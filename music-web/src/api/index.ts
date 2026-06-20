@@ -1,5 +1,9 @@
 import axios, { InternalAxiosRequestConfig } from 'axios';
-import { AuthResponse, User, ApiResponse, PageResponse } from '../types';
+import { 
+  AuthResponse, User, ApiResponse, PageResponse, 
+  LoginRequest, RegisterRequest, ChangePasswordRequest, 
+  ForgotPasswordRequest, ResetPasswordRequest 
+} from '../types';
 
 const API_BASE_URL = 'http://localhost:8080/api';
 
@@ -34,8 +38,11 @@ apiClient.interceptors.response.use(
 );
 
 export const authApi = {
-  login: (data: any) => apiClient.post<ApiResponse<AuthResponse>>('/auth/login', data),
-  register: (data: any) => apiClient.post<ApiResponse<User>>('/auth/register', data),
+  login: (data: LoginRequest) => apiClient.post<ApiResponse<AuthResponse>>('/auth/login', data),
+  register: (data: RegisterRequest) => apiClient.post<ApiResponse<User>>('/auth/register', data),
+  changePassword: (data: ChangePasswordRequest) => apiClient.post<ApiResponse<void>>('/auth/change-password', data),
+  forgotPassword: (data: ForgotPasswordRequest) => apiClient.post<ApiResponse<void>>('/auth/forgot-password', data),
+  resetPassword: (data: ResetPasswordRequest) => apiClient.post<ApiResponse<void>>('/auth/reset-password', data),
 };
 
 export const userApi = {
@@ -45,8 +52,8 @@ export const userApi = {
 export const adminApi = {
   getMe: () => apiClient.get<ApiResponse<User>>('/admins/me'),
   getAccounts: (page = 1, size = 20) => apiClient.get<ApiResponse<PageResponse<User>>>(`/admins/accounts?page=${page}&size=${size}`),
-  createAccount: (data: any) => apiClient.post<ApiResponse<User>>('/admins/accounts', data),
-  updateAccount: (id: string, data: any) => apiClient.put<ApiResponse<User>>(`/admins/accounts/${id}`, data),
+  createAccount: (data: import('../types').AccountCreationRequest) => apiClient.post<ApiResponse<User>>('/admins/accounts', data),
+  updateAccount: (id: string, data: import('../types').AccountUpdateRequest) => apiClient.put<ApiResponse<User>>(`/admins/accounts/${id}`, data),
   deleteAccount: (id: string) => apiClient.delete<ApiResponse<void>>(`/admins/accounts/${id}`),
 };
 

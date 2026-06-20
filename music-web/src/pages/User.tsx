@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { userApi } from '../api';
 import { User } from '../types';
+import ChangePasswordModal from '../components/ChangePasswordModal';
 
 export default function UserProfile() {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -66,13 +68,23 @@ export default function UserProfile() {
               <span style={{ color: 'var(--text-secondary)' }}>Role:</span>
               <span className="badge badge-user">{user?.role || 'USER'}</span>
             </div>
-            <div className="d-flex justify-content-between">
+            <div className="d-flex justify-content-between mb-4">
               <span style={{ color: 'var(--text-secondary)' }}>Account ID:</span>
               <span style={{ fontFamily: 'monospace' }}>{user?.id}</span>
+            </div>
+            <div className="d-flex justify-content-center mt-4">
+              <button onClick={() => setIsPasswordModalOpen(true)} className="btn btn-primary" style={{ padding: '0.5rem 1.5rem' }}>
+                Change Password
+              </button>
             </div>
           </div>
         </div>
       </div>
+      
+      <ChangePasswordModal 
+        isOpen={isPasswordModalOpen} 
+        onClose={() => setIsPasswordModalOpen(false)} 
+      />
     </>
   );
 }
