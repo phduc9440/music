@@ -1,8 +1,10 @@
 package com.ptit.music_be.controller;
 
+import com.ptit.music_be.dto.request.ForgotPasswordRequest;
 import com.ptit.music_be.dto.request.LoginRequest;
 import com.ptit.music_be.dto.request.RefreshRequest;
 import com.ptit.music_be.dto.request.RegisterRequest;
+import com.ptit.music_be.dto.request.ResetPasswordRequest;
 import com.ptit.music_be.dto.response.ApiResponse;
 import com.ptit.music_be.dto.response.AuthResponse;
 import com.ptit.music_be.dto.response.UserResponse;
@@ -55,6 +57,20 @@ public class AuthController {
 	@Operation(summary = "Change password", security = @io.swagger.v3.oas.annotations.security.SecurityRequirement(name = "bearerAuth"))
 	public ApiResponse<Void> changePassword(@RequestBody @Valid com.ptit.music_be.dto.request.ChangePasswordRequest request) {
 		authService.changePassword(request);
+		return ApiResponse.<Void>builder().build();
+	}
+
+	@PostMapping("/forgot-password")
+	@Operation(summary = "Request OTP for forgotten password")
+	public ApiResponse<Void> forgotPassword(@RequestBody @Valid ForgotPasswordRequest request) {
+		authService.forgotPassword(request);
+		return ApiResponse.<Void>builder().build();
+	}
+
+	@PostMapping("/reset-password")
+	@Operation(summary = "Reset password using OTP")
+	public ApiResponse<Void> resetPassword(@RequestBody @Valid ResetPasswordRequest request) {
+		authService.resetPassword(request);
 		return ApiResponse.<Void>builder().build();
 	}
 }

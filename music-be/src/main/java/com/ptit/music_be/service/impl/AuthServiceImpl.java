@@ -11,14 +11,18 @@ import com.ptit.music_be.dto.request.RegisterRequest;
 import com.ptit.music_be.dto.request.SendEmailRequest;
 import com.ptit.music_be.dto.request.ChangePasswordRequest;
 import org.springframework.security.core.context.SecurityContextHolder;
+import com.ptit.music_be.dto.request.ForgotPasswordRequest;
+import com.ptit.music_be.dto.request.ResetPasswordRequest;
 import com.ptit.music_be.dto.response.AuthResponse;
 import com.ptit.music_be.dto.response.UserResponse;
 import com.ptit.music_be.entity.Member;
+import com.ptit.music_be.entity.Otp;
 import com.ptit.music_be.entity.User;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.mapper.MemberMapper;
 import com.ptit.music_be.repository.MemberRepository;
+import com.ptit.music_be.repository.OtpRepository;
 import com.ptit.music_be.repository.UserRepository;
 import com.ptit.music_be.service.AuthService;
 import com.ptit.music_be.service.EmailService;
@@ -33,8 +37,10 @@ import org.springframework.stereotype.Service;
 
 import java.text.ParseException;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.Random;
 import java.util.UUID;
 
 @Service
@@ -48,6 +54,7 @@ public class AuthServiceImpl implements AuthService {
 	MemberMapper memberMapper;
 	PasswordEncoder passwordEncoder;
 	EmailService emailService;
+	OtpRepository otpRepository;
 
 	@NonFinal
 	@Value("${jwt.signerKey}")
@@ -193,6 +200,42 @@ public class AuthServiceImpl implements AuthService {
 
 		member.setPassword(passwordEncoder.encode(request.getNewPassword()));
 		memberRepository.save(member);
+	}
+
+	@Override
+	public void forgotPassword(ForgotPasswordRequest request) {
+		Member member = memberRepository.findByEmail(request.getEmail())
+				.orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+		String otpCode = String.format("%06d", new Random().nextInt(999999));
+		
+		otpRepository.deleteByMember(member); // Xóa các OTP cũ nếu có
+
+		Otp otp = Otp.builder()
+				.otpCode(otpCode)
+				.expiryTime(LocalDateTime.now().plusMinutes(5))
+				.member(member)
+				.build();
+		otpRepository.save(otp);
+
+		emailService.sendForgotPasswordEmail(member.getEmail(), otpCode);
+	}
+
+	@Override
+	public void resetPassword(ResetPasswordRequest request) {
+		Member member = memberRepository.findByEmail(request.getEmail())
+				.orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+		Otp otp = otpRepository.findByMemberAndOtpCode(member, request.getOtp())
+				.orElseThrow(() -> new AppException(ErrorCode.INVALID_CREDENTIALS)); // Hoặc lỗi OTP không hợp lệ
+
+		if (otp.getExpiryTime().isBefore(LocalDateTime.now())) {
+			throw new AppException(ErrorCode.INVALID_CREDENTIALS); // OTP hết hạn
+		}
+
+		member.setPassword(passwordEncoder.encode(request.getNewPassword()));
+		memberRepository.save(member);
+		otpRepository.delete(otp);
 	}
 }
 
