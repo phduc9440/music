@@ -1,5 +1,6 @@
 package com.ptit.music_be.service;
 
+import com.ptit.music_be.dto.request.ChangePasswordRequest;
 import com.ptit.music_be.dto.request.LoginRequest;
 import com.ptit.music_be.dto.request.RefreshRequest;
 import com.ptit.music_be.dto.request.RegisterRequest;
@@ -13,4 +14,6 @@ public interface AuthService {
 	AuthResponse login(LoginRequest request);
 
 	AuthResponse refreshToken(RefreshRequest request);
+
+	void changePassword(ChangePasswordRequest request);
 }
