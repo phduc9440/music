@@ -50,4 +50,11 @@ public class AuthController {
 				.result(authService.refreshToken(request))
 				.build();
 	}
+
+	@PostMapping("/change-password")
+	@Operation(summary = "Change password", security = @io.swagger.v3.oas.annotations.security.SecurityRequirement(name = "bearerAuth"))
+	public ApiResponse<Void> changePassword(@RequestBody @Valid com.ptit.music_be.dto.request.ChangePasswordRequest request) {
+		authService.changePassword(request);
+		return ApiResponse.<Void>builder().build();
+	}
 }
