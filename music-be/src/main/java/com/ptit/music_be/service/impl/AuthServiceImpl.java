@@ -9,6 +9,8 @@ import com.ptit.music_be.dto.request.LoginRequest;
 import com.ptit.music_be.dto.request.RefreshRequest;
 import com.ptit.music_be.dto.request.RegisterRequest;
 import com.ptit.music_be.dto.request.SendEmailRequest;
+import com.ptit.music_be.dto.request.ChangePasswordRequest;
+import org.springframework.security.core.context.SecurityContextHolder;
 import com.ptit.music_be.dto.response.AuthResponse;
 import com.ptit.music_be.dto.response.UserResponse;
 import com.ptit.music_be.entity.Member;
@@ -176,6 +178,21 @@ public class AuthServiceImpl implements AuthService {
 		}
 
 		return "ROLE_" + member.getRole().toUpperCase();
+	}
+
+	@Override
+	public void changePassword(ChangePasswordRequest request) {
+		String username = SecurityContextHolder.getContext().getAuthentication().getName();
+
+		Member member = memberRepository.findByUsername(username)
+				.orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
+
+		if (!passwordEncoder.matches(request.getOldPassword(), member.getPassword())) {
+			throw new AppException(ErrorCode.INVALID_CREDENTIALS);
+		}
+
+		member.setPassword(passwordEncoder.encode(request.getNewPassword()));
+		memberRepository.save(member);
 	}
 }
 
