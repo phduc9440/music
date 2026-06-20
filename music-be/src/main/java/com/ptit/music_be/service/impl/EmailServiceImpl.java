@@ -47,4 +47,33 @@ public class EmailServiceImpl implements EmailService {
 			log.error("Failed to send welcome email to {}", request.getTo(), e);
 		}
 	}
+	@Override
+	@Async
+	public void sendForgotPasswordEmail(String to, String otp) {
+		try {
+			MimeMessage message = javaMailSender.createMimeMessage();
+			MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+			helper.setTo(to);
+			helper.setSubject("Reset Your Password - Music App 🎵");
+
+			String htmlContent = "<h2>Password Reset Request</h2>" +
+					"<p>You recently requested to reset your password for your Music App account.</p>" +
+					"<p>Here is your One-Time Password (OTP):</p>" +
+					"<h3 style=\"background-color: #f4f4f4; padding: 10px; display: inline-block; letter-spacing: 2px;\">" + otp + "</h3>" +
+					"<p>This OTP will expire in 5 minutes.</p>" +
+					"<p>If you did not request a password reset, please ignore this email or contact support if you have questions.</p>" +
+					"<br>" +
+					"<p>Best regards,</p>" +
+					"<p><strong>The Music App Team</strong></p>";
+
+			helper.setText(htmlContent, true);
+
+			javaMailSender.send(message);
+			log.info("Forgot password email sent successfully to {}", to);
+
+		} catch (MessagingException e) {
+			log.error("Failed to send forgot password email to {}", to, e);
+		}
+	}
 }
