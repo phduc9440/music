@@ -27,6 +27,14 @@ export interface PageResponse<T> {
   totalElements: number;
 }
 
+export interface PageRequest {
+  page?: number;
+  size?: number;
+  sortBy?: string;
+  order?: 'asc' | 'desc';
+  keyword?: string;
+}
+
 export interface LoginRequest {
   username?: string;
   password?: string;

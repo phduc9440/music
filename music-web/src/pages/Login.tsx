@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { authApi, userApi, adminApi } from '../api';
+import { authApi, userApi, adminApi } from '../services';
 
 type ViewMode = 'login' | 'register' | 'forgot' | 'reset';
 
@@ -32,7 +32,7 @@ export default function Login() {
           await userApi.getMe();
           localStorage.setItem('role', 'USER');
           toast.success('Login successful!');
-          navigate('/user');
+          navigate('/profile');
         } catch (err) {
           try {
             await adminApi.getMe();

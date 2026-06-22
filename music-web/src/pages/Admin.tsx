@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { adminApi } from '../api';
+import { adminApi } from '../services';
 import { User } from '../types';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 
@@ -37,7 +37,7 @@ export default function AdminDashboard() {
 
   const loadAccounts = async () => {
     try {
-      const res = await adminApi.getAccounts(1, 20);
+      const res = await adminApi.getAccounts({ page: 1, size: 20 });
       setAccounts(res.data.result.data || []);
     } catch (error) {
       toast.error('Failed to load accounts');
