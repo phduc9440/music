@@ -1,5 +1,6 @@
-import axios, { InternalAxiosRequestConfig } from 'axios';
-import { 
+import axios from 'axios';
+import type { InternalAxiosRequestConfig } from 'axios';
+import type { 
   AuthResponse, User, ApiResponse, PageResponse, 
   LoginRequest, RegisterRequest, ChangePasswordRequest, 
   ForgotPasswordRequest, ResetPasswordRequest 
@@ -39,6 +40,7 @@ apiClient.interceptors.response.use(
 
 export const authApi = {
   login: (data: LoginRequest) => apiClient.post<ApiResponse<AuthResponse>>('/auth/login', data),
+  googleLogin: (data: { idToken: string }) => apiClient.post<ApiResponse<AuthResponse>>('/auth/google-login', data),
   register: (data: RegisterRequest) => apiClient.post<ApiResponse<User>>('/auth/register', data),
   changePassword: (data: ChangePasswordRequest) => apiClient.post<ApiResponse<void>>('/auth/change-password', data),
   forgotPassword: (data: ForgotPasswordRequest) => apiClient.post<ApiResponse<void>>('/auth/forgot-password', data),

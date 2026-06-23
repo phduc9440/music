@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { adminApi } from '../services';
-import { User } from '../types';
+import type { User } from '../types';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 
 export default function AdminDashboard() {
@@ -108,7 +108,9 @@ export default function AdminDashboard() {
         <div className="navbar-brand">Admin Panel</div>
         <div className="navbar-nav">
           <span style={{ fontWeight: 600 }}>{admin?.fullName || 'Admin'}</span>
-          <button onClick={() => setIsPasswordModalOpen(true)} className="btn btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}>Change Password</button>
+          {admin?.authProvider !== 'GOOGLE' && (
+            <button onClick={() => setIsPasswordModalOpen(true)} className="btn btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}>Change Password</button>
+          )}
           <button onClick={handleLogout} className="btn btn-danger" style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}>Logout</button>
         </div>
       </nav>

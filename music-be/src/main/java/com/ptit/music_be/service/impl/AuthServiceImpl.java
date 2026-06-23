@@ -21,6 +21,7 @@ import com.ptit.music_be.entity.Otp;
 import com.ptit.music_be.entity.User;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.dto.enums.*;
 import com.ptit.music_be.mapper.MemberMapper;
 import com.ptit.music_be.repository.MemberRepository;
 import com.ptit.music_be.repository.OtpRepository;
@@ -94,7 +95,8 @@ public class AuthServiceImpl implements AuthService {
 				.phone(request.getPhone())
 				.fullName(request.getFullName())
 				.address(request.getAddress())
-				.role("USER")
+				.role(Role.USER)
+				.authProvider(AuthProvider.LOCAL)
 				.build();
 
 		User savedUser = userRepository.save(user);
@@ -150,13 +152,19 @@ public class AuthServiceImpl implements AuthService {
 
 			if (member == null) {
 				User user = User.builder()
-						.username(email)
-						.password(passwordEncoder.encode(UUID.randomUUID().toString()))
 						.email(email)
 						.fullName(name)
-						.role("USER")
+						.role(Role.USER)
+						.authProvider(AuthProvider.GOOGLE)
 						.build();
 				member = userRepository.save(user);
+
+				if (email != null && !email.isBlank()) {
+					emailService.sendWelcomeEmail(SendEmailRequest.builder()
+							.to(email)
+							.fullName(name)
+							.build());
+				}
 			}
 
 			String token = generateToken(member, validDuration);
@@ -237,11 +245,11 @@ public class AuthServiceImpl implements AuthService {
 	}
 
 	private String buildScope(Member member) {
-		if (member.getRole() == null || member.getRole().isBlank()) {
+		if (member.getRole() == null) {
 			return "";
 		}
 
-		return "ROLE_" + member.getRole().toUpperCase();
+		return "ROLE_" + member.getRole().name();
 	}
 
 	@Override
@@ -250,6 +258,10 @@ public class AuthServiceImpl implements AuthService {
 
 		Member member = memberRepository.findByUsername(username)
 				.orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
+
+		if (AuthProvider.GOOGLE.equals(member.getAuthProvider())) {
+			throw new AppException(ErrorCode.UNAUTHORIZED); // or a custom error code
+		}
 
 		if (!passwordEncoder.matches(request.getOldPassword(), member.getPassword())) {
 			throw new AppException(ErrorCode.INVALID_CREDENTIALS);
@@ -263,6 +275,10 @@ public class AuthServiceImpl implements AuthService {
 	public void forgotPassword(ForgotPasswordRequest request) {
 		Member member = memberRepository.findByEmail(request.getEmail())
 				.orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+		if (AuthProvider.GOOGLE.equals(member.getAuthProvider())) {
+			throw new AppException(ErrorCode.UNAUTHORIZED);
+		}
 
 		String otpCode = String.format("%06d", new Random().nextInt(999999));
 		

@@ -1,5 +1,6 @@
 package com.ptit.music_be.configuration;
 
+import com.ptit.music_be.dto.enums.Role;
 import com.ptit.music_be.entity.Admin;
 import com.ptit.music_be.repository.AdminRepository;
 import lombok.AccessLevel;
@@ -21,10 +22,7 @@ public class ApplicationInitConfig {
 	PasswordEncoder passwordEncoder;
 
 	@Bean
-	@ConditionalOnProperty(
-			prefix = "spring",
-			value = "datasource.driver-class-name",
-			havingValue = "com.mysql.cj.jdbc.Driver")
+	@ConditionalOnProperty(prefix = "spring", value = "datasource.driver-class-name", havingValue = "com.mysql.cj.jdbc.Driver")
 	ApplicationRunner applicationRunner(AdminRepository adminRepository) {
 		return args -> {
 			if (adminRepository.findByUsername("admin").isEmpty()) {
@@ -32,7 +30,7 @@ public class ApplicationInitConfig {
 				Admin admin = Admin.builder()
 						.username("admin")
 						.password(passwordEncoder.encode("12345678"))
-						.role("ADMIN")
+						.role(Role.ADMIN)
 						.position("SUPER_ADMIN")
 						.build();
 
@@ -43,4 +41,3 @@ public class ApplicationInitConfig {
 		};
 	}
 }
-

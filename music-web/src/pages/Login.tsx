@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { authApi, userApi, adminApi } from '../services';
+import GoogleAuthButton from '../components/GoogleAuthButton';
 
 type ViewMode = 'login' | 'register' | 'forgot' | 'reset';
 
@@ -200,6 +201,10 @@ export default function Login() {
           <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: viewMode === 'login' ? '0' : '1rem' }} disabled={isLoading}>
             {getButtonText()}
           </button>
+          
+          {viewMode === 'login' && (
+            <GoogleAuthButton setIsLoading={setIsLoading} />
+          )}
           
           {/* Bottom links */}
           <div style={{ marginTop: '1.5rem', fontSize: '0.875rem' }}>

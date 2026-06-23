@@ -1,6 +1,6 @@
+import React from 'react';
 import { Navigate } from 'react-router-dom';
-
-const ProtectedRoute = ({ children, allowedRole }: { children: JSX.Element, allowedRole: string }) => {
+const ProtectedRoute = ({ children, allowedRole }: { children: React.ReactNode, allowedRole: string }) => {
   const token = localStorage.getItem('token');
   const role = localStorage.getItem('role');
 

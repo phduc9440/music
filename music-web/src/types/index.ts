@@ -6,6 +6,7 @@ export interface User {
   role: 'USER' | 'ADMIN';
   phone?: string;
   address?: string;
+  authProvider?: 'LOCAL' | 'GOOGLE' | string;
 }
 
 export interface AuthResponse {

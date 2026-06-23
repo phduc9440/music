@@ -1,5 +1,8 @@
 package com.ptit.music_be.dto.response;
 
+import com.ptit.music_be.dto.enums.AuthProvider;
+import com.ptit.music_be.dto.enums.Role;
+
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -19,5 +22,6 @@ public class MemberResponse {
 	String email;
 	String phone;
 	String fullName;
-	String role;
+	Role role;
+	AuthProvider authProvider;
 }
