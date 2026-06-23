@@ -1,6 +1,6 @@
 package com.ptit.music_be.exception;
 
-import com.ptit.music.dto.response.ApiResponse;
+import com.ptit.music_be.dto.response.ApiResponse;
 import jakarta.validation.ConstraintViolation;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;

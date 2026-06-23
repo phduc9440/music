@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { toast } from 'react-toastify';
-import { authApi } from '../api';
+import { authApi } from '../services';
 
 interface Props {
   isOpen: boolean;

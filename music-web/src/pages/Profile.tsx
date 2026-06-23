@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { userApi } from '../api';
+import { userApi } from '../services';
 import { User } from '../types';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 

@@ -31,7 +31,7 @@ apiClient.interceptors.response.use(
     if (error.response && error.response.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('role');
-      window.location.href = '/';
+      window.location.href = '/auth/login';
     }
     return Promise.reject(error);
   }
@@ -51,7 +51,7 @@ export const userApi = {
 
 export const adminApi = {
   getMe: () => apiClient.get<ApiResponse<User>>('/admins/me'),
-  getAccounts: (page = 1, size = 20) => apiClient.get<ApiResponse<PageResponse<User>>>(`/admins/accounts?page=${page}&size=${size}`),
+  getAccounts: (params?: import('../types').PageRequest) => apiClient.get<ApiResponse<PageResponse<User>>>('/admins/accounts', { params: { page: 1, size: 20, ...params } }),
   createAccount: (data: import('../types').AccountCreationRequest) => apiClient.post<ApiResponse<User>>('/admins/accounts', data),
   updateAccount: (id: string, data: import('../types').AccountUpdateRequest) => apiClient.put<ApiResponse<User>>(`/admins/accounts/${id}`, data),
   deleteAccount: (id: string) => apiClient.delete<ApiResponse<void>>(`/admins/accounts/${id}`),
