@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { userApi } from '../services';
-import { User } from '../types';
+import type { User } from '../types';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 
 export default function UserProfile() {
@@ -50,7 +50,7 @@ export default function UserProfile() {
         <div className="glass-container" style={{ textAlign: 'center' }}>
           <div style={{ 
             width: '100px', height: '100px', 
-            background: 'linear-gradient(135deg, var(--primary-color), var(--secondary-color))', 
+            backgroundColor: 'var(--primary-color)', 
             borderRadius: '50%', margin: '0 auto 1.5rem', 
             display: 'flex', alignItems: 'center', justifyContent: 'center', 
             fontSize: '2.5rem', fontWeight: 'bold', color: 'white' 
@@ -62,7 +62,7 @@ export default function UserProfile() {
           <p style={{ color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>@{user?.username}</p>
           <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>{user?.email || 'email@example.com'}</p>
 
-          <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1.5rem', borderRadius: '12px', textAlign: 'left' }}>
+          <div style={{ background: 'var(--background-dark)', border: '1px solid var(--surface-border)', padding: '1.5rem', borderRadius: '12px', textAlign: 'left' }}>
             <h3 style={{ marginBottom: '1rem', borderBottom: '1px solid var(--surface-border)', paddingBottom: '0.5rem' }}>Account Details</h3>
             <div className="d-flex justify-content-between mb-4">
               <span style={{ color: 'var(--text-secondary)' }}>Role:</span>
@@ -73,9 +73,11 @@ export default function UserProfile() {
               <span style={{ fontFamily: 'monospace' }}>{user?.id}</span>
             </div>
             <div className="d-flex justify-content-center mt-4">
-              <button onClick={() => setIsPasswordModalOpen(true)} className="btn btn-primary" style={{ padding: '0.5rem 1.5rem' }}>
-                Change Password
-              </button>
+              {user?.authProvider !== 'GOOGLE' && (
+                <button onClick={() => setIsPasswordModalOpen(true)} className="btn btn-primary" style={{ padding: '0.5rem 1.5rem' }}>
+                  Change Password
+                </button>
+              )}
             </div>
           </div>
         </div>

@@ -1,18 +1,18 @@
 :root {
-  --primary-color: #6366f1; /* Indigo */
-  --primary-hover: #4f46e5;
-  --secondary-color: #ec4899; /* Pink */
-  --background-dark: #0f172a; /* Slate 900 */
-  --surface-dark: rgba(30, 41, 59, 0.7); /* Slate 800 with opacity */
-  --surface-border: rgba(255, 255, 255, 0.1);
-  --text-primary: #f8fafc;
-  --text-secondary: #cbd5e1;
+  --primary-color: #2563eb; /* Standard Blue */
+  --primary-hover: #1d4ed8;
+  --secondary-color: #475569; /* Slate 600 */
+  --background-dark: #f8fafc; /* Light Gray Background */
+  --surface-dark: #ffffff; /* White surface */
+  --surface-border: #e2e8f0; /* Light border */
+  --text-primary: #0f172a; /* Dark text */
+  --text-secondary: #64748b; /* Muted text */
   --danger-color: #ef4444;
   --success-color: #10b981;
   
-  --glass-bg: rgba(255, 255, 255, 0.05);
-  --glass-border: 1px solid rgba(255, 255, 255, 0.1);
-  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  --glass-bg: #ffffff;
+  --glass-border: 1px solid #e2e8f0;
+  --glass-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   --glass-blur: blur(12px);
 }
 
@@ -29,9 +29,6 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-image: 
-    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(236, 72, 153, 0.15) 0px, transparent 50%);
   background-attachment: fixed;
   overflow-x: hidden;
 }
@@ -49,8 +46,6 @@ a:hover {
 /* Glassmorphism Container */
 .glass-container {
   background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
   border: var(--glass-border);
   box-shadow: var(--glass-shadow);
   border-radius: 16px;
@@ -71,14 +66,13 @@ a:hover {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  background: var(--primary-color);
   color: white;
-  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
 }
 
 .btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+  background: var(--primary-hover);
+  transform: translateY(-1px);
 }
 
 .btn-danger {
@@ -106,18 +100,18 @@ a:hover {
 .form-control {
   width: 100%;
   padding: 0.75rem 1rem;
-  background: rgba(15, 23, 42, 0.6);
+  background: #ffffff;
   border: 1px solid var(--surface-border);
   border-radius: 8px;
   color: var(--text-primary);
   font-size: 1rem;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
 .form-control:focus {
   outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
 }
 
 /* Auth Page layout */
@@ -138,9 +132,7 @@ a:hover {
 .auth-card h1 {
   margin-bottom: 0.5rem;
   font-size: 2rem;
-  background: linear-gradient(to right, #a855f7, #ec4899);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--text-primary);
 }
 
 .auth-card p {
@@ -154,8 +146,7 @@ a:hover {
   justify-content: space-between;
   align-items: center;
   padding: 1rem 2rem;
-  background: rgba(15, 23, 42, 0.8);
-  backdrop-filter: blur(10px);
+  background: #ffffff;
   border-bottom: 1px solid var(--surface-border);
   position: sticky;
   top: 0;
@@ -165,10 +156,7 @@ a:hover {
 .navbar-brand {
   font-size: 1.5rem;
   font-weight: 700;
-  color: white;
-  background: linear-gradient(to right, #a855f7, #ec4899);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--primary-color);
 }
 
 .navbar-nav {
@@ -215,7 +203,7 @@ a:hover {
 }
 
 .table tbody tr:hover {
-  background-color: rgba(255, 255, 255, 0.02);
+  background-color: #f1f5f9;
 }
 
 /* Badges */
@@ -227,13 +215,13 @@ a:hover {
 }
 
 .badge-admin {
-  background-color: rgba(236, 72, 153, 0.2);
-  color: #f472b6;
+  background-color: #fee2e2;
+  color: #ef4444;
 }
 
 .badge-user {
-  background-color: rgba(99, 102, 241, 0.2);
-  color: #818cf8;
+  background-color: #dbeafe;
+  color: #2563eb;
 }
 
 /* Utility */
@@ -251,8 +239,7 @@ a:hover {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
