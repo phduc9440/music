@@ -1,17 +1,20 @@
 package com.ptit.music_be.service.impl;
 
-import com.ptit.music_be.dto.request.SendEmailRequest;
-import com.ptit.music_be.service.EmailService;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
-import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
-import lombok.experimental.FieldDefaults;
-import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+
+import com.ptit.music_be.dto.request.SendEmailRequest;
+import com.ptit.music_be.service.EmailService;
+
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
@@ -19,61 +22,62 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class EmailServiceImpl implements EmailService {
 
-	JavaMailSender javaMailSender;
+    JavaMailSender javaMailSender;
 
-	@Override
-	@Async
-	public void sendWelcomeEmail(SendEmailRequest request) {
-		try {
-			MimeMessage message = javaMailSender.createMimeMessage();
-			MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+    @Override
+    @Async
+    public void sendWelcomeEmail(SendEmailRequest request) {
+        try {
+            MimeMessage message = javaMailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-			helper.setTo(request.getTo());
-			helper.setSubject("Welcome to Music App! 🎵");
+            helper.setTo(request.getTo());
+            helper.setSubject("Welcome to Music App! 🎵");
 
-			String htmlContent = "<h2>Hello " + request.getFullName() + ",</h2>" +
-					"<p>Thank you for registering an account at Music App.</p>" +
-					"<p>We hope you enjoy your time with us!</p>" +
-					"<br>" +
-					"<p>Best regards,</p>" +
-					"<p><strong>The Music App Team</strong></p>";
+            String htmlContent = "<h2>Hello " + request.getFullName() + ",</h2>"
+                    + "<p>Thank you for registering an account at Music App.</p>"
+                    + "<p>We hope you enjoy your time with us!</p>"
+                    + "<br>"
+                    + "<p>Best regards,</p>"
+                    + "<p><strong>The Music App Team</strong></p>";
 
-			helper.setText(htmlContent, true);
+            helper.setText(htmlContent, true);
 
-			javaMailSender.send(message);
-			log.info("Welcome email sent successfully to {}", request.getTo());
+            javaMailSender.send(message);
+            log.info("Welcome email sent successfully to {}", request.getTo());
 
-		} catch (MessagingException e) {
-			log.error("Failed to send welcome email to {}", request.getTo(), e);
-		}
-	}
-	@Override
-	@Async
-	public void sendForgotPasswordEmail(String to, String otp) {
-		try {
-			MimeMessage message = javaMailSender.createMimeMessage();
-			MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+        } catch (MessagingException e) {
+            log.error("Failed to send welcome email to {}", request.getTo(), e);
+        }
+    }
 
-			helper.setTo(to);
-			helper.setSubject("Reset Your Password - Music App 🎵");
+    @Override
+    @Async
+    public void sendForgotPasswordEmail(String to, String otp) {
+        try {
+            MimeMessage message = javaMailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-			String htmlContent = "<h2>Password Reset Request</h2>" +
-					"<p>You recently requested to reset your password for your Music App account.</p>" +
-					"<p>Here is your One-Time Password (OTP):</p>" +
-					"<h3 style=\"background-color: #f4f4f4; padding: 10px; display: inline-block; letter-spacing: 2px;\">" + otp + "</h3>" +
-					"<p>This OTP will expire in 5 minutes.</p>" +
-					"<p>If you did not request a password reset, please ignore this email or contact support if you have questions.</p>" +
-					"<br>" +
-					"<p>Best regards,</p>" +
-					"<p><strong>The Music App Team</strong></p>";
+            helper.setTo(to);
+            helper.setSubject("Reset Your Password - Music App 🎵");
 
-			helper.setText(htmlContent, true);
+            String htmlContent = "<h2>Password Reset Request</h2>"
+                    + "<p>You recently requested to reset your password for your Music App account.</p>"
+                    + "<p>Here is your One-Time Password (OTP):</p>"
+                    + "<h3 style=\"background-color: #f4f4f4; padding: 10px; display: inline-block; letter-spacing: 2px;\">"
+                    + otp + "</h3>" + "<p>This OTP will expire in 5 minutes.</p>"
+                    + "<p>If you did not request a password reset, please ignore this email or contact support if you have questions.</p>"
+                    + "<br>"
+                    + "<p>Best regards,</p>"
+                    + "<p><strong>The Music App Team</strong></p>";
 
-			javaMailSender.send(message);
-			log.info("Forgot password email sent successfully to {}", to);
+            helper.setText(htmlContent, true);
 
-		} catch (MessagingException e) {
-			log.error("Failed to send forgot password email to {}", to, e);
-		}
-	}
+            javaMailSender.send(message);
+            log.info("Forgot password email sent successfully to {}", to);
+
+        } catch (MessagingException e) {
+            log.error("Failed to send forgot password email to {}", to, e);
+        }
+    }
 }

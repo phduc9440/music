@@ -17,11 +17,11 @@ import lombok.experimental.SuperBuilder;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class MemberResponse {
 
-	String id;
-	String username;
-	String email;
-	String phone;
-	String fullName;
-	Role role;
-	AuthProvider authProvider;
+    String id;
+    String username;
+    String email;
+    String phone;
+    String fullName;
+    Role role;
+    AuthProvider authProvider;
 }

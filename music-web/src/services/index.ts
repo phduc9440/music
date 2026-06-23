@@ -1,9 +1,15 @@
 import axios from 'axios';
 import type { InternalAxiosRequestConfig } from 'axios';
-import type { 
-  AuthResponse, User, ApiResponse, PageResponse, 
-  LoginRequest, RegisterRequest, ChangePasswordRequest, 
-  ForgotPasswordRequest, ResetPasswordRequest 
+import type {
+  AuthResponse,
+  User,
+  ApiResponse,
+  PageResponse,
+  LoginRequest,
+  RegisterRequest,
+  ChangePasswordRequest,
+  ForgotPasswordRequest,
+  ResetPasswordRequest,
 } from '../types';
 
 const API_BASE_URL = 'http://localhost:8080/api';
@@ -23,7 +29,7 @@ apiClient.interceptors.request.use(
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 apiClient.interceptors.response.use(
@@ -35,7 +41,7 @@ apiClient.interceptors.response.use(
       window.location.href = '/auth/login';
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export const authApi = {
@@ -53,9 +59,14 @@ export const userApi = {
 
 export const adminApi = {
   getMe: () => apiClient.get<ApiResponse<User>>('/admins/me'),
-  getAccounts: (params?: import('../types').PageRequest) => apiClient.get<ApiResponse<PageResponse<User>>>('/admins/accounts', { params: { page: 1, size: 20, ...params } }),
-  createAccount: (data: import('../types').AccountCreationRequest) => apiClient.post<ApiResponse<User>>('/admins/accounts', data),
-  updateAccount: (id: string, data: import('../types').AccountUpdateRequest) => apiClient.put<ApiResponse<User>>(`/admins/accounts/${id}`, data),
+  getAccounts: (params?: import('../types').PageRequest) =>
+    apiClient.get<ApiResponse<PageResponse<User>>>('/admins/accounts', {
+      params: { page: 1, size: 20, ...params },
+    }),
+  createAccount: (data: import('../types').AccountCreationRequest) =>
+    apiClient.post<ApiResponse<User>>('/admins/accounts', data),
+  updateAccount: (id: string, data: import('../types').AccountUpdateRequest) =>
+    apiClient.put<ApiResponse<User>>(`/admins/accounts/${id}`, data),
   deleteAccount: (id: string) => apiClient.delete<ApiResponse<void>>(`/admins/accounts/${id}`),
 };
 

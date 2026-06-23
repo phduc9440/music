@@ -9,7 +9,7 @@
   --text-secondary: #64748b; /* Muted text */
   --danger-color: #ef4444;
   --success-color: #10b981;
-  
+
   --glass-bg: #ffffff;
   --glass-border: 1px solid #e2e8f0;
   --glass-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
@@ -184,7 +184,8 @@ a:hover {
   margin-top: 1rem;
 }
 
-.table th, .table td {
+.table th,
+.table td {
   padding: 1rem;
   text-align: left;
   border-bottom: 1px solid var(--surface-border);
@@ -225,12 +226,24 @@ a:hover {
 }
 
 /* Utility */
-.d-flex { display: flex; }
-.justify-content-between { justify-content: space-between; }
-.align-items-center { align-items: center; }
-.mt-4 { margin-top: 1.5rem; }
-.mb-4 { margin-bottom: 1.5rem; }
-.gap-2 { gap: 0.5rem; }
+.d-flex {
+  display: flex;
+}
+.justify-content-between {
+  justify-content: space-between;
+}
+.align-items-center {
+  align-items: center;
+}
+.mt-4 {
+  margin-top: 1.5rem;
+}
+.mb-4 {
+  margin-bottom: 1.5rem;
+}
+.gap-2 {
+  gap: 0.5rem;
+}
 
 /* Modal */
 .modal-overlay {

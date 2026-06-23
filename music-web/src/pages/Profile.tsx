@@ -42,28 +42,58 @@ export default function UserProfile() {
         <div className="navbar-brand">Music App</div>
         <div className="navbar-nav">
           <span style={{ fontWeight: 600 }}>{displayName}</span>
-          <button onClick={handleLogout} className="btn btn-danger" style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}>Logout</button>
+          <button
+            onClick={handleLogout}
+            className="btn btn-danger"
+            style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}
+          >
+            Logout
+          </button>
         </div>
       </nav>
 
       <div className="dashboard-container" style={{ maxWidth: '600px' }}>
         <div className="glass-container" style={{ textAlign: 'center' }}>
-          <div style={{ 
-            width: '100px', height: '100px', 
-            backgroundColor: 'var(--primary-color)', 
-            borderRadius: '50%', margin: '0 auto 1.5rem', 
-            display: 'flex', alignItems: 'center', justifyContent: 'center', 
-            fontSize: '2.5rem', fontWeight: 'bold', color: 'white' 
-          }}>
+          <div
+            style={{
+              width: '100px',
+              height: '100px',
+              backgroundColor: 'var(--primary-color)',
+              borderRadius: '50%',
+              margin: '0 auto 1.5rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '2.5rem',
+              fontWeight: 'bold',
+              color: 'white',
+            }}
+          >
             {displayName.charAt(0).toUpperCase()}
           </div>
-          
+
           <h2 style={{ marginBottom: '0.5rem', fontSize: '1.75rem' }}>{displayName}</h2>
           <p style={{ color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>@{user?.username}</p>
           <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>{user?.email || 'email@example.com'}</p>
 
-          <div style={{ background: 'var(--background-dark)', border: '1px solid var(--surface-border)', padding: '1.5rem', borderRadius: '12px', textAlign: 'left' }}>
-            <h3 style={{ marginBottom: '1rem', borderBottom: '1px solid var(--surface-border)', paddingBottom: '0.5rem' }}>Account Details</h3>
+          <div
+            style={{
+              background: 'var(--background-dark)',
+              border: '1px solid var(--surface-border)',
+              padding: '1.5rem',
+              borderRadius: '12px',
+              textAlign: 'left',
+            }}
+          >
+            <h3
+              style={{
+                marginBottom: '1rem',
+                borderBottom: '1px solid var(--surface-border)',
+                paddingBottom: '0.5rem',
+              }}
+            >
+              Account Details
+            </h3>
             <div className="d-flex justify-content-between mb-4">
               <span style={{ color: 'var(--text-secondary)' }}>Role:</span>
               <span className="badge badge-user">{user?.role || 'USER'}</span>
@@ -74,7 +104,11 @@ export default function UserProfile() {
             </div>
             <div className="d-flex justify-content-center mt-4">
               {user?.authProvider !== 'GOOGLE' && (
-                <button onClick={() => setIsPasswordModalOpen(true)} className="btn btn-primary" style={{ padding: '0.5rem 1.5rem' }}>
+                <button
+                  onClick={() => setIsPasswordModalOpen(true)}
+                  className="btn btn-primary"
+                  style={{ padding: '0.5rem 1.5rem' }}
+                >
                   Change Password
                 </button>
               )}
@@ -82,11 +116,8 @@ export default function UserProfile() {
           </div>
         </div>
       </div>
-      
-      <ChangePasswordModal 
-        isOpen={isPasswordModalOpen} 
-        onClose={() => setIsPasswordModalOpen(false)} 
-      />
+
+      <ChangePasswordModal isOpen={isPasswordModalOpen} onClose={() => setIsPasswordModalOpen(false)} />
     </>
   );
 }

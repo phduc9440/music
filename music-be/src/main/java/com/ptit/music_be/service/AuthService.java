@@ -12,17 +12,17 @@ import com.ptit.music_be.dto.response.UserResponse;
 
 public interface AuthService {
 
-	UserResponse register(RegisterRequest request);
+    UserResponse register(RegisterRequest request);
 
-	AuthResponse login(LoginRequest request);
+    AuthResponse login(LoginRequest request);
 
-	AuthResponse googleLogin(GoogleLoginRequest request);
+    AuthResponse googleLogin(GoogleLoginRequest request);
 
-	AuthResponse refreshToken(RefreshRequest request);
+    AuthResponse refreshToken(RefreshRequest request);
 
-	void changePassword(ChangePasswordRequest request);
+    void changePassword(ChangePasswordRequest request);
 
-	void forgotPassword(ForgotPasswordRequest request);
+    void forgotPassword(ForgotPasswordRequest request);
 
-	void resetPassword(ResetPasswordRequest request);
+    void resetPassword(ResetPasswordRequest request);
 }

@@ -12,5 +12,5 @@ import lombok.experimental.SuperBuilder;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class UserResponse extends MemberResponse {
 
-	String address;
+    String address;
 }
