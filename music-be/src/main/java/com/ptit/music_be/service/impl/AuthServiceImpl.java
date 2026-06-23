@@ -13,6 +13,7 @@ import com.ptit.music_be.dto.request.ChangePasswordRequest;
 import org.springframework.security.core.context.SecurityContextHolder;
 import com.ptit.music_be.dto.request.ForgotPasswordRequest;
 import com.ptit.music_be.dto.request.ResetPasswordRequest;
+import com.ptit.music_be.dto.request.GoogleLoginRequest;
 import com.ptit.music_be.dto.response.AuthResponse;
 import com.ptit.music_be.dto.response.UserResponse;
 import com.ptit.music_be.entity.Member;
@@ -42,6 +43,14 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Random;
 import java.util.UUID;
+import java.util.Collections;
+import java.io.IOException;
+import java.security.GeneralSecurityException;
+
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
 
 @Service
 @RequiredArgsConstructor
@@ -67,6 +76,10 @@ public class AuthServiceImpl implements AuthService {
 	@NonFinal
 	@Value("${jwt.refreshable-duration}")
 	long refreshableDuration;
+
+	@NonFinal
+	@Value("${google.client-id}")
+	String googleClientId;
 
 	@Override
 	public UserResponse register(RegisterRequest request) {
@@ -115,6 +128,50 @@ public class AuthServiceImpl implements AuthService {
 				.refreshToken(refreshToken)
 				.authenticated(true)
 				.build();
+	}
+
+	@Override
+	public AuthResponse googleLogin(GoogleLoginRequest request) {
+		try {
+			GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
+					.setAudience(Collections.singletonList(googleClientId))
+					.build();
+
+			GoogleIdToken idTokenObj = verifier.verify(request.getIdToken());
+			if (idTokenObj == null) {
+				throw new AppException(ErrorCode.UNAUTHENTICATED);
+			}
+
+			GoogleIdToken.Payload payload = idTokenObj.getPayload();
+			String email = payload.getEmail();
+			String name = (String) payload.get("name");
+
+			Member member = memberRepository.findByEmail(email).orElse(null);
+
+			if (member == null) {
+				User user = User.builder()
+						.username(email)
+						.password(passwordEncoder.encode(UUID.randomUUID().toString()))
+						.email(email)
+						.fullName(name)
+						.role("USER")
+						.build();
+				member = userRepository.save(user);
+			}
+
+			String token = generateToken(member, validDuration);
+			String refreshToken = generateToken(member, refreshableDuration);
+
+			return AuthResponse.builder()
+					.token(token)
+					.refreshToken(refreshToken)
+					.authenticated(true)
+					.build();
+
+		} catch (GeneralSecurityException | IOException e) {
+			log.error("Google token verification failed", e);
+			throw new AppException(ErrorCode.UNAUTHENTICATED);
+		}
 	}
 
 	private String generateToken(Member member, long durationHours) {

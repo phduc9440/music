@@ -37,6 +37,9 @@ jwt:
   valid-duration: ${JWT_VALID_DURATION:7}
   refreshable-duration: ${JWT_REFRESHABLE_DURATION:24}
 
+google:
+  client-id: ${GOOGLE_CLIENT_ID:1016771270071-pt7a40rhldqa68bnmk8rb44p96ba7ij7.apps.googleusercontent.com}
+
 springdoc:
   swagger-ui:
     path: /swagger-ui.html

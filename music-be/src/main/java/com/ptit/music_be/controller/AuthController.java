@@ -4,6 +4,7 @@ import com.ptit.music_be.dto.request.ForgotPasswordRequest;
 import com.ptit.music_be.dto.request.LoginRequest;
 import com.ptit.music_be.dto.request.RefreshRequest;
 import com.ptit.music_be.dto.request.RegisterRequest;
+import com.ptit.music_be.dto.request.GoogleLoginRequest;
 import com.ptit.music_be.dto.request.ResetPasswordRequest;
 import com.ptit.music_be.dto.response.ApiResponse;
 import com.ptit.music_be.dto.response.AuthResponse;
@@ -42,6 +43,14 @@ public class AuthController {
 	public ApiResponse<AuthResponse> login(@RequestBody @Valid LoginRequest request) {
 		return ApiResponse.<AuthResponse>builder()
 				.result(authService.login(request))
+				.build();
+	}
+
+	@PostMapping("/google-login")
+	@Operation(summary = "Login using Google ID Token")
+	public ApiResponse<AuthResponse> googleLogin(@RequestBody @Valid GoogleLoginRequest request) {
+		return ApiResponse.<AuthResponse>builder()
+				.result(authService.googleLogin(request))
 				.build();
 	}
 
