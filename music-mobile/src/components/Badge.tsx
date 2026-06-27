@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { COLORS } from '../../constants/colors';
+import { COLORS } from '../constants/colors';
 
 interface BadgeProps {
   role: string;
@@ -11,9 +11,7 @@ export const Badge: React.FC<BadgeProps> = ({ role }) => {
 
   return (
     <View style={[styles.badge, isAdmin ? styles.badgeAdmin : styles.badgeUser]}>
-      <Text style={[styles.badgeText, isAdmin ? styles.badgeAdminText : styles.badgeUserText]}>
-        {role}
-      </Text>
+      <Text style={[styles.badgeText, isAdmin ? styles.badgeAdminText : styles.badgeUserText]}>{role}</Text>
     </View>
   );
 };
@@ -30,14 +28,14 @@ const styles = StyleSheet.create({
   badgeAdmin: {
     backgroundColor: COLORS.badgeAdminBg,
   },
-  badgeUserText: {
-    color: COLORS.badgeUserText,
+  badgeText: {
     fontSize: 10,
     fontWeight: 'bold',
   },
+  badgeUserText: {
+    color: COLORS.badgeUserText,
+  },
   badgeAdminText: {
     color: COLORS.badgeAdminText,
-    fontSize: 10,
-    fontWeight: 'bold',
   },
 });

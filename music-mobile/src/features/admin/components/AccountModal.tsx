@@ -1,24 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Modal } from 'react-native';
-import { Input } from '../ui/Input';
-import { Button } from '../ui/Button';
-import { COLORS } from '../../constants/colors';
+import { Input } from '../../../components/Input';
+import { Button } from '../../../components/Button';
+import { COLORS } from '../../../constants/colors';
+
+import { User } from '../../../types';
 
 interface AccountModalProps {
   visible: boolean;
   isEditMode: boolean;
-  initialData?: any;
+  initialData?: User | null;
   onClose: () => void;
-  onSave: (data: any) => void;
+  onSave: (data: { username: string; email: string; fullName: string; password?: string }) => void;
 }
 
-export const AccountModal: React.FC<AccountModalProps> = ({ 
-  visible, 
-  isEditMode, 
-  initialData, 
-  onClose, 
-  onSave 
-}) => {
+export const AccountModal: React.FC<AccountModalProps> = ({ visible, isEditMode, initialData, onClose, onSave }) => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [fullName, setFullName] = useState('');
@@ -26,6 +22,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
 
   useEffect(() => {
     if (visible) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setUsername(initialData?.username || '');
       setEmail(initialData?.email || '');
       setFullName(initialData?.fullName || '');
@@ -42,24 +39,12 @@ export const AccountModal: React.FC<AccountModalProps> = ({
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <Text style={styles.modalTitle}>{isEditMode ? 'Edit Account' : 'Add Account'}</Text>
-          
+
+          <Input placeholder="Username" value={username} onChangeText={setUsername} />
+          <Input placeholder="Email" value={email} onChangeText={setEmail} />
+          <Input placeholder="Full Name" value={fullName} onChangeText={setFullName} />
           <Input
-            placeholder="Username"
-            value={username}
-            onChangeText={setUsername}
-          />
-          <Input
-            placeholder="Email"
-            value={email}
-            onChangeText={setEmail}
-          />
-          <Input
-            placeholder="Full Name"
-            value={fullName}
-            onChangeText={setFullName}
-          />
-          <Input
-            placeholder={isEditMode ? "Password (Leave empty to keep)" : "Password"}
+            placeholder={isEditMode ? 'Password (Leave empty to keep)' : 'Password'}
             value={password}
             onChangeText={setPassword}
             secureTextEntry

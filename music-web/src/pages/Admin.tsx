@@ -11,14 +11,14 @@ export default function AdminDashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
-  
+
   // Form State
   const [formId, setFormId] = useState('');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [fullName, setFullName] = useState('');
   const [password, setPassword] = useState('');
-  
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -109,9 +109,21 @@ export default function AdminDashboard() {
         <div className="navbar-nav">
           <span style={{ fontWeight: 600 }}>{admin?.fullName || 'Admin'}</span>
           {admin?.authProvider !== 'GOOGLE' && (
-            <button onClick={() => setIsPasswordModalOpen(true)} className="btn btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}>Change Password</button>
+            <button
+              onClick={() => setIsPasswordModalOpen(true)}
+              className="btn btn-primary"
+              style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}
+            >
+              Change Password
+            </button>
           )}
-          <button onClick={handleLogout} className="btn btn-danger" style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}>Logout</button>
+          <button
+            onClick={handleLogout}
+            className="btn btn-danger"
+            style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}
+          >
+            Logout
+          </button>
         </div>
       </nav>
 
@@ -119,7 +131,9 @@ export default function AdminDashboard() {
         <div className="glass-container">
           <div className="d-flex justify-content-between align-items-center mb-4">
             <h2>Account Management</h2>
-            <button onClick={() => openModal(false)} className="btn btn-primary">Add Account</button>
+            <button onClick={() => openModal(false)} className="btn btn-primary">
+              Add Account
+            </button>
           </div>
 
           <div className="table-responsive">
@@ -135,17 +149,31 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {accounts.map(acc => (
+                {accounts.map((acc) => (
                   <tr key={acc.id}>
-                    <td style={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>{acc.id.substring(0,8)}...</td>
+                    <td style={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>{acc.id.substring(0, 8)}...</td>
                     <td>{acc.username}</td>
                     <td>{acc.email}</td>
                     <td>{acc.fullName}</td>
-                    <td><span className={`badge ${acc.role === 'ADMIN' ? 'badge-admin' : 'badge-user'}`}>{acc.role}</span></td>
+                    <td>
+                      <span className={`badge ${acc.role === 'ADMIN' ? 'badge-admin' : 'badge-user'}`}>{acc.role}</span>
+                    </td>
                     <td>
                       <div className="d-flex gap-2">
-                        <button onClick={() => openModal(true, acc)} className="btn btn-primary" style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>Edit</button>
-                        <button onClick={() => handleDelete(acc.id)} className="btn btn-danger" style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>Del</button>
+                        <button
+                          onClick={() => openModal(true, acc)}
+                          className="btn btn-primary"
+                          style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(acc.id)}
+                          className="btn btn-danger"
+                          style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}
+                        >
+                          Del
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -160,34 +188,59 @@ export default function AdminDashboard() {
         <div className="glass-container modal-content">
           <div className="modal-header">
             <h3>{isEditMode ? 'Edit Account' : 'Add Account'}</h3>
-            <button onClick={closeModal} className="modal-close">&times;</button>
+            <button onClick={closeModal} className="modal-close">
+              &times;
+            </button>
           </div>
           <form onSubmit={handleSubmit}>
             <div className="form-group">
               <label>Username</label>
-              <input type="text" className="form-control" value={username} onChange={e => setUsername(e.target.value)} required />
+              <input
+                type="text"
+                className="form-control"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+              />
             </div>
             <div className="form-group">
               <label>Email</label>
-              <input type="email" className="form-control" value={email} onChange={e => setEmail(e.target.value)} required />
+              <input
+                type="email"
+                className="form-control"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
             </div>
             <div className="form-group">
               <label>Full Name</label>
-              <input type="text" className="form-control" value={fullName} onChange={e => setFullName(e.target.value)} required />
+              <input
+                type="text"
+                className="form-control"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                required
+              />
             </div>
             <div className="form-group">
               <label>Password {isEditMode && '(Leave empty to keep current)'}</label>
-              <input type="password" className="form-control" value={password} onChange={e => setPassword(e.target.value)} required={!isEditMode} />
+              <input
+                type="password"
+                className="form-control"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required={!isEditMode}
+              />
             </div>
-            <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Save Account</button>
+            <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>
+              Save Account
+            </button>
           </form>
         </div>
       </div>
 
-      <ChangePasswordModal 
-        isOpen={isPasswordModalOpen} 
-        onClose={() => setIsPasswordModalOpen(false)} 
-      />
+      <ChangePasswordModal isOpen={isPasswordModalOpen} onClose={() => setIsPasswordModalOpen(false)} />
     </>
   );
 }

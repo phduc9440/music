@@ -10,21 +10,21 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/auth/login" element={<Login />} />
-      <Route 
-        path="/profile" 
+      <Route
+        path="/profile"
         element={
           <ProtectedRoute allowedRole="USER">
             <UserProfile />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/admin" 
+      <Route
+        path="/admin"
         element={
           <ProtectedRoute allowedRole="ADMIN">
             <AdminDashboard />
           </ProtectedRoute>
-        } 
+        }
       />
     </Routes>
   );

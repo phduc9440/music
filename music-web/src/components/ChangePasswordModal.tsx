@@ -42,42 +42,49 @@ export default function ChangePasswordModal({ isOpen, onClose }: Props) {
       <div className="glass-container modal-content" style={{ maxWidth: '400px' }}>
         <div className="modal-header">
           <h3>Change Password</h3>
-          <button onClick={onClose} className="modal-close" disabled={isLoading}>&times;</button>
+          <button onClick={onClose} className="modal-close" disabled={isLoading}>
+            &times;
+          </button>
         </div>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label>Current Password</label>
-            <input 
-              type="password" 
-              className="form-control" 
-              value={oldPassword} 
-              onChange={e => setOldPassword(e.target.value)} 
-              required 
+            <input
+              type="password"
+              className="form-control"
+              value={oldPassword}
+              onChange={(e) => setOldPassword(e.target.value)}
+              required
             />
           </div>
           <div className="form-group">
             <label>New Password</label>
-            <input 
-              type="password" 
-              className="form-control" 
-              value={newPassword} 
-              onChange={e => setNewPassword(e.target.value)} 
-              required 
+            <input
+              type="password"
+              className="form-control"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              required
               minLength={8}
             />
           </div>
           <div className="form-group">
             <label>Confirm New Password</label>
-            <input 
-              type="password" 
-              className="form-control" 
-              value={confirmPassword} 
-              onChange={e => setConfirmPassword(e.target.value)} 
-              required 
+            <input
+              type="password"
+              className="form-control"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
               minLength={8}
             />
           </div>
-          <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }} disabled={isLoading}>
+          <button
+            type="submit"
+            className="btn btn-primary"
+            style={{ width: '100%', marginTop: '1rem' }}
+            disabled={isLoading}
+          >
             {isLoading ? 'Saving...' : 'Change Password'}
           </button>
         </form>

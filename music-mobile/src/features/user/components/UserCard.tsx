@@ -1,10 +1,10 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { User } from '../../types';
-import { Badge } from '../ui/Badge';
-import { Button } from '../ui/Button';
-import { GlassContainer } from '../ui/GlassContainer';
-import { COLORS } from '../../constants/colors';
+import { User } from '../../../types';
+import { Badge } from '../../../components/Badge';
+import { Button } from '../../../components/Button';
+import { GlassContainer } from '../../../components/GlassContainer';
+import { COLORS } from '../../../constants/colors';
 
 interface UserCardProps {
   user: User;
@@ -22,20 +22,10 @@ export const UserCard: React.FC<UserCardProps> = ({ user, onEdit, onDelete }) =>
       <Text style={styles.cardInfo}>@{user.username}</Text>
       <Text style={styles.cardInfo}>{user.email}</Text>
       <Text style={styles.cardId}>ID: {user.id.substring(0, 8)}...</Text>
-      
+
       <View style={styles.cardActions}>
-        <Button 
-          title="Edit" 
-          variant="primary" 
-          onPress={() => onEdit(user)} 
-          style={styles.actionBtn}
-        />
-        <Button 
-          title="Delete" 
-          variant="danger" 
-          onPress={() => onDelete(user.id)} 
-          style={styles.actionBtn}
-        />
+        <Button title="Edit" variant="primary" onPress={() => onEdit(user)} style={styles.actionBtn} />
+        <Button title="Delete" variant="danger" onPress={() => onDelete(user.id)} style={styles.actionBtn} />
       </View>
     </GlassContainer>
   );

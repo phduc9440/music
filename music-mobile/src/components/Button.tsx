@@ -1,6 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, TouchableOpacityProps } from 'react-native';
-import { COLORS } from '../../constants/colors';
+import { COLORS } from '../constants/colors';
 
 interface ButtonProps extends TouchableOpacityProps {
   title: string;
@@ -8,22 +8,27 @@ interface ButtonProps extends TouchableOpacityProps {
   isLoading?: boolean;
 }
 
-export const Button: React.FC<ButtonProps> = ({ 
-  title, 
-  variant = 'primary', 
-  isLoading = false, 
-  style, 
+export const Button: React.FC<ButtonProps> = ({
+  title,
+  variant = 'primary',
+  isLoading = false,
+  style,
   disabled,
-  ...props 
+  ...props
 }) => {
   const getBackgroundColor = () => {
     switch (variant) {
-      case 'danger': return COLORS.danger;
-      case 'outline': return COLORS.transparent;
-      case 'cancel': return COLORS.cancel;
-      case 'save': return COLORS.secondary;
+      case 'danger':
+        return COLORS.danger;
+      case 'outline':
+        return COLORS.transparent;
+      case 'cancel':
+        return COLORS.cancel;
+      case 'save':
+        return COLORS.secondary;
       case 'primary':
-      default: return COLORS.primary;
+      default:
+        return COLORS.primary;
     }
   };
 
@@ -38,17 +43,17 @@ export const Button: React.FC<ButtonProps> = ({
   };
 
   return (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={[
-        styles.button, 
-        { 
+        styles.button,
+        {
           backgroundColor: getBackgroundColor(),
           borderWidth: variant === 'outline' ? 1 : 0,
           borderColor: getBorderColor(),
-          opacity: disabled ? 0.7 : 1
+          opacity: disabled ? 0.7 : 1,
         },
-        style
-      ]} 
+        style,
+      ]}
       disabled={disabled || isLoading}
       {...props}
     >

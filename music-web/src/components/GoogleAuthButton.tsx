@@ -16,7 +16,7 @@ export default function GoogleAuthButton({ setIsLoading }: GoogleAuthButtonProps
     try {
       const response = await authApi.googleLogin({ idToken: credentialResponse.credential });
       localStorage.setItem('token', response.data.result.token);
-      
+
       try {
         await userApi.getMe();
         localStorage.setItem('role', 'USER');
@@ -29,7 +29,7 @@ export default function GoogleAuthButton({ setIsLoading }: GoogleAuthButtonProps
           toast.success('Login successful!');
           navigate('/admin');
         } catch (err2) {
-           toast.error('Could not fetch user/admin profile.');
+          toast.error('Could not fetch user/admin profile.');
         }
       }
     } catch (error: any) {
@@ -40,7 +40,15 @@ export default function GoogleAuthButton({ setIsLoading }: GoogleAuthButtonProps
   };
 
   return (
-    <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+    <div
+      style={{
+        marginTop: '1.5rem',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '1rem',
+      }}
+    >
       <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: '1rem' }}>
         <div style={{ flex: 1, height: '1px', backgroundColor: 'rgba(255,255,255,0.2)' }}></div>
         <span style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.6)' }}>OR</span>

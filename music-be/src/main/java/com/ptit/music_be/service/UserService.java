@@ -4,5 +4,5 @@ import com.ptit.music_be.dto.response.UserResponse;
 
 public interface UserService {
 
-	UserResponse getMyInfo();
+    UserResponse getMyInfo();
 }

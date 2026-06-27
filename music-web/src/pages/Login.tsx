@@ -8,7 +8,7 @@ type ViewMode = 'login' | 'register' | 'forgot' | 'reset';
 
 export default function Login() {
   const [viewMode, setViewMode] = useState<ViewMode>('login');
-  
+
   // Form State
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -16,7 +16,7 @@ export default function Login() {
   const [fullName, setFullName] = useState('');
   const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -41,7 +41,7 @@ export default function Login() {
             toast.success('Login successful!');
             navigate('/admin');
           } catch (err2) {
-             toast.error('Could not fetch user/admin profile.');
+            toast.error('Could not fetch user/admin profile.');
           }
         }
       } else if (viewMode === 'register') {
@@ -89,20 +89,19 @@ export default function Login() {
       <div className="glass-container auth-card">
         <h1>Music App</h1>
         <p>{getTitle()}</p>
-        
+
         <form onSubmit={handleSubmit}>
-          
           {/* Email (Used in Register, Forgot, Reset) */}
           {viewMode !== 'login' && (
             <div className="form-group">
               <label htmlFor="email">Email</label>
-              <input 
-                type="email" 
-                id="email" 
-                className="form-control" 
+              <input
+                type="email"
+                id="email"
+                className="form-control"
                 placeholder="Enter your email"
                 value={email}
-                onChange={e => setEmail(e.target.value)}
+                onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={viewMode === 'reset' && email !== ''}
               />
@@ -113,13 +112,13 @@ export default function Login() {
           {viewMode === 'register' && (
             <div className="form-group">
               <label htmlFor="fullName">Full Name</label>
-              <input 
-                type="text" 
-                id="fullName" 
-                className="form-control" 
+              <input
+                type="text"
+                id="fullName"
+                className="form-control"
                 placeholder="Enter your full name"
                 value={fullName}
-                onChange={e => setFullName(e.target.value)}
+                onChange={(e) => setFullName(e.target.value)}
                 required
               />
             </div>
@@ -129,14 +128,14 @@ export default function Login() {
           {(viewMode === 'login' || viewMode === 'register') && (
             <div className="form-group">
               <label htmlFor="username">Username</label>
-              <input 
-                type="text" 
-                id="username" 
-                className="form-control" 
-                placeholder="Enter username" 
+              <input
+                type="text"
+                id="username"
+                className="form-control"
+                placeholder="Enter username"
                 value={username}
-                onChange={e => setUsername(e.target.value)}
-                required 
+                onChange={(e) => setUsername(e.target.value)}
+                required
               />
             </div>
           )}
@@ -145,14 +144,14 @@ export default function Login() {
           {(viewMode === 'login' || viewMode === 'register') && (
             <div className="form-group">
               <label htmlFor="password">Password</label>
-              <input 
-                type="password" 
-                id="password" 
-                className="form-control" 
-                placeholder="Enter password" 
+              <input
+                type="password"
+                id="password"
+                className="form-control"
+                placeholder="Enter password"
                 value={password}
-                onChange={e => setPassword(e.target.value)}
-                required 
+                onChange={(e) => setPassword(e.target.value)}
+                required
               />
             </div>
           )}
@@ -161,14 +160,14 @@ export default function Login() {
           {viewMode === 'reset' && (
             <div className="form-group">
               <label htmlFor="otp">OTP Code</label>
-              <input 
-                type="text" 
-                id="otp" 
-                className="form-control" 
-                placeholder="Enter 6-digit OTP" 
+              <input
+                type="text"
+                id="otp"
+                className="form-control"
+                placeholder="Enter 6-digit OTP"
                 value={otp}
-                onChange={e => setOtp(e.target.value)}
-                required 
+                onChange={(e) => setOtp(e.target.value)}
+                required
                 maxLength={6}
               />
             </div>
@@ -178,14 +177,14 @@ export default function Login() {
           {viewMode === 'reset' && (
             <div className="form-group">
               <label htmlFor="newPassword">New Password</label>
-              <input 
-                type="password" 
-                id="newPassword" 
-                className="form-control" 
-                placeholder="Enter new password" 
+              <input
+                type="password"
+                id="newPassword"
+                className="form-control"
+                placeholder="Enter new password"
                 value={newPassword}
-                onChange={e => setNewPassword(e.target.value)}
-                required 
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
                 minLength={8}
               />
             </div>
@@ -194,36 +193,71 @@ export default function Login() {
           {/* Forgot Password Link (Only in Login) */}
           {viewMode === 'login' && (
             <div style={{ textAlign: 'right', marginBottom: '1rem', fontSize: '0.875rem' }}>
-              <a href="#" onClick={(e) => { e.preventDefault(); setViewMode('forgot'); }}>Forgot password?</a>
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setViewMode('forgot');
+                }}
+              >
+                Forgot password?
+              </a>
             </div>
           )}
-          
-          <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: viewMode === 'login' ? '0' : '1rem' }} disabled={isLoading}>
+
+          <button
+            type="submit"
+            className="btn btn-primary"
+            style={{ width: '100%', marginTop: viewMode === 'login' ? '0' : '1rem' }}
+            disabled={isLoading}
+          >
             {getButtonText()}
           </button>
-          
-          {viewMode === 'login' && (
-            <GoogleAuthButton setIsLoading={setIsLoading} />
-          )}
-          
+
+          {viewMode === 'login' && <GoogleAuthButton setIsLoading={setIsLoading} />}
+
           {/* Bottom links */}
           <div style={{ marginTop: '1.5rem', fontSize: '0.875rem' }}>
             {viewMode === 'login' && (
               <>
-                <span>Don't have an account? </span> 
-                <a href="#" onClick={(e) => { e.preventDefault(); setViewMode('register'); }}>Register now</a>
+                <span>Don't have an account? </span>
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setViewMode('register');
+                  }}
+                >
+                  Register now
+                </a>
               </>
             )}
             {viewMode === 'register' && (
               <>
-                <span>Already have an account? </span> 
-                <a href="#" onClick={(e) => { e.preventDefault(); setViewMode('login'); }}>Login now</a>
+                <span>Already have an account? </span>
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setViewMode('login');
+                  }}
+                >
+                  Login now
+                </a>
               </>
             )}
             {(viewMode === 'forgot' || viewMode === 'reset') && (
               <>
-                <span>Remember your password? </span> 
-                <a href="#" onClick={(e) => { e.preventDefault(); setViewMode('login'); }}>Back to Login</a>
+                <span>Remember your password? </span>
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setViewMode('login');
+                  }}
+                >
+                  Back to Login
+                </a>
               </>
             )}
           </div>

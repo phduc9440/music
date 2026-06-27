@@ -1,9 +1,10 @@
 package com.ptit.music_be.entity;
 
+import jakarta.persistence.*;
+
 import com.ptit.music_be.dto.enums.AuthProvider;
 import com.ptit.music_be.dto.enums.Role;
 
-import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
@@ -26,9 +27,11 @@ public class Member {
 
     @Column(unique = true)
     String email;
+
     String password;
     String phone;
     String fullName;
+
     @Enumerated(EnumType.STRING)
     Role role;
 
