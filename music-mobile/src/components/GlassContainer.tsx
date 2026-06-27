@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, ViewProps } from 'react-native';
-import { COLORS } from '../../constants/colors';
+import { COLORS } from '../constants/colors';
 
 interface GlassContainerProps extends ViewProps {
   children: React.ReactNode;

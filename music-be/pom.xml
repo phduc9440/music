@@ -142,6 +142,13 @@
 			<artifactId>spring-boot-starter-mail</artifactId>
 		</dependency>
 
+		<!-- GOOGLE API CLIENT -->
+		<dependency>
+			<groupId>com.google.api-client</groupId>
+			<artifactId>google-api-client</artifactId>
+			<version>2.9.0</version>
+		</dependency>
+
 	</dependencies>
 
 	<build>

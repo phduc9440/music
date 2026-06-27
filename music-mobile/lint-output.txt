@@ -1,0 +1,119 @@
+
+> music-mobile@1.0.0 lint
+> eslint .
+
+
+/home/phamduc/Documents/code/music/music-mobile/src/features/admin/components/AccountModal.tsx
+  25:7  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/exhaustive-deps')
+  26:7  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/phamduc/Documents/code/music/music-mobile/src/features/admin/components/AccountModal.tsx:26:7
+  24 |     if (visible) {
+  25 |       // eslint-disable-next-line react-hooks/exhaustive-deps
+> 26 |       setUsername(initialData?.username || '');
+     |       ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  27 |       setEmail(initialData?.email || '');
+  28 |       setFullName(initialData?.fullName || '');
+  29 |       setPassword('');  react-hooks/set-state-in-effect
+
+/home/phamduc/Documents/code/music/music-mobile/src/screens/AdminScreen.tsx
+  29:3  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/exhaustive-deps')
+  37:7  error    Error: Cannot access variable before it is declared
+
+`handleLogout` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+/home/phamduc/Documents/code/music/music-mobile/src/screens/AdminScreen.tsx:37:7
+  35 |     } catch {
+  36 |       Alert.alert('Error', 'Failed to load data. Please login again.');
+> 37 |       handleLogout();
+     |       ^^^^^^^^^^^^ `handleLogout` accessed before it is declared
+  38 |     } finally {
+  39 |       setIsLoading(false);
+  40 |     }
+
+/home/phamduc/Documents/code/music/music-mobile/src/screens/AdminScreen.tsx:48:3
+  46 |   }, []);
+  47 |
+> 48 |   const handleLogout = async () => {
+     |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 49 |     await AsyncStorage.removeItem('token');
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 50 |     navigation.replace('Login');
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 51 |   };
+     | ^^^^^ `handleLogout` is declared here
+  52 |
+  53 |   const openModal = (editMode = false, acc?: User) => {
+  54 |     setIsEditMode(editMode);  react-hooks/immutability
+  44:5  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/phamduc/Documents/code/music/music-mobile/src/screens/AdminScreen.tsx:44:5
+  42 |
+  43 |   useEffect(() => {
+> 44 |     loadData();
+     |     ^^^^^^^^ Avoid calling setState() directly within an effect
+  45 |     // eslint-disable-next-line react-hooks/exhaustive-deps
+  46 |   }, []);
+  47 |                                                                                                    react-hooks/set-state-in-effect
+
+/home/phamduc/Documents/code/music/music-mobile/src/screens/UserScreen.tsx
+  23:3  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/exhaustive-deps')
+  30:7  error    Error: Cannot access variable before it is declared
+
+`handleLogout` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+/home/phamduc/Documents/code/music/music-mobile/src/screens/UserScreen.tsx:30:7
+  28 |     } catch {
+  29 |       Alert.alert('Error', 'Failed to load profile. Please login again.');
+> 30 |       handleLogout();
+     |       ^^^^^^^^^^^^ `handleLogout` accessed before it is declared
+  31 |     } finally {
+  32 |       setIsLoading(false);
+  33 |     }
+
+/home/phamduc/Documents/code/music/music-mobile/src/screens/UserScreen.tsx:41:3
+  39 |   }, []);
+  40 |
+> 41 |   const handleLogout = async () => {
+     |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 42 |     await AsyncStorage.removeItem('token');
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 43 |     navigation.replace('Login');
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 44 |   };
+     | ^^^^^ `handleLogout` is declared here
+  45 |
+  46 |   if (isLoading) {
+  47 |     return (  react-hooks/immutability
+  37:5  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/phamduc/Documents/code/music/music-mobile/src/screens/UserScreen.tsx:37:5
+  35 |
+  36 |   useEffect(() => {
+> 37 |     loadUserProfile();
+     |     ^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  38 |     // eslint-disable-next-line react-hooks/exhaustive-deps
+  39 |   }, []);
+  40 |                                   react-hooks/set-state-in-effect
+
+✖ 8 problems (5 errors, 3 warnings)
+  0 errors and 3 warnings potentially fixable with the `--fix` option.
+

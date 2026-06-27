@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TextInput, StyleSheet, TextInputProps } from 'react-native';
-import { COLORS } from '../../constants/colors';
+import { COLORS } from '../constants/colors';
 
 interface InputProps extends TextInputProps {
   label?: string;
@@ -10,11 +10,7 @@ export const Input: React.FC<InputProps> = ({ label, style, ...props }) => {
   return (
     <View style={styles.container}>
       {label && <Text style={styles.label}>{label}</Text>}
-      <TextInput
-        style={[styles.input, style]}
-        placeholderTextColor={COLORS.textMuted}
-        {...props}
-      />
+      <TextInput style={[styles.input, style]} placeholderTextColor={COLORS.textMuted} {...props} />
     </View>
   );
 };

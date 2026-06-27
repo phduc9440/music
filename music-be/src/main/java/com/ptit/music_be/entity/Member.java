@@ -1,10 +1,13 @@
 package com.ptit.music_be.entity;
 
 import jakarta.persistence.*;
+
+import com.ptit.music_be.dto.enums.AuthProvider;
+import com.ptit.music_be.dto.enums.Role;
+
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
-
 
 @Table(name = "members")
 @Inheritance(strategy = InheritanceType.JOINED)
@@ -24,8 +27,14 @@ public class Member {
 
     @Column(unique = true)
     String email;
+
     String password;
     String phone;
     String fullName;
-    String role;
+
+    @Enumerated(EnumType.STRING)
+    Role role;
+
+    @Enumerated(EnumType.STRING)
+    AuthProvider authProvider;
 }
