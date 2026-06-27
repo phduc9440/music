@@ -6,6 +6,7 @@ import java.text.ParseException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Random;
@@ -83,6 +84,14 @@ public class AuthServiceImpl implements AuthService {
     @Value("${google.client-id}")
     String googleClientId;
 
+    @NonFinal
+    @Value("${google.ios-client-id}")
+    String googleIosClientId;
+
+    @NonFinal
+    @Value("${google.android-client-id}")
+    String googleAndroidClientId;
+
     @Override
     public UserResponse register(RegisterRequest request) {
         if (memberRepository.existsByUsername(request.getUsername())) {
@@ -137,8 +146,8 @@ public class AuthServiceImpl implements AuthService {
     public AuthResponse googleLogin(GoogleLoginRequest request) {
         try {
             GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
-                            new NetHttpTransport(), new GsonFactory())
-                    .setAudience(Collections.singletonList(googleClientId))
+                    new NetHttpTransport(), new GsonFactory())
+                    .setAudience(Arrays.asList(googleClientId, googleIosClientId, googleAndroidClientId))
                     .build();
 
             GoogleIdToken idTokenObj = verifier.verify(request.getIdToken());
