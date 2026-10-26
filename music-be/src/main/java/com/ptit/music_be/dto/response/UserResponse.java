@@ -1,16 +1,23 @@
 package com.ptit.music_be.dto.response;
 
+import java.util.Set;
+
+import com.ptit.music_be.dto.enums.AuthProvider;
+
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-import lombok.experimental.SuperBuilder;
 
 @Data
-@SuperBuilder
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(callSuper = true)
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class UserResponse extends MemberResponse {
+public class UserResponse {
 
-    String address;
+    String id;
+    String email;
+    String status;
+    Boolean emailVerified;
+    AuthProvider authProvider;
+    Set<String> roles;
 }

@@ -6,16 +6,14 @@ import java.text.ParseException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Random;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
@@ -26,26 +24,21 @@ import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import com.ptit.music_be.dto.enums.*;
-import com.ptit.music_be.dto.request.ChangePasswordRequest;
-import com.ptit.music_be.dto.request.ForgotPasswordRequest;
-import com.ptit.music_be.dto.request.GoogleLoginRequest;
-import com.ptit.music_be.dto.request.LoginRequest;
-import com.ptit.music_be.dto.request.RefreshRequest;
-import com.ptit.music_be.dto.request.RegisterRequest;
-import com.ptit.music_be.dto.request.ResetPasswordRequest;
-import com.ptit.music_be.dto.request.SendEmailRequest;
+import com.ptit.music_be.dto.enums.AuthProvider;
+import com.ptit.music_be.dto.request.*;
 import com.ptit.music_be.dto.response.AuthResponse;
 import com.ptit.music_be.dto.response.UserResponse;
-import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Otp;
+import com.ptit.music_be.entity.Role;
 import com.ptit.music_be.entity.User;
+import com.ptit.music_be.entity.UserRole;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
-import com.ptit.music_be.mapper.MemberMapper;
-import com.ptit.music_be.repository.MemberRepository;
+import com.ptit.music_be.mapper.UserMapper;
 import com.ptit.music_be.repository.OtpRepository;
+import com.ptit.music_be.repository.RoleRepository;
 import com.ptit.music_be.repository.UserRepository;
+import com.ptit.music_be.repository.UserRoleRepository;
 import com.ptit.music_be.service.AuthService;
 import com.ptit.music_be.service.EmailService;
 
@@ -62,8 +55,9 @@ import lombok.extern.slf4j.Slf4j;
 public class AuthServiceImpl implements AuthService {
 
     UserRepository userRepository;
-    MemberRepository memberRepository;
-    MemberMapper memberMapper;
+    RoleRepository roleRepository;
+    UserRoleRepository userRoleRepository;
+    UserMapper userMapper;
     PasswordEncoder passwordEncoder;
     EmailService emailService;
     OtpRepository otpRepository;
@@ -93,47 +87,61 @@ public class AuthServiceImpl implements AuthService {
     String googleAndroidClientId;
 
     @Override
+    @Transactional
     public UserResponse register(RegisterRequest request) {
-        if (memberRepository.existsByUsername(request.getUsername())) {
+        String email = request.getEmail() != null && !request.getEmail().isBlank()
+                ? request.getEmail()
+                : request.getUsername();
+
+        if (userRepository.existsByEmail(email)) {
             throw new AppException(ErrorCode.USER_EXISTED);
         }
 
+        Role roleUser = roleRepository.findByName("USER")
+                .orElseGet(() -> roleRepository.save(Role.builder().name("USER").build()));
+
         User user = User.builder()
-                .username(request.getUsername())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .email(request.getEmail())
-                .phone(request.getPhone())
-                .fullName(request.getFullName())
-                .address(request.getAddress())
-                .role(Role.USER)
+                .email(email)
+                .passwordHash(passwordEncoder.encode(request.getPassword()))
+                .status("ACTIVE")
+                .emailVerified(false)
                 .authProvider(AuthProvider.LOCAL)
                 .build();
 
         User savedUser = userRepository.save(user);
 
+        UserRole userRole = UserRole.builder()
+                .user(savedUser)
+                .role(roleUser)
+                .build();
+
+        userRoleRepository.save(userRole);
+        savedUser.getUserRoles().add(userRole);
+
         // Send welcome email asynchronously
-        if (request.getEmail() != null && !request.getEmail().isBlank()) {
+        if (email != null && !email.isBlank()) {
             emailService.sendWelcomeEmail(SendEmailRequest.builder()
-                    .to(request.getEmail())
-                    .fullName(request.getFullName())
+                    .to(email)
+                    .fullName(request.getFullName() != null ? request.getFullName() : email)
                     .build());
         }
 
-        return memberMapper.toUserResponse(savedUser);
+        return userMapper.toUserResponse(savedUser);
     }
 
     @Override
     public AuthResponse login(LoginRequest request) {
-        Member member = memberRepository
-                .findByUsername(request.getUsername())
+        User user = userRepository
+                .findByEmail(request.getUsername())
                 .orElseThrow(() -> new AppException(ErrorCode.INVALID_CREDENTIALS));
 
-        if (!passwordEncoder.matches(request.getPassword(), member.getPassword())) {
+        if (user.getPasswordHash() == null
+                || !passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             throw new AppException(ErrorCode.INVALID_CREDENTIALS);
         }
 
-        String token = generateToken(member, validDuration);
-        String refreshToken = generateToken(member, refreshableDuration);
+        String token = generateToken(user, validDuration);
+        String refreshToken = generateToken(user, refreshableDuration);
 
         return AuthResponse.builder()
                 .token(token)
@@ -143,6 +151,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional
     public AuthResponse googleLogin(GoogleLoginRequest request) {
         try {
             GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
@@ -159,31 +168,43 @@ public class AuthServiceImpl implements AuthService {
             String email = payload.getEmail();
             String name = (String) payload.get("name");
 
-            Member member = memberRepository.findByEmail(email).orElse(null);
+            User user = userRepository.findByEmail(email).orElse(null);
 
-            if (member == null) {
-                User user = User.builder()
+            if (user == null) {
+                Role roleUser = roleRepository.findByName("USER")
+                        .orElseGet(() -> roleRepository.save(Role.builder().name("USER").build()));
+
+                user = User.builder()
                         .email(email)
-                        .fullName(name)
-                        .role(Role.USER)
+                        .status("ACTIVE")
+                        .emailVerified(true)
                         .authProvider(AuthProvider.GOOGLE)
                         .build();
-                member = userRepository.save(user);
+
+                user = userRepository.save(user);
+
+                UserRole userRole = UserRole.builder()
+                        .user(user)
+                        .role(roleUser)
+                        .build();
+
+                userRoleRepository.save(userRole);
+                user.getUserRoles().add(userRole);
 
                 if (email != null && !email.isBlank()) {
                     emailService.sendWelcomeEmail(
-                            SendEmailRequest.builder().to(email).fullName(name).build());
+                            SendEmailRequest.builder().to(email).fullName(name != null ? name : email).build());
                 }
             }
 
-            String token = generateToken(member, validDuration);
-            String refreshToken = generateToken(member, refreshableDuration);
+            String token = generateToken(user, validDuration);
+            String refreshToken = generateToken(user, refreshableDuration);
 
             return AuthResponse.builder()
-                    .token(token)
-                    .refreshToken(refreshToken)
-                    .authenticated(true)
-                    .build();
+                .token(token)
+                .refreshToken(refreshToken)
+                .authenticated(true)
+                .build();
 
         } catch (GeneralSecurityException | IOException e) {
             log.error("Google token verification failed", e);
@@ -191,17 +212,17 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
-    private String generateToken(Member member, long durationHours) {
+    private String generateToken(User user, long durationHours) {
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
 
         JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
-                .subject(member.getUsername())
+                .subject(user.getEmail())
                 .issuer("music-app")
                 .issueTime(new Date())
                 .expirationTime(new Date(
                         Instant.now().plus(durationHours, ChronoUnit.HOURS).toEpochMilli()))
                 .jwtID(UUID.randomUUID().toString())
-                .claim("scope", buildScope(member))
+                .claim("scope", buildScope(user))
                 .build();
 
         SignedJWT signedJWT = new SignedJWT(header, claimsSet);
@@ -221,14 +242,14 @@ public class AuthServiceImpl implements AuthService {
     public AuthResponse refreshToken(RefreshRequest request) {
         try {
             SignedJWT signedJWT = verifyToken(request.getRefreshToken());
-            String username = signedJWT.getJWTClaimsSet().getSubject();
+            String email = signedJWT.getJWTClaimsSet().getSubject();
 
-            Member member = memberRepository
-                    .findByUsername(username)
+            User user = userRepository
+                    .findByEmail(email)
                     .orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
 
-            String token = generateToken(member, validDuration);
-            String refreshToken = generateToken(member, refreshableDuration);
+            String token = generateToken(user, validDuration);
+            String refreshToken = generateToken(user, refreshableDuration);
 
             return AuthResponse.builder()
                     .token(token)
@@ -255,74 +276,79 @@ public class AuthServiceImpl implements AuthService {
         return signedJWT;
     }
 
-    private String buildScope(Member member) {
-        if (member.getRole() == null) {
+    private String buildScope(User user) {
+        if (user.getUserRoles() == null || user.getUserRoles().isEmpty()) {
             return "";
         }
 
-        return "ROLE_" + member.getRole().name();
+        return user.getUserRoles().stream()
+                .filter(ur -> ur.getRole() != null)
+                .map(ur -> "ROLE_" + ur.getRole().getName())
+                .collect(Collectors.joining(" "));
     }
 
     @Override
     public void changePassword(ChangePasswordRequest request) {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
 
-        Member member = memberRepository
-                .findByUsername(username)
+        User user = userRepository
+                .findByEmail(email)
                 .orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
 
-        if (AuthProvider.GOOGLE.equals(member.getAuthProvider())) {
-            throw new AppException(ErrorCode.UNAUTHORIZED); // or a custom error code
+        if (AuthProvider.GOOGLE.equals(user.getAuthProvider())) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
         }
 
-        if (!passwordEncoder.matches(request.getOldPassword(), member.getPassword())) {
+        if (user.getPasswordHash() == null
+                || !passwordEncoder.matches(request.getOldPassword(), user.getPasswordHash())) {
             throw new AppException(ErrorCode.INVALID_CREDENTIALS);
         }
 
-        member.setPassword(passwordEncoder.encode(request.getNewPassword()));
-        memberRepository.save(member);
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
     }
 
     @Override
     public void forgotPassword(ForgotPasswordRequest request) {
-        Member member = memberRepository
+        User user = userRepository
                 .findByEmail(request.getEmail())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        if (AuthProvider.GOOGLE.equals(member.getAuthProvider())) {
+        if (AuthProvider.GOOGLE.equals(user.getAuthProvider())) {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
 
         String otpCode = String.format("%06d", new Random().nextInt(999999));
 
-        otpRepository.deleteByMember(member); // Xóa các OTP cũ nếu có
+        otpRepository.deleteByUser(user); // Xóa các OTP cũ nếu có
 
         Otp otp = Otp.builder()
                 .otpCode(otpCode)
                 .expiryTime(LocalDateTime.now().plusMinutes(5))
-                .member(member)
+                .user(user)
                 .build();
         otpRepository.save(otp);
 
-        emailService.sendForgotPasswordEmail(member.getEmail(), otpCode);
+        emailService.sendForgotPasswordEmail(user.getEmail(), otpCode);
     }
 
     @Override
+    @Transactional
     public void resetPassword(ResetPasswordRequest request) {
-        Member member = memberRepository
+        User user = userRepository
                 .findByEmail(request.getEmail())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
         Otp otp = otpRepository
-                .findByMemberAndOtpCode(member, request.getOtp())
-                .orElseThrow(() -> new AppException(ErrorCode.INVALID_CREDENTIALS)); // Hoặc lỗi OTP không hợp lệ
+                .findByUserAndOtpCode(user, request.getOtp())
+                .orElseThrow(() -> new AppException(ErrorCode.INVALID_CREDENTIALS));
 
         if (otp.getExpiryTime().isBefore(LocalDateTime.now())) {
-            throw new AppException(ErrorCode.INVALID_CREDENTIALS); // OTP hết hạn
+            throw new AppException(ErrorCode.INVALID_CREDENTIALS);
         }
 
-        member.setPassword(passwordEncoder.encode(request.getNewPassword()));
-        memberRepository.save(member);
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
         otpRepository.delete(otp);
     }
 }

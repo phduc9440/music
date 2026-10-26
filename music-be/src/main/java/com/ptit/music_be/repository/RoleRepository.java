@@ -5,10 +5,12 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import com.ptit.music_be.entity.Admin;
+import com.ptit.music_be.entity.Role;
 
 @Repository
-public interface AdminRepository extends JpaRepository<Admin, String> {
+public interface RoleRepository extends JpaRepository<Role, String> {
 
-    Optional<Admin> findByUsername(String username);
+    Optional<Role> findByName(String name);
+
+    boolean existsByName(String name);
 }

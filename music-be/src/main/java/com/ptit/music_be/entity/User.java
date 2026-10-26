@@ -1,25 +1,62 @@
 package com.ptit.music_be.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Inheritance;
-import jakarta.persistence.InheritanceType;
-import jakarta.persistence.Table;
+import java.util.ArrayList;
+import java.util.List;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import jakarta.persistence.*;
+
+import com.ptit.music_be.dto.enums.AuthProvider;
+
+import lombok.*;
 import lombok.experimental.FieldDefaults;
-import lombok.experimental.SuperBuilder;
 
-@Table(name = "users")
-@Inheritance(strategy = InheritanceType.JOINED)
 @Entity
-@Data
+@Table(name = "users")
+@Getter
+@Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@SuperBuilder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class User extends Member {
-    String address;
+public class User {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    String id;
+
+    @Column(nullable = false, unique = true)
+    String email;
+
+    @Column(name = "password_hash")
+    String passwordHash;
+
+    @Column(name = "status")
+    String status;
+
+    @Column(name = "email_verified")
+    Boolean emailVerified;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "auth_provider")
+    AuthProvider authProvider;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    List<UserRole> userRoles = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    List<Playlist> playlists = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @Builder.Default
+    List<Score> scores = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    List<UserScore> userScores = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    List<PracticeSession> practiceSessions = new ArrayList<>();
 }

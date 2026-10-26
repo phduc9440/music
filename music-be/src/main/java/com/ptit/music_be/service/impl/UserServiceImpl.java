@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import com.ptit.music_be.dto.response.UserResponse;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
-import com.ptit.music_be.mapper.MemberMapper;
+import com.ptit.music_be.mapper.UserMapper;
 import com.ptit.music_be.repository.UserRepository;
 import com.ptit.music_be.service.UserService;
 
@@ -20,15 +20,15 @@ import lombok.experimental.FieldDefaults;
 public class UserServiceImpl implements UserService {
 
     UserRepository userRepository;
-    MemberMapper memberMapper;
+    UserMapper userMapper;
 
     @Override
     public UserResponse getMyInfo() {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
 
         return userRepository
-                .findByUsername(username)
-                .map(memberMapper::toUserResponse)
+                .findByEmail(email)
+                .map(userMapper::toUserResponse)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
     }
 }
