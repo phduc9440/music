@@ -22,8 +22,8 @@ public class PracticeSession {
     String id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    User user;
+    @JoinColumn(name = "member_id", nullable = false)
+    Member member;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "score_id", nullable = false)

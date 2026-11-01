@@ -7,12 +7,12 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.ptit.music_be.dto.enums.AuthProvider;
+import com.ptit.music_be.entity.Member;
+import com.ptit.music_be.entity.MemberRole;
 import com.ptit.music_be.entity.Role;
-import com.ptit.music_be.entity.User;
-import com.ptit.music_be.entity.UserRole;
+import com.ptit.music_be.repository.MemberRepository;
+import com.ptit.music_be.repository.MemberRoleRepository;
 import com.ptit.music_be.repository.RoleRepository;
-import com.ptit.music_be.repository.UserRepository;
-import com.ptit.music_be.repository.UserRoleRepository;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -33,9 +33,9 @@ public class ApplicationInitConfig {
             value = "datasource.driver-class-name",
             havingValue = "com.mysql.cj.jdbc.Driver")
     ApplicationRunner applicationRunner(
-            UserRepository userRepository,
+            MemberRepository memberRepository,
             RoleRepository roleRepository,
-            UserRoleRepository userRoleRepository) {
+            MemberRoleRepository memberRoleRepository) {
         return args -> {
             // Seed roles if not present
             Role roleUser = roleRepository.findByName("USER")
@@ -45,8 +45,8 @@ public class ApplicationInitConfig {
                     .orElseGet(() -> roleRepository.save(Role.builder().name("ADMIN").build()));
 
             // Seed default admin if not present
-            if (userRepository.findByEmail("admin@music.com").isEmpty()) {
-                User admin = User.builder()
+            if (memberRepository.findByEmail("admin@music.com").isEmpty()) {
+                Member admin = Member.builder()
                         .email("admin@music.com")
                         .passwordHash(passwordEncoder.encode("12345678"))
                         .status("ACTIVE")
@@ -54,14 +54,14 @@ public class ApplicationInitConfig {
                         .authProvider(AuthProvider.LOCAL)
                         .build();
 
-                User savedAdmin = userRepository.save(admin);
+                Member savedAdmin = memberRepository.save(admin);
 
-                UserRole userRole = UserRole.builder()
-                        .user(savedAdmin)
+                MemberRole memberRole = MemberRole.builder()
+                        .member(savedAdmin)
                         .role(roleAdmin)
                         .build();
 
-                userRoleRepository.save(userRole);
+                memberRoleRepository.save(memberRole);
 
                 log.warn("Admin user created with email: admin@music.com and default password: 12345678, please change it!");
             }

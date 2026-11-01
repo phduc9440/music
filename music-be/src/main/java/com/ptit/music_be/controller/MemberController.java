@@ -5,8 +5,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ptit.music_be.dto.response.ApiResponse;
-import com.ptit.music_be.dto.response.UserResponse;
-import com.ptit.music_be.service.UserService;
+import com.ptit.music_be.dto.response.MemberResponse;
+import com.ptit.music_be.service.MemberService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -16,19 +16,19 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping({"/api/members", "/api/users"})
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-@Tag(name = "Users", description = "APIs for user management")
-public class UserController {
+@Tag(name = "Members", description = "APIs for member management")
+public class MemberController {
 
-    UserService userService;
+    MemberService memberService;
 
     @GetMapping("/me")
-    @Operation(summary = "Get current logged-in user info", security = @SecurityRequirement(name = "bearerAuth"))
-    public ApiResponse<UserResponse> getMyInfo() {
-        return ApiResponse.<UserResponse>builder()
-                .result(userService.getMyInfo())
+    @Operation(summary = "Get current logged-in member info", security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<MemberResponse> getMyInfo() {
+        return ApiResponse.<MemberResponse>builder()
+                .result(memberService.getMyInfo())
                 .build();
     }
 }

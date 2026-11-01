@@ -5,12 +5,12 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import com.ptit.music_be.entity.User;
+import com.ptit.music_be.entity.Member;
 
 @Repository
-public interface UserRepository extends JpaRepository<User, String> {
+public interface MemberRepository extends JpaRepository<Member, String> {
 
-    Optional<User> findByEmail(String email);
+    Optional<Member> findByEmail(String email);
 
     boolean existsByEmail(String email);
 }

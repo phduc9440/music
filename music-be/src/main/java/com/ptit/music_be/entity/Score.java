@@ -25,8 +25,8 @@ public class Score {
     String id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    User user;
+    @JoinColumn(name = "member_id")
+    Member member;
 
     @Column(nullable = false)
     String title;
@@ -69,7 +69,7 @@ public class Score {
 
     @OneToMany(mappedBy = "score", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    List<UserScore> userScores = new ArrayList<>();
+    List<MemberScore> memberScores = new ArrayList<>();
 
     @OneToMany(mappedBy = "score", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

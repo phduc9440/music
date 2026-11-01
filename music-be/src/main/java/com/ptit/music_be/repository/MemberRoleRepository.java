@@ -5,18 +5,18 @@ import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import com.ptit.music_be.entity.Member;
+import com.ptit.music_be.entity.MemberRole;
 import com.ptit.music_be.entity.Role;
-import com.ptit.music_be.entity.User;
-import com.ptit.music_be.entity.UserRole;
 
 @Repository
-public interface UserRoleRepository extends JpaRepository<UserRole, String> {
+public interface MemberRoleRepository extends JpaRepository<MemberRole, String> {
 
-    List<UserRole> findByUser(User user);
+    List<MemberRole> findByMember(Member member);
 
-    boolean existsByUserAndRole(User user, Role role);
+    boolean existsByMemberAndRole(Member member, Role role);
 
     @org.springframework.transaction.annotation.Transactional
     @org.springframework.data.jpa.repository.Modifying
-    void deleteByUser(User user);
+    void deleteByMember(Member member);
 }

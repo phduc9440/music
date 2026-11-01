@@ -8,11 +8,11 @@ import com.ptit.music_be.dto.request.RefreshRequest;
 import com.ptit.music_be.dto.request.RegisterRequest;
 import com.ptit.music_be.dto.request.ResetPasswordRequest;
 import com.ptit.music_be.dto.response.AuthResponse;
-import com.ptit.music_be.dto.response.UserResponse;
+import com.ptit.music_be.dto.response.MemberResponse;
 
 public interface AuthService {
 
-    UserResponse register(RegisterRequest request);
+    MemberResponse register(RegisterRequest request);
 
     AuthResponse login(LoginRequest request);
 

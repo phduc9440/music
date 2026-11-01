@@ -23,8 +23,8 @@ public class Playlist {
     String id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    User user;
+    @JoinColumn(name = "member_id", nullable = false)
+    Member member;
 
     @Column(nullable = false)
     String name;
