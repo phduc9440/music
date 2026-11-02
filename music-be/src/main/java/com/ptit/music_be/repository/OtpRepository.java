@@ -10,6 +10,7 @@ import com.ptit.music_be.entity.Otp;
 
 @Repository
 public interface OtpRepository extends JpaRepository<Otp, String> {
+
     Optional<Otp> findByMemberAndOtpCode(Member member, String otpCode);
 
     @org.springframework.transaction.annotation.Transactional

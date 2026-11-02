@@ -6,9 +6,13 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import com.ptit.music_be.dto.enums.Role;
-import com.ptit.music_be.entity.Admin;
-import com.ptit.music_be.repository.AdminRepository;
+import com.ptit.music_be.dto.enums.AuthProvider;
+import com.ptit.music_be.entity.Member;
+import com.ptit.music_be.entity.MemberRole;
+import com.ptit.music_be.entity.Role;
+import com.ptit.music_be.repository.MemberRepository;
+import com.ptit.music_be.repository.MemberRoleRepository;
+import com.ptit.music_be.repository.RoleRepository;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -28,20 +32,38 @@ public class ApplicationInitConfig {
             prefix = "spring",
             value = "datasource.driver-class-name",
             havingValue = "com.mysql.cj.jdbc.Driver")
-    ApplicationRunner applicationRunner(AdminRepository adminRepository) {
+    ApplicationRunner applicationRunner(
+            MemberRepository memberRepository,
+            RoleRepository roleRepository,
+            MemberRoleRepository memberRoleRepository) {
         return args -> {
-            if (adminRepository.findByUsername("admin").isEmpty()) {
+            // Seed roles if not present
+            Role roleUser = roleRepository.findByName("USER")
+                    .orElseGet(() -> roleRepository.save(Role.builder().name("USER").build()));
 
-                Admin admin = Admin.builder()
-                        .username("admin")
-                        .password(passwordEncoder.encode("12345678"))
-                        .role(Role.ADMIN)
-                        .position("SUPER_ADMIN")
+            Role roleAdmin = roleRepository.findByName("ADMIN")
+                    .orElseGet(() -> roleRepository.save(Role.builder().name("ADMIN").build()));
+
+            // Seed default admin if not present
+            if (memberRepository.findByEmail("admin@music.com").isEmpty()) {
+                Member admin = Member.builder()
+                        .email("admin@music.com")
+                        .passwordHash(passwordEncoder.encode("12345678"))
+                        .status("ACTIVE")
+                        .emailVerified(true)
+                        .authProvider(AuthProvider.LOCAL)
                         .build();
 
-                adminRepository.save(admin);
+                Member savedAdmin = memberRepository.save(admin);
 
-                log.warn("Admin user created with default password: 12345678, please change it!");
+                MemberRole memberRole = MemberRole.builder()
+                        .member(savedAdmin)
+                        .role(roleAdmin)
+                        .build();
+
+                memberRoleRepository.save(memberRole);
+
+                log.warn("Admin user created with email: admin@music.com and default password: 12345678, please change it!");
             }
         };
     }

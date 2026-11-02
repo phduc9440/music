@@ -10,11 +10,7 @@ import com.ptit.music_be.entity.Member;
 @Repository
 public interface MemberRepository extends JpaRepository<Member, String> {
 
-    Optional<Member> findByUsername(String username);
-
     Optional<Member> findByEmail(String email);
-
-    boolean existsByUsername(String username);
 
     boolean existsByEmail(String email);
 }

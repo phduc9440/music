@@ -1,27 +1,23 @@
 package com.ptit.music_be.dto.response;
 
-import com.ptit.music_be.dto.enums.AuthProvider;
-import com.ptit.music_be.dto.enums.Role;
+import java.util.Set;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.ptit.music_be.dto.enums.AuthProvider;
+
+import lombok.*;
 import lombok.experimental.FieldDefaults;
-import lombok.experimental.SuperBuilder;
 
 @Data
-@SuperBuilder
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class MemberResponse {
 
     String id;
-    String username;
     String email;
-    String phone;
-    String fullName;
-    Role role;
+    String status;
+    Boolean emailVerified;
     AuthProvider authProvider;
+    Set<String> roles;
 }

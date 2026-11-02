@@ -15,7 +15,7 @@ import com.ptit.music_be.dto.request.RegisterRequest;
 import com.ptit.music_be.dto.request.ResetPasswordRequest;
 import com.ptit.music_be.dto.response.ApiResponse;
 import com.ptit.music_be.dto.response.AuthResponse;
-import com.ptit.music_be.dto.response.UserResponse;
+import com.ptit.music_be.dto.response.MemberResponse;
 import com.ptit.music_be.service.AuthService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -35,8 +35,8 @@ public class AuthController {
 
     @PostMapping("/register")
     @Operation(summary = "Register a new user account")
-    public ApiResponse<UserResponse> register(@RequestBody @Valid RegisterRequest request) {
-        return ApiResponse.<UserResponse>builder()
+    public ApiResponse<MemberResponse> register(@RequestBody @Valid RegisterRequest request) {
+        return ApiResponse.<MemberResponse>builder()
                 .result(authService.register(request))
                 .build();
     }

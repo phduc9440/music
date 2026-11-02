@@ -10,6 +10,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import com.ptit.music_be.dto.response.ApiResponse;
 
@@ -38,6 +39,17 @@ public class GlobalExceptionHandler {
         apiResponse.setMessage(errorCode.getMessage());
 
         return ResponseEntity.status(errorCode.getHttpStatusCode()).body(apiResponse);
+    }
+
+    @ExceptionHandler(value = MaxUploadSizeExceededException.class)
+    ResponseEntity<ApiResponse> handlingMaxUploadSize(MaxUploadSizeExceededException exception) {
+        ErrorCode errorCode = ErrorCode.FILE_TOO_LARGE;
+
+        return ResponseEntity.status(errorCode.getHttpStatusCode())
+                .body(ApiResponse.builder()
+                        .code(errorCode.getCode())
+                        .message(errorCode.getMessage())
+                        .build());
     }
 
     @ExceptionHandler(value = AccessDeniedException.class)
