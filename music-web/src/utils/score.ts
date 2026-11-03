@@ -114,13 +114,10 @@ export const DOWNLOAD_FORMATS: { fileType: string; label: string }[] = [
  * Bấm vào thẻ bản nhạc thì đi đâu (doc 2.0):
  *  - PENDING / PROCESSING / FAILED -> /scores/{id}/processing (trang tiến độ, hiện lỗi + nút "Thử lại" nếu FAILED)
  *  - COMPLETED (và còn lại)        -> /scores/{id}
- * TODO(feature/omr-preprocess): trang /processing chưa có nên tạm cho tất cả vào trang chi tiết;
- * khi có trang đó thì đổi USE_PROCESSING_PAGE thành true.
  */
-const USE_PROCESSING_PAGE = false;
 export const getScorePath = (id: string, status: ProcessingStatus): string => {
   const inProgress = status === 'PENDING' || status === 'PROCESSING' || status === 'FAILED';
-  return USE_PROCESSING_PAGE && inProgress ? `/scores/${id}/processing` : `/scores/${id}`;
+  return inProgress ? `/scores/${id}/processing` : `/scores/${id}`;
 };
 
 // ---- Validate upload (khớp server: mục 2.1 trong doc, mã lỗi 2003–2011, 2202) ----
