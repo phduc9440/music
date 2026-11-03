@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.*;
 
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
@@ -59,6 +60,20 @@ public class AiTask {
 
     @Column(name = "error_message", columnDefinition = "TEXT")
     String errorMessage;
+
+    /** Tham số đầu vào của tác vụ (JSON), ví dụ {"targetFormat":"MP3","transpose":0}. */
+    @Column(name = "input_data", columnDefinition = "JSON")
+    String inputData;
+
+    /** Số lần đã tự gửi lại khi music-ai không phản hồi. */
+    @Column(name = "retry_count")
+    @ColumnDefault("0")
+    @Builder.Default
+    Integer retryCount = 0;
+
+    /** Bước đang chạy để hiển thị tiến độ: SPLIT_PDF, PREPROCESS, INFERENCE, MERGE, EXPORT. */
+    @Column(name = "step", length = 32)
+    String step;
 
     /** Free-form task output (MySQL JSON column), e.g. ids of generated files, page count. */
     @Column(name = "result_data", columnDefinition = "JSON")
