@@ -20,6 +20,10 @@ public class ScoreFileResponse {
     String contentType;
     Long sizeBytes;
     Integer pageNumber;
+    /** Phiên bản của file (MUSICXML tăng mỗi lần lưu). */
+    Integer version;
+    /** Có phải bản hiện hành không. */
+    Boolean isCurrent;
     LocalDateTime createdAt;
     /** Relative to the API base, e.g. /api/files/{id}/download */
     String downloadUrl;
