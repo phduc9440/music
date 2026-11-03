@@ -33,7 +33,7 @@
 		<lombok.version>1.18.38</lombok.version>
 		<lombok-mapstruct-binding.version>0.2.0</lombok-mapstruct-binding.version>
 
-		<spotless.version>2.43.0</spotless.version>
+		<spotless.version>2.44.0</spotless.version>
 		<maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
 	</properties>
 
@@ -73,7 +73,7 @@
 		<dependency>
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-			<version>2.5.0</version>
+			<version>2.8.9</version>
 		</dependency>
 
 		<!-- MYSQL -->
@@ -142,6 +142,13 @@
 			<artifactId>spring-boot-starter-mail</artifactId>
 		</dependency>
 
+		<!-- PDFBOX: kiểm tra PDF upload (mã hóa, số trang) -->
+		<dependency>
+			<groupId>org.apache.pdfbox</groupId>
+			<artifactId>pdfbox</artifactId>
+			<version>3.0.5</version>
+		</dependency>
+
 		<!-- GOOGLE API CLIENT -->
 		<dependency>
 			<groupId>com.google.api-client</groupId>
@@ -204,7 +211,7 @@
 			<plugin>
 				<groupId>com.diffplug.spotless</groupId>
 				<artifactId>spotless-maven-plugin</artifactId>
-				<version>2.43.0</version>
+				<version>2.44.0</version>
 
 				<configuration>
 					<java>

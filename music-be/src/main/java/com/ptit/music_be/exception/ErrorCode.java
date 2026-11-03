@@ -22,23 +22,31 @@ public enum ErrorCode {
     INVALID_REQUEST(1009, "Invalid request", HttpStatus.BAD_REQUEST),
 
     // Score files & OMR (2xxx)
-    SCORE_NOT_EXISTED(2001, "Score not existed", HttpStatus.NOT_FOUND),
-    FILE_NOT_EXISTED(2002, "File not existed", HttpStatus.NOT_FOUND),
-    FILE_EMPTY(2003, "Uploaded file is empty", HttpStatus.BAD_REQUEST),
-    FILE_TYPE_NOT_SUPPORTED(2004, "Only PDF, PNG, JPG, JPEG files are supported", HttpStatus.BAD_REQUEST),
-    FILE_TOO_LARGE(2005, "Uploaded file is too large", HttpStatus.PAYLOAD_TOO_LARGE),
-    INVALID_UPLOAD_COMBINATION(
-            2006, "Upload either exactly one PDF file or between 1 and 20 image files", HttpStatus.BAD_REQUEST),
-    FILE_STORAGE_ERROR(2007, "Could not store file", HttpStatus.INTERNAL_SERVER_ERROR),
+    SCORE_NOT_EXISTED(2001, "Bản nhạc không tồn tại", HttpStatus.NOT_FOUND),
+    FILE_NOT_EXISTED(2002, "File không tồn tại", HttpStatus.NOT_FOUND),
+    FILE_EMPTY(2003, "File tải lên bị rỗng", HttpStatus.BAD_REQUEST),
+    FILE_TYPE_NOT_SUPPORTED(2004, "Chỉ hỗ trợ file PDF, PNG, JPG, JPEG", HttpStatus.BAD_REQUEST),
+    FILE_TOO_LARGE(2005, "File tải lên quá lớn", HttpStatus.PAYLOAD_TOO_LARGE),
+    INVALID_UPLOAD_COMBINATION(2006, "Chỉ tải lên đúng 1 file PDF hoặc từ 1 đến 20 ảnh", HttpStatus.BAD_REQUEST),
+    FILE_STORAGE_ERROR(2007, "Không lưu được file", HttpStatus.INTERNAL_SERVER_ERROR),
+    PDF_ENCRYPTED(2008, "PDF bị mã hóa, đặt mật khẩu hoặc không mở được", HttpStatus.BAD_REQUEST),
+    PDF_TOO_MANY_PAGES(2009, "PDF phải có từ 1 đến 20 trang", HttpStatus.BAD_REQUEST),
+    IMAGE_RESOLUTION_INVALID(
+            2010, "Ảnh không đọc được, cạnh ngắn nhỏ hơn 600px hoặc lớn hơn 40 megapixel", HttpStatus.BAD_REQUEST),
+    INVALID_SOURCE_TYPE(2011, "Loại nguồn phải là PHOTO, SCAN hoặc PDF_NATIVE", HttpStatus.BAD_REQUEST),
 
-    SCORE_TITLE_INVALID(2017, "Title is required and must be at most 255 characters", HttpStatus.BAD_REQUEST),
-    SCORE_COMPOSER_INVALID(2018, "Composer must be at most 255 characters", HttpStatus.BAD_REQUEST),
-    SCORE_NOTES_INVALID(2019, "Study notes must be at most 5000 characters", HttpStatus.BAD_REQUEST),
-    INVALID_FILTER(2020, "Invalid filter value", HttpStatus.BAD_REQUEST),
-    SCORE_BUSY(2201, "Score is being processed, please try again later", HttpStatus.CONFLICT),
+    SCORE_TITLE_INVALID(2017, "Tiêu đề là bắt buộc và tối đa 255 ký tự", HttpStatus.BAD_REQUEST),
+    SCORE_COMPOSER_INVALID(2018, "Tên tác giả tối đa 255 ký tự", HttpStatus.BAD_REQUEST),
+    SCORE_NOTES_INVALID(2019, "Ghi chú tối đa 5000 ký tự", HttpStatus.BAD_REQUEST),
+    INVALID_FILTER(2020, "Giá trị bộ lọc không hợp lệ", HttpStatus.BAD_REQUEST),
+    SCORE_BUSY(2201, "Bản nhạc đang được xử lý, vui lòng thử lại sau", HttpStatus.CONFLICT),
+    TASK_LIMIT_EXCEEDED(
+            2202,
+            "Bạn đang có 3 tác vụ OMR chờ hoặc đang chạy, hãy đợi một tác vụ hoàn tất",
+            HttpStatus.TOO_MANY_REQUESTS),
 
     // AI tasks (21xx)
-    AI_TASK_NOT_EXISTED(2101, "AI task not existed", HttpStatus.NOT_FOUND),
+    AI_TASK_NOT_EXISTED(2101, "Tác vụ AI không tồn tại", HttpStatus.NOT_FOUND),
     ;
 
     int code;
