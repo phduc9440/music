@@ -1,7 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { GoogleLogin } from '@react-oauth/google';
-import { authApi, userApi, adminApi } from '../services';
+import { authApi } from '../services';
+import { completeLogin } from '../utils/auth';
 
 interface GoogleAuthButtonProps {
   setIsLoading: (loading: boolean) => void;
@@ -15,25 +16,11 @@ export default function GoogleAuthButton({ setIsLoading }: GoogleAuthButtonProps
     setIsLoading(true);
     try {
       const response = await authApi.googleLogin({ idToken: credentialResponse.credential });
-      localStorage.setItem('token', response.data.result.token);
-
-      try {
-        await userApi.getMe();
-        localStorage.setItem('role', 'USER');
-        toast.success('Login successful!');
-        navigate('/profile');
-      } catch (err) {
-        try {
-          await adminApi.getMe();
-          localStorage.setItem('role', 'ADMIN');
-          toast.success('Login successful!');
-          navigate('/admin');
-        } catch (err2) {
-          toast.error('Could not fetch user/admin profile.');
-        }
-      }
+      const target = await completeLogin(response.data.result);
+      toast.success('Login successful!');
+      navigate(target);
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Google Login failed');
+      toast.error(error.response?.data?.message || error.message || 'Google Login failed');
     } finally {
       setIsLoading(false);
     }

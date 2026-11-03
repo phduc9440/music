@@ -46,6 +46,7 @@ export default function AdminDashboard() {
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
     localStorage.removeItem('role');
     navigate('/');
   };

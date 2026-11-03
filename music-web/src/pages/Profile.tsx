@@ -28,6 +28,7 @@ export default function UserProfile() {
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
     localStorage.removeItem('role');
     navigate('/');
   };
