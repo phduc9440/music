@@ -10,6 +10,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.ptit.music_be.dto.enums.FileType;
 import com.ptit.music_be.dto.response.ApiResponse;
 import com.ptit.music_be.dto.response.ScoreFileResponse;
 import com.ptit.music_be.service.ScoreFileService;
@@ -31,10 +32,13 @@ public class ScoreFileController {
     ScoreFileService scoreFileService;
 
     @GetMapping("/scores/{scoreId}/files")
-    @Operation(summary = "List files of a score", security = @SecurityRequirement(name = "bearerAuth"))
-    public ApiResponse<List<ScoreFileResponse>> getFilesOfScore(@PathVariable String scoreId) {
+    @Operation(
+            summary = "List files of a score (optional ?type=PNG|MUSICXML|... to filter by file type)",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<List<ScoreFileResponse>> getFilesOfScore(
+            @PathVariable String scoreId, @RequestParam(required = false) FileType type) {
         return ApiResponse.<List<ScoreFileResponse>>builder()
-                .result(scoreFileService.getFilesOfScore(scoreId))
+                .result(scoreFileService.getFilesOfScore(scoreId, type))
                 .build();
     }
 
