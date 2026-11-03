@@ -18,4 +18,7 @@ public interface MemberScoreRepository extends JpaRepository<MemberScore, String
     List<MemberScore> findByScore(Score score);
 
     Optional<MemberScore> findByMemberAndScore(Member member, Score score);
+
+    /** Dòng chia sẻ của một người (theo email) với một bản nhạc, nếu có. */
+    Optional<MemberScore> findByScoreIdAndMemberEmail(String scoreId, String email);
 }
