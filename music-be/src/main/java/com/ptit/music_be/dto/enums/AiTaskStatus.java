@@ -4,7 +4,5 @@ public enum AiTaskStatus {
     PENDING,
     PROCESSING,
     COMPLETED,
-    FAILED,
-    /** Người dùng chủ động hủy (dùng ở nhánh feature/omr-preprocess). */
-    CANCELLED
+    FAILED
 }

@@ -1,14 +1,9 @@
 package com.ptit.music_be.entity;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 import jakarta.persistence.*;
-
-import org.hibernate.annotations.ColumnDefault;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import com.ptit.music_be.dto.enums.DifficultyLevel;
 
@@ -63,42 +58,6 @@ public class Score {
 
     @Column(name = "measure_count")
     Integer measureCount;
-
-    /** Khóa nhạc, ví dụ "G", "Bb", "F#m" (lấy từ MusicXML sau khi OMR xong). */
-    @Column(name = "key_signature", length = 16)
-    String keySignature;
-
-    /** Số chỉ nhịp, ví dụ "3/4". */
-    @Column(name = "time_signature", length = 8)
-    String timeSignature;
-
-    /** Số khuông nhạc (staff). Bằng 2 thì Player mới bật được Mute/Solo từng tay. */
-    @Column(name = "staff_count")
-    @ColumnDefault("2")
-    @Builder.Default
-    Integer staffCount = 2;
-
-    /** Số trang của bản gốc (PDF/ảnh). */
-    @Column(name = "page_count")
-    Integer pageCount;
-
-    /** Nguồn tạo bản nhạc: OMR / IMPORT / MANUAL (xem ScoreSource). */
-    @Column(name = "source_type", length = 16)
-    String sourceType;
-
-    /** Phiên bản MusicXML hiện hành. Tăng mỗi lần Editor lưu (chống ghi đè nhau). 0 = chưa có MusicXML. */
-    @Column(name = "current_version")
-    @ColumnDefault("0")
-    @Builder.Default
-    Integer currentVersion = 0;
-
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    LocalDateTime updatedAt;
 
     @Column(name = "view_count")
     @Builder.Default
