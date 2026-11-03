@@ -2,6 +2,7 @@ package com.ptit.music_be.repository;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -19,4 +20,7 @@ public interface ScoreFileRepository extends JpaRepository<ScoreFile, String> {
     /** Lấy ảnh trang 1 của nhiều bản nhạc một lượt để làm ảnh đại diện (tránh N+1 query). */
     List<ScoreFile> findByScoreIdInAndFileTypeInAndPageNumber(
             Collection<String> scoreIds, Collection<FileType> fileTypes, Integer pageNumber);
+
+    /** Tìm file theo đường dẫn lưu trữ (callback ghi lại cùng một trang thì cập nhật, không thêm dòng trùng). */
+    Optional<ScoreFile> findByScoreIdAndStoragePath(String scoreId, String storagePath);
 }
