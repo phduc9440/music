@@ -2,9 +2,6 @@ import { Routes, Route } from 'react-router-dom';
 import Home from '../pages/Home';
 import Login from '../pages/Login';
 import UserProfile from '../pages/Profile';
-import ScoreLibrary from '../pages/scores/ScoreLibrary';
-import ScoreDetail from '../pages/scores/ScoreDetail';
-import ScoreUpload from '../pages/scores/ScoreUpload';
 import AdminDashboard from '../pages/Admin';
 import ProtectedRoute from './ProtectedRoute';
 
@@ -18,30 +15,6 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute allowedRole="USER">
             <UserProfile />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/scores"
-        element={
-          <ProtectedRoute allowedRole="USER">
-            <ScoreLibrary />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/scores/upload"
-        element={
-          <ProtectedRoute allowedRole="USER">
-            <ScoreUpload />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/scores/:id"
-        element={
-          <ProtectedRoute allowedRole="USER">
-            <ScoreDetail />
           </ProtectedRoute>
         }
       />

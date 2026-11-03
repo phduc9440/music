@@ -10,7 +10,5 @@ public enum FileType {
     SVG,
     PNG,
     MP3,
-    WAV,
-    ORIGINAL_MUSICXML,
-    ORIGINAL_MIDI
+    WAV
 }

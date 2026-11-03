@@ -19,7 +19,6 @@ public enum ErrorCode {
     USERNAME_INVALID(1006, "Username must be at least {min} characters", HttpStatus.BAD_REQUEST),
     PASSWORD_INVALID(1007, "Password must be at least {min} characters", HttpStatus.BAD_REQUEST),
     EMPLOYEE_NOT_FOUND(1008, "Employee not found", HttpStatus.NOT_FOUND),
-    INVALID_REQUEST(1009, "Invalid request", HttpStatus.BAD_REQUEST),
 
     // Score files & OMR (2xxx)
     SCORE_NOT_EXISTED(2001, "Score not existed", HttpStatus.NOT_FOUND),
@@ -30,12 +29,6 @@ public enum ErrorCode {
     INVALID_UPLOAD_COMBINATION(
             2006, "Upload either exactly one PDF file or between 1 and 20 image files", HttpStatus.BAD_REQUEST),
     FILE_STORAGE_ERROR(2007, "Could not store file", HttpStatus.INTERNAL_SERVER_ERROR),
-
-    SCORE_TITLE_INVALID(2017, "Title is required and must be at most 255 characters", HttpStatus.BAD_REQUEST),
-    SCORE_COMPOSER_INVALID(2018, "Composer must be at most 255 characters", HttpStatus.BAD_REQUEST),
-    SCORE_NOTES_INVALID(2019, "Study notes must be at most 5000 characters", HttpStatus.BAD_REQUEST),
-    INVALID_FILTER(2020, "Invalid filter value", HttpStatus.BAD_REQUEST),
-    SCORE_BUSY(2201, "Score is being processed, please try again later", HttpStatus.CONFLICT),
 
     // AI tasks (21xx)
     AI_TASK_NOT_EXISTED(2101, "AI task not existed", HttpStatus.NOT_FOUND),

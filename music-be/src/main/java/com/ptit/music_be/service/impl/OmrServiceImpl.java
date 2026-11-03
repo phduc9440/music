@@ -19,7 +19,6 @@ import com.ptit.music_be.dto.enums.AiTaskStatus;
 import com.ptit.music_be.dto.enums.AiTaskType;
 import com.ptit.music_be.dto.enums.FileType;
 import com.ptit.music_be.dto.enums.ProcessingStatus;
-import com.ptit.music_be.dto.enums.ScoreSource;
 import com.ptit.music_be.dto.response.OmrUploadResponse;
 import com.ptit.music_be.entity.AiTask;
 import com.ptit.music_be.entity.Member;
@@ -79,7 +78,6 @@ public class OmrServiceImpl implements OmrService {
                 .visibility(DEFAULT_VISIBILITY)
                 .isOfficial(false)
                 .processingStatus(ProcessingStatus.PENDING.name())
-                .sourceType(ScoreSource.OMR.name())
                 .build());
 
         String scoreDir = "scores/" + score.getId();
