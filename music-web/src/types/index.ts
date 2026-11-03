@@ -91,6 +91,8 @@ export type Visibility = 'PRIVATE' | 'PUBLIC';
 export type Difficulty = 'EASY' | 'MEDIUM' | 'HARD';
 export type ScoreSort = 'newest' | 'oldest' | 'title';
 export type TaskStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
+/** Loại bản gốc khi upload OMR (BE: OmrSourceType), dùng cho thống kê SER 1.7. */
+export type OmrSourceType = 'PHOTO' | 'SCAN' | 'PDF_NATIVE';
 
 // Khớp với PageResponse của BE (khác với PageResponse cũ của trang admin)
 export interface PageResult<T> {
@@ -173,6 +175,14 @@ export interface ScoreUpdateRequest {
   difficulty?: Difficulty;
   studyNotes?: string;
   visibility?: Visibility;
+}
+
+// Body multipart của POST /omr/upload (files phải đúng thứ tự trang, ảnh đã xoay nếu người dùng xoay)
+export interface OmrUploadRequest {
+  files: File[];
+  title: string;
+  composer: string;
+  sourceType: OmrSourceType;
 }
 
 // Kết quả POST /omr/upload

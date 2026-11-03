@@ -1,4 +1,4 @@
-import type { Difficulty, ProcessingStatus, ScoreSource, TaskStatus } from '../types';
+import type { Difficulty, OmrSourceType, ProcessingStatus, ScoreSource, TaskStatus } from '../types';
 
 // Nhãn hiển thị tiếng Việt cho các giá trị enum của BE
 export const STATUS_LABELS: Record<ProcessingStatus, string> = {
@@ -21,6 +21,12 @@ export const SOURCE_LABELS: Record<ScoreSource, string> = {
   OMR: 'Quét từ ảnh',
   IMPORT: 'Nhập file',
   MANUAL: 'Tự soạn',
+};
+
+export const OMR_SOURCE_LABELS: Record<OmrSourceType, string> = {
+  PHOTO: 'Ảnh chụp',
+  SCAN: 'Bản scan',
+  PDF_NATIVE: 'PDF gốc',
 };
 
 export const DIFFICULTY_LABELS: Record<Difficulty, string> = {
@@ -86,6 +92,10 @@ export const formatRelative = (iso?: string | null): string => {
 export const getErrorMessage = (err: unknown, fallback: string): string =>
   (err as { response?: { data?: { message?: string } } }).response?.data?.message ?? fallback;
 
+/** Mã lỗi nghiệp vụ (ErrorCode của BE) trong response, ví dụ 2004. */
+export const getErrorCode = (err: unknown): number | undefined =>
+  (err as { response?: { data?: { code?: number } } }).response?.data?.code;
+
 export const getHttpStatus = (err: unknown): number | undefined =>
   (err as { response?: { status?: number } }).response?.status;
 
@@ -113,10 +123,32 @@ export const getScorePath = (id: string, status: ProcessingStatus): string => {
   return USE_PROCESSING_PAGE && inProgress ? `/scores/${id}/processing` : `/scores/${id}`;
 };
 
-// ---- Validate upload (khớp server: mục 2.1 trong doc, mã lỗi 2003–2006) ----
+// ---- Validate upload (khớp server: mục 2.1 trong doc, mã lỗi 2003–2011, 2202) ----
 export const UPLOAD_MAX_FILE_BYTES = 50 * 1024 * 1024;
 export const UPLOAD_MAX_TOTAL_BYTES = 200 * 1024 * 1024;
 export const UPLOAD_MAX_IMAGES = 20;
+export const UPLOAD_MAX_PDF_PAGES = 20;
+export const UPLOAD_MIN_IMAGE_SIDE = 600;
+export const UPLOAD_MAX_IMAGE_PIXELS = 40_000_000;
+
+/** Câu thông báo tiếng Việt theo mã lỗi BE khi upload thất bại. */
+const UPLOAD_ERROR_MESSAGES: Record<number, string> = {
+  2003: 'Có file rỗng (0 byte)',
+  2004: 'Định dạng file không hợp lệ: chỉ nhận PDF, PNG, JPG, JPEG và nội dung phải đúng định dạng',
+  2005: 'File quá lớn: mỗi file tối đa 50MB, cả lần tải tối đa 200MB',
+  2006: 'Chỉ tải 1 file PDF, hoặc 1–20 ảnh (không trộn PDF với ảnh)',
+  2008: 'PDF bị mã hóa, đặt mật khẩu hoặc không mở được',
+  2009: `PDF phải có từ 1 đến ${UPLOAD_MAX_PDF_PAGES} trang`,
+  2010: `Ảnh không đọc được, cạnh ngắn nhỏ hơn ${UPLOAD_MIN_IMAGE_SIDE}px hoặc lớn hơn 40 megapixel`,
+  2011: 'Loại nguồn không hợp lệ',
+  2018: 'Tên tác giả tối đa 255 ký tự',
+  2202: 'Bạn đang có 3 bản nhạc chờ số hóa, hãy đợi một bản xong rồi tải tiếp',
+};
+
+export const getUploadErrorMessage = (err: unknown): string => {
+  const code = getErrorCode(err);
+  return (code && UPLOAD_ERROR_MESSAGES[code]) || getErrorMessage(err, 'Tải lên thất bại, vui lòng thử lại');
+};
 export const UPLOAD_EXTENSIONS = ['pdf', 'png', 'jpg', 'jpeg'];
 
 export const getExtension = (name: string): string => name.split('.').pop()?.toLowerCase() ?? '';
@@ -142,3 +174,7 @@ export const validateUploadBatch = (files: File[]): string => {
 
 /** Tên file bỏ đuôi, dùng làm tiêu đề gợi ý. */
 export const fileNameWithoutExtension = (name: string): string => name.replace(/\.[^.]+$/, '');
+
+/** Tự đoán loại nguồn: PDF -> PDF gốc, ảnh -> Ảnh chụp (người dùng sửa được). */
+export const guessSourceType = (files: File[]): OmrSourceType =>
+  files.length > 0 && files.every(isPdf) ? 'PDF_NATIVE' : 'PHOTO';
