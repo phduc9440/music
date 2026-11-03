@@ -10,6 +10,13 @@ import type {
   ChangePasswordRequest,
   ForgotPasswordRequest,
   ResetPasswordRequest,
+  PageResult,
+  ScoreSummary,
+  ScoreDetail,
+  ScoreFileInfo,
+  ScoreListParams,
+  ScoreUpdateRequest,
+  OmrUploadResult,
 } from '../types';
 
 const API_BASE_URL = 'http://localhost:8080/api';
@@ -68,6 +75,52 @@ export const adminApi = {
   updateAccount: (id: string, data: import('../types').AccountUpdateRequest) =>
     apiClient.put<ApiResponse<User>>(`/admins/accounts/${id}`, data),
   deleteAccount: (id: string) => apiClient.delete<ApiResponse<void>>(`/admins/accounts/${id}`),
+};
+
+export const scoreApi = {
+  list: (params?: ScoreListParams) => apiClient.get<ApiResponse<PageResult<ScoreSummary>>>('/scores/me', { params }),
+  detail: (id: string) => apiClient.get<ApiResponse<ScoreDetail>>(`/scores/${id}`),
+  update: (id: string, data: ScoreUpdateRequest) => apiClient.patch<ApiResponse<ScoreDetail>>(`/scores/${id}`, data),
+  remove: (id: string) => apiClient.delete<ApiResponse<void>>(`/scores/${id}`),
+  files: (id: string, type?: string) =>
+    apiClient.get<ApiResponse<ScoreFileInfo[]>>(`/scores/${id}/files`, { params: type ? { type } : undefined }),
+};
+
+export const omrApi = {
+  // Upload 1 PDF hoặc 1–20 ảnh (đúng thứ tự trang) để tạo bản nhạc và tác vụ OMR
+  upload: (files: File[], title: string, onProgress?: (percent: number) => void) => {
+    const form = new FormData();
+    files.forEach((f) => form.append('files', f));
+    if (title.trim()) form.append('title', title.trim());
+    return apiClient.post<ApiResponse<OmrUploadResult>>('/omr/upload', form, {
+      // undefined để trình duyệt tự đặt multipart/form-data kèm boundary
+      headers: { 'Content-Type': undefined },
+      onUploadProgress: (e) => e.total && onProgress?.(Math.round((e.loaded * 100) / e.total)),
+    });
+  },
+};
+
+/**
+ * Tải file dạng blob kèm token. Link tải của BE có dạng "/api/files/{id}/download" còn baseURL của axios
+ * đã có sẵn "/api" nên phải bỏ tiền tố "/api".
+ */
+export const fetchFileBlob = async (downloadUrl: string): Promise<Blob> => {
+  const path = downloadUrl.replace(/^\/api/, '');
+  const response = await apiClient.get<Blob>(path, { responseType: 'blob' });
+  return response.data;
+};
+
+/** Tải file về máy: lấy blob rồi kích hoạt thẻ <a download>. */
+export const downloadFile = async (downloadUrl: string, fileName: string): Promise<void> => {
+  const blob = await fetchFileBlob(downloadUrl);
+  const objectUrl = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = objectUrl;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(objectUrl);
 };
 
 export default apiClient;

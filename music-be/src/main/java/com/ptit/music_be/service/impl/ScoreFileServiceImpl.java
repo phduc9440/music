@@ -1,0 +1,129 @@
+package com.ptit.music_be.service.impl;
+
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.ptit.music_be.dto.enums.FileType;
+import com.ptit.music_be.dto.enums.SharePermission;
+import com.ptit.music_be.dto.response.ScoreFileResponse;
+import com.ptit.music_be.entity.MemberScore;
+import com.ptit.music_be.entity.Score;
+import com.ptit.music_be.entity.ScoreFile;
+import com.ptit.music_be.exception.AppException;
+import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.mapper.ScoreFileMapper;
+import com.ptit.music_be.repository.MemberScoreRepository;
+import com.ptit.music_be.repository.ScoreFileRepository;
+import com.ptit.music_be.repository.ScoreRepository;
+import com.ptit.music_be.service.FileStorageService;
+import com.ptit.music_be.service.ScoreFileService;
+import com.ptit.music_be.utils.SecurityUtils;
+
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+
+@Service
+@RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+public class ScoreFileServiceImpl implements ScoreFileService {
+
+    static final String VISIBILITY_PUBLIC = "PUBLIC";
+
+    ScoreRepository scoreRepository;
+    MemberScoreRepository memberScoreRepository;
+    ScoreFileRepository scoreFileRepository;
+    ScoreFileMapper scoreFileMapper;
+    FileStorageService fileStorageService;
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ScoreFileResponse> getFilesOfScore(String scoreId, FileType type) {
+        Score score = scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+        checkCanView(score);
+        // Có type thì lọc theo loại, không thì lấy tất cả (sắp xếp theo loại rồi số trang)
+        List<ScoreFile> files = type == null
+                ? scoreFileRepository.findByScoreIdOrderByFileTypeAscPageNumberAsc(scoreId)
+                : scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(scoreId, type);
+        return scoreFileMapper.toResponses(files);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DownloadableFile loadForDownload(String fileId) {
+        ScoreFile scoreFile =
+                scoreFileRepository.findById(fileId).orElseThrow(() -> new AppException(ErrorCode.FILE_NOT_EXISTED));
+        checkCanView(scoreFile.getScore());
+
+        String fileName = scoreFile.getOriginalFileName() != null
+                ? scoreFile.getOriginalFileName()
+                : scoreFile.getStoragePath().substring(scoreFile.getStoragePath().lastIndexOf('/') + 1);
+        String contentType =
+                scoreFile.getContentType() != null ? scoreFile.getContentType() : "application/octet-stream";
+
+        return new DownloadableFile(
+                fileStorageService.loadAsResource(scoreFile.getStoragePath()), fileName, contentType);
+    }
+
+    @Override
+    public void checkCanView(Score score) {
+        if (!canView(score)) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+    }
+
+    @Override
+    public void checkCanEdit(Score score) {
+        if (!canEdit(score)) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean canView(Score score) {
+        if (VISIBILITY_PUBLIC.equals(score.getVisibility()) || SecurityUtils.isAdmin()) {
+            return true;
+        }
+        if (isOwner(score)) {
+            return true;
+        }
+        // Được chia sẻ (quyền VIEW hoặc EDIT) cũng xem được
+        return findShare(score).isPresent();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean canEdit(Score score) {
+        if (SecurityUtils.isAdmin()) {
+            return true;
+        }
+        // Bản chính thức chỉ ADMIN được sửa
+        if (Boolean.TRUE.equals(score.getIsOfficial())) {
+            return false;
+        }
+        if (isOwner(score)) {
+            return true;
+        }
+        return findShare(score)
+                .map(share -> SharePermission.EDIT.name().equals(share.getPermission()))
+                .orElse(false);
+    }
+
+    @Override
+    public boolean canDelete(Score score) {
+        return SecurityUtils.isAdmin() || isOwner(score);
+    }
+
+    private boolean isOwner(Score score) {
+        return score.getMember() != null
+                && SecurityUtils.getCurrentEmail().equals(score.getMember().getEmail());
+    }
+
+    private Optional<MemberScore> findShare(Score score) {
+        return memberScoreRepository.findByScoreIdAndMemberEmail(score.getId(), SecurityUtils.getCurrentEmail());
+    }
+}
