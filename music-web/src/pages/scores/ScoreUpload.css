@@ -85,18 +85,23 @@
   border-color: #fca5a5;
 }
 .sc-upfile__order {
+  position: absolute;
+  top: 0.35rem;
+  left: 0.35rem;
+  z-index: 1;
   display: grid;
   place-items: center;
-  flex-shrink: 0;
   width: 1.6rem;
   height: 1.6rem;
   border-radius: 50%;
-  background: var(--sc-accent-soft);
-  color: var(--sc-accent);
+  background: var(--sc-accent);
+  color: #fff;
   font-size: 0.8rem;
   font-weight: 700;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.25);
 }
 .sc-upfile__thumb {
+  position: relative;
   display: grid;
   place-items: center;
   flex-shrink: 0;
@@ -110,12 +115,48 @@
 .sc-upfile__thumb img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  transition: transform 0.2s;
 }
-.sc-upfile__pdf {
+.sc-upfile__placeholder {
+  padding: 0 0.25rem;
   font-size: 0.75rem;
-  font-weight: 800;
-  color: #dc2626;
+  font-weight: 700;
+  color: var(--sc-muted);
+  text-align: center;
+}
+
+/* PDF: một thẻ lớn có ảnh trang 1 */
+.sc-upfile--pdf .sc-upfile__thumb {
+  width: 96px;
+  height: 128px;
+}
+
+/* Ảnh: lưới thumbnail đánh số trang, kéo-thả để đổi thứ tự */
+.sc-upfiles--grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+}
+.sc-upfiles--grid .sc-upfile {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+  padding: 0.5rem;
+}
+.sc-upfiles--grid .sc-upfile[draggable='true'] {
+  cursor: grab;
+}
+.sc-upfiles--grid .sc-upfile__thumb {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 3 / 4;
+}
+.sc-upfiles--grid .sc-upfile__actions {
+  justify-content: center;
+}
+.sc-upfile.is-over {
+  border-color: var(--sc-accent);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
 }
 .sc-upfile__info {
   flex: 1;
@@ -141,6 +182,60 @@
   display: flex;
   flex-shrink: 0;
 }
+.sc-upload__summary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  font-size: 0.85rem;
+  color: var(--sc-muted);
+}
+.sc-upload__summary + .sc-upfiles {
+  margin-top: 0.5rem;
+}
+
+/* Form bên phải */
+.sc-upload__field {
+  margin-top: 1rem;
+}
+.sc-upload__optional {
+  font-weight: 400;
+}
+.sc-upload__hint {
+  margin-top: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--sc-muted);
+}
+.sc-segment {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.25rem;
+  padding: 0.25rem;
+  background: #f1f5f9;
+  border: 1px solid var(--sc-line);
+  border-radius: 10px;
+}
+.sc-segment__opt {
+  padding: 0.45rem 0.25rem;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--sc-muted);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.sc-segment__opt.is-active {
+  background: #fff;
+  color: var(--sc-accent);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+}
+.sc-segment__opt:disabled {
+  cursor: not-allowed;
+}
+
 .sc-icon-btn:disabled {
   opacity: 0.35;
   cursor: not-allowed;
