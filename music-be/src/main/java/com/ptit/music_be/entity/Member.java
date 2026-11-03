@@ -30,6 +30,14 @@ public class Member {
     @Column(name = "password_hash")
     String passwordHash;
 
+    @Column(name = "full_name")
+    String fullName;
+
+    @Column(length = 30)
+    String phone;
+
+    String address;
+
     @Column(name = "status")
     String status;
 

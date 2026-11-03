@@ -16,6 +16,9 @@ public class MemberResponse {
 
     String id;
     String email;
+    String fullName;
+    String phone;
+    String address;
     String status;
     Boolean emailVerified;
     AuthProvider authProvider;

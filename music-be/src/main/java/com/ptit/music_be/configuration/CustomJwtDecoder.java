@@ -18,7 +18,7 @@ import lombok.experimental.FieldDefaults;
 @Component
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class CustomJwtDecoder implements JwtDecoder {
+public class phần CustomJwtDecoder implements JwtDecoder {
     @Value("${jwt.signerKey}")
     private String SIGNER_KEY;
 
@@ -34,6 +34,11 @@ public class CustomJwtDecoder implements JwtDecoder {
                     .build();
         }
 
-        return nimbusJwtDecoder.decode(token);
+        Jwt jwt = nimbusJwtDecoder.decode(token);
+        // Refresh tokens must only be accepted by /auth/refresh, never as API bearer tokens.
+        if ("refresh".equals(jwt.getClaimAsString("typ"))) {
+            throw new JwtException("Refresh token cannot be used as access token");
+        }
+        return jwt;
     }
 }
