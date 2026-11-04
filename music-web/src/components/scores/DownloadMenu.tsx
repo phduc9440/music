@@ -1,15 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
-import { downloadFile } from '../../services';
+import { downloadFile, downloadScoreExport } from '../../services';
 import type { ScoreFileInfo } from '../../types';
 import { DOWNLOAD_FORMATS } from '../../utils/score';
 
 /**
  * Menu "Tải xuống" của trang chi tiết: liệt kê MusicXML, MIDI, Kern, MP3, WAV, PDF, SVG.
  * Định dạng đã có file thì tải được ngay, chưa có thì hiện "Tạo file" (làm ở nhánh export, mục 1.28–1.30).
+ * MusicXML và MIDI tải qua API riêng của bản nhạc để luôn nhận bản mới nhất (MIDI cũ sẽ được BE tạo lại).
  */
-export default function DownloadMenu({ files }: { files: ScoreFileInfo[] }) {
+export default function DownloadMenu({ scoreId, files }: { scoreId: string; files: ScoreFileInfo[] }) {
   const [open, setOpen] = useState(false);
+  const [busyType, setBusyType] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   // Bấm ra ngoài hoặc nhấn Esc thì đóng menu
@@ -27,10 +29,18 @@ export default function DownloadMenu({ files }: { files: ScoreFileInfo[] }) {
 
   const handleDownload = async (file: ScoreFileInfo) => {
     setOpen(false);
+    const fileName = file.originalFileName || `${file.fileType}-${file.id}`;
     try {
-      await downloadFile(file.downloadUrl, file.originalFileName || `${file.fileType}-${file.id}`);
+      if (file.fileType === 'MUSICXML' || file.fileType === 'MIDI') {
+        setBusyType(file.fileType);
+        await downloadScoreExport(scoreId, file.fileType === 'MIDI' ? 'midi' : 'musicxml', fileName);
+      } else {
+        await downloadFile(file.downloadUrl, fileName);
+      }
     } catch {
       toast.error('Không tải được file');
+    } finally {
+      setBusyType(null);
     }
   };
 
@@ -46,9 +56,16 @@ export default function DownloadMenu({ files }: { files: ScoreFileInfo[] }) {
             return (
               <li key={fileType} role="none">
                 {file ? (
-                  <button role="menuitem" className="sc-menu__item" onClick={() => handleDownload(file)}>
+                  <button
+                    role="menuitem"
+                    className="sc-menu__item"
+                    disabled={busyType !== null}
+                    onClick={() => handleDownload(file)}
+                  >
                     <span>{label}</span>
-                    <span className="sc-menu__hint">Tải về</span>
+                    <span className="sc-menu__hint">
+                      {busyType === fileType ? (fileType === 'MIDI' ? 'Đang tạo MIDI...' : 'Đang tải...') : 'Tải về'}
+                    </span>
                   </button>
                 ) : (
                   // TODO(feature/export-*): gọi API tạo file (MuseScore CLI) rồi tải về

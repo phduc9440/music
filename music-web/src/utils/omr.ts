@@ -17,13 +17,13 @@ export interface OmrStepDef {
   available: boolean;
 }
 
-/** 5 bước của quy trình số hóa (đặc tả mục 2.2). Hiện 4 bước đầu chạy thật; xuất MusicXML/MIDI sẽ có ở bản sau. */
+/** 5 bước của quy trình số hóa (đặc tả mục 2.2), cả 5 bước đều chạy thật. */
 export const OMR_STEPS: OmrStepDef[] = [
   { key: 'SPLIT_PDF', label: 'Tách trang PDF', available: true },
   { key: 'PREPROCESS', label: 'Tiền xử lý ảnh', available: true },
   { key: 'INFERENCE', label: 'Nhận diện ký hiệu', available: true },
   { key: 'MERGE', label: 'Ghép các trang', available: true },
-  { key: 'EXPORT', label: 'Xuất MusicXML và MIDI', available: false },
+  { key: 'EXPORT', label: 'Xuất MusicXML và MIDI', available: true },
 ];
 
 export type StepState = 'done' | 'active' | 'pending' | 'failed' | 'skipped' | 'later';
@@ -36,10 +36,13 @@ export const isTerminalStatus = (status: TaskStatus): boolean =>
 export const pickLatestOmrTask = (tasks: AiTaskInfo[]): AiTaskInfo | undefined =>
   tasks.find((t) => t.taskType === OMR_TASK_TYPE);
 
-/** Quy trình dừng trước bước ghép (resultData.stoppedAfter là PREPROCESS...); dừng sau MERGE là bình thường ở bản này. */
+/**
+ * Quy trình dừng sớm theo cấu hình (resultData.stoppedAfter là PREPROCESS hoặc MERGE).
+ * Chạy đủ các bước thì BE không ghi stoppedAfter (hoặc ghi EXPORT), khi đó không phải dừng sớm.
+ */
 export const stoppedEarly = (task: AiTaskInfo): boolean => {
   const stoppedAfter = task.resultData?.stoppedAfter;
-  return typeof stoppedAfter === 'string' && stoppedAfter.length > 0 && stoppedAfter !== 'MERGE';
+  return typeof stoppedAfter === 'string' && stoppedAfter.length > 0 && stoppedAfter !== 'EXPORT';
 };
 
 /**
@@ -126,6 +129,10 @@ const TASK_ERROR_TEXTS: Record<string, ErrorText> = {
   KERN_PARSE_ERROR: {
     title: 'Kết quả nhận diện bị lỗi cú pháp',
     hint: 'Bản kern sau khi ghép không đọc được. Bạn có thể xem bản kern để gỡ lỗi hoặc thử lại.',
+  },
+  EXPORT_ERROR: {
+    title: 'Không xuất được MusicXML',
+    hint: 'Đã nhận diện xong nhưng không chuyển được sang MusicXML hoặc MIDI. Bạn có thể nhận diện lại hoặc dùng ảnh rõ hơn.',
   },
   MODEL_NOT_LOADED: {
     title: 'Mô hình nhận diện chưa sẵn sàng',
