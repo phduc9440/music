@@ -18,7 +18,7 @@ export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
 };
 
 export const SOURCE_LABELS: Record<ScoreSource, string> = {
-  OMR: 'Quét từ ảnh',
+  OMR: 'Số hóa từ file',
   IMPORT: 'Nhập file',
   MANUAL: 'Tự soạn',
 };

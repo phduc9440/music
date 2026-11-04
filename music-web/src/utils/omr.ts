@@ -6,9 +6,6 @@ export const OMR_TASK_TYPE = 'OMR_CONVERSION';
 /** Chu kỳ hỏi tiến độ trên trang xử lý (đặc tả mục 2.4: 2 giây). */
 export const PROCESSING_POLL_MS = 2000;
 
-/** Sau khi xong, chờ bấy nhiêu ms rồi tự chuyển sang trang bản nhạc. */
-export const AUTO_OPEN_DELAY_MS = 2000;
-
 /** Nhãn dòng chữ phụ của bước chưa được hỗ trợ ở bản hiện tại. */
 export const STEP_LATER_HINT = 'Sẽ có ở bản sau';
 

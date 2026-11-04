@@ -8,7 +8,6 @@ import ProcessingSteps from '../../components/scores/ProcessingSteps';
 import { omrApi, scoreApi, taskApi } from '../../services';
 import type { AiTaskInfo, ScoreDetail as ScoreDetailData, ScoreFileInfo } from '../../types';
 import {
-  AUTO_OPEN_DELAY_MS,
   PROCESSING_POLL_MS,
   computeStepStates,
   describeTaskError,
@@ -17,7 +16,7 @@ import {
   pickLatestOmrTask,
   stoppedEarly,
 } from '../../utils/omr';
-import { OMR_SOURCE_LABELS, getErrorMessage, getHttpStatus, getUploadErrorMessage } from '../../utils/score';
+import { getErrorMessage, getHttpStatus, getUploadErrorMessage } from '../../utils/score';
 import '../../components/scores/scores.css';
 import './ScoreLibrary.css';
 import './ScoreProcessing.css';
@@ -116,13 +115,7 @@ export default function ScoreProcessing() {
     };
   }, [id, taskId, running]);
 
-  // Xong thì chờ 2 giây rồi mở trang bản nhạc (tạm thời; trang duyệt kết quả sẽ có ở nhánh sau)
   const completed = task?.status === 'COMPLETED';
-  useEffect(() => {
-    if (!id || !completed || compare) return;
-    const t = setTimeout(() => navigate(`/scores/${id}`, { replace: true }), AUTO_OPEN_DELAY_MS);
-    return () => clearTimeout(t);
-  }, [id, completed, compare, navigate]);
 
   const usesPdf = useMemo(() => !!score?.files.some((f) => f.fileType === 'ORIGINAL_PDF'), [score]);
   const originalImages = useMemo(() => score?.files.filter((f) => f.fileType === 'ORIGINAL_IMAGE') ?? [], [score]);
@@ -233,7 +226,7 @@ export default function ScoreProcessing() {
   const stepStates = computeStepStates(task, usesPdf);
   const warnings = getTaskWarnings(task);
   const error = failed ? describeTaskError(task) : null;
-  const sourceLabel = score.sourceType ? OMR_SOURCE_LABELS[score.sourceType as keyof typeof OMR_SOURCE_LABELS] : '';
+  const sourceLabel = usesPdf ? 'File PDF' : 'Ảnh chụp hoặc scan';
 
   let headline = 'Đang xử lý ảnh...';
   if (completed) headline = 'Số hóa xong';
@@ -288,8 +281,8 @@ export default function ScoreProcessing() {
           {completed && (
             <p className="sp-note">
               {stoppedEarly(task)
-                ? 'Ảnh các trang đã được làm sạch. Bước nhận diện ký hiệu sẽ có ở bản sau. Đang mở bản nhạc...'
-                : 'Đang mở bản nhạc...'}
+                ? 'Ảnh các trang đã được làm sạch. Bước nhận diện ký hiệu sẽ có ở bản sau.'
+                : 'Bấm "Mở bản nhạc" để xem kết quả.'}
             </p>
           )}
 
