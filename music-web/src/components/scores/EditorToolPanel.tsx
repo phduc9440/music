@@ -1,3 +1,20 @@
+import type { ReactNode } from 'react';
+import {
+  ToolDelete,
+  ToolDot,
+  ToolEighth,
+  ToolFlat,
+  ToolHalf,
+  ToolNatural,
+  ToolPencil,
+  ToolQuarter,
+  ToolRest,
+  ToolSelect,
+  ToolSharp,
+  ToolSixteenth,
+  ToolWhole,
+} from './ToolIcons';
+
 interface Props {
   /** Chỉ dùng cho Mobile: bảng công cụ đang mở dạng bottom sheet. */
   open: boolean;
@@ -5,7 +22,7 @@ interface Props {
 }
 
 interface ToolDef {
-  icon: string;
+  icon: ReactNode;
   label: string;
 }
 
@@ -21,31 +38,31 @@ const GROUPS: ToolGroup[] = [
     title: 'Chế độ',
     branch: 'editor-pitch / editor-note-input',
     tools: [
-      { icon: '↖', label: 'Chọn' },
-      { icon: '✎', label: 'Nhập nốt' },
+      { icon: <ToolSelect />, label: 'Chọn' },
+      { icon: <ToolPencil />, label: 'Nhập nốt' },
     ],
   },
   {
     title: 'Trường độ',
     branch: 'editor-duration',
     tools: [
-      { icon: '𝅝', label: 'Tròn' },
-      { icon: '𝅗𝅥', label: 'Trắng' },
-      { icon: '♩', label: 'Đen' },
-      { icon: '♪', label: 'Móc đơn' },
-      { icon: '𝅘𝅥𝅯', label: 'Móc kép' },
+      { icon: <ToolWhole />, label: 'Tròn' },
+      { icon: <ToolHalf />, label: 'Trắng' },
+      { icon: <ToolQuarter />, label: 'Đen' },
+      { icon: <ToolEighth />, label: 'Móc đơn' },
+      { icon: <ToolSixteenth />, label: 'Móc kép' },
     ],
   },
   {
     title: 'Ký hiệu',
     branch: 'editor-symbols',
     tools: [
-      { icon: '♯', label: 'Thăng' },
-      { icon: '♭', label: 'Giáng' },
-      { icon: '♮', label: 'Bình' },
-      { icon: '·', label: 'Chấm dôi' },
-      { icon: '𝄽', label: 'Dấu lặng' },
-      { icon: '⌫', label: 'Xóa' },
+      { icon: <ToolSharp />, label: 'Thăng' },
+      { icon: <ToolFlat />, label: 'Giáng' },
+      { icon: <ToolNatural />, label: 'Bình' },
+      { icon: <ToolDot />, label: 'Chấm dôi' },
+      { icon: <ToolRest />, label: 'Dấu lặng' },
+      { icon: <ToolDelete />, label: 'Xóa' },
     ],
   },
 ];
@@ -61,7 +78,8 @@ export default function EditorToolPanel({ open, onClose }: Props) {
       <aside className={`sv-tools${open ? ' is-open' : ''}`} aria-label="Công cụ chỉnh sửa">
         <div className="sv-tools__head">
           <strong>Công cụ chỉnh sửa</strong>
-          <button className="sc-btn sc-btn--sm sv-tools__close" onClick={onClose}>
+          <span className="sv-soon">Sắp có</span>
+          <button className="sc-btn sv-tools__close" onClick={onClose}>
             Đóng
           </button>
         </div>

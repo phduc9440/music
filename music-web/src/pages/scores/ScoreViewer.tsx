@@ -3,14 +3,25 @@ import { useNavigate, useParams } from 'react-router-dom';
 import DownloadMenu from '../../components/scores/DownloadMenu';
 import EditorToolPanel from '../../components/scores/EditorToolPanel';
 import ScoreCanvas from '../../components/scores/ScoreCanvas';
+import ZoomControl from '../../components/scores/ZoomControl';
+import {
+  IconBack,
+  IconEdit,
+  IconExpand,
+  IconPages,
+  IconPlay,
+  IconRedo,
+  IconSave,
+  IconScroll,
+  IconShrink,
+  IconUndo,
+} from '../../components/scores/ViewerIcons';
 import { fetchMusicXml, scoreApi } from '../../services';
 import type { ScoreDetail as ScoreDetailData } from '../../types';
 import { isValidScoreId } from '../../utils/omr';
 import { getHttpStatus } from '../../utils/score';
 import {
   ZOOM_DEFAULT,
-  ZOOM_MAX,
-  ZOOM_MIN,
   ZOOM_STEP,
   clampZoom,
   inspectMusicXml,
@@ -153,7 +164,7 @@ export default function ScoreViewer() {
       action = { label: 'Tải lại', run: () => window.location.reload() };
     }
     return (
-      <div className="sv-root sv-root--center">
+      <div className="sc-page sv-root sv-root--center">
         {phase === 'loading' ? (
           <div className="sv-state" aria-busy="true">
             <span className="sv-spinner" aria-hidden="true" />
@@ -189,90 +200,64 @@ export default function ScoreViewer() {
   ].filter(Boolean);
 
   return (
-    <div className="sv-root" ref={rootRef}>
+    <div className="sc-page sv-root" ref={rootRef}>
       <header className="sv-toolbar">
         <div className="sv-toolbar__left">
-          <button className="sc-btn sc-btn--sm" onClick={goBack} aria-label="Về trang chi tiết">
-            ‹ Chi tiết
+          <button className="sc-btn sv-icon" onClick={goBack} aria-label="Về trang chi tiết" title="Về trang chi tiết">
+            <IconBack />
           </button>
           <div className="sv-title">
             <h1 title={score.title}>{score.title}</h1>
-            <span className="sv-chip">{score.canEdit ? 'Chỉ xem · chưa bật sửa' : 'Chỉ xem'}</span>
+            <p>{score.composer || 'Chưa rõ tác giả'}</p>
           </div>
+          <span className={`sv-badge${score.canEdit ? ' is-soon' : ''}`}>
+            {score.canEdit ? 'Chỉ xem · chưa bật sửa' : 'Chỉ xem'}
+          </span>
         </div>
 
         <div className="sv-toolbar__center">
-          <div className="sv-zoom" role="group" aria-label="Thu phóng">
-            <button
-              className="sv-icon-btn"
-              onClick={() => setZoom(zoom - ZOOM_STEP)}
-              disabled={zoom <= ZOOM_MIN}
-              aria-label="Thu nhỏ"
-              title="Thu nhỏ (-)"
-            >
-              −
-            </button>
-            <input
-              type="range"
-              min={ZOOM_MIN}
-              max={ZOOM_MAX}
-              step={5}
-              value={zoom}
-              onChange={(e) => setZoom(Number(e.target.value))}
-              aria-label="Mức thu phóng"
-            />
-            <button
-              className="sv-icon-btn"
-              onClick={() => setZoom(zoom + ZOOM_STEP)}
-              disabled={zoom >= ZOOM_MAX}
-              aria-label="Phóng to"
-              title="Phóng to (+)"
-            >
-              +
-            </button>
-            <button className="sv-zoom__value" onClick={() => setZoom(ZOOM_DEFAULT)} title="Về 100% (0)">
-              {zoom}%
-            </button>
-          </div>
-
           <div className="sv-segment" role="group" aria-label="Chế độ xem">
             <button aria-pressed={mode === 'page'} onClick={() => setMode('page')}>
-              Trang
+              <IconPages /> Trang
             </button>
             <button aria-pressed={mode === 'scroll'} onClick={() => setMode('scroll')}>
-              Cuộn ngang
+              <IconScroll /> Cuộn ngang
             </button>
           </div>
+          <ZoomControl zoom={zoom} onChange={setZoom} />
         </div>
 
         <div className="sv-toolbar__right">
           {score.canEdit && (
-            <>
-              <button className="sc-btn sc-btn--sm sv-desktop-only" disabled title="Hoàn tác (có ở nhánh editor-pitch)">
-                ↶
+            <div className="sv-group sv-desktop-only">
+              <button className="sc-btn sv-icon" disabled title="Hoàn tác (có ở nhánh editor-pitch)">
+                <IconUndo />
               </button>
-              <button className="sc-btn sc-btn--sm sv-desktop-only" disabled title="Làm lại (có ở nhánh editor-pitch)">
-                ↷
+              <button className="sc-btn sv-icon" disabled title="Làm lại (có ở nhánh editor-pitch)">
+                <IconRedo />
               </button>
-              <button className="sc-btn sc-btn--sm sv-desktop-only" disabled title="Lưu (có ở nhánh editor-pitch)">
-                Lưu
+              <button className="sc-btn" disabled title="Lưu (có ở nhánh editor-pitch)">
+                <IconSave /> Lưu
               </button>
-              <button className="sc-btn sc-btn--sm sv-mobile-only" onClick={() => setToolsOpen(true)}>
-                Sửa
-              </button>
-            </>
+            </div>
           )}
-          <button className="sc-btn sc-btn--sm" disabled title="Trình phát sẽ có ở nhánh playback-basic">
-            ▶ Phát
+          {score.canEdit && (
+            <button className="sc-btn sv-mobile-only" onClick={() => setToolsOpen(true)}>
+              <IconEdit /> Sửa
+            </button>
+          )}
+          <button className="sc-btn sc-btn--primary" disabled title="Trình phát sẽ có ở nhánh playback-basic">
+            <IconPlay /> Phát
           </button>
           <DownloadMenu scoreId={score.id} files={score.files} />
           <button
-            className="sc-btn sc-btn--sm"
+            className="sc-btn sv-icon"
             onClick={toggleFullscreen}
             aria-pressed={fullscreen}
             title={fullscreen ? 'Thoát toàn màn hình (Esc)' : 'Toàn màn hình'}
+            aria-label={fullscreen ? 'Thoát toàn màn hình' : 'Toàn màn hình'}
           >
-            {fullscreen ? '⤡' : '⤢'}
+            {fullscreen ? <IconShrink /> : <IconExpand />}
           </button>
         </div>
       </header>
@@ -286,7 +271,7 @@ export default function ScoreViewer() {
               `Bản nhạc có ${info.staves} khuông (không phải 2) nên sau này không tách được tay trái/phải.`}
           </span>
           {warning && mode === 'page' && (
-            <button className="sc-btn sc-btn--sm" onClick={() => setMode('scroll')}>
+            <button className="sc-btn" onClick={() => setMode('scroll')}>
               Chuyển sang cuộn ngang
             </button>
           )}
@@ -298,20 +283,24 @@ export default function ScoreViewer() {
 
       <div className={`sv-body${score.canEdit ? ' has-tools' : ''}`}>
         {score.canEdit && <EditorToolPanel open={toolsOpen} onClose={() => setToolsOpen(false)} />}
-        <ScoreCanvas
-          xml={xml}
-          zoom={zoom}
-          mode={mode}
-          onZoomChange={setZoom}
-          onRendered={setPageCount}
-          onProgress={setProgress}
-          onError={() => setPhase('parseError')}
-        />
+        <div className="sv-stage">
+          <ScoreCanvas
+            xml={xml}
+            zoom={zoom}
+            mode={mode}
+            onZoomChange={setZoom}
+            onRendered={setPageCount}
+            onProgress={setProgress}
+            onError={() => setPhase('parseError')}
+          />
+          <div className="sv-pos" aria-live="polite">
+            {progressLabel}
+          </div>
+        </div>
       </div>
 
       <footer className="sv-status">
         <span>{summary.join(' · ') || 'Bản nhạc'}</span>
-        <span>{progressLabel}</span>
         <span className="sv-status__hint">Ctrl + cuộn hoặc chụm hai ngón để thu phóng</span>
       </footer>
     </div>
