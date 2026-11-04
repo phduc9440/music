@@ -31,10 +31,12 @@ public class AiServiceProperties {
     private final int connectTimeoutMs;
     private final int readTimeoutMs;
 
+    /** Timeout đọc của các lệnh chuyển đổi đồng bộ (kern/MusicXML/MIDI, đặc tả mục 6.2), tính bằng mili giây. */
+    private final int convertTimeoutMs;
+
     /**
-     * Bước cuối cùng pipeline OMR được chạy: PREPROCESS, MERGE (nhận diện + ghép kern) hoặc EXPORT (đủ MusicXML/MIDI).
-     * Tạm = MERGE cho tới khi có nhánh feature/omr-export-musicxml-midi, khi đó đổi mặc định thành EXPORT.
-     * Biến môi trường: OMR_STOP_AFTER.
+     * Bước cuối cùng pipeline OMR được chạy: PREPROCESS, MERGE (nhận diện + ghép kern) hoặc EXPORT (đủ MusicXML/MIDI,
+     * mặc định). Hai giá trị đầu chỉ dùng để chạy thử từng phần pipeline. Biến môi trường: OMR_STOP_AFTER.
      */
     private final String stopAfter;
 
@@ -55,7 +57,8 @@ public class AiServiceProperties {
             @Value("${app.ai.internal-key:${AI_INTERNAL_KEY:" + DEFAULT_INTERNAL_KEY + "}}") String internalKey,
             @Value("${app.ai.connect-timeout-ms:5000}") int connectTimeoutMs,
             @Value("${app.ai.read-timeout-ms:15000}") int readTimeoutMs,
-            @Value("${omr.stop-after:${OMR_STOP_AFTER:MERGE}}") String stopAfter,
+            @Value("${app.ai.convert-timeout-ms:20000}") int convertTimeoutMs,
+            @Value("${omr.stop-after:${OMR_STOP_AFTER:EXPORT}}") String stopAfter,
             @Value("${app.ai.pending-resend-seconds:30}") int pendingResendSeconds,
             @Value("${app.ai.max-resends:2}") int maxResends,
             @Value("${app.ai.processing-timeout-minutes:10}") int processingTimeoutMinutes,
@@ -64,6 +67,7 @@ public class AiServiceProperties {
         this.internalKey = internalKey;
         this.connectTimeoutMs = connectTimeoutMs;
         this.readTimeoutMs = readTimeoutMs;
+        this.convertTimeoutMs = convertTimeoutMs;
         this.stopAfter = stopAfter.trim().toUpperCase();
         this.pendingResendSeconds = pendingResendSeconds;
         this.maxResends = maxResends;
