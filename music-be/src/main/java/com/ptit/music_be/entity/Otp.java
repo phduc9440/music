@@ -27,6 +27,9 @@ public class Otp {
     @Column(name = "expiry_time", nullable = false)
     LocalDateTime expiryTime;
 
+    @Column(name = "attempts")
+    Integer attempts;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", nullable = false)
     Member member;

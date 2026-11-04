@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.ptit.music_be.dto.enums.AuthProvider;
+import com.ptit.music_be.dto.enums.MemberStatus;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.MemberRole;
 import com.ptit.music_be.entity.Role;
@@ -49,7 +50,7 @@ public class ApplicationInitConfig {
                 Member admin = Member.builder()
                         .email("admin@music.com")
                         .passwordHash(passwordEncoder.encode("12345678"))
-                        .status("ACTIVE")
+                        .status(MemberStatus.ACTIVE)
                         .emailVerified(true)
                         .authProvider(AuthProvider.LOCAL)
                         .build();

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { authApi, userApi, adminApi } from '../services';
+import { authApi } from '../services';
+import { completeLogin } from '../utils/auth';
 import GoogleAuthButton from '../components/GoogleAuthButton';
 
 type ViewMode = 'login' | 'register' | 'forgot' | 'reset';
@@ -10,7 +11,6 @@ export default function Login() {
   const [viewMode, setViewMode] = useState<ViewMode>('login');
 
   // Form State
-  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
   const [fullName, setFullName] = useState('');
@@ -26,26 +26,12 @@ export default function Login() {
 
     try {
       if (viewMode === 'login') {
-        const response = await authApi.login({ username, password });
-        localStorage.setItem('token', response.data.result.token);
-
-        try {
-          await userApi.getMe();
-          localStorage.setItem('role', 'USER');
-          toast.success('Login successful!');
-          navigate('/profile');
-        } catch (err) {
-          try {
-            await adminApi.getMe();
-            localStorage.setItem('role', 'ADMIN');
-            toast.success('Login successful!');
-            navigate('/admin');
-          } catch (err2) {
-            toast.error('Could not fetch user/admin profile.');
-          }
-        }
+        const response = await authApi.login({ username: email, password });
+        const target = await completeLogin(response.data.result);
+        toast.success('Login successful!');
+        navigate(target);
       } else if (viewMode === 'register') {
-        await authApi.register({ username, password, email, fullName });
+        await authApi.register({ password, email, fullName });
         toast.success('Registration successful! Please login.');
         setViewMode('login');
       } else if (viewMode === 'forgot') {
@@ -61,7 +47,7 @@ export default function Login() {
         setNewPassword('');
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Something went wrong');
+      toast.error(error.response?.data?.message || error.message || 'Something went wrong');
     } finally {
       setIsLoading(false);
     }
@@ -91,22 +77,20 @@ export default function Login() {
         <p>{getTitle()}</p>
 
         <form onSubmit={handleSubmit}>
-          {/* Email (Used in Register, Forgot, Reset) */}
-          {viewMode !== 'login' && (
-            <div className="form-group">
-              <label htmlFor="email">Email</label>
-              <input
-                type="email"
-                id="email"
-                className="form-control"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={viewMode === 'reset' && email !== ''}
-              />
-            </div>
-          )}
+          {/* Email (also the login identifier) */}
+          <div className="form-group">
+            <label htmlFor="email">Email</label>
+            <input
+              type="email"
+              id="email"
+              className="form-control"
+              placeholder="Enter your email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              disabled={viewMode === 'reset' && email !== ''}
+            />
+          </div>
 
           {/* Full Name (Used only in Register) */}
           {viewMode === 'register' && (
@@ -124,22 +108,6 @@ export default function Login() {
             </div>
           )}
 
-          {/* Username (Used in Login, Register) */}
-          {(viewMode === 'login' || viewMode === 'register') && (
-            <div className="form-group">
-              <label htmlFor="username">Username</label>
-              <input
-                type="text"
-                id="username"
-                className="form-control"
-                placeholder="Enter username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-              />
-            </div>
-          )}
-
           {/* Password (Used in Login, Register) */}
           {(viewMode === 'login' || viewMode === 'register') && (
             <div className="form-group">
@@ -152,6 +120,7 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                minLength={viewMode === 'register' ? 6 : undefined}
               />
             </div>
           )}

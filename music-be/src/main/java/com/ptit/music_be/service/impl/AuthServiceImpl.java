@@ -2,6 +2,9 @@ package com.ptit.music_be.service.impl;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.SecureRandom;
 import java.text.ParseException;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -25,6 +28,7 @@ import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.ptit.music_be.dto.enums.AuthProvider;
+import com.ptit.music_be.dto.enums.MemberStatus;
 import com.ptit.music_be.dto.request.*;
 import com.ptit.music_be.dto.response.AuthResponse;
 import com.ptit.music_be.dto.response.MemberResponse;
@@ -62,6 +66,12 @@ public class AuthServiceImpl implements AuthService {
     EmailService emailService;
     OtpRepository otpRepository;
 
+    static final SecureRandom RANDOM = new SecureRandom();
+    static final int MAX_OTP_ATTEMPTS = 5;
+    static final String TOKEN_TYPE_CLAIM = "typ";
+    static final String TYPE_ACCESS = "access";
+    static final String TYPE_REFRESH = "refresh";
+
     @NonFinal
     @Value("${jwt.signerKey}")
     String signerKey;
@@ -89,9 +99,13 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public MemberResponse register(RegisterRequest request) {
-        String email = request.getEmail() != null && !request.getEmail().isBlank()
-                ? request.getEmail()
-                : request.getUsername();
+        String email = (request.getEmail() != null && !request.getEmail().isBlank()
+                        ? request.getEmail()
+                        : request.getUsername());
+        if (email == null || email.isBlank() || !email.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
+            throw new AppException(ErrorCode.INVALID_CREDENTIALS);
+        }
+        email = email.trim().toLowerCase();
 
         if (memberRepository.existsByEmail(email)) {
             throw new AppException(ErrorCode.USER_EXISTED);
@@ -102,8 +116,11 @@ public class AuthServiceImpl implements AuthService {
 
         Member user = Member.builder()
                 .email(email)
+                .fullName(blankToNull(request.getFullName()))
+                .phone(blankToNull(request.getPhone()))
+                .address(blankToNull(request.getAddress()))
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
-                .status("ACTIVE")
+                .status(MemberStatus.ACTIVE)
                 .emailVerified(false)
                 .authProvider(AuthProvider.LOCAL)
                 .build();
@@ -132,7 +149,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AuthResponse login(LoginRequest request) {
         Member user = memberRepository
-                .findByEmail(request.getUsername())
+                .findByEmail(request.getUsername().trim().toLowerCase())
                 .orElseThrow(() -> new AppException(ErrorCode.INVALID_CREDENTIALS));
 
         if (user.getPasswordHash() == null
@@ -140,12 +157,25 @@ public class AuthServiceImpl implements AuthService {
             throw new AppException(ErrorCode.INVALID_CREDENTIALS);
         }
 
-        String token = generateToken(user, validDuration);
-        String refreshToken = generateToken(user, refreshableDuration);
+        assertActive(user);
 
+        return issueTokens(user);
+    }
+
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private void assertActive(Member user) {
+        if (user.getStatus() != null && user.getStatus() != MemberStatus.ACTIVE) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+    }
+
+    private AuthResponse issueTokens(Member user) {
         return AuthResponse.builder()
-                .token(token)
-                .refreshToken(refreshToken)
+                .token(generateToken(user, validDuration, TYPE_ACCESS))
+                .refreshToken(generateToken(user, refreshableDuration, TYPE_REFRESH))
                 .authenticated(true)
                 .build();
     }
@@ -165,6 +195,9 @@ public class AuthServiceImpl implements AuthService {
             }
 
             GoogleIdToken.Payload payload = idTokenObj.getPayload();
+            if (!Boolean.TRUE.equals(payload.getEmailVerified())) {
+                throw new AppException(ErrorCode.UNAUTHENTICATED);
+            }
             String email = payload.getEmail();
             String name = (String) payload.get("name");
 
@@ -176,7 +209,8 @@ public class AuthServiceImpl implements AuthService {
 
                 user = Member.builder()
                         .email(email)
-                        .status("ACTIVE")
+                        .fullName(blankToNull(name))
+                        .status(MemberStatus.ACTIVE)
                         .emailVerified(true)
                         .authProvider(AuthProvider.GOOGLE)
                         .build();
@@ -197,14 +231,9 @@ public class AuthServiceImpl implements AuthService {
                 }
             }
 
-            String token = generateToken(user, validDuration);
-            String refreshToken = generateToken(user, refreshableDuration);
+            assertActive(user);
 
-            return AuthResponse.builder()
-                .token(token)
-                .refreshToken(refreshToken)
-                .authenticated(true)
-                .build();
+            return issueTokens(user);
 
         } catch (GeneralSecurityException | IOException e) {
             log.error("Google token verification failed", e);
@@ -212,7 +241,7 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
-    private String generateToken(Member user, long durationHours) {
+    private String generateToken(Member user, long durationHours, String type) {
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
 
         JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
@@ -223,6 +252,7 @@ public class AuthServiceImpl implements AuthService {
                         Instant.now().plus(durationHours, ChronoUnit.HOURS).toEpochMilli()))
                 .jwtID(UUID.randomUUID().toString())
                 .claim("scope", buildScope(user))
+                .claim(TOKEN_TYPE_CLAIM, type)
                 .build();
 
         SignedJWT signedJWT = new SignedJWT(header, claimsSet);
@@ -242,20 +272,18 @@ public class AuthServiceImpl implements AuthService {
     public AuthResponse refreshToken(RefreshRequest request) {
         try {
             SignedJWT signedJWT = verifyToken(request.getRefreshToken());
+            if (!TYPE_REFRESH.equals(signedJWT.getJWTClaimsSet().getStringClaim(TOKEN_TYPE_CLAIM))) {
+                throw new AppException(ErrorCode.UNAUTHENTICATED);
+            }
             String email = signedJWT.getJWTClaimsSet().getSubject();
 
             Member user = memberRepository
                     .findByEmail(email)
                     .orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
 
-            String token = generateToken(user, validDuration);
-            String refreshToken = generateToken(user, refreshableDuration);
+            assertActive(user);
 
-            return AuthResponse.builder()
-                    .token(token)
-                    .refreshToken(refreshToken)
-                    .authenticated(true)
-                    .build();
+            return issueTokens(user);
         } catch (ParseException | JOSEException | AppException e) {
             log.error("Token refresh failed", e);
             throw new AppException(ErrorCode.UNAUTHENTICATED);
@@ -310,15 +338,13 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void forgotPassword(ForgotPasswordRequest request) {
-        Member user = memberRepository
-                .findByEmail(request.getEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
-
-        if (AuthProvider.GOOGLE.equals(user.getAuthProvider())) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+        // Always respond the same way to avoid leaking which emails are registered.
+        Member user = memberRepository.findByEmail(request.getEmail().trim().toLowerCase()).orElse(null);
+        if (user == null || AuthProvider.GOOGLE.equals(user.getAuthProvider())) {
+            return;
         }
 
-        String otpCode = String.format("%06d", new Random().nextInt(999999));
+        String otpCode = String.format("%06d", RANDOM.nextInt(1_000_000));
 
         otpRepository.deleteByMember(user); // Xóa các OTP cũ nếu có
 
@@ -333,17 +359,25 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    @Transactional
+    @Transactional(noRollbackFor = AppException.class)
     public void resetPassword(ResetPasswordRequest request) {
         Member user = memberRepository
-                .findByEmail(request.getEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
-
-        Otp otp = otpRepository
-                .findByMemberAndOtpCode(user, request.getOtp())
+                .findByEmail(request.getEmail().trim().toLowerCase())
                 .orElseThrow(() -> new AppException(ErrorCode.INVALID_CREDENTIALS));
 
-        if (otp.getExpiryTime().isBefore(LocalDateTime.now())) {
+        Otp otp = otpRepository.findByMember(user).orElseThrow(() -> new AppException(ErrorCode.INVALID_CREDENTIALS));
+
+        int attempts = otp.getAttempts() == null ? 0 : otp.getAttempts();
+        if (otp.getExpiryTime().isBefore(LocalDateTime.now()) || attempts >= MAX_OTP_ATTEMPTS) {
+            otpRepository.delete(otp);
+            throw new AppException(ErrorCode.INVALID_CREDENTIALS);
+        }
+
+        if (!MessageDigest.isEqual(
+                otp.getOtpCode().getBytes(StandardCharsets.UTF_8),
+                request.getOtp().getBytes(StandardCharsets.UTF_8))) {
+            otp.setAttempts(attempts + 1);
+            otpRepository.save(otp);
             throw new AppException(ErrorCode.INVALID_CREDENTIALS);
         }
 

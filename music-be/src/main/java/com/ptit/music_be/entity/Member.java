@@ -5,7 +5,10 @@ import java.util.List;
 
 import jakarta.persistence.*;
 
+import com.ptit.music_be.converter.AuthProviderConverter;
+import com.ptit.music_be.converter.MemberStatusConverter;
 import com.ptit.music_be.dto.enums.AuthProvider;
+import com.ptit.music_be.dto.enums.MemberStatus;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -30,13 +33,22 @@ public class Member {
     @Column(name = "password_hash")
     String passwordHash;
 
+    @Column(name = "full_name")
+    String fullName;
+
+    @Column(length = 30)
+    String phone;
+
+    String address;
+
+    @Convert(converter = MemberStatusConverter.class)
     @Column(name = "status")
-    String status;
+    MemberStatus status;
 
     @Column(name = "email_verified")
     Boolean emailVerified;
 
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = AuthProviderConverter.class)
     @Column(name = "auth_provider")
     AuthProvider authProvider;
 

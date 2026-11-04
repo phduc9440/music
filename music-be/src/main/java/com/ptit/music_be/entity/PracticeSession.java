@@ -4,6 +4,9 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.*;
 
+import com.ptit.music_be.converter.PracticeModeConverter;
+import com.ptit.music_be.dto.enums.PracticeMode;
+
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -29,8 +32,9 @@ public class PracticeSession {
     @JoinColumn(name = "score_id", nullable = false)
     Score score;
 
+    @Convert(converter = PracticeModeConverter.class)
     @Column(name = "mode")
-    String mode;
+    PracticeMode mode;
 
     @Column(name = "tempo_percent")
     Double tempoPercent;
