@@ -241,6 +241,7 @@ export default function ScoreProcessing() {
   else if (task.step === 'PREPROCESS') headline = 'Đang làm sạch và căn thẳng ảnh...';
   else if (task.step === 'INFERENCE') headline = 'Đang nhận diện ký hiệu nhạc...';
   else if (task.step === 'MERGE') headline = 'Đang ghép các trang...';
+  else if (task.step === 'EXPORT') headline = 'Đang xuất MusicXML và MIDI...';
 
   const activeNote =
     task.step === 'PREPROCESS' && totalPages > 0
@@ -289,7 +290,7 @@ export default function ScoreProcessing() {
             <p className="sp-note">
               {stoppedEarly(task)
                 ? 'Quy trình đã dừng sớm theo cấu hình. Bấm "Xem kết quả" để xem phần đã có.'
-                : 'Đã nhận diện và ghép các trang. Bấm "Xem kết quả" để kiểm tra.'}
+                : 'Đã nhận diện và xuất MusicXML, MIDI. Bấm "Xem kết quả" để xem bản nhạc.'}
             </p>
           )}
 

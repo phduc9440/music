@@ -129,3 +129,23 @@ button.sr-warning:focus-visible {
     position: static;
   }
 }
+
+.sr-score-page {
+  margin-bottom: 1rem;
+}
+.sr-score-page__label {
+  margin-bottom: 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--sc-muted);
+}
+.sr-score {
+  padding: 0.5rem;
+  overflow-x: auto;
+  border: 1px solid var(--sc-line);
+  border-radius: 10px;
+  background: #fff;
+}
+.sr-score__host {
+  min-width: 0;
+}

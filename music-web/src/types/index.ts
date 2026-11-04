@@ -197,7 +197,10 @@ export interface OmrResult {
   warnings: string[];
   /** Bước cuối đã chạy nếu task dừng sớm (MERGE, PREPROCESS...), null nếu chạy đủ. */
   stoppedAfter?: string | null;
-  pages: { pageNumber: number; imageFileId: string }[];
+  /** Phiên bản MusicXML hiện hành (BE: scores.current_version). */
+  musicXmlVersion?: number | null;
+  /** Mỗi trang kèm khoảng ô nhịp (đánh số từ 1) để vẽ đúng phần của trang đó từ MusicXML. */
+  pages: { pageNumber: number; imageFileId: string; firstMeasure?: number | null; lastMeasure?: number | null }[];
   kernFileId?: string | null;
   musicXmlFileId?: string | null;
   midiFileId?: string | null;

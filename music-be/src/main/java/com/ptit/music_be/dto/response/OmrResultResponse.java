@@ -41,6 +41,9 @@ public class OmrResultResponse {
     String musicXmlFileId;
     String midiFileId;
 
+    /** Version của MusicXML hiện hành (ETag "v{n}" của GET /musicxml), null nếu chưa có MusicXML. */
+    Integer musicXmlVersion;
+
     /** Một trang đã tiền xử lý. */
     @Data
     @Builder
@@ -50,5 +53,13 @@ public class OmrResultResponse {
     public static class Page {
         Integer pageNumber;
         String imageFileId;
+
+        /**
+         * Số ô nhịp đầu và cuối của trang trong MusicXML (đánh số liên tục từ 1), để vẽ đúng phần nhạc của trang bên
+         * cạnh ảnh gốc. Null nếu music-ai chưa báo (ví dụ task dừng trước bước xuất).
+         */
+        Integer firstMeasure;
+
+        Integer lastMeasure;
     }
 }

@@ -34,7 +34,7 @@ def test_valid_job_request(storage_root):
         inputs=[{"path": "scores/s1/original/01-a.pdf", "kind": "PDF"}],
         options={"preprocess": True},
     )
-    assert job.options.binarize is True and job.options.stopAfter == "MERGE"
+    assert job.options.binarize is True and job.options.stopAfter == "EXPORT" and job.options.musicXmlVersion == 1
 
 
 @pytest.mark.parametrize(

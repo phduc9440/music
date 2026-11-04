@@ -11,7 +11,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from app.storage import resolve_existing_file
+from app.storage import resolve, resolve_existing_file
 
 
 class JobInput(BaseModel):
@@ -41,9 +41,13 @@ class JobOptions(BaseModel):
     sourceType: Literal["PHOTO", "SCAN", "PDF_NATIVE"] = "PHOTO"
     """Loại nguồn: quyết định cách khử nhiễu (ảnh chụp cần mạnh hơn bản scan; PDF gốc không cần)."""
 
-    stopAfter: str = "MERGE"
-    """Bước cuối cùng được chạy: PREPROCESS (chỉ tiền xử lý) hoặc MERGE (nhận diện + ghép kern). EXPORT chưa có nên được
-    hiểu là MERGE."""
+    stopAfter: str = "EXPORT"
+    """Bước cuối cùng được chạy: PREPROCESS (chỉ tiền xử lý), MERGE (thêm nhận diện + ghép kern) hoặc EXPORT (thêm xuất
+    MusicXML và MIDI, mặc định)."""
+
+    musicXmlVersion: int = Field(default=1, ge=1, le=100000)
+    """Version của bản MusicXML lần chạy này tạo ra (``musicxml/v{n}.musicxml``, ``midi/v{n}.mid``). Java gửi
+    ``scores.current_version + 1`` nên nhận diện lại sinh bản mới mà không ghi đè bản cũ (đặc tả mục 2.3)."""
 
 
 class JobRequest(BaseModel):
@@ -71,4 +75,77 @@ class JobRequest(BaseModel):
         pages = [item.page for item in self.inputs if item.page is not None]
         if len(pages) != len(set(pages)):
             raise ValueError("Số trang của các ảnh không được trùng nhau")
+        return self
+
+
+# ====================================================================== /convert/** (đặc tả mục 6.2)
+
+
+def _score_dir(path: str) -> str:
+    """``scores/{scoreId}`` của một đường dẫn trong storage, hoặc ném ValueError nếu không nằm trong ``scores/``."""
+    parts = path.strip().replace("\\", "/").split("/")
+    if len(parts) < 3 or parts[0] != "scores" or not parts[1]:
+        raise ValueError(f"Đường dẫn {path!r} phải có dạng scores/{{scoreId}}/...")
+    return "/".join(parts[:2])
+
+
+def _safe_output_path(value: str, suffix: str) -> str:
+    """Đường dẫn đầu ra: tương đối, an toàn, nằm trong ``scores/{scoreId}/`` và đúng đuôi file."""
+    resolve(value)  # ném ValueError nếu rỗng, tuyệt đối, chứa ".." hoặc thoát khỏi storage
+    _score_dir(value)
+    if not value.lower().endswith(suffix):
+        raise ValueError(f"File đầu ra phải có đuôi {suffix}")
+    return value.strip().replace("\\", "/")
+
+
+class KernToMusicXmlRequest(BaseModel):
+    """Body của ``POST /convert/kern-to-musicxml``."""
+
+    kernPath: str
+    outPath: str
+    tempoBpm: Optional[int] = Field(default=None, ge=20, le=400)
+    """Tempo ghi vào ô nhịp 1; bỏ trống thì giữ tempo trong kern, không có thì 100."""
+
+    @field_validator("kernPath")
+    @classmethod
+    def _kern_must_exist(cls, value: str) -> str:
+        resolve_existing_file(value)
+        _score_dir(value)
+        return value.strip().replace("\\", "/")
+
+    @field_validator("outPath")
+    @classmethod
+    def _out_must_be_musicxml(cls, value: str) -> str:
+        return _safe_output_path(value, ".musicxml")
+
+    @model_validator(mode="after")
+    def _same_score(self) -> "KernToMusicXmlRequest":
+        if _score_dir(self.kernPath) != _score_dir(self.outPath):
+            raise ValueError("kernPath và outPath phải thuộc cùng một bản nhạc")
+        return self
+
+
+class MusicXmlToMidiRequest(BaseModel):
+    """Body của ``POST /convert/musicxml-to-midi``."""
+
+    musicXmlPath: str
+    outPath: str
+    tempoBpm: int = Field(default=100, ge=20, le=400)
+
+    @field_validator("musicXmlPath")
+    @classmethod
+    def _xml_must_exist(cls, value: str) -> str:
+        resolve_existing_file(value)
+        _score_dir(value)
+        return value.strip().replace("\\", "/")
+
+    @field_validator("outPath")
+    @classmethod
+    def _out_must_be_midi(cls, value: str) -> str:
+        return _safe_output_path(value, ".mid")
+
+    @model_validator(mode="after")
+    def _same_score(self) -> "MusicXmlToMidiRequest":
+        if _score_dir(self.musicXmlPath) != _score_dir(self.outPath):
+            raise ValueError("musicXmlPath và outPath phải thuộc cùng một bản nhạc")
         return self

@@ -21,15 +21,15 @@ public interface InternalAiTaskService {
     void updateProgress(String taskId, AiTaskProgressRequest request);
 
     /**
-     * Ghi một file kết quả (ví dụ PNG trang đã tiền xử lý) vào score_files. storagePath phải nằm trong
+     * Ghi một file kết quả (PNG trang, KERN, MUSICXML, MIDI) vào score_files. storagePath phải nằm trong
      * {@code scores/{scoreId}/} và file phải có trên đĩa; ghi lại cùng đường dẫn thì cập nhật dòng cũ.
      */
     void addFile(String taskId, AiTaskFileRequest request);
 
     /**
      * Đánh dấu COMPLETED, tiến độ 100, ghi result_data và cập nhật metadata của Score.
-     * Hiện omr.stop-after=MERGE nên dừng sau khi ghép kern vẫn coi là xong (chưa có MusicXML).
-     * TODO(feature/omr-export-musicxml-midi): khi có bước xuất, chỉ đặt Score COMPLETED nếu đã có MUSICXML hiện hành.
+     * Khi omr.stop-after=EXPORT (mặc định) mà task chưa đăng ký MusicXML nào thì chuyển FAILED EXPORT_ERROR thay vì
+     * COMPLETED. Đồng bộ scores.current_version theo MusicXML hiện hành.
      */
     void complete(String taskId, AiTaskCompleteRequest request);
 

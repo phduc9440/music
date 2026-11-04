@@ -78,7 +78,7 @@ export default function ScoreHero({ score, onEdit, onDelete }: Props) {
           <button className="sc-btn" disabled title="Trình phát sẽ có ở nhánh playback-basic">
             ▶ Phát
           </button>
-          <DownloadMenu files={score.files} />
+          <DownloadMenu scoreId={score.id} files={score.files} />
           {score.canEdit && (
             <button className="sc-btn" onClick={onEdit}>
               Sửa thông tin

@@ -98,6 +98,35 @@ export const fetchKern = async (scoreId: string): Promise<string> => {
   return response.data;
 };
 
+/** Chuỗi MusicXML hiện hành của bản nhạc (application/vnd.recordare.musicxml+xml). */
+export const fetchMusicXml = async (scoreId: string): Promise<string> => {
+  const response = await apiClient.get<string>(`/scores/${scoreId}/musicxml`, {
+    responseType: 'text',
+    transformResponse: (data) => data, // giữ nguyên chuỗi XML, không để axios thử parse JSON
+  });
+  return response.data;
+};
+
+/**
+ * Tải MusicXML hoặc MIDI của bản nhạc về máy. MIDI cũ hơn MusicXML thì BE tự tạo lại trước khi trả về
+ * (có thể mất vài giây).
+ */
+export const downloadScoreExport = async (
+  scoreId: string,
+  kind: 'musicxml' | 'midi',
+  fileName: string,
+): Promise<void> => {
+  const response = await apiClient.get<Blob>(`/scores/${scoreId}/${kind}`, { responseType: 'blob', timeout: 60000 });
+  const objectUrl = URL.createObjectURL(response.data);
+  const a = document.createElement('a');
+  a.href = objectUrl;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(objectUrl);
+};
+
 export const omrApi = {
   // Upload 1 PDF hoặc 1–20 ảnh (đúng thứ tự trang) để tạo bản nhạc và tác vụ OMR
   upload: (data: OmrUploadRequest, onProgress?: (percent: number) => void) => {

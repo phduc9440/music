@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -285,16 +286,32 @@ public class OmrServiceImpl implements OmrService {
                 .findFirst()
                 .orElseThrow(() -> new AppException(ErrorCode.AI_TASK_NOT_EXISTED));
 
-        List<OmrResultResponse.Page> pages =
-                scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(scoreId, FileType.PNG).stream()
-                        .map(f -> OmrResultResponse.Page.builder()
-                                .pageNumber(f.getPageNumber())
-                                .imageFileId(f.getId())
-                                .build())
-                        .toList();
-
         // result_data do music-ai ghi; thiếu hoặc hỏng thì coi như rỗng (task chưa xong hoặc đã lỗi)
         JsonNode data = parseJson(task.getResultData());
+
+        // result_data.pageMeasures = [{page, firstMeasure, lastMeasure}] do bước EXPORT ghi (đặc tả mục 2.3, ý 2)
+        Map<Integer, JsonNode> measuresByPage = new HashMap<>();
+        data.path("pageMeasures").forEach(m -> measuresByPage.put(m.path("page").asInt(), m));
+
+        List<OmrResultResponse.Page> pages =
+                scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(scoreId, FileType.PNG).stream()
+                        .map(f -> {
+                            JsonNode range = f.getPageNumber() == null ? null : measuresByPage.get(f.getPageNumber());
+                            return OmrResultResponse.Page.builder()
+                                    .pageNumber(f.getPageNumber())
+                                    .imageFileId(f.getId())
+                                    .firstMeasure(
+                                            range != null && range.hasNonNull("firstMeasure")
+                                                    ? range.get("firstMeasure").asInt()
+                                                    : null)
+                                    .lastMeasure(
+                                            range != null && range.hasNonNull("lastMeasure")
+                                                    ? range.get("lastMeasure").asInt()
+                                                    : null)
+                                    .build();
+                        })
+                        .toList();
+
         List<String> warnings = new ArrayList<>();
         data.path("warnings").forEach(w -> warnings.add(w.asText()));
         int pageCount = data.hasNonNull("pageCount") ? data.get("pageCount").asInt() : pages.size();
@@ -311,7 +328,17 @@ public class OmrServiceImpl implements OmrService {
                 .kernFileId(currentFileId(scoreId, FileType.KERN))
                 .musicXmlFileId(currentFileId(scoreId, FileType.MUSICXML))
                 .midiFileId(currentFileId(scoreId, FileType.MIDI))
+                .musicXmlVersion(currentVersion(scoreId, FileType.MUSICXML))
                 .build();
+    }
+
+    /** Version của file hiện hành thuộc loại cho trước, hoặc null nếu chưa có. */
+    private Integer currentVersion(String scoreId, FileType type) {
+        return scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(scoreId, type).stream()
+                .filter(f -> !Boolean.FALSE.equals(f.getIsCurrent()))
+                .map(f -> f.getVersion() == null ? 1 : f.getVersion())
+                .findFirst()
+                .orElse(null);
     }
 
     /** Id của file hiện hành (is_current không phải false) thuộc loại cho trước, hoặc null nếu chưa có. */
