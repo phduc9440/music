@@ -9,10 +9,19 @@ opencv-python-headless>=4.9
 pillow>=10.2
 pymupdf>=1.24.3
 
+# Nhận diện bằng Transcoda (nhánh feature/omr-recognition)
+torch>=2.2
+transformers>=4.40,<5      # Transcoda không chạy trên transformers v5
+loguru>=0.7                # file modeling_transcoda.py của model import loguru
+torchtune>=0.3             # ... và import torchtune (Transcoda dùng thành phần của nó)
+torchao==0.11.0           # torchtune 0.6 cần torchao.dtypes.nf4tensor, bản mới hơn đã bỏ
+# torchtune kéo bản mới của 3 gói dưới làm transformers 4.x hỏng, nên ghim lại đúng khoảng transformers cần
+huggingface-hub>=0.34,<1.0
+tokenizers>=0.22,<=0.23.0
+datasets<4
+music21>=9.1               # kiểm tra kern đã ghép đọc được (KERN_PARSE_ERROR); nhánh export MusicXML/MIDI cũng dùng
+
 # Chỉ để chạy test
 pytest>=8.0
 
-# --- Nhánh feature/omr-recognition sẽ thêm (CHƯA cần bây giờ, đừng cài) ---
-# torch
-# transformers>=4.40,<5      # Transcoda không chạy trên transformers v5
-# music21, verovio
+# Nhánh feature/omr-export-musicxml-midi sẽ thêm: verovio (nếu cần SVG)

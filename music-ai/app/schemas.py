@@ -41,8 +41,9 @@ class JobOptions(BaseModel):
     sourceType: Literal["PHOTO", "SCAN", "PDF_NATIVE"] = "PHOTO"
     """Loại nguồn: quyết định cách khử nhiễu (ảnh chụp cần mạnh hơn bản scan; PDF gốc không cần)."""
 
-    stopAfter: str = "PREPROCESS"
-    """Bước cuối cùng được chạy. Nhánh này chỉ có SPLIT_PDF và PREPROCESS."""
+    stopAfter: str = "MERGE"
+    """Bước cuối cùng được chạy: PREPROCESS (chỉ tiền xử lý) hoặc MERGE (nhận diện + ghép kern). EXPORT chưa có nên được
+    hiểu là MERGE."""
 
 
 class JobRequest(BaseModel):

@@ -41,6 +41,7 @@ def write_images(root, score, pages):
 
 
 def make_job(score, inputs, **options):
+    options.setdefault("stopAfter", "PREPROCESS")  # các test ở file này chỉ kiểm tra phần tiền xử lý
     return JobRequest(taskId=str(uuid.uuid4()), scoreId=score, inputs=inputs, options=options)
 
 
@@ -102,11 +103,10 @@ def test_preprocess_false_keeps_every_page(storage_root, java):
     assert java.bodies("complete")[0]["resultData"]["pageCount"] == 2
 
 
-def test_unsupported_stop_after_falls_back_with_warning(storage_root, java):
-    run(make_job("s5", write_images(storage_root, "s5", [make_score_page()]), stopAfter="INFERENCE"))
+def test_stop_after_preprocess_ends_without_inference(storage_root, java):
+    run(make_job("s5", write_images(storage_root, "s5", [make_score_page()]), stopAfter="PREPROCESS"))
     result = java.bodies("complete")[0]["resultData"]
-    assert result["stoppedAfter"] == "PREPROCESS"
-    assert any("INFERENCE" in w for w in result["warnings"])
+    assert result["stoppedAfter"] == "PREPROCESS" and "kernPath" not in result
 
 
 def test_old_pages_are_removed_on_rerun(storage_root, java):

@@ -1,7 +1,6 @@
 """Đưa ảnh trang đã tiền xử lý thành tensor đầu vào của Transcoda.
 
-CHƯA DÙNG Ở NHÁNH NÀY: nhánh feature/omr-recognition sẽ gọi :func:`to_model_input` trước khi suy luận. Viết sẵn để
-tiền xử lý và model thống nhất một chuẩn duy nhất.
+Được ``app/omr/transcoda.py`` gọi trước khi suy luận, để tiền xử lý và model dùng chung một chuẩn đầu vào duy nhất.
 
 Chuẩn đầu vào của ``btrkeks/transcoda-59M-zeroshot-v1`` (theo model card và bài báo arXiv 2605.10835):
 
