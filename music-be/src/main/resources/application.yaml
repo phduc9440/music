@@ -48,6 +48,11 @@ google:
   ios-client-id: ${GOOGLE_IOS_CLIENT_ID:1016771270071-317fpm7s4m5gavo8q5s3o8b3bhmnraoa.apps.googleusercontent.com}
   android-client-id: ${GOOGLE_ANDROID_CLIENT_ID:1016771270071-bge7t57lbrbegivts42qk53k6rlhemss.apps.googleusercontent.com}
 
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME:dzshfubel}
+  api-key: ${CLOUDINARY_API_KEY:756695726913226}
+  api-secret: ${CLOUDINARY_API_SECRET:ROJ9deD5nuhvdu1GHG7VtnE28fY}
+
 springdoc:
   swagger-ui:
     path: /swagger-ui.html

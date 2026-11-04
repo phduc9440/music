@@ -1,8 +1,9 @@
 package com.ptit.music_be.converter;
 
-import com.ptit.music_be.dto.enums.AuthProvider;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
+
+import com.ptit.music_be.dto.enums.AuthProvider;
 
 /** Lưu {@link AuthProvider} xuống DB dưới dạng số (1 = LOCAL, 2 = GOOGLE). */
 @Converter

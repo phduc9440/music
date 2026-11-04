@@ -21,6 +21,9 @@ public enum ErrorCode {
     EMPLOYEE_NOT_FOUND(1008, "Employee not found", HttpStatus.NOT_FOUND),
     INVALID_REQUEST(1009, "Invalid request", HttpStatus.BAD_REQUEST),
     TOO_MANY_REQUESTS(1010, "Too many requests. Please try again later.", HttpStatus.TOO_MANY_REQUESTS),
+    FULL_NAME_REQUIRED(1011, "Họ tên là bắt buộc", HttpStatus.BAD_REQUEST),
+    PASSWORD_SAME_AS_OLD(1012, "Mật khẩu mới phải khác mật khẩu hiện tại", HttpStatus.BAD_REQUEST),
+    AVATAR_INVALID(1014, "Ảnh đại diện phải là JPG hoặc PNG, tối đa 2MB", HttpStatus.BAD_REQUEST),
 
     // Score files & OMR (2xxx)
     SCORE_NOT_EXISTED(2001, "Bản nhạc không tồn tại", HttpStatus.NOT_FOUND),

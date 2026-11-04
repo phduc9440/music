@@ -20,6 +20,7 @@ public class MemberResponse {
     String fullName;
     String phone;
     String address;
+    String avatarUrl;
     MemberStatus status;
     Boolean emailVerified;
     AuthProvider authProvider;

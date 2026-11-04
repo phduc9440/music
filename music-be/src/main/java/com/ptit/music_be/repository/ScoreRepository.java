@@ -23,14 +23,15 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
      * Danh sách bản nhạc của một thành viên, có tìm theo tên/tác giả và lọc trạng thái/nguồn.
      * Tham số rỗng ("") nghĩa là không lọc; service luôn truyền chuỗi, không truyền null.
      */
-    @Query("""
-            select s from Score s
-            where s.member.id = :memberId
-              and (lower(s.title) like lower(concat('%', :keyword, '%'))
-                   or lower(coalesce(s.composer, '')) like lower(concat('%', :keyword, '%')))
-              and (:status = '' or s.processingStatus = :status)
-              and (:source = '' or s.sourceType = :source)
-            """)
+    @Query(
+            """
+			select s from Score s
+			where s.member.id = :memberId
+			and (lower(s.title) like lower(concat('%', :keyword, '%'))
+				or lower(coalesce(s.composer, '')) like lower(concat('%', :keyword, '%')))
+			and (:status = '' or s.processingStatus = :status)
+			and (:source = '' or s.sourceType = :source)
+			""")
     Page<Score> searchOfMember(
             @Param("memberId") String memberId,
             @Param("keyword") String keyword,

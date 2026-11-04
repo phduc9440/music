@@ -24,6 +24,7 @@ public class ScoreFileResponse {
     Integer version;
     /** Có phải bản hiện hành không. */
     Boolean isCurrent;
+
     LocalDateTime createdAt;
     /** Relative to the API base, e.g. /api/files/{id}/download */
     String downloadUrl;
