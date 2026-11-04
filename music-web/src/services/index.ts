@@ -19,6 +19,7 @@ import type {
   OmrUploadRequest,
   OmrUploadResult,
   AiTaskInfo,
+  OmrResult,
 } from '../types';
 
 const API_BASE_URL = 'http://localhost:8080/api';
@@ -88,6 +89,15 @@ export const scoreApi = {
     apiClient.get<ApiResponse<ScoreFileInfo[]>>(`/scores/${id}/files`, { params: type ? { type } : undefined }),
 };
 
+/** Chuỗi kern đã ghép của bản nhạc (text/plain). */
+export const fetchKern = async (scoreId: string): Promise<string> => {
+  const response = await apiClient.get<string>(`/scores/${scoreId}/kern`, {
+    responseType: 'text',
+    transformResponse: (data) => data, // giữ nguyên chuỗi, không để axios thử parse JSON
+  });
+  return response.data;
+};
+
 export const omrApi = {
   // Upload 1 PDF hoặc 1–20 ảnh (đúng thứ tự trang) để tạo bản nhạc và tác vụ OMR
   upload: (data: OmrUploadRequest, onProgress?: (percent: number) => void) => {
@@ -103,7 +113,14 @@ export const omrApi = {
     });
   },
   // Chạy lại OMR trên file gốc đã lưu (lỗi 2201: đang có tác vụ chạy, 2202: quá 3 tác vụ)
-  retry: (scoreId: string) => apiClient.post<ApiResponse<AiTaskInfo>>(`/scores/${scoreId}/omr/retry`),
+  // preprocess bỏ trống: dùng lại lựa chọn của lần chạy trước
+  retry: (scoreId: string, preprocess?: boolean) =>
+    apiClient.post<ApiResponse<AiTaskInfo>>(
+      `/scores/${scoreId}/omr/retry`,
+      preprocess === undefined ? {} : { preprocess },
+    ),
+  // Kết quả nhận diện mới nhất: cảnh báo, ảnh từng trang, id file kern
+  result: (scoreId: string) => apiClient.get<ApiResponse<OmrResult>>(`/scores/${scoreId}/omr/result`),
 };
 
 export const taskApi = {

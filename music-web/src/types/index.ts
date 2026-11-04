@@ -189,6 +189,20 @@ export interface OmrUploadRequest {
 }
 
 // Kết quả POST /omr/upload
+/** Kết quả nhận diện mới nhất của bản nhạc (BE: OmrResultResponse). */
+export interface OmrResult {
+  taskId: string;
+  status: TaskStatus;
+  pageCount?: number | null;
+  warnings: string[];
+  /** Bước cuối đã chạy nếu task dừng sớm (MERGE, PREPROCESS...), null nếu chạy đủ. */
+  stoppedAfter?: string | null;
+  pages: { pageNumber: number; imageFileId: string }[];
+  kernFileId?: string | null;
+  musicXmlFileId?: string | null;
+  midiFileId?: string | null;
+}
+
 export interface OmrUploadResult {
   scoreId: string;
   title: string;
