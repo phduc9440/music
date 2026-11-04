@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import AuthImage from './AuthImage';
 import StatusBadge from './StatusBadge';
 import { DIFFICULTY_LABELS, SOURCE_LABELS, formatDateTime } from '../../utils/score';
@@ -35,6 +36,18 @@ export default function ScoreHero({ score, onEdit, onDelete }: Props) {
         <h1 className="sc-hero__title">{score.title}</h1>
         <p className="sc-hero__composer">{score.composer || 'Chưa rõ tác giả'}</p>
         {score.ownerEmail && <p className="sc-hero__owner">Chủ sở hữu: {score.ownerEmail}</p>}
+
+        {(score.processingStatus === 'PENDING' || score.processingStatus === 'PROCESSING') && (
+          <p className="sc-hero__owner">
+            <Link to={`/scores/${score.id}/processing`}>Xem tiến độ số hóa →</Link>
+          </p>
+        )}
+
+        {score.processingStatus === 'COMPLETED' && score.sourceType === 'OMR' && (
+          <p className="sc-hero__owner">
+            <Link to={`/scores/${score.id}/review`}>Xem kết quả số hóa →</Link>
+          </p>
+        )}
 
         {score.processingStatus === 'FAILED' && score.rejectReason && (
           <div className="sc-error">Xử lý thất bại: {score.rejectReason}</div>

@@ -5,6 +5,8 @@ import UserProfile from '../pages/Profile';
 import ScoreLibrary from '../pages/scores/ScoreLibrary';
 import ScoreDetail from '../pages/scores/ScoreDetail';
 import ScoreUpload from '../pages/scores/ScoreUpload';
+import ScoreProcessing from '../pages/scores/ScoreProcessing';
+import ScoreReview from '../pages/scores/ScoreReview';
 import AdminDashboard from '../pages/Admin';
 import ProtectedRoute from './ProtectedRoute';
 
@@ -34,6 +36,22 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute allowedRole="USER">
             <ScoreUpload />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/scores/:id/processing"
+        element={
+          <ProtectedRoute allowedRole="USER">
+            <ScoreProcessing />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/scores/:id/review"
+        element={
+          <ProtectedRoute allowedRole="USER">
+            <ScoreReview />
           </ProtectedRoute>
         }
       />
