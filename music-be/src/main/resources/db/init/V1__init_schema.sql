@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS members (
     full_name      VARCHAR(255) NULL,
     phone          VARCHAR(30)  NULL,
     address        VARCHAR(255) NULL,
+    avatar_url     VARCHAR(512) NULL,
     status         INT          NULL COMMENT '1 = ACTIVE, 2 = INACTIVE',
     email_verified TINYINT(1)   NULL,
     auth_provider  INT          NULL COMMENT '1 = LOCAL, 2 = GOOGLE',

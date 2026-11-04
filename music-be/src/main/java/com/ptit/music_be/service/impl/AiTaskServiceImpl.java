@@ -34,7 +34,8 @@ public class AiTaskServiceImpl implements AiTaskService {
     @Override
     @Transactional(readOnly = true)
     public AiTaskResponse getTask(String taskId) {
-        AiTask task = aiTaskRepository.findById(taskId).orElseThrow(() -> new AppException(ErrorCode.AI_TASK_NOT_EXISTED));
+        AiTask task =
+                aiTaskRepository.findById(taskId).orElseThrow(() -> new AppException(ErrorCode.AI_TASK_NOT_EXISTED));
         if (!SecurityUtils.isAdmin()
                 && !SecurityUtils.getCurrentEmail().equals(task.getMember().getEmail())) {
             throw new AppException(ErrorCode.UNAUTHORIZED);
@@ -45,7 +46,8 @@ public class AiTaskServiceImpl implements AiTaskService {
     @Override
     @Transactional(readOnly = true)
     public List<AiTaskResponse> getTasksOfScore(String scoreId) {
-        Score score = scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+        Score score =
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
         scoreFileService.checkCanView(score);
         return aiTaskRepository.findByScoreIdOrderByCreatedAtDesc(scoreId).stream()
                 .map(aiTaskMapper::toResponse)

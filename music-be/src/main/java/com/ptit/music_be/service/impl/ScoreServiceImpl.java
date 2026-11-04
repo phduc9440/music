@@ -83,7 +83,8 @@ public class ScoreServiceImpl implements ScoreService {
         String safeSource = parseEnumName(source, ScoreSource.class);
 
         PageRequest pageable = PageRequest.of(safePage, safeSize, toSort(sort));
-        Page<Score> result = scoreRepository.searchOfMember(member.getId(), safeKeyword, safeStatus, safeSource, pageable);
+        Page<Score> result =
+                scoreRepository.searchOfMember(member.getId(), safeKeyword, safeStatus, safeSource, pageable);
 
         Map<String, ScoreFile> thumbnails = loadThumbnails(result.getContent());
         List<ScoreSummaryResponse> content = result.getContent().stream()
@@ -151,7 +152,8 @@ public class ScoreServiceImpl implements ScoreService {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
         // Đang có tác vụ chạy thì không cho xóa (worker/AI service còn đang ghi file vào thư mục của score)
-        if (aiTaskRepository.existsByScoreIdAndStatusIn(scoreId, List.of(AiTaskStatus.PENDING, AiTaskStatus.PROCESSING))) {
+        if (aiTaskRepository.existsByScoreIdAndStatusIn(
+                scoreId, List.of(AiTaskStatus.PENDING, AiTaskStatus.PROCESSING))) {
             throw new AppException(ErrorCode.SCORE_BUSY);
         }
 
@@ -280,7 +282,7 @@ public class ScoreServiceImpl implements ScoreService {
         return switch (key) {
             case "oldest" -> Sort.by(Sort.Order.asc("createdAt"), Sort.Order.asc("id"));
             case "title" -> Sort.by(Sort.Order.asc("title").ignoreCase(), Sort.Order.asc("id"));
-            // Mặc định (và mọi giá trị lạ): cập nhật gần nhất trước
+                // Mặc định (và mọi giá trị lạ): cập nhật gần nhất trước
             default -> Sort.by(Sort.Order.desc("updatedAt"), Sort.Order.desc("id"));
         };
     }

@@ -28,9 +28,11 @@ public class ScoreSummaryResponse {
     String sourceType;
     /** PRIVATE / PUBLIC (xem Visibility). */
     String visibility;
+
     Integer measureCount;
     /** Ảnh trang 1 (đường dẫn tương đối so với host, ví dụ /api/files/{id}/download?inline=true); null nếu chưa có. */
     String thumbnailUrl;
+
     LocalDateTime createdAt;
     LocalDateTime updatedAt;
 }

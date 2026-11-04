@@ -42,7 +42,8 @@ public class ScoreFileServiceImpl implements ScoreFileService {
     @Override
     @Transactional(readOnly = true)
     public List<ScoreFileResponse> getFilesOfScore(String scoreId, FileType type) {
-        Score score = scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+        Score score =
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
         checkCanView(score);
         // Có type thì lọc theo loại, không thì lấy tất cả (sắp xếp theo loại rồi số trang)
         List<ScoreFile> files = type == null
@@ -60,7 +61,9 @@ public class ScoreFileServiceImpl implements ScoreFileService {
 
         String fileName = scoreFile.getOriginalFileName() != null
                 ? scoreFile.getOriginalFileName()
-                : scoreFile.getStoragePath().substring(scoreFile.getStoragePath().lastIndexOf('/') + 1);
+                : scoreFile
+                        .getStoragePath()
+                        .substring(scoreFile.getStoragePath().lastIndexOf('/') + 1);
         String contentType =
                 scoreFile.getContentType() != null ? scoreFile.getContentType() : "application/octet-stream";
 

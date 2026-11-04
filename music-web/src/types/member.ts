@@ -7,6 +7,7 @@ export interface Member {
   fullName: string;
   phone?: string | null;
   address?: string | null;
+  avatarUrl?: string | null;
   status?: MemberStatus;
   emailVerified?: boolean;
   authProvider?: AuthProvider;
