@@ -70,6 +70,9 @@ export const computeStepStates = (task: AiTaskInfo, usesPdf: boolean): StepState
   });
 };
 
+/** Mã bản nhạc hợp lệ (UUID hoặc chuỗi tương tự): chặn đường dẫn lạ trước khi gọi API. */
+export const isValidScoreId = (id: string | undefined): id is string => !!id && /^[A-Za-z0-9-]{8,64}$/.test(id);
+
 /** Tách mã lỗi và chi tiết từ errorMessage của BE, dạng "MÃ" hoặc "MÃ: chi tiết". */
 export const parseTaskError = (message?: string | null): { code: string; detail: string } => {
   if (!message) return { code: '', detail: '' };

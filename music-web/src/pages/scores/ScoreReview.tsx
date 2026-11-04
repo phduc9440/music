@@ -5,7 +5,7 @@ import AuthImage from '../../components/scores/AuthImage';
 import Modal from '../../components/scores/Modal';
 import { fetchKern, omrApi, scoreApi } from '../../services';
 import type { OmrResult, ScoreDetail as ScoreDetailData, ScoreFileInfo } from '../../types';
-import { parseWarning } from '../../utils/omr';
+import { isValidScoreId, parseWarning } from '../../utils/omr';
 import { getHttpStatus, getUploadErrorMessage } from '../../utils/score';
 import '../../components/scores/scores.css';
 import './ScoreLibrary.css';
@@ -24,7 +24,8 @@ export default function ScoreReview() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const [loadState, setLoadState] = useState<LoadState>('loading');
+  const [loadStateRaw, setLoadState] = useState<LoadState>('loading');
+  const loadState: LoadState = isValidScoreId(id) ? loadStateRaw : 'notFound';
   const [score, setScore] = useState<ScoreDetailData | null>(null);
   const [result, setResult] = useState<OmrResult | null>(null);
   const [pages, setPages] = useState<ScoreFileInfo[]>([]);
@@ -38,7 +39,7 @@ export default function ScoreReview() {
 
   // Tải bản nhạc, kết quả nhận diện và ảnh các trang
   useEffect(() => {
-    if (!id) return;
+    if (!isValidScoreId(id)) return; // mã trên đường dẫn không hợp lệ: không gọi API
     let cancelled = false;
     (async () => {
       try {

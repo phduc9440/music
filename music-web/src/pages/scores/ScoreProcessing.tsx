@@ -13,6 +13,7 @@ import {
   describeTaskError,
   getTaskWarnings,
   isTerminalStatus,
+  isValidScoreId,
   pickLatestOmrTask,
   stoppedEarly,
 } from '../../utils/omr';
@@ -22,6 +23,9 @@ import './ScoreLibrary.css';
 import './ScoreProcessing.css';
 
 type LoadState = 'loading' | 'ready' | 'notFound' | 'error';
+
+/** Số cảnh báo tối đa hiện ở trang tiến độ; phần còn lại xem ở trang kết quả. */
+const MAX_WARNINGS_SHOWN = 3;
 
 /** Mã lỗi nghiệp vụ khi tác vụ đã kết thúc nên không hủy được nữa (AI_TASK_NOT_CANCELLABLE). */
 const NOT_CANCELLABLE_HTTP = 409;
@@ -34,7 +38,8 @@ export default function ScoreProcessing() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const [loadState, setLoadState] = useState<LoadState>('loading');
+  const [loadStateRaw, setLoadState] = useState<LoadState>('loading');
+  const loadState: LoadState = isValidScoreId(id) ? loadStateRaw : 'notFound';
   const [score, setScore] = useState<ScoreDetailData | null>(null);
   const [task, setTask] = useState<AiTaskInfo | null>(null);
   const [pages, setPages] = useState<ScoreFileInfo[]>([]);
@@ -44,7 +49,7 @@ export default function ScoreProcessing() {
 
   // Tải bản nhạc, tác vụ OMR mới nhất và các ảnh trang đã có
   useEffect(() => {
-    if (!id) return;
+    if (!isValidScoreId(id)) return; // mã trên đường dẫn không hợp lệ: không gọi API
     let cancelled = false;
     (async () => {
       try {
@@ -290,9 +295,12 @@ export default function ScoreProcessing() {
 
           {warnings.length > 0 && (
             <ul className="sp-warnings">
-              {warnings.map((w, i) => (
+              {warnings.slice(0, MAX_WARNINGS_SHOWN).map((w, i) => (
                 <li key={i}>{w}</li>
               ))}
+              {warnings.length > MAX_WARNINGS_SHOWN && (
+                <li>Và {warnings.length - MAX_WARNINGS_SHOWN} cảnh báo khác, xem đầy đủ ở trang kết quả.</li>
+              )}
             </ul>
           )}
 
