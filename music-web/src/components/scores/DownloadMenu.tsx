@@ -47,7 +47,7 @@ export default function DownloadMenu({ scoreId, files }: { scoreId: string; file
   return (
     <div className="sc-menu" ref={ref}>
       <button className="sc-btn" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>
-        Tải xuống ▾
+        Tải xuống
       </button>
       {open && (
         <ul className="sc-menu__list" role="menu">

@@ -332,8 +332,12 @@ export default function ScoreReview() {
         </div>
 
         <div className="sp-actions sr-actions">
-          <button className="sc-btn sc-btn--primary" disabled title="Trình chỉnh sửa sẽ có ở bản sau">
-            Chấp nhận và chỉnh sửa
+          <button
+            className="sc-btn sc-btn--primary"
+            disabled={!hasMusicXml}
+            onClick={() => navigate(`/scores/${score.id}/edit`)}
+          >
+            {score.canEdit ? 'Chấp nhận và chỉnh sửa' : 'Xem bản nhạc'}
           </button>
           <button className="sc-btn" disabled title="Trình phát sẽ có ở bản sau">
             Nghe thử
