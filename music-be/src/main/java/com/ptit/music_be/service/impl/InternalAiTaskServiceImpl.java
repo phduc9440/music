@@ -17,6 +17,7 @@ import org.springframework.util.StringUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ptit.music_be.configuration.AiServiceProperties;
+import com.ptit.music_be.dto.enums.AiTaskError;
 import com.ptit.music_be.dto.enums.AiTaskStatus;
 import com.ptit.music_be.dto.enums.AiTaskStep;
 import com.ptit.music_be.dto.enums.AiTaskType;
@@ -126,6 +127,10 @@ public class InternalAiTaskServiceImpl implements InternalAiTaskService {
                         : defaultContentType(fileType));
         file.setSizeBytes(request.getSizeBytes() != null ? request.getSizeBytes() : sizeOf(onDisk));
         file.setPageNumber(request.getPageNumber());
+        // MUSICXML ghi version của chính nó, MIDI ghi version MusicXML nguồn (mục 1.2); các loại khác giữ mặc định 1
+        if (request.getVersion() != null) {
+            file.setVersion(request.getVersion());
+        }
         file.setSourceTaskId(task.getId());
         file.setMeta(toJson(request.getMeta()));
         file.setIsCurrent(true);
@@ -160,12 +165,21 @@ public class InternalAiTaskServiceImpl implements InternalAiTaskService {
             return;
         }
 
+        // Chạy đủ pipeline (omr.stop-after=EXPORT) mà task này không để lại MusicXML nào thì kết quả vô dụng: báo lỗi
+        // thay vì để người dùng thấy "hoàn tất" nhưng không mở được bản nhạc (đặc tả mục 2.4, EXPORT_ERROR)
+        if (task.getTaskType() == AiTaskType.OMR_CONVERSION
+                && task.getScore() != null
+                && AiTaskStep.EXPORT.name().equals(aiServiceProperties.getStopAfter())
+                && !hasMusicXmlFrom(task)) {
+            fail(taskId, AiTaskError.EXPORT_ERROR.name(), "music-ai báo xong nhưng không có MusicXML");
+            return;
+        }
+
         Map<String, Object> result = new LinkedHashMap<>();
         if (request.getResultData() != null) {
             result.putAll(request.getResultData());
         }
-        // Ghi lại việc tạm dừng sớm để biết Score chưa có MusicXML dù task đã COMPLETED
-        // TODO(feature/omr-export-musicxml-midi): khi pipeline chạy tới EXPORT thì đây không còn là "dừng sớm"
+        // Chỉ khi cấu hình cố ý dừng sớm (omr.stop-after khác EXPORT) mới ghi lại để biết Score chưa có MusicXML
         String stopAfter = aiServiceProperties.getStopAfter();
         if (!AiTaskStep.EXPORT.name().equals(stopAfter)) {
             result.putIfAbsent("stoppedAfter", stopAfter);
@@ -184,6 +198,7 @@ public class InternalAiTaskServiceImpl implements InternalAiTaskService {
         Score score = task.getScore();
         if (score != null && task.getTaskType() == AiTaskType.OMR_CONVERSION) {
             applyScoreMetadata(score, request.getScoreMetadata());
+            syncCurrentVersion(score);
             score.setProcessingStatus(ProcessingStatus.COMPLETED.name());
             scoreRepository.save(score);
         }
@@ -274,6 +289,25 @@ public class InternalAiTaskServiceImpl implements InternalAiTaskService {
         if (metadata.getPageCount() != null) {
             score.setPageCount(metadata.getPageCount());
         }
+    }
+
+    /**
+     * scores.current_version luôn bằng version của MusicXML hiện hành (đặc tả mục 1.1: khóa lạc quan cho Editor). Chưa
+     * có MusicXML (ví dụ task dừng sớm) thì giữ nguyên giá trị cũ.
+     */
+    private boolean hasMusicXmlFrom(AiTask task) {
+        return scoreFileRepository
+                .findByScoreIdAndFileTypeOrderByPageNumberAsc(task.getScore().getId(), FileType.MUSICXML)
+                .stream()
+                .anyMatch(f -> task.getId().equals(f.getSourceTaskId()));
+    }
+
+    private void syncCurrentVersion(Score score) {
+        scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(score.getId(), FileType.MUSICXML).stream()
+                .filter(f -> !Boolean.FALSE.equals(f.getIsCurrent()) && f.getVersion() != null)
+                .map(ScoreFile::getVersion)
+                .max(Integer::compare)
+                .ifPresent(score::setCurrentVersion);
     }
 
     /**

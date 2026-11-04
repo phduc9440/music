@@ -185,15 +185,21 @@ public class AiTaskDispatcher {
             if (inputs.isEmpty()) {
                 throw new IllegalStateException("Task " + taskId + " không còn file gốc");
             }
-            return Optional.of(new OmrJobRequest(taskId, scoreId, inputs, buildOptions(task.getInputData())));
+            // Bản MusicXML mới luôn là version kế tiếp, nên nhận diện lại sinh v2, v3... và không ghi đè bản cũ
+            int currentVersion = task.getScore().getCurrentVersion() == null
+                    ? 0
+                    : task.getScore().getCurrentVersion();
+            return Optional.of(
+                    new OmrJobRequest(taskId, scoreId, inputs, buildOptions(task.getInputData(), currentVersion + 1)));
         });
     }
 
     /**
      * options gửi music-ai: lấy preprocess/sourceType/binarize từ ai_tasks.input_data, thêm stopAfter từ cấu hình
-     * omr.stop-after để music-ai biết dừng ở bước nào.
+     * omr.stop-after để music-ai biết dừng ở bước nào, và musicXmlVersion để music-ai đặt tên musicxml/v{n}.musicxml,
+     * midi/v{n}.mid cho lần xuất này.
      */
-    private Map<String, Object> buildOptions(String inputData) {
+    private Map<String, Object> buildOptions(String inputData, int musicXmlVersion) {
         Map<String, Object> options = new LinkedHashMap<>();
         options.put("preprocess", true);
         options.put("binarize", true);
@@ -214,6 +220,7 @@ public class AiTaskDispatcher {
             }
         }
         options.put("stopAfter", aiServiceProperties.getStopAfter());
+        options.put("musicXmlVersion", musicXmlVersion);
         return options;
     }
 }

@@ -2,8 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import AuthImage from '../../components/scores/AuthImage';
+import MusicXmlViewer from '../../components/scores/MusicXmlViewer';
 import Modal from '../../components/scores/Modal';
-import { fetchKern, omrApi, scoreApi } from '../../services';
+import { downloadScoreExport, fetchKern, fetchMusicXml, omrApi, scoreApi } from '../../services';
 import type { OmrResult, ScoreDetail as ScoreDetailData, ScoreFileInfo } from '../../types';
 import { isValidScoreId, parseWarning } from '../../utils/omr';
 import { getHttpStatus, getUploadErrorMessage } from '../../utils/score';
@@ -14,11 +15,12 @@ import './ScoreProcessing.css';
 import './ScoreReview.css';
 
 type LoadState = 'loading' | 'ready' | 'notFound' | 'error';
-type Tab = 'warnings' | 'kern';
+type Tab = 'score' | 'warnings' | 'kern';
 
 /**
  * Trang /scores/:id/review: xem lại kết quả số hóa (đặc tả mục 2.5, bản đầu).
- * Hiện tóm tắt, ảnh từng trang, cảnh báo theo trang và chuỗi **kern đã ghép (tải được file .krn).
+ * Hiện tóm tắt, ảnh từng trang cạnh bản nhạc vẽ từ MusicXML (OSMD), cảnh báo theo trang, chuỗi **kern đã ghép
+ * và nút tải MusicXML / MIDI.
  */
 export default function ScoreReview() {
   const { id } = useParams<{ id: string }>();
@@ -29,9 +31,12 @@ export default function ScoreReview() {
   const [score, setScore] = useState<ScoreDetailData | null>(null);
   const [result, setResult] = useState<OmrResult | null>(null);
   const [pages, setPages] = useState<ScoreFileInfo[]>([]);
-  const [tab, setTab] = useState<Tab>('warnings');
+  const [tab, setTab] = useState<Tab>('score');
   const [kern, setKern] = useState<string | null>(null);
   const [kernError, setKernError] = useState(false);
+  const [xml, setXml] = useState<string | null>(null);
+  const [xmlError, setXmlError] = useState(false);
+  const [exporting, setExporting] = useState<'musicxml' | 'midi' | null>(null);
   const [redoOpen, setRedoOpen] = useState(false);
   const [redoPreprocess, setRedoPreprocess] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -78,6 +83,20 @@ export default function ScoreReview() {
     };
   }, [tab, id, hasKern, kern, kernError]);
 
+  const hasMusicXml = !!result?.musicXmlFileId;
+
+  // Tải MusicXML khi mở tab Bản nhạc (mặc định)
+  useEffect(() => {
+    if (tab !== 'score' || !id || !hasMusicXml || xml !== null || xmlError) return;
+    let cancelled = false;
+    fetchMusicXml(id)
+      .then((text) => !cancelled && setXml(text))
+      .catch(() => !cancelled && setXmlError(true));
+    return () => {
+      cancelled = true;
+    };
+  }, [tab, id, hasMusicXml, xml, xmlError]);
+
   const warnings = useMemo(() => (result?.warnings ?? []).map(parseWarning), [result]);
 
   /** Cuộn tới ảnh của trang có cảnh báo. */
@@ -94,6 +113,18 @@ export default function ScoreReview() {
     link.download = `${score.title || 'ban-nhac'}.krn`;
     link.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleExport = async (kind: 'musicxml' | 'midi') => {
+    if (!id || !score) return;
+    setExporting(kind);
+    try {
+      await downloadScoreExport(id, kind, `${score.title || 'ban-nhac'}.${kind === 'midi' ? 'mid' : 'musicxml'}`);
+    } catch {
+      toast.error(kind === 'midi' ? 'Không tạo hoặc tải được file MIDI' : 'Không tải được file MusicXML');
+    } finally {
+      setExporting(null);
+    }
   };
 
   const handleCopyKern = async () => {
@@ -166,7 +197,7 @@ export default function ScoreReview() {
   const summary: [string, string][] = [
     ['Số trang', (result.pageCount ?? score.pageCount ?? pages.length).toString()],
     ['Số ô nhịp', score.measureCount?.toString() ?? '—'],
-    ['Khóa / dấu hóa', score.keySignature || '—'],
+    ['Khóa / dấu hóa', score.keySignature || '—'], // dạng G, Bb, F#m
     ['Nhịp', score.timeSignature || '—'],
     ['Tempo', score.tempoBpm ? `${score.tempoBpm} BPM` : '—'],
     ['Cảnh báo', warnings.length.toString()],
@@ -215,6 +246,9 @@ export default function ScoreReview() {
 
           <section className="sr-side">
             <div className="sc-tabs" role="tablist">
+              <button className="sc-tab" role="tab" aria-selected={tab === 'score'} onClick={() => setTab('score')}>
+                Bản nhạc
+              </button>
               <button
                 className="sc-tab"
                 role="tab"
@@ -227,6 +261,27 @@ export default function ScoreReview() {
                 Kern
               </button>
             </div>
+
+            {tab === 'score' && (
+              <div className="sr-panel" role="tabpanel">
+                {!hasMusicXml && <p className="sr-empty">Chưa có MusicXML cho bản nhạc này, hãy nhận diện lại.</p>}
+                {hasMusicXml && xmlError && <div className="sc-error">Không tải được MusicXML</div>}
+                {hasMusicXml && !xmlError && xml === null && <p className="sr-empty">Đang tải...</p>}
+                {xml !== null &&
+                  (result.pages.some((p) => p.firstMeasure != null && p.lastMeasure != null) ? (
+                    [...result.pages]
+                      .sort((a, b) => a.pageNumber - b.pageNumber)
+                      .map((p) => (
+                        <div key={p.pageNumber} className="sr-score-page">
+                          <div className="sr-score-page__label">Trang {p.pageNumber}</div>
+                          <MusicXmlViewer xml={xml} firstMeasure={p.firstMeasure} lastMeasure={p.lastMeasure} />
+                        </div>
+                      ))
+                  ) : (
+                    <MusicXmlViewer xml={xml} />
+                  ))}
+              </div>
+            )}
 
             {tab === 'warnings' && (
               <div className="sr-panel" role="tabpanel">
@@ -277,19 +332,35 @@ export default function ScoreReview() {
         </div>
 
         <div className="sp-actions sr-actions">
-          <button className="sc-btn sc-btn--primary" disabled title="Trình chỉnh sửa sẽ có ở bản sau">
-            Chấp nhận và chỉnh sửa
+          <button
+            className="sc-btn sc-btn--primary"
+            disabled={!hasMusicXml}
+            onClick={() => navigate(`/scores/${score.id}/edit`)}
+          >
+            {score.canEdit ? 'Chấp nhận và chỉnh sửa' : 'Xem bản nhạc'}
           </button>
           <button className="sc-btn" disabled title="Trình phát sẽ có ở bản sau">
             Nghe thử
           </button>
+          {hasMusicXml && (
+            <>
+              <button className="sc-btn" disabled={exporting !== null} onClick={() => handleExport('musicxml')}>
+                {exporting === 'musicxml' ? 'Đang tải...' : 'Tải MusicXML'}
+              </button>
+              <button className="sc-btn" disabled={exporting !== null} onClick={() => handleExport('midi')}>
+                {exporting === 'midi' ? 'Đang tạo MIDI...' : 'Tải MIDI'}
+              </button>
+            </>
+          )}
           {score.canEdit && (
             <button className="sc-btn" onClick={() => setRedoOpen(true)}>
               Nhận diện lại
             </button>
           )}
         </div>
-        <p className="sr-hint">Chỉnh sửa và nghe thử sẽ có ở bản sau; bản này dùng để kiểm tra kết quả nhận diện.</p>
+        <p className="sr-hint">
+          Chỉnh sửa và nghe thử trực tiếp sẽ có ở bản sau; bạn có thể tải MIDI để nghe thử bằng phần mềm khác.
+        </p>
       </main>
 
       {redoOpen && (

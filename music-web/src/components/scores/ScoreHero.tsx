@@ -70,15 +70,19 @@ export default function ScoreHero({ score, onEdit, onDelete }: Props) {
         )}
 
         <div className="sc-hero__actions">
-          {/* TODO(feature/score-viewer): mở /scores/:id/edit (1.17) */}
-          <button className="sc-btn sc-btn--primary" disabled title="Trình chỉnh sửa sẽ có ở nhánh score-viewer">
-            Mở trình chỉnh sửa
-          </button>
+          <Link
+            className={`sc-btn sc-btn--primary${score.processingStatus === 'COMPLETED' ? '' : ' is-disabled'}`}
+            to={`/scores/${score.id}/edit`}
+            aria-disabled={score.processingStatus !== 'COMPLETED'}
+            onClick={(e) => score.processingStatus !== 'COMPLETED' && e.preventDefault()}
+          >
+            {score.canEdit ? 'Mở trình chỉnh sửa' : 'Xem bản nhạc'}
+          </Link>
           {/* TODO(feature/playback-basic): mở /scores/:id/play (1.22) */}
           <button className="sc-btn" disabled title="Trình phát sẽ có ở nhánh playback-basic">
             ▶ Phát
           </button>
-          <DownloadMenu files={score.files} />
+          <DownloadMenu scoreId={score.id} files={score.files} />
           {score.canEdit && (
             <button className="sc-btn" onClick={onEdit}>
               Sửa thông tin

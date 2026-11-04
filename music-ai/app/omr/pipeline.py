@@ -6,10 +6,10 @@ Mỗi bước báo tiến độ về Java qua callback:
     PREPROCESS  (10-30%)  tiền xử lý từng trang -> lưu ``pages/page-NNN.png`` -> callback ``files`` -> báo tiến độ
     INFERENCE   (30-85%)  Transcoda nhận diện từng trang -> lưu ``kern/page-NNN.krn`` (tiến độ 30 + 55 * xong / tổng)
     MERGE       (85-90%)  làm sạch, ghép kern, kiểm tra -> lưu ``kern/merged.krn`` -> callback ``files`` (KERN)
+    EXPORT      (90-98%)  kern -> ``musicxml/v{n}.musicxml`` -> ``midi/v{n}.mid`` -> callback ``files`` (MUSICXML, MIDI)
 
-Sau MERGE job kết thúc bằng callback ``complete`` (``omr.stop-after=MERGE``); bước EXPORT (MusicXML/MIDI) là của nhánh
-feature/omr-export-musicxml-midi: viết ``_run_export`` rồi gọi trong :func:`_run` ngay trước ``_finish``.
-``stopAfter=PREPROCESS`` vẫn được hỗ trợ (chạy riêng phần tiền xử lý, không cần model).
+Sau EXPORT job kết thúc bằng callback ``complete`` (mặc định ``omr.stop-after=EXPORT``). ``stopAfter=PREPROCESS`` và
+``stopAfter=MERGE`` vẫn được hỗ trợ để chạy riêng từng phần (PREPROCESS không cần model).
 
 Quy tắc dừng job:
   * Java hủy (``DELETE /omr/jobs/{id}``) -> dừng ở lần kiểm tra kế tiếp (giữa các trang, giữa các bước nhỏ và giữa các
@@ -32,6 +32,9 @@ import numpy as np
 from app import storage
 from app.callback import JavaCallback, TaskGone
 from app.config import Settings, get_settings
+from app.convert.errors import ConversionError
+from app.convert.kern import kern_file_to_musicxml_file
+from app.convert.midi import musicxml_file_to_midi_file
 from app.omr import kern_check, merge
 from app.omr.pdf import iter_pdf_pages
 from app.omr.preprocess import PreprocessOptions, UnreadablePage, load_image_gray, process_page
@@ -45,7 +48,7 @@ STEP_PREPROCESS = "PREPROCESS"
 STEP_INFERENCE = "INFERENCE"
 STEP_MERGE = "MERGE"
 STEP_EXPORT = "EXPORT"
-# Giá trị stopAfter chấp nhận; EXPORT (chưa có) được hiểu là chạy tới MERGE
+# Giá trị stopAfter chấp nhận; INFERENCE không đứng riêng nên được hiểu là chạy tới MERGE
 STOP_AFTER_VALUES = (STEP_PREPROCESS, STEP_INFERENCE, STEP_MERGE, STEP_EXPORT)
 
 PAGE_COUNT_RECOGNITION_MESSAGE = "không nhận diện được nốt nào ở cả {n} trang"
@@ -114,6 +117,9 @@ class JobContext:
     recognizer: Optional[Recognizer] = None
     page_kern_paths: list[str] = field(default_factory=list)
     inference_ms: list[int] = field(default_factory=list)
+    page_measures: list[dict] = field(default_factory=list)
+    """Ô nhịp đầu/cuối của từng trang theo bản kern ghép (bước MERGE tính, bước EXPORT hiệu chỉnh và báo về Java)."""
+    kern_measure_count: int = 0
 
     @property
     def task_id(self) -> str:
@@ -176,9 +182,12 @@ def _run(ctx: JobContext) -> None:
     options = ctx.job.options
     requested = options.stopAfter.strip().upper()
     if requested not in STOP_AFTER_VALUES:
-        ctx.warnings.append(f"Bước dừng {requested!r} không hợp lệ, chạy tới bước {STEP_MERGE}")
-    # Chưa có bước EXPORT và INFERENCE không đứng riêng: mọi giá trị sau PREPROCESS đều chạy tới MERGE
-    stop_after = STEP_PREPROCESS if requested == STEP_PREPROCESS else STEP_MERGE
+        ctx.warnings.append(f"Bước dừng {requested!r} không hợp lệ, chạy tới bước {STEP_EXPORT}")
+        stop_after = STEP_EXPORT
+    elif requested in (STEP_PREPROCESS, STEP_EXPORT):
+        stop_after = requested
+    else:  # INFERENCE không đứng riêng (ghép kern ngay sau khi nhận diện) nên chạy tới MERGE
+        stop_after = STEP_MERGE
 
     ctx.budget.check()
     ctx.callback.progress(5, STEP_SPLIT_PDF)
@@ -203,6 +212,11 @@ def _run(ctx: JobContext) -> None:
         if merged is None:  # KERN_PARSE_ERROR đã được báo
             return
         extra, score_metadata = merged
+        if stop_after == STEP_EXPORT:
+            exported = _export(ctx, extra, score_metadata)
+            if exported is None:  # EXPORT_ERROR đã được báo
+                return
+            extra, score_metadata = exported
     _finish(
         ctx,
         total_pages=len(pages),
@@ -393,6 +407,8 @@ def _merge_pages(ctx: JobContext, pages: list[merge.PageKern]) -> Optional[tuple
         ctx.warnings.append(f"Chưa kiểm tra cú pháp kern bằng music21: {detail}")
 
     meta = merge.extract_metadata(merged)
+    ctx.page_measures = merge.page_measure_ranges(merged)
+    ctx.kern_measure_count = meta.measure_count
     callback.progress(90, STEP_MERGE)
 
     extra = {
@@ -413,6 +429,104 @@ def _merge_pages(ctx: JobContext, pages: list[merge.PageKern]) -> Optional[tuple
     return extra, score_metadata
 
 
+def _export(ctx: JobContext, extra: dict, score_metadata: dict) -> Optional[tuple[dict, dict]]:
+    """Bước EXPORT (90-98%): kern -> ``musicxml/v{n}.musicxml`` -> ``midi/v{n}.mid``, báo hai file về Java.
+
+    ``n`` là ``options.musicXmlVersion`` (Java tính) nên nhận diện lại không ghi đè bản cũ. Hai file chỉ được đăng ký
+    (callback ``files``) sau khi cả hai đã ghi xong, để task lỗi giữa chừng không làm MusicXML cũ mất vị trí hiện hành.
+    Trả ``(result_data_bổ_sung, scoreMetadata_đã_cập_nhật)``; trả None nếu đã báo FAILED ``EXPORT_ERROR``.
+    """
+    budget, callback = ctx.budget, ctx.callback
+    score_id = ctx.job.scoreId
+    version = ctx.job.options.musicXmlVersion
+    budget.check()
+    callback.progress(90, STEP_EXPORT)
+
+    xml_relative = f"scores/{score_id}/musicxml/v{version}.musicxml"
+    midi_relative = f"scores/{score_id}/midi/v{version}.mid"
+    try:
+        normalized = kern_file_to_musicxml_file(
+            storage.resolve(extra["kernPath"]), storage.resolve(xml_relative), score_metadata.get("tempoBpm")
+        )
+        budget.check()
+        callback.progress(95, STEP_EXPORT)
+        midi = musicxml_file_to_midi_file(
+            storage.resolve(xml_relative), storage.resolve(midi_relative), normalized.tempo_bpm
+        )
+    except ConversionError as exc:
+        log.warning("Job %s: xuất MusicXML/MIDI lỗi: %s", ctx.task_id, exc)
+        callback.fail("EXPORT_ERROR", str(exc)[:300])
+        return None
+    except (JobCancelled, JobTimeout, TaskGone):
+        raise
+    except Exception as exc:  # noqa: BLE001 - music21 có thể ném đủ loại lỗi trên kern lạ
+        log.exception("Job %s: lỗi không mong đợi khi xuất MusicXML/MIDI", ctx.task_id)
+        callback.fail("EXPORT_ERROR", f"{type(exc).__name__}: {exc}"[:300])
+        return None
+
+    ctx.warnings.extend(normalized.warnings)
+    if ctx.kern_measure_count and ctx.kern_measure_count != normalized.measure_count:
+        ctx.warnings.append(
+            f"Số ô nhịp trong kern ({ctx.kern_measure_count}) khác MusicXML ({normalized.measure_count}), "
+            "ảnh trang và bản nhạc đặt cạnh nhau có thể lệch"
+        )
+    if normalized.staff_count != 2 and not any("spine" in w for w in ctx.warnings):
+        ctx.warnings.append(
+            f"Bản nhạc có {normalized.staff_count} khuông (piano thường có 2), "
+            "các nút Tắt/Solo từng tay có thể không dùng được"
+        )
+
+    budget.check()
+    callback.progress(98, STEP_EXPORT)
+    callback.file(
+        file_type="MUSICXML",
+        storage_path=xml_relative,
+        page_number=None,
+        content_type="application/vnd.recordare.musicxml+xml",
+        size_bytes=storage.resolve(xml_relative).stat().st_size,
+        meta={"staffCount": normalized.staff_count, "measureCount": normalized.measure_count},
+        version=version,
+    )
+    callback.file(
+        file_type="MIDI",
+        storage_path=midi_relative,
+        page_number=None,
+        content_type="audio/midi",
+        size_bytes=storage.resolve(midi_relative).stat().st_size,
+        meta={"sourceVersion": version, "tracks": midi.tracks, "notes": midi.notes, "seconds": midi.seconds},
+        version=version,
+    )
+
+    count = normalized.measure_count
+    page_measures = [
+        {
+            "page": r["page"],
+            "firstMeasure": min(r["firstMeasure"], count),
+            "lastMeasure": min(r["lastMeasure"], count),
+        }
+        for r in ctx.page_measures
+    ]
+    result_extra = {
+        **extra,
+        "musicXmlPath": xml_relative,
+        "midiPath": midi_relative,
+        "musicXmlVersion": version,
+        "pageMeasures": page_measures,
+    }
+    # MusicXML là nguồn đúng nhất cho metadata (đặc tả mục 2.4): ghi đè các giá trị rút tạm từ kern
+    metadata = {
+        **score_metadata,
+        "measureCount": normalized.measure_count,
+        "staffCount": normalized.staff_count,
+        "tempoBpm": normalized.tempo_bpm,
+    }
+    if normalized.key_signature:
+        metadata["keySignature"] = normalized.key_signature
+    if normalized.time_signature:
+        metadata["timeSignature"] = normalized.time_signature
+    return result_extra, metadata
+
+
 def _finish(
     ctx: JobContext,
     total_pages: int,
@@ -428,9 +542,10 @@ def _finish(
         "warnings": ctx.warnings,
         "preprocess": options.preprocess,
         "binarize": options.binarize,
-        "stoppedAfter": stop_after,
         **extra,
     }
+    if stop_after != STEP_EXPORT:  # chạy đủ pipeline thì không phải "dừng sớm"; web dựa vào khóa này để báo
+        result_data["stoppedAfter"] = stop_after
     ctx.callback.complete(result_data, {"pageCount": kept_pages, **score_metadata})
 
 

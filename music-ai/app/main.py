@@ -13,10 +13,14 @@ from uuid import UUID
 
 from fastapi import Depends, FastAPI, Header, HTTPException
 
+from app import storage
 from app.config import get_settings
+from app.convert.errors import ConversionError
+from app.convert.kern import kern_file_to_musicxml_file
+from app.convert.midi import musicxml_file_to_midi_file
 from app.jobs import JobManager, QueueFullError
 from app.omr.transcoda import get_recognizer
-from app.schemas import JobRequest
+from app.schemas import JobRequest, KernToMusicXmlRequest, MusicXmlToMidiRequest
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("music-ai")
@@ -93,3 +97,43 @@ def submit_job(job: JobRequest) -> dict:
 def cancel_job(task_id: UUID) -> dict:
     """Hủy job đang chờ/chạy. ``cancelled=false`` nghĩa là không có job như vậy (đã xong hoặc chưa từng nhận)."""
     return {"taskId": str(task_id), "cancelled": manager.cancel(str(task_id))}
+
+
+@app.post("/convert/kern-to-musicxml", dependencies=[Depends(require_internal_key)])
+def convert_kern_to_musicxml(body: KernToMusicXmlRequest) -> dict:
+    """kern -> MusicXML đã chuẩn hóa (1 part Piano nhiều staff), đồng bộ (đặc tả mục 6.2).
+
+    Chạy ngoài hàng đợi OMR nên không phải chờ job Transcoda. Trả metadata để Java cập nhật ``scores``. Đường dẫn sai:
+    422 (Pydantic); kern hỏng hoặc thiếu music21: 422 kèm lý do.
+    """
+    try:
+        result = kern_file_to_musicxml_file(
+            storage.resolve(body.kernPath), storage.resolve(body.outPath), body.tempoBpm
+        )
+    except ConversionError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {
+        "outPath": body.outPath,
+        "measureCount": result.measure_count,
+        "staffCount": result.staff_count,
+        "keySignature": result.key_signature,
+        "timeSignature": result.time_signature,
+        "tempoBpm": result.tempo_bpm,
+        "warnings": result.warnings,
+    }
+
+
+@app.post("/convert/musicxml-to-midi", dependencies=[Depends(require_internal_key)])
+def convert_musicxml_to_midi(body: MusicXmlToMidiRequest) -> dict:
+    """MusicXML -> MIDI (staff 1 -> track/kênh 1, staff 2 -> track/kênh 2), đồng bộ (đặc tả mục 6.2).
+
+    Java gọi khi Editor vừa lưu MusicXML mới và MIDI cũ đã lỗi thời; thường dưới 1 giây. MusicXML hỏng hoặc không có
+    nốt: 422 kèm lý do.
+    """
+    try:
+        stats = musicxml_file_to_midi_file(
+            storage.resolve(body.musicXmlPath), storage.resolve(body.outPath), body.tempoBpm
+        )
+    except ConversionError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {"outPath": body.outPath, "notes": stats.notes, "tracks": stats.tracks, "seconds": stats.seconds}

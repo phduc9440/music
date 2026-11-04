@@ -7,6 +7,7 @@ import ScoreDetail from '../pages/scores/ScoreDetail';
 import ScoreUpload from '../pages/scores/ScoreUpload';
 import ScoreProcessing from '../pages/scores/ScoreProcessing';
 import ScoreReview from '../pages/scores/ScoreReview';
+import ScoreViewer from '../pages/scores/ScoreViewer';
 import AdminDashboard from '../pages/Admin';
 import ProtectedRoute from './ProtectedRoute';
 
@@ -52,6 +53,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute allowedRole="USER">
             <ScoreReview />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/scores/:id/edit"
+        element={
+          <ProtectedRoute allowedRole="USER">
+            <ScoreViewer />
           </ProtectedRoute>
         }
       />

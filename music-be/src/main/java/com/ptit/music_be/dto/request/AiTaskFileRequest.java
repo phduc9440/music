@@ -22,7 +22,7 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class AiTaskFileRequest {
 
-    /** Loại file (nhánh này chỉ PNG). Không nhận ORIGINAL_*: file gốc do Java tạo lúc upload. */
+    /** Loại file music-ai được báo: PNG, KERN, MUSICXML, MIDI. Không nhận ORIGINAL_* (file gốc do Java tạo). */
     @NotNull(message = "INVALID_REQUEST")
     FileType fileType;
 
@@ -39,6 +39,13 @@ public class AiTaskFileRequest {
 
     @Min(value = 0, message = "INVALID_REQUEST")
     Long sizeBytes;
+
+    /**
+     * Phiên bản MusicXML của file (đặc tả mục 1.2): MUSICXML ghi version của chính nó, MIDI ghi version MusicXML nguồn.
+     * Bỏ trống thì giữ mặc định 1.
+     */
+    @Min(value = 1, message = "INVALID_REQUEST")
+    Integer version;
 
     /** Thông tin thêm, ví dụ {"width":1050,"height":1485,"deskewAngle":-1.8,"sourcePage":2}. */
     Map<String, Object> meta;
