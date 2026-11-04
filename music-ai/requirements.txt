@@ -1,0 +1,18 @@
+# Dịch vụ web
+fastapi>=0.110
+uvicorn[standard]>=0.29
+pydantic>=2.6
+
+# Tiền xử lý ảnh (nhánh feature/omr-preprocess)
+numpy>=1.26
+opencv-python-headless>=4.9
+pillow>=10.2
+pymupdf>=1.24.3
+
+# Chỉ để chạy test
+pytest>=8.0
+
+# --- Nhánh feature/omr-recognition sẽ thêm (CHƯA cần bây giờ, đừng cài) ---
+# torch
+# transformers>=4.40,<5      # Transcoda không chạy trên transformers v5
+# music21, verovio

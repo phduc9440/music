@@ -18,6 +18,7 @@ import type {
   ScoreUpdateRequest,
   OmrUploadRequest,
   OmrUploadResult,
+  AiTaskInfo,
 } from '../types';
 
 const API_BASE_URL = 'http://localhost:8080/api';
@@ -101,6 +102,15 @@ export const omrApi = {
       onUploadProgress: (e) => e.total && onProgress?.(Math.round((e.loaded * 100) / e.total)),
     });
   },
+  // Chạy lại OMR trên file gốc đã lưu (lỗi 2201: đang có tác vụ chạy, 2202: quá 3 tác vụ)
+  retry: (scoreId: string) => apiClient.post<ApiResponse<AiTaskInfo>>(`/scores/${scoreId}/omr/retry`),
+};
+
+export const taskApi = {
+  get: (taskId: string) => apiClient.get<ApiResponse<AiTaskInfo>>(`/ai-tasks/${taskId}`),
+  // Mới nhất trước
+  listOfScore: (scoreId: string) => apiClient.get<ApiResponse<AiTaskInfo[]>>(`/scores/${scoreId}/ai-tasks`),
+  cancel: (taskId: string) => apiClient.post<ApiResponse<AiTaskInfo>>(`/ai-tasks/${taskId}/cancel`),
 };
 
 /**

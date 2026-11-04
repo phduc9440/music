@@ -32,6 +32,18 @@ public class AiTaskController {
                 .build();
     }
 
+    @PostMapping("/ai-tasks/{taskId}/cancel")
+    @Operation(
+            summary = "Hủy một tác vụ đang chờ hoặc đang chạy (task CANCELLED, score FAILED)",
+            description = "Chỉ chủ task hoặc ADMIN. Errors: 2101 task không tồn tại, 1002 không có quyền,"
+                    + " 2102 task đã kết thúc nên không hủy được",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<AiTaskResponse> cancelTask(@PathVariable String taskId) {
+        return ApiResponse.<AiTaskResponse>builder()
+                .result(aiTaskService.cancelTask(taskId))
+                .build();
+    }
+
     @GetMapping("/scores/{scoreId}/ai-tasks")
     @Operation(summary = "List AI tasks of a score", security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<List<AiTaskResponse>> getTasksOfScore(@PathVariable String scoreId) {

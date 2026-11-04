@@ -132,11 +132,14 @@ export interface ScoreFileInfo {
 
 export interface AiTaskInfo {
   id: string;
+  scoreId?: string;
   taskType: string;
   status: TaskStatus;
   progress?: number | null;
   step?: string | null;
   errorMessage?: string | null;
+  /** JSON kết quả do music-ai trả về (pageCount, warnings, stoppedAfter...). */
+  resultData?: Record<string, unknown> | null;
   createdAt?: string;
   startedAt?: string | null;
   finishedAt?: string | null;

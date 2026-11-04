@@ -2,6 +2,7 @@ package com.ptit.music_be.service.impl;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -27,6 +28,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ptit.music_be.dto.enums.AiTaskStatus;
 import com.ptit.music_be.dto.enums.AiTaskType;
@@ -34,6 +36,8 @@ import com.ptit.music_be.dto.enums.FileType;
 import com.ptit.music_be.dto.enums.OmrSourceType;
 import com.ptit.music_be.dto.enums.ProcessingStatus;
 import com.ptit.music_be.dto.enums.ScoreSource;
+import com.ptit.music_be.dto.request.OmrRetryRequest;
+import com.ptit.music_be.dto.response.AiTaskResponse;
 import com.ptit.music_be.dto.response.OmrUploadResponse;
 import com.ptit.music_be.entity.AiTask;
 import com.ptit.music_be.entity.Member;
@@ -50,6 +54,7 @@ import com.ptit.music_be.repository.ScoreFileRepository;
 import com.ptit.music_be.repository.ScoreRepository;
 import com.ptit.music_be.service.FileStorageService;
 import com.ptit.music_be.service.OmrService;
+import com.ptit.music_be.service.ScoreFileService;
 import com.ptit.music_be.utils.SecurityUtils;
 
 import lombok.AccessLevel;
@@ -73,6 +78,7 @@ public class OmrServiceImpl implements OmrService {
     MemberRepository memberRepository;
     ScoreRepository scoreRepository;
     ScoreFileRepository scoreFileRepository;
+    ScoreFileService scoreFileService;
     AiTaskRepository aiTaskRepository;
     FileStorageService fileStorageService;
     ScoreFileMapper scoreFileMapper;
@@ -190,6 +196,115 @@ public class OmrServiceImpl implements OmrService {
                 .task(aiTaskMapper.toResponse(task))
                 .files(scoreFileMapper.toResponses(savedFiles))
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public AiTaskResponse retry(String scoreId, OmrRetryRequest request) {
+        Score score =
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+        scoreFileService.checkCanEdit(score);
+
+        if (aiTaskRepository.existsByScoreIdAndTaskTypeAndStatusIn(
+                scoreId, AiTaskType.OMR_CONVERSION, ACTIVE_STATUSES)) {
+            throw new AppException(ErrorCode.SCORE_BUSY);
+        }
+        Member member = memberRepository
+                .findByEmail(SecurityUtils.getCurrentEmail())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        long activeTasks = aiTaskRepository.countByMemberIdAndTaskTypeAndStatusIn(
+                member.getId(), AiTaskType.OMR_CONVERSION, ACTIVE_STATUSES);
+        if (activeTasks >= maxActiveTasks) {
+            throw new AppException(ErrorCode.TASK_LIMIT_EXCEEDED);
+        }
+
+        // File gốc (1 PDF hoặc các ảnh) phải còn trên đĩa mới chạy lại được
+        List<ScoreFile> originals =
+                scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(scoreId, FileType.ORIGINAL_PDF);
+        boolean isPdf = !originals.isEmpty();
+        if (!isPdf) {
+            originals =
+                    scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(scoreId, FileType.ORIGINAL_IMAGE);
+        }
+        if (originals.isEmpty()) {
+            throw new AppException(ErrorCode.FILE_NOT_EXISTED);
+        }
+        for (ScoreFile original : originals) {
+            if (!Files.isRegularFile(fileStorageService.resolve(original.getStoragePath()))) {
+                throw new AppException(ErrorCode.FILE_NOT_EXISTED);
+            }
+        }
+
+        // Kế thừa sourceType/preprocess từ task OMR gần nhất; body có preprocess thì ưu tiên body
+        JsonNode previous = latestOmrInput(scoreId);
+        OmrSourceType sourceType = isPdf ? OmrSourceType.PDF_NATIVE : OmrSourceType.PHOTO;
+        boolean preprocess = true;
+        if (previous != null) {
+            if (previous.hasNonNull("sourceType")) {
+                try {
+                    sourceType =
+                            OmrSourceType.valueOf(previous.get("sourceType").asText());
+                } catch (IllegalArgumentException ignored) {
+                    // giữ giá trị đoán theo loại file
+                }
+            }
+            preprocess = previous.path("preprocess").asBoolean(true);
+        }
+        if (request != null && request.getPreprocess() != null) {
+            preprocess = request.getPreprocess();
+        }
+
+        removeStalePages(score);
+
+        score.setProcessingStatus(ProcessingStatus.PENDING.name());
+        scoreRepository.save(score);
+
+        AiTask task = aiTaskRepository.save(AiTask.builder()
+                .member(member)
+                .score(score)
+                .taskType(AiTaskType.OMR_CONVERSION)
+                .status(AiTaskStatus.PENDING)
+                .progress(0)
+                .inputData(buildInputData(sourceType, preprocess))
+                .build());
+
+        eventPublisher.publishEvent(new OmrTaskCreatedEvent(task.getId(), score.getId()));
+        return aiTaskMapper.toResponse(task);
+    }
+
+    /** input_data của task OMR gần nhất của score, hoặc null nếu chưa có / không phải JSON. */
+    private JsonNode latestOmrInput(String scoreId) {
+        return aiTaskRepository.findByScoreIdOrderByCreatedAtDesc(scoreId).stream()
+                .filter(t -> t.getTaskType() == AiTaskType.OMR_CONVERSION && t.getInputData() != null)
+                .findFirst()
+                .map(t -> {
+                    try {
+                        return objectMapper.readTree(t.getInputData());
+                    } catch (JsonProcessingException e) {
+                        return null;
+                    }
+                })
+                .orElse(null);
+    }
+
+    /**
+     * Xóa ảnh trang đã tiền xử lý của lần chạy trước (dữ liệu dẫn xuất, sẽ được sinh lại). Thư mục trên đĩa chỉ bị xóa
+     * sau khi commit để không mất file khi DB rollback.
+     */
+    private void removeStalePages(Score score) {
+        List<ScoreFile> stalePages =
+                scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(score.getId(), FileType.PNG);
+        if (stalePages.isEmpty()) {
+            return;
+        }
+        scoreFileRepository.deleteAll(stalePages);
+        String pagesDir = "scores/" + score.getId() + "/pages";
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                fileStorageService.deleteDirectory(pagesDir);
+            }
+        });
     }
 
     // ---------------------------------------------------------------- validation
@@ -366,9 +481,13 @@ public class OmrServiceImpl implements OmrService {
 
     /** input_data của task OMR, ví dụ {"sourceType":"PHOTO","preprocess":true}. */
     private String buildInputData(OmrSourceType sourceType) {
+        return buildInputData(sourceType, true);
+    }
+
+    private String buildInputData(OmrSourceType sourceType, boolean preprocess) {
         Map<String, Object> input = new LinkedHashMap<>();
         input.put("sourceType", sourceType.name());
-        input.put("preprocess", true);
+        input.put("preprocess", preprocess);
         try {
             return objectMapper.writeValueAsString(input);
         } catch (JsonProcessingException e) {

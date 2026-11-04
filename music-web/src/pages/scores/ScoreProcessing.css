@@ -1,0 +1,313 @@
+/* Trang tiến độ số hóa (/scores/:id/processing). Tiền tố sp- */
+.sp-container {
+  max-width: 880px;
+}
+.sp-skeleton {
+  height: 320px;
+  border-radius: 20px;
+}
+
+.sp-card {
+  padding: 1.5rem;
+  background: var(--sc-card);
+  border: 1px solid var(--sc-line);
+  border-radius: var(--sc-radius);
+  box-shadow: var(--sc-shadow);
+}
+.sp-card__top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+.sp-headline {
+  font-size: 1.2rem;
+}
+.sp-percent {
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--sc-accent);
+}
+
+/* Thanh tiến độ tổng */
+.sp-bar {
+  height: 10px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+.sp-bar__fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--sc-accent), #7c9cff);
+  transition: width 0.5s ease;
+}
+.sp-bar__fill--completed {
+  background: #22c55e;
+}
+.sp-bar__fill--failed,
+.sp-bar__fill--cancelled {
+  background: #ef4444;
+}
+
+/* Danh sách các bước */
+.sp-steps {
+  display: grid;
+  gap: 0.15rem;
+  margin: 1.25rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.sp-step {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.25rem;
+}
+.sp-step__mark {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid #cbd5e1;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #fff;
+}
+.sp-step__body {
+  display: flex;
+  flex-direction: column;
+}
+.sp-step__label {
+  font-weight: 600;
+}
+.sp-step__note {
+  font-size: 0.8rem;
+  color: var(--sc-muted);
+}
+.sp-step--done .sp-step__mark {
+  background: #22c55e;
+  border-color: #22c55e;
+}
+.sp-step--skipped .sp-step__mark {
+  border-color: #cbd5e1;
+  color: #94a3b8;
+}
+.sp-step--active .sp-step__mark {
+  border-color: var(--sc-accent);
+  border-top-color: transparent;
+  animation: sp-spin 0.9s linear infinite;
+}
+.sp-step--failed .sp-step__mark {
+  background: #ef4444;
+  border-color: #ef4444;
+}
+.sp-step--pending .sp-step__label {
+  color: var(--sc-muted);
+}
+.sp-step--later,
+.sp-step--skipped {
+  opacity: 0.55;
+}
+
+.sp-note {
+  margin-top: 1rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 10px;
+  background: var(--sc-accent-soft);
+  color: #1e3a8a;
+  font-size: 0.9rem;
+}
+.sp-warnings {
+  margin: 1rem 0 0;
+  padding: 0.7rem 0.9rem 0.7rem 1.9rem;
+  border-radius: 10px;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 0.85rem;
+}
+.sp-error {
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  background: #fef2f2;
+  color: #991b1b;
+}
+.sp-error p {
+  margin-top: 0.25rem;
+  font-size: 0.9rem;
+}
+.sp-error__detail {
+  color: #b45454;
+}
+.sp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1.25rem;
+}
+.sp-actions:empty {
+  display: none;
+}
+
+/* Dải ảnh các trang */
+.sp-pages {
+  margin-top: 1.75rem;
+}
+.sp-pages h2 {
+  font-size: 1.1rem;
+}
+.sp-pages__hint {
+  margin: 0.15rem 0 0.75rem;
+  font-size: 0.85rem;
+  color: var(--sc-muted);
+}
+.sp-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sp-strip__item {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1050 / 1485;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--sc-line);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: var(--sc-shadow);
+  cursor: pointer;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
+}
+.sp-strip__item:hover,
+.sp-strip__item:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: var(--sc-shadow-hover);
+}
+.sp-strip__item .sc-thumb {
+  height: 100%;
+  object-fit: contain;
+}
+.sp-strip__item--wait {
+  cursor: default;
+  background: linear-gradient(90deg, #eef2f7 25%, #f8fafc 37%, #eef2f7 63%);
+  background-size: 200% 100%;
+  animation: sc-shimmer 1.3s linear infinite;
+}
+.sp-strip__item--wait:hover {
+  transform: none;
+  box-shadow: var(--sc-shadow);
+}
+.sp-strip__no {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  min-width: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.72);
+  color: #fff;
+  font-size: 0.75rem;
+  line-height: 22px;
+  text-align: center;
+}
+
+/* So sánh trước và sau */
+.sc-modal.sp-compare {
+  max-width: 760px;
+}
+.sp-compare__loading,
+.sp-compare__note {
+  padding: 1.5rem 0;
+  text-align: center;
+  color: var(--sc-muted);
+  font-size: 0.9rem;
+}
+.sp-compare__labels {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--sc-muted);
+}
+.sp-compare__stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1050 / 1485;
+  max-height: 70vh;
+  margin: 0 auto;
+  overflow: hidden;
+  border: 1px solid var(--sc-line);
+  border-radius: 10px;
+  background: #fff;
+  user-select: none;
+}
+.sp-compare__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #fff;
+}
+.sp-compare__line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--sc-accent);
+  box-shadow: 0 0 0 1px #fff;
+  pointer-events: none;
+}
+.sp-compare__range {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: ew-resize;
+}
+.sp-compare__stage:focus-within .sp-compare__line {
+  width: 4px;
+  margin-left: -2px;
+}
+
+@keyframes sp-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 640px) {
+  .sp-card {
+    padding: 1.1rem;
+  }
+  .sp-strip {
+    grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sp-step__mark,
+  .sp-bar__fill,
+  .sp-strip__item,
+  .sp-strip__item--wait {
+    animation: none !important;
+    transition: none !important;
+  }
+}

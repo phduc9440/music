@@ -4,6 +4,8 @@ import java.util.List;
 
 import org.springframework.web.multipart.MultipartFile;
 
+import com.ptit.music_be.dto.request.OmrRetryRequest;
+import com.ptit.music_be.dto.response.AiTaskResponse;
 import com.ptit.music_be.dto.response.OmrUploadResponse;
 
 public interface OmrService {
@@ -17,4 +19,13 @@ public interface OmrService {
      * @param sourceType PHOTO / SCAN / PDF_NATIVE; rỗng thì tự đoán (PDF -> PDF_NATIVE, ảnh -> PHOTO)
      */
     OmrUploadResponse upload(List<MultipartFile> files, String title, String composer, String sourceType);
+
+    /**
+     * Chạy lại OMR trên file gốc đã lưu (đặc tả mục 2.2 luồng 6): tạo task OMR_CONVERSION mới. Cần quyền sửa bản nhạc
+     * (UNAUTHORIZED), không cho khi score đang có task OMR PENDING/PROCESSING (SCORE_BUSY 2201), người dùng đang có
+     * đủ 3 task OMR thì TASK_LIMIT_EXCEEDED (2202). Ảnh trang đã tiền xử lý của lần trước bị xóa vì sẽ được sinh lại.
+     *
+     * @param request tùy chọn; {@code preprocess} để trống thì dùng lại lựa chọn của lần chạy trước (mặc định true)
+     */
+    AiTaskResponse retry(String scoreId, OmrRetryRequest request);
 }

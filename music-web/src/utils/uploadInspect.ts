@@ -20,7 +20,7 @@ export interface FileInspection {
 const PDF_THUMB_WIDTH = 240;
 
 // pdf.js khá nặng nên chỉ tải khi người dùng chọn PDF
-const loadPdfJs = async () => {
+export const loadPdfJs = async () => {
   const pdfjs = await import('pdfjs-dist');
   pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
   return pdfjs;

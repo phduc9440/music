@@ -1,10 +1,17 @@
 package com.ptit.music_be.service.impl;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import com.ptit.music_be.dto.enums.AiTaskError;
+import com.ptit.music_be.dto.enums.AiTaskStatus;
+import com.ptit.music_be.dto.enums.AiTaskType;
+import com.ptit.music_be.dto.enums.ProcessingStatus;
 import com.ptit.music_be.dto.response.AiTaskResponse;
 import com.ptit.music_be.entity.AiTask;
 import com.ptit.music_be.entity.Score;
@@ -16,6 +23,7 @@ import com.ptit.music_be.repository.ScoreRepository;
 import com.ptit.music_be.service.AiTaskService;
 import com.ptit.music_be.service.ScoreFileService;
 import com.ptit.music_be.utils.SecurityUtils;
+import com.ptit.music_be.worker.AiTaskDispatcher;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -30,11 +38,13 @@ public class AiTaskServiceImpl implements AiTaskService {
     ScoreRepository scoreRepository;
     ScoreFileService scoreFileService;
     AiTaskMapper aiTaskMapper;
+    AiTaskDispatcher aiTaskDispatcher;
 
     @Override
     @Transactional(readOnly = true)
     public AiTaskResponse getTask(String taskId) {
-        AiTask task = aiTaskRepository.findById(taskId).orElseThrow(() -> new AppException(ErrorCode.AI_TASK_NOT_EXISTED));
+        AiTask task =
+                aiTaskRepository.findById(taskId).orElseThrow(() -> new AppException(ErrorCode.AI_TASK_NOT_EXISTED));
         if (!SecurityUtils.isAdmin()
                 && !SecurityUtils.getCurrentEmail().equals(task.getMember().getEmail())) {
             throw new AppException(ErrorCode.UNAUTHORIZED);
@@ -45,10 +55,49 @@ public class AiTaskServiceImpl implements AiTaskService {
     @Override
     @Transactional(readOnly = true)
     public List<AiTaskResponse> getTasksOfScore(String scoreId) {
-        Score score = scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+        Score score =
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
         scoreFileService.checkCanView(score);
         return aiTaskRepository.findByScoreIdOrderByCreatedAtDesc(scoreId).stream()
                 .map(aiTaskMapper::toResponse)
                 .toList();
+    }
+
+    @Override
+    @Transactional
+    public AiTaskResponse cancelTask(String taskId) {
+        // Khóa dòng để callback đến cùng lúc không ghi đè trạng thái CANCELLED
+        AiTask task = aiTaskRepository
+                .findByIdForUpdate(taskId)
+                .orElseThrow(() -> new AppException(ErrorCode.AI_TASK_NOT_EXISTED));
+        if (!SecurityUtils.isAdmin()
+                && !SecurityUtils.getCurrentEmail().equals(task.getMember().getEmail())) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+        if (task.getStatus() != AiTaskStatus.PENDING && task.getStatus() != AiTaskStatus.PROCESSING) {
+            throw new AppException(ErrorCode.AI_TASK_NOT_CANCELLABLE);
+        }
+
+        task.setStatus(AiTaskStatus.CANCELLED);
+        task.setErrorMessage(AiTaskError.CANCELLED_BY_USER.name());
+        task.setFinishedAt(LocalDateTime.now());
+        aiTaskRepository.save(task);
+
+        Score score = task.getScore();
+        if (score != null && task.getTaskType() == AiTaskType.OMR_CONVERSION) {
+            score.setProcessingStatus(ProcessingStatus.FAILED.name());
+            scoreRepository.save(score);
+        }
+
+        // Chỉ báo music-ai sau khi commit, để nó không dừng job rồi DB lại rollback
+        if (task.getTaskType() == AiTaskType.OMR_CONVERSION) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    aiTaskDispatcher.cancelRemote(taskId);
+                }
+            });
+        }
+        return aiTaskMapper.toResponse(task);
     }
 }
