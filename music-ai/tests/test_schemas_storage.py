@@ -34,7 +34,7 @@ def test_valid_job_request(storage_root):
         inputs=[{"path": "scores/s1/original/01-a.pdf", "kind": "PDF"}],
         options={"preprocess": True},
     )
-    assert job.options.binarize is True and job.options.stopAfter == "PREPROCESS"
+    assert job.options.binarize is True and job.options.stopAfter == "MERGE"
 
 
 @pytest.mark.parametrize(

@@ -43,6 +43,12 @@ export default function ScoreHero({ score, onEdit, onDelete }: Props) {
           </p>
         )}
 
+        {score.processingStatus === 'COMPLETED' && score.sourceType === 'OMR' && (
+          <p className="sc-hero__owner">
+            <Link to={`/scores/${score.id}/review`}>Xem kết quả số hóa →</Link>
+          </p>
+        )}
+
         {score.processingStatus === 'FAILED' && score.rejectReason && (
           <div className="sc-error">Xử lý thất bại: {score.rejectReason}</div>
         )}

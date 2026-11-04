@@ -234,6 +234,8 @@ export default function ScoreProcessing() {
   else if (queued) headline = 'Đang xếp hàng chờ xử lý...';
   else if (task.step === 'SPLIT_PDF') headline = 'Đang tách các trang PDF...';
   else if (task.step === 'PREPROCESS') headline = 'Đang làm sạch và căn thẳng ảnh...';
+  else if (task.step === 'INFERENCE') headline = 'Đang nhận diện ký hiệu nhạc...';
+  else if (task.step === 'MERGE') headline = 'Đang ghép các trang...';
 
   const activeNote =
     task.step === 'PREPROCESS' && totalPages > 0
@@ -281,8 +283,8 @@ export default function ScoreProcessing() {
           {completed && (
             <p className="sp-note">
               {stoppedEarly(task)
-                ? 'Ảnh các trang đã được làm sạch. Bước nhận diện ký hiệu sẽ có ở bản sau.'
-                : 'Bấm "Mở bản nhạc" để xem kết quả.'}
+                ? 'Quy trình đã dừng sớm theo cấu hình. Bấm "Xem kết quả" để xem phần đã có.'
+                : 'Đã nhận diện và ghép các trang. Bấm "Xem kết quả" để kiểm tra.'}
             </p>
           )}
 
@@ -323,9 +325,9 @@ export default function ScoreProcessing() {
             {completed && (
               <button
                 className="sc-btn sc-btn--primary"
-                onClick={() => navigate(`/scores/${score.id}`, { replace: true })}
+                onClick={() => navigate(`/scores/${score.id}/review`, { replace: true })}
               >
-                Mở bản nhạc
+                Xem kết quả
               </button>
             )}
           </div>

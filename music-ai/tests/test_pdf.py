@@ -72,7 +72,7 @@ def _pdf_job(root, score="p1"):
         taskId=str(uuid.uuid4()),
         scoreId=score,
         inputs=[{"path": rel, "kind": "PDF"}],
-        options={"sourceType": "PDF_NATIVE"},
+        options={"sourceType": "PDF_NATIVE", "stopAfter": "PREPROCESS"},
     )
 
 
@@ -124,7 +124,7 @@ def test_real_pymupdf(storage_root, java, tmp_path):
     path.parent.mkdir(parents=True)
     pages[0].save(path, "PDF", save_all=True, append_images=pages[1:], resolution=150)
     job = JobRequest(
-        taskId=str(uuid.uuid4()), scoreId="real", inputs=[{"path": rel, "kind": "PDF"}], options={}
+        taskId=str(uuid.uuid4()), scoreId="real", inputs=[{"path": rel, "kind": "PDF"}], options={"stopAfter": "PREPROCESS"}
     )
     run_omr_job(job, threading.Event(), JavaCallback(str(job.taskId)))
     assert java.endpoints()[-1] == "complete"

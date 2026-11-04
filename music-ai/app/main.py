@@ -15,6 +15,7 @@ from fastapi import Depends, FastAPI, Header, HTTPException
 
 from app.config import get_settings
 from app.jobs import JobManager, QueueFullError
+from app.omr.transcoda import get_recognizer
 from app.schemas import JobRequest
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -27,6 +28,8 @@ manager = JobManager()
 async def lifespan(_: FastAPI):
     settings = get_settings()
     log.info("STORAGE_ROOT = %s, JAVA_BASE_URL = %s", settings.storage_root, settings.java_base_url)
+    # Nạp Transcoda một lần ở luồng nền (đặc tả mục 2.3): dịch vụ lên ngay, /health báo modelLoaded khi xong
+    get_recognizer().start_loading()
     manager.start()
     yield
     manager.stop()
@@ -59,8 +62,21 @@ def _detect_device() -> str:
 
 @app.get("/health")
 def health() -> dict:
-    """Trạng thái dịch vụ. ``modelLoaded`` luôn false ở nhánh tiền xử lý (chưa nạp Transcoda)."""
-    return {"modelLoaded": False, "device": _detect_device(), "queueSize": manager.queue_size}
+    """Trạng thái dịch vụ.
+
+    ``modelLoaded`` là true khi Transcoda đã nạp xong; ``modelState`` là một trong idle, loading, ready, failed,
+    disabled (``LOAD_MODEL=false``); nạp lỗi thì ``modelError`` ghi nguyên nhân. ``device`` là thiết bị đang chạy model.
+    """
+    recognizer = get_recognizer()
+    body = {
+        "modelLoaded": recognizer.model_loaded,
+        "modelState": recognizer.state,
+        "device": recognizer.device if recognizer.model_loaded else _detect_device(),
+        "queueSize": manager.queue_size,
+    }
+    if recognizer.error:
+        body["modelError"] = recognizer.error
+    return body
 
 
 @app.post("/omr/jobs", status_code=202, dependencies=[Depends(require_internal_key)])

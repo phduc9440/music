@@ -17,12 +17,12 @@ export interface OmrStepDef {
   available: boolean;
 }
 
-/** 5 bước của quy trình số hóa (đặc tả mục 2.2). Hiện chỉ 2 bước đầu chạy thật. */
+/** 5 bước của quy trình số hóa (đặc tả mục 2.2). Hiện 4 bước đầu chạy thật; xuất MusicXML/MIDI sẽ có ở bản sau. */
 export const OMR_STEPS: OmrStepDef[] = [
   { key: 'SPLIT_PDF', label: 'Tách trang PDF', available: true },
   { key: 'PREPROCESS', label: 'Tiền xử lý ảnh', available: true },
-  { key: 'INFERENCE', label: 'Nhận diện ký hiệu', available: false },
-  { key: 'MERGE', label: 'Ghép các trang', available: false },
+  { key: 'INFERENCE', label: 'Nhận diện ký hiệu', available: true },
+  { key: 'MERGE', label: 'Ghép các trang', available: true },
   { key: 'EXPORT', label: 'Xuất MusicXML và MIDI', available: false },
 ];
 
@@ -36,9 +36,11 @@ export const isTerminalStatus = (status: TaskStatus): boolean =>
 export const pickLatestOmrTask = (tasks: AiTaskInfo[]): AiTaskInfo | undefined =>
   tasks.find((t) => t.taskType === OMR_TASK_TYPE);
 
-/** Nhánh hiện tại dừng sau bước tiền xử lý (resultData.stoppedAfter) nên các bước sau chưa chạy. */
-export const stoppedEarly = (task: AiTaskInfo): boolean =>
-  typeof task.resultData?.stoppedAfter === 'string' && task.resultData.stoppedAfter.length > 0;
+/** Quy trình dừng trước bước ghép (resultData.stoppedAfter là PREPROCESS...); dừng sau MERGE là bình thường ở bản này. */
+export const stoppedEarly = (task: AiTaskInfo): boolean => {
+  const stoppedAfter = task.resultData?.stoppedAfter;
+  return typeof stoppedAfter === 'string' && stoppedAfter.length > 0 && stoppedAfter !== 'MERGE';
+};
 
 /**
  * Trạng thái hiển thị của từng bước trong danh sách.
@@ -50,13 +52,14 @@ export const computeStepStates = (task: AiTaskInfo, usesPdf: boolean): StepState
   const current = OMR_STEPS.findIndex((s) => s.key === task.step);
   const completed = task.status === 'COMPLETED';
   const failed = task.status === 'FAILED' || task.status === 'CANCELLED';
-  const finishedAll = completed && !stoppedEarly(task);
+  // Bước cuối đã chạy khi task COMPLETED: stoppedAfter nếu dừng sớm, không thì chạy đủ cả 5 bước
+  const stoppedAfter = typeof task.resultData?.stoppedAfter === 'string' ? task.resultData.stoppedAfter : '';
+  const stopIndex = stoppedAfter ? OMR_STEPS.findIndex((s) => s.key === stoppedAfter) : OMR_STEPS.length - 1;
 
   return OMR_STEPS.map((step, index): StepState => {
     if (!usesPdf && step.key === 'SPLIT_PDF') return 'skipped';
-    if (finishedAll) return 'done';
+    if (completed) return index <= stopIndex ? 'done' : 'later';
     if (!step.available) return 'later';
-    if (completed) return 'done';
     if (current < 0) {
       // Chưa có bước nào (đang xếp hàng): lỗi thì gán cho bước thật đầu tiên, còn lại đều chờ
       return failed && index === (usesPdf ? 0 : 1) ? 'failed' : 'pending';
@@ -109,6 +112,22 @@ const TASK_ERROR_TEXTS: Record<string, ErrorText> = {
     title: 'Không còn file gốc',
     hint: 'File gốc không còn trên hệ thống nên không thể chạy lại. Hãy tải file lên lại.',
   },
+  RECOGNITION_EMPTY: {
+    title: 'Không nhận diện được nốt nhạc nào',
+    hint: 'Hệ thống không đọc ra nốt nào từ các trang. Hãy dùng ảnh rõ, thẳng, đủ sáng hoặc PDF chất lượng cao hơn.',
+  },
+  MERGE_SPINE_MISMATCH: {
+    title: 'Các trang không khớp nhau',
+    hint: 'Số khuông nhạc của các trang khác nhau nên không ghép được thành một bản nhạc. Hãy kiểm tra thứ tự và nội dung trang.',
+  },
+  KERN_PARSE_ERROR: {
+    title: 'Kết quả nhận diện bị lỗi cú pháp',
+    hint: 'Bản kern sau khi ghép không đọc được. Bạn có thể xem bản kern để gỡ lỗi hoặc thử lại.',
+  },
+  MODEL_NOT_LOADED: {
+    title: 'Mô hình nhận diện chưa sẵn sàng',
+    hint: 'Dịch vụ chưa nạp xong mô hình Transcoda. Hãy đợi ít phút rồi thử lại.',
+  },
   INTERNAL_ERROR: {
     title: 'Có lỗi trong quá trình xử lý',
     hint: 'Đã xảy ra lỗi ngoài dự kiến. Bạn có thể thử lại.',
@@ -132,4 +151,17 @@ export const describeTaskError = (task: AiTaskInfo): ErrorText & { detail: strin
 export const getTaskWarnings = (task: AiTaskInfo): string[] => {
   const warnings = task.resultData?.warnings;
   return Array.isArray(warnings) ? warnings.filter((w): w is string => typeof w === 'string') : [];
+};
+
+/** Cảnh báo kèm số trang (tách từ tiền tố "Trang N, ..."); page = null nếu cảnh báo chung. */
+interface ParsedWarning {
+  page: number | null;
+  text: string;
+}
+
+/** Tách số trang từ chuỗi cảnh báo do music-ai sinh, ví dụ "Trang 2, ô nhịp 3: ...". */
+export const parseWarning = (raw: string): ParsedWarning => {
+  const match = /^Trang\s+(\d+)\s*[,:]?\s*(.*)$/s.exec(raw);
+  if (!match) return { page: null, text: raw };
+  return { page: Number(match[1]), text: match[2] || raw };
 };

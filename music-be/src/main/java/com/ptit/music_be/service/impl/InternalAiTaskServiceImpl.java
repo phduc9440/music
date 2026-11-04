@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -48,6 +49,8 @@ public class InternalAiTaskServiceImpl implements InternalAiTaskService {
 
     static final Set<AiTaskStatus> FINISHED_STATUSES =
             EnumSet.of(AiTaskStatus.COMPLETED, AiTaskStatus.FAILED, AiTaskStatus.CANCELLED);
+    /** Loại file chỉ có một bản hiện hành cho mỗi bản nhạc. */
+    static final Set<FileType> SINGLE_CURRENT_TYPES = EnumSet.of(FileType.KERN, FileType.MUSICXML, FileType.MIDI);
     /** Độ dài tối đa của error_message lưu lại (cột TEXT, nhưng không cần dài hơn). */
     static final int MAX_ERROR_LENGTH = 1000;
 
@@ -125,8 +128,27 @@ public class InternalAiTaskServiceImpl implements InternalAiTaskService {
         file.setPageNumber(request.getPageNumber());
         file.setSourceTaskId(task.getId());
         file.setMeta(toJson(request.getMeta()));
-        // TODO(feature/omr-recognition): với KERN/MUSICXML/MIDI cần đặt is_current = false cho bản cũ cùng loại
-        scoreFileRepository.save(file);
+        file.setIsCurrent(true);
+        ScoreFile saved = scoreFileRepository.save(file);
+        if (SINGLE_CURRENT_TYPES.contains(fileType)) {
+            demoteOtherCurrentFiles(score.getId(), saved);
+        }
+    }
+
+    /**
+     * Mỗi (score, file_type) chỉ có một bản hiện hành (mục 1.2 của đặc tả): đặt is_current = false cho các bản khác
+     * cùng loại, bản vừa ghi giữ true. PNG không áp dụng vì mỗi trang là một dòng riêng.
+     */
+    private void demoteOtherCurrentFiles(String scoreId, ScoreFile current) {
+        List<ScoreFile> sameType =
+                scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(scoreId, current.getFileType());
+        List<ScoreFile> stale = sameType.stream()
+                .filter(f -> !f.getId().equals(current.getId()) && !Boolean.FALSE.equals(f.getIsCurrent()))
+                .toList();
+        stale.forEach(f -> f.setIsCurrent(false));
+        if (!stale.isEmpty()) {
+            scoreFileRepository.saveAll(stale);
+        }
     }
 
     @Override
@@ -143,8 +165,10 @@ public class InternalAiTaskServiceImpl implements InternalAiTaskService {
             result.putAll(request.getResultData());
         }
         // Ghi lại việc tạm dừng sớm để biết Score chưa có MusicXML dù task đã COMPLETED
-        if (AiTaskStep.PREPROCESS.name().equals(aiServiceProperties.getStopAfter())) {
-            result.putIfAbsent("stoppedAfter", AiTaskStep.PREPROCESS.name());
+        // TODO(feature/omr-export-musicxml-midi): khi pipeline chạy tới EXPORT thì đây không còn là "dừng sớm"
+        String stopAfter = aiServiceProperties.getStopAfter();
+        if (!AiTaskStep.EXPORT.name().equals(stopAfter)) {
+            result.putIfAbsent("stoppedAfter", stopAfter);
         }
 
         LocalDateTime now = LocalDateTime.now();
