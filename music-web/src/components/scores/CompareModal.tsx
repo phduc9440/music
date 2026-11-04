@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { fetchFileBlob } from '../../services';
 import { renderPdfPageToUrl } from '../../utils/pdfRender';
+import { useOverlayClose } from './useOverlayClose';
 
 interface Props {
   /** Số trang đang xem (bắt đầu từ 1). */
@@ -25,6 +26,11 @@ export default function CompareModal({ pageNumber, processedUrl, originalUrl, or
   const [failed, setFailed] = useState(false);
   // Vị trí đường chia theo %: bên trái đường chia là ảnh gốc, bên phải là ảnh đã xử lý
   const [split, setSplit] = useState(50);
+  const overlayProps = useOverlayClose(onClose);
+  const closeButton = useRef<HTMLButtonElement>(null);
+
+  // Đưa focus vào hộp thoại khi mở để người dùng bàn phím đóng bằng Esc/Enter được ngay
+  useEffect(() => closeButton.current?.focus(), []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
@@ -63,7 +69,7 @@ export default function CompareModal({ pageNumber, processedUrl, originalUrl, or
   const canCompare = loaded?.original != null;
 
   return (
-    <div className="sc-modal-overlay" onClick={onClose}>
+    <div className="sc-modal-overlay" {...overlayProps}>
       <div
         className="sc-modal sp-compare"
         role="dialog"
@@ -73,7 +79,7 @@ export default function CompareModal({ pageNumber, processedUrl, originalUrl, or
       >
         <div className="sc-modal__header">
           <h3>So sánh trang {pageNumber}</h3>
-          <button className="sc-icon-btn" onClick={onClose} aria-label="Đóng">
+          <button ref={closeButton} className="sc-icon-btn" onClick={onClose} aria-label="Đóng">
             ×
           </button>
         </div>

@@ -28,8 +28,8 @@ public interface InternalAiTaskService {
 
     /**
      * Đánh dấu COMPLETED, tiến độ 100, ghi result_data và cập nhật metadata của Score.
-     * TODO(feature/omr-recognition): khi có nhận diện thật, chỉ đặt Score COMPLETED nếu đã có MUSICXML hiện hành.
-     * Hiện omr.stop-after=PREPROCESS nên dừng sau tiền xử lý vẫn coi là xong.
+     * Hiện omr.stop-after=MERGE nên dừng sau khi ghép kern vẫn coi là xong (chưa có MusicXML).
+     * TODO(feature/omr-export-musicxml-midi): khi có bước xuất, chỉ đặt Score COMPLETED nếu đã có MUSICXML hiện hành.
      */
     void complete(String taskId, AiTaskCompleteRequest request);
 
