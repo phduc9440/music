@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { userApi } from '../services';
-import type { User } from '../types';
+import { AuthProvider } from '../types';
+import type { Member } from '../types';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 
 export default function UserProfile() {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<Member | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const navigate = useNavigate();
@@ -35,7 +36,7 @@ export default function UserProfile() {
 
   if (isLoading) return <div>Loading...</div>;
 
-  const displayName = user?.fullName || user?.username || 'User';
+  const displayName = user?.fullName || user?.email || 'User';
 
   return (
     <>
@@ -81,7 +82,6 @@ export default function UserProfile() {
           </div>
 
           <h2 style={{ marginBottom: '0.5rem', fontSize: '1.75rem' }}>{displayName}</h2>
-          <p style={{ color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>@{user?.username}</p>
           <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>{user?.email || 'email@example.com'}</p>
 
           <div
@@ -104,14 +104,14 @@ export default function UserProfile() {
             </h3>
             <div className="d-flex justify-content-between mb-4">
               <span style={{ color: 'var(--text-secondary)' }}>Role:</span>
-              <span className="badge badge-user">{user?.role || 'USER'}</span>
+              <span className="badge badge-user">{user?.roles?.includes('ADMIN') ? 'ADMIN' : 'USER'}</span>
             </div>
             <div className="d-flex justify-content-between mb-4">
               <span style={{ color: 'var(--text-secondary)' }}>Account ID:</span>
               <span style={{ fontFamily: 'monospace' }}>{user?.id}</span>
             </div>
             <div className="d-flex justify-content-center mt-4">
-              {user?.authProvider !== 'GOOGLE' && (
+              {user?.authProvider !== AuthProvider.GOOGLE && (
                 <button
                   onClick={() => setIsPasswordModalOpen(true)}
                   className="btn btn-primary"

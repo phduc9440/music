@@ -2,19 +2,19 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { adminApi } from '../services';
-import type { User } from '../types';
+import { AuthProvider } from '../types';
+import type { Member } from '../types';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 
 export default function AdminDashboard() {
-  const [admin, setAdmin] = useState<User | null>(null);
-  const [accounts, setAccounts] = useState<User[]>([]);
+  const [admin, setAdmin] = useState<Member | null>(null);
+  const [accounts, setAccounts] = useState<Member[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
   // Form State
   const [formId, setFormId] = useState('');
-  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [fullName, setFullName] = useState('');
   const [password, setPassword] = useState('');
@@ -51,18 +51,16 @@ export default function AdminDashboard() {
     navigate('/');
   };
 
-  const openModal = (editMode = false, acc?: User) => {
+  const openModal = (editMode = false, acc?: Member) => {
     setIsEditMode(editMode);
     setIsModalOpen(true);
     if (editMode && acc) {
       setFormId(acc.id);
-      setUsername(acc.username);
       setEmail(acc.email);
       setFullName(acc.fullName);
       setPassword('');
     } else {
       setFormId('');
-      setUsername('');
       setEmail('');
       setFullName('');
       setPassword('');
@@ -73,7 +71,7 @@ export default function AdminDashboard() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload: any = { username, email, fullName };
+    const payload: any = { email, fullName };
     if (password) payload.password = password;
 
     try {
@@ -109,7 +107,7 @@ export default function AdminDashboard() {
         <div className="navbar-brand">Admin Panel</div>
         <div className="navbar-nav">
           <span style={{ fontWeight: 600 }}>{admin?.fullName || 'Admin'}</span>
-          {admin?.authProvider !== 'GOOGLE' && (
+          {admin?.authProvider !== AuthProvider.GOOGLE && (
             <button
               onClick={() => setIsPasswordModalOpen(true)}
               className="btn btn-primary"
@@ -142,7 +140,6 @@ export default function AdminDashboard() {
               <thead>
                 <tr>
                   <th>ID</th>
-                  <th>Username</th>
                   <th>Email</th>
                   <th>Full Name</th>
                   <th>Role</th>
@@ -153,11 +150,12 @@ export default function AdminDashboard() {
                 {accounts.map((acc) => (
                   <tr key={acc.id}>
                     <td style={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>{acc.id.substring(0, 8)}...</td>
-                    <td>{acc.username}</td>
                     <td>{acc.email}</td>
                     <td>{acc.fullName}</td>
                     <td>
-                      <span className={`badge ${acc.role === 'ADMIN' ? 'badge-admin' : 'badge-user'}`}>{acc.role}</span>
+                      <span className={`badge ${acc.roles?.includes('ADMIN') ? 'badge-admin' : 'badge-user'}`}>
+                        {acc.roles?.includes('ADMIN') ? 'ADMIN' : 'USER'}
+                      </span>
                     </td>
                     <td>
                       <div className="d-flex gap-2">
@@ -194,16 +192,6 @@ export default function AdminDashboard() {
             </button>
           </div>
           <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label>Username</label>
-              <input
-                type="text"
-                className="form-control"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-              />
-            </div>
             <div className="form-group">
               <label>Email</label>
               <input
