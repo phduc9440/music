@@ -3,6 +3,7 @@ package com.ptit.music_be.dto.response;
 import java.util.Set;
 
 import com.ptit.music_be.dto.enums.AuthProvider;
+import com.ptit.music_be.dto.enums.MemberStatus;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -19,7 +20,7 @@ public class MemberResponse {
     String fullName;
     String phone;
     String address;
-    String status;
+    MemberStatus status;
     Boolean emailVerified;
     AuthProvider authProvider;
     Set<String> roles;

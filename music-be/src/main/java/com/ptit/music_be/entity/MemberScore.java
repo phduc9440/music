@@ -2,6 +2,9 @@ package com.ptit.music_be.entity;
 
 import jakarta.persistence.*;
 
+import com.ptit.music_be.converter.SharePermissionConverter;
+import com.ptit.music_be.dto.enums.SharePermission;
+
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -29,6 +32,7 @@ public class MemberScore {
     @JoinColumn(name = "score_id", nullable = false)
     Score score;
 
+    @Convert(converter = SharePermissionConverter.class)
     @Column(name = "permission")
-    String permission;
+    SharePermission permission;
 }

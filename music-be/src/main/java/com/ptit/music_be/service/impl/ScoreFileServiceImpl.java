@@ -109,7 +109,7 @@ public class ScoreFileServiceImpl implements ScoreFileService {
             return true;
         }
         return findShare(score)
-                .map(share -> SharePermission.EDIT.name().equals(share.getPermission()))
+                .map(share -> share.getPermission() == SharePermission.EDIT)
                 .orElse(false);
     }
 

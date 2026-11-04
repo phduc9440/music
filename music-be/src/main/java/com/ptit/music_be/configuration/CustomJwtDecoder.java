@@ -18,7 +18,7 @@ import lombok.experimental.FieldDefaults;
 @Component
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class phần CustomJwtDecoder implements JwtDecoder {
+public class CustomJwtDecoder implements JwtDecoder {
     @Value("${jwt.signerKey}")
     private String SIGNER_KEY;
 

@@ -28,6 +28,7 @@ import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.ptit.music_be.dto.enums.AuthProvider;
+import com.ptit.music_be.dto.enums.MemberStatus;
 import com.ptit.music_be.dto.request.*;
 import com.ptit.music_be.dto.response.AuthResponse;
 import com.ptit.music_be.dto.response.MemberResponse;
@@ -119,7 +120,7 @@ public class AuthServiceImpl implements AuthService {
                 .phone(blankToNull(request.getPhone()))
                 .address(blankToNull(request.getAddress()))
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
-                .status("ACTIVE")
+                .status(MemberStatus.ACTIVE)
                 .emailVerified(false)
                 .authProvider(AuthProvider.LOCAL)
                 .build();
@@ -166,7 +167,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private void assertActive(Member user) {
-        if (user.getStatus() != null && !"ACTIVE".equalsIgnoreCase(user.getStatus())) {
+        if (user.getStatus() != null && user.getStatus() != MemberStatus.ACTIVE) {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
     }
@@ -209,7 +210,7 @@ public class AuthServiceImpl implements AuthService {
                 user = Member.builder()
                         .email(email)
                         .fullName(blankToNull(name))
-                        .status("ACTIVE")
+                        .status(MemberStatus.ACTIVE)
                         .emailVerified(true)
                         .authProvider(AuthProvider.GOOGLE)
                         .build();
