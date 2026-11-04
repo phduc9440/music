@@ -51,8 +51,12 @@ class JavaCallback:
         content_type: str,
         size_bytes: int,
         meta: Optional[dict[str, Any]] = None,
+        version: Optional[int] = None,
     ) -> bool:
-        """Báo đã ghi xong một file kết quả (ví dụ ``pages/page-001.png``)."""
+        """Báo đã ghi xong một file kết quả (ví dụ ``pages/page-001.png``).
+
+        ``version`` chỉ dùng cho MUSICXML (version của chính nó) và MIDI (version MusicXML nguồn), xem mục 1.2.
+        """
         payload: dict[str, Any] = {
             "fileType": file_type,
             "storagePath": storage_path,
@@ -62,6 +66,8 @@ class JavaCallback:
         }
         if meta is not None:
             payload["meta"] = meta
+        if version is not None:
+            payload["version"] = version
         return self._post("files", payload)
 
     def complete(self, result_data: dict[str, Any], score_metadata: Optional[dict[str, Any]] = None) -> bool:

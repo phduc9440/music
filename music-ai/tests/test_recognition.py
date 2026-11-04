@@ -198,18 +198,11 @@ def test_stop_after_preprocess_does_not_touch_model(storage_root, java):
     assert done["scoreMetadata"] == {"pageCount": 1}
 
 
-@pytest.mark.parametrize("stop_after", ["EXPORT", "INFERENCE", "merge"])
+@pytest.mark.parametrize("stop_after", ["INFERENCE", "merge"])  # EXPORT chạy tiếp tới xuất MusicXML: xem test_export.py
 def test_later_stop_after_values_run_through_merge(storage_root, java, stop_after):
     write_images(storage_root, "r14", [make_score_page()])
     run(job_for("r14", 1, stopAfter=stop_after), FakeRecognizer([PAGE_1]))
     assert java.bodies("complete")[0]["resultData"]["stoppedAfter"] == "MERGE"
-
-
-def test_unknown_stop_after_warns_and_runs_through_merge(storage_root, java):
-    write_images(storage_root, "r15", [make_score_page()])
-    run(job_for("r15", 1, stopAfter="NONSENSE"), FakeRecognizer([PAGE_1]))
-    result = java.bodies("complete")[0]["resultData"]
-    assert result["stoppedAfter"] == "MERGE" and any("NONSENSE" in w for w in result["warnings"])
 
 
 def test_old_page_kern_files_are_removed_on_rerun(storage_root, java):

@@ -24,4 +24,5 @@ music21>=9.1               # kiểm tra kern đã ghép đọc được (KERN_PA
 # Chỉ để chạy test
 pytest>=8.0
 
-# Nhánh feature/omr-export-musicxml-midi sẽ thêm: verovio (nếu cần SVG)
+# Xuất MusicXML/MIDI (nhánh feature/omr-export-musicxml-midi) dùng music21 ở trên và thư viện chuẩn, không thêm gói nào.
+# verovio (SVG) để nhánh export-format-conversion thêm nếu cần.

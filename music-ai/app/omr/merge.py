@@ -762,6 +762,29 @@ def extract_metadata(result: MergeResult) -> KernMetadata:
     )
 
 
+def page_measure_ranges(result: MergeResult) -> list[dict]:
+    """Ô nhịp đầu và cuối của từng trang trong bản kern đã ghép: ``[{page, firstMeasure, lastMeasure}]``.
+
+    Dùng cùng cách đếm với :func:`_count_measures` (một ô nhịp là đoạn giữa hai vạch nhịp có ít nhất một dòng dữ liệu) và
+    đánh số từ 1, nên khớp với số ô nhịp của MusicXML sau khi chuẩn hóa. Ô nhịp nằm vắt qua chỗ nối trang thuộc cả hai
+    trang. Trang không có dòng dữ liệu nào thì không xuất hiện. Web dùng để vẽ đúng phần nhạc của từng trang bên cạnh
+    ảnh gốc (đặc tả mục 2.3).
+    """
+    ranges: dict[int, list[int]] = {}
+    measure = 1
+    has_data = False
+    for line, page in zip(result.lines, result.line_pages):
+        if is_barline(line):
+            if has_data:
+                measure += 1
+            has_data = False
+        elif is_data_line(line):
+            has_data = True
+            bounds = ranges.setdefault(page, [measure, measure])
+            bounds[1] = measure
+    return [{"page": page, "firstMeasure": b[0], "lastMeasure": b[1]} for page, b in sorted(ranges.items())]
+
+
 def _count_measures(result: MergeResult) -> int:
     """Số ô nhịp = số đoạn giữa các vạch nhịp có ít nhất một dòng dữ liệu."""
     count = 0

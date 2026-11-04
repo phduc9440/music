@@ -69,8 +69,11 @@ Bên Spring Boot đặt `AI_INTERNAL_KEY` trùng với `INTERNAL_KEY` ở đây 
 | GET | `/health` | `{modelLoaded, device, queueSize}` |
 | POST | `/omr/jobs` | Nhận job, trả **202** rồi chạy nền, **tuần tự 1 job một lúc**. Gửi lại cùng `taskId` vẫn 202, không chạy lần hai. Dữ liệu sai: 422. Hàng đợi đầy: 503 |
 | DELETE | `/omr/jobs/{taskId}` | Hủy job đang chờ/chạy (dừng giữa các trang). Trả `{"cancelled": true/false}` |
+| POST | `/convert/kern-to-musicxml` | Đồng bộ: kern → MusicXML đã chuẩn hóa. Body `{kernPath, outPath, tempoBpm?}`; trả số ô nhịp, giọng, nhịp, tempo |
+| POST | `/convert/musicxml-to-midi` | Đồng bộ: MusicXML → MIDI (Java gọi khi MIDI cũ hơn MusicXML). Body `{musicXmlPath, outPath, tempoBpm}`; trả `{notes, tracks, seconds}` |
 
-`/omr/jobs` và DELETE cần header `X-Internal-Key`, sai trả 401.
+Mọi endpoint trừ `/health` cần header `X-Internal-Key`, sai trả 401. Hai endpoint `/convert/**` chạy ngoài hàng đợi OMR; đường
+dẫn phải nằm trong `scores/<scoreId>/` (cùng một bản nhạc cho vào và ra), `outPath` có đuôi `.musicxml` / `.mid`; sai: 422.
 
 Body `POST /omr/jobs`:
 
@@ -79,7 +82,7 @@ Body `POST /omr/jobs`:
   "taskId": "uuid",
   "scoreId": "uuid-của-bản-nhạc",
   "inputs": [{"path": "scores/<scoreId>/original/01-xxx.pdf", "kind": "PDF", "page": null}],
-  "options": {"preprocess": true, "binarize": true, "sourceType": "PHOTO", "stopAfter": "MERGE"}
+  "options": {"preprocess": true, "binarize": true, "sourceType": "PHOTO", "stopAfter": "EXPORT", "musicXmlVersion": 1}
 }
 ```
 
@@ -93,10 +96,33 @@ nằm trong `scores/<scoreId>/`; hoặc đúng 1 PDF, hoặc nhiều ảnh (khô
 | `SPLIT_PDF` | 5-10% | Tách PDF / đọc các ảnh đầu vào |
 | `PREPROCESS` | 10-30% | Tiền xử lý từng trang → `pages/page-NNN.png` → callback `files` (PNG) |
 | `INFERENCE` | 30-85% | Transcoda nhận diện từng trang → `kern/page-NNN.krn`; tiến độ `30 + 55 × trang_xong / tổng_trang` |
-| `MERGE` | 85-90% | Làm sạch, ghép kern, kiểm tra → `kern/merged.krn` → callback `files` (KERN) → `complete` |
+| `MERGE` | 85-90% | Làm sạch, ghép kern, kiểm tra → `kern/merged.krn` → callback `files` (KERN) |
+| `EXPORT` | 90-98% | kern → `musicxml/v{n}.musicxml` → `midi/v{n}.mid` → callback `files` (MUSICXML, MIDI) → `complete` |
 
-`stopAfter` (Java gửi, biến `OMR_STOP_AFTER`): `PREPROCESS` dừng sau tiền xử lý (không cần model); `MERGE` (mặc định) chạy
-tới hết ghép kern; `EXPORT` hiện được hiểu là `MERGE` vì chưa có bước xuất.
+`stopAfter` (Java gửi, biến `OMR_STOP_AFTER`): `PREPROCESS` dừng sau tiền xử lý (không cần model); `MERGE` dừng sau ghép
+kern; `EXPORT` (mặc định) chạy đủ. `musicXmlVersion` do Java tính (`scores.current_version + 1`): nhận diện lại sinh
+`v2`, `v3`... và không ghi đè bản cũ. Chỉ khi chạy đủ thì `result_data` không có khóa `stoppedAfter`.
+
+## Xuất MusicXML và MIDI (đặc tả mục 2.4)
+
+1. **kern → MusicXML** (`app/convert/kern.py`): music21 đọc `merged.krn` rồi ghi MusicXML thô.
+2. **Chuẩn hóa** (`app/convert/musicxml.py`, chỉ dùng thư viện chuẩn): gộp các khuông thành **1 part "Piano" nhiều staff**
+   (`<staves>2</staves>`, staff 1 = tay phải), đưa các part về cùng `divisions`, đánh lại `<staff>`/`<voice>` cho không trùng,
+   thêm `<sound tempo>` ở ô nhịp 1, đánh lại số ô nhịp từ 1. Khuông trên/dưới được xác định từ **khóa nhạc và cao độ**,
+   không dựa vào thứ tự part music21 trả về. Metadata (`measureCount`, `keySignature` dạng `G`/`Bb`/`F#m`, `timeSignature`,
+   `tempoBpm`, `staffCount`) rút từ chính MusicXML này và ghi đè giá trị tạm rút từ kern.
+3. **MusicXML → MIDI** (`app/convert/midi.py`): tự ghi MIDI chuẩn (SMF 1, 480 tick/phách): **track i = staff i+1, kênh i**
+   (bỏ qua kênh 9), tempo và nhịp ở track đầu; nốt nối (tie) gộp thành một nốt. Không dùng `music21 write('midi')` vì cách
+   music21 gán track/kênh cho bản nhiều staff thay đổi theo phiên bản.
+
+Hai file chỉ được báo về Java (callback `files`) sau khi cả hai đã ghi xong; `complete` kèm `pageMeasures`
+(`[{page, firstMeasure, lastMeasure}]`, để web vẽ đúng phần nhạc của từng trang bên cạnh ảnh gốc).
+
+| Tình huống | Kết quả |
+|---|---|
+| music21 không đọc/ghi được kern, thiếu music21, MusicXML không có ô nhịp | FAILED `EXPORT_ERROR: chi tiết` (file kern vẫn giữ) |
+| Số ô nhịp theo kern khác theo MusicXML | Cảnh báo: ảnh trang và bản nhạc đặt cạnh nhau có thể lệch |
+| Số staff khác 2 | Cảnh báo: nút Tắt/Solo từng tay có thể không dùng được |
 
 ## Tiền xử lý (đặc tả mục 2.2)
 
@@ -187,8 +213,11 @@ quá 10 phút). Có GPU NVIDIA thì `DEVICE=auto` tự dùng; trên Mac Apple Si
 ## Test
 
 ```bash
-pytest -q          # 100+ test, khoảng 2 phút; test PDF thật tự bỏ qua nếu chưa cài pymupdf
+pytest -q          # 130+ test, khoảng 2-3 phút; test PDF thật và test music21 thật tự bỏ qua nếu chưa cài
 ```
+
+`tests/test_convert_kern.py` chạy music21 thật (kern → MusicXML → MIDI) và chỉ chạy khi đã `pip install music21`; các test
+còn lại (`test_convert_xml.py`, `test_export.py`) dùng MusicXML dựng tay nên chạy ở mọi nơi.
 
 Test dùng trang nhạc tổng hợp (`tests/synth.py`), Spring Boot giả (`tests/fake_java.py`) và Transcoda giả
 (`tests/fake_recognizer.py`), nên **không cần Java, torch hay tải model** để chạy test. Việc chạy model thật phải thử tay.
