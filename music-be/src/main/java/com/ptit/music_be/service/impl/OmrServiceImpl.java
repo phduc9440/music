@@ -38,6 +38,7 @@ import com.ptit.music_be.dto.enums.ProcessingStatus;
 import com.ptit.music_be.dto.enums.ScoreSource;
 import com.ptit.music_be.dto.request.OmrRetryRequest;
 import com.ptit.music_be.dto.response.AiTaskResponse;
+import com.ptit.music_be.dto.response.OmrResultResponse;
 import com.ptit.music_be.dto.response.OmrUploadResponse;
 import com.ptit.music_be.entity.AiTask;
 import com.ptit.music_be.entity.Member;
@@ -270,6 +271,67 @@ public class OmrServiceImpl implements OmrService {
 
         eventPublisher.publishEvent(new OmrTaskCreatedEvent(task.getId(), score.getId()));
         return aiTaskMapper.toResponse(task);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public OmrResultResponse getResult(String scoreId) {
+        Score score =
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+        scoreFileService.checkCanView(score);
+
+        AiTask task = aiTaskRepository.findByScoreIdOrderByCreatedAtDesc(scoreId).stream()
+                .filter(t -> t.getTaskType() == AiTaskType.OMR_CONVERSION)
+                .findFirst()
+                .orElseThrow(() -> new AppException(ErrorCode.AI_TASK_NOT_EXISTED));
+
+        List<OmrResultResponse.Page> pages =
+                scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(scoreId, FileType.PNG).stream()
+                        .map(f -> OmrResultResponse.Page.builder()
+                                .pageNumber(f.getPageNumber())
+                                .imageFileId(f.getId())
+                                .build())
+                        .toList();
+
+        // result_data do music-ai ghi; thiếu hoặc hỏng thì coi như rỗng (task chưa xong hoặc đã lỗi)
+        JsonNode data = parseJson(task.getResultData());
+        List<String> warnings = new ArrayList<>();
+        data.path("warnings").forEach(w -> warnings.add(w.asText()));
+        int pageCount = data.hasNonNull("pageCount") ? data.get("pageCount").asInt() : pages.size();
+        String stoppedAfter =
+                data.hasNonNull("stoppedAfter") ? data.get("stoppedAfter").asText() : null;
+
+        return OmrResultResponse.builder()
+                .taskId(task.getId())
+                .status(task.getStatus())
+                .pageCount(pageCount)
+                .warnings(warnings)
+                .stoppedAfter(stoppedAfter)
+                .pages(pages)
+                .kernFileId(currentFileId(scoreId, FileType.KERN))
+                .musicXmlFileId(currentFileId(scoreId, FileType.MUSICXML))
+                .midiFileId(currentFileId(scoreId, FileType.MIDI))
+                .build();
+    }
+
+    /** Id của file hiện hành (is_current không phải false) thuộc loại cho trước, hoặc null nếu chưa có. */
+    private String currentFileId(String scoreId, FileType type) {
+        return scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(scoreId, type).stream()
+                .filter(f -> !Boolean.FALSE.equals(f.getIsCurrent()))
+                .map(ScoreFile::getId)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private JsonNode parseJson(String json) {
+        if (json == null || json.isBlank()) {
+            return objectMapper.createObjectNode();
+        }
+        try {
+            return objectMapper.readTree(json);
+        } catch (JsonProcessingException e) {
+            return objectMapper.createObjectNode();
+        }
     }
 
     /** input_data của task OMR gần nhất của score, hoặc null nếu chưa có / không phải JSON. */

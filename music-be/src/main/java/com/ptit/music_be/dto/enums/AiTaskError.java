@@ -22,6 +22,8 @@ public enum AiTaskError {
     JOB_REJECTED,
     /** Không còn file gốc để gửi đi xử lý. */
     ORIGINAL_FILE_MISSING,
+    /** Model nhận diện (Transcoda) bị tắt hoặc nạp lỗi. */
+    MODEL_NOT_LOADED,
     /** Người dùng bấm hủy. */
     CANCELLED_BY_USER
 }

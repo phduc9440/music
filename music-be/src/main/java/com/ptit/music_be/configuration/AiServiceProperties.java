@@ -32,8 +32,9 @@ public class AiServiceProperties {
     private final int readTimeoutMs;
 
     /**
-     * Bước cuối cùng pipeline OMR được chạy (PREPROCESS, về sau INFERENCE/MERGE/EXPORT). Tạm = PREPROCESS cho tới
-     * khi có nhánh feature/omr-recognition. Biến môi trường: OMR_STOP_AFTER.
+     * Bước cuối cùng pipeline OMR được chạy: PREPROCESS, MERGE (nhận diện + ghép kern) hoặc EXPORT (đủ MusicXML/MIDI).
+     * Tạm = MERGE cho tới khi có nhánh feature/omr-export-musicxml-midi, khi đó đổi mặc định thành EXPORT.
+     * Biến môi trường: OMR_STOP_AFTER.
      */
     private final String stopAfter;
 
@@ -54,7 +55,7 @@ public class AiServiceProperties {
             @Value("${app.ai.internal-key:${AI_INTERNAL_KEY:" + DEFAULT_INTERNAL_KEY + "}}") String internalKey,
             @Value("${app.ai.connect-timeout-ms:5000}") int connectTimeoutMs,
             @Value("${app.ai.read-timeout-ms:15000}") int readTimeoutMs,
-            @Value("${omr.stop-after:${OMR_STOP_AFTER:PREPROCESS}}") String stopAfter,
+            @Value("${omr.stop-after:${OMR_STOP_AFTER:MERGE}}") String stopAfter,
             @Value("${app.ai.pending-resend-seconds:30}") int pendingResendSeconds,
             @Value("${app.ai.max-resends:2}") int maxResends,
             @Value("${app.ai.processing-timeout-minutes:10}") int processingTimeoutMinutes,

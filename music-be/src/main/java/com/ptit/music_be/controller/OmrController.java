@@ -9,6 +9,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.ptit.music_be.dto.request.OmrRetryRequest;
 import com.ptit.music_be.dto.response.AiTaskResponse;
 import com.ptit.music_be.dto.response.ApiResponse;
+import com.ptit.music_be.dto.response.OmrResultResponse;
 import com.ptit.music_be.dto.response.OmrUploadResponse;
 import com.ptit.music_be.service.OmrService;
 
@@ -66,6 +67,18 @@ public class OmrController {
                     OmrRetryRequest request) {
         return ApiResponse.<AiTaskResponse>builder()
                 .result(omrService.retry(scoreId, request))
+                .build();
+    }
+
+    @GetMapping("/scores/{scoreId}/omr/result")
+    @Operation(
+            summary = "Kết quả nhận diện mới nhất: cảnh báo, ảnh từng trang, id file kern/MusicXML/MIDI hiện hành",
+            description = "Cần quyền xem bản nhạc. Errors: 2001 không có bản nhạc, 1002 không có quyền,"
+                    + " 2101 bản nhạc chưa có tác vụ OMR nào",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<OmrResultResponse> getResult(@PathVariable String scoreId) {
+        return ApiResponse.<OmrResultResponse>builder()
+                .result(omrService.getResult(scoreId))
                 .build();
     }
 }
