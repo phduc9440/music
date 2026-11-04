@@ -62,7 +62,10 @@ export default function ZoomControl({ zoom, onChange }: Props) {
       </button>
 
       {open && (
-        <div className="sv-zoom__pop" role="menu">
+        <div className="sv-zoom__pop" role="dialog" aria-label="Mức thu phóng">
+          <div className="sv-zoom__title">
+            Thu phóng <span>{zoom}%</span>
+          </div>
           <input
             type="range"
             min={ZOOM_MIN}
@@ -72,19 +75,22 @@ export default function ZoomControl({ zoom, onChange }: Props) {
             onChange={(e) => onChange(Number(e.target.value))}
             aria-label="Mức thu phóng"
           />
-          <ul>
+          <div className="sv-zoom__scale" aria-hidden="true">
+            <span>{ZOOM_MIN}%</span>
+            <span>{ZOOM_MAX}%</span>
+          </div>
+          <ul className="sv-zoom__presets">
             {PRESETS.map((value) => (
-              <li key={value} role="none">
+              <li key={value}>
                 <button
-                  role="menuitemradio"
-                  aria-checked={zoom === value}
                   className={zoom === value ? 'is-active' : ''}
+                  aria-pressed={zoom === value}
                   onClick={() => {
                     onChange(value);
                     setOpen(false);
                   }}
                 >
-                  {value}%{value === 100 && <span className="sv-zoom__hint">Mặc định</span>}
+                  {value}%
                 </button>
               </li>
             ))}

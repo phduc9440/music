@@ -121,18 +121,23 @@
   color: var(--sc-accent);
 }
 
-/* Chuyển chế độ xem */
-.sv-segment {
+/* Chuyển chế độ xem và thu phóng: cùng một kiểu viên thuốc viền mảnh, cao bằng nút (44px) */
+.sv-segment,
+.sv-zoom {
+  position: relative;
   display: inline-flex;
-  padding: 4px;
+  align-items: center;
+  height: 44px;
+  padding: 3px;
+  background: #fff;
+  border: 1px solid var(--sc-line);
   border-radius: 12px;
-  background: #f1f5f9;
 }
 .sv-segment button {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  min-height: 38px;
+  height: 100%;
   padding: 0 1rem;
   border: 0;
   border-radius: 9px;
@@ -148,28 +153,20 @@
 }
 .sv-segment button:hover {
   color: var(--sc-ink);
-}
-.sv-segment button[aria-pressed='true'] {
-  background: #fff;
-  color: var(--sc-accent);
-  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.15);
-}
-
-/* ---- Điều khiển thu phóng: [−] [100% ▾] [+] ---- */
-.sv-zoom {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  padding: 4px;
-  border-radius: 12px;
   background: #f1f5f9;
 }
+.sv-segment button[aria-pressed='true'] {
+  background: var(--sc-accent-soft);
+  color: var(--sc-accent);
+}
+
+/* Thu phóng: [−] | 100% ▾ | [+] */
 .sv-zoom__step {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 38px;
-  height: 38px;
+  height: 100%;
   border: 0;
   border-radius: 9px;
   background: transparent;
@@ -177,25 +174,25 @@
   cursor: pointer;
 }
 .sv-zoom__step:hover:not(:disabled) {
-  background: #fff;
-  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.15);
+  background: #f1f5f9;
 }
 .sv-zoom__step:disabled {
-  opacity: 0.35;
+  opacity: 0.3;
   cursor: not-allowed;
 }
 .sv-zoom__value {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.35rem;
-  min-width: 5rem;
-  height: 38px;
-  padding: 0 0.6rem;
+  gap: 0.4rem;
+  width: 5.6rem;
+  height: 100%;
+  margin: 0 3px;
   border: 0;
-  border-radius: 9px;
-  background: #fff;
-  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.15);
+  border-right: 1px solid var(--sc-line);
+  border-left: 1px solid var(--sc-line);
+  border-radius: 0;
+  background: transparent;
   color: var(--sc-ink);
   font: inherit;
   font-size: 1rem;
@@ -203,64 +200,85 @@
   font-variant-numeric: tabular-nums;
   cursor: pointer;
 }
+.sv-zoom__value:hover,
+.sv-zoom__value[aria-expanded='true'] {
+  background: #f8fafc;
+  color: var(--sc-accent);
+}
 .sv-zoom__caret {
   width: 0;
   height: 0;
   border-top: 5px solid currentColor;
   border-right: 4px solid transparent;
   border-left: 4px solid transparent;
-  opacity: 0.55;
+  opacity: 0.6;
 }
 .sv-zoom__pop {
   position: absolute;
-  top: calc(100% + 8px);
+  top: calc(100% + 10px);
   left: 50%;
   z-index: 30;
-  width: 220px;
-  padding: 0.75rem;
+  width: 260px;
+  padding: 1rem;
   transform: translateX(-50%);
   background: #fff;
   border: 1px solid var(--sc-line);
-  border-radius: 14px;
-  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
+  border-radius: 16px;
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.18);
+}
+.sv-zoom__title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 0.6rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+.sv-zoom__title span {
+  color: var(--sc-accent);
+  font-size: 1.15rem;
+  font-variant-numeric: tabular-nums;
 }
 .sv-zoom__pop input[type='range'] {
   width: 100%;
-  margin: 0 0 0.5rem;
+  margin: 0;
   accent-color: var(--sc-accent);
 }
-.sv-zoom__pop ul {
+.sv-zoom__scale {
+  display: flex;
+  justify-content: space-between;
+  margin: 0.15rem 0 0.9rem;
+  color: var(--sc-muted);
+  font-size: 0.75rem;
+}
+.sv-zoom__presets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem;
   margin: 0;
   padding: 0;
   list-style: none;
 }
-.sv-zoom__pop li button {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.sv-zoom__presets button {
   width: 100%;
-  padding: 0.55rem 0.7rem;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
+  height: 38px;
+  border: 1px solid var(--sc-line);
+  border-radius: 10px;
+  background: #fff;
   color: var(--sc-ink);
   font: inherit;
+  font-size: 0.92rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  text-align: left;
   cursor: pointer;
 }
-.sv-zoom__pop li button:hover {
+.sv-zoom__presets button:hover {
   background: #f1f5f9;
 }
-.sv-zoom__pop li button.is-active {
+.sv-zoom__presets button.is-active {
+  border-color: var(--sc-accent);
   background: var(--sc-accent-soft);
   color: var(--sc-accent);
-}
-.sv-zoom__hint {
-  color: var(--sc-muted);
-  font-size: 0.78rem;
-  font-weight: 500;
 }
 
 /* ---- Cảnh báo ---- */
