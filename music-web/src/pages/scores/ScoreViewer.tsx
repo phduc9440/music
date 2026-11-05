@@ -59,6 +59,8 @@ const SHORTCUTS: [string, string][] = [
   [`${MOD} + S`, 'Lưu'],
   ['1 – 5', 'Trường độ: móc kép, móc đơn, đen, trắng, tròn (áp lên nốt chọn)'],
   ['.', 'Bật/tắt chấm dôi'],
+  ['Bấm vào khuông (chế độ Nhập nốt)', 'Mở khung chọn nốt tại đúng dòng/khe đã bấm rồi bấm Thêm'],
+  ['Kéo nút trường độ vào khuông', 'Thêm nốt có trường độ đó tại chỗ thả'],
   ['A – G (chế độ Nhập nốt)', 'Biến nốt/dấu lặng đang chọn thành nốt đó rồi sang mục kế tiếp'],
   ['Delete', 'Xóa nốt đang chọn (hợp âm còn nốt khác thì giữ lại)'],
   ['Esc', 'Bỏ chọn'],
@@ -439,6 +441,8 @@ function ScoreWorkspace({ score, xml, info, doc }: WorkspaceProps) {
             inputMode={editor.inputMode}
             onInputModeChange={editor.setInputMode}
             inputDuration={editor.inputDuration}
+            keepMeasure={editor.keepMeasure}
+            onKeepMeasureChange={editor.setKeepMeasure}
             onDuration={editor.chooseDuration}
             onDot={editor.toggleDot}
             previewTone={editor.previewTone}
@@ -467,6 +471,10 @@ function ScoreWorkspace({ score, xml, info, doc }: WorkspaceProps) {
             focusMeasure={focusMeasure}
             onSelectNotes={canEdit ? editor.select : undefined}
             onDragPitch={canEdit ? editor.dragPitch : undefined}
+            inputMode={editor.inputMode}
+            inputDuration={editor.inputDuration}
+            onInsertNote={canEdit ? editor.insertNoteAt : undefined}
+            onConfirmMeasure={canEdit ? editor.confirmMeasureOk : undefined}
           />
           <div className="sv-pos" aria-live="polite">
             {progressLabel}
@@ -480,7 +488,8 @@ function ScoreWorkspace({ score, xml, info, doc }: WorkspaceProps) {
           {canEdit && editor.inputMode && (
             <span className="sv-status__sel">
               Nhập nốt · trường độ {DURATION_LABELS[editor.inputDuration.type]}
-              {editor.inputDuration.dotted ? ' chấm dôi' : ''} · bấm A–G
+              {editor.inputDuration.dotted ? ' chấm dôi' : ''} · bấm vào khuông để thêm nốt, hoặc chọn dấu lặng rồi bấm
+              A–G
             </span>
           )}
           {canEdit && editor.statusText && <span className="sv-status__sel">{editor.statusText}</span>}

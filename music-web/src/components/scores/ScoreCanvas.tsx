@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { MouseEvent, PointerEvent as ReactPointerEvent } from 'react';
+import type { DragEvent, MouseEvent, PointerEvent as ReactPointerEvent } from 'react';
 import type { OpenSheetMusicDisplay } from 'opensheetmusicdisplay';
 import {
   NOTE_ID_ATTR,
@@ -9,9 +9,14 @@ import {
   bindNoteIds,
   noteIdsFromEvent,
 } from '../../editor/osmdBridge';
+import { DURATION_QUARTERS } from '../../editor/durations';
+import type { AccidentalChoice, DurationChoice, DurationType, InsertTarget } from '../../editor/durations';
 import type { ScoreDocument } from '../../editor/ScoreDocument';
+import { DURATION_DRAG_TYPE, ledgerLines, locateSpot, solfegeName, spotTarget } from '../../editor/staffHit';
+import type { StaffSpot } from '../../editor/staffHit';
 import { ZOOM_MAX, ZOOM_MIN, clampZoom } from '../../utils/viewer';
 import type { ViewMode } from '../../utils/viewer';
+import NoteInsertPopover from './NoteInsertPopover';
 import '../../editor/editor.css';
 
 interface Props {
@@ -42,6 +47,14 @@ interface Props {
   onSelectNotes?: (ids: string[], additive: boolean) => void;
   /** Kéo nốt bằng chuột/bút lên hoặc xuống `steps` bậc (dương = lên). Chạm không kéo nốt để khỏi lẫn với cuộn. */
   onDragPitch?: (ids: string[], steps: number) => void;
+  /** Đang ở chế độ Nhập nốt: rê chuột hiện nốt mờ, bấm vào khuông mở khung thêm nốt. */
+  inputMode?: boolean;
+  /** Trường độ đang chọn, dùng làm mặc định cho khung thêm nốt. */
+  inputDuration?: DurationChoice;
+  /** Xác nhận ô nhịp sai độ dài là đúng (hiện dấu ✓ khi rê chuột vào mép trên viền đỏ). */
+  onConfirmMeasure?: (measureIndex: number) => void;
+  /** Thêm nốt tại vị trí trên khuông (bấm hoặc kéo-thả); trả về true nếu thêm được. Có prop này thì canvas nhận kéo-thả. */
+  onInsertNote?: (target: InsertTarget, choice: DurationChoice, accidental: AccidentalChoice) => boolean;
 }
 
 /** Cử chỉ chuột/bút đang diễn ra: kéo khung chọn vùng, hoặc kéo một nốt. */
@@ -64,7 +77,11 @@ const ISSUE_PAD_X = 10;
 const ISSUE_PAD_Y = 22;
 
 /** Vẽ viền đỏ quanh các ô nhịp sai độ dài, tính từ vùng chiếm của các nốt đã gắn id trong ô đó. */
-const drawIssueBoxes = (host: HTMLElement, measures: ReadonlySet<number>): void => {
+const drawIssueBoxes = (
+  host: HTMLElement,
+  measures: ReadonlySet<number>,
+  onConfirm?: (measureIndex: number) => void,
+): void => {
   host.querySelectorAll(`.${ISSUE_BOX_CLASS}`).forEach((el) => el.remove());
   if (measures.size === 0) return;
   const origin = host.getBoundingClientRect();
@@ -84,16 +101,60 @@ const drawIssueBoxes = (host: HTMLElement, measures: ReadonlySet<number>): void 
       box.b = Math.max(box.b, rect.bottom);
     }
   });
-  for (const box of boxes.values()) {
+  for (const [measureIndex, box] of boxes) {
     const div = document.createElement('div');
     div.className = ISSUE_BOX_CLASS;
     div.style.left = `${box.l - origin.left - ISSUE_PAD_X}px`;
     div.style.top = `${box.t - origin.top - ISSUE_PAD_Y}px`;
     div.style.width = `${box.r - box.l + ISSUE_PAD_X * 2}px`;
     div.style.height = `${box.b - box.t + ISSUE_PAD_Y * 2}px`;
+    if (onConfirm) {
+      // Dải sát mép trên của viền: rê chuột hoặc chạm vào thì hiện dấu ✓ để xác nhận ô nhịp này đúng
+      const hot = document.createElement('div');
+      hot.className = 'ed-issue-hot';
+      const ok = document.createElement('button');
+      ok.type = 'button';
+      ok.className = 'ed-issue-ok';
+      ok.textContent = '✓';
+      ok.title = 'Ô nhịp này đúng (ví dụ ô lấy đà): bỏ cảnh báo';
+      ok.setAttribute('aria-label', `Xác nhận ô ${measureIndex + 1} đúng`);
+      hot.appendChild(ok);
+      // Không để cử chỉ chọn vùng / bỏ chọn của khung nhạc bắt sự kiện này
+      hot.addEventListener('pointerdown', (e) => e.stopPropagation());
+      hot.addEventListener('click', (e) => {
+        e.stopPropagation();
+        hot.classList.toggle('is-open');
+      });
+      ok.addEventListener('click', () => onConfirm(measureIndex));
+      div.appendChild(hot);
+    }
     host.appendChild(div);
   }
 };
+
+/** Chiều cao ước lượng của khung thêm nốt (px), để quyết định mở lên hay xuống. */
+const POPOVER_HEIGHT = 190;
+
+/** Nốt mờ ở chỗ sẽ thêm nốt: đầu nốt, dòng kẻ phụ và tên nốt. */
+function NoteGhost({ spot }: { spot: StaffSpot }) {
+  const w = spot.halfStep * 2.6;
+  const h = spot.halfStep * 2;
+  return (
+    <div className="ed-ghost" style={{ left: spot.x, top: spot.y }}>
+      {ledgerLines(spot.line).map((k) => (
+        <span
+          key={k}
+          className="ed-ghost__ledger"
+          style={{ left: -w, width: w * 2, top: (k - spot.line) * spot.halfStep }}
+        />
+      ))}
+      <span className="ed-ghost__head" style={{ left: -w / 2, top: -h / 2, width: w, height: h }} />
+      <span className="ed-ghost__label" style={{ left: w, top: -h * 1.6 }}>
+        {solfegeName(spot.step, spot.octave)}
+      </span>
+    </div>
+  );
+}
 
 /**
  * Vùng vẽ bản nhạc bằng OpenSheetMusicDisplay (font nhạc Bravura có sẵn trong thư viện).
@@ -116,12 +177,20 @@ export default function ScoreCanvas({
   focusMeasure = null,
   onSelectNotes,
   onDragPitch,
+  inputMode = false,
+  inputDuration,
+  onInsertNote,
+  onConfirmMeasure,
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const hostRef = useRef<HTMLDivElement>(null);
   const osmdRef = useRef<OpenSheetMusicDisplay | null>(null);
   const gestureRef = useRef<Gesture | null>(null);
   const suppressClickRef = useRef(false);
+  const hoverRef = useRef({ x: 0, y: 0, frame: 0 });
+  // Nốt mờ báo chỗ sẽ thêm; khung chọn nốt (gắn với revision lúc mở để tự đóng khi bản nhạc đổi)
+  const [ghost, setGhost] = useState<StaffSpot | null>(null);
+  const [popover, setPopover] = useState<{ spot: StaffSpot; revision: number } | null>(null);
   const [band, setBand] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
   // Revision của nội dung OSMD đang giữ, để biết khi nào cần nạp lại
   const loadedRevision = useRef(0);
@@ -143,6 +212,7 @@ export default function ScoreCanvas({
     revision,
     selected,
     issueMeasures,
+    onConfirmMeasure,
   });
   useEffect(() => {
     latest.current = {
@@ -156,6 +226,7 @@ export default function ScoreCanvas({
       revision,
       selected,
       issueMeasures,
+      onConfirmMeasure,
     };
   });
 
@@ -187,7 +258,7 @@ export default function ScoreCanvas({
     try {
       bindNoteIds(osmd, current, host);
       applySelection(host, latest.current.selected);
-      drawIssueBoxes(host, latest.current.issueMeasures);
+      drawIssueBoxes(host, latest.current.issueMeasures, (i) => latest.current.onConfirmMeasure?.(i));
     } catch {
       // chỉ mất khả năng chọn nốt, bản nhạc vẫn xem được
     }
@@ -326,7 +397,7 @@ export default function ScoreCanvas({
   // Tô lại ô nhịp sai khi danh sách đổi
   useEffect(() => {
     const host = hostRef.current;
-    if (host) drawIssueBoxes(host, issueMeasures);
+    if (host) drawIssueBoxes(host, issueMeasures, (i) => latest.current.onConfirmMeasure?.(i));
   }, [issueMeasures]);
 
   // Cuộn tới ô nhịp được yêu cầu (bấm cảnh báo trên thanh trạng thái)
@@ -395,21 +466,96 @@ export default function ScoreCanvas({
     const ids = noteIdsFromEvent(e.nativeEvent);
     if (ids.length === 0 && e.shiftKey) return;
     onSelectNotes(ids, e.shiftKey);
+    if (e.shiftKey) return;
+    // Cảm ứng không đi qua pointer-down: bấm khuông / dấu lặng cũng mở khung thêm nốt
+    const onRest = latest.current.doc?.getInfo(ids[0])?.isRest === true;
+    if (ids.length === 0) openPopover(e.clientX, e.clientY);
+    else if (onRest) openPopover(e.clientX, e.clientY, true);
   };
 
-  /** Số px (màn hình / đơn vị SVG) của một bậc nhạc: nửa khoảng cách giữa hai dòng kẻ = 5 đơn vị × zoom. */
+  /** Kích thước một bậc nhạc (nửa khoảng cách giữa hai dòng kẻ): theo đơn vị SVG và theo px màn hình. Zoom nằm trong tỉ lệ viewBox → màn hình. */
   const stepSize = () => {
     const unit = (osmdRef.current?.EngravingRules as { UnitInPixels?: number } | undefined)?.UnitInPixels ?? 10;
-    const user = (unit / 2) * (latest.current.zoom / 100);
+    const user = unit / 2;
     const svg = hostRef.current?.querySelector('svg');
     const viewBoxWidth = svg?.viewBox.baseVal.width ?? 0;
     const scale = svg && viewBoxWidth > 0 ? svg.getBoundingClientRect().width / viewBoxWidth : 1;
     return { user, screen: user * scale };
   };
 
+  /** Vị trí khuông ứng với điểm màn hình, hoặc null. */
+  const locate = (x: number, y: number): StaffSpot | null => {
+    const osmd = osmdRef.current;
+    const host = hostRef.current;
+    const current = latest.current.doc;
+    if (!osmd || !host || !current) return null;
+    try {
+      return locateSpot(osmd, current, host, x, y);
+    } catch {
+      return null; // hình học OSMD không đọc được: chỉ mất tính năng thêm nốt
+    }
+  };
+
+  /** Mở khung thêm nốt tại điểm bấm; `restOnly`: chỉ mở khi điểm bấm trúng dấu lặng. */
+  const openPopover = (x: number, y: number, restOnly = false) => {
+    if (!inputMode || !onInsertNote) return;
+    const spot = locate(x, y);
+    if (!spot || (restOnly && spot.restEntry === null)) return;
+    setGhost(null);
+    setPopover({ spot, revision });
+  };
+
+  /** Rê chuột (chế độ Nhập nốt): cập nhật nốt mờ, gộp theo khung hình. */
+  const hover = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (!inputMode || !onInsertNote || popover) {
+      if (ghost) setGhost(null);
+      return;
+    }
+    const current = latest.current.doc;
+    const overNote = noteIdsFromEvent(e.nativeEvent).some((id) => current?.getInfo(id)?.isRest === false);
+    hoverRef.current.x = e.clientX;
+    hoverRef.current.y = e.clientY;
+    if (overNote) {
+      if (ghost) setGhost(null);
+      return;
+    }
+    if (hoverRef.current.frame) return;
+    hoverRef.current.frame = requestAnimationFrame(() => {
+      hoverRef.current.frame = 0;
+      setGhost(locate(hoverRef.current.x, hoverRef.current.y));
+    });
+  };
+
+  const hasDuration = (e: DragEvent<HTMLDivElement>) =>
+    !!onInsertNote && e.dataTransfer.types.includes(DURATION_DRAG_TYPE);
+
+  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
+    if (!hasDuration(e)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    setGhost(locate(e.clientX, e.clientY));
+  };
+
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+    if (!hasDuration(e)) return;
+    e.preventDefault();
+    setGhost(null);
+    let choice: DurationChoice | null = null;
+    try {
+      const data = JSON.parse(e.dataTransfer.getData(DURATION_DRAG_TYPE)) as { type?: string; dotted?: boolean };
+      if (data.type && data.type in DURATION_QUARTERS)
+        choice = { type: data.type as DurationType, dotted: !!data.dotted };
+    } catch {
+      // dữ liệu kéo không hợp lệ: bỏ qua
+    }
+    const spot = locate(e.clientX, e.clientY);
+    if (choice && spot) onInsertNote?.(spotTarget(spot), choice, 'auto');
+  };
+
   const handlePointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     const scroller = scrollRef.current;
     if (!scroller || e.button !== 0 || e.pointerType === 'touch') return;
+    if (popover) setPopover(null);
     // Bỏ qua khi bấm vào thanh cuộn
     const box = scroller.getBoundingClientRect();
     if (e.clientX - box.left >= scroller.clientWidth || e.clientY - box.top >= scroller.clientHeight) return;
@@ -427,7 +573,10 @@ export default function ScoreCanvas({
 
   const handlePointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
     const g = gestureRef.current;
-    if (!g) return;
+    if (!g) {
+      if (e.pointerType === 'mouse' || e.pointerType === 'pen') hover(e);
+      return;
+    }
     if (g.kind === 'band') {
       if (!g.moved && Math.hypot(e.clientX - g.x0, e.clientY - g.y0) < DRAG_THRESHOLD) return;
       g.moved = true;
@@ -469,8 +618,15 @@ export default function ScoreCanvas({
     }, 50);
     if (!g.moved) {
       if (cancelled) return;
-      if (g.kind === 'note') onSelectNotes?.(g.ids, e.shiftKey);
-      else if (!e.shiftKey) onSelectNotes?.([], false);
+      if (g.kind === 'note') {
+        onSelectNotes?.(g.ids, e.shiftKey);
+        // Nhập nốt: bấm vào dấu lặng mở khung thay dấu lặng bằng nốt
+        const onRest = latest.current.doc?.getInfo(g.ids[0])?.isRest === true;
+        if (onRest && !e.shiftKey) openPopover(e.clientX, e.clientY, true);
+      } else if (!e.shiftKey) {
+        onSelectNotes?.([], false);
+        openPopover(e.clientX, e.clientY);
+      }
       return;
     }
     if (cancelled) return;
@@ -492,16 +648,26 @@ export default function ScoreCanvas({
     onSelectNotes?.(ids, e.shiftKey);
   };
 
+  const activePopover = popover && popover.revision === revision ? popover : null;
+  const shownGhost = activePopover ? activePopover.spot : ghost;
+
   return (
     <div
       ref={scrollRef}
       className={`sv-canvas sv-canvas--${mode}`}
-      onScroll={reportProgress}
+      onScroll={() => {
+        reportProgress();
+        if (popover) setPopover(null);
+      }}
       onClick={handleClick}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={(e) => finishGesture(e, false)}
       onPointerCancel={(e) => finishGesture(e, true)}
+      onPointerLeave={() => setGhost(null)}
+      onDragOver={handleDragOver}
+      onDragLeave={() => setGhost(null)}
+      onDrop={handleDrop}
       aria-busy={busy}
       tabIndex={0}
       aria-label="Bản nhạc"
@@ -512,6 +678,23 @@ export default function ScoreCanvas({
         </div>
       )}
       <div ref={hostRef} className="sv-canvas__host" />
+      {shownGhost && <NoteGhost spot={shownGhost} />}
+      {activePopover && (
+        <NoteInsertPopover
+          key={`${activePopover.spot.measureIndex}-${activePopover.spot.beforeEntry}-${Math.round(activePopover.spot.y)}`}
+          target={spotTarget(activePopover.spot)}
+          left={Math.max(8, Math.min(activePopover.spot.x + 16, window.innerWidth - 272))}
+          top={Math.max(
+            8,
+            activePopover.spot.y + 18 + POPOVER_HEIGHT > window.innerHeight
+              ? activePopover.spot.y - POPOVER_HEIGHT - 12
+              : activePopover.spot.y + 18,
+          )}
+          initialDuration={inputDuration ?? { type: 'quarter', dotted: false }}
+          onAdd={(target, choice, accidental) => onInsertNote?.(target, choice, accidental) ?? false}
+          onClose={() => setPopover(null)}
+        />
+      )}
       {band && <div className="ed-band" style={{ left: band.x, top: band.y, width: band.w, height: band.h }} />}
     </div>
   );

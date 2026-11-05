@@ -122,6 +122,17 @@ const writeDuration = (note: Element, d: number, type: DurationType, dotted: boo
   if (dotted) typeEl.after(owner.createElement('dot'));
 };
 
+/** Bỏ thông tin nối nét (<beam>) của cả bè trong ô để OSMD không gặp nét nối đứt đoạn sau khi trường độ đổi. */
+const stripBeams = (entries: Entry[]): void => {
+  for (const entry of entries) {
+    for (const note of entry.members) {
+      Array.from(note.children)
+        .filter((c) => c.tagName === 'beam')
+        .forEach((c) => c.remove());
+    }
+  }
+};
+
 /** Dựng thẻ <note> dấu lặng có cùng khuông và bè với `like`. */
 const makeRest = (like: Element, d: number, type: DurationType, dotted: boolean): Element => {
   const owner = like.ownerDocument;
@@ -146,7 +157,7 @@ type Plan = { error: EditFailure } | { run: () => void };
  * Lập kế hoạch đổi trường độ của một nốt/hợp âm/dấu lặng (chưa sửa DOM). Trả về lỗi nếu không làm được, để người
  * gọi có thể từ chối trước khi đụng vào bản nhạc.
  */
-const planDuration = (head: Element, choice: DurationChoice): Plan => {
+const planDuration = (head: Element, choice: DurationChoice, keep = true): Plan => {
   const measure = head.parentElement;
   if (!measure) return { error: 'unsupported' };
   const staff = numberOf(head, 'staff') ?? 1;
@@ -157,16 +168,29 @@ const planDuration = (head: Element, choice: DurationChoice): Plan => {
   if (index < 0) return { error: 'unsupported' };
   const entry = entries[index];
   if (entry.members.some((m) => hasChild(m, 'time-modification'))) return { error: 'tuplet' };
-  if (entry.members.some((m) => hasTie(m, 'start') || hasTie(m, 'stop'))) return { error: 'tie' };
+  if (keep && entry.members.some((m) => hasTie(m, 'start') || hasTie(m, 'stop'))) return { error: 'tie' };
 
   const part = measure.parentElement;
   const divisions = divisionsAt(part, measure);
   const target = DURATION_QUARTERS[choice.type] * (choice.dotted ? 1.5 : 1) * divisions;
   if (!Number.isInteger(target)) return { error: 'divisions' };
   const delta = target - entry.duration;
-  if (delta === 0) return { error: 'unchanged' };
+  // Đã đúng cả độ dài, loại nốt lẫn chấm dôi thì không có gì để đổi (file OMR đôi khi có <type> lệch <duration>)
+  const sameLook =
+    childOf(head, 'type')?.textContent?.trim() === choice.type && hasChild(head, 'dot') === choice.dotted;
+  if (delta === 0 && sameLook) return { error: 'unchanged' };
 
   const apply = (): void => entry.members.forEach((m) => writeDuration(m, target, choice.type, choice.dotted));
+
+  // Đổi thẳng: chỉ đổi nốt này, các nốt khác giữ nguyên; ô nhịp thừa/thiếu phách sẽ được viền đỏ để người dùng tự sửa
+  if (!keep || delta === 0) {
+    return {
+      run: () => {
+        apply();
+        stripBeams(entries);
+      },
+    };
+  }
 
   if (delta < 0) {
     const rests = splitRests(-delta, divisions);
@@ -174,6 +198,7 @@ const planDuration = (head: Element, choice: DurationChoice): Plan => {
     return {
       run: () => {
         apply();
+        stripBeams(entries);
         let anchor = entry.members[entry.members.length - 1];
         for (const r of rests) {
           const rest = makeRest(head, r.d, r.type, r.dotted);
@@ -205,6 +230,7 @@ const planDuration = (head: Element, choice: DurationChoice): Plan => {
   return {
     run: () => {
       apply();
+      stripBeams(entries);
       consumed.forEach((e) => e.members.forEach((m) => m.remove()));
       let anchor = entry.members[entry.members.length - 1];
       for (const r of leftoverRests) {
@@ -266,12 +292,44 @@ const rollback = (doc: ScoreDocument, snapshots: { partIndex: number; measureInd
   doc.reindex();
 };
 
+/** Cao độ mặc định cho nốt mới sinh từ dấu lặng: nốt có cao độ gần nhất phía trước cùng bè, không có thì theo khóa nhạc. */
+const defaultPitchFor = (doc: ScoreDocument, info: NoteInfo): Pitch => {
+  const fifths = doc.keyAt(info.measureIndex);
+  const index = doc.notes.indexOf(info);
+  for (let i = index - 1; i >= 0; i--) {
+    const n = doc.notes[i];
+    if (n.partIndex !== info.partIndex || n.staff !== info.staff || n.voice !== info.voice) continue;
+    const p = n.isRest || n.isGrace ? null : readPitch(n.element);
+    if (p) return { step: p.step, alter: keyAlter(fifths, p.step), octave: p.octave };
+  }
+  const ref = clefReference(doc, info);
+  const base: { step: Step; octave: number } =
+    ref === 50 ? { step: 'D', octave: 3 } : ref === 60 ? { step: 'C', octave: 4 } : { step: 'B', octave: 4 };
+  return { ...base, alter: keyAlter(fifths, base.step) };
+};
+
+/** Biến một dấu lặng (đơn lẻ) thành nốt, giữ nguyên trường độ. */
+const restToNote = (doc: ScoreDocument, info: NoteInfo): void => {
+  const rest = childOf(info.element, 'rest');
+  if (!rest) return;
+  const pitch = defaultPitchFor(doc, info);
+  rest.replaceWith(info.element.ownerDocument.createElement('pitch'));
+  writePitch(info.element, pitch);
+};
+
 const DURATION_LABEL_PREFIX = 'Đổi trường độ';
 
 /**
- * Đổi trường độ các nốt (hoặc dấu lặng) đã chọn, giữ nguyên độ dài ô nhịp. Có bước nào không làm được thì không đổi gì.
+ * Đổi trường độ các nốt (hoặc dấu lặng) đã chọn. Có bước nào không làm được thì không đổi gì.
+ * @param keepMeasure false (mặc định): đổi thẳng đúng trường độ đã chọn, độ dài ô nhịp thay đổi theo (ô sai phách được
+ *   viền đỏ để sửa tiếp); true: giữ nguyên độ dài ô nhịp bằng cách lấp dấu lặng hoặc ghi đè nốt phía sau
  */
-export function setDuration(doc: ScoreDocument, ids: readonly string[], choice: DurationChoice): EditResult {
+export function setDuration(
+  doc: ScoreDocument,
+  ids: readonly string[],
+  choice: DurationChoice,
+  keepMeasure = false,
+): EditResult {
   const heads = new Map<string, NoteInfo>();
   for (const id of ids) {
     const info = doc.getInfo(id);
@@ -296,9 +354,16 @@ export function setDuration(doc: ScoreDocument, ids: readonly string[], choice: 
   const label = `${DURATION_LABEL_PREFIX}: ${DURATION_LABELS[choice.type]}${choice.dotted ? ' chấm dôi' : ''}`;
   const command = commitEdit(doc, label, touched, [...ids], () => {
     for (const h of ordered) {
-      const plan = planDuration(h.element, choice);
+      const plan = planDuration(h.element, choice, keepMeasure);
       if ('error' in plan) {
-        if (plan.error === 'unchanged') continue;
+        if (plan.error === 'unchanged') {
+          // Dấu lặng đã đúng trường độ này: bấm lại nghĩa là muốn biến nó thành nốt
+          if (hasChild(h.element, 'rest')) {
+            restToNote(doc, h);
+            changedCount += 1;
+          }
+          continue;
+        }
         failure = plan.error;
         return;
       }
@@ -417,3 +482,157 @@ export function enterNote(doc: ScoreDocument, id: string, letter: string, choice
 /** Kiểm tra chuỗi là tên bậc A–G (dùng khi nhận phím). */
 export const isLetterKey = (key: string): boolean =>
   key.length === 1 && key.toLowerCase() in LETTER_STEP && isStep(key.toUpperCase());
+
+/** Dấu hóa người dùng chọn khi thêm nốt: tự động = theo dấu hóa cung nhạc. */
+export type AccidentalChoice = 'auto' | 'sharp' | 'flat' | 'natural';
+
+/** Vị trí thêm nốt: ô nhịp, khuông, bè, cao độ (chưa tính dấu hóa) và chỗ chèn trong bè. */
+export interface InsertTarget {
+  partIndex: number;
+  measureIndex: number;
+  /** Khuông bắt đầu từ 1. */
+  staff: number;
+  /** Bè bắt đầu từ 1. */
+  voice: number;
+  step: Step;
+  octave: number;
+  /** Chèn trước mục thứ này của bè (bằng số mục = chèn cuối ô). Bỏ qua khi `restEntry` có giá trị. */
+  beforeEntry: number;
+  /** Chỉ số mục là dấu lặng được thay bằng nốt mới; null = chèn thêm. */
+  restEntry: number | null;
+}
+
+const ACCIDENTAL_ALTER: Record<Exclude<AccidentalChoice, 'auto'>, number> = { sharp: 1, flat: -1, natural: 0 };
+
+/** Dựng thẻ <note> nốt thường (không phải dấu lặng) theo thứ tự phần tử của MusicXML. */
+const makePitched = (
+  owner: Document,
+  pitch: Pitch,
+  d: number,
+  choice: DurationChoice,
+  voice: number,
+  staff: number | null,
+): Element => {
+  const note = owner.createElement('note');
+  const add = (parent: Element, tag: string, text?: string) => {
+    const el = owner.createElement(tag);
+    if (text !== undefined) el.textContent = text;
+    parent.appendChild(el);
+    return el;
+  };
+  const p = add(note, 'pitch');
+  add(p, 'step', pitch.step);
+  if (pitch.alter !== 0) add(p, 'alter', String(pitch.alter));
+  add(p, 'octave', String(pitch.octave));
+  add(note, 'duration', String(d));
+  add(note, 'voice', String(voice));
+  add(note, 'type', choice.type);
+  if (choice.dotted) add(note, 'dot');
+  if (staff !== null) add(note, 'staff', String(staff));
+  return note;
+};
+
+/**
+ * Thêm một nốt vào bè tại `target` (người dùng bấm hoặc kéo-thả lên khuông).
+ * - Bấm vào dấu lặng: dấu lặng trở thành nốt; nốt ngắn hơn thì phần dư thành dấu lặng, dài hơn thì đổi thẳng
+ *   (hoặc ghi đè nốt sau nếu `keepMeasure`).
+ * - Bấm vào chỗ trống: chèn nốt mới, các nốt sau lùi lại; ô nhịp thừa phách sẽ được viền đỏ. Với `keepMeasure`
+ *   thì ghi đè các nốt/dấu lặng phía sau cho vừa chỗ, ô nhịp giữ nguyên độ dài.
+ * Từ chối khi dính dấu nối, chùm ba hoặc bè có <forward>. Khi thất bại DOM không thay đổi.
+ */
+export function insertNote(
+  doc: ScoreDocument,
+  target: InsertTarget,
+  choice: DurationChoice,
+  accidental: AccidentalChoice = 'auto',
+  keepMeasure = false,
+): EditResult {
+  const measure = doc.getMeasure(target.partIndex, target.measureIndex);
+  if (!measure) return { ok: false, reason: 'empty' };
+  const entries = voiceEntries(measure, target.staff, target.voice);
+  if (!entries || entries.length === 0) return { ok: false, reason: 'unsupported' };
+  const divisions = divisionsAt(measure.parentElement, measure);
+  const length = DURATION_QUARTERS[choice.type] * (choice.dotted ? 1.5 : 1) * divisions;
+  if (!Number.isInteger(length)) return { ok: false, reason: 'divisions' };
+
+  const alter =
+    accidental === 'auto' ? keyAlter(doc.keyAt(target.measureIndex), target.step) : ACCIDENTAL_ALTER[accidental];
+  const pitch: Pitch = { step: target.step, alter, octave: target.octave };
+  if (!inRange(pitchToMidi(pitch))) return { ok: false, reason: 'range' };
+
+  const touched: Touched = new Map();
+  touched.set(`${target.partIndex}|${target.measureIndex}`, {
+    partIndex: target.partIndex,
+    measureIndex: target.measureIndex,
+  });
+  const label = `Thêm nốt ${pitch.step}${alter > 0 ? '#' : alter < 0 ? 'b' : ''}${pitch.octave}`;
+
+  // Thay dấu lặng bằng nốt
+  if (target.restEntry !== null) {
+    const entry = entries[target.restEntry];
+    if (!entry || !entry.isRest || entry.members.length !== 1) return { ok: false, reason: 'unsupported' };
+    const head = entry.members[0];
+    const plan = planDuration(head, choice, keepMeasure || length < entry.duration);
+    if ('error' in plan && plan.error !== 'unchanged') return { ok: false, reason: plan.error };
+    const command = commitEdit(doc, label, touched, [], () => {
+      if ('run' in plan) plan.run();
+      const owner = head.ownerDocument;
+      const pitchEl = owner.createElement('pitch');
+      childOf(head, 'rest')?.replaceWith(pitchEl);
+      writePitch(head, pitch);
+    });
+    command.selectAfter = idsOfEntry(doc, head);
+    command.changedIds = command.selectAfter;
+    return { ok: true, command };
+  }
+
+  // Chèn nốt mới
+  const at = Math.max(0, Math.min(target.beforeEntry, entries.length));
+  const prev = entries[at - 1];
+  const next = entries[at];
+  const tupleOf = (e?: Entry) => e?.members.some((m) => hasChild(m, 'time-modification')) ?? false;
+  if (tupleOf(prev) && tupleOf(next)) return { ok: false, reason: 'tuplet' };
+  if (prev?.members.some((m) => hasTie(m, 'start')) || next?.members.some((m) => hasTie(m, 'stop'))) {
+    return { ok: false, reason: 'tie' };
+  }
+
+  // Giữ ô đủ phách: ghi đè các mục phía sau cho vừa chỗ nốt mới
+  const consumed: Entry[] = [];
+  let leftover = 0;
+  if (keepMeasure) {
+    let remaining = length;
+    for (let j = at; j < entries.length && remaining > 0; j++) {
+      const e = entries[j];
+      if (tupleOf(e)) return { ok: false, reason: 'tuplet' };
+      if (e.members.some((m) => hasTie(m, 'start') || hasTie(m, 'stop'))) return { ok: false, reason: 'tie' };
+      consumed.push(e);
+      if (e.duration <= remaining) remaining -= e.duration;
+      else {
+        leftover = e.duration - remaining;
+        remaining = 0;
+      }
+    }
+    if (remaining > 0) return { ok: false, reason: 'noSpace' };
+  }
+  const leftoverRests = leftover > 0 ? splitRests(leftover, divisions) : [];
+  if (!leftoverRests) return { ok: false, reason: 'divisions' };
+
+  const like = (prev ?? next).members[0];
+  const staffTag = hasChild(like, 'staff') || target.staff > 1 ? target.staff : null;
+  const created = makePitched(measure.ownerDocument, pitch, length, choice, target.voice, staffTag);
+  const command = commitEdit(doc, label, touched, [], () => {
+    stripBeams(entries);
+    if (next) next.members[0].before(created);
+    else prev.members[prev.members.length - 1].after(created);
+    consumed.forEach((e) => e.members.forEach((m) => m.remove()));
+    let anchor: Element = created;
+    for (const r of leftoverRests) {
+      const rest = makeRest(like, r.d, r.type, r.dotted);
+      anchor.after(rest);
+      anchor = rest;
+    }
+  });
+  command.selectAfter = idsOfEntry(doc, created);
+  command.changedIds = command.selectAfter;
+  return { ok: true, command };
+}

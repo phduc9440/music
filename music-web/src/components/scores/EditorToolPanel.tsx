@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import type { SymbolOp } from '../../editor/commands';
 import type { DurationChoice, DurationType } from '../../editor/durations';
 import type { PitchOp } from '../../editor/pitch';
+import { DURATION_DRAG_TYPE } from '../../editor/staffHit';
 import {
   ToolDelete,
   ToolDot,
@@ -39,6 +40,9 @@ interface Props {
   inputMode: boolean;
   onInputModeChange: (enabled: boolean) => void;
   inputDuration: DurationChoice;
+  /** "Giữ ô nhịp đủ phách": đổi trường độ nhưng lấp dấu lặng / ghi đè nốt sau để ô không đổi độ dài. */
+  keepMeasure: boolean;
+  onKeepMeasureChange: (enabled: boolean) => void;
   onDuration: (type: DurationType) => void;
   onDot: () => void;
   /** "Nghe khi sửa": phát âm xem trước mỗi khi đổi cao độ. */
@@ -112,6 +116,8 @@ export default function EditorToolPanel({
   inputMode,
   onInputModeChange,
   inputDuration,
+  keepMeasure,
+  onKeepMeasureChange,
   onDuration,
   onDot,
   previewTone,
@@ -248,10 +254,18 @@ export default function EditorToolPanel({
               <button
                 key={tool.type}
                 className={`sv-tool${inputMode && inputDuration.type === tool.type ? ' is-active' : ''}`}
-                disabled={(!hasSelection && !inputMode) || busy}
+                disabled={busy}
+                draggable={!busy}
+                onDragStart={(e) => {
+                  e.dataTransfer.setData(
+                    DURATION_DRAG_TYPE,
+                    JSON.stringify({ type: tool.type, dotted: inputDuration.dotted }),
+                  );
+                  e.dataTransfer.effectAllowed = 'copy';
+                }}
                 aria-pressed={inputMode ? inputDuration.type === tool.type : undefined}
                 onClick={() => onDuration(tool.type)}
-                title={`${tool.label} (${tool.key})`}
+                title={`${tool.label} (${tool.key}) · bấm: đổi trường độ nốt đang chọn · kéo vào khuông: thêm nốt`}
                 aria-label={tool.label}
               >
                 <span className="sv-tool__icon" aria-hidden="true">
@@ -261,6 +275,13 @@ export default function EditorToolPanel({
               </button>
             ))}
           </div>
+          <label
+            className="sv-tools__check"
+            title="Bật: nốt ngắn đi thì lấp dấu lặng, nốt dài ra thì ghi đè nốt sau, ô nhịp giữ nguyên độ dài. Tắt: đổi đúng trường độ đã chọn."
+          >
+            <input type="checkbox" checked={keepMeasure} onChange={(e) => onKeepMeasureChange(e.target.checked)} />
+            Giữ ô nhịp đủ phách
+          </label>
         </div>
       </aside>
     </>

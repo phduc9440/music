@@ -46,3 +46,23 @@ export const clearDraft = (scoreId: string, version: number): void => {
     // bỏ qua
   }
 };
+
+const KEEP_MEASURE_KEY = 'editor-keep-measure';
+
+/** Đọc tùy chọn "Giữ ô nhịp đủ phách" khi đổi trường độ; mặc định tắt (đổi thẳng). */
+export const loadKeepMeasurePref = (): boolean => {
+  try {
+    return localStorage.getItem(KEEP_MEASURE_KEY) === 'on';
+  } catch {
+    return false;
+  }
+};
+
+/** Lưu tùy chọn "Giữ ô nhịp đủ phách"; bỏ qua nếu trình duyệt chặn localStorage. */
+export const saveKeepMeasurePref = (enabled: boolean): void => {
+  try {
+    localStorage.setItem(KEEP_MEASURE_KEY, enabled ? 'on' : 'off');
+  } catch {
+    // không lưu được thì lần sau dùng mặc định
+  }
+};

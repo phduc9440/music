@@ -2,6 +2,8 @@
  * Kiểm tra độ dài mỗi ô nhịp: tổng <duration> của từng bè (bỏ nốt hợp âm <chord/> và nốt trang trí <grace/>) phải
  * bằng số chỉ nhịp × divisions. Ô sai được vẽ viền đỏ và báo trên thanh trạng thái.
  */
+import { commitEdit } from './commands';
+import type { EditResult, Touched } from './commands';
 import type { ScoreDocument } from './ScoreDocument';
 
 /** Một ô nhịp có độ dài sai. */
@@ -68,4 +70,24 @@ export function checkMeasures(doc: ScoreDocument): MeasureIssue[] {
     });
   }
   return [...worst.values()].sort((a, b) => a.measureIndex - b.measureIndex);
+}
+
+/**
+ * Xác nhận ô nhịp có độ dài "sai" thực ra là đúng (ví dụ ô lấy đà, ô cuối ngắn): đánh dấu `implicit="yes"` theo
+ * chuẩn MusicXML ở ô đó của mọi part, nên được lưu cùng bản nhạc và hoàn tác được.
+ */
+export function confirmMeasure(doc: ScoreDocument, measureIndex: number): EditResult {
+  const touched: Touched = new Map();
+  const targets: Element[] = [];
+  for (let partIndex = 0; partIndex < doc.partCount; partIndex++) {
+    const measure = doc.getMeasure(partIndex, measureIndex);
+    if (!measure || measure.getAttribute('implicit') === 'yes') continue;
+    targets.push(measure);
+    touched.set(`${partIndex}|${measureIndex}`, { partIndex, measureIndex });
+  }
+  if (targets.length === 0) return { ok: false, reason: 'unchanged' };
+  const command = commitEdit(doc, `Xác nhận ô ${measureIndex + 1} đúng`, touched, [], () => {
+    targets.forEach((m) => m.setAttribute('implicit', 'yes'));
+  });
+  return { ok: true, command };
 }

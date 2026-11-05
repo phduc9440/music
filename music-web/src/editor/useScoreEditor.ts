@@ -9,13 +9,13 @@ import { saveMusicXml } from '../services';
 import { getConflictVersion, getSaveErrorMessage } from '../utils/score';
 import { EDIT_FAILURE_MESSAGES, changePitch, removeNotes, setAlteration } from './commands';
 import type { EditResult, SymbolOp } from './commands';
-import { DURATION_LABELS, DURATION_QUARTERS, enterNote, isLetterKey, setDuration } from './durations';
-import type { DurationChoice, DurationType } from './durations';
-import { DRAFT_INTERVAL_MS, clearDraft, loadDraft, saveDraft } from './draft';
+import { DURATION_LABELS, DURATION_QUARTERS, enterNote, insertNote, isLetterKey, setDuration } from './durations';
+import type { AccidentalChoice, DurationChoice, DurationType, InsertTarget } from './durations';
+import { DRAFT_INTERVAL_MS, clearDraft, loadDraft, loadKeepMeasurePref, saveDraft, saveKeepMeasurePref } from './draft';
 import type { Draft } from './draft';
 import { describeSelection } from './describe';
 import { History } from './history';
-import { checkMeasures } from './measureCheck';
+import { checkMeasures, confirmMeasure } from './measureCheck';
 import type { MeasureIssue } from './measureCheck';
 import type { PitchOp } from './pitch';
 import { selectionGroups } from './playback';
@@ -83,12 +83,19 @@ export interface ScoreEditor {
   setInputMode: (enabled: boolean) => void;
   /** Trường độ dùng khi nhập nốt (cũng là trường độ vừa chọn trên bảng công cụ). */
   inputDuration: DurationChoice;
+  /** true: đổi trường độ nhưng giữ ô nhịp đủ phách (lấp dấu lặng / ghi đè nốt sau); false: đổi thẳng. */
+  keepMeasure: boolean;
+  setKeepMeasure: (enabled: boolean) => void;
   /** Chọn trường độ: đang nhập nốt thì đặt trường độ nhập, không thì đổi trường độ vùng chọn. */
   chooseDuration: (type: DurationType) => void;
   /** Bật/tắt chấm dôi, cùng quy tắc với {@link chooseDuration}. */
   toggleDot: () => void;
   /** Nhập nốt tên `letter` (a–g) tại nốt đang chọn. */
   enterLetter: (letter: string) => void;
+  /** Thêm nốt tại vị trí trên khuông (bấm khuông hoặc kéo-thả trường độ); true nếu thêm được. */
+  /** Xác nhận ô nhịp thừa/thiếu phách là đúng (ô lấy đà...), bỏ viền đỏ. */
+  confirmMeasureOk: (measureIndex: number) => void;
+  insertNoteAt: (target: InsertTarget, choice: DurationChoice, accidental: AccidentalChoice) => boolean;
   /** Áp ký hiệu (thăng, giáng, bình, dấu lặng, xóa) lên vùng chọn. */
   applySymbol: (op: SymbolOp) => void;
   /** Kéo nốt: đổi `steps` bậc (dương = lên) cho vùng chọn, hoặc cho `ids` nếu chúng chưa được chọn. */
@@ -124,6 +131,7 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
   const [saving, setSaving] = useState(false);
   const [version, setVersion] = useState(initialVersion);
   const [notice, setNotice] = useState<Notice | null>(null);
+  const [keepMeasure, setKeepMeasureState] = useState(loadKeepMeasurePref);
   const [inputMode, setInputMode] = useState(false);
   const [inputDuration, setInputDuration] = useState<DurationChoice>({ type: 'quarter', dotted: false });
   const [previewTone, setPreviewToneState] = useState(loadPreviewTonePref);
@@ -158,6 +166,11 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     const h = historyRef.current;
     setFlags({ dirty: h.dirty, canUndo: h.canUndo, canRedo: h.canRedo });
     setRevision((r) => r + 1);
+  }, []);
+
+  const setKeepMeasure = useCallback((enabled: boolean) => {
+    setKeepMeasureState(enabled);
+    saveKeepMeasurePref(enabled);
   }, []);
 
   const setPreviewTone = useCallback((enabled: boolean) => {
@@ -250,9 +263,9 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
         flash(`Trường độ nhập: ${DURATION_LABELS[type]}`);
         return;
       }
-      if (canEdit && selection.size > 0) commit(setDuration(doc, [...selection], choice), false);
+      if (canEdit && selection.size > 0) commit(setDuration(doc, [...selection], choice, keepMeasure), false);
     },
-    [inputMode, canEdit, selection, doc, commit, flash],
+    [inputMode, canEdit, selection, doc, commit, flash, keepMeasure],
   );
 
   const toggleDot = useCallback(() => {
@@ -270,8 +283,8 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
       return;
     }
     const dotted = first.element.querySelector(':scope > dot') !== null;
-    commit(setDuration(doc, [...selection], { type: typeText as DurationType, dotted: !dotted }), false);
-  }, [inputMode, inputDuration, canEdit, selection, doc, commit, flash]);
+    commit(setDuration(doc, [...selection], { type: typeText as DurationType, dotted: !dotted }, keepMeasure), false);
+  }, [inputMode, inputDuration, canEdit, selection, doc, commit, flash, keepMeasure]);
 
   const enterLetter = useCallback(
     (letter: string) => {
@@ -279,6 +292,24 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
       commit(enterNote(doc, [...selection][0], letter, inputDuration), true);
     },
     [canEdit, inputMode, selection, doc, inputDuration, commit],
+  );
+
+  const confirmMeasureOk = useCallback(
+    (measureIndex: number) => {
+      if (canEdit) commit(confirmMeasure(doc, measureIndex), false);
+    },
+    [canEdit, doc, commit],
+  );
+
+  const insertNoteAt = useCallback(
+    (target: InsertTarget, choice: DurationChoice, accidental: AccidentalChoice): boolean => {
+      if (!canEdit) return false;
+      const result = insertNote(doc, target, choice, accidental, keepMeasure);
+      commit(result, true);
+      if (result.ok) setInputDuration(choice);
+      return result.ok;
+    },
+    [canEdit, doc, keepMeasure, commit],
   );
 
   const applySymbol = useCallback(
@@ -566,12 +597,16 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     clearSelection,
     applyPitch,
     applySymbol,
+    keepMeasure,
+    setKeepMeasure,
     inputMode,
     setInputMode,
     inputDuration,
     chooseDuration,
     toggleDot,
     enterLetter,
+    insertNoteAt,
+    confirmMeasureOk,
     dragPitch,
     selectInChord,
     undo,
