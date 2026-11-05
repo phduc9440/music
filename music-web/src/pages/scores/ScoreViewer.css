@@ -841,6 +841,13 @@
 }
 
 /* Nút chữ cho nhóm Sắc thái / Lặp lại */
+.sv-tools__sub {
+  margin: 0.6rem 0 0.3rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--sc-muted);
+}
+
 .sv-tools__row--text {
   grid-template-columns: repeat(3, 1fr);
 }

@@ -50,6 +50,8 @@ export type EditFailure =
   | 'badValue'
   | 'badChord'
   | 'hairpinTarget'
+  | 'spanTarget'
+  | 'arpeggioTarget'
   | 'noMeasure'
   | 'lastMeasure'
   | 'voiceMain'
@@ -91,6 +93,8 @@ export const EDIT_FAILURE_MESSAGES: Record<EditFailure, string> = {
   badValue: 'Giá trị không hợp lệ',
   badChord: 'Không hiểu hợp âm này. Ví dụ: C, Am7, G/B, F#m, Bbmaj7, Dsus4, C6/9, N.C.',
   hairpinTarget: 'Cresc./dim. cần chọn từ hai nốt trở lên (từ nốt bắt đầu đến nốt kết thúc)',
+  spanTarget: 'Vùng chọn phải nằm trong cùng một khuông của cùng một phần nhạc',
+  arpeggioTarget: 'Dấu rải cần một hợp âm có từ hai nốt trở lên: hãy chọn hợp âm',
   noMeasure: 'Hãy chọn một nốt để biết thao tác này áp dụng cho ô nhịp nào',
   lastMeasure: 'Bản nhạc phải còn ít nhất một ô nhịp',
   voiceMain: 'Đây là bè chính của khuông nên không xóa theo cách này (hãy dùng nút Xóa nốt / Dấu lặng)',

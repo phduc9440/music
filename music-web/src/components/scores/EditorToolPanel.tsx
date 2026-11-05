@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import type { SymbolOp } from '../editor/commands';
-import { DYNAMICS } from '../editor/marks';
+import { DYNAMICS, EXTRA_DYNAMICS } from '../editor/marks';
 import type { MarkOp } from '../editor/marks';
 import { TUPLET_PRESETS } from '../editor/tuplets';
 import type { TupletOp } from '../editor/tuplets';
@@ -133,6 +133,62 @@ const MARK_TOOLS: { op: MarkOp; label: string; title: string }[] = [
   { op: 'dim', label: 'Dim.', title: 'Dim.: nhỏ dần, từ nốt đầu đến nốt cuối của vùng chọn' },
 ];
 
+/** Menu "Thêm ký hiệu…": các ký hiệu ít dùng, chia nhóm. */
+const MORE_MARK_GROUPS: { title: string; tools: { op: MarkOp; label: string; title: string }[] }[] = [
+  {
+    title: 'Sắc thái',
+    tools: EXTRA_DYNAMICS.map((d) => ({
+      op: `dyn:${d}` as MarkOp,
+      label: d,
+      title:
+        d === 'ppp' || d === 'fff'
+          ? `${d}: ${d === 'ppp' ? 'rất rất nhỏ' : 'rất rất to'} (đặt ở nốt đầu của vùng chọn)`
+          : `${d}: nhấn mạnh một nốt rồi trở lại mức cũ (đặt ở nốt đầu của vùng chọn)`,
+    })),
+  },
+  {
+    title: 'Kỹ thuật',
+    tools: [
+      { op: 'marcato', label: 'Marcato', title: 'Marcato: nhấn mạnh và ngắt (bấm lại để bỏ)' },
+      { op: 'staccatissimo', label: 'Staccatissimo', title: 'Staccatissimo: ngắt rất ngắn (bấm lại để bỏ)' },
+      { op: 'breath', label: 'Lấy hơi', title: 'Dấu lấy hơi sau nốt (bấm lại để bỏ)' },
+      { op: 'caesura', label: 'Ngắt nghỉ', title: 'Dấu ngắt nghỉ // (bấm lại để bỏ; bản xem trước chưa vẽ dấu này)' },
+      { op: 'arpeggio', label: 'Rải hợp âm', title: 'Rải các nốt của hợp âm đang chọn từ dưới lên (bấm lại để bỏ)' },
+    ],
+  },
+  {
+    title: 'Láy',
+    tools: [
+      { op: 'trill', label: 'Láy rền', title: 'Láy rền (tr): luân phiên với nốt liền trên (bấm lại để bỏ)' },
+      { op: 'mordent', label: 'Láy ngắn', title: 'Láy ngắn (mordent): nốt - nốt dưới - nốt (bấm lại để bỏ)' },
+      {
+        op: 'invMordent',
+        label: 'Láy ngắn ngược',
+        title: 'Láy ngắn ngược: nốt - nốt trên - nốt (bấm lại để bỏ)',
+      },
+      { op: 'turn', label: 'Láy vòng', title: 'Láy vòng: nốt trên - nốt - nốt dưới - nốt (bấm lại để bỏ)' },
+    ],
+  },
+  {
+    title: 'Khác',
+    tools: [
+      { op: 'pedal', label: 'Pedal', title: 'Pedal: nhấn từ nốt đầu đến hết nốt cuối của vùng chọn (bấm lại để bỏ)' },
+      { op: 'ottava8va', label: '8va', title: '8va: viết thấp hơn một quãng tám, đàn/hát cao hơn (bấm lại để bỏ)' },
+      { op: 'ottava8vb', label: '8vb', title: '8vb: viết cao hơn một quãng tám, đàn/hát thấp hơn (bấm lại để bỏ)' },
+      {
+        op: 'graceSlash',
+        label: 'Hoa mỹ (gạch)',
+        title: 'Nốt hoa mỹ có gạch chéo (acciaccatura): thêm trước nốt đang chọn, cao hơn một bậc',
+      },
+      {
+        op: 'gracePlain',
+        label: 'Hoa mỹ (không gạch)',
+        title: 'Nốt hoa mỹ không gạch (appoggiatura): thêm trước nốt đang chọn, cao hơn một bậc',
+      },
+    ],
+  },
+];
+
 const REPEAT_TOOLS: { op: MarkOp; label: string; title: string }[] = [
   { op: 'repeatStart', label: '|:', title: 'Dấu lặp ở đầu ô nhịp (ô đầu của vùng chọn)' },
   { op: 'repeatEnd', label: ':|', title: 'Dấu lặp ở cuối ô nhịp (ô cuối của vùng chọn)' },
@@ -197,6 +253,7 @@ export default function EditorToolPanel({
 }: Props) {
   const [tupletMenu, setTupletMenu] = useState(false);
   const [otherMenu, setOtherMenu] = useState(false);
+  const [moreMarks, setMoreMarks] = useState(false);
   return (
     <>
       {open && <div className="sv-sheet-backdrop" onClick={onClose} aria-hidden="true" />}
@@ -510,7 +567,39 @@ export default function EditorToolPanel({
                 {d}
               </button>
             ))}
+            <button
+              className={`sv-tool sv-tool--text${moreMarks ? ' is-active' : ''}`}
+              disabled={busy}
+              aria-expanded={moreMarks}
+              onClick={() => setMoreMarks((open) => !open)}
+              title="Thêm ký hiệu: sắc thái khác, kỹ thuật, nốt láy, pedal, 8va/8vb, nốt hoa mỹ"
+            >
+              Thêm ký hiệu…
+            </button>
           </div>
+          {moreMarks &&
+            MORE_MARK_GROUPS.map((group) => (
+              <div key={group.title} role="menu" aria-label={group.title}>
+                <div className="sv-tools__sub">{group.title}</div>
+                <div className="sv-tools__row sv-tools__row--text">
+                  {group.tools.map((tool) => (
+                    <button
+                      key={tool.op}
+                      className="sv-tool sv-tool--text"
+                      role="menuitem"
+                      disabled={!hasSelection || busy}
+                      onClick={() => {
+                        onMark(tool.op);
+                        setMoreMarks(false);
+                      }}
+                      title={`${tool.title}${hasSelection ? '' : ' - hãy chọn nốt trước'}`}
+                    >
+                      {tool.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
         </div>
 
         <div className="sv-tools__group sv-tools__group--soon">
