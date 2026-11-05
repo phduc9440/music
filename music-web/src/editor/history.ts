@@ -80,6 +80,7 @@ export class History {
       doc.replaceMeasure(s.partIndex, s.measureIndex, s.before.cloneNode(true) as Element, false);
     }
     if (command.head) doc.restoreHead(command.head.before);
+    if (command.parts) doc.restoreParts(command.parts.before);
     doc.reindex();
     this.cursor -= 1;
     return command;
@@ -93,6 +94,7 @@ export class History {
       doc.replaceMeasure(s.partIndex, s.measureIndex, s.after.cloneNode(true) as Element, false);
     }
     if (command.head) doc.restoreHead(command.head.after);
+    if (command.parts) doc.restoreParts(command.parts.after);
     doc.reindex();
     this.cursor += 1;
     return command;

@@ -215,6 +215,19 @@ export class ScoreDocument {
     this.reindex();
   }
 
+  /** Bản sao toàn bộ các <part> (dùng cho lệnh thêm/xóa ô nhịp làm đổi số ô nhịp). */
+  partsSnapshot(): Element[] {
+    return this.parts().map((p) => p.cloneNode(true) as Element);
+  }
+
+  /** Thay toàn bộ các <part> bằng bản đã chụp (hoàn tác / làm lại việc thêm/xóa ô nhịp). */
+  restoreParts(parts: readonly Element[]): void {
+    const root = this.doc.documentElement;
+    this.parts().forEach((p) => p.remove());
+    parts.forEach((p) => root.appendChild(p.cloneNode(true)));
+    this.reindex();
+  }
+
   /** Phần tử gốc <score-partwise> (dùng cho phần đầu file: tiêu đề, tác giả...). */
   get root(): Element {
     return this.doc.documentElement;

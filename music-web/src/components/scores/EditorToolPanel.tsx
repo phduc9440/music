@@ -54,6 +54,10 @@ interface Props {
   onChordModeChange: (enabled: boolean) => void;
   /** Ký hiệu sắc thái, lặp lại và chỉ dẫn nhảy. */
   onMark: (op: MarkOp) => void;
+  /** Thêm / xóa ô nhịp. */
+  onMeasures: (op: 'insertAfter' | 'insertBefore' | 'delete') => void;
+  /** Viết bè, nốt nhỏ, xóa bè. */
+  onVoice: (op: 'addBelow' | 'addAbove' | 'cue' | 'remove') => void;
   /** "Giữ ô nhịp đủ phách": đổi trường độ nhưng lấp dấu lặng / ghi đè nốt sau để ô không đổi độ dài. */
   onDuration: (type: DurationType) => void;
   onDot: () => void;
@@ -161,6 +165,8 @@ export default function EditorToolPanel({
   chordMode,
   onChordModeChange,
   onMark,
+  onMeasures,
+  onVoice,
   onDuration,
   onDot,
   previewTone,
@@ -310,6 +316,74 @@ export default function EditorToolPanel({
                 <ToolDot />
               </span>
               <span className="sv-tool__label">Chấm dôi</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="sv-tools__group sv-tools__group--soon">
+          <div className="sv-tools__title">Ô nhịp</div>
+          <div className="sv-tools__row sv-tools__row--text">
+            <button
+              className="sv-tool sv-tool--text"
+              disabled={busy}
+              onClick={() => onMeasures('insertAfter')}
+              title="Thêm một ô nhịp trống sau ô đang chọn (không chọn gì: thêm vào cuối bài)"
+            >
+              Thêm ô sau
+            </button>
+            <button
+              className="sv-tool sv-tool--text"
+              disabled={!hasSelection || busy}
+              onClick={() => onMeasures('insertBefore')}
+              title="Chèn một ô nhịp trống trước ô đang chọn"
+            >
+              Chèn ô trước
+            </button>
+            <button
+              className="sv-tool sv-tool--text"
+              disabled={!hasSelection || busy}
+              onClick={() => onMeasures('delete')}
+              title="Xóa các ô nhịp có nốt đang chọn (bấm Hoàn tác nếu lỡ tay)"
+            >
+              Xóa ô nhịp
+            </button>
+          </div>
+        </div>
+
+        <div className="sv-tools__group sv-tools__group--soon">
+          <div className="sv-tools__title">Viết bè</div>
+          <div className="sv-tools__row sv-tools__row--text">
+            <button
+              className="sv-tool sv-tool--text"
+              disabled={!hasSelection || busy}
+              onClick={() => onVoice('addBelow')}
+              title="Sao các nốt đang chọn sang một bè mới cùng trường độ, nốt nhỏ, thấp hơn một quãng ba (sau đó chỉnh cao độ tùy ý)"
+            >
+              Bè dưới
+            </button>
+            <button
+              className="sv-tool sv-tool--text"
+              disabled={!hasSelection || busy}
+              onClick={() => onVoice('addAbove')}
+              title="Như trên nhưng bè cao hơn một quãng ba"
+            >
+              Bè trên
+            </button>
+            <button
+              className="sv-tool sv-tool--text"
+              disabled={!hasSelection || busy}
+              onClick={() => onVoice('cue')}
+              title="Bật/tắt hình nốt nhỏ cho các nốt đang chọn"
+            >
+              Nốt nhỏ
+            </button>
+            <button
+              className="sv-tool sv-tool--text"
+              disabled={!hasSelection || busy}
+              onClick={() => onVoice('remove')}
+              title="Xóa bè phụ chứa nốt đang chọn (chỉ trong ô nhịp đang chọn)"
+            >
+              Xóa bè
             </button>
           </div>
         </div>

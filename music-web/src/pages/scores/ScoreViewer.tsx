@@ -68,6 +68,11 @@ const SHORTCUTS: [string, string][] = [
   ['Bấm vào tiêu đề, tên tác giả hoặc nhịp độ', 'Sửa nội dung; tiêu đề và tác giả sửa được cả cỡ chữ, đậm, nghiêng'],
   ['Chế độ Lời', 'Chọn nốt, gõ âm tiết rồi Space sang nốt kế; "-" khi một chữ trải qua nhiều nốt; Esc để thoát'],
   ['Chế độ Hợp âm', 'Chọn nốt, gõ hợp âm (C, Am7, G/B...) rồi Space sang nốt kế; ô trống để xóa'],
+  ['Nhóm Ô nhịp', 'Thêm ô sau / chèn ô trước / xóa các ô đang chọn (hoàn tác được)'],
+  [
+    'Nhóm Viết bè',
+    'Chọn nốt rồi bấm Bè dưới / Bè trên: sao sang bè mới, nốt nhỏ cùng trường độ; chỉnh cao độ bằng ↑ ↓',
+  ],
   [
     'Nhóm Sắc thái',
     'Staccato, Accent, Tenuto, Fermata, Cresc./Dim. (chọn nốt đầu đến nốt cuối), pp…ff (đặt ở nốt đầu)',
@@ -465,6 +470,8 @@ function ScoreWorkspace({ score, xml, info, doc }: WorkspaceProps) {
             chordMode={editor.chordMode}
             onChordModeChange={editor.setChordMode}
             onMark={editor.applyMark}
+            onMeasures={editor.editMeasures}
+            onVoice={editor.editVoice}
             onDuration={editor.chooseDuration}
             onDot={editor.toggleDot}
             previewTone={editor.previewTone}

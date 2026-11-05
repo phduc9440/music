@@ -25,6 +25,8 @@ export interface EditCommand {
   selectAfter?: string[];
   /** Phần đầu file (tiêu đề, tác giả...) trước và sau khi sửa; chỉ có ở lệnh sửa các chữ đầu bản nhạc. */
   head?: { before: Element[]; after: Element[] };
+  /** Toàn bộ các part trước và sau khi sửa; chỉ có ở lệnh làm đổi số ô nhịp (thêm/xóa ô). */
+  parts?: { before: Element[]; after: Element[] };
 }
 
 /** Lý do một thao tác không thực hiện được. */
@@ -45,7 +47,10 @@ export type EditFailure =
   | 'badValue'
   | 'badChord'
   | 'hairpinTarget'
-  | 'noMeasure';
+  | 'noMeasure'
+  | 'lastMeasure'
+  | 'voiceMain'
+  | 'voiceNone';
 
 export type EditResult = { ok: true; command: EditCommand } | { ok: false; reason: EditFailure };
 
@@ -78,6 +83,9 @@ export const EDIT_FAILURE_MESSAGES: Record<EditFailure, string> = {
   badChord: 'Không hiểu hợp âm này. Ví dụ: C, Am7, G/B, F#m, Bbmaj7, Dsus4',
   hairpinTarget: 'Cresc./dim. cần chọn từ hai nốt trở lên (từ nốt bắt đầu đến nốt kết thúc)',
   noMeasure: 'Hãy chọn một nốt để biết thao tác này áp dụng cho ô nhịp nào',
+  lastMeasure: 'Bản nhạc phải còn ít nhất một ô nhịp',
+  voiceMain: 'Đây là bè chính của khuông nên không xóa theo cách này (hãy dùng nút Xóa nốt / Dấu lặng)',
+  voiceNone: 'Hãy chọn các nốt (không phải dấu lặng hay nốt trang trí) để viết bè',
 };
 
 export const childOf = (parent: Element, tag: string): Element | undefined =>

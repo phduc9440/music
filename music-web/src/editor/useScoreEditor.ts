@@ -23,6 +23,8 @@ import { canHoldLyric, pasteLyrics, setLyric, stepLyricNote } from './lyrics';
 import type { LyricEnd } from './lyrics';
 import { applyMark as runMark } from './marks';
 import type { MarkOp } from './marks';
+import { deleteMeasures, insertMeasure } from './structure';
+import { addHarmonyVoice, removeVoice, toggleCue } from './voices';
 import { setTempo } from './tempo';
 import type { TempoInfo } from './tempo';
 import { toggleSlur, toggleTie } from './ties';
@@ -104,6 +106,10 @@ export interface ScoreEditor {
   pasteChordText: (text: string) => void;
   /** Áp ký hiệu sắc thái / lặp / chỉ dẫn lên vùng chọn. */
   applyMark: (op: MarkOp) => void;
+  /** Thêm ô nhịp trống sau / trước ô đang chọn (không chọn gì: thêm vào cuối), hoặc xóa các ô đang chọn. */
+  editMeasures: (op: 'insertAfter' | 'insertBefore' | 'delete') => void;
+  /** Viết bè (sao nốt sang bè mới, nốt nhỏ), bật/tắt nốt nhỏ, hoặc xóa bè phụ. */
+  editVoice: (op: 'addBelow' | 'addAbove' | 'cue' | 'remove') => void;
   /** Lời đang nhập (1–4). */
   lyricVerse: number;
   setLyricVerse: (verse: number) => void;
@@ -416,6 +422,36 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     (op: MarkOp) => {
       if (!canEdit || selection.size === 0) return;
       commit(runMark(doc, [...selection], op), false);
+    },
+    [canEdit, selection, doc, commit],
+  );
+
+  const editMeasures = useCallback(
+    (op: 'insertAfter' | 'insertBefore' | 'delete') => {
+      if (!canEdit) return;
+      const picked = [...selection].map((id) => doc.getInfo(id)).filter((n) => n !== undefined);
+      const indexes = picked.map((n) => n.measureIndex);
+      const first = indexes.length ? Math.min(...indexes) : doc.measureCount - 1;
+      const last = indexes.length ? Math.max(...indexes) : doc.measureCount - 1;
+      if (op === 'delete') {
+        if (indexes.length === 0) {
+          commit({ ok: false, reason: 'noMeasure' }, false);
+          return;
+        }
+        commit(deleteMeasures(doc, first, last), false);
+      } else if (op === 'insertAfter') commit(insertMeasure(doc, last, 'after'), false);
+      else commit(insertMeasure(doc, first, 'before'), false);
+    },
+    [canEdit, selection, doc, commit],
+  );
+
+  const editVoice = useCallback(
+    (op: 'addBelow' | 'addAbove' | 'cue' | 'remove') => {
+      if (!canEdit || selection.size === 0) return;
+      const ids = [...selection];
+      if (op === 'cue') commit(toggleCue(doc, ids), false);
+      else if (op === 'remove') commit(removeVoice(doc, ids), false);
+      else commit(addHarmonyVoice(doc, ids, op === 'addBelow' ? -2 : 2), false);
     },
     [canEdit, selection, doc, commit],
   );
@@ -804,6 +840,8 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     moveChord,
     pasteChordText,
     applyMark,
+    editMeasures,
+    editVoice,
     lyricMode,
     setLyricMode,
     lyricVerse,
