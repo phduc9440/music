@@ -29,6 +29,7 @@ import {
 } from './durationCore';
 import type { Dots, DurationChoice, DurationType, Entry, Plan } from './durationCore';
 import { scaleDivisions } from './divisions';
+import { middleLineMidi, middleLinePitch } from './clefs';
 import { inRange, keyAlter, pitchToMidi, isStep } from './pitch';
 import type { Pitch, Step } from './pitch';
 import type { NoteInfo, ScoreDocument } from './ScoreDocument';
@@ -143,9 +144,7 @@ const defaultPitchFor = (doc: ScoreDocument, info: NoteInfo): Pitch => {
     const p = n.isRest || n.isGrace ? null : readPitch(n.element);
     if (p) return { step: p.step, alter: keyAlter(fifths, p.step), octave: p.octave };
   }
-  const ref = clefReference(doc, info);
-  const base: { step: Step; octave: number } =
-    ref === 50 ? { step: 'D', octave: 3 } : ref === 60 ? { step: 'C', octave: 4 } : { step: 'B', octave: 4 };
+  const base = middleLinePitch(doc, info.partIndex, info.staff, info.measureIndex);
   return { ...base, alter: keyAlter(fifths, base.step) };
 };
 
@@ -255,21 +254,6 @@ function setDurationOnce(doc: ScoreDocument, ids: readonly string[], choice: Dur
 
 const LETTER_STEP: Record<string, Step> = { a: 'A', b: 'B', c: 'C', d: 'D', e: 'E', f: 'F', g: 'G' };
 
-/** Dấu khóa mặc định để chọn quãng tám khi chưa có nốt nào trước đó (G → B4, F → D3, C → C4). */
-const clefReference = (doc: ScoreDocument, info: NoteInfo): number => {
-  let sign = 'G';
-  doc.getMeasures(info.partIndex).forEach((measure, measureIndex) => {
-    if (measureIndex > info.measureIndex) return;
-    for (const attributes of Array.from(measure.children).filter((c) => c.tagName === 'attributes')) {
-      for (const clef of Array.from(attributes.children).filter((c) => c.tagName === 'clef')) {
-        const number = Number(clef.getAttribute('number') ?? 1);
-        if (number === info.staff) sign = childOf(clef, 'sign')?.textContent?.trim() ?? sign;
-      }
-    }
-  });
-  return sign === 'F' ? 50 : sign === 'C' ? 60 : 71;
-};
-
 /** Cao độ MIDI tham chiếu: nốt chính nó nếu đã có cao độ, rồi nốt có cao độ gần nhất phía trước cùng bè, rồi khóa nhạc. */
 const referenceMidi = (doc: ScoreDocument, info: NoteInfo): number => {
   if (info.midi !== null) return info.midi;
@@ -280,7 +264,7 @@ const referenceMidi = (doc: ScoreDocument, info: NoteInfo): number => {
       return n.midi;
     }
   }
-  return clefReference(doc, info);
+  return middleLineMidi(doc, info.partIndex, info.staff, info.measureIndex);
 };
 
 /**

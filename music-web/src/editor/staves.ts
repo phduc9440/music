@@ -2,17 +2,34 @@
  * Khuông nhạc và các thiết lập đầu khuông: thêm/xóa khuông (khuông Fa cho đàn, phần nhạc riêng cho SATB...), đổi khóa
  * (Sol/Fa/Đô), dấu hóa theo khóa nhạc, và chỉ số nhịp (đổi nhịp giữa bài, nhịp tự do).
  */
+import { clefAt } from './clefs';
 import { childOf, commitEdit } from './commands';
 import type { EditResult, Touched } from './commands';
 import { runStructural } from './structure';
 import type { NoteInfo, ScoreDocument } from './ScoreDocument';
 import { measureEnd } from './voices';
 
-export type ClefSign = 'G' | 'F' | 'C';
-export const CLEFS: Record<ClefSign, { sign: string; line: number; label: string }> = {
-  G: { sign: 'G', line: 2, label: 'Khóa Sol' },
-  F: { sign: 'F', line: 4, label: 'Khóa Fa' },
-  C: { sign: 'C', line: 3, label: 'Khóa Đô' },
+/** Các khóa nhạc chọn được: Sol, Sol 8 dưới (Tenor), Fa, Đô dòng 3 (Alto), Đô dòng 4 (Tenor). */
+export type ClefSign = 'G' | 'G8b' | 'F' | 'C' | 'C4';
+export const CLEFS: Record<
+  ClefSign,
+  { sign: string; line: number; octaveChange: number; label: string; short: string }
+> = {
+  G: { sign: 'G', line: 2, octaveChange: 0, label: 'Khóa Sol', short: 'Sol' },
+  G8b: { sign: 'G', line: 2, octaveChange: -1, label: 'Khóa Sol số 8 dưới (Tenor)', short: 'Tenor (Sol 8)' },
+  F: { sign: 'F', line: 4, octaveChange: 0, label: 'Khóa Fa', short: 'Fa' },
+  C: { sign: 'C', line: 3, octaveChange: 0, label: 'Khóa Đô dòng 3 (Alto)', short: 'Đô' },
+  C4: { sign: 'C', line: 4, octaveChange: 0, label: 'Khóa Đô dòng 4 (Tenor)', short: 'Đô dòng 4' },
+};
+
+/** Dựng thẻ <clef> theo `spec` (có <clef-octave-change> khi khác 0, đúng thứ tự sign, line, clef-octave-change). */
+const makeClef = (owner: Document, spec: (typeof CLEFS)[ClefSign], number: number | null): Element => {
+  const clef = el(owner, 'clef');
+  if (number !== null) clef.setAttribute('number', String(number));
+  clef.appendChild(el(owner, 'sign', spec.sign));
+  clef.appendChild(el(owner, 'line', String(spec.line)));
+  if (spec.octaveChange !== 0) clef.appendChild(el(owner, 'clef-octave-change', String(spec.octaveChange)));
+  return clef;
 };
 
 /** Phạm vi áp dụng: chỉ các ô đã chọn (sau đó trở lại như cũ) hoặc từ ô đầu đã chọn đến hết bài. */
@@ -178,13 +195,7 @@ export function changeNotation(
       if (change.kind === 'clef') {
         const multi = doc.staffCountOfPart(partIndex) > 1;
         const spec = CLEFS[change.sign];
-        const make = () => {
-          const clef = el(owner, 'clef');
-          if (multi) clef.setAttribute('number', String(target.staff));
-          clef.appendChild(el(owner, 'sign', spec.sign));
-          clef.appendChild(el(owner, 'line', String(spec.line)));
-          return clef;
-        };
+        const make = () => makeClef(owner, spec, multi ? target.staff : null);
         applyRange(doc, partIndex, from, to, { tag: 'clef', staff: multi ? target.staff : 1 }, make, restore);
       } else if (change.kind === 'key') {
         const make = () => {
@@ -229,18 +240,18 @@ export function readNotation(doc: ScoreDocument, ids: readonly string[]): Notati
   const first = infos[0];
   const indexes = infos.map((n) => n.measureIndex);
   const from = Math.min(...indexes);
-  const clefEl = effective(doc, first.partIndex, from, {
-    tag: 'clef',
-    staff: doc.staffCountOfPart(first.partIndex) > 1 ? first.staff : 1,
+  const current = clefAt(doc, first.partIndex, doc.staffCountOfPart(first.partIndex) > 1 ? first.staff : 1, from);
+  const known = (Object.keys(CLEFS) as ClefSign[]).find((k) => {
+    const c = CLEFS[k];
+    return c.sign === current.sign && c.line === current.line && c.octaveChange === current.octaveChange;
   });
-  const sign = childOf(clefEl ?? el(doc.root.ownerDocument, 'clef'), 'sign')?.textContent?.trim();
   const { beats, beatType, free } = doc.timeAt(from);
   return {
     partIndex: first.partIndex,
     staff: first.staff,
     from,
     to: Math.max(...indexes),
-    clef: sign === 'G' || sign === 'F' || sign === 'C' ? sign : null,
+    clef: known ?? null,
     fifths: doc.keyAt(from),
     beats,
     beatType,
@@ -309,11 +320,11 @@ export function addBassStaff(doc: ScoreDocument, partIndex: number): EditResult 
   return result;
 }
 
-/** Thêm một phần nhạc mới một khuông (ví dụ khuông hát cho SATB) với khóa Sol hoặc Fa, toàn dấu lặng. */
-export function addPart(doc: ScoreDocument, sign: 'G' | 'F'): EditResult {
+/** Thêm một phần nhạc mới một khuông (ví dụ khuông hát cho SATB) với khóa `clefKey` (Sol, Fa, Tenor...), toàn dấu lặng. */
+export function addPart(doc: ScoreDocument, clefKey: ClefSign): EditResult {
   const source = doc.getMeasures(0);
   const lengths = source.map((_, m) => measureLength(doc, 0, m));
-  const result = runStructural(doc, `Thêm khuông ${sign === 'G' ? 'Sol' : 'Fa'}`, () => {
+  const result = runStructural(doc, `Thêm khuông ${CLEFS[clefKey].short}`, () => {
     const owner = source[0].ownerDocument;
     const root = doc.root;
     const list = Array.from(root.children).find((c) => c.tagName === 'part-list') as Element;
@@ -340,10 +351,7 @@ export function addPart(doc: ScoreDocument, sign: 'G' | 'F'): EditResult {
           )
           .forEach((c) => c.remove());
         if (i === 0 && measure.querySelector('attributes') === null) {
-          const clef = el(owner, 'clef');
-          clef.appendChild(el(owner, 'sign', CLEFS[sign].sign));
-          clef.appendChild(el(owner, 'line', String(CLEFS[sign].line)));
-          insertInAttributes(copy, clef);
+          insertInAttributes(copy, makeClef(owner, CLEFS[clefKey], null));
         }
         if (copy.children.length > 0) measure.appendChild(copy);
       }

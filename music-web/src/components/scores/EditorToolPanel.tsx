@@ -60,8 +60,8 @@ interface Props {
   onChordModeChange: (enabled: boolean) => void;
   /** Ký hiệu sắc thái, lặp lại và chỉ dẫn nhảy. */
   onMark: (op: MarkOp) => void;
-  /** Thêm khuông Fa cho đàn, thêm khuông Sol/Fa riêng, xóa khuông. */
-  onStaves: (op: 'addBass' | 'addG' | 'addF' | 'remove') => void;
+  /** Thêm khuông Fa cho đàn, thêm khuông Sol/Fa/Tenor riêng, xóa khuông. */
+  onStaves: (op: 'addBass' | 'addG' | 'addF' | 'addTenor' | 'remove') => void;
   /** Mở hộp thoại khóa nhạc, dấu hóa, nhịp. */
   onOpenNotation: () => void;
   /** Thêm / xóa ô nhịp. */
@@ -365,6 +365,14 @@ export default function EditorToolPanel({
               title="Thêm một khuông riêng khóa Fa (ví dụ bè T/B) phía dưới cùng"
             >
               Thêm khuông Fa
+            </button>
+            <button
+              className="sv-tool sv-tool--text"
+              disabled={busy}
+              onClick={() => onStaves('addTenor')}
+              title="Thêm một khuông riêng khóa Sol số 8 dưới (bè Tenor trong SATB) phía dưới cùng"
+            >
+              Thêm khuông Tenor
             </button>
             <button
               className="sv-tool sv-tool--text"

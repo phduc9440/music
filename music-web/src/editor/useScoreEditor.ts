@@ -126,7 +126,7 @@ export interface ScoreEditor {
   /** Thêm ô nhịp trống sau / trước ô đang chọn (không chọn gì: thêm vào cuối), hoặc xóa các ô đang chọn. */
   editMeasures: (op: 'insertAfter' | 'insertBefore' | 'delete') => void;
   /** Thêm khuông Fa cho đàn, thêm khuông Sol/Fa riêng (phần nhạc mới), hoặc xóa khuông của nốt đang chọn. */
-  editStaves: (op: 'addBass' | 'addG' | 'addF' | 'remove') => void;
+  editStaves: (op: 'addBass' | 'addG' | 'addF' | 'addTenor' | 'remove') => void;
   /** Đổi khóa nhạc, dấu hóa đầu khuông hoặc nhịp tại vùng chọn. */
   editNotation: (change: NotationChange) => void;
   /** Viết bè (sao nốt sang bè mới, nốt nhỏ), bật/tắt nốt nhỏ, hoặc xóa bè phụ. */
@@ -469,12 +469,13 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
   );
 
   const editStaves = useCallback(
-    (op: 'addBass' | 'addG' | 'addF' | 'remove') => {
+    (op: 'addBass' | 'addG' | 'addF' | 'addTenor' | 'remove') => {
       if (!canEdit) return;
       const picked = [...selection][0] ? doc.getInfo([...selection][0]) : undefined;
       if (op === 'addBass') commit(addBassStaff(doc, picked?.partIndex ?? 0), false);
       else if (op === 'addG') commit(addPart(doc, 'G'), false);
       else if (op === 'addF') commit(addPart(doc, 'F'), false);
+      else if (op === 'addTenor') commit(addPart(doc, 'G8b'), false);
       else if (!picked) commit({ ok: false, reason: 'noStaff' }, false);
       else commit(removeStaff(doc, picked.partIndex, picked.staff), false);
     },

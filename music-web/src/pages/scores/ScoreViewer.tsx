@@ -80,7 +80,7 @@ const SHORTCUTS: [string, string][] = [
   ['Chế độ Hợp âm', 'Chọn nốt, gõ hợp âm (C, Am7, G/B...) rồi Space sang nốt kế; ô trống để xóa'],
   [
     'Nhóm Khuông nhạc',
-    'Thêm khuông Fa cho đàn, thêm khuông Sol/Fa riêng (SATB), xóa khuông; "Khóa · Dấu hóa · Nhịp…" đổi khóa, dấu hóa đầu khuông, nhịp giữa bài',
+    'Thêm khuông Fa cho đàn, thêm khuông Sol/Fa/Tenor riêng (SATB), xóa khuông; "Khóa · Dấu hóa · Nhịp…" đổi khóa (Sol, Sol 8 dưới, Fa, Đô), dấu hóa đầu khuông, nhịp giữa bài',
   ],
   ['Nhóm Ô nhịp', 'Thêm ô sau / chèn ô trước / xóa các ô đang chọn (hoàn tác được)'],
   [
