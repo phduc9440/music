@@ -1,5 +1,7 @@
 package com.ptit.music_be.service;
 
+import java.util.List;
+
 import com.ptit.music_be.dto.request.ScoreUpdateRequest;
 import com.ptit.music_be.dto.response.PageResponse;
 import com.ptit.music_be.dto.response.ScoreDetailResponse;
@@ -27,4 +29,9 @@ public interface ScoreService {
     ScoreDetailResponse updateScore(String scoreId, ScoreUpdateRequest request);
 
     void deleteScore(String scoreId);
+
+    /**
+     * Thay toàn bộ thể loại (tag) của bản nhạc bằng danh sách mới (tối đa 10, rỗng = gỡ hết). Cần quyền sửa bản nhạc.
+     */
+    ScoreDetailResponse updateTags(String scoreId, List<String> tagIds);
 }

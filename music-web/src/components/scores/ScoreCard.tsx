@@ -33,6 +33,11 @@ export default function ScoreCard({ score, onOpen }: Props) {
           {score.sourceType && <span className="sc-chip sc-chip--accent">{SOURCE_LABELS[score.sourceType]}</span>}
           {score.difficulty && <span className="sc-chip">{DIFFICULTY_LABELS[score.difficulty]}</span>}
           {score.visibility === 'PUBLIC' && <span className="sc-chip">Công khai</span>}
+          {score.tags?.map((t) => (
+            <span key={t.id} className="sc-chip sc-chip--tag">
+              {t.name}
+            </span>
+          ))}
         </div>
         <div className="sc-card__foot">
           <span>{score.measureCount ? `${score.measureCount} ô nhịp` : '—'}</span>

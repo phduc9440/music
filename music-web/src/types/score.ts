@@ -17,6 +17,13 @@ export interface PageResult<T> {
   totalPages: number;
 }
 
+// Thể loại (tag) gắn cho bản nhạc, BE: TagResponse
+export interface Tag {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 export interface ScoreSummary {
   id: string;
   title: string;
@@ -26,6 +33,7 @@ export interface ScoreSummary {
   sourceType?: ScoreSource | null;
   visibility: Visibility;
   measureCount?: number | null;
+  tags?: Tag[];
   thumbnailUrl?: string | null;
   createdAt?: string;
   updatedAt?: string;
