@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
-import { DURATION_LABELS, nextDots } from '../../editor/durations';
-import type { AccidentalChoice, DurationChoice, DurationType, InsertTarget } from '../../editor/durations';
-import { STEPS } from '../../editor/pitch';
-import { solfegeName } from '../../editor/staffHit';
+import { DURATION_LABELS, nextDots } from '../editor/durations';
+import type { AccidentalChoice, DurationChoice, DurationType, InsertTarget } from '../editor/durations';
+import { STEPS } from '../editor/pitch';
+import { solfegeName } from '../editor/staffHit';
 import {
   ToolEighth,
   ToolFlat,

@@ -4,8 +4,8 @@ import DownloadMenu from '../../components/scores/DownloadMenu';
 import EditorToolPanel from '../../components/scores/EditorToolPanel';
 import ChordBar from '../../components/scores/ChordBar';
 import NotationModal from '../../components/scores/NotationModal';
-import { readNotation } from '../../editor/staves';
-import type { NotationChange } from '../../editor/staves';
+import { readNotation } from '../../components/editor/staves';
+import type { NotationChange } from '../../components/editor/staves';
 import LyricBar from '../../components/scores/LyricBar';
 import Modal from '../../components/scores/Modal';
 import ScoreCanvas from '../../components/scores/ScoreCanvas';
@@ -23,11 +23,11 @@ import {
   IconShrink,
   IconUndo,
 } from '../../components/scores/ViewerIcons';
-import { syncTitle } from '../../editor/header';
-import { ScoreDocument } from '../../editor/ScoreDocument';
-import { DURATION_LABELS, dotsLabel } from '../../editor/durations';
-import { usePlayback } from '../../editor/usePlayback';
-import { useScoreEditor } from '../../editor/useScoreEditor';
+import { syncTitle } from '../../components/editor/header';
+import { ScoreDocument } from '../../components/editor/ScoreDocument';
+import { DURATION_LABELS, dotsLabel } from '../../components/editor/durations';
+import { usePlayback } from '../../components/editor/usePlayback';
+import { useScoreEditor } from '../../components/editor/useScoreEditor';
 import { fetchMusicXml, scoreApi } from '../../services';
 import type { ScoreDetail as ScoreDetailData } from '../../types';
 import { isValidScoreId } from '../../utils/omr';

@@ -5,8 +5,8 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
-import { saveMusicXml } from '../services';
-import { getConflictVersion, getSaveErrorMessage } from '../utils/score';
+import { saveMusicXml } from '../../services';
+import { getConflictVersion, getSaveErrorMessage } from '../../utils/score';
 import { EDIT_FAILURE_MESSAGES, changePitch, removeNotes, setAlteration } from './commands';
 import type { EditResult, SymbolOp } from './commands';
 import {

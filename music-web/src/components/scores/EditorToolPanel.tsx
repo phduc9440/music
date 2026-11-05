@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import type { SymbolOp } from '../../editor/commands';
-import { DYNAMICS } from '../../editor/marks';
-import type { MarkOp } from '../../editor/marks';
-import { TUPLET_PRESETS } from '../../editor/tuplets';
-import type { TupletOp } from '../../editor/tuplets';
-import type { VoiceOp } from '../../editor/voices';
-import type { DurationChoice, DurationType } from '../../editor/durations';
-import type { PitchOp } from '../../editor/pitch';
-import { DURATION_DRAG_TYPE } from '../../editor/staffHit';
+import type { SymbolOp } from '../editor/commands';
+import { DYNAMICS } from '../editor/marks';
+import type { MarkOp } from '../editor/marks';
+import { TUPLET_PRESETS } from '../editor/tuplets';
+import type { TupletOp } from '../editor/tuplets';
+import type { VoiceOp } from '../editor/voices';
+import type { DurationChoice, DurationType } from '../editor/durations';
+import type { PitchOp } from '../editor/pitch';
+import { DURATION_DRAG_TYPE } from '../editor/staffHit';
 import {
   ToolDelete,
   ToolDot,
