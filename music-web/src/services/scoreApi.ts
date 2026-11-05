@@ -5,6 +5,7 @@ import type {
   ScoreDetail,
   ScoreFileInfo,
   ScoreListParams,
+  ScoreSaveResult,
   ScoreSummary,
   ScoreUpdateRequest,
 } from '../types';
@@ -34,6 +35,27 @@ export const fetchMusicXml = async (scoreId: string): Promise<string> => {
     transformResponse: (data) => data, // giữ nguyên chuỗi XML, không để axios thử parse JSON
   });
   return response.data;
+};
+
+/**
+ * Lưu MusicXML đã chỉnh sửa (PUT /scores/{id}/musicxml, đặc tả 3.6).
+ * @param scoreId id bản nhạc
+ * @param xml nội dung MusicXML
+ * @param version phiên bản web đang giữ, gửi qua If-Match; lệch với BE thì lỗi 2014 (409)
+ * @param force true để ghi đè dù lệch phiên bản (chỉ chủ sở hữu/ADMIN)
+ */
+export const saveMusicXml = async (
+  scoreId: string,
+  xml: string,
+  version: number,
+  force = false,
+): Promise<ScoreSaveResult> => {
+  const response = await apiClient.put<ApiResponse<ScoreSaveResult>>(`/scores/${scoreId}/musicxml`, xml, {
+    headers: { 'Content-Type': 'application/vnd.recordare.musicxml+xml', 'If-Match': `"v${version}"` },
+    params: force ? { force: true } : undefined,
+    timeout: 60000,
+  });
+  return response.data.result;
 };
 
 /**

@@ -136,6 +136,56 @@ export class ScoreDocument {
     return before + staff - 1;
   }
 
+  /** Số part (phần nhạc). */
+  get partCount(): number {
+    return this.parts().length;
+  }
+
+  /** Các thẻ <measure> của một part (mảng rỗng nếu part không tồn tại). */
+  getMeasures(partIndex: number): Element[] {
+    return this.measuresOf(partIndex);
+  }
+
+  /** Divisions có hiệu lực ở một ô nhịp của một part cụ thể. */
+  divisionsAtPart(partIndex: number, measureIndex: number): number {
+    return this.divisionsInPart(partIndex, measureIndex);
+  }
+
+  /** Chỉ số nhịp (số phách, loại phách) có hiệu lực ở ô nhịp của part đầu tiên; mặc định 4/4. */
+  timeAt(measureIndex: number): { beats: number; beatType: number } {
+    const measures = this.measuresOf(0);
+    let beats = 4;
+    let beatType = 4;
+    for (let i = 0; i <= measureIndex && i < measures.length; i++) {
+      for (const attributes of Array.from(measures[i].children).filter((c) => c.tagName === 'attributes')) {
+        const time = Array.from(attributes.children).find((c) => c.tagName === 'time');
+        const b = time ? childNumber(time, 'beats') : null;
+        const t = time ? childNumber(time, 'beat-type') : null;
+        if (b !== null && t !== null && b > 0 && t > 0) {
+          beats = b;
+          beatType = t;
+        }
+      }
+    }
+    return { beats, beatType };
+  }
+
+  /** Thẻ <measure> theo vị trí; undefined nếu không có. */
+  getMeasure(partIndex: number, measureIndex: number): Element | undefined {
+    return this.measuresOf(partIndex)[measureIndex];
+  }
+
+  /**
+   * Thay một ô nhịp bằng bản sao khác (dùng cho hoàn tác / làm lại).
+   * @param reindex false nếu người gọi sẽ gọi {@link reindex} sau khi thay xong nhiều ô
+   */
+  replaceMeasure(partIndex: number, measureIndex: number, replacement: Element, reindex = true): void {
+    const current = this.getMeasure(partIndex, measureIndex);
+    if (!current) return;
+    current.replaceWith(replacement);
+    if (reindex) this.reindex();
+  }
+
   /** Dựng lại chỉ mục id sau khi DOM thay đổi (id phụ thuộc vị trí nên được tính lại). */
   reindex(): void {
     this.noteMap = new Map();
@@ -152,6 +202,17 @@ export class ScoreDocument {
       });
       this.partStaves.push(staves);
     });
+  }
+
+  /**
+   * Thay toàn bộ nội dung bằng một chuỗi MusicXML khác (khôi phục bản nháp). Id nốt được tính lại.
+   * @throws Error nếu XML không hợp lệ; khi đó tài liệu không đổi
+   */
+  restore(xml: string): void {
+    const parsed = ScoreDocument.parse(xml);
+    const imported = this.doc.importNode(parsed.doc.documentElement, true);
+    this.doc.replaceChild(imported, this.doc.documentElement);
+    this.reindex();
   }
 
   /** Xuất MusicXML. Bỏ DOCTYPE vì BE từ chối mọi DOCTYPE (chống XXE). */

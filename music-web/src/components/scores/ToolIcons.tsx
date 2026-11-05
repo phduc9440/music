@@ -92,3 +92,37 @@ export const ToolDelete = () => (
     <path d="M9 5h10a2 2 0 012 2v10a2 2 0 01-2 2H9l-6-7zM12 9.500l5 5M17 9.500l-5 5" />
   </Svg>
 );
+
+/** Nhóm Cao độ: mũi tên lên/xuống, kèm dấu thăng/giáng cho nửa cung và hai mũi tên chồng cho quãng tám. */
+export const ToolStepUp = () => (
+  <Svg>
+    <path d="M12 19V5M6 11l6-6 6 6" />
+  </Svg>
+);
+export const ToolStepDown = () => (
+  <Svg>
+    <path d="M12 5v14M6 13l6 6 6-6" />
+  </Svg>
+);
+export const ToolSemitoneUp = () => (
+  <Svg>
+    <path d="M8 19V6M3.5 10.5L8 6l4.5 4.5" />
+    <path d="M17 8v11M20.5 7v11M15 11.5l7-1.5M15 16.5l7-1.5" />
+  </Svg>
+);
+export const ToolSemitoneDown = () => (
+  <Svg>
+    <path d="M8 5v13M3.5 13.5L8 18l4.5-4.5" />
+    <path d="M16.5 5v14M16.5 14.5c3-2.5 5.5 0 4 2.5-1 1.6-3 2-4 2" />
+  </Svg>
+);
+export const ToolOctaveUp = () => (
+  <Svg>
+    <path d="M6 11l6-6 6 6M6 19l6-6 6 6" />
+  </Svg>
+);
+export const ToolOctaveDown = () => (
+  <Svg>
+    <path d="M6 5l6 6 6-6M6 13l6 6 6-6" />
+  </Svg>
+);

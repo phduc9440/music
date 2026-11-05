@@ -11,3 +11,10 @@
   stroke: var(--sc-accent, #d9480f);
   stroke-opacity: 0.45;
 }
+
+/* Ô nhịp sai độ dài: nốt trong ô được tô đỏ */
+.ed-note--issue:not(.ed-note--selected) path,
+.ed-note--issue:not(.ed-note--selected) text {
+  fill: #dc2626 !important;
+  stroke: #dc2626 !important;
+}
