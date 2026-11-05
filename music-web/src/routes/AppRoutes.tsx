@@ -8,6 +8,7 @@ import ScoreUpload from '../pages/scores/ScoreUpload';
 import ScoreProcessing from '../pages/scores/ScoreProcessing';
 import ScoreReview from '../pages/scores/ScoreReview';
 import ScoreViewer from '../pages/scores/ScoreViewer';
+import EditorSpike from '../pages/scores/EditorSpike';
 import AdminDashboard from '../pages/Admin';
 import ProtectedRoute from './ProtectedRoute';
 
@@ -64,6 +65,16 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+      {import.meta.env.DEV && (
+        <Route
+          path="/dev/editor-spike/:id"
+          element={
+            <ProtectedRoute allowedRole="USER">
+              <EditorSpike />
+            </ProtectedRoute>
+          }
+        />
+      )}
       <Route
         path="/scores/:id"
         element={
