@@ -3,8 +3,10 @@
 Tự ghi file MIDI chuẩn (SMF định dạng 1) thay vì ``music21 ... write('midi')``: cách gán track/kênh của music21 cho bản
 nhiều staff thay đổi theo phiên bản và không kiểm thử được khi thiếu music21, trong khi Player cần đúng quy ước:
 
-* track ``i`` (đếm từ 0) là staff ``i + 1`` và dùng kênh ``i`` (bỏ qua kênh 9 dành cho trống);
-* tempo và số chỉ nhịp nằm ở track đầu (staff 1); mỗi track có chương trình 0 (Acoustic Grand Piano);
+* track ``i`` (đếm từ 0) là khuông thứ ``i + 1`` tính từ trên xuống qua mọi part (bản giọng hát + piano: track 0 =
+  giọng hát, 1 = tay phải, 2 = tay trái) và dùng kênh ``i`` (bỏ qua kênh 9 dành cho trống);
+* tempo và số chỉ nhịp nằm ở track đầu; chương trình MIDI lấy theo ``<midi-program>`` của part (mặc định 0 = Acoustic
+  Grand Piano);
 * nốt nối (tie) được gộp thành một nốt dài; nốt trang trí, dấu lặp và biểu cảm (dynamics) được bỏ qua, vận tốc cố định.
 """
 
@@ -38,8 +40,8 @@ class MidiStats:
 def musicxml_to_midi_bytes(data: bytes, tempo_bpm: int) -> tuple[bytes, MidiStats]:
     """Đổi MusicXML partwise (đã chuẩn hóa hoặc chưa) thành bytes của file MIDI.
 
-    Nhiều ``<part>`` thì mỗi part là một track (bản chưa gộp staff); một part nhiều staff thì mỗi staff là một track.
-    Ném :class:`ConversionError` nếu XML hỏng hoặc không có nốt nào.
+    Mỗi khuông là một track: part một khuông chiếm một track, part nhiều staff chiếm một track mỗi staff, theo thứ tự
+    part từ trên xuống. Ném :class:`ConversionError` nếu XML hỏng hoặc không có nốt nào.
     """
     try:
         root = ET.fromstring(data)
@@ -49,19 +51,31 @@ def musicxml_to_midi_bytes(data: bytes, tempo_bpm: int) -> tuple[bytes, MidiStat
     if root.tag != "score-partwise" or not parts:
         raise ConversionError("MusicXML phải là score-partwise và có ít nhất một <part>")
 
+    programs = _part_programs(root)
     events: list[tuple[int, NoteEvent]] = []  # (chỉ số track, nốt)
-    for part_index, part in enumerate(parts):
+    track_programs: dict[int, int] = {}
+    offset = 0
+    for part in parts:
         part_events, _ = parse_part_events(part)
+        staves = max([_declared_staves(part)] + [e.staff for e in part_events])
         for event in part_events:
-            track = part_index if len(parts) > 1 else event.staff - 1
-            events.append((max(0, track), event))
+            events.append((offset + max(0, min(event.staff, staves) - 1), event))
+        for staff in range(staves):
+            track_programs[offset + staff] = programs.get(part.get("id", ""), 0)
+        offset += staves
     if not events:
         raise ConversionError("Bản nhạc không có nốt nào để ghi MIDI")
 
     track_count = max(track for track, _ in events) + 1
     time_signature = _first_time_signature(parts[0])
     tracks = [
-        _build_track(index, [e for t, e in events if t == index], tempo_bpm if index == 0 else None, time_signature)
+        _build_track(
+            index,
+            [e for t, e in events if t == index],
+            tempo_bpm if index == 0 else None,
+            time_signature,
+            track_programs.get(index, 0),
+        )
         for index in range(track_count)
     ]
     header = b"MThd" + struct.pack(">IHHH", 6, 1, track_count, TICKS_PER_QUARTER)
@@ -94,8 +108,36 @@ def _ticks(quarters: Fraction) -> int:
     return int(round(quarters * TICKS_PER_QUARTER))
 
 
+def _declared_staves(part: ET.Element) -> int:
+    """Số staff part khai báo (``<staves>``), mặc định 1."""
+    best = 1
+    for attributes in part.iter("attributes"):
+        best = max(best, child_int(attributes, "staves") or 1)
+    return best
+
+
+def _part_programs(root: ET.Element) -> dict[str, int]:
+    """``id part -> chương trình MIDI (0-127)`` theo ``<midi-program>`` (MusicXML đánh số 1-128)."""
+    programs: dict[str, int] = {}
+    part_list = root.find("part-list")
+    if part_list is None:
+        return programs
+    for score_part in part_list.findall("score-part"):
+        program = None
+        for midi in score_part.iter("midi-instrument"):
+            program = child_int(midi, "midi-program")
+            break
+        if score_part.get("id") and program is not None and 1 <= program <= 128:
+            programs[score_part.get("id")] = program - 1
+    return programs
+
+
 def _build_track(
-    index: int, notes: list[NoteEvent], tempo_bpm: Optional[int], time_signature: Optional[tuple[int, int]]
+    index: int,
+    notes: list[NoteEvent],
+    tempo_bpm: Optional[int],
+    time_signature: Optional[tuple[int, int]],
+    program: int = 0,
 ) -> bytes:
     channel = _channel(index)
     messages: list[tuple[int, int, bytes]] = []  # (tick, thứ tự ưu tiên, dữ liệu); nốt tắt (0) đứng trước nốt bật (1)
@@ -113,7 +155,7 @@ def _build_track(
     if time_signature is not None and index == 0:
         beats, beat_type = time_signature
         meta += _event(0, _meta(0x58, bytes([beats, beat_type.bit_length() - 1, 24, 8])))
-    meta += _event(0, bytes([0xC0 | channel, 0]))  # chương trình 0 = Acoustic Grand Piano
+    meta += _event(0, bytes([0xC0 | channel, program]))  # 0 = Acoustic Grand Piano, 52 = Choir Aahs
 
     data = bytearray(meta)
     previous = 0
