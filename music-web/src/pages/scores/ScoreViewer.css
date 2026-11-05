@@ -63,7 +63,7 @@
 /* ---- Thanh trên ---- */
 .sv-toolbar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 0.75rem 1.25rem;
   padding: 0.8rem 1.25rem;
@@ -81,6 +81,19 @@
 }
 .sv-toolbar__right {
   justify-content: flex-end;
+}
+/* Nút trên thanh luôn một dòng; khi chật thì cả nhóm bên phải xuống hàng thay vì bóp chữ */
+.sv-toolbar__right {
+  flex-wrap: wrap;
+}
+.sv-toolbar .sc-btn {
+  flex: none;
+  white-space: nowrap;
+}
+/* Menu thả xuống ở nhóm bên phải bám mép phải của nút để không tràn khỏi màn hình */
+.sv-toolbar__right .sc-menu__list {
+  left: auto;
+  right: 0;
 }
 .sv-group {
   display: flex;
@@ -898,8 +911,8 @@
 
 /* ---- Menu chọn nhạc cụ khi phát ---- */
 .sv-instruments {
-  min-width: 300px;
-  max-width: min(92vw, 380px);
+  width: 360px;
+  max-width: calc(100vw - 24px);
   padding: 0.6rem;
 }
 .sv-instrument-row {
@@ -909,7 +922,7 @@
   padding: 0.25rem 0;
 }
 .sv-instrument-row__name {
-  flex: 1 1 0;
+  flex: 1 1 90px;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -919,7 +932,8 @@
   color: var(--sc-ink);
 }
 .sv-instrument-row__select {
-  flex: 0 0 auto;
+  flex: 0 1 170px;
+  min-width: 0;
   min-height: 40px;
   padding: 0 0.5rem;
   border: 1px solid var(--sc-line);
@@ -930,6 +944,7 @@
   font-size: 0.88rem;
 }
 .sv-instrument-row__reset {
+  flex: none;
   min-height: 40px;
   padding: 0 0.5rem;
   border: none;
@@ -938,5 +953,17 @@
   font: inherit;
   font-size: 0.78rem;
   font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
+}
+@media (max-width: 767px) {
+  /* Điện thoại: bảng chọn rộng gần hết màn hình, đặt ngay dưới thanh trên */
+  .sv-toolbar__right .sv-instruments {
+    position: fixed;
+    top: 64px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-width: none;
+  }
 }
