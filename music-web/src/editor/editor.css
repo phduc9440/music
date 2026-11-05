@@ -1,0 +1,13 @@
+/* Tô nốt đang chọn / đang rê chuột trên SVG của OSMD (tiền tố ed-). */
+.ed-note--selected path,
+.ed-note--selected text {
+  fill: var(--sc-accent, #d9480f) !important;
+  stroke: var(--sc-accent, #d9480f) !important;
+}
+[data-note-id] {
+  cursor: pointer;
+}
+[data-note-id]:hover:not(.ed-note--selected) path {
+  stroke: var(--sc-accent, #d9480f);
+  stroke-opacity: 0.45;
+}

@@ -37,6 +37,11 @@ public enum ErrorCode {
     INVALID_SOURCE_TYPE(2011, "Loại nguồn phải là PHOTO, SCAN hoặc PDF_NATIVE", HttpStatus.BAD_REQUEST),
     MUSICXML_NOT_READY(
             2012, "Bản nhạc chưa có MusicXML, hãy đợi nhận diện xong hoặc nhận diện lại", HttpStatus.CONFLICT),
+    MUSICXML_INVALID(2013, "Nội dung MusicXML không hợp lệ, hãy tải lại trang rồi thử lưu lại", HttpStatus.BAD_REQUEST),
+    SCORE_VERSION_CONFLICT(
+            2014,
+            "Bản nhạc vừa được lưu ở nơi khác, hãy tải bản mới nhất hoặc ghi đè bản của bạn",
+            HttpStatus.CONFLICT),
 
     SCORE_TITLE_INVALID(2017, "Tiêu đề là bắt buộc và tối đa 255 ký tự", HttpStatus.BAD_REQUEST),
     SCORE_COMPOSER_INVALID(2018, "Tên tác giả tối đa 255 ký tự", HttpStatus.BAD_REQUEST),
