@@ -73,7 +73,7 @@ export function addHarmonyVoice(doc: ScoreDocument, ids: readonly string[], step
       first,
       newVoice: Math.max(...sameMeasure.map((n) => n.voice)) + 1,
       source: sameMeasure.filter((n) => n.staff === first.staff && n.voice === first.voice && !n.isGrace),
-      fifths: doc.keyAt(first.measureIndex),
+      fifths: doc.keyAtPart(first.partIndex, first.measureIndex),
     };
   });
 
@@ -161,7 +161,7 @@ export function addChordNote(doc: ScoreDocument, ids: readonly string[], steps: 
   const result = commitEdit(doc, 'Viết bè cùng thân', touched, [], () => {
     for (const chord of plans) {
       const head = chord[0];
-      const fifths = doc.keyAt(head.measureIndex);
+      const fifths = doc.keyAtPart(head.partIndex, head.measureIndex);
       const base = readPitch(head.element);
       if (!base) continue;
       const taken = new Set(chord.map((n) => n.midi));

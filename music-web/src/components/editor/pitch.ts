@@ -7,7 +7,7 @@
 export const STEPS = ['C', 'D', 'E', 'F', 'G', 'A', 'B'] as const;
 export type Step = (typeof STEPS)[number];
 
-/** Cao độ ở dạng MusicXML: bậc, dấu hóa thực (−1 giáng, 0, +1 thăng) và quãng tám. */
+/** Cao độ ở dạng MusicXML: bậc, dấu hóa thực (−1 giáng, 0, +1 thăng; vi cung ±0,5 và ±1,5) và quãng tám. */
 export interface Pitch {
   step: Step;
   alter: number;
@@ -82,7 +82,10 @@ export const movePitch = (pitch: Pitch, op: PitchOp, fifths: number): Pitch | 'r
     next = { ...pitch, octave: pitch.octave + (op === 'octaveUp' ? 1 : -1) };
   } else if (op === 'semitoneUp' || op === 'semitoneDown') {
     const direction = op === 'semitoneUp' ? 1 : -1;
-    next = spellMidi(pitchToMidi(pitch) + direction, fifths, direction);
+    // Nốt vi cung nằm giữa hai nửa cung: lấy nửa cung gần nhất ở phía đang đi tới rồi mới nhích một nửa cung
+    const midi = pitchToMidi(pitch);
+    const grid = direction > 0 ? Math.floor(midi) : Math.ceil(midi);
+    next = spellMidi(grid + direction, fifths, direction);
   } else {
     const direction = op === 'stepUp' ? 1 : -1;
     const index = STEPS.indexOf(pitch.step) + direction;
@@ -93,16 +96,63 @@ export const movePitch = (pitch: Pitch, op: PitchOp, fifths: number): Pitch | 'r
   return inRange(pitchToMidi(next)) ? next : 'range';
 };
 
-/** Tên cao độ để hiển thị, ví dụ `F#4`, `Bb3`. */
-export const pitchName = (pitch: Pitch): string =>
-  `${pitch.step}${pitch.alter > 0 ? '#'.repeat(pitch.alter) : pitch.alter < 0 ? 'b'.repeat(-pitch.alter) : ''}${pitch.octave}`;
+/** Ký hiệu chữ của dấu hóa vi cung: + (nửa thăng), #+ (ba phần tư thăng), d (nửa giáng), db (ba phần tư giáng). */
+const MICROTONE_TEXT: Record<string, string> = { '0.5': '+', '1.5': '#+', '-0.5': 'd', '-1.5': 'db' };
+
+/** Tên cao độ để hiển thị, ví dụ `F#4`, `Bb3`, `C+4` (C nửa thăng). */
+export const pitchName = (pitch: Pitch): string => {
+  const { alter } = pitch;
+  const text = Number.isInteger(alter)
+    ? alter > 0
+      ? '#'.repeat(alter)
+      : alter < 0
+        ? 'b'.repeat(-alter)
+        : ''
+    : (MICROTONE_TEXT[String(alter)] ?? '');
+  return `${pitch.step}${text}${pitch.octave}`;
+};
 
 /** Tần số (Hz) của một cao độ MIDI, A4 = 440Hz. */
 export const midiToFrequency = (midi: number): number => 440 * Math.pow(2, (midi - 69) / 12);
 
-/** Tên dấu hóa hiển thị trong MusicXML (`<accidental>`) cho một giá trị alter. */
-export const accidentalName = (alter: number): string =>
-  alter >= 2 ? 'double-sharp' : alter > 0 ? 'sharp' : alter <= -2 ? 'flat-flat' : alter < 0 ? 'flat' : 'natural';
+/** Tên dấu hóa hiển thị trong MusicXML (`<accidental>`) cho một giá trị alter (bội của 0,5). */
+export const accidentalName = (alter: number): string => {
+  const half = Math.round(alter * 2); // đơn vị nửa cung 0,5
+  if (half >= 4) return 'double-sharp';
+  if (half === 3) return 'three-quarters-sharp';
+  if (half === 2) return 'sharp';
+  if (half === 1) return 'quarter-sharp';
+  if (half === -1) return 'quarter-flat';
+  if (half === -2) return 'flat';
+  if (half === -3) return 'three-quarters-flat';
+  if (half <= -4) return 'flat-flat';
+  return 'natural';
+};
+
+const mod = (a: number, n: number): number => ((a % n) + n) % n;
+
+/**
+ * Số dấu hóa của "khoảng chuyển âm" (<transpose>), tìm bằng cách thử f trong −14..14 sao cho f×7 ≡ chromatic (mod 12) và
+ * f×4 ≡ diatonic (mod 7). Ví dụ clarinet B♭ (diatonic −1, chromatic −2) cho f = −2: khóa thật C thành khóa viết D (hai thăng).
+ * Thiếu diatonic thì chọn f nhỏ nhất khớp chromatic.
+ */
+export const intervalFifths = (diatonic: number | null, chromatic: number): number => {
+  let best: number | null = null;
+  for (let f = -14; f <= 14; f++) {
+    if (mod(f * 7, 12) !== mod(chromatic, 12)) continue;
+    if (diatonic !== null && mod(f * 4, 7) !== mod(diatonic, 7)) continue;
+    if (best === null || Math.abs(f) < Math.abs(best)) best = f;
+  }
+  return best ?? 0;
+};
+
+/** Đưa số dấu hóa về khoảng −7..7 bằng cách viết lại đồng âm (±12 quãng năm). */
+export const clampFifths = (fifths: number): number => {
+  let value = fifths;
+  while (value > 7) value -= 12;
+  while (value < -7) value += 12;
+  return value;
+};
 
 /**
  * Trạng thái dấu hóa trong một ô nhịp (theo khuông): nốt đã ghi dấu hóa thì các nốt sau cùng bậc và cùng quãng

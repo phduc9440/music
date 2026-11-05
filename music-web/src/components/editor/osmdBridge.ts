@@ -42,7 +42,9 @@ interface OsmdNote {
  *
  * Cách ghép: trong cùng khuông và ô nhịp, gom theo (thời điểm, dấu lặng hay nốt); mỗi nhóm sắp theo (bè, cao độ) ở cả
  * hai phía rồi ghép theo thứ tự. Vì chỉ dùng thứ tự tương đối nên không phụ thuộc cách OSMD đánh số bè/quãng tám.
- * Nhóm có số lượng khác nhau (thường là nốt trang trí) bị bỏ qua và ghi vào `problems`.
+ * Nốt hoa mỹ (grace) ghép riêng thành nhóm "g" ở cùng thời điểm với nốt chính theo ĐÚNG thứ tự trong bản nhạc (không
+ * sắp theo cao độ, vì thứ tự các nốt hoa mỹ liên tiếp có ý nghĩa). Nhóm có số lượng khác nhau bị bỏ qua và ghi vào
+ * `problems`.
  */
 export function bindNoteIds(osmd: OpenSheetMusicDisplay, doc: ScoreDocument, host: HTMLElement): BindReport {
   // Xóa gắn kết cũ (sau render SVG thường đã mới, nhưng chắc chắn không sót)
@@ -58,8 +60,8 @@ export function bindNoteIds(osmd: OpenSheetMusicDisplay, doc: ScoreDocument, hos
   // Gom nốt DOM theo (part, ô, khuông, thời điểm, loại)
   const domGroups = new Map<string, NoteInfo[]>();
   for (const info of doc.notes) {
-    if (info.isGrace) continue;
-    const key = [info.partIndex, info.measureIndex, info.staff, info.onsetKey, info.isRest ? 'r' : 'n'].join('|');
+    const kind = info.isGrace ? 'g' : info.isRest ? 'r' : 'n';
+    const key = [info.partIndex, info.measureIndex, info.staff, info.onsetKey, kind].join('|');
     const list = domGroups.get(key) ?? [];
     list.push(info);
     domGroups.set(key, list);
@@ -90,7 +92,8 @@ export function bindNoteIds(osmd: OpenSheetMusicDisplay, doc: ScoreDocument, hos
             const source = note.sourceNote;
             if (!source) continue;
             const isRest = source.isRest();
-            const key = [where.part, measureIndex, where.staff, onsetKey, isRest ? 'r' : 'n'].join('|');
+            const kind = source.IsGraceNote ? 'g' : isRest ? 'r' : 'n';
+            const key = [where.part, measureIndex, where.staff, onsetKey, kind].join('|');
             const list = osmdGroups.get(key) ?? [];
             list.push({
               svg: (note as unknown as SvgNote).getSVGGElement?.(),
@@ -112,8 +115,13 @@ export function bindNoteIds(osmd: OpenSheetMusicDisplay, doc: ScoreDocument, hos
       report.problems.push(`Nhóm ${key}: DOM ${domList.length} nốt, OSMD ${osmdList?.length ?? 0} nốt`);
       continue;
     }
-    const domSorted = [...domList].sort((a, b) => a.voice - b.voice || (a.midi ?? 0) - (b.midi ?? 0));
-    const osmdSorted = [...osmdList].sort((a, b) => a.voiceId - b.voiceId || a.halfTone - b.halfTone);
+    const isGraceGroup = key.endsWith('|g');
+    const domSorted = isGraceGroup
+      ? domList
+      : [...domList].sort((a, b) => a.voice - b.voice || (a.midi ?? 0) - (b.midi ?? 0));
+    const osmdSorted = isGraceGroup
+      ? osmdList
+      : [...osmdList].sort((a, b) => a.voiceId - b.voiceId || a.halfTone - b.halfTone);
     domSorted.forEach((info, i) => {
       const svg = osmdSorted[i].svg;
       if (!svg) {

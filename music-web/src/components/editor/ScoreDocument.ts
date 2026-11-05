@@ -27,9 +27,20 @@ export interface NoteInfo {
   isGrace: boolean;
   /** Thời điểm bắt đầu trong ô, làm tròn từ phần của nốt tròn (để so khớp với OSMD). */
   onsetKey: number;
-  /** Cao độ MIDI; null với dấu lặng. */
+  /** Cao độ MIDI viết trên khuông (có thể lẻ nửa cung với nốt vi cung); null với dấu lặng. */
   midi: number | null;
+  /** Cao độ MIDI NGHE THẤY: bằng `midi` cộng độ chuyển âm của nhạc cụ (clarinet B♭ nghe thấp hơn 2 nửa cung); null với dấu lặng. */
+  soundingMidi: number | null;
 }
+
+/** Độ chuyển âm của một nhạc cụ (<transpose>): nghe = viết + chromatic + 12 × octave. */
+export interface Transpose {
+  diatonic: number;
+  chromatic: number;
+  octave: number;
+}
+
+export const NO_TRANSPOSE: Transpose = { diatonic: 0, chromatic: 0, octave: 0 };
 
 /** Bước nửa cung của các bậc C D E F G A B. */
 const STEP_SEMITONE: Record<string, number> = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
@@ -42,7 +53,8 @@ export const noteMidi = (note: Element): number | null => {
   const octave = Number(pitch.getElementsByTagName('octave')[0]?.textContent);
   const alter = Number(pitch.getElementsByTagName('alter')[0]?.textContent ?? 0) || 0;
   if (!(step in STEP_SEMITONE) || !Number.isFinite(octave)) return null;
-  return (octave + 1) * 12 + STEP_SEMITONE[step] + Math.round(alter);
+  // Không làm tròn alter: nốt vi cung (±0,5, ±1,5) cho MIDI lẻ nửa cung
+  return (octave + 1) * 12 + STEP_SEMITONE[step] + alter;
 };
 
 const childNumber = (parent: Element, tag: string): number | null => {
@@ -52,6 +64,21 @@ const childNumber = (parent: Element, tag: string): number | null => {
   if (!text) return null;
   const value = Number(text);
   return Number.isFinite(value) ? value : null;
+};
+
+/** Độ chuyển âm khai báo trong <attributes><transpose> của ô; null nếu ô không khai báo. */
+const transposeOfMeasure = (measure: Element): Transpose | null => {
+  let found: Transpose | null = null;
+  for (const attributes of Array.from(measure.children).filter((c) => c.tagName === 'attributes')) {
+    const el = Array.from(attributes.children).find((c) => c.tagName === 'transpose');
+    if (!el) continue;
+    found = {
+      diatonic: childNumber(el, 'diatonic') ?? 0,
+      chromatic: childNumber(el, 'chromatic') ?? 0,
+      octave: childNumber(el, 'octave-change') ?? 0,
+    };
+  }
+  return found;
 };
 
 /** Tài liệu MusicXML đang chỉnh sửa. */
@@ -108,8 +135,32 @@ export class ScoreDocument {
 
   /** Số dấu hóa (fifths) có hiệu lực ở ô nhịp cho trước của part đầu tiên; mặc định 0. */
   keyAt(measureIndex: number): number {
-    const measures = this.measuresOf(0);
-    let fifths = 0;
+    return this.keyAtPart(0, measureIndex);
+  }
+
+  /**
+   * Số dấu hóa của khóa nhạc VIẾT của một part tại ô cho trước. Nhạc cụ chuyển âm có khóa viết riêng; part chưa khai báo
+   * <key> nào thì dùng khóa của part đầu tiên (như trước đây).
+   */
+  keyAtPart(partIndex: number, measureIndex: number): number {
+    const own = this.declaredKey(partIndex, measureIndex);
+    if (own !== null) return own;
+    return partIndex === 0 ? 0 : (this.declaredKey(0, measureIndex) ?? 0);
+  }
+
+  /** Độ chuyển âm có hiệu lực ở ô cho trước của một part (không chuyển âm: toàn 0). */
+  transposeAt(partIndex: number, measureIndex: number): Transpose {
+    const measures = this.measuresOf(partIndex);
+    let current = NO_TRANSPOSE;
+    for (let i = 0; i <= measureIndex && i < measures.length; i++) {
+      current = transposeOfMeasure(measures[i]) ?? current;
+    }
+    return current;
+  }
+
+  private declaredKey(partIndex: number, measureIndex: number): number | null {
+    const measures = this.measuresOf(partIndex);
+    let fifths: number | null = null;
     for (let i = 0; i <= measureIndex && i < measures.length; i++) {
       for (const attributes of Array.from(measures[i].children).filter((c) => c.tagName === 'attributes')) {
         const key = Array.from(attributes.children).find((c) => c.tagName === 'key');
@@ -201,8 +252,10 @@ export class ScoreDocument {
     this.parts().forEach((part, partIndex) => {
       let staves = 1;
       let divisions = 1;
+      let transpose = NO_TRANSPOSE;
       this.measuresOfPart(part).forEach((measure, measureIndex) => {
-        const result = this.indexMeasure(measure, partIndex, measureIndex, divisions);
+        transpose = transposeOfMeasure(measure) ?? transpose;
+        const result = this.indexMeasure(measure, partIndex, measureIndex, divisions, transpose);
         staves = Math.max(staves, result.staves);
         divisions = result.divisions;
       });
@@ -308,6 +361,7 @@ export class ScoreDocument {
     partIndex: number,
     measureIndex: number,
     startDivisions: number,
+    transpose: Transpose,
   ): { staves: number; divisions: number } {
     let divisions = startDivisions;
     let cursor = 0;
@@ -356,6 +410,7 @@ export class ScoreDocument {
           if (!isGrace) cursor += childNumber(child, 'duration') ?? 0;
         }
         const id = `${prefix}m${measureIndex}-s${staff}-v${voice}-${entryIndex}${chordIndex > 0 ? `c${chordIndex}` : ''}`;
+        const midi = noteMidi(child);
         const info: NoteInfo = {
           id,
           element: child,
@@ -368,7 +423,8 @@ export class ScoreDocument {
           isRest,
           isGrace,
           onsetKey: Math.round((onset / (4 * divisions)) * ONSET_PRECISION),
-          midi: noteMidi(child),
+          midi,
+          soundingMidi: midi === null ? null : midi + transpose.chromatic + 12 * transpose.octave,
         };
         this.noteMap.set(id, child);
         this.infoMap.set(id, info);

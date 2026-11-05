@@ -6,6 +6,7 @@
 import type { OpenSheetMusicDisplay } from 'opensheetmusicdisplay';
 import { clefAt, naturalAt, topLineIndex } from './clefs';
 import type { InsertTarget } from './durations';
+import { octaveShiftAt } from './octave';
 import { NOTE_ID_ATTR } from './osmdBridge';
 import type { Step } from './pitch';
 import type { ScoreDocument } from './ScoreDocument';
@@ -178,6 +179,9 @@ export function locateSpot(
   const afterAt = entries.findIndex((n) => (boxOf(n.entryIndex)?.centerX ?? -Infinity) > clientX);
   const beforeEntry = afterAt >= 0 ? afterAt : entries.length;
   const restAt = restHit ? entries.findIndex((n) => n.entryIndex === restHit.entryIndex) : -1;
+  // Trong đoạn 8va/8vb vị trí vẽ lệch cao độ thật một quãng tám: cộng phần lệch vào cao độ chèn
+  const anchorEntry = entries[restAt >= 0 ? restAt : beforeEntry];
+  const shift = octaveShiftAt(doc, best.partIndex, best.staff, best.measureIndex, anchorEntry?.onsetKey ?? Infinity);
 
   return {
     partIndex: best.partIndex,
@@ -185,7 +189,7 @@ export function locateSpot(
     staff: best.staff,
     voice,
     step,
-    octave,
+    octave: octave + shift,
     beforeEntry,
     restEntry: restAt >= 0 ? restAt : null,
     x: restHit && restAt >= 0 ? restHit.centerX : clientX,
