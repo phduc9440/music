@@ -95,13 +95,14 @@ export const movePitch = (pitch: Pitch, op: PitchOp, fifths: number): Pitch | 'r
 
 /** Tên cao độ để hiển thị, ví dụ `F#4`, `Bb3`. */
 export const pitchName = (pitch: Pitch): string =>
-  `${pitch.step}${pitch.alter > 0 ? '#' : pitch.alter < 0 ? 'b' : ''}${pitch.octave}`;
+  `${pitch.step}${pitch.alter > 0 ? '#'.repeat(pitch.alter) : pitch.alter < 0 ? 'b'.repeat(-pitch.alter) : ''}${pitch.octave}`;
 
 /** Tần số (Hz) của một cao độ MIDI, A4 = 440Hz. */
 export const midiToFrequency = (midi: number): number => 440 * Math.pow(2, (midi - 69) / 12);
 
 /** Tên dấu hóa hiển thị trong MusicXML (`<accidental>`) cho một giá trị alter. */
-export const accidentalName = (alter: number): string => (alter > 0 ? 'sharp' : alter < 0 ? 'flat' : 'natural');
+export const accidentalName = (alter: number): string =>
+  alter >= 2 ? 'double-sharp' : alter > 0 ? 'sharp' : alter <= -2 ? 'flat-flat' : alter < 0 ? 'flat' : 'natural';
 
 /**
  * Trạng thái dấu hóa trong một ô nhịp (theo khuông): nốt đã ghi dấu hóa thì các nốt sau cùng bậc và cùng quãng

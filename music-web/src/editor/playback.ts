@@ -2,6 +2,7 @@
  * Dựng lịch phát từ MusicXML để nghe thử bản nhạc (nút Phát) và để xem trước vùng chọn. Chỉ tính thời gian và cao
  * độ từ DOM, không dùng thư viện âm thanh.
  */
+import { playOrder } from './playOrder';
 import type { NoteInfo, ScoreDocument } from './ScoreDocument';
 
 /** Một nốt cần phát. */
@@ -48,13 +49,21 @@ export function buildPlayback(doc: ScoreDocument, fallbackBpm: number): Playback
   for (const info of doc.notes) infoOf.set(info.element, info);
 
   const notes: PlayNote[] = [];
+  const order = playOrder(doc);
   let total = 0;
   for (let partIndex = 0; partIndex < doc.partCount; partIndex++) {
     let bpm = fallbackBpm > 0 ? fallbackBpm : 100;
     let clock = 0;
     const pending = new Map<string, PlayNote>();
-    doc.getMeasures(partIndex).forEach((measure, measureIndex) => {
-      bpm = tempoOf(measure) ?? bpm;
+    const measuresOfPart = doc.getMeasures(partIndex);
+    let previous = -1;
+    order.forEach((measureIndex) => {
+      const measure = measuresOfPart[measureIndex];
+      if (!measure) return;
+      if (measureIndex !== previous + 1) pending.clear(); // nhảy (lặp, D.C....): nốt nối không đi theo
+      previous = measureIndex;
+      // Tempo của part đầu quyết định cho mọi part để các khuông không lệch nhau
+      bpm = tempoOf(doc.getMeasure(0, measureIndex) ?? measure) ?? tempoOf(measure) ?? bpm;
       const divisions = doc.divisionsAtPart(partIndex, measureIndex) || 1;
       const secPerDivision = 60 / bpm / divisions;
       let cursor = 0;

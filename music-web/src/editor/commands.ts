@@ -207,10 +207,10 @@ const refreshAccidentals = (doc: ScoreDocument, partIndex: number, measureIndex:
     for (const info of ordered) {
       const pitch = readPitch(info.element);
       if (!pitch) continue;
-      const shown = state.visit(pitch);
-      // Nốt nối (stop) không vẽ lại dấu hóa; giữ nguyên nếu đã có
-      if (hasTie(info.element, 'stop') && shown !== null) continue;
-      setAccidental(info.element, shown);
+      // Nốt nối (stop) không vẽ lại dấu hóa và cũng không làm đổi trạng thái dấu hóa của ô: nốt cùng cao độ đứng sau
+      // (không nối) vẫn phải ghi lại dấu hóa, nếu không sẽ bị đọc thành nốt tự nhiên.
+      if (hasTie(info.element, 'stop')) continue;
+      setAccidental(info.element, state.visit(pitch));
     }
   }
 };
