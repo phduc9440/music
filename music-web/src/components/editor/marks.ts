@@ -420,7 +420,7 @@ export function addGrace(doc: ScoreDocument, ids: readonly string[], slash: bool
     const at = STEPS.indexOf(pitch.step);
     const step = STEPS[(at + 1) % STEPS.length];
     const octave = pitch.octave + (at === STEPS.length - 1 ? 1 : 0);
-    const alter = keyAlter(doc.keyAt(head.measureIndex), step);
+    const alter = keyAlter(doc.keyAtPart(head.partIndex, head.measureIndex), step);
     return { head, grace: { step, alter, octave } as Pitch };
   });
   if (planned.some((p) => !inRange(pitchToMidi(p.grace)))) return { ok: false, reason: 'range' };

@@ -8,6 +8,7 @@ import type { EditResult, Touched } from './commands';
 import { runStructural } from './structure';
 import type { NoteInfo, ScoreDocument } from './ScoreDocument';
 import { measureEnd } from './voices';
+import { clampFifths, intervalFifths } from './pitch';
 
 /** Các khóa nhạc chọn được: Sol, Sol 8 dưới (Tenor), Fa, Đô dòng 3 (Alto), Đô dòng 4 (Tenor). */
 export type ClefSign = 'G' | 'G8b' | 'F' | 'C' | 'C4';
@@ -200,7 +201,8 @@ export function changeNotation(
       } else if (change.kind === 'key') {
         const make = () => {
           const key = el(owner, 'key');
-          key.appendChild(el(owner, 'fifths', String(change.fifths)));
+          // Điệu thức đặt theo âm thật; nhạc cụ chuyển âm ghi khóa viết đã quy đổi
+          key.appendChild(el(owner, 'fifths', String(writtenFifths(doc, partIndex, from, change.fifths))));
           return key;
         };
         applyRange(doc, partIndex, from, to, { tag: 'key' }, make, restore);
@@ -234,6 +236,21 @@ export interface NotationInfo {
   free: boolean;
 }
 
+/** Số dấu hóa của điệu thức THẬT (concert) tại ô của một part, quy đổi từ khóa viết của part đó. */
+const concertFifths = (doc: ScoreDocument, partIndex: number, measureIndex: number): number => {
+  const t = doc.transposeAt(partIndex, measureIndex);
+  return clampFifths(doc.keyAtPart(partIndex, measureIndex) + intervalFifths(t.diatonic, t.chromatic));
+};
+
+/**
+ * Số dấu hóa của khóa VIẾT của một part khi điệu thức thật là `concert`: nhạc cụ chuyển âm viết khác (clarinet B♭ chơi
+ * điệu thức thật Đô trưởng thì viết Rê trưởng, hai thăng).
+ */
+const writtenFifths = (doc: ScoreDocument, partIndex: number, measureIndex: number, concert: number): number => {
+  const t = doc.transposeAt(partIndex, measureIndex);
+  return clampFifths(concert - intervalFifths(t.diatonic, t.chromatic));
+};
+
 export function readNotation(doc: ScoreDocument, ids: readonly string[]): NotationInfo | null {
   const infos = ids.map((id) => doc.getInfo(id)).filter((n): n is NoteInfo => n !== undefined);
   if (infos.length === 0) return null;
@@ -252,7 +269,7 @@ export function readNotation(doc: ScoreDocument, ids: readonly string[]): Notati
     from,
     to: Math.max(...indexes),
     clef: known ?? null,
-    fifths: doc.keyAt(from),
+    fifths: concertFifths(doc, first.partIndex, from),
     beats,
     beatType,
     free,

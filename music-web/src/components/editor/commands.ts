@@ -113,7 +113,8 @@ export const readPitch = (note: Element): Pitch | null => {
   if (!pitch) return null;
   const step = childOf(pitch, 'step')?.textContent?.trim() ?? '';
   const octave = Number(childOf(pitch, 'octave')?.textContent);
-  const alter = Math.round(Number(childOf(pitch, 'alter')?.textContent ?? 0) || 0);
+  // Giữ vi cung: làm tròn tới bội của 0,5 chứ không tới số nguyên
+  const alter = Math.round((Number(childOf(pitch, 'alter')?.textContent ?? 0) || 0) * 2) / 2;
   if (!isStep(step) || !Number.isFinite(octave)) return null;
   return { step, alter, octave };
 };
@@ -202,7 +203,7 @@ const tieChain = (doc: ScoreDocument, info: NoteInfo, indexOf: Map<string, numbe
 
 /** Tính lại dấu hóa hiển thị của mọi nốt trong một ô nhịp theo trạng thái dấu hóa của từng khuông. */
 const refreshAccidentals = (doc: ScoreDocument, partIndex: number, measureIndex: number): void => {
-  const fifths = doc.keyAt(measureIndex);
+  const fifths = doc.keyAtPart(partIndex, measureIndex);
   const byStaff = new Map<number, NoteInfo[]>();
   for (const info of doc.notes) {
     if (info.partIndex !== partIndex || info.measureIndex !== measureIndex || info.isRest) continue;
@@ -342,7 +343,7 @@ export function changePitch(doc: ScoreDocument, ids: readonly string[], op: Pitc
   return transformPitches(doc, ids, label, (old, info) => {
     let moved: Pitch = old;
     for (let i = 0; i < count; i++) {
-      const step = movePitch(moved, op, doc.keyAt(info.measureIndex));
+      const step = movePitch(moved, op, doc.keyAtPart(info.partIndex, info.measureIndex));
       if (step === 'range') return 'range';
       moved = step;
     }

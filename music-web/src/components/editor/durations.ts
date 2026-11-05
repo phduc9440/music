@@ -136,7 +136,7 @@ const rollback = (doc: ScoreDocument, snapshots: { partIndex: number; measureInd
 
 /** Cao độ mặc định cho nốt mới sinh từ dấu lặng: nốt có cao độ gần nhất phía trước cùng bè, không có thì theo khóa nhạc. */
 const defaultPitchFor = (doc: ScoreDocument, info: NoteInfo): Pitch => {
-  const fifths = doc.keyAt(info.measureIndex);
+  const fifths = doc.keyAtPart(info.partIndex, info.measureIndex);
   const index = doc.notes.indexOf(info);
   for (let i = index - 1; i >= 0; i--) {
     const n = doc.notes[i];
@@ -284,7 +284,7 @@ function enterNoteOnce(doc: ScoreDocument, id: string, letter: string, choice: D
   const members = voiceEntries(measure, headInfo.staff, headInfo.voice)?.find((e) => e.members.includes(head));
   if (members && members.members.length > 1) return { ok: false, reason: 'unsupported' };
 
-  const alter = keyAlter(doc.keyAt(info.measureIndex), step);
+  const alter = keyAlter(doc.keyAtPart(info.partIndex, info.measureIndex), step);
   const ref = referenceMidi(doc, headInfo);
   let best: Pitch | null = null;
   for (let octave = 0; octave <= 8; octave++) {
@@ -410,7 +410,9 @@ function insertNoteOnce(
   if (length === null) return { ok: false, reason: 'divisions' };
 
   const alter =
-    accidental === 'auto' ? keyAlter(doc.keyAt(target.measureIndex), target.step) : ACCIDENTAL_ALTER[accidental];
+    accidental === 'auto'
+      ? keyAlter(doc.keyAtPart(target.partIndex, target.measureIndex), target.step)
+      : ACCIDENTAL_ALTER[accidental];
   const pitch: Pitch = { step: target.step, alter, octave: target.octave };
   if (!inRange(pitchToMidi(pitch))) return { ok: false, reason: 'range' };
 

@@ -17,6 +17,7 @@ export interface PlayNote {
   /** Giây kể từ đầu bản nhạc. */
   time: number;
   duration: number;
+  /** Cao độ NGHE THẤY (đã tính chuyển âm của nhạc cụ). */
   midi: number;
   /** Âm lượng 0–1; 0,8 là mức mặc định (tương đương mf) khi bản nhạc chưa ghi mức to nhỏ. */
   gain: number;
@@ -67,6 +68,9 @@ const ACCENT_DYNAMICS: Record<string, { peak?: number; after?: number }> = {
   fp: { peak: 98, after: 54 },
   sfp: { peak: 98, after: 54 },
 };
+
+/** Cao độ nghe thấy của một nốt (nhạc cụ chuyển âm nghe khác chữ viết). */
+const soundOf = (info: NoteInfo): number | null => info.soundingMidi ?? info.midi;
 
 const has = (table: object, key: string): boolean => Object.prototype.hasOwnProperty.call(table, key);
 
@@ -432,7 +436,7 @@ export function buildPlayback(doc: ScoreDocument, fallbackBpm: number): Playback
                   id: g.info.id,
                   start: at(offset),
                   end: at(offset + lengths[gi]),
-                  midi: g.info.midi as number,
+                  midi: soundOf(g.info) as number,
                   factor: 1,
                   accent: false,
                 });
@@ -455,7 +459,7 @@ export function buildPlayback(doc: ScoreDocument, fallbackBpm: number): Playback
           id: info.id,
           start: at(startQ),
           end: at(endQ),
-          midi: info.midi,
+          midi: soundOf(info) as number,
           factor: articulationFactor(item.child),
           accent: hasDeep(item.child, 'accent') || hasDeep(item.child, 'strong-accent'),
         };
@@ -492,7 +496,7 @@ export function selectionGroups(doc: ScoreDocument, ids: Iterable<string>): numb
   for (const info of infos) {
     const key = `${info.partIndex}|${info.measureIndex}|${info.onsetKey}`;
     if (key !== lastKey) groups.push([]);
-    groups[groups.length - 1].push(info.midi as number);
+    groups[groups.length - 1].push(soundOf(info) as number);
     lastKey = key;
   }
   return groups;

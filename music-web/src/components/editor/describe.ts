@@ -3,7 +3,7 @@ import { readPitch } from './commands';
 import type { ScoreDocument } from './ScoreDocument';
 import { dotCount, dotsLabel } from './durationCore';
 import { ratioOf, tupletName } from './tuplets';
-import { pitchName } from './pitch';
+import { pitchName, spellMidi } from './pitch';
 
 /** Tên trường độ theo giá trị <type> của MusicXML. */
 const TYPE_LABELS: Record<string, string> = {
@@ -33,8 +33,15 @@ export function describeSelection(doc: ScoreDocument, selection: ReadonlySet<str
   const duration = TYPE_LABELS[typeText];
   const pitch = readPitch(info.element);
   const ratio = ratioOf(info.element);
+  // Nhạc cụ chuyển âm: ghi thêm cao độ nghe thấy, ví dụ "C5 (nghe là Bb4)"
+  const written = info.midi;
+  const sounding = info.soundingMidi;
+  const heard =
+    pitch && written !== null && sounding !== null && sounding !== written && Number.isInteger(sounding)
+      ? ` (nghe là ${pitchName(spellMidi(sounding, doc.keyAtPart(info.partIndex, info.measureIndex), sounding < written ? -1 : 1))})`
+      : '';
   const parts = [
-    pitch ? pitchName(pitch) : 'Dấu lặng',
+    pitch ? `${pitchName(pitch)}${heard}` : 'Dấu lặng',
     duration
       ? `${info.isRest ? 'lặng' : 'nốt'} ${duration}${dotsLabel(dotCount(info.element))}${ratio ? ` (${tupletName(ratio)})` : ''}`
       : '',
