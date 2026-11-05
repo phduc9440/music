@@ -24,7 +24,8 @@ import type { LyricEnd } from './lyrics';
 import { applyMark as runMark } from './marks';
 import type { MarkOp } from './marks';
 import { deleteMeasures, insertMeasure } from './structure';
-import { addHarmonyVoice, removeVoice, toggleCue } from './voices';
+import { addChordNote, addHarmonyVoice, removeVoice, toggleCue } from './voices';
+import type { VoiceOp } from './voices';
 import { setTempo } from './tempo';
 import type { TempoInfo } from './tempo';
 import { toggleSlur, toggleTie } from './ties';
@@ -109,7 +110,7 @@ export interface ScoreEditor {
   /** Thêm ô nhịp trống sau / trước ô đang chọn (không chọn gì: thêm vào cuối), hoặc xóa các ô đang chọn. */
   editMeasures: (op: 'insertAfter' | 'insertBefore' | 'delete') => void;
   /** Viết bè (sao nốt sang bè mới, nốt nhỏ), bật/tắt nốt nhỏ, hoặc xóa bè phụ. */
-  editVoice: (op: 'addBelow' | 'addAbove' | 'cue' | 'remove') => void;
+  editVoice: (op: VoiceOp) => void;
   /** Lời đang nhập (1–4). */
   lyricVerse: number;
   setLyricVerse: (verse: number) => void;
@@ -446,11 +447,14 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
   );
 
   const editVoice = useCallback(
-    (op: 'addBelow' | 'addAbove' | 'cue' | 'remove') => {
+    (op: VoiceOp) => {
       if (!canEdit || selection.size === 0) return;
       const ids = [...selection];
       if (op === 'cue') commit(toggleCue(doc, ids), false);
       else if (op === 'remove') commit(removeVoice(doc, ids), false);
+      else if (op === 'chordBelow') commit(addChordNote(doc, ids, -2), false);
+      else if (op === 'chordAbove') commit(addChordNote(doc, ids, 2), false);
+      else if (op === 'blank') commit(addHarmonyVoice(doc, ids, 0, true), false);
       else commit(addHarmonyVoice(doc, ids, op === 'addBelow' ? -2 : 2), false);
     },
     [canEdit, selection, doc, commit],

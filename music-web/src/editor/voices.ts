@@ -4,8 +4,12 @@
  */
 import { chordKey, childOf, commitEdit, readPitch, touch, writePitch } from './commands';
 import type { EditResult, Touched } from './commands';
-import { movePitch } from './pitch';
+import { movePitch, pitchToMidi } from './pitch';
+import type { Pitch } from './pitch';
 import type { NoteInfo, ScoreDocument } from './ScoreDocument';
+
+/** Thao tác viết bè trên bảng công cụ. */
+export type VoiceOp = 'chordBelow' | 'chordAbove' | 'addBelow' | 'addAbove' | 'blank' | 'cue' | 'remove';
 
 const num = (parent: Element, tag: string): number => Number(childOf(parent, tag)?.textContent) || 0;
 
@@ -16,7 +20,7 @@ const make = (owner: Document, tag: string, text?: string): Element => {
 };
 
 /** Các phần tử của một nốt chỉ thuộc về bè gốc (không sao sang bè mới). */
-const DROP = ['tie', 'notations', 'lyric', 'beam', 'stem', 'accidental', 'notehead', 'instrument'];
+const DROP = ['tie', 'notations', 'lyric', 'stem', 'accidental', 'notehead', 'instrument'];
 
 /** Vị trí chèn cuối ô (trước các vạch nhịp ở cuối) và tổng độ dài ô theo divisions. */
 function measureEnd(measure: Element): { anchor: Element | null; cursor: number } {
@@ -34,31 +38,43 @@ function measureEnd(measure: Element): { anchor: Element | null; cursor: number 
   return { anchor: children.slice(lastBody + 1).find((c) => c.tagName === 'barline') ?? null, cursor };
 }
 
-/**
- * Viết bè cho các nốt đã chọn. `steps` là số bậc dịch so với nốt gốc (−2: bè dưới một quãng ba; +2: bè trên).
- */
-export function addHarmonyVoice(doc: ScoreDocument, ids: readonly string[], steps: number): EditResult {
-  const selected = ids.map((id) => doc.getInfo(id)).filter((n): n is NoteInfo => !!n && !n.isGrace && !n.isRest);
-  if (selected.length === 0) return { ok: false, reason: 'voiceNone' };
-  if (selected.some((n) => childOf(n.element, 'time-modification'))) return { ok: false, reason: 'tuplet' };
-
-  const groups = new Map<string, { first: NoteInfo; entries: Set<number> }>();
-  for (const n of selected) {
-    const key = `${n.partIndex}|${n.measureIndex}|${n.staff}|${n.voice}`;
-    const g = groups.get(key) ?? { first: n, entries: new Set<number>() };
-    g.entries.add(n.entryIndex);
-    groups.set(key, g);
+/** Dịch cao độ `steps` bậc (âm: xuống) theo khóa của ô; vượt biên thì dừng ở nốt xa nhất đạt được. */
+const shifted = (pitch: Pitch, steps: number, fifths: number): Pitch => {
+  let moved = pitch;
+  for (let i = 0; i < Math.abs(steps); i++) {
+    const next = movePitch(moved, steps < 0 ? 'stepDown' : 'stepUp', fifths);
+    if (next === 'range') break;
+    moved = next;
   }
+  return moved;
+};
+
+/**
+ * Bè riêng: sao toàn bộ bè của khuông, trong các ô chứa nốt đã chọn, sang một bè mới (cùng khuông, cùng nhịp điệu lúc
+ * đầu, thấp/cao hơn `steps` bậc). Sau đó bè mới là bè độc lập: đổi trường độ, thêm/bớt nốt, chỉnh cao độ riêng
+ * (ví dụ bè chính hai nốt trắng, bè phụ bốn nốt đen). Bè mới luôn đủ độ dài ô nên không báo thiếu/thừa phách.
+ */
+export function addHarmonyVoice(doc: ScoreDocument, ids: readonly string[], steps: number, blank = false): EditResult {
+  const selected = ids
+    .map((id) => doc.getInfo(id))
+    .filter((n): n is NoteInfo => !!n && !n.isGrace && (blank || !n.isRest));
+  if (selected.length === 0) return { ok: false, reason: 'voiceNone' };
+
+  const groups = new Map<string, NoteInfo>();
+  for (const n of selected) groups.set(`${n.partIndex}|${n.measureIndex}|${n.staff}|${n.voice}`, n);
 
   const touched: Touched = new Map();
-  const jobs = [...groups.values()].map(({ first, entries }) => {
+  const jobs = [...groups.values()].map((first) => {
     touch(touched, first);
     const sameMeasure = doc.notes.filter(
       (n) => n.partIndex === first.partIndex && n.measureIndex === first.measureIndex,
     );
-    const newVoice = Math.max(...sameMeasure.map((n) => n.voice)) + 1;
-    const source = sameMeasure.filter((n) => n.staff === first.staff && n.voice === first.voice && !n.isGrace);
-    return { first, entries, newVoice, source, fifths: doc.keyAt(first.measureIndex) };
+    return {
+      first,
+      newVoice: Math.max(...sameMeasure.map((n) => n.voice)) + 1,
+      source: sameMeasure.filter((n) => n.staff === first.staff && n.voice === first.voice && !n.isGrace),
+      fifths: doc.keyAt(first.measureIndex),
+    };
   });
 
   const command = commitEdit(doc, 'Viết bè', touched, [], () => {
@@ -66,49 +82,46 @@ export function addHarmonyVoice(doc: ScoreDocument, ids: readonly string[], step
       const measure = job.first.element.closest('measure') as Element;
       const owner = measure.ownerDocument;
       const { anchor, cursor } = measureEnd(measure);
-      const staves = doc.staffCountOfPart(job.first.partIndex);
       const out: Element[] = [];
       if (cursor > 0) {
         const backup = make(owner, 'backup');
         backup.appendChild(make(owner, 'duration', String(cursor)));
         out.push(backup);
       }
-      const lastSelected = Math.max(...job.entries);
-      const byEntry = new Map<number, NoteInfo[]>();
-      for (const n of job.source) byEntry.set(n.entryIndex, [...(byEntry.get(n.entryIndex) ?? []), n]);
-      for (const [entry, members] of [...byEntry].sort((a, b) => a[0] - b[0])) {
-        if (entry > lastSelected) break;
-        const duration = num(members[0].element, 'duration');
-        if (job.entries.has(entry) && !members[0].isRest) {
-          for (const m of members) {
-            const copy = m.element.cloneNode(true) as Element;
-            DROP.forEach((tag) =>
-              Array.from(copy.children)
-                .filter((c) => c.tagName === tag)
-                .forEach((c) => c.remove()),
-            );
-            childOf(copy, 'voice')?.replaceWith(make(owner, 'voice', String(job.newVoice)));
-            if (!childOf(copy, 'voice')) childOf(copy, 'duration')?.after(make(owner, 'voice', String(job.newVoice)));
-            copy.insertBefore(make(owner, 'cue'), copy.firstChild);
-            const pitch = readPitch(copy);
-            if (pitch) {
-              let moved = pitch;
-              for (let i = 0; i < Math.abs(steps); i++) {
-                const next = movePitch(moved, steps < 0 ? 'stepDown' : 'stepUp', job.fifths);
-                if (next === 'range') break;
-                moved = next;
-              }
-              writePitch(copy, moved);
-            }
-            out.push(copy);
-          }
-        } else {
-          const forward = make(owner, 'forward');
-          forward.appendChild(make(owner, 'duration', String(duration)));
-          forward.appendChild(make(owner, 'voice', String(job.newVoice)));
-          if (staves > 1) forward.appendChild(make(owner, 'staff', String(job.first.staff)));
-          out.push(forward);
+      if (blank) {
+        // Bè trống: một dấu lặng nguyên ô, người dùng bấm vào đó để nhập nốt với nhịp điệu riêng
+        const { beats, beatType } = doc.timeAt(job.first.measureIndex);
+        const length = (beats * 4 * doc.divisionsAtPart(job.first.partIndex, job.first.measureIndex)) / beatType;
+        const rest = make(owner, 'note');
+        const marker = make(owner, 'rest');
+        marker.setAttribute('measure', 'yes');
+        rest.appendChild(marker);
+        rest.appendChild(make(owner, 'duration', String(Number.isInteger(length) ? length : cursor)));
+        rest.appendChild(make(owner, 'voice', String(job.newVoice)));
+        if (doc.staffCountOfPart(job.first.partIndex) > 1)
+          rest.appendChild(make(owner, 'staff', String(job.first.staff)));
+        out.push(rest);
+      }
+      for (const m of blank ? [] : job.source) {
+        const copy = m.element.cloneNode(true) as Element;
+        DROP.forEach((tag) =>
+          Array.from(copy.children)
+            .filter((c) => c.tagName === tag)
+            .forEach((c) => c.remove()),
+        );
+        const keep = (m.element.querySelector('notations') ?? null) as Element | null;
+        const tuplets = keep ? Array.from(keep.children).filter((c) => c.tagName === 'tuplet') : [];
+        if (tuplets.length > 0) {
+          const notations = make(owner, 'notations');
+          tuplets.forEach((t) => notations.appendChild(t.cloneNode(true)));
+          copy.appendChild(notations);
         }
+        const voiceEl = childOf(copy, 'voice');
+        if (voiceEl) voiceEl.textContent = String(job.newVoice);
+        else childOf(copy, 'duration')?.after(make(owner, 'voice', String(job.newVoice)));
+        const pitch = readPitch(copy);
+        if (pitch) writePitch(copy, shifted(pitch, steps, job.fifths));
+        out.push(copy);
       }
       out.forEach((e) => measure.insertBefore(e, anchor));
     }
@@ -126,6 +139,54 @@ export function addHarmonyVoice(doc: ScoreDocument, ids: readonly string[], step
     )
     .map((n) => n.id);
   return { ok: true, command };
+}
+
+/**
+ * Bè cùng thân: thêm vào mỗi nốt đã chọn một nốt nữa trong hợp âm, cùng trường độ, thấp/cao hơn `steps` bậc
+ * (kiểu hai nốt chung một thân như bản nhạc thánh ca). Nốt trùng cao độ sẽ dịch thêm một bậc.
+ */
+export function addChordNote(doc: ScoreDocument, ids: readonly string[], steps: number): EditResult {
+  const selected = ids.map((id) => doc.getInfo(id)).filter((n): n is NoteInfo => !!n && !n.isGrace && !n.isRest);
+  if (selected.length === 0) return { ok: false, reason: 'voiceNone' };
+  const keys = new Set(selected.map(chordKey));
+  const members = new Map<string, NoteInfo[]>();
+  for (const n of doc.notes) {
+    if (n.isGrace || n.isRest || !keys.has(chordKey(n))) continue;
+    members.set(chordKey(n), [...(members.get(chordKey(n)) ?? []), n]);
+  }
+  const touched: Touched = new Map();
+  const created: Element[] = [];
+  const plans = [...members.values()];
+  plans.forEach((chord) => touch(touched, chord[0]));
+  const result = commitEdit(doc, 'Viết bè cùng thân', touched, [], () => {
+    for (const chord of plans) {
+      const head = chord[0];
+      const fifths = doc.keyAt(head.measureIndex);
+      const base = readPitch(head.element);
+      if (!base) continue;
+      const taken = new Set(chord.map((n) => n.midi));
+      let pitch = shifted(base, steps, fifths);
+      let guard = 0;
+      while (taken.has(pitchToMidi(pitch)) && guard++ < 8) pitch = shifted(pitch, steps < 0 ? -1 : 1, fifths);
+      if (taken.has(pitchToMidi(pitch))) continue;
+      const copy = head.element.cloneNode(true) as Element;
+      ['tie', 'notations', 'lyric', 'accidental', 'chord', 'beam'].forEach((tag) =>
+        Array.from(copy.children)
+          .filter((c) => c.tagName === tag)
+          .forEach((c) => c.remove()),
+      );
+      const chordEl = make(copy.ownerDocument, 'chord');
+      const cue = childOf(copy, 'cue');
+      if (cue) cue.after(chordEl);
+      else copy.insertBefore(chordEl, copy.firstChild);
+      writePitch(copy, pitch);
+      chord[chord.length - 1].element.after(copy);
+      created.push(copy);
+    }
+  });
+  if (created.length === 0) return { ok: false, reason: 'range' };
+  result.selectAfter = doc.notes.filter((n) => created.includes(n.element)).map((n) => n.id);
+  return { ok: true, command: result };
 }
 
 /** Bật / tắt "nốt nhỏ" (cue) cho các nốt đã chọn (cả hợp âm). Tất cả đã nhỏ thì đổi lại thành nốt thường. */

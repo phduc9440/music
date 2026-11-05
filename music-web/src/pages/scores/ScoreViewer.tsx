@@ -71,7 +71,7 @@ const SHORTCUTS: [string, string][] = [
   ['Nhóm Ô nhịp', 'Thêm ô sau / chèn ô trước / xóa các ô đang chọn (hoàn tác được)'],
   [
     'Nhóm Viết bè',
-    'Chọn nốt rồi bấm Bè dưới / Bè trên: sao sang bè mới, nốt nhỏ cùng trường độ; chỉnh cao độ bằng ↑ ↓',
+    'Bè thân: thêm nốt chung thân cùng trường độ. Bè riêng: bè mới nhịp điệu riêng (bấm vào dấu lặng để nhập). Chép bè: sao cả ô sang bè mới',
   ],
   [
     'Nhóm Sắc thái',

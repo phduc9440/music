@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import type { SymbolOp } from '../../editor/commands';
 import { DYNAMICS } from '../../editor/marks';
 import type { MarkOp } from '../../editor/marks';
+import type { VoiceOp } from '../../editor/voices';
 import type { DurationChoice, DurationType } from '../../editor/durations';
 import type { PitchOp } from '../../editor/pitch';
 import { DURATION_DRAG_TYPE } from '../../editor/staffHit';
@@ -57,7 +58,7 @@ interface Props {
   /** Thêm / xóa ô nhịp. */
   onMeasures: (op: 'insertAfter' | 'insertBefore' | 'delete') => void;
   /** Viết bè, nốt nhỏ, xóa bè. */
-  onVoice: (op: 'addBelow' | 'addAbove' | 'cue' | 'remove') => void;
+  onVoice: (op: VoiceOp) => void;
   /** "Giữ ô nhịp đủ phách": đổi trường độ nhưng lấp dấu lặng / ghi đè nốt sau để ô không đổi độ dài. */
   onDuration: (type: DurationType) => void;
   onDot: () => void;
@@ -356,24 +357,48 @@ export default function EditorToolPanel({
             <button
               className="sv-tool sv-tool--text"
               disabled={!hasSelection || busy}
-              onClick={() => onVoice('addBelow')}
-              title="Sao các nốt đang chọn sang một bè mới cùng trường độ, nốt nhỏ, thấp hơn một quãng ba (sau đó chỉnh cao độ tùy ý)"
+              onClick={() => onVoice('chordBelow')}
+              title="Bè cùng thân: thêm vào mỗi nốt đang chọn một nốt cùng trường độ, thấp hơn một quãng ba (hai nốt chung một thân)"
             >
-              Bè dưới
+              Bè thân ↓
+            </button>
+            <button
+              className="sv-tool sv-tool--text"
+              disabled={!hasSelection || busy}
+              onClick={() => onVoice('chordAbove')}
+              title="Bè cùng thân: thêm nốt cùng trường độ, cao hơn một quãng ba"
+            >
+              Bè thân ↑
+            </button>
+            <button
+              className="sv-tool sv-tool--text"
+              disabled={!hasSelection || busy}
+              onClick={() => onVoice('blank')}
+              title="Thêm một bè riêng (ô trống): bấm vào dấu lặng của bè mới để nhập nốt với nhịp điệu khác bè chính"
+            >
+              Bè riêng
+            </button>
+            <button
+              className="sv-tool sv-tool--text"
+              disabled={!hasSelection || busy}
+              onClick={() => onVoice('addBelow')}
+              title="Chép cả ô nhịp sang bè riêng thấp hơn một quãng ba, rồi sửa trường độ, cao độ từng nốt"
+            >
+              Chép bè ↓
             </button>
             <button
               className="sv-tool sv-tool--text"
               disabled={!hasSelection || busy}
               onClick={() => onVoice('addAbove')}
-              title="Như trên nhưng bè cao hơn một quãng ba"
+              title="Chép cả ô nhịp sang bè riêng cao hơn một quãng ba"
             >
-              Bè trên
+              Chép bè ↑
             </button>
             <button
               className="sv-tool sv-tool--text"
               disabled={!hasSelection || busy}
               onClick={() => onVoice('cue')}
-              title="Bật/tắt hình nốt nhỏ cho các nốt đang chọn"
+              title="Bật/tắt hình nốt nhỏ cho các nốt đang chọn (thường dùng cho nốt bè)"
             >
               Nốt nhỏ
             </button>
@@ -381,7 +406,7 @@ export default function EditorToolPanel({
               className="sv-tool sv-tool--text"
               disabled={!hasSelection || busy}
               onClick={() => onVoice('remove')}
-              title="Xóa bè phụ chứa nốt đang chọn (chỉ trong ô nhịp đang chọn)"
+              title="Xóa bè riêng chứa nốt đang chọn (bè chính không xóa được)"
             >
               Xóa bè
             </button>
