@@ -23,7 +23,7 @@ const make = (owner: Document, tag: string, text?: string): Element => {
 const DROP = ['tie', 'notations', 'lyric', 'stem', 'accidental', 'notehead', 'instrument'];
 
 /** Vị trí chèn cuối ô (trước các vạch nhịp ở cuối) và tổng độ dài ô theo divisions. */
-function measureEnd(measure: Element): { anchor: Element | null; cursor: number } {
+export function measureEnd(measure: Element): { anchor: Element | null; cursor: number } {
   let cursor = 0;
   for (const c of Array.from(measure.children)) {
     if (c.tagName === 'backup') cursor -= num(c, 'duration');

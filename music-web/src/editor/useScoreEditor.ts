@@ -26,6 +26,8 @@ import type { MarkOp } from './marks';
 import { deleteMeasures, insertMeasure } from './structure';
 import { addChordNote, addHarmonyVoice, removeVoice, toggleCue } from './voices';
 import type { VoiceOp } from './voices';
+import { addBassStaff, addPart, changeNotation, readNotation, removeStaff } from './staves';
+import type { NotationChange } from './staves';
 import { setTempo } from './tempo';
 import type { TempoInfo } from './tempo';
 import { toggleSlur, toggleTie } from './ties';
@@ -109,6 +111,10 @@ export interface ScoreEditor {
   applyMark: (op: MarkOp) => void;
   /** Thêm ô nhịp trống sau / trước ô đang chọn (không chọn gì: thêm vào cuối), hoặc xóa các ô đang chọn. */
   editMeasures: (op: 'insertAfter' | 'insertBefore' | 'delete') => void;
+  /** Thêm khuông Fa cho đàn, thêm khuông Sol/Fa riêng (phần nhạc mới), hoặc xóa khuông của nốt đang chọn. */
+  editStaves: (op: 'addBass' | 'addG' | 'addF' | 'remove') => void;
+  /** Đổi khóa nhạc, dấu hóa đầu khuông hoặc nhịp tại vùng chọn. */
+  editNotation: (change: NotationChange) => void;
   /** Viết bè (sao nốt sang bè mới, nốt nhỏ), bật/tắt nốt nhỏ, hoặc xóa bè phụ. */
   editVoice: (op: VoiceOp) => void;
   /** Lời đang nhập (1–4). */
@@ -442,6 +448,32 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
         commit(deleteMeasures(doc, first, last), false);
       } else if (op === 'insertAfter') commit(insertMeasure(doc, last, 'after'), false);
       else commit(insertMeasure(doc, first, 'before'), false);
+    },
+    [canEdit, selection, doc, commit],
+  );
+
+  const editStaves = useCallback(
+    (op: 'addBass' | 'addG' | 'addF' | 'remove') => {
+      if (!canEdit) return;
+      const picked = [...selection][0] ? doc.getInfo([...selection][0]) : undefined;
+      if (op === 'addBass') commit(addBassStaff(doc, picked?.partIndex ?? 0), false);
+      else if (op === 'addG') commit(addPart(doc, 'G'), false);
+      else if (op === 'addF') commit(addPart(doc, 'F'), false);
+      else if (!picked) commit({ ok: false, reason: 'noStaff' }, false);
+      else commit(removeStaff(doc, picked.partIndex, picked.staff), false);
+    },
+    [canEdit, selection, doc, commit],
+  );
+
+  const editNotation = useCallback(
+    (change: NotationChange) => {
+      if (!canEdit) return;
+      const info = readNotation(doc, [...selection]);
+      if (!info) {
+        commit({ ok: false, reason: 'noStaff' }, false);
+        return;
+      }
+      commit(changeNotation(doc, info, change), false);
     },
     [canEdit, selection, doc, commit],
   );
@@ -845,6 +877,8 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     pasteChordText,
     applyMark,
     editMeasures,
+    editStaves,
+    editNotation,
     editVoice,
     lyricMode,
     setLyricMode,

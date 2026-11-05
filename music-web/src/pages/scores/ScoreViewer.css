@@ -854,3 +854,37 @@
   font-style: italic;
   font-family: Georgia, serif;
 }
+
+/* Hộp thoại khóa nhạc, dấu hóa, nhịp */
+.sv-notation {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 0.5rem 0;
+}
+.sv-notation h4 {
+  margin: 0 0 0.4rem;
+  font-size: 0.9rem;
+}
+.sv-notation__scope {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  border: 1px solid var(--border, #ddd);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+}
+.sv-notation__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+.sv-notation__row input[type='number'] {
+  width: 4rem;
+}
+.sv-notation__choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}

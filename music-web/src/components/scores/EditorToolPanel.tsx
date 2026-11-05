@@ -55,6 +55,10 @@ interface Props {
   onChordModeChange: (enabled: boolean) => void;
   /** Ký hiệu sắc thái, lặp lại và chỉ dẫn nhảy. */
   onMark: (op: MarkOp) => void;
+  /** Thêm khuông Fa cho đàn, thêm khuông Sol/Fa riêng, xóa khuông. */
+  onStaves: (op: 'addBass' | 'addG' | 'addF' | 'remove') => void;
+  /** Mở hộp thoại khóa nhạc, dấu hóa, nhịp. */
+  onOpenNotation: () => void;
   /** Thêm / xóa ô nhịp. */
   onMeasures: (op: 'insertAfter' | 'insertBefore' | 'delete') => void;
   /** Viết bè, nốt nhỏ, xóa bè. */
@@ -166,6 +170,8 @@ export default function EditorToolPanel({
   chordMode,
   onChordModeChange,
   onMark,
+  onStaves,
+  onOpenNotation,
   onMeasures,
   onVoice,
   onDuration,
@@ -317,6 +323,52 @@ export default function EditorToolPanel({
                 <ToolDot />
               </span>
               <span className="sv-tool__label">Chấm dôi</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="sv-tools__group sv-tools__group--soon">
+          <div className="sv-tools__title">Khuông nhạc</div>
+          <div className="sv-tools__row sv-tools__row--text">
+            <button
+              className="sv-tool sv-tool--text"
+              disabled={busy}
+              onClick={() => onStaves('addBass')}
+              title="Thêm khuông Fa dưới khuông hiện tại: đàn hai khuông (khuông của nốt đang chọn, mặc định khuông đầu)"
+            >
+              Thêm Fa (đàn)
+            </button>
+            <button
+              className="sv-tool sv-tool--text"
+              disabled={busy}
+              onClick={() => onStaves('addG')}
+              title="Thêm một khuông riêng khóa Sol (ví dụ bè S/A) phía dưới cùng"
+            >
+              Thêm khuông Sol
+            </button>
+            <button
+              className="sv-tool sv-tool--text"
+              disabled={busy}
+              onClick={() => onStaves('addF')}
+              title="Thêm một khuông riêng khóa Fa (ví dụ bè T/B) phía dưới cùng"
+            >
+              Thêm khuông Fa
+            </button>
+            <button
+              className="sv-tool sv-tool--text"
+              disabled={!hasSelection || busy}
+              onClick={() => onStaves('remove')}
+              title="Xóa khuông của nốt đang chọn (khuông Fa của đàn, hoặc cả khuông riêng)"
+            >
+              Xóa khuông
+            </button>
+            <button
+              className="sv-tool sv-tool--text"
+              disabled={!hasSelection || busy}
+              onClick={onOpenNotation}
+              title="Đổi khóa Sol/Fa/Đô, dấu hóa đầu khuông, chỉ số nhịp (kể cả đổi nhịp giữa bài và nhịp tự do)"
+            >
+              Khóa · Dấu hóa · Nhịp…
             </button>
           </div>
         </div>

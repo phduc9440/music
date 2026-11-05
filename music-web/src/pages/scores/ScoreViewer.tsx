@@ -3,6 +3,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import DownloadMenu from '../../components/scores/DownloadMenu';
 import EditorToolPanel from '../../components/scores/EditorToolPanel';
 import ChordBar from '../../components/scores/ChordBar';
+import NotationModal from '../../components/scores/NotationModal';
+import { readNotation } from '../../editor/staves';
+import type { NotationChange } from '../../editor/staves';
 import LyricBar from '../../components/scores/LyricBar';
 import Modal from '../../components/scores/Modal';
 import ScoreCanvas from '../../components/scores/ScoreCanvas';
@@ -68,6 +71,10 @@ const SHORTCUTS: [string, string][] = [
   ['Bấm vào tiêu đề, tên tác giả hoặc nhịp độ', 'Sửa nội dung; tiêu đề và tác giả sửa được cả cỡ chữ, đậm, nghiêng'],
   ['Chế độ Lời', 'Chọn nốt, gõ âm tiết rồi Space sang nốt kế; "-" khi một chữ trải qua nhiều nốt; Esc để thoát'],
   ['Chế độ Hợp âm', 'Chọn nốt, gõ hợp âm (C, Am7, G/B...) rồi Space sang nốt kế; ô trống để xóa'],
+  [
+    'Nhóm Khuông nhạc',
+    'Thêm khuông Fa cho đàn, thêm khuông Sol/Fa riêng (SATB), xóa khuông; "Khóa · Dấu hóa · Nhịp…" đổi khóa, dấu hóa đầu khuông, nhịp giữa bài',
+  ],
   ['Nhóm Ô nhịp', 'Thêm ô sau / chèn ô trước / xóa các ô đang chọn (hoàn tác được)'],
   [
     'Nhóm Viết bè',
@@ -220,6 +227,7 @@ function ScoreWorkspace({ score, xml, info, doc }: WorkspaceProps) {
 
   const [prefs, setPrefs] = useState(loadViewerPrefs);
   const [pageCount, setPageCount] = useState(1);
+  const [notationOpen, setNotationOpen] = useState(false);
   const [progress, setProgress] = useState(1);
   const [toolsOpen, setToolsOpen] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
@@ -470,6 +478,8 @@ function ScoreWorkspace({ score, xml, info, doc }: WorkspaceProps) {
             chordMode={editor.chordMode}
             onChordModeChange={editor.setChordMode}
             onMark={editor.applyMark}
+            onStaves={editor.editStaves}
+            onOpenNotation={() => setNotationOpen(true)}
             onMeasures={editor.editMeasures}
             onVoice={editor.editVoice}
             onDuration={editor.chooseDuration}
@@ -513,6 +523,17 @@ function ScoreWorkspace({ score, xml, info, doc }: WorkspaceProps) {
         </div>
       </div>
 
+      {canEdit && notationOpen && (
+        <NotationHost
+          doc={doc}
+          selection={editor.selection}
+          onApply={(change) => {
+            editor.editNotation(change);
+            setNotationOpen(false);
+          }}
+          onClose={() => setNotationOpen(false)}
+        />
+      )}
       {canEdit && editor.chordMode && (
         <ChordBar
           doc={doc}
@@ -633,4 +654,20 @@ function ScoreWorkspace({ score, xml, info, doc }: WorkspaceProps) {
       )}
     </div>
   );
+}
+
+/** Đọc đầu khuông tại vùng chọn rồi hiện hộp thoại (không hiện nếu chưa chọn nốt nào). */
+function NotationHost({
+  doc,
+  selection,
+  onApply,
+  onClose,
+}: {
+  doc: ScoreDocument;
+  selection: ReadonlySet<string>;
+  onApply: (change: NotationChange) => void;
+  onClose: () => void;
+}) {
+  const info = readNotation(doc, [...selection]);
+  return info ? <NotationModal info={info} onApply={onApply} onClose={onClose} /> : null;
 }

@@ -50,7 +50,10 @@ export type EditFailure =
   | 'noMeasure'
   | 'lastMeasure'
   | 'voiceMain'
-  | 'voiceNone';
+  | 'voiceNone'
+  | 'hasBass'
+  | 'lastStaff'
+  | 'noStaff';
 
 export type EditResult = { ok: true; command: EditCommand } | { ok: false; reason: EditFailure };
 
@@ -85,6 +88,9 @@ export const EDIT_FAILURE_MESSAGES: Record<EditFailure, string> = {
   noMeasure: 'Hãy chọn một nốt để biết thao tác này áp dụng cho ô nhịp nào',
   lastMeasure: 'Bản nhạc phải còn ít nhất một ô nhịp',
   voiceMain: 'Đây là bè chính của khuông nên không xóa theo cách này (hãy dùng nút Xóa nốt / Dấu lặng)',
+  hasBass: 'Phần nhạc này đã có hai khuông rồi (dùng "Thêm khuông Sol/Fa" để thêm khuông riêng)',
+  lastStaff: 'Bản nhạc phải còn ít nhất một khuông (khuông 1 của đàn chỉ xóa được khi còn phần nhạc khác)',
+  noStaff: 'Hãy chọn một nốt hoặc dấu lặng để biết thao tác này áp dụng cho khuông nào',
   voiceNone: 'Hãy chọn các nốt (không phải dấu lặng hay nốt trang trí) để viết bè',
 };
 

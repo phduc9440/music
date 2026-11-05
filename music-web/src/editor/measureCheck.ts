@@ -51,7 +51,8 @@ export function checkMeasures(doc: ScoreDocument): MeasureIssue[] {
         }
       }
       if (totals.size === 0) return;
-      const { beats, beatType } = doc.timeAt(measureIndex);
+      const { beats, beatType, free } = doc.timeAt(measureIndex);
+      if (free) return; // nhịp tự do: ô nhịp dài tùy ý
       const divisions = doc.divisionsAtPart(partIndex, measureIndex);
       const expected = (beats * divisions * 4) / beatType;
       const beatLength = (divisions * 4) / beatType;

@@ -24,7 +24,8 @@ const renumber = (doc: ScoreDocument, fromIndex: number): void => {
   }
 };
 
-const run = (doc: ScoreDocument, label: string, apply: () => number): EditResult => {
+/** Chạy một thay đổi cấu trúc (đổi số ô nhịp / khuông / phần nhạc) và dựng lệnh hoàn tác bằng bản chụp cả bản nhạc. */
+export const runStructural = (doc: ScoreDocument, label: string, apply: () => number): EditResult => {
   const before = doc.partsSnapshot();
   const focus = apply();
   doc.reindex();
@@ -56,7 +57,7 @@ export function insertMeasure(doc: ScoreDocument, measureIndex: number, where: '
     lengths.push(length);
   }
 
-  return run(doc, `Thêm ô nhịp ${pos + 2}`, () => {
+  return runStructural(doc, `Thêm ô nhịp ${pos + 2}`, () => {
     const newIndex = pos + 1;
     for (let p = 0; p < doc.partCount; p++) {
       const measures = doc.getMeasures(p);
@@ -121,7 +122,7 @@ export function deleteMeasures(doc: ScoreDocument, from: number, to: number): Ed
   if (hi - lo + 1 >= count) return { ok: false, reason: 'lastMeasure' };
 
   const label = lo === hi ? `Xóa ô nhịp ${lo + 1}` : `Xóa ô nhịp ${lo + 1}–${hi + 1}`;
-  return run(doc, label, () => {
+  return runStructural(doc, label, () => {
     for (let p = 0; p < doc.partCount; p++) {
       const measures = doc.getMeasures(p);
       const next = measures[hi + 1];

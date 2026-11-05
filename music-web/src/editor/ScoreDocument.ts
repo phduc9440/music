@@ -151,23 +151,29 @@ export class ScoreDocument {
     return this.divisionsInPart(partIndex, measureIndex);
   }
 
-  /** Chỉ số nhịp (số phách, loại phách) có hiệu lực ở ô nhịp của part đầu tiên; mặc định 4/4. */
-  timeAt(measureIndex: number): { beats: number; beatType: number } {
+  /** Chỉ số nhịp (số phách, loại phách) có hiệu lực ở ô nhịp của part đầu tiên; mặc định 4/4. `free`: nhịp tự do. */
+  timeAt(measureIndex: number): { beats: number; beatType: number; free: boolean } {
     const measures = this.measuresOf(0);
     let beats = 4;
     let beatType = 4;
+    let free = false;
     for (let i = 0; i <= measureIndex && i < measures.length; i++) {
       for (const attributes of Array.from(measures[i].children).filter((c) => c.tagName === 'attributes')) {
         const time = Array.from(attributes.children).find((c) => c.tagName === 'time');
+        if (time && Array.from(time.children).some((c) => c.tagName === 'senza-misura')) {
+          free = true;
+          continue;
+        }
         const b = time ? childNumber(time, 'beats') : null;
         const t = time ? childNumber(time, 'beat-type') : null;
         if (b !== null && t !== null && b > 0 && t > 0) {
           beats = b;
           beatType = t;
+          free = false;
         }
       }
     }
-    return { beats, beatType };
+    return { beats, beatType, free };
   }
 
   /** Thẻ <measure> theo vị trí; undefined nếu không có. */
@@ -215,16 +221,20 @@ export class ScoreDocument {
     this.reindex();
   }
 
-  /** Bản sao toàn bộ các <part> (dùng cho lệnh thêm/xóa ô nhịp làm đổi số ô nhịp). */
+  /** Bản sao <part-list> và toàn bộ các <part> (dùng cho lệnh làm đổi cấu trúc: thêm/xóa ô nhịp, khuông, phần nhạc). */
   partsSnapshot(): Element[] {
-    return this.parts().map((p) => p.cloneNode(true) as Element);
+    const list = Array.from(this.doc.documentElement.children).filter((c) => c.tagName === 'part-list');
+    return [...list, ...this.parts()].map((p) => p.cloneNode(true) as Element);
   }
 
-  /** Thay toàn bộ các <part> bằng bản đã chụp (hoàn tác / làm lại việc thêm/xóa ô nhịp). */
-  restoreParts(parts: readonly Element[]): void {
+  /** Thay <part-list> và các <part> bằng bản đã chụp (hoàn tác / làm lại). */
+  restoreParts(snapshot: readonly Element[]): void {
     const root = this.doc.documentElement;
+    const list = snapshot.find((e) => e.tagName === 'part-list');
+    const current = Array.from(root.children).find((c) => c.tagName === 'part-list');
+    if (list && current) current.replaceWith(list.cloneNode(true));
     this.parts().forEach((p) => p.remove());
-    parts.forEach((p) => root.appendChild(p.cloneNode(true)));
+    snapshot.filter((e) => e.tagName === 'part').forEach((p) => root.appendChild(p.cloneNode(true)));
     this.reindex();
   }
 
