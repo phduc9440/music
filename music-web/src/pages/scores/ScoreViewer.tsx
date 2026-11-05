@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import DownloadMenu from '../../components/scores/DownloadMenu';
 import EditorToolPanel from '../../components/scores/EditorToolPanel';
+import LyricBar from '../../components/scores/LyricBar';
 import Modal from '../../components/scores/Modal';
 import ScoreCanvas from '../../components/scores/ScoreCanvas';
 import ZoomControl from '../../components/scores/ZoomControl';
@@ -18,6 +19,7 @@ import {
   IconShrink,
   IconUndo,
 } from '../../components/scores/ViewerIcons';
+import { syncTitle } from '../../editor/header';
 import { ScoreDocument } from '../../editor/ScoreDocument';
 import { DURATION_LABELS } from '../../editor/durations';
 import { usePlayback } from '../../editor/usePlayback';
@@ -62,6 +64,8 @@ const SHORTCUTS: [string, string][] = [
   ['Bấm vào khuông (chế độ Nhập nốt)', 'Mở khung chọn nốt tại đúng dòng/khe đã bấm rồi bấm Thêm'],
   ['Kéo nút trường độ vào khuông', 'Thêm nốt có trường độ đó tại chỗ thả'],
   ['A – G (chế độ Nhập nốt)', 'Biến nốt/dấu lặng đang chọn thành nốt đó rồi sang mục kế tiếp'],
+  ['Bấm vào tiêu đề, tên tác giả hoặc nhịp độ', 'Sửa nội dung; tiêu đề và tác giả sửa được cả cỡ chữ, đậm, nghiêng'],
+  ['Chế độ Lời', 'Chọn nốt, gõ âm tiết rồi Space sang nốt kế; "-" khi một chữ trải qua nhiều nốt; Esc để thoát'],
   ['T', 'Dấu nối: nối nốt đang chọn với nốt cùng cao độ liền sau (bấm lại để bỏ)'],
   ['S', 'Dấu luyến: chọn từ nốt đầu đến nốt cuối rồi bấm (bấm lại để bỏ)'],
   ['Delete', 'Xóa nốt đang chọn (hợp âm còn nốt khác thì giữ lại)'],
@@ -112,7 +116,10 @@ export default function ScoreViewer() {
           return;
         }
         try {
-          setDoc(ScoreDocument.parse(text));
+          const opened = ScoreDocument.parse(text);
+          // Tiêu đề trên bản nhạc theo tên bài hát trong ứng dụng (trừ khi đã tự sửa tiêu đề trong trình sửa)
+          if (syncTitle(opened, detail.data.result.title)) setXml(opened.serialize());
+          setDoc(opened);
           setPhase('ready');
         } catch {
           setPhase('parseError');
@@ -443,8 +450,8 @@ function ScoreWorkspace({ score, xml, info, doc }: WorkspaceProps) {
             inputMode={editor.inputMode}
             onInputModeChange={editor.setInputMode}
             inputDuration={editor.inputDuration}
-            keepMeasure={editor.keepMeasure}
-            onKeepMeasureChange={editor.setKeepMeasure}
+            lyricMode={editor.lyricMode}
+            onLyricModeChange={editor.setLyricMode}
             onDuration={editor.chooseDuration}
             onDot={editor.toggleDot}
             previewTone={editor.previewTone}
@@ -477,6 +484,8 @@ function ScoreWorkspace({ score, xml, info, doc }: WorkspaceProps) {
             inputDuration={editor.inputDuration}
             onInsertNote={canEdit ? editor.insertNoteAt : undefined}
             onConfirmMeasure={canEdit ? editor.confirmMeasureOk : undefined}
+            onEditHeader={canEdit ? editor.editHeader : undefined}
+            onEditTempo={canEdit ? editor.editTempo : undefined}
           />
           <div className="sv-pos" aria-live="polite">
             {progressLabel}
@@ -484,6 +493,19 @@ function ScoreWorkspace({ score, xml, info, doc }: WorkspaceProps) {
         </div>
       </div>
 
+      {canEdit && editor.lyricMode && (
+        <LyricBar
+          doc={doc}
+          revision={editor.revision}
+          selectedId={[...editor.selection][0] ?? null}
+          verse={editor.lyricVerse}
+          onVerseChange={editor.setLyricVerse}
+          onEnter={editor.enterLyric}
+          onMove={editor.moveLyric}
+          onPaste={editor.pasteLyricsText}
+          onExit={() => editor.setInputMode(false)}
+        />
+      )}
       <footer className="sv-status">
         <span>{summary.join(' · ') || 'Bản nhạc'}</span>
         <div className="sv-status__right">

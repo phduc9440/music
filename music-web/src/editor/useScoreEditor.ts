@@ -11,11 +11,17 @@ import { EDIT_FAILURE_MESSAGES, changePitch, removeNotes, setAlteration } from '
 import type { EditResult, SymbolOp } from './commands';
 import { DURATION_LABELS, DURATION_QUARTERS, enterNote, insertNote, isLetterKey, setDuration } from './durations';
 import type { AccidentalChoice, DurationChoice, DurationType, InsertTarget } from './durations';
-import { DRAFT_INTERVAL_MS, clearDraft, loadDraft, loadKeepMeasurePref, saveDraft, saveKeepMeasurePref } from './draft';
+import { DRAFT_INTERVAL_MS, clearDraft, loadDraft, saveDraft } from './draft';
 import type { Draft } from './draft';
 import { describeSelection } from './describe';
 import { History } from './history';
 import { checkMeasures, confirmMeasure } from './measureCheck';
+import { setHeaderText } from './header';
+import type { HeaderField, TextStyle } from './header';
+import { canHoldLyric, pasteLyrics, setLyric, stepLyricNote } from './lyrics';
+import type { LyricEnd } from './lyrics';
+import { setTempo } from './tempo';
+import type { TempoInfo } from './tempo';
 import { toggleSlur, toggleTie } from './ties';
 import type { MeasureIssue } from './measureCheck';
 import type { PitchOp } from './pitch';
@@ -82,11 +88,25 @@ export interface ScoreEditor {
   /** Chế độ nhập nốt: chọn dấu lặng rồi bấm phím A–G để biến nó thành nốt. */
   inputMode: boolean;
   setInputMode: (enabled: boolean) => void;
+  /** Chế độ nhập lời: chọn nốt rồi gõ âm tiết, Space sang nốt kế. */
+  lyricMode: boolean;
+  setLyricMode: (enabled: boolean) => void;
+  /** Lời đang nhập (1–4). */
+  lyricVerse: number;
+  setLyricVerse: (verse: number) => void;
+  /** Ghi âm tiết cho nốt đang chọn: 'word' hết chữ rồi sang nốt kế, 'hyphen' chữ còn tiếp rồi sang nốt kế, 'stay' ở lại. */
+  enterLyric: (text: string, end: LyricEnd | 'stay') => void;
+  /** Chuyển sang nốt kế (1) / liền trước (−1) có thể mang lời. */
+  moveLyric: (delta: 1 | -1) => void;
+  /** Gán cả đoạn lời lên các nốt liên tiếp từ nốt đang chọn. */
+  pasteLyricsText: (text: string) => void;
+  /** Sửa tiêu đề / tác giả (nội dung và kiểu chữ); true nếu đã áp dụng. */
+  editHeader: (field: HeaderField, text: string, style: TextStyle) => boolean;
+  /** Sửa chỉ số nhịp (tempo); true nếu đã áp dụng. */
+  editTempo: (info: TempoInfo) => boolean;
   /** Trường độ dùng khi nhập nốt (cũng là trường độ vừa chọn trên bảng công cụ). */
   inputDuration: DurationChoice;
   /** true: đổi trường độ nhưng giữ ô nhịp đủ phách (lấp dấu lặng / ghi đè nốt sau); false: đổi thẳng. */
-  keepMeasure: boolean;
-  setKeepMeasure: (enabled: boolean) => void;
   /** Chọn trường độ: đang nhập nốt thì đặt trường độ nhập, không thì đổi trường độ vùng chọn. */
   chooseDuration: (type: DurationType) => void;
   /** Bật/tắt chấm dôi, cùng quy tắc với {@link chooseDuration}. */
@@ -132,8 +152,9 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
   const [saving, setSaving] = useState(false);
   const [version, setVersion] = useState(initialVersion);
   const [notice, setNotice] = useState<Notice | null>(null);
-  const [keepMeasure, setKeepMeasureState] = useState(loadKeepMeasurePref);
-  const [inputMode, setInputMode] = useState(false);
+  const [inputMode, setInputModeState] = useState(false);
+  const [lyricMode, setLyricModeState] = useState(false);
+  const [lyricVerse, setLyricVerse] = useState(1);
   const [inputDuration, setInputDuration] = useState<DurationChoice>({ type: 'quarter', dotted: false });
   const [previewTone, setPreviewToneState] = useState(loadPreviewTonePref);
   const [conflict, setConflict] = useState<{ latestVersion: number } | null>(null);
@@ -167,11 +188,6 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     const h = historyRef.current;
     setFlags({ dirty: h.dirty, canUndo: h.canUndo, canRedo: h.canRedo });
     setRevision((r) => r + 1);
-  }, []);
-
-  const setKeepMeasure = useCallback((enabled: boolean) => {
-    setKeepMeasureState(enabled);
-    saveKeepMeasurePref(enabled);
   }, []);
 
   const setPreviewTone = useCallback((enabled: boolean) => {
@@ -264,9 +280,9 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
         flash(`Trường độ nhập: ${DURATION_LABELS[type]}`);
         return;
       }
-      if (canEdit && selection.size > 0) commit(setDuration(doc, [...selection], choice, keepMeasure), false);
+      if (canEdit && selection.size > 0) commit(setDuration(doc, [...selection], choice), false);
     },
-    [inputMode, canEdit, selection, doc, commit, flash, keepMeasure],
+    [inputMode, canEdit, selection, doc, commit, flash],
   );
 
   const toggleDot = useCallback(() => {
@@ -284,8 +300,8 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
       return;
     }
     const dotted = first.element.querySelector(':scope > dot') !== null;
-    commit(setDuration(doc, [...selection], { type: typeText as DurationType, dotted: !dotted }, keepMeasure), false);
-  }, [inputMode, inputDuration, canEdit, selection, doc, commit, flash, keepMeasure]);
+    commit(setDuration(doc, [...selection], { type: typeText as DurationType, dotted: !dotted }), false);
+  }, [inputMode, inputDuration, canEdit, selection, doc, commit, flash]);
 
   const enterLetter = useCallback(
     (letter: string) => {
@@ -302,15 +318,100 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     [canEdit, doc, commit],
   );
 
+  /** Chọn chế độ Chọn (false) hoặc Nhập nốt (true); hai chế độ này tắt chế độ nhập lời. */
+  const setInputMode = useCallback((enabled: boolean) => {
+    setInputModeState(enabled);
+    setLyricModeState(false);
+  }, []);
+
+  const setLyricMode = useCallback(
+    (enabled: boolean) => {
+      setLyricModeState(enabled);
+      if (!enabled) return;
+      setInputModeState(false);
+      const current = [...selection][0];
+      if (current && canHoldLyric(doc, current)) return;
+      const first = doc.notes.find((n) => canHoldLyric(doc, n.id));
+      if (first) setSelection(new Set([first.id]));
+    },
+    [selection, doc],
+  );
+
+  const enterLyric = useCallback(
+    (text: string, end: LyricEnd | 'stay') => {
+      const id = [...selection][0];
+      if (!canEdit || !id) return;
+      const result = setLyric(doc, id, text, end === 'stay' ? 'word' : end, lyricVerse);
+      const next = end === 'stay' ? null : stepLyricNote(doc, id, 1);
+      if (!result.ok) {
+        // Không có gì để đổi: chỉ sang nốt kế
+        if (result.reason === 'unchanged') {
+          if (next) setSelection(new Set([next]));
+          return;
+        }
+        commit(result, false);
+        return;
+      }
+      if (next) result.command.selectAfter = [next];
+      commit(result, false);
+    },
+    [selection, canEdit, doc, lyricVerse, commit],
+  );
+
+  const moveLyric = useCallback(
+    (delta: 1 | -1) => {
+      const id = [...selection][0];
+      const target = id ? stepLyricNote(doc, id, delta) : null;
+      if (target) setSelection(new Set([target]));
+    },
+    [selection, doc],
+  );
+
+  const pasteLyricsText = useCallback(
+    (text: string) => {
+      if (!canEdit) return;
+      const current = [...selection][0];
+      const start =
+        current && canHoldLyric(doc, current) ? current : doc.notes.find((n) => canHoldLyric(doc, n.id))?.id;
+      if (!start) return;
+      const { result, report } = pasteLyrics(doc, start, text, lyricVerse);
+      commit(result, false);
+      if (!result.ok) return;
+      toast.success(`Đã gán ${report.placed} âm tiết`);
+      if (report.leftover > 0) toast.warn(`Còn ${report.leftover} âm tiết không có nốt để gán`);
+    },
+    [canEdit, selection, doc, lyricVerse, commit],
+  );
+
+  const editHeader = useCallback(
+    (field: HeaderField, text: string, style: TextStyle): boolean => {
+      if (!canEdit) return false;
+      const result = setHeaderText(doc, field, text, style);
+      commit(result, false);
+      return result.ok;
+    },
+    [canEdit, doc, commit],
+  );
+
+  const editTempo = useCallback(
+    (info: TempoInfo): boolean => {
+      if (!canEdit) return false;
+      const result = setTempo(doc, info);
+      commit(result, false);
+      return result.ok;
+    },
+    [canEdit, doc, commit],
+  );
+
   const insertNoteAt = useCallback(
     (target: InsertTarget, choice: DurationChoice, accidental: AccidentalChoice): boolean => {
       if (!canEdit) return false;
-      const result = insertNote(doc, target, choice, accidental, keepMeasure);
+      const result = insertNote(doc, target, choice, accidental);
       commit(result, true);
       if (result.ok) setInputDuration(choice);
       return result.ok;
     },
-    [canEdit, doc, keepMeasure, commit],
+    [canEdit, doc, commit],
   );
 
   const applySymbol = useCallback(
@@ -550,6 +651,8 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
       } else if (inputMode && !mod && !e.altKey && isLetterKey(e.key) && selection.size > 0) {
         e.preventDefault();
         enterLetter(e.key);
+      } else if (e.key === 'Escape' && lyricMode) {
+        setLyricMode(false);
       } else if (e.key === 'Escape' && inputMode) {
         setInputMode(false);
       } else if (e.key === 'Escape' && selection.size > 0) {
@@ -565,6 +668,9 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [
+    lyricMode,
+    setLyricMode,
+    setInputMode,
     canEdit,
     blocked,
     conflict,
@@ -603,10 +709,17 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     clearSelection,
     applyPitch,
     applySymbol,
-    keepMeasure,
-    setKeepMeasure,
     inputMode,
     setInputMode,
+    lyricMode,
+    setLyricMode,
+    lyricVerse,
+    setLyricVerse,
+    enterLyric,
+    moveLyric,
+    pasteLyricsText,
+    editHeader,
+    editTempo,
     inputDuration,
     chooseDuration,
     toggleDot,

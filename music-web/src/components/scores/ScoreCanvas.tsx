@@ -16,7 +16,13 @@ import { DURATION_DRAG_TYPE, ledgerLines, locateSpot, solfegeName, spotTarget } 
 import type { StaffSpot } from '../../editor/staffHit';
 import { ZOOM_MAX, ZOOM_MIN, clampZoom } from '../../utils/viewer';
 import type { ViewMode } from '../../utils/viewer';
+import { applyHeaderStyle, readHeader } from '../../editor/header';
+import type { HeaderField, HeaderState, TextStyle } from '../../editor/header';
+import { readTempo } from '../../editor/tempo';
+import type { TempoInfo } from '../../editor/tempo';
 import NoteInsertPopover from './NoteInsertPopover';
+import TextEditPopover from './TextEditPopover';
+import type { TextKind } from './TextEditPopover';
 import '../../editor/editor.css';
 
 interface Props {
@@ -51,6 +57,10 @@ interface Props {
   inputMode?: boolean;
   /** Trường độ đang chọn, dùng làm mặc định cho khung thêm nốt. */
   inputDuration?: DurationChoice;
+  /** Sửa tiêu đề / tác giả: chữ trên đầu bản nhạc trở thành bấm để sửa. */
+  onEditHeader?: (field: HeaderField, text: string, style: TextStyle) => boolean;
+  /** Sửa chỉ số nhịp (tempo) hiện ở đầu bản nhạc. */
+  onEditTempo?: (info: TempoInfo) => boolean;
   /** Xác nhận ô nhịp sai độ dài là đúng (hiện dấu ✓ khi rê chuột vào mép trên viền đỏ). */
   onConfirmMeasure?: (measureIndex: number) => void;
   /** Thêm nốt tại vị trí trên khuông (bấm hoặc kéo-thả); trả về true nếu thêm được. Có prop này thì canvas nhận kéo-thả. */
@@ -75,6 +85,50 @@ const DRAG_THRESHOLD = 5;
 /** Khoảng đệm quanh các nốt của ô nhịp sai khi vẽ viền (px). */
 const ISSUE_PAD_X = 10;
 const ISSUE_PAD_Y = 22;
+
+const TEXT_HOT_CLASS = 'ed-text-hot';
+
+/**
+ * Phủ vùng bấm lên các chữ đầu bản nhạc (tiêu đề, tác giả, tempo) để mở khung sửa. Tìm chữ trong SVG theo nội dung
+ * đã biết từ MusicXML nên không phụ thuộc cấu trúc bên trong OSMD.
+ */
+const drawTextHotspots = (
+  host: HTMLElement,
+  doc: ScoreDocument,
+  onOpen: (kind: TextKind, rect: DOMRect) => void,
+): void => {
+  host.querySelectorAll(`.${TEXT_HOT_CLASS}`).forEach((el) => el.remove());
+  const header = readHeader(doc);
+  const tempo = readTempo(doc);
+  const origin = host.getBoundingClientRect();
+  const texts = Array.from(host.querySelectorAll('svg text'));
+  const used = new Set<Element>();
+  const add = (kind: TextKind, match: (text: string) => boolean, padLeft = 0) => {
+    const el = texts.find((t) => !used.has(t) && match((t.textContent ?? '').trim()));
+    if (!el) return;
+    used.add(el);
+    const rect = el.getBoundingClientRect();
+    const div = document.createElement('div');
+    div.className = TEXT_HOT_CLASS;
+    div.title = 'Bấm để sửa';
+    div.style.left = `${rect.left - origin.left - 6 - padLeft}px`;
+    div.style.top = `${rect.top - origin.top - 4}px`;
+    div.style.width = `${rect.width + 12 + padLeft}px`;
+    div.style.height = `${rect.height + 8}px`;
+    div.addEventListener('pointerdown', (e) => e.stopPropagation());
+    div.addEventListener('click', (e) => {
+      e.stopPropagation();
+      onOpen(kind, div.getBoundingClientRect());
+    });
+    host.appendChild(div);
+  };
+  if (header.title) add('title', (t) => t === header.title);
+  if (header.composer) add('composer', (t) => t === header.composer);
+  if (tempo) {
+    add('tempo', (t) => /^=\s*[\d.]+/.test(t), 36); // chừa chỗ cho ký hiệu nốt bên trái dấu "="
+    if (tempo.words) add('tempo', (t) => t === tempo.words);
+  }
+};
 
 /** Vẽ viền đỏ quanh các ô nhịp sai độ dài, tính từ vùng chiếm của các nốt đã gắn id trong ô đó. */
 const drawIssueBoxes = (
@@ -181,6 +235,8 @@ export default function ScoreCanvas({
   inputDuration,
   onInsertNote,
   onConfirmMeasure,
+  onEditHeader,
+  onEditTempo,
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const hostRef = useRef<HTMLDivElement>(null);
@@ -200,6 +256,30 @@ export default function ScoreCanvas({
   const wantedKey = loadId > 0 ? `${loadId}|${zoom}|${mode}` : '';
   const busy = wantedKey === '' || drawnKey !== wantedKey;
 
+  const [textEdit, setTextEdit] = useState<{
+    kind: TextKind;
+    left: number;
+    top: number;
+    revision: number;
+    header: HeaderState;
+    tempo: TempoInfo | null;
+  } | null>(null);
+  /** Mở khung sửa chữ đầu bản nhạc ngay dưới vùng chữ được bấm. */
+  const openText = onEditHeader
+    ? (kind: TextKind, rect: DOMRect) => {
+        const current = doc;
+        if (!current) return;
+        setTextEdit({
+          kind,
+          left: Math.max(8, Math.min(rect.left, window.innerWidth - 336)),
+          top: Math.max(8, Math.min(rect.bottom + 8, window.innerHeight - 300)),
+          revision,
+          header: readHeader(current),
+          tempo: readTempo(current),
+        });
+      }
+    : undefined;
+
   // Giữ các giá trị mới nhất cho các callback sự kiện mà không phải đăng ký lại
   const latest = useRef({
     zoom,
@@ -213,6 +293,7 @@ export default function ScoreCanvas({
     selected,
     issueMeasures,
     onConfirmMeasure,
+    openText,
   });
   useEffect(() => {
     latest.current = {
@@ -227,6 +308,7 @@ export default function ScoreCanvas({
       selected,
       issueMeasures,
       onConfirmMeasure,
+      openText,
     };
   });
 
@@ -259,6 +341,7 @@ export default function ScoreCanvas({
       bindNoteIds(osmd, current, host);
       applySelection(host, latest.current.selected);
       drawIssueBoxes(host, latest.current.issueMeasures, (i) => latest.current.onConfirmMeasure?.(i));
+      if (latest.current.openText) drawTextHotspots(host, current, (k, r) => latest.current.openText?.(k, r));
     } catch {
       // chỉ mất khả năng chọn nốt, bản nhạc vẫn xem được
     }
@@ -324,6 +407,7 @@ export default function ScoreCanvas({
           pageBackgroundColor: '#ffffff',
         });
         osmd.zoom = zoom / 100;
+        if (latest.current.doc) applyHeaderStyle(osmd, readHeader(latest.current.doc));
         osmd.render();
         decorate(osmd);
         // Vẽ lại làm khung co lại tạm thời nên trả về vị trí cuộn cũ (đổi zoom thì giữ tương đối)
@@ -368,6 +452,7 @@ export default function ScoreCanvas({
       try {
         await osmd.load(doc.serialize());
         if (cancelled) return;
+        applyHeaderStyle(osmd, readHeader(doc));
         osmd.render();
         loadedRevision.current = revision;
         decorate(osmd);
@@ -648,6 +733,7 @@ export default function ScoreCanvas({
     onSelectNotes?.(ids, e.shiftKey);
   };
 
+  const activeText = textEdit && textEdit.revision === revision ? textEdit : null;
   const activePopover = popover && popover.revision === revision ? popover : null;
   const shownGhost = activePopover ? activePopover.spot : ghost;
 
@@ -678,6 +764,19 @@ export default function ScoreCanvas({
         </div>
       )}
       <div ref={hostRef} className="sv-canvas__host" />
+      {activeText && (
+        <TextEditPopover
+          key={`${activeText.kind}-${activeText.revision}`}
+          kind={activeText.kind}
+          left={activeText.left}
+          top={activeText.top}
+          header={activeText.header}
+          tempo={activeText.tempo}
+          onApplyHeader={(field, text, style) => onEditHeader?.(field, text, style) ?? false}
+          onApplyTempo={(info) => onEditTempo?.(info) ?? false}
+          onClose={() => setTextEdit(null)}
+        />
+      )}
       {shownGhost && <NoteGhost spot={shownGhost} />}
       {activePopover && (
         <NoteInsertPopover

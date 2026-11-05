@@ -321,15 +321,9 @@ const DURATION_LABEL_PREFIX = 'Đổi trường độ';
 
 /**
  * Đổi trường độ các nốt (hoặc dấu lặng) đã chọn. Có bước nào không làm được thì không đổi gì.
- * @param keepMeasure false (mặc định): đổi thẳng đúng trường độ đã chọn, độ dài ô nhịp thay đổi theo (ô sai phách được
- *   viền đỏ để sửa tiếp); true: giữ nguyên độ dài ô nhịp bằng cách lấp dấu lặng hoặc ghi đè nốt phía sau
+ * Đổi thẳng đúng trường độ đã chọn: độ dài ô nhịp thay đổi theo (ô sai phách được viền đỏ để sửa tiếp).
  */
-export function setDuration(
-  doc: ScoreDocument,
-  ids: readonly string[],
-  choice: DurationChoice,
-  keepMeasure = false,
-): EditResult {
+export function setDuration(doc: ScoreDocument, ids: readonly string[], choice: DurationChoice): EditResult {
   const heads = new Map<string, NoteInfo>();
   for (const id of ids) {
     const info = doc.getInfo(id);
@@ -354,7 +348,7 @@ export function setDuration(
   const label = `${DURATION_LABEL_PREFIX}: ${DURATION_LABELS[choice.type]}${choice.dotted ? ' chấm dôi' : ''}`;
   const command = commitEdit(doc, label, touched, [...ids], () => {
     for (const h of ordered) {
-      const plan = planDuration(h.element, choice, keepMeasure);
+      const plan = planDuration(h.element, choice, false);
       if ('error' in plan) {
         if (plan.error === 'unchanged') {
           // Dấu lặng đã đúng trường độ này: bấm lại nghĩa là muốn biến nó thành nốt
@@ -534,10 +528,8 @@ const makePitched = (
 
 /**
  * Thêm một nốt vào bè tại `target` (người dùng bấm hoặc kéo-thả lên khuông).
- * - Bấm vào dấu lặng: dấu lặng trở thành nốt; nốt ngắn hơn thì phần dư thành dấu lặng, dài hơn thì đổi thẳng
- *   (hoặc ghi đè nốt sau nếu `keepMeasure`).
- * - Bấm vào chỗ trống: chèn nốt mới, các nốt sau lùi lại; ô nhịp thừa phách sẽ được viền đỏ. Với `keepMeasure`
- *   thì ghi đè các nốt/dấu lặng phía sau cho vừa chỗ, ô nhịp giữ nguyên độ dài.
+ * - Bấm vào dấu lặng: dấu lặng trở thành nốt; nốt ngắn hơn thì phần dư thành dấu lặng, dài hơn thì đổi thẳng.
+ * - Bấm vào chỗ trống: chèn nốt mới, các nốt sau lùi lại; ô nhịp thừa phách sẽ được viền đỏ.
  * Từ chối khi dính dấu nối, chùm ba hoặc bè có <forward>. Khi thất bại DOM không thay đổi.
  */
 export function insertNote(
@@ -545,7 +537,6 @@ export function insertNote(
   target: InsertTarget,
   choice: DurationChoice,
   accidental: AccidentalChoice = 'auto',
-  keepMeasure = false,
 ): EditResult {
   const measure = doc.getMeasure(target.partIndex, target.measureIndex);
   if (!measure) return { ok: false, reason: 'empty' };
@@ -572,7 +563,7 @@ export function insertNote(
     const entry = entries[target.restEntry];
     if (!entry || !entry.isRest || entry.members.length !== 1) return { ok: false, reason: 'unsupported' };
     const head = entry.members[0];
-    const plan = planDuration(head, choice, keepMeasure || length < entry.duration);
+    const plan = planDuration(head, choice, length < entry.duration);
     if ('error' in plan && plan.error !== 'unchanged') return { ok: false, reason: plan.error };
     const command = commitEdit(doc, label, touched, [], () => {
       if ('run' in plan) plan.run();
@@ -596,27 +587,6 @@ export function insertNote(
     return { ok: false, reason: 'tie' };
   }
 
-  // Giữ ô đủ phách: ghi đè các mục phía sau cho vừa chỗ nốt mới
-  const consumed: Entry[] = [];
-  let leftover = 0;
-  if (keepMeasure) {
-    let remaining = length;
-    for (let j = at; j < entries.length && remaining > 0; j++) {
-      const e = entries[j];
-      if (tupleOf(e)) return { ok: false, reason: 'tuplet' };
-      if (e.members.some((m) => hasTie(m, 'start') || hasTie(m, 'stop'))) return { ok: false, reason: 'tie' };
-      consumed.push(e);
-      if (e.duration <= remaining) remaining -= e.duration;
-      else {
-        leftover = e.duration - remaining;
-        remaining = 0;
-      }
-    }
-    if (remaining > 0) return { ok: false, reason: 'noSpace' };
-  }
-  const leftoverRests = leftover > 0 ? splitRests(leftover, divisions) : [];
-  if (!leftoverRests) return { ok: false, reason: 'divisions' };
-
   const like = (prev ?? next).members[0];
   const staffTag = hasChild(like, 'staff') || target.staff > 1 ? target.staff : null;
   const created = makePitched(measure.ownerDocument, pitch, length, choice, target.voice, staffTag);
@@ -624,13 +594,6 @@ export function insertNote(
     stripBeams(entries);
     if (next) next.members[0].before(created);
     else prev.members[prev.members.length - 1].after(created);
-    consumed.forEach((e) => e.members.forEach((m) => m.remove()));
-    let anchor: Element = created;
-    for (const r of leftoverRests) {
-      const rest = makeRest(like, r.d, r.type, r.dotted);
-      anchor.after(rest);
-      anchor = rest;
-    }
   });
   command.selectAfter = idsOfEntry(doc, created);
   command.changedIds = command.selectAfter;

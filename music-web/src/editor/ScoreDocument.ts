@@ -215,6 +215,33 @@ export class ScoreDocument {
     this.reindex();
   }
 
+  /** Phần tử gốc <score-partwise> (dùng cho phần đầu file: tiêu đề, tác giả...). */
+  get root(): Element {
+    return this.doc.documentElement;
+  }
+
+  /** Bản sao các phần tử đứng trước <part-list> (work, movement-title, identification, defaults, credit). */
+  headSnapshot(): Element[] {
+    return this.headNodes().map((e) => e.cloneNode(true) as Element);
+  }
+
+  /** Thay các phần tử đầu file bằng bản đã chụp (hoàn tác / làm lại việc sửa tiêu đề...). */
+  restoreHead(elements: readonly Element[]): void {
+    const root = this.doc.documentElement;
+    const anchor = Array.from(root.children).find((c) => c.tagName === 'part-list') ?? null;
+    this.headNodes().forEach((e) => e.remove());
+    elements.forEach((e) => root.insertBefore(e.cloneNode(true), anchor));
+  }
+
+  private headNodes(): Element[] {
+    const out: Element[] = [];
+    for (const child of Array.from(this.doc.documentElement.children)) {
+      if (child.tagName === 'part-list' || child.tagName === 'part') break;
+      out.push(child);
+    }
+    return out;
+  }
+
   /** Xuất MusicXML. Bỏ DOCTYPE vì BE từ chối mọi DOCTYPE (chống XXE). */
   serialize(): string {
     const body = new XMLSerializer().serializeToString(this.doc.documentElement);

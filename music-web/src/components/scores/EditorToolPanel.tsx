@@ -9,6 +9,7 @@ import {
   ToolEighth,
   ToolFlat,
   ToolHalf,
+  ToolLyric,
   ToolNatural,
   ToolSlur,
   ToolTie,
@@ -42,9 +43,10 @@ interface Props {
   inputMode: boolean;
   onInputModeChange: (enabled: boolean) => void;
   inputDuration: DurationChoice;
+  /** Chế độ nhập lời bài hát. */
+  lyricMode: boolean;
+  onLyricModeChange: (enabled: boolean) => void;
   /** "Giữ ô nhịp đủ phách": đổi trường độ nhưng lấp dấu lặng / ghi đè nốt sau để ô không đổi độ dài. */
-  keepMeasure: boolean;
-  onKeepMeasureChange: (enabled: boolean) => void;
   onDuration: (type: DurationType) => void;
   onDot: () => void;
   /** "Nghe khi sửa": phát âm xem trước mỗi khi đổi cao độ. */
@@ -120,8 +122,8 @@ export default function EditorToolPanel({
   inputMode,
   onInputModeChange,
   inputDuration,
-  keepMeasure,
-  onKeepMeasureChange,
+  lyricMode,
+  onLyricModeChange,
   onDuration,
   onDot,
   previewTone,
@@ -151,8 +153,8 @@ export default function EditorToolPanel({
           <div className="sv-tools__title">Chế độ</div>
           <div className="sv-tools__row">
             <button
-              className={`sv-tool${inputMode ? '' : ' is-active'}`}
-              aria-pressed={!inputMode}
+              className={`sv-tool${inputMode || lyricMode ? '' : ' is-active'}`}
+              aria-pressed={!inputMode && !lyricMode}
               onClick={() => onInputModeChange(false)}
               title="Chọn nốt"
               aria-label="Chọn"
@@ -173,6 +175,18 @@ export default function EditorToolPanel({
                 <ToolPencil />
               </span>
               <span className="sv-tool__label">Nhập nốt</span>
+            </button>
+            <button
+              className={`sv-tool${lyricMode ? ' is-active' : ''}`}
+              aria-pressed={lyricMode}
+              onClick={() => onLyricModeChange(true)}
+              title="Nhập lời bài hát: chọn nốt rồi gõ âm tiết, Space sang nốt kế (Esc để thoát)"
+              aria-label="Nhập lời"
+            >
+              <span className="sv-tool__icon" aria-hidden="true">
+                <ToolLyric />
+              </span>
+              <span className="sv-tool__label">Lời</span>
             </button>
           </div>
         </div>
@@ -279,13 +293,6 @@ export default function EditorToolPanel({
               </button>
             ))}
           </div>
-          <label
-            className="sv-tools__check"
-            title="Bật: nốt ngắn đi thì lấp dấu lặng, nốt dài ra thì ghi đè nốt sau, ô nhịp giữ nguyên độ dài. Tắt: đổi đúng trường độ đã chọn."
-          >
-            <input type="checkbox" checked={keepMeasure} onChange={(e) => onKeepMeasureChange(e.target.checked)} />
-            Giữ ô nhịp đủ phách
-          </label>
         </div>
       </aside>
     </>

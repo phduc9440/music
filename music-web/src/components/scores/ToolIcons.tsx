@@ -91,6 +91,14 @@ export const ToolSlur = () => (
     <circle cx="19" cy="19" r="1.5" fill="currentColor" stroke="none" />
   </Svg>
 );
+export const ToolLyric = () => (
+  <Svg>
+    <path d="M4 7h16M4 12h10" />
+    <path d="M8 19v-4.500M8 16.500l8-1.500M16 15v3.500" />
+    <circle cx="7" cy="19" r="1.600" fill="currentColor" stroke="none" />
+    <circle cx="15" cy="18.500" r="1.600" fill="currentColor" stroke="none" />
+  </Svg>
+);
 export const ToolDot = () => (
   <Svg>
     <circle cx="12" cy="12" r="2.6" fill="currentColor" />

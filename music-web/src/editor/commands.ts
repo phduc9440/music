@@ -23,6 +23,8 @@ export interface EditCommand {
   changedIds: string[];
   /** Vùng chọn nên đặt sau lệnh (khi id đổi, ví dụ sau khi chèn dấu lặng); không có thì giữ vùng chọn cũ. */
   selectAfter?: string[];
+  /** Phần đầu file (tiêu đề, tác giả...) trước và sau khi sửa; chỉ có ở lệnh sửa các chữ đầu bản nhạc. */
+  head?: { before: Element[]; after: Element[] };
 }
 
 /** Lý do một thao tác không thực hiện được. */
@@ -38,7 +40,9 @@ export type EditFailure =
   | 'divisions'
   | 'unsupported'
   | 'tieTarget'
-  | 'slurTarget';
+  | 'slurTarget'
+  | 'lyricTarget'
+  | 'badValue';
 
 export type EditResult = { ok: true; command: EditCommand } | { ok: false; reason: EditFailure };
 
@@ -66,6 +70,8 @@ export const EDIT_FAILURE_MESSAGES: Record<EditFailure, string> = {
   unsupported: 'Cấu trúc ô nhịp này chưa hỗ trợ đổi trường độ',
   tieTarget: 'Dấu nối cần hai nốt liền nhau cùng cao độ trong cùng bè: hãy chọn nốt trước (hoặc cả hai nốt)',
   slurTarget: 'Dấu luyến cần chọn từ hai nốt trở lên trong cùng một khuông',
+  lyricTarget: 'Hãy chọn một nốt (không phải dấu lặng hay nốt nối tiếp) để nhập lời',
+  badValue: 'Giá trị không hợp lệ',
 };
 
 export const childOf = (parent: Element, tag: string): Element | undefined =>

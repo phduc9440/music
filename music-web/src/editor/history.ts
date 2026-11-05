@@ -79,6 +79,7 @@ export class History {
     for (const s of command.snapshots) {
       doc.replaceMeasure(s.partIndex, s.measureIndex, s.before.cloneNode(true) as Element, false);
     }
+    if (command.head) doc.restoreHead(command.head.before);
     doc.reindex();
     this.cursor -= 1;
     return command;
@@ -91,6 +92,7 @@ export class History {
     for (const s of command.snapshots) {
       doc.replaceMeasure(s.partIndex, s.measureIndex, s.after.cloneNode(true) as Element, false);
     }
+    if (command.head) doc.restoreHead(command.head.after);
     doc.reindex();
     this.cursor += 1;
     return command;

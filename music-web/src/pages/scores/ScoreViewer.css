@@ -791,3 +791,51 @@
     flex-wrap: wrap;
   }
 }
+
+/* Thanh nhập lời bài hát */
+.sv-lyricbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-top: 1px solid var(--sc-line);
+  background: #fff;
+}
+.sv-lyricbar__verse {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--sc-muted);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+.sv-lyricbar__input {
+  flex: 1;
+  min-width: 0;
+  height: 38px;
+  padding: 0 0.75rem;
+  border: 1.5px solid var(--sc-accent, #d9480f);
+  border-radius: 10px;
+  font: inherit;
+}
+.sv-lyricbar__input:disabled {
+  border-color: var(--sc-line);
+  background: #f8fafc;
+}
+.sv-lyricbar__paste {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.6rem;
+  border: 1px solid var(--sc-line);
+  border-radius: 10px;
+  font: inherit;
+}
+@media (max-width: 767px) {
+  .sv-lyricbar {
+    flex-wrap: wrap;
+  }
+  .sv-lyricbar__input {
+    flex-basis: 100%;
+    order: 5;
+  }
+}
