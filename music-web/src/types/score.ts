@@ -77,6 +77,17 @@ export interface ScoreDetail extends ScoreSummary {
   latestTasks: AiTaskInfo[];
 }
 
+/** Kết quả lưu MusicXML từ trình chỉnh sửa (đặc tả 3.6). */
+export interface ScoreSaveResult {
+  /** Phiên bản MusicXML mới. */
+  version: number;
+  measureCount: number;
+  keySignature: string;
+  timeSignature: string;
+  tempoBpm: number;
+  updatedAt: string;
+}
+
 export interface ScoreListParams {
   page?: number;
   size?: number;

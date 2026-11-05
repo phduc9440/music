@@ -136,6 +136,62 @@ export class ScoreDocument {
     return before + staff - 1;
   }
 
+  /** Số part (phần nhạc). */
+  get partCount(): number {
+    return this.parts().length;
+  }
+
+  /** Các thẻ <measure> của một part (mảng rỗng nếu part không tồn tại). */
+  getMeasures(partIndex: number): Element[] {
+    return this.measuresOf(partIndex);
+  }
+
+  /** Divisions có hiệu lực ở một ô nhịp của một part cụ thể. */
+  divisionsAtPart(partIndex: number, measureIndex: number): number {
+    return this.divisionsInPart(partIndex, measureIndex);
+  }
+
+  /** Chỉ số nhịp (số phách, loại phách) có hiệu lực ở ô nhịp của part đầu tiên; mặc định 4/4. `free`: nhịp tự do. */
+  timeAt(measureIndex: number): { beats: number; beatType: number; free: boolean } {
+    const measures = this.measuresOf(0);
+    let beats = 4;
+    let beatType = 4;
+    let free = false;
+    for (let i = 0; i <= measureIndex && i < measures.length; i++) {
+      for (const attributes of Array.from(measures[i].children).filter((c) => c.tagName === 'attributes')) {
+        const time = Array.from(attributes.children).find((c) => c.tagName === 'time');
+        if (time && Array.from(time.children).some((c) => c.tagName === 'senza-misura')) {
+          free = true;
+          continue;
+        }
+        const b = time ? childNumber(time, 'beats') : null;
+        const t = time ? childNumber(time, 'beat-type') : null;
+        if (b !== null && t !== null && b > 0 && t > 0) {
+          beats = b;
+          beatType = t;
+          free = false;
+        }
+      }
+    }
+    return { beats, beatType, free };
+  }
+
+  /** Thẻ <measure> theo vị trí; undefined nếu không có. */
+  getMeasure(partIndex: number, measureIndex: number): Element | undefined {
+    return this.measuresOf(partIndex)[measureIndex];
+  }
+
+  /**
+   * Thay một ô nhịp bằng bản sao khác (dùng cho hoàn tác / làm lại).
+   * @param reindex false nếu người gọi sẽ gọi {@link reindex} sau khi thay xong nhiều ô
+   */
+  replaceMeasure(partIndex: number, measureIndex: number, replacement: Element, reindex = true): void {
+    const current = this.getMeasure(partIndex, measureIndex);
+    if (!current) return;
+    current.replaceWith(replacement);
+    if (reindex) this.reindex();
+  }
+
   /** Dựng lại chỉ mục id sau khi DOM thay đổi (id phụ thuộc vị trí nên được tính lại). */
   reindex(): void {
     this.noteMap = new Map();
@@ -152,6 +208,61 @@ export class ScoreDocument {
       });
       this.partStaves.push(staves);
     });
+  }
+
+  /**
+   * Thay toàn bộ nội dung bằng một chuỗi MusicXML khác (khôi phục bản nháp). Id nốt được tính lại.
+   * @throws Error nếu XML không hợp lệ; khi đó tài liệu không đổi
+   */
+  restore(xml: string): void {
+    const parsed = ScoreDocument.parse(xml);
+    const imported = this.doc.importNode(parsed.doc.documentElement, true);
+    this.doc.replaceChild(imported, this.doc.documentElement);
+    this.reindex();
+  }
+
+  /** Bản sao <part-list> và toàn bộ các <part> (dùng cho lệnh làm đổi cấu trúc: thêm/xóa ô nhịp, khuông, phần nhạc). */
+  partsSnapshot(): Element[] {
+    const list = Array.from(this.doc.documentElement.children).filter((c) => c.tagName === 'part-list');
+    return [...list, ...this.parts()].map((p) => p.cloneNode(true) as Element);
+  }
+
+  /** Thay <part-list> và các <part> bằng bản đã chụp (hoàn tác / làm lại). */
+  restoreParts(snapshot: readonly Element[]): void {
+    const root = this.doc.documentElement;
+    const list = snapshot.find((e) => e.tagName === 'part-list');
+    const current = Array.from(root.children).find((c) => c.tagName === 'part-list');
+    if (list && current) current.replaceWith(list.cloneNode(true));
+    this.parts().forEach((p) => p.remove());
+    snapshot.filter((e) => e.tagName === 'part').forEach((p) => root.appendChild(p.cloneNode(true)));
+    this.reindex();
+  }
+
+  /** Phần tử gốc <score-partwise> (dùng cho phần đầu file: tiêu đề, tác giả...). */
+  get root(): Element {
+    return this.doc.documentElement;
+  }
+
+  /** Bản sao các phần tử đứng trước <part-list> (work, movement-title, identification, defaults, credit). */
+  headSnapshot(): Element[] {
+    return this.headNodes().map((e) => e.cloneNode(true) as Element);
+  }
+
+  /** Thay các phần tử đầu file bằng bản đã chụp (hoàn tác / làm lại việc sửa tiêu đề...). */
+  restoreHead(elements: readonly Element[]): void {
+    const root = this.doc.documentElement;
+    const anchor = Array.from(root.children).find((c) => c.tagName === 'part-list') ?? null;
+    this.headNodes().forEach((e) => e.remove());
+    elements.forEach((e) => root.insertBefore(e.cloneNode(true), anchor));
+  }
+
+  private headNodes(): Element[] {
+    const out: Element[] = [];
+    for (const child of Array.from(this.doc.documentElement.children)) {
+      if (child.tagName === 'part-list' || child.tagName === 'part') break;
+      out.push(child);
+    }
+    return out;
   }
 
   /** Xuất MusicXML. Bỏ DOCTYPE vì BE từ chối mọi DOCTYPE (chống XXE). */

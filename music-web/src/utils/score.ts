@@ -146,6 +146,28 @@ export const getUploadErrorMessage = (err: unknown): string => {
   const code = getErrorCode(err);
   return (code && UPLOAD_ERROR_MESSAGES[code]) || getErrorMessage(err, 'Tải lên thất bại, vui lòng thử lại');
 };
+/** Câu thông báo tiếng Việt theo mã lỗi BE khi lưu MusicXML từ trình chỉnh sửa. */
+const SAVE_ERROR_MESSAGES: Record<number, string> = {
+  1002: 'Bạn không có quyền sửa bản nhạc này',
+  2001: 'Bản nhạc không còn tồn tại',
+  2005: 'Bản nhạc quá lớn để lưu (tối đa 5MB), hãy chia nhỏ hoặc xóa bớt',
+  2013: 'Nội dung bản nhạc không hợp lệ. Hãy tải lại trang; bản nháp của bạn vẫn được giữ',
+  2201: 'Bản nhạc đang được nhận diện lại, hãy đợi xong rồi lưu',
+};
+
+/** Thông báo cho lỗi lưu (không gồm 2014, vì xung đột phiên bản có hộp thoại riêng). */
+export const getSaveErrorMessage = (err: unknown): string => {
+  const code = getErrorCode(err);
+  return (code && SAVE_ERROR_MESSAGES[code]) || getErrorMessage(err, 'Lưu thất bại, vui lòng thử lại');
+};
+
+/** Phiên bản mới nhất BE trả kèm lỗi 2014 SCORE_VERSION_CONFLICT; undefined nếu không phải lỗi này. */
+export const getConflictVersion = (err: unknown): number | undefined => {
+  if (getErrorCode(err) !== 2014) return undefined;
+  const result = (err as { response?: { data?: { result?: { currentVersion?: number } } } }).response?.data?.result;
+  return typeof result?.currentVersion === 'number' ? result.currentVersion : 0;
+};
+
 export const UPLOAD_EXTENSIONS = ['pdf', 'png', 'jpg', 'jpeg'];
 
 export const getExtension = (name: string): string => name.split('.').pop()?.toLowerCase() ?? '';
