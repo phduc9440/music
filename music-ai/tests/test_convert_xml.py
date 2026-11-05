@@ -225,3 +225,50 @@ def test_midi_file_is_written_atomically(tmp_path):
     assert out.read_bytes()[:4] == b"MThd" and stats.notes == 7
     assert not (tmp_path / "midi" / "v1.mid.tmp").exists()
     assert stats.seconds == pytest.approx(6 * 60 / 90, abs=0.01)
+
+
+# ------------------------------------------------------------------ giọng hát + piano
+
+
+def test_voice_part_is_kept_separate_above_two_staff_piano():
+    from tests.xml_samples import voice_and_piano
+
+    result = normalize_musicxml(voice_and_piano(), tempo_bpm=None)
+    root = ET.fromstring(result.xml)
+    assert result.parts == ["Giọng hát", "Piano"]
+    assert result.staff_count == 3 and result.measure_count == 2 and result.tempo_bpm == 80
+    assert [p.get("id") for p in root.findall("part")] == ["P1", "P2"]
+    score_parts = root.find("part-list").findall("score-part")
+    assert [sp.findtext("part-name") for sp in score_parts] == ["Giọng hát", "Piano"]
+    assert [sp.findtext(".//midi-program") for sp in score_parts] == ["53", "1"]
+    assert [sp.findtext(".//midi-channel") for sp in score_parts] == ["1", "2"]
+
+    voice, piano = root.findall("part")
+    assert voice.find("measure/attributes/staves") is None
+    assert [n.findtext("pitch/step") for n in voice.iter("note")][:3] == ["D", "E", "F"]
+    assert piano.findtext("measure/attributes/staves") == "2"
+    clefs = piano.find("measure/attributes").findall("clef")
+    assert [(c.get("number"), c.findtext("sign")) for c in clefs] == [("1", "G"), ("2", "F")]
+    # mọi part cùng divisions sau chuẩn hóa, ô nhịp đánh số từ 1
+    divisions = {d.text for d in root.iter("divisions")}
+    assert len(divisions) == 1
+    assert [m.get("number") for m in voice.findall("measure")] == ["1", "2"]
+    assert normalize_musicxml(result.xml).xml == result.xml  # chạy lại không đổi
+
+
+def test_midi_has_one_track_per_staff_across_parts_with_part_programs():
+    from tests.xml_samples import voice_and_piano
+
+    normalized = normalize_musicxml(voice_and_piano(), tempo_bpm=None).xml
+    data, stats = musicxml_to_midi_bytes(normalized, 80)
+    assert stats.tracks == 3
+    chunks = data.split(b"MTrk")[1:]
+    programs = [chunk[chunk.index(bytes([0xC0 | i])) + 1] for i, chunk in enumerate(chunks)]
+    assert programs == [52, 0, 0]  # giọng hát Choir Aahs, hai tay piano Acoustic Grand
+    # track 0 là giọng hát (D5 = 74), track 2 là tay trái (G2 = 43)
+    assert bytes([0x90, 74]) in chunks[0] and bytes([0x92, 43]) in chunks[2]
+
+
+def test_part_names_that_are_not_voices_keep_the_single_piano_part():
+    result = normalize_musicxml(piano_grand_staff(), tempo_bpm=None)  # tên part "Music0"/"Music1"
+    assert result.parts == ["Piano"] and result.staff_count == 2

@@ -91,3 +91,18 @@ def piano_grand_staff(*, bass_first: bool = True, treble_divisions: int = 2, bas
         ],
     )
     return score(bass, treble) if bass_first else score(treble, bass)
+
+
+def voice_and_piano() -> bytes:
+    """Như music21 xuất từ kern có ``*Ivox``/``*Ipiano``: 3 part (giọng, tay phải, tay trái), tên part Voice/Piano."""
+    voice = part("P3", 1, ("G", 2), [[note("D", 5, 1), note("E", 5, 1), note("F", 5, 1, alter=1)], [note("G", 5, 3)]])
+    treble = part("P2", 2, ("G", 2), [[note("G", 4, 2), note("A", 4, 2), note("B", 4, 2)], [note("D", 5, 6)]], tempo=80)
+    bass = part("P1", 4, ("F", 4), [[note("G", 2, 12)], [note("D", 3, 12)]])
+    ids_names = (("P3", "Voice"), ("P2", "Piano"), ("P1", "Piano"))
+    part_list = "".join(f'<score-part id="{i}"><part-name>{n}</part-name></score-part>' for i, n in ids_names)
+    return (
+        f'{HEADER}<score-partwise version="4.0"><part-list>{part_list}</part-list>'
+        # thứ tự part cố ý đặt piano trước để chắc chắn chuẩn hóa không dựa vào thứ tự của music21
+        + bass + voice + treble
+        + "</score-partwise>"
+    ).encode("utf-8")
