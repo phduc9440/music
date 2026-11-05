@@ -10,7 +10,8 @@ PHOTO = pp.PreprocessOptions(preprocess=True, binarize=True, source_type="PHOTO"
 
 
 def test_output_has_transcoda_size_and_is_gray_uint8():
-    result = pp.process_page(make_score_page(), PHOTO, 1)
+    # Trang có bóng đổ và nhiễu như ảnh chụp: không phải ảnh số sạch nên vẫn được nhị phân hóa
+    result = pp.process_page(make_score_page(shade=True, noise=6), PHOTO, 1)
     assert not result.skipped
     assert result.image.shape == (1485, 1050)  # cao 1485 x rộng 1050
     assert result.image.dtype == np.uint8
@@ -141,3 +142,34 @@ def test_to_model_array_fits_other_sizes(tmp_path):
     path = tmp_path / "small.png"
     cv2.imwrite(str(path), np.zeros((700, 500), np.uint8))
     assert to_model_array(path).shape == (1, 3, 1485, 1050)
+
+
+def _screenshot_page():
+    """Trang sạch có dải xám đều màu ở mép trên như ảnh chụp màn hình điện thoại."""
+    page = make_score_page()
+    page[:12, :] = 127
+    return page
+
+
+def test_strip_edge_bands_removes_uniform_gray_band_only():
+    page = _screenshot_page()
+    stripped = pp.strip_edge_bands(page)
+    assert stripped.shape == (page.shape[0] - 12, page.shape[1])
+    # Trang bình thường (có dòng kẻ khuông, nền trắng) không bị cắt gì
+    clean_page = make_score_page()
+    assert pp.strip_edge_bands(clean_page).shape == clean_page.shape
+
+
+def test_process_page_strips_band_and_keeps_clean_source_unbinarized():
+    result = pp.process_page(_screenshot_page(), PHOTO, 1)
+    assert not result.skipped
+    assert result.meta.get("edgeBandsStripped") is True and result.meta.get("cleanSource") is True
+    assert result.meta["binarized"] is False
+    assert any("dải viền" in w for w in result.warnings)
+    # Không còn vạch đen sát mép trên
+    assert result.image[:5, :].min() == 255
+
+
+def test_is_clean_digital_rejects_shaded_photo():
+    assert pp.is_clean_digital(make_score_page())
+    assert not pp.is_clean_digital(make_score_page(shade=True, noise=6))

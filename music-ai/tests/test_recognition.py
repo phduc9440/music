@@ -110,7 +110,10 @@ def test_all_pages_empty_fails_recognition_empty(storage_root, java):
     assert not (storage_root / "scores/r3/kern/merged.krn").exists()
 
 
-def test_spine_mismatch_fails(storage_root, java):
+def test_spine_mismatch_fails(storage_root, java, monkeypatch):
+    # Mặc định ghép nới lỏng (tự vá số spine); test này kiểm tra chế độ nghiêm ngặt theo đúng đặc tả
+    monkeypatch.setenv("MERGE_LENIENT_SPINES", "false")
+    config.get_settings.cache_clear()
     job = setup_pages(storage_root, "r4")
     ragged = kern("**kern|**kern|**kern", "=1|=1|=1", "4c|4e|4g", "*^|*|*", "4c|4c|4e|4g")
     run(job, FakeRecognizer([PAGE_1, ragged]))

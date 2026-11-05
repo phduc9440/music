@@ -22,6 +22,22 @@ def test_clean_page_strips_header_and_terminator():
     assert all(not ln.startswith("**") and ln != f"*-{T}*-" for ln in page.body)
 
 
+def test_clean_page_drops_page_with_only_rests():
+    # Model không đọc được ảnh thường sinh một dãy dấu lặng dài: không có nốt nào thì bỏ trang
+    body = "".join(f"2r\n={i}\n" for i in range(1, 8))
+    page, warnings = clean(1, f"**kern\n*clefG2\n*M3/4\n{body}")
+    assert page is None
+    assert any("chỉ có dấu lặng" in w for w in warnings)
+
+
+def test_has_pitched_note():
+    assert merge.has_pitched_note("4c#")
+    assert merge.has_pitched_note(f"4r{T}4ee-")
+    assert merge.has_pitched_note("4c 4e")
+    assert not merge.has_pitched_note(f"4r{T}2r")
+    assert not merge.has_pitched_note("=1") and not merge.has_pitched_note("*clefG2") and not merge.has_pitched_note(".")
+
+
 def test_clean_page_handles_windows_newlines_bom_and_blank_lines():
     raw = "﻿" + PAGE_1.replace("\n", "\r\n") + "\r\n\r\n"
     page, _ = clean(1, raw)
@@ -66,7 +82,7 @@ def test_runaway_repetition_is_collapsed():
 
 
 def test_short_repeats_are_kept():
-    rows = ["**kern|**kern", "=1|=1"] + ["4r|4r"] * 10
+    rows = ["**kern|**kern", "=1|=1", "4c|4e"] + ["4r|4r"] * 10
     page, warnings = clean(1, kern(*rows), max_repeat=24)
     assert page.body.count(f"4r{T}4r") == 10 and warnings == []
 
