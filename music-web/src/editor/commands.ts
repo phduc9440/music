@@ -58,8 +58,8 @@ export const EDIT_FAILURE_MESSAGES: Record<EditFailure, string> = {
   unchanged: 'Nốt đã ở đúng trạng thái này rồi',
   empty: 'Hãy chọn ít nhất một nốt (không phải dấu lặng)',
   tuplet: 'Chưa hỗ trợ đổi trường độ của nốt trong nhóm nốt đặc biệt (chùm ba...)',
-  tie: 'Chưa hỗ trợ đổi trường độ của nốt có dấu nối',
-  noSpace: 'Phía sau chưa đủ chỗ trống trong ô nhịp. Hãy đổi nốt phía sau thành dấu lặng (hoặc xóa) rồi thử lại',
+  tie: 'Chưa hỗ trợ đổi trường độ khi có nốt dính dấu nối (nốt đang sửa hoặc nốt bị đè)',
+  noSpace: 'Không kéo dài được: nốt sẽ vượt quá cuối ô nhịp',
   divisions: 'Bản nhạc chia nhịp quá thô nên không đổi sang trường độ này được',
   unsupported: 'Cấu trúc ô nhịp này chưa hỗ trợ đổi trường độ',
 };

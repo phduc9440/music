@@ -217,7 +217,9 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
   const commit = useCallback(
     (result: EditResult, preview: boolean) => {
       if (!result.ok) {
-        flash(EDIT_FAILURE_MESSAGES[result.reason]);
+        const message = EDIT_FAILURE_MESSAGES[result.reason];
+        flash(message);
+        toast.warn(message, { toastId: `edit-${result.reason}` });
         return;
       }
       historyRef.current.push(result.command);

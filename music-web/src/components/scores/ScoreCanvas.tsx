@@ -460,12 +460,19 @@ export default function ScoreCanvas({
     } else {
       setBand(null);
     }
-    if (!g.moved) return; // bấm thường: để onClick xử lý
-    // Sau khi kéo trình duyệt vẫn bắn thêm sự kiện click, bỏ qua nó
+    // Khung đang giữ con trỏ (setPointerCapture) nên sự kiện click sau đó trỏ vào khung chứ không vào nốt:
+    // bấm thường (không kéo) phải xử lý chọn nốt ngay tại đây, rồi bỏ qua click đi kèm.
+    // Sau khi thả chuột trình duyệt vẫn bắn thêm sự kiện click, bỏ qua nó
     suppressClickRef.current = true;
     window.setTimeout(() => {
       suppressClickRef.current = false;
     }, 50);
+    if (!g.moved) {
+      if (cancelled) return;
+      if (g.kind === 'note') onSelectNotes?.(g.ids, e.shiftKey);
+      else if (!e.shiftKey) onSelectNotes?.([], false);
+      return;
+    }
     if (cancelled) return;
     if (g.kind === 'note') {
       if (g.steps !== 0) onDragPitch?.(g.ids, g.steps);

@@ -1,8 +1,8 @@
 /**
  * Đổi trường độ và nhập nốt bằng bàn phím. Độ dài mỗi ô nhịp luôn được giữ nguyên:
  * - nốt ngắn đi thì phần trống phía sau được lấp bằng dấu lặng;
- * - nốt dài ra thì chiếm chỗ các dấu lặng liền sau nó trong cùng bè (gặp nốt khác hoặc hết ô thì từ chối, người dùng
- *   tự xóa nốt phía sau trước, nên không có nốt nào bị mất âm thầm).
+ * - nốt dài ra thì ghi đè các nốt/dấu lặng liền sau nó trong cùng bè (phần dư của mục bị cắt dở thành dấu lặng);
+ *   kéo quá cuối ô nhịp thì từ chối.
  * Chưa hỗ trợ nốt có dấu nối và nhóm nốt đặc biệt (chùm ba...).
  */
 import { chordKey, childOf, commitEdit, hasTie, readPitch, touch, writePitch } from './commands';
@@ -184,14 +184,14 @@ const planDuration = (head: Element, choice: DurationChoice): Plan => {
     };
   }
 
-  // Kéo dài: chiếm các dấu lặng liền sau
+  // Kéo dài: ghi đè các nốt/dấu lặng liền sau trong cùng bè (hoàn tác được); phần dư của mục cuối thành dấu lặng
   let remaining = delta;
   const consumed: Entry[] = [];
   let leftover = 0;
   for (let j = index + 1; j < entries.length && remaining > 0; j++) {
     const next = entries[j];
-    if (!next.isRest) return { error: 'noSpace' };
     if (next.members.some((m) => hasChild(m, 'time-modification'))) return { error: 'tuplet' };
+    if (next.members.some((m) => hasTie(m, 'start') || hasTie(m, 'stop'))) return { error: 'tie' };
     consumed.push(next);
     if (next.duration <= remaining) remaining -= next.duration;
     else {
