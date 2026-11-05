@@ -18,7 +18,7 @@ Dùng file này để hỏi nhanh: "làm mục 3.6", "kiểm tra 4.4"...
 | STT | Chức năng | Mô tả | Ưu tiên | Trạng thái | Ghi chú |
 |---|---|---|---|---|---|
 | 3.4 | Upload sheet nhạc | Hỗ trợ PDF, MusicXML, MIDI | BB | ✅ | PDF/ảnh qua OMR (`POST /api/omr/upload`). MusicXML (.musicxml/.xml/.mxl) và MIDI (.mid/.midi) qua `POST /api/scores/import`, trang FE `/scores/import`. MIDI mới lưu bản gốc (`ORIGINAL_MIDI`), chưa chuyển sang MusicXML để hiển thị sheet |
-| 3.5 | CRUD thông tin bài | Tên, tác giả, độ khó (Easy/Medium/Hard/Expert), ghi chú | BB | 🟡 | Có xem/sửa/xóa. Enum `DifficultyLevel` chỉ có EASY/MEDIUM/HARD, thiếu **EXPERT** |
+| 3.5 | CRUD thông tin bài | Tên, tác giả, độ khó (Easy/Medium/Hard/Expert), ghi chú | BB | ✅ | Có xem/sửa/xóa. Enum `DifficultyLevel` đã có EASY/MEDIUM/HARD/EXPERT (BE + FE) |
 | 3.6 | Gắn nhãn thể loại (Tags) | Cổ điển, Pop, Ballad, Jazz, Nhạc Việt... | BB | 🟡 | Có entity `Tag`, `ScoreTag`. Chưa thấy controller/API |
 | 3.7 | Tìm kiếm, lọc, sắp xếp | Theo tên / tác giả / tag / độ khó / ngày tạo | BB | 🟡 | Có keyword, status, source, sort. Chưa lọc theo tag, độ khó |
 | 3.8 | Quyền riêng tư | Private (chủ sở hữu) / Public (cộng đồng) | BB | 🟡 | Có field `visibility` (PRIVATE/PUBLIC). Chưa có luồng duyệt Public (xem 4.4) |

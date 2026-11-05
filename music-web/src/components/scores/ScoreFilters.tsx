@@ -1,14 +1,16 @@
 import { MAX_KEYWORD } from '../../utils/score';
-import type { ProcessingStatus, ScoreSort, ScoreSource } from '../../types';
+import type { Difficulty, ProcessingStatus, ScoreSort, ScoreSource } from '../../types';
 
 interface Props {
   keyword: string;
   status: ProcessingStatus | '';
   source: ScoreSource | '';
+  difficulty: Difficulty | '';
   sort: ScoreSort;
   onKeyword: (v: string) => void;
   onStatus: (v: ProcessingStatus | '') => void;
   onSource: (v: ScoreSource | '') => void;
+  onDifficulty: (v: Difficulty | '') => void;
   onSort: (v: ScoreSort) => void;
 }
 
@@ -51,6 +53,18 @@ export default function ScoreFilters(p: Props) {
         <option value="OMR">Quét từ ảnh</option>
         <option value="IMPORT">Nhập file</option>
         <option value="MANUAL">Tự soạn</option>
+      </select>
+      <select
+        className="sc-input"
+        aria-label="Lọc theo độ khó"
+        value={p.difficulty}
+        onChange={(e) => p.onDifficulty(e.target.value as Difficulty | '')}
+      >
+        <option value="">Mọi độ khó</option>
+        <option value="EASY">Dễ</option>
+        <option value="MEDIUM">Trung bình</option>
+        <option value="HARD">Khó</option>
+        <option value="EXPERT">Chuyên gia</option>
       </select>
       <select
         className="sc-input"

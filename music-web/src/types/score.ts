@@ -80,6 +80,7 @@ export interface ScoreListParams {
   keyword?: string;
   status?: ProcessingStatus | '';
   source?: ScoreSource | '';
+  difficulty?: Difficulty | '';
   sort?: ScoreSort;
 }
 

@@ -33,6 +33,7 @@ export const DIFFICULTY_LABELS: Record<Difficulty, string> = {
   EASY: 'Dễ',
   MEDIUM: 'Trung bình',
   HARD: 'Khó',
+  EXPERT: 'Chuyên gia',
 };
 
 export const FILE_TYPE_LABELS: Record<string, string> = {
