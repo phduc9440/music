@@ -45,7 +45,9 @@ const ALT = isMac ? '⌥' : 'Alt';
 /** Danh sách phím tắt trong hộp thoại "Phím tắt" (mở bằng phím ?). */
 const SHORTCUTS: [string, string][] = [
   ['Bấm / Shift + bấm', 'Chọn nốt / chọn thêm hoặc bỏ bớt'],
+  ['Kéo khung / kéo nốt (chuột, bút)', 'Chọn vùng / kéo nốt lên xuống để đổi cao độ'],
   ['Tab / Shift + Tab', 'Sang nốt kế tiếp / trước đó'],
+  ['[  /  ]', 'Chọn nốt thấp hơn / cao hơn trong hợp âm'],
   ['↑ / ↓', 'Lên / xuống một bậc'],
   [`${ALT} + ↑ / ↓`, 'Lên / xuống nửa cung'],
   [`${MOD} + ↑ / ↓`, 'Lên / xuống một quãng tám'],
@@ -439,6 +441,7 @@ function ScoreWorkspace({ score, xml, info, doc }: WorkspaceProps) {
             issueMeasures={issueMeasures}
             focusMeasure={focusMeasure}
             onSelectNotes={canEdit ? editor.select : undefined}
+            onDragPitch={canEdit ? editor.dragPitch : undefined}
           />
           <div className="sv-pos" aria-live="polite">
             {progressLabel}

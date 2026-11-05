@@ -65,6 +65,10 @@ export interface ScoreEditor {
   select: (ids: readonly string[], additive: boolean) => void;
   clearSelection: () => void;
   applyPitch: (op: PitchOp) => void;
+  /** Kéo nốt: đổi `steps` bậc (dương = lên) cho vùng chọn, hoặc cho `ids` nếu chúng chưa được chọn. */
+  dragPitch: (ids: readonly string[], steps: number) => void;
+  /** Chọn riêng nốt thấp hơn (−1) / cao hơn (+1) trong hợp âm đang chọn. */
+  selectInChord: (delta: 1 | -1) => void;
   undo: () => void;
   redo: () => void;
   save: (force?: boolean) => Promise<void>;
@@ -178,10 +182,11 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     [doc, selection],
   );
 
-  const applyPitch = useCallback(
-    (op: PitchOp) => {
-      if (!canEdit || selection.size === 0) return;
-      const result = changePitch(doc, [...selection], op);
+  /** Áp một thao tác cao độ lên `targets`, ghi lịch sử, vẽ lại và phát âm xem trước. */
+  const runPitch = useCallback(
+    (targets: readonly string[], op: PitchOp, count: number) => {
+      if (!canEdit || targets.length === 0) return;
+      const result = changePitch(doc, targets, op, count);
       if (!result.ok) {
         flash(EDIT_FAILURE_MESSAGES[result.reason]);
         return;
@@ -189,11 +194,51 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
       historyRef.current.push(result.command);
       sync();
       if (previewTone) {
-        const first = [...selection].map((id) => doc.getInfo(id)).find((n) => n?.midi != null);
+        const first = targets.map((id) => doc.getInfo(id)).find((n) => n?.midi != null);
         if (first?.midi != null) playPreviewTone(first.midi);
       }
     },
-    [canEdit, selection, doc, flash, sync, previewTone],
+    [canEdit, doc, flash, sync, previewTone],
+  );
+
+  const applyPitch = useCallback((op: PitchOp) => runPitch([...selection], op, 1), [runPitch, selection]);
+
+  const dragPitch = useCallback(
+    (ids: readonly string[], steps: number) => {
+      if (!canEdit || steps === 0) return;
+      const inSelection = ids.some((id) => selection.has(id));
+      if (!inSelection) setSelection(new Set(ids));
+      runPitch(inSelection ? [...selection] : ids, steps > 0 ? 'stepUp' : 'stepDown', Math.abs(steps));
+    },
+    [canEdit, selection, runPitch],
+  );
+
+  const selectInChord = useCallback(
+    (delta: 1 | -1) => {
+      const first = [...selection].map((id) => doc.getInfo(id)).find((n) => n !== undefined);
+      if (!first) return;
+      const members = doc.notes
+        .filter(
+          (n) =>
+            n.partIndex === first.partIndex &&
+            n.measureIndex === first.measureIndex &&
+            n.staff === first.staff &&
+            n.voice === first.voice &&
+            n.entryIndex === first.entryIndex &&
+            !n.isRest,
+        )
+        .sort((a, b) => (a.midi ?? 0) - (b.midi ?? 0));
+      if (members.length < 2) return;
+      const wholeChord = selection.size > 1;
+      const current = members.findIndex((n) => selection.has(n.id));
+      const index = wholeChord
+        ? delta > 0
+          ? members.length - 1
+          : 0
+        : Math.min(members.length - 1, Math.max(0, current + delta));
+      setSelection(new Set([members[index].id]));
+    },
+    [doc, selection],
   );
 
   const undo = useCallback(() => {
@@ -321,6 +366,23 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     return () => window.removeEventListener('beforeunload', onBeforeUnload);
   }, [canEdit, flags.dirty, scoreId, version, doc]);
 
+  // Nút Back của trình duyệt khi chưa lưu: thêm một mục lịch sử đệm để chặn và hỏi xác nhận
+  useEffect(() => {
+    if (!canEdit || !flags.dirty) return;
+    window.history.pushState(null, '', window.location.href);
+    const onPopState = () => {
+      if (allowLeaveRef.current) return;
+      if (window.confirm('Bạn có thay đổi chưa lưu. Rời trang sẽ mất các thay đổi này?')) {
+        allowLeaveRef.current = true;
+        window.history.go(-1);
+      } else {
+        window.history.pushState(null, '', window.location.href);
+      }
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [canEdit, flags.dirty]);
+
   // Phím tắt
   useEffect(() => {
     if (!canEdit) return;
@@ -346,6 +408,9 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
         if (mod) applyPitch(up ? 'octaveUp' : 'octaveDown');
         else if (e.altKey) applyPitch(up ? 'semitoneUp' : 'semitoneDown');
         else applyPitch(up ? 'stepUp' : 'stepDown');
+      } else if ((e.key === '[' || e.key === ']') && selection.size > 0) {
+        e.preventDefault();
+        selectInChord(e.key === ']' ? 1 : -1);
       } else if (e.key === 'Escape' && selection.size > 0) {
         clearSelection();
       } else if (e.key === 'Tab' && !mod && !e.altKey) {
@@ -358,7 +423,20 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [canEdit, blocked, conflict, draft, selection, save, undo, redo, applyPitch, clearSelection, selectRelative]);
+  }, [
+    canEdit,
+    blocked,
+    conflict,
+    draft,
+    selection,
+    save,
+    undo,
+    redo,
+    applyPitch,
+    clearSelection,
+    selectRelative,
+    selectInChord,
+  ]);
 
   return {
     selection,
@@ -378,6 +456,8 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     select,
     clearSelection,
     applyPitch,
+    dragPitch,
+    selectInChord,
     undo,
     redo,
     save,

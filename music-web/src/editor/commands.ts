@@ -174,9 +174,10 @@ const chordKey = (n: NoteInfo): string => `${n.partIndex}|${n.measureIndex}|${n.
  * @param doc tài liệu đang sửa
  * @param ids id các nốt đang chọn
  * @param op thao tác
+ * @param count số lần lặp thao tác (kéo nốt nhiều bậc vẫn là một lệnh)
  * @returns lệnh đã áp dụng (để đưa vào lịch sử) hoặc lý do thất bại; khi thất bại DOM không thay đổi
  */
-export function changePitch(doc: ScoreDocument, ids: readonly string[], op: PitchOp): EditResult {
+export function changePitch(doc: ScoreDocument, ids: readonly string[], op: PitchOp, count = 1): EditResult {
   const selected = ids.map((id) => doc.getInfo(id)).filter((n): n is NoteInfo => n !== undefined);
   const pitched = selected.filter((n) => !n.isRest && readPitch(n.element));
   if (pitched.length === 0) return { ok: false, reason: 'rest' };
@@ -188,8 +189,12 @@ export function changePitch(doc: ScoreDocument, ids: readonly string[], op: Pitc
   const next = new Map<string, Pitch>();
   for (const info of pitched) {
     const old = readPitch(info.element) as Pitch;
-    const moved = movePitch(old, op, doc.keyAt(info.measureIndex));
-    if (moved === 'range') return { ok: false, reason: 'range' };
+    let moved: Pitch = old;
+    for (let i = 0; i < count; i++) {
+      const step = movePitch(moved, op, doc.keyAt(info.measureIndex));
+      if (step === 'range') return { ok: false, reason: 'range' };
+      moved = step;
+    }
     next.set(info.id, moved);
   }
   for (const info of pitched) {
@@ -238,5 +243,12 @@ export function changePitch(doc: ScoreDocument, ids: readonly string[], op: Pitc
   for (const s of snapshots) s.after = doc.getMeasure(s.partIndex, s.measureIndex)?.cloneNode(true) as Element;
   doc.reindex();
 
-  return { ok: true, command: { label: PITCH_OP_LABELS[op], snapshots, changedIds: [...next.keys()] } };
+  return {
+    ok: true,
+    command: {
+      label: count > 1 ? `${PITCH_OP_LABELS[op]} (${count} lần)` : PITCH_OP_LABELS[op],
+      snapshots,
+      changedIds: [...next.keys()],
+    },
+  };
 }

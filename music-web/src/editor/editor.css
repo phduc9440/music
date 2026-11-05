@@ -12,9 +12,23 @@
   stroke-opacity: 0.45;
 }
 
-/* Ô nhịp sai độ dài: nốt trong ô được tô đỏ */
-.ed-note--issue:not(.ed-note--selected) path,
-.ed-note--issue:not(.ed-note--selected) text {
-  fill: #dc2626 !important;
-  stroke: #dc2626 !important;
+/* Ô nhịp sai độ dài: viền đỏ vẽ quanh các nốt của ô */
+.sv-canvas__host {
+  position: relative;
+  user-select: none;
+}
+.ed-issue-box {
+  position: absolute;
+  border: 2px solid #dc2626;
+  border-radius: 8px;
+  background: rgba(220, 38, 38, 0.05);
+  pointer-events: none;
+}
+/* Khung chọn vùng khi kéo chuột */
+.ed-band {
+  position: fixed;
+  z-index: 20;
+  border: 1px solid var(--sc-accent, #d9480f);
+  background: rgba(217, 72, 15, 0.12);
+  pointer-events: none;
 }

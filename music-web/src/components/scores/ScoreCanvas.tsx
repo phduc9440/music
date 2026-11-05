@@ -1,7 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { MouseEvent } from 'react';
+import type { MouseEvent, PointerEvent as ReactPointerEvent } from 'react';
 import type { OpenSheetMusicDisplay } from 'opensheetmusicdisplay';
-import { SELECTED_CLASS, applySelection, bindNoteIds, noteIdsFromEvent } from '../../editor/osmdBridge';
+import {
+  NOTE_ID_ATTR,
+  NOTE_IDS_ATTR,
+  SELECTED_CLASS,
+  applySelection,
+  bindNoteIds,
+  noteIdsFromEvent,
+} from '../../editor/osmdBridge';
 import type { ScoreDocument } from '../../editor/ScoreDocument';
 import { ZOOM_MAX, ZOOM_MIN, clampZoom } from '../../utils/viewer';
 import type { ViewMode } from '../../utils/viewer';
@@ -33,7 +40,14 @@ interface Props {
   focusMeasure?: { index: number; key: number } | null;
   /** Bấm vào nốt (ids rỗng = bấm ra ngoài); additive = giữ Shift. Có prop này thì canvas cho chọn nốt. */
   onSelectNotes?: (ids: string[], additive: boolean) => void;
+  /** Kéo nốt bằng chuột/bút lên hoặc xuống `steps` bậc (dương = lên). Chạm không kéo nốt để khỏi lẫn với cuộn. */
+  onDragPitch?: (ids: string[], steps: number) => void;
 }
+
+/** Cử chỉ chuột/bút đang diễn ra: kéo khung chọn vùng, hoặc kéo một nốt. */
+type Gesture =
+  | { kind: 'band'; x0: number; y0: number; moved: boolean }
+  | { kind: 'note'; ids: string[]; el: SVGGElement; y0: number; moved: boolean; steps: number };
 
 /** Chờ sau lần đổi zoom/kích thước cuối cùng rồi mới vẽ lại (ms). */
 const RENDER_DEBOUNCE_MS = 200;
@@ -41,15 +55,44 @@ const RENDER_DEBOUNCE_MS = 200;
 const EDIT_REDRAW_MS = 150;
 const EMPTY_SET: ReadonlySet<string> = new Set();
 const EMPTY_NUMBERS: ReadonlySet<number> = new Set();
-const ISSUE_CLASS = 'ed-note--issue';
 const MEASURE_OF_ID = /^(?:p\d+-)?m(\d+)-/;
+const ISSUE_BOX_CLASS = 'ed-issue-box';
+/** Quãng kéo tối thiểu (px) để coi là kéo chứ không phải bấm. */
+const DRAG_THRESHOLD = 5;
+/** Khoảng đệm quanh các nốt của ô nhịp sai khi vẽ viền (px). */
+const ISSUE_PAD_X = 10;
+const ISSUE_PAD_Y = 22;
 
-/** Tô đỏ các nhóm nốt thuộc ô nhịp sai độ dài. */
-const applyIssues = (host: HTMLElement, measures: ReadonlySet<number>): void => {
-  host.querySelectorAll('[data-note-id]').forEach((el) => {
-    const match = MEASURE_OF_ID.exec(el.getAttribute('data-note-id') ?? '');
-    el.classList.toggle(ISSUE_CLASS, !!match && measures.has(Number(match[1])));
+/** Vẽ viền đỏ quanh các ô nhịp sai độ dài, tính từ vùng chiếm của các nốt đã gắn id trong ô đó. */
+const drawIssueBoxes = (host: HTMLElement, measures: ReadonlySet<number>): void => {
+  host.querySelectorAll(`.${ISSUE_BOX_CLASS}`).forEach((el) => el.remove());
+  if (measures.size === 0) return;
+  const origin = host.getBoundingClientRect();
+  const boxes = new Map<number, { l: number; t: number; r: number; b: number }>();
+  host.querySelectorAll(`[${NOTE_ID_ATTR}]`).forEach((el) => {
+    const match = MEASURE_OF_ID.exec(el.getAttribute(NOTE_ID_ATTR) ?? '');
+    if (!match || !measures.has(Number(match[1]))) return;
+    const rect = el.getBoundingClientRect();
+    if (rect.width === 0 && rect.height === 0) return;
+    const key = Number(match[1]);
+    const box = boxes.get(key);
+    if (!box) boxes.set(key, { l: rect.left, t: rect.top, r: rect.right, b: rect.bottom });
+    else {
+      box.l = Math.min(box.l, rect.left);
+      box.t = Math.min(box.t, rect.top);
+      box.r = Math.max(box.r, rect.right);
+      box.b = Math.max(box.b, rect.bottom);
+    }
   });
+  for (const box of boxes.values()) {
+    const div = document.createElement('div');
+    div.className = ISSUE_BOX_CLASS;
+    div.style.left = `${box.l - origin.left - ISSUE_PAD_X}px`;
+    div.style.top = `${box.t - origin.top - ISSUE_PAD_Y}px`;
+    div.style.width = `${box.r - box.l + ISSUE_PAD_X * 2}px`;
+    div.style.height = `${box.b - box.t + ISSUE_PAD_Y * 2}px`;
+    host.appendChild(div);
+  }
 };
 
 /**
@@ -72,10 +115,14 @@ export default function ScoreCanvas({
   issueMeasures = EMPTY_NUMBERS,
   focusMeasure = null,
   onSelectNotes,
+  onDragPitch,
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const hostRef = useRef<HTMLDivElement>(null);
   const osmdRef = useRef<OpenSheetMusicDisplay | null>(null);
+  const gestureRef = useRef<Gesture | null>(null);
+  const suppressClickRef = useRef(false);
+  const [band, setBand] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
   // Revision của nội dung OSMD đang giữ, để biết khi nào cần nạp lại
   const loadedRevision = useRef(0);
   // loadId > 0: đã nạp xong MusicXML (tăng theo mỗi lần nạp); drawnKey: cấu hình đã vẽ xong gần nhất
@@ -140,7 +187,7 @@ export default function ScoreCanvas({
     try {
       bindNoteIds(osmd, current, host);
       applySelection(host, latest.current.selected);
-      applyIssues(host, latest.current.issueMeasures);
+      drawIssueBoxes(host, latest.current.issueMeasures);
     } catch {
       // chỉ mất khả năng chọn nốt, bản nhạc vẫn xem được
     }
@@ -279,7 +326,7 @@ export default function ScoreCanvas({
   // Tô lại ô nhịp sai khi danh sách đổi
   useEffect(() => {
     const host = hostRef.current;
-    if (host) applyIssues(host, issueMeasures);
+    if (host) drawIssueBoxes(host, issueMeasures);
   }, [issueMeasures]);
 
   // Cuộn tới ô nhịp được yêu cầu (bấm cảnh báo trên thanh trạng thái)
@@ -340,10 +387,102 @@ export default function ScoreCanvas({
 
   /** Bắt sự kiện ủy quyền trên khung: bấm nốt để chọn, Shift+bấm để thêm/bớt, bấm ra ngoài để bỏ chọn. */
   const handleClick = (e: MouseEvent) => {
+    if (suppressClickRef.current) {
+      suppressClickRef.current = false;
+      return;
+    }
     if (!onSelectNotes) return;
     const ids = noteIdsFromEvent(e.nativeEvent);
     if (ids.length === 0 && e.shiftKey) return;
     onSelectNotes(ids, e.shiftKey);
+  };
+
+  /** Số px (màn hình / đơn vị SVG) của một bậc nhạc: nửa khoảng cách giữa hai dòng kẻ = 5 đơn vị × zoom. */
+  const stepSize = () => {
+    const unit = (osmdRef.current?.EngravingRules as { UnitInPixels?: number } | undefined)?.UnitInPixels ?? 10;
+    const user = (unit / 2) * (latest.current.zoom / 100);
+    const svg = hostRef.current?.querySelector('svg');
+    const viewBoxWidth = svg?.viewBox.baseVal.width ?? 0;
+    const scale = svg && viewBoxWidth > 0 ? svg.getBoundingClientRect().width / viewBoxWidth : 1;
+    return { user, screen: user * scale };
+  };
+
+  const handlePointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const scroller = scrollRef.current;
+    if (!scroller || e.button !== 0 || e.pointerType === 'touch') return;
+    // Bỏ qua khi bấm vào thanh cuộn
+    const box = scroller.getBoundingClientRect();
+    if (e.clientX - box.left >= scroller.clientWidth || e.clientY - box.top >= scroller.clientHeight) return;
+    const ids = noteIdsFromEvent(e.nativeEvent);
+    if (ids.length > 0) {
+      const el = (e.target as Element).closest(`[${NOTE_ID_ATTR}]`) as SVGGElement | null;
+      if (!onDragPitch || !el) return;
+      gestureRef.current = { kind: 'note', ids, el, y0: e.clientY, moved: false, steps: 0 };
+    } else {
+      if (!onSelectNotes) return;
+      gestureRef.current = { kind: 'band', x0: e.clientX, y0: e.clientY, moved: false };
+    }
+    scroller.setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const g = gestureRef.current;
+    if (!g) return;
+    if (g.kind === 'band') {
+      if (!g.moved && Math.hypot(e.clientX - g.x0, e.clientY - g.y0) < DRAG_THRESHOLD) return;
+      g.moved = true;
+      setBand({
+        x: Math.min(g.x0, e.clientX),
+        y: Math.min(g.y0, e.clientY),
+        w: Math.abs(e.clientX - g.x0),
+        h: Math.abs(e.clientY - g.y0),
+      });
+      return;
+    }
+    const dy = e.clientY - g.y0;
+    if (!g.moved && Math.abs(dy) < DRAG_THRESHOLD) return;
+    g.moved = true;
+    const size = stepSize();
+    g.steps = Math.round(-dy / size.screen);
+    // Trong lúc kéo chỉ dịch nhóm SVG (bóng mờ, bám theo bậc); thả chuột mới áp lệnh
+    g.el.style.transform = `translateY(${-g.steps * size.user}px)`;
+    g.el.style.opacity = '0.55';
+  };
+
+  const finishGesture = (e: ReactPointerEvent<HTMLDivElement>, cancelled: boolean) => {
+    const g = gestureRef.current;
+    gestureRef.current = null;
+    if (!g) return;
+    if (scrollRef.current?.hasPointerCapture(e.pointerId)) scrollRef.current.releasePointerCapture(e.pointerId);
+    if (g.kind === 'note') {
+      g.el.style.transform = '';
+      g.el.style.opacity = '';
+    } else {
+      setBand(null);
+    }
+    if (!g.moved) return; // bấm thường: để onClick xử lý
+    // Sau khi kéo trình duyệt vẫn bắn thêm sự kiện click, bỏ qua nó
+    suppressClickRef.current = true;
+    window.setTimeout(() => {
+      suppressClickRef.current = false;
+    }, 50);
+    if (cancelled) return;
+    if (g.kind === 'note') {
+      if (g.steps !== 0) onDragPitch?.(g.ids, g.steps);
+      return;
+    }
+    const left = Math.min(g.x0, e.clientX);
+    const right = Math.max(g.x0, e.clientX);
+    const top = Math.min(g.y0, e.clientY);
+    const bottom = Math.max(g.y0, e.clientY);
+    const ids: string[] = [];
+    hostRef.current?.querySelectorAll(`[${NOTE_ID_ATTR}]`).forEach((el) => {
+      const r = el.getBoundingClientRect();
+      if (r.right < left || r.left > right || r.bottom < top || r.top > bottom) return;
+      const raw = el.getAttribute(NOTE_IDS_ATTR) ?? el.getAttribute(NOTE_ID_ATTR) ?? '';
+      ids.push(...raw.split(' ').filter(Boolean));
+    });
+    onSelectNotes?.(ids, e.shiftKey);
   };
 
   return (
@@ -352,6 +491,10 @@ export default function ScoreCanvas({
       className={`sv-canvas sv-canvas--${mode}`}
       onScroll={reportProgress}
       onClick={handleClick}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={(e) => finishGesture(e, false)}
+      onPointerCancel={(e) => finishGesture(e, true)}
       aria-busy={busy}
       tabIndex={0}
       aria-label="Bản nhạc"
@@ -362,6 +505,7 @@ export default function ScoreCanvas({
         </div>
       )}
       <div ref={hostRef} className="sv-canvas__host" />
+      {band && <div className="ed-band" style={{ left: band.x, top: band.y, width: band.w, height: band.h }} />}
     </div>
   );
 }
