@@ -84,3 +84,9 @@ export const IconEdit = () => (
     <path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4" />
   </Svg>
 );
+
+export const IconStop = () => (
+  <Svg>
+    <rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" />
+  </Svg>
+);

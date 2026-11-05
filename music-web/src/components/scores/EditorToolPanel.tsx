@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import type { SymbolOp } from '../../editor/commands';
 import type { PitchOp } from '../../editor/pitch';
 import {
   ToolDelete,
@@ -32,6 +33,7 @@ interface Props {
   /** Đang lưu: tạm khóa nút sửa. */
   busy: boolean;
   onPitch: (op: PitchOp) => void;
+  onSymbol: (op: SymbolOp) => void;
   /** "Nghe khi sửa": phát âm xem trước mỗi khi đổi cao độ. */
   previewTone: boolean;
   onPreviewToneChange: (enabled: boolean) => void;
@@ -77,6 +79,22 @@ const PITCH_TOOLS: PitchTool[] = [
   { op: 'octaveDown', icon: <ToolOctaveDown />, label: 'Xuống quãng 8', shortcut: `${MOD}+↓` },
 ];
 
+interface SymbolTool {
+  op: SymbolOp;
+  icon: ReactNode;
+  label: string;
+  /** Phím tắt hiện trong tooltip (nếu có). */
+  shortcut?: string;
+}
+
+const SYMBOL_TOOLS: SymbolTool[] = [
+  { op: 'sharp', icon: <ToolSharp />, label: 'Thăng' },
+  { op: 'flat', icon: <ToolFlat />, label: 'Giáng' },
+  { op: 'natural', icon: <ToolNatural />, label: 'Bình' },
+  { op: 'rest', icon: <ToolRest />, label: 'Dấu lặng' },
+  { op: 'delete', icon: <ToolDelete />, label: 'Xóa', shortcut: 'Delete' },
+];
+
 const SOON_GROUPS: SoonGroup[] = [
   {
     title: 'Trường độ',
@@ -87,18 +105,6 @@ const SOON_GROUPS: SoonGroup[] = [
       { icon: <ToolQuarter />, label: 'Đen' },
       { icon: <ToolEighth />, label: 'Móc đơn' },
       { icon: <ToolSixteenth />, label: 'Móc kép' },
-    ],
-  },
-  {
-    title: 'Ký hiệu',
-    branch: 'editor-symbols',
-    tools: [
-      { icon: <ToolSharp />, label: 'Thăng' },
-      { icon: <ToolFlat />, label: 'Giáng' },
-      { icon: <ToolNatural />, label: 'Bình' },
-      { icon: <ToolDot />, label: 'Chấm dôi' },
-      { icon: <ToolRest />, label: 'Dấu lặng' },
-      { icon: <ToolDelete />, label: 'Xóa' },
     ],
   },
 ];
@@ -114,6 +120,7 @@ export default function EditorToolPanel({
   hasSelection,
   busy,
   onPitch,
+  onSymbol,
   previewTone,
   onPreviewToneChange,
   canUndo,
@@ -196,6 +203,33 @@ export default function EditorToolPanel({
             </button>
             <button className="sc-btn sc-btn--primary" disabled={!canSave || busy} onClick={onSave}>
               <IconSave /> Lưu
+            </button>
+          </div>
+        </div>
+
+        <div className="sv-tools__group sv-tools__group--soon">
+          <div className="sv-tools__title">Ký hiệu</div>
+          <div className="sv-tools__row">
+            {SYMBOL_TOOLS.map((tool) => (
+              <button
+                key={tool.op}
+                className="sv-tool"
+                disabled={!hasSelection || busy}
+                onClick={() => onSymbol(tool.op)}
+                title={`${tool.label}${tool.shortcut ? ` (${tool.shortcut})` : ''}${hasSelection ? '' : ' - hãy chọn nốt trước'}`}
+                aria-label={tool.label}
+              >
+                <span className="sv-tool__icon" aria-hidden="true">
+                  {tool.icon}
+                </span>
+                <span className="sv-tool__label">{tool.label}</span>
+              </button>
+            ))}
+            <button className="sv-tool" disabled title="Chấm dôi (sẽ có ở nhánh editor-duration)" aria-label="Chấm dôi">
+              <span className="sv-tool__icon" aria-hidden="true">
+                <ToolDot />
+              </span>
+              <span className="sv-tool__label">Chấm dôi</span>
             </button>
           </div>
         </div>

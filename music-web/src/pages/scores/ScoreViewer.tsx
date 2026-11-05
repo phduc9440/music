@@ -13,11 +13,13 @@ import {
   IconPlay,
   IconRedo,
   IconSave,
+  IconStop,
   IconScroll,
   IconShrink,
   IconUndo,
 } from '../../components/scores/ViewerIcons';
 import { ScoreDocument } from '../../editor/ScoreDocument';
+import { usePlayback } from '../../editor/usePlayback';
 import { useScoreEditor } from '../../editor/useScoreEditor';
 import { fetchMusicXml, scoreApi } from '../../services';
 import type { ScoreDetail as ScoreDetailData } from '../../types';
@@ -54,6 +56,7 @@ const SHORTCUTS: [string, string][] = [
   [`${MOD} + Z`, 'Hoàn tác'],
   [`${MOD} + Shift + Z  hoặc  ${MOD} + Y`, 'Làm lại'],
   [`${MOD} + S`, 'Lưu'],
+  ['Delete', 'Xóa nốt đang chọn (hợp âm còn nốt khác thì giữ lại)'],
   ['Esc', 'Bỏ chọn'],
   ['+  /  -  /  0', 'Phóng to / thu nhỏ / về 100%'],
   ['?', 'Mở bảng này'],
@@ -209,6 +212,7 @@ function ScoreWorkspace({ score, xml, info, doc }: WorkspaceProps) {
     blocked: helpOpen,
   });
 
+  const playback = usePlayback(doc, score.tempoBpm ?? 100);
   const issueMeasures = useMemo(() => new Set(editor.issues.map((i) => i.measureIndex)), [editor.issues]);
 
   const updatePrefs = useCallback((patch: Partial<typeof prefs>) => {
@@ -373,8 +377,19 @@ function ScoreWorkspace({ score, xml, info, doc }: WorkspaceProps) {
               <IconEdit /> Sửa
             </button>
           )}
-          <button className="sc-btn" disabled title="Trình phát sẽ có ở nhánh playback-basic">
-            <IconPlay /> Phát
+          <button
+            className="sc-btn"
+            onClick={() => playback.toggle(editor.selection)}
+            aria-pressed={playback.playing}
+            title={
+              playback.playing
+                ? 'Dừng phát'
+                : editor.selection.size > 0
+                  ? 'Phát từ nốt đang chọn (âm thử, chưa phải trình phát đầy đủ)'
+                  : 'Phát cả bản nhạc (âm thử, chưa phải trình phát đầy đủ)'
+            }
+          >
+            {playback.playing ? <IconStop /> : <IconPlay />} {playback.playing ? 'Dừng' : 'Phát'}
           </button>
           <DownloadMenu scoreId={score.id} files={score.files} />
           <button
@@ -416,6 +431,7 @@ function ScoreWorkspace({ score, xml, info, doc }: WorkspaceProps) {
             hasSelection={editor.selection.size > 0}
             busy={editor.saving}
             onPitch={editor.applyPitch}
+            onSymbol={editor.applySymbol}
             previewTone={editor.previewTone}
             onPreviewToneChange={editor.setPreviewTone}
             canUndo={editor.canUndo}

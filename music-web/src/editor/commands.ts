@@ -3,7 +3,7 @@
  * trước/sau để {@link History} hoàn tác, làm lại. Không phụ thuộc React hay OSMD.
  */
 import type { NoteInfo, ScoreDocument } from './ScoreDocument';
-import { AccidentalState, accidentalName, isStep, movePitch, pitchToMidi } from './pitch';
+import { AccidentalState, accidentalName, inRange, isStep, movePitch, pitchToMidi } from './pitch';
 import type { Pitch, PitchOp } from './pitch';
 
 /** Bản sao một ô nhịp trước và sau khi sửa. */
@@ -24,7 +24,7 @@ export interface EditCommand {
 }
 
 /** Lý do một thao tác không thực hiện được. */
-export type EditFailure = 'range' | 'rest' | 'duplicate';
+export type EditFailure = 'range' | 'rest' | 'duplicate' | 'unchanged' | 'empty';
 
 export type EditResult = { ok: true; command: EditCommand } | { ok: false; reason: EditFailure };
 
@@ -43,6 +43,8 @@ export const EDIT_FAILURE_MESSAGES: Record<EditFailure, string> = {
   range: 'Không thể đổi: cao độ vượt quá khoảng A0–C8',
   rest: 'Dấu lặng không có cao độ nên không đổi được',
   duplicate: 'Không thể đổi: hợp âm đã có nốt cùng cao độ',
+  unchanged: 'Nốt đã ở đúng trạng thái này rồi',
+  empty: 'Hãy chọn ít nhất một nốt (không phải dấu lặng)',
 };
 
 const childOf = (parent: Element, tag: string): Element | undefined =>
@@ -168,16 +170,53 @@ const refreshAccidentals = (doc: ScoreDocument, partIndex: number, measureIndex:
 
 const chordKey = (n: NoteInfo): string => `${n.partIndex}|${n.measureIndex}|${n.staff}|${n.voice}|${n.entryIndex}`;
 
+/** Ký hiệu áp lên nốt đang chọn. */
+export type SymbolOp = 'sharp' | 'flat' | 'natural' | 'rest' | 'delete';
+
+/** Nhãn hiển thị của từng ký hiệu (dùng cho thông báo hoàn tác / làm lại). */
+export const SYMBOL_OP_LABELS: Record<SymbolOp, string> = {
+  sharp: 'Thêm dấu thăng',
+  flat: 'Thêm dấu giáng',
+  natural: 'Thêm dấu bình',
+  rest: 'Đổi thành dấu lặng',
+  delete: 'Xóa nốt',
+};
+
+type Touched = Map<string, { partIndex: number; measureIndex: number }>;
+
+const touch = (touched: Touched, info: NoteInfo): void => {
+  touched.set(`${info.partIndex}|${info.measureIndex}`, { partIndex: info.partIndex, measureIndex: info.measureIndex });
+};
+
 /**
- * Đổi cao độ cho các nốt đã chọn. Dấu lặng bị bỏ qua; nốt có dấu nối kéo theo cả chuỗi nốt nối. Nếu có bất kỳ
- * nốt nào vượt A0–C8 hoặc làm trùng cao độ trong hợp âm thì không đổi gì cả.
- * @param doc tài liệu đang sửa
- * @param ids id các nốt đang chọn
- * @param op thao tác
- * @param count số lần lặp thao tác (kéo nốt nhiều bậc vẫn là một lệnh)
- * @returns lệnh đã áp dụng (để đưa vào lịch sử) hoặc lý do thất bại; khi thất bại DOM không thay đổi
+ * Chụp các ô nhịp bị ảnh hưởng, chạy `apply` để sửa DOM, tính lại id và dấu hóa hiển thị, rồi chụp lại để dựng lệnh.
  */
-export function changePitch(doc: ScoreDocument, ids: readonly string[], op: PitchOp, count = 1): EditResult {
+function commitEdit(
+  doc: ScoreDocument,
+  label: string,
+  touched: Touched,
+  changedIds: string[],
+  apply: () => void,
+): EditCommand {
+  const snapshots: MeasureSnapshot[] = [...touched.values()].map((t) => ({
+    ...t,
+    before: doc.getMeasure(t.partIndex, t.measureIndex)?.cloneNode(true) as Element,
+    after: null as unknown as Element,
+  }));
+  apply();
+  doc.reindex();
+  for (const t of touched.values()) refreshAccidentals(doc, t.partIndex, t.measureIndex);
+  for (const s of snapshots) s.after = doc.getMeasure(s.partIndex, s.measureIndex)?.cloneNode(true) as Element;
+  return { label, snapshots, changedIds };
+}
+
+type Mover = (old: Pitch, info: NoteInfo) => Pitch | 'range';
+
+/**
+ * Đổi cao độ từng nốt đã chọn theo `mover`. Dấu lặng bị bỏ qua; nốt có dấu nối kéo theo cả chuỗi nốt nối (nhận cùng
+ * cao độ mới). Nếu có nốt vượt A0–C8, làm trùng cao độ trong hợp âm, hoặc không có gì thay đổi thì không sửa gì.
+ */
+function transformPitches(doc: ScoreDocument, ids: readonly string[], label: string, mover: Mover): EditResult {
   const selected = ids.map((id) => doc.getInfo(id)).filter((n): n is NoteInfo => n !== undefined);
   const pitched = selected.filter((n) => !n.isRest && readPitch(n.element));
   if (pitched.length === 0) return { ok: false, reason: 'rest' };
@@ -188,13 +227,8 @@ export function changePitch(doc: ScoreDocument, ids: readonly string[], op: Pitc
   // Cao độ mới của từng nốt (nốt chọn trước, rồi nốt nối nhận cùng cao độ với nốt gốc)
   const next = new Map<string, Pitch>();
   for (const info of pitched) {
-    const old = readPitch(info.element) as Pitch;
-    let moved: Pitch = old;
-    for (let i = 0; i < count; i++) {
-      const step = movePitch(moved, op, doc.keyAt(info.measureIndex));
-      if (step === 'range') return { ok: false, reason: 'range' };
-      moved = step;
-    }
+    const moved = mover(readPitch(info.element) as Pitch, info);
+    if (moved === 'range') return { ok: false, reason: 'range' };
     next.set(info.id, moved);
   }
   for (const info of pitched) {
@@ -204,12 +238,15 @@ export function changePitch(doc: ScoreDocument, ids: readonly string[], op: Pitc
     }
   }
 
+  const unchanged = [...next].every(([id, pitch]) => {
+    const old = readPitch((doc.getInfo(id) as NoteInfo).element);
+    return old && old.step === pitch.step && old.alter === pitch.alter && old.octave === pitch.octave;
+  });
+  if (unchanged) return { ok: false, reason: 'unchanged' };
+
   // Không để hai nốt trong cùng hợp âm trùng cao độ
   const touchedChords = new Set<string>();
-  for (const id of next.keys()) {
-    const info = doc.getInfo(id);
-    if (info) touchedChords.add(chordKey(info));
-  }
+  for (const id of next.keys()) touchedChords.add(chordKey(doc.getInfo(id) as NoteInfo));
   const seen = new Map<string, Set<number>>();
   for (const info of doc.notes) {
     if (info.isRest || info.isGrace) continue;
@@ -224,31 +261,122 @@ export function changePitch(doc: ScoreDocument, ids: readonly string[], op: Pitc
     seen.set(key, set);
   }
 
-  // Áp dụng
-  const touched = new Map<string, { partIndex: number; measureIndex: number }>();
-  for (const id of next.keys()) {
-    const info = doc.getInfo(id) as NoteInfo;
-    touched.set(`${info.partIndex}|${info.measureIndex}`, {
-      partIndex: info.partIndex,
-      measureIndex: info.measureIndex,
-    });
-  }
-  const snapshots = [...touched.values()].map((t) => ({
-    ...t,
-    before: doc.getMeasure(t.partIndex, t.measureIndex)?.cloneNode(true) as Element,
-    after: null as unknown as Element,
-  }));
-  for (const [id, pitch] of next) writePitch((doc.getInfo(id) as NoteInfo).element, pitch);
-  for (const t of touched.values()) refreshAccidentals(doc, t.partIndex, t.measureIndex);
-  for (const s of snapshots) s.after = doc.getMeasure(s.partIndex, s.measureIndex)?.cloneNode(true) as Element;
-  doc.reindex();
+  const touched: Touched = new Map();
+  for (const id of next.keys()) touch(touched, doc.getInfo(id) as NoteInfo);
+  const command = commitEdit(doc, label, touched, [...next.keys()], () => {
+    for (const [id, pitch] of next) writePitch((doc.getInfo(id) as NoteInfo).element, pitch);
+  });
+  return { ok: true, command };
+}
 
-  return {
-    ok: true,
-    command: {
-      label: count > 1 ? `${PITCH_OP_LABELS[op]} (${count} lần)` : PITCH_OP_LABELS[op],
-      snapshots,
-      changedIds: [...next.keys()],
-    },
-  };
+/**
+ * Đổi cao độ cho các nốt đã chọn.
+ * @param doc tài liệu đang sửa
+ * @param ids id các nốt đang chọn
+ * @param op thao tác
+ * @param count số lần lặp thao tác (kéo nốt nhiều bậc vẫn là một lệnh)
+ * @returns lệnh đã áp dụng (để đưa vào lịch sử) hoặc lý do thất bại; khi thất bại DOM không thay đổi
+ */
+export function changePitch(doc: ScoreDocument, ids: readonly string[], op: PitchOp, count = 1): EditResult {
+  const label = count > 1 ? `${PITCH_OP_LABELS[op]} (${count} lần)` : PITCH_OP_LABELS[op];
+  return transformPitches(doc, ids, label, (old, info) => {
+    let moved: Pitch = old;
+    for (let i = 0; i < count; i++) {
+      const step = movePitch(moved, op, doc.keyAt(info.measureIndex));
+      if (step === 'range') return 'range';
+      moved = step;
+    }
+    return moved;
+  });
+}
+
+/**
+ * Đặt dấu thăng / giáng / bình cho nốt đã chọn (giữ nguyên bậc và quãng tám). Bấm lại dấu đang có thì trở về
+ * nốt tự nhiên (alter 0).
+ */
+export function setAlteration(
+  doc: ScoreDocument,
+  ids: readonly string[],
+  kind: 'sharp' | 'flat' | 'natural',
+): EditResult {
+  const target = kind === 'sharp' ? 1 : kind === 'flat' ? -1 : 0;
+  return transformPitches(doc, ids, SYMBOL_OP_LABELS[kind], (old) => {
+    const moved = { ...old, alter: old.alter === target ? 0 : target };
+    return inRange(pitchToMidi(moved)) ? moved : 'range';
+  });
+}
+
+/** Biến thẻ <note> thành dấu lặng cùng trường độ: thay <pitch> bằng <rest/>, bỏ dấu hóa, dấu nối, cán và nét nối. */
+const convertToRest = (note: Element): void => {
+  const owner = note.ownerDocument;
+  Array.from(note.children).forEach((c) => {
+    if (c.tagName === 'pitch') c.replaceWith(owner.createElement('rest'));
+    else if (['accidental', 'tie', 'stem', 'notehead', 'beam', 'chord'].includes(c.tagName)) c.remove();
+    else if (c.tagName === 'notations') {
+      Array.from(c.children)
+        .filter((n) => n.tagName === 'tied')
+        .forEach((n) => n.remove());
+      if (c.children.length === 0) c.remove();
+    }
+  });
+};
+
+/**
+ * Đổi nốt đã chọn thành dấu lặng ('rest', cả hợp âm) hoặc xóa nốt ('delete', chỉ các nốt chọn; hợp âm còn nốt khác thì
+ * giữ lại, xóa hết thì thành dấu lặng). Trường độ không đổi nên ô nhịp vẫn đủ phách. Nốt nối kéo theo cả chuỗi.
+ */
+export function removeNotes(doc: ScoreDocument, ids: readonly string[], mode: 'rest' | 'delete'): EditResult {
+  const selected = ids.map((id) => doc.getInfo(id)).filter((n): n is NoteInfo => n !== undefined && !n.isRest);
+  if (selected.length === 0) return { ok: false, reason: 'empty' };
+
+  const indexOf = new Map<string, number>();
+  doc.notes.forEach((n, i) => indexOf.set(n.id, i));
+  const chosen = new Map<string, NoteInfo>();
+  for (const info of selected) {
+    chosen.set(info.id, info);
+    for (const tied of tieChain(doc, info, indexOf)) chosen.set(tied.id, tied);
+  }
+
+  // Gom theo hợp âm (cùng thời điểm, bè, khuông)
+  const groups = new Map<string, NoteInfo[]>();
+  for (const info of doc.notes) {
+    if (info.isRest) continue;
+    const key = chordKey(info);
+    const list = groups.get(key) ?? [];
+    list.push(info);
+    groups.set(key, list);
+  }
+
+  const touched: Touched = new Map();
+  const plan: { members: NoteInfo[]; remove: NoteInfo[] }[] = [];
+  for (const members of groups.values()) {
+    const picked = members.filter((m) => chosen.has(m.id));
+    if (picked.length === 0) continue;
+    plan.push({ members, remove: mode === 'rest' ? members : picked });
+    touch(touched, members[0]);
+  }
+
+  const command = commitEdit(doc, SYMBOL_OP_LABELS[mode], touched, [...chosen.keys()], () => {
+    for (const { members, remove } of plan) {
+      const removeSet = new Set(remove);
+      const keepers = members.filter((m) => !removeSet.has(m));
+      const head = members[0];
+      if (keepers.length === 0) {
+        if (head.isGrace) members.forEach((m) => m.element.remove());
+        else {
+          convertToRest(head.element);
+          members.slice(1).forEach((m) => m.element.remove());
+        }
+        continue;
+      }
+      remove.forEach((m) => m.element.remove());
+      // Nếu nốt đầu hợp âm bị xóa thì nốt còn lại đầu tiên trở thành nốt đầu (bỏ <chord/>)
+      if (removeSet.has(head)) {
+        Array.from(keepers[0].element.children)
+          .filter((c) => c.tagName === 'chord')
+          .forEach((c) => c.remove());
+      }
+    }
+  });
+  return { ok: true, command };
 }
