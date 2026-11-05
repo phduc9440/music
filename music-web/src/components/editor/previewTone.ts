@@ -19,7 +19,12 @@ export interface ToneEvent {
   at: number;
   duration: number;
   midis: number[];
+  /** Âm lượng 0–1; mặc định 0,8 giữ nguyên độ to cũ của âm xem trước. */
+  gain?: number;
 }
+
+/** Âm lượng mặc định của một nhóm nốt (ứng với mức mf). */
+const DEFAULT_TONE_GAIN = 0.8;
 
 /** Đọc lựa chọn "Nghe khi sửa" đã lưu; mặc định bật. */
 export const loadPreviewTonePref = (): boolean => {
@@ -73,7 +78,8 @@ export function playTones(events: readonly ToneEvent[]): void {
     stopAllTones();
     const base = ctx.currentTime + 0.03;
     for (const event of events) {
-      const level = 0.28 / Math.sqrt(Math.max(1, event.midis.length));
+      const level =
+        (0.28 * ((event.gain ?? DEFAULT_TONE_GAIN) / DEFAULT_TONE_GAIN)) / Math.sqrt(Math.max(1, event.midis.length));
       for (const midi of event.midis) {
         const start = base + event.at;
         const end = start + event.duration;

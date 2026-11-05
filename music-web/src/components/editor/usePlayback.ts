@@ -36,7 +36,7 @@ export function usePlayback(doc: ScoreDocument, fallbackBpm: number): Playback {
       const offset = starts.length > 0 ? Math.min(...starts) : 0;
       const events = plan.notes
         .filter((n) => n.time >= offset - 1e-6)
-        .map((n) => ({ at: n.time - offset, duration: Math.max(0.08, n.duration), midis: [n.midi] }));
+        .map((n) => ({ at: n.time - offset, duration: Math.max(0.08, n.duration), midis: [n.midi], gain: n.gain }));
       if (events.length === 0) return;
       playTones(events);
       setPlaying(true);
