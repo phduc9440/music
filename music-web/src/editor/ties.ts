@@ -9,7 +9,7 @@ import { pitchToMidi } from './pitch';
 import type { NoteInfo, ScoreDocument } from './ScoreDocument';
 
 /** Thẻ <notations> của nốt, tạo mới (đúng chỗ: trước <lyric>/<play>) nếu chưa có. */
-const notationsOf = (note: Element): Element => {
+export const notationsOf = (note: Element): Element => {
   const existing = childOf(note, 'notations');
   if (existing) return existing;
   const el = note.ownerDocument.createElement('notations');
@@ -20,7 +20,7 @@ const notationsOf = (note: Element): Element => {
 };
 
 /** Xóa thẻ con của <notations> thỏa điều kiện; bỏ luôn <notations> nếu trống. */
-const removeNotation = (note: Element, tag: string, match: (el: Element) => boolean): void => {
+export const removeNotation = (note: Element, tag: string, match: (el: Element) => boolean): void => {
   const notations = childOf(note, 'notations');
   if (!notations) return;
   Array.from(notations.children)

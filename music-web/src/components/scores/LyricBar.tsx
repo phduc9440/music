@@ -41,7 +41,8 @@ export default function LyricBar({
   const current = useMemo(() => {
     void revision; // đọc lại khi nội dung bản nhạc đổi
     const info = selectedId ? doc.getInfo(selectedId) : undefined;
-    return info ? (readLyric(info.element, verse)?.text ?? '') : '';
+    // khoảng trắng trong một âm tiết hiện bằng "_" để gõ lại được (Space dùng để sang nốt kế)
+    return info ? (readLyric(info.element, verse)?.text ?? '').replace(/ /g, '_') : '';
   }, [doc, selectedId, verse, revision]);
 
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -128,8 +129,8 @@ export default function LyricBar({
         <Modal title="Dán lời bài hát" onClose={() => setPasteOpen(false)}>
           <p className="sv-modal-text">
             Dán cả đoạn lời: mỗi chữ cách nhau bằng dấu cách sẽ được gán lần lượt lên các nốt, bắt đầu từ nốt đang chọn
-            (bỏ qua dấu lặng và nốt nối tiếp). Dùng "-" khi một chữ trải qua nhiều nốt (ví dụ "xin-chào"), dùng "_" để
-            bỏ qua một nốt.
+            (bỏ qua dấu lặng và nốt nối tiếp). Dùng "-" khi một chữ trải qua nhiều nốt (ví dụ "xin-chào"), dùng "_" đứng
+            riêng để bỏ qua một nốt. Dùng "_" giữa hai chữ (ví dụ "xin_chào") để đặt hai chữ trên cùng một nốt.
           </p>
           <textarea
             className="sv-lyricbar__paste"

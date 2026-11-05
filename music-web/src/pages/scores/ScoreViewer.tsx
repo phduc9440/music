@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import DownloadMenu from '../../components/scores/DownloadMenu';
 import EditorToolPanel from '../../components/scores/EditorToolPanel';
+import ChordBar from '../../components/scores/ChordBar';
 import LyricBar from '../../components/scores/LyricBar';
 import Modal from '../../components/scores/Modal';
 import ScoreCanvas from '../../components/scores/ScoreCanvas';
@@ -66,6 +67,15 @@ const SHORTCUTS: [string, string][] = [
   ['A – G (chế độ Nhập nốt)', 'Biến nốt/dấu lặng đang chọn thành nốt đó rồi sang mục kế tiếp'],
   ['Bấm vào tiêu đề, tên tác giả hoặc nhịp độ', 'Sửa nội dung; tiêu đề và tác giả sửa được cả cỡ chữ, đậm, nghiêng'],
   ['Chế độ Lời', 'Chọn nốt, gõ âm tiết rồi Space sang nốt kế; "-" khi một chữ trải qua nhiều nốt; Esc để thoát'],
+  ['Chế độ Hợp âm', 'Chọn nốt, gõ hợp âm (C, Am7, G/B...) rồi Space sang nốt kế; ô trống để xóa'],
+  [
+    'Nhóm Sắc thái',
+    'Staccato, Accent, Tenuto, Fermata, Cresc./Dim. (chọn nốt đầu đến nốt cuối), pp…ff (đặt ở nốt đầu)',
+  ],
+  [
+    'Nhóm Lặp lại & chỉ dẫn',
+    'Dấu lặp |: :|, Nhà 1 / Nhà 2 (lời 2 hát đoạn khác), Segno, Coda, D.C., D.S., Fine, To Coda',
+  ],
   ['T', 'Dấu nối: nối nốt đang chọn với nốt cùng cao độ liền sau (bấm lại để bỏ)'],
   ['S', 'Dấu luyến: chọn từ nốt đầu đến nốt cuối rồi bấm (bấm lại để bỏ)'],
   ['Delete', 'Xóa nốt đang chọn (hợp âm còn nốt khác thì giữ lại)'],
@@ -452,6 +462,9 @@ function ScoreWorkspace({ score, xml, info, doc }: WorkspaceProps) {
             inputDuration={editor.inputDuration}
             lyricMode={editor.lyricMode}
             onLyricModeChange={editor.setLyricMode}
+            chordMode={editor.chordMode}
+            onChordModeChange={editor.setChordMode}
+            onMark={editor.applyMark}
             onDuration={editor.chooseDuration}
             onDot={editor.toggleDot}
             previewTone={editor.previewTone}
@@ -493,6 +506,17 @@ function ScoreWorkspace({ score, xml, info, doc }: WorkspaceProps) {
         </div>
       </div>
 
+      {canEdit && editor.chordMode && (
+        <ChordBar
+          doc={doc}
+          revision={editor.revision}
+          selectedId={[...editor.selection][0] ?? null}
+          onEnter={editor.enterChord}
+          onMove={editor.moveChord}
+          onPaste={editor.pasteChordText}
+          onExit={() => editor.setInputMode(false)}
+        />
+      )}
       {canEdit && editor.lyricMode && (
         <LyricBar
           doc={doc}

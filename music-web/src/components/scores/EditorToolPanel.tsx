@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 import type { SymbolOp } from '../../editor/commands';
+import { DYNAMICS } from '../../editor/marks';
+import type { MarkOp } from '../../editor/marks';
 import type { DurationChoice, DurationType } from '../../editor/durations';
 import type { PitchOp } from '../../editor/pitch';
 import { DURATION_DRAG_TYPE } from '../../editor/staffHit';
@@ -9,6 +11,7 @@ import {
   ToolEighth,
   ToolFlat,
   ToolHalf,
+  ToolChord,
   ToolLyric,
   ToolNatural,
   ToolSlur,
@@ -46,6 +49,11 @@ interface Props {
   /** Chế độ nhập lời bài hát. */
   lyricMode: boolean;
   onLyricModeChange: (enabled: boolean) => void;
+  /** Chế độ nhập hợp âm. */
+  chordMode: boolean;
+  onChordModeChange: (enabled: boolean) => void;
+  /** Ký hiệu sắc thái, lặp lại và chỉ dẫn nhảy. */
+  onMark: (op: MarkOp) => void;
   /** "Giữ ô nhịp đủ phách": đổi trường độ nhưng lấp dấu lặng / ghi đè nốt sau để ô không đổi độ dài. */
   onDuration: (type: DurationType) => void;
   onDot: () => void;
@@ -100,6 +108,32 @@ const SYMBOL_TOOLS: SymbolTool[] = [
   { op: 'delete', icon: <ToolDelete />, label: 'Xóa', shortcut: 'Delete' },
 ];
 
+const MARK_TOOLS: { op: MarkOp; label: string; title: string }[] = [
+  { op: 'staccato', label: 'Staccato', title: 'Staccato: ngắt, gọn (bấm lại để bỏ)' },
+  { op: 'accent', label: 'Accent', title: 'Accent: nhấn nốt (bấm lại để bỏ)' },
+  { op: 'tenuto', label: 'Tenuto', title: 'Tenuto: giữ đủ độ dài (bấm lại để bỏ)' },
+  { op: 'fermata', label: 'Fermata', title: 'Fermata: ngân tự do (bấm lại để bỏ)' },
+  { op: 'cresc', label: 'Cresc.', title: 'Cresc.: to dần, từ nốt đầu đến nốt cuối của vùng chọn' },
+  { op: 'dim', label: 'Dim.', title: 'Dim.: nhỏ dần, từ nốt đầu đến nốt cuối của vùng chọn' },
+];
+
+const REPEAT_TOOLS: { op: MarkOp; label: string; title: string }[] = [
+  { op: 'repeatStart', label: '|:', title: 'Dấu lặp ở đầu ô nhịp (ô đầu của vùng chọn)' },
+  { op: 'repeatEnd', label: ':|', title: 'Dấu lặp ở cuối ô nhịp (ô cuối của vùng chọn)' },
+  { op: 'volta1', label: 'Nhà 1', title: 'Nhà 1 (1.) trải qua các ô của vùng chọn, đóng bằng dấu lặp' },
+  {
+    op: 'volta2',
+    label: 'Nhà 2',
+    title: 'Nhà 2 (2.) trải qua các ô của vùng chọn: dùng khi lần hát sau (lời 2) khác đoạn cuối',
+  },
+  { op: 'segno', label: 'Segno', title: 'Dấu Segno ở ô đầu của vùng chọn' },
+  { op: 'coda', label: 'Coda', title: 'Dấu Coda ở ô đầu của vùng chọn' },
+  { op: 'dc', label: 'D.C.', title: 'D.C.: quay lại từ đầu (ở cuối ô cuối của vùng chọn)' },
+  { op: 'ds', label: 'D.S.', title: 'D.S.: quay lại dấu Segno' },
+  { op: 'fine', label: 'Fine', title: 'Fine: kết thúc' },
+  { op: 'tocoda', label: 'To Coda', title: 'To Coda: nhảy tới Coda' },
+];
+
 const DURATION_TOOLS: { type: DurationType; icon: ReactNode; label: string; key: string }[] = [
   { type: 'whole', icon: <ToolWhole />, label: 'Tròn', key: '5' },
   { type: 'half', icon: <ToolHalf />, label: 'Trắng', key: '4' },
@@ -124,6 +158,9 @@ export default function EditorToolPanel({
   inputDuration,
   lyricMode,
   onLyricModeChange,
+  chordMode,
+  onChordModeChange,
+  onMark,
   onDuration,
   onDot,
   previewTone,
@@ -153,8 +190,8 @@ export default function EditorToolPanel({
           <div className="sv-tools__title">Chế độ</div>
           <div className="sv-tools__row">
             <button
-              className={`sv-tool${inputMode || lyricMode ? '' : ' is-active'}`}
-              aria-pressed={!inputMode && !lyricMode}
+              className={`sv-tool${inputMode || lyricMode || chordMode ? '' : ' is-active'}`}
+              aria-pressed={!inputMode && !lyricMode && !chordMode}
               onClick={() => onInputModeChange(false)}
               title="Chọn nốt"
               aria-label="Chọn"
@@ -187,6 +224,18 @@ export default function EditorToolPanel({
                 <ToolLyric />
               </span>
               <span className="sv-tool__label">Lời</span>
+            </button>
+            <button
+              className={`sv-tool${chordMode ? ' is-active' : ''}`}
+              aria-pressed={chordMode}
+              onClick={() => onChordModeChange(true)}
+              title="Nhập hợp âm: chọn nốt rồi gõ Am7, C/G... (Esc để thoát)"
+              aria-label="Nhập hợp âm"
+            >
+              <span className="sv-tool__icon" aria-hidden="true">
+                <ToolChord />
+              </span>
+              <span className="sv-tool__label">Hợp âm</span>
             </button>
           </div>
         </div>
@@ -262,6 +311,51 @@ export default function EditorToolPanel({
               </span>
               <span className="sv-tool__label">Chấm dôi</span>
             </button>
+          </div>
+        </div>
+
+        <div className="sv-tools__group sv-tools__group--soon">
+          <div className="sv-tools__title">Sắc thái</div>
+          <div className="sv-tools__row sv-tools__row--text">
+            {MARK_TOOLS.map((tool) => (
+              <button
+                key={tool.op}
+                className="sv-tool sv-tool--text"
+                disabled={!hasSelection || busy}
+                onClick={() => onMark(tool.op)}
+                title={`${tool.title}${hasSelection ? '' : ' - hãy chọn nốt trước'}`}
+              >
+                {tool.label}
+              </button>
+            ))}
+            {DYNAMICS.map((d) => (
+              <button
+                key={d}
+                className="sv-tool sv-tool--text sv-tool--dyn"
+                disabled={!hasSelection || busy}
+                onClick={() => onMark(`dyn:${d}`)}
+                title={`Mức to nhỏ ${d} (đặt ở nốt đầu của vùng chọn)`}
+              >
+                {d}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="sv-tools__group sv-tools__group--soon">
+          <div className="sv-tools__title">Lặp lại &amp; chỉ dẫn</div>
+          <div className="sv-tools__row sv-tools__row--text">
+            {REPEAT_TOOLS.map((tool) => (
+              <button
+                key={tool.op}
+                className="sv-tool sv-tool--text"
+                disabled={!hasSelection || busy}
+                onClick={() => onMark(tool.op)}
+                title={`${tool.title}${hasSelection ? '' : ' - hãy chọn nốt trước'}`}
+              >
+                {tool.label}
+              </button>
+            ))}
           </div>
         </div>
 

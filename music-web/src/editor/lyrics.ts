@@ -95,7 +95,8 @@ export function setLyric(doc: ScoreDocument, id: string, text: string, end: Lyri
   const list = lyricNotes(doc, info);
   const index = list.indexOf(info);
   if (index < 0) return { ok: false, reason: 'lyricTarget' };
-  const clean = text.trim();
+  // "_" giữa hai chữ là khoảng trắng trong cùng một âm tiết (hai chữ trên một nốt)
+  const clean = text.trim().replace(/_/g, ' ');
   const current = readLyric(info.element, verse);
   const syllabic = syllabicFor(continuesWord(list, index, verse), end);
   if (clean === (current?.text ?? '') && (clean === '' || current?.syllabic === syllabic)) {
@@ -116,7 +117,7 @@ interface Piece {
   end: LyricEnd;
 }
 
-/** Tách đoạn lời dán vào thành các âm tiết: cách nhau bằng dấu cách; "xin-chào" hoặc "xin- chào" là một chữ hai nốt. */
+/** Tách đoạn lời dán vào thành các âm tiết: cách nhau bằng dấu cách; "xin_chào" là hai chữ trên một nốt; "_" đứng riêng là bỏ qua một nốt; "xin-chào" hoặc "xin- chào" là một chữ hai nốt. */
 const tokenize = (text: string): (Piece | 'skip')[] => {
   const out: (Piece | 'skip')[] = [];
   for (const token of text.split(/\s+/).filter(Boolean)) {
@@ -133,7 +134,7 @@ const tokenize = (text: string): (Piece | 'skip')[] => {
         if (last && prev && prev !== 'skip') prev.end = 'hyphen';
         return;
       }
-      out.push({ text: part, end: last ? 'word' : 'hyphen' });
+      out.push({ text: part.replace(/_/g, ' '), end: last ? 'word' : 'hyphen' });
     });
   }
   return out;

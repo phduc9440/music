@@ -18,8 +18,11 @@ import { History } from './history';
 import { checkMeasures, confirmMeasure } from './measureCheck';
 import { setHeaderText } from './header';
 import type { HeaderField, TextStyle } from './header';
+import { canHoldChord, pasteChords, setChord, stepChordNote } from './harmony';
 import { canHoldLyric, pasteLyrics, setLyric, stepLyricNote } from './lyrics';
 import type { LyricEnd } from './lyrics';
+import { applyMark as runMark } from './marks';
+import type { MarkOp } from './marks';
 import { setTempo } from './tempo';
 import type { TempoInfo } from './tempo';
 import { toggleSlur, toggleTie } from './ties';
@@ -91,6 +94,16 @@ export interface ScoreEditor {
   /** Chế độ nhập lời: chọn nốt rồi gõ âm tiết, Space sang nốt kế. */
   lyricMode: boolean;
   setLyricMode: (enabled: boolean) => void;
+  /** Chế độ nhập hợp âm: chọn nốt rồi gõ "Am7", "C/G"... */
+  chordMode: boolean;
+  setChordMode: (enabled: boolean) => void;
+  /** Ghi hợp âm cho nốt đang chọn; `advance` = sang nốt kế sau khi ghi. */
+  enterChord: (text: string, advance: boolean) => void;
+  moveChord: (delta: 1 | -1) => void;
+  /** Gán một dãy hợp âm lên các nốt liên tiếp từ nốt đang chọn. */
+  pasteChordText: (text: string) => void;
+  /** Áp ký hiệu sắc thái / lặp / chỉ dẫn lên vùng chọn. */
+  applyMark: (op: MarkOp) => void;
   /** Lời đang nhập (1–4). */
   lyricVerse: number;
   setLyricVerse: (verse: number) => void;
@@ -154,6 +167,7 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
   const [notice, setNotice] = useState<Notice | null>(null);
   const [inputMode, setInputModeState] = useState(false);
   const [lyricMode, setLyricModeState] = useState(false);
+  const [chordMode, setChordModeState] = useState(false);
   const [lyricVerse, setLyricVerse] = useState(1);
   const [inputDuration, setInputDuration] = useState<DurationChoice>({ type: 'quarter', dotted: false });
   const [previewTone, setPreviewToneState] = useState(loadPreviewTonePref);
@@ -322,6 +336,7 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
   const setInputMode = useCallback((enabled: boolean) => {
     setInputModeState(enabled);
     setLyricModeState(false);
+    setChordModeState(false);
   }, []);
 
   const setLyricMode = useCallback(
@@ -329,12 +344,80 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
       setLyricModeState(enabled);
       if (!enabled) return;
       setInputModeState(false);
+      setChordModeState(false);
       const current = [...selection][0];
       if (current && canHoldLyric(doc, current)) return;
       const first = doc.notes.find((n) => canHoldLyric(doc, n.id));
       if (first) setSelection(new Set([first.id]));
     },
     [selection, doc],
+  );
+
+  const setChordMode = useCallback(
+    (enabled: boolean) => {
+      setChordModeState(enabled);
+      if (!enabled) return;
+      setInputModeState(false);
+      setLyricModeState(false);
+      const current = [...selection][0];
+      if (current && canHoldChord(doc, current)) return;
+      const first = doc.notes.find((n) => canHoldChord(doc, n.id));
+      if (first) setSelection(new Set([first.id]));
+    },
+    [selection, doc],
+  );
+
+  const enterChord = useCallback(
+    (text: string, advance: boolean) => {
+      const id = [...selection][0];
+      if (!canEdit || !id) return;
+      const result = setChord(doc, id, text);
+      const next = advance ? stepChordNote(doc, id, 1) : null;
+      if (!result.ok) {
+        if (result.reason === 'unchanged') {
+          if (next) setSelection(new Set([next]));
+          return;
+        }
+        commit(result, false);
+        return;
+      }
+      if (next) result.command.selectAfter = [next];
+      commit(result, false);
+    },
+    [selection, canEdit, doc, commit],
+  );
+
+  const moveChord = useCallback(
+    (delta: 1 | -1) => {
+      const id = [...selection][0];
+      const target = id ? stepChordNote(doc, id, delta) : null;
+      if (target) setSelection(new Set([target]));
+    },
+    [selection, doc],
+  );
+
+  const pasteChordText = useCallback(
+    (text: string) => {
+      if (!canEdit) return;
+      const current = [...selection][0];
+      const start =
+        current && canHoldChord(doc, current) ? current : doc.notes.find((n) => canHoldChord(doc, n.id))?.id;
+      if (!start) return;
+      const { result, placed, leftover } = pasteChords(doc, start, text);
+      commit(result, false);
+      if (!result.ok) return;
+      toast.success(`Đã gán ${placed} hợp âm`);
+      if (leftover > 0) toast.warn(`Còn ${leftover} hợp âm không có nốt để gán`);
+    },
+    [canEdit, selection, doc, commit],
+  );
+
+  const applyMark = useCallback(
+    (op: MarkOp) => {
+      if (!canEdit || selection.size === 0) return;
+      commit(runMark(doc, [...selection], op), false);
+    },
+    [canEdit, selection, doc, commit],
   );
 
   const enterLyric = useCallback(
@@ -651,6 +734,8 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
       } else if (inputMode && !mod && !e.altKey && isLetterKey(e.key) && selection.size > 0) {
         e.preventDefault();
         enterLetter(e.key);
+      } else if (e.key === 'Escape' && chordMode) {
+        setChordMode(false);
       } else if (e.key === 'Escape' && lyricMode) {
         setLyricMode(false);
       } else if (e.key === 'Escape' && inputMode) {
@@ -668,6 +753,8 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [
+    chordMode,
+    setChordMode,
     lyricMode,
     setLyricMode,
     setInputMode,
@@ -711,6 +798,12 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     applySymbol,
     inputMode,
     setInputMode,
+    chordMode,
+    setChordMode,
+    enterChord,
+    moveChord,
+    pasteChordText,
+    applyMark,
     lyricMode,
     setLyricMode,
     lyricVerse,

@@ -42,7 +42,10 @@ export type EditFailure =
   | 'tieTarget'
   | 'slurTarget'
   | 'lyricTarget'
-  | 'badValue';
+  | 'badValue'
+  | 'badChord'
+  | 'hairpinTarget'
+  | 'noMeasure';
 
 export type EditResult = { ok: true; command: EditCommand } | { ok: false; reason: EditFailure };
 
@@ -72,6 +75,9 @@ export const EDIT_FAILURE_MESSAGES: Record<EditFailure, string> = {
   slurTarget: 'Dấu luyến cần chọn từ hai nốt trở lên trong cùng một khuông',
   lyricTarget: 'Hãy chọn một nốt (không phải dấu lặng hay nốt nối tiếp) để nhập lời',
   badValue: 'Giá trị không hợp lệ',
+  badChord: 'Không hiểu hợp âm này. Ví dụ: C, Am7, G/B, F#m, Bbmaj7, Dsus4',
+  hairpinTarget: 'Cresc./dim. cần chọn từ hai nốt trở lên (từ nốt bắt đầu đến nốt kết thúc)',
+  noMeasure: 'Hãy chọn một nốt để biết thao tác này áp dụng cho ô nhịp nào',
 };
 
 export const childOf = (parent: Element, tag: string): Element | undefined =>
