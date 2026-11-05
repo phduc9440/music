@@ -26,14 +26,17 @@ class FakeRecognizer:
         self.truncated = truncated
         self.on_call = on_call
         self.calls: list[str] = []
+        self.beams: list = []
+        """``num_beams`` của từng lần gọi (None = mặc định)."""
 
     def wait_ready(self, check, timeout_s: float) -> None:
         if self.state != "ready":
             raise RecognizerNotReady(self.error or f"model {self.state}")
 
-    def recognize(self, png_path, check) -> RecognitionResult:
+    def recognize(self, png_path, check, num_beams=None) -> RecognitionResult:
         index = len(self.calls)
         self.calls.append(str(png_path))
+        self.beams.append(num_beams)
         if self.on_call:
             self.on_call(index)
         deadline = time.monotonic() + self.delay_s

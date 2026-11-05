@@ -56,3 +56,43 @@ PAGE_2_REPEATED = kern(
     "==|==",
     "*-|*-",
 )
+
+# Một hệ giọng hát + piano (3 spine, khuông giọng ở cột phải), như Transcoda trả cho một trang ảo chỉ có một hệ
+SYSTEM_3 = kern(
+    "**kern|**kern|**kern",
+    "*clefF4|*clefG2|*clefG2",
+    "*k[f#]|*k[f#]|*k[f#]",
+    "*M3/4|*M3/4|*M3/4",
+    "=1|=1|=1",
+    "4G|4g|4b",
+    "4A|4a|4cc",
+    "4B|4b|4dd",
+    "=2|=2|=2",
+    "*-|*-|*-",
+)
+
+# Cùng một hệ khi đọc riêng từng nhóm khuông: grand staff 2 spine và khuông giọng 1 spine, nhịp điệu khác nhau
+PIANO_ONLY = kern(
+    "**kern|**kern",
+    "*clefF4|*clefG2",
+    "*k[f#]|*k[f#]",
+    "*M3/4|*M3/4",
+    "=1|=1",
+    "2G|4g",
+    ".|4a",
+    "4B|4b",
+    "=2|=2",
+    "*-|*-",
+)
+
+VOICE_ONLY = kern(
+    "**kern",
+    "*clefG2",
+    "*k[f#]",
+    "*M3/4",
+    "=1",
+    "2b",
+    "4cc",
+    "=2",
+    "*-",
+)

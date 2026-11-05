@@ -1,9 +1,14 @@
 """Chuẩn hóa MusicXML trước khi lưu (đặc tả mục 2.4, "Chuẩn hóa MusicXML").
 
-Đầu ra luôn có dạng:
+Đầu ra có dạng:
 
-* đúng 1 ``<part>`` tên "Piano", id ``P1``; nhiều khuông (kern có 2 spine) được gộp thành nhiều **staff** trong cùng
-  part (``<staves>2</staves>``, staff 1 = tay phải/khuông trên, staff 2 = tay trái/khuông dưới);
+* bản piano (mặc định, kern không ghi tên part hoặc mọi part tên "Piano"): đúng 1 ``<part>`` tên "Piano", id ``P1``;
+  nhiều khuông (kern có 2 spine) được gộp thành nhiều **staff** trong cùng part (``<staves>2</staves>``, staff 1 = tay
+  phải/khuông trên, staff 2 = tay trái/khuông dưới);
+* bản có giọng hát (kern có dòng ``*Ivox``/``*Ipiano`` do bước ghép thêm theo bố cục trang, music21 đọc thành tên part
+  "Voice"/"Piano"): mỗi khuông đơn là một part riêng
+  ("Giọng hát", chương trình MIDI 53) đứng trên, các khuông piano gộp thành part "Piano" nhiều staff như trên; id
+  ``P1``, ``P2``... từ trên xuống;
 * ``<sound tempo>`` ở ô nhịp 1 theo ``tempo_bpm``;
 * số ô nhịp đánh lại liên tục từ 1.
 
@@ -30,6 +35,12 @@ XML_HEADER = (
 )
 
 DEFAULT_TEMPO_BPM = 100
+
+PIANO_NAME = "Piano"
+VOICE_NAME = "Giọng hát"
+VOICE_MIDI_PROGRAM = 53
+"""Chương trình MIDI (đánh số từ 1) cho giọng hát: 53 = Choir Aahs. Editor nhận cả tên "Giọng hát" lẫn chương trình này
+là giọng hát."""
 
 # Thứ tự phần tử con theo lược đồ MusicXML, dùng để chèn đúng chỗ
 _NOTE_BEFORE_VOICE = {
@@ -61,6 +72,8 @@ class NormalizeResult:
     time_signature: Optional[str]
     tempo_bpm: int
     warnings: list[str] = field(default_factory=list)
+    parts: list[str] = field(default_factory=lambda: [PIANO_NAME])
+    """Tên các part từ trên xuống (``["Piano"]`` với bản piano, ``["Giọng hát", "Piano"]`` với bản có giọng hát)."""
 
 
 # ====================================================================== điểm vào
@@ -85,7 +98,18 @@ def normalize_musicxml(data: bytes, tempo_bpm: Optional[int] = None) -> Normaliz
     if not any(p.findall("measure") for p in parts):
         raise ConversionError("MusicXML không có ô nhịp nào")
 
+    names = _part_names(root)
     _strip_instrument_refs(root)
+    groups = _group_parts(parts, names)
+    if len(groups) == 1 and groups[0][0] is None:
+        return _normalize_piano(root, parts, tempo_bpm, warnings)
+    return _normalize_ensemble(root, groups, tempo_bpm, warnings)
+
+
+def _normalize_piano(
+    root: ET.Element, parts: list[ET.Element], tempo_bpm: Optional[int], warnings: list[str]
+) -> NormalizeResult:
+    """Đường cũ: mọi khuông gộp thành một part "Piano" nhiều staff."""
     ordered = _order_parts(parts)
     _rescale_divisions(ordered)
     merged = _merge_parts(ordered, warnings) if len(ordered) > 1 else ordered[0]
@@ -105,6 +129,115 @@ def normalize_musicxml(data: bytes, tempo_bpm: Optional[int] = None) -> Normaliz
     xml = (XML_HEADER + ET.tostring(root, encoding="unicode")).encode("utf-8")
     summary = summarize(merged)
     return NormalizeResult(xml=xml, warnings=warnings, **summary)
+
+
+def _normalize_ensemble(
+    root: ET.Element,
+    groups: list[tuple[Optional[str], list[ET.Element]]],
+    tempo_bpm: Optional[int],
+    warnings: list[str],
+) -> NormalizeResult:
+    """Bản có khuông đơn (giọng hát...): mỗi khuông đơn một part, các khuông piano gộp thành một part nhiều staff."""
+    every_part = [p for _, members in groups for p in members]
+    _rescale_divisions(every_part)
+    outputs: list[tuple[str, ET.Element]] = []
+    for name, members in groups:
+        if name is None:  # nhóm piano
+            ordered = _order_parts(members)
+            part = _merge_parts(ordered, warnings) if len(ordered) > 1 else ordered[0]
+            outputs.append((PIANO_NAME, part))
+        else:
+            outputs.append((name, members[0]))
+
+    counts = [len(part.findall("measure")) for _, part in outputs]
+    if len(set(counts)) > 1:
+        warnings.append(f"Các part có số ô nhịp khác nhau {counts}")
+    for index, (_, part) in enumerate(outputs, start=1):
+        part.set("id", f"P{index}")
+        for number, measure in enumerate(part.findall("measure"), start=1):
+            measure.set("number", str(number))
+        _ensure_clef_numbers(part)
+    # Tempo có thể chỉ nằm ở một part (music21 ghi vào part chứa *MM); part trên cùng mang tempo cho cả bản và mọi
+    # part khác đã có tempo ở ô nhịp 1 được đồng bộ theo, để không có hai tempo khác nhau
+    bpm = tempo_bpm if tempo_bpm is not None else _existing_tempo([part for _, part in outputs])
+    for index, (_, part) in enumerate(outputs):
+        first = part.findall("measure")[0]
+        if index == 0 or any(sound.get("tempo") for sound in first.iter("sound")):
+            _set_tempo(first, bpm)
+
+    _rebuild_part_list_ensemble(root, [name for name, _ in outputs])
+    for old_part in root.findall("part"):
+        root.remove(old_part)
+    for _, part in outputs:
+        root.append(part)
+
+    ET.indent(root)
+    xml = (XML_HEADER + ET.tostring(root, encoding="unicode")).encode("utf-8")
+    summary = summarize(outputs[0][1])
+    summary["staff_count"] = sum(summarize(part)["staff_count"] for _, part in outputs)
+    return NormalizeResult(xml=xml, warnings=warnings, parts=[name for name, _ in outputs], **summary)
+
+
+# ====================================================================== nhóm part theo tên
+
+
+def _part_names(root: ET.Element) -> dict[str, str]:
+    """``id part -> part-name`` theo ``<part-list>`` (music21 lấy tên từ mã nhạc cụ ``*Ivox``/``*Ipiano`` của kern)."""
+    names: dict[str, str] = {}
+    part_list = root.find("part-list")
+    if part_list is None:
+        return names
+    for score_part in part_list.findall("score-part"):
+        name = (child_text(score_part, "part-name") or "").strip()
+        if score_part.get("id") and name:
+            names[score_part.get("id")] = name
+    return names
+
+
+_VOICE_WORDS = ("voice", "vocal", "soprano", "mezzo", "alto", "tenor", "baritone", "choir", "giọng")
+
+
+def _is_voice(name: Optional[str]) -> bool:
+    """Tên part là giọng hát (``Voice`` do bước ghép thêm theo bố cục, hoặc tên giọng quen thuộc).
+
+    Chỉ những tên này mới được tách thành part riêng; mọi tên khác (kể cả tên music21 tự đặt) đi đường piano cũ để bản
+    piano không bị đổi đầu ra.
+    """
+    return bool(name) and any(word in name.lower() for word in _VOICE_WORDS)
+
+
+def _group_parts(
+    parts: list[ET.Element], names: dict[str, str]
+) -> list[tuple[Optional[str], list[ET.Element]]]:
+    """Chia part thành nhóm ``(tên, các part)``: mỗi part giọng hát là một nhóm riêng (tên hiển thị, ví dụ "Giọng hát"),
+    mọi part còn lại gộp thành nhóm piano tên ``None`` đặt cuối.
+
+    Giọng hát luôn đứng trên piano trong bản có đệm, nên thứ tự nhóm không dựa vào thứ tự part của music21; trong nhóm
+    piano, :func:`_order_parts` sắp lại khuông trên/dưới theo khóa nhạc và cao độ.
+    """
+    singles: list[tuple[Optional[str], list[ET.Element]]] = []
+    piano: list[ET.Element] = []
+    for part in parts:
+        name = names.get(part.get("id", ""))
+        if _is_voice(name):
+            singles.append((_display_name(name or ""), [part]))
+        else:
+            piano.append(part)
+    # Nhiều giọng cùng tên (mỗi khuông đơn đều là *Ivox) thì đánh số từ trên xuống: Giọng hát 1, Giọng hát 2...
+    labels = [label for label, _ in singles]
+    if len(singles) > 1 and len(set(labels)) < len(labels):
+        singles = [(f"{label} {index}", members) for index, (label, members) in enumerate(singles, start=1)]
+    return singles + ([(None, piano)] if piano else [])
+
+
+def _display_name(name: str) -> str:
+    """Tên part tiếng Việt cho khuông đơn: ``Voice`` -> ``Giọng hát``, ``Voice 2`` -> ``Giọng hát 2``; tên khác giữ nguyên."""
+    lowered = name.lower()
+    if lowered == "voice":
+        return VOICE_NAME
+    if lowered.startswith("voice "):
+        return f"{VOICE_NAME} {name[6:].strip()}"
+    return name
 
 
 def summarize(part: ET.Element) -> dict:
@@ -410,6 +543,18 @@ def _apply_staff_and_voice(element: ET.Element, staff: int, voice_offset: int) -
 # ====================================================================== tempo và part-list
 
 
+def _existing_tempo(parts: list[ET.Element]) -> Optional[int]:
+    """Tempo ``<sound tempo>`` đầu tiên ở ô nhịp 1 của các part, hoặc None."""
+    for part in parts:
+        measures = part.findall("measure")
+        if not measures:
+            continue
+        for sound in measures[0].iter("sound"):
+            if sound.get("tempo"):
+                return round(float(sound.get("tempo")))
+    return None
+
+
 def _set_tempo(first_measure: ET.Element, tempo_bpm: Optional[int]) -> None:
     """Bảo đảm ô nhịp 1 có ``<sound tempo>``: sửa cái đã có, chưa có thì thêm hướng dẫn tempo (đặc tả mục 2.4)."""
     sounds = [s for s in first_measure.iter("sound") if s.get("tempo")]
@@ -440,6 +585,31 @@ def _set_tempo(first_measure: ET.Element, tempo_bpm: Optional[int]) -> None:
     else:
         position = len(first_measure)
     first_measure.insert(position, direction)
+
+
+def _rebuild_part_list_ensemble(root: ET.Element, names: list[str]) -> None:
+    """``<part-list>`` cho bản nhiều part: mỗi part một ``<score-part id="Pn">``, kênh MIDI riêng, giọng hát chương trình
+    :data:`VOICE_MIDI_PROGRAM`, piano chương trình 1."""
+    old = root.find("part-list")
+    index = list(root).index(old) if old is not None else 0
+    if old is not None:
+        root.remove(old)
+    part_list = ET.Element("part-list")
+    for number, name in enumerate(names, start=1):
+        part_id = f"P{number}"
+        voice = name.startswith(VOICE_NAME)
+        score_part = ET.SubElement(part_list, "score-part", {"id": part_id})
+        ET.SubElement(score_part, "part-name").text = name
+        ET.SubElement(score_part, "part-abbreviation").text = (
+            "Gh." if voice else ("Pno." if name == PIANO_NAME else name[:4] + ".")
+        )
+        instrument = ET.SubElement(score_part, "score-instrument", {"id": f"{part_id}-I1"})
+        ET.SubElement(instrument, "instrument-name").text = "Voice" if voice else name
+        midi = ET.SubElement(score_part, "midi-instrument", {"id": f"{part_id}-I1"})
+        channel = number if number < 10 else number + 1  # bỏ kênh 10 (trống)
+        ET.SubElement(midi, "midi-channel").text = str(min(channel, 16))
+        ET.SubElement(midi, "midi-program").text = str(VOICE_MIDI_PROGRAM if voice else 1)
+    root.insert(index, part_list)
 
 
 def _rebuild_part_list(root: ET.Element, merged: ET.Element) -> None:

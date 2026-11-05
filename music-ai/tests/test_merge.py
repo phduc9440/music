@@ -302,7 +302,9 @@ def test_lenient_pads_page_with_fewer_spines_and_closes_open_splits():
     result = merge.merge_pages(pages(two, three, three), lenient=True)
     assert result.spines == 3 and result.header == f"**kern{T}**kern{T}**kern"
     assert any("Trang 1" in w and "thêm 1 cột" in w for w in result.warnings)
-    assert f"4c{T}4e{T}." in result.lines  # trang 1 được thêm cột trống bên phải
+    # Trang 1 được thêm cột bên phải: khóa nhạc lấy theo spine đó ở trang khác, mỗi ô một dấu lặng dài bằng ô
+    assert result.lines[0] == f"*clefF4{T}*clefG2{T}*clefG2"
+    assert f"4c{T}4e{T}4r" in result.lines
     # Trang 2 kết thúc khi còn tách: có dòng gộp trước trang 3 và trước *-
     joins = [ln for ln in result.lines if ln == f"*{T}*v{T}*v{T}*"]
     assert len(joins) == 2
@@ -330,3 +332,44 @@ def test_lenient_leaves_balanced_split_untouched():
     page, _ = clean(1, text)
     result = merge.merge_pages([page], lenient=True)
     assert not any("hai giọng" in w for w in result.warnings)
+
+
+# ------------------------------------------------------------------ vai trò khuông, độn cột, thống kê ô nhịp
+
+
+def test_annotate_roles_adds_humdrum_instrument_codes_in_spine_order():
+    three = kern("**kern|**kern|**kern", "*clefF4|*clefG2|*clefG2", "=1|=1|=1", "4c|4e|4g", "==|==|==", "*-|*-|*-")
+    merged = merge.merge_pages(pages(three))
+    annotated = merge.annotate_roles(merged, ["SINGLE", "PIANO", "PIANO"])
+    assert annotated.lines[0] == f"*Ipiano{T}*Ipiano{T}*Ivox"  # spine trái = khuông dưới cùng
+    assert annotated.text.splitlines()[1] == annotated.lines[0]
+    assert len(annotated.line_pages) == len(annotated.lines)
+    # chỉ có piano, chỉ có khuông đơn, hoặc sai số spine: giữ nguyên
+    assert merge.annotate_roles(merged, ["PIANO", "PIANO", "PIANO"]) is merged
+    assert merge.annotate_roles(merged, ["SINGLE", "SINGLE", "SINGLE"]) is merged
+    assert merge.annotate_roles(merged, ["SINGLE", "PIANO"]) is merged
+
+
+def test_rest_token_covers_plain_and_dotted_durations():
+    assert merge.rest_token(Fraction(1)) == "1r"
+    assert merge.rest_token(Fraction(3, 4)) == "2.r"
+    assert merge.rest_token(Fraction(3, 8)) == "4.r"
+    assert merge.rest_token(Fraction(7, 8)) == "2..r"
+    assert merge.rest_token(Fraction(2)) == "0r"
+    assert merge.rest_token(Fraction(5, 8)) is None
+
+
+def test_pad_page_inherits_clef_and_meter_and_fills_measures_with_rests():
+    two = merge.clean_page(1, kern("**kern|**kern", "*clefF4|*clefG2", "*M3/4|*M3/4", "4c|2e", "4d|.", "4e|4f", "=1|=1"))[0]
+    padded = merge.pad_page(two, 3, [{}, {}, {"clef": "*clefG2"}])
+    assert padded.header == f"**kern{T}**kern{T}**kern"
+    assert padded.body[0] == f"*clefF4{T}*clefG2{T}*clefG2"
+    assert padded.body[1] == f"*M3/4{T}*M3/4{T}*M3/4"  # nhịp chung: lấy theo chính dòng đó
+    assert padded.body[2] == f"4c{T}2e{T}2.r" and padded.body[3] == f"4d{T}.{T}."
+    assert merge.pad_page(padded, 2).header == f"**kern{T}**kern"
+
+
+def test_measure_stats_counts_checked_and_wrong_measures():
+    text = kern("**kern|**kern", "*M2/4|*M2/4", "=1|=1", "4c|2e", "4d|.", "=2|=2", "4c|4e", "=3|=3", "4c|4e", "4d|4f", "==|==")
+    checked, bad = merge.measure_stats(merge.merge_pages(pages(text)))
+    assert (checked, bad) == (3, 1)

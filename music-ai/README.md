@@ -61,6 +61,10 @@ Bên Spring Boot đặt `AI_INTERNAL_KEY` trùng với `INTERNAL_KEY` ở đây 
 | `MODEL_WAIT_S` | `600` | Job đến khi model còn đang nạp thì chờ tối đa bấy nhiêu giây |
 | `KERN_PARSE_MODE` | `fail` | `fail`: music21 không đọc được kern ghép thì task FAILED `KERN_PARSE_ERROR`; `warn`: chỉ cảnh báo |
 | `MAX_REPEAT_LINES` | `24` | Một dòng kern lặp liên tiếp quá số này bị coi là model sinh lặp và cắt bớt |
+| `OMR_ROUTING` | `fallback` | `off`: như cũ. `fallback`: trang có số spine khác số khuông trên ảnh thì nhận diện lại từng hệ. `always`: nhận diện cả hai cách cho mọi trang rồi chọn (để đo, chậm gấp đôi). Xem "Bố cục và nhận diện lại theo hệ" |
+| `OMR_ROUTING_MEASURES` | `0` | `1`: trang đúng số spine nhưng có ô nhịp lệch trường độ cũng được nhận diện lại theo hệ (chậm hơn, đọc lại mọi hệ của trang) |
+| `ROUTING_RETRY_BEAMS` | `3` | Hệ vẫn sai số khuông thì thử lại bằng beam search với số beam này; `0`/`1`: không thử lại |
+| `ROUTING_RESERVE_S` | `30` | Giây giữ lại cho bước ghép/xuất: nhận diện lại chỉ chạy khi job còn nhiều thời gian hơn mức này |
 
 ## API (Spring Boot gọi, đặc tả mục 6.2)
 
@@ -94,8 +98,8 @@ nằm trong `scores/<scoreId>/`; hoặc đúng 1 PDF, hoặc nhiều ảnh (khô
 | Bước | Tiến độ | Việc làm |
 |---|---|---|
 | `SPLIT_PDF` | 5-10% | Tách PDF / đọc các ảnh đầu vào |
-| `PREPROCESS` | 10-30% | Tiền xử lý từng trang → `pages/page-NNN.png` → callback `files` (PNG) |
-| `INFERENCE` | 30-85% | Transcoda nhận diện từng trang → `kern/page-NNN.krn`; tiến độ `30 + 55 × trang_xong / tổng_trang` |
+| `PREPROCESS` | 10-30% | Tiền xử lý từng trang → `pages/page-NNN.png` → callback `files` (PNG); bố cục → `layout/page-NNN.json` |
+| `INFERENCE` | 30-85% | Transcoda nhận diện từng trang → `kern/page-NNN.krn`; tiến độ `30 + 55 × trang_xong / tổng_trang`. Sau đó (vẫn ở 85%) trang sai số khuông được nhận diện lại theo hệ → `routing/` |
 | `MERGE` | 85-90% | Làm sạch, ghép kern, kiểm tra → `kern/merged.krn` → callback `files` (KERN) |
 | `EXPORT` | 90-98% | kern → `musicxml/v{n}.musicxml` → `midi/v{n}.mid` → callback `files` (MUSICXML, MIDI) → `complete` |
 
@@ -103,16 +107,48 @@ nằm trong `scores/<scoreId>/`; hoặc đúng 1 PDF, hoặc nhiều ảnh (khô
 kern; `EXPORT` (mặc định) chạy đủ. `musicXmlVersion` do Java tính (`scores.current_version + 1`): nhận diện lại sinh
 `v2`, `v3`... và không ghi đè bản cũ. Chỉ khi chạy đủ thì `result_data` không có khóa `stoppedAfter`.
 
+## Bố cục và nhận diện lại theo hệ (bản giọng hát + piano)
+
+Transcoda đôi khi bỏ hẳn một khuông ở cả trang (ví dụ khuông giọng hát) hoặc tách/gộp spine sai rồi trôi tới cuối trang.
+Plan và lý do chọn cách làm: `docs/omr-multi-staff-plan.md`.
+
+1. **Bố cục** (`app/omr/layout.py`, chỉ OpenCV, ~10 ms/trang): trên chính ảnh 1050×1485 model nhận, dò khuông, gom hệ
+   theo vạch nối ở lề trái, gán vai trò (cặp có ngoặc nhọn là piano; không thấy ngoặc thì hai khuông dưới cùng là
+   piano, khuông phía trên là giọng hát). Mọi hệ cùng số khuông thì bố cục được coi là tin cậy.
+2. **Kiểm tra**: kern trang phải có số spine bằng số khuông mỗi hệ. Sai thì có cảnh báo ghi rõ trang.
+3. **Nhận diện lại theo hệ** (`app/omr/routing.py`, `OMR_ROUTING=fallback`): sau khi mọi trang đã có kết quả, mỗi hệ của
+   trang sai được đặt lên một trang trắng giữ nguyên tỉ lệ (`routing/page-NNN-sKK.png`) rồi nhận diện riêng. Hệ "sai" (sai số spine, hoặc hệ có cả giọng lẫn piano mà ô nhịp lệch trường độ) được thử theo
+   thứ tự rẻ trước: đọc cả hệ (greedy) → **đọc riêng từng nhóm khuông** (khuông giọng một ảnh, grand staff piano một ảnh,
+   `routing/page-NNN-sKK-r1-single.png`, `...-r2-piano.png`; mỗi lần greedy và ngắn) rồi ghép theo ô nhịp và thời điểm
+   (`app/omr/combine.py`); không ghép được (số ô khác nhau, đổi khóa giữa ô...) thì ghi cảnh báo lý do và độn như trước.
+   Kern các hệ được ghép (`routing/page-NNN-systems.krn`) và chỉ thay kết quả cả trang khi
+   có hệ đọc đúng số khuông và điểm cấu trúc cao hơn. Chỉ dùng thời gian còn dư của job (trừ `ROUTING_RESERVE_S`):
+   không đủ thời gian thì giữ kết quả cả trang kèm cảnh báo, không bao giờ làm job FAILED. `result_data.routing` ghi
+   trang nào dùng ứng viên nào.
+4. **Vai trò → kern**: bản có cả khuông đơn và piano thì `merged.krn` có dòng `*Ivox`/`*Ipiano` (mã nhạc cụ Humdrum)
+   ngay sau `**kern`; `result_data.staffRoles` ghi vai trò từ trên xuống. Bản chỉ có piano hoặc chỉ một khuông giữ
+   nguyên như cũ.
+
+Đo trên bản nhạc thật (script không ghi vào storage, không gọi Java):
+
+```bash
+python scripts/omr_check.py <scoreId>                          # không cần model: số khuông trên ảnh so với kern đã lưu
+python scripts/omr_check.py <scoreId> --run off,fallback,always  # có model: bảng trang/hệ đúng số khuông, ô đúng trường độ, s/trang
+python scripts/omr_check.py <scoreId> --run fallback --dump /tmp/omr  # lưu ảnh + kern từng lần đọc và systems.txt để đối chiếu
+```
+
 ## Xuất MusicXML và MIDI (đặc tả mục 2.4)
 
 1. **kern → MusicXML** (`app/convert/kern.py`): music21 đọc `merged.krn` rồi ghi MusicXML thô.
 2. **Chuẩn hóa** (`app/convert/musicxml.py`, chỉ dùng thư viện chuẩn): gộp các khuông thành **1 part "Piano" nhiều staff**
-   (`<staves>2</staves>`, staff 1 = tay phải), đưa các part về cùng `divisions`, đánh lại `<staff>`/`<voice>` cho không trùng,
+   (`<staves>2</staves>`, staff 1 = tay phải). Kern có `*Ivox` thì mỗi khuông giọng là **một part "Giọng hát"** riêng
+   (chương trình MIDI 53) đứng trên part "Piano" 2 khuông. Đưa các part về cùng `divisions`, đánh lại `<staff>`/`<voice>` cho không trùng,
    thêm `<sound tempo>` ở ô nhịp 1, đánh lại số ô nhịp từ 1. Khuông trên/dưới được xác định từ **khóa nhạc và cao độ**,
    không dựa vào thứ tự part music21 trả về. Metadata (`measureCount`, `keySignature` dạng `G`/`Bb`/`F#m`, `timeSignature`,
    `tempoBpm`, `staffCount`) rút từ chính MusicXML này và ghi đè giá trị tạm rút từ kern.
-3. **MusicXML → MIDI** (`app/convert/midi.py`): tự ghi MIDI chuẩn (SMF 1, 480 tick/phách): **track i = staff i+1, kênh i**
-   (bỏ qua kênh 9), tempo và nhịp ở track đầu; nốt nối (tie) gộp thành một nốt. Không dùng `music21 write('midi')` vì cách
+3. **MusicXML → MIDI** (`app/convert/midi.py`): tự ghi MIDI chuẩn (SMF 1, 480 tick/phách): **track i = khuông thứ i+1 từ trên
+   xuống qua mọi part, kênh i** (bỏ qua kênh 9; bản giọng hát + piano: track 0 giọng, 1 tay phải, 2 tay trái), chương trình
+   theo `<midi-program>` của part, tempo và nhịp ở track đầu; nốt nối (tie) gộp thành một nốt. Không dùng `music21 write('midi')` vì cách
    music21 gán track/kênh cho bản nhiều staff thay đổi theo phiên bản.
 
 Hai file chỉ được báo về Java (callback `files`) sau khi cả hai đã ghi xong; `complete` kèm `pageMeasures`

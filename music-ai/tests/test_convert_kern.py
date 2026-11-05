@@ -46,3 +46,21 @@ def test_kern_to_midi_chain(merged_kern, tmp_path):
     kern_file_to_musicxml_file(merged_kern, xml, None)
     stats = musicxml_file_to_midi_file(xml, tmp_path / "v1.mid", 96)
     assert stats.tracks == 2 and stats.notes >= 10
+
+
+def test_kern_with_voice_code_exports_voice_and_piano_parts(tmp_path):
+    """Kern ghép có ``*Ivox``/``*Ipiano`` (bước MERGE thêm theo bố cục) -> MusicXML 2 part bằng music21 thật."""
+    from tests.kern_samples import SYSTEM_3
+
+    page, _ = merge.clean_page(1, SYSTEM_3)
+    merged = merge.annotate_roles(merge.merge_pages([page]), ["SINGLE", "PIANO", "PIANO"])
+    kern_path = tmp_path / "merged.krn"
+    kern_path.write_text(merged.text, encoding="utf-8")
+    result = kern_file_to_musicxml_file(kern_path, tmp_path / "v1.musicxml", 90)
+    assert result.parts == ["Giọng hát", "Piano"] and result.staff_count == 3
+    root = ET.parse(tmp_path / "v1.musicxml").getroot()
+    voice, piano = root.findall("part")
+    assert [n.findtext("pitch/step") for n in voice.iter("note")] == ["B", "C", "D"]  # khuông giọng = cột phải
+    assert piano.findtext("measure/attributes/staves") == "2"
+    stats = musicxml_file_to_midi_file(tmp_path / "v1.musicxml", tmp_path / "v1.mid", 90)
+    assert stats.tracks == 3
