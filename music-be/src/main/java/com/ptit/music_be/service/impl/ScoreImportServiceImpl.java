@@ -87,7 +87,22 @@ public class ScoreImportServiceImpl implements ScoreImportService {
 
     /** Thông tin đọc được từ MusicXML. */
     record MusicXmlInfo(
-            String title, String composer, Integer measureCount, String timeSignature, Integer staffCount) {}
+            String title,
+            String composer,
+            Integer measureCount,
+            String timeSignature,
+            Integer staffCount,
+            Integer tempoBpm,
+            String keySignature) {}
+
+    /** Tonic theo số dấu hóa (fifths) từ -7 đến 7: chỉ số = fifths + 7. */
+    static final String[] MAJOR_KEYS = {
+        "Cb", "Gb", "Db", "Ab", "Eb", "Bb", "F", "C", "G", "D", "A", "E", "B", "F#", "C#"
+    };
+
+    static final String[] MINOR_KEYS = {
+        "Ab", "Eb", "Bb", "F", "C", "G", "D", "A", "E", "B", "F#", "C#", "G#", "D#", "A#"
+    };
 
     @Override
     @Transactional
@@ -138,6 +153,8 @@ public class ScoreImportServiceImpl implements ScoreImportService {
                 .sourceType(ScoreSource.IMPORT.name())
                 .measureCount(info == null ? null : info.measureCount())
                 .timeSignature(info == null ? null : info.timeSignature())
+                .tempoBpm(info == null ? null : info.tempoBpm())
+                .keySignature(info == null ? null : info.keySignature())
                 .staffCount(info == null || info.staffCount() == null ? 2 : info.staffCount())
                 .currentVersion(kind.isMidi() ? 0 : 1)
                 .build());
@@ -344,7 +361,63 @@ public class ScoreImportServiceImpl implements ScoreImportService {
         String beatType = firstText(root, "beat-type");
         String time = beats != null && beatType != null ? beats + "/" + beatType : null;
 
-        return new MusicXmlInfo(title, composer, measures, time == null || time.length() > 8 ? null : time, staves);
+        return new MusicXmlInfo(
+                title,
+                composer,
+                measures,
+                time == null || time.length() > 8 ? null : time,
+                staves,
+                readTempo(root),
+                readKeySignature(root));
+    }
+
+    /** Tempo: ưu tiên thuộc tính tempo của &lt;sound&gt;, không có thì lấy &lt;per-minute&gt; của &lt;metronome&gt;. */
+    private Integer readTempo(Element root) {
+        NodeList sounds = root.getElementsByTagName("sound");
+        for (int i = 0; i < sounds.getLength(); i++) {
+            Integer bpm = toBpm(((Element) sounds.item(i)).getAttribute("tempo"));
+            if (bpm != null) {
+                return bpm;
+            }
+        }
+        return toBpm(firstText(root, "per-minute"));
+    }
+
+    private Integer toBpm(String text) {
+        if (!StringUtils.hasText(text)) {
+            return null;
+        }
+        try {
+            long bpm = Math.round(Double.parseDouble(text.trim()));
+            return bpm >= 1 && bpm <= 999 ? (int) bpm : null;
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    /** Khóa nhạc từ &lt;key&gt; đầu tiên: số dấu hóa + mode -> "C", "Bb", "F#m"... Null nếu không có hoặc không hợp lệ. */
+    private String readKeySignature(Element root) {
+        NodeList keys = root.getElementsByTagName("key");
+        if (keys.getLength() == 0) {
+            return null;
+        }
+        Element key = (Element) keys.item(0);
+        String fifthsText = firstText(key, "fifths");
+        if (fifthsText == null) {
+            return null;
+        }
+        int fifths;
+        try {
+            fifths = Integer.parseInt(fifthsText);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+        if (fifths < -7 || fifths > 7) {
+            return null;
+        }
+        String mode = firstText(key, "mode");
+        boolean minor = mode != null && mode.equalsIgnoreCase("minor");
+        return minor ? MINOR_KEYS[fifths + 7] + "m" : MAJOR_KEYS[fifths + 7];
     }
 
     private String firstText(Element root, String tag) {
