@@ -25,6 +25,9 @@ public interface ScoreService {
     PageResponse<ScoreSummaryResponse> getMyScores(
             int page, int size, String keyword, String status, String source, String difficulty, String tagId, String sort);
 
+    /** Bản nhạc người khác chia sẻ cho người đang đăng nhập (qua liên kết hoặc được mời/duyệt), kèm cấp quyền. */
+    PageResponse<ScoreSummaryResponse> getSharedWithMe(int page, int size);
+
     ScoreDetailResponse getScore(String scoreId);
 
     ScoreDetailResponse updateScore(String scoreId, ScoreUpdateRequest request);

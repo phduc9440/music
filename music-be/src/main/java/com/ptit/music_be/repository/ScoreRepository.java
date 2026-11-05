@@ -1,6 +1,7 @@
 package com.ptit.music_be.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,6 +19,12 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
     List<Score> findByMember(Member member);
 
     List<Score> findByVisibility(String visibility);
+
+    /** Các bản nhạc được người khác chia sẻ cho một thành viên (cập nhật gần nhất trước). */
+    @Query("select ms.score from MemberScore ms where ms.member.id = :memberId and ms.permission is not null order by ms.score.updatedAt desc")
+    Page<Score> findSharedWithMember(@Param("memberId") String memberId, Pageable pageable);
+
+    Optional<Score> findByShareTokenAndLinkPermissionIsNotNull(String shareToken);
 
     /**
      * Danh sách bản nhạc của một thành viên, có tìm theo tên/tác giả và lọc trạng thái/nguồn/độ khó/thể loại.

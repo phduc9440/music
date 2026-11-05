@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 
 /**
  * allowedRole="USER": any signed-in account (ADMIN has every USER permission).
@@ -7,10 +7,12 @@ import { Navigate } from 'react-router-dom';
  * This is a UI guard only; the backend rejects non-admin calls to /api/admin/** with 403.
  */
 const ProtectedRoute = ({ children, allowedRole }: { children: React.ReactNode; allowedRole: 'USER' | 'ADMIN' }) => {
+  const location = useLocation();
   const token = localStorage.getItem('token');
   const role = localStorage.getItem('role');
 
-  if (!token || !role) return <Navigate to="/auth/login" />;
+  // Nhớ trang đang định vào (ví dụ liên kết chia sẻ /s/xxx) để quay lại sau khi đăng nhập
+  if (!token || !role) return <Navigate to="/auth/login" state={{ from: location.pathname + location.search }} />;
   if (allowedRole === 'ADMIN' && role !== 'ADMIN') return <Navigate to="/profile" />;
 
   return children;

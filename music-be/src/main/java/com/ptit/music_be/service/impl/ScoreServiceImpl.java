@@ -42,8 +42,10 @@ import com.ptit.music_be.mapper.AiTaskMapper;
 import com.ptit.music_be.mapper.ScoreFileMapper;
 import com.ptit.music_be.repository.AiTaskRepository;
 import com.ptit.music_be.repository.MemberRepository;
+import com.ptit.music_be.repository.MemberScoreRepository;
 import com.ptit.music_be.repository.ScoreFileRepository;
 import com.ptit.music_be.repository.ScoreRepository;
+import com.ptit.music_be.repository.ScoreReviewRepository;
 import com.ptit.music_be.repository.ScoreTagRepository;
 import com.ptit.music_be.repository.TagRepository;
 import com.ptit.music_be.service.FileStorageService;
@@ -70,6 +72,8 @@ public class ScoreServiceImpl implements ScoreService {
     ScoreFileRepository scoreFileRepository;
     AiTaskRepository aiTaskRepository;
     TagRepository tagRepository;
+    MemberScoreRepository memberScoreRepository;
+    ScoreReviewRepository scoreReviewRepository;
     ScoreTagRepository scoreTagRepository;
     ScoreFileService scoreFileService;
     FileStorageService fileStorageService;
@@ -118,6 +122,43 @@ public class ScoreServiceImpl implements ScoreService {
     }
 
     // ------------------------------------------------------------------ chi tiết
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<ScoreSummaryResponse> getSharedWithMe(int page, int size) {
+        Member member = memberRepository
+                .findByEmail(SecurityUtils.getCurrentEmail())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        int safeSize = size <= 0 ? DEFAULT_PAGE_SIZE : Math.min(size, MAX_PAGE_SIZE);
+        Page<Score> result =
+                scoreRepository.findSharedWithMember(member.getId(), PageRequest.of(Math.max(page, 0), safeSize));
+
+        Map<String, ScoreFile> thumbnails = loadThumbnails(result.getContent());
+        Map<String, List<TagResponse>> tagsByScore = loadTags(result.getContent());
+        Map<String, String> levels = new HashMap<>();
+        for (var share : memberScoreRepository.findByMember(member)) {
+            if (share.getPermission() != null) {
+                levels.put(share.getScore().getId(), share.getPermission().name());
+            }
+        }
+        List<ScoreSummaryResponse> content = result.getContent().stream()
+                .map(score -> {
+                    ScoreSummaryResponse summary = toSummary(
+                            score, thumbnails.get(score.getId()), tagsByScore.getOrDefault(score.getId(), List.of()));
+                    summary.setAccessLevel(levels.get(score.getId()));
+                    summary.setOwnerEmail(
+                            score.getMember() == null ? null : score.getMember().getEmail());
+                    return summary;
+                })
+                .toList();
+        return PageResponse.<ScoreSummaryResponse>builder()
+                .content(content)
+                .pageNumber(result.getNumber())
+                .pageSize(result.getSize())
+                .totalElements(result.getTotalElements())
+                .totalPages(result.getTotalPages())
+                .build();
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -280,6 +321,8 @@ public class ScoreServiceImpl implements ScoreService {
         List<AiTaskResponse> latestTasks =
                 latestByType.values().stream().map(aiTaskMapper::toResponse).toList();
 
+        var rating = scoreReviewRepository.getRatingStats(score.getId());
+
         return ScoreDetailResponse.builder()
                 .id(score.getId())
                 .title(score.getTitle())
@@ -304,9 +347,14 @@ public class ScoreServiceImpl implements ScoreService {
                 .pageCount(score.getPageCount())
                 .currentVersion(score.getCurrentVersion())
                 .viewCount(score.getViewCount())
+                .averageRating(rating.getAverage() == null ? null : Math.round(rating.getAverage() * 10) / 10.0)
+                .ratingCount(rating.getRatingCount() == null ? 0 : rating.getRatingCount())
                 .ownerEmail(score.getMember() == null ? null : score.getMember().getEmail())
                 .canEdit(scoreFileService.canEdit(score))
                 .canDelete(scoreFileService.canDelete(score))
+                .canReview(scoreFileService.canReview(score))
+                .canManageSharing(scoreFileService.canManageSharing(score))
+                .accessLevel(scoreFileService.getAccessLevel(score))
                 .createdAt(score.getCreatedAt())
                 .updatedAt(score.getUpdatedAt())
                 .files(scoreFileMapper.toResponses(currentFiles))

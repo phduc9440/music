@@ -11,6 +11,8 @@ import type {
 
 export const scoreApi = {
   list: (params?: ScoreListParams) => apiClient.get<ApiResponse<PageResult<ScoreSummary>>>('/scores/me', { params }),
+  sharedWithMe: (params?: { page?: number; size?: number }) =>
+    apiClient.get<ApiResponse<PageResult<ScoreSummary>>>('/scores/shared-with-me', { params }),
   detail: (id: string) => apiClient.get<ApiResponse<ScoreDetail>>(`/scores/${id}`),
   update: (id: string, data: ScoreUpdateRequest) => apiClient.patch<ApiResponse<ScoreDetail>>(`/scores/${id}`, data),
   // Thay toàn bộ thể loại của bản nhạc (tối đa 10, mảng rỗng = gỡ hết)

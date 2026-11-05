@@ -1,4 +1,12 @@
-import type { Difficulty, OmrSourceType, ProcessingStatus, ScoreSource, TaskStatus } from '../types';
+import type {
+  AccessLevel,
+  Difficulty,
+  OmrSourceType,
+  ProcessingStatus,
+  ScoreSource,
+  TaskStatus,
+} from '../types';
+import type { SharePermission } from '../types';
 
 // Nhãn hiển thị tiếng Việt cho các giá trị enum của BE
 export const STATUS_LABELS: Record<ProcessingStatus, string> = {
@@ -27,6 +35,19 @@ export const OMR_SOURCE_LABELS: Record<OmrSourceType, string> = {
   PHOTO: 'Ảnh chụp',
   SCAN: 'Bản scan',
   PDF_NATIVE: 'PDF gốc',
+};
+
+export const SHARE_PERMISSION_LABELS: Record<SharePermission, string> = {
+  1: 'Người xem',
+  2: 'Người nhận xét',
+  3: 'Người chỉnh sửa',
+};
+
+export const ACCESS_LEVEL_LABELS: Record<AccessLevel, string> = {
+  OWNER: 'Chủ sở hữu',
+  EDIT: 'Người chỉnh sửa',
+  REVIEW: 'Người nhận xét',
+  VIEW: 'Người xem',
 };
 
 export const DIFFICULTY_LABELS: Record<Difficulty, string> = {
@@ -62,6 +83,7 @@ export const TASK_TYPE_LABELS: Record<string, string> = {
 export const MAX_TITLE = 255;
 export const MAX_COMPOSER = 255;
 export const MAX_NOTES = 5000;
+export const MAX_REVIEW_COMMENT = 2000;
 export const MAX_KEYWORD = 100;
 
 // Chu kỳ tự làm mới khi còn tác vụ đang chạy

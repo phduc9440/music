@@ -111,8 +111,50 @@ public class ScoreFileServiceImpl implements ScoreFileService {
         if (isOwner(score)) {
             return true;
         }
+        return hasShare(score, SharePermission.EDIT);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean canReview(Score score) {
+        return SecurityUtils.isAdmin() || isOwner(score) || hasShare(score, SharePermission.REVIEW);
+    }
+
+    @Override
+    public void checkCanReview(Score score) {
+        if (!canReview(score)) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+    }
+
+    @Override
+    public boolean canManageSharing(Score score) {
+        return SecurityUtils.isAdmin() || isOwner(score);
+    }
+
+    @Override
+    public void checkCanManageSharing(Score score) {
+        if (!canManageSharing(score)) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public String getAccessLevel(Score score) {
+        if (canManageSharing(score)) {
+            return "OWNER";
+        }
+        Optional<MemberScore> share = findShare(score);
+        if (share.isPresent()) {
+            return share.get().getPermission().name();
+        }
+        return VISIBILITY_PUBLIC.equals(score.getVisibility()) ? SharePermission.VIEW.name() : null;
+    }
+
+    private boolean hasShare(Score score, SharePermission atLeast) {
         return findShare(score)
-                .map(share -> share.getPermission() == SharePermission.EDIT)
+                .map(share -> share.getPermission().includes(atLeast))
                 .orElse(false);
     }
 
@@ -126,7 +168,10 @@ public class ScoreFileServiceImpl implements ScoreFileService {
                 && SecurityUtils.getCurrentEmail().equals(score.getMember().getEmail());
     }
 
+    /** Quyền đã được cấp cho người đang đăng nhập. Dòng mới chỉ có yêu cầu xin (permission null) thì chưa có quyền. */
     private Optional<MemberScore> findShare(Score score) {
-        return memberScoreRepository.findByScoreIdAndMemberEmail(score.getId(), SecurityUtils.getCurrentEmail());
+        return memberScoreRepository
+                .findByScoreIdAndMemberEmail(score.getId(), SecurityUtils.getCurrentEmail())
+                .filter(share -> share.getPermission() != null);
     }
 }

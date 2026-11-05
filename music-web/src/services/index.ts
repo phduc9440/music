@@ -7,3 +7,5 @@ export * from './omrApi';
 export * from './fileApi';
 export * from './importApi';
 export * from './tagApi';
+export * from './sharingApi';
+export * from './reviewApi';

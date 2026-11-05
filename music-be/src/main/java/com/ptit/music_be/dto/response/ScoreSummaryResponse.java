@@ -31,6 +31,10 @@ public class ScoreSummaryResponse {
     String visibility;
 
     Integer measureCount;
+    /** Chỉ có trong danh sách "Được chia sẻ với tôi": cấp của người xem (VIEW / REVIEW / EDIT). */
+    String accessLevel;
+    /** Chỉ có trong danh sách "Được chia sẻ với tôi": email chủ sở hữu. */
+    String ownerEmail;
     /** Thể loại đã gắn, sắp xếp theo tên. */
     List<TagResponse> tags;
     /** Ảnh trang 1 (đường dẫn tương đối so với host, ví dụ /api/files/{id}/download?inline=true); null nếu chưa có. */

@@ -56,6 +56,17 @@ public class ScoreController {
                 .build();
     }
 
+    @GetMapping("/shared-with-me")
+    @Operation(
+            summary = "Scores other people shared with me (via link or invitation), with my access level",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<PageResponse<ScoreSummaryResponse>> getSharedWithMe(
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "12") int size) {
+        return ApiResponse.<PageResponse<ScoreSummaryResponse>>builder()
+                .result(scoreService.getSharedWithMe(page, size))
+                .build();
+    }
+
     @GetMapping("/{scoreId}")
     @Operation(
             summary = "Score detail (info + current files + latest task of each type)",

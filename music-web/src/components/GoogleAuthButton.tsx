@@ -6,9 +6,11 @@ import { completeLogin } from '../utils/auth';
 
 interface GoogleAuthButtonProps {
   setIsLoading: (loading: boolean) => void;
+  /** Trang cần quay lại sau khi đăng nhập (mặc định theo vai trò). */
+  redirectTo?: string;
 }
 
-export default function GoogleAuthButton({ setIsLoading }: GoogleAuthButtonProps) {
+export default function GoogleAuthButton({ setIsLoading, redirectTo }: GoogleAuthButtonProps) {
   const navigate = useNavigate();
 
   const handleGoogleSuccess = async (credentialResponse: any) => {
@@ -18,7 +20,7 @@ export default function GoogleAuthButton({ setIsLoading }: GoogleAuthButtonProps
       const response = await authApi.googleLogin({ idToken: credentialResponse.credential });
       const target = await completeLogin(response.data.result);
       toast.success('Login successful!');
-      navigate(target);
+      navigate(redirectTo ?? target, { replace: true });
     } catch (error: any) {
       toast.error(error.response?.data?.message || error.message || 'Google Login failed');
     } finally {

@@ -4,7 +4,10 @@ import { toast } from 'react-toastify';
 import DeleteScoreModal from '../../components/scores/DeleteScoreModal';
 import EditScoreModal from '../../components/scores/EditScoreModal';
 import FilesTable from '../../components/scores/FilesTable';
+import RequestAccess from '../../components/scores/RequestAccess';
+import ReviewsSection from '../../components/scores/ReviewsSection';
 import ScoreHero from '../../components/scores/ScoreHero';
+import ShareModal from '../../components/scores/ShareModal';
 import TasksTable from '../../components/scores/TasksTable';
 import { scoreApi } from '../../services';
 import type { ScoreDetail as ScoreDetailData } from '../../types';
@@ -16,9 +19,10 @@ type LoadState =
   | { phase: 'loading' }
   | { phase: 'ready'; score: ScoreDetailData }
   | { phase: 'notFound' }
+  | { phase: 'forbidden' }
   | { phase: 'error' };
 
-type Tab = 'files' | 'tasks';
+type Tab = 'files' | 'tasks' | 'reviews';
 
 /** Trang /scores/:id: chi tiết bản nhạc (doc mục 2.0). */
 export default function ScoreDetail() {
@@ -29,6 +33,7 @@ export default function ScoreDetail() {
   const [tab, setTab] = useState<Tab>('files');
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [sharing, setSharing] = useState(false);
 
   // Tải chi tiết bản nhạc
   useEffect(() => {
@@ -42,9 +47,11 @@ export default function ScoreDetail() {
       .catch((err) => {
         if (cancelled) return;
         const code = getHttpStatus(err);
-        // 404: không tồn tại; 403: không có quyền xem -> cùng một màn hình "không tìm thấy"
-        if (code === 404 || code === 403) {
+        // 404: không tồn tại. 403: chưa có quyền xem -> cho xin quyền
+        if (code === 404) {
           setState({ phase: 'notFound' });
+        } else if (code === 403) {
+          setState({ phase: 'forbidden' });
         } else {
           setState((prev) => (prev.phase === 'ready' ? prev : { phase: 'error' }));
           toast.error('Không tải được bản nhạc');
@@ -86,6 +93,17 @@ export default function ScoreDetail() {
     );
   }
 
+  if (state.phase === 'forbidden' && id) {
+    return (
+      <div className="sc-page">
+        {navbar}
+        <main className="sc-container">
+          <RequestAccess scoreId={id} onGranted={() => setTick((n) => n + 1)} />
+        </main>
+      </div>
+    );
+  }
+
   if (!score) {
     const notFound = state.phase === 'notFound';
     return (
@@ -108,7 +126,12 @@ export default function ScoreDetail() {
     <div className="sc-page">
       {navbar}
       <main className="sc-container">
-        <ScoreHero score={score} onEdit={() => setEditing(true)} onDelete={() => setDeleting(true)} />
+        <ScoreHero
+          score={score}
+          onEdit={() => setEditing(true)}
+          onDelete={() => setDeleting(true)}
+          onShare={() => setSharing(true)}
+        />
 
         <div className="sc-tabs" role="tablist">
           <button role="tab" aria-selected={tab === 'files'} className="sc-tab" onClick={() => setTab('files')}>
@@ -117,10 +140,19 @@ export default function ScoreDetail() {
           <button role="tab" aria-selected={tab === 'tasks'} className="sc-tab" onClick={() => setTab('tasks')}>
             Lịch sử tác vụ <span className="sc-tab__count">{score.latestTasks.length}</span>
           </button>
+          <button role="tab" aria-selected={tab === 'reviews'} className="sc-tab" onClick={() => setTab('reviews')}>
+            Nhận xét{score.ratingCount ? <span className="sc-tab__count">{score.ratingCount}</span> : null}
+          </button>
         </div>
 
-        {tab === 'files' ? <FilesTable files={score.files} /> : <TasksTable tasks={score.latestTasks} />}
+        {tab === 'files' && <FilesTable files={score.files} />}
+        {tab === 'tasks' && <TasksTable tasks={score.latestTasks} />}
+        {tab === 'reviews' && (
+          <ReviewsSection scoreId={score.id} canReview={score.canReview} onChanged={() => setTick((n) => n + 1)} />
+        )}
       </main>
+
+      {sharing && <ShareModal scoreId={score.id} onClose={() => setSharing(false)} />}
 
       {editing && (
         <EditScoreModal

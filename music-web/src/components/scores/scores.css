@@ -375,3 +375,108 @@ textarea.sc-input {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* ---- Chia sẻ ---- */
+.sc-share__link,
+.sc-share__invite {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+}
+.sc-share__members {
+  margin-top: 1rem;
+}
+.sc-share__list {
+  list-style: none;
+  margin: 0.5rem 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+.sc-share__list li {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+/* ---- Xin quyền ---- */
+.sc-request {
+  display: grid;
+  gap: 0.5rem;
+  width: min(100%, 24rem);
+  margin: 1rem auto 0;
+  text-align: left;
+}
+.sc-share__requests {
+  margin-top: 1rem;
+}
+.sc-share__request {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+.sc-share__request-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+/* ---- Nhận xét ---- */
+.sc-reviews {
+  display: grid;
+  gap: 1rem;
+}
+.sc-reviews__summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.sc-reviews__avg {
+  font-size: 1.75rem;
+}
+.sc-reviews__stars {
+  color: #f59e0b;
+  letter-spacing: 0.1em;
+}
+.sc-reviews__form {
+  display: grid;
+  gap: 0.5rem;
+}
+.sc-reviews__pick {
+  display: flex;
+  gap: 0.25rem;
+}
+.sc-star {
+  border: none;
+  background: none;
+  font-size: 1.6rem;
+  line-height: 1;
+  color: #cbd5e1;
+  cursor: pointer;
+}
+.sc-star.is-on {
+  color: #f59e0b;
+}
+.sc-reviews__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+.sc-review {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+.sc-review__head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.sc-review p {
+  margin: 0.25rem 0 0;
+  white-space: pre-wrap;
+}
