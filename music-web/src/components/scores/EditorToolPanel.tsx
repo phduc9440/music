@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import type { SymbolOp } from '../../editor/commands';
+import type { DurationChoice, DurationType } from '../../editor/durations';
 import type { PitchOp } from '../../editor/pitch';
 import {
   ToolDelete,
@@ -34,6 +35,12 @@ interface Props {
   busy: boolean;
   onPitch: (op: PitchOp) => void;
   onSymbol: (op: SymbolOp) => void;
+  /** Chế độ nhập nốt (bấm phím A–G để nhập) và trường độ đang dùng. */
+  inputMode: boolean;
+  onInputModeChange: (enabled: boolean) => void;
+  inputDuration: DurationChoice;
+  onDuration: (type: DurationType) => void;
+  onDot: () => void;
   /** "Nghe khi sửa": phát âm xem trước mỗi khi đổi cao độ. */
   previewTone: boolean;
   onPreviewToneChange: (enabled: boolean) => void;
@@ -44,18 +51,6 @@ interface Props {
   onUndo: () => void;
   onRedo: () => void;
   onSave: () => void;
-}
-
-interface ToolDef {
-  icon: ReactNode;
-  label: string;
-}
-
-interface SoonGroup {
-  title: string;
-  /** Nhánh sẽ làm công cụ này, hiện trong tooltip. */
-  branch: string;
-  tools: ToolDef[];
 }
 
 interface PitchTool {
@@ -95,24 +90,17 @@ const SYMBOL_TOOLS: SymbolTool[] = [
   { op: 'delete', icon: <ToolDelete />, label: 'Xóa', shortcut: 'Delete' },
 ];
 
-const SOON_GROUPS: SoonGroup[] = [
-  {
-    title: 'Trường độ',
-    branch: 'editor-duration',
-    tools: [
-      { icon: <ToolWhole />, label: 'Tròn' },
-      { icon: <ToolHalf />, label: 'Trắng' },
-      { icon: <ToolQuarter />, label: 'Đen' },
-      { icon: <ToolEighth />, label: 'Móc đơn' },
-      { icon: <ToolSixteenth />, label: 'Móc kép' },
-    ],
-  },
+const DURATION_TOOLS: { type: DurationType; icon: ReactNode; label: string; key: string }[] = [
+  { type: 'whole', icon: <ToolWhole />, label: 'Tròn', key: '5' },
+  { type: 'half', icon: <ToolHalf />, label: 'Trắng', key: '4' },
+  { type: 'quarter', icon: <ToolQuarter />, label: 'Đen', key: '3' },
+  { type: 'eighth', icon: <ToolEighth />, label: 'Móc đơn', key: '2' },
+  { type: '16th', icon: <ToolSixteenth />, label: 'Móc kép', key: '1' },
 ];
 
 /**
  * Bảng công cụ chỉnh sửa (đặc tả 1.17): Desktop ở bên trái, iPad thu thành thanh dưới đáy, Mobile mở dạng
- * bottom sheet. Hiện bật chế độ "Chọn" và nhóm "Cao độ"; "Nhập nốt", "Trường độ", "Ký hiệu" còn khóa và sẽ bật ở
- * các nhánh editor-* sau. Mobile chỉ có nhóm Cao độ (đặc tả 1.18). Chỉ hiện khi canEdit.
+ * bottom sheet. Mobile chỉ có nhóm Cao độ (đặc tả 1.18). Chỉ hiện khi canEdit.
  */
 export default function EditorToolPanel({
   open,
@@ -121,6 +109,11 @@ export default function EditorToolPanel({
   busy,
   onPitch,
   onSymbol,
+  inputMode,
+  onInputModeChange,
+  inputDuration,
+  onDuration,
+  onDot,
   previewTone,
   onPreviewToneChange,
   canUndo,
@@ -147,16 +140,23 @@ export default function EditorToolPanel({
         <div className="sv-tools__group sv-tools__group--mode">
           <div className="sv-tools__title">Chế độ</div>
           <div className="sv-tools__row">
-            <button className="sv-tool is-active" aria-pressed="true" title="Chọn nốt" aria-label="Chọn">
+            <button
+              className={`sv-tool${inputMode ? '' : ' is-active'}`}
+              aria-pressed={!inputMode}
+              onClick={() => onInputModeChange(false)}
+              title="Chọn nốt"
+              aria-label="Chọn"
+            >
               <span className="sv-tool__icon" aria-hidden="true">
                 <ToolSelect />
               </span>
               <span className="sv-tool__label">Chọn</span>
             </button>
             <button
-              className="sv-tool"
-              disabled
-              title="Nhập nốt (sẽ có ở nhánh editor-note-input)"
+              className={`sv-tool${inputMode ? ' is-active' : ''}`}
+              aria-pressed={inputMode}
+              onClick={() => onInputModeChange(true)}
+              title="Nhập nốt: chọn dấu lặng rồi bấm phím A–G (Esc để thoát)"
               aria-label="Nhập nốt"
             >
               <span className="sv-tool__icon" aria-hidden="true">
@@ -225,7 +225,14 @@ export default function EditorToolPanel({
                 <span className="sv-tool__label">{tool.label}</span>
               </button>
             ))}
-            <button className="sv-tool" disabled title="Chấm dôi (sẽ có ở nhánh editor-duration)" aria-label="Chấm dôi">
+            <button
+              className={`sv-tool${inputMode && inputDuration.dotted ? ' is-active' : ''}`}
+              disabled={(!hasSelection && !inputMode) || busy}
+              aria-pressed={inputMode ? inputDuration.dotted : undefined}
+              onClick={onDot}
+              title="Chấm dôi (.)"
+              aria-label="Chấm dôi"
+            >
               <span className="sv-tool__icon" aria-hidden="true">
                 <ToolDot />
               </span>
@@ -234,29 +241,27 @@ export default function EditorToolPanel({
           </div>
         </div>
 
-        {SOON_GROUPS.map((group) => (
-          <div key={group.title} className="sv-tools__group sv-tools__group--soon">
-            <div className="sv-tools__title">
-              {group.title} <span className="sv-soon">Sắp có</span>
-            </div>
-            <div className="sv-tools__row">
-              {group.tools.map((tool) => (
-                <button
-                  key={tool.label}
-                  className="sv-tool"
-                  disabled
-                  title={`${tool.label} (sẽ có ở nhánh ${group.branch})`}
-                  aria-label={tool.label}
-                >
-                  <span className="sv-tool__icon" aria-hidden="true">
-                    {tool.icon}
-                  </span>
-                  <span className="sv-tool__label">{tool.label}</span>
-                </button>
-              ))}
-            </div>
+        <div className="sv-tools__group sv-tools__group--soon">
+          <div className="sv-tools__title">Trường độ</div>
+          <div className="sv-tools__row">
+            {DURATION_TOOLS.map((tool) => (
+              <button
+                key={tool.type}
+                className={`sv-tool${inputMode && inputDuration.type === tool.type ? ' is-active' : ''}`}
+                disabled={(!hasSelection && !inputMode) || busy}
+                aria-pressed={inputMode ? inputDuration.type === tool.type : undefined}
+                onClick={() => onDuration(tool.type)}
+                title={`${tool.label} (${tool.key})`}
+                aria-label={tool.label}
+              >
+                <span className="sv-tool__icon" aria-hidden="true">
+                  {tool.icon}
+                </span>
+                <span className="sv-tool__label">{tool.label}</span>
+              </button>
+            ))}
           </div>
-        ))}
+        </div>
       </aside>
     </>
   );

@@ -19,6 +19,7 @@ import {
   IconUndo,
 } from '../../components/scores/ViewerIcons';
 import { ScoreDocument } from '../../editor/ScoreDocument';
+import { DURATION_LABELS } from '../../editor/durations';
 import { usePlayback } from '../../editor/usePlayback';
 import { useScoreEditor } from '../../editor/useScoreEditor';
 import { fetchMusicXml, scoreApi } from '../../services';
@@ -56,6 +57,9 @@ const SHORTCUTS: [string, string][] = [
   [`${MOD} + Z`, 'Hoàn tác'],
   [`${MOD} + Shift + Z  hoặc  ${MOD} + Y`, 'Làm lại'],
   [`${MOD} + S`, 'Lưu'],
+  ['1 – 5', 'Trường độ: móc kép, móc đơn, đen, trắng, tròn (áp lên nốt chọn)'],
+  ['.', 'Bật/tắt chấm dôi'],
+  ['A – G (chế độ Nhập nốt)', 'Biến nốt/dấu lặng đang chọn thành nốt đó rồi sang mục kế tiếp'],
   ['Delete', 'Xóa nốt đang chọn (hợp âm còn nốt khác thì giữ lại)'],
   ['Esc', 'Bỏ chọn'],
   ['+  /  -  /  0', 'Phóng to / thu nhỏ / về 100%'],
@@ -432,6 +436,11 @@ function ScoreWorkspace({ score, xml, info, doc }: WorkspaceProps) {
             busy={editor.saving}
             onPitch={editor.applyPitch}
             onSymbol={editor.applySymbol}
+            inputMode={editor.inputMode}
+            onInputModeChange={editor.setInputMode}
+            inputDuration={editor.inputDuration}
+            onDuration={editor.chooseDuration}
+            onDot={editor.toggleDot}
             previewTone={editor.previewTone}
             onPreviewToneChange={editor.setPreviewTone}
             canUndo={editor.canUndo}
@@ -468,6 +477,12 @@ function ScoreWorkspace({ score, xml, info, doc }: WorkspaceProps) {
       <footer className="sv-status">
         <span>{summary.join(' · ') || 'Bản nhạc'}</span>
         <div className="sv-status__right">
+          {canEdit && editor.inputMode && (
+            <span className="sv-status__sel">
+              Nhập nốt · trường độ {DURATION_LABELS[editor.inputDuration.type]}
+              {editor.inputDuration.dotted ? ' chấm dôi' : ''} · bấm A–G
+            </span>
+          )}
           {canEdit && editor.statusText && <span className="sv-status__sel">{editor.statusText}</span>}
           {canEdit && firstIssue && (
             <button

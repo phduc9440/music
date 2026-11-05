@@ -9,6 +9,8 @@ import { saveMusicXml } from '../services';
 import { getConflictVersion, getSaveErrorMessage } from '../utils/score';
 import { EDIT_FAILURE_MESSAGES, changePitch, removeNotes, setAlteration } from './commands';
 import type { EditResult, SymbolOp } from './commands';
+import { DURATION_LABELS, DURATION_QUARTERS, enterNote, isLetterKey, setDuration } from './durations';
+import type { DurationChoice, DurationType } from './durations';
 import { DRAFT_INTERVAL_MS, clearDraft, loadDraft, saveDraft } from './draft';
 import type { Draft } from './draft';
 import { describeSelection } from './describe';
@@ -19,6 +21,15 @@ import type { PitchOp } from './pitch';
 import { selectionGroups } from './playback';
 import { loadPreviewTonePref, playPreviewGroups, savePreviewTonePref } from './previewTone';
 import type { ScoreDocument } from './ScoreDocument';
+
+/** Phím số chọn nhanh trường độ: 1 móc kép ... 5 tròn. */
+const DIGIT_DURATIONS: Record<string, DurationType> = {
+  '1': '16th',
+  '2': 'eighth',
+  '3': 'quarter',
+  '4': 'half',
+  '5': 'whole',
+};
 
 /** Thời gian hiện thông báo ngắn trên thanh trạng thái (ms). */
 const NOTICE_MS = 2500;
@@ -67,6 +78,17 @@ export interface ScoreEditor {
   select: (ids: readonly string[], additive: boolean) => void;
   clearSelection: () => void;
   applyPitch: (op: PitchOp) => void;
+  /** Chế độ nhập nốt: chọn dấu lặng rồi bấm phím A–G để biến nó thành nốt. */
+  inputMode: boolean;
+  setInputMode: (enabled: boolean) => void;
+  /** Trường độ dùng khi nhập nốt (cũng là trường độ vừa chọn trên bảng công cụ). */
+  inputDuration: DurationChoice;
+  /** Chọn trường độ: đang nhập nốt thì đặt trường độ nhập, không thì đổi trường độ vùng chọn. */
+  chooseDuration: (type: DurationType) => void;
+  /** Bật/tắt chấm dôi, cùng quy tắc với {@link chooseDuration}. */
+  toggleDot: () => void;
+  /** Nhập nốt tên `letter` (a–g) tại nốt đang chọn. */
+  enterLetter: (letter: string) => void;
   /** Áp ký hiệu (thăng, giáng, bình, dấu lặng, xóa) lên vùng chọn. */
   applySymbol: (op: SymbolOp) => void;
   /** Kéo nốt: đổi `steps` bậc (dương = lên) cho vùng chọn, hoặc cho `ids` nếu chúng chưa được chọn. */
@@ -102,6 +124,8 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
   const [saving, setSaving] = useState(false);
   const [version, setVersion] = useState(initialVersion);
   const [notice, setNotice] = useState<Notice | null>(null);
+  const [inputMode, setInputMode] = useState(false);
+  const [inputDuration, setInputDuration] = useState<DurationChoice>({ type: 'quarter', dotted: false });
   const [previewTone, setPreviewToneState] = useState(loadPreviewTonePref);
   const [conflict, setConflict] = useState<{ latestVersion: number } | null>(null);
   const [draft, setDraft] = useState<Draft | null>(() => {
@@ -198,7 +222,10 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
       }
       historyRef.current.push(result.command);
       sync();
-      setSelection((prev) => new Set([...prev].filter((id) => doc.getInfo(id) !== undefined)));
+      const after = result.command.selectAfter;
+      setSelection((prev) =>
+        after ? new Set(after) : new Set([...prev].filter((id) => doc.getInfo(id) !== undefined)),
+      );
       if (preview && previewTone) playPreviewGroups(selectionGroups(doc, result.command.changedIds));
     },
     [doc, flash, sync, previewTone],
@@ -211,6 +238,45 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
       commit(changePitch(doc, targets, op, count), true);
     },
     [canEdit, doc, commit],
+  );
+
+  const chooseDuration = useCallback(
+    (type: DurationType) => {
+      const choice: DurationChoice = { type, dotted: false };
+      setInputDuration(choice);
+      if (inputMode) {
+        flash(`Trường độ nhập: ${DURATION_LABELS[type]}`);
+        return;
+      }
+      if (canEdit && selection.size > 0) commit(setDuration(doc, [...selection], choice), false);
+    },
+    [inputMode, canEdit, selection, doc, commit, flash],
+  );
+
+  const toggleDot = useCallback(() => {
+    if (inputMode) {
+      const next = { ...inputDuration, dotted: !inputDuration.dotted };
+      setInputDuration(next);
+      flash(`Trường độ nhập: ${DURATION_LABELS[next.type]}${next.dotted ? ' chấm dôi' : ''}`);
+      return;
+    }
+    if (!canEdit || selection.size === 0) return;
+    const first = [...selection].map((id) => doc.getInfo(id)).find((n) => n !== undefined);
+    const typeText = first?.element.querySelector(':scope > type')?.textContent?.trim() ?? '';
+    if (!first || !(typeText in DURATION_QUARTERS)) {
+      flash('Chưa đổi được chấm dôi cho trường độ này');
+      return;
+    }
+    const dotted = first.element.querySelector(':scope > dot') !== null;
+    commit(setDuration(doc, [...selection], { type: typeText as DurationType, dotted: !dotted }), false);
+  }, [inputMode, inputDuration, canEdit, selection, doc, commit, flash]);
+
+  const enterLetter = useCallback(
+    (letter: string) => {
+      if (!canEdit || !inputMode || selection.size === 0) return;
+      commit(enterNote(doc, [...selection][0], letter, inputDuration), true);
+    },
+    [canEdit, inputMode, selection, doc, inputDuration, commit],
   );
 
   const applySymbol = useCallback(
@@ -438,6 +504,15 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
       } else if ((e.key === 'Delete' || e.key === 'Backspace') && selection.size > 0) {
         e.preventDefault();
         applySymbol('delete');
+      } else if (!mod && !e.altKey && /^[1-5]$/.test(e.key)) {
+        chooseDuration(DIGIT_DURATIONS[e.key]);
+      } else if (!mod && !e.altKey && e.key === '.') {
+        toggleDot();
+      } else if (inputMode && !mod && !e.altKey && isLetterKey(e.key) && selection.size > 0) {
+        e.preventDefault();
+        enterLetter(e.key);
+      } else if (e.key === 'Escape' && inputMode) {
+        setInputMode(false);
       } else if (e.key === 'Escape' && selection.size > 0) {
         clearSelection();
       } else if (e.key === 'Tab' && !mod && !e.altKey) {
@@ -464,6 +539,10 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     selectRelative,
     selectInChord,
     applySymbol,
+    chooseDuration,
+    toggleDot,
+    enterLetter,
+    inputMode,
   ]);
 
   return {
@@ -485,6 +564,12 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     clearSelection,
     applyPitch,
     applySymbol,
+    inputMode,
+    setInputMode,
+    inputDuration,
+    chooseDuration,
+    toggleDot,
+    enterLetter,
     dragPitch,
     selectInChord,
     undo,

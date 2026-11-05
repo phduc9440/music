@@ -21,10 +21,22 @@ export interface EditCommand {
   snapshots: MeasureSnapshot[];
   /** Id các nốt bị đổi (kể cả nốt nối kéo theo). */
   changedIds: string[];
+  /** Vùng chọn nên đặt sau lệnh (khi id đổi, ví dụ sau khi chèn dấu lặng); không có thì giữ vùng chọn cũ. */
+  selectAfter?: string[];
 }
 
 /** Lý do một thao tác không thực hiện được. */
-export type EditFailure = 'range' | 'rest' | 'duplicate' | 'unchanged' | 'empty';
+export type EditFailure =
+  | 'range'
+  | 'rest'
+  | 'duplicate'
+  | 'unchanged'
+  | 'empty'
+  | 'tuplet'
+  | 'tie'
+  | 'noSpace'
+  | 'divisions'
+  | 'unsupported';
 
 export type EditResult = { ok: true; command: EditCommand } | { ok: false; reason: EditFailure };
 
@@ -45,9 +57,14 @@ export const EDIT_FAILURE_MESSAGES: Record<EditFailure, string> = {
   duplicate: 'Không thể đổi: hợp âm đã có nốt cùng cao độ',
   unchanged: 'Nốt đã ở đúng trạng thái này rồi',
   empty: 'Hãy chọn ít nhất một nốt (không phải dấu lặng)',
+  tuplet: 'Chưa hỗ trợ đổi trường độ của nốt trong nhóm nốt đặc biệt (chùm ba...)',
+  tie: 'Chưa hỗ trợ đổi trường độ của nốt có dấu nối',
+  noSpace: 'Phía sau chưa đủ chỗ trống trong ô nhịp. Hãy đổi nốt phía sau thành dấu lặng (hoặc xóa) rồi thử lại',
+  divisions: 'Bản nhạc chia nhịp quá thô nên không đổi sang trường độ này được',
+  unsupported: 'Cấu trúc ô nhịp này chưa hỗ trợ đổi trường độ',
 };
 
-const childOf = (parent: Element, tag: string): Element | undefined =>
+export const childOf = (parent: Element, tag: string): Element | undefined =>
   Array.from(parent.children).find((c) => c.tagName === tag);
 
 /** Đọc cao độ của thẻ <note>; null nếu là dấu lặng hoặc dữ liệu thiếu. */
@@ -108,7 +125,7 @@ const setAccidental = (note: Element, alter: number | null): void => {
   else note.appendChild(el);
 };
 
-const hasTie = (note: Element, type: 'start' | 'stop'): boolean =>
+export const hasTie = (note: Element, type: 'start' | 'stop'): boolean =>
   Array.from(note.children).some((c) => c.tagName === 'tie' && c.getAttribute('type') === type);
 
 /** Nốt cùng cao độ, cùng bè nối với nốt đã cho (nối tới trước và sau), không gồm chính nó. */
@@ -168,7 +185,8 @@ const refreshAccidentals = (doc: ScoreDocument, partIndex: number, measureIndex:
   }
 };
 
-const chordKey = (n: NoteInfo): string => `${n.partIndex}|${n.measureIndex}|${n.staff}|${n.voice}|${n.entryIndex}`;
+export const chordKey = (n: NoteInfo): string =>
+  `${n.partIndex}|${n.measureIndex}|${n.staff}|${n.voice}|${n.entryIndex}`;
 
 /** Ký hiệu áp lên nốt đang chọn. */
 export type SymbolOp = 'sharp' | 'flat' | 'natural' | 'rest' | 'delete';
@@ -182,16 +200,16 @@ export const SYMBOL_OP_LABELS: Record<SymbolOp, string> = {
   delete: 'Xóa nốt',
 };
 
-type Touched = Map<string, { partIndex: number; measureIndex: number }>;
+export type Touched = Map<string, { partIndex: number; measureIndex: number }>;
 
-const touch = (touched: Touched, info: NoteInfo): void => {
+export const touch = (touched: Touched, info: NoteInfo): void => {
   touched.set(`${info.partIndex}|${info.measureIndex}`, { partIndex: info.partIndex, measureIndex: info.measureIndex });
 };
 
 /**
  * Chụp các ô nhịp bị ảnh hưởng, chạy `apply` để sửa DOM, tính lại id và dấu hóa hiển thị, rồi chụp lại để dựng lệnh.
  */
-function commitEdit(
+export function commitEdit(
   doc: ScoreDocument,
   label: string,
   touched: Touched,
