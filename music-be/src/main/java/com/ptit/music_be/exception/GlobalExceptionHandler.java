@@ -6,8 +6,8 @@ import java.util.Objects;
 import jakarta.validation.ConstraintViolation;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -39,6 +39,8 @@ public class GlobalExceptionHandler {
 
         apiResponse.setCode(errorCode.getCode());
         apiResponse.setMessage(errorCode.getMessage());
+        // Một số lỗi kèm dữ liệu cho client (ví dụ SCORE_VERSION_CONFLICT trả version mới nhất)
+        apiResponse.setResult(exception.getPayload());
 
         return ResponseEntity.status(errorCode.getHttpStatusCode()).body(apiResponse);
     }
