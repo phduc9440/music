@@ -112,6 +112,20 @@ def is_data_line(line: str) -> bool:
     return bool(line) and line[0] not in "*=!"
 
 
+_PITCH_LETTER = re.compile(r"[a-gA-G]")
+
+
+def has_pitched_note(line: str) -> bool:
+    """Dòng dữ liệu có ít nhất một nốt có cao độ (không tính dấu lặng ``r``, dấu ``.`` và token rỗng)."""
+    if not is_data_line(line):
+        return False
+    for column in line.split(TAB):
+        for token in column.split(" "):
+            if token and token != "." and "r" not in token and _PITCH_LETTER.search(token):
+                return True
+    return False
+
+
 def is_barline(line: str) -> bool:
     return line.startswith("=")
 
@@ -157,6 +171,12 @@ def clean_page(
 
     if not any(is_data_line(ln) for ln in body):
         return None, warnings + [f"Trang {number}: không nhận diện được nốt nào nên đã bỏ qua trang này"]
+    # Model không đọc được ảnh thường sinh một dãy dấu lặng dài: coi như chưa nhận diện được nốt nào
+    if not any(has_pitched_note(ln) for ln in body):
+        return None, warnings + [
+            f"Trang {number}: kết quả chỉ có dấu lặng, không có nốt nào nên đã bỏ qua trang này "
+            "(ảnh có thể bị nhiễu, dính viền hoặc quá mờ)"
+        ]
     return PageKern(number=number, header=header, body=body), warnings
 
 

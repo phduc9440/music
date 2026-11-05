@@ -3,8 +3,8 @@
 Mục tiêu: mỗi trang nhạc ra một ảnh xám 8-bit đúng 1050 (rộng) x 1485 (cao), nền trắng, giống bản render sạch của
 Verovio mà Transcoda đã được huấn luyện. Thứ tự các bước:
 
-    đọc ảnh (xoay theo EXIF) -> xám -> khử nhiễu -> căn thẳng (deskew) -> kiểm tra có khuông nhạc
-    -> cắt bớt lề thừa -> nhị phân hóa thích ứng -> resize + pad về 1050x1485
+    đọc ảnh (xoay theo EXIF) -> xám -> bỏ dải viền đều màu (ảnh chụp màn hình) -> khử nhiễu -> căn thẳng (deskew) -> kiểm tra có khuông nhạc
+    -> cắt bớt lề thừa -> nhị phân hóa thích ứng (bỏ qua với ảnh số đã sạch) -> resize + pad về 1050x1485
 
 Tệp này chỉ dùng numpy, OpenCV và Pillow, không phụ thuộc FastAPI hay PyMuPDF nên test được độc lập. Việc vẽ PDF thành
 ảnh nằm ở ``app/omr/pdf.py``.
@@ -150,6 +150,48 @@ def flatten_illumination(gray: np.ndarray) -> np.ndarray:
     sigma = max(gray.shape) / 25.0
     background = cv2.GaussianBlur(background, (0, 0), sigmaX=sigma)
     return cv2.divide(gray, np.maximum(background, 1), scale=255)
+
+
+def strip_edge_bands(gray: np.ndarray, max_fraction: float = 0.1) -> np.ndarray:
+    """Cắt các dải ngang/dọc đều màu, không phải nền trắng, sát mép ảnh.
+
+    Ảnh chụp màn hình điện thoại thường dính thanh trạng thái hoặc viền xám cao vài pixel. Nếu giữ lại, bước nhị phân
+    hóa biến dải xám thành vạch đen dày và model nhận diện bị rối. Một hàng (cột) bị coi là dải khi gần như đồng nhất
+    (độ lệch chuẩn nhỏ) và tối hơn nền (trung bình < 235). Dòng kẻ khuông không bị ảnh hưởng vì phần lớn pixel của hàng
+    đó vẫn trắng nên độ lệch chuẩn lớn. Mỗi phía chỉ cắt tối đa ``max_fraction`` kích thước ảnh.
+    """
+
+    def uniform_dark(line: np.ndarray) -> bool:
+        return float(line.std()) < 3.0 and float(line.mean()) < 235.0
+
+    height, width = gray.shape
+    top = 0
+    while top < int(height * max_fraction) and uniform_dark(gray[top, :]):
+        top += 1
+    bottom = height
+    while height - bottom < int(height * max_fraction) and uniform_dark(gray[bottom - 1, :]):
+        bottom -= 1
+    left = 0
+    while left < int(width * max_fraction) and uniform_dark(gray[:, left]):
+        left += 1
+    right = width
+    while width - right < int(width * max_fraction) and uniform_dark(gray[:, right - 1]):
+        right -= 1
+    if (top, bottom, left, right) == (0, height, 0, width) or bottom - top < 8 or right - left < 8:
+        return gray
+    return gray[top:bottom, left:right]
+
+
+def is_clean_digital(gray: np.ndarray) -> bool:
+    """Ảnh số đã sạch (chụp màn hình, xuất PDF) thì không cần nhị phân hóa.
+
+    Nền gần như trắng thuần: trong các pixel sáng (>= 200), từ 97% trở lên đạt >= 245. Ảnh chụp bằng máy ảnh có bóng
+    đổ, hạt nhiễu hoặc nền ngả màu nên không đạt. Với ảnh sạch, nhị phân hóa chỉ có hại: dòng kẻ mảnh bị đứt nét.
+    """
+    light = gray[gray >= 200]
+    if light.size < 0.5 * gray.size:
+        return False
+    return float(np.mean(light >= 245)) >= 0.97
 
 
 def _analysis_copy(gray: np.ndarray) -> np.ndarray:
@@ -368,6 +410,12 @@ def process_page(
         return result
 
     check()
+    stripped = strip_edge_bands(gray)
+    if stripped.shape != gray.shape:
+        result.warnings.append(f"Trang {page_number}: đã cắt dải viền đều màu ở mép ảnh (thường là thanh trạng thái)")
+        result.meta["edgeBandsStripped"] = True
+    gray = stripped
+    clean_source = is_clean_digital(gray)
     work = denoise(gray, options.source_type)
 
     check()
@@ -395,9 +443,11 @@ def process_page(
     work = crop_margins(work)
 
     check()
-    if options.binarize:
+    if options.binarize and not clean_source:
         work = binarize(work)
         result.meta["binarized"] = True
+    elif options.binarize:
+        result.meta["cleanSource"] = True  # ảnh số sạch: giữ nguyên mức xám để dòng kẻ mảnh không bị đứt
 
     if work.shape[1] > work.shape[0]:
         result.warnings.append(f"Trang {page_number} nằm ngang, đã thu nhỏ cho vừa khổ dọc")
