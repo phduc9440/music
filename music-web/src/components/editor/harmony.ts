@@ -1,6 +1,6 @@
 /**
  * Hợp âm (chord symbol) ghi trên nốt: <harmony> đứng ngay trước thẻ <note> đầu của mục. Gõ bằng ký hiệu thường dùng
- * như "C", "Am7", "G/B", "F#m", "Bbmaj7"; hậu tố lạ vẫn giữ nguyên chữ (kind = other).
+ * như "C", "Am7", "G/B", "F#m", "Bbmaj7", "C6/9", "N.C."; hậu tố lạ vẫn giữ nguyên chữ (kind = other).
  */
 import { commitEdit, touch } from './commands';
 import type { EditResult, Touched } from './commands';
@@ -11,6 +11,13 @@ interface Note {
   alter: number;
 }
 
+/** Nốt thêm hoặc đổi của hợp âm (<degree>): ví dụ nốt 9 thêm vào "C6/9", nốt 11 tăng nửa cung trong "C7#11". */
+export interface ChordDegree {
+  value: number;
+  alter: number;
+  type: 'add' | 'alter';
+}
+
 export interface ChordSpec {
   root: Note;
   /** Giá trị <kind> của MusicXML. */
@@ -18,52 +25,125 @@ export interface ChordSpec {
   /** Chữ hiển thị sau tên gốc (ví dụ "m7"). */
   text: string;
   bass: Note | null;
+  /** Các <degree> đi kèm kind (rỗng với đa số hợp âm). */
+  degrees: ChordDegree[];
+  /** Hợp âm "N.C." (không hợp âm): hiện chữ N.C., không hiện tên gốc. */
+  noChord: boolean;
 }
 
-/** Hậu tố gõ vào → kind của MusicXML (chữ hiển thị giữ đúng như người dùng gõ). */
-const KINDS: Record<string, string> = {
-  '': 'major',
-  m: 'minor',
-  min: 'minor',
-  '-': 'minor',
-  '7': 'dominant',
-  maj7: 'major-seventh',
-  M7: 'major-seventh',
-  m7: 'minor-seventh',
-  min7: 'minor-seventh',
-  dim: 'diminished',
-  dim7: 'diminished-seventh',
-  aug: 'augmented',
-  '+': 'augmented',
-  sus4: 'suspended-fourth',
-  sus2: 'suspended-second',
-  sus: 'suspended-fourth',
-  '6': 'major-sixth',
-  m6: 'minor-sixth',
-  '9': 'dominant-ninth',
-  maj9: 'major-ninth',
-  m9: 'minor-ninth',
-  m7b5: 'half-diminished',
-  '5': 'power',
-};
+interface KindDef {
+  kind: string;
+  degrees?: ChordDegree[];
+}
+
+const addDegree = (value: number, alter = 0): ChordDegree => ({ value, alter, type: 'add' });
+const alterDegree = (value: number, alter: number): ChordDegree => ({ value, alter, type: 'alter' });
+
+/**
+ * Hậu tố gõ vào → kind (và degree) của MusicXML. Chữ hiển thị luôn giữ đúng như người dùng gõ. Với mỗi kind, hậu tố
+ * đứng đầu là cách viết mặc định khi đọc hợp âm từ file không có thuộc tính text.
+ */
+const KINDS = new Map<string, KindDef>([
+  ['', { kind: 'major' }],
+  ['m', { kind: 'minor' }],
+  ['min', { kind: 'minor' }],
+  ['mi', { kind: 'minor' }],
+  ['-', { kind: 'minor' }],
+  ['7', { kind: 'dominant' }],
+  ['maj7', { kind: 'major-seventh' }],
+  ['Maj7', { kind: 'major-seventh' }],
+  ['M7', { kind: 'major-seventh' }],
+  ['Δ', { kind: 'major-seventh' }],
+  ['Δ7', { kind: 'major-seventh' }],
+  ['m7', { kind: 'minor-seventh' }],
+  ['min7', { kind: 'minor-seventh' }],
+  ['mi7', { kind: 'minor-seventh' }],
+  ['-7', { kind: 'minor-seventh' }],
+  ['mM7', { kind: 'major-minor' }],
+  ['mMaj7', { kind: 'major-minor' }],
+  ['mmaj7', { kind: 'major-minor' }],
+  ['m(maj7)', { kind: 'major-minor' }],
+  ['dim', { kind: 'diminished' }],
+  ['°', { kind: 'diminished' }],
+  ['o', { kind: 'diminished' }],
+  ['dim7', { kind: 'diminished-seventh' }],
+  ['°7', { kind: 'diminished-seventh' }],
+  ['o7', { kind: 'diminished-seventh' }],
+  ['m7b5', { kind: 'half-diminished' }],
+  ['m7♭5', { kind: 'half-diminished' }],
+  ['ø', { kind: 'half-diminished' }],
+  ['ø7', { kind: 'half-diminished' }],
+  ['aug', { kind: 'augmented' }],
+  ['+', { kind: 'augmented' }],
+  ['aug7', { kind: 'augmented-seventh' }],
+  ['+7', { kind: 'augmented-seventh' }],
+  ['sus4', { kind: 'suspended-fourth' }],
+  ['sus', { kind: 'suspended-fourth' }],
+  ['sus2', { kind: 'suspended-second' }],
+  ['7sus4', { kind: 'suspended-fourth', degrees: [addDegree(7, -1)] }],
+  ['7sus', { kind: 'suspended-fourth', degrees: [addDegree(7, -1)] }],
+  ['6', { kind: 'major-sixth' }],
+  ['m6', { kind: 'minor-sixth' }],
+  ['6/9', { kind: 'major-sixth', degrees: [addDegree(9)] }],
+  ['m6/9', { kind: 'minor-sixth', degrees: [addDegree(9)] }],
+  ['9', { kind: 'dominant-ninth' }],
+  ['maj9', { kind: 'major-ninth' }],
+  ['M9', { kind: 'major-ninth' }],
+  ['m9', { kind: 'minor-ninth' }],
+  ['min9', { kind: 'minor-ninth' }],
+  ['11', { kind: 'dominant-11th' }],
+  ['m11', { kind: 'minor-11th' }],
+  ['13', { kind: 'dominant-13th' }],
+  ['maj13', { kind: 'major-13th' }],
+  ['m13', { kind: 'minor-13th' }],
+  ['5', { kind: 'power' }],
+  ['add9', { kind: 'major', degrees: [addDegree(9)] }],
+  ['add2', { kind: 'major', degrees: [addDegree(2)] }],
+  ['m(add9)', { kind: 'minor', degrees: [addDegree(9)] }],
+  ['madd9', { kind: 'minor', degrees: [addDegree(9)] }],
+  ['7#11', { kind: 'dominant', degrees: [addDegree(11, 1)] }],
+  ['7b13', { kind: 'dominant', degrees: [addDegree(13, -1)] }],
+  ['7b9', { kind: 'dominant', degrees: [addDegree(9, -1)] }],
+  ['7#9', { kind: 'dominant', degrees: [addDegree(9, 1)] }],
+  ['7b5', { kind: 'dominant', degrees: [alterDegree(5, -1)] }],
+  ['7#5', { kind: 'dominant', degrees: [alterDegree(5, 1)] }],
+  // "alt" gồm nhiều nốt biến hóa nên không có kind riêng: ghi là dominant, chữ "7alt" giữ trong thuộc tính text.
+  ['7alt', { kind: 'dominant' }],
+]);
+
+const lookupKind = (suffix: string): KindDef =>
+  KINDS.get(suffix) ?? KINDS.get(suffix.replace(/\s+/g, '')) ?? { kind: 'other' };
 
 const ALTER_SYMBOL: Record<number, string> = { [-2]: 'bb', [-1]: 'b', 0: '', 1: '#', 2: '##' };
 
 const alterOf = (symbol: string): number =>
   symbol === '#' || symbol === '♯' ? 1 : symbol === 'b' || symbol === '♭' ? -1 : 0;
 
-const PATTERN = /^([A-Ga-g])([#b♯♭]?)([^/]*)(?:\/([A-Ga-g])([#b♯♭]?))?$/;
+/** "N.C.", "NC", "N.C" — không có hợp âm. */
+const NO_CHORD = /^N\.?C\.?$/i;
+/** Nốt bass ở cuối: "/E", "/F#". Dấu "/" theo sau là CHỮ SỐ (như "6/9") không phải bass. */
+const BASS = /\/([A-Ga-g])([#b♯♭]?)$/;
+const ROOT = /^([A-Ga-g])([#b♯♭]?)(.*)$/;
 
 /** Hiểu một ký hiệu hợp âm; null nếu không đọc được. */
 export function parseChord(input: string): ChordSpec | null {
-  const match = PATTERN.exec(input.trim());
+  const clean = input.trim();
+  if (NO_CHORD.test(clean)) {
+    return { root: { step: 'C', alter: 0 }, kind: 'none', text: 'N.C.', bass: null, degrees: [], noChord: true };
+  }
+  const bassMatch = BASS.exec(clean);
+  const match = ROOT.exec(bassMatch ? clean.slice(0, bassMatch.index) : clean);
   if (!match) return null;
   const suffix = match[3].trim();
+  if (suffix.endsWith('/')) return null;
+  const def = lookupKind(suffix);
   return {
     root: { step: match[1].toUpperCase(), alter: alterOf(match[2]) },
-    kind: KINDS[suffix] ?? 'other',
+    kind: def.kind,
     text: suffix,
-    bass: match[4] ? { step: match[4].toUpperCase(), alter: alterOf(match[5]) } : null,
+    bass: bassMatch ? { step: bassMatch[1].toUpperCase(), alter: alterOf(bassMatch[2]) } : null,
+    degrees: def.degrees ?? [],
+    noChord: false,
   };
 }
 
@@ -79,18 +159,20 @@ const noteText = (el: Element | undefined, stepTag: string, alterTag: string): s
 
 /** Ký hiệu hợp âm đang ghi trong một thẻ <harmony>, theo dạng người dùng gõ. */
 export const chordText = (harmony: Element): string => {
-  const root = noteText(child(harmony, 'root'), 'root-step', 'root-alter');
   const kind = child(harmony, 'kind');
+  if (textOf(kind) === 'none') return kind?.getAttribute('text') || 'N.C.';
+  const root = noteText(child(harmony, 'root'), 'root-step', 'root-alter');
   const text = kind?.hasAttribute('text') ? (kind.getAttribute('text') ?? '') : defaultSuffix(textOf(kind));
   const bass = noteText(child(harmony, 'bass'), 'bass-step', 'bass-alter');
   return `${root}${text}${bass ? `/${bass}` : ''}`;
 };
 
+/** Hậu tố mặc định của một kind khi file không ghi thuộc tính text (không tính các kind có degree). */
 const defaultSuffix = (kind: string): string => {
-  const hit = Object.entries(KINDS).find(
-    ([suffix, k]) => k === kind && suffix !== '' && suffix !== 'min' && suffix !== '-',
-  );
-  return kind === 'major' ? '' : (hit?.[0] ?? '');
+  for (const [suffix, def] of KINDS) {
+    if (def.kind === kind && !def.degrees) return suffix;
+  }
+  return '';
 };
 
 /** Các thẻ <harmony> đứng liền ngay trước thẻ `note`. */
@@ -143,8 +225,11 @@ const buildHarmony = (owner: Document, spec: ChordSpec): Element => {
     return el;
   };
   const harmony = make('harmony');
+  if (spec.noChord) harmony.setAttribute('print-frame', 'no');
   const root = make('root');
-  root.appendChild(make('root-step', spec.root.step));
+  const step = make('root-step', spec.root.step);
+  if (spec.noChord) step.setAttribute('text', '');
+  root.appendChild(step);
   if (spec.root.alter !== 0) root.appendChild(make('root-alter', String(spec.root.alter)));
   harmony.appendChild(root);
   const kind = make('kind', spec.kind);
@@ -155,6 +240,13 @@ const buildHarmony = (owner: Document, spec: ChordSpec): Element => {
     bass.appendChild(make('bass-step', spec.bass.step));
     if (spec.bass.alter !== 0) bass.appendChild(make('bass-alter', String(spec.bass.alter)));
     harmony.appendChild(bass);
+  }
+  for (const degree of spec.degrees) {
+    const el = make('degree');
+    el.appendChild(make('degree-value', String(degree.value)));
+    el.appendChild(make('degree-alter', String(degree.alter)));
+    el.appendChild(make('degree-type', degree.type));
+    harmony.appendChild(el);
   }
   return harmony;
 };

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { CLEFS } from '../../editor/staves';
-import type { ClefSign, NotationChange, NotationInfo, Scope } from '../../editor/staves';
+import { CLEFS } from '../editor/staves';
+import type { ClefSign, NotationChange, NotationInfo, Scope } from '../editor/staves';
 import Modal from './Modal';
 
 interface Props {

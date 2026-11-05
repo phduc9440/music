@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { ClipboardEvent, KeyboardEvent } from 'react';
-import { canHoldChord, readChord } from '../../editor/harmony';
-import type { ScoreDocument } from '../../editor/ScoreDocument';
+import { canHoldChord, readChord } from '../editor/harmony';
+import type { ScoreDocument } from '../editor/ScoreDocument';
 import Modal from './Modal';
 
 interface Props {
@@ -76,7 +76,7 @@ export default function ChordBar({ doc, revision, selectedId, onEnter, onMove, o
         autoFocus
         placeholder={
           usable
-            ? 'Gõ hợp âm, ví dụ C, Am7, G/B, F#m · Space: sang nốt kế · Enter: ghi · Esc: thoát'
+            ? 'Gõ hợp âm, ví dụ C, Am7, G/B, C6/9, N.C. · Space: sang nốt kế · Enter: ghi · Esc: thoát'
             : 'Hãy chọn một nốt để nhập hợp âm'
         }
         onKeyDown={onKeyDown}

@@ -4,6 +4,7 @@
  */
 import { commitEdit } from './commands';
 import type { EditResult, Touched } from './commands';
+import { DURATION_LABELS, splitRests } from './durationCore';
 import type { ScoreDocument } from './ScoreDocument';
 
 /** Một ô nhịp có độ dài sai. */
@@ -12,9 +13,9 @@ export interface MeasureIssue {
   measureIndex: number;
   /** Chỉ số part chứa lỗi. */
   partIndex: number;
-  /** Chênh lệch tính bằng phách (dương = thừa, âm = thiếu). */
+  /** Chênh lệch tính bằng phách (dương = thừa, âm = thiếu); nhịp kép tính phách là nốt chấm dôi. */
   diffBeats: number;
-  /** Câu tiếng Việt, ví dụ "Ô 12 thiếu 1 phách". */
+  /** Câu tiếng Việt, ví dụ "Ô 12 thiếu 1 phách", "Ô 3 thiếu 2 móc đơn". */
   message: string;
 }
 
@@ -28,6 +29,38 @@ const numberOf = (parent: Element, tag: string): number => {
 
 /** Định dạng số phách theo kiểu Việt (dấu phẩy thập phân, tối đa 2 chữ số). */
 const formatBeats = (value: number): string => String(Math.round(Math.abs(value) * 100) / 100).replace('.', ',');
+
+/** Nhịp kép (6/8, 9/8, 12/8, 6/16...): phách là nốt chấm dôi, dài 3 đơn vị của loại phách. */
+export const isCompound = (beats: number, beatType: number): boolean => beatType >= 8 && beats > 3 && beats % 3 === 0;
+
+const WHOLE_NOTE_NAMES = new Set(['breve', 'whole', 'half', 'quarter']);
+
+/**
+ * Câu mô tả phần thừa/thiếu `diffQuarters` (số nốt đen, đã lấy trị tuyệt đối), ví dụ "1 phách", "2 móc đơn",
+ * "1 nốt đen chấm". Trả về null nếu không diễn đạt được bằng hình nốt (ví dụ ô có chùm lẻ): khi đó dùng số phách.
+ */
+const describeGap = (diffQuarters: number, beatType: number, compound: boolean): string | null => {
+  const unit = 4 / beatType;
+  const beat = compound ? unit * 3 : unit;
+  const near = (x: number) => Math.abs(x - Math.round(x)) < 1e-9;
+  if (near(diffQuarters / beat)) return `${Math.round(diffQuarters / beat)} phách`;
+  // Nhịp kép: đếm theo đơn vị của loại phách (2 móc đơn) thay vì ghép thành nốt chấm dôi
+  if (compound && near(diffQuarters / unit)) {
+    const type = beatType === 8 ? 'eighth' : beatType === 16 ? '16th' : beatType === 32 ? '32nd' : null;
+    if (type) return `${Math.round(diffQuarters / unit)} ${DURATION_LABELS[type]}`;
+  }
+  const pieces = splitRests(Math.round(diffQuarters * 64), 64);
+  if (!pieces) return null;
+  const groups: { text: string; count: number }[] = [];
+  for (const p of pieces) {
+    const name = DURATION_LABELS[p.type];
+    const text = `${WHOLE_NOTE_NAMES.has(p.type) ? 'nốt ' : ''}${name}${p.dots === 1 ? ' chấm' : p.dots === 2 ? ' chấm kép' : ''}`;
+    const last = groups[groups.length - 1];
+    if (last && last.text === text) last.count += 1;
+    else groups.push({ text, count: 1 });
+  }
+  return groups.map((g) => `${g.count} ${g.text}`).join(' và ');
+};
 
 /**
  * Tìm các ô nhịp có độ dài sai. Bỏ qua ô nhịp ngắn đánh dấu `implicit="yes"` (ô lấy đà) và ô không có nốt.
@@ -55,7 +88,9 @@ export function checkMeasures(doc: ScoreDocument): MeasureIssue[] {
       if (free) return; // nhịp tự do: ô nhịp dài tùy ý
       const divisions = doc.divisionsAtPart(partIndex, measureIndex);
       const expected = (beats * divisions * 4) / beatType;
-      const beatLength = (divisions * 4) / beatType;
+      const compound = isCompound(beats, beatType);
+      // Nhịp kép: một phách là nốt chấm dôi (3 đơn vị của loại phách)
+      const beatLength = ((divisions * 4) / beatType) * (compound ? 3 : 1);
       for (const total of totals.values()) {
         if (total === expected) continue;
         const diffBeats = (total - expected) / beatLength;
@@ -65,7 +100,9 @@ export function checkMeasures(doc: ScoreDocument): MeasureIssue[] {
           measureIndex,
           partIndex,
           diffBeats,
-          message: `Ô ${measureIndex + 1} ${diffBeats < 0 ? 'thiếu' : 'thừa'} ${formatBeats(diffBeats)} phách`,
+          message: `Ô ${measureIndex + 1} ${diffBeats < 0 ? 'thiếu' : 'thừa'} ${
+            describeGap(Math.abs(total - expected) / divisions, beatType, compound) ?? `${formatBeats(diffBeats)} phách`
+          }`,
         });
       }
     });

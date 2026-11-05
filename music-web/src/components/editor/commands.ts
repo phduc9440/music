@@ -37,6 +37,9 @@ export type EditFailure =
   | 'unchanged'
   | 'empty'
   | 'tuplet'
+  | 'tupletFit'
+  | 'tupletType'
+  | 'noTuplet'
   | 'tie'
   | 'noSpace'
   | 'divisions'
@@ -74,7 +77,10 @@ export const EDIT_FAILURE_MESSAGES: Record<EditFailure, string> = {
   duplicate: 'Không thể đổi: hợp âm đã có nốt cùng cao độ',
   unchanged: 'Nốt đã ở đúng trạng thái này rồi',
   empty: 'Hãy chọn ít nhất một nốt (không phải dấu lặng)',
-  tuplet: 'Chưa hỗ trợ đổi trường độ của nốt trong nhóm nốt đặc biệt (chùm ba...)',
+  tuplet: 'Nốt này đã nằm trong chùm, hoặc vị trí chèn nằm giữa một chùm (chưa hỗ trợ chùm lồng nhau)',
+  tupletFit: 'Trường độ mới không vừa chùm; hãy bỏ chùm trước',
+  tupletType: 'Không viết được chùm này bằng các hình nốt hiện có (thử chùm khác hoặc trường độ khác)',
+  noTuplet: 'Nốt đang chọn không nằm trong chùm nào',
   tie: 'Chưa hỗ trợ đổi trường độ khi có nốt dính dấu nối (nốt đang sửa hoặc nốt bị đè)',
   noSpace: 'Không kéo dài được: nốt sẽ vượt quá cuối ô nhịp',
   divisions: 'Bản nhạc chia nhịp quá thô nên không đổi sang trường độ này được',
@@ -83,7 +89,7 @@ export const EDIT_FAILURE_MESSAGES: Record<EditFailure, string> = {
   slurTarget: 'Dấu luyến cần chọn từ hai nốt trở lên trong cùng một khuông',
   lyricTarget: 'Hãy chọn một nốt (không phải dấu lặng hay nốt nối tiếp) để nhập lời',
   badValue: 'Giá trị không hợp lệ',
-  badChord: 'Không hiểu hợp âm này. Ví dụ: C, Am7, G/B, F#m, Bbmaj7, Dsus4',
+  badChord: 'Không hiểu hợp âm này. Ví dụ: C, Am7, G/B, F#m, Bbmaj7, Dsus4, C6/9, N.C.',
   hairpinTarget: 'Cresc./dim. cần chọn từ hai nốt trở lên (từ nốt bắt đầu đến nốt kết thúc)',
   noMeasure: 'Hãy chọn một nốt để biết thao tác này áp dụng cho ô nhịp nào',
   lastMeasure: 'Bản nhạc phải còn ít nhất một ô nhịp',
@@ -207,10 +213,10 @@ const refreshAccidentals = (doc: ScoreDocument, partIndex: number, measureIndex:
     for (const info of ordered) {
       const pitch = readPitch(info.element);
       if (!pitch) continue;
-      const shown = state.visit(pitch);
-      // Nốt nối (stop) không vẽ lại dấu hóa; giữ nguyên nếu đã có
-      if (hasTie(info.element, 'stop') && shown !== null) continue;
-      setAccidental(info.element, shown);
+      // Nốt nối (stop) không vẽ lại dấu hóa và cũng không làm đổi trạng thái dấu hóa của ô: nốt cùng cao độ đứng sau
+      // (không nối) vẫn phải ghi lại dấu hóa, nếu không sẽ bị đọc thành nốt tự nhiên.
+      if (hasTie(info.element, 'stop')) continue;
+      setAccidental(info.element, state.visit(pitch));
     }
   }
 };

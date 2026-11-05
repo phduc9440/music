@@ -4,9 +4,9 @@
  * đã nằm trong tỉ lệ viewBox → màn hình của thẻ <svg> nên không nhân thêm.
  */
 import type { OpenSheetMusicDisplay } from 'opensheetmusicdisplay';
+import { clefAt, naturalAt, topLineIndex } from './clefs';
 import type { InsertTarget } from './durations';
 import { NOTE_ID_ATTR } from './osmdBridge';
-import { STEPS } from './pitch';
 import type { Step } from './pitch';
 import type { ScoreDocument } from './ScoreDocument';
 
@@ -55,40 +55,10 @@ export const topLineDiatonic = (
   partIndex: number,
   measureIndex: number,
   staff: number,
-): number | null => {
-  let sign = 'G';
-  let line: number | null = null;
-  let shift = 0;
-  doc.getMeasures(partIndex).forEach((measure, index) => {
-    if (index > measureIndex) return;
-    for (const attributes of Array.from(measure.children).filter((c) => c.tagName === 'attributes')) {
-      for (const clef of Array.from(attributes.children).filter((c) => c.tagName === 'clef')) {
-        if (Number(clef.getAttribute('number') ?? 1) !== staff) continue;
-        const text = (tag: string) =>
-          Array.from(clef.children)
-            .find((c) => c.tagName === tag)
-            ?.textContent?.trim();
-        sign = text('sign') ?? sign;
-        line = text('line') ? Number(text('line')) : null;
-        shift = Number(text('clef-octave-change') ?? 0) || 0;
-      }
-    }
-  });
-  const base: Record<string, { d: number; line: number }> = {
-    G: { d: 4 * 7 + 4, line: 2 },
-    F: { d: 3 * 7 + 3, line: 4 },
-    C: { d: 4 * 7, line: 3 },
-  };
-  const entry = base[sign];
-  if (!entry) return null;
-  return entry.d + (5 - (line ?? entry.line)) * 2 + shift * 7;
-};
+): number | null => topLineIndex(clefAt(doc, partIndex, staff, measureIndex));
 
 /** Cao độ tự nhiên (bậc + quãng tám) ở `line` bậc dưới dòng kẻ trên cùng. */
-export const pitchAtLine = (topD: number, line: number): { step: Step; octave: number } => {
-  const d = topD - line;
-  return { step: STEPS[((d % 7) + 7) % 7], octave: Math.floor(d / 7) };
-};
+export const pitchAtLine = naturalAt;
 
 interface EntryBox {
   voice: number;

@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { ScoreDocument } from '../../editor/ScoreDocument';
-import { applySelection, bindNoteIds, noteIdsFromEvent } from '../../editor/osmdBridge';
-import type { BindReport } from '../../editor/osmdBridge';
+import { ScoreDocument } from '../../components/editor/ScoreDocument';
+import { applySelection, bindNoteIds, noteIdsFromEvent } from '../../components/editor/osmdBridge';
+import type { BindReport } from '../../components/editor/osmdBridge';
 import { fetchMusicXml } from '../../services';
-import '../../editor/editor.css';
+import '../../components/editor/editor.css';
 
 /**
  * Trang thử (chỉ có khi chạy `npm run dev`): kiểm tra id nốt phía OSMD khớp id phía DOM MusicXML.

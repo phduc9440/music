@@ -1,11 +1,14 @@
+import { useState } from 'react';
 import type { ReactNode } from 'react';
-import type { SymbolOp } from '../../editor/commands';
-import { DYNAMICS } from '../../editor/marks';
-import type { MarkOp } from '../../editor/marks';
-import type { VoiceOp } from '../../editor/voices';
-import type { DurationChoice, DurationType } from '../../editor/durations';
-import type { PitchOp } from '../../editor/pitch';
-import { DURATION_DRAG_TYPE } from '../../editor/staffHit';
+import type { SymbolOp } from '../editor/commands';
+import { DYNAMICS } from '../editor/marks';
+import type { MarkOp } from '../editor/marks';
+import { TUPLET_PRESETS } from '../editor/tuplets';
+import type { TupletOp } from '../editor/tuplets';
+import type { VoiceOp } from '../editor/voices';
+import type { DurationChoice, DurationType } from '../editor/durations';
+import type { PitchOp } from '../editor/pitch';
+import { DURATION_DRAG_TYPE } from '../editor/staffHit';
 import {
   ToolDelete,
   ToolDot,
@@ -27,8 +30,10 @@ import {
   ToolSemitoneUp,
   ToolSharp,
   ToolSixteenth,
+  ToolSixtyFourth,
   ToolStepDown,
   ToolStepUp,
+  ToolThirtySecond,
   ToolWhole,
 } from './ToolIcons';
 import { IconRedo, IconSave, IconUndo } from './ViewerIcons';
@@ -55,14 +60,16 @@ interface Props {
   onChordModeChange: (enabled: boolean) => void;
   /** Ký hiệu sắc thái, lặp lại và chỉ dẫn nhảy. */
   onMark: (op: MarkOp) => void;
-  /** Thêm khuông Fa cho đàn, thêm khuông Sol/Fa riêng, xóa khuông. */
-  onStaves: (op: 'addBass' | 'addG' | 'addF' | 'remove') => void;
+  /** Thêm khuông Fa cho đàn, thêm khuông Sol/Fa/Tenor riêng, xóa khuông. */
+  onStaves: (op: 'addBass' | 'addG' | 'addF' | 'addTenor' | 'remove') => void;
   /** Mở hộp thoại khóa nhạc, dấu hóa, nhịp. */
   onOpenNotation: () => void;
   /** Thêm / xóa ô nhịp. */
   onMeasures: (op: 'insertAfter' | 'insertBefore' | 'delete') => void;
   /** Viết bè, nốt nhỏ, xóa bè. */
   onVoice: (op: VoiceOp) => void;
+  /** Tạo chùm (chùm ba, chùm năm...) từ nốt đang chọn hoặc bỏ chùm. */
+  onTuplet: (op: TupletOp) => void;
   /** "Giữ ô nhịp đủ phách": đổi trường độ nhưng lấp dấu lặng / ghi đè nốt sau để ô không đổi độ dài. */
   onDuration: (type: DurationType) => void;
   onDot: () => void;
@@ -149,6 +156,8 @@ const DURATION_TOOLS: { type: DurationType; icon: ReactNode; label: string; key:
   { type: 'quarter', icon: <ToolQuarter />, label: 'Đen', key: '3' },
   { type: 'eighth', icon: <ToolEighth />, label: 'Móc đơn', key: '2' },
   { type: '16th', icon: <ToolSixteenth />, label: 'Móc kép', key: '1' },
+  { type: '32nd', icon: <ToolThirtySecond />, label: 'Móc ba', key: '6' },
+  { type: '64th', icon: <ToolSixtyFourth />, label: 'Móc tứ', key: '7' },
 ];
 
 /**
@@ -174,6 +183,7 @@ export default function EditorToolPanel({
   onOpenNotation,
   onMeasures,
   onVoice,
+  onTuplet,
   onDuration,
   onDot,
   previewTone,
@@ -185,6 +195,8 @@ export default function EditorToolPanel({
   onRedo,
   onSave,
 }: Props) {
+  const [tupletMenu, setTupletMenu] = useState(false);
+  const [otherMenu, setOtherMenu] = useState(false);
   return (
     <>
       {open && <div className="sv-sheet-backdrop" onClick={onClose} aria-hidden="true" />}
@@ -312,11 +324,11 @@ export default function EditorToolPanel({
               </button>
             ))}
             <button
-              className={`sv-tool${inputMode && inputDuration.dotted ? ' is-active' : ''}`}
+              className={`sv-tool${inputMode && inputDuration.dots > 0 ? ' is-active' : ''}`}
               disabled={(!hasSelection && !inputMode) || busy}
-              aria-pressed={inputMode ? inputDuration.dotted : undefined}
+              aria-pressed={inputMode ? inputDuration.dots > 0 : undefined}
               onClick={onDot}
-              title="Chấm dôi (.)"
+              title="Chấm dôi (.): bấm lần 2 chấm dôi kép, lần 3 bỏ chấm"
               aria-label="Chấm dôi"
             >
               <span className="sv-tool__icon" aria-hidden="true">
@@ -353,6 +365,14 @@ export default function EditorToolPanel({
               title="Thêm một khuông riêng khóa Fa (ví dụ bè T/B) phía dưới cùng"
             >
               Thêm khuông Fa
+            </button>
+            <button
+              className="sv-tool sv-tool--text"
+              disabled={busy}
+              onClick={() => onStaves('addTenor')}
+              title="Thêm một khuông riêng khóa Sol số 8 dưới (bè Tenor trong SATB) phía dưới cùng"
+            >
+              Thêm khuông Tenor
             </button>
             <button
               className="sv-tool sv-tool--text"
@@ -522,7 +542,7 @@ export default function EditorToolPanel({
                 onDragStart={(e) => {
                   e.dataTransfer.setData(
                     DURATION_DRAG_TYPE,
-                    JSON.stringify({ type: tool.type, dotted: inputDuration.dotted }),
+                    JSON.stringify({ type: tool.type, dots: inputDuration.dots }),
                   );
                   e.dataTransfer.effectAllowed = 'copy';
                 }}
@@ -538,6 +558,73 @@ export default function EditorToolPanel({
               </button>
             ))}
           </div>
+          <div className="sv-tools__row sv-tools__row--text">
+            <button
+              className={`sv-tool sv-tool--text${tupletMenu ? ' is-active' : ''}`}
+              disabled={!hasSelection || busy}
+              aria-expanded={tupletMenu}
+              onClick={() => setTupletMenu((open) => !open)}
+              title={`Chùm: biến nốt/dấu lặng đang chọn thành chùm ba, chùm năm... (${MOD}+3 = chùm ba)${hasSelection ? '' : ' - hãy chọn nốt trước'}`}
+            >
+              Chùm…
+            </button>
+            <button
+              className={`sv-tool sv-tool--text${otherMenu ? ' is-active' : ''}`}
+              disabled={busy}
+              aria-expanded={otherMenu}
+              onClick={() => setOtherMenu((open) => !open)}
+              title="Các trường độ ít dùng (tròn đôi)"
+            >
+              Khác…
+            </button>
+          </div>
+          {otherMenu && (
+            <div className="sv-tools__row sv-tools__row--text" role="menu" aria-label="Trường độ khác">
+              <button
+                className={`sv-tool sv-tool--text${inputMode && inputDuration.type === 'breve' ? ' is-active' : ''}`}
+                role="menuitem"
+                disabled={busy}
+                onClick={() => {
+                  onDuration('breve');
+                  setOtherMenu(false);
+                }}
+                title="Tròn đôi (dài 2 nốt tròn): bấm để đổi trường độ nốt đang chọn, hoặc đặt trường độ nhập"
+              >
+                Tròn đôi
+              </button>
+            </div>
+          )}
+          {tupletMenu && (
+            <div className="sv-tools__row sv-tools__row--text" role="menu" aria-label="Chọn kiểu chùm">
+              {TUPLET_PRESETS.map((preset) => (
+                <button
+                  key={preset.label}
+                  className="sv-tool sv-tool--text"
+                  role="menuitem"
+                  disabled={!hasSelection || busy}
+                  onClick={() => {
+                    onTuplet({ kind: 'make', actual: preset.actual, normal: preset.normal });
+                    setTupletMenu(false);
+                  }}
+                  title={`${preset.label}: ${preset.actual} nốt trong thời gian của ${preset.normal} nốt cùng loại (nốt đang chọn giữ chỗ đầu, các chỗ còn lại là dấu lặng để nhập)`}
+                >
+                  {preset.label}
+                </button>
+              ))}
+              <button
+                className="sv-tool sv-tool--text"
+                role="menuitem"
+                disabled={!hasSelection || busy}
+                onClick={() => {
+                  onTuplet({ kind: 'remove' });
+                  setTupletMenu(false);
+                }}
+                title="Bỏ chùm: gộp cả chùm chứa nốt đang chọn về một nốt (giữ cao độ nốt đầu tiên có cao độ)"
+              >
+                Bỏ chùm
+              </button>
+            </div>
+          )}
         </div>
       </aside>
     </>

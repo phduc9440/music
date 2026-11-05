@@ -4,8 +4,8 @@ import DownloadMenu from '../../components/scores/DownloadMenu';
 import EditorToolPanel from '../../components/scores/EditorToolPanel';
 import ChordBar from '../../components/scores/ChordBar';
 import NotationModal from '../../components/scores/NotationModal';
-import { readNotation } from '../../editor/staves';
-import type { NotationChange } from '../../editor/staves';
+import { readNotation } from '../../components/editor/staves';
+import type { NotationChange } from '../../components/editor/staves';
 import LyricBar from '../../components/scores/LyricBar';
 import Modal from '../../components/scores/Modal';
 import ScoreCanvas from '../../components/scores/ScoreCanvas';
@@ -23,11 +23,11 @@ import {
   IconShrink,
   IconUndo,
 } from '../../components/scores/ViewerIcons';
-import { syncTitle } from '../../editor/header';
-import { ScoreDocument } from '../../editor/ScoreDocument';
-import { DURATION_LABELS } from '../../editor/durations';
-import { usePlayback } from '../../editor/usePlayback';
-import { useScoreEditor } from '../../editor/useScoreEditor';
+import { syncTitle } from '../../components/editor/header';
+import { ScoreDocument } from '../../components/editor/ScoreDocument';
+import { DURATION_LABELS, dotsLabel } from '../../components/editor/durations';
+import { usePlayback } from '../../components/editor/usePlayback';
+import { useScoreEditor } from '../../components/editor/useScoreEditor';
 import { fetchMusicXml, scoreApi } from '../../services';
 import type { ScoreDetail as ScoreDetailData } from '../../types';
 import { isValidScoreId } from '../../utils/omr';
@@ -63,17 +63,24 @@ const SHORTCUTS: [string, string][] = [
   [`${MOD} + Z`, 'Hoàn tác'],
   [`${MOD} + Shift + Z  hoặc  ${MOD} + Y`, 'Làm lại'],
   [`${MOD} + S`, 'Lưu'],
-  ['1 – 5', 'Trường độ: móc kép, móc đơn, đen, trắng, tròn (áp lên nốt chọn)'],
-  ['.', 'Bật/tắt chấm dôi'],
+  [
+    '1 – 7',
+    'Trường độ: móc kép, móc đơn, đen, trắng, tròn (1–5), móc ba, móc tứ (6–7); tròn đôi ở nút "Khác" (áp lên nốt chọn)',
+  ],
+  ['.', 'Chấm dôi: bấm lần 1 chấm dôi, lần 2 chấm dôi kép, lần 3 bỏ chấm'],
+  [
+    `${MOD} + 3`,
+    'Chùm ba từ nốt/dấu lặng đang chọn (nhóm Trường độ → "Chùm…" còn có chùm hai, bốn, năm, sáu, bảy và "Bỏ chùm")',
+  ],
   ['Bấm vào khuông (chế độ Nhập nốt)', 'Mở khung chọn nốt tại đúng dòng/khe đã bấm rồi bấm Thêm'],
   ['Kéo nút trường độ vào khuông', 'Thêm nốt có trường độ đó tại chỗ thả'],
   ['A – G (chế độ Nhập nốt)', 'Biến nốt/dấu lặng đang chọn thành nốt đó rồi sang mục kế tiếp'],
   ['Bấm vào tiêu đề, tên tác giả hoặc nhịp độ', 'Sửa nội dung; tiêu đề và tác giả sửa được cả cỡ chữ, đậm, nghiêng'],
   ['Chế độ Lời', 'Chọn nốt, gõ âm tiết rồi Space sang nốt kế; "-" khi một chữ trải qua nhiều nốt; Esc để thoát'],
-  ['Chế độ Hợp âm', 'Chọn nốt, gõ hợp âm (C, Am7, G/B...) rồi Space sang nốt kế; ô trống để xóa'],
+  ['Chế độ Hợp âm', 'Chọn nốt, gõ hợp âm (C, Am7, G/B, C6/9, N.C....) rồi Space sang nốt kế; ô trống để xóa'],
   [
     'Nhóm Khuông nhạc',
-    'Thêm khuông Fa cho đàn, thêm khuông Sol/Fa riêng (SATB), xóa khuông; "Khóa · Dấu hóa · Nhịp…" đổi khóa, dấu hóa đầu khuông, nhịp giữa bài',
+    'Thêm khuông Fa cho đàn, thêm khuông Sol/Fa/Tenor riêng (SATB), xóa khuông; "Khóa · Dấu hóa · Nhịp…" đổi khóa (Sol, Sol 8 dưới, Fa, Đô), dấu hóa đầu khuông, nhịp giữa bài',
   ],
   ['Nhóm Ô nhịp', 'Thêm ô sau / chèn ô trước / xóa các ô đang chọn (hoàn tác được)'],
   [
@@ -482,6 +489,7 @@ function ScoreWorkspace({ score, xml, info, doc }: WorkspaceProps) {
             onOpenNotation={() => setNotationOpen(true)}
             onMeasures={editor.editMeasures}
             onVoice={editor.editVoice}
+            onTuplet={editor.editTuplet}
             onDuration={editor.chooseDuration}
             onDot={editor.toggleDot}
             previewTone={editor.previewTone}
@@ -564,8 +572,7 @@ function ScoreWorkspace({ score, xml, info, doc }: WorkspaceProps) {
           {canEdit && editor.inputMode && (
             <span className="sv-status__sel">
               Nhập nốt · trường độ {DURATION_LABELS[editor.inputDuration.type]}
-              {editor.inputDuration.dotted ? ' chấm dôi' : ''} · bấm vào khuông để thêm nốt, hoặc chọn dấu lặng rồi bấm
-              A–G
+              {dotsLabel(editor.inputDuration.dots)} · bấm vào khuông để thêm nốt, hoặc chọn dấu lặng rồi bấm A–G
             </span>
           )}
           {canEdit && editor.statusText && <span className="sv-status__sel">{editor.statusText}</span>}

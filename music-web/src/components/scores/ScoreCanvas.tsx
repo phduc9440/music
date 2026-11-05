@@ -8,22 +8,22 @@ import {
   applySelection,
   bindNoteIds,
   noteIdsFromEvent,
-} from '../../editor/osmdBridge';
-import { DURATION_QUARTERS } from '../../editor/durations';
-import type { AccidentalChoice, DurationChoice, DurationType, InsertTarget } from '../../editor/durations';
-import type { ScoreDocument } from '../../editor/ScoreDocument';
-import { DURATION_DRAG_TYPE, ledgerLines, locateSpot, solfegeName, spotTarget } from '../../editor/staffHit';
-import type { StaffSpot } from '../../editor/staffHit';
+} from '../editor/osmdBridge';
+import { DURATION_QUARTERS } from '../editor/durations';
+import type { AccidentalChoice, DurationChoice, DurationType, InsertTarget } from '../editor/durations';
+import type { ScoreDocument } from '../editor/ScoreDocument';
+import { DURATION_DRAG_TYPE, ledgerLines, locateSpot, solfegeName, spotTarget } from '../editor/staffHit';
+import type { StaffSpot } from '../editor/staffHit';
 import { ZOOM_MAX, ZOOM_MIN, clampZoom } from '../../utils/viewer';
 import type { ViewMode } from '../../utils/viewer';
-import { applyHeaderStyle, readHeader } from '../../editor/header';
-import type { HeaderField, HeaderState, TextStyle } from '../../editor/header';
-import { readTempo } from '../../editor/tempo';
-import type { TempoInfo } from '../../editor/tempo';
+import { applyHeaderStyle, readHeader } from '../editor/header';
+import type { HeaderField, HeaderState, TextStyle } from '../editor/header';
+import { readTempo } from '../editor/tempo';
+import type { TempoInfo } from '../editor/tempo';
 import NoteInsertPopover from './NoteInsertPopover';
 import TextEditPopover from './TextEditPopover';
 import type { TextKind } from './TextEditPopover';
-import '../../editor/editor.css';
+import '../editor/editor.css';
 
 interface Props {
   /** Nội dung MusicXML (dùng khi chưa có `doc`, tức là chỉ xem). */
@@ -627,9 +627,9 @@ export default function ScoreCanvas({
     setGhost(null);
     let choice: DurationChoice | null = null;
     try {
-      const data = JSON.parse(e.dataTransfer.getData(DURATION_DRAG_TYPE)) as { type?: string; dotted?: boolean };
+      const data = JSON.parse(e.dataTransfer.getData(DURATION_DRAG_TYPE)) as { type?: string; dots?: number };
       if (data.type && data.type in DURATION_QUARTERS)
-        choice = { type: data.type as DurationType, dotted: !!data.dotted };
+        choice = { type: data.type as DurationType, dots: data.dots === 1 || data.dots === 2 ? data.dots : 0 };
     } catch {
       // dữ liệu kéo không hợp lệ: bỏ qua
     }
@@ -789,7 +789,7 @@ export default function ScoreCanvas({
               ? activePopover.spot.y - POPOVER_HEIGHT - 12
               : activePopover.spot.y + 18,
           )}
-          initialDuration={inputDuration ?? { type: 'quarter', dotted: false }}
+          initialDuration={inputDuration ?? { type: 'quarter', dots: 0 }}
           onAdd={(target, choice, accidental) => onInsertNote?.(target, choice, accidental) ?? false}
           onClose={() => setPopover(null)}
         />
