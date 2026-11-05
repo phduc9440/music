@@ -94,6 +94,21 @@ class Settings:
     max_repeat_lines: int = 24
     """Một dòng kern giống hệt nhau lặp liên tiếp quá số này thì coi là model sinh lặp và cắt bớt."""
 
+    # ---- Kiểm tra số khuông theo bố cục và nhận diện lại theo hệ (app/omr/routing.py) ----
+
+    omr_routing: str = "fallback"
+    """``off``: như cũ. ``fallback``: trang có số spine khác số khuông trên ảnh thì nhận diện lại từng hệ (sau khi xong
+    lượt chính, trong thời gian còn lại của job). ``always``: nhận diện cả hai cách cho mọi trang có bố cục tin cậy rồi
+    chọn (để đo, chậm gấp đôi). Đặt bằng ``OMR_ROUTING``."""
+
+    routing_retry_beams: int = 3
+    """Hệ vẫn sai số spine thì thử lại bằng beam search với số beam này (bài báo dùng 3). 0 hoặc 1: không thử lại.
+    Đặt bằng ``ROUTING_RETRY_BEAMS``."""
+
+    routing_reserve_s: int = 30
+    """Giây giữ lại cho bước ghép và xuất: nhận diện lại chỉ chạy khi job còn nhiều thời gian hơn mức này, nên không bao
+    giờ làm job quá hạn. Đặt bằng ``ROUTING_RESERVE_S``."""
+
 
 def _bool_env(name: str, default: bool) -> bool:
     raw = os.environ.get(name)
@@ -150,4 +165,14 @@ def get_settings() -> Settings:
         kern_parse_mode=(os.environ.get("KERN_PARSE_MODE", "").strip() or "fail").lower(),
         lenient_spines=_bool_env("MERGE_LENIENT_SPINES", True),
         max_repeat_lines=_int_env("MAX_REPEAT_LINES", 24),
+        omr_routing=_routing_env(),
+        routing_retry_beams=max(0, _int_env("ROUTING_RETRY_BEAMS", 3)),
+        routing_reserve_s=max(0, _int_env("ROUTING_RESERVE_S", 30)),
     )
+
+
+def _routing_env() -> str:
+    raw = (os.environ.get("OMR_ROUTING", "").strip() or "fallback").lower()
+    if raw not in ("off", "fallback", "always"):
+        raise ValueError(f"OMR_ROUTING phải là off, fallback hoặc always, nhận được {raw!r}")
+    return raw

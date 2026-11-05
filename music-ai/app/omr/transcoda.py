@@ -58,8 +58,9 @@ class Recognizer(Protocol):
     def wait_ready(self, check: Callable[[], None], timeout_s: float) -> None:
         """Chờ model sẵn sàng, gọi ``check()`` (hủy/hết hạn) đều đặn. Ném :class:`RecognizerNotReady` nếu không được."""
 
-    def recognize(self, png_path, check: Callable[[], None]) -> RecognitionResult:
-        """Nhận diện một ảnh trang 1050x1485. ``check()`` được gọi giữa các token để hủy/timeout kịp thời."""
+    def recognize(self, png_path, check: Callable[[], None], num_beams: Optional[int] = None) -> RecognitionResult:
+        """Nhận diện một ảnh trang 1050x1485. ``check()`` được gọi giữa các token để hủy/timeout kịp thời.
+        ``num_beams`` None thì dùng cấu hình ``NUM_BEAMS`` (bước nhận diện lại truyền 3 khi thử lại)."""
 
 
 class TranscodaRecognizer:
@@ -163,8 +164,12 @@ class TranscodaRecognizer:
 
     # ------------------------------------------------------------------ suy luận
 
-    def recognize(self, png_path, check: Callable[[], None]) -> RecognitionResult:
-        """Chạy Transcoda trên một ảnh trang (PNG 1050x1485 do bước tiền xử lý tạo ra)."""
+    def recognize(self, png_path, check: Callable[[], None], num_beams: Optional[int] = None) -> RecognitionResult:
+        """Chạy Transcoda trên một ảnh trang (PNG 1050x1485 do bước tiền xử lý tạo ra).
+
+        ``num_beams`` None thì dùng ``NUM_BEAMS`` của cấu hình; bước nhận diện lại theo hệ truyền số beam riêng khi thử
+        lại một hệ đọc sai số khuông.
+        """
         if self._state != STATE_READY:
             raise RecognizerNotReady("model chưa sẵn sàng")
         import torch  # noqa: PLC0415
@@ -189,7 +194,7 @@ class TranscodaRecognizer:
             image_sizes=image_sizes,
             max_length=settings.max_tokens,
             do_sample=False,
-            num_beams=settings.num_beams,
+            num_beams=num_beams or settings.num_beams,
             repetition_penalty=settings.repetition_penalty,
         )
         started = time.monotonic()

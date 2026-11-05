@@ -432,12 +432,14 @@ def align_pages_leniently(pages: list[PageKern]) -> tuple[list[PageKern], int, l
     Dùng cho kết quả của model thật: có khi một trang bị đọc thiếu một khuông (ví dụ chỉ 2 spine trong khi các trang
     khác có 3). Thứ tự spine của kern là từ khuông dưới lên trên, nên khuông bị thiếu thường là khuông trên cùng, tức cột
     bên phải. Khác :func:`align_spines`, không yêu cầu mọi dòng cùng số cột (trang có thể tách/gộp spine giữa chừng).
+    Cột thêm vào không để trống hoàn toàn (xem :func:`pad_page`) để music21 vẫn dựng đủ ô nhịp và khóa nhạc cho khuông đó.
     Trả ``(trang_đã_căn, số_spine_chuẩn, cảnh_báo)``.
     """
     counts: dict[int, int] = {}
     for page in pages:
         counts[page.spines] = counts.get(page.spines, 0) + 1
     base = max(counts, key=lambda width: (counts[width], width))
+    references = spine_references([p for p in pages if p.spines == base], base)
     warnings: list[str] = []
     result: list[PageKern] = []
     for page in pages:
@@ -454,14 +456,104 @@ def align_pages_leniently(pages: list[PageKern]) -> tuple[list[PageKern], int, l
             warnings.append(
                 f"Trang {page.number}: có {page.spines} spine nhiều hơn các trang khác ({base}), đã bỏ {-delta} cột bên phải"
             )
-        result.append(
-            PageKern(
-                number=page.number,
-                header=_fit_row(page.header, delta),
-                body=[_fit_row(row, delta) for row in page.body],
-            )
-        )
+        result.append(pad_page(page, base, references))
     return result, base, warnings
+
+
+def spine_references(pages: list[PageKern], spines: int) -> list[dict[str, str]]:
+    """Khóa nhạc/dấu hóa/khóa điệu/nhịp đầu tiên của từng spine, lấy từ các trang đủ ``spines`` cột (để điền cho cột độn)."""
+    references: list[dict[str, str]] = [{} for _ in range(spines)]
+    for page in pages:
+        for line in page.body[: _prologue_length(page.body)]:
+            fields = line.split(TAB)
+            if len(fields) != spines:
+                continue
+            for index, token in enumerate(fields):
+                kind = classify(token)
+                if kind and kind not in references[index]:
+                    references[index][kind] = token
+    return references
+
+
+_REST_DURATIONS = {Fraction(4): "00", Fraction(2): "0", **{Fraction(1, 2**k): str(2**k) for k in range(0, 7)}}
+
+
+def rest_token(duration: Fraction) -> Optional[str]:
+    """Dấu lặng kern đúng ``duration`` (nốt tròn = 1) nếu biểu diễn được bằng một token (có thể có chấm), ngược lại None."""
+    for base, digits in _REST_DURATIONS.items():
+        for dots in range(3):
+            if base * (2 - Fraction(1, 2**dots)) == duration:
+                return f"{digits}{'.' * dots}r"
+    return None
+
+
+def _measure_rest_rows(body: list[str]) -> dict[int, str]:
+    """``chỉ số dòng dữ liệu đầu tiên của mỗi ô nhịp -> dấu lặng dài bằng ô đó`` (đo theo spine đầu tiên)."""
+    rests: dict[int, str] = {}
+    rows: list[int] = []
+
+    def flush() -> None:
+        if not rows:
+            return
+        total = sum((token_duration(body[i].split(TAB)[0]) or Fraction(0) for i in rows), Fraction(0))
+        token = rest_token(total) if total > 0 else None
+        if token:
+            rests[rows[0]] = token
+
+    for index, line in enumerate(body):
+        if is_barline(line):
+            flush()
+            rows = []
+        elif is_data_line(line):
+            rows.append(index)
+    flush()
+    return rests
+
+
+def pad_page(page: PageKern, target: int, references: Optional[list[dict[str, str]]] = None) -> PageKern:
+    """Đưa trang về ``target`` spine: thêm cột bên phải (khuông trên cùng) hoặc bỏ bớt cột bên phải.
+
+    Cột thêm vào không để trống hoàn toàn, vì music21 bỏ ô nhịp không có nốt nào và khuông không có khóa nhạc làm MusicXML
+    thiếu ``<attributes>``, khiến khuông đó lệch ô so với các khuông khác:
+
+    * dòng diễn giải đầu trang lấy giá trị cùng loại của spine đó ở trang khác (``references``); không có thì dấu hóa,
+      khóa điệu, nhịp (chung cho mọi khuông) lấy theo chính dòng đó, còn khóa nhạc mặc định khóa Sol;
+    * mỗi ô nhịp có một dấu lặng dài bằng ô (đo theo spine đầu tiên), không biểu diễn được thì để ``.``.
+    """
+    delta = target - page.spines
+    if delta <= 0:
+        return PageKern(
+            number=page.number, header=_fit_row(page.header, delta), body=[_fit_row(row, delta) for row in page.body]
+        )
+    references = references or []
+    rests = _measure_rest_rows(page.body)
+    prologue = _prologue_length(page.body)
+    body: list[str] = []
+    for index, row in enumerate(page.body):
+        fields = row.split(TAB)
+        if is_data_line(row):
+            fillers = [rests.get(index, ".")] * delta
+        elif index < prologue and _is_interpretation(row):
+            kinds = {classify(token) for token in fields} - {None}
+            kind = next(iter(kinds)) if len(kinds) == 1 else None
+            same_row = next((token for token in fields if kind and classify(token) == kind), None)
+            fallback = "*clefG2" if kind == KIND_CLEF else (same_row or "*")
+            fillers = []
+            for k in range(delta):
+                spine = page.spines + k
+                known = references[spine] if spine < len(references) else {}
+                fillers.append(known.get(kind, fallback) if kind else "*")
+        else:
+            fillers = [_filler(row)] * delta
+        body.append(TAB.join(fields + fillers))
+    return PageKern(number=page.number, header=_fit_row(page.header, delta), body=body)
+
+
+def fit_page_spines(page: PageKern, target: int, references: Optional[list[dict[str, str]]] = None) -> PageKern:
+    """Đưa một trang về đúng ``target`` spine (số spine đích lấy từ bố cục trang), cùng cách độn như :func:`pad_page`."""
+    if page.spines == target:
+        return page
+    return pad_page(page, target, references)
 
 
 def _track_groups(groups: list[int], line: str) -> list[int]:
@@ -618,6 +710,43 @@ def _finalize_barlines(lines: list[str]) -> None:
         number += 1
 
 
+# ====================================================================== vai trò khuông
+
+
+INSTRUMENT_VOICE = "*Ivox"
+INSTRUMENT_PIANO = "*Ipiano"
+
+
+def annotate_roles(result: MergeResult, roles_top_down: list[str], piano_role: str = "PIANO") -> MergeResult:
+    """Thêm dòng mã nhạc cụ Humdrum (``*Ivox`` cho khuông đơn, ``*Ipiano`` cho khuông piano) ngay sau dòng ``**kern``.
+
+    ``roles_top_down`` là vai trò từ khuông trên cùng xuống (như :attr:`layout.PageLayout.roles`); spine kern thì đi từ
+    khuông dưới lên nên thứ tự bị đảo. music21 đọc hai mã này thành ``partName`` "Voice"/"Piano" (dòng ``*I"Tên`` thì
+    không) và bước chuẩn hóa MusicXML dựa vào đó để tách part "Giọng hát".
+
+    Không làm gì (trả nguyên ``result``) khi số vai trò khác số spine, khi chỉ có piano (bản piano giữ đúng đầu ra cũ)
+    hoặc khi không có piano (bản một khuông có thể là giai điệu nhạc cụ, không tự gọi là giọng hát).
+    """
+    if len(roles_top_down) != result.spines or piano_role not in roles_top_down:
+        return result
+    if all(role == piano_role for role in roles_top_down):
+        return result
+    codes = [INSTRUMENT_PIANO if role == piano_role else INSTRUMENT_VOICE for role in roles_top_down]
+    line = TAB.join(reversed(codes))
+    first_page = result.line_pages[0] if result.line_pages else 1
+    lines = [line, *result.lines]
+    line_pages = [first_page, *result.line_pages]
+    text = "\n".join([result.header, *lines, TAB.join(["*-"] * result.spines)]) + "\n"
+    return MergeResult(
+        text=text,
+        spines=result.spines,
+        warnings=list(result.warnings),
+        line_pages=line_pages,
+        lines=lines,
+        header=result.header,
+    )
+
+
 # ====================================================================== trường độ & kiểm tra ô nhịp
 
 
@@ -657,6 +786,21 @@ def check_measures(result: MergeResult) -> list[str]:
     Chỉ kiểm tra các ô nhịp không tách/gộp spine. Ô nhịp đầu tiên (nhịp lấy đà) và ô nhịp cuối cùng được phép ngắn
     hơn. Mỗi cảnh báo ghi số trang và số ô nhịp; chỉ nêu tối đa :data:`MAX_WARNINGS_PER_KIND` ô.
     """
+    _, problems = _measure_report(result)
+    if len(problems) > MAX_WARNINGS_PER_KIND:
+        extra = len(problems) - MAX_WARNINGS_PER_KIND
+        problems = problems[:MAX_WARNINGS_PER_KIND] + [f"Còn {extra} ô nhịp khác có tổng trường độ không khớp số chỉ nhịp"]
+    return problems
+
+
+def measure_stats(result: MergeResult) -> tuple[int, int]:
+    """``(số ô kiểm được, số ô sai trường độ)``, cùng quy tắc với :func:`check_measures`. Dùng để chấm ứng viên."""
+    checked, problems = _measure_report(result)
+    return checked, len(problems)
+
+
+def _measure_report(result: MergeResult) -> tuple[int, list[str]]:
+    """Đếm ô nhịp kiểm được và liệt kê mọi ô sai trường độ (không giới hạn số cảnh báo)."""
     base = result.spines
     problems: list[str] = []
     meter: Optional[Fraction] = None
@@ -704,9 +848,11 @@ def check_measures(result: MergeResult) -> list[str]:
     segments.append(current)
 
     with_data = [s for s in segments if s["data"] > 0]
+    checked = 0
     for position, segment in enumerate(with_data):
         if not segment["ok"] or segment["meter"] is None:
             continue
+        checked += 1
         is_edge = position == 0 or position == len(with_data) - 1
         for index, total in enumerate(segment["sums"]):
             if total == 0:
@@ -718,11 +864,7 @@ def check_measures(result: MergeResult) -> list[str]:
                     f"{total} (nốt tròn), khác số chỉ nhịp {segment['meter']}"
                 )
                 break
-
-    if len(problems) > MAX_WARNINGS_PER_KIND:
-        extra = len(problems) - MAX_WARNINGS_PER_KIND
-        problems = problems[:MAX_WARNINGS_PER_KIND] + [f"Còn {extra} ô nhịp khác có tổng trường độ không khớp số chỉ nhịp"]
-    return problems
+    return checked, problems
 
 
 # ====================================================================== metadata
