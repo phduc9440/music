@@ -19,10 +19,11 @@ public interface ScoreService {
      * @param status  lọc theo ProcessingStatus (rỗng = tất cả)
      * @param source  lọc theo ScoreSource (rỗng = tất cả)
      * @param difficulty lọc theo DifficultyLevel (rỗng = tất cả)
+     * @param tagId lọc theo id thể loại (rỗng = tất cả)
      * @param sort    newest (mặc định) | oldest | title
      */
     PageResponse<ScoreSummaryResponse> getMyScores(
-            int page, int size, String keyword, String status, String source, String difficulty, String sort);
+            int page, int size, String keyword, String status, String source, String difficulty, String tagId, String sort);
 
     ScoreDetailResponse getScore(String scoreId);
 

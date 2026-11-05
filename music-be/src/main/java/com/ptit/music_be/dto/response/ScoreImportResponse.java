@@ -15,5 +15,6 @@ public class ScoreImportResponse {
     String title;
     String composer;
     String processingStatus;
+    List<TagResponse> tags;
     List<ScoreFileResponse> files;
 }

@@ -1,5 +1,7 @@
 package com.ptit.music_be.service;
 
+import java.util.List;
+
 import org.springframework.web.multipart.MultipartFile;
 
 import com.ptit.music_be.dto.response.ScoreImportResponse;
@@ -12,6 +14,7 @@ public interface ScoreImportService {
      *
      * @param title tiêu đề, rỗng thì lấy từ file (work-title) hoặc tên file
      * @param composer tác giả (tùy chọn); rỗng thì lấy từ MusicXML
+     * @param tagIds id thể loại gắn cho bản nhạc (tùy chọn, tối đa 10); id không tồn tại thì từ chối cả lần import
      */
-    ScoreImportResponse importScore(MultipartFile file, String title, String composer);
+    ScoreImportResponse importScore(MultipartFile file, String title, String composer, List<String> tagIds);
 }
