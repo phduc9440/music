@@ -36,7 +36,9 @@ export type EditFailure =
   | 'tie'
   | 'noSpace'
   | 'divisions'
-  | 'unsupported';
+  | 'unsupported'
+  | 'tieTarget'
+  | 'slurTarget';
 
 export type EditResult = { ok: true; command: EditCommand } | { ok: false; reason: EditFailure };
 
@@ -62,6 +64,8 @@ export const EDIT_FAILURE_MESSAGES: Record<EditFailure, string> = {
   noSpace: 'Không kéo dài được: nốt sẽ vượt quá cuối ô nhịp',
   divisions: 'Bản nhạc chia nhịp quá thô nên không đổi sang trường độ này được',
   unsupported: 'Cấu trúc ô nhịp này chưa hỗ trợ đổi trường độ',
+  tieTarget: 'Dấu nối cần hai nốt liền nhau cùng cao độ trong cùng bè: hãy chọn nốt trước (hoặc cả hai nốt)',
+  slurTarget: 'Dấu luyến cần chọn từ hai nốt trở lên trong cùng một khuông',
 };
 
 export const childOf = (parent: Element, tag: string): Element | undefined =>
@@ -189,7 +193,7 @@ export const chordKey = (n: NoteInfo): string =>
   `${n.partIndex}|${n.measureIndex}|${n.staff}|${n.voice}|${n.entryIndex}`;
 
 /** Ký hiệu áp lên nốt đang chọn. */
-export type SymbolOp = 'sharp' | 'flat' | 'natural' | 'rest' | 'delete';
+export type SymbolOp = 'sharp' | 'flat' | 'natural' | 'rest' | 'delete' | 'tie' | 'slur';
 
 /** Nhãn hiển thị của từng ký hiệu (dùng cho thông báo hoàn tác / làm lại). */
 export const SYMBOL_OP_LABELS: Record<SymbolOp, string> = {
@@ -198,6 +202,8 @@ export const SYMBOL_OP_LABELS: Record<SymbolOp, string> = {
   natural: 'Thêm dấu bình',
   rest: 'Đổi thành dấu lặng',
   delete: 'Xóa nốt',
+  tie: 'Dấu nối',
+  slur: 'Dấu luyến',
 };
 
 export type Touched = Map<string, { partIndex: number; measureIndex: number }>;
@@ -332,11 +338,45 @@ const convertToRest = (note: Element): void => {
     else if (['accidental', 'tie', 'stem', 'notehead', 'beam', 'chord'].includes(c.tagName)) c.remove();
     else if (c.tagName === 'notations') {
       Array.from(c.children)
-        .filter((n) => n.tagName === 'tied')
+        .filter((n) => n.tagName === 'tied' || n.tagName === 'slur')
         .forEach((n) => n.remove());
       if (c.children.length === 0) c.remove();
     }
   });
+};
+
+/** Các thẻ <slur> nằm trong <notations> của một nốt. */
+export const slursOf = (note: Element): Element[] =>
+  Array.from(note.children)
+    .filter((c) => c.tagName === 'notations')
+    .flatMap((n) => Array.from(n.children))
+    .filter((c) => c.tagName === 'slur');
+
+/**
+ * Với các nốt sắp bị xóa/đổi thành dấu lặng, tìm đầu kia của dấu luyến dính vào chúng (nằm ở nốt khác) để gỡ nốt,
+ * tránh để lại dấu luyến mồ côi.
+ */
+const slurPartners = (doc: ScoreDocument, removed: ReadonlySet<NoteInfo>) => {
+  const out: { info: NoteInfo; type: string; number: string }[] = [];
+  doc.notes.forEach((n, index) => {
+    if (!removed.has(n)) return;
+    for (const slur of slursOf(n.element)) {
+      const type = slur.getAttribute('type');
+      const number = slur.getAttribute('number') ?? '1';
+      const wanted = type === 'start' ? 'stop' : 'start';
+      if (type !== 'start' && type !== 'stop') continue;
+      const range = type === 'start' ? doc.notes.slice(index + 1) : doc.notes.slice(0, index).reverse();
+      const partner = range.find(
+        (m) =>
+          m.partIndex === n.partIndex &&
+          slursOf(m.element).some(
+            (x) => x.getAttribute('type') === wanted && (x.getAttribute('number') ?? '1') === number,
+          ),
+      );
+      if (partner && !removed.has(partner)) out.push({ info: partner, type: wanted, number });
+    }
+  });
+  return out;
 };
 
 /**
@@ -374,7 +414,19 @@ export function removeNotes(doc: ScoreDocument, ids: readonly string[], mode: 'r
     touch(touched, members[0]);
   }
 
+  const removedSet = new Set(plan.flatMap((p) => p.remove));
+  const partners = slurPartners(doc, removedSet);
+  partners.forEach((p) => touch(touched, p.info));
   const command = commitEdit(doc, SYMBOL_OP_LABELS[mode], touched, [...chosen.keys()], () => {
+    for (const p of partners) {
+      slursOf(p.info.element)
+        .filter((x) => x.getAttribute('type') === p.type && (x.getAttribute('number') ?? '1') === p.number)
+        .forEach((x) => {
+          const parent = x.parentElement;
+          x.remove();
+          if (parent && parent.children.length === 0) parent.remove();
+        });
+    }
     for (const { members, remove } of plan) {
       const removeSet = new Set(remove);
       const keepers = members.filter((m) => !removeSet.has(m));

@@ -77,6 +77,20 @@ export const ToolNatural = () => (
     <path d="M8 4v11.5l9-2.500M16 20V8.5L7 11" />
   </Svg>
 );
+export const ToolTie = () => (
+  <Svg>
+    <ellipse cx="6" cy="9" rx="2.6" ry="1.9" transform="rotate(-20 6 9)" fill="currentColor" stroke="none" />
+    <ellipse cx="18" cy="9" rx="2.6" ry="1.9" transform="rotate(-20 18 9)" fill="currentColor" stroke="none" />
+    <path d="M5 14.5q7 7 14 0" />
+  </Svg>
+);
+export const ToolSlur = () => (
+  <Svg>
+    <path d="M3.5 16q8.500-11 17 0" />
+    <circle cx="5" cy="19" r="1.5" fill="currentColor" stroke="none" />
+    <circle cx="19" cy="19" r="1.5" fill="currentColor" stroke="none" />
+  </Svg>
+);
 export const ToolDot = () => (
   <Svg>
     <circle cx="12" cy="12" r="2.6" fill="currentColor" />

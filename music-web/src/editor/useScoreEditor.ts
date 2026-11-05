@@ -16,6 +16,7 @@ import type { Draft } from './draft';
 import { describeSelection } from './describe';
 import { History } from './history';
 import { checkMeasures, confirmMeasure } from './measureCheck';
+import { toggleSlur, toggleTie } from './ties';
 import type { MeasureIssue } from './measureCheck';
 import type { PitchOp } from './pitch';
 import { selectionGroups } from './playback';
@@ -316,7 +317,9 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     (op: SymbolOp) => {
       if (!canEdit || selection.size === 0) return;
       const ids = [...selection];
-      if (op === 'rest' || op === 'delete') commit(removeNotes(doc, ids, op), false);
+      if (op === 'tie') commit(toggleTie(doc, ids), false);
+      else if (op === 'slur') commit(toggleSlur(doc, ids), false);
+      else if (op === 'rest' || op === 'delete') commit(removeNotes(doc, ids, op), false);
       else commit(setAlteration(doc, ids, op), true);
     },
     [canEdit, selection, doc, commit],
@@ -537,6 +540,9 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
       } else if ((e.key === 'Delete' || e.key === 'Backspace') && selection.size > 0) {
         e.preventDefault();
         applySymbol('delete');
+      } else if (!mod && !e.altKey && (key === 't' || key === 's') && selection.size > 0) {
+        e.preventDefault();
+        applySymbol(key === 't' ? 'tie' : 'slur');
       } else if (!mod && !e.altKey && /^[1-5]$/.test(e.key)) {
         chooseDuration(DIGIT_DURATIONS[e.key]);
       } else if (!mod && !e.altKey && e.key === '.') {

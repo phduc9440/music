@@ -10,6 +10,8 @@ import {
   ToolFlat,
   ToolHalf,
   ToolNatural,
+  ToolSlur,
+  ToolTie,
   ToolOctaveDown,
   ToolOctaveUp,
   ToolPencil,
@@ -90,6 +92,8 @@ const SYMBOL_TOOLS: SymbolTool[] = [
   { op: 'sharp', icon: <ToolSharp />, label: 'Thăng' },
   { op: 'flat', icon: <ToolFlat />, label: 'Giáng' },
   { op: 'natural', icon: <ToolNatural />, label: 'Bình' },
+  { op: 'tie', icon: <ToolTie />, label: 'Nối', shortcut: 'T' },
+  { op: 'slur', icon: <ToolSlur />, label: 'Luyến', shortcut: 'S' },
   { op: 'rest', icon: <ToolRest />, label: 'Dấu lặng' },
   { op: 'delete', icon: <ToolDelete />, label: 'Xóa', shortcut: 'Delete' },
 ];

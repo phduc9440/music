@@ -62,6 +62,8 @@ const SHORTCUTS: [string, string][] = [
   ['Bấm vào khuông (chế độ Nhập nốt)', 'Mở khung chọn nốt tại đúng dòng/khe đã bấm rồi bấm Thêm'],
   ['Kéo nút trường độ vào khuông', 'Thêm nốt có trường độ đó tại chỗ thả'],
   ['A – G (chế độ Nhập nốt)', 'Biến nốt/dấu lặng đang chọn thành nốt đó rồi sang mục kế tiếp'],
+  ['T', 'Dấu nối: nối nốt đang chọn với nốt cùng cao độ liền sau (bấm lại để bỏ)'],
+  ['S', 'Dấu luyến: chọn từ nốt đầu đến nốt cuối rồi bấm (bấm lại để bỏ)'],
   ['Delete', 'Xóa nốt đang chọn (hợp âm còn nốt khác thì giữ lại)'],
   ['Esc', 'Bỏ chọn'],
   ['+  /  -  /  0', 'Phóng to / thu nhỏ / về 100%'],
