@@ -627,9 +627,9 @@ export default function ScoreCanvas({
     setGhost(null);
     let choice: DurationChoice | null = null;
     try {
-      const data = JSON.parse(e.dataTransfer.getData(DURATION_DRAG_TYPE)) as { type?: string; dotted?: boolean };
+      const data = JSON.parse(e.dataTransfer.getData(DURATION_DRAG_TYPE)) as { type?: string; dots?: number };
       if (data.type && data.type in DURATION_QUARTERS)
-        choice = { type: data.type as DurationType, dotted: !!data.dotted };
+        choice = { type: data.type as DurationType, dots: data.dots === 1 || data.dots === 2 ? data.dots : 0 };
     } catch {
       // dữ liệu kéo không hợp lệ: bỏ qua
     }
@@ -789,7 +789,7 @@ export default function ScoreCanvas({
               ? activePopover.spot.y - POPOVER_HEIGHT - 12
               : activePopover.spot.y + 18,
           )}
-          initialDuration={inputDuration ?? { type: 'quarter', dotted: false }}
+          initialDuration={inputDuration ?? { type: 'quarter', dots: 0 }}
           onAdd={(target, choice, accidental) => onInsertNote?.(target, choice, accidental) ?? false}
           onClose={() => setPopover(null)}
         />

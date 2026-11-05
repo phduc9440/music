@@ -25,7 +25,7 @@ import {
 } from '../../components/scores/ViewerIcons';
 import { syncTitle } from '../../editor/header';
 import { ScoreDocument } from '../../editor/ScoreDocument';
-import { DURATION_LABELS } from '../../editor/durations';
+import { DURATION_LABELS, dotsLabel } from '../../editor/durations';
 import { usePlayback } from '../../editor/usePlayback';
 import { useScoreEditor } from '../../editor/useScoreEditor';
 import { fetchMusicXml, scoreApi } from '../../services';
@@ -63,8 +63,11 @@ const SHORTCUTS: [string, string][] = [
   [`${MOD} + Z`, 'Hoàn tác'],
   [`${MOD} + Shift + Z  hoặc  ${MOD} + Y`, 'Làm lại'],
   [`${MOD} + S`, 'Lưu'],
-  ['1 – 5', 'Trường độ: móc kép, móc đơn, đen, trắng, tròn (áp lên nốt chọn)'],
-  ['.', 'Bật/tắt chấm dôi'],
+  [
+    '1 – 7',
+    'Trường độ: móc kép, móc đơn, đen, trắng, tròn (1–5), móc ba, móc tứ (6–7); tròn đôi ở nút "Khác" (áp lên nốt chọn)',
+  ],
+  ['.', 'Chấm dôi: bấm lần 1 chấm dôi, lần 2 chấm dôi kép, lần 3 bỏ chấm'],
   [
     `${MOD} + 3`,
     'Chùm ba từ nốt/dấu lặng đang chọn (nhóm Trường độ → "Chùm…" còn có chùm hai, bốn, năm, sáu, bảy và "Bỏ chùm")',
@@ -569,8 +572,7 @@ function ScoreWorkspace({ score, xml, info, doc }: WorkspaceProps) {
           {canEdit && editor.inputMode && (
             <span className="sv-status__sel">
               Nhập nốt · trường độ {DURATION_LABELS[editor.inputDuration.type]}
-              {editor.inputDuration.dotted ? ' chấm dôi' : ''} · bấm vào khuông để thêm nốt, hoặc chọn dấu lặng rồi bấm
-              A–G
+              {dotsLabel(editor.inputDuration.dots)} · bấm vào khuông để thêm nốt, hoặc chọn dấu lặng rồi bấm A–G
             </span>
           )}
           {canEdit && editor.statusText && <span className="sv-status__sel">{editor.statusText}</span>}

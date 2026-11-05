@@ -62,6 +62,18 @@ export const ToolSixteenth = () => (
     <path d="M13.4 17V3.5c0 3.5 5 4 5 8M13.4 9c0 3.5 5 4 5 8" />
   </Svg>
 );
+export const ToolThirtySecond = () => (
+  <Svg>
+    <Head filled />
+    <path d="M13.4 17V2.5c0 2.5 4.5 3 4.5 5.5M13.4 6.5c0 2.5 4.5 3 4.5 5.5M13.4 10.5c0 2.5 4.5 3 4.5 5.5" />
+  </Svg>
+);
+export const ToolSixtyFourth = () => (
+  <Svg>
+    <Head filled />
+    <path d="M13.4 17V2c0 2 4 2.5 4 4.5M13.4 5.5c0 2 4 2.5 4 4.5M13.4 9c0 2 4 2.5 4 4.5M13.4 12.5c0 2 4 2.5 4 4.5" />
+  </Svg>
+);
 export const ToolSharp = () => (
   <Svg>
     <path d="M9 4v16M15 3v16M6 9.5l12-3M6 16.5l12-3" />
@@ -74,7 +86,7 @@ export const ToolFlat = () => (
 );
 export const ToolNatural = () => (
   <Svg>
-    <path d="M8 4v11.5l9-2.500M16 20V8.5L7 11" />
+    <path d="M8 4v11.5l9-2.5M16 20V8.5L7 11" />
   </Svg>
 );
 export const ToolTie = () => (
@@ -94,7 +106,7 @@ export const ToolSlur = () => (
 export const ToolLyric = () => (
   <Svg>
     <path d="M4 7h16M4 12h10" />
-    <path d="M8 19v-4.500M8 16.500l8-1.500M16 15v3.500" />
+    <path d="M8 19v-4.5M8 16.500l8-1.500M16 15v3.500" />
     <circle cx="7" cy="19" r="1.600" fill="currentColor" stroke="none" />
     <circle cx="15" cy="18.500" r="1.600" fill="currentColor" stroke="none" />
   </Svg>

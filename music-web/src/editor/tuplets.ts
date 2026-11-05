@@ -9,19 +9,21 @@ import { divisionsFactor, scaleDivisions } from './divisions';
 import {
   choiceQuarters,
   divisionsAt,
+  dotCount,
   hasChild,
   headOf,
   idsOfEntry,
   makeRest,
   numberOf,
   placeAfter,
+  scaledLength,
   splitRests,
   stripBeams,
   voiceEntries,
   writeDuration,
   writtenChoice,
 } from './durationCore';
-import type { DurationChoice, Entry, Plan, Ratio } from './durationCore';
+import type { Dots, DurationChoice, Entry, Plan, Ratio } from './durationCore';
 import type { NoteInfo, ScoreDocument } from './ScoreDocument';
 import { runStructural } from './structure';
 import { notationsOf, removeNotation } from './ties';
@@ -213,25 +215,22 @@ export function planTupletDuration(entries: Entry[], index: number, choice: Dura
   if (!group) return { error: 'unsupported' };
   const ratio: Ratio = { actual: group.actual, normal: group.normal };
 
-  const numerator = choiceQuarters(choice) * 4 * divisions * ratio.normal;
-  const denominator = 4 * ratio.actual;
-  if (numerator % denominator !== 0) return { error: 'divisions' };
-  const target = numerator / denominator;
+  const target = scaledLength(choiceQuarters(choice), divisions, ratio);
+  if (target === null) return { error: 'divisions' };
 
   const tied = (e: Entry) => e.members.some((m) => hasTie(m, 'start') || hasTie(m, 'stop'));
   const head = entry.members[0];
-  const sameLook =
-    childOf(head, 'type')?.textContent?.trim() === choice.type && hasChild(head, 'dot') === choice.dotted;
+  const sameLook = childOf(head, 'type')?.textContent?.trim() === choice.type && dotCount(head) === choice.dots;
   const delta = target - entry.duration;
   if (delta === 0 && sameLook) return { error: 'unchanged' };
   if (tied(entry)) return { error: 'tie' };
 
   const first = entries[group.from].members[0];
-  const apply = (): void => entry.members.forEach((m) => writeDuration(m, target, choice.type, choice.dotted));
-  const addRests = (rests: { d: number; type: DurationChoice['type']; dotted: boolean }[]): void => {
+  const apply = (): void => entry.members.forEach((m) => writeDuration(m, target, choice.type, choice.dots));
+  const addRests = (rests: { d: number; type: DurationChoice['type']; dots: Dots }[]): void => {
     let anchor = entry.members[entry.members.length - 1];
     for (const r of rests) {
-      const rest = makeRest(head, r.d, r.type, r.dotted);
+      const rest = makeRest(head, r.d, r.type, r.dots);
       setTimeModification(rest, ratio);
       anchor.after(rest);
       anchor = rest;
@@ -333,13 +332,13 @@ export function makeTuplet(doc: ScoreDocument, id: string, actual: number, norma
     const each = (entry.duration * factor) / actual;
     stripBeams(entries);
     entry.members.forEach((m) => {
-      writeDuration(m, each, written.type, written.dotted);
+      writeDuration(m, each, written.type, written.dots);
       setTimeModification(m, ratio);
     });
     childOf(head, 'rest')?.removeAttribute('measure');
     let anchor = entry.members[entry.members.length - 1];
     for (let k = 1; k < actual; k++) {
-      const rest = makeRest(head, each, written.type, written.dotted);
+      const rest = makeRest(head, each, written.type, written.dots);
       setTimeModification(rest, ratio);
       anchor.after(rest);
       anchor = rest;
@@ -442,13 +441,13 @@ export function removeTuplet(doc: ScoreDocument, id: string): EditResult {
       removeNotation(m, 'tuplet', () => true);
     });
     if (written) {
-      keeper.members.forEach((m) => writeDuration(m, range.span, written.type, written.dotted));
+      keeper.members.forEach((m) => writeDuration(m, range.span, written.type, written.dots));
     } else if (restPieces) {
       const [firstPiece, ...others] = restPieces;
-      keeper.members.forEach((m) => writeDuration(m, firstPiece.d, firstPiece.type, firstPiece.dotted));
+      keeper.members.forEach((m) => writeDuration(m, firstPiece.d, firstPiece.type, firstPiece.dots));
       let anchor = keeperHead;
       for (const r of others) {
-        const rest = makeRest(keeperHead, r.d, r.type, r.dotted);
+        const rest = makeRest(keeperHead, r.d, r.type, r.dots);
         anchor.after(rest);
         anchor = rest;
       }

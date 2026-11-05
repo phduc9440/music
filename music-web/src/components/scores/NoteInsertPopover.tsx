@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
-import { DURATION_LABELS } from '../../editor/durations';
+import { DURATION_LABELS, nextDots } from '../../editor/durations';
 import type { AccidentalChoice, DurationChoice, DurationType, InsertTarget } from '../../editor/durations';
 import { STEPS } from '../../editor/pitch';
 import { solfegeName } from '../../editor/staffHit';
@@ -12,6 +12,8 @@ import {
   ToolQuarter,
   ToolSharp,
   ToolSixteenth,
+  ToolSixtyFourth,
+  ToolThirtySecond,
   ToolWhole,
 } from './ToolIcons';
 
@@ -33,6 +35,8 @@ const DURATIONS: { type: DurationType; icon: ReactNode; key: string }[] = [
   { type: 'quarter', icon: <ToolQuarter />, key: '3' },
   { type: 'eighth', icon: <ToolEighth />, key: '2' },
   { type: '16th', icon: <ToolSixteenth />, key: '1' },
+  { type: '32nd', icon: <ToolThirtySecond />, key: '6' },
+  { type: '64th', icon: <ToolSixtyFourth />, key: '7' },
 ];
 
 const ACCIDENTALS: { value: AccidentalChoice; label: string; icon?: ReactNode }[] = [
@@ -72,11 +76,11 @@ export default function NoteInsertPopover({ target, left, top, initialDuration, 
     } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
       e.preventDefault();
       setShift((s) => s + (e.key === 'ArrowUp' ? 1 : -1));
-    } else if (/^[1-5]$/.test(e.key)) {
+    } else if (/^[1-7]$/.test(e.key)) {
       const found = DURATIONS.find((d) => d.key === e.key);
       if (found) setDuration((d) => ({ ...d, type: found.type }));
     } else if (e.key === '.') {
-      setDuration((d) => ({ ...d, dotted: !d.dotted }));
+      setDuration((d) => ({ ...d, dots: nextDots(d.dots) }));
     }
   };
 
@@ -129,12 +133,12 @@ export default function NoteInsertPopover({ target, left, top, initialDuration, 
         ))}
         <button
           type="button"
-          className={`ed-pop__btn ed-pop__btn--dot${duration.dotted ? ' is-active' : ''}`}
-          aria-pressed={duration.dotted}
-          title="Chấm dôi (.)"
-          onClick={() => setDuration((cur) => ({ ...cur, dotted: !cur.dotted }))}
+          className={`ed-pop__btn ed-pop__btn--dot${duration.dots > 0 ? ' is-active' : ''}`}
+          aria-pressed={duration.dots > 0}
+          title="Chấm dôi (.): bấm thêm lần nữa để chấm dôi kép"
+          onClick={() => setDuration((cur) => ({ ...cur, dots: nextDots(cur.dots) }))}
         >
-          •
+          {'•'.repeat(Math.max(duration.dots, 1))}
         </button>
       </div>
 

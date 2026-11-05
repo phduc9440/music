@@ -11,26 +11,31 @@ import type { EditFailure, EditResult, Touched } from './commands';
 import {
   DURATION_LABELS,
   DURATION_QUARTERS,
+  choiceQuarters,
   divisionsAt,
+  dotCount,
+  dotsLabel,
+  nextDots,
   hasChild,
   headOf,
   idsOfEntry,
   makeRest,
   numberOf,
+  scaledLength,
   splitRests,
   stripBeams,
   voiceEntries,
   writeDuration,
 } from './durationCore';
-import type { DurationChoice, DurationType, Entry, Plan } from './durationCore';
+import type { Dots, DurationChoice, DurationType, Entry, Plan } from './durationCore';
 import { scaleDivisions } from './divisions';
 import { inRange, keyAlter, pitchToMidi, isStep } from './pitch';
 import type { Pitch, Step } from './pitch';
 import type { NoteInfo, ScoreDocument } from './ScoreDocument';
 import { groupRange, planTupletDuration, ratioOf } from './tuplets';
 
-export { DURATION_LABELS, DURATION_QUARTERS };
-export type { DurationChoice, DurationType };
+export { DURATION_LABELS, DURATION_QUARTERS, dotsLabel, nextDots };
+export type { Dots, DurationChoice, DurationType };
 
 /**
  * Lập kế hoạch đổi trường độ của một nốt/hợp âm/dấu lặng (chưa sửa DOM). Trả về lỗi nếu không làm được, để người
@@ -52,15 +57,14 @@ const planDuration = (head: Element, choice: DurationChoice, keep = true): Plan 
   if (ratioOf(entry.members[0])) return planTupletDuration(entries, index, choice, divisions);
   if (keep && entry.members.some((m) => hasTie(m, 'start') || hasTie(m, 'stop'))) return { error: 'tie' };
 
-  const target = DURATION_QUARTERS[choice.type] * (choice.dotted ? 1.5 : 1) * divisions;
-  if (!Number.isInteger(target)) return { error: 'divisions' };
+  const target = scaledLength(choiceQuarters(choice), divisions);
+  if (target === null) return { error: 'divisions' };
   const delta = target - entry.duration;
   // Đã đúng cả độ dài, loại nốt lẫn chấm dôi thì không có gì để đổi (file OMR đôi khi có <type> lệch <duration>)
-  const sameLook =
-    childOf(head, 'type')?.textContent?.trim() === choice.type && hasChild(head, 'dot') === choice.dotted;
+  const sameLook = childOf(head, 'type')?.textContent?.trim() === choice.type && dotCount(head) === choice.dots;
   if (delta === 0 && sameLook) return { error: 'unchanged' };
 
-  const apply = (): void => entry.members.forEach((m) => writeDuration(m, target, choice.type, choice.dotted));
+  const apply = (): void => entry.members.forEach((m) => writeDuration(m, target, choice.type, choice.dots));
 
   // Đổi thẳng: chỉ đổi nốt này, các nốt khác giữ nguyên; ô nhịp thừa/thiếu phách sẽ được viền đỏ để người dùng tự sửa
   if (!keep || delta === 0) {
@@ -81,7 +85,7 @@ const planDuration = (head: Element, choice: DurationChoice, keep = true): Plan 
         stripBeams(entries);
         let anchor = entry.members[entry.members.length - 1];
         for (const r of rests) {
-          const rest = makeRest(head, r.d, r.type, r.dotted);
+          const rest = makeRest(head, r.d, r.type, r.dots);
           anchor.after(rest);
           anchor = rest;
         }
@@ -114,7 +118,7 @@ const planDuration = (head: Element, choice: DurationChoice, keep = true): Plan 
       consumed.forEach((e) => e.members.forEach((m) => m.remove()));
       let anchor = entry.members[entry.members.length - 1];
       for (const r of leftoverRests) {
-        const rest = makeRest(head, r.d, r.type, r.dotted);
+        const rest = makeRest(head, r.d, r.type, r.dots);
         anchor.after(rest);
         anchor = rest;
       }
@@ -217,7 +221,7 @@ function setDurationOnce(doc: ScoreDocument, ids: readonly string[], choice: Dur
 
   let failure = null as EditFailure | null;
   let changedCount = 0;
-  const label = `${DURATION_LABEL_PREFIX}: ${DURATION_LABELS[choice.type]}${choice.dotted ? ' chấm dôi' : ''}`;
+  const label = `${DURATION_LABEL_PREFIX}: ${DURATION_LABELS[choice.type]}${dotsLabel(choice.dots)}`;
   const command = commitEdit(doc, label, touched, [...ids], () => {
     for (const h of ordered) {
       const plan = planDuration(h.element, choice, false);
@@ -393,7 +397,7 @@ const makePitched = (
   add(note, 'duration', String(d));
   add(note, 'voice', String(voice));
   add(note, 'type', choice.type);
-  if (choice.dotted) add(note, 'dot');
+  for (let i = 0; i < choice.dots; i++) add(note, 'dot');
   if (staff !== null) add(note, 'staff', String(staff));
   return note;
 };
@@ -418,11 +422,8 @@ function insertNoteOnce(
   // Bấm vào dấu lặng trong chùm: nốt mới nằm trong chùm nên độ dài thật = hình nốt × normal / actual
   const restEntry = target.restEntry !== null ? entries[target.restEntry] : undefined;
   const ratio = restEntry ? ratioOf(restEntry.members[0]) : null;
-  const lengthNumerator =
-    DURATION_QUARTERS[choice.type] * (choice.dotted ? 1.5 : 1) * 4 * divisions * (ratio?.normal ?? 1);
-  const lengthDenominator = 4 * (ratio?.actual ?? 1);
-  if (lengthNumerator % lengthDenominator !== 0) return { ok: false, reason: 'divisions' };
-  const length = lengthNumerator / lengthDenominator;
+  const length = scaledLength(choiceQuarters(choice), divisions, ratio ?? undefined);
+  if (length === null) return { ok: false, reason: 'divisions' };
 
   const alter =
     accidental === 'auto' ? keyAlter(doc.keyAt(target.measureIndex), target.step) : ACCIDENTAL_ALTER[accidental];

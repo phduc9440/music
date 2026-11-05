@@ -6,56 +6,97 @@ import { childOf } from './commands';
 import type { EditFailure } from './commands';
 import type { NoteInfo, ScoreDocument } from './ScoreDocument';
 
-/** Các trường độ cơ bản của bảng công cụ. */
-export type DurationType = 'whole' | 'half' | 'quarter' | 'eighth' | '16th';
+/** Các trường độ cơ bản của bảng công cụ (từ tròn đôi đến móc tứ). */
+export type DurationType = 'breve' | 'whole' | 'half' | 'quarter' | 'eighth' | '16th' | '32nd' | '64th';
+
+/** Số chấm dôi: 0 = không, 1 = chấm dôi, 2 = chấm dôi kép. */
+export type Dots = 0 | 1 | 2;
 
 export interface DurationChoice {
   type: DurationType;
-  dotted: boolean;
+  dots: Dots;
 }
 
 /** Độ dài tính bằng số nốt đen. */
 export const DURATION_QUARTERS: Record<DurationType, number> = {
+  breve: 8,
   whole: 4,
   half: 2,
   quarter: 1,
   eighth: 0.5,
   '16th': 0.25,
+  '32nd': 0.125,
+  '64th': 0.0625,
 };
 
 /** Tên tiếng Việt hiển thị. */
 export const DURATION_LABELS: Record<DurationType, string> = {
+  breve: 'tròn đôi',
   whole: 'tròn',
   half: 'trắng',
   quarter: 'đen',
   eighth: 'móc đơn',
   '16th': 'móc kép',
+  '32nd': 'móc ba',
+  '64th': 'móc tứ',
 };
+
+/** Hệ số độ dài do chấm dôi: 1, 1,5 hoặc 1,75. */
+export const dotFactor = (dots: Dots): number => 2 - 1 / 2 ** dots;
+
+/** Hậu tố tên tiếng Việt của chấm dôi: "", " chấm dôi" hoặc " chấm dôi kép". */
+export const dotsLabel = (dots: Dots): string => (dots === 0 ? '' : dots === 1 ? ' chấm dôi' : ' chấm dôi kép');
+
+/** Số chấm dôi (<dot/>) của một thẻ <note>, tối đa 2. */
+export const dotCount = (note: Element): Dots => {
+  const n = Array.from(note.children).filter((c) => c.tagName === 'dot').length;
+  return n >= 2 ? 2 : n === 1 ? 1 : 0;
+};
+
+/** Chấm dôi kế tiếp khi bấm phím "." : 0 → 1 → 2 → 0. */
+export const nextDots = (dots: Dots): Dots => (dots === 0 ? 1 : dots === 1 ? 2 : 0);
 
 /** Độ dài (số nốt đen) của một lựa chọn trường độ. */
 export const choiceQuarters = (choice: DurationChoice): number =>
-  DURATION_QUARTERS[choice.type] * (choice.dotted ? 1.5 : 1);
+  DURATION_QUARTERS[choice.type] * dotFactor(choice.dots);
+
+/**
+ * Độ dài `quarters` nốt đen đổi sang đơn vị divisions (nếu có `ratio` thì là độ dài thật của nốt viết ra trong chùm);
+ * null nếu không ra số nguyên (divisions quá thô). Tính bằng số nguyên (bội của 1/64 nốt đen) nên không sai số.
+ */
+export const scaledLength = (quarters: number, divisions: number, ratio?: Ratio): number | null => {
+  const numerator = Math.round(quarters * 64) * divisions * (ratio?.normal ?? 1);
+  const denominator = 64 * (ratio?.actual ?? 1);
+  return numerator % denominator === 0 ? numerator / denominator : null;
+};
 
 /** Hình nốt (loại nốt + chấm dôi) có độ dài `quarters` nốt đen; null nếu không có hình nốt nào đúng độ dài đó. */
 export const writtenChoice = (quarters: number): DurationChoice | null => {
-  for (const dotted of [false, true]) {
+  for (const dots of [0, 1, 2] as const) {
     for (const type of Object.keys(DURATION_QUARTERS) as DurationType[]) {
-      if (Math.abs(choiceQuarters({ type, dotted }) - quarters) < 1e-9) return { type, dotted };
+      if (Math.abs(choiceQuarters({ type, dots }) - quarters) < 1e-9) return { type, dots };
     }
   }
   return null;
 };
 
 /** Các giá trị dùng để chia phần trống thành dấu lặng, từ lớn đến nhỏ. */
-const REST_VALUES: { quarters: number; type: DurationType; dotted: boolean }[] = [
-  { quarters: 4, type: 'whole', dotted: false },
-  { quarters: 3, type: 'half', dotted: true },
-  { quarters: 2, type: 'half', dotted: false },
-  { quarters: 1.5, type: 'quarter', dotted: true },
-  { quarters: 1, type: 'quarter', dotted: false },
-  { quarters: 0.75, type: 'eighth', dotted: true },
-  { quarters: 0.5, type: 'eighth', dotted: false },
-  { quarters: 0.25, type: '16th', dotted: false },
+const REST_VALUES: { quarters: number; type: DurationType; dots: Dots }[] = [
+  { quarters: 8, type: 'breve', dots: 0 },
+  { quarters: 4, type: 'whole', dots: 0 },
+  { quarters: 3.5, type: 'half', dots: 2 },
+  { quarters: 3, type: 'half', dots: 1 },
+  { quarters: 2, type: 'half', dots: 0 },
+  { quarters: 1.75, type: 'quarter', dots: 2 },
+  { quarters: 1.5, type: 'quarter', dots: 1 },
+  { quarters: 1, type: 'quarter', dots: 0 },
+  { quarters: 0.875, type: 'eighth', dots: 2 },
+  { quarters: 0.75, type: 'eighth', dots: 1 },
+  { quarters: 0.5, type: 'eighth', dots: 0 },
+  { quarters: 0.375, type: '16th', dots: 1 },
+  { quarters: 0.25, type: '16th', dots: 0 },
+  { quarters: 0.125, type: '32nd', dots: 0 },
+  { quarters: 0.0625, type: '64th', dots: 0 },
 ];
 
 /** Tỉ lệ của nhóm nốt đặc biệt: `actual` nốt chiếm chỗ của `normal` nốt (3:2 = chùm ba). */
@@ -72,21 +113,15 @@ export const splitRests = (
   total: number,
   divisions: number,
   ratio?: Ratio,
-): { d: number; type: DurationType; dotted: boolean }[] | null => {
-  const actual = ratio?.actual ?? 1;
-  const normal = ratio?.normal ?? 1;
-  const out: { d: number; type: DurationType; dotted: boolean }[] = [];
+): { d: number; type: DurationType; dots: Dots }[] | null => {
+  const out: { d: number; type: DurationType; dots: Dots }[] = [];
   let left = total;
   while (left > 0) {
-    let fit: { d: number; type: DurationType; dotted: boolean } | null = null;
+    let fit: { d: number; type: DurationType; dots: Dots } | null = null;
     for (const v of REST_VALUES) {
-      // v.quarters × 4 luôn là số nguyên, nên phép chia hết dưới đây chính xác (không sai số số thực)
-      const numerator = v.quarters * 4 * divisions * normal;
-      const denominator = 4 * actual;
-      if (numerator % denominator !== 0) continue;
-      const d = numerator / denominator;
-      if (d <= left) {
-        fit = { d, type: v.type, dotted: v.dotted };
+      const d = scaledLength(v.quarters, divisions, ratio);
+      if (d !== null && d <= left) {
+        fit = { d, type: v.type, dots: v.dots };
         break;
       }
     }
@@ -141,7 +176,7 @@ export const placeAfter = (note: Element, el: Element, after: string[]): void =>
 };
 
 /** Ghi trường độ mới vào một thẻ <note>: <duration>, <type>, <dot/>; bỏ <beam> vì nhóm nốt đã đổi. */
-export const writeDuration = (note: Element, d: number, type: DurationType, dotted: boolean): void => {
+export const writeDuration = (note: Element, d: number, type: DurationType, dots: Dots): void => {
   const owner = note.ownerDocument;
   const duration = childOf(note, 'duration');
   if (duration) duration.textContent = String(d);
@@ -154,7 +189,12 @@ export const writeDuration = (note: Element, d: number, type: DurationType, dott
   Array.from(note.children)
     .filter((c) => c.tagName === 'dot' || c.tagName === 'beam')
     .forEach((c) => c.remove());
-  if (dotted) typeEl.after(owner.createElement('dot'));
+  let anchor: Element = typeEl;
+  for (let i = 0; i < dots; i++) {
+    const dot = owner.createElement('dot');
+    anchor.after(dot);
+    anchor = dot;
+  }
 };
 
 /** Bỏ thông tin nối nét (<beam>) của cả bè trong ô để OSMD không gặp nét nối đứt đoạn sau khi trường độ đổi. */
@@ -169,7 +209,7 @@ export const stripBeams = (entries: Entry[]): void => {
 };
 
 /** Dựng thẻ <note> dấu lặng có cùng khuông và bè với `like`. */
-export const makeRest = (like: Element, d: number, type: DurationType, dotted: boolean): Element => {
+export const makeRest = (like: Element, d: number, type: DurationType, dots: Dots): Element => {
   const owner = like.ownerDocument;
   const note = owner.createElement('note');
   const add = (tag: string, text?: string) => {
@@ -181,7 +221,7 @@ export const makeRest = (like: Element, d: number, type: DurationType, dotted: b
   add('duration', String(d));
   add('voice', String(numberOf(like, 'voice') ?? 1));
   add('type', type);
-  if (dotted) add('dot');
+  for (let i = 0; i < dots; i++) add('dot');
   if (hasChild(like, 'staff')) add('staff', String(numberOf(like, 'staff') ?? 1));
   return note;
 };

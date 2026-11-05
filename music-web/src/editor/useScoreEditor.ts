@@ -9,7 +9,17 @@ import { saveMusicXml } from '../services';
 import { getConflictVersion, getSaveErrorMessage } from '../utils/score';
 import { EDIT_FAILURE_MESSAGES, changePitch, removeNotes, setAlteration } from './commands';
 import type { EditResult, SymbolOp } from './commands';
-import { DURATION_LABELS, DURATION_QUARTERS, enterNote, insertNote, isLetterKey, setDuration } from './durations';
+import {
+  DURATION_LABELS,
+  DURATION_QUARTERS,
+  dotsLabel,
+  enterNote,
+  insertNote,
+  isLetterKey,
+  nextDots,
+  setDuration,
+} from './durations';
+import { dotCount } from './durationCore';
 import type { AccidentalChoice, DurationChoice, DurationType, InsertTarget } from './durations';
 import { DRAFT_INTERVAL_MS, clearDraft, loadDraft, saveDraft } from './draft';
 import type { Draft } from './draft';
@@ -39,13 +49,15 @@ import { selectionGroups } from './playback';
 import { loadPreviewTonePref, playPreviewGroups, savePreviewTonePref } from './previewTone';
 import type { ScoreDocument } from './ScoreDocument';
 
-/** Phím số chọn nhanh trường độ: 1 móc kép ... 5 tròn. */
+/** Phím số chọn nhanh trường độ: 1 móc kép ... 5 tròn, 6 móc ba, 7 móc tứ. */
 const DIGIT_DURATIONS: Record<string, DurationType> = {
   '1': '16th',
   '2': 'eighth',
   '3': 'quarter',
   '4': 'half',
   '5': 'whole',
+  '6': '32nd',
+  '7': '64th',
 };
 
 /** Thời gian hiện thông báo ngắn trên thanh trạng thái (ms). */
@@ -186,7 +198,7 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
   const [lyricMode, setLyricModeState] = useState(false);
   const [chordMode, setChordModeState] = useState(false);
   const [lyricVerse, setLyricVerse] = useState(1);
-  const [inputDuration, setInputDuration] = useState<DurationChoice>({ type: 'quarter', dotted: false });
+  const [inputDuration, setInputDuration] = useState<DurationChoice>({ type: 'quarter', dots: 0 });
   const [previewTone, setPreviewToneState] = useState(loadPreviewTonePref);
   const [conflict, setConflict] = useState<{ latestVersion: number } | null>(null);
   const [draft, setDraft] = useState<Draft | null>(() => {
@@ -305,7 +317,7 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
 
   const chooseDuration = useCallback(
     (type: DurationType) => {
-      const choice: DurationChoice = { type, dotted: false };
+      const choice: DurationChoice = { type, dots: 0 };
       setInputDuration(choice);
       if (inputMode) {
         flash(`Trường độ nhập: ${DURATION_LABELS[type]}`);
@@ -318,9 +330,9 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
 
   const toggleDot = useCallback(() => {
     if (inputMode) {
-      const next = { ...inputDuration, dotted: !inputDuration.dotted };
+      const next: DurationChoice = { ...inputDuration, dots: nextDots(inputDuration.dots) };
       setInputDuration(next);
-      flash(`Trường độ nhập: ${DURATION_LABELS[next.type]}${next.dotted ? ' chấm dôi' : ''}`);
+      flash(`Trường độ nhập: ${DURATION_LABELS[next.type]}${dotsLabel(next.dots)}`);
       return;
     }
     if (!canEdit || selection.size === 0) return;
@@ -330,8 +342,8 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
       flash('Chưa đổi được chấm dôi cho trường độ này');
       return;
     }
-    const dotted = first.element.querySelector(':scope > dot') !== null;
-    commit(setDuration(doc, [...selection], { type: typeText as DurationType, dotted: !dotted }), false);
+    const dots = dotCount(first.element);
+    commit(setDuration(doc, [...selection], { type: typeText as DurationType, dots: nextDots(dots) }), false);
   }, [inputMode, inputDuration, canEdit, selection, doc, commit, flash]);
 
   const enterLetter = useCallback(
@@ -578,7 +590,7 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
       const first = doc.getInfo(result.command.selectAfter?.[0] ?? '');
       const type = first?.element.querySelector(':scope > type')?.textContent?.trim() ?? '';
       if (first && type in DURATION_QUARTERS) {
-        setInputDuration({ type: type as DurationType, dotted: first.element.querySelector(':scope > dot') !== null });
+        setInputDuration({ type: type as DurationType, dots: dotCount(first.element) });
         flash(
           `${tupletName(op)}: trường độ nhập ${DURATION_LABELS[type as DurationType]}, bấm vào dấu lặng để nhập nốt`,
         );
@@ -831,7 +843,7 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
       } else if (!mod && !e.altKey && (key === 't' || key === 's') && selection.size > 0) {
         e.preventDefault();
         applySymbol(key === 't' ? 'tie' : 'slur');
-      } else if (!mod && !e.altKey && /^[1-5]$/.test(e.key)) {
+      } else if (!mod && !e.altKey && /^[1-7]$/.test(e.key)) {
         chooseDuration(DIGIT_DURATIONS[e.key]);
       } else if (!mod && !e.altKey && e.key === '.') {
         toggleDot();
