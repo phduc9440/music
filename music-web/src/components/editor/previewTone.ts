@@ -1,8 +1,11 @@
 /**
- * Phát âm bằng WebAudio (sóng triangle), không cần thư viện: dùng cho âm xem trước khi sửa và cho nút Phát cơ bản.
- * Nhánh playback-basic có thể thay bằng sampler.
+ * Phát âm bằng WebAudio cho nút Phát và âm xem trước khi sửa. Âm sắc do `instruments.ts` dựng (piano, đàn dây, sáo...).
+ *
+ * Lịch phát được hẹn giờ DẦN (cửa sổ nhìn trước vài giây) thay vì hẹn một lần cả bản nhạc, để bản dài hàng nghìn nốt
+ * không làm đơ trình duyệt và bấm Dừng thì dừng ngay.
  */
-import { midiToFrequency } from './pitch';
+import { DEFAULT_INSTRUMENT, scheduleVoice } from './instruments';
+import type { InstrumentId, Voice } from './instruments';
 
 const PREF_KEY = 'editor-preview-tone';
 /** Thời lượng mỗi nốt của âm xem trước (giây) và khoảng cách giữa hai nhóm nốt liên tiếp. */
@@ -10,17 +13,23 @@ const PREVIEW_NOTE_S = 0.3;
 const PREVIEW_STEP_S = 0.32;
 /** Xem trước tối đa chừng này nhóm nốt (khoảng 6 giây) để vùng chọn lớn không kêu quá dài. */
 const PREVIEW_MAX_GROUPS = 18;
+/** Hẹn giờ trước các nốt sắp tới trong khoảng này (giây), kiểm tra lại sau mỗi `TICK_MS`. */
+const LOOKAHEAD_S = 2.5;
+const TICK_MS = 100;
 
 let context: AudioContext | null = null;
-let active: { osc: OscillatorNode; gain: GainNode }[] = [];
+let voices: Voice[] = [];
+let timer: number | undefined;
 
 /** Một nhóm nốt phát cùng lúc, bắt đầu sau `at` giây kể từ lúc gọi. */
 export interface ToneEvent {
   at: number;
   duration: number;
   midis: number[];
-  /** Âm lượng 0–1; mặc định 0,8 giữ nguyên độ to cũ của âm xem trước. */
+  /** Âm lượng 0–1; mặc định 0,8 (mf). */
   gain?: number;
+  /** Nhạc cụ; mặc định piano. */
+  instrument?: InstrumentId;
 }
 
 /** Âm lượng mặc định của một nhóm nốt (ứng với mức mf). */
@@ -55,16 +64,10 @@ const getContext = (): AudioContext | null => {
 
 /** Dừng ngay mọi âm đang phát hoặc đã hẹn giờ. */
 export function stopAllTones(): void {
-  for (const { osc, gain } of active) {
-    try {
-      gain.gain.cancelScheduledValues(0);
-      gain.gain.setValueAtTime(0.0001, context?.currentTime ?? 0);
-      osc.stop();
-    } catch {
-      // nốt đã dừng
-    }
-  }
-  active = [];
+  window.clearTimeout(timer);
+  timer = undefined;
+  for (const voice of voices) voice.kill();
+  voices = [];
 }
 
 /**
@@ -76,29 +79,38 @@ export function playTones(events: readonly ToneEvent[]): void {
     const ctx = getContext();
     if (!ctx) return;
     stopAllTones();
-    const base = ctx.currentTime + 0.03;
-    for (const event of events) {
-      const level =
-        (0.28 * ((event.gain ?? DEFAULT_TONE_GAIN) / DEFAULT_TONE_GAIN)) / Math.sqrt(Math.max(1, event.midis.length));
-      for (const midi of event.midis) {
-        const start = base + event.at;
-        const end = start + event.duration;
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'triangle';
-        osc.frequency.value = midiToFrequency(midi);
-        gain.gain.setValueAtTime(0.0001, start);
-        gain.gain.exponentialRampToValueAtTime(level, start + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.0001, end);
-        osc.connect(gain).connect(ctx.destination);
-        osc.start(start);
-        osc.stop(end + 0.02);
-        active.push({ osc, gain });
-        osc.onended = () => {
-          active = active.filter((a) => a.osc !== osc);
-        };
+    const queue = [...events].sort((a, b) => a.at - b.at);
+    const base = ctx.currentTime + 0.05;
+    let next = 0;
+
+    const pump = () => {
+      try {
+        const horizon = ctx.currentTime - base + LOOKAHEAD_S;
+        while (next < queue.length && queue[next].at <= horizon) {
+          const event = queue[next++];
+          // Hợp âm nhiều nốt hơi nhỏ hơn từng nốt đơn để tổng không vọt lên
+          const level = (event.gain ?? DEFAULT_TONE_GAIN) * (event.midis.length > 1 ? 0.85 : 1);
+          for (const midi of event.midis) {
+            // Nốt đã quá hạn (tab bị treo) vẫn phát từ "bây giờ" thay vì bị bỏ
+            const start = Math.max(base + event.at, ctx.currentTime);
+            voices.push(
+              scheduleVoice(ctx, {
+                instrument: event.instrument ?? DEFAULT_INSTRUMENT,
+                midi,
+                start,
+                duration: event.duration,
+                level,
+              }),
+            );
+          }
+        }
+        voices = voices.filter((v) => v.endsAt > ctx.currentTime);
+        if (next < queue.length) timer = window.setTimeout(pump, TICK_MS);
+      } catch {
+        // bỏ qua
       }
-    }
+    };
+    pump();
   } catch {
     // bỏ qua
   }
@@ -108,7 +120,7 @@ export function playTones(events: readonly ToneEvent[]): void {
  * Âm xem trước: phát lần lượt các nhóm nốt (mỗi nhóm là các nốt cùng thời điểm, phát cùng lúc), để nghe được cả
  * vùng đang chọn chứ không chỉ một nốt.
  */
-export function playPreviewGroups(groups: readonly number[][]): void {
+export function playPreviewGroups(groups: readonly number[][], instrument?: InstrumentId): void {
   const limited = groups.slice(0, PREVIEW_MAX_GROUPS);
-  playTones(limited.map((midis, i) => ({ at: i * PREVIEW_STEP_S, duration: PREVIEW_NOTE_S, midis })));
+  playTones(limited.map((midis, i) => ({ at: i * PREVIEW_STEP_S, duration: PREVIEW_NOTE_S, midis, instrument })));
 }

@@ -14,6 +14,8 @@ import type { NoteInfo, ScoreDocument } from './ScoreDocument';
 /** Một nốt cần phát. */
 export interface PlayNote {
   id: string;
+  /** Chỉ số part của nốt (để chọn nhạc cụ theo part). */
+  part: number;
   /** Giây kể từ đầu bản nhạc. */
   time: number;
   duration: number;
@@ -236,6 +238,19 @@ interface Building {
   accent: boolean;
 }
 
+/** Các dấu luyến (<slur>) bắt đầu / kết thúc trên thẻ <note>, khóa theo số thứ tự của dấu luyến. */
+const slurMarks = (note: Element): { starts: string[]; stops: string[] } => {
+  const starts: string[] = [];
+  const stops: string[] = [];
+  for (const slur of Array.from(note.getElementsByTagName('slur'))) {
+    const key = slur.getAttribute('number') ?? '1';
+    const type = slur.getAttribute('type');
+    if (type === 'start') starts.push(key);
+    else if (type === 'stop') stops.push(key);
+  }
+  return { starts, stops };
+};
+
 const articulationFactor = (note: Element): number => {
   if (hasDeep(note, 'staccatissimo')) return ARTICULATION_FACTOR.staccatissimo;
   if (hasDeep(note, 'staccato')) return ARTICULATION_FACTOR.staccato;
@@ -392,11 +407,16 @@ export function buildPlayback(doc: ScoreDocument, fallbackBpm: number): Playback
     const building: Building[] = [];
     const events: Event[] = [];
     const pending = new Map<string, Building>();
+    /** Các dấu luyến đang mở trong part này: nốt nằm trong dấu luyến được ngân liền sang nốt kế. */
+    const slurs = new Set<string>();
     let previous = -1;
     order.forEach((measureIndex, k) => {
       const measure = measures[measureIndex];
       if (!measure) return;
-      if (measureIndex !== previous + 1) pending.clear(); // nhảy (lặp, D.C....): nốt nối không đi theo
+      if (measureIndex !== previous + 1) {
+        pending.clear(); // nhảy (lặp, D.C....): nốt nối và dấu luyến không đi theo
+        slurs.clear();
+      }
       previous = measureIndex;
       const mt = times[k];
       const div = divisionsOf(p, measureIndex);
@@ -448,6 +468,10 @@ export function buildPlayback(doc: ScoreDocument, fallbackBpm: number): Playback
           graces = [];
         }
         if (!info || info.isRest || info.midi === null || item.duration <= 0) continue;
+        const marks = slurMarks(item.child);
+        marks.starts.forEach((k) => slurs.add(`${info.staff}|${k}`));
+        marks.stops.forEach((k) => slurs.delete(`${info.staff}|${k}`));
+        const legato = slurs.size > 0; // nốt cuối của dấu luyến đã đóng nên ngắt bình thường
         const key = `${info.staff}|${info.voice}|${info.midi}`;
         const held = hasTie(item.child, 'stop') ? pending.get(key) : undefined;
         if (held) {
@@ -460,7 +484,7 @@ export function buildPlayback(doc: ScoreDocument, fallbackBpm: number): Playback
           start: at(startQ),
           end: at(endQ),
           midi: soundOf(info) as number,
-          factor: articulationFactor(item.child),
+          factor: legato && articulationFactor(item.child) === LEGATO_FACTOR ? 1 : articulationFactor(item.child),
           accent: hasDeep(item.child, 'accent') || hasDeep(item.child, 'strong-accent'),
         };
         building.push(note);
@@ -471,6 +495,7 @@ export function buildPlayback(doc: ScoreDocument, fallbackBpm: number): Playback
     for (const note of building) {
       result.push({
         id: note.id,
+        part: p,
         time: note.start,
         duration: (note.end - note.start) * note.factor,
         midi: note.midi,

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import DownloadMenu from '../../components/scores/DownloadMenu';
+import InstrumentMenu from '../../components/scores/InstrumentMenu';
 import EditorToolPanel from '../../components/scores/EditorToolPanel';
 import ChordBar from '../../components/scores/ChordBar';
 import NotationModal from '../../components/scores/NotationModal';
@@ -427,15 +428,12 @@ function ScoreWorkspace({ score, xml, info, doc }: WorkspaceProps) {
             onClick={() => playback.toggle(editor.selection)}
             aria-pressed={playback.playing}
             title={
-              playback.playing
-                ? 'Dừng phát'
-                : editor.selection.size > 0
-                  ? 'Phát từ nốt đang chọn (âm thử, chưa phải trình phát đầy đủ)'
-                  : 'Phát cả bản nhạc (âm thử, chưa phải trình phát đầy đủ)'
+              playback.playing ? 'Dừng phát' : editor.selection.size > 0 ? 'Phát từ nốt đang chọn' : 'Phát cả bản nhạc'
             }
           >
             {playback.playing ? <IconStop /> : <IconPlay />} {playback.playing ? 'Dừng' : 'Phát'}
           </button>
+          <InstrumentMenu parts={playback.parts} onChange={playback.setInstrument} />
           <DownloadMenu scoreId={score.id} files={score.files} />
           <button
             className="sc-btn sv-icon"
