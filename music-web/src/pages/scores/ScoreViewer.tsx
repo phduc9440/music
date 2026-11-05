@@ -77,7 +77,7 @@ const SHORTCUTS: [string, string][] = [
   ['A – G (chế độ Nhập nốt)', 'Biến nốt/dấu lặng đang chọn thành nốt đó rồi sang mục kế tiếp'],
   ['Bấm vào tiêu đề, tên tác giả hoặc nhịp độ', 'Sửa nội dung; tiêu đề và tác giả sửa được cả cỡ chữ, đậm, nghiêng'],
   ['Chế độ Lời', 'Chọn nốt, gõ âm tiết rồi Space sang nốt kế; "-" khi một chữ trải qua nhiều nốt; Esc để thoát'],
-  ['Chế độ Hợp âm', 'Chọn nốt, gõ hợp âm (C, Am7, G/B...) rồi Space sang nốt kế; ô trống để xóa'],
+  ['Chế độ Hợp âm', 'Chọn nốt, gõ hợp âm (C, Am7, G/B, C6/9, N.C....) rồi Space sang nốt kế; ô trống để xóa'],
   [
     'Nhóm Khuông nhạc',
     'Thêm khuông Fa cho đàn, thêm khuông Sol/Fa/Tenor riêng (SATB), xóa khuông; "Khóa · Dấu hóa · Nhịp…" đổi khóa (Sol, Sol 8 dưới, Fa, Đô), dấu hóa đầu khuông, nhịp giữa bài',
