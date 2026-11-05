@@ -74,7 +74,7 @@ def test_wrong_system_is_retried_with_beam_search_then_padded_with_warning():
 
     page, results, warnings = routing.recognize_by_systems(1, image, layout, recognize, 3, lambda: True)
     assert calls == [(0, None), (0, 3), (1, None), (1, 3)]
-    assert [r.attempts for r in results] == [2, 2]
+    assert all(r.attempts >= 2 for r in results)
     assert page.spines == 3
     assert any("hệ 2" in w and "khuông trống" in w for w in warnings)
 
@@ -134,6 +134,120 @@ def test_system_missing_voice_is_read_by_roles_and_combined():
     assert [t for _, _, t in calls if t][:2] == ["r2-piano", "r1-single"]  # piano (khuông dưới) đọc trước
     merged = merge.merge_pages([page])
     assert merge.measure_stats(merged) == (2, 0)
+
+
+BAD_MEASURE = SYSTEM_3.replace("4dd", "8dd")  # đúng 3 spine nhưng ô nhịp của khuông giọng thiếu trường độ
+
+
+def test_system_with_wrong_measure_is_read_by_roles_and_skips_beam_search():
+    image, layout = vocal_page(systems=2)  # hệ 1 (chỉ số 0) ở trang 2: không được nới ô nhịp đầu/cuối
+    calls = []
+
+    def recognize(img, index, beams, tag=None):
+        calls.append((index, beams, tag))
+        if tag == "r2-piano":
+            return PIANO_ONLY, False
+        if tag == "r1-single":
+            return VOICE_ONLY, False
+        return (BAD_MEASURE if index == 0 else SYSTEM_3), False
+
+    page, results, _ = routing.recognize_by_systems(2, image, layout, recognize, 3, lambda: True)
+    assert [r.method for r in results] == ["roles", "system"]
+    assert [c for c in calls if c[0] == 0] == [(0, None, None), (0, None, "r2-piano"), (0, None, "r1-single")]
+    assert not any(c[1] == 3 for c in calls)  # không tốn lần beam search
+    assert merge.measure_stats(merge.merge_pages([page]), False, False)[1] == 0
+
+
+def test_system_without_meter_line_is_judged_by_the_known_meter():
+    image, layout = vocal_page(systems=2)
+    no_meter = "\n".join(line for line in BAD_MEASURE.split("\n") if not line.startswith("*M"))
+    calls = []
+
+    def recognize(img, index, beams, tag=None):
+        calls.append((index, beams, tag))
+        if tag == "r2-piano":
+            return PIANO_ONLY, False
+        if tag == "r1-single":
+            return VOICE_ONLY, False
+        return (no_meter if index == 0 else SYSTEM_3), False
+
+    routing.recognize_by_systems(2, image, layout, recognize, 3, lambda: True)
+    assert [c for c in calls if c[0] == 0] == [(0, None, None)]  # không biết số chỉ nhịp: không kiểm được ô nhịp
+
+    calls.clear()
+    routing.recognize_by_systems(2, image, layout, recognize, 3, lambda: True, meter="*M3/4")
+    assert (0, None, "r1-single") in calls  # biết 3/4: phát hiện ô nhịp thiếu và đọc riêng
+    assert routing.page_meter(merge.clean_page(1, no_meter)[0]) is None
+    assert routing.page_meter(merge.clean_page(1, SYSTEM_3)[0]) == "*M3/4"
+
+
+def test_roles_that_lose_a_measure_are_followed_by_beam_search():
+    image, layout = vocal_page(systems=2)
+    calls = []
+
+    def recognize(img, index, beams, tag=None):
+        calls.append((index, beams, tag))
+        if tag == "r2-piano":
+            return PIANO_ONLY, False
+        if tag == "r1-single":
+            return VOICE_ONLY.replace("2b", "4b"), False  # lệch trường độ: ô giọng bị thay bằng dấu lặng
+        if index == 0 and beams is None:
+            return PAGE_1, False  # greedy mất khuông giọng
+        return SYSTEM_3, False
+
+    page, results, _ = routing.recognize_by_systems(2, image, layout, recognize, 3, lambda: True)
+    assert (0, 3, None) in calls  # không dừng ở kết quả đã mất nốt
+    assert results[0].method == "system" and "4b" in "\n".join(page.body)
+
+
+def test_good_system_is_read_once():
+    image, layout = vocal_page(systems=1)
+    calls = []
+
+    def recognize(img, index, beams, tag=None):
+        calls.append((beams, tag))
+        return SYSTEM_3, False
+
+    _, results, _ = routing.recognize_by_systems(1, image, layout, recognize, 3, lambda: True)
+    assert calls == [(None, None)] and results[0].attempts == 1
+
+
+def test_first_and_last_measures_of_the_piece_are_not_treated_as_wrong():
+    image, layout = vocal_page(systems=1)  # trang 1, hệ duy nhất: có thể là ô lấy đà / ô cuối bài
+    calls = []
+
+    def recognize(img, index, beams, tag=None):
+        calls.append((beams, tag))
+        return BAD_MEASURE, False
+
+    routing.recognize_by_systems(1, image, layout, recognize, 3, lambda: True)
+    assert calls == [(None, None)]
+
+
+def test_roles_that_would_replace_a_measure_with_rests_do_not_beat_a_whole_system_with_right_spines():
+    image, layout = vocal_page(systems=2)
+    calls = []
+
+    def recognize(img, index, beams, tag=None):
+        calls.append((index, beams, tag))
+        if tag == "r2-piano":
+            return PIANO_ONLY, False
+        if tag == "r1-single":
+            return VOICE_ONLY.replace("2b", "4b"), False  # trường độ khác khuông piano: sẽ bị thay bằng dấu lặng
+        return (BAD_MEASURE if index == 0 else SYSTEM_3), False
+
+    page, results, _ = routing.recognize_by_systems(2, image, layout, recognize, 3, lambda: True)
+    assert results[0].method == "system"
+    assert (0, 3, None) in calls  # thử beam search sau cùng
+    assert "8dd" in "\n".join(page.body)  # vẫn giữ nốt đã đọc, không bị thay bằng dấu lặng
+
+
+def test_measure_check_triggers_page_fallback_only_when_enabled():
+    _, layout = vocal_page(systems=1)
+    long_measure = merge.clean_page(1, SYSTEM_3.replace("4dd", "2dd"))[0]  # ô nhịp dài hơn số chỉ nhịp: sai cả ở rìa
+    assert not routing.needs_fallback("fallback", layout, long_measure)
+    assert routing.needs_fallback("fallback", layout, long_measure, check_measures=True)
+    assert not routing.needs_fallback("fallback", layout, merge.clean_page(1, SYSTEM_3)[0], check_measures=True)
 
 
 def test_role_split_failure_falls_back_to_padding_with_reason():

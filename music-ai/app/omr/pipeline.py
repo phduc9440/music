@@ -411,7 +411,11 @@ def _route_pages(
     _clear_dir(score_id, "routing", (".png", ".krn"))
     paths = dict(kept_pages)
     positions = {page_number: index for index, (page_number, _) in enumerate(kept_pages)}
-    todo = [pn for pn, _ in kept_pages if routing.needs_fallback(mode, ctx.layouts.get(pn), primary[pn])]
+    todo = [
+        pn
+        for pn, _ in kept_pages
+        if routing.needs_fallback(mode, ctx.layouts.get(pn), primary[pn], settings.routing_measures)
+    ]
 
     # Trang sai số khuông nhưng không nhận diện lại được (tắt định tuyến) thì ít nhất phải cảnh báo
     for page_number, _ in kept_pages:
@@ -483,6 +487,7 @@ def _route_pages(
                 settings.routing_retry_beams,
                 can_retry,
                 max_repeat=settings.max_repeat_lines,
+                meter=next((m for m in map(routing.page_meter, primary.values()) if m), None),
             )
         except _RoutingAbort as exc:
             report.skipped = str(exc)

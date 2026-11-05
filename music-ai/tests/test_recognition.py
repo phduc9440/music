@@ -268,9 +268,10 @@ def test_wrong_system_is_retried_with_beams(storage_root, java):
     job = vocal_job(storage_root, "v2", systems=2)
     recognizer = FakeRecognizer([PAGE_1, PAGE_1, SYSTEM_3])
     run(job, recognizer)
-    assert recognizer.beams == [None, None, 3, None]
+    # cả trang, hệ 1 (greedy), đọc riêng piano (sai spine nên thử beam 3, vẫn sai), beam 3 cả hệ, hệ 2
+    assert recognizer.beams == [None, None, None, 3, 3, None]
     page = java.bodies("complete")[0]["resultData"]["routing"]["pages"][0]
-    assert page["chosen"] == "systems" and page["retries"] == 1
+    assert page["chosen"] == "systems" and page["retries"] == 3
 
 
 def test_routing_off_only_warns_about_missing_staff(storage_root, java, monkeypatch):

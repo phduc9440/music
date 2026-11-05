@@ -793,13 +793,18 @@ def check_measures(result: MergeResult) -> list[str]:
     return problems
 
 
-def measure_stats(result: MergeResult) -> tuple[int, int]:
-    """``(số ô kiểm được, số ô sai trường độ)``, cùng quy tắc với :func:`check_measures`. Dùng để chấm ứng viên."""
-    checked, problems = _measure_report(result)
+def measure_stats(result: MergeResult, lenient_first: bool = True, lenient_last: bool = True) -> tuple[int, int]:
+    """``(số ô kiểm được, số ô sai trường độ)``, cùng quy tắc với :func:`check_measures`. Dùng để chấm ứng viên.
+
+    Ô nhịp đầu/cuối của đoạn được nới (chỉ sai khi dài hơn số chỉ nhịp) vì có thể là ô lấy đà hay ô cuối bài. Một hệ ở
+    giữa trang không có ô nào như vậy nên bên gọi có thể tắt ``lenient_first``/``lenient_last`` để kiểm chặt."""
+    checked, problems = _measure_report(result, lenient_first, lenient_last)
     return checked, len(problems)
 
 
-def _measure_report(result: MergeResult) -> tuple[int, list[str]]:
+def _measure_report(
+    result: MergeResult, lenient_first: bool = True, lenient_last: bool = True
+) -> tuple[int, list[str]]:
     """Đếm ô nhịp kiểm được và liệt kê mọi ô sai trường độ (không giới hạn số cảnh báo)."""
     base = result.spines
     problems: list[str] = []
@@ -853,7 +858,7 @@ def _measure_report(result: MergeResult) -> tuple[int, list[str]]:
         if not segment["ok"] or segment["meter"] is None:
             continue
         checked += 1
-        is_edge = position == 0 or position == len(with_data) - 1
+        is_edge = (lenient_first and position == 0) or (lenient_last and position == len(with_data) - 1)
         for index, total in enumerate(segment["sums"]):
             if total == 0:
                 continue  # spine không có nốt nào trong ô nhịp này (ví dụ chỉ có dòng trống)

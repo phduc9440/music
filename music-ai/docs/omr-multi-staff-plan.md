@@ -98,8 +98,21 @@ Vì vậy "mỗi hệ riêng lẻ dễ đọc hơn" không đúng với model n�
 grand staff (cả hai là loại đầu vào model làm tốt, xem 5 bản một khuông trong storage đều đọc đúng 1 spine) rồi ghép theo ô
 nhịp (`app/omr/combine.py`). Chỉ số so sánh là `systemsOk` (đếm trước khi độn cột), không dùng `pagesOk`.
 
+### 7b. Đo lần 2 và bước tối ưu thời gian
+
+Đọc riêng giọng/piano cứu được cả 4 hệ trang 1 (`systemsOk` 14/14); đối chiếu ảnh cho thấy chỉ còn một ô nhịp giọng hát sai
+(hệ 2, nốt 16 dày) vì hệ đó đã đúng số spine nên không được nhận diện lại. Điều chỉnh:
+
+* Hệ có cả giọng lẫn piano bị coi là "sai" khi sai số spine **hoặc** có ô nhịp lệch trường độ (kiểm chặt cả ô đầu/cuối
+  của hệ, trừ ô đầu bài và ô cuối trang). Đọc riêng chỉ được nhận khi điểm cao hơn, và không nhận nếu phải thay ô nhịp
+  bằng dấu lặng trong khi đọc cả hệ đã đúng số spine (mất nốt tệ hơn lệch trường độ).
+* Thứ tự thử theo chi phí: đọc cả hệ (greedy) -> đọc riêng (2 lần greedy ngắn) -> beam 3 (chậm ~3 lần) sau cùng. Trước đây beam
+  chạy trước đọc riêng nên hệ mất giọng tốn 2 lần cả hệ + 2 lần đọc riêng.
+* `OMR_ROUTING_MEASURES=1` (mặc định tắt): trang đúng số spine nhưng lệch ô nhịp cũng được đọc lại theo hệ; tốn thêm cỡ một
+  lượt cả trang nên chỉ bật khi cần độ chính xác hơn thời gian.
+
 ## 8. Trạng thái
 
-Đã làm Phase 1-4 (code + test, chưa commit). Chưa đo bằng model thật: cần chạy
+Đã làm Phase 1-4 và 7b (code + test, chưa commit). Cần đo lại bằng model thật: cần chạy
 `python scripts/omr_check.py 37ca0796-2b70-47e3-9d65-844bb0dfa366 --run off,fallback,always` trên máy có Transcoda để
 lấy số cho báo cáo và quyết định có cần Phase 5 (Audiveris) không.

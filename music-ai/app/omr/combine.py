@@ -24,6 +24,10 @@ from app.omr.merge import TAB, PageKern
 _FALLBACK_CLEF = "*clefG2"
 
 
+REPLACED_MARK = "thay bằng dấu lặng trọn ô"
+"""Có trong cảnh báo khi một khuông bị thay bằng ô nghỉ vì lệch trường độ (nơi khác dùng để nhận ra mất nốt)."""
+
+
 class CombineError(Exception):
     """Không ghép được các luồng một cách đáng tin; thông điệp là lý do (tiếng Việt, đưa thẳng vào cảnh báo)."""
 
@@ -159,7 +163,7 @@ def combine_streams(streams: list[PageKern], number: int) -> tuple[PageKern, lis
     if mismatched:
         warnings.append(
             f"{mismatched} ô nhịp có trường độ lệch giữa khuông giọng và piano khi đọc riêng, "
-            "khuông đó được thay bằng dấu lặng trọn ô"
+            f"khuông đó được {REPLACED_MARK}"
         )
     header = TAB.join(["**kern"] * sum(widths))
     return PageKern(number=number, header=header, body=body), warnings

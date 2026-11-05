@@ -62,6 +62,7 @@ Bên Spring Boot đặt `AI_INTERNAL_KEY` trùng với `INTERNAL_KEY` ở đây 
 | `KERN_PARSE_MODE` | `fail` | `fail`: music21 không đọc được kern ghép thì task FAILED `KERN_PARSE_ERROR`; `warn`: chỉ cảnh báo |
 | `MAX_REPEAT_LINES` | `24` | Một dòng kern lặp liên tiếp quá số này bị coi là model sinh lặp và cắt bớt |
 | `OMR_ROUTING` | `fallback` | `off`: như cũ. `fallback`: trang có số spine khác số khuông trên ảnh thì nhận diện lại từng hệ. `always`: nhận diện cả hai cách cho mọi trang rồi chọn (để đo, chậm gấp đôi). Xem "Bố cục và nhận diện lại theo hệ" |
+| `OMR_ROUTING_MEASURES` | `0` | `1`: trang đúng số spine nhưng có ô nhịp lệch trường độ cũng được nhận diện lại theo hệ (chậm hơn, đọc lại mọi hệ của trang) |
 | `ROUTING_RETRY_BEAMS` | `3` | Hệ vẫn sai số khuông thì thử lại bằng beam search với số beam này; `0`/`1`: không thử lại |
 | `ROUTING_RESERVE_S` | `30` | Giây giữ lại cho bước ghép/xuất: nhận diện lại chỉ chạy khi job còn nhiều thời gian hơn mức này |
 
@@ -116,9 +117,9 @@ Plan và lý do chọn cách làm: `docs/omr-multi-staff-plan.md`.
    piano, khuông phía trên là giọng hát). Mọi hệ cùng số khuông thì bố cục được coi là tin cậy.
 2. **Kiểm tra**: kern trang phải có số spine bằng số khuông mỗi hệ. Sai thì có cảnh báo ghi rõ trang.
 3. **Nhận diện lại theo hệ** (`app/omr/routing.py`, `OMR_ROUTING=fallback`): sau khi mọi trang đã có kết quả, mỗi hệ của
-   trang sai được đặt lên một trang trắng giữ nguyên tỉ lệ (`routing/page-NNN-sKK.png`) rồi nhận diện riêng; hệ vẫn sai
-   thì thử lại bằng beam search, rồi vẫn sai thì **đọc riêng từng nhóm khuông** (khuông giọng một ảnh, grand staff piano
-   một ảnh, `routing/page-NNN-sKK-r1-single.png`, `...-r2-piano.png`) và ghép theo ô nhịp và thời điểm
+   trang sai được đặt lên một trang trắng giữ nguyên tỉ lệ (`routing/page-NNN-sKK.png`) rồi nhận diện riêng. Hệ "sai" (sai số spine, hoặc hệ có cả giọng lẫn piano mà ô nhịp lệch trường độ) được thử theo
+   thứ tự rẻ trước: đọc cả hệ (greedy) → **đọc riêng từng nhóm khuông** (khuông giọng một ảnh, grand staff piano một ảnh,
+   `routing/page-NNN-sKK-r1-single.png`, `...-r2-piano.png`; mỗi lần greedy và ngắn) rồi ghép theo ô nhịp và thời điểm
    (`app/omr/combine.py`); không ghép được (số ô khác nhau, đổi khóa giữa ô...) thì ghi cảnh báo lý do và độn như trước.
    Kern các hệ được ghép (`routing/page-NNN-systems.krn`) và chỉ thay kết quả cả trang khi
    có hệ đọc đúng số khuông và điểm cấu trúc cao hơn. Chỉ dùng thời gian còn dư của job (trừ `ROUTING_RESERVE_S`):

@@ -8,9 +8,11 @@ Cách sửa ở đây chỉ dùng chính Transcoda:
 1. Bố cục (``app/omr/layout.py``) cho biết mỗi hệ có ``n`` khuông và tọa độ từng hệ.
 2. Trang nào có số spine khác ``n`` (hoặc bị bỏ vì không đọc được nốt) thì được nhận diện lại: mỗi hệ cắt ra, đặt lên
    một trang trắng 1050x1485 **giữ nguyên tỉ lệ** (trang 1 hệ vẫn đúng phân phối lúc train: 1-6 hệ, căn trên).
-3. Hệ nào vẫn sai số spine thì thử lại bằng beam search (mặc định 3, như bài báo).
-3b. Vẫn sai thì đọc RIÊNG từng nhóm khuông của hệ (khuông giọng một ảnh, grand staff piano một ảnh; cả hai là loại đầu
-   vào model làm tốt) rồi ghép theo ô nhịp và thời điểm bằng :mod:`app.omr.combine`.
+3. Hệ "sai" = sai số spine, hoặc (với hệ có cả giọng lẫn piano) có ô nhịp lệch trường độ. Hệ sai thì đọc RIÊNG từng
+   nhóm khuông (khuông giọng một ảnh, grand staff piano một ảnh; cả hai là loại đầu vào model làm tốt, mỗi lần đọc greedy
+   và ngắn) rồi ghép theo ô nhịp và thời điểm bằng :mod:`app.omr.combine`.
+3b. Vẫn sai thì mới thử beam search (mặc định 3, như bài báo; chậm gấp ~3 lần một lần greedy nên để sau cùng).
+   Hệ chỉ có một loại khuông thì không có bước đọc riêng, thử beam khi sai số spine như trước.
 4. Ghép kern các hệ thành kern trang bằng chính :func:`merge.merge_pages` (kế thừa khóa/nhịp, gộp spine tách, bỏ vạch
    nhịp trùng), rồi chọn giữa kết quả cả trang và kết quả theo hệ bằng điểm cấu trúc.
 
@@ -21,6 +23,7 @@ from __future__ import annotations
 
 import logging
 import math
+import re
 from dataclasses import dataclass, field
 from typing import Callable, Optional
 
@@ -129,20 +132,34 @@ def expected_staves(layout: Optional[PageLayout]) -> Optional[int]:
     return layout.staff_count
 
 
-def needs_fallback(mode: str, layout: Optional[PageLayout], page: Optional[merge.PageKern]) -> bool:
-    """Trang có cần nhận diện lại theo hệ không."""
+def needs_fallback(
+    mode: str, layout: Optional[PageLayout], page: Optional[merge.PageKern], check_measures: bool = False
+) -> bool:
+    """Trang có cần nhận diện lại theo hệ không.
+
+    ``check_measures``: trang đúng số spine nhưng có ô nhịp lệch trường độ cũng được nhận diện lại (tốn thêm thời gian
+    vì phải đọc lại mọi hệ của trang, nên mặc định tắt)."""
     expected = expected_staves(layout)
     if mode == MODE_OFF or expected is None:
         return False
     if mode == MODE_ALWAYS:
         return True
-    return page is None or page.spines != expected
+    if page is None or page.spines != expected:
+        return True
+    return check_measures and score_page(page, expected).measure_ratio < 1.0
 
 
-def score_page(page: Optional[merge.PageKern], expected: int, spines_ok: Optional[float] = None) -> Score:
+def score_page(
+    page: Optional[merge.PageKern],
+    expected: int,
+    spines_ok: Optional[float] = None,
+    lenient_first: bool = True,
+    lenient_last: bool = True,
+) -> Score:
     """Chấm một ứng viên: đúng số spine trước, rồi tỉ lệ ô nhịp đúng trường độ.
 
     ``spines_ok`` None thì tính từ số spine của ``page``; kết quả theo hệ truyền tỉ lệ hệ đúng của riêng nó.
+    ``lenient_first``/``lenient_last``: nới ô nhịp đầu/cuối (lấy đà, cuối bài); hệ ở giữa trang kiểm chặt cả hai đầu.
     """
     if page is None:
         return Score(spines_ok=0.0, measure_ratio=0.0, measures=0)
@@ -150,7 +167,7 @@ def score_page(page: Optional[merge.PageKern], expected: int, spines_ok: Optiona
         spines_ok = 1.0 if page.spines == expected else 0.0
     try:
         single = merge.merge_pages([page])
-        checked, bad = merge.measure_stats(single)
+        checked, bad = merge.measure_stats(single, lenient_first, lenient_last)
         measures = merge.extract_metadata(single).measure_count
     except Exception:  # noqa: BLE001 - kern hỏng tới mức không ghép được thì coi như điểm thấp nhất
         return Score(spines_ok=spines_ok, measure_ratio=0.0, measures=0)
@@ -272,25 +289,20 @@ def recognize_by_systems(
     retry_beams: int,
     can_retry: Callable[[], bool],
     max_repeat: int = 24,
+    meter: Optional[str] = None,
 ) -> tuple[Optional[merge.PageKern], list[SystemResult], list[str]]:
     """Nhận diện lại trang ``number`` theo từng hệ. Trả ``(kern_trang, kết_quả_từng_hệ, cảnh_báo)``.
 
     ``kern_trang`` là None nếu không hệ nào đọc được. ``can_retry()`` False thì không thử lại bằng beam search (hết thời
-    gian). Hủy job hoặc hết hạn từ ``recognize`` được để nguyên cho bên gọi xử lý.
+    gian). ``meter``: token ``*M4/4`` đã biết của bài (hệ ở giữa bài không tự có dòng này). Hủy job hoặc hết hạn từ ``recognize`` được để nguyên cho bên gọi xử lý.
     """
     warnings: list[str] = []
     results: list[SystemResult] = []
     for index, (system, band) in enumerate(zip(layout.systems, system_bands(layout))):
-        image = virtual_page(gray, band)
-        target = len(system.staves)
-        result = _recognize_system(number, index, image, target, recognize, retry_beams, can_retry, max_repeat)
-        if (result.page is None or result.page.spines != target) and len(role_groups(system)) > 1:
-            roles_result = _recognize_by_roles(number, index, gray, layout, recognize, retry_beams, can_retry, max_repeat)
-            result.warnings.extend(roles_result.warnings)
-            if roles_result.page is not None:
-                roles_result.attempts += result.attempts
-                result = roles_result
+        judge = _judge(number, index, layout, meter)
+        result = _recognize_one(number, index, gray, layout, band, recognize, retry_beams, can_retry, max_repeat, judge)
         results.append(result)
+        meter = page_meter(result.page) or meter  # hệ sau được chấm theo số chỉ nhịp đã thấy
 
     fixed: list[merge.PageKern] = []
     for index, (system, result) in enumerate(zip(layout.systems, results), start=1):
@@ -308,6 +320,127 @@ def recognize_by_systems(
     except merge.MergeSpineMismatch:
         warnings.append(f"Trang {number}: không ghép được kern các hệ")
         return None, results, warnings
+
+
+@dataclass(frozen=True)
+class Judge:
+    """Cách chấm ô nhịp của một hệ: nới ô đầu/cuối hay không, và số chỉ nhịp đã biết."""
+
+    lenient_first: bool
+    lenient_last: bool
+    meter: Optional[str] = None
+    """Token ``*M4/4`` lấy từ trang/các hệ trước. Trang ảo một hệ thường không có dòng số chỉ nhịp (nó nằm ở đầu bài) nên
+    nếu không bổ sung thì ô nhịp của hệ không kiểm được (bị bỏ qua), lỗi trường độ lọt qua."""
+
+
+def page_meter(page: Optional[merge.PageKern]) -> Optional[str]:
+    """Token ``*M n/d`` đầu tiên của kern, hoặc None."""
+    if page is None:
+        return None
+    for line in page.body:
+        if line.startswith("*"):
+            for token in line.split(merge.TAB):
+                if re.match(r"^\*M\d+/\d+", token):
+                    return token
+    return None
+
+
+def _judge(number: int, index: int, layout: PageLayout, meter: Optional[str]) -> Judge:
+    """Chỉ nới ô nhịp đầu bài (hệ đầu trang 1, có thể là ô lấy đà) và ô cuối trang (hệ cuối, có thể là ô cuối bài). Mọi
+    ô khác phải đủ trường độ."""
+    return Judge(number == 1 and index == 0, index == len(layout.systems) - 1, meter)
+
+
+def _with_meter(page: Optional[merge.PageKern], meter: Optional[str]) -> Optional[merge.PageKern]:
+    """Bản dùng để chấm điểm: thêm dòng số chỉ nhịp nếu kern chưa có (không dùng cho kết quả xuất)."""
+    if page is None or meter is None or page_meter(page) is not None:
+        return page
+    row = merge.TAB.join([meter] * page.spines)
+    return merge.PageKern(number=page.number, header=page.header, body=[row] + list(page.body))
+
+
+def _score(page: Optional[merge.PageKern], target: int, judge: Judge) -> Score:
+    return score_page(
+        _with_meter(page, judge.meter), target, lenient_first=judge.lenient_first, lenient_last=judge.lenient_last
+    )
+
+
+def _is_good(page: Optional[merge.PageKern], target: int, judge: Judge) -> bool:
+    """Đúng số spine và mọi ô nhịp kiểm được đều đủ trường độ."""
+    return page is not None and page.spines == target and _score(page, target, judge).measure_ratio >= 1.0
+
+
+def _rank(page: Optional[merge.PageKern], target: int, judge: Judge, lossy: bool = False) -> tuple:
+    """Khoá so sánh ứng viên: (đúng spine, tỉ lệ ô nhịp đúng, không phải thay ô nhịp bằng dấu lặng)."""
+    return _score(page, target, judge).key() + (0 if lossy else 1,)
+
+
+def _read(
+    number: int,
+    index: int,
+    image: np.ndarray,
+    recognize: Recognize,
+    beams: Optional[int],
+    max_repeat: int,
+    tag: Optional[str] = None,
+) -> Optional[merge.PageKern]:
+    """Một lần đọc model rồi làm sạch kern; None nếu không đọc được nốt nào."""
+    text, truncated = recognize(image, index, beams) if tag is None else recognize(image, index, beams, tag)
+    page, _ = merge.clean_page(number, text, max_repeat=max_repeat, truncated=truncated)
+    return page
+
+
+def _recognize_one(
+    number: int,
+    index: int,
+    gray: np.ndarray,
+    layout: PageLayout,
+    band: tuple[int, int],
+    recognize: Recognize,
+    retry_beams: int,
+    can_retry: Callable[[], bool],
+    max_repeat: int,
+    judge: Judge,
+) -> SystemResult:
+    """Nhận diện một hệ theo thứ tự rẻ trước: đọc cả hệ (greedy) -> đọc riêng giọng/piano (2 lần greedy ngắn) -> beam."""
+    system = layout.systems[index]
+    target = len(system.staves)
+    image = virtual_page(gray, band)
+    if len(role_groups(system)) <= 1:
+        return _recognize_system(number, index, image, target, recognize, retry_beams, can_retry, max_repeat)
+
+    best = _recognize_system(number, index, image, target, recognize, 0, can_retry, max_repeat)
+    attempts = best.attempts
+    warnings: list[str] = []
+    lossy = False
+    """Kết quả đang giữ có ô nhịp bị thay bằng dấu lặng (mất nốt) nên chưa được coi là tốt."""
+
+    if not _is_good(best.page, target, judge) and can_retry():
+        roles = _recognize_by_roles(number, index, gray, layout, recognize, retry_beams, can_retry, max_repeat)
+        attempts += roles.attempts
+        warnings.extend(roles.warnings)
+        roles_lossy = any(combine.REPLACED_MARK in w for w in roles.warnings)
+        if roles.page is not None and _accept_roles(best.page, roles.page, roles_lossy, target, judge):
+            best = SystemResult(roles.page, attempts, "roles", warnings)
+            lossy = roles_lossy
+    if (lossy or not _is_good(best.page, target, judge)) and retry_beams > 1 and can_retry():
+        beam = _read(number, index, image, recognize, retry_beams, max_repeat)
+        attempts += 1
+        if beam is not None and _rank(beam, target, judge) > _rank(best.page, target, judge, lossy):
+            best = SystemResult(beam, attempts, "system", warnings)
+    best.attempts = attempts
+    best.warnings = warnings
+    return best
+
+
+def _accept_roles(
+    whole: Optional[merge.PageKern], roles: merge.PageKern, lossy: bool, target: int, judge: Judge
+) -> bool:
+    """Kết quả đọc riêng có tốt hơn kết quả đọc cả hệ không. Khi cả hệ đã đúng số spine (chỉ lệch ô nhịp) thì không nhận
+    kết quả phải thay ô nhịp bằng dấu lặng, vì mất nốt còn tệ hơn lệch trường độ."""
+    if lossy and whole is not None and whole.spines == target:
+        return False
+    return _rank(roles, target, judge, lossy) > _rank(whole, target, judge)
 
 
 def _recognize_system(
@@ -329,8 +462,7 @@ def _recognize_system(
     for beams in beam_plan:
         if attempts and not can_retry():
             break
-        text, truncated = recognize(image, index, beams) if tag is None else recognize(image, index, beams, tag)
-        page, _ = merge.clean_page(number, text, max_repeat=max_repeat, truncated=truncated)
+        page = _read(number, index, image, recognize, beams, max_repeat, tag)
         attempts.append((beams, page))
         if page is not None and page.spines == target:
             break
