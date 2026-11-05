@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import type { ReactNode } from 'react';
 import type { SymbolOp } from '../../editor/commands';
 import { DYNAMICS } from '../../editor/marks';
 import type { MarkOp } from '../../editor/marks';
+import { TUPLET_PRESETS } from '../../editor/tuplets';
+import type { TupletOp } from '../../editor/tuplets';
 import type { VoiceOp } from '../../editor/voices';
 import type { DurationChoice, DurationType } from '../../editor/durations';
 import type { PitchOp } from '../../editor/pitch';
@@ -63,6 +66,8 @@ interface Props {
   onMeasures: (op: 'insertAfter' | 'insertBefore' | 'delete') => void;
   /** Viết bè, nốt nhỏ, xóa bè. */
   onVoice: (op: VoiceOp) => void;
+  /** Tạo chùm (chùm ba, chùm năm...) từ nốt đang chọn hoặc bỏ chùm. */
+  onTuplet: (op: TupletOp) => void;
   /** "Giữ ô nhịp đủ phách": đổi trường độ nhưng lấp dấu lặng / ghi đè nốt sau để ô không đổi độ dài. */
   onDuration: (type: DurationType) => void;
   onDot: () => void;
@@ -174,6 +179,7 @@ export default function EditorToolPanel({
   onOpenNotation,
   onMeasures,
   onVoice,
+  onTuplet,
   onDuration,
   onDot,
   previewTone,
@@ -185,6 +191,7 @@ export default function EditorToolPanel({
   onRedo,
   onSave,
 }: Props) {
+  const [tupletMenu, setTupletMenu] = useState(false);
   return (
     <>
       {open && <div className="sv-sheet-backdrop" onClick={onClose} aria-hidden="true" />}
@@ -538,6 +545,48 @@ export default function EditorToolPanel({
               </button>
             ))}
           </div>
+          <div className="sv-tools__row sv-tools__row--text">
+            <button
+              className={`sv-tool sv-tool--text${tupletMenu ? ' is-active' : ''}`}
+              disabled={!hasSelection || busy}
+              aria-expanded={tupletMenu}
+              onClick={() => setTupletMenu((open) => !open)}
+              title={`Chùm: biến nốt/dấu lặng đang chọn thành chùm ba, chùm năm... (${MOD}+3 = chùm ba)${hasSelection ? '' : ' - hãy chọn nốt trước'}`}
+            >
+              Chùm…
+            </button>
+          </div>
+          {tupletMenu && (
+            <div className="sv-tools__row sv-tools__row--text" role="menu" aria-label="Chọn kiểu chùm">
+              {TUPLET_PRESETS.map((preset) => (
+                <button
+                  key={preset.label}
+                  className="sv-tool sv-tool--text"
+                  role="menuitem"
+                  disabled={!hasSelection || busy}
+                  onClick={() => {
+                    onTuplet({ kind: 'make', actual: preset.actual, normal: preset.normal });
+                    setTupletMenu(false);
+                  }}
+                  title={`${preset.label}: ${preset.actual} nốt trong thời gian của ${preset.normal} nốt cùng loại (nốt đang chọn giữ chỗ đầu, các chỗ còn lại là dấu lặng để nhập)`}
+                >
+                  {preset.label}
+                </button>
+              ))}
+              <button
+                className="sv-tool sv-tool--text"
+                role="menuitem"
+                disabled={!hasSelection || busy}
+                onClick={() => {
+                  onTuplet({ kind: 'remove' });
+                  setTupletMenu(false);
+                }}
+                title="Bỏ chùm: gộp cả chùm chứa nốt đang chọn về một nốt (giữ cao độ nốt đầu tiên có cao độ)"
+              >
+                Bỏ chùm
+              </button>
+            </div>
+          )}
         </div>
       </aside>
     </>

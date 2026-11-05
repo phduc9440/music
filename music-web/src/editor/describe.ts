@@ -1,6 +1,7 @@
 /** Mô tả vùng chọn cho thanh trạng thái, ví dụ "G4 · nốt đen · ô 5 · tay phải". */
 import { readPitch } from './commands';
 import type { ScoreDocument } from './ScoreDocument';
+import { ratioOf, tupletName } from './tuplets';
 import { pitchName } from './pitch';
 
 /** Tên trường độ theo giá trị <type> của MusicXML. */
@@ -29,9 +30,10 @@ export function describeSelection(doc: ScoreDocument, selection: ReadonlySet<str
       ?.textContent?.trim() ?? '';
   const duration = TYPE_LABELS[typeText];
   const pitch = readPitch(info.element);
+  const ratio = ratioOf(info.element);
   const parts = [
     pitch ? pitchName(pitch) : 'Dấu lặng',
-    duration ? `${info.isRest ? 'lặng' : 'nốt'} ${duration}` : '',
+    duration ? `${info.isRest ? 'lặng' : 'nốt'} ${duration}${ratio ? ` (${tupletName(ratio)})` : ''}` : '',
     `ô ${info.measureIndex + 1}`,
     doc.staffCountOfPart(info.partIndex) >= 2 ? (info.staff === 1 ? 'tay phải' : 'tay trái') : '',
   ];

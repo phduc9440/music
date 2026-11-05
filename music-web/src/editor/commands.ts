@@ -37,6 +37,9 @@ export type EditFailure =
   | 'unchanged'
   | 'empty'
   | 'tuplet'
+  | 'tupletFit'
+  | 'tupletType'
+  | 'noTuplet'
   | 'tie'
   | 'noSpace'
   | 'divisions'
@@ -74,7 +77,10 @@ export const EDIT_FAILURE_MESSAGES: Record<EditFailure, string> = {
   duplicate: 'Không thể đổi: hợp âm đã có nốt cùng cao độ',
   unchanged: 'Nốt đã ở đúng trạng thái này rồi',
   empty: 'Hãy chọn ít nhất một nốt (không phải dấu lặng)',
-  tuplet: 'Chưa hỗ trợ đổi trường độ của nốt trong nhóm nốt đặc biệt (chùm ba...)',
+  tuplet: 'Nốt này đã nằm trong chùm, hoặc vị trí chèn nằm giữa một chùm (chưa hỗ trợ chùm lồng nhau)',
+  tupletFit: 'Trường độ mới không vừa chùm; hãy bỏ chùm trước',
+  tupletType: 'Không viết được chùm này bằng các hình nốt hiện có (thử chùm khác hoặc trường độ khác)',
+  noTuplet: 'Nốt đang chọn không nằm trong chùm nào',
   tie: 'Chưa hỗ trợ đổi trường độ khi có nốt dính dấu nối (nốt đang sửa hoặc nốt bị đè)',
   noSpace: 'Không kéo dài được: nốt sẽ vượt quá cuối ô nhịp',
   divisions: 'Bản nhạc chia nhịp quá thô nên không đổi sang trường độ này được',

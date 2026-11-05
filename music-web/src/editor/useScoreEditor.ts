@@ -29,6 +29,8 @@ import type { VoiceOp } from './voices';
 import { addBassStaff, addPart, changeNotation, readNotation, removeStaff } from './staves';
 import type { NotationChange } from './staves';
 import { setTempo } from './tempo';
+import { makeTuplet, removeTuplet, tupletName } from './tuplets';
+import type { TupletOp } from './tuplets';
 import type { TempoInfo } from './tempo';
 import { toggleSlur, toggleTie } from './ties';
 import type { MeasureIssue } from './measureCheck';
@@ -117,6 +119,8 @@ export interface ScoreEditor {
   editNotation: (change: NotationChange) => void;
   /** Viết bè (sao nốt sang bè mới, nốt nhỏ), bật/tắt nốt nhỏ, hoặc xóa bè phụ. */
   editVoice: (op: VoiceOp) => void;
+  /** Tạo chùm (chùm ba, chùm năm...) từ nốt đang chọn, hoặc gộp chùm đang chọn về một nốt. */
+  editTuplet: (op: TupletOp) => void;
   /** Lời đang nhập (1–4). */
   lyricVerse: number;
   setLyricVerse: (verse: number) => void;
@@ -558,6 +562,31 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     [canEdit, doc, commit],
   );
 
+  const editTuplet = useCallback(
+    (op: TupletOp) => {
+      if (!canEdit) return;
+      const target = doc.notes.find((n) => selection.has(n.id));
+      if (!target) {
+        commit({ ok: false, reason: 'noMeasure' }, false);
+        return;
+      }
+      const result =
+        op.kind === 'make' ? makeTuplet(doc, target.id, op.actual, op.normal) : removeTuplet(doc, target.id);
+      commit(result, false);
+      if (!result.ok || op.kind !== 'make') return;
+      // Chùm mới toàn dấu lặng: đặt trường độ nhập bằng hình nốt của chùm để gõ A–G là điền nốt vào chùm luôn
+      const first = doc.getInfo(result.command.selectAfter?.[0] ?? '');
+      const type = first?.element.querySelector(':scope > type')?.textContent?.trim() ?? '';
+      if (first && type in DURATION_QUARTERS) {
+        setInputDuration({ type: type as DurationType, dotted: first.element.querySelector(':scope > dot') !== null });
+        flash(
+          `${tupletName(op)}: trường độ nhập ${DURATION_LABELS[type as DurationType]}, bấm vào dấu lặng để nhập nốt`,
+        );
+      }
+    },
+    [canEdit, selection, doc, commit, flash],
+  );
+
   const insertNoteAt = useCallback(
     (target: InsertTarget, choice: DurationChoice, accidental: AccidentalChoice): boolean => {
       if (!canEdit) return false;
@@ -784,6 +813,9 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
       } else if (mod && key === 'y') {
         e.preventDefault();
         redo();
+      } else if (mod && !e.shiftKey && !e.altKey && e.key === '3') {
+        e.preventDefault();
+        editTuplet({ kind: 'make', actual: 3, normal: 2 });
       } else if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && selection.size > 0) {
         e.preventDefault();
         const up = e.key === 'ArrowUp';
@@ -846,6 +878,7 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     chooseDuration,
     toggleDot,
     enterLetter,
+    editTuplet,
     inputMode,
   ]);
 
@@ -880,6 +913,7 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     editStaves,
     editNotation,
     editVoice,
+    editTuplet,
     lyricMode,
     setLyricMode,
     lyricVerse,

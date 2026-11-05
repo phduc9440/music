@@ -65,6 +65,10 @@ const SHORTCUTS: [string, string][] = [
   [`${MOD} + S`, 'Lưu'],
   ['1 – 5', 'Trường độ: móc kép, móc đơn, đen, trắng, tròn (áp lên nốt chọn)'],
   ['.', 'Bật/tắt chấm dôi'],
+  [
+    `${MOD} + 3`,
+    'Chùm ba từ nốt/dấu lặng đang chọn (nhóm Trường độ → "Chùm…" còn có chùm hai, bốn, năm, sáu, bảy và "Bỏ chùm")',
+  ],
   ['Bấm vào khuông (chế độ Nhập nốt)', 'Mở khung chọn nốt tại đúng dòng/khe đã bấm rồi bấm Thêm'],
   ['Kéo nút trường độ vào khuông', 'Thêm nốt có trường độ đó tại chỗ thả'],
   ['A – G (chế độ Nhập nốt)', 'Biến nốt/dấu lặng đang chọn thành nốt đó rồi sang mục kế tiếp'],
@@ -482,6 +486,7 @@ function ScoreWorkspace({ score, xml, info, doc }: WorkspaceProps) {
             onOpenNotation={() => setNotationOpen(true)}
             onMeasures={editor.editMeasures}
             onVoice={editor.editVoice}
+            onTuplet={editor.editTuplet}
             onDuration={editor.chooseDuration}
             onDot={editor.toggleDot}
             previewTone={editor.previewTone}

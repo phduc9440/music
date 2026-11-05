@@ -3,155 +3,34 @@
  * - nốt ngắn đi thì phần trống phía sau được lấp bằng dấu lặng;
  * - nốt dài ra thì ghi đè các nốt/dấu lặng liền sau nó trong cùng bè (phần dư của mục bị cắt dở thành dấu lặng);
  *   kéo quá cuối ô nhịp thì từ chối.
- * Chưa hỗ trợ nốt có dấu nối và nhóm nốt đặc biệt (chùm ba...).
+ * Nốt trong chùm (chùm ba...) đổi trường độ trong phạm vi chùm, xem `tuplets.ts`. Chưa hỗ trợ đổi trường độ nốt có
+ * dấu nối.
  */
 import { chordKey, childOf, commitEdit, hasTie, readPitch, touch, writePitch } from './commands';
 import type { EditFailure, EditResult, Touched } from './commands';
+import {
+  DURATION_LABELS,
+  DURATION_QUARTERS,
+  divisionsAt,
+  hasChild,
+  headOf,
+  idsOfEntry,
+  makeRest,
+  numberOf,
+  splitRests,
+  stripBeams,
+  voiceEntries,
+  writeDuration,
+} from './durationCore';
+import type { DurationChoice, DurationType, Entry, Plan } from './durationCore';
+import { scaleDivisions } from './divisions';
 import { inRange, keyAlter, pitchToMidi, isStep } from './pitch';
 import type { Pitch, Step } from './pitch';
 import type { NoteInfo, ScoreDocument } from './ScoreDocument';
+import { groupRange, planTupletDuration, ratioOf } from './tuplets';
 
-/** Các trường độ cơ bản của bảng công cụ. */
-export type DurationType = 'whole' | 'half' | 'quarter' | 'eighth' | '16th';
-
-export interface DurationChoice {
-  type: DurationType;
-  dotted: boolean;
-}
-
-/** Độ dài tính bằng số nốt đen. */
-export const DURATION_QUARTERS: Record<DurationType, number> = {
-  whole: 4,
-  half: 2,
-  quarter: 1,
-  eighth: 0.5,
-  '16th': 0.25,
-};
-
-/** Tên tiếng Việt hiển thị. */
-export const DURATION_LABELS: Record<DurationType, string> = {
-  whole: 'tròn',
-  half: 'trắng',
-  quarter: 'đen',
-  eighth: 'móc đơn',
-  '16th': 'móc kép',
-};
-
-/** Các giá trị dùng để chia phần trống thành dấu lặng, từ lớn đến nhỏ. */
-const REST_VALUES: { quarters: number; type: DurationType; dotted: boolean }[] = [
-  { quarters: 4, type: 'whole', dotted: false },
-  { quarters: 3, type: 'half', dotted: true },
-  { quarters: 2, type: 'half', dotted: false },
-  { quarters: 1.5, type: 'quarter', dotted: true },
-  { quarters: 1, type: 'quarter', dotted: false },
-  { quarters: 0.75, type: 'eighth', dotted: true },
-  { quarters: 0.5, type: 'eighth', dotted: false },
-  { quarters: 0.25, type: '16th', dotted: false },
-];
-
-interface Entry {
-  /** Các thẻ <note> của một nốt hoặc hợp âm; phần tử đầu là nốt đầu. */
-  members: Element[];
-  duration: number;
-  isRest: boolean;
-}
-
-const numberOf = (parent: Element, tag: string): number | null => {
-  const text = childOf(parent, tag)?.textContent?.trim();
-  const value = Number(text);
-  return text && Number.isFinite(value) ? value : null;
-};
-
-const hasChild = (el: Element, tag: string): boolean => childOf(el, tag) !== undefined;
-
-/** Các nốt/hợp âm/dấu lặng của một bè trong ô nhịp, theo thứ tự; null nếu bè có <forward> (chưa hỗ trợ). */
-const voiceEntries = (measure: Element, staff: number, voice: number): Entry[] | null => {
-  const entries: Entry[] = [];
-  for (const child of Array.from(measure.children)) {
-    if (child.tagName === 'forward' && (numberOf(child, 'voice') ?? 1) === voice) return null;
-    if (child.tagName !== 'note' || hasChild(child, 'grace')) continue;
-    if ((numberOf(child, 'staff') ?? 1) !== staff || (numberOf(child, 'voice') ?? 1) !== voice) continue;
-    if (hasChild(child, 'chord') && entries.length > 0) {
-      entries[entries.length - 1].members.push(child);
-    } else {
-      entries.push({ members: [child], duration: numberOf(child, 'duration') ?? 0, isRest: hasChild(child, 'rest') });
-    }
-  }
-  return entries;
-};
-
-/** Chia `total` (đơn vị divisions) thành các dấu lặng hợp lệ; null nếu không chia vừa (divisions quá thô). */
-const splitRests = (total: number, divisions: number): { d: number; type: DurationType; dotted: boolean }[] | null => {
-  const out: { d: number; type: DurationType; dotted: boolean }[] = [];
-  let left = total;
-  while (left > 0) {
-    const fit = REST_VALUES.find((v) => Number.isInteger(v.quarters * divisions) && v.quarters * divisions <= left);
-    if (!fit) return null;
-    out.push({ d: fit.quarters * divisions, type: fit.type, dotted: fit.dotted });
-    left -= fit.quarters * divisions;
-  }
-  return out;
-};
-
-/** Đặt thẻ `el` sau thẻ đầu tiên tìm thấy trong `after` (theo thứ tự ưu tiên); không có thì thêm vào cuối. */
-const placeAfter = (note: Element, el: Element, after: string[]): void => {
-  for (const tag of after) {
-    const anchor = Array.from(note.children).find((c) => c.tagName === tag);
-    if (anchor) {
-      anchor.after(el);
-      return;
-    }
-  }
-  note.appendChild(el);
-};
-
-/** Ghi trường độ mới vào một thẻ <note>: <duration>, <type>, <dot/>; bỏ <beam> vì nhóm nốt đã đổi. */
-const writeDuration = (note: Element, d: number, type: DurationType, dotted: boolean): void => {
-  const owner = note.ownerDocument;
-  const duration = childOf(note, 'duration');
-  if (duration) duration.textContent = String(d);
-  let typeEl = childOf(note, 'type');
-  if (!typeEl) {
-    typeEl = owner.createElement('type');
-    placeAfter(note, typeEl, ['voice', 'duration']);
-  }
-  typeEl.textContent = type;
-  Array.from(note.children)
-    .filter((c) => c.tagName === 'dot' || c.tagName === 'beam')
-    .forEach((c) => c.remove());
-  if (dotted) typeEl.after(owner.createElement('dot'));
-};
-
-/** Bỏ thông tin nối nét (<beam>) của cả bè trong ô để OSMD không gặp nét nối đứt đoạn sau khi trường độ đổi. */
-const stripBeams = (entries: Entry[]): void => {
-  for (const entry of entries) {
-    for (const note of entry.members) {
-      Array.from(note.children)
-        .filter((c) => c.tagName === 'beam')
-        .forEach((c) => c.remove());
-    }
-  }
-};
-
-/** Dựng thẻ <note> dấu lặng có cùng khuông và bè với `like`. */
-const makeRest = (like: Element, d: number, type: DurationType, dotted: boolean): Element => {
-  const owner = like.ownerDocument;
-  const note = owner.createElement('note');
-  const add = (tag: string, text?: string) => {
-    const el = owner.createElement(tag);
-    if (text !== undefined) el.textContent = text;
-    note.appendChild(el);
-  };
-  add('rest');
-  add('duration', String(d));
-  add('voice', String(numberOf(like, 'voice') ?? 1));
-  add('type', type);
-  if (dotted) add('dot');
-  if (hasChild(like, 'staff')) add('staff', String(numberOf(like, 'staff') ?? 1));
-  return note;
-};
-
-type Plan = { error: EditFailure } | { run: () => void };
+export { DURATION_LABELS, DURATION_QUARTERS };
+export type { DurationChoice, DurationType };
 
 /**
  * Lập kế hoạch đổi trường độ của một nốt/hợp âm/dấu lặng (chưa sửa DOM). Trả về lỗi nếu không làm được, để người
@@ -167,11 +46,12 @@ const planDuration = (head: Element, choice: DurationChoice, keep = true): Plan 
   const index = entries.findIndex((e) => e.members.includes(head));
   if (index < 0) return { error: 'unsupported' };
   const entry = entries[index];
-  if (entry.members.some((m) => hasChild(m, 'time-modification'))) return { error: 'tuplet' };
-  if (keep && entry.members.some((m) => hasTie(m, 'start') || hasTie(m, 'stop'))) return { error: 'tie' };
-
   const part = measure.parentElement;
   const divisions = divisionsAt(part, measure);
+  // Nốt trong chùm: đổi trong phạm vi chùm, tổng độ dài chùm không đổi
+  if (ratioOf(entry.members[0])) return planTupletDuration(entries, index, choice, divisions);
+  if (keep && entry.members.some((m) => hasTie(m, 'start') || hasTie(m, 'stop'))) return { error: 'tie' };
+
   const target = DURATION_QUARTERS[choice.type] * (choice.dotted ? 1.5 : 1) * divisions;
   if (!Number.isInteger(target)) return { error: 'divisions' };
   const delta = target - entry.duration;
@@ -242,49 +122,6 @@ const planDuration = (head: Element, choice: DurationChoice, keep = true): Plan 
   };
 };
 
-/** Divisions có hiệu lực tại ô nhịp `measure` của part `part`. */
-const divisionsAt = (part: Element | null, measure: Element): number => {
-  let divisions = 1;
-  if (!part) return divisions;
-  for (const m of Array.from(part.children)) {
-    if (m.tagName !== 'measure') continue;
-    for (const attributes of Array.from(m.children).filter((c) => c.tagName === 'attributes')) {
-      const value = numberOf(attributes, 'divisions');
-      if (value !== null && value > 0) divisions = value;
-    }
-    if (m === measure) break;
-  }
-  return divisions;
-};
-
-/** Phần tử <note> đầu của nốt/hợp âm chứa nốt có `info`. */
-const headOf = (doc: ScoreDocument, info: NoteInfo): NoteInfo =>
-  doc.notes.find(
-    (n) =>
-      n.chordIndex === 0 &&
-      n.partIndex === info.partIndex &&
-      n.measureIndex === info.measureIndex &&
-      n.staff === info.staff &&
-      n.voice === info.voice &&
-      n.entryIndex === info.entryIndex,
-  ) ?? info;
-
-/** Id của mọi nốt (kể cả nốt thêm trong hợp âm) thuộc cùng mục với thẻ `head` sau khi đã tính lại id. */
-const idsOfEntry = (doc: ScoreDocument, head: Element): string[] => {
-  const info = doc.notes.find((n) => n.element === head);
-  if (!info) return [];
-  return doc.notes
-    .filter(
-      (n) =>
-        n.partIndex === info.partIndex &&
-        n.measureIndex === info.measureIndex &&
-        n.staff === info.staff &&
-        n.voice === info.voice &&
-        n.entryIndex === info.entryIndex,
-    )
-    .map((n) => n.id);
-};
-
 /** Khôi phục các ô nhịp về bản đã chụp trước khi sửa (dùng khi một bước giữa chừng thất bại). */
 const rollback = (doc: ScoreDocument, snapshots: { partIndex: number; measureIndex: number; before: Element }[]) => {
   for (const s of snapshots)
@@ -317,13 +154,48 @@ const restToNote = (doc: ScoreDocument, info: NoteInfo): void => {
   writePitch(info.element, pitch);
 };
 
+/** Các hệ số thử nhân divisions khi một trường độ không chia hết (ví dụ nốt móc đơn khi divisions = 3). */
+const RESCALE_FACTORS = [2, 4, 8, 16];
+
+/**
+ * Chạy `run`; nếu thất bại vì divisions quá thô thì nhân divisions của part lên (2, 4, 8, 16 lần) rồi thử lại. Lần
+ * thử thành công thành một lệnh cấu trúc (bản chụp cả bài) để hoàn tác khôi phục luôn divisions cũ; thất bại thì
+ * bản nhạc nguyên như cũ.
+ */
+function withRescale(doc: ScoreDocument, partIndex: number, run: () => EditResult): EditResult {
+  const first = run();
+  if (first.ok || first.reason !== 'divisions') return first;
+  const before = doc.partsSnapshot();
+  for (const factor of RESCALE_FACTORS) {
+    scaleDivisions(doc, partIndex, factor);
+    doc.reindex();
+    const result = run();
+    if (result.ok) {
+      const { command } = result;
+      return {
+        ok: true,
+        command: {
+          label: command.label,
+          snapshots: [],
+          changedIds: command.changedIds,
+          selectAfter: command.selectAfter,
+          parts: { before, after: doc.partsSnapshot() },
+        },
+      };
+    }
+    doc.restoreParts(before);
+    if (result.reason !== 'divisions') return result;
+  }
+  return first;
+}
+
 const DURATION_LABEL_PREFIX = 'Đổi trường độ';
 
 /**
  * Đổi trường độ các nốt (hoặc dấu lặng) đã chọn. Có bước nào không làm được thì không đổi gì.
  * Đổi thẳng đúng trường độ đã chọn: độ dài ô nhịp thay đổi theo (ô sai phách được viền đỏ để sửa tiếp).
  */
-export function setDuration(doc: ScoreDocument, ids: readonly string[], choice: DurationChoice): EditResult {
+function setDurationOnce(doc: ScoreDocument, ids: readonly string[], choice: DurationChoice): EditResult {
   const heads = new Map<string, NoteInfo>();
   for (const id of ids) {
     const info = doc.getInfo(id);
@@ -413,7 +285,7 @@ const referenceMidi = (doc: ScoreDocument, info: NoteInfo): number => {
  * Sau khi nhập, vùng chọn nhảy sang mục kế tiếp trong bè để gõ tiếp.
  * @param letter chữ cái a–g (không phân biệt hoa thường)
  */
-export function enterNote(doc: ScoreDocument, id: string, letter: string, choice: DurationChoice | null): EditResult {
+function enterNoteOnce(doc: ScoreDocument, id: string, letter: string, choice: DurationChoice | null): EditResult {
   const step = LETTER_STEP[letter.toLowerCase()];
   const info = doc.getInfo(id);
   if (!step || !info || info.isGrace) return { ok: false, reason: 'empty' };
@@ -532,19 +404,25 @@ const makePitched = (
  * - Bấm vào chỗ trống: chèn nốt mới, các nốt sau lùi lại; ô nhịp thừa phách sẽ được viền đỏ.
  * Từ chối khi dính dấu nối, chùm ba hoặc bè có <forward>. Khi thất bại DOM không thay đổi.
  */
-export function insertNote(
+function insertNoteOnce(
   doc: ScoreDocument,
   target: InsertTarget,
   choice: DurationChoice,
-  accidental: AccidentalChoice = 'auto',
+  accidental: AccidentalChoice,
 ): EditResult {
   const measure = doc.getMeasure(target.partIndex, target.measureIndex);
   if (!measure) return { ok: false, reason: 'empty' };
   const entries = voiceEntries(measure, target.staff, target.voice);
   if (!entries || entries.length === 0) return { ok: false, reason: 'unsupported' };
   const divisions = divisionsAt(measure.parentElement, measure);
-  const length = DURATION_QUARTERS[choice.type] * (choice.dotted ? 1.5 : 1) * divisions;
-  if (!Number.isInteger(length)) return { ok: false, reason: 'divisions' };
+  // Bấm vào dấu lặng trong chùm: nốt mới nằm trong chùm nên độ dài thật = hình nốt × normal / actual
+  const restEntry = target.restEntry !== null ? entries[target.restEntry] : undefined;
+  const ratio = restEntry ? ratioOf(restEntry.members[0]) : null;
+  const lengthNumerator =
+    DURATION_QUARTERS[choice.type] * (choice.dotted ? 1.5 : 1) * 4 * divisions * (ratio?.normal ?? 1);
+  const lengthDenominator = 4 * (ratio?.actual ?? 1);
+  if (lengthNumerator % lengthDenominator !== 0) return { ok: false, reason: 'divisions' };
+  const length = lengthNumerator / lengthDenominator;
 
   const alter =
     accidental === 'auto' ? keyAlter(doc.keyAt(target.measureIndex), target.step) : ACCIDENTAL_ALTER[accidental];
@@ -581,8 +459,9 @@ export function insertNote(
   const at = Math.max(0, Math.min(target.beforeEntry, entries.length));
   const prev = entries[at - 1];
   const next = entries[at];
-  const tupleOf = (e?: Entry) => e?.members.some((m) => hasChild(m, 'time-modification')) ?? false;
-  if (tupleOf(prev) && tupleOf(next)) return { ok: false, reason: 'tuplet' };
+  // Không chèn vào giữa một chùm (chèn sau mục cuối của chùm, hoặc giữa hai chùm liền nhau thì được)
+  const prevGroup = prev && next && ratioOf(prev.members[0]) ? groupRange(entries, at - 1, divisions) : null;
+  if (prevGroup && prevGroup.to >= at) return { ok: false, reason: 'tuplet' };
   if (prev?.members.some((m) => hasTie(m, 'start')) || next?.members.some((m) => hasTie(m, 'stop'))) {
     return { ok: false, reason: 'tie' };
   }
@@ -598,4 +477,25 @@ export function insertNote(
   command.selectAfter = idsOfEntry(doc, created);
   command.changedIds = command.selectAfter;
   return { ok: true, command };
+}
+
+/** Đổi trường độ các nốt đã chọn; tự chia nhỏ divisions của part khi cần (xem {@link withRescale}). */
+export function setDuration(doc: ScoreDocument, ids: readonly string[], choice: DurationChoice): EditResult {
+  const first = ids.map((id) => doc.getInfo(id)).find((n) => n !== undefined);
+  return withRescale(doc, first?.partIndex ?? 0, () => setDurationOnce(doc, ids, choice));
+}
+
+/** Nhập nốt bằng phím A–G; tự chia nhỏ divisions của part khi cần. */
+export function enterNote(doc: ScoreDocument, id: string, letter: string, choice: DurationChoice | null): EditResult {
+  return withRescale(doc, doc.getInfo(id)?.partIndex ?? 0, () => enterNoteOnce(doc, id, letter, choice));
+}
+
+/** Thêm một nốt vào bè tại `target`; tự chia nhỏ divisions của part khi cần. */
+export function insertNote(
+  doc: ScoreDocument,
+  target: InsertTarget,
+  choice: DurationChoice,
+  accidental: AccidentalChoice = 'auto',
+): EditResult {
+  return withRescale(doc, target.partIndex, () => insertNoteOnce(doc, target, choice, accidental));
 }
