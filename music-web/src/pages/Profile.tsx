@@ -102,6 +102,15 @@ export default function UserProfile() {
       <nav className="navbar">
         <div className="navbar-brand">Music App</div>
         <div className="navbar-nav">
+          {localStorage.getItem('role') === 'ADMIN' && (
+            <button
+              className="btn"
+              onClick={() => navigate('/admin')}
+              style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}
+            >
+              Quản trị
+            </button>
+          )}
           <button
             className="btn"
             onClick={() => navigate('/scores')}

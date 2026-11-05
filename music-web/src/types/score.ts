@@ -99,6 +99,14 @@ export interface OmrUploadRequest {
   sourceType: OmrSourceType;
 }
 
+// Kết quả POST /scores/import
+export interface ScoreImportResult {
+  scoreId: string;
+  title: string;
+  composer?: string | null;
+  processingStatus: ProcessingStatus;
+}
+
 // Kết quả POST /omr/upload
 export interface OmrUploadResult {
   scoreId: string;

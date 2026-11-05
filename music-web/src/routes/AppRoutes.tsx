@@ -5,6 +5,7 @@ import UserProfile from '../pages/Profile';
 import ScoreLibrary from '../pages/scores/ScoreLibrary';
 import ScoreDetail from '../pages/scores/ScoreDetail';
 import ScoreUpload from '../pages/scores/ScoreUpload';
+import ScoreImport from '../pages/scores/ScoreImport';
 import AdminDashboard from '../pages/Admin';
 import ProtectedRoute from './ProtectedRoute';
 
@@ -34,6 +35,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute allowedRole="USER">
             <ScoreUpload />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/scores/import"
+        element={
+          <ProtectedRoute allowedRole="USER">
+            <ScoreImport />
           </ProtectedRoute>
         }
       />

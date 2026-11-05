@@ -95,6 +95,11 @@ export default function ScoreLibrary() {
       <nav className="navbar">
         <div className="navbar-brand">Music App</div>
         <div className="navbar-nav">
+          {localStorage.getItem('role') === 'ADMIN' && (
+            <button className="sc-btn sc-btn--sm" onClick={() => navigate('/admin')}>
+              Quản trị
+            </button>
+          )}
           <button className="sc-btn sc-btn--sm" onClick={() => navigate('/profile')}>
             Hồ sơ
           </button>
