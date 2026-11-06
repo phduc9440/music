@@ -3,7 +3,7 @@ import type { FormEvent } from 'react';
 import { toast } from 'react-toastify';
 import { sharingApi } from '../../services';
 import { SHARE_PERMISSION_LABELS, getErrorMessage } from '../../utils/score';
-import type { AccessRequest, ScoreSharing, SharePermission } from '../../types';
+import type { AccessRequest, ScoreSharing, SharePermission, Visibility } from '../../types';
 import Modal from './Modal';
 
 interface Props {
@@ -13,7 +13,13 @@ interface Props {
 
 const LEVELS: SharePermission[] = [1, 2, 3];
 
-/** Hộp thoại "Chia sẻ": bật liên kết theo cấp (xem / nhận xét / chỉnh sửa) và quản lý người được chia sẻ. */
+const VISIBILITY_HINTS: Record<Visibility, string> = {
+  PRIVATE: 'Bản nhạc đang riêng tư: chỉ bạn và những người được chia sẻ bên dưới truy cập được.',
+  PENDING: 'Bản nhạc đang chờ quản trị viên duyệt công khai. Trong lúc chờ vẫn là riêng tư.',
+  PUBLIC: 'Bản nhạc đã công khai: mọi người đăng nhập đều xem và nhận xét được.',
+};
+
+/** Hộp thoại "Chia sẻ": mời theo email, duyệt yêu cầu xin quyền và quản lý người được chia sẻ. */
 export default function ShareModal({ scoreId, onClose }: Props) {
   const [sharing, setSharing] = useState<ScoreSharing | null>(null);
   const [requests, setRequests] = useState<AccessRequest[]>([]);
@@ -59,27 +65,6 @@ export default function ShareModal({ scoreId, onClose }: Props) {
     }
   };
 
-  const link = sharing?.shareToken ? `${window.location.origin}/s/${sharing.shareToken}` : '';
-
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(link);
-      toast.success('Đã sao chép liên kết');
-    } catch {
-      toast.error('Không sao chép được, hãy chọn và sao chép thủ công');
-    }
-  };
-
-  const toggleLink = (on: boolean) => {
-    if (!on && !window.confirm('Tắt liên kết? Mọi người đã vào bằng liên kết sẽ mất quyền truy cập.')) return;
-    run(() => sharingApi.setLink(scoreId, on ? 1 : null), on ? 'Đã bật liên kết' : 'Đã tắt liên kết');
-  };
-
-  const resetLink = () => {
-    if (!window.confirm('Tạo liên kết mới? Liên kết cũ sẽ hết hiệu lực và mọi người đã vào bằng nó mất quyền.')) return;
-    run(() => sharingApi.resetLink(scoreId), 'Đã tạo liên kết mới');
-  };
-
   const invite = async (e: FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
@@ -93,44 +78,9 @@ export default function ShareModal({ scoreId, onClose }: Props) {
       {sharing && (
         <>
           <section>
-            <label className="sc-label">
-              <input
-                type="checkbox"
-                checked={sharing.linkEnabled}
-                disabled={busy}
-                onChange={(e) => toggleLink(e.target.checked)}
-              />{' '}
-              Bất kỳ ai có liên kết (cần đăng nhập)
-            </label>
-
-            {sharing.linkEnabled && sharing.linkPermission && (
-              <>
-                <select
-                  className="sc-input"
-                  aria-label="Quyền của người có liên kết"
-                  value={sharing.linkPermission}
-                  disabled={busy}
-                  onChange={(e) =>
-                    run(() => sharingApi.setLink(scoreId, Number(e.target.value) as SharePermission), 'Đã đổi quyền')
-                  }
-                >
-                  {LEVELS.map((l) => (
-                    <option key={l} value={l}>
-                      {SHARE_PERMISSION_LABELS[l]}
-                    </option>
-                  ))}
-                </select>
-                <div className="sc-share__link">
-                  <input className="sc-input" readOnly value={link} onFocus={(e) => e.target.select()} />
-                  <button type="button" className="sc-btn" onClick={copy}>
-                    Sao chép
-                  </button>
-                </div>
-                <button type="button" className="sc-btn sc-btn--sm" disabled={busy} onClick={resetLink}>
-                  Tạo liên kết mới
-                </button>
-              </>
-            )}
+            <p className="sc-upload__hint">
+              {VISIBILITY_HINTS[sharing.visibility]} Đổi chế độ hiển thị trong mục “Sửa thông tin”.
+            </p>
           </section>
 
           {requests.length > 0 && (
@@ -192,8 +142,7 @@ export default function ShareModal({ scoreId, onClose }: Props) {
                 <li key={m.memberId}>
                   <span title={m.email}>
                     {m.fullName || m.email}
-                    {m.source === 'LINK' && <span className="sc-chip"> qua liên kết</span>}
-                  </span>
+                                      </span>
                   <select
                     className="sc-input"
                     aria-label={`Quyền của ${m.email}`}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import NotificationBell from '../../components/NotificationBell';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { LibraryEmpty, LibrarySkeleton } from '../../components/scores/LibraryStates';
@@ -108,6 +109,7 @@ export default function ScoreLibrary() {
       <nav className="navbar">
         <div className="navbar-brand">Music App</div>
         <div className="navbar-nav">
+          <NotificationBell />
           {localStorage.getItem('role') === 'ADMIN' && (
             <button className="sc-btn sc-btn--sm" onClick={() => navigate('/admin')}>
               Quản trị

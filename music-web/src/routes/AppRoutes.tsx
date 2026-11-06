@@ -7,7 +7,6 @@ import ScoreDetail from '../pages/scores/ScoreDetail';
 import ScoreUpload from '../pages/scores/ScoreUpload';
 import ScoreImport from '../pages/scores/ScoreImport';
 import SharedScores from '../pages/scores/SharedScores';
-import JoinShared from '../pages/scores/JoinShared';
 import AdminDashboard from '../pages/Admin';
 import ProtectedRoute from './ProtectedRoute';
 
@@ -53,14 +52,6 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute allowedRole="USER">
             <SharedScores />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/s/:token"
-        element={
-          <ProtectedRoute allowedRole="USER">
-            <JoinShared />
           </ProtectedRoute>
         }
       />

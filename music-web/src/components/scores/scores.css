@@ -480,3 +480,84 @@ textarea.sc-input {
   margin: 0.25rem 0 0;
   white-space: pre-wrap;
 }
+
+/* Chuông thông báo */
+.sc-bell {
+  position: relative;
+}
+.sc-bell__badge {
+  margin-left: 0.35rem;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+.sc-bell__panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.4rem);
+  z-index: 50;
+  width: min(22rem, 90vw);
+  max-height: 24rem;
+  overflow-y: auto;
+  background: #fff;
+  color: #0f172a;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
+}
+.sc-bell__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 0.9rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+.sc-bell__link {
+  border: 0;
+  background: none;
+  color: #2563eb;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.sc-bell__link:disabled {
+  color: #94a3b8;
+  cursor: default;
+}
+.sc-bell__empty {
+  padding: 1rem;
+  margin: 0;
+  color: #64748b;
+  text-align: center;
+}
+.sc-bell__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.sc-bell__item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  width: 100%;
+  padding: 0.65rem 0.9rem;
+  border: 0;
+  border-bottom: 1px solid #f1f5f9;
+  background: #fff;
+  text-align: left;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.sc-bell__item:hover {
+  background: #f8fafc;
+}
+.sc-bell__item--unread {
+  background: #eff6ff;
+  font-weight: 600;
+}
+.sc-bell__item small {
+  color: #64748b;
+  font-weight: 400;
+}

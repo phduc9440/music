@@ -9,13 +9,18 @@ interface Props {
   scoreId: string;
   /** Có quyền rồi (ví dụ vừa được duyệt) thì báo cho trang cha tải lại bản nhạc. */
   onGranted: () => void;
+  /** Các cấp được phép xin; mặc định xem hoặc chỉnh sửa. */
+  levels?: SharePermission[];
+  /** Đang xem được bản nhạc rồi (ví dụ xin thêm quyền sửa): không tự coi là "đã được cấp quyền" khi mở. */
+  hasViewAccess?: boolean;
 }
 
-const LEVELS: SharePermission[] = [1, 2, 3];
+const DEFAULT_LEVELS: SharePermission[] = [1, 3];
 
 /** Màn hình thay cho "Không tìm thấy" khi người dùng chưa có quyền xem bản nhạc: gửi yêu cầu xin quyền. */
-export default function RequestAccess({ scoreId, onGranted }: Props) {
-  const [level, setLevel] = useState<SharePermission>(1);
+export default function RequestAccess({ scoreId, onGranted, levels = DEFAULT_LEVELS, hasViewAccess = false }: Props) {
+  const LEVELS = levels;
+  const [level, setLevel] = useState<SharePermission>(levels[0]);
   const [message, setMessage] = useState('');
   const [pending, setPending] = useState<SharePermission | null>(null);
   const [busy, setBusy] = useState(false);
@@ -25,11 +30,11 @@ export default function RequestAccess({ scoreId, onGranted }: Props) {
     sharingApi
       .myAccess(scoreId)
       .then((res) => {
-        if (res.data.result.accessLevel) onGranted();
+        if (res.data.result.accessLevel && !hasViewAccess) onGranted();
         else setPending(res.data.result.requestedPermission);
       })
       .catch(() => undefined); // không tải được trạng thái thì vẫn cho gửi yêu cầu
-  }, [scoreId, onGranted]);
+  }, [scoreId, onGranted, hasViewAccess]);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -40,11 +45,14 @@ export default function RequestAccess({ scoreId, onGranted }: Props) {
       setPending(res.data.result.requestedPermission);
       toast.success('Đã gửi yêu cầu, hãy chờ chủ sở hữu duyệt');
     } catch (err) {
-      setError(
-        getErrorCode(err) === 2404
-          ? 'Bạn đã có quyền này hoặc cao hơn.'
-          : getErrorMessage(err, 'Không gửi được yêu cầu, vui lòng thử lại'),
-      );
+      if (getErrorCode(err) === 2404) {
+        // Bản công khai (hoặc đã được cấp): yêu cầu xem thì chỉ cần báo là xem được ngay
+        toast.info('Bản nhạc đã công khai, bạn có thể xem ngay');
+        if (level === 1) onGranted();
+        else setError('Bạn đã có quyền này hoặc cao hơn.');
+      } else {
+        setError(getErrorMessage(err, 'Không gửi được yêu cầu, vui lòng thử lại'));
+      }
     } finally {
       setBusy(false);
     }
@@ -52,7 +60,7 @@ export default function RequestAccess({ scoreId, onGranted }: Props) {
 
   return (
     <div className="sc-empty">
-      <h3>Bạn chưa có quyền với bản nhạc này</h3>
+      <h3>{hasViewAccess ? 'Xin quyền chỉnh sửa' : 'Bạn chưa có quyền với bản nhạc này'}</h3>
       {pending && (
         <p>
           Yêu cầu <strong>{SHARE_PERMISSION_LABELS[pending]}</strong> của bạn đang chờ chủ sở hữu duyệt. Bạn có thể gửi

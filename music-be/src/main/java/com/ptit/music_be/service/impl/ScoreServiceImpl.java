@@ -23,7 +23,10 @@ import com.ptit.music_be.dto.enums.AiTaskStatus;
 import com.ptit.music_be.dto.enums.DifficultyLevel;
 import com.ptit.music_be.dto.enums.FileType;
 import com.ptit.music_be.dto.enums.ProcessingStatus;
+import com.ptit.music_be.dto.enums.NotificationType;
 import com.ptit.music_be.dto.enums.ScoreSource;
+import com.ptit.music_be.dto.enums.Visibility;
+import com.ptit.music_be.service.NotificationService;
 import com.ptit.music_be.dto.request.ScoreUpdateRequest;
 import com.ptit.music_be.dto.response.AiTaskResponse;
 import com.ptit.music_be.dto.response.PageResponse;
@@ -76,6 +79,7 @@ public class ScoreServiceImpl implements ScoreService {
     ScoreReviewRepository scoreReviewRepository;
     ScoreTagRepository scoreTagRepository;
     ScoreFileService scoreFileService;
+    NotificationService notificationService;
     FileStorageService fileStorageService;
     ScoreFileMapper scoreFileMapper;
     AiTaskMapper aiTaskMapper;
@@ -194,10 +198,105 @@ public class ScoreServiceImpl implements ScoreService {
             score.setDifficulty(request.getDifficulty());
         }
         if (request.getVisibility() != null) {
-            score.setVisibility(request.getVisibility().name());
+            changeVisibility(score, request.getVisibility());
         }
 
         return toDetail(scoreRepository.save(score));
+    }
+
+    /**
+     * Đổi chế độ hiển thị. Chỉ chủ sở hữu hoặc ADMIN được đổi. Chủ xin PUBLIC thì thành PENDING chờ ADMIN duyệt; ADMIN
+     * đặt PUBLIC thì có hiệu lực ngay; về PRIVATE thì có hiệu lực ngay (kể cả hủy yêu cầu đang chờ).
+     */
+    private void changeVisibility(Score score, Visibility requested) {
+        scoreFileService.checkCanManageSharing(score);
+        String current = score.getVisibility() == null ? Visibility.PRIVATE.name() : score.getVisibility();
+        if (requested == Visibility.PRIVATE) {
+            score.setVisibility(Visibility.PRIVATE.name());
+            score.setRejectReason(null);
+        } else if (SecurityUtils.isAdmin()) {
+            score.setVisibility(Visibility.PUBLIC.name());
+            score.setRejectReason(null);
+        } else if (!Visibility.PUBLIC.name().equals(current)) {
+            score.setVisibility(Visibility.PENDING.name());
+            score.setRejectReason(null);
+            if (!Visibility.PENDING.name().equals(current)) { // xin lại khi đang chờ thì không báo lần nữa
+                Member me = memberRepository.findByEmail(SecurityUtils.getCurrentEmail()).orElse(null);
+                notificationService.notifyAdmins(
+                        me,
+                        NotificationType.PUBLISH_REQUESTED,
+                        score.getId(),
+                        "Có bản nhạc xin công khai: \"" + score.getTitle() + "\"");
+            }
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<ScoreSummaryResponse> getPendingPublic(int page, int size) {
+        requireAdmin();
+        int safeSize = size <= 0 ? DEFAULT_PAGE_SIZE : Math.min(size, MAX_PAGE_SIZE);
+        Page<Score> result = scoreRepository.findByVisibility(
+                Visibility.PENDING.name(), PageRequest.of(Math.max(page, 0), safeSize, Sort.by("updatedAt")));
+        Map<String, ScoreFile> thumbnails = loadThumbnails(result.getContent());
+        Map<String, List<TagResponse>> tagsByScore = loadTags(result.getContent());
+        List<ScoreSummaryResponse> content = result.getContent().stream()
+                .map(score -> {
+                    ScoreSummaryResponse summary = toSummary(
+                            score, thumbnails.get(score.getId()), tagsByScore.getOrDefault(score.getId(), List.of()));
+                    summary.setOwnerEmail(
+                            score.getMember() == null ? null : score.getMember().getEmail());
+                    return summary;
+                })
+                .toList();
+        return PageResponse.<ScoreSummaryResponse>builder()
+                .content(content)
+                .pageNumber(result.getNumber())
+                .pageSize(result.getSize())
+                .totalElements(result.getTotalElements())
+                .totalPages(result.getTotalPages())
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public ScoreDetailResponse approvePublic(String scoreId) {
+        requireAdmin();
+        Score score = findScore(scoreId);
+        score.setVisibility(Visibility.PUBLIC.name());
+        score.setRejectReason(null);
+        Score saved = scoreRepository.save(score);
+        notificationService.notify(
+                score.getMember(),
+                null,
+                NotificationType.PUBLISH_APPROVED,
+                score.getId(),
+                "Bản nhạc \"" + score.getTitle() + "\" đã được duyệt công khai");
+        return toDetail(saved);
+    }
+
+    @Override
+    @Transactional
+    public ScoreDetailResponse rejectPublic(String scoreId, String reason) {
+        requireAdmin();
+        Score score = findScore(scoreId);
+        score.setVisibility(Visibility.PRIVATE.name());
+        score.setRejectReason(blankToNull(reason));
+        Score saved = scoreRepository.save(score);
+        notificationService.notify(
+                score.getMember(),
+                null,
+                NotificationType.PUBLISH_REJECTED,
+                score.getId(),
+                "Bản nhạc \"" + score.getTitle() + "\" bị từ chối công khai"
+                        + (score.getRejectReason() == null ? "" : ": " + score.getRejectReason()));
+        return toDetail(saved);
+    }
+
+    private static void requireAdmin() {
+        if (!SecurityUtils.isAdmin()) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
     }
 
     // ------------------------------------------------------------------ thể loại (tags)

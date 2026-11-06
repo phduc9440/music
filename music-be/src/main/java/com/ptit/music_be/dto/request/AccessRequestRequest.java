@@ -8,7 +8,7 @@ import com.ptit.music_be.dto.enums.SharePermission;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-/** Người dùng xin quyền xem (1) / nhận xét (2) / chỉnh sửa (3) một bản nhạc. */
+/** Người dùng xin quyền xem (1) hoặc chỉnh sửa (3) một bản nhạc. */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

@@ -19,7 +19,7 @@ export interface PageResult<T> {
 }
 
 // ---- Chia sẻ (BE: SharePermission lưu số) ----
-export type ShareSource = 'DIRECT' | 'LINK';
+export type ShareSource = 'DIRECT';
 /** Cấp truy cập của người đang xem một bản nhạc. */
 export type AccessLevel = 'OWNER' | 'EDIT' | 'REVIEW' | 'VIEW';
 
@@ -69,17 +69,9 @@ export interface ReviewList {
 }
 
 export interface ScoreSharing {
-  linkEnabled: boolean;
-  linkPermission: SharePermission | null;
-  shareToken: string | null;
+  visibility: Visibility;
   members: ShareMember[];
   pendingRequests: number;
-}
-
-export interface SharedJoinResult {
-  scoreId: string;
-  title: string;
-  accessLevel: AccessLevel;
 }
 
 // Thể loại (tag) gắn cho bản nhạc, BE: TagResponse
@@ -195,4 +187,24 @@ export interface OmrUploadResult {
   scoreId: string;
   title: string;
   processingStatus: ProcessingStatus;
+}
+
+// Thông báo trong ứng dụng, BE: NotificationResponse
+export type NotificationType =
+  | 'ACCESS_REQUESTED'
+  | 'ACCESS_APPROVED'
+  | 'ACCESS_REJECTED'
+  | 'SHARED_WITH_YOU'
+  | 'PUBLISH_REQUESTED'
+  | 'PUBLISH_APPROVED'
+  | 'PUBLISH_REJECTED'
+  | 'NEW_REVIEW';
+
+export interface AppNotification {
+  id: string;
+  type: NotificationType;
+  scoreId?: string | null;
+  message: string;
+  read: boolean;
+  createdAt: string;
 }

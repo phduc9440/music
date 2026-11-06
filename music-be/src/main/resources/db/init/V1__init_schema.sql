@@ -65,10 +65,7 @@ CREATE TABLE IF NOT EXISTS scores (
     created_at        DATETIME(6)  NULL,
     updated_at        DATETIME(6)  NULL,
     view_count        BIGINT       NULL DEFAULT 0,
-    link_permission   INT          NULL COMMENT 'Quyền của bất kỳ ai có liên kết: 1 = VIEW, 2 = REVIEW, 3 = EDIT, NULL = tắt',
-    share_token       VARCHAR(64)  NULL,
     PRIMARY KEY (id),
-    UNIQUE KEY uk_scores_share_token (share_token),
     CONSTRAINT fk_scores_member FOREIGN KEY (member_id) REFERENCES members (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -119,7 +116,7 @@ CREATE TABLE IF NOT EXISTS member_scores (
     member_id  VARCHAR(36)  NOT NULL,
     score_id   VARCHAR(36)  NOT NULL,
     permission INT          NULL COMMENT 'Cấp đã được cấp: 1 = VIEW, 2 = REVIEW, 3 = EDIT; NULL = mới chỉ xin, chưa có quyền',
-    source     VARCHAR(16)  NOT NULL DEFAULT 'DIRECT' COMMENT 'DIRECT = chủ cấp/duyệt, LINK = vào bằng liên kết',
+    source     VARCHAR(16)  NOT NULL DEFAULT 'DIRECT' COMMENT 'DIRECT = chủ cấp/duyệt',
     requested_permission INT NULL COMMENT 'Cấp đang xin (1 xem, 2 nhận xét, 3 chỉnh sửa); NULL = không có yêu cầu chờ duyệt',
     request_message      VARCHAR(500) NULL,
     requested_at         DATETIME(6)  NULL,
@@ -179,6 +176,19 @@ CREATE TABLE IF NOT EXISTS playlist_items (
     PRIMARY KEY (id),
     CONSTRAINT fk_playlist_items_playlist FOREIGN KEY (playlist_id) REFERENCES playlists (id),
     CONSTRAINT fk_playlist_items_score    FOREIGN KEY (score_id)    REFERENCES scores (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS notifications (
+    id           VARCHAR(36)  NOT NULL,
+    recipient_id VARCHAR(36)  NOT NULL,
+    type         VARCHAR(32)  NOT NULL,
+    score_id     VARCHAR(36)  NULL,
+    message      VARCHAR(500) NOT NULL,
+    is_read      TINYINT(1)   NOT NULL DEFAULT 0,
+    created_at   DATETIME(6)  NULL,
+    PRIMARY KEY (id),
+    KEY idx_notifications_recipient (recipient_id, is_read, created_at),
+    CONSTRAINT fk_notifications_recipient FOREIGN KEY (recipient_id) REFERENCES members (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS practice_sessions (

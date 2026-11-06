@@ -17,7 +17,8 @@ export type PracticeMode = (typeof PracticeMode)[keyof typeof PracticeMode];
 
 export type ProcessingStatus = 'NONE' | 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
 export type ScoreSource = 'OMR' | 'IMPORT' | 'MANUAL';
-export type Visibility = 'PRIVATE' | 'PUBLIC';
+/** PENDING: chủ đã xin công khai, chờ ADMIN duyệt. */
+export type Visibility = 'PRIVATE' | 'PENDING' | 'PUBLIC';
 export type Difficulty = 'EASY' | 'MEDIUM' | 'HARD' | 'EXPERT';
 export type ScoreSort = 'newest' | 'created' | 'oldest' | 'title';
 export type TaskStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';

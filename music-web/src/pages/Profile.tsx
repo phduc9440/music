@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import NotificationBell from '../components/NotificationBell';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { userApi } from '../services';
@@ -102,6 +103,7 @@ export default function UserProfile() {
       <nav className="navbar">
         <div className="navbar-brand">Music App</div>
         <div className="navbar-nav">
+          <NotificationBell />
           {localStorage.getItem('role') === 'ADMIN' && (
             <button
               className="btn"

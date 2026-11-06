@@ -1,13 +1,9 @@
 import apiClient from './client';
-import type { AccessRequest, ApiResponse, MyAccess, ScoreSharing, SharePermission, SharedJoinResult } from '../types';
+import type { AccessRequest, ApiResponse, MyAccess, ScoreSharing, SharePermission } from '../types';
 
 export const sharingApi = {
   // Chủ sở hữu hoặc ADMIN: trạng thái chia sẻ của một bản nhạc
   get: (scoreId: string) => apiClient.get<ApiResponse<ScoreSharing>>(`/scores/${scoreId}/sharing`),
-  // permission = null để tắt liên kết (mọi người đã vào bằng liên kết bị thu hồi quyền)
-  setLink: (scoreId: string, permission: SharePermission | null) =>
-    apiClient.put<ApiResponse<ScoreSharing>>(`/scores/${scoreId}/sharing/link`, { permission }),
-  resetLink: (scoreId: string) => apiClient.post<ApiResponse<ScoreSharing>>(`/scores/${scoreId}/sharing/link/reset`),
   addMember: (scoreId: string, email: string, permission: SharePermission) =>
     apiClient.post<ApiResponse<ScoreSharing>>(`/scores/${scoreId}/sharing/members`, { email, permission }),
   updateMember: (scoreId: string, memberId: string, permission: SharePermission) =>
@@ -29,6 +25,4 @@ export const sharingApi = {
     ),
   rejectRequest: (scoreId: string, memberId: string) =>
     apiClient.post<ApiResponse<ScoreSharing>>(`/scores/${scoreId}/access-requests/${memberId}/reject`),
-  // Mở liên kết chia sẻ: người đăng nhập nhận quyền theo cấp của liên kết
-  join: (token: string) => apiClient.post<ApiResponse<SharedJoinResult>>(`/shared/${token}/join`),
 };

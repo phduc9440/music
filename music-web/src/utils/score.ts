@@ -6,7 +6,7 @@ import type {
   ScoreSource,
   TaskStatus,
 } from '../types';
-import type { SharePermission } from '../types';
+import type { SharePermission, Visibility } from '../types';
 
 // Nhãn hiển thị tiếng Việt cho các giá trị enum của BE
 export const STATUS_LABELS: Record<ProcessingStatus, string> = {
@@ -35,6 +35,12 @@ export const OMR_SOURCE_LABELS: Record<OmrSourceType, string> = {
   PHOTO: 'Ảnh chụp',
   SCAN: 'Bản scan',
   PDF_NATIVE: 'PDF gốc',
+};
+
+export const VISIBILITY_LABELS: Record<Visibility, string> = {
+  PRIVATE: 'Riêng tư',
+  PENDING: 'Chờ duyệt công khai',
+  PUBLIC: 'Công khai',
 };
 
 export const SHARE_PERMISSION_LABELS: Record<SharePermission, string> = {

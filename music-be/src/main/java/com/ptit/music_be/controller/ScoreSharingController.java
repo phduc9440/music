@@ -14,7 +14,6 @@ import com.ptit.music_be.dto.response.AccessRequestResponse;
 import com.ptit.music_be.dto.response.ApiResponse;
 import com.ptit.music_be.dto.response.MyAccessResponse;
 import com.ptit.music_be.dto.response.ScoreSharingResponse;
-import com.ptit.music_be.dto.response.SharedJoinResponse;
 import com.ptit.music_be.service.ScoreSharingService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -28,7 +27,7 @@ import lombok.experimental.FieldDefaults;
 @RequestMapping("/api")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-@Tag(name = "Score sharing", description = "Chia sẻ bằng liên kết và quản lý người được chia sẻ (1 xem, 2 nhận xét, 3 chỉnh sửa)")
+@Tag(name = "Score sharing", description = "Quản lý người được chia sẻ và yêu cầu xin quyền (1 xem, 2 nhận xét, 3 chỉnh sửa)")
 public class ScoreSharingController {
 
     ScoreSharingService sharingService;
@@ -39,25 +38,6 @@ public class ScoreSharingController {
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<ScoreSharingResponse> getSharing(@PathVariable String scoreId) {
         return ok(sharingService.getSharing(scoreId));
-    }
-
-    @PutMapping("/scores/{scoreId}/sharing/link")
-    @Operation(
-            summary = "Turn the share link on / change its level / off",
-            description = "permission: 1 view, 2 review, 3 edit; null turns the link off and revokes everyone who joined"
-                    + " through it",
-            security = @SecurityRequirement(name = "bearerAuth"))
-    public ApiResponse<ScoreSharingResponse> setLink(
-            @PathVariable String scoreId, @RequestBody ScoreLinkRequest request) {
-        return ok(sharingService.setLink(scoreId, request.getPermission()));
-    }
-
-    @PostMapping("/scores/{scoreId}/sharing/link/reset")
-    @Operation(
-            summary = "Generate a new link token (old link stops working, link access is revoked)",
-            security = @SecurityRequirement(name = "bearerAuth"))
-    public ApiResponse<ScoreSharingResponse> resetLink(@PathVariable String scoreId) {
-        return ok(sharingService.resetLink(scoreId));
     }
 
     @PostMapping("/scores/{scoreId}/sharing/members")
@@ -86,9 +66,9 @@ public class ScoreSharingController {
 
     @PostMapping("/scores/{scoreId}/access-requests")
     @Operation(
-            summary = "Ask the owner for view (1) / review (2) / edit (3) access",
+            summary = "Ask the owner for view (1) / edit (3) access",
             description = "Stored in the caller's member_scores row until the owner approves or rejects."
-                    + " Errors: 2404 already has that access or higher",
+                    + " Errors: 2404 already has that access or higher (including a PUBLIC score, which everyone can view and review)",
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<MyAccessResponse> requestAccess(
             @PathVariable String scoreId, @Valid @RequestBody AccessRequestRequest request) {
@@ -127,15 +107,6 @@ public class ScoreSharingController {
     @Operation(summary = "Reject a request", security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<ScoreSharingResponse> rejectRequest(@PathVariable String scoreId, @PathVariable String memberId) {
         return ok(sharingService.rejectRequest(scoreId, memberId));
-    }
-
-    @PostMapping("/shared/{token}/join")
-    @Operation(
-            summary = "Open a share link: the signed-in user gets the link's level (higher existing level is kept)",
-            description = "Errors: 2401 invalid or turned-off link",
-            security = @SecurityRequirement(name = "bearerAuth"))
-    public ApiResponse<SharedJoinResponse> join(@PathVariable String token) {
-        return ok(sharingService.joinByToken(token));
     }
 
     private static <T> ApiResponse<T> ok(T result) {

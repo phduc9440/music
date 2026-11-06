@@ -63,9 +63,8 @@ public enum ErrorCode {
     TOO_MANY_TAGS(2302, "Mỗi bản nhạc tối đa 10 thể loại", HttpStatus.BAD_REQUEST),
 
     // Sharing & reviews (24xx)
-    SHARE_TOKEN_INVALID(2401, "Liên kết chia sẻ không hợp lệ hoặc đã bị tắt", HttpStatus.NOT_FOUND),
     ACCESS_REQUEST_NOT_EXISTED(2402, "Không có yêu cầu xin quyền nào đang chờ", HttpStatus.NOT_FOUND),
-    ALREADY_HAS_ACCESS(2404, "Bạn đã có quyền này hoặc cao hơn với bản nhạc", HttpStatus.BAD_REQUEST),
+    ALREADY_HAS_ACCESS(2404, "Bạn đã có quyền này hoặc cao hơn với bản nhạc (bản nhạc công khai thì ai cũng xem và nhận xét được)", HttpStatus.BAD_REQUEST),
     CANNOT_SHARE_WITH_OWNER(2406, "Không thể chia sẻ bản nhạc cho chính chủ sở hữu", HttpStatus.BAD_REQUEST),
     SHARE_MEMBER_NOT_EXISTED(2407, "Người này chưa có quyền với bản nhạc", HttpStatus.NOT_FOUND),
     SHARE_PERMISSION_INVALID(2408, "Cấp quyền phải là 1 (xem), 2 (nhận xét) hoặc 3 (chỉnh sửa)", HttpStatus.BAD_REQUEST),
@@ -73,6 +72,7 @@ public enum ErrorCode {
     REVIEW_COMMENT_INVALID(2411, "Bình luận tối đa 2000 ký tự", HttpStatus.BAD_REQUEST),
     REVIEW_EMPTY(2412, "Nhận xét cần có số sao hoặc bình luận", HttpStatus.BAD_REQUEST),
     REVIEW_NOT_EXISTED(2413, "Nhận xét không tồn tại", HttpStatus.NOT_FOUND),
+    NOTIFICATION_NOT_EXISTED(2501, "Thông báo không tồn tại", HttpStatus.NOT_FOUND),
     ;
 
     int code;

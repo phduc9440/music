@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
+import NotificationBell from '../components/NotificationBell';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { adminApi, userApi } from '../services';
+import { Link } from 'react-router-dom';
+import { adminApi, scoreApi, userApi } from '../services';
 import { AuthProvider, MemberStatus } from '../types';
-import type { Member, PageResult } from '../types';
+import type { Member, PageResult, ScoreSummary } from '../types';
 import { isAdminMember } from '../utils/auth';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 import Pagination from '../components/scores/Pagination';
@@ -22,6 +24,35 @@ export default function AdminDashboard() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const navigate = useNavigate();
+  const [pendingScores, setPendingScores] = useState<ScoreSummary[]>([]);
+  const [pendingReload, setPendingReload] = useState(0);
+
+  useEffect(() => {
+    scoreApi
+      .pendingPublic({ page: 0, size: 50 })
+      .then((res) => setPendingScores(res.data.result.content))
+      .catch(() => toast.error('Không tải được danh sách bản nhạc chờ duyệt'));
+  }, [pendingReload]);
+
+  const reviewPublic = async (score: ScoreSummary, approve: boolean) => {
+    let reason: string | undefined;
+    if (!approve) {
+      const input = window.prompt('Lý do từ chối công khai (có thể bỏ trống):');
+      if (input === null) return;
+      reason = input.trim() || undefined;
+    }
+    setBusyId(score.id);
+    try {
+      if (approve) await scoreApi.approvePublic(score.id);
+      else await scoreApi.rejectPublic(score.id, reason);
+      toast.success(approve ? 'Đã duyệt công khai' : 'Đã từ chối công khai');
+      setPendingReload((n) => n + 1);
+    } catch (error) {
+      toast.error(errMsg(error, 'Thao tác thất bại'));
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   useEffect(() => {
     userApi
@@ -90,6 +121,7 @@ export default function AdminDashboard() {
       <nav className="navbar">
         <div className="navbar-brand">Admin Panel</div>
         <div className="navbar-nav">
+          <NotificationBell />
           <span style={{ fontWeight: 600 }}>{admin?.fullName || 'Admin'}</span>
           <button
             onClick={() => navigate('/scores')}
@@ -119,6 +151,54 @@ export default function AdminDashboard() {
 
       <div className="dashboard-container">
         <div className="glass-container">
+          <h2>Bản nhạc chờ duyệt công khai ({pendingScores.length})</h2>
+          <div className="table-responsive mb-4">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Tên bản nhạc</th>
+                  <th>Chủ sở hữu</th>
+                  <th>Thao tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pendingScores.map((s) => (
+                  <tr key={s.id}>
+                    <td>
+                      <Link to={`/scores/${s.id}`}>{s.title}</Link>
+                    </td>
+                    <td>{s.ownerEmail}</td>
+                    <td>
+                      <div className="d-flex gap-2">
+                        <button
+                          className="btn btn-primary"
+                          style={btn}
+                          disabled={busyId === s.id}
+                          onClick={() => reviewPublic(s, true)}
+                        >
+                          Duyệt
+                        </button>
+                        <button
+                          className="btn btn-danger"
+                          style={btn}
+                          disabled={busyId === s.id}
+                          onClick={() => reviewPublic(s, false)}
+                        >
+                          Từ chối
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {pendingScores.length === 0 && (
+                  <tr>
+                    <td colSpan={3}>Không có bản nhạc nào đang chờ duyệt.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
           <div className="d-flex justify-content-between align-items-center mb-4">
             <h2>Quản lý thành viên</h2>
             <form onSubmit={handleSearch} className="d-flex gap-2">

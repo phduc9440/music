@@ -34,6 +34,15 @@ public interface ScoreService {
 
     void deleteScore(String scoreId);
 
+    /** ADMIN: các bản nhạc chủ đã xin công khai và đang chờ duyệt (cũ nhất trước). */
+    PageResponse<ScoreSummaryResponse> getPendingPublic(int page, int size);
+
+    /** ADMIN: duyệt công khai, bản nhạc chuyển sang PUBLIC. */
+    ScoreDetailResponse approvePublic(String scoreId);
+
+    /** ADMIN: từ chối công khai, bản nhạc về PRIVATE kèm lý do. */
+    ScoreDetailResponse rejectPublic(String scoreId, String reason);
+
     /**
      * Thay toàn bộ thể loại (tag) của bản nhạc bằng danh sách mới (tối đa 10, rỗng = gỡ hết). Cần quyền sửa bản nhạc.
      */

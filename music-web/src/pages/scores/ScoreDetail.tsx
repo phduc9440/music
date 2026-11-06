@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import NotificationBell from '../../components/NotificationBell';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import DeleteScoreModal from '../../components/scores/DeleteScoreModal';
@@ -7,6 +8,7 @@ import FilesTable from '../../components/scores/FilesTable';
 import RequestAccess from '../../components/scores/RequestAccess';
 import ReviewsSection from '../../components/scores/ReviewsSection';
 import ScoreHero from '../../components/scores/ScoreHero';
+import Modal from '../../components/scores/Modal';
 import ShareModal from '../../components/scores/ShareModal';
 import TasksTable from '../../components/scores/TasksTable';
 import { scoreApi } from '../../services';
@@ -34,6 +36,7 @@ export default function ScoreDetail() {
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [requestingEdit, setRequestingEdit] = useState(false);
 
   // Tải chi tiết bản nhạc
   useEffect(() => {
@@ -75,6 +78,7 @@ export default function ScoreDetail() {
     <nav className="navbar">
       <div className="navbar-brand">Music App</div>
       <div className="navbar-nav">
+          <NotificationBell />
         <button className="sc-btn sc-btn--sm" onClick={() => navigate('/scores')}>
           ‹ Thư viện
         </button>
@@ -131,6 +135,7 @@ export default function ScoreDetail() {
           onEdit={() => setEditing(true)}
           onDelete={() => setDeleting(true)}
           onShare={() => setSharing(true)}
+          onRequestEdit={() => setRequestingEdit(true)}
         />
 
         <div className="sc-tabs" role="tablist">
@@ -151,6 +156,20 @@ export default function ScoreDetail() {
           <ReviewsSection scoreId={score.id} canReview={score.canReview} onChanged={() => setTick((n) => n + 1)} />
         )}
       </main>
+
+      {requestingEdit && (
+        <Modal title="Xin quyền chỉnh sửa" onClose={() => setRequestingEdit(false)}>
+          <RequestAccess
+            scoreId={score.id}
+            levels={[3]}
+            hasViewAccess
+            onGranted={() => {
+              setRequestingEdit(false);
+              setTick((n) => n + 1);
+            }}
+          />
+        </Modal>
+      )}
 
       {sharing && <ShareModal scoreId={score.id} onClose={() => setSharing(false)} />}
 

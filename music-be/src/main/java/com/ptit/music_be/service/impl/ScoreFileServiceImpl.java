@@ -117,7 +117,10 @@ public class ScoreFileServiceImpl implements ScoreFileService {
     @Override
     @Transactional(readOnly = true)
     public boolean canReview(Score score) {
-        return SecurityUtils.isAdmin() || isOwner(score) || hasShare(score, SharePermission.REVIEW);
+        return SecurityUtils.isAdmin()
+                || isOwner(score)
+                || VISIBILITY_PUBLIC.equals(score.getVisibility()) // bản công khai: ai đăng nhập cũng nhận xét được
+                || hasShare(score, SharePermission.REVIEW);
     }
 
     @Override
@@ -145,11 +148,13 @@ public class ScoreFileServiceImpl implements ScoreFileService {
         if (canManageSharing(score)) {
             return "OWNER";
         }
-        Optional<MemberScore> share = findShare(score);
-        if (share.isPresent()) {
-            return share.get().getPermission().name();
+        SharePermission shared = findShare(score).map(MemberScore::getPermission).orElse(null);
+        // Bản công khai cho mọi người quyền nhận xét (gồm xem); quyền được chia sẻ cao hơn thì giữ
+        if (VISIBILITY_PUBLIC.equals(score.getVisibility())
+                && (shared == null || !shared.includes(SharePermission.REVIEW))) {
+            return SharePermission.REVIEW.name();
         }
-        return VISIBILITY_PUBLIC.equals(score.getVisibility()) ? SharePermission.VIEW.name() : null;
+        return shared == null ? null : shared.name();
     }
 
     private boolean hasShare(Score score, SharePermission atLeast) {

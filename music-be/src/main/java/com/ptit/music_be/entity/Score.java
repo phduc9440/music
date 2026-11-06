@@ -10,9 +10,7 @@ import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import com.ptit.music_be.converter.SharePermissionConverter;
 import com.ptit.music_be.dto.enums.DifficultyLevel;
-import com.ptit.music_be.dto.enums.SharePermission;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -51,6 +49,7 @@ public class Score {
     @Column(name = "processing_status")
     String processingStatus;
 
+    /** PRIVATE / PENDING (chủ xin công khai, chờ ADMIN duyệt) / PUBLIC (xem Visibility). */
     @Column(name = "visibility")
     String visibility;
 
@@ -81,15 +80,6 @@ public class Score {
     Integer staffCount = 2;
 
     /** Số trang của bản gốc (PDF/ảnh). */
-    /** Quyền của bất kỳ ai có liên kết chia sẻ; null = tắt chia sẻ bằng liên kết. */
-    @Convert(converter = SharePermissionConverter.class)
-    @Column(name = "link_permission")
-    SharePermission linkPermission;
-
-    /** Mã bí mật trong liên kết chia sẻ; null khi chưa từng bật. */
-    @Column(name = "share_token", length = 64, unique = true)
-    String shareToken;
-
     @Column(name = "page_count")
     Integer pageCount;
 

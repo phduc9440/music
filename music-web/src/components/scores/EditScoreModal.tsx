@@ -19,7 +19,7 @@ export default function EditScoreModal({ score, onClose, onSaved }: Props) {
   const [composer, setComposer] = useState(score.composer ?? '');
   const [difficulty, setDifficulty] = useState<Difficulty | ''>(score.difficulty ?? '');
   const [studyNotes, setStudyNotes] = useState(score.studyNotes ?? '');
-  const [visibility, setVisibility] = useState<Visibility>(score.visibility);
+  const [visibility, setVisibility] = useState<Visibility>(score.visibility === 'PENDING' ? 'PUBLIC' : score.visibility);
   const [allTags, setAllTags] = useState<Tag[]>([]);
   const initialTagIds = (score.tags ?? []).map((t) => t.id);
   const [tagIds, setTagIds] = useState<string[]>(initialTagIds);
@@ -124,8 +124,13 @@ export default function EditScoreModal({ score, onClose, onSaved }: Props) {
               onChange={(e) => setVisibility(e.target.value as Visibility)}
             >
               <option value="PRIVATE">Riêng tư (chỉ mình tôi)</option>
-              <option value="PUBLIC">Công khai</option>
+              <option value="PUBLIC">Công khai (cần quản trị viên duyệt)</option>
             </select>
+            {visibility === 'PUBLIC' && score.visibility !== 'PUBLIC' && (
+              <p className="sc-upload__hint">
+                Sau khi được duyệt, mọi người đăng nhập đều xem và nhận xét được. Trong lúc chờ bản nhạc vẫn riêng tư.
+              </p>
+            )}
           </>
         )}
 

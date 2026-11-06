@@ -1,6 +1,6 @@
 import AuthImage from './AuthImage';
 import StatusBadge from './StatusBadge';
-import { ACCESS_LEVEL_LABELS, DIFFICULTY_LABELS, SOURCE_LABELS, formatDateTime } from '../../utils/score';
+import { ACCESS_LEVEL_LABELS, DIFFICULTY_LABELS, SOURCE_LABELS, VISIBILITY_LABELS, formatDateTime } from '../../utils/score';
 import type { ScoreDetail } from '../../types';
 import DownloadMenu from './DownloadMenu';
 
@@ -9,10 +9,11 @@ interface Props {
   onEdit: () => void;
   onDelete: () => void;
   onShare: () => void;
+  onRequestEdit: () => void;
 }
 
 /** Khối đầu trang chi tiết: ảnh bìa, tiêu đề, thông số và nút thao tác. */
-export default function ScoreHero({ score, onEdit, onDelete, onShare }: Props) {
+export default function ScoreHero({ score, onEdit, onDelete, onShare, onRequestEdit }: Props) {
   const facts: [string, string][] = [
     ['Khóa / dấu hóa', score.keySignature || '—'],
     ['Nhịp', score.timeSignature || '—'],
@@ -31,7 +32,7 @@ export default function ScoreHero({ score, onEdit, onDelete, onShare }: Props) {
       <div className="sc-hero__main">
         <div className="sc-hero__badges">
           <StatusBadge status={score.processingStatus} />
-          <span className="sc-chip">{score.visibility === 'PUBLIC' ? 'Công khai' : 'Riêng tư'}</span>
+          <span className="sc-chip">{VISIBILITY_LABELS[score.visibility]}</span>
           {score.accessLevel && score.accessLevel !== 'OWNER' && (
             <span className="sc-chip sc-chip--accent">Bạn là: {ACCESS_LEVEL_LABELS[score.accessLevel]}</span>
           )}
@@ -50,6 +51,9 @@ export default function ScoreHero({ score, onEdit, onDelete, onShare }: Props) {
         )}
         {score.ownerEmail && <p className="sc-hero__owner">Chủ sở hữu: {score.ownerEmail}</p>}
 
+        {score.visibility === 'PRIVATE' && score.processingStatus !== 'FAILED' && score.rejectReason && (
+          <div className="sc-error">Yêu cầu công khai bị từ chối: {score.rejectReason}</div>
+        )}
         {score.processingStatus === 'FAILED' && score.rejectReason && (
           <div className="sc-error">Xử lý thất bại: {score.rejectReason}</div>
         )}
@@ -83,6 +87,11 @@ export default function ScoreHero({ score, onEdit, onDelete, onShare }: Props) {
           {score.canManageSharing && (
             <button className="sc-btn" onClick={onShare}>
               Chia sẻ
+            </button>
+          )}
+          {!score.canEdit && score.accessLevel !== 'OWNER' && (
+            <button className="sc-btn" onClick={onRequestEdit}>
+              Xin quyền chỉnh sửa
             </button>
           )}
           {score.canEdit && (

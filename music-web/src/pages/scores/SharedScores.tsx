@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import NotificationBell from '../../components/NotificationBell';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import Pagination from '../../components/scores/Pagination';
@@ -28,6 +29,7 @@ export default function SharedScores() {
       <nav className="navbar">
         <div className="navbar-brand">Music App</div>
         <div className="navbar-nav">
+          <NotificationBell />
           <button className="sc-btn sc-btn--sm" onClick={() => navigate('/scores')}>
             ‹ Thư viện
           </button>

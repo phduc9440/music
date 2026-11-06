@@ -1,20 +1,19 @@
 package com.ptit.music_be.service.impl;
 
-import java.security.SecureRandom;
 import java.time.LocalDateTime;
-import java.util.Base64;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ptit.music_be.dto.enums.NotificationType;
+import com.ptit.music_be.service.NotificationService;
 import com.ptit.music_be.dto.enums.SharePermission;
 import com.ptit.music_be.dto.enums.ShareSource;
 import com.ptit.music_be.dto.response.AccessRequestResponse;
 import com.ptit.music_be.dto.response.MyAccessResponse;
 import com.ptit.music_be.dto.response.ScoreSharingResponse;
 import com.ptit.music_be.dto.response.ShareMemberResponse;
-import com.ptit.music_be.dto.response.SharedJoinResponse;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.MemberScore;
 import com.ptit.music_be.entity.Score;
@@ -36,45 +35,16 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class ScoreSharingServiceImpl implements ScoreSharingService {
 
-    static final SecureRandom RANDOM = new SecureRandom();
-
     ScoreRepository scoreRepository;
     MemberRepository memberRepository;
     MemberScoreRepository memberScoreRepository;
     ScoreFileService scoreFileService;
+    NotificationService notificationService;
 
     @Override
     @Transactional(readOnly = true)
     public ScoreSharingResponse getSharing(String scoreId) {
         Score score = findManageableScore(scoreId);
-        return toResponse(score);
-    }
-
-    @Override
-    @Transactional
-    public ScoreSharingResponse setLink(String scoreId, SharePermission permission) {
-        Score score = findManageableScore(scoreId);
-        if (permission == null) {
-            score.setLinkPermission(null);
-            memberScoreRepository.deleteByScoreIdAndSource(scoreId, ShareSource.LINK);
-        } else {
-            if (score.getShareToken() == null) {
-                score.setShareToken(newToken());
-            }
-            score.setLinkPermission(permission);
-            memberScoreRepository.updatePermissionByScoreIdAndSource(scoreId, ShareSource.LINK, permission);
-        }
-        scoreRepository.save(score);
-        return toResponse(score);
-    }
-
-    @Override
-    @Transactional
-    public ScoreSharingResponse resetLink(String scoreId) {
-        Score score = findManageableScore(scoreId);
-        score.setShareToken(newToken());
-        memberScoreRepository.deleteByScoreIdAndSource(scoreId, ShareSource.LINK);
-        scoreRepository.save(score);
         return toResponse(score);
     }
 
@@ -92,9 +62,15 @@ public class ScoreSharingServiceImpl implements ScoreSharingService {
                 .findByScoreIdAndMemberId(scoreId, member.getId())
                 .orElseGet(() -> MemberScore.builder().score(score).member(member).build());
         share.setPermission(permission);
-        share.setSource(ShareSource.DIRECT); // chủ cấp trực tiếp thì không bị thu hồi khi tắt liên kết
+        share.setSource(ShareSource.DIRECT);
         clearRequestIfSatisfied(share);
         memberScoreRepository.save(share);
+        notificationService.notify(
+                member,
+                currentMember(),
+                NotificationType.SHARED_WITH_YOU,
+                scoreId,
+                "Bạn được chia sẻ bản nhạc \"" + score.getTitle() + "\" với quyền " + label(permission));
         return toResponse(score);
     }
 
@@ -125,50 +101,18 @@ public class ScoreSharingServiceImpl implements ScoreSharingService {
         return toResponse(score);
     }
 
-    @Override
-    @Transactional
-    public SharedJoinResponse joinByToken(String token) {
-        Score score = scoreRepository
-                .findByShareTokenAndLinkPermissionIsNotNull(token == null ? "" : token.trim())
-                .orElseThrow(() -> new AppException(ErrorCode.SHARE_TOKEN_INVALID));
-
-        // Chủ sở hữu và ADMIN đã có toàn quyền, không tạo dòng chia sẻ cho họ
-        if (scoreFileService.canManageSharing(score)) {
-            return joinResponse(score, "OWNER");
-        }
-
-        Member me = memberRepository
-                .findByEmail(SecurityUtils.getCurrentEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
-        SharePermission linkPermission = score.getLinkPermission();
-
-        MemberScore share = memberScoreRepository.findByScoreIdAndMemberId(score.getId(), me.getId()).orElse(null);
-        if (share == null) {
-            share = MemberScore.builder()
-                    .score(score)
-                    .member(me)
-                    .permission(linkPermission)
-                    .source(ShareSource.LINK)
-                    .build();
-            memberScoreRepository.save(share);
-        } else if (share.getPermission() == null || !share.getPermission().includes(linkPermission)) {
-            // Quyền cao nhất thắng: chưa có quyền hoặc đang thấp hơn cấp của liên kết thì nâng lên
-            share.setPermission(linkPermission);
-            clearRequestIfSatisfied(share);
-            memberScoreRepository.save(share);
-        }
-        return joinResponse(score, share.getPermission().name());
-    }
-
     // ------------------------------------------------------------------ xin quyền
 
     @Override
     @Transactional
     public MyAccessResponse requestAccess(String scoreId, SharePermission permission, String message) {
+        if (permission != SharePermission.VIEW && permission != SharePermission.EDIT) {
+            throw new AppException(ErrorCode.SHARE_PERMISSION_INVALID); // chỉ xin xem hoặc chỉnh sửa
+        }
         Score score = scoreRepository
                 .findById(scoreId)
                 .orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
-        // Đã có quyền bằng hoặc cao hơn cấp đang xin (kể cả chủ sở hữu, ADMIN, bản PUBLIC) thì không cần xin
+        // Đã có quyền bằng hoặc cao hơn cấp đang xin (kể cả chủ sở hữu, ADMIN; bản PUBLIC thì mặc định đã xem và nhận xét được) thì không cần xin
         String current = scoreFileService.getAccessLevel(score);
         if ("OWNER".equals(current) || (current != null && SharePermission.valueOf(current).includes(permission))) {
             throw new AppException(ErrorCode.ALREADY_HAS_ACCESS);
@@ -184,6 +128,12 @@ public class ScoreSharingServiceImpl implements ScoreSharingService {
         share.setRequestMessage(message == null || message.isBlank() ? null : message.trim());
         share.setRequestedAt(LocalDateTime.now());
         memberScoreRepository.save(share);
+        notificationService.notify(
+                score.getMember(),
+                me,
+                NotificationType.ACCESS_REQUESTED,
+                scoreId,
+                displayName(me) + " xin quyền " + label(permission) + " bản nhạc \"" + score.getTitle() + "\"");
         return MyAccessResponse.builder()
                 .accessLevel(current)
                 .requestedPermission(permission)
@@ -232,6 +182,13 @@ public class ScoreSharingServiceImpl implements ScoreSharingService {
         share.setSource(ShareSource.DIRECT);
         clearRequest(share);
         memberScoreRepository.save(share);
+        notificationService.notify(
+                share.getMember(),
+                currentMember(),
+                NotificationType.ACCESS_APPROVED,
+                scoreId,
+                "Yêu cầu của bạn đã được đồng ý: quyền " + label(share.getPermission()) + " bản nhạc \""
+                        + score.getTitle() + "\"");
         return toResponse(score);
     }
 
@@ -240,12 +197,19 @@ public class ScoreSharingServiceImpl implements ScoreSharingService {
     public ScoreSharingResponse rejectRequest(String scoreId, String memberId) {
         Score score = findManageableScore(scoreId);
         MemberScore share = findPendingRequest(scoreId, memberId);
+        Member requester = share.getMember();
         if (share.getPermission() == null) {
             memberScoreRepository.delete(share); // chưa có quyền gì thì không còn lý do giữ dòng này
         } else {
             clearRequest(share);
             memberScoreRepository.save(share);
         }
+        notificationService.notify(
+                requester,
+                currentMember(),
+                NotificationType.ACCESS_REJECTED,
+                scoreId,
+                "Yêu cầu xin quyền bản nhạc \"" + score.getTitle() + "\" của bạn đã bị từ chối");
         return toResponse(score);
     }
 
@@ -292,30 +256,29 @@ public class ScoreSharingServiceImpl implements ScoreSharingService {
                         .build())
                 .toList();
         return ScoreSharingResponse.builder()
-                .linkEnabled(score.getLinkPermission() != null)
-                .linkPermission(score.getLinkPermission())
-                .shareToken(score.getShareToken())
+                .visibility(score.getVisibility())
                 .members(members)
                 .pendingRequests(memberScoreRepository.countByScoreIdAndRequestedPermissionIsNotNull(score.getId()))
                 .build();
     }
 
-    private SharedJoinResponse joinResponse(Score score, String accessLevel) {
-        return SharedJoinResponse.builder()
-                .scoreId(score.getId())
-                .title(score.getTitle())
-                .accessLevel(accessLevel)
-                .build();
+    private Member currentMember() {
+        return memberRepository.findByEmail(SecurityUtils.getCurrentEmail()).orElse(null);
+    }
+
+    private static String displayName(Member m) {
+        return m.getFullName() != null && !m.getFullName().isBlank() ? m.getFullName() : m.getEmail();
+    }
+
+    private static String label(SharePermission p) {
+        return switch (p) {
+            case VIEW -> "xem";
+            case REVIEW -> "nhận xét";
+            case EDIT -> "chỉnh sửa";
+        };
     }
 
     private boolean isOwnerOf(Score score, Member member) {
         return score.getMember() != null && score.getMember().getId().equals(member.getId());
-    }
-
-    /** 24 byte ngẫu nhiên an toàn (SecureRandom) mã hóa base64url: 32 ký tự, không thể đoán. */
-    private static String newToken() {
-        byte[] bytes = new byte[24];
-        RANDOM.nextBytes(bytes);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 }

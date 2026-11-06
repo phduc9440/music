@@ -8,6 +8,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import com.ptit.music_be.dto.enums.NotificationType;
+import com.ptit.music_be.service.NotificationService;
 import com.ptit.music_be.dto.response.ReviewListResponse;
 import com.ptit.music_be.dto.response.ReviewResponse;
 import com.ptit.music_be.entity.Member;
@@ -35,6 +37,7 @@ public class ScoreReviewServiceImpl implements ScoreReviewService {
     ScoreReviewRepository reviewRepository;
     MemberRepository memberRepository;
     ScoreFileService scoreFileService;
+    NotificationService notificationService;
 
     @Override
     @Transactional(readOnly = true)
@@ -61,9 +64,19 @@ public class ScoreReviewServiceImpl implements ScoreReviewService {
         ScoreReview review = reviewRepository
                 .findByScoreIdAndMemberId(scoreId, me.getId())
                 .orElseGet(() -> ScoreReview.builder().score(score).member(me).build());
+        boolean isNew = review.getId() == null;
         review.setRating(rating);
         review.setComment(cleanComment);
         reviewRepository.save(review);
+        if (isNew) { // sửa lại nhận xét cũ thì không báo thêm
+            String who = me.getFullName() != null && !me.getFullName().isBlank() ? me.getFullName() : me.getEmail();
+            notificationService.notify(
+                    score.getMember(),
+                    me,
+                    NotificationType.NEW_REVIEW,
+                    scoreId,
+                    who + " đã nhận xét bản nhạc \"" + score.getTitle() + "\"");
+        }
         reviewRepository.flush();
         return toResponse(score);
     }
