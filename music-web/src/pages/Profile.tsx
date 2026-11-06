@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import NotificationBell from '../components/NotificationBell';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { userApi } from '../services';
+import { authApi, userApi } from '../services';
 import { AuthProvider } from '../types';
 import type { Member } from '../types';
 import ChangePasswordModal from '../components/ChangePasswordModal';
@@ -23,8 +23,7 @@ export default function UserProfile() {
   }, []);
 
   const handleLogout = useCallback(() => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
+    authApi.logout().catch(() => undefined);
     localStorage.removeItem('role');
     navigate('/');
   }, [navigate]);

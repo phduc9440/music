@@ -8,11 +8,10 @@ import { Navigate, useLocation } from 'react-router-dom';
  */
 const ProtectedRoute = ({ children, allowedRole }: { children: React.ReactNode; allowedRole: 'USER' | 'ADMIN' }) => {
   const location = useLocation();
-  const token = localStorage.getItem('token');
   const role = localStorage.getItem('role');
 
   // Nhớ trang đang định vào (ví dụ liên kết chia sẻ /s/xxx) để quay lại sau khi đăng nhập
-  if (!token || !role) return <Navigate to="/auth/login" state={{ from: location.pathname + location.search }} />;
+  if (!role) return <Navigate to="/auth/login" state={{ from: location.pathname + location.search }} />;
   if (allowedRole === 'ADMIN' && role !== 'ADMIN') return <Navigate to="/profile" />;
 
   return children;

@@ -3,7 +3,7 @@ import NotificationBell from '../components/NotificationBell';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
-import { adminApi, scoreApi, userApi } from '../services';
+import { adminApi, authApi, scoreApi, userApi } from '../services';
 import { AuthProvider, MemberStatus } from '../types';
 import type { Member, PageResult, ScoreSummary } from '../types';
 import { isAdminMember } from '../utils/auth';
@@ -72,8 +72,7 @@ export default function AdminDashboard() {
   }, [page, keyword, reloadKey]);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
+    authApi.logout().catch(() => undefined);
     localStorage.removeItem('role');
     navigate('/');
   };
