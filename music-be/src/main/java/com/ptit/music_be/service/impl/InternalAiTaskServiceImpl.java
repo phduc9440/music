@@ -142,6 +142,14 @@ public class InternalAiTaskServiceImpl implements InternalAiTaskService {
         if (SINGLE_CURRENT_TYPES.contains(fileType)) {
             demoteOtherCurrentFiles(score.getId(), saved);
         }
+        // MusicXML hiện hành đổi thì current_version đổi theo ngay (không chờ callback complete), nếu không Editor sẽ
+        // so version với giá trị cũ và báo xung đột 409 ở mọi lần Lưu khi complete không bao giờ đến
+        if (fileType == FileType.MUSICXML
+                && task.getTaskType() == AiTaskType.OMR_CONVERSION
+                && saved.getVersion() != null) {
+            score.setCurrentVersion(saved.getVersion());
+            scoreRepository.save(score);
+        }
     }
 
     /**

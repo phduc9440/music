@@ -7,7 +7,7 @@ import Modal from '../../components/scores/Modal';
 import { downloadScoreExport, fetchKern, fetchMusicXml, omrApi, scoreApi } from '../../services';
 import type { OmrResult, ScoreDetail as ScoreDetailData, ScoreFileInfo } from '../../types';
 import { isValidScoreId, parseWarning } from '../../utils/omr';
-import { getHttpStatus, getUploadErrorMessage, toSafeFileName } from '../../utils/score';
+import { getErrorMessage, getHttpStatus, getUploadErrorMessage, toSafeFileName } from '../../utils/score';
 import '../../components/scores/scores.css';
 import './ScoreLibrary.css';
 import './ScoreDetail.css';
@@ -121,8 +121,10 @@ export default function ScoreReview() {
     setExporting(kind);
     try {
       await downloadScoreExport(id, kind, `${score.title || 'ban-nhac'}.${kind === 'midi' ? 'mid' : 'musicxml'}`);
-    } catch {
-      toast.error(kind === 'midi' ? 'Không tạo hoặc tải được file MIDI' : 'Không tải được file MusicXML');
+    } catch (err) {
+      toast.error(
+        getErrorMessage(err, kind === 'midi' ? 'Không tạo hoặc tải được file MIDI' : 'Không tải được file MusicXML'),
+      );
     } finally {
       setExporting(null);
     }
