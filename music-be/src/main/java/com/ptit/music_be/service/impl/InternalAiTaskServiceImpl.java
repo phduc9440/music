@@ -12,6 +12,8 @@ import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -201,6 +203,7 @@ public class InternalAiTaskServiceImpl implements InternalAiTaskService {
         if (score != null && task.getTaskType() == AiTaskType.OMR_CONVERSION) {
             applyScoreMetadata(score, request.getScoreMetadata());
             syncCurrentVersion(score);
+            removeStalePages(score, task);
             score.setProcessingStatus(ProcessingStatus.COMPLETED.name());
             scoreRepository.save(score);
         }
@@ -281,6 +284,33 @@ public class InternalAiTaskServiceImpl implements InternalAiTaskService {
             return ProcessingStatus.COMPLETED;
         }
         return ProcessingStatus.FAILED;
+    }
+
+    /**
+     * Nhận diện lại không xóa ảnh trang cũ từ đầu (music-ai ghi đè từng trang, nên lần chạy lỗi vẫn còn ảnh để xem).
+     * Chỉ khi lần chạy mới hoàn tất mới dọn các dòng PNG không do task này ghi (trang thừa khi số trang giảm), file
+     * trên đĩa xóa sau khi commit.
+     */
+    private void removeStalePages(Score score, AiTask task) {
+        List<ScoreFile> pages =
+                scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(score.getId(), FileType.PNG);
+        if (pages.stream().noneMatch(f -> task.getId().equals(f.getSourceTaskId()))) {
+            return; // lần chạy này không ghi trang nào (dừng sớm/lạ): không đụng tới dữ liệu cũ
+        }
+        List<ScoreFile> stale = pages.stream()
+                .filter(f -> !task.getId().equals(f.getSourceTaskId()))
+                .toList();
+        if (stale.isEmpty()) {
+            return;
+        }
+        scoreFileRepository.deleteAll(stale);
+        List<String> paths = stale.stream().map(ScoreFile::getStoragePath).toList();
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                paths.forEach(fileStorageService::delete);
+            }
+        });
     }
 
     private void applyScoreMetadata(Score score, AiTaskCompleteRequest.ScoreMetadata metadata) {
