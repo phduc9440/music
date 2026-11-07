@@ -23,6 +23,9 @@ public class CorsConfig {
         // Allow all HTTP methods
         corsConfiguration.addAllowedMethod("*");
 
+        // Cho JS đọc header ETag (Editor lấy version MusicXML từ ETag của GET /scores/{id}/musicxml)
+        corsConfiguration.addExposedHeader("ETag");
+
         // Allow credentials (cookies, authorization headers)
         corsConfiguration.setAllowCredentials(true);
 
