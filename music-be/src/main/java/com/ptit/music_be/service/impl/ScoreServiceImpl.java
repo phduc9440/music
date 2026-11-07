@@ -51,7 +51,7 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class ScoreServiceImpl implements ScoreService {
 
-    static final int DEFAULT_PAGE_SIZE = 12;
+    static final int DEFAULT_PAGE_SIZE = 10;
     static final int MAX_PAGE_SIZE = 50;
     static final int MAX_KEYWORD_LENGTH = 100;
 
@@ -83,7 +83,8 @@ public class ScoreServiceImpl implements ScoreService {
         String safeSource = parseEnumName(source, ScoreSource.class);
 
         PageRequest pageable = PageRequest.of(safePage, safeSize, toSort(sort));
-        Page<Score> result = scoreRepository.searchOfMember(member.getId(), safeKeyword, safeStatus, safeSource, pageable);
+        Page<Score> result =
+                scoreRepository.searchOfMember(member.getId(), safeKeyword, safeStatus, safeSource, pageable);
 
         Map<String, ScoreFile> thumbnails = loadThumbnails(result.getContent());
         List<ScoreSummaryResponse> content = result.getContent().stream()
@@ -135,6 +136,10 @@ public class ScoreServiceImpl implements ScoreService {
             score.setDifficulty(request.getDifficulty());
         }
         if (request.getVisibility() != null) {
+            // Người được chia sẻ quyền EDIT chỉ sửa nội dung, không được đổi chế độ hiển thị
+            if (!scoreFileService.canDelete(score)) {
+                throw new AppException(ErrorCode.UNAUTHORIZED);
+            }
             score.setVisibility(request.getVisibility().name());
         }
 
@@ -151,7 +156,8 @@ public class ScoreServiceImpl implements ScoreService {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
         // Đang có tác vụ chạy thì không cho xóa (worker/AI service còn đang ghi file vào thư mục của score)
-        if (aiTaskRepository.existsByScoreIdAndStatusIn(scoreId, List.of(AiTaskStatus.PENDING, AiTaskStatus.PROCESSING))) {
+        if (aiTaskRepository.existsByScoreIdAndStatusIn(
+                scoreId, List.of(AiTaskStatus.PENDING, AiTaskStatus.PROCESSING))) {
             throw new AppException(ErrorCode.SCORE_BUSY);
         }
 
@@ -260,7 +266,9 @@ public class ScoreServiceImpl implements ScoreService {
             return "";
         }
         String trimmed = keyword.trim();
-        return trimmed.length() > MAX_KEYWORD_LENGTH ? trimmed.substring(0, MAX_KEYWORD_LENGTH) : trimmed;
+        trimmed = trimmed.length() > MAX_KEYWORD_LENGTH ? trimmed.substring(0, MAX_KEYWORD_LENGTH) : trimmed;
+        // Escape ký tự đại diện của LIKE để "%" và "_" được tìm như ký tự thường (khớp với escape '\\' ở repository)
+        return trimmed.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
     }
 
     /** Rỗng -> "" (không lọc); đúng tên enum -> trả tên đó; sai -> INVALID_FILTER. */

@@ -21,7 +21,7 @@ import {
 } from './durations';
 import { dotCount } from './durationCore';
 import type { AccidentalChoice, DurationChoice, DurationType, InsertTarget } from './durations';
-import { DRAFT_INTERVAL_MS, clearDraft, loadDraft, saveDraft } from './draft';
+import { DRAFT_INTERVAL_MS, clearDraft, loadDraft, purgeOtherDrafts, saveDraft } from './draft';
 import type { Draft } from './draft';
 import { describeSelection } from './describe';
 import { History } from './history';
@@ -203,6 +203,7 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
   const [conflict, setConflict] = useState<{ latestVersion: number } | null>(null);
   const [draft, setDraft] = useState<Draft | null>(() => {
     if (!canEdit) return null;
+    purgeOtherDrafts(scoreId, initialVersion); // nháp của phiên bản cũ không còn khôi phục được
     const found = loadDraft(scoreId, initialVersion);
     return found && found.xml !== doc.serialize() ? found : null;
   });
@@ -695,6 +696,7 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
         const result = await saveMusicXml(scoreId, doc.serialize(), version, force);
         historyRef.current.markSaved(position);
         clearDraft(scoreId, version);
+        purgeOtherDrafts(scoreId, result.version);
         setVersion(result.version);
         setConflict(null);
         setFlags({

@@ -46,3 +46,19 @@ export const clearDraft = (scoreId: string, version: number): void => {
     // bỏ qua
   }
 };
+
+/** Xóa bản nháp của các phiên bản khác `keepVersion` (nháp của phiên bản cũ không còn dùng được và chiếm dung lượng). */
+export const purgeOtherDrafts = (scoreId: string, keepVersion: number): void => {
+  try {
+    const prefix = `draft:${scoreId}:`;
+    const keep = keyOf(scoreId, keepVersion);
+    const stale: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(prefix) && key !== keep) stale.push(key);
+    }
+    stale.forEach((key) => localStorage.removeItem(key));
+  } catch {
+    // bỏ qua
+  }
+};

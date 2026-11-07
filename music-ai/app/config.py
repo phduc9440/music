@@ -149,7 +149,7 @@ def get_settings() -> Settings:
     storage_root = Path(storage) if storage else _REPO_ROOT / "music-be" / "storage"
     return Settings(
         storage_root=storage_root.expanduser().resolve(),
-        internal_key=os.environ.get("INTERNAL_KEY", DEFAULT_INTERNAL_KEY),
+        internal_key=os.environ.get("INTERNAL_KEY") or os.environ.get("AI_INTERNAL_KEY") or DEFAULT_INTERNAL_KEY,
         java_base_url=os.environ.get("JAVA_BASE_URL", "http://localhost:8080").rstrip("/"),
         task_timeout_s=_int_env("TASK_TIMEOUT_S", 600),
         page_timeout_s=_int_env("PAGE_TIMEOUT_S", 90),
