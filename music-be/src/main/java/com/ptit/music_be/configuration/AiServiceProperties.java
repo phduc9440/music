@@ -62,7 +62,7 @@ public class AiServiceProperties {
             @Value("${app.ai.pending-resend-seconds:30}") int pendingResendSeconds,
             @Value("${app.ai.max-resends:2}") int maxResends,
             @Value("${app.ai.processing-timeout-minutes:10}") int processingTimeoutMinutes,
-            @Value("${app.ai.queued-timeout-minutes:30}") int queuedTimeoutMinutes) {
+            @Value("${app.ai.queued-timeout-minutes:120}") int queuedTimeoutMinutes) {
         this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
         this.internalKey = internalKey;
         this.connectTimeoutMs = connectTimeoutMs;

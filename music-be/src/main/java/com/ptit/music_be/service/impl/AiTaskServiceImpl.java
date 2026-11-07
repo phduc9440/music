@@ -11,6 +11,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import com.ptit.music_be.dto.enums.AiTaskError;
 import com.ptit.music_be.dto.enums.AiTaskStatus;
 import com.ptit.music_be.dto.enums.AiTaskType;
+import com.ptit.music_be.dto.enums.FileType;
 import com.ptit.music_be.dto.enums.ProcessingStatus;
 import com.ptit.music_be.dto.response.AiTaskResponse;
 import com.ptit.music_be.entity.AiTask;
@@ -19,6 +20,7 @@ import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.mapper.AiTaskMapper;
 import com.ptit.music_be.repository.AiTaskRepository;
+import com.ptit.music_be.repository.ScoreFileRepository;
 import com.ptit.music_be.repository.ScoreRepository;
 import com.ptit.music_be.service.AiTaskService;
 import com.ptit.music_be.service.ScoreFileService;
@@ -36,6 +38,7 @@ public class AiTaskServiceImpl implements AiTaskService {
 
     AiTaskRepository aiTaskRepository;
     ScoreRepository scoreRepository;
+    ScoreFileRepository scoreFileRepository;
     ScoreFileService scoreFileService;
     AiTaskMapper aiTaskMapper;
     AiTaskDispatcher aiTaskDispatcher;
@@ -88,7 +91,11 @@ public class AiTaskServiceImpl implements AiTaskService {
 
         Score score = task.getScore();
         if (score != null && task.getTaskType() == AiTaskType.OMR_CONVERSION) {
-            score.setProcessingStatus(ProcessingStatus.FAILED.name());
+            // Hủy lần nhận diện lại khi đã có MusicXML từ trước: bản nhạc vẫn dùng được nên giữ COMPLETED
+            boolean hasPreviousResult = scoreFileRepository.existsCurrentFileFromOtherTask(
+                    score.getId(), FileType.MUSICXML, task.getId());
+            score.setProcessingStatus(
+                    (hasPreviousResult ? ProcessingStatus.COMPLETED : ProcessingStatus.FAILED).name());
             scoreRepository.save(score);
         }
 
