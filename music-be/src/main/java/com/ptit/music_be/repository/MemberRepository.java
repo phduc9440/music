@@ -2,7 +2,12 @@ package com.ptit.music_be.repository;
 
 import java.util.Optional;
 
+import jakarta.persistence.LockModeType;
+
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.ptit.music_be.entity.Member;
@@ -11,6 +16,14 @@ import com.ptit.music_be.entity.Member;
 public interface MemberRepository extends JpaRepository<Member, String> {
 
     Optional<Member> findByEmail(String email);
+
+    /**
+     * Khóa dòng thành viên (trong transaction) để các lần upload/chạy lại song song của cùng một người được xếp hàng,
+     * tránh cùng vượt giới hạn số task đang chạy.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select m from Member m where m.email = :email")
+    Optional<Member> findByEmailForUpdate(@Param("email") String email);
 
     boolean existsByEmail(String email);
 }
