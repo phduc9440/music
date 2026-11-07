@@ -7,7 +7,7 @@ import Modal from '../../components/scores/Modal';
 import { downloadScoreExport, fetchKern, fetchMusicXml, omrApi, scoreApi } from '../../services';
 import type { OmrResult, ScoreDetail as ScoreDetailData, ScoreFileInfo } from '../../types';
 import { isValidScoreId, parseWarning } from '../../utils/omr';
-import { getErrorMessage, getHttpStatus, getUploadErrorMessage } from '../../utils/score';
+import { getErrorMessage, getHttpStatus, getUploadErrorMessage, toSafeFileName } from '../../utils/score';
 import '../../components/scores/scores.css';
 import './ScoreLibrary.css';
 import './ScoreDetail.css';
@@ -110,9 +110,10 @@ export default function ScoreReview() {
     const url = URL.createObjectURL(new Blob([kern], { type: 'text/plain;charset=utf-8' }));
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${score.title || 'ban-nhac'}.krn`;
+    link.download = `${toSafeFileName(score.title)}.krn`;
     link.click();
-    URL.revokeObjectURL(url);
+    // Thu hồi chậm một nhịp để trình duyệt kịp bắt đầu tải
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   const handleExport = async (kind: 'musicxml' | 'midi') => {
