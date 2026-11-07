@@ -29,7 +29,7 @@ import { ScoreDocument } from '../../components/editor/ScoreDocument';
 import { DURATION_LABELS, dotsLabel } from '../../components/editor/durations';
 import { usePlayback } from '../../components/editor/usePlayback';
 import { useScoreEditor } from '../../components/editor/useScoreEditor';
-import { fetchMusicXml, scoreApi } from '../../services';
+import { fetchMusicXmlWithVersion, scoreApi } from '../../services';
 import type { ScoreDetail as ScoreDetailData } from '../../types';
 import { isValidScoreId } from '../../utils/omr';
 import { getHttpStatus } from '../../utils/score';
@@ -116,6 +116,7 @@ export default function ScoreViewer() {
   const phase: Phase = isValidScoreId(id) ? phaseRaw : 'notFound';
   const [score, setScore] = useState<ScoreDetailData | null>(null);
   const [xml, setXml] = useState<string | null>(null);
+  const [xmlVersion, setXmlVersion] = useState<number | null>(null);
   const [info, setInfo] = useState<MusicXmlInfo | null>(null);
   const [doc, setDoc] = useState<ScoreDocument | null>(null);
 
@@ -130,7 +131,9 @@ export default function ScoreViewer() {
         setScore(detail.data.result);
         let text: string;
         try {
-          text = await fetchMusicXml(id);
+          const fetched = await fetchMusicXmlWithVersion(id);
+          text = fetched.xml;
+          setXmlVersion(fetched.version);
         } catch (err) {
           if (cancelled) return;
           // 409 = MUSICXML_NOT_READY (2012): chưa số hóa xong
@@ -168,7 +171,7 @@ export default function ScoreViewer() {
   const goBack = () => navigate(id ? `/scores/${id}` : '/scores');
 
   if (phase === 'ready' && score && xml && info && doc) {
-    return <ScoreWorkspace key={score.id} score={score} xml={xml} info={info} doc={doc} />;
+    return <ScoreWorkspace key={score.id} score={score} xml={xml} info={info} doc={doc} xmlVersion={xmlVersion} />;
   }
 
   // ---- Các màn hình không xem được ----
@@ -222,6 +225,8 @@ interface WorkspaceProps {
   xml: string;
   info: MusicXmlInfo;
   doc: ScoreDocument;
+  /** Version của MusicXML vừa tải (từ ETag); null thì dùng score.currentVersion. */
+  xmlVersion: number | null;
 }
 
 /**
@@ -229,7 +234,7 @@ interface WorkspaceProps {
  * toàn màn hình, tải MusicXML/MIDI. Khi `canEdit` có thêm chọn nốt, đổi cao độ, hoàn tác/làm lại, lưu (đặc tả 3.0,
  * 1.18, 3.6), bản nháp và xử lý xung đột phiên bản. Responsive Desktop / iPad / Mobile.
  */
-function ScoreWorkspace({ score, xml, info, doc }: WorkspaceProps) {
+function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
   const navigate = useNavigate();
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -252,7 +257,7 @@ function ScoreWorkspace({ score, xml, info, doc }: WorkspaceProps) {
     scoreId: score.id,
     title: score.title,
     doc,
-    initialVersion: score.currentVersion ?? 1,
+    initialVersion: xmlVersion ?? score.currentVersion ?? 1,
     canEdit,
     canForce: score.canDelete,
     blocked: helpOpen,

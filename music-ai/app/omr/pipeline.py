@@ -291,7 +291,6 @@ def _preprocess_pages(ctx: JobContext, pages: list[Optional[tuple[int, np.ndarra
         preprocess=options.preprocess, binarize=options.binarize, source_type=options.sourceType
     )
     score_id = ctx.job.scoreId
-    _clear_old_pages(score_id)
     _clear_dir(score_id, "layout", (".json",))
     ctx.layouts = {}
 
@@ -331,6 +330,9 @@ def _preprocess_pages(ctx: JobContext, pages: list[Optional[tuple[int, np.ndarra
             )
         budget.end_page()
         callback.progress(10 + round(20 * (index + 1) / total), STEP_PREPROCESS)
+    # Ảnh trang lần trước được ghi đè dần; chỉ khi xử lý xong mọi trang mới xóa trang thừa
+    # (lần chạy lỗi giữa chừng thì ảnh cũ vẫn còn nguyên để xem lại)
+    _clear_extra_pages(score_id, kept)
     return kept_pages
 
 
@@ -782,13 +784,16 @@ def _finish(
 # ====================================================================== ghi file
 
 
-def _clear_old_pages(score_id: str) -> None:
-    """Xóa các ``page-*.png`` của lần chạy trước để không sót trang cũ khi lần này ít trang hơn."""
+def _clear_extra_pages(score_id: str, keep: int) -> None:
+    """Xóa ``page-NNN.png`` có số lớn hơn ``keep`` (trang thừa của lần chạy trước khi lần này ít trang hơn)."""
     pages_dir = storage.resolve(f"scores/{score_id}/pages")
     if not pages_dir.is_dir():
         return
     for entry in pages_dir.iterdir():
-        if entry.is_file() and entry.name.startswith("page-") and entry.suffix == ".png":
+        if not (entry.is_file() and entry.name.startswith("page-") and entry.suffix == ".png"):
+            continue
+        digits = entry.stem[len("page-"):]
+        if digits.isdigit() and int(digits) > keep:
             try:
                 entry.unlink()
             except OSError as exc:

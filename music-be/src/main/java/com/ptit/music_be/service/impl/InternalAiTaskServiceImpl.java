@@ -12,6 +12,8 @@ import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -111,7 +113,9 @@ public class InternalAiTaskServiceImpl implements InternalAiTaskService {
         String storagePath = validateStoragePath(score.getId(), request.getStoragePath());
         Path onDisk = fileStorageService.resolve(storagePath);
         if (!Files.isRegularFile(onDisk)) {
-            throw new AppException(ErrorCode.FILE_NOT_EXISTED);
+            // Không dùng 404: music-ai coi 404 là "task không còn" và bỏ job im lặng. 400 chỉ làm file này không được
+            // ghi nhận, job vẫn chạy tiếp và báo lỗi đúng (ví dụ EXPORT_ERROR) ở bước complete.
+            throw new AppException(ErrorCode.INVALID_REQUEST);
         }
 
         // Cùng một đường dẫn (nhận diện lại ghi đè pages/page-001.png) thì cập nhật dòng cũ thay vì thêm dòng trùng
@@ -137,6 +141,14 @@ public class InternalAiTaskServiceImpl implements InternalAiTaskService {
         ScoreFile saved = scoreFileRepository.save(file);
         if (SINGLE_CURRENT_TYPES.contains(fileType)) {
             demoteOtherCurrentFiles(score.getId(), saved);
+        }
+        // MusicXML hiện hành đổi thì current_version đổi theo ngay (không chờ callback complete), nếu không Editor sẽ
+        // so version với giá trị cũ và báo xung đột 409 ở mọi lần Lưu khi complete không bao giờ đến
+        if (fileType == FileType.MUSICXML
+                && task.getTaskType() == AiTaskType.OMR_CONVERSION
+                && saved.getVersion() != null) {
+            score.setCurrentVersion(saved.getVersion());
+            scoreRepository.save(score);
         }
     }
 
@@ -199,6 +211,7 @@ public class InternalAiTaskServiceImpl implements InternalAiTaskService {
         if (score != null && task.getTaskType() == AiTaskType.OMR_CONVERSION) {
             applyScoreMetadata(score, request.getScoreMetadata());
             syncCurrentVersion(score);
+            removeStalePages(score, task);
             score.setProcessingStatus(ProcessingStatus.COMPLETED.name());
             scoreRepository.save(score);
         }
@@ -217,7 +230,7 @@ public class InternalAiTaskServiceImpl implements InternalAiTaskService {
         task.setErrorMessage(text.length() > MAX_ERROR_LENGTH ? text.substring(0, MAX_ERROR_LENGTH) : text);
         task.setFinishedAt(LocalDateTime.now());
         aiTaskRepository.save(task);
-        syncScoreStatus(task, ProcessingStatus.FAILED);
+        syncScoreStatus(task, failedScoreStatus(task));
         log.warn("Task {} thất bại: {}", taskId, task.getErrorMessage());
     }
 
@@ -265,6 +278,47 @@ public class InternalAiTaskServiceImpl implements InternalAiTaskService {
             score.setProcessingStatus(status.name());
             scoreRepository.save(score);
         }
+    }
+
+    /**
+     * Nhận diện lại thất bại mà bản nhạc đã có MusicXML từ lần chạy trước thì bản nhạc vẫn dùng được (mở Editor, xem
+     * lại): giữ COMPLETED thay vì FAILED. Lỗi vẫn nằm ở ai_tasks.status/error_message của task vừa chạy.
+     */
+    private ProcessingStatus failedScoreStatus(AiTask task) {
+        Score score = task.getScore();
+        if (score != null
+                && scoreFileRepository.existsCurrentFileFromOtherTask(
+                        score.getId(), FileType.MUSICXML, task.getId())) {
+            return ProcessingStatus.COMPLETED;
+        }
+        return ProcessingStatus.FAILED;
+    }
+
+    /**
+     * Nhận diện lại không xóa ảnh trang cũ từ đầu (music-ai ghi đè từng trang, nên lần chạy lỗi vẫn còn ảnh để xem).
+     * Chỉ khi lần chạy mới hoàn tất mới dọn các dòng PNG không do task này ghi (trang thừa khi số trang giảm), file
+     * trên đĩa xóa sau khi commit.
+     */
+    private void removeStalePages(Score score, AiTask task) {
+        List<ScoreFile> pages =
+                scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(score.getId(), FileType.PNG);
+        if (pages.stream().noneMatch(f -> task.getId().equals(f.getSourceTaskId()))) {
+            return; // lần chạy này không ghi trang nào (dừng sớm/lạ): không đụng tới dữ liệu cũ
+        }
+        List<ScoreFile> stale = pages.stream()
+                .filter(f -> !task.getId().equals(f.getSourceTaskId()))
+                .toList();
+        if (stale.isEmpty()) {
+            return;
+        }
+        scoreFileRepository.deleteAll(stale);
+        List<String> paths = stale.stream().map(ScoreFile::getStoragePath).toList();
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                paths.forEach(fileStorageService::delete);
+            }
+        });
     }
 
     private void applyScoreMetadata(Score score, AiTaskCompleteRequest.ScoreMetadata metadata) {

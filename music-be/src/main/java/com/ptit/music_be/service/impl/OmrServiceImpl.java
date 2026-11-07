@@ -260,8 +260,6 @@ public class OmrServiceImpl implements OmrService {
             preprocess = request.getPreprocess();
         }
 
-        removeStalePages(score);
-
         score.setProcessingStatus(ProcessingStatus.PENDING.name());
         scoreRepository.save(score);
 
@@ -378,26 +376,6 @@ public class OmrServiceImpl implements OmrService {
                     }
                 })
                 .orElse(null);
-    }
-
-    /**
-     * Xóa ảnh trang đã tiền xử lý của lần chạy trước (dữ liệu dẫn xuất, sẽ được sinh lại). Thư mục trên đĩa chỉ bị xóa
-     * sau khi commit để không mất file khi DB rollback.
-     */
-    private void removeStalePages(Score score) {
-        List<ScoreFile> stalePages =
-                scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(score.getId(), FileType.PNG);
-        if (stalePages.isEmpty()) {
-            return;
-        }
-        scoreFileRepository.deleteAll(stalePages);
-        String pagesDir = "scores/" + score.getId() + "/pages";
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                fileStorageService.deleteDirectory(pagesDir);
-            }
-        });
     }
 
     // ---------------------------------------------------------------- validation

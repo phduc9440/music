@@ -71,7 +71,6 @@ public final class MusicXmlInspector {
 
         String key = null;
         String time = null;
-        int staves = 1;
         Integer tempo = null;
         for (Element measure : measures) {
             for (Element attributes : childElements(measure, "attributes")) {
@@ -91,17 +90,38 @@ public final class MusicXmlInspector {
                         }
                     }
                 }
-                Integer declared = intOrNull(childText(attributes, "staves"));
-                if (declared != null && declared > 0) {
-                    staves = Math.max(staves, declared);
-                }
             }
             if (tempo == null) {
                 tempo = firstTempo(measure);
             }
         }
         return new MusicXmlSummary(
-                measures.size(), key, time, tempo != null && tempo > 0 ? tempo : DEFAULT_TEMPO_BPM, staves);
+                measures.size(),
+                key,
+                time,
+                tempo != null && tempo > 0 ? tempo : DEFAULT_TEMPO_BPM,
+                countStaves(parts));
+    }
+
+    /**
+     * Tổng số khuông của mọi part (OMR xuất nhiều part, ví dụ giọng + piano = 1 + 2 = 3). Mỗi part có số khuông là giá
+     * trị {@code <staves>} lớn nhất trong các ô nhịp của nó, mặc định 1.
+     */
+    private static int countStaves(List<Element> parts) {
+        int total = 0;
+        for (Element part : parts) {
+            int staves = 1;
+            for (Element measure : childElements(part, "measure")) {
+                for (Element attributes : childElements(measure, "attributes")) {
+                    Integer declared = intOrNull(childText(attributes, "staves"));
+                    if (declared != null && declared > 0) {
+                        staves = Math.max(staves, declared);
+                    }
+                }
+            }
+            total += staves;
+        }
+        return total;
     }
 
     // ---------------------------------------------------------------- phân tích an toàn
