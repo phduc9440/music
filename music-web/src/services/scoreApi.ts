@@ -1,4 +1,5 @@
 import apiClient from './client';
+import { saveBlob, unwrapBlobError } from './fileApi';
 import type {
   ApiResponse,
   PageResult,
@@ -74,13 +75,10 @@ export const downloadScoreExport = async (
   kind: 'musicxml' | 'midi',
   fileName: string,
 ): Promise<void> => {
-  const response = await apiClient.get<Blob>(`/scores/${scoreId}/${kind}`, { responseType: 'blob', timeout: 60000 });
-  const objectUrl = URL.createObjectURL(response.data);
-  const a = document.createElement('a');
-  a.href = objectUrl;
-  a.download = fileName;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(objectUrl);
+  try {
+    const response = await apiClient.get<Blob>(`/scores/${scoreId}/${kind}`, { responseType: 'blob', timeout: 60000 });
+    saveBlob(response.data, fileName);
+  } catch (err) {
+    throw await unwrapBlobError(err);
+  }
 };

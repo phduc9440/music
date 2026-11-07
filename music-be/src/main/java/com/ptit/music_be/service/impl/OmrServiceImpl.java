@@ -116,13 +116,17 @@ public class OmrServiceImpl implements OmrService {
     public OmrUploadResponse upload(List<MultipartFile> files, String title, String composer, String sourceType) {
         // Kiểm tra rẻ trước (tham số chữ), rồi mới đọc nội dung file
         String cleanComposer = resolveComposer(composer);
+        // Tiêu đề người dùng nhập quá dài thì báo lỗi (giống PATCH), không âm thầm cắt
+        if (title != null && title.trim().length() > MAX_TITLE_LENGTH) {
+            throw new AppException(ErrorCode.SCORE_TITLE_INVALID);
+        }
         List<UploadKind> kinds = validate(files);
         boolean isPdf = kinds.getFirst() == UploadKind.PDF;
         OmrSourceType resolvedSourceType = resolveSourceType(sourceType, isPdf);
         int pageCount = isPdf ? inspectPdf(files.getFirst()) : inspectImages(files);
 
         Member member = memberRepository
-                .findByEmail(SecurityUtils.getCurrentEmail())
+                .findByEmailForUpdate(SecurityUtils.getCurrentEmail())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
         long activeTasks = aiTaskRepository.countByMemberIdAndTaskTypeAndStatusIn(
@@ -212,7 +216,7 @@ public class OmrServiceImpl implements OmrService {
             throw new AppException(ErrorCode.SCORE_BUSY);
         }
         Member member = memberRepository
-                .findByEmail(SecurityUtils.getCurrentEmail())
+                .findByEmailForUpdate(SecurityUtils.getCurrentEmail())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
         long activeTasks = aiTaskRepository.countByMemberIdAndTaskTypeAndStatusIn(
                 member.getId(), AiTaskType.OMR_CONVERSION, ACTIVE_STATUSES);
@@ -255,8 +259,6 @@ public class OmrServiceImpl implements OmrService {
         if (request != null && request.getPreprocess() != null) {
             preprocess = request.getPreprocess();
         }
-
-        removeStalePages(score);
 
         score.setProcessingStatus(ProcessingStatus.PENDING.name());
         scoreRepository.save(score);
@@ -374,26 +376,6 @@ public class OmrServiceImpl implements OmrService {
                     }
                 })
                 .orElse(null);
-    }
-
-    /**
-     * Xóa ảnh trang đã tiền xử lý của lần chạy trước (dữ liệu dẫn xuất, sẽ được sinh lại). Thư mục trên đĩa chỉ bị xóa
-     * sau khi commit để không mất file khi DB rollback.
-     */
-    private void removeStalePages(Score score) {
-        List<ScoreFile> stalePages =
-                scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(score.getId(), FileType.PNG);
-        if (stalePages.isEmpty()) {
-            return;
-        }
-        scoreFileRepository.deleteAll(stalePages);
-        String pagesDir = "scores/" + score.getId() + "/pages";
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                fileStorageService.deleteDirectory(pagesDir);
-            }
-        });
     }
 
     // ---------------------------------------------------------------- validation
