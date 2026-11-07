@@ -111,7 +111,9 @@ public class InternalAiTaskServiceImpl implements InternalAiTaskService {
         String storagePath = validateStoragePath(score.getId(), request.getStoragePath());
         Path onDisk = fileStorageService.resolve(storagePath);
         if (!Files.isRegularFile(onDisk)) {
-            throw new AppException(ErrorCode.FILE_NOT_EXISTED);
+            // Không dùng 404: music-ai coi 404 là "task không còn" và bỏ job im lặng. 400 chỉ làm file này không được
+            // ghi nhận, job vẫn chạy tiếp và báo lỗi đúng (ví dụ EXPORT_ERROR) ở bước complete.
+            throw new AppException(ErrorCode.INVALID_REQUEST);
         }
 
         // Cùng một đường dẫn (nhận diện lại ghi đè pages/page-001.png) thì cập nhật dòng cũ thay vì thêm dòng trùng
@@ -217,7 +219,7 @@ public class InternalAiTaskServiceImpl implements InternalAiTaskService {
         task.setErrorMessage(text.length() > MAX_ERROR_LENGTH ? text.substring(0, MAX_ERROR_LENGTH) : text);
         task.setFinishedAt(LocalDateTime.now());
         aiTaskRepository.save(task);
-        syncScoreStatus(task, ProcessingStatus.FAILED);
+        syncScoreStatus(task, failedScoreStatus(task));
         log.warn("Task {} thất bại: {}", taskId, task.getErrorMessage());
     }
 
@@ -265,6 +267,20 @@ public class InternalAiTaskServiceImpl implements InternalAiTaskService {
             score.setProcessingStatus(status.name());
             scoreRepository.save(score);
         }
+    }
+
+    /**
+     * Nhận diện lại thất bại mà bản nhạc đã có MusicXML từ lần chạy trước thì bản nhạc vẫn dùng được (mở Editor, xem
+     * lại): giữ COMPLETED thay vì FAILED. Lỗi vẫn nằm ở ai_tasks.status/error_message của task vừa chạy.
+     */
+    private ProcessingStatus failedScoreStatus(AiTask task) {
+        Score score = task.getScore();
+        if (score != null
+                && scoreFileRepository.existsCurrentFileFromOtherTask(
+                        score.getId(), FileType.MUSICXML, task.getId())) {
+            return ProcessingStatus.COMPLETED;
+        }
+        return ProcessingStatus.FAILED;
     }
 
     private void applyScoreMetadata(Score score, AiTaskCompleteRequest.ScoreMetadata metadata) {
