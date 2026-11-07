@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import { downloadFile, downloadScoreExport } from '../../services';
 import type { ScoreFileInfo } from '../../types';
-import { DOWNLOAD_FORMATS } from '../../utils/score';
+import { DOWNLOAD_FORMATS, getErrorMessage } from '../../utils/score';
 
 /**
  * Menu "Tải xuống" của trang chi tiết: liệt kê MusicXML, MIDI, Kern, MP3, WAV, PDF, SVG.
@@ -37,8 +37,8 @@ export default function DownloadMenu({ scoreId, files }: { scoreId: string; file
       } else {
         await downloadFile(file.downloadUrl, fileName);
       }
-    } catch {
-      toast.error('Không tải được file');
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Không tải được file'));
     } finally {
       setBusyType(null);
     }

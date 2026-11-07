@@ -1,10 +1,14 @@
 package com.ptit.music_be.controller;
 
+import java.io.IOException;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -12,6 +16,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ptit.music_be.dto.response.ApiResponse;
 import com.ptit.music_be.dto.response.ScoreSaveResponse;
+import com.ptit.music_be.exception.AppException;
+import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.service.ScoreEditService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -21,6 +27,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.experimental.NonFinal;
 
 @RestController
 @RequestMapping("/api")
@@ -30,6 +37,10 @@ import lombok.experimental.FieldDefaults;
 public class ScoreEditController {
 
     ScoreEditService scoreEditService;
+
+    @NonFinal
+    @Value("${app.editor.max-musicxml-bytes:5242880}")
+    long maxMusicXmlBytes;
 
     @PutMapping("/scores/{scoreId}/musicxml")
     @Operation(
@@ -44,7 +55,7 @@ public class ScoreEditController {
             security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<ApiResponse<ScoreSaveResponse>> saveMusicXml(
             @PathVariable String scoreId,
-            @RequestBody(required = false) byte[] body,
+            HttpServletRequest request,
             @RequestHeader(value = HttpHeaders.CONTENT_TYPE, required = false) String contentType,
             @Parameter(description = "Version đang sửa, ví dụ \"v5\"")
                     @RequestHeader(value = HttpHeaders.IF_MATCH, required = false)
@@ -52,9 +63,29 @@ public class ScoreEditController {
             @Parameter(description = "true để ghi đè dù version đã đổi (chỉ chủ sở hữu hoặc ADMIN)")
                     @RequestParam(defaultValue = "false")
                     boolean force) {
+        byte[] body = readBoundedBody(request);
         ScoreSaveResponse saved = scoreEditService.saveMusicXml(scoreId, body, contentType, ifMatch, force);
         return ResponseEntity.ok()
                 .eTag("\"v" + saved.getVersion() + "\"")
                 .body(ApiResponse.<ScoreSaveResponse>builder().result(saved).build());
+    }
+
+    /**
+     * Đọc body nhưng không bao giờ giữ quá {@code maxMusicXmlBytes + 1} byte trong RAM: Content-Length đã vượt giới hạn
+     * thì từ chối ngay, còn không thì đọc có chặn (phòng body chunked không có Content-Length).
+     */
+    private byte[] readBoundedBody(HttpServletRequest request) {
+        if (request.getContentLengthLong() > maxMusicXmlBytes) {
+            throw new AppException(ErrorCode.FILE_TOO_LARGE);
+        }
+        try {
+            byte[] body = request.getInputStream().readNBytes((int) Math.min(maxMusicXmlBytes + 1, Integer.MAX_VALUE));
+            if (body.length > maxMusicXmlBytes) {
+                throw new AppException(ErrorCode.FILE_TOO_LARGE);
+            }
+            return body;
+        } catch (IOException e) {
+            throw new AppException(ErrorCode.INVALID_REQUEST);
+        }
     }
 }
