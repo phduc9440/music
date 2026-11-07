@@ -53,6 +53,18 @@ class MusicXmlInspectorTest {
     }
 
     @Test
+    void staffCountSumsStavesOfAllParts() {
+        // Giọng hát (1 khuông) + piano (2 khuông) = 3, như output nhiều part của OMR
+        String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><score-partwise version=\"3.1\"><part-list/>"
+                + "<part id=\"P1\"><measure number=\"1\">"
+                + "<attributes><divisions>4</divisions></attributes></measure></part>"
+                + "<part id=\"P2\"><measure number=\"1\"><attributes><staves>2</staves></attributes></measure></part>"
+                + "</score-partwise>";
+
+        assertThat(MusicXmlInspector.inspect(bytes(xml)).staffCount()).isEqualTo(3);
+    }
+
+    @Test
     void keySignatureFormats() {
         assertThat(MusicXmlInspector.inspect(score(1, "major", null, 1)).keySignature())
                 .isEqualTo("G");

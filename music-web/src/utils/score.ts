@@ -197,3 +197,13 @@ export const fileNameWithoutExtension = (name: string): string => name.replace(/
 /** Tự đoán loại nguồn: PDF -> PDF gốc, ảnh -> Ảnh chụp (người dùng sửa được). */
 export const guessSourceType = (files: File[]): OmrSourceType =>
   files.length > 0 && files.every(isPdf) ? 'PDF_NATIVE' : 'PHOTO';
+
+/** Tên file tải về an toàn: bỏ ký tự cấm (\ / : * ? " < > |) và ký tự điều khiển, tối đa 120 ký tự. */
+export function toSafeFileName(name: string | null | undefined, fallback = 'ban-nhac'): string {
+  const cleaned = (name ?? '')
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_')
+    .trim()
+    .slice(0, 120);
+  return cleaned || fallback;
+}

@@ -1,4 +1,5 @@
 import apiClient from './client';
+import { saveBlob, unwrapBlobError } from './fileApi';
 import type {
   ApiResponse,
   PageResult,
@@ -28,14 +29,21 @@ export const fetchKern = async (scoreId: string): Promise<string> => {
   return response.data;
 };
 
-/** Chuỗi MusicXML hiện hành của bản nhạc (application/vnd.recordare.musicxml+xml). */
-export const fetchMusicXml = async (scoreId: string): Promise<string> => {
+/**
+ * MusicXML hiện hành kèm version lấy từ ETag ("v5" -> 5). Version đi cùng đúng nội dung vừa tải nên dùng cho If-Match khi
+ * lưu, không bị lệch nếu có người lưu giữa hai lần gọi API. version = null nếu không đọc được ETag.
+ */
+export const fetchMusicXmlWithVersion = async (scoreId: string): Promise<{ xml: string; version: number | null }> => {
   const response = await apiClient.get<string>(`/scores/${scoreId}/musicxml`, {
     responseType: 'text',
     transformResponse: (data) => data, // giữ nguyên chuỗi XML, không để axios thử parse JSON
   });
-  return response.data;
+  const match = /v(\d+)/.exec(String(response.headers?.etag ?? ''));
+  return { xml: response.data, version: match ? Number(match[1]) : null };
 };
+
+/** Chuỗi MusicXML hiện hành của bản nhạc (application/vnd.recordare.musicxml+xml). */
+export const fetchMusicXml = async (scoreId: string): Promise<string> => (await fetchMusicXmlWithVersion(scoreId)).xml;
 
 /**
  * Lưu MusicXML đã chỉnh sửa (PUT /scores/{id}/musicxml, đặc tả 3.6).
@@ -67,13 +75,10 @@ export const downloadScoreExport = async (
   kind: 'musicxml' | 'midi',
   fileName: string,
 ): Promise<void> => {
-  const response = await apiClient.get<Blob>(`/scores/${scoreId}/${kind}`, { responseType: 'blob', timeout: 60000 });
-  const objectUrl = URL.createObjectURL(response.data);
-  const a = document.createElement('a');
-  a.href = objectUrl;
-  a.download = fileName;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(objectUrl);
+  try {
+    const response = await apiClient.get<Blob>(`/scores/${scoreId}/${kind}`, { responseType: 'blob', timeout: 60000 });
+    saveBlob(response.data, fileName);
+  } catch (err) {
+    throw await unwrapBlobError(err);
+  }
 };

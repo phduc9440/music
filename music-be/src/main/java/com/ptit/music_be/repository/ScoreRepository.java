@@ -39,8 +39,8 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
             """
 			select s from Score s
 			where s.member.id = :memberId
-			and (lower(s.title) like lower(concat('%', :keyword, '%'))
-				or lower(coalesce(s.composer, '')) like lower(concat('%', :keyword, '%')))
+			and (lower(s.title) like lower(concat('%', :keyword, '%')) escape '\\'
+				or lower(coalesce(s.composer, '')) like lower(concat('%', :keyword, '%')) escape '\\')
 			and (:status = '' or s.processingStatus = :status)
 			and (:source = '' or s.sourceType = :source)
 			""")
