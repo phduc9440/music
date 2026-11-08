@@ -72,6 +72,8 @@ interface Props {
   followMeasure?: number | null;
   /** Bấm vào một nốt khi không có `onSelectNotes` (trang phát): trả về ô nhịp của nốt đó (từ 0). */
   onMeasureClick?: (measureIndex: number, additive: boolean) => void;
+  /** Số nửa cung chuyển giọng khi VẼ bản nhạc (trang phát). 0 = giọng gốc. Editor không dùng để khỏi nhầm khi đang sửa nốt. */
+  transpose?: number;
   /** Đoạn A-B cần tô khung (chỉ số ô từ 0); null = không tô. Nên giữ nguyên tham chiếu giữa các lần vẽ. */
   loopRange?: LoopRange | null;
   /** Shift + kéo qua các ô nhịp (khi không có `onSelectNotes`): trả về ô đầu và ô cuối (từ 0, đầu ≤ cuối). */
@@ -247,6 +249,17 @@ const drawIssueBoxes = (
   }
 };
 
+/**
+ * Đưa bản nhạc của OSMD về `semitones` nửa cung (so với giọng viết trong file). Chỉ dựng lại đồ họa khi giá trị đổi; `load()`
+ * tạo bản nhạc mới ở giọng gốc nên sau mỗi lần nạp phải gọi lại.
+ */
+const syncTranspose = (osmd: OpenSheetMusicDisplay, semitones: number): void => {
+  const sheet = osmd.Sheet;
+  if (!sheet || sheet.Transpose === semitones) return;
+  sheet.Transpose = semitones;
+  osmd.updateGraphic();
+};
+
 /** Chiều cao ước lượng của khung thêm nốt (px), để quyết định mở lên hay xuống. */
 const POPOVER_HEIGHT = 190;
 
@@ -295,6 +308,7 @@ export default function ScoreCanvas({
   followMeasure = null,
   onMeasureClick,
   loopRange = null,
+  transpose = 0,
   onMeasureRange,
   onSelectNotes,
   onDragPitch,
@@ -322,7 +336,7 @@ export default function ScoreCanvas({
   // loadId > 0: đã nạp xong MusicXML (tăng theo mỗi lần nạp); drawnKey: cấu hình đã vẽ xong gần nhất
   const [loadId, setLoadId] = useState(0);
   const [drawnKey, setDrawnKey] = useState('');
-  const wantedKey = loadId > 0 ? `${loadId}|${zoom}|${mode}` : '';
+  const wantedKey = loadId > 0 ? `${loadId}|${zoom}|${mode}|${transpose}` : '';
   const busy = wantedKey === '' || drawnKey !== wantedKey;
 
   const [textEdit, setTextEdit] = useState<{
@@ -363,6 +377,7 @@ export default function ScoreCanvas({
     playing,
     mutedStaves,
     loopRange,
+    transpose,
     issueMeasures,
     onConfirmMeasure,
     openText,
@@ -381,6 +396,7 @@ export default function ScoreCanvas({
       playing,
       mutedStaves,
       loopRange,
+      transpose,
       issueMeasures,
       onConfirmMeasure,
       openText,
@@ -432,7 +448,7 @@ export default function ScoreCanvas({
     let cancelled = false;
     (async () => {
       try {
-        const { OpenSheetMusicDisplay: Osmd } = await import('opensheetmusicdisplay');
+        const { OpenSheetMusicDisplay: Osmd, TransposeCalculator } = await import('opensheetmusicdisplay');
         if (cancelled) return;
         const osmd = new Osmd(host, {
           autoResize: false, // tự vẽ lại bằng ResizeObserver
@@ -442,6 +458,7 @@ export default function ScoreCanvas({
           drawComposer: true,
           drawPartNames: false,
         });
+        osmd.TransposeCalculator = new TransposeCalculator(); // cần có thì `Sheet.Transpose` mới có tác dụng
         const source = latest.current.doc;
         loadedRevision.current = latest.current.revision;
         await osmd.load(source ? source.serialize() : xml);
@@ -486,6 +503,7 @@ export default function ScoreCanvas({
         });
         osmd.zoom = zoom / 100;
         if (latest.current.doc) applyHeaderStyle(osmd, readHeader(latest.current.doc));
+        syncTranspose(osmd, transpose);
         osmd.render();
         decorate(osmd);
         // Vẽ lại làm khung co lại tạm thời nên trả về vị trí cuộn cũ (đổi zoom thì giữ tương đối)
@@ -494,7 +512,7 @@ export default function ScoreCanvas({
         const pages = horizontal ? 1 : Math.max(1, osmd.GraphicSheet?.MusicPages?.length ?? 1);
         latest.current.onRendered(pages);
         reportProgress();
-        setDrawnKey(`${loadId}|${zoom}|${mode}`);
+        setDrawnKey(`${loadId}|${zoom}|${mode}|${transpose}`);
       } catch {
         latest.current.onError();
       }
@@ -516,7 +534,7 @@ export default function ScoreCanvas({
       clearTimeout(timer);
       observer.disconnect();
     };
-  }, [loadId, zoom, mode, reportProgress, decorate]);
+  }, [loadId, zoom, mode, transpose, reportProgress, decorate]);
 
   // Nội dung `doc` đổi (sửa, hoàn tác, khôi phục nháp): nạp lại XML, vẽ lại, giữ vị trí cuộn. Gộp trong 150ms.
   useEffect(() => {
@@ -531,6 +549,7 @@ export default function ScoreCanvas({
         await osmd.load(doc.serialize());
         if (cancelled) return;
         applyHeaderStyle(osmd, readHeader(doc));
+        syncTranspose(osmd, latest.current.transpose);
         osmd.render();
         loadedRevision.current = revision;
         decorate(osmd);

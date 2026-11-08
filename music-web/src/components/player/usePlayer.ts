@@ -6,6 +6,8 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { detectInstrument, partLabel } from '../editor/instruments';
+import { readStartingKey } from '../editor/transpose';
+import type { KeySignature } from '../editor/transpose';
 import type { InstrumentId } from '../editor/instruments';
 import { stopAllTones, getSharedAudioContext } from '../editor/previewTone';
 import type { ScoreDocument } from '../editor/ScoreDocument';
@@ -20,6 +22,7 @@ import type { MixerState, TrackMix } from './mixer';
 import { loadPlayerSettings, loadScoreSettings, saveScoreSettings } from './settings';
 import { trackOfNoteId } from './highlight';
 import { activeNoteIds, buildTimeline, firstOrderOfMeasure, measureOrderAt } from './timeline';
+import { countOutOfRange } from './transposeRange';
 import type { Timeline } from './timeline';
 
 /** Nhạc cụ của một part để hiện trong menu "Nhạc cụ". */
@@ -85,6 +88,14 @@ export interface PlayerApi {
   pickLoopMeasure: (measureIndex: number) => void;
   /** Xóa A và B, tắt lặp. */
   clearLoop: () => void;
+  /** Số nửa cung đang chuyển giọng khi nghe (−12…+12). */
+  transpose: number;
+  /** Chuyển giọng khi nghe; có hiệu lực ngay khi đang phát và được nhớ theo từng bản nhạc. */
+  setTranspose: (semitones: number) => void;
+  /** Số nốt vượt âm vực piano sau khi chuyển giọng (bị bỏ khi phát). */
+  outOfRange: number;
+  /** Khóa nhạc đầu bài (để hiện tên giọng gốc và giọng mới). */
+  startKey: KeySignature;
   /** Phát hoặc tạm dừng. */
   toggle: () => void;
   /** Phát; đang dừng ở đầu bài và có `ids` thì phát từ nốt đầu của vùng chọn. */
@@ -155,6 +166,7 @@ export function usePlayer(doc: ScoreDocument, options: UsePlayerOptions): Player
       tempoPercent: saved.tempoPercent,
       mixer: saved.mixer,
       loop: saved.loop,
+      transpose: saved.transpose,
     });
   });
   const samplerSnapshot = useSyncExternalStore(sampler.subscribe, sampler.getSnapshot);
@@ -166,6 +178,7 @@ export function usePlayer(doc: ScoreDocument, options: UsePlayerOptions): Player
   const tempoPercent = useSyncExternalStore(subscribe, () => engine?.getTempoPercent() ?? 100);
   const mixer = useSyncExternalStore(subscribe, () => engine?.getMixer() ?? EMPTY_MIXER);
   const loop = useSyncExternalStore(subscribe, () => engine?.getLoop() ?? NO_LOOP);
+  const transpose = useSyncExternalStore(subscribe, () => engine?.getTranspose() ?? 0);
 
   const [overrides, setOverrides] = useState<Record<number, InstrumentId>>({});
   const instrumentRef = useRef<(part: number) => InstrumentId>(() => 'piano');
@@ -375,6 +388,23 @@ export function usePlayer(doc: ScoreDocument, options: UsePlayerOptions): Player
 
   const clearLoop = useCallback(() => setLoop({ a: null, b: null, enabled: false }), [setLoop]);
 
+  const setTranspose = useCallback(
+    (semitones: number) => {
+      if (!engine) return;
+      engine.setTranspose(semitones);
+      saveScoreSettings(scoreId, { transpose: engine.getTranspose() });
+    },
+    [engine, scoreId],
+  );
+
+  const outOfRange = useMemo(() => (timeline ? countOutOfRange(timeline, transpose) : 0), [timeline, transpose]);
+  const startKey = useMemo(
+    () => readStartingKey(doc),
+    // `revision` báo `doc` (đối tượng giữ nguyên) đã đổi nội dung
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [doc, revision],
+  );
+
   // Phím tắt trang /play
   useEffect(() => {
     if (!shortcuts) return;
@@ -439,6 +469,10 @@ export function usePlayer(doc: ScoreDocument, options: UsePlayerOptions): Player
     markLoop,
     pickLoopMeasure,
     clearLoop,
+    transpose,
+    setTranspose,
+    outOfRange,
+    startKey,
     mutedStaves,
     setTrackMix,
     resetMixer,

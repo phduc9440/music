@@ -16,6 +16,7 @@ import type { LoopSegment, LoopSettings } from './loop';
 import { EMPTY_MIXER, pruneMixer, trackGain, withTrackMix } from './mixer';
 import type { MixerState, TrackMix } from './mixer';
 import { clampTempoPercent, DEFAULT_TEMPO_PERCENT } from './settings';
+import { clampTranspose, inPianoRange } from './transposeRange';
 import { firstEventAtOrAfter, measureOrderAt, timeOfOrder } from './timeline';
 import type { Timeline, TimelineEvent } from './timeline';
 
@@ -34,6 +35,8 @@ export interface EngineOptions {
   mixer?: MixerState;
   /** Đoạn lặp A-B ban đầu. */
   loop?: LoopSettings;
+  /** Chuyển giọng ban đầu (nửa cung, −12…+12). */
+  transpose?: number;
 }
 
 /**
@@ -102,6 +105,8 @@ export class PlayerEngine {
   private rate = 1;
   /** Tempo do người dùng chọn; `rate` có thể cao hơn khi tăng tốc dần đang chạy, và về lại đây khi dừng hoặc tắt. */
   private baseRate = 1;
+  /** Số nửa cung cộng vào cao độ mỗi nốt khi hẹn giờ (nghe ở giọng khác, bản nhạc không đổi). */
+  private transpose = 0;
   private voices: ScheduledVoice[] = [];
   private mixer: MixerState = EMPTY_MIXER;
   private trackIds: string[] = [];
@@ -119,6 +124,7 @@ export class PlayerEngine {
     this.baseRate = this.rate;
     this.mixer = options.mixer ?? EMPTY_MIXER;
     this.loop = options.loop ?? NO_LOOP;
+    this.transpose = clampTranspose(options.transpose ?? 0);
   }
 
   /** Nạp dòng thời gian mới (sau khi sửa bản nhạc); đang phát thì dừng và về đầu. */
@@ -143,6 +149,27 @@ export class PlayerEngine {
 
   getTimeline(): Timeline {
     return this.timeline;
+  }
+
+  /** Số nửa cung đang chuyển giọng khi nghe. */
+  getTranspose(): number {
+    return this.transpose;
+  }
+
+  /**
+   * Chuyển giọng khi nghe (−12…+12 nửa cung). Đang phát thì áp dụng ngay từ vị trí hiện tại như khi đổi tempo: nốt chưa
+   * vang được hẹn lại ở cao độ mới, nốt đang ngân vẫn ngân hết. Nốt ra ngoài âm vực piano (A0–C8) bị bỏ khi phát.
+   */
+  setTranspose(semitones: number): void {
+    const next = clampTranspose(semitones);
+    if (next === this.transpose) return;
+    this.transpose = next;
+    if (this.status === 'playing') {
+      const pos = this.position();
+      this.killPending();
+      this.anchor(pos, 0);
+    }
+    this.emit();
   }
 
   /** Cài đặt lặp A-B hiện tại (đổi tham chiếu mỗi khi có thay đổi). */
@@ -418,6 +445,8 @@ export class PlayerEngine {
 
   /** Hẹn giờ một nốt theo điểm neo `anchor`; nốt vắt qua `limit` (cuối đoạn A-B) bị cắt tại đó. */
   private schedule(event: TimelineEvent, anchor: Anchor, limit: number): void {
+    if (!inPianoRange(event.midi, this.transpose)) return;
+    const midi = event.midi + this.transpose;
     const now = this.now();
     const start = Math.max(anchor.ctx + (event.time - anchor.pos) / anchor.rate, now + 0.005);
     const duration = Math.max(MIN_NOTE_S, Math.min(event.duration, limit - event.time) / anchor.rate);
@@ -425,9 +454,8 @@ export class PlayerEngine {
     const destination = this.trackNode(event.trackId);
     const voice =
       (instrument === 'piano'
-        ? this.sampler?.play(this.ctx, { midi: event.midi, start, duration, level: event.gain, destination })
-        : null) ??
-      scheduleVoice(this.ctx, { instrument, midi: event.midi, start, duration, level: event.gain, destination });
+        ? this.sampler?.play(this.ctx, { midi, start, duration, level: event.gain, destination })
+        : null) ?? scheduleVoice(this.ctx, { instrument, midi, start, duration, level: event.gain, destination });
     this.voices.push({ voice, start });
   }
 

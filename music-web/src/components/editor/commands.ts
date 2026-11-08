@@ -202,7 +202,7 @@ const tieChain = (doc: ScoreDocument, info: NoteInfo, indexOf: Map<string, numbe
 };
 
 /** Tính lại dấu hóa hiển thị của mọi nốt trong một ô nhịp theo trạng thái dấu hóa của từng khuông. */
-const refreshAccidentals = (doc: ScoreDocument, partIndex: number, measureIndex: number): void => {
+export const refreshAccidentals = (doc: ScoreDocument, partIndex: number, measureIndex: number): void => {
   const fifths = doc.keyAtPart(partIndex, measureIndex);
   const byStaff = new Map<number, NoteInfo[]>();
   for (const info of doc.notes) {

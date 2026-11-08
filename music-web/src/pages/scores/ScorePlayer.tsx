@@ -1,19 +1,23 @@
 import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'react-toastify';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import DownloadMenu from '../../components/scores/DownloadMenu';
+import Modal from '../../components/scores/Modal';
 import InstrumentMenu from '../../components/scores/InstrumentMenu';
 import ScoreCanvas from '../../components/scores/ScoreCanvas';
 import ZoomControl from '../../components/scores/ZoomControl';
 import { IconBack, IconPages, IconScroll } from '../../components/scores/ViewerIcons';
+import { EDIT_FAILURE_MESSAGES } from '../../components/editor/commands';
 import { syncTitle } from '../../components/editor/header';
 import { ScoreDocument } from '../../components/editor/ScoreDocument';
+import { transposeDocument } from '../../components/editor/transpose';
 import { PlayerBar } from '../../components/player/PlayerBar';
 import { usePlayer } from '../../components/player/usePlayer';
 import { countView } from '../../services/playbackApi';
-import { fetchMusicXmlWithVersion, scoreApi } from '../../services';
+import { fetchMusicXmlWithVersion, saveMusicXml, scoreApi } from '../../services';
 import type { ScoreDetail as ScoreDetailData } from '../../types';
 import { isValidScoreId } from '../../utils/omr';
-import { getHttpStatus } from '../../utils/score';
+import { getConflictVersion, getHttpStatus, getSaveErrorMessage } from '../../utils/score';
 import { clampZoom, inspectMusicXml, loadViewerPrefs, saveViewerPrefs } from '../../utils/viewer';
 import type { ViewMode } from '../../utils/viewer';
 import '../../components/scores/scores.css';
@@ -31,6 +35,9 @@ export default function ScorePlayer() {
   const [score, setScore] = useState<ScoreDetailData | null>(null);
   const [xml, setXml] = useState<string | null>(null);
   const [doc, setDoc] = useState<ScoreDocument | null>(null);
+  /** Phiên bản MusicXML đang giữ (gửi qua If-Match khi lưu); tải lại sau mỗi lần lưu thành công. */
+  const [version, setVersion] = useState(1);
+  const [reloadCount, setReloadCount] = useState(0);
 
   useEffect(() => {
     if (!isValidScoreId(id)) return;
@@ -41,8 +48,11 @@ export default function ScorePlayer() {
         if (cancelled) return;
         setScore(detail.data.result);
         let text: string;
+        let fetchedVersion: number | null = null;
         try {
-          text = (await fetchMusicXmlWithVersion(id)).xml;
+          const fetched = await fetchMusicXmlWithVersion(id);
+          text = fetched.xml;
+          fetchedVersion = fetched.version;
         } catch (err) {
           if (!cancelled) setPhase(getHttpStatus(err) === 409 ? 'notReady' : 'error');
           return;
@@ -54,6 +64,7 @@ export default function ScorePlayer() {
           const shown = syncTitle(opened, detail.data.result.title) ? opened.serialize() : text;
           setXml(shown);
           setDoc(opened);
+          setVersion(fetchedVersion ?? detail.data.result.currentVersion ?? 1);
           setPhase('ready');
         } catch {
           setPhase('parseError');
@@ -67,10 +78,19 @@ export default function ScorePlayer() {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, reloadCount]);
 
   if (phase === 'ready' && score && xml && doc)
-    return <PlayerWorkspace key={score.id} score={score} xml={xml} doc={doc} />;
+    return (
+      <PlayerWorkspace
+        key={score.id}
+        score={score}
+        xml={xml}
+        doc={doc}
+        version={version}
+        onReload={() => setReloadCount((n) => n + 1)}
+      />
+    );
 
   let title = 'Đang tải bản nhạc...';
   let text = '';
@@ -119,9 +139,22 @@ export default function ScorePlayer() {
   );
 }
 
-function PlayerWorkspace({ score, xml, doc }: { score: ScoreDetailData; xml: string; doc: ScoreDocument }) {
+function PlayerWorkspace({
+  score,
+  xml,
+  doc,
+  version,
+  onReload,
+}: {
+  score: ScoreDetailData;
+  xml: string;
+  doc: ScoreDocument;
+  version: number;
+  onReload: () => void;
+}) {
   const [prefs, setPrefs] = useState(loadViewerPrefs);
   const [failed, setFailed] = useState(false);
+  const [conflict, setConflict] = useState<{ latestVersion: number } | null>(null);
   const { zoom, mode } = prefs;
   const player = usePlayer(doc, {
     scoreId: score.id,
@@ -135,6 +168,37 @@ function PlayerWorkspace({ score, xml, doc }: { score: ScoreDetailData; xml: str
     () => (loopA !== null && loopB !== null ? { start: loopA, end: loopB, active: loopOn } : null),
     [loopA, loopB, loopOn],
   );
+
+  /**
+   * Ghi giọng đang nghe thành nội dung bản nhạc: chuyển giọng trên một bản sao rồi lưu thành phiên bản mới (If-Match).
+   * Thành công thì đặt giọng nghe về 0 và tải lại bản nhạc; lệch phiên bản thì hiện hộp thoại xung đột.
+   */
+  const applyTranspose = async (semitones: number): Promise<boolean> => {
+    let copy: ScoreDocument;
+    try {
+      copy = ScoreDocument.parse(xml);
+    } catch {
+      toast.error('Không đọc được bản nhạc để chuyển giọng');
+      return false;
+    }
+    const result = transposeDocument(copy, semitones);
+    if (!result.ok) {
+      toast.warn(EDIT_FAILURE_MESSAGES[result.reason]);
+      return false;
+    }
+    try {
+      const saved = await saveMusicXml(score.id, copy.serialize(), version);
+      toast.success(`Đã chuyển giọng và lưu (phiên bản ${saved.version})`);
+      player.setTranspose(0);
+      onReload();
+      return true;
+    } catch (err) {
+      const latest = getConflictVersion(err);
+      if (latest !== undefined) setConflict({ latestVersion: latest });
+      else toast.error(getSaveErrorMessage(err));
+      return false;
+    }
+  };
 
   const update = (patch: Partial<typeof prefs>) =>
     setPrefs((prev) => {
@@ -209,13 +273,44 @@ function PlayerWorkspace({ score, xml, doc }: { score: ScoreDetailData; xml: str
             playing={player.activeIds}
             mutedStaves={player.mutedStaves}
             loopRange={loopRange}
+            transpose={player.transpose}
             onMeasureRange={(a, b) => player.setLoop({ a, b })}
             followMeasure={player.status === 'playing' ? player.followMeasure : null}
             onMeasureClick={(m, additive) => (additive ? player.pickLoopMeasure(m) : player.seekToMeasure(m))}
           />
         </div>
       </div>
-      <PlayerBar player={player} canDragLoop />
+      <PlayerBar
+        player={player}
+        canDragLoop
+        transposeRedraws
+        onApplyTranspose={score.canEdit ? applyTranspose : undefined}
+        applyTransposeHint="Sẽ lưu ngay thành một phiên bản mới của bản nhạc."
+      />
+      {conflict && (
+        <Modal title="Bản nhạc vừa được lưu ở nơi khác" onClose={() => setConflict(null)}>
+          <p className="sv-modal-text">
+            {conflict.latestVersion > 0
+              ? `Trên máy chủ đã có phiên bản ${conflict.latestVersion}, mới hơn bản bạn đang nghe (phiên bản ${version}). `
+              : 'Trên máy chủ đã có phiên bản mới hơn bản bạn đang nghe. '}
+            Hãy tải bản mới nhất rồi chuyển giọng lại.
+          </p>
+          <div className="sc-modal__actions">
+            <button
+              className="sc-btn sc-btn--primary"
+              onClick={() => {
+                setConflict(null);
+                onReload();
+              }}
+            >
+              Tải bản mới nhất
+            </button>
+            <button className="sc-btn" onClick={() => setConflict(null)}>
+              Đóng
+            </button>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

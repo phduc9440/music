@@ -66,6 +66,17 @@ export const spellMidi = (midi: number, fifths: number, direction: 1 | -1): Pitc
   return spellings(midi).sort((a, b) => rank(a) - rank(b))[0];
 };
 
+/**
+ * Chọn cách viết một cao độ MIDI giữ nguyên VAI TRÒ so với khóa nhạc: `relative` = dấu hóa của nốt gốc trừ dấu hóa mà khóa
+ * nhạc gốc áp cho bậc đó (0 = nốt thuộc giọng; +1 = nâng cao so với giọng; −1 = hạ thấp). Dùng khi chuyển giọng: nốt thuộc
+ * giọng thì viết theo khóa mới, nốt nâng/hạ thì vẫn nâng/hạ so với khóa mới (♯4 của Sol trưởng là Đô♯, của Fa trưởng là Si♮).
+ * Không có cách viết nào giữ đúng vai trò thì chọn cách gần nhất, ít dấu hóa nhất.
+ */
+export const spellMidiRelative = (midi: number, fifths: number, relative: number): Pitch => {
+  const cost = (p: Pitch): number => Math.abs(p.alter - keyAlter(fifths, p.step) - relative);
+  return spellings(midi).sort((a, b) => cost(a) - cost(b) || Math.abs(a.alter) - Math.abs(b.alter))[0];
+};
+
 /** Có nằm trong khoảng A0–C8 không. */
 export const inRange = (midi: number): boolean => midi >= MIDI_MIN && midi <= MIDI_MAX;
 

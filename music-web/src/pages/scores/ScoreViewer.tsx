@@ -626,7 +626,22 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
           onExit={() => editor.setInputMode(false)}
         />
       )}
-      {playerOpen && <PlayerBar player={player} onClose={closePlayer} />}
+      {playerOpen && (
+        <PlayerBar
+          player={player}
+          onClose={closePlayer}
+          onApplyTranspose={
+            canEdit
+              ? (semitones) => {
+                  const done = editor.transposeScore(semitones);
+                  if (done) player.setTranspose(0); // bản nhạc đã ở giọng mới, không cộng thêm khi nghe
+                  return done;
+                }
+              : undefined
+          }
+          applyTransposeHint="Bạn có thể hoàn tác (Ctrl+Z) và cần bấm Lưu để giữ lại."
+        />
+      )}
       <footer className="sv-status">
         <span>{summary.join(' · ') || 'Bản nhạc'}</span>
         <div className="sv-status__right">

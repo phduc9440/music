@@ -529,6 +529,129 @@
   background: rgb(217 119 6 / 0.04);
 }
 
+/* Chuyển giọng */
+.pl-tr__value {
+  font-variant-numeric: tabular-nums;
+  min-width: 1.6em;
+  text-align: left;
+}
+.pl-tr__head {
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.pl-tr__stepper {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+.pl-tr__step {
+  flex: none;
+  width: 44px;
+  min-height: 44px;
+  border: 1px solid var(--sc-border, #e5e7eb);
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.pl-tr__step:hover:not(:disabled) {
+  background: rgb(15 23 42 / 0.06);
+}
+.pl-tr__step:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.pl-tr__step:focus-visible,
+.pl-tr__select:focus-visible {
+  outline: 2px solid var(--sc-primary, #2563eb);
+  outline-offset: 2px;
+}
+.pl-tr__select {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1px solid var(--sc-border, #e5e7eb);
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+}
+.pl-tr__key {
+  margin: 10px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.pl-tr__note {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--sc-muted, #6b7280);
+}
+.pl-tr__note--warn {
+  color: #b45309;
+}
+.pl-tr__apply {
+  width: 100%;
+  min-height: 40px;
+  margin-top: 10px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--sc-primary, #2563eb);
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pl-tr__apply:hover:not(:disabled) {
+  background: var(--sc-primary-hover, #1d4ed8);
+}
+.pl-tr__apply:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.pl-tr__confirm-actions {
+  display: flex;
+  gap: 8px;
+}
+.pl-tr__confirm-actions .pl-tr__apply {
+  flex: 1;
+}
+.pl-tr__cancel {
+  flex: none;
+  min-height: 40px;
+  margin-top: 10px;
+  padding: 0 16px;
+  border: 1px solid var(--sc-border, #e5e7eb);
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.pl-tr__apply:focus-visible,
+.pl-tr__cancel:focus-visible {
+  outline: 2px solid var(--sc-primary, #2563eb);
+  outline-offset: 2px;
+}
+.pl-tr__reset {
+  display: block;
+  margin: 10px 0 0;
+  font-size: 12px;
+}
+.pl-tr__reset:disabled {
+  opacity: 0.4;
+  cursor: default;
+  text-decoration: none;
+}
+
 /* Nốt đang vang */
 .pl-note--muted {
   opacity: 0.3;
