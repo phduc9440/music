@@ -23,6 +23,7 @@ import com.ptit.music_be.repository.AiTaskRepository;
 import com.ptit.music_be.repository.ScoreFileRepository;
 import com.ptit.music_be.repository.ScoreRepository;
 import com.ptit.music_be.service.AiTaskService;
+import com.ptit.music_be.service.MuseScoreCliService;
 import com.ptit.music_be.service.ScoreFileService;
 import com.ptit.music_be.utils.SecurityUtils;
 import com.ptit.music_be.worker.AiTaskDispatcher;
@@ -42,6 +43,7 @@ public class AiTaskServiceImpl implements AiTaskService {
     ScoreFileService scoreFileService;
     AiTaskMapper aiTaskMapper;
     AiTaskDispatcher aiTaskDispatcher;
+    MuseScoreCliService museScoreCliService;
 
     @Override
     @Transactional(readOnly = true)
@@ -105,6 +107,15 @@ public class AiTaskServiceImpl implements AiTaskService {
                 @Override
                 public void afterCommit() {
                     aiTaskDispatcher.cancelRemote(taskId);
+                }
+            });
+        }
+        // Task xuất file: giết tiến trình MuseScore đang chạy (worker thấy task CANCELLED sẽ tự dọn file)
+        if (task.getTaskType() == AiTaskType.AUDIO_SYNTHESIS || task.getTaskType() == AiTaskType.FORMAT_CONVERSION) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    museScoreCliService.kill(taskId);
                 }
             });
         }
