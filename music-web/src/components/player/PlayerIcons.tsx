@@ -50,3 +50,19 @@ export const IconClose = () => (
     <path d="M6 6l12 12M18 6L6 18" />
   </Svg>
 );
+export const IconMixer = () => (
+  <Svg size={18}>
+    <path d="M5 4v16M12 4v16M19 4v16" />
+    <circle cx="5" cy="14" r="2.2" fill="currentColor" />
+    <circle cx="12" cy="8" r="2.2" fill="currentColor" />
+    <circle cx="19" cy="15" r="2.2" fill="currentColor" />
+  </Svg>
+);
+export const IconLoop = () => (
+  <Svg size={18}>
+    <path d="M17 2l3 3-3 3" />
+    <path d="M4 11V9a4 4 0 0 1 4-4h12" />
+    <path d="M7 22l-3-3 3-3" />
+    <path d="M20 13v2a4 4 0 0 1-4 4H4" />
+  </Svg>
+);

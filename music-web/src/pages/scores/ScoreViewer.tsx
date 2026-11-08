@@ -268,6 +268,7 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
   });
 
   const player = usePlayer(doc, {
+    scoreId: score.id,
     enabled: playerOpen,
     fallbackBpm: score.tempoBpm ?? 100,
     revision: editor.revision,
@@ -278,6 +279,11 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
     selectionRef.current = editor.selection;
   });
   const { canPlay, playFrom, stop: stopPlayer, status: playerStatus } = player;
+  const { a: loopA, b: loopB, enabled: loopOn } = player.loop;
+  const loopRange = useMemo(
+    () => (playerOpen && loopA !== null && loopB !== null ? { start: loopA, end: loopB, active: loopOn } : null),
+    [playerOpen, loopA, loopB, loopOn],
+  );
 
   // Mở thanh Player bằng nút Phát: đợi mẫu âm tải xong rồi mới phát
   useEffect(() => {
@@ -567,6 +573,8 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
             issueMeasures={issueMeasures}
             focusMeasure={focusMeasure}
             playing={player.activeIds}
+            mutedStaves={player.mutedStaves}
+            loopRange={loopRange}
             followMeasure={player.status === 'playing' ? player.followMeasure : null}
             onSelectNotes={canEdit ? editor.select : undefined}
             onDragPitch={canEdit ? editor.dragPitch : undefined}

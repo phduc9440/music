@@ -1,4 +1,7 @@
 import { IconClose, IconNextMeasure, IconPauseBig, IconPlayBig, IconPrevMeasure, IconStopSmall } from './PlayerIcons';
+import { LoopControl } from './LoopControl';
+import { MixerPopover } from './MixerPopover';
+import { TempoControl } from './TempoControl';
 import { TransportProgress } from './TransportProgress';
 import { useEnginePosition } from './usePlayer';
 import type { PlayerApi } from './usePlayer';
@@ -15,9 +18,11 @@ interface Props {
   onClose?: () => void;
   /** Nội dung chèn thêm bên phải (ví dụ menu nhạc cụ). */
   extra?: React.ReactNode;
+  /** Bản nhạc ở trang này chọn được đoạn A-B bằng Shift + kéo (trang phát): hiện mẹo trong khung Lặp. */
+  canDragLoop?: boolean;
 }
 
-export function PlayerBar({ player, onClose, extra }: Props) {
+export function PlayerBar({ player, onClose, extra, canDragLoop }: Props) {
   if (!player.engine || !player.timeline) {
     return (
       <div className="pl-bar pl-bar--notice" role="region" aria-label="Trình phát">
@@ -32,13 +37,23 @@ export function PlayerBar({ player, onClose, extra }: Props) {
       </div>
     );
   }
-  return <BarBody player={player} onClose={onClose} extra={extra} engine={player.engine} timeline={player.timeline} />;
+  return (
+    <BarBody
+      player={player}
+      onClose={onClose}
+      extra={extra}
+      canDragLoop={canDragLoop}
+      engine={player.engine}
+      timeline={player.timeline}
+    />
+  );
 }
 
 function BarBody({
   player,
   onClose,
   extra,
+  canDragLoop,
   engine,
   timeline,
 }: Props & { engine: NonNullable<PlayerApi['engine']>; timeline: NonNullable<PlayerApi['timeline']> }) {
@@ -47,7 +62,11 @@ function BarBody({
   const loading = player.sampler.state === 'loading';
   const order = timeline.measures.findIndex((m) => position < m.end);
   const current = (order < 0 ? timeline.measures.length : order + 1) || 1;
+  // Ô đang phát theo chỉ số trong bản nhạc (khác thứ tự lượt phát khi có dấu lặp lại)
+  const currentMeasure = timeline.measures[Math.max(0, order < 0 ? timeline.measures.length - 1 : order)]?.index ?? 0;
   const percent = Math.round(player.sampler.progress * 100);
+  // Thời gian hiển thị là giây thật: ở 50% bài dài gấp đôi
+  const speed = player.tempoPercent / 100;
 
   let notice: React.ReactNode = null;
   if (player.empty) notice = <span className="pl-notice">Bản nhạc trống, chưa có nốt để phát.</span>;
@@ -112,16 +131,42 @@ function BarBody({
           position={position}
           disabled={!player.canPlay}
           onSeek={(s) => engine.seek(s)}
+          loopSegments={player.loopSegments}
+          loopOn={player.loop.enabled}
         />
         <div className="pl-meta">
           <span className="pl-time" aria-live="off">
-            Ô {Math.min(current, timeline.measures.length)} / {timeline.measures.length} · {fmt(position)} /{' '}
-            {fmt(timeline.total)}
+            Ô {Math.min(current, timeline.measures.length)} / {timeline.measures.length} · {fmt(position / speed)} /{' '}
+            {fmt(timeline.total / speed)}
           </span>
           {notice}
         </div>
       </div>
       <div className="pl-side">
+        <TempoControl
+          percent={player.tempoPercent}
+          baseBpm={timeline.baseBpm}
+          onChange={player.setTempoPercent}
+          disabled={!player.canPlay}
+        />
+        <LoopControl
+          loop={player.loop}
+          measureCount={timeline.measureCount}
+          currentMeasure={currentMeasure}
+          unreachable={player.loop.a !== null && player.loop.b !== null && player.loopSegments.length === 0}
+          onMark={player.markLoop}
+          onChange={player.setLoop}
+          onClear={player.clearLoop}
+          showDragHint={canDragLoop}
+          disabled={!player.canPlay}
+        />
+        <MixerPopover
+          tracks={timeline.tracks}
+          mixer={player.mixer}
+          onChange={player.setTrackMix}
+          onReset={player.resetMixer}
+          disabled={!player.canPlay}
+        />
         {extra}
         {onClose && (
           <button type="button" className="pl-btn pl-btn--ghost" onClick={onClose} aria-label="Đóng trình phát">

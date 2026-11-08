@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import type { KeyboardEvent, PointerEvent } from 'react';
+import type { LoopSegment } from './loop';
 import type { Timeline } from './timeline';
 import { measureOrderAt } from './timeline';
 
@@ -11,10 +12,14 @@ interface Props {
   position: number;
   disabled?: boolean;
   onSeek: (seconds: number) => void;
+  /** Các đoạn A-B tô trên thanh (giây ở tempo gốc). */
+  loopSegments?: readonly LoopSegment[];
+  /** Đang bật lặp (tô đậm); tắt thì tô nhạt nét đứt. */
+  loopOn?: boolean;
 }
 
 /** Thanh tiến trình có thể kéo: thả để nhảy tới đầu ô nhịp gần nhất; hỗ trợ bàn phím (←/→, Home, End). */
-export function TransportProgress({ timeline, position, disabled, onSeek }: Props) {
+export function TransportProgress({ timeline, position, disabled, onSeek, loopSegments = [], loopOn = false }: Props) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<number | null>(null);
   const total = Math.max(timeline.total, 0.001);
@@ -79,6 +84,14 @@ export function TransportProgress({ timeline, position, disabled, onSeek }: Prop
     >
       <div className="pl-progress__rail">
         <div className="pl-progress__fill" style={{ width: `${Math.min(100, (shown / total) * 100)}%` }} />
+        {loopSegments.map((s) => (
+          <i
+            key={s.startOrder}
+            className={`pl-progress__loop${loopOn ? '' : ' pl-progress__loop--off'}`}
+            style={{ left: `${(s.start / total) * 100}%`, width: `${((s.end - s.start) / total) * 100}%` }}
+            aria-hidden="true"
+          />
+        ))}
         {ticks.map((m) => (
           <i key={m.order} className="pl-progress__tick" style={{ left: `${(m.start / total) * 100}%` }} />
         ))}

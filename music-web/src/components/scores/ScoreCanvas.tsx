@@ -20,7 +20,7 @@ import { applyHeaderStyle, readHeader } from '../editor/header';
 import type { HeaderField, HeaderState, TextStyle } from '../editor/header';
 import { readTempo } from '../editor/tempo';
 import type { TempoInfo } from '../editor/tempo';
-import { applyPlaying, keepMeasureVisible, measureOfEvent } from '../player/highlight';
+import { applyMutedTracks, applyPlaying, keepMeasureVisible, measureOfEvent } from '../player/highlight';
 import NoteInsertPopover from './NoteInsertPopover';
 import TextEditPopover from './TextEditPopover';
 import type { TextKind } from './TextEditPopover';
@@ -66,17 +66,31 @@ interface Props {
   onConfirmMeasure?: (measureIndex: number) => void;
   /** Id các nốt đang vang khi phát (tô bằng class CSS, không vẽ lại). */
   playing?: ReadonlySet<string>;
+  /** Id track ("part:khuông") đang tắt tiếng: nốt của khuông đó được làm mờ. */
+  mutedStaves?: ReadonlySet<string>;
   /** Ô nhịp (từ 0) cần giữ trong khung nhìn khi phát; null = không tự cuộn. */
   followMeasure?: number | null;
   /** Bấm vào một nốt khi không có `onSelectNotes` (trang phát): trả về ô nhịp của nốt đó (từ 0). */
   onMeasureClick?: (measureIndex: number, additive: boolean) => void;
+  /** Đoạn A-B cần tô khung (chỉ số ô từ 0); null = không tô. Nên giữ nguyên tham chiếu giữa các lần vẽ. */
+  loopRange?: LoopRange | null;
+  /** Shift + kéo qua các ô nhịp (khi không có `onSelectNotes`): trả về ô đầu và ô cuối (từ 0, đầu ≤ cuối). */
+  onMeasureRange?: (startMeasure: number, endMeasure: number) => void;
   /** Thêm nốt tại vị trí trên khuông (bấm hoặc kéo-thả); trả về true nếu thêm được. Có prop này thì canvas nhận kéo-thả. */
   onInsertNote?: (target: InsertTarget, choice: DurationChoice, accidental: AccidentalChoice) => boolean;
 }
 
-/** Cử chỉ chuột/bút đang diễn ra: kéo khung chọn vùng, hoặc kéo một nốt. */
+/** Đoạn A-B tô trên bản nhạc: chỉ số ô từ 0 (gồm cả hai đầu); `active` = đang bật lặp. */
+export interface LoopRange {
+  start: number;
+  end: number;
+  active: boolean;
+}
+
+/** Cử chỉ chuột/bút đang diễn ra: kéo khung chọn vùng, hoặc kéo một nốt, hoặc Shift + kéo qua các ô nhịp. */
 type Gesture =
   | { kind: 'band'; x0: number; y0: number; moved: boolean }
+  | { kind: 'measures'; x0: number; y0: number; from: number | null; to: number | null; moved: boolean }
   | { kind: 'note'; ids: string[]; el: SVGGElement; y0: number; moved: boolean; steps: number };
 
 /** Chờ sau lần đổi zoom/kích thước cuối cùng rồi mới vẽ lại (ms). */
@@ -88,6 +102,9 @@ const EMPTY_NUMBERS: ReadonlySet<number> = new Set();
 
 const MEASURE_OF_ID = /^(?:p\d+-)?m(\d+)-/;
 const ISSUE_BOX_CLASS = 'ed-issue-box';
+const LOOP_BOX_CLASS = 'pl-loop-box';
+const LOOP_PAD_X = 6;
+const LOOP_PAD_Y = 18;
 /** Quãng kéo tối thiểu (px) để coi là kéo chứ không phải bấm. */
 const DRAG_THRESHOLD = 5;
 /** Khoảng đệm quanh các nốt của ô nhịp sai khi vẽ viền (px). */
@@ -138,19 +155,19 @@ const drawTextHotspots = (
   }
 };
 
-/** Vẽ viền đỏ quanh các ô nhịp sai độ dài, tính từ vùng chiếm của các nốt đã gắn id trong ô đó. */
-const drawIssueBoxes = (
-  host: HTMLElement,
-  measures: ReadonlySet<number>,
-  onConfirm?: (measureIndex: number) => void,
-): void => {
-  host.querySelectorAll(`.${ISSUE_BOX_CLASS}`).forEach((el) => el.remove());
-  if (measures.size === 0) return;
-  const origin = host.getBoundingClientRect();
-  const boxes = new Map<number, { l: number; t: number; r: number; b: number }>();
+interface MeasureBox {
+  l: number;
+  t: number;
+  r: number;
+  b: number;
+}
+
+/** Vùng chiếm (toạ độ màn hình) của từng ô nhịp thỏa `accept`, tính từ các nốt đã gắn id trong ô đó. */
+const collectMeasureBoxes = (host: HTMLElement, accept: (measureIndex: number) => boolean): Map<number, MeasureBox> => {
+  const boxes = new Map<number, MeasureBox>();
   host.querySelectorAll(`[${NOTE_ID_ATTR}]`).forEach((el) => {
     const match = MEASURE_OF_ID.exec(el.getAttribute(NOTE_ID_ATTR) ?? '');
-    if (!match || !measures.has(Number(match[1]))) return;
+    if (!match || !accept(Number(match[1]))) return;
     const rect = el.getBoundingClientRect();
     if (rect.width === 0 && rect.height === 0) return;
     const key = Number(match[1]);
@@ -163,6 +180,42 @@ const drawIssueBoxes = (
       box.b = Math.max(box.b, rect.bottom);
     }
   });
+  return boxes;
+};
+
+/** Khung quanh các ô nhịp trong đoạn A-B (chỉ số ô từ 0, gồm cả hai đầu). */
+const drawLoopBoxes = (host: HTMLElement, range: LoopRange | null): void => {
+  host.querySelectorAll(`.${LOOP_BOX_CLASS}`).forEach((el) => el.remove());
+  if (!range) return;
+  const origin = host.getBoundingClientRect();
+  for (const box of collectMeasureBoxes(host, (i) => i >= range.start && i <= range.end).values()) {
+    const div = document.createElement('div');
+    div.className = range.active ? LOOP_BOX_CLASS : `${LOOP_BOX_CLASS} ${LOOP_BOX_CLASS}--off`;
+    div.style.left = `${box.l - origin.left - LOOP_PAD_X}px`;
+    div.style.top = `${box.t - origin.top - LOOP_PAD_Y}px`;
+    div.style.width = `${box.r - box.l + LOOP_PAD_X * 2}px`;
+    div.style.height = `${box.b - box.t + LOOP_PAD_Y * 2}px`;
+    host.appendChild(div);
+  }
+};
+
+/** Chỉ số ô nhịp (từ 0) của nốt nằm dưới điểm màn hình, hoặc null. Dùng khi đang giữ con trỏ (sự kiện không trỏ vào nốt). */
+const measureAtPoint = (x: number, y: number): number | null => {
+  const id = document.elementFromPoint(x, y)?.closest(`[${NOTE_ID_ATTR}]`)?.getAttribute(NOTE_ID_ATTR);
+  const match = id ? MEASURE_OF_ID.exec(id) : null;
+  return match ? Number(match[1]) : null;
+};
+
+/** Vẽ viền đỏ quanh các ô nhịp sai độ dài, tính từ vùng chiếm của các nốt đã gắn id trong ô đó. */
+const drawIssueBoxes = (
+  host: HTMLElement,
+  measures: ReadonlySet<number>,
+  onConfirm?: (measureIndex: number) => void,
+): void => {
+  host.querySelectorAll(`.${ISSUE_BOX_CLASS}`).forEach((el) => el.remove());
+  if (measures.size === 0) return;
+  const origin = host.getBoundingClientRect();
+  const boxes = collectMeasureBoxes(host, (i) => measures.has(i));
   for (const [measureIndex, box] of boxes) {
     const div = document.createElement('div');
     div.className = ISSUE_BOX_CLASS;
@@ -238,8 +291,11 @@ export default function ScoreCanvas({
   issueMeasures = EMPTY_NUMBERS,
   focusMeasure = null,
   playing = EMPTY_SET,
+  mutedStaves = EMPTY_SET,
   followMeasure = null,
   onMeasureClick,
+  loopRange = null,
+  onMeasureRange,
   onSelectNotes,
   onDragPitch,
   inputMode = false,
@@ -259,6 +315,8 @@ export default function ScoreCanvas({
   const [ghost, setGhost] = useState<StaffSpot | null>(null);
   const [popover, setPopover] = useState<{ spot: StaffSpot; revision: number } | null>(null);
   const [band, setBand] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  /** Đoạn ô nhịp đang được kéo chọn (Shift + kéo), để tô khung ngay khi kéo. */
+  const [dragRange, setDragRange] = useState<{ start: number; end: number } | null>(null);
   // Revision của nội dung OSMD đang giữ, để biết khi nào cần nạp lại
   const loadedRevision = useRef(0);
   // loadId > 0: đã nạp xong MusicXML (tăng theo mỗi lần nạp); drawnKey: cấu hình đã vẽ xong gần nhất
@@ -303,6 +361,8 @@ export default function ScoreCanvas({
     revision,
     selected,
     playing,
+    mutedStaves,
+    loopRange,
     issueMeasures,
     onConfirmMeasure,
     openText,
@@ -319,6 +379,8 @@ export default function ScoreCanvas({
       revision,
       selected,
       playing,
+      mutedStaves,
+      loopRange,
       issueMeasures,
       onConfirmMeasure,
       openText,
@@ -354,6 +416,8 @@ export default function ScoreCanvas({
       bindNoteIds(osmd, current, host);
       applySelection(host, latest.current.selected);
       applyPlaying(host, latest.current.playing);
+      applyMutedTracks(host, latest.current.mutedStaves);
+      drawLoopBoxes(host, latest.current.loopRange);
       drawIssueBoxes(host, latest.current.issueMeasures, (i) => latest.current.onConfirmMeasure?.(i));
       if (latest.current.openText) drawTextHotspots(host, current, (k, r) => latest.current.openText?.(k, r));
     } catch {
@@ -497,6 +561,20 @@ export default function ScoreCanvas({
   useEffect(() => {
     if (hostRef.current) applyPlaying(hostRef.current, playing);
   }, [playing]);
+
+  // Khung đoạn A-B (hoặc đoạn đang kéo chọn): vẽ lại khi giá trị đổi, không vẽ lại chỉ vì tham chiếu đổi
+  const shownStart = dragRange ? dragRange.start : (loopRange?.start ?? -1);
+  const shownEnd = dragRange ? dragRange.end : (loopRange?.end ?? -1);
+  const shownActive = dragRange ? true : (loopRange?.active ?? false);
+  useEffect(() => {
+    const host = hostRef.current;
+    if (host) drawLoopBoxes(host, shownStart < 0 ? null : { start: shownStart, end: shownEnd, active: shownActive });
+  }, [shownStart, shownEnd, shownActive]);
+
+  // Khuông bị tắt tiếng: chỉ đổi class CSS
+  useEffect(() => {
+    if (hostRef.current) applyMutedTracks(hostRef.current, mutedStaves);
+  }, [mutedStaves]);
 
   // Phát: giữ ô nhịp đang phát trong khung nhìn
   useEffect(() => {
@@ -674,6 +752,12 @@ export default function ScoreCanvas({
     // Bỏ qua khi bấm vào thanh cuộn
     const box = scroller.getBoundingClientRect();
     if (e.clientX - box.left >= scroller.clientWidth || e.clientY - box.top >= scroller.clientHeight) return;
+    if (e.shiftKey && !onSelectNotes && onMeasureRange) {
+      const from = measureOfEvent(e.nativeEvent);
+      gestureRef.current = { kind: 'measures', x0: e.clientX, y0: e.clientY, from, to: from, moved: false };
+      scroller.setPointerCapture(e.pointerId);
+      return;
+    }
     const ids = noteIdsFromEvent(e.nativeEvent);
     if (ids.length > 0) {
       const el = (e.target as Element).closest(`[${NOTE_ID_ATTR}]`) as SVGGElement | null;
@@ -703,6 +787,21 @@ export default function ScoreCanvas({
       });
       return;
     }
+    if (g.kind === 'measures') {
+      if (!g.moved && Math.hypot(e.clientX - g.x0, e.clientY - g.y0) < DRAG_THRESHOLD) return;
+      g.moved = true;
+      const measure = measureAtPoint(e.clientX, e.clientY);
+      if (measure !== null) {
+        g.from ??= measure;
+        g.to = measure;
+      }
+      if (g.from !== null && g.to !== null) {
+        const start = Math.min(g.from, g.to);
+        const end = Math.max(g.from, g.to);
+        setDragRange((prev) => (prev && prev.start === start && prev.end === end ? prev : { start, end }));
+      }
+      return;
+    }
     const dy = e.clientY - g.y0;
     if (!g.moved && Math.abs(dy) < DRAG_THRESHOLD) return;
     g.moved = true;
@@ -721,8 +820,10 @@ export default function ScoreCanvas({
     if (g.kind === 'note') {
       g.el.style.transform = '';
       g.el.style.opacity = '';
-    } else {
+    } else if (g.kind === 'band') {
       setBand(null);
+    } else {
+      setDragRange(null);
     }
     // Khung đang giữ con trỏ (setPointerCapture) nên sự kiện click sau đó trỏ vào khung chứ không vào nốt:
     // bấm thường (không kéo) phải xử lý chọn nốt ngay tại đây, rồi bỏ qua click đi kèm.
@@ -731,6 +832,16 @@ export default function ScoreCanvas({
     window.setTimeout(() => {
       suppressClickRef.current = false;
     }, 50);
+    if (g.kind === 'measures') {
+      if (cancelled) return;
+      // Shift + bấm (không kéo): để trang cha xử lý như chọn lần lượt A rồi B
+      if (!g.moved) {
+        if (g.from !== null) onMeasureClick?.(g.from, true);
+      } else if (g.from !== null && g.to !== null) {
+        onMeasureRange?.(Math.min(g.from, g.to), Math.max(g.from, g.to));
+      }
+      return;
+    }
     if (!g.moved) {
       if (cancelled) return;
       if (g.kind === 'note') {

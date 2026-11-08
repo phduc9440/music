@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import DownloadMenu from '../../components/scores/DownloadMenu';
 import InstrumentMenu from '../../components/scores/InstrumentMenu';
@@ -124,10 +124,17 @@ function PlayerWorkspace({ score, xml, doc }: { score: ScoreDetailData; xml: str
   const [failed, setFailed] = useState(false);
   const { zoom, mode } = prefs;
   const player = usePlayer(doc, {
+    scoreId: score.id,
     fallbackBpm: score.tempoBpm ?? 100,
     shortcuts: true,
     onFirstPlay: () => void countView(score.id),
   });
+
+  const { a: loopA, b: loopB, enabled: loopOn } = player.loop;
+  const loopRange = useMemo(
+    () => (loopA !== null && loopB !== null ? { start: loopA, end: loopB, active: loopOn } : null),
+    [loopA, loopB, loopOn],
+  );
 
   const update = (patch: Partial<typeof prefs>) =>
     setPrefs((prev) => {
@@ -200,12 +207,15 @@ function PlayerWorkspace({ score, xml, doc }: { score: ScoreDetailData; xml: str
             onProgress={() => undefined}
             onError={() => setFailed(true)}
             playing={player.activeIds}
+            mutedStaves={player.mutedStaves}
+            loopRange={loopRange}
+            onMeasureRange={(a, b) => player.setLoop({ a, b })}
             followMeasure={player.status === 'playing' ? player.followMeasure : null}
-            onMeasureClick={(m) => player.seekToMeasure(m)}
+            onMeasureClick={(m, additive) => (additive ? player.pickLoopMeasure(m) : player.seekToMeasure(m))}
           />
         </div>
       </div>
-      <PlayerBar player={player} />
+      <PlayerBar player={player} canDragLoop />
     </div>
   );
 }

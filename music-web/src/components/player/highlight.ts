@@ -13,6 +13,24 @@ export function applyPlaying(host: HTMLElement, ids: ReadonlySet<string>): void 
   });
 }
 
+export const MUTED_CLASS = 'pl-note--muted';
+
+const TRACK_OF_ID = /^(?:p(\d+)-)?m\d+-s(\d+)-/;
+
+/** Id track ("part:khuông", khuông từ 1) của một id nốt như "p1-m3-s2-v1-0", hoặc null nếu không đúng dạng. */
+export function trackOfNoteId(noteId: string): string | null {
+  const match = TRACK_OF_ID.exec(noteId);
+  return match ? `${match[1] ?? '0'}:${match[2]}` : null;
+}
+
+/** Làm mờ các nốt thuộc track đang tắt tiếng; tập rỗng thì bỏ làm mờ hết. */
+export function applyMutedTracks(host: HTMLElement, muted: ReadonlySet<string>): void {
+  host.querySelectorAll(`[${NOTE_ID_ATTR}]`).forEach((el) => {
+    const track = muted.size > 0 ? trackOfNoteId(el.getAttribute(NOTE_ID_ATTR) ?? '') : null;
+    el.classList.toggle(MUTED_CLASS, track !== null && muted.has(track));
+  });
+}
+
 const MEASURE_OF_ID = /^(?:p\d+-)?m(\d+)-/;
 
 /** Phần tử SVG đầu tiên của ô nhịp `measureIndex` (từ 0), hoặc null nếu chưa vẽ. */
