@@ -1,3 +1,5 @@
+import { NO_LOOP, sanitizeLoop } from './loop';
+import type { LoopSettings } from './loop';
 import { EMPTY_MIXER, sanitizeMixer } from './mixer';
 import type { MixerState } from './mixer';
 
@@ -48,6 +50,8 @@ export interface ScorePlayerSettings {
   tempoPercent: number;
   /** Mute / Solo / âm lượng theo track (chỉ gồm track khác mặc định). */
   mixer: MixerState;
+  /** Đoạn lặp A-B (chỉ số ô từ 0). */
+  loop: LoopSettings;
 }
 
 const scoreKey = (scoreId: string | number): string => `player:${scoreId}`;
@@ -63,12 +67,14 @@ const readScoreRecord = (scoreId: string | number): Record<string, unknown> => {
 };
 
 export function loadScoreSettings(scoreId: string | number | null | undefined): ScorePlayerSettings {
-  if (scoreId === null || scoreId === undefined) return { tempoPercent: DEFAULT_TEMPO_PERCENT, mixer: EMPTY_MIXER };
+  if (scoreId === null || scoreId === undefined)
+    return { tempoPercent: DEFAULT_TEMPO_PERCENT, mixer: EMPTY_MIXER, loop: NO_LOOP };
   const record = readScoreRecord(scoreId);
   return {
     tempoPercent:
       typeof record.tempoPercent === 'number' ? clampTempoPercent(record.tempoPercent) : DEFAULT_TEMPO_PERCENT,
     mixer: sanitizeMixer(record.mixer),
+    loop: sanitizeLoop(record.loop),
   };
 }
 

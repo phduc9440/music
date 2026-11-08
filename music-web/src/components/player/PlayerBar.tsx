@@ -1,4 +1,5 @@
 import { IconClose, IconNextMeasure, IconPauseBig, IconPlayBig, IconPrevMeasure, IconStopSmall } from './PlayerIcons';
+import { LoopControl } from './LoopControl';
 import { MixerPopover } from './MixerPopover';
 import { TempoControl } from './TempoControl';
 import { TransportProgress } from './TransportProgress';
@@ -17,9 +18,11 @@ interface Props {
   onClose?: () => void;
   /** Nội dung chèn thêm bên phải (ví dụ menu nhạc cụ). */
   extra?: React.ReactNode;
+  /** Bản nhạc ở trang này chọn được đoạn A-B bằng Shift + kéo (trang phát): hiện mẹo trong khung Lặp. */
+  canDragLoop?: boolean;
 }
 
-export function PlayerBar({ player, onClose, extra }: Props) {
+export function PlayerBar({ player, onClose, extra, canDragLoop }: Props) {
   if (!player.engine || !player.timeline) {
     return (
       <div className="pl-bar pl-bar--notice" role="region" aria-label="Trình phát">
@@ -34,13 +37,23 @@ export function PlayerBar({ player, onClose, extra }: Props) {
       </div>
     );
   }
-  return <BarBody player={player} onClose={onClose} extra={extra} engine={player.engine} timeline={player.timeline} />;
+  return (
+    <BarBody
+      player={player}
+      onClose={onClose}
+      extra={extra}
+      canDragLoop={canDragLoop}
+      engine={player.engine}
+      timeline={player.timeline}
+    />
+  );
 }
 
 function BarBody({
   player,
   onClose,
   extra,
+  canDragLoop,
   engine,
   timeline,
 }: Props & { engine: NonNullable<PlayerApi['engine']>; timeline: NonNullable<PlayerApi['timeline']> }) {
@@ -49,6 +62,8 @@ function BarBody({
   const loading = player.sampler.state === 'loading';
   const order = timeline.measures.findIndex((m) => position < m.end);
   const current = (order < 0 ? timeline.measures.length : order + 1) || 1;
+  // Ô đang phát theo chỉ số trong bản nhạc (khác thứ tự lượt phát khi có dấu lặp lại)
+  const currentMeasure = timeline.measures[Math.max(0, order < 0 ? timeline.measures.length - 1 : order)]?.index ?? 0;
   const percent = Math.round(player.sampler.progress * 100);
   // Thời gian hiển thị là giây thật: ở 50% bài dài gấp đôi
   const speed = player.tempoPercent / 100;
@@ -116,6 +131,8 @@ function BarBody({
           position={position}
           disabled={!player.canPlay}
           onSeek={(s) => engine.seek(s)}
+          loopSegments={player.loopSegments}
+          loopOn={player.loop.enabled}
         />
         <div className="pl-meta">
           <span className="pl-time" aria-live="off">
@@ -130,6 +147,17 @@ function BarBody({
           percent={player.tempoPercent}
           baseBpm={timeline.baseBpm}
           onChange={player.setTempoPercent}
+          disabled={!player.canPlay}
+        />
+        <LoopControl
+          loop={player.loop}
+          measureCount={timeline.measureCount}
+          currentMeasure={currentMeasure}
+          unreachable={player.loop.a !== null && player.loop.b !== null && player.loopSegments.length === 0}
+          onMark={player.markLoop}
+          onChange={player.setLoop}
+          onClear={player.clearLoop}
+          showDragHint={canDragLoop}
           disabled={!player.canPlay}
         />
         <MixerPopover

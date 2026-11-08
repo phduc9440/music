@@ -13,6 +13,8 @@ import { PlayerEngine } from './PlayerEngine';
 import type { EngineStatus } from './PlayerEngine';
 import { getPianoSampler } from './sampler';
 import type { SamplerSnapshot } from './sampler';
+import { isLoopComplete, loopSegments, NO_LOOP } from './loop';
+import type { LoopSegment, LoopSettings } from './loop';
 import { EMPTY_MIXER, silentTracks } from './mixer';
 import type { MixerState, TrackMix } from './mixer';
 import { loadPlayerSettings, loadScoreSettings, saveScoreSettings } from './settings';
@@ -71,6 +73,18 @@ export interface PlayerApi {
   setTrackMix: (trackId: string, patch: Partial<TrackMix>) => void;
   /** Đưa mọi track về mặc định. */
   resetMixer: () => void;
+  /** Đoạn lặp A-B (chỉ số ô từ 0; A ≤ B khi đã đặt đủ). */
+  loop: LoopSettings;
+  /** Các đoạn A-B trong lượt phát (hiển thị trên thanh thời gian); rỗng nếu chưa đặt đủ A và B. */
+  loopSegments: readonly LoopSegment[];
+  /** Đổi A, B hoặc bật/tắt lặp; hoàn tất đoạn (đủ A và B) thì tự bật lặp. */
+  setLoop: (patch: Partial<LoopSettings>) => void;
+  /** Đặt A hoặc B tại ô đang phát. */
+  markLoop: (which: 'a' | 'b') => void;
+  /** Chọn đoạn bằng các lần bấm liên tiếp: lần 1 đặt A, lần 2 đặt B, lần 3 bắt đầu đoạn mới. */
+  pickLoopMeasure: (measureIndex: number) => void;
+  /** Xóa A và B, tắt lặp. */
+  clearLoop: () => void;
   /** Phát hoặc tạm dừng. */
   toggle: () => void;
   /** Phát; đang dừng ở đầu bài và có `ids` thì phát từ nốt đầu của vùng chọn. */
@@ -135,7 +149,13 @@ export function usePlayer(doc: ScoreDocument, options: UsePlayerOptions): Player
     const ctx = getSharedAudioContext();
     if (!ctx) return null;
     const saved = loadScoreSettings(scoreId);
-    return new PlayerEngine({ ctx, sampler, tempoPercent: saved.tempoPercent, mixer: saved.mixer });
+    return new PlayerEngine({
+      ctx,
+      sampler,
+      tempoPercent: saved.tempoPercent,
+      mixer: saved.mixer,
+      loop: saved.loop,
+    });
   });
   const samplerSnapshot = useSyncExternalStore(sampler.subscribe, sampler.getSnapshot);
   const subscribe = useCallback(
@@ -145,6 +165,7 @@ export function usePlayer(doc: ScoreDocument, options: UsePlayerOptions): Player
   const status = useSyncExternalStore(subscribe, () => engine?.getStatus() ?? 'stopped');
   const tempoPercent = useSyncExternalStore(subscribe, () => engine?.getTempoPercent() ?? 100);
   const mixer = useSyncExternalStore(subscribe, () => engine?.getMixer() ?? EMPTY_MIXER);
+  const loop = useSyncExternalStore(subscribe, () => engine?.getLoop() ?? NO_LOOP);
 
   const [overrides, setOverrides] = useState<Record<number, InstrumentId>>({});
   const instrumentRef = useRef<(part: number) => InstrumentId>(() => 'piano');
@@ -224,6 +245,12 @@ export function usePlayer(doc: ScoreDocument, options: UsePlayerOptions): Player
     }
     return audible;
   }, [view.active, mutedStaves]);
+
+  const segments = useMemo(
+    () => (timeline ? loopSegments(timeline, loop.a, loop.b) : []),
+    // `loop.a`/`loop.b` thay vì `loop`: bật/tắt lặp không đổi các đoạn
+    [timeline, loop.a, loop.b],
+  );
 
   const empty = timeline !== null && timeline.events.length === 0;
   const canPlay = engine !== null && timeline !== null && !empty && samplerSnapshot.state !== 'loading';
@@ -314,6 +341,40 @@ export function usePlayer(doc: ScoreDocument, options: UsePlayerOptions): Player
     saveScoreSettings(scoreId, { mixer: engine.getMixer() });
   }, [engine, scoreId]);
 
+  const setLoop = useCallback(
+    (patch: Partial<LoopSettings>) => {
+      if (!engine) return;
+      const before = engine.getLoop();
+      const next = { ...before, ...patch };
+      // Vừa đặt đủ A và B mà chưa nói bật/tắt: bật luôn, vì người dùng đặt đoạn là để lặp
+      if (patch.enabled === undefined && !isLoopComplete(before) && isLoopComplete(next)) next.enabled = true;
+      engine.setLoop(next);
+      saveScoreSettings(scoreId, { loop: engine.getLoop() });
+    },
+    [engine, scoreId],
+  );
+
+  const markLoop = useCallback(
+    (which: 'a' | 'b') => {
+      if (!engine) return;
+      const current = engine.getTimeline().measures[engine.currentOrder()];
+      if (current) setLoop({ [which]: current.index });
+    },
+    [engine, setLoop],
+  );
+
+  const pickLoopMeasure = useCallback(
+    (measureIndex: number) => {
+      if (!engine) return;
+      const { a, b } = engine.getLoop();
+      if (a === null || b !== null) setLoop({ a: measureIndex, b: null, enabled: false });
+      else setLoop({ b: measureIndex });
+    },
+    [engine, setLoop],
+  );
+
+  const clearLoop = useCallback(() => setLoop({ a: null, b: null, enabled: false }), [setLoop]);
+
   // Phím tắt trang /play
   useEffect(() => {
     if (!shortcuts) return;
@@ -372,6 +433,12 @@ export function usePlayer(doc: ScoreDocument, options: UsePlayerOptions): Player
     tempoPercent,
     setTempoPercent,
     mixer,
+    loop,
+    loopSegments: segments,
+    setLoop,
+    markLoop,
+    pickLoopMeasure,
+    clearLoop,
     mutedStaves,
     setTrackMix,
     resetMixer,

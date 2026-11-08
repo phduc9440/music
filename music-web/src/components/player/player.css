@@ -380,6 +380,121 @@
   color: #b45309;
 }
 
+/* Lặp đoạn A-B */
+.pl-progress__loop {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgb(217 119 6 / 0.45);
+  border-left: 2px solid #d97706;
+  border-right: 2px solid #d97706;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+.pl-progress__loop--off {
+  background: rgb(217 119 6 / 0.18);
+  border-style: dashed;
+}
+.pl-loop__head {
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.pl-loop__marks {
+  display: flex;
+  gap: 8px;
+}
+.pl-loop__fields {
+  display: flex;
+  gap: 12px;
+  margin: 10px 0;
+}
+.pl-loop__field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--sc-muted, #6b7280);
+}
+.pl-loop__input {
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--sc-border, #e5e7eb);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--sc-text, #1f2937);
+  font: inherit;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.pl-loop__input:focus-visible {
+  outline: 2px solid var(--sc-primary, #2563eb);
+  outline-offset: 1px;
+}
+.pl-loop__toggle {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--sc-border, #e5e7eb);
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pl-loop__toggle:hover:not(:disabled) {
+  background: rgb(15 23 42 / 0.06);
+}
+.pl-loop__toggle:focus-visible {
+  outline: 2px solid var(--sc-primary, #2563eb);
+  outline-offset: 2px;
+}
+.pl-loop__toggle:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.pl-loop__toggle--on {
+  background: #d97706;
+  border-color: #d97706;
+  color: #fff;
+}
+.pl-loop__toggle--on:hover:not(:disabled) {
+  background: #b45309;
+}
+.pl-loop__note {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--sc-muted, #6b7280);
+}
+.pl-loop__note--warn {
+  color: #b45309;
+}
+.pl-loop__clear {
+  display: block;
+  margin: 10px 0 0;
+  font-size: 12px;
+}
+.pl-loop__clear:disabled {
+  opacity: 0.4;
+  cursor: default;
+  text-decoration: none;
+}
+/* Khung quanh các ô trong đoạn A-B trên bản nhạc */
+.pl-loop-box {
+  position: absolute;
+  border: 2px solid #d97706;
+  border-radius: 8px;
+  background: rgb(217 119 6 / 0.08);
+  pointer-events: none;
+}
+.pl-loop-box--off {
+  border-style: dashed;
+  border-color: rgb(217 119 6 / 0.55);
+  background: rgb(217 119 6 / 0.04);
+}
+
 /* Nốt đang vang */
 .pl-note--muted {
   opacity: 0.3;

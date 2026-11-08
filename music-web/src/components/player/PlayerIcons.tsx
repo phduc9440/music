@@ -58,3 +58,11 @@ export const IconMixer = () => (
     <circle cx="19" cy="15" r="2.2" fill="currentColor" />
   </Svg>
 );
+export const IconLoop = () => (
+  <Svg size={18}>
+    <path d="M17 2l3 3-3 3" />
+    <path d="M4 11V9a4 4 0 0 1 4-4h12" />
+    <path d="M7 22l-3-3 3-3" />
+    <path d="M20 13v2a4 4 0 0 1-4 4H4" />
+  </Svg>
+);

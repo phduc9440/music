@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import DownloadMenu from '../../components/scores/DownloadMenu';
 import InstrumentMenu from '../../components/scores/InstrumentMenu';
@@ -130,6 +130,12 @@ function PlayerWorkspace({ score, xml, doc }: { score: ScoreDetailData; xml: str
     onFirstPlay: () => void countView(score.id),
   });
 
+  const { a: loopA, b: loopB, enabled: loopOn } = player.loop;
+  const loopRange = useMemo(
+    () => (loopA !== null && loopB !== null ? { start: loopA, end: loopB, active: loopOn } : null),
+    [loopA, loopB, loopOn],
+  );
+
   const update = (patch: Partial<typeof prefs>) =>
     setPrefs((prev) => {
       const next = { ...prev, ...patch };
@@ -202,12 +208,14 @@ function PlayerWorkspace({ score, xml, doc }: { score: ScoreDetailData; xml: str
             onError={() => setFailed(true)}
             playing={player.activeIds}
             mutedStaves={player.mutedStaves}
+            loopRange={loopRange}
+            onMeasureRange={(a, b) => player.setLoop({ a, b })}
             followMeasure={player.status === 'playing' ? player.followMeasure : null}
-            onMeasureClick={(m) => player.seekToMeasure(m)}
+            onMeasureClick={(m, additive) => (additive ? player.pickLoopMeasure(m) : player.seekToMeasure(m))}
           />
         </div>
       </div>
-      <PlayerBar player={player} />
+      <PlayerBar player={player} canDragLoop />
     </div>
   );
 }

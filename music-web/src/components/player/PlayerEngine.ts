@@ -10,6 +10,8 @@
 import { DEFAULT_INSTRUMENT, getMaster, scheduleVoice } from '../editor/instruments';
 import type { InstrumentId, Voice } from '../editor/instruments';
 import type { PianoSampler } from './sampler';
+import { loopSegments, NO_LOOP, normalizeLoop, pickSegment, sameLoop } from './loop';
+import type { LoopSegment, LoopSettings } from './loop';
 import { EMPTY_MIXER, pruneMixer, trackGain, withTrackMix } from './mixer';
 import type { MixerState, TrackMix } from './mixer';
 import { clampTempoPercent, DEFAULT_TEMPO_PERCENT } from './settings';
@@ -29,6 +31,14 @@ export interface EngineOptions {
   tempoPercent?: number;
   /** Mute / Solo / âm lượng ban đầu theo track. */
   mixer?: MixerState;
+  /** Đoạn lặp A-B ban đầu. */
+  loop?: LoopSettings;
+}
+
+/** Điểm neo của đồng hồ: từ thời điểm `ctx` (giây của AudioContext) bản nhạc ở vị trí `pos` (giây bản nhạc). */
+interface Anchor {
+  ctx: number;
+  pos: number;
 }
 
 /** Giọng đã hẹn kèm thời điểm bắt đầu (giây của context) để biết giọng nào chưa vang. */
@@ -46,6 +56,8 @@ const START_DELAY_S = 0.05;
 const MIN_NOTE_S = 0.08;
 /** Hằng số thời gian (giây) khi đổi độ lợi của track: đủ nhanh để Mute / Solo nghe ngay, đủ chậm để không "tách". */
 const MIX_TAU_S = 0.015;
+/** Số lần quay vòng tối đa trong một lần hẹn giờ (chặn vòng lặp vô hạn nếu đoạn lặp quá ngắn). */
+const MAX_WRAPS_PER_TICK = 16;
 
 export class PlayerEngine {
   private readonly ctx: BaseAudioContext;
@@ -66,10 +78,17 @@ export class PlayerEngine {
   private status: EngineStatus = 'stopped';
   /** Vị trí (giây bản nhạc) khi dừng hoặc tạm dừng. */
   private idlePos = 0;
-  /** Khi đang phát: vị trí bản nhạc tại thời điểm `anchorCtx` của AudioContext. */
-  private anchorPos = 0;
-  private anchorCtx = 0;
+  /**
+   * Khi đang phát: các điểm neo của đồng hồ theo thứ tự thời gian. Điểm cuối dùng để hẹn giờ nốt tiếp theo; vị trí hiển
+   * thị dùng điểm đang có hiệu lực (`ctx` ≤ bây giờ), nên khi quay vòng A-B vị trí chỉ nhảy đúng lúc nghe thấy quay lại.
+   */
+  private anchors: Anchor[] = [{ ctx: 0, pos: 0 }];
   private nextIndex = 0;
+  private loop: LoopSettings = NO_LOOP;
+  /** Các đoạn A-B trong lượt phát (kể cả khi chưa bật lặp, để hiển thị). */
+  private segments: LoopSegment[] = [];
+  /** Đoạn đang áp dụng cho lần phát hiện tại; null nếu không lặp. */
+  private segment: LoopSegment | null = null;
   /** Tốc độ phát so với tempo gốc (1 = 100%). */
   private rate = 1;
   private voices: ScheduledVoice[] = [];
@@ -87,6 +106,7 @@ export class PlayerEngine {
     this.autoTick = options.autoTick ?? true;
     this.rate = clampTempoPercent(options.tempoPercent ?? DEFAULT_TEMPO_PERCENT) / 100;
     this.mixer = options.mixer ?? EMPTY_MIXER;
+    this.loop = options.loop ?? NO_LOOP;
   }
 
   /** Nạp dòng thời gian mới (sau khi sửa bản nhạc); đang phát thì dừng và về đầu. */
@@ -96,7 +116,10 @@ export class PlayerEngine {
     this.trackIds = timeline.tracks.map((t) => t.id);
     this.mixer = pruneMixer(this.mixer, this.trackIds);
     this.instrumentOf = instrumentOf;
-    this.idlePos = 0;
+    this.loop = normalizeLoop(this.loop, timeline.measureCount);
+    this.segments = loopSegments(timeline, this.loop.a, this.loop.b);
+    this.segment = null;
+    this.idlePos = this.restPos();
     for (const node of this.trackNodes.values()) node.disconnect();
     this.trackNodes.clear();
     this.emit();
@@ -108,6 +131,35 @@ export class PlayerEngine {
 
   getTimeline(): Timeline {
     return this.timeline;
+  }
+
+  /** Cài đặt lặp A-B hiện tại (đổi tham chiếu mỗi khi có thay đổi). */
+  getLoop(): LoopSettings {
+    return this.loop;
+  }
+
+  /**
+   * Đổi đoạn lặp A-B (kẹp vào số ô của bản nhạc, B < A thì tự đổi chỗ). Đang phát thì áp dụng ngay từ vị trí hiện tại:
+   * nốt chưa vang được hẹn lại, nốt đang ngân vẫn ngân hết.
+   */
+  setLoop(patch: Partial<LoopSettings>): void {
+    const next = normalizeLoop({ ...this.loop, ...patch }, this.timeline.measureCount);
+    if (sameLoop(next, this.loop)) return;
+    this.loop = next;
+    this.segments = loopSegments(this.timeline, next.a, next.b);
+    if (this.status === 'playing') {
+      const pos = this.position();
+      this.killPending();
+      this.anchor(pos, 0);
+    } else if (this.status === 'stopped') {
+      this.idlePos = this.restPos();
+    }
+    this.emit();
+  }
+
+  /** Vị trí khi dừng hẳn: đầu đoạn A nếu đang lặp, không thì đầu bài. */
+  private restPos(): number {
+    return this.loop.enabled ? (this.segments[0]?.start ?? 0) : 0;
   }
 
   /** Bảng Mute / Solo / âm lượng hiện tại (đổi tham chiếu mỗi khi có thay đổi). */
@@ -164,8 +216,10 @@ export class PlayerEngine {
   /** Vị trí hiện tại (giây bản nhạc, ở tempo gốc). */
   position(): number {
     if (this.status !== 'playing') return this.idlePos;
-    const pos = this.anchorPos + (this.now() - this.anchorCtx) * this.rate;
-    return Math.min(this.timeline.total, Math.max(this.anchorPos, pos));
+    const now = this.now();
+    const anchor = this.effectiveAnchor(now);
+    const pos = anchor.pos + (now - anchor.ctx) * this.rate;
+    return Math.min(this.timeline.total, Math.max(anchor.pos, pos));
   }
 
   /** Thứ tự (trong lượt phát) của ô đang vang. */
@@ -205,10 +259,21 @@ export class PlayerEngine {
     return true;
   }
 
+  /** Điểm neo đang có hiệu lực tại thời điểm `now`: điểm cuối cùng đã tới giờ (chưa tới thì điểm đầu). */
+  private effectiveAnchor(now: number): Anchor {
+    let current = this.anchors[0];
+    for (const anchor of this.anchors) {
+      if (anchor.ctx <= now) current = anchor;
+      else break;
+    }
+    return current;
+  }
+
+  /** Đặt lại đồng hồ: bản nhạc ở vị trí `pos` sau `delay` giây, và chọn đoạn A-B áp dụng cho vị trí đó. */
   private anchor(pos: number, delay: number): void {
-    this.anchorPos = pos;
-    this.anchorCtx = this.now() + delay;
+    this.anchors = [{ ctx: this.now() + delay, pos }];
     this.nextIndex = firstEventAtOrAfter(this.timeline, pos);
+    this.segment = this.loop.enabled ? pickSegment(this.segments, measureOrderAt(this.timeline, pos)) : null;
   }
 
   pause(): void {
@@ -220,9 +285,10 @@ export class PlayerEngine {
   }
 
   stop(): void {
-    if (this.status === 'stopped' && this.idlePos === 0) return;
+    const rest = this.restPos();
+    if (this.status === 'stopped' && this.idlePos === rest) return;
     this.halt();
-    this.idlePos = 0;
+    this.idlePos = rest;
     this.status = 'stopped';
     this.emit();
   }
@@ -247,16 +313,38 @@ export class PlayerEngine {
   /** Hẹn giờ các nốt sắp tới; gọi định kỳ bởi bộ hẹn giờ, hoặc gọi tay khi kiểm thử. */
   tick(): void {
     if (this.status !== 'playing') return;
-    const pos = this.position();
+    const now = this.now();
     const lookahead = typeof document !== 'undefined' && document.hidden ? HIDDEN_LOOKAHEAD_S : LOOKAHEAD_S;
-    const horizon = pos + lookahead * this.rate;
+    this.scheduleUntil(now + lookahead);
+    const pos = this.position();
+    // Bỏ các điểm neo đã qua (giữ điểm đang có hiệu lực)
+    const effective = this.anchors.indexOf(this.effectiveAnchor(now));
+    if (effective > 0) this.anchors = this.anchors.slice(effective);
+    if (!this.segment && this.nextIndex >= this.timeline.events.length && pos >= this.timeline.total - 1e-3)
+      this.finish();
+    else this.voices = this.voices.filter((v) => v.voice.endsAt > now);
+  }
+
+  /**
+   * Hẹn giờ mọi nốt rơi vào khoảng tới thời điểm `horizonCtx` (giây của AudioContext). Khi chạm cuối đoạn A-B thì thêm
+   * điểm neo quay về A đúng vào lúc nghe thấy cuối B rồi hẹn tiếp từ A, nên các vòng nối nhau không hở và không trễ dồn.
+   */
+  private scheduleUntil(horizonCtx: number): void {
     const events = this.timeline.events;
-    while (this.nextIndex < events.length && events[this.nextIndex].time < horizon) {
-      this.schedule(events[this.nextIndex]);
-      this.nextIndex += 1;
+    for (let wraps = 0; ; wraps++) {
+      const anchor = this.anchors[this.anchors.length - 1];
+      const horizon = anchor.pos + (horizonCtx - anchor.ctx) * this.rate;
+      const segment = this.segment;
+      const limit = segment ? segment.end : Infinity;
+      const until = Math.min(horizon, limit);
+      while (this.nextIndex < events.length && events[this.nextIndex].time < until) {
+        this.schedule(events[this.nextIndex], anchor, limit);
+        this.nextIndex += 1;
+      }
+      if (!segment || horizon < limit || wraps >= MAX_WRAPS_PER_TICK) return;
+      this.anchors.push({ ctx: anchor.ctx + (limit - anchor.pos) / this.rate, pos: segment.start });
+      this.nextIndex = firstEventAtOrAfter(this.timeline, segment.start);
     }
-    if (this.nextIndex >= events.length && pos >= this.timeline.total - 1e-3) this.finish();
-    else this.voices = this.voices.filter((v) => v.voice.endsAt > this.now());
   }
 
   private trackNode(trackId: string): GainNode {
@@ -270,10 +358,11 @@ export class PlayerEngine {
     return node;
   }
 
-  private schedule(event: TimelineEvent): void {
+  /** Hẹn giờ một nốt theo điểm neo `anchor`; nốt vắt qua `limit` (cuối đoạn A-B) bị cắt tại đó. */
+  private schedule(event: TimelineEvent, anchor: Anchor, limit: number): void {
     const now = this.now();
-    const start = Math.max(this.anchorCtx + (event.time - this.anchorPos) / this.rate, now + 0.005);
-    const duration = Math.max(MIN_NOTE_S, event.duration / this.rate);
+    const start = Math.max(anchor.ctx + (event.time - anchor.pos) / this.rate, now + 0.005);
+    const duration = Math.max(MIN_NOTE_S, Math.min(event.duration, limit - event.time) / this.rate);
     const instrument = this.instrumentOf(event.part);
     const destination = this.trackNode(event.trackId);
     const voice =
@@ -288,7 +377,7 @@ export class PlayerEngine {
   private finish(): void {
     clearInterval(this.timer);
     this.timer = undefined;
-    this.idlePos = 0;
+    this.idlePos = this.restPos();
     this.status = 'stopped';
     this.emit();
     this.endedListeners.forEach((l) => l());
