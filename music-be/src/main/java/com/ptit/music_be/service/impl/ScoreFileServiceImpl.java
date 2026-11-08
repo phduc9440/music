@@ -61,7 +61,9 @@ public class ScoreFileServiceImpl implements ScoreFileService {
 
         String fileName = scoreFile.getOriginalFileName() != null
                 ? scoreFile.getOriginalFileName()
-                : scoreFile.getStoragePath().substring(scoreFile.getStoragePath().lastIndexOf('/') + 1);
+                : scoreFile
+                        .getStoragePath()
+                        .substring(scoreFile.getStoragePath().lastIndexOf('/') + 1);
         String contentType =
                 scoreFile.getContentType() != null ? scoreFile.getContentType() : "application/octet-stream";
 

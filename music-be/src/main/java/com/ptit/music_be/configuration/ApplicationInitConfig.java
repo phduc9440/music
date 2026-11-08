@@ -39,11 +39,15 @@ public class ApplicationInitConfig {
             MemberRoleRepository memberRoleRepository) {
         return args -> {
             // Seed roles if not present
-            Role roleUser = roleRepository.findByName("USER")
-                    .orElseGet(() -> roleRepository.save(Role.builder().name("USER").build()));
+            Role roleUser = roleRepository
+                    .findByName("USER")
+                    .orElseGet(() ->
+                            roleRepository.save(Role.builder().name("USER").build()));
 
-            Role roleAdmin = roleRepository.findByName("ADMIN")
-                    .orElseGet(() -> roleRepository.save(Role.builder().name("ADMIN").build()));
+            Role roleAdmin = roleRepository
+                    .findByName("ADMIN")
+                    .orElseGet(() ->
+                            roleRepository.save(Role.builder().name("ADMIN").build()));
 
             // Seed default admin if not present
             if (memberRepository.findByEmail("admin@music.com").isEmpty()) {
@@ -57,14 +61,13 @@ public class ApplicationInitConfig {
 
                 Member savedAdmin = memberRepository.save(admin);
 
-                MemberRole memberRole = MemberRole.builder()
-                        .member(savedAdmin)
-                        .role(roleAdmin)
-                        .build();
+                MemberRole memberRole =
+                        MemberRole.builder().member(savedAdmin).role(roleAdmin).build();
 
                 memberRoleRepository.save(memberRole);
 
-                log.warn("Admin user created with email: admin@music.com and default password: 12345678, please change it!");
+                log.warn(
+                        "Admin user created with email: admin@music.com and default password: 12345678, please change it!");
             }
         };
     }

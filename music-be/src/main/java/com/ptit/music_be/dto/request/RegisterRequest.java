@@ -23,6 +23,7 @@ public class RegisterRequest {
 
     @Email(message = "EMAIL_INVALID")
     String email;
+
     @Size(max = 30, message = "INVALID_REQUEST")
     String phone;
 

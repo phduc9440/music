@@ -1,8 +1,9 @@
 package com.ptit.music_be.converter;
 
-import com.ptit.music_be.dto.enums.SharePermission;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
+
+import com.ptit.music_be.dto.enums.SharePermission;
 
 /** Lưu {@link SharePermission} xuống DB dưới dạng số. */
 @Converter

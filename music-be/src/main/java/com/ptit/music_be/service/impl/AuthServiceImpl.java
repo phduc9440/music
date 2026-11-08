@@ -1,8 +1,8 @@
 package com.ptit.music_be.service.impl;
 
 import java.io.IOException;
-import java.security.GeneralSecurityException;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.text.ParseException;
@@ -100,8 +100,8 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public MemberResponse register(RegisterRequest request) {
         String email = (request.getEmail() != null && !request.getEmail().isBlank()
-                        ? request.getEmail()
-                        : request.getUsername());
+                ? request.getEmail()
+                : request.getUsername());
         if (email == null || email.isBlank() || !email.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
             throw new AppException(ErrorCode.INVALID_CREDENTIALS);
         }
@@ -111,7 +111,8 @@ public class AuthServiceImpl implements AuthService {
             throw new AppException(ErrorCode.USER_EXISTED);
         }
 
-        Role roleUser = roleRepository.findByName("USER")
+        Role roleUser = roleRepository
+                .findByName("USER")
                 .orElseGet(() -> roleRepository.save(Role.builder().name("USER").build()));
 
         Member user = Member.builder()
@@ -127,10 +128,8 @@ public class AuthServiceImpl implements AuthService {
 
         Member savedUser = memberRepository.save(user);
 
-        MemberRole memberRole = MemberRole.builder()
-                .member(savedUser)
-                .role(roleUser)
-                .build();
+        MemberRole memberRole =
+                MemberRole.builder().member(savedUser).role(roleUser).build();
 
         memberRoleRepository.save(memberRole);
         savedUser.getMemberRoles().add(memberRole);
@@ -152,8 +151,7 @@ public class AuthServiceImpl implements AuthService {
                 .findByEmail(request.getUsername().trim().toLowerCase())
                 .orElseThrow(() -> new AppException(ErrorCode.INVALID_CREDENTIALS));
 
-        if (user.getPasswordHash() == null
-                || !passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+        if (user.getPasswordHash() == null || !passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             throw new AppException(ErrorCode.INVALID_CREDENTIALS);
         }
 
@@ -185,7 +183,7 @@ public class AuthServiceImpl implements AuthService {
     public AuthResponse googleLogin(GoogleLoginRequest request) {
         try {
             GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
-                    new NetHttpTransport(), new GsonFactory())
+                            new NetHttpTransport(), new GsonFactory())
                     .setAudience(Arrays.asList(googleClientId, googleIosClientId, googleAndroidClientId))
                     .build();
 
@@ -204,8 +202,10 @@ public class AuthServiceImpl implements AuthService {
             Member user = memberRepository.findByEmail(email).orElse(null);
 
             if (user == null) {
-                Role roleUser = roleRepository.findByName("USER")
-                        .orElseGet(() -> roleRepository.save(Role.builder().name("USER").build()));
+                Role roleUser = roleRepository
+                        .findByName("USER")
+                        .orElseGet(() ->
+                                roleRepository.save(Role.builder().name("USER").build()));
 
                 user = Member.builder()
                         .email(email)
@@ -217,17 +217,17 @@ public class AuthServiceImpl implements AuthService {
 
                 user = memberRepository.save(user);
 
-                MemberRole memberRole = MemberRole.builder()
-                        .member(user)
-                        .role(roleUser)
-                        .build();
+                MemberRole memberRole =
+                        MemberRole.builder().member(user).role(roleUser).build();
 
                 memberRoleRepository.save(memberRole);
                 user.getMemberRoles().add(memberRole);
 
                 if (email != null && !email.isBlank()) {
-                    emailService.sendWelcomeEmail(
-                            SendEmailRequest.builder().to(email).fullName(name != null ? name : email).build());
+                    emailService.sendWelcomeEmail(SendEmailRequest.builder()
+                            .to(email)
+                            .fullName(name != null ? name : email)
+                            .build());
                 }
             }
 
@@ -277,9 +277,8 @@ public class AuthServiceImpl implements AuthService {
             }
             String email = signedJWT.getJWTClaimsSet().getSubject();
 
-            Member user = memberRepository
-                    .findByEmail(email)
-                    .orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
+            Member user =
+                    memberRepository.findByEmail(email).orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
 
             assertActive(user);
 
@@ -319,9 +318,8 @@ public class AuthServiceImpl implements AuthService {
     public void changePassword(ChangePasswordRequest request) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
 
-        Member user = memberRepository
-                .findByEmail(email)
-                .orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
+        Member user =
+                memberRepository.findByEmail(email).orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
 
         if (AuthProvider.GOOGLE.equals(user.getAuthProvider())) {
             throw new AppException(ErrorCode.UNAUTHORIZED);
@@ -332,6 +330,10 @@ public class AuthServiceImpl implements AuthService {
             throw new AppException(ErrorCode.INVALID_CREDENTIALS);
         }
 
+        if (request.getOldPassword().equals(request.getNewPassword())) {
+            throw new AppException(ErrorCode.PASSWORD_SAME_AS_OLD);
+        }
+
         user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
         memberRepository.save(user);
     }
@@ -339,7 +341,9 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void forgotPassword(ForgotPasswordRequest request) {
         // Always respond the same way to avoid leaking which emails are registered.
-        Member user = memberRepository.findByEmail(request.getEmail().trim().toLowerCase()).orElse(null);
+        Member user = memberRepository
+                .findByEmail(request.getEmail().trim().toLowerCase())
+                .orElse(null);
         if (user == null || AuthProvider.GOOGLE.equals(user.getAuthProvider())) {
             return;
         }
