@@ -49,6 +49,7 @@ public class Score {
     @Column(name = "processing_status")
     String processingStatus;
 
+    /** PRIVATE / PENDING (chủ xin công khai, chờ ADMIN duyệt) / PUBLIC (xem Visibility). */
     @Column(name = "visibility")
     String visibility;
 

@@ -5,6 +5,8 @@ import UserProfile from '../pages/Profile';
 import ScoreLibrary from '../pages/scores/ScoreLibrary';
 import ScoreDetail from '../pages/scores/ScoreDetail';
 import ScoreUpload from '../pages/scores/ScoreUpload';
+import ScoreImport from '../pages/scores/ScoreImport';
+import SharedScores from '../pages/scores/SharedScores';
 import ScoreProcessing from '../pages/scores/ScoreProcessing';
 import ScoreReview from '../pages/scores/ScoreReview';
 import ScoreViewer from '../pages/scores/ScoreViewer';
@@ -50,10 +52,10 @@ const AppRoutes = () => {
         }
       />
       <Route
-        path="/scores/:id/review"
+        path="/scores/shared"
         element={
           <ProtectedRoute allowedRole="USER">
-            <ScoreReview />
+            <SharedScores />
           </ProtectedRoute>
         }
       />

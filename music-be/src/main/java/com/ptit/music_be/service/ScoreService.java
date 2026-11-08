@@ -1,5 +1,7 @@
 package com.ptit.music_be.service;
 
+import java.util.List;
+
 import com.ptit.music_be.dto.request.ScoreUpdateRequest;
 import com.ptit.music_be.dto.response.PageResponse;
 import com.ptit.music_be.dto.response.ScoreDetailResponse;
@@ -17,14 +19,32 @@ public interface ScoreService {
      * @param status  lọc theo ProcessingStatus (rỗng = tất cả)
      * @param source  lọc theo ScoreSource (rỗng = tất cả)
      * @param difficulty lọc theo DifficultyLevel (rỗng = tất cả)
+     * @param tagId lọc theo id thể loại (rỗng = tất cả)
      * @param sort    newest (mặc định) | oldest | title
      */
     PageResponse<ScoreSummaryResponse> getMyScores(
-            int page, int size, String keyword, String status, String source, String difficulty, String sort);
+            int page, int size, String keyword, String status, String source, String difficulty, String tagId, String sort);
+
+    /** Bản nhạc người khác chia sẻ cho người đang đăng nhập (qua liên kết hoặc được mời/duyệt), kèm cấp quyền. */
+    PageResponse<ScoreSummaryResponse> getSharedWithMe(int page, int size);
 
     ScoreDetailResponse getScore(String scoreId);
 
     ScoreDetailResponse updateScore(String scoreId, ScoreUpdateRequest request);
 
     void deleteScore(String scoreId);
+
+    /** ADMIN: các bản nhạc chủ đã xin công khai và đang chờ duyệt (cũ nhất trước). */
+    PageResponse<ScoreSummaryResponse> getPendingPublic(int page, int size);
+
+    /** ADMIN: duyệt công khai, bản nhạc chuyển sang PUBLIC. */
+    ScoreDetailResponse approvePublic(String scoreId);
+
+    /** ADMIN: từ chối công khai, bản nhạc về PRIVATE kèm lý do. */
+    ScoreDetailResponse rejectPublic(String scoreId, String reason);
+
+    /**
+     * Thay toàn bộ thể loại (tag) của bản nhạc bằng danh sách mới (tối đa 10, rỗng = gỡ hết). Cần quyền sửa bản nhạc.
+     */
+    ScoreDetailResponse updateTags(String scoreId, List<String> tagIds);
 }

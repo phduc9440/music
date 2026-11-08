@@ -1,16 +1,19 @@
 import { MAX_KEYWORD } from '../../utils/score';
-import type { Difficulty, ProcessingStatus, ScoreSort, ScoreSource } from '../../types';
+import type { Difficulty, ProcessingStatus, ScoreSort, ScoreSource, Tag } from '../../types';
 
 interface Props {
   keyword: string;
   status: ProcessingStatus | '';
   source: ScoreSource | '';
   difficulty: Difficulty | '';
+  tags: Tag[];
+  tagId: string;
   sort: ScoreSort;
   onKeyword: (v: string) => void;
   onStatus: (v: ProcessingStatus | '') => void;
   onSource: (v: ScoreSource | '') => void;
   onDifficulty: (v: Difficulty | '') => void;
+  onTag: (v: string) => void;
   onSort: (v: ScoreSort) => void;
 }
 
@@ -68,11 +71,25 @@ export default function ScoreFilters(p: Props) {
       </select>
       <select
         className="sc-input"
+        aria-label="Lọc theo thể loại"
+        value={p.tagId}
+        onChange={(e) => p.onTag(e.target.value)}
+      >
+        <option value="">Mọi thể loại</option>
+        {p.tags.map((t) => (
+          <option key={t.id} value={t.id}>
+            {t.name}
+          </option>
+        ))}
+      </select>
+      <select
+        className="sc-input"
         aria-label="Sắp xếp"
         value={p.sort}
         onChange={(e) => p.onSort(e.target.value as ScoreSort)}
       >
         <option value="newest">Mới cập nhật</option>
+        <option value="created">Mới tạo</option>
         <option value="oldest">Cũ nhất</option>
         <option value="title">Tên A → Z</option>
       </select>

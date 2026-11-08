@@ -1,8 +1,9 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { importApi } from '../../services';
+import { importApi, tagApi } from '../../services';
+import type { Tag } from '../../types';
 import {
   fileNameWithoutExtension,
   formatSize,
@@ -15,6 +16,7 @@ import {
 import '../../components/scores/scores.css';
 import './ScoreUpload.css';
 
+const MAX_TAGS = 10; // khớp BE (mã lỗi 2302)
 const IMPORT_EXTENSIONS = ['musicxml', 'xml', 'mxl', 'mid', 'midi'];
 
 const validateImportFile = (file: File): string => {
@@ -32,12 +34,25 @@ export default function ScoreImport() {
   const [title, setTitle] = useState('');
   const [titleTouched, setTitleTouched] = useState(false);
   const [composer, setComposer] = useState('');
+  const [allTags, setAllTags] = useState<Tag[]>([]);
+  const [tagIds, setTagIds] = useState<string[]>([]);
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
 
   const fileError = file ? validateImportFile(file) : '';
   const canSubmit = !!file && !fileError && !uploading && title.length <= MAX_TITLE && composer.length <= MAX_COMPOSER;
+
+  // Lỗi tải danh sách thể loại thì vẫn import được, chỉ không chọn được thể loại
+  useEffect(() => {
+    tagApi
+      .list()
+      .then((res) => setAllTags(res.data.result))
+      .catch(() => setAllTags([]));
+  }, []);
+
+  const toggleTag = (id: string) =>
+    setTagIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
   const pick = (files: File[]) => {
     const next = files[0];
@@ -53,7 +68,10 @@ export default function ScoreImport() {
     setUploading(true);
     setProgress(0);
     try {
-      const res = await importApi.importScore({ file, title: titleTouched ? title : '', composer }, setProgress);
+      const res = await importApi.importScore(
+        { file, title: titleTouched ? title : '', composer, tagIds },
+        setProgress,
+      );
       toast.success('Đã nhập bản nhạc');
       navigate(`/scores/${res.data.result.scoreId}`, { replace: true });
     } catch (err) {
@@ -162,6 +180,34 @@ export default function ScoreImport() {
               placeholder="Mặc định lấy từ file MusicXML"
               onChange={(e) => setComposer(e.target.value)}
             />
+
+            {allTags.length > 0 && (
+              <>
+                <span className="sc-label sc-upload__field">
+                  Thể loại <span className="sc-upload__optional">(tùy chọn)</span>
+                  <span className="sc-counter">
+                    {tagIds.length}/{MAX_TAGS}
+                  </span>
+                </span>
+                <div className="sc-tagpick" role="group" aria-label="Thể loại">
+                  {allTags.map((t) => {
+                    const active = tagIds.includes(t.id);
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        aria-pressed={active}
+                        className={`sc-tagpick__opt ${active ? 'is-active' : ''}`}
+                        disabled={uploading || (!active && tagIds.length >= MAX_TAGS)}
+                        onClick={() => toggleTag(t.id)}
+                      >
+                        {t.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
 
             {uploading && (
               <div className="sc-upload__progress">

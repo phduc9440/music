@@ -1,11 +1,14 @@
 package com.ptit.music_be.service.impl;
 
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -20,24 +23,34 @@ import com.ptit.music_be.dto.enums.AiTaskStatus;
 import com.ptit.music_be.dto.enums.DifficultyLevel;
 import com.ptit.music_be.dto.enums.FileType;
 import com.ptit.music_be.dto.enums.ProcessingStatus;
+import com.ptit.music_be.dto.enums.NotificationType;
 import com.ptit.music_be.dto.enums.ScoreSource;
+import com.ptit.music_be.dto.enums.Visibility;
+import com.ptit.music_be.service.NotificationService;
 import com.ptit.music_be.dto.request.ScoreUpdateRequest;
 import com.ptit.music_be.dto.response.AiTaskResponse;
 import com.ptit.music_be.dto.response.PageResponse;
 import com.ptit.music_be.dto.response.ScoreDetailResponse;
 import com.ptit.music_be.dto.response.ScoreSummaryResponse;
+import com.ptit.music_be.dto.response.TagResponse;
 import com.ptit.music_be.entity.AiTask;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreFile;
+import com.ptit.music_be.entity.ScoreTag;
+import com.ptit.music_be.entity.Tag;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.mapper.AiTaskMapper;
 import com.ptit.music_be.mapper.ScoreFileMapper;
 import com.ptit.music_be.repository.AiTaskRepository;
 import com.ptit.music_be.repository.MemberRepository;
+import com.ptit.music_be.repository.MemberScoreRepository;
 import com.ptit.music_be.repository.ScoreFileRepository;
 import com.ptit.music_be.repository.ScoreRepository;
+import com.ptit.music_be.repository.ScoreReviewRepository;
+import com.ptit.music_be.repository.ScoreTagRepository;
+import com.ptit.music_be.repository.TagRepository;
 import com.ptit.music_be.service.FileStorageService;
 import com.ptit.music_be.service.ScoreFileService;
 import com.ptit.music_be.service.ScoreService;
@@ -55,12 +68,18 @@ public class ScoreServiceImpl implements ScoreService {
     static final int DEFAULT_PAGE_SIZE = 10;
     static final int MAX_PAGE_SIZE = 50;
     static final int MAX_KEYWORD_LENGTH = 100;
+    static final int MAX_TAGS_PER_SCORE = 10;
 
     MemberRepository memberRepository;
     ScoreRepository scoreRepository;
     ScoreFileRepository scoreFileRepository;
     AiTaskRepository aiTaskRepository;
+    TagRepository tagRepository;
+    MemberScoreRepository memberScoreRepository;
+    ScoreReviewRepository scoreReviewRepository;
+    ScoreTagRepository scoreTagRepository;
     ScoreFileService scoreFileService;
+    NotificationService notificationService;
     FileStorageService fileStorageService;
     ScoreFileMapper scoreFileMapper;
     AiTaskMapper aiTaskMapper;
@@ -70,7 +89,7 @@ public class ScoreServiceImpl implements ScoreService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<ScoreSummaryResponse> getMyScores(
-            int page, int size, String keyword, String status, String source, String difficulty, String sort) {
+            int page, int size, String keyword, String status, String source, String difficulty, String tagId, String sort) {
         Member member = memberRepository
                 .findByEmail(SecurityUtils.getCurrentEmail())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
@@ -83,15 +102,18 @@ public class ScoreServiceImpl implements ScoreService {
         String safeStatus = parseEnumName(status, ProcessingStatus.class);
         String safeSource = parseEnumName(source, ScoreSource.class);
         String safeDifficulty = parseEnumName(difficulty, DifficultyLevel.class);
+        String safeTagId = tagId == null ? "" : tagId.trim();
 
         PageRequest pageable = PageRequest.of(safePage, safeSize, toSort(sort));
         Page<Score> result =
                 scoreRepository.searchOfMember(
-                        member.getId(), safeKeyword, safeStatus, safeSource, safeDifficulty, pageable);
+                        member.getId(), safeKeyword, safeStatus, safeSource, safeDifficulty, safeTagId, pageable);
 
         Map<String, ScoreFile> thumbnails = loadThumbnails(result.getContent());
+        Map<String, List<TagResponse>> tagsByScore = loadTags(result.getContent());
         List<ScoreSummaryResponse> content = result.getContent().stream()
-                .map(score -> toSummary(score, thumbnails.get(score.getId())))
+                .map(score -> toSummary(
+                        score, thumbnails.get(score.getId()), tagsByScore.getOrDefault(score.getId(), List.of())))
                 .toList();
 
         return PageResponse.<ScoreSummaryResponse>builder()
@@ -104,6 +126,43 @@ public class ScoreServiceImpl implements ScoreService {
     }
 
     // ------------------------------------------------------------------ chi tiết
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<ScoreSummaryResponse> getSharedWithMe(int page, int size) {
+        Member member = memberRepository
+                .findByEmail(SecurityUtils.getCurrentEmail())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        int safeSize = size <= 0 ? DEFAULT_PAGE_SIZE : Math.min(size, MAX_PAGE_SIZE);
+        Page<Score> result =
+                scoreRepository.findSharedWithMember(member.getId(), PageRequest.of(Math.max(page, 0), safeSize));
+
+        Map<String, ScoreFile> thumbnails = loadThumbnails(result.getContent());
+        Map<String, List<TagResponse>> tagsByScore = loadTags(result.getContent());
+        Map<String, String> levels = new HashMap<>();
+        for (var share : memberScoreRepository.findByMember(member)) {
+            if (share.getPermission() != null) {
+                levels.put(share.getScore().getId(), share.getPermission().name());
+            }
+        }
+        List<ScoreSummaryResponse> content = result.getContent().stream()
+                .map(score -> {
+                    ScoreSummaryResponse summary = toSummary(
+                            score, thumbnails.get(score.getId()), tagsByScore.getOrDefault(score.getId(), List.of()));
+                    summary.setAccessLevel(levels.get(score.getId()));
+                    summary.setOwnerEmail(
+                            score.getMember() == null ? null : score.getMember().getEmail());
+                    return summary;
+                })
+                .toList();
+        return PageResponse.<ScoreSummaryResponse>builder()
+                .content(content)
+                .pageNumber(result.getNumber())
+                .pageSize(result.getSize())
+                .totalElements(result.getTotalElements())
+                .totalPages(result.getTotalPages())
+                .build();
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -139,14 +198,160 @@ public class ScoreServiceImpl implements ScoreService {
             score.setDifficulty(request.getDifficulty());
         }
         if (request.getVisibility() != null) {
-            // Người được chia sẻ quyền EDIT chỉ sửa nội dung, không được đổi chế độ hiển thị
-            if (!scoreFileService.canDelete(score)) {
-                throw new AppException(ErrorCode.UNAUTHORIZED);
-            }
-            score.setVisibility(request.getVisibility().name());
+            changeVisibility(score, request.getVisibility());
         }
 
         return toDetail(scoreRepository.save(score));
+    }
+
+    /**
+     * Đổi chế độ hiển thị. Chỉ chủ sở hữu hoặc ADMIN được đổi. Chủ xin PUBLIC thì thành PENDING chờ ADMIN duyệt; ADMIN
+     * đặt PUBLIC thì có hiệu lực ngay; về PRIVATE thì có hiệu lực ngay (kể cả hủy yêu cầu đang chờ).
+     */
+    private void changeVisibility(Score score, Visibility requested) {
+        scoreFileService.checkCanManageSharing(score);
+        String current = score.getVisibility() == null ? Visibility.PRIVATE.name() : score.getVisibility();
+        if (requested == Visibility.PRIVATE) {
+            score.setVisibility(Visibility.PRIVATE.name());
+            score.setRejectReason(null);
+        } else if (SecurityUtils.isAdmin()) {
+            score.setVisibility(Visibility.PUBLIC.name());
+            score.setRejectReason(null);
+        } else if (!Visibility.PUBLIC.name().equals(current)) {
+            score.setVisibility(Visibility.PENDING.name());
+            score.setRejectReason(null);
+            if (!Visibility.PENDING.name().equals(current)) { // xin lại khi đang chờ thì không báo lần nữa
+                Member me = memberRepository.findByEmail(SecurityUtils.getCurrentEmail()).orElse(null);
+                notificationService.notifyAdmins(
+                        me,
+                        NotificationType.PUBLISH_REQUESTED,
+                        score.getId(),
+                        "Có bản nhạc xin công khai: \"" + score.getTitle() + "\"");
+            }
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<ScoreSummaryResponse> getPendingPublic(int page, int size) {
+        requireAdmin();
+        int safeSize = size <= 0 ? DEFAULT_PAGE_SIZE : Math.min(size, MAX_PAGE_SIZE);
+        Page<Score> result = scoreRepository.findByVisibility(
+                Visibility.PENDING.name(), PageRequest.of(Math.max(page, 0), safeSize, Sort.by("updatedAt")));
+        Map<String, ScoreFile> thumbnails = loadThumbnails(result.getContent());
+        Map<String, List<TagResponse>> tagsByScore = loadTags(result.getContent());
+        List<ScoreSummaryResponse> content = result.getContent().stream()
+                .map(score -> {
+                    ScoreSummaryResponse summary = toSummary(
+                            score, thumbnails.get(score.getId()), tagsByScore.getOrDefault(score.getId(), List.of()));
+                    summary.setOwnerEmail(
+                            score.getMember() == null ? null : score.getMember().getEmail());
+                    return summary;
+                })
+                .toList();
+        return PageResponse.<ScoreSummaryResponse>builder()
+                .content(content)
+                .pageNumber(result.getNumber())
+                .pageSize(result.getSize())
+                .totalElements(result.getTotalElements())
+                .totalPages(result.getTotalPages())
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public ScoreDetailResponse approvePublic(String scoreId) {
+        requireAdmin();
+        Score score = findScore(scoreId);
+        score.setVisibility(Visibility.PUBLIC.name());
+        score.setRejectReason(null);
+        Score saved = scoreRepository.save(score);
+        notificationService.notify(
+                score.getMember(),
+                null,
+                NotificationType.PUBLISH_APPROVED,
+                score.getId(),
+                "Bản nhạc \"" + score.getTitle() + "\" đã được duyệt công khai");
+        return toDetail(saved);
+    }
+
+    @Override
+    @Transactional
+    public ScoreDetailResponse rejectPublic(String scoreId, String reason) {
+        requireAdmin();
+        Score score = findScore(scoreId);
+        score.setVisibility(Visibility.PRIVATE.name());
+        score.setRejectReason(blankToNull(reason));
+        Score saved = scoreRepository.save(score);
+        notificationService.notify(
+                score.getMember(),
+                null,
+                NotificationType.PUBLISH_REJECTED,
+                score.getId(),
+                "Bản nhạc \"" + score.getTitle() + "\" bị từ chối công khai"
+                        + (score.getRejectReason() == null ? "" : ": " + score.getRejectReason()));
+        return toDetail(saved);
+    }
+
+    private static void requireAdmin() {
+        if (!SecurityUtils.isAdmin()) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+    }
+
+    // ------------------------------------------------------------------ thể loại (tags)
+
+    @Override
+    @Transactional
+    public ScoreDetailResponse updateTags(String scoreId, List<String> tagIds) {
+        Score score = findScore(scoreId);
+        scoreFileService.checkCanEdit(score);
+
+        Set<String> wanted = new LinkedHashSet<>(tagIds == null ? List.of() : tagIds);
+        if (wanted.size() > MAX_TAGS_PER_SCORE) {
+            throw new AppException(ErrorCode.TOO_MANY_TAGS);
+        }
+        Map<String, Tag> found =
+                tagRepository.findAllById(wanted).stream().collect(Collectors.toMap(Tag::getId, t -> t));
+        if (found.size() != wanted.size()) {
+            throw new AppException(ErrorCode.TAG_NOT_EXISTED);
+        }
+
+        // Chỉ xóa tag không còn được chọn và thêm tag mới, tag giữ nguyên thì không đụng tới (orphanRemoval lo việc xóa)
+        score.getScoreTags().removeIf(st -> !wanted.contains(st.getTag().getId()));
+        Set<String> have =
+                score.getScoreTags().stream().map(st -> st.getTag().getId()).collect(Collectors.toSet());
+        for (String id : wanted) {
+            if (!have.contains(id)) {
+                score.getScoreTags()
+                        .add(ScoreTag.builder().score(score).tag(found.get(id)).build());
+            }
+        }
+        return toDetail(scoreRepository.save(score));
+    }
+
+    private Map<String, List<TagResponse>> loadTags(Collection<Score> scores) {
+        Map<String, List<TagResponse>> result = new HashMap<>();
+        if (scores.isEmpty()) {
+            return result;
+        }
+        List<String> ids = scores.stream().map(Score::getId).toList();
+        for (ScoreTag st : scoreTagRepository.findByScoreIdInFetchTag(ids)) {
+            result.computeIfAbsent(st.getScore().getId(), k -> new java.util.ArrayList<>())
+                    .add(toTagResponse(st.getTag()));
+        }
+        result.values()
+                .forEach(list ->
+                        list.sort(java.util.Comparator.comparing(TagResponse::getName, String.CASE_INSENSITIVE_ORDER)));
+        return result;
+    }
+
+    private static TagResponse toTagResponse(Tag tag) {
+        return TagResponse.builder()
+                .id(tag.getId())
+                .name(tag.getName())
+                .slug(tag.getSlug())
+                .build();
     }
 
     // ------------------------------------------------------------------ xóa
@@ -183,7 +388,7 @@ public class ScoreServiceImpl implements ScoreService {
         return scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
     }
 
-    private ScoreSummaryResponse toSummary(Score score, ScoreFile thumbnail) {
+    private ScoreSummaryResponse toSummary(Score score, ScoreFile thumbnail, List<TagResponse> tags) {
         return ScoreSummaryResponse.builder()
                 .id(score.getId())
                 .title(score.getTitle())
@@ -193,6 +398,7 @@ public class ScoreServiceImpl implements ScoreService {
                 .sourceType(score.getSourceType())
                 .visibility(score.getVisibility())
                 .measureCount(score.getMeasureCount())
+                .tags(tags)
                 .thumbnailUrl(thumbnail == null ? null : "/api/files/" + thumbnail.getId() + "/download?inline=true")
                 .createdAt(score.getCreatedAt())
                 .updatedAt(score.getUpdatedAt())
@@ -214,6 +420,8 @@ public class ScoreServiceImpl implements ScoreService {
         List<AiTaskResponse> latestTasks =
                 latestByType.values().stream().map(aiTaskMapper::toResponse).toList();
 
+        var rating = scoreReviewRepository.getRatingStats(score.getId());
+
         return ScoreDetailResponse.builder()
                 .id(score.getId())
                 .title(score.getTitle())
@@ -225,6 +433,11 @@ public class ScoreServiceImpl implements ScoreService {
                 .sourceType(score.getSourceType())
                 .visibility(score.getVisibility())
                 .isOfficial(score.getIsOfficial())
+                .tags(score.getScoreTags().stream()
+                        .map(ScoreTag::getTag)
+                        .map(ScoreServiceImpl::toTagResponse)
+                        .sorted(java.util.Comparator.comparing(TagResponse::getName, String.CASE_INSENSITIVE_ORDER))
+                        .toList())
                 .keySignature(score.getKeySignature())
                 .timeSignature(score.getTimeSignature())
                 .tempoBpm(score.getTempoBpm())
@@ -233,9 +446,14 @@ public class ScoreServiceImpl implements ScoreService {
                 .pageCount(score.getPageCount())
                 .currentVersion(score.getCurrentVersion())
                 .viewCount(score.getViewCount())
+                .averageRating(rating.getAverage() == null ? null : Math.round(rating.getAverage() * 10) / 10.0)
+                .ratingCount(rating.getRatingCount() == null ? 0 : rating.getRatingCount())
                 .ownerEmail(score.getMember() == null ? null : score.getMember().getEmail())
                 .canEdit(scoreFileService.canEdit(score))
                 .canDelete(scoreFileService.canDelete(score))
+                .canReview(scoreFileService.canReview(score))
+                .canManageSharing(scoreFileService.canManageSharing(score))
+                .accessLevel(scoreFileService.getAccessLevel(score))
                 .createdAt(score.getCreatedAt())
                 .updatedAt(score.getUpdatedAt())
                 .files(scoreFileMapper.toResponses(currentFiles))
@@ -289,6 +507,7 @@ public class ScoreServiceImpl implements ScoreService {
     private static Sort toSort(String sort) {
         String key = sort == null ? "newest" : sort.trim().toLowerCase(Locale.ROOT);
         return switch (key) {
+            case "created" -> Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"));
             case "oldest" -> Sort.by(Sort.Order.asc("createdAt"), Sort.Order.asc("id"));
             case "title" -> Sort.by(Sort.Order.asc("title").ignoreCase(), Sort.Order.asc("id"));
                 // Mặc định (và mọi giá trị lạ): cập nhật gần nhất trước

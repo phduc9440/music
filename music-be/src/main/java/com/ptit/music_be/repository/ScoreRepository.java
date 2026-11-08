@@ -23,6 +23,12 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
 
     List<Score> findByVisibility(String visibility);
 
+    Page<Score> findByVisibility(String visibility, Pageable pageable);
+
+    /** Các bản nhạc được người khác chia sẻ cho một thành viên (cập nhật gần nhất trước). */
+    @Query("select ms.score from MemberScore ms where ms.member.id = :memberId and ms.permission is not null order by ms.score.updatedAt desc")
+    Page<Score> findSharedWithMember(@Param("memberId") String memberId, Pageable pageable);
+
     /**
      * Khóa dòng bản nhạc (SELECT ... FOR UPDATE) để hai lần lưu MusicXML cùng lúc không cùng ra một version; chỉ gọi
      * bên trong transaction.
@@ -44,6 +50,7 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
 			and (:status = '' or s.processingStatus = :status)
 			and (:source = '' or s.sourceType = :source)
 			and (:difficulty = '' or cast(s.difficulty as string) = :difficulty)
+			and (:tagId = '' or exists (select 1 from ScoreTag st where st.score = s and st.tag.id = :tagId))
 			""")
     Page<Score> searchOfMember(
             @Param("memberId") String memberId,
@@ -51,5 +58,6 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
             @Param("status") String status,
             @Param("source") String source,
             @Param("difficulty") String difficulty,
+            @Param("tagId") String tagId,
             Pageable pageable);
 }
