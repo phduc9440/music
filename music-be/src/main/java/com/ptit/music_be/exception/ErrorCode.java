@@ -40,6 +40,13 @@ public enum ErrorCode {
     IMAGE_RESOLUTION_INVALID(
             2010, "Ảnh không đọc được, cạnh ngắn nhỏ hơn 600px hoặc lớn hơn 40 megapixel", HttpStatus.BAD_REQUEST),
     INVALID_SOURCE_TYPE(2011, "Loại nguồn phải là PHOTO, SCAN hoặc PDF_NATIVE", HttpStatus.BAD_REQUEST),
+    MUSICXML_NOT_READY(
+            2012, "Bản nhạc chưa có MusicXML, hãy đợi nhận diện xong hoặc nhận diện lại", HttpStatus.CONFLICT),
+    MUSICXML_INVALID(2013, "Nội dung MusicXML không hợp lệ, hãy tải lại trang rồi thử lưu lại", HttpStatus.BAD_REQUEST),
+    SCORE_VERSION_CONFLICT(
+            2014,
+            "Bản nhạc vừa được lưu ở nơi khác, hãy tải bản mới nhất hoặc ghi đè bản của bạn",
+            HttpStatus.CONFLICT),
 
     MUSICXML_INVALID(2012, "File MusicXML không hợp lệ hoặc bị hỏng", HttpStatus.BAD_REQUEST),
     MIDI_INVALID(2013, "File MIDI không hợp lệ hoặc bị hỏng", HttpStatus.BAD_REQUEST),
@@ -73,6 +80,8 @@ public enum ErrorCode {
     REVIEW_EMPTY(2412, "Nhận xét cần có số sao hoặc bình luận", HttpStatus.BAD_REQUEST),
     REVIEW_NOT_EXISTED(2413, "Nhận xét không tồn tại", HttpStatus.NOT_FOUND),
     NOTIFICATION_NOT_EXISTED(2501, "Thông báo không tồn tại", HttpStatus.NOT_FOUND),
+    AI_TASK_NOT_CANCELLABLE(2102, "Tác vụ đã kết thúc nên không thể hủy", HttpStatus.CONFLICT),
+    AI_SERVICE_UNAVAILABLE(2103, "Dịch vụ nhận diện nhạc tạm thời không khả dụng", HttpStatus.SERVICE_UNAVAILABLE),
     ;
 
     int code;

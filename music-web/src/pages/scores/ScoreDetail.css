@@ -253,3 +253,13 @@
     font-size: 1.5rem;
   }
 }
+
+/* Nút dạng liên kết (ví dụ "Mở trình chỉnh sửa") */
+a.sc-btn {
+  text-decoration: none;
+}
+a.sc-btn.is-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}

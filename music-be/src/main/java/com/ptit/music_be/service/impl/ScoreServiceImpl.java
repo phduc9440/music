@@ -65,7 +65,7 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class ScoreServiceImpl implements ScoreService {
 
-    static final int DEFAULT_PAGE_SIZE = 12;
+    static final int DEFAULT_PAGE_SIZE = 10;
     static final int MAX_PAGE_SIZE = 50;
     static final int MAX_KEYWORD_LENGTH = 100;
     static final int MAX_TAGS_PER_SCORE = 10;
@@ -487,7 +487,9 @@ public class ScoreServiceImpl implements ScoreService {
             return "";
         }
         String trimmed = keyword.trim();
-        return trimmed.length() > MAX_KEYWORD_LENGTH ? trimmed.substring(0, MAX_KEYWORD_LENGTH) : trimmed;
+        trimmed = trimmed.length() > MAX_KEYWORD_LENGTH ? trimmed.substring(0, MAX_KEYWORD_LENGTH) : trimmed;
+        // Escape ký tự đại diện của LIKE để "%" và "_" được tìm như ký tự thường (khớp với escape '\\' ở repository)
+        return trimmed.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
     }
 
     /** Rỗng -> "" (không lọc); đúng tên enum -> trả tên đó; sai -> INVALID_FILTER. */

@@ -46,7 +46,7 @@ public class ScoreController {
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<PageResponse<ScoreSummaryResponse>> getMyScores(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "12") int size,
+            @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String source,
