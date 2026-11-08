@@ -8,6 +8,7 @@ import { toast } from 'react-toastify';
 import { saveMusicXml } from '../../services';
 import { getConflictVersion, getSaveErrorMessage } from '../../utils/score';
 import { EDIT_FAILURE_MESSAGES, changePitch, removeNotes, setAlteration } from './commands';
+import { transposeDocument } from './transpose';
 import type { EditResult, SymbolOp } from './commands';
 import {
   DURATION_LABELS,
@@ -125,6 +126,8 @@ export interface ScoreEditor {
   applyMark: (op: MarkOp) => void;
   /** Thêm ô nhịp trống sau / trước ô đang chọn (không chọn gì: thêm vào cuối), hoặc xóa các ô đang chọn. */
   editMeasures: (op: 'insertAfter' | 'insertBefore' | 'delete') => void;
+  /** Chuyển giọng cả bản nhạc `semitones` nửa cung thành một lệnh hoàn tác được; trả về true nếu thành công. */
+  transposeScore: (semitones: number) => boolean;
   /** Thêm khuông Fa cho đàn, thêm khuông Sol/Fa riêng (phần nhạc mới), hoặc xóa khuông của nốt đang chọn. */
   editStaves: (op: 'addBass' | 'addG' | 'addF' | 'addTenor' | 'remove') => void;
   /** Đổi khóa nhạc, dấu hóa đầu khuông hoặc nhịp tại vùng chọn. */
@@ -448,6 +451,16 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
       commit(runMark(doc, [...selection], op), false);
     },
     [canEdit, selection, doc, commit],
+  );
+
+  const transposeScore = useCallback(
+    (semitones: number): boolean => {
+      if (!canEdit) return false;
+      const result = transposeDocument(doc, semitones);
+      commit(result, false);
+      return result.ok;
+    },
+    [canEdit, doc, commit],
   );
 
   const editMeasures = useCallback(
@@ -925,6 +938,7 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     pasteChordText,
     applyMark,
     editMeasures,
+    transposeScore,
     editStaves,
     editNotation,
     editVoice,

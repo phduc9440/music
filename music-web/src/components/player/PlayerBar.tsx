@@ -23,9 +23,21 @@ interface Props {
   canDragLoop?: boolean;
   /** Bản nhạc ở trang này được vẽ lại theo giọng mới khi chuyển giọng (trang phát); không thì chỉ đổi âm thanh (Editor). */
   transposeRedraws?: boolean;
+  /** Có thì cho phép ghi giọng đang nghe thành nội dung bản nhạc (chỉ người được sửa). Trả về true nếu thành công. */
+  onApplyTranspose?: (semitones: number) => Promise<boolean> | boolean;
+  /** Giải thích hậu quả của việc áp dụng (ví dụ "sẽ lưu thành phiên bản mới") để người dùng xác nhận. */
+  applyTransposeHint?: string;
 }
 
-export function PlayerBar({ player, onClose, extra, canDragLoop, transposeRedraws }: Props) {
+export function PlayerBar({
+  player,
+  onClose,
+  extra,
+  canDragLoop,
+  transposeRedraws,
+  onApplyTranspose,
+  applyTransposeHint,
+}: Props) {
   if (!player.engine || !player.timeline) {
     return (
       <div className="pl-bar pl-bar--notice" role="region" aria-label="Trình phát">
@@ -47,6 +59,8 @@ export function PlayerBar({ player, onClose, extra, canDragLoop, transposeRedraw
       extra={extra}
       canDragLoop={canDragLoop}
       transposeRedraws={transposeRedraws}
+      onApplyTranspose={onApplyTranspose}
+      applyTransposeHint={applyTransposeHint}
       engine={player.engine}
       timeline={player.timeline}
     />
@@ -59,6 +73,8 @@ function BarBody({
   extra,
   canDragLoop,
   transposeRedraws,
+  onApplyTranspose,
+  applyTransposeHint,
   engine,
   timeline,
 }: Props & { engine: NonNullable<PlayerApi['engine']>; timeline: NonNullable<PlayerApi['timeline']> }) {
@@ -171,6 +187,8 @@ function BarBody({
           outOfRange={player.outOfRange}
           redraws={transposeRedraws === true}
           onChange={player.setTranspose}
+          onApply={onApplyTranspose}
+          applyHint={applyTransposeHint}
           disabled={!player.canPlay}
         />
         <MixerPopover
