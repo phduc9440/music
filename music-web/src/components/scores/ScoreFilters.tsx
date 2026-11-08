@@ -50,7 +50,7 @@ export default function ScoreFilters(p: Props) {
         onChange={(e) => p.onSource(e.target.value as ScoreSource | '')}
       >
         <option value="">Mọi nguồn</option>
-        <option value="OMR">Quét từ ảnh</option>
+        <option value="OMR">Số hóa từ file</option>
         <option value="IMPORT">Nhập file</option>
         <option value="MANUAL">Tự soạn</option>
       </select>

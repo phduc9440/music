@@ -146,7 +146,6 @@ export default function ScoreUpload() {
       const res = await omrApi.upload({ files: finalFiles, title, composer, sourceType }, setProgress);
       toast.success('Đã tải lên, bản nhạc đang chờ số hóa');
       const created = res.data.result;
-      // TODO(feature/omr-preprocess): sau khi có trang tiến độ, getScorePath sẽ chuyển sang /scores/{id}/processing
       navigate(getScorePath(created.scoreId, 'PENDING'), { replace: true });
     } catch (err) {
       // Giữ nguyên các file đã chọn để người dùng sửa rồi thử lại
