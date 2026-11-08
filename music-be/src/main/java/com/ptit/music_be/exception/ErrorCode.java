@@ -66,6 +66,10 @@ public enum ErrorCode {
     AI_TASK_NOT_EXISTED(2101, "Tác vụ AI không tồn tại", HttpStatus.NOT_FOUND),
     AI_TASK_NOT_CANCELLABLE(2102, "Tác vụ đã kết thúc nên không thể hủy", HttpStatus.CONFLICT),
     AI_SERVICE_UNAVAILABLE(2103, "Dịch vụ nhận diện nhạc tạm thời không khả dụng", HttpStatus.SERVICE_UNAVAILABLE),
+
+    // Tags (23xx)
+    TAG_NOT_EXISTED(2301, "Thể loại không tồn tại", HttpStatus.NOT_FOUND),
+    TOO_MANY_TAGS(2302, "Mỗi bản nhạc tối đa 10 thể loại", HttpStatus.BAD_REQUEST),
     ;
 
     int code;

@@ -1,6 +1,7 @@
 package com.ptit.music_be.dto.response;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import com.ptit.music_be.dto.enums.DifficultyLevel;
 
@@ -30,6 +31,8 @@ public class ScoreSummaryResponse {
     String visibility;
 
     Integer measureCount;
+    /** Thể loại đã gắn, sắp xếp theo tên. */
+    List<TagResponse> tags;
     /** Ảnh trang 1 (đường dẫn tương đối so với host, ví dụ /api/files/{id}/download?inline=true); null nếu chưa có. */
     String thumbnailUrl;
 

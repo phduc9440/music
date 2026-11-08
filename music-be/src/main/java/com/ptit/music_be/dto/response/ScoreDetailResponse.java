@@ -30,6 +30,9 @@ public class ScoreDetailResponse {
     String visibility;
     Boolean isOfficial;
 
+    /** Thể loại đã gắn, sắp xếp theo tên. */
+    List<TagResponse> tags;
+
     String keySignature;
     String timeSignature;
     Integer tempoBpm;

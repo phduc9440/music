@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { toast } from 'react-toastify';
-import { scoreApi } from '../../services';
+import { scoreApi, tagApi } from '../../services';
 import { MAX_COMPOSER, MAX_NOTES, MAX_TITLE, getErrorMessage } from '../../utils/score';
 import Modal from './Modal';
-import type { Difficulty, ScoreDetail, Visibility } from '../../types';
+import type { Difficulty, ScoreDetail, Tag, Visibility } from '../../types';
+
+const MAX_TAGS = 10; // khớp BE (mã lỗi 2302)
 
 interface Props {
   score: ScoreDetail;
@@ -18,8 +20,21 @@ export default function EditScoreModal({ score, onClose, onSaved }: Props) {
   const [difficulty, setDifficulty] = useState<Difficulty | ''>(score.difficulty ?? '');
   const [studyNotes, setStudyNotes] = useState(score.studyNotes ?? '');
   const [visibility, setVisibility] = useState<Visibility>(score.visibility);
+  const [allTags, setAllTags] = useState<Tag[]>([]);
+  const initialTagIds = (score.tags ?? []).map((t) => t.id);
+  const [tagIds, setTagIds] = useState<string[]>(initialTagIds);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    tagApi
+      .list()
+      .then((res) => setAllTags(res.data.result))
+      .catch(() => setError('Không tải được danh sách thể loại'));
+  }, []);
+
+  const toggleTag = (id: string) =>
+    setTagIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -41,8 +56,13 @@ export default function EditScoreModal({ score, onClose, onSaved }: Props) {
         // Chỉ chủ sở hữu (hoặc admin) mới được đổi chế độ hiển thị
         ...(score.canDelete ? { visibility } : {}),
       });
+      let saved = res.data.result;
+      // Chỉ gọi API thể loại khi người dùng có đổi lựa chọn
+      const tagsChanged =
+        tagIds.length !== initialTagIds.length || tagIds.some((id) => !initialTagIds.includes(id));
+      if (tagsChanged) saved = (await scoreApi.updateTags(score.id, tagIds)).data.result;
       toast.success('Đã lưu thông tin bản nhạc');
-      onSaved(res.data.result);
+      onSaved(saved);
     } catch (err) {
       setError(getErrorMessage(err, 'Không lưu được, vui lòng thử lại'));
     } finally {
@@ -108,6 +128,30 @@ export default function EditScoreModal({ score, onClose, onSaved }: Props) {
             </select>
           </>
         )}
+
+        <span className="sc-label">
+          Thể loại
+          <span className="sc-counter">
+            {tagIds.length}/{MAX_TAGS}
+          </span>
+        </span>
+        <div className="sc-tagpick" role="group" aria-label="Thể loại">
+          {allTags.map((t) => {
+            const active = tagIds.includes(t.id);
+            return (
+              <button
+                key={t.id}
+                type="button"
+                aria-pressed={active}
+                className={`sc-tagpick__opt ${active ? 'is-active' : ''}`}
+                disabled={!active && tagIds.length >= MAX_TAGS}
+                onClick={() => toggleTag(t.id)}
+              >
+                {t.name}
+              </button>
+            );
+          })}
+        </div>
 
         <label className="sc-label" htmlFor="sc-notes">
           Ghi chú luyện tập

@@ -1,11 +1,14 @@
 package com.ptit.music_be.service.impl;
 
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -26,10 +29,13 @@ import com.ptit.music_be.dto.response.AiTaskResponse;
 import com.ptit.music_be.dto.response.PageResponse;
 import com.ptit.music_be.dto.response.ScoreDetailResponse;
 import com.ptit.music_be.dto.response.ScoreSummaryResponse;
+import com.ptit.music_be.dto.response.TagResponse;
 import com.ptit.music_be.entity.AiTask;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreFile;
+import com.ptit.music_be.entity.ScoreTag;
+import com.ptit.music_be.entity.Tag;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.mapper.AiTaskMapper;
@@ -38,6 +44,8 @@ import com.ptit.music_be.repository.AiTaskRepository;
 import com.ptit.music_be.repository.MemberRepository;
 import com.ptit.music_be.repository.ScoreFileRepository;
 import com.ptit.music_be.repository.ScoreRepository;
+import com.ptit.music_be.repository.ScoreTagRepository;
+import com.ptit.music_be.repository.TagRepository;
 import com.ptit.music_be.service.FileStorageService;
 import com.ptit.music_be.service.ScoreFileService;
 import com.ptit.music_be.service.ScoreService;
@@ -55,11 +63,14 @@ public class ScoreServiceImpl implements ScoreService {
     static final int DEFAULT_PAGE_SIZE = 10;
     static final int MAX_PAGE_SIZE = 50;
     static final int MAX_KEYWORD_LENGTH = 100;
+    static final int MAX_TAGS_PER_SCORE = 10;
 
     MemberRepository memberRepository;
     ScoreRepository scoreRepository;
     ScoreFileRepository scoreFileRepository;
     AiTaskRepository aiTaskRepository;
+    TagRepository tagRepository;
+    ScoreTagRepository scoreTagRepository;
     ScoreFileService scoreFileService;
     FileStorageService fileStorageService;
     ScoreFileMapper scoreFileMapper;
@@ -90,8 +101,10 @@ public class ScoreServiceImpl implements ScoreService {
                         member.getId(), safeKeyword, safeStatus, safeSource, safeDifficulty, pageable);
 
         Map<String, ScoreFile> thumbnails = loadThumbnails(result.getContent());
+        Map<String, List<TagResponse>> tagsByScore = loadTags(result.getContent());
         List<ScoreSummaryResponse> content = result.getContent().stream()
-                .map(score -> toSummary(score, thumbnails.get(score.getId())))
+                .map(score -> toSummary(
+                        score, thumbnails.get(score.getId()), tagsByScore.getOrDefault(score.getId(), List.of())))
                 .toList();
 
         return PageResponse.<ScoreSummaryResponse>builder()
@@ -149,6 +162,61 @@ public class ScoreServiceImpl implements ScoreService {
         return toDetail(scoreRepository.save(score));
     }
 
+    // ------------------------------------------------------------------ thể loại (tags)
+
+    @Override
+    @Transactional
+    public ScoreDetailResponse updateTags(String scoreId, List<String> tagIds) {
+        Score score = findScore(scoreId);
+        scoreFileService.checkCanEdit(score);
+
+        Set<String> wanted = new LinkedHashSet<>(tagIds == null ? List.of() : tagIds);
+        if (wanted.size() > MAX_TAGS_PER_SCORE) {
+            throw new AppException(ErrorCode.TOO_MANY_TAGS);
+        }
+        Map<String, Tag> found =
+                tagRepository.findAllById(wanted).stream().collect(Collectors.toMap(Tag::getId, t -> t));
+        if (found.size() != wanted.size()) {
+            throw new AppException(ErrorCode.TAG_NOT_EXISTED);
+        }
+
+        // Chỉ xóa tag không còn được chọn và thêm tag mới, tag giữ nguyên thì không đụng tới (orphanRemoval lo việc xóa)
+        score.getScoreTags().removeIf(st -> !wanted.contains(st.getTag().getId()));
+        Set<String> have =
+                score.getScoreTags().stream().map(st -> st.getTag().getId()).collect(Collectors.toSet());
+        for (String id : wanted) {
+            if (!have.contains(id)) {
+                score.getScoreTags()
+                        .add(ScoreTag.builder().score(score).tag(found.get(id)).build());
+            }
+        }
+        return toDetail(scoreRepository.save(score));
+    }
+
+    private Map<String, List<TagResponse>> loadTags(Collection<Score> scores) {
+        Map<String, List<TagResponse>> result = new HashMap<>();
+        if (scores.isEmpty()) {
+            return result;
+        }
+        List<String> ids = scores.stream().map(Score::getId).toList();
+        for (ScoreTag st : scoreTagRepository.findByScoreIdInFetchTag(ids)) {
+            result.computeIfAbsent(st.getScore().getId(), k -> new java.util.ArrayList<>())
+                    .add(toTagResponse(st.getTag()));
+        }
+        result.values()
+                .forEach(list ->
+                        list.sort(java.util.Comparator.comparing(TagResponse::getName, String.CASE_INSENSITIVE_ORDER)));
+        return result;
+    }
+
+    private static TagResponse toTagResponse(Tag tag) {
+        return TagResponse.builder()
+                .id(tag.getId())
+                .name(tag.getName())
+                .slug(tag.getSlug())
+                .build();
+    }
+
     // ------------------------------------------------------------------ xóa
 
     @Override
@@ -183,7 +251,7 @@ public class ScoreServiceImpl implements ScoreService {
         return scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
     }
 
-    private ScoreSummaryResponse toSummary(Score score, ScoreFile thumbnail) {
+    private ScoreSummaryResponse toSummary(Score score, ScoreFile thumbnail, List<TagResponse> tags) {
         return ScoreSummaryResponse.builder()
                 .id(score.getId())
                 .title(score.getTitle())
@@ -193,6 +261,7 @@ public class ScoreServiceImpl implements ScoreService {
                 .sourceType(score.getSourceType())
                 .visibility(score.getVisibility())
                 .measureCount(score.getMeasureCount())
+                .tags(tags)
                 .thumbnailUrl(thumbnail == null ? null : "/api/files/" + thumbnail.getId() + "/download?inline=true")
                 .createdAt(score.getCreatedAt())
                 .updatedAt(score.getUpdatedAt())
@@ -225,6 +294,11 @@ public class ScoreServiceImpl implements ScoreService {
                 .sourceType(score.getSourceType())
                 .visibility(score.getVisibility())
                 .isOfficial(score.getIsOfficial())
+                .tags(score.getScoreTags().stream()
+                        .map(ScoreTag::getTag)
+                        .map(ScoreServiceImpl::toTagResponse)
+                        .sorted(java.util.Comparator.comparing(TagResponse::getName, String.CASE_INSENSITIVE_ORDER))
+                        .toList())
                 .keySignature(score.getKeySignature())
                 .timeSignature(score.getTimeSignature())
                 .tempoBpm(score.getTempoBpm())

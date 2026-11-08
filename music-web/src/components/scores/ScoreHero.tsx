@@ -48,6 +48,15 @@ export default function ScoreHero({ score, onEdit, onDelete }: Props) {
         </div>
         <h1 className="sc-hero__title">{score.title}</h1>
         <p className="sc-hero__composer">{score.composer || 'Chưa rõ tác giả'}</p>
+        {score.tags && score.tags.length > 0 && (
+          <div className="sc-hero__badges">
+            {score.tags.map((t) => (
+              <span key={t.id} className="sc-chip sc-chip--tag">
+                {t.name}
+              </span>
+            ))}
+          </div>
+        )}
         {score.ownerEmail && <p className="sc-hero__owner">Chủ sở hữu: {score.ownerEmail}</p>}
 
         {(score.processingStatus === 'PENDING' || score.processingStatus === 'PROCESSING') && (
