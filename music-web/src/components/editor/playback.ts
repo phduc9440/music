@@ -34,6 +34,11 @@ export interface PlayNote {
   /** Vị trí bắt đầu và kết thúc tính theo phách đen kể từ đầu lượt phát (không phụ thuộc tempo). */
   beat: number;
   beatEnd: number;
+  /**
+   * Chỉ có ở nốt đệm hợp âm: true nếu nốt này đánh lại hợp âm ĐANG HIỆU LỰC ở đầu một ô không ghi ký hiệu hợp âm nào (không
+   * phải do chính một ký hiệu sinh ra). Người dùng chọn có đánh các nốt này hay không.
+   */
+  carried?: boolean;
 }
 
 /** Một ô nhịp trong lượt phát. */
@@ -592,8 +597,10 @@ export function buildPlayback(doc: ScoreDocument, fallbackBpm: number): Playback
       const mt = times[k];
       const div = divisionsOf(chordPart, measureIndex);
       const harmonies = harmoniesOf(measure);
-      const points: { q: number; notes: ChordNotes | null }[] = [];
-      if (harmonies.length === 0 || harmonies[0].at / div > EPS) points.push({ q: 0, notes: carry[measureIndex] });
+      const points: { q: number; notes: ChordNotes | null; carried?: boolean }[] = [];
+      if (harmonies.length === 0 || harmonies[0].at / div > EPS) {
+        points.push({ q: 0, notes: carry[measureIndex], carried: true });
+      }
       for (const h of harmonies) points.push({ q: h.at / div, notes: chordNotes(h.child) });
       points.forEach((point, i) => {
         const q1 = i + 1 < points.length ? points[i + 1].q : mt.length;
@@ -613,6 +620,7 @@ export function buildPlayback(doc: ScoreDocument, fallbackBpm: number): Playback
           staff: 0,
           beat: mt.startBeat + point.q,
           beatEnd: mt.startBeat + q1,
+          ...(point.carried ? { carried: true } : {}),
         });
         chords.push(make(point.notes.bass, CHORD_BASS_GAIN));
         for (const tone of point.notes.tones) chords.push(make(tone, CHORD_GAIN));

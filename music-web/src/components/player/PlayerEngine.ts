@@ -37,6 +37,8 @@ export interface EngineOptions {
   loop?: LoopSettings;
   /** Chuyển giọng ban đầu (nửa cung, −12…+12). */
   transpose?: number;
+  /** Ô không ghi hợp âm có đánh lại hợp âm đang hiệu lực không (mặc định có). */
+  chordCarry?: boolean;
 }
 
 /**
@@ -107,6 +109,8 @@ export class PlayerEngine {
   private baseRate = 1;
   /** Số nửa cung cộng vào cao độ mỗi nốt khi hẹn giờ (nghe ở giọng khác, bản nhạc không đổi). */
   private transpose = 0;
+  /** Đánh lại hợp âm đang hiệu lực ở ô không ghi ký hiệu hợp âm; tắt thì các ô đó im phần đệm. */
+  private chordCarry = true;
   private voices: ScheduledVoice[] = [];
   private mixer: MixerState = EMPTY_MIXER;
   private trackIds: string[] = [];
@@ -125,6 +129,7 @@ export class PlayerEngine {
     this.mixer = options.mixer ?? EMPTY_MIXER;
     this.loop = options.loop ?? NO_LOOP;
     this.transpose = clampTranspose(options.transpose ?? 0);
+    this.chordCarry = options.chordCarry ?? true;
   }
 
   /** Nạp dòng thời gian mới (sau khi sửa bản nhạc); đang phát thì dừng và về đầu. */
@@ -149,6 +154,26 @@ export class PlayerEngine {
 
   getTimeline(): Timeline {
     return this.timeline;
+  }
+
+  /** Ô không ghi hợp âm có đánh lại hợp âm đang hiệu lực không. */
+  getChordCarry(): boolean {
+    return this.chordCarry;
+  }
+
+  /**
+   * Bật/tắt việc đánh lại hợp âm ở ô không ghi ký hiệu hợp âm. Áp dụng ngay khi đang phát như đổi tempo: nốt chưa vang
+   * được hẹn lại theo lựa chọn mới, nốt đang ngân vẫn ngân hết.
+   */
+  setChordCarry(on: boolean): void {
+    if (on === this.chordCarry) return;
+    this.chordCarry = on;
+    if (this.status === 'playing') {
+      const pos = this.position();
+      this.killPending();
+      this.anchor(pos, 0);
+    }
+    this.emit();
   }
 
   /** Số nửa cung đang chuyển giọng khi nghe. */
@@ -445,6 +470,7 @@ export class PlayerEngine {
 
   /** Hẹn giờ một nốt theo điểm neo `anchor`; nốt vắt qua `limit` (cuối đoạn A-B) bị cắt tại đó. */
   private schedule(event: TimelineEvent, anchor: Anchor, limit: number): void {
+    if (event.carried && !this.chordCarry) return;
     if (!inPianoRange(event.midi, this.transpose)) return;
     const midi = event.midi + this.transpose;
     const now = this.now();

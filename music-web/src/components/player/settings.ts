@@ -55,6 +55,8 @@ export interface ScorePlayerSettings {
   loop: LoopSettings;
   /** Chuyển giọng khi nghe (nửa cung, −12…+12). */
   transpose: number;
+  /** Ô không ghi hợp âm có đánh lại hợp âm đang hiệu lực không (mặc định có). */
+  chordCarry: boolean;
 }
 
 const scoreKey = (scoreId: string | number): string => `player:${scoreId}`;
@@ -71,7 +73,7 @@ const readScoreRecord = (scoreId: string | number): Record<string, unknown> => {
 
 export function loadScoreSettings(scoreId: string | number | null | undefined): ScorePlayerSettings {
   if (scoreId === null || scoreId === undefined)
-    return { tempoPercent: DEFAULT_TEMPO_PERCENT, mixer: EMPTY_MIXER, loop: NO_LOOP, transpose: 0 };
+    return { tempoPercent: DEFAULT_TEMPO_PERCENT, mixer: EMPTY_MIXER, loop: NO_LOOP, transpose: 0, chordCarry: true };
   const record = readScoreRecord(scoreId);
   return {
     tempoPercent:
@@ -79,6 +81,7 @@ export function loadScoreSettings(scoreId: string | number | null | undefined): 
     mixer: sanitizeMixer(record.mixer),
     loop: sanitizeLoop(record.loop),
     transpose: typeof record.transpose === 'number' ? clampTranspose(record.transpose) : 0,
+    chordCarry: record.chordCarry !== false,
   };
 }
 

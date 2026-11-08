@@ -1,4 +1,5 @@
 import { IconClose, IconNextMeasure, IconPauseBig, IconPlayBig, IconPrevMeasure, IconStopSmall } from './PlayerIcons';
+import { ChordControl } from './ChordControl';
 import { LoopControl } from './LoopControl';
 import { mixOf } from './mixer';
 import { MixerPopover } from './MixerPopover';
@@ -169,16 +170,13 @@ function BarBody({
       </div>
       <div className="pl-side">
         {timeline.tracks.some((t) => t.id === CHORD_TRACK_ID) && (
-          <button
-            type="button"
-            className={`pl-chip${chordsOn ? ' pl-chip--on' : ''}`}
-            aria-pressed={chordsOn}
-            title={chordsOn ? 'Đang đệm hợp âm: bấm để tắt' : 'Đã tắt đệm hợp âm: bấm để bật'}
+          <ChordControl
+            on={chordsOn}
+            carry={player.chordCarry}
+            onToggle={() => player.setTrackMix(CHORD_TRACK_ID, { mute: chordsOn })}
+            onCarryChange={player.setChordCarry}
             disabled={!player.canPlay}
-            onClick={() => player.setTrackMix(CHORD_TRACK_ID, { mute: chordsOn })}
-          >
-            Hợp âm
-          </button>
+          />
         )}
         <TempoControl
           percent={player.tempoPercent}

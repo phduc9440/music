@@ -96,6 +96,10 @@ export interface PlayerApi {
   outOfRange: number;
   /** Khóa nhạc đầu bài (để hiện tên giọng gốc và giọng mới). */
   startKey: KeySignature;
+  /** Ô không ghi hợp âm có đánh lại hợp âm đang hiệu lực không (mặc định có). */
+  chordCarry: boolean;
+  /** Bật/tắt việc đánh lại hợp âm ở ô không ghi ký hiệu hợp âm; có hiệu lực ngay và được nhớ theo từng bản nhạc. */
+  setChordCarry: (on: boolean) => void;
   /** Phát hoặc tạm dừng. */
   toggle: () => void;
   /** Phát; đang dừng ở đầu bài và có `ids` thì phát từ nốt đầu của vùng chọn. */
@@ -167,6 +171,7 @@ export function usePlayer(doc: ScoreDocument, options: UsePlayerOptions): Player
       mixer: saved.mixer,
       loop: saved.loop,
       transpose: saved.transpose,
+      chordCarry: saved.chordCarry,
     });
   });
   const samplerSnapshot = useSyncExternalStore(sampler.subscribe, sampler.getSnapshot);
@@ -179,6 +184,7 @@ export function usePlayer(doc: ScoreDocument, options: UsePlayerOptions): Player
   const mixer = useSyncExternalStore(subscribe, () => engine?.getMixer() ?? EMPTY_MIXER);
   const loop = useSyncExternalStore(subscribe, () => engine?.getLoop() ?? NO_LOOP);
   const transpose = useSyncExternalStore(subscribe, () => engine?.getTranspose() ?? 0);
+  const chordCarry = useSyncExternalStore(subscribe, () => engine?.getChordCarry() ?? true);
 
   const [overrides, setOverrides] = useState<Record<number, InstrumentId>>({});
   const instrumentRef = useRef<(part: number) => InstrumentId>(() => 'piano');
@@ -397,6 +403,15 @@ export function usePlayer(doc: ScoreDocument, options: UsePlayerOptions): Player
     [engine, scoreId],
   );
 
+  const setChordCarry = useCallback(
+    (on: boolean) => {
+      if (!engine) return;
+      engine.setChordCarry(on);
+      saveScoreSettings(scoreId, { chordCarry: engine.getChordCarry() });
+    },
+    [engine, scoreId],
+  );
+
   const outOfRange = useMemo(() => (timeline ? countOutOfRange(timeline, transpose) : 0), [timeline, transpose]);
   const startKey = useMemo(
     () => readStartingKey(doc),
@@ -473,6 +488,8 @@ export function usePlayer(doc: ScoreDocument, options: UsePlayerOptions): Player
     setTranspose,
     outOfRange,
     startKey,
+    chordCarry,
+    setChordCarry,
     mutedStaves,
     setTrackMix,
     resetMixer,
