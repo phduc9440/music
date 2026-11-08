@@ -103,6 +103,7 @@ export interface ScoreListParams {
   status?: ProcessingStatus | '';
   source?: ScoreSource | '';
   difficulty?: Difficulty | '';
+  tagId?: string;
   sort?: ScoreSort;
 }
 

@@ -31,15 +31,19 @@ import com.ptit.music_be.dto.enums.FileType;
 import com.ptit.music_be.dto.enums.ProcessingStatus;
 import com.ptit.music_be.dto.enums.ScoreSource;
 import com.ptit.music_be.dto.response.ScoreImportResponse;
+import com.ptit.music_be.dto.response.TagResponse;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreFile;
+import com.ptit.music_be.entity.ScoreTag;
+import com.ptit.music_be.entity.Tag;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.mapper.ScoreFileMapper;
 import com.ptit.music_be.repository.MemberRepository;
 import com.ptit.music_be.repository.ScoreFileRepository;
 import com.ptit.music_be.repository.ScoreRepository;
+import com.ptit.music_be.repository.TagRepository;
 import com.ptit.music_be.service.FileStorageService;
 import com.ptit.music_be.service.ScoreImportService;
 import com.ptit.music_be.utils.SecurityUtils;
@@ -55,12 +59,14 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ScoreImportServiceImpl implements ScoreImportService {
 
+    static final int MAX_TAGS_PER_SCORE = 10;
     static final int MAX_TITLE_LENGTH = 255;
     static final int MAX_COMPOSER_LENGTH = 255;
     /** Giới hạn dung lượng XML sau khi giải nén (chống zip bomb). */
     static final int MAX_XML_BYTES = 50 * 1024 * 1024;
 
     MemberRepository memberRepository;
+    TagRepository tagRepository;
     ScoreRepository scoreRepository;
     ScoreFileRepository scoreFileRepository;
     FileStorageService fileStorageService;
@@ -106,7 +112,7 @@ public class ScoreImportServiceImpl implements ScoreImportService {
 
     @Override
     @Transactional
-    public ScoreImportResponse importScore(MultipartFile file, String title, String composer) {
+    public ScoreImportResponse importScore(MultipartFile file, String title, String composer, List<String> tagIds) {
         String cleanComposer = trimToLength(composer, MAX_COMPOSER_LENGTH, ErrorCode.SCORE_COMPOSER_INVALID);
         String cleanTitle = trimToLength(title, MAX_TITLE_LENGTH, ErrorCode.SCORE_TITLE_INVALID);
 
@@ -117,6 +123,9 @@ public class ScoreImportServiceImpl implements ScoreImportService {
         if (kind == null) {
             throw new AppException(ErrorCode.IMPORT_TYPE_NOT_SUPPORTED);
         }
+
+        // Kiểm tra thể loại trước khi ghi gì vào DB hay đĩa: id sai thì từ chối cả lần import
+        List<Tag> tags = resolveTags(tagIds);
 
         byte[] data;
         try {
@@ -159,6 +168,10 @@ public class ScoreImportServiceImpl implements ScoreImportService {
                 .currentVersion(kind.isMidi() ? 0 : 1)
                 .build());
 
+        for (Tag tag : tags) {
+            score.getScoreTags().add(ScoreTag.builder().score(score).tag(tag).build());
+        }
+
         String scoreDir = "scores/" + score.getId();
         // Nếu bước nào bên dưới lỗi thì DB rollback -> xóa luôn file đã ghi ra đĩa
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
@@ -198,6 +211,13 @@ public class ScoreImportServiceImpl implements ScoreImportService {
                 .title(score.getTitle())
                 .composer(score.getComposer())
                 .processingStatus(score.getProcessingStatus())
+                .tags(tags.stream()
+                        .map(t -> TagResponse.builder()
+                                .id(t.getId())
+                                .name(t.getName())
+                                .slug(t.getSlug())
+                                .build())
+                        .toList())
                 .files(scoreFileMapper.toResponses(saved))
                 .build();
     }
@@ -221,6 +241,28 @@ public class ScoreImportServiceImpl implements ScoreImportService {
     }
 
     // ---------------------------------------------------------------- validation
+
+    /** Bỏ id trùng, tối đa 10, mọi id phải tồn tại; kết quả sắp xếp theo tên. */
+    private List<Tag> resolveTags(List<String> tagIds) {
+        if (tagIds == null) {
+            return List.of();
+        }
+        List<String> wanted = tagIds.stream()
+                .filter(StringUtils::hasText)
+                .map(String::trim)
+                .distinct()
+                .toList();
+        if (wanted.size() > MAX_TAGS_PER_SCORE) {
+            throw new AppException(ErrorCode.TOO_MANY_TAGS);
+        }
+        List<Tag> found = tagRepository.findAllById(wanted);
+        if (found.size() != wanted.size()) {
+            throw new AppException(ErrorCode.TAG_NOT_EXISTED);
+        }
+        return found.stream()
+                .sorted(java.util.Comparator.comparing(Tag::getName, String.CASE_INSENSITIVE_ORDER))
+                .toList();
+    }
 
     private ImportKind kindFromExtension(String fileName) {
         String ext = StringUtils.getFilenameExtension(fileName);

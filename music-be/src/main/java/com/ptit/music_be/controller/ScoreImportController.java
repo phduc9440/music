@@ -1,5 +1,7 @@
 package com.ptit.music_be.controller;
 
+import java.util.List;
+
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -28,14 +30,16 @@ public class ScoreImportController {
     @Operation(
             summary = "Import one MusicXML (.musicxml/.xml/.mxl) or MIDI (.mid/.midi) file",
             description = "Errors: 2003 empty file, 2012 invalid MusicXML, 2013 invalid MIDI,"
-                    + " 2014 unsupported type, 2017/2018 title or composer too long",
+                    + " 2014 unsupported type, 2017/2018 title or composer too long,"
+                    + " 2301 tag not found, 2302 too many tags (tagIds is optional, repeat the field per tag)",
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<ScoreImportResponse> importScore(
             @RequestPart("file") MultipartFile file,
             @RequestParam(value = "title", required = false) String title,
-            @RequestParam(value = "composer", required = false) String composer) {
+            @RequestParam(value = "composer", required = false) String composer,
+            @RequestParam(value = "tagIds", required = false) List<String> tagIds) {
         return ApiResponse.<ScoreImportResponse>builder()
-                .result(scoreImportService.importScore(file, title, composer))
+                .result(scoreImportService.importScore(file, title, composer, tagIds))
                 .build();
     }
 }
