@@ -171,6 +171,9 @@ export default function ScoreUpload() {
             <h1>Tải bản nhạc lên</h1>
             <p>Hệ thống sẽ số hóa bản nhạc thành MusicXML và MIDI</p>
           </div>
+          <button type="button" className="sc-btn" disabled={busy} onClick={() => navigate('/scores/import')}>
+            Đã có file MusicXML / MIDI?
+          </button>
         </header>
 
         <form className="sc-upload" onSubmit={handleSubmit}>

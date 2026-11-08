@@ -23,6 +23,8 @@ public enum ErrorCode {
     TOO_MANY_REQUESTS(1010, "Too many requests. Please try again later.", HttpStatus.TOO_MANY_REQUESTS),
     FULL_NAME_REQUIRED(1011, "Họ tên là bắt buộc", HttpStatus.BAD_REQUEST),
     PASSWORD_SAME_AS_OLD(1012, "Mật khẩu mới phải khác mật khẩu hiện tại", HttpStatus.BAD_REQUEST),
+    CANNOT_MODIFY_SELF(1013, "Quản trị viên không thể khóa hoặc hạ quyền chính mình", HttpStatus.BAD_REQUEST),
+    ROLE_NOT_EXISTED(1015, "Vai trò không tồn tại", HttpStatus.BAD_REQUEST),
     AVATAR_INVALID(1014, "Ảnh đại diện phải là JPG hoặc PNG, tối đa 2MB", HttpStatus.BAD_REQUEST),
 
     // Score files & OMR (2xxx)
@@ -46,6 +48,10 @@ public enum ErrorCode {
             "Bản nhạc vừa được lưu ở nơi khác, hãy tải bản mới nhất hoặc ghi đè bản của bạn",
             HttpStatus.CONFLICT),
 
+    MUSICXML_INVALID(2012, "File MusicXML không hợp lệ hoặc bị hỏng", HttpStatus.BAD_REQUEST),
+    MIDI_INVALID(2013, "File MIDI không hợp lệ hoặc bị hỏng", HttpStatus.BAD_REQUEST),
+    IMPORT_TYPE_NOT_SUPPORTED(
+            2014, "Chỉ hỗ trợ một file .musicxml, .xml, .mxl, .mid hoặc .midi", HttpStatus.BAD_REQUEST),
     SCORE_TITLE_INVALID(2017, "Tiêu đề là bắt buộc và tối đa 255 ký tự", HttpStatus.BAD_REQUEST),
     SCORE_COMPOSER_INVALID(2018, "Tên tác giả tối đa 255 ký tự", HttpStatus.BAD_REQUEST),
     SCORE_NOTES_INVALID(2019, "Ghi chú tối đa 5000 ký tự", HttpStatus.BAD_REQUEST),

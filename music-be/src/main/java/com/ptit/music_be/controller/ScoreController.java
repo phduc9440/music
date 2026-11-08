@@ -37,7 +37,7 @@ public class ScoreController {
     @GetMapping("/me")
     @Operation(
             summary = "List my scores (search, filter, paginate)",
-            description = "status: NONE|PENDING|PROCESSING|COMPLETED|FAILED; source: OMR|IMPORT|MANUAL; "
+            description = "status: NONE|PENDING|PROCESSING|COMPLETED|FAILED; source: OMR|IMPORT|MANUAL; difficulty: EASY|MEDIUM|HARD|EXPERT; "
                     + "sort: newest (default) | oldest | title; size: 1..50",
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<PageResponse<ScoreSummaryResponse>> getMyScores(
@@ -46,9 +46,10 @@ public class ScoreController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String source,
+            @RequestParam(required = false) String difficulty,
             @RequestParam(defaultValue = "newest") String sort) {
         return ApiResponse.<PageResponse<ScoreSummaryResponse>>builder()
-                .result(scoreService.getMyScores(page, size, keyword, status, source, sort))
+                .result(scoreService.getMyScores(page, size, keyword, status, source, difficulty, sort))
                 .build();
     }
 

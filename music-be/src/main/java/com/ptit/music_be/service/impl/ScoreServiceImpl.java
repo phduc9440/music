@@ -17,6 +17,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.util.StringUtils;
 
 import com.ptit.music_be.dto.enums.AiTaskStatus;
+import com.ptit.music_be.dto.enums.DifficultyLevel;
 import com.ptit.music_be.dto.enums.FileType;
 import com.ptit.music_be.dto.enums.ProcessingStatus;
 import com.ptit.music_be.dto.enums.ScoreSource;
@@ -69,7 +70,7 @@ public class ScoreServiceImpl implements ScoreService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<ScoreSummaryResponse> getMyScores(
-            int page, int size, String keyword, String status, String source, String sort) {
+            int page, int size, String keyword, String status, String source, String difficulty, String sort) {
         Member member = memberRepository
                 .findByEmail(SecurityUtils.getCurrentEmail())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
@@ -81,10 +82,12 @@ public class ScoreServiceImpl implements ScoreService {
         // Giá trị lọc sai (ví dụ status=ABC) thì báo lỗi 2020 thay vì âm thầm bỏ qua
         String safeStatus = parseEnumName(status, ProcessingStatus.class);
         String safeSource = parseEnumName(source, ScoreSource.class);
+        String safeDifficulty = parseEnumName(difficulty, DifficultyLevel.class);
 
         PageRequest pageable = PageRequest.of(safePage, safeSize, toSort(sort));
         Page<Score> result =
-                scoreRepository.searchOfMember(member.getId(), safeKeyword, safeStatus, safeSource, pageable);
+                scoreRepository.searchOfMember(
+                        member.getId(), safeKeyword, safeStatus, safeSource, safeDifficulty, pageable);
 
         Map<String, ScoreFile> thumbnails = loadThumbnails(result.getContent());
         List<ScoreSummaryResponse> content = result.getContent().stream()

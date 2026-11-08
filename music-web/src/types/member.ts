@@ -45,3 +45,9 @@ export interface PracticeSession {
   scorePoints?: number | null;
   isCompleted?: boolean | null;
 }
+
+/** PATCH /api/admin/members/{id}: trường nào bỏ trống thì giữ nguyên. roles là tên không có prefix ROLE_. */
+export interface AdminUpdateMemberRequest {
+  status?: MemberStatus;
+  roles?: string[];
+}

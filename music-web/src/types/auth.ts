@@ -33,19 +33,6 @@ export interface ResetPasswordRequest {
   newPassword?: string;
 }
 
-export interface AccountCreationRequest {
-  password?: string;
-  email?: string;
-  fullName?: string;
-  roles?: string[];
-}
-
-export interface AccountUpdateRequest {
-  email?: string;
-  fullName?: string;
-  password?: string;
-}
-
 export interface RefreshRequest {
   refreshToken?: string;
 }
