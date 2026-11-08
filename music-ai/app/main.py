@@ -18,9 +18,10 @@ from app.config import get_settings
 from app.convert.errors import ConversionError
 from app.convert.kern import kern_file_to_musicxml_file
 from app.convert.midi import musicxml_file_to_midi_file
+from app.convert.prepare import prepare_musicxml
 from app.jobs import JobManager, QueueFullError
 from app.omr.transcoda import get_recognizer
-from app.schemas import JobRequest, KernToMusicXmlRequest, MusicXmlToMidiRequest
+from app.schemas import JobRequest, KernToMusicXmlRequest, MusicXmlToMidiRequest, PrepareRequest
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("music-ai")
@@ -137,3 +138,27 @@ def convert_musicxml_to_midi(body: MusicXmlToMidiRequest) -> dict:
     except ConversionError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     return {"outPath": body.outPath, "notes": stats.notes, "tracks": stats.tracks, "seconds": stats.seconds}
+
+
+@app.post("/convert/prepare", dependencies=[Depends(require_internal_key)])
+def convert_prepare(body: PrepareRequest) -> dict:
+    """Chuẩn bị MusicXML trước khi MuseScore xuất file: dịch giọng, đổi tempo, chọn tay, đặt/ẩn tiêu đề, bỏ hợp âm.
+
+    Đồng bộ, chạy ngoài hàng đợi OMR. File vào và ra nằm trong cùng ``scores/{scoreId}/``. MusicXML hỏng hoặc thiếu
+    music21 khi cần dịch giọng: 422 kèm lý do.
+    """
+    try:
+        result = prepare_musicxml(
+            storage.resolve(body.inPath),
+            storage.resolve(body.outPath),
+            transpose=body.transpose,
+            tempo_percent=body.tempoPercent,
+            hands=body.hands,
+            title=body.title,
+            composer=body.composer,
+            show_title=body.showTitle,
+            strip_harmony=body.stripHarmony,
+        )
+    except ConversionError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {"outPath": body.outPath, "warnings": result.warnings}
