@@ -35,7 +35,9 @@ export default function ScoreHero({ score, onEdit, onDelete }: Props) {
       ? score.latestTasks.find((t) => t.taskType === OMR_TASK_TYPE && t.status === 'FAILED')
       : undefined;
   const failure = failedTask ? describeTaskError(failedTask) : null;
-  const failureReason = failure ? `${failure.title}${failure.detail ? ` (${failure.detail})` : ''}` : score.rejectReason;
+  const failureReason = failure
+    ? `${failure.title}${failure.detail ? ` (${failure.detail})` : ''}`
+    : score.rejectReason;
 
   return (
     <section className="sc-hero">
@@ -92,10 +94,15 @@ export default function ScoreHero({ score, onEdit, onDelete }: Props) {
           >
             {score.canEdit ? 'Mở trình chỉnh sửa' : 'Xem bản nhạc'}
           </Link>
-          {/* TODO(feature/playback-basic): mở /scores/:id/play (1.22) */}
-          <button className="sc-btn" disabled title="Trình phát sẽ có ở nhánh playback-basic">
+          <Link
+            className={`sc-btn${hasMusicXml ? '' : ' is-disabled'}`}
+            to={`/scores/${score.id}/play`}
+            aria-disabled={!hasMusicXml}
+            title={hasMusicXml ? undefined : 'Bản nhạc chưa có MusicXML để phát'}
+            onClick={(e) => !hasMusicXml && e.preventDefault()}
+          >
             ▶ Phát
-          </button>
+          </Link>
           <DownloadMenu scoreId={score.id} files={score.files} />
           {score.canEdit && (
             <button className="sc-btn" onClick={onEdit}>

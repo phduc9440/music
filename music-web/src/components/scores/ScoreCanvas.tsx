@@ -20,6 +20,7 @@ import { applyHeaderStyle, readHeader } from '../editor/header';
 import type { HeaderField, HeaderState, TextStyle } from '../editor/header';
 import { readTempo } from '../editor/tempo';
 import type { TempoInfo } from '../editor/tempo';
+import { applyPlaying, keepMeasureVisible, measureOfEvent } from '../player/highlight';
 import NoteInsertPopover from './NoteInsertPopover';
 import TextEditPopover from './TextEditPopover';
 import type { TextKind } from './TextEditPopover';
@@ -63,6 +64,12 @@ interface Props {
   onEditTempo?: (info: TempoInfo) => boolean;
   /** Xác nhận ô nhịp sai độ dài là đúng (hiện dấu ✓ khi rê chuột vào mép trên viền đỏ). */
   onConfirmMeasure?: (measureIndex: number) => void;
+  /** Id các nốt đang vang khi phát (tô bằng class CSS, không vẽ lại). */
+  playing?: ReadonlySet<string>;
+  /** Ô nhịp (từ 0) cần giữ trong khung nhìn khi phát; null = không tự cuộn. */
+  followMeasure?: number | null;
+  /** Bấm vào một nốt khi không có `onSelectNotes` (trang phát): trả về ô nhịp của nốt đó (từ 0). */
+  onMeasureClick?: (measureIndex: number, additive: boolean) => void;
   /** Thêm nốt tại vị trí trên khuông (bấm hoặc kéo-thả); trả về true nếu thêm được. Có prop này thì canvas nhận kéo-thả. */
   onInsertNote?: (target: InsertTarget, choice: DurationChoice, accidental: AccidentalChoice) => boolean;
 }
@@ -78,6 +85,7 @@ const RENDER_DEBOUNCE_MS = 200;
 const EDIT_REDRAW_MS = 150;
 const EMPTY_SET: ReadonlySet<string> = new Set();
 const EMPTY_NUMBERS: ReadonlySet<number> = new Set();
+
 const MEASURE_OF_ID = /^(?:p\d+-)?m(\d+)-/;
 const ISSUE_BOX_CLASS = 'ed-issue-box';
 /** Quãng kéo tối thiểu (px) để coi là kéo chứ không phải bấm. */
@@ -229,6 +237,9 @@ export default function ScoreCanvas({
   selected = EMPTY_SET,
   issueMeasures = EMPTY_NUMBERS,
   focusMeasure = null,
+  playing = EMPTY_SET,
+  followMeasure = null,
+  onMeasureClick,
   onSelectNotes,
   onDragPitch,
   inputMode = false,
@@ -291,6 +302,7 @@ export default function ScoreCanvas({
     doc,
     revision,
     selected,
+    playing,
     issueMeasures,
     onConfirmMeasure,
     openText,
@@ -306,6 +318,7 @@ export default function ScoreCanvas({
       doc,
       revision,
       selected,
+      playing,
       issueMeasures,
       onConfirmMeasure,
       openText,
@@ -340,6 +353,7 @@ export default function ScoreCanvas({
     try {
       bindNoteIds(osmd, current, host);
       applySelection(host, latest.current.selected);
+      applyPlaying(host, latest.current.playing);
       drawIssueBoxes(host, latest.current.issueMeasures, (i) => latest.current.onConfirmMeasure?.(i));
       if (latest.current.openText) drawTextHotspots(host, current, (k, r) => latest.current.openText?.(k, r));
     } catch {
@@ -479,6 +493,18 @@ export default function ScoreCanvas({
     }
   }, [selected]);
 
+  // Nốt đang vang: chỉ đổi class CSS
+  useEffect(() => {
+    if (hostRef.current) applyPlaying(hostRef.current, playing);
+  }, [playing]);
+
+  // Phát: giữ ô nhịp đang phát trong khung nhìn
+  useEffect(() => {
+    const scroller = scrollRef.current;
+    const host = hostRef.current;
+    if (scroller && host && followMeasure !== null) keepMeasureVisible(scroller, host, followMeasure);
+  }, [followMeasure]);
+
   // Tô lại ô nhịp sai khi danh sách đổi
   useEffect(() => {
     const host = hostRef.current;
@@ -547,7 +573,11 @@ export default function ScoreCanvas({
       suppressClickRef.current = false;
       return;
     }
-    if (!onSelectNotes) return;
+    if (!onSelectNotes) {
+      const measure = onMeasureClick ? measureOfEvent(e.nativeEvent) : null;
+      if (measure !== null) onMeasureClick?.(measure, e.shiftKey);
+      return;
+    }
     const ids = noteIdsFromEvent(e.nativeEvent);
     if (ids.length === 0 && e.shiftKey) return;
     onSelectNotes(ids, e.shiftKey);

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { INSTRUMENTS } from '../editor/instruments';
 import type { InstrumentId } from '../editor/instruments';
-import type { PartInstrument } from '../editor/usePlayback';
+import type { PartInstrument } from '../player/usePlayer';
 
 /**
  * Menu "Nhạc cụ" cạnh nút Phát: mỗi part (khuông/đàn/giọng hát) chọn một âm sắc riêng. Mặc định theo file

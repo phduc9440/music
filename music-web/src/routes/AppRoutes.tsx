@@ -8,6 +8,7 @@ import ScoreUpload from '../pages/scores/ScoreUpload';
 import ScoreProcessing from '../pages/scores/ScoreProcessing';
 import ScoreReview from '../pages/scores/ScoreReview';
 import ScoreViewer from '../pages/scores/ScoreViewer';
+import ScorePlayer from '../pages/scores/ScorePlayer';
 import EditorSpike from '../pages/scores/EditorSpike';
 import AdminDashboard from '../pages/Admin';
 import ProtectedRoute from './ProtectedRoute';
@@ -62,6 +63,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute allowedRole="USER">
             <ScoreViewer />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/scores/:id/play"
+        element={
+          <ProtectedRoute allowedRole="USER">
+            <ScorePlayer />
           </ProtectedRoute>
         }
       />

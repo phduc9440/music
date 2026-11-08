@@ -78,11 +78,6 @@ export class PlayerEngine {
     this.emit();
   }
 
-  /** Đổi cách chọn nhạc cụ theo part mà không dựng lại dòng thời gian (nốt đã hẹn giờ giữ nhạc cụ cũ). */
-  setInstrumentResolver(instrumentOf: (part: number) => InstrumentId): void {
-    this.instrumentOf = instrumentOf;
-  }
-
   getStatus(): EngineStatus {
     return this.status;
   }
