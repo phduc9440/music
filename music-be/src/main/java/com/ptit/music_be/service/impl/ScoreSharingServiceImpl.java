@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.ptit.music_be.dto.enums.NotificationType;
-import com.ptit.music_be.service.NotificationService;
 import com.ptit.music_be.dto.enums.SharePermission;
 import com.ptit.music_be.dto.enums.ShareSource;
 import com.ptit.music_be.dto.response.AccessRequestResponse;
@@ -22,6 +21,7 @@ import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.repository.MemberRepository;
 import com.ptit.music_be.repository.MemberScoreRepository;
 import com.ptit.music_be.repository.ScoreRepository;
+import com.ptit.music_be.service.NotificationService;
 import com.ptit.music_be.service.ScoreFileService;
 import com.ptit.music_be.service.ScoreSharingService;
 import com.ptit.music_be.utils.SecurityUtils;
@@ -60,7 +60,8 @@ public class ScoreSharingServiceImpl implements ScoreSharingService {
         }
         MemberScore share = memberScoreRepository
                 .findByScoreIdAndMemberId(scoreId, member.getId())
-                .orElseGet(() -> MemberScore.builder().score(score).member(member).build());
+                .orElseGet(
+                        () -> MemberScore.builder().score(score).member(member).build());
         share.setPermission(permission);
         share.setSource(ShareSource.DIRECT);
         clearRequestIfSatisfied(share);
@@ -109,12 +110,13 @@ public class ScoreSharingServiceImpl implements ScoreSharingService {
         if (permission != SharePermission.VIEW && permission != SharePermission.EDIT) {
             throw new AppException(ErrorCode.SHARE_PERMISSION_INVALID); // chỉ xin xem hoặc chỉnh sửa
         }
-        Score score = scoreRepository
-                .findById(scoreId)
-                .orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
-        // Đã có quyền bằng hoặc cao hơn cấp đang xin (kể cả chủ sở hữu, ADMIN; bản PUBLIC thì mặc định đã xem và nhận xét được) thì không cần xin
+        Score score =
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+        // Đã có quyền bằng hoặc cao hơn cấp đang xin (kể cả chủ sở hữu, ADMIN; bản PUBLIC thì mặc định đã xem và nhận
+        // xét được) thì không cần xin
         String current = scoreFileService.getAccessLevel(score);
-        if ("OWNER".equals(current) || (current != null && SharePermission.valueOf(current).includes(permission))) {
+        if ("OWNER".equals(current)
+                || (current != null && SharePermission.valueOf(current).includes(permission))) {
             throw new AppException(ErrorCode.ALREADY_HAS_ACCESS);
         }
 
@@ -143,9 +145,8 @@ public class ScoreSharingServiceImpl implements ScoreSharingService {
     @Override
     @Transactional(readOnly = true)
     public MyAccessResponse getMyAccess(String scoreId) {
-        Score score = scoreRepository
-                .findById(scoreId)
-                .orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+        Score score =
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
         SharePermission requested = memberScoreRepository
                 .findByScoreIdAndMemberEmail(scoreId, SecurityUtils.getCurrentEmail())
                 .map(MemberScore::getRequestedPermission)
@@ -238,9 +239,8 @@ public class ScoreSharingServiceImpl implements ScoreSharingService {
     // ------------------------------------------------------------------ helpers
 
     private Score findManageableScore(String scoreId) {
-        Score score = scoreRepository
-                .findById(scoreId)
-                .orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+        Score score =
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
         scoreFileService.checkCanManageSharing(score);
         return score;
     }

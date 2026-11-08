@@ -27,7 +27,9 @@ import lombok.experimental.FieldDefaults;
 @RequestMapping("/api")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-@Tag(name = "Score sharing", description = "Quản lý người được chia sẻ và yêu cầu xin quyền (1 xem, 2 nhận xét, 3 chỉnh sửa)")
+@Tag(
+        name = "Score sharing",
+        description = "Quản lý người được chia sẻ và yêu cầu xin quyền (1 xem, 2 nhận xét, 3 chỉnh sửa)")
 public class ScoreSharingController {
 
     ScoreSharingService sharingService;
@@ -67,8 +69,9 @@ public class ScoreSharingController {
     @PostMapping("/scores/{scoreId}/access-requests")
     @Operation(
             summary = "Ask the owner for view (1) / edit (3) access",
-            description = "Stored in the caller's member_scores row until the owner approves or rejects."
-                    + " Errors: 2404 already has that access or higher (including a PUBLIC score, which everyone can view and review)",
+            description =
+                    "Stored in the caller's member_scores row until the owner approves or rejects."
+                            + " Errors: 2404 already has that access or higher (including a PUBLIC score, which everyone can view and review)",
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<MyAccessResponse> requestAccess(
             @PathVariable String scoreId, @Valid @RequestBody AccessRequestRequest request) {
@@ -105,7 +108,8 @@ public class ScoreSharingController {
 
     @PostMapping("/scores/{scoreId}/access-requests/{memberId}/reject")
     @Operation(summary = "Reject a request", security = @SecurityRequirement(name = "bearerAuth"))
-    public ApiResponse<ScoreSharingResponse> rejectRequest(@PathVariable String scoreId, @PathVariable String memberId) {
+    public ApiResponse<ScoreSharingResponse> rejectRequest(
+            @PathVariable String scoreId, @PathVariable String memberId) {
         return ok(sharingService.rejectRequest(scoreId, memberId));
     }
 

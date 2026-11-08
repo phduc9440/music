@@ -21,6 +21,7 @@ public class AccessRequestResponse {
     SharePermission requestedPermission;
     /** Cấp họ đang có (null nếu chưa có quyền gì). */
     SharePermission currentPermission;
+
     String message;
     LocalDateTime requestedAt;
 }

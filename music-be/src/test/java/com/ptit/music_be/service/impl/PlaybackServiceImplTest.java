@@ -66,8 +66,7 @@ class PlaybackServiceImplTest {
     }
 
     private static void loginAs(String email) {
-        SecurityContextHolder.getContext()
-                .setAuthentication(new TestingAuthenticationToken(email, "n/a", "ROLE_USER"));
+        SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken(email, "n/a", "ROLE_USER"));
     }
 
     @Test

@@ -41,8 +41,9 @@ public class ScoreController {
     @GetMapping("/me")
     @Operation(
             summary = "List my scores (search, filter, paginate)",
-            description = "status: NONE|PENDING|PROCESSING|COMPLETED|FAILED; source: OMR|IMPORT|MANUAL; difficulty: EASY|MEDIUM|HARD|EXPERT; tagId: id from GET /api/tags; "
-                    + "sort: newest (updated, default) | created | oldest | title; size: 1..50",
+            description =
+                    "status: NONE|PENDING|PROCESSING|COMPLETED|FAILED; source: OMR|IMPORT|MANUAL; difficulty: EASY|MEDIUM|HARD|EXPERT; tagId: id from GET /api/tags; "
+                            + "sort: newest (updated, default) | created | oldest | title; size: 1..50",
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<PageResponse<ScoreSummaryResponse>> getMyScores(
             @RequestParam(defaultValue = "0") int page,
@@ -113,7 +114,8 @@ public class ScoreController {
 
     @PatchMapping("/{scoreId}")
     @Operation(
-            summary = "Edit score info (title, composer, difficulty, studyNotes, visibility; PUBLIC from a non-admin owner becomes PENDING until an ADMIN approves); null fields are kept",
+            summary =
+                    "Edit score info (title, composer, difficulty, studyNotes, visibility; PUBLIC from a non-admin owner becomes PENDING until an ADMIN approves); null fields are kept",
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<ScoreDetailResponse> updateScore(
             @PathVariable String scoreId, @Valid @RequestBody ScoreUpdateRequest request) {

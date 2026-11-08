@@ -26,7 +26,8 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
     Page<Score> findByVisibility(String visibility, Pageable pageable);
 
     /** Các bản nhạc được người khác chia sẻ cho một thành viên (cập nhật gần nhất trước). */
-    @Query("select ms.score from MemberScore ms where ms.member.id = :memberId and ms.permission is not null order by ms.score.updatedAt desc")
+    @Query(
+            "select ms.score from MemberScore ms where ms.member.id = :memberId and ms.permission is not null order by ms.score.updatedAt desc")
     Page<Score> findSharedWithMember(@Param("memberId") String memberId, Pageable pageable);
 
     /**

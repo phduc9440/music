@@ -35,7 +35,9 @@ public class NotificationController {
     @GetMapping("/unread-count")
     @Operation(summary = "Number of unread notifications", security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<Long> unreadCount() {
-        return ApiResponse.<Long>builder().result(notificationService.countUnread()).build();
+        return ApiResponse.<Long>builder()
+                .result(notificationService.countUnread())
+                .build();
     }
 
     @PostMapping("/{id}/read")

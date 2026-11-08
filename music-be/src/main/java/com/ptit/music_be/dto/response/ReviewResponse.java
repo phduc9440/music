@@ -17,11 +17,13 @@ public class ReviewResponse {
     String fullName;
     /** 1..5, null nếu chỉ bình luận. */
     Integer rating;
+
     String comment;
     /** Nhận xét của chính người đang xem (được sửa, xóa). */
     boolean mine;
     /** Người đang xem xóa được không: tác giả nhận xét, chủ sở hữu hoặc ADMIN. */
     boolean canDelete;
+
     LocalDateTime createdAt;
     LocalDateTime updatedAt;
 }

@@ -23,7 +23,14 @@ public interface ScoreService {
      * @param sort    newest (mặc định) | oldest | title
      */
     PageResponse<ScoreSummaryResponse> getMyScores(
-            int page, int size, String keyword, String status, String source, String difficulty, String tagId, String sort);
+            int page,
+            int size,
+            String keyword,
+            String status,
+            String source,
+            String difficulty,
+            String tagId,
+            String sort);
 
     /** Bản nhạc người khác chia sẻ cho người đang đăng nhập (qua liên kết hoặc được mời/duyệt), kèm cấp quyền. */
     PageResponse<ScoreSummaryResponse> getSharedWithMe(int page, int size);

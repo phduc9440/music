@@ -49,8 +49,7 @@ public class AuthController {
 
     @PostMapping("/login")
     @Operation(summary = "Login and receive JWT token")
-    public ApiResponse<AuthResponse> login(
-            @RequestBody @Valid LoginRequest request, HttpServletResponse response) {
+    public ApiResponse<AuthResponse> login(@RequestBody @Valid LoginRequest request, HttpServletResponse response) {
         AuthResponse auth = authService.login(request);
         authCookies.write(response, auth);
         return ApiResponse.<AuthResponse>builder().result(auth).build();
@@ -71,12 +70,15 @@ public class AuthController {
             @RequestBody(required = false) RefreshRequest body,
             HttpServletRequest httpRequest,
             HttpServletResponse response) {
-        String token = body != null && body.getRefreshToken() != null && !body.getRefreshToken().isBlank()
+        String token = body != null
+                        && body.getRefreshToken() != null
+                        && !body.getRefreshToken().isBlank()
                 ? body.getRefreshToken()
                 : AuthCookies.read(httpRequest, AuthCookies.REFRESH);
         if (token == null) throw new AppException(ErrorCode.UNAUTHENTICATED);
 
-        AuthResponse auth = authService.refreshToken(RefreshRequest.builder().refreshToken(token).build());
+        AuthResponse auth = authService.refreshToken(
+                RefreshRequest.builder().refreshToken(token).build());
         authCookies.write(response, auth);
         return ApiResponse.<AuthResponse>builder().result(auth).build();
     }
