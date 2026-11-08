@@ -40,8 +40,50 @@ const KIND_INTERVALS: Record<string, readonly number[]> = {
   Tristan: [0, 3, 6, 10],
 };
 
-/** Loại không đọc được ("other"...): chỉ đánh gốc và quãng năm, vì không biết là trưởng hay thứ. */
+/** Loại không đọc được và cũng không có chữ hiển thị để đoán: chỉ đánh gốc và quãng năm, vì không biết là trưởng hay thứ. */
 const UNKNOWN_KIND: readonly number[] = [0, 7];
+
+/**
+ * Họ hợp âm theo TIÊN TỐ của tên loại, cho các loại không có trong bảng chuẩn mà file vẫn ghi (ví dụ "minor-fifth" do
+ * một số phần mềm xuất cho Em(♭5)). Thứ tự quan trọng: tiên tố dài hơn đứng trước.
+ */
+const KIND_FAMILIES: readonly (readonly [string, readonly number[]])[] = [
+  ['half-diminished', [0, 3, 6, 10]],
+  ['diminished', [0, 3, 6]],
+  ['augmented', [0, 4, 8]],
+  ['minor', [0, 3, 7]],
+  ['major', [0, 4, 7]],
+  ['dominant', [0, 4, 7, 10]],
+  ['suspended', [0, 5, 7]],
+  ['power', [0, 7]],
+];
+
+/**
+ * Đoán các quãng từ chữ hiển thị của hợp âm ("m(b5)", "dim", "sus4", "aug"...) khi loại không nhận ra. Không đoán được
+ * (chữ rỗng) thì trả null. Chữ không giống loại nào được coi là hợp âm trưởng. Nhận ra cả "b5" / "#5" ghi trong chữ.
+ */
+function intervalsFromText(text: string): readonly number[] | null {
+  const t = text.trim();
+  if (!t) return null;
+  let base: number[];
+  if (/^(dim|°|o)/.test(t)) base = [0, 3, 6];
+  else if (/^(aug|\+)/.test(t)) base = [0, 4, 8];
+  else if (/^sus/.test(t)) base = [0, 5, 7];
+  else if (/^(min|mi|m(?!a)|-)/.test(t)) base = [0, 3, 7];
+  else base = [0, 4, 7];
+  if (/[b♭]5/.test(t)) base = base.map((i) => (i === 7 ? 6 : i));
+  else if (/[#♯]5/.test(t)) base = base.map((i) => (i === 7 ? 8 : i));
+  return base;
+}
+
+/** Các quãng của loại hợp âm: theo bảng chuẩn, rồi theo họ của tên loại, rồi theo chữ hiển thị, cuối cùng gốc + quãng năm. */
+function intervalsOf(kindEl: Element | undefined): readonly number[] {
+  const kind = textOf(kindEl);
+  if (Object.prototype.hasOwnProperty.call(KIND_INTERVALS, kind)) return KIND_INTERVALS[kind];
+  const family = KIND_FAMILIES.find(([prefix]) => kind.startsWith(prefix));
+  if (family) return family[1];
+  return intervalsFromText(kindEl?.getAttribute('text') ?? '') ?? UNKNOWN_KIND;
+}
 
 const STEP_SEMITONE: Record<string, number> = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
 /** Quãng (nửa cung) của bậc 1…7 trong gam trưởng. */
@@ -110,8 +152,7 @@ export function chordNotes(harmony: Element): ChordNotes | null {
   if (kind === 'none') return null;
   const root = pitchClass(child(harmony, 'root'), 'root-step', 'root-alter');
   if (root === null) return null;
-  const base = Object.prototype.hasOwnProperty.call(KIND_INTERVALS, kind) ? KIND_INTERVALS[kind] : UNKNOWN_KIND;
-  const intervals = applyDegrees(harmony, [...base]);
+  const intervals = applyDegrees(harmony, [...intervalsOf(child(harmony, 'kind'))]);
 
   const rootMidi = CHORD_BASE + ((((root - CHORD_BASE) % 12) + 12) % 12);
   const tones = [...new Set(intervals.map((i) => rootMidi + i))].sort((a, b) => a - b);
