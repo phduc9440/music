@@ -1,21 +1,13 @@
 import apiClient from './client';
-import type {
-  AccountCreationRequest,
-  AccountUpdateRequest,
-  ApiResponse,
-  PageRequest,
-  PageResponse,
-  Member,
-} from '../types';
+import type { AdminUpdateMemberRequest, ApiResponse, Member, PageResult } from '../types';
 
+/** Khớp AdminMemberController của BE (/api/admin/members). Chỉ ROLE_ADMIN gọi được. page bắt đầu từ 0. */
 export const adminApi = {
-  getMe: () => apiClient.get<ApiResponse<Member>>('/admins/me'),
-  getAccounts: (params?: PageRequest) =>
-    apiClient.get<ApiResponse<PageResponse<Member>>>('/admins/accounts', {
-      params: { page: 1, size: 20, ...params },
+  getMembers: (params?: { page?: number; size?: number; keyword?: string }) =>
+    apiClient.get<ApiResponse<PageResult<Member>>>('/admin/members', {
+      params: { page: 0, size: 20, ...params },
     }),
-  createAccount: (data: AccountCreationRequest) => apiClient.post<ApiResponse<Member>>('/admins/accounts', data),
-  updateAccount: (id: string, data: AccountUpdateRequest) =>
-    apiClient.put<ApiResponse<Member>>(`/admins/accounts/${id}`, data),
-  deleteAccount: (id: string) => apiClient.delete<ApiResponse<void>>(`/admins/accounts/${id}`),
+  getMember: (id: string) => apiClient.get<ApiResponse<Member>>(`/admin/members/${id}`),
+  updateMember: (id: string, data: AdminUpdateMemberRequest) =>
+    apiClient.patch<ApiResponse<Member>>(`/admin/members/${id}`, data),
 };

@@ -94,6 +94,7 @@ export interface ScoreListParams {
   keyword?: string;
   status?: ProcessingStatus | '';
   source?: ScoreSource | '';
+  difficulty?: Difficulty | '';
   sort?: ScoreSort;
 }
 
@@ -111,6 +112,14 @@ export interface OmrUploadRequest {
   title: string;
   composer: string;
   sourceType: OmrSourceType;
+}
+
+// Kết quả POST /scores/import
+export interface ScoreImportResult {
+  scoreId: string;
+  title: string;
+  composer?: string | null;
+  processingStatus: ProcessingStatus;
 }
 
 // Kết quả POST /omr/upload

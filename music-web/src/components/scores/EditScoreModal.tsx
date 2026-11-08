@@ -89,6 +89,7 @@ export default function EditScoreModal({ score, onClose, onSaved }: Props) {
           <option value="EASY">Dễ</option>
           <option value="MEDIUM">Trung bình</option>
           <option value="HARD">Khó</option>
+          <option value="EXPERT">Chuyên gia</option>
         </select>
 
         {score.canDelete && (

@@ -1,48 +1,44 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { adminApi } from '../services';
-import { AuthProvider } from '../types';
-import type { Member } from '../types';
+import { adminApi, userApi } from '../services';
+import { AuthProvider, MemberStatus } from '../types';
+import type { Member, PageResult } from '../types';
+import { isAdminMember } from '../utils/auth';
 import ChangePasswordModal from '../components/ChangePasswordModal';
+import Pagination from '../components/scores/Pagination';
+
+const PAGE_SIZE = 20;
+
+const errMsg = (error: unknown, fallback: string) =>
+  (error as { response?: { data?: { message?: string } } }).response?.data?.message || fallback;
 
 export default function AdminDashboard() {
   const [admin, setAdmin] = useState<Member | null>(null);
-  const [accounts, setAccounts] = useState<Member[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false);
+  const [result, setResult] = useState<PageResult<Member> | null>(null);
+  const [page, setPage] = useState(0);
+  const [keywordInput, setKeywordInput] = useState('');
+  const [keyword, setKeyword] = useState('');
+  const [busyId, setBusyId] = useState<string | null>(null);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
-
-  // Form State
-  const [formId, setFormId] = useState('');
-  const [email, setEmail] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [password, setPassword] = useState('');
-
   const navigate = useNavigate();
 
   useEffect(() => {
-    loadAdmin();
-    loadAccounts();
+    userApi
+      .getMe()
+      .then((res) => setAdmin(res.data.result))
+      .catch(() => toast.error('Không tải được hồ sơ quản trị viên'));
   }, []);
 
-  const loadAdmin = async () => {
-    try {
-      const res = await adminApi.getMe();
-      setAdmin(res.data.result);
-    } catch (error) {
-      toast.error('Failed to load admin profile');
-    }
-  };
+  const [reloadKey, setReloadKey] = useState(0);
+  const reload = useCallback(() => setReloadKey((k) => k + 1), []);
 
-  const loadAccounts = async () => {
-    try {
-      const res = await adminApi.getAccounts({ page: 1, size: 20 });
-      setAccounts(res.data.result.data || []);
-    } catch (error) {
-      toast.error('Failed to load accounts');
-    }
-  };
+  useEffect(() => {
+    adminApi
+      .getMembers({ page, size: PAGE_SIZE, keyword: keyword || undefined })
+      .then((res) => setResult(res.data.result))
+      .catch((error) => toast.error(errMsg(error, 'Không tải được danh sách thành viên')));
+  }, [page, keyword, reloadKey]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -51,55 +47,43 @@ export default function AdminDashboard() {
     navigate('/');
   };
 
-  const openModal = (editMode = false, acc?: Member) => {
-    setIsEditMode(editMode);
-    setIsModalOpen(true);
-    if (editMode && acc) {
-      setFormId(acc.id);
-      setEmail(acc.email);
-      setFullName(acc.fullName);
-      setPassword('');
-    } else {
-      setFormId('');
-      setEmail('');
-      setFullName('');
-      setPassword('');
-    }
-  };
-
-  const closeModal = () => setIsModalOpen(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    const payload: any = { email, fullName };
-    if (password) payload.password = password;
+    setPage(0);
+    setKeyword(keywordInput.trim());
+  };
 
+  const update = async (member: Member, data: Parameters<typeof adminApi.updateMember>[1], okMsg: string) => {
+    setBusyId(member.id);
     try {
-      if (isEditMode) {
-        await adminApi.updateAccount(formId, payload);
-        toast.success('Account updated successfully');
-      } else {
-        await adminApi.createAccount(payload);
-        toast.success('Account created successfully');
-      }
-      closeModal();
-      loadAccounts();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to save account');
+      await adminApi.updateMember(member.id, data);
+      toast.success(okMsg);
+      reload();
+    } catch (error) {
+      toast.error(errMsg(error, 'Cập nhật thất bại'));
+    } finally {
+      setBusyId(null);
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this account?')) {
-      try {
-        await adminApi.deleteAccount(id);
-        toast.success('Account deleted successfully');
-        loadAccounts();
-      } catch (error: any) {
-        toast.error(error.response?.data?.message || 'Failed to delete account');
-      }
-    }
+  const toggleStatus = (m: Member) => {
+    const lock = m.status !== MemberStatus.INACTIVE;
+    if (lock && !window.confirm(`Khóa tài khoản ${m.email}?`)) return;
+    update(
+      m,
+      { status: lock ? MemberStatus.INACTIVE : MemberStatus.ACTIVE },
+      lock ? 'Đã khóa tài khoản' : 'Đã mở khóa tài khoản',
+    );
   };
+
+  const toggleAdmin = (m: Member) => {
+    const makeAdmin = !isAdminMember(m);
+    const msg = makeAdmin ? `Cấp quyền ADMIN cho ${m.email}?` : `Thu hồi quyền ADMIN của ${m.email}?`;
+    if (!window.confirm(msg)) return;
+    update(m, { roles: makeAdmin ? ['ADMIN', 'USER'] : ['USER'] }, 'Đã cập nhật vai trò');
+  };
+
+  const btn = { padding: '0.25rem 0.75rem', fontSize: '0.75rem' };
 
   return (
     <>
@@ -107,6 +91,13 @@ export default function AdminDashboard() {
         <div className="navbar-brand">Admin Panel</div>
         <div className="navbar-nav">
           <span style={{ fontWeight: 600 }}>{admin?.fullName || 'Admin'}</span>
+          <button
+            onClick={() => navigate('/scores')}
+            className="btn"
+            style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}
+          >
+            Giao diện người dùng
+          </button>
           {admin?.authProvider !== AuthProvider.GOOGLE && (
             <button
               onClick={() => setIsPasswordModalOpen(true)}
@@ -129,103 +120,87 @@ export default function AdminDashboard() {
       <div className="dashboard-container">
         <div className="glass-container">
           <div className="d-flex justify-content-between align-items-center mb-4">
-            <h2>Account Management</h2>
-            <button onClick={() => openModal(false)} className="btn btn-primary">
-              Add Account
-            </button>
+            <h2>Quản lý thành viên</h2>
+            <form onSubmit={handleSearch} className="d-flex gap-2">
+              <input
+                className="form-control"
+                placeholder="Tìm theo email hoặc tên"
+                value={keywordInput}
+                onChange={(e) => setKeywordInput(e.target.value)}
+              />
+              <button type="submit" className="btn btn-primary">
+                Tìm
+              </button>
+            </form>
           </div>
 
           <div className="table-responsive">
             <table className="table">
               <thead>
                 <tr>
-                  <th>ID</th>
                   <th>Email</th>
-                  <th>Full Name</th>
-                  <th>Role</th>
-                  <th>Actions</th>
+                  <th>Họ tên</th>
+                  <th>Vai trò</th>
+                  <th>Trạng thái</th>
+                  <th>Thao tác</th>
                 </tr>
               </thead>
               <tbody>
-                {accounts.map((acc) => (
-                  <tr key={acc.id}>
-                    <td style={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>{acc.id.substring(0, 8)}...</td>
-                    <td>{acc.email}</td>
-                    <td>{acc.fullName}</td>
-                    <td>
-                      <span className={`badge ${acc.roles?.includes('ADMIN') ? 'badge-admin' : 'badge-user'}`}>
-                        {acc.roles?.includes('ADMIN') ? 'ADMIN' : 'USER'}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="d-flex gap-2">
-                        <button
-                          onClick={() => openModal(true, acc)}
-                          className="btn btn-primary"
-                          style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(acc.id)}
-                          className="btn btn-danger"
-                          style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}
-                        >
-                          Del
-                        </button>
-                      </div>
-                    </td>
+                {result?.content.map((m) => {
+                  const isSelf = m.id === admin?.id;
+                  const locked = m.status === MemberStatus.INACTIVE;
+                  return (
+                    <tr key={m.id}>
+                      <td>{m.email}</td>
+                      <td>{m.fullName}</td>
+                      <td>
+                        <span className={`badge ${isAdminMember(m) ? 'badge-admin' : 'badge-user'}`}>
+                          {isAdminMember(m) ? 'ADMIN' : 'USER'}
+                        </span>
+                      </td>
+                      <td>{locked ? 'Đã khóa' : 'Hoạt động'}</td>
+                      <td>
+                        <div className="d-flex gap-2">
+                          <button
+                            onClick={() => toggleAdmin(m)}
+                            disabled={isSelf || busyId === m.id}
+                            className="btn btn-primary"
+                            style={btn}
+                            title={isSelf ? 'Không thể đổi vai trò của chính mình' : undefined}
+                          >
+                            {isAdminMember(m) ? 'Thu hồi ADMIN' : 'Cấp ADMIN'}
+                          </button>
+                          <button
+                            onClick={() => toggleStatus(m)}
+                            disabled={isSelf || busyId === m.id}
+                            className={`btn ${locked ? 'btn-primary' : 'btn-danger'}`}
+                            style={btn}
+                            title={isSelf ? 'Không thể khóa chính mình' : undefined}
+                          >
+                            {locked ? 'Mở khóa' : 'Khóa'}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {result && result.content.length === 0 && (
+                  <tr>
+                    <td colSpan={5}>Không có thành viên nào.</td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
-        </div>
-      </div>
 
-      <div className={`modal-overlay ${isModalOpen ? 'active' : ''}`}>
-        <div className="glass-container modal-content">
-          <div className="modal-header">
-            <h3>{isEditMode ? 'Edit Account' : 'Add Account'}</h3>
-            <button onClick={closeModal} className="modal-close">
-              &times;
-            </button>
-          </div>
-          <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label>Email</label>
-              <input
-                type="email"
-                className="form-control"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label>Full Name</label>
-              <input
-                type="text"
-                className="form-control"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label>Password {isEditMode && '(Leave empty to keep current)'}</label>
-              <input
-                type="password"
-                className="form-control"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required={!isEditMode}
-              />
-            </div>
-            <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>
-              Save Account
-            </button>
-          </form>
+          {result && (
+            <Pagination
+              page={result.pageNumber}
+              totalPages={result.totalPages}
+              totalElements={result.totalElements}
+              onChange={setPage}
+            />
+          )}
         </div>
       </div>
 

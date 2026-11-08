@@ -32,7 +32,7 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
     Optional<Score> findByIdForUpdate(@Param("id") String id);
 
     /**
-     * Danh sách bản nhạc của một thành viên, có tìm theo tên/tác giả và lọc trạng thái/nguồn.
+     * Danh sách bản nhạc của một thành viên, có tìm theo tên/tác giả và lọc trạng thái/nguồn/độ khó.
      * Tham số rỗng ("") nghĩa là không lọc; service luôn truyền chuỗi, không truyền null.
      */
     @Query(
@@ -43,11 +43,13 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
 				or lower(coalesce(s.composer, '')) like lower(concat('%', :keyword, '%')) escape '\\')
 			and (:status = '' or s.processingStatus = :status)
 			and (:source = '' or s.sourceType = :source)
+			and (:difficulty = '' or cast(s.difficulty as string) = :difficulty)
 			""")
     Page<Score> searchOfMember(
             @Param("memberId") String memberId,
             @Param("keyword") String keyword,
             @Param("status") String status,
             @Param("source") String source,
+            @Param("difficulty") String difficulty,
             Pageable pageable);
 }

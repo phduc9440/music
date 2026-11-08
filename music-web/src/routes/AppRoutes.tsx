@@ -9,6 +9,7 @@ import ScoreProcessing from '../pages/scores/ScoreProcessing';
 import ScoreReview from '../pages/scores/ScoreReview';
 import ScoreViewer from '../pages/scores/ScoreViewer';
 import EditorSpike from '../pages/scores/EditorSpike';
+import ScoreImport from '../pages/scores/ScoreImport';
 import AdminDashboard from '../pages/Admin';
 import ProtectedRoute from './ProtectedRoute';
 
@@ -46,6 +47,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute allowedRole="USER">
             <ScoreProcessing />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/scores/import"
+        element={
+          <ProtectedRoute allowedRole="USER">
+            <ScoreImport />
           </ProtectedRoute>
         }
       />
