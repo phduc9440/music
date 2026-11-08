@@ -41,6 +41,10 @@ public class ScoreDetailResponse {
     Integer pageCount;
     Integer currentVersion;
     Long viewCount;
+    /** Điểm sao trung bình (1 chữ số thập phân); null nếu chưa ai chấm. */
+    Double averageRating;
+    /** Số lượt chấm sao. */
+    long ratingCount;
 
     /** Email chủ sở hữu (null với bản nhạc chính thức không có chủ). */
     String ownerEmail;
@@ -48,6 +52,12 @@ public class ScoreDetailResponse {
     boolean canEdit;
     /** Người đang xem có quyền xóa không (chỉ chủ sở hữu hoặc ADMIN). */
     boolean canDelete;
+    /** Người đang xem có quyền nhận xét (chấm sao, bình luận) không. */
+    boolean canReview;
+    /** Người đang xem có quyền quản lý chia sẻ (chủ sở hữu hoặc ADMIN) không. */
+    boolean canManageSharing;
+    /** Cấp truy cập hiện tại: OWNER / EDIT / REVIEW / VIEW. */
+    String accessLevel;
 
     LocalDateTime createdAt;
     LocalDateTime updatedAt;

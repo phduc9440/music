@@ -10,6 +10,7 @@ import ScoreReview from '../pages/scores/ScoreReview';
 import ScoreViewer from '../pages/scores/ScoreViewer';
 import EditorSpike from '../pages/scores/EditorSpike';
 import ScoreImport from '../pages/scores/ScoreImport';
+import SharedScores from '../pages/scores/SharedScores';
 import AdminDashboard from '../pages/Admin';
 import ProtectedRoute from './ProtectedRoute';
 
@@ -63,6 +64,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute allowedRole="USER">
             <ScoreReview />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/scores/shared"
+        element={
+          <ProtectedRoute allowedRole="USER">
+            <SharedScores />
           </ProtectedRoute>
         }
       />

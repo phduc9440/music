@@ -4,6 +4,7 @@ import type {
   ProcessingStatus,
   ScoreSort,
   ScoreSource,
+  SharePermission,
   TaskStatus,
   Visibility,
 } from './enums';
@@ -15,6 +16,62 @@ export interface PageResult<T> {
   pageSize: number;
   totalElements: number;
   totalPages: number;
+}
+
+// ---- Chia sẻ (BE: SharePermission lưu số) ----
+export type ShareSource = 'DIRECT';
+/** Cấp truy cập của người đang xem một bản nhạc. */
+export type AccessLevel = 'OWNER' | 'EDIT' | 'REVIEW' | 'VIEW';
+
+export interface ShareMember {
+  memberId: string;
+  email: string;
+  fullName?: string | null;
+  permission: SharePermission;
+  source: ShareSource;
+}
+
+/** Quyền hiện có và yêu cầu đang chờ của tôi với một bản nhạc. */
+export interface MyAccess {
+  accessLevel: AccessLevel | null;
+  requestedPermission: SharePermission | null;
+}
+
+/** Một yêu cầu xin quyền đang chờ chủ sở hữu duyệt. */
+export interface AccessRequest {
+  memberId: string;
+  email: string;
+  fullName?: string | null;
+  requestedPermission: SharePermission;
+  currentPermission?: SharePermission | null;
+  message?: string | null;
+  requestedAt?: string;
+}
+
+/** Một nhận xét (chấm sao và/hoặc bình luận), BE: ReviewResponse. */
+export interface Review {
+  id: string;
+  memberId: string;
+  email: string;
+  fullName?: string | null;
+  rating?: number | null;
+  comment?: string | null;
+  mine: boolean;
+  canDelete: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ReviewList {
+  averageRating: number | null;
+  ratingCount: number;
+  reviews: Review[];
+}
+
+export interface ScoreSharing {
+  visibility: Visibility;
+  members: ShareMember[];
+  pendingRequests: number;
 }
 
 // Thể loại (tag) gắn cho bản nhạc, BE: TagResponse
@@ -34,6 +91,10 @@ export interface ScoreSummary {
   visibility: Visibility;
   measureCount?: number | null;
   tags?: Tag[];
+  /** Chỉ có trong danh sách "Được chia sẻ với tôi": email chủ sở hữu. */
+  ownerEmail?: string | null;
+  /** Chỉ có trong danh sách "Được chia sẻ với tôi". */
+  accessLevel?: AccessLevel | null;
   thumbnailUrl?: string | null;
   createdAt?: string;
   updatedAt?: string;
@@ -81,6 +142,10 @@ export interface ScoreDetail extends ScoreSummary {
   ownerEmail?: string | null;
   canEdit: boolean;
   canDelete: boolean;
+  canReview: boolean;
+  averageRating?: number | null;
+  ratingCount?: number;
+  canManageSharing: boolean;
   files: ScoreFileInfo[];
   latestTasks: AiTaskInfo[];
 }
@@ -153,4 +218,24 @@ export interface OmrResult {
   kernFileId?: string | null;
   musicXmlFileId?: string | null;
   midiFileId?: string | null;
+}
+
+// Thông báo trong ứng dụng, BE: NotificationResponse
+export type NotificationType =
+  | 'ACCESS_REQUESTED'
+  | 'ACCESS_APPROVED'
+  | 'ACCESS_REJECTED'
+  | 'SHARED_WITH_YOU'
+  | 'PUBLISH_REQUESTED'
+  | 'PUBLISH_APPROVED'
+  | 'PUBLISH_REJECTED'
+  | 'NEW_REVIEW';
+
+export interface AppNotification {
+  id: string;
+  type: NotificationType;
+  scoreId?: string | null;
+  message: string;
+  read: boolean;
+  createdAt: string;
 }

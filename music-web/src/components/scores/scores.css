@@ -375,3 +375,189 @@ textarea.sc-input {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* ---- Chia sẻ ---- */
+.sc-share__link,
+.sc-share__invite {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+}
+.sc-share__members {
+  margin-top: 1rem;
+}
+.sc-share__list {
+  list-style: none;
+  margin: 0.5rem 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+.sc-share__list li {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+/* ---- Xin quyền ---- */
+.sc-request {
+  display: grid;
+  gap: 0.5rem;
+  width: min(100%, 24rem);
+  margin: 1rem auto 0;
+  text-align: left;
+}
+.sc-share__requests {
+  margin-top: 1rem;
+}
+.sc-share__request {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+.sc-share__request-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+/* ---- Nhận xét ---- */
+.sc-reviews {
+  display: grid;
+  gap: 1rem;
+}
+.sc-reviews__summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.sc-reviews__avg {
+  font-size: 1.75rem;
+}
+.sc-reviews__stars {
+  color: #f59e0b;
+  letter-spacing: 0.1em;
+}
+.sc-reviews__form {
+  display: grid;
+  gap: 0.5rem;
+}
+.sc-reviews__pick {
+  display: flex;
+  gap: 0.25rem;
+}
+.sc-star {
+  border: none;
+  background: none;
+  font-size: 1.6rem;
+  line-height: 1;
+  color: #cbd5e1;
+  cursor: pointer;
+}
+.sc-star.is-on {
+  color: #f59e0b;
+}
+.sc-reviews__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+.sc-review {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+.sc-review__head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.sc-review p {
+  margin: 0.25rem 0 0;
+  white-space: pre-wrap;
+}
+
+/* Chuông thông báo */
+.sc-bell {
+  position: relative;
+}
+.sc-bell__badge {
+  margin-left: 0.35rem;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+.sc-bell__panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.4rem);
+  z-index: 50;
+  width: min(22rem, 90vw);
+  max-height: 24rem;
+  overflow-y: auto;
+  background: #fff;
+  color: #0f172a;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
+}
+.sc-bell__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 0.9rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+.sc-bell__link {
+  border: 0;
+  background: none;
+  color: #2563eb;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.sc-bell__link:disabled {
+  color: #94a3b8;
+  cursor: default;
+}
+.sc-bell__empty {
+  padding: 1rem;
+  margin: 0;
+  color: #64748b;
+  text-align: center;
+}
+.sc-bell__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.sc-bell__item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  width: 100%;
+  padding: 0.65rem 0.9rem;
+  border: 0;
+  border-bottom: 1px solid #f1f5f9;
+  background: #fff;
+  text-align: left;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.sc-bell__item:hover {
+  background: #f8fafc;
+}
+.sc-bell__item--unread {
+  background: #eff6ff;
+  font-weight: 600;
+}
+.sc-bell__item small {
+  color: #64748b;
+  font-weight: 400;
+}

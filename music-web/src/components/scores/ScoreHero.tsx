@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import AuthImage from './AuthImage';
 import StatusBadge from './StatusBadge';
 import { OMR_TASK_TYPE, describeTaskError } from '../../utils/omr';
-import { DIFFICULTY_LABELS, SOURCE_LABELS, formatDateTime } from '../../utils/score';
+import { ACCESS_LEVEL_LABELS, DIFFICULTY_LABELS, SOURCE_LABELS, VISIBILITY_LABELS, formatDateTime } from '../../utils/score';
 import type { ScoreDetail } from '../../types';
 import DownloadMenu from './DownloadMenu';
 
@@ -10,10 +10,12 @@ interface Props {
   score: ScoreDetail;
   onEdit: () => void;
   onDelete: () => void;
+  onShare: () => void;
+  onRequestEdit: () => void;
 }
 
 /** Khối đầu trang chi tiết: ảnh bìa, tiêu đề, thông số và nút thao tác. */
-export default function ScoreHero({ score, onEdit, onDelete }: Props) {
+export default function ScoreHero({ score, onEdit, onDelete, onShare, onRequestEdit }: Props) {
   const facts: [string, string][] = [
     ['Khóa / dấu hóa', score.keySignature || '—'],
     ['Nhịp', score.timeSignature || '—'],
@@ -21,6 +23,7 @@ export default function ScoreHero({ score, onEdit, onDelete }: Props) {
     ['Số ô nhịp', score.measureCount?.toString() ?? '—'],
     ['Số trang', score.pageCount?.toString() ?? '—'],
     ['Độ khó', score.difficulty ? DIFFICULTY_LABELS[score.difficulty] : '—'],
+    ['Đánh giá', score.averageRating != null ? `${score.averageRating.toFixed(1)} ★ (${score.ratingCount ?? 0})` : '—'],
     ['Nguồn', score.sourceType ? SOURCE_LABELS[score.sourceType] : '—'],
     ['Cập nhật', formatDateTime(score.updatedAt)],
   ];
@@ -43,7 +46,10 @@ export default function ScoreHero({ score, onEdit, onDelete }: Props) {
       <div className="sc-hero__main">
         <div className="sc-hero__badges">
           <StatusBadge status={score.processingStatus} />
-          <span className="sc-chip">{score.visibility === 'PUBLIC' ? 'Công khai' : 'Riêng tư'}</span>
+          <span className="sc-chip">{VISIBILITY_LABELS[score.visibility]}</span>
+          {score.accessLevel && score.accessLevel !== 'OWNER' && (
+            <span className="sc-chip sc-chip--accent">Bạn là: {ACCESS_LEVEL_LABELS[score.accessLevel]}</span>
+          )}
           {score.isOfficial && <span className="sc-chip sc-chip--accent">Chính thức</span>}
         </div>
         <h1 className="sc-hero__title">{score.title}</h1>
@@ -73,6 +79,9 @@ export default function ScoreHero({ score, onEdit, onDelete }: Props) {
 
         {score.processingStatus === 'FAILED' && failureReason && (
           <div className="sc-error">Xử lý thất bại: {failureReason}</div>
+        )}
+        {score.visibility === 'PRIVATE' && score.processingStatus !== 'FAILED' && score.rejectReason && (
+          <div className="sc-error">Yêu cầu công khai bị từ chối: {score.rejectReason}</div>
         )}
 
         <dl className="sc-facts">
@@ -106,6 +115,16 @@ export default function ScoreHero({ score, onEdit, onDelete }: Props) {
             ▶ Phát
           </button>
           <DownloadMenu scoreId={score.id} files={score.files} />
+          {score.canManageSharing && (
+            <button className="sc-btn" onClick={onShare}>
+              Chia sẻ
+            </button>
+          )}
+          {!score.canEdit && score.accessLevel !== 'OWNER' && (
+            <button className="sc-btn" onClick={onRequestEdit}>
+              Xin quyền chỉnh sửa
+            </button>
+          )}
           {score.canEdit && (
             <button className="sc-btn" onClick={onEdit}>
               Sửa thông tin

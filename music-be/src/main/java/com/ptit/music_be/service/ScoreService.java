@@ -25,11 +25,23 @@ public interface ScoreService {
     PageResponse<ScoreSummaryResponse> getMyScores(
             int page, int size, String keyword, String status, String source, String difficulty, String tagId, String sort);
 
+    /** Bản nhạc người khác chia sẻ cho người đang đăng nhập (qua liên kết hoặc được mời/duyệt), kèm cấp quyền. */
+    PageResponse<ScoreSummaryResponse> getSharedWithMe(int page, int size);
+
     ScoreDetailResponse getScore(String scoreId);
 
     ScoreDetailResponse updateScore(String scoreId, ScoreUpdateRequest request);
 
     void deleteScore(String scoreId);
+
+    /** ADMIN: các bản nhạc chủ đã xin công khai và đang chờ duyệt (cũ nhất trước). */
+    PageResponse<ScoreSummaryResponse> getPendingPublic(int page, int size);
+
+    /** ADMIN: duyệt công khai, bản nhạc chuyển sang PUBLIC. */
+    ScoreDetailResponse approvePublic(String scoreId);
+
+    /** ADMIN: từ chối công khai, bản nhạc về PRIVATE kèm lý do. */
+    ScoreDetailResponse rejectPublic(String scoreId, String reason);
 
     /**
      * Thay toàn bộ thể loại (tag) của bản nhạc bằng danh sách mới (tối đa 10, rỗng = gỡ hết). Cần quyền sửa bản nhạc.

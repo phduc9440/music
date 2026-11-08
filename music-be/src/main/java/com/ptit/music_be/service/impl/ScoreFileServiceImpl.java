@@ -111,8 +111,55 @@ public class ScoreFileServiceImpl implements ScoreFileService {
         if (isOwner(score)) {
             return true;
         }
+        return hasShare(score, SharePermission.EDIT);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean canReview(Score score) {
+        return SecurityUtils.isAdmin()
+                || isOwner(score)
+                || VISIBILITY_PUBLIC.equals(score.getVisibility()) // bản công khai: ai đăng nhập cũng nhận xét được
+                || hasShare(score, SharePermission.REVIEW);
+    }
+
+    @Override
+    public void checkCanReview(Score score) {
+        if (!canReview(score)) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+    }
+
+    @Override
+    public boolean canManageSharing(Score score) {
+        return SecurityUtils.isAdmin() || isOwner(score);
+    }
+
+    @Override
+    public void checkCanManageSharing(Score score) {
+        if (!canManageSharing(score)) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public String getAccessLevel(Score score) {
+        if (canManageSharing(score)) {
+            return "OWNER";
+        }
+        SharePermission shared = findShare(score).map(MemberScore::getPermission).orElse(null);
+        // Bản công khai cho mọi người quyền nhận xét (gồm xem); quyền được chia sẻ cao hơn thì giữ
+        if (VISIBILITY_PUBLIC.equals(score.getVisibility())
+                && (shared == null || !shared.includes(SharePermission.REVIEW))) {
+            return SharePermission.REVIEW.name();
+        }
+        return shared == null ? null : shared.name();
+    }
+
+    private boolean hasShare(Score score, SharePermission atLeast) {
         return findShare(score)
-                .map(share -> share.getPermission() == SharePermission.EDIT)
+                .map(share -> share.getPermission().includes(atLeast))
                 .orElse(false);
     }
 
@@ -126,7 +173,10 @@ public class ScoreFileServiceImpl implements ScoreFileService {
                 && SecurityUtils.getCurrentEmail().equals(score.getMember().getEmail());
     }
 
+    /** Quyền đã được cấp cho người đang đăng nhập. Dòng mới chỉ có yêu cầu xin (permission null) thì chưa có quyền. */
     private Optional<MemberScore> findShare(Score score) {
-        return memberScoreRepository.findByScoreIdAndMemberEmail(score.getId(), SecurityUtils.getCurrentEmail());
+        return memberScoreRepository
+                .findByScoreIdAndMemberEmail(score.getId(), SecurityUtils.getCurrentEmail())
+                .filter(share -> share.getPermission() != null);
     }
 }

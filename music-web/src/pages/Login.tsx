@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { authApi } from '../services';
 import { completeLogin } from '../utils/auth';
@@ -19,6 +19,8 @@ export default function Login() {
 
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = (location.state as { from?: string } | null)?.from; // trang đang định vào trước khi bị chuyển sang đăng nhập
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,7 +31,7 @@ export default function Login() {
         const response = await authApi.login({ username: email, password });
         const target = await completeLogin(response.data.result);
         toast.success('Login successful!');
-        navigate(target);
+        navigate(from ?? target, { replace: true });
       } else if (viewMode === 'register') {
         await authApi.register({ password, email, fullName });
         toast.success('Registration successful! Please login.');
@@ -183,7 +185,7 @@ export default function Login() {
             {getButtonText()}
           </button>
 
-          {viewMode === 'login' && <GoogleAuthButton setIsLoading={setIsLoading} />}
+          {viewMode === 'login' && <GoogleAuthButton setIsLoading={setIsLoading} redirectTo={from} />}
 
           {/* Bottom links */}
           <div style={{ marginTop: '1.5rem', fontSize: '0.875rem' }}>
