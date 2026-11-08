@@ -161,6 +161,124 @@
   transform: scale(1.25);
 }
 
+/* Nút mở hộp nổi và hộp nổi (Tempo, Mixer, A-B...) */
+.pl-pop {
+  position: relative;
+}
+.pl-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--sc-border, #e5e7eb);
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.pl-chip:hover:not(:disabled),
+.pl-chip--open {
+  background: rgb(15 23 42 / 0.07);
+}
+.pl-chip--on {
+  border-color: var(--sc-primary, #2563eb);
+  color: var(--sc-primary, #2563eb);
+}
+.pl-chip:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.pl-chip:focus-visible,
+.pl-preset:focus-visible,
+.pl-range:focus-visible {
+  outline: 2px solid var(--sc-primary, #2563eb);
+  outline-offset: 2px;
+}
+.pl-pop__panel {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 12px);
+  z-index: 30;
+  width: 280px;
+  padding: 14px 16px;
+  background: var(--sc-surface, #fff);
+  border: 1px solid var(--sc-border, #e5e7eb);
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgb(15 23 42 / 0.18);
+}
+
+/* Tempo */
+.pl-tempo__value {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.pl-tempo__bpm {
+  color: var(--sc-muted, #6b7280);
+  font-size: 12px;
+}
+.pl-tempo__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.pl-tempo__out {
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--sc-muted, #6b7280);
+}
+.pl-range {
+  width: 100%;
+  height: 28px;
+  margin: 0;
+  accent-color: var(--sc-primary, #2563eb);
+  cursor: pointer;
+}
+.pl-tempo__scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--sc-muted, #6b7280);
+}
+.pl-tempo__presets {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.pl-preset {
+  flex: 1;
+  min-height: 40px;
+  border: 1px solid var(--sc-border, #e5e7eb);
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.pl-preset:hover {
+  background: rgb(15 23 42 / 0.06);
+}
+.pl-preset--active {
+  background: var(--sc-primary, #2563eb);
+  border-color: var(--sc-primary, #2563eb);
+  color: #fff;
+}
+.pl-preset--active:hover {
+  background: var(--sc-primary-hover, #1d4ed8);
+}
+
 /* Nốt đang vang */
 .pl-note--playing,
 .pl-note--playing * {
@@ -175,6 +293,7 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .pl-btn,
+  .pl-chip,
   .pl-progress__thumb {
     transition: none;
   }
@@ -205,10 +324,26 @@
   .pl-btn--stop {
     display: none;
   }
+  .pl-pop {
+    position: static;
+  }
+  .pl-pop__panel {
+    position: fixed;
+    left: 8px;
+    right: 8px;
+    bottom: 80px;
+    width: auto;
+  }
+  .pl-tempo__bpm {
+    display: none;
+  }
 }
 @media (prefers-color-scheme: dark) {
   .pl-bar {
     background: rgb(30 41 59 / 0.88);
     color: #e5e7eb;
+  }
+  .pl-pop__panel {
+    background: var(--sc-surface, #1e293b);
   }
 }

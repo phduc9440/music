@@ -4,11 +4,13 @@
  * ô) nên chỉ có một đồng hồ.
  *
  * Mọi thời gian trong lớp này là GIÂY CỦA BẢN NHẠC ở tempo gốc; giây của AudioContext chỉ xuất hiện khi hẹn giờ nốt.
+ * Tempo (20–200%) chỉ đổi tốc độ trôi của đồng hồ (`rate`) nên cao độ không đổi: mỗi nốt vẫn là mẫu âm gốc.
  * Kiểm thử được: truyền `now` giả và gọi `tick()` thay cho bộ hẹn giờ thật.
  */
 import { DEFAULT_INSTRUMENT, getMaster, scheduleVoice } from '../editor/instruments';
 import type { InstrumentId, Voice } from '../editor/instruments';
 import type { PianoSampler } from './sampler';
+import { clampTempoPercent, DEFAULT_TEMPO_PERCENT } from './settings';
 import { firstEventAtOrAfter, measureOrderAt, timeOfOrder } from './timeline';
 import type { Timeline, TimelineEvent } from './timeline';
 
@@ -21,6 +23,14 @@ export interface EngineOptions {
   now?: () => number;
   /** Có thì dùng thay cho bộ hẹn giờ thật (kiểm thử gọi `tick()` tay). */
   autoTick?: boolean;
+  /** Tempo ban đầu (% so với tempo gốc), mặc định 100. */
+  tempoPercent?: number;
+}
+
+/** Giọng đã hẹn kèm thời điểm bắt đầu (giây của context) để biết giọng nào chưa vang. */
+interface ScheduledVoice {
+  voice: Voice;
+  start: number;
 }
 
 const TICK_MS = 25;
@@ -54,7 +64,9 @@ export class PlayerEngine {
   private anchorPos = 0;
   private anchorCtx = 0;
   private nextIndex = 0;
-  private voices: Voice[] = [];
+  /** Tốc độ phát so với tempo gốc (1 = 100%). */
+  private rate = 1;
+  private voices: ScheduledVoice[] = [];
   private trackNodes = new Map<string, GainNode>();
   private timer: ReturnType<typeof setInterval> | undefined;
   private listeners = new Set<() => void>();
@@ -65,6 +77,7 @@ export class PlayerEngine {
     this.sampler = options.sampler ?? null;
     this.now = options.now ?? (() => options.ctx.currentTime);
     this.autoTick = options.autoTick ?? true;
+    this.rate = clampTempoPercent(options.tempoPercent ?? DEFAULT_TEMPO_PERCENT) / 100;
   }
 
   /** Nạp dòng thời gian mới (sau khi sửa bản nhạc); đang phát thì dừng và về đầu. */
@@ -86,10 +99,33 @@ export class PlayerEngine {
     return this.timeline;
   }
 
+  /** Tempo hiện tại (% so với tempo gốc). */
+  getTempoPercent(): number {
+    return Math.round(this.rate * 100);
+  }
+
+  /**
+   * Đổi tempo (kẹp 20–200%). Đang phát thì anchor lại đúng tại vị trí hiện tại nên vị trí không nhảy; chỉ hủy và hẹn
+   * lại các nốt chưa vang, nốt đang ngân vẫn ngân hết.
+   */
+  setTempo(percent: number): void {
+    const next = clampTempoPercent(percent) / 100;
+    if (next === this.rate) return;
+    if (this.status === 'playing') {
+      const pos = this.position();
+      this.killPending();
+      this.rate = next;
+      this.anchor(pos, 0);
+    } else {
+      this.rate = next;
+    }
+    this.emit();
+  }
+
   /** Vị trí hiện tại (giây bản nhạc, ở tempo gốc). */
   position(): number {
     if (this.status !== 'playing') return this.idlePos;
-    const pos = this.anchorPos + (this.now() - this.anchorCtx);
+    const pos = this.anchorPos + (this.now() - this.anchorCtx) * this.rate;
     return Math.min(this.timeline.total, Math.max(this.anchorPos, pos));
   }
 
@@ -174,14 +210,14 @@ export class PlayerEngine {
     if (this.status !== 'playing') return;
     const pos = this.position();
     const lookahead = typeof document !== 'undefined' && document.hidden ? HIDDEN_LOOKAHEAD_S : LOOKAHEAD_S;
-    const horizon = pos + lookahead;
+    const horizon = pos + lookahead * this.rate;
     const events = this.timeline.events;
     while (this.nextIndex < events.length && events[this.nextIndex].time < horizon) {
       this.schedule(events[this.nextIndex]);
       this.nextIndex += 1;
     }
     if (this.nextIndex >= events.length && pos >= this.timeline.total - 1e-3) this.finish();
-    else this.voices = this.voices.filter((v) => v.endsAt > this.now());
+    else this.voices = this.voices.filter((v) => v.voice.endsAt > this.now());
   }
 
   private trackNode(trackId: string): GainNode {
@@ -196,8 +232,8 @@ export class PlayerEngine {
 
   private schedule(event: TimelineEvent): void {
     const now = this.now();
-    const start = Math.max(this.anchorCtx + (event.time - this.anchorPos), now + 0.005);
-    const duration = Math.max(MIN_NOTE_S, event.duration);
+    const start = Math.max(this.anchorCtx + (event.time - this.anchorPos) / this.rate, now + 0.005);
+    const duration = Math.max(MIN_NOTE_S, event.duration / this.rate);
     const instrument = this.instrumentOf(event.part);
     const destination = this.trackNode(event.trackId);
     const voice =
@@ -205,7 +241,7 @@ export class PlayerEngine {
         ? this.sampler?.play(this.ctx, { midi: event.midi, start, duration, level: event.gain, destination })
         : null) ??
       scheduleVoice(this.ctx, { instrument, midi: event.midi, start, duration, level: event.gain, destination });
-    this.voices.push(voice);
+    this.voices.push({ voice, start });
   }
 
   /** Hết bài: các nốt cuối vẫn được ngân hết rồi mới im. */
@@ -225,8 +261,19 @@ export class PlayerEngine {
   }
 
   private killVoices(): void {
-    for (const voice of this.voices) voice.kill();
+    for (const { voice } of this.voices) voice.kill();
     this.voices = [];
+  }
+
+  /** Chỉ tắt các giọng chưa bắt đầu (đổi tempo): giọng đang vang được giữ lại. */
+  private killPending(): void {
+    const now = this.now();
+    const keep: ScheduledVoice[] = [];
+    for (const item of this.voices) {
+      if (item.start > now) item.voice.kill();
+      else keep.push(item);
+    }
+    this.voices = keep;
   }
 
   dispose(): void {

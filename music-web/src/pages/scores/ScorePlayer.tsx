@@ -124,6 +124,7 @@ function PlayerWorkspace({ score, xml, doc }: { score: ScoreDetailData; xml: str
   const [failed, setFailed] = useState(false);
   const { zoom, mode } = prefs;
   const player = usePlayer(doc, {
+    scoreId: score.id,
     fallbackBpm: score.tempoBpm ?? 100,
     shortcuts: true,
     onFirstPlay: () => void countView(score.id),

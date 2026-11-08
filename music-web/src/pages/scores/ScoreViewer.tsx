@@ -268,6 +268,7 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
   });
 
   const player = usePlayer(doc, {
+    scoreId: score.id,
     enabled: playerOpen,
     fallbackBpm: score.tempoBpm ?? 100,
     revision: editor.revision,

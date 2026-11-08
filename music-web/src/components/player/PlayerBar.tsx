@@ -1,4 +1,5 @@
 import { IconClose, IconNextMeasure, IconPauseBig, IconPlayBig, IconPrevMeasure, IconStopSmall } from './PlayerIcons';
+import { TempoControl } from './TempoControl';
 import { TransportProgress } from './TransportProgress';
 import { useEnginePosition } from './usePlayer';
 import type { PlayerApi } from './usePlayer';
@@ -48,6 +49,8 @@ function BarBody({
   const order = timeline.measures.findIndex((m) => position < m.end);
   const current = (order < 0 ? timeline.measures.length : order + 1) || 1;
   const percent = Math.round(player.sampler.progress * 100);
+  // Thời gian hiển thị là giây thật: ở 50% bài dài gấp đôi
+  const speed = player.tempoPercent / 100;
 
   let notice: React.ReactNode = null;
   if (player.empty) notice = <span className="pl-notice">Bản nhạc trống, chưa có nốt để phát.</span>;
@@ -115,13 +118,19 @@ function BarBody({
         />
         <div className="pl-meta">
           <span className="pl-time" aria-live="off">
-            Ô {Math.min(current, timeline.measures.length)} / {timeline.measures.length} · {fmt(position)} /{' '}
-            {fmt(timeline.total)}
+            Ô {Math.min(current, timeline.measures.length)} / {timeline.measures.length} · {fmt(position / speed)} /{' '}
+            {fmt(timeline.total / speed)}
           </span>
           {notice}
         </div>
       </div>
       <div className="pl-side">
+        <TempoControl
+          percent={player.tempoPercent}
+          baseBpm={timeline.baseBpm}
+          onChange={player.setTempoPercent}
+          disabled={!player.canPlay}
+        />
         {extra}
         {onClose && (
           <button type="button" className="pl-btn pl-btn--ghost" onClick={onClose} aria-label="Đóng trình phát">

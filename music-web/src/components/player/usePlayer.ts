@@ -13,7 +13,7 @@ import { PlayerEngine } from './PlayerEngine';
 import type { EngineStatus } from './PlayerEngine';
 import { getPianoSampler } from './sampler';
 import type { SamplerSnapshot } from './sampler';
-import { loadPlayerSettings } from './settings';
+import { loadPlayerSettings, loadScoreSettings, saveScoreSettings } from './settings';
 import { activeNoteIds, buildTimeline, firstOrderOfMeasure, measureOrderAt } from './timeline';
 import type { Timeline } from './timeline';
 
@@ -27,6 +27,8 @@ export interface PartInstrument {
 }
 
 export interface UsePlayerOptions {
+  /** Id bản nhạc, dùng làm khóa lưu cài đặt (tempo...) trong localStorage; bỏ trống thì không lưu. */
+  scoreId?: string | number | null;
   /** false thì chưa dựng dòng thời gian / chưa tải mẫu âm (Editor khi thanh Player đang ẩn). */
   enabled?: boolean;
   /** Tempo của bản nhạc khi file không khai báo. */
@@ -54,6 +56,10 @@ export interface PlayerApi {
   empty: boolean;
   /** Bấm Play được: có nốt và mẫu âm không còn đang tải. */
   canPlay: boolean;
+  /** Tempo hiện tại (% so với tempo gốc, 20–200). */
+  tempoPercent: number;
+  /** Đổi tempo; có hiệu lực ngay cả khi đang phát và được nhớ theo từng bản nhạc. */
+  setTempoPercent: (percent: number) => void;
   /** Phát hoặc tạm dừng. */
   toggle: () => void;
   /** Phát; đang dừng ở đầu bài và có `ids` thì phát từ nốt đầu của vùng chọn. */
@@ -108,7 +114,7 @@ export function useEnginePosition(engine: PlayerEngine): number {
 }
 
 export function usePlayer(doc: ScoreDocument, options: UsePlayerOptions): PlayerApi {
-  const { enabled = true, fallbackBpm, revision = 0, shortcuts = false, onFirstPlay } = options;
+  const { scoreId, enabled = true, fallbackBpm, revision = 0, shortcuts = false, onFirstPlay } = options;
   const firstPlayRef = useRef(onFirstPlay);
   useEffect(() => {
     firstPlayRef.current = onFirstPlay;
@@ -116,7 +122,7 @@ export function usePlayer(doc: ScoreDocument, options: UsePlayerOptions): Player
   const sampler = getPianoSampler();
   const [engine] = useState(() => {
     const ctx = getSharedAudioContext();
-    return ctx ? new PlayerEngine({ ctx, sampler }) : null;
+    return ctx ? new PlayerEngine({ ctx, sampler, tempoPercent: loadScoreSettings(scoreId).tempoPercent }) : null;
   });
   const samplerSnapshot = useSyncExternalStore(sampler.subscribe, sampler.getSnapshot);
   const subscribe = useCallback(
@@ -124,6 +130,7 @@ export function usePlayer(doc: ScoreDocument, options: UsePlayerOptions): Player
     [engine],
   );
   const status = useSyncExternalStore(subscribe, () => engine?.getStatus() ?? 'stopped');
+  const tempoPercent = useSyncExternalStore(subscribe, () => engine?.getTempoPercent() ?? 100);
 
   const [overrides, setOverrides] = useState<Record<number, InstrumentId>>({});
   const instrumentRef = useRef<(part: number) => InstrumentId>(() => 'piano');
@@ -221,6 +228,15 @@ export function usePlayer(doc: ScoreDocument, options: UsePlayerOptions): Player
 
   const stop = useCallback(() => engine?.stop(), [engine]);
 
+  const setTempoPercent = useCallback(
+    (percent: number) => {
+      if (!engine) return;
+      engine.setTempo(percent);
+      saveScoreSettings(scoreId, { tempoPercent: engine.getTempoPercent() });
+    },
+    [engine, scoreId],
+  );
+
   const step = useCallback(
     (delta: number) => {
       if (!engine) return;
@@ -302,6 +318,8 @@ export function usePlayer(doc: ScoreDocument, options: UsePlayerOptions): Player
     followMeasure,
     empty,
     canPlay,
+    tempoPercent,
+    setTempoPercent,
     toggle,
     playFrom,
     stop,
