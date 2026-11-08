@@ -7,7 +7,7 @@
  * Tempo (20–200%) chỉ đổi tốc độ trôi của đồng hồ (`rate`) nên cao độ không đổi: mỗi nốt vẫn là mẫu âm gốc.
  * Kiểm thử được: truyền `now` giả và gọi `tick()` thay cho bộ hẹn giờ thật.
  */
-import { DEFAULT_INSTRUMENT, getMaster, scheduleVoice } from '../editor/instruments';
+import { accompanimentInstrument, DEFAULT_INSTRUMENT, getMaster, scheduleVoice } from '../editor/instruments';
 import type { InstrumentId, Voice } from '../editor/instruments';
 import type { PianoSampler } from './sampler';
 import { loopSegments, NO_LOOP, normalizeLoop, pickSegment, sameLoop } from './loop';
@@ -479,8 +479,9 @@ export class PlayerEngine {
     // `ring`: pedal giữ nốt vang lâu hơn độ dài ghi trên bản nhạc
     const sounding = Math.max(event.duration, event.ring ?? 0);
     const duration = Math.max(MIN_NOTE_S, Math.min(sounding, limit - event.time) / anchor.rate);
-    // Đệm hợp âm luôn bằng piano, không theo nhạc cụ của part chứa ký hiệu hợp âm (ví dụ giọng hát)
-    const instrument = event.trackId === CHORD_TRACK_ID ? 'piano' : this.instrumentOf(event.part);
+    // Đệm hợp âm: organ / guitar tự đệm bằng tiếng của mình, các nhạc cụ khác (ví dụ giọng hát, sáo) đệm bằng piano
+    const melody = this.instrumentOf(event.part);
+    const instrument = event.trackId === CHORD_TRACK_ID ? accompanimentInstrument(melody) : melody;
     const destination = this.trackNode(event.trackId);
     const voice =
       (instrument === 'piano'

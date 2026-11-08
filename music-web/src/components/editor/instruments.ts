@@ -19,6 +19,13 @@ export interface InstrumentInfo {
   label: string;
 }
 
+/**
+ * Nhạc cụ đệm hợp âm khi nghe: nhạc cụ đa âm (organ, guitar) tự đệm bằng chính tiếng của mình; nhạc cụ đơn âm (sáo, kèn, giọng
+ * hát) và đàn dây thì phần đệm do piano chơi.
+ */
+export const accompanimentInstrument = (melody: InstrumentId): InstrumentId =>
+  melody === 'organ' || melody === 'guitar' ? melody : 'piano';
+
 export const INSTRUMENTS: readonly InstrumentInfo[] = [
   { id: 'piano', label: 'Piano' },
   { id: 'strings', label: 'Đàn dây' },
