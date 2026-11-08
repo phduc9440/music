@@ -463,6 +463,40 @@
 .pl-loop__toggle--on:hover:not(:disabled) {
   background: #b45309;
 }
+.pl-loop__opts {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.pl-loop__opt {
+  flex: 1;
+  min-height: 40px;
+  padding: 0 6px;
+  border: 1px solid var(--sc-border, #e5e7eb);
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.pl-loop__opt:hover:not(:disabled) {
+  background: rgb(15 23 42 / 0.06);
+}
+.pl-loop__opt:focus-visible {
+  outline: 2px solid var(--sc-primary, #2563eb);
+  outline-offset: 2px;
+}
+.pl-loop__opt:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.pl-loop__opt--on {
+  border-color: #d97706;
+  color: #b45309;
+  font-weight: 600;
+  background: rgb(217 119 6 / 0.1);
+}
 .pl-loop__note {
   margin: 8px 0 0;
   font-size: 12px;

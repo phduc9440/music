@@ -11,6 +11,7 @@ import { DEFAULT_INSTRUMENT, getMaster, scheduleVoice } from '../editor/instrume
 import type { InstrumentId, Voice } from '../editor/instruments';
 import type { PianoSampler } from './sampler';
 import { loopSegments, NO_LOOP, normalizeLoop, pickSegment, sameLoop } from './loop';
+import { scheduleClick } from './metronome';
 import type { LoopSegment, LoopSettings } from './loop';
 import { EMPTY_MIXER, pruneMixer, trackGain, withTrackMix } from './mixer';
 import type { MixerState, TrackMix } from './mixer';
@@ -35,10 +36,16 @@ export interface EngineOptions {
   loop?: LoopSettings;
 }
 
-/** Điểm neo của đồng hồ: từ thời điểm `ctx` (giây của AudioContext) bản nhạc ở vị trí `pos` (giây bản nhạc). */
+/**
+ * Điểm neo của đồng hồ: từ thời điểm `ctx` (giây của AudioContext) bản nhạc ở vị trí `pos` (giây bản nhạc) và trôi với
+ * tốc độ `rate`. `hold` = đứng yên ở `pos` (đang đếm nhịp vào). Tốc độ gắn theo điểm neo để đổi tốc độ ở vòng sau
+ * (tăng tốc dần) không làm sai vị trí hiển thị của vòng đang phát.
+ */
 interface Anchor {
   ctx: number;
   pos: number;
+  rate: number;
+  hold?: boolean;
 }
 
 /** Giọng đã hẹn kèm thời điểm bắt đầu (giây của context) để biết giọng nào chưa vang. */
@@ -58,6 +65,8 @@ const MIN_NOTE_S = 0.08;
 const MIX_TAU_S = 0.015;
 /** Số lần quay vòng tối đa trong một lần hẹn giờ (chặn vòng lặp vô hạn nếu đoạn lặp quá ngắn). */
 const MAX_WRAPS_PER_TICK = 16;
+/** Tăng tốc dần: mỗi vòng tăng thêm bấy nhiêu % cho tới 100%. */
+const SPEED_STEP_PERCENT = 5;
 
 export class PlayerEngine {
   private readonly ctx: BaseAudioContext;
@@ -82,7 +91,7 @@ export class PlayerEngine {
    * Khi đang phát: các điểm neo của đồng hồ theo thứ tự thời gian. Điểm cuối dùng để hẹn giờ nốt tiếp theo; vị trí hiển
    * thị dùng điểm đang có hiệu lực (`ctx` ≤ bây giờ), nên khi quay vòng A-B vị trí chỉ nhảy đúng lúc nghe thấy quay lại.
    */
-  private anchors: Anchor[] = [{ ctx: 0, pos: 0 }];
+  private anchors: Anchor[] = [{ ctx: 0, pos: 0, rate: 1 }];
   private nextIndex = 0;
   private loop: LoopSettings = NO_LOOP;
   /** Các đoạn A-B trong lượt phát (kể cả khi chưa bật lặp, để hiển thị). */
@@ -91,6 +100,8 @@ export class PlayerEngine {
   private segment: LoopSegment | null = null;
   /** Tốc độ phát so với tempo gốc (1 = 100%). */
   private rate = 1;
+  /** Tempo do người dùng chọn; `rate` có thể cao hơn khi tăng tốc dần đang chạy, và về lại đây khi dừng hoặc tắt. */
+  private baseRate = 1;
   private voices: ScheduledVoice[] = [];
   private mixer: MixerState = EMPTY_MIXER;
   private trackIds: string[] = [];
@@ -105,6 +116,7 @@ export class PlayerEngine {
     this.now = options.now ?? (() => options.ctx.currentTime);
     this.autoTick = options.autoTick ?? true;
     this.rate = clampTempoPercent(options.tempoPercent ?? DEFAULT_TEMPO_PERCENT) / 100;
+    this.baseRate = this.rate;
     this.mixer = options.mixer ?? EMPTY_MIXER;
     this.loop = options.loop ?? NO_LOOP;
   }
@@ -147,6 +159,7 @@ export class PlayerEngine {
     if (sameLoop(next, this.loop)) return;
     this.loop = next;
     this.segments = loopSegments(this.timeline, next.a, next.b);
+    if (!(next.enabled && next.speedUp)) this.rate = this.baseRate; // tắt lặp / tăng tốc: về tempo đã chọn
     if (this.status === 'playing') {
       const pos = this.position();
       this.killPending();
@@ -201,7 +214,8 @@ export class PlayerEngine {
    */
   setTempo(percent: number): void {
     const next = clampTempoPercent(percent) / 100;
-    if (next === this.rate) return;
+    if (next === this.rate && next === this.baseRate) return;
+    this.baseRate = next;
     if (this.status === 'playing') {
       const pos = this.position();
       this.killPending();
@@ -218,7 +232,8 @@ export class PlayerEngine {
     if (this.status !== 'playing') return this.idlePos;
     const now = this.now();
     const anchor = this.effectiveAnchor(now);
-    const pos = anchor.pos + (now - anchor.ctx) * this.rate;
+    if (anchor.hold) return Math.min(this.timeline.total, anchor.pos);
+    const pos = anchor.pos + (now - anchor.ctx) * anchor.rate;
     return Math.min(this.timeline.total, Math.max(anchor.pos, pos));
   }
 
@@ -251,7 +266,7 @@ export class PlayerEngine {
     pos = Math.max(0, pos);
     const resumable = this.ctx as { resume?: () => Promise<void>; state?: string };
     if (resumable.state === 'suspended') resumable.resume?.().catch(() => undefined);
-    this.anchor(pos, START_DELAY_S);
+    this.anchor(pos, START_DELAY_S, true);
     this.status = 'playing';
     if (this.autoTick) this.timer = setInterval(() => this.tick(), TICK_MS);
     this.tick();
@@ -269,11 +284,51 @@ export class PlayerEngine {
     return current;
   }
 
-  /** Đặt lại đồng hồ: bản nhạc ở vị trí `pos` sau `delay` giây, và chọn đoạn A-B áp dụng cho vị trí đó. */
-  private anchor(pos: number, delay: number): void {
-    this.anchors = [{ ctx: this.now() + delay, pos }];
+  /**
+   * Đặt lại đồng hồ: bản nhạc ở vị trí `pos` sau `delay` giây, và chọn đoạn A-B áp dụng cho vị trí đó. `countIn` = được
+   * phép đếm nhịp vào (chỉ khi đang lặp và `pos` đúng đầu đoạn A; kéo thanh thời gian giữa chừng thì không đếm).
+   */
+  private anchor(pos: number, delay: number, countIn = false): void {
     this.nextIndex = firstEventAtOrAfter(this.timeline, pos);
     this.segment = this.loop.enabled ? pickSegment(this.segments, measureOrderAt(this.timeline, pos)) : null;
+    const atStart = this.segment !== null && Math.abs(pos - this.segment.start) < 1e-6;
+    this.anchors = this.passAnchors(this.now() + delay, pos, countIn && this.loop.countIn && atStart);
+  }
+
+  /**
+   * Điểm neo cho một lượt phát bắt đầu lúc `ctxStart` ở vị trí `pos`. Có đếm nhịp vào thì thêm một điểm neo đứng yên suốt
+   * một ô (hẹn các tiếng gõ) rồi mới trôi: vị trí hiển thị đứng ở đầu đoạn trong lúc đếm.
+   */
+  private passAnchors(ctxStart: number, pos: number, countIn: boolean): Anchor[] {
+    const rate = this.rate;
+    if (!countIn) return [{ ctx: ctxStart, pos, rate }];
+    const { count, beatSeconds } = this.countInBeats();
+    const beat = beatSeconds / rate;
+    for (let i = 0; i < count; i++) {
+      const start = ctxStart + i * beat;
+      this.voices.push({ voice: scheduleClick(this.ctx, start, i === 0), start });
+    }
+    return [
+      { ctx: ctxStart, pos, rate, hold: true },
+      { ctx: ctxStart + count * beat, pos, rate },
+    ];
+  }
+
+  /** Số tiếng gõ của một ô và độ dài một phách (giây ở tempo gốc), theo nhịp của bản nhạc ("3/4", "6/8"; tự do thì 4/4). */
+  private countInBeats(): { count: number; beatSeconds: number } {
+    const match = /^(\d+)\/(\d+)$/.exec(this.timeline.timeSignature);
+    const count = match ? Math.min(12, Math.max(1, Number(match[1]))) : 4;
+    const unit = match && Number(match[2]) > 0 ? Number(match[2]) : 4;
+    return { count, beatSeconds: (60 / this.timeline.baseBpm) * (4 / unit) };
+  }
+
+  /** Tăng tốc dần: sang vòng mới thì tăng thêm 5% cho tới 100% (không giảm nếu người dùng đã chọn trên 100%). */
+  private advanceSpeed(): void {
+    if (!this.loop.speedUp) return;
+    const percent = Math.round(this.rate * 100);
+    if (percent >= 100) return;
+    this.rate = Math.min(100, percent + SPEED_STEP_PERCENT) / 100;
+    this.emit();
   }
 
   pause(): void {
@@ -288,6 +343,7 @@ export class PlayerEngine {
     const rest = this.restPos();
     if (this.status === 'stopped' && this.idlePos === rest) return;
     this.halt();
+    this.rate = this.baseRate;
     this.idlePos = rest;
     this.status = 'stopped';
     this.emit();
@@ -333,7 +389,7 @@ export class PlayerEngine {
     const events = this.timeline.events;
     for (let wraps = 0; ; wraps++) {
       const anchor = this.anchors[this.anchors.length - 1];
-      const horizon = anchor.pos + (horizonCtx - anchor.ctx) * this.rate;
+      const horizon = anchor.hold ? -Infinity : anchor.pos + (horizonCtx - anchor.ctx) * anchor.rate;
       const segment = this.segment;
       const limit = segment ? segment.end : Infinity;
       const until = Math.min(horizon, limit);
@@ -342,7 +398,9 @@ export class PlayerEngine {
         this.nextIndex += 1;
       }
       if (!segment || horizon < limit || wraps >= MAX_WRAPS_PER_TICK) return;
-      this.anchors.push({ ctx: anchor.ctx + (limit - anchor.pos) / this.rate, pos: segment.start });
+      const wrapCtx = anchor.ctx + (limit - anchor.pos) / anchor.rate;
+      this.advanceSpeed();
+      this.anchors.push(...this.passAnchors(wrapCtx, segment.start, this.loop.countIn));
       this.nextIndex = firstEventAtOrAfter(this.timeline, segment.start);
     }
   }
@@ -361,8 +419,8 @@ export class PlayerEngine {
   /** Hẹn giờ một nốt theo điểm neo `anchor`; nốt vắt qua `limit` (cuối đoạn A-B) bị cắt tại đó. */
   private schedule(event: TimelineEvent, anchor: Anchor, limit: number): void {
     const now = this.now();
-    const start = Math.max(anchor.ctx + (event.time - anchor.pos) / this.rate, now + 0.005);
-    const duration = Math.max(MIN_NOTE_S, Math.min(event.duration, limit - event.time) / this.rate);
+    const start = Math.max(anchor.ctx + (event.time - anchor.pos) / anchor.rate, now + 0.005);
+    const duration = Math.max(MIN_NOTE_S, Math.min(event.duration, limit - event.time) / anchor.rate);
     const instrument = this.instrumentOf(event.part);
     const destination = this.trackNode(event.trackId);
     const voice =
@@ -377,6 +435,7 @@ export class PlayerEngine {
   private finish(): void {
     clearInterval(this.timer);
     this.timer = undefined;
+    this.rate = this.baseRate;
     this.idlePos = this.restPos();
     this.status = 'stopped';
     this.emit();

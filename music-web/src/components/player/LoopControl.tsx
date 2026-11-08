@@ -122,6 +122,28 @@ export function LoopControl({
         >
           {loop.enabled ? 'Đang lặp' : 'Bật lặp'}
         </button>
+        <div className="pl-loop__opts" role="group" aria-label="Tùy chọn khi lặp">
+          <button
+            type="button"
+            className={`pl-loop__opt${loop.countIn ? ' pl-loop__opt--on' : ''}`}
+            aria-pressed={loop.countIn}
+            disabled={!complete}
+            title="Đếm một ô bằng tiếng gõ trước mỗi vòng"
+            onClick={() => onChange({ countIn: !loop.countIn })}
+          >
+            Đếm nhịp vào
+          </button>
+          <button
+            type="button"
+            className={`pl-loop__opt${loop.speedUp ? ' pl-loop__opt--on' : ''}`}
+            aria-pressed={loop.speedUp}
+            disabled={!complete}
+            title="Mỗi vòng nhanh thêm 5% cho tới 100%, bắt đầu từ tốc độ đang chọn"
+            onClick={() => onChange({ speedUp: !loop.speedUp })}
+          >
+            Tăng tốc dần
+          </button>
+        </div>
         {!complete && <p className="pl-loop__note">Đặt cả A và B để bật lặp.</p>}
         {unreachable && (
           <p className="pl-loop__note pl-loop__note--warn" role="status">

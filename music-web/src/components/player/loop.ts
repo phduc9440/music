@@ -14,9 +14,13 @@ export interface LoopSettings {
   b: number | null;
   /** Bật lặp; chỉ có tác dụng khi đã đặt đủ A và B. */
   enabled: boolean;
+  /** Đếm nhịp vào (một ô tiếng gõ) trước mỗi vòng. */
+  countIn: boolean;
+  /** Tăng tốc dần: mỗi vòng +5% tốc độ cho tới 100%. */
+  speedUp: boolean;
 }
 
-export const NO_LOOP: LoopSettings = { a: null, b: null, enabled: false };
+export const NO_LOOP: LoopSettings = { a: null, b: null, enabled: false, countIn: false, speedUp: false };
 
 /** Đoạn ngắn hơn thế (giây) bị bỏ qua để vòng lặp không quay vô hạn trong một lần hẹn giờ. */
 export const MIN_LOOP_SECONDS = 0.05;
@@ -42,11 +46,11 @@ export function normalizeLoop(loop: LoopSettings, measureCount: number): LoopSet
   let a = fixIndex(loop.a, max);
   let b = fixIndex(loop.b, max);
   if (a !== null && b !== null && b < a) [a, b] = [b, a];
-  return { a, b, enabled: loop.enabled && a !== null && b !== null };
+  return { a, b, enabled: loop.enabled && a !== null && b !== null, countIn: loop.countIn, speedUp: loop.speedUp };
 }
 
 export const sameLoop = (x: LoopSettings, y: LoopSettings): boolean =>
-  x.a === y.a && x.b === y.b && x.enabled === y.enabled;
+  x.a === y.a && x.b === y.b && x.enabled === y.enabled && x.countIn === y.countIn && x.speedUp === y.speedUp;
 
 /** Đã đặt đủ A và B. */
 export const isLoopComplete = (loop: LoopSettings): boolean => loop.a !== null && loop.b !== null;
@@ -90,5 +94,14 @@ export function sanitizeLoop(raw: unknown): LoopSettings {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return NO_LOOP;
   const r = raw as Partial<Record<keyof LoopSettings, unknown>>;
   const index = (v: unknown): number | null => (typeof v === 'number' && Number.isInteger(v) && v >= 0 ? v : null);
-  return normalizeLoop({ a: index(r.a), b: index(r.b), enabled: r.enabled === true }, 0);
+  return normalizeLoop(
+    {
+      a: index(r.a),
+      b: index(r.b),
+      enabled: r.enabled === true,
+      countIn: r.countIn === true,
+      speedUp: r.speedUp === true,
+    },
+    0,
+  );
 }
