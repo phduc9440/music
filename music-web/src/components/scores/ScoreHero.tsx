@@ -1,5 +1,7 @@
+import { Link } from 'react-router-dom';
 import AuthImage from './AuthImage';
 import StatusBadge from './StatusBadge';
+import { OMR_TASK_TYPE, describeTaskError } from '../../utils/omr';
 import { DIFFICULTY_LABELS, SOURCE_LABELS, formatDateTime } from '../../utils/score';
 import type { ScoreDetail } from '../../types';
 import DownloadMenu from './DownloadMenu';
@@ -23,6 +25,18 @@ export default function ScoreHero({ score, onEdit, onDelete }: Props) {
     ['Cập nhật', formatDateTime(score.updatedAt)],
   ];
 
+  // Mở được trình chỉnh sửa khi đã có MusicXML hiện hành (không phụ thuộc trạng thái xử lý, vì nhận diện lại lỗi vẫn giữ
+  // bản MusicXML cũ dùng được)
+  const hasMusicXml = score.files.some((f) => f.fileType === 'MUSICXML');
+
+  // Lý do thất bại lấy từ tác vụ OMR mới nhất (cột reject_reason của bản nhạc không được ghi)
+  const failedTask =
+    score.processingStatus === 'FAILED'
+      ? score.latestTasks.find((t) => t.taskType === OMR_TASK_TYPE && t.status === 'FAILED')
+      : undefined;
+  const failure = failedTask ? describeTaskError(failedTask) : null;
+  const failureReason = failure ? `${failure.title}${failure.detail ? ` (${failure.detail})` : ''}` : score.rejectReason;
+
   return (
     <section className="sc-hero">
       <AuthImage src={score.thumbnailUrl} alt={score.title} className="sc-hero__cover" />
@@ -36,8 +50,20 @@ export default function ScoreHero({ score, onEdit, onDelete }: Props) {
         <p className="sc-hero__composer">{score.composer || 'Chưa rõ tác giả'}</p>
         {score.ownerEmail && <p className="sc-hero__owner">Chủ sở hữu: {score.ownerEmail}</p>}
 
-        {score.processingStatus === 'FAILED' && score.rejectReason && (
-          <div className="sc-error">Xử lý thất bại: {score.rejectReason}</div>
+        {(score.processingStatus === 'PENDING' || score.processingStatus === 'PROCESSING') && (
+          <p className="sc-hero__owner">
+            <Link to={`/scores/${score.id}/processing`}>Xem tiến độ số hóa →</Link>
+          </p>
+        )}
+
+        {score.processingStatus === 'COMPLETED' && score.sourceType === 'OMR' && (
+          <p className="sc-hero__owner">
+            <Link to={`/scores/${score.id}/review`}>Xem kết quả số hóa →</Link>
+          </p>
+        )}
+
+        {score.processingStatus === 'FAILED' && failureReason && (
+          <div className="sc-error">Xử lý thất bại: {failureReason}</div>
         )}
 
         <dl className="sc-facts">
@@ -57,15 +83,20 @@ export default function ScoreHero({ score, onEdit, onDelete }: Props) {
         )}
 
         <div className="sc-hero__actions">
-          {/* TODO(feature/score-viewer): mở /scores/:id/edit (1.17) */}
-          <button className="sc-btn sc-btn--primary" disabled title="Trình chỉnh sửa sẽ có ở nhánh score-viewer">
-            Mở trình chỉnh sửa
-          </button>
+          <Link
+            className={`sc-btn sc-btn--primary${hasMusicXml ? '' : ' is-disabled'}`}
+            to={`/scores/${score.id}/edit`}
+            aria-disabled={!hasMusicXml}
+            title={hasMusicXml ? undefined : 'Bản nhạc chưa có MusicXML để mở'}
+            onClick={(e) => !hasMusicXml && e.preventDefault()}
+          >
+            {score.canEdit ? 'Mở trình chỉnh sửa' : 'Xem bản nhạc'}
+          </Link>
           {/* TODO(feature/playback-basic): mở /scores/:id/play (1.22) */}
           <button className="sc-btn" disabled title="Trình phát sẽ có ở nhánh playback-basic">
             ▶ Phát
           </button>
-          <DownloadMenu files={score.files} />
+          <DownloadMenu scoreId={score.id} files={score.files} />
           {score.canEdit && (
             <button className="sc-btn" onClick={onEdit}>
               Sửa thông tin

@@ -1,10 +1,14 @@
 package com.ptit.music_be.repository;
 
 import java.util.List;
+import java.util.Optional;
+
+import jakarta.persistence.LockModeType;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -20,6 +24,14 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
     List<Score> findByVisibility(String visibility);
 
     /**
+     * Khóa dòng bản nhạc (SELECT ... FOR UPDATE) để hai lần lưu MusicXML cùng lúc không cùng ra một version; chỉ gọi
+     * bên trong transaction.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select s from Score s where s.id = :id")
+    Optional<Score> findByIdForUpdate(@Param("id") String id);
+
+    /**
      * Danh sách bản nhạc của một thành viên, có tìm theo tên/tác giả và lọc trạng thái/nguồn.
      * Tham số rỗng ("") nghĩa là không lọc; service luôn truyền chuỗi, không truyền null.
      */
@@ -27,8 +39,8 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
             """
 			select s from Score s
 			where s.member.id = :memberId
-			and (lower(s.title) like lower(concat('%', :keyword, '%'))
-				or lower(coalesce(s.composer, '')) like lower(concat('%', :keyword, '%')))
+			and (lower(s.title) like lower(concat('%', :keyword, '%')) escape '\\'
+				or lower(coalesce(s.composer, '')) like lower(concat('%', :keyword, '%')) escape '\\')
 			and (:status = '' or s.processingStatus = :status)
 			and (:source = '' or s.sourceType = :source)
 			""")

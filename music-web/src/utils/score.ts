@@ -18,7 +18,7 @@ export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
 };
 
 export const SOURCE_LABELS: Record<ScoreSource, string> = {
-  OMR: 'Quét từ ảnh',
+  OMR: 'Số hóa từ file',
   IMPORT: 'Nhập file',
   MANUAL: 'Tự soạn',
 };
@@ -114,13 +114,10 @@ export const DOWNLOAD_FORMATS: { fileType: string; label: string }[] = [
  * Bấm vào thẻ bản nhạc thì đi đâu (doc 2.0):
  *  - PENDING / PROCESSING / FAILED -> /scores/{id}/processing (trang tiến độ, hiện lỗi + nút "Thử lại" nếu FAILED)
  *  - COMPLETED (và còn lại)        -> /scores/{id}
- * TODO(feature/omr-preprocess): trang /processing chưa có nên tạm cho tất cả vào trang chi tiết;
- * khi có trang đó thì đổi USE_PROCESSING_PAGE thành true.
  */
-const USE_PROCESSING_PAGE = false;
 export const getScorePath = (id: string, status: ProcessingStatus): string => {
   const inProgress = status === 'PENDING' || status === 'PROCESSING' || status === 'FAILED';
-  return USE_PROCESSING_PAGE && inProgress ? `/scores/${id}/processing` : `/scores/${id}`;
+  return inProgress ? `/scores/${id}/processing` : `/scores/${id}`;
 };
 
 // ---- Validate upload (khớp server: mục 2.1 trong doc, mã lỗi 2003–2011, 2202) ----
@@ -149,6 +146,28 @@ export const getUploadErrorMessage = (err: unknown): string => {
   const code = getErrorCode(err);
   return (code && UPLOAD_ERROR_MESSAGES[code]) || getErrorMessage(err, 'Tải lên thất bại, vui lòng thử lại');
 };
+/** Câu thông báo tiếng Việt theo mã lỗi BE khi lưu MusicXML từ trình chỉnh sửa. */
+const SAVE_ERROR_MESSAGES: Record<number, string> = {
+  1002: 'Bạn không có quyền sửa bản nhạc này',
+  2001: 'Bản nhạc không còn tồn tại',
+  2005: 'Bản nhạc quá lớn để lưu (tối đa 5MB), hãy chia nhỏ hoặc xóa bớt',
+  2013: 'Nội dung bản nhạc không hợp lệ. Hãy tải lại trang; bản nháp của bạn vẫn được giữ',
+  2201: 'Bản nhạc đang được nhận diện lại, hãy đợi xong rồi lưu',
+};
+
+/** Thông báo cho lỗi lưu (không gồm 2014, vì xung đột phiên bản có hộp thoại riêng). */
+export const getSaveErrorMessage = (err: unknown): string => {
+  const code = getErrorCode(err);
+  return (code && SAVE_ERROR_MESSAGES[code]) || getErrorMessage(err, 'Lưu thất bại, vui lòng thử lại');
+};
+
+/** Phiên bản mới nhất BE trả kèm lỗi 2014 SCORE_VERSION_CONFLICT; undefined nếu không phải lỗi này. */
+export const getConflictVersion = (err: unknown): number | undefined => {
+  if (getErrorCode(err) !== 2014) return undefined;
+  const result = (err as { response?: { data?: { result?: { currentVersion?: number } } } }).response?.data?.result;
+  return typeof result?.currentVersion === 'number' ? result.currentVersion : 0;
+};
+
 export const UPLOAD_EXTENSIONS = ['pdf', 'png', 'jpg', 'jpeg'];
 
 export const getExtension = (name: string): string => name.split('.').pop()?.toLowerCase() ?? '';
@@ -178,3 +197,13 @@ export const fileNameWithoutExtension = (name: string): string => name.replace(/
 /** Tự đoán loại nguồn: PDF -> PDF gốc, ảnh -> Ảnh chụp (người dùng sửa được). */
 export const guessSourceType = (files: File[]): OmrSourceType =>
   files.length > 0 && files.every(isPdf) ? 'PDF_NATIVE' : 'PHOTO';
+
+/** Tên file tải về an toàn: bỏ ký tự cấm (\ / : * ? " < > |) và ký tự điều khiển, tối đa 120 ký tự. */
+export function toSafeFileName(name: string | null | undefined, fallback = 'ban-nhac'): string {
+  const cleaned = (name ?? '')
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_')
+    .trim()
+    .slice(0, 120);
+  return cleaned || fallback;
+}

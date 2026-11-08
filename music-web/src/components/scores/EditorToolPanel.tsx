@@ -1,0 +1,721 @@
+import { useState } from 'react';
+import type { ReactNode } from 'react';
+import type { SymbolOp } from '../editor/commands';
+import { DYNAMICS, EXTRA_DYNAMICS } from '../editor/marks';
+import type { MarkOp } from '../editor/marks';
+import { TUPLET_PRESETS } from '../editor/tuplets';
+import type { TupletOp } from '../editor/tuplets';
+import type { VoiceOp } from '../editor/voices';
+import type { DurationChoice, DurationType } from '../editor/durations';
+import type { PitchOp } from '../editor/pitch';
+import { DURATION_DRAG_TYPE } from '../editor/staffHit';
+import {
+  ToolDelete,
+  ToolDot,
+  ToolEighth,
+  ToolFlat,
+  ToolHalf,
+  ToolChord,
+  ToolLyric,
+  ToolNatural,
+  ToolSlur,
+  ToolTie,
+  ToolOctaveDown,
+  ToolOctaveUp,
+  ToolPencil,
+  ToolQuarter,
+  ToolRest,
+  ToolSelect,
+  ToolSemitoneDown,
+  ToolSemitoneUp,
+  ToolSharp,
+  ToolSixteenth,
+  ToolSixtyFourth,
+  ToolStepDown,
+  ToolStepUp,
+  ToolThirtySecond,
+  ToolWhole,
+} from './ToolIcons';
+import { IconRedo, IconSave, IconUndo } from './ViewerIcons';
+
+interface Props {
+  /** Chỉ dùng cho Mobile: bảng công cụ đang mở dạng bottom sheet. */
+  open: boolean;
+  onClose: () => void;
+  /** Có đang chọn ít nhất một nốt không (các nút Cao độ chỉ bật khi có). */
+  hasSelection: boolean;
+  /** Đang lưu: tạm khóa nút sửa. */
+  busy: boolean;
+  onPitch: (op: PitchOp) => void;
+  onSymbol: (op: SymbolOp) => void;
+  /** Chế độ nhập nốt (bấm phím A–G để nhập) và trường độ đang dùng. */
+  inputMode: boolean;
+  onInputModeChange: (enabled: boolean) => void;
+  inputDuration: DurationChoice;
+  /** Chế độ nhập lời bài hát. */
+  lyricMode: boolean;
+  onLyricModeChange: (enabled: boolean) => void;
+  /** Chế độ nhập hợp âm. */
+  chordMode: boolean;
+  onChordModeChange: (enabled: boolean) => void;
+  /** Ký hiệu sắc thái, lặp lại và chỉ dẫn nhảy. */
+  onMark: (op: MarkOp) => void;
+  /** Thêm khuông Fa cho đàn, thêm khuông Sol/Fa/Tenor riêng, xóa khuông. */
+  onStaves: (op: 'addBass' | 'addG' | 'addF' | 'addTenor' | 'remove') => void;
+  /** Mở hộp thoại khóa nhạc, dấu hóa, nhịp. */
+  onOpenNotation: () => void;
+  /** Thêm / xóa ô nhịp. */
+  onMeasures: (op: 'insertAfter' | 'insertBefore' | 'delete') => void;
+  /** Viết bè, nốt nhỏ, xóa bè. */
+  onVoice: (op: VoiceOp) => void;
+  /** Tạo chùm (chùm ba, chùm năm...) từ nốt đang chọn hoặc bỏ chùm. */
+  onTuplet: (op: TupletOp) => void;
+  /** "Giữ ô nhịp đủ phách": đổi trường độ nhưng lấp dấu lặng / ghi đè nốt sau để ô không đổi độ dài. */
+  onDuration: (type: DurationType) => void;
+  onDot: () => void;
+  /** "Nghe khi sửa": phát âm xem trước mỗi khi đổi cao độ. */
+  previewTone: boolean;
+  onPreviewToneChange: (enabled: boolean) => void;
+  /** Hoàn tác / làm lại / lưu: chỉ hiện trong bottom sheet trên Mobile (Desktop và iPad có ở thanh trên). */
+  canUndo: boolean;
+  canRedo: boolean;
+  canSave: boolean;
+  onUndo: () => void;
+  onRedo: () => void;
+  onSave: () => void;
+}
+
+interface PitchTool {
+  op: PitchOp;
+  icon: ReactNode;
+  label: string;
+  /** Phím tắt hiện trong tooltip. */
+  shortcut: string;
+}
+
+const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
+const MOD = isMac ? '⌘' : 'Ctrl';
+const ALT = isMac ? '⌥' : 'Alt';
+
+const PITCH_TOOLS: PitchTool[] = [
+  { op: 'stepUp', icon: <ToolStepUp />, label: 'Lên bậc', shortcut: '↑' },
+  { op: 'stepDown', icon: <ToolStepDown />, label: 'Xuống bậc', shortcut: '↓' },
+  { op: 'semitoneUp', icon: <ToolSemitoneUp />, label: 'Lên ½ cung', shortcut: `${ALT}+↑` },
+  { op: 'semitoneDown', icon: <ToolSemitoneDown />, label: 'Xuống ½ cung', shortcut: `${ALT}+↓` },
+  { op: 'octaveUp', icon: <ToolOctaveUp />, label: 'Lên quãng 8', shortcut: `${MOD}+↑` },
+  { op: 'octaveDown', icon: <ToolOctaveDown />, label: 'Xuống quãng 8', shortcut: `${MOD}+↓` },
+];
+
+interface SymbolTool {
+  op: SymbolOp;
+  icon: ReactNode;
+  label: string;
+  /** Phím tắt hiện trong tooltip (nếu có). */
+  shortcut?: string;
+}
+
+const SYMBOL_TOOLS: SymbolTool[] = [
+  { op: 'sharp', icon: <ToolSharp />, label: 'Thăng' },
+  { op: 'flat', icon: <ToolFlat />, label: 'Giáng' },
+  { op: 'natural', icon: <ToolNatural />, label: 'Bình' },
+  { op: 'tie', icon: <ToolTie />, label: 'Nối', shortcut: 'T' },
+  { op: 'slur', icon: <ToolSlur />, label: 'Luyến', shortcut: 'S' },
+  { op: 'rest', icon: <ToolRest />, label: 'Dấu lặng' },
+  { op: 'delete', icon: <ToolDelete />, label: 'Xóa', shortcut: 'Delete' },
+];
+
+const MARK_TOOLS: { op: MarkOp; label: string; title: string }[] = [
+  { op: 'staccato', label: 'Staccato', title: 'Staccato: ngắt, gọn (bấm lại để bỏ)' },
+  { op: 'accent', label: 'Accent', title: 'Accent: nhấn nốt (bấm lại để bỏ)' },
+  { op: 'tenuto', label: 'Tenuto', title: 'Tenuto: giữ đủ độ dài (bấm lại để bỏ)' },
+  { op: 'fermata', label: 'Fermata', title: 'Fermata: ngân tự do (bấm lại để bỏ)' },
+  { op: 'cresc', label: 'Cresc.', title: 'Cresc.: to dần, từ nốt đầu đến nốt cuối của vùng chọn' },
+  { op: 'dim', label: 'Dim.', title: 'Dim.: nhỏ dần, từ nốt đầu đến nốt cuối của vùng chọn' },
+];
+
+/** Menu "Thêm ký hiệu…": các ký hiệu ít dùng, chia nhóm. */
+const MORE_MARK_GROUPS: { title: string; tools: { op: MarkOp; label: string; title: string }[] }[] = [
+  {
+    title: 'Sắc thái',
+    tools: EXTRA_DYNAMICS.map((d) => ({
+      op: `dyn:${d}` as MarkOp,
+      label: d,
+      title:
+        d === 'ppp' || d === 'fff'
+          ? `${d}: ${d === 'ppp' ? 'rất rất nhỏ' : 'rất rất to'} (đặt ở nốt đầu của vùng chọn)`
+          : `${d}: nhấn mạnh một nốt rồi trở lại mức cũ (đặt ở nốt đầu của vùng chọn)`,
+    })),
+  },
+  {
+    title: 'Kỹ thuật',
+    tools: [
+      { op: 'marcato', label: 'Marcato', title: 'Marcato: nhấn mạnh và ngắt (bấm lại để bỏ)' },
+      { op: 'staccatissimo', label: 'Staccatissimo', title: 'Staccatissimo: ngắt rất ngắn (bấm lại để bỏ)' },
+      { op: 'breath', label: 'Lấy hơi', title: 'Dấu lấy hơi sau nốt (bấm lại để bỏ)' },
+      { op: 'caesura', label: 'Ngắt nghỉ', title: 'Dấu ngắt nghỉ // (bấm lại để bỏ; bản xem trước chưa vẽ dấu này)' },
+      { op: 'arpeggio', label: 'Rải hợp âm', title: 'Rải các nốt của hợp âm đang chọn từ dưới lên (bấm lại để bỏ)' },
+    ],
+  },
+  {
+    title: 'Láy',
+    tools: [
+      { op: 'trill', label: 'Láy rền', title: 'Láy rền (tr): luân phiên với nốt liền trên (bấm lại để bỏ)' },
+      { op: 'mordent', label: 'Láy ngắn', title: 'Láy ngắn (mordent): nốt - nốt dưới - nốt (bấm lại để bỏ)' },
+      {
+        op: 'invMordent',
+        label: 'Láy ngắn ngược',
+        title: 'Láy ngắn ngược: nốt - nốt trên - nốt (bấm lại để bỏ)',
+      },
+      { op: 'turn', label: 'Láy vòng', title: 'Láy vòng: nốt trên - nốt - nốt dưới - nốt (bấm lại để bỏ)' },
+    ],
+  },
+  {
+    title: 'Khác',
+    tools: [
+      { op: 'pedal', label: 'Pedal', title: 'Pedal: nhấn từ nốt đầu đến hết nốt cuối của vùng chọn (bấm lại để bỏ)' },
+      { op: 'ottava8va', label: '8va', title: '8va: viết thấp hơn một quãng tám, đàn/hát cao hơn (bấm lại để bỏ)' },
+      { op: 'ottava8vb', label: '8vb', title: '8vb: viết cao hơn một quãng tám, đàn/hát thấp hơn (bấm lại để bỏ)' },
+      {
+        op: 'graceSlash',
+        label: 'Hoa mỹ (gạch)',
+        title: 'Nốt hoa mỹ có gạch chéo (acciaccatura): thêm trước nốt đang chọn, cao hơn một bậc',
+      },
+      {
+        op: 'gracePlain',
+        label: 'Hoa mỹ (không gạch)',
+        title: 'Nốt hoa mỹ không gạch (appoggiatura): thêm trước nốt đang chọn, cao hơn một bậc',
+      },
+    ],
+  },
+];
+
+const REPEAT_TOOLS: { op: MarkOp; label: string; title: string }[] = [
+  { op: 'repeatStart', label: '|:', title: 'Dấu lặp ở đầu ô nhịp (ô đầu của vùng chọn)' },
+  { op: 'repeatEnd', label: ':|', title: 'Dấu lặp ở cuối ô nhịp (ô cuối của vùng chọn)' },
+  { op: 'volta1', label: 'Nhà 1', title: 'Nhà 1 (1.) trải qua các ô của vùng chọn, đóng bằng dấu lặp' },
+  {
+    op: 'volta2',
+    label: 'Nhà 2',
+    title: 'Nhà 2 (2.) trải qua các ô của vùng chọn: dùng khi lần hát sau (lời 2) khác đoạn cuối',
+  },
+  { op: 'segno', label: 'Segno', title: 'Dấu Segno ở ô đầu của vùng chọn' },
+  { op: 'coda', label: 'Coda', title: 'Dấu Coda ở ô đầu của vùng chọn' },
+  { op: 'dc', label: 'D.C.', title: 'D.C.: quay lại từ đầu (ở cuối ô cuối của vùng chọn)' },
+  { op: 'ds', label: 'D.S.', title: 'D.S.: quay lại dấu Segno' },
+  { op: 'fine', label: 'Fine', title: 'Fine: kết thúc' },
+  { op: 'tocoda', label: 'To Coda', title: 'To Coda: nhảy tới Coda' },
+];
+
+const DURATION_TOOLS: { type: DurationType; icon: ReactNode; label: string; key: string }[] = [
+  { type: 'whole', icon: <ToolWhole />, label: 'Tròn', key: '5' },
+  { type: 'half', icon: <ToolHalf />, label: 'Trắng', key: '4' },
+  { type: 'quarter', icon: <ToolQuarter />, label: 'Đen', key: '3' },
+  { type: 'eighth', icon: <ToolEighth />, label: 'Móc đơn', key: '2' },
+  { type: '16th', icon: <ToolSixteenth />, label: 'Móc kép', key: '1' },
+  { type: '32nd', icon: <ToolThirtySecond />, label: 'Móc ba', key: '6' },
+  { type: '64th', icon: <ToolSixtyFourth />, label: 'Móc tứ', key: '7' },
+];
+
+/**
+ * Bảng công cụ chỉnh sửa (đặc tả 1.17): Desktop ở bên trái, iPad thu thành thanh dưới đáy, Mobile mở dạng
+ * bottom sheet. Mobile chỉ có nhóm Cao độ (đặc tả 1.18). Chỉ hiện khi canEdit.
+ */
+export default function EditorToolPanel({
+  open,
+  onClose,
+  hasSelection,
+  busy,
+  onPitch,
+  onSymbol,
+  inputMode,
+  onInputModeChange,
+  inputDuration,
+  lyricMode,
+  onLyricModeChange,
+  chordMode,
+  onChordModeChange,
+  onMark,
+  onStaves,
+  onOpenNotation,
+  onMeasures,
+  onVoice,
+  onTuplet,
+  onDuration,
+  onDot,
+  previewTone,
+  onPreviewToneChange,
+  canUndo,
+  canRedo,
+  canSave,
+  onUndo,
+  onRedo,
+  onSave,
+}: Props) {
+  const [tupletMenu, setTupletMenu] = useState(false);
+  const [otherMenu, setOtherMenu] = useState(false);
+  const [moreMarks, setMoreMarks] = useState(false);
+  return (
+    <>
+      {open && <div className="sv-sheet-backdrop" onClick={onClose} aria-hidden="true" />}
+      <aside className={`sv-tools${open ? ' is-open' : ''}`} aria-label="Công cụ chỉnh sửa">
+        <div className="sv-tools__head">
+          <strong>Công cụ chỉnh sửa</strong>
+          <button className="sc-btn sv-tools__close" onClick={onClose}>
+            Đóng
+          </button>
+        </div>
+        <p className="sv-tools__note">
+          Bấm vào nốt để chọn (Shift để chọn thêm), rồi dùng nhóm Cao độ hoặc phím mũi tên.
+        </p>
+
+        <div className="sv-tools__group sv-tools__group--mode">
+          <div className="sv-tools__title">Chế độ</div>
+          <div className="sv-tools__row">
+            <button
+              className={`sv-tool${inputMode || lyricMode || chordMode ? '' : ' is-active'}`}
+              aria-pressed={!inputMode && !lyricMode && !chordMode}
+              onClick={() => onInputModeChange(false)}
+              title="Chọn nốt"
+              aria-label="Chọn"
+            >
+              <span className="sv-tool__icon" aria-hidden="true">
+                <ToolSelect />
+              </span>
+              <span className="sv-tool__label">Chọn</span>
+            </button>
+            <button
+              className={`sv-tool${inputMode ? ' is-active' : ''}`}
+              aria-pressed={inputMode}
+              onClick={() => onInputModeChange(true)}
+              title="Nhập nốt: chọn dấu lặng rồi bấm phím A–G (Esc để thoát)"
+              aria-label="Nhập nốt"
+            >
+              <span className="sv-tool__icon" aria-hidden="true">
+                <ToolPencil />
+              </span>
+              <span className="sv-tool__label">Nhập nốt</span>
+            </button>
+            <button
+              className={`sv-tool${lyricMode ? ' is-active' : ''}`}
+              aria-pressed={lyricMode}
+              onClick={() => onLyricModeChange(true)}
+              title="Nhập lời bài hát: chọn nốt rồi gõ âm tiết, Space sang nốt kế (Esc để thoát)"
+              aria-label="Nhập lời"
+            >
+              <span className="sv-tool__icon" aria-hidden="true">
+                <ToolLyric />
+              </span>
+              <span className="sv-tool__label">Lời</span>
+            </button>
+            <button
+              className={`sv-tool${chordMode ? ' is-active' : ''}`}
+              aria-pressed={chordMode}
+              onClick={() => onChordModeChange(true)}
+              title="Nhập hợp âm: chọn nốt rồi gõ Am7, C/G... (Esc để thoát)"
+              aria-label="Nhập hợp âm"
+            >
+              <span className="sv-tool__icon" aria-hidden="true">
+                <ToolChord />
+              </span>
+              <span className="sv-tool__label">Hợp âm</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="sv-tools__group sv-tools__group--pitch">
+          <div className="sv-tools__title">Cao độ</div>
+          <div className="sv-tools__row">
+            {PITCH_TOOLS.map((tool) => (
+              <button
+                key={tool.op}
+                className="sv-tool"
+                disabled={!hasSelection || busy}
+                onClick={() => onPitch(tool.op)}
+                title={`${tool.label} (${tool.shortcut})${hasSelection ? '' : ' - hãy chọn nốt trước'}`}
+                aria-label={tool.label}
+              >
+                <span className="sv-tool__icon" aria-hidden="true">
+                  {tool.icon}
+                </span>
+                <span className="sv-tool__label">{tool.label}</span>
+              </button>
+            ))}
+          </div>
+          <label className="sv-tools__check">
+            <input type="checkbox" checked={previewTone} onChange={(e) => onPreviewToneChange(e.target.checked)} />
+            Nghe khi sửa
+          </label>
+        </div>
+
+        <div className="sv-tools__group sv-tools__group--actions">
+          <div className="sv-tools__title">Thao tác</div>
+          <div className="sv-tools__actions">
+            <button className="sc-btn" disabled={!canUndo || busy} onClick={onUndo}>
+              <IconUndo /> Hoàn tác
+            </button>
+            <button className="sc-btn" disabled={!canRedo || busy} onClick={onRedo}>
+              <IconRedo /> Làm lại
+            </button>
+            <button className="sc-btn sc-btn--primary" disabled={!canSave || busy} onClick={onSave}>
+              <IconSave /> Lưu
+            </button>
+          </div>
+        </div>
+
+        <div className="sv-tools__group sv-tools__group--soon">
+          <div className="sv-tools__title">Ký hiệu</div>
+          <div className="sv-tools__row">
+            {SYMBOL_TOOLS.map((tool) => (
+              <button
+                key={tool.op}
+                className="sv-tool"
+                disabled={!hasSelection || busy}
+                onClick={() => onSymbol(tool.op)}
+                title={`${tool.label}${tool.shortcut ? ` (${tool.shortcut})` : ''}${hasSelection ? '' : ' - hãy chọn nốt trước'}`}
+                aria-label={tool.label}
+              >
+                <span className="sv-tool__icon" aria-hidden="true">
+                  {tool.icon}
+                </span>
+                <span className="sv-tool__label">{tool.label}</span>
+              </button>
+            ))}
+            <button
+              className={`sv-tool${inputMode && inputDuration.dots > 0 ? ' is-active' : ''}`}
+              disabled={(!hasSelection && !inputMode) || busy}
+              aria-pressed={inputMode ? inputDuration.dots > 0 : undefined}
+              onClick={onDot}
+              title="Chấm dôi (.): bấm lần 2 chấm dôi kép, lần 3 bỏ chấm"
+              aria-label="Chấm dôi"
+            >
+              <span className="sv-tool__icon" aria-hidden="true">
+                <ToolDot />
+              </span>
+              <span className="sv-tool__label">Chấm dôi</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="sv-tools__group sv-tools__group--soon">
+          <div className="sv-tools__title">Khuông nhạc</div>
+          <div className="sv-tools__row sv-tools__row--text">
+            <button
+              className="sv-tool sv-tool--text"
+              disabled={busy}
+              onClick={() => onStaves('addBass')}
+              title="Thêm khuông Fa dưới khuông hiện tại: đàn hai khuông (khuông của nốt đang chọn, mặc định khuông đầu)"
+            >
+              Thêm Fa (đàn)
+            </button>
+            <button
+              className="sv-tool sv-tool--text"
+              disabled={busy}
+              onClick={() => onStaves('addG')}
+              title="Thêm một khuông riêng khóa Sol (ví dụ bè S/A) phía dưới cùng"
+            >
+              Thêm khuông Sol
+            </button>
+            <button
+              className="sv-tool sv-tool--text"
+              disabled={busy}
+              onClick={() => onStaves('addF')}
+              title="Thêm một khuông riêng khóa Fa (ví dụ bè T/B) phía dưới cùng"
+            >
+              Thêm khuông Fa
+            </button>
+            <button
+              className="sv-tool sv-tool--text"
+              disabled={busy}
+              onClick={() => onStaves('addTenor')}
+              title="Thêm một khuông riêng khóa Sol số 8 dưới (bè Tenor trong SATB) phía dưới cùng"
+            >
+              Thêm khuông Tenor
+            </button>
+            <button
+              className="sv-tool sv-tool--text"
+              disabled={!hasSelection || busy}
+              onClick={() => onStaves('remove')}
+              title="Xóa khuông của nốt đang chọn (khuông Fa của đàn, hoặc cả khuông riêng)"
+            >
+              Xóa khuông
+            </button>
+            <button
+              className="sv-tool sv-tool--text"
+              disabled={!hasSelection || busy}
+              onClick={onOpenNotation}
+              title="Đổi khóa Sol/Fa/Đô, dấu hóa đầu khuông, chỉ số nhịp (kể cả đổi nhịp giữa bài và nhịp tự do)"
+            >
+              Khóa · Dấu hóa · Nhịp…
+            </button>
+          </div>
+        </div>
+
+        <div className="sv-tools__group sv-tools__group--soon">
+          <div className="sv-tools__title">Ô nhịp</div>
+          <div className="sv-tools__row sv-tools__row--text">
+            <button
+              className="sv-tool sv-tool--text"
+              disabled={busy}
+              onClick={() => onMeasures('insertAfter')}
+              title="Thêm một ô nhịp trống sau ô đang chọn (không chọn gì: thêm vào cuối bài)"
+            >
+              Thêm ô sau
+            </button>
+            <button
+              className="sv-tool sv-tool--text"
+              disabled={!hasSelection || busy}
+              onClick={() => onMeasures('insertBefore')}
+              title="Chèn một ô nhịp trống trước ô đang chọn"
+            >
+              Chèn ô trước
+            </button>
+            <button
+              className="sv-tool sv-tool--text"
+              disabled={!hasSelection || busy}
+              onClick={() => onMeasures('delete')}
+              title="Xóa các ô nhịp có nốt đang chọn (bấm Hoàn tác nếu lỡ tay)"
+            >
+              Xóa ô nhịp
+            </button>
+          </div>
+        </div>
+
+        <div className="sv-tools__group sv-tools__group--soon">
+          <div className="sv-tools__title">Viết bè</div>
+          <div className="sv-tools__row sv-tools__row--text">
+            <button
+              className="sv-tool sv-tool--text"
+              disabled={!hasSelection || busy}
+              onClick={() => onVoice('chordBelow')}
+              title="Bè cùng thân: thêm vào mỗi nốt đang chọn một nốt cùng trường độ, thấp hơn một quãng ba (hai nốt chung một thân)"
+            >
+              Bè thân ↓
+            </button>
+            <button
+              className="sv-tool sv-tool--text"
+              disabled={!hasSelection || busy}
+              onClick={() => onVoice('chordAbove')}
+              title="Bè cùng thân: thêm nốt cùng trường độ, cao hơn một quãng ba"
+            >
+              Bè thân ↑
+            </button>
+            <button
+              className="sv-tool sv-tool--text"
+              disabled={!hasSelection || busy}
+              onClick={() => onVoice('blank')}
+              title="Thêm một bè riêng (ô trống): bấm vào dấu lặng của bè mới để nhập nốt với nhịp điệu khác bè chính"
+            >
+              Bè riêng
+            </button>
+            <button
+              className="sv-tool sv-tool--text"
+              disabled={!hasSelection || busy}
+              onClick={() => onVoice('addBelow')}
+              title="Chép cả ô nhịp sang bè riêng thấp hơn một quãng ba, rồi sửa trường độ, cao độ từng nốt"
+            >
+              Chép bè ↓
+            </button>
+            <button
+              className="sv-tool sv-tool--text"
+              disabled={!hasSelection || busy}
+              onClick={() => onVoice('addAbove')}
+              title="Chép cả ô nhịp sang bè riêng cao hơn một quãng ba"
+            >
+              Chép bè ↑
+            </button>
+            <button
+              className="sv-tool sv-tool--text"
+              disabled={!hasSelection || busy}
+              onClick={() => onVoice('cue')}
+              title="Bật/tắt hình nốt nhỏ cho các nốt đang chọn (thường dùng cho nốt bè)"
+            >
+              Nốt nhỏ
+            </button>
+            <button
+              className="sv-tool sv-tool--text"
+              disabled={!hasSelection || busy}
+              onClick={() => onVoice('remove')}
+              title="Xóa bè riêng chứa nốt đang chọn (bè chính không xóa được)"
+            >
+              Xóa bè
+            </button>
+          </div>
+        </div>
+
+        <div className="sv-tools__group sv-tools__group--soon">
+          <div className="sv-tools__title">Sắc thái</div>
+          <div className="sv-tools__row sv-tools__row--text">
+            {MARK_TOOLS.map((tool) => (
+              <button
+                key={tool.op}
+                className="sv-tool sv-tool--text"
+                disabled={!hasSelection || busy}
+                onClick={() => onMark(tool.op)}
+                title={`${tool.title}${hasSelection ? '' : ' - hãy chọn nốt trước'}`}
+              >
+                {tool.label}
+              </button>
+            ))}
+            {DYNAMICS.map((d) => (
+              <button
+                key={d}
+                className="sv-tool sv-tool--text sv-tool--dyn"
+                disabled={!hasSelection || busy}
+                onClick={() => onMark(`dyn:${d}`)}
+                title={`Mức to nhỏ ${d} (đặt ở nốt đầu của vùng chọn)`}
+              >
+                {d}
+              </button>
+            ))}
+            <button
+              className={`sv-tool sv-tool--text${moreMarks ? ' is-active' : ''}`}
+              disabled={busy}
+              aria-expanded={moreMarks}
+              onClick={() => setMoreMarks((open) => !open)}
+              title="Thêm ký hiệu: sắc thái khác, kỹ thuật, nốt láy, pedal, 8va/8vb, nốt hoa mỹ"
+            >
+              Thêm ký hiệu…
+            </button>
+          </div>
+          {moreMarks &&
+            MORE_MARK_GROUPS.map((group) => (
+              <div key={group.title} role="menu" aria-label={group.title}>
+                <div className="sv-tools__sub">{group.title}</div>
+                <div className="sv-tools__row sv-tools__row--text">
+                  {group.tools.map((tool) => (
+                    <button
+                      key={tool.op}
+                      className="sv-tool sv-tool--text"
+                      role="menuitem"
+                      disabled={!hasSelection || busy}
+                      onClick={() => {
+                        onMark(tool.op);
+                        setMoreMarks(false);
+                      }}
+                      title={`${tool.title}${hasSelection ? '' : ' - hãy chọn nốt trước'}`}
+                    >
+                      {tool.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+        </div>
+
+        <div className="sv-tools__group sv-tools__group--soon">
+          <div className="sv-tools__title">Lặp lại &amp; chỉ dẫn</div>
+          <div className="sv-tools__row sv-tools__row--text">
+            {REPEAT_TOOLS.map((tool) => (
+              <button
+                key={tool.op}
+                className="sv-tool sv-tool--text"
+                disabled={!hasSelection || busy}
+                onClick={() => onMark(tool.op)}
+                title={`${tool.title}${hasSelection ? '' : ' - hãy chọn nốt trước'}`}
+              >
+                {tool.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="sv-tools__group sv-tools__group--soon">
+          <div className="sv-tools__title">Trường độ</div>
+          <div className="sv-tools__row">
+            {DURATION_TOOLS.map((tool) => (
+              <button
+                key={tool.type}
+                className={`sv-tool${inputMode && inputDuration.type === tool.type ? ' is-active' : ''}`}
+                disabled={busy}
+                draggable={!busy}
+                onDragStart={(e) => {
+                  e.dataTransfer.setData(
+                    DURATION_DRAG_TYPE,
+                    JSON.stringify({ type: tool.type, dots: inputDuration.dots }),
+                  );
+                  e.dataTransfer.effectAllowed = 'copy';
+                }}
+                aria-pressed={inputMode ? inputDuration.type === tool.type : undefined}
+                onClick={() => onDuration(tool.type)}
+                title={`${tool.label} (${tool.key}) · bấm: đổi trường độ nốt đang chọn · kéo vào khuông: thêm nốt`}
+                aria-label={tool.label}
+              >
+                <span className="sv-tool__icon" aria-hidden="true">
+                  {tool.icon}
+                </span>
+                <span className="sv-tool__label">{tool.label}</span>
+              </button>
+            ))}
+          </div>
+          <div className="sv-tools__row sv-tools__row--text">
+            <button
+              className={`sv-tool sv-tool--text${tupletMenu ? ' is-active' : ''}`}
+              disabled={!hasSelection || busy}
+              aria-expanded={tupletMenu}
+              onClick={() => setTupletMenu((open) => !open)}
+              title={`Chùm: biến nốt/dấu lặng đang chọn thành chùm ba, chùm năm... (${MOD}+3 = chùm ba)${hasSelection ? '' : ' - hãy chọn nốt trước'}`}
+            >
+              Chùm…
+            </button>
+            <button
+              className={`sv-tool sv-tool--text${otherMenu ? ' is-active' : ''}`}
+              disabled={busy}
+              aria-expanded={otherMenu}
+              onClick={() => setOtherMenu((open) => !open)}
+              title="Các trường độ ít dùng (tròn đôi)"
+            >
+              Khác…
+            </button>
+          </div>
+          {otherMenu && (
+            <div className="sv-tools__row sv-tools__row--text" role="menu" aria-label="Trường độ khác">
+              <button
+                className={`sv-tool sv-tool--text${inputMode && inputDuration.type === 'breve' ? ' is-active' : ''}`}
+                role="menuitem"
+                disabled={busy}
+                onClick={() => {
+                  onDuration('breve');
+                  setOtherMenu(false);
+                }}
+                title="Tròn đôi (dài 2 nốt tròn): bấm để đổi trường độ nốt đang chọn, hoặc đặt trường độ nhập"
+              >
+                Tròn đôi
+              </button>
+            </div>
+          )}
+          {tupletMenu && (
+            <div className="sv-tools__row sv-tools__row--text" role="menu" aria-label="Chọn kiểu chùm">
+              {TUPLET_PRESETS.map((preset) => (
+                <button
+                  key={preset.label}
+                  className="sv-tool sv-tool--text"
+                  role="menuitem"
+                  disabled={!hasSelection || busy}
+                  onClick={() => {
+                    onTuplet({ kind: 'make', actual: preset.actual, normal: preset.normal });
+                    setTupletMenu(false);
+                  }}
+                  title={`${preset.label}: ${preset.actual} nốt trong thời gian của ${preset.normal} nốt cùng loại (nốt đang chọn giữ chỗ đầu, các chỗ còn lại là dấu lặng để nhập)`}
+                >
+                  {preset.label}
+                </button>
+              ))}
+              <button
+                className="sv-tool sv-tool--text"
+                role="menuitem"
+                disabled={!hasSelection || busy}
+                onClick={() => {
+                  onTuplet({ kind: 'remove' });
+                  setTupletMenu(false);
+                }}
+                title="Bỏ chùm: gộp cả chùm chứa nốt đang chọn về một nốt (giữ cao độ nốt đầu tiên có cao độ)"
+              >
+                Bỏ chùm
+              </button>
+            </div>
+          )}
+        </div>
+      </aside>
+    </>
+  );
+}
