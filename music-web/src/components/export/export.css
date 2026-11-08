@@ -1,0 +1,68 @@
+/* Hộp thoại xuất file (tiền tố ex-). Dùng chung biến và nút của scores.css */
+.ex-body {
+  display: flex;
+  flex-direction: column;
+}
+.ex-hint {
+  margin: 0.4rem 0 0;
+  font-size: 0.82rem;
+  color: var(--sc-muted);
+}
+.ex-step {
+  margin: 0.6rem 0;
+  font-weight: 600;
+}
+.ex-ok {
+  margin: 0.6rem 0 0;
+  font-weight: 600;
+  color: #15803d;
+}
+.ex-error {
+  margin: 0.9rem 0 0;
+  padding: 0.6rem 0.8rem;
+  border-radius: 10px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 0.88rem;
+}
+.ex-range {
+  width: 100%;
+  accent-color: var(--sc-accent);
+}
+.ex-audio {
+  width: 100%;
+  margin-top: 0.8rem;
+}
+.ex-segment {
+  display: inline-flex;
+  align-self: flex-start;
+  border: 1px solid var(--sc-line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.ex-segment button {
+  padding: 0.45rem 1rem;
+  border: 0;
+  background: #fff;
+  color: var(--sc-ink);
+  font: inherit;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+.ex-segment button + button {
+  border-left: 1px solid var(--sc-line);
+}
+.ex-segment button[aria-pressed='true'] {
+  background: var(--sc-accent);
+  color: #fff;
+}
+.ex-toast-btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
