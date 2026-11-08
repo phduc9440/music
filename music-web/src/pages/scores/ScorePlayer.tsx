@@ -9,6 +9,7 @@ import { syncTitle } from '../../components/editor/header';
 import { ScoreDocument } from '../../components/editor/ScoreDocument';
 import { PlayerBar } from '../../components/player/PlayerBar';
 import { usePlayer } from '../../components/player/usePlayer';
+import { countView } from '../../services/playbackApi';
 import { fetchMusicXmlWithVersion, scoreApi } from '../../services';
 import type { ScoreDetail as ScoreDetailData } from '../../types';
 import { isValidScoreId } from '../../utils/omr';
@@ -122,7 +123,11 @@ function PlayerWorkspace({ score, xml, doc }: { score: ScoreDetailData; xml: str
   const [prefs, setPrefs] = useState(loadViewerPrefs);
   const [failed, setFailed] = useState(false);
   const { zoom, mode } = prefs;
-  const player = usePlayer(doc, { fallbackBpm: score.tempoBpm ?? 100, shortcuts: true });
+  const player = usePlayer(doc, {
+    fallbackBpm: score.tempoBpm ?? 100,
+    shortcuts: true,
+    onFirstPlay: () => void countView(score.id),
+  });
 
   const update = (patch: Partial<typeof prefs>) =>
     setPrefs((prev) => {

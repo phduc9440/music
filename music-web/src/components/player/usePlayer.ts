@@ -35,6 +35,8 @@ export interface UsePlayerOptions {
   revision?: number;
   /** Bật phím tắt Space, ←/→, Home (chỉ trang /play; trong Editor Space đã dùng cho nhập lời/hợp âm). */
   shortcuts?: boolean;
+  /** Có thì gọi một lần khi lần phát đầu tiên bắt đầu (ghi lượt xem). */
+  onFirstPlay?: () => void;
 }
 
 export interface PlayerApi {
@@ -106,7 +108,11 @@ export function useEnginePosition(engine: PlayerEngine): number {
 }
 
 export function usePlayer(doc: ScoreDocument, options: UsePlayerOptions): PlayerApi {
-  const { enabled = true, fallbackBpm, revision = 0, shortcuts = false } = options;
+  const { enabled = true, fallbackBpm, revision = 0, shortcuts = false, onFirstPlay } = options;
+  const firstPlayRef = useRef(onFirstPlay);
+  useEffect(() => {
+    firstPlayRef.current = onFirstPlay;
+  });
   const sampler = getPianoSampler();
   const [engine] = useState(() => {
     const ctx = getSharedAudioContext();
@@ -182,7 +188,10 @@ export function usePlayer(doc: ScoreDocument, options: UsePlayerOptions): Player
   const play = useCallback(
     (from?: number) => {
       stopAllTones(); // âm xem trước khi sửa không chồng lên bản đang phát
-      engine?.play(from);
+      if (engine?.play(from)) {
+        firstPlayRef.current?.();
+        firstPlayRef.current = undefined;
+      }
     },
     [engine],
   );

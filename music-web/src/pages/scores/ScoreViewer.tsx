@@ -30,6 +30,7 @@ import { DURATION_LABELS, dotsLabel } from '../../components/editor/durations';
 import { PlayerBar } from '../../components/player/PlayerBar';
 import { usePlayer } from '../../components/player/usePlayer';
 import { useScoreEditor } from '../../components/editor/useScoreEditor';
+import { countView } from '../../services/playbackApi';
 import { fetchMusicXmlWithVersion, scoreApi } from '../../services';
 import type { ScoreDetail as ScoreDetailData } from '../../types';
 import { isValidScoreId } from '../../utils/omr';
@@ -270,6 +271,7 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
     enabled: playerOpen,
     fallbackBpm: score.tempoBpm ?? 100,
     revision: editor.revision,
+    onFirstPlay: () => void countView(score.id),
   });
   const selectionRef = useRef(editor.selection);
   useEffect(() => {
