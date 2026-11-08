@@ -67,7 +67,7 @@ export function sanitizeMixer(raw: unknown): MixerState {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return EMPTY_MIXER;
   const out: Record<string, TrackMix> = {};
   for (const [id, value] of Object.entries(raw as Record<string, unknown>)) {
-    if (!/^\d+:\d+$/.test(id) || !value || typeof value !== 'object') continue;
+    if (!/^(\d+:\d+|chords)$/.test(id) || !value || typeof value !== 'object') continue;
     const v = value as Partial<Record<keyof TrackMix, unknown>>;
     const mix: TrackMix = {
       mute: v.mute === true,

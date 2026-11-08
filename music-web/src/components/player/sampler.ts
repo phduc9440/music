@@ -6,6 +6,7 @@
  * của `instruments.ts` và báo "Đang dùng âm thanh thay thế".
  */
 import { getMaster } from '../editor/instruments';
+import { levelDriveDb } from '../editor/loudness';
 import type { Voice } from '../editor/instruments';
 import type { SoundQuality } from './settings';
 
@@ -42,10 +43,12 @@ export interface SamplerNote {
 }
 
 const MAX_PARALLEL = 6;
-/** Dưới mức này dùng lớp lực nhẹ (velocity 60), còn lại dùng lớp mạnh (velocity 110). */
-const SOFT_LAYER_BELOW = 0.62;
-/** Mức `level` mà mỗi lớp lực được ghi sẵn, dùng để chỉnh to nhỏ phần còn lại. */
-const REFERENCE_LEVEL = { soft: 0.45, loud: 0.8 };
+/** Dưới mức to nhỏ này (dB so với mf, xem levelDriveDb) dùng lớp lực nhẹ (velocity 60), còn lại dùng lớp mạnh (110). */
+const SOFT_LAYER_BELOW_DB = -6.5;
+/** Biên độ (dB) của lớp mạnh ở mức mf. Mẫu mạnh có đỉnh gần −3 dBFS, nên mf để dư chỗ cho ff, fff mà không vỡ tiếng. */
+const MF_AMPLITUDE_DB = -5;
+/** Lớp nhẹ được ghi nhỏ hơn lớp mạnh chừng 9,5 dB (đo trên 30 mẫu); bù lại để chuyển lớp không làm nhảy âm lượng. */
+const SOFT_LAYER_OFFSET_DB = 9.5;
 const RELEASE_TAU = 0.1;
 const TAIL_S = 0.8;
 
@@ -177,12 +180,15 @@ export class PianoSampler {
     if (this.state !== 'ready') return null;
     const sample = this.nearest(note.midi);
     if (!sample) return null;
-    const soft = this.quality === 'high' && note.level < SOFT_LAYER_BELOW && sample.buffers.has('v60');
+    const drive = levelDriveDb(note.level);
+    const soft = this.quality === 'high' && drive < SOFT_LAYER_BELOW_DB && sample.buffers.has('v60');
     const layer = soft ? 'v60' : sample.buffers.has('v110') ? 'v110' : (sample.buffers.keys().next().value as string);
     const buffer = sample.buffers.get(layer);
     if (!buffer) return null;
-    const reference = soft ? REFERENCE_LEVEL.soft : REFERENCE_LEVEL.loud;
-    const amp = Math.min(1.2, Math.max(0.15, Math.pow(note.level / reference, 0.8)));
+    const amp = Math.min(
+      2,
+      Math.max(0.02, Math.pow(10, (MF_AMPLITUDE_DB + drive + (soft ? SOFT_LAYER_OFFSET_DB : 0)) / 20)),
+    );
 
     const source = ctx.createBufferSource();
     source.buffer = buffer;

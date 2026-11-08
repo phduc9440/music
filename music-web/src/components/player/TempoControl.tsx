@@ -11,14 +11,17 @@ interface Props {
   baseBpm: number;
   onChange: (percent: number) => void;
   disabled?: boolean;
+  /** Chỉ vẽ nội dung, dùng trong bottom sheet trên điện thoại. */
+  inline?: boolean;
 }
 
 /** Điều khiển tempo 20–200%: thanh trượt bước 5%, ba mức nhanh 50 / 75 / 100%, nhấp đúp thanh trượt để về 100%. */
-export function TempoControl({ percent, baseBpm, onChange, disabled }: Props) {
+export function TempoControl({ percent, baseBpm, onChange, disabled, inline }: Props) {
   const bpm = Math.round((baseBpm * percent) / 100);
   const changed = percent !== DEFAULT_TEMPO_PERCENT;
   return (
     <PlayerPopover
+      inline={inline}
       label={`Tốc độ phát: ${percent}% (${bpm} BPM)`}
       title="Tốc độ phát"
       disabled={disabled}

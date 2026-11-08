@@ -74,3 +74,10 @@ export const IconTranspose = () => (
     <path d="M12 15l4 4 4-4" />
   </Svg>
 );
+export const IconMore = () => (
+  <Svg>
+    <circle cx="5.5" cy="12" r="1.6" fill="currentColor" />
+    <circle cx="12" cy="12" r="1.6" fill="currentColor" />
+    <circle cx="18.5" cy="12" r="1.6" fill="currentColor" />
+  </Svg>
+);

@@ -23,6 +23,8 @@ interface Props {
   /** Câu giải thích hậu quả của việc áp dụng, hiện ở bước xác nhận. */
   applyHint?: string;
   disabled?: boolean;
+  /** Chỉ vẽ nội dung, dùng trong bottom sheet trên điện thoại. */
+  inline?: boolean;
 }
 
 const OPTIONS = Array.from({ length: MAX_TRANSPOSE - MIN_TRANSPOSE + 1 }, (_, i) => MAX_TRANSPOSE - i);
@@ -37,6 +39,7 @@ export function TransposeControl({
   onApply,
   applyHint,
   disabled,
+  inline,
 }: Props) {
   const changed = semitones !== 0;
   const [confirming, setConfirming] = useState(false);
@@ -53,6 +56,7 @@ export function TransposeControl({
   const summary = describeTranspose(startKey, semitones);
   return (
     <PlayerPopover
+      inline={inline}
       label={changed ? `Chuyển giọng: đang nghe ${signedSemitones(semitones)} nửa cung` : 'Chuyển giọng'}
       title="Chuyển giọng khi nghe"
       disabled={disabled}
