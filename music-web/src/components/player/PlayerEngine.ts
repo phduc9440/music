@@ -10,6 +10,8 @@
 import { DEFAULT_INSTRUMENT, getMaster, scheduleVoice } from '../editor/instruments';
 import type { InstrumentId, Voice } from '../editor/instruments';
 import type { PianoSampler } from './sampler';
+import { EMPTY_MIXER, pruneMixer, trackGain, withTrackMix } from './mixer';
+import type { MixerState, TrackMix } from './mixer';
 import { clampTempoPercent, DEFAULT_TEMPO_PERCENT } from './settings';
 import { firstEventAtOrAfter, measureOrderAt, timeOfOrder } from './timeline';
 import type { Timeline, TimelineEvent } from './timeline';
@@ -25,6 +27,8 @@ export interface EngineOptions {
   autoTick?: boolean;
   /** Tempo ban đầu (% so với tempo gốc), mặc định 100. */
   tempoPercent?: number;
+  /** Mute / Solo / âm lượng ban đầu theo track. */
+  mixer?: MixerState;
 }
 
 /** Giọng đã hẹn kèm thời điểm bắt đầu (giây của context) để biết giọng nào chưa vang. */
@@ -40,6 +44,8 @@ const HIDDEN_LOOKAHEAD_S = 2;
 /** Chờ một chút sau khi bấm Play để nốt đầu không bị trễ. */
 const START_DELAY_S = 0.05;
 const MIN_NOTE_S = 0.08;
+/** Hằng số thời gian (giây) khi đổi độ lợi của track: đủ nhanh để Mute / Solo nghe ngay, đủ chậm để không "tách". */
+const MIX_TAU_S = 0.015;
 
 export class PlayerEngine {
   private readonly ctx: BaseAudioContext;
@@ -67,6 +73,8 @@ export class PlayerEngine {
   /** Tốc độ phát so với tempo gốc (1 = 100%). */
   private rate = 1;
   private voices: ScheduledVoice[] = [];
+  private mixer: MixerState = EMPTY_MIXER;
+  private trackIds: string[] = [];
   private trackNodes = new Map<string, GainNode>();
   private timer: ReturnType<typeof setInterval> | undefined;
   private listeners = new Set<() => void>();
@@ -78,12 +86,15 @@ export class PlayerEngine {
     this.now = options.now ?? (() => options.ctx.currentTime);
     this.autoTick = options.autoTick ?? true;
     this.rate = clampTempoPercent(options.tempoPercent ?? DEFAULT_TEMPO_PERCENT) / 100;
+    this.mixer = options.mixer ?? EMPTY_MIXER;
   }
 
   /** Nạp dòng thời gian mới (sau khi sửa bản nhạc); đang phát thì dừng và về đầu. */
   setTimeline(timeline: Timeline, instrumentOf: (part: number) => InstrumentId): void {
     this.stop();
     this.timeline = timeline;
+    this.trackIds = timeline.tracks.map((t) => t.id);
+    this.mixer = pruneMixer(this.mixer, this.trackIds);
     this.instrumentOf = instrumentOf;
     this.idlePos = 0;
     for (const node of this.trackNodes.values()) node.disconnect();
@@ -97,6 +108,34 @@ export class PlayerEngine {
 
   getTimeline(): Timeline {
     return this.timeline;
+  }
+
+  /** Bảng Mute / Solo / âm lượng hiện tại (đổi tham chiếu mỗi khi có thay đổi). */
+  getMixer(): MixerState {
+    return this.mixer;
+  }
+
+  /** Đổi Mute / Solo / âm lượng của một track; có hiệu lực ngay cả với nốt đã hẹn giờ. */
+  setTrackMix(trackId: string, patch: Partial<TrackMix>): void {
+    if (!this.trackIds.includes(trackId)) return;
+    this.mixer = withTrackMix(this.mixer, trackId, patch);
+    this.applyMixer();
+    this.emit();
+  }
+
+  /** Đưa mọi track về mặc định (không tắt tiếng, âm lượng 100%). */
+  resetMixer(): void {
+    if (Object.keys(this.mixer).length === 0) return;
+    this.mixer = EMPTY_MIXER;
+    this.applyMixer();
+    this.emit();
+  }
+
+  private applyMixer(): void {
+    const at = this.ctx.currentTime;
+    for (const [trackId, node] of this.trackNodes) {
+      node.gain.setTargetAtTime(trackGain(this.mixer, this.trackIds, trackId), at, MIX_TAU_S);
+    }
   }
 
   /** Tempo hiện tại (% so với tempo gốc). */
@@ -224,6 +263,7 @@ export class PlayerEngine {
     let node = this.trackNodes.get(trackId);
     if (!node) {
       node = this.ctx.createGain();
+      node.gain.value = trackGain(this.mixer, this.trackIds, trackId);
       node.connect(getMaster(this.ctx));
       this.trackNodes.set(trackId, node);
     }

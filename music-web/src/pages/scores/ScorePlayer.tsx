@@ -201,6 +201,7 @@ function PlayerWorkspace({ score, xml, doc }: { score: ScoreDetailData; xml: str
             onProgress={() => undefined}
             onError={() => setFailed(true)}
             playing={player.activeIds}
+            mutedStaves={player.mutedStaves}
             followMeasure={player.status === 'playing' ? player.followMeasure : null}
             onMeasureClick={(m) => player.seekToMeasure(m)}
           />

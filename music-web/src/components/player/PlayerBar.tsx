@@ -1,4 +1,5 @@
 import { IconClose, IconNextMeasure, IconPauseBig, IconPlayBig, IconPrevMeasure, IconStopSmall } from './PlayerIcons';
+import { MixerPopover } from './MixerPopover';
 import { TempoControl } from './TempoControl';
 import { TransportProgress } from './TransportProgress';
 import { useEnginePosition } from './usePlayer';
@@ -129,6 +130,13 @@ function BarBody({
           percent={player.tempoPercent}
           baseBpm={timeline.baseBpm}
           onChange={player.setTempoPercent}
+          disabled={!player.canPlay}
+        />
+        <MixerPopover
+          tracks={timeline.tracks}
+          mixer={player.mixer}
+          onChange={player.setTrackMix}
+          onReset={player.resetMixer}
           disabled={!player.canPlay}
         />
         {extra}

@@ -568,6 +568,7 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
             issueMeasures={issueMeasures}
             focusMeasure={focusMeasure}
             playing={player.activeIds}
+            mutedStaves={player.mutedStaves}
             followMeasure={player.status === 'playing' ? player.followMeasure : null}
             onSelectNotes={canEdit ? editor.select : undefined}
             onDragPitch={canEdit ? editor.dragPitch : undefined}

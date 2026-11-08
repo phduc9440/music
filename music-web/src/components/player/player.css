@@ -279,7 +279,112 @@
   background: var(--sc-primary-hover, #1d4ed8);
 }
 
+/* Mixer */
+.pl-chip__inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.pl-pop__panel:has(.pl-mix) {
+  width: 340px;
+}
+.pl-mix__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.pl-mix__reset {
+  margin: 0;
+  font-weight: 500;
+  font-size: 12px;
+}
+.pl-mix__reset:disabled {
+  opacity: 0.4;
+  cursor: default;
+  text-decoration: none;
+}
+.pl-mix__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 32px 32px;
+  grid-template-areas:
+    'name mute solo'
+    'vol vol pct';
+  align-items: center;
+  gap: 2px 6px;
+  padding: 8px 0;
+  border-top: 1px solid var(--sc-border, #e5e7eb);
+  transition: opacity 0.15s;
+}
+.pl-mix__row--silent .pl-mix__name,
+.pl-mix__row--silent .pl-mix__vol {
+  opacity: 0.5;
+}
+.pl-mix__name {
+  grid-area: name;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+.pl-mix__btn {
+  min-width: 32px;
+  min-height: 32px;
+  border: 1px solid var(--sc-border, #e5e7eb);
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.pl-mix__btn--mute {
+  grid-area: mute;
+}
+.pl-mix__btn--solo {
+  grid-area: solo;
+}
+.pl-mix__btn:hover {
+  background: rgb(15 23 42 / 0.06);
+}
+.pl-mix__btn:focus-visible {
+  outline: 2px solid var(--sc-primary, #2563eb);
+  outline-offset: 2px;
+}
+.pl-mix__btn--mute.pl-mix__btn--on {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #fff;
+}
+.pl-mix__btn--solo.pl-mix__btn--on {
+  background: #d97706;
+  border-color: #d97706;
+  color: #fff;
+}
+.pl-mix__vol {
+  grid-area: vol;
+}
+.pl-mix__pct {
+  grid-area: pct;
+  text-align: right;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--sc-muted, #6b7280);
+}
+.pl-mix__note {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: #b45309;
+}
+
 /* Nốt đang vang */
+.pl-note--muted {
+  opacity: 0.3;
+}
+
 .pl-note--playing,
 .pl-note--playing * {
   fill: var(--sc-primary, #2563eb) !important;
@@ -299,6 +404,9 @@
   }
   .pl-btn--loading {
     animation: none;
+  }
+  .pl-mix__row {
+    transition: none;
   }
 }
 @media (max-width: 1279px) {
@@ -334,8 +442,12 @@
     bottom: 80px;
     width: auto;
   }
-  .pl-tempo__bpm {
+  .pl-tempo__bpm,
+  .pl-chip__text {
     display: none;
+  }
+  .pl-pop__panel:has(.pl-mix) {
+    width: auto;
   }
 }
 @media (prefers-color-scheme: dark) {

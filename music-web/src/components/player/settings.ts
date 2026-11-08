@@ -1,3 +1,6 @@
+import { EMPTY_MIXER, sanitizeMixer } from './mixer';
+import type { MixerState } from './mixer';
+
 /** Cài đặt của Player lưu trong localStorage của trình duyệt; mọi thao tác đều bỏ qua lỗi khi trình duyệt chặn lưu trữ. */
 
 export type SoundQuality = 'high' | 'light';
@@ -43,6 +46,8 @@ export function clampTempoPercent(value: number): number {
 export interface ScorePlayerSettings {
   /** Tempo (% so với tempo gốc). */
   tempoPercent: number;
+  /** Mute / Solo / âm lượng theo track (chỉ gồm track khác mặc định). */
+  mixer: MixerState;
 }
 
 const scoreKey = (scoreId: string | number): string => `player:${scoreId}`;
@@ -58,11 +63,12 @@ const readScoreRecord = (scoreId: string | number): Record<string, unknown> => {
 };
 
 export function loadScoreSettings(scoreId: string | number | null | undefined): ScorePlayerSettings {
-  if (scoreId === null || scoreId === undefined) return { tempoPercent: DEFAULT_TEMPO_PERCENT };
+  if (scoreId === null || scoreId === undefined) return { tempoPercent: DEFAULT_TEMPO_PERCENT, mixer: EMPTY_MIXER };
   const record = readScoreRecord(scoreId);
   return {
     tempoPercent:
       typeof record.tempoPercent === 'number' ? clampTempoPercent(record.tempoPercent) : DEFAULT_TEMPO_PERCENT,
+    mixer: sanitizeMixer(record.mixer),
   };
 }
 

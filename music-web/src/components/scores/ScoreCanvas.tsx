@@ -20,7 +20,7 @@ import { applyHeaderStyle, readHeader } from '../editor/header';
 import type { HeaderField, HeaderState, TextStyle } from '../editor/header';
 import { readTempo } from '../editor/tempo';
 import type { TempoInfo } from '../editor/tempo';
-import { applyPlaying, keepMeasureVisible, measureOfEvent } from '../player/highlight';
+import { applyMutedTracks, applyPlaying, keepMeasureVisible, measureOfEvent } from '../player/highlight';
 import NoteInsertPopover from './NoteInsertPopover';
 import TextEditPopover from './TextEditPopover';
 import type { TextKind } from './TextEditPopover';
@@ -66,6 +66,8 @@ interface Props {
   onConfirmMeasure?: (measureIndex: number) => void;
   /** Id các nốt đang vang khi phát (tô bằng class CSS, không vẽ lại). */
   playing?: ReadonlySet<string>;
+  /** Id track ("part:khuông") đang tắt tiếng: nốt của khuông đó được làm mờ. */
+  mutedStaves?: ReadonlySet<string>;
   /** Ô nhịp (từ 0) cần giữ trong khung nhìn khi phát; null = không tự cuộn. */
   followMeasure?: number | null;
   /** Bấm vào một nốt khi không có `onSelectNotes` (trang phát): trả về ô nhịp của nốt đó (từ 0). */
@@ -238,6 +240,7 @@ export default function ScoreCanvas({
   issueMeasures = EMPTY_NUMBERS,
   focusMeasure = null,
   playing = EMPTY_SET,
+  mutedStaves = EMPTY_SET,
   followMeasure = null,
   onMeasureClick,
   onSelectNotes,
@@ -303,6 +306,7 @@ export default function ScoreCanvas({
     revision,
     selected,
     playing,
+    mutedStaves,
     issueMeasures,
     onConfirmMeasure,
     openText,
@@ -319,6 +323,7 @@ export default function ScoreCanvas({
       revision,
       selected,
       playing,
+      mutedStaves,
       issueMeasures,
       onConfirmMeasure,
       openText,
@@ -354,6 +359,7 @@ export default function ScoreCanvas({
       bindNoteIds(osmd, current, host);
       applySelection(host, latest.current.selected);
       applyPlaying(host, latest.current.playing);
+      applyMutedTracks(host, latest.current.mutedStaves);
       drawIssueBoxes(host, latest.current.issueMeasures, (i) => latest.current.onConfirmMeasure?.(i));
       if (latest.current.openText) drawTextHotspots(host, current, (k, r) => latest.current.openText?.(k, r));
     } catch {
@@ -497,6 +503,11 @@ export default function ScoreCanvas({
   useEffect(() => {
     if (hostRef.current) applyPlaying(hostRef.current, playing);
   }, [playing]);
+
+  // Khuông bị tắt tiếng: chỉ đổi class CSS
+  useEffect(() => {
+    if (hostRef.current) applyMutedTracks(hostRef.current, mutedStaves);
+  }, [mutedStaves]);
 
   // Phát: giữ ô nhịp đang phát trong khung nhìn
   useEffect(() => {
