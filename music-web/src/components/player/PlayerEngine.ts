@@ -470,12 +470,15 @@ export class PlayerEngine {
 
   /** Hẹn giờ một nốt theo điểm neo `anchor`; nốt vắt qua `limit` (cuối đoạn A-B) bị cắt tại đó. */
   private schedule(event: TimelineEvent, anchor: Anchor, limit: number): void {
+    if (event.silent) return; // nốt gốc của láy: các nốt láy (cùng id) phát thay
     if (event.carried && !this.chordCarry) return;
     if (!inPianoRange(event.midi, this.transpose)) return;
     const midi = event.midi + this.transpose;
     const now = this.now();
     const start = Math.max(anchor.ctx + (event.time - anchor.pos) / anchor.rate, now + 0.005);
-    const duration = Math.max(MIN_NOTE_S, Math.min(event.duration, limit - event.time) / anchor.rate);
+    // `ring`: pedal giữ nốt vang lâu hơn độ dài ghi trên bản nhạc
+    const sounding = Math.max(event.duration, event.ring ?? 0);
+    const duration = Math.max(MIN_NOTE_S, Math.min(sounding, limit - event.time) / anchor.rate);
     // Đệm hợp âm luôn bằng piano, không theo nhạc cụ của part chứa ký hiệu hợp âm (ví dụ giọng hát)
     const instrument = event.trackId === CHORD_TRACK_ID ? 'piano' : this.instrumentOf(event.part);
     const destination = this.trackNode(event.trackId);

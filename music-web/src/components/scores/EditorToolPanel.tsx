@@ -151,8 +151,12 @@ const MORE_MARK_GROUPS: { title: string; tools: { op: MarkOp; label: string; tit
     tools: [
       { op: 'marcato', label: 'Marcato', title: 'Marcato: nhấn mạnh và ngắt (bấm lại để bỏ)' },
       { op: 'staccatissimo', label: 'Staccatissimo', title: 'Staccatissimo: ngắt rất ngắn (bấm lại để bỏ)' },
-      { op: 'breath', label: 'Lấy hơi', title: 'Dấu lấy hơi sau nốt (bấm lại để bỏ)' },
-      { op: 'caesura', label: 'Ngắt nghỉ', title: 'Dấu ngắt nghỉ // (bấm lại để bỏ; bản xem trước chưa vẽ dấu này)' },
+      { op: 'breath', label: 'Lấy hơi', title: 'Dấu lấy hơi sau nốt: nốt ngắt sớm một chút khi phát (bấm lại để bỏ)' },
+      {
+        op: 'caesura',
+        label: 'Ngắt nghỉ',
+        title: 'Dấu ngắt nghỉ //: nghỉ thêm một phách sau nốt khi phát (bấm lại để bỏ; bản xem trước chưa vẽ dấu này)',
+      },
       { op: 'arpeggio', label: 'Rải hợp âm', title: 'Rải các nốt của hợp âm đang chọn từ dưới lên (bấm lại để bỏ)' },
     ],
   },

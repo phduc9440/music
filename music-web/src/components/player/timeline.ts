@@ -177,8 +177,10 @@ export interface ScoringNote {
 export function toScoringNotes(timeline: Timeline): ScoringNote[] {
   let step = -1;
   let lastBeat = Number.NaN;
+  // Nốt đệm hợp âm và nốt phụ của láy (rền, ngắn, vòng) không thuộc bản nhạc nên không đưa vào chấm điểm; nốt gốc của láy
+  // vẫn có mặt (một nốt trên bản nhạc)
   return timeline.events
-    .filter((e) => e.trackId !== CHORD_TRACK_ID) // nốt đệm hợp âm không thuộc bản nhạc nên không đưa vào chấm điểm
+    .filter((e) => e.trackId !== CHORD_TRACK_ID && !e.ornament)
     .sort((a, b) => a.beat - b.beat || a.midi - b.midi)
     .map((e) => {
       if (e.beat !== lastBeat) {

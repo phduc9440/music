@@ -8,6 +8,7 @@ interface Marks {
   forward: boolean;
   backward: number; // số lần chơi của đoạn lặp (0 = không có dấu lặp cuối)
   endings: number[] | null; // các lần chơi mà ô này thuộc (nhà 1 / nhà 2...)
+  groupLast: number; // số thứ tự nhà cuối của cụm nhà (liền nhau) chứa ô này; 0 nếu ô không thuộc nhà nào
   segno: boolean;
   coda: boolean;
   dc: boolean;
@@ -25,11 +26,12 @@ const endingNumbers = (text: string | null): number[] =>
 const readMarks = (doc: ScoreDocument): Marks[] => {
   const measures = doc.getMeasures(0);
   let activeEnding: number[] | null = null;
-  return measures.map((measure) => {
+  const all = measures.map((measure) => {
     const marks: Marks = {
       forward: false,
       backward: 0,
       endings: null,
+      groupLast: 0,
       segno: false,
       coda: false,
       dc: false,
@@ -60,6 +62,20 @@ const readMarks = (doc: ScoreDocument): Marks[] => {
     }
     return marks;
   });
+  // Cụm nhà = các ô nhà liền nhau; khi quay lại bằng D.C./D.S. chỉ phát nhà cuối của cụm (bỏ nhà 1)
+  let start = 0;
+  while (start < all.length) {
+    if (!all[start].endings) {
+      start += 1;
+      continue;
+    }
+    let end = start;
+    while (end < all.length && all[end].endings) end += 1;
+    const last = Math.max(0, ...all.slice(start, end).flatMap((m) => m.endings ?? []));
+    for (let k = start; k < end; k++) all[k].groupLast = last;
+    start = end;
+  }
+  return all;
 };
 
 /** Chỉ số các ô nhịp theo thứ tự phát (một ô có thể xuất hiện nhiều lần). */
@@ -77,8 +93,8 @@ export function playOrder(doc: ScoreDocument): number[] {
 
   for (let guard = 0; i < n && guard < n * 12; guard++) {
     const m = marks[i];
-    if (!jumped && m.endings && !m.endings.includes(pass)) {
-      i += 1; // ô thuộc nhà của lần chơi khác
+    if (m.endings && (jumped ? !m.endings.includes(m.groupLast) : !m.endings.includes(pass))) {
+      i += 1; // ô thuộc nhà của lần chơi khác (khi quay lại bằng D.C./D.S. chỉ lấy nhà cuối)
       continue;
     }
     if (m.forward && !jumped) repeatStart = i;
