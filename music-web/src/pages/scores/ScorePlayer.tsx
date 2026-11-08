@@ -209,13 +209,14 @@ function PlayerWorkspace({ score, xml, doc }: { score: ScoreDetailData; xml: str
             playing={player.activeIds}
             mutedStaves={player.mutedStaves}
             loopRange={loopRange}
+            transpose={player.transpose}
             onMeasureRange={(a, b) => player.setLoop({ a, b })}
             followMeasure={player.status === 'playing' ? player.followMeasure : null}
             onMeasureClick={(m, additive) => (additive ? player.pickLoopMeasure(m) : player.seekToMeasure(m))}
           />
         </div>
       </div>
-      <PlayerBar player={player} canDragLoop />
+      <PlayerBar player={player} canDragLoop transposeRedraws />
     </div>
   );
 }

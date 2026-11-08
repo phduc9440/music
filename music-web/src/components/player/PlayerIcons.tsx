@@ -66,3 +66,11 @@ export const IconLoop = () => (
     <path d="M20 13v2a4 4 0 0 1-4 4H4" />
   </Svg>
 );
+export const IconTranspose = () => (
+  <Svg size={18}>
+    <path d="M8 20V5" />
+    <path d="M4 9l4-4 4 4" />
+    <path d="M16 4v15" />
+    <path d="M12 15l4 4 4-4" />
+  </Svg>
+);

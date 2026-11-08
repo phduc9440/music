@@ -2,6 +2,7 @@ import { IconClose, IconNextMeasure, IconPauseBig, IconPlayBig, IconPrevMeasure,
 import { LoopControl } from './LoopControl';
 import { MixerPopover } from './MixerPopover';
 import { TempoControl } from './TempoControl';
+import { TransposeControl } from './TransposeControl';
 import { TransportProgress } from './TransportProgress';
 import { useEnginePosition } from './usePlayer';
 import type { PlayerApi } from './usePlayer';
@@ -20,9 +21,11 @@ interface Props {
   extra?: React.ReactNode;
   /** Bản nhạc ở trang này chọn được đoạn A-B bằng Shift + kéo (trang phát): hiện mẹo trong khung Lặp. */
   canDragLoop?: boolean;
+  /** Bản nhạc ở trang này được vẽ lại theo giọng mới khi chuyển giọng (trang phát); không thì chỉ đổi âm thanh (Editor). */
+  transposeRedraws?: boolean;
 }
 
-export function PlayerBar({ player, onClose, extra, canDragLoop }: Props) {
+export function PlayerBar({ player, onClose, extra, canDragLoop, transposeRedraws }: Props) {
   if (!player.engine || !player.timeline) {
     return (
       <div className="pl-bar pl-bar--notice" role="region" aria-label="Trình phát">
@@ -43,6 +46,7 @@ export function PlayerBar({ player, onClose, extra, canDragLoop }: Props) {
       onClose={onClose}
       extra={extra}
       canDragLoop={canDragLoop}
+      transposeRedraws={transposeRedraws}
       engine={player.engine}
       timeline={player.timeline}
     />
@@ -54,6 +58,7 @@ function BarBody({
   onClose,
   extra,
   canDragLoop,
+  transposeRedraws,
   engine,
   timeline,
 }: Props & { engine: NonNullable<PlayerApi['engine']>; timeline: NonNullable<PlayerApi['timeline']> }) {
@@ -158,6 +163,14 @@ function BarBody({
           onChange={player.setLoop}
           onClear={player.clearLoop}
           showDragHint={canDragLoop}
+          disabled={!player.canPlay}
+        />
+        <TransposeControl
+          semitones={player.transpose}
+          startKey={player.startKey}
+          outOfRange={player.outOfRange}
+          redraws={transposeRedraws === true}
+          onChange={player.setTranspose}
           disabled={!player.canPlay}
         />
         <MixerPopover

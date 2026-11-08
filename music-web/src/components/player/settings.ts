@@ -1,6 +1,7 @@
 import { NO_LOOP, sanitizeLoop } from './loop';
 import type { LoopSettings } from './loop';
 import { EMPTY_MIXER, sanitizeMixer } from './mixer';
+import { clampTranspose } from './transposeRange';
 import type { MixerState } from './mixer';
 
 /** Cài đặt của Player lưu trong localStorage của trình duyệt; mọi thao tác đều bỏ qua lỗi khi trình duyệt chặn lưu trữ. */
@@ -52,6 +53,8 @@ export interface ScorePlayerSettings {
   mixer: MixerState;
   /** Đoạn lặp A-B (chỉ số ô từ 0). */
   loop: LoopSettings;
+  /** Chuyển giọng khi nghe (nửa cung, −12…+12). */
+  transpose: number;
 }
 
 const scoreKey = (scoreId: string | number): string => `player:${scoreId}`;
@@ -68,13 +71,14 @@ const readScoreRecord = (scoreId: string | number): Record<string, unknown> => {
 
 export function loadScoreSettings(scoreId: string | number | null | undefined): ScorePlayerSettings {
   if (scoreId === null || scoreId === undefined)
-    return { tempoPercent: DEFAULT_TEMPO_PERCENT, mixer: EMPTY_MIXER, loop: NO_LOOP };
+    return { tempoPercent: DEFAULT_TEMPO_PERCENT, mixer: EMPTY_MIXER, loop: NO_LOOP, transpose: 0 };
   const record = readScoreRecord(scoreId);
   return {
     tempoPercent:
       typeof record.tempoPercent === 'number' ? clampTempoPercent(record.tempoPercent) : DEFAULT_TEMPO_PERCENT,
     mixer: sanitizeMixer(record.mixer),
     loop: sanitizeLoop(record.loop),
+    transpose: typeof record.transpose === 'number' ? clampTranspose(record.transpose) : 0,
   };
 }
 
