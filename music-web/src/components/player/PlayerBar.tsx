@@ -1,15 +1,33 @@
-import { IconClose, IconNextMeasure, IconPauseBig, IconPlayBig, IconPrevMeasure, IconStopSmall } from './PlayerIcons';
+import { useRef, useState } from 'react';
+import {
+  IconClose,
+  IconMore,
+  IconNextMeasure,
+  IconPauseBig,
+  IconPlayBig,
+  IconPrevMeasure,
+  IconStopSmall,
+} from './PlayerIcons';
 import { ChordControl } from './ChordControl';
 import { LoopControl } from './LoopControl';
 import { mixOf } from './mixer';
 import { MixerPopover } from './MixerPopover';
+import { PlayerSheet } from './PlayerSheet';
+import type { SheetTab } from './PlayerSheet';
+import { DEFAULT_TEMPO_PERCENT } from './settings';
 import { TempoControl } from './TempoControl';
 import { TransposeControl } from './TransposeControl';
 import { CHORD_TRACK_ID } from './timeline';
 import { TransportProgress } from './TransportProgress';
+import { useMediaQuery } from './useMediaQuery';
 import { useEnginePosition } from './usePlayer';
 import type { PlayerApi } from './usePlayer';
 import './player.css';
+
+/** Dưới mức này các tùy chọn dồn vào nút "⋯" và bottom sheet (khớp @media trong player.css). */
+const MOBILE_QUERY = '(max-width: 767px)';
+
+type ControlId = 'tempo' | 'loop' | 'transpose' | 'mixer' | 'chords';
 
 const fmt = (seconds: number): string => {
   const s = Math.max(0, Math.round(seconds));
@@ -94,6 +112,98 @@ function BarBody({
   // Thời gian hiển thị là giây thật: ở 50% bài dài gấp đôi
   const speed = player.tempoPercent / 100;
 
+  const isMobile = useMediaQuery(MOBILE_QUERY);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [tab, setTab] = useState<ControlId>('tempo');
+  const moreRef = useRef<HTMLButtonElement>(null);
+  // Phóng to cửa sổ (xoay máy, iPad) thì sheet không còn chỗ đứng: đóng luôn để khi thu nhỏ lại không tự bật lên
+  if (!isMobile && sheetOpen) setSheetOpen(false);
+
+  const hasChords = timeline.tracks.some((t) => t.id === CHORD_TRACK_ID);
+  const hasMixer = timeline.tracks.length >= 2;
+  const tabs: SheetTab[] = [
+    { id: 'tempo', label: 'Tốc độ' },
+    { id: 'loop', label: 'Lặp' },
+    { id: 'transpose', label: 'Giọng' },
+    ...(hasMixer ? [{ id: 'mixer', label: 'Mixer' }] : []),
+    ...(hasChords ? [{ id: 'chords', label: 'Hợp âm' }] : []),
+  ];
+  const activeTab = tabs.some((t) => t.id === tab) ? tab : 'tempo';
+  /** Có cài đặt khác mặc định (tempo, lặp, chuyển giọng, mixer, hợp âm) thì nút "⋯" có chấm báo. */
+  const customized =
+    player.tempoPercent !== DEFAULT_TEMPO_PERCENT ||
+    player.loop.enabled ||
+    player.transpose !== 0 ||
+    Object.keys(player.mixer).length > 0 ||
+    (hasChords && !player.chordCarry);
+
+  /** Một điều khiển: ở desktop là nút + hộp nổi, trong sheet (inline) chỉ là phần nội dung. */
+  const control = (id: ControlId, inline: boolean): React.ReactNode => {
+    switch (id) {
+      case 'chords':
+        return (
+          <ChordControl
+            on={chordsOn}
+            carry={player.chordCarry}
+            onToggle={() => player.setTrackMix(CHORD_TRACK_ID, { mute: chordsOn })}
+            onCarryChange={player.setChordCarry}
+            disabled={!player.canPlay}
+            inline={inline}
+          />
+        );
+      case 'tempo':
+        return (
+          <TempoControl
+            percent={player.tempoPercent}
+            baseBpm={timeline.baseBpm}
+            onChange={player.setTempoPercent}
+            disabled={!player.canPlay}
+            inline={inline}
+          />
+        );
+      case 'loop':
+        return (
+          <LoopControl
+            loop={player.loop}
+            measureCount={timeline.measureCount}
+            currentMeasure={currentMeasure}
+            unreachable={player.loop.a !== null && player.loop.b !== null && player.loopSegments.length === 0}
+            onMark={player.markLoop}
+            onChange={player.setLoop}
+            onClear={player.clearLoop}
+            showDragHint={canDragLoop}
+            disabled={!player.canPlay}
+            inline={inline}
+          />
+        );
+      case 'transpose':
+        return (
+          <TransposeControl
+            semitones={player.transpose}
+            startKey={player.startKey}
+            outOfRange={player.outOfRange}
+            redraws={transposeRedraws === true}
+            onChange={player.setTranspose}
+            onApply={onApplyTranspose}
+            applyHint={applyTransposeHint}
+            disabled={!player.canPlay}
+            inline={inline}
+          />
+        );
+      case 'mixer':
+        return (
+          <MixerPopover
+            tracks={timeline.tracks}
+            mixer={player.mixer}
+            onChange={player.setTrackMix}
+            onReset={player.resetMixer}
+            disabled={!player.canPlay}
+            inline={inline}
+          />
+        );
+    }
+  };
+
   let notice: React.ReactNode = null;
   if (player.empty) notice = <span className="pl-notice">Bản nhạc trống, chưa có nốt để phát.</span>;
   else if (loading) notice = <span className="pl-notice">Đang tải âm piano… {percent}%</span>;
@@ -169,49 +279,30 @@ function BarBody({
         </div>
       </div>
       <div className="pl-side">
-        {timeline.tracks.some((t) => t.id === CHORD_TRACK_ID) && (
-          <ChordControl
-            on={chordsOn}
-            carry={player.chordCarry}
-            onToggle={() => player.setTrackMix(CHORD_TRACK_ID, { mute: chordsOn })}
-            onCarryChange={player.setChordCarry}
+        {isMobile ? (
+          <button
+            ref={moreRef}
+            type="button"
+            className={`pl-btn pl-btn--more${sheetOpen ? ' pl-btn--open' : ''}`}
+            onClick={() => setSheetOpen((v) => !v)}
             disabled={!player.canPlay}
-          />
+            aria-haspopup="dialog"
+            aria-expanded={sheetOpen}
+            aria-label={customized ? 'Tùy chọn phát (có cài đặt khác mặc định)' : 'Tùy chọn phát'}
+            title="Tùy chọn phát"
+          >
+            <IconMore />
+            {customized && <span className="pl-btn__dot" aria-hidden="true" />}
+          </button>
+        ) : (
+          <>
+            {hasChords && control('chords', false)}
+            {control('tempo', false)}
+            {control('loop', false)}
+            {control('transpose', false)}
+            {control('mixer', false)}
+          </>
         )}
-        <TempoControl
-          percent={player.tempoPercent}
-          baseBpm={timeline.baseBpm}
-          onChange={player.setTempoPercent}
-          disabled={!player.canPlay}
-        />
-        <LoopControl
-          loop={player.loop}
-          measureCount={timeline.measureCount}
-          currentMeasure={currentMeasure}
-          unreachable={player.loop.a !== null && player.loop.b !== null && player.loopSegments.length === 0}
-          onMark={player.markLoop}
-          onChange={player.setLoop}
-          onClear={player.clearLoop}
-          showDragHint={canDragLoop}
-          disabled={!player.canPlay}
-        />
-        <TransposeControl
-          semitones={player.transpose}
-          startKey={player.startKey}
-          outOfRange={player.outOfRange}
-          redraws={transposeRedraws === true}
-          onChange={player.setTranspose}
-          onApply={onApplyTranspose}
-          applyHint={applyTransposeHint}
-          disabled={!player.canPlay}
-        />
-        <MixerPopover
-          tracks={timeline.tracks}
-          mixer={player.mixer}
-          onChange={player.setTrackMix}
-          onReset={player.resetMixer}
-          disabled={!player.canPlay}
-        />
         {extra}
         {onClose && (
           <button type="button" className="pl-btn pl-btn--ghost" onClick={onClose} aria-label="Đóng trình phát">
@@ -219,6 +310,17 @@ function BarBody({
           </button>
         )}
       </div>
+      {isMobile && sheetOpen && (
+        <PlayerSheet
+          tabs={tabs}
+          active={activeTab}
+          onSelect={(id) => setTab(id as ControlId)}
+          onClose={() => setSheetOpen(false)}
+          returnFocusRef={moreRef}
+        >
+          {control(activeTab as ControlId, true)}
+        </PlayerSheet>
+      )}
     </div>
   );
 }

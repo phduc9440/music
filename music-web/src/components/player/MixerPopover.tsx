@@ -10,13 +10,15 @@ interface Props {
   onChange: (trackId: string, patch: Partial<TrackMix>) => void;
   onReset: () => void;
   disabled?: boolean;
+  /** Chỉ vẽ nội dung, dùng trong bottom sheet trên điện thoại. */
+  inline?: boolean;
 }
 
 /**
  * Mixer theo khuông: mỗi hàng một track có nút M (tắt tiếng), S (chỉ nghe track này) và âm lượng 0–100%. Có Solo thì
  * chỉ track Solo phát. Bản nhạc chỉ có một khuông thì nút bị khóa kèm gợi ý.
  */
-export function MixerPopover({ tracks, mixer, onChange, onReset, disabled }: Props) {
+export function MixerPopover({ tracks, mixer, onChange, onReset, disabled, inline }: Props) {
   const single = tracks.length < 2;
   const ids = tracks.map((t) => t.id);
   const silent = silentTracks(mixer, ids);
@@ -26,6 +28,7 @@ export function MixerPopover({ tracks, mixer, onChange, onReset, disabled }: Pro
 
   return (
     <PlayerPopover
+      inline={inline}
       label="Mixer các khuông"
       title={single ? 'Bản nhạc chỉ có một khuông' : 'Tắt tiếng, chỉ nghe một khuông, chỉnh âm lượng'}
       disabled={disabled || single}

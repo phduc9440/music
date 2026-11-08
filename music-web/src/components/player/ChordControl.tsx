@@ -8,6 +8,8 @@ interface Props {
   onToggle: () => void;
   onCarryChange: (on: boolean) => void;
   disabled?: boolean;
+  /** Chỉ vẽ nội dung, dùng trong bottom sheet trên điện thoại. */
+  inline?: boolean;
 }
 
 /** Một hàng công tắc (role="switch") có chữ và dòng giải thích. */
@@ -49,9 +51,10 @@ function Switch({
  * Đệm hợp âm: bật/tắt toàn bộ, và chọn việc ô không ghi ký hiệu hợp âm thì đánh lại hợp âm đang hiệu lực hay để im.
  * Âm lượng đệm chỉnh trong Mixer (hàng "Hợp âm").
  */
-export function ChordControl({ on, carry, onToggle, onCarryChange, disabled }: Props) {
+export function ChordControl({ on, carry, onToggle, onCarryChange, disabled, inline }: Props) {
   return (
     <PlayerPopover
+      inline={inline}
       label={on ? 'Đệm hợp âm: đang bật' : 'Đệm hợp âm: đang tắt'}
       title="Đệm hợp âm"
       disabled={disabled}

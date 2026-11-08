@@ -18,6 +18,8 @@ interface Props {
   /** Hiện mẹo chọn đoạn bằng Shift + kéo trên bản nhạc (trang phát). */
   showDragHint?: boolean;
   disabled?: boolean;
+  /** Chỉ vẽ nội dung, dùng trong bottom sheet trên điện thoại. */
+  inline?: boolean;
 }
 
 /** Ô nhập số ô nhịp (tính từ 1). Chỉ áp dụng khi rời ô hoặc nhấn Enter để gõ "12" không bị đổi chỗ A/B ở chữ số đầu. */
@@ -76,6 +78,7 @@ export function LoopControl({
   onClear,
   showDragHint,
   disabled,
+  inline,
 }: Props) {
   const complete = isLoopComplete(loop);
   const hasAny = loop.a !== null || loop.b !== null;
@@ -87,6 +90,7 @@ export function LoopControl({
 
   return (
     <PlayerPopover
+      inline={inline}
       label={loop.enabled ? `Lặp đoạn ${summary}` : 'Lặp đoạn A-B'}
       title="Lặp đoạn A-B"
       disabled={disabled}
