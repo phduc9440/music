@@ -1,8 +1,10 @@
 import { IconClose, IconNextMeasure, IconPauseBig, IconPlayBig, IconPrevMeasure, IconStopSmall } from './PlayerIcons';
 import { LoopControl } from './LoopControl';
+import { mixOf } from './mixer';
 import { MixerPopover } from './MixerPopover';
 import { TempoControl } from './TempoControl';
 import { TransposeControl } from './TransposeControl';
+import { CHORD_TRACK_ID } from './timeline';
 import { TransportProgress } from './TransportProgress';
 import { useEnginePosition } from './usePlayer';
 import type { PlayerApi } from './usePlayer';
@@ -86,6 +88,8 @@ function BarBody({
   // Ô đang phát theo chỉ số trong bản nhạc (khác thứ tự lượt phát khi có dấu lặp lại)
   const currentMeasure = timeline.measures[Math.max(0, order < 0 ? timeline.measures.length - 1 : order)]?.index ?? 0;
   const percent = Math.round(player.sampler.progress * 100);
+  /** Đệm hợp âm đang bật (track "Hợp âm" không bị tắt tiếng); mặc định bật. */
+  const chordsOn = !mixOf(player.mixer, CHORD_TRACK_ID).mute;
   // Thời gian hiển thị là giây thật: ở 50% bài dài gấp đôi
   const speed = player.tempoPercent / 100;
 
@@ -164,6 +168,18 @@ function BarBody({
         </div>
       </div>
       <div className="pl-side">
+        {timeline.tracks.some((t) => t.id === CHORD_TRACK_ID) && (
+          <button
+            type="button"
+            className={`pl-chip${chordsOn ? ' pl-chip--on' : ''}`}
+            aria-pressed={chordsOn}
+            title={chordsOn ? 'Đang đệm hợp âm: bấm để tắt' : 'Đã tắt đệm hợp âm: bấm để bật'}
+            disabled={!player.canPlay}
+            onClick={() => player.setTrackMix(CHORD_TRACK_ID, { mute: chordsOn })}
+          >
+            Hợp âm
+          </button>
+        )}
         <TempoControl
           percent={player.tempoPercent}
           baseBpm={timeline.baseBpm}

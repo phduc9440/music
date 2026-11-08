@@ -17,7 +17,7 @@ import { EMPTY_MIXER, pruneMixer, trackGain, withTrackMix } from './mixer';
 import type { MixerState, TrackMix } from './mixer';
 import { clampTempoPercent, DEFAULT_TEMPO_PERCENT } from './settings';
 import { clampTranspose, inPianoRange } from './transposeRange';
-import { firstEventAtOrAfter, measureOrderAt, timeOfOrder } from './timeline';
+import { CHORD_TRACK_ID, firstEventAtOrAfter, measureOrderAt, timeOfOrder } from './timeline';
 import type { Timeline, TimelineEvent } from './timeline';
 
 export type EngineStatus = 'stopped' | 'playing' | 'paused';
@@ -450,7 +450,8 @@ export class PlayerEngine {
     const now = this.now();
     const start = Math.max(anchor.ctx + (event.time - anchor.pos) / anchor.rate, now + 0.005);
     const duration = Math.max(MIN_NOTE_S, Math.min(event.duration, limit - event.time) / anchor.rate);
-    const instrument = this.instrumentOf(event.part);
+    // Đệm hợp âm luôn bằng piano, không theo nhạc cụ của part chứa ký hiệu hợp âm (ví dụ giọng hát)
+    const instrument = event.trackId === CHORD_TRACK_ID ? 'piano' : this.instrumentOf(event.part);
     const destination = this.trackNode(event.trackId);
     const voice =
       (instrument === 'piano'

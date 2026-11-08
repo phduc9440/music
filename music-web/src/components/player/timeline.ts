@@ -14,6 +14,9 @@ export const MAX_BPM = 300;
 export const DEFAULT_BPM = 100;
 
 /** Một khuông của một part, đơn vị của Mute / Solo / âm lượng. */
+/** Id của track đệm hợp âm (nốt sinh từ ký hiệu hợp âm, không phải nốt trên bản nhạc). */
+export const CHORD_TRACK_ID = 'chords';
+
 export interface TimelineTrack {
   id: string;
   part: number;
@@ -86,7 +89,9 @@ const buildTracks = (doc: ScoreDocument): TimelineTrack[] => {
 export function buildTimeline(doc: ScoreDocument, fallbackBpm: number | null | undefined): Timeline {
   const baseBpm = readBaseBpm(doc, fallbackBpm);
   const plan = buildPlayback(doc, baseBpm);
-  const events: TimelineEvent[] = plan.notes.map((n) => ({ ...n, trackId: `${n.part}:${n.staff}` }));
+  const noteEvents: TimelineEvent[] = plan.notes.map((n) => ({ ...n, trackId: `${n.part}:${n.staff}` }));
+  const chordEvents: TimelineEvent[] = plan.chords.map((n) => ({ ...n, trackId: CHORD_TRACK_ID }));
+  const events = [...noteEvents, ...chordEvents].sort((a, b) => a.time - b.time || a.midi - b.midi);
   const time = doc.timeAt(0);
   return {
     baseBpm,
@@ -95,8 +100,12 @@ export function buildTimeline(doc: ScoreDocument, fallbackBpm: number | null | u
     total: plan.total,
     measures: plan.measures,
     events,
-    tracks: buildTracks(doc),
-    maxDuration: events.reduce((max, e) => Math.max(max, e.duration), 0),
+    tracks: [
+      ...buildTracks(doc),
+      ...(chordEvents.length > 0 ? [{ id: CHORD_TRACK_ID, part: chordEvents[0].part, staff: 0, label: 'Hợp âm' }] : []),
+    ],
+    // Chỉ tính nốt trên bản nhạc: nốt đệm hợp âm không tô trên bản nhạc nên không cần tra
+    maxDuration: noteEvents.reduce((max, e) => Math.max(max, e.duration), 0),
   };
 }
 
@@ -144,7 +153,7 @@ export function activeNoteIds(timeline: Timeline, time: number): Set<string> {
   const events = timeline.events;
   let i = firstEventAtOrAfter(timeline, time + 1e-9) - 1;
   for (; i >= 0 && events[i].time + timeline.maxDuration >= time; i--) {
-    if (events[i].time + events[i].duration > time) active.add(events[i].id);
+    if (events[i].trackId !== CHORD_TRACK_ID && events[i].time + events[i].duration > time) active.add(events[i].id);
   }
   return active;
 }
@@ -168,7 +177,8 @@ export interface ScoringNote {
 export function toScoringNotes(timeline: Timeline): ScoringNote[] {
   let step = -1;
   let lastBeat = Number.NaN;
-  return [...timeline.events]
+  return timeline.events
+    .filter((e) => e.trackId !== CHORD_TRACK_ID) // nốt đệm hợp âm không thuộc bản nhạc nên không đưa vào chấm điểm
     .sort((a, b) => a.beat - b.beat || a.midi - b.midi)
     .map((e) => {
       if (e.beat !== lastBeat) {

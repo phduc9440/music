@@ -1,4 +1,5 @@
 /** Giới hạn chuyển giọng khi nghe và âm vực đàn piano (A0–C8). */
+import { CHORD_TRACK_ID } from './timeline';
 import type { Timeline } from './timeline';
 
 export const MIN_TRANSPOSE = -12;
@@ -20,6 +21,8 @@ export const inPianoRange = (midi: number, semitones: number): boolean => {
 export function countOutOfRange(timeline: Timeline, semitones: number): number {
   if (semitones === 0) return 0;
   let count = 0;
-  for (const event of timeline.events) if (!inPianoRange(event.midi, semitones)) count += 1;
+  for (const event of timeline.events) {
+    if (event.trackId !== CHORD_TRACK_ID && !inPianoRange(event.midi, semitones)) count += 1;
+  }
   return count;
 }

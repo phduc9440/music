@@ -8,6 +8,8 @@
  * - Âm lượng (gain) theo mức to nhỏ gần nhất trước nốt của part đó, nội suy dọc theo cresc./dim.
  * - Độ dài nốt theo dấu thể hiện (staccato, tenuto...); nốt hoa mỹ lấy thời gian của nốt chính theo sau.
  */
+import { chordNotes } from './chordNotes';
+import type { ChordNotes } from './chordNotes';
 import { playOrder } from './playOrder';
 import type { NoteInfo, ScoreDocument } from './ScoreDocument';
 
@@ -49,6 +51,11 @@ export interface PlayMeasure {
 
 export interface PlaybackPlan {
   notes: PlayNote[];
+  /**
+   * Nốt đệm của các ký hiệu hợp âm (<harmony>) theo thứ tự phát: bass và các nốt hợp âm đánh cùng lúc, giữ tới hợp âm kế
+   * hoặc hết ô (hợp âm chưa đổi thì đánh lại ở đầu ô kế). Tách khỏi `notes` vì không phải nốt trên bản nhạc.
+   */
+  chords: PlayNote[];
   /** Các ô nhịp theo thứ tự phát. */
   measures: PlayMeasure[];
   /** Tổng thời lượng (giây). */
@@ -57,6 +64,10 @@ export interface PlaybackPlan {
 
 /** Âm lượng mặc định và vận tốc MIDI tương ứng (mf). */
 export const DEFAULT_GAIN = 0.8;
+/** Âm lượng nốt đệm hợp âm (nhỏ hơn giai điệu để không át), nốt bass to hơn một chút, và phần ngân (≤ 1) trước khi nhả. */
+export const CHORD_GAIN = 0.5;
+export const CHORD_BASS_GAIN = 0.62;
+const CHORD_HOLD = 0.92;
 export const DEFAULT_VELOCITY = 83;
 /** Nốt ngân bình thường chỉ vang 90% độ dài để hai nốt liền nhau không dính. */
 const LEGATO_FACTOR = 0.9;
@@ -132,6 +143,7 @@ type Item =
       isGrace: boolean;
       slash: boolean;
     }
+  | { kind: 'harmony'; at: number; child: Element }
   | { kind: 'tempo'; at: number; bpm: number }
   | { kind: 'level'; at: number; velocity: number }
   | { kind: 'accent'; at: number; peak?: number; after?: number }
@@ -176,7 +188,9 @@ const scanMeasure = (measure: Element): Scan => {
   for (const child of Array.from(measure.children)) {
     if (child.tagName === 'backup') cursor -= childNumber(child, 'duration');
     else if (child.tagName === 'forward') cursor += childNumber(child, 'duration');
-    else if (child.tagName === 'direction') {
+    else if (child.tagName === 'harmony') {
+      items.push({ kind: 'harmony', at: Math.max(0, cursor + childNumber(child, 'offset')), child });
+    } else if (child.tagName === 'direction') {
       readDirection(child, Math.max(0, cursor + childNumber(child, 'offset')), items);
     } else if (child.tagName === 'sound') {
       const tempo = Number(child.getAttribute('tempo'));
@@ -553,6 +567,60 @@ export function buildPlayback(doc: ScoreDocument, fallbackBpm: number): Playback
     }
   });
   result.sort((a, b) => a.time - b.time || a.midi - b.midi);
+
+  // Lượt 3: nốt đệm của ký hiệu hợp âm, lấy từ part đầu tiên có hợp âm (tránh đánh đôi khi nhiều part cùng ghi hợp âm)
+  const chords: PlayNote[] = [];
+  const chordPart = parts.findIndex((measures) =>
+    measures.some((m) => scanOf(m).items.some((i) => i.kind === 'harmony')),
+  );
+  if (chordPart >= 0) {
+    const chordMeasures = parts[chordPart];
+    const harmoniesOf = (m: Element) =>
+      scanOf(m)
+        .items.flatMap((i) => (i.kind === 'harmony' ? [i] : []))
+        .sort((a, b) => a.at - b.at);
+    // Hợp âm đang có hiệu lực ở đầu từng ô theo thứ tự TRONG BẢN NHẠC (không theo lượt phát) nên lặp lại / nhảy vẫn đúng
+    const carry: (ChordNotes | null)[] = [];
+    let current: ChordNotes | null = null;
+    chordMeasures.forEach((m, index) => {
+      carry[index] = current;
+      for (const h of harmoniesOf(m)) current = chordNotes(h.child);
+    });
+    order.forEach((measureIndex, k) => {
+      const measure = chordMeasures[measureIndex];
+      if (!measure) return;
+      const mt = times[k];
+      const div = divisionsOf(chordPart, measureIndex);
+      const harmonies = harmoniesOf(measure);
+      const points: { q: number; notes: ChordNotes | null }[] = [];
+      if (harmonies.length === 0 || harmonies[0].at / div > EPS) points.push({ q: 0, notes: carry[measureIndex] });
+      for (const h of harmonies) points.push({ q: h.at / div, notes: chordNotes(h.child) });
+      points.forEach((point, i) => {
+        const q1 = i + 1 < points.length ? points[i + 1].q : mt.length;
+        if (!point.notes || q1 - point.q <= EPS) return;
+        const start = timeAt(mt, point.q);
+        const end = timeAt(mt, q1);
+        const duration = (end - start) * CHORD_HOLD;
+        const make = (midi: number, gain: number): PlayNote => ({
+          id: `chord-${k}-${i}-${midi}`,
+          part: chordPart,
+          time: start,
+          duration,
+          midi,
+          gain,
+          measure: measureIndex,
+          order: k,
+          staff: 0,
+          beat: mt.startBeat + point.q,
+          beatEnd: mt.startBeat + q1,
+        });
+        chords.push(make(point.notes.bass, CHORD_BASS_GAIN));
+        for (const tone of point.notes.tones) chords.push(make(tone, CHORD_GAIN));
+      });
+    });
+    chords.sort((a, b) => a.time - b.time || a.midi - b.midi);
+  }
+
   const measures: PlayMeasure[] = times.map((m, k) => ({
     index: order[k],
     order: k,
@@ -561,7 +629,7 @@ export function buildPlayback(doc: ScoreDocument, fallbackBpm: number): Playback
     startBeat: m.startBeat,
     lengthBeats: m.length,
   }));
-  return { notes: result, measures, total: clock };
+  return { notes: result, chords, measures, total: clock };
 }
 
 /**
