@@ -1,0 +1,214 @@
+/* Thanh Player — tiền tố pl- để không đụng CSS của phần khác */
+.pl-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 76px;
+  padding: 10px 20px;
+  background: rgb(255 255 255 / 0.88);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border-top: 1px solid var(--sc-border, #e5e7eb);
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -6px 24px rgb(15 23 42 / 0.08);
+  color: var(--sc-text, #1f2937);
+}
+.pl-bar--notice {
+  justify-content: space-between;
+  min-height: 56px;
+}
+.pl-transport {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+.pl-middle {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pl-side {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+.pl-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    transform 0.1s,
+    opacity 0.15s;
+}
+.pl-btn:hover:not(:disabled) {
+  background: rgb(15 23 42 / 0.07);
+}
+.pl-btn:active:not(:disabled) {
+  transform: scale(0.94);
+}
+.pl-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.pl-btn:focus-visible,
+.pl-progress:focus-visible,
+.pl-link:focus-visible {
+  outline: 2px solid var(--sc-primary, #2563eb);
+  outline-offset: 2px;
+}
+.pl-btn--play {
+  width: 52px;
+  height: 52px;
+  background: var(--sc-primary, #2563eb);
+  color: #fff;
+  box-shadow: 0 4px 12px rgb(37 99 235 / 0.35);
+}
+.pl-btn--play:hover:not(:disabled) {
+  background: var(--sc-primary-hover, #1d4ed8);
+}
+.pl-btn--loading {
+  animation: pl-pulse 1.2s ease-in-out infinite;
+}
+.pl-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+.pl-time {
+  font-variant-numeric: tabular-nums;
+  color: var(--sc-muted, #6b7280);
+}
+.pl-notice {
+  color: var(--sc-muted, #6b7280);
+  font-size: 13px;
+}
+.pl-notice--warn {
+  color: #b45309;
+}
+.pl-link {
+  margin-left: 8px;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--sc-primary, #2563eb);
+  cursor: pointer;
+  text-decoration: underline;
+  font: inherit;
+}
+
+.pl-progress {
+  position: relative;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  touch-action: none;
+  border-radius: 6px;
+}
+.pl-progress--disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+.pl-progress__rail {
+  position: relative;
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: rgb(15 23 42 / 0.12);
+  overflow: hidden;
+}
+.pl-progress__fill {
+  height: 100%;
+  background: var(--sc-primary, #2563eb);
+  border-radius: inherit;
+}
+.pl-progress__tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgb(255 255 255 / 0.7);
+}
+.pl-progress__thumb {
+  position: absolute;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--sc-primary, #2563eb);
+  box-shadow: 0 1px 4px rgb(15 23 42 / 0.25);
+  transition: transform 0.1s;
+}
+.pl-progress:hover .pl-progress__thumb,
+.pl-progress--drag .pl-progress__thumb {
+  transform: scale(1.25);
+}
+
+/* Nốt đang vang */
+.pl-note--playing,
+.pl-note--playing * {
+  fill: var(--sc-primary, #2563eb) !important;
+  stroke: var(--sc-primary, #2563eb) !important;
+}
+
+@keyframes pl-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pl-btn,
+  .pl-progress__thumb {
+    transition: none;
+  }
+  .pl-btn--loading {
+    animation: none;
+  }
+}
+@media (max-width: 1279px) {
+  .pl-bar {
+    gap: 12px;
+    padding: 8px 14px;
+  }
+}
+@media (max-width: 767px) {
+  .pl-bar {
+    flex-wrap: wrap;
+    min-height: 64px;
+    padding: 8px 12px;
+    gap: 6px 10px;
+  }
+  .pl-middle {
+    order: 3;
+    flex-basis: 100%;
+  }
+  .pl-side {
+    margin-left: auto;
+  }
+  .pl-btn--stop {
+    display: none;
+  }
+}
+@media (prefers-color-scheme: dark) {
+  .pl-bar {
+    background: rgb(30 41 59 / 0.88);
+    color: #e5e7eb;
+  }
+}

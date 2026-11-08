@@ -27,8 +27,10 @@ import {
 import { syncTitle } from '../../components/editor/header';
 import { ScoreDocument } from '../../components/editor/ScoreDocument';
 import { DURATION_LABELS, dotsLabel } from '../../components/editor/durations';
-import { usePlayback } from '../../components/editor/usePlayback';
+import { PlayerBar } from '../../components/player/PlayerBar';
+import { usePlayer } from '../../components/player/usePlayer';
 import { useScoreEditor } from '../../components/editor/useScoreEditor';
+import { countView } from '../../services/playbackApi';
 import { fetchMusicXmlWithVersion, scoreApi } from '../../services';
 import type { ScoreDetail as ScoreDetailData } from '../../types';
 import { isValidScoreId } from '../../utils/omr';
@@ -249,6 +251,8 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
   const [parseFailed, setParseFailed] = useState(false);
   const [focusMeasure, setFocusMeasure] = useState<{ index: number; key: number } | null>(null);
   const [issueCursor, setIssueCursor] = useState(0);
+  const [playerOpen, setPlayerOpen] = useState(false);
+  const playAfterLoad = useRef(false);
 
   const { zoom, mode } = prefs;
   const canEdit = score.canEdit;
@@ -263,7 +267,45 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
     blocked: helpOpen,
   });
 
-  const playback = usePlayback(doc, score.tempoBpm ?? 100);
+  const player = usePlayer(doc, {
+    enabled: playerOpen,
+    fallbackBpm: score.tempoBpm ?? 100,
+    revision: editor.revision,
+    onFirstPlay: () => void countView(score.id),
+  });
+  const selectionRef = useRef(editor.selection);
+  useEffect(() => {
+    selectionRef.current = editor.selection;
+  });
+  const { canPlay, playFrom, stop: stopPlayer, status: playerStatus } = player;
+
+  // Mở thanh Player bằng nút Phát: đợi mẫu âm tải xong rồi mới phát
+  useEffect(() => {
+    if (playerOpen && playAfterLoad.current && canPlay) {
+      playAfterLoad.current = false;
+      playFrom(selectionRef.current);
+    }
+  }, [playerOpen, canPlay, playFrom]);
+
+  // Sửa bản nhạc khi đang phát: dừng để không phát lệch nội dung mới
+  const lastRevision = useRef(editor.revision);
+  useEffect(() => {
+    if (lastRevision.current === editor.revision) return;
+    lastRevision.current = editor.revision;
+    if (playerStatus !== 'stopped') stopPlayer();
+  }, [editor.revision, playerStatus, stopPlayer]);
+
+  const onPlayButton = () => {
+    if (!playerOpen) {
+      playAfterLoad.current = true;
+      setPlayerOpen(true);
+    } else player.playFrom(editor.selection);
+  };
+  const closePlayer = () => {
+    playAfterLoad.current = false;
+    stopPlayer();
+    setPlayerOpen(false);
+  };
   const issueMeasures = useMemo(() => new Set(editor.issues.map((i) => i.measureIndex)), [editor.issues]);
 
   const updatePrefs = useCallback((patch: Partial<typeof prefs>) => {
@@ -430,15 +472,20 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
           )}
           <button
             className="sc-btn"
-            onClick={() => playback.toggle(editor.selection)}
-            aria-pressed={playback.playing}
+            onClick={onPlayButton}
+            aria-pressed={player.status === 'playing'}
             title={
-              playback.playing ? 'Dừng phát' : editor.selection.size > 0 ? 'Phát từ nốt đang chọn' : 'Phát cả bản nhạc'
+              player.status === 'playing'
+                ? 'Tạm dừng'
+                : editor.selection.size > 0
+                  ? 'Phát từ nốt đang chọn'
+                  : 'Phát cả bản nhạc'
             }
           >
-            {playback.playing ? <IconStop /> : <IconPlay />} {playback.playing ? 'Dừng' : 'Phát'}
+            {player.status === 'playing' ? <IconStop /> : <IconPlay />}{' '}
+            {player.status === 'playing' ? 'Tạm dừng' : 'Phát'}
           </button>
-          <InstrumentMenu parts={playback.parts} onChange={playback.setInstrument} />
+          <InstrumentMenu parts={player.parts} onChange={player.setInstrument} />
           <DownloadMenu scoreId={score.id} files={score.files} />
           <button
             className="sc-btn sv-icon"
@@ -519,6 +566,8 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
             selected={editor.selection}
             issueMeasures={issueMeasures}
             focusMeasure={focusMeasure}
+            playing={player.activeIds}
+            followMeasure={player.status === 'playing' ? player.followMeasure : null}
             onSelectNotes={canEdit ? editor.select : undefined}
             onDragPitch={canEdit ? editor.dragPitch : undefined}
             inputMode={editor.inputMode}
@@ -569,6 +618,7 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
           onExit={() => editor.setInputMode(false)}
         />
       )}
+      {playerOpen && <PlayerBar player={player} onClose={closePlayer} />}
       <footer className="sv-status">
         <span>{summary.join(' · ') || 'Bản nhạc'}</span>
         <div className="sv-status__right">

@@ -1,0 +1,277 @@
+{
+  "version": 1,
+  "source": "MuseScore_General.sf3 (Grand Piano)",
+  "sampleSeconds": 4.0,
+  "layers": [
+    {
+      "id": "v60",
+      "velocity": 60
+    },
+    {
+      "id": "v110",
+      "velocity": 110
+    }
+  ],
+  "samples": [
+    {
+      "note": "A0",
+      "midi": 21,
+      "files": {
+        "v60": "v60/A0.mp3",
+        "v110": "v110/A0.mp3"
+      }
+    },
+    {
+      "note": "C1",
+      "midi": 24,
+      "files": {
+        "v60": "v60/C1.mp3",
+        "v110": "v110/C1.mp3"
+      }
+    },
+    {
+      "note": "Ds1",
+      "midi": 27,
+      "files": {
+        "v60": "v60/Ds1.mp3",
+        "v110": "v110/Ds1.mp3"
+      }
+    },
+    {
+      "note": "Fs1",
+      "midi": 30,
+      "files": {
+        "v60": "v60/Fs1.mp3",
+        "v110": "v110/Fs1.mp3"
+      }
+    },
+    {
+      "note": "A1",
+      "midi": 33,
+      "files": {
+        "v60": "v60/A1.mp3",
+        "v110": "v110/A1.mp3"
+      }
+    },
+    {
+      "note": "C2",
+      "midi": 36,
+      "files": {
+        "v60": "v60/C2.mp3",
+        "v110": "v110/C2.mp3"
+      }
+    },
+    {
+      "note": "Ds2",
+      "midi": 39,
+      "files": {
+        "v60": "v60/Ds2.mp3",
+        "v110": "v110/Ds2.mp3"
+      }
+    },
+    {
+      "note": "Fs2",
+      "midi": 42,
+      "files": {
+        "v60": "v60/Fs2.mp3",
+        "v110": "v110/Fs2.mp3"
+      }
+    },
+    {
+      "note": "A2",
+      "midi": 45,
+      "files": {
+        "v60": "v60/A2.mp3",
+        "v110": "v110/A2.mp3"
+      }
+    },
+    {
+      "note": "C3",
+      "midi": 48,
+      "files": {
+        "v60": "v60/C3.mp3",
+        "v110": "v110/C3.mp3"
+      }
+    },
+    {
+      "note": "Ds3",
+      "midi": 51,
+      "files": {
+        "v60": "v60/Ds3.mp3",
+        "v110": "v110/Ds3.mp3"
+      }
+    },
+    {
+      "note": "Fs3",
+      "midi": 54,
+      "files": {
+        "v60": "v60/Fs3.mp3",
+        "v110": "v110/Fs3.mp3"
+      }
+    },
+    {
+      "note": "A3",
+      "midi": 57,
+      "files": {
+        "v60": "v60/A3.mp3",
+        "v110": "v110/A3.mp3"
+      }
+    },
+    {
+      "note": "C4",
+      "midi": 60,
+      "files": {
+        "v60": "v60/C4.mp3",
+        "v110": "v110/C4.mp3"
+      }
+    },
+    {
+      "note": "Ds4",
+      "midi": 63,
+      "files": {
+        "v60": "v60/Ds4.mp3",
+        "v110": "v110/Ds4.mp3"
+      }
+    },
+    {
+      "note": "Fs4",
+      "midi": 66,
+      "files": {
+        "v60": "v60/Fs4.mp3",
+        "v110": "v110/Fs4.mp3"
+      }
+    },
+    {
+      "note": "A4",
+      "midi": 69,
+      "files": {
+        "v60": "v60/A4.mp3",
+        "v110": "v110/A4.mp3"
+      }
+    },
+    {
+      "note": "C5",
+      "midi": 72,
+      "files": {
+        "v60": "v60/C5.mp3",
+        "v110": "v110/C5.mp3"
+      }
+    },
+    {
+      "note": "Ds5",
+      "midi": 75,
+      "files": {
+        "v60": "v60/Ds5.mp3",
+        "v110": "v110/Ds5.mp3"
+      }
+    },
+    {
+      "note": "Fs5",
+      "midi": 78,
+      "files": {
+        "v60": "v60/Fs5.mp3",
+        "v110": "v110/Fs5.mp3"
+      }
+    },
+    {
+      "note": "A5",
+      "midi": 81,
+      "files": {
+        "v60": "v60/A5.mp3",
+        "v110": "v110/A5.mp3"
+      }
+    },
+    {
+      "note": "C6",
+      "midi": 84,
+      "files": {
+        "v60": "v60/C6.mp3",
+        "v110": "v110/C6.mp3"
+      }
+    },
+    {
+      "note": "Ds6",
+      "midi": 87,
+      "files": {
+        "v60": "v60/Ds6.mp3",
+        "v110": "v110/Ds6.mp3"
+      }
+    },
+    {
+      "note": "Fs6",
+      "midi": 90,
+      "files": {
+        "v60": "v60/Fs6.mp3",
+        "v110": "v110/Fs6.mp3"
+      }
+    },
+    {
+      "note": "A6",
+      "midi": 93,
+      "files": {
+        "v60": "v60/A6.mp3",
+        "v110": "v110/A6.mp3"
+      }
+    },
+    {
+      "note": "C7",
+      "midi": 96,
+      "files": {
+        "v60": "v60/C7.mp3",
+        "v110": "v110/C7.mp3"
+      }
+    },
+    {
+      "note": "Ds7",
+      "midi": 99,
+      "files": {
+        "v60": "v60/Ds7.mp3",
+        "v110": "v110/Ds7.mp3"
+      }
+    },
+    {
+      "note": "Fs7",
+      "midi": 102,
+      "files": {
+        "v60": "v60/Fs7.mp3",
+        "v110": "v110/Fs7.mp3"
+      }
+    },
+    {
+      "note": "A7",
+      "midi": 105,
+      "files": {
+        "v60": "v60/A7.mp3",
+        "v110": "v110/A7.mp3"
+      }
+    },
+    {
+      "note": "C8",
+      "midi": 108,
+      "files": {
+        "v60": "v60/C8.mp3",
+        "v110": "v110/C8.mp3"
+      }
+    }
+  ],
+  "light": {
+    "layer": "v110",
+    "midis": [
+      21,
+      27,
+      33,
+      39,
+      45,
+      51,
+      57,
+      63,
+      69,
+      75,
+      81,
+      87,
+      93,
+      99,
+      105
+    ]
+  }
+}

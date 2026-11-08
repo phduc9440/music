@@ -42,6 +42,8 @@ export interface VoiceSpec {
   duration: number;
   /** Độ to 0–1; 0,8 là mức mặc định (mf). */
   level: number;
+  /** Nút nhận âm thanh của giọng; bỏ trống thì nối thẳng vào chuỗi chung (Player nối vào kênh riêng từng khuông). */
+  destination?: AudioNode;
 }
 
 /** Giọng đã hẹn giờ, để cắt ngay khi bấm Dừng. */
@@ -398,7 +400,7 @@ export function scheduleVoice(ctx: BaseAudioContext, spec: VoiceSpec): Voice {
           ? buildBells(ctx, spec, f, peak)
           : buildSustained(ctx, spec, f, peak);
   const { env, sources, valueAt } = built;
-  env.connect(getMaster(ctx));
+  env.connect(spec.destination ?? getMaster(ctx));
 
   // Nhả phím từ đúng mức biên độ tại thời điểm đó rồi tắt dần (chuông thì để vang tự nhiên)
   const releaseAt = spec.start + Math.max(0.03, spec.duration);

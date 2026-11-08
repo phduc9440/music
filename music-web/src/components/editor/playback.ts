@@ -23,10 +23,34 @@ export interface PlayNote {
   midi: number;
   /** Âm lượng 0–1; 0,8 là mức mặc định (tương đương mf) khi bản nhạc chưa ghi mức to nhỏ. */
   gain: number;
+  /** Chỉ số (từ 0) của ô nhịp trong bản nhạc. */
+  measure: number;
+  /** Thứ tự của ô trong lượt phát (ô lặp lại xuất hiện nhiều lần nên khác `measure`). */
+  order: number;
+  /** Khuông trong part (từ 1). */
+  staff: number;
+  /** Vị trí bắt đầu và kết thúc tính theo phách đen kể từ đầu lượt phát (không phụ thuộc tempo). */
+  beat: number;
+  beatEnd: number;
+}
+
+/** Một ô nhịp trong lượt phát. */
+export interface PlayMeasure {
+  /** Chỉ số (từ 0) của ô trong bản nhạc. */
+  index: number;
+  /** Thứ tự trong lượt phát. */
+  order: number;
+  /** Giây bắt đầu / kết thúc trên đồng hồ chung (đã tính fermata). */
+  start: number;
+  end: number;
+  startBeat: number;
+  lengthBeats: number;
 }
 
 export interface PlaybackPlan {
   notes: PlayNote[];
+  /** Các ô nhịp theo thứ tự phát. */
+  measures: PlayMeasure[];
   /** Tổng thời lượng (giây). */
   total: number;
 }
@@ -199,6 +223,8 @@ interface Fermata {
 /** Thời gian của một ô nhịp trong đồng hồ chung. */
 interface MeasureTime {
   start: number;
+  /** Phách đen kể từ đầu lượt phát. */
+  startBeat: number;
   /** Độ dài ô (nốt đen) lấy theo part dài nhất. */
   length: number;
   segments: Segment[];
@@ -233,6 +259,11 @@ interface Building {
   id: string;
   start: number;
   end: number;
+  measure: number;
+  order: number;
+  staff: number;
+  beat: number;
+  beatEnd: number;
   midi: number;
   factor: number;
   accent: boolean;
@@ -360,6 +391,7 @@ export function buildPlayback(doc: ScoreDocument, fallbackBpm: number): Playback
   const times: MeasureTime[] = [];
   let bpm = fallbackBpm > 0 ? fallbackBpm : 100;
   let clock = 0;
+  let beatClock = 0;
   for (const measureIndex of order) {
     let length = 0;
     let tempos: { q: number; bpm: number }[] = [];
@@ -395,8 +427,9 @@ export function buildPlayback(doc: ScoreDocument, fallbackBpm: number): Playback
       const key = Math.round(h.q1 * 1e6);
       if (extra > (fermatas.get(key)?.extra ?? 0)) fermatas.set(key, { pos: h.q1, extra });
     }
-    const m: MeasureTime = { start: clock, length, segments, fermatas: [...fermatas.values()] };
+    const m: MeasureTime = { start: clock, startBeat: beatClock, length, segments, fermatas: [...fermatas.values()] };
     times.push(m);
+    beatClock += length;
     clock = timeAt(m, length);
     bpm = segments[segments.length - 1].bpm;
   }
@@ -456,6 +489,11 @@ export function buildPlayback(doc: ScoreDocument, fallbackBpm: number): Playback
                   id: g.info.id,
                   start: at(offset),
                   end: at(offset + lengths[gi]),
+                  measure: measureIndex,
+                  order: k,
+                  staff: g.info.staff,
+                  beat: mt.startBeat + offset,
+                  beatEnd: mt.startBeat + offset + lengths[gi],
                   midi: soundOf(g.info) as number,
                   factor: 1,
                   accent: false,
@@ -476,6 +514,7 @@ export function buildPlayback(doc: ScoreDocument, fallbackBpm: number): Playback
         const held = hasTie(item.child, 'stop') ? pending.get(key) : undefined;
         if (held) {
           held.end = at(endQ);
+          held.beatEnd = mt.startBeat + endQ;
           if (!hasTie(item.child, 'start')) pending.delete(key);
           continue;
         }
@@ -483,6 +522,11 @@ export function buildPlayback(doc: ScoreDocument, fallbackBpm: number): Playback
           id: info.id,
           start: at(startQ),
           end: at(endQ),
+          measure: measureIndex,
+          order: k,
+          staff: info.staff,
+          beat: mt.startBeat + startQ,
+          beatEnd: mt.startBeat + endQ,
           midi: soundOf(info) as number,
           factor: legato && articulationFactor(item.child) === LEGATO_FACTOR ? 1 : articulationFactor(item.child),
           accent: hasDeep(item.child, 'accent') || hasDeep(item.child, 'strong-accent'),
@@ -500,11 +544,24 @@ export function buildPlayback(doc: ScoreDocument, fallbackBpm: number): Playback
         duration: (note.end - note.start) * note.factor,
         midi: note.midi,
         gain: gains.get(note) ?? DEFAULT_GAIN,
+        measure: note.measure,
+        order: note.order,
+        staff: note.staff,
+        beat: note.beat,
+        beatEnd: note.beatEnd,
       });
     }
   });
   result.sort((a, b) => a.time - b.time || a.midi - b.midi);
-  return { notes: result, total: clock };
+  const measures: PlayMeasure[] = times.map((m, k) => ({
+    index: order[k],
+    order: k,
+    start: m.start,
+    end: timeAt(m, m.length),
+    startBeat: m.startBeat,
+    lengthBeats: m.length,
+  }));
+  return { notes: result, measures, total: clock };
 }
 
 /**
