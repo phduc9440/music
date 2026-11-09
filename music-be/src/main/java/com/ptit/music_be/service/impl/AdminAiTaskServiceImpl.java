@@ -91,8 +91,9 @@ public class AdminAiTaskServiceImpl implements AdminAiTaskService {
                         + " order by t.createdAt desc, t.id",
                 AiTask.class);
         params.forEach(query::setParameter);
-        List<AiTask> tasks =
-                query.setFirstResult(safePage * safeSize).setMaxResults(safeSize).getResultList();
+        List<AiTask> tasks = query.setFirstResult(safePage * safeSize)
+                .setMaxResults(safeSize)
+                .getResultList();
 
         LocalDateTime now = LocalDateTime.now();
         List<AdminAiTaskResponse> content =
@@ -123,8 +124,7 @@ public class AdminAiTaskServiceImpl implements AdminAiTaskService {
                 .stream()
                 // tính trung bình ở Java: JPQL không có hàm hiệu thời gian chung cho mọi CSDL
                 .collect(java.util.stream.Collectors.groupingBy(
-                        r -> (AiTaskType) r[0],
-                        java.util.stream.Collectors.summarizingLong(r -> Duration.between(
+                        r -> (AiTaskType) r[0], java.util.stream.Collectors.summarizingLong(r -> Duration.between(
                                         (LocalDateTime) r[1], (LocalDateTime) r[2])
                                 .getSeconds())))
                 .entrySet()
@@ -164,7 +164,8 @@ public class AdminAiTaskServiceImpl implements AdminAiTaskService {
     }
 
     private long countStatus(AiTaskStatus status, LocalDateTime since) {
-        String jpql = "select count(t) from AiTask t where t.status = :s" + (since == null ? "" : " and t.updatedAt >= :since");
+        String jpql = "select count(t) from AiTask t where t.status = :s"
+                + (since == null ? "" : " and t.updatedAt >= :since");
         var q = entityManager.createQuery(jpql, Long.class).setParameter("s", status);
         if (since != null) {
             q.setParameter("since", since);
@@ -209,7 +210,9 @@ public class AdminAiTaskServiceImpl implements AdminAiTaskService {
     }
 
     private static Long seconds(LocalDateTime from, LocalDateTime to) {
-        return from == null || to == null ? null : Math.max(0, Duration.between(from, to).getSeconds());
+        return from == null || to == null
+                ? null
+                : Math.max(0, Duration.between(from, to).getSeconds());
     }
 
     private static <E extends Enum<E>> E parse(String value, Class<E> type) {

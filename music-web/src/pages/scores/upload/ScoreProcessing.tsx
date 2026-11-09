@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import CompareModal from '../../components/scores/CompareModal';
-import Modal from '../../components/scores/Modal';
-import PageStrip from '../../components/scores/PageStrip';
-import ProcessingSteps from '../../components/scores/ProcessingSteps';
-import { omrApi, scoreApi, taskApi } from '../../services';
-import type { AiTaskInfo, ScoreDetail as ScoreDetailData, ScoreFileInfo } from '../../types';
+import CompareModal from '../../../components/scores/upload/CompareModal';
+import Modal from '../../../components/scores/common/Modal';
+import PageStrip from '../../../components/scores/upload/PageStrip';
+import ProcessingSteps from '../../../components/scores/upload/ProcessingSteps';
+import { omrApi, scoreApi, taskApi } from '../../../services';
+import type { AiTaskInfo, ScoreDetail as ScoreDetailData, ScoreFileInfo } from '../../../types';
 import {
   PROCESSING_POLL_MS,
   computeStepStates,
@@ -16,10 +16,10 @@ import {
   isValidScoreId,
   pickLatestOmrTask,
   stoppedEarly,
-} from '../../utils/omr';
-import { getErrorMessage, getHttpStatus, getUploadErrorMessage, useScoreBase } from '../../utils/score';
-import '../../components/scores/scores.css';
-import './ScoreLibrary.css';
+} from '../../../utils/omr';
+import { getErrorMessage, getHttpStatus, getUploadErrorMessage, useScoreBase } from '../../../utils/score';
+import '../../../components/scores/scores.css';
+import '../library/ScoreLibrary.css';
 import './ScoreProcessing.css';
 
 type LoadState = 'loading' | 'ready' | 'notFound' | 'error';

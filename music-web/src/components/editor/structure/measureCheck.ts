@@ -2,10 +2,10 @@
  * Kiểm tra độ dài mỗi ô nhịp: tổng <duration> của từng bè (bỏ nốt hợp âm <chord/> và nốt trang trí <grace/>) phải
  * bằng số chỉ nhịp × divisions. Ô sai được vẽ viền đỏ và báo trên thanh trạng thái.
  */
-import { commitEdit } from './commands';
-import type { EditResult, Touched } from './commands';
-import { DURATION_LABELS, splitRests } from './durationCore';
-import type { ScoreDocument } from './ScoreDocument';
+import { commitEdit } from '../core/commands';
+import type { EditResult, Touched } from '../core/commands';
+import { DURATION_LABELS, splitRests } from '../notes/durationCore';
+import type { ScoreDocument } from '../core/ScoreDocument';
 
 /** Một ô nhịp có độ dài sai. */
 export interface MeasureIssue {

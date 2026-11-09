@@ -1,5 +1,5 @@
-import AuthImage from './AuthImage';
-import type { ScoreFileInfo } from '../../types';
+import AuthImage from '../common/AuthImage';
+import type { ScoreFileInfo } from '../../../types';
 
 interface Props {
   /** Các ảnh trang đã xử lý (PNG), theo thứ tự trang. */

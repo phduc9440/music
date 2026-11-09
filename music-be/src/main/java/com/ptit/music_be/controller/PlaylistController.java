@@ -96,7 +96,9 @@ public class PlaylistController {
     }
 
     @DeleteMapping("/{id}/scores/{scoreId}")
-    @Operation(summary = "Remove a score from my playlist (score is kept)", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(
+            summary = "Remove a score from my playlist (score is kept)",
+            security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<List<PlaylistItemResponse>> removeScore(@PathVariable String id, @PathVariable String scoreId) {
         return ApiResponse.<List<PlaylistItemResponse>>builder()
                 .result(playlistService.removeScore(id, scoreId))

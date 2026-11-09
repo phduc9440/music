@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { practiceStatsApi } from '../../services';
-import type { PracticePeriod, PracticeTimeBucket } from '../../types';
+import { practiceStatsApi } from '../../../services';
+import type { PracticePeriod, PracticeTimeBucket } from '../../../types';
 
 const PERIODS: { value: PracticePeriod; label: string; hint: string }[] = [
   { value: 'DAY', label: 'Ngày', hint: '30 ngày gần nhất' },

@@ -46,7 +46,9 @@ public class PracticeSessionController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "One of my practice sessions (with error log)", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(
+            summary = "One of my practice sessions (with error log)",
+            security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<PracticeSessionResponse> get(@PathVariable String id) {
         return ApiResponse.<PracticeSessionResponse>builder()
                 .result(practiceSessionService.getSession(id))

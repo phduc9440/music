@@ -2,13 +2,13 @@
  * Khuông nhạc và các thiết lập đầu khuông: thêm/xóa khuông (khuông Fa cho đàn, phần nhạc riêng cho SATB...), đổi khóa
  * (Sol/Fa/Đô), dấu hóa theo khóa nhạc, và chỉ số nhịp (đổi nhịp giữa bài, nhịp tự do).
  */
-import { clefAt } from './clefs';
-import { childOf, commitEdit } from './commands';
-import type { EditResult, Touched } from './commands';
+import { clefAt } from '../notation/clefs';
+import { childOf, commitEdit } from '../core/commands';
+import type { EditResult, Touched } from '../core/commands';
 import { runStructural } from './structure';
-import type { NoteInfo, ScoreDocument } from './ScoreDocument';
-import { measureEnd } from './voices';
-import { clampFifths, intervalFifths } from './pitch';
+import type { NoteInfo, ScoreDocument } from '../core/ScoreDocument';
+import { measureEnd } from '../notes/voices';
+import { clampFifths, intervalFifths } from '../notes/pitch';
 
 /** Các khóa nhạc chọn được: Sol, Sol 8 dưới (Tenor), Fa, Đô dòng 3 (Alto), Đô dòng 4 (Tenor). */
 export type ClefSign = 'G' | 'G8b' | 'F' | 'C' | 'C4';

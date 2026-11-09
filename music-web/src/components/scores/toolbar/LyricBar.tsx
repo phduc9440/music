@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
 import type { ClipboardEvent, KeyboardEvent } from 'react';
-import { canHoldLyric, MAX_VERSE, readLyric } from '../editor/lyrics';
-import type { LyricEnd } from '../editor/lyrics';
-import type { ScoreDocument } from '../editor/ScoreDocument';
-import Modal from './Modal';
+import { canHoldLyric, MAX_VERSE, readLyric } from '../../editor/notation/lyrics';
+import type { LyricEnd } from '../../editor/notation/lyrics';
+import type { ScoreDocument } from '../../editor/core/ScoreDocument';
+import Modal from '../common/Modal';
 
 interface Props {
   doc: ScoreDocument;

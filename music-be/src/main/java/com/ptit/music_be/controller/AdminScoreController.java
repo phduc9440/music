@@ -33,7 +33,8 @@ public class AdminScoreController {
 
     @GetMapping
     @Operation(
-            summary = "All scores of all users (search title/composer/owner email; filters visibility PRIVATE|PENDING|PUBLIC, official true|false, source OMR|IMPORT|MANUAL, difficulty; sort UPDATED|CREATED|TITLE|VIEWS)",
+            summary =
+                    "All scores of all users (search title/composer/owner email; filters visibility PRIVATE|PENDING|PUBLIC, official true|false, source OMR|IMPORT|MANUAL, difficulty; sort UPDATED|CREATED|TITLE|VIEWS)",
             description = "Delete uses DELETE /api/scores/{id}, which already allows ADMIN",
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<PageResponse<ScoreSummaryResponse>> list(
@@ -53,7 +54,8 @@ public class AdminScoreController {
 
     @PutMapping("/{scoreId}/visibility")
     @Operation(
-            summary = "Set a score PUBLIC or PRIVATE right away (PRIVATE: optional reason, leaves the curated library, owner is notified)",
+            summary =
+                    "Set a score PUBLIC or PRIVATE right away (PRIVATE: optional reason, leaves the curated library, owner is notified)",
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<ScoreDetailResponse> setVisibility(
             @PathVariable String scoreId, @Valid @RequestBody AdminScoreVisibilityRequest request) {
@@ -64,7 +66,8 @@ public class AdminScoreController {
 
     @PostMapping("/bulk")
     @Operation(
-            summary = "Apply PUBLIC / PRIVATE (reason) / DELETE to up to 100 scores; each one is processed on its own, failures are listed",
+            summary =
+                    "Apply PUBLIC / PRIVATE (reason) / DELETE to up to 100 scores; each one is processed on its own, failures are listed",
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<AdminScoreBulkResponse> bulk(@Valid @RequestBody AdminScoreBulkRequest request) {
         return ApiResponse.<AdminScoreBulkResponse>builder()

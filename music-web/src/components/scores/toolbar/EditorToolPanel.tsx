@@ -1,15 +1,15 @@
 import { Fragment, useState } from 'react';
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
-import type { SymbolOp } from '../editor/commands';
-import { DYNAMICS, EXTRA_DYNAMICS } from '../editor/marks';
-import type { MarkOp } from '../editor/marks';
-import { TUPLET_PRESETS } from '../editor/tuplets';
-import type { TupletOp } from '../editor/tuplets';
-import type { VoiceOp } from '../editor/voices';
-import type { DurationChoice, DurationType } from '../editor/durations';
-import type { PitchOp } from '../editor/pitch';
-import { DURATION_DRAG_TYPE } from '../editor/staffHit';
-import { useMediaQuery } from '../player/useMediaQuery';
+import type { SymbolOp } from '../../editor/core/commands';
+import { DYNAMICS, EXTRA_DYNAMICS } from '../../editor/notation/marks';
+import type { MarkOp } from '../../editor/notation/marks';
+import { TUPLET_PRESETS } from '../../editor/notes/tuplets';
+import type { TupletOp } from '../../editor/notes/tuplets';
+import type { VoiceOp } from '../../editor/notes/voices';
+import type { DurationChoice, DurationType } from '../../editor/notes/durations';
+import type { PitchOp } from '../../editor/notes/pitch';
+import { DURATION_DRAG_TYPE } from '../../editor/core/staffHit';
+import { useMediaQuery } from '../../player/hooks/useMediaQuery';
 import {
   ToolDelete,
   ToolDot,
@@ -37,7 +37,7 @@ import {
   ToolThirtySecond,
   ToolWhole,
 } from './ToolIcons';
-import { IconRedo, IconSave, IconUndo } from './ViewerIcons';
+import { IconRedo, IconSave, IconUndo } from '../viewer/ViewerIcons';
 
 interface Props {
   /** Chỉ dùng cho Mobile: bảng công cụ đang mở dạng bottom sheet. */

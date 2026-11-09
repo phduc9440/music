@@ -1,5 +1,5 @@
-import { OMR_STEPS, STEP_LATER_HINT } from '../../utils/omr';
-import type { StepState } from '../../utils/omr';
+import { OMR_STEPS, STEP_LATER_HINT } from '../../../utils/omr';
+import type { StepState } from '../../../utils/omr';
 
 interface Props {
   states: StepState[];

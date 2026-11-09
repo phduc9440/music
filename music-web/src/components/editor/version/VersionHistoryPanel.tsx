@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
-import { versionApi } from '../../services/versionApi';
-import type { ScoreVersion } from '../../types/version';
-import { formatDateTime } from '../../utils/score';
-import Modal from '../scores/Modal';
-import MusicXmlViewer from '../scores/MusicXmlViewer';
+import { versionApi } from '../../../services/versionApi';
+import type { ScoreVersion } from '../../../types/version';
+import { formatDateTime } from '../../../utils/score';
+import Modal from '../../scores/common/Modal';
+import MusicXmlViewer from '../../scores/viewer/MusicXmlViewer';
 import VersionDiffView from './VersionDiffView';
 import { formatVersionSize, getVersionErrorMessage, versionSourceLabel } from './versionUtils';
 import './version.css';
-import { useDialog } from '../ui/dialog-context';
+import { useDialog } from '../../ui/dialog-context';
 
 interface Props {
   scoreId: string;

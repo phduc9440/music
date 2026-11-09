@@ -5,7 +5,7 @@
  * gian đã mở lặp lại nên một ô có thể xuất hiện nhiều lần; mỗi lần xuất hiện của A cùng lần xuất hiện đầu tiên của B
  * sau nó tạo thành một "đoạn" (segment). Đang phát thì lặp đoạn đầu tiên mà chưa phát qua hết ô B (xem {@link pickSegment}).
  */
-import type { Timeline } from './timeline';
+import type { Timeline } from '../engine/timeline';
 
 export interface LoopSettings {
   /** Ô bắt đầu (từ 0), null nếu chưa đặt. */

@@ -3,10 +3,10 @@
  * fermata, rải hợp âm, mức to nhỏ (ppp…fff, sf, sfz…), cresc./dim., pedal, 8va/8vb và nốt hoa mỹ; cùng bộ điều phối cho
  * dấu lặp và chỉ dẫn nhảy. Bấm lần nữa trên cùng vùng chọn thì gỡ ký hiệu (trừ nốt hoa mỹ: thêm một nốt mỗi lần bấm).
  */
-import { childOf, commitEdit, readPitch, touch } from './commands';
-import type { EditResult, Touched } from './commands';
-import { inRange, keyAlter, pitchToMidi, STEPS } from './pitch';
-import type { Pitch } from './pitch';
+import { childOf, commitEdit, readPitch, touch } from '../core/commands';
+import type { EditResult, Touched } from '../core/commands';
+import { inRange, keyAlter, pitchToMidi, STEPS } from '../notes/pitch';
+import type { Pitch } from '../notes/pitch';
 import {
   NAV_LABELS,
   setRepeatTimes,
@@ -15,11 +15,11 @@ import {
   toggleEnding,
   toggleNavigation,
   toggleRepeat,
-} from './repeats';
-import type { NavKind } from './repeats';
-import { setSectionLabel } from './sections';
-import type { NoteInfo, ScoreDocument } from './ScoreDocument';
-import { notationsOf, removeNotation } from './ties';
+} from '../structure/repeats';
+import type { NavKind } from '../structure/repeats';
+import { setSectionLabel } from '../structure/sections';
+import type { NoteInfo, ScoreDocument } from '../core/ScoreDocument';
+import { notationsOf, removeNotation } from '../notes/ties';
 
 export type Articulation =
   | 'staccato'

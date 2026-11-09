@@ -1,5 +1,5 @@
-import type { DiffErrorType, DiffMeasure, DiffStatus, ScoreVersion, VersionSource } from '../../types/version';
-import { getErrorCode, getSaveErrorMessage } from '../../utils/score';
+import type { DiffErrorType, DiffMeasure, DiffStatus, ScoreVersion, VersionSource } from '../../../types/version';
+import { getErrorCode, getSaveErrorMessage } from '../../../utils/score';
 
 export const VERSION_SOURCE_LABELS: Record<VersionSource, string> = {
   EDITOR: 'Chỉnh sửa',

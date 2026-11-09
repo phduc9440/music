@@ -2,11 +2,11 @@
  * Chỉ số nhịp (tempo) hiện ở đầu bản nhạc, ví dụ "♩ = 100" và chữ tốc độ ("Allegro"). Lấy từ <direction> đầu tiên
  * có <metronome> hoặc <sound tempo>; sửa cả hai để hiển thị và phát nhạc khớp nhau.
  */
-import { childOf, commitEdit } from './commands';
-import type { EditResult, Touched } from './commands';
-import { DURATION_QUARTERS } from './durations';
-import type { DurationType } from './durations';
-import type { ScoreDocument } from './ScoreDocument';
+import { childOf, commitEdit } from '../core/commands';
+import type { EditResult, Touched } from '../core/commands';
+import { DURATION_QUARTERS } from '../notes/durations';
+import type { DurationType } from '../notes/durations';
+import type { ScoreDocument } from '../core/ScoreDocument';
 
 export interface TempoInfo {
   bpm: number;

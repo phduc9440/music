@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { toast } from 'react-toastify';
-import { playlistApi } from '../../services';
-import { getErrorMessage } from '../../utils/score';
-import Modal from './Modal';
-import type { Playlist } from '../../types';
+import { playlistApi } from '../../../services';
+import { getErrorMessage } from '../../../utils/score';
+import Modal from '../common/Modal';
+import type { Playlist } from '../../../types';
 
 const MAX_NAME = 255; // khớp BE (mã lỗi 2602)
 const MAX_DESCRIPTION = 2000; // khớp BE (mã lỗi 2603)

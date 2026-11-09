@@ -8,8 +8,8 @@
  * Mọi hàm nhận `BaseAudioContext` nên chạy được cả trên `OfflineAudioContext` (dùng để kiểm thử mà không cần loa).
  */
 import { levelAmplitude } from './loudness';
-import { midiToFrequency } from './pitch';
-import type { ScoreDocument } from './ScoreDocument';
+import { midiToFrequency } from '../notes/pitch';
+import type { ScoreDocument } from '../core/ScoreDocument';
 
 export type InstrumentId = 'piano' | 'strings' | 'flute' | 'organ' | 'guitar' | 'choir' | 'brass' | 'bells';
 

@@ -3,8 +3,8 @@
  * quãng tám. `<pitch>` luôn là cao độ nghe thấy, nên khi bấm lên khuông để chèn nốt trong đoạn 8va thì cao độ thật
  * phải cộng thêm phần lệch này.
  */
-import { toOnsetKey } from './ScoreDocument';
-import type { ScoreDocument } from './ScoreDocument';
+import { toOnsetKey } from '../core/ScoreDocument';
+import type { ScoreDocument } from '../core/ScoreDocument';
 
 const numberIn = (parent: Element, tag: string): number | null => {
   const text = Array.from(parent.children)

@@ -3,8 +3,8 @@
  * nốt đầu mang `<tuplet type="start">`, nốt cuối mang `<tuplet type="stop">`. `<duration>` luôn là độ dài thật (đã
  * rút ngắn), còn `<type>` là hình nốt viết ra.
  */
-import { childOf, commitEdit, hasTie, touch } from './commands';
-import type { EditCommand, EditResult, Touched } from './commands';
+import { childOf, commitEdit, hasTie, touch } from '../core/commands';
+import type { EditCommand, EditResult, Touched } from '../core/commands';
 import { divisionsFactor, scaleDivisions } from './divisions';
 import {
   choiceQuarters,
@@ -24,8 +24,8 @@ import {
   writtenChoice,
 } from './durationCore';
 import type { Dots, DurationChoice, Entry, Plan, Ratio } from './durationCore';
-import type { NoteInfo, ScoreDocument } from './ScoreDocument';
-import { runStructural } from './structure';
+import type { NoteInfo, ScoreDocument } from '../core/ScoreDocument';
+import { runStructural } from '../structure/structure';
 import { notationsOf, removeNotation } from './ties';
 
 /** Các kiểu chùm có sẵn trên bảng công cụ. */

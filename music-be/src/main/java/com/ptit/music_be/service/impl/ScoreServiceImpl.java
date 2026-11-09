@@ -362,8 +362,8 @@ public class ScoreServiceImpl implements ScoreService {
     public PageResponse<ScoreSummaryResponse> getOfficialCandidates(int page, int size, String keyword) {
         requireAdmin();
         int safeSize = size <= 0 ? DEFAULT_PAGE_SIZE : Math.min(size, MAX_PAGE_SIZE);
-        Page<Score> result =
-                scoreRepository.searchOfficialCandidates(normalizeKeyword(keyword), PageRequest.of(Math.max(page, 0), safeSize));
+        Page<Score> result = scoreRepository.searchOfficialCandidates(
+                normalizeKeyword(keyword), PageRequest.of(Math.max(page, 0), safeSize));
         return toSummaryPage(result, true);
     }
 
@@ -398,7 +398,9 @@ public class ScoreServiceImpl implements ScoreService {
                             score, thumbnails.get(score.getId()), tagsByScore.getOrDefault(score.getId(), List.of()));
                     if (withOwner) {
                         summary.setOwnerEmail(
-                                score.getMember() == null ? null : score.getMember().getEmail());
+                                score.getMember() == null
+                                        ? null
+                                        : score.getMember().getEmail());
                     }
                     return summary;
                 })

@@ -18,6 +18,7 @@ public class PracticeSessionRequest {
     String scoreId;
     /** 1 = FREE, 2 = LOOP, 3 = TEST. */
     PracticeMode mode;
+
     Double tempoPercent;
     Integer loopStartMeasure;
     Integer loopEndMeasure;
@@ -32,6 +33,7 @@ public class PracticeSessionRequest {
     Integer missedCount;
     /** Không gửi thì BE tự tính. */
     Double accuracyPct;
+
     Double timingAccuracyPct;
     Double scorePoints;
     Boolean isCompleted;

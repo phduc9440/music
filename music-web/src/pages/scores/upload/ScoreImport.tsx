@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { importApi, tagApi } from '../../services';
-import type { Tag } from '../../types';
+import { importApi, tagApi } from '../../../services';
+import type { Tag } from '../../../types';
 import {
   fileNameWithoutExtension,
   formatSize,
@@ -12,8 +12,8 @@ import {
   MAX_COMPOSER,
   MAX_TITLE,
   UPLOAD_MAX_FILE_BYTES,
-} from '../../utils/score';
-import '../../components/scores/scores.css';
+} from '../../../utils/score';
+import '../../../components/scores/scores.css';
 import './ScoreUpload.css';
 
 const MAX_TAGS = 10; // khớp BE (mã lỗi 2302)

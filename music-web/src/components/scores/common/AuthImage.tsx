@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { fetchFileBlob } from '../../services';
+import { fetchFileBlob } from '../../../services';
 
 interface AuthImageProps {
   /** Link tải của BE, ví dụ /api/files/{id}/download?inline=true */

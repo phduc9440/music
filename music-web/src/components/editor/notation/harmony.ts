@@ -2,9 +2,9 @@
  * Hợp âm (chord symbol) ghi trên nốt: <harmony> đứng ngay trước thẻ <note> đầu của mục. Gõ bằng ký hiệu thường dùng
  * như "C", "Am7", "G/B", "F#m", "Bbmaj7", "C6/9", "N.C."; hậu tố lạ vẫn giữ nguyên chữ (kind = other).
  */
-import { commitEdit, touch } from './commands';
-import type { EditResult, Touched } from './commands';
-import type { NoteInfo, ScoreDocument } from './ScoreDocument';
+import { commitEdit, touch } from '../core/commands';
+import type { EditResult, Touched } from '../core/commands';
+import type { NoteInfo, ScoreDocument } from '../core/ScoreDocument';
 
 interface Note {
   step: string;

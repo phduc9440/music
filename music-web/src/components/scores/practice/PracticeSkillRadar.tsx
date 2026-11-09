@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 import { PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, ResponsiveContainer, Tooltip } from 'recharts';
-import { practiceStatsApi } from '../../services';
-import type { PracticeSkills } from '../../types';
+import { practiceStatsApi } from '../../../services';
+import type { PracticeSkills } from '../../../types';
 
 const RANGES = [7, 30, 90];
 

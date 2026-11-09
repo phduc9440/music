@@ -1,6 +1,6 @@
 /** Giới hạn chuyển giọng khi nghe và âm vực đàn piano (A0–C8). */
-import { CHORD_TRACK_ID } from './timeline';
-import type { Timeline } from './timeline';
+import { CHORD_TRACK_ID } from '../engine/timeline';
+import type { Timeline } from '../engine/timeline';
 
 export const MIN_TRANSPOSE = -12;
 export const MAX_TRANSPOSE = 12;

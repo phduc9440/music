@@ -51,8 +51,11 @@ class AdminScoreSearchQueryTest {
     @Test
     void invalidFilterValuesAreRejected() {
         asAdmin();
-        assertThrows(AppException.class, () -> scoreService.getAllForAdmin(0, 20, null, null, "maybe", null, null, null));
-        assertThrows(AppException.class, () -> scoreService.getAllForAdmin(0, 20, null, null, null, null, null, "RANDOM"));
-        assertThrows(AppException.class, () -> scoreService.getAllForAdmin(0, 20, null, null, null, "WRONG", null, null));
+        assertThrows(
+                AppException.class, () -> scoreService.getAllForAdmin(0, 20, null, null, "maybe", null, null, null));
+        assertThrows(
+                AppException.class, () -> scoreService.getAllForAdmin(0, 20, null, null, null, null, null, "RANDOM"));
+        assertThrows(
+                AppException.class, () -> scoreService.getAllForAdmin(0, 20, null, null, null, "WRONG", null, null));
     }
 }

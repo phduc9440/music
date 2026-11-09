@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import Modal from '../../components/scores/Modal';
-import { playlistApi, scoreApi } from '../../services';
-import { getErrorMessage } from '../../utils/score';
-import { DIFFICULTY_LABELS } from '../../utils/score';
-import type { Playlist, PlaylistItem, ScoreSummary } from '../../types';
-import '../../components/scores/scores.css';
+import Modal from '../../../components/scores/common/Modal';
+import { playlistApi, scoreApi } from '../../../services';
+import { getErrorMessage } from '../../../utils/score';
+import { DIFFICULTY_LABELS } from '../../../utils/score';
+import type { Playlist, PlaylistItem, ScoreSummary } from '../../../types';
+import '../../../components/scores/scores.css';
 
 /** Trang /playlists/:id: xem bài trong playlist, thêm/xóa bài, kéo thả đổi thứ tự (mục 3.10). */
 export default function PlaylistDetail() {

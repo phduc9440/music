@@ -3,10 +3,10 @@
  * (`staffHit`), cao độ mặc định khi nhập nốt (`durations`) và hộp thoại đổi khóa (`staves`). Tính cả
  * `<clef-octave-change>` (khóa Sol 8 dưới của bè Tenor).
  */
-import { childOf } from './commands';
-import { STEPS, pitchToMidi } from './pitch';
-import type { Step } from './pitch';
-import type { ScoreDocument } from './ScoreDocument';
+import { childOf } from '../core/commands';
+import { STEPS, pitchToMidi } from '../notes/pitch';
+import type { Step } from '../notes/pitch';
+import type { ScoreDocument } from '../core/ScoreDocument';
 
 export interface ClefInfo {
   /** 'G' | 'F' | 'C' (hoặc dấu khóa lạ như 'percussion'). */

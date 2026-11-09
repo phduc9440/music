@@ -4,10 +4,10 @@
  *
  * `toScoringNotes` là dữ liệu nốt chuẩn bàn giao cho phần chấm điểm (Scoring).
  */
-import { partLabel } from '../editor/instruments';
-import { buildPlayback } from '../editor/playback';
-import type { PlayMeasure, PlayNote } from '../editor/playback';
-import type { ScoreDocument } from '../editor/ScoreDocument';
+import { partLabel } from '../../editor/audio/instruments';
+import { buildPlayback } from '../../editor/audio/playback';
+import type { PlayMeasure, PlayNote } from '../../editor/audio/playback';
+import type { ScoreDocument } from '../../editor/core/ScoreDocument';
 
 export const MIN_BPM = 20;
 export const MAX_BPM = 300;

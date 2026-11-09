@@ -26,7 +26,9 @@ public class AdminTagController {
     AdminTagService adminTagService;
 
     @GetMapping
-    @Operation(summary = "List all tags with the number of scores using each", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(
+            summary = "List all tags with the number of scores using each",
+            security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<List<AdminTagResponse>> list() {
         return ApiResponse.<List<AdminTagResponse>>builder()
                 .result(adminTagService.getTags())
@@ -34,7 +36,9 @@ public class AdminTagController {
     }
 
     @PostMapping
-    @Operation(summary = "Create a tag (slug is generated from the name)", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(
+            summary = "Create a tag (slug is generated from the name)",
+            security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<AdminTagResponse> create(@RequestBody TagRequest request) {
         return ApiResponse.<AdminTagResponse>builder()
                 .result(adminTagService.create(request))

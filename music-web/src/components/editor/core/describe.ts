@@ -1,9 +1,9 @@
 /** Mô tả vùng chọn cho thanh trạng thái, ví dụ "G4 · nốt đen · ô 5 · tay phải". */
 import { readPitch } from './commands';
 import type { ScoreDocument } from './ScoreDocument';
-import { dotCount, dotsLabel } from './durationCore';
-import { ratioOf, tupletName } from './tuplets';
-import { pitchName, spellMidi } from './pitch';
+import { dotCount, dotsLabel } from '../notes/durationCore';
+import { ratioOf, tupletName } from '../notes/tuplets';
+import { pitchName, spellMidi } from '../notes/pitch';
 
 /** Tên trường độ theo giá trị <type> của MusicXML. */
 const TYPE_LABELS: Record<string, string> = {

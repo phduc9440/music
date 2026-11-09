@@ -1,8 +1,8 @@
 import { toast } from 'react-toastify';
-import { downloadFile } from '../../services';
-import { TASK_STATUS_LABELS, TASK_TYPE_LABELS, formatDateTime } from '../../utils/score';
-import type { AiTaskInfo, ScoreFileInfo } from '../../types';
-import { EXPORT_TASK_TYPES, stepLabel, translateTaskError } from '../export/exportUtils';
+import { downloadFile } from '../../../services';
+import { TASK_STATUS_LABELS, TASK_TYPE_LABELS, formatDateTime } from '../../../utils/score';
+import type { AiTaskInfo, ScoreFileInfo } from '../../../types';
+import { EXPORT_TASK_TYPES, stepLabel, translateTaskError } from '../../export/exportUtils';
 
 /** File do tác vụ xuất tạo ra (id nằm trong resultData.fileId), nếu còn trong danh sách file của bản nhạc. */
 const exportedFileOf = (task: AiTaskInfo, files: ScoreFileInfo[]): ScoreFileInfo | undefined => {

@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import Pagination from '../../components/scores/Pagination';
-import ScoreCard from '../../components/scores/ScoreCard';
-import { scoreApi } from '../../services';
-import type { Difficulty, PageResult, ScoreSummary } from '../../types';
-import { DIFFICULTY_LABELS, getScorePath } from '../../utils/score';
-import '../../components/scores/scores.css';
+import Pagination from '../../../components/scores/common/Pagination';
+import ScoreCard from '../../../components/scores/library/ScoreCard';
+import { scoreApi } from '../../../services';
+import type { Difficulty, PageResult, ScoreSummary } from '../../../types';
+import { DIFFICULTY_LABELS, getScorePath } from '../../../utils/score';
+import '../../../components/scores/scores.css';
 
 const PAGE_SIZE = 12;
 

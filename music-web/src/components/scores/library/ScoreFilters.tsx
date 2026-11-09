@@ -1,5 +1,5 @@
-import { MAX_KEYWORD } from '../../utils/score';
-import type { Difficulty, ProcessingStatus, ScoreSort, ScoreSource, Tag } from '../../types';
+import { MAX_KEYWORD } from '../../../utils/score';
+import type { Difficulty, ProcessingStatus, ScoreSort, ScoreSource, Tag } from '../../../types';
 
 interface Props {
   keyword: string;

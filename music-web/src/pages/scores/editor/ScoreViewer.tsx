@@ -1,18 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import DownloadMenu from '../../components/scores/DownloadMenu';
-import VersionHistoryPanel from '../../components/editor/VersionHistoryPanel';
-import InstrumentMenu from '../../components/scores/InstrumentMenu';
-import EditorToolPanel from '../../components/scores/EditorToolPanel';
-import ChordBar from '../../components/scores/ChordBar';
-import NotationModal from '../../components/scores/NotationModal';
-import { readNotation } from '../../components/editor/staves';
-import type { NotationChange } from '../../components/editor/staves';
-import LyricBar from '../../components/scores/LyricBar';
-import Modal from '../../components/scores/Modal';
-import ScoreCanvas from '../../components/scores/ScoreCanvas';
-import ToolbarMoreMenu from '../../components/scores/ToolbarMoreMenu';
-import ZoomControl from '../../components/scores/ZoomControl';
+import DownloadMenu from '../../../components/scores/viewer/DownloadMenu';
+import VersionHistoryPanel from '../../../components/editor/version/VersionHistoryPanel';
+import InstrumentMenu from '../../../components/scores/viewer/InstrumentMenu';
+import EditorToolPanel from '../../../components/scores/toolbar/EditorToolPanel';
+import ChordBar from '../../../components/scores/toolbar/ChordBar';
+import NotationModal from '../../../components/scores/toolbar/NotationModal';
+import { readNotation } from '../../../components/editor/structure/staves';
+import type { NotationChange } from '../../../components/editor/structure/staves';
+import LyricBar from '../../../components/scores/toolbar/LyricBar';
+import Modal from '../../../components/scores/common/Modal';
+import ScoreCanvas from '../../../components/scores/viewer/ScoreCanvas';
+import ToolbarMoreMenu from '../../../components/scores/toolbar/ToolbarMoreMenu';
+import ZoomControl from '../../../components/scores/viewer/ZoomControl';
 import {
   IconBack,
   IconEdit,
@@ -27,18 +27,18 @@ import {
   IconScroll,
   IconShrink,
   IconUndo,
-} from '../../components/scores/ViewerIcons';
-import { syncTitle } from '../../components/editor/header';
-import { ScoreDocument } from '../../components/editor/ScoreDocument';
-import { DURATION_LABELS, dotsLabel } from '../../components/editor/durations';
-import { PlayerBar } from '../../components/player/PlayerBar';
-import { usePlayer } from '../../components/player/usePlayer';
-import { useScoreEditor } from '../../components/editor/useScoreEditor';
-import { countView } from '../../services/playbackApi';
-import { fetchMusicXmlWithVersion, scoreApi } from '../../services';
-import type { ScoreDetail as ScoreDetailData } from '../../types';
-import { isValidScoreId } from '../../utils/omr';
-import { getHttpStatus, useScoreBase } from '../../utils/score';
+} from '../../../components/scores/viewer/ViewerIcons';
+import { syncTitle } from '../../../components/editor/structure/header';
+import { ScoreDocument } from '../../../components/editor/core/ScoreDocument';
+import { DURATION_LABELS, dotsLabel } from '../../../components/editor/notes/durations';
+import { PlayerBar } from '../../../components/player/PlayerBar';
+import { usePlayer } from '../../../components/player/hooks/usePlayer';
+import { useScoreEditor } from '../../../components/editor/core/useScoreEditor';
+import { countView } from '../../../services/playbackApi';
+import { fetchMusicXmlWithVersion, scoreApi } from '../../../services';
+import type { ScoreDetail as ScoreDetailData } from '../../../types';
+import { isValidScoreId } from '../../../utils/omr';
+import { getHttpStatus, useScoreBase } from '../../../utils/score';
 import {
   ZOOM_DEFAULT,
   ZOOM_STEP,
@@ -47,9 +47,9 @@ import {
   loadViewerPrefs,
   performanceWarning,
   saveViewerPrefs,
-} from '../../utils/viewer';
-import type { MusicXmlInfo, ViewMode } from '../../utils/viewer';
-import '../../components/scores/scores.css';
+} from '../../../utils/viewer';
+import type { MusicXmlInfo, ViewMode } from '../../../utils/viewer';
+import '../../../components/scores/scores.css';
 import './ScoreViewer.css';
 
 type Phase = 'loading' | 'ready' | 'notFound' | 'notReady' | 'parseError' | 'error';

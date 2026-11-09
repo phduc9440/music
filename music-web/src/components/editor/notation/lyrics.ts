@@ -3,9 +3,9 @@
  * cho từng lời (verse). Ghi vào <lyric number> trong thẻ <note>; từ nhiều âm tiết dùng <syllabic> begin/middle/end.
  * Tiếng Việt mỗi chữ là một âm tiết nên gõ cách nhau bằng dấu cách là đủ; dấu "-" dùng khi một chữ trải qua nhiều nốt.
  */
-import { childOf, commitEdit, hasTie, touch } from './commands';
-import type { EditResult, Touched } from './commands';
-import type { NoteInfo, ScoreDocument } from './ScoreDocument';
+import { childOf, commitEdit, hasTie, touch } from '../core/commands';
+import type { EditResult, Touched } from '../core/commands';
+import type { NoteInfo, ScoreDocument } from '../core/ScoreDocument';
 
 export const MAX_VERSE = 4;
 

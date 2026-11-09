@@ -4,11 +4,11 @@
  * đã nằm trong tỉ lệ viewBox → màn hình của thẻ <svg> nên không nhân thêm.
  */
 import type { OpenSheetMusicDisplay } from 'opensheetmusicdisplay';
-import { clefAt, naturalAt, topLineIndex } from './clefs';
-import type { InsertTarget } from './durations';
-import { octaveShiftAt } from './octave';
+import { clefAt, naturalAt, topLineIndex } from '../notation/clefs';
+import type { InsertTarget } from '../notes/durations';
+import { octaveShiftAt } from '../notes/octave';
 import { NOTE_ID_ATTR } from './osmdBridge';
-import type { Step } from './pitch';
+import type { Step } from '../notes/pitch';
 import type { ScoreDocument } from './ScoreDocument';
 
 /** Kiểu dữ liệu kéo-thả của nút trường độ trên bảng công cụ. */

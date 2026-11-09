@@ -5,10 +5,10 @@
  * Lỗi tải một phần (sau khi thử lại một lần) đưa sampler về trạng thái "error"; nơi gọi tự chuyển sang piano tổng hợp
  * của `instruments.ts` và báo "Đang dùng âm thanh thay thế".
  */
-import { getMaster } from '../editor/instruments';
-import { levelDriveDb } from '../editor/loudness';
-import type { Voice } from '../editor/instruments';
-import type { SoundQuality } from './settings';
+import { getMaster } from '../../editor/audio/instruments';
+import { levelDriveDb } from '../../editor/audio/loudness';
+import type { Voice } from '../../editor/audio/instruments';
+import type { SoundQuality } from '../state/settings';
 
 export type SamplerState = 'idle' | 'loading' | 'ready' | 'error' | 'unsupported';
 

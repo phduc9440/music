@@ -2,12 +2,12 @@
  * Chuyển giọng: đọc khóa nhạc đầu bài, chọn cách viết giọng mới ít dấu hóa nhất và gọi tên giọng bằng tiếng Việt.
  * Chỉ chứa hàm thuần (phần Player dùng để hiện nhãn "G trưởng → A trưởng"; phần áp dụng vào bản nhạc dùng lại ở đây).
  */
-import { readPitch, refreshAccidentals, writePitch } from './commands';
-import type { EditResult } from './commands';
+import { readPitch, refreshAccidentals, writePitch } from '../core/commands';
+import type { EditResult } from '../core/commands';
 import { inRange, keyAlter, pitchToMidi, spellMidiRelative } from './pitch';
 import type { Pitch, Step } from './pitch';
-import type { ScoreDocument } from './ScoreDocument';
-import { runStructural } from './structure';
+import type { ScoreDocument } from '../core/ScoreDocument';
+import { runStructural } from '../structure/structure';
 
 /** Khóa nhạc: số dấu hóa (dương = thăng, âm = giáng) và thể trưởng / thứ. */
 export interface KeySignature {

@@ -1,5 +1,5 @@
 /** Tô nốt đang vang và cuộn theo bản nhạc khi phát, chỉ đổi class CSS trên SVG của OSMD (không vẽ lại). */
-import { NOTE_ID_ATTR, NOTE_IDS_ATTR } from '../editor/osmdBridge';
+import { NOTE_ID_ATTR, NOTE_IDS_ATTR } from '../../editor/core/osmdBridge';
 
 export const PLAYING_CLASS = 'pl-note--playing';
 

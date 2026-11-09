@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { IconMore } from './ViewerIcons';
+import { IconMore } from '../viewer/ViewerIcons';
 
 export interface MoreMenuItem {
   key: string;

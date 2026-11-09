@@ -1,19 +1,19 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import DeleteScoreModal from '../../components/scores/DeleteScoreModal';
-import EditScoreModal from '../../components/scores/EditScoreModal';
-import FilesTable from '../../components/scores/FilesTable';
-import RequestAccess from '../../components/scores/RequestAccess';
-import ReviewsSection from '../../components/scores/ReviewsSection';
-import ScoreHero, { ScorePreview, ScoreSidebar } from '../../components/scores/ScoreHero';
-import Modal from '../../components/scores/Modal';
-import ShareModal from '../../components/scores/ShareModal';
-import TasksTable from '../../components/scores/TasksTable';
-import { scoreApi } from '../../services';
-import type { ScoreDetail as ScoreDetailData } from '../../types';
-import { getHttpStatus, POLL_INTERVAL_MS } from '../../utils/score';
-import '../../components/scores/scores.css';
+import DeleteScoreModal from '../../../components/scores/detail/DeleteScoreModal';
+import EditScoreModal from '../../../components/scores/detail/EditScoreModal';
+import FilesTable from '../../../components/scores/detail/FilesTable';
+import RequestAccess from '../../../components/scores/detail/RequestAccess';
+import ReviewsSection from '../../../components/scores/detail/ReviewsSection';
+import ScoreHero, { ScorePreview, ScoreSidebar } from '../../../components/scores/detail/ScoreHero';
+import Modal from '../../../components/scores/common/Modal';
+import ShareModal from '../../../components/scores/detail/ShareModal';
+import TasksTable from '../../../components/scores/detail/TasksTable';
+import { scoreApi } from '../../../services';
+import type { ScoreDetail as ScoreDetailData } from '../../../types';
+import { getHttpStatus, POLL_INTERVAL_MS } from '../../../utils/score';
+import '../../../components/scores/scores.css';
 import './ScoreDetail.css';
 
 type LoadState =

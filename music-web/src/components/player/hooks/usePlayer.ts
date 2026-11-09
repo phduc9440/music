@@ -5,25 +5,25 @@
  * phải vẽ lại liên tục.
  */
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { detectInstrument, partLabel } from '../editor/instruments';
-import { readStartingKey } from '../editor/transpose';
-import type { KeySignature } from '../editor/transpose';
-import type { InstrumentId } from '../editor/instruments';
-import { stopAllTones, getSharedAudioContext } from '../editor/previewTone';
-import type { ScoreDocument } from '../editor/ScoreDocument';
-import { PlayerEngine } from './PlayerEngine';
-import type { EngineStatus } from './PlayerEngine';
-import { getPianoSampler } from './sampler';
-import type { SamplerSnapshot } from './sampler';
-import { isLoopComplete, loopSegments, NO_LOOP } from './loop';
-import type { LoopSegment, LoopSettings } from './loop';
-import { EMPTY_MIXER, silentTracks } from './mixer';
-import type { MixerState, TrackMix } from './mixer';
-import { loadPlayerSettings, loadScoreSettings, saveScoreSettings } from './settings';
-import { trackOfNoteId } from './highlight';
-import { activeNoteIds, buildTimeline, firstOrderOfMeasure, measureOrderAt } from './timeline';
-import { countOutOfRange } from './transposeRange';
-import type { Timeline } from './timeline';
+import { detectInstrument, partLabel } from '../../editor/audio/instruments';
+import { readStartingKey } from '../../editor/notes/transpose';
+import type { KeySignature } from '../../editor/notes/transpose';
+import type { InstrumentId } from '../../editor/audio/instruments';
+import { stopAllTones, getSharedAudioContext } from '../../editor/audio/previewTone';
+import type { ScoreDocument } from '../../editor/core/ScoreDocument';
+import { PlayerEngine } from '../engine/PlayerEngine';
+import type { EngineStatus } from '../engine/PlayerEngine';
+import { getPianoSampler } from '../engine/sampler';
+import type { SamplerSnapshot } from '../engine/sampler';
+import { isLoopComplete, loopSegments, NO_LOOP } from '../state/loop';
+import type { LoopSegment, LoopSettings } from '../state/loop';
+import { EMPTY_MIXER, silentTracks } from '../state/mixer';
+import type { MixerState, TrackMix } from '../state/mixer';
+import { loadPlayerSettings, loadScoreSettings, saveScoreSettings } from '../state/settings';
+import { trackOfNoteId } from '../engine/highlight';
+import { activeNoteIds, buildTimeline, firstOrderOfMeasure, measureOrderAt } from '../engine/timeline';
+import { countOutOfRange } from '../state/transposeRange';
+import type { Timeline } from '../engine/timeline';
 
 /** Nhạc cụ của một part để hiện trong menu "Nhạc cụ". */
 export interface PartInstrument {

@@ -28,7 +28,8 @@ public class AdminAiTaskController {
 
     @GetMapping
     @Operation(
-            summary = "AI tasks, newest first (status PENDING|PROCESSING|COMPLETED|FAILED|CANCELLED, type, keyword = score title/owner email, from/to yyyy-MM-dd)",
+            summary =
+                    "AI tasks, newest first (status PENDING|PROCESSING|COMPLETED|FAILED|CANCELLED, type, keyword = score title/owner email, from/to yyyy-MM-dd)",
             description = "Cancel uses POST /api/ai-tasks/{id}/cancel, which already allows ADMIN",
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<PageResponse<AdminAiTaskResponse>> list(
@@ -45,7 +46,8 @@ public class AdminAiTaskController {
     }
 
     @GetMapping("/summary")
-    @Operation(summary = "Queue summary: pending, processing, failed/completed in 24h, average run time by type (7 days)",
+    @Operation(
+            summary = "Queue summary: pending, processing, failed/completed in 24h, average run time by type (7 days)",
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<AdminAiTaskResponse.Summary> summary() {
         return ApiResponse.<AdminAiTaskResponse.Summary>builder()
@@ -63,7 +65,8 @@ public class AdminAiTaskController {
 
     @PostMapping("/{taskId}/retry")
     @Operation(
-            summary = "Retry a FAILED/CANCELLED OMR task (creates a new task for the same score, assigned to its owner)",
+            summary =
+                    "Retry a FAILED/CANCELLED OMR task (creates a new task for the same score, assigned to its owner)",
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<AdminAiTaskResponse> retry(@PathVariable String taskId) {
         return ApiResponse.<AdminAiTaskResponse>builder()

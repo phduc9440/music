@@ -352,7 +352,8 @@ public class AuthServiceImpl implements AuthService {
 
         applyNewPassword(user, request.getNewPassword());
         emailService.sendPasswordChangedEmail(user.getEmail(), user.getFullName(), false);
-        // Các thiết bị khác bị đăng xuất; thiết bị đang dùng nhận token mới (cấp sau mốc đổi) để không bị đăng xuất theo
+        // Các thiết bị khác bị đăng xuất; thiết bị đang dùng nhận token mới (cấp sau mốc đổi) để không bị đăng xuất
+        // theo
         return issueTokens(user);
     }
 

@@ -40,7 +40,9 @@ class AdminDashboardServiceImplTest {
         assertTrue(r.getMembersWithoutDate() >= 0);
         assertNotNull(r.getTotals());
         assertTrue(r.getTotals().getMembers() >= r.getTotals().getAdmins());
-        assertEquals(r.getTotals().getMembers(), r.getTotals().getActiveMembers() + r.getTotals().getLockedMembers());
+        assertEquals(
+                r.getTotals().getMembers(),
+                r.getTotals().getActiveMembers() + r.getTotals().getLockedMembers());
         assertEquals(
                 r.getTotals().getScores(),
                 r.getScoresByVisibility().stream().mapToLong(k -> k.getCount()).sum());

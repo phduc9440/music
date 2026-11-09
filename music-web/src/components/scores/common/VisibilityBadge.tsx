@@ -1,5 +1,5 @@
-import { Icon } from '../ui';
-import type { IconName } from '../ui';
+import { Icon } from '../../ui';
+import type { IconName } from '../../ui';
 
 const BADGE: Record<string, { icon: IconName; label: string }> = {
   PUBLIC: { icon: 'globe', label: 'Công khai' },

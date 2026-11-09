@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { INSTRUMENTS } from '../editor/instruments';
-import type { InstrumentId } from '../editor/instruments';
-import type { PartInstrument } from '../player/usePlayer';
+import { INSTRUMENTS } from '../../editor/audio/instruments';
+import type { InstrumentId } from '../../editor/audio/instruments';
+import type { PartInstrument } from '../../player/hooks/usePlayer';
 import { IconInstrument } from './ViewerIcons';
 
 /**

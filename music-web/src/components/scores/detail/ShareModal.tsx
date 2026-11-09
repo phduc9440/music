@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { toast } from 'react-toastify';
-import { sharingApi } from '../../services';
-import { SHARE_PERMISSION_LABELS, getErrorMessage } from '../../utils/score';
-import type { AccessRequest, ScoreSharing, SharePermission, Visibility } from '../../types';
-import Modal from './Modal';
+import { sharingApi } from '../../../services';
+import { SHARE_PERMISSION_LABELS, getErrorMessage } from '../../../utils/score';
+import type { AccessRequest, ScoreSharing, SharePermission, Visibility } from '../../../types';
+import Modal from '../common/Modal';
 
 interface Props {
   scoreId: string;

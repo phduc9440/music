@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
-import { DURATION_LABELS } from '../editor/durations';
-import type { DurationType } from '../editor/durations';
-import { DEFAULT_SIZE, SIZE_MAX, SIZE_MIN } from '../editor/header';
-import type { HeaderField, HeaderState, TextStyle } from '../editor/header';
-import { BPM_MAX, BPM_MIN } from '../editor/tempo';
-import type { TempoInfo } from '../editor/tempo';
+import { DURATION_LABELS } from '../../editor/notes/durations';
+import type { DurationType } from '../../editor/notes/durations';
+import { DEFAULT_SIZE, SIZE_MAX, SIZE_MIN } from '../../editor/structure/header';
+import type { HeaderField, HeaderState, TextStyle } from '../../editor/structure/header';
+import { BPM_MAX, BPM_MIN } from '../../editor/structure/tempo';
+import type { TempoInfo } from '../../editor/structure/tempo';
 
 export type TextKind = HeaderField | 'tempo';
 

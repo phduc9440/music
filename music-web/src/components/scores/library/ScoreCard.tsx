@@ -1,8 +1,8 @@
-import AuthImage from './AuthImage';
-import StatusBadge from './StatusBadge';
-import { ACCESS_LEVEL_LABELS, DIFFICULTY_LABELS, SOURCE_LABELS, formatRelative } from '../../utils/score';
-import type { ScoreSummary } from '../../types';
-import VisibilityBadge from './VisibilityBadge';
+import AuthImage from '../common/AuthImage';
+import StatusBadge from '../common/StatusBadge';
+import { ACCESS_LEVEL_LABELS, DIFFICULTY_LABELS, SOURCE_LABELS, formatRelative } from '../../../utils/score';
+import type { ScoreSummary } from '../../../types';
+import VisibilityBadge from '../common/VisibilityBadge';
 
 interface Props {
   score: ScoreSummary;

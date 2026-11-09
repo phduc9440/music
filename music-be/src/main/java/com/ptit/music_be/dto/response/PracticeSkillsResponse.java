@@ -12,6 +12,7 @@ import lombok.experimental.FieldDefaults;
 public class PracticeSkillsResponse {
     /** Số ngày gần nhất được tính (tính cả hôm nay). */
     int days;
+
     long sessionCount;
     /** Tỉ lệ nốt đúng cao độ. */
     double pitchAccuracy;

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { fetchFileBlob } from '../../services';
-import { renderPdfPageToUrl } from '../../utils/pdfRender';
-import { useOverlayClose } from './useOverlayClose';
+import { fetchFileBlob } from '../../../services';
+import { renderPdfPageToUrl } from '../../../utils/pdfRender';
+import { useOverlayClose } from '../common/useOverlayClose';
 
 interface Props {
   /** Số trang đang xem (bắt đầu từ 1). */

@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import UploadDropzone from '../../components/scores/UploadDropzone';
-import UploadFileItem from '../../components/scores/UploadFileItem';
-import type { UploadItem } from '../../components/scores/UploadFileItem';
-import { omrApi } from '../../services';
-import type { OmrSourceType } from '../../types';
+import UploadDropzone from '../../../components/scores/upload/UploadDropzone';
+import UploadFileItem from '../../../components/scores/upload/UploadFileItem';
+import type { UploadItem } from '../../../components/scores/upload/UploadFileItem';
+import { omrApi } from '../../../services';
+import type { OmrSourceType } from '../../../types';
 import {
   fileNameWithoutExtension,
   getScorePath,
@@ -18,9 +18,9 @@ import {
   OMR_SOURCE_LABELS,
   validateUploadBatch,
   validateUploadFile,
-} from '../../utils/score';
-import { inspectFile, rotateImageFile } from '../../utils/uploadInspect';
-import '../../components/scores/scores.css';
+} from '../../../utils/score';
+import { inspectFile, rotateImageFile } from '../../../utils/uploadInspect';
+import '../../../components/scores/scores.css';
 import './ScoreUpload.css';
 
 const SOURCE_TYPES = Object.keys(OMR_SOURCE_LABELS) as OmrSourceType[];

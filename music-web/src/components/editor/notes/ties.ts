@@ -3,10 +3,10 @@
  * và `<notations><tied>` (hiển thị). Dấu luyến: từ nốt đầu đến nốt cuối của vùng chọn, ghi `<notations><slur>`.
  * Bấm lại trên cùng vùng chọn thì gỡ bỏ.
  */
-import { childOf, commitEdit, hasTie, readPitch, slursOf, touch } from './commands';
-import type { EditResult, Touched } from './commands';
+import { childOf, commitEdit, hasTie, readPitch, slursOf, touch } from '../core/commands';
+import type { EditResult, Touched } from '../core/commands';
 import { pitchToMidi } from './pitch';
-import type { NoteInfo, ScoreDocument } from './ScoreDocument';
+import type { NoteInfo, ScoreDocument } from '../core/ScoreDocument';
 
 /** Thẻ <notations> của nốt, tạo mới (đúng chỗ: trước <lyric>/<play>) nếu chưa có. */
 export const notationsOf = (note: Element): Element => {

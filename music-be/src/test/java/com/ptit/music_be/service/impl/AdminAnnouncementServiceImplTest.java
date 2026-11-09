@@ -35,10 +35,21 @@ class AdminAnnouncementServiceImplTest {
     private final NotificationService notifications = mock(NotificationService.class);
     private final AdminAnnouncementServiceImpl service = new AdminAnnouncementServiceImpl(members, notifications);
 
-    private final Member me = Member.builder().id("me").email("admin@x.com").status(MemberStatus.ACTIVE).build();
-    private final Member u1 = Member.builder().id("u1").email("u1@x.com").status(MemberStatus.ACTIVE).build();
-    private final Member lockedAdmin =
-            Member.builder().id("a2").email("a2@x.com").status(MemberStatus.INACTIVE).build();
+    private final Member me = Member.builder()
+            .id("me")
+            .email("admin@x.com")
+            .status(MemberStatus.ACTIVE)
+            .build();
+    private final Member u1 = Member.builder()
+            .id("u1")
+            .email("u1@x.com")
+            .status(MemberStatus.ACTIVE)
+            .build();
+    private final Member lockedAdmin = Member.builder()
+            .id("a2")
+            .email("a2@x.com")
+            .status(MemberStatus.INACTIVE)
+            .build();
 
     @BeforeEach
     void setUp() {
@@ -62,7 +73,9 @@ class AdminAnnouncementServiceImplTest {
         when(notifications.notifyAll(anyCollection(), eq(me), eq(NotificationType.ANNOUNCEMENT), eq("Bảo trì 22h")))
                 .thenReturn(1);
 
-        assertEquals(1, service.send(req("  Bảo trì 22h  ", AnnouncementAudience.ALL)).getRecipients());
+        assertEquals(
+                1,
+                service.send(req("  Bảo trì 22h  ", AnnouncementAudience.ALL)).getRecipients());
     }
 
     @Test

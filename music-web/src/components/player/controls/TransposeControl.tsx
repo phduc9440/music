@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { describeTranspose, signedSemitones } from '../editor/transpose';
-import type { KeySignature } from '../editor/transpose';
+import { describeTranspose, signedSemitones } from '../../editor/notes/transpose';
+import type { KeySignature } from '../../editor/notes/transpose';
 import { IconTranspose } from './PlayerIcons';
 import { PlayerPopover } from './PlayerPopover';
-import { MAX_TRANSPOSE, MIN_TRANSPOSE } from './transposeRange';
+import { MAX_TRANSPOSE, MIN_TRANSPOSE } from '../state/transposeRange';
 
 interface Props {
   /** Số nửa cung đang chuyển (−12…+12). */

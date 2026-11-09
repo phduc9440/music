@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { toast } from 'react-toastify';
-import { scoreApi } from '../../services';
-import Modal from './Modal';
-import { getErrorMessage } from '../../utils/score';
+import { scoreApi } from '../../../services';
+import Modal from '../common/Modal';
+import { getErrorMessage } from '../../../utils/score';
 
 interface Props {
   scoreId: string;

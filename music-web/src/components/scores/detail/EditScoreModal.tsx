@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { toast } from 'react-toastify';
-import { scoreApi, tagApi } from '../../services';
-import { MAX_COMPOSER, MAX_NOTES, MAX_TITLE, getErrorMessage } from '../../utils/score';
-import Modal from './Modal';
-import type { Difficulty, ScoreDetail, Tag, Visibility } from '../../types';
+import { scoreApi, tagApi } from '../../../services';
+import { MAX_COMPOSER, MAX_NOTES, MAX_TITLE, getErrorMessage } from '../../../utils/score';
+import Modal from '../common/Modal';
+import type { Difficulty, ScoreDetail, Tag, Visibility } from '../../../types';
 
 const MAX_TAGS = 10; // khớp BE (mã lỗi 2302)
 

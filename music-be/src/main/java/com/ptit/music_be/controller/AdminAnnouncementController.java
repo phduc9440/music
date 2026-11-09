@@ -27,7 +27,8 @@ public class AdminAnnouncementController {
 
     @PostMapping
     @Operation(
-            summary = "Send a notification to ALL / USERS (non-admins) / ADMINS / SELECTED (memberIds, max 200) - active accounts only, max 500 chars",
+            summary =
+                    "Send a notification to ALL / USERS (non-admins) / ADMINS / SELECTED (memberIds, max 200) - active accounts only, max 500 chars",
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<AnnouncementResponse> send(@Valid @RequestBody AnnouncementRequest request) {
         return ApiResponse.<AnnouncementResponse>builder()

@@ -8,23 +8,23 @@ import {
   applySelection,
   bindNoteIds,
   noteIdsFromEvent,
-} from '../editor/osmdBridge';
-import { DURATION_QUARTERS } from '../editor/durations';
-import type { AccidentalChoice, DurationChoice, DurationType, InsertTarget } from '../editor/durations';
-import type { ScoreDocument } from '../editor/ScoreDocument';
-import { DURATION_DRAG_TYPE, ledgerLines, locateSpot, solfegeName, spotTarget } from '../editor/staffHit';
-import type { StaffSpot } from '../editor/staffHit';
-import { ZOOM_MAX, ZOOM_MIN, clampZoom } from '../../utils/viewer';
-import type { ViewMode } from '../../utils/viewer';
-import { applyHeaderStyle, readHeader } from '../editor/header';
-import type { HeaderField, HeaderState, TextStyle } from '../editor/header';
-import { readTempo } from '../editor/tempo';
-import type { TempoInfo } from '../editor/tempo';
-import { applyMutedTracks, applyPlaying, keepMeasureVisible, measureOfEvent } from '../player/highlight';
-import NoteInsertPopover from './NoteInsertPopover';
-import TextEditPopover from './TextEditPopover';
-import type { TextKind } from './TextEditPopover';
-import '../editor/editor.css';
+} from '../../editor/core/osmdBridge';
+import { DURATION_QUARTERS } from '../../editor/notes/durations';
+import type { AccidentalChoice, DurationChoice, DurationType, InsertTarget } from '../../editor/notes/durations';
+import type { ScoreDocument } from '../../editor/core/ScoreDocument';
+import { DURATION_DRAG_TYPE, ledgerLines, locateSpot, solfegeName, spotTarget } from '../../editor/core/staffHit';
+import type { StaffSpot } from '../../editor/core/staffHit';
+import { ZOOM_MAX, ZOOM_MIN, clampZoom } from '../../../utils/viewer';
+import type { ViewMode } from '../../../utils/viewer';
+import { applyHeaderStyle, readHeader } from '../../editor/structure/header';
+import type { HeaderField, HeaderState, TextStyle } from '../../editor/structure/header';
+import { readTempo } from '../../editor/structure/tempo';
+import type { TempoInfo } from '../../editor/structure/tempo';
+import { applyMutedTracks, applyPlaying, keepMeasureVisible, measureOfEvent } from '../../player/engine/highlight';
+import NoteInsertPopover from '../toolbar/NoteInsertPopover';
+import TextEditPopover from '../toolbar/TextEditPopover';
+import type { TextKind } from '../toolbar/TextEditPopover';
+import '../../editor/editor.css';
 
 interface Props {
   /** Nội dung MusicXML (dùng khi chưa có `doc`, tức là chỉ xem). */

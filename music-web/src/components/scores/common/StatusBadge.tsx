@@ -1,5 +1,5 @@
-import { STATUS_LABELS } from '../../utils/score';
-import type { ProcessingStatus } from '../../types';
+import { STATUS_LABELS } from '../../../utils/score';
+import type { ProcessingStatus } from '../../../types';
 
 export default function StatusBadge({ status }: { status: ProcessingStatus }) {
   const running = status === 'PROCESSING' || status === 'PENDING';

@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { toast } from 'react-toastify';
-import { sharingApi } from '../../services';
-import { SHARE_PERMISSION_LABELS, getErrorCode, getErrorMessage } from '../../utils/score';
-import type { SharePermission } from '../../types';
+import { sharingApi } from '../../../services';
+import { SHARE_PERMISSION_LABELS, getErrorCode, getErrorMessage } from '../../../utils/score';
+import type { SharePermission } from '../../../types';
 
 interface Props {
   scoreId: string;

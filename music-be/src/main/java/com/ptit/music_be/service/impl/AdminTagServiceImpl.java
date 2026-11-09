@@ -53,7 +53,8 @@ public class AdminTagServiceImpl implements AdminTagService {
         if (slug.isEmpty()) {
             throw new AppException(ErrorCode.TAG_NAME_INVALID);
         }
-        // name/slug đều UNIQUE và so sánh không phân biệt hoa thường, không phân biệt dấu (Pop = pop, Cổ điển = Co dien)
+        // name/slug đều UNIQUE và so sánh không phân biệt hoa thường, không phân biệt dấu (Pop = pop, Cổ điển = Co
+        // dien)
         if (tagRepository.existsByName(name) || tagRepository.existsBySlug(slug)) {
             throw new AppException(ErrorCode.TAG_DUPLICATED);
         }
@@ -91,7 +92,9 @@ public class AdminTagServiceImpl implements AdminTagService {
     }
 
     private static String cleanName(TagRequest request) {
-        String name = request == null || request.getName() == null ? "" : request.getName().trim();
+        String name = request == null || request.getName() == null
+                ? ""
+                : request.getName().trim();
         // Gộp nhiều khoảng trắng liên tiếp thành một
         name = name.replaceAll("\\s+", " ");
         if (name.isEmpty() || name.length() > MAX_NAME) {

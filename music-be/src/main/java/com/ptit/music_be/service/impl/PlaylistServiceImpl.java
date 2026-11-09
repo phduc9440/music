@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -108,9 +107,15 @@ public class PlaylistServiceImpl implements PlaylistService {
         if (playlistItemRepository.existsByPlaylistAndScore(playlist, score)) {
             throw new AppException(ErrorCode.PLAYLIST_SCORE_DUPLICATED);
         }
-        int next = playlistItemRepository.findByPlaylistOrderByPositionAsc(playlist).size() + 1;
-        playlistItemRepository.save(
-                PlaylistItem.builder().playlist(playlist).score(score).position(next).build());
+        int next = playlistItemRepository
+                        .findByPlaylistOrderByPositionAsc(playlist)
+                        .size()
+                + 1;
+        playlistItemRepository.save(PlaylistItem.builder()
+                .playlist(playlist)
+                .score(score)
+                .position(next)
+                .build());
         return toItemResponses(playlist);
     }
 
@@ -176,11 +181,15 @@ public class PlaylistServiceImpl implements PlaylistService {
     }
 
     private void apply(Playlist playlist, PlaylistRequest request) {
-        String name = request == null || request.getName() == null ? null : request.getName().trim();
+        String name = request == null || request.getName() == null
+                ? null
+                : request.getName().trim();
         if (!StringUtils.hasText(name) || name.length() > MAX_NAME) {
             throw new AppException(ErrorCode.PLAYLIST_NAME_INVALID);
         }
-        String description = request.getDescription() == null ? null : request.getDescription().trim();
+        String description = request.getDescription() == null
+                ? null
+                : request.getDescription().trim();
         if (description != null && description.length() > MAX_DESCRIPTION) {
             throw new AppException(ErrorCode.PLAYLIST_DESCRIPTION_INVALID);
         }

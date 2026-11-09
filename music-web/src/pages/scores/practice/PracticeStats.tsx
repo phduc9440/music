@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
-import PracticeSkillRadar from '../../components/scores/PracticeSkillRadar';
-import PracticeTimeChart from '../../components/scores/PracticeTimeChart';
-import { practiceStatsApi } from '../../services';
-import type { PracticeHeatmapDay, PracticeStreak } from '../../types';
-import '../../components/scores/scores.css';
+import PracticeSkillRadar from '../../../components/scores/practice/PracticeSkillRadar';
+import PracticeTimeChart from '../../../components/scores/practice/PracticeTimeChart';
+import { practiceStatsApi } from '../../../services';
+import type { PracticeHeatmapDay, PracticeStreak } from '../../../types';
+import '../../../components/scores/scores.css';
 import './PracticeStats.css';
 
 const WEEKS = 53;

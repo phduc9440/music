@@ -12,12 +12,12 @@
  *   chèn một quãng lặng chung cho mọi part (như fermata nhưng sau nốt).
  */
 import { DEFAULT_GAIN, DEFAULT_VELOCITY, velocityGain } from './loudness';
-import { chordNotes } from './chordNotes';
-import type { ChordNotes } from './chordNotes';
-import { keyAlter, pitchToMidi, STEPS } from './pitch';
-import type { Step } from './pitch';
+import { chordNotes } from '../notation/chordNotes';
+import type { ChordNotes } from '../notation/chordNotes';
+import { keyAlter, pitchToMidi, STEPS } from '../notes/pitch';
+import type { Step } from '../notes/pitch';
 import { playOrder } from './playOrder';
-import type { NoteInfo, ScoreDocument } from './ScoreDocument';
+import type { NoteInfo, ScoreDocument } from '../core/ScoreDocument';
 
 /** Một nốt cần phát. */
 export interface PlayNote {

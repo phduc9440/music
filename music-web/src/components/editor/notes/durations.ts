@@ -6,8 +6,8 @@
  * Nốt trong chùm (chùm ba...) đổi trường độ trong phạm vi chùm, xem `tuplets.ts`. Chưa hỗ trợ đổi trường độ nốt có
  * dấu nối.
  */
-import { chordKey, childOf, commitEdit, hasTie, readPitch, touch, writePitch } from './commands';
-import type { EditFailure, EditResult, Touched } from './commands';
+import { chordKey, childOf, commitEdit, hasTie, readPitch, touch, writePitch } from '../core/commands';
+import type { EditFailure, EditResult, Touched } from '../core/commands';
 import {
   DURATION_LABELS,
   DURATION_QUARTERS,
@@ -29,10 +29,10 @@ import {
 } from './durationCore';
 import type { Dots, DurationChoice, DurationType, Entry, Plan } from './durationCore';
 import { scaleDivisions } from './divisions';
-import { middleLineMidi, middleLinePitch } from './clefs';
+import { middleLineMidi, middleLinePitch } from '../notation/clefs';
 import { inRange, keyAlter, pitchToMidi, isStep } from './pitch';
 import type { Pitch, Step } from './pitch';
-import type { NoteInfo, ScoreDocument } from './ScoreDocument';
+import type { NoteInfo, ScoreDocument } from '../core/ScoreDocument';
 import { groupRange, planTupletDuration, ratioOf } from './tuplets';
 
 export { DURATION_LABELS, DURATION_QUARTERS, dotsLabel, nextDots };

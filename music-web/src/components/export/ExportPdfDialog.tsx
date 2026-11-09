@@ -3,7 +3,7 @@ import { toast } from 'react-toastify';
 import { downloadFile, fetchFileBlob } from '../../services';
 import type { ExportFileInfo, MeasureNumbers, PdfOptions, PdfOrientation, PdfPageSize } from '../../types/export';
 import { renderPdfPageToUrl } from '../../utils/pdfRender';
-import Modal from '../scores/Modal';
+import Modal from '../scores/common/Modal';
 import ExportRunningView from './ExportRunningView';
 import { translateTaskError, validatePdfOptions } from './exportUtils';
 import { useExportFlow } from './useExportFlow';

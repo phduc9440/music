@@ -79,8 +79,10 @@ public class ApplicationInitConfig {
             memberRepository.findByEmail("admin@music.com").ifPresent(root -> {
                 boolean has = memberRoleRepository.existsByMemberAndRole(root, roleSuperAdmin);
                 if (!has) {
-                    memberRoleRepository.save(
-                            MemberRole.builder().member(root).role(roleSuperAdmin).build());
+                    memberRoleRepository.save(MemberRole.builder()
+                            .member(root)
+                            .role(roleSuperAdmin)
+                            .build());
                 }
             });
         };

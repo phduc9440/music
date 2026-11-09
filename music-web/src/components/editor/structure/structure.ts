@@ -2,8 +2,8 @@
  * Thêm / xóa ô nhịp. Việc này làm đổi số ô nhịp (và id nốt phía sau) nên lệnh lưu bản chụp toàn bộ các part thay vì
  * từng ô nhịp như các lệnh khác.
  */
-import type { EditCommand, EditResult } from './commands';
-import type { ScoreDocument } from './ScoreDocument';
+import type { EditCommand, EditResult } from '../core/commands';
+import type { ScoreDocument } from '../core/ScoreDocument';
 
 const LEADING = ['attributes', 'direction', 'print', 'sound'];
 

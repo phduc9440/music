@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { LibraryEmpty, LibrarySkeleton } from '../../components/scores/LibraryStates';
-import Pagination from '../../components/scores/Pagination';
-import ScoreCard from '../../components/scores/ScoreCard';
-import ScoreFilters from '../../components/scores/ScoreFilters';
-import { scoreApi, tagApi } from '../../services';
-import type { Difficulty, PageResult, ProcessingStatus, ScoreSort, ScoreSource, ScoreSummary, Tag } from '../../types';
-import { getScorePath, MAX_KEYWORD, POLL_INTERVAL_MS } from '../../utils/score';
-import '../../components/scores/scores.css';
+import { LibraryEmpty, LibrarySkeleton } from '../../../components/scores/library/LibraryStates';
+import Pagination from '../../../components/scores/common/Pagination';
+import ScoreCard from '../../../components/scores/library/ScoreCard';
+import ScoreFilters from '../../../components/scores/library/ScoreFilters';
+import { scoreApi, tagApi } from '../../../services';
+import type { Difficulty, PageResult, ProcessingStatus, ScoreSort, ScoreSource, ScoreSummary, Tag } from '../../../types';
+import { getScorePath, MAX_KEYWORD, POLL_INTERVAL_MS } from '../../../utils/score';
+import '../../../components/scores/scores.css';
 import './ScoreLibrary.css';
 
 const PAGE_SIZE = 12;

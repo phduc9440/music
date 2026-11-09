@@ -2,9 +2,9 @@
  * Bảng trường độ và các hàm đọc/ghi "mục" nốt (nốt, hợp âm hoặc dấu lặng trong một bè) dùng chung cho
  * `durations.ts` và `tuplets.ts`. Tách riêng để hai file không import vòng tròn nhau.
  */
-import { childOf } from './commands';
-import type { EditFailure } from './commands';
-import type { NoteInfo, ScoreDocument } from './ScoreDocument';
+import { childOf } from '../core/commands';
+import type { EditFailure } from '../core/commands';
+import type { NoteInfo, ScoreDocument } from '../core/ScoreDocument';
 
 /** Các trường độ cơ bản của bảng công cụ (từ tròn đôi đến móc tứ). */
 export type DurationType = 'breve' | 'whole' | 'half' | 'quarter' | 'eighth' | '16th' | '32nd' | '64th';

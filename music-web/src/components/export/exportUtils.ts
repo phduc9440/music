@@ -1,4 +1,4 @@
-import type { MixerState } from '../player/mixer';
+import type { MixerState } from '../player/state/mixer';
 import type { ExportFormat, ExportHands, ExportOptions, PdfOptions } from '../../types/export';
 import type { TaskStatus } from '../../types';
 import { getErrorCode, getErrorMessage } from '../../utils/score';

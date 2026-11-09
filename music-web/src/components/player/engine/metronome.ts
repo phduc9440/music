@@ -1,6 +1,6 @@
 /** Tiếng gõ đếm nhịp (tổng hợp, không dùng mẫu âm): phách đầu cao hơn các phách còn lại. */
-import { getMaster } from '../editor/instruments';
-import type { Voice } from '../editor/instruments';
+import { getMaster } from '../../editor/audio/instruments';
+import type { Voice } from '../../editor/audio/instruments';
 
 const CLICK_S = 0.06;
 

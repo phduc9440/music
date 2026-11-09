@@ -3,8 +3,8 @@
  * (và <credit> nếu có). Kiểu chữ (cỡ, đậm, nghiêng) là cài đặt riêng của ứng dụng, lưu trong
  * <identification><miscellaneous> nên vẫn là MusicXML hợp lệ.
  */
-import type { EditResult } from './commands';
-import type { ScoreDocument } from './ScoreDocument';
+import type { EditResult } from '../core/commands';
+import type { ScoreDocument } from '../core/ScoreDocument';
 
 export type HeaderField = 'title' | 'composer';
 

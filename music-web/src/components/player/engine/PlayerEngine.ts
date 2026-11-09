@@ -7,16 +7,16 @@
  * Tempo (20–200%) chỉ đổi tốc độ trôi của đồng hồ (`rate`) nên cao độ không đổi: mỗi nốt vẫn là mẫu âm gốc.
  * Kiểm thử được: truyền `now` giả và gọi `tick()` thay cho bộ hẹn giờ thật.
  */
-import { accompanimentInstrument, DEFAULT_INSTRUMENT, getMaster, scheduleVoice } from '../editor/instruments';
-import type { InstrumentId, Voice } from '../editor/instruments';
+import { accompanimentInstrument, DEFAULT_INSTRUMENT, getMaster, scheduleVoice } from '../../editor/audio/instruments';
+import type { InstrumentId, Voice } from '../../editor/audio/instruments';
 import type { PianoSampler } from './sampler';
-import { loopSegments, NO_LOOP, normalizeLoop, pickSegment, sameLoop } from './loop';
+import { loopSegments, NO_LOOP, normalizeLoop, pickSegment, sameLoop } from '../state/loop';
 import { scheduleClick } from './metronome';
-import type { LoopSegment, LoopSettings } from './loop';
-import { EMPTY_MIXER, pruneMixer, trackGain, withTrackMix } from './mixer';
-import type { MixerState, TrackMix } from './mixer';
-import { clampTempoPercent, DEFAULT_TEMPO_PERCENT } from './settings';
-import { clampTranspose, inPianoRange } from './transposeRange';
+import type { LoopSegment, LoopSettings } from '../state/loop';
+import { EMPTY_MIXER, pruneMixer, trackGain, withTrackMix } from '../state/mixer';
+import type { MixerState, TrackMix } from '../state/mixer';
+import { clampTempoPercent, DEFAULT_TEMPO_PERCENT } from '../state/settings';
+import { clampTranspose, inPianoRange } from '../state/transposeRange';
 import { CHORD_TRACK_ID, firstEventAtOrAfter, measureOrderAt, timeOfOrder } from './timeline';
 import type { Timeline, TimelineEvent } from './timeline';
 

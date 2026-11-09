@@ -2,9 +2,9 @@
  * Dấu lặp, nhà 1/nhà 2 (volta) và chỉ dẫn nhảy (Segno, Coda, D.C., D.S., Fine, To Coda). Lặp và nhà ghi vào
  * <barline> của ô nhịp ở mọi part; chỉ dẫn nhảy là <direction> ở part đầu tiên.
  */
-import { commitEdit } from './commands';
-import type { EditResult, Touched } from './commands';
-import type { ScoreDocument } from './ScoreDocument';
+import { commitEdit } from '../core/commands';
+import type { EditResult, Touched } from '../core/commands';
+import type { ScoreDocument } from '../core/ScoreDocument';
 
 const child = (parent: Element, tag: string, pred?: (el: Element) => boolean): Element | undefined =>
   Array.from(parent.children).find((c) => c.tagName === tag && (!pred || pred(c)));

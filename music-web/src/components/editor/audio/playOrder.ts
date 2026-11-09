@@ -2,7 +2,7 @@
  * Thứ tự các ô nhịp khi phát: lặp lại (|: :|), nhà 1 / nhà 2 (volta), D.C., D.S., Fine, To Coda. Đọc theo các ô của
  * part đầu tiên; quy tắc theo thông lệ: khi quay lại (D.C./D.S.) thì không lặp lại các dấu lặp nữa.
  */
-import type { ScoreDocument } from './ScoreDocument';
+import type { ScoreDocument } from '../core/ScoreDocument';
 
 interface Marks {
   forward: boolean;

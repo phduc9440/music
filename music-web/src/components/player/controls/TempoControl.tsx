@@ -1,5 +1,5 @@
 import { PlayerPopover } from './PlayerPopover';
-import { DEFAULT_TEMPO_PERCENT, MAX_TEMPO_PERCENT, MIN_TEMPO_PERCENT } from './settings';
+import { DEFAULT_TEMPO_PERCENT, MAX_TEMPO_PERCENT, MIN_TEMPO_PERCENT } from '../state/settings';
 
 const PRESETS = [50, 75, 100];
 const STEP = 5;

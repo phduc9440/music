@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ZOOM_MAX, ZOOM_MIN, ZOOM_STEP } from '../../utils/viewer';
+import { ZOOM_MAX, ZOOM_MIN, ZOOM_STEP } from '../../../utils/viewer';
 import { IconMinus, IconPlus } from './ViewerIcons';
 
 interface Props {

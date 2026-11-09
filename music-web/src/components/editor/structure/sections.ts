@@ -2,9 +2,9 @@
  * Nhãn đoạn của bài (Phiên khúc, Điệp khúc, Cầu...): ghi bằng `<rehearsal>` trong một <direction> đặt phía trên ô nhịp,
  * ở part đầu tiên. Mỗi ô có tối đa một nhãn: đặt nhãn khác thì thay nhãn cũ, đặt lại đúng nhãn đó thì gỡ.
  */
-import { commitEdit } from './commands';
-import type { EditResult, Touched } from './commands';
-import type { ScoreDocument } from './ScoreDocument';
+import { commitEdit } from '../core/commands';
+import type { EditResult, Touched } from '../core/commands';
+import type { ScoreDocument } from '../core/ScoreDocument';
 
 /** Các <direction> có <rehearsal> của ô nhịp. */
 const rehearsalDirections = (measure: Element): Element[] =>

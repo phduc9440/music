@@ -1,5 +1,5 @@
 import type { DragEvent } from 'react';
-import { formatSize, isPdf } from '../../utils/score';
+import { formatSize, isPdf } from '../../../utils/score';
 
 /** Một file người dùng đã chọn trên trang upload, kèm kết quả kiểm tra nội dung (pdf.js / đo ảnh). */
 export interface UploadItem {

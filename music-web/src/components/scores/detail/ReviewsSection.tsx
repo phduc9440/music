@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { toast } from 'react-toastify';
-import { reviewApi } from '../../services';
-import { MAX_REVIEW_COMMENT, formatRelative, getErrorMessage } from '../../utils/score';
-import type { ReviewList } from '../../types';
-import { useDialog } from '../../components/ui/dialog-context';
+import { reviewApi } from '../../../services';
+import { MAX_REVIEW_COMMENT, formatRelative, getErrorMessage } from '../../../utils/score';
+import type { ReviewList } from '../../../types';
+import { useDialog } from '../../ui/dialog-context';
 
 interface Props {
   scoreId: string;

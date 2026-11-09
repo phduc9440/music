@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import type { ClipboardEvent, KeyboardEvent } from 'react';
-import { canHoldChord, readChord } from '../editor/harmony';
-import type { ScoreDocument } from '../editor/ScoreDocument';
-import Modal from './Modal';
+import { canHoldChord, readChord } from '../../editor/notation/harmony';
+import type { ScoreDocument } from '../../editor/core/ScoreDocument';
+import Modal from '../common/Modal';
 
 interface Props {
   doc: ScoreDocument;

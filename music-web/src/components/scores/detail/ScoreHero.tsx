@@ -1,14 +1,20 @@
 import { Link } from 'react-router-dom';
-import AuthImage from './AuthImage';
-import StatusBadge from './StatusBadge';
-import { OMR_TASK_TYPE, describeTaskError } from '../../utils/omr';
-import { ACCESS_LEVEL_LABELS, DIFFICULTY_LABELS, SOURCE_LABELS, formatDateTime, useScoreBase } from '../../utils/score';
-import type { ScoreDetail } from '../../types';
-import DownloadMenu from './DownloadMenu';
-import VisibilityBadge from './VisibilityBadge';
-import MidiConvertButton from '../export/MidiConvertButton';
-import { isTaskFinished } from '../export/exportUtils';
-import { Icon } from '../ui';
+import AuthImage from '../common/AuthImage';
+import StatusBadge from '../common/StatusBadge';
+import { OMR_TASK_TYPE, describeTaskError } from '../../../utils/omr';
+import {
+  ACCESS_LEVEL_LABELS,
+  DIFFICULTY_LABELS,
+  SOURCE_LABELS,
+  formatDateTime,
+  useScoreBase,
+} from '../../../utils/score';
+import type { ScoreDetail } from '../../../types';
+import DownloadMenu from '../viewer/DownloadMenu';
+import VisibilityBadge from '../common/VisibilityBadge';
+import MidiConvertButton from '../../export/MidiConvertButton';
+import { isTaskFinished } from '../../export/exportUtils';
+import { Icon } from '../../ui';
 
 interface Props {
   score: ScoreDetail;

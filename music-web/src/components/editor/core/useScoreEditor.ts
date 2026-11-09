@@ -5,11 +5,11 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
-import { fetchMusicXmlWithVersion, saveMusicXml } from '../../services';
-import { versionApi } from '../../services/versionApi';
-import { getConflictVersion, getSaveErrorMessage } from '../../utils/score';
+import { fetchMusicXmlWithVersion, saveMusicXml } from '../../../services';
+import { versionApi } from '../../../services/versionApi';
+import { getConflictVersion, getSaveErrorMessage } from '../../../utils/score';
 import { EDIT_FAILURE_MESSAGES, changePitch, removeNotes, setAlteration } from './commands';
-import { transposeDocument } from './transpose';
+import { transposeDocument } from '../notes/transpose';
 import type { EditResult, SymbolOp } from './commands';
 import {
   DURATION_LABELS,
@@ -20,38 +20,38 @@ import {
   isLetterKey,
   nextDots,
   setDuration,
-} from './durations';
-import { dotCount } from './durationCore';
-import type { AccidentalChoice, DurationChoice, DurationType, InsertTarget } from './durations';
+} from '../notes/durations';
+import { dotCount } from '../notes/durationCore';
+import type { AccidentalChoice, DurationChoice, DurationType, InsertTarget } from '../notes/durations';
 import { DRAFT_INTERVAL_MS, clearDraft, loadDraft, purgeOtherDrafts, saveDraft } from './draft';
 import type { Draft } from './draft';
 import { describeSelection } from './describe';
 import { History } from './history';
-import { getVersionErrorMessage } from './versionUtils';
-import { checkMeasures, confirmMeasure } from './measureCheck';
-import { setHeaderText } from './header';
-import type { HeaderField, TextStyle } from './header';
-import { canHoldChord, pasteChords, setChord, stepChordNote } from './harmony';
-import { canHoldLyric, pasteLyrics, setLyric, stepLyricNote } from './lyrics';
-import type { LyricEnd } from './lyrics';
-import { applyMark as runMark } from './marks';
-import type { MarkOp } from './marks';
-import { deleteMeasures, insertMeasure } from './structure';
-import { addChordNote, addHarmonyVoice, removeVoice, toggleCue } from './voices';
-import type { VoiceOp } from './voices';
-import { addBassStaff, addPart, changeNotation, readNotation, removeStaff } from './staves';
-import type { NotationChange } from './staves';
-import { setTempo } from './tempo';
-import { makeTuplet, removeTuplet, tupletName } from './tuplets';
-import type { TupletOp } from './tuplets';
-import type { TempoInfo } from './tempo';
-import { toggleSlur, toggleTie } from './ties';
-import type { MeasureIssue } from './measureCheck';
-import type { PitchOp } from './pitch';
-import { selectionGroups } from './playback';
-import { loadPreviewTonePref, playPreviewGroups, savePreviewTonePref } from './previewTone';
+import { getVersionErrorMessage } from '../version/versionUtils';
+import { checkMeasures, confirmMeasure } from '../structure/measureCheck';
+import { setHeaderText } from '../structure/header';
+import type { HeaderField, TextStyle } from '../structure/header';
+import { canHoldChord, pasteChords, setChord, stepChordNote } from '../notation/harmony';
+import { canHoldLyric, pasteLyrics, setLyric, stepLyricNote } from '../notation/lyrics';
+import type { LyricEnd } from '../notation/lyrics';
+import { applyMark as runMark } from '../notation/marks';
+import type { MarkOp } from '../notation/marks';
+import { deleteMeasures, insertMeasure } from '../structure/structure';
+import { addChordNote, addHarmonyVoice, removeVoice, toggleCue } from '../notes/voices';
+import type { VoiceOp } from '../notes/voices';
+import { addBassStaff, addPart, changeNotation, readNotation, removeStaff } from '../structure/staves';
+import type { NotationChange } from '../structure/staves';
+import { setTempo } from '../structure/tempo';
+import { makeTuplet, removeTuplet, tupletName } from '../notes/tuplets';
+import type { TupletOp } from '../notes/tuplets';
+import type { TempoInfo } from '../structure/tempo';
+import { toggleSlur, toggleTie } from '../notes/ties';
+import type { MeasureIssue } from '../structure/measureCheck';
+import type { PitchOp } from '../notes/pitch';
+import { selectionGroups } from '../audio/playback';
+import { loadPreviewTonePref, playPreviewGroups, savePreviewTonePref } from '../audio/previewTone';
 import type { ScoreDocument } from './ScoreDocument';
-import { useDialog } from '../ui/dialog-context';
+import { useDialog } from '../../ui/dialog-context';
 
 /** Phím số chọn nhanh trường độ: 1 móc kép ... 5 tròn, 6 móc ba, 7 móc tứ. */
 const DIGIT_DURATIONS: Record<string, DurationType> = {

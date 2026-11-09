@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
-import Modal from '../../components/scores/Modal';
-import Pagination from '../../components/scores/Pagination';
-import { practiceApi } from '../../services';
-import { getErrorMessage } from '../../utils/score';
-import type { PageResult, PracticeSessionRecord } from '../../types';
-import '../../components/scores/scores.css';
-import { useDialog } from '../../components/ui/dialog-context';
+import Modal from '../../../components/scores/common/Modal';
+import Pagination from '../../../components/scores/common/Pagination';
+import { practiceApi } from '../../../services';
+import { getErrorMessage } from '../../../utils/score';
+import type { PageResult, PracticeSessionRecord } from '../../../types';
+import '../../../components/scores/scores.css';
+import { useDialog } from '../../../components/ui/dialog-context';
 
 const PAGE_SIZE = 20;
 const MODE_LABELS: Record<number, string> = { 1: 'Tự do', 2: 'Lặp đoạn', 3: 'Chấm điểm' };

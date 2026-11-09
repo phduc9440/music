@@ -2,11 +2,11 @@
  * Viết bè: sao các nốt đã chọn sang một bè mới cùng khuông (cùng trường độ, nốt nhỏ kiểu "cue", mặc định cách một
  * quãng ba) để người dùng chỉnh cao độ tiếp; cùng nút bật/tắt nốt nhỏ và xóa bè.
  */
-import { chordKey, childOf, commitEdit, readPitch, touch, writePitch } from './commands';
-import type { EditResult, Touched } from './commands';
+import { chordKey, childOf, commitEdit, readPitch, touch, writePitch } from '../core/commands';
+import type { EditResult, Touched } from '../core/commands';
 import { movePitch, pitchToMidi } from './pitch';
 import type { Pitch } from './pitch';
-import type { NoteInfo, ScoreDocument } from './ScoreDocument';
+import type { NoteInfo, ScoreDocument } from '../core/ScoreDocument';
 
 /** Thao tác viết bè trên bảng công cụ. */
 export type VoiceOp = 'chordBelow' | 'chordAbove' | 'addBelow' | 'addAbove' | 'blank' | 'cue' | 'remove';

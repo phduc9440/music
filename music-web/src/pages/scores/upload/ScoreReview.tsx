@@ -1,16 +1,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import AuthImage from '../../components/scores/AuthImage';
-import MusicXmlViewer from '../../components/scores/MusicXmlViewer';
-import Modal from '../../components/scores/Modal';
-import { downloadScoreExport, fetchKern, fetchMusicXml, omrApi, scoreApi } from '../../services';
-import type { OmrMeasure, OmrResult, ScoreDetail as ScoreDetailData, ScoreFileInfo } from '../../types';
-import { boxToPercent, flaggedMeasures, isValidScoreId, MEASURE_FLAG_LABELS, parseWarning } from '../../utils/omr';
-import { getErrorMessage, getHttpStatus, getUploadErrorMessage, toSafeFileName, useScoreBase } from '../../utils/score';
-import '../../components/scores/scores.css';
-import './ScoreLibrary.css';
-import './ScoreDetail.css';
+import AuthImage from '../../../components/scores/common/AuthImage';
+import MusicXmlViewer from '../../../components/scores/viewer/MusicXmlViewer';
+import Modal from '../../../components/scores/common/Modal';
+import { downloadScoreExport, fetchKern, fetchMusicXml, omrApi, scoreApi } from '../../../services';
+import type { OmrMeasure, OmrResult, ScoreDetail as ScoreDetailData, ScoreFileInfo } from '../../../types';
+import { boxToPercent, flaggedMeasures, isValidScoreId, MEASURE_FLAG_LABELS, parseWarning } from '../../../utils/omr';
+import {
+  getErrorMessage,
+  getHttpStatus,
+  getUploadErrorMessage,
+  toSafeFileName,
+  useScoreBase,
+} from '../../../utils/score';
+import '../../../components/scores/scores.css';
+import '../library/ScoreLibrary.css';
+import '../library/ScoreDetail.css';
 import './ScoreProcessing.css';
 import './ScoreReview.css';
 

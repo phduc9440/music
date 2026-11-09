@@ -16,6 +16,7 @@ public class PracticeTimeBucketResponse {
     LocalDate start;
     /** Ngày cuối chu kỳ (với DAY thì bằng start). */
     LocalDate end;
+
     long totalSeconds;
     long sessionCount;
 }

@@ -3,8 +3,8 @@
  * trước/sau để {@link History} hoàn tác, làm lại. Không phụ thuộc React hay OSMD.
  */
 import type { NoteInfo, ScoreDocument } from './ScoreDocument';
-import { AccidentalState, accidentalName, inRange, isStep, movePitch, pitchToMidi } from './pitch';
-import type { Pitch, PitchOp } from './pitch';
+import { AccidentalState, accidentalName, inRange, isStep, movePitch, pitchToMidi } from '../notes/pitch';
+import type { Pitch, PitchOp } from '../notes/pitch';
 
 /** Bản sao một ô nhịp trước và sau khi sửa. */
 export interface MeasureSnapshot {

@@ -90,8 +90,8 @@ public class EmailServiceImpl implements EmailService {
     @Async
     public void sendPasswordChangedEmail(String to, String fullName, boolean viaReset) {
         String name = escape(fullName == null || fullName.isBlank() ? to : fullName);
-        String time = java.time.LocalDateTime.now()
-                .format(java.time.format.DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy"));
+        String time =
+                java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy"));
         send(
                 to,
                 "Mật khẩu Music App của bạn vừa được thay đổi",
@@ -100,7 +100,8 @@ public class EmailServiceImpl implements EmailService {
                         "<p>Xin chào " + name + ",</p>"
                                 + "<p>Mật khẩu tài khoản Music App của bạn vừa được "
                                 + (viaReset ? "đặt lại bằng mã OTP" : "đổi trong phần cài đặt tài khoản")
-                                + " lúc <strong>" + time + "</strong>. Các thiết bị đang đăng nhập khác đã bị đăng xuất.</p>"
+                                + " lúc <strong>" + time
+                                + "</strong>. Các thiết bị đang đăng nhập khác đã bị đăng xuất.</p>"
                                 + "<p style=\"color:#b91c1c\"><strong>Nếu không phải bạn thực hiện</strong>, hãy dùng "
                                 + "chức năng “Quên mật khẩu” để đặt lại ngay và liên hệ quản trị viên.</p>"),
                 "Password changed");

@@ -46,10 +46,14 @@ class AdminAiTaskQueryTest {
 
         assertTrue(all.getTotalElements() >= filtered.getTotalElements());
         assertTrue(filtered.getContent().size() <= 5);
-        assertTrue(filtered.getContent().stream().allMatch(t -> t.getStatus().name().equals("FAILED")));
+        assertTrue(filtered.getContent().stream()
+                .allMatch(t -> t.getStatus().name().equals("FAILED")));
         // dữ liệu vào/ra chỉ có ở API chi tiết
         assertTrue(all.getContent().stream().allMatch(t -> t.getInputData() == null && t.getResultData() == null));
-        all.getContent().stream().findFirst().ifPresent(t -> assertEquals(t.getId(), service.detail(t.getId()).getId()));
+        all.getContent().stream()
+                .findFirst()
+                .ifPresent(
+                        t -> assertEquals(t.getId(), service.detail(t.getId()).getId()));
     }
 
     @Test

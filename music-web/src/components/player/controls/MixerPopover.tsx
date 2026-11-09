@@ -1,8 +1,8 @@
 import { PlayerPopover } from './PlayerPopover';
 import { IconMixer } from './PlayerIcons';
-import { DEFAULT_TRACK_MIX, hasSolo, mixOf, silentTracks } from './mixer';
-import type { MixerState, TrackMix } from './mixer';
-import type { TimelineTrack } from './timeline';
+import { DEFAULT_TRACK_MIX, hasSolo, mixOf, silentTracks } from '../state/mixer';
+import type { MixerState, TrackMix } from '../state/mixer';
+import type { TimelineTrack } from '../engine/timeline';
 
 interface Props {
   tracks: readonly TimelineTrack[];

@@ -1,8 +1,8 @@
 import { useRef, useState } from 'react';
 import type { KeyboardEvent, PointerEvent } from 'react';
-import type { LoopSegment } from './loop';
-import type { Timeline } from './timeline';
-import { measureOrderAt } from './timeline';
+import type { LoopSegment } from '../state/loop';
+import type { Timeline } from '../engine/timeline';
+import { measureOrderAt } from '../engine/timeline';
 
 const MAX_TICKS = 160;
 

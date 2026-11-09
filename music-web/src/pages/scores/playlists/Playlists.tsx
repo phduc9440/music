@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import Modal from '../../components/scores/Modal';
-import PlaylistFormModal from '../../components/scores/PlaylistFormModal';
-import { playlistApi } from '../../services';
-import { getErrorMessage } from '../../utils/score';
-import type { Playlist } from '../../types';
-import '../../components/scores/scores.css';
+import Modal from '../../../components/scores/common/Modal';
+import PlaylistFormModal from '../../../components/scores/playlist/PlaylistFormModal';
+import { playlistApi } from '../../../services';
+import { getErrorMessage } from '../../../utils/score';
+import type { Playlist } from '../../../types';
+import '../../../components/scores/scores.css';
 
 /** Trang /playlists: tạo, sửa, xóa playlist luyện tập (bấm Mở để quản lý bài trong playlist, mục 3.10). */
 export default function Playlists() {

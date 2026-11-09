@@ -105,8 +105,10 @@ public class AdminMemberServiceImpl implements AdminMemberService {
         return AdminMemberDetailResponse.builder()
                 .member(memberMapper.toMemberResponse(member))
                 .scoreCount(scores)
-                .publicScores(count("select count(s) from Score s where s.member.id = :id and s.visibility = 'PUBLIC'", id))
-                .pendingScores(count("select count(s) from Score s where s.member.id = :id and s.visibility = 'PENDING'", id))
+                .publicScores(
+                        count("select count(s) from Score s where s.member.id = :id and s.visibility = 'PUBLIC'", id))
+                .pendingScores(
+                        count("select count(s) from Score s where s.member.id = :id and s.visibility = 'PENDING'", id))
                 .playlistCount(count("select count(p) from Playlist p where p.member.id = :id", id))
                 .reviewCount(count("select count(r) from ScoreReview r where r.member.id = :id", id))
                 .practiceSessions(count("select count(p) from PracticeSession p where p.member.id = :id", id))
@@ -116,7 +118,10 @@ public class AdminMemberServiceImpl implements AdminMemberService {
     }
 
     private long count(String jpql, String memberId) {
-        return entityManager.createQuery(jpql, Long.class).setParameter("id", memberId).getSingleResult();
+        return entityManager
+                .createQuery(jpql, Long.class)
+                .setParameter("id", memberId)
+                .getSingleResult();
     }
 
     @Override
@@ -174,7 +179,8 @@ public class AdminMemberServiceImpl implements AdminMemberService {
     }
 
     private static boolean hasRole(Member member, String roleName) {
-        return member.getMemberRoles().stream().anyMatch(mr -> roleName.equals(mr.getRole().getName()));
+        return member.getMemberRoles().stream()
+                .anyMatch(mr -> roleName.equals(mr.getRole().getName()));
     }
 
     private Member find(String memberId) {

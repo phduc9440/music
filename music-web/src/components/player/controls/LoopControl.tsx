@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { IconLoop } from './PlayerIcons';
 import { PlayerPopover } from './PlayerPopover';
-import { isLoopComplete } from './loop';
-import type { LoopSettings } from './loop';
+import { isLoopComplete } from '../state/loop';
+import type { LoopSettings } from '../state/loop';
 
 interface Props {
   loop: LoopSettings;

@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { toast } from 'react-toastify';
-import { downloadFile } from '../../services';
-import { FILE_TYPE_LABELS, formatSize, getErrorMessage } from '../../utils/score';
-import type { ScoreFileInfo } from '../../types';
+import { downloadFile } from '../../../services';
+import { FILE_TYPE_LABELS, formatSize, getErrorMessage } from '../../../utils/score';
+import type { ScoreFileInfo } from '../../../types';
 
 /** Danh sách file hiện hành của bản nhạc, mỗi dòng có nút tải về. */
 export default function FilesTable({ files }: { files: ScoreFileInfo[] }) {

@@ -3,7 +3,7 @@
  * divisions = 1). Việc này sửa MỌI <divisions>, <duration> và <offset> của part nên phải chạy bên trong
  * `runStructural` để hoàn tác khôi phục lại đủ.
  */
-import type { ScoreDocument } from './ScoreDocument';
+import type { ScoreDocument } from '../core/ScoreDocument';
 
 const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
 
