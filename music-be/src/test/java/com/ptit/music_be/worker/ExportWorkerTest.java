@@ -36,6 +36,7 @@ import org.springframework.transaction.support.SimpleTransactionStatus;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ptit.music_be.client.AiServiceClient;
+import com.ptit.music_be.client.MusicXmlNormalizeResult;
 import com.ptit.music_be.dto.enums.AiTaskError;
 import com.ptit.music_be.dto.enums.AiTaskStatus;
 import com.ptit.music_be.dto.enums.AiTaskType;
@@ -46,6 +47,7 @@ import com.ptit.music_be.entity.ScoreFile;
 import com.ptit.music_be.exception.MuseScoreException;
 import com.ptit.music_be.repository.AiTaskRepository;
 import com.ptit.music_be.repository.ScoreFileRepository;
+import com.ptit.music_be.repository.ScoreRepository;
 import com.ptit.music_be.service.FileStorageService;
 import com.ptit.music_be.service.MuseScoreCliService;
 
@@ -62,6 +64,9 @@ class ExportWorkerTest {
 
     @Mock
     ScoreFileRepository scoreFileRepository;
+
+    @Mock
+    ScoreRepository scoreRepository;
 
     @Mock
     MuseScoreCliService museScoreCliService;
@@ -140,6 +145,7 @@ class ExportWorkerTest {
         worker = new ExportWorker(
                 aiTaskRepository,
                 scoreFileRepository,
+                scoreRepository,
                 storage,
                 museScoreCliService,
                 aiServiceClient,
@@ -308,5 +314,288 @@ class ExportWorkerTest {
         task.setStatus(AiTaskStatus.PROCESSING);
         worker.fail(TASK_ID, "TASK_TIMEOUT");
         assertThat(task.getStatus()).isEqualTo(AiTaskStatus.FAILED);
+    }
+
+    // ---------------------------------------------------------------- SVG
+
+    /** MuseScore giả: ghi {@code out-1.svg}, {@code out-2.svg}, {@code out-10.svg} cạnh file đầu ra. */
+    void museScoreWritesSvgPages(Runnable beforeWrite) {
+        doAnswer(invocation -> {
+                    beforeWrite.run();
+                    Path output = invocation.getArgument(1);
+                    Files.createDirectories(output.getParent());
+                    for (int page : new int[] {10, 2, 1}) {
+                        Files.writeString(output.resolveSibling("out-" + page + ".svg"), "<svg>" + page + "</svg>");
+                    }
+                    return null;
+                })
+                .when(museScoreCliService)
+                .convert(any(Path.class), any(Path.class), anyList(), eq(TASK_ID));
+    }
+
+    @Test
+    void svg_savesEveryPageAndCompletesTask() throws Exception {
+        setInput("SVG", "{}");
+        museScoreWritesSvgPages(() -> {});
+
+        worker.process(TASK_ID);
+
+        assertThat(task.getStatus()).isEqualTo(AiTaskStatus.COMPLETED);
+        assertThat(objectMapper.readTree(task.getResultData()).get("pageCount").asInt())
+                .isEqualTo(3);
+        assertThat(root.resolve("scores/s1/export/v3-task1-p01.svg")).hasContent("<svg>1</svg>");
+        assertThat(root.resolve("scores/s1/export/v3-task1-p02.svg")).hasContent("<svg>2</svg>");
+        // Trang số 10 phải đứng sau trang 2 (sắp theo số chứ không theo chữ)
+        assertThat(root.resolve("scores/s1/export/v3-task1-p03.svg")).hasContent("<svg>10</svg>");
+        assertThat(root.resolve("scores/s1/tmp/task1")).doesNotExist();
+        verify(aiServiceClient, never())
+                .prepareMusicXml(anyString(), anyString(), anyInt(), anyInt(), anyString(), any(), any(), any(), any());
+        verify(museScoreCliService).convert(eq(root.resolve(SOURCE)), any(Path.class), eq(List.of()), eq(TASK_ID));
+
+        org.mockito.ArgumentCaptor<ScoreFile> captor = org.mockito.ArgumentCaptor.forClass(ScoreFile.class);
+        verify(scoreFileRepository, org.mockito.Mockito.times(3)).save(captor.capture());
+        assertThat(captor.getAllValues()).extracting(ScoreFile::getPageNumber).containsExactly(1, 2, 3);
+        assertThat(captor.getAllValues()).extracting(ScoreFile::getFileType).containsOnly(FileType.SVG);
+        assertThat(captor.getAllValues()).extracting(ScoreFile::getSourceTaskId).containsOnly(TASK_ID);
+        assertThat(captor.getValue().getOriginalFileName()).isEqualTo("Bài ca  thử nghiệm-trang-03.svg");
+    }
+
+    @Test
+    void svg_cancelledWhileRendering_discardsPages() throws Exception {
+        setInput("SVG", "{}");
+        museScoreWritesSvgPages(() -> task.setStatus(AiTaskStatus.CANCELLED));
+
+        worker.process(TASK_ID);
+
+        assertThat(task.getStatus()).isEqualTo(AiTaskStatus.CANCELLED);
+        assertThat(root.resolve("scores/s1/export")).doesNotExist();
+        verify(scoreFileRepository, never()).save(any(ScoreFile.class));
+    }
+
+    @Test
+    void collectSvgPages_singlePageScoreUsesTheOutputFileItself() throws Exception {
+        Path output = root.resolve("t/out.svg");
+        Files.createDirectories(output.getParent());
+        Files.writeString(output, "<svg/>");
+
+        assertThat(ExportWorker.collectSvgPages(output)).containsExactly(output);
+        assertThat(ExportWorker.collectSvgPages(root.resolve("t/other.svg"))).isEmpty();
+    }
+
+    // ---------------------------------------------------------------- MIDI -> MusicXML
+
+    static final String RAW = "scores/s1/tmp/task1/raw.musicxml";
+    static final String V1 = "scores/s1/musicxml/v1.musicxml";
+
+    /** Bản nhạc chỉ có MIDI gốc: nguồn của task là file .mid, kết quả là MusicXML. */
+    void givenMidiConversionTask() {
+        setInput("MUSICXML", "{}");
+        ScoreFile midi = ScoreFile.builder()
+                .id("src")
+                .fileType(FileType.ORIGINAL_MIDI)
+                .storagePath("scores/s1/original/song.mid")
+                .build();
+        when(scoreFileRepository.findById("src")).thenReturn(Optional.of(midi));
+        when(scoreRepository.findByIdForUpdate(SCORE_ID)).thenReturn(Optional.of(task.getScore()));
+    }
+
+    /** MuseScore giả ghi raw.musicxml; music-ai giả ghi v1.musicxml rồi trả metadata. */
+    void midiToolsWork(Runnable duringNormalize) throws IOException {
+        doAnswer(invocation -> {
+                    Path output = invocation.getArgument(1);
+                    Files.createDirectories(output.getParent());
+                    Files.writeString(output, "<raw/>");
+                    return null;
+                })
+                .when(museScoreCliService)
+                .convert(any(Path.class), any(Path.class), anyList(), eq(TASK_ID));
+        when(aiServiceClient.normalizeMusicXml(RAW, V1)).thenAnswer(invocation -> {
+            duringNormalize.run();
+            Path target = root.resolve(V1);
+            Files.createDirectories(target.getParent());
+            Files.writeString(target, "<score-partwise/>");
+            return new MusicXmlNormalizeResult(12, 2, "G", "3/4", 96, List.of("Hai track được gộp"));
+        });
+    }
+
+    @Test
+    void midiConversion_writesVersionOneAndUpdatesScore() throws Exception {
+        givenMidiConversionTask();
+        midiToolsWork(() -> {});
+
+        worker.process(TASK_ID);
+
+        assertThat(task.getStatus()).isEqualTo(AiTaskStatus.COMPLETED);
+        assertThat(root.resolve(V1)).hasContent("<score-partwise/>");
+        assertThat(root.resolve("scores/s1/tmp/task1")).doesNotExist();
+        verify(museScoreCliService)
+                .convert(
+                        eq(root.resolve("scores/s1/original/song.mid")),
+                        eq(root.resolve(RAW)),
+                        eq(List.of()),
+                        eq(TASK_ID));
+
+        Score score = task.getScore();
+        assertThat(score.getCurrentVersion()).isEqualTo(1);
+        assertThat(score.getMeasureCount()).isEqualTo(12);
+        assertThat(score.getStaffCount()).isEqualTo(2);
+        assertThat(score.getKeySignature()).isEqualTo("G");
+        assertThat(score.getTimeSignature()).isEqualTo("3/4");
+        assertThat(score.getTempoBpm()).isEqualTo(96);
+
+        org.mockito.ArgumentCaptor<ScoreFile> captor = org.mockito.ArgumentCaptor.forClass(ScoreFile.class);
+        verify(scoreFileRepository).save(captor.capture());
+        assertThat(captor.getValue().getFileType()).isEqualTo(FileType.MUSICXML);
+        assertThat(captor.getValue().getVersion()).isEqualTo(1);
+        assertThat(captor.getValue().getIsCurrent()).isTrue();
+        assertThat(captor.getValue().getStoragePath()).isEqualTo(V1);
+        assertThat(objectMapper
+                        .readTree(task.getResultData())
+                        .get("warnings")
+                        .get(0)
+                        .asText())
+                .isEqualTo("Hai track được gộp");
+    }
+
+    @Test
+    void midiConversion_refusedWhenScoreAlreadyHasMusicXml() throws Exception {
+        givenMidiConversionTask();
+        ScoreFile existing =
+                ScoreFile.builder().fileType(FileType.MUSICXML).version(1).build();
+        when(scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(SCORE_ID, FileType.MUSICXML))
+                .thenReturn(List.of(existing));
+
+        worker.process(TASK_ID);
+
+        assertThat(task.getStatus()).isEqualTo(AiTaskStatus.FAILED);
+        assertThat(task.getErrorMessage()).contains("đã có MusicXML");
+        verify(museScoreCliService, never()).convert(any(), any(), anyList(), anyString());
+    }
+
+    @Test
+    void midiConversion_normalizeRejected_failsWithReasonAndLeavesNoFile() throws Exception {
+        givenMidiConversionTask();
+        midiToolsWork(() -> {});
+        doThrow(org.springframework.web.client.HttpClientErrorException.create(
+                        org.springframework.http.HttpStatus.UNPROCESSABLE_ENTITY,
+                        "Unprocessable",
+                        org.springframework.http.HttpHeaders.EMPTY,
+                        "{\"detail\":\"MusicXML hỏng\"}".getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                        java.nio.charset.StandardCharsets.UTF_8))
+                .when(aiServiceClient)
+                .normalizeMusicXml(RAW, V1);
+
+        worker.process(TASK_ID);
+
+        assertThat(task.getStatus()).isEqualTo(AiTaskStatus.FAILED);
+        assertThat(task.getErrorMessage()).startsWith("EXPORT_ERROR").contains("MusicXML hỏng");
+        assertThat(root.resolve(V1)).doesNotExist();
+        verify(scoreFileRepository, never()).save(any(ScoreFile.class));
+    }
+
+    @Test
+    void midiConversion_cancelledWhileNormalizing_removesTheWrittenFile() throws Exception {
+        givenMidiConversionTask();
+        midiToolsWork(() -> task.setStatus(AiTaskStatus.CANCELLED));
+
+        worker.process(TASK_ID);
+
+        assertThat(task.getStatus()).isEqualTo(AiTaskStatus.CANCELLED);
+        assertThat(root.resolve(V1)).doesNotExist();
+        verify(scoreFileRepository, never()).save(any(ScoreFile.class));
+        // Bị hủy thì bản nhạc không được lên version 1
+        assertThat(task.getScore().getCurrentVersion()).isNotEqualTo(1);
+    }
+
+    // ---------------------------------------------------------------- PDF
+
+    static final String PDF_OPTIONS = "{\"marginMm\":20,\"measureNumbers\":\"NONE\",\"orientation\":\"LANDSCAPE\","
+            + "\"pageSize\":\"LETTER\",\"showChords\":false,\"showTitle\":true,\"staffSpaceMm\":2.0}";
+
+    /** MuseScore giả: ghi PDF (hoặc nội dung giả) và chụp lại nội dung file style được truyền qua -S. */
+    void museScoreWritesPdf(String content, java.util.concurrent.atomic.AtomicReference<String> styleSeen) {
+        doAnswer(invocation -> {
+                    List<String> args = invocation.getArgument(2);
+                    styleSeen.set(Files.readString(Path.of(args.get(1))));
+                    Path output = invocation.getArgument(1);
+                    Files.createDirectories(output.getParent());
+                    Files.writeString(output, content);
+                    return null;
+                })
+                .when(museScoreCliService)
+                .convert(any(Path.class), any(Path.class), anyList(), eq(TASK_ID));
+    }
+
+    @Test
+    void pdf_preparesTitleAndStripsChordsThenRendersWithStyle() throws Exception {
+        setInput("PDF", PDF_OPTIONS);
+        task.getScore().setComposer("Tác giả");
+        var styleSeen = new java.util.concurrent.atomic.AtomicReference<String>();
+        museScoreWritesPdf("%PDF-1.4 nội dung", styleSeen);
+
+        worker.process(TASK_ID);
+
+        assertThat(task.getStatus()).isEqualTo(AiTaskStatus.COMPLETED);
+        verify(aiServiceClient)
+                .prepareMusicXml(
+                        eq(SOURCE),
+                        eq("scores/s1/tmp/task1/in.musicxml"),
+                        eq(0),
+                        eq(100),
+                        eq("BOTH"),
+                        eq("Bài ca: thử/nghiệm"),
+                        eq("Tác giả"),
+                        eq(true),
+                        eq(true)); // showChords = false -> stripHarmony = true
+        verify(museScoreCliService)
+                .convert(
+                        eq(root.resolve("scores/s1/tmp/task1/in.musicxml")),
+                        any(Path.class),
+                        eq(List.of(
+                                "-S",
+                                root.resolve("scores/s1/tmp/task1/style.mss").toString())),
+                        eq(TASK_ID));
+        assertThat(styleSeen.get())
+                .contains("<pageWidth>11</pageWidth>")
+                .contains("<pageHeight>8.5</pageHeight>")
+                .contains("<Spatium>2</Spatium>")
+                .contains("<showMeasureNumber>0</showMeasureNumber>");
+        assertThat(root.resolve("scores/s1/export/v3-task1.pdf")).hasContent("%PDF-1.4 nội dung");
+        assertThat(root.resolve("scores/s1/tmp/task1")).doesNotExist();
+
+        org.mockito.ArgumentCaptor<ScoreFile> captor = org.mockito.ArgumentCaptor.forClass(ScoreFile.class);
+        verify(scoreFileRepository).save(captor.capture());
+        assertThat(captor.getValue().getFileType()).isEqualTo(FileType.PDF);
+        assertThat(captor.getValue().getContentType()).isEqualTo("application/pdf");
+        assertThat(captor.getValue().getOriginalFileName()).isEqualTo("Bài ca  thử nghiệm.pdf");
+    }
+
+    @Test
+    void pdf_hiddenTitleAndChordsKept() throws Exception {
+        setInput(
+                "PDF",
+                "{\"marginMm\":15,\"measureNumbers\":\"SYSTEM\",\"orientation\":\"PORTRAIT\",\"pageSize\":\"A4\","
+                        + "\"showChords\":true,\"showTitle\":false,\"staffSpaceMm\":1.75}");
+        museScoreWritesPdf("%PDF-1.7", new java.util.concurrent.atomic.AtomicReference<>());
+
+        worker.process(TASK_ID);
+
+        assertThat(task.getStatus()).isEqualTo(AiTaskStatus.COMPLETED);
+        verify(aiServiceClient)
+                .prepareMusicXml(
+                        anyString(), anyString(), eq(0), eq(100), eq("BOTH"), any(), any(), eq(false), eq(false));
+    }
+
+    @Test
+    void pdf_outputThatIsNotPdfFailsTheTask() throws Exception {
+        setInput("PDF", PDF_OPTIONS);
+        museScoreWritesPdf("<html>không phải PDF</html>", new java.util.concurrent.atomic.AtomicReference<>());
+
+        worker.process(TASK_ID);
+
+        assertThat(task.getStatus()).isEqualTo(AiTaskStatus.FAILED);
+        assertThat(task.getErrorMessage()).startsWith("EXPORT_ERROR");
+        assertThat(root.resolve("scores/s1/export")).doesNotExist();
+        verify(scoreFileRepository, never()).save(any(ScoreFile.class));
     }
 }

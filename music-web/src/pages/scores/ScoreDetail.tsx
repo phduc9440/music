@@ -136,6 +136,7 @@ export default function ScoreDetail() {
           onDelete={() => setDeleting(true)}
           onShare={() => setSharing(true)}
           onRequestEdit={() => setRequestingEdit(true)}
+          onConverted={() => setTick((n) => n + 1)}
         />
 
         <div className="sc-tabs" role="tablist">

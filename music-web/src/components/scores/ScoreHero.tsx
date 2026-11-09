@@ -11,6 +11,8 @@ import {
 } from '../../utils/score';
 import type { ScoreDetail } from '../../types';
 import DownloadMenu from './DownloadMenu';
+import MidiConvertButton from '../export/MidiConvertButton';
+import { isTaskFinished } from '../export/exportUtils';
 
 interface Props {
   score: ScoreDetail;
@@ -18,10 +20,12 @@ interface Props {
   onDelete: () => void;
   onShare: () => void;
   onRequestEdit: () => void;
+  /** Gọi khi bản nhạc nhập từ MIDI chuyển xong thành MusicXML để trang tải lại. */
+  onConverted?: () => void;
 }
 
 /** Khối đầu trang chi tiết: ảnh bìa, tiêu đề, thông số và nút thao tác. */
-export default function ScoreHero({ score, onEdit, onDelete, onShare, onRequestEdit }: Props) {
+export default function ScoreHero({ score, onEdit, onDelete, onShare, onRequestEdit, onConverted }: Props) {
   const facts: [string, string][] = [
     ['Khóa / dấu hóa', score.keySignature || '—'],
     ['Nhịp', score.timeSignature || '—'],
@@ -37,6 +41,11 @@ export default function ScoreHero({ score, onEdit, onDelete, onShare, onRequestE
   // Mở được trình chỉnh sửa khi đã có MusicXML hiện hành (không phụ thuộc trạng thái xử lý, vì nhận diện lại lỗi vẫn giữ
   // bản MusicXML cũ dùng được)
   const hasMusicXml = score.files.some((f) => f.fileType === 'MUSICXML');
+  // Bản nhạc nhập từ MIDI chưa có MusicXML: cho chuyển đổi để mở được trình chỉnh sửa và trình phát
+  const canConvertMidi = score.canEdit && !hasMusicXml && score.files.some((f) => f.fileType === 'ORIGINAL_MIDI');
+  const activeConversion = score.latestTasks.find(
+    (t) => t.taskType === 'FORMAT_CONVERSION' && !isTaskFinished(t.status),
+  );
 
   // Lý do thất bại lấy từ tác vụ OMR mới nhất (cột reject_reason của bản nhạc không được ghi)
   const failedTask =
@@ -127,6 +136,9 @@ export default function ScoreHero({ score, onEdit, onDelete, onShare, onRequestE
           >
             ▶ Phát
           </Link>
+          {canConvertMidi && (
+            <MidiConvertButton scoreId={score.id} resume={activeConversion} onDone={() => onConverted?.()} />
+          )}
           <DownloadMenu scoreId={score.id} files={score.files} title={score.title} staffCount={score.staffCount} />
           {score.canManageSharing && (
             <button className="sc-btn" onClick={onShare}>

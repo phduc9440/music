@@ -5,6 +5,8 @@ import { exportApi } from '../../services/exportApi';
 import type { ScoreFileInfo } from '../../types';
 import type { ExportFileInfo, ExportFormat } from '../../types/export';
 import ExportAudioDialog from '../export/ExportAudioDialog';
+import ExportPdfDialog from '../export/ExportPdfDialog';
+import ExportSvgDialog from '../export/ExportSvgDialog';
 import { DOWNLOAD_FORMATS, getErrorMessage } from '../../utils/score';
 
 interface DownloadMenuProps {
@@ -17,20 +19,21 @@ interface DownloadMenuProps {
   audioShortcut?: boolean;
 }
 
-/** MP3/WAV được tạo theo yêu cầu bằng hộp thoại xuất âm thanh (mục 1.28), không tải thẳng một file có sẵn. */
-const AUDIO_FORMATS: string[] = ['MP3', 'WAV'];
+/** Các định dạng tạo theo yêu cầu bằng hộp thoại riêng (mục 1.28–1.30), không tải thẳng một file có sẵn. */
+const DIALOG_FORMATS = ['MP3', 'WAV', 'PDF', 'SVG'] as const;
+type DialogFormat = (typeof DIALOG_FORMATS)[number];
 
 /**
  * Menu "Tải xuống" của trang chi tiết: liệt kê MusicXML, MIDI, Kern, MP3, WAV, PDF, SVG.
- * Định dạng đã có file thì tải được ngay, chưa có thì hiện "Tạo file". MP3/WAV luôn mở hộp thoại xuất âm thanh
- * (cùng tùy chọn với lần xuất trước thì nhận file ngay). PDF/SVG làm ở nhánh export-formats (mục 1.29–1.30).
+ * Định dạng đã có file thì tải được ngay, chưa có thì hiện "Tạo file". MP3, WAV, PDF, SVG luôn mở hộp thoại xuất riêng
+ * (cùng tùy chọn với lần xuất trước thì nhận file ngay) và gắn nhãn "Cũ" khi bản nhạc đã sửa sau lúc xuất.
  * MusicXML và MIDI tải qua API riêng của bản nhạc để luôn nhận bản mới nhất (MIDI cũ sẽ được BE tạo lại).
  */
 export default function DownloadMenu({ scoreId, files, title, staffCount, audioShortcut }: DownloadMenuProps) {
   const [open, setOpen] = useState(false);
   const [busyType, setBusyType] = useState<string | null>(null);
   const [exports, setExports] = useState<ExportFileInfo[]>([]);
-  const [audioFormat, setAudioFormat] = useState<ExportFormat | null>(null);
+  const [dialog, setDialog] = useState<DialogFormat | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   // Mở menu thì hỏi lại danh sách file đã xuất để gắn nhãn "Cũ" (bản nhạc đã sửa sau lúc xuất); lỗi thì bỏ qua
@@ -77,7 +80,7 @@ export default function DownloadMenu({ scoreId, files, title, staffCount, audioS
   return (
     <>
       {audioShortcut && (
-        <button className="sc-btn" onClick={() => setAudioFormat('MP3')}>
+        <button className="sc-btn" onClick={() => setDialog('MP3')}>
           Xuất âm thanh
         </button>
       )}
@@ -88,7 +91,7 @@ export default function DownloadMenu({ scoreId, files, title, staffCount, audioS
         {open && (
           <ul className="sc-menu__list" role="menu">
             {DOWNLOAD_FORMATS.map(({ fileType, label }) => {
-              if (AUDIO_FORMATS.includes(fileType)) {
+              if ((DIALOG_FORMATS as readonly string[]).includes(fileType)) {
                 const made = exports.filter((f) => f.fileType === fileType);
                 const hint =
                   made.length === 0 ? 'Tạo file' : made.every((f) => f.outdated) ? 'Cũ · Xuất lại' : 'Xuất / tải';
@@ -99,7 +102,7 @@ export default function DownloadMenu({ scoreId, files, title, staffCount, audioS
                       className={`sc-menu__item${made.length === 0 ? ' is-missing' : ''}`}
                       onClick={() => {
                         setOpen(false);
-                        setAudioFormat(fileType as ExportFormat);
+                        setDialog(fileType as DialogFormat);
                       }}
                     >
                       <span>{label}</span>
@@ -124,15 +127,9 @@ export default function DownloadMenu({ scoreId, files, title, staffCount, audioS
                       </span>
                     </button>
                   ) : (
-                    // PDF, SVG: tạo file ở nhánh export-formats (mục 1.29–1.30)
-                    <button
-                      role="menuitem"
-                      className="sc-menu__item is-missing"
-                      disabled
-                      title="Chức năng tạo file sẽ có ở nhánh xuất file"
-                    >
+                    <button role="menuitem" className="sc-menu__item is-missing" disabled>
                       <span>{label}</span>
-                      <span className="sc-menu__hint">Tạo file</span>
+                      <span className="sc-menu__hint">Chưa có</span>
                     </button>
                   )}
                 </li>
@@ -145,8 +142,21 @@ export default function DownloadMenu({ scoreId, files, title, staffCount, audioS
         scoreId={scoreId}
         title={title ?? 'ban-nhac'}
         staffCount={staffCount}
-        format={audioFormat}
-        onClose={() => setAudioFormat(null)}
+        format={dialog === 'MP3' || dialog === 'WAV' ? (dialog as ExportFormat) : null}
+        onClose={() => setDialog(null)}
+      />
+      <ExportPdfDialog
+        scoreId={scoreId}
+        open={dialog === 'PDF'}
+        onOpen={() => setDialog('PDF')}
+        onClose={() => setDialog(null)}
+      />
+      <ExportSvgDialog
+        scoreId={scoreId}
+        title={title ?? 'ban-nhac'}
+        open={dialog === 'SVG'}
+        onOpen={() => setDialog('SVG')}
+        onClose={() => setDialog(null)}
       />
     </>
   );

@@ -14,10 +14,10 @@ import {
   exportFileName,
   handsFromMixer,
   isTaskFinished,
-  stepLabel,
   translateTaskError,
   validateExportOptions,
 } from './exportUtils';
+import ExportRunningView from './ExportRunningView';
 import { useExportTask } from './useExportTask';
 import './export.css';
 
@@ -126,7 +126,7 @@ export default function ExportAudioDialog({ scoreId, title, staffCount, format, 
       {result ? (
         <ResultView key={result.id} file={result} title={title} onAgain={again} onClose={onClose} />
       ) : running ? (
-        <RunningView task={task} cancelling={cancelling} onCancel={() => void cancel()} onClose={onClose} />
+        <ExportRunningView task={task} cancelling={cancelling} onCancel={() => void cancel()} onClose={onClose} />
       ) : failed ? (
         <div className="ex-body">
           <p className="ex-error" role="alert">
@@ -282,39 +282,6 @@ function ExportForm({
         </button>
         <button className="sc-btn sc-btn--primary" onClick={() => void submit()} disabled={busy}>
           {busy ? 'Đang gửi...' : 'Xuất file'}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ------------------------------------------------------------------------------------------------ tiến độ
-
-function RunningView({
-  task,
-  cancelling,
-  onCancel,
-  onClose,
-}: {
-  task: AiTaskInfo;
-  cancelling: boolean;
-  onCancel: () => void;
-  onClose: () => void;
-}) {
-  const progress = Math.min(100, Math.max(0, task.progress ?? 0));
-  return (
-    <div className="ex-body" aria-live="polite">
-      <p className="ex-step">{stepLabel(task.step)}...</p>
-      <div className="sc-progress" role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
-        <div className="sc-progress__bar sc-progress__bar--processing" style={{ width: `${progress}%` }} />
-      </div>
-      <p className="ex-hint">Bạn có thể đóng hộp thoại, việc xuất file vẫn chạy nền và sẽ có thông báo khi xong.</p>
-      <div className="sc-modal__actions">
-        <button className="sc-btn sc-btn--danger" onClick={onCancel} disabled={cancelling}>
-          {cancelling ? 'Đang hủy...' : 'Hủy xuất file'}
-        </button>
-        <button className="sc-btn" onClick={onClose}>
-          Đóng
         </button>
       </div>
     </div>

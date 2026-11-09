@@ -1,5 +1,5 @@
 import type { MixerState } from '../player/mixer';
-import type { ExportFormat, ExportHands, ExportOptions } from '../../types/export';
+import type { ExportFormat, ExportHands, ExportOptions, PdfOptions } from '../../types/export';
 import type { TaskStatus } from '../../types';
 import { getErrorCode, getErrorMessage } from '../../utils/score';
 
@@ -92,5 +92,13 @@ export function validateExportOptions(
   if (format === 'MP3' && !(EXPORT_BITRATES as readonly number[]).includes(options.bitrate ?? DEFAULT_BITRATE))
     return 'Chất lượng MP3 phải là 128, 192 hoặc 320 kbps';
   if (options.hands !== 'BOTH' && staffCount !== 2) return 'Chỉ chọn riêng một tay được với bản nhạc có 2 khuông';
+  return null;
+}
+
+/** Kiểm tra tùy chọn PDF trước khi gửi (cùng quy tắc với BE). Trả về lỗi tiếng Việt hoặc null. */
+export function validatePdfOptions(options: PdfOptions): string | null {
+  if (options.staffSpaceMm < 1.5 || options.staffSpaceMm > 2.2) return 'Cỡ khuông phải từ 1,5 đến 2,2 mm';
+  if (!Number.isInteger(options.marginMm) || options.marginMm < 10 || options.marginMm > 25)
+    return 'Lề phải từ 10 đến 25 mm';
   return null;
 }

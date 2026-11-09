@@ -8,7 +8,9 @@ import { EXPORT_TASK_TYPES, stepLabel, translateTaskError } from '../export/expo
 const exportedFileOf = (task: AiTaskInfo, files: ScoreFileInfo[]): ScoreFileInfo | undefined => {
   if (task.status !== 'COMPLETED' || !EXPORT_TASK_TYPES.includes(task.taskType)) return undefined;
   const fileId = (task.resultData as { fileId?: string } | null | undefined)?.fileId;
-  return fileId ? files.find((f) => f.id === fileId) : undefined;
+  const file = fileId ? files.find((f) => f.id === fileId) : undefined;
+  // SVG có nhiều trang, tải ZIP ở hộp thoại Xuất SVG nên không đưa nút tải một trang ở đây
+  return file?.fileType === 'SVG' ? undefined : file;
 };
 
 /** Tác vụ mới nhất của mỗi loại, kèm thanh tiến độ. Tác vụ xuất file đã xong có nút Tải xuống. */

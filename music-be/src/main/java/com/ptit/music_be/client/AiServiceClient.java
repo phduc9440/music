@@ -110,4 +110,19 @@ public class AiServiceClient {
                 .retrieve()
                 .toBodilessEntity();
     }
+
+    /**
+     * Chuẩn hóa một file MusicXML trong storage ({@code POST /convert/normalize}), đồng bộ: gộp nhiều part thành piano
+     * nhiều staff, đánh lại số ô nhịp, đặt tempo; ghi kết quả ra {@code outPath} và trả metadata để cập nhật
+     * {@code scores}. Hai đường dẫn tương đối so với gốc storage và thuộc cùng một bản nhạc.
+     */
+    public MusicXmlNormalizeResult normalizeMusicXml(String inPath, String outPath) {
+        return convertClient
+                .post()
+                .uri("/convert/normalize")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("inPath", inPath, "outPath", outPath))
+                .retrieve()
+                .body(MusicXmlNormalizeResult.class);
+    }
 }
