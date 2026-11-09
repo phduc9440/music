@@ -7,7 +7,7 @@ import type { Member } from '../types';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 import { roleLabel } from '../utils/auth';
 import '../components/scores/scores.css';
-import './scores/ScoreLibrary.css';
+import './scores/library/ScoreLibrary.css';
 import './Profile.css';
 
 export default function UserProfile() {

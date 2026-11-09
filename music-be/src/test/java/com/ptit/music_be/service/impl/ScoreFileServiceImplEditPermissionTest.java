@@ -31,7 +31,8 @@ class ScoreFileServiceImplEditPermissionTest {
 
     private void loginAs(String email, String... authorities) {
         SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken(email, "x", authorities));
-        org.mockito.Mockito.when(shares.findByScoreIdAndMemberEmail(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+        org.mockito.Mockito.when(shares.findByScoreIdAndMemberEmail(
+                        org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
                 .thenReturn(Optional.empty());
     }
 

@@ -24,6 +24,7 @@ class AdminAnnouncementQueryTest {
         var admins = memberRepository.findAllAdmins();
 
         assertTrue(all.size() >= nonAdmins.size());
-        assertTrue(nonAdmins.stream().noneMatch(m -> admins.stream().map(Member::getId).anyMatch(m.getId()::equals)));
+        assertTrue(nonAdmins.stream()
+                .noneMatch(m -> admins.stream().map(Member::getId).anyMatch(m.getId()::equals)));
     }
 }

@@ -20,5 +20,6 @@ public class ErrorLogResponse {
     String message;
     /** Tên class exception, null nếu log không kèm exception. */
     String exceptionClass;
+
     String stackTrace;
 }

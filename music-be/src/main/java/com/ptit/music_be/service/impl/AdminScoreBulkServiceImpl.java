@@ -40,18 +40,25 @@ public class AdminScoreBulkServiceImpl implements AdminScoreBulkService {
         }
         int success = 0;
         List<AdminScoreBulkResponse.Failure> failures = new ArrayList<>();
-        for (String id : request.getIds().stream().filter(i -> i != null && !i.isBlank()).distinct().toList()) {
+        for (String id : request.getIds().stream()
+                .filter(i -> i != null && !i.isBlank())
+                .distinct()
+                .toList()) {
             try {
                 run(id, request.getAction(), request.getReason());
                 success++;
             } catch (AppException e) {
-                failures.add(new AdminScoreBulkResponse.Failure(id, e.getErrorCode().getMessage()));
+                failures.add(
+                        new AdminScoreBulkResponse.Failure(id, e.getErrorCode().getMessage()));
             } catch (RuntimeException e) {
                 log.error("Bulk score action {} failed for {}", request.getAction(), id, e);
                 failures.add(new AdminScoreBulkResponse.Failure(id, ErrorCode.UNCATEGORIZED_EXCEPTION.getMessage()));
             }
         }
-        return AdminScoreBulkResponse.builder().success(success).failures(failures).build();
+        return AdminScoreBulkResponse.builder()
+                .success(success)
+                .failures(failures)
+                .build();
     }
 
     private void run(String id, ScoreBulkAction action, String reason) {

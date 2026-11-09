@@ -34,7 +34,8 @@ class AdminMemberDetailQueryTest {
     void detailQueriesRun() {
         SecurityContextHolder.getContext()
                 .setAuthentication(new TestingAuthenticationToken("admin@music.com", "x", "ROLE_ADMIN"));
-        String id = memberRepository.findByEmail("admin@music.com").orElseThrow().getId();
+        String id =
+                memberRepository.findByEmail("admin@music.com").orElseThrow().getId();
 
         AdminMemberDetailResponse d = service.getMemberDetail(id);
 

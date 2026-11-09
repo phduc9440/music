@@ -140,7 +140,8 @@ class AuthServicePasswordResetTest {
         when(members.findByEmail("a@x.com")).thenReturn(Optional.of(user));
         when(otps.findByMember(user)).thenReturn(Optional.of(otp));
 
-        AppException e = assertThrows(AppException.class, () -> service.resetPassword(reset("654321", "new-password-1")));
+        AppException e =
+                assertThrows(AppException.class, () -> service.resetPassword(reset("654321", "new-password-1")));
 
         assertEquals(ErrorCode.OTP_INVALID, e.getErrorCode());
         assertEquals(1, otp.getAttempts());

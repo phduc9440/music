@@ -100,8 +100,8 @@ public class PracticeStatsServiceImpl implements PracticeStatsService {
         }
 
         // Mọi phiên đều tính vào thời gian tập (khác với chuỗi ngày, không có ngưỡng 60 giây)
-        List<PracticeHeatmapDayResponse> days = queryAll(
-                currentMember(), ranges.get(0)[0], ranges.get(ranges.size() - 1)[1]);
+        List<PracticeHeatmapDayResponse> days =
+                queryAll(currentMember(), ranges.get(0)[0], ranges.get(ranges.size() - 1)[1]);
 
         List<PracticeTimeBucketResponse> result = new ArrayList<>();
         for (LocalDate[] range : ranges) {

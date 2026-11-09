@@ -3,7 +3,7 @@ import { toast } from 'react-toastify';
 import { downloadFile } from '../../services';
 import { exportApi } from '../../services/exportApi';
 import type { ExportFileInfo, SvgOptions } from '../../types/export';
-import Modal from '../scores/Modal';
+import Modal from '../scores/common/Modal';
 import ExportRunningView from './ExportRunningView';
 import { translateTaskError } from './exportUtils';
 import { useExportFlow } from './useExportFlow';

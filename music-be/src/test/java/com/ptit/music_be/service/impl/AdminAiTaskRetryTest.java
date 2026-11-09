@@ -47,7 +47,8 @@ class AdminAiTaskRetryTest {
     void failedOmrTaskIsRetriedForTheSameScore() {
         task("old", AiTaskType.OMR_CONVERSION, AiTaskStatus.FAILED);
         task("new", AiTaskType.OMR_CONVERSION, AiTaskStatus.PENDING);
-        when(omr.retryAsAdmin("s1")).thenReturn(AiTaskResponse.builder().id("new").build());
+        when(omr.retryAsAdmin("s1"))
+                .thenReturn(AiTaskResponse.builder().id("new").build());
 
         assertEquals("new", service.retry("old").getId());
         verify(omr).retryAsAdmin("s1");

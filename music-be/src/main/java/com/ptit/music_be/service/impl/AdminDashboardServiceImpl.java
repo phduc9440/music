@@ -19,8 +19,8 @@ import com.ptit.music_be.dto.response.AdminDashboardResponse;
 import com.ptit.music_be.dto.response.AdminDashboardResponse.DayCount;
 import com.ptit.music_be.dto.response.AdminDashboardResponse.DayPractice;
 import com.ptit.music_be.dto.response.AdminDashboardResponse.KeyCount;
-import com.ptit.music_be.dto.response.AdminDashboardResponse.Totals;
 import com.ptit.music_be.dto.response.AdminDashboardResponse.TopScore;
+import com.ptit.music_be.dto.response.AdminDashboardResponse.Totals;
 import com.ptit.music_be.service.AdminDashboardService;
 
 import lombok.extern.slf4j.Slf4j;
@@ -54,10 +54,13 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
                 .membersByDay(membersByDay(start, today))
                 .membersWithoutDate(count("select count(m) from Member m where m.createdAt is null"))
                 .practiceByDay(practiceByDay(start, today))
-                .scoresByVisibility(keyCounts("select coalesce(s.visibility, 'PRIVATE'), count(s) from Score s group by s.visibility"))
-                .scoresBySource(keyCounts("select coalesce(s.sourceType, 'UNKNOWN'), count(s) from Score s group by s.sourceType"))
-                .scoresByDifficulty(keyCounts(
-                        "select coalesce(cast(s.difficulty as string), 'NONE'), count(s) from Score s group by s.difficulty"))
+                .scoresByVisibility(keyCounts(
+                        "select coalesce(s.visibility, 'PRIVATE'), count(s) from Score s group by s.visibility"))
+                .scoresBySource(keyCounts(
+                        "select coalesce(s.sourceType, 'UNKNOWN'), count(s) from Score s group by s.sourceType"))
+                .scoresByDifficulty(
+                        keyCounts(
+                                "select coalesce(cast(s.difficulty as string), 'NONE'), count(s) from Score s group by s.difficulty"))
                 .aiTasksByStatus(keyCounts("select cast(t.status as string), count(t) from AiTask t group by t.status"))
                 .topTags(topTags())
                 .topViewed(topViewed())
@@ -71,8 +74,9 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
                 .members(count("select count(m) from Member m"))
                 .activeMembers(countWithStatus(MemberStatus.ACTIVE))
                 .lockedMembers(countWithStatus(MemberStatus.INACTIVE))
-                .admins(count(
-                        "select count(distinct mr.member) from MemberRole mr where mr.role.name in ('ADMIN', 'SUPER_ADMIN')"))
+                .admins(
+                        count(
+                                "select count(distinct mr.member) from MemberRole mr where mr.role.name in ('ADMIN', 'SUPER_ADMIN')"))
                 .scores(count("select count(s) from Score s"))
                 .publicScores(count("select count(s) from Score s where s.visibility = 'PUBLIC'"))
                 .pendingScores(count("select count(s) from Score s where s.visibility = 'PENDING'"))
@@ -167,7 +171,8 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
     }
 
     private List<KeyCount> topTags() {
-        return em.createQuery(
+        return em
+                .createQuery(
                         "select st.tag.name, count(st) from ScoreTag st group by st.tag.id, st.tag.name"
                                 + " order by count(st) desc, st.tag.name",
                         Object[].class)
@@ -179,15 +184,15 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
     }
 
     private List<TopScore> topViewed() {
-        return em.createQuery(
+        return em
+                .createQuery(
                         "select s.id, s.title, s.member.email, coalesce(s.viewCount, 0) from Score s"
                                 + " where coalesce(s.viewCount, 0) > 0 order by s.viewCount desc, s.title",
                         Object[].class)
                 .setMaxResults(TOP_SCORES)
                 .getResultList()
                 .stream()
-                .map(r -> new TopScore(
-                        (String) r[0], (String) r[1], (String) r[2], ((Number) r[3]).longValue()))
+                .map(r -> new TopScore((String) r[0], (String) r[1], (String) r[2], ((Number) r[3]).longValue()))
                 .toList();
     }
 }

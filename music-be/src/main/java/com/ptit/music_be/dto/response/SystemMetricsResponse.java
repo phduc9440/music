@@ -26,6 +26,7 @@ public class SystemMetricsResponse {
     Double systemCpuPercent;
     /** Load average 1 phút (không có trên Windows). */
     Double loadAverage;
+
     int availableProcessors;
 
     Long physicalMemoryTotalBytes;
@@ -36,6 +37,7 @@ public class SystemMetricsResponse {
 
     /** Ổ đĩa chứa thư mục lưu file (app.storage.local-root). */
     Long diskTotalBytes;
+
     Long diskUsableBytes;
 
     String javaVersion;

@@ -108,12 +108,13 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
         Member me = currentMember();
         int safeSize = size <= 0 ? DEFAULT_PAGE_SIZE : Math.min(size, MAX_PAGE_SIZE);
         PageRequest pageable = PageRequest.of(
-                Math.max(page, 0), safeSize, Sort.by(Sort.Direction.DESC, "startedAt").and(Sort.by("id")));
+                Math.max(page, 0),
+                safeSize,
+                Sort.by(Sort.Direction.DESC, "startedAt").and(Sort.by("id")));
         Page<PracticeSession> result;
         if (StringUtils.hasText(scoreId)) {
-            Score score = scoreRepository
-                    .findById(scoreId)
-                    .orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+            Score score =
+                    scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
             result = practiceSessionRepository.findByMemberAndScore(me, score, pageable);
         } else {
             result = practiceSessionRepository.findByMember(me, pageable);

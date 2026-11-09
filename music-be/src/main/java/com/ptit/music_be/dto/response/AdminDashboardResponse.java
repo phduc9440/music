@@ -29,6 +29,7 @@ public class AdminDashboardResponse {
     long membersWithoutDate;
     /** Luyện tập mỗi ngày: số phiên và số phút. */
     List<DayPractice> practiceByDay;
+
     List<KeyCount> scoresByVisibility;
     List<KeyCount> scoresBySource;
     List<KeyCount> scoresByDifficulty;
@@ -53,6 +54,7 @@ public class AdminDashboardResponse {
         long reviews;
         /** Điểm sao trung bình toàn hệ thống; null nếu chưa có nhận xét. */
         Double averageRating;
+
         long practiceSessions;
         long aiTasksRunning;
         long aiTasksFailed;

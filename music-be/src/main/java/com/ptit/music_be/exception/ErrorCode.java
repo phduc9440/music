@@ -26,8 +26,12 @@ public enum ErrorCode {
     CANNOT_MODIFY_SELF(1013, "Quản trị viên không thể khóa hoặc hạ quyền chính mình", HttpStatus.BAD_REQUEST),
     ROLE_NOT_EXISTED(1015, "Vai trò không tồn tại", HttpStatus.BAD_REQUEST),
     ACCOUNT_LOCKED(1016, "Tài khoản đã bị khóa", HttpStatus.FORBIDDEN),
-    OTP_INVALID(1017, "Mã OTP không đúng hoặc đã hết hạn. Nếu nhập sai nhiều lần, hãy yêu cầu mã mới.", HttpStatus.BAD_REQUEST),
-    OTP_REQUEST_TOO_SOON(1018, "Bạn vừa yêu cầu mã OTP, vui lòng chờ một lát rồi thử lại", HttpStatus.TOO_MANY_REQUESTS),
+    OTP_INVALID(
+            1017,
+            "Mã OTP không đúng hoặc đã hết hạn. Nếu nhập sai nhiều lần, hãy yêu cầu mã mới.",
+            HttpStatus.BAD_REQUEST),
+    OTP_REQUEST_TOO_SOON(
+            1018, "Bạn vừa yêu cầu mã OTP, vui lòng chờ một lát rồi thử lại", HttpStatus.TOO_MANY_REQUESTS),
     AVATAR_INVALID(1014, "Ảnh đại diện phải là JPG hoặc PNG, tối đa 2MB", HttpStatus.BAD_REQUEST),
 
     // Score files & OMR (2xxx)
@@ -59,8 +63,7 @@ public enum ErrorCode {
     SCORE_COMPOSER_INVALID(2018, "Tên tác giả tối đa 255 ký tự", HttpStatus.BAD_REQUEST),
     SCORE_NOTES_INVALID(2019, "Ghi chú tối đa 5000 ký tự", HttpStatus.BAD_REQUEST),
     INVALID_FILTER(2020, "Giá trị bộ lọc không hợp lệ", HttpStatus.BAD_REQUEST),
-    SCORE_NOT_PUBLIC_FOR_OFFICIAL(
-            2022, "Chỉ đưa vào kho score mẫu được bản nhạc đã công khai", HttpStatus.CONFLICT),
+    SCORE_NOT_PUBLIC_FOR_OFFICIAL(2022, "Chỉ đưa vào kho score mẫu được bản nhạc đã công khai", HttpStatus.CONFLICT),
     SCORE_OFFICIAL_LOCKED(2023, "Bản nhạc trong kho score mẫu chỉ ADMIN được xóa", HttpStatus.FORBIDDEN),
     SCORE_NOT_PENDING_PUBLIC(2021, "Bản nhạc này không ở trạng thái chờ duyệt công khai", HttpStatus.CONFLICT),
     SCORE_BUSY(2201, "Bản nhạc đang được xử lý, vui lòng thử lại sau", HttpStatus.CONFLICT),

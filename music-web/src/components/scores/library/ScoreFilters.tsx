@@ -1,0 +1,98 @@
+import { MAX_KEYWORD } from '../../../utils/score';
+import type { Difficulty, ProcessingStatus, ScoreSort, ScoreSource, Tag } from '../../../types';
+
+interface Props {
+  keyword: string;
+  status: ProcessingStatus | '';
+  source: ScoreSource | '';
+  difficulty: Difficulty | '';
+  tags: Tag[];
+  tagId: string;
+  sort: ScoreSort;
+  onKeyword: (v: string) => void;
+  onStatus: (v: ProcessingStatus | '') => void;
+  onSource: (v: ScoreSource | '') => void;
+  onDifficulty: (v: Difficulty | '') => void;
+  onTag: (v: string) => void;
+  onSort: (v: ScoreSort) => void;
+}
+
+/** Thanh tìm kiếm + bộ lọc + sắp xếp. */
+export default function ScoreFilters(p: Props) {
+  return (
+    <div className="sc-filters">
+      <label className="sc-search">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+          <circle cx="11" cy="11" r="7" />
+          <path d="m20 20-3.5-3.5" strokeLinecap="round" />
+        </svg>
+        <input
+          className="sc-input"
+          placeholder="Tìm theo tên hoặc tác giả..."
+          value={p.keyword}
+          maxLength={MAX_KEYWORD}
+          onChange={(e) => p.onKeyword(e.target.value)}
+        />
+      </label>
+      <select
+        className="sc-input"
+        aria-label="Lọc theo trạng thái"
+        value={p.status}
+        onChange={(e) => p.onStatus(e.target.value as ProcessingStatus | '')}
+      >
+        <option value="">Mọi trạng thái</option>
+        <option value="PENDING">Đang chờ</option>
+        <option value="PROCESSING">Đang xử lý</option>
+        <option value="COMPLETED">Hoàn tất</option>
+        <option value="FAILED">Thất bại</option>
+      </select>
+      <select
+        className="sc-input"
+        aria-label="Lọc theo nguồn"
+        value={p.source}
+        onChange={(e) => p.onSource(e.target.value as ScoreSource | '')}
+      >
+        <option value="">Mọi nguồn</option>
+        <option value="OMR">Số hóa từ file</option>
+        <option value="IMPORT">Nhập file</option>
+        <option value="MANUAL">Tự soạn</option>
+      </select>
+      <select
+        className="sc-input"
+        aria-label="Lọc theo độ khó"
+        value={p.difficulty}
+        onChange={(e) => p.onDifficulty(e.target.value as Difficulty | '')}
+      >
+        <option value="">Mọi độ khó</option>
+        <option value="EASY">Dễ</option>
+        <option value="MEDIUM">Trung bình</option>
+        <option value="HARD">Khó</option>
+        <option value="EXPERT">Chuyên gia</option>
+      </select>
+      <select
+        className="sc-input"
+        aria-label="Lọc theo thể loại"
+        value={p.tagId}
+        onChange={(e) => p.onTag(e.target.value)}
+      >
+        <option value="">Mọi thể loại</option>
+        {p.tags.map((t) => (
+          <option key={t.id} value={t.id}>
+            {t.name}
+          </option>
+        ))}
+      </select>
+      <select
+        className="sc-input"
+        aria-label="Sắp xếp"
+        value={p.sort}
+        onChange={(e) => p.onSort(e.target.value as ScoreSort)}
+      >
+        <option value="newest">Mới cập nhật</option>
+        <option value="created">Mới tạo</option>
+        <option value="oldest">Cũ nhất</option>
+        <option value="title">Tên A → Z</option>
+      </select>
+    </div>
+  );
+}

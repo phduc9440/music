@@ -17,5 +17,6 @@ public class PracticeStreakResponse {
     int longestStreak;
     /** Ngày tập gần nhất, null nếu chưa tập lần nào. */
     LocalDate lastPracticeDate;
+
     boolean practicedToday;
 }
