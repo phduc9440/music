@@ -990,3 +990,109 @@
   align-items: center;
   gap: 0.65rem;
 }
+
+/* ---- Bảng công cụ dạng mục xổ xuống (như bảng Palettes của MuseScore) ---- */
+.sv-tools__search {
+  display: none;
+}
+h3.sv-tools__title {
+  margin-top: 0;
+}
+.sv-tools__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: default;
+}
+.sv-tools__chev {
+  display: none;
+}
+.sv-tools__empty {
+  margin: 0.5rem 0;
+  color: var(--sc-muted);
+  font-size: 0.92rem;
+}
+
+/* Thu gọn và tìm kiếm chỉ có ở Desktop; iPad và Mobile luôn trải các nhóm */
+@media (min-width: 1280px) {
+  .sv-tools__search {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: block;
+    margin: 0 -0.25rem 0.5rem;
+    padding: 0.25rem;
+    background: var(--sv-bar);
+  }
+  .sv-tools__search input {
+    width: 100%;
+    min-height: 44px;
+    padding: 0 0.85rem;
+    border: 1px solid var(--sc-line);
+    border-radius: 12px;
+    background: #fff;
+    color: var(--sc-ink);
+    font: inherit;
+    font-size: 0.92rem;
+  }
+  .sv-tools__search input:focus-visible,
+  .sv-tools__toggle:focus-visible {
+    outline: 2px solid var(--sc-accent);
+    outline-offset: 2px;
+  }
+  .sv-tools__group {
+    margin-bottom: 0;
+    border-bottom: 1px solid var(--sc-line);
+  }
+  h3.sv-tools__title {
+    margin-bottom: 0;
+  }
+  .sv-tools__toggle {
+    min-height: 44px;
+    cursor: pointer;
+  }
+  .sv-tools__toggle:disabled {
+    cursor: default;
+  }
+  .sv-tools__toggle:hover:not(:disabled) {
+    color: var(--sc-accent);
+  }
+  .sv-tools__chev {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-right: 4px;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(-45deg);
+    transition: transform 0.15s;
+  }
+  .sv-tools__group:not(.is-collapsed) .sv-tools__chev {
+    transform: rotate(45deg);
+  }
+  .sv-tools__group.is-collapsed .sv-tools__body {
+    display: none;
+  }
+  .sv-tools__body {
+    padding-bottom: 0.9rem;
+  }
+}
+@media (max-width: 1279px) {
+  .sv-tools__group--pitch .sv-tools__body {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+}
+@media (max-width: 767px) {
+  .sv-tools__group--pitch .sv-tools__body {
+    display: block;
+  }
+}
