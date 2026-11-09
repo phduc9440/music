@@ -4,8 +4,6 @@ import { adminApi } from '../../services';
 import type { ErrorLogEntry, SystemMetrics } from '../../types';
 import './AdminSystem.css';
 
-const REFRESH_MS = 10000;
-
 const formatBytes = (bytes?: number | null) => {
   if (bytes == null) return '—';
   const units = ['B', 'KB', 'MB', 'GB', 'TB'];
@@ -45,23 +43,26 @@ function Meter({ label, percent, detail }: { label: string; percent: number | nu
 const ratio = (used?: number | null, total?: number | null) =>
   used == null || !total ? null : (used * 100) / total;
 
-/** Admin (mục 4.8): thông số tải máy chủ (tự làm mới) và nhật ký lỗi gần đây. */
+/** Admin (mục 4.8): thông số tải máy chủ và nhật ký lỗi gần đây, tự làm mới mỗi 30 giây hoặc khi bấm nút. */
+const REFRESH_MS = 30000;
+
 export default function AdminSystem() {
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
   const [logs, setLogs] = useState<ErrorLogEntry[] | null>(null);
   const [keyword, setKeyword] = useState('');
   const [openId, setOpenId] = useState<number | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const [auto, setAuto] = useState(true);
 
   const loadMetrics = useCallback(() => {
-    adminApi
+    return adminApi
       .getMetrics()
       .then((res) => setMetrics(res.data.result))
-      .catch(() => undefined); // lỗi tạm thời khi tự làm mới thì bỏ qua, không làm phiền bằng toast
+      .catch(() => toast.error('Không tải được thông số máy chủ'));
   }, []);
 
   const loadLogs = useCallback(() => {
-    adminApi
+    return adminApi
       .getErrorLogs(100)
       .then((res) => setLogs(res.data.result))
       .catch(() => toast.error('Không tải được nhật ký lỗi'));
@@ -72,14 +73,23 @@ export default function AdminSystem() {
     loadLogs();
   }, [loadMetrics, loadLogs]);
 
+  // Tự làm mới mỗi 30 giây khi bật; tab bị ẩn thì bỏ qua lượt đó để khỏi gọi API vô ích
   useEffect(() => {
     if (!auto) return;
     const timer = setInterval(() => {
-      loadMetrics();
-      loadLogs();
+      if (document.visibilityState === 'visible') {
+        loadMetrics();
+        loadLogs();
+      }
     }, REFRESH_MS);
     return () => clearInterval(timer);
   }, [auto, loadMetrics, loadLogs]);
+
+  const refresh = async () => {
+    setRefreshing(true);
+    await Promise.all([loadMetrics(), loadLogs()]);
+    setRefreshing(false);
+  };
 
   const clear = async () => {
     if (!window.confirm('Xóa toàn bộ nhật ký lỗi đang lưu trong bộ nhớ?')) return;
@@ -115,10 +125,15 @@ export default function AdminSystem() {
             {m ? `Chạy được ${formatUptime(m.uptimeSeconds)} · Java ${m.javaVersion} · ${m.availableProcessors} nhân CPU` : ''}
           </p>
         </div>
-        <label className="d-flex gap-2 align-items-center">
-          <input type="checkbox" checked={auto} onChange={(e) => setAuto(e.target.checked)} />
-          Tự làm mới mỗi {REFRESH_MS / 1000} giây
-        </label>
+        <div className="d-flex gap-2 align-items-center">
+          <label className="d-flex gap-2 align-items-center">
+            <input type="checkbox" checked={auto} onChange={(e) => setAuto(e.target.checked)} />
+            Tự làm mới mỗi {REFRESH_MS / 1000} giây
+          </label>
+          <button className="btn btn-primary" onClick={refresh} disabled={refreshing}>
+            {refreshing ? 'Đang làm mới...' : 'Làm mới'}
+          </button>
+        </div>
       </div>
 
       <div className="sys-grid">
@@ -169,9 +184,6 @@ export default function AdminSystem() {
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
             />
-            <button className="btn" onClick={loadLogs}>
-              Làm mới
-            </button>
             <button className="btn btn-danger" onClick={clear} disabled={!logs || logs.length === 0}>
               Xóa log
             </button>
