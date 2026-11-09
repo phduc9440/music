@@ -71,3 +71,54 @@
   border-radius: 12px;
   background: #fff;
 }
+
+/* So sánh hai phiên bản */
+.vh-diff__facts {
+  margin-bottom: 0.75rem;
+}
+.vh-diff__types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0 0 0.75rem;
+}
+.vh-diff__strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  max-height: 45vh;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+.vh-diff__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 0.75rem;
+}
+.vh-cell {
+  min-width: 2.2rem;
+  padding: 0.2rem 0.45rem;
+  border: 1px solid var(--sc-line);
+  border-radius: 6px;
+  background: #f1f5f9;
+  font-size: 0.78rem;
+  text-align: center;
+  cursor: help;
+}
+.vh-cell--edited {
+  background: #fef3c7;
+  border-color: #f59e0b;
+}
+.vh-cell--deleted {
+  background: #fee2e2;
+  border-color: #ef4444;
+  text-decoration: line-through;
+}
+.vh-cell--added {
+  background: #dcfce7;
+  border-color: #22c55e;
+}
