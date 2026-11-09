@@ -41,9 +41,10 @@ public class CustomJwtDecoder implements JwtDecoder {
         if ("refresh".equals(jwt.getClaimAsString("typ"))) {
             throw new JwtException("Refresh token cannot be used as access token");
         }
-        // Tài khoản bị admin khóa thì token đã cấp cũng không dùng được nữa (FE sẽ thử refresh rồi bị từ chối)
-        if (memberStatusGuard.isLocked(jwt.getSubject())) {
-            throw new JwtException("Account is locked");
+        // Tài khoản bị khóa, hoặc token cấp trước lần đổi/đặt lại mật khẩu gần nhất, thì không dùng được nữa
+        // (FE sẽ thử refresh, refresh cũng bị từ chối, rồi về trang đăng nhập)
+        if (memberStatusGuard.isRejected(jwt.getSubject(), jwt.getIssuedAt())) {
+            throw new JwtException("Token revoked");
         }
         return jwt;
     }

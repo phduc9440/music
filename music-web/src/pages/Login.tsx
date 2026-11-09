@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { authApi } from '../services';
@@ -7,6 +7,14 @@ import GoogleAuthButton from '../components/GoogleAuthButton';
 import { Icon } from '../components/ui';
 
 type ViewMode = 'login' | 'register' | 'forgot' | 'reset';
+
+type ApiErr = { response?: { data?: { message?: string; result?: { retryAfterSeconds?: number } } }; message?: string };
+
+const apiError = (error: unknown) =>
+  (error as ApiErr).response?.data?.message || (error as ApiErr).message || 'Có lỗi xảy ra, vui lòng thử lại';
+
+/** Số giây phải chờ khi backend báo xin mã OTP quá sớm (OTP_REQUEST_TOO_SOON). */
+const retryAfter = (error: unknown) => (error as ApiErr).response?.data?.result?.retryAfterSeconds ?? 0;
 
 export default function Login() {
   const [viewMode, setViewMode] = useState<ViewMode>('login');
@@ -19,6 +27,13 @@ export default function Login() {
   const [newPassword, setNewPassword] = useState('');
 
   const [isLoading, setIsLoading] = useState(false);
+  // Đếm ngược trước khi được xin mã OTP mới (khớp giới hạn 60 giây của backend)
+  const [resendIn, setResendIn] = useState(0);
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const t = setTimeout(() => setResendIn((n) => n - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendIn]);
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as { from?: string } | null)?.from; // trang đang định vào trước khi bị chuyển sang đăng nhập
@@ -39,7 +54,8 @@ export default function Login() {
         setViewMode('login');
       } else if (viewMode === 'forgot') {
         await authApi.forgotPassword({ email });
-        toast.success('Đã gửi mã OTP tới email của bạn');
+        toast.success('Nếu email đã đăng ký, mã OTP sẽ được gửi tới hộp thư trong ít phút');
+        setResendIn(60);
         setViewMode('reset');
       } else if (viewMode === 'reset') {
         await authApi.resetPassword({ email, otp, newPassword });
@@ -49,8 +65,25 @@ export default function Login() {
         setOtp('');
         setNewPassword('');
       }
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || error.message || 'Có lỗi xảy ra, vui lòng thử lại');
+    } catch (error) {
+      toast.error(apiError(error));
+      const wait = retryAfter(error);
+      if (wait) setResendIn(wait);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const resendOtp = async () => {
+    setIsLoading(true);
+    try {
+      await authApi.forgotPassword({ email });
+      toast.success('Đã gửi lại mã OTP');
+      setResendIn(60);
+    } catch (error) {
+      toast.error(apiError(error));
+      const wait = retryAfter(error);
+      if (wait) setResendIn(wait);
     } finally {
       setIsLoading(false);
     }
@@ -126,7 +159,7 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength={viewMode === 'register' ? 6 : undefined}
+                minLength={viewMode === 'register' ? 8 : undefined}
               />
             </div>
           )}
@@ -141,10 +174,28 @@ export default function Login() {
                 className="form-control"
                 placeholder="6 chữ số"
                 value={otp}
-                onChange={(e) => setOtp(e.target.value)}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
                 required
                 maxLength={6}
+                inputMode="numeric"
+                autoComplete="one-time-code"
               />
+              <div style={{ marginTop: '0.4rem', fontSize: '0.8125rem', color: 'var(--ui-text-2)', textAlign: 'left' }}>
+                Không nhận được mã?{' '}
+                {resendIn > 0 ? (
+                  <span>Gửi lại sau {resendIn} giây</span>
+                ) : (
+                  <a
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (!isLoading) resendOtp();
+                    }}
+                  >
+                    Gửi lại mã
+                  </a>
+                )}
+              </div>
             </div>
           )}
 

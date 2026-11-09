@@ -1,9 +1,7 @@
 package com.ptit.music_be.service.impl;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
-import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.text.ParseException;
 import java.time.Instant;
@@ -27,6 +25,8 @@ import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import com.ptit.music_be.configuration.MemberStatusGuard;
+import com.ptit.music_be.configuration.OtpRequestLimiter;
 import com.ptit.music_be.dto.enums.AuthProvider;
 import com.ptit.music_be.dto.enums.MemberStatus;
 import com.ptit.music_be.dto.request.*;
@@ -65,6 +65,8 @@ public class AuthServiceImpl implements AuthService {
     PasswordEncoder passwordEncoder;
     EmailService emailService;
     OtpRepository otpRepository;
+    MemberStatusGuard memberStatusGuard;
+    OtpRequestLimiter otpRequestLimiter;
 
     static final SecureRandom RANDOM = new SecureRandom();
     static final int MAX_OTP_ATTEMPTS = 5;
@@ -283,6 +285,13 @@ public class AuthServiceImpl implements AuthService {
                     memberRepository.findByEmail(email).orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
 
             assertActive(user);
+            // Refresh token cấp trước lần đổi/đặt lại mật khẩu gần nhất không dùng được nữa (đăng xuất các thiết bị cũ)
+            Date issuedAt = signedJWT.getJWTClaimsSet().getIssueTime();
+            if (user.getPasswordChangedAt() != null
+                    && (issuedAt == null
+                            || issuedAt.toInstant().getEpochSecond() < epochSecond(user.getPasswordChangedAt()))) {
+                throw new AppException(ErrorCode.UNAUTHENTICATED);
+            }
 
             return issueTokens(user);
         } catch (ParseException | JOSEException | AppException e) {
@@ -321,7 +330,8 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public void changePassword(ChangePasswordRequest request) {
+    @Transactional
+    public AuthResponse changePassword(ChangePasswordRequest request) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
 
         Member user =
@@ -340,16 +350,36 @@ public class AuthServiceImpl implements AuthService {
             throw new AppException(ErrorCode.PASSWORD_SAME_AS_OLD);
         }
 
-        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        applyNewPassword(user, request.getNewPassword());
+        emailService.sendPasswordChangedEmail(user.getEmail(), user.getFullName(), false);
+        // Các thiết bị khác bị đăng xuất; thiết bị đang dùng nhận token mới (cấp sau mốc đổi) để không bị đăng xuất theo
+        return issueTokens(user);
+    }
+
+    /**
+     * Đặt mật khẩu mới và ghi mốc đổi mật khẩu (làm tròn xuống giây, cùng đơn vị với iat của JWT) để mọi token cấp
+     * trước đó bị từ chối; xóa cache của MemberStatusGuard để có hiệu lực ngay.
+     */
+    private void applyNewPassword(Member user, String rawPassword) {
+        user.setPasswordHash(passwordEncoder.encode(rawPassword));
+        user.setPasswordChangedAt(LocalDateTime.now().truncatedTo(java.time.temporal.ChronoUnit.SECONDS));
         memberRepository.save(user);
+        memberStatusGuard.evict(user.getEmail());
+    }
+
+    private static long epochSecond(LocalDateTime time) {
+        return time.atZone(java.time.ZoneId.systemDefault()).toEpochSecond();
     }
 
     @Override
     public void forgotPassword(ForgotPasswordRequest request) {
-        // Always respond the same way to avoid leaking which emails are registered.
-        Member user = memberRepository
-                .findByEmail(request.getEmail().trim().toLowerCase())
-                .orElse(null);
+        String email = request.getEmail().trim().toLowerCase();
+        // Giới hạn theo email (cách nhau 60 giây, tối đa 5 lần/giờ), áp cả cho email không tồn tại để không lộ email
+        // nào đã đăng ký; vừa chặn spam hộp thư vừa chặn xin mã mới liên tục để đoán mò
+        otpRequestLimiter.acquire(email);
+
+        // Phản hồi như nhau dù email có tồn tại hay không
+        Member user = memberRepository.findByEmail(email).orElse(null);
         if (user == null || AuthProvider.GOOGLE.equals(user.getAuthProvider())) {
             return;
         }
@@ -358,8 +388,9 @@ public class AuthServiceImpl implements AuthService {
 
         otpRepository.deleteByMember(user); // Xóa các OTP cũ nếu có
 
+        // Chỉ lưu bản băm (BCrypt): lộ bảng otps cũng không dùng được mã để đổi mật khẩu người khác
         Otp otp = Otp.builder()
-                .otpCode(otpCode)
+                .otpCode(passwordEncoder.encode(otpCode))
                 .expiryTime(LocalDateTime.now().plusMinutes(5))
                 .member(user)
                 .build();
@@ -371,28 +402,27 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional(noRollbackFor = AppException.class)
     public void resetPassword(ResetPasswordRequest request) {
+        // Mọi trường hợp sai (email không tồn tại, không có mã, hết hạn, sai mã) đều báo cùng một lỗi
         Member user = memberRepository
                 .findByEmail(request.getEmail().trim().toLowerCase())
-                .orElseThrow(() -> new AppException(ErrorCode.INVALID_CREDENTIALS));
+                .orElseThrow(() -> new AppException(ErrorCode.OTP_INVALID));
 
-        Otp otp = otpRepository.findByMember(user).orElseThrow(() -> new AppException(ErrorCode.INVALID_CREDENTIALS));
+        Otp otp = otpRepository.findByMember(user).orElseThrow(() -> new AppException(ErrorCode.OTP_INVALID));
 
         int attempts = otp.getAttempts() == null ? 0 : otp.getAttempts();
         if (otp.getExpiryTime().isBefore(LocalDateTime.now()) || attempts >= MAX_OTP_ATTEMPTS) {
             otpRepository.delete(otp);
-            throw new AppException(ErrorCode.INVALID_CREDENTIALS);
+            throw new AppException(ErrorCode.OTP_INVALID);
         }
 
-        if (!MessageDigest.isEqual(
-                otp.getOtpCode().getBytes(StandardCharsets.UTF_8),
-                request.getOtp().getBytes(StandardCharsets.UTF_8))) {
+        if (!passwordEncoder.matches(request.getOtp().trim(), otp.getOtpCode())) {
             otp.setAttempts(attempts + 1);
             otpRepository.save(otp);
-            throw new AppException(ErrorCode.INVALID_CREDENTIALS);
+            throw new AppException(ErrorCode.OTP_INVALID);
         }
 
-        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
-        memberRepository.save(user);
+        applyNewPassword(user, request.getNewPassword());
         otpRepository.delete(otp);
+        emailService.sendPasswordChangedEmail(user.getEmail(), user.getFullName(), true);
     }
 }

@@ -38,9 +38,16 @@ public interface MemberRepository extends JpaRepository<Member, String> {
     @Query("update Member m set m.lastLoginAt = :at where m.id = :id")
     void updateLastLogin(@Param("id") String id, @Param("at") java.time.LocalDateTime at);
 
-    /** Chỉ lấy trạng thái tài khoản (nhẹ hơn tải cả Member), dùng để chặn token của tài khoản bị khóa. */
-    @Query("select m.status from Member m where m.email = :email")
-    Optional<MemberStatus> findStatusByEmail(@Param("email") String email);
+    /** Trạng thái xác thực tối thiểu để kiểm tra token ở mỗi request (nhẹ hơn tải cả Member). */
+    interface AuthState {
+        MemberStatus getStatus();
+
+        java.time.LocalDateTime getPasswordChangedAt();
+    }
+
+    /** Trạng thái tài khoản và mốc đổi mật khẩu, dùng để chặn token của tài khoản bị khóa hoặc cấp trước khi đổi mật khẩu. */
+    @Query("select m.status as status, m.passwordChangedAt as passwordChangedAt from Member m where m.email = :email")
+    Optional<AuthState> findAuthStateByEmail(@Param("email") String email);
 
     /** Mọi thành viên đang hoạt động (status = ACTIVE), để gửi thông báo chung. */
     @Query("select m from Member m where m.status = :status")
