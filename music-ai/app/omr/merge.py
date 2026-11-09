@@ -161,6 +161,17 @@ def clean_page(
             body = body[:i]
             break
 
+    # Model đôi khi gộp hai khuông (``*v *v``) khi chưa hề tách (``*^``): các dòng sau đó mất một cột nên kern hỏng (spine
+    # đếm theo ``**kern`` ở đầu không còn khớp ``*-`` ở cuối, music21 báo không xác định được kiểu spine). Cắt từ chỗ sai;
+    # trang mất ô nhịp thì bị nhận diện lại theo hệ vì số ô lệch số ô trên ảnh.
+    invalid = first_invalid_join(body, len(header.split(TAB)))
+    if invalid is not None:
+        warnings.append(
+            f"Trang {number}: model gộp spine sai ở dòng {invalid + 1} của kết quả (gộp hai khuông chưa từng tách), "
+            f"đã bỏ {len(body) - invalid} dòng từ chỗ đó trở đi"
+        )
+        body = body[:invalid]
+
     if truncated and body:
         body = body[:-1]
         warnings.append(f"Trang {number}: kết quả chạm giới hạn độ dài của model, phần cuối trang có thể bị thiếu")
@@ -575,6 +586,31 @@ def _track_groups(groups: list[int], line: str) -> list[int]:
             updated.append(gid)
             previous_join = None
     return updated
+
+
+def first_invalid_join(body: list[str], spines: int) -> Optional[int]:
+    """Chỉ số dòng đầu tiên trong ``body`` có ``*v`` gộp các cột không cùng một spine gốc (hoặc một ``*v`` lẻ không có cột
+    để gộp), tức là gộp khi chưa hề tách bằng ``*^``; None nếu mọi chỗ gộp đều hợp lệ."""
+    groups = list(range(spines))
+    for index, line in enumerate(body):
+        if not line.startswith("*"):
+            continue
+        fields = line.split(TAB)
+        if len(fields) != len(groups):
+            continue
+        position = 0
+        while position < len(fields):
+            if fields[position] != "*v":
+                position += 1
+                continue
+            end = position
+            while end < len(fields) and fields[end] == "*v":
+                end += 1
+            if end - position < 2 or len(set(groups[position:end])) > 1:
+                return index
+            position = end
+        groups = _track_groups(groups, line)
+    return None
 
 
 def _join_lines(groups: list[int]) -> list[str]:

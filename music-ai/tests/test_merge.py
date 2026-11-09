@@ -404,3 +404,45 @@ def test_drop_repeated_blocks_keeps_music_when_count_already_matches_or_no_exact
     triple = _melody_body(a, a, a, b)
     fixed, removed = merge.drop_repeated_blocks(triple, 2)
     assert removed == 2 and merge.count_measures(fixed.body) == 2
+
+
+# ---------------------------------------------------------------- gộp spine khi chưa tách
+
+
+def _three_spines(*rows: str) -> str:
+    return "\n".join(["**kern\t**kern\t**kern", "*clefF4\t*clefG2\t*clefG2", "*M3/4\t*M3/4\t*M3/4", *rows])
+
+
+def test_join_without_split_is_cut_so_the_merged_kern_keeps_its_columns():
+    raw = _three_spines(
+        "4C\t4c\t4e",
+        "=1\t=1\t=1",
+        "*\t*v\t*v",  # gộp hai khuông chưa từng tách: các dòng sau chỉ còn hai cột
+        "4D\t4d f",
+        "=2\t=2",
+        "4E\t4e",
+    )
+    page, warnings = merge.clean_page(2, raw)
+    assert page is not None
+    assert any("gộp spine sai" in w for w in warnings)
+    assert all(len(line.split("\t")) == 3 for line in page.body)
+    result = merge.merge_pages([page])
+    assert {len(line.split("\t")) for line in result.lines} == {3}
+
+
+def test_split_then_join_of_the_same_spine_is_kept():
+    raw = _three_spines(
+        "4C\t4c\t4e",
+        "*\t*\t*^",
+        "4D\t4d\t4f\t4a",
+        "*\t*\t*v\t*v",
+        "4E\t4e\t4g",
+        "=1\t=1\t=1",
+    )
+    page, warnings = merge.clean_page(1, raw)
+    assert page is not None and warnings == []
+    assert merge.first_invalid_join(page.body, 3) is None
+
+
+def test_lone_join_marker_is_invalid():
+    assert merge.first_invalid_join(["4C\t4c", "*\t*v", "4D\t4d"], 2) == 1
