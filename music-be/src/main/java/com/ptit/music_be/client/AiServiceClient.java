@@ -9,6 +9,7 @@ import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.ptit.music_be.configuration.AiServiceProperties;
 
 /**
@@ -109,6 +110,20 @@ public class AiServiceClient {
                 .body(body)
                 .retrieve()
                 .toBodilessEntity();
+    }
+
+    /**
+     * So sánh hai MusicXML của cùng một bản nhạc ({@code POST /analysis/diff}), đồng bộ. Trả về JSON
+     * {@code {measures: [...], summary: {...}}} của music-ai. File hỏng: music-ai trả 422 ({@code HttpClientErrorException}).
+     */
+    public JsonNode diffMusicXml(String basePath, String targetPath) {
+        return convertClient
+                .post()
+                .uri("/analysis/diff")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("basePath", basePath, "targetPath", targetPath))
+                .retrieve()
+                .body(JsonNode.class);
     }
 
     /**
