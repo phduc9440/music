@@ -171,10 +171,13 @@ def page_measures(page: Optional[merge.PageKern]) -> Optional[int]:
 
 def measures_off(found: Optional[int], expected: Optional[int]) -> bool:
     """Số ô của cả trang lệch ảnh đủ nhiều để chắc là model đọc sai (sinh lặp, đọc lại hệ trước, bỏ hệ), không phải do
-    bộ dò vạch nhịp sót một vạch: lệch từ 2 ô và từ 10% trở lên."""
+    bộ dò vạch nhịp sót một vạch. Thừa ô: lệch từ 2 ô và từ 10% trở lên. Thiếu ô: từ 1 ô, vì bộ dò hầu như không đếm
+    thừa (đã loại thân nốt, đầu nốt) nên kern ít ô hơn ảnh thường là model bỏ sót ô (vd. ô cuối trang)."""
     if found is None or expected is None:
         return False
-    return abs(found - expected) >= max(2, math.ceil(0.1 * expected))
+    if found < expected:
+        return True
+    return found - expected >= max(2, math.ceil(0.1 * expected))
 
 
 def page_measure_limit(expected: Optional[int]) -> Optional[int]:

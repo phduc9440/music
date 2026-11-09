@@ -284,6 +284,8 @@ def test_page_with_extra_measures_needs_fallback_even_with_right_spines():
     assert routing.needs_fallback("fallback", layout, looped)
     assert not routing.needs_fallback("fallback", layout, right)
     assert not routing.needs_fallback("fallback", layout, one_off)
+    missing_one = merge.clean_page(1, melody(11))[0]  # thiếu ô thì không phải lỗi của bộ dò
+    assert routing.needs_fallback("fallback", layout, missing_one)
     assert not routing.needs_fallback("fallback", layout, looped, check_bars=False)
 
 
@@ -291,6 +293,8 @@ def test_measures_off_needs_two_measures_and_ten_percent():
     assert not routing.measures_off(None, 12) and not routing.measures_off(12, None)
     assert routing.measures_off(14, 12) and routing.measures_off(10, 12)
     assert not routing.measures_off(13, 12)
+    assert routing.measures_off(11, 12)  # thiếu một ô là đủ để đọc lại
+    assert not routing.measures_off(12, 12)
     assert not routing.measures_off(62, 60) and routing.measures_off(66, 60)
 
 
