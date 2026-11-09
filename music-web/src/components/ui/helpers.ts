@@ -13,4 +13,3 @@ export const VISIBILITY: Record<string, { label: string; tone: Tone }> = {
   PENDING: { label: 'Chờ duyệt', tone: 'warning' },
   PRIVATE: { label: 'Riêng tư', tone: 'neutral' },
 };
-

@@ -6,6 +6,7 @@ import { practiceApi } from '../../services';
 import { getErrorMessage } from '../../utils/score';
 import type { PageResult, PracticeSessionRecord } from '../../types';
 import '../../components/scores/scores.css';
+import { useDialog } from '../../components/ui/dialog-context';
 
 const PAGE_SIZE = 20;
 const MODE_LABELS: Record<number, string> = { 1: 'Tự do', 2: 'Lặp đoạn', 3: 'Chấm điểm' };
@@ -21,6 +22,7 @@ const formatPct = (v?: number | null) => (v == null ? '—' : `${v.toFixed(1)}%`
 
 /** Trang /practice-history: lịch sử phiên tập của tôi, xem log lỗi chi tiết và xóa phiên (mục 3.11). */
 export default function PracticeHistory() {
+  const { confirm } = useDialog();
   const [page, setPage] = useState(0);
   const [result, setResult] = useState<PageResult<PracticeSessionRecord> | null>(null);
   const [detail, setDetail] = useState<PracticeSessionRecord | null>(null);
@@ -43,7 +45,13 @@ export default function PracticeHistory() {
   };
 
   const remove = async (s: PracticeSessionRecord) => {
-    if (!window.confirm(`Xóa phiên tập "${s.scoreTitle}" lúc ${formatDate(s.startedAt)}?`)) return;
+    const ok = await confirm({
+      title: 'Xóa phiên tập này?',
+      message: `"${s.scoreTitle}" lúc ${formatDate(s.startedAt)}. Số liệu thống kê sẽ tính lại.`,
+      confirmLabel: 'Xóa',
+      tone: 'danger',
+    });
+    if (!ok) return;
     try {
       await practiceApi.remove(s.id);
       toast.success('Đã xóa phiên tập');
@@ -56,7 +64,6 @@ export default function PracticeHistory() {
 
   return (
     <div className="sc-page">
-
       <main className="sc-container">
         <header className="sc-lib-head">
           <div>

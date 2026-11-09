@@ -5,6 +5,7 @@ import type { IconName } from '../../components/ui';
 import { adminApi } from '../../services';
 import type { ErrorLogEntry, SystemMetrics } from '../../types';
 import './AdminSystem.css';
+import { useDialog } from '../../components/ui/dialog-context';
 
 const formatBytes = (bytes?: number | null) => {
   if (bytes == null) return '—';
@@ -34,7 +35,17 @@ const LEVELS = {
 };
 
 /** Thẻ đo mức sử dụng: số phần trăm, thanh đo và nhãn mức (màu luôn đi kèm chữ). */
-function Meter({ label, icon, percent, detail }: { label: string; icon: IconName; percent: number | null; detail: string }) {
+function Meter({
+  label,
+  icon,
+  percent,
+  detail,
+}: {
+  label: string;
+  icon: IconName;
+  percent: number | null;
+  detail: string;
+}) {
   const safe = percent == null ? 0 : Math.min(100, Math.max(0, percent));
   const level = safe >= 90 ? 'danger' : safe >= 70 ? 'warn' : 'ok';
   return (
@@ -62,13 +73,13 @@ function Meter({ label, icon, percent, detail }: { label: string; icon: IconName
   );
 }
 
-const ratio = (used?: number | null, total?: number | null) =>
-  used == null || !total ? null : (used * 100) / total;
+const ratio = (used?: number | null, total?: number | null) => (used == null || !total ? null : (used * 100) / total);
 
 /** Admin (mục 4.8): thông số tải máy chủ và nhật ký lỗi gần đây, tự làm mới mỗi 30 giây hoặc khi bấm nút. */
 const REFRESH_MS = 30000;
 
 export default function AdminSystem() {
+  const { confirm } = useDialog();
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
   const [logs, setLogs] = useState<ErrorLogEntry[] | null>(null);
   const [keyword, setKeyword] = useState('');
@@ -114,7 +125,13 @@ export default function AdminSystem() {
   };
 
   const clear = async () => {
-    if (!window.confirm('Xóa toàn bộ nhật ký lỗi đang lưu trong bộ nhớ?')) return;
+    const ok = await confirm({
+      title: 'Xóa toàn bộ nhật ký lỗi?',
+      message: 'Các bản ghi lỗi đang lưu trong bộ nhớ sẽ bị xóa.',
+      confirmLabel: 'Xóa log',
+      tone: 'danger',
+    });
+    if (!ok) return;
     try {
       await adminApi.clearErrorLogs();
       toast.success('Đã xóa nhật ký lỗi');
@@ -135,14 +152,17 @@ export default function AdminSystem() {
     m && m.physicalMemoryTotalBytes != null && m.physicalMemoryFreeBytes != null
       ? m.physicalMemoryTotalBytes - m.physicalMemoryFreeBytes
       : null;
-  const diskUsed = m && m.diskTotalBytes != null && m.diskUsableBytes != null ? m.diskTotalBytes - m.diskUsableBytes : null;
+  const diskUsed =
+    m && m.diskTotalBytes != null && m.diskUsableBytes != null ? m.diskTotalBytes - m.diskUsableBytes : null;
 
   return (
     <>
       <PageHeader
         title="Giám sát hệ thống"
         description={
-          m ? `Đã chạy ${formatUptime(m.uptimeSeconds)} · Java ${m.javaVersion} · ${m.availableProcessors} nhân CPU` : 'Thông số máy chủ và nhật ký lỗi'
+          m
+            ? `Đã chạy ${formatUptime(m.uptimeSeconds)} · Java ${m.javaVersion} · ${m.availableProcessors} nhân CPU`
+            : 'Thông số máy chủ và nhật ký lỗi'
         }
         actions={
           <>
@@ -182,7 +202,12 @@ export default function AdminSystem() {
           percent={ratio(diskUsed, m?.diskTotalBytes)}
           detail={m ? `Còn trống ${formatBytes(m.diskUsableBytes)} / ${formatBytes(m.diskTotalBytes)}` : '—'}
         />
-        <StatCard label="Luồng (thread)" icon="server" value={m?.threadCount ?? '—'} hint={`Cao nhất: ${m?.peakThreadCount ?? '—'}`} />
+        <StatCard
+          label="Luồng (thread)"
+          icon="server"
+          value={m?.threadCount ?? '—'}
+          hint={`Cao nhất: ${m?.peakThreadCount ?? '—'}`}
+        />
         <StatCard
           label="Lỗi từ lúc khởi động"
           icon="alert"

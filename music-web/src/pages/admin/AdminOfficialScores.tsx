@@ -18,6 +18,7 @@ import { errorMessage } from '../../components/ui/helpers';
 import { scoreApi } from '../../services';
 import type { PageResult, ScoreSummary } from '../../types';
 import { DIFFICULTY_LABELS } from '../../utils/score';
+import { useDialog } from '../../components/ui/dialog-context';
 
 const PAGE_SIZE = 20;
 
@@ -25,6 +26,7 @@ type Tab = 'library' | 'candidates';
 
 /** Admin (mục 4.5): quản lý kho score mẫu, gồm xem kho, gỡ bản khỏi kho và thêm bản nhạc công khai vào kho. */
 export default function AdminOfficialScores() {
+  const { confirm } = useDialog();
   const [tab, setTab] = useState<Tab>('library');
   const [page, setPage] = useState(0);
   const [keywordInput, setKeywordInput] = useState('');
@@ -59,10 +61,20 @@ export default function AdminOfficialScores() {
   const toggle = useCallback(
     async (score: ScoreSummary) => {
       const adding = tab === 'candidates';
-      const message = adding
-        ? `Thêm "${score.title}" vào kho score mẫu? Sau đó chỉ ADMIN được sửa hoặc xóa bản nhạc này.`
-        : `Gỡ "${score.title}" khỏi kho score mẫu? Bản nhạc vẫn được giữ và vẫn công khai.`;
-      if (!window.confirm(message)) return;
+      const ok = await confirm(
+        adding
+          ? {
+              title: `Thêm "${score.title}" vào kho score mẫu?`,
+              message: 'Sau đó chỉ ADMIN được sửa hoặc xóa bản nhạc này.',
+              confirmLabel: 'Thêm vào kho',
+            }
+          : {
+              title: `Gỡ "${score.title}" khỏi kho score mẫu?`,
+              message: 'Bản nhạc vẫn được giữ và vẫn công khai.',
+              confirmLabel: 'Gỡ khỏi kho',
+            },
+      );
+      if (!ok) return;
       setBusyId(score.id);
       try {
         if (adding) await scoreApi.markOfficial(score.id);
@@ -75,7 +87,7 @@ export default function AdminOfficialScores() {
         setReload((n) => n + 1);
       }
     },
-    [tab],
+    [tab, confirm],
   );
 
   const colSpan = tab === 'candidates' ? 4 : 3;
@@ -126,7 +138,13 @@ export default function AdminOfficialScores() {
                     <Link to={`/admin/scores/${s.id}`}>{s.title}</Link>
                   </CellTitle>
                 </td>
-                <td>{s.difficulty ? <Badge>{DIFFICULTY_LABELS[s.difficulty]}</Badge> : <span className="adm-subtle">—</span>}</td>
+                <td>
+                  {s.difficulty ? (
+                    <Badge>{DIFFICULTY_LABELS[s.difficulty]}</Badge>
+                  ) : (
+                    <span className="adm-subtle">—</span>
+                  )}
+                </td>
                 {tab === 'candidates' && <td className="adm-muted">{s.ownerEmail}</td>}
                 <td className="adm-table__actions">
                   <div className="adm-table__actions-inner">
@@ -136,7 +154,13 @@ export default function AdminOfficialScores() {
                         Gỡ khỏi kho
                       </Button>
                     ) : (
-                      <Button size="sm" variant="primary" icon="plus" disabled={busyId === s.id} onClick={() => toggle(s)}>
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        icon="plus"
+                        disabled={busyId === s.id}
+                        onClick={() => toggle(s)}
+                      >
                         Thêm vào kho
                       </Button>
                     )}

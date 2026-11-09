@@ -171,7 +171,11 @@ export function Button({
       aria-busy={loading || undefined}
       {...rest}
     >
-      {loading ? <span className="adm-spinner" aria-hidden="true" /> : icon && <Icon name={icon} size={size === 'sm' ? 14 : 16} />}
+      {loading ? (
+        <span className="adm-spinner" aria-hidden="true" />
+      ) : (
+        icon && <Icon name={icon} size={size === 'sm' ? 14 : 16} />
+      )}
       {children}
     </button>
   );
@@ -385,7 +389,13 @@ export function Pager({
       </span>
       {totalPages > 1 && (
         <div className="adm-pager__buttons">
-          <Button size="sm" icon="chevronLeft" disabled={page === 0} onClick={() => onChange(page - 1)} aria-label="Trang trước" />
+          <Button
+            size="sm"
+            icon="chevronLeft"
+            disabled={page === 0}
+            onClick={() => onChange(page - 1)}
+            aria-label="Trang trước"
+          />
           <Button
             size="sm"
             icon="chevronRight"

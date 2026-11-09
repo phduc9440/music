@@ -8,6 +8,7 @@ import MusicXmlViewer from '../scores/MusicXmlViewer';
 import VersionDiffView from './VersionDiffView';
 import { formatVersionSize, getVersionErrorMessage, versionSourceLabel } from './versionUtils';
 import './version.css';
+import { useDialog } from '../ui/dialog-context';
 
 interface Props {
   scoreId: string;
@@ -27,6 +28,7 @@ interface Props {
  * "Khôi phục" để lưu một bản cũ thành phiên bản mới nhất mà không xóa lịch sử.
  */
 export default function VersionHistoryPanel({ scoreId, canEdit, dirty, busy, onRestore, onClose }: Props) {
+  const { confirm } = useDialog();
   const [versions, setVersions] = useState<ScoreVersion[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<number | null>(null);
@@ -46,9 +48,12 @@ export default function VersionHistoryPanel({ scoreId, canEdit, dirty, busy, onR
 
   const restore = async (version: number) => {
     const warning = dirty ? 'Bạn có thay đổi chưa lưu, chúng sẽ bị bỏ. ' : '';
-    const ok = window.confirm(
-      `${warning}Khôi phục phiên bản ${version}? Nội dung của nó sẽ được lưu thành phiên bản mới nhất, các phiên bản hiện có vẫn nằm trong lịch sử.`,
-    );
+    const ok = await confirm({
+      title: `Khôi phục phiên bản ${version}?`,
+      message: `${warning}Nội dung của nó sẽ được lưu thành phiên bản mới nhất, các phiên bản hiện có vẫn nằm trong lịch sử.`,
+      confirmLabel: 'Khôi phục',
+      tone: dirty ? 'danger' : 'primary',
+    });
     if (!ok) return;
     setRestoring(version);
     const done = await onRestore(version);

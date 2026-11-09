@@ -51,7 +51,11 @@ export default function AdminMemberDetail() {
       <>
         <PageHeader title="Không tìm thấy thành viên" back={back} />
         <Card>
-          <EmptyState icon="users" title="Tài khoản không tồn tại" description="Có thể tài khoản đã bị xóa hoặc đường dẫn sai." />
+          <EmptyState
+            icon="users"
+            title="Tài khoản không tồn tại"
+            description="Có thể tài khoản đã bị xóa hoặc đường dẫn sai."
+          />
         </Card>
       </>
     );
@@ -74,7 +78,9 @@ export default function AdminMemberDetail() {
           m && (
             <span style={{ display: 'inline-flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' }}>
               {m.email}
-              <Badge tone={isSuperAdminMember(m) ? 'violet' : isAdminMember(m) ? 'primary' : 'neutral'}>{roleLabel(m)}</Badge>
+              <Badge tone={isSuperAdminMember(m) ? 'violet' : isAdminMember(m) ? 'primary' : 'neutral'}>
+                {roleLabel(m)}
+              </Badge>
               <Badge tone={locked ? 'danger' : 'success'}>{locked ? 'Đã khóa' : 'Hoạt động'}</Badge>
             </span>
           )
@@ -89,8 +95,18 @@ export default function AdminMemberDetail() {
           value={detail ? nf.format(detail.scoreCount) : '—'}
           hint={detail ? `${detail.publicScores} công khai · ${detail.pendingScores} chờ duyệt` : undefined}
         />
-        <StatCard label="Playlist" icon="library" tone="violet" value={detail ? nf.format(detail.playlistCount) : '—'} />
-        <StatCard label="Nhận xét đã viết" icon="star" tone="warning" value={detail ? nf.format(detail.reviewCount) : '—'} />
+        <StatCard
+          label="Playlist"
+          icon="library"
+          tone="violet"
+          value={detail ? nf.format(detail.playlistCount) : '—'}
+        />
+        <StatCard
+          label="Nhận xét đã viết"
+          icon="star"
+          tone="warning"
+          value={detail ? nf.format(detail.reviewCount) : '—'}
+        />
         <StatCard
           label="Luyện tập"
           icon="activity"

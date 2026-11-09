@@ -18,11 +18,17 @@ import {
 import { VISIBILITY, errorMessage, formatDateTime } from '../../components/ui/helpers';
 import { adminApi, scoreApi } from '../../services';
 import type { PageResult, ScoreSummary } from '../../types';
+import { useDialog } from '../../components/ui/dialog-context';
 
 const PAGE_SIZE = 20;
 
 const SOURCE_LABEL: Record<string, string> = { OMR: 'Số hóa (OMR)', IMPORT: 'Nhập file', MANUAL: 'Tạo trong editor' };
-const DIFFICULTY_LABEL: Record<string, string> = { EASY: 'Dễ', MEDIUM: 'Trung bình', HARD: 'Khó', EXPERT: 'Chuyên gia' };
+const DIFFICULTY_LABEL: Record<string, string> = {
+  EASY: 'Dễ',
+  MEDIUM: 'Trung bình',
+  HARD: 'Khó',
+  EXPERT: 'Chuyên gia',
+};
 const SORT_LABEL: Record<string, string> = {
   UPDATED: 'Mới cập nhật',
   CREATED: 'Mới tạo',
@@ -34,6 +40,7 @@ type BulkAction = 'PUBLIC' | 'PRIVATE' | 'DELETE';
 
 /** Admin: xem mọi bản nhạc của mọi người dùng, tìm kiếm, lọc, sắp xếp; thao tác từng bản hoặc hàng loạt. */
 export default function AdminScores() {
+  const { confirm, prompt } = useDialog();
   const [result, setResult] = useState<PageResult<ScoreSummary> | null>(null);
   const [page, setPage] = useState(0);
   const [keywordInput, setKeywordInput] = useState('');
@@ -116,15 +123,25 @@ export default function AdminScores() {
     }
   };
 
-  const publish = (score: ScoreSummary) => {
-    if (!window.confirm(`Công khai bản nhạc "${score.title}"? Mọi người dùng đã đăng nhập sẽ xem được.`)) return;
+  const publish = async (score: ScoreSummary) => {
+    const ok = await confirm({
+      title: `Công khai "${score.title}"?`,
+      message: 'Mọi người dùng đã đăng nhập sẽ xem được. Chủ sở hữu sẽ nhận thông báo.',
+      confirmLabel: 'Công khai',
+    });
+    if (!ok) return;
     run(score, () => adminApi.setScoreVisibility(score.id, 'PUBLIC'), 'Đã công khai', 'Không đổi được quyền riêng tư');
   };
 
-  const unpublish = (score: ScoreSummary) => {
-    const input = window.prompt(
-      `Gỡ công khai "${score.title}" (về riêng tư${score.isOfficial ? ', đồng thời rời kho score mẫu' : ''}). Lý do (có thể bỏ trống):`,
-    );
+  const unpublish = async (score: ScoreSummary) => {
+    const input = await prompt({
+      title: `Gỡ công khai "${score.title}"?`,
+      message: `Bản nhạc về riêng tư${score.isOfficial ? ' và rời kho score mẫu' : ''}. Chủ sở hữu sẽ nhận thông báo kèm lý do.`,
+      label: 'Lý do (có thể bỏ trống)',
+      maxLength: 255,
+      confirmLabel: 'Gỡ công khai',
+      tone: 'danger',
+    });
     if (input === null) return;
     run(
       score,
@@ -139,8 +156,14 @@ export default function AdminScores() {
       ? run(score, () => scoreApi.unmarkOfficial(score.id), 'Đã gỡ khỏi kho score mẫu', 'Không gỡ được khỏi kho')
       : run(score, () => scoreApi.markOfficial(score.id), 'Đã thêm vào kho score mẫu', 'Không thêm được vào kho');
 
-  const remove = (score: ScoreSummary) => {
-    if (!window.confirm(`Xóa vĩnh viễn bản nhạc "${score.title}" của ${score.ownerEmail}? Không thể hoàn tác.`)) return;
+  const remove = async (score: ScoreSummary) => {
+    const ok = await confirm({
+      title: `Xóa vĩnh viễn "${score.title}"?`,
+      message: `Bản nhạc của ${score.ownerEmail} và toàn bộ file sẽ bị xóa. Không thể hoàn tác.`,
+      confirmLabel: 'Xóa vĩnh viễn',
+      tone: 'danger',
+    });
+    if (!ok) return;
     run(score, () => scoreApi.remove(score.id), 'Đã xóa bản nhạc', 'Không xóa được bản nhạc');
   };
 
@@ -149,13 +172,25 @@ export default function AdminScores() {
     if (ids.length === 0) return;
     let reason: string | undefined;
     if (action === 'DELETE') {
-      if (!window.confirm(`Xóa vĩnh viễn ${ids.length} bản nhạc đã chọn? Không thể hoàn tác.`)) return;
+      const ok = await confirm({
+        title: `Xóa vĩnh viễn ${ids.length} bản nhạc đã chọn?`,
+        message: 'Toàn bộ file của các bản này sẽ bị xóa. Không thể hoàn tác.',
+        confirmLabel: 'Xóa vĩnh viễn',
+        tone: 'danger',
+      });
+      if (!ok) return;
     } else if (action === 'PUBLIC') {
-      if (!window.confirm(`Công khai ${ids.length} bản nhạc đã chọn?`)) return;
+      const ok = await confirm({ title: `Công khai ${ids.length} bản nhạc đã chọn?`, confirmLabel: 'Công khai' });
+      if (!ok) return;
     } else {
-      const input = window.prompt(
-        `Gỡ công khai ${ids.length} bản nhạc đã chọn (về riêng tư, bản trong kho mẫu sẽ rời kho). Lý do (có thể bỏ trống):`,
-      );
+      const input = await prompt({
+        title: `Gỡ công khai ${ids.length} bản nhạc đã chọn?`,
+        message: 'Các bản về riêng tư, bản trong kho mẫu sẽ rời kho. Chủ sở hữu sẽ nhận thông báo.',
+        label: 'Lý do (có thể bỏ trống)',
+        maxLength: 255,
+        confirmLabel: 'Gỡ công khai',
+        tone: 'danger',
+      });
       if (input === null) return;
       reason = input.trim() || undefined;
     }
@@ -183,7 +218,12 @@ export default function AdminScores() {
   };
 
   const select = (label: string, value: string, onChange: (v: string) => void, options: [string, string][]) => (
-    <select className="adm-input" aria-label={label} value={value} onChange={(e) => changeFilter(() => onChange(e.target.value))}>
+    <select
+      className="adm-input"
+      aria-label={label}
+      value={value}
+      onChange={(e) => changeFilter(() => onChange(e.target.value))}
+    >
       {options.map(([v, l]) => (
         <option key={v} value={v}>
           {l}
@@ -256,7 +296,12 @@ export default function AdminScores() {
           <thead>
             <tr>
               <th className="adm-table__check">
-                <input type="checkbox" aria-label="Chọn tất cả bản trên trang" checked={allChecked} onChange={toggleAll} />
+                <input
+                  type="checkbox"
+                  aria-label="Chọn tất cả bản trên trang"
+                  checked={allChecked}
+                  onChange={toggleAll}
+                />
               </th>
               <th>Bản nhạc</th>
               <th>Chủ sở hữu</th>
@@ -303,7 +348,13 @@ export default function AdminScores() {
                         </Button>
                       </>
                     ) : (
-                      <Button size="sm" variant="primary" icon="globe" disabled={busyId === s.id} onClick={() => publish(s)}>
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        icon="globe"
+                        disabled={busyId === s.id}
+                        onClick={() => publish(s)}
+                      >
                         Công khai
                       </Button>
                     )}

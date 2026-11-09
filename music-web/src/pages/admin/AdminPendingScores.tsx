@@ -5,11 +5,13 @@ import { Button, ButtonLink, Card, CellTitle, PageHeader, Pager, Table, TableSta
 import { errorMessage, formatDateTime } from '../../components/ui/helpers';
 import { scoreApi } from '../../services';
 import type { PageResult, ScoreSummary } from '../../types';
+import { useDialog } from '../../components/ui/dialog-context';
 
 const PAGE_SIZE = 20;
 
 /** Admin (mục 4.4): duyệt hoặc từ chối các bản nhạc chủ sở hữu xin công khai, cũ nhất trước. */
 export default function AdminPendingScores() {
+  const { confirm, prompt } = useDialog();
   const [result, setResult] = useState<PageResult<ScoreSummary> | null>(null);
   const [page, setPage] = useState(0);
   const [reload, setReload] = useState(0);
@@ -30,9 +32,21 @@ export default function AdminPendingScores() {
   const review = async (score: ScoreSummary, approve: boolean) => {
     let reason: string | undefined;
     if (approve) {
-      if (!window.confirm(`Duyệt công khai bản nhạc "${score.title}"? Mọi người dùng đã đăng nhập sẽ xem được.`)) return;
+      const ok = await confirm({
+        title: `Duyệt công khai "${score.title}"?`,
+        message: 'Mọi người dùng đã đăng nhập sẽ xem được bản nhạc này. Chủ sở hữu sẽ nhận thông báo.',
+        confirmLabel: 'Duyệt',
+      });
+      if (!ok) return;
     } else {
-      const input = window.prompt(`Lý do từ chối công khai "${score.title}" (có thể bỏ trống):`);
+      const input = await prompt({
+        title: `Từ chối công khai "${score.title}"?`,
+        message: 'Bản nhạc về riêng tư. Chủ sở hữu sẽ nhận thông báo kèm lý do.',
+        label: 'Lý do (có thể bỏ trống)',
+        maxLength: 255,
+        confirmLabel: 'Từ chối',
+        tone: 'danger',
+      });
       if (input === null) return;
       reason = input.trim() || undefined;
     }
@@ -83,7 +97,13 @@ export default function AdminPendingScores() {
                 <td className="adm-table__actions">
                   <div className="adm-table__actions-inner">
                     <ButtonLink to={`/admin/scores/${s.id}`} size="sm" variant="ghost" icon="eye" title="Xem trước" />
-                    <Button size="sm" variant="primary" icon="check" disabled={busyId === s.id} onClick={() => review(s, true)}>
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      icon="check"
+                      disabled={busyId === s.id}
+                      onClick={() => review(s, true)}
+                    >
                       Duyệt
                     </Button>
                     <Button size="sm" icon="x" disabled={busyId === s.id} onClick={() => review(s, false)}>
@@ -94,7 +114,12 @@ export default function AdminPendingScores() {
               </tr>
             ))}
             {result && result.content.length === 0 && (
-              <TableState colSpan={4} icon="check" title="Không có yêu cầu nào" description="Mọi yêu cầu công khai đã được xử lý." />
+              <TableState
+                colSpan={4}
+                icon="check"
+                title="Không có yêu cầu nào"
+                description="Mọi yêu cầu công khai đã được xử lý."
+              />
             )}
           </tbody>
         </Table>

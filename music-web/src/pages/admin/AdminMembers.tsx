@@ -20,6 +20,7 @@ import { adminApi } from '../../services';
 import { MemberStatus } from '../../types';
 import type { Member, PageResult } from '../../types';
 import { isAdminMember, isSuperAdminMember, roleLabel } from '../../utils/auth';
+import { useDialog } from '../../components/ui/dialog-context';
 
 const PAGE_SIZE = 20;
 
@@ -27,6 +28,7 @@ const PAGE_SIZE = 20;
 export default function AdminMembers() {
   const { admin } = useOutletContext<AdminOutletContext>();
   const viewerIsSuper = !!admin && isSuperAdminMember(admin);
+  const { confirm } = useDialog();
   const [result, setResult] = useState<PageResult<Member> | null>(null);
   const [page, setPage] = useState(0);
   const [keywordInput, setKeywordInput] = useState('');
@@ -55,9 +57,18 @@ export default function AdminMembers() {
     }
   };
 
-  const toggleStatus = (m: Member) => {
+  const toggleStatus = async (m: Member) => {
     const lock = m.status !== MemberStatus.INACTIVE;
-    if (lock && !window.confirm(`Khóa tài khoản ${m.email}? Người này sẽ bị đăng xuất ngay.`)) return;
+    if (
+      lock &&
+      !(await confirm({
+        title: `Khóa tài khoản ${m.email}?`,
+        message: 'Người này sẽ bị đăng xuất ngay và không đăng nhập lại được cho đến khi được mở khóa.',
+        confirmLabel: 'Khóa tài khoản',
+        tone: 'danger',
+      }))
+    )
+      return;
     update(
       m,
       { status: lock ? MemberStatus.INACTIVE : MemberStatus.ACTIVE },
@@ -65,10 +76,18 @@ export default function AdminMembers() {
     );
   };
 
-  const toggleAdmin = (m: Member) => {
+  const toggleAdmin = async (m: Member) => {
     const makeAdmin = !isAdminMember(m);
-    const msg = makeAdmin ? `Cấp quyền ADMIN cho ${m.email}?` : `Thu hồi quyền ADMIN của ${m.email}?`;
-    if (!window.confirm(msg)) return;
+    const ok = await confirm(
+      makeAdmin
+        ? {
+            title: `Cấp quyền ADMIN cho ${m.email}?`,
+            message: 'Người này sẽ vào được trang quản trị.',
+            confirmLabel: 'Cấp ADMIN',
+          }
+        : { title: `Thu hồi quyền ADMIN của ${m.email}?`, confirmLabel: 'Thu hồi', tone: 'danger' },
+    );
+    if (!ok) return;
     update(m, { roles: makeAdmin ? ['ADMIN', 'USER'] : ['USER'] }, 'Đã cập nhật vai trò');
   };
 
@@ -133,7 +152,13 @@ export default function AdminMembers() {
                   <td className="adm-nowrap adm-muted">{formatDateTime(m.lastLoginAt)}</td>
                   <td className="adm-table__actions">
                     <div className="adm-table__actions-inner">
-                      <ButtonLink to={`/admin/members/${m.id}`} size="sm" variant="ghost" icon="eye" title="Xem chi tiết" />
+                      <ButtonLink
+                        to={`/admin/members/${m.id}`}
+                        size="sm"
+                        variant="ghost"
+                        icon="eye"
+                        title="Xem chi tiết"
+                      />
                       {viewerIsSuper && !targetSuper && (
                         <Button
                           size="sm"
@@ -149,7 +174,13 @@ export default function AdminMembers() {
                         variant={locked ? 'secondary' : 'ghost'}
                         icon={locked ? 'unlock' : 'lock'}
                         disabled={isSelf || protectedTarget || busyId === m.id}
-                        title={isSelf ? 'Không thể khóa chính mình' : protectedTarget ? 'Không thể khóa SUPER ADMIN' : undefined}
+                        title={
+                          isSelf
+                            ? 'Không thể khóa chính mình'
+                            : protectedTarget
+                              ? 'Không thể khóa SUPER ADMIN'
+                              : undefined
+                        }
                         onClick={() => toggleStatus(m)}
                       >
                         {locked ? 'Mở khóa' : 'Khóa'}

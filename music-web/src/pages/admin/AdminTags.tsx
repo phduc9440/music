@@ -4,11 +4,13 @@ import { Badge, Button, Card, PageHeader, Table, TableState } from '../../compon
 import { errorMessage } from '../../components/ui/helpers';
 import { adminApi } from '../../services';
 import type { AdminTag } from '../../types';
+import { useDialog } from '../../components/ui/dialog-context';
 
 const MAX_NAME = 50;
 
 /** Admin (mục 4.6): thêm, đổi tên, xóa thể loại (tag) của bản nhạc. */
 export default function AdminTags() {
+  const { confirm } = useDialog();
   const [tags, setTags] = useState<AdminTag[] | null>(null);
   const [newName, setNewName] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -61,11 +63,16 @@ export default function AdminTags() {
   };
 
   const remove = async (tag: AdminTag) => {
-    const message =
-      tag.scoreCount > 0
-        ? `Xóa thể loại "${tag.name}"? Thể loại sẽ bị gỡ khỏi ${tag.scoreCount} bản nhạc đang dùng (bản nhạc vẫn được giữ).`
-        : `Xóa thể loại "${tag.name}"?`;
-    if (!window.confirm(message)) return;
+    const ok = await confirm({
+      title: `Xóa thể loại "${tag.name}"?`,
+      message:
+        tag.scoreCount > 0
+          ? `Thể loại sẽ bị gỡ khỏi ${tag.scoreCount} bản nhạc đang dùng (bản nhạc vẫn được giữ).`
+          : undefined,
+      confirmLabel: 'Xóa',
+      tone: 'danger',
+    });
+    if (!ok) return;
     if (await run(() => adminApi.deleteTag(tag.id), 'Đã xóa thể loại', 'Không xóa được thể loại')) load();
   };
 
@@ -73,7 +80,11 @@ export default function AdminTags() {
     <>
       <PageHeader
         title="Thể loại"
-        description={tags ? `${tags.length} thể loại dùng để gắn nhãn và lọc bản nhạc` : 'Thể loại dùng để gắn nhãn và lọc bản nhạc'}
+        description={
+          tags
+            ? `${tags.length} thể loại dùng để gắn nhãn và lọc bản nhạc`
+            : 'Thể loại dùng để gắn nhãn và lọc bản nhạc'
+        }
         actions={
           <form onSubmit={add} style={{ display: 'flex', gap: '0.5rem' }}>
             <input
@@ -169,7 +180,12 @@ export default function AdminTags() {
               </tr>
             ))}
             {tags && tags.length === 0 && (
-              <TableState colSpan={4} icon="tag" title="Chưa có thể loại nào" description="Thêm thể loại đầu tiên ở ô phía trên." />
+              <TableState
+                colSpan={4}
+                icon="tag"
+                title="Chưa có thể loại nào"
+                description="Thêm thể loại đầu tiên ở ô phía trên."
+              />
             )}
           </tbody>
         </Table>

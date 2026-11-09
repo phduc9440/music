@@ -5,6 +5,7 @@ import { errorMessage } from '../../components/ui/helpers';
 import { adminApi } from '../../services';
 import { MemberStatus } from '../../types';
 import type { AnnouncementAudience, Member } from '../../types';
+import { useDialog } from '../../components/ui/dialog-context';
 
 const MAX_LENGTH = 500;
 const MAX_SELECTED = 200;
@@ -18,6 +19,7 @@ const AUDIENCES: { value: AnnouncementAudience; label: string; hint: string }[] 
 
 /** Admin: gửi thông báo chung, hiện ở chuông thông báo của người nhận (poll 30 giây một lần). */
 export default function AdminAnnouncements() {
+  const { confirm } = useDialog();
   const [message, setMessage] = useState('');
   const [audience, setAudience] = useState<AnnouncementAudience>('ALL');
   const [sending, setSending] = useState(false);
@@ -64,7 +66,12 @@ export default function AdminAnnouncements() {
     e.preventDefault();
     if (!canSend) return;
     // Gửi xong không thu hồi được, nên luôn hỏi lại
-    if (!window.confirm(`Gửi thông báo này tới "${audienceLabel}"? Không thể thu hồi sau khi gửi.`)) return;
+    const ok = await confirm({
+      title: 'Gửi thông báo?',
+      message: `Người nhận: ${audienceLabel}.\nThông báo không thể thu hồi sau khi gửi.`,
+      confirmLabel: 'Gửi thông báo',
+    });
+    if (!ok) return;
     setSending(true);
     try {
       const res = await adminApi.sendAnnouncement(
@@ -99,7 +106,12 @@ export default function AdminAnnouncements() {
               <div className="adm-choice-list" role="radiogroup" aria-label="Người nhận">
                 {AUDIENCES.map((a) => (
                   <label key={a.value} className={`adm-choice${audience === a.value ? ' adm-choice--active' : ''}`}>
-                    <input type="radio" name="audience" checked={audience === a.value} onChange={() => setAudience(a.value)} />
+                    <input
+                      type="radio"
+                      name="audience"
+                      checked={audience === a.value}
+                      onChange={() => setAudience(a.value)}
+                    />
                     <span>
                       <span className="adm-choice__label">{a.label}</span>
                       <span className="adm-choice__hint" style={{ display: 'block' }}>
@@ -209,7 +221,10 @@ export default function AdminAnnouncements() {
               </div>
             </div>
           </div>
-          <ul className="adm-muted" style={{ margin: '1rem 0 0', paddingLeft: '1.1rem', fontSize: 'var(--adm-text-sm)' }}>
+          <ul
+            className="adm-muted"
+            style={{ margin: '1rem 0 0', paddingLeft: '1.1rem', fontSize: 'var(--adm-text-sm)' }}
+          >
             <li>Gửi tới: {audienceLabel}</li>
             <li>Không gửi cho chính bạn.</li>
             <li>Không thu hồi được sau khi gửi.</li>

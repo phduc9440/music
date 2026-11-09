@@ -173,7 +173,12 @@ function HBar({
             {rows.map((r) => (
               <Cell key={r.label} fill={r.color ?? color} />
             ))}
-            <LabelList dataKey="count" position="right" formatter={(v) => nf.format(Number(v))} style={{ fontSize: 12, fill: '#0f172a' }} />
+            <LabelList
+              dataKey="count"
+              position="right"
+              formatter={(v) => nf.format(Number(v))}
+              style={{ fontSize: 12, fill: '#0f172a' }}
+            />
           </Bar>
         </BarChart>
       </ResponsiveContainer>
@@ -243,7 +248,12 @@ export default function AdminDashboard() {
         description={`Số liệu toàn hệ thống; biểu đồ theo ngày hiển thị ${days} ngày gần nhất`}
         actions={
           <>
-            <select className="adm-input" aria-label="Khoảng thời gian" value={days} onChange={(e) => setDays(Number(e.target.value))}>
+            <select
+              className="adm-input"
+              aria-label="Khoảng thời gian"
+              value={days}
+              onChange={(e) => setDays(Number(e.target.value))}
+            >
               {RANGES.map((r) => (
                 <option key={r} value={r}>
                   {r} ngày gần nhất
@@ -288,7 +298,9 @@ export default function AdminDashboard() {
           icon="star"
           tone="violet"
           value={t ? nf.format(t.reviews) : '—'}
-          hint={t ? (t.averageRating == null ? 'Chưa có đánh giá sao' : `Trung bình ${t.averageRating} / 5 sao`) : undefined}
+          hint={
+            t ? (t.averageRating == null ? 'Chưa có đánh giá sao' : `Trung bình ${t.averageRating} / 5 sao`) : undefined
+          }
         />
         <StatCard
           label="Phiên luyện tập"
@@ -317,13 +329,23 @@ export default function AdminDashboard() {
             <ResponsiveContainer>
               <AreaChart data={scoresDay} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
                 <CartesianGrid stroke="#e2e8f0" vertical={false} />
-                <XAxis dataKey="date" tickFormatter={shortDate} tick={AXIS} axisLine={false} tickLine={false} minTickGap={24} />
+                <XAxis
+                  dataKey="date"
+                  tickFormatter={shortDate}
+                  tick={AXIS}
+                  axisLine={false}
+                  tickLine={false}
+                  minTickGap={24}
+                />
                 <YAxis allowDecimals={false} tick={AXIS} axisLine={false} tickLine={false} />
                 <Tooltip
                   cursor={{ stroke: '#94a3b8', strokeWidth: 1 }}
                   content={({ active, payload, label }: TipProps) =>
                     active && payload?.[0] ? (
-                      <Tip title={longDate(String(label))} lines={[`${nf.format(Number(payload[0].value))} bản nhạc mới`]} />
+                      <Tip
+                        title={longDate(String(label))}
+                        lines={[`${nf.format(Number(payload[0].value))} bản nhạc mới`]}
+                      />
                     ) : null
                   }
                 />
@@ -354,7 +376,14 @@ export default function AdminDashboard() {
             <ResponsiveContainer>
               <BarChart data={practiceDay} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
                 <CartesianGrid stroke="#e2e8f0" vertical={false} />
-                <XAxis dataKey="date" tickFormatter={shortDate} tick={AXIS} axisLine={false} tickLine={false} minTickGap={24} />
+                <XAxis
+                  dataKey="date"
+                  tickFormatter={shortDate}
+                  tick={AXIS}
+                  axisLine={false}
+                  tickLine={false}
+                  minTickGap={24}
+                />
                 <YAxis allowDecimals={false} tick={AXIS} axisLine={false} tickLine={false} />
                 <Tooltip
                   cursor={{ fill: 'rgba(148,163,184,0.12)' }}
@@ -381,21 +410,36 @@ export default function AdminDashboard() {
         <ChartCard
           title="Thành viên mới theo ngày"
           sub={`${nf.format(newMembers)} tài khoản trong ${days} ngày${
-            data && data.membersWithoutDate > 0 ? ` · ${nf.format(data.membersWithoutDate)} tài khoản cũ chưa có ngày đăng ký` : ''
+            data && data.membersWithoutDate > 0
+              ? ` · ${nf.format(data.membersWithoutDate)} tài khoản cũ chưa có ngày đăng ký`
+              : ''
           }`}
-          table={{ head: ['Ngày', 'Số tài khoản'], rows: membersDay.map((d) => [longDate(d.date), nf.format(d.count)]) }}
+          table={{
+            head: ['Ngày', 'Số tài khoản'],
+            rows: membersDay.map((d) => [longDate(d.date), nf.format(d.count)]),
+          }}
         >
           <div className="dash-chart">
             <ResponsiveContainer>
               <BarChart data={membersDay} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
                 <CartesianGrid stroke="#e2e8f0" vertical={false} />
-                <XAxis dataKey="date" tickFormatter={shortDate} tick={AXIS} axisLine={false} tickLine={false} minTickGap={24} />
+                <XAxis
+                  dataKey="date"
+                  tickFormatter={shortDate}
+                  tick={AXIS}
+                  axisLine={false}
+                  tickLine={false}
+                  minTickGap={24}
+                />
                 <YAxis allowDecimals={false} tick={AXIS} axisLine={false} tickLine={false} />
                 <Tooltip
                   cursor={{ fill: 'rgba(148,163,184,0.12)' }}
                   content={({ active, payload, label }: TipProps) =>
                     active && payload?.[0] ? (
-                      <Tip title={longDate(String(label))} lines={[`${nf.format(Number(payload[0].value))} tài khoản mới`]} />
+                      <Tip
+                        title={longDate(String(label))}
+                        lines={[`${nf.format(Number(payload[0].value))} tài khoản mới`]}
+                      />
                     ) : null
                   }
                 />
@@ -421,7 +465,11 @@ export default function AdminDashboard() {
         >
           <HBar rows={source} color={SERIES_SCORES} unit="bản nhạc" />
         </ChartCard>
-        <ChartCard title="Độ khó" sub="Số bản nhạc theo độ khó" table={{ head: ['Độ khó', 'Số bản'], rows: rowsOf(difficulty) }}>
+        <ChartCard
+          title="Độ khó"
+          sub="Số bản nhạc theo độ khó"
+          table={{ head: ['Độ khó', 'Số bản'], rows: rowsOf(difficulty) }}
+        >
           <HBar rows={difficulty} color={SERIES_SCORES} unit="bản nhạc" />
         </ChartCard>
       </div>
@@ -471,7 +519,9 @@ export default function AdminDashboard() {
                   </td>
                 </tr>
               ))}
-              {data && data.topViewed.length === 0 && <TableState colSpan={2} icon="eye" title="Chưa có lượt xem nào" />}
+              {data && data.topViewed.length === 0 && (
+                <TableState colSpan={2} icon="eye" title="Chưa có lượt xem nào" />
+              )}
             </tbody>
           </Table>
         </Card>

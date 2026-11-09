@@ -160,7 +160,11 @@ const PATHS = {
 
 export type IconName = keyof typeof PATHS;
 
-export default function Icon({ name, size = 18, ...rest }: { name: IconName; size?: number } & SVGProps<SVGSVGElement>) {
+export default function Icon({
+  name,
+  size = 18,
+  ...rest
+}: { name: IconName; size?: number } & SVGProps<SVGSVGElement>) {
   return (
     <svg
       width={size}

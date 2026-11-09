@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import { reviewApi } from '../../services';
 import { MAX_REVIEW_COMMENT, formatRelative, getErrorMessage } from '../../utils/score';
 import type { ReviewList } from '../../types';
+import { useDialog } from '../../components/ui/dialog-context';
 
 interface Props {
   scoreId: string;
@@ -17,6 +18,7 @@ const stars = (n: number) => '★'.repeat(n) + '☆'.repeat(5 - n);
 
 /** Tab "Nhận xét": điểm trung bình, danh sách nhận xét và form viết nhận xét của tôi. */
 export default function ReviewsSection({ scoreId, canReview, onChanged }: Props) {
+  const { confirm } = useDialog();
   const [data, setData] = useState<ReviewList | null>(null);
   const [rating, setRating] = useState<number | null>(null);
   const [comment, setComment] = useState('');
@@ -60,7 +62,12 @@ export default function ReviewsSection({ scoreId, canReview, onChanged }: Props)
   };
 
   const remove = async (id: string, own: boolean) => {
-    if (!window.confirm(own ? 'Xóa nhận xét của bạn?' : 'Xóa nhận xét này?')) return;
+    const ok = await confirm({
+      title: own ? 'Xóa nhận xét của bạn?' : 'Xóa nhận xét này?',
+      confirmLabel: 'Xóa',
+      tone: 'danger',
+    });
+    if (!ok) return;
     setBusy(true);
     try {
       const result = (await reviewApi.remove(scoreId, id)).data.result;
