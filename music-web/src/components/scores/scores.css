@@ -672,6 +672,21 @@ select.sc-input {
   background: #eff6ff;
   font-weight: 600;
 }
+.sc-bell__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--ui-primary);
+  font-size: var(--ui-text-xs);
+  font-weight: 600;
+}
+/* danh sách chỉ hiện tối đa 3 dòng, bấm vào để đọc toàn văn */
+.sc-bell__text {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 .sc-bell__item small {
   color: #64748b;
   font-weight: 400;

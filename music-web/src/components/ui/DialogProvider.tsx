@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { DialogContext } from './dialog-context';
-import type { ConfirmOptions, DialogApi, PromptOptions } from './dialog-context';
+import type { AlertOptions, ConfirmOptions, DialogApi, PromptOptions } from './dialog-context';
 import Icon from './Icon';
 import './dialog.css';
 
 type Pending =
   | { kind: 'confirm'; options: ConfirmOptions; resolve: (value: boolean) => void }
-  | { kind: 'prompt'; options: PromptOptions; resolve: (value: string | null) => void };
+  | { kind: 'prompt'; options: PromptOptions; resolve: (value: string | null) => void }
+  | { kind: 'alert'; options: AlertOptions; resolve: () => void };
 
 /**
  * Hộp thoại xác nhận / nhập liệu của web, thay cho window.confirm và window.prompt của trình duyệt.
@@ -39,11 +40,21 @@ export default function DialogProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const alert = useCallback(
+    (options: AlertOptions) =>
+      new Promise<void>((resolve) => {
+        lastFocus.current = document.activeElement as HTMLElement | null;
+        setPending({ kind: 'alert', options, resolve });
+      }),
+    [],
+  );
+
   const close = useCallback(
     (accepted: boolean) => {
       if (!pending) return;
       if (pending.kind === 'confirm') pending.resolve(accepted);
-      else pending.resolve(accepted ? value : null);
+      else if (pending.kind === 'prompt') pending.resolve(accepted ? value : null);
+      else pending.resolve();
       setPending(null);
       // Trả focus về nút đã mở hộp thoại (người dùng bàn phím không bị lạc chỗ)
       lastFocus.current?.focus?.();
@@ -65,16 +76,50 @@ export default function DialogProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [pending, close]);
 
-  const api = useMemo<DialogApi>(() => ({ confirm, prompt }), [confirm, prompt]);
+  const api = useMemo<DialogApi>(() => ({ confirm, prompt, alert }), [confirm, prompt, alert]);
 
-  const o = pending?.options;
+  const o = pending && pending.kind !== 'alert' ? pending.options : undefined;
   const danger = o?.tone === 'danger';
   const blocked = pending?.kind === 'prompt' && (pending.options.required ?? false) && !value.trim();
 
   return (
     <DialogContext.Provider value={api}>
       {children}
-      {pending && o && (
+      {pending?.kind === 'alert' && (
+        <div className="ui-dialog-overlay" onMouseDown={() => close(false)}>
+          <div
+            className="ui-dialog ui-dialog--read"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="ui-dialog-title"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div className="ui-dialog__body">
+              <span className="ui-dialog__icon ui-dialog__icon--primary">
+                <Icon name={pending.options.icon === 'megaphone' ? 'megaphone' : 'bell'} size={20} />
+              </span>
+              <div className="ui-dialog__text">
+                <h2 id="ui-dialog-title" className="ui-dialog__title">
+                  {pending.options.title}
+                </h2>
+                {pending.options.meta && <p className="ui-dialog__meta">{pending.options.meta}</p>}
+              </div>
+            </div>
+            <div className="ui-dialog__content">{pending.options.message}</div>
+            <div className="ui-dialog__actions">
+              <button
+                ref={confirmRef}
+                type="button"
+                className="ui-dialog__btn ui-dialog__btn--primary"
+                onClick={() => close(true)}
+              >
+                {pending.options.closeLabel ?? 'Đóng'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {pending && pending.kind !== 'alert' && o && (
         <div className="ui-dialog-overlay" onMouseDown={() => close(false)}>
           <div
             className="ui-dialog"

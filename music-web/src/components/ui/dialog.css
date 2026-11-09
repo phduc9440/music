@@ -175,3 +175,29 @@
     animation: none;
   }
 }
+
+/* Hộp thoại đọc nội dung (thông báo từ quản trị viên...) */
+.ui-dialog--read {
+  max-width: 560px;
+}
+
+.ui-dialog__meta {
+  margin: 0.2rem 0 0;
+  color: var(--ui-text-3);
+  font-size: var(--ui-text-sm);
+}
+
+.ui-dialog__content {
+  max-height: min(60vh, 480px);
+  overflow-y: auto;
+  margin: 0 1.25rem 1.1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  background: var(--ui-surface-muted);
+  color: var(--ui-text);
+  font-size: 0.95rem;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
