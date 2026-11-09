@@ -1,9 +1,10 @@
 """Phân tích bố cục trang nhạc: khuông, hệ khuông và vai trò từng khuông (chỉ dùng OpenCV, không cần model).
 
 Chạy trên chính ảnh trang đã tiền xử lý (1050x1485) mà Transcoda nhận, để số khuông đo được so thẳng với số spine model
-sinh ra. Kết quả dùng cho ba việc:
+sinh ra. Kết quả dùng cho bốn việc:
 
 * **kiểm tra**: trang có ``n`` khuông mỗi hệ thì kern của trang phải có ``n`` spine ``**kern``;
+* **đếm ô nhịp**: số vạch nhịp từng hệ (``app/omr/barlines.py``) để phát hiện model sinh thừa/lặp ô nhịp;
 * **nhận diện lại theo hệ**: tọa độ từng hệ để cắt thành "trang ảo" (``app/omr/routing.py``);
 * **vai trò**: khuông nào là giọng hát/nhạc cụ một khuông (``SINGLE``), khuông nào thuộc piano (``PIANO``), để bước
   xuất tách part "Giọng hát" khỏi part "Piano".
@@ -82,6 +83,15 @@ class System:
     connected: bool = False
     """True nếu các khuông được nối bằng vạch dọc ở lề trái (bằng chứng chắc chắn là cùng hệ)."""
 
+    barlines: list[int] = field(default_factory=list)
+    """Tọa độ x các vạch nhịp dò được (:mod:`app.omr.barlines`), không gồm vạch đầu hệ."""
+
+    measures: Optional[int] = None
+    """Số ô nhịp của hệ đếm trên ảnh; None nếu chưa dò."""
+
+    bars_closed: bool = False
+    """Hệ kết thúc bằng vạch nhịp ở mép phải. False thì số ô có thể sai (thiếu vạch cuối, dò sót)."""
+
     @property
     def top(self) -> int:
         return self.staves[0].top
@@ -109,6 +119,9 @@ class System:
             "left": self.left,
             "right": self.right,
             "connected": self.connected,
+            "measures": self.measures,
+            "barsClosed": self.bars_closed,
+            "barlines": self.barlines,
             "staves": [s.to_dict() for s in self.staves],
         }
 
@@ -145,6 +158,27 @@ class PageLayout:
             return first
         return None
 
+    @property
+    def measure_counts(self) -> list[Optional[int]]:
+        """Số ô nhịp từng hệ đếm trên ảnh (None nếu chưa dò)."""
+        return [s.measures for s in self.systems]
+
+    @property
+    def bars_confident(self) -> bool:
+        """Số ô đếm trên ảnh đủ tin để so với kết quả model: bố cục tin được và mọi hệ kết thúc bằng vạch nhịp."""
+        return (
+            self.confident
+            and bool(self.systems)
+            and all(s.bars_closed and s.measures is not None and s.measures > 0 for s in self.systems)
+        )
+
+    @property
+    def measure_count(self) -> Optional[int]:
+        """Tổng số ô của trang đếm trên ảnh, hoặc None nếu không đủ tin (:attr:`bars_confident`)."""
+        if not self.bars_confident:
+            return None
+        return sum(s.measures or 0 for s in self.systems)
+
     def to_dict(self) -> dict:
         return {
             "width": self.width,
@@ -153,6 +187,7 @@ class PageLayout:
             "confident": self.confident,
             "staffCount": self.staff_count,
             "roles": self.roles,
+            "measureCount": self.measure_count,
             "notes": self.notes,
             "systems": [s.to_dict() for s in self.systems],
         }
@@ -194,6 +229,10 @@ def analyze_layout(gray: np.ndarray) -> PageLayout:
     layout.systems = _group_systems(staves, ink, interline)
     for system in layout.systems:
         _assign_roles(system, ink, interline)
+
+    from app.omr import barlines  # noqa: PLC0415 - barlines dùng kiểu của module này (tránh import vòng)
+
+    barlines.annotate(layout, ink)
 
     counts = layout.staff_counts
     if layout.staff_count is None:
