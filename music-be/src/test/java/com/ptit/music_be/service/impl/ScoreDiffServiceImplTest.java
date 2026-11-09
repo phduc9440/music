@@ -96,7 +96,12 @@ class ScoreDiffServiceImplTest {
         verify(scoreFileRepository).save(saved.capture());
         JsonNode meta = JSON.readTree(saved.getValue().getMeta());
         assertThat(meta.path("savedBy").asText()).isEqualTo("a@b.c"); // meta cũ được giữ
-        assertThat(meta.path("diffs").path("1").path("summary").path("measureEditRate").asDouble()).isZero();
+        assertThat(meta.path("diffs")
+                        .path("1")
+                        .path("summary")
+                        .path("measureEditRate")
+                        .asDouble())
+                .isZero();
     }
 
     @Test

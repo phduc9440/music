@@ -371,8 +371,14 @@ public class OmrServiceImpl implements OmrService {
             return null;
         }
         return OmrResultResponse.MeasureCheck.builder()
-                .imageMeasures(check.hasNonNull("imageMeasures") ? check.get("imageMeasures").asInt() : null)
-                .kernMeasures(check.hasNonNull("kernMeasures") ? check.get("kernMeasures").asInt() : null)
+                .imageMeasures(
+                        check.hasNonNull("imageMeasures")
+                                ? check.get("imageMeasures").asInt()
+                                : null)
+                .kernMeasures(
+                        check.hasNonNull("kernMeasures")
+                                ? check.get("kernMeasures").asInt()
+                                : null)
                 .build();
     }
 

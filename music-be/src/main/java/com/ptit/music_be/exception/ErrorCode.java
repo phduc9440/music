@@ -102,10 +102,12 @@ public enum ErrorCode {
 
     // Score diff 29xx
     SCORE_DIFF_NO_BASE(
-            2901, "Không có phiên bản do nhận diện sinh ra để so sánh (đã quá 20 phiên bản hoặc bản nhạc không từ OMR)",
+            2901,
+            "Không có phiên bản do nhận diện sinh ra để so sánh (đã quá 20 phiên bản hoặc bản nhạc không từ OMR)",
             HttpStatus.NOT_FOUND),
     SCORE_DIFF_SAME_VERSION(2902, "Không thể so sánh một phiên bản với chính nó", HttpStatus.BAD_REQUEST),
-    SCORE_DIFF_FAILED(2903, "Không so sánh được hai phiên bản (MusicXML không đọc được)", HttpStatus.UNPROCESSABLE_ENTITY),
+    SCORE_DIFF_FAILED(
+            2903, "Không so sánh được hai phiên bản (MusicXML không đọc được)", HttpStatus.UNPROCESSABLE_ENTITY),
     ;
 
     int code;

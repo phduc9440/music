@@ -48,7 +48,8 @@ public class ScoreDiffServiceImpl implements ScoreDiffService {
 
         List<ScoreFile> files =
                 scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(scoreId, FileType.MUSICXML);
-        ScoreFile target = find(files, version).orElseThrow(() -> new AppException(ErrorCode.SCORE_VERSION_NOT_EXISTED));
+        ScoreFile target =
+                find(files, version).orElseThrow(() -> new AppException(ErrorCode.SCORE_VERSION_NOT_EXISTED));
         int baseVersion = base != null ? base : omrVersion(score, files);
         if (baseVersion == version) {
             throw new AppException(ErrorCode.SCORE_DIFF_SAME_VERSION);
