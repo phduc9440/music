@@ -87,3 +87,35 @@
   font-size: 12px;
   color: var(--text-secondary);
 }
+
+.ps-chart {
+  margin-top: 20px;
+  background: #fff;
+  border: 1px solid var(--surface-border);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.ps-chart__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.ps-chart__head p {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.ps-chart__tabs {
+  display: flex;
+  gap: 6px;
+}
+
+.ps-chart__body {
+  width: 100%;
+  min-width: 0;
+}
