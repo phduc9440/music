@@ -446,3 +446,34 @@ def test_split_then_join_of_the_same_spine_is_kept():
 
 def test_lone_join_marker_is_invalid():
     assert merge.first_invalid_join(["4C\t4c", "*\t*v", "4D\t4d"], 2) == 1
+
+
+def _result_from(body: list[str], spines: int = 1) -> merge.MergeResult:
+    header = "\t".join(["**kern"] * spines)
+    text = "\n".join([header, *body, "\t".join(["*-"] * spines)]) + "\n"
+    return merge.MergeResult(
+        text=text, spines=spines, warnings=[], line_pages=[1] * len(body), lines=list(body), header=header
+    )
+
+
+def test_missing_barline_is_restored_from_durations():
+    body = ["*clefG2", "*M2/4", "8aL", "8bJ", "8ccL", "8aJ", "=", "2g", "4ff", "4dd", "=", "8bL", "8ddJ", "4ee", "=="]
+    fixed = merge.split_merged_measures(_result_from(body))
+    assert sum(1 for ln in fixed.lines if ln.startswith("=") and ln != "==") == 3
+    assert fixed.lines[fixed.lines.index("2g") + 1] .startswith("=")
+    assert any("bỏ sót vạch nhịp" in w for w in fixed.warnings)
+    assert merge.bad_measures(fixed) == []
+
+
+def test_measure_with_wrong_total_is_left_alone():
+    body = ["*M2/4", "8a", "8b", "8cc", "=", "2g", "4ff", "=", "4b", "4d", "=="]
+    fixed = merge.split_merged_measures(_result_from(body))
+    assert fixed.lines == body
+
+
+def test_two_spines_are_split_only_where_all_staves_are_aligned():
+    body = ["*M2/4\t*M2/4", "2g\t4a", ".\t4b", "2a\t2c", "=="]
+    fixed = merge.split_merged_measures(_result_from(body, 2))
+    assert [ln.split("\t")[0] for ln in fixed.lines][3].startswith("=")
+    held = ["*M2/4\t*M2/4", "1g\t4a", ".\t4b", ".\t2c", "=="]
+    assert merge.split_merged_measures(_result_from(held, 2)).lines == held

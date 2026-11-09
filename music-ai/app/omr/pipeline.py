@@ -654,6 +654,7 @@ def _merge_pages(ctx: JobContext, pages: list[merge.PageKern]) -> Optional[tuple
     callback.progress(85, STEP_MERGE)
 
     merged = merge.merge_pages(pages, lenient=settings.lenient_spines)
+    merged = merge.split_merged_measures(merged)
     ctx.staff_roles = _job_roles(ctx, merged.spines)
     if ctx.staff_roles is not None:
         merged = merge.annotate_roles(merged, ctx.staff_roles)
