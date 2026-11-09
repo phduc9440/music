@@ -109,6 +109,10 @@ const CAESURA_BEATS = 1;
 const TRILL_STEP_S = 0.07;
 const TRILL_MIN_STEP_S = 0.035;
 const ORNAMENT_MIN_S = 0.03;
+/** Glissando / slide: phần đầu của nốt giữ nguyên cao độ gốc, phần còn lại trượt tới nốt đích (mỗi bước một nửa cung). */
+const GLISS_HOLD = 0.3;
+const GLISS_STEP_MAX_S = 0.1;
+const GLISS_STEP_MIN_S = 0.025;
 const ORNAMENT_MAX_S = 0.09;
 /** Rải hợp âm: nốt kế tiếp vào trễ chừng này (giây), tổng độ rải không quá nửa độ dài nốt ngắn nhất và 0,25 giây. */
 const ARPEGGIO_STEP_S = 0.035;
@@ -378,6 +382,11 @@ interface Building {
   arpeggio: 'up' | 'down' | null;
   /** Khóa nhóm các nốt cùng hợp âm (cùng thời điểm, khuông, bè) để rải. */
   chordKey: string;
+  /** Khóa các đường glissando/slide bắt đầu / kết thúc ở nốt này (khuông|kiểu|số hiệu). */
+  glissStart: string[];
+  glissStop: string[];
+  /** Cao độ nốt đích của glissando/slide bắt đầu ở nốt này; null nếu không có. */
+  glissTarget: number | null;
 }
 
 type OrnamentKind = 'trill' | 'mordent' | 'invMordent' | 'turn';
@@ -415,6 +424,51 @@ const arpeggioOf = (note: Element): 'up' | 'down' | null => {
   const el = note.getElementsByTagName('arpeggiate')[0];
   if (!el) return null;
   return el.getAttribute('direction') === 'down' ? 'down' : 'up';
+};
+
+/** Khóa của các thẻ <glissando>/<slide> có `type` cho trước trên nốt (cùng khuông, kiểu và số hiệu thì ghép thành cặp). */
+const lineKeys = (note: Element, staff: number, type: 'start' | 'stop'): string[] =>
+  (['glissando', 'slide'] as const).flatMap((tag) =>
+    Array.from(note.getElementsByTagName(tag))
+      .filter((el) => el.getAttribute('type') === type)
+      .map((el) => `${staff}|${tag}|${el.getAttribute('number') ?? '1'}`),
+  );
+
+/** Ghép nốt bắt đầu với nốt kết thúc của glissando/slide để nốt đầu biết cao độ đích. Nhận danh sách đã xếp theo thời gian. */
+const linkGlissandi = (notes: Building[]): void => {
+  const open = new Map<string, Building>();
+  for (const note of notes) {
+    for (const key of note.glissStop) {
+      const from = open.get(key);
+      if (from) {
+        from.glissTarget = note.midi;
+        open.delete(key);
+      }
+    }
+    for (const key of note.glissStart) open.set(key, note);
+  }
+};
+
+/**
+ * Khai triển glissando/slide thành các nốt nhỏ trong `span` giây của nốt đầu: giữ cao độ gốc một lúc rồi trượt từng
+ * nửa cung tới sát nốt đích (nốt đích do chính nốt kế tiếp phát). Quá nhiều bước thì bỏ cách một để mỗi bước không
+ * ngắn hơn GLISS_STEP_MIN_S. Hai nốt cách nhau không quá một nửa cung thì không cần khai triển (mảng rỗng).
+ */
+const expandGliss = (from: number, to: number, span: number): OrnamentStep[] => {
+  const between = Math.abs(to - from) - 1;
+  if (between < 1 || span <= 0) return [];
+  const direction = Math.sign(to - from);
+  const runSpan = span * (1 - GLISS_HOLD);
+  const stride = Math.max(1, Math.ceil((GLISS_STEP_MIN_S * between) / runSpan));
+  const middles: number[] = [];
+  for (let k = stride; k <= between; k += stride) middles.push(from + direction * k);
+  if (middles.length === 0) return [];
+  const length = Math.min(GLISS_STEP_MAX_S, runSpan / middles.length);
+  const runStart = span - length * middles.length;
+  return [
+    { midi: from, offset: 0, length: runStart },
+    ...middles.map((midi, i) => ({ midi, offset: runStart + i * length, length })),
+  ];
 };
 
 /**
@@ -784,6 +838,9 @@ export function buildPlayback(doc: ScoreDocument, fallbackBpm: number): Playback
                   neighbors: null,
                   arpeggio: null,
                   chordKey: '',
+                  glissStart: [],
+                  glissStop: [],
+                  glissTarget: null,
                 });
               }
               offset += lengths[gi];
@@ -826,6 +883,9 @@ export function buildPlayback(doc: ScoreDocument, fallbackBpm: number): Playback
           neighbors: ornament ? neighborsOf(info, doc.keyAtPart(p, measureIndex)) : null,
           arpeggio: arpeggioOf(item.child),
           chordKey: `${k}|${info.staff}|${info.voice}|${startQ.toFixed(6)}`,
+          glissStart: lineKeys(item.child, info.staff, 'start'),
+          glissStop: lineKeys(item.child, info.staff, 'stop'),
+          glissTarget: null,
         };
         building.push(note);
         if (hasTie(item.child, 'start')) pending.set(key, note);
@@ -833,6 +893,7 @@ export function buildPlayback(doc: ScoreDocument, fallbackBpm: number): Playback
     });
     const gains = assignGains(building, events);
     spreadArpeggios(building);
+    linkGlissandi(building);
     const sustain = pedalSustain(pedals);
     const onsets = onsetsByPitch(building);
     for (const note of building) {
@@ -867,7 +928,11 @@ export function buildPlayback(doc: ScoreDocument, fallbackBpm: number): Playback
       };
       const ringsLonger = ringing > held + EPS;
       const base: PlayNote = ringsLonger ? { ...plain, ring: ringing } : plain;
-      const steps = note.ornament ? expandOrnament(note.ornament, note.midi, note.neighbors, span) : [];
+      const steps = note.ornament
+        ? expandOrnament(note.ornament, note.midi, note.neighbors, span)
+        : note.glissTarget !== null
+          ? expandGliss(note.midi, note.glissTarget, span)
+          : [];
       if (steps.length === 0) {
         result.push(base);
         continue;
