@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import { adminApi } from '../../services';
 import { MemberStatus } from '../../types';
 import type { Member, PageResult } from '../../types';
-import { isAdminMember } from '../../utils/auth';
+import { isAdminMember, isSuperAdminMember, roleLabel } from '../../utils/auth';
 import Pagination from '../../components/scores/Pagination';
 import type { AdminOutletContext } from '../../components/admin/AdminLayout';
 
@@ -16,6 +16,7 @@ const errMsg = (error: unknown, fallback: string) =>
 /** Admin: danh sách thành viên, khóa/mở khóa và cấp/thu hồi quyền ADMIN. */
 export default function AdminMembers() {
   const { admin } = useOutletContext<AdminOutletContext>();
+  const viewerIsSuper = !!admin && isSuperAdminMember(admin);
   const [result, setResult] = useState<PageResult<Member> | null>(null);
   const [page, setPage] = useState(0);
   const [keywordInput, setKeywordInput] = useState('');
@@ -105,30 +106,35 @@ export default function AdminMembers() {
               {result?.content.map((m) => {
                 const isSelf = m.id === admin?.id;
                 const locked = m.status === MemberStatus.INACTIVE;
+                const targetSuper = isSuperAdminMember(m);
+                // Admin thường không được đụng đến tài khoản SUPER ADMIN (BE cũng chặn)
+                const protectedTarget = targetSuper && !viewerIsSuper;
                 return (
                   <tr key={m.id}>
                     <td>{m.email}</td>
                     <td>{m.fullName}</td>
                     <td>
                       <span className={`badge ${isAdminMember(m) ? 'badge-admin' : 'badge-user'}`}>
-                        {isAdminMember(m) ? 'ADMIN' : 'USER'}
+                        {roleLabel(m)}
                       </span>
                     </td>
                     <td>{locked ? 'Đã khóa' : 'Hoạt động'}</td>
                     <td>
                       <div className="d-flex gap-2">
-                        <button
-                          onClick={() => toggleAdmin(m)}
-                          disabled={isSelf || busyId === m.id}
-                          className="btn btn-primary"
-                          style={btn}
-                          title={isSelf ? 'Không thể đổi vai trò của chính mình' : undefined}
-                        >
-                          {isAdminMember(m) ? 'Thu hồi ADMIN' : 'Cấp ADMIN'}
-                        </button>
+                        {viewerIsSuper && (
+                          <button
+                            onClick={() => toggleAdmin(m)}
+                            disabled={isSelf || targetSuper || busyId === m.id}
+                            className="btn btn-primary"
+                            style={btn}
+                            title={isSelf || targetSuper ? 'Không thể đổi vai trò của SUPER ADMIN' : undefined}
+                          >
+                            {isAdminMember(m) ? 'Thu hồi ADMIN' : 'Cấp ADMIN'}
+                          </button>
+                        )}
                         <button
                           onClick={() => toggleStatus(m)}
-                          disabled={isSelf || busyId === m.id}
+                          disabled={isSelf || protectedTarget || busyId === m.id}
                           className={`btn ${locked ? 'btn-primary' : 'btn-danger'}`}
                           style={btn}
                           title={isSelf ? 'Không thể khóa chính mình' : undefined}

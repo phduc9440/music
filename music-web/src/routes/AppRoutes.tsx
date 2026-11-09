@@ -172,6 +172,10 @@ const AppRoutes = () => {
         <Route index element={<AdminMembers />} />
         <Route path="scores" element={<AdminScores />} />
         <Route path="scores/:id" element={<ScoreDetail admin />} />
+        <Route path="scores/:id/edit" element={<ScoreViewer />} />
+        <Route path="scores/:id/play" element={<ScorePlayer />} />
+        <Route path="scores/:id/processing" element={<ScoreProcessing />} />
+        <Route path="scores/:id/review" element={<ScoreReview />} />
         <Route path="pending-scores" element={<AdminPendingScores />} />
         <Route path="official-scores" element={<AdminOfficialScores />} />
         <Route path="tags" element={<AdminTags />} />

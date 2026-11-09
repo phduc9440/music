@@ -1,3 +1,4 @@
+import { useLocation } from 'react-router-dom';
 import type {
   AccessLevel,
   Difficulty,
@@ -235,4 +236,12 @@ export function toSafeFileName(name: string | null | undefined, fallback = 'ban-
     .trim()
     .slice(0, 120);
   return cleaned || fallback;
+}
+
+/**
+ * Đường dẫn gốc của các trang bản nhạc: admin xem trong /admin/scores/..., người dùng trong /scores/...
+ * Dùng chung để các trang chi tiết, trình xem, phát, tiến độ, kết quả số hóa không phải nhân đôi cho admin.
+ */
+export function useScoreBase(): string {
+  return useLocation().pathname.startsWith('/admin/') ? '/admin/scores' : '/scores';
 }

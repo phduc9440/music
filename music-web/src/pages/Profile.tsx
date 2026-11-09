@@ -6,6 +6,7 @@ import { authApi, userApi } from '../services';
 import { AuthProvider } from '../types';
 import type { Member } from '../types';
 import ChangePasswordModal from '../components/ChangePasswordModal';
+import { roleLabel } from '../utils/auth';
 
 export default function UserProfile() {
   const [user, setUser] = useState<Member | null>(null);
@@ -242,7 +243,7 @@ export default function UserProfile() {
             </h3>
             <div className="d-flex justify-content-between mb-4">
               <span style={{ color: 'var(--text-secondary)' }}>Role:</span>
-              <span className="badge badge-user">{user?.roles?.includes('ADMIN') ? 'ADMIN' : 'USER'}</span>
+              <span className="badge badge-user">{user ? roleLabel(user) : 'USER'}</span>
             </div>
             <div className="d-flex justify-content-between mb-4">
               <span style={{ color: 'var(--text-secondary)' }}>Account ID:</span>

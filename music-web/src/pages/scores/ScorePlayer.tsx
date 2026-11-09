@@ -17,7 +17,7 @@ import { countView } from '../../services/playbackApi';
 import { fetchMusicXmlWithVersion, saveMusicXml, scoreApi } from '../../services';
 import type { ScoreDetail as ScoreDetailData } from '../../types';
 import { isValidScoreId } from '../../utils/omr';
-import { getConflictVersion, getHttpStatus, getSaveErrorMessage } from '../../utils/score';
+import { getConflictVersion, getHttpStatus, getSaveErrorMessage, useScoreBase } from '../../utils/score';
 import { clampZoom, inspectMusicXml, loadViewerPrefs, saveViewerPrefs } from '../../utils/viewer';
 import type { ViewMode } from '../../utils/viewer';
 import '../../components/scores/scores.css';
@@ -30,6 +30,7 @@ type Phase = 'loading' | 'ready' | 'notFound' | 'notReady' | 'parseError' | 'err
 export default function ScorePlayer() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const base = useScoreBase();
   const [phaseRaw, setPhase] = useState<Phase>('loading');
   const phase: Phase = isValidScoreId(id) ? phaseRaw : 'notFound';
   const [score, setScore] = useState<ScoreDetailData | null>(null);
@@ -98,15 +99,15 @@ export default function ScorePlayer() {
   if (phase === 'notFound') {
     title = 'Không tìm thấy bản nhạc';
     text = 'Bản nhạc không tồn tại hoặc bạn không có quyền xem.';
-    action = { label: 'Về thư viện', to: '/scores' };
+    action = { label: 'Về thư viện', to: base };
   } else if (phase === 'notReady') {
     title = 'Bản nhạc chưa số hóa xong';
     text = 'Bản nhạc chưa có MusicXML để phát. Hãy đợi nhận diện xong hoặc xem trang tiến độ.';
-    action = { label: 'Về trang tiến độ', to: `/scores/${id}/processing` };
+    action = { label: 'Về trang tiến độ', to: `${base}/${id}/processing` };
   } else if (phase === 'parseError') {
     title = 'Không đọc được bản nhạc';
     text = 'File MusicXML bị lỗi nên không phát được.';
-    action = { label: 'Về trang chi tiết', to: `/scores/${id}` };
+    action = { label: 'Về trang chi tiết', to: `${base}/${id}` };
   } else if (phase === 'error') {
     title = 'Không tải được bản nhạc';
     text = 'Vui lòng thử lại sau.';
@@ -152,6 +153,7 @@ function PlayerWorkspace({
   version: number;
   onReload: () => void;
 }) {
+  const base = useScoreBase();
   const [prefs, setPrefs] = useState(loadViewerPrefs);
   const [failed, setFailed] = useState(false);
   const [conflict, setConflict] = useState<{ latestVersion: number } | null>(null);
@@ -213,7 +215,7 @@ function PlayerWorkspace({
       <div className="sc-page sv-root sv-root--center">
         <div className="sv-state" role="alert">
           <h2>Không vẽ được bản nhạc</h2>
-          <Link className="sc-btn sc-btn--primary" to={`/scores/${score.id}`}>
+          <Link className="sc-btn sc-btn--primary" to={`${base}/${score.id}`}>
             Về trang chi tiết
           </Link>
         </div>
@@ -227,7 +229,7 @@ function PlayerWorkspace({
         <div className="sv-toolbar__left">
           <Link
             className="sc-btn sv-icon"
-            to={`/scores/${score.id}`}
+            to={`${base}/${score.id}`}
             aria-label="Về trang chi tiết"
             title="Về trang chi tiết"
           >
@@ -259,7 +261,7 @@ function PlayerWorkspace({
             audioShortcut
           />
           {score.canEdit && (
-            <Link className="sc-btn" to={`/scores/${score.id}/edit`}>
+            <Link className="sc-btn" to={`${base}/${score.id}/edit`}>
               Mở trình chỉnh sửa
             </Link>
           )}

@@ -308,9 +308,13 @@ public class AuthServiceImpl implements AuthService {
             return "";
         }
 
+        // SUPER_ADMIN kéo theo ADMIN để mọi chỗ kiểm tra hasRole('ADMIN') (kể cả /api/admin/**) vẫn qua
         return user.getMemberRoles().stream()
                 .filter(ur -> ur.getRole() != null)
-                .map(ur -> "ROLE_" + ur.getRole().getName())
+                .flatMap(ur -> "SUPER_ADMIN".equals(ur.getRole().getName())
+                        ? java.util.stream.Stream.of("ROLE_SUPER_ADMIN", "ROLE_ADMIN")
+                        : java.util.stream.Stream.of("ROLE_" + ur.getRole().getName()))
+                .distinct()
                 .collect(Collectors.joining(" "));
     }
 

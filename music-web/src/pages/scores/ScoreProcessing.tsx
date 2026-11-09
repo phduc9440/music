@@ -17,7 +17,7 @@ import {
   pickLatestOmrTask,
   stoppedEarly,
 } from '../../utils/omr';
-import { getErrorMessage, getHttpStatus, getUploadErrorMessage } from '../../utils/score';
+import { getErrorMessage, getHttpStatus, getUploadErrorMessage, useScoreBase } from '../../utils/score';
 import '../../components/scores/scores.css';
 import './ScoreLibrary.css';
 import './ScoreProcessing.css';
@@ -37,6 +37,7 @@ const NOT_CANCELLABLE_HTTP = 409;
 export default function ScoreProcessing() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const base = useScoreBase();
 
   const [loadStateRaw, setLoadState] = useState<LoadState>('loading');
   const loadState: LoadState = isValidScoreId(id) ? loadStateRaw : 'notFound';
@@ -171,7 +172,7 @@ export default function ScoreProcessing() {
     <nav className="navbar">
       <div className="navbar-brand">Music App</div>
       <div className="navbar-nav">
-        <button className="sc-btn sc-btn--sm" onClick={() => navigate('/scores')}>
+        <button className="sc-btn sc-btn--sm" onClick={() => navigate(base)}>
           ‹ Thư viện
         </button>
       </div>
@@ -198,7 +199,7 @@ export default function ScoreProcessing() {
           <div className="sc-empty">
             <h3>{notFound ? 'Không tìm thấy bản nhạc' : 'Không tải được tiến độ'}</h3>
             <p>{notFound ? 'Bản nhạc không tồn tại hoặc bạn không có quyền xem.' : 'Vui lòng thử lại sau.'}</p>
-            <button className="sc-btn sc-btn--primary" onClick={() => navigate('/scores')}>
+            <button className="sc-btn sc-btn--primary" onClick={() => navigate(base)}>
               Về thư viện
             </button>
           </div>
@@ -216,7 +217,7 @@ export default function ScoreProcessing() {
           <div className="sc-empty">
             <h3>Bản nhạc này chưa có tác vụ số hóa</h3>
             <p>Bạn có thể xem chi tiết bản nhạc hoặc tải một file mới lên.</p>
-            <button className="sc-btn sc-btn--primary" onClick={() => navigate(`/scores/${score.id}`)}>
+            <button className="sc-btn sc-btn--primary" onClick={() => navigate(`${base}/${score.id}`)}>
               Xem bản nhạc
             </button>
           </div>
@@ -334,7 +335,7 @@ export default function ScoreProcessing() {
             {completed && (
               <button
                 className="sc-btn sc-btn--primary"
-                onClick={() => navigate(`/scores/${score.id}/review`, { replace: true })}
+                onClick={() => navigate(`${base}/${score.id}/review`, { replace: true })}
               >
                 Xem kết quả
               </button>

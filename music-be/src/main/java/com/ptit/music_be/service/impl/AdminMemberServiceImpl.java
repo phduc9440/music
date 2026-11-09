@@ -35,6 +35,7 @@ import lombok.experimental.FieldDefaults;
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminMemberServiceImpl implements AdminMemberService {
 
+    static final String SUPER_ADMIN = "SUPER_ADMIN";
     static final int DEFAULT_PAGE_SIZE = 20;
     static final int MAX_PAGE_SIZE = 50;
 
@@ -77,6 +78,11 @@ public class AdminMemberServiceImpl implements AdminMemberService {
     public MemberResponse updateMember(String memberId, AdminUpdateMemberRequest request) {
         Member member = find(memberId);
         boolean isSelf = member.getEmail().equals(SecurityUtils.getCurrentEmail());
+        boolean targetIsSuper = hasRole(member, SUPER_ADMIN);
+        // Chỉ SUPER_ADMIN được đụng đến tài khoản SUPER_ADMIN khác (khóa, đổi vai trò)
+        if (targetIsSuper && !isSelf && !SecurityUtils.isSuperAdmin()) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
 
         if (request.getStatus() != null) {
             if (isSelf && request.getStatus() != MemberStatus.ACTIVE) {
@@ -92,7 +98,15 @@ public class AdminMemberServiceImpl implements AdminMemberService {
             if (names.isEmpty()) {
                 throw new AppException(ErrorCode.ROLE_NOT_EXISTED);
             }
-            if (isSelf && !names.contains("ADMIN")) {
+            // Chỉ SUPER_ADMIN được cấp/thu hồi ADMIN; ADMIN thường không được đổi vai trò của ai
+            if (!SecurityUtils.isSuperAdmin()) {
+                throw new AppException(ErrorCode.UNAUTHORIZED);
+            }
+            // SUPER_ADMIN là tài khoản gốc do ApplicationInitConfig tạo, không cấp/thu hồi qua API
+            if (names.contains(SUPER_ADMIN) != targetIsSuper) {
+                throw new AppException(ErrorCode.UNAUTHORIZED);
+            }
+            if (isSelf) {
                 throw new AppException(ErrorCode.CANNOT_MODIFY_SELF);
             }
             // orphanRemoval=true: bỏ role khỏi list thì dòng member_roles bị xóa
@@ -110,6 +124,10 @@ public class AdminMemberServiceImpl implements AdminMemberService {
         }
 
         return memberMapper.toMemberResponse(memberRepository.save(member));
+    }
+
+    private static boolean hasRole(Member member, String roleName) {
+        return member.getMemberRoles().stream().anyMatch(mr -> roleName.equals(mr.getRole().getName()));
     }
 
     private Member find(String memberId) {
