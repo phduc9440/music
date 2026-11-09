@@ -18,6 +18,7 @@ import AdminLayout from '../components/admin/AdminLayout';
 import AdminMembers from '../pages/admin/AdminMembers';
 import AdminPendingScores from '../pages/admin/AdminPendingScores';
 import PracticeHistory from '../pages/scores/PracticeHistory';
+import PracticeStats from '../pages/scores/PracticeStats';
 import ProtectedRoute from './ProtectedRoute';
 
 const AppRoutes = () => {
@@ -136,6 +137,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute allowedRole="USER">
             <PracticeHistory />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/practice-stats"
+        element={
+          <ProtectedRoute allowedRole="USER">
+            <PracticeStats />
           </ProtectedRoute>
         }
       />

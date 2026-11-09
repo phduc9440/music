@@ -304,3 +304,17 @@ export interface PracticeSessionRecord {
   isCompleted?: boolean | null;
   errorLog?: unknown[] | null;
 }
+
+// Heatmap/streak luyện tập, BE: PracticeHeatmapDayResponse / PracticeStreakResponse (date dạng yyyy-MM-dd)
+export interface PracticeHeatmapDay {
+  date: string;
+  sessionCount: number;
+  totalSeconds: number;
+}
+
+export interface PracticeStreak {
+  currentStreak: number;
+  longestStreak: number;
+  lastPracticeDate?: string | null;
+  practicedToday: boolean;
+}
