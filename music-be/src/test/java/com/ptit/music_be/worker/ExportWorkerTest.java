@@ -309,4 +309,70 @@ class ExportWorkerTest {
         worker.fail(TASK_ID, "TASK_TIMEOUT");
         assertThat(task.getStatus()).isEqualTo(AiTaskStatus.FAILED);
     }
+
+    // ---------------------------------------------------------------- SVG
+
+    /** MuseScore giả: ghi {@code out-1.svg}, {@code out-2.svg}, {@code out-10.svg} cạnh file đầu ra. */
+    void museScoreWritesSvgPages(Runnable beforeWrite) {
+        doAnswer(invocation -> {
+                    beforeWrite.run();
+                    Path output = invocation.getArgument(1);
+                    Files.createDirectories(output.getParent());
+                    for (int page : new int[] {10, 2, 1}) {
+                        Files.writeString(output.resolveSibling("out-" + page + ".svg"), "<svg>" + page + "</svg>");
+                    }
+                    return null;
+                })
+                .when(museScoreCliService)
+                .convert(any(Path.class), any(Path.class), anyList(), eq(TASK_ID));
+    }
+
+    @Test
+    void svg_savesEveryPageAndCompletesTask() throws Exception {
+        setInput("SVG", "{}");
+        museScoreWritesSvgPages(() -> {});
+
+        worker.process(TASK_ID);
+
+        assertThat(task.getStatus()).isEqualTo(AiTaskStatus.COMPLETED);
+        assertThat(objectMapper.readTree(task.getResultData()).get("pageCount").asInt())
+                .isEqualTo(3);
+        assertThat(root.resolve("scores/s1/export/v3-task1-p01.svg")).hasContent("<svg>1</svg>");
+        assertThat(root.resolve("scores/s1/export/v3-task1-p02.svg")).hasContent("<svg>2</svg>");
+        // Trang số 10 phải đứng sau trang 2 (sắp theo số chứ không theo chữ)
+        assertThat(root.resolve("scores/s1/export/v3-task1-p03.svg")).hasContent("<svg>10</svg>");
+        assertThat(root.resolve("scores/s1/tmp/task1")).doesNotExist();
+        verify(aiServiceClient, never())
+                .prepareMusicXml(anyString(), anyString(), anyInt(), anyInt(), anyString(), any(), any(), any(), any());
+        verify(museScoreCliService).convert(eq(root.resolve(SOURCE)), any(Path.class), eq(List.of()), eq(TASK_ID));
+
+        org.mockito.ArgumentCaptor<ScoreFile> captor = org.mockito.ArgumentCaptor.forClass(ScoreFile.class);
+        verify(scoreFileRepository, org.mockito.Mockito.times(3)).save(captor.capture());
+        assertThat(captor.getAllValues()).extracting(ScoreFile::getPageNumber).containsExactly(1, 2, 3);
+        assertThat(captor.getAllValues()).extracting(ScoreFile::getFileType).containsOnly(FileType.SVG);
+        assertThat(captor.getAllValues()).extracting(ScoreFile::getSourceTaskId).containsOnly(TASK_ID);
+        assertThat(captor.getValue().getOriginalFileName()).isEqualTo("Bài ca  thử nghiệm-trang-03.svg");
+    }
+
+    @Test
+    void svg_cancelledWhileRendering_discardsPages() throws Exception {
+        setInput("SVG", "{}");
+        museScoreWritesSvgPages(() -> task.setStatus(AiTaskStatus.CANCELLED));
+
+        worker.process(TASK_ID);
+
+        assertThat(task.getStatus()).isEqualTo(AiTaskStatus.CANCELLED);
+        assertThat(root.resolve("scores/s1/export")).doesNotExist();
+        verify(scoreFileRepository, never()).save(any(ScoreFile.class));
+    }
+
+    @Test
+    void collectSvgPages_singlePageScoreUsesTheOutputFileItself() throws Exception {
+        Path output = root.resolve("t/out.svg");
+        Files.createDirectories(output.getParent());
+        Files.writeString(output, "<svg/>");
+
+        assertThat(ExportWorker.collectSvgPages(output)).containsExactly(output);
+        assertThat(ExportWorker.collectSvgPages(root.resolve("t/other.svg"))).isEmpty();
+    }
 }

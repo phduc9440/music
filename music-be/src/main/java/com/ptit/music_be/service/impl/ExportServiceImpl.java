@@ -1,5 +1,6 @@
 package com.ptit.music_be.service.impl;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.time.LocalDateTime;
@@ -8,6 +9,8 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -38,7 +41,9 @@ import com.ptit.music_be.repository.ScoreRepository;
 import com.ptit.music_be.service.ExportService;
 import com.ptit.music_be.service.FileStorageService;
 import com.ptit.music_be.service.MuseScoreCliService;
+import com.ptit.music_be.service.ScoreContentService;
 import com.ptit.music_be.service.ScoreFileService;
+import com.ptit.music_be.service.export.ExportNames;
 import com.ptit.music_be.service.export.ExportOptionsValidator;
 import com.ptit.music_be.service.export.ExportSpec;
 import com.ptit.music_be.utils.SecurityUtils;
@@ -77,6 +82,7 @@ public class ExportServiceImpl implements ExportService {
     MemberRepository memberRepository;
     ScoreFileService scoreFileService;
     FileStorageService fileStorageService;
+    ScoreContentService scoreContentService;
     MuseScoreCliService museScoreCliService;
     MuseScoreProperties museScoreProperties;
     ExportOptionsValidator validator;
@@ -90,15 +96,29 @@ public class ExportServiceImpl implements ExportService {
         Score score =
                 scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
         scoreFileService.checkCanView(score);
-        if (!museScoreCliService.isAvailable()) {
-            throw new AppException(ErrorCode.EXPORT_NOT_AVAILABLE);
-        }
         ScoreFile source = currentMusicXml(scoreId).orElseThrow(() -> new AppException(ErrorCode.MUSICXML_NOT_READY));
         ExportSpec spec = validator.validate(
                 request == null ? null : request.getTargetFormat(),
                 request == null ? null : request.getOptions(),
                 score);
 
+        // MusicXML và MIDI có sẵn: trả file hiện hành, không cần MuseScore và không tạo task
+        if (spec.fileType() == FileType.MUSICXML) {
+            return ExportResponse.builder()
+                    .cached(true)
+                    .file(toFileResponse(source, score))
+                    .build();
+        }
+        if (spec.fileType() == FileType.MIDI) {
+            return ExportResponse.builder()
+                    .cached(true)
+                    .file(toFileResponse(currentMidi(scoreId), score))
+                    .build();
+        }
+
+        if (!museScoreCliService.isAvailable()) {
+            throw new AppException(ErrorCode.EXPORT_NOT_AVAILABLE);
+        }
         if (spec.taskType() == AiTaskType.AUDIO_SYNTHESIS
                 && estimateSeconds(score, spec.intOption("tempoPercent", 100))
                         > museScoreProperties.getMaxAudioSeconds()) {
@@ -111,12 +131,28 @@ public class ExportServiceImpl implements ExportService {
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
         int sourceVersion = versionOf(source);
-        Optional<ScoreFile> cached = findCached(scoreId, spec, sourceVersion);
-        if (cached.isPresent()) {
-            return ExportResponse.builder()
-                    .cached(true)
-                    .file(toFileResponse(cached.get(), score))
-                    .build();
+        if (spec.fileType() == FileType.SVG) {
+            List<ScoreFile> pages = findCachedSvgPages(scoreId, sourceVersion);
+            if (!pages.isEmpty()) {
+                if (spec.page() != null && spec.page() > pages.size()) {
+                    throw new AppException(ErrorCode.EXPORT_OPTION_INVALID);
+                }
+                List<ExportFileResponse> files =
+                        pages.stream().map(f -> toFileResponse(f, score)).toList();
+                return ExportResponse.builder()
+                        .cached(true)
+                        .file(files.get(0))
+                        .files(files)
+                        .build();
+            }
+        } else {
+            Optional<ScoreFile> cached = findCached(scoreId, spec, sourceVersion);
+            if (cached.isPresent()) {
+                return ExportResponse.builder()
+                        .cached(true)
+                        .file(toFileResponse(cached.get(), score))
+                        .build();
+            }
         }
 
         Optional<AiTask> duplicate = findDuplicateTask(scoreId, spec, sourceVersion);
@@ -158,6 +194,37 @@ public class ExportServiceImpl implements ExportService {
                 .cached(false)
                 .task(aiTaskMapper.toResponse(task))
                 .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public SvgZip zipSvgPages(String scoreId, String taskId) {
+        Score score =
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+        scoreFileService.checkCanView(score);
+        List<ScoreFile> pages = scoreFileRepository.findByScoreIdAndFileTypeIn(scoreId, Set.of(FileType.SVG)).stream()
+                .filter(f -> taskId.equals(f.getSourceTaskId()))
+                .sorted(Comparator.comparing(ScoreFile::getPageNumber, Comparator.nullsLast(Comparator.naturalOrder())))
+                .toList();
+        if (pages.isEmpty()) {
+            throw new AppException(ErrorCode.FILE_NOT_EXISTED);
+        }
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        try (ZipOutputStream zip = new ZipOutputStream(buffer)) {
+            int index = 1;
+            for (ScoreFile page : pages) {
+                byte[] bytes = Files.readAllBytes(fileStorageService.resolve(page.getStoragePath()));
+                int number = page.getPageNumber() != null ? page.getPageNumber() : index;
+                zip.putNextEntry(new ZipEntry(ExportNames.svgPageName(score.getTitle(), number)));
+                zip.write(bytes);
+                zip.closeEntry();
+                index++;
+            }
+        } catch (IOException e) {
+            log.warn("Không gom được ZIP SVG của task {}: {}", taskId, e.getMessage());
+            throw new AppException(ErrorCode.FILE_NOT_EXISTED);
+        }
+        return new SvgZip(ExportNames.safeTitle(score.getTitle()) + "-svg.zip", buffer.toByteArray());
     }
 
     @Override
@@ -238,6 +305,26 @@ public class ExportServiceImpl implements ExportService {
                 .findFirst();
     }
 
+    /** Các trang SVG hiện hành của đúng version MusicXML này (cùng một lần xuất), theo thứ tự trang. */
+    private List<ScoreFile> findCachedSvgPages(String scoreId, int sourceVersion) {
+        List<ScoreFile> pages = scoreFileRepository.findByScoreIdAndFileTypeIn(scoreId, Set.of(FileType.SVG)).stream()
+                .filter(f -> f.getSourceTaskId() != null && (f.getIsCurrent() == null || f.getIsCurrent()))
+                .filter(f -> versionOf(f) == sourceVersion)
+                .sorted(Comparator.comparing(ScoreFile::getPageNumber, Comparator.nullsLast(Comparator.naturalOrder())))
+                .toList();
+        // Thiếu một trang trên đĩa thì coi như chưa có, để xuất lại cho đủ bộ
+        return pages.stream().allMatch(this::existsOnDisk) ? pages : List.of();
+    }
+
+    /** MIDI hiện hành; sinh lại nếu chưa có hoặc cũ hơn MusicXML (ScoreContentService lo, đồng bộ). */
+    private ScoreFile currentMidi(String scoreId) {
+        scoreContentService.getMidi(scoreId);
+        return scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(scoreId, FileType.MIDI).stream()
+                .filter(f -> f.getIsCurrent() == null || f.getIsCurrent())
+                .max(Comparator.comparingInt(ExportServiceImpl::versionOf))
+                .orElseThrow(() -> new AppException(ErrorCode.FILE_NOT_EXISTED));
+    }
+
     private boolean existsOnDisk(ScoreFile file) {
         try {
             return Files.isRegularFile(fileStorageService.resolve(file.getStoragePath()));
@@ -258,6 +345,7 @@ public class ExportServiceImpl implements ExportService {
                 .contentType(file.getContentType())
                 .sizeBytes(file.getSizeBytes())
                 .pageNumber(file.getPageNumber())
+                .taskId(file.getSourceTaskId())
                 .createdAt(file.getCreatedAt())
                 .downloadUrl("/api/files/" + file.getId() + "/download")
                 .options(meta.get("options"))

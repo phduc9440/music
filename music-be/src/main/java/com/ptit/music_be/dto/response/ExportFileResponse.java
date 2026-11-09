@@ -22,6 +22,9 @@ public class ExportFileResponse {
     String contentType;
     Long sizeBytes;
     Integer pageNumber;
+    /** Tác vụ xuất đã tạo file này (để gom các trang SVG của cùng một lần xuất). */
+    String taskId;
+
     LocalDateTime createdAt;
     /** Ví dụ /api/files/{id}/download */
     String downloadUrl;

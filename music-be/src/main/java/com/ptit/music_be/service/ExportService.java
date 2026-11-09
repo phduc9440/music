@@ -17,4 +17,14 @@ public interface ExportService {
 
     /** File xuất còn trên đĩa của bản nhạc, kèm cờ {@code outdated}. Cần quyền xem. */
     List<ExportFileResponse> listExports(String scoreId);
+
+    /** ZIP chứa mọi trang SVG của một lần xuất. */
+    record SvgZip(String fileName, byte[] content) {}
+
+    /**
+     * Gom các trang SVG do tác vụ {@code taskId} tạo ra thành một file ZIP (tên trang {@code {tiêu đề}-trang-01.svg}).
+     * Cần quyền xem. Lỗi: SCORE_NOT_EXISTED (2001), UNAUTHORIZED (1002), FILE_NOT_EXISTED (2002) nếu tác vụ không có
+     * trang nào còn trên đĩa.
+     */
+    SvgZip zipSvgPages(String scoreId, String taskId);
 }

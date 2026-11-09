@@ -46,8 +46,33 @@ public class ExportOptionsValidator {
         }
         return switch (type) {
             case MP3, WAV -> validateAudio(type, options, score);
+            case MIDI, MUSICXML -> validateNoOptions(type, options);
+            case SVG -> validateSvg(options);
             default -> throw invalid();
         };
+    }
+
+    /** MIDI và MusicXML trả file hiện hành, không có tùy chọn. */
+    private ExportSpec validateNoOptions(FileType type, JsonNode options) {
+        requireObject(options, Set.of());
+        return new ExportSpec(type, AiTaskType.FORMAT_CONVERSION, objectMapper.createObjectNode());
+    }
+
+    /** SVG: {@code page} là "ALL" hoặc số trang từ 1. Tác vụ luôn kết xuất mọi trang nên tùy chọn lưu lại để trống. */
+    private ExportSpec validateSvg(JsonNode options) {
+        JsonNode node = requireObject(options, Set.of("page"));
+        Integer page = null;
+        if (node.has("page") && !node.get("page").isNull()) {
+            JsonNode value = node.get("page");
+            if (value.isTextual() && "ALL".equalsIgnoreCase(value.asText())) {
+                page = null;
+            } else if (value.isIntegralNumber() && value.canConvertToInt() && value.asInt() >= 1) {
+                page = value.asInt();
+            } else {
+                throw invalid();
+            }
+        }
+        return new ExportSpec(FileType.SVG, AiTaskType.FORMAT_CONVERSION, objectMapper.createObjectNode(), page);
     }
 
     private ExportSpec validateAudio(FileType type, JsonNode options, Score score) {

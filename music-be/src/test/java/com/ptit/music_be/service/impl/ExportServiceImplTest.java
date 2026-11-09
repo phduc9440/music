@@ -48,8 +48,10 @@ import com.ptit.music_be.repository.AiTaskRepository;
 import com.ptit.music_be.repository.MemberRepository;
 import com.ptit.music_be.repository.ScoreFileRepository;
 import com.ptit.music_be.repository.ScoreRepository;
+import com.ptit.music_be.service.ExportService;
 import com.ptit.music_be.service.FileStorageService;
 import com.ptit.music_be.service.MuseScoreCliService;
+import com.ptit.music_be.service.ScoreContentService;
 import com.ptit.music_be.service.ScoreFileService;
 import com.ptit.music_be.service.export.ExportOptionsValidator;
 
@@ -82,6 +84,9 @@ class ExportServiceImplTest {
     MuseScoreCliService museScoreCliService;
 
     @Mock
+    ScoreContentService scoreContentService;
+
+    @Mock
     AiTaskMapper aiTaskMapper;
 
     @Mock
@@ -106,6 +111,7 @@ class ExportServiceImplTest {
                 memberRepository,
                 scoreFileService,
                 fileStorageService,
+                scoreContentService,
                 museScoreCliService,
                 properties,
                 new ExportOptionsValidator(objectMapper),
@@ -330,5 +336,135 @@ class ExportServiceImplTest {
         assertThat(ExportServiceImpl.estimateSeconds(s, 50)).isEqualTo(30.0);
         s.setMeasureCount(null);
         assertThat(ExportServiceImpl.estimateSeconds(s, 100)).isZero();
+    }
+
+    // ---------------------------------------------------------------- MIDI, MusicXML, SVG
+
+    private ScoreFile svgPage(int page, String sourceTaskId, String path) {
+        return ScoreFile.builder()
+                .id("svg-" + page)
+                .score(score)
+                .fileType(FileType.SVG)
+                .storagePath(path)
+                .pageNumber(page)
+                .version(3)
+                .isCurrent(true)
+                .sourceTaskId(sourceTaskId)
+                .meta("{\"sourceVersion\":3,\"options\":{}}")
+                .build();
+    }
+
+    @Test
+    void musicXmlIsReturnedDirectlyWithoutTask() throws Exception {
+        when(museScoreCliService.isAvailable()).thenReturn(false); // không cần MuseScore
+
+        ExportResponse response = service.requestExport(SCORE_ID, request("MUSICXML", null));
+
+        assertThat(response.isCached()).isTrue();
+        assertThat(response.getFile().getId()).isEqualTo("xml-1");
+        verify(aiTaskRepository, never()).save(any());
+    }
+
+    @Test
+    void midiIsRegeneratedThenReturnedDirectly() throws Exception {
+        ScoreFile midi = ScoreFile.builder()
+                .id("midi-1")
+                .score(score)
+                .fileType(FileType.MIDI)
+                .storagePath("scores/score-1/midi/v3.mid")
+                .version(3)
+                .isCurrent(true)
+                .build();
+        when(scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(SCORE_ID, FileType.MIDI))
+                .thenReturn(List.of(midi));
+
+        ExportResponse response = service.requestExport(SCORE_ID, request("MIDI", null));
+
+        verify(scoreContentService).getMidi(SCORE_ID);
+        assertThat(response.isCached()).isTrue();
+        assertThat(response.getFile().getId()).isEqualTo("midi-1");
+        verify(aiTaskRepository, never()).save(any());
+    }
+
+    @Test
+    void svgCreatesFormatConversionTask() throws Exception {
+        ExportResponse response = service.requestExport(SCORE_ID, request("SVG", null));
+
+        assertThat(response.isCached()).isFalse();
+        AiTask saved = captureSavedTask();
+        assertThat(saved.getTaskType()).isEqualTo(AiTaskType.FORMAT_CONVERSION);
+        assertThat(objectMapper
+                        .readTree(saved.getInputData())
+                        .get("targetFormat")
+                        .asText())
+                .isEqualTo("SVG");
+        assertThat(objectMapper.readTree(saved.getInputData()).get("options").isEmpty())
+                .isTrue();
+    }
+
+    @Test
+    void svgReturnsAllCachedPagesInOrder() throws Exception {
+        Path file = Files.writeString(dir.resolve("p.svg"), "<svg/>");
+        when(fileStorageService.resolve(anyString())).thenReturn(file);
+        when(scoreFileRepository.findByScoreIdAndFileTypeIn(eq(SCORE_ID), anyCollection()))
+                .thenReturn(List.of(svgPage(2, "t1", "p2"), svgPage(1, "t1", "p1")));
+
+        ExportResponse response = service.requestExport(SCORE_ID, request("SVG", "{\"page\":2}"));
+
+        assertThat(response.isCached()).isTrue();
+        assertThat(response.getFiles()).extracting("pageNumber").containsExactly(1, 2);
+        assertThat(response.getFiles()).extracting("taskId").containsOnly("t1");
+        assertThat(response.getFile().getId()).isEqualTo("svg-1");
+        verify(aiTaskRepository, never()).save(any());
+    }
+
+    @Test
+    void svgPageBeyondPageCountIsInvalid() throws Exception {
+        Path file = Files.writeString(dir.resolve("p.svg"), "<svg/>");
+        when(fileStorageService.resolve(anyString())).thenReturn(file);
+        when(scoreFileRepository.findByScoreIdAndFileTypeIn(eq(SCORE_ID), anyCollection()))
+                .thenReturn(List.of(svgPage(1, "t1", "p1"), svgPage(2, "t1", "p2")));
+
+        assertThatThrownBy(() -> service.requestExport(SCORE_ID, request("SVG", "{\"page\":5}")))
+                .satisfies(e -> assertError(e, ErrorCode.EXPORT_OPTION_INVALID));
+    }
+
+    @Test
+    void svgWithMissingPageFileIsNotCached() throws Exception {
+        when(fileStorageService.resolve("p1")).thenReturn(Files.writeString(dir.resolve("p1.svg"), "<svg/>"));
+        when(fileStorageService.resolve("p2")).thenReturn(dir.resolve("gone.svg"));
+        when(scoreFileRepository.findByScoreIdAndFileTypeIn(eq(SCORE_ID), anyCollection()))
+                .thenReturn(List.of(svgPage(1, "t1", "p1"), svgPage(2, "t1", "p2")));
+
+        assertThat(service.requestExport(SCORE_ID, request("SVG", null)).isCached())
+                .isFalse();
+    }
+
+    @Test
+    void zipContainsEveryPageOfTheTask() throws Exception {
+        score.setTitle("Bài ca");
+        when(fileStorageService.resolve("p1")).thenReturn(Files.writeString(dir.resolve("p1.svg"), "<svg>1</svg>"));
+        when(fileStorageService.resolve("p2")).thenReturn(Files.writeString(dir.resolve("p2.svg"), "<svg>2</svg>"));
+        when(scoreFileRepository.findByScoreIdAndFileTypeIn(eq(SCORE_ID), anyCollection()))
+                .thenReturn(List.of(svgPage(2, "t1", "p2"), svgPage(1, "t1", "p1"), svgPage(1, "other", "x")));
+
+        ExportService.SvgZip zip = service.zipSvgPages(SCORE_ID, "t1");
+
+        assertThat(zip.fileName()).isEqualTo("Bài ca-svg.zip");
+        List<String> names = new java.util.ArrayList<>();
+        try (java.util.zip.ZipInputStream in =
+                new java.util.zip.ZipInputStream(new java.io.ByteArrayInputStream(zip.content()))) {
+            java.util.zip.ZipEntry entry;
+            while ((entry = in.getNextEntry()) != null) {
+                names.add(entry.getName());
+            }
+        }
+        assertThat(names).containsExactly("Bài ca-trang-01.svg", "Bài ca-trang-02.svg");
+    }
+
+    @Test
+    void zipOfUnknownTaskIs2002() {
+        assertThatThrownBy(() -> service.zipSvgPages(SCORE_ID, "none"))
+                .satisfies(e -> assertError(e, ErrorCode.FILE_NOT_EXISTED));
     }
 }

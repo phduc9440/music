@@ -106,4 +106,37 @@ class ExportOptionsValidatorTest {
                         .textOption("hands", "x"))
                 .isEqualTo("BOTH");
     }
+
+    @Test
+    void midiAndMusicXmlTakeNoOptions() {
+        assertThat(validator.validate("MIDI", null, score(2)).fileType()).isEqualTo(FileType.MIDI);
+        assertThat(validator.validate("musicxml", json2("{}"), score(2)).fileType())
+                .isEqualTo(FileType.MUSICXML);
+        assertInvalid("MIDI", "{\"transpose\":2}", score(2));
+        assertInvalid("MUSICXML", "{\"bitrate\":192}", score(2));
+    }
+
+    @Test
+    void svgPageIsAllOrPositiveNumber() {
+        ExportSpec all = validator.validate("SVG", null, score(2));
+        assertThat(all.fileType()).isEqualTo(FileType.SVG);
+        assertThat(all.taskType()).isEqualTo(AiTaskType.FORMAT_CONVERSION);
+        assertThat(all.page()).isNull();
+        assertThat(all.options().isEmpty()).isTrue();
+
+        assertThat(validator
+                        .validate("SVG", json2("{\"page\":\"ALL\"}"), score(2))
+                        .page())
+                .isNull();
+        // Trang không nằm trong khóa cache nên các lựa chọn trang cho cùng một bộ tùy chọn
+        ExportSpec third = validator.validate("SVG", json2("{\"page\":3}"), score(2));
+        assertThat(third.page()).isEqualTo(3);
+        assertThat(third.options()).isEqualTo(all.options());
+
+        assertInvalid("SVG", "{\"page\":0}", score(2));
+        assertInvalid("SVG", "{\"page\":-1}", score(2));
+        assertInvalid("SVG", "{\"page\":1.5}", score(2));
+        assertInvalid("SVG", "{\"page\":\"first\"}", score(2));
+        assertInvalid("SVG", "{\"dpi\":300}", score(2));
+    }
 }

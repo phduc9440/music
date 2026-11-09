@@ -6,12 +6,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import jakarta.annotation.PreDestroy;
 
@@ -40,6 +44,7 @@ import com.ptit.music_be.repository.AiTaskRepository;
 import com.ptit.music_be.repository.ScoreFileRepository;
 import com.ptit.music_be.service.FileStorageService;
 import com.ptit.music_be.service.MuseScoreCliService;
+import com.ptit.music_be.service.export.ExportNames;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -139,41 +144,12 @@ public class ExportWorker {
         }
 
         String tmpDir = "scores/" + job.scoreId() + "/tmp/" + taskId;
-        String storedPath = null;
+        List<String> storedPaths = new ArrayList<>();
         try {
-            int transpose = job.options().path("transpose").asInt(0);
-            int tempoPercent = job.options().path("tempoPercent").asInt(100);
-            String hands = job.options().path("hands").asText("BOTH");
-
-            updateStep(taskId, AiTaskStep.PREPARE, 10);
-            String inputPath = job.sourcePath();
-            if (transpose != 0 || tempoPercent != 100 || !"BOTH".equals(hands)) {
-                inputPath = tmpDir + "/in.musicxml";
-                aiServiceClient.prepareMusicXml(
-                        job.sourcePath(), inputPath, transpose, tempoPercent, hands, null, null, null, null);
-            }
-
-            updateStep(taskId, AiTaskStep.RENDER, 30);
-            String extension = job.format() == FileType.MP3 ? "mp3" : "wav";
-            Path output = fileStorageService.resolve(tmpDir + "/out." + extension);
-            List<String> args = new ArrayList<>();
-            if (job.format() == FileType.MP3) {
-                args.add("-b");
-                args.add(String.valueOf(job.options().path("bitrate").asInt(192)));
-            }
-            museScoreCliService.convert(fileStorageService.resolve(inputPath), output, args, taskId);
-
-            updateStep(taskId, AiTaskStep.SAVE, 90);
-            String finalPath =
-                    "scores/%s/audio/v%d-%s.%s".formatted(job.scoreId(), job.sourceVersion(), taskId, extension);
-            long size = Files.size(output);
-            try (InputStream in = Files.newInputStream(output)) {
-                storedPath = fileStorageService.store(in, finalPath);
-            }
-            if (!complete(job, storedPath, size)) {
-                // Task đã bị hủy hoặc hết hạn trong lúc xử lý: không ghi kết quả
-                fileStorageService.delete(storedPath);
-                storedPath = null;
+            if (job.format() == FileType.SVG) {
+                renderSvg(job, tmpDir, storedPaths);
+            } else {
+                renderAudio(job, tmpDir, storedPaths);
             }
         } catch (TaskStoppedException e) {
             log.info("Task xuất {} đã dừng giữa chừng", taskId);
@@ -190,11 +166,109 @@ public class ExportWorker {
         } finally {
             fileStorageService.deleteDirectory(tmpDir);
             // Ghi DB lỗi sau khi đã lưu file thì file thành mồ côi: xóa luôn
-            if (storedPath != null && !isCompleted(taskId)) {
-                fileStorageService.delete(storedPath);
+            if (!storedPaths.isEmpty() && !isCompleted(taskId)) {
+                storedPaths.forEach(fileStorageService::delete);
             }
         }
     }
+
+    /** MP3/WAV: chuẩn bị MusicXML nếu cần (music-ai) rồi MuseScore xuất âm thanh. */
+    private void renderAudio(Job job, String tmpDir, List<String> storedPaths) throws IOException {
+        String taskId = job.taskId();
+        int transpose = job.options().path("transpose").asInt(0);
+        int tempoPercent = job.options().path("tempoPercent").asInt(100);
+        String hands = job.options().path("hands").asText("BOTH");
+
+        updateStep(taskId, AiTaskStep.PREPARE, 10);
+        String inputPath = job.sourcePath();
+        if (transpose != 0 || tempoPercent != 100 || !"BOTH".equals(hands)) {
+            inputPath = tmpDir + "/in.musicxml";
+            aiServiceClient.prepareMusicXml(
+                    job.sourcePath(), inputPath, transpose, tempoPercent, hands, null, null, null, null);
+        }
+
+        updateStep(taskId, AiTaskStep.RENDER, 30);
+        String extension = job.format() == FileType.MP3 ? "mp3" : "wav";
+        Path output = fileStorageService.resolve(tmpDir + "/out." + extension);
+        List<String> args = new ArrayList<>();
+        if (job.format() == FileType.MP3) {
+            args.add("-b");
+            args.add(String.valueOf(job.options().path("bitrate").asInt(192)));
+        }
+        museScoreCliService.convert(fileStorageService.resolve(inputPath), output, args, taskId);
+
+        updateStep(taskId, AiTaskStep.SAVE, 90);
+        String finalPath = "scores/%s/audio/v%d-%s.%s".formatted(job.scoreId(), job.sourceVersion(), taskId, extension);
+        long size = Files.size(output);
+        String stored;
+        try (InputStream in = Files.newInputStream(output)) {
+            stored = fileStorageService.store(in, finalPath);
+        }
+        storedPaths.add(stored);
+        if (!complete(job, stored, size)) {
+            // Task đã bị hủy hoặc hết hạn trong lúc xử lý: không ghi kết quả
+            fileStorageService.delete(stored);
+            storedPaths.clear();
+        }
+    }
+
+    /** SVG: MuseScore kết xuất mọi trang ({@code out-1.svg}, {@code out-2.svg}...), mỗi trang một dòng score_files. */
+    private void renderSvg(Job job, String tmpDir, List<String> storedPaths) throws IOException {
+        String taskId = job.taskId();
+        updateStep(taskId, AiTaskStep.RENDER, 30);
+        Path output = fileStorageService.resolve(tmpDir + "/out.svg");
+        museScoreCliService.convert(fileStorageService.resolve(job.sourcePath()), output, List.of(), taskId);
+
+        List<Path> pages = collectSvgPages(output);
+        if (pages.isEmpty()) {
+            throw new MuseScoreException(AiTaskError.EXPORT_ERROR, "MuseScore không tạo ra trang SVG nào");
+        }
+
+        updateStep(taskId, AiTaskStep.SAVE, 90);
+        List<StoredPage> stored = new ArrayList<>();
+        for (int i = 0; i < pages.size(); i++) {
+            int number = i + 1;
+            String finalPath =
+                    "scores/%s/export/v%d-%s-p%02d.svg".formatted(job.scoreId(), job.sourceVersion(), taskId, number);
+            long size = Files.size(pages.get(i));
+            try (InputStream in = Files.newInputStream(pages.get(i))) {
+                String path = fileStorageService.store(in, finalPath);
+                storedPaths.add(path);
+                stored.add(new StoredPage(path, size, number));
+            }
+        }
+        if (!completeSvg(job, stored)) {
+            storedPaths.forEach(fileStorageService::delete);
+            storedPaths.clear();
+        }
+    }
+
+    /**
+     * Các trang SVG MuseScore đã ghi cạnh {@code output}: {@code tên-N.svg} sắp theo N; không có thì nếu {@code output}
+     * tự nó tồn tại (bản nhạc một trang) thì đó là trang 1. Rỗng nếu không có gì.
+     */
+    static List<Path> collectSvgPages(Path output) throws IOException {
+        String name = output.getFileName().toString();
+        String base = name.substring(0, name.length() - ".svg".length());
+        Pattern pattern = Pattern.compile(Pattern.quote(base) + "-(\\d+)\\.svg");
+        List<Path> numbered;
+        try (Stream<Path> siblings = Files.list(output.toAbsolutePath().getParent())) {
+            numbered = siblings.filter(
+                            p -> pattern.matcher(p.getFileName().toString()).matches())
+                    .filter(p -> p.toFile().length() > 0)
+                    .sorted(Comparator.comparingInt(p -> {
+                        Matcher m = pattern.matcher(p.getFileName().toString());
+                        return m.matches() ? Integer.parseInt(m.group(1)) : 0;
+                    }))
+                    .toList();
+        }
+        if (!numbered.isEmpty()) {
+            return numbered;
+        }
+        return Files.isRegularFile(output) && Files.size(output) > 0 ? List.of(output) : List.of();
+    }
+
+    record StoredPage(String path, long size, int pageNumber) {}
 
     private static String restError(RestClientResponseException e) {
         if (e.getStatusCode().is4xxClientError()) {
@@ -307,6 +381,62 @@ public class ExportWorker {
         return Boolean.TRUE.equals(ok);
     }
 
+    /** Ghi các trang SVG và hoàn tất task. False nếu task không còn PROCESSING (khi đó không ghi gì). */
+    private boolean completeSvg(Job job, List<StoredPage> pages) {
+        Boolean ok = tx.execute(status -> {
+            Optional<AiTask> found = aiTaskRepository.findByIdForUpdate(job.taskId());
+            if (found.isEmpty() || found.get().getStatus() != AiTaskStatus.PROCESSING) {
+                return false;
+            }
+            AiTask task = found.get();
+
+            ObjectNode meta = objectMapper.createObjectNode();
+            meta.put("sourceVersion", job.sourceVersion());
+            meta.set("options", job.options());
+            meta.put("pageCount", pages.size());
+
+            // Bộ trang cũ không còn là bản hiện hành (job dọn đêm sẽ xóa)
+            for (ScoreFile old :
+                    scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(job.scoreId(), FileType.SVG)) {
+                if (old.getSourceTaskId() != null && (old.getIsCurrent() == null || old.getIsCurrent())) {
+                    old.setIsCurrent(false);
+                    scoreFileRepository.save(old);
+                }
+            }
+
+            var fileIds = objectMapper.createArrayNode();
+            for (StoredPage page : pages) {
+                ScoreFile saved = scoreFileRepository.save(ScoreFile.builder()
+                        .score(task.getScore())
+                        .fileType(FileType.SVG)
+                        .originalFileName(ExportNames.svgPageName(job.title(), page.pageNumber()))
+                        .storagePath(page.path())
+                        .contentType("image/svg+xml")
+                        .sizeBytes(page.size())
+                        .pageNumber(page.pageNumber())
+                        .version(job.sourceVersion())
+                        .isCurrent(true)
+                        .sourceTaskId(job.taskId())
+                        .meta(meta.toString())
+                        .build());
+                fileIds.add(saved.getId());
+            }
+
+            ObjectNode result = objectMapper.createObjectNode();
+            result.put("fileId", fileIds.get(0).asText());
+            result.set("fileIds", fileIds);
+            result.put("pageCount", pages.size());
+            task.setStatus(AiTaskStatus.COMPLETED);
+            task.setStep(AiTaskStep.SAVE.name());
+            task.setProgress(100);
+            task.setResultData(result.toString());
+            task.setFinishedAt(LocalDateTime.now());
+            aiTaskRepository.save(task);
+            return true;
+        });
+        return Boolean.TRUE.equals(ok);
+    }
+
     private boolean isCompleted(String taskId) {
         return Boolean.TRUE.equals(tx.execute(status -> aiTaskRepository
                 .findById(taskId)
@@ -358,12 +488,6 @@ public class ExportWorker {
 
     /** Tên file tải về: tiêu đề bản nhạc bỏ ký tự không hợp lệ trong tên file, tối đa 100 ký tự. */
     static String downloadName(String title, String extension) {
-        String clean = title == null
-                ? ""
-                : title.replaceAll("[/\\\\:*?\"<>|\\p{Cntrl}]", " ").trim();
-        if (clean.length() > 100) {
-            clean = clean.substring(0, 100).trim();
-        }
-        return (clean.isEmpty() ? "score" : clean) + "." + extension;
+        return ExportNames.fileName(title, extension);
     }
 }
