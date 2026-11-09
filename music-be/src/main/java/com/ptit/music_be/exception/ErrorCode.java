@@ -104,6 +104,10 @@ public enum ErrorCode {
     EXPORT_NOT_AVAILABLE(2704, "Tính năng xuất file chưa sẵn sàng trên máy chủ", HttpStatus.SERVICE_UNAVAILABLE),
     EXPORT_SOURCE_NOT_SUPPORTED(2705, "Bản nhạc không có nguồn phù hợp để chuyển đổi", HttpStatus.CONFLICT),
 
+    // Practice sessions 30xx
+    PRACTICE_SESSION_NOT_EXISTED(3001, "Phiên tập không tồn tại", HttpStatus.NOT_FOUND),
+    PRACTICE_SESSION_INVALID(3002, "Dữ liệu phiên tập không hợp lệ", HttpStatus.BAD_REQUEST),
+
     // Score versions 28xx
     SCORE_VERSION_NOT_EXISTED(2801, "Phiên bản bản nhạc không tồn tại hoặc đã bị xóa", HttpStatus.NOT_FOUND),
 

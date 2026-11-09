@@ -83,4 +83,8 @@ public class PracticeSession {
 
     @Column(name = "is_completed")
     Boolean isCompleted;
+
+    /** Log lỗi chi tiết từng nốt (mảng JSON), cột kiểu JSON trong MySQL. */
+    @Column(name = "error_log", columnDefinition = "json")
+    String errorLog;
 }

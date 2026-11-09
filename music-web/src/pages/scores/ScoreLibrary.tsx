@@ -121,6 +121,9 @@ export default function ScoreLibrary() {
           <button className="sc-btn sc-btn--sm" onClick={() => navigate('/playlists')}>
             Playlist
           </button>
+          <button className="sc-btn sc-btn--sm" onClick={() => navigate('/practice-history')}>
+            Lịch sử tập
+          </button>
           <button className="sc-btn sc-btn--sm" onClick={() => navigate('/profile')}>
             Hồ sơ
           </button>

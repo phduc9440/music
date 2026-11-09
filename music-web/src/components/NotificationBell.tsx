@@ -60,7 +60,7 @@ export default function NotificationBell() {
       setUnread((c) => Math.max(0, c - 1));
     }
     setOpen(false);
-    if (n.type === 'PUBLISH_REQUESTED') navigate('/admin');
+    if (n.type === 'PUBLISH_REQUESTED') navigate('/admin/pending-scores');
     else if (n.scoreId) navigate(`/scores/${n.scoreId}`);
   };
 

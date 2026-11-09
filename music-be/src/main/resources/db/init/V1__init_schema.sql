@@ -212,7 +212,9 @@ CREATE TABLE IF NOT EXISTS practice_sessions (
     timing_accuracy_pct DOUBLE       NULL,
     score_points        DOUBLE       NULL,
     is_completed        TINYINT(1)   NULL,
+    error_log           JSON         NULL COMMENT 'Log lỗi chi tiết từng nốt (mảng JSON)',
     PRIMARY KEY (id),
+    KEY idx_practice_sessions_member_started (member_id, started_at),
     CONSTRAINT fk_practice_sessions_member FOREIGN KEY (member_id) REFERENCES members (id),
     CONSTRAINT fk_practice_sessions_score  FOREIGN KEY (score_id)  REFERENCES scores (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
