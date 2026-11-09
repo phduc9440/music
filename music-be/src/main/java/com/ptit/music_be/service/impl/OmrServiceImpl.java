@@ -327,10 +327,52 @@ public class OmrServiceImpl implements OmrService {
                 .warnings(warnings)
                 .stoppedAfter(stoppedAfter)
                 .pages(pages)
+                .measureMap(measureMap(data))
+                .measureCheck(measureCheck(data))
                 .kernFileId(currentFileId(scoreId, FileType.KERN))
                 .musicXmlFileId(currentFileId(scoreId, FileType.MUSICXML))
                 .midiFileId(currentFileId(scoreId, FileType.MIDI))
                 .musicXmlVersion(currentVersion(scoreId, FileType.MUSICXML))
+                .build();
+    }
+
+    /** result_data.measureMap -> danh sách ô nhịp; thiếu hoặc sai kiểu thì rỗng. */
+    private List<OmrResultResponse.MeasureEntry> measureMap(JsonNode data) {
+        List<OmrResultResponse.MeasureEntry> entries = new ArrayList<>();
+        data.path("measureMap").forEach(m -> {
+            if (!m.hasNonNull("measure") || !m.hasNonNull("page")) {
+                return;
+            }
+            List<Integer> box = null;
+            JsonNode boxNode = m.path("box");
+            if (boxNode.isArray() && boxNode.size() == 4) {
+                box = new ArrayList<>();
+                for (JsonNode v : boxNode) {
+                    box.add(v.asInt());
+                }
+            }
+            List<String> flags = new ArrayList<>();
+            m.path("flags").forEach(f -> flags.add(f.asText()));
+            entries.add(OmrResultResponse.MeasureEntry.builder()
+                    .measure(m.get("measure").asInt())
+                    .page(m.get("page").asInt())
+                    .system(m.hasNonNull("system") ? m.get("system").asInt() : null)
+                    .box(box)
+                    .flags(flags)
+                    .build());
+        });
+        return entries;
+    }
+
+    /** result_data.measureCheck, null nếu không có. */
+    private OmrResultResponse.MeasureCheck measureCheck(JsonNode data) {
+        JsonNode check = data.path("measureCheck");
+        if (!check.isObject()) {
+            return null;
+        }
+        return OmrResultResponse.MeasureCheck.builder()
+                .imageMeasures(check.hasNonNull("imageMeasures") ? check.get("imageMeasures").asInt() : null)
+                .kernMeasures(check.hasNonNull("kernMeasures") ? check.get("kernMeasures").asInt() : null)
                 .build();
     }
 
