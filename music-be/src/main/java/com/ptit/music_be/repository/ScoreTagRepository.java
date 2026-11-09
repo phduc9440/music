@@ -19,6 +19,12 @@ public interface ScoreTagRepository extends JpaRepository<ScoreTag, String> {
 
     List<ScoreTag> findByTag(Tag tag);
 
+    long countByTag(Tag tag);
+
+    /** Số bản nhạc đang dùng từng thể loại: [tagId, số bản nhạc]. Thể loại chưa ai dùng không có dòng. */
+    @Query("select st.tag.id, count(st) from ScoreTag st group by st.tag.id")
+    List<Object[]> countGroupedByTag();
+
     /** Tag của nhiều bản nhạc trong một câu truy vấn (tránh N+1 khi hiện danh sách). */
     @Query("select st from ScoreTag st join fetch st.tag where st.score.id in :scoreIds")
     List<ScoreTag> findByScoreIdInFetchTag(@Param("scoreIds") Collection<String> scoreIds);

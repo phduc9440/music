@@ -73,6 +73,8 @@ public enum ErrorCode {
 
     // Tags (23xx)
     TAG_NOT_EXISTED(2301, "Thể loại không tồn tại", HttpStatus.NOT_FOUND),
+    TAG_NAME_INVALID(2303, "Tên thể loại là bắt buộc và tối đa 50 ký tự", HttpStatus.BAD_REQUEST),
+    TAG_DUPLICATED(2304, "Thể loại này đã tồn tại", HttpStatus.CONFLICT),
     TOO_MANY_TAGS(2302, "Mỗi bản nhạc tối đa 10 thể loại", HttpStatus.BAD_REQUEST),
 
     // Sharing & reviews (24xx)

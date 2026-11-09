@@ -1,5 +1,5 @@
 import apiClient from './client';
-import type { AdminUpdateMemberRequest, ApiResponse, Member, PageResult } from '../types';
+import type { AdminTag, AdminUpdateMemberRequest, ApiResponse, Member, PageResult } from '../types';
 
 /** Khớp AdminMemberController của BE (/api/admin/members). Chỉ ROLE_ADMIN gọi được. page bắt đầu từ 0. */
 export const adminApi = {
@@ -10,4 +10,9 @@ export const adminApi = {
   getMember: (id: string) => apiClient.get<ApiResponse<Member>>(`/admin/members/${id}`),
   updateMember: (id: string, data: AdminUpdateMemberRequest) =>
     apiClient.patch<ApiResponse<Member>>(`/admin/members/${id}`, data),
+  // 4.6: quản lý thể loại (tag) master data
+  getTags: () => apiClient.get<ApiResponse<AdminTag[]>>('/admin/tags'),
+  createTag: (name: string) => apiClient.post<ApiResponse<AdminTag>>('/admin/tags', { name }),
+  updateTag: (id: string, name: string) => apiClient.put<ApiResponse<AdminTag>>(`/admin/tags/${id}`, { name }),
+  deleteTag: (id: string) => apiClient.delete<ApiResponse<void>>(`/admin/tags/${id}`),
 };
