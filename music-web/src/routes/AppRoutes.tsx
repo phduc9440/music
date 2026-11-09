@@ -16,7 +16,9 @@ import PlaylistDetail from '../pages/scores/PlaylistDetail';
 import Playlists from '../pages/scores/Playlists';
 import AdminLayout from '../components/admin/AdminLayout';
 import AdminMembers from '../pages/admin/AdminMembers';
+import AdminOfficialScores from '../pages/admin/AdminOfficialScores';
 import AdminPendingScores from '../pages/admin/AdminPendingScores';
+import OfficialScores from '../pages/scores/OfficialScores';
 import PracticeHistory from '../pages/scores/PracticeHistory';
 import PracticeStats from '../pages/scores/PracticeStats';
 import ProtectedRoute from './ProtectedRoute';
@@ -91,6 +93,14 @@ const AppRoutes = () => {
         }
       />
       <Route
+        path="/scores/official"
+        element={
+          <ProtectedRoute allowedRole="USER">
+            <OfficialScores />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/scores/shared"
         element={
           <ProtectedRoute allowedRole="USER">
@@ -158,6 +168,7 @@ const AppRoutes = () => {
       >
         <Route index element={<AdminMembers />} />
         <Route path="pending-scores" element={<AdminPendingScores />} />
+        <Route path="official-scores" element={<AdminOfficialScores />} />
       </Route>
     </Routes>
   );

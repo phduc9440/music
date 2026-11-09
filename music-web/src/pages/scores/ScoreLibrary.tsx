@@ -115,6 +115,9 @@ export default function ScoreLibrary() {
               Quản trị
             </button>
           )}
+          <button className="sc-btn sc-btn--sm" onClick={() => navigate('/scores/official')}>
+            Kho score mẫu
+          </button>
           <button className="sc-btn sc-btn--sm" onClick={() => navigate('/scores/shared')}>
             Được chia sẻ với tôi
           </button>

@@ -102,6 +102,53 @@ public class ScoreController {
                 .build();
     }
 
+    @GetMapping("/official")
+    @Operation(
+            summary = "Curated sheet library for beginners (easiest first); difficulty: EASY|MEDIUM|HARD|EXPERT",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<PageResponse<ScoreSummaryResponse>> getOfficialScores(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String difficulty) {
+        return ApiResponse.<PageResponse<ScoreSummaryResponse>>builder()
+                .result(scoreService.getOfficialScores(page, size, keyword, difficulty))
+                .build();
+    }
+
+    @GetMapping("/official/candidates")
+    @Operation(
+            summary = "ADMIN: public scores that are not in the curated library yet",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<PageResponse<ScoreSummaryResponse>> getOfficialCandidates(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String keyword) {
+        return ApiResponse.<PageResponse<ScoreSummaryResponse>>builder()
+                .result(scoreService.getOfficialCandidates(page, size, keyword))
+                .build();
+    }
+
+    @PutMapping("/{scoreId}/official")
+    @Operation(
+            summary = "ADMIN: add a public score to the curated library (only ADMIN can then edit or delete it)",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<ScoreDetailResponse> markOfficial(@PathVariable String scoreId) {
+        return ApiResponse.<ScoreDetailResponse>builder()
+                .result(scoreService.markOfficial(scoreId))
+                .build();
+    }
+
+    @DeleteMapping("/{scoreId}/official")
+    @Operation(
+            summary = "ADMIN: remove a score from the curated library (the score itself is kept)",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<ScoreDetailResponse> unmarkOfficial(@PathVariable String scoreId) {
+        return ApiResponse.<ScoreDetailResponse>builder()
+                .result(scoreService.unmarkOfficial(scoreId))
+                .build();
+    }
+
     @GetMapping("/{scoreId}")
     @Operation(
             summary = "Score detail (info + current files + latest task of each type)",

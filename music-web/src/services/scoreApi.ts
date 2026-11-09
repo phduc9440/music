@@ -2,6 +2,7 @@ import apiClient from './client';
 import { saveBlob, unwrapBlobError } from './fileApi';
 import type {
   ApiResponse,
+  Difficulty,
   PageResult,
   ScoreDetail,
   ScoreFileInfo,
@@ -15,6 +16,14 @@ export const scoreApi = {
   list: (params?: ScoreListParams) => apiClient.get<ApiResponse<PageResult<ScoreSummary>>>('/scores/me', { params }),
   sharedWithMe: (params?: { page?: number; size?: number }) =>
     apiClient.get<ApiResponse<PageResult<ScoreSummary>>>('/scores/shared-with-me', { params }),
+  // 4.5: kho score mẫu (mọi người dùng xem được), từ dễ đến khó
+  official: (params?: { page?: number; size?: number; keyword?: string; difficulty?: Difficulty | '' }) =>
+    apiClient.get<ApiResponse<PageResult<ScoreSummary>>>('/scores/official', { params }),
+  // ADMIN: bản nhạc công khai chưa nằm trong kho, để chọn đưa vào
+  officialCandidates: (params?: { page?: number; size?: number; keyword?: string }) =>
+    apiClient.get<ApiResponse<PageResult<ScoreSummary>>>('/scores/official/candidates', { params }),
+  markOfficial: (id: string) => apiClient.put<ApiResponse<ScoreDetail>>(`/scores/${id}/official`),
+  unmarkOfficial: (id: string) => apiClient.delete<ApiResponse<ScoreDetail>>(`/scores/${id}/official`),
   detail: (id: string) => apiClient.get<ApiResponse<ScoreDetail>>(`/scores/${id}`),
   update: (id: string, data: ScoreUpdateRequest) => apiClient.patch<ApiResponse<ScoreDetail>>(`/scores/${id}`, data),
   // Thay toàn bộ thể loại của bản nhạc (tối đa 10, mảng rỗng = gỡ hết)
