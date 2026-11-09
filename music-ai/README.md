@@ -62,6 +62,7 @@ Bên Spring Boot đặt `AI_INTERNAL_KEY` trùng với `INTERNAL_KEY` ở đây 
 | `KERN_PARSE_MODE` | `fail` | `fail`: music21 không đọc được kern ghép thì task FAILED `KERN_PARSE_ERROR`; `warn`: chỉ cảnh báo |
 | `MAX_REPEAT_LINES` | `24` | Một dòng kern lặp liên tiếp quá số này bị coi là model sinh lặp và cắt bớt |
 | `OMR_ROUTING` | `fallback` | `off`: như cũ. `fallback`: trang có số spine khác số khuông trên ảnh thì nhận diện lại từng hệ. `always`: nhận diện cả hai cách cho mọi trang rồi chọn (để đo, chậm gấp đôi). Xem "Bố cục và nhận diện lại theo hệ" |
+| `OMR_ROUTING_BARS` | `1` | `1`: đếm vạch nhịp trên ảnh; trang có số ô lệch nhiều (model đọc lặp, đọc lại hệ trước) cũng được nhận diện lại theo hệ, model bị dừng sớm khi sinh vượt số ô, lần đọc đúng số ô được ưu tiên. `0`: tắt (để so sánh). Xem "Đếm ô nhịp trên ảnh" |
 | `OMR_ROUTING_MEASURES` | `0` | `1`: trang đúng số spine nhưng có ô nhịp lệch trường độ cũng được nhận diện lại theo hệ (chậm hơn, đọc lại mọi hệ của trang) |
 | `ROUTING_RETRY_BEAMS` | `3` | Hệ vẫn sai số khuông thì thử lại bằng beam search với số beam này; `0`/`1`: không thử lại |
 | `ROUTING_RESERVE_S` | `30` | Giây giữ lại cho bước ghép/xuất: nhận diện lại chỉ chạy khi job còn nhiều thời gian hơn mức này |
@@ -99,7 +100,7 @@ nằm trong `scores/<scoreId>/`; hoặc đúng 1 PDF, hoặc nhiều ảnh (khô
 |---|---|---|
 | `SPLIT_PDF` | 5-10% | Tách PDF / đọc các ảnh đầu vào |
 | `PREPROCESS` | 10-30% | Tiền xử lý từng trang → `pages/page-NNN.png` → callback `files` (PNG); bố cục → `layout/page-NNN.json` |
-| `INFERENCE` | 30-85% | Transcoda nhận diện từng trang → `kern/page-NNN.krn`; tiến độ `30 + 55 × trang_xong / tổng_trang`. Sau đó (vẫn ở 85%) trang sai số khuông được nhận diện lại theo hệ → `routing/` |
+| `INFERENCE` | 30-85% | Transcoda nhận diện từng trang → `kern/page-NNN.krn`; tiến độ `30 + 55 × trang_xong / tổng_trang`. Sau đó (vẫn ở 85%) trang sai số khuông hoặc lệch số ô được nhận diện lại theo hệ → `routing/` |
 | `MERGE` | 85-90% | Làm sạch, ghép kern, kiểm tra → `kern/merged.krn` → callback `files` (KERN) |
 | `EXPORT` | 90-98% | kern → `musicxml/v{n}.musicxml` → `midi/v{n}.mid` → callback `files` (MUSICXML, MIDI) → `complete` |
 
@@ -129,12 +130,36 @@ Plan và lý do chọn cách làm: `docs/omr-multi-staff-plan.md`.
    ngay sau `**kern`; `result_data.staffRoles` ghi vai trò từ trên xuống. Bản chỉ có piano hoặc chỉ một khuông giữ
    nguyên như cũ.
 
+## Đếm ô nhịp trên ảnh (sửa lỗi model đọc lặp)
+
+Transcoda giải mã cả trang tự hồi quy nên đôi khi "lạc chỗ": đọc xong một hệ lại quay về đọc lại hệ trước, hoặc lặp nguyên
+một khối ô nhịp tới hết `MAX_TOKENS`. Số khuông vẫn đúng nên bước kiểm tra spine không thấy (ví dụ bài 6 hệ, 32 ô mà kern
+ra 44 ô).
+
+1. **Dò vạch nhịp** (`app/omr/barlines.py`, gọi từ `analyze_layout`): cột phủ kín chiều cao khuông, mảnh, không vượt ra
+   ngoài khuông (trừ khi nối sang khuông kề trong hệ), bốn góc hai đầu không có đầu nốt (thân nốt luôn có đầu nốt ở một
+   đầu); gộp theo hệ, giữ vạch có ở ít nhất nửa số khuông. `layout/page-NNN.json` có thêm `measureCount` và từng hệ
+   `measures`, `barlines`, `barsClosed`. Số ô của trang chỉ được dùng khi mọi hệ kết thúc bằng vạch nhịp
+   (`bars_confident`); bản quét mờ/nghiêng thì không dùng, pipeline chạy như cũ.
+2. **Dừng sinh sớm**: lượt cả trang được sinh tối đa `số ô + max(4, 20%)` vạch nhịp, trang ảo một hệ tối đa `số ô + 3`
+   (`max_measures` của `recognize`), để vòng lặp không ăn hết thời gian của bước nhận diện lại.
+3. **Nhận diện lại theo hệ khi lệch số ô**: trang lệch từ 2 ô và từ 10% (`routing.measures_off`) được nhận diện lại theo
+   hệ như trang sai số khuông; mỗi hệ phải đúng số ô của hệ đó (sai thì thử đọc riêng giọng/piano rồi beam). Khi chọn
+   ứng viên, lệch 0 hay 1 ô coi như nhau (bộ dò có thể sót một vạch), lệch từ 2 ô bị xếp sau.
+4. **Bỏ khối lặp**: mọi lần đọc vẫn thừa ô thì bỏ các khối ô nhịp lặp liền nhau giống hệt
+   (`merge.drop_repeated_blocks`), chỉ tới khi bằng số ô trên ảnh (nhạc thật cũng có thể lặp).
+5. **Bản đồ ô nhịp** (`app/omr/measure_map.py`): `result_data.measureMap = [{measure, page, system, box, flags}]` (khung
+   `[x0, y0, x1, y1]` trên ảnh `pages/page-NNN.png`; `flags`: `DURATION` lệch trường độ, `COUNT_MISMATCH` hệ/trang lệch
+   số ô) và `result_data.measureCheck = {imageMeasures, kernMeasures, pagesRerouted, pages}` cho trang review.
+
 Đo trên bản nhạc thật (script không ghi vào storage, không gọi Java):
 
 ```bash
 python scripts/omr_check.py <scoreId>                          # không cần model: số khuông trên ảnh so với kern đã lưu
 python scripts/omr_check.py <scoreId> --run off,fallback,always  # có model: bảng trang/hệ đúng số khuông, ô đúng trường độ, s/trang
 python scripts/omr_check.py <scoreId> --run fallback --dump /tmp/omr  # lưu ảnh + kern từng lần đọc và systems.txt để đối chiếu
+python scripts/omr_check.py --all --bars omr-dump/bars           # ảnh trang có vạch nhịp dò được, kiểm tra bộ dò bằng mắt
+OMR_ROUTING_BARS=0 python scripts/omr_check.py --all --run fallback  # so sánh trước/sau khi dùng số ô trên ảnh
 ```
 
 ## Xuất MusicXML và MIDI (đặc tả mục 2.4)

@@ -373,3 +373,34 @@ def test_measure_stats_counts_checked_and_wrong_measures():
     text = kern("**kern|**kern", "*M2/4|*M2/4", "=1|=1", "4c|2e", "4d|.", "=2|=2", "4c|4e", "=3|=3", "4c|4e", "4d|4f", "==|==")
     checked, bad = merge.measure_stats(merge.merge_pages(pages(text)))
     assert (checked, bad) == (3, 1)
+
+
+def _melody_body(*measures):
+    """Kern 1 spine, mỗi phần tử là nội dung một ô (các nốt cách nhau bằng dấu cách)."""
+    rows = ["**kern", "*clefG2", "*M3/4"]
+    for number, notes in enumerate(measures, start=1):
+        rows += notes.split() + [f"={number}"]
+    rows.append("*-")
+    return merge.clean_page(1, kern(*rows))[0]
+
+
+def test_drop_repeated_blocks_only_down_to_the_image_count():
+    a, b, c, d = "2f 4g", "2a 4f", "4d 4e 4f", "2.c"
+    page = _melody_body(a, b, c, d, b, c, d, b, c, d, a)  # khối (b c d) lặp 3 lần: 11 ô
+    fixed, removed = merge.drop_repeated_blocks(page, 8)
+    assert removed == 3 and merge.count_measures(fixed.body) == 8
+    fixed, removed = merge.drop_repeated_blocks(page, 5)
+    assert removed == 6 and merge.count_measures(fixed.body) == 5
+    sigs = [tuple(ln for ln in chunk if merge.is_data_line(ln)) for chunk in merge.split_measures(fixed.body)]
+    assert [" ".join(s) for s in sigs if s] == [a, b, c, d, a]
+
+
+def test_drop_repeated_blocks_keeps_music_when_count_already_matches_or_no_exact_loop():
+    a, b = "2f 4g", "2a 4f"
+    page = _melody_body(a, b, a, b)
+    assert merge.drop_repeated_blocks(page, 4) == (page, 0)  # nhạc lặp thật, số ô đã đúng
+    single = _melody_body(a, a, b)
+    assert merge.drop_repeated_blocks(single, 2)[1] == 0  # một ô chỉ lặp 2 lần: không chắc là lặp do model
+    triple = _melody_body(a, a, a, b)
+    fixed, removed = merge.drop_repeated_blocks(triple, 2)
+    assert removed == 2 and merge.count_measures(fixed.body) == 2

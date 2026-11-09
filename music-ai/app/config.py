@@ -106,6 +106,11 @@ class Settings:
     chậm hơn; hệ lệch ô nhịp trong trang đã nhận diện lại theo hệ luôn được xử lý bất kể cờ này). Đặt bằng
     ``OMR_ROUTING_MEASURES=1``."""
 
+    routing_bars: bool = True
+    """Trang có số ô nhịp lệch nhiều so với số ô đếm trên ảnh (vạch nhịp, ``app/omr/barlines.py``) cũng được nhận diện lại
+    theo hệ, và khi chọn giữa các lần đọc thì ưu tiên lần đúng số ô. Đây là cách sửa lỗi model "lạc chỗ" (đọc lại hệ
+    trước, lặp nguyên khối ô nhịp). Tắt bằng ``OMR_ROUTING_BARS=0`` (để đo so sánh)."""
+
     routing_retry_beams: int = 3
     """Hệ vẫn sai số spine thì thử lại bằng beam search với số beam này (bài báo dùng 3). 0 hoặc 1: không thử lại.
     Đặt bằng ``ROUTING_RETRY_BEAMS``."""
@@ -172,6 +177,7 @@ def get_settings() -> Settings:
         max_repeat_lines=_int_env("MAX_REPEAT_LINES", 24),
         omr_routing=_routing_env(),
         routing_measures=os.environ.get("OMR_ROUTING_MEASURES", "").strip().lower() in ("1", "true", "yes", "on"),
+        routing_bars=_bool_env("OMR_ROUTING_BARS", True),
         routing_retry_beams=max(0, _int_env("ROUTING_RETRY_BEAMS", 3)),
         routing_reserve_s=max(0, _int_env("ROUTING_RESERVE_S", 30)),
     )

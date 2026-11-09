@@ -46,10 +46,13 @@ class RecognitionResult:
     """Số token đã sinh."""
 
     truncated: bool
-    """True nếu chạm giới hạn ``max_tokens`` (có thể bị cắt giữa chừng hoặc sinh lặp)."""
+    """True nếu chạm giới hạn ``max_tokens`` hoặc bị dừng sớm vì vượt số ô (có thể bị cắt giữa chừng hoặc sinh lặp)."""
 
     millis: int
     """Thời gian suy luận (mili giây)."""
+
+    stopped_early: bool = False
+    """True nếu bị dừng vì đã sinh nhiều vạch nhịp hơn ``max_measures`` (model lặp)."""
 
 
 class Recognizer(Protocol):
@@ -58,9 +61,12 @@ class Recognizer(Protocol):
     def wait_ready(self, check: Callable[[], None], timeout_s: float) -> None:
         """Chờ model sẵn sàng, gọi ``check()`` (hủy/hết hạn) đều đặn. Ném :class:`RecognizerNotReady` nếu không được."""
 
-    def recognize(self, png_path, check: Callable[[], None], num_beams: Optional[int] = None) -> RecognitionResult:
+    def recognize(
+        self, png_path, check: Callable[[], None], num_beams: Optional[int] = None, max_measures: Optional[int] = None
+    ) -> RecognitionResult:
         """Nhận diện một ảnh trang 1050x1485. ``check()`` được gọi giữa các token để hủy/timeout kịp thời.
-        ``num_beams`` None thì dùng cấu hình ``NUM_BEAMS`` (bước nhận diện lại truyền 3 khi thử lại)."""
+        ``num_beams`` None thì dùng cấu hình ``NUM_BEAMS`` (bước nhận diện lại truyền 3 khi thử lại).
+        ``max_measures``: dừng sinh khi kết quả đã có nhiều vạch nhịp hơn số này (None = không giới hạn)."""
 
 
 class TranscodaRecognizer:
@@ -164,11 +170,16 @@ class TranscodaRecognizer:
 
     # ------------------------------------------------------------------ suy luận
 
-    def recognize(self, png_path, check: Callable[[], None], num_beams: Optional[int] = None) -> RecognitionResult:
+    def recognize(
+        self, png_path, check: Callable[[], None], num_beams: Optional[int] = None, max_measures: Optional[int] = None
+    ) -> RecognitionResult:
         """Chạy Transcoda trên một ảnh trang (PNG 1050x1485 do bước tiền xử lý tạo ra).
 
         ``num_beams`` None thì dùng ``NUM_BEAMS`` của cấu hình; bước nhận diện lại theo hệ truyền số beam riêng khi thử
         lại một hệ đọc sai số khuông.
+
+        ``max_measures``: số ô đếm trên ảnh cộng phần dư (bên gọi tính). Model "lạc chỗ" thường lặp tới hết ``max_tokens``
+        (vài chục giây mỗi trang); dừng ngay khi đã vượt số vạch nhịp này để dành thời gian cho bước nhận diện lại theo hệ.
         """
         if self._state != STATE_READY:
             raise RecognizerNotReady("model chưa sẵn sàng")
@@ -182,12 +193,21 @@ class TranscodaRecognizer:
         pixel_values = pixel_values.to(self._device)
         image_sizes = image_sizes.to(self._device)
 
+        tokenizer = self._tokenizer
+        limit = BarlineLimit(max_measures) if max_measures else None
+
         class _CheckEveryToken(StoppingCriteria):
-            """Gọi ``check()`` sau mỗi token: Java hủy hoặc quá 90 giây thì ngoại lệ thoát khỏi ``generate``."""
+            """Gọi ``check()`` sau mỗi token: Java hủy hoặc quá 90 giây thì ngoại lệ thoát khỏi ``generate``. Có
+            ``max_measures`` thì cứ :data:`BARLINE_CHECK_EVERY` token giải mã một lần để đếm vạch nhịp."""
 
             def __call__(self, input_ids, scores, **kwargs):  # noqa: ANN001
                 check()
-                return torch.zeros(input_ids.shape[0], dtype=torch.bool, device=input_ids.device)
+                done = torch.zeros(input_ids.shape[0], dtype=torch.bool, device=input_ids.device)
+                if limit is not None and input_ids.shape[-1] % BARLINE_CHECK_EVERY == 0:
+                    for row in range(input_ids.shape[0]):
+                        text = tokenizer.decode(input_ids[row], skip_special_tokens=True)
+                        done[row] = limit.exceeded(text)
+                return done
 
         kwargs = dict(
             pixel_values=pixel_values,
@@ -209,12 +229,30 @@ class TranscodaRecognizer:
         ids = output[0]
         text = self._tokenizer.decode(ids, skip_special_tokens=True)
         tokens = int(ids.shape[-1])
+        stopped = limit is not None and limit.exceeded(text)
         return RecognitionResult(
             text=text,
             tokens=tokens,
-            truncated=tokens >= settings.max_tokens,
+            truncated=tokens >= settings.max_tokens or stopped,
             millis=int((time.monotonic() - started) * 1000),
+            stopped_early=stopped,
         )
+
+
+BARLINE_CHECK_EVERY = 32
+"""Số token giữa hai lần giải mã để đếm vạch nhịp (giải mã cả chuỗi tốn ~1 ms, nên không làm sau mỗi token)."""
+
+
+class BarlineLimit:
+    """Phát hiện kết quả đang sinh đã có nhiều vạch nhịp hơn ``max_measures``."""
+
+    def __init__(self, max_measures: int) -> None:
+        self.max_measures = max_measures
+
+    def exceeded(self, text: str) -> bool:
+        # Vạch nhịp là dòng bắt đầu bằng "="; +1 vì kern có thể mở đầu bằng một vạch trước ô đầu tiên
+        lines = text.replace("\\n", "\n").split("\n")
+        return sum(1 for line in lines if line.startswith("=")) > self.max_measures + 1
 
 
 _recognizer: Optional[TranscodaRecognizer] = None
