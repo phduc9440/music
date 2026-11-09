@@ -1,6 +1,7 @@
 package com.ptit.music_be.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -15,4 +16,8 @@ public interface PlaylistItemRepository extends JpaRepository<PlaylistItem, Stri
     List<PlaylistItem> findByPlaylistOrderByPositionAsc(Playlist playlist);
 
     List<PlaylistItem> findByScore(Score score);
+
+    boolean existsByPlaylistAndScore(Playlist playlist, Score score);
+
+    Optional<PlaylistItem> findByPlaylistAndScore(Playlist playlist, Score score);
 }

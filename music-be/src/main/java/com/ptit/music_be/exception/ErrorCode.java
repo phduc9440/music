@@ -89,6 +89,9 @@ public enum ErrorCode {
     PLAYLIST_NOT_EXISTED(2601, "Playlist không tồn tại", HttpStatus.NOT_FOUND),
     PLAYLIST_NAME_INVALID(2602, "Tên playlist là bắt buộc và tối đa 255 ký tự", HttpStatus.BAD_REQUEST),
     PLAYLIST_DESCRIPTION_INVALID(2603, "Mô tả playlist tối đa 2000 ký tự", HttpStatus.BAD_REQUEST),
+    PLAYLIST_SCORE_DUPLICATED(2604, "Bản nhạc đã có trong playlist", HttpStatus.CONFLICT),
+    PLAYLIST_SCORE_NOT_IN_PLAYLIST(2605, "Bản nhạc không có trong playlist", HttpStatus.NOT_FOUND),
+    PLAYLIST_ORDER_INVALID(2606, "Danh sách thứ tự không khớp với các bài trong playlist", HttpStatus.BAD_REQUEST),
     NOTIFICATION_NOT_EXISTED(2501, "Thông báo không tồn tại", HttpStatus.NOT_FOUND),
 
     // Export 27xx

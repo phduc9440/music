@@ -269,3 +269,13 @@ export interface Playlist {
   description?: string | null;
   scoreCount: number;
 }
+
+// Một bài trong playlist, BE: PlaylistItemResponse (position bắt đầu từ 1)
+export interface PlaylistItem {
+  scoreId: string;
+  title: string;
+  composer?: string | null;
+  difficulty?: Difficulty | null;
+  measureCount?: number | null;
+  position: number;
+}
