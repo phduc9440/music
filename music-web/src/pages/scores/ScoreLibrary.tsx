@@ -118,6 +118,9 @@ export default function ScoreLibrary() {
           <button className="sc-btn sc-btn--sm" onClick={() => navigate('/scores/shared')}>
             Được chia sẻ với tôi
           </button>
+          <button className="sc-btn sc-btn--sm" onClick={() => navigate('/playlists')}>
+            Playlist
+          </button>
           <button className="sc-btn sc-btn--sm" onClick={() => navigate('/profile')}>
             Hồ sơ
           </button>

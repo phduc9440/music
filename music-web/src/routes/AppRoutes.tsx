@@ -11,6 +11,7 @@ import ScoreViewer from '../pages/scores/ScoreViewer';
 import EditorSpike from '../pages/scores/EditorSpike';
 import ScoreImport from '../pages/scores/ScoreImport';
 import SharedScores from '../pages/scores/SharedScores';
+import Playlists from '../pages/scores/Playlists';
 import AdminDashboard from '../pages/Admin';
 import ProtectedRoute from './ProtectedRoute';
 
@@ -64,6 +65,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute allowedRole="USER">
             <ScoreReview />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/playlists"
+        element={
+          <ProtectedRoute allowedRole="USER">
+            <Playlists />
           </ProtectedRoute>
         }
       />

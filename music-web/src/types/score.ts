@@ -239,3 +239,11 @@ export interface AppNotification {
   read: boolean;
   createdAt: string;
 }
+
+// Playlist luyện tập, BE: PlaylistResponse
+export interface Playlist {
+  id: string;
+  name: string;
+  description?: string | null;
+  scoreCount: number;
+}

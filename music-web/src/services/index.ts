@@ -10,3 +10,4 @@ export * from './tagApi';
 export * from './sharingApi';
 export * from './reviewApi';
 export * from './notificationApi';
+export * from './playlistApi';
