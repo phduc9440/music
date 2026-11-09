@@ -26,8 +26,16 @@ type LoadState =
 
 type Tab = 'files' | 'tasks' | 'reviews';
 
-/** Trang /scores/:id: chi tiết bản nhạc (doc mục 2.0). */
-export default function ScoreDetail() {
+/**
+ * Trang /scores/:id: chi tiết bản nhạc (doc mục 2.0).
+ * admin = true: dùng lại cho /admin/scores/:id, nằm trong khung AdminLayout (không vẽ navbar riêng) và quay về
+ * danh sách quản lý bản nhạc thay vì thư viện của người dùng.
+ */
+export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
+  const backPath = admin ? '/admin/scores' : '/scores';
+  const backLabel = admin ? '‹ Quay lại' : '‹ Thư viện';
+  // Admin vào từ nhiều trang (quản lý, chờ duyệt, kho mẫu) nên quay về trang trước đó
+  const goBack = () => (admin && window.history.length > 1 ? navigate(-1) : navigate(backPath));
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [state, setState] = useState<LoadState>({ phase: 'loading' });
@@ -74,13 +82,19 @@ export default function ScoreDetail() {
     return () => clearInterval(t);
   }, [running]);
 
-  const navbar = (
+  const navbar = admin ? (
+    <div style={{ padding: '0 0 1rem' }}>
+      <button className="sc-btn sc-btn--sm" onClick={goBack}>
+        {backLabel}
+      </button>
+    </div>
+  ) : (
     <nav className="navbar">
       <div className="navbar-brand">Music App</div>
       <div className="navbar-nav">
         <NotificationBell />
-        <button className="sc-btn sc-btn--sm" onClick={() => navigate('/scores')}>
-          ‹ Thư viện
+        <button className="sc-btn sc-btn--sm" onClick={goBack}>
+          {backLabel}
         </button>
       </div>
     </nav>
@@ -117,8 +131,8 @@ export default function ScoreDetail() {
           <div className="sc-empty">
             <h3>{notFound ? 'Không tìm thấy bản nhạc' : 'Không tải được bản nhạc'}</h3>
             <p>{notFound ? 'Bản nhạc không tồn tại hoặc bạn không có quyền xem.' : 'Vui lòng thử lại sau.'}</p>
-            <button className="sc-btn sc-btn--primary" onClick={() => navigate('/scores')}>
-              Về thư viện
+            <button className="sc-btn sc-btn--primary" onClick={goBack}>
+              {admin ? 'Về danh sách' : 'Về thư viện'}
             </button>
           </div>
         </main>
@@ -189,7 +203,7 @@ export default function ScoreDetail() {
           scoreId={score.id}
           title={score.title}
           onClose={() => setDeleting(false)}
-          onDeleted={() => navigate('/scores', { replace: true })}
+          onDeleted={() => navigate(backPath, { replace: true })}
         />
       )}
     </div>

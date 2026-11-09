@@ -6,6 +6,8 @@ import type {
   ErrorLogEntry,
   Member,
   PageResult,
+  ScoreDetail,
+  ScoreSummary,
   SystemMetrics,
 } from '../types';
 
@@ -18,6 +20,11 @@ export const adminApi = {
   getMember: (id: string) => apiClient.get<ApiResponse<Member>>(`/admin/members/${id}`),
   updateMember: (id: string, data: AdminUpdateMemberRequest) =>
     apiClient.patch<ApiResponse<Member>>(`/admin/members/${id}`, data),
+  // Quản lý toàn bộ bản nhạc (xóa dùng scoreApi.remove)
+  getScores: (params?: { page?: number; size?: number; keyword?: string; visibility?: string }) =>
+    apiClient.get<ApiResponse<PageResult<ScoreSummary>>>('/admin/scores', { params: { page: 0, size: 20, ...params } }),
+  setScoreVisibility: (id: string, visibility: 'PUBLIC' | 'PRIVATE', reason?: string) =>
+    apiClient.put<ApiResponse<ScoreDetail>>(`/admin/scores/${id}/visibility`, { visibility, reason }),
   // 4.6: quản lý thể loại (tag) master data
   getTags: () => apiClient.get<ApiResponse<AdminTag[]>>('/admin/tags'),
   createTag: (name: string) => apiClient.post<ApiResponse<AdminTag>>('/admin/tags', { name }),

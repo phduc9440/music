@@ -89,6 +89,7 @@ export interface ScoreSummary {
   processingStatus: ProcessingStatus;
   sourceType?: ScoreSource | null;
   visibility: Visibility;
+  isOfficial?: boolean | null;
   measureCount?: number | null;
   tags?: Tag[];
   /** Chỉ có trong danh sách "Được chia sẻ với tôi": email chủ sở hữu. */
@@ -131,7 +132,6 @@ export interface AiTaskInfo {
 export interface ScoreDetail extends ScoreSummary {
   studyNotes?: string | null;
   rejectReason?: string | null;
-  isOfficial?: boolean | null;
   keySignature?: string | null;
   timeSignature?: string | null;
   tempoBpm?: number | null;

@@ -18,6 +18,7 @@ import AdminLayout from '../components/admin/AdminLayout';
 import AdminMembers from '../pages/admin/AdminMembers';
 import AdminOfficialScores from '../pages/admin/AdminOfficialScores';
 import AdminPendingScores from '../pages/admin/AdminPendingScores';
+import AdminScores from '../pages/admin/AdminScores';
 import AdminSystem from '../pages/admin/AdminSystem';
 import AdminTags from '../pages/admin/AdminTags';
 import OfficialScores from '../pages/scores/OfficialScores';
@@ -169,6 +170,8 @@ const AppRoutes = () => {
         }
       >
         <Route index element={<AdminMembers />} />
+        <Route path="scores" element={<AdminScores />} />
+        <Route path="scores/:id" element={<ScoreDetail admin />} />
         <Route path="pending-scores" element={<AdminPendingScores />} />
         <Route path="official-scores" element={<AdminOfficialScores />} />
         <Route path="tags" element={<AdminTags />} />

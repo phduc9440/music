@@ -81,7 +81,7 @@ export default function AdminPendingScores() {
               {result?.content.map((s) => (
                 <tr key={s.id}>
                   <td>
-                    <Link to={`/scores/${s.id}`} title="Mở để xem trước khi duyệt">
+                    <Link to={`/admin/scores/${s.id}`} title="Mở để xem trước khi duyệt">
                       {s.title}
                     </Link>
                   </td>

@@ -14,6 +14,7 @@ export interface AdminOutletContext {
 
 const MENU = [
   { to: '/admin', label: 'Thành viên', icon: '👥', end: true },
+  { to: '/admin/scores', label: 'Quản lý bản nhạc', icon: '🎵', end: false },
   { to: '/admin/pending-scores', label: 'Bản nhạc chờ duyệt', icon: '🎼', end: false },
   { to: '/admin/official-scores', label: 'Kho score mẫu', icon: '📚', end: false },
   { to: '/admin/tags', label: 'Thể loại', icon: '🏷️', end: false },
