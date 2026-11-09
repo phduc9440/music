@@ -32,13 +32,16 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 import com.ptit.music_be.dto.enums.AiTaskType;
 import com.ptit.music_be.dto.enums.FileType;
+import com.ptit.music_be.dto.response.ScoreContent;
 import com.ptit.music_be.dto.response.ScoreSaveResponse;
 import com.ptit.music_be.dto.response.ScoreVersionConflict;
+import com.ptit.music_be.dto.response.ScoreVersionResponse;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreFile;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.repository.AiTaskRepository;
+import com.ptit.music_be.repository.MemberRepository;
 import com.ptit.music_be.repository.ScoreFileRepository;
 import com.ptit.music_be.repository.ScoreRepository;
 import com.ptit.music_be.service.FileStorageService;
@@ -70,6 +73,9 @@ class ScoreEditServiceImplTest {
     @Mock
     FileStorageService fileStorageService;
 
+    @Mock
+    MemberRepository memberRepository;
+
     @TempDir
     Path storage;
 
@@ -84,9 +90,11 @@ class ScoreEditServiceImplTest {
                 aiTaskRepository,
                 scoreFileService,
                 fileStorageService,
+                memberRepository,
                 1024 * 1024);
         score = Score.builder().id(SCORE_ID).currentVersion(3).build();
         lenient().when(scoreRepository.findByIdForUpdate(SCORE_ID)).thenReturn(Optional.of(score));
+        lenient().when(scoreRepository.findById(SCORE_ID)).thenReturn(Optional.of(score));
         lenient()
                 .when(fileStorageService.resolve(any()))
                 .thenAnswer(invocation -> storage.resolve((String) invocation.getArgument(0)));
@@ -355,5 +363,116 @@ class ScoreEditServiceImplTest {
         for (TransactionSynchronization sync : TransactionSynchronizationManager.getSynchronizations()) {
             sync.afterCompletion(status);
         }
+    }
+
+    // ---------------------------------------------------------------- lịch sử phiên bản
+
+    @Test
+    void listVersionsReturnsNewestFirstWithSourceAndCurrent() {
+        score.setSourceType("OMR");
+        List<ScoreFile> files = xmlVersions(5);
+        files.get(3).setMeta("{\"savedBy\":\"a@mail.com\",\"savedByName\":\"An\",\"restoredFrom\":2}");
+        files.get(4).setMeta("{\"savedBy\":\"a@mail.com\",\"savedByName\":\"An\",\"measureCount\":12}");
+        when(scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(SCORE_ID, FileType.MUSICXML))
+                .thenReturn(files);
+
+        List<ScoreVersionResponse> versions = service.listVersions(SCORE_ID);
+
+        assertThat(versions).extracting(ScoreVersionResponse::getVersion).containsExactly(5, 4, 3, 2, 1);
+        assertThat(versions)
+                .extracting(ScoreVersionResponse::getIsCurrent)
+                .containsExactly(true, false, false, false, false);
+        assertThat(versions.get(0).getSource()).isEqualTo("EDITOR");
+        assertThat(versions.get(0).getSavedByName()).isEqualTo("An");
+        assertThat(versions.get(0).getMeasureCount()).isEqualTo(12);
+        assertThat(versions.get(1).getSource()).isEqualTo("RESTORE");
+        assertThat(versions.get(1).getRestoredFrom()).isEqualTo(2);
+        assertThat(versions.get(4).getSource()).isEqualTo("OMR");
+        assertThat(versions.get(4).getSavedByName()).isNull();
+    }
+
+    @Test
+    void listVersionsKeepsOnlyTwentyNewest() {
+        givenXmlVersions(25);
+
+        List<ScoreVersionResponse> versions = service.listVersions(SCORE_ID);
+
+        assertThat(versions).hasSize(20);
+        assertThat(versions.get(0).getVersion()).isEqualTo(25);
+        assertThat(versions.get(19).getVersion()).isEqualTo(6);
+    }
+
+    @Test
+    void getVersionContentReturnsOldBytes() throws Exception {
+        givenXmlVersions(5);
+        writeVersionFile(2, VALID_XML);
+
+        ScoreContent content = service.getVersionContent(SCORE_ID, 2);
+
+        assertThat(content.version()).isEqualTo(2);
+        assertThat(content.bytes()).isEqualTo(VALID_XML);
+    }
+
+    @Test
+    void getVersionContentOfMissingVersionIs2801() {
+        givenXmlVersions(5);
+
+        assertThat(catchError(() -> service.getVersionContent(SCORE_ID, 9)).getErrorCode())
+                .isEqualTo(ErrorCode.SCORE_VERSION_NOT_EXISTED);
+    }
+
+    @Test
+    void getVersionContentWhenFileIsGoneIs2002() {
+        givenXmlVersions(5);
+
+        assertThat(catchError(() -> service.getVersionContent(SCORE_ID, 2)).getErrorCode())
+                .isEqualTo(ErrorCode.FILE_NOT_EXISTED);
+    }
+
+    @Test
+    void restoreSavesOldContentAsNextVersion() throws Exception {
+        score.setCurrentVersion(5);
+        givenXmlVersions(5);
+        writeVersionFile(2, VALID_XML);
+
+        ScoreSaveResponse response = service.restoreVersion(SCORE_ID, 2, "\"v5\"");
+
+        assertThat(response.getVersion()).isEqualTo(6);
+        assertThat(score.getCurrentVersion()).isEqualTo(6);
+        assertThat(Files.readAllBytes(storage.resolve("scores/score-1/musicxml/v6.musicxml")))
+                .isEqualTo(VALID_XML);
+        ArgumentCaptor<ScoreFile> created = ArgumentCaptor.forClass(ScoreFile.class);
+        verify(scoreFileRepository).save(created.capture());
+        assertThat(created.getValue().getVersion()).isEqualTo(6);
+        assertThat(created.getValue().getMeta()).contains("\"restoredFrom\":2").contains("owner@mail.com");
+    }
+
+    @Test
+    void restoreWithStaleIfMatchIsConflict() throws Exception {
+        score.setCurrentVersion(5);
+        givenXmlVersions(5);
+        writeVersionFile(2, VALID_XML);
+
+        AppException error = catchError(() -> service.restoreVersion(SCORE_ID, 2, "\"v4\""));
+
+        assertThat(error.getErrorCode()).isEqualTo(ErrorCode.SCORE_VERSION_CONFLICT);
+        verify(scoreFileRepository, never()).save(any());
+    }
+
+    @Test
+    void restoreOfDeletedVersionIs2801() {
+        score.setCurrentVersion(5);
+        givenXmlVersions(5);
+
+        assertThat(catchError(() -> service.restoreVersion(SCORE_ID, 9, "\"v5\""))
+                        .getErrorCode())
+                .isEqualTo(ErrorCode.SCORE_VERSION_NOT_EXISTED);
+        verify(scoreFileRepository, never()).save(any());
+    }
+
+    private void writeVersionFile(int version, byte[] content) throws Exception {
+        Path file = storage.resolve("scores/score-1/musicxml/v%d.musicxml".formatted(version));
+        Files.createDirectories(file.getParent());
+        Files.write(file, content);
     }
 }

@@ -1,6 +1,10 @@
 package com.ptit.music_be.service;
 
+import java.util.List;
+
+import com.ptit.music_be.dto.response.ScoreContent;
 import com.ptit.music_be.dto.response.ScoreSaveResponse;
+import com.ptit.music_be.dto.response.ScoreVersionResponse;
 
 /** Lưu chỉnh sửa của Editor: ghi MusicXML phiên bản mới cho bản nhạc (đặc tả mục 3.6). */
 public interface ScoreEditService {
@@ -24,4 +28,24 @@ public interface ScoreEditService {
      * @return version mới và metadata đã cập nhật
      */
     ScoreSaveResponse saveMusicXml(String scoreId, byte[] body, String contentType, String ifMatch, boolean force);
+
+    /**
+     * Lịch sử các version MusicXML còn giữ (tối đa 20), mới nhất trước. Cần quyền xem bản nhạc. Lỗi:
+     * SCORE_NOT_EXISTED (2001), UNAUTHORIZED (1002).
+     */
+    List<ScoreVersionResponse> listVersions(String scoreId);
+
+    /**
+     * Nội dung MusicXML của một version cũ (để xem trước). Cần quyền xem. Lỗi: SCORE_NOT_EXISTED (2001),
+     * UNAUTHORIZED (1002), SCORE_VERSION_NOT_EXISTED (2801) nếu version không còn, FILE_NOT_EXISTED (2002) nếu file
+     * đã mất trên đĩa.
+     */
+    ScoreContent getVersionContent(String scoreId, int version);
+
+    /**
+     * Khôi phục một version cũ: lưu nội dung của nó thành version mới ngay sau version hiện hành (không ghi đè lịch
+     * sử), qua đúng luồng của {@link #saveMusicXml}. Cần quyền sửa. Ngoài các lỗi của saveMusicXml còn có
+     * SCORE_VERSION_NOT_EXISTED (2801) và SCORE_VERSION_CONFLICT (2014) khi If-Match khác version hiện hành.
+     */
+    ScoreSaveResponse restoreVersion(String scoreId, int version, String ifMatch);
 }

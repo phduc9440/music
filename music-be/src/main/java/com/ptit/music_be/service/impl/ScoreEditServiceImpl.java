@@ -24,17 +24,22 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ptit.music_be.dto.enums.AiTaskStatus;
 import com.ptit.music_be.dto.enums.AiTaskType;
 import com.ptit.music_be.dto.enums.FileType;
+import com.ptit.music_be.dto.response.ScoreContent;
 import com.ptit.music_be.dto.response.ScoreSaveResponse;
 import com.ptit.music_be.dto.response.ScoreVersionConflict;
+import com.ptit.music_be.dto.response.ScoreVersionResponse;
+import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreFile;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.repository.AiTaskRepository;
+import com.ptit.music_be.repository.MemberRepository;
 import com.ptit.music_be.repository.ScoreFileRepository;
 import com.ptit.music_be.repository.ScoreRepository;
 import com.ptit.music_be.service.FileStorageService;
@@ -71,6 +76,7 @@ public class ScoreEditServiceImpl implements ScoreEditService {
     private final AiTaskRepository aiTaskRepository;
     private final ScoreFileService scoreFileService;
     private final FileStorageService fileStorageService;
+    private final MemberRepository memberRepository;
     private final long maxMusicXmlBytes;
 
     public ScoreEditServiceImpl(
@@ -79,12 +85,14 @@ public class ScoreEditServiceImpl implements ScoreEditService {
             AiTaskRepository aiTaskRepository,
             ScoreFileService scoreFileService,
             FileStorageService fileStorageService,
+            MemberRepository memberRepository,
             @Value("${app.editor.max-musicxml-bytes:5242880}") long maxMusicXmlBytes) {
         this.scoreRepository = scoreRepository;
         this.scoreFileRepository = scoreFileRepository;
         this.aiTaskRepository = aiTaskRepository;
         this.scoreFileService = scoreFileService;
         this.fileStorageService = fileStorageService;
+        this.memberRepository = memberRepository;
         this.maxMusicXmlBytes = maxMusicXmlBytes;
     }
 
@@ -92,6 +100,12 @@ public class ScoreEditServiceImpl implements ScoreEditService {
     @Transactional
     public ScoreSaveResponse saveMusicXml(
             String scoreId, byte[] body, String contentType, String ifMatch, boolean force) {
+        return save(scoreId, body, contentType, ifMatch, force, null);
+    }
+
+    /** Luồng lưu chung cho lưu từ Editor và khôi phục; {@code restoredFrom} khác null là khôi phục từ version đó. */
+    private ScoreSaveResponse save(
+            String scoreId, byte[] body, String contentType, String ifMatch, boolean force, Integer restoredFrom) {
         // Khóa dòng ngay từ đầu để hai lần lưu cùng lúc được xếp hàng và không cùng ra một version
         Score score = scoreRepository
                 .findByIdForUpdate(scoreId)
@@ -148,7 +162,7 @@ public class ScoreEditServiceImpl implements ScoreEditService {
                 .sizeBytes((long) body.length)
                 .version(newVersion)
                 .isCurrent(true)
-                .meta(buildMeta(summary))
+                .meta(buildMeta(summary, restoredFrom))
                 .build();
         if (!changed.isEmpty()) {
             scoreFileRepository.saveAll(changed);
@@ -295,14 +309,119 @@ public class ScoreEditServiceImpl implements ScoreEditService {
         }
     }
 
-    private String buildMeta(MusicXmlSummary summary) {
+    private String buildMeta(MusicXmlSummary summary, Integer restoredFrom) {
+        String email = SecurityUtils.getCurrentEmail();
         Map<String, Object> meta = new LinkedHashMap<>();
-        meta.put("savedBy", SecurityUtils.getCurrentEmail());
+        meta.put("savedBy", email);
+        memberRepository.findByEmail(email).map(Member::getFullName).ifPresent(name -> meta.put("savedByName", name));
         meta.put("measureCount", summary.measureCount());
+        if (restoredFrom != null) {
+            meta.put("restoredFrom", restoredFrom);
+        }
         try {
             return JSON.writeValueAsString(meta);
         } catch (JsonProcessingException e) {
             return "{}";
+        }
+    }
+
+    // ---------------------------------------------------------------- lịch sử phiên bản
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ScoreVersionResponse> listVersions(String scoreId) {
+        Score score =
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+        scoreFileService.checkCanView(score);
+
+        List<ScoreFile> xmlFiles =
+                scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(scoreId, FileType.MUSICXML);
+        int current = xmlFiles.stream()
+                .filter(f -> !Boolean.FALSE.equals(f.getIsCurrent()))
+                .mapToInt(this::versionOf)
+                .max()
+                .orElse(0);
+        return xmlFiles.stream()
+                .sorted(Comparator.comparingInt(this::versionOf).reversed())
+                .limit(MAX_KEPT_VERSIONS)
+                .map(file -> toVersionResponse(file, score, versionOf(file) == current))
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ScoreContent getVersionContent(String scoreId, int version) {
+        Score score =
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+        scoreFileService.checkCanView(score);
+        return new ScoreContent(readVersion(scoreId, version), version);
+    }
+
+    @Override
+    @Transactional
+    public ScoreSaveResponse restoreVersion(String scoreId, int version, String ifMatch) {
+        // Khóa dòng trước khi đọc để version được khôi phục không bị dọn mất giữa chừng bởi một lần lưu khác
+        Score score = scoreRepository
+                .findByIdForUpdate(scoreId)
+                .orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+        scoreFileService.checkCanEdit(score);
+        byte[] body = readVersion(scoreId, version);
+        return save(scoreId, body, MUSICXML_CONTENT_TYPE, ifMatch, false, version);
+    }
+
+    /** Đọc nội dung một version MusicXML: 2801 nếu không có dòng, 2002 nếu file đã mất trên đĩa. */
+    private byte[] readVersion(String scoreId, int version) {
+        ScoreFile file =
+                scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(scoreId, FileType.MUSICXML).stream()
+                        .filter(f -> versionOf(f) == version)
+                        .findFirst()
+                        .orElseThrow(() -> new AppException(ErrorCode.SCORE_VERSION_NOT_EXISTED));
+        try {
+            return Files.readAllBytes(fileStorageService.resolve(file.getStoragePath()));
+        } catch (IOException e) {
+            log.warn("Không đọc được MusicXML version {} của {}: {}", version, scoreId, e.getMessage());
+            throw new AppException(ErrorCode.FILE_NOT_EXISTED);
+        }
+    }
+
+    private ScoreVersionResponse toVersionResponse(ScoreFile file, Score score, boolean isCurrent) {
+        JsonNode meta = parseMeta(file.getMeta());
+        Integer restoredFrom =
+                meta.hasNonNull("restoredFrom") ? meta.get("restoredFrom").asInt() : null;
+        String source;
+        if (restoredFrom != null) {
+            source = "RESTORE";
+        } else if (meta.has("savedBy")) {
+            source = "EDITOR";
+        } else if ("OMR".equals(score.getSourceType()) || "IMPORT".equals(score.getSourceType())) {
+            source = score.getSourceType();
+        } else {
+            source = "EDITOR";
+        }
+        return ScoreVersionResponse.builder()
+                .version(versionOf(file))
+                .createdAt(file.getCreatedAt())
+                .savedByName(
+                        meta.hasNonNull("savedByName") ? meta.get("savedByName").asText() : null)
+                .measureCount(
+                        meta.hasNonNull("measureCount")
+                                ? meta.get("measureCount").asInt()
+                                : null)
+                .sizeBytes(file.getSizeBytes())
+                .isCurrent(isCurrent)
+                .source(source)
+                .restoredFrom(restoredFrom)
+                .build();
+    }
+
+    private static JsonNode parseMeta(String meta) {
+        if (meta == null || meta.isBlank()) {
+            return JSON.createObjectNode();
+        }
+        try {
+            return JSON.readTree(meta);
+        } catch (JsonProcessingException e) {
+            return JSON.createObjectNode();
         }
     }
 }
