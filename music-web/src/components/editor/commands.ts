@@ -52,6 +52,12 @@ export type EditFailure =
   | 'hairpinTarget'
   | 'spanTarget'
   | 'arpeggioTarget'
+  | 'glissTarget'
+  | 'graceTarget'
+  | 'noSection'
+  | 'barRepeat'
+  | 'breakFirst'
+  | 'noRepeat'
   | 'noMeasure'
   | 'lastMeasure'
   | 'voiceMain'
@@ -95,6 +101,13 @@ export const EDIT_FAILURE_MESSAGES: Record<EditFailure, string> = {
   hairpinTarget: 'Cresc./dim. cần chọn từ hai nốt trở lên (từ nốt bắt đầu đến nốt kết thúc)',
   spanTarget: 'Vùng chọn phải nằm trong cùng một khuông của cùng một phần nhạc',
   arpeggioTarget: 'Dấu rải cần một hợp âm có từ hai nốt trở lên: hãy chọn hợp âm',
+  glissTarget:
+    'Glissando cần hai nốt trong cùng một khuông và bè: chọn nốt bắt đầu (nốt liền sau là nốt kết thúc) hoặc chọn cả hai nốt',
+  graceTarget: 'Hãy chọn một nốt hoa mỹ (nốt nhỏ) để đổi giữa có gạch chéo và không gạch',
+  noSection: 'Ô nhịp này chưa có nhãn đoạn',
+  barRepeat: 'Ô này đã có dấu lặp ở cuối nên không đặt thêm vạch đôi được',
+  breakFirst: 'Ô đầu bài luôn mở đầu dòng và trang đầu: hãy chọn một ô phía sau',
+  noRepeat: 'Ô cuối của vùng chọn chưa có dấu lặp cuối (:|): hãy đặt dấu lặp cuối trước',
   noMeasure: 'Hãy chọn một nốt để biết thao tác này áp dụng cho ô nhịp nào',
   lastMeasure: 'Bản nhạc phải còn ít nhất một ô nhịp',
   voiceMain: 'Đây là bè chính của khuông nên không xóa theo cách này (hãy dùng nút Xóa nốt / Dấu lặng)',
@@ -202,7 +215,7 @@ const tieChain = (doc: ScoreDocument, info: NoteInfo, indexOf: Map<string, numbe
 };
 
 /** Tính lại dấu hóa hiển thị của mọi nốt trong một ô nhịp theo trạng thái dấu hóa của từng khuông. */
-const refreshAccidentals = (doc: ScoreDocument, partIndex: number, measureIndex: number): void => {
+export const refreshAccidentals = (doc: ScoreDocument, partIndex: number, measureIndex: number): void => {
   const fifths = doc.keyAtPart(partIndex, measureIndex);
   const byStaff = new Map<number, NoteInfo[]>();
   for (const info of doc.notes) {

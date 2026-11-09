@@ -23,6 +23,13 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
 
     List<Score> findByVisibility(String visibility);
 
+    Page<Score> findByVisibility(String visibility, Pageable pageable);
+
+    /** Các bản nhạc được người khác chia sẻ cho một thành viên (cập nhật gần nhất trước). */
+    @Query(
+            "select ms.score from MemberScore ms where ms.member.id = :memberId and ms.permission is not null order by ms.score.updatedAt desc")
+    Page<Score> findSharedWithMember(@Param("memberId") String memberId, Pageable pageable);
+
     /**
      * Khóa dòng bản nhạc (SELECT ... FOR UPDATE) để hai lần lưu MusicXML cùng lúc không cùng ra một version; chỉ gọi
      * bên trong transaction.
@@ -32,7 +39,7 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
     Optional<Score> findByIdForUpdate(@Param("id") String id);
 
     /**
-     * Danh sách bản nhạc của một thành viên, có tìm theo tên/tác giả và lọc trạng thái/nguồn.
+     * Danh sách bản nhạc của một thành viên, có tìm theo tên/tác giả và lọc trạng thái/nguồn/độ khó/thể loại.
      * Tham số rỗng ("") nghĩa là không lọc; service luôn truyền chuỗi, không truyền null.
      */
     @Query(
@@ -43,11 +50,15 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
 				or lower(coalesce(s.composer, '')) like lower(concat('%', :keyword, '%')) escape '\\')
 			and (:status = '' or s.processingStatus = :status)
 			and (:source = '' or s.sourceType = :source)
+			and (:difficulty = '' or cast(s.difficulty as string) = :difficulty)
+			and (:tagId = '' or exists (select 1 from ScoreTag st where st.score = s and st.tag.id = :tagId))
 			""")
     Page<Score> searchOfMember(
             @Param("memberId") String memberId,
             @Param("keyword") String keyword,
             @Param("status") String status,
             @Param("source") String source,
+            @Param("difficulty") String difficulty,
+            @Param("tagId") String tagId,
             Pageable pageable);
 }

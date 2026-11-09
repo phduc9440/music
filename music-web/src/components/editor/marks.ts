@@ -7,8 +7,17 @@ import { childOf, commitEdit, readPitch, touch } from './commands';
 import type { EditResult, Touched } from './commands';
 import { inRange, keyAlter, pitchToMidi, STEPS } from './pitch';
 import type { Pitch } from './pitch';
-import { NAV_LABELS, toggleEnding, toggleNavigation, toggleRepeat } from './repeats';
+import {
+  NAV_LABELS,
+  setRepeatTimes,
+  toggleBreak,
+  toggleDoubleBar,
+  toggleEnding,
+  toggleNavigation,
+  toggleRepeat,
+} from './repeats';
 import type { NavKind } from './repeats';
+import { setSectionLabel } from './sections';
 import type { NoteInfo, ScoreDocument } from './ScoreDocument';
 import { notationsOf, removeNotation } from './ties';
 
@@ -17,6 +26,7 @@ export type Articulation =
   | 'accent'
   | 'tenuto'
   | 'fermata'
+  | 'fermataBelow'
   | 'marcato'
   | 'staccatissimo'
   | 'breath'
@@ -46,6 +56,13 @@ export const DYNAMIC_VELOCITY: Partial<Record<Dynamic, number>> = {
 export type MarkOp =
   | NotationMark
   | 'arpeggio'
+  | 'arpeggioDown'
+  | 'trillSharp'
+  | 'trillFlat'
+  | 'trillNatural'
+  | 'glissando'
+  | 'slide'
+  | 'graceToggle'
   | 'pedal'
   | 'ottava8va'
   | 'ottava8vb'
@@ -58,10 +75,20 @@ export type MarkOp =
   | 'repeatEnd'
   | 'volta1'
   | 'volta2'
+  | 'volta3'
+  | `repeatTimes:${2 | 3 | 4}`
+  | 'sectionRemove'
+  | `section:${string}`
+  | 'barDouble'
+  | 'lineBreak'
+  | 'pageBreak'
   | NavKind;
 
 /** Thẻ MusicXML của từng ký hiệu trong <notations>; `group` là thẻ chứa (null = nằm trực tiếp trong <notations>). */
-const NOTATION_DEF: Record<NotationMark, { group: 'articulations' | 'ornaments' | null; tag: string }> = {
+const NOTATION_DEF: Record<
+  NotationMark,
+  { group: 'articulations' | 'ornaments' | null; tag: string; type?: 'inverted' }
+> = {
   staccato: { group: 'articulations', tag: 'staccato' },
   accent: { group: 'articulations', tag: 'accent' },
   tenuto: { group: 'articulations', tag: 'tenuto' },
@@ -70,6 +97,7 @@ const NOTATION_DEF: Record<NotationMark, { group: 'articulations' | 'ornaments' 
   breath: { group: 'articulations', tag: 'breath-mark' },
   caesura: { group: 'articulations', tag: 'caesura' },
   fermata: { group: null, tag: 'fermata' },
+  fermataBelow: { group: null, tag: 'fermata', type: 'inverted' },
   trill: { group: 'ornaments', tag: 'trill-mark' },
   mordent: { group: 'ornaments', tag: 'mordent' },
   invMordent: { group: 'ornaments', tag: 'inverted-mordent' },
@@ -81,6 +109,7 @@ export const ARTICULATION_LABELS: Record<NotationMark | 'arpeggio', string> = {
   accent: 'Accent',
   tenuto: 'Tenuto',
   fermata: 'Fermata',
+  fermataBelow: 'Fermata ngược',
   marcato: 'Marcato',
   staccatissimo: 'Staccatissimo',
   breath: 'Lấy hơi',
@@ -121,11 +150,22 @@ const membersOf = (doc: ScoreDocument, head: NoteInfo): NoteInfo[] =>
       n.entryIndex === head.entryIndex,
   );
 
+/**
+ * Thẻ `el` có đúng là ký hiệu `kind` không. Fermata thường và fermata ngược dùng chung thẻ <fermata>, phân biệt bằng
+ * `type="inverted"` (thiếu `type` hoặc `type="upright"` là fermata thường).
+ */
+const matchesMark = (el: Element, kind: NotationMark): boolean => {
+  const { tag, type } = NOTATION_DEF[kind];
+  if (el.tagName !== tag) return false;
+  if (tag !== 'fermata') return true;
+  return (el.getAttribute('type') === 'inverted') === (type === 'inverted');
+};
+
 const hasMark = (note: Element, kind: NotationMark): boolean => {
-  const { group, tag } = NOTATION_DEF[kind];
+  const { group } = NOTATION_DEF[kind];
   const notations = childOf(note, 'notations');
   const holder = notations && (group ? childOf(notations, group) : notations);
-  return !!holder && childOf(holder, tag) !== undefined;
+  return !!holder && Array.from(holder.children).some((c) => matchesMark(c, kind));
 };
 
 const addMark = (note: Element, kind: NotationMark): void => {
@@ -141,20 +181,24 @@ const addMark = (note: Element, kind: NotationMark): void => {
     }
     holder = found;
   }
-  holder.appendChild(owner.createElement(tag));
+  const mark = owner.createElement(tag);
+  const { type } = NOTATION_DEF[kind];
+  if (type) mark.setAttribute('type', type);
+  holder.appendChild(mark);
 };
 
 const removeMark = (note: Element, kind: NotationMark): void => {
   const { group, tag } = NOTATION_DEF[kind];
   if (!group) {
-    removeNotation(note, tag, () => true);
+    removeNotation(note, tag, (el) => matchesMark(el, kind));
     return;
   }
   const notations = childOf(note, 'notations');
   const holder = notations && childOf(notations, group);
   if (!notations || !holder) return;
   Array.from(holder.children)
-    .filter((c) => c.tagName === tag)
+    // Bỏ láy rền thì bỏ luôn dấu hóa của nó, tránh để lại dấu hóa không thuộc láy nào
+    .filter((c) => c.tagName === tag || (kind === 'trill' && c.tagName === 'accidental-mark'))
     .forEach((c) => c.remove());
   if (holder.children.length === 0) holder.remove();
   if (notations.children.length === 0) notations.remove();
@@ -175,37 +219,233 @@ export function toggleArticulation(doc: ScoreDocument, ids: readonly string[], k
     () => {
       for (const h of heads) {
         removeMark(h.element, kind);
-        if (!all) addMark(h.element, kind);
+        if (all) continue;
+        // Fermata thường và fermata ngược loại trừ nhau trên cùng một nốt
+        if (kind === 'fermata') removeMark(h.element, 'fermataBelow');
+        if (kind === 'fermataBelow') removeMark(h.element, 'fermata');
+        addMark(h.element, kind);
       }
     },
   );
   return { ok: true, command };
 }
 
-/** Bật/tắt dấu rải (<arpeggiate/>) trên MỌI nốt của các hợp âm đã chọn; mục chỉ có một nốt thì bỏ qua. */
-export function toggleArpeggio(doc: ScoreDocument, ids: readonly string[]): EditResult {
+/** Dấu hóa của láy rền: giá trị trong <accidental-mark> và nhãn tiếng Việt. */
+const TRILL_ACCIDENTAL = {
+  trillSharp: { value: 'sharp', label: 'thăng' },
+  trillFlat: { value: 'flat', label: 'giáng' },
+  trillNatural: { value: 'natural', label: 'bình' },
+} as const;
+type TrillAccidental = keyof typeof TRILL_ACCIDENTAL;
+
+const trillAccidentalOf = (note: Element): string | null => {
+  const notations = childOf(note, 'notations');
+  const ornaments = notations && childOf(notations, 'ornaments');
+  const mark = ornaments && childOf(ornaments, 'accidental-mark');
+  return mark?.textContent?.trim() ?? null;
+};
+
+/**
+ * Đặt dấu hóa (♯ ♭ ♮) cho nốt láy trên các nốt đã chọn: ghi `<accidental-mark>` ngay sau `<trill-mark>`, nốt chưa có láy
+ * rền thì thêm luôn. Mọi nốt đã có đúng dấu hóa này thì bỏ dấu hóa (giữ láy rền); dấu hóa khác thì được thay.
+ */
+export function setTrillAccidental(doc: ScoreDocument, ids: readonly string[], kind: TrillAccidental): EditResult {
+  const heads = selectedHeads(doc, ids);
+  if (heads.length === 0) return { ok: false, reason: 'empty' };
+  const { value, label } = TRILL_ACCIDENTAL[kind];
+  const all = heads.every((h) => hasMark(h.element, 'trill') && trillAccidentalOf(h.element) === value);
+  const touched: Touched = new Map();
+  heads.forEach((h) => touch(touched, h));
+  const command = commitEdit(
+    doc,
+    `${all ? 'Bỏ' : 'Đặt'} dấu ${label} cho láy rền`,
+    touched,
+    heads.map((h) => h.id),
+    () => {
+      for (const h of heads) {
+        if (!hasMark(h.element, 'trill')) addMark(h.element, 'trill');
+        const notations = notationsOf(h.element);
+        const ornaments = childOf(notations, 'ornaments');
+        if (!ornaments) continue;
+        Array.from(ornaments.children)
+          .filter((c) => c.tagName === 'accidental-mark')
+          .forEach((c) => c.remove());
+        if (all) continue;
+        const trill = childOf(ornaments, 'trill-mark');
+        const mark = h.element.ownerDocument.createElement('accidental-mark');
+        mark.setAttribute('placement', 'above');
+        mark.textContent = value;
+        ornaments.insertBefore(mark, trill ? trill.nextSibling : null);
+      }
+    },
+  );
+  return { ok: true, command };
+}
+
+/**
+ * Bật/tắt dấu rải (<arpeggiate/>) trên MỌI nốt của các hợp âm đã chọn; mục chỉ có một nốt thì bỏ qua.
+ * `direction`: 'up' (mặc định, từ dưới lên) hoặc 'down' (từ trên xuống, ghi `direction="down"`). Đang có dấu rải
+ * hướng khác thì đổi sang hướng mới thay vì gỡ.
+ */
+export function toggleArpeggio(
+  doc: ScoreDocument,
+  ids: readonly string[],
+  direction: 'up' | 'down' = 'up',
+): EditResult {
   const chords = selectedHeads(doc, ids)
     .map((head) => ({ head, members: membersOf(doc, head) }))
     .filter((c) => c.members.length >= 2);
   if (chords.length === 0) return { ok: false, reason: 'arpeggioTarget' };
-  const has = (el: Element) => {
+  const hasSame = (el: Element) => {
     const notations = childOf(el, 'notations');
-    return !!notations && childOf(notations, 'arpeggiate') !== undefined;
+    const mark = notations && childOf(notations, 'arpeggiate');
+    return !!mark && (mark.getAttribute('direction') === 'down') === (direction === 'down');
   };
-  const all = chords.every((c) => c.members.every((m) => has(m.element)));
+  const all = chords.every((c) => c.members.every((m) => hasSame(m.element)));
   const touched: Touched = new Map();
   chords.forEach((c) => touch(touched, c.head));
+  const name = ARTICULATION_LABELS.arpeggio.toLowerCase() + (direction === 'down' ? ' xuống' : '');
   const command = commitEdit(
     doc,
-    `${all ? 'Bỏ' : 'Thêm'} ${ARTICULATION_LABELS.arpeggio.toLowerCase()}`,
+    `${all ? 'Bỏ' : 'Thêm'} ${name}`,
     touched,
     chords.map((c) => c.head.id),
     () => {
       for (const { members } of chords) {
         for (const m of members) {
           removeNotation(m.element, 'arpeggiate', () => true);
-          if (!all) notationsOf(m.element).appendChild(m.element.ownerDocument.createElement('arpeggiate'));
+          if (all) continue;
+          const mark = m.element.ownerDocument.createElement('arpeggiate');
+          if (direction === 'down') mark.setAttribute('direction', 'down');
+          notationsOf(m.element).appendChild(mark);
         }
+      }
+    },
+  );
+  return { ok: true, command };
+}
+
+/** Hai kiểu đường nối giữa hai nốt: glissando (đường lượn, chữ "gliss.") và trượt/slide (đường thẳng). */
+const LINE_DEF = {
+  glissando: { tag: 'glissando', label: 'glissando', lineType: 'wavy' },
+  slide: { tag: 'slide', label: 'đường trượt', lineType: 'solid' },
+} as const;
+type LineKind = keyof typeof LINE_DEF;
+
+/** Thẻ `<glissando>`/`<slide>` có `type` cho trước trong <notations> của nốt. */
+const lineMark = (note: Element, tag: string, type: 'start' | 'stop'): Element | undefined => {
+  const notations = childOf(note, 'notations');
+  return notations && Array.from(notations.children).find((c) => c.tagName === tag && c.getAttribute('type') === type);
+};
+
+/**
+ * Bật/tắt glissando hoặc đường trượt: bắt đầu ở nốt đầu của vùng chọn, kết thúc ở nốt cuối của vùng chọn (từ hai nốt
+ * trở lên), hoặc ở nốt liền sau cùng khuông và bè nếu chỉ chọn một nốt. Nốt đầu đã có đường nối thì bấm cùng kiểu là
+ * gỡ cả hai đầu, bấm kiểu kia là đổi kiểu.
+ */
+export function toggleLine(doc: ScoreDocument, ids: readonly string[], kind: LineKind): EditResult {
+  const heads = selectedHeads(doc, ids);
+  if (heads.length === 0) return { ok: false, reason: 'empty' };
+  const start = heads[0];
+  const sameVoice = (n: NoteInfo) =>
+    n.partIndex === start.partIndex && n.staff === start.staff && n.voice === start.voice;
+  const def = LINE_DEF[kind];
+
+  // Đường nối đang có ở nốt đầu (kiểu nào cũng tính) và nốt kết thúc của nó
+  const current = (['glissando', 'slide'] as const)
+    .map((tag) => ({ tag, mark: lineMark(start.element, tag, 'start') }))
+    .find((x) => x.mark !== undefined);
+  const currentNumber = current?.mark?.getAttribute('number') ?? '1';
+  const startAt = doc.notes.indexOf(start);
+  const oldEnd = current
+    ? doc.notes
+        .slice(startAt + 1)
+        .find(
+          (n) =>
+            sameVoice(n) &&
+            (lineMark(n.element, current.tag, 'stop')?.getAttribute('number') ?? '1') === currentNumber &&
+            lineMark(n.element, current.tag, 'stop') !== undefined,
+        )
+    : undefined;
+
+  let end = oldEnd;
+  if (!end) {
+    if (heads.length >= 2) {
+      const last = heads[heads.length - 1];
+      if (!sameVoice(last)) return { ok: false, reason: 'glissTarget' };
+      end = last;
+    } else {
+      const line = doc.notes.filter((n) => sameVoice(n) && n.chordIndex === 0 && !n.isRest && !n.isGrace);
+      end = line[line.indexOf(start) + 1];
+    }
+  }
+  const removeOnly = current?.tag === kind;
+  if (!removeOnly && (!end || end === start)) return { ok: false, reason: 'glissTarget' };
+
+  // Số hiệu `number` chưa dùng trong đoạn từ nốt đầu tới nốt cuối
+  const used = new Set<string>();
+  if (end && !removeOnly) {
+    const part = doc.getMeasures(start.partIndex);
+    for (let m = start.measureIndex; m <= end.measureIndex; m++) {
+      part[m]?.querySelectorAll('notations > glissando, notations > slide').forEach((el) => {
+        if (el !== current?.mark) used.add(el.getAttribute('number') ?? '1');
+      });
+    }
+  }
+  let number = 1;
+  while (used.has(String(number))) number += 1;
+
+  const touched: Touched = new Map();
+  touch(touched, start);
+  if (end) touch(touched, end);
+  const label = removeOnly ? `Bỏ ${def.label}` : current ? `Đổi sang ${def.label}` : `Thêm ${def.label}`;
+  const command = commitEdit(doc, label, touched, end ? [start.id, end.id] : [start.id], () => {
+    if (current) {
+      removeNotation(start.element, current.tag, (el) => el.getAttribute('type') === 'start');
+      if (oldEnd) {
+        removeNotation(
+          oldEnd.element,
+          current.tag,
+          (el) => el.getAttribute('type') === 'stop' && (el.getAttribute('number') ?? '1') === currentNumber,
+        );
+      }
+    }
+    if (removeOnly || !end) return;
+    const make = (note: Element, type: 'start' | 'stop'): void => {
+      const el = note.ownerDocument.createElement(def.tag);
+      el.setAttribute('type', type);
+      el.setAttribute('number', String(number));
+      el.setAttribute('line-type', def.lineType);
+      if (kind === 'glissando' && type === 'start') el.textContent = 'gliss.';
+      notationsOf(note).appendChild(el);
+    };
+    make(start.element, 'start');
+    make(end.element, 'stop');
+  });
+  return { ok: true, command };
+}
+
+/** Đổi nốt hoa mỹ đang chọn giữa có gạch chéo (acciaccatura) và không gạch (appoggiatura). */
+export function toggleGraceSlash(doc: ScoreDocument, ids: readonly string[]): EditResult {
+  const graces = ids
+    .map((id) => doc.getInfo(id))
+    .filter((n): n is NoteInfo => n !== undefined && n.isGrace && n.chordIndex === 0);
+  if (graces.length === 0) return { ok: false, reason: 'graceTarget' };
+  const slashed = (g: NoteInfo) => childOf(g.element, 'grace')?.getAttribute('slash') === 'yes';
+  const all = graces.every(slashed);
+  const touched: Touched = new Map();
+  graces.forEach((g) => touch(touched, g));
+  const command = commitEdit(
+    doc,
+    all ? 'Bỏ gạch chéo nốt hoa mỹ' : 'Thêm gạch chéo nốt hoa mỹ',
+    touched,
+    graces.map((g) => g.id),
+    () => {
+      for (const g of graces) {
+        const mark = childOf(g.element, 'grace');
+        if (!mark) continue;
+        if (all) mark.removeAttribute('slash');
+        else mark.setAttribute('slash', 'yes');
       }
     },
   );
@@ -482,7 +722,11 @@ const measureRange = (doc: ScoreDocument, ids: readonly string[]): { from: numbe
 /** Điều phối một thao tác ký hiệu lên vùng chọn. */
 export function applyMark(doc: ScoreDocument, ids: readonly string[], op: MarkOp): EditResult {
   if (isNotationMark(op)) return toggleArticulation(doc, ids, op);
+  if (op === 'trillSharp' || op === 'trillFlat' || op === 'trillNatural') return setTrillAccidental(doc, ids, op);
   if (op === 'arpeggio') return toggleArpeggio(doc, ids);
+  if (op === 'arpeggioDown') return toggleArpeggio(doc, ids, 'down');
+  if (op === 'glissando' || op === 'slide') return toggleLine(doc, ids, op);
+  if (op === 'graceToggle') return toggleGraceSlash(doc, ids);
   if (op === 'pedal') return toggleSpan(doc, ids, PEDAL);
   if (op === 'ottava8va' || op === 'ottava8vb') return toggleSpan(doc, ids, OTTAVA[op]);
   if (op === 'graceSlash') return addGrace(doc, ids, true);
@@ -496,6 +740,13 @@ export function applyMark(doc: ScoreDocument, ids: readonly string[], op: MarkOp
   if (op === 'repeatEnd') return toggleRepeat(doc, range.to, 'end');
   if (op === 'volta1') return toggleEnding(doc, range.from, range.to, '1', true);
   if (op === 'volta2') return toggleEnding(doc, range.from, range.to, '2', false);
+  if (op === 'volta3') return toggleEnding(doc, range.from, range.to, '3', false);
+  if (op.startsWith('repeatTimes:')) return setRepeatTimes(doc, range.to, Number(op.slice('repeatTimes:'.length)));
+  if (op === 'sectionRemove') return setSectionLabel(doc, range.from, null);
+  if (op.startsWith('section:')) return setSectionLabel(doc, range.from, op.slice('section:'.length));
+  if (op === 'barDouble') return toggleDoubleBar(doc, range.to);
+  if (op === 'lineBreak') return toggleBreak(doc, range.from, 'system');
+  if (op === 'pageBreak') return toggleBreak(doc, range.from, 'page');
   // Segno/Coda ở ô đầu của vùng chọn; D.C./D.S./Fine/To Coda ở ô cuối
   const kind = op as NavKind;
   return toggleNavigation(doc, kind === 'segno' || kind === 'coda' ? range.from : range.to, kind);

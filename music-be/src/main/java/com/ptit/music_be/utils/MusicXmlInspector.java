@@ -96,11 +96,7 @@ public final class MusicXmlInspector {
             }
         }
         return new MusicXmlSummary(
-                measures.size(),
-                key,
-                time,
-                tempo != null && tempo > 0 ? tempo : DEFAULT_TEMPO_BPM,
-                countStaves(parts));
+                measures.size(), key, time, tempo != null && tempo > 0 ? tempo : DEFAULT_TEMPO_BPM, countStaves(parts));
     }
 
     /**

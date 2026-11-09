@@ -50,4 +50,22 @@ public interface AiTaskRepository extends JpaRepository<AiTask, String> {
     /** Task đang chạy không có callback nào từ trước mốc {@code before}. */
     List<AiTask> findByTaskTypeAndStatusAndUpdatedAtBefore(
             AiTaskType taskType, AiTaskStatus status, LocalDateTime before);
+
+    // ---- Tác vụ xuất file (AUDIO_SYNTHESIS, FORMAT_CONVERSION)
+
+    /** Số tác vụ thuộc các loại cho trước của người dùng đang ở các trạng thái cho trước. */
+    long countByMemberIdAndTaskTypeInAndStatusIn(
+            String memberId, Collection<AiTaskType> taskTypes, Collection<AiTaskStatus> statuses);
+
+    /** Số tác vụ thuộc các loại cho trước của người dùng được tạo sau mốc {@code after}. */
+    long countByMemberIdAndTaskTypeInAndCreatedAtAfter(
+            String memberId, Collection<AiTaskType> taskTypes, LocalDateTime after);
+
+    /** Tác vụ đang chạy của một bản nhạc (dùng để không tạo task xuất trùng). */
+    List<AiTask> findByScoreIdAndTaskTypeInAndStatusIn(
+            String scoreId, Collection<AiTaskType> taskTypes, Collection<AiTaskStatus> statuses);
+
+    /** Tác vụ có trạng thái cho trước không cập nhật gì từ trước mốc {@code before} (job quét task xuất). */
+    List<AiTask> findByTaskTypeInAndStatusAndUpdatedAtBefore(
+            Collection<AiTaskType> taskTypes, AiTaskStatus status, LocalDateTime before);
 }

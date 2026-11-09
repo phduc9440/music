@@ -32,4 +32,16 @@ public interface ScoreFileRepository extends JpaRepository<ScoreFile, String> {
             + " and (f.sourceTaskId is null or f.sourceTaskId <> :taskId)")
     boolean existsCurrentFileFromOtherTask(
             @Param("scoreId") String scoreId, @Param("fileType") FileType fileType, @Param("taskId") String taskId);
+
+    /** File của bản nhạc thuộc các loại cho trước (danh sách file xuất). */
+    List<ScoreFile> findByScoreIdAndFileTypeIn(String scoreId, Collection<FileType> fileTypes);
+
+    /**
+     * File xuất cần dọn: không còn là bản hiện hành, hoặc đã lỗi thời (version nhỏ hơn MusicXML hiện hành của bản
+     * nhạc) và tạo trước mốc {@code cutoff}.
+     */
+    @Query("select f from ScoreFile f where f.fileType in :types and f.sourceTaskId is not null"
+            + " and (f.isCurrent = false or (f.version < f.score.currentVersion and f.createdAt < :cutoff))")
+    List<ScoreFile> findStaleExportFiles(
+            @Param("types") Collection<FileType> types, @Param("cutoff") java.time.LocalDateTime cutoff);
 }

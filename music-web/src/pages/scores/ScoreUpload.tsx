@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import NotificationBell from '../../components/NotificationBell';
 import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -159,6 +160,7 @@ export default function ScoreUpload() {
       <nav className="navbar">
         <div className="navbar-brand">Music App</div>
         <div className="navbar-nav">
+          <NotificationBell />
           <button className="sc-btn sc-btn--sm" disabled={busy} onClick={() => navigate('/scores')}>
             ‹ Thư viện
           </button>
@@ -171,6 +173,9 @@ export default function ScoreUpload() {
             <h1>Tải bản nhạc lên</h1>
             <p>Hệ thống sẽ số hóa bản nhạc thành MusicXML và MIDI</p>
           </div>
+          <button type="button" className="sc-btn" disabled={busy} onClick={() => navigate('/scores/import')}>
+            Đã có file MusicXML / MIDI?
+          </button>
         </header>
 
         <form className="sc-upload" onSubmit={handleSubmit}>

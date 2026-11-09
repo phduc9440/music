@@ -1,0 +1,5 @@
+# File người dùng tải lên khi chạy backend từ thư mục gốc
+storage/
+
+# File mẫu để test import
+test-import/

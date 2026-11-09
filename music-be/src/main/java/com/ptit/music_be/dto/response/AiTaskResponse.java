@@ -22,6 +22,7 @@ public class AiTaskResponse {
     Integer progress;
     /** Bước đang chạy (SPLIT_PDF, PREPROCESS, ...), có thể null. */
     String step;
+
     String errorMessage;
 
     @JsonRawValue

@@ -82,3 +82,20 @@ def test_kern_to_musicxml_endpoint(client, storage_root, monkeypatch):
     monkeypatch.setattr(main, "kern_file_to_musicxml_file", failing)
     response = client.post("/convert/kern-to-musicxml", json=body, headers=KEY)
     assert response.status_code == 422 and "music21" in response.json()["detail"]
+
+
+def test_prepare_endpoint_scales_tempo_and_rejects_bad_paths(client, storage_root):
+    write(storage_root, "scores/a/musicxml/v1.musicxml", normalize_musicxml(piano_grand_staff()).xml)
+    body = {"inPath": "scores/a/musicxml/v1.musicxml", "outPath": "scores/a/tmp/t1/in.musicxml", "tempoPercent": 50}
+    response = client.post("/convert/prepare", json=body, headers=KEY)
+    assert response.status_code == 200
+    assert response.json()["outPath"] == "scores/a/tmp/t1/in.musicxml"
+    assert 'tempo="48"' in (storage_root / "scores/a/tmp/t1/in.musicxml").read_text(encoding="utf-8")
+
+    assert client.post("/convert/prepare", json=body).status_code == 401
+    traversal = {**body, "outPath": "scores/a/../b/in.musicxml"}
+    assert client.post("/convert/prepare", json=traversal, headers=KEY).status_code == 422
+    other_score = {**body, "outPath": "scores/b/tmp/in.musicxml"}
+    assert client.post("/convert/prepare", json=other_score, headers=KEY).status_code == 422
+    too_fast = {**body, "tempoPercent": 500}
+    assert client.post("/convert/prepare", json=too_fast, headers=KEY).status_code == 422

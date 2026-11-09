@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
+import NotificationBell from '../../components/NotificationBell';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { LibraryEmpty, LibrarySkeleton } from '../../components/scores/LibraryStates';
 import Pagination from '../../components/scores/Pagination';
 import ScoreCard from '../../components/scores/ScoreCard';
 import ScoreFilters from '../../components/scores/ScoreFilters';
-import { scoreApi } from '../../services';
-import type { PageResult, ProcessingStatus, ScoreSort, ScoreSource, ScoreSummary } from '../../types';
+import { scoreApi, tagApi } from '../../services';
+import type { Difficulty, PageResult, ProcessingStatus, ScoreSort, ScoreSource, ScoreSummary, Tag } from '../../types';
 import { getScorePath, MAX_KEYWORD, POLL_INTERVAL_MS } from '../../utils/score';
 import '../../components/scores/scores.css';
 import './ScoreLibrary.css';
@@ -23,6 +24,9 @@ export default function ScoreLibrary() {
   const [keyword, setKeyword] = useState(''); // giá trị đã debounce, dùng để gọi API
   const [status, setStatus] = useState<ProcessingStatus | ''>('');
   const [source, setSource] = useState<ScoreSource | ''>('');
+  const [difficulty, setDifficulty] = useState<Difficulty | ''>('');
+  const [tagId, setTagId] = useState('');
+  const [allTags, setAllTags] = useState<Tag[]>([]);
   const [sort, setSort] = useState<ScoreSort>('newest');
 
   // Dữ liệu: key = bộ lọc của lần tải xong gần nhất, dùng để biết đang tải lại hay không
@@ -31,7 +35,15 @@ export default function ScoreLibrary() {
     data: null,
   });
   const [tick, setTick] = useState(0); // tăng lên để tải lại (polling)
-  const requestKey = [page, keyword, status, source, sort].join('|');
+  const requestKey = [page, keyword, status, source, difficulty, tagId, sort].join('|');
+
+  // Danh sách thể loại cho ô lọc; lỗi thì ô lọc chỉ còn "Mọi thể loại", không chặn trang
+  useEffect(() => {
+    tagApi
+      .list()
+      .then((res) => setAllTags(res.data.result))
+      .catch(() => setAllTags([]));
+  }, []);
 
   // Debounce ô tìm kiếm 400ms để không gọi API sau mỗi phím gõ
   useEffect(() => {
@@ -46,7 +58,7 @@ export default function ScoreLibrary() {
   useEffect(() => {
     let cancelled = false;
     scoreApi
-      .list({ page, size: PAGE_SIZE, keyword, status, source, sort })
+      .list({ page, size: PAGE_SIZE, keyword, status, source, difficulty, tagId, sort })
       .then((res) => {
         if (!cancelled) setLoaded({ key: requestKey, data: res.data.result });
       })
@@ -58,7 +70,7 @@ export default function ScoreLibrary() {
     return () => {
       cancelled = true;
     };
-  }, [page, keyword, status, source, sort, tick, requestKey]);
+  }, [page, keyword, status, source, difficulty, tagId, sort, tick, requestKey]);
 
   // Còn bản nhạc PENDING/PROCESSING thì cứ 5 giây tải lại một lần để thấy trạng thái mới
   const data = loaded.data;
@@ -71,7 +83,7 @@ export default function ScoreLibrary() {
 
   const isInitialLoading = loaded.data === null && loaded.key === '';
   const isRefetching = loaded.key !== requestKey;
-  const hasFilter = Boolean(keyword || status || source);
+  const hasFilter = Boolean(keyword || status || source || difficulty || tagId);
 
   // Đổi bộ lọc thì quay về trang đầu
   const changeFilter =
@@ -86,6 +98,8 @@ export default function ScoreLibrary() {
     setKeyword('');
     setStatus('');
     setSource('');
+    setDifficulty('');
+    setTagId('');
     setSort('newest');
     setPage(0);
   };
@@ -95,6 +109,15 @@ export default function ScoreLibrary() {
       <nav className="navbar">
         <div className="navbar-brand">Music App</div>
         <div className="navbar-nav">
+          <NotificationBell />
+          {localStorage.getItem('role') === 'ADMIN' && (
+            <button className="sc-btn sc-btn--sm" onClick={() => navigate('/admin')}>
+              Quản trị
+            </button>
+          )}
+          <button className="sc-btn sc-btn--sm" onClick={() => navigate('/scores/shared')}>
+            Được chia sẻ với tôi
+          </button>
           <button className="sc-btn sc-btn--sm" onClick={() => navigate('/profile')}>
             Hồ sơ
           </button>
@@ -116,10 +139,15 @@ export default function ScoreLibrary() {
           keyword={keywordInput}
           status={status}
           source={source}
+          difficulty={difficulty}
+          tags={allTags}
+          tagId={tagId}
           sort={sort}
           onKeyword={setKeywordInput}
           onStatus={changeFilter(setStatus)}
           onSource={changeFilter(setSource)}
+          onDifficulty={changeFilter(setDifficulty)}
+          onTag={changeFilter(setTagId)}
           onSort={changeFilter(setSort)}
         />
 

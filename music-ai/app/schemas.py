@@ -149,3 +149,62 @@ class MusicXmlToMidiRequest(BaseModel):
         if _score_dir(self.musicXmlPath) != _score_dir(self.outPath):
             raise ValueError("musicXmlPath và outPath phải thuộc cùng một bản nhạc")
         return self
+
+
+class PrepareRequest(BaseModel):
+    """Body của ``POST /convert/prepare`` (dịch giọng, đổi tempo, chọn tay, đặt tiêu đề trước khi xuất file)."""
+
+    inPath: str
+    outPath: str
+    transpose: int = Field(default=0, ge=-12, le=12)
+    tempoPercent: int = Field(default=100, ge=20, le=200)
+    hands: Literal["BOTH", "RIGHT", "LEFT"] = "BOTH"
+    title: Optional[str] = Field(default=None, max_length=255)
+    composer: Optional[str] = Field(default=None, max_length=255)
+    showTitle: bool = True
+    stripHarmony: bool = False
+
+    @field_validator("inPath")
+    @classmethod
+    def _in_must_exist(cls, value: str) -> str:
+        resolve_existing_file(value)
+        _score_dir(value)
+        return value.strip().replace("\\", "/")
+
+    @field_validator("outPath")
+    @classmethod
+    def _out_must_be_musicxml(cls, value: str) -> str:
+        return _safe_output_path(value, ".musicxml")
+
+    @model_validator(mode="after")
+    def _same_score(self) -> "PrepareRequest":
+        if _score_dir(self.inPath) != _score_dir(self.outPath):
+            raise ValueError("inPath và outPath phải thuộc cùng một bản nhạc")
+        return self
+
+
+class NormalizeRequest(BaseModel):
+    """Body của ``POST /convert/normalize``: chuẩn hóa MusicXML có sẵn trong storage."""
+
+    inPath: str
+    outPath: str
+    tempoBpm: Optional[int] = Field(default=None, ge=20, le=400)
+    """Tempo ghi vào ô nhịp 1; bỏ trống thì giữ tempo đã có, không có thì 100."""
+
+    @field_validator("inPath")
+    @classmethod
+    def _in_must_exist(cls, value: str) -> str:
+        resolve_existing_file(value)
+        _score_dir(value)
+        return value.strip().replace("\\", "/")
+
+    @field_validator("outPath")
+    @classmethod
+    def _out_must_be_musicxml(cls, value: str) -> str:
+        return _safe_output_path(value, ".musicxml")
+
+    @model_validator(mode="after")
+    def _same_score(self) -> "NormalizeRequest":
+        if _score_dir(self.inPath) != _score_dir(self.outPath):
+            raise ValueError("inPath và outPath phải thuộc cùng một bản nhạc")
+        return self

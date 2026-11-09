@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { INSTRUMENTS } from '../editor/instruments';
 import type { InstrumentId } from '../editor/instruments';
-import type { PartInstrument } from '../editor/usePlayback';
+import type { PartInstrument } from '../player/usePlayer';
+import { IconInstrument } from './ViewerIcons';
 
 /**
  * Menu "Nhạc cụ" cạnh nút Phát: mỗi part (khuông/đàn/giọng hát) chọn một âm sắc riêng. Mặc định theo file
@@ -11,9 +12,12 @@ import type { PartInstrument } from '../editor/usePlayback';
 export default function InstrumentMenu({
   parts,
   onChange,
+  compact,
 }: {
   parts: PartInstrument[];
   onChange: (partIndex: number, instrument: InstrumentId | null) => void;
+  /** Chỉ hiện biểu tượng (tên nằm ở chú thích khi rê chuột), dùng trên thanh trên của trình soạn nhạc. */
+  compact?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -35,13 +39,14 @@ export default function InstrumentMenu({
   return (
     <div className="sc-menu" ref={ref}>
       <button
-        className="sc-btn"
+        className={`sc-btn${compact ? ' sv-icon' : ''}`}
         aria-haspopup="dialog"
         aria-expanded={open}
+        aria-label="Nhạc cụ"
         onClick={() => setOpen(!open)}
         title="Chọn nhạc cụ khi phát"
       >
-        Nhạc cụ
+        {compact ? <IconInstrument /> : 'Nhạc cụ'}
       </button>
       {open && (
         <div className="sc-menu__list sv-instruments" role="dialog" aria-label="Chọn nhạc cụ cho từng khuông">
