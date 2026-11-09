@@ -99,6 +99,16 @@ type Gesture =
 const RENDER_DEBOUNCE_MS = 200;
 /** Gộp các thao tác sửa liên tiếp (ví dụ giữ phím ↑) thành một lần vẽ (ms). */
 const EDIT_REDRAW_MS = 150;
+
+/**
+ * OSMD mặc định bỏ qua chỗ xuống dòng / sang trang ghi trong XML (`<print new-system|new-page="yes">`) và tự chia dòng.
+ * Chỉ bật khi bản nhạc có ghi ngắt (do người dùng đặt trong trình soạn, hoặc file gốc có sẵn); bản không có thì giữ
+ * cách chia dòng tự động như cũ.
+ */
+const breakOptions = (xml: string): { newSystemFromXML: boolean; newPageFromXML: boolean } => {
+  const on = /<print\b[^>]*\bnew-(?:system|page)="yes"/.test(xml);
+  return { newSystemFromXML: on, newPageFromXML: on };
+};
 const EMPTY_SET: ReadonlySet<string> = new Set();
 const EMPTY_NUMBERS: ReadonlySet<number> = new Set();
 
@@ -461,7 +471,9 @@ export default function ScoreCanvas({
         osmd.TransposeCalculator = new TransposeCalculator(); // cần có thì `Sheet.Transpose` mới có tác dụng
         const source = latest.current.doc;
         loadedRevision.current = latest.current.revision;
-        await osmd.load(source ? source.serialize() : xml);
+        const text = source ? source.serialize() : xml;
+        osmd.setOptions(breakOptions(text));
+        await osmd.load(text);
         if (cancelled) return;
         osmdRef.current = osmd;
         setLoadId((n) => n + 1);
@@ -546,7 +558,9 @@ export default function ScoreCanvas({
       const top = scroller.scrollTop;
       const left = scroller.scrollLeft;
       try {
-        await osmd.load(doc.serialize());
+        const text = doc.serialize();
+        osmd.setOptions(breakOptions(text));
+        await osmd.load(text);
         if (cancelled) return;
         applyHeaderStyle(osmd, readHeader(doc));
         syncTranspose(osmd, latest.current.transpose);

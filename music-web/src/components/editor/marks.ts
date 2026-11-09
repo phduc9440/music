@@ -7,8 +7,17 @@ import { childOf, commitEdit, readPitch, touch } from './commands';
 import type { EditResult, Touched } from './commands';
 import { inRange, keyAlter, pitchToMidi, STEPS } from './pitch';
 import type { Pitch } from './pitch';
-import { NAV_LABELS, toggleEnding, toggleNavigation, toggleRepeat } from './repeats';
+import {
+  NAV_LABELS,
+  setRepeatTimes,
+  toggleBreak,
+  toggleDoubleBar,
+  toggleEnding,
+  toggleNavigation,
+  toggleRepeat,
+} from './repeats';
 import type { NavKind } from './repeats';
+import { setSectionLabel } from './sections';
 import type { NoteInfo, ScoreDocument } from './ScoreDocument';
 import { notationsOf, removeNotation } from './ties';
 
@@ -62,6 +71,13 @@ export type MarkOp =
   | 'repeatEnd'
   | 'volta1'
   | 'volta2'
+  | 'volta3'
+  | `repeatTimes:${2 | 3 | 4}`
+  | 'sectionRemove'
+  | `section:${string}`
+  | 'barDouble'
+  | 'lineBreak'
+  | 'pageBreak'
   | NavKind;
 
 /** Thẻ MusicXML của từng ký hiệu trong <notations>; `group` là thẻ chứa (null = nằm trực tiếp trong <notations>). */
@@ -643,6 +659,13 @@ export function applyMark(doc: ScoreDocument, ids: readonly string[], op: MarkOp
   if (op === 'repeatEnd') return toggleRepeat(doc, range.to, 'end');
   if (op === 'volta1') return toggleEnding(doc, range.from, range.to, '1', true);
   if (op === 'volta2') return toggleEnding(doc, range.from, range.to, '2', false);
+  if (op === 'volta3') return toggleEnding(doc, range.from, range.to, '3', false);
+  if (op.startsWith('repeatTimes:')) return setRepeatTimes(doc, range.to, Number(op.slice('repeatTimes:'.length)));
+  if (op === 'sectionRemove') return setSectionLabel(doc, range.from, null);
+  if (op.startsWith('section:')) return setSectionLabel(doc, range.from, op.slice('section:'.length));
+  if (op === 'barDouble') return toggleDoubleBar(doc, range.to);
+  if (op === 'lineBreak') return toggleBreak(doc, range.from, 'system');
+  if (op === 'pageBreak') return toggleBreak(doc, range.from, 'page');
   // Segno/Coda ở ô đầu của vùng chọn; D.C./D.S./Fine/To Coda ở ô cuối
   const kind = op as NavKind;
   return toggleNavigation(doc, kind === 'segno' || kind === 'coda' ? range.from : range.to, kind);

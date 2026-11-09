@@ -54,6 +54,10 @@ export type EditFailure =
   | 'arpeggioTarget'
   | 'glissTarget'
   | 'graceTarget'
+  | 'noSection'
+  | 'barRepeat'
+  | 'breakFirst'
+  | 'noRepeat'
   | 'noMeasure'
   | 'lastMeasure'
   | 'voiceMain'
@@ -100,6 +104,10 @@ export const EDIT_FAILURE_MESSAGES: Record<EditFailure, string> = {
   glissTarget:
     'Glissando cần hai nốt trong cùng một khuông và bè: chọn nốt bắt đầu (nốt liền sau là nốt kết thúc) hoặc chọn cả hai nốt',
   graceTarget: 'Hãy chọn một nốt hoa mỹ (nốt nhỏ) để đổi giữa có gạch chéo và không gạch',
+  noSection: 'Ô nhịp này chưa có nhãn đoạn',
+  barRepeat: 'Ô này đã có dấu lặp ở cuối nên không đặt thêm vạch đôi được',
+  breakFirst: 'Ô đầu bài luôn mở đầu dòng và trang đầu: hãy chọn một ô phía sau',
+  noRepeat: 'Ô cuối của vùng chọn chưa có dấu lặp cuối (:|): hãy đặt dấu lặp cuối trước',
   noMeasure: 'Hãy chọn một nốt để biết thao tác này áp dụng cho ô nhịp nào',
   lastMeasure: 'Bản nhạc phải còn ít nhất một ô nhịp',
   voiceMain: 'Đây là bè chính của khuông nên không xóa theo cách này (hãy dùng nút Xóa nốt / Dấu lặng)',

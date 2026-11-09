@@ -224,6 +224,26 @@ const REPEAT_TOOLS: { op: MarkOp; label: string; title: string }[] = [
     label: 'Nhà 2',
     title: 'Nhà 2 (2.) trải qua các ô của vùng chọn: dùng khi lần hát sau (lời 2) khác đoạn cuối',
   },
+  {
+    op: 'volta3',
+    label: 'Nhà 3',
+    title: 'Nhà 3 (3.) trải qua các ô của vùng chọn, để hở: dùng khi có lần chơi thứ ba',
+  },
+  {
+    op: 'repeatTimes:2',
+    label: 'Lặp ×2',
+    title: 'Chơi đoạn lặp 2 lần (mặc định). Chọn ô có dấu lặp cuối :|',
+  },
+  {
+    op: 'repeatTimes:3',
+    label: 'Lặp ×3',
+    title: 'Chơi đoạn lặp 3 lần: đặt ở dấu lặp cuối của ô cuối vùng chọn (cần có :| trước)',
+  },
+  {
+    op: 'repeatTimes:4',
+    label: 'Lặp ×4',
+    title: 'Chơi đoạn lặp 4 lần: đặt ở dấu lặp cuối của ô cuối vùng chọn (cần có :| trước)',
+  },
   { op: 'segno', label: 'Segno', title: 'Dấu Segno ở ô đầu của vùng chọn' },
   { op: 'coda', label: 'Coda', title: 'Dấu Coda ở ô đầu của vùng chọn' },
   { op: 'dc', label: 'D.C.', title: 'D.C.: quay lại từ đầu (ở cuối ô cuối của vùng chọn)' },
@@ -242,9 +262,52 @@ const DURATION_TOOLS: { type: DurationType; icon: ReactNode; label: string; key:
   { type: '64th', icon: <ToolSixtyFourth />, label: 'Móc tứ', key: '7' },
 ];
 
+/** Nhãn đoạn đặt sẵn (kèm tên tiếng Anh để ô tìm kiếm gõ kiểu nào cũng ra). */
+const SECTION_PRESETS: { name: string; en: string }[] = [
+  { name: 'Intro', en: 'intro mở đầu' },
+  { name: 'Phiên khúc 1', en: 'verse 1' },
+  { name: 'Phiên khúc 2', en: 'verse 2' },
+  { name: 'Điệp khúc', en: 'chorus' },
+  { name: 'Cầu', en: 'bridge' },
+  { name: 'Kết', en: 'outro ending kết thúc' },
+];
+
+const SECTION_TOOLS: { op: MarkOp; label: string; title: string }[] = [
+  ...SECTION_PRESETS.map(({ name, en }) => ({
+    op: `section:${name}` as MarkOp,
+    label: name,
+    title: `Nhãn đoạn "${name}" (${en}) ở đầu ô đang chọn: bấm lại để bỏ, nhãn khác sẽ thay nhãn cũ`,
+  })),
+  { op: 'sectionRemove', label: 'Bỏ nhãn', title: 'Bỏ nhãn đoạn ở ô đang chọn' },
+];
+
+const BREAK_TOOLS: { op: MarkOp; label: string; title: string }[] = [
+  {
+    op: 'lineBreak',
+    label: 'Xuống dòng',
+    title: 'Bắt đầu dòng mới tại ô đang chọn (bấm lại để bỏ); chỉ có tác dụng ở chế độ xem theo trang',
+  },
+  {
+    op: 'pageBreak',
+    label: 'Sang trang',
+    title: 'Bắt đầu trang mới tại ô đang chọn (bấm lại để bỏ); chỉ có tác dụng ở chế độ xem theo trang',
+  },
+  {
+    op: 'barDouble',
+    label: 'Vạch đôi',
+    title: 'Vạch đôi ở cuối ô cuối của vùng chọn để ngăn đoạn (bấm lại để bỏ; ô có dấu lặp cuối thì không đặt được)',
+  },
+];
+
 /** Tra nhanh nhãn và chú thích của mọi ký hiệu dạng MarkOp (gộp từ các bảng ở trên). */
 const MARK_INDEX = new Map<MarkOp, { label: string; title: string }>(
-  [...MARK_TOOLS, ...MORE_MARK_GROUPS.flatMap((group) => group.tools), ...REPEAT_TOOLS].map((tool) => [tool.op, tool]),
+  [
+    ...MARK_TOOLS,
+    ...MORE_MARK_GROUPS.flatMap((group) => group.tools),
+    ...REPEAT_TOOLS,
+    ...SECTION_TOOLS,
+    ...BREAK_TOOLS,
+  ].map((tool) => [tool.op, tool]),
 );
 
 /** Từ khóa thêm (tên tiếng Anh, tên gọi khác) để ô "Tìm ký hiệu" gõ kiểu nào cũng ra. */
@@ -277,6 +340,14 @@ const KEYWORDS: Partial<Record<MarkOp, string>> = {
   repeatEnd: 'repeat lặp lại dấu lặp',
   volta1: 'volta ending nhà 1',
   volta2: 'volta ending nhà 2',
+  volta3: 'volta ending nhà 3',
+  'repeatTimes:2': 'repeat lặp lần số lần',
+  'repeatTimes:3': 'repeat lặp lần số lần',
+  'repeatTimes:4': 'repeat lặp lần số lần',
+  sectionRemove: 'nhãn đoạn section rehearsal bỏ',
+  barDouble: 'double bar vạch đôi vạch kép ngăn đoạn',
+  lineBreak: 'line break xuống dòng ngắt dòng',
+  pageBreak: 'page break sang trang ngắt trang',
   segno: 'segno',
   coda: 'coda',
   dc: 'da capo quay lại đầu',
@@ -414,6 +485,7 @@ export default function EditorToolPanel({
 }: Props) {
   const [expanded, setExpanded] = useState<string[]>(loadOpen);
   const [query, setQuery] = useState('');
+  const [sectionText, setSectionText] = useState('');
   const wide = useMediaQuery('(min-width: 1280px)');
   const words = normalize(query.trim()).split(/\s+/).filter(Boolean);
   const searching = wide && words.length > 0;
@@ -754,6 +826,47 @@ export default function EditorToolPanel({
       title: 'Lặp lại & chỉ dẫn',
       mod: 'soon',
       blocks: [{ kind: 'text', entries: markEntries(REPEAT_TOOLS.map((tool) => tool.op)) }],
+    },
+    {
+      id: 'structure',
+      title: 'Cấu trúc bài',
+      mod: 'soon',
+      blocks: [
+        {
+          kind: 'text',
+          sub: 'Nhãn đoạn (đặt ở đầu ô đang chọn)',
+          entries: markEntries(SECTION_TOOLS.map((tool) => tool.op)),
+        },
+        { kind: 'text', sub: 'Ngắt đoạn', entries: markEntries(BREAK_TOOLS.map((tool) => tool.op)) },
+      ],
+      extra: (
+        <form
+          className="sv-tools__inline"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const text = sectionText.trim();
+            if (!text || needSelection) return;
+            onMark(`section:${text}`);
+            setSectionText('');
+          }}
+        >
+          <input
+            value={sectionText}
+            onChange={(e) => setSectionText(e.target.value)}
+            maxLength={30}
+            placeholder="Nhãn tự đặt (ví dụ: Rap)"
+            aria-label="Nhãn đoạn tự đặt"
+          />
+          <button
+            type="submit"
+            className="sv-tool sv-tool--text"
+            disabled={needSelection || !sectionText.trim()}
+            title={`Đặt nhãn tự đặt ở đầu ô đang chọn${selectionHint}`}
+          >
+            Đặt
+          </button>
+        </form>
+      ),
     },
     {
       id: 'staves',
