@@ -36,13 +36,26 @@
   text-align: center;
   color: var(--sc-muted);
 }
+/* Cột phải dính theo màn hình: thanh tab đứng yên, chỉ nội dung tab cuộn (không kéo dài cả trang) */
 .sr-side {
   position: sticky;
   top: 1rem;
+  display: flex;
+  flex-direction: column;
   min-width: 0;
+  max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
+}
+.sr-side > .sc-tabs {
+  flex: none;
 }
 .sr-panel {
-  padding: 1rem 0;
+  flex: 1 1 auto;
+  min-height: 8rem;
+  padding: 1rem 0.25rem 1rem 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 .sr-empty {
   color: var(--sc-muted);
@@ -66,6 +79,7 @@
   font: inherit;
   font-size: 0.85rem;
   text-align: left;
+  overflow-wrap: anywhere;
 }
 button.sr-warning {
   cursor: pointer;
@@ -84,17 +98,22 @@ button.sr-warning:focus-visible {
   font-size: 0.75rem;
   font-weight: 600;
 }
+/* Thanh Sao chép / Tải .krn dính đầu khung cuộn để luôn bấm được khi kern dài */
 .sr-kern__bar {
+  position: sticky;
+  top: -1rem;
+  z-index: 1;
   display: flex;
   justify-content: flex-end;
   gap: 0.5rem;
   margin-bottom: 0.5rem;
+  padding: 0.5rem 0;
+  background: var(--background-dark, #f8fafc);
 }
 .sr-kern {
-  max-height: 70vh;
   margin: 0;
   padding: 0.9rem;
-  overflow: auto;
+  overflow-x: auto;
   border: 1px solid var(--sc-line);
   border-radius: 10px;
   background: #0f172a;
@@ -127,6 +146,12 @@ button.sr-warning:focus-visible {
   }
   .sr-side {
     position: static;
+    max-height: none;
+  }
+  /* Một cột: khung nội dung tab có chiều cao tối đa riêng, không đẩy trang dài ra */
+  .sr-panel {
+    min-height: 0;
+    max-height: 60vh;
   }
 }
 
@@ -171,8 +196,11 @@ button.sr-warning:focus-visible {
   border-color: #2563eb;
 }
 .sr-selected {
+  flex: none;
+  max-height: 40vh;
   margin: 0.75rem 0;
   padding: 0.5rem 0.75rem;
+  overflow: auto;
   background: var(--sc-card);
   border: 1px solid var(--sc-line);
   border-radius: 10px;
