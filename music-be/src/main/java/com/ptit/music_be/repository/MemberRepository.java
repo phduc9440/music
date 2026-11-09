@@ -32,7 +32,9 @@ public interface MemberRepository extends JpaRepository<Member, String> {
 
     /** Ghi lần đăng nhập gần nhất mà không động đến các cột khác của tài khoản. */
     @org.springframework.transaction.annotation.Transactional
-    @org.springframework.data.jpa.repository.Modifying
+    // flushAutomatically: tài khoản Google mới tạo trong cùng transaction phải được ghi xuống DB trước câu update này,
+    // nếu không update chạy trên 0 dòng và lần đăng nhập đầu tiên không được ghi nhận
+    @org.springframework.data.jpa.repository.Modifying(flushAutomatically = true)
     @Query("update Member m set m.lastLoginAt = :at where m.id = :id")
     void updateLastLogin(@Param("id") String id, @Param("at") java.time.LocalDateTime at);
 
