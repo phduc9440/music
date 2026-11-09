@@ -1,4 +1,4 @@
-import type { AiTaskInfo, TaskStatus } from '../types';
+import type { AiTaskInfo, OmrMeasure, TaskStatus } from '../types';
 
 /** Loại tác vụ OMR (khớp AiTaskType.OMR_CONVERSION của BE). */
 export const OMR_TASK_TYPE = 'OMR_CONVERSION';
@@ -174,4 +174,34 @@ export const parseWarning = (raw: string): ParsedWarning => {
   const match = /^Trang\s+(\d+)\s*[,:]?\s*(.*)$/s.exec(raw);
   if (!match) return { page: null, text: raw };
   return { page: Number(match[1]), text: match[2] || raw };
+};
+
+/** Kích thước ảnh trang đã tiền xử lý (music-ai); khung ô trong measureMap tính theo kích thước này. */
+export const PAGE_IMAGE_WIDTH = 1050;
+export const PAGE_IMAGE_HEIGHT = 1485;
+
+/** Nhãn của cờ cần kiểm tra trong measureMap. */
+export const MEASURE_FLAG_LABELS: Record<OmrMeasure['flags'][number], string> = {
+  DURATION: 'Tổng trường độ không khớp số chỉ nhịp',
+  COUNT_MISMATCH: 'Số ô của hệ này khác số ô trên ảnh, có thể thừa hoặc thiếu ô',
+};
+
+/** Các ô cần kiểm tra (có ít nhất một cờ), theo số ô tăng dần. */
+export const flaggedMeasures = (map: OmrMeasure[] | undefined): OmrMeasure[] =>
+  (map ?? []).filter((m) => m.flags.length > 0).sort((a, b) => a.measure - b.measure);
+
+/** Khung ô quy ra phần trăm của ảnh trang để vẽ lớp phủ; null nếu ô chưa có khung. */
+export const boxToPercent = (
+  box: OmrMeasure['box'],
+): { left: string; top: string; width: string; height: string } | null => {
+  if (!box) return null;
+  const [x0, y0, x1, y1] = box;
+  if (x1 <= x0 || y1 <= y0) return null;
+  const pct = (value: number, total: number) => `${((value / total) * 100).toFixed(3)}%`;
+  return {
+    left: pct(x0, PAGE_IMAGE_WIDTH),
+    top: pct(y0, PAGE_IMAGE_HEIGHT),
+    width: pct(x1 - x0, PAGE_IMAGE_WIDTH),
+    height: pct(y1 - y0, PAGE_IMAGE_HEIGHT),
+  };
 };

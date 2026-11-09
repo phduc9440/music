@@ -203,6 +203,25 @@ export interface OmrUploadResult {
   processingStatus: ProcessingStatus;
 }
 
+/** Một ô nhịp của bản nhận diện (BE: OmrResultResponse.MeasureEntry). */
+export interface OmrMeasure {
+  /** Số ô trong MusicXML, đánh số liên tục từ 1. */
+  measure: number;
+  page: number;
+  /** Hệ trên trang (từ 1); null nếu chưa biết chắc ô thuộc hệ nào. */
+  system?: number | null;
+  /** Khung ô trên ảnh trang đã tiền xử lý [x0, y0, x1, y1] (ảnh 1050x1485); null nếu chưa biết. */
+  box?: [number, number, number, number] | null;
+  /** DURATION: tổng trường độ sai số chỉ nhịp; COUNT_MISMATCH: số ô của hệ/trang lệch số ô đếm trên ảnh. */
+  flags: ('DURATION' | 'COUNT_MISMATCH')[];
+}
+
+/** So số ô đếm trên ảnh với số ô đọc được (BE: OmrResultResponse.MeasureCheck). */
+export interface OmrMeasureCheck {
+  imageMeasures?: number | null;
+  kernMeasures?: number | null;
+}
+
 /** Kết quả nhận diện mới nhất của bản nhạc (BE: OmrResultResponse). */
 export interface OmrResult {
   taskId: string;
@@ -215,6 +234,9 @@ export interface OmrResult {
   musicXmlVersion?: number | null;
   /** Mỗi trang kèm khoảng ô nhịp (đánh số từ 1) để vẽ đúng phần của trang đó từ MusicXML. */
   pages: { pageNumber: number; imageFileId: string; firstMeasure?: number | null; lastMeasure?: number | null }[];
+  /** Bản đồ ô nhịp (rỗng với kết quả cũ). */
+  measureMap?: OmrMeasure[];
+  measureCheck?: OmrMeasureCheck | null;
   kernFileId?: string | null;
   musicXmlFileId?: string | null;
   midiFileId?: string | null;

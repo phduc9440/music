@@ -149,3 +149,46 @@ button.sr-warning:focus-visible {
 .sr-score__host {
   min-width: 0;
 }
+
+/* Khung ô nhịp khoanh trên ảnh trang và ô đang chọn */
+.sr-page__frame {
+  position: relative;
+}
+.sr-box {
+  position: absolute;
+  padding: 0;
+  cursor: pointer;
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: 4px;
+}
+.sr-box--flag {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: #f59e0b;
+}
+.sr-box--active {
+  background: rgba(37, 99, 235, 0.18);
+  border-color: #2563eb;
+}
+.sr-selected {
+  margin: 0.75rem 0;
+  padding: 0.5rem 0.75rem;
+  background: var(--sc-card);
+  border: 1px solid var(--sc-line);
+  border-radius: 10px;
+}
+.sr-selected__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+.sr-selected__flag {
+  margin: 0 0 0.25rem;
+  font-size: 0.85rem;
+  color: #b45309;
+}
+.sr-warning--active {
+  outline: 2px solid #2563eb;
+}

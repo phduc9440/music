@@ -5,8 +5,8 @@ import AuthImage from '../../components/scores/AuthImage';
 import MusicXmlViewer from '../../components/scores/MusicXmlViewer';
 import Modal from '../../components/scores/Modal';
 import { downloadScoreExport, fetchKern, fetchMusicXml, omrApi, scoreApi } from '../../services';
-import type { OmrResult, ScoreDetail as ScoreDetailData, ScoreFileInfo } from '../../types';
-import { isValidScoreId, parseWarning } from '../../utils/omr';
+import type { OmrMeasure, OmrResult, ScoreDetail as ScoreDetailData, ScoreFileInfo } from '../../types';
+import { boxToPercent, flaggedMeasures, isValidScoreId, MEASURE_FLAG_LABELS, parseWarning } from '../../utils/omr';
 import { getErrorMessage, getHttpStatus, getUploadErrorMessage, toSafeFileName } from '../../utils/score';
 import '../../components/scores/scores.css';
 import './ScoreLibrary.css';
@@ -15,12 +15,12 @@ import './ScoreProcessing.css';
 import './ScoreReview.css';
 
 type LoadState = 'loading' | 'ready' | 'notFound' | 'error';
-type Tab = 'score' | 'warnings' | 'kern';
+type Tab = 'score' | 'check' | 'warnings' | 'kern';
 
 /**
  * Trang /scores/:id/review: xem lại kết quả số hóa (đặc tả mục 2.5, bản đầu).
- * Hiện tóm tắt, ảnh từng trang cạnh bản nhạc vẽ từ MusicXML (OSMD), cảnh báo theo trang, chuỗi **kern đã ghép
- * và nút tải MusicXML / MIDI.
+ * Hiện tóm tắt, ảnh từng trang cạnh bản nhạc vẽ từ MusicXML (OSMD), danh sách ô cần kiểm tra (khoanh trên ảnh trang,
+ * bấm ô để xem đúng ô đó vẽ từ MusicXML), cảnh báo theo trang, chuỗi **kern đã ghép và nút tải MusicXML / MIDI.
  */
 export default function ScoreReview() {
   const { id } = useParams<{ id: string }>();
@@ -40,6 +40,7 @@ export default function ScoreReview() {
   const [redoOpen, setRedoOpen] = useState(false);
   const [redoPreprocess, setRedoPreprocess] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [selected, setSelected] = useState<number | null>(null); // số ô đang chọn
   const pageRefs = useRef<Record<number, HTMLElement | null>>({});
 
   // Tải bản nhạc, kết quả nhận diện và ảnh các trang
@@ -87,7 +88,8 @@ export default function ScoreReview() {
 
   // Tải MusicXML khi mở tab Bản nhạc (mặc định)
   useEffect(() => {
-    if (tab !== 'score' || !id || !hasMusicXml || xml !== null || xmlError) return;
+    const needXml = tab === 'score' || tab === 'check' || selected !== null;
+    if (!needXml || !id || !hasMusicXml || xml !== null || xmlError) return;
     let cancelled = false;
     fetchMusicXml(id)
       .then((text) => !cancelled && setXml(text))
@@ -95,15 +97,38 @@ export default function ScoreReview() {
     return () => {
       cancelled = true;
     };
-  }, [tab, id, hasMusicXml, xml, xmlError]);
+  }, [tab, selected, id, hasMusicXml, xml, xmlError]);
 
   const warnings = useMemo(() => (result?.warnings ?? []).map(parseWarning), [result]);
+  const flagged = useMemo(() => flaggedMeasures(result?.measureMap), [result]);
+  /** Ô theo trang, để vẽ khung trên ảnh. */
+  const measuresByPage = useMemo(() => {
+    const byPage = new Map<number, OmrMeasure[]>();
+    for (const m of result?.measureMap ?? []) {
+      if (!m.box) continue;
+      byPage.set(m.page, [...(byPage.get(m.page) ?? []), m]);
+    }
+    return byPage;
+  }, [result]);
+  const selectedMeasure = useMemo(
+    () => (result?.measureMap ?? []).find((m) => m.measure === selected) ?? null,
+    [result, selected],
+  );
 
   /** Cuộn tới ảnh của trang có cảnh báo. */
   const scrollToPage = useCallback((page: number | null) => {
     if (page == null) return;
     pageRefs.current[page]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, []);
+
+  /** Chọn một ô: khoanh trên ảnh trang và hiện ô đó vẽ từ MusicXML. */
+  const selectMeasure = useCallback(
+    (m: OmrMeasure) => {
+      setSelected((cur) => (cur === m.measure ? null : m.measure));
+      scrollToPage(m.page);
+    },
+    [scrollToPage],
+  );
 
   const handleDownloadKern = () => {
     if (kern == null || !score) return;
@@ -197,9 +222,11 @@ export default function ScoreReview() {
     );
   }
 
+  const imageMeasures = result.measureCheck?.imageMeasures ?? null;
   const summary: [string, string][] = [
     ['Số trang', (result.pageCount ?? score.pageCount ?? pages.length).toString()],
     ['Số ô nhịp', score.measureCount?.toString() ?? '—'],
+    ...(imageMeasures != null ? ([['Số ô đếm trên ảnh', imageMeasures.toString()]] as [string, string][]) : []),
     ['Khóa / dấu hóa', score.keySignature || '—'], // dạng G, Bb, F#m
     ['Nhịp', score.timeSignature || '—'],
     ['Tempo', score.tempoBpm ? `${score.tempoBpm} BPM` : '—'],
@@ -241,7 +268,25 @@ export default function ScoreReview() {
                   if (page.pageNumber != null) pageRefs.current[page.pageNumber] = el;
                 }}
               >
-                <AuthImage src={page.downloadUrl} alt={`Trang ${page.pageNumber}`} className="sr-page__img" />
+                <div className="sr-page__frame">
+                  <AuthImage src={page.downloadUrl} alt={`Trang ${page.pageNumber}`} className="sr-page__img" />
+                  {(page.pageNumber != null ? (measuresByPage.get(page.pageNumber) ?? []) : []).map((m) => {
+                    const style = boxToPercent(m.box);
+                    const warn = m.flags.length > 0;
+                    if (!style || (!warn && m.measure !== selected)) return null; // chỉ vẽ ô nghi ngờ và ô đang chọn
+                    return (
+                      <button
+                        key={m.measure}
+                        type="button"
+                        style={style}
+                        className={`sr-box${warn ? ' sr-box--flag' : ''}${m.measure === selected ? ' sr-box--active' : ''}`}
+                        title={`Ô ${m.measure}`}
+                        aria-label={`Ô ${m.measure}`}
+                        onClick={() => selectMeasure(m)}
+                      />
+                    );
+                  })}
+                </div>
                 <figcaption>Trang {page.pageNumber}</figcaption>
               </figure>
             ))}
@@ -251,6 +296,9 @@ export default function ScoreReview() {
             <div className="sc-tabs" role="tablist">
               <button className="sc-tab" role="tab" aria-selected={tab === 'score'} onClick={() => setTab('score')}>
                 Bản nhạc
+              </button>
+              <button className="sc-tab" role="tab" aria-selected={tab === 'check'} onClick={() => setTab('check')}>
+                Ô cần kiểm tra <span className="sc-tab__count">{flagged.length}</span>
               </button>
               <button
                 className="sc-tab"
@@ -264,6 +312,31 @@ export default function ScoreReview() {
                 Kern
               </button>
             </div>
+
+            {selectedMeasure && xml !== null && (
+              <div className="sr-selected">
+                <div className="sr-selected__bar">
+                  <strong>
+                    Ô {selectedMeasure.measure} · Trang {selectedMeasure.page}
+                    {selectedMeasure.system != null ? `, hệ ${selectedMeasure.system}` : ''}
+                  </strong>
+                  <button className="sc-btn sc-btn--sm" onClick={() => setSelected(null)}>
+                    Bỏ chọn
+                  </button>
+                </div>
+                {selectedMeasure.flags.map((f) => (
+                  <p key={f} className="sr-selected__flag">
+                    {MEASURE_FLAG_LABELS[f]}
+                  </p>
+                ))}
+                <MusicXmlViewer
+                  key={selectedMeasure.measure}
+                  xml={xml}
+                  firstMeasure={selectedMeasure.measure}
+                  lastMeasure={selectedMeasure.measure}
+                />
+              </div>
+            )}
 
             {tab === 'score' && (
               <div className="sr-panel" role="tabpanel">
@@ -283,6 +356,34 @@ export default function ScoreReview() {
                   ) : (
                     <MusicXmlViewer xml={xml} />
                   ))}
+              </div>
+            )}
+
+            {tab === 'check' && (
+              <div className="sr-panel" role="tabpanel">
+                {flagged.length === 0 ? (
+                  <p className="sr-empty">
+                    {result.measureMap?.length
+                      ? 'Không có ô nào nghi ngờ: tổng trường độ khớp số chỉ nhịp và số ô khớp ảnh.'
+                      : 'Kết quả này chưa có bản đồ ô nhịp, hãy nhận diện lại để dùng chức năng này.'}
+                  </p>
+                ) : (
+                  <ul className="sr-warnings">
+                    {flagged.map((m) => (
+                      <li key={m.measure}>
+                        <button
+                          className={`sr-warning${m.measure === selected ? ' sr-warning--active' : ''}`}
+                          onClick={() => selectMeasure(m)}
+                        >
+                          <span className="sr-warning__page">
+                            Ô {m.measure} · Trang {m.page}
+                          </span>
+                          {m.flags.map((f) => MEASURE_FLAG_LABELS[f]).join('; ')}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             )}
 
