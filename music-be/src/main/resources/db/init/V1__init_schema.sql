@@ -19,6 +19,8 @@ CREATE TABLE IF NOT EXISTS members (
     status         INT          NULL COMMENT '1 = ACTIVE, 2 = INACTIVE',
     email_verified TINYINT(1)   NULL,
     auth_provider  INT          NULL COMMENT '1 = LOCAL, 2 = GOOGLE',
+    created_at     DATETIME(6)  NULL COMMENT 'Ngày đăng ký (NULL với tài khoản tạo trước khi có cột này)',
+    last_login_at  DATETIME(6)  NULL COMMENT 'Lần đăng nhập gần nhất (đăng nhập thường hoặc Google)',
     PRIMARY KEY (id),
     UNIQUE KEY uk_members_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

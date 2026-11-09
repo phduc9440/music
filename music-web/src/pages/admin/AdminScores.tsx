@@ -1,52 +1,114 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import Pagination from '../../components/scores/Pagination';
+import {
+  Badge,
+  Button,
+  ButtonLink,
+  Card,
+  CellTitle,
+  PageHeader,
+  Pager,
+  SearchForm,
+  Table,
+  TableState,
+  Toolbar,
+  VisibilityBadge,
+} from '../../components/ui';
+import { VISIBILITY, errorMessage, formatDateTime } from '../../components/ui/helpers';
 import { adminApi, scoreApi } from '../../services';
 import type { PageResult, ScoreSummary } from '../../types';
+import { useDialog } from '../../components/ui/dialog-context';
 
 const PAGE_SIZE = 20;
 
-const VISIBILITY_LABEL: Record<string, string> = {
-  PRIVATE: 'Riêng tư',
-  PENDING: 'Chờ duyệt',
-  PUBLIC: 'Công khai',
+const SOURCE_LABEL: Record<string, string> = { OMR: 'Số hóa (OMR)', IMPORT: 'Nhập file', MANUAL: 'Tạo trong editor' };
+const DIFFICULTY_LABEL: Record<string, string> = {
+  EASY: 'Dễ',
+  MEDIUM: 'Trung bình',
+  HARD: 'Khó',
+  EXPERT: 'Chuyên gia',
+};
+const SORT_LABEL: Record<string, string> = {
+  UPDATED: 'Mới cập nhật',
+  CREATED: 'Mới tạo',
+  TITLE: 'Tên A-Z',
+  VIEWS: 'Nhiều lượt xem',
 };
 
-const errMsg = (error: unknown, fallback: string) =>
-  (error as { response?: { data?: { message?: string } } }).response?.data?.message || fallback;
+type BulkAction = 'PUBLIC' | 'PRIVATE' | 'DELETE';
 
-const btn = { padding: '0.25rem 0.75rem', fontSize: '0.75rem' };
-
-const formatDate = (iso?: string | null) => (iso ? new Date(iso).toLocaleString('vi-VN') : '—');
-
-/** Admin: xem mọi bản nhạc của mọi người dùng, tìm kiếm, lọc theo quyền riêng tư và xóa bản vi phạm. */
+/** Admin: xem mọi bản nhạc của mọi người dùng, tìm kiếm, lọc, sắp xếp; thao tác từng bản hoặc hàng loạt. */
 export default function AdminScores() {
+  const { confirm, prompt } = useDialog();
   const [result, setResult] = useState<PageResult<ScoreSummary> | null>(null);
   const [page, setPage] = useState(0);
   const [keywordInput, setKeywordInput] = useState('');
   const [keyword, setKeyword] = useState('');
   const [visibility, setVisibility] = useState('');
+  const [official, setOfficial] = useState('');
+  const [source, setSource] = useState('');
+  const [difficulty, setDifficulty] = useState('');
+  const [sort, setSort] = useState('UPDATED');
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
   const [reload, setReload] = useState(0);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   useEffect(() => {
     adminApi
-      .getScores({ page, size: PAGE_SIZE, keyword: keyword || undefined, visibility: visibility || undefined })
+      .getScores({
+        page,
+        size: PAGE_SIZE,
+        keyword: keyword || undefined,
+        visibility: visibility || undefined,
+        official: official || undefined,
+        source: source || undefined,
+        difficulty: difficulty || undefined,
+        sort,
+      })
       .then((res) => {
         const data = res.data.result;
         // Xóa hết bản cuối của một trang thì lùi về trang trước
         if (data.content.length === 0 && page > 0) setPage(page - 1);
-        else setResult(data);
+        else {
+          setResult(data);
+          // Bản vừa bị xóa/đổi khỏi trang thì bỏ khỏi danh sách đã chọn
+          const ids = new Set(data.content.map((r) => r.id));
+          setSelected((prev) => (prev.size === 0 ? prev : new Set([...prev].filter((id) => ids.has(id)))));
+        }
       })
       .catch(() => toast.error('Không tải được danh sách bản nhạc'));
-  }, [page, keyword, visibility, reload]);
+  }, [page, keyword, visibility, official, source, difficulty, sort, reload]);
 
-  const search = (e: React.FormEvent) => {
-    e.preventDefault();
+  // Đổi bộ lọc, trang hoặc dữ liệu thì bỏ chọn để không thao tác nhầm lên bản đã không còn hiển thị
+  const changeFilter = (apply: () => void) => {
+    apply();
     setPage(0);
-    setKeyword(keywordInput.trim());
+    setSelected(new Set());
   };
+
+  const filtered = !!(keyword || visibility || official || source || difficulty);
+  const clearFilters = () =>
+    changeFilter(() => {
+      setKeyword('');
+      setKeywordInput('');
+      setVisibility('');
+      setOfficial('');
+      setSource('');
+      setDifficulty('');
+    });
+
+  const rows = result?.content ?? [];
+  const allChecked = rows.length > 0 && rows.every((r) => selected.has(r.id));
+  const toggleAll = () => setSelected(allChecked ? new Set() : new Set(rows.map((r) => r.id)));
+  const toggleOne = (id: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   const run = async (score: ScoreSummary, action: () => Promise<unknown>, okMsg: string, failMsg: string) => {
     setBusyId(score.id);
@@ -54,22 +116,32 @@ export default function AdminScores() {
       await action();
       toast.success(okMsg);
     } catch (error) {
-      toast.error(errMsg(error, failMsg));
+      toast.error(errorMessage(error, failMsg));
     } finally {
       setBusyId(null);
       setReload((n) => n + 1);
     }
   };
 
-  const publish = (score: ScoreSummary) => {
-    if (!window.confirm(`Công khai bản nhạc "${score.title}"? Mọi người dùng đã đăng nhập sẽ xem được.`)) return;
+  const publish = async (score: ScoreSummary) => {
+    const ok = await confirm({
+      title: `Công khai "${score.title}"?`,
+      message: 'Mọi người dùng đã đăng nhập sẽ xem được. Chủ sở hữu sẽ nhận thông báo.',
+      confirmLabel: 'Công khai',
+    });
+    if (!ok) return;
     run(score, () => adminApi.setScoreVisibility(score.id, 'PUBLIC'), 'Đã công khai', 'Không đổi được quyền riêng tư');
   };
 
-  const unpublish = (score: ScoreSummary) => {
-    const input = window.prompt(
-      `Gỡ công khai "${score.title}" (về riêng tư${score.isOfficial ? ', đồng thời rời kho score mẫu' : ''}). Lý do (có thể bỏ trống):`,
-    );
+  const unpublish = async (score: ScoreSummary) => {
+    const input = await prompt({
+      title: `Gỡ công khai "${score.title}"?`,
+      message: `Bản nhạc về riêng tư${score.isOfficial ? ' và rời kho score mẫu' : ''}. Chủ sở hữu sẽ nhận thông báo kèm lý do.`,
+      label: 'Lý do (có thể bỏ trống)',
+      maxLength: 255,
+      confirmLabel: 'Gỡ công khai',
+      tone: 'danger',
+    });
     if (input === null) return;
     run(
       score,
@@ -85,123 +157,243 @@ export default function AdminScores() {
       : run(score, () => scoreApi.markOfficial(score.id), 'Đã thêm vào kho score mẫu', 'Không thêm được vào kho');
 
   const remove = async (score: ScoreSummary) => {
-    if (!window.confirm(`Xóa vĩnh viễn bản nhạc "${score.title}" của ${score.ownerEmail}? Không thể hoàn tác.`)) return;
-    setBusyId(score.id);
+    const ok = await confirm({
+      title: `Xóa vĩnh viễn "${score.title}"?`,
+      message: `Bản nhạc của ${score.ownerEmail} và toàn bộ file sẽ bị xóa. Không thể hoàn tác.`,
+      confirmLabel: 'Xóa vĩnh viễn',
+      tone: 'danger',
+    });
+    if (!ok) return;
+    run(score, () => scoreApi.remove(score.id), 'Đã xóa bản nhạc', 'Không xóa được bản nhạc');
+  };
+
+  const bulk = async (action: BulkAction) => {
+    const ids = [...selected];
+    if (ids.length === 0) return;
+    let reason: string | undefined;
+    if (action === 'DELETE') {
+      const ok = await confirm({
+        title: `Xóa vĩnh viễn ${ids.length} bản nhạc đã chọn?`,
+        message: 'Toàn bộ file của các bản này sẽ bị xóa. Không thể hoàn tác.',
+        confirmLabel: 'Xóa vĩnh viễn',
+        tone: 'danger',
+      });
+      if (!ok) return;
+    } else if (action === 'PUBLIC') {
+      const ok = await confirm({ title: `Công khai ${ids.length} bản nhạc đã chọn?`, confirmLabel: 'Công khai' });
+      if (!ok) return;
+    } else {
+      const input = await prompt({
+        title: `Gỡ công khai ${ids.length} bản nhạc đã chọn?`,
+        message: 'Các bản về riêng tư, bản trong kho mẫu sẽ rời kho. Chủ sở hữu sẽ nhận thông báo.',
+        label: 'Lý do (có thể bỏ trống)',
+        maxLength: 255,
+        confirmLabel: 'Gỡ công khai',
+        tone: 'danger',
+      });
+      if (input === null) return;
+      reason = input.trim() || undefined;
+    }
+    setBulkBusy(true);
     try {
-      await scoreApi.remove(score.id);
-      toast.success('Đã xóa bản nhạc');
+      const res = await adminApi.bulkScores(ids, action, reason);
+      const { success, failures } = res.data.result;
+      if (failures.length === 0) {
+        toast.success(`Đã xử lý ${success} bản nhạc`);
+      } else {
+        const titleOf = (id: string) => rows.find((r) => r.id === id)?.title ?? id;
+        toast.warn(
+          `Thành công ${success}, lỗi ${failures.length}: ` +
+            failures.map((f) => `"${titleOf(f.id)}" (${f.message})`).join('; '),
+          { autoClose: 10000 },
+        );
+      }
     } catch (error) {
-      toast.error(errMsg(error, 'Không xóa được bản nhạc'));
+      toast.error(errorMessage(error, 'Thao tác hàng loạt thất bại'));
     } finally {
-      setBusyId(null);
+      setBulkBusy(false);
+      setSelected(new Set());
       setReload((n) => n + 1);
     }
   };
 
+  const select = (label: string, value: string, onChange: (v: string) => void, options: [string, string][]) => (
+    <select
+      className="adm-input"
+      aria-label={label}
+      value={value}
+      onChange={(e) => changeFilter(() => onChange(e.target.value))}
+    >
+      {options.map(([v, l]) => (
+        <option key={v} value={v}>
+          {l}
+        </option>
+      ))}
+    </select>
+  );
+
   return (
     <>
-      <div className="adm-page-head">
-        <div>
-          <h1>Quản lý bản nhạc</h1>
-          <p>{result ? `${result.totalElements} bản nhạc` : ''}</p>
-        </div>
-        <form onSubmit={search} className="d-flex gap-2">
-          <input
-            className="form-control"
-            placeholder="Tên, tác giả hoặc email chủ sở hữu"
+      <PageHeader
+        title="Quản lý bản nhạc"
+        description="Mọi bản nhạc của mọi người dùng. Chọn nhiều bản để công khai, gỡ công khai hoặc xóa cùng lúc."
+        actions={
+          <SearchForm
             value={keywordInput}
-            onChange={(e) => setKeywordInput(e.target.value)}
+            onChange={setKeywordInput}
+            onSubmit={() => changeFilter(() => setKeyword(keywordInput.trim()))}
+            placeholder="Tên, tác giả hoặc email chủ sở hữu"
           />
-          <select
-            className="form-control"
-            value={visibility}
-            onChange={(e) => {
-              setPage(0);
-              setVisibility(e.target.value);
-            }}
-          >
-            <option value="">Tất cả</option>
-            {Object.entries(VISIBILITY_LABEL).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-          <button type="submit" className="btn btn-primary">
-            Tìm
-          </button>
-        </form>
-      </div>
+        }
+      />
 
-      <div className="adm-card">
-        <div className="table-responsive">
-          <table className="table" style={{ marginTop: 0 }}>
-            <thead>
-              <tr>
-                <th>Tên bản nhạc</th>
-                <th>Tác giả</th>
-                <th>Chủ sở hữu</th>
-                <th>Quyền riêng tư</th>
-                <th>Kho mẫu</th>
-                <th>Cập nhật</th>
-                <th>Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {result?.content.map((s) => (
-                <tr key={s.id}>
-                  <td>
-                    <Link to={`/admin/scores/${s.id}`}>{s.title}</Link>
-                  </td>
-                  <td>{s.composer || '—'}</td>
-                  <td>{s.ownerEmail}</td>
-                  <td>{VISIBILITY_LABEL[s.visibility] ?? s.visibility}</td>
-                  <td>{s.isOfficial ? '✓' : '—'}</td>
-                  <td>{formatDate(s.updatedAt)}</td>
-                  <td>
-                    <div className="d-flex gap-2 flex-wrap">
-                      <Link to={`/admin/scores/${s.id}`} className="btn" style={btn}>
-                        Xem
-                      </Link>
-                      {s.visibility === 'PUBLIC' ? (
-                        <>
-                          <button className="btn" style={btn} disabled={busyId === s.id} onClick={() => toggleOfficial(s)}>
-                            {s.isOfficial ? 'Gỡ khỏi kho' : 'Thêm vào kho'}
-                          </button>
-                          <button className="btn" style={btn} disabled={busyId === s.id} onClick={() => unpublish(s)}>
-                            Gỡ công khai
-                          </button>
-                        </>
-                      ) : (
-                        <button className="btn btn-primary" style={btn} disabled={busyId === s.id} onClick={() => publish(s)}>
-                          Công khai
-                        </button>
-                      )}
-                      <button className="btn btn-danger" style={btn} disabled={busyId === s.id} onClick={() => remove(s)}>
-                        Xóa
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {result && result.content.length === 0 && (
-                <tr>
-                  <td colSpan={7}>Không có bản nhạc nào.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+      <Toolbar>
+        {select('Quyền riêng tư', visibility, setVisibility, [
+          ['', 'Mọi quyền riêng tư'],
+          ...Object.entries(VISIBILITY).map(([v, x]) => [v, x.label] as [string, string]),
+        ])}
+        {select('Kho mẫu', official, setOfficial, [
+          ['', 'Kho mẫu: tất cả'],
+          ['true', 'Trong kho mẫu'],
+          ['false', 'Ngoài kho mẫu'],
+        ])}
+        {select('Nguồn', source, setSource, [['', 'Mọi nguồn'], ...Object.entries(SOURCE_LABEL)])}
+        {select('Độ khó', difficulty, setDifficulty, [['', 'Mọi độ khó'], ...Object.entries(DIFFICULTY_LABEL)])}
+        {filtered && (
+          <Button variant="ghost" icon="x" onClick={clearFilters}>
+            Xóa bộ lọc
+          </Button>
+        )}
+        <span className="adm-toolbar__spacer" />
+        {select(
+          'Sắp xếp',
+          sort,
+          setSort,
+          Object.entries(SORT_LABEL).map(([v, l]) => [v, `Sắp xếp: ${l}`] as [string, string]),
+        )}
+      </Toolbar>
+
+      {selected.size > 0 && (
+        <div className="adm-bulkbar" role="toolbar" aria-label="Thao tác hàng loạt">
+          <span className="adm-bulkbar__count">Đã chọn {selected.size} bản</span>
+          <Button size="sm" variant="primary" icon="globe" loading={bulkBusy} onClick={() => bulk('PUBLIC')}>
+            Công khai
+          </Button>
+          <Button size="sm" icon="lock" disabled={bulkBusy} onClick={() => bulk('PRIVATE')}>
+            Gỡ công khai
+          </Button>
+          <Button size="sm" variant="danger" icon="trash" disabled={bulkBusy} onClick={() => bulk('DELETE')}>
+            Xóa
+          </Button>
+          <Button size="sm" variant="ghost" disabled={bulkBusy} onClick={() => setSelected(new Set())}>
+            Bỏ chọn
+          </Button>
         </div>
+      )}
 
+      <Card flush>
+        <Table minWidth={1000}>
+          <thead>
+            <tr>
+              <th className="adm-table__check">
+                <input
+                  type="checkbox"
+                  aria-label="Chọn tất cả bản trên trang"
+                  checked={allChecked}
+                  onChange={toggleAll}
+                />
+              </th>
+              <th>Bản nhạc</th>
+              <th>Chủ sở hữu</th>
+              <th>Trạng thái</th>
+              <th>Cập nhật</th>
+              <th className="adm-table__actions">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            {!result && <TableState colSpan={6} loading />}
+            {rows.map((s) => (
+              <tr key={s.id} className={selected.has(s.id) ? 'adm-row--selected' : undefined}>
+                <td className="adm-table__check">
+                  <input
+                    type="checkbox"
+                    aria-label={`Chọn ${s.title}`}
+                    checked={selected.has(s.id)}
+                    onChange={() => toggleOne(s.id)}
+                  />
+                </td>
+                <td>
+                  <CellTitle sub={s.composer || undefined}>
+                    <Link to={`/admin/scores/${s.id}`}>{s.title}</Link>
+                  </CellTitle>
+                </td>
+                <td className="adm-muted">{s.ownerEmail}</td>
+                <td>
+                  <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: '0.3rem' }}>
+                    <VisibilityBadge value={s.visibility} />
+                    {s.isOfficial && <Badge tone="violet">Kho mẫu</Badge>}
+                  </span>
+                </td>
+                <td className="adm-nowrap adm-muted">{formatDateTime(s.updatedAt)}</td>
+                <td className="adm-table__actions">
+                  <div className="adm-table__actions-inner">
+                    <ButtonLink to={`/admin/scores/${s.id}`} size="sm" variant="ghost" icon="eye" title="Xem" />
+                    {s.visibility === 'PUBLIC' ? (
+                      <>
+                        <Button size="sm" icon="library" disabled={busyId === s.id} onClick={() => toggleOfficial(s)}>
+                          {s.isOfficial ? 'Gỡ khỏi kho' : 'Thêm vào kho'}
+                        </Button>
+                        <Button size="sm" icon="lock" disabled={busyId === s.id} onClick={() => unpublish(s)}>
+                          Gỡ công khai
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        icon="globe"
+                        disabled={busyId === s.id}
+                        onClick={() => publish(s)}
+                      >
+                        Công khai
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      icon="trash"
+                      aria-label={`Xóa ${s.title}`}
+                      title="Xóa"
+                      disabled={busyId === s.id}
+                      onClick={() => remove(s)}
+                    />
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {result && rows.length === 0 && (
+              <TableState
+                colSpan={6}
+                icon="music"
+                title="Không có bản nhạc nào"
+                description={filtered ? 'Không có bản nào khớp bộ lọc. Thử bỏ bớt điều kiện.' : undefined}
+              />
+            )}
+          </tbody>
+        </Table>
         {result && (
-          <Pagination
+          <Pager
             page={result.pageNumber}
             totalPages={result.totalPages}
             totalElements={result.totalElements}
-            onChange={setPage}
+            unit="bản nhạc"
+            onChange={(p) => {
+              setSelected(new Set());
+              setPage(p);
+            }}
           />
         )}
-      </div>
+      </Card>
     </>
   );
 }

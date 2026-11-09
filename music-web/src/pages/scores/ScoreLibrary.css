@@ -7,8 +7,10 @@
   margin-bottom: 1.25rem;
 }
 .sc-lib-head h1 {
-  font-size: 1.75rem;
-  letter-spacing: -0.02em;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
 }
 .sc-lib-head p {
   margin-top: 0.25rem;
@@ -88,6 +90,12 @@
 }
 .sc-card__cover .sc-thumb--empty {
   height: 100%;
+}
+.sc-card__visibility {
+  position: absolute;
+  top: 0.6rem;
+  left: 0.6rem;
+  filter: drop-shadow(0 1px 3px rgba(15, 23, 42, 0.2));
 }
 .sc-card__status {
   position: absolute;
@@ -209,5 +217,17 @@
   }
   .sc-pager {
     flex-wrap: wrap;
+  }
+}
+
+/* màn hình nhỏ: tiêu đề và nút xếp chồng, thẻ bản nhạc chiếm cả chiều ngang */
+@media (max-width: 600px) {
+  .sc-lib-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sc-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

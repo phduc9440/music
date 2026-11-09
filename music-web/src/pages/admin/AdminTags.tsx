@@ -1,15 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
+import { Badge, Button, Card, PageHeader, Table, TableState } from '../../components/ui';
+import { errorMessage } from '../../components/ui/helpers';
 import { adminApi } from '../../services';
 import type { AdminTag } from '../../types';
+import { useDialog } from '../../components/ui/dialog-context';
 
 const MAX_NAME = 50;
 
-const errMsg = (error: unknown, fallback: string) =>
-  (error as { response?: { data?: { message?: string } } }).response?.data?.message || fallback;
-
 /** Admin (mục 4.6): thêm, đổi tên, xóa thể loại (tag) của bản nhạc. */
 export default function AdminTags() {
+  const { confirm } = useDialog();
   const [tags, setTags] = useState<AdminTag[] | null>(null);
   const [newName, setNewName] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -32,7 +33,7 @@ export default function AdminTags() {
       toast.success(okMsg);
       return true;
     } catch (error) {
-      toast.error(errMsg(error, failMsg));
+      toast.error(errorMessage(error, failMsg));
       return false;
     } finally {
       setBusy(false);
@@ -62,112 +63,133 @@ export default function AdminTags() {
   };
 
   const remove = async (tag: AdminTag) => {
-    const message =
-      tag.scoreCount > 0
-        ? `Xóa thể loại "${tag.name}"? Thể loại sẽ bị gỡ khỏi ${tag.scoreCount} bản nhạc đang dùng (bản nhạc vẫn được giữ).`
-        : `Xóa thể loại "${tag.name}"?`;
-    if (!window.confirm(message)) return;
+    const ok = await confirm({
+      title: `Xóa thể loại "${tag.name}"?`,
+      message:
+        tag.scoreCount > 0
+          ? `Thể loại sẽ bị gỡ khỏi ${tag.scoreCount} bản nhạc đang dùng (bản nhạc vẫn được giữ).`
+          : undefined,
+      confirmLabel: 'Xóa',
+      tone: 'danger',
+    });
+    if (!ok) return;
     if (await run(() => adminApi.deleteTag(tag.id), 'Đã xóa thể loại', 'Không xóa được thể loại')) load();
   };
 
-  const btn = { padding: '0.25rem 0.75rem', fontSize: '0.75rem' };
-
   return (
     <>
-      <div className="adm-page-head">
-        <div>
-          <h1>Quản lý thể loại</h1>
-          <p>{tags ? `${tags.length} thể loại` : 'Thể loại dùng để gắn nhãn và lọc bản nhạc'}</p>
-        </div>
-        <form onSubmit={add} className="d-flex gap-2">
-          <input
-            className="form-control"
-            placeholder="Tên thể loại mới"
-            maxLength={MAX_NAME}
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-          />
-          <button type="submit" className="btn btn-primary" disabled={busy || !newName.trim()}>
-            Thêm
-          </button>
-        </form>
-      </div>
+      <PageHeader
+        title="Thể loại"
+        description={
+          tags
+            ? `${tags.length} thể loại dùng để gắn nhãn và lọc bản nhạc`
+            : 'Thể loại dùng để gắn nhãn và lọc bản nhạc'
+        }
+        actions={
+          <form onSubmit={add} style={{ display: 'flex', gap: '0.5rem' }}>
+            <input
+              className="adm-input"
+              style={{ minWidth: 240 }}
+              placeholder="Tên thể loại mới"
+              aria-label="Tên thể loại mới"
+              maxLength={MAX_NAME}
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+            />
+            <Button type="submit" variant="primary" icon="plus" disabled={busy || !newName.trim()}>
+              Thêm
+            </Button>
+          </form>
+        }
+      />
 
-      <div className="adm-card">
-        <div className="table-responsive">
-          <table className="table" style={{ marginTop: 0 }}>
-            <thead>
-              <tr>
-                <th>Tên thể loại</th>
-                <th>Slug</th>
-                <th>Số bản nhạc</th>
-                <th>Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tags?.map((t) => (
-                <tr key={t.id}>
-                  <td>
+      <Card flush>
+        <Table minWidth={640}>
+          <thead>
+            <tr>
+              <th>Tên thể loại</th>
+              <th>Slug</th>
+              <th className="adm-table__num">Số bản nhạc</th>
+              <th className="adm-table__actions">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            {!tags && <TableState colSpan={4} loading />}
+            {tags?.map((t) => (
+              <tr key={t.id}>
+                <td>
+                  {editingId === t.id ? (
+                    <input
+                      className="adm-input"
+                      value={editName}
+                      maxLength={MAX_NAME}
+                      aria-label={`Tên mới cho ${t.name}`}
+                      autoFocus
+                      onChange={(e) => setEditName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') saveEdit(t);
+                        if (e.key === 'Escape') setEditingId(null);
+                      }}
+                    />
+                  ) : (
+                    <span style={{ fontWeight: 500 }}>{t.name}</span>
+                  )}
+                </td>
+                <td>
+                  <span className="adm-code">{t.slug}</span>
+                </td>
+                <td className="adm-table__num">
+                  <Badge tone={t.scoreCount > 0 ? 'primary' : 'neutral'}>{t.scoreCount}</Badge>
+                </td>
+                <td className="adm-table__actions">
+                  <div className="adm-table__actions-inner">
                     {editingId === t.id ? (
-                      <input
-                        className="form-control"
-                        value={editName}
-                        maxLength={MAX_NAME}
-                        autoFocus
-                        onChange={(e) => setEditName(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') saveEdit(t);
-                          if (e.key === 'Escape') setEditingId(null);
-                        }}
-                      />
+                      <>
+                        <Button size="sm" variant="primary" icon="check" disabled={busy} onClick={() => saveEdit(t)}>
+                          Lưu
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>
+                          Hủy
+                        </Button>
+                      </>
                     ) : (
-                      t.name
+                      <>
+                        <Button
+                          size="sm"
+                          disabled={busy}
+                          onClick={() => {
+                            setEditingId(t.id);
+                            setEditName(t.name);
+                          }}
+                        >
+                          Đổi tên
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          icon="trash"
+                          aria-label={`Xóa ${t.name}`}
+                          title="Xóa"
+                          disabled={busy}
+                          onClick={() => remove(t)}
+                        />
+                      </>
                     )}
-                  </td>
-                  <td>{t.slug}</td>
-                  <td>{t.scoreCount}</td>
-                  <td>
-                    <div className="d-flex gap-2">
-                      {editingId === t.id ? (
-                        <>
-                          <button className="btn btn-primary" style={btn} disabled={busy} onClick={() => saveEdit(t)}>
-                            Lưu
-                          </button>
-                          <button className="btn" style={btn} onClick={() => setEditingId(null)}>
-                            Hủy
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            className="btn btn-primary"
-                            style={btn}
-                            disabled={busy}
-                            onClick={() => {
-                              setEditingId(t.id);
-                              setEditName(t.name);
-                            }}
-                          >
-                            Đổi tên
-                          </button>
-                          <button className="btn btn-danger" style={btn} disabled={busy} onClick={() => remove(t)}>
-                            Xóa
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {tags && tags.length === 0 && (
-                <tr>
-                  <td colSpan={4}>Chưa có thể loại nào.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {tags && tags.length === 0 && (
+              <TableState
+                colSpan={4}
+                icon="tag"
+                title="Chưa có thể loại nào"
+                description="Thêm thể loại đầu tiên ở ô phía trên."
+              />
+            )}
+          </tbody>
+        </Table>
+      </Card>
     </>
   );
 }

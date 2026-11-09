@@ -380,6 +380,12 @@ export interface ErrorLogEntry {
   stackTrace?: string | null;
 }
 
+// Thao tác hàng loạt trên bản nhạc, BE: AdminScoreBulkResponse
+export interface BulkResult {
+  success: number;
+  failures: { id: string; message: string }[];
+}
+
 // Gửi thông báo chung, BE: AnnouncementRequest / AnnouncementResponse
 export type AnnouncementAudience = 'ALL' | 'USERS' | 'ADMINS' | 'SELECTED';
 
@@ -409,6 +415,8 @@ export interface AdminDashboard {
   days: number;
   totals: DashboardTotals;
   scoresByDay: { date: string; count: number }[];
+  membersByDay: { date: string; count: number }[];
+  membersWithoutDate: number;
   practiceByDay: { date: string; sessions: number; minutes: number }[];
   scoresByVisibility: DashboardKeyCount[];
   scoresBySource: DashboardKeyCount[];

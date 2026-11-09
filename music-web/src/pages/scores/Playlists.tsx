@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import NotificationBell from '../../components/NotificationBell';
 import Modal from '../../components/scores/Modal';
 import PlaylistFormModal from '../../components/scores/PlaylistFormModal';
 import { playlistApi } from '../../services';
@@ -43,15 +42,6 @@ export default function Playlists() {
 
   return (
     <div className="sc-page">
-      <nav className="navbar">
-        <div className="navbar-brand">Music App</div>
-        <div className="navbar-nav">
-          <NotificationBell />
-          <button className="sc-btn sc-btn--sm" onClick={() => navigate('/scores')}>
-            ‹ Thư viện
-          </button>
-        </div>
-      </nav>
 
       <main className="sc-container">
         <header className="sc-lib-head">

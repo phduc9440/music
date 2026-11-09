@@ -51,6 +51,7 @@ import type { PitchOp } from './pitch';
 import { selectionGroups } from './playback';
 import { loadPreviewTonePref, playPreviewGroups, savePreviewTonePref } from './previewTone';
 import type { ScoreDocument } from './ScoreDocument';
+import { useDialog } from '../ui/dialog-context';
 
 /** Phím số chọn nhanh trường độ: 1 móc kép ... 5 tròn, 6 móc ba, 7 móc tứ. */
 const DIGIT_DURATIONS: Record<string, DurationType> = {
@@ -185,10 +186,12 @@ export interface ScoreEditor {
   downloadMine: () => void;
   dismissConflict: () => void;
   /** Hỏi xác nhận nếu còn thay đổi chưa lưu; true nếu được phép rời trang. */
-  confirmLeave: () => boolean;
+  /** Hỏi trước khi rời trình chỉnh sửa khi còn thay đổi chưa lưu (hộp thoại của web); true nếu được rời. */
+  confirmLeave: () => Promise<boolean>;
 }
 
 export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
+  const { confirm: confirmDialog } = useDialog();
   const { scoreId, title, doc, initialVersion, canEdit, canForce, blocked } = options;
   const historyRef = useRef(new History());
   const savingRef = useRef(false);
@@ -822,8 +825,16 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
   }, [scoreId, version]);
 
   const confirmLeave = useCallback(
-    () => !historyRef.current.dirty || window.confirm('Bạn có thay đổi chưa lưu. Rời trang sẽ mất các thay đổi này?'),
-    [],
+    async () =>
+      !historyRef.current.dirty ||
+      confirmDialog({
+        title: 'Rời trang khi chưa lưu?',
+        message: 'Các thay đổi chưa lưu sẽ bị mất.',
+        confirmLabel: 'Rời trang',
+        cancelLabel: 'Ở lại',
+        tone: 'danger',
+      }),
+    [confirmDialog],
   );
 
   // Tự lưu nháp mỗi 30 giây khi có thay đổi chưa lưu
@@ -854,9 +865,16 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
   useEffect(() => {
     if (!canEdit || !flags.dirty) return;
     window.history.pushState(null, '', window.location.href);
-    const onPopState = () => {
+    const onPopState = async () => {
       if (allowLeaveRef.current) return;
-      if (window.confirm('Bạn có thay đổi chưa lưu. Rời trang sẽ mất các thay đổi này?')) {
+      const leave = await confirmDialog({
+        title: 'Rời trang khi chưa lưu?',
+        message: 'Các thay đổi chưa lưu sẽ bị mất.',
+        confirmLabel: 'Rời trang',
+        cancelLabel: 'Ở lại',
+        tone: 'danger',
+      });
+      if (leave) {
         allowLeaveRef.current = true;
         window.history.go(-1);
       } else {
@@ -865,7 +883,7 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
-  }, [canEdit, flags.dirty]);
+  }, [canEdit, flags.dirty, confirmDialog]);
 
   // Phím tắt
   useEffect(() => {

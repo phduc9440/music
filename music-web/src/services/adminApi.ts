@@ -4,6 +4,7 @@ import type {
   AnnouncementAudience,
   AdminMemberDetail,
   AdminTag,
+  BulkResult,
   AdminUpdateMemberRequest,
   ApiResponse,
   ErrorLogEntry,
@@ -29,10 +30,21 @@ export const adminApi = {
   sendAnnouncement: (message: string, audience: AnnouncementAudience, memberIds?: string[]) =>
     apiClient.post<ApiResponse<{ recipients: number }>>('/admin/announcements', { message, audience, memberIds }),
   // Quản lý toàn bộ bản nhạc (xóa dùng scoreApi.remove)
-  getScores: (params?: { page?: number; size?: number; keyword?: string; visibility?: string }) =>
+  getScores: (params?: {
+    page?: number;
+    size?: number;
+    keyword?: string;
+    visibility?: string;
+    official?: string;
+    source?: string;
+    difficulty?: string;
+    sort?: string;
+  }) =>
     apiClient.get<ApiResponse<PageResult<ScoreSummary>>>('/admin/scores', { params: { page: 0, size: 20, ...params } }),
   setScoreVisibility: (id: string, visibility: 'PUBLIC' | 'PRIVATE', reason?: string) =>
     apiClient.put<ApiResponse<ScoreDetail>>(`/admin/scores/${id}/visibility`, { visibility, reason }),
+  bulkScores: (ids: string[], action: 'PUBLIC' | 'PRIVATE' | 'DELETE', reason?: string) =>
+    apiClient.post<ApiResponse<BulkResult>>('/admin/scores/bulk', { ids, action, reason }),
   // 4.6: quản lý thể loại (tag) master data
   getTags: () => apiClient.get<ApiResponse<AdminTag[]>>('/admin/tags'),
   createTag: (name: string) => apiClient.post<ApiResponse<AdminTag>>('/admin/tags', { name }),

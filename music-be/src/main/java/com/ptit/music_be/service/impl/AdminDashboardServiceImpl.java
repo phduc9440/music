@@ -51,6 +51,8 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
                 .days(safeDays)
                 .totals(totals())
                 .scoresByDay(scoresByDay(start, today))
+                .membersByDay(membersByDay(start, today))
+                .membersWithoutDate(count("select count(m) from Member m where m.createdAt is null"))
                 .practiceByDay(practiceByDay(start, today))
                 .scoresByVisibility(keyCounts("select coalesce(s.visibility, 'PRIVATE'), count(s) from Score s group by s.visibility"))
                 .scoresBySource(keyCounts("select coalesce(s.sourceType, 'UNKNOWN'), count(s) from Score s group by s.sourceType"))
@@ -101,6 +103,25 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         List<Object[]> rows = em.createQuery(
                         "select cast(s.createdAt as date), count(s) from Score s"
                                 + " where s.createdAt >= :from and s.createdAt < :to group by cast(s.createdAt as date)",
+                        Object[].class)
+                .setParameter("from", start.atStartOfDay())
+                .setParameter("to", end.plusDays(1).atStartOfDay())
+                .getResultList();
+        Map<LocalDate, Long> byDay = new HashMap<>();
+        for (Object[] r : rows) {
+            byDay.put(LocalDate.parse(r[0].toString()), ((Number) r[1]).longValue());
+        }
+        List<DayCount> result = new ArrayList<>();
+        for (LocalDate d = start; !d.isAfter(end); d = d.plusDays(1)) {
+            result.add(new DayCount(d, byDay.getOrDefault(d, 0L)));
+        }
+        return result;
+    }
+
+    private List<DayCount> membersByDay(LocalDate start, LocalDate end) {
+        List<Object[]> rows = em.createQuery(
+                        "select cast(m.createdAt as date), count(m) from Member m"
+                                + " where m.createdAt >= :from and m.createdAt < :to group by cast(m.createdAt as date)",
                         Object[].class)
                 .setParameter("from", start.atStartOfDay())
                 .setParameter("to", end.plusDays(1).atStartOfDay())

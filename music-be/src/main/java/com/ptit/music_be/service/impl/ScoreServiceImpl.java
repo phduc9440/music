@@ -268,14 +268,43 @@ public class ScoreServiceImpl implements ScoreService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<ScoreSummaryResponse> getAllForAdmin(int page, int size, String keyword, String visibility) {
+    public PageResponse<ScoreSummaryResponse> getAllForAdmin(
+            int page,
+            int size,
+            String keyword,
+            String visibility,
+            String official,
+            String source,
+            String difficulty,
+            String sort) {
         requireAdmin();
         int safeSize = size <= 0 ? DEFAULT_PAGE_SIZE : Math.min(size, MAX_PAGE_SIZE);
+        String safeOfficial = official == null ? "" : official.trim().toLowerCase();
+        if (!safeOfficial.isEmpty() && !"true".equals(safeOfficial) && !"false".equals(safeOfficial)) {
+            throw new AppException(ErrorCode.INVALID_REQUEST);
+        }
         Page<Score> result = scoreRepository.searchAllForAdmin(
                 normalizeKeyword(keyword),
                 parseEnumName(visibility, Visibility.class),
-                PageRequest.of(Math.max(page, 0), safeSize, Sort.by(Sort.Order.desc("updatedAt"), Sort.Order.asc("id"))));
+                safeOfficial,
+                parseEnumName(source, ScoreSource.class),
+                parseEnumName(difficulty, DifficultyLevel.class),
+                PageRequest.of(Math.max(page, 0), safeSize, adminSort(sort)));
         return toSummaryPage(result, true);
+    }
+
+    /** Sắp xếp danh sách admin theo danh sách trắng, luôn kèm id để thứ tự ổn định giữa các trang. */
+    private static Sort adminSort(String sort) {
+        String key = sort == null ? "" : sort.trim().toUpperCase();
+        Sort.Order primary =
+                switch (key) {
+                    case "", "UPDATED" -> Sort.Order.desc("updatedAt");
+                    case "CREATED" -> Sort.Order.desc("createdAt");
+                    case "TITLE" -> Sort.Order.asc("title");
+                    case "VIEWS" -> Sort.Order.desc("viewCount");
+                    default -> throw new AppException(ErrorCode.INVALID_REQUEST);
+                };
+        return Sort.by(primary, Sort.Order.asc("id"));
     }
 
     @Override

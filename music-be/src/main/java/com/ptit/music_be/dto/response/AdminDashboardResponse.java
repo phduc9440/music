@@ -20,6 +20,13 @@ public class AdminDashboardResponse {
     Totals totals;
     /** Bản nhạc tạo mới mỗi ngày (đủ days ngày, ngày không có là 0). */
     List<DayCount> scoresByDay;
+    /**
+     * Thành viên đăng ký mới mỗi ngày. Chỉ tính tài khoản có ngày đăng ký (tài khoản tạo trước khi có cột này không
+     * có, xem membersWithoutDate).
+     */
+    List<DayCount> membersByDay;
+    /** Số tài khoản chưa có ngày đăng ký (không nằm trong biểu đồ trên). */
+    long membersWithoutDate;
     /** Luyện tập mỗi ngày: số phiên và số phút. */
     List<DayPractice> practiceByDay;
     List<KeyCount> scoresByVisibility;

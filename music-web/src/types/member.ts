@@ -12,6 +12,9 @@ export interface Member {
   emailVerified?: boolean;
   authProvider?: AuthProvider;
   roles?: string[];
+  /** Ngày đăng ký; null với tài khoản tạo trước khi có cột này. */
+  createdAt?: string | null;
+  lastLoginAt?: string | null;
 }
 
 /** Khớp AdminMemberDetailResponse của BE. */

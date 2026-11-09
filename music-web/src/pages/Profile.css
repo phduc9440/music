@@ -1,0 +1,122 @@
+/* Trang hồ sơ (/profile). Dùng chung nút, ô nhập, nhãn của scores.css; màu lấy từ styles/tokens.css. */
+.pf-grid {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.pf-stack {
+  display: grid;
+  gap: 1rem;
+}
+
+.pf-card {
+  padding: 1.25rem;
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  box-shadow: var(--ui-shadow-sm);
+}
+
+.pf-card__title {
+  margin-bottom: 0.25rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.pf-identity {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.35rem;
+  padding: 1.75rem 1.25rem;
+}
+
+.pf-avatar {
+  width: 96px;
+  height: 96px;
+  margin-bottom: 0.5rem;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ui-primary);
+  color: #fff;
+  font-size: 2.25rem;
+  font-weight: 700;
+}
+
+.pf-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pf-name {
+  font-size: 1.15rem;
+  font-weight: 700;
+  word-break: break-word;
+}
+
+.pf-email {
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-md);
+  word-break: break-all;
+}
+
+.pf-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.pf-hint {
+  color: var(--ui-text-3);
+  font-size: var(--ui-text-xs);
+}
+
+.pf-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1.1rem;
+}
+
+.pf-dl {
+  margin: 0.5rem 0 0;
+}
+
+.pf-dl > div {
+  display: grid;
+  grid-template-columns: 40% 1fr;
+  gap: 1rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--ui-border);
+}
+
+.pf-dl > div:last-child {
+  border-bottom: 0;
+}
+
+.pf-dl dt {
+  color: var(--ui-text-2);
+}
+
+.pf-dl dd {
+  margin: 0;
+  word-break: break-word;
+}
+
+.pf-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: var(--ui-text-sm);
+  color: var(--ui-text-2);
+}
+
+@media (max-width: 760px) {
+  .pf-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

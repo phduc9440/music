@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
+import { Avatar, Badge, Button, Card, Field, Icon, PageHeader } from '../../components/ui';
+import { errorMessage } from '../../components/ui/helpers';
 import { adminApi } from '../../services';
 import { MemberStatus } from '../../types';
 import type { AnnouncementAudience, Member } from '../../types';
+import { useDialog } from '../../components/ui/dialog-context';
 
 const MAX_LENGTH = 500;
 const MAX_SELECTED = 200;
@@ -14,11 +17,9 @@ const AUDIENCES: { value: AnnouncementAudience; label: string; hint: string }[] 
   { value: 'SELECTED', label: 'Chọn người nhận', hint: `Chọn từng tài khoản (tối đa ${MAX_SELECTED} người)` },
 ];
 
-const errMsg = (error: unknown, fallback: string) =>
-  (error as { response?: { data?: { message?: string } } }).response?.data?.message || fallback;
-
 /** Admin: gửi thông báo chung, hiện ở chuông thông báo của người nhận (poll 30 giây một lần). */
 export default function AdminAnnouncements() {
+  const { confirm } = useDialog();
   const [message, setMessage] = useState('');
   const [audience, setAudience] = useState<AnnouncementAudience>('ALL');
   const [sending, setSending] = useState(false);
@@ -65,7 +66,12 @@ export default function AdminAnnouncements() {
     e.preventDefault();
     if (!canSend) return;
     // Gửi xong không thu hồi được, nên luôn hỏi lại
-    if (!window.confirm(`Gửi thông báo này tới "${audienceLabel}"? Không thể thu hồi sau khi gửi.`)) return;
+    const ok = await confirm({
+      title: 'Gửi thông báo?',
+      message: `Người nhận: ${audienceLabel}.\nThông báo không thể thu hồi sau khi gửi.`,
+      confirmLabel: 'Gửi thông báo',
+    });
+    if (!ok) return;
     setSending(true);
     try {
       const res = await adminApi.sendAnnouncement(
@@ -80,7 +86,7 @@ export default function AdminAnnouncements() {
       setSelected([]);
       setSearch('');
     } catch (error) {
-      toast.error(errMsg(error, 'Không gửi được thông báo'));
+      toast.error(errorMessage(error, 'Không gửi được thông báo'));
     } finally {
       setSending(false);
     }
@@ -88,128 +94,142 @@ export default function AdminAnnouncements() {
 
   return (
     <>
-      <div className="adm-page-head">
-        <div>
-          <h1>Gửi thông báo</h1>
-          <p>Thông báo hiện ở biểu tượng chuông của người nhận</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Gửi thông báo"
+        description="Thông báo hiện ở biểu tượng chuông của người nhận. Tài khoản bị khóa không nhận được."
+      />
 
-      <div className="adm-card" style={{ maxWidth: 720 }}>
-        <form onSubmit={send}>
-          <label className="form-label" htmlFor="ann-audience" style={{ fontWeight: 600 }}>
-            Người nhận
-          </label>
-          <div className="d-flex flex-column gap-2 mb-4" id="ann-audience" role="radiogroup">
-            {AUDIENCES.map((a) => (
-              <label key={a.value} className="d-flex gap-2 align-items-start" style={{ cursor: 'pointer' }}>
-                <input
-                  type="radio"
-                  name="audience"
-                  checked={audience === a.value}
-                  onChange={() => setAudience(a.value)}
-                  style={{ marginTop: 4 }}
-                />
-                <span>
-                  {a.label}
-                  <span style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '0.8rem' }}>{a.hint}</span>
-                </span>
-              </label>
-            ))}
-          </div>
-
-          {audience === 'SELECTED' && (
-            <div className="mb-4">
-              <input
-                className="form-control"
-                placeholder="Gõ email hoặc tên để tìm (ít nhất 2 ký tự)"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                aria-label="Tìm người nhận"
-              />
-              {shownFound.length > 0 && (
-                <ul style={{ listStyle: 'none', margin: '0.5rem 0 0', padding: 0, border: '1px solid var(--surface-border)', borderRadius: 8 }}>
-                  {shownFound.map((m) => {
-                    const locked = m.status === MemberStatus.INACTIVE;
-                    const chosen = isSelected(m);
-                    return (
-                      <li
-                        key={m.id}
-                        className="d-flex justify-content-between align-items-center"
-                        style={{ padding: '0.4rem 0.75rem', borderBottom: '1px solid var(--surface-border)' }}
-                      >
-                        <span>
-                          {m.email}
-                          {m.fullName && <span style={{ color: 'var(--text-secondary)' }}> · {m.fullName}</span>}
-                          {locked && <span style={{ color: 'var(--text-secondary)' }}> · đã khóa</span>}
-                        </span>
-                        <button
-                          type="button"
-                          className="btn"
-                          style={{ padding: '0.2rem 0.6rem', fontSize: '0.75rem' }}
-                          disabled={locked || chosen}
-                          title={locked ? 'Tài khoản bị khóa không nhận được thông báo' : undefined}
-                          onClick={() => add(m)}
-                        >
-                          {chosen ? 'Đã chọn' : 'Thêm'}
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-              <div className="d-flex flex-wrap gap-2 mt-2" aria-live="polite">
-                {selected.length === 0 && (
-                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Chưa chọn ai</span>
-                )}
-                {selected.map((m) => (
-                  <span
-                    key={m.id}
-                    className="badge badge-user d-inline-flex align-items-center gap-1"
-                    style={{ padding: '0.3rem 0.6rem' }}
-                  >
-                    {m.email}
-                    <button
-                      type="button"
-                      aria-label={`Bỏ ${m.email}`}
-                      onClick={() => remove(m)}
-                      style={{ border: 0, background: 'transparent', cursor: 'pointer', lineHeight: 1 }}
-                    >
-                      ×
-                    </button>
-                  </span>
+      <div className="adm-grid-2" style={{ gridTemplateColumns: 'minmax(0, 3fr) minmax(0, 2fr)', alignItems: 'start' }}>
+        <Card title="Soạn thông báo">
+          <form onSubmit={send}>
+            <Field label="Người nhận">
+              <div className="adm-choice-list" role="radiogroup" aria-label="Người nhận">
+                {AUDIENCES.map((a) => (
+                  <label key={a.value} className={`adm-choice${audience === a.value ? ' adm-choice--active' : ''}`}>
+                    <input
+                      type="radio"
+                      name="audience"
+                      checked={audience === a.value}
+                      onChange={() => setAudience(a.value)}
+                    />
+                    <span>
+                      <span className="adm-choice__label">{a.label}</span>
+                      <span className="adm-choice__hint" style={{ display: 'block' }}>
+                        {a.hint}
+                      </span>
+                    </span>
+                  </label>
                 ))}
               </div>
+            </Field>
+
+            {audience === 'SELECTED' && (
+              <Field label="Tìm và thêm người nhận" htmlFor="ann-search" hint="Gõ ít nhất 2 ký tự của email hoặc tên">
+                <input
+                  id="ann-search"
+                  className="adm-input"
+                  placeholder="Email hoặc tên"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+                {shownFound.length > 0 && (
+                  <ul className="adm-list">
+                    {shownFound.map((m) => {
+                      const locked = m.status === MemberStatus.INACTIVE;
+                      const chosen = isSelected(m);
+                      return (
+                        <li key={m.id} className="adm-list__item">
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', minWidth: 0 }}>
+                            <Avatar name={m.fullName || m.email} src={m.avatarUrl} size={28} />
+                            <span style={{ minWidth: 0 }}>
+                              <span style={{ display: 'block', fontWeight: 500 }}>{m.fullName || m.email}</span>
+                              {m.fullName && <span className="adm-subtle">{m.email}</span>}
+                            </span>
+                            {locked && <Badge tone="danger">Đã khóa</Badge>}
+                          </span>
+                          <Button
+                            size="sm"
+                            icon={chosen ? 'check' : 'plus'}
+                            disabled={locked || chosen}
+                            title={locked ? 'Tài khoản bị khóa không nhận được thông báo' : undefined}
+                            onClick={() => add(m)}
+                          >
+                            {chosen ? 'Đã chọn' : 'Thêm'}
+                          </Button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+                <div className="adm-chips" aria-live="polite" style={{ marginTop: '0.5rem' }}>
+                  {selected.length === 0 && <span className="adm-subtle">Chưa chọn ai</span>}
+                  {selected.map((m) => (
+                    <span key={m.id} className="adm-chip">
+                      {m.email}
+                      <button type="button" aria-label={`Bỏ ${m.email}`} onClick={() => remove(m)}>
+                        <Icon name="x" size={14} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </Field>
+            )}
+
+            <Field label="Nội dung" htmlFor="ann-message" hint={`${message.length}/${MAX_LENGTH} ký tự`}>
+              <textarea
+                id="ann-message"
+                className="adm-input"
+                rows={5}
+                maxLength={MAX_LENGTH}
+                placeholder="Ví dụ: Hệ thống bảo trì lúc 22:00 tối nay, có thể gián đoạn khoảng 15 phút."
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+              />
+            </Field>
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+              <span className="adm-muted" role="status">
+                {lastSent}
+              </span>
+              <Button type="submit" variant="primary" icon="send" loading={sending} disabled={!canSend}>
+                Gửi thông báo
+              </Button>
             </div>
-          )}
+          </form>
+        </Card>
 
-          <label className="form-label" htmlFor="ann-message" style={{ fontWeight: 600 }}>
-            Nội dung
-          </label>
-          <textarea
-            id="ann-message"
-            className="form-control"
-            rows={5}
-            maxLength={MAX_LENGTH}
-            placeholder="Ví dụ: Hệ thống bảo trì lúc 22:00 tối nay, có thể gián đoạn khoảng 15 phút."
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-          />
-          <div className="d-flex justify-content-between align-items-center mt-2">
-            <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
-              {message.length}/{MAX_LENGTH}
+        <Card title="Xem trước" description="Người nhận sẽ thấy trong chuông thông báo">
+          <div
+            style={{
+              display: 'flex',
+              gap: '0.75rem',
+              padding: '0.85rem',
+              border: '1px solid var(--adm-border)',
+              borderRadius: 'var(--adm-radius)',
+              background: 'var(--adm-primary-soft)',
+            }}
+          >
+            <span className="adm-stat__icon adm-tone--primary" style={{ flexShrink: 0 }}>
+              <Icon name="megaphone" size={16} />
             </span>
-            <button type="submit" className="btn btn-primary" disabled={sending || !canSend}>
-              {sending ? 'Đang gửi…' : 'Gửi thông báo'}
-            </button>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                {trimmed || <span className="adm-subtle">Nội dung thông báo sẽ hiện ở đây</span>}
+              </div>
+              <div className="adm-subtle" style={{ marginTop: '0.25rem', fontSize: 'var(--adm-text-xs)' }}>
+                Vừa xong
+              </div>
+            </div>
           </div>
-        </form>
-
-        {lastSent && (
-          <p role="status" style={{ marginTop: '1rem', color: 'var(--text-secondary)' }}>
-            {lastSent}
-          </p>
-        )}
+          <ul
+            className="adm-muted"
+            style={{ margin: '1rem 0 0', paddingLeft: '1.1rem', fontSize: 'var(--adm-text-sm)' }}
+          >
+            <li>Gửi tới: {audienceLabel}</li>
+            <li>Không gửi cho chính bạn.</li>
+            <li>Không thu hồi được sau khi gửi.</li>
+          </ul>
+        </Card>
       </div>
     </>
   );

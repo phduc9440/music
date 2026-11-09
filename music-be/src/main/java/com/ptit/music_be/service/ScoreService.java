@@ -54,8 +54,19 @@ public interface ScoreService {
     /** ADMIN: gỡ khỏi kho score mẫu (bản nhạc vẫn giữ nguyên, vẫn công khai). */
     ScoreDetailResponse unmarkOfficial(String scoreId);
 
-    /** ADMIN: mọi bản nhạc trong hệ thống (mới cập nhật trước), tìm theo từ khóa và lọc visibility. */
-    PageResponse<ScoreSummaryResponse> getAllForAdmin(int page, int size, String keyword, String visibility);
+    /**
+     * ADMIN: mọi bản nhạc trong hệ thống, tìm theo từ khóa, lọc visibility/kho mẫu/nguồn/độ khó. sort: UPDATED (mặc định,
+     * mới nhất trước), CREATED, TITLE (A-Z), VIEWS (nhiều nhất trước).
+     */
+    PageResponse<ScoreSummaryResponse> getAllForAdmin(
+            int page,
+            int size,
+            String keyword,
+            String visibility,
+            String official,
+            String source,
+            String difficulty,
+            String sort);
 
     /** ADMIN: đặt thẳng PUBLIC hoặc PRIVATE (PRIVATE kèm lý do, gỡ khỏi kho mẫu, báo cho chủ). */
     ScoreDetailResponse setVisibilityByAdmin(String scoreId, Visibility visibility, String reason);

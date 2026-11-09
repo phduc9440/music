@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import NotificationBell from '../../components/NotificationBell';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { LibraryEmpty, LibrarySkeleton } from '../../components/scores/LibraryStates';
@@ -106,35 +105,6 @@ export default function ScoreLibrary() {
 
   return (
     <div className="sc-page">
-      <nav className="navbar">
-        <div className="navbar-brand">Music App</div>
-        <div className="navbar-nav">
-          <NotificationBell />
-          {localStorage.getItem('role') === 'ADMIN' && (
-            <button className="sc-btn sc-btn--sm" onClick={() => navigate('/admin')}>
-              Quản trị
-            </button>
-          )}
-          <button className="sc-btn sc-btn--sm" onClick={() => navigate('/scores/official')}>
-            Kho score mẫu
-          </button>
-          <button className="sc-btn sc-btn--sm" onClick={() => navigate('/scores/shared')}>
-            Được chia sẻ với tôi
-          </button>
-          <button className="sc-btn sc-btn--sm" onClick={() => navigate('/playlists')}>
-            Playlist
-          </button>
-          <button className="sc-btn sc-btn--sm" onClick={() => navigate('/practice-history')}>
-            Lịch sử tập
-          </button>
-          <button className="sc-btn sc-btn--sm" onClick={() => navigate('/practice-stats')}>
-            Chuỗi luyện tập
-          </button>
-          <button className="sc-btn sc-btn--sm" onClick={() => navigate('/profile')}>
-            Hồ sơ
-          </button>
-        </div>
-      </nav>
 
       <main className="sc-container">
         <header className="sc-lib-head">

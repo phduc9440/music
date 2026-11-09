@@ -1,0 +1,203 @@
+/* Hộp thoại xác nhận / nhập liệu của web (DialogProvider). Màu lấy từ styles/tokens.css. */
+
+.ui-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.45);
+  animation: ui-dialog-fade 0.12s ease-out;
+}
+
+.ui-dialog {
+  width: 100%;
+  max-width: 440px;
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  box-shadow: var(--ui-shadow-pop);
+  color: var(--ui-text);
+  font-family: var(--ui-font);
+  animation: ui-dialog-pop 0.14s ease-out;
+}
+
+.ui-dialog__body {
+  display: flex;
+  gap: 0.9rem;
+  padding: 1.25rem 1.25rem 1rem;
+}
+
+.ui-dialog__icon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ui-dialog__icon--primary {
+  background: var(--ui-primary-soft);
+  color: var(--ui-primary);
+}
+
+.ui-dialog__icon--danger {
+  background: var(--ui-danger-soft);
+  color: var(--ui-danger);
+}
+
+.ui-dialog__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.ui-dialog__title {
+  margin: 0.15rem 0 0;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.ui-dialog__message {
+  margin: 0.35rem 0 0;
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-md);
+  line-height: 1.55;
+  white-space: pre-line;
+  word-break: break-word;
+}
+
+.ui-dialog__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.85rem;
+  font-size: var(--ui-text-md);
+  font-weight: 600;
+}
+
+.ui-dialog__field textarea {
+  width: 100%;
+  min-height: 72px;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius);
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  font: inherit;
+  font-weight: 400;
+  resize: vertical;
+}
+
+.ui-dialog__field textarea:focus {
+  outline: none;
+  border-color: var(--ui-primary);
+  box-shadow: 0 0 0 3px var(--ui-primary-ring);
+}
+
+.ui-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.85rem 1.25rem;
+  border-top: 1px solid var(--ui-border);
+  background: var(--ui-surface-muted);
+  border-radius: 0 0 var(--ui-radius-lg) var(--ui-radius-lg);
+}
+
+.ui-dialog__btn {
+  height: 36px;
+  padding: 0 1rem;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius);
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  font: inherit;
+  font-size: var(--ui-text-md);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ui-dialog__btn:hover:not(:disabled) {
+  background: var(--ui-surface-hover);
+}
+
+.ui-dialog__btn--primary {
+  background: var(--ui-primary);
+  border-color: var(--ui-primary);
+  color: #fff;
+}
+
+.ui-dialog__btn--primary:hover:not(:disabled) {
+  background: var(--ui-primary-hover);
+}
+
+.ui-dialog__btn--danger {
+  background: var(--ui-danger);
+  border-color: var(--ui-danger);
+  color: #fff;
+}
+
+.ui-dialog__btn--danger:hover:not(:disabled) {
+  background: var(--ui-danger-hover);
+}
+
+.ui-dialog__btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ui-dialog__btn:focus-visible {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 2px;
+}
+
+@keyframes ui-dialog-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes ui-dialog-pop {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-dialog-overlay,
+  .ui-dialog {
+    animation: none;
+  }
+}
+
+/* Hộp thoại đọc nội dung (thông báo từ quản trị viên...) */
+.ui-dialog--read {
+  max-width: 560px;
+}
+
+.ui-dialog__meta {
+  margin: 0.2rem 0 0;
+  color: var(--ui-text-3);
+  font-size: var(--ui-text-sm);
+}
+
+.ui-dialog__content {
+  max-height: min(60vh, 480px);
+  overflow-y: auto;
+  margin: 0 1.25rem 1.1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  background: var(--ui-surface-muted);
+  color: var(--ui-text);
+  font-size: 0.95rem;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

@@ -1,37 +1,10 @@
-.sys-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-  gap: 12px;
-}
-
-.sys-card {
-  background: #fff;
-  border: 1px solid var(--surface-border);
-  border-radius: 12px;
-  padding: 16px;
-}
-
-.sys-card__label {
-  color: var(--text-secondary);
-  font-size: 0.85rem;
-}
-
-.sys-card__value {
-  font-size: 1.8rem;
-  font-weight: 700;
-  margin: 2px 0 8px;
-}
-
-.sys-card__detail {
-  margin-top: 8px;
-  color: var(--text-secondary);
-  font-size: 0.8rem;
-}
+/* Riêng trang giám sát hệ thống; màu lấy từ token của khuôn mẫu admin (admin.css). */
 
 .sys-meter {
-  height: 8px;
+  height: 6px;
+  margin-top: 0.6rem;
   border-radius: 999px;
-  background: #e2e8f0;
+  background: var(--adm-surface-hover);
   overflow: hidden;
 }
 
@@ -42,7 +15,7 @@
 }
 
 .sys-meter__bar--ok {
-  background: var(--success-color);
+  background: #16a34a;
 }
 
 .sys-meter__bar--warn {
@@ -50,23 +23,26 @@
 }
 
 .sys-meter__bar--danger {
-  background: var(--danger-color);
+  background: var(--adm-danger);
 }
 
 .sys-logger {
   white-space: nowrap;
-  color: var(--text-secondary);
+  color: var(--adm-text-2);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: var(--adm-text-sm);
 }
 
 .sys-stack {
-  max-height: 260px;
+  max-height: 280px;
+  margin: 0;
   overflow: auto;
-  padding: 12px;
-  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  border-radius: var(--adm-radius);
   background: #0f172a;
   color: #e2e8f0;
   font-size: 12px;
-  line-height: 1.5;
+  line-height: 1.55;
   white-space: pre-wrap;
   word-break: break-all;
 }

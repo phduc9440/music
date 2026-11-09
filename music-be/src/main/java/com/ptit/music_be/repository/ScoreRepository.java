@@ -91,7 +91,7 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
 			""")
     Page<Score> searchOfficialCandidates(@Param("keyword") String keyword, Pageable pageable);
 
-    /** ADMIN: mọi bản nhạc trong hệ thống, tìm theo tên/tác giả/email chủ sở hữu, lọc visibility ("" là không lọc). */
+    /** ADMIN: mọi bản nhạc trong hệ thống, tìm theo tên/tác giả/email chủ sở hữu, lọc visibility, kho mẫu ("true"/"false"), nguồn, độ khó ("" là không lọc). */
     @Query(
             """
 			select s from Score s
@@ -99,7 +99,17 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
 				or lower(coalesce(s.composer, '')) like lower(concat('%', :keyword, '%')) escape '\\'
 				or lower(s.member.email) like lower(concat('%', :keyword, '%')) escape '\\')
 			and (:visibility = '' or s.visibility = :visibility)
+			and (:official = ''
+				or (:official = 'true' and s.isOfficial = true)
+				or (:official = 'false' and (s.isOfficial is null or s.isOfficial = false)))
+			and (:source = '' or s.sourceType = :source)
+			and (:difficulty = '' or cast(s.difficulty as string) = :difficulty)
 			""")
     Page<Score> searchAllForAdmin(
-            @Param("keyword") String keyword, @Param("visibility") String visibility, Pageable pageable);
+            @Param("keyword") String keyword,
+            @Param("visibility") String visibility,
+            @Param("official") String official,
+            @Param("source") String source,
+            @Param("difficulty") String difficulty,
+            Pageable pageable);
 }

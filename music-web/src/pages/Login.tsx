@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import { authApi } from '../services';
 import { completeLogin } from '../utils/auth';
 import GoogleAuthButton from '../components/GoogleAuthButton';
+import { Icon } from '../components/ui';
 
 type ViewMode = 'login' | 'register' | 'forgot' | 'reset';
 
@@ -30,51 +31,54 @@ export default function Login() {
       if (viewMode === 'login') {
         const response = await authApi.login({ username: email, password });
         const target = await completeLogin(response.data.result);
-        toast.success('Login successful!');
+        toast.success('Đăng nhập thành công');
         navigate(from ?? target, { replace: true });
       } else if (viewMode === 'register') {
         await authApi.register({ password, email, fullName });
-        toast.success('Registration successful! Please login.');
+        toast.success('Đăng ký thành công, vui lòng đăng nhập');
         setViewMode('login');
       } else if (viewMode === 'forgot') {
         await authApi.forgotPassword({ email });
-        toast.success('OTP has been sent to your email.');
+        toast.success('Đã gửi mã OTP tới email của bạn');
         setViewMode('reset');
       } else if (viewMode === 'reset') {
         await authApi.resetPassword({ email, otp, newPassword });
-        toast.success('Password has been reset successfully! Please login.');
+        toast.success('Đã đặt lại mật khẩu, vui lòng đăng nhập');
         setViewMode('login');
         setPassword('');
         setOtp('');
         setNewPassword('');
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || error.message || 'Something went wrong');
+      toast.error(error.response?.data?.message || error.message || 'Có lỗi xảy ra, vui lòng thử lại');
     } finally {
       setIsLoading(false);
     }
   };
 
   const getTitle = () => {
-    if (viewMode === 'login') return 'Welcome back! Please login to your account.';
-    if (viewMode === 'register') return 'Create a new account to get started.';
-    if (viewMode === 'forgot') return 'Enter your email to receive an OTP.';
-    if (viewMode === 'reset') return 'Enter OTP and your new password.';
+    if (viewMode === 'login') return 'Đăng nhập để vào thư viện bản nhạc của bạn.';
+    if (viewMode === 'register') return 'Tạo tài khoản mới để bắt đầu.';
+    if (viewMode === 'forgot') return 'Nhập email để nhận mã OTP.';
+    if (viewMode === 'reset') return 'Nhập mã OTP và mật khẩu mới.';
     return '';
   };
 
   const getButtonText = () => {
-    if (isLoading) return 'Processing...';
-    if (viewMode === 'login') return 'Login';
-    if (viewMode === 'register') return 'Register';
-    if (viewMode === 'forgot') return 'Send OTP';
-    if (viewMode === 'reset') return 'Reset Password';
+    if (isLoading) return 'Đang xử lý…';
+    if (viewMode === 'login') return 'Đăng nhập';
+    if (viewMode === 'register') return 'Đăng ký';
+    if (viewMode === 'forgot') return 'Gửi mã OTP';
+    if (viewMode === 'reset') return 'Đặt lại mật khẩu';
     return '';
   };
 
   return (
     <div className="auth-wrapper">
-      <div className="glass-container auth-card">
+      <div className="auth-card">
+        <div className="auth-logo" aria-hidden="true">
+          <Icon name="music" size={22} />
+        </div>
         <h1>Music App</h1>
         <p>{getTitle()}</p>
 
@@ -86,7 +90,7 @@ export default function Login() {
               type="email"
               id="email"
               className="form-control"
-              placeholder="Enter your email"
+              placeholder="ban@vidu.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -97,12 +101,12 @@ export default function Login() {
           {/* Full Name (Used only in Register) */}
           {viewMode === 'register' && (
             <div className="form-group">
-              <label htmlFor="fullName">Full Name</label>
+              <label htmlFor="fullName">Họ tên</label>
               <input
                 type="text"
                 id="fullName"
                 className="form-control"
-                placeholder="Enter your full name"
+                placeholder="Nguyễn Văn A"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 required
@@ -113,12 +117,12 @@ export default function Login() {
           {/* Password (Used in Login, Register) */}
           {(viewMode === 'login' || viewMode === 'register') && (
             <div className="form-group">
-              <label htmlFor="password">Password</label>
+              <label htmlFor="password">Mật khẩu</label>
               <input
                 type="password"
                 id="password"
                 className="form-control"
-                placeholder="Enter password"
+                placeholder="Nhập mật khẩu"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -130,12 +134,12 @@ export default function Login() {
           {/* OTP (Used in Reset) */}
           {viewMode === 'reset' && (
             <div className="form-group">
-              <label htmlFor="otp">OTP Code</label>
+              <label htmlFor="otp">Mã OTP</label>
               <input
                 type="text"
                 id="otp"
                 className="form-control"
-                placeholder="Enter 6-digit OTP"
+                placeholder="6 chữ số"
                 value={otp}
                 onChange={(e) => setOtp(e.target.value)}
                 required
@@ -147,12 +151,12 @@ export default function Login() {
           {/* New Password (Used in Reset) */}
           {viewMode === 'reset' && (
             <div className="form-group">
-              <label htmlFor="newPassword">New Password</label>
+              <label htmlFor="newPassword">Mật khẩu mới</label>
               <input
                 type="password"
                 id="newPassword"
                 className="form-control"
-                placeholder="Enter new password"
+                placeholder="Ít nhất 8 ký tự"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 required
@@ -171,7 +175,7 @@ export default function Login() {
                   setViewMode('forgot');
                 }}
               >
-                Forgot password?
+                Quên mật khẩu?
               </a>
             </div>
           )}
@@ -191,7 +195,7 @@ export default function Login() {
           <div style={{ marginTop: '1.5rem', fontSize: '0.875rem' }}>
             {viewMode === 'login' && (
               <>
-                <span>Don't have an account? </span>
+                <span>Chưa có tài khoản? </span>
                 <a
                   href="#"
                   onClick={(e) => {
@@ -199,13 +203,13 @@ export default function Login() {
                     setViewMode('register');
                   }}
                 >
-                  Register now
+                  Đăng ký ngay
                 </a>
               </>
             )}
             {viewMode === 'register' && (
               <>
-                <span>Already have an account? </span>
+                <span>Đã có tài khoản? </span>
                 <a
                   href="#"
                   onClick={(e) => {
@@ -213,13 +217,13 @@ export default function Login() {
                     setViewMode('login');
                   }}
                 >
-                  Login now
+                  Đăng nhập
                 </a>
               </>
             )}
             {(viewMode === 'forgot' || viewMode === 'reset') && (
               <>
-                <span>Remember your password? </span>
+                <span>Đã nhớ mật khẩu? </span>
                 <a
                   href="#"
                   onClick={(e) => {
@@ -227,7 +231,7 @@ export default function Login() {
                     setViewMode('login');
                   }}
                 >
-                  Back to Login
+                  Quay lại đăng nhập
                 </a>
               </>
             )}

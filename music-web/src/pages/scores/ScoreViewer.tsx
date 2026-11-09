@@ -371,7 +371,7 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
   const warning = useMemo(() => performanceWarning(info), [info]);
   const notTwoStaves = info.valid && info.staves !== 2;
   const goBack = () => {
-    if (editor.confirmLeave()) navigate(`${base}/${score.id}`);
+    void editor.confirmLeave().then((ok) => ok && navigate(`${base}/${score.id}`));
   };
 
   const goToIssue = () => {

@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import NotificationBell from '../../components/NotificationBell';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import DeleteScoreModal from '../../components/scores/DeleteScoreModal';
@@ -7,7 +6,7 @@ import EditScoreModal from '../../components/scores/EditScoreModal';
 import FilesTable from '../../components/scores/FilesTable';
 import RequestAccess from '../../components/scores/RequestAccess';
 import ReviewsSection from '../../components/scores/ReviewsSection';
-import ScoreHero from '../../components/scores/ScoreHero';
+import ScoreHero, { ScorePreview, ScoreSidebar } from '../../components/scores/ScoreHero';
 import Modal from '../../components/scores/Modal';
 import ShareModal from '../../components/scores/ShareModal';
 import TasksTable from '../../components/scores/TasksTable';
@@ -82,22 +81,12 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
     return () => clearInterval(t);
   }, [running]);
 
-  const navbar = admin ? (
-    <div style={{ padding: '0 0 1rem' }}>
-      <button className="sc-btn sc-btn--sm" onClick={goBack}>
+  const navbar = (
+    <div className="sc-backbar">
+      <button type="button" className="sc-backlink" onClick={goBack}>
         {backLabel}
       </button>
     </div>
-  ) : (
-    <nav className="navbar">
-      <div className="navbar-brand">Music App</div>
-      <div className="navbar-nav">
-        <NotificationBell />
-        <button className="sc-btn sc-btn--sm" onClick={goBack}>
-          {backLabel}
-        </button>
-      </div>
-    </nav>
   );
 
   if (state.phase === 'loading') {
@@ -144,32 +133,39 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
     <div className="sc-page">
       {navbar}
       <main className="sc-container">
-        <ScoreHero
-          score={score}
-          onEdit={() => setEditing(true)}
-          onDelete={() => setDeleting(true)}
-          onShare={() => setSharing(true)}
-          onRequestEdit={() => setRequestingEdit(true)}
-          onConverted={() => setTick((n) => n + 1)}
-        />
+        <ScoreHero score={score} onConverted={() => setTick((n) => n + 1)} />
 
-        <div className="sc-tabs" role="tablist">
-          <button role="tab" aria-selected={tab === 'files'} className="sc-tab" onClick={() => setTab('files')}>
-            File <span className="sc-tab__count">{score.files.length}</span>
-          </button>
-          <button role="tab" aria-selected={tab === 'tasks'} className="sc-tab" onClick={() => setTab('tasks')}>
-            Lịch sử tác vụ <span className="sc-tab__count">{score.latestTasks.length}</span>
-          </button>
-          <button role="tab" aria-selected={tab === 'reviews'} className="sc-tab" onClick={() => setTab('reviews')}>
-            Nhận xét{score.ratingCount ? <span className="sc-tab__count">{score.ratingCount}</span> : null}
-          </button>
+        <div className="sd-layout">
+          <div className="sd-main">
+            <ScorePreview score={score} />
+
+            <div className="sc-tabs" role="tablist">
+              <button role="tab" aria-selected={tab === 'files'} className="sc-tab" onClick={() => setTab('files')}>
+                File <span className="sc-tab__count">{score.files.length}</span>
+              </button>
+              <button role="tab" aria-selected={tab === 'tasks'} className="sc-tab" onClick={() => setTab('tasks')}>
+                Lịch sử tác vụ <span className="sc-tab__count">{score.latestTasks.length}</span>
+              </button>
+              <button role="tab" aria-selected={tab === 'reviews'} className="sc-tab" onClick={() => setTab('reviews')}>
+                Nhận xét{score.ratingCount ? <span className="sc-tab__count">{score.ratingCount}</span> : null}
+              </button>
+            </div>
+
+            {tab === 'files' && <FilesTable files={score.files} />}
+            {tab === 'tasks' && <TasksTable tasks={score.latestTasks} files={score.files} />}
+            {tab === 'reviews' && (
+              <ReviewsSection scoreId={score.id} canReview={score.canReview} onChanged={() => setTick((n) => n + 1)} />
+            )}
+          </div>
+
+          <ScoreSidebar
+            score={score}
+            onEdit={() => setEditing(true)}
+            onDelete={() => setDeleting(true)}
+            onShare={() => setSharing(true)}
+            onRequestEdit={() => setRequestingEdit(true)}
+          />
         </div>
-
-        {tab === 'files' && <FilesTable files={score.files} />}
-        {tab === 'tasks' && <TasksTable tasks={score.latestTasks} files={score.files} />}
-        {tab === 'reviews' && (
-          <ReviewsSection scoreId={score.id} canReview={score.canReview} onChanged={() => setTick((n) => n + 1)} />
-        )}
       </main>
 
       {requestingEdit && (

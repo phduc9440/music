@@ -169,14 +169,11 @@ export default function ScoreProcessing() {
   };
 
   const navbar = (
-    <nav className="navbar">
-      <div className="navbar-brand">Music App</div>
-      <div className="navbar-nav">
-        <button className="sc-btn sc-btn--sm" onClick={() => navigate(base)}>
-          ‹ Thư viện
-        </button>
-      </div>
-    </nav>
+    <div className="sc-backbar">
+      <button type="button" className="sc-backlink" onClick={() => navigate(base)}>
+        ‹ Thư viện
+      </button>
+    </div>
   );
 
   if (loadState === 'loading') {

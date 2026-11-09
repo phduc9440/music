@@ -30,6 +30,12 @@ public interface MemberRepository extends JpaRepository<Member, String> {
 
     boolean existsByEmail(String email);
 
+    /** Ghi lần đăng nhập gần nhất mà không động đến các cột khác của tài khoản. */
+    @org.springframework.transaction.annotation.Transactional
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("update Member m set m.lastLoginAt = :at where m.id = :id")
+    void updateLastLogin(@Param("id") String id, @Param("at") java.time.LocalDateTime at);
+
     /** Chỉ lấy trạng thái tài khoản (nhẹ hơn tải cả Member), dùng để chặn token của tài khoản bị khóa. */
     @Query("select m.status from Member m where m.email = :email")
     Optional<MemberStatus> findStatusByEmail(@Param("email") String email);
