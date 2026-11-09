@@ -7,6 +7,7 @@ export interface Member {
   fullName: string;
   phone?: string | null;
   address?: string | null;
+  avatarUrl?: string | null;
   status?: MemberStatus;
   emailVerified?: boolean;
   authProvider?: AuthProvider;
@@ -43,4 +44,10 @@ export interface PracticeSession {
   timingAccuracyPct?: number | null;
   scorePoints?: number | null;
   isCompleted?: boolean | null;
+}
+
+/** PATCH /api/admin/members/{id}: trường nào bỏ trống thì giữ nguyên. roles là tên không có prefix ROLE_. */
+export interface AdminUpdateMemberRequest {
+  status?: MemberStatus;
+  roles?: string[];
 }

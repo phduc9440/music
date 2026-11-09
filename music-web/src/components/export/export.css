@@ -1,0 +1,108 @@
+/* Hộp thoại xuất file (tiền tố ex-). Dùng chung biến và nút của scores.css */
+.ex-body {
+  display: flex;
+  flex-direction: column;
+}
+.ex-hint {
+  margin: 0.4rem 0 0;
+  font-size: 0.82rem;
+  color: var(--sc-muted);
+}
+.ex-step {
+  margin: 0.6rem 0;
+  font-weight: 600;
+}
+.ex-ok {
+  margin: 0.6rem 0 0;
+  font-weight: 600;
+  color: #15803d;
+}
+.ex-error {
+  margin: 0.9rem 0 0;
+  padding: 0.6rem 0.8rem;
+  border-radius: 10px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 0.88rem;
+}
+.ex-range {
+  width: 100%;
+  accent-color: var(--sc-accent);
+}
+.ex-audio {
+  width: 100%;
+  margin-top: 0.8rem;
+}
+.ex-segment {
+  display: inline-flex;
+  align-self: flex-start;
+  border: 1px solid var(--sc-line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.ex-segment button {
+  padding: 0.45rem 1rem;
+  border: 0;
+  background: #fff;
+  color: var(--sc-ink);
+  font: inherit;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+.ex-segment button + button {
+  border-left: 1px solid var(--sc-line);
+}
+.ex-segment button[aria-pressed='true'] {
+  background: var(--sc-accent);
+  color: #fff;
+}
+.ex-toast-btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Hộp thoại PDF / SVG */
+.ex-check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.7rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.ex-preview {
+  display: block;
+  width: 100%;
+  max-height: 55vh;
+  margin-top: 0.8rem;
+  object-fit: contain;
+  border: 1px solid var(--sc-line);
+  border-radius: 10px;
+  background: #fff;
+}
+.ex-pages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  max-height: 9rem;
+  margin-top: 0.8rem;
+  overflow-y: auto;
+}
+.ex-radio {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+  font-size: 0.92rem;
+  cursor: pointer;
+}
+.ex-radio .sc-input {
+  width: 5.5rem;
+  padding: 0.3rem 0.5rem;
+}

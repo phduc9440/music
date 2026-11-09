@@ -2,18 +2,30 @@ import { Link } from 'react-router-dom';
 import AuthImage from './AuthImage';
 import StatusBadge from './StatusBadge';
 import { OMR_TASK_TYPE, describeTaskError } from '../../utils/omr';
-import { DIFFICULTY_LABELS, SOURCE_LABELS, formatDateTime } from '../../utils/score';
+import {
+  ACCESS_LEVEL_LABELS,
+  DIFFICULTY_LABELS,
+  SOURCE_LABELS,
+  VISIBILITY_LABELS,
+  formatDateTime,
+} from '../../utils/score';
 import type { ScoreDetail } from '../../types';
 import DownloadMenu from './DownloadMenu';
+import MidiConvertButton from '../export/MidiConvertButton';
+import { isTaskFinished } from '../export/exportUtils';
 
 interface Props {
   score: ScoreDetail;
   onEdit: () => void;
   onDelete: () => void;
+  onShare: () => void;
+  onRequestEdit: () => void;
+  /** Gọi khi bản nhạc nhập từ MIDI chuyển xong thành MusicXML để trang tải lại. */
+  onConverted?: () => void;
 }
 
 /** Khối đầu trang chi tiết: ảnh bìa, tiêu đề, thông số và nút thao tác. */
-export default function ScoreHero({ score, onEdit, onDelete }: Props) {
+export default function ScoreHero({ score, onEdit, onDelete, onShare, onRequestEdit, onConverted }: Props) {
   const facts: [string, string][] = [
     ['Khóa / dấu hóa', score.keySignature || '—'],
     ['Nhịp', score.timeSignature || '—'],
@@ -21,6 +33,7 @@ export default function ScoreHero({ score, onEdit, onDelete }: Props) {
     ['Số ô nhịp', score.measureCount?.toString() ?? '—'],
     ['Số trang', score.pageCount?.toString() ?? '—'],
     ['Độ khó', score.difficulty ? DIFFICULTY_LABELS[score.difficulty] : '—'],
+    ['Đánh giá', score.averageRating != null ? `${score.averageRating.toFixed(1)} ★ (${score.ratingCount ?? 0})` : '—'],
     ['Nguồn', score.sourceType ? SOURCE_LABELS[score.sourceType] : '—'],
     ['Cập nhật', formatDateTime(score.updatedAt)],
   ];
@@ -28,6 +41,11 @@ export default function ScoreHero({ score, onEdit, onDelete }: Props) {
   // Mở được trình chỉnh sửa khi đã có MusicXML hiện hành (không phụ thuộc trạng thái xử lý, vì nhận diện lại lỗi vẫn giữ
   // bản MusicXML cũ dùng được)
   const hasMusicXml = score.files.some((f) => f.fileType === 'MUSICXML');
+  // Bản nhạc nhập từ MIDI chưa có MusicXML: cho chuyển đổi để mở được trình chỉnh sửa và trình phát
+  const canConvertMidi = score.canEdit && !hasMusicXml && score.files.some((f) => f.fileType === 'ORIGINAL_MIDI');
+  const activeConversion = score.latestTasks.find(
+    (t) => t.taskType === 'FORMAT_CONVERSION' && !isTaskFinished(t.status),
+  );
 
   // Lý do thất bại lấy từ tác vụ OMR mới nhất (cột reject_reason của bản nhạc không được ghi)
   const failedTask =
@@ -35,7 +53,9 @@ export default function ScoreHero({ score, onEdit, onDelete }: Props) {
       ? score.latestTasks.find((t) => t.taskType === OMR_TASK_TYPE && t.status === 'FAILED')
       : undefined;
   const failure = failedTask ? describeTaskError(failedTask) : null;
-  const failureReason = failure ? `${failure.title}${failure.detail ? ` (${failure.detail})` : ''}` : score.rejectReason;
+  const failureReason = failure
+    ? `${failure.title}${failure.detail ? ` (${failure.detail})` : ''}`
+    : score.rejectReason;
 
   return (
     <section className="sc-hero">
@@ -43,11 +63,23 @@ export default function ScoreHero({ score, onEdit, onDelete }: Props) {
       <div className="sc-hero__main">
         <div className="sc-hero__badges">
           <StatusBadge status={score.processingStatus} />
-          <span className="sc-chip">{score.visibility === 'PUBLIC' ? 'Công khai' : 'Riêng tư'}</span>
+          <span className="sc-chip">{VISIBILITY_LABELS[score.visibility]}</span>
+          {score.accessLevel && score.accessLevel !== 'OWNER' && (
+            <span className="sc-chip sc-chip--accent">Bạn là: {ACCESS_LEVEL_LABELS[score.accessLevel]}</span>
+          )}
           {score.isOfficial && <span className="sc-chip sc-chip--accent">Chính thức</span>}
         </div>
         <h1 className="sc-hero__title">{score.title}</h1>
         <p className="sc-hero__composer">{score.composer || 'Chưa rõ tác giả'}</p>
+        {score.tags && score.tags.length > 0 && (
+          <div className="sc-hero__badges">
+            {score.tags.map((t) => (
+              <span key={t.id} className="sc-chip sc-chip--tag">
+                {t.name}
+              </span>
+            ))}
+          </div>
+        )}
         {score.ownerEmail && <p className="sc-hero__owner">Chủ sở hữu: {score.ownerEmail}</p>}
 
         {(score.processingStatus === 'PENDING' || score.processingStatus === 'PROCESSING') && (
@@ -64,6 +96,9 @@ export default function ScoreHero({ score, onEdit, onDelete }: Props) {
 
         {score.processingStatus === 'FAILED' && failureReason && (
           <div className="sc-error">Xử lý thất bại: {failureReason}</div>
+        )}
+        {score.visibility === 'PRIVATE' && score.processingStatus !== 'FAILED' && score.rejectReason && (
+          <div className="sc-error">Yêu cầu công khai bị từ chối: {score.rejectReason}</div>
         )}
 
         <dl className="sc-facts">
@@ -92,11 +127,29 @@ export default function ScoreHero({ score, onEdit, onDelete }: Props) {
           >
             {score.canEdit ? 'Mở trình chỉnh sửa' : 'Xem bản nhạc'}
           </Link>
-          {/* TODO(feature/playback-basic): mở /scores/:id/play (1.22) */}
-          <button className="sc-btn" disabled title="Trình phát sẽ có ở nhánh playback-basic">
+          <Link
+            className={`sc-btn${hasMusicXml ? '' : ' is-disabled'}`}
+            to={`/scores/${score.id}/play`}
+            aria-disabled={!hasMusicXml}
+            title={hasMusicXml ? undefined : 'Bản nhạc chưa có MusicXML để phát'}
+            onClick={(e) => !hasMusicXml && e.preventDefault()}
+          >
             ▶ Phát
-          </button>
-          <DownloadMenu scoreId={score.id} files={score.files} />
+          </Link>
+          {canConvertMidi && (
+            <MidiConvertButton scoreId={score.id} resume={activeConversion} onDone={() => onConverted?.()} />
+          )}
+          <DownloadMenu scoreId={score.id} files={score.files} title={score.title} staffCount={score.staffCount} />
+          {score.canManageSharing && (
+            <button className="sc-btn" onClick={onShare}>
+              Chia sẻ
+            </button>
+          )}
+          {!score.canEdit && score.accessLevel !== 'OWNER' && (
+            <button className="sc-btn" onClick={onRequestEdit}>
+              Xin quyền chỉnh sửa
+            </button>
+          )}
           {score.canEdit && (
             <button className="sc-btn" onClick={onEdit}>
               Sửa thông tin

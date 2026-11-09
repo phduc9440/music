@@ -5,9 +5,11 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
-import { saveMusicXml } from '../../services';
+import { fetchMusicXmlWithVersion, saveMusicXml } from '../../services';
+import { versionApi } from '../../services/versionApi';
 import { getConflictVersion, getSaveErrorMessage } from '../../utils/score';
 import { EDIT_FAILURE_MESSAGES, changePitch, removeNotes, setAlteration } from './commands';
+import { transposeDocument } from './transpose';
 import type { EditResult, SymbolOp } from './commands';
 import {
   DURATION_LABELS,
@@ -25,6 +27,7 @@ import { DRAFT_INTERVAL_MS, clearDraft, loadDraft, purgeOtherDrafts, saveDraft }
 import type { Draft } from './draft';
 import { describeSelection } from './describe';
 import { History } from './history';
+import { getVersionErrorMessage } from './versionUtils';
 import { checkMeasures, confirmMeasure } from './measureCheck';
 import { setHeaderText } from './header';
 import type { HeaderField, TextStyle } from './header';
@@ -125,6 +128,8 @@ export interface ScoreEditor {
   applyMark: (op: MarkOp) => void;
   /** Thêm ô nhịp trống sau / trước ô đang chọn (không chọn gì: thêm vào cuối), hoặc xóa các ô đang chọn. */
   editMeasures: (op: 'insertAfter' | 'insertBefore' | 'delete') => void;
+  /** Chuyển giọng cả bản nhạc `semitones` nửa cung thành một lệnh hoàn tác được; trả về true nếu thành công. */
+  transposeScore: (semitones: number) => boolean;
   /** Thêm khuông Fa cho đàn, thêm khuông Sol/Fa riêng (phần nhạc mới), hoặc xóa khuông của nốt đang chọn. */
   editStaves: (op: 'addBass' | 'addG' | 'addF' | 'addTenor' | 'remove') => void;
   /** Đổi khóa nhạc, dấu hóa đầu khuông hoặc nhịp tại vùng chọn. */
@@ -174,6 +179,8 @@ export interface ScoreEditor {
   reloadLatest: () => void;
   /** Xung đột: lưu đè bằng `force=true`. */
   overwrite: () => Promise<void>;
+  /** Khôi phục một phiên bản cũ thành phiên bản mới nhất và nạp lại tài liệu; true nếu thành công. */
+  restoreVersion: (version: number) => Promise<boolean>;
   /** Xung đột: tải bản của tôi về máy dưới dạng .musicxml. */
   downloadMine: () => void;
   dismissConflict: () => void;
@@ -448,6 +455,16 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
       commit(runMark(doc, [...selection], op), false);
     },
     [canEdit, selection, doc, commit],
+  );
+
+  const transposeScore = useCallback(
+    (semitones: number): boolean => {
+      if (!canEdit) return false;
+      const result = transposeDocument(doc, semitones);
+      commit(result, false);
+      return result.ok;
+    },
+    [canEdit, doc, commit],
   );
 
   const editMeasures = useCallback(
@@ -728,6 +745,47 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     window.location.reload();
   }, [scoreId, version]);
 
+  /**
+   * Khôi phục một phiên bản cũ từ bảng lịch sử: BE lưu nó thành phiên bản mới, sau đó tải lại nội dung vào tài liệu
+   * đang mở, xóa lịch sử hoàn tác và bản nháp. Lệch phiên bản (2014) thì mở hộp thoại xung đột sẵn có.
+   * Trả về true nếu khôi phục xong.
+   */
+  const restoreVersion = useCallback(
+    async (target: number): Promise<boolean> => {
+      if (!canEdit || savingRef.current) return false;
+      savingRef.current = true;
+      setSaving(true);
+      try {
+        const result = await versionApi.restore(scoreId, target, version);
+        try {
+          const fetched = await fetchMusicXmlWithVersion(scoreId);
+          doc.restore(fetched.xml);
+        } catch {
+          toast.warn(`Đã khôi phục thành phiên bản ${result.version} nhưng chưa tải lại được, hãy tải lại trang`);
+          return false;
+        }
+        historyRef.current.clear();
+        clearDraft(scoreId, version);
+        purgeOtherDrafts(scoreId, result.version);
+        setVersion(result.version);
+        setConflict(null);
+        setSelection(new Set());
+        sync();
+        toast.success(`Đã khôi phục phiên bản ${target} thành phiên bản ${result.version}`);
+        return true;
+      } catch (err) {
+        const latest = getConflictVersion(err);
+        if (latest !== undefined) setConflict({ latestVersion: latest });
+        else toast.error(getVersionErrorMessage(err));
+        return false;
+      } finally {
+        savingRef.current = false;
+        setSaving(false);
+      }
+    },
+    [canEdit, doc, scoreId, version, sync],
+  );
+
   const downloadMine = useCallback(() => {
     const blob = new Blob([doc.serialize()], { type: 'application/vnd.recordare.musicxml+xml' });
     const url = URL.createObjectURL(blob);
@@ -814,6 +872,8 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     if (!canEdit) return;
     const onKey = (e: KeyboardEvent) => {
       if (blocked || conflict || draft) return;
+      // Có hộp thoại đang mở (lịch sử phiên bản, xuất file...): phím thuộc về hộp thoại, không sửa bản nhạc phía sau
+      if (document.querySelector('.sc-modal-overlay')) return;
       const target = e.target as HTMLElement | null;
       if (target && (/^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName) || target.isContentEditable)) return;
       const mod = e.ctrlKey || e.metaKey;
@@ -925,6 +985,7 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     pasteChordText,
     applyMark,
     editMeasures,
+    transposeScore,
     editStaves,
     editNotation,
     editVoice,
@@ -953,6 +1014,7 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     discardDraft,
     reloadLatest,
     overwrite,
+    restoreVersion,
     downloadMine,
     dismissConflict,
     confirmLeave,

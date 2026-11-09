@@ -287,8 +287,7 @@ public class InternalAiTaskServiceImpl implements InternalAiTaskService {
     private ProcessingStatus failedScoreStatus(AiTask task) {
         Score score = task.getScore();
         if (score != null
-                && scoreFileRepository.existsCurrentFileFromOtherTask(
-                        score.getId(), FileType.MUSICXML, task.getId())) {
+                && scoreFileRepository.existsCurrentFileFromOtherTask(score.getId(), FileType.MUSICXML, task.getId())) {
             return ProcessingStatus.COMPLETED;
         }
         return ProcessingStatus.FAILED;

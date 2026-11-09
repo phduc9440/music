@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import DownloadMenu from '../../components/scores/DownloadMenu';
+import VersionHistoryPanel from '../../components/editor/VersionHistoryPanel';
 import InstrumentMenu from '../../components/scores/InstrumentMenu';
 import EditorToolPanel from '../../components/scores/EditorToolPanel';
 import ChordBar from '../../components/scores/ChordBar';
@@ -27,8 +28,10 @@ import {
 import { syncTitle } from '../../components/editor/header';
 import { ScoreDocument } from '../../components/editor/ScoreDocument';
 import { DURATION_LABELS, dotsLabel } from '../../components/editor/durations';
-import { usePlayback } from '../../components/editor/usePlayback';
+import { PlayerBar } from '../../components/player/PlayerBar';
+import { usePlayer } from '../../components/player/usePlayer';
 import { useScoreEditor } from '../../components/editor/useScoreEditor';
+import { countView } from '../../services/playbackApi';
 import { fetchMusicXmlWithVersion, scoreApi } from '../../services';
 import type { ScoreDetail as ScoreDetailData } from '../../types';
 import { isValidScoreId } from '../../utils/omr';
@@ -212,7 +215,9 @@ export default function ScoreViewer() {
                 {action.label}
               </button>
             )}
-            {phase === 'parseError' && score && <DownloadMenu scoreId={score.id} files={score.files} />}
+            {phase === 'parseError' && score && (
+              <DownloadMenu scoreId={score.id} files={score.files} title={score.title} staffCount={score.staffCount} />
+            )}
           </div>
         </div>
       )}
@@ -243,12 +248,15 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
   const [notationOpen, setNotationOpen] = useState(false);
   const [progress, setProgress] = useState(1);
   const [toolsOpen, setToolsOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [hideWarning, setHideWarning] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [parseFailed, setParseFailed] = useState(false);
   const [focusMeasure, setFocusMeasure] = useState<{ index: number; key: number } | null>(null);
   const [issueCursor, setIssueCursor] = useState(0);
+  const [playerOpen, setPlayerOpen] = useState(false);
+  const playAfterLoad = useRef(false);
 
   const { zoom, mode } = prefs;
   const canEdit = score.canEdit;
@@ -263,7 +271,51 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
     blocked: helpOpen,
   });
 
-  const playback = usePlayback(doc, score.tempoBpm ?? 100);
+  const player = usePlayer(doc, {
+    scoreId: score.id,
+    enabled: playerOpen,
+    fallbackBpm: score.tempoBpm ?? 100,
+    revision: editor.revision,
+    onFirstPlay: () => void countView(score.id),
+  });
+  const selectionRef = useRef(editor.selection);
+  useEffect(() => {
+    selectionRef.current = editor.selection;
+  });
+  const { canPlay, playFrom, stop: stopPlayer, status: playerStatus } = player;
+  const { a: loopA, b: loopB, enabled: loopOn } = player.loop;
+  const loopRange = useMemo(
+    () => (playerOpen && loopA !== null && loopB !== null ? { start: loopA, end: loopB, active: loopOn } : null),
+    [playerOpen, loopA, loopB, loopOn],
+  );
+
+  // Mở thanh Player bằng nút Phát: đợi mẫu âm tải xong rồi mới phát
+  useEffect(() => {
+    if (playerOpen && playAfterLoad.current && canPlay) {
+      playAfterLoad.current = false;
+      playFrom(selectionRef.current);
+    }
+  }, [playerOpen, canPlay, playFrom]);
+
+  // Sửa bản nhạc khi đang phát: dừng để không phát lệch nội dung mới
+  const lastRevision = useRef(editor.revision);
+  useEffect(() => {
+    if (lastRevision.current === editor.revision) return;
+    lastRevision.current = editor.revision;
+    if (playerStatus !== 'stopped') stopPlayer();
+  }, [editor.revision, playerStatus, stopPlayer]);
+
+  const onPlayButton = () => {
+    if (!playerOpen) {
+      playAfterLoad.current = true;
+      setPlayerOpen(true);
+    } else player.playFrom(editor.selection);
+  };
+  const closePlayer = () => {
+    playAfterLoad.current = false;
+    stopPlayer();
+    setPlayerOpen(false);
+  };
   const issueMeasures = useMemo(() => new Set(editor.issues.map((i) => i.measureIndex)), [editor.issues]);
 
   const updatePrefs = useCallback((patch: Partial<typeof prefs>) => {
@@ -334,7 +386,7 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
             <button className="sc-btn sc-btn--primary" onClick={goBack}>
               Về trang chi tiết
             </button>
-            <DownloadMenu scoreId={score.id} files={score.files} />
+            <DownloadMenu scoreId={score.id} files={score.files} title={score.title} staffCount={score.staffCount} />
           </div>
         </div>
       </div>
@@ -430,16 +482,24 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
           )}
           <button
             className="sc-btn"
-            onClick={() => playback.toggle(editor.selection)}
-            aria-pressed={playback.playing}
+            onClick={onPlayButton}
+            aria-pressed={player.status === 'playing'}
             title={
-              playback.playing ? 'Dừng phát' : editor.selection.size > 0 ? 'Phát từ nốt đang chọn' : 'Phát cả bản nhạc'
+              player.status === 'playing'
+                ? 'Tạm dừng'
+                : editor.selection.size > 0
+                  ? 'Phát từ nốt đang chọn'
+                  : 'Phát cả bản nhạc'
             }
           >
-            {playback.playing ? <IconStop /> : <IconPlay />} {playback.playing ? 'Dừng' : 'Phát'}
+            {player.status === 'playing' ? <IconStop /> : <IconPlay />}{' '}
+            {player.status === 'playing' ? 'Tạm dừng' : 'Phát'}
           </button>
-          <InstrumentMenu parts={playback.parts} onChange={playback.setInstrument} />
-          <DownloadMenu scoreId={score.id} files={score.files} />
+          <InstrumentMenu parts={player.parts} onChange={player.setInstrument} />
+          <button className="sc-btn" onClick={() => setHistoryOpen(true)} title="Lịch sử phiên bản">
+            Lịch sử
+          </button>
+          <DownloadMenu scoreId={score.id} files={score.files} title={score.title} staffCount={score.staffCount} />
           <button
             className="sc-btn sv-icon"
             onClick={toggleFullscreen}
@@ -519,6 +579,10 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
             selected={editor.selection}
             issueMeasures={issueMeasures}
             focusMeasure={focusMeasure}
+            playing={player.activeIds}
+            mutedStaves={player.mutedStaves}
+            loopRange={loopRange}
+            followMeasure={player.status === 'playing' ? player.followMeasure : null}
             onSelectNotes={canEdit ? editor.select : undefined}
             onDragPitch={canEdit ? editor.dragPitch : undefined}
             inputMode={editor.inputMode}
@@ -567,6 +631,22 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
           onMove={editor.moveLyric}
           onPaste={editor.pasteLyricsText}
           onExit={() => editor.setInputMode(false)}
+        />
+      )}
+      {playerOpen && (
+        <PlayerBar
+          player={player}
+          onClose={closePlayer}
+          onApplyTranspose={
+            canEdit
+              ? (semitones) => {
+                  const done = editor.transposeScore(semitones);
+                  if (done) player.setTranspose(0); // bản nhạc đã ở giọng mới, không cộng thêm khi nghe
+                  return done;
+                }
+              : undefined
+          }
+          applyTransposeHint="Bạn có thể hoàn tác (Ctrl+Z) và cần bấm Lưu để giữ lại."
         />
       )}
       <footer className="sv-status">
@@ -633,6 +713,17 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
             </button>
           </div>
         </Modal>
+      )}
+
+      {historyOpen && (
+        <VersionHistoryPanel
+          scoreId={score.id}
+          canEdit={canEdit}
+          dirty={editor.dirty}
+          busy={editor.saving}
+          onRestore={editor.restoreVersion}
+          onClose={() => setHistoryOpen(false)}
+        />
       )}
 
       {editor.conflict && (

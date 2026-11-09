@@ -21,6 +21,11 @@ public enum ErrorCode {
     EMPLOYEE_NOT_FOUND(1008, "Employee not found", HttpStatus.NOT_FOUND),
     INVALID_REQUEST(1009, "Invalid request", HttpStatus.BAD_REQUEST),
     TOO_MANY_REQUESTS(1010, "Too many requests. Please try again later.", HttpStatus.TOO_MANY_REQUESTS),
+    FULL_NAME_REQUIRED(1011, "Họ tên là bắt buộc", HttpStatus.BAD_REQUEST),
+    PASSWORD_SAME_AS_OLD(1012, "Mật khẩu mới phải khác mật khẩu hiện tại", HttpStatus.BAD_REQUEST),
+    CANNOT_MODIFY_SELF(1013, "Quản trị viên không thể khóa hoặc hạ quyền chính mình", HttpStatus.BAD_REQUEST),
+    ROLE_NOT_EXISTED(1015, "Vai trò không tồn tại", HttpStatus.BAD_REQUEST),
+    AVATAR_INVALID(1014, "Ảnh đại diện phải là JPG hoặc PNG, tối đa 2MB", HttpStatus.BAD_REQUEST),
 
     // Score files & OMR (2xxx)
     SCORE_NOT_EXISTED(2001, "Bản nhạc không tồn tại", HttpStatus.NOT_FOUND),
@@ -43,6 +48,10 @@ public enum ErrorCode {
             "Bản nhạc vừa được lưu ở nơi khác, hãy tải bản mới nhất hoặc ghi đè bản của bạn",
             HttpStatus.CONFLICT),
 
+    MUSICXML_FILE_INVALID(2015, "File MusicXML không hợp lệ hoặc bị hỏng", HttpStatus.BAD_REQUEST),
+    MIDI_INVALID(2016, "File MIDI không hợp lệ hoặc bị hỏng", HttpStatus.BAD_REQUEST),
+    IMPORT_TYPE_NOT_SUPPORTED(
+            2021, "Chỉ hỗ trợ một file .musicxml, .xml, .mxl, .mid hoặc .midi", HttpStatus.BAD_REQUEST),
     SCORE_TITLE_INVALID(2017, "Tiêu đề là bắt buộc và tối đa 255 ký tự", HttpStatus.BAD_REQUEST),
     SCORE_COMPOSER_INVALID(2018, "Tên tác giả tối đa 255 ký tự", HttpStatus.BAD_REQUEST),
     SCORE_NOTES_INVALID(2019, "Ghi chú tối đa 5000 ký tự", HttpStatus.BAD_REQUEST),
@@ -57,6 +66,39 @@ public enum ErrorCode {
     AI_TASK_NOT_EXISTED(2101, "Tác vụ AI không tồn tại", HttpStatus.NOT_FOUND),
     AI_TASK_NOT_CANCELLABLE(2102, "Tác vụ đã kết thúc nên không thể hủy", HttpStatus.CONFLICT),
     AI_SERVICE_UNAVAILABLE(2103, "Dịch vụ nhận diện nhạc tạm thời không khả dụng", HttpStatus.SERVICE_UNAVAILABLE),
+
+    // Tags (23xx)
+    TAG_NOT_EXISTED(2301, "Thể loại không tồn tại", HttpStatus.NOT_FOUND),
+    TOO_MANY_TAGS(2302, "Mỗi bản nhạc tối đa 10 thể loại", HttpStatus.BAD_REQUEST),
+
+    // Sharing & reviews (24xx)
+    ACCESS_REQUEST_NOT_EXISTED(2402, "Không có yêu cầu xin quyền nào đang chờ", HttpStatus.NOT_FOUND),
+    ALREADY_HAS_ACCESS(
+            2404,
+            "Bạn đã có quyền này hoặc cao hơn với bản nhạc (bản nhạc công khai thì ai cũng xem và nhận xét được)",
+            HttpStatus.BAD_REQUEST),
+    CANNOT_SHARE_WITH_OWNER(2406, "Không thể chia sẻ bản nhạc cho chính chủ sở hữu", HttpStatus.BAD_REQUEST),
+    SHARE_MEMBER_NOT_EXISTED(2407, "Người này chưa có quyền với bản nhạc", HttpStatus.NOT_FOUND),
+    SHARE_PERMISSION_INVALID(
+            2408, "Cấp quyền phải là 1 (xem), 2 (nhận xét) hoặc 3 (chỉnh sửa)", HttpStatus.BAD_REQUEST),
+    REVIEW_RATING_INVALID(2410, "Số sao phải từ 1 đến 5", HttpStatus.BAD_REQUEST),
+    REVIEW_COMMENT_INVALID(2411, "Bình luận tối đa 2000 ký tự", HttpStatus.BAD_REQUEST),
+    REVIEW_EMPTY(2412, "Nhận xét cần có số sao hoặc bình luận", HttpStatus.BAD_REQUEST),
+    REVIEW_NOT_EXISTED(2413, "Nhận xét không tồn tại", HttpStatus.NOT_FOUND),
+    NOTIFICATION_NOT_EXISTED(2501, "Thông báo không tồn tại", HttpStatus.NOT_FOUND),
+
+    // Export 27xx
+    EXPORT_OPTION_INVALID(2701, "Tùy chọn xuất file không hợp lệ", HttpStatus.BAD_REQUEST),
+    AUDIO_TOO_LONG(2702, "Bản nhạc quá dài để xuất âm thanh (tối đa 20 phút), hãy tăng tempo", HttpStatus.BAD_REQUEST),
+    EXPORT_LIMIT_EXCEEDED(
+            2703,
+            "Bạn đang xuất quá nhiều file, vui lòng đợi các tác vụ xuất đang chạy hoàn tất",
+            HttpStatus.TOO_MANY_REQUESTS),
+    EXPORT_NOT_AVAILABLE(2704, "Tính năng xuất file chưa sẵn sàng trên máy chủ", HttpStatus.SERVICE_UNAVAILABLE),
+    EXPORT_SOURCE_NOT_SUPPORTED(2705, "Bản nhạc không có nguồn phù hợp để chuyển đổi", HttpStatus.CONFLICT),
+
+    // Score versions 28xx
+    SCORE_VERSION_NOT_EXISTED(2801, "Phiên bản bản nhạc không tồn tại hoặc đã bị xóa", HttpStatus.NOT_FOUND),
     ;
 
     int code;

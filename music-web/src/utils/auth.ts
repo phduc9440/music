@@ -1,28 +1,24 @@
-import { userApi, adminApi } from '../services';
-import type { AuthResponse } from '../types';
+import { authApi, userApi } from '../services';
+import type { AuthResponse, Member } from '../types';
+
+export type AppRole = 'USER' | 'ADMIN';
+
+export const isAdminMember = (member: Pick<Member, 'roles'>) => !!member.roles?.includes('ADMIN');
 
 /**
- * Stores the issued tokens, detects whether the account is a USER or ADMIN and
- * returns the route to navigate to. Clears the tokens again if no profile can be loaded.
+ * Token đã nằm trong cookie HttpOnly do backend set. Hàm này đọc roles từ profile và trả về route cần chuyển tới.
+ * The stored role is only used for UI (menus, route guards); the backend enforces permissions.
+ * Nếu không tải được profile thì xoá cookie (gọi logout).
  */
-export async function completeLogin(auth: AuthResponse): Promise<string> {
-  localStorage.setItem('token', auth.token);
-  if (auth.refreshToken) localStorage.setItem('refreshToken', auth.refreshToken);
-
+export async function completeLogin(_auth: AuthResponse): Promise<string> {
   try {
-    await userApi.getMe();
-    localStorage.setItem('role', 'USER');
-    return '/profile';
+    const res = await userApi.getMe();
+    const admin = isAdminMember(res.data.result);
+    localStorage.setItem('role', admin ? 'ADMIN' : 'USER');
+    return admin ? '/admin' : '/profile';
   } catch {
-    try {
-      await adminApi.getMe();
-      localStorage.setItem('role', 'ADMIN');
-      return '/admin';
-    } catch {
-      localStorage.removeItem('token');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('role');
-      throw new Error('Could not fetch user/admin profile.');
-    }
+    localStorage.removeItem('role');
+    await authApi.logout().catch(() => undefined);
+    throw new Error('Could not fetch profile.');
   }
 }

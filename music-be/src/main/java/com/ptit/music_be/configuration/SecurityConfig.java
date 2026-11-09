@@ -39,14 +39,17 @@ public class SecurityConfig {
 
         http.authorizeHttpRequests(request -> request.requestMatchers(PUBLIC_ENDPOINTS)
                 .permitAll()
+                .requestMatchers("/api/admin/**")
+                .hasRole("ADMIN")
                 .anyRequest()
                 .authenticated());
 
-        http.oauth2ResourceServer(oauth2 ->
-                oauth2.jwt(jwtConfigurer -> jwtConfigurer
+        http.oauth2ResourceServer(oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer
                         .decoder(customJwtDecoder)
                         .jwtAuthenticationConverter(jwtAuthenticationConverter()))
-                .authenticationEntryPoint(new JwtAuthenticationEntryPoint()));
+                .bearerTokenResolver(new CookieBearerTokenResolver())
+                .authenticationEntryPoint(new JwtAuthenticationEntryPoint())
+                .accessDeniedHandler(new JwtAccessDeniedHandler()));
 
         http.csrf(AbstractHttpConfigurer::disable);
         http.cors(Customizer.withDefaults());

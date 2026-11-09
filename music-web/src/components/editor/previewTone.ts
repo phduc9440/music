@@ -62,6 +62,9 @@ const getContext = (): AudioContext | null => {
   return context;
 };
 
+/** AudioContext dùng chung với Player để hai nơi cùng một chuỗi vang / nén; null nếu trình duyệt không hỗ trợ. */
+export const getSharedAudioContext = (): AudioContext | null => getContext();
+
 /** Dừng ngay mọi âm đang phát hoặc đã hẹn giờ. */
 export function stopAllTones(): void {
   window.clearTimeout(timer);

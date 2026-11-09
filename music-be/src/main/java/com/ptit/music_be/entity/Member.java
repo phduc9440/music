@@ -41,6 +41,10 @@ public class Member {
 
     String address;
 
+    /** Public Cloudinary URL of the avatar (public id = avatars/{memberId}). */
+    @Column(name = "avatar_url", length = 512)
+    String avatarUrl;
+
     @Convert(converter = MemberStatusConverter.class)
     @Column(name = "status")
     MemberStatus status;

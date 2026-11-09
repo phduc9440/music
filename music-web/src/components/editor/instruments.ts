@@ -7,6 +7,7 @@
  *
  * Mọi hàm nhận `BaseAudioContext` nên chạy được cả trên `OfflineAudioContext` (dùng để kiểm thử mà không cần loa).
  */
+import { levelAmplitude } from './loudness';
 import { midiToFrequency } from './pitch';
 import type { ScoreDocument } from './ScoreDocument';
 
@@ -17,6 +18,13 @@ export interface InstrumentInfo {
   /** Tên tiếng Việt hiển thị. */
   label: string;
 }
+
+/**
+ * Nhạc cụ đệm hợp âm khi nghe: nhạc cụ đa âm (organ, guitar) tự đệm bằng chính tiếng của mình; nhạc cụ đơn âm (sáo, kèn, giọng
+ * hát) và đàn dây thì phần đệm do piano chơi.
+ */
+export const accompanimentInstrument = (melody: InstrumentId): InstrumentId =>
+  melody === 'organ' || melody === 'guitar' ? melody : 'piano';
 
 export const INSTRUMENTS: readonly InstrumentInfo[] = [
   { id: 'piano', label: 'Piano' },
@@ -42,6 +50,8 @@ export interface VoiceSpec {
   duration: number;
   /** Độ to 0–1; 0,8 là mức mặc định (mf). */
   level: number;
+  /** Nút nhận âm thanh của giọng; bỏ trống thì nối thẳng vào chuỗi chung (Player nối vào kênh riêng từng khuông). */
+  destination?: AudioNode;
 }
 
 /** Giọng đã hẹn giờ, để cắt ngay khi bấm Dừng. */
@@ -114,14 +124,16 @@ export function getMaster(ctx: BaseAudioContext): AudioNode {
   wet.gain.value = 0.2;
   const reverb = ctx.createConvolver();
   reverb.buffer = buildImpulse(ctx, 1.6);
+  // Chỉ để chống vỡ tiếng khi nhiều nốt chồng nhau: ngưỡng cao, tỉ lệ lớn. Trước đây ngưỡng −20 dB tỉ lệ 4:1 nén phẳng
+  // gần hết mức to nhỏ (ff chỉ to hơn mf chừng 0,5 dB), nên pp / ff gần như không khác nhau (xem loudness.ts).
   const compressor = ctx.createDynamicsCompressor();
-  compressor.threshold.value = -20;
-  compressor.knee.value = 18;
-  compressor.ratio.value = 4;
-  compressor.attack.value = 0.008;
+  compressor.threshold.value = -6;
+  compressor.knee.value = 6;
+  compressor.ratio.value = 12;
+  compressor.attack.value = 0.004;
   compressor.release.value = 0.25;
   const out = ctx.createGain();
-  out.gain.value = 0.95;
+  out.gain.value = 1.05; // bù lại phần nhỏ đi khi bộ nén không còn tự khuếch đại như trước (fff vẫn dưới 0 dBFS)
   input.connect(dry).connect(compressor);
   input.connect(reverb).connect(wet).connect(compressor);
   compressor.connect(out).connect(ctx.destination);
@@ -386,8 +398,7 @@ const buildSustained = (ctx: BaseAudioContext, s: VoiceSpec, f: number, peak: nu
 export function scheduleVoice(ctx: BaseAudioContext, spec: VoiceSpec): Voice {
   const profile = PROFILES[spec.instrument];
   const f = midiToFrequency(spec.midi);
-  const loud = Math.min(1.25, Math.max(0.4, spec.level / 0.8));
-  const peak = profile.trim * (0.35 + 0.65 * Math.min(1, spec.level / 0.8)) * loud;
+  const peak = profile.trim * levelAmplitude(spec.level);
 
   const built =
     spec.instrument === 'piano'
@@ -398,7 +409,7 @@ export function scheduleVoice(ctx: BaseAudioContext, spec: VoiceSpec): Voice {
           ? buildBells(ctx, spec, f, peak)
           : buildSustained(ctx, spec, f, peak);
   const { env, sources, valueAt } = built;
-  env.connect(getMaster(ctx));
+  env.connect(spec.destination ?? getMaster(ctx));
 
   // Nhả phím từ đúng mức biên độ tại thời điểm đó rồi tắt dần (chuông thì để vang tự nhiên)
   const releaseAt = spec.start + Math.max(0.03, spec.duration);
