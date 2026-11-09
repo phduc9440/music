@@ -1,5 +1,13 @@
 import apiClient from './client';
-import type { AdminTag, AdminUpdateMemberRequest, ApiResponse, Member, PageResult } from '../types';
+import type {
+  AdminTag,
+  AdminUpdateMemberRequest,
+  ApiResponse,
+  ErrorLogEntry,
+  Member,
+  PageResult,
+  SystemMetrics,
+} from '../types';
 
 /** Khớp AdminMemberController của BE (/api/admin/members). Chỉ ROLE_ADMIN gọi được. page bắt đầu từ 0. */
 export const adminApi = {
@@ -15,4 +23,9 @@ export const adminApi = {
   createTag: (name: string) => apiClient.post<ApiResponse<AdminTag>>('/admin/tags', { name }),
   updateTag: (id: string, name: string) => apiClient.put<ApiResponse<AdminTag>>(`/admin/tags/${id}`, { name }),
   deleteTag: (id: string) => apiClient.delete<ApiResponse<void>>(`/admin/tags/${id}`),
+  // 4.8: giám sát hệ thống
+  getMetrics: () => apiClient.get<ApiResponse<SystemMetrics>>('/admin/system/metrics'),
+  getErrorLogs: (limit?: number) =>
+    apiClient.get<ApiResponse<ErrorLogEntry[]>>('/admin/system/error-logs', { params: { limit } }),
+  clearErrorLogs: () => apiClient.delete<ApiResponse<void>>('/admin/system/error-logs'),
 };

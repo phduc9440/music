@@ -1,0 +1,72 @@
+.sys-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+}
+
+.sys-card {
+  background: #fff;
+  border: 1px solid var(--surface-border);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.sys-card__label {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.sys-card__value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin: 2px 0 8px;
+}
+
+.sys-card__detail {
+  margin-top: 8px;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+.sys-meter {
+  height: 8px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+
+.sys-meter__bar {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.sys-meter__bar--ok {
+  background: var(--success-color);
+}
+
+.sys-meter__bar--warn {
+  background: #f59e0b;
+}
+
+.sys-meter__bar--danger {
+  background: var(--danger-color);
+}
+
+.sys-logger {
+  white-space: nowrap;
+  color: var(--text-secondary);
+}
+
+.sys-stack {
+  max-height: 260px;
+  overflow: auto;
+  padding: 12px;
+  border-radius: 8px;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
