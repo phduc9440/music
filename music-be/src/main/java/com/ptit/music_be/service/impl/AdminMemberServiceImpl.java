@@ -13,6 +13,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ptit.music_be.configuration.MemberStatusGuard;
 import com.ptit.music_be.dto.enums.MemberStatus;
 import com.ptit.music_be.dto.request.AdminUpdateMemberRequest;
 import com.ptit.music_be.dto.response.AdminMemberDetailResponse;
@@ -47,6 +48,7 @@ public class AdminMemberServiceImpl implements AdminMemberService {
     RoleRepository roleRepository;
     MemberMapper memberMapper;
     EntityManager entityManager;
+    MemberStatusGuard memberStatusGuard;
 
     @Override
     @Transactional(readOnly = true)
@@ -133,6 +135,7 @@ public class AdminMemberServiceImpl implements AdminMemberService {
                 throw new AppException(ErrorCode.CANNOT_MODIFY_SELF);
             }
             member.setStatus(request.getStatus());
+            memberStatusGuard.evict(member.getEmail()); // khóa có hiệu lực ngay, mở khóa cũng vậy
         }
 
         if (request.getRoles() != null) {

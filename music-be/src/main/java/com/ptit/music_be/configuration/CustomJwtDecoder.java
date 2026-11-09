@@ -22,6 +22,8 @@ public class CustomJwtDecoder implements JwtDecoder {
     @Value("${jwt.signerKey}")
     private String SIGNER_KEY;
 
+    final MemberStatusGuard memberStatusGuard;
+
     NimbusJwtDecoder nimbusJwtDecoder;
 
     @Override
@@ -38,6 +40,10 @@ public class CustomJwtDecoder implements JwtDecoder {
         // Refresh tokens must only be accepted by /auth/refresh, never as API bearer tokens.
         if ("refresh".equals(jwt.getClaimAsString("typ"))) {
             throw new JwtException("Refresh token cannot be used as access token");
+        }
+        // Tài khoản bị admin khóa thì token đã cấp cũng không dùng được nữa (FE sẽ thử refresh rồi bị từ chối)
+        if (memberStatusGuard.isLocked(jwt.getSubject())) {
+            throw new JwtException("Account is locked");
         }
         return jwt;
     }
