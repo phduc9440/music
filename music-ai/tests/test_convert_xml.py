@@ -310,3 +310,17 @@ def test_notes_are_untouched_when_signatures_are_dropped():
     measures = [[note("C", 4, 3)], [_TIME_3_4, note("D", 4, 3)]]
     root = parse(normalize_musicxml(score(part("P1", 1, ("G", 2), measures, beats=3))))
     assert [n.findtext("pitch/step") for n in root.iter("note")] == ["C", "D"]
+
+
+_CLEF_G = "<attributes><clef><sign>G</sign><line>2</line></clef></attributes>"
+_CLEF_F = "<attributes><clef><sign>F</sign><line>4</line></clef></attributes>"
+
+
+def test_repeated_clefs_are_dropped_but_a_real_clef_change_stays():
+    # kern ghép các hệ có *clefG2 ở mỗi chỗ nối nên music21 in lại khóa Sol ở đầu mỗi hệ
+    three = [note("C", 4, 3)]
+    measures = [three, [_CLEF_G, *three], three, [_CLEF_F, *three], [_CLEF_F, *three], [_CLEF_G, *three]]
+    root = parse(normalize_musicxml(score(part("P1", 1, ("G", 2), measures, beats=3))))
+    with_clef = [m.get("number") for m in root.iter("measure") if m.find("attributes/clef") is not None]
+    assert with_clef == ["1", "4", "6"]
+    assert all(len(m.find("attributes")) > 0 for m in root.iter("measure") if m.find("attributes") is not None)
