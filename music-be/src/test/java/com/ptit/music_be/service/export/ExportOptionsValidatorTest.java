@@ -86,7 +86,6 @@ class ExportOptionsValidatorTest {
     @Test
     void rejectsUnsupportedOrMissingFormat() {
         Score score = score(2);
-        assertInvalid("PDF", null, score);
         assertInvalid("FLAC", null, score);
         assertInvalid("", null, score);
         assertInvalid(null, null, score);
@@ -138,5 +137,49 @@ class ExportOptionsValidatorTest {
         assertInvalid("SVG", "{\"page\":1.5}", score(2));
         assertInvalid("SVG", "{\"page\":\"first\"}", score(2));
         assertInvalid("SVG", "{\"dpi\":300}", score(2));
+    }
+
+    @Test
+    void pdfWithoutOptionsGetsDefaults() {
+        ExportSpec spec = validator.validate("pdf", null, score(2));
+
+        assertThat(spec.fileType()).isEqualTo(FileType.PDF);
+        assertThat(spec.taskType()).isEqualTo(AiTaskType.FORMAT_CONVERSION);
+        assertThat(spec.options())
+                .isEqualTo(json2("{\"pageSize\":\"A4\",\"orientation\":\"PORTRAIT\",\"staffSpaceMm\":1.75,"
+                        + "\"marginMm\":15,\"showTitle\":true,\"measureNumbers\":\"SYSTEM\",\"showChords\":true}"));
+    }
+
+    @Test
+    void pdfOptionsAreNormalized() {
+        ExportSpec a = validator.validate(
+                "PDF", json2("{\"staffSpaceMm\":2,\"pageSize\":\"LETTER\",\"showChords\":false}"), score(2));
+        ExportSpec b = validator.validate(
+                "PDF", json2("{\"showChords\":false,\"pageSize\":\"LETTER\",\"staffSpaceMm\":2.001}"), score(2));
+
+        assertThat(a.options().get("staffSpaceMm").asDouble()).isEqualTo(2.0);
+        // 2 và 2.001 cùng làm tròn về 2.0 nên cùng khóa cache
+        assertThat(a.options()).isEqualTo(b.options());
+        assertThat(a.options().get("showChords").asBoolean()).isFalse();
+    }
+
+    @Test
+    void pdfRejectsBadValues() {
+        Score score = score(2);
+        assertInvalid("PDF", "{\"pageSize\":\"A3\"}", score);
+        assertInvalid("PDF", "{\"orientation\":\"SIDEWAYS\"}", score);
+        assertInvalid("PDF", "{\"staffSpaceMm\":1.49}", score);
+        assertInvalid("PDF", "{\"staffSpaceMm\":2.21}", score);
+        assertInvalid("PDF", "{\"staffSpaceMm\":\"1.75\"}", score);
+        assertInvalid("PDF", "{\"marginMm\":9}", score);
+        assertInvalid("PDF", "{\"marginMm\":26}", score);
+        assertInvalid("PDF", "{\"marginMm\":12.5}", score);
+        assertInvalid("PDF", "{\"showTitle\":\"yes\"}", score);
+        assertInvalid("PDF", "{\"measureNumbers\":\"ALL\"}", score);
+        assertInvalid("PDF", "{\"showChords\":1}", score);
+        assertInvalid("PDF", "{\"tempoPercent\":50}", score);
+        // Các mốc biên hợp lệ
+        validator.validate("PDF", json2("{\"staffSpaceMm\":1.5,\"marginMm\":10}"), score);
+        validator.validate("PDF", json2("{\"staffSpaceMm\":2.2,\"marginMm\":25}"), score);
     }
 }

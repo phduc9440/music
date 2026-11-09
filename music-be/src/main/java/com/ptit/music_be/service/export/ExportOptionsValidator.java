@@ -30,6 +30,13 @@ public class ExportOptionsValidator {
     public static final Set<String> HANDS = Set.of("BOTH", "RIGHT", "LEFT");
 
     private static final Set<String> AUDIO_KEYS_MP3 = Set.of("bitrate", "tempoPercent", "transpose", "hands");
+    public static final Set<String> PAGE_SIZES = Set.of("A4", "LETTER");
+    public static final Set<String> ORIENTATIONS = Set.of("PORTRAIT", "LANDSCAPE");
+    public static final Set<String> MEASURE_NUMBERS = Set.of("SYSTEM", "EVERY", "NONE");
+
+    private static final Set<String> PDF_KEYS =
+            Set.of("pageSize", "orientation", "staffSpaceMm", "marginMm", "showTitle", "measureNumbers", "showChords");
+
     private static final Set<String> AUDIO_KEYS_WAV = Set.of("tempoPercent", "transpose", "hands");
 
     private final ObjectMapper objectMapper;
@@ -48,6 +55,7 @@ public class ExportOptionsValidator {
             case MP3, WAV -> validateAudio(type, options, score);
             case MIDI, MUSICXML -> validateNoOptions(type, options);
             case SVG -> validateSvg(options);
+            case PDF -> validatePdf(options);
             default -> throw invalid();
         };
     }
@@ -56,6 +64,24 @@ public class ExportOptionsValidator {
     private ExportSpec validateNoOptions(FileType type, JsonNode options) {
         requireObject(options, Set.of());
         return new ExportSpec(type, AiTaskType.FORMAT_CONVERSION, objectMapper.createObjectNode());
+    }
+
+    /**
+     * PDF (đặc tả 1.30): khổ giấy A4/LETTER, hướng, cỡ khuông 1,5-2,2 mm (mặc định 1,75), lề 10-25 mm (15), có tiêu đề
+     * hay không, đánh số ô nhịp SYSTEM/EVERY/NONE, có hợp âm hay không.
+     */
+    private ExportSpec validatePdf(JsonNode options) {
+        JsonNode node = requireObject(options, PDF_KEYS);
+        Map<String, Object> normalized = new TreeMap<>();
+        normalized.put("pageSize", enumValue(node, "pageSize", "A4", PAGE_SIZES));
+        normalized.put("orientation", enumValue(node, "orientation", "PORTRAIT", ORIENTATIONS));
+        normalized.put("staffSpaceMm", decimalValue(node, "staffSpaceMm", 1.75, 1.5, 2.2));
+        normalized.put("marginMm", intValue(node, "marginMm", 15, 10, 25));
+        normalized.put("showTitle", boolValue(node, "showTitle", true));
+        normalized.put("measureNumbers", enumValue(node, "measureNumbers", "SYSTEM", MEASURE_NUMBERS));
+        normalized.put("showChords", boolValue(node, "showChords", true));
+        ObjectNode result = objectMapper.valueToTree(normalized);
+        return new ExportSpec(FileType.PDF, AiTaskType.FORMAT_CONVERSION, result);
     }
 
     /** SVG: {@code page} là "ALL" hoặc số trang từ 1. Tác vụ luôn kết xuất mọi trang nên tùy chọn lưu lại để trống. */
@@ -133,6 +159,43 @@ public class ExportOptionsValidator {
         }
         int number = value.asInt();
         if (number < min || number > max) {
+            throw invalid();
+        }
+        return number;
+    }
+
+    private static String enumValue(JsonNode node, String name, String fallback, Set<String> allowed) {
+        if (!node.has(name) || node.get(name).isNull()) {
+            return fallback;
+        }
+        JsonNode value = node.get(name);
+        if (!value.isTextual() || !allowed.contains(value.asText())) {
+            throw invalid();
+        }
+        return value.asText();
+    }
+
+    private static boolean boolValue(JsonNode node, String name, boolean fallback) {
+        if (!node.has(name) || node.get(name).isNull()) {
+            return fallback;
+        }
+        if (!node.get(name).isBoolean()) {
+            throw invalid();
+        }
+        return node.get(name).asBoolean();
+    }
+
+    /** Số thực trong [min, max], làm tròn 2 chữ số thập phân để cùng một giá trị luôn ra cùng khóa cache. */
+    private static double decimalValue(JsonNode node, String name, double fallback, double min, double max) {
+        if (!node.has(name) || node.get(name).isNull()) {
+            return fallback;
+        }
+        JsonNode value = node.get(name);
+        if (!value.isNumber()) {
+            throw invalid();
+        }
+        double number = Math.round(value.asDouble() * 100) / 100.0;
+        if (Double.isNaN(number) || number < min || number > max) {
             throw invalid();
         }
         return number;

@@ -553,4 +553,55 @@ class ExportServiceImplTest {
         assertThatThrownBy(() -> service.requestMidiConversion(SCORE_ID))
                 .satisfies(e -> assertError(e, ErrorCode.EXPORT_NOT_AVAILABLE));
     }
+
+    // ---------------------------------------------------------------- PDF
+
+    @Test
+    void pdfCreatesFormatConversionTaskWithNormalizedOptions() throws Exception {
+        ExportResponse response = service.requestExport(SCORE_ID, request("PDF", "{\"pageSize\":\"LETTER\"}"));
+
+        assertThat(response.isCached()).isFalse();
+        AiTask saved = captureSavedTask();
+        assertThat(saved.getTaskType()).isEqualTo(AiTaskType.FORMAT_CONVERSION);
+        var input = objectMapper.readTree(saved.getInputData());
+        assertThat(input.get("targetFormat").asText()).isEqualTo("PDF");
+        assertThat(input.get("options").get("pageSize").asText()).isEqualTo("LETTER");
+        assertThat(input.get("options").get("marginMm").asInt()).isEqualTo(15);
+        // PDF không bị giới hạn thời lượng như âm thanh
+        score.setMeasureCount(100000);
+        assertThat(service.requestExport(SCORE_ID, request("PDF", null)).getTask())
+                .isNotNull();
+    }
+
+    @Test
+    void pdfWithSameOptionsReturnsTheCachedFile() throws Exception {
+        Path file = Files.writeString(dir.resolve("a.pdf"), "%PDF-1.4");
+        when(fileStorageService.resolve("scores/score-1/export/v3-old.pdf")).thenReturn(file);
+        String defaults = "{\"marginMm\":15,\"measureNumbers\":\"SYSTEM\",\"orientation\":\"PORTRAIT\","
+                + "\"pageSize\":\"A4\",\"showChords\":true,\"showTitle\":true,\"staffSpaceMm\":1.75}";
+        ScoreFile pdf = ScoreFile.builder()
+                .id("pdf-1")
+                .score(score)
+                .fileType(FileType.PDF)
+                .storagePath("scores/score-1/export/v3-old.pdf")
+                .version(3)
+                .isCurrent(true)
+                .sourceTaskId("old")
+                .meta("{\"sourceVersion\":3,\"options\":" + defaults + "}")
+                .build();
+        when(scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(SCORE_ID, FileType.PDF))
+                .thenReturn(List.of(pdf));
+
+        ExportResponse response = service.requestExport(SCORE_ID, request("PDF", "{\"staffSpaceMm\":1.75}"));
+
+        assertThat(response.isCached()).isTrue();
+        assertThat(response.getFile().getId()).isEqualTo("pdf-1");
+        verify(aiTaskRepository, never()).save(any());
+    }
+
+    @Test
+    void pdfWithInvalidOptionsIs2701() {
+        assertThatThrownBy(() -> service.requestExport(SCORE_ID, request("PDF", "{\"marginMm\":99}")))
+                .satisfies(e -> assertError(e, ErrorCode.EXPORT_OPTION_INVALID));
+    }
 }

@@ -48,6 +48,7 @@ import com.ptit.music_be.repository.ScoreRepository;
 import com.ptit.music_be.service.FileStorageService;
 import com.ptit.music_be.service.MuseScoreCliService;
 import com.ptit.music_be.service.export.ExportNames;
+import com.ptit.music_be.service.export.MssStyleBuilder;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -156,6 +157,8 @@ public class ExportWorker {
                 renderSvg(job, tmpDir, storedPaths);
             } else if (job.format() == FileType.MUSICXML) {
                 convertMidi(job, tmpDir, storedPaths);
+            } else if (job.format() == FileType.PDF) {
+                renderPdf(job, tmpDir, storedPaths);
             } else {
                 renderAudio(job, tmpDir, storedPaths);
             }
@@ -217,6 +220,53 @@ public class ExportWorker {
             // Task đã bị hủy hoặc hết hạn trong lúc xử lý: không ghi kết quả
             fileStorageService.delete(stored);
             storedPaths.clear();
+        }
+    }
+
+    /**
+     * PDF vector (1.30): music-ai đặt tiêu đề/tác giả và bỏ hợp âm nếu cần, sinh file style từ tùy chọn, MuseScore xuất
+     * PDF với {@code -S style.mss}. Kết quả phải bắt đầu bằng {@code %PDF} mới được lưu.
+     */
+    private void renderPdf(Job job, String tmpDir, List<String> storedPaths) throws IOException {
+        String taskId = job.taskId();
+        boolean showTitle = job.options().path("showTitle").asBoolean(true);
+        boolean showChords = job.options().path("showChords").asBoolean(true);
+
+        updateStep(taskId, AiTaskStep.PREPARE, 10);
+        String inputPath = tmpDir + "/in.musicxml";
+        aiServiceClient.prepareMusicXml(
+                job.sourcePath(), inputPath, 0, 100, "BOTH", job.title(), job.composer(), showTitle, !showChords);
+
+        Path style = fileStorageService.resolve(tmpDir + "/style.mss");
+        Files.createDirectories(style.getParent());
+        Files.writeString(style, MssStyleBuilder.fromOptions(job.options()));
+
+        updateStep(taskId, AiTaskStep.RENDER, 30);
+        Path output = fileStorageService.resolve(tmpDir + "/out.pdf");
+        museScoreCliService.convert(
+                fileStorageService.resolve(inputPath), output, List.of("-S", style.toString()), taskId);
+        if (!startsWithPdfMagic(output)) {
+            throw new MuseScoreException(AiTaskError.EXPORT_ERROR, "file kết quả không phải PDF");
+        }
+
+        updateStep(taskId, AiTaskStep.SAVE, 90);
+        String finalPath = "scores/%s/export/v%d-%s.pdf".formatted(job.scoreId(), job.sourceVersion(), taskId);
+        long size = Files.size(output);
+        String stored;
+        try (InputStream in = Files.newInputStream(output)) {
+            stored = fileStorageService.store(in, finalPath);
+        }
+        storedPaths.add(stored);
+        if (!complete(job, stored, size)) {
+            fileStorageService.delete(stored);
+            storedPaths.clear();
+        }
+    }
+
+    private static boolean startsWithPdfMagic(Path file) throws IOException {
+        try (InputStream in = Files.newInputStream(file)) {
+            byte[] head = in.readNBytes(4);
+            return head.length == 4 && head[0] == '%' && head[1] == 'P' && head[2] == 'D' && head[3] == 'F';
         }
     }
 
@@ -462,13 +512,13 @@ public class ExportWorker {
                 }
             }
 
-            boolean mp3 = job.format() == FileType.MP3;
+            String extension = job.format().name().toLowerCase();
             ScoreFile saved = scoreFileRepository.save(ScoreFile.builder()
                     .score(task.getScore())
                     .fileType(job.format())
-                    .originalFileName(downloadName(job.title(), mp3 ? "mp3" : "wav"))
+                    .originalFileName(downloadName(job.title(), extension))
                     .storagePath(storedPath)
-                    .contentType(mp3 ? "audio/mpeg" : "audio/wav")
+                    .contentType(contentTypeOf(job.format()))
                     .sizeBytes(size)
                     .version(job.sourceVersion())
                     .isCurrent(true)
@@ -543,6 +593,15 @@ public class ExportWorker {
             return true;
         });
         return Boolean.TRUE.equals(ok);
+    }
+
+    private static String contentTypeOf(FileType format) {
+        return switch (format) {
+            case MP3 -> "audio/mpeg";
+            case WAV -> "audio/wav";
+            case PDF -> "application/pdf";
+            default -> "application/octet-stream";
+        };
     }
 
     private boolean isCompleted(String taskId) {

@@ -506,4 +506,96 @@ class ExportWorkerTest {
         // Bị hủy thì bản nhạc không được lên version 1
         assertThat(task.getScore().getCurrentVersion()).isNotEqualTo(1);
     }
+
+    // ---------------------------------------------------------------- PDF
+
+    static final String PDF_OPTIONS = "{\"marginMm\":20,\"measureNumbers\":\"NONE\",\"orientation\":\"LANDSCAPE\","
+            + "\"pageSize\":\"LETTER\",\"showChords\":false,\"showTitle\":true,\"staffSpaceMm\":2.0}";
+
+    /** MuseScore giả: ghi PDF (hoặc nội dung giả) và chụp lại nội dung file style được truyền qua -S. */
+    void museScoreWritesPdf(String content, java.util.concurrent.atomic.AtomicReference<String> styleSeen) {
+        doAnswer(invocation -> {
+                    List<String> args = invocation.getArgument(2);
+                    styleSeen.set(Files.readString(Path.of(args.get(1))));
+                    Path output = invocation.getArgument(1);
+                    Files.createDirectories(output.getParent());
+                    Files.writeString(output, content);
+                    return null;
+                })
+                .when(museScoreCliService)
+                .convert(any(Path.class), any(Path.class), anyList(), eq(TASK_ID));
+    }
+
+    @Test
+    void pdf_preparesTitleAndStripsChordsThenRendersWithStyle() throws Exception {
+        setInput("PDF", PDF_OPTIONS);
+        task.getScore().setComposer("Tác giả");
+        var styleSeen = new java.util.concurrent.atomic.AtomicReference<String>();
+        museScoreWritesPdf("%PDF-1.4 nội dung", styleSeen);
+
+        worker.process(TASK_ID);
+
+        assertThat(task.getStatus()).isEqualTo(AiTaskStatus.COMPLETED);
+        verify(aiServiceClient)
+                .prepareMusicXml(
+                        eq(SOURCE),
+                        eq("scores/s1/tmp/task1/in.musicxml"),
+                        eq(0),
+                        eq(100),
+                        eq("BOTH"),
+                        eq("Bài ca: thử/nghiệm"),
+                        eq("Tác giả"),
+                        eq(true),
+                        eq(true)); // showChords = false -> stripHarmony = true
+        verify(museScoreCliService)
+                .convert(
+                        eq(root.resolve("scores/s1/tmp/task1/in.musicxml")),
+                        any(Path.class),
+                        eq(List.of(
+                                "-S",
+                                root.resolve("scores/s1/tmp/task1/style.mss").toString())),
+                        eq(TASK_ID));
+        assertThat(styleSeen.get())
+                .contains("<pageWidth>11</pageWidth>")
+                .contains("<pageHeight>8.5</pageHeight>")
+                .contains("<Spatium>2</Spatium>")
+                .contains("<showMeasureNumber>0</showMeasureNumber>");
+        assertThat(root.resolve("scores/s1/export/v3-task1.pdf")).hasContent("%PDF-1.4 nội dung");
+        assertThat(root.resolve("scores/s1/tmp/task1")).doesNotExist();
+
+        org.mockito.ArgumentCaptor<ScoreFile> captor = org.mockito.ArgumentCaptor.forClass(ScoreFile.class);
+        verify(scoreFileRepository).save(captor.capture());
+        assertThat(captor.getValue().getFileType()).isEqualTo(FileType.PDF);
+        assertThat(captor.getValue().getContentType()).isEqualTo("application/pdf");
+        assertThat(captor.getValue().getOriginalFileName()).isEqualTo("Bài ca  thử nghiệm.pdf");
+    }
+
+    @Test
+    void pdf_hiddenTitleAndChordsKept() throws Exception {
+        setInput(
+                "PDF",
+                "{\"marginMm\":15,\"measureNumbers\":\"SYSTEM\",\"orientation\":\"PORTRAIT\",\"pageSize\":\"A4\","
+                        + "\"showChords\":true,\"showTitle\":false,\"staffSpaceMm\":1.75}");
+        museScoreWritesPdf("%PDF-1.7", new java.util.concurrent.atomic.AtomicReference<>());
+
+        worker.process(TASK_ID);
+
+        assertThat(task.getStatus()).isEqualTo(AiTaskStatus.COMPLETED);
+        verify(aiServiceClient)
+                .prepareMusicXml(
+                        anyString(), anyString(), eq(0), eq(100), eq("BOTH"), any(), any(), eq(false), eq(false));
+    }
+
+    @Test
+    void pdf_outputThatIsNotPdfFailsTheTask() throws Exception {
+        setInput("PDF", PDF_OPTIONS);
+        museScoreWritesPdf("<html>không phải PDF</html>", new java.util.concurrent.atomic.AtomicReference<>());
+
+        worker.process(TASK_ID);
+
+        assertThat(task.getStatus()).isEqualTo(AiTaskStatus.FAILED);
+        assertThat(task.getErrorMessage()).startsWith("EXPORT_ERROR");
+        assertThat(root.resolve("scores/s1/export")).doesNotExist();
+        verify(scoreFileRepository, never()).save(any(ScoreFile.class));
+    }
 }

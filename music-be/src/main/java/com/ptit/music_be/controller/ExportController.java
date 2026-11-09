@@ -34,7 +34,8 @@ public class ExportController {
     @Operation(
             summary = "Yêu cầu xuất file. Có file cùng tùy chọn thì trả ngay (cached), không thì tạo task chạy nền",
             description =
-                    "Định dạng: MP3, WAV (nhạc), SVG (mọi trang, tải ZIP qua /exports/{taskId}/zip), MIDI và MUSICXML"
+                    "Định dạng: MP3, WAV (nhạc), PDF (options: pageSize A4/LETTER, orientation PORTRAIT/LANDSCAPE, staffSpaceMm 1.5-2.2,"
+                            + " marginMm 10-25, showTitle, measureNumbers SYSTEM/EVERY/NONE, showChords), SVG (mọi trang, tải ZIP qua /exports/{taskId}/zip), MIDI và MUSICXML"
                             + " (trả file hiện hành ngay, không cần options). Body: {\"targetFormat\":\"MP3\",\"options\":{\"bitrate\":192,\"tempoPercent\":75,"
                             + "\"transpose\":2,\"hands\":\"BOTH\"}}. bitrate chỉ cho MP3 (128/192/320), tempoPercent 20-200,"
                             + " transpose -12..12, hands RIGHT/LEFT chỉ khi bản nhạc có đúng 2 khuông. Theo dõi task bằng"
