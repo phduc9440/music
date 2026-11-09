@@ -438,7 +438,7 @@ public class ScoreServiceImpl implements ScoreService {
         if (!scoreFileService.canDelete(score)) {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
-        // Bản trong kho sheet mẫu chỉ ADMIN được xóa (chủ sở hữu muốn xóa thì nhờ admin gỡ khỏi kho trước)
+        // Bản trong kho score mẫu chỉ ADMIN được xóa (chủ sở hữu muốn xóa thì nhờ admin gỡ khỏi kho trước)
         if (Boolean.TRUE.equals(score.getIsOfficial()) && !SecurityUtils.isAdmin()) {
             throw new AppException(ErrorCode.SCORE_OFFICIAL_LOCKED);
         }

@@ -11,7 +11,7 @@ import '../../components/scores/scores.css';
 
 const PAGE_SIZE = 12;
 
-/** Trang /scores/official: kho sheet mẫu (bản nhạc chính thức) cho người mới học, từ dễ đến khó (mục 4.5). */
+/** Trang /scores/official: kho score mẫu (bản nhạc chính thức) cho người mới học, từ dễ đến khó (mục 4.5). */
 export default function OfficialScores() {
   const navigate = useNavigate();
   const [page, setPage] = useState(0);
@@ -24,7 +24,7 @@ export default function OfficialScores() {
     scoreApi
       .official({ page, size: PAGE_SIZE, keyword: keyword || undefined, difficulty })
       .then((res) => setData(res.data.result))
-      .catch(() => toast.error('Không tải được kho sheet mẫu'));
+      .catch(() => toast.error('Không tải được kho score mẫu'));
   }, [page, keyword, difficulty]);
 
   return (
@@ -42,7 +42,7 @@ export default function OfficialScores() {
       <main className="sc-container">
         <header className="sc-lib-head">
           <div>
-            <h1>Kho sheet mẫu</h1>
+            <h1>Kho score mẫu</h1>
             <p>{data ? `${data.totalElements} bản nhạc, sắp từ dễ đến khó` : 'Bản nhạc chọn lọc cho người mới học'}</p>
           </div>
         </header>

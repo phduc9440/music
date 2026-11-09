@@ -63,7 +63,7 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
             Pageable pageable);
 
     /**
-     * Kho sheet mẫu (is_official = true): tìm theo tên/tác giả, lọc độ khó ("" là không lọc), sắp từ dễ đến khó rồi
+     * Kho score mẫu (is_official = true): tìm theo tên/tác giả, lọc độ khó ("" là không lọc), sắp từ dễ đến khó rồi
      * theo tên để người mới học bắt đầu từ bài dễ.
      */
     @Query(
@@ -80,7 +80,7 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
     Page<Score> searchOfficial(
             @Param("keyword") String keyword, @Param("difficulty") String difficulty, Pageable pageable);
 
-    /** ADMIN: các bản nhạc công khai chưa nằm trong kho sheet mẫu, để chọn đưa vào (cập nhật gần nhất trước). */
+    /** ADMIN: các bản nhạc công khai chưa nằm trong kho score mẫu, để chọn đưa vào (cập nhật gần nhất trước). */
     @Query(
             """
 			select s from Score s

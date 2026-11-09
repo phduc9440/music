@@ -41,16 +41,16 @@ public interface ScoreService {
 
     void deleteScore(String scoreId);
 
-    /** Kho sheet mẫu cho người mới học (mọi người đã đăng nhập xem được), từ dễ đến khó. */
+    /** Kho score mẫu cho người mới học (mọi người đã đăng nhập xem được), từ dễ đến khó. */
     PageResponse<ScoreSummaryResponse> getOfficialScores(int page, int size, String keyword, String difficulty);
 
-    /** ADMIN: bản nhạc công khai chưa nằm trong kho sheet mẫu, để chọn đưa vào. */
+    /** ADMIN: bản nhạc công khai chưa nằm trong kho score mẫu, để chọn đưa vào. */
     PageResponse<ScoreSummaryResponse> getOfficialCandidates(int page, int size, String keyword);
 
-    /** ADMIN: đưa một bản nhạc đã công khai vào kho sheet mẫu. */
+    /** ADMIN: đưa một bản nhạc đã công khai vào kho score mẫu. */
     ScoreDetailResponse markOfficial(String scoreId);
 
-    /** ADMIN: gỡ khỏi kho sheet mẫu (bản nhạc vẫn giữ nguyên, vẫn công khai). */
+    /** ADMIN: gỡ khỏi kho score mẫu (bản nhạc vẫn giữ nguyên, vẫn công khai). */
     ScoreDetailResponse unmarkOfficial(String scoreId);
 
     /** ADMIN: các bản nhạc chủ đã xin công khai và đang chờ duyệt (cũ nhất trước). */

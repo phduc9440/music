@@ -13,7 +13,7 @@ const errMsg = (error: unknown, fallback: string) =>
 
 type Tab = 'library' | 'candidates';
 
-/** Admin (mục 4.5): quản lý kho sheet mẫu, gồm xem kho, gỡ bản khỏi kho và thêm bản nhạc công khai vào kho. */
+/** Admin (mục 4.5): quản lý kho score mẫu, gồm xem kho, gỡ bản khỏi kho và thêm bản nhạc công khai vào kho. */
 export default function AdminOfficialScores() {
   const [tab, setTab] = useState<Tab>('library');
   const [page, setPage] = useState(0);
@@ -50,14 +50,14 @@ export default function AdminOfficialScores() {
     async (score: ScoreSummary) => {
       const adding = tab === 'candidates';
       const message = adding
-        ? `Thêm "${score.title}" vào kho sheet mẫu? Sau đó chỉ ADMIN được sửa hoặc xóa bản nhạc này.`
-        : `Gỡ "${score.title}" khỏi kho sheet mẫu? Bản nhạc vẫn được giữ và vẫn công khai.`;
+        ? `Thêm "${score.title}" vào kho score mẫu? Sau đó chỉ ADMIN được sửa hoặc xóa bản nhạc này.`
+        : `Gỡ "${score.title}" khỏi kho score mẫu? Bản nhạc vẫn được giữ và vẫn công khai.`;
       if (!window.confirm(message)) return;
       setBusyId(score.id);
       try {
         if (adding) await scoreApi.markOfficial(score.id);
         else await scoreApi.unmarkOfficial(score.id);
-        toast.success(adding ? 'Đã thêm vào kho sheet mẫu' : 'Đã gỡ khỏi kho sheet mẫu');
+        toast.success(adding ? 'Đã thêm vào kho score mẫu' : 'Đã gỡ khỏi kho score mẫu');
       } catch (error) {
         toast.error(errMsg(error, 'Thao tác thất bại'));
       } finally {
@@ -74,8 +74,8 @@ export default function AdminOfficialScores() {
     <>
       <div className="adm-page-head">
         <div>
-          <h1>Kho sheet mẫu</h1>
-          <p>Bản nhạc chọn lọc cho người mới học. Người dùng xem ở mục “Kho sheet mẫu” trong thư viện.</p>
+          <h1>Kho score mẫu</h1>
+          <p>Bản nhạc chọn lọc cho người mới học. Người dùng xem ở mục “Kho score mẫu” trong thư viện.</p>
         </div>
         <form
           className="d-flex gap-2"

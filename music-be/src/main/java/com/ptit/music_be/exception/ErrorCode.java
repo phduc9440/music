@@ -57,8 +57,8 @@ public enum ErrorCode {
     SCORE_NOTES_INVALID(2019, "Ghi chú tối đa 5000 ký tự", HttpStatus.BAD_REQUEST),
     INVALID_FILTER(2020, "Giá trị bộ lọc không hợp lệ", HttpStatus.BAD_REQUEST),
     SCORE_NOT_PUBLIC_FOR_OFFICIAL(
-            2022, "Chỉ đưa vào kho sheet mẫu được bản nhạc đã công khai", HttpStatus.CONFLICT),
-    SCORE_OFFICIAL_LOCKED(2023, "Bản nhạc trong kho sheet mẫu chỉ ADMIN được xóa", HttpStatus.FORBIDDEN),
+            2022, "Chỉ đưa vào kho score mẫu được bản nhạc đã công khai", HttpStatus.CONFLICT),
+    SCORE_OFFICIAL_LOCKED(2023, "Bản nhạc trong kho score mẫu chỉ ADMIN được xóa", HttpStatus.FORBIDDEN),
     SCORE_NOT_PENDING_PUBLIC(2021, "Bản nhạc này không ở trạng thái chờ duyệt công khai", HttpStatus.CONFLICT),
     SCORE_BUSY(2201, "Bản nhạc đang được xử lý, vui lòng thử lại sau", HttpStatus.CONFLICT),
     TASK_LIMIT_EXCEEDED(
