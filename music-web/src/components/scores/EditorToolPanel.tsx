@@ -150,6 +150,7 @@ const MORE_MARK_GROUPS: { title: string; tools: { op: MarkOp; label: string; tit
   {
     title: 'Kỹ thuật',
     tools: [
+      { op: 'fermataBelow', label: 'Fermata ngược', title: 'Fermata ngược (vẽ dưới nốt): ngân tự do (bấm lại để bỏ)' },
       { op: 'marcato', label: 'Marcato', title: 'Marcato: nhấn mạnh và ngắt (bấm lại để bỏ)' },
       { op: 'staccatissimo', label: 'Staccatissimo', title: 'Staccatissimo: ngắt rất ngắn (bấm lại để bỏ)' },
       { op: 'breath', label: 'Lấy hơi', title: 'Dấu lấy hơi sau nốt: nốt ngắt sớm một chút khi phát (bấm lại để bỏ)' },
@@ -165,6 +166,22 @@ const MORE_MARK_GROUPS: { title: string; tools: { op: MarkOp; label: string; tit
     title: 'Láy',
     tools: [
       { op: 'trill', label: 'Láy rền', title: 'Láy rền (tr): luân phiên với nốt liền trên (bấm lại để bỏ)' },
+      {
+        op: 'trillSharp',
+        label: 'Láy rền ♯',
+        title: 'Dấu thăng cho láy rền: nốt liền trên được nâng nửa cung (thêm láy rền nếu chưa có; bấm lại để bỏ dấu)',
+      },
+      {
+        op: 'trillFlat',
+        label: 'Láy rền ♭',
+        title: 'Dấu giáng cho láy rền: nốt liền trên được hạ nửa cung (thêm láy rền nếu chưa có; bấm lại để bỏ dấu)',
+      },
+      {
+        op: 'trillNatural',
+        label: 'Láy rền ♮',
+        title:
+          'Dấu bình cho láy rền: nốt liền trên theo âm gốc, bỏ qua hóa biểu (thêm láy rền nếu chưa có; bấm lại để bỏ dấu)',
+      },
       { op: 'mordent', label: 'Láy ngắn', title: 'Láy ngắn (mordent): nốt - nốt dưới - nốt (bấm lại để bỏ)' },
       {
         op: 'invMordent',
@@ -318,6 +335,10 @@ const KEYWORDS: Partial<Record<MarkOp, string>> = {
   marcato: 'marcato',
   staccatissimo: 'staccatissimo',
   fermata: 'fermata ngân dấu nghỉ',
+  fermataBelow: 'fermata ngược inverted fermata ngân dấu nghỉ',
+  trillSharp: 'trill sharp thăng dấu hóa láy rền',
+  trillFlat: 'trill flat giáng dấu hóa láy rền',
+  trillNatural: 'trill natural bình dấu hóa láy rền',
   breath: 'breath mark lấy hơi',
   caesura: 'caesura ngắt nghỉ',
   trill: 'trill tr láy hoa mỹ',
@@ -363,11 +384,15 @@ const ARTICULATION_OPS: MarkOp[] = [
   'marcato',
   'staccatissimo',
   'fermata',
+  'fermataBelow',
   'breath',
   'caesura',
 ];
 const ORNAMENT_OPS: MarkOp[] = [
   'trill',
+  'trillSharp',
+  'trillFlat',
+  'trillNatural',
   'mordent',
   'invMordent',
   'turn',
