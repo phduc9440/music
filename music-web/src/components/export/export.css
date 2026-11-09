@@ -66,3 +66,43 @@
   text-decoration: underline;
   cursor: pointer;
 }
+
+/* Hộp thoại PDF / SVG */
+.ex-check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.7rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.ex-preview {
+  display: block;
+  width: 100%;
+  max-height: 55vh;
+  margin-top: 0.8rem;
+  object-fit: contain;
+  border: 1px solid var(--sc-line);
+  border-radius: 10px;
+  background: #fff;
+}
+.ex-pages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  max-height: 9rem;
+  margin-top: 0.8rem;
+  overflow-y: auto;
+}
+.ex-radio {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+  font-size: 0.92rem;
+  cursor: pointer;
+}
+.ex-radio .sc-input {
+  width: 5.5rem;
+  padding: 0.3rem 0.5rem;
+}
