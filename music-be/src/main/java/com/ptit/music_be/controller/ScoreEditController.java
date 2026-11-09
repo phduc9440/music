@@ -1,13 +1,17 @@
 package com.ptit.music_be.controller;
 
 import java.io.IOException;
+import java.util.List;
 
 import jakarta.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,7 +19,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ptit.music_be.dto.response.ApiResponse;
+import com.ptit.music_be.dto.response.ScoreContent;
 import com.ptit.music_be.dto.response.ScoreSaveResponse;
+import com.ptit.music_be.dto.response.ScoreVersionResponse;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.service.ScoreEditService;
@@ -65,6 +71,55 @@ public class ScoreEditController {
                     boolean force) {
         byte[] body = readBoundedBody(request);
         ScoreSaveResponse saved = scoreEditService.saveMusicXml(scoreId, body, contentType, ifMatch, force);
+        return ResponseEntity.ok()
+                .eTag("\"v" + saved.getVersion() + "\"")
+                .body(ApiResponse.<ScoreSaveResponse>builder().result(saved).build());
+    }
+
+    @GetMapping("/scores/{scoreId}/versions")
+    @Operation(
+            summary = "Lịch sử các phiên bản MusicXML còn giữ (tối đa 20), mới nhất trước",
+            description = "Mỗi phần tử có version, createdAt, savedByName, measureCount, sizeBytes, isCurrent và"
+                    + " source (EDITOR, OMR, IMPORT, RESTORE). Cần quyền xem bản nhạc. Errors: 2001 không có bản nhạc,"
+                    + " 1002 không có quyền",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<List<ScoreVersionResponse>> listVersions(@PathVariable String scoreId) {
+        return ApiResponse.<List<ScoreVersionResponse>>builder()
+                .result(scoreEditService.listVersions(scoreId))
+                .build();
+    }
+
+    @GetMapping("/scores/{scoreId}/versions/{version}")
+    @Operation(
+            summary = "MusicXML của một phiên bản cũ (để xem trước)",
+            description = "Header ETag \"v{version}\". Cần quyền xem bản nhạc. Errors: 2001, 1002, 2801 phiên bản"
+                    + " không còn (chỉ giữ 20 bản mới nhất), 2002 file đã mất",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<byte[]> getVersion(@PathVariable String scoreId, @PathVariable int version) {
+        ScoreContent content = scoreEditService.getVersionContent(scoreId, version);
+        return ResponseEntity.ok()
+                .contentType(ScoreContentController.MUSICXML_MEDIA_TYPE)
+                .eTag("\"v" + content.version() + "\"")
+                .cacheControl(CacheControl.noCache())
+                .body(content.bytes());
+    }
+
+    @PostMapping("/scores/{scoreId}/versions/{version}/restore")
+    @Operation(
+            summary = "Khôi phục một phiên bản cũ thành phiên bản mới nhất",
+            description =
+                    "Lưu nội dung của phiên bản được chọn thành version kế tiếp (lịch sử không bị ghi đè, vẫn giữ"
+                            + " tối đa 20 bản). Bắt buộc header If-Match: \"v{currentVersion}\". MIDI tự sinh lại ở lần tải kế"
+                            + " tiếp. Errors: 2001, 1002 không có quyền sửa, 2801 phiên bản không còn, 2014 xung đột version"
+                            + " (result.currentVersion là version mới nhất), 2201 đang có tác vụ nhận diện, 2012 chưa có MusicXML",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<ApiResponse<ScoreSaveResponse>> restoreVersion(
+            @PathVariable String scoreId,
+            @PathVariable int version,
+            @Parameter(description = "Version đang sửa, ví dụ \"v5\"")
+                    @RequestHeader(value = HttpHeaders.IF_MATCH, required = false)
+                    String ifMatch) {
+        ScoreSaveResponse saved = scoreEditService.restoreVersion(scoreId, version, ifMatch);
         return ResponseEntity.ok()
                 .eTag("\"v" + saved.getVersion() + "\"")
                 .body(ApiResponse.<ScoreSaveResponse>builder().result(saved).build());

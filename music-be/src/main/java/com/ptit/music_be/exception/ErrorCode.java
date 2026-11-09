@@ -96,6 +96,9 @@ public enum ErrorCode {
             HttpStatus.TOO_MANY_REQUESTS),
     EXPORT_NOT_AVAILABLE(2704, "Tính năng xuất file chưa sẵn sàng trên máy chủ", HttpStatus.SERVICE_UNAVAILABLE),
     EXPORT_SOURCE_NOT_SUPPORTED(2705, "Bản nhạc không có nguồn phù hợp để chuyển đổi", HttpStatus.CONFLICT),
+
+    // Score versions 28xx
+    SCORE_VERSION_NOT_EXISTED(2801, "Phiên bản bản nhạc không tồn tại hoặc đã bị xóa", HttpStatus.NOT_FOUND),
     ;
 
     int code;
