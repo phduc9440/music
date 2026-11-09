@@ -482,12 +482,17 @@ const neighborsOf = (info: NoteInfo, fifths: number): { upper: number; lower: nu
   const at = step ? STEPS.indexOf(step) : -1;
   const shift = (info.soundingMidi ?? 0) - (info.midi ?? 0);
   if (at < 0 || !Number.isFinite(octave) || info.midi === null || info.soundingMidi === null) return null;
-  const spell = (stepIndex: number, oct: number): number => {
+  // Dấu hóa ghi kèm láy (♯ ♭ ♮ trên chữ tr) áp cho nốt kề trên thay cho hóa biểu
+  const accidental = info.element.getElementsByTagName('accidental-mark')[0]?.textContent?.trim();
+  const upperAlter = accidental
+    ? ({ sharp: 1, flat: -1, natural: 0 } as Record<string, number>)[accidental]
+    : undefined;
+  const spell = (stepIndex: number, oct: number, alter?: number): number => {
     const target = STEPS[(stepIndex + 7) % 7];
-    return pitchToMidi({ step: target, alter: keyAlter(fifths, target), octave: oct }) + shift;
+    return pitchToMidi({ step: target, alter: alter ?? keyAlter(fifths, target), octave: oct }) + shift;
   };
   return {
-    upper: spell(at + 1, octave + (at === 6 ? 1 : 0)),
+    upper: spell(at + 1, octave + (at === 6 ? 1 : 0), upperAlter),
     lower: spell(at - 1, octave - (at === 0 ? 1 : 0)),
   };
 };
