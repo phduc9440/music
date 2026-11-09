@@ -49,6 +49,8 @@ const AI_ORDER = ['COMPLETED', 'PROCESSING', 'PENDING', 'FAILED', 'CANCELLED'];
 
 const SERIES_SCORES = '#2a78d6';
 const SERIES_PRACTICE = '#1baf7a';
+// Slot 7 (violet) của bảng màu dataviz, để thành viên không trùng màu với bản nhạc/luyện tập
+const SERIES_MEMBERS = '#6250d6';
 const AXIS = { fontSize: 12, fill: '#64748b' };
 
 const nf = new Intl.NumberFormat('vi-VN');
@@ -231,8 +233,10 @@ export default function AdminDashboard() {
   const t = data?.totals;
 
   const scoresDay = useMemo(() => data?.scoresByDay ?? [], [data]);
+  const membersDay = useMemo(() => data?.membersByDay ?? [], [data]);
   const practiceDay = useMemo(() => data?.practiceByDay ?? [], [data]);
   const newScores = scoresDay.reduce((s, d) => s + d.count, 0);
+  const newMembers = membersDay.reduce((s, d) => s + d.count, 0);
   const practiceMinutes = practiceDay.reduce((s, d) => s + d.minutes, 0);
 
   const visibility = orderBy(data?.scoresByVisibility ?? [], VISIBILITY_ORDER).map((r) => ({
@@ -384,12 +388,41 @@ export default function AdminDashboard() {
 
       <div className="dash-grid">
         <ChartCard
+          title="Thành viên mới theo ngày"
+          sub={`${nf.format(newMembers)} tài khoản trong ${days} ngày${
+            data && data.membersWithoutDate > 0 ? ` · ${nf.format(data.membersWithoutDate)} tài khoản cũ chưa có ngày đăng ký` : ''
+          }`}
+          table={{ head: ['Ngày', 'Số tài khoản'], rows: membersDay.map((d) => [longDate(d.date), nf.format(d.count)]) }}
+        >
+          <div className="dash-chart">
+            <ResponsiveContainer>
+              <BarChart data={membersDay} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
+                <CartesianGrid stroke="#e2e8f0" vertical={false} />
+                <XAxis dataKey="date" tickFormatter={shortDate} tick={AXIS} axisLine={false} tickLine={false} minTickGap={24} />
+                <YAxis allowDecimals={false} tick={AXIS} axisLine={false} tickLine={false} />
+                <Tooltip
+                  cursor={{ fill: 'rgba(148,163,184,0.12)' }}
+                  content={({ active, payload, label }: TipProps) =>
+                    active && payload?.[0] ? (
+                      <Tip title={longDate(String(label))} lines={[`${nf.format(Number(payload[0].value))} tài khoản mới`]} />
+                    ) : null
+                  }
+                />
+                <Bar dataKey="count" fill={SERIES_MEMBERS} radius={[4, 4, 0, 0]} maxBarSize={18} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </ChartCard>
+        <ChartCard
           title="Quyền riêng tư"
           sub="Số bản nhạc theo trạng thái hiển thị"
           table={{ head: ['Trạng thái', 'Số bản'], rows: rowsOf(visibility) }}
         >
           <HBar rows={visibility} color={SERIES_SCORES} unit="bản nhạc" />
         </ChartCard>
+      </div>
+
+      <div className="dash-grid">
         <ChartCard
           title="Nguồn bản nhạc"
           sub="Cách bản nhạc được tạo ra"
@@ -397,12 +430,12 @@ export default function AdminDashboard() {
         >
           <HBar rows={source} color={SERIES_SCORES} unit="bản nhạc" />
         </ChartCard>
-      </div>
-
-      <div className="dash-grid">
         <ChartCard title="Độ khó" sub="Số bản nhạc theo độ khó" table={{ head: ['Độ khó', 'Số bản'], rows: rowsOf(difficulty) }}>
           <HBar rows={difficulty} color={SERIES_SCORES} unit="bản nhạc" />
         </ChartCard>
+      </div>
+
+      <div className="dash-grid">
         <ChartCard
           title="Tác vụ AI theo trạng thái"
           sub="OMR, hợp âm, tổng hợp âm thanh, chuyển định dạng"
@@ -410,9 +443,6 @@ export default function AdminDashboard() {
         >
           <HBar rows={ai} color="#94a3b8" unit="tác vụ" />
         </ChartCard>
-      </div>
-
-      <div className="dash-grid">
         <ChartCard
           title="Thể loại phổ biến"
           sub="Top thể loại được gắn nhiều nhất"
@@ -420,8 +450,10 @@ export default function AdminDashboard() {
         >
           <HBar rows={tags} color={SERIES_SCORES} unit="bản nhạc" />
         </ChartCard>
+      </div>
 
-        <div className="adm-card">
+      <div className="dash-grid">
+        <div className="adm-card" style={{ gridColumn: '1 / -1' }}>
           <div className="dash-card__head">
             <div>
               <div className="dash-card__title">Bản nhạc được xem nhiều nhất</div>

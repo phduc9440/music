@@ -1,5 +1,6 @@
 package com.ptit.music_be.dto.response;
 
+import java.time.LocalDateTime;
 import java.util.Set;
 
 import com.ptit.music_be.dto.enums.AuthProvider;
@@ -25,4 +26,6 @@ public class MemberResponse {
     Boolean emailVerified;
     AuthProvider authProvider;
     Set<String> roles;
+    LocalDateTime createdAt;
+    LocalDateTime lastLoginAt;
 }

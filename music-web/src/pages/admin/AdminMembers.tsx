@@ -13,6 +13,9 @@ const PAGE_SIZE = 20;
 const errMsg = (error: unknown, fallback: string) =>
   (error as { response?: { data?: { message?: string } } }).response?.data?.message || fallback;
 
+const formatDate = (iso?: string | null, dateOnly = false) =>
+  iso ? (dateOnly ? new Date(iso).toLocaleDateString('vi-VN') : new Date(iso).toLocaleString('vi-VN')) : '—';
+
 /** Admin: danh sách thành viên, khóa/mở khóa và cấp/thu hồi quyền ADMIN. */
 export default function AdminMembers() {
   const { admin } = useOutletContext<AdminOutletContext>();
@@ -98,6 +101,8 @@ export default function AdminMembers() {
                 <th>Email</th>
                 <th>Họ tên</th>
                 <th>Vai trò</th>
+                <th>Ngày đăng ký</th>
+                <th>Đăng nhập cuối</th>
                 <th>Trạng thái</th>
                 <th>Thao tác</th>
               </tr>
@@ -122,6 +127,8 @@ export default function AdminMembers() {
                         {roleLabel(m)}
                       </span>
                     </td>
+                    <td>{formatDate(m.createdAt, true)}</td>
+                    <td>{formatDate(m.lastLoginAt)}</td>
                     <td>{locked ? 'Đã khóa' : 'Hoạt động'}</td>
                     <td>
                       <div className="d-flex gap-2">
@@ -155,7 +162,7 @@ export default function AdminMembers() {
               })}
               {result && result.content.length === 0 && (
                 <tr>
-                  <td colSpan={5}>Không có thành viên nào.</td>
+                  <td colSpan={7}>Không có thành viên nào.</td>
                 </tr>
               )}
             </tbody>

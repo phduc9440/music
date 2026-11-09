@@ -156,6 +156,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         assertActive(user);
+        memberRepository.updateLastLogin(user.getId(), LocalDateTime.now());
 
         return issueTokens(user);
     }
@@ -232,6 +233,7 @@ public class AuthServiceImpl implements AuthService {
             }
 
             assertActive(user);
+            memberRepository.updateLastLogin(user.getId(), LocalDateTime.now());
 
             return issueTokens(user);
 

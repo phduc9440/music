@@ -67,6 +67,8 @@ export default function AdminMemberDetail() {
         ['Email đã xác thực', m.emailVerified ? 'Rồi' : 'Chưa'],
         ['Vai trò', <span className={`badge ${m.roles?.includes('ADMIN') ? 'badge-admin' : 'badge-user'}`}>{roleLabel(m)}</span>],
         ['Trạng thái', locked ? 'Đã khóa' : 'Hoạt động'],
+        ['Ngày đăng ký', m.createdAt ? formatDate(m.createdAt) : 'Chưa ghi nhận (tài khoản cũ)'],
+        ['Đăng nhập gần nhất', m.lastLoginAt ? formatDate(m.lastLoginAt) : 'Chưa ghi nhận'],
         ['Mã tài khoản', <code>{m.id}</code>],
       ]
     : [];
