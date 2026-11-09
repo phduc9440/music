@@ -122,7 +122,7 @@ export default function AdminOfficialScores() {
               {result?.content.map((s) => (
                 <tr key={s.id}>
                   <td>
-                    <Link to={`/scores/${s.id}`}>{s.title}</Link>
+                    <Link to={`/admin/scores/${s.id}`}>{s.title}</Link>
                   </td>
                   <td>{s.composer || '—'}</td>
                   <td>{s.difficulty ? DIFFICULTY_LABELS[s.difficulty] : '—'}</td>

@@ -20,6 +20,18 @@ public final class SecurityUtils {
         return authentication.getName();
     }
 
+    /** SUPER_ADMIN: có mọi quyền của ADMIN và còn được sửa nội dung bản nhạc của người khác. */
+    public static boolean isSuperAdmin() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null) {
+            return false;
+        }
+        return authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch("ROLE_SUPER_ADMIN"::equals);
+    }
+
+    /** ADMIN hoặc SUPER_ADMIN (SUPER_ADMIN luôn được cấp kèm ROLE_ADMIN trong token, xem AuthServiceImpl). */
     public static boolean isAdmin() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null) {

@@ -8,6 +8,7 @@ import {
   SOURCE_LABELS,
   VISIBILITY_LABELS,
   formatDateTime,
+  useScoreBase,
 } from '../../utils/score';
 import type { ScoreDetail } from '../../types';
 import DownloadMenu from './DownloadMenu';
@@ -26,6 +27,7 @@ interface Props {
 
 /** Khối đầu trang chi tiết: ảnh bìa, tiêu đề, thông số và nút thao tác. */
 export default function ScoreHero({ score, onEdit, onDelete, onShare, onRequestEdit, onConverted }: Props) {
+  const base = useScoreBase();
   const facts: [string, string][] = [
     ['Khóa / dấu hóa', score.keySignature || '—'],
     ['Nhịp', score.timeSignature || '—'],
@@ -84,13 +86,13 @@ export default function ScoreHero({ score, onEdit, onDelete, onShare, onRequestE
 
         {(score.processingStatus === 'PENDING' || score.processingStatus === 'PROCESSING') && (
           <p className="sc-hero__owner">
-            <Link to={`/scores/${score.id}/processing`}>Xem tiến độ số hóa →</Link>
+            <Link to={`${base}/${score.id}/processing`}>Xem tiến độ số hóa →</Link>
           </p>
         )}
 
         {score.processingStatus === 'COMPLETED' && score.sourceType === 'OMR' && (
           <p className="sc-hero__owner">
-            <Link to={`/scores/${score.id}/review`}>Xem kết quả số hóa →</Link>
+            <Link to={`${base}/${score.id}/review`}>Xem kết quả số hóa →</Link>
           </p>
         )}
 
@@ -120,7 +122,7 @@ export default function ScoreHero({ score, onEdit, onDelete, onShare, onRequestE
         <div className="sc-hero__actions">
           <Link
             className={`sc-btn sc-btn--primary${hasMusicXml ? '' : ' is-disabled'}`}
-            to={`/scores/${score.id}/edit`}
+            to={`${base}/${score.id}/edit`}
             aria-disabled={!hasMusicXml}
             title={hasMusicXml ? undefined : 'Bản nhạc chưa có MusicXML để mở'}
             onClick={(e) => !hasMusicXml && e.preventDefault()}
@@ -129,7 +131,7 @@ export default function ScoreHero({ score, onEdit, onDelete, onShare, onRequestE
           </Link>
           <Link
             className={`sc-btn${hasMusicXml ? '' : ' is-disabled'}`}
-            to={`/scores/${score.id}/play`}
+            to={`${base}/${score.id}/play`}
             aria-disabled={!hasMusicXml}
             title={hasMusicXml ? undefined : 'Bản nhạc chưa có MusicXML để phát'}
             onClick={(e) => !hasMusicXml && e.preventDefault()}
@@ -145,7 +147,7 @@ export default function ScoreHero({ score, onEdit, onDelete, onShare, onRequestE
               Chia sẻ
             </button>
           )}
-          {!score.canEdit && score.accessLevel !== 'OWNER' && (
+          {!score.canEdit && score.accessLevel !== 'OWNER' && !base.startsWith('/admin') && (
             <button className="sc-btn" onClick={onRequestEdit}>
               Xin quyền chỉnh sửa
             </button>

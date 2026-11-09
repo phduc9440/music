@@ -30,7 +30,7 @@ public interface MemberRepository extends JpaRepository<Member, String> {
     boolean existsByEmail(String email);
 
     /** Mọi thành viên có vai trò ADMIN (để gửi thông báo duyệt). */
-    @Query("select distinct mr.member from MemberRole mr where mr.role.name = 'ADMIN'")
+    @Query("select distinct mr.member from MemberRole mr where mr.role.name in ('ADMIN', 'SUPER_ADMIN')")
     java.util.List<Member> findAllAdmins();
 
     @Query(

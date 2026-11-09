@@ -14,10 +14,12 @@ import ScoreImport from '../pages/scores/ScoreImport';
 import SharedScores from '../pages/scores/SharedScores';
 import PlaylistDetail from '../pages/scores/PlaylistDetail';
 import Playlists from '../pages/scores/Playlists';
+import AdminDashboard from '../pages/admin/AdminDashboard';
 import AdminLayout from '../components/admin/AdminLayout';
 import AdminMembers from '../pages/admin/AdminMembers';
 import AdminOfficialScores from '../pages/admin/AdminOfficialScores';
 import AdminPendingScores from '../pages/admin/AdminPendingScores';
+import AdminScores from '../pages/admin/AdminScores';
 import AdminSystem from '../pages/admin/AdminSystem';
 import AdminTags from '../pages/admin/AdminTags';
 import OfficialScores from '../pages/scores/OfficialScores';
@@ -168,7 +170,14 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       >
-        <Route index element={<AdminMembers />} />
+        <Route index element={<AdminDashboard />} />
+        <Route path="members" element={<AdminMembers />} />
+        <Route path="scores" element={<AdminScores />} />
+        <Route path="scores/:id" element={<ScoreDetail admin />} />
+        <Route path="scores/:id/edit" element={<ScoreViewer />} />
+        <Route path="scores/:id/play" element={<ScorePlayer />} />
+        <Route path="scores/:id/processing" element={<ScoreProcessing />} />
+        <Route path="scores/:id/review" element={<ScoreReview />} />
         <Route path="pending-scores" element={<AdminPendingScores />} />
         <Route path="official-scores" element={<AdminOfficialScores />} />
         <Route path="tags" element={<AdminTags />} />

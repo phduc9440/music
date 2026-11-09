@@ -38,7 +38,7 @@ import { countView } from '../../services/playbackApi';
 import { fetchMusicXmlWithVersion, scoreApi } from '../../services';
 import type { ScoreDetail as ScoreDetailData } from '../../types';
 import { isValidScoreId } from '../../utils/omr';
-import { getHttpStatus } from '../../utils/score';
+import { getHttpStatus, useScoreBase } from '../../utils/score';
 import {
   ZOOM_DEFAULT,
   ZOOM_STEP,
@@ -117,6 +117,7 @@ const SHORTCUTS: [string, string][] = [
 export default function ScoreViewer() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const base = useScoreBase();
 
   const [phaseRaw, setPhase] = useState<Phase>('loading');
   const phase: Phase = isValidScoreId(id) ? phaseRaw : 'notFound';
@@ -174,7 +175,7 @@ export default function ScoreViewer() {
     };
   }, [id]);
 
-  const goBack = () => navigate(id ? `/scores/${id}` : '/scores');
+  const goBack = () => navigate(id ? `${base}/${id}` : base);
 
   if (phase === 'ready' && score && xml && info && doc) {
     return <ScoreWorkspace key={score.id} score={score} xml={xml} info={info} doc={doc} xmlVersion={xmlVersion} />;
@@ -187,11 +188,11 @@ export default function ScoreViewer() {
   if (phase === 'notFound') {
     title = 'Không tìm thấy bản nhạc';
     text = 'Bản nhạc không tồn tại hoặc bạn không có quyền xem.';
-    action = { label: 'Về thư viện', run: () => navigate('/scores') };
+    action = { label: 'Về thư viện', run: () => navigate(base) };
   } else if (phase === 'notReady') {
     title = 'Bản nhạc chưa số hóa xong';
     text = 'Bản nhạc chưa có MusicXML. Hãy đợi nhận diện xong hoặc xem trang tiến độ.';
-    action = { label: 'Về trang tiến độ', run: () => navigate(`/scores/${id}/processing`) };
+    action = { label: 'Về trang tiến độ', run: () => navigate(`${base}/${id}/processing`) };
   } else if (phase === 'parseError' || (phase === 'ready' && !doc)) {
     title = 'Không đọc được bản nhạc';
     text = 'File MusicXML bị lỗi nên không vẽ được. Bạn có thể tải file về để kiểm tra.';
@@ -244,6 +245,7 @@ interface WorkspaceProps {
  */
 function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
   const navigate = useNavigate();
+  const base = useScoreBase();
   const rootRef = useRef<HTMLDivElement>(null);
 
   const [prefs, setPrefs] = useState(loadViewerPrefs);
@@ -369,7 +371,7 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
   const warning = useMemo(() => performanceWarning(info), [info]);
   const notTwoStaves = info.valid && info.staves !== 2;
   const goBack = () => {
-    if (editor.confirmLeave()) navigate(`/scores/${score.id}`);
+    if (editor.confirmLeave()) navigate(`${base}/${score.id}`);
   };
 
   const goToIssue = () => {

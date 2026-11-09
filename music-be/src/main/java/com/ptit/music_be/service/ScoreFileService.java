@@ -51,7 +51,7 @@ public interface ScoreFileService {
     void checkCanManageSharing(Score score);
 
     /**
-     * Cấp truy cập của người đang đăng nhập: "OWNER" (chủ sở hữu hoặc ADMIN), "EDIT", "REVIEW", "VIEW" (được chia sẻ
+     * Cấp truy cập của người đang đăng nhập: "OWNER" (chủ sở hữu hoặc SUPER_ADMIN), "EDIT", "REVIEW", "VIEW" (được chia sẻ
      * hoặc bản PUBLIC), hoặc null nếu không có quyền.
      */
     String getAccessLevel(Score score);

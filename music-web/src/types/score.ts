@@ -89,6 +89,7 @@ export interface ScoreSummary {
   processingStatus: ProcessingStatus;
   sourceType?: ScoreSource | null;
   visibility: Visibility;
+  isOfficial?: boolean | null;
   measureCount?: number | null;
   tags?: Tag[];
   /** Chỉ có trong danh sách "Được chia sẻ với tôi": email chủ sở hữu. */
@@ -131,7 +132,6 @@ export interface AiTaskInfo {
 export interface ScoreDetail extends ScoreSummary {
   studyNotes?: string | null;
   rejectReason?: string | null;
-  isOfficial?: boolean | null;
   keySignature?: string | null;
   timeSignature?: string | null;
   tempoBpm?: number | null;
@@ -377,4 +377,39 @@ export interface ErrorLogEntry {
   message: string;
   exceptionClass?: string | null;
   stackTrace?: string | null;
+}
+
+// Thống kê dashboard admin, BE: AdminDashboardResponse
+export interface DashboardTotals {
+  members: number;
+  activeMembers: number;
+  lockedMembers: number;
+  admins: number;
+  scores: number;
+  publicScores: number;
+  pendingScores: number;
+  officialScores: number;
+  reviews: number;
+  averageRating: number | null;
+  practiceSessions: number;
+  aiTasksRunning: number;
+  aiTasksFailed: number;
+}
+
+export interface DashboardKeyCount {
+  key: string;
+  count: number;
+}
+
+export interface AdminDashboard {
+  days: number;
+  totals: DashboardTotals;
+  scoresByDay: { date: string; count: number }[];
+  practiceByDay: { date: string; sessions: number; minutes: number }[];
+  scoresByVisibility: DashboardKeyCount[];
+  scoresBySource: DashboardKeyCount[];
+  scoresByDifficulty: DashboardKeyCount[];
+  aiTasksByStatus: DashboardKeyCount[];
+  topTags: DashboardKeyCount[];
+  topViewed: { id: string; title: string; ownerEmail: string | null; viewCount: number }[];
 }

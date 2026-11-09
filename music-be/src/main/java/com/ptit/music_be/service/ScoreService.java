@@ -2,6 +2,7 @@ package com.ptit.music_be.service;
 
 import java.util.List;
 
+import com.ptit.music_be.dto.enums.Visibility;
 import com.ptit.music_be.dto.request.ScoreUpdateRequest;
 import com.ptit.music_be.dto.response.PageResponse;
 import com.ptit.music_be.dto.response.ScoreDetailResponse;
@@ -52,6 +53,12 @@ public interface ScoreService {
 
     /** ADMIN: gỡ khỏi kho score mẫu (bản nhạc vẫn giữ nguyên, vẫn công khai). */
     ScoreDetailResponse unmarkOfficial(String scoreId);
+
+    /** ADMIN: mọi bản nhạc trong hệ thống (mới cập nhật trước), tìm theo từ khóa và lọc visibility. */
+    PageResponse<ScoreSummaryResponse> getAllForAdmin(int page, int size, String keyword, String visibility);
+
+    /** ADMIN: đặt thẳng PUBLIC hoặc PRIVATE (PRIVATE kèm lý do, gỡ khỏi kho mẫu, báo cho chủ). */
+    ScoreDetailResponse setVisibilityByAdmin(String scoreId, Visibility visibility, String reason);
 
     /** ADMIN: các bản nhạc chủ đã xin công khai và đang chờ duyệt (cũ nhất trước). */
     PageResponse<ScoreSummaryResponse> getPendingPublic(int page, int size);

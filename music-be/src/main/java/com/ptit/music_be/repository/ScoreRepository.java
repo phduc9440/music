@@ -90,4 +90,16 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
 			order by s.updatedAt desc, s.id
 			""")
     Page<Score> searchOfficialCandidates(@Param("keyword") String keyword, Pageable pageable);
+
+    /** ADMIN: mọi bản nhạc trong hệ thống, tìm theo tên/tác giả/email chủ sở hữu, lọc visibility ("" là không lọc). */
+    @Query(
+            """
+			select s from Score s
+			where (lower(s.title) like lower(concat('%', :keyword, '%')) escape '\\'
+				or lower(coalesce(s.composer, '')) like lower(concat('%', :keyword, '%')) escape '\\'
+				or lower(s.member.email) like lower(concat('%', :keyword, '%')) escape '\\')
+			and (:visibility = '' or s.visibility = :visibility)
+			""")
+    Page<Score> searchAllForAdmin(
+            @Param("keyword") String keyword, @Param("visibility") String visibility, Pageable pageable);
 }

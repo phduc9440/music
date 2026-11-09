@@ -7,7 +7,7 @@ import Modal from '../../components/scores/Modal';
 import { downloadScoreExport, fetchKern, fetchMusicXml, omrApi, scoreApi } from '../../services';
 import type { OmrMeasure, OmrResult, ScoreDetail as ScoreDetailData, ScoreFileInfo } from '../../types';
 import { boxToPercent, flaggedMeasures, isValidScoreId, MEASURE_FLAG_LABELS, parseWarning } from '../../utils/omr';
-import { getErrorMessage, getHttpStatus, getUploadErrorMessage, toSafeFileName } from '../../utils/score';
+import { getErrorMessage, getHttpStatus, getUploadErrorMessage, toSafeFileName, useScoreBase } from '../../utils/score';
 import '../../components/scores/scores.css';
 import './ScoreLibrary.css';
 import './ScoreDetail.css';
@@ -25,6 +25,7 @@ type Tab = 'score' | 'check' | 'warnings' | 'kern';
 export default function ScoreReview() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const base = useScoreBase();
 
   const [loadStateRaw, setLoadState] = useState<LoadState>('loading');
   const loadState: LoadState = isValidScoreId(id) ? loadStateRaw : 'notFound';
@@ -171,7 +172,7 @@ export default function ScoreReview() {
     try {
       await omrApi.retry(id, redoPreprocess);
       toast.success('Đã gửi nhận diện lại');
-      navigate(`/scores/${id}/processing`);
+      navigate(`${base}/${id}/processing`);
     } catch (err) {
       toast.error(getUploadErrorMessage(err));
       setBusy(false);
@@ -182,7 +183,7 @@ export default function ScoreReview() {
     <nav className="navbar">
       <div className="navbar-brand">Music App</div>
       <div className="navbar-nav">
-        <button className="sc-btn sc-btn--sm" onClick={() => navigate('/scores')}>
+        <button className="sc-btn sc-btn--sm" onClick={() => navigate(base)}>
           ‹ Thư viện
         </button>
       </div>
@@ -213,7 +214,7 @@ export default function ScoreReview() {
                 ? 'Bản nhạc không tồn tại, bạn không có quyền xem hoặc chưa được số hóa.'
                 : 'Vui lòng thử lại sau.'}
             </p>
-            <button className="sc-btn sc-btn--primary" onClick={() => navigate('/scores')}>
+            <button className="sc-btn sc-btn--primary" onClick={() => navigate(base)}>
               Về thư viện
             </button>
           </div>
@@ -242,7 +243,7 @@ export default function ScoreReview() {
             <h1>{score.title}</h1>
             <p>Kết quả số hóa · kiểm tra trước khi chỉnh sửa</p>
           </div>
-          <button className="sc-btn sc-btn--sm" onClick={() => navigate(`/scores/${score.id}`)}>
+          <button className="sc-btn sc-btn--sm" onClick={() => navigate(`${base}/${score.id}`)}>
             Chi tiết bản nhạc
           </button>
         </header>
@@ -439,7 +440,7 @@ export default function ScoreReview() {
           <button
             className="sc-btn sc-btn--primary"
             disabled={!hasMusicXml}
-            onClick={() => navigate(`/scores/${score.id}/edit`)}
+            onClick={() => navigate(`${base}/${score.id}/edit`)}
           >
             {score.canEdit ? 'Chấp nhận và chỉnh sửa' : 'Xem bản nhạc'}
           </button>
