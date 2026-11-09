@@ -13,5 +13,7 @@ public enum NotificationType {
     PUBLISH_APPROVED,
     PUBLISH_REJECTED,
     /** Có người nhận xét bản nhạc của bạn. */
-    NEW_REVIEW
+    NEW_REVIEW,
+    /** Thông báo chung do ADMIN gửi cho một nhóm người dùng. */
+    ANNOUNCEMENT
 }

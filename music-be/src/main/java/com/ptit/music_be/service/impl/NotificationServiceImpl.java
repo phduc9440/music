@@ -54,6 +54,22 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
+    @Transactional
+    public int notifyAll(java.util.Collection<Member> recipients, Member actor, NotificationType type, String message) {
+        String text = truncate(message);
+        java.util.List<Notification> batch = recipients.stream()
+                .filter(r -> r != null && (actor == null || !r.getId().equals(actor.getId())))
+                .map(r -> Notification.builder()
+                        .recipient(r)
+                        .type(type)
+                        .message(text)
+                        .build())
+                .toList();
+        notificationRepository.saveAll(batch);
+        return batch.size();
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public PageResponse<NotificationResponse> getMine(int page, int size) {
         int safeSize = size <= 0 ? 20 : Math.min(size, MAX_PAGE_SIZE);

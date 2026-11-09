@@ -14,6 +14,9 @@ public interface NotificationService {
     /** Gửi cho mọi ADMIN (trừ người gây ra sự kiện). */
     void notifyAdmins(Member actor, NotificationType type, String scoreId, String message);
 
+    /** Gửi cùng một nội dung cho nhiều người (bỏ qua người gây ra sự kiện); trả về số người đã nhận. */
+    int notifyAll(java.util.Collection<Member> recipients, Member actor, NotificationType type, String message);
+
     PageResponse<NotificationResponse> getMine(int page, int size);
 
     long countUnread();

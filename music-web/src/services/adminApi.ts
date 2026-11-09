@@ -1,6 +1,7 @@
 import apiClient from './client';
 import type {
   AdminDashboard,
+  AnnouncementAudience,
   AdminMemberDetail,
   AdminTag,
   AdminUpdateMemberRequest,
@@ -25,6 +26,8 @@ export const adminApi = {
     apiClient.patch<ApiResponse<Member>>(`/admin/members/${id}`, data),
   getDashboard: (days = 30) =>
     apiClient.get<ApiResponse<AdminDashboard>>('/admin/dashboard', { params: { days } }),
+  sendAnnouncement: (message: string, audience: AnnouncementAudience, memberIds?: string[]) =>
+    apiClient.post<ApiResponse<{ recipients: number }>>('/admin/announcements', { message, audience, memberIds }),
   // Quản lý toàn bộ bản nhạc (xóa dùng scoreApi.remove)
   getScores: (params?: { page?: number; size?: number; keyword?: string; visibility?: string }) =>
     apiClient.get<ApiResponse<PageResult<ScoreSummary>>>('/admin/scores', { params: { page: 0, size: 20, ...params } }),

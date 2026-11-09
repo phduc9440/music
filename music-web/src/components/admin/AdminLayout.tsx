@@ -18,6 +18,7 @@ const MENU = [
   { to: '/admin/scores', label: 'Quản lý bản nhạc', icon: '🎵', end: false },
   { to: '/admin/pending-scores', label: 'Bản nhạc chờ duyệt', icon: '🎼', end: false },
   { to: '/admin/official-scores', label: 'Kho score mẫu', icon: '📚', end: false },
+  { to: '/admin/announcements', label: 'Gửi thông báo', icon: '📣', end: false },
   { to: '/admin/tags', label: 'Thể loại', icon: '🏷️', end: false },
   { to: '/admin/system', label: 'Giám sát hệ thống', icon: '📈', end: false },
 ];
