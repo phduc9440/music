@@ -15,6 +15,7 @@ export interface AdminOutletContext {
 const MENU = [
   { to: '/admin', label: 'Thành viên', icon: '👥', end: true },
   { to: '/admin/pending-scores', label: 'Bản nhạc chờ duyệt', icon: '🎼', end: false },
+  { to: '/admin/official-scores', label: 'Kho sheet mẫu', icon: '📚', end: false },
 ];
 
 /** Khung trang quản trị: header trên cùng, sidebar bên trái, vùng nội dung (main) ở giữa. */

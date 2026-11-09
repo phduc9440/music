@@ -61,4 +61,33 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
             @Param("difficulty") String difficulty,
             @Param("tagId") String tagId,
             Pageable pageable);
+
+    /**
+     * Kho sheet mẫu (is_official = true): tìm theo tên/tác giả, lọc độ khó ("" là không lọc), sắp từ dễ đến khó rồi
+     * theo tên để người mới học bắt đầu từ bài dễ.
+     */
+    @Query(
+            """
+			select s from Score s
+			where s.isOfficial = true
+			and (lower(s.title) like lower(concat('%', :keyword, '%')) escape '\\'
+				or lower(coalesce(s.composer, '')) like lower(concat('%', :keyword, '%')) escape '\\')
+			and (:difficulty = '' or cast(s.difficulty as string) = :difficulty)
+			order by case cast(s.difficulty as string)
+				when 'EASY' then 1 when 'MEDIUM' then 2 when 'HARD' then 3 when 'EXPERT' then 4 else 5 end,
+				lower(s.title), s.id
+			""")
+    Page<Score> searchOfficial(
+            @Param("keyword") String keyword, @Param("difficulty") String difficulty, Pageable pageable);
+
+    /** ADMIN: các bản nhạc công khai chưa nằm trong kho sheet mẫu, để chọn đưa vào (cập nhật gần nhất trước). */
+    @Query(
+            """
+			select s from Score s
+			where s.visibility = 'PUBLIC' and (s.isOfficial is null or s.isOfficial = false)
+			and (lower(s.title) like lower(concat('%', :keyword, '%')) escape '\\'
+				or lower(coalesce(s.composer, '')) like lower(concat('%', :keyword, '%')) escape '\\')
+			order by s.updatedAt desc, s.id
+			""")
+    Page<Score> searchOfficialCandidates(@Param("keyword") String keyword, Pageable pageable);
 }
