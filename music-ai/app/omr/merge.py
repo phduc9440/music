@@ -747,12 +747,20 @@ def _finalize_barlines(lines: list[str]) -> None:
 
 
 def split_merged_measures(result: MergeResult) -> MergeResult:
+    """Chèn lại vạch nhịp model bỏ sót (xem :func:`split_merged_measures_at`); chỉ trả kết quả."""
+    return split_merged_measures_at(result)[0]
+
+
+def split_merged_measures_at(result: MergeResult) -> tuple[MergeResult, list[int]]:
     """Chèn lại vạch nhịp model bỏ sót, dựa vào trường độ.
 
     Model hay đọc đúng nốt nhưng quên một vạch nhịp, nên hai ô liền nhau dính thành một. Một đoạn giữa hai vạch nhịp mà
     mọi dòng nhạc đều có tổng trường độ đúng ``k`` lần số chỉ nhịp (``k >= 2``) và có chỗ cắt mà *mọi* dòng nhạc cùng tròn
     ``j`` lần số chỉ nhịp thì gần như chắc chắn là ``k`` ô dính nhau: chèn vạch nhịp vào các chỗ đó. Không đụng tới đoạn
     đang tách/gộp spine, đoạn chưa biết số chỉ nhịp hay đoạn có tổng không chia hết (ô thật sự sai thì để cờ trường độ báo).
+
+    Trả ``(kết quả, danh_sách)``: mỗi phần tử là số thứ tự (từ 1, cách đánh số của :func:`page_measure_ranges` trên bản
+    *trước khi* chèn) của một ô đã được tách thêm một lần, lặp lại theo số vạch chèn vào ô đó.
     """
     base = result.spines
     lines = list(result.lines)
@@ -762,10 +770,15 @@ def split_merged_measures(result: MergeResult) -> MergeResult:
     out_pages: list[int] = []
     inserted = 0
     first_page = 0
+    ordinal = 0
+    split_ordinals: list[int] = []
 
     def flush(segment: list[tuple[str, int]], seg_meter: Optional[Fraction]) -> None:
-        nonlocal inserted, first_page
+        nonlocal inserted, first_page, ordinal
+        if any(is_data_line(line) for line, _ in segment):
+            ordinal += 1
         cuts = _missing_barline_cuts(segment, seg_meter, base)
+        split_ordinals.extend([ordinal] * len(cuts))
         for position, (line, page_no) in enumerate(segment):
             if position in cuts:
                 out_lines.append(TAB.join(["="] * base))
@@ -797,16 +810,17 @@ def split_merged_measures(result: MergeResult) -> MergeResult:
         segment.append((line, page_no))
     flush(segment, segment_meter)
     if not inserted:
-        return result
+        return result, []
     _finalize_barlines(out_lines)
     warnings = list(result.warnings)
     warnings.append(
         f"Trang {first_page}: model bỏ sót vạch nhịp, đã tự chèn {inserted} vạch nhịp theo trường độ (nên đối chiếu lại với ảnh)"
     )
     text = "\n".join([result.header, *out_lines, TAB.join(["*-"] * base)]) + "\n"
-    return MergeResult(
+    fixed = MergeResult(
         text=text, spines=base, warnings=warnings, line_pages=out_pages, lines=out_lines, header=result.header
     )
+    return fixed, split_ordinals
 
 
 def _missing_barline_cuts(segment: list[tuple[str, int]], meter: Optional[Fraction], base: int) -> set[int]:

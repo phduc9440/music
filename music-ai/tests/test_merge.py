@@ -477,3 +477,10 @@ def test_two_spines_are_split_only_where_all_staves_are_aligned():
     assert [ln.split("\t")[0] for ln in fixed.lines][3].startswith("=")
     held = ["*M2/4\t*M2/4", "1g\t4a", ".\t4b", ".\t2c", "=="]
     assert merge.split_merged_measures(_result_from(held, 2)).lines == held
+
+
+def test_split_reports_which_measures_were_split():
+    body = ["*M2/4", "8a", "8b", "8cc", "8a", "=", "2g", "4ff", "4dd", "=", "4b", "4d", "=="]
+    fixed, ordinals = merge.split_merged_measures_at(_result_from(body))
+    assert ordinals == [2]
+    assert merge.count_measures(fixed.lines) == 4
