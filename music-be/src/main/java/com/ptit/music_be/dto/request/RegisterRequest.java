@@ -18,7 +18,7 @@ public class RegisterRequest {
     // Deprecated: the email is the login identifier. Kept for older clients.
     String username;
 
-    @Size(min = 6, message = "PASSWORD_INVALID")
+    @Size(min = 8, message = "PASSWORD_INVALID")
     String password;
 
     @Email(message = "EMAIL_INVALID")

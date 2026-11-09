@@ -15,9 +15,9 @@ public enum ErrorCode {
     UNAUTHORIZED(1002, "You do not have permission", HttpStatus.FORBIDDEN),
     USER_EXISTED(1003, "User already existed", HttpStatus.BAD_REQUEST),
     USER_NOT_EXISTED(1004, "User not existed", HttpStatus.NOT_FOUND),
-    INVALID_CREDENTIALS(1005, "Invalid username or password", HttpStatus.UNAUTHORIZED),
+    INVALID_CREDENTIALS(1005, "Email hoặc mật khẩu không đúng", HttpStatus.UNAUTHORIZED),
     USERNAME_INVALID(1006, "Username must be at least {min} characters", HttpStatus.BAD_REQUEST),
-    PASSWORD_INVALID(1007, "Password must be at least {min} characters", HttpStatus.BAD_REQUEST),
+    PASSWORD_INVALID(1007, "Mật khẩu phải có ít nhất {min} ký tự", HttpStatus.BAD_REQUEST),
     EMPLOYEE_NOT_FOUND(1008, "Employee not found", HttpStatus.NOT_FOUND),
     INVALID_REQUEST(1009, "Invalid request", HttpStatus.BAD_REQUEST),
     TOO_MANY_REQUESTS(1010, "Too many requests. Please try again later.", HttpStatus.TOO_MANY_REQUESTS),
@@ -26,6 +26,8 @@ public enum ErrorCode {
     CANNOT_MODIFY_SELF(1013, "Quản trị viên không thể khóa hoặc hạ quyền chính mình", HttpStatus.BAD_REQUEST),
     ROLE_NOT_EXISTED(1015, "Vai trò không tồn tại", HttpStatus.BAD_REQUEST),
     ACCOUNT_LOCKED(1016, "Tài khoản đã bị khóa", HttpStatus.FORBIDDEN),
+    OTP_INVALID(1017, "Mã OTP không đúng hoặc đã hết hạn. Nếu nhập sai nhiều lần, hãy yêu cầu mã mới.", HttpStatus.BAD_REQUEST),
+    OTP_REQUEST_TOO_SOON(1018, "Bạn vừa yêu cầu mã OTP, vui lòng chờ một lát rồi thử lại", HttpStatus.TOO_MANY_REQUESTS),
     AVATAR_INVALID(1014, "Ảnh đại diện phải là JPG hoặc PNG, tối đa 2MB", HttpStatus.BAD_REQUEST),
 
     // Score files & OMR (2xxx)

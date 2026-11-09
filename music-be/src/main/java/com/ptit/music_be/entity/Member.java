@@ -68,6 +68,10 @@ public class Member {
     @Column(name = "last_login_at")
     LocalDateTime lastLoginAt;
 
+    /** Lần đổi/đặt lại mật khẩu gần nhất (làm tròn xuống giây); mọi token cấp trước mốc này bị từ chối. */
+    @Column(name = "password_changed_at")
+    LocalDateTime passwordChangedAt;
+
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     List<MemberRole> memberRoles = new ArrayList<>();

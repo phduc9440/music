@@ -18,20 +18,22 @@ export default function ChangePasswordModal({ isOpen, onClose }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
-      toast.error('New passwords do not match');
+      toast.error('Mật khẩu mới nhập lại không khớp');
       return;
     }
 
     setIsLoading(true);
     try {
       await authApi.changePassword({ oldPassword, newPassword });
-      toast.success('Password changed successfully');
+      toast.success('Đã đổi mật khẩu. Các thiết bị khác đã bị đăng xuất.');
       setOldPassword('');
       setNewPassword('');
       setConfirmPassword('');
       onClose();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to change password');
+    } catch (error) {
+      toast.error(
+        (error as { response?: { data?: { message?: string } } }).response?.data?.message || 'Không đổi được mật khẩu',
+      );
     } finally {
       setIsLoading(false);
     }
@@ -39,16 +41,16 @@ export default function ChangePasswordModal({ isOpen, onClose }: Props) {
 
   return (
     <div className="modal-overlay active">
-      <div className="glass-container modal-content" style={{ maxWidth: '400px' }}>
+      <div className="auth-card modal-content" style={{ maxWidth: '400px' }}>
         <div className="modal-header">
-          <h3>Change Password</h3>
+          <h3>Đổi mật khẩu</h3>
           <button onClick={onClose} className="modal-close" disabled={isLoading}>
             &times;
           </button>
         </div>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Current Password</label>
+            <label>Mật khẩu hiện tại</label>
             <input
               type="password"
               className="form-control"
@@ -58,7 +60,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: Props) {
             />
           </div>
           <div className="form-group">
-            <label>New Password</label>
+            <label>Mật khẩu mới (ít nhất 8 ký tự)</label>
             <input
               type="password"
               className="form-control"
@@ -69,7 +71,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: Props) {
             />
           </div>
           <div className="form-group">
-            <label>Confirm New Password</label>
+            <label>Nhập lại mật khẩu mới</label>
             <input
               type="password"
               className="form-control"
@@ -85,7 +87,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: Props) {
             style={{ width: '100%', marginTop: '1rem' }}
             disabled={isLoading}
           >
-            {isLoading ? 'Saving...' : 'Change Password'}
+            {isLoading ? 'Đang lưu…' : 'Đổi mật khẩu'}
           </button>
         </form>
       </div>

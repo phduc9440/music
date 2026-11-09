@@ -92,11 +92,13 @@ public class AuthController {
 
     @PostMapping("/change-password")
     @Operation(
-            summary = "Change password",
+            summary = "Change password (logs out other devices; this device gets new cookies)",
             security = @io.swagger.v3.oas.annotations.security.SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<Void> changePassword(
-            @RequestBody @Valid com.ptit.music_be.dto.request.ChangePasswordRequest request) {
-        authService.changePassword(request);
+            @RequestBody @Valid com.ptit.music_be.dto.request.ChangePasswordRequest request,
+            HttpServletResponse response) {
+        // Thiết bị hiện tại nhận cookie token mới; các thiết bị khác bị đăng xuất vì token cũ bị thu hồi
+        authCookies.write(response, authService.changePassword(request));
         return ApiResponse.<Void>builder().build();
     }
 
