@@ -425,3 +425,36 @@ export interface AdminDashboard {
   topTags: DashboardKeyCount[];
   topViewed: { id: string; title: string; ownerEmail: string | null; viewCount: number }[];
 }
+
+// Giám sát tác vụ AI của admin, BE: AdminAiTaskResponse
+export interface AdminAiTask {
+  id: string;
+  taskType: string;
+  status: TaskStatus;
+  step?: string | null;
+  progress?: number | null;
+  errorMessage?: string | null;
+  retryCount?: number | null;
+  scoreId?: string | null;
+  scoreTitle?: string | null;
+  memberEmail?: string | null;
+  createdAt?: string;
+  startedAt?: string | null;
+  finishedAt?: string | null;
+  waitSeconds?: number | null;
+  runSeconds?: number | null;
+  canCancel: boolean;
+  canRetry: boolean;
+  /** Chỉ có ở API chi tiết. */
+  inputData?: unknown;
+  resultData?: unknown;
+}
+
+export interface AiTaskSummary {
+  pending: number;
+  processing: number;
+  failedLast24h: number;
+  completedLast24h: number;
+  averageRunSeconds: { taskType: string; seconds: number; count: number }[];
+}
+

@@ -1,6 +1,8 @@
 import apiClient from './client';
 import type {
+  AdminAiTask,
   AdminDashboard,
+  AiTaskSummary,
   AnnouncementAudience,
   AdminMemberDetail,
   AdminTag,
@@ -45,6 +47,19 @@ export const adminApi = {
     apiClient.put<ApiResponse<ScoreDetail>>(`/admin/scores/${id}/visibility`, { visibility, reason }),
   bulkScores: (ids: string[], action: 'PUBLIC' | 'PRIVATE' | 'DELETE', reason?: string) =>
     apiClient.post<ApiResponse<BulkResult>>('/admin/scores/bulk', { ids, action, reason }),
+  // 5.2: giám sát tác vụ AI (hủy dùng taskApi.cancel)
+  getAiTasks: (params: {
+    page?: number;
+    size?: number;
+    status?: string;
+    type?: string;
+    keyword?: string;
+    from?: string;
+    to?: string;
+  }) => apiClient.get<ApiResponse<PageResult<AdminAiTask>>>('/admin/ai-tasks', { params }),
+  getAiTaskSummary: () => apiClient.get<ApiResponse<AiTaskSummary>>('/admin/ai-tasks/summary'),
+  getAiTask: (id: string) => apiClient.get<ApiResponse<AdminAiTask>>(`/admin/ai-tasks/${id}`),
+  retryAiTask: (id: string) => apiClient.post<ApiResponse<AdminAiTask>>(`/admin/ai-tasks/${id}/retry`),
   // 4.6: quản lý thể loại (tag) master data
   getTags: () => apiClient.get<ApiResponse<AdminTag[]>>('/admin/tags'),
   createTag: (name: string) => apiClient.post<ApiResponse<AdminTag>>('/admin/tags', { name }),

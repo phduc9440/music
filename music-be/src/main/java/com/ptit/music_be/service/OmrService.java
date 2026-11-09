@@ -30,6 +30,9 @@ public interface OmrService {
      */
     AiTaskResponse retry(String scoreId, OmrRetryRequest request);
 
+    /** ADMIN: chạy lại OMR của bất kỳ bản nhạc nào (dùng lại tham số lần trước); task gán cho chủ bản nhạc. */
+    AiTaskResponse retryAsAdmin(String scoreId);
+
     /**
      * Kết quả của lần nhận diện mới nhất (đặc tả mục 2.3, 7.2): gộp {@code result_data} của task OMR mới nhất với id
      * các file hiện hành. Cần quyền xem bản nhạc (UNAUTHORIZED). Bản nhạc chưa từng có task OMR thì ném

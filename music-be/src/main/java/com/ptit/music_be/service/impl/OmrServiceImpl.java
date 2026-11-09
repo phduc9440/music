@@ -223,6 +223,32 @@ public class OmrServiceImpl implements OmrService {
         if (activeTasks >= maxActiveTasks) {
             throw new AppException(ErrorCode.TASK_LIMIT_EXCEEDED);
         }
+        return startRetry(score, member, request);
+    }
+
+    @Override
+    @Transactional
+    public AiTaskResponse retryAsAdmin(String scoreId) {
+        // Kiểm duyệt: admin chạy lại cả bản của người khác (không cần quyền sửa nội dung), không tính vào giới hạn số
+        // task của chủ; task mới vẫn gán cho chủ bản nhạc để họ thấy trong lịch sử và trang tiến độ của mình
+        if (!SecurityUtils.isAdmin()) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+        Score score =
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+        if (aiTaskRepository.existsByScoreIdAndTaskTypeAndStatusIn(
+                scoreId, AiTaskType.OMR_CONVERSION, ACTIVE_STATUSES)) {
+            throw new AppException(ErrorCode.SCORE_BUSY);
+        }
+        if (score.getMember() == null) {
+            throw new AppException(ErrorCode.USER_NOT_EXISTED);
+        }
+        return startRetry(score, score.getMember(), null);
+    }
+
+    /** Phần chung của chạy lại OMR: kiểm tra file gốc, kế thừa tham số lần trước, tạo task mới và gửi đi. */
+    private AiTaskResponse startRetry(Score score, Member member, OmrRetryRequest request) {
+        String scoreId = score.getId();
 
         // File gốc (1 PDF hoặc các ảnh) phải còn trên đĩa mới chạy lại được
         List<ScoreFile> originals =
