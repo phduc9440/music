@@ -4,8 +4,11 @@ import java.util.List;
 
 import org.springframework.web.bind.annotation.*;
 
+import com.ptit.music_be.dto.request.PlaylistAddScoreRequest;
+import com.ptit.music_be.dto.request.PlaylistOrderRequest;
 import com.ptit.music_be.dto.request.PlaylistRequest;
 import com.ptit.music_be.dto.response.ApiResponse;
+import com.ptit.music_be.dto.response.PlaylistItemResponse;
 import com.ptit.music_be.dto.response.PlaylistResponse;
 import com.ptit.music_be.service.PlaylistService;
 
@@ -62,5 +65,41 @@ public class PlaylistController {
     public ApiResponse<Void> delete(@PathVariable String id) {
         playlistService.delete(id);
         return ApiResponse.<Void>builder().build();
+    }
+
+    // ---- 3.10: bài trong playlist
+
+    @GetMapping("/{id}/scores")
+    @Operation(summary = "List scores in my playlist (in order)", security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<List<PlaylistItemResponse>> items(@PathVariable String id) {
+        return ApiResponse.<List<PlaylistItemResponse>>builder()
+                .result(playlistService.getItems(id))
+                .build();
+    }
+
+    @PostMapping("/{id}/scores")
+    @Operation(summary = "Add a score to the end of my playlist", security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<List<PlaylistItemResponse>> addScore(
+            @PathVariable String id, @RequestBody PlaylistAddScoreRequest request) {
+        return ApiResponse.<List<PlaylistItemResponse>>builder()
+                .result(playlistService.addScore(id, request == null ? null : request.getScoreId()))
+                .build();
+    }
+
+    @PutMapping("/{id}/scores/order")
+    @Operation(summary = "Reorder scores in my playlist", security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<List<PlaylistItemResponse>> reorder(
+            @PathVariable String id, @RequestBody PlaylistOrderRequest request) {
+        return ApiResponse.<List<PlaylistItemResponse>>builder()
+                .result(playlistService.reorder(id, request))
+                .build();
+    }
+
+    @DeleteMapping("/{id}/scores/{scoreId}")
+    @Operation(summary = "Remove a score from my playlist (score is kept)", security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<List<PlaylistItemResponse>> removeScore(@PathVariable String id, @PathVariable String scoreId) {
+        return ApiResponse.<List<PlaylistItemResponse>>builder()
+                .result(playlistService.removeScore(id, scoreId))
+                .build();
     }
 }

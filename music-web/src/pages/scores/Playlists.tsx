@@ -9,7 +9,7 @@ import { getErrorMessage } from '../../utils/score';
 import type { Playlist } from '../../types';
 import '../../components/scores/scores.css';
 
-/** Trang /playlists: tạo, sửa, xóa playlist luyện tập (quản lý bài trong playlist là mục 3.10). */
+/** Trang /playlists: tạo, sửa, xóa playlist luyện tập (bấm Mở để quản lý bài trong playlist, mục 3.10). */
 export default function Playlists() {
   const navigate = useNavigate();
   const [items, setItems] = useState<Playlist[] | null>(null);
@@ -79,6 +79,9 @@ export default function Playlists() {
                 <p>{p.description || 'Chưa có mô tả'}</p>
                 <p>{p.scoreCount} bài</p>
                 <div className="sc-modal__actions">
+                  <button className="sc-btn sc-btn--sm sc-btn--primary" onClick={() => navigate(`/playlists/${p.id}`)}>
+                    Mở
+                  </button>
                   <button className="sc-btn sc-btn--sm" onClick={() => setEditing(p)}>
                     Sửa
                   </button>
