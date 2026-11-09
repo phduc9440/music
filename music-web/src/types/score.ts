@@ -279,3 +279,28 @@ export interface PlaylistItem {
   measureCount?: number | null;
   position: number;
 }
+
+// Phiên tập, BE: PracticeSessionResponse. mode: 1 = FREE, 2 = LOOP, 3 = TEST. errorLog chỉ có ở chi tiết.
+export interface PracticeSessionRecord {
+  id: string;
+  scoreId: string;
+  scoreTitle: string;
+  mode: 1 | 2 | 3;
+  tempoPercent?: number | null;
+  loopStartMeasure?: number | null;
+  loopEndMeasure?: number | null;
+  startedAt?: string | null;
+  endedAt?: string | null;
+  durationSeconds?: number | null;
+  totalNotes?: number | null;
+  perfectCount?: number | null;
+  earlyCount?: number | null;
+  lateCount?: number | null;
+  wrongPitchCount?: number | null;
+  missedCount?: number | null;
+  accuracyPct?: number | null;
+  timingAccuracyPct?: number | null;
+  scorePoints?: number | null;
+  isCompleted?: boolean | null;
+  errorLog?: unknown[] | null;
+}
