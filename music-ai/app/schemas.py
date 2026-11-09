@@ -208,3 +208,26 @@ class NormalizeRequest(BaseModel):
         if _score_dir(self.inPath) != _score_dir(self.outPath):
             raise ValueError("inPath và outPath phải thuộc cùng một bản nhạc")
         return self
+
+
+class DiffRequest(BaseModel):
+    """Body của ``POST /analysis/diff``: so sánh hai MusicXML của cùng một bản nhạc."""
+
+    basePath: str
+    """MusicXML gốc (thường là bản do OMR sinh ra)."""
+
+    targetPath: str
+    """MusicXML cần so với bản gốc (thường là bản người dùng đã sửa)."""
+
+    @field_validator("basePath", "targetPath")
+    @classmethod
+    def _must_exist(cls, value: str) -> str:
+        resolve_existing_file(value)
+        _score_dir(value)
+        return value.strip().replace("\\", "/")
+
+    @model_validator(mode="after")
+    def _same_score(self) -> "DiffRequest":
+        if _score_dir(self.basePath) != _score_dir(self.targetPath):
+            raise ValueError("basePath và targetPath phải thuộc cùng một bản nhạc")
+        return self

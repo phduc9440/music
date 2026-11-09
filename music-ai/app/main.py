@@ -14,6 +14,7 @@ from uuid import UUID
 from fastapi import Depends, FastAPI, Header, HTTPException
 
 from app import storage
+from app.analysis.diff import diff_files
 from app.config import get_settings
 from app.convert.errors import ConversionError
 from app.convert.kern import kern_file_to_musicxml_file
@@ -22,7 +23,14 @@ from app.convert.normalize import normalize_musicxml_file
 from app.convert.prepare import prepare_musicxml
 from app.jobs import JobManager, QueueFullError
 from app.omr.transcoda import get_recognizer
-from app.schemas import JobRequest, KernToMusicXmlRequest, MusicXmlToMidiRequest, NormalizeRequest, PrepareRequest
+from app.schemas import (
+    DiffRequest,
+    JobRequest,
+    KernToMusicXmlRequest,
+    MusicXmlToMidiRequest,
+    NormalizeRequest,
+    PrepareRequest,
+)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("music-ai")
@@ -185,3 +193,16 @@ def convert_normalize(body: NormalizeRequest) -> dict:
         "tempoBpm": result.tempo_bpm,
         "warnings": result.warnings,
     }
+
+
+@app.post("/analysis/diff", dependencies=[Depends(require_internal_key)])
+def analysis_diff(body: DiffRequest) -> dict:
+    """So sánh hai MusicXML của cùng một bản nhạc (bản OMR và bản đã sửa), đồng bộ.
+
+    Trả ``{measures: [{base, target, status, errors[]}], summary: {...}}`` (xem ``app/analysis/diff.py``). File hỏng,
+    không phải score-partwise hoặc có khai báo ENTITY: 422 kèm lý do.
+    """
+    try:
+        return diff_files(storage.resolve(body.basePath), storage.resolve(body.targetPath))
+    except ConversionError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
