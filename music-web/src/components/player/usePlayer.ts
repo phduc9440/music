@@ -427,6 +427,8 @@ export function usePlayer(doc: ScoreDocument, options: UsePlayerOptions): Player
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       const target = e.target as HTMLElement | null;
       if (target?.closest('input, textarea, select, [role="slider"], [role="dialog"]')) return;
+      // Hộp thoại đang mở (xuất file...) mà focus còn ở nền trang: không bật/tắt phát phía sau
+      if (document.querySelector('.sc-modal-overlay')) return;
       if (e.key === ' ') {
         if (target?.closest('button, a')) return; // Space trên nút là bấm nút
         e.preventDefault();

@@ -872,6 +872,8 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     if (!canEdit) return;
     const onKey = (e: KeyboardEvent) => {
       if (blocked || conflict || draft) return;
+      // Có hộp thoại đang mở (lịch sử phiên bản, xuất file...): phím thuộc về hộp thoại, không sửa bản nhạc phía sau
+      if (document.querySelector('.sc-modal-overlay')) return;
       const target = e.target as HTMLElement | null;
       if (target && (/^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName) || target.isContentEditable)) return;
       const mod = e.ctrlKey || e.metaKey;
