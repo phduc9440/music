@@ -32,16 +32,19 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.ptit.music_be.client.AiServiceClient;
+import com.ptit.music_be.client.MusicXmlNormalizeResult;
 import com.ptit.music_be.dto.enums.AiTaskError;
 import com.ptit.music_be.dto.enums.AiTaskStatus;
 import com.ptit.music_be.dto.enums.AiTaskStep;
 import com.ptit.music_be.dto.enums.FileType;
 import com.ptit.music_be.entity.AiTask;
+import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreFile;
 import com.ptit.music_be.event.ExportTaskCreatedEvent;
 import com.ptit.music_be.exception.MuseScoreException;
 import com.ptit.music_be.repository.AiTaskRepository;
 import com.ptit.music_be.repository.ScoreFileRepository;
+import com.ptit.music_be.repository.ScoreRepository;
 import com.ptit.music_be.service.FileStorageService;
 import com.ptit.music_be.service.MuseScoreCliService;
 import com.ptit.music_be.service.export.ExportNames;
@@ -64,6 +67,7 @@ public class ExportWorker {
 
     private final AiTaskRepository aiTaskRepository;
     private final ScoreFileRepository scoreFileRepository;
+    private final ScoreRepository scoreRepository;
     private final FileStorageService fileStorageService;
     private final MuseScoreCliService museScoreCliService;
     private final AiServiceClient aiServiceClient;
@@ -80,6 +84,7 @@ public class ExportWorker {
     public ExportWorker(
             AiTaskRepository aiTaskRepository,
             ScoreFileRepository scoreFileRepository,
+            ScoreRepository scoreRepository,
             FileStorageService fileStorageService,
             MuseScoreCliService museScoreCliService,
             AiServiceClient aiServiceClient,
@@ -87,6 +92,7 @@ public class ExportWorker {
             PlatformTransactionManager transactionManager) {
         this.aiTaskRepository = aiTaskRepository;
         this.scoreFileRepository = scoreFileRepository;
+        this.scoreRepository = scoreRepository;
         this.fileStorageService = fileStorageService;
         this.museScoreCliService = museScoreCliService;
         this.aiServiceClient = aiServiceClient;
@@ -148,6 +154,8 @@ public class ExportWorker {
         try {
             if (job.format() == FileType.SVG) {
                 renderSvg(job, tmpDir, storedPaths);
+            } else if (job.format() == FileType.MUSICXML) {
+                convertMidi(job, tmpDir, storedPaths);
             } else {
                 renderAudio(job, tmpDir, storedPaths);
             }
@@ -243,6 +251,98 @@ public class ExportWorker {
         }
     }
 
+    /** Kết quả ghi bản nhạc chuyển từ MIDI: xong, task đã dừng (hủy/hết hạn), hoặc bị từ chối vì đã có MusicXML. */
+    private enum MidiOutcome {
+        DONE,
+        STOPPED,
+        REJECTED
+    }
+
+    /**
+     * Bản nhạc nhập từ MIDI: MuseScore đổi MIDI gốc thành MusicXML, music-ai chuẩn hóa (gộp track thành piano 2 staff),
+     * kết quả là {@code musicxml/v1.musicxml} và các cột {@code scores}. Nhiều track được music-ai gộp theo khóa nhạc và
+     * cao độ; các cảnh báo đi vào {@code result_data.warnings}.
+     */
+    private void convertMidi(Job job, String tmpDir, List<String> storedPaths) throws IOException {
+        String taskId = job.taskId();
+        updateStep(taskId, AiTaskStep.RENDER, 30);
+        String rawPath = tmpDir + "/raw.musicxml";
+        museScoreCliService.convert(
+                fileStorageService.resolve(job.sourcePath()), fileStorageService.resolve(rawPath), List.of(), taskId);
+
+        updateStep(taskId, AiTaskStep.SAVE, 70);
+        String finalPath = "scores/%s/musicxml/v1.musicxml".formatted(job.scoreId());
+        MusicXmlNormalizeResult normalized = aiServiceClient.normalizeMusicXml(rawPath, finalPath);
+        if (normalized == null) {
+            throw new MuseScoreException(AiTaskError.EXPORT_ERROR, "music-ai không trả kết quả chuẩn hóa");
+        }
+        storedPaths.add(finalPath);
+
+        long size = Files.size(fileStorageService.resolve(finalPath));
+        MidiOutcome outcome = completeMidiConversion(job, finalPath, size, normalized);
+        if (outcome == MidiOutcome.STOPPED) {
+            fileStorageService.delete(finalPath);
+        }
+        if (outcome != MidiOutcome.DONE) {
+            // REJECTED: v1.musicxml có thể đã thuộc về dòng khác nên không được xóa
+            storedPaths.clear();
+        }
+    }
+
+    private MidiOutcome completeMidiConversion(Job job, String storedPath, long size, MusicXmlNormalizeResult result) {
+        return tx.execute(status -> {
+            Optional<AiTask> found = aiTaskRepository.findByIdForUpdate(job.taskId());
+            Optional<Score> foundScore = scoreRepository.findByIdForUpdate(job.scoreId());
+            if (found.isEmpty() || found.get().getStatus() != AiTaskStatus.PROCESSING || foundScore.isEmpty()) {
+                return MidiOutcome.STOPPED;
+            }
+            AiTask task = found.get();
+            Score score = foundScore.get();
+            if (!scoreFileRepository
+                    .findByScoreIdAndFileTypeOrderByPageNumberAsc(job.scoreId(), FileType.MUSICXML)
+                    .isEmpty()) {
+                markFailed(task, AiTaskError.EXPORT_ERROR + ": bản nhạc đã có MusicXML");
+                return MidiOutcome.REJECTED;
+            }
+
+            ObjectNode meta = objectMapper.createObjectNode();
+            meta.put("source", "MIDI");
+            meta.put("measureCount", result.measureCount());
+            ScoreFile saved = scoreFileRepository.save(ScoreFile.builder()
+                    .score(score)
+                    .fileType(FileType.MUSICXML)
+                    .originalFileName("v1.musicxml")
+                    .storagePath(storedPath)
+                    .contentType("application/vnd.recordare.musicxml+xml")
+                    .sizeBytes(size)
+                    .version(1)
+                    .isCurrent(true)
+                    .meta(meta.toString())
+                    .build());
+
+            score.setCurrentVersion(1);
+            score.setMeasureCount(result.measureCount());
+            score.setKeySignature(result.keySignature());
+            score.setTimeSignature(result.timeSignature());
+            score.setTempoBpm(result.tempoBpm());
+            score.setStaffCount(result.staffCount());
+            score.setUpdatedAt(LocalDateTime.now());
+            scoreRepository.save(score);
+
+            ObjectNode data = objectMapper.createObjectNode();
+            data.put("fileId", saved.getId());
+            var warnings = data.putArray("warnings");
+            result.warnings().forEach(warnings::add);
+            task.setStatus(AiTaskStatus.COMPLETED);
+            task.setStep(AiTaskStep.SAVE.name());
+            task.setProgress(100);
+            task.setResultData(data.toString());
+            task.setFinishedAt(LocalDateTime.now());
+            aiTaskRepository.save(task);
+            return MidiOutcome.DONE;
+        });
+    }
+
     /**
      * Các trang SVG MuseScore đã ghi cạnh {@code output}: {@code tên-N.svg} sắp theo N; không có thì nếu {@code output}
      * tự nó tồn tại (bản nhạc một trang) thì đó là trang 1. Rỗng nếu không có gì.
@@ -294,6 +394,14 @@ public class ExportWorker {
             FileType format = parseFormat(input.path("targetFormat").asText(""));
             if (source.isEmpty() || format == null || task.getScore() == null) {
                 markFailed(task, AiTaskError.EXPORT_ERROR + ": thiếu dữ liệu nguồn");
+                return null;
+            }
+            if (format == FileType.MUSICXML
+                    && !scoreFileRepository
+                            .findByScoreIdAndFileTypeOrderByPageNumberAsc(
+                                    task.getScore().getId(), FileType.MUSICXML)
+                            .isEmpty()) {
+                markFailed(task, AiTaskError.EXPORT_ERROR + ": bản nhạc đã có MusicXML");
                 return null;
             }
             task.setStatus(AiTaskStatus.PROCESSING);

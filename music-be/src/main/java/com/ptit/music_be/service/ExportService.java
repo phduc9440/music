@@ -15,6 +15,16 @@ public interface ExportService {
      */
     ExportResponse requestExport(String scoreId, ExportRequest request);
 
+    /**
+     * Chuyển bản nhạc nhập từ MIDI thành MusicXML: tạo task chạy MuseScore trên {@code ORIGINAL_MIDI} rồi chuẩn hóa,
+     * kết quả là MusicXML version 1 để mở được Editor và Player. Cần quyền sửa. Lỗi: SCORE_NOT_EXISTED (2001),
+     * UNAUTHORIZED (1002), EXPORT_SOURCE_NOT_SUPPORTED (2705) nếu bản nhạc đã có MusicXML hoặc không có MIDI gốc,
+     * EXPORT_NOT_AVAILABLE (2704), EXPORT_LIMIT_EXCEEDED (2703). Đang có task chuyển đổi thì trả lại task đó.
+     *
+     * <p>Cũng được gọi khi {@code POST /exports} với {@code targetFormat = MUSICXML} và bản nhạc chưa có MusicXML.
+     */
+    ExportResponse requestMidiConversion(String scoreId);
+
     /** File xuất còn trên đĩa của bản nhạc, kèm cờ {@code outdated}. Cần quyền xem. */
     List<ExportFileResponse> listExports(String scoreId);
 

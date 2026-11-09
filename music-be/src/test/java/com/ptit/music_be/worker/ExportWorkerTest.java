@@ -36,6 +36,7 @@ import org.springframework.transaction.support.SimpleTransactionStatus;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ptit.music_be.client.AiServiceClient;
+import com.ptit.music_be.client.MusicXmlNormalizeResult;
 import com.ptit.music_be.dto.enums.AiTaskError;
 import com.ptit.music_be.dto.enums.AiTaskStatus;
 import com.ptit.music_be.dto.enums.AiTaskType;
@@ -46,6 +47,7 @@ import com.ptit.music_be.entity.ScoreFile;
 import com.ptit.music_be.exception.MuseScoreException;
 import com.ptit.music_be.repository.AiTaskRepository;
 import com.ptit.music_be.repository.ScoreFileRepository;
+import com.ptit.music_be.repository.ScoreRepository;
 import com.ptit.music_be.service.FileStorageService;
 import com.ptit.music_be.service.MuseScoreCliService;
 
@@ -62,6 +64,9 @@ class ExportWorkerTest {
 
     @Mock
     ScoreFileRepository scoreFileRepository;
+
+    @Mock
+    ScoreRepository scoreRepository;
 
     @Mock
     MuseScoreCliService museScoreCliService;
@@ -140,6 +145,7 @@ class ExportWorkerTest {
         worker = new ExportWorker(
                 aiTaskRepository,
                 scoreFileRepository,
+                scoreRepository,
                 storage,
                 museScoreCliService,
                 aiServiceClient,
@@ -374,5 +380,130 @@ class ExportWorkerTest {
 
         assertThat(ExportWorker.collectSvgPages(output)).containsExactly(output);
         assertThat(ExportWorker.collectSvgPages(root.resolve("t/other.svg"))).isEmpty();
+    }
+
+    // ---------------------------------------------------------------- MIDI -> MusicXML
+
+    static final String RAW = "scores/s1/tmp/task1/raw.musicxml";
+    static final String V1 = "scores/s1/musicxml/v1.musicxml";
+
+    /** Bản nhạc chỉ có MIDI gốc: nguồn của task là file .mid, kết quả là MusicXML. */
+    void givenMidiConversionTask() {
+        setInput("MUSICXML", "{}");
+        ScoreFile midi = ScoreFile.builder()
+                .id("src")
+                .fileType(FileType.ORIGINAL_MIDI)
+                .storagePath("scores/s1/original/song.mid")
+                .build();
+        when(scoreFileRepository.findById("src")).thenReturn(Optional.of(midi));
+        when(scoreRepository.findByIdForUpdate(SCORE_ID)).thenReturn(Optional.of(task.getScore()));
+    }
+
+    /** MuseScore giả ghi raw.musicxml; music-ai giả ghi v1.musicxml rồi trả metadata. */
+    void midiToolsWork(Runnable duringNormalize) throws IOException {
+        doAnswer(invocation -> {
+                    Path output = invocation.getArgument(1);
+                    Files.createDirectories(output.getParent());
+                    Files.writeString(output, "<raw/>");
+                    return null;
+                })
+                .when(museScoreCliService)
+                .convert(any(Path.class), any(Path.class), anyList(), eq(TASK_ID));
+        when(aiServiceClient.normalizeMusicXml(RAW, V1)).thenAnswer(invocation -> {
+            duringNormalize.run();
+            Path target = root.resolve(V1);
+            Files.createDirectories(target.getParent());
+            Files.writeString(target, "<score-partwise/>");
+            return new MusicXmlNormalizeResult(12, 2, "G", "3/4", 96, List.of("Hai track được gộp"));
+        });
+    }
+
+    @Test
+    void midiConversion_writesVersionOneAndUpdatesScore() throws Exception {
+        givenMidiConversionTask();
+        midiToolsWork(() -> {});
+
+        worker.process(TASK_ID);
+
+        assertThat(task.getStatus()).isEqualTo(AiTaskStatus.COMPLETED);
+        assertThat(root.resolve(V1)).hasContent("<score-partwise/>");
+        assertThat(root.resolve("scores/s1/tmp/task1")).doesNotExist();
+        verify(museScoreCliService)
+                .convert(
+                        eq(root.resolve("scores/s1/original/song.mid")),
+                        eq(root.resolve(RAW)),
+                        eq(List.of()),
+                        eq(TASK_ID));
+
+        Score score = task.getScore();
+        assertThat(score.getCurrentVersion()).isEqualTo(1);
+        assertThat(score.getMeasureCount()).isEqualTo(12);
+        assertThat(score.getStaffCount()).isEqualTo(2);
+        assertThat(score.getKeySignature()).isEqualTo("G");
+        assertThat(score.getTimeSignature()).isEqualTo("3/4");
+        assertThat(score.getTempoBpm()).isEqualTo(96);
+
+        org.mockito.ArgumentCaptor<ScoreFile> captor = org.mockito.ArgumentCaptor.forClass(ScoreFile.class);
+        verify(scoreFileRepository).save(captor.capture());
+        assertThat(captor.getValue().getFileType()).isEqualTo(FileType.MUSICXML);
+        assertThat(captor.getValue().getVersion()).isEqualTo(1);
+        assertThat(captor.getValue().getIsCurrent()).isTrue();
+        assertThat(captor.getValue().getStoragePath()).isEqualTo(V1);
+        assertThat(objectMapper
+                        .readTree(task.getResultData())
+                        .get("warnings")
+                        .get(0)
+                        .asText())
+                .isEqualTo("Hai track được gộp");
+    }
+
+    @Test
+    void midiConversion_refusedWhenScoreAlreadyHasMusicXml() throws Exception {
+        givenMidiConversionTask();
+        ScoreFile existing =
+                ScoreFile.builder().fileType(FileType.MUSICXML).version(1).build();
+        when(scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(SCORE_ID, FileType.MUSICXML))
+                .thenReturn(List.of(existing));
+
+        worker.process(TASK_ID);
+
+        assertThat(task.getStatus()).isEqualTo(AiTaskStatus.FAILED);
+        assertThat(task.getErrorMessage()).contains("đã có MusicXML");
+        verify(museScoreCliService, never()).convert(any(), any(), anyList(), anyString());
+    }
+
+    @Test
+    void midiConversion_normalizeRejected_failsWithReasonAndLeavesNoFile() throws Exception {
+        givenMidiConversionTask();
+        midiToolsWork(() -> {});
+        doThrow(org.springframework.web.client.HttpClientErrorException.create(
+                        org.springframework.http.HttpStatus.UNPROCESSABLE_ENTITY,
+                        "Unprocessable",
+                        org.springframework.http.HttpHeaders.EMPTY,
+                        "{\"detail\":\"MusicXML hỏng\"}".getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                        java.nio.charset.StandardCharsets.UTF_8))
+                .when(aiServiceClient)
+                .normalizeMusicXml(RAW, V1);
+
+        worker.process(TASK_ID);
+
+        assertThat(task.getStatus()).isEqualTo(AiTaskStatus.FAILED);
+        assertThat(task.getErrorMessage()).startsWith("EXPORT_ERROR").contains("MusicXML hỏng");
+        assertThat(root.resolve(V1)).doesNotExist();
+        verify(scoreFileRepository, never()).save(any(ScoreFile.class));
+    }
+
+    @Test
+    void midiConversion_cancelledWhileNormalizing_removesTheWrittenFile() throws Exception {
+        givenMidiConversionTask();
+        midiToolsWork(() -> task.setStatus(AiTaskStatus.CANCELLED));
+
+        worker.process(TASK_ID);
+
+        assertThat(task.getStatus()).isEqualTo(AiTaskStatus.CANCELLED);
+        assertThat(root.resolve(V1)).doesNotExist();
+        verify(scoreFileRepository, never()).save(any(ScoreFile.class));
+        // Bị hủy thì bản nhạc không được lên version 1
+        assertThat(task.getScore().getCurrentVersion()).isNotEqualTo(1);
     }
 }

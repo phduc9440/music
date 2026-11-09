@@ -96,11 +96,20 @@ public class ExportServiceImpl implements ExportService {
         Score score =
                 scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
         scoreFileService.checkCanView(score);
-        ScoreFile source = currentMusicXml(scoreId).orElseThrow(() -> new AppException(ErrorCode.MUSICXML_NOT_READY));
         ExportSpec spec = validator.validate(
                 request == null ? null : request.getTargetFormat(),
                 request == null ? null : request.getOptions(),
                 score);
+        Optional<ScoreFile> current = currentMusicXml(scoreId);
+        if (current.isEmpty()) {
+            // Chưa có MusicXML: chỉ xin MusicXML mới có thể chuyển từ MIDI gốc (bản nhạc nhập từ MIDI)
+            if (spec.fileType() == FileType.MUSICXML) {
+                scoreFileService.checkCanEdit(score);
+                return convertMidi(score, spec);
+            }
+            throw new AppException(ErrorCode.MUSICXML_NOT_READY);
+        }
+        ScoreFile source = current.get();
 
         // MusicXML và MIDI có sẵn: trả file hiện hành, không cần MuseScore và không tạo task
         if (spec.fileType() == FileType.MUSICXML) {
@@ -163,6 +172,63 @@ public class ExportServiceImpl implements ExportService {
                     .build();
         }
 
+        checkLimits(member);
+
+        ObjectNode input = objectMapper.createObjectNode();
+        input.put("targetFormat", spec.fileType().name());
+        input.put("sourceFileId", source.getId());
+        input.put("sourceVersion", sourceVersion);
+        input.set("options", spec.options());
+        return enqueue(member, score, spec.taskType(), input);
+    }
+
+    @Override
+    @Transactional
+    public ExportResponse requestMidiConversion(String scoreId) {
+        Score score =
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+        scoreFileService.checkCanEdit(score);
+        if (currentMusicXml(scoreId).isPresent()) {
+            throw new AppException(ErrorCode.EXPORT_SOURCE_NOT_SUPPORTED);
+        }
+        return convertMidi(score, validator.validate("MUSICXML", null, score));
+    }
+
+    /** Tạo (hoặc trả lại) task chuyển MIDI gốc thành MusicXML. Người gọi đã kiểm tra quyền sửa và bản nhạc chưa có MusicXML. */
+    private ExportResponse convertMidi(Score score, ExportSpec spec) {
+        ScoreFile midi =
+                scoreFileRepository
+                        .findByScoreIdAndFileTypeOrderByPageNumberAsc(score.getId(), FileType.ORIGINAL_MIDI)
+                        .stream()
+                        .max(Comparator.comparing(
+                                ScoreFile::getCreatedAt, Comparator.nullsFirst(Comparator.naturalOrder())))
+                        .orElseThrow(() -> new AppException(ErrorCode.EXPORT_SOURCE_NOT_SUPPORTED));
+        if (!museScoreCliService.isAvailable()) {
+            throw new AppException(ErrorCode.EXPORT_NOT_AVAILABLE);
+        }
+        Member member = memberRepository
+                .findByEmailForUpdate(SecurityUtils.getCurrentEmail())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        Optional<AiTask> duplicate = findDuplicateTask(score.getId(), spec, 0);
+        if (duplicate.isPresent()) {
+            return ExportResponse.builder()
+                    .cached(false)
+                    .task(aiTaskMapper.toResponse(duplicate.get()))
+                    .build();
+        }
+        checkLimits(member);
+
+        ObjectNode input = objectMapper.createObjectNode();
+        input.put("targetFormat", FileType.MUSICXML.name());
+        input.put("sourceFileId", midi.getId());
+        input.put("sourceVersion", 0);
+        input.set("options", objectMapper.createObjectNode());
+        return enqueue(member, score, AiTaskType.FORMAT_CONVERSION, input);
+    }
+
+    /** Mỗi người tối đa 2 task xuất đang chạy và 10 task xuất trong một giờ. */
+    private void checkLimits(Member member) {
         if (aiTaskRepository.countByMemberIdAndTaskTypeInAndStatusIn(member.getId(), EXPORT_TASK_TYPES, ACTIVE_STATUSES)
                         >= MAX_ACTIVE_TASKS
                 || aiTaskRepository.countByMemberIdAndTaskTypeInAndCreatedAtAfter(
@@ -172,24 +238,20 @@ public class ExportServiceImpl implements ExportService {
                         >= MAX_TASKS_PER_HOUR) {
             throw new AppException(ErrorCode.EXPORT_LIMIT_EXCEEDED);
         }
+    }
 
-        ObjectNode input = objectMapper.createObjectNode();
-        input.put("targetFormat", spec.fileType().name());
-        input.put("sourceFileId", source.getId());
-        input.put("sourceVersion", sourceVersion);
-        input.set("options", spec.options());
-
+    private ExportResponse enqueue(Member member, Score score, AiTaskType taskType, ObjectNode input) {
         // Không đổi scores.processing_status: xuất file không làm bản nhạc "đang xử lý" (đặc tả 0.4)
         AiTask task = aiTaskRepository.save(AiTask.builder()
                 .member(member)
                 .score(score)
-                .taskType(spec.taskType())
+                .taskType(taskType)
                 .status(AiTaskStatus.PENDING)
                 .progress(0)
                 .inputData(input.toString())
                 .build());
 
-        eventPublisher.publishEvent(new ExportTaskCreatedEvent(task.getId(), scoreId));
+        eventPublisher.publishEvent(new ExportTaskCreatedEvent(task.getId(), score.getId()));
         return ExportResponse.builder()
                 .cached(false)
                 .task(aiTaskMapper.toResponse(task))

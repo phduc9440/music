@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -466,5 +467,90 @@ class ExportServiceImplTest {
     void zipOfUnknownTaskIs2002() {
         assertThatThrownBy(() -> service.zipSvgPages(SCORE_ID, "none"))
                 .satisfies(e -> assertError(e, ErrorCode.FILE_NOT_EXISTED));
+    }
+
+    // ---------------------------------------------------------------- MIDI -> MusicXML
+
+    private ScoreFile originalMidi() {
+        return ScoreFile.builder()
+                .id("mid-1")
+                .score(score)
+                .fileType(FileType.ORIGINAL_MIDI)
+                .storagePath("scores/score-1/original/song.mid")
+                .createdAt(LocalDateTime.now())
+                .build();
+    }
+
+    private void givenOnlyOriginalMidi() {
+        when(scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(SCORE_ID, FileType.MUSICXML))
+                .thenReturn(List.of());
+        when(scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(SCORE_ID, FileType.ORIGINAL_MIDI))
+                .thenReturn(List.of(originalMidi()));
+    }
+
+    @Test
+    void musicXmlRequestWithOnlyMidiCreatesConversionTask() throws Exception {
+        givenOnlyOriginalMidi();
+
+        ExportResponse response = service.requestExport(SCORE_ID, request("MUSICXML", null));
+
+        assertThat(response.isCached()).isFalse();
+        verify(scoreFileService).checkCanEdit(score);
+        AiTask saved = captureSavedTask();
+        assertThat(saved.getTaskType()).isEqualTo(AiTaskType.FORMAT_CONVERSION);
+        var input = objectMapper.readTree(saved.getInputData());
+        assertThat(input.get("targetFormat").asText()).isEqualTo("MUSICXML");
+        assertThat(input.get("sourceFileId").asText()).isEqualTo("mid-1");
+        assertThat(input.get("sourceVersion").asInt()).isZero();
+        verify(eventPublisher).publishEvent(new ExportTaskCreatedEvent("task-1", SCORE_ID));
+    }
+
+    @Test
+    void requestMidiConversionCreatesTheSameTask() {
+        givenOnlyOriginalMidi();
+
+        ExportResponse response = service.requestMidiConversion(SCORE_ID);
+
+        assertThat(response.getTask().getId()).isEqualTo("task-1");
+        verify(scoreFileService).checkCanEdit(score);
+    }
+
+    @Test
+    void midiConversionReturnsRunningTaskInsteadOfDuplicating() {
+        givenOnlyOriginalMidi();
+        AiTask running = AiTask.builder()
+                .id("running-1")
+                .taskType(AiTaskType.FORMAT_CONVERSION)
+                .status(AiTaskStatus.PROCESSING)
+                .inputData("{\"targetFormat\":\"MUSICXML\",\"sourceVersion\":0,\"options\":{}}")
+                .build();
+        when(aiTaskRepository.findByScoreIdAndTaskTypeInAndStatusIn(eq(SCORE_ID), anyCollection(), anyCollection()))
+                .thenReturn(List.of(running));
+
+        assertThat(service.requestMidiConversion(SCORE_ID).getTask().getId()).isEqualTo("running-1");
+        verify(aiTaskRepository, never()).save(any());
+    }
+
+    @Test
+    void conversionIsRefusedWithoutMidiOrWhenMusicXmlExists() throws Exception {
+        // Không có MusicXML và không có MIDI gốc
+        when(scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(SCORE_ID, FileType.MUSICXML))
+                .thenReturn(List.of());
+        assertThatThrownBy(() -> service.requestExport(SCORE_ID, request("MUSICXML", null)))
+                .satisfies(e -> assertError(e, ErrorCode.EXPORT_SOURCE_NOT_SUPPORTED));
+
+        // Đã có MusicXML thì không chuyển đổi nữa
+        when(scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(SCORE_ID, FileType.MUSICXML))
+                .thenReturn(List.of(musicXml));
+        assertThatThrownBy(() -> service.requestMidiConversion(SCORE_ID))
+                .satisfies(e -> assertError(e, ErrorCode.EXPORT_SOURCE_NOT_SUPPORTED));
+    }
+
+    @Test
+    void conversionNeedsMuseScore() {
+        givenOnlyOriginalMidi();
+        when(museScoreCliService.isAvailable()).thenReturn(false);
+        assertThatThrownBy(() -> service.requestMidiConversion(SCORE_ID))
+                .satisfies(e -> assertError(e, ErrorCode.EXPORT_NOT_AVAILABLE));
     }
 }
