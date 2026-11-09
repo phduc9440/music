@@ -166,7 +166,7 @@ public class AuthServiceImpl implements AuthService {
 
     private void assertActive(Member user) {
         if (user.getStatus() != null && user.getStatus() != MemberStatus.ACTIVE) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+            throw new AppException(ErrorCode.ACCOUNT_LOCKED);
         }
     }
 
