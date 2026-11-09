@@ -346,3 +346,35 @@ export interface AdminTag {
   slug: string;
   scoreCount: number;
 }
+
+// Giám sát hệ thống (admin), BE: SystemMetricsResponse / ErrorLogResponse. Số null = hệ điều hành không cung cấp.
+export interface SystemMetrics {
+  timestamp: string;
+  startTime: string;
+  uptimeSeconds: number;
+  heapUsedBytes: number;
+  heapMaxBytes: number;
+  processCpuPercent?: number | null;
+  systemCpuPercent?: number | null;
+  loadAverage?: number | null;
+  availableProcessors: number;
+  physicalMemoryTotalBytes?: number | null;
+  physicalMemoryFreeBytes?: number | null;
+  threadCount: number;
+  peakThreadCount: number;
+  diskTotalBytes?: number | null;
+  diskUsableBytes?: number | null;
+  javaVersion: string;
+  errorCountSinceStart: number;
+}
+
+export interface ErrorLogEntry {
+  id: number;
+  timestamp: string;
+  level: string;
+  logger: string;
+  thread: string;
+  message: string;
+  exceptionClass?: string | null;
+  stackTrace?: string | null;
+}
