@@ -14,6 +14,7 @@ import ScoreImport from '../pages/scores/ScoreImport';
 import SharedScores from '../pages/scores/SharedScores';
 import PlaylistDetail from '../pages/scores/PlaylistDetail';
 import Playlists from '../pages/scores/Playlists';
+import AdminAiTasks from '../pages/admin/AdminAiTasks';
 import AdminAnnouncements from '../pages/admin/AdminAnnouncements';
 import AdminDashboard from '../pages/admin/AdminDashboard';
 import AdminLayout from '../components/admin/AdminLayout';
@@ -106,6 +107,7 @@ const AppRoutes = () => {
         <Route path="official-scores" element={<AdminOfficialScores />} />
         <Route path="announcements" element={<AdminAnnouncements />} />
         <Route path="tags" element={<AdminTags />} />
+        <Route path="ai-tasks" element={<AdminAiTasks />} />
         <Route path="system" element={<AdminSystem />} />
       </Route>
     </Routes>

@@ -70,6 +70,7 @@ public enum ErrorCode {
     // AI tasks (21xx)
     AI_TASK_NOT_EXISTED(2101, "Tác vụ AI không tồn tại", HttpStatus.NOT_FOUND),
     AI_TASK_NOT_CANCELLABLE(2102, "Tác vụ đã kết thúc nên không thể hủy", HttpStatus.CONFLICT),
+    AI_TASK_NOT_RETRYABLE(2104, "Chỉ chạy lại được tác vụ số hóa (OMR) đã lỗi hoặc bị hủy", HttpStatus.CONFLICT),
     AI_SERVICE_UNAVAILABLE(2103, "Dịch vụ nhận diện nhạc tạm thời không khả dụng", HttpStatus.SERVICE_UNAVAILABLE),
 
     // Tags (23xx)

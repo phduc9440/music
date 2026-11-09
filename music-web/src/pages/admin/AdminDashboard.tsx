@@ -316,6 +316,7 @@ export default function AdminDashboard() {
           value={t ? nf.format(t.aiTasksRunning) : '—'}
           hint={t ? `đang chạy · ${t.aiTasksFailed} lỗi` : undefined}
           alert={!!t && t.aiTasksFailed > 0}
+          to="/admin/ai-tasks"
         />
       </StatGrid>
 

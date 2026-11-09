@@ -42,7 +42,13 @@ const MENU: { section: string; items: MenuItem[] }[] = [
       { to: '/admin/tags', label: 'Thể loại', icon: 'tag' },
     ],
   },
-  { section: 'Hệ thống', items: [{ to: '/admin/system', label: 'Giám sát hệ thống', icon: 'activity' }] },
+  {
+    section: 'Hệ thống',
+    items: [
+      { to: '/admin/ai-tasks', label: 'Tác vụ AI', icon: 'cpu' },
+      { to: '/admin/system', label: 'Giám sát hệ thống', icon: 'activity' },
+    ],
+  },
 ];
 
 const ALL_ITEMS = MENU.flatMap((g) => g.items);
