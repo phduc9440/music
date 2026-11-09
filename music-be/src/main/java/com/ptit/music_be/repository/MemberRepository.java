@@ -34,6 +34,18 @@ public interface MemberRepository extends JpaRepository<Member, String> {
     @Query("select m.status from Member m where m.email = :email")
     Optional<MemberStatus> findStatusByEmail(@Param("email") String email);
 
+    /** Mọi thành viên đang hoạt động (status = ACTIVE), để gửi thông báo chung. */
+    @Query("select m from Member m where m.status = :status")
+    java.util.List<Member> findAllByStatus(@Param("status") MemberStatus status);
+
+    /** Thành viên đang hoạt động không có vai trò ADMIN/SUPER_ADMIN. */
+    @Query(
+            """
+			select m from Member m where m.status = :status
+			and not exists (select 1 from MemberRole mr where mr.member = m and mr.role.name in ('ADMIN', 'SUPER_ADMIN'))
+			""")
+    java.util.List<Member> findNonAdminsByStatus(@Param("status") MemberStatus status);
+
     /** Mọi thành viên có vai trò ADMIN (để gửi thông báo duyệt). */
     @Query("select distinct mr.member from MemberRole mr where mr.role.name in ('ADMIN', 'SUPER_ADMIN')")
     java.util.List<Member> findAllAdmins();

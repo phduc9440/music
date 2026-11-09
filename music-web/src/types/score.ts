@@ -251,7 +251,8 @@ export type NotificationType =
   | 'PUBLISH_REQUESTED'
   | 'PUBLISH_APPROVED'
   | 'PUBLISH_REJECTED'
-  | 'NEW_REVIEW';
+  | 'NEW_REVIEW'
+  | 'ANNOUNCEMENT';
 
 export interface AppNotification {
   id: string;
@@ -378,6 +379,9 @@ export interface ErrorLogEntry {
   exceptionClass?: string | null;
   stackTrace?: string | null;
 }
+
+// Gửi thông báo chung, BE: AnnouncementRequest / AnnouncementResponse
+export type AnnouncementAudience = 'ALL' | 'USERS' | 'ADMINS' | 'SELECTED';
 
 // Thống kê dashboard admin, BE: AdminDashboardResponse
 export interface DashboardTotals {
