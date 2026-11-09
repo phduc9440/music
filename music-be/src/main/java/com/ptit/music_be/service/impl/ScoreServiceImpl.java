@@ -270,7 +270,7 @@ public class ScoreServiceImpl implements ScoreService {
     @Transactional
     public ScoreDetailResponse approvePublic(String scoreId) {
         requireAdmin();
-        Score score = findScore(scoreId);
+        Score score = findPending(scoreId);
         score.setVisibility(Visibility.PUBLIC.name());
         score.setRejectReason(null);
         Score saved = scoreRepository.save(score);
@@ -287,7 +287,7 @@ public class ScoreServiceImpl implements ScoreService {
     @Transactional
     public ScoreDetailResponse rejectPublic(String scoreId, String reason) {
         requireAdmin();
-        Score score = findScore(scoreId);
+        Score score = findPending(scoreId);
         score.setVisibility(Visibility.PRIVATE.name());
         score.setRejectReason(blankToNull(reason));
         Score saved = scoreRepository.save(score);
@@ -392,6 +392,15 @@ public class ScoreServiceImpl implements ScoreService {
     }
 
     // ------------------------------------------------------------------ helpers
+
+    /** Bản nhạc phải đang chờ duyệt (PENDING): tránh duyệt nhầm bản riêng tư hoặc thu hồi bản đã công khai. */
+    private Score findPending(String scoreId) {
+        Score score = findScore(scoreId);
+        if (!Visibility.PENDING.name().equals(score.getVisibility())) {
+            throw new AppException(ErrorCode.SCORE_NOT_PENDING_PUBLIC);
+        }
+        return score;
+    }
 
     private Score findScore(String scoreId) {
         return scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
