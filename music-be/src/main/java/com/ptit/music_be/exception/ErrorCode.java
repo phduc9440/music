@@ -85,6 +85,10 @@ public enum ErrorCode {
     REVIEW_COMMENT_INVALID(2411, "Bình luận tối đa 2000 ký tự", HttpStatus.BAD_REQUEST),
     REVIEW_EMPTY(2412, "Nhận xét cần có số sao hoặc bình luận", HttpStatus.BAD_REQUEST),
     REVIEW_NOT_EXISTED(2413, "Nhận xét không tồn tại", HttpStatus.NOT_FOUND),
+    // Playlists (26xx)
+    PLAYLIST_NOT_EXISTED(2601, "Playlist không tồn tại", HttpStatus.NOT_FOUND),
+    PLAYLIST_NAME_INVALID(2602, "Tên playlist là bắt buộc và tối đa 255 ký tự", HttpStatus.BAD_REQUEST),
+    PLAYLIST_DESCRIPTION_INVALID(2603, "Mô tả playlist tối đa 2000 ký tự", HttpStatus.BAD_REQUEST),
     NOTIFICATION_NOT_EXISTED(2501, "Thông báo không tồn tại", HttpStatus.NOT_FOUND),
 
     // Export 27xx
