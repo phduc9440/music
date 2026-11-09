@@ -119,6 +119,7 @@ def _normalize_piano(
     for number, measure in enumerate(measures, start=1):
         measure.set("number", str(number))
     _ensure_clef_numbers(merged)
+    _drop_repeated_signatures(merged)
     _set_tempo(measures[0], tempo_bpm)
     _rebuild_part_list(root, merged)
     for old_part in root.findall("part"):
@@ -157,6 +158,7 @@ def _normalize_ensemble(
         for number, measure in enumerate(part.findall("measure"), start=1):
             measure.set("number", str(number))
         _ensure_clef_numbers(part)
+        _drop_repeated_signatures(part)
     # Tempo có thể chỉ nằm ở một part (music21 ghi vào part chứa *MM); part trên cùng mang tempo cho cả bản và mọi
     # part khác đã có tempo ở ô nhịp 1 được đồng bộ theo, để không có hai tempo khác nhau
     bpm = tempo_bpm if tempo_bpm is not None else _existing_tempo([part for _, part in outputs])
@@ -508,6 +510,31 @@ def _ensure_clef_numbers(part: ET.Element) -> None:
         for position, clef in enumerate(clefs, start=1):
             if clef.get("number") is None and len(clefs) > 1:
                 clef.set("number", str(position))
+
+
+def _drop_repeated_signatures(part: ET.Element) -> None:
+    """Bỏ ``<time>`` và ``<key>`` lặp lại đúng giá trị đang hiệu lực (kern ghép nhiều trang/hệ có dòng ``*M3/4`` ở mỗi chỗ
+    nối nên music21 in lại số chỉ nhịp ở đầu mỗi hệ). Chỉ đổi nhịp/dấu hóa thật mới được giữ. Ô nhịp đầu luôn giữ nguyên.
+    ``<attributes>`` rỗng sau khi bỏ cũng được xóa."""
+    current: dict[tuple[str, Optional[str]], bytes] = {}
+    for index, measure in enumerate(part.findall("measure")):
+        for attributes in measure.findall("attributes"):
+            for tag in ("time", "key"):
+                for element in attributes.findall(tag):
+                    key = (tag, element.get("number"))
+                    signature = ET.tostring(_without_tail(element))
+                    if index > 0 and current.get(key) == signature:
+                        attributes.remove(element)
+                    else:
+                        current[key] = signature
+            if index > 0 and len(attributes) == 0:
+                measure.remove(attributes)
+
+
+def _without_tail(element: ET.Element) -> ET.Element:
+    copy = ET.fromstring(ET.tostring(element))
+    copy.tail = None
+    return copy
 
 
 def _int_text(element: ET.Element) -> int:
