@@ -4,3 +4,5 @@ storage/
 # File mẫu để test import
 test-import/
 doc/duc-feature.md
+music-be/src/main/resources/application.yaml
+music-web/.env
