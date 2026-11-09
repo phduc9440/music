@@ -227,3 +227,80 @@ export function toggleNavigation(doc: ScoreDocument, measureIndex: number, kind:
   });
   return { ok: true, command };
 }
+
+/** Bật/tắt vạch đôi (light-light) ở cuối ô nhịp: dùng ngăn các đoạn. Ô đang có dấu lặp cuối thì không đặt được. */
+export function toggleDoubleBar(doc: ScoreDocument, measureIndex: number): EditResult {
+  const { touched, measures } = allParts(doc, measureIndex);
+  if (measures.length === 0) return { ok: false, reason: 'noMeasure' };
+  const hasRepeat = measures.some((m) => {
+    const b = barlineAt(m, 'right');
+    return !!b && child(b, 'repeat') !== undefined;
+  });
+  if (hasRepeat) return { ok: false, reason: 'barRepeat' };
+  const present = measures.every((m) => {
+    const b = barlineAt(m, 'right');
+    return !!b && child(b, 'bar-style')?.textContent === 'light-light';
+  });
+  const command = commitEdit(doc, present ? 'Bỏ vạch đôi' : 'Thêm vạch đôi', touched, [], () => {
+    for (const m of measures) {
+      if (present) {
+        const b = barlineAt(m, 'right');
+        if (!b) continue;
+        child(b, 'bar-style')?.remove();
+        tidyBarline(b);
+      } else {
+        setBarStyle(ensureBarline(m, 'right'), 'light-light');
+      }
+    }
+  });
+  return { ok: true, command };
+}
+
+/**
+ * Bật/tắt ngắt dòng (`system`) hoặc sang trang (`page`) ngay TRƯỚC ô `measureIndex`: ô này mở đầu dòng/trang mới.
+ * Ghi `<print new-system="yes">` / `<print new-page="yes">` ở đầu ô, mọi part. Ô đầu bài thì không cần.
+ */
+export function toggleBreak(doc: ScoreDocument, measureIndex: number, kind: 'system' | 'page'): EditResult {
+  if (measureIndex <= 0) return { ok: false, reason: 'breakFirst' };
+  const { touched, measures } = allParts(doc, measureIndex);
+  if (measures.length === 0) return { ok: false, reason: 'noMeasure' };
+  const attr = kind === 'page' ? 'new-page' : 'new-system';
+  const present = measures.every((m) => child(m, 'print')?.getAttribute(attr) === 'yes');
+  const label = kind === 'page' ? 'sang trang tại ô' : 'xuống dòng tại ô';
+  const command = commitEdit(doc, `${present ? 'Bỏ' : 'Đặt'} ${label} ${measureIndex + 1}`, touched, [], () => {
+    for (const m of measures) {
+      let print = child(m, 'print');
+      if (present) {
+        print?.removeAttribute(attr);
+        if (print && print.attributes.length === 0 && print.children.length === 0) print.remove();
+        continue;
+      }
+      if (!print) {
+        print = make(m.ownerDocument, 'print');
+        m.prepend(print);
+      }
+      print.setAttribute(attr, 'yes');
+    }
+  });
+  return { ok: true, command };
+}
+
+/** Đặt số lần chơi của đoạn lặp kết thúc ở ô `measureIndex` (`times` ở dấu lặp cuối; 2 là mặc định nên không ghi). */
+export function setRepeatTimes(doc: ScoreDocument, measureIndex: number, times: number): EditResult {
+  const { touched, measures } = allParts(doc, measureIndex);
+  if (measures.length === 0) return { ok: false, reason: 'noMeasure' };
+  const repeats = measures.map((m) => {
+    const b = barlineAt(m, 'right');
+    return b && child(b, 'repeat', (r) => r.getAttribute('direction') === 'backward');
+  });
+  if (repeats.some((r) => !r)) return { ok: false, reason: 'noRepeat' };
+  const ends = repeats.filter((r): r is Element => r !== undefined);
+  if (ends.every((r) => (r.getAttribute('times') ?? '2') === String(times))) return { ok: false, reason: 'unchanged' };
+  const command = commitEdit(doc, `Lặp ${times} lần`, touched, [], () => {
+    for (const r of ends) {
+      if (times <= 2) r.removeAttribute('times');
+      else r.setAttribute('times', String(times));
+    }
+  });
+  return { ok: true, command };
+}

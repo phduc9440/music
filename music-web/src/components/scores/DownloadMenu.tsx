@@ -8,6 +8,7 @@ import ExportAudioDialog from '../export/ExportAudioDialog';
 import ExportPdfDialog from '../export/ExportPdfDialog';
 import ExportSvgDialog from '../export/ExportSvgDialog';
 import { DOWNLOAD_FORMATS, getErrorMessage } from '../../utils/score';
+import { IconDownload } from './ViewerIcons';
 
 interface DownloadMenuProps {
   scoreId: string;
@@ -17,6 +18,8 @@ interface DownloadMenuProps {
   staffCount?: number | null;
   /** Hiện thêm nút "Xuất âm thanh" cạnh nút Tải xuống (dùng ở trang Player). */
   audioShortcut?: boolean;
+  /** Chỉ hiện biểu tượng (tên nằm ở chú thích khi rê chuột), dùng trên thanh trên của trình soạn nhạc. */
+  compact?: boolean;
 }
 
 /** Các định dạng tạo theo yêu cầu bằng hộp thoại riêng (mục 1.28–1.30), không tải thẳng một file có sẵn. */
@@ -29,7 +32,7 @@ type DialogFormat = (typeof DIALOG_FORMATS)[number];
  * (cùng tùy chọn với lần xuất trước thì nhận file ngay) và gắn nhãn "Cũ" khi bản nhạc đã sửa sau lúc xuất.
  * MusicXML và MIDI tải qua API riêng của bản nhạc để luôn nhận bản mới nhất (MIDI cũ sẽ được BE tạo lại).
  */
-export default function DownloadMenu({ scoreId, files, title, staffCount, audioShortcut }: DownloadMenuProps) {
+export default function DownloadMenu({ scoreId, files, title, staffCount, audioShortcut, compact }: DownloadMenuProps) {
   const [open, setOpen] = useState(false);
   const [busyType, setBusyType] = useState<string | null>(null);
   const [exports, setExports] = useState<ExportFileInfo[]>([]);
@@ -85,8 +88,15 @@ export default function DownloadMenu({ scoreId, files, title, staffCount, audioS
         </button>
       )}
       <div className="sc-menu" ref={ref}>
-        <button className="sc-btn" aria-haspopup="menu" aria-expanded={open} onClick={toggle}>
-          Tải xuống
+        <button
+          className={`sc-btn${compact ? ' sv-icon' : ''}`}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-label="Tải xuống"
+          title="Tải xuống"
+          onClick={toggle}
+        >
+          {compact ? <IconDownload /> : 'Tải xuống'}
         </button>
         {open && (
           <ul className="sc-menu__list" role="menu">
