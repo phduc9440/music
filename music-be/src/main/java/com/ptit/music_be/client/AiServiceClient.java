@@ -1,6 +1,7 @@
 package com.ptit.music_be.client;
 
 import java.time.Duration;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.springframework.http.MediaType;
@@ -67,5 +68,46 @@ public class AiServiceClient {
     /** Yêu cầu music-ai dừng job đang chờ/chạy. Người gọi tự quyết định xử lý lỗi (thường chỉ ghi log). */
     public void cancelOmrJob(String taskId) {
         restClient.delete().uri("/omr/jobs/{taskId}", taskId).retrieve().toBodilessEntity();
+    }
+
+    /**
+     * Chuẩn bị MusicXML trước khi xuất file ({@code POST /convert/prepare}), đồng bộ: dịch giọng, đổi tempo, chọn
+     * tay, đặt/ẩn tiêu đề, bỏ hợp âm. Tham số null thì không gửi. Đường dẫn tương đối so với gốc storage.
+     */
+    public void prepareMusicXml(
+            String inPath,
+            String outPath,
+            int transpose,
+            int tempoPercent,
+            String hands,
+            String title,
+            String composer,
+            Boolean showTitle,
+            Boolean stripHarmony) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("inPath", inPath);
+        body.put("outPath", outPath);
+        body.put("transpose", transpose);
+        body.put("tempoPercent", tempoPercent);
+        body.put("hands", hands);
+        if (title != null) {
+            body.put("title", title);
+        }
+        if (composer != null) {
+            body.put("composer", composer);
+        }
+        if (showTitle != null) {
+            body.put("showTitle", showTitle);
+        }
+        if (stripHarmony != null) {
+            body.put("stripHarmony", stripHarmony);
+        }
+        convertClient
+                .post()
+                .uri("/convert/prepare")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(body)
+                .retrieve()
+                .toBodilessEntity();
     }
 }

@@ -16,5 +16,11 @@ public enum AiTaskStep {
     /** Ghép kern nhiều trang (85-90%). */
     MERGE,
     /** Xuất MusicXML / MIDI (90-100%). */
-    EXPORT
+    EXPORT,
+    /** Xuất file: chuẩn bị MusicXML (dịch giọng, đổi tempo, chọn tay) qua music-ai (10%). */
+    PREPARE,
+    /** Xuất file: MuseScore đang tổng hợp/kết xuất (30-90%). */
+    RENDER,
+    /** Xuất file: lưu file kết quả và ghi DB (90-100%). */
+    SAVE
 }

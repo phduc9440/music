@@ -2,7 +2,13 @@ import { Link } from 'react-router-dom';
 import AuthImage from './AuthImage';
 import StatusBadge from './StatusBadge';
 import { OMR_TASK_TYPE, describeTaskError } from '../../utils/omr';
-import { ACCESS_LEVEL_LABELS, DIFFICULTY_LABELS, SOURCE_LABELS, VISIBILITY_LABELS, formatDateTime } from '../../utils/score';
+import {
+  ACCESS_LEVEL_LABELS,
+  DIFFICULTY_LABELS,
+  SOURCE_LABELS,
+  VISIBILITY_LABELS,
+  formatDateTime,
+} from '../../utils/score';
 import type { ScoreDetail } from '../../types';
 import DownloadMenu from './DownloadMenu';
 
@@ -121,7 +127,7 @@ export default function ScoreHero({ score, onEdit, onDelete, onShare, onRequestE
           >
             ▶ Phát
           </Link>
-          <DownloadMenu scoreId={score.id} files={score.files} />
+          <DownloadMenu scoreId={score.id} files={score.files} title={score.title} staffCount={score.staffCount} />
           {score.canManageSharing && (
             <button className="sc-btn" onClick={onShare}>
               Chia sẻ

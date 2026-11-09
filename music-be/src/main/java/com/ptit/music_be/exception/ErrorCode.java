@@ -73,15 +73,29 @@ public enum ErrorCode {
 
     // Sharing & reviews (24xx)
     ACCESS_REQUEST_NOT_EXISTED(2402, "Không có yêu cầu xin quyền nào đang chờ", HttpStatus.NOT_FOUND),
-    ALREADY_HAS_ACCESS(2404, "Bạn đã có quyền này hoặc cao hơn với bản nhạc (bản nhạc công khai thì ai cũng xem và nhận xét được)", HttpStatus.BAD_REQUEST),
+    ALREADY_HAS_ACCESS(
+            2404,
+            "Bạn đã có quyền này hoặc cao hơn với bản nhạc (bản nhạc công khai thì ai cũng xem và nhận xét được)",
+            HttpStatus.BAD_REQUEST),
     CANNOT_SHARE_WITH_OWNER(2406, "Không thể chia sẻ bản nhạc cho chính chủ sở hữu", HttpStatus.BAD_REQUEST),
     SHARE_MEMBER_NOT_EXISTED(2407, "Người này chưa có quyền với bản nhạc", HttpStatus.NOT_FOUND),
-    SHARE_PERMISSION_INVALID(2408, "Cấp quyền phải là 1 (xem), 2 (nhận xét) hoặc 3 (chỉnh sửa)", HttpStatus.BAD_REQUEST),
+    SHARE_PERMISSION_INVALID(
+            2408, "Cấp quyền phải là 1 (xem), 2 (nhận xét) hoặc 3 (chỉnh sửa)", HttpStatus.BAD_REQUEST),
     REVIEW_RATING_INVALID(2410, "Số sao phải từ 1 đến 5", HttpStatus.BAD_REQUEST),
     REVIEW_COMMENT_INVALID(2411, "Bình luận tối đa 2000 ký tự", HttpStatus.BAD_REQUEST),
     REVIEW_EMPTY(2412, "Nhận xét cần có số sao hoặc bình luận", HttpStatus.BAD_REQUEST),
     REVIEW_NOT_EXISTED(2413, "Nhận xét không tồn tại", HttpStatus.NOT_FOUND),
     NOTIFICATION_NOT_EXISTED(2501, "Thông báo không tồn tại", HttpStatus.NOT_FOUND),
+
+    // Export 27xx
+    EXPORT_OPTION_INVALID(2701, "Tùy chọn xuất file không hợp lệ", HttpStatus.BAD_REQUEST),
+    AUDIO_TOO_LONG(2702, "Bản nhạc quá dài để xuất âm thanh (tối đa 20 phút), hãy tăng tempo", HttpStatus.BAD_REQUEST),
+    EXPORT_LIMIT_EXCEEDED(
+            2703,
+            "Bạn đang xuất quá nhiều file, vui lòng đợi các tác vụ xuất đang chạy hoàn tất",
+            HttpStatus.TOO_MANY_REQUESTS),
+    EXPORT_NOT_AVAILABLE(2704, "Tính năng xuất file chưa sẵn sàng trên máy chủ", HttpStatus.SERVICE_UNAVAILABLE),
+    EXPORT_SOURCE_NOT_SUPPORTED(2705, "Bản nhạc không có nguồn phù hợp để chuyển đổi", HttpStatus.CONFLICT),
     ;
 
     int code;

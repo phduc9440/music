@@ -1,9 +1,9 @@
 package com.ptit.music_be.service.impl;
 
 import java.util.Collection;
-import java.util.LinkedHashSet;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -22,11 +22,10 @@ import org.springframework.util.StringUtils;
 import com.ptit.music_be.dto.enums.AiTaskStatus;
 import com.ptit.music_be.dto.enums.DifficultyLevel;
 import com.ptit.music_be.dto.enums.FileType;
-import com.ptit.music_be.dto.enums.ProcessingStatus;
 import com.ptit.music_be.dto.enums.NotificationType;
+import com.ptit.music_be.dto.enums.ProcessingStatus;
 import com.ptit.music_be.dto.enums.ScoreSource;
 import com.ptit.music_be.dto.enums.Visibility;
-import com.ptit.music_be.service.NotificationService;
 import com.ptit.music_be.dto.request.ScoreUpdateRequest;
 import com.ptit.music_be.dto.response.AiTaskResponse;
 import com.ptit.music_be.dto.response.PageResponse;
@@ -52,6 +51,7 @@ import com.ptit.music_be.repository.ScoreReviewRepository;
 import com.ptit.music_be.repository.ScoreTagRepository;
 import com.ptit.music_be.repository.TagRepository;
 import com.ptit.music_be.service.FileStorageService;
+import com.ptit.music_be.service.NotificationService;
 import com.ptit.music_be.service.ScoreFileService;
 import com.ptit.music_be.service.ScoreService;
 import com.ptit.music_be.utils.SecurityUtils;
@@ -89,7 +89,14 @@ public class ScoreServiceImpl implements ScoreService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<ScoreSummaryResponse> getMyScores(
-            int page, int size, String keyword, String status, String source, String difficulty, String tagId, String sort) {
+            int page,
+            int size,
+            String keyword,
+            String status,
+            String source,
+            String difficulty,
+            String tagId,
+            String sort) {
         Member member = memberRepository
                 .findByEmail(SecurityUtils.getCurrentEmail())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
@@ -105,9 +112,8 @@ public class ScoreServiceImpl implements ScoreService {
         String safeTagId = tagId == null ? "" : tagId.trim();
 
         PageRequest pageable = PageRequest.of(safePage, safeSize, toSort(sort));
-        Page<Score> result =
-                scoreRepository.searchOfMember(
-                        member.getId(), safeKeyword, safeStatus, safeSource, safeDifficulty, safeTagId, pageable);
+        Page<Score> result = scoreRepository.searchOfMember(
+                member.getId(), safeKeyword, safeStatus, safeSource, safeDifficulty, safeTagId, pageable);
 
         Map<String, ScoreFile> thumbnails = loadThumbnails(result.getContent());
         Map<String, List<TagResponse>> tagsByScore = loadTags(result.getContent());
@@ -221,7 +227,9 @@ public class ScoreServiceImpl implements ScoreService {
             score.setVisibility(Visibility.PENDING.name());
             score.setRejectReason(null);
             if (!Visibility.PENDING.name().equals(current)) { // xin lại khi đang chờ thì không báo lần nữa
-                Member me = memberRepository.findByEmail(SecurityUtils.getCurrentEmail()).orElse(null);
+                Member me = memberRepository
+                        .findByEmail(SecurityUtils.getCurrentEmail())
+                        .orElse(null);
                 notificationService.notifyAdmins(
                         me,
                         NotificationType.PUBLISH_REQUESTED,
@@ -317,7 +325,8 @@ public class ScoreServiceImpl implements ScoreService {
             throw new AppException(ErrorCode.TAG_NOT_EXISTED);
         }
 
-        // Chỉ xóa tag không còn được chọn và thêm tag mới, tag giữ nguyên thì không đụng tới (orphanRemoval lo việc xóa)
+        // Chỉ xóa tag không còn được chọn và thêm tag mới, tag giữ nguyên thì không đụng tới (orphanRemoval lo việc
+        // xóa)
         score.getScoreTags().removeIf(st -> !wanted.contains(st.getTag().getId()));
         Set<String> have =
                 score.getScoreTags().stream().map(st -> st.getTag().getId()).collect(Collectors.toSet());

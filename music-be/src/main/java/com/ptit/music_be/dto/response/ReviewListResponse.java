@@ -15,5 +15,6 @@ public class ReviewListResponse {
     Double averageRating;
     /** Số lượt chấm sao. */
     long ratingCount;
+
     List<ReviewResponse> reviews;
 }

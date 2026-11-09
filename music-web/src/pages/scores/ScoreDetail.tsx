@@ -78,7 +78,7 @@ export default function ScoreDetail() {
     <nav className="navbar">
       <div className="navbar-brand">Music App</div>
       <div className="navbar-nav">
-          <NotificationBell />
+        <NotificationBell />
         <button className="sc-btn sc-btn--sm" onClick={() => navigate('/scores')}>
           ‹ Thư viện
         </button>
@@ -151,7 +151,7 @@ export default function ScoreDetail() {
         </div>
 
         {tab === 'files' && <FilesTable files={score.files} />}
-        {tab === 'tasks' && <TasksTable tasks={score.latestTasks} />}
+        {tab === 'tasks' && <TasksTable tasks={score.latestTasks} files={score.files} />}
         {tab === 'reviews' && (
           <ReviewsSection scoreId={score.id} canReview={score.canReview} onChanged={() => setTick((n) => n + 1)} />
         )}

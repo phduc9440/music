@@ -1,8 +1,18 @@
+import { toast } from 'react-toastify';
+import { downloadFile } from '../../services';
 import { TASK_STATUS_LABELS, TASK_TYPE_LABELS, formatDateTime } from '../../utils/score';
-import type { AiTaskInfo } from '../../types';
+import type { AiTaskInfo, ScoreFileInfo } from '../../types';
+import { EXPORT_TASK_TYPES, stepLabel, translateTaskError } from '../export/exportUtils';
 
-/** Tác vụ mới nhất của mỗi loại, kèm thanh tiến độ. */
-export default function TasksTable({ tasks }: { tasks: AiTaskInfo[] }) {
+/** File do tác vụ xuất tạo ra (id nằm trong resultData.fileId), nếu còn trong danh sách file của bản nhạc. */
+const exportedFileOf = (task: AiTaskInfo, files: ScoreFileInfo[]): ScoreFileInfo | undefined => {
+  if (task.status !== 'COMPLETED' || !EXPORT_TASK_TYPES.includes(task.taskType)) return undefined;
+  const fileId = (task.resultData as { fileId?: string } | null | undefined)?.fileId;
+  return fileId ? files.find((f) => f.id === fileId) : undefined;
+};
+
+/** Tác vụ mới nhất của mỗi loại, kèm thanh tiến độ. Tác vụ xuất file đã xong có nút Tải xuống. */
+export default function TasksTable({ tasks, files = [] }: { tasks: AiTaskInfo[]; files?: ScoreFileInfo[] }) {
   if (tasks.length === 0) {
     return <div className="sc-panel sc-panel--empty">Chưa có tác vụ nào.</div>;
   }
@@ -22,12 +32,30 @@ export default function TasksTable({ tasks }: { tasks: AiTaskInfo[] }) {
         <tbody>
           {tasks.map((t) => {
             const progress = Math.min(100, Math.max(0, t.progress ?? 0));
+            const isExport = EXPORT_TASK_TYPES.includes(t.taskType);
+            const exported = exportedFileOf(t, files);
             return (
               <tr key={t.id}>
                 <td>
                   <div className="sc-table__name">{TASK_TYPE_LABELS[t.taskType] ?? t.taskType}</div>
-                  {t.step && <div className="sc-table__sub">Bước: {t.step}</div>}
-                  {t.errorMessage && <div className="sc-table__error">{t.errorMessage}</div>}
+                  {t.step && <div className="sc-table__sub">Bước: {isExport ? stepLabel(t.step) : t.step}</div>}
+                  {t.errorMessage && (
+                    <div className="sc-table__error">
+                      {isExport ? translateTaskError(t.errorMessage) : t.errorMessage}
+                    </div>
+                  )}
+                  {exported && (
+                    <button
+                      className="sc-btn sc-btn--sm"
+                      onClick={() =>
+                        downloadFile(exported.downloadUrl, exported.originalFileName || exported.id).catch(() =>
+                          toast.error('Không tải được file'),
+                        )
+                      }
+                    >
+                      Tải xuống
+                    </button>
+                  )}
                 </td>
                 <td>
                   <span className={`sc-status sc-status--${t.status.toLowerCase()}`}>

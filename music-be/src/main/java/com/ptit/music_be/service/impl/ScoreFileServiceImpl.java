@@ -148,7 +148,8 @@ public class ScoreFileServiceImpl implements ScoreFileService {
         if (canManageSharing(score)) {
             return "OWNER";
         }
-        SharePermission shared = findShare(score).map(MemberScore::getPermission).orElse(null);
+        SharePermission shared =
+                findShare(score).map(MemberScore::getPermission).orElse(null);
         // Bản công khai cho mọi người quyền nhận xét (gồm xem); quyền được chia sẻ cao hơn thì giữ
         if (VISIBILITY_PUBLIC.equals(score.getVisibility())
                 && (shared == null || !shared.includes(SharePermission.REVIEW))) {

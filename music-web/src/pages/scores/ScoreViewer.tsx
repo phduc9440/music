@@ -214,7 +214,9 @@ export default function ScoreViewer() {
                 {action.label}
               </button>
             )}
-            {phase === 'parseError' && score && <DownloadMenu scoreId={score.id} files={score.files} />}
+            {phase === 'parseError' && score && (
+              <DownloadMenu scoreId={score.id} files={score.files} title={score.title} staffCount={score.staffCount} />
+            )}
           </div>
         </div>
       )}
@@ -382,7 +384,7 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
             <button className="sc-btn sc-btn--primary" onClick={goBack}>
               Về trang chi tiết
             </button>
-            <DownloadMenu scoreId={score.id} files={score.files} />
+            <DownloadMenu scoreId={score.id} files={score.files} title={score.title} staffCount={score.staffCount} />
           </div>
         </div>
       </div>
@@ -492,7 +494,7 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
             {player.status === 'playing' ? 'Tạm dừng' : 'Phát'}
           </button>
           <InstrumentMenu parts={player.parts} onChange={player.setInstrument} />
-          <DownloadMenu scoreId={score.id} files={score.files} />
+          <DownloadMenu scoreId={score.id} files={score.files} title={score.title} staffCount={score.staffCount} />
           <button
             className="sc-btn sv-icon"
             onClick={toggleFullscreen}

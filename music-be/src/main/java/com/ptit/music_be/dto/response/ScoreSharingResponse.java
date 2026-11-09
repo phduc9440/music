@@ -14,6 +14,7 @@ import lombok.experimental.FieldDefaults;
 public class ScoreSharingResponse {
     /** PRIVATE / PENDING / PUBLIC (xem Visibility). */
     String visibility;
+
     List<ShareMemberResponse> members;
     /** Số yêu cầu xin quyền đang chờ duyệt. */
     long pendingRequests;

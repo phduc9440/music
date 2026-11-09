@@ -251,7 +251,13 @@ function PlayerWorkspace({
         </div>
         <div className="sv-toolbar__right">
           <InstrumentMenu parts={player.parts} onChange={player.setInstrument} />
-          <DownloadMenu scoreId={score.id} files={score.files} />
+          <DownloadMenu
+            scoreId={score.id}
+            files={score.files}
+            title={score.title}
+            staffCount={score.staffCount}
+            audioShortcut
+          />
           {score.canEdit && (
             <Link className="sc-btn" to={`/scores/${score.id}/edit`}>
               Mở trình chỉnh sửa
