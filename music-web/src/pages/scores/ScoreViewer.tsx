@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import DownloadMenu from '../../components/scores/DownloadMenu';
+import VersionHistoryPanel from '../../components/editor/VersionHistoryPanel';
 import InstrumentMenu from '../../components/scores/InstrumentMenu';
 import EditorToolPanel from '../../components/scores/EditorToolPanel';
 import ChordBar from '../../components/scores/ChordBar';
@@ -247,6 +248,7 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
   const [notationOpen, setNotationOpen] = useState(false);
   const [progress, setProgress] = useState(1);
   const [toolsOpen, setToolsOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [hideWarning, setHideWarning] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -494,6 +496,9 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
             {player.status === 'playing' ? 'Tạm dừng' : 'Phát'}
           </button>
           <InstrumentMenu parts={player.parts} onChange={player.setInstrument} />
+          <button className="sc-btn" onClick={() => setHistoryOpen(true)} title="Lịch sử phiên bản">
+            Lịch sử
+          </button>
           <DownloadMenu scoreId={score.id} files={score.files} title={score.title} staffCount={score.staffCount} />
           <button
             className="sc-btn sv-icon"
@@ -708,6 +713,17 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
             </button>
           </div>
         </Modal>
+      )}
+
+      {historyOpen && (
+        <VersionHistoryPanel
+          scoreId={score.id}
+          canEdit={canEdit}
+          dirty={editor.dirty}
+          busy={editor.saving}
+          onRestore={editor.restoreVersion}
+          onClose={() => setHistoryOpen(false)}
+        />
       )}
 
       {editor.conflict && (

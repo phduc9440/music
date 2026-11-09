@@ -1,0 +1,73 @@
+/* Bảng lịch sử phiên bản (tiền tố vh-). Dùng biến và nút của scores.css */
+.sc-modal.vh-modal--wide {
+  max-width: 960px;
+}
+.vh-hint {
+  margin: 0.2rem 0 0.8rem;
+  font-size: 0.82rem;
+  color: var(--sc-muted);
+}
+.vh-empty {
+  margin: 1.2rem 0;
+  text-align: center;
+  color: var(--sc-muted);
+}
+.vh-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 55vh;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+.vh-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--sc-line);
+  border-radius: 12px;
+  background: #fff;
+}
+.vh-item.is-current {
+  border-color: var(--sc-accent);
+  background: #f5f8ff;
+}
+.vh-item__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+.vh-item__meta {
+  margin-top: 0.2rem;
+  font-size: 0.8rem;
+  color: var(--sc-muted);
+}
+.vh-item__actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 0.4rem;
+}
+.vh-badge {
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: var(--sc-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+.vh-badge--current {
+  background: var(--sc-accent);
+  color: #fff;
+}
+.vh-preview {
+  max-height: 65vh;
+  overflow: auto;
+  border: 1px solid var(--sc-line);
+  border-radius: 12px;
+  background: #fff;
+}
