@@ -318,3 +318,13 @@ export interface PracticeStreak {
   lastPracticeDate?: string | null;
   practicedToday: boolean;
 }
+
+// Thời gian luyện tập theo chu kỳ, BE: PracticeTimeBucketResponse (start/end dạng yyyy-MM-dd)
+export type PracticePeriod = 'DAY' | 'WEEK' | 'MONTH';
+
+export interface PracticeTimeBucket {
+  start: string;
+  end: string;
+  totalSeconds: number;
+  sessionCount: number;
+}

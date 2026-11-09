@@ -1,6 +1,9 @@
 package com.ptit.music_be.service.impl;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.temporal.TemporalAdjusters;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.NavigableSet;
 import java.util.TreeSet;
@@ -10,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.ptit.music_be.dto.response.PracticeHeatmapDayResponse;
 import com.ptit.music_be.dto.response.PracticeStreakResponse;
+import com.ptit.music_be.dto.response.PracticeTimeBucketResponse;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
@@ -49,6 +53,74 @@ public class PracticeStatsServiceImpl implements PracticeStatsService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<PracticeTimeBucketResponse> getTimeStats(String period, Integer count) {
+        String p = period == null ? "" : period.trim().toUpperCase();
+        int defaultCount;
+        int maxCount;
+        switch (p) {
+            case "DAY" -> {
+                defaultCount = 30;
+                maxCount = 90;
+            }
+            case "WEEK" -> {
+                defaultCount = 12;
+                maxCount = 52;
+            }
+            case "MONTH" -> {
+                defaultCount = 12;
+                maxCount = 24;
+            }
+            default -> throw new AppException(ErrorCode.PRACTICE_STATS_PERIOD_INVALID);
+        }
+        int n = count == null ? defaultCount : Math.min(Math.max(count, 1), maxCount);
+
+        // Các chu kỳ [start, end], cũ nhất trước, chu kỳ cuối chứa hôm nay
+        LocalDate today = LocalDate.now();
+        List<LocalDate[]> ranges = new ArrayList<>();
+        for (int i = n - 1; i >= 0; i--) {
+            switch (p) {
+                case "DAY" -> {
+                    LocalDate d = today.minusDays(i);
+                    ranges.add(new LocalDate[] {d, d});
+                }
+                case "WEEK" -> {
+                    LocalDate start = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+                            .minusWeeks(i);
+                    ranges.add(new LocalDate[] {start, start.plusDays(6)});
+                }
+                default -> {
+                    LocalDate start = today.withDayOfMonth(1).minusMonths(i);
+                    ranges.add(new LocalDate[] {start, start.with(TemporalAdjusters.lastDayOfMonth())});
+                }
+            }
+        }
+
+        // Mọi phiên đều tính vào thời gian tập (khác với chuỗi ngày, không có ngưỡng 60 giây)
+        List<PracticeHeatmapDayResponse> days = queryAll(
+                currentMember(), ranges.get(0)[0], ranges.get(ranges.size() - 1)[1]);
+
+        List<PracticeTimeBucketResponse> result = new ArrayList<>();
+        for (LocalDate[] range : ranges) {
+            long seconds = 0;
+            long sessions = 0;
+            for (PracticeHeatmapDayResponse d : days) {
+                if (!d.getDate().isBefore(range[0]) && !d.getDate().isAfter(range[1])) {
+                    seconds += d.getTotalSeconds();
+                    sessions += d.getSessionCount();
+                }
+            }
+            result.add(PracticeTimeBucketResponse.builder()
+                    .start(range[0])
+                    .end(range[1])
+                    .totalSeconds(seconds)
+                    .sessionCount(sessions)
+                    .build());
+        }
+        return result;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public PracticeStreakResponse getStreak() {
         LocalDate today = LocalDate.now();
         NavigableSet<LocalDate> days = new TreeSet<>();
@@ -83,8 +155,16 @@ public class PracticeStatsServiceImpl implements PracticeStatsService {
     }
 
     private List<PracticeHeatmapDayResponse> query(Member member, LocalDate from, LocalDate to) {
+        return queryWithMin(member, from, to, MIN_SECONDS);
+    }
+
+    private List<PracticeHeatmapDayResponse> queryAll(Member member, LocalDate from, LocalDate to) {
+        return queryWithMin(member, from, to, 0);
+    }
+
+    private List<PracticeHeatmapDayResponse> queryWithMin(Member member, LocalDate from, LocalDate to, int minSeconds) {
         return practiceSessionRepository
-                .sumByDay(member, from.atStartOfDay(), to.plusDays(1).atStartOfDay(), MIN_SECONDS)
+                .sumByDay(member, from.atStartOfDay(), to.plusDays(1).atStartOfDay(), minSeconds)
                 .stream()
                 .map(row -> PracticeHeatmapDayResponse.builder()
                         .date(toLocalDate(row[0]))

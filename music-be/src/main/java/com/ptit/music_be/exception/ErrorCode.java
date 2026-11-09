@@ -107,6 +107,7 @@ public enum ErrorCode {
     // Practice sessions 30xx
     PRACTICE_SESSION_NOT_EXISTED(3001, "Phiên tập không tồn tại", HttpStatus.NOT_FOUND),
     PRACTICE_SESSION_INVALID(3002, "Dữ liệu phiên tập không hợp lệ", HttpStatus.BAD_REQUEST),
+    PRACTICE_STATS_PERIOD_INVALID(3004, "Chu kỳ thống kê phải là DAY, WEEK hoặc MONTH", HttpStatus.BAD_REQUEST),
     PRACTICE_STATS_RANGE_INVALID(3003, "Khoảng ngày thống kê không hợp lệ (tối đa 400 ngày)", HttpStatus.BAD_REQUEST),
 
     // Score versions 28xx

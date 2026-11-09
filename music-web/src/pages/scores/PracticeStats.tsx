@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import NotificationBell from '../../components/NotificationBell';
+import PracticeTimeChart from '../../components/scores/PracticeTimeChart';
 import { practiceStatsApi } from '../../services';
 import type { PracticeHeatmapDay, PracticeStreak } from '../../types';
 import '../../components/scores/scores.css';
@@ -102,7 +103,7 @@ export default function PracticeStats() {
       <main className="sc-container">
         <header className="sc-lib-head">
           <div>
-            <h1>Chuỗi luyện tập</h1>
+            <h1>Thống kê luyện tập</h1>
             <p>Phiên tập từ 1 phút trở lên mới được tính là một ngày có tập.</p>
           </div>
         </header>
@@ -152,6 +153,8 @@ export default function PracticeStats() {
             Nhiều
           </div>
         </div>
+
+        <PracticeTimeChart />
       </main>
     </div>
   );

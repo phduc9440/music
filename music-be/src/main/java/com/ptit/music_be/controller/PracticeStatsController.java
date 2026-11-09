@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import com.ptit.music_be.dto.response.ApiResponse;
 import com.ptit.music_be.dto.response.PracticeHeatmapDayResponse;
 import com.ptit.music_be.dto.response.PracticeStreakResponse;
+import com.ptit.music_be.dto.response.PracticeTimeBucketResponse;
 import com.ptit.music_be.service.PracticeStatsService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,6 +37,17 @@ public class PracticeStatsController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
         return ApiResponse.<List<PracticeHeatmapDayResponse>>builder()
                 .result(practiceStatsService.getHeatmap(from, to))
+                .build();
+    }
+
+    @GetMapping("/time")
+    @Operation(
+            summary = "My practice time per DAY / WEEK / MONTH (zero-filled, oldest first)",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<List<PracticeTimeBucketResponse>> time(
+            @RequestParam(defaultValue = "DAY") String period, @RequestParam(required = false) Integer count) {
+        return ApiResponse.<List<PracticeTimeBucketResponse>>builder()
+                .result(practiceStatsService.getTimeStats(period, count))
                 .build();
     }
 
