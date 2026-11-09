@@ -1,5 +1,5 @@
 import apiClient from './client';
-import type { ApiResponse, PageResult, PracticeHeatmapDay, PracticePeriod, PracticeSessionRecord, PracticeStreak, PracticeTimeBucket } from '../types';
+import type { ApiResponse, PageResult, PracticeHeatmapDay, PracticePeriod, PracticeSessionRecord, PracticeSkills, PracticeStreak, PracticeTimeBucket } from '../types';
 
 export const practiceApi = {
   list: (params?: { scoreId?: string; page?: number; size?: number }) =>
@@ -13,5 +13,7 @@ export const practiceStatsApi = {
     apiClient.get<ApiResponse<PracticeHeatmapDay[]>>('/practice-stats/heatmap', { params }),
   time: (period: PracticePeriod, count?: number) =>
     apiClient.get<ApiResponse<PracticeTimeBucket[]>>('/practice-stats/time', { params: { period, count } }),
+  skills: (days?: number) =>
+    apiClient.get<ApiResponse<PracticeSkills>>('/practice-stats/skills', { params: { days } }),
   streak: () => apiClient.get<ApiResponse<PracticeStreak>>('/practice-stats/streak'),
 };

@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.ptit.music_be.dto.response.PracticeHeatmapDayResponse;
+import com.ptit.music_be.dto.response.PracticeSkillsResponse;
 import com.ptit.music_be.dto.response.PracticeStreakResponse;
 import com.ptit.music_be.dto.response.PracticeTimeBucketResponse;
 import com.ptit.music_be.entity.Member;
@@ -35,6 +36,9 @@ public class PracticeStatsServiceImpl implements PracticeStatsService {
     static int MIN_SECONDS = 60;
     static int DEFAULT_DAYS = 365;
     static int MAX_RANGE_DAYS = 400;
+    static int DEFAULT_SKILL_DAYS = 30;
+    static int MIN_SKILL_DAYS = 7;
+    static int MAX_SKILL_DAYS = 90;
     static LocalDate EPOCH = LocalDate.of(2000, 1, 1);
 
     PracticeSessionRepository practiceSessionRepository;
@@ -117,6 +121,52 @@ public class PracticeStatsServiceImpl implements PracticeStatsService {
                     .build());
         }
         return result;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PracticeSkillsResponse getSkills(Integer days) {
+        int n = days == null ? DEFAULT_SKILL_DAYS : days;
+        if (n < MIN_SKILL_DAYS || n > MAX_SKILL_DAYS) {
+            throw new AppException(ErrorCode.PRACTICE_STATS_DAYS_INVALID);
+        }
+        Member me = currentMember();
+        LocalDate today = LocalDate.now();
+        LocalDate start = today.minusDays(n - 1L);
+
+        Object[] row = practiceSessionRepository
+                .skillTotals(me, start.atStartOfDay(), today.plusDays(1).atStartOfDay())
+                .get(0);
+        long sessions = ((Number) row[0]).longValue();
+        double totalNotes = ((Number) row[1]).doubleValue();
+        double perfect = ((Number) row[2]).doubleValue();
+        double early = ((Number) row[3]).doubleValue();
+        double late = ((Number) row[4]).doubleValue();
+        double tempoWeighted = ((Number) row[5]).doubleValue();
+        double notesWithTempo = ((Number) row[6]).doubleValue();
+
+        // Pitch Accuracy: nốt đúng cao độ (đúng giờ + sớm + trễ) / tổng nốt
+        double pitch = totalNotes > 0 ? (perfect + early + late) * 100 / totalNotes : 0;
+        // Timing: nốt đúng giờ / tổng nốt
+        double timing = totalNotes > 0 ? perfect * 100 / totalNotes : 0;
+        // Tốc độ ngón: tempo trung bình (có trọng số theo số nốt), 100% tempo bản gốc = 100 điểm, tối đa 100
+        double speed = notesWithTempo > 0 ? Math.min(100, tempoWeighted / notesWithTempo) : 0;
+        // Chăm chỉ: số ngày có tập (từ 60 giây) / số ngày trong kỳ
+        long practicedDays = query(me, start, today).size();
+        double diligence = practicedDays * 100.0 / n;
+
+        return PracticeSkillsResponse.builder()
+                .days(n)
+                .sessionCount(sessions)
+                .pitchAccuracy(round1(pitch))
+                .timing(round1(timing))
+                .speed(round1(speed))
+                .diligence(round1(diligence))
+                .build();
+    }
+
+    private static double round1(double v) {
+        return Math.round(v * 10) / 10.0;
     }
 
     @Override
