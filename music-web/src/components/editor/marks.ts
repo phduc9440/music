@@ -26,6 +26,7 @@ export type Articulation =
   | 'accent'
   | 'tenuto'
   | 'fermata'
+  | 'fermataBelow'
   | 'marcato'
   | 'staccatissimo'
   | 'breath'
@@ -56,6 +57,9 @@ export type MarkOp =
   | NotationMark
   | 'arpeggio'
   | 'arpeggioDown'
+  | 'trillSharp'
+  | 'trillFlat'
+  | 'trillNatural'
   | 'glissando'
   | 'slide'
   | 'graceToggle'
@@ -81,7 +85,10 @@ export type MarkOp =
   | NavKind;
 
 /** Thẻ MusicXML của từng ký hiệu trong <notations>; `group` là thẻ chứa (null = nằm trực tiếp trong <notations>). */
-const NOTATION_DEF: Record<NotationMark, { group: 'articulations' | 'ornaments' | null; tag: string }> = {
+const NOTATION_DEF: Record<
+  NotationMark,
+  { group: 'articulations' | 'ornaments' | null; tag: string; type?: 'inverted' }
+> = {
   staccato: { group: 'articulations', tag: 'staccato' },
   accent: { group: 'articulations', tag: 'accent' },
   tenuto: { group: 'articulations', tag: 'tenuto' },
@@ -90,6 +97,7 @@ const NOTATION_DEF: Record<NotationMark, { group: 'articulations' | 'ornaments' 
   breath: { group: 'articulations', tag: 'breath-mark' },
   caesura: { group: 'articulations', tag: 'caesura' },
   fermata: { group: null, tag: 'fermata' },
+  fermataBelow: { group: null, tag: 'fermata', type: 'inverted' },
   trill: { group: 'ornaments', tag: 'trill-mark' },
   mordent: { group: 'ornaments', tag: 'mordent' },
   invMordent: { group: 'ornaments', tag: 'inverted-mordent' },
@@ -101,6 +109,7 @@ export const ARTICULATION_LABELS: Record<NotationMark | 'arpeggio', string> = {
   accent: 'Accent',
   tenuto: 'Tenuto',
   fermata: 'Fermata',
+  fermataBelow: 'Fermata ngược',
   marcato: 'Marcato',
   staccatissimo: 'Staccatissimo',
   breath: 'Lấy hơi',
@@ -141,11 +150,22 @@ const membersOf = (doc: ScoreDocument, head: NoteInfo): NoteInfo[] =>
       n.entryIndex === head.entryIndex,
   );
 
+/**
+ * Thẻ `el` có đúng là ký hiệu `kind` không. Fermata thường và fermata ngược dùng chung thẻ <fermata>, phân biệt bằng
+ * `type="inverted"` (thiếu `type` hoặc `type="upright"` là fermata thường).
+ */
+const matchesMark = (el: Element, kind: NotationMark): boolean => {
+  const { tag, type } = NOTATION_DEF[kind];
+  if (el.tagName !== tag) return false;
+  if (tag !== 'fermata') return true;
+  return (el.getAttribute('type') === 'inverted') === (type === 'inverted');
+};
+
 const hasMark = (note: Element, kind: NotationMark): boolean => {
-  const { group, tag } = NOTATION_DEF[kind];
+  const { group } = NOTATION_DEF[kind];
   const notations = childOf(note, 'notations');
   const holder = notations && (group ? childOf(notations, group) : notations);
-  return !!holder && childOf(holder, tag) !== undefined;
+  return !!holder && Array.from(holder.children).some((c) => matchesMark(c, kind));
 };
 
 const addMark = (note: Element, kind: NotationMark): void => {
@@ -161,20 +181,24 @@ const addMark = (note: Element, kind: NotationMark): void => {
     }
     holder = found;
   }
-  holder.appendChild(owner.createElement(tag));
+  const mark = owner.createElement(tag);
+  const { type } = NOTATION_DEF[kind];
+  if (type) mark.setAttribute('type', type);
+  holder.appendChild(mark);
 };
 
 const removeMark = (note: Element, kind: NotationMark): void => {
   const { group, tag } = NOTATION_DEF[kind];
   if (!group) {
-    removeNotation(note, tag, () => true);
+    removeNotation(note, tag, (el) => matchesMark(el, kind));
     return;
   }
   const notations = childOf(note, 'notations');
   const holder = notations && childOf(notations, group);
   if (!notations || !holder) return;
   Array.from(holder.children)
-    .filter((c) => c.tagName === tag)
+    // Bỏ láy rền thì bỏ luôn dấu hóa của nó, tránh để lại dấu hóa không thuộc láy nào
+    .filter((c) => c.tagName === tag || (kind === 'trill' && c.tagName === 'accidental-mark'))
     .forEach((c) => c.remove());
   if (holder.children.length === 0) holder.remove();
   if (notations.children.length === 0) notations.remove();
@@ -195,7 +219,63 @@ export function toggleArticulation(doc: ScoreDocument, ids: readonly string[], k
     () => {
       for (const h of heads) {
         removeMark(h.element, kind);
-        if (!all) addMark(h.element, kind);
+        if (all) continue;
+        // Fermata thường và fermata ngược loại trừ nhau trên cùng một nốt
+        if (kind === 'fermata') removeMark(h.element, 'fermataBelow');
+        if (kind === 'fermataBelow') removeMark(h.element, 'fermata');
+        addMark(h.element, kind);
+      }
+    },
+  );
+  return { ok: true, command };
+}
+
+/** Dấu hóa của láy rền: giá trị trong <accidental-mark> và nhãn tiếng Việt. */
+const TRILL_ACCIDENTAL = {
+  trillSharp: { value: 'sharp', label: 'thăng' },
+  trillFlat: { value: 'flat', label: 'giáng' },
+  trillNatural: { value: 'natural', label: 'bình' },
+} as const;
+type TrillAccidental = keyof typeof TRILL_ACCIDENTAL;
+
+const trillAccidentalOf = (note: Element): string | null => {
+  const notations = childOf(note, 'notations');
+  const ornaments = notations && childOf(notations, 'ornaments');
+  const mark = ornaments && childOf(ornaments, 'accidental-mark');
+  return mark?.textContent?.trim() ?? null;
+};
+
+/**
+ * Đặt dấu hóa (♯ ♭ ♮) cho nốt láy trên các nốt đã chọn: ghi `<accidental-mark>` ngay sau `<trill-mark>`, nốt chưa có láy
+ * rền thì thêm luôn. Mọi nốt đã có đúng dấu hóa này thì bỏ dấu hóa (giữ láy rền); dấu hóa khác thì được thay.
+ */
+export function setTrillAccidental(doc: ScoreDocument, ids: readonly string[], kind: TrillAccidental): EditResult {
+  const heads = selectedHeads(doc, ids);
+  if (heads.length === 0) return { ok: false, reason: 'empty' };
+  const { value, label } = TRILL_ACCIDENTAL[kind];
+  const all = heads.every((h) => hasMark(h.element, 'trill') && trillAccidentalOf(h.element) === value);
+  const touched: Touched = new Map();
+  heads.forEach((h) => touch(touched, h));
+  const command = commitEdit(
+    doc,
+    `${all ? 'Bỏ' : 'Đặt'} dấu ${label} cho láy rền`,
+    touched,
+    heads.map((h) => h.id),
+    () => {
+      for (const h of heads) {
+        if (!hasMark(h.element, 'trill')) addMark(h.element, 'trill');
+        const notations = notationsOf(h.element);
+        const ornaments = childOf(notations, 'ornaments');
+        if (!ornaments) continue;
+        Array.from(ornaments.children)
+          .filter((c) => c.tagName === 'accidental-mark')
+          .forEach((c) => c.remove());
+        if (all) continue;
+        const trill = childOf(ornaments, 'trill-mark');
+        const mark = h.element.ownerDocument.createElement('accidental-mark');
+        mark.setAttribute('placement', 'above');
+        mark.textContent = value;
+        ornaments.insertBefore(mark, trill ? trill.nextSibling : null);
       }
     },
   );
@@ -642,6 +722,7 @@ const measureRange = (doc: ScoreDocument, ids: readonly string[]): { from: numbe
 /** Điều phối một thao tác ký hiệu lên vùng chọn. */
 export function applyMark(doc: ScoreDocument, ids: readonly string[], op: MarkOp): EditResult {
   if (isNotationMark(op)) return toggleArticulation(doc, ids, op);
+  if (op === 'trillSharp' || op === 'trillFlat' || op === 'trillNatural') return setTrillAccidental(doc, ids, op);
   if (op === 'arpeggio') return toggleArpeggio(doc, ids);
   if (op === 'arpeggioDown') return toggleArpeggio(doc, ids, 'down');
   if (op === 'glissando' || op === 'slide') return toggleLine(doc, ids, op);
