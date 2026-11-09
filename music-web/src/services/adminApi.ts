@@ -1,6 +1,7 @@
 import apiClient from './client';
 import type {
   AdminDashboard,
+  AdminMemberDetail,
   AdminTag,
   AdminUpdateMemberRequest,
   ApiResponse,
@@ -19,6 +20,7 @@ export const adminApi = {
       params: { page: 0, size: 20, ...params },
     }),
   getMember: (id: string) => apiClient.get<ApiResponse<Member>>(`/admin/members/${id}`),
+  getMemberDetail: (id: string) => apiClient.get<ApiResponse<AdminMemberDetail>>(`/admin/members/${id}/detail`),
   updateMember: (id: string, data: AdminUpdateMemberRequest) =>
     apiClient.patch<ApiResponse<Member>>(`/admin/members/${id}`, data),
   getDashboard: (days = 30) =>

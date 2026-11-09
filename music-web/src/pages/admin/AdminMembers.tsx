@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { Link, useOutletContext } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { adminApi } from '../../services';
 import { MemberStatus } from '../../types';
@@ -111,7 +111,11 @@ export default function AdminMembers() {
                 const protectedTarget = targetSuper && !viewerIsSuper;
                 return (
                   <tr key={m.id}>
-                    <td>{m.email}</td>
+                    <td>
+                      <Link to={`/admin/members/${m.id}`} title="Xem chi tiết">
+                        {m.email}
+                      </Link>
+                    </td>
                     <td>{m.fullName}</td>
                     <td>
                       <span className={`badge ${isAdminMember(m) ? 'badge-admin' : 'badge-user'}`}>
@@ -121,6 +125,9 @@ export default function AdminMembers() {
                     <td>{locked ? 'Đã khóa' : 'Hoạt động'}</td>
                     <td>
                       <div className="d-flex gap-2">
+                        <Link to={`/admin/members/${m.id}`} className="btn" style={btn}>
+                          Chi tiết
+                        </Link>
                         {viewerIsSuper && (
                           <button
                             onClick={() => toggleAdmin(m)}

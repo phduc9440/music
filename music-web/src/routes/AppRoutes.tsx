@@ -16,6 +16,7 @@ import PlaylistDetail from '../pages/scores/PlaylistDetail';
 import Playlists from '../pages/scores/Playlists';
 import AdminDashboard from '../pages/admin/AdminDashboard';
 import AdminLayout from '../components/admin/AdminLayout';
+import AdminMemberDetail from '../pages/admin/AdminMemberDetail';
 import AdminMembers from '../pages/admin/AdminMembers';
 import AdminOfficialScores from '../pages/admin/AdminOfficialScores';
 import AdminPendingScores from '../pages/admin/AdminPendingScores';
@@ -172,6 +173,7 @@ const AppRoutes = () => {
       >
         <Route index element={<AdminDashboard />} />
         <Route path="members" element={<AdminMembers />} />
+        <Route path="members/:id" element={<AdminMemberDetail />} />
         <Route path="scores" element={<AdminScores />} />
         <Route path="scores/:id" element={<ScoreDetail admin />} />
         <Route path="scores/:id/edit" element={<ScoreViewer />} />

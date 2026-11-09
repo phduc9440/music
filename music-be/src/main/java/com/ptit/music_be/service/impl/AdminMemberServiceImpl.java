@@ -1,7 +1,10 @@
 package com.ptit.music_be.service.impl;
 
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import jakarta.persistence.EntityManager;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -12,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.ptit.music_be.dto.enums.MemberStatus;
 import com.ptit.music_be.dto.request.AdminUpdateMemberRequest;
+import com.ptit.music_be.dto.response.AdminMemberDetailResponse;
 import com.ptit.music_be.dto.response.MemberResponse;
 import com.ptit.music_be.dto.response.PageResponse;
 import com.ptit.music_be.entity.Member;
@@ -42,6 +46,7 @@ public class AdminMemberServiceImpl implements AdminMemberService {
     MemberRepository memberRepository;
     RoleRepository roleRepository;
     MemberMapper memberMapper;
+    EntityManager entityManager;
 
     @Override
     @Transactional(readOnly = true)
@@ -71,6 +76,45 @@ public class AdminMemberServiceImpl implements AdminMemberService {
     @Transactional(readOnly = true)
     public MemberResponse getMember(String memberId) {
         return memberMapper.toMemberResponse(find(memberId));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public AdminMemberDetailResponse getMemberDetail(String memberId) {
+        Member member = find(memberId);
+        String id = member.getId();
+        long scores = count("select count(s) from Score s where s.member.id = :id", id);
+        long seconds = entityManager
+                .createQuery(
+                        "select coalesce(sum(p.durationSeconds), 0) from PracticeSession p where p.member.id = :id",
+                        Number.class)
+                .setParameter("id", id)
+                .getSingleResult()
+                .longValue();
+        List<AdminMemberDetailResponse.RecentScore> recent = entityManager
+                .createQuery(
+                        "select new com.ptit.music_be.dto.response.AdminMemberDetailResponse$RecentScore("
+                                + "s.id, s.title, s.composer, s.visibility, s.isOfficial, s.updatedAt)"
+                                + " from Score s where s.member.id = :id order by s.updatedAt desc, s.id",
+                        AdminMemberDetailResponse.RecentScore.class)
+                .setParameter("id", id)
+                .setMaxResults(10)
+                .getResultList();
+        return AdminMemberDetailResponse.builder()
+                .member(memberMapper.toMemberResponse(member))
+                .scoreCount(scores)
+                .publicScores(count("select count(s) from Score s where s.member.id = :id and s.visibility = 'PUBLIC'", id))
+                .pendingScores(count("select count(s) from Score s where s.member.id = :id and s.visibility = 'PENDING'", id))
+                .playlistCount(count("select count(p) from Playlist p where p.member.id = :id", id))
+                .reviewCount(count("select count(r) from ScoreReview r where r.member.id = :id", id))
+                .practiceSessions(count("select count(p) from PracticeSession p where p.member.id = :id", id))
+                .practiceMinutes(Math.round(seconds / 6.0) / 10.0)
+                .recentScores(recent)
+                .build();
+    }
+
+    private long count(String jpql, String memberId) {
+        return entityManager.createQuery(jpql, Long.class).setParameter("id", memberId).getSingleResult();
     }
 
     @Override
