@@ -347,7 +347,7 @@ def test_system_still_off_after_retries_is_reported():
         return (distinct if index == 0 else melody(3)), False  # 9 ô khác nhau: không có khối lặp để bỏ
 
     page, results, warnings = routing.recognize_by_systems(1, image, layout, recognize, 3, lambda: True)
-    assert results[0].attempts == 2
+    assert results[0].attempts >= 2  # 2 lần đọc cả hệ (+ các lần đọc lại từng ô nếu có)
     assert any("hệ 1: đọc ra 9 ô nhịp trong khi ảnh có 4 ô" in w for w in warnings)
 
 
@@ -389,3 +389,82 @@ def test_loops_left_after_all_retries_are_trimmed():
     assert routing.page_measures(results[0].page) == 4
     assert any("hệ 1: model đọc lặp, đã bỏ 4 ô nhịp" in w for w in warnings)
     assert routing.page_measures(page) == 7
+
+
+def _bar_layout(measures: int):
+    from types import SimpleNamespace
+
+    system = SimpleNamespace(measures=measures, bars_closed=True, barlines=[100 * (i + 1) for i in range(measures)])
+    return SimpleNamespace(systems=[system])
+
+
+def _page_of(text: str) -> merge.PageKern:
+    return merge.clean_page(1, text)[0]
+
+
+def test_bad_measures_are_reread_by_cutting_the_image_at_each_barline():
+    layout = _bar_layout(4)
+    gray = np.full((TARGET_H, TARGET_W), 255, dtype=np.uint8)
+    # Model đọc cả hệ bị rơi nốt a lặp ở ô 2 -> ô 2 dài 3 phách và mất một ô
+    whole = _page_of("*clefG2\n*M2/4\n4r\n8eeL\n8eeJ\n=\n4cc\n4a\n8dd\n8dd\n=\n4b\n4g\n4e\n=\n4g\n8e\n8g\n=\n")
+    truth = {
+        1: "*clefG2\n*M2/4\n4r\n8eeL\n8eeJ\n=\n",
+        2: "*clefG2\n*M2/4\n4r\n8eeL\n8eeJ\n=\n4cc\n4a\n=\n",
+        3: "*clefG2\n*M2/4\n4r\n8eeL\n8eeJ\n=\n4cc\n4a\n=\n4a\n8dd\n8dd\n=\n",
+        4: "*clefG2\n*M2/4\n4r\n8eeL\n8eeJ\n=\n4cc\n4a\n=\n4a\n8dd\n8dd\n=\n4b\n4g\n=\n",
+    }
+    tags = []
+
+    def recognize(img, index, beams, tag=None):
+        tags.append(tag)
+        return truth[int(tag[1:])], False
+
+    judge = routing.Judge(False, False, "*M2/4", 4)
+    band = (0, 200)
+    fixed, reads = routing.reread_by_measures(
+        1, 0, gray, layout, band, whole, recognize, lambda: True, 24, judge
+    )
+    assert reads > 0 and tags[0] == "m2"  # ô 1 đã đủ trường độ nên giữ nguyên
+    assert merge.count_measures(fixed.body) == 4
+    assert routing._is_good(fixed, 1, judge)
+
+
+def test_reread_keeps_the_original_when_nothing_gets_better():
+    layout = _bar_layout(4)
+    gray = np.full((TARGET_H, TARGET_W), 255, dtype=np.uint8)
+    whole = _page_of("*clefG2\n*M2/4\n4r\n8eeL\n8eeJ\n=\n4cc\n4a\n8dd\n8dd\n=\n4b\n4g\n4e\n=\n4g\n8e\n8g\n=\n")
+
+    def recognize(img, index, beams, tag=None):
+        return "*clefG2\n*M2/4\n4cc\n4a\n8dd\n8dd\n=\n", False  # vẫn sai: không đủ k ô
+
+    judge = routing.Judge(False, False, "*M2/4", 4)
+    fixed, _ = routing.reread_by_measures(1, 0, gray, layout, (0, 200), whole, recognize, lambda: True, 24, judge)
+    assert fixed is whole
+
+
+def test_reread_does_nothing_when_the_system_is_already_good():
+    layout = _bar_layout(2)
+    gray = np.full((TARGET_H, TARGET_W), 255, dtype=np.uint8)
+    good = _page_of("*clefG2\n*M2/4\n4a\n4b\n=\n2c\n=\n")
+
+    def recognize(img, index, beams, tag=None):
+        raise AssertionError("không được gọi model")
+
+    judge = routing.Judge(False, False, "*M2/4", 2)
+    assert routing.reread_by_measures(1, 0, gray, layout, (0, 200), good, recognize, lambda: True, 24, judge) == (good, 0)
+
+
+def test_reread_recovers_a_missing_last_measure():
+    layout = _bar_layout(4)
+    gray = np.full((TARGET_H, TARGET_W), 255, dtype=np.uint8)
+    whole = _page_of("*clefG2\n*M2/4\n4dd\n4dd\n=\n8ff\n8ee\n8dd\n8bb\n=\n2cc\n=\n")  # thiếu ô cuối
+    full = "*clefG2\n*M2/4\n4dd\n4dd\n=\n8ff\n8ee\n8dd\n8bb\n=\n2cc\n=\n4.cc\n=\n"
+
+    def recognize(img, index, beams, tag=None):
+        k = int(tag[1:])
+        bars = full.split("=\n")[:k]
+        return "=\n".join(bars) + "=\n", False
+
+    judge = routing.Judge(False, True, "*M2/4", 4)
+    fixed, _ = routing.reread_by_measures(1, 0, gray, layout, (0, 200), whole, recognize, lambda: True, 24, judge)
+    assert fixed is not whole and merge.count_measures(fixed.body) == 4

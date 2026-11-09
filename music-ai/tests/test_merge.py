@@ -404,3 +404,83 @@ def test_drop_repeated_blocks_keeps_music_when_count_already_matches_or_no_exact
     triple = _melody_body(a, a, a, b)
     fixed, removed = merge.drop_repeated_blocks(triple, 2)
     assert removed == 2 and merge.count_measures(fixed.body) == 2
+
+
+# ---------------------------------------------------------------- gộp spine khi chưa tách
+
+
+def _three_spines(*rows: str) -> str:
+    return "\n".join(["**kern\t**kern\t**kern", "*clefF4\t*clefG2\t*clefG2", "*M3/4\t*M3/4\t*M3/4", *rows])
+
+
+def test_join_without_split_is_cut_so_the_merged_kern_keeps_its_columns():
+    raw = _three_spines(
+        "4C\t4c\t4e",
+        "=1\t=1\t=1",
+        "*\t*v\t*v",  # gộp hai khuông chưa từng tách: các dòng sau chỉ còn hai cột
+        "4D\t4d f",
+        "=2\t=2",
+        "4E\t4e",
+    )
+    page, warnings = merge.clean_page(2, raw)
+    assert page is not None
+    assert any("gộp spine sai" in w for w in warnings)
+    assert all(len(line.split("\t")) == 3 for line in page.body)
+    result = merge.merge_pages([page])
+    assert {len(line.split("\t")) for line in result.lines} == {3}
+
+
+def test_split_then_join_of_the_same_spine_is_kept():
+    raw = _three_spines(
+        "4C\t4c\t4e",
+        "*\t*\t*^",
+        "4D\t4d\t4f\t4a",
+        "*\t*\t*v\t*v",
+        "4E\t4e\t4g",
+        "=1\t=1\t=1",
+    )
+    page, warnings = merge.clean_page(1, raw)
+    assert page is not None and warnings == []
+    assert merge.first_invalid_join(page.body, 3) is None
+
+
+def test_lone_join_marker_is_invalid():
+    assert merge.first_invalid_join(["4C\t4c", "*\t*v", "4D\t4d"], 2) == 1
+
+
+def _result_from(body: list[str], spines: int = 1) -> merge.MergeResult:
+    header = "\t".join(["**kern"] * spines)
+    text = "\n".join([header, *body, "\t".join(["*-"] * spines)]) + "\n"
+    return merge.MergeResult(
+        text=text, spines=spines, warnings=[], line_pages=[1] * len(body), lines=list(body), header=header
+    )
+
+
+def test_missing_barline_is_restored_from_durations():
+    body = ["*clefG2", "*M2/4", "8aL", "8bJ", "8ccL", "8aJ", "=", "2g", "4ff", "4dd", "=", "8bL", "8ddJ", "4ee", "=="]
+    fixed = merge.split_merged_measures(_result_from(body))
+    assert sum(1 for ln in fixed.lines if ln.startswith("=") and ln != "==") == 3
+    assert fixed.lines[fixed.lines.index("2g") + 1] .startswith("=")
+    assert any("bỏ sót vạch nhịp" in w for w in fixed.warnings)
+    assert merge.bad_measures(fixed) == []
+
+
+def test_measure_with_wrong_total_is_left_alone():
+    body = ["*M2/4", "8a", "8b", "8cc", "=", "2g", "4ff", "=", "4b", "4d", "=="]
+    fixed = merge.split_merged_measures(_result_from(body))
+    assert fixed.lines == body
+
+
+def test_two_spines_are_split_only_where_all_staves_are_aligned():
+    body = ["*M2/4\t*M2/4", "2g\t4a", ".\t4b", "2a\t2c", "=="]
+    fixed = merge.split_merged_measures(_result_from(body, 2))
+    assert [ln.split("\t")[0] for ln in fixed.lines][3].startswith("=")
+    held = ["*M2/4\t*M2/4", "1g\t4a", ".\t4b", ".\t2c", "=="]
+    assert merge.split_merged_measures(_result_from(held, 2)).lines == held
+
+
+def test_split_reports_which_measures_were_split():
+    body = ["*M2/4", "8a", "8b", "8cc", "8a", "=", "2g", "4ff", "4dd", "=", "4b", "4d", "=="]
+    fixed, ordinals = merge.split_merged_measures_at(_result_from(body))
+    assert ordinals == [2]
+    assert merge.count_measures(fixed.lines) == 4

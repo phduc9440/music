@@ -272,3 +272,41 @@ def test_midi_has_one_track_per_staff_across_parts_with_part_programs():
 def test_part_names_that_are_not_voices_keep_the_single_piano_part():
     result = normalize_musicxml(piano_grand_staff(), tempo_bpm=None)  # tên part "Music0"/"Music1"
     assert result.parts == ["Piano"] and result.staff_count == 2
+
+
+# ---------------------------------------------------------------- số chỉ nhịp lặp lại
+
+_TIME_3_4 = "<attributes><time><beats>3</beats><beat-type>4</beat-type></time></attributes>"
+_TIME_4_4 = "<attributes><time><beats>4</beats><beat-type>4</beat-type></time></attributes>"
+_KEY_G = "<attributes><key><fifths>1</fifths></key></attributes>"
+
+
+def _measures_with_time(root):
+    return [
+        m.get("number") for m in root.iter("measure") if m.find("attributes") is not None and m.find("attributes/time") is not None
+    ]
+
+
+def test_repeated_time_and_key_signatures_are_dropped_but_real_changes_stay():
+    # kern ghép nhiều hệ có dòng *M3/4 ở mỗi chỗ nối nên music21 in lại số chỉ nhịp ở đầu mỗi hệ
+    three = [note("C", 4, 3)]
+    four = [note("C", 4, 4)]
+    measures = [
+        three,
+        [_TIME_3_4, *three],  # lặp
+        three,
+        [_TIME_4_4, *four],  # đổi nhịp thật
+        [_TIME_4_4, *four],  # lặp
+        [_TIME_3_4, *three],  # đổi lại 3/4
+        [_KEY_G, *three],  # dấu hóa lặp (ô 1 đã có fifths=1)
+    ]
+    root = parse(normalize_musicxml(score(part("P1", 1, ("G", 2), measures, beats=3))))
+    assert _measures_with_time(root) == ["1", "4", "6"]
+    assert len(list(root.iter("key"))) == 1
+    assert all(len(m.find("attributes")) > 0 for m in root.iter("measure") if m.find("attributes") is not None)
+
+
+def test_notes_are_untouched_when_signatures_are_dropped():
+    measures = [[note("C", 4, 3)], [_TIME_3_4, note("D", 4, 3)]]
+    root = parse(normalize_musicxml(score(part("P1", 1, ("G", 2), measures, beats=3))))
+    assert [n.findtext("pitch/step") for n in root.iter("note")] == ["C", "D"]

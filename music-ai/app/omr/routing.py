@@ -28,6 +28,7 @@ import logging
 import math
 import re
 from dataclasses import dataclass, field
+from fractions import Fraction
 from typing import Callable, Optional
 
 import numpy as np
@@ -530,6 +531,16 @@ def _recognize_one(
         )
         result.page, notes = trim_loops(result.page, measures, where)
         result.warnings.extend(notes)
+        if can_retry():
+            fixed, reads = reread_by_measures(
+                number, index, gray, layout, band, result.page, recognize, can_retry, max_repeat, judge
+            )
+            result.attempts += reads
+            if fixed is not result.page:
+                result.warnings.append(
+                    f"{where}: đã đọc lại riêng từng ô nhịp sai bằng cách cắt ảnh tới từng vạch nhịp (nên đối chiếu lại với ảnh)"
+                )
+            result.page = fixed
         return result
 
     best = _recognize_system(number, index, image, target, recognize, 0, can_retry, max_repeat, measures=measures)
@@ -558,6 +569,117 @@ def _recognize_one(
     best.attempts = attempts
     best.warnings = warnings
     return best
+
+
+_MAX_MEASURE_READS = 12
+"""Hệ có nhiều ô hơn mức này thì không đọc lại từng ô (tốn quá nhiều lượt chạy model)."""
+
+_BAR_PAD_PX = 3
+"""Lấy thêm bấy nhiêu px sau tọa độ vạch nhịp để ảnh cắt còn nguyên nét vạch."""
+
+
+def _chunk_total(chunk: list[str]) -> Fraction:
+    """Tổng trường độ (nốt tròn) của một ô nhịp một khuông."""
+    total = Fraction(0)
+    for line in chunk:
+        if merge.is_data_line(line):
+            duration = merge.token_duration(line.split(merge.TAB)[0])
+            if duration is not None:
+                total += duration
+    return total
+
+
+def _chunk_ok(chunk: list[str], meter: Fraction, lenient: bool) -> bool:
+    """Ô nhịp đủ trường độ; ``lenient`` (ô lấy đà/ô cuối bài) chỉ cần không dài hơn số chỉ nhịp."""
+    total = _chunk_total(chunk)
+    if total <= 0:
+        return False
+    return total <= meter if lenient else total == meter
+
+
+def _prefix_image(gray: np.ndarray, band: tuple[int, int], right_x: int) -> np.ndarray:
+    """Trang ảo chỉ chứa hệ từ đầu hệ (khóa nhạc, dấu hóa, số chỉ nhịp) tới hết vạch nhịp ``right_x``."""
+    y0, y1 = band
+    width = min(TARGET_W, gray.shape[1], int(right_x) + _BAR_PAD_PX)
+    strip = np.full((y1 - y0, TARGET_W), 255, dtype=np.uint8)
+    strip[:, :width] = gray[y0:y1, :width]
+    return virtual_page(strip, (0, y1 - y0))
+
+
+def reread_by_measures(
+    number: int,
+    index: int,
+    gray: np.ndarray,
+    layout: PageLayout,
+    band: tuple[int, int],
+    page: Optional[merge.PageKern],
+    recognize: Recognize,
+    can_retry: Callable[[], bool],
+    max_repeat: int,
+    judge: Judge,
+) -> tuple[Optional[merge.PageKern], int]:
+    """Đọc lại riêng từng ô nhịp sai của một hệ một khuông. Trả ``(kern, số lần gọi model)``; không đổi gì thì trả lại
+    đúng ``page``.
+
+    Model hay làm rơi nốt (nhất là nốt lặp lại ngay sau vạch nhịp) hoặc bỏ vạch nhịp khi đọc cả hệ. Biết tọa độ từng
+    vạch nhịp trên ảnh nên với ô thứ ``k`` ta cắt ảnh từ đầu hệ tới vạch nhịp thứ ``k`` rồi cho model đọc: kết quả phải
+    có đúng ``k`` ô, và ô cuối của nó thay cho ô ``k`` của bản cũ nếu đủ trường độ. Ô nào bản cũ đã đủ trường độ (và
+    còn thẳng hàng với ảnh) thì giữ nguyên, nên chỉ tốn lượt chạy cho ô sai. Kết quả chỉ được nhận khi điểm xếp hạng cao
+    hơn bản cũ.
+    """
+    system = layout.systems[index]
+    count = system.measures
+    if (
+        page is None
+        or page.spines != 1
+        or not count
+        or not judge.measures
+        or not system.bars_closed
+        or len(system.barlines) != count
+        or count > _MAX_MEASURE_READS
+        or _is_good(page, 1, judge)
+    ):
+        return page, 0
+    meter_token = page_meter(page) or judge.meter
+    meter = merge._meter_fraction(meter_token) if meter_token else None
+    if meter is None:
+        return page, 0
+
+    original = merge.split_measures(page.body)
+    aligned = len(original) == count and page_measures(page) == count
+
+    def lenient(position: int) -> bool:
+        return (judge.lenient_first and position == 1) or (judge.lenient_last and position == count)
+
+    first_bad = next(
+        (k for k in range(1, min(len(original), count) + 1) if not _chunk_ok(original[k - 1], meter, lenient(k))),
+        1 if not aligned else count + 1,
+    )
+    chunks: list[list[str]] = [list(original[k - 1]) for k in range(1, first_bad) if k <= len(original)]
+    reads = 0
+    for k in range(first_bad, count + 1):
+        keep = original[k - 1] if aligned and k <= len(original) else None
+        if keep is not None and _chunk_ok(keep, meter, lenient(k)):
+            chunks.append(list(keep))
+            continue
+        if not can_retry():
+            return page, reads
+        prefix = _read(number, index, _prefix_image(gray, band, system.barlines[k - 1]), recognize, None, max_repeat, f"m{k}")
+        reads += 1
+        pieces = merge.split_measures(prefix.body) if prefix is not None and page_measures(prefix) == k else None
+        if pieces is not None and len(pieces) >= k:
+            chunks.append(list(pieces[k - 1]))
+        elif keep is not None:
+            chunks.append(list(keep))
+        else:
+            return page, reads  # không biết lấy ô nào thay cho ô k: bỏ cả lượt sửa
+    body = [line for chunk in chunks for line in chunk]
+    candidate = merge.PageKern(number=page.number, header=page.header, body=body)
+    new, old = _score(candidate, 1, judge), _score(page, 1, judge)
+    # So độ lệch ô THẲNG (không nới MEASURE_TOLERANCE như xếp hạng): đọc lại từng ô chính là để tìm đúng số ô trên ảnh
+    if (new.measure_gap, -new.measure_ratio) < (old.measure_gap, -old.measure_ratio):
+        return candidate, reads
+    return page, reads
 
 
 def _accept_roles(

@@ -161,6 +161,17 @@ def clean_page(
             body = body[:i]
             break
 
+    # Model đôi khi gộp hai khuông (``*v *v``) khi chưa hề tách (``*^``): các dòng sau đó mất một cột nên kern hỏng (spine
+    # đếm theo ``**kern`` ở đầu không còn khớp ``*-`` ở cuối, music21 báo không xác định được kiểu spine). Cắt từ chỗ sai;
+    # trang mất ô nhịp thì bị nhận diện lại theo hệ vì số ô lệch số ô trên ảnh.
+    invalid = first_invalid_join(body, len(header.split(TAB)))
+    if invalid is not None:
+        warnings.append(
+            f"Trang {number}: model gộp spine sai ở dòng {invalid + 1} của kết quả (gộp hai khuông chưa từng tách), "
+            f"đã bỏ {len(body) - invalid} dòng từ chỗ đó trở đi"
+        )
+        body = body[:invalid]
+
     if truncated and body:
         body = body[:-1]
         warnings.append(f"Trang {number}: kết quả chạm giới hạn độ dài của model, phần cuối trang có thể bị thiếu")
@@ -577,6 +588,31 @@ def _track_groups(groups: list[int], line: str) -> list[int]:
     return updated
 
 
+def first_invalid_join(body: list[str], spines: int) -> Optional[int]:
+    """Chỉ số dòng đầu tiên trong ``body`` có ``*v`` gộp các cột không cùng một spine gốc (hoặc một ``*v`` lẻ không có cột
+    để gộp), tức là gộp khi chưa hề tách bằng ``*^``; None nếu mọi chỗ gộp đều hợp lệ."""
+    groups = list(range(spines))
+    for index, line in enumerate(body):
+        if not line.startswith("*"):
+            continue
+        fields = line.split(TAB)
+        if len(fields) != len(groups):
+            continue
+        position = 0
+        while position < len(fields):
+            if fields[position] != "*v":
+                position += 1
+                continue
+            end = position
+            while end < len(fields) and fields[end] == "*v":
+                end += 1
+            if end - position < 2 or len(set(groups[position:end])) > 1:
+                return index
+            position = end
+        groups = _track_groups(groups, line)
+    return None
+
+
 def _join_lines(groups: list[int]) -> list[str]:
     """Các dòng ``*v`` đưa các spine đang tách về lại một cột mỗi spine gốc (rỗng nếu không còn cột nào tách)."""
     lines: list[str] = []
@@ -708,6 +744,123 @@ def _finalize_barlines(lines: list[str]) -> None:
                 renumbered.append(f"={number}{match.group('rest')}")
         lines[i] = TAB.join(renumbered)
         number += 1
+
+
+def split_merged_measures(result: MergeResult) -> MergeResult:
+    """Chèn lại vạch nhịp model bỏ sót (xem :func:`split_merged_measures_at`); chỉ trả kết quả."""
+    return split_merged_measures_at(result)[0]
+
+
+def split_merged_measures_at(result: MergeResult) -> tuple[MergeResult, list[int]]:
+    """Chèn lại vạch nhịp model bỏ sót, dựa vào trường độ.
+
+    Model hay đọc đúng nốt nhưng quên một vạch nhịp, nên hai ô liền nhau dính thành một. Một đoạn giữa hai vạch nhịp mà
+    mọi dòng nhạc đều có tổng trường độ đúng ``k`` lần số chỉ nhịp (``k >= 2``) và có chỗ cắt mà *mọi* dòng nhạc cùng tròn
+    ``j`` lần số chỉ nhịp thì gần như chắc chắn là ``k`` ô dính nhau: chèn vạch nhịp vào các chỗ đó. Không đụng tới đoạn
+    đang tách/gộp spine, đoạn chưa biết số chỉ nhịp hay đoạn có tổng không chia hết (ô thật sự sai thì để cờ trường độ báo).
+
+    Trả ``(kết quả, danh_sách)``: mỗi phần tử là số thứ tự (từ 1, cách đánh số của :func:`page_measure_ranges` trên bản
+    *trước khi* chèn) của một ô đã được tách thêm một lần, lặp lại theo số vạch chèn vào ô đó.
+    """
+    base = result.spines
+    lines = list(result.lines)
+    pages = list(result.line_pages)
+    meter: Optional[Fraction] = None
+    out_lines: list[str] = []
+    out_pages: list[int] = []
+    inserted = 0
+    first_page = 0
+    ordinal = 0
+    split_ordinals: list[int] = []
+
+    def flush(segment: list[tuple[str, int]], seg_meter: Optional[Fraction]) -> None:
+        nonlocal inserted, first_page, ordinal
+        if any(is_data_line(line) for line, _ in segment):
+            ordinal += 1
+        cuts = _missing_barline_cuts(segment, seg_meter, base)
+        split_ordinals.extend([ordinal] * len(cuts))
+        for position, (line, page_no) in enumerate(segment):
+            if position in cuts:
+                out_lines.append(TAB.join(["="] * base))
+                out_pages.append(page_no)
+                inserted += 1
+                first_page = first_page or page_no
+            out_lines.append(line)
+            out_pages.append(page_no)
+
+    segment: list[tuple[str, int]] = []
+    segment_meter: Optional[Fraction] = None
+    for line, page_no in zip(lines, pages):
+        if is_barline(line):
+            flush(segment, segment_meter)
+            out_lines.append(line)
+            out_pages.append(page_no)
+            segment = []
+            segment_meter = meter
+            continue
+        if _is_interpretation(line):
+            fields = line.split(TAB)
+            if len(fields) == base:
+                for token in fields:
+                    value = _meter_fraction(token)
+                    if value is not None:
+                        meter = value
+                        segment_meter = value
+                        break
+        segment.append((line, page_no))
+    flush(segment, segment_meter)
+    if not inserted:
+        return result, []
+    _finalize_barlines(out_lines)
+    warnings = list(result.warnings)
+    warnings.append(
+        f"Trang {first_page}: model bỏ sót vạch nhịp, đã tự chèn {inserted} vạch nhịp theo trường độ (nên đối chiếu lại với ảnh)"
+    )
+    text = "\n".join([result.header, *out_lines, TAB.join(["*-"] * base)]) + "\n"
+    fixed = MergeResult(
+        text=text, spines=base, warnings=warnings, line_pages=out_pages, lines=out_lines, header=result.header
+    )
+    return fixed, split_ordinals
+
+
+def _missing_barline_cuts(segment: list[tuple[str, int]], meter: Optional[Fraction], base: int) -> set[int]:
+    """Chỉ số (trong ``segment``) của các dòng cần chèn vạch nhịp ngay trước nó; rỗng nếu đoạn không thỏa điều kiện."""
+    if meter is None or meter <= 0:
+        return set()
+    rows: list[tuple[int, list[Fraction]]] = []
+    totals = [Fraction(0)] * base
+    for position, (line, _) in enumerate(segment):
+        if line.startswith("*") or line.startswith("!"):
+            if line.startswith("*") and _is_interpretation(line) and len(line.split(TAB)) != base:
+                return set()  # đang tách/gộp spine
+            continue
+        if not is_data_line(line):
+            continue
+        fields = line.split(TAB)
+        if len(fields) != base:
+            return set()
+        for index, token in enumerate(fields):
+            duration = token_duration(token)
+            if duration is not None:
+                totals[index] += duration
+        rows.append((position, list(totals)))
+    active = [i for i in range(base) if totals[i] > 0]
+    if not active:
+        return set()
+    count = totals[active[0]] / meter
+    if count < 2 or count.denominator != 1 or any(totals[i] != totals[active[0]] for i in active):
+        return set()
+    cuts: set[int] = set()
+    wanted = 1
+    for row_index, (position, _) in enumerate(rows):
+        if wanted >= count:
+            break
+        # Cộng dồn tới *trước* dòng này phải tròn ``wanted`` lần số chỉ nhịp ở mọi dòng nhạc
+        before = rows[row_index - 1][1] if row_index else [Fraction(0)] * base
+        if all(before[i] == wanted * meter for i in active):
+            cuts.add(position)
+            wanted += 1
+    return cuts if wanted == count else set()
 
 
 # ====================================================================== vai trò khuông

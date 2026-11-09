@@ -641,6 +641,23 @@ def _job_roles(ctx: JobContext, spines: int) -> Optional[list[str]]:
     return list(max(counts, key=lambda key: counts[key]))
 
 
+def _adjust_system_counts(
+    system_counts: dict[int, list[Optional[int]]], ranges: list[dict], split_ordinals: list[int]
+) -> None:
+    """Cộng số vạch nhịp đã chèn (:func:`merge.split_merged_measures_at`) vào số ô của hệ chứa ô được tách, để bản đồ ô
+    nhịp vẫn chia được ô cho từng hệ. Trang có hệ không đọc được (None) thì giữ nguyên."""
+    first = {r["page"]: r["firstMeasure"] for r in ranges}
+    for page, counts in system_counts.items():
+        if page not in first or any(c is None for c in counts):
+            continue
+        start = first[page]
+        for index, count in enumerate(counts):
+            end = start + int(count)  # type: ignore[arg-type]
+            extra = sum(1 for o in split_ordinals if start <= o < end)
+            counts[index] = int(count) + extra  # type: ignore[arg-type]
+            start = end
+
+
 def _merge_pages(ctx: JobContext, pages: list[merge.PageKern]) -> Optional[tuple[dict, dict]]:
     """Bước MERGE (85-90%): ghép kern, kiểm tra, lưu ``kern/merged.krn`` và báo file KERN.
 
@@ -654,6 +671,10 @@ def _merge_pages(ctx: JobContext, pages: list[merge.PageKern]) -> Optional[tuple
     callback.progress(85, STEP_MERGE)
 
     merged = merge.merge_pages(pages, lenient=settings.lenient_spines)
+    before_ranges = merge.page_measure_ranges(merged)
+    merged, split_ordinals = merge.split_merged_measures_at(merged)
+    if split_ordinals:
+        _adjust_system_counts(ctx.system_counts, before_ranges, split_ordinals)
     ctx.staff_roles = _job_roles(ctx, merged.spines)
     if ctx.staff_roles is not None:
         merged = merge.annotate_roles(merged, ctx.staff_roles)
