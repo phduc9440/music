@@ -378,3 +378,38 @@ export interface ErrorLogEntry {
   exceptionClass?: string | null;
   stackTrace?: string | null;
 }
+
+// Thống kê dashboard admin, BE: AdminDashboardResponse
+export interface DashboardTotals {
+  members: number;
+  activeMembers: number;
+  lockedMembers: number;
+  admins: number;
+  scores: number;
+  publicScores: number;
+  pendingScores: number;
+  officialScores: number;
+  reviews: number;
+  averageRating: number | null;
+  practiceSessions: number;
+  aiTasksRunning: number;
+  aiTasksFailed: number;
+}
+
+export interface DashboardKeyCount {
+  key: string;
+  count: number;
+}
+
+export interface AdminDashboard {
+  days: number;
+  totals: DashboardTotals;
+  scoresByDay: { date: string; count: number }[];
+  practiceByDay: { date: string; sessions: number; minutes: number }[];
+  scoresByVisibility: DashboardKeyCount[];
+  scoresBySource: DashboardKeyCount[];
+  scoresByDifficulty: DashboardKeyCount[];
+  aiTasksByStatus: DashboardKeyCount[];
+  topTags: DashboardKeyCount[];
+  topViewed: { id: string; title: string; ownerEmail: string | null; viewCount: number }[];
+}

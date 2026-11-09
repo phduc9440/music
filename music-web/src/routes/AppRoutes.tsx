@@ -14,6 +14,7 @@ import ScoreImport from '../pages/scores/ScoreImport';
 import SharedScores from '../pages/scores/SharedScores';
 import PlaylistDetail from '../pages/scores/PlaylistDetail';
 import Playlists from '../pages/scores/Playlists';
+import AdminDashboard from '../pages/admin/AdminDashboard';
 import AdminLayout from '../components/admin/AdminLayout';
 import AdminMembers from '../pages/admin/AdminMembers';
 import AdminOfficialScores from '../pages/admin/AdminOfficialScores';
@@ -169,7 +170,8 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       >
-        <Route index element={<AdminMembers />} />
+        <Route index element={<AdminDashboard />} />
+        <Route path="members" element={<AdminMembers />} />
         <Route path="scores" element={<AdminScores />} />
         <Route path="scores/:id" element={<ScoreDetail admin />} />
         <Route path="scores/:id/edit" element={<ScoreViewer />} />
