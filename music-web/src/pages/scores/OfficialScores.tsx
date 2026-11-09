@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import NotificationBell from '../../components/NotificationBell';
 import Pagination from '../../components/scores/Pagination';
 import ScoreCard from '../../components/scores/ScoreCard';
 import { scoreApi } from '../../services';
@@ -29,15 +28,6 @@ export default function OfficialScores() {
 
   return (
     <div className="sc-page">
-      <nav className="navbar">
-        <div className="navbar-brand">Music App</div>
-        <div className="navbar-nav">
-          <NotificationBell />
-          <button className="sc-btn sc-btn--sm" onClick={() => navigate('/scores')}>
-            ‹ Thư viện
-          </button>
-        </div>
-      </nav>
 
       <main className="sc-container">
         <header className="sc-lib-head">

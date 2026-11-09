@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import NotificationBell from '../../components/NotificationBell';
 import PracticeSkillRadar from '../../components/scores/PracticeSkillRadar';
 import PracticeTimeChart from '../../components/scores/PracticeTimeChart';
 import { practiceStatsApi } from '../../services';
@@ -34,7 +32,6 @@ interface Cell {
 
 /** Trang /practice-stats: chuỗi ngày luyện tập và heatmap kiểu GitHub (mục 3.12). */
 export default function PracticeStats() {
-  const navigate = useNavigate();
   const [streak, setStreak] = useState<PracticeStreak | null>(null);
   const [days, setDays] = useState<Map<string, PracticeHeatmapDay> | null>(null);
 
@@ -88,18 +85,6 @@ export default function PracticeStats() {
 
   return (
     <div className="sc-page">
-      <nav className="navbar">
-        <div className="navbar-brand">Music App</div>
-        <div className="navbar-nav">
-          <NotificationBell />
-          <button className="sc-btn sc-btn--sm" onClick={() => navigate('/practice-history')}>
-            Lịch sử tập
-          </button>
-          <button className="sc-btn sc-btn--sm" onClick={() => navigate('/scores')}>
-            ‹ Thư viện
-          </button>
-        </div>
-      </nav>
 
       <main className="sc-container">
         <header className="sc-lib-head">

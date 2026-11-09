@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import NotificationBell from '../../components/NotificationBell';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import DeleteScoreModal from '../../components/scores/DeleteScoreModal';
@@ -82,22 +81,12 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
     return () => clearInterval(t);
   }, [running]);
 
-  const navbar = admin ? (
-    <div style={{ padding: '0 0 1rem' }}>
-      <button className="sc-btn sc-btn--sm" onClick={goBack}>
+  const navbar = (
+    <div className="sc-backbar">
+      <button type="button" className="sc-backlink" onClick={goBack}>
         {backLabel}
       </button>
     </div>
-  ) : (
-    <nav className="navbar">
-      <div className="navbar-brand">Music App</div>
-      <div className="navbar-nav">
-        <NotificationBell />
-        <button className="sc-btn sc-btn--sm" onClick={goBack}>
-          {backLabel}
-        </button>
-      </div>
-    </nav>
   );
 
   if (state.phase === 'loading') {

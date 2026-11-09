@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import NotificationBell from '../../components/NotificationBell';
 import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -157,15 +156,6 @@ export default function ScoreUpload() {
 
   return (
     <div className="sc-page">
-      <nav className="navbar">
-        <div className="navbar-brand">Music App</div>
-        <div className="navbar-nav">
-          <NotificationBell />
-          <button className="sc-btn sc-btn--sm" disabled={busy} onClick={() => navigate('/scores')}>
-            ‹ Thư viện
-          </button>
-        </div>
-      </nav>
 
       <main className="sc-container">
         <header className="sc-lib-head">

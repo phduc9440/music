@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { notificationApi } from '../services';
+import { Icon } from './ui';
 import { formatRelative } from '../utils/score';
 import type { AppNotification } from '../types';
 import './scores/scores.css';
@@ -74,12 +75,13 @@ export default function NotificationBell() {
     <div className="sc-bell" ref={ref}>
       <button
         type="button"
-        className="sc-btn sc-btn--sm"
+        className="sc-bell__btn"
         aria-label={`Thông báo${unread ? `, ${unread} chưa đọc` : ''}`}
         aria-expanded={open}
         onClick={toggle}
       >
-        🔔{unread > 0 && <span className="sc-bell__badge">{unread > 99 ? '99+' : unread}</span>}
+        <Icon name="bell" size={18} />
+        {unread > 0 && <span className="sc-bell__badge">{unread > 99 ? '99+' : unread}</span>}
       </button>
 
       {open && (

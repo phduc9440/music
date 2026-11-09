@@ -1,16 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import Pagination from '../../components/scores/Pagination';
+import { Button, ButtonLink, Card, CellTitle, PageHeader, Pager, Table, TableState } from '../../components/ui';
+import { errorMessage, formatDateTime } from '../../components/ui/helpers';
 import { scoreApi } from '../../services';
 import type { PageResult, ScoreSummary } from '../../types';
 
 const PAGE_SIZE = 20;
-
-const errMsg = (error: unknown, fallback: string) =>
-  (error as { response?: { data?: { message?: string } } }).response?.data?.message || fallback;
-
-const formatDate = (iso?: string | null) => (iso ? new Date(iso).toLocaleString('vi-VN') : '—');
 
 /** Admin (mục 4.4): duyệt hoặc từ chối các bản nhạc chủ sở hữu xin công khai, cũ nhất trước. */
 export default function AdminPendingScores() {
@@ -47,87 +43,71 @@ export default function AdminPendingScores() {
       toast.success(approve ? 'Đã duyệt công khai' : 'Đã từ chối công khai');
     } catch (error) {
       // Ví dụ admin khác đã xử lý trước: báo lỗi rồi tải lại danh sách
-      toast.error(errMsg(error, 'Thao tác thất bại'));
+      toast.error(errorMessage(error, 'Thao tác thất bại'));
     } finally {
       setBusyId(null);
       setReload((n) => n + 1);
     }
   };
 
-  const btn = { padding: '0.25rem 0.75rem', fontSize: '0.75rem' };
-
   return (
     <>
-      <div className="adm-page-head">
-        <div>
-          <h1>Bản nhạc chờ duyệt công khai</h1>
-          <p>{result ? `${result.totalElements} bản nhạc đang chờ` : ''}</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Chờ duyệt công khai"
+        description="Bản nhạc chủ sở hữu xin công khai, cũ nhất trước. Mở bản nhạc để xem trước khi quyết định; chủ sở hữu được báo kết quả."
+      />
 
-      <div className="adm-card">
-        <div className="table-responsive">
-          <table className="table" style={{ marginTop: 0 }}>
-            <thead>
-              <tr>
-                <th>Tên bản nhạc</th>
-                <th>Tác giả</th>
-                <th>Chủ sở hữu</th>
-                <th>Gửi yêu cầu lúc</th>
-                <th>Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {result?.content.map((s) => (
-                <tr key={s.id}>
-                  <td>
+      <Card flush>
+        <Table minWidth={800}>
+          <thead>
+            <tr>
+              <th>Bản nhạc</th>
+              <th>Chủ sở hữu</th>
+              <th>Gửi yêu cầu lúc</th>
+              <th className="adm-table__actions">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            {!result && <TableState colSpan={4} loading />}
+            {result?.content.map((s) => (
+              <tr key={s.id}>
+                <td>
+                  <CellTitle sub={s.composer || undefined}>
                     <Link to={`/admin/scores/${s.id}`} title="Mở để xem trước khi duyệt">
                       {s.title}
                     </Link>
-                  </td>
-                  <td>{s.composer || '—'}</td>
-                  <td>{s.ownerEmail}</td>
-                  <td>{formatDate(s.updatedAt)}</td>
-                  <td>
-                    <div className="d-flex gap-2">
-                      <button
-                        className="btn btn-primary"
-                        style={btn}
-                        disabled={busyId === s.id}
-                        onClick={() => review(s, true)}
-                      >
-                        Duyệt
-                      </button>
-                      <button
-                        className="btn btn-danger"
-                        style={btn}
-                        disabled={busyId === s.id}
-                        onClick={() => review(s, false)}
-                      >
-                        Từ chối
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {result && result.content.length === 0 && (
-                <tr>
-                  <td colSpan={5}>Không có bản nhạc nào đang chờ duyệt.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-
+                  </CellTitle>
+                </td>
+                <td className="adm-muted">{s.ownerEmail}</td>
+                <td className="adm-nowrap adm-muted">{formatDateTime(s.updatedAt)}</td>
+                <td className="adm-table__actions">
+                  <div className="adm-table__actions-inner">
+                    <ButtonLink to={`/admin/scores/${s.id}`} size="sm" variant="ghost" icon="eye" title="Xem trước" />
+                    <Button size="sm" variant="primary" icon="check" disabled={busyId === s.id} onClick={() => review(s, true)}>
+                      Duyệt
+                    </Button>
+                    <Button size="sm" icon="x" disabled={busyId === s.id} onClick={() => review(s, false)}>
+                      Từ chối
+                    </Button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {result && result.content.length === 0 && (
+              <TableState colSpan={4} icon="check" title="Không có yêu cầu nào" description="Mọi yêu cầu công khai đã được xử lý." />
+            )}
+          </tbody>
+        </Table>
         {result && (
-          <Pagination
+          <Pager
             page={result.pageNumber}
             totalPages={result.totalPages}
             totalElements={result.totalElements}
+            unit="bản đang chờ"
             onChange={setPage}
           />
         )}
-      </div>
+      </Card>
     </>
   );
 }

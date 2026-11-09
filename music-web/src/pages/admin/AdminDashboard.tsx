@@ -14,6 +14,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { Button, Card, CellTitle, PageHeader, StatCard, StatGrid, Table, TableState, Tabs } from '../../components/ui';
 import { adminApi } from '../../services';
 import type { AdminDashboard as DashboardData, DashboardKeyCount } from '../../types';
 import './AdminDashboard.css';
@@ -99,16 +100,20 @@ function ChartCard({
 }) {
   const [asTable, setAsTable] = useState(false);
   return (
-    <div className="adm-card">
-      <div className="dash-card__head">
-        <div>
-          <div className="dash-card__title">{title}</div>
-          {sub && <div className="dash-card__sub">{sub}</div>}
-        </div>
-        <button className="btn" style={{ padding: '0.2rem 0.6rem', fontSize: '0.75rem' }} onClick={() => setAsTable((v) => !v)}>
-          {asTable ? 'Biểu đồ' : 'Bảng'}
-        </button>
-      </div>
+    <Card
+      title={title}
+      description={sub}
+      actions={
+        <Tabs
+          value={asTable ? 'table' : 'chart'}
+          onChange={(v) => setAsTable(v === 'table')}
+          items={[
+            { value: 'chart', label: 'Biểu đồ' },
+            { value: 'table', label: 'Bảng' },
+          ]}
+        />
+      }
+    >
       {asTable ? (
         <div className="dash-table-wrap">
           <table className="dash-table">
@@ -131,7 +136,7 @@ function ChartCard({
       ) : (
         children
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -151,7 +156,7 @@ function HBar({
     <div className="dash-chart" style={{ height }}>
       <ResponsiveContainer>
         <BarChart data={rows} layout="vertical" margin={{ top: 4, right: 36, bottom: 4, left: 0 }} barCategoryGap={10}>
-          <XAxis type="number" hide domain={[0, 'dataMax']} />
+          <XAxis type="number" hide domain={[0, (max: number) => Math.max(1, max) * 1.15]} />
           <YAxis type="category" dataKey="label" width={118} tick={AXIS} axisLine={false} tickLine={false} />
           <Tooltip
             cursor={{ fill: 'rgba(148,163,184,0.12)' }}
@@ -173,36 +178,6 @@ function HBar({
         </BarChart>
       </ResponsiveContainer>
     </div>
-  );
-}
-
-function Kpi({
-  label,
-  value,
-  detail,
-  to,
-  alert,
-}: {
-  label: string;
-  value: string;
-  detail?: string;
-  to?: string;
-  alert?: boolean;
-}) {
-  const body = (
-    <>
-      <div className="dash-kpi__label">{label}</div>
-      <div className="dash-kpi__value">{value}</div>
-      {detail && <div className="dash-kpi__detail">{detail}</div>}
-    </>
-  );
-  const cls = `dash-kpi${alert ? ' dash-kpi--alert' : ''}`;
-  return to ? (
-    <Link to={to} className={cls}>
-      {body}
-    </Link>
-  ) : (
-    <div className={cls}>{body}</div>
   );
 }
 
@@ -263,60 +238,76 @@ export default function AdminDashboard() {
 
   return (
     <div className="dash">
-      <div className="adm-page-head">
-        <div>
-          <h1>Tổng quan hệ thống</h1>
-          <p>Số liệu toàn hệ thống; biểu đồ theo ngày hiển thị {days} ngày gần nhất</p>
-        </div>
-        <div className="d-flex gap-2 align-items-center">
-          <select className="form-control" value={days} onChange={(e) => setDays(Number(e.target.value))}>
-            {RANGES.map((r) => (
-              <option key={r} value={r}>
-                {r} ngày
-              </option>
-            ))}
-          </select>
-          <button className="btn btn-primary" onClick={refresh} disabled={refreshing}>
-            {refreshing ? 'Đang tải…' : 'Làm mới'}
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="Bảng điều khiển"
+        description={`Số liệu toàn hệ thống; biểu đồ theo ngày hiển thị ${days} ngày gần nhất`}
+        actions={
+          <>
+            <select className="adm-input" aria-label="Khoảng thời gian" value={days} onChange={(e) => setDays(Number(e.target.value))}>
+              {RANGES.map((r) => (
+                <option key={r} value={r}>
+                  {r} ngày gần nhất
+                </option>
+              ))}
+            </select>
+            <Button icon="refresh" loading={refreshing} onClick={refresh}>
+              Làm mới
+            </Button>
+          </>
+        }
+      />
 
-      <div className="dash-kpis">
-        <Kpi
+      <StatGrid>
+        <StatCard
           label="Thành viên"
+          icon="users"
+          tone="primary"
           value={t ? nf.format(t.members) : '—'}
-          detail={t ? `${t.activeMembers} hoạt động · ${t.lockedMembers} bị khóa · ${t.admins} admin` : undefined}
+          hint={t ? `${t.activeMembers} hoạt động · ${t.lockedMembers} bị khóa · ${t.admins} admin` : undefined}
           to="/admin/members"
         />
-        <Kpi
+        <StatCard
           label="Bản nhạc"
+          icon="music"
+          tone="primary"
           value={t ? nf.format(t.scores) : '—'}
-          detail={t ? `${t.publicScores} công khai · ${t.officialScores} trong kho mẫu` : undefined}
+          hint={t ? `${t.publicScores} công khai · ${t.officialScores} trong kho mẫu` : undefined}
           to="/admin/scores"
         />
-        <Kpi
-          label="Chờ duyệt công khai"
+        <StatCard
+          label="Chờ duyệt"
+          icon="clock"
+          tone="warning"
           value={t ? nf.format(t.pendingScores) : '—'}
-          detail={t && t.pendingScores > 0 ? 'Cần xử lý' : 'Không có yêu cầu nào'}
+          hint={t && t.pendingScores > 0 ? 'Cần xử lý' : 'Không có yêu cầu nào'}
           to="/admin/pending-scores"
           alert={!!t && t.pendingScores > 0}
         />
-        <Kpi
+        <StatCard
           label="Nhận xét"
+          icon="star"
+          tone="violet"
           value={t ? nf.format(t.reviews) : '—'}
-          detail={t ? (t.averageRating == null ? 'Chưa có đánh giá sao' : `Trung bình ${t.averageRating} / 5 sao`) : undefined}
+          hint={t ? (t.averageRating == null ? 'Chưa có đánh giá sao' : `Trung bình ${t.averageRating} / 5 sao`) : undefined}
         />
-        <Kpi label="Phiên luyện tập" value={t ? nf.format(t.practiceSessions) : '—'} detail="Tổng từ trước đến nay" />
-        <Kpi
+        <StatCard
+          label="Phiên luyện tập"
+          icon="activity"
+          tone="success"
+          value={t ? nf.format(t.practiceSessions) : '—'}
+          hint="Tổng từ trước đến nay"
+        />
+        <StatCard
           label="Tác vụ AI"
+          icon="cpu"
+          tone={t && t.aiTasksFailed > 0 ? 'danger' : 'neutral'}
           value={t ? nf.format(t.aiTasksRunning) : '—'}
-          detail={t ? `đang chạy · ${t.aiTasksFailed} lỗi` : undefined}
+          hint={t ? `đang chạy · ${t.aiTasksFailed} lỗi` : undefined}
           alert={!!t && t.aiTasksFailed > 0}
         />
-      </div>
+      </StatGrid>
 
-      <div className="dash-grid">
+      <div className="adm-grid-2">
         <ChartCard
           title="Bản nhạc mới theo ngày"
           sub={`${nf.format(newScores)} bản trong ${days} ngày`}
@@ -386,7 +377,7 @@ export default function AdminDashboard() {
         </ChartCard>
       </div>
 
-      <div className="dash-grid">
+      <div className="adm-grid-2">
         <ChartCard
           title="Thành viên mới theo ngày"
           sub={`${nf.format(newMembers)} tài khoản trong ${days} ngày${
@@ -422,7 +413,7 @@ export default function AdminDashboard() {
         </ChartCard>
       </div>
 
-      <div className="dash-grid">
+      <div className="adm-grid-2">
         <ChartCard
           title="Nguồn bản nhạc"
           sub="Cách bản nhạc được tạo ra"
@@ -435,7 +426,7 @@ export default function AdminDashboard() {
         </ChartCard>
       </div>
 
-      <div className="dash-grid">
+      <div className="adm-grid-2">
         <ChartCard
           title="Tác vụ AI theo trạng thái"
           sub="OMR, hợp âm, tổng hợp âm thanh, chuyển định dạng"
@@ -452,45 +443,38 @@ export default function AdminDashboard() {
         </ChartCard>
       </div>
 
-      <div className="dash-grid">
-        <div className="adm-card" style={{ gridColumn: '1 / -1' }}>
-          <div className="dash-card__head">
-            <div>
-              <div className="dash-card__title">Bản nhạc được xem nhiều nhất</div>
-              <div className="dash-card__sub">Theo lượt xem, top 5</div>
-            </div>
-          </div>
-          {data && data.topViewed.length === 0 ? (
-            <div className="dash-empty">Chưa có lượt xem nào</div>
-          ) : (
-            <table className="dash-table">
-              <thead>
-                <tr>
-                  <th>Bản nhạc</th>
-                  <th style={{ width: '40%' }}>Lượt xem</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data?.topViewed.map((s) => (
-                  <tr key={s.id}>
-                    <td>
+      <div className="adm-grid-2">
+        <Card title="Bản nhạc được xem nhiều nhất" description="Theo lượt xem, top 5" flush className="adm-span-all">
+          <Table>
+            <thead>
+              <tr>
+                <th>Bản nhạc</th>
+                <th style={{ width: '40%' }}>Lượt xem</th>
+              </tr>
+            </thead>
+            <tbody>
+              {!data && <TableState colSpan={2} loading />}
+              {data?.topViewed.map((s) => (
+                <tr key={s.id}>
+                  <td>
+                    <CellTitle sub={s.ownerEmail}>
                       <Link to={`/admin/scores/${s.id}`}>{s.title}</Link>
-                      <div className="dash-card__sub">{s.ownerEmail}</div>
-                    </td>
-                    <td>
-                      <div className="dash-bar-cell">
-                        <div className="dash-bar-cell__track">
-                          <div className="dash-bar-cell__fill" style={{ width: `${(s.viewCount / maxViews) * 100}%` }} />
-                        </div>
-                        <span>{nf.format(s.viewCount)}</span>
+                    </CellTitle>
+                  </td>
+                  <td>
+                    <div className="dash-bar-cell">
+                      <div className="dash-bar-cell__track">
+                        <div className="dash-bar-cell__fill" style={{ width: `${(s.viewCount / maxViews) * 100}%` }} />
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+                      <span className="adm-table__num">{nf.format(s.viewCount)}</span>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {data && data.topViewed.length === 0 && <TableState colSpan={2} icon="eye" title="Chưa có lượt xem nào" />}
+            </tbody>
+          </Table>
+        </Card>
       </div>
     </div>
   );

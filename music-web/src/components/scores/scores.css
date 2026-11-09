@@ -1,92 +1,143 @@
-/* Biến màu và thành phần dùng chung của tính năng bản nhạc. Mọi class đều có tiền tố sc- để không đụng CSS khác. */
+/*
+ * Thành phần dùng chung của các trang bản nhạc (người dùng). Mọi class có tiền tố sc- để không đụng CSS khác.
+ * Màu, chữ, bo góc lấy từ styles/tokens.css (cùng bộ token với trang quản trị) qua các biến --sc-* dưới đây.
+ */
 .sc-page {
-  --sc-accent: var(--primary-color, #2563eb);
-  --sc-accent-soft: #eff4ff;
-  --sc-ink: var(--text-primary, #0f172a);
-  --sc-muted: var(--text-secondary, #64748b);
-  --sc-line: var(--surface-border, #e2e8f0);
-  --sc-card: #fff;
-  --sc-radius: 16px;
-  --sc-shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 4px 12px rgba(15, 23, 42, 0.05);
-  --sc-shadow-hover: 0 10px 28px rgba(37, 99, 235, 0.16);
+  --sc-accent: var(--ui-primary);
+  --sc-accent-soft: var(--ui-primary-soft);
+  --sc-ink: var(--ui-text);
+  --sc-muted: var(--ui-text-2);
+  --sc-line: var(--ui-border);
+  --sc-card: var(--ui-surface);
+  --sc-radius: var(--ui-radius-lg);
+  --sc-shadow: var(--ui-shadow-sm);
+  --sc-shadow-hover: var(--ui-shadow);
   min-height: 100vh;
-  background: radial-gradient(1200px 400px at 50% -120px, #dbe7ff 0%, transparent 70%), var(--background-dark, #f8fafc);
+  background: var(--ui-bg);
+  color: var(--ui-text);
+  font-family: var(--ui-font);
+}
+
+/* Trang nằm trong khung chung (UserLayout / AdminLayout) thì khung đã lo chiều cao và nền */
+.app-main .sc-page,
+.adm-main .sc-page {
+  min-height: 0;
+  background: transparent;
 }
 
 .sc-container {
-  max-width: 1120px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 1.75rem 1.25rem 3rem;
+  padding: 1.5rem 1.5rem 3rem;
 }
 
-/* ---- Nút ---- */
+.adm-main .sc-container {
+  max-width: none;
+  padding: 0;
+}
+
+/* Liên kết quay lại ở đầu trang (thay cho thanh điều hướng riêng của từng trang trước đây) */
+.sc-backbar {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem 1.5rem 0;
+}
+
+.adm-main .sc-backbar {
+  padding: 0 0 0.75rem;
+}
+
+.sc-backlink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ui-text-2);
+  font: inherit;
+  font-size: var(--ui-text-sm);
+  cursor: pointer;
+}
+
+.sc-backlink:hover {
+  color: var(--ui-text);
+}
+
+/* ---- Nút (cùng kích thước và kiểu với nút của trang quản trị) ---- */
 .sc-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.4rem;
-  padding: 0.55rem 1rem;
-  border-radius: 10px;
-  border: 1px solid var(--sc-line);
-  background: #fff;
-  color: var(--sc-ink);
+  height: 36px;
+  padding: 0 0.9rem;
+  border-radius: var(--ui-radius);
+  border: 1px solid var(--ui-border-strong);
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  box-shadow: var(--ui-shadow-sm);
   font: inherit;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: var(--ui-text-md);
+  line-height: 1;
+  white-space: nowrap;
   cursor: pointer;
+  text-decoration: none;
   transition:
-    background 0.15s,
+    background-color 0.15s,
     border-color 0.15s,
-    box-shadow 0.15s,
-    transform 0.05s;
+    color 0.15s;
 }
 .sc-btn:hover:not(:disabled) {
-  border-color: #cbd5e1;
-  background: #f8fafc;
+  background: var(--ui-surface-hover);
+  color: var(--ui-text);
 }
-.sc-btn:active:not(:disabled) {
-  transform: translateY(1px);
-}
-.sc-btn:disabled {
-  opacity: 0.55;
+.sc-btn:disabled,
+.sc-btn.is-disabled {
+  opacity: 0.5;
   cursor: not-allowed;
 }
 .sc-btn--primary {
-  background: var(--sc-accent);
-  border-color: var(--sc-accent);
+  background: var(--ui-primary);
+  border-color: var(--ui-primary);
   color: #fff;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
 }
 .sc-btn--primary:hover:not(:disabled) {
-  background: var(--primary-hover, #1d4ed8);
-  border-color: var(--primary-hover, #1d4ed8);
+  background: var(--ui-primary-hover);
+  border-color: var(--ui-primary-hover);
+  color: #fff;
 }
 .sc-btn--danger {
-  color: #dc2626;
+  color: var(--ui-danger);
   border-color: #fecaca;
-  background: #fff5f5;
+  background: var(--ui-danger-soft);
 }
 .sc-btn--danger:hover:not(:disabled) {
   background: #fee2e2;
   border-color: #fca5a5;
+  color: var(--ui-danger);
 }
 .sc-btn--danger-solid {
-  background: #dc2626;
-  border-color: #dc2626;
+  background: var(--ui-danger);
+  border-color: var(--ui-danger);
   color: #fff;
 }
 .sc-btn--danger-solid:hover:not(:disabled) {
-  background: #b91c1c;
-  border-color: #b91c1c;
+  background: var(--ui-danger-hover);
+  border-color: var(--ui-danger-hover);
+  color: #fff;
 }
 .sc-btn--sm {
-  padding: 0.35rem 0.7rem;
-  font-size: 0.8rem;
+  height: 30px;
+  padding: 0 0.65rem;
+  font-size: var(--ui-text-sm);
 }
 .sc-btn:focus-visible,
 .sc-icon-btn:focus-visible,
 .sc-input:focus-visible {
-  outline: 3px solid rgba(37, 99, 235, 0.35);
-  outline-offset: 1px;
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 2px;
 }
 
 .sc-icon-btn {
@@ -96,36 +147,48 @@
   line-height: 1;
   color: var(--sc-muted);
   cursor: pointer;
-  border-radius: 8px;
+  border-radius: var(--ui-radius);
   width: 2rem;
   height: 2rem;
 }
 .sc-icon-btn:hover {
-  background: #f1f5f9;
+  background: var(--ui-surface-hover);
   color: var(--sc-ink);
 }
 
 /* ---- Ô nhập ---- */
 .sc-input {
   width: 100%;
-  padding: 0.6rem 0.8rem;
-  border: 1px solid var(--sc-line);
-  border-radius: 10px;
-  background: #fff;
-  color: var(--sc-ink);
+  min-height: 36px;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius);
+  background: var(--ui-surface);
+  color: var(--ui-text);
   font: inherit;
-  font-size: 0.92rem;
+  font-size: var(--ui-text-md);
   transition:
     border-color 0.15s,
     box-shadow 0.15s;
 }
+.sc-input:hover {
+  border-color: var(--ui-text-3);
+}
 .sc-input:focus {
-  border-color: var(--sc-accent);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  border-color: var(--ui-primary);
+  box-shadow: 0 0 0 3px var(--ui-primary-ring);
   outline: none;
 }
 textarea.sc-input {
   resize: vertical;
+}
+select.sc-input {
+  padding-right: 2rem;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.6rem center;
+  cursor: pointer;
 }
 .sc-label {
   display: block;
@@ -482,17 +545,46 @@ textarea.sc-input {
 }
 
 /* Chuông thông báo */
+.sc-bell__btn {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: var(--ui-radius);
+  background: transparent;
+  color: var(--ui-text-2);
+  cursor: pointer;
+}
+.sc-bell__btn:hover,
+.sc-bell__btn[aria-expanded='true'] {
+  background: var(--ui-surface-hover);
+  color: var(--ui-text);
+}
+.sc-bell__btn:focus-visible {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 2px;
+}
 .sc-bell {
   position: relative;
 }
 .sc-bell__badge {
-  margin-left: 0.35rem;
-  padding: 0 0.4rem;
+  position: absolute;
+  top: 3px;
+  right: 2px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 0.3rem;
+  border: 2px solid var(--ui-surface);
   border-radius: 999px;
-  background: #dc2626;
+  background: var(--ui-danger);
   color: #fff;
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   font-weight: 700;
+  line-height: 13px;
+  text-align: center;
 }
 .sc-bell__panel {
   position: absolute;

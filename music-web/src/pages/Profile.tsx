@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import NotificationBell from '../components/NotificationBell';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { authApi, userApi } from '../services';
@@ -7,6 +6,9 @@ import { AuthProvider } from '../types';
 import type { Member } from '../types';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 import { roleLabel } from '../utils/auth';
+import '../components/scores/scores.css';
+import './scores/ScoreLibrary.css';
+import './Profile.css';
 
 export default function UserProfile() {
   const [user, setUser] = useState<Member | null>(null);
@@ -85,7 +87,7 @@ export default function UserProfile() {
         const response = await userApi.getMe();
         applyMember(response.data.result);
       } catch {
-        toast.error('Failed to load profile');
+        toast.error('Không tải được hồ sơ');
         handleLogout();
       } finally {
         setIsLoading(false);
@@ -94,66 +96,33 @@ export default function UserProfile() {
     fetchProfile();
   }, [applyMember, handleLogout]);
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) {
+    return (
+      <div className="sc-page">
+        <main className="sc-container" aria-busy="true">
+          <div className="sc-skeleton sc-skeleton--hero" />
+        </main>
+      </div>
+    );
+  }
 
-  const displayName = user?.fullName || user?.email || 'User';
+  const displayName = user?.fullName || user?.email || 'Tài khoản';
+  const isGoogle = user?.authProvider === AuthProvider.GOOGLE;
 
   return (
-    <>
-      <nav className="navbar">
-        <div className="navbar-brand">Music App</div>
-        <div className="navbar-nav">
-          <NotificationBell />
-          {localStorage.getItem('role') === 'ADMIN' && (
-            <button
-              className="btn"
-              onClick={() => navigate('/admin')}
-              style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}
-            >
-              Quản trị
-            </button>
-          )}
-          <button
-            className="btn"
-            onClick={() => navigate('/scores')}
-            style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}
-          >
-            Bản nhạc của tôi
-          </button>
-          <span style={{ fontWeight: 600 }}>{displayName}</span>
-          <button
-            onClick={handleLogout}
-            className="btn btn-danger"
-            style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}
-          >
-            Logout
-          </button>
-        </div>
-      </nav>
+    <div className="sc-page">
+      <main className="sc-container">
+        <header className="sc-lib-head">
+          <div>
+            <h1>Hồ sơ của tôi</h1>
+            <p>Thông tin cá nhân hiển thị với những người bạn chia sẻ bản nhạc.</p>
+          </div>
+        </header>
 
-      <div className="dashboard-container" style={{ maxWidth: '600px' }}>
-        <div className="glass-container" style={{ textAlign: 'center' }}>
-          <div style={{ margin: '0 auto 1.5rem', width: '100px' }}>
-            <div
-              style={{
-                width: '100px',
-                height: '100px',
-                backgroundColor: 'var(--primary-color)',
-                borderRadius: '50%',
-                overflow: 'hidden',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '2.5rem',
-                fontWeight: 'bold',
-                color: 'white',
-              }}
-            >
-              {user?.avatarUrl ? (
-                <img src={user.avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : (
-                displayName.charAt(0).toUpperCase()
-              )}
+        <div className="pf-grid">
+          <section className="pf-card pf-identity">
+            <div className="pf-avatar">
+              {user?.avatarUrl ? <img src={user.avatarUrl} alt="" /> : displayName.charAt(0).toUpperCase()}
             </div>
             <input
               ref={fileInput}
@@ -162,109 +131,94 @@ export default function UserProfile() {
               onChange={handleAvatarChange}
               style={{ display: 'none' }}
             />
-            <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
-              <button
-                type="button"
-                className="btn"
-                disabled={isUploading}
-                onClick={() => fileInput.current?.click()}
-                style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}
-              >
-                {isUploading ? '...' : 'Đổi ảnh'}
+            <h2 className="pf-name">{displayName}</h2>
+            <p className="pf-email">{user?.email}</p>
+            {user && <span className="sc-chip sc-chip--accent">{roleLabel(user)}</span>}
+            <div className="pf-actions">
+              <button type="button" className="sc-btn sc-btn--sm" disabled={isUploading} onClick={() => fileInput.current?.click()}>
+                {isUploading ? 'Đang tải…' : 'Đổi ảnh'}
               </button>
               {user?.avatarUrl && (
-                <button
-                  type="button"
-                  className="btn btn-danger"
-                  disabled={isUploading}
-                  onClick={handleAvatarDelete}
-                  style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}
-                >
-                  Xóa
+                <button type="button" className="sc-btn sc-btn--sm sc-btn--danger" disabled={isUploading} onClick={handleAvatarDelete}>
+                  Xóa ảnh
                 </button>
               )}
             </div>
-          </div>
+            <p className="pf-hint">JPG hoặc PNG, tối đa 2MB</p>
+          </section>
 
-          <h2 style={{ marginBottom: '0.5rem', fontSize: '1.75rem' }}>{displayName}</h2>
-          <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>{user?.email || 'email@example.com'}</p>
+          <div className="pf-stack">
+            <section className="pf-card">
+              <h2 className="pf-card__title">Thông tin cá nhân</h2>
+              <form onSubmit={handleSave}>
+                <label className="sc-label" htmlFor="pf-name">
+                  Họ tên
+                </label>
+                <input
+                  id="pf-name"
+                  className="sc-input"
+                  value={form.fullName}
+                  onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+                  required
+                  maxLength={255}
+                />
+                <label className="sc-label" htmlFor="pf-phone">
+                  Số điện thoại
+                </label>
+                <input
+                  id="pf-phone"
+                  className="sc-input"
+                  value={form.phone}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  maxLength={30}
+                />
+                <label className="sc-label" htmlFor="pf-address">
+                  Địa chỉ
+                </label>
+                <input
+                  id="pf-address"
+                  className="sc-input"
+                  value={form.address}
+                  onChange={(e) => setForm({ ...form, address: e.target.value })}
+                  maxLength={255}
+                />
+                <div className="pf-form-actions">
+                  <button type="submit" className="sc-btn sc-btn--primary" disabled={isSaving}>
+                    {isSaving ? 'Đang lưu…' : 'Lưu thay đổi'}
+                  </button>
+                </div>
+              </form>
+            </section>
 
-          <form onSubmit={handleSave} style={{ textAlign: 'left', marginBottom: '1.5rem' }}>
-            <div className="form-group">
-              <label>Họ tên</label>
-              <input
-                className="form-control"
-                value={form.fullName}
-                onChange={(e) => setForm({ ...form, fullName: e.target.value })}
-                required
-                maxLength={255}
-              />
-            </div>
-            <div className="form-group">
-              <label>Số điện thoại</label>
-              <input
-                className="form-control"
-                value={form.phone}
-                onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                maxLength={30}
-              />
-            </div>
-            <div className="form-group">
-              <label>Địa chỉ</label>
-              <input
-                className="form-control"
-                value={form.address}
-                onChange={(e) => setForm({ ...form, address: e.target.value })}
-                maxLength={255}
-              />
-            </div>
-            <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={isSaving}>
-              {isSaving ? 'Đang lưu...' : 'Lưu thay đổi'}
-            </button>
-          </form>
-
-          <div
-            style={{
-              background: 'var(--background-dark)',
-              border: '1px solid var(--surface-border)',
-              padding: '1.5rem',
-              borderRadius: '12px',
-              textAlign: 'left',
-            }}
-          >
-            <h3
-              style={{
-                marginBottom: '1rem',
-                borderBottom: '1px solid var(--surface-border)',
-                paddingBottom: '0.5rem',
-              }}
-            >
-              Account Details
-            </h3>
-            <div className="d-flex justify-content-between mb-4">
-              <span style={{ color: 'var(--text-secondary)' }}>Role:</span>
-              <span className="badge badge-user">{user ? roleLabel(user) : 'USER'}</span>
-            </div>
-            <div className="d-flex justify-content-between mb-4">
-              <span style={{ color: 'var(--text-secondary)' }}>Account ID:</span>
-              <span style={{ fontFamily: 'monospace' }}>{user?.id}</span>
-            </div>
-            <div className="d-flex justify-content-center mt-4">
-              {user?.authProvider !== AuthProvider.GOOGLE && (
-                <button
-                  onClick={() => setIsPasswordModalOpen(true)}
-                  className="btn btn-primary"
-                  style={{ padding: '0.5rem 1.5rem' }}
-                >
-                  Change Password
-                </button>
+            <section className="pf-card">
+              <h2 className="pf-card__title">Tài khoản</h2>
+              <dl className="pf-dl">
+                <div>
+                  <dt>Đăng nhập bằng</dt>
+                  <dd>{isGoogle ? 'Google' : 'Email / mật khẩu'}</dd>
+                </div>
+                <div>
+                  <dt>Vai trò</dt>
+                  <dd>{user ? roleLabel(user) : '—'}</dd>
+                </div>
+                <div>
+                  <dt>Mã tài khoản</dt>
+                  <dd className="pf-mono">{user?.id}</dd>
+                </div>
+              </dl>
+              {!isGoogle && (
+                <div className="pf-form-actions">
+                  <button type="button" className="sc-btn" onClick={() => setIsPasswordModalOpen(true)}>
+                    Đổi mật khẩu
+                  </button>
+                </div>
               )}
-            </div>
+            </section>
           </div>
         </div>
-      </div>
+      </main>
 
       <ChangePasswordModal isOpen={isPasswordModalOpen} onClose={() => setIsPasswordModalOpen(false)} />
-    </>
+    </div>
   );
 }

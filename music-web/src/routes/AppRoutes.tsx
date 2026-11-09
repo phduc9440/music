@@ -27,6 +27,7 @@ import AdminTags from '../pages/admin/AdminTags';
 import OfficialScores from '../pages/scores/OfficialScores';
 import PracticeHistory from '../pages/scores/PracticeHistory';
 import PracticeStats from '../pages/scores/PracticeStats';
+import UserLayout from '../components/layout/UserLayout';
 import ProtectedRoute from './ProtectedRoute';
 
 const AppRoutes = () => {
@@ -34,86 +35,30 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/auth/login" element={<Login />} />
+      {/* Trang người dùng nằm trong khung chung (thanh trên + nội dung) */}
       <Route
-        path="/profile"
         element={
           <ProtectedRoute allowedRole="USER">
-            <UserProfile />
+            <UserLayout />
           </ProtectedRoute>
         }
-      />
-      <Route
-        path="/scores"
-        element={
-          <ProtectedRoute allowedRole="USER">
-            <ScoreLibrary />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/scores/upload"
-        element={
-          <ProtectedRoute allowedRole="USER">
-            <ScoreUpload />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/scores/:id/processing"
-        element={
-          <ProtectedRoute allowedRole="USER">
-            <ScoreProcessing />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/scores/import"
-        element={
-          <ProtectedRoute allowedRole="USER">
-            <ScoreImport />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/scores/:id/review"
-        element={
-          <ProtectedRoute allowedRole="USER">
-            <ScoreReview />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/playlists"
-        element={
-          <ProtectedRoute allowedRole="USER">
-            <Playlists />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/playlists/:id"
-        element={
-          <ProtectedRoute allowedRole="USER">
-            <PlaylistDetail />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/scores/official"
-        element={
-          <ProtectedRoute allowedRole="USER">
-            <OfficialScores />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/scores/shared"
-        element={
-          <ProtectedRoute allowedRole="USER">
-            <SharedScores />
-          </ProtectedRoute>
-        }
-      />
+      >
+        <Route path="/profile" element={<UserProfile />} />
+        <Route path="/scores" element={<ScoreLibrary />} />
+        <Route path="/scores/upload" element={<ScoreUpload />} />
+        <Route path="/scores/import" element={<ScoreImport />} />
+        <Route path="/scores/official" element={<OfficialScores />} />
+        <Route path="/scores/shared" element={<SharedScores />} />
+        <Route path="/scores/:id" element={<ScoreDetail />} />
+        <Route path="/scores/:id/processing" element={<ScoreProcessing />} />
+        <Route path="/scores/:id/review" element={<ScoreReview />} />
+        <Route path="/playlists" element={<Playlists />} />
+        <Route path="/playlists/:id" element={<PlaylistDetail />} />
+        <Route path="/practice-history" element={<PracticeHistory />} />
+        <Route path="/practice-stats" element={<PracticeStats />} />
+      </Route>
+
+      {/* Trình chỉnh sửa và trình phát dùng toàn màn hình, có thanh công cụ riêng */}
       <Route
         path="/scores/:id/edit"
         element={
@@ -140,30 +85,6 @@ const AppRoutes = () => {
           }
         />
       )}
-      <Route
-        path="/scores/:id"
-        element={
-          <ProtectedRoute allowedRole="USER">
-            <ScoreDetail />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/practice-history"
-        element={
-          <ProtectedRoute allowedRole="USER">
-            <PracticeHistory />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/practice-stats"
-        element={
-          <ProtectedRoute allowedRole="USER">
-            <PracticeStats />
-          </ProtectedRoute>
-        }
-      />
       <Route
         path="/admin"
         element={

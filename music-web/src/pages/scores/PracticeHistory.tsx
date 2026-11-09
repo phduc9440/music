@@ -1,7 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import NotificationBell from '../../components/NotificationBell';
 import Modal from '../../components/scores/Modal';
 import Pagination from '../../components/scores/Pagination';
 import { practiceApi } from '../../services';
@@ -23,7 +21,6 @@ const formatPct = (v?: number | null) => (v == null ? '—' : `${v.toFixed(1)}%`
 
 /** Trang /practice-history: lịch sử phiên tập của tôi, xem log lỗi chi tiết và xóa phiên (mục 3.11). */
 export default function PracticeHistory() {
-  const navigate = useNavigate();
   const [page, setPage] = useState(0);
   const [result, setResult] = useState<PageResult<PracticeSessionRecord> | null>(null);
   const [detail, setDetail] = useState<PracticeSessionRecord | null>(null);
@@ -59,15 +56,6 @@ export default function PracticeHistory() {
 
   return (
     <div className="sc-page">
-      <nav className="navbar">
-        <div className="navbar-brand">Music App</div>
-        <div className="navbar-nav">
-          <NotificationBell />
-          <button className="sc-btn sc-btn--sm" onClick={() => navigate('/scores')}>
-            ‹ Thư viện
-          </button>
-        </div>
-      </nav>
 
       <main className="sc-container">
         <header className="sc-lib-head">

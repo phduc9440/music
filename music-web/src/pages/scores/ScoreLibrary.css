@@ -7,8 +7,10 @@
   margin-bottom: 1.25rem;
 }
 .sc-lib-head h1 {
-  font-size: 1.75rem;
-  letter-spacing: -0.02em;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
 }
 .sc-lib-head p {
   margin-top: 0.25rem;
@@ -209,5 +211,17 @@
   }
   .sc-pager {
     flex-wrap: wrap;
+  }
+}
+
+/* màn hình nhỏ: tiêu đề và nút xếp chồng, thẻ bản nhạc chiếm cả chiều ngang */
+@media (max-width: 600px) {
+  .sc-lib-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sc-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
