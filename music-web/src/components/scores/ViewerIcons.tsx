@@ -90,3 +90,34 @@ export const IconStop = () => (
     <rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" />
   </Svg>
 );
+
+export const IconMore = () => (
+  <Svg>
+    <circle cx="5" cy="12" r="1.4" fill="currentColor" />
+    <circle cx="12" cy="12" r="1.4" fill="currentColor" />
+    <circle cx="19" cy="12" r="1.4" fill="currentColor" />
+  </Svg>
+);
+export const IconHistory = () => (
+  <Svg>
+    <path d="M4 12a8 8 0 108-8 8 8 0 00-6 2.7M4 4v4h4M12 8v4l3 2" />
+  </Svg>
+);
+export const IconDownload = () => (
+  <Svg>
+    <path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14" />
+  </Svg>
+);
+export const IconInstrument = () => (
+  <Svg>
+    <path d="M9 18V6l10-2v12" />
+    <circle cx="6.5" cy="18" r="2.5" />
+    <circle cx="16.5" cy="16" r="2.5" />
+  </Svg>
+);
+export const IconKeyboard = () => (
+  <Svg>
+    <rect x="3" y="6" width="18" height="12" rx="2" />
+    <path d="M7 10h.01M11 10h.01M15 10h.01M7 14h10" />
+  </Svg>
+);

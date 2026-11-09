@@ -11,11 +11,14 @@ import type { NotationChange } from '../../components/editor/staves';
 import LyricBar from '../../components/scores/LyricBar';
 import Modal from '../../components/scores/Modal';
 import ScoreCanvas from '../../components/scores/ScoreCanvas';
+import ToolbarMoreMenu from '../../components/scores/ToolbarMoreMenu';
 import ZoomControl from '../../components/scores/ZoomControl';
 import {
   IconBack,
   IconEdit,
   IconExpand,
+  IconHistory,
+  IconKeyboard,
   IconPages,
   IconPlay,
   IconRedo,
@@ -424,8 +427,8 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
             <p>{score.composer || 'Chưa rõ tác giả'}</p>
           </div>
           {canEdit ? (
-            <span className={`sv-savestate${saveClass}`} role="status" aria-live="polite">
-              {saveLabel}
+            <span className={`sv-savestate${saveClass}`} role="status" aria-live="polite" title={saveLabel}>
+              <span className="sv-sr">{saveLabel}</span>
             </span>
           ) : (
             <span className="sv-badge">Chỉ xem</span>
@@ -433,12 +436,22 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
         </div>
 
         <div className="sv-toolbar__center">
-          <div className="sv-segment" role="group" aria-label="Chế độ xem">
-            <button aria-pressed={mode === 'page'} onClick={() => setMode('page')}>
-              <IconPages /> Trang
+          <div className="sv-segment sv-segment--icons" role="group" aria-label="Chế độ xem">
+            <button
+              aria-pressed={mode === 'page'}
+              aria-label="Xem theo trang"
+              title="Xem theo trang"
+              onClick={() => setMode('page')}
+            >
+              <IconPages />
             </button>
-            <button aria-pressed={mode === 'scroll'} onClick={() => setMode('scroll')}>
-              <IconScroll /> Cuộn ngang
+            <button
+              aria-pressed={mode === 'scroll'}
+              aria-label="Cuộn ngang"
+              title="Cuộn ngang"
+              onClick={() => setMode('scroll')}
+            >
+              <IconScroll />
             </button>
           </div>
           <ZoomControl zoom={zoom} onChange={setZoom} />
@@ -495,20 +508,42 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
             {player.status === 'playing' ? <IconStop /> : <IconPlay />}{' '}
             {player.status === 'playing' ? 'Tạm dừng' : 'Phát'}
           </button>
-          <InstrumentMenu parts={player.parts} onChange={player.setInstrument} />
-          <button className="sc-btn" onClick={() => setHistoryOpen(true)} title="Lịch sử phiên bản">
-            Lịch sử
-          </button>
-          <DownloadMenu scoreId={score.id} files={score.files} title={score.title} staffCount={score.staffCount} />
-          <button
-            className="sc-btn sv-icon"
-            onClick={toggleFullscreen}
-            aria-pressed={fullscreen}
-            title={fullscreen ? 'Thoát toàn màn hình (Esc)' : 'Toàn màn hình'}
-            aria-label={fullscreen ? 'Thoát toàn màn hình' : 'Toàn màn hình'}
-          >
-            {fullscreen ? <IconShrink /> : <IconExpand />}
-          </button>
+          <InstrumentMenu parts={player.parts} onChange={player.setInstrument} compact />
+          <DownloadMenu
+            scoreId={score.id}
+            files={score.files}
+            title={score.title}
+            staffCount={score.staffCount}
+            compact
+          />
+          <ToolbarMoreMenu
+            items={[
+              {
+                key: 'history',
+                label: 'Lịch sử phiên bản',
+                icon: <IconHistory />,
+                onClick: () => setHistoryOpen(true),
+              },
+              {
+                key: 'fullscreen',
+                label: fullscreen ? 'Thoát toàn màn hình' : 'Toàn màn hình',
+                icon: fullscreen ? <IconShrink /> : <IconExpand />,
+                hint: fullscreen ? 'Esc' : undefined,
+                onClick: () => void toggleFullscreen(),
+              },
+              ...(canEdit
+                ? [
+                    {
+                      key: 'shortcuts',
+                      label: 'Phím tắt',
+                      icon: <IconKeyboard />,
+                      hint: '?',
+                      onClick: () => setHelpOpen(true),
+                    },
+                  ]
+                : []),
+            ]}
+          />
         </div>
       </header>
 
