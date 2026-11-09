@@ -40,4 +40,17 @@ public interface PracticeSessionRepository extends JpaRepository<PracticeSession
             @Param("from") LocalDateTime from,
             @Param("to") LocalDateTime to,
             @Param("minSeconds") int minSeconds);
+
+    /**
+     * Tổng hợp để chấm điểm kỹ năng trong [from, to), đúng một dòng:
+     * [số phiên, tổng nốt, nốt đúng giờ, nốt sớm, nốt trễ, tổng (tempo x nốt), tổng nốt có tempo].
+     */
+    @Query("select count(s), coalesce(sum(s.totalNotes), 0), coalesce(sum(s.perfectCount), 0),"
+            + " coalesce(sum(s.earlyCount), 0), coalesce(sum(s.lateCount), 0),"
+            + " coalesce(sum(case when s.tempoPercent is not null then s.tempoPercent * s.totalNotes else 0 end), 0),"
+            + " coalesce(sum(case when s.tempoPercent is not null then s.totalNotes else 0 end), 0)"
+            + " from PracticeSession s"
+            + " where s.member = :member and s.startedAt >= :from and s.startedAt < :to")
+    List<Object[]> skillTotals(
+            @Param("member") Member member, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 }

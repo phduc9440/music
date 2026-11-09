@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import NotificationBell from '../../components/NotificationBell';
+import PracticeSkillRadar from '../../components/scores/PracticeSkillRadar';
 import PracticeTimeChart from '../../components/scores/PracticeTimeChart';
 import { practiceStatsApi } from '../../services';
 import type { PracticeHeatmapDay, PracticeStreak } from '../../types';
@@ -155,6 +156,8 @@ export default function PracticeStats() {
         </div>
 
         <PracticeTimeChart />
+
+        <PracticeSkillRadar />
       </main>
     </div>
   );

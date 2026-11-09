@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.ptit.music_be.dto.response.ApiResponse;
 import com.ptit.music_be.dto.response.PracticeHeatmapDayResponse;
+import com.ptit.music_be.dto.response.PracticeSkillsResponse;
 import com.ptit.music_be.dto.response.PracticeStreakResponse;
 import com.ptit.music_be.dto.response.PracticeTimeBucketResponse;
 import com.ptit.music_be.service.PracticeStatsService;
@@ -48,6 +49,16 @@ public class PracticeStatsController {
             @RequestParam(defaultValue = "DAY") String period, @RequestParam(required = false) Integer count) {
         return ApiResponse.<List<PracticeTimeBucketResponse>>builder()
                 .result(practiceStatsService.getTimeStats(period, count))
+                .build();
+    }
+
+    @GetMapping("/skills")
+    @Operation(
+            summary = "My 4 skill scores (0-100) over the last N days, for the radar chart",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<PracticeSkillsResponse> skills(@RequestParam(required = false) Integer days) {
+        return ApiResponse.<PracticeSkillsResponse>builder()
+                .result(practiceStatsService.getSkills(days))
                 .build();
     }
 

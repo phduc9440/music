@@ -328,3 +328,13 @@ export interface PracticeTimeBucket {
   totalSeconds: number;
   sessionCount: number;
 }
+
+// Điểm kỹ năng 0-100 cho biểu đồ radar, BE: PracticeSkillsResponse (sessionCount = 0 là chưa có dữ liệu)
+export interface PracticeSkills {
+  days: number;
+  sessionCount: number;
+  pitchAccuracy: number;
+  timing: number;
+  speed: number;
+  diligence: number;
+}
