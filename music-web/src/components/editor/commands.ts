@@ -52,6 +52,8 @@ export type EditFailure =
   | 'hairpinTarget'
   | 'spanTarget'
   | 'arpeggioTarget'
+  | 'glissTarget'
+  | 'graceTarget'
   | 'noMeasure'
   | 'lastMeasure'
   | 'voiceMain'
@@ -95,6 +97,9 @@ export const EDIT_FAILURE_MESSAGES: Record<EditFailure, string> = {
   hairpinTarget: 'Cresc./dim. cần chọn từ hai nốt trở lên (từ nốt bắt đầu đến nốt kết thúc)',
   spanTarget: 'Vùng chọn phải nằm trong cùng một khuông của cùng một phần nhạc',
   arpeggioTarget: 'Dấu rải cần một hợp âm có từ hai nốt trở lên: hãy chọn hợp âm',
+  glissTarget:
+    'Glissando cần hai nốt trong cùng một khuông và bè: chọn nốt bắt đầu (nốt liền sau là nốt kết thúc) hoặc chọn cả hai nốt',
+  graceTarget: 'Hãy chọn một nốt hoa mỹ (nốt nhỏ) để đổi giữa có gạch chéo và không gạch',
   noMeasure: 'Hãy chọn một nốt để biết thao tác này áp dụng cho ô nhịp nào',
   lastMeasure: 'Bản nhạc phải còn ít nhất một ô nhịp',
   voiceMain: 'Đây là bè chính của khuông nên không xóa theo cách này (hãy dùng nút Xóa nốt / Dấu lặng)',

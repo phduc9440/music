@@ -190,6 +190,27 @@ const MORE_MARK_GROUPS: { title: string; tools: { op: MarkOp; label: string; tit
         label: 'Hoa mỹ (không gạch)',
         title: 'Nốt hoa mỹ không gạch (appoggiatura): thêm trước nốt đang chọn, cao hơn một bậc',
       },
+      {
+        op: 'graceToggle',
+        label: 'Đổi gạch (hoa mỹ)',
+        title: 'Đổi nốt hoa mỹ đang chọn giữa có gạch chéo (acciaccatura) và không gạch (appoggiatura)',
+      },
+      {
+        op: 'arpeggioDown',
+        label: 'Rải xuống',
+        title: 'Rải các nốt của hợp âm đang chọn từ trên xuống (bấm lại để bỏ)',
+      },
+      {
+        op: 'glissando',
+        label: 'Glissando',
+        title:
+          'Glissando: đường lượn từ nốt đang chọn tới nốt liền sau (hoặc tới nốt cuối của vùng chọn); bấm lại để bỏ',
+      },
+      {
+        op: 'slide',
+        label: 'Trượt',
+        title: 'Trượt (slide): đường thẳng nối hai nốt như glissando, không có chữ; bấm lại để bỏ',
+      },
     ],
   },
 ];
@@ -243,6 +264,10 @@ const KEYWORDS: Partial<Record<MarkOp, string>> = {
   graceSlash: 'grace note acciaccatura nốt hoa mỹ trang trí',
   gracePlain: 'grace note appoggiatura nốt hoa mỹ trang trí',
   arpeggio: 'arpeggio rải hợp âm hoa mỹ',
+  arpeggioDown: 'arpeggio rải hợp âm xuống hoa mỹ',
+  glissando: 'glissando gliss trượt hoa mỹ',
+  slide: 'slide trượt glissando hoa mỹ',
+  graceToggle: 'grace note đổi gạch chéo acciaccatura appoggiatura hoa mỹ',
   cresc: 'crescendo to dần',
   dim: 'diminuendo decrescendo nhỏ dần',
   pedal: 'pedal',
@@ -270,7 +295,19 @@ const ARTICULATION_OPS: MarkOp[] = [
   'breath',
   'caesura',
 ];
-const ORNAMENT_OPS: MarkOp[] = ['trill', 'mordent', 'invMordent', 'turn', 'graceSlash', 'gracePlain', 'arpeggio'];
+const ORNAMENT_OPS: MarkOp[] = [
+  'trill',
+  'mordent',
+  'invMordent',
+  'turn',
+  'graceSlash',
+  'gracePlain',
+  'graceToggle',
+  'arpeggio',
+  'arpeggioDown',
+  'glissando',
+  'slide',
+];
 const PEDAL_OPS: MarkOp[] = ['pedal', 'ottava8va', 'ottava8vb'];
 
 /** Bỏ dấu, hạ chữ thường để "lay", "Láy", "LÁY" cùng khớp. */
