@@ -786,7 +786,7 @@ def check_measures(result: MergeResult) -> list[str]:
     Chỉ kiểm tra các ô nhịp không tách/gộp spine. Ô nhịp đầu tiên (nhịp lấy đà) và ô nhịp cuối cùng được phép ngắn
     hơn. Mỗi cảnh báo ghi số trang và số ô nhịp; chỉ nêu tối đa :data:`MAX_WARNINGS_PER_KIND` ô.
     """
-    _, problems = _measure_report(result)
+    _, problems, _ = _measure_report(result)
     if len(problems) > MAX_WARNINGS_PER_KIND:
         extra = len(problems) - MAX_WARNINGS_PER_KIND
         problems = problems[:MAX_WARNINGS_PER_KIND] + [f"Còn {extra} ô nhịp khác có tổng trường độ không khớp số chỉ nhịp"]
@@ -798,20 +798,36 @@ def measure_stats(result: MergeResult, lenient_first: bool = True, lenient_last:
 
     Ô nhịp đầu/cuối của đoạn được nới (chỉ sai khi dài hơn số chỉ nhịp) vì có thể là ô lấy đà hay ô cuối bài. Một hệ ở
     giữa trang không có ô nào như vậy nên bên gọi có thể tắt ``lenient_first``/``lenient_last`` để kiểm chặt."""
-    checked, problems = _measure_report(result, lenient_first, lenient_last)
+    checked, problems, _ = _measure_report(result, lenient_first, lenient_last)
     return checked, len(problems)
+
+
+def bad_measures(result: MergeResult) -> list[int]:
+    """Số thứ tự (từ 1, cùng cách đánh số với :func:`page_measure_ranges`) các ô nhịp sai tổng trường độ, cùng quy tắc
+    với :func:`check_measures`."""
+    _, _, positions = _measure_report(result)
+    return positions
 
 
 def _measure_report(
     result: MergeResult, lenient_first: bool = True, lenient_last: bool = True
-) -> tuple[int, list[str]]:
-    """Đếm ô nhịp kiểm được và liệt kê mọi ô sai trường độ (không giới hạn số cảnh báo)."""
+) -> tuple[int, list[str], list[int]]:
+    """Đếm ô nhịp kiểm được, liệt kê mọi ô sai trường độ (không giới hạn số cảnh báo) và số thứ tự (từ 1, trong các ô
+    có dữ liệu) của các ô đó."""
     base = result.spines
     problems: list[str] = []
     meter: Optional[Fraction] = None
 
     def open_segment(number: int, page_no: int) -> dict:
-        return {"number": number, "page": page_no, "sums": [Fraction(0)] * base, "meter": meter, "ok": True, "data": 0}
+        return {
+            "number": number,
+            "page": page_no,
+            "sums": [Fraction(0)] * base,
+            "meter": meter,
+            "ok": True,
+            "data": 0,
+            "any": False,
+        }
 
     # Dữ liệu nằm trước vạch nhịp đầu tiên (nếu có) là ô nhịp lấy đà, mang số (số đầu - 1)
     first_barline = next((ln for ln in result.lines if is_barline(ln)), None)
@@ -839,6 +855,7 @@ def _measure_report(
             continue
         if not is_data_line(line):
             continue
+        current["any"] = True  # có dữ liệu (kể cả dòng đang tách spine): ô này có số thứ tự
         fields = line.split(TAB)
         if len(fields) != base:
             current["ok"] = False  # đang tách/gộp spine: không tính được
@@ -853,7 +870,9 @@ def _measure_report(
     segments.append(current)
 
     with_data = [s for s in segments if s["data"] > 0]
+    ordinals = {id(s): k for k, s in enumerate((s for s in segments if s["any"]), start=1)}
     checked = 0
+    positions: list[int] = []
     for position, segment in enumerate(with_data):
         if not segment["ok"] or segment["meter"] is None:
             continue
@@ -868,8 +887,9 @@ def _measure_report(
                     f"Trang {segment['page']}, ô nhịp {segment['number']}: dòng nhạc thứ {index + 1} có tổng trường độ "
                     f"{total} (nốt tròn), khác số chỉ nhịp {segment['meter']}"
                 )
+                positions.append(ordinals[id(segment)])
                 break
-    return checked, problems
+    return checked, problems, positions
 
 
 # ====================================================================== metadata
@@ -954,12 +974,80 @@ def page_measure_ranges(result: MergeResult) -> list[dict]:
 
 def _count_measures(result: MergeResult) -> int:
     """Số ô nhịp = số đoạn giữa các vạch nhịp có ít nhất một dòng dữ liệu."""
+    return count_measures(result.lines)
+
+
+def count_measures(lines: list[str]) -> int:
+    """Số ô nhịp của một dãy dòng kern (ví dụ ``PageKern.body``), cùng cách đếm với :func:`extract_metadata`."""
     count = 0
     has_data = False
-    for line in result.lines:
+    for line in lines:
         if is_barline(line):
             count += 1 if has_data else 0
             has_data = False
         elif is_data_line(line):
             has_data = True
     return count + (1 if has_data else 0)
+
+
+# ====================================================================== khối ô nhịp lặp
+
+
+def split_measures(lines: list[str]) -> list[list[str]]:
+    """Tách dãy dòng kern thành từng đoạn kết thúc bằng một vạch nhịp (đoạn cuối có thể không có vạch)."""
+    chunks: list[list[str]] = [[]]
+    for line in lines:
+        chunks[-1].append(line)
+        if is_barline(line):
+            chunks.append([])
+    if not chunks[-1]:
+        chunks.pop()
+    return chunks
+
+
+def _chunk_signature(chunk: list[str]) -> tuple[str, ...]:
+    """Nội dung so sánh của một ô: chỉ các dòng dữ liệu (số ô nhịp trên vạch nhịp luôn khác nhau)."""
+    return tuple(line for line in chunk if is_data_line(line))
+
+
+def drop_repeated_blocks(page: PageKern, expected: int) -> tuple[PageKern, int]:
+    """Bỏ các khối ô nhịp lặp liền nhau giống hệt khi trang có nhiều ô hơn ``expected`` (số ô đếm trên ảnh).
+
+    Chỉ dùng làm bước cuối khi nhận diện lại vẫn thừa ô: model "lạc chỗ" lặp nguyên một khối. Khối là ``L`` ô liên tiếp
+    lặp ``k`` lần ngay sau nhau (``L >= 2, k >= 2`` hoặc một ô lặp từ 3 lần). Nhạc thật cũng có thể lặp, nên chỉ bỏ tới
+    khi số ô bằng ``expected`` chứ không bỏ hết các bản lặp. Trả ``(trang, số ô đã bỏ)``.
+    """
+    chunks = split_measures(page.body)
+    signatures = [_chunk_signature(c) for c in chunks]
+    excess = count_measures(page.body) - expected
+    removed = 0
+    index = 0
+    while excess > 0 and index < len(chunks):
+        best: Optional[tuple[int, int]] = None
+        for length in range(1, 13):
+            block = signatures[index : index + length]
+            if len(block) < length or not all(block):
+                break
+            repeats = 1
+            while signatures[index + repeats * length : index + (repeats + 1) * length] == block:
+                repeats += 1
+            if repeats >= (3 if length == 1 else 2) and (best is None or length * repeats > best[0] * best[1]):
+                best = (length, repeats)
+        if best is None:
+            index += 1
+            continue
+        length, repeats = best
+        copies = min(repeats - 1, excess // length)
+        if copies <= 0:
+            index += length * repeats
+            continue
+        start = index + length
+        del chunks[start : start + copies * length]
+        del signatures[start : start + copies * length]
+        excess -= copies * length
+        removed += copies * length
+        index += length * (repeats - copies)
+    if not removed:
+        return page, 0
+    body = [line for chunk in chunks for line in chunk]
+    return PageKern(number=page.number, header=page.header, body=body), removed

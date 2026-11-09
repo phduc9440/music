@@ -260,3 +260,132 @@ def test_role_split_failure_falls_back_to_padding_with_reason():
     assert results[0].method == "system" and page.spines == 3
     assert any("đọc riêng nhóm khuông SINGLE ra 2 spine, cần 1" in w for w in warnings)
     assert any("khuông trống" in w for w in warnings)
+
+
+# ------------------------------------------------------------------ số ô nhịp theo vạch nhịp trên ảnh
+
+
+def melody_page(measures=(4, 5, 3)):
+    from tests.synth import make_melody_page
+
+    image = process_page(make_melody_page(measures=measures), PreprocessOptions(source_type="SCAN"), 1).image
+    return image, analyze_layout(image)
+
+
+def test_page_with_extra_measures_needs_fallback_even_with_right_spines():
+    from tests.kern_samples import melody
+
+    _, layout = melody_page()
+    assert routing.expected_measures(layout) == 12
+    looped = merge.clean_page(1, melody(20))[0]
+    right = merge.clean_page(1, melody(12))[0]
+    one_off = merge.clean_page(1, melody(13))[0]  # bộ dò có thể sót một vạch: chưa đủ để nhận diện lại
+    assert looped.spines == 1 and routing.page_measures(looped) == 20
+    assert routing.needs_fallback("fallback", layout, looped)
+    assert not routing.needs_fallback("fallback", layout, right)
+    assert not routing.needs_fallback("fallback", layout, one_off)
+    missing_one = merge.clean_page(1, melody(11))[0]  # thiếu ô thì không phải lỗi của bộ dò
+    assert routing.needs_fallback("fallback", layout, missing_one)
+    assert not routing.needs_fallback("fallback", layout, looped, check_bars=False)
+
+
+def test_measures_off_needs_two_measures_and_ten_percent():
+    assert not routing.measures_off(None, 12) and not routing.measures_off(12, None)
+    assert routing.measures_off(14, 12) and routing.measures_off(10, 12)
+    assert not routing.measures_off(13, 12)
+    assert routing.measures_off(11, 12)  # thiếu một ô là đủ để đọc lại
+    assert not routing.measures_off(12, 12)
+    assert not routing.measures_off(62, 60) and routing.measures_off(66, 60)
+
+
+def test_system_with_looped_measures_is_retried_with_beams_and_the_right_count_wins():
+    from tests.kern_samples import melody
+
+    image, layout = melody_page()
+    calls = []
+
+    def recognize(img, index, beams, tag=None):
+        calls.append((index, beams))
+        wanted = layout.systems[index].measures
+        if index == 1 and beams is None:
+            return melody(wanted * 2), False  # đọc greedy lặp cả hệ
+        return melody(wanted), False
+
+    page, results, warnings = routing.recognize_by_systems(1, image, layout, recognize, 3, lambda: True)
+    assert calls == [(0, None), (1, None), (1, 3), (2, None)]
+    assert [routing.page_measures(r.page) for r in results] == [4, 5, 3]
+    assert routing.page_measures(page) == 12
+    assert warnings == []
+
+
+def test_bars_can_be_ignored_for_comparison():
+    from tests.kern_samples import melody
+
+    image, layout = melody_page()
+    calls = []
+
+    def recognize(img, index, beams, tag=None):
+        calls.append((index, beams))
+        return melody(layout.systems[index].measures * 2), False
+
+    _, _, warnings = routing.recognize_by_systems(1, image, layout, recognize, 3, lambda: True, use_bars=False)
+    assert calls == [(0, None), (1, None), (2, None)]  # không biết số ô thì không thử lại
+    assert warnings == []
+
+
+def test_system_still_off_after_retries_is_reported():
+    from tests.kern_samples import melody
+
+    image, layout = melody_page(measures=(4, 3))
+
+    from tests.kern_samples import kern
+
+    pitches = "cdefgabcd"
+    distinct = kern("**kern", "*clefG2", "*M3/4", *[r for i, p in enumerate(pitches) for r in (f"2.{p}", f"={i + 1}")], "*-")
+
+    def recognize(img, index, beams, tag=None):
+        return (distinct if index == 0 else melody(3)), False  # 9 ô khác nhau: không có khối lặp để bỏ
+
+    page, results, warnings = routing.recognize_by_systems(1, image, layout, recognize, 3, lambda: True)
+    assert results[0].attempts == 2
+    assert any("hệ 1: đọc ra 9 ô nhịp trong khi ảnh có 4 ô" in w for w in warnings)
+
+
+def test_off_by_one_is_tolerated_when_ranking_but_big_gaps_are_not():
+    from tests.kern_samples import melody
+
+    page = lambda n: merge.clean_page(1, melody(n))[0]  # noqa: E731
+    assert routing.score_page(page(5), 1, measures_expected=5).key() == routing.score_page(
+        page(6), 1, measures_expected=5
+    ).key()
+    assert routing.score_page(page(5), 1, measures_expected=5).key() > routing.score_page(
+        page(10), 1, measures_expected=5
+    ).key()
+
+
+def test_choose_prefers_systems_when_the_page_has_looped_measures():
+    from tests.kern_samples import melody
+
+    looped = merge.clean_page(1, melody(20))[0]
+    systems = merge.clean_page(1, melody(12))[0]
+    assert routing.choose(looped, systems, 1, systems_ok=1.0, measures=12)[0] == routing.SOURCE_SYSTEMS
+    assert routing.choose(looped, systems, 1, systems_ok=1.0)[0] == routing.SOURCE_PAGE  # không biết số ô: như cũ
+
+
+def test_loops_left_after_all_retries_are_trimmed():
+    from tests.kern_samples import kern
+
+    image, layout = melody_page(measures=(4, 3))
+    looped = kern("**kern", "*clefG2", "*M3/4", *("2f|4g|=1|2a|4f|=2".split("|") * 4), "*-")
+
+    def recognize(img, index, beams, tag=None):
+        if index == 0:
+            return looped, False  # 8 ô = khối (2 ô) lặp 4 lần; ảnh có 4 ô
+        from tests.kern_samples import melody
+
+        return melody(3), False
+
+    page, results, warnings = routing.recognize_by_systems(1, image, layout, recognize, 3, lambda: True)
+    assert routing.page_measures(results[0].page) == 4
+    assert any("hệ 1: model đọc lặp, đã bỏ 4 ô nhịp" in w for w in warnings)
+    assert routing.page_measures(page) == 7

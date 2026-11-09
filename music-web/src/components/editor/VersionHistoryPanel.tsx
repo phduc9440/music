@@ -5,6 +5,7 @@ import type { ScoreVersion } from '../../types/version';
 import { formatDateTime } from '../../utils/score';
 import Modal from '../scores/Modal';
 import MusicXmlViewer from '../scores/MusicXmlViewer';
+import VersionDiffView from './VersionDiffView';
 import { formatVersionSize, getVersionErrorMessage, versionSourceLabel } from './versionUtils';
 import './version.css';
 
@@ -30,6 +31,7 @@ export default function VersionHistoryPanel({ scoreId, canEdit, dirty, busy, onR
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<number | null>(null);
   const [restoring, setRestoring] = useState<number | null>(null);
+  const [compare, setCompare] = useState<{ version: number; base?: number } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -53,6 +55,21 @@ export default function VersionHistoryPanel({ scoreId, canEdit, dirty, busy, onR
     setRestoring(null);
     if (done) onClose();
   };
+
+  const hasOmr = versions?.some((v) => v.source === 'OMR') ?? false;
+
+  if (compare !== null) {
+    return (
+      <Modal title={`So sánh phiên bản ${compare.version}`} onClose={onClose} className="vh-modal--wide">
+        <VersionDiffView scoreId={scoreId} version={compare.version} base={compare.base} />
+        <div className="sc-modal__actions">
+          <button className="sc-btn" onClick={() => setCompare(null)}>
+            Quay lại danh sách
+          </button>
+        </div>
+      </Modal>
+    );
+  }
 
   if (preview !== null) {
     const target = versions?.find((v) => v.version === preview);
@@ -93,36 +110,52 @@ export default function VersionHistoryPanel({ scoreId, canEdit, dirty, busy, onR
         <>
           <p className="vh-hint">Chỉ giữ 20 phiên bản mới nhất. Khôi phục không xóa các phiên bản hiện có.</p>
           <ul className="vh-list">
-            {versions.map((v) => (
-              <li key={v.version} className={`vh-item${v.isCurrent ? ' is-current' : ''}`}>
-                <div className="vh-item__main">
-                  <div className="vh-item__title">
-                    <strong>Phiên bản {v.version}</strong>
-                    {v.isCurrent && <span className="vh-badge vh-badge--current">Hiện tại</span>}
-                    <span className="vh-badge">{versionSourceLabel(v)}</span>
+            {versions.map((v, index) => {
+              const previous = versions[index + 1]; // danh sách mới nhất trước nên bản kế tiếp là bản trước đó
+              return (
+                <li key={v.version} className={`vh-item${v.isCurrent ? ' is-current' : ''}`}>
+                  <div className="vh-item__main">
+                    <div className="vh-item__title">
+                      <strong>Phiên bản {v.version}</strong>
+                      {v.isCurrent && <span className="vh-badge vh-badge--current">Hiện tại</span>}
+                      <span className="vh-badge">{versionSourceLabel(v)}</span>
+                    </div>
+                    <div className="vh-item__meta">
+                      {formatDateTime(v.createdAt)} · {v.savedByName || '—'}
+                      {v.measureCount ? ` · ${v.measureCount} ô nhịp` : ''}
+                      {formatVersionSize(v.sizeBytes) ? ` · ${formatVersionSize(v.sizeBytes)}` : ''}
+                    </div>
                   </div>
-                  <div className="vh-item__meta">
-                    {formatDateTime(v.createdAt)} · {v.savedByName || '—'}
-                    {v.measureCount ? ` · ${v.measureCount} ô nhịp` : ''}
-                    {formatVersionSize(v.sizeBytes) ? ` · ${formatVersionSize(v.sizeBytes)}` : ''}
-                  </div>
-                </div>
-                <div className="vh-item__actions">
-                  <button className="sc-btn sc-btn--sm" onClick={() => setPreview(v.version)}>
-                    Xem
-                  </button>
-                  {canEdit && !v.isCurrent && (
-                    <button
-                      className="sc-btn sc-btn--sm"
-                      disabled={busy || restoring !== null}
-                      onClick={() => void restore(v.version)}
-                    >
-                      {restoring === v.version ? 'Đang khôi phục...' : 'Khôi phục'}
+                  <div className="vh-item__actions">
+                    <button className="sc-btn sc-btn--sm" onClick={() => setPreview(v.version)}>
+                      Xem
                     </button>
-                  )}
-                </div>
-              </li>
-            ))}
+                    {hasOmr && v.source !== 'OMR' && (
+                      <button className="sc-btn sc-btn--sm" onClick={() => setCompare({ version: v.version })}>
+                        So với bản OMR
+                      </button>
+                    )}
+                    {previous && (
+                      <button
+                        className="sc-btn sc-btn--sm"
+                        onClick={() => setCompare({ version: v.version, base: previous.version })}
+                      >
+                        So với bản trước
+                      </button>
+                    )}
+                    {canEdit && !v.isCurrent && (
+                      <button
+                        className="sc-btn sc-btn--sm"
+                        disabled={busy || restoring !== null}
+                        onClick={() => void restore(v.version)}
+                      >
+                        {restoring === v.version ? 'Đang khôi phục...' : 'Khôi phục'}
+                      </button>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         </>
       )}

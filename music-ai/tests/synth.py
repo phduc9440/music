@@ -51,12 +51,14 @@ def make_vocal_page(
     stray_line=False,
     drop_line=False,
     seed=0,
+    bars=0,
 ) -> np.ndarray:
     """Trang giọng hát + piano: mỗi hệ ``staves`` khuông, khuông trên cùng có "lời ca" bên dưới.
 
     ``brace_pair``: chỉ số khuông trên của cặp có ngoặc ở lề trái (mặc định hai khuông dưới cùng). ``connector``: vạch hệ
     nối mọi khuông ở lề trái. ``first_staves``: số khuông của hệ đầu (giấu khuông trống ở đoạn dạo đầu). ``stray_line``:
     một nét ngang dài (như dòng 8va) giữa hai khuông piano. ``drop_line``: xóa một dòng kẻ của khuông giọng hát hệ đầu.
+    ``bars``: số ô mỗi hệ (0 = không vẽ vạch nhịp); vạch của cặp piano nối liền hai khuông, khuông khác vạch riêng.
     """
     rng = np.random.default_rng(seed)
     page = np.full((height, width), 255, np.uint8)
@@ -91,7 +93,76 @@ def make_vocal_page(
             y_top, y_bottom = bases[pair], bases[pair + 1] + 4 * spacing
             center = ((left - 22), (y_top + y_bottom) // 2)
             cv2.ellipse(page, center, (12, (y_bottom - y_top) // 2), 0, 90, 270, 0, 5)
+        if bars:
+            step = (right - left - 140) // 12
+            spots = [left + 90 + int((k + 0.5) * step) for k in range(12)]
+            xs = [spots[round((i + 1) * 12 / bars) - 1] for i in range(bars - 1)] + [right]
+            pair = brace_pair if brace_pair is not None else count - 2
+            for x in xs:
+                index = 0
+                while index < count:
+                    if index == pair and index + 1 < count:
+                        cv2.line(page, (x, bases[index]), (x, bases[index + 1] + 4 * spacing), 0, 2)
+                        index += 2
+                    else:
+                        cv2.line(page, (x, bases[index]), (x, bases[index] + 4 * spacing), 0, 2)
+                        index += 1
         if stray_line and count >= 3:
             y = (bases[-2] + 4 * spacing + bases[-1]) // 2
             cv2.line(page, (left + 300, y), (right - 100, y), 0, 2)
+    return page
+
+
+def make_melody_page(
+    width=1700, height=2400, measures=(4, 5, 3), close_last=True, final_double=True, seed=0
+) -> np.ndarray:
+    """Trang giai điệu một khuông có vạch nhịp: hệ thứ ``i`` có ``measures[i]`` ô.
+
+    Mỗi ô có một nốt trắng với thân nốt dài **phủ kín chiều cao khuông** (đầu nốt rỗng ở dòng kẻ dưới, thân lên tới dòng
+    kẻ trên: dễ bị nhầm là vạch nhịp), một nốt đen thân ngắn và một nốt móc đơn có cờ. ``close_last=False``: hệ cuối không
+    có vạch nhịp ở mép phải. ``final_double``: hệ cuối kết thúc bằng vạch kết (mảnh + dày).
+    """
+    rng = np.random.default_rng(seed)
+    page = np.full((height, width), 255, np.uint8)
+    spacing = 16
+    left, right = int(width * 0.08), int(width * 0.94)
+    top = int(height * 0.08)
+    system_height = int((height * 0.84) / max(1, len(measures)))
+    for s, count in enumerate(measures):
+        base = top + s * system_height
+        bottom = base + 4 * spacing
+        for line in range(5):
+            cv2.line(page, (left, base + line * spacing), (right, base + line * spacing), 0, 2)
+        # khóa Sol giả: nét dọc vượt khỏi khuông (không được tính là vạch nhịp)
+        cv2.line(page, (left + 30, base - 2 * spacing), (left + 30, bottom + spacing), 0, 4)
+        start = left + 120
+        width_m = (right - start) / count
+        for m in range(count):
+            x = int(start + m * width_m)
+            # nốt trắng: đầu rỗng trên dòng kẻ dưới, thân phủ kín khuông
+            hx = x + int(width_m * 0.2)
+            cv2.ellipse(page, (hx, bottom), (10, 7), -20, 0, 360, 0, 2)
+            cv2.line(page, (hx + 9, bottom), (hx + 9, base), 0, 2)
+            # nốt đen thân ngắn
+            qx = x + int(width_m * 0.45)
+            qy = base + int(rng.integers(1, 4)) * spacing
+            cv2.ellipse(page, (qx, qy), (10, 7), -20, 0, 360, 0, -1)
+            cv2.line(page, (qx + 9, qy), (qx + 9, qy - 3 * spacing), 0, 2)
+            # nốt móc đơn có cờ
+            ex = x + int(width_m * 0.7)
+            ey = base + 2 * spacing
+            cv2.ellipse(page, (ex, ey), (10, 7), -20, 0, 360, 0, -1)
+            cv2.line(page, (ex + 9, ey), (ex + 9, ey - 3 * spacing), 0, 2)
+            cv2.line(page, (ex + 9, ey - 3 * spacing), (ex + 22, ey - spacing), 0, 3)
+            # vạch nhịp ở cuối ô (ô cuối của hệ cuối có thể không có)
+            bx = int(start + (m + 1) * width_m) - 6
+            last = m == count - 1
+            if last and s == len(measures) - 1:
+                if not close_last:
+                    continue
+                if final_double:
+                    cv2.line(page, (bx - 10, base), (bx - 10, bottom), 0, 2)
+                    cv2.line(page, (bx, base), (bx, bottom), 0, 6)
+                    continue
+            cv2.line(page, (bx, base), (bx, bottom), 0, 2)
     return page

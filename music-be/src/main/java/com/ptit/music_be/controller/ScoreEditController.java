@@ -20,10 +20,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ptit.music_be.dto.response.ApiResponse;
 import com.ptit.music_be.dto.response.ScoreContent;
+import com.ptit.music_be.dto.response.ScoreDiffResponse;
 import com.ptit.music_be.dto.response.ScoreSaveResponse;
 import com.ptit.music_be.dto.response.ScoreVersionResponse;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.service.ScoreDiffService;
 import com.ptit.music_be.service.ScoreEditService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -43,6 +45,7 @@ import lombok.experimental.NonFinal;
 public class ScoreEditController {
 
     ScoreEditService scoreEditService;
+    ScoreDiffService scoreDiffService;
 
     @NonFinal
     @Value("${app.editor.max-musicxml-bytes:5242880}")
@@ -102,6 +105,25 @@ public class ScoreEditController {
                 .eTag("\"v" + content.version() + "\"")
                 .cacheControl(CacheControl.noCache())
                 .body(content.bytes());
+    }
+
+    @GetMapping("/scores/{scoreId}/versions/{version}/diff")
+    @Operation(
+            summary = "So sánh một phiên bản MusicXML với bản gốc (mặc định là bản do nhận diện sinh ra)",
+            description = "Đo công sửa sau khi số hóa: ô giữ nguyên, ô sửa, ô OMR sinh thừa (deleted), ô OMR bỏ sót"
+                    + " (added) và lỗi nốt theo loại. Tham số base là version gốc, bỏ trống thì dùng bản OMR. Kết quả"
+                    + " được lưu để lần sau trả ngay (cached = true). Errors: 2001, 1002, 2801, 2901 không có bản gốc,"
+                    + " 2902 trùng version, 2903 không đọc được MusicXML, 2103 music-ai không khả dụng",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<ScoreDiffResponse> diffVersion(
+            @PathVariable String scoreId,
+            @PathVariable int version,
+            @Parameter(description = "Version gốc để so; bỏ trống thì dùng bản do OMR sinh ra")
+                    @RequestParam(required = false)
+                    Integer base) {
+        return ApiResponse.<ScoreDiffResponse>builder()
+                .result(scoreDiffService.diff(scoreId, version, base))
+                .build();
     }
 
     @PostMapping("/scores/{scoreId}/versions/{version}/restore")

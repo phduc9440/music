@@ -329,3 +329,138 @@ def test_systems_missing_voice_are_read_by_roles_through_the_pipeline(storage_ro
     assert page["chosen"] == "systems" and page["roleSplit"] == 2 and page["systemsOk"] == 2
     assert data["spines"] == 3 and data["staffRoles"] == ["SINGLE", "PIANO", "PIANO"]
     assert any("đọc riêng từng nhóm khuông" in w for w in data["warnings"])
+
+
+# ------------------------------------------------------------------ số ô nhịp theo vạch nhịp trên ảnh
+
+
+def melody_job(root, score, measures=(4, 5, 3)):
+    from tests.synth import make_melody_page
+
+    write_images(root, score, [make_melody_page(measures=measures)])
+    return job_for(score, 1)
+
+
+def test_page_with_looped_measures_is_recognized_again_by_systems(storage_root, java):
+    from tests.kern_samples import melody
+
+    job = melody_job(storage_root, "m1")
+    # cả trang: đúng 1 khuông nhưng lặp thành 20 ô; từng hệ: đúng 4, 5, 3 ô như trên ảnh
+    recognizer = FakeRecognizer([melody(20), melody(4), melody(5), melody(3)])
+    run(job, recognizer)
+
+    assert java.endpoints()[-1] == "complete" and "fail" not in java.endpoints()
+    assert len(recognizer.calls) == 1 + 3
+    data = java.bodies("complete")[0]["resultData"]
+    page = data["routing"]["pages"][0]
+    assert page["chosen"] == "systems"
+    # lượt cả trang bị dừng sớm ở vạch nhịp thứ 18 (giới hạn 12 + 4)
+    assert page["expectedMeasures"] == 12 and page["primaryMeasures"] == 18 and page["chosenMeasures"] == 12
+    assert any("18 ô nhịp trong khi ảnh có 12 ô" in w for w in data["warnings"])
+    assert not any("dừng khi vượt" in w for w in data["warnings"])  # cảnh báo của lượt cả trang được thay
+    assert java.bodies("complete")[0]["scoreMetadata"]["measureCount"] == 12
+
+
+def test_routing_bars_off_keeps_the_page_and_warns(storage_root, java, monkeypatch):
+    from tests.kern_samples import melody
+
+    monkeypatch.setenv("OMR_ROUTING_BARS", "0")
+    config.get_settings.cache_clear()
+    job = melody_job(storage_root, "m2")
+    recognizer = FakeRecognizer([melody(20)])
+    run(job, recognizer)
+    assert len(recognizer.calls) == 1
+    data = java.bodies("complete")[0]["resultData"]
+    assert any("đọc được 20 ô nhịp trong khi ảnh có 12 ô (thừa 8 ô" in w for w in data["warnings"])
+
+
+def test_page_matching_the_image_is_not_recognized_again(storage_root, java):
+    from tests.kern_samples import melody
+
+    job = melody_job(storage_root, "m3")
+    recognizer = FakeRecognizer([melody(12)])
+    run(job, recognizer)
+    assert len(recognizer.calls) == 1
+    data = java.bodies("complete")[0]["resultData"]
+    assert data["routing"]["pages"] == []
+    assert not any("ô nhịp trong khi ảnh có" in w for w in data["warnings"])
+
+
+def test_looping_page_is_stopped_early_then_recognized_by_systems(storage_root, java):
+    from tests.kern_samples import melody
+
+    job = melody_job(storage_root, "m4")
+    recognizer = FakeRecognizer([melody(60), melody(4), melody(5), melody(3)])
+    run(job, recognizer)
+    # 12 ô trên ảnh: cả trang được sinh tối đa 12 + 4 vạch; từng hệ tối đa số ô của hệ + 3
+    assert recognizer.limits == [16, 7, 8, 6]
+    first = (storage_root / "scores/m4/kern/page-001.krn").read_text(encoding="utf-8")
+    assert sum(1 for line in first.splitlines() if line.startswith("=")) == 18  # cắt ngay sau vạch thứ 16 + 2
+    data = java.bodies("complete")[0]["resultData"]
+    assert data["routing"]["pages"][0]["chosen"] == "systems"
+    assert data["routing"]["pages"][0]["chosenMeasures"] == 12
+
+
+def test_no_limit_without_trusted_barlines(storage_root, java):
+    job = setup_pages(storage_root, "m5", 1)
+    recognizer = FakeRecognizer([PAGE_1])
+    run(job, recognizer)
+    assert recognizer.limits == [None]
+
+
+def test_loops_are_trimmed_on_the_page_when_there_is_no_time_to_route(storage_root, java, monkeypatch):
+    monkeypatch.setenv("ROUTING_RESERVE_S", "100000")
+    config.get_settings.cache_clear()
+    job = melody_job(storage_root, "m6")
+    head = [r for i, p in enumerate("cdefga") for r in (f"2.{p}", f"={i + 1}")]
+    loop = ["2f", "4g", "=", "2a", "4f", "="] * 5  # khối 2 ô lặp 5 lần: 6 + 10 = 16 ô, ảnh có 12
+    recognizer = FakeRecognizer([kern("**kern", "*clefG2", "*M3/4", *head, *loop, "*-")])
+    run(job, recognizer)
+    data = java.bodies("complete")[0]["resultData"]
+    page = data["routing"]["pages"][0]
+    assert page["skipped"] == "không đủ thời gian" and page["chosenMeasures"] == 12
+    assert any("model đọc lặp, đã bỏ 4 ô nhịp" in w for w in data["warnings"])
+    assert java.bodies("complete")[0]["scoreMetadata"]["measureCount"] == 12
+
+
+def test_measure_map_places_each_measure_on_the_page_image(storage_root, java):
+    from tests.kern_samples import melody
+
+    job = melody_job(storage_root, "m7")
+    run(job, FakeRecognizer([melody(12)]))
+    data = java.bodies("complete")[0]["resultData"]
+    check = data["measureCheck"]
+    assert check["imageMeasures"] == 12 and check["kernMeasures"] == 12 and check["pagesRerouted"] == 0
+    assert check["pages"] == [{"page": 1, "imageMeasures": 12, "kernMeasures": 12}]
+    entries = data["measureMap"]
+    assert [e["measure"] for e in entries] == list(range(1, 13))
+    assert [e["system"] for e in entries] == [1] * 4 + [2] * 5 + [3] * 3
+    assert all(e["flags"] == [] for e in entries)
+    boxes = [e["box"] for e in entries]
+    assert all(b[0] < b[2] and b[1] < b[3] for b in boxes)
+    assert boxes[0][2] == boxes[1][0]  # ô liền nhau chung vạch nhịp
+    assert boxes[3][1] < boxes[4][1]  # hệ 2 nằm dưới hệ 1
+
+
+def test_measure_map_after_routing_and_flags(storage_root, java):
+    from tests.kern_samples import melody
+
+    bad_system = melody(5).replace("4g\n=2", "4g\n4a\n=2")  # ô 1 của hệ 2 thừa trường độ
+    job = melody_job(storage_root, "m8")
+    run(job, FakeRecognizer([melody(20), melody(4), bad_system, melody(2)]))
+    data = java.bodies("complete")[0]["resultData"]
+    entries = data["measureMap"]
+    assert data["measureCheck"]["pagesRerouted"] == 1 and len(entries) == 11
+    assert [e["system"] for e in entries] == [1] * 4 + [2] * 5 + [3] * 2
+    assert "DURATION" in entries[4]["flags"]
+    # hệ 3 đọc ra 2 ô trong khi ảnh có 3: chỉ khoanh cả hệ và đánh dấu lệch số ô
+    last = entries[-1]
+    assert last["flags"] == ["COUNT_MISMATCH"] and last["box"] == entries[-2]["box"]
+
+
+def test_measure_map_without_trusted_barlines_has_pages_only(storage_root, java):
+    job = setup_pages(storage_root, "m9", 1)
+    run(job, FakeRecognizer([PAGE_1]))
+    data = java.bodies("complete")[0]["resultData"]
+    assert data["measureCheck"]["imageMeasures"] is None
+    assert all(e["page"] == 1 and e["system"] is None and e["box"] is None for e in data["measureMap"])
