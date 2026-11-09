@@ -675,7 +675,9 @@ def reread_by_measures(
             return page, reads  # không biết lấy ô nào thay cho ô k: bỏ cả lượt sửa
     body = [line for chunk in chunks for line in chunk]
     candidate = merge.PageKern(number=page.number, header=page.header, body=body)
-    if _rank(candidate, 1, judge) > _rank(page, 1, judge):
+    new, old = _score(candidate, 1, judge), _score(page, 1, judge)
+    # So độ lệch ô THẲNG (không nới MEASURE_TOLERANCE như xếp hạng): đọc lại từng ô chính là để tìm đúng số ô trên ảnh
+    if (new.measure_gap, -new.measure_ratio) < (old.measure_gap, -old.measure_ratio):
         return candidate, reads
     return page, reads
 

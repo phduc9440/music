@@ -452,3 +452,19 @@ def test_reread_does_nothing_when_the_system_is_already_good():
 
     judge = routing.Judge(False, False, "*M2/4", 2)
     assert routing.reread_by_measures(1, 0, gray, layout, (0, 200), good, recognize, lambda: True, 24, judge) == (good, 0)
+
+
+def test_reread_recovers_a_missing_last_measure():
+    layout = _bar_layout(4)
+    gray = np.full((TARGET_H, TARGET_W), 255, dtype=np.uint8)
+    whole = _page_of("*clefG2\n*M2/4\n4dd\n4dd\n=\n8ff\n8ee\n8dd\n8bb\n=\n2cc\n=\n")  # thiếu ô cuối
+    full = "*clefG2\n*M2/4\n4dd\n4dd\n=\n8ff\n8ee\n8dd\n8bb\n=\n2cc\n=\n4.cc\n=\n"
+
+    def recognize(img, index, beams, tag=None):
+        k = int(tag[1:])
+        bars = full.split("=\n")[:k]
+        return "=\n".join(bars) + "=\n", False
+
+    judge = routing.Judge(False, True, "*M2/4", 4)
+    fixed, _ = routing.reread_by_measures(1, 0, gray, layout, (0, 200), whole, recognize, lambda: True, 24, judge)
+    assert fixed is not whole and merge.count_measures(fixed.body) == 4
