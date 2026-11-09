@@ -513,13 +513,14 @@ def _ensure_clef_numbers(part: ET.Element) -> None:
 
 
 def _drop_repeated_signatures(part: ET.Element) -> None:
-    """Bỏ ``<time>`` và ``<key>`` lặp lại đúng giá trị đang hiệu lực (kern ghép nhiều trang/hệ có dòng ``*M3/4`` ở mỗi chỗ
-    nối nên music21 in lại số chỉ nhịp ở đầu mỗi hệ). Chỉ đổi nhịp/dấu hóa thật mới được giữ. Ô nhịp đầu luôn giữ nguyên.
+    """Bỏ ``<time>``, ``<key>`` và ``<clef>`` lặp lại đúng giá trị đang hiệu lực (kern ghép nhiều trang/hệ có dòng
+    ``*M3/4``, ``*clefG2`` ở mỗi chỗ nối nên music21 in lại số chỉ nhịp, khóa nhạc ở đầu mỗi hệ). Chỉ đổi nhịp/dấu hóa/khóa
+    thật mới được giữ. Ô nhịp đầu luôn giữ nguyên.
     ``<attributes>`` rỗng sau khi bỏ cũng được xóa."""
     current: dict[tuple[str, Optional[str]], bytes] = {}
     for index, measure in enumerate(part.findall("measure")):
         for attributes in measure.findall("attributes"):
-            for tag in ("time", "key"):
+            for tag in ("time", "key", "clef"):
                 for element in attributes.findall(tag):
                     key = (tag, element.get("number"))
                     signature = ET.tostring(_without_tail(element))

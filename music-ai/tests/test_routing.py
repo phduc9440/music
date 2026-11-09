@@ -468,3 +468,50 @@ def test_reread_recovers_a_missing_last_measure():
     judge = routing.Judge(False, True, "*M2/4", 4)
     fixed, _ = routing.reread_by_measures(1, 0, gray, layout, (0, 200), whole, recognize, lambda: True, 24, judge)
     assert fixed is not whole and merge.count_measures(fixed.body) == 4
+
+
+def test_whole_page_tail_replaces_wrong_system_reads_but_keeps_good_ones():
+    from types import SimpleNamespace
+
+    counts = [2, 2, 2]
+    layout = SimpleNamespace(systems=[SimpleNamespace(staves=[1], measures=c) for c in counts])
+    judges = [routing.Judge(i == 0, i == 2, "*M2/4", c) for i, c in enumerate(counts)]
+
+    def system(text):
+        return routing.SystemResult(_page_of(text), 1)
+
+    good1 = system("*clefG2\n*M2/4\n4a\n4b\n=\n2c\n=\n")
+    lost2 = system("*clefG2\n4d\n4e\n4f\n=\n2g\n=\n")  # rơi nốt ở ô đầu: ô 3/4
+    short3 = system("*clefG2\n4a\n4a\n=\n")  # chỉ 1 ô, ảnh có 2
+    results = [good1, lost2, short3]
+    whole = _page_of(
+        "*clefG2\n*M2/4\n4a\n4b\n=\n2c\n=\n2c\n=\n4d\n4e\n=\n2g\n=\n4a\n4a\n=\n2b\n=\n"  # thừa 1 ô ở đầu (lặp)
+    )
+    routing.graft_whole_tail(results, layout, judges, whole)
+    assert results[0] is good1  # hệ đúng rồi thì giữ nguyên
+    assert [r.method for r in results[1:]] == ["whole", "whole"]
+    assert [routing.page_measures(r.page) for r in results] == [2, 2, 2]
+
+
+def test_whole_page_tail_stops_when_a_slice_is_not_good():
+    from types import SimpleNamespace
+
+    layout = SimpleNamespace(systems=[SimpleNamespace(staves=[1], measures=2) for _ in range(2)])
+    judges = [routing.Judge(False, True, "*M2/4", 2) for _ in range(2)]
+    broken = routing.SystemResult(_page_of("*clefG2\n*M2/4\n4a\n=\n"), 1)
+    results = [broken, broken]
+    whole = _page_of("*clefG2\n*M2/4\n4a\n4b\n4c\n=\n2c\n=\n4a\n4b\n=\n2c\n=\n")
+    routing.graft_whole_tail(results, layout, judges, whole)
+    assert [r.method for r in results] == ["system", "whole"]
+
+
+def test_whole_page_tail_is_not_used_when_the_page_is_a_runaway_loop():
+    from types import SimpleNamespace
+
+    layout = SimpleNamespace(systems=[SimpleNamespace(staves=[1], measures=2) for _ in range(2)])
+    judges = [routing.Judge(False, True, "*M2/4", 2) for _ in range(2)]
+    short = routing.SystemResult(_page_of("*clefG2\n*M2/4\n4a\n4b\n=\n"), 1)
+    results = [short, short]
+    loop = "*clefG2\n*M2/4\n" + "4a\n4b\n=\n" * 8  # một ô lặp 8 lần
+    routing.graft_whole_tail(results, layout, judges, _page_of(loop))
+    assert [r.method for r in results] == ["system", "system"]

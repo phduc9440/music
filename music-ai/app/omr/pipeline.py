@@ -515,6 +515,7 @@ def _route_pages(
                 max_repeat=settings.max_repeat_lines,
                 meter=next((m for m in map(routing.page_meter, primary.values()) if m), None),
                 use_bars=settings.routing_bars,
+                whole=before,
             )
         except _RoutingAbort as exc:
             report.skipped = str(exc)

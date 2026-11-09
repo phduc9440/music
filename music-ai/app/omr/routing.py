@@ -386,20 +386,26 @@ def recognize_by_systems(
     max_repeat: int = 24,
     meter: Optional[str] = None,
     use_bars: bool = True,
+    whole: Optional[merge.PageKern] = None,
 ) -> tuple[Optional[merge.PageKern], list[SystemResult], list[str]]:
     """Nhận diện lại trang ``number`` theo từng hệ. Trả ``(kern_trang, kết_quả_từng_hệ, cảnh_báo)``.
 
     ``kern_trang`` là None nếu không hệ nào đọc được. ``can_retry()`` False thì không thử lại bằng beam search (hết thời
     gian). ``meter``: token ``*M4/4`` đã biết của bài (hệ ở giữa bài không tự có dòng này). ``use_bars``: dùng số ô
-    từng hệ đếm trên ảnh để chấm và thử lại. Hủy job hoặc hết hạn từ ``recognize`` được để nguyên cho bên gọi xử lý.
+    từng hệ đếm trên ảnh để chấm và thử lại. ``whole``: kết quả đọc cả trang trước đó (nếu có), dùng để lấy lại các hệ
+    cuối mà nó đọc đúng hơn (:func:`graft_whole_tail`). Hủy job hoặc hết hạn từ ``recognize`` được để nguyên cho bên gọi
+    xử lý.
     """
     warnings: list[str] = []
     results: list[SystemResult] = []
+    judges: list[Judge] = []
     for index, (system, band) in enumerate(zip(layout.systems, system_bands(layout))):
         judge = _judge(number, index, layout, meter, use_bars)
+        judges.append(judge)
         result = _recognize_one(number, index, gray, layout, band, recognize, retry_beams, can_retry, max_repeat, judge)
         results.append(result)
         meter = page_meter(result.page) or meter  # hệ sau được chấm theo số chỉ nhịp đã thấy
+    graft_whole_tail(results, layout, judges, whole)
 
     fixed: list[merge.PageKern] = []
     for index, (system, result) in enumerate(zip(layout.systems, results), start=1):
@@ -680,6 +686,63 @@ def reread_by_measures(
     if (new.measure_gap, -new.measure_ratio) < (old.measure_gap, -old.measure_ratio):
         return candidate, reads
     return page, reads
+
+
+def graft_whole_tail(
+    results: list[SystemResult], layout: PageLayout, judges: list[Judge], whole: Optional[merge.PageKern]
+) -> None:
+    """Lấy lại từ kết quả đọc cả trang những hệ cuối mà nó đọc đúng còn đọc theo hệ thì sai (sửa ``results`` tại chỗ).
+
+    Model đọc cả trang đôi khi "lạc" ở đầu trang (lặp lại hệ đầu) nhưng các hệ cuối lại đúng, trong khi đọc riêng từng hệ
+    lại làm rơi nốt hoặc ô nhịp. Biết số ô từng hệ trên ảnh nên chia từ CUỐI trang lên: ``c`` ô cuối là hệ cuối,
+    ``c'`` ô trước đó là hệ kế... Mỗi đoạn chỉ được dùng khi nó tự đủ ``c`` ô, đúng trường độ và tốt hơn kết quả theo hệ
+    (đoạn nào không đạt thì dừng, vì từ đó trở lên không còn chắc thẳng hàng).
+    """
+    if whole is None or len(results) != len(layout.systems) or not results:
+        return
+    counts = [j.measures for j in judges]
+    if any(c is None for c in counts):
+        return
+    if any(len(sy.staves) != whole.spines for sy in layout.systems):
+        return
+    if any(line.startswith("*") and len(line.split(merge.TAB)) != whole.spines for line in whole.body):
+        return  # có tách/gộp spine: không chia theo ô nhịp được
+    chunks = merge.split_measures(whole.body)
+    if len(chunks) != merge.count_measures(whole.body):
+        return
+    # Kết quả cả trang chứa các ô lặp giống hệt nhau liền kề là model chạy "lạc" (runaway): phần cuối của nó cũng không
+    # đáng tin, chỉ lấy khi lỗi của nó khu trú ở đầu trang (lặp lại hệ đầu bằng bản đọc hơi khác, không giống hệt)
+    if merge.drop_repeated_blocks(whole, sum(int(c) for c in counts))[1]:  # type: ignore[arg-type]
+        return
+    end = len(chunks)
+    for index in range(len(results) - 1, -1, -1):
+        count = int(counts[index])  # type: ignore[arg-type]
+        if count <= 0 or end - count < 0:
+            return
+        body = [line for chunk in chunks[end - count : end] for line in chunk]
+        piece = merge.PageKern(number=whole.number, header=whole.header, body=body)
+        target = len(layout.systems[index].staves)
+        judge = judges[index]
+        if not _is_good(piece, target, judge):
+            return
+        current = results[index].page
+        better = current is None
+        if not better:
+            new, old = _score(piece, target, judge), _score(current, target, judge)
+            # So độ lệch ô thẳng (không nới MEASURE_TOLERANCE): đoạn này đã đúng số ô trên ảnh
+            better = _rank(piece, target, judge) > _rank(current, target, judge) or (
+                new.measure_gap,
+                -new.measure_ratio,
+            ) < (old.measure_gap, -old.measure_ratio)
+        if better:
+            results[index] = SystemResult(
+                piece,
+                results[index].attempts,
+                "whole",
+                results[index].warnings
+                + [f"Trang {whole.number}, hệ {index + 1}: dùng phần kết quả đọc cả trang vì đúng số ô và trường độ hơn"],
+            )
+        end -= count
 
 
 def _accept_roles(
