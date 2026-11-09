@@ -52,6 +52,8 @@ const PATHS = {
   ),
   activity: <path d="M3 12h4l3-8 4 16 3-8h4" />,
   menu: <path d="M4 6h16M4 12h16M4 18h16" />,
+  play: <path d="M7 4.5v15l12-7.5z" />,
+  edit: <path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4" />,
   bell: (
     <>
       <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />

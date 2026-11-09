@@ -1,7 +1,8 @@
 import AuthImage from './AuthImage';
 import StatusBadge from './StatusBadge';
-import { ACCESS_LEVEL_LABELS, DIFFICULTY_LABELS, SOURCE_LABELS, VISIBILITY_LABELS, formatRelative } from '../../utils/score';
+import { ACCESS_LEVEL_LABELS, DIFFICULTY_LABELS, SOURCE_LABELS, formatRelative } from '../../utils/score';
 import type { ScoreSummary } from '../../types';
+import VisibilityBadge from './VisibilityBadge';
 
 interface Props {
   score: ScoreSummary;
@@ -20,6 +21,7 @@ export default function ScoreCard({ score, onOpen }: Props) {
     >
       <div className="sc-card__cover">
         <AuthImage src={score.thumbnailUrl} alt={score.title} className="sc-card__img" />
+        <VisibilityBadge value={score.visibility} className="sc-card__visibility" />
         <div className="sc-card__status">
           <StatusBadge status={score.processingStatus} />
         </div>
@@ -33,8 +35,9 @@ export default function ScoreCard({ score, onOpen }: Props) {
         <div className="sc-card__chips">
           {score.sourceType && <span className="sc-chip sc-chip--accent">{SOURCE_LABELS[score.sourceType]}</span>}
           {score.difficulty && <span className="sc-chip">{DIFFICULTY_LABELS[score.difficulty]}</span>}
-          {score.accessLevel && <span className="sc-chip sc-chip--accent">{ACCESS_LEVEL_LABELS[score.accessLevel]}</span>}
-          {score.visibility !== 'PRIVATE' && <span className="sc-chip">{VISIBILITY_LABELS[score.visibility]}</span>}
+          {score.accessLevel && (
+            <span className="sc-chip sc-chip--accent">{ACCESS_LEVEL_LABELS[score.accessLevel]}</span>
+          )}
           {score.tags?.map((t) => (
             <span key={t.id} className="sc-chip sc-chip--tag">
               {t.name}
