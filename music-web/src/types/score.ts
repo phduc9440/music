@@ -338,3 +338,11 @@ export interface PracticeSkills {
   speed: number;
   diligence: number;
 }
+
+// Thể loại kèm số bản nhạc đang dùng, BE: AdminTagResponse
+export interface AdminTag {
+  id: string;
+  name: string;
+  slug: string;
+  scoreCount: number;
+}

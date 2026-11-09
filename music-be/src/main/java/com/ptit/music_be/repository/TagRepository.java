@@ -17,4 +17,8 @@ public interface TagRepository extends JpaRepository<Tag, String> {
     boolean existsByName(String name);
 
     boolean existsBySlug(String slug);
+
+    boolean existsByNameIgnoreCaseAndIdNot(String name, String id);
+
+    boolean existsBySlugAndIdNot(String slug, String id);
 }
