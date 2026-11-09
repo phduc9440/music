@@ -70,3 +70,18 @@ def test_layout_json_has_measure_fields():
     assert [s["measures"] for s in data["systems"]] == [2, 3]
     assert all(s["barsClosed"] for s in data["systems"])
     assert all(len(s["barlines"]) == s["measures"] for s in data["systems"])
+
+
+def test_closing_barline_beyond_a_shortened_staff_is_kept():
+    # bản quét cũ: dòng kẻ của một hệ đứt sớm hơn vạch kết; mép phải theo các hệ khác của trang
+    image = page_image(make_melody_page(measures=(3, 3)))
+    layout = analyze_layout(image)
+    assert layout.measure_counts == [3, 3]
+    system = layout.systems[1]
+    top, bottom = int(system.top), int(system.bottom)
+    last = system.barlines[-1]
+    broken = image.copy()
+    broken[top - 2 : bottom + 3, last - 40 : last - 4] = 0 if image.max() == 1 else 255  # xóa đoạn dòng kẻ cuối hệ
+    after = analyze_layout(broken)
+    assert after.measure_counts == [3, 3]
+    assert after.systems[1].bars_closed

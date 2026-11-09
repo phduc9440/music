@@ -46,6 +46,9 @@ _LEFT_SKIP = 0.6
 _OVERSHOOT = 0.6
 """Mực kéo dài ra ngoài khuông quá bấy nhiêu khoảng dòng kẻ (mà không nối sang khuông kề) thì là thân nốt."""
 
+_OUTER_OVERSHOOT = 1.3
+"""Vạch đã nối sang khuông kề ở một đầu thì đầu còn lại (nếu là mép ngoài của hệ) được lấn ra ngoài khuông tới bấy nhiêu."""
+
 _MERGE = 1.6
 """Hai vạch (của các khuông khác nhau trong hệ) cách nhau không quá bấy nhiêu khoảng dòng kẻ là cùng một vạch."""
 
@@ -61,6 +64,16 @@ _HEAD_HEIGHT = 1.0
 
 _HEAD_OUTSIDE = 0.6
 """Ô góc lấn ra ngoài khuông bấy nhiêu khoảng dòng kẻ (đầu nốt nằm trên/dưới dòng kẻ ngoài cùng)."""
+
+_LINK_GAP = 1.0
+"""Vạch xuyên grand staff của bản quét cũ có thể đứt vài điểm ảnh trước khi chạm khuông kề: coi là nối liền nếu hở không
+quá bấy nhiêu khoảng dòng kẻ."""
+
+_WEAK_HEAD_INK = 0.15
+"""Ứng viên có mực ở các góc trong khoảng (``_HEAD_INK``, ``_WEAK_HEAD_INK``] là ứng viên yếu: ở khuông đông nốt (piano, nốt
+sát vạch) vạch thật cũng bị nốt kề đè vào các góc. Ứng viên yếu chỉ được tính khi một khuông khác của hệ có ứng viên chắc
+ở cùng vị trí và phải nối liền sang khuông kề (vạch xuyên grand staff), vì thân nốt, số chỉ nhịp hiếm khi nối liền hai
+khuông."""
 
 
 @dataclass
@@ -80,8 +93,10 @@ def annotate(layout: "PageLayout", ink: np.ndarray) -> None:
     if not layout.systems or layout.interline <= 0:
         return
     residue = _without_lines(ink)
+    # mép phải trang: dòng kẻ của bản quét cũ đứt sớm nên mép phải của từng khuông/hệ có thể thấp hơn vạch kết thật
+    page_right = max((staff.right for system in layout.systems for staff in system.staves), default=0.0)
     for system in layout.systems:
-        bars = detect_system(system, ink, residue, layout.interline)
+        bars = detect_system(system, ink, residue, layout.interline, page_right)
         system.barlines = bars.barlines
         system.measures = bars.measures
         system.bars_closed = bars.closed
@@ -98,30 +113,31 @@ def _without_lines(ink: np.ndarray) -> np.ndarray:
 
 
 def detect_system(
-    system: "System", ink: np.ndarray, residue: np.ndarray, interline: float
+    system: "System", ink: np.ndarray, residue: np.ndarray, interline: float, page_right: float = 0.0
 ) -> SystemBars:
-    """Vạch nhịp của một hệ. ``residue`` là mặt nạ mực đã bỏ dòng kẻ (:func:`_without_lines`)."""
-    candidates: list[tuple[float, int, bool]] = []
+    """Vạch nhịp của một hệ. ``residue`` là mặt nạ mực đã bỏ dòng kẻ (:func:`_without_lines`); ``page_right``: mép phải
+    xa nhất của các khuông trong trang."""
+    candidates: list[tuple[float, int, bool, bool]] = []
     staves = system.staves
     for index, staff in enumerate(staves):
         above = staves[index - 1] if index > 0 else None
         below = staves[index + 1] if index + 1 < len(staves) else None
-        for x, linked in _staff_candidates(staff, above, below, ink, residue, interline):
-            candidates.append((x, index, linked))
+        for x, linked, weak in _staff_candidates(staff, above, below, ink, residue, interline, page_right):
+            candidates.append((x, index, linked, weak))
     candidates.sort()
 
     clusters: list[dict] = []
-    for x, staff_index, linked in candidates:
-        if clusters and x - clusters[-1]["last"] <= _MERGE * interline:
-            cluster = clusters[-1]
-            cluster["last"] = x
-            cluster["staves"].add(staff_index)
-            cluster["linked"] = cluster["linked"] or linked
-        else:
-            clusters.append({"first": x, "last": x, "staves": {staff_index}, "linked": linked})
+    for x, staff_index, linked, weak in candidates:
+        if not (clusters and x - clusters[-1]["last"] <= _MERGE * interline):
+            clusters.append({"first": x, "last": x, "staves": set(), "strong": 0, "linked": False})
+        cluster = clusters[-1]
+        cluster["last"] = x
+        cluster["staves"].add(staff_index)
+        cluster["strong"] += 0 if weak else 1
+        cluster["linked"] = cluster["linked"] or linked
 
     need = (len(staves) + 1) // 2
-    kept = [c for c in clusters if len(c["staves"]) >= need or c["linked"]]
+    kept = [c for c in clusters if c["strong"] and (len(c["staves"]) >= need or c["linked"])]
     barlines = [int(round((c["first"] + c["last"]) / 2)) for c in kept]
     closed = bool(kept) and system.right - kept[-1]["last"] <= _MERGE * interline
     measures = len(kept) + (0 if closed else 1)
@@ -135,16 +151,17 @@ def _staff_candidates(
     ink: np.ndarray,
     residue: np.ndarray,
     interline: float,
-) -> list[tuple[float, bool]]:
-    """Ứng viên vạch nhịp của một khuông: ``(x giữa vạch, nối liền sang khuông kề)``."""
+    page_right: float = 0.0,
+) -> list[tuple[float, bool, bool]]:
+    """Ứng viên vạch nhịp của một khuông: ``(x giữa vạch, nối liền sang khuông kề, yếu)``."""
     height, width = ink.shape
     top, bottom = int(round(staff.top)), int(round(staff.bottom))
     if bottom <= top or top < 0 or bottom >= height:
         return []
     coverage = ink[top : bottom + 1, :].mean(axis=0)
-    # mép phải lấy theo khuông dài nhất của hệ: dòng kẻ của ảnh quét có thể đứt sớm làm một khuông trông ngắn hơn
-    right_edge = max(staff.right, above.right if above else 0, below.right if below else 0)
-    results: list[tuple[float, bool]] = []
+    # mép phải lấy theo khuông dài nhất của hệ và của trang: dòng kẻ của ảnh quét có thể đứt sớm làm khuông trông ngắn hơn
+    right_edge = max(staff.right, above.right if above else 0, below.right if below else 0, page_right)
+    results: list[tuple[float, bool, bool]] = []
     for x0, x1, parts in _bar_groups(_runs(np.flatnonzero(coverage >= _COVERAGE)), interline):
         if x1 - x0 + 1 > (_MAX_WIDTH if parts == 1 else _MAX_DOUBLE_WIDTH) * interline:
             continue
@@ -153,15 +170,23 @@ def _staff_candidates(
         column = ink[:, max(0, x0 - 1) : min(width, x1 + 2)].max(axis=1)
         up = _extent(column, top - 1, -1)
         down = _extent(column, bottom + 1, 1)
-        linked_up = above is not None and top - up <= above.bottom + 1
-        linked_down = below is not None and bottom + down >= below.top - 1
-        if up > _OVERSHOOT * interline and not linked_up:
+        linked_up = above is not None and top - up <= above.bottom + _LINK_GAP * interline
+        linked_down = below is not None and bottom + down >= below.top - _LINK_GAP * interline
+        linked = linked_up or linked_down
+        # đầu ngoài của vạch xuyên grand staff có thể lấn quá mép khuông một chút (vạch dày, mép khuông ước lượng lệch)
+        up_limit = (_OUTER_OVERSHOOT if linked and above is None else _OVERSHOOT) * interline
+        down_limit = (_OUTER_OVERSHOOT if linked and below is None else _OVERSHOOT) * interline
+        if up > up_limit and not linked_up:
             continue
-        if down > _OVERSHOOT * interline and not linked_down:
+        if down > down_limit and not linked_down:
             continue
-        if _head_ink(residue, top, bottom, x0, x1, interline) > _HEAD_INK:
+        head = _head_ink(residue, top, bottom, x0, x1, interline)
+        if head > _WEAK_HEAD_INK:
             continue
-        results.append(((x0 + x1) / 2, linked_up or linked_down))
+        weak = head > _HEAD_INK
+        if weak and not linked:  # số chỉ nhịp (hai số 4 chồng nhau) cũng phủ kín khuông: ứng viên yếu phải nối liền sang khuông kề
+            continue
+        results.append(((x0 + x1) / 2, linked, weak))
     return results
 
 
