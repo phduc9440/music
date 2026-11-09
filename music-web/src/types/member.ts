@@ -14,6 +14,26 @@ export interface Member {
   roles?: string[];
 }
 
+/** Khớp AdminMemberDetailResponse của BE. */
+export interface AdminMemberDetail {
+  member: Member;
+  scoreCount: number;
+  publicScores: number;
+  pendingScores: number;
+  playlistCount: number;
+  reviewCount: number;
+  practiceSessions: number;
+  practiceMinutes: number;
+  recentScores: {
+    id: string;
+    title: string;
+    composer?: string | null;
+    visibility: string;
+    isOfficial?: boolean | null;
+    updatedAt?: string | null;
+  }[];
+}
+
 /** Khớp entity MemberScore: quyền của người được chia sẻ bản nhạc. */
 export interface MemberScore {
   id: string;
