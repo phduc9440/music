@@ -1,4 +1,4 @@
-package com.ptit.music_be.service.impl;
+package com.ptit.music_be.service.library.impl;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -25,8 +25,8 @@ import com.ptit.music_be.repository.MemberRepository;
 import com.ptit.music_be.repository.PlaylistItemRepository;
 import com.ptit.music_be.repository.PlaylistRepository;
 import com.ptit.music_be.repository.ScoreRepository;
-import com.ptit.music_be.service.PlaylistService;
-import com.ptit.music_be.service.ScoreFileService;
+import com.ptit.music_be.service.library.PlaylistService;
+import com.ptit.music_be.service.score.ScoreFileService;
 import com.ptit.music_be.utils.SecurityUtils;
 
 import lombok.AccessLevel;

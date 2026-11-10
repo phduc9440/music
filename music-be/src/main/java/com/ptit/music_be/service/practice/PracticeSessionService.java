@@ -1,4 +1,4 @@
-package com.ptit.music_be.service;
+package com.ptit.music_be.service.practice;
 
 import com.ptit.music_be.dto.request.PracticeSessionRequest;
 import com.ptit.music_be.dto.response.PageResponse;

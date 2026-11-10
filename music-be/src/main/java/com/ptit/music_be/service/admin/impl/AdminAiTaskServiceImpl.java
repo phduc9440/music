@@ -23,7 +23,7 @@ import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.repository.AiTaskRepository;
 import com.ptit.music_be.service.admin.AdminAiTaskService;
-import com.ptit.music_be.service.OmrService;
+import com.ptit.music_be.service.ai.OmrService;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;

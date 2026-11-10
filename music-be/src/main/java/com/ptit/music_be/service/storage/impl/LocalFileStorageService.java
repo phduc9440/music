@@ -1,4 +1,4 @@
-package com.ptit.music_be.service.impl;
+package com.ptit.music_be.service.storage.impl;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service;
 
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
-import com.ptit.music_be.service.FileStorageService;
+import com.ptit.music_be.service.storage.FileStorageService;
 
 import lombok.extern.slf4j.Slf4j;
 

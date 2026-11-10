@@ -1,4 +1,4 @@
-package com.ptit.music_be.service;
+package com.ptit.music_be.service.ai;
 
 import java.nio.file.Path;
 import java.util.List;

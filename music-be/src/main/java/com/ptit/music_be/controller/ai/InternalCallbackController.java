@@ -1,4 +1,4 @@
-package com.ptit.music_be.controller;
+package com.ptit.music_be.controller.ai;
 
 import jakarta.validation.Valid;
 
@@ -13,7 +13,7 @@ import com.ptit.music_be.dto.request.AiTaskFailRequest;
 import com.ptit.music_be.dto.request.AiTaskFileRequest;
 import com.ptit.music_be.dto.request.AiTaskProgressRequest;
 import com.ptit.music_be.dto.response.ApiResponse;
-import com.ptit.music_be.service.InternalAiTaskService;
+import com.ptit.music_be.service.ai.InternalAiTaskService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

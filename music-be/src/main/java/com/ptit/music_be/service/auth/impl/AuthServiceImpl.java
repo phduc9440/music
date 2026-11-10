@@ -1,4 +1,4 @@
-package com.ptit.music_be.service.impl;
+package com.ptit.music_be.service.auth.impl;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -43,8 +43,8 @@ import com.ptit.music_be.repository.MemberRepository;
 import com.ptit.music_be.repository.MemberRoleRepository;
 import com.ptit.music_be.repository.OtpRepository;
 import com.ptit.music_be.repository.RoleRepository;
-import com.ptit.music_be.service.AuthService;
-import com.ptit.music_be.service.EmailService;
+import com.ptit.music_be.service.auth.AuthService;
+import com.ptit.music_be.service.auth.EmailService;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;

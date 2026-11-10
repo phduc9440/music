@@ -1,4 +1,4 @@
-package com.ptit.music_be.service.impl;
+package com.ptit.music_be.service.library.impl;
 
 import java.util.List;
 
@@ -8,7 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.ptit.music_be.dto.response.TagResponse;
 import com.ptit.music_be.repository.TagRepository;
-import com.ptit.music_be.service.TagService;
+import com.ptit.music_be.service.library.TagService;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;

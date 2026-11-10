@@ -1,4 +1,4 @@
-package com.ptit.music_be.service.impl;
+package com.ptit.music_be.service.auth.impl;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.util.HtmlUtils;
 
 import com.ptit.music_be.dto.request.SendEmailRequest;
-import com.ptit.music_be.service.EmailService;
+import com.ptit.music_be.service.auth.EmailService;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;

@@ -1,4 +1,4 @@
-package com.ptit.music_be.service.impl;
+package com.ptit.music_be.service.score.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -27,7 +27,7 @@ import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.repository.ScoreCounterRepository;
 import com.ptit.music_be.repository.ScoreRepository;
-import com.ptit.music_be.service.ScoreFileService;
+import com.ptit.music_be.service.score.ScoreFileService;
 
 @ExtendWith(MockitoExtension.class)
 class PlaybackServiceImplTest {

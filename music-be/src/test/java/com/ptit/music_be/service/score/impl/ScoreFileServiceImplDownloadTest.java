@@ -1,4 +1,4 @@
-package com.ptit.music_be.service.impl;
+package com.ptit.music_be.service.score.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -31,9 +31,9 @@ import com.ptit.music_be.repository.MemberRepository;
 import com.ptit.music_be.repository.MemberScoreRepository;
 import com.ptit.music_be.repository.ScoreFileRepository;
 import com.ptit.music_be.repository.ScoreRepository;
-import com.ptit.music_be.service.FileStorageService;
 import com.ptit.music_be.service.permission.ScoreAccessAuditor;
 import com.ptit.music_be.service.permission.impl.ScorePermissionServiceImpl;
+import com.ptit.music_be.service.storage.FileStorageService;
 
 /** Ai được tải file nào: chủ cho phép tải thì người xem tải MusicXML/MIDI/PDF; file gốc chỉ người có quyền sửa. */
 class ScoreFileServiceImplDownloadTest {

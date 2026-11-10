@@ -1,4 +1,4 @@
-package com.ptit.music_be.controller;
+package com.ptit.music_be.controller.ai;
 
 import java.util.List;
 
@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.ptit.music_be.dto.response.AiTaskResponse;
 import com.ptit.music_be.dto.response.ApiResponse;
-import com.ptit.music_be.service.AiTaskService;
+import com.ptit.music_be.service.ai.AiTaskService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;

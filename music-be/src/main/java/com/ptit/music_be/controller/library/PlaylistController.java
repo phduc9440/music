@@ -1,4 +1,4 @@
-package com.ptit.music_be.controller;
+package com.ptit.music_be.controller.library;
 
 import java.util.List;
 
@@ -10,7 +10,7 @@ import com.ptit.music_be.dto.request.PlaylistRequest;
 import com.ptit.music_be.dto.response.ApiResponse;
 import com.ptit.music_be.dto.response.PlaylistItemResponse;
 import com.ptit.music_be.dto.response.PlaylistResponse;
-import com.ptit.music_be.service.PlaylistService;
+import com.ptit.music_be.service.library.PlaylistService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;

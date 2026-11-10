@@ -1,4 +1,4 @@
-package com.ptit.music_be.service.impl;
+package com.ptit.music_be.service.ai.impl;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -36,8 +36,8 @@ import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.repository.AiTaskRepository;
 import com.ptit.music_be.repository.ScoreFileRepository;
 import com.ptit.music_be.repository.ScoreRepository;
-import com.ptit.music_be.service.FileStorageService;
-import com.ptit.music_be.service.InternalAiTaskService;
+import com.ptit.music_be.service.ai.InternalAiTaskService;
+import com.ptit.music_be.service.storage.FileStorageService;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;

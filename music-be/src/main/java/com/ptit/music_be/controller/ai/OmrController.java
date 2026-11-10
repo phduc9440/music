@@ -1,4 +1,4 @@
-package com.ptit.music_be.controller;
+package com.ptit.music_be.controller.ai;
 
 import java.util.List;
 
@@ -11,7 +11,7 @@ import com.ptit.music_be.dto.response.AiTaskResponse;
 import com.ptit.music_be.dto.response.ApiResponse;
 import com.ptit.music_be.dto.response.OmrResultResponse;
 import com.ptit.music_be.dto.response.OmrUploadResponse;
-import com.ptit.music_be.service.OmrService;
+import com.ptit.music_be.service.ai.OmrService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

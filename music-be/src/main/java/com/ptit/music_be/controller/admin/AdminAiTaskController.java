@@ -1,4 +1,4 @@
-package com.ptit.music_be.controller;
+package com.ptit.music_be.controller.admin;
 
 import java.time.LocalDate;
 

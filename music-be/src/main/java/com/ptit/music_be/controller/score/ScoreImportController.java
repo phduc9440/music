@@ -1,4 +1,4 @@
-package com.ptit.music_be.controller;
+package com.ptit.music_be.controller.score;
 
 import java.util.List;
 
@@ -8,7 +8,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.ptit.music_be.dto.response.ApiResponse;
 import com.ptit.music_be.dto.response.ScoreImportResponse;
-import com.ptit.music_be.service.ScoreImportService;
+import com.ptit.music_be.service.score.ScoreImportService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;

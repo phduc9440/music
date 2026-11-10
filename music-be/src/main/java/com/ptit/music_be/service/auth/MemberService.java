@@ -1,4 +1,4 @@
-package com.ptit.music_be.service;
+package com.ptit.music_be.service.auth;
 
 import org.springframework.web.multipart.MultipartFile;
 

@@ -1,4 +1,4 @@
-package com.ptit.music_be.service.impl;
+package com.ptit.music_be.service.score.impl;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -24,9 +24,9 @@ import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.repository.ScoreFileRepository;
 import com.ptit.music_be.repository.ScoreRepository;
-import com.ptit.music_be.service.FileStorageService;
-import com.ptit.music_be.service.ScoreContentService;
-import com.ptit.music_be.service.ScoreFileService;
+import com.ptit.music_be.service.score.ScoreContentService;
+import com.ptit.music_be.service.score.ScoreFileService;
+import com.ptit.music_be.service.storage.FileStorageService;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;

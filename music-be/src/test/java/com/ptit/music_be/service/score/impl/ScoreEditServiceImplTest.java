@@ -1,4 +1,4 @@
-package com.ptit.music_be.service.impl;
+package com.ptit.music_be.service.score.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -44,8 +44,8 @@ import com.ptit.music_be.repository.AiTaskRepository;
 import com.ptit.music_be.repository.MemberRepository;
 import com.ptit.music_be.repository.ScoreFileRepository;
 import com.ptit.music_be.repository.ScoreRepository;
-import com.ptit.music_be.service.FileStorageService;
-import com.ptit.music_be.service.ScoreFileService;
+import com.ptit.music_be.service.score.ScoreFileService;
+import com.ptit.music_be.service.storage.FileStorageService;
 
 @ExtendWith(MockitoExtension.class)
 class ScoreEditServiceImplTest {

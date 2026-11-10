@@ -1,4 +1,4 @@
-package com.ptit.music_be.service;
+package com.ptit.music_be.service.score;
 
 import com.ptit.music_be.dto.response.ScoreContent;
 

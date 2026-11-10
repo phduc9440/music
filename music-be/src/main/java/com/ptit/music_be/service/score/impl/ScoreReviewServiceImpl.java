@@ -1,4 +1,4 @@
-package com.ptit.music_be.service.impl;
+package com.ptit.music_be.service.score.impl;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -19,9 +19,9 @@ import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.repository.MemberRepository;
 import com.ptit.music_be.repository.ScoreRepository;
 import com.ptit.music_be.repository.ScoreReviewRepository;
-import com.ptit.music_be.service.NotificationService;
-import com.ptit.music_be.service.ScoreFileService;
-import com.ptit.music_be.service.ScoreReviewService;
+import com.ptit.music_be.service.notification.NotificationService;
+import com.ptit.music_be.service.score.ScoreFileService;
+import com.ptit.music_be.service.score.ScoreReviewService;
 import com.ptit.music_be.utils.SecurityUtils;
 
 import lombok.AccessLevel;

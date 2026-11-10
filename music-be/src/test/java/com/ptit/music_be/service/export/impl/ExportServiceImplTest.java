@@ -1,4 +1,4 @@
-package com.ptit.music_be.service.impl;
+package com.ptit.music_be.service.export.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -49,12 +49,12 @@ import com.ptit.music_be.repository.AiTaskRepository;
 import com.ptit.music_be.repository.MemberRepository;
 import com.ptit.music_be.repository.ScoreFileRepository;
 import com.ptit.music_be.repository.ScoreRepository;
-import com.ptit.music_be.service.ExportService;
-import com.ptit.music_be.service.FileStorageService;
-import com.ptit.music_be.service.MuseScoreCliService;
-import com.ptit.music_be.service.ScoreContentService;
-import com.ptit.music_be.service.ScoreFileService;
+import com.ptit.music_be.service.ai.MuseScoreCliService;
 import com.ptit.music_be.service.export.ExportOptionsValidator;
+import com.ptit.music_be.service.export.ExportService;
+import com.ptit.music_be.service.score.ScoreContentService;
+import com.ptit.music_be.service.score.ScoreFileService;
+import com.ptit.music_be.service.storage.FileStorageService;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)

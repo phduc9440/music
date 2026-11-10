@@ -1,4 +1,4 @@
-package com.ptit.music_be.service.impl;
+package com.ptit.music_be.service.auth.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -37,7 +37,7 @@ import com.ptit.music_be.repository.MemberRepository;
 import com.ptit.music_be.repository.MemberRoleRepository;
 import com.ptit.music_be.repository.OtpRepository;
 import com.ptit.music_be.repository.RoleRepository;
-import com.ptit.music_be.service.EmailService;
+import com.ptit.music_be.service.auth.EmailService;
 
 /** Luồng quên mật khẩu bằng OTP: băm mã, giới hạn theo email, lỗi riêng, thu hồi phiên cũ, mail báo đổi mật khẩu. */
 class AuthServicePasswordResetTest {

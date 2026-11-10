@@ -1,4 +1,4 @@
-package com.ptit.music_be.service.impl;
+package com.ptit.music_be.service.score.impl;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -52,11 +52,11 @@ import com.ptit.music_be.repository.ScoreRepository;
 import com.ptit.music_be.repository.ScoreReviewRepository;
 import com.ptit.music_be.repository.ScoreTagRepository;
 import com.ptit.music_be.repository.TagRepository;
-import com.ptit.music_be.service.NotificationService;
-import com.ptit.music_be.service.ScoreFileService;
-import com.ptit.music_be.service.ScoreService;
+import com.ptit.music_be.service.notification.NotificationService;
 import com.ptit.music_be.service.permission.AccessDecision;
 import com.ptit.music_be.service.permission.ScorePermissionService;
+import com.ptit.music_be.service.score.ScoreFileService;
+import com.ptit.music_be.service.score.ScoreService;
 import com.ptit.music_be.utils.SecurityUtils;
 
 import lombok.AccessLevel;

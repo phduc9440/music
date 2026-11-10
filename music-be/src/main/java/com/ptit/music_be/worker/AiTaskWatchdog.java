@@ -13,7 +13,7 @@ import com.ptit.music_be.dto.enums.AiTaskStep;
 import com.ptit.music_be.dto.enums.AiTaskType;
 import com.ptit.music_be.entity.AiTask;
 import com.ptit.music_be.repository.AiTaskRepository;
-import com.ptit.music_be.service.InternalAiTaskService;
+import com.ptit.music_be.service.ai.InternalAiTaskService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

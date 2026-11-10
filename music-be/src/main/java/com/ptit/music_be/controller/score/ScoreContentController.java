@@ -1,4 +1,4 @@
-package com.ptit.music_be.controller;
+package com.ptit.music_be.controller.score;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ptit.music_be.dto.response.ScoreContent;
-import com.ptit.music_be.service.ScoreContentService;
+import com.ptit.music_be.service.score.ScoreContentService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

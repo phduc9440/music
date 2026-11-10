@@ -33,7 +33,7 @@ import com.ptit.music_be.entity.ScoreFile;
 import com.ptit.music_be.event.OmrTaskCreatedEvent;
 import com.ptit.music_be.repository.AiTaskRepository;
 import com.ptit.music_be.repository.ScoreFileRepository;
-import com.ptit.music_be.service.InternalAiTaskService;
+import com.ptit.music_be.service.ai.InternalAiTaskService;
 
 import lombok.extern.slf4j.Slf4j;
 

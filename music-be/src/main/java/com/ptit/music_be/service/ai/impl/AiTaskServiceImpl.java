@@ -1,4 +1,4 @@
-package com.ptit.music_be.service.impl;
+package com.ptit.music_be.service.ai.impl;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -22,9 +22,9 @@ import com.ptit.music_be.mapper.AiTaskMapper;
 import com.ptit.music_be.repository.AiTaskRepository;
 import com.ptit.music_be.repository.ScoreFileRepository;
 import com.ptit.music_be.repository.ScoreRepository;
-import com.ptit.music_be.service.AiTaskService;
-import com.ptit.music_be.service.MuseScoreCliService;
-import com.ptit.music_be.service.ScoreFileService;
+import com.ptit.music_be.service.ai.AiTaskService;
+import com.ptit.music_be.service.ai.MuseScoreCliService;
+import com.ptit.music_be.service.score.ScoreFileService;
 import com.ptit.music_be.utils.SecurityUtils;
 import com.ptit.music_be.worker.AiTaskDispatcher;
 

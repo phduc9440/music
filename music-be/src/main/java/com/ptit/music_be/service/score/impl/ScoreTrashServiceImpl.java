@@ -1,4 +1,4 @@
-package com.ptit.music_be.service.impl;
+package com.ptit.music_be.service.score.impl;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -19,7 +19,7 @@ import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.repository.MemberRepository;
 import com.ptit.music_be.repository.ScoreTrashRepository;
-import com.ptit.music_be.service.ScoreTrashService;
+import com.ptit.music_be.service.score.ScoreTrashService;
 import com.ptit.music_be.service.storage.ScoreStorageCleaner;
 import com.ptit.music_be.utils.SecurityUtils;
 

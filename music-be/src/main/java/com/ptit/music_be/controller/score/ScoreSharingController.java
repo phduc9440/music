@@ -1,4 +1,4 @@
-package com.ptit.music_be.controller;
+package com.ptit.music_be.controller.score;
 
 import java.util.List;
 
@@ -14,7 +14,7 @@ import com.ptit.music_be.dto.response.AccessRequestResponse;
 import com.ptit.music_be.dto.response.ApiResponse;
 import com.ptit.music_be.dto.response.MyAccessResponse;
 import com.ptit.music_be.dto.response.ScoreSharingResponse;
-import com.ptit.music_be.service.ScoreSharingService;
+import com.ptit.music_be.service.score.ScoreSharingService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;

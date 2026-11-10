@@ -1,4 +1,4 @@
-package com.ptit.music_be.service.impl;
+package com.ptit.music_be.service.score.impl;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -44,8 +44,8 @@ import com.ptit.music_be.repository.MemberRepository;
 import com.ptit.music_be.repository.ScoreFileRepository;
 import com.ptit.music_be.repository.ScoreRepository;
 import com.ptit.music_be.repository.TagRepository;
-import com.ptit.music_be.service.FileStorageService;
-import com.ptit.music_be.service.ScoreImportService;
+import com.ptit.music_be.service.score.ScoreImportService;
+import com.ptit.music_be.service.storage.FileStorageService;
 import com.ptit.music_be.utils.SecurityUtils;
 
 import lombok.AccessLevel;

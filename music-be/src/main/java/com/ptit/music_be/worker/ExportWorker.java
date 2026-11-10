@@ -45,10 +45,10 @@ import com.ptit.music_be.exception.MuseScoreException;
 import com.ptit.music_be.repository.AiTaskRepository;
 import com.ptit.music_be.repository.ScoreFileRepository;
 import com.ptit.music_be.repository.ScoreRepository;
-import com.ptit.music_be.service.FileStorageService;
-import com.ptit.music_be.service.MuseScoreCliService;
+import com.ptit.music_be.service.ai.MuseScoreCliService;
 import com.ptit.music_be.service.export.ExportNames;
 import com.ptit.music_be.service.export.MssStyleBuilder;
+import com.ptit.music_be.service.storage.FileStorageService;
 
 import lombok.extern.slf4j.Slf4j;
 

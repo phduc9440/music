@@ -1,4 +1,4 @@
-package com.ptit.music_be.service.impl;
+package com.ptit.music_be.service.ai.impl;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -21,7 +21,7 @@ import org.springframework.stereotype.Service;
 import com.ptit.music_be.configuration.MuseScoreProperties;
 import com.ptit.music_be.dto.enums.AiTaskError;
 import com.ptit.music_be.exception.MuseScoreException;
-import com.ptit.music_be.service.MuseScoreCliService;
+import com.ptit.music_be.service.ai.MuseScoreCliService;
 
 import lombok.extern.slf4j.Slf4j;
 

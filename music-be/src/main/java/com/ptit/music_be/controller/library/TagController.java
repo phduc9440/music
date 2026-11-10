@@ -1,4 +1,4 @@
-package com.ptit.music_be.controller;
+package com.ptit.music_be.controller.library;
 
 import java.util.List;
 
@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ptit.music_be.dto.response.ApiResponse;
 import com.ptit.music_be.dto.response.TagResponse;
-import com.ptit.music_be.service.TagService;
+import com.ptit.music_be.service.library.TagService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;

@@ -1,4 +1,4 @@
-package com.ptit.music_be.controller;
+package com.ptit.music_be.controller.score;
 
 import java.io.IOException;
 import java.util.List;
@@ -25,8 +25,8 @@ import com.ptit.music_be.dto.response.ScoreSaveResponse;
 import com.ptit.music_be.dto.response.ScoreVersionResponse;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
-import com.ptit.music_be.service.ScoreDiffService;
-import com.ptit.music_be.service.ScoreEditService;
+import com.ptit.music_be.service.score.ScoreDiffService;
+import com.ptit.music_be.service.score.ScoreEditService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

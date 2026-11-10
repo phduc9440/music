@@ -1,4 +1,4 @@
-package com.ptit.music_be.service;
+package com.ptit.music_be.service.storage;
 
 import java.io.InputStream;
 import java.nio.file.Path;

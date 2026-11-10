@@ -13,7 +13,7 @@ import com.ptit.music_be.dto.response.AdminScoreBulkResponse;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.service.admin.AdminScoreBulkService;
-import com.ptit.music_be.service.ScoreService;
+import com.ptit.music_be.service.score.ScoreService;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;

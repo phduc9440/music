@@ -1,4 +1,4 @@
-package com.ptit.music_be.controller;
+package com.ptit.music_be.controller.practice;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -11,7 +11,7 @@ import com.ptit.music_be.dto.response.PracticeHeatmapDayResponse;
 import com.ptit.music_be.dto.response.PracticeSkillsResponse;
 import com.ptit.music_be.dto.response.PracticeStreakResponse;
 import com.ptit.music_be.dto.response.PracticeTimeBucketResponse;
-import com.ptit.music_be.service.PracticeStatsService;
+import com.ptit.music_be.service.practice.PracticeStatsService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;

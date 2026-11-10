@@ -1,4 +1,4 @@
-package com.ptit.music_be.service.impl;
+package com.ptit.music_be.service.score.impl;
 
 import java.util.EnumSet;
 import java.util.List;
@@ -17,10 +17,10 @@ import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.mapper.ScoreFileMapper;
 import com.ptit.music_be.repository.ScoreFileRepository;
 import com.ptit.music_be.repository.ScoreRepository;
-import com.ptit.music_be.service.FileStorageService;
-import com.ptit.music_be.service.ScoreFileService;
 import com.ptit.music_be.service.permission.AccessDecision;
 import com.ptit.music_be.service.permission.ScorePermissionService;
+import com.ptit.music_be.service.score.ScoreFileService;
+import com.ptit.music_be.service.storage.FileStorageService;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;

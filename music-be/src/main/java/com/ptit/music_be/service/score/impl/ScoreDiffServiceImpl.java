@@ -1,4 +1,4 @@
-package com.ptit.music_be.service.impl;
+package com.ptit.music_be.service.score.impl;
 
 import java.util.List;
 import java.util.Optional;
@@ -21,8 +21,8 @@ import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.repository.ScoreFileRepository;
 import com.ptit.music_be.repository.ScoreRepository;
-import com.ptit.music_be.service.ScoreDiffService;
-import com.ptit.music_be.service.ScoreFileService;
+import com.ptit.music_be.service.score.ScoreDiffService;
+import com.ptit.music_be.service.score.ScoreFileService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

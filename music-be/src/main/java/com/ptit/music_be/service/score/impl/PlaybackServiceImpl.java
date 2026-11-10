@@ -1,4 +1,4 @@
-package com.ptit.music_be.service.impl;
+package com.ptit.music_be.service.score.impl;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -13,8 +13,8 @@ import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.repository.ScoreCounterRepository;
 import com.ptit.music_be.repository.ScoreRepository;
-import com.ptit.music_be.service.PlaybackService;
-import com.ptit.music_be.service.ScoreFileService;
+import com.ptit.music_be.service.score.PlaybackService;
+import com.ptit.music_be.service.score.ScoreFileService;
 import com.ptit.music_be.utils.SecurityUtils;
 
 import lombok.AccessLevel;

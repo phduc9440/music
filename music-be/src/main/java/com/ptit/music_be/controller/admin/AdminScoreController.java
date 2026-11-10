@@ -1,4 +1,4 @@
-package com.ptit.music_be.controller;
+package com.ptit.music_be.controller.admin;
 
 import jakarta.validation.Valid;
 
@@ -12,7 +12,7 @@ import com.ptit.music_be.dto.response.PageResponse;
 import com.ptit.music_be.dto.response.ScoreDetailResponse;
 import com.ptit.music_be.dto.response.ScoreSummaryResponse;
 import com.ptit.music_be.service.admin.AdminScoreBulkService;
-import com.ptit.music_be.service.ScoreService;
+import com.ptit.music_be.service.score.ScoreService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;

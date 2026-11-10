@@ -1,4 +1,4 @@
-package com.ptit.music_be.service.impl;
+package com.ptit.music_be.service.practice.impl;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,8 +24,8 @@ import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.repository.MemberRepository;
 import com.ptit.music_be.repository.PracticeSessionRepository;
 import com.ptit.music_be.repository.ScoreRepository;
-import com.ptit.music_be.service.PracticeSessionService;
-import com.ptit.music_be.service.ScoreFileService;
+import com.ptit.music_be.service.practice.PracticeSessionService;
+import com.ptit.music_be.service.score.ScoreFileService;
 import com.ptit.music_be.utils.SecurityUtils;
 
 import lombok.AccessLevel;

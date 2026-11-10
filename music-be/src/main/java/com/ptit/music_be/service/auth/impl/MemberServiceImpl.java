@@ -1,4 +1,4 @@
-package com.ptit.music_be.service.impl;
+package com.ptit.music_be.service.auth.impl;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,7 +19,7 @@ import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.mapper.MemberMapper;
 import com.ptit.music_be.repository.MemberRepository;
-import com.ptit.music_be.service.MemberService;
+import com.ptit.music_be.service.auth.MemberService;
 import com.ptit.music_be.utils.SecurityUtils;
 
 import lombok.AccessLevel;

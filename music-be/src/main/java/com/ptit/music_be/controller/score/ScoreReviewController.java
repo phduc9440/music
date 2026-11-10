@@ -1,4 +1,4 @@
-package com.ptit.music_be.controller;
+package com.ptit.music_be.controller.score;
 
 import jakarta.validation.Valid;
 
@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import com.ptit.music_be.dto.request.ReviewRequest;
 import com.ptit.music_be.dto.response.ApiResponse;
 import com.ptit.music_be.dto.response.ReviewListResponse;
-import com.ptit.music_be.service.ScoreReviewService;
+import com.ptit.music_be.service.score.ScoreReviewService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;

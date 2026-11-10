@@ -1,4 +1,4 @@
-package com.ptit.music_be.service;
+package com.ptit.music_be.service.notification;
 
 import com.ptit.music_be.dto.enums.NotificationType;
 import com.ptit.music_be.dto.response.NotificationResponse;
