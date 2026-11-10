@@ -117,6 +117,11 @@ export default function ScoreReview() {
     }
     return byPage;
   }, [result]);
+  const flaggedByPage = useMemo(() => {
+    const counts = new Map<number, number>();
+    for (const m of flagged) counts.set(m.page, (counts.get(m.page) ?? 0) + 1);
+    return counts;
+  }, [flagged]);
   const selectedMeasure = useMemo(
     () => (result?.measureMap ?? []).find((m) => m.measure === selected) ?? null,
     [result, selected],
@@ -226,15 +231,44 @@ export default function ScoreReview() {
     );
   }
 
+  const tabs: { key: Tab; label: string; count?: number }[] = [
+    { key: 'score', label: 'Bản nhạc' },
+    { key: 'check', label: 'Ô cần kiểm tra', count: flagged.length },
+    { key: 'warnings', label: 'Cảnh báo', count: warnings.length },
+    { key: 'kern', label: 'Kern' },
+  ];
+  /** Mũi tên trái/phải, Home/End chuyển tab theo chuẩn WAI-ARIA. */
+  const handleTabKey = (e: React.KeyboardEvent) => {
+    const keys = tabs.map((t) => t.key);
+    const cur = keys.indexOf(tab);
+    let next: number;
+    if (e.key === 'ArrowRight') next = (cur + 1) % keys.length;
+    else if (e.key === 'ArrowLeft') next = (cur - 1 + keys.length) % keys.length;
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = keys.length - 1;
+    else return;
+    e.preventDefault();
+    setTab(keys[next]);
+    document.getElementById(`sr-tab-${keys[next]}`)?.focus();
+  };
   const imageMeasures = result.measureCheck?.imageMeasures ?? null;
-  const summary: [string, string][] = [
-    ['Số trang', (result.pageCount ?? score.pageCount ?? pages.length).toString()],
-    ['Số ô nhịp', score.measureCount?.toString() ?? '—'],
-    ...(imageMeasures != null ? ([['Số ô đếm trên ảnh', imageMeasures.toString()]] as [string, string][]) : []),
-    ['Khóa / dấu hóa', score.keySignature || '—'], // dạng G, Bb, F#m
-    ['Nhịp', score.timeSignature || '—'],
-    ['Tempo', score.tempoBpm ? `${score.tempoBpm} BPM` : '—'],
-    ['Cảnh báo', warnings.length.toString()],
+  const summary: { label: string; value: string; tone?: 'ok' | 'warn' }[] = [
+    { label: 'Số trang', value: (result.pageCount ?? score.pageCount ?? pages.length).toString() },
+    { label: 'Số ô nhịp', value: score.measureCount?.toString() ?? '—' },
+    ...(imageMeasures != null
+      ? [
+          {
+            label: 'Số ô đếm trên ảnh',
+            value: imageMeasures.toString(),
+            tone: imageMeasures === score.measureCount ? ('ok' as const) : ('warn' as const),
+          },
+        ]
+      : []),
+    { label: 'Khóa / dấu hóa', value: score.keySignature || '—' }, // dạng G, Bb, F#m
+    { label: 'Nhịp', value: score.timeSignature || '—' },
+    { label: 'Tempo', value: score.tempoBpm ? `${score.tempoBpm} BPM` : '—' },
+    { label: 'Ô cần kiểm tra', value: flagged.length.toString(), tone: flagged.length > 0 ? 'warn' : 'ok' },
+    { label: 'Cảnh báo', value: warnings.length.toString(), tone: warnings.length > 0 ? 'warn' : 'ok' },
   ];
 
   return (
@@ -252,8 +286,8 @@ export default function ScoreReview() {
         </header>
 
         <dl className="sc-facts sr-summary">
-          {summary.map(([label, value]) => (
-            <div key={label} className="sc-fact">
+          {summary.map(({ label, value, tone }) => (
+            <div key={label} className={`sc-fact${tone ? ` sr-fact--${tone}` : ''}`}>
               <dt>{label}</dt>
               <dd>{value}</dd>
             </div>
@@ -262,7 +296,19 @@ export default function ScoreReview() {
 
         <div className="sr-grid">
           <section className="sr-pages" aria-label="Ảnh các trang">
-            <h2>Các trang</h2>
+            <div className="sr-pages__head">
+              <h2>Các trang</h2>
+              {flagged.length > 0 && (
+                <ul className="sr-legend" aria-label="Chú thích khung trên ảnh">
+                  <li>
+                    <i className="sr-legend__dot sr-legend__dot--flag" /> Ô nghi ngờ
+                  </li>
+                  <li>
+                    <i className="sr-legend__dot sr-legend__dot--active" /> Ô đang chọn
+                  </li>
+                </ul>
+              )}
+            </div>
             {pages.length === 0 && <p className="sp-pages__hint">Chưa có ảnh trang nào.</p>}
             {pages.map((page) => (
               <figure
@@ -284,37 +330,41 @@ export default function ScoreReview() {
                         type="button"
                         style={style}
                         className={`sr-box${warn ? ' sr-box--flag' : ''}${m.measure === selected ? ' sr-box--active' : ''}`}
-                        title={`Ô ${m.measure}`}
+                        title={`Ô ${m.measure}${warn ? `: ${m.flags.map((f) => MEASURE_FLAG_LABELS[f]).join('; ')}` : ''}`}
                         aria-label={`Ô ${m.measure}`}
+                        aria-pressed={m.measure === selected}
                         onClick={() => selectMeasure(m)}
                       />
                     );
                   })}
                 </div>
-                <figcaption>Trang {page.pageNumber}</figcaption>
+                <figcaption>
+                  Trang {page.pageNumber}
+                  {page.pageNumber != null && (flaggedByPage.get(page.pageNumber) ?? 0) > 0 && (
+                    <span className="sr-page__badge">{flaggedByPage.get(page.pageNumber)} ô cần kiểm tra</span>
+                  )}
+                </figcaption>
               </figure>
             ))}
           </section>
 
           <section className="sr-side">
-            <div className="sc-tabs" role="tablist">
-              <button className="sc-tab" role="tab" aria-selected={tab === 'score'} onClick={() => setTab('score')}>
-                Bản nhạc
-              </button>
-              <button className="sc-tab" role="tab" aria-selected={tab === 'check'} onClick={() => setTab('check')}>
-                Ô cần kiểm tra <span className="sc-tab__count">{flagged.length}</span>
-              </button>
-              <button
-                className="sc-tab"
-                role="tab"
-                aria-selected={tab === 'warnings'}
-                onClick={() => setTab('warnings')}
-              >
-                Cảnh báo <span className="sc-tab__count">{warnings.length}</span>
-              </button>
-              <button className="sc-tab" role="tab" aria-selected={tab === 'kern'} onClick={() => setTab('kern')}>
-                Kern
-              </button>
+            <div className="sc-tabs sr-tabs" role="tablist" aria-label="Kết quả số hóa" onKeyDown={handleTabKey}>
+              {tabs.map((t) => (
+                <button
+                  key={t.key}
+                  id={`sr-tab-${t.key}`}
+                  className="sc-tab"
+                  role="tab"
+                  aria-selected={tab === t.key}
+                  aria-controls="sr-tabpanel"
+                  tabIndex={tab === t.key ? 0 : -1}
+                  onClick={() => setTab(t.key)}
+                >
+                  {t.label}
+                  {t.count != null && <span className="sc-tab__count">{t.count}</span>}
+                </button>
+              ))}
             </div>
 
             {selectedMeasure && xml !== null && (
@@ -343,7 +393,7 @@ export default function ScoreReview() {
             )}
 
             {tab === 'score' && (
-              <div className="sr-panel" role="tabpanel">
+              <div className="sr-panel" role="tabpanel" id="sr-tabpanel" aria-labelledby={`sr-tab-${tab}`}>
                 {!hasMusicXml && <p className="sr-empty">Chưa có MusicXML cho bản nhạc này, hãy nhận diện lại.</p>}
                 {hasMusicXml && xmlError && <div className="sc-error">Không tải được MusicXML</div>}
                 {hasMusicXml && !xmlError && xml === null && <p className="sr-empty">Đang tải...</p>}
@@ -364,7 +414,7 @@ export default function ScoreReview() {
             )}
 
             {tab === 'check' && (
-              <div className="sr-panel" role="tabpanel">
+              <div className="sr-panel" role="tabpanel" id="sr-tabpanel" aria-labelledby={`sr-tab-${tab}`}>
                 {flagged.length === 0 ? (
                   <p className="sr-empty">
                     {result.measureMap?.length
@@ -392,7 +442,7 @@ export default function ScoreReview() {
             )}
 
             {tab === 'warnings' && (
-              <div className="sr-panel" role="tabpanel">
+              <div className="sr-panel" role="tabpanel" id="sr-tabpanel" aria-labelledby={`sr-tab-${tab}`}>
                 {warnings.length === 0 ? (
                   <p className="sr-empty">Không có cảnh báo nào. Các ô nhịp đều khớp số chỉ nhịp.</p>
                 ) : (
@@ -415,7 +465,7 @@ export default function ScoreReview() {
             )}
 
             {tab === 'kern' && (
-              <div className="sr-panel" role="tabpanel">
+              <div className="sr-panel" role="tabpanel" id="sr-tabpanel" aria-labelledby={`sr-tab-${tab}`}>
                 {!hasKern && <p className="sr-empty">Chưa có file kern cho bản nhạc này.</p>}
                 {hasKern && kernError && <div className="sc-error">Không tải được chuỗi kern</div>}
                 {hasKern && !kernError && kern === null && <p className="sr-empty">Đang tải...</p>}
@@ -439,7 +489,7 @@ export default function ScoreReview() {
           </section>
         </div>
 
-        <div className="sp-actions sr-actions">
+        <div className="sp-actions sr-actions" role="toolbar" aria-label="Thao tác với kết quả">
           <button
             className="sc-btn sc-btn--primary"
             disabled={!hasMusicXml}

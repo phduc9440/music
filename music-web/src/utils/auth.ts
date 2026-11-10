@@ -15,6 +15,7 @@ export const isAdminMember = (member: Pick<Member, 'roles'>) => !!member.roles?.
  * The stored role is only used for UI (menus, route guards); the backend enforces permissions.
  * Nếu không tải được profile thì xoá cookie (gọi logout).
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function completeLogin(_auth: AuthResponse): Promise<string> {
   try {
     const res = await userApi.getMe();

@@ -83,7 +83,12 @@ export default function MusicXmlViewer({ xml, firstMeasure, lastMeasure }: Props
     <div className="sr-score">
       {state === 'loading' && <p className="sr-empty">Đang vẽ bản nhạc...</p>}
       {state === 'error' && <div className="sc-error">Không vẽ được bản nhạc từ MusicXML</div>}
-      <div ref={hostRef} className="sr-score__host" hidden={state !== 'ready'} />
+      {/* Không dùng hidden: khung bị ẩn có độ rộng 0 nên OSMD sẽ xếp mỗi dòng một ô khi vẽ lần đầu */}
+      <div
+        ref={hostRef}
+        className="sr-score__host"
+        style={state === 'ready' ? undefined : { height: 0, overflow: 'hidden' }}
+      />
     </div>
   );
 }

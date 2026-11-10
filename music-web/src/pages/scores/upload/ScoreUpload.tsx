@@ -264,9 +264,16 @@ export default function ScoreUpload() {
             </p>
 
             {(busy || inspecting) && (
-              <div className="sc-upload__progress">
+              <div className="sc-upload__progress" aria-live="polite">
                 {uploading && (
-                  <div className="sc-progress sc-progress--wide" role="progressbar" aria-valuenow={progress}>
+                  <div
+                    className="sc-progress sc-progress--wide"
+                    role="progressbar"
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={progress}
+                    aria-label="Tiến độ tải lên"
+                  >
                     <div className="sc-progress__bar" style={{ width: `${progress}%` }} />
                   </div>
                 )}
