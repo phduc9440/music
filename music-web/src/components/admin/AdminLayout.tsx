@@ -116,7 +116,7 @@ export default function AdminLayout() {
 
   return (
     <div className={`adm-shell${collapsed ? ' adm-shell--collapsed' : ''}`}>
-      <header className="adm-header">
+      <header className="adm-header ui-stage">
         <div className="adm-header__left">
           <button
             type="button"
@@ -200,7 +200,7 @@ export default function AdminLayout() {
       </header>
 
       <div className="adm-body">
-        <aside className={`adm-sidebar${mobileOpen ? ' adm-sidebar--open' : ''}`}>
+        <aside className={`adm-sidebar ui-stage${mobileOpen ? ' adm-sidebar--open' : ''}`}>
           <nav className="adm-menu" aria-label="Menu quản trị">
             {MENU.map((group) => (
               <div key={group.section} className="adm-menu">

@@ -81,7 +81,7 @@ export default function UserLayout() {
 
   return (
     <div className="app-shell">
-      <header className="app-header">
+      <header className="app-header ui-stage">
         <div className="app-header__inner">
           <div className="app-header__left">
             <button

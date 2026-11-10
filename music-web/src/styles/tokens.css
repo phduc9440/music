@@ -15,21 +15,22 @@
   color-scheme: light;
 
   /* nền và chữ */
-  --ui-bg: #f5f6f8;
-  --ui-surface: #ffffff;
-  --ui-surface-muted: #f8fafc;
-  --ui-surface-hover: #f1f5f9;
-  --ui-border: #e5e7eb;
-  --ui-border-strong: #d1d5db;
-  --ui-text: #0f172a;
-  --ui-text-2: #475569;
-  --ui-text-3: #64748b;
+  /* bảng màu "Phòng hòa nhạc" (mục 5.1): nền giấy ngà, chữ nâu đen, nhấn nâu gỗ; theme tối nhấn vàng đồng */
+  --ui-bg: #f6f1e9;
+  --ui-surface: #fffdf9;
+  --ui-surface-muted: #faf6ef;
+  --ui-surface-hover: #f1e9dd;
+  --ui-border: #e6dccd;
+  --ui-border-strong: #cdbca5;
+  --ui-text: #1f1612;
+  --ui-text-2: #57473c;
+  --ui-text-3: #6c5b4e;
 
   /* màu nhấn và trạng thái */
-  --ui-primary: #2563eb;
-  --ui-primary-hover: #1d4ed8;
-  --ui-primary-soft: #eff6ff;
-  --ui-primary-ring: rgba(37, 99, 235, 0.18);
+  --ui-primary: #5a3d2b;
+  --ui-primary-hover: #3f2a1e;
+  --ui-primary-soft: #f3e8d8;
+  --ui-primary-ring: rgba(90, 61, 43, 0.2);
   --ui-success: #15803d;
   --ui-success-soft: #ecfdf3;
   --ui-warning: #b45309;
@@ -41,15 +42,15 @@
   --ui-violet-soft: #f5f3ff;
 
   /* vai trò bổ sung */
-  --ui-on-accent: #ffffff; /* chữ trên nền màu nhấn / nền tối */
-  --ui-primary-border: #bfdbfe;
+  --ui-on-accent: #fffaf2; /* chữ trên nền màu nhấn / nền tối */
+  --ui-primary-border: #dcc7aa;
   --ui-danger-border: #fecaca;
   --ui-success-border: #bbf7d0;
   --ui-warning-border: #fde68a;
   --ui-warning-strong: #f59e0b;
-  --ui-shadow-ink: #0f172a; /* gốc của bóng đổ và lớp phủ, trộn với độ trong suốt */
-  --ui-overlay: rgba(15, 23, 42, 0.45); /* nền mờ phía sau hộp thoại */
-  --ui-overlay-soft: rgba(15, 23, 42, 0.35); /* nền mờ phía sau ngăn kéo trên điện thoại */
+  --ui-shadow-ink: #1f1612; /* gốc của bóng đổ và lớp phủ, trộn với độ trong suốt */
+  --ui-overlay: rgba(31, 22, 18, 0.5); /* nền mờ phía sau hộp thoại */
+  --ui-overlay-soft: rgba(31, 22, 18, 0.38); /* nền mờ phía sau ngăn kéo trên điện thoại */
 
   /* "sân khấu" ở đầu trang chủ (mục 5.1 Phòng hòa nhạc): luôn tối ở cả hai theme, nhấn vàng đồng và đỏ nhung */
   --ui-stage-bg: #1b1411;
@@ -57,22 +58,27 @@
   --ui-stage-text: #f6efe3;
   --ui-stage-text-2: #d3c4ab;
   --ui-stage-line: rgb(246 239 227 / 0.16); /* năm dòng kẻ khuông */
+  --ui-stage-border: #3a2c24;
+  --ui-stage-border-strong: #5a473b;
   --ui-brass: #d4a853;
+  --ui-brass-hover: #e3bf74;
+  --ui-brass-soft: #3a2c1a;
   --ui-velvet: #9b1c2c;
   --ui-velvet-hover: #7f1623;
+  --ui-stage-danger: #f08a8a;
 
   /* khung nhật ký lỗi (luôn tối ở cả hai theme, như một cửa sổ terminal) */
-  --ui-console-bg: #0f172a;
-  --ui-console-text: #e2e8f0;
+  --ui-console-bg: #1b1411;
+  --ui-console-text: #efe6d8;
 
   /* biểu đồ */
-  --ui-chart-scores: #2a78d6;
-  --ui-chart-practice: #1baf7a;
-  --ui-chart-members: #6250d6;
-  --ui-chart-axis: #64748b;
-  --ui-chart-grid: #e2e8f0;
-  --ui-chart-cursor: rgba(148, 163, 184, 0.12);
-  --ui-chart-neutral: #94a3b8;
+  --ui-chart-scores: #8a5a2b;
+  --ui-chart-practice: #2f8f5b;
+  --ui-chart-members: #9b1c2c;
+  --ui-chart-axis: #6c5b4e;
+  --ui-chart-grid: #e9dfd1;
+  --ui-chart-cursor: rgba(108, 91, 78, 0.12);
+  --ui-chart-neutral: #a8998a;
   --ui-chart-ok: #0ca30c;
   --ui-chart-busy: #fab219;
   --ui-chart-fail: #d03b3b;
@@ -81,9 +87,9 @@
   --ui-radius-lg: 12px;
   --ui-radius: 8px;
   --ui-radius-sm: 6px;
-  --ui-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
-  --ui-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), 0 4px 12px rgba(15, 23, 42, 0.04);
-  --ui-shadow-pop: 0 10px 30px rgba(15, 23, 42, 0.14);
+  --ui-shadow-sm: 0 1px 2px rgba(31, 22, 18, 0.06);
+  --ui-shadow: 0 1px 3px rgba(31, 22, 18, 0.07), 0 4px 12px rgba(31, 22, 18, 0.05);
+  --ui-shadow-pop: 0 10px 30px rgba(31, 22, 18, 0.16);
   --ui-header-h: 60px;
   --ui-content-max: 1200px; /* bề ngang tối đa của phần nội dung chính (thanh trên thì tràn hết màn hình) */
 
@@ -121,21 +127,21 @@
 :root[data-theme='dark'] {
   color-scheme: dark;
 
-  --ui-bg: #0b1220;
-  --ui-surface: #111a2e;
-  --ui-surface-muted: #0e1626;
-  --ui-surface-hover: #1a2540;
-  --ui-border: #1f2b44;
-  --ui-border-strong: #33415c;
-  --ui-text: #e6edf7;
-  --ui-text-2: #a9b6cc;
-  --ui-text-3: #8794ad;
+  --ui-bg: #110c0a;
+  --ui-surface: #1a1310;
+  --ui-surface-muted: #150f0d;
+  --ui-surface-hover: #271d18;
+  --ui-border: #2e231d;
+  --ui-border-strong: #4a3a30;
+  --ui-text: #f3ece1;
+  --ui-text-2: #cdbfa8;
+  --ui-text-3: #a8998a;
 
   /* ở theme tối màu nhấn sáng hơn, nên chữ trên nền nhấn chuyển sang tối để vẫn đủ tương phản */
-  --ui-primary: #60a5fa;
-  --ui-primary-hover: #93c5fd;
-  --ui-primary-soft: #14233f;
-  --ui-primary-ring: rgba(96, 165, 250, 0.3);
+  --ui-primary: #d4a853;
+  --ui-primary-hover: #e3bf74;
+  --ui-primary-soft: #2c2216;
+  --ui-primary-ring: rgba(212, 168, 83, 0.3);
   --ui-success: #4ade80;
   --ui-success-soft: #0f2a1c;
   --ui-warning: #fbbf24;
@@ -146,8 +152,8 @@
   --ui-violet: #a78bfa;
   --ui-violet-soft: #231a3d;
 
-  --ui-on-accent: #0b1220;
-  --ui-primary-border: #1e40af;
+  --ui-on-accent: #1a1310;
+  --ui-primary-border: #7a5c2a;
   --ui-danger-border: #7f1d1d;
   --ui-success-border: #166534;
   --ui-warning-border: #92400e;
@@ -156,16 +162,20 @@
   --ui-overlay: rgba(0, 0, 0, 0.6);
   --ui-overlay-soft: rgba(0, 0, 0, 0.5);
 
-  --ui-chart-scores: #5b9cf0;
-  --ui-chart-practice: #34d399;
-  --ui-chart-members: #8b7cf0;
-  --ui-chart-axis: #94a3b8;
-  --ui-chart-grid: #1f2b44;
-  --ui-chart-cursor: rgba(148, 163, 184, 0.16);
-  --ui-chart-neutral: #64748b;
+  --ui-chart-scores: #d4a853;
+  --ui-chart-practice: #4fbf8a;
+  --ui-chart-members: #e07a88;
+  --ui-chart-axis: #a8998a;
+  --ui-chart-grid: #2e231d;
+  --ui-chart-cursor: rgba(168, 153, 138, 0.16);
+  --ui-chart-neutral: #6c5b4e;
   --ui-chart-ok: #4ade80;
   --ui-chart-busy: #fbbf24;
   --ui-chart-fail: #f87171;
+
+  /* sân khấu ở theme tối tối hơn nền trang một chút để vẫn tách khỏi nội dung */
+  --ui-stage-bg: #0b0806;
+  --ui-stage-bg-2: #1f1712;
 
   --ui-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --ui-shadow: 0 1px 3px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.35);
@@ -179,4 +189,27 @@
   --ui-diff-added: #4ade80;
   --ui-diff-removed: #f87171;
   --ui-diff-changed: #fbbf24;
+}
+
+/*
+ * Vùng "sân khấu" tối giữa trang sáng: thanh trên của trang người dùng, header và sidebar quản trị. Gắn class ui-stage
+ * là mọi component bên trong (menu, ô tìm, chuông, nút giao diện) tự đổi sang chữ ngà trên nền nâu đen, nhấn vàng đồng.
+ */
+.ui-stage {
+  color-scheme: dark;
+  --ui-surface: var(--ui-stage-bg);
+  --ui-surface-muted: var(--ui-stage-bg-2);
+  --ui-surface-hover: var(--ui-stage-bg-2);
+  --ui-border: var(--ui-stage-border);
+  --ui-border-strong: var(--ui-stage-border-strong);
+  --ui-text: var(--ui-stage-text);
+  --ui-text-2: var(--ui-stage-text-2);
+  --ui-text-3: var(--ui-stage-text-2);
+  --ui-primary: var(--ui-brass);
+  --ui-primary-hover: var(--ui-brass-hover);
+  --ui-primary-soft: var(--ui-brass-soft);
+  --ui-primary-ring: color-mix(in srgb, var(--ui-brass) 30%, transparent);
+  --ui-on-accent: var(--ui-stage-bg);
+  --ui-danger: var(--ui-stage-danger);
+  --ui-danger-soft: var(--ui-stage-bg-2);
 }
