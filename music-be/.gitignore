@@ -33,4 +33,4 @@ build/
 .vscode/
 
 ### Local file storage ###
-storage/
+/storage/
