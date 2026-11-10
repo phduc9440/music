@@ -30,6 +30,7 @@ services:
 
   music-be:
     build: ./music-be
+    platform: linux/amd64
     depends_on:
       mysql:
         condition: service_healthy

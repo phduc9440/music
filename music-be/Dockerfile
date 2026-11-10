@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 # ---- Tầng 1: build jar bằng Maven + Java 21 ----
 FROM eclipse-temurin:21-jdk-jammy AS build
 WORKDIR /src
@@ -13,7 +12,8 @@ RUN cp src/main/resources/application.yaml.example src/main/resources/applicatio
     && cp target/*.jar /app.jar
 
 # ---- Tầng 2: chạy trên JRE 21 cùng MuseScore 3.6.2 ----
-FROM eclipse-temurin:21-jre-jammy
+# MuseScore 3.6.2 chỉ có bản x86_64 nên tầng này luôn là amd64 (trên Mac chip Apple chạy qua Rosetta).
+FROM --platform=linux/amd64 eclipse-temurin:21-jre-jammy
 ARG MUSESCORE_URL=https://github.com/musescore/MuseScore/releases/download/v3.6.2/MuseScore-3.6.2.548021370-x86_64.AppImage
 RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates curl libasound2 libfontconfig1 libfreetype6 libgl1 libglib2.0-0 libnss3 libpulse0 \
