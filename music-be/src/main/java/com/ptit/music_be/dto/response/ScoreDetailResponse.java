@@ -29,6 +29,8 @@ public class ScoreDetailResponse {
     String sourceType;
     String visibility;
     Boolean isOfficial;
+    /** Bản trong kho mẫu: tên người phối (chủ bản gốc). */
+    String arrangerName;
 
     /** Thể loại đã gắn, sắp xếp theo tên. */
     List<TagResponse> tags;

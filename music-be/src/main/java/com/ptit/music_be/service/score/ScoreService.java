@@ -55,9 +55,6 @@ public interface ScoreService {
     /** ADMIN: bản nhạc công khai chưa nằm trong kho score mẫu, để chọn đưa vào. */
     PageResponse<ScoreSummaryResponse> getOfficialCandidates(int page, int size, String keyword);
 
-    /** ADMIN: đưa một bản nhạc đã công khai vào kho score mẫu. */
-    ScoreDetailResponse markOfficial(String scoreId);
-
     /**
      * Trang Khám phá: các bản đang công khai, tìm theo tên/tác giả, lọc độ khó và thể loại. sort: NEWEST (mặc định),
      * VIEWS (xem nhiều nhất), RATING (đánh giá cao nhất).
@@ -65,7 +62,10 @@ public interface ScoreService {
     PageResponse<ScoreSummaryResponse> getPublicScores(
             int page, int size, String keyword, String difficulty, String tagId, String sort);
 
-    /** ADMIN: gỡ khỏi kho score mẫu (bản nhạc vẫn giữ nguyên, vẫn công khai). */
+    /**
+     * ADMIN: gỡ khỏi kho score mẫu. Bản sao do người dùng đồng ý đưa vào (có bản gốc) thì được chuyển vào thùng rác,
+     * bản gốc của chủ không bị ảnh hưởng; bản gắn cờ từ trước chỉ bị bỏ cờ.
+     */
     ScoreDetailResponse unmarkOfficial(String scoreId);
 
     /**

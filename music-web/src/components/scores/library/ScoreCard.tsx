@@ -38,6 +38,7 @@ export default function ScoreCard({ score, onOpen, explore = false }: Props) {
         </h3>
         <p className="sc-card__composer">{score.composer || 'Chưa rõ tác giả'}</p>
         {score.ownerEmail && score.accessLevel && <p className="sc-card__composer">Chia sẻ bởi {score.ownerEmail}</p>}
+        {score.arrangerName && <p className="sc-card__composer">Bản phối của {score.arrangerName}</p>}
         {explore && score.ownerName && <p className="sc-card__composer">Chia sẻ bởi {score.ownerName}</p>}
         <div className="sc-card__chips">
           {score.sourceType && <span className="sc-chip sc-chip--accent">{SOURCE_LABELS[score.sourceType]}</span>}

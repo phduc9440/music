@@ -147,19 +147,9 @@ public class ScoreController {
                 .build();
     }
 
-    @PutMapping("/{scoreId}/official")
-    @Operation(
-            summary = "ADMIN: add a public score to the curated library (only ADMIN can then edit or delete it)",
-            security = @SecurityRequirement(name = "bearerAuth"))
-    public ApiResponse<ScoreDetailResponse> markOfficial(@PathVariable String scoreId) {
-        return ApiResponse.<ScoreDetailResponse>builder()
-                .result(scoreService.markOfficial(scoreId))
-                .build();
-    }
-
     @DeleteMapping("/{scoreId}/official")
     @Operation(
-            summary = "ADMIN: remove a score from the curated library (the score itself is kept)",
+            summary = "ADMIN: remove a score from the curated library (a copy goes to the trash, the owner's original is untouched)",
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<ScoreDetailResponse> unmarkOfficial(@PathVariable String scoreId) {
         return ApiResponse.<ScoreDetailResponse>builder()

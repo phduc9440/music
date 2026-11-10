@@ -16,7 +16,7 @@ import {
   VisibilityBadge,
 } from '../../components/ui';
 import { VISIBILITY, errorMessage, formatDateTime } from '../../components/ui/helpers';
-import { adminApi, scoreApi } from '../../services';
+import { adminApi, officialRequestApi, scoreApi } from '../../services';
 import type { PageResult, ScoreSummary } from '../../types';
 import { useDialog } from '../../components/ui/dialog-context';
 
@@ -130,7 +130,12 @@ export default function AdminScores() {
       confirmLabel: 'Duyệt công khai',
     });
     if (!ok) return;
-    run(score, () => adminApi.setScoreVisibility(score.id, 'PUBLIC'), 'Đã duyệt công khai', 'Không duyệt được bản nhạc');
+    run(
+      score,
+      () => adminApi.setScoreVisibility(score.id, 'PUBLIC'),
+      'Đã duyệt công khai',
+      'Không duyệt được bản nhạc',
+    );
   };
 
   const unpublish = async (score: ScoreSummary) => {
@@ -151,10 +156,19 @@ export default function AdminScores() {
     );
   };
 
-  const toggleOfficial = (score: ScoreSummary) =>
-    score.isOfficial
-      ? run(score, () => scoreApi.unmarkOfficial(score.id), 'Đã gỡ khỏi kho score mẫu', 'Không gỡ được khỏi kho')
-      : run(score, () => scoreApi.markOfficial(score.id), 'Đã thêm vào kho score mẫu', 'Không thêm được vào kho');
+  const toggleOfficial = async (score: ScoreSummary) => {
+    if (score.isOfficial) {
+      run(score, () => scoreApi.unmarkOfficial(score.id), 'Đã gỡ khỏi kho score mẫu', 'Không gỡ được khỏi kho');
+      return;
+    }
+    const ok = await confirm({
+      title: `Xin đưa "${score.title}" vào kho score mẫu?`,
+      message: `${score.ownerEmail} sẽ nhận thông báo. Họ đồng ý thì hệ thống sao chép một bản vào kho, bản của họ giữ nguyên.`,
+      confirmLabel: 'Gửi lời xin',
+    });
+    if (!ok) return;
+    run(score, () => officialRequestApi.request(score.id), 'Đã gửi lời xin tới chủ sở hữu', 'Không gửi được lời xin');
+  };
 
   const remove = async (score: ScoreSummary) => {
     const input = await prompt({
@@ -355,7 +369,7 @@ export default function AdminScores() {
                     {s.visibility === 'PUBLIC' ? (
                       <>
                         <Button size="sm" icon="library" disabled={busyId === s.id} onClick={() => toggleOfficial(s)}>
-                          {s.isOfficial ? 'Gỡ khỏi kho' : 'Thêm vào kho'}
+                          {s.isOfficial ? 'Gỡ khỏi kho' : 'Xin đưa vào kho'}
                         </Button>
                         <Button size="sm" icon="lock" disabled={busyId === s.id} onClick={() => unpublish(s)}>
                           Gỡ công khai

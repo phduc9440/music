@@ -40,6 +40,8 @@ public class ScoreSummaryResponse {
     String ownerEmail;
     /** Thể loại đã gắn, sắp xếp theo tên. */
     List<TagResponse> tags;
+    /** Bản trong kho mẫu: tên người phối (chủ bản gốc). */
+    String arrangerName;
     /** Chỉ có trong trang Khám phá: tên người chia sẻ (không lộ email). */
     String ownerName;
     /** Chỉ có trong trang Khám phá: lượt xem, điểm sao trung bình (null nếu chưa ai chấm) và số lượt chấm. */

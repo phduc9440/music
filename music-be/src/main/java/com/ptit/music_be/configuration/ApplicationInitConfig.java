@@ -26,6 +26,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ApplicationInitConfig {
 
+    /** Tài khoản gốc: SUPER_ADMIN và cũng là chủ sở hữu các bản nhạc của kho score mẫu. */
+    public static final String ROOT_ADMIN_EMAIL = "admin@music.com";
+
     PasswordEncoder passwordEncoder;
 
     @Bean
@@ -55,9 +58,9 @@ public class ApplicationInitConfig {
                             Role.builder().name("SUPER_ADMIN").build()));
 
             // Seed default admin if not present
-            if (memberRepository.findByEmail("admin@music.com").isEmpty()) {
+            if (memberRepository.findByEmail(ROOT_ADMIN_EMAIL).isEmpty()) {
                 Member admin = Member.builder()
-                        .email("admin@music.com")
+                        .email(ROOT_ADMIN_EMAIL)
                         .passwordHash(passwordEncoder.encode("12345678"))
                         .status(MemberStatus.ACTIVE)
                         .emailVerified(true)
@@ -76,7 +79,7 @@ public class ApplicationInitConfig {
             }
 
             // Tài khoản gốc luôn là SUPER_ADMIN (cũng áp dụng cho DB đã có sẵn admin@music.com từ trước)
-            memberRepository.findByEmail("admin@music.com").ifPresent(root -> {
+            memberRepository.findByEmail(ROOT_ADMIN_EMAIL).ifPresent(root -> {
                 boolean has = memberRoleRepository.existsByMemberAndRole(root, roleSuperAdmin);
                 if (!has) {
                     memberRoleRepository.save(MemberRole.builder()

@@ -15,6 +15,8 @@ import VisibilityBadge from '../common/VisibilityBadge';
 import MidiConvertButton from '../../export/MidiConvertButton';
 import { isTaskFinished } from '../../export/exportUtils';
 import { Icon } from '../../ui';
+import OfficialRequestBanner from './OfficialRequestBanner';
+import PublishToggle from './PublishToggle';
 
 interface Props {
   score: ScoreDetail;
@@ -22,6 +24,8 @@ interface Props {
   onDelete: () => void;
   onShare: () => void;
   onRequestEdit: () => void;
+  /** Gọi khi chủ sở hữu đổi chế độ hiển thị (công khai, hủy yêu cầu, về riêng tư) với bản nhạc đã cập nhật. */
+  onVisibilityChanged: (score: ScoreDetail) => void;
   /** Gọi khi bản nhạc nhập từ MIDI chuyển xong thành MusicXML để trang tải lại. */
   onConverted?: () => void;
 }
@@ -33,7 +37,11 @@ const hasMusicXml = (score: ScoreDetail) => score.files.some((f) => f.fileType =
  * Đầu trang chi tiết: nhãn trạng thái, tiêu đề, dòng phụ, ba thao tác chính (mở, phát, tải xuống) và các thông báo
  * (đang số hóa, xử lý lỗi, bị từ chối công khai).
  */
-export default function ScoreHero({ score, onConverted }: Pick<Props, 'score' | 'onConverted'>) {
+export default function ScoreHero({
+  score,
+  onConverted,
+  onVisibilityChanged,
+}: Pick<Props, 'score' | 'onConverted' | 'onVisibilityChanged'>) {
   const base = useScoreBase();
   const ready = hasMusicXml(score);
   // Bản nhạc nhập từ MIDI chưa có MusicXML: cho chuyển đổi để mở được trình chỉnh sửa và trình phát
@@ -53,6 +61,11 @@ export default function ScoreHero({ score, onConverted }: Pick<Props, 'score' | 
     : score.rejectReason;
   const processing = score.processingStatus === 'PENDING' || score.processingStatus === 'PROCESSING';
 
+  // Chỉ chủ sở hữu đổi được chế độ hiển thị; admin kiểm duyệt có nút riêng ở trang quản trị. Bản trong kho mẫu do
+  // hệ thống quản lý nên không có nút này.
+  const canChangeVisibility =
+    score.canManageSharing && score.accessLevel === 'OWNER' && !base.startsWith('/admin') && !score.isOfficial;
+
   const meta = [
     score.composer || 'Chưa rõ tác giả',
     score.ownerEmail ? `Chủ sở hữu: ${score.ownerEmail}` : null,
@@ -66,6 +79,7 @@ export default function ScoreHero({ score, onConverted }: Pick<Props, 'score' | 
           <div className="sd-badges">
             <StatusBadge status={score.processingStatus} />
             <VisibilityBadge value={score.visibility} />
+            {canChangeVisibility && <PublishToggle score={score} onChanged={onVisibilityChanged} />}
             {score.isOfficial && <span className="sc-chip sc-chip--accent">Kho score mẫu</span>}
             {score.accessLevel && score.accessLevel !== 'OWNER' && (
               <span className="sc-chip sc-chip--accent">Bạn là: {ACCESS_LEVEL_LABELS[score.accessLevel]}</span>
@@ -112,6 +126,8 @@ export default function ScoreHero({ score, onConverted }: Pick<Props, 'score' | 
           </Link>
         </div>
       </div>
+
+      {score.accessLevel === 'OWNER' && !base.startsWith('/admin') && <OfficialRequestBanner scoreId={score.id} />}
 
       {processing && (
         <div className="sd-alert sd-alert--info" role="status">
@@ -184,7 +200,13 @@ export function ScorePreview({ score }: { score: ScoreDetail }) {
 }
 
 /** Cột phải: số liệu nổi bật, thông số, ghi chú luyện tập và các thao tác quản lý. */
-export function ScoreSidebar({ score, onEdit, onDelete, onShare, onRequestEdit }: Omit<Props, 'onConverted'>) {
+export function ScoreSidebar({
+  score,
+  onEdit,
+  onDelete,
+  onShare,
+  onRequestEdit,
+}: Omit<Props, 'onConverted' | 'onVisibilityChanged'>) {
   const base = useScoreBase();
   const highlights: [string, string][] = [
     ['Ô nhịp', score.measureCount?.toString() ?? '—'],

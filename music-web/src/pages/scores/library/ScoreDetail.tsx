@@ -142,7 +142,11 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
     <div className="sc-page">
       {navbar}
       <main className="sc-container">
-        <ScoreHero score={score} onConverted={() => setTick((n) => n + 1)} />
+        <ScoreHero
+          score={score}
+          onConverted={() => setTick((n) => n + 1)}
+          onVisibilityChanged={(updated) => setState({ phase: 'ready', score: updated })}
+        />
 
         <div className="sd-layout">
           <div className="sd-main">

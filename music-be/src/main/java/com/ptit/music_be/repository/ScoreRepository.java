@@ -116,6 +116,11 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
             """
 			select s from Score s
 			where s.visibility = 'PUBLIC' and (s.isOfficial is null or s.isOfficial = false)
+			and s.originalScoreId is null
+			and not exists (select 1 from OfficialRequest r where r.score = s
+				and (r.status = com.ptit.music_be.dto.enums.OfficialRequestStatus.PENDING
+					or (r.status = com.ptit.music_be.dto.enums.OfficialRequestStatus.ACCEPTED
+						and exists (select 1 from Score c where c.id = r.copyScoreId))))
 			and (lower(s.title) like lower(concat('%', :keyword, '%')) escape '\\'
 				or lower(coalesce(s.composer, '')) like lower(concat('%', :keyword, '%')) escape '\\')
 			order by s.updatedAt desc, s.id

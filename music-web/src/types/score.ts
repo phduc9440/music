@@ -97,6 +97,8 @@ export interface ScoreSummary {
   /** Chỉ có trong danh sách "Được chia sẻ với tôi". */
   accessLevel?: AccessLevel | null;
   thumbnailUrl?: string | null;
+  /** Bản trong kho mẫu: tên người phối (chủ bản gốc). */
+  arrangerName?: string | null;
   /** Chỉ có trong trang Khám phá: tên người chia sẻ (không có email), lượt xem, điểm sao trung bình và số lượt chấm. */
   ownerName?: string | null;
   viewCount?: number | null;
@@ -278,7 +280,10 @@ export type NotificationType =
   | 'PUBLISH_REJECTED'
   | 'NEW_REVIEW'
   | 'ANNOUNCEMENT'
-  | 'SCORE_TRASHED_BY_ADMIN';
+  | 'SCORE_TRASHED_BY_ADMIN'
+  | 'OFFICIAL_REQUESTED'
+  | 'OFFICIAL_ACCEPTED'
+  | 'OFFICIAL_DECLINED';
 
 export interface AppNotification {
   id: string;
@@ -482,4 +487,23 @@ export interface AiTaskSummary {
   failedLast24h: number;
   completedLast24h: number;
   averageRunSeconds: { taskType: string; seconds: number; count: number }[];
+}
+
+// Lời xin đưa bản nhạc vào kho score mẫu (BE: OfficialRequestResponse)
+export type OfficialRequestStatus = 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'CANCELED';
+
+export interface OfficialRequest {
+  id: string;
+  scoreId: string;
+  scoreTitle: string;
+  composer?: string | null;
+  status: OfficialRequestStatus;
+  /** Quản trị viên đã xin (tên, hoặc email nếu chưa đặt tên). */
+  requestedBy: string;
+  /** Chỉ có ở danh sách của quản trị viên. */
+  ownerEmail?: string | null;
+  /** Bản sao trong kho mẫu, có khi chủ đã đồng ý. */
+  copyScoreId?: string | null;
+  createdAt?: string;
+  resolvedAt?: string | null;
 }

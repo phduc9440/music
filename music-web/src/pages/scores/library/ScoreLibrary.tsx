@@ -5,7 +5,7 @@ import { LibraryEmpty, LibrarySkeleton } from '../../../components/scores/librar
 import Pagination from '../../../components/scores/common/Pagination';
 import ScoreCard from '../../../components/scores/library/ScoreCard';
 import ScoreFilters from '../../../components/scores/library/ScoreFilters';
-import { scoreApi, tagApi } from '../../../services';
+import { officialRequestApi, scoreApi, tagApi } from '../../../services';
 import type {
   Difficulty,
   PageResult,
@@ -34,6 +34,8 @@ export default function ScoreLibrary() {
   const [difficulty, setDifficulty] = useState<Difficulty | ''>('');
   const [tagId, setTagId] = useState('');
   const [allTags, setAllTags] = useState<Tag[]>([]);
+  // Số lời xin đưa bản nhạc của mình vào kho mẫu đang chờ trả lời
+  const [pendingOfficial, setPendingOfficial] = useState(0);
   const [sort, setSort] = useState<ScoreSort>('newest');
 
   // Dữ liệu: key = bộ lọc của lần tải xong gần nhất, dùng để biết đang tải lại hay không
@@ -50,6 +52,14 @@ export default function ScoreLibrary() {
       .list()
       .then((res) => setAllTags(res.data.result))
       .catch(() => setAllTags([]));
+  }, []);
+
+  // Lời xin vào kho mẫu đang chờ; lỗi thì không hiện nút, không chặn trang
+  useEffect(() => {
+    officialRequestApi
+      .mine()
+      .then((res) => setPendingOfficial(res.data.result.length))
+      .catch(() => setPendingOfficial(0));
   }, []);
 
   // Debounce ô tìm kiếm 400ms để không gọi API sau mỗi phím gõ
@@ -120,6 +130,11 @@ export default function ScoreLibrary() {
             <p>{data ? `${data.totalElements} bản nhạc trong thư viện` : 'Quản lý và theo dõi các bản nhạc'}</p>
           </div>
           <div className="sc-lib-head__actions">
+            {pendingOfficial > 0 && (
+              <button className="sc-btn sc-btn--primary" onClick={() => navigate('/scores/official-requests')}>
+                Lời xin vào kho mẫu ({pendingOfficial})
+              </button>
+            )}
             <button className="sc-btn" onClick={() => navigate('/scores/trash')}>
               Thùng rác
             </button>

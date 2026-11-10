@@ -17,6 +17,7 @@
 .sd-badges {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.4rem;
   margin-bottom: 0.6rem;
 }
@@ -64,6 +65,11 @@
 .sd-alert a {
   margin-left: auto;
   font-weight: 600;
+}
+.sd-alert__actions {
+  display: inline-flex;
+  gap: 0.4rem;
+  margin-left: auto;
 }
 .sd-alert--info {
   background: var(--ui-primary-soft);

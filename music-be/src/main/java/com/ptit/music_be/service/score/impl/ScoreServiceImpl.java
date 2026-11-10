@@ -47,6 +47,7 @@ import com.ptit.music_be.mapper.ScoreFileMapper;
 import com.ptit.music_be.repository.AiTaskRepository;
 import com.ptit.music_be.repository.MemberRepository;
 import com.ptit.music_be.repository.MemberScoreRepository;
+import com.ptit.music_be.repository.OfficialRequestRepository;
 import com.ptit.music_be.repository.ScoreFileRepository;
 import com.ptit.music_be.repository.ScoreRepository;
 import com.ptit.music_be.repository.ScoreReviewRepository;
@@ -81,6 +82,7 @@ public class ScoreServiceImpl implements ScoreService {
     TagRepository tagRepository;
     MemberScoreRepository memberScoreRepository;
     ScoreReviewRepository scoreReviewRepository;
+    OfficialRequestRepository officialRequestRepository;
     ScoreTagRepository scoreTagRepository;
     ScoreFileService scoreFileService;
     NotificationService notificationService;
@@ -442,24 +444,24 @@ public class ScoreServiceImpl implements ScoreService {
 
     @Override
     @Transactional
-    public ScoreDetailResponse markOfficial(String scoreId) {
-        requireAdmin();
-        Score score = findScore(scoreId);
-        // Không công khai bản riêng tư của người dùng chỉ vì đưa vào kho: phải đã được công khai trước
-        if (!Visibility.PUBLIC.name().equals(score.getVisibility())) {
-            throw new AppException(ErrorCode.SCORE_NOT_PUBLIC_FOR_OFFICIAL);
-        }
-        score.setIsOfficial(true);
-        return toDetail(scoreRepository.save(score));
-    }
-
-    @Override
-    @Transactional
     public ScoreDetailResponse unmarkOfficial(String scoreId) {
         requireAdmin();
         Score score = findScore(scoreId);
         score.setIsOfficial(false);
-        return toDetail(scoreRepository.save(score));
+        if (score.getOriginalScoreId() != null) {
+            // Bản sao trong kho mẫu thuộc tài khoản hệ thống: vào thùng rác, bản gốc của người dùng không đụng tới
+            Member actor = memberRepository
+                    .findByEmail(SecurityUtils.getCurrentEmail())
+                    .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+            score.setVisibility(Visibility.PRIVATE.name());
+            score.setDeletedAt(LocalDateTime.now());
+            score.setDeletedBy(actor.getId());
+            score.setDeleteReason("Gỡ khỏi kho score mẫu");
+        }
+        Score saved = scoreRepository.save(score);
+        // Rút lời xin đã nhận để quản trị viên có thể xin lại bản gốc sau này
+        officialRequestRepository.cancelAcceptedByCopy(scoreId);
+        return toDetail(saved);
     }
 
     private PageResponse<ScoreSummaryResponse> toSummaryPage(Page<Score> result, boolean withOwner) {
@@ -667,6 +669,7 @@ public class ScoreServiceImpl implements ScoreService {
                 .sourceType(score.getSourceType())
                 .visibility(score.getVisibility())
                 .isOfficial(score.getIsOfficial())
+                .arrangerName(score.getArrangerName())
                 .measureCount(score.getMeasureCount())
                 .tags(tags)
                 .thumbnailUrl(thumbnail == null ? null : "/api/files/" + thumbnail.getId() + "/download?inline=true")
@@ -712,6 +715,7 @@ public class ScoreServiceImpl implements ScoreService {
                 .sourceType(score.getSourceType())
                 .visibility(score.getVisibility())
                 .isOfficial(score.getIsOfficial())
+                .arrangerName(score.getArrangerName())
                 .tags(score.getScoreTags().stream()
                         .map(ScoreTag::getTag)
                         .map(ScoreServiceImpl::toTagResponse)

@@ -17,5 +17,11 @@ public enum NotificationType {
     /** Thông báo chung do ADMIN gửi cho một nhóm người dùng. */
     ANNOUNCEMENT,
     /** ADMIN đã chuyển bản nhạc của bạn vào thùng rác (kèm lý do nếu có). */
-    SCORE_TRASHED_BY_ADMIN
+    SCORE_TRASHED_BY_ADMIN,
+    /** Gửi chủ bản nhạc: quản trị viên xin đưa bản nhạc vào kho score mẫu, chờ đồng ý. */
+    OFFICIAL_REQUESTED,
+    /** Gửi quản trị viên: chủ đã đồng ý, bản sao đã vào kho mẫu. */
+    OFFICIAL_ACCEPTED,
+    /** Gửi quản trị viên: chủ đã từ chối. */
+    OFFICIAL_DECLINED
 }
