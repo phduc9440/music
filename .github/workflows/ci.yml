@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [dev, main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: ci_password
+          MYSQL_DATABASE: music_db
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -pci_password --silent"
+          --health-interval=5s --health-timeout=5s --health-retries=30
+    defaults:
+      run:
+        working-directory: music-be
+    env:
+      SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/music_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ci_password
+      MAIL_USERNAME: ci@example.com
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      # application.yaml bị .gitignore nên CI dùng bản .example, giá trị thật lấy từ biến môi trường ở trên.
+      - run: cp src/main/resources/application.yaml.example src/main/resources/application.yaml
+      - run: chmod +x mvnw && ./mvnw -B spotless:check test
+
+  music-ai:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: music-ai
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: music-ai/requirements.txt
+      # Bỏ torch và các gói kéo theo (nặng, chỉ cần khi chạy model thật); test cần chúng tự bỏ qua bằng importorskip.
+      - name: Cài gói nhẹ
+        run: |
+          pip install fastapi "uvicorn[standard]" pydantic httpx numpy opencv-python-headless pillow pymupdf \
+            "music21>=9.1" loguru pytest
+      - run: python -m pytest -q
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: music-web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: music-web/package-lock.json
+      - run: npm ci
+      - run: npx tsc -b
+      # TODO: chạy `npx eslint src` toàn bộ khi Đức sửa xong lỗi ở Admin, Profile, Login, GoogleAuthButton,
+      # ChangePasswordModal. Tạm thời chỉ kiểm thư mục của phần bản nhạc.
+      - run: npx eslint src/pages/scores src/components/scores src/components/player src/components/editor src/components/export
+      - run: npm run lint:colors
+      - run: npm run build
