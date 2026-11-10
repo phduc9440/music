@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import com.ptit.music_be.dto.request.AnnouncementRequest;
 import com.ptit.music_be.dto.response.AnnouncementResponse;
 import com.ptit.music_be.dto.response.ApiResponse;
-import com.ptit.music_be.service.AdminAnnouncementService;
+import com.ptit.music_be.service.admin.AdminAnnouncementService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;

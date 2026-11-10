@@ -1,4 +1,4 @@
-package com.ptit.music_be.service.impl;
+package com.ptit.music_be.service.admin.impl;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,7 +12,7 @@ import com.ptit.music_be.dto.request.AdminScoreBulkRequest;
 import com.ptit.music_be.dto.response.AdminScoreBulkResponse;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
-import com.ptit.music_be.service.AdminScoreBulkService;
+import com.ptit.music_be.service.admin.AdminScoreBulkService;
 import com.ptit.music_be.service.ScoreService;
 
 import lombok.AccessLevel;

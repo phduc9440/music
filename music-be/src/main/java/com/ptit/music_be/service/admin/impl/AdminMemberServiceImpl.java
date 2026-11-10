@@ -1,4 +1,4 @@
-package com.ptit.music_be.service.impl;
+package com.ptit.music_be.service.admin.impl;
 
 import java.util.List;
 import java.util.Set;
@@ -27,7 +27,7 @@ import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.mapper.MemberMapper;
 import com.ptit.music_be.repository.MemberRepository;
 import com.ptit.music_be.repository.RoleRepository;
-import com.ptit.music_be.service.AdminMemberService;
+import com.ptit.music_be.service.admin.AdminMemberService;
 import com.ptit.music_be.utils.SecurityUtils;
 
 import lombok.AccessLevel;

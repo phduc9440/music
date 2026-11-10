@@ -1,4 +1,4 @@
-package com.ptit.music_be.service.impl;
+package com.ptit.music_be.service.admin.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;

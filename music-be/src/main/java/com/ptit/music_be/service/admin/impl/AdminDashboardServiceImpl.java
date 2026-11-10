@@ -1,4 +1,4 @@
-package com.ptit.music_be.service.impl;
+package com.ptit.music_be.service.admin.impl;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -21,7 +21,7 @@ import com.ptit.music_be.dto.response.AdminDashboardResponse.DayPractice;
 import com.ptit.music_be.dto.response.AdminDashboardResponse.KeyCount;
 import com.ptit.music_be.dto.response.AdminDashboardResponse.TopScore;
 import com.ptit.music_be.dto.response.AdminDashboardResponse.Totals;
-import com.ptit.music_be.service.AdminDashboardService;
+import com.ptit.music_be.service.admin.AdminDashboardService;
 
 import lombok.extern.slf4j.Slf4j;
 

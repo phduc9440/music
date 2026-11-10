@@ -1,4 +1,4 @@
-package com.ptit.music_be.service.impl;
+package com.ptit.music_be.service.admin.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -13,7 +13,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 import com.ptit.music_be.dto.response.AdminMemberDetailResponse;
 import com.ptit.music_be.repository.MemberRepository;
-import com.ptit.music_be.service.AdminMemberService;
+import com.ptit.music_be.service.admin.AdminMemberService;
 
 /** Chạy các câu JPQL của chi tiết thành viên với DB thật (cần MySQL đang chạy). */
 @SpringBootTest

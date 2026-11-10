@@ -7,7 +7,7 @@ import com.ptit.music_be.dto.response.AdminMemberDetailResponse;
 import com.ptit.music_be.dto.response.ApiResponse;
 import com.ptit.music_be.dto.response.MemberResponse;
 import com.ptit.music_be.dto.response.PageResponse;
-import com.ptit.music_be.service.AdminMemberService;
+import com.ptit.music_be.service.admin.AdminMemberService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;

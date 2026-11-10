@@ -1,4 +1,4 @@
-package com.ptit.music_be.service.impl;
+package com.ptit.music_be.service.admin.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -18,7 +18,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import com.ptit.music_be.dto.response.AdminAiTaskResponse;
 import com.ptit.music_be.dto.response.PageResponse;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.service.AdminAiTaskService;
+import com.ptit.music_be.service.admin.AdminAiTaskService;
 
 /** Chạy các câu JPQL của trang giám sát tác vụ AI với DB thật, chỉ đọc (cần MySQL đang chạy). */
 @SpringBootTest

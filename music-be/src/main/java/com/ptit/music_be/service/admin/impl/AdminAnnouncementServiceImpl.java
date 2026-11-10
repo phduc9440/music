@@ -1,4 +1,4 @@
-package com.ptit.music_be.service.impl;
+package com.ptit.music_be.service.admin.impl;
 
 import java.util.List;
 
@@ -14,7 +14,7 @@ import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.repository.MemberRepository;
-import com.ptit.music_be.service.AdminAnnouncementService;
+import com.ptit.music_be.service.admin.AdminAnnouncementService;
 import com.ptit.music_be.service.NotificationService;
 import com.ptit.music_be.utils.SecurityUtils;
 

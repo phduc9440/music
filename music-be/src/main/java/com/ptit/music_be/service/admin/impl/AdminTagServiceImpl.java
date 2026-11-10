@@ -1,4 +1,4 @@
-package com.ptit.music_be.service.impl;
+package com.ptit.music_be.service.admin.impl;
 
 import java.text.Normalizer;
 import java.util.HashMap;
@@ -17,7 +17,7 @@ import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.repository.ScoreTagRepository;
 import com.ptit.music_be.repository.TagRepository;
-import com.ptit.music_be.service.AdminTagService;
+import com.ptit.music_be.service.admin.AdminTagService;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
