@@ -29,8 +29,12 @@ services:
       - hf-cache:/cache/huggingface
 
   music-be:
-    build: ./music-be
-    platform: linux/amd64
+    build:
+      context: ./music-be
+      args:
+        BE_PLATFORM: ${BE_PLATFORM:-linux/amd64}
+        WITH_MUSESCORE: ${WITH_MUSESCORE:-1}
+    platform: ${BE_PLATFORM:-linux/amd64}
     depends_on:
       mysql:
         condition: service_healthy
