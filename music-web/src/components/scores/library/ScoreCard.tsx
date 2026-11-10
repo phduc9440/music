@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import AuthImage from '../common/AuthImage';
 import StatusBadge from '../common/StatusBadge';
 import { ACCESS_LEVEL_LABELS, DIFFICULTY_LABELS, SOURCE_LABELS, formatRelative } from '../../../utils/score';
@@ -9,10 +10,12 @@ interface Props {
   onOpen: (score: ScoreSummary) => void;
   /** Thẻ ở trang Khám phá: ẩn nhãn quyền riêng tư và trạng thái xử lý (ai cũng thấy là công khai, đã xong). */
   explore?: boolean;
+  /** Nút thêm ở cuối thẻ (ví dụ "Lưu vào playlist"); bấm vào không mở bản nhạc. */
+  actions?: ReactNode;
 }
 
 /** Một thẻ bản nhạc trong lưới thư viện. */
-export default function ScoreCard({ score, onOpen, explore = false }: Props) {
+export default function ScoreCard({ score, onOpen, explore = false, actions }: Props) {
   return (
     <article
       className="sc-card"
@@ -66,6 +69,11 @@ export default function ScoreCard({ score, onOpen, explore = false }: Props) {
           <span>{score.measureCount ? `${score.measureCount} ô nhịp` : '—'}</span>
           <span>{formatRelative(score.updatedAt)}</span>
         </div>
+        {actions && (
+          <div className="sc-card__actions" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+            {actions}
+          </div>
+        )}
       </div>
     </article>
   );

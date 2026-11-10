@@ -20,6 +20,7 @@ import com.ptit.music_be.dto.response.ApiResponse;
 import com.ptit.music_be.dto.response.PageResponse;
 import com.ptit.music_be.dto.response.ScoreDetailResponse;
 import com.ptit.music_be.dto.response.ScoreSummaryResponse;
+import com.ptit.music_be.service.score.PublicScoreFilter;
 import com.ptit.music_be.service.score.ScoreService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -104,8 +105,8 @@ public class ScoreController {
 
     @GetMapping("/public")
     @Operation(
-            summary = "Explore: scores that are PUBLIC; keyword (title/composer), difficulty, tagId; "
-                    + "sort: NEWEST (default) | VIEWS | RATING",
+            summary = "Explore: scores that are PUBLIC; keyword (title/composer), difficulty, tagId, composerId, "
+                    + "staffs (1 | 2 | 3 = three or more), key (e.g. G, Am); sort: NEWEST (default) | VIEWS | RATING",
             description = "Cards carry ownerName (never the owner's email), viewCount, ratingAverage and ratingCount.",
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<PageResponse<ScoreSummaryResponse>> getPublicScores(
@@ -114,9 +115,13 @@ public class ScoreController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String difficulty,
             @RequestParam(required = false) String tagId,
+            @RequestParam(required = false) String composerId,
+            @RequestParam(required = false) Integer staffs,
+            @RequestParam(required = false) String key,
             @RequestParam(required = false) String sort) {
+        PublicScoreFilter filter = new PublicScoreFilter(keyword, difficulty, tagId, composerId, staffs, key);
         return ApiResponse.<PageResponse<ScoreSummaryResponse>>builder()
-                .result(scoreService.getPublicScores(page, size, keyword, difficulty, tagId, sort))
+                .result(scoreService.getPublicScores(page, size, filter, sort))
                 .build();
     }
 
@@ -128,9 +133,10 @@ public class ScoreController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String difficulty) {
+            @RequestParam(required = false) String difficulty,
+            @RequestParam(required = false) String composerId) {
         return ApiResponse.<PageResponse<ScoreSummaryResponse>>builder()
-                .result(scoreService.getOfficialScores(page, size, keyword, difficulty))
+                .result(scoreService.getOfficialScores(page, size, keyword, difficulty, composerId))
                 .build();
     }
 
@@ -149,7 +155,8 @@ public class ScoreController {
 
     @DeleteMapping("/{scoreId}/official")
     @Operation(
-            summary = "ADMIN: remove a score from the curated library (a copy goes to the trash, the owner's original is untouched)",
+            summary =
+                    "ADMIN: remove a score from the curated library (a copy goes to the trash, the owner's original is untouched)",
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<ScoreDetailResponse> unmarkOfficial(@PathVariable String scoreId) {
         return ApiResponse.<ScoreDetailResponse>builder()

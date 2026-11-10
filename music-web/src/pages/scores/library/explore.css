@@ -1,0 +1,296 @@
+/* Trang Khám phá (/explore): cột lọc bên trái, lưới bản nhạc bên phải. Màu lấy từ styles/tokens.css. */
+.ex-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.ex-head h1 {
+  margin: 0;
+  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+}
+
+.ex-head p {
+  margin: 0.25rem 0 0;
+  color: var(--ui-text-2);
+}
+
+.ex-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: min(100%, 440px);
+  padding: 0.3rem 0.35rem 0.3rem 0.85rem;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: 999px;
+  background: var(--ui-surface);
+  color: var(--ui-text-3);
+}
+
+.ex-search:focus-within {
+  border-color: var(--ui-primary);
+  box-shadow: 0 0 0 3px var(--ui-primary-ring);
+}
+
+.ex-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ui-text);
+  font: inherit;
+}
+
+.ex-search .sc-btn {
+  border-radius: 999px;
+}
+
+/* ---- hàng chip bộ lọc đang chọn + sắp xếp ---- */
+.ex-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid var(--ui-border);
+}
+
+.ex-filter-toggle {
+  display: none;
+}
+
+.ex-chips {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.ex-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--ui-primary-border);
+  border-radius: 999px;
+  background: var(--ui-primary-soft);
+  color: var(--ui-primary);
+  font: inherit;
+  font-size: var(--ui-text-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ex-chip:hover {
+  border-color: var(--ui-primary);
+}
+
+.ex-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ui-primary);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.ex-sort {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-sm);
+}
+
+.ex-sort .sc-input {
+  width: auto;
+}
+
+/* ---- bố cục hai cột ---- */
+.ex-layout {
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.ex-filters {
+  position: sticky;
+  top: calc(var(--ui-header-h) + 1rem);
+  max-height: calc(100vh - var(--ui-header-h) - 2rem);
+  overflow-y: auto;
+  padding: 1rem;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-surface);
+}
+
+.ex-group {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.ex-group + .ex-group {
+  margin-top: 1.1rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--ui-border);
+}
+
+.ex-group legend {
+  margin-bottom: 0.55rem;
+  padding: 0;
+  color: var(--ui-text-3);
+  font-size: var(--ui-text-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ex-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.ex-option {
+  padding: 0.3rem 0.65rem;
+  border: 1px solid var(--ui-border);
+  border-radius: 999px;
+  background: var(--ui-surface);
+  color: var(--ui-text-2);
+  font: inherit;
+  font-size: var(--ui-text-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.ex-option:hover {
+  border-color: var(--ui-border-strong);
+  color: var(--ui-text);
+}
+
+.ex-option--on,
+.ex-option--on:hover {
+  border-color: var(--ui-primary);
+  background: var(--ui-primary);
+  color: var(--ui-on-accent);
+}
+
+.ex-option:focus-visible,
+.ex-composer:focus-visible,
+.ex-chip:focus-visible {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 2px;
+}
+
+.ex-composer-search {
+  margin-bottom: 0.5rem;
+}
+
+.ex-composers {
+  margin: 0;
+  padding: 0;
+  max-height: 260px;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.ex-composer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.35rem 0.5rem;
+  border: 0;
+  border-radius: var(--ui-radius-sm);
+  background: none;
+  color: var(--ui-text);
+  font: inherit;
+  font-size: var(--ui-text-md);
+  text-align: left;
+  cursor: pointer;
+}
+
+.ex-composer:hover {
+  background: var(--ui-surface-hover);
+}
+
+.ex-composer small {
+  color: var(--ui-text-3);
+}
+
+.ex-composer--on,
+.ex-composer--on:hover {
+  background: var(--ui-primary-soft);
+  color: var(--ui-primary);
+  font-weight: 600;
+}
+
+.ex-muted {
+  padding: 0.35rem 0.5rem;
+  color: var(--ui-text-3);
+  font-size: var(--ui-text-sm);
+}
+
+.ex-results {
+  min-width: 0;
+}
+
+.ex-skeleton {
+  min-height: 320px;
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-surface-muted);
+  animation: ex-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes ex-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* Màn hình nhỏ: cột lọc thành khối gập/mở bằng nút "Bộ lọc" */
+@media (max-width: 900px) {
+  .ex-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ex-filter-toggle {
+    display: inline-flex;
+  }
+
+  .ex-filters {
+    display: none;
+    position: static;
+    max-height: none;
+  }
+
+  .ex-filters--open {
+    display: block;
+  }
+
+  .ex-sort {
+    margin-left: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ex-skeleton {
+    animation: none;
+  }
+}

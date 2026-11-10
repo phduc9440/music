@@ -44,6 +44,7 @@ const MENU: { section: string; items: MenuItem[] }[] = [
       { to: '/admin/pending-scores', label: 'Chờ duyệt công khai', icon: 'clock', pendingBadge: true },
       { to: '/admin/official-scores', label: 'Kho score mẫu', icon: 'library' },
       { to: '/admin/tags', label: 'Thể loại', icon: 'tag' },
+      { to: '/admin/composers', label: 'Nhạc sĩ', icon: 'users' },
     ],
   },
   {

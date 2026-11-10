@@ -14,3 +14,4 @@ export * from './notificationApi';
 export * from './playlistApi';
 export * from './practiceApi';
 export * from './homeApi';
+export * from './composerApi';

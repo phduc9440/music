@@ -1,0 +1,413 @@
+/* Trang Nhạc sĩ (/composers) và chi tiết nhạc sĩ (/composers/:slug), mục 5.4. Màu lấy từ styles/tokens.css. */
+.cp-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.cp-head h1,
+.cd-hero h1,
+.cd-section__head h2 {
+  margin: 0;
+  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+}
+
+.cp-head h1 {
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+}
+
+.cp-head p {
+  margin: 0.25rem 0 0;
+  color: var(--ui-text-2);
+}
+
+.cp-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: min(100%, 320px);
+  padding: 0.5rem 0.85rem;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: 999px;
+  background: var(--ui-surface);
+  color: var(--ui-text-3);
+}
+
+.cp-search:focus-within {
+  border-color: var(--ui-primary);
+  box-shadow: 0 0 0 3px var(--ui-primary-ring);
+}
+
+.cp-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ui-text);
+  font: inherit;
+}
+
+/* ---- tab thời kỳ ---- */
+.cp-tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--ui-border);
+  overflow-x: auto;
+}
+
+.cp-tab {
+  flex: none;
+  padding: 0.6rem 0.9rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--ui-text-2);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cp-tab:hover {
+  color: var(--ui-text);
+}
+
+.cp-tab--on {
+  border-bottom-color: var(--ui-primary);
+  color: var(--ui-primary);
+}
+
+.cp-tab:focus-visible,
+.cp-card:focus-visible {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 2px;
+}
+
+/* ---- lưới thẻ nhạc sĩ ---- */
+.cp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 1.25rem;
+}
+
+.cp-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-surface);
+  color: inherit;
+  text-decoration: none;
+  overflow: hidden;
+  box-shadow: var(--ui-shadow-sm);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.cp-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--ui-brass);
+  box-shadow: var(--ui-shadow-pop);
+  color: inherit;
+}
+
+.cp-card--skeleton {
+  min-height: 330px;
+  background: var(--ui-surface-muted);
+  animation: cp-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes cp-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.cp-card__portrait {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+}
+
+.cp-card__period {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: var(--ui-stage-bg);
+  color: var(--ui-brass);
+  font-size: var(--ui-text-xs);
+  font-weight: 700;
+}
+
+.cp-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.85rem 1rem 1rem;
+}
+
+.cp-card__body strong {
+  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  font-size: 1.05rem;
+}
+
+.cp-card__body span {
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-sm);
+}
+
+.cp-card__body .cp-card__count {
+  margin-top: 0.35rem;
+  color: var(--ui-text-3);
+  font-size: var(--ui-text-xs);
+}
+
+/* ---- chi tiết: phần đầu ---- */
+.cd-hero {
+  display: grid;
+  grid-template-columns: minmax(200px, 300px) minmax(0, 1fr);
+  gap: 2rem;
+  margin: 1rem 0 1.5rem;
+  padding: 1.5rem;
+  border-radius: var(--ui-radius-lg);
+  background: radial-gradient(ellipse at 100% 0%, var(--ui-stage-bg-2), transparent 70%), var(--ui-stage-bg);
+  color: var(--ui-stage-text);
+}
+
+.cd-hero__portrait {
+  margin: 0;
+  aspect-ratio: 4 / 5;
+  border-radius: var(--ui-radius);
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 10px 30px color-mix(in srgb, var(--ui-shadow-ink) 45%, transparent);
+}
+
+.cd-hero__portrait figcaption {
+  position: absolute;
+  inset: auto 0 0;
+  padding: 0.35rem 0.6rem;
+  background: color-mix(in srgb, var(--ui-stage-bg) 80%, transparent);
+  color: var(--ui-stage-text-2);
+  font-size: var(--ui-text-xs);
+}
+
+.cd-hero__portrait figcaption a {
+  color: var(--ui-brass);
+}
+
+.cd-hero__text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.cd-hero__period {
+  padding: 0.2rem 0.65rem;
+  border: 1px solid var(--ui-brass);
+  border-radius: 999px;
+  color: var(--ui-brass);
+  font-size: var(--ui-text-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.cd-hero h1 {
+  margin-top: 0.6rem;
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  line-height: 1.15;
+}
+
+.cd-hero__meta {
+  margin: 0.4rem 0 0;
+  color: var(--ui-brass);
+  font-weight: 600;
+}
+
+.cd-hero__aliases {
+  margin: 0.3rem 0 0;
+  color: var(--ui-stage-text-2);
+  font-size: var(--ui-text-sm);
+}
+
+.cd-hero__bio {
+  max-width: 640px;
+  margin: 1rem 0 0;
+  color: var(--ui-stage-text);
+  font-size: 1.02rem;
+  line-height: 1.7;
+}
+
+.cd-hero__bio--empty {
+  color: var(--ui-stage-text-2);
+  font-style: italic;
+}
+
+.cd-hero__actions {
+  margin-top: auto;
+  padding-top: 1.25rem;
+}
+
+/* nút chính trên nền sân khấu: vàng đồng */
+.cd-hero__actions .sc-btn--primary {
+  border-color: var(--ui-brass);
+  background: var(--ui-brass);
+  color: var(--ui-stage-bg);
+}
+
+.cd-hero__actions .sc-btn--primary:hover {
+  border-color: var(--ui-brass-hover);
+  background: var(--ui-brass-hover);
+  color: var(--ui-stage-bg);
+}
+
+/* ---- dòng thời gian ---- */
+.cd-timeline {
+  margin-bottom: 2rem;
+  padding: 1.1rem 1.25rem 0.9rem;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-surface);
+}
+
+.cd-timeline__track {
+  position: relative;
+  height: 44px;
+  border-radius: var(--ui-radius-sm);
+  background: var(--ui-surface-muted);
+  overflow: hidden;
+}
+
+.cd-timeline__era {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: flex-start;
+  padding: 0.2rem 0.4rem;
+  border-right: 1px solid var(--ui-border);
+  color: var(--ui-text-3);
+  font-size: var(--ui-text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.cd-timeline__era--classical,
+.cd-timeline__era--modern {
+  background: var(--ui-surface-hover);
+}
+
+.cd-timeline__era--on {
+  background: var(--ui-primary-soft);
+  color: var(--ui-primary);
+}
+
+.cd-timeline__life {
+  position: absolute;
+  bottom: 6px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--ui-brass);
+  box-shadow: 0 0 0 2px var(--ui-surface);
+}
+
+.cd-timeline__axis {
+  position: relative;
+  height: 1.2rem;
+  margin-top: 0.3rem;
+  color: var(--ui-text-3);
+  font-size: var(--ui-text-xs);
+}
+
+.cd-timeline__axis span {
+  position: absolute;
+  transform: translateX(-50%);
+}
+
+.cd-timeline__axis span:first-child {
+  transform: none;
+}
+
+.cd-timeline__caption {
+  margin: 0.4rem 0 0;
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-sm);
+}
+
+/* ---- các khối bản nhạc ---- */
+.cd-section {
+  margin-bottom: 2rem;
+}
+
+.cd-section__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.cd-section__head h2 {
+  font-size: 1.35rem;
+}
+
+.cd-section__more {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  color: var(--ui-primary);
+  font-size: var(--ui-text-sm);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.cd-empty {
+  margin: 0;
+  color: var(--ui-text-2);
+}
+
+.cd-skeleton {
+  min-height: 360px;
+  margin-top: 2.5rem;
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-surface-muted);
+  animation: cp-pulse 1.4s ease-in-out infinite;
+}
+
+@media (max-width: 720px) {
+  .cd-hero {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.25rem;
+  }
+
+  .cd-hero__portrait {
+    max-width: 240px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cp-card {
+    transition: none;
+  }
+
+  .cp-card:hover {
+    transform: none;
+  }
+
+  .cp-card--skeleton,
+  .cd-skeleton {
+    animation: none;
+  }
+}

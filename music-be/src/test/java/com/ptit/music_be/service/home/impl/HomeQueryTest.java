@@ -17,7 +17,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
@@ -138,18 +137,6 @@ class HomeQueryTest {
         scoreRepository.saveAll(List.of(done, failed));
 
         assertEquals(before + 4, homeQueryRepository.sumDigitizedPages());
-    }
-
-    @Test
-    void composerTitlesArePublicOnlyAndMostViewedFirst() {
-        String composer = tag + " Bach";
-        score(owner, "Ít xem", "PUBLIC", composer, 1);
-        score(owner, "Xem nhiều", "PUBLIC", "  " + composer + " ", 50); // khoảng trắng hai đầu vẫn gom chung
-        score(owner, "Riêng tư", "PRIVATE", composer, 999);
-
-        assertEquals(
-                List.of(tag + " Xem nhiều", tag + " Ít xem"),
-                homeQueryRepository.publicTitlesOfComposer(composer, PageRequest.of(0, 3)));
     }
 
     @Test

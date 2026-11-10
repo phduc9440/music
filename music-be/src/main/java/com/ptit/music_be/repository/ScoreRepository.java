@@ -42,8 +42,7 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
      * Danh sách bản nhạc của một thành viên, có tìm theo tên/tác giả và lọc trạng thái/nguồn/độ khó/thể loại.
      * Tham số rỗng ("") nghĩa là không lọc; service luôn truyền chuỗi, không truyền null.
      */
-    @Query(
-            """
+    @Query("""
 			select s from Score s
 			where s.member.id = :memberId
 			and (lower(s.title) like lower(concat('%', :keyword, '%')) escape '\\'
@@ -63,36 +62,42 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
             Pageable pageable);
 
     /**
-     * Kho score mẫu (is_official = true): tìm theo tên/tác giả, lọc độ khó ("" là không lọc), sắp từ dễ đến khó rồi
+     * Kho score mẫu (is_official = true): tìm theo tên/tác giả, lọc độ khó và nhạc sĩ ("" là không lọc), sắp từ dễ đến khó rồi
      * theo tên để người mới học bắt đầu từ bài dễ.
      */
-    @Query(
-            """
+    @Query("""
 			select s from Score s
 			where s.isOfficial = true
 			and (lower(s.title) like lower(concat('%', :keyword, '%')) escape '\\'
 				or lower(coalesce(s.composer, '')) like lower(concat('%', :keyword, '%')) escape '\\')
 			and (:difficulty = '' or cast(s.difficulty as string) = :difficulty)
+			and (:composerId = '' or s.composerId = :composerId)
 			order by case cast(s.difficulty as string)
 				when 'EASY' then 1 when 'MEDIUM' then 2 when 'HARD' then 3 when 'EXPERT' then 4 else 5 end,
 				lower(s.title), s.id
 			""")
     Page<Score> searchOfficial(
-            @Param("keyword") String keyword, @Param("difficulty") String difficulty, Pageable pageable);
+            @Param("keyword") String keyword,
+            @Param("difficulty") String difficulty,
+            @Param("composerId") String composerId,
+            Pageable pageable);
 
     /**
-     * Phần chung của trang Khám phá: bản PUBLIC, tìm tên/tác giả, lọc độ khó và thể loại ("" là không lọc). Bản sao
+     * Phần chung của trang Khám phá: bản PUBLIC, tìm tên/tác giả, lọc độ khó, thể loại, nhạc sĩ, khóa ("" là không lọc)
+     * và số khuông trong [staffMin, staffMax] (staffMin = 0 là không lọc). Bản sao
      * trong kho mẫu (có bản gốc) không liệt kê ở đây vì đã nằm ở "Kho score mẫu"; nếu không, bản gốc của người dùng và
      * bản sao của nó sẽ hiện thành hai bản trùng nhau.
      */
-    String PUBLIC_EXPLORE_FILTER =
-            """
+    String PUBLIC_EXPLORE_FILTER = """
 			from Score s
 			where s.visibility = 'PUBLIC' and s.originalScoreId is null
 			and (lower(s.title) like lower(concat('%', :keyword, '%')) escape '\\'
 				or lower(coalesce(s.composer, '')) like lower(concat('%', :keyword, '%')) escape '\\')
 			and (:difficulty = '' or cast(s.difficulty as string) = :difficulty)
 			and (:tagId = '' or exists (select 1 from ScoreTag st where st.score = s and st.tag.id = :tagId))
+			and (:composerId = '' or s.composerId = :composerId)
+			and (:staffMin = 0 or coalesce(s.staffCount, 2) between :staffMin and :staffMax)
+			and (:keySig = '' or s.keySignature = :keySig)
 			""";
 
     /** Trang Khám phá: thứ tự lấy từ Sort của {@code pageable} (mới nhất, xem nhiều). */
@@ -101,6 +106,10 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
             @Param("keyword") String keyword,
             @Param("difficulty") String difficulty,
             @Param("tagId") String tagId,
+            @Param("composerId") String composerId,
+            @Param("staffMin") int staffMin,
+            @Param("staffMax") int staffMax,
+            @Param("keySig") String keySig,
             Pageable pageable);
 
     /** Trang Khám phá, đánh giá cao nhất trước (điểm sao trung bình, bản chưa ai chấm xếp cuối, rồi theo lượt xem). */
@@ -113,11 +122,14 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
             @Param("keyword") String keyword,
             @Param("difficulty") String difficulty,
             @Param("tagId") String tagId,
+            @Param("composerId") String composerId,
+            @Param("staffMin") int staffMin,
+            @Param("staffMax") int staffMax,
+            @Param("keySig") String keySig,
             Pageable pageable);
 
     /** ADMIN: các bản nhạc công khai chưa nằm trong kho score mẫu, để chọn đưa vào (cập nhật gần nhất trước). */
-    @Query(
-            """
+    @Query("""
 			select s from Score s
 			where s.visibility = 'PUBLIC' and (s.isOfficial is null or s.isOfficial = false)
 			and s.originalScoreId is null
@@ -132,8 +144,7 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
     Page<Score> searchOfficialCandidates(@Param("keyword") String keyword, Pageable pageable);
 
     /** ADMIN: mọi bản nhạc trong hệ thống, tìm theo tên/tác giả/email chủ sở hữu, lọc visibility, kho mẫu ("true"/"false"), nguồn, độ khó ("" là không lọc). */
-    @Query(
-            """
+    @Query("""
 			select s from Score s
 			where (lower(s.title) like lower(concat('%', :keyword, '%')) escape '\\'
 				or lower(coalesce(s.composer, '')) like lower(concat('%', :keyword, '%')) escape '\\'

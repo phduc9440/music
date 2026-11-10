@@ -20,25 +20,13 @@ public class PublicHomeResponse {
      */
     List<ScoreSummaryResponse> featured;
 
-    /** Tác giả có nhiều bản công khai nhất (gom theo tên, chưa có bảng nhạc sĩ). */
-    List<Composer> composers;
+    /** Nhạc sĩ có nhiều bản công khai nhất (bảng composers, mục 5.4), kèm tối đa 3 bản tiêu biểu. */
+    List<ComposerResponse> composers;
 
     Stats stats;
 
     /** Thời điểm tính số liệu (kết quả được nhớ 5 phút). */
     LocalDateTime generatedAt;
-
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @FieldDefaults(level = AccessLevel.PRIVATE)
-    public static class Composer {
-        String name;
-        long scoreCount;
-        /** Tối đa 3 tên bản công khai, xem nhiều nhất trước. */
-        List<String> topTitles;
-    }
 
     /** Số liệu thật đếm từ DB. */
     @Data

@@ -56,6 +56,7 @@ import com.ptit.music_be.repository.TagRepository;
 import com.ptit.music_be.service.notification.NotificationService;
 import com.ptit.music_be.service.permission.AccessDecision;
 import com.ptit.music_be.service.permission.ScorePermissionService;
+import com.ptit.music_be.service.score.PublicScoreFilter;
 import com.ptit.music_be.service.score.ScoreFileService;
 import com.ptit.music_be.service.score.ScoreService;
 import com.ptit.music_be.utils.SecurityUtils;
@@ -369,11 +370,13 @@ public class ScoreServiceImpl implements ScoreService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<ScoreSummaryResponse> getOfficialScores(int page, int size, String keyword, String difficulty) {
+    public PageResponse<ScoreSummaryResponse> getOfficialScores(
+            int page, int size, String keyword, String difficulty, String composerId) {
         int safeSize = size <= 0 ? DEFAULT_PAGE_SIZE : Math.min(size, MAX_PAGE_SIZE);
         Page<Score> result = scoreRepository.searchOfficial(
                 normalizeKeyword(keyword),
                 parseEnumName(difficulty, DifficultyLevel.class),
+                composerId == null ? "" : composerId.trim(),
                 PageRequest.of(Math.max(page, 0), safeSize));
         return toSummaryPage(result, false);
     }
@@ -381,29 +384,68 @@ public class ScoreServiceImpl implements ScoreService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<ScoreSummaryResponse> getPublicScores(
-            int page, int size, String keyword, String difficulty, String tagId, String sort) {
+            int page, int size, PublicScoreFilter filter, String sort) {
         int safeSize = size <= 0 ? DEFAULT_PAGE_SIZE : Math.min(size, MAX_PAGE_SIZE);
         int safePage = Math.max(page, 0);
-        String safeKeyword = normalizeKeyword(keyword);
-        String safeDifficulty = parseEnumName(difficulty, DifficultyLevel.class);
-        String safeTagId = tagId == null ? "" : tagId.trim();
+        String safeKeyword = normalizeKeyword(filter.keyword());
+        String safeDifficulty = parseEnumName(filter.difficulty(), DifficultyLevel.class);
+        String safeTagId = filter.tagId() == null ? "" : filter.tagId().trim();
+        String safeComposerId =
+                filter.composerId() == null ? "" : filter.composerId().trim();
+        String safeKey = filter.key() == null ? "" : filter.key().trim();
+        // Số khuông: 1 = một bè, 2 = hai khuông, 3 = từ ba khuông trở lên
+        int staffMin = 0;
+        int staffMax = 0;
+        if (filter.staffs() != null) {
+            switch (filter.staffs()) {
+                case 1 -> staffMin = staffMax = 1;
+                case 2 -> staffMin = staffMax = 2;
+                case 3 -> {
+                    staffMin = 3;
+                    staffMax = Integer.MAX_VALUE;
+                }
+                default -> throw new AppException(ErrorCode.INVALID_REQUEST);
+            }
+        }
         String key = sort == null ? "" : sort.trim().toUpperCase(Locale.ROOT);
         Page<Score> result =
                 switch (key) {
-                    case "", "NEWEST" -> scoreRepository.searchPublic(
-                            safeKeyword,
-                            safeDifficulty,
-                            safeTagId,
-                            PageRequest.of(
-                                    safePage, safeSize, Sort.by(Sort.Order.desc("createdAt"), Sort.Order.asc("id"))));
-                    case "VIEWS" -> scoreRepository.searchPublic(
-                            safeKeyword,
-                            safeDifficulty,
-                            safeTagId,
-                            PageRequest.of(
-                                    safePage, safeSize, Sort.by(Sort.Order.desc("viewCount"), Sort.Order.asc("id"))));
-                    case "RATING" -> scoreRepository.searchPublicTopRated(
-                            safeKeyword, safeDifficulty, safeTagId, PageRequest.of(safePage, safeSize));
+                    case "", "NEWEST" ->
+                        scoreRepository.searchPublic(
+                                safeKeyword,
+                                safeDifficulty,
+                                safeTagId,
+                                safeComposerId,
+                                staffMin,
+                                staffMax,
+                                safeKey,
+                                PageRequest.of(
+                                        safePage,
+                                        safeSize,
+                                        Sort.by(Sort.Order.desc("createdAt"), Sort.Order.asc("id"))));
+                    case "VIEWS" ->
+                        scoreRepository.searchPublic(
+                                safeKeyword,
+                                safeDifficulty,
+                                safeTagId,
+                                safeComposerId,
+                                staffMin,
+                                staffMax,
+                                safeKey,
+                                PageRequest.of(
+                                        safePage,
+                                        safeSize,
+                                        Sort.by(Sort.Order.desc("viewCount"), Sort.Order.asc("id"))));
+                    case "RATING" ->
+                        scoreRepository.searchPublicTopRated(
+                                safeKeyword,
+                                safeDifficulty,
+                                safeTagId,
+                                safeComposerId,
+                                staffMin,
+                                staffMax,
+                                safeKey,
+                                PageRequest.of(safePage, safeSize));
                     default -> throw new AppException(ErrorCode.INVALID_REQUEST);
                 };
         return toExplorePage(result);
@@ -425,9 +467,7 @@ public class ScoreServiceImpl implements ScoreService {
             ScoreReviewRepository.ScoreRatingStats stats = ratings.get(card.getId());
             card.setRatingCount(stats == null ? 0L : stats.getRatingCount());
             card.setRatingAverage(
-                    stats == null || stats.getAverage() == null
-                            ? null
-                            : Math.round(stats.getAverage() * 10.0) / 10.0);
+                    stats == null || stats.getAverage() == null ? null : Math.round(stats.getAverage() * 10.0) / 10.0);
         }
         return page;
     }
@@ -689,7 +729,8 @@ public class ScoreServiceImpl implements ScoreService {
         String me = SecurityUtils.getCurrentEmail();
         return scoreRepository
                 .findById(score.getOriginalScoreId())
-                .filter(original -> original.getMember() != null && me.equals(original.getMember().getEmail()))
+                .filter(original -> original.getMember() != null
+                        && me.equals(original.getMember().getEmail()))
                 .map(Score::getId)
                 .orElse(null);
     }
@@ -815,7 +856,7 @@ public class ScoreServiceImpl implements ScoreService {
             case "created" -> Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"));
             case "oldest" -> Sort.by(Sort.Order.asc("createdAt"), Sort.Order.asc("id"));
             case "title" -> Sort.by(Sort.Order.asc("title").ignoreCase(), Sort.Order.asc("id"));
-                // Mặc định (và mọi giá trị lạ): cập nhật gần nhất trước
+            // Mặc định (và mọi giá trị lạ): cập nhật gần nhất trước
             default -> Sort.by(Sort.Order.desc("updatedAt"), Sort.Order.desc("id"));
         };
     }

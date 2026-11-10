@@ -725,3 +725,13 @@ select.sc-input {
 .sc-check input {
   margin-top: 0.25rem;
 }
+
+/* Nút thêm ở cuối thẻ bản nhạc (ví dụ "Lưu vào playlist" ở trang Khám phá) */
+.sc-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--sc-line);
+}

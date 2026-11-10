@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import { scoreApi, tagApi } from '../../../services';
 import { MAX_COMPOSER, MAX_NOTES, MAX_TITLE, getErrorMessage } from '../../../utils/score';
 import Modal from '../common/Modal';
+import ComposerDatalist from '../../composers/ComposerDatalist';
 import type { Difficulty, ScoreDetail, Tag, Visibility } from '../../../types';
 
 const MAX_TAGS = 10; // khớp BE (mã lỗi 2302)
@@ -95,10 +96,12 @@ export default function EditScoreModal({ score, onClose, onSaved }: Props) {
         <input
           id="sc-composer"
           className="sc-input"
+          list="sc-composer-list"
           value={composer}
           maxLength={MAX_COMPOSER}
           onChange={(e) => setComposer(e.target.value)}
         />
+        <ComposerDatalist id="sc-composer-list" />
 
         <label className="sc-label" htmlFor="sc-difficulty">
           Độ khó
