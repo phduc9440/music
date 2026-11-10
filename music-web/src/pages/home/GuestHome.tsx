@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import type { DragEvent, ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { CREATE_SCORE_PATH } from '../../components/layout/nav';
 import SiteFooter from '../../components/layout/SiteFooter';
+import ComposerPortrait from '../../components/composers/ComposerPortrait';
 import { Icon } from '../../components/ui';
 import type { IconName } from '../../components/ui';
 import { API_BASE_URL, homeApi } from '../../services';
 import ThemeToggle from '../../theme/ThemeToggle';
-import type { HomeComposer, PublicHome, ScoreSummary } from '../../types';
+import type { Composer, PublicHome, ScoreSummary } from '../../types';
 import { useReveal } from '../../hooks/useReveal';
+import { lifespan } from '../../utils/composer';
 import { DIFFICULTY_LABELS } from '../../utils/score';
 import { isImportBatch, setPendingUpload } from '../../utils/pendingUpload';
 import './guest-home.css';
@@ -213,39 +215,37 @@ function FeaturedStrip({ children }: { children: ReactNode }) {
   );
 }
 
-function ComposerCard({ composer }: { composer: HomeComposer }) {
-  const initials = composer.name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(-2)
-    .map((w) => w[0]?.toUpperCase())
-    .join('');
+function ComposerCard({ composer }: { composer: Composer }) {
+  const titles = composer.topTitles ?? [];
   return (
-    // Thẻ lật: mặt trước tên tác giả, rê chuột hoặc chọn bằng bàn phím thì lật ra các bản tiêu biểu
-    <div
+    // Thẻ lật: mặt trước chân dung và tên, rê chuột hoặc chọn bằng bàn phím thì lật ra năm sinh–mất và các bản tiêu biểu
+    <Link
+      to={`/composers/${composer.slug}`}
       className="gh-composer"
-      tabIndex={0}
       aria-label={`${composer.name}: ${composer.scoreCount} bản nhạc công khai`}
     >
-      <div className="gh-composer__inner">
-        <div className="gh-composer__face gh-composer__face--front">
-          <span className="gh-composer__monogram" aria-hidden="true">
-            {initials || '♪'}
+      <span className="gh-composer__inner">
+        <span className="gh-composer__face gh-composer__face--front">
+          <span className="gh-composer__portrait">
+            <ComposerPortrait name={composer.name} imageUrl={composer.imageUrl} />
           </span>
           <strong>{composer.name}</strong>
           <span>{composer.scoreCount} bản nhạc</span>
-        </div>
-        <div className="gh-composer__face gh-composer__face--back">
+        </span>
+        <span className="gh-composer__face gh-composer__face--back">
           <strong>{composer.name}</strong>
-          <ul>
-            {composer.topTitles.map((t) => (
-              <li key={t}>{t}</li>
-            ))}
-          </ul>
+          {lifespan(composer) && <span>{lifespan(composer)}</span>}
+          {titles.length > 0 && (
+            <ul>
+              {titles.map((t) => (
+                <li key={t}>{t}</li>
+              ))}
+            </ul>
+          )}
           <span>{composer.scoreCount} bản trên hệ thống</span>
-        </div>
-      </div>
-    </div>
+        </span>
+      </span>
+    </Link>
   );
 }
 
@@ -360,10 +360,10 @@ export default function GuestHome() {
         </Section>
 
         {data && data.composers.length > 0 && (
-          <Section title="Những nhạc sĩ được yêu thích" lead="Tác giả có nhiều bản nhạc công khai nhất trên hệ thống.">
+          <Section title="Những nhạc sĩ được yêu thích" lead="Nhạc sĩ có nhiều bản nhạc công khai nhất trên hệ thống.">
             <div className="gh-composers">
               {data.composers.map((c) => (
-                <ComposerCard key={c.name} composer={c} />
+                <ComposerCard key={c.id} composer={c} />
               ))}
             </div>
           </Section>

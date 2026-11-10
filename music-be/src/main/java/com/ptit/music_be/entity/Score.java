@@ -12,6 +12,7 @@ import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import com.ptit.music_be.dto.enums.DifficultyLevel;
+import com.ptit.music_be.service.composer.ScoreComposerListener;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -20,6 +21,8 @@ import lombok.experimental.FieldDefaults;
 @Table(name = "scores")
 // Bản nhạc trong thùng rác (deleted_at khác null) tự biến mất khỏi mọi truy vấn JPA; xem ScoreTrashRepository
 @SQLRestriction("deleted_at IS NULL")
+// Tự gắn composer_id theo chữ tác giả mỗi lần lưu (mục 5.4)
+@EntityListeners(ScoreComposerListener.class)
 @Getter
 @Setter
 @Builder
@@ -41,6 +44,10 @@ public class Score {
 
     @Column(name = "composer")
     String composer;
+
+    /** Nhạc sĩ trong bảng composers ứng với chữ tác giả (null nếu không khớp ai). Do ScoreComposerListener gắn. */
+    @Column(name = "composer_id", length = 36)
+    String composerId;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "difficulty")

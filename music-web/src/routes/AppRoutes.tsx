@@ -25,6 +25,9 @@ import AdminPendingScores from '../pages/admin/AdminPendingScores';
 import AdminScores from '../pages/admin/AdminScores';
 import AdminSystem from '../pages/admin/AdminSystem';
 import AdminTags from '../pages/admin/AdminTags';
+import AdminComposers from '../pages/admin/AdminComposers';
+import ComposerDetail from '../pages/composers/ComposerDetail';
+import Composers from '../pages/composers/Composers';
 import ExploreScores from '../pages/scores/library/ExploreScores';
 import OfficialRequests from '../pages/scores/library/OfficialRequests';
 import OfficialScores from '../pages/scores/library/OfficialScores';
@@ -61,6 +64,8 @@ const router = createBrowserRouter(
         <Route path="/scores/upload" element={<ScoreUpload />} />
         <Route path="/scores/import" element={<ScoreImport />} />
         <Route path="/explore" element={<ExploreScores />} />
+        <Route path="/composers" element={<Composers />} />
+        <Route path="/composers/:slug" element={<ComposerDetail />} />
         <Route path="/scores/official" element={<OfficialScores />} />
         <Route path="/scores/official-requests" element={<OfficialRequests />} />
         <Route path="/scores/shared" element={<SharedScores />} />
@@ -122,6 +127,7 @@ const router = createBrowserRouter(
         <Route path="official-scores" element={<AdminOfficialScores />} />
         <Route path="announcements" element={<AdminAnnouncements />} />
         <Route path="tags" element={<AdminTags />} />
+        <Route path="composers" element={<AdminComposers />} />
         <Route path="ai-tasks" element={<AdminAiTasks />} />
         <Route path="system" element={<AdminSystem />} />
       </Route>

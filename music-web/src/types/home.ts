@@ -1,19 +1,14 @@
+import type { Composer } from './composer';
 import type { PracticeStreak, ScoreSummary } from './score';
 
 /** GET /api/public/home: trang chủ cho khách (không có email hay dữ liệu riêng tư). */
 export interface PublicHome {
   /** Bản công khai xem nhiều nhất; thumbnailUrl là ảnh công khai, khách tải được. */
   featured: ScoreSummary[];
-  /** Tác giả có nhiều bản công khai nhất (gom theo tên, chưa có bảng nhạc sĩ). */
-  composers: HomeComposer[];
+  /** Nhạc sĩ có nhiều bản công khai nhất (bảng composers, mục 5.4), kèm tối đa 3 bản tiêu biểu. */
+  composers: Composer[];
   stats: HomeStats;
   generatedAt: string;
-}
-
-export interface HomeComposer {
-  name: string;
-  scoreCount: number;
-  topTitles: string[];
 }
 
 export interface HomeStats {

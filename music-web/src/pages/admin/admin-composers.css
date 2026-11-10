@@ -1,0 +1,77 @@
+/* Trang admin Nhạc sĩ (mục 5.4). */
+.acp-form {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: 1.5rem;
+}
+
+.acp-form__preview {
+  align-self: start;
+  aspect-ratio: 4 / 5;
+  border-radius: var(--adm-radius);
+  overflow: hidden;
+  border: 1px solid var(--adm-border);
+}
+
+.acp-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 1rem;
+}
+
+.acp-grid--image {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.acp-error {
+  margin: 0 0 1rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--ui-danger-border);
+  border-radius: var(--adm-radius);
+  background: var(--adm-danger-soft);
+  color: var(--adm-danger);
+}
+
+.acp-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.acp-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.acp-row__thumb {
+  width: 40px;
+  height: 50px;
+  flex: none;
+  border-radius: var(--adm-radius-sm);
+  overflow: hidden;
+  font-size: 0.85rem;
+}
+
+.acp-row__thumb .composer-portrait--empty {
+  font-size: 0.9rem;
+}
+
+.acp-form-card {
+  margin-bottom: 1.25rem;
+}
+
+@media (max-width: 900px) {
+  .acp-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .acp-form__preview {
+    max-width: 140px;
+  }
+
+  .acp-grid,
+  .acp-grid--image {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

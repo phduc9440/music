@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import ComposerDatalist from '../../../components/composers/ComposerDatalist';
 import { importApi, tagApi } from '../../../services';
 import type { Tag } from '../../../types';
 import {
@@ -175,12 +176,14 @@ export default function ScoreImport() {
             <input
               id="im-composer"
               className="sc-input"
+              list="im-composer-list"
               value={composer}
               maxLength={MAX_COMPOSER}
               disabled={uploading}
               placeholder="Mặc định lấy từ file MusicXML"
               onChange={(e) => setComposer(e.target.value)}
             />
+            <ComposerDatalist id="im-composer-list" />
 
             {allTags.length > 0 && (
               <>

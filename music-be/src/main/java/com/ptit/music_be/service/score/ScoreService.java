@@ -50,7 +50,14 @@ public interface ScoreService {
     void deleteScore(String scoreId, String reason);
 
     /** Kho score mẫu cho người mới học (mọi người đã đăng nhập xem được), từ dễ đến khó. */
-    PageResponse<ScoreSummaryResponse> getOfficialScores(int page, int size, String keyword, String difficulty);
+    default PageResponse<ScoreSummaryResponse> getOfficialScores(
+            int page, int size, String keyword, String difficulty) {
+        return getOfficialScores(page, size, keyword, difficulty, null);
+    }
+
+    /** Kho score mẫu, lọc thêm theo nhạc sĩ (id trong bảng composers; rỗng là không lọc). */
+    PageResponse<ScoreSummaryResponse> getOfficialScores(
+            int page, int size, String keyword, String difficulty, String composerId);
 
     /** ADMIN: bản nhạc công khai chưa nằm trong kho score mẫu, để chọn đưa vào. */
     PageResponse<ScoreSummaryResponse> getOfficialCandidates(int page, int size, String keyword);
@@ -59,8 +66,13 @@ public interface ScoreService {
      * Trang Khám phá: các bản đang công khai, tìm theo tên/tác giả, lọc độ khó và thể loại. sort: NEWEST (mặc định),
      * VIEWS (xem nhiều nhất), RATING (đánh giá cao nhất).
      */
-    PageResponse<ScoreSummaryResponse> getPublicScores(
-            int page, int size, String keyword, String difficulty, String tagId, String sort);
+    default PageResponse<ScoreSummaryResponse> getPublicScores(
+            int page, int size, String keyword, String difficulty, String tagId, String sort) {
+        return getPublicScores(page, size, PublicScoreFilter.of(keyword, difficulty, tagId), sort);
+    }
+
+    /** Trang Khám phá với đủ bộ lọc (nhạc sĩ, số khuông, khóa nhạc; mục 5.4). */
+    PageResponse<ScoreSummaryResponse> getPublicScores(int page, int size, PublicScoreFilter filter, String sort);
 
     /**
      * ADMIN: gỡ khỏi kho score mẫu. Bản sao do người dùng đồng ý đưa vào (có bản gốc) thì được chuyển vào thùng rác,

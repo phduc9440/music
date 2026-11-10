@@ -20,7 +20,7 @@ export const isLibrary = (p: string) =>
 
 /**
  * Điều hướng chính của người dùng, gom theo nhóm (menu thả xuống ở máy tính, danh sách có tiêu đề ở điện thoại).
- * Chỉ liệt kê trang đã có; khi làm thêm Diễn đàn, Nhạc sĩ, Team và Show, Bảng giá... thì thêm vào đây.
+ * Chỉ liệt kê trang đã có; khi làm thêm Diễn đàn, Team và Show, Bảng giá... thì thêm vào đây.
  */
 export const NAV_GROUPS: NavGroup[] = [
   {
@@ -29,6 +29,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { to: '/explore', label: 'Bản nhạc công khai', icon: 'globe' },
       { to: '/scores/official', label: 'Kho score mẫu', icon: 'library' },
+      { to: '/composers', label: 'Nhạc sĩ', icon: 'users' },
     ],
   },
   {
@@ -54,8 +55,10 @@ export const NAV_GROUPS: NavGroup[] = [
 /** Nút "+ Tạo bản nhạc" trên thanh trên. Tạm trỏ tới trang tải lên; sẽ trỏ về trang gộp khi có (mục I1). */
 export const CREATE_SCORE_PATH = '/scores/upload';
 
-export const isItemActive = (item: NavLinkItem, pathname: string): boolean =>
-  item.match ? item.match(pathname) : pathname === item.to || pathname.startsWith(`${item.to}/`);
+export const isItemActive = (item: NavLinkItem, path: string): boolean => {
+  const pathname = path.split(/[?#]/)[0]; // đường dẫn "từ đâu tới" có thể kèm bộ lọc (?composer=...)
+  return item.match ? item.match(pathname) : pathname === item.to || pathname.startsWith(`${item.to}/`);
+};
 
 export const isGroupActive = (group: NavGroup, pathname: string): boolean =>
   group.items.some((item) => isItemActive(item, pathname));

@@ -13,6 +13,7 @@ import org.springframework.util.StringUtils;
 
 import com.ptit.music_be.dto.enums.FileType;
 import com.ptit.music_be.dto.enums.Visibility;
+import com.ptit.music_be.dto.response.ComposerResponse;
 import com.ptit.music_be.dto.response.HomeSummaryResponse;
 import com.ptit.music_be.dto.response.PageResponse;
 import com.ptit.music_be.dto.response.PublicHomeResponse;
@@ -29,6 +30,7 @@ import com.ptit.music_be.repository.MemberRepository;
 import com.ptit.music_be.repository.OfficialRequestRepository;
 import com.ptit.music_be.repository.ScoreFileRepository;
 import com.ptit.music_be.repository.ScoreRepository;
+import com.ptit.music_be.service.composer.ComposerService;
 import com.ptit.music_be.service.home.HomeService;
 import com.ptit.music_be.service.practice.PracticeStatsService;
 import com.ptit.music_be.service.score.ScoreService;
@@ -44,7 +46,6 @@ public class HomeServiceImpl implements HomeService {
     static final long PUBLIC_CACHE_MILLIS = 5 * 60 * 1000L;
     static final int FEATURED_SIZE = 8;
     static final int COMPOSER_SIZE = 6;
-    static final int COMPOSER_TITLES = 3;
     static final int RECENT_SIZE = 3;
     static final int PENDING_SIZE = 5;
 
@@ -59,6 +60,7 @@ public class HomeServiceImpl implements HomeService {
     private final OfficialRequestRepository officialRequestRepository;
     private final PracticeStatsService practiceStatsService;
     private final FileStorageService fileStorageService;
+    private final ComposerService composerService;
 
     /** Trang chủ khách giống nhau cho mọi người nên nhớ một bản trong bộ nhớ (mỗi máy chủ một bản). */
     private volatile CachedHome cachedHome;
@@ -93,15 +95,7 @@ public class HomeServiceImpl implements HomeService {
             }
         }
 
-        List<PublicHomeResponse.Composer> composers = new ArrayList<>();
-        for (Object[] row : homeQueryRepository.topPublicComposers(PageRequest.of(0, COMPOSER_SIZE))) {
-            String name = (String) row[0];
-            composers.add(PublicHomeResponse.Composer.builder()
-                    .name(name)
-                    .scoreCount(((Number) row[1]).longValue())
-                    .topTitles(homeQueryRepository.publicTitlesOfComposer(name, PageRequest.of(0, COMPOSER_TITLES)))
-                    .build());
-        }
+        List<ComposerResponse> composers = composerService.listPublic(null, null, COMPOSER_SIZE);
 
         PublicHomeResponse.Stats stats = PublicHomeResponse.Stats.builder()
                 .scores(homeQueryRepository.countScores())

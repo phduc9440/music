@@ -18,8 +18,13 @@ export const scoreApi = {
   sharedWithMe: (params?: { page?: number; size?: number }) =>
     apiClient.get<ApiResponse<PageResult<ScoreSummary>>>('/scores/shared-with-me', { params }),
   // 4.5: kho score mẫu (mọi người dùng xem được), từ dễ đến khó
-  official: (params?: { page?: number; size?: number; keyword?: string; difficulty?: Difficulty | '' }) =>
-    apiClient.get<ApiResponse<PageResult<ScoreSummary>>>('/scores/official', { params }),
+  official: (params?: {
+    page?: number;
+    size?: number;
+    keyword?: string;
+    difficulty?: Difficulty | '';
+    composerId?: string;
+  }) => apiClient.get<ApiResponse<PageResult<ScoreSummary>>>('/scores/official', { params }),
   // Khám phá: bản nhạc đang công khai của mọi người
   explore: (params?: {
     page?: number;
@@ -27,6 +32,12 @@ export const scoreApi = {
     keyword?: string;
     difficulty?: Difficulty | '';
     tagId?: string;
+    /** Nhạc sĩ (id trong bảng composers). */
+    composerId?: string;
+    /** Số khuông: 1 (một bè), 2 (hai khuông), 3 (từ ba khuông). */
+    staffs?: 1 | 2 | 3;
+    /** Khóa nhạc, ví dụ "G", "Am". */
+    key?: string;
     sort?: 'NEWEST' | 'VIEWS' | 'RATING';
   }) => apiClient.get<ApiResponse<PageResult<ScoreSummary>>>('/scores/public', { params }),
   // ADMIN: bản nhạc công khai chưa nằm trong kho, để chọn đưa vào

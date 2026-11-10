@@ -38,20 +38,6 @@ public interface HomeQueryRepository extends Repository<Score, String> {
     @Query("select count(m) from Member m")
     long countMembers();
 
-    /**
-     * Tác giả có nhiều bản công khai nhất: [tên tác giả, số bản]. Cột composer là chữ tự do (chưa có bảng nhạc sĩ, mục
-     * 5.4), nên gom theo tên đã bỏ khoảng trắng hai đầu.
-     */
-    @Query("select trim(s.composer), count(s) from Score s where " + PUBLIC_SCORE
-            + " and s.composer is not null and trim(s.composer) <> ''"
-            + " group by trim(s.composer) order by count(s) desc, trim(s.composer)")
-    List<Object[]> topPublicComposers(Pageable pageable);
-
-    /** Các bản công khai của một tác giả, xem nhiều nhất trước. */
-    @Query("select s.title from Score s where " + PUBLIC_SCORE + " and trim(s.composer) = :composer"
-            + " order by coalesce(s.viewCount, 0) desc, s.id")
-    List<String> publicTitlesOfComposer(@Param("composer") String composer, Pageable pageable);
-
     /** Yêu cầu xin quyền đang chờ trên các bản của một chủ sở hữu, mới nhất trước, kèm người xin và bản nhạc. */
     @Query("select ms from MemberScore ms join fetch ms.member join fetch ms.score sc"
             + " where sc.member.id = :ownerId and sc.deletedAt is null and ms.requestedPermission is not null"
@@ -81,4 +67,9 @@ public interface HomeQueryRepository extends Repository<Score, String> {
             + " and (sc.member.id = :memberId or sc.visibility = 'PUBLIC')"
             + " order by p.startedAt desc, p.id")
     List<Score> lastPracticedScores(@Param("memberId") String memberId, Pageable pageable);
+
+    /** Khóa nhạc có trong các bản công khai (cho bộ lọc trang Khám phá). */
+    @Query("select distinct s.keySignature from Score s where " + PUBLIC_SCORE
+            + " and s.keySignature is not null and s.keySignature <> '' order by s.keySignature")
+    List<String> distinctPublicKeys();
 }

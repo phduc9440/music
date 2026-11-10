@@ -140,12 +140,17 @@ public enum ErrorCode {
     // Score lifecycle 33xx
     OFFICIAL_REQUEST_NOT_EXISTED(3401, "Lời xin đưa vào kho score mẫu không tồn tại", HttpStatus.NOT_FOUND),
     OFFICIAL_REQUEST_NOT_PENDING(3402, "Lời xin này đã được xử lý", HttpStatus.CONFLICT),
-    OFFICIAL_REQUEST_DUPLICATED(
-            3403, "Bản nhạc này đang có lời xin chờ chủ sở hữu trả lời", HttpStatus.CONFLICT),
+    OFFICIAL_REQUEST_DUPLICATED(3403, "Bản nhạc này đang có lời xin chờ chủ sở hữu trả lời", HttpStatus.CONFLICT),
     SCORE_ALREADY_OFFICIAL(3404, "Bản nhạc này đã nằm trong kho score mẫu", HttpStatus.CONFLICT),
     SCORE_SYSTEM_OWNER_MISSING(
             3405, "Chưa có tài khoản hệ thống để chứa bản nhạc của kho score mẫu", HttpStatus.INTERNAL_SERVER_ERROR),
     SCORE_NOT_IN_TRASH(3301, "Bản nhạc không nằm trong thùng rác của bạn", HttpStatus.NOT_FOUND),
+    COMPOSER_NOT_EXISTED(3501, "Nhạc sĩ không tồn tại", HttpStatus.NOT_FOUND),
+    COMPOSER_NAME_INVALID(3502, "Tên nhạc sĩ là bắt buộc và tối đa 255 ký tự", HttpStatus.BAD_REQUEST),
+    COMPOSER_DUPLICATED(3503, "Đã có nhạc sĩ trùng tên (đường dẫn)", HttpStatus.CONFLICT),
+    COMPOSER_YEARS_INVALID(3504, "Năm sinh, năm mất không hợp lệ", HttpStatus.BAD_REQUEST),
+    COMPOSER_IMAGE_INVALID(3505, "Ảnh phải là đường dẫn https và có ghi nguồn, giấy phép", HttpStatus.BAD_REQUEST),
+    COMPOSER_FIELD_TOO_LONG(3506, "Thông tin nhạc sĩ vượt quá độ dài cho phép", HttpStatus.BAD_REQUEST),
     ;
 
     int code;
