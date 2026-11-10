@@ -32,13 +32,21 @@ import OfficialScores from '../pages/scores/library/OfficialScores';
 import PracticeHistory from '../pages/scores/practice/PracticeHistory';
 import PracticeStats from '../pages/scores/practice/PracticeStats';
 import UserLayout from '../components/layout/UserLayout';
+import GuestRoute from './GuestRoute';
 import ProtectedRoute from './ProtectedRoute';
 
 const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
-      <Route path="/auth/login" element={<Login />} />
+      <Route
+        path="/auth/login"
+        element={
+          <GuestRoute>
+            <Login />
+          </GuestRoute>
+        }
+      />
       {/* Trang người dùng nằm trong khung chung (thanh trên + nội dung) */}
       <Route
         element={
