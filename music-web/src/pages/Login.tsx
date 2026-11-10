@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { authApi } from '../services';
 import { completeLogin } from '../utils/auth';
@@ -109,6 +109,10 @@ export default function Login() {
 
   return (
     <div className="auth-wrapper">
+      <Link to="/" className="auth-back">
+        <Icon name="arrowLeft" size={16} />
+        Trang chủ
+      </Link>
       <div className="auth-theme">
         <ThemeToggle />
       </div>

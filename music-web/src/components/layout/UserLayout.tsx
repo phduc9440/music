@@ -4,6 +4,7 @@ import ChangePasswordModal from '../ChangePasswordModal';
 import CommandPalette from './CommandPalette';
 import MobileTabBar from './MobileTabBar';
 import NavDropdown from './NavDropdown';
+import SiteFooter from './SiteFooter';
 import NotificationBell from '../NotificationBell';
 import ThemeToggle from '../../theme/ThemeToggle';
 import { adoptServerTheme } from '../../theme/theme';
@@ -81,7 +82,7 @@ export default function UserLayout() {
 
   return (
     <div className="app-shell">
-      <header className="app-header">
+      <header className="app-header ui-stage">
         <div className="app-header__inner">
           <div className="app-header__left">
             <button
@@ -94,7 +95,7 @@ export default function UserLayout() {
               <Icon name={navOpen ? 'x' : 'menu'} />
             </button>
 
-            <Link to="/scores" className="app-brand">
+            <Link to="/" className="app-brand">
               <span className="app-brand__logo">
                 <Icon name="music" size={16} />
               </span>
@@ -193,6 +194,7 @@ export default function UserLayout() {
       <main className="app-main">
         <Outlet />
       </main>
+      <SiteFooter variant="app" />
 
       <MobileTabBar activePath={navPath} />
       {searchOpen && <CommandPalette onClose={() => setSearchOpen(false)} />}

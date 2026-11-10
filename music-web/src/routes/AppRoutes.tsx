@@ -1,5 +1,4 @@
 import { Route, createBrowserRouter, createRoutesFromElements } from 'react-router-dom';
-import Home from '../pages/Home';
 import Login from '../pages/Login';
 import UserProfile from '../pages/Profile';
 import ScoreLibrary from '../pages/scores/library/ScoreLibrary';
@@ -31,10 +30,11 @@ import OfficialRequests from '../pages/scores/library/OfficialRequests';
 import OfficialScores from '../pages/scores/library/OfficialScores';
 import PracticeHistory from '../pages/scores/practice/PracticeHistory';
 import PracticeStats from '../pages/scores/practice/PracticeStats';
-import UserLayout from '../components/layout/UserLayout';
 import GuestRoute from './GuestRoute';
 import ProtectedRoute from './ProtectedRoute';
 import RootLayout from './RootLayout';
+import UserArea from './UserArea';
+import WorkspaceHome from '../pages/home/WorkspaceHome';
 
 /**
  * Router dạng dữ liệu (createBrowserRouter) thay cho <BrowserRouter>: cần cho hiệu ứng chuyển trang bằng View
@@ -45,14 +45,6 @@ const router = createBrowserRouter(
   createRoutesFromElements(
     <Route element={<RootLayout />}>
       <Route
-        path="/"
-        element={
-          <GuestRoute>
-            <Home />
-          </GuestRoute>
-        }
-      />
-      <Route
         path="/auth/login"
         element={
           <GuestRoute>
@@ -60,14 +52,10 @@ const router = createBrowserRouter(
           </GuestRoute>
         }
       />
-      {/* Trang người dùng nằm trong khung chung (thanh trên + nội dung) */}
-      <Route
-        element={
-          <ProtectedRoute allowedRole="USER">
-            <UserLayout />
-          </ProtectedRoute>
-        }
-      >
+      {/* Trang người dùng nằm trong khung chung (thanh trên + nội dung). "/" là trang làm việc khi đã đăng nhập,
+          trang giới thiệu khi chưa (xem UserArea) */}
+      <Route element={<UserArea />}>
+        <Route index element={<WorkspaceHome />} />
         <Route path="/profile" element={<UserProfile />} />
         <Route path="/scores" element={<ScoreLibrary />} />
         <Route path="/scores/upload" element={<ScoreUpload />} />

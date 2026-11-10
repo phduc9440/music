@@ -81,6 +81,25 @@
 
 /* ================================================================== khung */
 
+/* Header và sidebar là vùng sân khấu tối (class ui-stage): map lại --adm-* theo --ui-* đã đổi trong vùng đó */
+.adm-shell .ui-stage {
+  --adm-surface: var(--ui-surface);
+  --adm-surface-muted: var(--ui-surface-muted);
+  --adm-surface-hover: var(--ui-surface-hover);
+  --adm-border: var(--ui-border);
+  --adm-border-strong: var(--ui-border-strong);
+  --adm-text: var(--ui-text);
+  --adm-text-2: var(--ui-text-2);
+  --adm-text-3: var(--ui-text-3);
+  --adm-primary: var(--ui-primary);
+  --adm-primary-hover: var(--ui-primary-hover);
+  --adm-primary-soft: var(--ui-primary-soft);
+  --adm-primary-ring: var(--ui-primary-ring);
+  --adm-danger: var(--ui-danger);
+  --adm-danger-soft: var(--ui-danger-soft);
+  color: var(--adm-text);
+}
+
 .adm-header {
   position: sticky;
   top: 0;
@@ -235,7 +254,8 @@
 .adm-body {
   flex: 1;
   display: flex;
-  min-height: 0;
+  /* cao ít nhất bằng màn hình: chân trang chỉ hiện khi cuộn xuống cuối */
+  min-height: calc(100vh - var(--adm-header-h));
 }
 
 .adm-sidebar {
@@ -358,6 +378,11 @@
 
 .adm-backdrop {
   display: none;
+}
+
+/* chân trang (SiteFooter) đứng ngay dưới khung, không cần khoảng cách thêm */
+.adm-shell > .site-footer {
+  margin-top: 0;
 }
 
 /* ================================================================== page header */

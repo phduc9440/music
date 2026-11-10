@@ -2,6 +2,7 @@ package com.ptit.music_be.configuration;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -32,12 +33,17 @@ public class SecurityConfig {
         "/api/auth/**", "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**",
     };
 
+    static final String[] PUBLIC_READ_ENDPOINTS = {"/api/public/**"};
+
     CustomJwtDecoder customJwtDecoder;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         http.authorizeHttpRequests(request -> request.requestMatchers(PUBLIC_ENDPOINTS)
+                .permitAll()
+                // API đọc cho khách chưa đăng nhập (trang chủ...), chỉ trả dữ liệu của bản PUBLIC
+                .requestMatchers(HttpMethod.GET, PUBLIC_READ_ENDPOINTS)
                 .permitAll()
                 .requestMatchers("/api/admin/**")
                 .hasRole("ADMIN")

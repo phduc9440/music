@@ -23,7 +23,7 @@ export async function completeLogin(_auth: AuthResponse): Promise<string> {
     const admin = isAdminMember(res.data.result);
     adoptServerTheme(res.data.result.uiTheme); // giao diện đã chọn đi theo tài khoản giữa các máy
     localStorage.setItem('role', admin ? 'ADMIN' : 'USER');
-    return admin ? '/admin' : '/profile';
+    return admin ? '/admin' : '/'; // người dùng vào trang làm việc
   } catch {
     localStorage.removeItem('role');
     await authApi.logout().catch(() => undefined);

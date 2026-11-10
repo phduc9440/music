@@ -16,6 +16,8 @@ public class CookieBearerTokenResolver implements BearerTokenResolver {
     public String resolve(HttpServletRequest request) {
         String path = request.getRequestURI();
         if (path.startsWith("/api/auth/") && !path.equals("/api/auth/change-password")) return null;
+        // API cho khách không cần biết ai đang xem; bỏ qua token để cookie hết hạn không làm khách bị 401
+        if (path.startsWith("/api/public/")) return null;
 
         String header = headerResolver.resolve(request);
         return header != null ? header : AuthCookies.read(request, AuthCookies.ACCESS);

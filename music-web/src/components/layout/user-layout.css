@@ -337,6 +337,8 @@
 .app-main {
   flex: 1;
   min-width: 0;
+  /* cao ít nhất bằng màn hình: chân trang chỉ hiện khi cuộn xuống cuối */
+  min-height: calc(100vh - var(--ui-header-h));
 }
 
 .app-backdrop {
@@ -501,7 +503,8 @@
     box-shadow: var(--ui-shadow);
   }
 
-  .app-main {
+  /* chừa chỗ cho thanh tab dưới cùng (đặt ở khung để chân trang cũng nằm trên thanh tab) */
+  .app-shell {
     padding-bottom: calc(4rem + env(safe-area-inset-bottom));
   }
 
