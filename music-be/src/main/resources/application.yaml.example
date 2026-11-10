@@ -25,6 +25,8 @@ spring:
     locations: classpath:db/init,classpath:db/seed
     baseline-on-migrate: true
     baseline-version: 0
+    # Migration của các thành viên đặt tên V{yyyyMMddHHmm}__<tên>_<mô tả>.sql nên có thể chạy lệch thứ tự giữa các nhánh
+    out-of-order: true
 
   mail:
     host: smtp.gmail.com

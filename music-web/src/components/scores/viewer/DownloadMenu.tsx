@@ -20,6 +20,8 @@ interface DownloadMenuProps {
   audioShortcut?: boolean;
   /** Chỉ hiện biểu tượng (tên nằm ở chú thích khi rê chuột), dùng trên thanh trên của trình soạn nhạc. */
   compact?: boolean;
+  /** Người xem chưa được chủ cho phép tải thì ẩn hẳn menu (mặc định cho tải). */
+  canDownload?: boolean;
 }
 
 /** Các định dạng tạo theo yêu cầu bằng hộp thoại riêng (mục 1.28–1.30), không tải thẳng một file có sẵn. */
@@ -32,7 +34,15 @@ type DialogFormat = (typeof DIALOG_FORMATS)[number];
  * (cùng tùy chọn với lần xuất trước thì nhận file ngay) và gắn nhãn "Cũ" khi bản nhạc đã sửa sau lúc xuất.
  * MusicXML và MIDI tải qua API riêng của bản nhạc để luôn nhận bản mới nhất (MIDI cũ sẽ được BE tạo lại).
  */
-export default function DownloadMenu({ scoreId, files, title, staffCount, audioShortcut, compact }: DownloadMenuProps) {
+export default function DownloadMenu({
+  scoreId,
+  files,
+  title,
+  staffCount,
+  audioShortcut,
+  compact,
+  canDownload = true,
+}: DownloadMenuProps) {
   const [open, setOpen] = useState(false);
   const [busyType, setBusyType] = useState<string | null>(null);
   const [exports, setExports] = useState<ExportFileInfo[]>([]);
@@ -79,6 +89,8 @@ export default function DownloadMenu({ scoreId, files, title, staffCount, audioS
       setBusyType(null);
     }
   };
+
+  if (!canDownload) return null;
 
   return (
     <>

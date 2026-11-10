@@ -691,3 +691,15 @@ select.sc-input {
   color: var(--ui-text-2);
   font-weight: 400;
 }
+
+/* Ô chọn có chữ bên cạnh trong các hộp thoại */
+.sc-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0.9rem 0 0;
+  cursor: pointer;
+}
+.sc-check input {
+  margin-top: 0.25rem;
+}

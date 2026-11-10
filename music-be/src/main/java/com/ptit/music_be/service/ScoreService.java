@@ -40,7 +40,14 @@ public interface ScoreService {
 
     ScoreDetailResponse updateScore(String scoreId, ScoreUpdateRequest request);
 
+    /** Chuyển vào thùng rác, không ghi lý do. */
     void deleteScore(String scoreId);
+
+    /**
+     * Chuyển bản nhạc vào thùng rác (xóa mềm, giữ 30 ngày). Chủ sở hữu xóa bản của mình; ADMIN chỉ xóa để kiểm duyệt
+     * bản đang PUBLIC / PENDING, {@code reason} là lý do gửi cho chủ.
+     */
+    void deleteScore(String scoreId, String reason);
 
     /** Kho score mẫu cho người mới học (mọi người đã đăng nhập xem được), từ dễ đến khó. */
     PageResponse<ScoreSummaryResponse> getOfficialScores(int page, int size, String keyword, String difficulty);

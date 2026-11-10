@@ -33,4 +33,7 @@ public class ScoreUpdateRequest {
     String studyNotes;
 
     Visibility visibility;
+
+    /** Cho phép người xem tải MusicXML, MIDI, âm thanh, PDF. Chỉ chủ sở hữu được đổi. */
+    Boolean allowDownload;
 }

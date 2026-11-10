@@ -268,6 +268,7 @@ function PlayerWorkspace({
             files={score.files}
             title={score.title}
             staffCount={score.staffCount}
+            canDownload={score.canDownload}
             audioShortcut
           />
           {score.canEdit && (

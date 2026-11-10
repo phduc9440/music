@@ -6,7 +6,15 @@ import Pagination from '../../../components/scores/common/Pagination';
 import ScoreCard from '../../../components/scores/library/ScoreCard';
 import ScoreFilters from '../../../components/scores/library/ScoreFilters';
 import { scoreApi, tagApi } from '../../../services';
-import type { Difficulty, PageResult, ProcessingStatus, ScoreSort, ScoreSource, ScoreSummary, Tag } from '../../../types';
+import type {
+  Difficulty,
+  PageResult,
+  ProcessingStatus,
+  ScoreSort,
+  ScoreSource,
+  ScoreSummary,
+  Tag,
+} from '../../../types';
 import { getScorePath, MAX_KEYWORD, POLL_INTERVAL_MS } from '../../../utils/score';
 import '../../../components/scores/scores.css';
 import './ScoreLibrary.css';
@@ -105,16 +113,20 @@ export default function ScoreLibrary() {
 
   return (
     <div className="sc-page">
-
       <main className="sc-container">
         <header className="sc-lib-head">
           <div>
             <h1>Bản nhạc của tôi</h1>
             <p>{data ? `${data.totalElements} bản nhạc trong thư viện` : 'Quản lý và theo dõi các bản nhạc'}</p>
           </div>
-          <button className="sc-btn sc-btn--primary" onClick={() => navigate('/scores/upload')}>
-            + Tải bản nhạc lên
-          </button>
+          <div className="sc-lib-head__actions">
+            <button className="sc-btn" onClick={() => navigate('/scores/trash')}>
+              Thùng rác
+            </button>
+            <button className="sc-btn sc-btn--primary" onClick={() => navigate('/scores/upload')}>
+              + Tải bản nhạc lên
+            </button>
+          </div>
         </header>
 
         <ScoreFilters

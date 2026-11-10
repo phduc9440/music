@@ -120,6 +120,8 @@ public class ScoreContentServiceImpl implements ScoreContentService {
             Score score =
                     scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
             scoreFileService.checkCanView(score);
+            // /midi chỉ dùng để tải file về (Player phát qua API khác), nên người xem cần được chủ cho phép tải
+            scoreFileService.checkCanDownload(score);
 
             ScoreFile xml = currentFile(scoreId, FileType.MUSICXML)
                     .orElseThrow(() -> new AppException(ErrorCode.MUSICXML_NOT_READY));

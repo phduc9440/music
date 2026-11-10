@@ -48,7 +48,7 @@ public class ScoreFileController {
             security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<Resource> download(
             @PathVariable String fileId, @RequestParam(defaultValue = "false") boolean inline) {
-        ScoreFileService.DownloadableFile file = scoreFileService.loadForDownload(fileId);
+        ScoreFileService.DownloadableFile file = scoreFileService.loadForDownload(fileId, inline);
 
         ContentDisposition disposition = (inline ? ContentDisposition.inline() : ContentDisposition.attachment())
                 .filename(file.fileName(), StandardCharsets.UTF_8)

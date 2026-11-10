@@ -75,6 +75,9 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
   // Còn tác vụ đang chạy thì tự làm mới mỗi 5 giây để thấy tiến độ
   const score = state.phase === 'ready' ? state.score : null;
   const running = score?.processingStatus === 'PENDING' || score?.processingStatus === 'PROCESSING';
+  // File gốc và lịch sử tác vụ chỉ dành cho người có quyền sửa; người xem chỉ thấy tab Nhận xét
+  const canSeeSources = score?.accessLevel === 'OWNER' || score?.accessLevel === 'EDIT';
+  const activeTab: Tab = canSeeSources ? tab : 'reviews';
   useEffect(() => {
     if (!running) return;
     const t = setInterval(() => setTick((n) => n + 1), POLL_INTERVAL_MS);
@@ -140,20 +143,39 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
             <ScorePreview score={score} />
 
             <div className="sc-tabs" role="tablist">
-              <button role="tab" aria-selected={tab === 'files'} className="sc-tab" onClick={() => setTab('files')}>
-                File <span className="sc-tab__count">{score.files.length}</span>
-              </button>
-              <button role="tab" aria-selected={tab === 'tasks'} className="sc-tab" onClick={() => setTab('tasks')}>
-                Lịch sử tác vụ <span className="sc-tab__count">{score.latestTasks.length}</span>
-              </button>
-              <button role="tab" aria-selected={tab === 'reviews'} className="sc-tab" onClick={() => setTab('reviews')}>
+              {canSeeSources && (
+                <>
+                  <button
+                    role="tab"
+                    aria-selected={activeTab === 'files'}
+                    className="sc-tab"
+                    onClick={() => setTab('files')}
+                  >
+                    File <span className="sc-tab__count">{score.files.length}</span>
+                  </button>
+                  <button
+                    role="tab"
+                    aria-selected={activeTab === 'tasks'}
+                    className="sc-tab"
+                    onClick={() => setTab('tasks')}
+                  >
+                    Lịch sử tác vụ <span className="sc-tab__count">{score.latestTasks.length}</span>
+                  </button>
+                </>
+              )}
+              <button
+                role="tab"
+                aria-selected={activeTab === 'reviews'}
+                className="sc-tab"
+                onClick={() => setTab('reviews')}
+              >
                 Nhận xét{score.ratingCount ? <span className="sc-tab__count">{score.ratingCount}</span> : null}
               </button>
             </div>
 
-            {tab === 'files' && <FilesTable files={score.files} />}
-            {tab === 'tasks' && <TasksTable tasks={score.latestTasks} files={score.files} />}
-            {tab === 'reviews' && (
+            {activeTab === 'files' && <FilesTable files={score.files} />}
+            {activeTab === 'tasks' && <TasksTable tasks={score.latestTasks} files={score.files} />}
+            {activeTab === 'reviews' && (
               <ReviewsSection scoreId={score.id} canReview={score.canReview} onChanged={() => setTick((n) => n + 1)} />
             )}
           </div>
@@ -198,6 +220,7 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
         <DeleteScoreModal
           scoreId={score.id}
           title={score.title}
+          moderating={score.accessLevel !== 'OWNER'}
           onClose={() => setDeleting(false)}
           onDeleted={() => navigate(backPath, { replace: true })}
         />

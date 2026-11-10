@@ -128,8 +128,8 @@ public class ScoreEditServiceImpl implements ScoreEditService {
         MusicXmlSummary summary = MusicXmlInspector.inspect(body);
 
         if (force) {
-            // Ghi đè bản mới hơn của người khác: chỉ chủ sở hữu hoặc ADMIN
-            if (!scoreFileService.canDelete(score)) {
+            // Ghi đè bản mới hơn của người khác: chỉ chủ sở hữu (ADMIN và người được chia sẻ quyền sửa thì không)
+            if (!scoreFileService.canManageSharing(score)) {
                 throw new AppException(ErrorCode.UNAUTHORIZED);
             }
         } else {

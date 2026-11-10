@@ -135,6 +135,9 @@ public enum ErrorCode {
     SCORE_DIFF_SAME_VERSION(2902, "Không thể so sánh một phiên bản với chính nó", HttpStatus.BAD_REQUEST),
     SCORE_DIFF_FAILED(
             2903, "Không so sánh được hai phiên bản (MusicXML không đọc được)", HttpStatus.UNPROCESSABLE_ENTITY),
+
+    // Score lifecycle 33xx
+    SCORE_NOT_IN_TRASH(3301, "Bản nhạc không nằm trong thùng rác của bạn", HttpStatus.NOT_FOUND),
     ;
 
     int code;

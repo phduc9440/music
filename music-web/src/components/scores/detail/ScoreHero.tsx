@@ -83,7 +83,13 @@ export default function ScoreHero({ score, onConverted }: Pick<Props, 'score' | 
           {canConvertMidi && (
             <MidiConvertButton scoreId={score.id} resume={activeConversion} onDone={() => onConverted?.()} />
           )}
-          <DownloadMenu scoreId={score.id} files={score.files} title={score.title} staffCount={score.staffCount} />
+          <DownloadMenu
+            scoreId={score.id}
+            files={score.files}
+            title={score.title}
+            staffCount={score.staffCount}
+            canDownload={score.canDownload}
+          />
           <Link
             className={`sc-btn${ready ? '' : ' is-disabled'}`}
             to={`${base}/${score.id}/play`}

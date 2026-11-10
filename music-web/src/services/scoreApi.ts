@@ -10,6 +10,7 @@ import type {
   ScoreSaveResult,
   ScoreSummary,
   ScoreUpdateRequest,
+  TrashedScore,
 } from '../types';
 
 export const scoreApi = {
@@ -35,7 +36,14 @@ export const scoreApi = {
   approvePublic: (id: string) => apiClient.post<ApiResponse<ScoreDetail>>(`/scores/${id}/publish/approve`),
   rejectPublic: (id: string, reason?: string) =>
     apiClient.post<ApiResponse<ScoreDetail>>(`/scores/${id}/publish/reject`, { reason }),
-  remove: (id: string) => apiClient.delete<ApiResponse<void>>(`/scores/${id}`),
+  // Chuyển vào thùng rác (giữ 30 ngày); reason chỉ dành cho quản trị viên kiểm duyệt, gửi tới chủ sở hữu
+  remove: (id: string, reason?: string) =>
+    apiClient.delete<ApiResponse<void>>(`/scores/${id}`, { params: reason ? { reason } : undefined }),
+  trash: (params?: { page?: number; size?: number }) =>
+    apiClient.get<ApiResponse<PageResult<TrashedScore>>>('/scores/trash', { params }),
+  restore: (id: string) => apiClient.post<ApiResponse<void>>(`/scores/${id}/restore`),
+  // Xóa hẳn một bản nhạc đang nằm trong thùng rác, không khôi phục được
+  purge: (id: string) => apiClient.delete<ApiResponse<void>>(`/scores/${id}/purge`),
   files: (id: string, type?: string) =>
     apiClient.get<ApiResponse<ScoreFileInfo[]>>(`/scores/${id}/files`, { params: type ? { type } : undefined }),
 };

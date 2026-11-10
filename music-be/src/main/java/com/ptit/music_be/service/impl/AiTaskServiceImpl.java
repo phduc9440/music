@@ -62,10 +62,8 @@ public class AiTaskServiceImpl implements AiTaskService {
     public List<AiTaskResponse> getTasksOfScore(String scoreId) {
         Score score =
                 scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
-        // Lịch sử tác vụ AI chỉ dành cho chủ sở hữu hoặc ADMIN (giống GET /ai-tasks/{id})
-        if (!scoreFileService.canDelete(score)) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
-        }
+        // Lịch sử tác vụ AI chỉ dành cho người có quyền sửa bản nhạc (người xem bản công khai không thấy)
+        scoreFileService.checkCanEdit(score);
         return aiTaskRepository.findByScoreIdOrderByCreatedAtDesc(scoreId).stream()
                 .map(aiTaskMapper::toResponse)
                 .toList();
