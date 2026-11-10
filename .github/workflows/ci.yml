@@ -1,8 +1,11 @@
 name: CI
 
+# Tạm tắt: chưa cần CI, chỉ chạy khi bấm tay (Actions -> CI -> Run workflow).
+# Bật lại tự động cho mỗi pull request: xoá dòng workflow_dispatch và bỏ dấu # ở 3 dòng pull_request.
 on:
-  pull_request:
-    branches: [dev, main]
+  workflow_dispatch:
+  # pull_request:
+  #   branches: [dev, main]
 
 concurrency:
   group: ci-${{ github.ref }}
