@@ -1,0 +1,69 @@
+# Chạy cả hệ thống: cp .env.example .env && docker compose up --build
+# Web http://localhost:5173 · BE http://localhost:8080/swagger-ui.html
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: music_db
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  music-ai:
+    build: ./music-ai
+    environment:
+      INTERNAL_KEY: ${AI_INTERNAL_KEY}
+      JAVA_BASE_URL: http://music-be:8080
+      STORAGE_ROOT: /data/storage
+      # CPU chậm hơn GPU nhiều, nới thời gian chờ (xem music-ai/README.md)
+      INFERENCE_PAGE_TIMEOUT_S: "300"
+      TASK_TIMEOUT_S: "1800"
+    volumes:
+      - storage:/data/storage
+      - hf-cache:/cache/huggingface
+
+  music-be:
+    build: ./music-be
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/music_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      JWT_SIGNER_KEY: ${JWT_SIGNER_KEY}
+      AI_BASE_URL: http://music-ai:8000
+      AI_INTERNAL_KEY: ${AI_INTERNAL_KEY}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+      APP_STORAGE_LOCAL_ROOT: /data/storage
+    volumes:
+      - storage:/data/storage
+    ports:
+      - "${BE_PORT:-8080}:8080"
+
+  web:
+    build:
+      context: ./music-web
+      args:
+        VITE_API_BASE_URL: http://localhost:${BE_PORT:-8080}/api
+        VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+    depends_on:
+      - music-be
+    ports:
+      - "${WEB_PORT:-5173}:80"
+
+volumes:
+  mysql-data:
+  storage:
+  hf-cache:

@@ -20,6 +20,8 @@ export type ViewMode = 'page' | 'scroll';
 export interface ViewerPrefs {
   zoom: number;
   mode: ViewMode;
+  /** Đảo màu bản nhạc (nền tối, nốt sáng) cho theme tối. */
+  invert: boolean;
 }
 
 const PREFS_KEY = 'score-viewer-prefs';
@@ -32,7 +34,7 @@ export const clampZoom = (value: number): number => {
 
 /** Đọc lựa chọn thu phóng và chế độ xem đã lưu; lỗi hoặc dữ liệu lạ thì trả mặc định. */
 export const loadViewerPrefs = (): ViewerPrefs => {
-  const fallback: ViewerPrefs = { zoom: ZOOM_DEFAULT, mode: 'page' };
+  const fallback: ViewerPrefs = { zoom: ZOOM_DEFAULT, mode: 'page', invert: false };
   try {
     const raw = localStorage.getItem(PREFS_KEY);
     if (!raw) return fallback;
@@ -40,6 +42,7 @@ export const loadViewerPrefs = (): ViewerPrefs => {
     return {
       zoom: typeof data.zoom === 'number' ? clampZoom(data.zoom) : fallback.zoom,
       mode: data.mode === 'scroll' ? 'scroll' : 'page',
+      invert: data.invert === true,
     };
   } catch {
     return fallback;

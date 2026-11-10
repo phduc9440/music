@@ -6,7 +6,7 @@ import Modal from '../../../components/scores/common/Modal';
 import InstrumentMenu from '../../../components/scores/viewer/InstrumentMenu';
 import ScoreCanvas from '../../../components/scores/viewer/ScoreCanvas';
 import ZoomControl from '../../../components/scores/viewer/ZoomControl';
-import { IconBack, IconPages, IconScroll } from '../../../components/scores/viewer/ViewerIcons';
+import { IconBack, IconInvert, IconPages, IconScroll } from '../../../components/scores/viewer/ViewerIcons';
 import { EDIT_FAILURE_MESSAGES } from '../../../components/editor/core/commands';
 import { syncTitle } from '../../../components/editor/structure/header';
 import { ScoreDocument } from '../../../components/editor/core/ScoreDocument';
@@ -157,7 +157,7 @@ function PlayerWorkspace({
   const [prefs, setPrefs] = useState(loadViewerPrefs);
   const [failed, setFailed] = useState(false);
   const [conflict, setConflict] = useState<{ latestVersion: number } | null>(null);
-  const { zoom, mode } = prefs;
+  const { zoom, mode, invert } = prefs;
   const player = usePlayer(doc, {
     scoreId: score.id,
     fallbackBpm: score.tempoBpm ?? 100,
@@ -250,6 +250,16 @@ function PlayerWorkspace({
             </button>
           </div>
           <ZoomControl zoom={zoom} onChange={(z) => update({ zoom: clampZoom(z) })} />
+          <div className="sv-segment sv-segment--icons" role="group" aria-label="Màu bản nhạc">
+            <button
+              aria-pressed={invert}
+              aria-label="Đảo màu bản nhạc"
+              title="Đảo màu bản nhạc (nền tối, nốt sáng)"
+              onClick={() => update({ invert: !invert })}
+            >
+              <IconInvert />
+            </button>
+          </div>
         </div>
         <div className="sv-toolbar__right">
           <InstrumentMenu parts={player.parts} onChange={player.setInstrument} />
@@ -274,6 +284,7 @@ function PlayerWorkspace({
             doc={doc}
             zoom={zoom}
             mode={mode}
+            inverted={invert}
             onZoomChange={(z) => update({ zoom: clampZoom(z) })}
             onRendered={() => undefined}
             onProgress={() => undefined}

@@ -74,6 +74,8 @@ interface Props {
   onMeasureClick?: (measureIndex: number, additive: boolean) => void;
   /** Số nửa cung chuyển giọng khi VẼ bản nhạc (trang phát). 0 = giọng gốc. Editor không dùng để khỏi nhầm khi đang sửa nốt. */
   transpose?: number;
+  /** Đảo màu bản nhạc (nền tối, nốt sáng). */
+  inverted?: boolean;
   /** Đoạn A-B cần tô khung (chỉ số ô từ 0); null = không tô. Nên giữ nguyên tham chiếu giữa các lần vẽ. */
   loopRange?: LoopRange | null;
   /** Shift + kéo qua các ô nhịp (khi không có `onSelectNotes`): trả về ô đầu và ô cuối (từ 0, đầu ≤ cuối). */
@@ -96,6 +98,12 @@ type Gesture =
   | { kind: 'note'; ids: string[]; el: SVGGElement; y0: number; moved: boolean; steps: number };
 
 /** Chờ sau lần đổi zoom/kích thước cuối cùng rồi mới vẽ lại (ms). */
+/** Đọc màu từ biến CSS lúc vẽ (OSMD cần chuỗi màu, không dùng được var()). Không có biến thì dùng `fallback`. */
+const readCssColor = (name: string, fallback: string): string => {
+  const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return value || fallback;
+};
+
 const RENDER_DEBOUNCE_MS = 200;
 /** Gộp các thao tác sửa liên tiếp (ví dụ giữ phím ↑) thành một lần vẽ (ms). */
 const EDIT_REDRAW_MS = 150;
@@ -319,6 +327,7 @@ export default function ScoreCanvas({
   onMeasureClick,
   loopRange = null,
   transpose = 0,
+  inverted = false,
   onMeasureRange,
   onSelectNotes,
   onDragPitch,
@@ -345,6 +354,13 @@ export default function ScoreCanvas({
   const loadedRevision = useRef(0);
   // loadId > 0: đã nạp xong MusicXML (tăng theo mỗi lần nạp); drawnKey: cấu hình đã vẽ xong gần nhất
   const [loadId, setLoadId] = useState(0);
+  // Đổi theme (thuộc tính data-theme trên <html>) thì vẽ lại để OSMD lấy màu mới
+  const [themeTick, setThemeTick] = useState(0);
+  useEffect(() => {
+    const observer = new MutationObserver(() => setThemeTick((n) => n + 1));
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => observer.disconnect();
+  }, []);
   const [drawnKey, setDrawnKey] = useState('');
   const wantedKey = loadId > 0 ? `${loadId}|${zoom}|${mode}|${transpose}` : '';
   const busy = wantedKey === '' || drawnKey !== wantedKey;
@@ -511,7 +527,8 @@ export default function ScoreCanvas({
         osmd.setOptions({
           renderSingleHorizontalStaffline: horizontal,
           pageFormat: horizontal ? 'Endless' : 'A4 P',
-          pageBackgroundColor: '#ffffff',
+          pageBackgroundColor: readCssColor('--ui-paper', 'white'),
+          defaultColorMusic: readCssColor('--ui-staff-ink', 'black'),
         });
         osmd.zoom = zoom / 100;
         if (latest.current.doc) applyHeaderStyle(osmd, readHeader(latest.current.doc));
@@ -546,7 +563,7 @@ export default function ScoreCanvas({
       clearTimeout(timer);
       observer.disconnect();
     };
-  }, [loadId, zoom, mode, transpose, reportProgress, decorate]);
+  }, [loadId, zoom, mode, transpose, themeTick, reportProgress, decorate]);
 
   // Nội dung `doc` đổi (sửa, hoàn tác, khôi phục nháp): nạp lại XML, vẽ lại, giữ vị trí cuộn. Gộp trong 150ms.
   useEffect(() => {
@@ -914,7 +931,7 @@ export default function ScoreCanvas({
   return (
     <div
       ref={scrollRef}
-      className={`sv-canvas sv-canvas--${mode}`}
+      className={`sv-canvas sv-canvas--${mode}${inverted ? ' sv-canvas--inverted' : ''}`}
       onScroll={() => {
         reportProgress();
         if (popover) setPopover(null);

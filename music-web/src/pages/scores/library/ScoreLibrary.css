@@ -71,7 +71,7 @@
 .sc-card:hover,
 .sc-card:focus-visible {
   transform: translateY(-4px);
-  border-color: #bfd2ff;
+  border-color: var(--ui-primary-border);
   box-shadow: var(--sc-shadow-hover);
   outline: none;
 }
@@ -95,13 +95,13 @@
   position: absolute;
   top: 0.6rem;
   left: 0.6rem;
-  filter: drop-shadow(0 1px 3px rgba(15, 23, 42, 0.2));
+  filter: drop-shadow(0 1px 3px color-mix(in srgb, var(--ui-shadow-ink) 20%, transparent));
 }
 .sc-card__status {
   position: absolute;
   top: 0.6rem;
   right: 0.6rem;
-  filter: drop-shadow(0 1px 3px rgba(15, 23, 42, 0.2));
+  filter: drop-shadow(0 1px 3px color-mix(in srgb, var(--ui-shadow-ink) 20%, transparent));
 }
 .sc-card__body {
   display: flex;
@@ -142,7 +142,7 @@
   pointer-events: none;
 }
 .sc-skeleton {
-  background: linear-gradient(90deg, #eef2f7 25%, #f8fafc 37%, #eef2f7 63%);
+  background: linear-gradient(90deg, var(--ui-surface-hover) 25%, var(--ui-surface-muted) 37%, var(--ui-surface-hover) 63%);
   background-size: 200% 100%;
   animation: sc-shimmer 1.3s linear infinite;
   border-radius: 8px;
@@ -168,7 +168,7 @@
   padding: 3.5rem 1rem;
   text-align: center;
   background: var(--sc-card);
-  border: 1px dashed #cbd5e1;
+  border: 1px dashed var(--ui-border-strong);
   border-radius: var(--sc-radius);
 }
 .sc-empty__icon {
