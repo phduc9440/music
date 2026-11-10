@@ -1,6 +1,7 @@
 /* Trang tiến độ số hóa (/scores/:id/processing). Tiền tố sp- */
 .sp-container {
   max-width: 880px;
+  margin-inline: auto;
 }
 .sp-skeleton {
   height: 320px;
@@ -202,7 +203,12 @@
 }
 .sp-strip__item--wait {
   cursor: default;
-  background: linear-gradient(90deg, var(--ui-surface-hover) 25%, var(--ui-surface-muted) 37%, var(--ui-surface-hover) 63%);
+  background: linear-gradient(
+    90deg,
+    var(--ui-surface-hover) 25%,
+    var(--ui-surface-muted) 37%,
+    var(--ui-surface-hover) 63%
+  );
   background-size: 200% 100%;
   animation: sc-shimmer 1.3s linear infinite;
 }

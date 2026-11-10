@@ -99,7 +99,7 @@ export default function UserProfile() {
   if (isLoading) {
     return (
       <div className="sc-page">
-        <main className="sc-container" aria-busy="true">
+        <main className="sc-container sc-container--form" aria-busy="true">
           <div className="sc-skeleton sc-skeleton--hero" />
         </main>
       </div>
@@ -111,7 +111,7 @@ export default function UserProfile() {
 
   return (
     <div className="sc-page">
-      <main className="sc-container">
+      <main className="sc-container sc-container--form">
         <header className="sc-lib-head">
           <div>
             <h1>Hồ sơ của tôi</h1>
@@ -135,11 +135,21 @@ export default function UserProfile() {
             <p className="pf-email">{user?.email}</p>
             {user && <span className="sc-chip sc-chip--accent">{roleLabel(user)}</span>}
             <div className="pf-actions">
-              <button type="button" className="sc-btn sc-btn--sm" disabled={isUploading} onClick={() => fileInput.current?.click()}>
+              <button
+                type="button"
+                className="sc-btn sc-btn--sm"
+                disabled={isUploading}
+                onClick={() => fileInput.current?.click()}
+              >
                 {isUploading ? 'Đang tải…' : 'Đổi ảnh'}
               </button>
               {user?.avatarUrl && (
-                <button type="button" className="sc-btn sc-btn--sm sc-btn--danger" disabled={isUploading} onClick={handleAvatarDelete}>
+                <button
+                  type="button"
+                  className="sc-btn sc-btn--sm sc-btn--danger"
+                  disabled={isUploading}
+                  onClick={handleAvatarDelete}
+                >
                   Xóa ảnh
                 </button>
               )}

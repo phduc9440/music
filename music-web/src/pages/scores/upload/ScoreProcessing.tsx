@@ -180,7 +180,7 @@ export default function ScoreProcessing() {
     return (
       <div className="sc-page">
         {navbar}
-        <main className="sc-container" aria-busy="true">
+        <main className="sc-container sp-container" aria-busy="true">
           <div className="sc-skeleton sp-skeleton" />
         </main>
       </div>
@@ -192,7 +192,7 @@ export default function ScoreProcessing() {
     return (
       <div className="sc-page">
         {navbar}
-        <main className="sc-container">
+        <main className="sc-container sp-container">
           <div className="sc-empty">
             <h3>{notFound ? 'Không tìm thấy bản nhạc' : 'Không tải được tiến độ'}</h3>
             <p>{notFound ? 'Bản nhạc không tồn tại hoặc bạn không có quyền xem.' : 'Vui lòng thử lại sau.'}</p>
@@ -210,7 +210,7 @@ export default function ScoreProcessing() {
     return (
       <div className="sc-page">
         {navbar}
-        <main className="sc-container">
+        <main className="sc-container sp-container">
           <div className="sc-empty">
             <h3>Bản nhạc này chưa có tác vụ số hóa</h3>
             <p>Bạn có thể xem chi tiết bản nhạc hoặc tải một file mới lên.</p>

@@ -82,8 +82,7 @@ export default function ScoreImport() {
 
   return (
     <div className="sc-page">
-
-      <main className="sc-container">
+      <main className="sc-container sc-container--form">
         <header className="sc-lib-head">
           <div>
             <h1>Nhập file MusicXML / MIDI</h1>

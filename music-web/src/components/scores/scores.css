@@ -25,10 +25,18 @@
   background: transparent;
 }
 
+/* Thanh trên tràn hết màn hình, còn nội dung chính giữ một khung vừa phải ở giữa (--ui-content-max trong tokens.css) */
 .sc-container {
-  max-width: 1200px;
+  width: 100%;
+  max-width: var(--ui-content-max);
   margin: 0 auto;
   padding: 1.5rem 1.5rem 3rem;
+}
+
+/* Trang biểu mẫu (hồ sơ, tải lên, nhập file): kéo hết màn hình thì rất khó đọc nên giữ một cột vừa phải ở giữa */
+.sc-container--form {
+  max-width: 960px;
+  margin-inline: auto;
 }
 
 .adm-main .sc-container {
@@ -38,7 +46,7 @@
 
 /* Liên kết quay lại ở đầu trang (thay cho thanh điều hướng riêng của từng trang trước đây) */
 .sc-backbar {
-  max-width: 1200px;
+  max-width: var(--ui-content-max);
   margin: 0 auto;
   padding: 1rem 1.5rem 0;
 }

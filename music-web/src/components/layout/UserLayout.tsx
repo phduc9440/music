@@ -83,22 +83,36 @@ export default function UserLayout() {
     <div className="app-shell">
       <header className="app-header">
         <div className="app-header__inner">
-          <button
-            type="button"
-            className="app-iconbtn app-header__burger"
-            aria-label="Mở menu điều hướng"
-            aria-expanded={navOpen}
-            onClick={() => setNavOpen((v) => !v)}
-          >
-            <Icon name={navOpen ? 'x' : 'menu'} />
-          </button>
+          <div className="app-header__left">
+            <button
+              type="button"
+              className="app-iconbtn app-header__burger"
+              aria-label="Mở menu điều hướng"
+              aria-expanded={navOpen}
+              onClick={() => setNavOpen((v) => !v)}
+            >
+              <Icon name={navOpen ? 'x' : 'menu'} />
+            </button>
 
-          <Link to="/scores" className="app-brand">
-            <span className="app-brand__logo">
-              <Icon name="music" size={16} />
-            </span>
-            Music App
-          </Link>
+            <Link to="/scores" className="app-brand">
+              <span className="app-brand__logo">
+                <Icon name="music" size={16} />
+              </span>
+              Music App
+            </Link>
+
+            <button
+              type="button"
+              className="app-search"
+              aria-label="Tìm kiếm (Ctrl+K)"
+              title="Tìm kiếm (Ctrl+K)"
+              onClick={() => setSearchOpen(true)}
+            >
+              <Icon name="search" size={16} />
+              <span className="app-search__text">Tìm kiếm</span>
+              <kbd className="app-search__kbd">Ctrl K</kbd>
+            </button>
+          </div>
 
           <nav className={`app-nav${navOpen ? ' app-nav--open' : ''}`} aria-label="Điều hướng chính">
             {NAV_GROUPS.map((group) => (
@@ -111,17 +125,6 @@ export default function UserLayout() {
               <Icon name="plus" size={16} />
               <span>Tạo bản nhạc</span>
             </Link>
-            <button
-              type="button"
-              className="app-search"
-              aria-label="Tìm kiếm (Ctrl+K)"
-              title="Tìm kiếm (Ctrl+K)"
-              onClick={() => setSearchOpen(true)}
-            >
-              <Icon name="search" size={16} />
-              <span className="app-search__text">Tìm kiếm</span>
-              <kbd className="app-search__kbd">Ctrl K</kbd>
-            </button>
             <ThemeToggle />
             <NotificationBell />
             <div className="app-usermenu" ref={menuRef}>
