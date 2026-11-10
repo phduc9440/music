@@ -75,7 +75,10 @@ public interface ScoreService {
             String difficulty,
             String sort);
 
-    /** ADMIN: đặt thẳng PUBLIC hoặc PRIVATE (PRIVATE kèm lý do, gỡ khỏi kho mẫu, báo cho chủ). */
+    /**
+     * ADMIN kiểm duyệt: PUBLIC chỉ cho bản đang chờ duyệt (PENDING), PRIVATE chỉ cho bản đang công khai (kèm lý do, gỡ
+     * khỏi kho mẫu, báo cho chủ). Các chuyển trạng thái khác báo lỗi; không công khai thay chủ.
+     */
     ScoreDetailResponse setVisibilityByAdmin(String scoreId, Visibility visibility, String reason);
 
     /** ADMIN: các bản nhạc chủ đã xin công khai và đang chờ duyệt (cũ nhất trước). */

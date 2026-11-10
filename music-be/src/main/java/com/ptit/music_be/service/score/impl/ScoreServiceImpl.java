@@ -330,6 +330,14 @@ public class ScoreServiceImpl implements ScoreService {
         if (current.equals(visibility.name())) {
             return toDetail(score);
         }
+        // Admin chỉ kiểm duyệt: duyệt bản đang chờ (PENDING → PUBLIC) hoặc gỡ bản đã công khai (PUBLIC → PRIVATE).
+        // Không tự công khai bản riêng tư của người khác khi chủ chưa xin.
+        if (visibility == Visibility.PUBLIC && !Visibility.PENDING.name().equals(current)) {
+            throw new AppException(ErrorCode.SCORE_NOT_PENDING_PUBLIC);
+        }
+        if (visibility == Visibility.PRIVATE && !Visibility.PUBLIC.name().equals(current)) {
+            throw new AppException(ErrorCode.SCORE_NOT_PUBLIC);
+        }
         if (visibility == Visibility.PUBLIC) {
             score.setVisibility(Visibility.PUBLIC.name());
             score.setRejectReason(null);
@@ -351,7 +359,7 @@ public class ScoreServiceImpl implements ScoreService {
                     makePublic ? NotificationType.PUBLISH_APPROVED : NotificationType.PUBLISH_REJECTED,
                     score.getId(),
                     "Bản nhạc \"" + score.getTitle() + "\""
-                            + (makePublic ? " đã được quản trị viên công khai" : " đã bị quản trị viên gỡ công khai")
+                            + (makePublic ? " đã được duyệt công khai" : " đã bị quản trị viên gỡ công khai")
                             + (!makePublic && saved.getRejectReason() != null ? ": " + saved.getRejectReason() : ""));
         }
         return toDetail(saved);
