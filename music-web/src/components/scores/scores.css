@@ -47,6 +47,11 @@
   padding: 0 0 0.75rem;
 }
 
+/* BackLink dùng chung có margin-bottom riêng; ở đây thanh quay lại đã có padding */
+.adm-main .sc-backbar .adm-page-header__back {
+  margin-bottom: 0;
+}
+
 .sc-backlink {
   display: inline-flex;
   align-items: center;

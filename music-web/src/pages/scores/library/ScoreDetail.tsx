@@ -10,6 +10,7 @@ import ScoreHero, { ScorePreview, ScoreSidebar } from '../../../components/score
 import Modal from '../../../components/scores/common/Modal';
 import ShareModal from '../../../components/scores/detail/ShareModal';
 import TasksTable from '../../../components/scores/detail/TasksTable';
+import { BackLink } from '../../../components/ui';
 import { scoreApi } from '../../../services';
 import type { ScoreDetail as ScoreDetailData } from '../../../types';
 import { getHttpStatus, POLL_INTERVAL_MS } from '../../../utils/score';
@@ -32,7 +33,7 @@ type Tab = 'files' | 'tasks' | 'reviews';
  */
 export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
   const backPath = admin ? '/admin/scores' : '/scores';
-  const backLabel = admin ? '‹ Quay lại' : '‹ Thư viện';
+  const backLabel = admin ? 'Quay lại' : '‹ Thư viện';
   // Admin vào từ nhiều trang (quản lý, chờ duyệt, kho mẫu) nên quay về trang trước đó
   const goBack = () => (admin && window.history.length > 1 ? navigate(-1) : navigate(backPath));
   const { id } = useParams<{ id: string }>();
@@ -84,11 +85,16 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
     return () => clearInterval(t);
   }, [running]);
 
+  // Trang admin dùng cùng nút quay lại với các trang chi tiết admin khác (ví dụ chi tiết thành viên)
   const navbar = (
     <div className="sc-backbar">
-      <button type="button" className="sc-backlink" onClick={goBack}>
-        {backLabel}
-      </button>
+      {admin ? (
+        <BackLink label={backLabel} onClick={goBack} />
+      ) : (
+        <button type="button" className="sc-backlink" onClick={goBack}>
+          {backLabel}
+        </button>
+      )}
     </div>
   );
 
