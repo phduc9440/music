@@ -9,8 +9,8 @@ import com.ptit.music_be.dto.enums.AiTaskError;
 import com.ptit.music_be.dto.enums.AiTaskStatus;
 import com.ptit.music_be.entity.AiTask;
 import com.ptit.music_be.repository.AiTaskRepository;
-import com.ptit.music_be.service.MuseScoreCliService;
-import com.ptit.music_be.service.impl.ExportServiceImpl;
+import com.ptit.music_be.service.ai.MuseScoreCliService;
+import com.ptit.music_be.service.export.impl.ExportServiceImpl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

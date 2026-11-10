@@ -15,7 +15,7 @@ import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.repository.MemberRepository;
 import com.ptit.music_be.service.admin.AdminAnnouncementService;
-import com.ptit.music_be.service.NotificationService;
+import com.ptit.music_be.service.notification.NotificationService;
 import com.ptit.music_be.utils.SecurityUtils;
 
 import lombok.AccessLevel;

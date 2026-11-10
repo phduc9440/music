@@ -14,7 +14,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import com.ptit.music_be.dto.response.PageResponse;
 import com.ptit.music_be.dto.response.ScoreSummaryResponse;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.service.ScoreService;
+import com.ptit.music_be.service.score.ScoreService;
 
 /** Chạy câu JPQL lọc/sắp xếp của trang quản lý bản nhạc với DB thật (cần MySQL đang chạy). */
 @SpringBootTest

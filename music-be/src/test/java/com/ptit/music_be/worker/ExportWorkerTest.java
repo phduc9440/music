@@ -48,8 +48,8 @@ import com.ptit.music_be.exception.MuseScoreException;
 import com.ptit.music_be.repository.AiTaskRepository;
 import com.ptit.music_be.repository.ScoreFileRepository;
 import com.ptit.music_be.repository.ScoreRepository;
-import com.ptit.music_be.service.FileStorageService;
-import com.ptit.music_be.service.MuseScoreCliService;
+import com.ptit.music_be.service.ai.MuseScoreCliService;
+import com.ptit.music_be.service.storage.FileStorageService;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)

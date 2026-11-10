@@ -5,7 +5,7 @@ import java.util.List;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import com.ptit.music_be.service.ScoreTrashService;
+import com.ptit.music_be.service.score.ScoreTrashService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
