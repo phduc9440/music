@@ -146,6 +146,20 @@ class ScoreExploreQueryTest {
     }
 
     @Test
+    void aLibraryCopyIsNotListedNextToItsOriginal() {
+        Score copy = score(quiet.getMember(), "Quiet", "PUBLIC", 0L, DifficultyLevel.EASY);
+        copy.setIsOfficial(true);
+        copy.setOriginalScoreId(quiet.getId());
+        scoreRepository.save(copy);
+
+        List<String> titles = titles(explore(tag, null, null));
+
+        // bản gốc hiện một lần, bản sao trong kho mẫu không hiện thêm lần nữa
+        assertEquals(1, titles.stream().filter(t -> t.equals(tag + " Quiet")).count());
+        assertEquals(3, titles.size());
+    }
+
+    @Test
     void invalidValuesAreRejected() {
         assertThrows(AppException.class, () -> explore(null, null, "RANDOM"));
         assertThrows(AppException.class, () -> explore(null, "IMPOSSIBLE", null));

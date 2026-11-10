@@ -147,6 +147,8 @@ export interface ScoreDetail extends ScoreSummary {
   currentVersion?: number | null;
   viewCount?: number | null;
   ownerEmail?: string | null;
+  /** Bản trong kho mẫu mà bạn là chủ của bản gốc: id bản gốc của bạn. */
+  myOriginalScoreId?: string | null;
   canEdit: boolean;
   canDelete: boolean;
   canReview: boolean;

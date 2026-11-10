@@ -678,6 +678,22 @@ public class ScoreServiceImpl implements ScoreService {
                 .build();
     }
 
+    /**
+     * Bản sao trong kho mẫu thuộc tài khoản hệ thống nên chủ của bản gốc xem nó như bản của người khác. Trả về id bản gốc
+     * của người đang xem để giao diện dẫn về đúng bản của họ (null nếu không phải bản sao hoặc người xem không phải chủ).
+     */
+    private String myOriginalScoreId(Score score) {
+        if (score.getOriginalScoreId() == null) {
+            return null;
+        }
+        String me = SecurityUtils.getCurrentEmail();
+        return scoreRepository
+                .findById(score.getOriginalScoreId())
+                .filter(original -> original.getMember() != null && me.equals(original.getMember().getEmail()))
+                .map(Score::getId)
+                .orElse(null);
+    }
+
     private ScoreDetailResponse toDetail(Score score) {
         AccessDecision decision = scorePermissionService.resolve(score);
         boolean canEdit = scorePermissionService.canEdit(score, decision);
@@ -716,6 +732,7 @@ public class ScoreServiceImpl implements ScoreService {
                 .visibility(score.getVisibility())
                 .isOfficial(score.getIsOfficial())
                 .arrangerName(score.getArrangerName())
+                .myOriginalScoreId(myOriginalScoreId(score))
                 .tags(score.getScoreTags().stream()
                         .map(ScoreTag::getTag)
                         .map(ScoreServiceImpl::toTagResponse)

@@ -38,7 +38,14 @@ import ProtectedRoute from './ProtectedRoute';
 const AppRoutes = () => {
   return (
     <Routes>
-      <Route path="/" element={<Home />} />
+      <Route
+        path="/"
+        element={
+          <GuestRoute>
+            <Home />
+          </GuestRoute>
+        }
+      />
       <Route
         path="/auth/login"
         element={
