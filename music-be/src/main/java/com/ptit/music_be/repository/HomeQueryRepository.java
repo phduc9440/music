@@ -72,13 +72,4 @@ public interface HomeQueryRepository extends Repository<Score, String> {
     @Query("select distinct s.keySignature from Score s where " + PUBLIC_SCORE
             + " and s.keySignature is not null and s.keySignature <> '' order by s.keySignature")
     List<String> distinctPublicKeys();
-
-    /**
-     * Bản công khai được xem nhiều nhất từ ngày {@code since} (tổng lượt xem trong các ngày đó, chỉ bản có ít nhất một
-     * lượt): [id bản nhạc, số lượt]. Bỏ bản sao trong kho mẫu như trang Khám phá.
-     */
-    @Query("select s.id, sum(d.views) from Score s, ScoreDailyViews d where d.scoreId = s.id and " + PUBLIC_SCORE
-            + " and d.viewDate >= :since group by s.id having sum(d.views) > 0"
-            + " order by sum(d.views) desc, s.id")
-    List<Object[]> topPublicSince(@Param("since") java.time.LocalDate since, Pageable pageable);
 }

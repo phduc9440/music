@@ -8,13 +8,11 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -451,20 +449,6 @@ public class ScoreServiceImpl implements ScoreService {
                     default -> throw new AppException(ErrorCode.INVALID_REQUEST);
                 };
         return toExplorePage(result);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<ScoreSummaryResponse> getPublicScoresByIds(List<String> ids) {
-        if (ids == null || ids.isEmpty()) {
-            return List.of();
-        }
-        Map<String, Score> byId = scoreRepository.findAllById(ids).stream()
-                .filter(s -> Visibility.PUBLIC.name().equals(s.getVisibility()) && s.getOriginalScoreId() == null)
-                .collect(Collectors.toMap(Score::getId, s -> s));
-        List<Score> ordered =
-                ids.stream().map(byId::get).filter(Objects::nonNull).toList();
-        return toExplorePage(new PageImpl<>(ordered)).getContent();
     }
 
     /** Thẻ ở trang Khám phá: thêm tên người chia sẻ, lượt xem và điểm sao; không lộ email chủ sở hữu. */

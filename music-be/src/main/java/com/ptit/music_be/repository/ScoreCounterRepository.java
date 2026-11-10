@@ -21,15 +21,4 @@ public interface ScoreCounterRepository extends Repository<Score, String> {
     /** Lượt xem hiện tại (0 nếu cột còn null). */
     @Query("SELECT COALESCE(s.viewCount, 0) FROM Score s WHERE s.id = :scoreId")
     Long findViewCount(@Param("scoreId") String scoreId);
-
-    /**
-     * Cộng một lượt xem vào dòng đếm của ngày {@code day} (tạo dòng nếu chưa có) bằng một câu lệnh nguyên tử. Dùng cho
-     * mục "Nổi bật tuần" ở trang chủ.
-     */
-    @Modifying
-    @Query(
-            value = "INSERT INTO score_daily_views (score_id, view_date, views) VALUES (:scoreId, :day, 1)"
-                    + " ON DUPLICATE KEY UPDATE views = views + 1",
-            nativeQuery = true)
-    int incrementDailyViews(@Param("scoreId") String scoreId, @Param("day") java.time.LocalDate day);
 }

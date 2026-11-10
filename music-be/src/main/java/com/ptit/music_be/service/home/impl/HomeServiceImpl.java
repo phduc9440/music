@@ -44,7 +44,7 @@ public class HomeServiceImpl implements HomeService {
 
     static final long PUBLIC_CACHE_MILLIS = 5 * 60 * 1000L;
     static final int FEATURED_SIZE = 8;
-    static final int WEEK_DAYS = 7;
+    static final int FEATURED_POOL = 48;
     static final int COMPOSER_SIZE = 6;
     static final int RECENT_SIZE = 3;
     static final int PENDING_SIZE = 5;
@@ -86,26 +86,14 @@ public class HomeServiceImpl implements HomeService {
 
     /** Mỗi câu truy vấn chạy trong transaction riêng của nó (ScoreService, repository). */
     PublicHomeResponse buildPublicHome() {
-        // "Nổi bật tuần": bản có nhiều lượt xem nhất trong 7 ngày qua, thiếu thì bổ sung theo tổng lượt xem
-        List<String> weeklyIds =
-                homeQueryRepository
-                        .topPublicSince(LocalDate.now().minusDays(WEEK_DAYS - 1), PageRequest.of(0, FEATURED_SIZE))
-                        .stream()
-                        .map(row -> (String) row[0])
-                        .toList();
-        List<ScoreSummaryResponse> featured = new ArrayList<>(scoreService.getPublicScoresByIds(weeklyIds));
-        int weekly = featured.size();
-        if (weekly < FEATURED_SIZE) {
-            for (ScoreSummaryResponse card : scoreService
-                    .getPublicScores(0, FEATURED_SIZE, null, null, null, "VIEWS")
-                    .getContent()) {
-                if (featured.size() >= FEATURED_SIZE) {
-                    break;
-                }
-                if (featured.stream().noneMatch(f -> f.getId().equals(card.getId()))) {
-                    featured.add(card);
-                }
-            }
+        // Nổi bật = nhiều lượt xem so với tuổi bản nhạc (lượt xem / số ngày kể từ lúc tạo), để bản mới được quan tâm
+        // nổi lên trên bản cũ chỉ có tổng lượt xem lớn. Chọn trong nhóm xem nhiều nhất rồi xếp lại.
+        List<ScoreSummaryResponse> featured = new ArrayList<>(scoreService
+                .getPublicScores(0, FEATURED_POOL, null, null, null, "VIEWS")
+                .getContent());
+        featured.sort(Comparator.comparingDouble(HomeServiceImpl::heat).reversed());
+        if (featured.size() > FEATURED_SIZE) {
+            featured = new ArrayList<>(featured.subList(0, FEATURED_SIZE));
         }
         // Ảnh trong thẻ phải tải được khi chưa đăng nhập: dùng đường ảnh công khai thay cho /api/files/... cần quyền
         for (ScoreSummaryResponse card : featured) {
@@ -126,11 +114,19 @@ public class HomeServiceImpl implements HomeService {
 
         return PublicHomeResponse.builder()
                 .featured(featured)
-                .featuredWeekly(weekly)
                 .composers(composers)
                 .stats(stats)
                 .generatedAt(LocalDateTime.now())
                 .build();
+    }
+
+    /** Lượt xem trung bình mỗi ngày kể từ lúc tạo (bản vừa tạo tính là 1 ngày). */
+    static double heat(ScoreSummaryResponse card) {
+        long views = card.getViewCount() == null ? 0 : card.getViewCount();
+        long days = card.getCreatedAt() == null
+                ? 0
+                : Math.max(0, java.time.temporal.ChronoUnit.DAYS.between(card.getCreatedAt(), LocalDateTime.now()));
+        return (double) views / (days + 1);
     }
 
     @Override

@@ -15,16 +15,10 @@ import lombok.experimental.FieldDefaults;
 public class PublicHomeResponse {
 
     /**
-     * Bản nhạc công khai nổi bật (xem nhiều nhất). thumbnailUrl trỏ tới ảnh công khai
+     * Bản nhạc công khai nổi bật (nhiều lượt xem so với số ngày kể từ lúc tạo). thumbnailUrl trỏ tới ảnh công khai
      * /api/public/scores/{id}/thumbnail, khách tải được không cần đăng nhập.
      */
     List<ScoreSummaryResponse> featured;
-
-    /**
-     * Số bản đầu danh sách featured được chọn vì có lượt xem trong 7 ngày qua ("Nổi bật tuần"); các bản sau được bổ sung
-     * theo tổng lượt xem. 0 nghĩa là chưa có lượt xem nào trong tuần.
-     */
-    int featuredWeekly;
 
     /** Nhạc sĩ có nhiều bản công khai nhất (bảng composers, mục 5.4), kèm tối đa 3 bản tiêu biểu. */
     List<ComposerResponse> composers;

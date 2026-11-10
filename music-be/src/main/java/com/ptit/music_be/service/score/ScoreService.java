@@ -75,12 +75,6 @@ public interface ScoreService {
     PageResponse<ScoreSummaryResponse> getPublicScores(int page, int size, PublicScoreFilter filter, String sort);
 
     /**
-     * Thẻ kiểu Khám phá cho các id cho trước, giữ nguyên thứ tự. Chỉ trả bản đang công khai (bản khác, bản đã vào thùng
-     * rác hay id lạ bị bỏ qua), nên dùng được cho trang chủ của khách.
-     */
-    java.util.List<ScoreSummaryResponse> getPublicScoresByIds(java.util.List<String> ids);
-
-    /**
      * ADMIN: gỡ khỏi kho score mẫu. Bản sao do người dùng đồng ý đưa vào (có bản gốc) thì được chuyển vào thùng rác,
      * bản gốc của chủ không bị ảnh hưởng; bản gắn cờ từ trước chỉ bị bỏ cờ.
      */
