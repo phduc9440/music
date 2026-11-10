@@ -196,7 +196,7 @@ class ScoreEditServiceImplTest {
     @Test
     void forceByOwnerOverridesVersion() {
         givenXmlVersions(3);
-        when(scoreFileService.canDelete(score)).thenReturn(true);
+        when(scoreFileService.canManageSharing(score)).thenReturn(true);
 
         ScoreSaveResponse response = service.saveMusicXml(SCORE_ID, VALID_XML, XML_TYPE, "\"v1\"", true);
 
@@ -206,7 +206,7 @@ class ScoreEditServiceImplTest {
     @Test
     void forceByNonOwnerIsUnauthorized() {
         givenXmlVersions(3);
-        when(scoreFileService.canDelete(score)).thenReturn(false);
+        when(scoreFileService.canManageSharing(score)).thenReturn(false);
 
         AppException error = catchError(() -> service.saveMusicXml(SCORE_ID, VALID_XML, XML_TYPE, "\"v1\"", true));
 

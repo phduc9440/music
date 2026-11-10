@@ -58,6 +58,10 @@ public class ScoreDetailResponse {
     boolean canManageSharing;
     /** Cấp truy cập hiện tại: OWNER / EDIT / REVIEW / VIEW. */
     String accessLevel;
+    /** Người đang xem có được tải MusicXML, MIDI, âm thanh, PDF không. */
+    boolean canDownload;
+    /** Chủ sở hữu đã cho người xem tải chưa (chỉ chủ sở hữu thấy giá trị thật). */
+    boolean allowDownload;
 
     LocalDateTime createdAt;
     LocalDateTime updatedAt;

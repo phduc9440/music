@@ -96,6 +96,8 @@ public class ExportServiceImpl implements ExportService {
         Score score =
                 scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
         scoreFileService.checkCanView(score);
+        // Xuất file cũng là tải về: người xem phải được chủ cho phép (allowDownload), người sửa luôn được
+        scoreFileService.checkCanDownload(score);
         ExportSpec spec = validator.validate(
                 request == null ? null : request.getTargetFormat(),
                 request == null ? null : request.getOptions(),
@@ -263,7 +265,7 @@ public class ExportServiceImpl implements ExportService {
     public SvgZip zipSvgPages(String scoreId, String taskId) {
         Score score =
                 scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
-        scoreFileService.checkCanView(score);
+        scoreFileService.checkCanDownload(score);
         List<ScoreFile> pages = scoreFileRepository.findByScoreIdAndFileTypeIn(scoreId, Set.of(FileType.SVG)).stream()
                 .filter(f -> taskId.equals(f.getSourceTaskId()))
                 .sorted(Comparator.comparing(ScoreFile::getPageNumber, Comparator.nullsLast(Comparator.naturalOrder())))
@@ -295,6 +297,9 @@ public class ExportServiceImpl implements ExportService {
         Score score =
                 scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
         scoreFileService.checkCanView(score);
+        if (!scoreFileService.canDownload(score)) {
+            return List.of(); // người xem chưa được tải thì không thấy danh sách file đã xuất
+        }
         return scoreFileRepository.findByScoreIdAndFileTypeIn(scoreId, EXPORT_FILE_TYPES).stream()
                 .filter(f -> f.getSourceTaskId() != null && existsOnDisk(f))
                 .sorted(Comparator.comparing(ScoreFile::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))

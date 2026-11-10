@@ -1,5 +1,6 @@
 package com.ptit.music_be.service.impl;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -10,13 +11,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 
 import com.ptit.music_be.dto.enums.AiTaskStatus;
@@ -24,6 +24,7 @@ import com.ptit.music_be.dto.enums.DifficultyLevel;
 import com.ptit.music_be.dto.enums.FileType;
 import com.ptit.music_be.dto.enums.NotificationType;
 import com.ptit.music_be.dto.enums.ProcessingStatus;
+import com.ptit.music_be.dto.enums.ScoreAccess;
 import com.ptit.music_be.dto.enums.ScoreSource;
 import com.ptit.music_be.dto.enums.Visibility;
 import com.ptit.music_be.dto.request.ScoreUpdateRequest;
@@ -38,6 +39,7 @@ import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreFile;
 import com.ptit.music_be.entity.ScoreTag;
 import com.ptit.music_be.entity.Tag;
+import com.ptit.music_be.event.ScoreTrashedByAdminEvent;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.mapper.AiTaskMapper;
@@ -50,10 +52,11 @@ import com.ptit.music_be.repository.ScoreRepository;
 import com.ptit.music_be.repository.ScoreReviewRepository;
 import com.ptit.music_be.repository.ScoreTagRepository;
 import com.ptit.music_be.repository.TagRepository;
-import com.ptit.music_be.service.FileStorageService;
 import com.ptit.music_be.service.NotificationService;
 import com.ptit.music_be.service.ScoreFileService;
 import com.ptit.music_be.service.ScoreService;
+import com.ptit.music_be.service.permission.AccessDecision;
+import com.ptit.music_be.service.permission.ScorePermissionService;
 import com.ptit.music_be.utils.SecurityUtils;
 
 import lombok.AccessLevel;
@@ -69,6 +72,7 @@ public class ScoreServiceImpl implements ScoreService {
     static final int MAX_PAGE_SIZE = 50;
     static final int MAX_KEYWORD_LENGTH = 100;
     static final int MAX_TAGS_PER_SCORE = 10;
+    static final int MAX_DELETE_REASON_LENGTH = 500;
 
     MemberRepository memberRepository;
     ScoreRepository scoreRepository;
@@ -80,7 +84,8 @@ public class ScoreServiceImpl implements ScoreService {
     ScoreTagRepository scoreTagRepository;
     ScoreFileService scoreFileService;
     NotificationService notificationService;
-    FileStorageService fileStorageService;
+    ScorePermissionService scorePermissionService;
+    ApplicationEventPublisher eventPublisher;
     ScoreFileMapper scoreFileMapper;
     AiTaskMapper aiTaskMapper;
 
@@ -175,6 +180,7 @@ public class ScoreServiceImpl implements ScoreService {
     public ScoreDetailResponse getScore(String scoreId) {
         Score score = findScore(scoreId);
         scoreFileService.checkCanView(score);
+        scorePermissionService.auditModeratorAccess(score, "VIEW");
         return toDetail(score);
     }
 
@@ -205,6 +211,11 @@ public class ScoreServiceImpl implements ScoreService {
         }
         if (request.getVisibility() != null) {
             changeVisibility(score, request.getVisibility());
+        }
+        if (request.getAllowDownload() != null) {
+            // Chỉ chủ sở hữu quyết định người khác có được tải hay không
+            scoreFileService.checkCanManageSharing(score);
+            score.setAllowDownload(request.getAllowDownload());
         }
 
         return toDetail(scoreRepository.save(score));
@@ -516,8 +527,20 @@ public class ScoreServiceImpl implements ScoreService {
     @Override
     @Transactional
     public void deleteScore(String scoreId) {
+        deleteScore(scoreId, null);
+    }
+
+    /**
+     * Chuyển bản nhạc vào thùng rác (xóa mềm): file trên đĩa và các dòng liên quan được giữ nguyên tới khi bị xóa hẳn
+     * (xem {@code ScoreTrashService}). Chủ sở hữu xóa bản của mình; ADMIN chỉ xóa để kiểm duyệt bản đang PUBLIC /
+     * PENDING và khi đó bản nhạc về PRIVATE để chủ khôi phục xong không tự công khai lại.
+     */
+    @Override
+    @Transactional
+    public void deleteScore(String scoreId, String reason) {
         Score score = findScore(scoreId);
-        if (!scoreFileService.canDelete(score)) {
+        AccessDecision decision = scorePermissionService.resolve(score);
+        if (!scorePermissionService.canDelete(score, decision)) {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
         // Bản trong kho score mẫu chỉ ADMIN được xóa (chủ sở hữu muốn xóa thì nhờ admin gỡ khỏi kho trước)
@@ -530,17 +553,31 @@ public class ScoreServiceImpl implements ScoreService {
             throw new AppException(ErrorCode.SCORE_BUSY);
         }
 
-        // score_files và ai_tasks bị xóa theo bằng ON DELETE CASCADE ở mức DB (@OnDelete trên entity)
-        scoreRepository.delete(score);
+        Member actor = memberRepository
+                .findByEmail(SecurityUtils.getCurrentEmail())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        boolean byOwner = decision.level() == ScoreAccess.OWNER;
+        String cleanReason = truncate(blankToNull(reason), MAX_DELETE_REASON_LENGTH);
 
-        // Chỉ xóa file trên đĩa SAU KHI commit thành công, tránh mất file mà DB lại rollback
-        String scoreDir = "scores/" + scoreId;
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                fileStorageService.deleteDirectory(scoreDir);
-            }
-        });
+        if (!byOwner) {
+            scorePermissionService.auditModeratorAccess(score, "DELETE");
+        }
+        score.setDeletedAt(LocalDateTime.now());
+        score.setDeletedBy(actor.getId());
+        score.setDeleteReason(cleanReason);
+        // Yêu cầu công khai đang chờ bị hủy; bản bị ADMIN gỡ thì không còn công khai và rời kho score mẫu
+        if (!byOwner || Visibility.PENDING.name().equals(score.getVisibility())) {
+            score.setVisibility(Visibility.PRIVATE.name());
+        }
+        if (!byOwner) {
+            score.setIsOfficial(false);
+        }
+        scoreRepository.save(score);
+
+        if (!byOwner && score.getMember() != null) {
+            eventPublisher.publishEvent(new ScoreTrashedByAdminEvent(
+                    score.getId(), score.getMember().getId(), score.getTitle(), cleanReason));
+        }
     }
 
     // ------------------------------------------------------------------ helpers
@@ -577,19 +614,28 @@ public class ScoreServiceImpl implements ScoreService {
     }
 
     private ScoreDetailResponse toDetail(Score score) {
-        // Chỉ hiện các file hiện hành (is_current null coi như hiện hành, vì dữ liệu cũ chưa có cột này)
+        AccessDecision decision = scorePermissionService.resolve(score);
+        boolean canEdit = scorePermissionService.canEdit(score, decision);
+        boolean isOwner = decision.level() == ScoreAccess.OWNER;
+        // Chỉ hiện các file hiện hành (is_current null coi như hiện hành, vì dữ liệu cũ chưa có cột này).
+        // Người xem dưới quyền sửa không thấy file gốc (PDF/ảnh/MusicXML/MIDI gốc, kern, ảnh trang)
         List<ScoreFile> currentFiles =
                 scoreFileRepository.findByScoreIdOrderByFileTypeAscPageNumberAsc(score.getId()).stream()
                         .filter(f -> f.getIsCurrent() == null || f.getIsCurrent())
+                        .filter(f -> canEdit || !ScoreFileServiceImpl.SOURCE_FILE_TYPES.contains(f.getFileType()))
                         .toList();
 
-        // Task mới nhất của mỗi loại: danh sách đã sắp xếp mới -> cũ nên lấy phần tử đầu tiên của từng loại
-        Map<Object, AiTask> latestByType = new LinkedHashMap<>();
-        for (AiTask task : aiTaskRepository.findByScoreIdOrderByCreatedAtDesc(score.getId())) {
-            latestByType.putIfAbsent(task.getTaskType(), task);
+        // Task mới nhất của mỗi loại: danh sách đã sắp xếp mới -> cũ nên lấy phần tử đầu tiên của từng loại.
+        // Lịch sử tác vụ chỉ dành cho người có quyền sửa
+        List<AiTaskResponse> latestTasks = List.of();
+        if (canEdit) {
+            Map<Object, AiTask> latestByType = new LinkedHashMap<>();
+            for (AiTask task : aiTaskRepository.findByScoreIdOrderByCreatedAtDesc(score.getId())) {
+                latestByType.putIfAbsent(task.getTaskType(), task);
+            }
+            latestTasks =
+                    latestByType.values().stream().map(aiTaskMapper::toResponse).toList();
         }
-        List<AiTaskResponse> latestTasks =
-                latestByType.values().stream().map(aiTaskMapper::toResponse).toList();
 
         var rating = scoreReviewRepository.getRatingStats(score.getId());
 
@@ -620,11 +666,16 @@ public class ScoreServiceImpl implements ScoreService {
                 .averageRating(rating.getAverage() == null ? null : Math.round(rating.getAverage() * 10) / 10.0)
                 .ratingCount(rating.getRatingCount() == null ? 0 : rating.getRatingCount())
                 .ownerEmail(score.getMember() == null ? null : score.getMember().getEmail())
-                .canEdit(scoreFileService.canEdit(score))
-                .canDelete(scoreFileService.canDelete(score))
-                .canReview(scoreFileService.canReview(score))
-                .canManageSharing(scoreFileService.canManageSharing(score))
-                .accessLevel(scoreFileService.getAccessLevel(score))
+                .canEdit(canEdit)
+                .canDelete(scorePermissionService.canDelete(score, decision))
+                .canReview(decision.can(ScoreAccess.REVIEW))
+                .canManageSharing(isOwner)
+                .accessLevel(
+                        decision.level() == ScoreAccess.NONE
+                                ? null
+                                : decision.level().name())
+                .canDownload(canEdit || (decision.can(ScoreAccess.VIEW) && score.isAllowDownload()))
+                .allowDownload(isOwner && score.isAllowDownload())
                 .createdAt(score.getCreatedAt())
                 .updatedAt(score.getUpdatedAt())
                 .files(scoreFileMapper.toResponses(currentFiles))
@@ -684,6 +735,10 @@ public class ScoreServiceImpl implements ScoreService {
                 // Mặc định (và mọi giá trị lạ): cập nhật gần nhất trước
             default -> Sort.by(Sort.Order.desc("updatedAt"), Sort.Order.desc("id"));
         };
+    }
+
+    private static String truncate(String value, int max) {
+        return value == null || value.length() <= max ? value : value.substring(0, max);
     }
 
     private static String blankToNull(String value) {

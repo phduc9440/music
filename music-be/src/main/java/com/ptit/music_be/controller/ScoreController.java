@@ -185,10 +185,12 @@ public class ScoreController {
 
     @DeleteMapping("/{scoreId}")
     @Operation(
-            summary = "Delete a score and its files (owner or ADMIN only; blocked while a task is PROCESSING)",
+            summary = "Move a score to the trash for 30 days (owner, or ADMIN moderating a PUBLIC/PENDING score)",
+            description = "Blocked while a task is running. ADMIN can pass a reason that is sent to the owner. "
+                    + "See GET /api/scores/trash, POST /{id}/restore and DELETE /{id}/purge.",
             security = @SecurityRequirement(name = "bearerAuth"))
-    public ApiResponse<Void> deleteScore(@PathVariable String scoreId) {
-        scoreService.deleteScore(scoreId);
-        return ApiResponse.<Void>builder().message("Score deleted").build();
+    public ApiResponse<Void> deleteScore(@PathVariable String scoreId, @RequestParam(required = false) String reason) {
+        scoreService.deleteScore(scoreId, reason);
+        return ApiResponse.<Void>builder().message("Score moved to trash").build();
     }
 }
