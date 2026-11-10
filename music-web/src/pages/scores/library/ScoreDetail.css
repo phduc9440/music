@@ -66,6 +66,11 @@
   margin-left: auto;
   font-weight: 600;
 }
+.sd-alert__actions {
+  display: inline-flex;
+  gap: 0.4rem;
+  margin-left: auto;
+}
 .sd-alert--info {
   background: var(--ui-primary-soft);
   border-color: var(--ui-primary-border);

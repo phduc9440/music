@@ -15,6 +15,7 @@ import VisibilityBadge from '../common/VisibilityBadge';
 import MidiConvertButton from '../../export/MidiConvertButton';
 import { isTaskFinished } from '../../export/exportUtils';
 import { Icon } from '../../ui';
+import OfficialRequestBanner from './OfficialRequestBanner';
 import PublishToggle from './PublishToggle';
 
 interface Props {
@@ -125,6 +126,8 @@ export default function ScoreHero({
           </Link>
         </div>
       </div>
+
+      {score.accessLevel === 'OWNER' && !base.startsWith('/admin') && <OfficialRequestBanner scoreId={score.id} />}
 
       {processing && (
         <div className="sd-alert sd-alert--info" role="status">
