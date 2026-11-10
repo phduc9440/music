@@ -1,8 +1,8 @@
 # File người dùng tải lên khi chạy backend từ thư mục gốc
-storage/
+/storage/
 
 # File mẫu để test import
 test-import/
-doc/duc-feature.md
+doc/
 music-be/src/main/resources/application.yaml
 music-web/.env
