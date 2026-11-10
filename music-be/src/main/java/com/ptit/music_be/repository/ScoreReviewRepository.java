@@ -24,6 +24,19 @@ public interface ScoreReviewRepository extends JpaRepository<ScoreReview, String
             + " where r.score.id = :scoreId")
     RatingStats getRatingStats(@Param("scoreId") String scoreId);
 
+    /** Điểm trung bình và số lượt chấm của nhiều bản nhạc cùng lúc (bản chưa ai chấm không có dòng). */
+    @Query("select r.score.id as scoreId, avg(r.rating) as average, count(r.rating) as ratingCount"
+            + " from ScoreReview r where r.score.id in :scoreIds and r.rating is not null group by r.score.id")
+    List<ScoreRatingStats> getRatingStatsFor(@Param("scoreIds") java.util.Collection<String> scoreIds);
+
+    interface ScoreRatingStats {
+        String getScoreId();
+
+        Double getAverage();
+
+        Long getRatingCount();
+    }
+
     interface RatingStats {
         Double getAverage();
 

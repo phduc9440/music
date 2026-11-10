@@ -58,6 +58,13 @@ public interface ScoreService {
     /** ADMIN: đưa một bản nhạc đã công khai vào kho score mẫu. */
     ScoreDetailResponse markOfficial(String scoreId);
 
+    /**
+     * Trang Khám phá: các bản đang công khai, tìm theo tên/tác giả, lọc độ khó và thể loại. sort: NEWEST (mặc định),
+     * VIEWS (xem nhiều nhất), RATING (đánh giá cao nhất).
+     */
+    PageResponse<ScoreSummaryResponse> getPublicScores(
+            int page, int size, String keyword, String difficulty, String tagId, String sort);
+
     /** ADMIN: gỡ khỏi kho score mẫu (bản nhạc vẫn giữ nguyên, vẫn công khai). */
     ScoreDetailResponse unmarkOfficial(String scoreId);
 

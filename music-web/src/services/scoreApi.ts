@@ -20,6 +20,15 @@ export const scoreApi = {
   // 4.5: kho score mẫu (mọi người dùng xem được), từ dễ đến khó
   official: (params?: { page?: number; size?: number; keyword?: string; difficulty?: Difficulty | '' }) =>
     apiClient.get<ApiResponse<PageResult<ScoreSummary>>>('/scores/official', { params }),
+  // Khám phá: bản nhạc đang công khai của mọi người
+  explore: (params?: {
+    page?: number;
+    size?: number;
+    keyword?: string;
+    difficulty?: Difficulty | '';
+    tagId?: string;
+    sort?: 'NEWEST' | 'VIEWS' | 'RATING';
+  }) => apiClient.get<ApiResponse<PageResult<ScoreSummary>>>('/scores/public', { params }),
   // ADMIN: bản nhạc công khai chưa nằm trong kho, để chọn đưa vào
   officialCandidates: (params?: { page?: number; size?: number; keyword?: string }) =>
     apiClient.get<ApiResponse<PageResult<ScoreSummary>>>('/scores/official/candidates', { params }),

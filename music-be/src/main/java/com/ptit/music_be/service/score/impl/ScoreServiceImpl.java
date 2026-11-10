@@ -378,6 +378,60 @@ public class ScoreServiceImpl implements ScoreService {
 
     @Override
     @Transactional(readOnly = true)
+    public PageResponse<ScoreSummaryResponse> getPublicScores(
+            int page, int size, String keyword, String difficulty, String tagId, String sort) {
+        int safeSize = size <= 0 ? DEFAULT_PAGE_SIZE : Math.min(size, MAX_PAGE_SIZE);
+        int safePage = Math.max(page, 0);
+        String safeKeyword = normalizeKeyword(keyword);
+        String safeDifficulty = parseEnumName(difficulty, DifficultyLevel.class);
+        String safeTagId = tagId == null ? "" : tagId.trim();
+        String key = sort == null ? "" : sort.trim().toUpperCase(Locale.ROOT);
+        Page<Score> result =
+                switch (key) {
+                    case "", "NEWEST" -> scoreRepository.searchPublic(
+                            safeKeyword,
+                            safeDifficulty,
+                            safeTagId,
+                            PageRequest.of(
+                                    safePage, safeSize, Sort.by(Sort.Order.desc("createdAt"), Sort.Order.asc("id"))));
+                    case "VIEWS" -> scoreRepository.searchPublic(
+                            safeKeyword,
+                            safeDifficulty,
+                            safeTagId,
+                            PageRequest.of(
+                                    safePage, safeSize, Sort.by(Sort.Order.desc("viewCount"), Sort.Order.asc("id"))));
+                    case "RATING" -> scoreRepository.searchPublicTopRated(
+                            safeKeyword, safeDifficulty, safeTagId, PageRequest.of(safePage, safeSize));
+                    default -> throw new AppException(ErrorCode.INVALID_REQUEST);
+                };
+        return toExplorePage(result);
+    }
+
+    /** Thẻ ở trang Khám phá: thêm tên người chia sẻ, lượt xem và điểm sao; không lộ email chủ sở hữu. */
+    private PageResponse<ScoreSummaryResponse> toExplorePage(Page<Score> result) {
+        PageResponse<ScoreSummaryResponse> page = toSummaryPage(result, false);
+        Map<String, Score> byId = result.getContent().stream().collect(Collectors.toMap(Score::getId, s -> s));
+        Map<String, ScoreReviewRepository.ScoreRatingStats> ratings = new HashMap<>();
+        if (!byId.isEmpty()) {
+            scoreReviewRepository.getRatingStatsFor(byId.keySet()).forEach(r -> ratings.put(r.getScoreId(), r));
+        }
+        for (ScoreSummaryResponse card : page.getContent()) {
+            Score score = byId.get(card.getId());
+            Member owner = score.getMember();
+            card.setOwnerName(owner == null || !StringUtils.hasText(owner.getFullName()) ? null : owner.getFullName());
+            card.setViewCount(score.getViewCount() == null ? 0L : score.getViewCount());
+            ScoreReviewRepository.ScoreRatingStats stats = ratings.get(card.getId());
+            card.setRatingCount(stats == null ? 0L : stats.getRatingCount());
+            card.setRatingAverage(
+                    stats == null || stats.getAverage() == null
+                            ? null
+                            : Math.round(stats.getAverage() * 10.0) / 10.0);
+        }
+        return page;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public PageResponse<ScoreSummaryResponse> getOfficialCandidates(int page, int size, String keyword) {
         requireAdmin();
         int safeSize = size <= 0 ? DEFAULT_PAGE_SIZE : Math.min(size, MAX_PAGE_SIZE);

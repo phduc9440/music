@@ -97,6 +97,11 @@ export interface ScoreSummary {
   /** Chỉ có trong danh sách "Được chia sẻ với tôi". */
   accessLevel?: AccessLevel | null;
   thumbnailUrl?: string | null;
+  /** Chỉ có trong trang Khám phá: tên người chia sẻ (không có email), lượt xem, điểm sao trung bình và số lượt chấm. */
+  ownerName?: string | null;
+  viewCount?: number | null;
+  ratingAverage?: number | null;
+  ratingCount?: number | null;
   createdAt?: string;
   updatedAt?: string;
 }

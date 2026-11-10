@@ -102,6 +102,24 @@ public class ScoreController {
                 .build();
     }
 
+    @GetMapping("/public")
+    @Operation(
+            summary = "Explore: scores that are PUBLIC; keyword (title/composer), difficulty, tagId; "
+                    + "sort: NEWEST (default) | VIEWS | RATING",
+            description = "Cards carry ownerName (never the owner's email), viewCount, ratingAverage and ratingCount.",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<PageResponse<ScoreSummaryResponse>> getPublicScores(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String difficulty,
+            @RequestParam(required = false) String tagId,
+            @RequestParam(required = false) String sort) {
+        return ApiResponse.<PageResponse<ScoreSummaryResponse>>builder()
+                .result(scoreService.getPublicScores(page, size, keyword, difficulty, tagId, sort))
+                .build();
+    }
+
     @GetMapping("/official")
     @Operation(
             summary = "Curated sheet library for beginners (easiest first); difficulty: EASY|MEDIUM|HARD|EXPERT",

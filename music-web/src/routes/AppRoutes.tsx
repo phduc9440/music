@@ -26,6 +26,7 @@ import AdminPendingScores from '../pages/admin/AdminPendingScores';
 import AdminScores from '../pages/admin/AdminScores';
 import AdminSystem from '../pages/admin/AdminSystem';
 import AdminTags from '../pages/admin/AdminTags';
+import ExploreScores from '../pages/scores/library/ExploreScores';
 import OfficialScores from '../pages/scores/library/OfficialScores';
 import PracticeHistory from '../pages/scores/practice/PracticeHistory';
 import PracticeStats from '../pages/scores/practice/PracticeStats';
@@ -49,6 +50,7 @@ const AppRoutes = () => {
         <Route path="/scores" element={<ScoreLibrary />} />
         <Route path="/scores/upload" element={<ScoreUpload />} />
         <Route path="/scores/import" element={<ScoreImport />} />
+        <Route path="/explore" element={<ExploreScores />} />
         <Route path="/scores/official" element={<OfficialScores />} />
         <Route path="/scores/shared" element={<SharedScores />} />
         <Route path="/scores/trash" element={<ScoreTrash />} />

@@ -52,6 +52,15 @@
   margin-bottom: 0;
 }
 
+.sc-card__stats {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  font-size: var(--ui-text-sm);
+  color: var(--ui-text-2);
+}
+
 .sc-backlink {
   display: inline-flex;
   align-items: center;

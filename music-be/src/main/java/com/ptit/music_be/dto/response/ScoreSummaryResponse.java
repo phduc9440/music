@@ -40,6 +40,13 @@ public class ScoreSummaryResponse {
     String ownerEmail;
     /** Thể loại đã gắn, sắp xếp theo tên. */
     List<TagResponse> tags;
+    /** Chỉ có trong trang Khám phá: tên người chia sẻ (không lộ email). */
+    String ownerName;
+    /** Chỉ có trong trang Khám phá: lượt xem, điểm sao trung bình (null nếu chưa ai chấm) và số lượt chấm. */
+    Long viewCount;
+
+    Double ratingAverage;
+    Long ratingCount;
     /** Ảnh trang 1 (đường dẫn tương đối so với host, ví dụ /api/files/{id}/download?inline=true); null nếu chưa có. */
     String thumbnailUrl;
 

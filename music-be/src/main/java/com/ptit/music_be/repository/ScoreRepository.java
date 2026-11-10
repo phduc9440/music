@@ -80,6 +80,37 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
     Page<Score> searchOfficial(
             @Param("keyword") String keyword, @Param("difficulty") String difficulty, Pageable pageable);
 
+    /** Phần chung của trang Khám phá: bản PUBLIC, tìm tên/tác giả, lọc độ khó và thể loại ("" là không lọc). */
+    String PUBLIC_EXPLORE_FILTER =
+            """
+			from Score s
+			where s.visibility = 'PUBLIC'
+			and (lower(s.title) like lower(concat('%', :keyword, '%')) escape '\\'
+				or lower(coalesce(s.composer, '')) like lower(concat('%', :keyword, '%')) escape '\\')
+			and (:difficulty = '' or cast(s.difficulty as string) = :difficulty)
+			and (:tagId = '' or exists (select 1 from ScoreTag st where st.score = s and st.tag.id = :tagId))
+			""";
+
+    /** Trang Khám phá: thứ tự lấy từ Sort của {@code pageable} (mới nhất, xem nhiều). */
+    @Query(value = "select s " + PUBLIC_EXPLORE_FILTER, countQuery = "select count(s) " + PUBLIC_EXPLORE_FILTER)
+    Page<Score> searchPublic(
+            @Param("keyword") String keyword,
+            @Param("difficulty") String difficulty,
+            @Param("tagId") String tagId,
+            Pageable pageable);
+
+    /** Trang Khám phá, đánh giá cao nhất trước (điểm sao trung bình, bản chưa ai chấm xếp cuối, rồi theo lượt xem). */
+    @Query(
+            value = "select s " + PUBLIC_EXPLORE_FILTER
+                    + " order by coalesce((select avg(r.rating) from ScoreReview r where r.score = s), 0) desc,"
+                    + " coalesce(s.viewCount, 0) desc, s.id",
+            countQuery = "select count(s) " + PUBLIC_EXPLORE_FILTER)
+    Page<Score> searchPublicTopRated(
+            @Param("keyword") String keyword,
+            @Param("difficulty") String difficulty,
+            @Param("tagId") String tagId,
+            Pageable pageable);
+
     /** ADMIN: các bản nhạc công khai chưa nằm trong kho score mẫu, để chọn đưa vào (cập nhật gần nhất trước). */
     @Query(
             """

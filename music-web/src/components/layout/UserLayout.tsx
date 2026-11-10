@@ -23,6 +23,7 @@ const isLibrary = (p: string) => p === '/scores' || (p.startsWith('/scores/') &&
 
 const NAV: NavItem[] = [
   { to: '/scores', label: 'Thư viện', icon: 'music', match: isLibrary },
+  { to: '/explore', label: 'Khám phá', icon: 'globe' },
   { to: '/scores/official', label: 'Kho score mẫu', icon: 'library' },
   { to: '/scores/shared', label: 'Được chia sẻ', icon: 'share' },
   { to: '/playlists', label: 'Playlist', icon: 'list' },
