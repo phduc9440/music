@@ -1,12 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { DragEvent, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import AuthImage from '../../components/scores/common/AuthImage';
 import { CREATE_SCORE_PATH } from '../../components/layout/nav';
 import SiteFooter from '../../components/layout/SiteFooter';
 import { Icon } from '../../components/ui';
 import type { IconName } from '../../components/ui';
-import { homeApi } from '../../services';
+import { API_BASE_URL, homeApi } from '../../services';
 import ThemeToggle from '../../theme/ThemeToggle';
 import type { HomeComposer, PublicHome, ScoreSummary } from '../../types';
 import { useReveal } from '../../hooks/useReveal';
@@ -93,11 +92,49 @@ function StaffBackdrop() {
   );
 }
 
-function FeaturedCard({ score, onOpen }: { score: ScoreSummary; onOpen: () => void }) {
+/** Ảnh công khai (/api/public/...) tải thẳng bằng <img>, không cần token như ảnh trong thư viện. */
+const publicUrl = (path: string) => `${API_BASE_URL.replace(/\/api\/?$/, '')}${path}`;
+
+/**
+ * Bìa thẻ: ảnh trang 1 nếu có, nếu không (hoặc tải lỗi) thì vẽ một trang nhạc trống có năm dòng kẻ khuông và tên bài,
+ * để thẻ không bị trống trơn.
+ */
+function FeaturedCover({ score }: { score: ScoreSummary }) {
+  const [broken, setBroken] = useState(false);
+  if (score.thumbnailUrl && !broken) {
+    return (
+      <img
+        src={publicUrl(score.thumbnailUrl)}
+        alt=""
+        className="gh-card__img"
+        loading="lazy"
+        onError={() => setBroken(true)}
+      />
+    );
+  }
   return (
-    <button type="button" className="gh-card" onClick={onOpen}>
+    <span className="gh-sheet" aria-hidden="true">
+      <span className="gh-sheet__title">{score.title}</span>
+      {score.composer && <span className="gh-sheet__composer">{score.composer}</span>}
+      <span className="gh-sheet__staves">
+        {[0, 1, 2, 3].map((i) => (
+          <span key={i} className="gh-sheet__staff" />
+        ))}
+      </span>
+    </span>
+  );
+}
+
+function FeaturedCard({ score, rank, onOpen }: { score: ScoreSummary; rank: number; onOpen: () => void }) {
+  return (
+    <button type="button" className="gh-card" onClick={onOpen} aria-label={`Mở bản nhạc ${score.title}`}>
       <span className="gh-card__cover">
-        <AuthImage src={score.thumbnailUrl} alt={score.title} className="gh-card__img" />
+        <FeaturedCover score={score} />
+        <span className="gh-card__rank">#{rank}</span>
+        <span className="gh-card__open">
+          Mở bản nhạc
+          <Icon name="chevronRight" size={14} />
+        </span>
       </span>
       <span className="gh-card__body">
         <strong className="gh-card__title" title={score.title}>
@@ -106,11 +143,73 @@ function FeaturedCard({ score, onOpen }: { score: ScoreSummary; onOpen: () => vo
         <span className="gh-card__composer">{score.composer || 'Chưa rõ tác giả'}</span>
         <span className="gh-card__meta">
           {score.difficulty && <span className="gh-chip">{DIFFICULTY_LABELS[score.difficulty]}</span>}
-          <span>{formatNumber(score.viewCount ?? 0)} lượt xem</span>
-          {score.ratingAverage != null && <span>★ {score.ratingAverage.toFixed(1)}</span>}
+          <span className="gh-card__stat" title="Lượt xem">
+            <Icon name="eye" size={14} />
+            {formatNumber(score.viewCount ?? 0)}
+          </span>
+          {score.ratingAverage != null && (
+            <span className="gh-card__stat" title="Điểm sao trung bình">
+              <Icon name="star" size={14} />
+              {score.ratingAverage.toFixed(1)}
+            </span>
+          )}
         </span>
       </span>
     </button>
+  );
+}
+
+/** Dải thẻ cuộn ngang; ít thẻ thì căn giữa, nhiều thẻ thì hiện nút trái/phải. */
+function FeaturedStrip({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [edges, setEdges] = useState({ start: true, end: true });
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const update = () =>
+      setEdges({
+        start: el.scrollLeft <= 4,
+        end: el.scrollLeft + el.clientWidth >= el.scrollWidth - 4,
+      });
+    update();
+    el.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    return () => {
+      el.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+    };
+  }, [children]);
+
+  const scrollBy = (dir: 1 | -1) =>
+    ref.current?.scrollBy({ left: dir * ref.current.clientWidth * 0.8, behavior: 'smooth' });
+
+  return (
+    <div className="gh-strip-wrap">
+      {!edges.start && (
+        <button
+          type="button"
+          className="gh-strip__nav gh-strip__nav--prev"
+          aria-label="Xem bản trước"
+          onClick={() => scrollBy(-1)}
+        >
+          <Icon name="chevronLeft" size={20} />
+        </button>
+      )}
+      <div ref={ref} className="gh-strip">
+        {children}
+      </div>
+      {!edges.end && (
+        <button
+          type="button"
+          className="gh-strip__nav gh-strip__nav--next"
+          aria-label="Xem bản tiếp"
+          onClick={() => scrollBy(1)}
+        >
+          <Icon name="chevronRight" size={20} />
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -252,11 +351,11 @@ export default function GuestHome() {
             <p className="gh-note">Chưa có bản nhạc công khai nào. Hãy là người đầu tiên chia sẻ!</p>
           )}
           {data && data.featured.length > 0 && (
-            <div className="gh-strip">
-              {data.featured.map((s) => (
-                <FeaturedCard key={s.id} score={s} onOpen={() => loginThen(`/scores/${s.id}`)} />
+            <FeaturedStrip>
+              {data.featured.map((s, i) => (
+                <FeaturedCard key={s.id} score={s} rank={i + 1} onOpen={() => loginThen(`/scores/${s.id}`)} />
               ))}
-            </div>
+            </FeaturedStrip>
           )}
         </Section>
 
