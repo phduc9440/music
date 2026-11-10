@@ -231,3 +231,53 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.sc-lib-head__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Thùng rác (/scores/trash) */
+.sc-trash {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sc-trash__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+  background: var(--sc-card);
+  border: 1px solid var(--sc-line);
+  border-radius: var(--sc-radius);
+}
+.sc-trash__info {
+  min-width: 0;
+}
+.sc-trash__info h3 {
+  overflow: hidden;
+  font-size: 1rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sc-trash__info p {
+  margin-top: 0.15rem;
+  color: var(--sc-muted);
+  font-size: 0.88rem;
+}
+.sc-trash__actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 0.5rem;
+}
+@media (max-width: 640px) {
+  .sc-trash__item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
