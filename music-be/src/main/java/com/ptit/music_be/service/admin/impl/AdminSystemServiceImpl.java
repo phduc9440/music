@@ -1,4 +1,4 @@
-package com.ptit.music_be.service.impl;
+package com.ptit.music_be.service.admin.impl;
 
 import java.io.File;
 import java.lang.management.ManagementFactory;
@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 import com.ptit.music_be.dto.response.ErrorLogResponse;
 import com.ptit.music_be.dto.response.SystemMetricsResponse;
 import com.ptit.music_be.monitoring.ErrorLogStore;
-import com.ptit.music_be.service.AdminSystemService;
+import com.ptit.music_be.service.admin.AdminSystemService;
 
 @Service
 public class AdminSystemServiceImpl implements AdminSystemService {

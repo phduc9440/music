@@ -1,4 +1,4 @@
-package com.ptit.music_be.service.impl;
+package com.ptit.music_be.service.admin.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -12,7 +12,7 @@ import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import com.ptit.music_be.dto.response.AdminDashboardResponse;
-import com.ptit.music_be.service.AdminDashboardService;
+import com.ptit.music_be.service.admin.AdminDashboardService;
 
 /** Chạy các câu JPQL của dashboard với DB thật (giống MusicBeApplicationTests, cần MySQL đang chạy). */
 @SpringBootTest

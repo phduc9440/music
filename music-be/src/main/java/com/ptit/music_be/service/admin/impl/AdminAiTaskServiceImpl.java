@@ -1,4 +1,4 @@
-package com.ptit.music_be.service.impl;
+package com.ptit.music_be.service.admin.impl;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -22,7 +22,7 @@ import com.ptit.music_be.entity.AiTask;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.repository.AiTaskRepository;
-import com.ptit.music_be.service.AdminAiTaskService;
+import com.ptit.music_be.service.admin.AdminAiTaskService;
 import com.ptit.music_be.service.OmrService;
 
 import lombok.AccessLevel;

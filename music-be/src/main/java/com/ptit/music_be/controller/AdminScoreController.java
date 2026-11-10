@@ -11,7 +11,7 @@ import com.ptit.music_be.dto.response.ApiResponse;
 import com.ptit.music_be.dto.response.PageResponse;
 import com.ptit.music_be.dto.response.ScoreDetailResponse;
 import com.ptit.music_be.dto.response.ScoreSummaryResponse;
-import com.ptit.music_be.service.AdminScoreBulkService;
+import com.ptit.music_be.service.admin.AdminScoreBulkService;
 import com.ptit.music_be.service.ScoreService;
 
 import io.swagger.v3.oas.annotations.Operation;

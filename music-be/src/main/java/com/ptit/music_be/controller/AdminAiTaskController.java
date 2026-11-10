@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import com.ptit.music_be.dto.response.AdminAiTaskResponse;
 import com.ptit.music_be.dto.response.ApiResponse;
 import com.ptit.music_be.dto.response.PageResponse;
-import com.ptit.music_be.service.AdminAiTaskService;
+import com.ptit.music_be.service.admin.AdminAiTaskService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
