@@ -211,7 +211,7 @@
   width: 100%;
   max-width: var(--gh-max);
   margin: 0 auto;
-  padding: 1rem 16px 3rem;
+  padding: 1rem 16px 0;
 }
 
 .gh-section {
@@ -576,27 +576,6 @@
   margin: 0;
   font-family: var(--gh-serif);
   font-size: 1.3rem;
-}
-
-/* ---- chân trang ---- */
-.gh-footer {
-  padding: 1.5rem max(16px, calc((100% - var(--gh-max)) / 2));
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 0.75rem;
-  border-top: 1px solid var(--ui-border);
-  color: var(--ui-text-3);
-  font-size: var(--ui-text-sm);
-}
-
-.gh-link {
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--ui-primary);
-  font: inherit;
-  cursor: pointer;
 }
 
 /* ---- hiện dần khi cuộn (useReveal) ---- */

@@ -1,0 +1,120 @@
+/* Chân trang trang giới thiệu: nền "sân khấu" luôn tối (token --ui-stage-*), khớp với phần đầu trang chủ. */
+.site-footer {
+  --sf-max: 1120px;
+  margin-top: 4rem;
+  background: var(--ui-stage-bg);
+  color: var(--ui-stage-text);
+}
+
+.site-footer__inner {
+  max-width: var(--sf-max);
+  margin: 0 auto;
+  padding: 3rem 16px 2rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) repeat(3, minmax(0, 1fr));
+  gap: 2rem;
+}
+
+.site-footer__logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--ui-stage-text);
+  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.site-footer__mark {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--ui-radius);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ui-brass);
+  color: var(--ui-stage-bg);
+}
+
+.site-footer__brand p {
+  max-width: 300px;
+  margin: 0.75rem 0 0;
+  color: var(--ui-stage-text-2);
+  font-size: var(--ui-text-md);
+  line-height: 1.6;
+}
+
+.site-footer__col h2 {
+  margin: 0 0 0.75rem;
+  color: var(--ui-brass);
+  font-size: var(--ui-text-xs);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.site-footer__col ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.site-footer__col a {
+  color: var(--ui-stage-text-2);
+  font-size: var(--ui-text-md);
+  text-decoration: none;
+}
+
+.site-footer__col a:hover {
+  color: var(--ui-stage-text);
+  text-decoration: underline;
+}
+
+.site-footer a:focus-visible {
+  outline: 2px solid var(--ui-brass);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.site-footer__bottom {
+  max-width: var(--sf-max);
+  margin: 0 auto;
+  padding: 0 16px 1.5rem;
+}
+
+/* năm dòng kẻ khuông làm đường phân cách */
+.site-footer__staff {
+  display: block;
+  height: 17px;
+  margin-bottom: 1rem;
+  background: repeating-linear-gradient(to bottom, var(--ui-stage-line) 0 1px, transparent 1px 4px);
+}
+
+.site-footer__legal {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+  color: var(--ui-stage-text-2);
+  font-size: var(--ui-text-sm);
+}
+
+@media (max-width: 860px) {
+  .site-footer__inner {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .site-footer__brand {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 480px) {
+  .site-footer__inner {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

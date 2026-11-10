@@ -3,6 +3,7 @@ import type { DragEvent, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AuthImage from '../../components/scores/common/AuthImage';
 import { CREATE_SCORE_PATH } from '../../components/layout/nav';
+import SiteFooter from '../../components/layout/SiteFooter';
 import { Icon } from '../../components/ui';
 import type { IconName } from '../../components/ui';
 import { homeApi } from '../../services';
@@ -307,7 +308,7 @@ export default function GuestHome() {
           </Section>
         )}
 
-        <Section title="Câu hỏi thường gặp">
+        <Section id="faq" title="Câu hỏi thường gặp">
           <div className="gh-faq">
             {FAQ.map((f) => (
               <details key={f.q}>
@@ -325,12 +326,7 @@ export default function GuestHome() {
         </Section>
       </main>
 
-      <footer className="gh-footer">
-        <span>© {new Date().getFullYear()} Music App · Đồ án PTIT</span>
-        <button type="button" className="gh-link" onClick={() => navigate('/auth/login')}>
-          Đăng nhập
-        </button>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
