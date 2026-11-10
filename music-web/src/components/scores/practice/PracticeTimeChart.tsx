@@ -1,0 +1,105 @@
+import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'react-toastify';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { practiceStatsApi } from '../../../services';
+import type { PracticePeriod, PracticeTimeBucket } from '../../../types';
+
+const PERIODS: { value: PracticePeriod; label: string; hint: string }[] = [
+  { value: 'DAY', label: 'Ngày', hint: '30 ngày gần nhất' },
+  { value: 'WEEK', label: 'Tuần', hint: '12 tuần gần nhất' },
+  { value: 'MONTH', label: 'Tháng', hint: '12 tháng gần nhất' },
+];
+
+/** yyyy-MM-dd -> Date theo giờ máy (không để lệch múi giờ). */
+const parseDate = (s: string) => {
+  const [y, m, d] = s.split('-').map(Number);
+  return new Date(y, m - 1, d);
+};
+
+const labelOf = (b: PracticeTimeBucket, period: PracticePeriod) => {
+  const d = parseDate(b.start);
+  if (period === 'MONTH') return `Th${d.getMonth() + 1}/${String(d.getFullYear()).slice(2)}`;
+  return `${d.getDate()}/${d.getMonth() + 1}`;
+};
+
+const formatMinutes = (seconds: number) => {
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes} phút`;
+  return `${Math.floor(minutes / 60)} giờ ${minutes % 60} phút`;
+};
+
+/** Biểu đồ cột thời gian luyện tập theo Ngày / Tuần / Tháng (mục 3.13). */
+export default function PracticeTimeChart() {
+  const [period, setPeriod] = useState<PracticePeriod>('DAY');
+  const [buckets, setBuckets] = useState<PracticeTimeBucket[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    practiceStatsApi
+      .time(period)
+      .then((res) => !cancelled && setBuckets(res.data.result))
+      .catch(() => toast.error('Không tải được biểu đồ thời gian luyện tập'));
+    return () => {
+      cancelled = true;
+    };
+  }, [period]);
+
+  const data = useMemo(
+    () =>
+      (buckets ?? []).map((b) => ({
+        label: labelOf(b, period),
+        range: b.start === b.end ? parseDate(b.start).toLocaleDateString('vi-VN') : `${parseDate(b.start).toLocaleDateString('vi-VN')} – ${parseDate(b.end).toLocaleDateString('vi-VN')}`,
+        minutes: Math.round((b.totalSeconds / 60) * 10) / 10,
+        seconds: b.totalSeconds,
+        sessions: b.sessionCount,
+      })),
+    [buckets, period],
+  );
+
+  const totalSeconds = data.reduce((sum, d) => sum + d.seconds, 0);
+  const average = data.length > 0 ? totalSeconds / data.length : 0;
+  const hint = PERIODS.find((p) => p.value === period)?.hint;
+
+  return (
+    <section className="ps-chart">
+      <div className="ps-chart__head">
+        <div>
+          <h2>Thời gian luyện tập</h2>
+          <p>
+            {hint}: tổng {formatMinutes(totalSeconds)}, trung bình {formatMinutes(average)} mỗi{' '}
+            {PERIODS.find((p) => p.value === period)?.label.toLowerCase()}
+          </p>
+        </div>
+        <div className="ps-chart__tabs">
+          {PERIODS.map((p) => (
+            <button
+              key={p.value}
+              className={`sc-btn sc-btn--sm${p.value === period ? ' sc-btn--primary' : ''}`}
+              onClick={() => setPeriod(p.value)}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="ps-chart__body">
+        <ResponsiveContainer width="100%" height={280}>
+          <BarChart data={data} margin={{ top: 8, right: 8, left: -8, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+            <XAxis dataKey="label" tick={{ fontSize: 12 }} interval="preserveStartEnd" />
+            <YAxis tick={{ fontSize: 12 }} allowDecimals={false} unit=" p" />
+            <Tooltip
+              formatter={(_value, _name, item) => [
+                `${formatMinutes(item.payload.seconds)} (${item.payload.sessions} phiên)`,
+                'Thời gian tập',
+              ]}
+              labelFormatter={(_label, items) => items?.[0]?.payload?.range ?? ''}
+            />
+            <Bar dataKey="minutes" fill="#2563eb" radius={[4, 4, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </section>
+  );
+}

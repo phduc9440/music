@@ -12,6 +12,29 @@ export interface Member {
   emailVerified?: boolean;
   authProvider?: AuthProvider;
   roles?: string[];
+  /** Ngày đăng ký; null với tài khoản tạo trước khi có cột này. */
+  createdAt?: string | null;
+  lastLoginAt?: string | null;
+}
+
+/** Khớp AdminMemberDetailResponse của BE. */
+export interface AdminMemberDetail {
+  member: Member;
+  scoreCount: number;
+  publicScores: number;
+  pendingScores: number;
+  playlistCount: number;
+  reviewCount: number;
+  practiceSessions: number;
+  practiceMinutes: number;
+  recentScores: {
+    id: string;
+    title: string;
+    composer?: string | null;
+    visibility: string;
+    isOfficial?: boolean | null;
+    updatedAt?: string | null;
+  }[];
 }
 
 /** Khớp entity MemberScore: quyền của người được chia sẻ bản nhạc. */

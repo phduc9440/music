@@ -20,7 +20,8 @@ public interface AuthService {
 
     AuthResponse refreshToken(RefreshRequest request);
 
-    void changePassword(ChangePasswordRequest request);
+    /** Đổi mật khẩu; trả token mới cho thiết bị hiện tại (token cũ ở mọi nơi bị thu hồi). */
+    AuthResponse changePassword(ChangePasswordRequest request);
 
     void forgotPassword(ForgotPasswordRequest request);
 

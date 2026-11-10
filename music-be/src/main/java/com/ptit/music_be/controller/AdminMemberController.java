@@ -3,6 +3,7 @@ package com.ptit.music_be.controller;
 import org.springframework.web.bind.annotation.*;
 
 import com.ptit.music_be.dto.request.AdminUpdateMemberRequest;
+import com.ptit.music_be.dto.response.AdminMemberDetailResponse;
 import com.ptit.music_be.dto.response.ApiResponse;
 import com.ptit.music_be.dto.response.MemberResponse;
 import com.ptit.music_be.dto.response.PageResponse;
@@ -42,6 +43,16 @@ public class AdminMemberController {
     public ApiResponse<MemberResponse> getMember(@PathVariable String memberId) {
         return ApiResponse.<MemberResponse>builder()
                 .result(adminMemberService.getMember(memberId))
+                .build();
+    }
+
+    @GetMapping("/{memberId}/detail")
+    @Operation(
+            summary = "Chi tiết thành viên kèm số liệu hoạt động và bản nhạc gần đây",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<AdminMemberDetailResponse> getMemberDetail(@PathVariable String memberId) {
+        return ApiResponse.<AdminMemberDetailResponse>builder()
+                .result(adminMemberService.getMemberDetail(memberId))
                 .build();
     }
 

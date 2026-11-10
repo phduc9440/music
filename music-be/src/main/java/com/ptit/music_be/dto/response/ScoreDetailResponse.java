@@ -54,7 +54,7 @@ public class ScoreDetailResponse {
     boolean canDelete;
     /** Người đang xem có quyền nhận xét (chấm sao, bình luận) không. */
     boolean canReview;
-    /** Người đang xem có quyền quản lý chia sẻ (chủ sở hữu hoặc ADMIN) không. */
+    /** Người đang xem có quyền quản lý chia sẻ (chủ sở hữu hoặc SUPER_ADMIN) không. */
     boolean canManageSharing;
     /** Cấp truy cập hiện tại: OWNER / EDIT / REVIEW / VIEW. */
     String accessLevel;

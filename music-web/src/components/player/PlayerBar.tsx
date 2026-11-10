@@ -7,21 +7,21 @@ import {
   IconPlayBig,
   IconPrevMeasure,
   IconStopSmall,
-} from './PlayerIcons';
-import { ChordControl } from './ChordControl';
-import { LoopControl } from './LoopControl';
-import { mixOf } from './mixer';
-import { MixerPopover } from './MixerPopover';
+} from './controls/PlayerIcons';
+import { ChordControl } from './controls/ChordControl';
+import { LoopControl } from './controls/LoopControl';
+import { mixOf } from './state/mixer';
+import { MixerPopover } from './controls/MixerPopover';
 import { PlayerSheet } from './PlayerSheet';
 import type { SheetTab } from './PlayerSheet';
-import { DEFAULT_TEMPO_PERCENT } from './settings';
-import { TempoControl } from './TempoControl';
-import { TransposeControl } from './TransposeControl';
-import { CHORD_TRACK_ID } from './timeline';
-import { TransportProgress } from './TransportProgress';
-import { useMediaQuery } from './useMediaQuery';
-import { useEnginePosition } from './usePlayer';
-import type { PlayerApi } from './usePlayer';
+import { DEFAULT_TEMPO_PERCENT } from './state/settings';
+import { TempoControl } from './controls/TempoControl';
+import { TransposeControl } from './controls/TransposeControl';
+import { CHORD_TRACK_ID } from './engine/timeline';
+import { TransportProgress } from './controls/TransportProgress';
+import { useMediaQuery } from './hooks/useMediaQuery';
+import { useEnginePosition } from './hooks/usePlayer';
+import type { PlayerApi } from './hooks/usePlayer';
 import './player.css';
 
 /** Dưới mức này các tùy chọn dồn vào nút "⋯" và bottom sheet (khớp @media trong player.css). */

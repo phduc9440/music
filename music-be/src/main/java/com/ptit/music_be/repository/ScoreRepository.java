@@ -61,4 +61,55 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
             @Param("difficulty") String difficulty,
             @Param("tagId") String tagId,
             Pageable pageable);
+
+    /**
+     * Kho score mẫu (is_official = true): tìm theo tên/tác giả, lọc độ khó ("" là không lọc), sắp từ dễ đến khó rồi
+     * theo tên để người mới học bắt đầu từ bài dễ.
+     */
+    @Query(
+            """
+			select s from Score s
+			where s.isOfficial = true
+			and (lower(s.title) like lower(concat('%', :keyword, '%')) escape '\\'
+				or lower(coalesce(s.composer, '')) like lower(concat('%', :keyword, '%')) escape '\\')
+			and (:difficulty = '' or cast(s.difficulty as string) = :difficulty)
+			order by case cast(s.difficulty as string)
+				when 'EASY' then 1 when 'MEDIUM' then 2 when 'HARD' then 3 when 'EXPERT' then 4 else 5 end,
+				lower(s.title), s.id
+			""")
+    Page<Score> searchOfficial(
+            @Param("keyword") String keyword, @Param("difficulty") String difficulty, Pageable pageable);
+
+    /** ADMIN: các bản nhạc công khai chưa nằm trong kho score mẫu, để chọn đưa vào (cập nhật gần nhất trước). */
+    @Query(
+            """
+			select s from Score s
+			where s.visibility = 'PUBLIC' and (s.isOfficial is null or s.isOfficial = false)
+			and (lower(s.title) like lower(concat('%', :keyword, '%')) escape '\\'
+				or lower(coalesce(s.composer, '')) like lower(concat('%', :keyword, '%')) escape '\\')
+			order by s.updatedAt desc, s.id
+			""")
+    Page<Score> searchOfficialCandidates(@Param("keyword") String keyword, Pageable pageable);
+
+    /** ADMIN: mọi bản nhạc trong hệ thống, tìm theo tên/tác giả/email chủ sở hữu, lọc visibility, kho mẫu ("true"/"false"), nguồn, độ khó ("" là không lọc). */
+    @Query(
+            """
+			select s from Score s
+			where (lower(s.title) like lower(concat('%', :keyword, '%')) escape '\\'
+				or lower(coalesce(s.composer, '')) like lower(concat('%', :keyword, '%')) escape '\\'
+				or lower(s.member.email) like lower(concat('%', :keyword, '%')) escape '\\')
+			and (:visibility = '' or s.visibility = :visibility)
+			and (:official = ''
+				or (:official = 'true' and s.isOfficial = true)
+				or (:official = 'false' and (s.isOfficial is null or s.isOfficial = false)))
+			and (:source = '' or s.sourceType = :source)
+			and (:difficulty = '' or cast(s.difficulty as string) = :difficulty)
+			""")
+    Page<Score> searchAllForAdmin(
+            @Param("keyword") String keyword,
+            @Param("visibility") String visibility,
+            @Param("official") String official,
+            @Param("source") String source,
+            @Param("difficulty") String difficulty,
+            Pageable pageable);
 }

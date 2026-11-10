@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { notificationApi } from '../services';
+import { Icon } from './ui';
+import { useDialog } from './ui/dialog-context';
 import { formatRelative } from '../utils/score';
 import type { AppNotification } from '../types';
 import './scores/scores.css';
@@ -15,6 +17,7 @@ export default function NotificationBell() {
   const [loading, setLoading] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const dialog = useDialog();
 
   const refreshCount = useCallback(() => {
     notificationApi
@@ -60,7 +63,17 @@ export default function NotificationBell() {
       setUnread((c) => Math.max(0, c - 1));
     }
     setOpen(false);
-    if (n.type === 'PUBLISH_REQUESTED') navigate('/admin');
+    // Thông báo chung của quản trị viên không dẫn tới trang nào: mở hộp thoại để đọc toàn văn
+    if (n.type === 'ANNOUNCEMENT') {
+      await dialog.alert({
+        title: 'Thông báo từ quản trị viên',
+        meta: new Date(n.createdAt).toLocaleString('vi-VN'),
+        message: n.message,
+        icon: 'megaphone',
+      });
+      return;
+    }
+    if (n.type === 'PUBLISH_REQUESTED') navigate('/admin/pending-scores');
     else if (n.scoreId) navigate(`/scores/${n.scoreId}`);
   };
 
@@ -74,12 +87,13 @@ export default function NotificationBell() {
     <div className="sc-bell" ref={ref}>
       <button
         type="button"
-        className="sc-btn sc-btn--sm"
+        className="sc-bell__btn"
         aria-label={`Thông báo${unread ? `, ${unread} chưa đọc` : ''}`}
         aria-expanded={open}
         onClick={toggle}
       >
-        🔔{unread > 0 && <span className="sc-bell__badge">{unread > 99 ? '99+' : unread}</span>}
+        <Icon name="bell" size={18} />
+        {unread > 0 && <span className="sc-bell__badge">{unread > 99 ? '99+' : unread}</span>}
       </button>
 
       {open && (
@@ -100,7 +114,13 @@ export default function NotificationBell() {
                   className={`sc-bell__item${n.read ? '' : ' sc-bell__item--unread'}`}
                   onClick={() => openItem(n)}
                 >
-                  <span>{n.message}</span>
+                  {n.type === 'ANNOUNCEMENT' && (
+                    <span className="sc-bell__tag">
+                      <Icon name="megaphone" size={12} />
+                      Quản trị viên
+                    </span>
+                  )}
+                  <span className="sc-bell__text">{n.message}</span>
                   <small>{formatRelative(n.createdAt)}</small>
                 </button>
               </li>

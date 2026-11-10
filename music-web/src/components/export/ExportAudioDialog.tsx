@@ -4,9 +4,9 @@ import { downloadFile, fetchFileBlob, taskApi } from '../../services';
 import { exportApi } from '../../services/exportApi';
 import type { AiTaskInfo } from '../../types';
 import type { ExportFileInfo, ExportFormat, ExportHands, ExportOptions } from '../../types/export';
-import Modal from '../scores/Modal';
-import { clampTempoPercent, loadScoreSettings } from '../player/settings';
-import { clampTranspose } from '../player/transposeRange';
+import Modal from '../scores/common/Modal';
+import { clampTempoPercent, loadScoreSettings } from '../player/state/settings';
+import { clampTranspose } from '../player/state/transposeRange';
 import {
   DEFAULT_BITRATE,
   EXPORT_BITRATES,

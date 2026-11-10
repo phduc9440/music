@@ -2,6 +2,7 @@ package com.ptit.music_be.service;
 
 import java.util.List;
 
+import com.ptit.music_be.dto.enums.Visibility;
 import com.ptit.music_be.dto.request.ScoreUpdateRequest;
 import com.ptit.music_be.dto.response.PageResponse;
 import com.ptit.music_be.dto.response.ScoreDetailResponse;
@@ -40,6 +41,35 @@ public interface ScoreService {
     ScoreDetailResponse updateScore(String scoreId, ScoreUpdateRequest request);
 
     void deleteScore(String scoreId);
+
+    /** Kho score mẫu cho người mới học (mọi người đã đăng nhập xem được), từ dễ đến khó. */
+    PageResponse<ScoreSummaryResponse> getOfficialScores(int page, int size, String keyword, String difficulty);
+
+    /** ADMIN: bản nhạc công khai chưa nằm trong kho score mẫu, để chọn đưa vào. */
+    PageResponse<ScoreSummaryResponse> getOfficialCandidates(int page, int size, String keyword);
+
+    /** ADMIN: đưa một bản nhạc đã công khai vào kho score mẫu. */
+    ScoreDetailResponse markOfficial(String scoreId);
+
+    /** ADMIN: gỡ khỏi kho score mẫu (bản nhạc vẫn giữ nguyên, vẫn công khai). */
+    ScoreDetailResponse unmarkOfficial(String scoreId);
+
+    /**
+     * ADMIN: mọi bản nhạc trong hệ thống, tìm theo từ khóa, lọc visibility/kho mẫu/nguồn/độ khó. sort: UPDATED (mặc định,
+     * mới nhất trước), CREATED, TITLE (A-Z), VIEWS (nhiều nhất trước).
+     */
+    PageResponse<ScoreSummaryResponse> getAllForAdmin(
+            int page,
+            int size,
+            String keyword,
+            String visibility,
+            String official,
+            String source,
+            String difficulty,
+            String sort);
+
+    /** ADMIN: đặt thẳng PUBLIC hoặc PRIVATE (PRIVATE kèm lý do, gỡ khỏi kho mẫu, báo cho chủ). */
+    ScoreDetailResponse setVisibilityByAdmin(String scoreId, Visibility visibility, String reason);
 
     /** ADMIN: các bản nhạc chủ đã xin công khai và đang chờ duyệt (cũ nhất trước). */
     PageResponse<ScoreSummaryResponse> getPendingPublic(int page, int size);

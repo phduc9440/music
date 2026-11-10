@@ -267,10 +267,158 @@ public class ScoreServiceImpl implements ScoreService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public PageResponse<ScoreSummaryResponse> getAllForAdmin(
+            int page,
+            int size,
+            String keyword,
+            String visibility,
+            String official,
+            String source,
+            String difficulty,
+            String sort) {
+        requireAdmin();
+        int safeSize = size <= 0 ? DEFAULT_PAGE_SIZE : Math.min(size, MAX_PAGE_SIZE);
+        String safeOfficial = official == null ? "" : official.trim().toLowerCase();
+        if (!safeOfficial.isEmpty() && !"true".equals(safeOfficial) && !"false".equals(safeOfficial)) {
+            throw new AppException(ErrorCode.INVALID_REQUEST);
+        }
+        Page<Score> result = scoreRepository.searchAllForAdmin(
+                normalizeKeyword(keyword),
+                parseEnumName(visibility, Visibility.class),
+                safeOfficial,
+                parseEnumName(source, ScoreSource.class),
+                parseEnumName(difficulty, DifficultyLevel.class),
+                PageRequest.of(Math.max(page, 0), safeSize, adminSort(sort)));
+        return toSummaryPage(result, true);
+    }
+
+    /** Sắp xếp danh sách admin theo danh sách trắng, luôn kèm id để thứ tự ổn định giữa các trang. */
+    private static Sort adminSort(String sort) {
+        String key = sort == null ? "" : sort.trim().toUpperCase();
+        Sort.Order primary =
+                switch (key) {
+                    case "", "UPDATED" -> Sort.Order.desc("updatedAt");
+                    case "CREATED" -> Sort.Order.desc("createdAt");
+                    case "TITLE" -> Sort.Order.asc("title");
+                    case "VIEWS" -> Sort.Order.desc("viewCount");
+                    default -> throw new AppException(ErrorCode.INVALID_REQUEST);
+                };
+        return Sort.by(primary, Sort.Order.asc("id"));
+    }
+
+    @Override
+    @Transactional
+    public ScoreDetailResponse setVisibilityByAdmin(String scoreId, Visibility visibility, String reason) {
+        requireAdmin();
+        if (visibility == null || visibility == Visibility.PENDING) {
+            throw new AppException(ErrorCode.INVALID_REQUEST);
+        }
+        Score score = findScore(scoreId);
+        String current = score.getVisibility() == null ? Visibility.PRIVATE.name() : score.getVisibility();
+        if (current.equals(visibility.name())) {
+            return toDetail(score);
+        }
+        if (visibility == Visibility.PUBLIC) {
+            score.setVisibility(Visibility.PUBLIC.name());
+            score.setRejectReason(null);
+        } else {
+            // Gỡ công khai: bản không còn public thì cũng rời kho score mẫu
+            score.setVisibility(Visibility.PRIVATE.name());
+            score.setRejectReason(blankToNull(reason));
+            score.setIsOfficial(false);
+        }
+        Score saved = scoreRepository.save(score);
+        boolean selfOwned = score.getMember() != null
+                && score.getMember().getEmail() != null
+                && score.getMember().getEmail().equalsIgnoreCase(SecurityUtils.getCurrentEmail());
+        if (!selfOwned) {
+            boolean makePublic = visibility == Visibility.PUBLIC;
+            notificationService.notify(
+                    score.getMember(),
+                    null,
+                    makePublic ? NotificationType.PUBLISH_APPROVED : NotificationType.PUBLISH_REJECTED,
+                    score.getId(),
+                    "Bản nhạc \"" + score.getTitle() + "\""
+                            + (makePublic ? " đã được quản trị viên công khai" : " đã bị quản trị viên gỡ công khai")
+                            + (!makePublic && saved.getRejectReason() != null ? ": " + saved.getRejectReason() : ""));
+        }
+        return toDetail(saved);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<ScoreSummaryResponse> getOfficialScores(int page, int size, String keyword, String difficulty) {
+        int safeSize = size <= 0 ? DEFAULT_PAGE_SIZE : Math.min(size, MAX_PAGE_SIZE);
+        Page<Score> result = scoreRepository.searchOfficial(
+                normalizeKeyword(keyword),
+                parseEnumName(difficulty, DifficultyLevel.class),
+                PageRequest.of(Math.max(page, 0), safeSize));
+        return toSummaryPage(result, false);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<ScoreSummaryResponse> getOfficialCandidates(int page, int size, String keyword) {
+        requireAdmin();
+        int safeSize = size <= 0 ? DEFAULT_PAGE_SIZE : Math.min(size, MAX_PAGE_SIZE);
+        Page<Score> result = scoreRepository.searchOfficialCandidates(
+                normalizeKeyword(keyword), PageRequest.of(Math.max(page, 0), safeSize));
+        return toSummaryPage(result, true);
+    }
+
+    @Override
+    @Transactional
+    public ScoreDetailResponse markOfficial(String scoreId) {
+        requireAdmin();
+        Score score = findScore(scoreId);
+        // Không công khai bản riêng tư của người dùng chỉ vì đưa vào kho: phải đã được công khai trước
+        if (!Visibility.PUBLIC.name().equals(score.getVisibility())) {
+            throw new AppException(ErrorCode.SCORE_NOT_PUBLIC_FOR_OFFICIAL);
+        }
+        score.setIsOfficial(true);
+        return toDetail(scoreRepository.save(score));
+    }
+
+    @Override
+    @Transactional
+    public ScoreDetailResponse unmarkOfficial(String scoreId) {
+        requireAdmin();
+        Score score = findScore(scoreId);
+        score.setIsOfficial(false);
+        return toDetail(scoreRepository.save(score));
+    }
+
+    private PageResponse<ScoreSummaryResponse> toSummaryPage(Page<Score> result, boolean withOwner) {
+        Map<String, ScoreFile> thumbnails = loadThumbnails(result.getContent());
+        Map<String, List<TagResponse>> tagsByScore = loadTags(result.getContent());
+        List<ScoreSummaryResponse> content = result.getContent().stream()
+                .map(score -> {
+                    ScoreSummaryResponse summary = toSummary(
+                            score, thumbnails.get(score.getId()), tagsByScore.getOrDefault(score.getId(), List.of()));
+                    if (withOwner) {
+                        summary.setOwnerEmail(
+                                score.getMember() == null
+                                        ? null
+                                        : score.getMember().getEmail());
+                    }
+                    return summary;
+                })
+                .toList();
+        return PageResponse.<ScoreSummaryResponse>builder()
+                .content(content)
+                .pageNumber(result.getNumber())
+                .pageSize(result.getSize())
+                .totalElements(result.getTotalElements())
+                .totalPages(result.getTotalPages())
+                .build();
+    }
+
+    @Override
     @Transactional
     public ScoreDetailResponse approvePublic(String scoreId) {
         requireAdmin();
-        Score score = findScore(scoreId);
+        Score score = findPending(scoreId);
         score.setVisibility(Visibility.PUBLIC.name());
         score.setRejectReason(null);
         Score saved = scoreRepository.save(score);
@@ -287,7 +435,7 @@ public class ScoreServiceImpl implements ScoreService {
     @Transactional
     public ScoreDetailResponse rejectPublic(String scoreId, String reason) {
         requireAdmin();
-        Score score = findScore(scoreId);
+        Score score = findPending(scoreId);
         score.setVisibility(Visibility.PRIVATE.name());
         score.setRejectReason(blankToNull(reason));
         Score saved = scoreRepository.save(score);
@@ -372,6 +520,10 @@ public class ScoreServiceImpl implements ScoreService {
         if (!scoreFileService.canDelete(score)) {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
+        // Bản trong kho score mẫu chỉ ADMIN được xóa (chủ sở hữu muốn xóa thì nhờ admin gỡ khỏi kho trước)
+        if (Boolean.TRUE.equals(score.getIsOfficial()) && !SecurityUtils.isAdmin()) {
+            throw new AppException(ErrorCode.SCORE_OFFICIAL_LOCKED);
+        }
         // Đang có tác vụ chạy thì không cho xóa (worker/AI service còn đang ghi file vào thư mục của score)
         if (aiTaskRepository.existsByScoreIdAndStatusIn(
                 scoreId, List.of(AiTaskStatus.PENDING, AiTaskStatus.PROCESSING))) {
@@ -393,6 +545,15 @@ public class ScoreServiceImpl implements ScoreService {
 
     // ------------------------------------------------------------------ helpers
 
+    /** Bản nhạc phải đang chờ duyệt (PENDING): tránh duyệt nhầm bản riêng tư hoặc thu hồi bản đã công khai. */
+    private Score findPending(String scoreId) {
+        Score score = findScore(scoreId);
+        if (!Visibility.PENDING.name().equals(score.getVisibility())) {
+            throw new AppException(ErrorCode.SCORE_NOT_PENDING_PUBLIC);
+        }
+        return score;
+    }
+
     private Score findScore(String scoreId) {
         return scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
     }
@@ -406,6 +567,7 @@ public class ScoreServiceImpl implements ScoreService {
                 .processingStatus(score.getProcessingStatus())
                 .sourceType(score.getSourceType())
                 .visibility(score.getVisibility())
+                .isOfficial(score.getIsOfficial())
                 .measureCount(score.getMeasureCount())
                 .tags(tags)
                 .thumbnailUrl(thumbnail == null ? null : "/api/files/" + thumbnail.getId() + "/download?inline=true")

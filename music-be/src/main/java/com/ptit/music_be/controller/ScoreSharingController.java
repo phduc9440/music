@@ -36,7 +36,7 @@ public class ScoreSharingController {
 
     @GetMapping("/scores/{scoreId}/sharing")
     @Operation(
-            summary = "Sharing state of a score (owner or ADMIN only)",
+            summary = "Sharing state of a score (owner or SUPER_ADMIN only)",
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<ScoreSharingResponse> getSharing(@PathVariable String scoreId) {
         return ok(sharingService.getSharing(scoreId));
@@ -88,7 +88,7 @@ public class ScoreSharingController {
 
     @GetMapping("/scores/{scoreId}/access-requests")
     @Operation(
-            summary = "Pending access requests (owner or ADMIN only)",
+            summary = "Pending access requests (owner or SUPER_ADMIN only)",
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<List<AccessRequestResponse>> getAccessRequests(@PathVariable String scoreId) {
         return ok(sharingService.getAccessRequests(scoreId));

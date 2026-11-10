@@ -1,0 +1,93 @@
+/*
+ * Riêng phần biểu đồ của dashboard. Thẻ, số liệu, bảng dùng khuôn mẫu chung (admin.css + components/ui).
+ * Màu series theo bảng dataviz: xanh dương = bản nhạc, aqua = luyện tập, tím = thành viên.
+ */
+
+.dash-chart {
+  width: 100%;
+  height: 240px;
+}
+
+.dash-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 240px;
+  color: var(--adm-text-2);
+  font-size: var(--adm-text-sm);
+}
+
+.dash-tooltip {
+  padding: 0.45rem 0.7rem;
+  background: var(--adm-surface);
+  border: 1px solid var(--adm-border);
+  border-radius: var(--adm-radius);
+  box-shadow: var(--adm-shadow-pop);
+  font-size: var(--adm-text-sm);
+}
+
+.dash-tooltip__title {
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+/* bảng thay thế biểu đồ (nút "Bảng") */
+.dash-table-wrap {
+  max-height: 240px;
+  overflow: auto;
+}
+
+.dash-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--adm-text-sm);
+}
+
+.dash-table th,
+.dash-table td {
+  padding: 0.45rem 0.25rem;
+  text-align: left;
+  border-bottom: 1px solid var(--adm-border);
+}
+
+.dash-table th {
+  color: var(--adm-text-2);
+  font-weight: 600;
+}
+
+.dash-table td:last-child,
+.dash-table th:last-child {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* thanh ngang trong ô bảng (top lượt xem) */
+.dash-bar-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.dash-bar-cell__track {
+  flex: 1;
+  height: 8px;
+  background: var(--adm-surface-hover);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.dash-bar-cell__fill {
+  height: 100%;
+  background: #2a78d6;
+  border-radius: 4px;
+}
+
+/* Tabs nhỏ gọn trong đầu thẻ biểu đồ */
+.dash .adm-card__actions .adm-tabs {
+  margin-bottom: 0;
+}
+
+.dash .adm-card__actions .adm-tab {
+  padding: 0.25rem 0.6rem;
+  font-size: var(--adm-text-sm);
+}

@@ -1,0 +1,519 @@
+/* Trang chi tiết bản nhạc (/scores/:id) */
+/* ---- Đầu trang: nhãn, tiêu đề, dòng phụ, thao tác chính, thông báo ---- */
+.sd-head {
+  margin-bottom: 1.25rem;
+}
+.sd-head__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.sd-head__text {
+  min-width: 0;
+  flex: 1 1 420px;
+}
+.sd-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+}
+.sd-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  word-break: break-word;
+}
+.sd-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0;
+  margin-top: 0.35rem;
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-md);
+}
+/* dấu chấm ngăn cách giữa các mục của dòng phụ */
+.sd-meta span + span::before {
+  content: '·';
+  margin: 0 0.5rem;
+  color: var(--ui-text-3);
+}
+.sd-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.sd-alert {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid;
+  border-radius: var(--ui-radius);
+  font-size: var(--ui-text-md);
+}
+.sd-alert svg {
+  flex-shrink: 0;
+}
+.sd-alert a {
+  margin-left: auto;
+  font-weight: 600;
+}
+.sd-alert--info {
+  background: var(--ui-primary-soft);
+  border-color: #bfdbfe;
+  color: #1e3a8a;
+}
+.sd-alert--warning {
+  background: var(--ui-warning-soft);
+  border-color: #fcd34d;
+  color: #78350f;
+}
+.sd-alert--danger {
+  background: var(--ui-danger-soft);
+  border-color: #fecaca;
+  color: #7f1d1d;
+}
+
+/* ---- Bố cục 2 cột: nội dung chính và cột thông tin ---- */
+.sd-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 1.25rem;
+  align-items: start;
+}
+.sd-main {
+  min-width: 0;
+}
+.sd-side {
+  display: grid;
+  gap: 1rem;
+  position: sticky;
+  top: calc(var(--ui-header-h) + 1rem);
+}
+.adm-main .sd-side {
+  top: calc(var(--adm-header-h, 60px) + 1rem);
+}
+
+.sd-card {
+  padding: 1.15rem 1.25rem;
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  box-shadow: var(--ui-shadow-sm);
+}
+.sd-card__title {
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+/* xem trước trang 1 */
+.sd-preview {
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+  background: var(--ui-surface-muted);
+}
+.sd-preview--empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 200px;
+  text-align: center;
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-md);
+}
+.sd-preview--empty strong {
+  color: var(--ui-text);
+}
+.sd-preview--empty .sc-btn {
+  margin-top: 0.5rem;
+}
+.sd-preview__empty-icon {
+  width: 44px;
+  height: 44px;
+  margin-bottom: 0.25rem;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ui-surface-hover);
+  color: var(--ui-text-3);
+}
+.sd-preview__link {
+  position: relative;
+  display: block;
+  border-radius: var(--ui-radius);
+  overflow: hidden;
+}
+.sd-preview__img {
+  display: block;
+  width: 100%;
+  max-height: 520px;
+  min-height: 260px;
+  object-fit: contain;
+  object-position: top center;
+  background: #fff;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+}
+.sd-preview__hint {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.78);
+  color: #fff;
+  font-size: var(--ui-text-sm);
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.sd-preview__link:hover .sd-preview__hint,
+.sd-preview__link:focus-visible .sd-preview__hint {
+  opacity: 1;
+}
+
+/* số liệu nổi bật */
+.sd-highlights {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.sd-highlight {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.65rem 0.25rem;
+  border-radius: var(--ui-radius);
+  background: var(--ui-surface-muted);
+  border: 1px solid var(--ui-border);
+}
+.sd-highlight__value {
+  font-size: 1.2rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.sd-highlight__label {
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-xs);
+}
+
+.sd-dl {
+  margin: 0;
+}
+.sd-dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--ui-border);
+  font-size: var(--ui-text-md);
+}
+.sd-dl > div:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.sd-dl dt {
+  color: var(--ui-text-2);
+  flex-shrink: 0;
+}
+.sd-dl dd {
+  margin: 0;
+  font-weight: 500;
+  text-align: right;
+}
+.sd-tags {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.3rem;
+}
+
+.sd-notes {
+  white-space: pre-wrap;
+  color: var(--ui-text);
+  font-size: var(--ui-text-md);
+  line-height: 1.6;
+}
+
+/* thao tác quản lý */
+.sd-manage {
+  display: grid;
+  gap: 0.15rem;
+  margin: 0 -0.5rem;
+}
+.sd-manage__item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.55rem 0.5rem;
+  border: 0;
+  border-radius: var(--ui-radius-sm);
+  background: transparent;
+  color: var(--ui-text);
+  font: inherit;
+  font-size: var(--ui-text-md);
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+.sd-manage__item:hover {
+  background: var(--ui-surface-hover);
+}
+.sd-manage__item svg {
+  color: var(--ui-text-2);
+}
+.sd-manage__item--danger,
+.sd-manage__item--danger svg {
+  color: var(--ui-danger);
+}
+.sd-manage__item--danger:hover {
+  background: var(--ui-danger-soft);
+}
+
+@media (max-width: 640px) {
+  /* bảng file / tác vụ: cuộn ngang thay vì bóp cột đến mức vỡ chữ */
+  .sc-table-wrap {
+    overflow-x: auto;
+  }
+  .sc-table {
+    min-width: 560px;
+  }
+  /* tab giữ một hàng, vuốt ngang nếu thiếu chỗ */
+  .sc-tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+  }
+  .sc-tab {
+    white-space: nowrap;
+  }
+  .sd-title {
+    font-size: 1.45rem;
+  }
+}
+
+@media (max-width: 1000px) {
+  .sd-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sd-side {
+    position: static;
+  }
+}
+
+.sc-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.6rem;
+  margin-top: 1.25rem;
+}
+.sc-fact {
+  padding: 0.6rem 0.8rem;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid var(--sc-line);
+}
+.sc-fact dt {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--sc-muted);
+}
+.sc-fact dd {
+  margin-top: 0.15rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+.sc-notes {
+  margin-top: 1rem;
+  padding: 0.8rem 1rem;
+  border-left: 4px solid var(--sc-accent);
+  border-radius: 0 12px 12px 0;
+  background: var(--sc-accent-soft);
+}
+.sc-notes h4 {
+  font-size: 0.8rem;
+  margin-bottom: 0.25rem;
+  color: var(--sc-accent);
+}
+.sc-notes p {
+  white-space: pre-wrap;
+  font-size: 0.92rem;
+}
+
+/* Tab kiểu gạch chân */
+.sc-tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--sc-line);
+}
+.sc-tab {
+  position: relative;
+  padding: 0.7rem 1rem;
+  border: none;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  color: var(--sc-muted);
+  cursor: pointer;
+}
+.sc-tab:hover {
+  color: var(--sc-ink);
+}
+.sc-tab[aria-selected='true'] {
+  color: var(--sc-accent);
+}
+.sc-tab[aria-selected='true']::after {
+  content: '';
+  position: absolute;
+  left: 0.5rem;
+  right: 0.5rem;
+  bottom: -1px;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: var(--sc-accent);
+}
+.sc-tab__count {
+  margin-left: 0.3rem;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  background: #eef2f7;
+  font-size: 0.75rem;
+}
+
+/* Bảng */
+.sc-panel {
+  background: var(--sc-card);
+  border: 1px solid var(--sc-line);
+  border-radius: var(--sc-radius);
+  box-shadow: var(--sc-shadow);
+}
+.sc-panel--empty {
+  padding: 2rem;
+  text-align: center;
+  color: var(--sc-muted);
+}
+.sc-table-wrap {
+  overflow-x: auto;
+}
+.sc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.sc-table th {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--sc-muted);
+  background: #f8fafc;
+  border-bottom: 1px solid var(--sc-line);
+}
+.sc-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+.sc-table tbody tr:last-child td {
+  border-bottom: none;
+}
+.sc-table tbody tr:hover {
+  background: #fafcff;
+}
+.sc-table__name {
+  font-weight: 600;
+  word-break: break-all;
+}
+.sc-table__sub {
+  font-size: 0.78rem;
+  color: var(--sc-muted);
+}
+.sc-table__error {
+  margin-top: 0.2rem;
+  font-size: 0.78rem;
+  color: #b91c1c;
+}
+.sc-table__action {
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Thanh tiến độ */
+.sc-progress-cell {
+  min-width: 160px;
+  white-space: nowrap;
+}
+.sc-progress {
+  display: inline-block;
+  width: 100px;
+  height: 8px;
+  vertical-align: middle;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+.sc-progress__bar {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--sc-accent);
+  transition: width 0.4s;
+}
+.sc-progress__bar--completed {
+  background: #22c55e;
+}
+.sc-progress__bar--failed {
+  background: #ef4444;
+}
+.sc-progress__bar--pending {
+  background: #f59e0b;
+}
+.sc-progress__text {
+  margin-left: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--sc-muted);
+}
+
+.sc-delete__text {
+  margin: 0.5rem 0 0.9rem;
+  line-height: 1.5;
+}
+.sc-delete__text code {
+  padding: 0.1rem 0.4rem;
+  border-radius: 6px;
+  background: #f1f5f9;
+  font-weight: 700;
+}
+.sc-skeleton--hero {
+  height: 360px;
+  border-radius: var(--ui-radius-lg);
+}
+
+
+/* Nút dạng liên kết (ví dụ "Mở trình chỉnh sửa") */
+a.sc-btn {
+  text-decoration: none;
+}
+a.sc-btn.is-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}

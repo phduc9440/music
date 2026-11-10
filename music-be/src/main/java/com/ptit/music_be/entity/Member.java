@@ -1,9 +1,12 @@
 package com.ptit.music_be.entity;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 import jakarta.persistence.*;
+
+import org.hibernate.annotations.CreationTimestamp;
 
 import com.ptit.music_be.converter.AuthProviderConverter;
 import com.ptit.music_be.converter.MemberStatusConverter;
@@ -55,6 +58,19 @@ public class Member {
     @Convert(converter = AuthProviderConverter.class)
     @Column(name = "auth_provider")
     AuthProvider authProvider;
+
+    /** Ngày đăng ký; null với tài khoản tạo trước khi có cột này. */
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    LocalDateTime createdAt;
+
+    /** Lần đăng nhập gần nhất (đăng nhập thường hoặc Google). */
+    @Column(name = "last_login_at")
+    LocalDateTime lastLoginAt;
+
+    /** Lần đổi/đặt lại mật khẩu gần nhất (làm tròn xuống giây); mọi token cấp trước mốc này bị từ chối. */
+    @Column(name = "password_changed_at")
+    LocalDateTime passwordChangedAt;
 
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

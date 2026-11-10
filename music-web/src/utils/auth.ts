@@ -3,6 +3,11 @@ import type { AuthResponse, Member } from '../types';
 
 export type AppRole = 'USER' | 'ADMIN';
 
+export const isSuperAdminMember = (member: Pick<Member, 'roles'>) => !!member.roles?.includes('SUPER_ADMIN');
+
+export const roleLabel = (member: Pick<Member, 'roles'>) =>
+  isSuperAdminMember(member) ? 'SUPER ADMIN' : isAdminMember(member) ? 'ADMIN' : 'USER';
+
 export const isAdminMember = (member: Pick<Member, 'roles'>) => !!member.roles?.includes('ADMIN');
 
 /**

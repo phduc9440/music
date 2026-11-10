@@ -49,6 +49,11 @@ public class ApplicationInitConfig {
                     .orElseGet(() ->
                             roleRepository.save(Role.builder().name("ADMIN").build()));
 
+            Role roleSuperAdmin = roleRepository
+                    .findByName("SUPER_ADMIN")
+                    .orElseGet(() -> roleRepository.save(
+                            Role.builder().name("SUPER_ADMIN").build()));
+
             // Seed default admin if not present
             if (memberRepository.findByEmail("admin@music.com").isEmpty()) {
                 Member admin = Member.builder()
@@ -69,6 +74,17 @@ public class ApplicationInitConfig {
                 log.warn(
                         "Admin user created with email: admin@music.com and default password: 12345678, please change it!");
             }
+
+            // Tài khoản gốc luôn là SUPER_ADMIN (cũng áp dụng cho DB đã có sẵn admin@music.com từ trước)
+            memberRepository.findByEmail("admin@music.com").ifPresent(root -> {
+                boolean has = memberRoleRepository.existsByMemberAndRole(root, roleSuperAdmin);
+                if (!has) {
+                    memberRoleRepository.save(MemberRole.builder()
+                            .member(root)
+                            .role(roleSuperAdmin)
+                            .build());
+                }
+            });
         };
     }
 }

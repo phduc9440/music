@@ -1,14 +1,14 @@
 :root {
-  --primary-color: #2563eb; /* Standard Blue */
-  --primary-hover: #1d4ed8;
-  --secondary-color: #475569; /* Slate 600 */
-  --background-dark: #f8fafc; /* Light Gray Background */
-  --surface-dark: #ffffff; /* White surface */
-  --surface-border: #e2e8f0; /* Light border */
-  --text-primary: #0f172a; /* Dark text */
-  --text-secondary: #64748b; /* Muted text */
-  --danger-color: #ef4444;
-  --success-color: #10b981;
+  --primary-color: var(--ui-primary); /* Standard Blue */
+  --primary-hover: var(--ui-primary-hover);
+  --secondary-color: var(--ui-text-2); /* Slate 600 */
+  --background-dark: var(--ui-bg); /* Light Gray Background */
+  --surface-dark: var(--ui-surface); /* White surface */
+  --surface-border: var(--ui-border); /* Light border */
+  --text-primary: var(--ui-text); /* Dark text */
+  --text-secondary: var(--ui-text-2); /* Muted text */
+  --danger-color: var(--ui-danger);
+  --success-color: var(--ui-success);
 
   --glass-bg: #ffffff;
   --glass-border: 1px solid #e2e8f0;
@@ -23,7 +23,7 @@
 }
 
 body {
-  font-family: 'Inter', 'Roboto', sans-serif;
+  font-family: var(--ui-font);
   background-color: var(--background-dark);
   color: var(--text-primary);
   min-height: 100vh;
@@ -52,66 +52,101 @@ a:hover {
   padding: 2rem;
 }
 
-/* Buttons */
+/* Nút, ô nhập, trang đăng nhập: dùng chung token với phần còn lại (styles/tokens.css) */
 .btn {
-  display: inline-block;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  height: 40px;
+  padding: 0 1.1rem;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius);
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  font: inherit;
   font-weight: 600;
+  font-size: var(--ui-text-md);
   cursor: pointer;
-  transition: all 0.3s ease;
-  border: none;
-  outline: none;
-  font-size: 1rem;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--ui-surface-hover);
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .btn-primary {
-  background: var(--primary-color);
-  color: white;
+  background: var(--ui-primary);
+  border-color: var(--ui-primary);
+  color: #fff;
 }
 
-.btn-primary:hover {
-  background: var(--primary-hover);
-  transform: translateY(-1px);
+.btn-primary:hover:not(:disabled) {
+  background: var(--ui-primary-hover);
+  border-color: var(--ui-primary-hover);
 }
 
 .btn-danger {
-  background: var(--danger-color);
-  color: white;
+  background: var(--ui-danger);
+  border-color: var(--ui-danger);
+  color: #fff;
 }
 
-.btn-danger:hover {
-  background: #dc2626;
+.btn-danger:hover:not(:disabled) {
+  background: var(--ui-danger-hover);
+  border-color: var(--ui-danger-hover);
+}
+
+.btn:focus-visible,
+.form-control:focus-visible {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 2px;
 }
 
 /* Forms */
 .form-group {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.1rem;
   text-align: left;
 }
 
 .form-group label {
   display: block;
-  margin-bottom: 0.5rem;
-  font-size: 0.875rem;
-  color: var(--text-secondary);
+  margin-bottom: 0.4rem;
+  font-size: var(--ui-text-md);
+  font-weight: 600;
+  color: var(--ui-text);
 }
 
 .form-control {
   width: 100%;
-  padding: 0.75rem 1rem;
-  background: #ffffff;
-  border: 1px solid var(--surface-border);
-  border-radius: 8px;
-  color: var(--text-primary);
-  font-size: 1rem;
-  transition: all 0.2s ease;
+  height: 40px;
+  padding: 0 0.85rem;
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius);
+  color: var(--ui-text);
+  font: inherit;
+  font-size: var(--ui-text-md);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.form-control:hover {
+  border-color: var(--ui-text-3);
 }
 
 .form-control:focus {
   outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+  border-color: var(--ui-primary);
+  box-shadow: 0 0 0 3px var(--ui-primary-ring);
 }
 
 /* Auth Page layout */
@@ -121,23 +156,42 @@ a:hover {
   align-items: center;
   min-height: 100vh;
   padding: 1rem;
+  background: var(--ui-bg);
 }
 
 .auth-card {
   width: 100%;
   max-width: 400px;
+  padding: 2rem;
   text-align: center;
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  box-shadow: var(--ui-shadow);
+}
+
+.auth-logo {
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 1rem;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ui-primary);
+  color: #fff;
 }
 
 .auth-card h1 {
-  margin-bottom: 0.5rem;
-  font-size: 2rem;
-  color: var(--text-primary);
+  margin-bottom: 0.35rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--ui-text);
 }
 
 .auth-card p {
-  color: var(--text-secondary);
-  margin-bottom: 2rem;
+  color: var(--ui-text-2);
+  margin-bottom: 1.75rem;
 }
 
 /* Navbar */

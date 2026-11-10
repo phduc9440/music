@@ -15,9 +15,9 @@ public enum ErrorCode {
     UNAUTHORIZED(1002, "You do not have permission", HttpStatus.FORBIDDEN),
     USER_EXISTED(1003, "User already existed", HttpStatus.BAD_REQUEST),
     USER_NOT_EXISTED(1004, "User not existed", HttpStatus.NOT_FOUND),
-    INVALID_CREDENTIALS(1005, "Invalid username or password", HttpStatus.UNAUTHORIZED),
+    INVALID_CREDENTIALS(1005, "Email hoặc mật khẩu không đúng", HttpStatus.UNAUTHORIZED),
     USERNAME_INVALID(1006, "Username must be at least {min} characters", HttpStatus.BAD_REQUEST),
-    PASSWORD_INVALID(1007, "Password must be at least {min} characters", HttpStatus.BAD_REQUEST),
+    PASSWORD_INVALID(1007, "Mật khẩu phải có ít nhất {min} ký tự", HttpStatus.BAD_REQUEST),
     EMPLOYEE_NOT_FOUND(1008, "Employee not found", HttpStatus.NOT_FOUND),
     INVALID_REQUEST(1009, "Invalid request", HttpStatus.BAD_REQUEST),
     TOO_MANY_REQUESTS(1010, "Too many requests. Please try again later.", HttpStatus.TOO_MANY_REQUESTS),
@@ -25,6 +25,13 @@ public enum ErrorCode {
     PASSWORD_SAME_AS_OLD(1012, "Mật khẩu mới phải khác mật khẩu hiện tại", HttpStatus.BAD_REQUEST),
     CANNOT_MODIFY_SELF(1013, "Quản trị viên không thể khóa hoặc hạ quyền chính mình", HttpStatus.BAD_REQUEST),
     ROLE_NOT_EXISTED(1015, "Vai trò không tồn tại", HttpStatus.BAD_REQUEST),
+    ACCOUNT_LOCKED(1016, "Tài khoản đã bị khóa", HttpStatus.FORBIDDEN),
+    OTP_INVALID(
+            1017,
+            "Mã OTP không đúng hoặc đã hết hạn. Nếu nhập sai nhiều lần, hãy yêu cầu mã mới.",
+            HttpStatus.BAD_REQUEST),
+    OTP_REQUEST_TOO_SOON(
+            1018, "Bạn vừa yêu cầu mã OTP, vui lòng chờ một lát rồi thử lại", HttpStatus.TOO_MANY_REQUESTS),
     AVATAR_INVALID(1014, "Ảnh đại diện phải là JPG hoặc PNG, tối đa 2MB", HttpStatus.BAD_REQUEST),
 
     // Score files & OMR (2xxx)
@@ -56,6 +63,9 @@ public enum ErrorCode {
     SCORE_COMPOSER_INVALID(2018, "Tên tác giả tối đa 255 ký tự", HttpStatus.BAD_REQUEST),
     SCORE_NOTES_INVALID(2019, "Ghi chú tối đa 5000 ký tự", HttpStatus.BAD_REQUEST),
     INVALID_FILTER(2020, "Giá trị bộ lọc không hợp lệ", HttpStatus.BAD_REQUEST),
+    SCORE_NOT_PUBLIC_FOR_OFFICIAL(2022, "Chỉ đưa vào kho score mẫu được bản nhạc đã công khai", HttpStatus.CONFLICT),
+    SCORE_OFFICIAL_LOCKED(2023, "Bản nhạc trong kho score mẫu chỉ ADMIN được xóa", HttpStatus.FORBIDDEN),
+    SCORE_NOT_PENDING_PUBLIC(2021, "Bản nhạc này không ở trạng thái chờ duyệt công khai", HttpStatus.CONFLICT),
     SCORE_BUSY(2201, "Bản nhạc đang được xử lý, vui lòng thử lại sau", HttpStatus.CONFLICT),
     TASK_LIMIT_EXCEEDED(
             2202,
@@ -65,10 +75,13 @@ public enum ErrorCode {
     // AI tasks (21xx)
     AI_TASK_NOT_EXISTED(2101, "Tác vụ AI không tồn tại", HttpStatus.NOT_FOUND),
     AI_TASK_NOT_CANCELLABLE(2102, "Tác vụ đã kết thúc nên không thể hủy", HttpStatus.CONFLICT),
+    AI_TASK_NOT_RETRYABLE(2104, "Chỉ chạy lại được tác vụ số hóa (OMR) đã lỗi hoặc bị hủy", HttpStatus.CONFLICT),
     AI_SERVICE_UNAVAILABLE(2103, "Dịch vụ nhận diện nhạc tạm thời không khả dụng", HttpStatus.SERVICE_UNAVAILABLE),
 
     // Tags (23xx)
     TAG_NOT_EXISTED(2301, "Thể loại không tồn tại", HttpStatus.NOT_FOUND),
+    TAG_NAME_INVALID(2303, "Tên thể loại là bắt buộc và tối đa 50 ký tự", HttpStatus.BAD_REQUEST),
+    TAG_DUPLICATED(2304, "Thể loại này đã tồn tại", HttpStatus.CONFLICT),
     TOO_MANY_TAGS(2302, "Mỗi bản nhạc tối đa 10 thể loại", HttpStatus.BAD_REQUEST),
 
     // Sharing & reviews (24xx)
@@ -85,6 +98,13 @@ public enum ErrorCode {
     REVIEW_COMMENT_INVALID(2411, "Bình luận tối đa 2000 ký tự", HttpStatus.BAD_REQUEST),
     REVIEW_EMPTY(2412, "Nhận xét cần có số sao hoặc bình luận", HttpStatus.BAD_REQUEST),
     REVIEW_NOT_EXISTED(2413, "Nhận xét không tồn tại", HttpStatus.NOT_FOUND),
+    // Playlists (26xx)
+    PLAYLIST_NOT_EXISTED(2601, "Playlist không tồn tại", HttpStatus.NOT_FOUND),
+    PLAYLIST_NAME_INVALID(2602, "Tên playlist là bắt buộc và tối đa 255 ký tự", HttpStatus.BAD_REQUEST),
+    PLAYLIST_DESCRIPTION_INVALID(2603, "Mô tả playlist tối đa 2000 ký tự", HttpStatus.BAD_REQUEST),
+    PLAYLIST_SCORE_DUPLICATED(2604, "Bản nhạc đã có trong playlist", HttpStatus.CONFLICT),
+    PLAYLIST_SCORE_NOT_IN_PLAYLIST(2605, "Bản nhạc không có trong playlist", HttpStatus.NOT_FOUND),
+    PLAYLIST_ORDER_INVALID(2606, "Danh sách thứ tự không khớp với các bài trong playlist", HttpStatus.BAD_REQUEST),
     NOTIFICATION_NOT_EXISTED(2501, "Thông báo không tồn tại", HttpStatus.NOT_FOUND),
 
     // Export 27xx
@@ -96,6 +116,13 @@ public enum ErrorCode {
             HttpStatus.TOO_MANY_REQUESTS),
     EXPORT_NOT_AVAILABLE(2704, "Tính năng xuất file chưa sẵn sàng trên máy chủ", HttpStatus.SERVICE_UNAVAILABLE),
     EXPORT_SOURCE_NOT_SUPPORTED(2705, "Bản nhạc không có nguồn phù hợp để chuyển đổi", HttpStatus.CONFLICT),
+
+    // Practice sessions 30xx
+    PRACTICE_SESSION_NOT_EXISTED(3001, "Phiên tập không tồn tại", HttpStatus.NOT_FOUND),
+    PRACTICE_SESSION_INVALID(3002, "Dữ liệu phiên tập không hợp lệ", HttpStatus.BAD_REQUEST),
+    PRACTICE_STATS_DAYS_INVALID(3005, "Số ngày thống kê phải từ 7 đến 90", HttpStatus.BAD_REQUEST),
+    PRACTICE_STATS_PERIOD_INVALID(3004, "Chu kỳ thống kê phải là DAY, WEEK hoặc MONTH", HttpStatus.BAD_REQUEST),
+    PRACTICE_STATS_RANGE_INVALID(3003, "Khoảng ngày thống kê không hợp lệ (tối đa 400 ngày)", HttpStatus.BAD_REQUEST),
 
     // Score versions 28xx
     SCORE_VERSION_NOT_EXISTED(2801, "Phiên bản bản nhạc không tồn tại hoặc đã bị xóa", HttpStatus.NOT_FOUND),

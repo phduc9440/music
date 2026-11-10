@@ -101,13 +101,16 @@ public class ScoreFileServiceImpl implements ScoreFileService {
     @Override
     @Transactional(readOnly = true)
     public boolean canEdit(Score score) {
-        if (SecurityUtils.isAdmin()) {
+        // SUPER_ADMIN sửa được mọi bản nhạc, kể cả của người khác
+        if (SecurityUtils.isSuperAdmin()) {
             return true;
         }
-        // Bản chính thức chỉ ADMIN được sửa
+        // Bản chính thức (kho score mẫu): chỉ ADMIN được sửa
         if (Boolean.TRUE.equals(score.getIsOfficial())) {
-            return false;
+            return SecurityUtils.isAdmin();
         }
+        // ADMIN thường không có quyền sửa nội dung bản của người khác (chỉ kiểm duyệt: xem, đổi công khai, xóa);
+        // vẫn sửa được bản của chính mình hoặc bản được chia sẻ quyền sửa như người dùng thường
         if (isOwner(score)) {
             return true;
         }
@@ -132,7 +135,9 @@ public class ScoreFileServiceImpl implements ScoreFileService {
 
     @Override
     public boolean canManageSharing(Score score) {
-        return SecurityUtils.isAdmin() || isOwner(score);
+        // Chia sẻ, duyệt yêu cầu truy cập: chủ sở hữu hoặc SUPER_ADMIN. ADMIN thường không chia sẻ bản của người khác
+        // (việc kiểm duyệt công khai của admin đi qua AdminScoreController/approve/reject, không qua hàm này)
+        return SecurityUtils.isSuperAdmin() || isOwner(score);
     }
 
     @Override

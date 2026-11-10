@@ -1,0 +1,66 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: music-be
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/music_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: root
+    password: your_db_password
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/init,classpath:db/seed
+    baseline-on-migrate: true
+    baseline-version: 0
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD:your_mail_app_password}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+jwt:
+  signerKey: ${JWT_SIGNER_KEY:change_me_to_a_long_random_hex_string}
+  valid-duration: ${JWT_VALID_DURATION:7}
+  refreshable-duration: ${JWT_REFRESHABLE_DURATION:24}
+
+google:
+  client-id: ${GOOGLE_CLIENT_ID:your_google_client_id}
+  ios-client-id: ${GOOGLE_IOS_CLIENT_ID:your_google_ios_client_id}
+  android-client-id: ${GOOGLE_ANDROID_CLIENT_ID:your_google_android_client_id}
+
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME:your_cloud_name}
+  api-key: ${CLOUDINARY_API_KEY:your_api_key}
+  api-secret: ${CLOUDINARY_API_SECRET:your_api_secret}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+  api-docs:
+    path: /v3/api-docs
+
+logging:
+  level:
+    org.springframework.security: INFO
+    root: INFO

@@ -1,0 +1,48 @@
+/* Riêng trang giám sát hệ thống; màu lấy từ token của khuôn mẫu admin (admin.css). */
+
+.sys-meter {
+  height: 6px;
+  margin-top: 0.6rem;
+  border-radius: 999px;
+  background: var(--adm-surface-hover);
+  overflow: hidden;
+}
+
+.sys-meter__bar {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.sys-meter__bar--ok {
+  background: #16a34a;
+}
+
+.sys-meter__bar--warn {
+  background: #f59e0b;
+}
+
+.sys-meter__bar--danger {
+  background: var(--adm-danger);
+}
+
+.sys-logger {
+  white-space: nowrap;
+  color: var(--adm-text-2);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: var(--adm-text-sm);
+}
+
+.sys-stack {
+  max-height: 280px;
+  margin: 0;
+  overflow: auto;
+  padding: 0.85rem 1rem;
+  border-radius: var(--adm-radius);
+  background: #0f172a;
+  color: #e2e8f0;
+  font-size: 12px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-all;
+}

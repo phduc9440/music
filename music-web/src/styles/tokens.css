@@ -1,0 +1,49 @@
+/*
+ * Token thiết kế dùng chung cho toàn ứng dụng (trang người dùng và trang quản trị).
+ * Đổi màu, chữ, bo góc ở đây là cả app đổi theo:
+ *   - admin.css map sang --adm-*      (khung và component quản trị)
+ *   - scores.css map sang --sc-*      (các trang bản nhạc của người dùng)
+ *   - index.css map sang biến cũ      (--primary-color, --text-primary...) cho phần còn lại
+ */
+:root {
+  /* nền và chữ */
+  --ui-bg: #f5f6f8;
+  --ui-surface: #ffffff;
+  --ui-surface-muted: #f8fafc;
+  --ui-surface-hover: #f1f5f9;
+  --ui-border: #e5e7eb;
+  --ui-border-strong: #d1d5db;
+  --ui-text: #0f172a;
+  --ui-text-2: #475569;
+  --ui-text-3: #94a3b8;
+
+  /* màu nhấn và trạng thái */
+  --ui-primary: #2563eb;
+  --ui-primary-hover: #1d4ed8;
+  --ui-primary-soft: #eff6ff;
+  --ui-primary-ring: rgba(37, 99, 235, 0.18);
+  --ui-success: #15803d;
+  --ui-success-soft: #ecfdf3;
+  --ui-warning: #b45309;
+  --ui-warning-soft: #fffbeb;
+  --ui-danger: #dc2626;
+  --ui-danger-hover: #b91c1c;
+  --ui-danger-soft: #fef2f2;
+  --ui-violet: #6d28d9;
+  --ui-violet-soft: #f5f3ff;
+
+  /* kích thước */
+  --ui-radius-lg: 12px;
+  --ui-radius: 8px;
+  --ui-radius-sm: 6px;
+  --ui-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --ui-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), 0 4px 12px rgba(15, 23, 42, 0.04);
+  --ui-shadow-pop: 0 10px 30px rgba(15, 23, 42, 0.14);
+  --ui-header-h: 60px;
+
+  /* chữ */
+  --ui-font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --ui-text-xs: 0.75rem;
+  --ui-text-sm: 0.8125rem;
+  --ui-text-md: 0.875rem;
+}

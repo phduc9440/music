@@ -89,6 +89,7 @@ export interface ScoreSummary {
   processingStatus: ProcessingStatus;
   sourceType?: ScoreSource | null;
   visibility: Visibility;
+  isOfficial?: boolean | null;
   measureCount?: number | null;
   tags?: Tag[];
   /** Chỉ có trong danh sách "Được chia sẻ với tôi": email chủ sở hữu. */
@@ -131,7 +132,6 @@ export interface AiTaskInfo {
 export interface ScoreDetail extends ScoreSummary {
   studyNotes?: string | null;
   rejectReason?: string | null;
-  isOfficial?: boolean | null;
   keySignature?: string | null;
   timeSignature?: string | null;
   tempoBpm?: number | null;
@@ -251,7 +251,8 @@ export type NotificationType =
   | 'PUBLISH_REQUESTED'
   | 'PUBLISH_APPROVED'
   | 'PUBLISH_REJECTED'
-  | 'NEW_REVIEW';
+  | 'NEW_REVIEW'
+  | 'ANNOUNCEMENT';
 
 export interface AppNotification {
   id: string;
@@ -261,3 +262,199 @@ export interface AppNotification {
   read: boolean;
   createdAt: string;
 }
+
+// Playlist luyện tập, BE: PlaylistResponse
+export interface Playlist {
+  id: string;
+  name: string;
+  description?: string | null;
+  scoreCount: number;
+}
+
+// Một bài trong playlist, BE: PlaylistItemResponse (position bắt đầu từ 1)
+export interface PlaylistItem {
+  scoreId: string;
+  title: string;
+  composer?: string | null;
+  difficulty?: Difficulty | null;
+  measureCount?: number | null;
+  position: number;
+}
+
+// Phiên tập, BE: PracticeSessionResponse. mode: 1 = FREE, 2 = LOOP, 3 = TEST. errorLog chỉ có ở chi tiết.
+export interface PracticeSessionRecord {
+  id: string;
+  scoreId: string;
+  scoreTitle: string;
+  mode: 1 | 2 | 3;
+  tempoPercent?: number | null;
+  loopStartMeasure?: number | null;
+  loopEndMeasure?: number | null;
+  startedAt?: string | null;
+  endedAt?: string | null;
+  durationSeconds?: number | null;
+  totalNotes?: number | null;
+  perfectCount?: number | null;
+  earlyCount?: number | null;
+  lateCount?: number | null;
+  wrongPitchCount?: number | null;
+  missedCount?: number | null;
+  accuracyPct?: number | null;
+  timingAccuracyPct?: number | null;
+  scorePoints?: number | null;
+  isCompleted?: boolean | null;
+  errorLog?: unknown[] | null;
+}
+
+// Heatmap/streak luyện tập, BE: PracticeHeatmapDayResponse / PracticeStreakResponse (date dạng yyyy-MM-dd)
+export interface PracticeHeatmapDay {
+  date: string;
+  sessionCount: number;
+  totalSeconds: number;
+}
+
+export interface PracticeStreak {
+  currentStreak: number;
+  longestStreak: number;
+  lastPracticeDate?: string | null;
+  practicedToday: boolean;
+}
+
+// Thời gian luyện tập theo chu kỳ, BE: PracticeTimeBucketResponse (start/end dạng yyyy-MM-dd)
+export type PracticePeriod = 'DAY' | 'WEEK' | 'MONTH';
+
+export interface PracticeTimeBucket {
+  start: string;
+  end: string;
+  totalSeconds: number;
+  sessionCount: number;
+}
+
+// Điểm kỹ năng 0-100 cho biểu đồ radar, BE: PracticeSkillsResponse (sessionCount = 0 là chưa có dữ liệu)
+export interface PracticeSkills {
+  days: number;
+  sessionCount: number;
+  pitchAccuracy: number;
+  timing: number;
+  speed: number;
+  diligence: number;
+}
+
+// Thể loại kèm số bản nhạc đang dùng, BE: AdminTagResponse
+export interface AdminTag {
+  id: string;
+  name: string;
+  slug: string;
+  scoreCount: number;
+}
+
+// Giám sát hệ thống (admin), BE: SystemMetricsResponse / ErrorLogResponse. Số null = hệ điều hành không cung cấp.
+export interface SystemMetrics {
+  timestamp: string;
+  startTime: string;
+  uptimeSeconds: number;
+  heapUsedBytes: number;
+  heapMaxBytes: number;
+  processCpuPercent?: number | null;
+  systemCpuPercent?: number | null;
+  loadAverage?: number | null;
+  availableProcessors: number;
+  physicalMemoryTotalBytes?: number | null;
+  physicalMemoryFreeBytes?: number | null;
+  threadCount: number;
+  peakThreadCount: number;
+  diskTotalBytes?: number | null;
+  diskUsableBytes?: number | null;
+  javaVersion: string;
+  errorCountSinceStart: number;
+}
+
+export interface ErrorLogEntry {
+  id: number;
+  timestamp: string;
+  level: string;
+  logger: string;
+  thread: string;
+  message: string;
+  exceptionClass?: string | null;
+  stackTrace?: string | null;
+}
+
+// Thao tác hàng loạt trên bản nhạc, BE: AdminScoreBulkResponse
+export interface BulkResult {
+  success: number;
+  failures: { id: string; message: string }[];
+}
+
+// Gửi thông báo chung, BE: AnnouncementRequest / AnnouncementResponse
+export type AnnouncementAudience = 'ALL' | 'USERS' | 'ADMINS' | 'SELECTED';
+
+// Thống kê dashboard admin, BE: AdminDashboardResponse
+export interface DashboardTotals {
+  members: number;
+  activeMembers: number;
+  lockedMembers: number;
+  admins: number;
+  scores: number;
+  publicScores: number;
+  pendingScores: number;
+  officialScores: number;
+  reviews: number;
+  averageRating: number | null;
+  practiceSessions: number;
+  aiTasksRunning: number;
+  aiTasksFailed: number;
+}
+
+export interface DashboardKeyCount {
+  key: string;
+  count: number;
+}
+
+export interface AdminDashboard {
+  days: number;
+  totals: DashboardTotals;
+  scoresByDay: { date: string; count: number }[];
+  membersByDay: { date: string; count: number }[];
+  membersWithoutDate: number;
+  practiceByDay: { date: string; sessions: number; minutes: number }[];
+  scoresByVisibility: DashboardKeyCount[];
+  scoresBySource: DashboardKeyCount[];
+  scoresByDifficulty: DashboardKeyCount[];
+  aiTasksByStatus: DashboardKeyCount[];
+  topTags: DashboardKeyCount[];
+  topViewed: { id: string; title: string; ownerEmail: string | null; viewCount: number }[];
+}
+
+// Giám sát tác vụ AI của admin, BE: AdminAiTaskResponse
+export interface AdminAiTask {
+  id: string;
+  taskType: string;
+  status: TaskStatus;
+  step?: string | null;
+  progress?: number | null;
+  errorMessage?: string | null;
+  retryCount?: number | null;
+  scoreId?: string | null;
+  scoreTitle?: string | null;
+  memberEmail?: string | null;
+  createdAt?: string;
+  startedAt?: string | null;
+  finishedAt?: string | null;
+  waitSeconds?: number | null;
+  runSeconds?: number | null;
+  canCancel: boolean;
+  canRetry: boolean;
+  /** Chỉ có ở API chi tiết. */
+  inputData?: unknown;
+  resultData?: unknown;
+}
+
+export interface AiTaskSummary {
+  pending: number;
+  processing: number;
+  failedLast24h: number;
+  completedLast24h: number;
+  averageRunSeconds: { taskType: string; seconds: number; count: number }[];
+}
+

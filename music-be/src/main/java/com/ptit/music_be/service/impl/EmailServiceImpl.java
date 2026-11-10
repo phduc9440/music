@@ -7,6 +7,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.web.util.HtmlUtils;
 
 import com.ptit.music_be.dto.request.SendEmailRequest;
 import com.ptit.music_be.service.EmailService;
@@ -24,60 +25,85 @@ public class EmailServiceImpl implements EmailService {
 
     JavaMailSender javaMailSender;
 
-    @Override
-    @Async
-    public void sendWelcomeEmail(SendEmailRequest request) {
+    /** Khung HTML chung cho mọi email: tiêu đề, nội dung, chữ ký. Escape các giá trị người dùng nhập trước khi ghép. */
+    private static String layout(String heading, String body) {
+        return "<div style=\"font-family:Arial,Helvetica,sans-serif;color:#0f172a;line-height:1.6;max-width:560px\">"
+                + "<h2 style=\"margin:0 0 12px\">" + heading + "</h2>"
+                + body
+                + "<p style=\"margin-top:24px;color:#475569\">Trân trọng,<br><strong>Đội ngũ Music App</strong></p>"
+                + "</div>";
+    }
+
+    private static String escape(String value) {
+        return HtmlUtils.htmlEscape(value == null ? "" : value);
+    }
+
+    private void send(String to, String subject, String html, String kind) {
         try {
             MimeMessage message = javaMailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-
-            helper.setTo(request.getTo());
-            helper.setSubject("Welcome to Music App! 🎵");
-
-            String htmlContent = "<h2>Hello " + request.getFullName() + ",</h2>"
-                    + "<p>Thank you for registering an account at Music App.</p>"
-                    + "<p>We hope you enjoy your time with us!</p>"
-                    + "<br>"
-                    + "<p>Best regards,</p>"
-                    + "<p><strong>The Music App Team</strong></p>";
-
-            helper.setText(htmlContent, true);
-
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(html, true);
             javaMailSender.send(message);
-            log.info("Welcome email sent successfully to {}", request.getTo());
-
-        } catch (MessagingException e) {
-            log.error("Failed to send welcome email to {}", request.getTo(), e);
+            log.info("{} email sent to {}", kind, to);
+        } catch (MessagingException | RuntimeException e) {
+            log.error("Failed to send {} email to {}", kind, to, e);
         }
     }
 
     @Override
     @Async
+    public void sendWelcomeEmail(SendEmailRequest request) {
+        String name = escape(request.getFullName());
+        send(
+                request.getTo(),
+                "Chào mừng bạn đến với Music App",
+                layout(
+                        "Xin chào " + name + ",",
+                        "<p>Cảm ơn bạn đã đăng ký tài khoản Music App.</p>"
+                                + "<p>Chúc bạn có những giờ luyện tập thật vui!</p>"),
+                "Welcome");
+    }
+
+    @Override
+    @Async
     public void sendForgotPasswordEmail(String to, String otp) {
-        try {
-            MimeMessage message = javaMailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+        send(
+                to,
+                "Mã đặt lại mật khẩu Music App",
+                layout(
+                        "Đặt lại mật khẩu",
+                        "<p>Bạn vừa yêu cầu đặt lại mật khẩu cho tài khoản Music App.</p>"
+                                + "<p>Mã xác nhận (OTP) của bạn:</p>"
+                                + "<p style=\"font-size:28px;font-weight:700;letter-spacing:6px;background:#f1f5f9;"
+                                + "display:inline-block;padding:10px 18px;border-radius:8px;margin:4px 0\">"
+                                + escape(otp) + "</p>"
+                                + "<p>Mã có hiệu lực trong <strong>5 phút</strong> và chỉ dùng được một lần. "
+                                + "Không chia sẻ mã này với bất kỳ ai, kể cả người tự xưng là nhân viên Music App.</p>"
+                                + "<p style=\"color:#475569\">Nếu bạn không yêu cầu, hãy bỏ qua email này. Mật khẩu "
+                                + "của bạn vẫn giữ nguyên.</p>"),
+                "Forgot password");
+    }
 
-            helper.setTo(to);
-            helper.setSubject("Reset Your Password - Music App 🎵");
-
-            String htmlContent = "<h2>Password Reset Request</h2>"
-                    + "<p>You recently requested to reset your password for your Music App account.</p>"
-                    + "<p>Here is your One-Time Password (OTP):</p>"
-                    + "<h3 style=\"background-color: #f4f4f4; padding: 10px; display: inline-block; letter-spacing: 2px;\">"
-                    + otp + "</h3>" + "<p>This OTP will expire in 5 minutes.</p>"
-                    + "<p>If you did not request a password reset, please ignore this email or contact support if you have questions.</p>"
-                    + "<br>"
-                    + "<p>Best regards,</p>"
-                    + "<p><strong>The Music App Team</strong></p>";
-
-            helper.setText(htmlContent, true);
-
-            javaMailSender.send(message);
-            log.info("Forgot password email sent successfully to {}", to);
-
-        } catch (MessagingException e) {
-            log.error("Failed to send forgot password email to {}", to, e);
-        }
+    @Override
+    @Async
+    public void sendPasswordChangedEmail(String to, String fullName, boolean viaReset) {
+        String name = escape(fullName == null || fullName.isBlank() ? to : fullName);
+        String time =
+                java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy"));
+        send(
+                to,
+                "Mật khẩu Music App của bạn vừa được thay đổi",
+                layout(
+                        "Mật khẩu đã được thay đổi",
+                        "<p>Xin chào " + name + ",</p>"
+                                + "<p>Mật khẩu tài khoản Music App của bạn vừa được "
+                                + (viaReset ? "đặt lại bằng mã OTP" : "đổi trong phần cài đặt tài khoản")
+                                + " lúc <strong>" + time
+                                + "</strong>. Các thiết bị đang đăng nhập khác đã bị đăng xuất.</p>"
+                                + "<p style=\"color:#b91c1c\"><strong>Nếu không phải bạn thực hiện</strong>, hãy dùng "
+                                + "chức năng “Quên mật khẩu” để đặt lại ngay và liên hệ quản trị viên.</p>"),
+                "Password changed");
     }
 }
