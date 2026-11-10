@@ -3,6 +3,8 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import ChangePasswordModal from '../ChangePasswordModal';
 import NotificationBell from '../NotificationBell';
+import SiteFooter from '../layout/SiteFooter';
+import type { FooterColumn } from '../layout/SiteFooter';
 import ThemeToggle from '../../theme/ThemeToggle';
 import { adoptServerTheme } from '../../theme/theme';
 import { authApi, scoreApi, userApi } from '../../services';
@@ -54,6 +56,22 @@ const MENU: { section: string; items: MenuItem[] }[] = [
 ];
 
 const ALL_ITEMS = MENU.flatMap((g) => g.items);
+
+/** Chân trang khu quản trị: các nhóm menu bên trái, thêm lối về giao diện người dùng. */
+const FOOTER_COLUMNS: FooterColumn[] = [
+  ...MENU.filter((g) => g.items.length > 1).map((g) => ({
+    title: g.section,
+    links: g.items.map((i) => ({ label: i.label, to: i.to })),
+  })),
+  {
+    title: 'Khác',
+    links: [
+      { label: 'Bảng điều khiển', to: '/admin' },
+      { label: 'Giao diện người dùng', to: '/' },
+      { label: 'Hồ sơ của tôi', to: '/profile' },
+    ],
+  },
+];
 
 /** Tên trang đang mở (mục menu khớp dài nhất) để hiện trên header. */
 const currentTitle = (pathname: string) =>
@@ -161,12 +179,7 @@ export default function AdminLayout() {
             {menuOpen && (
               <div className="adm-usermenu__panel" role="menu">
                 {admin?.email && <div className="adm-usermenu__email">{admin.email}</div>}
-                <button
-                  type="button"
-                  role="menuitem"
-                  className="adm-usermenu__item"
-                  onClick={() => navigate('/scores')}
-                >
+                <button type="button" role="menuitem" className="adm-usermenu__item" onClick={() => navigate('/')}>
                   <Icon name="home" size={16} />
                   Giao diện người dùng
                 </button>
@@ -228,7 +241,7 @@ export default function AdminLayout() {
               </div>
             ))}
           </nav>
-          <button type="button" className="adm-menu__item" onClick={() => navigate('/scores')}>
+          <button type="button" className="adm-menu__item" onClick={() => navigate('/')}>
             <span className="adm-menu__icon">
               <Icon name="home" />
             </span>
@@ -243,6 +256,12 @@ export default function AdminLayout() {
           </div>
         </main>
       </div>
+
+      <SiteFooter
+        variant="app"
+        columns={FOOTER_COLUMNS}
+        tip="Khu quản trị: kiểm duyệt nội dung công khai, kho score mẫu, thành viên và hệ thống."
+      />
 
       <ChangePasswordModal isOpen={passwordOpen} onClose={() => setPasswordOpen(false)} />
     </div>

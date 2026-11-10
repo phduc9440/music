@@ -11,7 +11,8 @@
   margin: 0 auto;
   padding: 3rem 16px 2rem;
   display: grid;
-  grid-template-columns: minmax(0, 1.6fr) repeat(3, minmax(0, 1fr));
+  /* --sf-cols: số cột liên kết, do SiteFooter đặt */
+  grid-template-columns: minmax(0, 1.6fr) repeat(var(--sf-cols, 3), minmax(0, 1fr));
   gap: 2rem;
 }
 
@@ -113,14 +114,14 @@
   }
 }
 
-/* ---- bản cho trang đã đăng nhập: gọn hơn, 5 cột (logo + 3 nhóm menu + tài khoản) ---- */
+/* ---- bản cho trang đã đăng nhập và khu quản trị: gọn hơn ---- */
 .site-footer--app {
   margin-top: 3rem;
 }
 
 .site-footer--app .site-footer__inner {
   padding: 2rem 16px 1.25rem;
-  grid-template-columns: minmax(0, 1.4fr) repeat(4, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1.4fr) repeat(var(--sf-cols, 4), minmax(0, 1fr));
   gap: 1.5rem;
 }
 

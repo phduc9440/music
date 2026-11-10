@@ -254,7 +254,8 @@
 .adm-body {
   flex: 1;
   display: flex;
-  min-height: 0;
+  /* cao ít nhất bằng màn hình: chân trang chỉ hiện khi cuộn xuống cuối */
+  min-height: calc(100vh - var(--adm-header-h));
 }
 
 .adm-sidebar {
@@ -377,6 +378,11 @@
 
 .adm-backdrop {
   display: none;
+}
+
+/* chân trang (SiteFooter) đứng ngay dưới khung, không cần khoảng cách thêm */
+.adm-shell > .site-footer {
+  margin-top: 0;
 }
 
 /* ================================================================== page header */
