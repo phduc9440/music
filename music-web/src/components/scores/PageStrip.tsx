@@ -10,7 +10,9 @@ interface Props {
 }
 
 /** Dải ảnh thu nhỏ các trang đã xử lý; bấm vào một trang để so sánh với ảnh gốc. */
-export default function PageStrip({ pages, total, onSelect }: Props) {
+export default function PageStrip({ pages: rawPages, total, onSelect }: Props) {
+  // Backend không đảm bảo thứ tự trả về: sắp theo số trang
+  const pages = [...rawPages].sort((a, b) => (a.pageNumber ?? 0) - (b.pageNumber ?? 0));
   const waiting = Math.max(0, total - pages.length);
   return (
     <ul className="sp-strip">
