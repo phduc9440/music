@@ -27,6 +27,7 @@ import AdminScores from '../pages/admin/AdminScores';
 import AdminSystem from '../pages/admin/AdminSystem';
 import AdminTags from '../pages/admin/AdminTags';
 import ExploreScores from '../pages/scores/library/ExploreScores';
+import OfficialRequests from '../pages/scores/library/OfficialRequests';
 import OfficialScores from '../pages/scores/library/OfficialScores';
 import PracticeHistory from '../pages/scores/practice/PracticeHistory';
 import PracticeStats from '../pages/scores/practice/PracticeStats';
@@ -52,6 +53,7 @@ const AppRoutes = () => {
         <Route path="/scores/import" element={<ScoreImport />} />
         <Route path="/explore" element={<ExploreScores />} />
         <Route path="/scores/official" element={<OfficialScores />} />
+        <Route path="/scores/official-requests" element={<OfficialRequests />} />
         <Route path="/scores/shared" element={<SharedScores />} />
         <Route path="/scores/trash" element={<ScoreTrash />} />
         <Route path="/scores/:id" element={<ScoreDetail />} />

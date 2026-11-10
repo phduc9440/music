@@ -3,6 +3,7 @@ export * from './authApi';
 export * from './userApi';
 export * from './adminApi';
 export * from './scoreApi';
+export * from './officialRequestApi';
 export * from './omrApi';
 export * from './fileApi';
 export * from './importApi';

@@ -15,6 +15,7 @@ import VisibilityBadge from '../common/VisibilityBadge';
 import MidiConvertButton from '../../export/MidiConvertButton';
 import { isTaskFinished } from '../../export/exportUtils';
 import { Icon } from '../../ui';
+import PublishToggle from './PublishToggle';
 
 interface Props {
   score: ScoreDetail;
@@ -22,6 +23,8 @@ interface Props {
   onDelete: () => void;
   onShare: () => void;
   onRequestEdit: () => void;
+  /** Gọi khi chủ sở hữu đổi chế độ hiển thị (công khai, hủy yêu cầu, về riêng tư) với bản nhạc đã cập nhật. */
+  onVisibilityChanged: (score: ScoreDetail) => void;
   /** Gọi khi bản nhạc nhập từ MIDI chuyển xong thành MusicXML để trang tải lại. */
   onConverted?: () => void;
 }
@@ -184,7 +187,14 @@ export function ScorePreview({ score }: { score: ScoreDetail }) {
 }
 
 /** Cột phải: số liệu nổi bật, thông số, ghi chú luyện tập và các thao tác quản lý. */
-export function ScoreSidebar({ score, onEdit, onDelete, onShare, onRequestEdit }: Omit<Props, 'onConverted'>) {
+export function ScoreSidebar({
+  score,
+  onEdit,
+  onDelete,
+  onShare,
+  onRequestEdit,
+  onVisibilityChanged,
+}: Omit<Props, 'onConverted'>) {
   const base = useScoreBase();
   const highlights: [string, string][] = [
     ['Ô nhịp', score.measureCount?.toString() ?? '—'],
@@ -214,7 +224,11 @@ export function ScoreSidebar({ score, onEdit, onDelete, onShare, onRequestEdit }
     ],
   ];
   const canRequestEdit = !score.canEdit && score.accessLevel !== 'OWNER' && !base.startsWith('/admin');
-  const hasManage = score.canManageSharing || score.canEdit || canRequestEdit || score.canDelete;
+  // Chỉ chủ sở hữu đổi được chế độ hiển thị; admin kiểm duyệt có nút riêng ở trang quản trị. Bản trong kho mẫu do
+  // hệ thống quản lý nên không có nút này.
+  const canChangeVisibility =
+    score.canManageSharing && score.accessLevel === 'OWNER' && !base.startsWith('/admin') && !score.isOfficial;
+  const hasManage = score.canManageSharing || score.canEdit || canRequestEdit || score.canDelete || canChangeVisibility;
 
   return (
     <aside className="sd-side">
@@ -255,6 +269,7 @@ export function ScoreSidebar({ score, onEdit, onDelete, onShare, onRequestEdit }
                 Chia sẻ
               </button>
             )}
+            {canChangeVisibility && <PublishToggle score={score} onChanged={onVisibilityChanged} />}
             {canRequestEdit && (
               <button type="button" className="sd-manage__item" onClick={onRequestEdit}>
                 <Icon name="key" size={16} />

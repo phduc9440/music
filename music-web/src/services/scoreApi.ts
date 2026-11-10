@@ -32,7 +32,6 @@ export const scoreApi = {
   // ADMIN: bản nhạc công khai chưa nằm trong kho, để chọn đưa vào
   officialCandidates: (params?: { page?: number; size?: number; keyword?: string }) =>
     apiClient.get<ApiResponse<PageResult<ScoreSummary>>>('/scores/official/candidates', { params }),
-  markOfficial: (id: string) => apiClient.put<ApiResponse<ScoreDetail>>(`/scores/${id}/official`),
   unmarkOfficial: (id: string) => apiClient.delete<ApiResponse<ScoreDetail>>(`/scores/${id}/official`),
   detail: (id: string) => apiClient.get<ApiResponse<ScoreDetail>>(`/scores/${id}`),
   update: (id: string, data: ScoreUpdateRequest) => apiClient.patch<ApiResponse<ScoreDetail>>(`/scores/${id}`, data),

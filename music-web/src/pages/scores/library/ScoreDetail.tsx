@@ -192,6 +192,7 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
             onDelete={() => setDeleting(true)}
             onShare={() => setSharing(true)}
             onRequestEdit={() => setRequestingEdit(true)}
+            onVisibilityChanged={(updated) => setState({ phase: 'ready', score: updated })}
           />
         </div>
       </main>

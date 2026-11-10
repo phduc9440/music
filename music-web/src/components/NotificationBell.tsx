@@ -76,6 +76,9 @@ export default function NotificationBell() {
     if (n.type === 'PUBLISH_REQUESTED') navigate('/admin/pending-scores');
     // Bản nhạc đã vào thùng rác nên trang chi tiết không mở được: đưa người dùng tới thùng rác để khôi phục
     else if (n.type === 'SCORE_TRASHED_BY_ADMIN') navigate('/scores/trash');
+    // Lời xin vào kho mẫu: chủ trả lời ở trang riêng; kết quả gửi tới admin thì mở tab lời xin
+    else if (n.type === 'OFFICIAL_REQUESTED') navigate('/scores/official-requests');
+    else if (n.type === 'OFFICIAL_ACCEPTED' || n.type === 'OFFICIAL_DECLINED') navigate('/admin/official-scores');
     else if (n.scoreId) navigate(`/scores/${n.scoreId}`);
   };
 

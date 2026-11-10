@@ -59,6 +59,14 @@ public class Score {
     @Column(name = "is_official")
     Boolean isOfficial;
 
+    /** Với bản trong kho mẫu: id bản gốc của người dùng mà nó được sao chép từ. */
+    @Column(name = "original_score_id", length = 36)
+    String originalScoreId;
+
+    /** Với bản trong kho mẫu: tên người phối (chủ bản gốc), để ghi nhận tác giả bản phối. */
+    @Column(name = "arranger_name")
+    String arrangerName;
+
     @Column(name = "reject_reason")
     String rejectReason;
 
