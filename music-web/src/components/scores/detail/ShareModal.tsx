@@ -79,7 +79,7 @@ export default function ShareModal({ scoreId, onClose }: Props) {
         <>
           <section>
             <p className="sc-upload__hint">
-              {VISIBILITY_HINTS[sharing.visibility]} Đổi chế độ hiển thị trong mục “Sửa thông tin”.
+              {VISIBILITY_HINTS[sharing.visibility]} Đổi chế độ hiển thị bằng nút cạnh nhãn quyền riêng tư ở đầu trang.
             </p>
           </section>
 

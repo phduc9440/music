@@ -36,7 +36,11 @@ const hasMusicXml = (score: ScoreDetail) => score.files.some((f) => f.fileType =
  * Đầu trang chi tiết: nhãn trạng thái, tiêu đề, dòng phụ, ba thao tác chính (mở, phát, tải xuống) và các thông báo
  * (đang số hóa, xử lý lỗi, bị từ chối công khai).
  */
-export default function ScoreHero({ score, onConverted }: Pick<Props, 'score' | 'onConverted'>) {
+export default function ScoreHero({
+  score,
+  onConverted,
+  onVisibilityChanged,
+}: Pick<Props, 'score' | 'onConverted' | 'onVisibilityChanged'>) {
   const base = useScoreBase();
   const ready = hasMusicXml(score);
   // Bản nhạc nhập từ MIDI chưa có MusicXML: cho chuyển đổi để mở được trình chỉnh sửa và trình phát
@@ -56,6 +60,11 @@ export default function ScoreHero({ score, onConverted }: Pick<Props, 'score' | 
     : score.rejectReason;
   const processing = score.processingStatus === 'PENDING' || score.processingStatus === 'PROCESSING';
 
+  // Chỉ chủ sở hữu đổi được chế độ hiển thị; admin kiểm duyệt có nút riêng ở trang quản trị. Bản trong kho mẫu do
+  // hệ thống quản lý nên không có nút này.
+  const canChangeVisibility =
+    score.canManageSharing && score.accessLevel === 'OWNER' && !base.startsWith('/admin') && !score.isOfficial;
+
   const meta = [
     score.composer || 'Chưa rõ tác giả',
     score.ownerEmail ? `Chủ sở hữu: ${score.ownerEmail}` : null,
@@ -69,6 +78,7 @@ export default function ScoreHero({ score, onConverted }: Pick<Props, 'score' | 
           <div className="sd-badges">
             <StatusBadge status={score.processingStatus} />
             <VisibilityBadge value={score.visibility} />
+            {canChangeVisibility && <PublishToggle score={score} onChanged={onVisibilityChanged} />}
             {score.isOfficial && <span className="sc-chip sc-chip--accent">Kho score mẫu</span>}
             {score.accessLevel && score.accessLevel !== 'OWNER' && (
               <span className="sc-chip sc-chip--accent">Bạn là: {ACCESS_LEVEL_LABELS[score.accessLevel]}</span>
@@ -193,8 +203,7 @@ export function ScoreSidebar({
   onDelete,
   onShare,
   onRequestEdit,
-  onVisibilityChanged,
-}: Omit<Props, 'onConverted'>) {
+}: Omit<Props, 'onConverted' | 'onVisibilityChanged'>) {
   const base = useScoreBase();
   const highlights: [string, string][] = [
     ['Ô nhịp', score.measureCount?.toString() ?? '—'],
@@ -224,11 +233,7 @@ export function ScoreSidebar({
     ],
   ];
   const canRequestEdit = !score.canEdit && score.accessLevel !== 'OWNER' && !base.startsWith('/admin');
-  // Chỉ chủ sở hữu đổi được chế độ hiển thị; admin kiểm duyệt có nút riêng ở trang quản trị. Bản trong kho mẫu do
-  // hệ thống quản lý nên không có nút này.
-  const canChangeVisibility =
-    score.canManageSharing && score.accessLevel === 'OWNER' && !base.startsWith('/admin') && !score.isOfficial;
-  const hasManage = score.canManageSharing || score.canEdit || canRequestEdit || score.canDelete || canChangeVisibility;
+  const hasManage = score.canManageSharing || score.canEdit || canRequestEdit || score.canDelete;
 
   return (
     <aside className="sd-side">
@@ -269,7 +274,6 @@ export function ScoreSidebar({
                 Chia sẻ
               </button>
             )}
-            {canChangeVisibility && <PublishToggle score={score} onChanged={onVisibilityChanged} />}
             {canRequestEdit && (
               <button type="button" className="sd-manage__item" onClick={onRequestEdit}>
                 <Icon name="key" size={16} />

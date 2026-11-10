@@ -56,7 +56,7 @@ const ACTIONS: Record<
   },
 };
 
-/** Nút trong mục Quản lý của chủ sở hữu: xin công khai, hủy yêu cầu đang chờ, hoặc chuyển bản đã công khai về riêng tư. */
+/** Nút cạnh nhãn quyền riêng tư ở đầu trang chi tiết: xin công khai, hủy yêu cầu đang chờ, hoặc chuyển về riêng tư. */
 export default function PublishToggle({ score, onChanged }: Props) {
   const { confirm } = useDialog();
   const [busy, setBusy] = useState(false);
@@ -83,8 +83,8 @@ export default function PublishToggle({ score, onChanged }: Props) {
   };
 
   return (
-    <button type="button" className="sd-manage__item" disabled={busy} onClick={run}>
-      <Icon name={action.icon} size={16} />
+    <button type="button" className="sc-btn sc-btn--sm" disabled={busy} onClick={run}>
+      <Icon name={action.icon} size={14} />
       {action.label}
     </button>
   );
