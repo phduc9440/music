@@ -114,7 +114,10 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
 
   const entries = useMemo<Entry[]>(() => {
     const matching = folded ? commands.filter((c) => fold(`${c.label} ${c.hint ?? ''}`).includes(folded)) : commands;
-    const open = (s: ScoreSummary) => go(getScorePath(s.id, s.processingStatus));
+    const open = (s: ScoreSummary, from: string) => {
+      onClose();
+      navigate(getScorePath(s.id, s.processingStatus), { state: { from } });
+    };
     // Chỉ dùng kết quả tìm khi đủ ký tự; ngắn hơn thì bỏ kết quả cũ
     const ownResults = trimmed.length >= MIN_QUERY ? mine : [];
     const ownIds = new Set(ownResults.map((s) => s.id));
@@ -126,7 +129,7 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
         label: s.title,
         hint: s.composer ?? undefined,
         icon: 'music',
-        run: () => open(s),
+        run: () => open(s, '/scores'),
       })),
       ...publicResults.map<Entry>((s) => ({
         id: `public-${s.id}`,
@@ -134,7 +137,7 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
         label: s.title,
         hint: s.composer ?? undefined,
         icon: 'globe',
-        run: () => open(s),
+        run: () => open(s, '/explore'),
       })),
       ...matching,
     ];

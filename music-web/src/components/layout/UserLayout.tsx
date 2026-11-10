@@ -12,7 +12,7 @@ import { authApi, userApi } from '../../services';
 import { AuthProvider } from '../../types';
 import type { Member } from '../../types';
 import { isAdminMember, roleLabel } from '../../utils/auth';
-import { CREATE_SCORE_PATH, NAV_GROUPS } from './nav';
+import { CREATE_SCORE_PATH, NAV_GROUPS, navContextPath } from './nav';
 import './user-layout.css';
 
 /**
@@ -21,7 +21,9 @@ import './user-layout.css';
  */
 export default function UserLayout() {
   const navigate = useNavigate();
-  const { pathname } = useLocation();
+  const { pathname, state } = useLocation();
+  // Bản nhạc mở từ Khám phá, Kho score mẫu... vẫn tô sáng mục đó thay vì nhảy về Thư viện
+  const navPath = navContextPath(pathname, state);
   const [me, setMe] = useState<Member | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false); // menu điều hướng trên màn hình nhỏ
@@ -100,7 +102,7 @@ export default function UserLayout() {
 
           <nav className={`app-nav${navOpen ? ' app-nav--open' : ''}`} aria-label="Điều hướng chính">
             {NAV_GROUPS.map((group) => (
-              <NavDropdown key={group.id} group={group} pathname={pathname} onNavigate={() => setNavOpen(false)} />
+              <NavDropdown key={group.id} group={group} pathname={navPath} onNavigate={() => setNavOpen(false)} />
             ))}
           </nav>
 
@@ -189,7 +191,7 @@ export default function UserLayout() {
         <Outlet />
       </main>
 
-      <MobileTabBar />
+      <MobileTabBar activePath={navPath} />
       {searchOpen && <CommandPalette onClose={() => setSearchOpen(false)} />}
       <ChangePasswordModal isOpen={passwordOpen} onClose={() => setPasswordOpen(false)} />
     </div>

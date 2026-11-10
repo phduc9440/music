@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import Modal from '../../../components/scores/common/Modal';
 import { playlistApi, scoreApi } from '../../../services';
@@ -12,6 +12,7 @@ import '../../../components/scores/scores.css';
 export default function PlaylistDetail() {
   const { id = '' } = useParams();
   const navigate = useNavigate();
+  const { pathname } = useLocation(); // để trang chi tiết bản nhạc quay lại đúng playlist này
   const [playlist, setPlaylist] = useState<Playlist | null>(null);
   const [items, setItems] = useState<PlaylistItem[] | null>(null);
   const [adding, setAdding] = useState(false);
@@ -30,24 +31,22 @@ export default function PlaylistDetail() {
       });
   }, [id, navigate]);
 
-  const run = useCallback(
-    async (action: () => Promise<{ data: { result: PlaylistItem[] } }>, fallback: string) => {
-      setBusy(true);
-      try {
-        const res = await action();
-        setItems(res.data.result);
-        return true;
-      } catch (err) {
-        toast.error(getErrorMessage(err, fallback));
-        return false;
-      } finally {
-        setBusy(false);
-      }
-    },
-    [],
-  );
+  const run = useCallback(async (action: () => Promise<{ data: { result: PlaylistItem[] } }>, fallback: string) => {
+    setBusy(true);
+    try {
+      const res = await action();
+      setItems(res.data.result);
+      return true;
+    } catch (err) {
+      toast.error(getErrorMessage(err, fallback));
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }, []);
 
-  const remove = (scoreId: string) => run(() => playlistApi.removeScore(id, scoreId), 'Không bỏ được bài khỏi playlist');
+  const remove = (scoreId: string) =>
+    run(() => playlistApi.removeScore(id, scoreId), 'Không bỏ được bài khỏi playlist');
 
   const drop = async (target: number) => {
     if (!items || dragIndex === null || dragIndex === target) return;
@@ -130,10 +129,17 @@ export default function PlaylistDetail() {
                         .join(' · ') || 'Chưa có thông tin'}
                     </p>
                   </div>
-                  <button className="sc-btn sc-btn--sm" onClick={() => navigate(`/scores/${item.scoreId}`)}>
+                  <button
+                    className="sc-btn sc-btn--sm"
+                    onClick={() => navigate(`/scores/${item.scoreId}`, { state: { from: pathname } })}
+                  >
                     Mở bài
                   </button>
-                  <button className="sc-btn sc-btn--sm sc-btn--danger" disabled={busy} onClick={() => remove(item.scoreId)}>
+                  <button
+                    className="sc-btn sc-btn--sm sc-btn--danger"
+                    disabled={busy}
+                    onClick={() => remove(item.scoreId)}
+                  >
                     Bỏ
                   </button>
                 </li>
