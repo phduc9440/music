@@ -156,8 +156,7 @@ export default function ScoreUpload() {
 
   return (
     <div className="sc-page">
-
-      <main className="sc-container">
+      <main className="sc-container sc-container--form">
         <header className="sc-lib-head">
           <div>
             <h1>Tải bản nhạc lên</h1>

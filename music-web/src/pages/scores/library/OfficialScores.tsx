@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import Pagination from '../../../components/scores/common/Pagination';
 import ScoreCard from '../../../components/scores/library/ScoreCard';
@@ -13,6 +13,7 @@ const PAGE_SIZE = 12;
 /** Trang /scores/official: kho score mẫu (bản nhạc chính thức) cho người mới học, từ dễ đến khó (mục 4.5). */
 export default function OfficialScores() {
   const navigate = useNavigate();
+  const { pathname } = useLocation(); // để trang chi tiết biết người dùng đi từ đâu tới
   const [page, setPage] = useState(0);
   const [keywordInput, setKeywordInput] = useState('');
   const [keyword, setKeyword] = useState('');
@@ -28,7 +29,6 @@ export default function OfficialScores() {
 
   return (
     <div className="sc-page">
-
       <main className="sc-container">
         <header className="sc-lib-head">
           <div>
@@ -84,7 +84,7 @@ export default function OfficialScores() {
               <ScoreCard
                 key={s.id}
                 score={s}
-                onOpen={(item) => navigate(getScorePath(item.id, item.processingStatus))}
+                onOpen={(item) => navigate(getScorePath(item.id, item.processingStatus), { state: { from: pathname } })}
               />
             ))}
           </div>

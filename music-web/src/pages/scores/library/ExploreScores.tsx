@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import Pagination from '../../../components/scores/common/Pagination';
 import ScoreCard from '../../../components/scores/library/ScoreCard';
@@ -21,6 +21,7 @@ const SORT_LABELS: Record<ExploreSort, string> = {
 /** Trang /explore: bản nhạc đang công khai của mọi người, tìm theo tên/tác giả, lọc độ khó và thể loại. */
 export default function ExploreScores() {
   const navigate = useNavigate();
+  const { pathname } = useLocation(); // để trang chi tiết biết người dùng đi từ đâu tới
   const [page, setPage] = useState(0);
   const [keywordInput, setKeywordInput] = useState('');
   const [keyword, setKeyword] = useState('');
@@ -49,10 +50,12 @@ export default function ExploreScores() {
   }, [page, keyword, difficulty, tagId, sort]);
 
   // Đổi bộ lọc thì quay về trang đầu
-  const change = <T,>(setter: (value: T) => void) => (value: T) => {
-    setPage(0);
-    setter(value);
-  };
+  const change =
+    <T,>(setter: (value: T) => void) =>
+    (value: T) => {
+      setPage(0);
+      setter(value);
+    };
 
   return (
     <div className="sc-page">
@@ -138,7 +141,7 @@ export default function ExploreScores() {
                 key={s.id}
                 score={s}
                 explore
-                onOpen={(item) => navigate(getScorePath(item.id, item.processingStatus))}
+                onOpen={(item) => navigate(getScorePath(item.id, item.processingStatus), { state: { from: pathname } })}
               />
             ))}
           </div>

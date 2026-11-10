@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import Pagination from '../../../components/scores/common/Pagination';
 import ScoreCard from '../../../components/scores/library/ScoreCard';
@@ -13,6 +13,7 @@ const PAGE_SIZE = 12;
 /** Trang /scores/shared: bản nhạc người khác chia sẻ cho tôi. */
 export default function SharedScores() {
   const navigate = useNavigate();
+  const { pathname } = useLocation(); // để trang chi tiết biết người dùng đi từ đâu tới
   const [page, setPage] = useState(0);
   const [data, setData] = useState<PageResult<ScoreSummary> | null>(null);
 
@@ -25,7 +26,6 @@ export default function SharedScores() {
 
   return (
     <div className="sc-page">
-
       <main className="sc-container">
         <header className="sc-lib-head">
           <div>
@@ -47,7 +47,7 @@ export default function SharedScores() {
               <ScoreCard
                 key={s.id}
                 score={s}
-                onOpen={(item) => navigate(getScorePath(item.id, item.processingStatus))}
+                onOpen={(item) => navigate(getScorePath(item.id, item.processingStatus), { state: { from: pathname } })}
               />
             ))}
           </div>

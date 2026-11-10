@@ -1,6 +1,7 @@
 /* Trang xem lại kết quả số hóa (/scores/:id/review). Tiền tố sr- */
 .sr-container {
   max-width: 1080px;
+  margin-inline: auto;
 }
 .sr-summary {
   margin-bottom: 1.5rem;

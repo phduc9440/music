@@ -18,14 +18,22 @@
   border-bottom: 1px solid var(--ui-border);
 }
 
+/* Kiểu Facebook: thanh trên chiếm hết chiều ngang, ba cột bằng nhau hai bên, điều hướng nằm giữa */
 .app-header__inner {
-  max-width: 1200px;
   height: var(--ui-header-h);
-  margin: 0 auto;
-  padding: 0 1.5rem;
+  padding: 0 1rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 1rem;
+}
+
+.app-header__left {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: 0.75rem;
+  min-width: 0;
+  justify-self: start;
 }
 
 .app-brand {
@@ -56,8 +64,8 @@
 .app-nav {
   display: flex;
   align-items: center;
-  gap: 0.15rem;
-  flex: 1;
+  justify-content: center;
+  gap: 0.5rem;
   min-width: 0;
   height: 100%;
 }
@@ -97,11 +105,137 @@
   background: var(--ui-primary);
 }
 
+/* nhóm điều hướng (menu thả xuống) */
+.app-navgroup {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.app-navgroup__trigger {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: var(--ui-text-md);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.app-navgroup__trigger svg {
+  transition: transform 0.15s ease;
+}
+
+.app-navgroup--open .app-navgroup__trigger svg {
+  transform: rotate(180deg);
+}
+
+.app-navgroup__label {
+  display: none;
+}
+
+.app-navgroup__panel {
+  display: none;
+  position: absolute;
+  top: calc(100% - 6px);
+  left: 0;
+  z-index: 300;
+  min-width: 220px;
+  padding: 0.35rem;
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  box-shadow: var(--ui-shadow-pop);
+}
+
+.app-navgroup--open .app-navgroup__panel {
+  display: block;
+}
+
+.app-navgroup__item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: var(--ui-radius-sm);
+  color: var(--ui-text);
+  font-size: var(--ui-text-md);
+  white-space: nowrap;
+}
+
+.app-navgroup__item:hover {
+  background: var(--ui-surface-hover);
+  color: var(--ui-text);
+}
+
+.app-navgroup__item--active,
+.app-navgroup__item--active:hover {
+  background: var(--ui-primary-soft);
+  color: var(--ui-primary);
+  font-weight: 600;
+}
+
+/* nút tạo bản nhạc và ô tìm kiếm trên thanh trên */
+.app-create {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  height: 34px;
+  padding: 0 0.8rem;
+  border-radius: var(--ui-radius);
+  background: var(--ui-primary);
+  color: var(--ui-on-accent);
+  font-size: var(--ui-text-md);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.app-create:hover {
+  background: var(--ui-primary-hover);
+  color: var(--ui-on-accent);
+}
+
+.app-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 220px;
+  height: 34px;
+  padding: 0 0.6rem;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  background: var(--ui-surface-muted);
+  color: var(--ui-text-2);
+  font: inherit;
+  font-size: var(--ui-text-md);
+  cursor: pointer;
+}
+
+.app-search:hover {
+  border-color: var(--ui-border-strong);
+  color: var(--ui-text);
+}
+
+.app-search__kbd {
+  margin-left: auto;
+  padding: 0 0.35rem;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius-sm);
+  color: var(--ui-text-3);
+  font-family: inherit;
+  font-size: var(--ui-text-xs);
+}
+
+/* thanh tab dưới cùng: chỉ dành cho điện thoại */
+.app-tabbar {
+  display: none;
+}
+
 .app-header__right {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  margin-left: auto;
+  justify-self: end;
 }
 
 .app-iconbtn {
@@ -215,19 +349,37 @@
 }
 
 /* màn hình vừa: bỏ icon trong menu cho đỡ chật */
-@media (max-width: 1120px) {
-  .app-nav__item svg {
+/* màn hình vừa: ô tìm kiếm gọn lại để điều hướng ở giữa không bị chen */
+@media (max-width: 1320px) {
+  .app-search {
+    min-width: 0;
+  }
+
+  .app-search__kbd {
+    display: none;
+  }
+}
+
+@media (max-width: 1180px) {
+  .app-search__text,
+  .app-create span {
     display: none;
   }
 
-  .app-header__inner {
-    gap: 1rem;
+  .app-create,
+  .app-search {
+    width: 36px;
+    padding: 0;
+    justify-content: center;
   }
 }
 
 /* màn hình nhỏ: điều hướng thành ngăn thả xuống */
 @media (max-width: 900px) {
+  /* điện thoại: bỏ lưới ba cột, điều hướng thành ngăn thả xuống */
   .app-header__inner {
+    display: flex;
+    justify-content: space-between;
     padding: 0 1rem;
     gap: 0.5rem;
   }
@@ -262,22 +414,95 @@
     visibility: visible;
   }
 
-  .app-nav__item {
+  .app-nav {
+    max-height: calc(100vh - var(--ui-header-h) - 4.5rem);
+    overflow-y: auto;
+  }
+
+  /* trên điện thoại mỗi nhóm hiện sẵn: tiêu đề rồi danh sách các mục */
+  .app-navgroup {
+    display: block;
     height: auto;
-    padding: 0.7rem 0.75rem;
-    border-radius: var(--ui-radius);
+    padding: 0.25rem 0;
   }
 
-  .app-nav__item svg {
-    display: inline;
-  }
-
-  .app-nav__item--active {
-    background: var(--ui-primary-soft);
-  }
-
-  .app-nav__item--active::after {
+  .app-navgroup__trigger {
     display: none;
+  }
+
+  .app-navgroup__label {
+    display: block;
+    padding: 0.4rem 0.75rem 0.15rem;
+    color: var(--ui-text-3);
+    font-size: var(--ui-text-xs);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .app-navgroup__panel {
+    display: block;
+    position: static;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    box-shadow: none;
+    background: transparent;
+  }
+
+  .app-navgroup__item {
+    padding: 0.7rem 0.75rem;
+  }
+
+  /* nút tạo và tìm kiếm đã có ở thanh tab / hộp tìm: bớt chật thanh trên */
+  .app-create {
+    display: none;
+  }
+
+  .app-tabbar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 220;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    padding-bottom: env(safe-area-inset-bottom);
+    background: var(--ui-surface);
+    border-top: 1px solid var(--ui-border);
+  }
+
+  .app-tabbar__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+    padding: 0.45rem 0.25rem 0.4rem;
+    color: var(--ui-text-3);
+    font-size: 0.6875rem;
+    font-weight: 500;
+  }
+
+  .app-tabbar__item--active {
+    color: var(--ui-primary);
+    font-weight: 600;
+  }
+
+  .app-tabbar__item--primary .app-tabbar__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    margin-top: -0.9rem;
+    border-radius: 50%;
+    background: var(--ui-primary);
+    color: var(--ui-on-accent);
+    box-shadow: var(--ui-shadow);
+  }
+
+  .app-main {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom));
   }
 
   .app-backdrop {

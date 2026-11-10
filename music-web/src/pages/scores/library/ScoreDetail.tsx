@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import DeleteScoreModal from '../../../components/scores/detail/DeleteScoreModal';
 import EditScoreModal from '../../../components/scores/detail/EditScoreModal';
@@ -10,6 +10,7 @@ import ScoreHero, { ScorePreview, ScoreSidebar } from '../../../components/score
 import Modal from '../../../components/scores/common/Modal';
 import ShareModal from '../../../components/scores/detail/ShareModal';
 import TasksTable from '../../../components/scores/detail/TasksTable';
+import { getBackTarget } from '../../../components/layout/nav';
 import { BackLink } from '../../../components/ui';
 import { scoreApi } from '../../../services';
 import type { ScoreDetail as ScoreDetailData } from '../../../types';
@@ -32,8 +33,13 @@ type Tab = 'files' | 'tasks' | 'reviews';
  * danh sách quản lý bản nhạc thay vì thư viện của người dùng.
  */
 export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
-  const backPath = admin ? '/admin/scores' : '/scores';
-  const backLabel = admin ? 'Quay lại' : '‹ Thư viện';
+  const location = useLocation();
+  // Người dùng quay lại đúng nơi đã đi từ đó tới (Khám phá, Kho score mẫu, Được chia sẻ, playlist...), mặc định là Thư viện
+  const back = admin
+    ? { to: '/admin/scores', label: 'Quay lại' }
+    : getBackTarget(location.state, { to: '/scores', label: 'Thư viện' });
+  const backPath = back.to;
+  const backLabel = admin ? back.label : `‹ ${back.label}`;
   // Admin vào từ nhiều trang (quản lý, chờ duyệt, kho mẫu) nên quay về trang trước đó
   const goBack = () => (admin && window.history.length > 1 ? navigate(-1) : navigate(backPath));
   const { id } = useParams<{ id: string }>();
@@ -130,7 +136,7 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
             <h3>{notFound ? 'Không tìm thấy bản nhạc' : 'Không tải được bản nhạc'}</h3>
             <p>{notFound ? 'Bản nhạc không tồn tại hoặc bạn không có quyền xem.' : 'Vui lòng thử lại sau.'}</p>
             <button className="sc-btn sc-btn--primary" onClick={goBack}>
-              {admin ? 'Về danh sách' : 'Về thư viện'}
+              {admin ? 'Về danh sách' : `Về ${back.label}`}
             </button>
           </div>
         </main>

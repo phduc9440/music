@@ -1,50 +1,34 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import ChangePasswordModal from '../ChangePasswordModal';
+import CommandPalette from './CommandPalette';
+import MobileTabBar from './MobileTabBar';
+import NavDropdown from './NavDropdown';
 import NotificationBell from '../NotificationBell';
 import ThemeToggle from '../../theme/ThemeToggle';
 import { adoptServerTheme } from '../../theme/theme';
 import { Avatar, Icon } from '../ui';
-import type { IconName } from '../ui';
 import { authApi, userApi } from '../../services';
 import { AuthProvider } from '../../types';
 import type { Member } from '../../types';
 import { isAdminMember, roleLabel } from '../../utils/auth';
+import { CREATE_SCORE_PATH, NAV_GROUPS, navContextPath } from './nav';
 import './user-layout.css';
 
-interface NavItem {
-  to: string;
-  label: string;
-  icon: IconName;
-  /** Mục đang mở khi đường dẫn khớp (mặc định: bằng hoặc bắt đầu bằng `to/`). */
-  match?: (pathname: string) => boolean;
-}
-
-/** Thư viện bao gồm cả chi tiết, tải lên, nhập file... nhưng không gồm kho mẫu và mục được chia sẻ. */
-const isLibrary = (p: string) =>
-  p === '/scores' || (p.startsWith('/scores/') && !/^\/scores\/(official|shared)(\/|$)/.test(p));
-
-const NAV: NavItem[] = [
-  { to: '/scores', label: 'Thư viện', icon: 'music', match: isLibrary },
-  { to: '/explore', label: 'Khám phá', icon: 'globe' },
-  { to: '/scores/official', label: 'Kho score mẫu', icon: 'library' },
-  { to: '/scores/shared', label: 'Được chia sẻ', icon: 'share' },
-  { to: '/playlists', label: 'Playlist', icon: 'list' },
-  { to: '/practice-history', label: 'Luyện tập', icon: 'clock' },
-  { to: '/practice-stats', label: 'Thống kê', icon: 'chart' },
-];
-
-const isActive = (item: NavItem, pathname: string) =>
-  item.match ? item.match(pathname) : pathname === item.to || pathname.startsWith(`${item.to}/`);
-
-/** Khung chung của các trang người dùng: thanh trên (logo, điều hướng chính, chuông, tài khoản) và vùng nội dung. */
+/**
+ * Khung chung của các trang người dùng: thanh trên (logo, nhóm điều hướng, tạo bản nhạc, tìm kiếm Ctrl/Cmd+K, giao diện,
+ * chuông, tài khoản), thanh tab dưới cùng trên điện thoại và vùng nội dung.
+ */
 export default function UserLayout() {
   const navigate = useNavigate();
-  const { pathname } = useLocation();
+  const { pathname, state } = useLocation();
+  // Bản nhạc mở từ Khám phá, Kho score mẫu... vẫn tô sáng mục đó thay vì nhảy về Thư viện
+  const navPath = navContextPath(pathname, state);
   const [me, setMe] = useState<Member | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false); // menu điều hướng trên màn hình nhỏ
   const [passwordOpen, setPasswordOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -67,6 +51,18 @@ export default function UserLayout() {
     return () => document.removeEventListener('mousedown', onDown);
   }, [menuOpen]);
 
+  // Ctrl/Cmd+K mở hoặc đóng hộp tìm toàn cục
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setSearchOpen((v) => !v);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   const logout = () => {
     authApi.logout().catch(() => undefined);
     localStorage.removeItem('role');
@@ -87,39 +83,48 @@ export default function UserLayout() {
     <div className="app-shell">
       <header className="app-header">
         <div className="app-header__inner">
-          <button
-            type="button"
-            className="app-iconbtn app-header__burger"
-            aria-label="Mở menu điều hướng"
-            aria-expanded={navOpen}
-            onClick={() => setNavOpen((v) => !v)}
-          >
-            <Icon name={navOpen ? 'x' : 'menu'} />
-          </button>
+          <div className="app-header__left">
+            <button
+              type="button"
+              className="app-iconbtn app-header__burger"
+              aria-label="Mở menu điều hướng"
+              aria-expanded={navOpen}
+              onClick={() => setNavOpen((v) => !v)}
+            >
+              <Icon name={navOpen ? 'x' : 'menu'} />
+            </button>
 
-          <Link to="/scores" className="app-brand">
-            <span className="app-brand__logo">
-              <Icon name="music" size={16} />
-            </span>
-            Music App
-          </Link>
+            <Link to="/scores" className="app-brand">
+              <span className="app-brand__logo">
+                <Icon name="music" size={16} />
+              </span>
+              Music App
+            </Link>
+
+            <button
+              type="button"
+              className="app-search"
+              aria-label="Tìm kiếm (Ctrl+K)"
+              title="Tìm kiếm (Ctrl+K)"
+              onClick={() => setSearchOpen(true)}
+            >
+              <Icon name="search" size={16} />
+              <span className="app-search__text">Tìm kiếm</span>
+              <kbd className="app-search__kbd">Ctrl K</kbd>
+            </button>
+          </div>
 
           <nav className={`app-nav${navOpen ? ' app-nav--open' : ''}`} aria-label="Điều hướng chính">
-            {NAV.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={() => `app-nav__item${isActive(item, pathname) ? ' app-nav__item--active' : ''}`}
-                aria-current={isActive(item, pathname) ? 'page' : undefined}
-                onClick={() => setNavOpen(false)}
-              >
-                <Icon name={item.icon} size={16} />
-                {item.label}
-              </NavLink>
+            {NAV_GROUPS.map((group) => (
+              <NavDropdown key={group.id} group={group} pathname={navPath} onNavigate={() => setNavOpen(false)} />
             ))}
           </nav>
 
           <div className="app-header__right">
+            <Link to={CREATE_SCORE_PATH} className="app-create">
+              <Icon name="plus" size={16} />
+              <span>Tạo bản nhạc</span>
+            </Link>
             <ThemeToggle />
             <NotificationBell />
             <div className="app-usermenu" ref={menuRef}>
@@ -189,6 +194,8 @@ export default function UserLayout() {
         <Outlet />
       </main>
 
+      <MobileTabBar activePath={navPath} />
+      {searchOpen && <CommandPalette onClose={() => setSearchOpen(false)} />}
       <ChangePasswordModal isOpen={passwordOpen} onClose={() => setPasswordOpen(false)} />
     </div>
   );

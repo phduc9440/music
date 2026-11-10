@@ -61,7 +61,9 @@ export default function OfficialRequests() {
           <article key={r.id} className="sc-card mb-3" style={{ cursor: 'default' }}>
             <div className="sc-card__body">
               <h3 className="sc-card__title">
-                <Link to={`/scores/${r.scoreId}`}>{r.scoreTitle}</Link>
+                <Link to={`/scores/${r.scoreId}`} state={{ from: '/scores/official-requests' }}>
+                  {r.scoreTitle}
+                </Link>
               </h3>
               <p className="sc-card__composer">{r.composer || 'Chưa rõ tác giả'}</p>
               <p className="sc-card__composer">

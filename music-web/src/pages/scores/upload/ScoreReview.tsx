@@ -202,7 +202,7 @@ export default function ScoreReview() {
     return (
       <div className="sc-page">
         {navbar}
-        <main className="sc-container" aria-busy="true">
+        <main className="sc-container sr-container" aria-busy="true">
           <div className="sc-skeleton sp-skeleton" />
         </main>
       </div>
@@ -214,7 +214,7 @@ export default function ScoreReview() {
     return (
       <div className="sc-page">
         {navbar}
-        <main className="sc-container">
+        <main className="sc-container sr-container">
           <div className="sc-empty">
             <h3>{notFound ? 'Chưa có kết quả số hóa' : 'Không tải được kết quả'}</h3>
             <p>
