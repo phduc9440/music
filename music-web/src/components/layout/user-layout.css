@@ -501,7 +501,8 @@
     box-shadow: var(--ui-shadow);
   }
 
-  .app-main {
+  /* chừa chỗ cho thanh tab dưới cùng (đặt ở khung để chân trang cũng nằm trên thanh tab) */
+  .app-shell {
     padding-bottom: calc(4rem + env(safe-area-inset-bottom));
   }
 

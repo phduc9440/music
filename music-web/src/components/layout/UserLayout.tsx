@@ -4,6 +4,7 @@ import ChangePasswordModal from '../ChangePasswordModal';
 import CommandPalette from './CommandPalette';
 import MobileTabBar from './MobileTabBar';
 import NavDropdown from './NavDropdown';
+import SiteFooter from './SiteFooter';
 import NotificationBell from '../NotificationBell';
 import ThemeToggle from '../../theme/ThemeToggle';
 import { adoptServerTheme } from '../../theme/theme';
@@ -193,6 +194,7 @@ export default function UserLayout() {
       <main className="app-main">
         <Outlet />
       </main>
+      <SiteFooter variant="app" />
 
       <MobileTabBar activePath={navPath} />
       {searchOpen && <CommandPalette onClose={() => setSearchOpen(false)} />}

@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Icon } from '../ui';
-import { CREATE_SCORE_PATH } from './nav';
+import { CREATE_SCORE_PATH, NAV_GROUPS } from './nav';
 import './site-footer.css';
 
 interface FooterLink {
@@ -12,7 +12,7 @@ interface FooterLink {
  * Các cột liên kết. Trang cần đăng nhập vẫn liệt kê: khách bấm vào sẽ được đưa tới đăng nhập rồi quay lại đúng trang
  * (ProtectedRoute nhớ trang định vào). Khi có Diễn đàn, Nhạc sĩ, Bảng giá... thì thêm vào đây.
  */
-const COLUMNS: { title: string; links: FooterLink[] }[] = [
+const SITE_COLUMNS: { title: string; links: FooterLink[] }[] = [
   {
     title: 'Khám phá',
     links: [
@@ -38,10 +38,27 @@ const COLUMNS: { title: string; links: FooterLink[] }[] = [
   },
 ];
 
-/** Chân trang của trang giới thiệu: nền "sân khấu" tối như phần đầu trang, logo, các cột liên kết, bản quyền. */
-export default function SiteFooter() {
+/** Trang đã đăng nhập: lấy đúng các nhóm của menu chính (thêm trang vào menu là chân trang có theo) và mục tài khoản. */
+const APP_COLUMNS: { title: string; links: FooterLink[] }[] = [
+  ...NAV_GROUPS.map((g) => ({ title: g.label, links: g.items.map((i) => ({ label: i.label, to: i.to })) })),
+  {
+    title: 'Tài khoản',
+    links: [
+      { label: 'Trang chủ', to: '/' },
+      { label: 'Hồ sơ của tôi', to: '/profile' },
+    ],
+  },
+];
+
+/**
+ * Chân trang nền "sân khấu" tối: logo, các cột liên kết, bản quyền. variant="site" cho trang giới thiệu của khách,
+ * "app" cho các trang sau khi đăng nhập (gọn hơn, trên điện thoại chỉ giữ dòng bản quyền vì đã có thanh tab dưới).
+ */
+export default function SiteFooter({ variant = 'site' }: { variant?: 'site' | 'app' }) {
+  const app = variant === 'app';
+  const columns = app ? APP_COLUMNS : SITE_COLUMNS;
   return (
-    <footer className="site-footer">
+    <footer className={`site-footer ui-stage${app ? ' site-footer--app' : ''}`}>
       <div className="site-footer__inner">
         <div className="site-footer__brand">
           <Link to="/" className="site-footer__logo">
@@ -50,10 +67,14 @@ export default function SiteFooter() {
             </span>
             Music App
           </Link>
-          <p>Chụp bản nhạc giấy, sửa, nghe và luyện tập, cùng nhóm, bằng tiếng Việt.</p>
+          <p>
+            {app
+              ? 'Mẹo: nhấn Ctrl + K (Cmd + K trên Mac) để tìm nhanh bản nhạc và lệnh.'
+              : 'Chụp bản nhạc giấy, sửa, nghe và luyện tập, cùng nhóm, bằng tiếng Việt.'}
+          </p>
         </div>
 
-        {COLUMNS.map((col) => (
+        {columns.map((col) => (
           <nav key={col.title} className="site-footer__col" aria-label={col.title}>
             <h2>{col.title}</h2>
             <ul>
