@@ -29,12 +29,7 @@ services:
       - hf-cache:/cache/huggingface
 
   music-be:
-    build:
-      context: ./music-be
-      args:
-        BE_PLATFORM: ${BE_PLATFORM:-linux/amd64}
-        WITH_MUSESCORE: ${WITH_MUSESCORE:-1}
-    platform: ${BE_PLATFORM:-linux/amd64}
+    build: ./music-be
     depends_on:
       mysql:
         condition: service_healthy
@@ -52,7 +47,6 @@ services:
       CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
       CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
       APP_STORAGE_LOCAL_ROOT: /data/storage
-      MUSESCORE_PATH: /opt/musescore/AppRun
     volumes:
       - storage:/data/storage
     ports:
