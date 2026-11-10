@@ -125,12 +125,12 @@ export default function AdminScores() {
 
   const publish = async (score: ScoreSummary) => {
     const ok = await confirm({
-      title: `Công khai "${score.title}"?`,
-      message: 'Mọi người dùng đã đăng nhập sẽ xem được. Chủ sở hữu sẽ nhận thông báo.',
-      confirmLabel: 'Công khai',
+      title: `Duyệt công khai "${score.title}"?`,
+      message: 'Chủ sở hữu đã xin công khai bản này. Sau khi duyệt, mọi người dùng đã đăng nhập sẽ xem được.',
+      confirmLabel: 'Duyệt công khai',
     });
     if (!ok) return;
-    run(score, () => adminApi.setScoreVisibility(score.id, 'PUBLIC'), 'Đã công khai', 'Không đổi được quyền riêng tư');
+    run(score, () => adminApi.setScoreVisibility(score.id, 'PUBLIC'), 'Đã duyệt công khai', 'Không duyệt được bản nhạc');
   };
 
   const unpublish = async (score: ScoreSummary) => {
@@ -180,7 +180,11 @@ export default function AdminScores() {
       });
       if (!ok) return;
     } else if (action === 'PUBLIC') {
-      const ok = await confirm({ title: `Công khai ${ids.length} bản nhạc đã chọn?`, confirmLabel: 'Công khai' });
+      const ok = await confirm({
+        title: `Duyệt công khai ${ids.length} bản nhạc đã chọn?`,
+        message: 'Chỉ duyệt được các bản đang chờ duyệt. Bản ở trạng thái khác sẽ báo lỗi trong danh sách.',
+        confirmLabel: 'Duyệt công khai',
+      });
       if (!ok) return;
     } else {
       const input = await prompt({
@@ -277,7 +281,7 @@ export default function AdminScores() {
         <div className="adm-bulkbar" role="toolbar" aria-label="Thao tác hàng loạt">
           <span className="adm-bulkbar__count">Đã chọn {selected.size} bản</span>
           <Button size="sm" variant="primary" icon="globe" loading={bulkBusy} onClick={() => bulk('PUBLIC')}>
-            Công khai
+            Duyệt các bản đang chờ
           </Button>
           <Button size="sm" icon="lock" disabled={bulkBusy} onClick={() => bulk('PRIVATE')}>
             Gỡ công khai
@@ -347,7 +351,7 @@ export default function AdminScores() {
                           Gỡ công khai
                         </Button>
                       </>
-                    ) : (
+                    ) : s.visibility === 'PENDING' ? (
                       <Button
                         size="sm"
                         variant="primary"
@@ -355,9 +359,9 @@ export default function AdminScores() {
                         disabled={busyId === s.id}
                         onClick={() => publish(s)}
                       >
-                        Công khai
+                        Duyệt công khai
                       </Button>
-                    )}
+                    ) : null}
                     <Button
                       size="sm"
                       variant="ghost"

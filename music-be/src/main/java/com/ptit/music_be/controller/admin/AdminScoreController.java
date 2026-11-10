@@ -55,7 +55,7 @@ public class AdminScoreController {
     @PutMapping("/{scoreId}/visibility")
     @Operation(
             summary =
-                    "Set a score PUBLIC or PRIVATE right away (PRIVATE: optional reason, leaves the curated library, owner is notified)",
+                    "Moderate: approve a PENDING score to PUBLIC, or take a PUBLIC score down to PRIVATE (optional reason, leaves the curated library, owner is notified). Other transitions are rejected",
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<ScoreDetailResponse> setVisibility(
             @PathVariable String scoreId, @Valid @RequestBody AdminScoreVisibilityRequest request) {
@@ -67,7 +67,7 @@ public class AdminScoreController {
     @PostMapping("/bulk")
     @Operation(
             summary =
-                    "Apply PUBLIC / PRIVATE (reason) / DELETE to up to 100 scores; each one is processed on its own, failures are listed",
+                    "Apply PUBLIC (approve pending scores only) / PRIVATE (take down public scores, reason) / DELETE to up to 100 scores; each one is processed on its own, failures are listed",
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<AdminScoreBulkResponse> bulk(@Valid @RequestBody AdminScoreBulkRequest request) {
         return ApiResponse.<AdminScoreBulkResponse>builder()
