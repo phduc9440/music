@@ -201,10 +201,6 @@ export default function UserProfile() {
                   <dt>Vai trò</dt>
                   <dd>{user ? roleLabel(user) : '—'}</dd>
                 </div>
-                <div>
-                  <dt>Mã tài khoản</dt>
-                  <dd className="pf-mono">{user?.id}</dd>
-                </div>
               </dl>
               {!isGoogle && (
                 <div className="pf-form-actions">

@@ -109,12 +109,6 @@
   word-break: break-word;
 }
 
-.pf-mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: var(--ui-text-sm);
-  color: var(--ui-text-2);
-}
-
 @media (max-width: 760px) {
   .pf-grid {
     grid-template-columns: minmax(0, 1fr);
