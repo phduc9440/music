@@ -31,6 +31,8 @@ public class ScoreDetailResponse {
     Boolean isOfficial;
     /** Bản trong kho mẫu: tên người phối (chủ bản gốc). */
     String arrangerName;
+    /** Bản sao trong kho mẫu mà người đang xem là chủ của bản gốc: id bản gốc của họ, để mở lại bản của mình. */
+    String myOriginalScoreId;
 
     /** Thể loại đã gắn, sắp xếp theo tên. */
     List<TagResponse> tags;

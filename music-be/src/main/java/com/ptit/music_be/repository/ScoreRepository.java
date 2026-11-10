@@ -80,11 +80,15 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
     Page<Score> searchOfficial(
             @Param("keyword") String keyword, @Param("difficulty") String difficulty, Pageable pageable);
 
-    /** Phần chung của trang Khám phá: bản PUBLIC, tìm tên/tác giả, lọc độ khó và thể loại ("" là không lọc). */
+    /**
+     * Phần chung của trang Khám phá: bản PUBLIC, tìm tên/tác giả, lọc độ khó và thể loại ("" là không lọc). Bản sao
+     * trong kho mẫu (có bản gốc) không liệt kê ở đây vì đã nằm ở "Kho score mẫu"; nếu không, bản gốc của người dùng và
+     * bản sao của nó sẽ hiện thành hai bản trùng nhau.
+     */
     String PUBLIC_EXPLORE_FILTER =
             """
 			from Score s
-			where s.visibility = 'PUBLIC'
+			where s.visibility = 'PUBLIC' and s.originalScoreId is null
 			and (lower(s.title) like lower(concat('%', :keyword, '%')) escape '\\'
 				or lower(coalesce(s.composer, '')) like lower(concat('%', :keyword, '%')) escape '\\')
 			and (:difficulty = '' or cast(s.difficulty as string) = :difficulty)

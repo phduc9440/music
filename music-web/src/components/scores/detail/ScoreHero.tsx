@@ -128,6 +128,16 @@ export default function ScoreHero({
       </div>
 
       {score.accessLevel === 'OWNER' && !base.startsWith('/admin') && <OfficialRequestBanner scoreId={score.id} />}
+      {score.myOriginalScoreId && (
+        <div className="sd-alert sd-alert--info" role="status">
+          <Icon name="library" size={16} />
+          <span>
+            Đây là bản sao trong kho score mẫu, ghi bạn là người phối. Bản gốc của bạn vẫn là của bạn và bạn vẫn sửa,
+            chia sẻ, xóa được như trước.
+          </span>
+          <Link to={`/scores/${score.myOriginalScoreId}`}>Mở bản của tôi →</Link>
+        </div>
+      )}
 
       {processing && (
         <div className="sd-alert sd-alert--info" role="status">
@@ -235,7 +245,9 @@ export function ScoreSidebar({
       ),
     ],
   ];
-  const canRequestEdit = !score.canEdit && score.accessLevel !== 'OWNER' && !base.startsWith('/admin');
+  // Bản trong kho mẫu do hệ thống quản lý, chỉ admin sửa: không có chuyện xin quyền chỉnh sửa
+  const canRequestEdit =
+    !score.canEdit && score.accessLevel !== 'OWNER' && !base.startsWith('/admin') && !score.isOfficial;
   const hasManage = score.canManageSharing || score.canEdit || canRequestEdit || score.canDelete;
 
   return (

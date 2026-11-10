@@ -156,6 +156,26 @@ class OfficialRequestQueryTest {
     }
 
     @Test
+    void theOwnerOfTheOriginalIsPointedBackToTheirOwnScoreWhenOpeningTheLibraryCopy() {
+        SecurityContextHolder.getContext()
+                .setAuthentication(new TestingAuthenticationToken(owner.getEmail(), "x", "ROLE_USER"));
+
+        var detail = scoreService.getScore(copy.getId());
+
+        // bản sao thuộc tài khoản hệ thống nên người dùng không sửa được, nhưng biết bản gốc của mình ở đâu
+        assertEquals(taken.getId(), detail.getMyOriginalScoreId());
+        assertEquals("Chủ", detail.getArrangerName());
+        assertFalse(detail.isCanEdit());
+        assertFalse(detail.isCanManageSharing());
+        assertFalse(detail.isCanDelete());
+
+        // người khác mở cùng bản sao thì không có liên kết nào tới bản của chủ
+        SecurityContextHolder.getContext()
+                .setAuthentication(new TestingAuthenticationToken("other@test.local", "x", "ROLE_USER"));
+        assertEquals(null, scoreService.getScore(copy.getId()).getMyOriginalScoreId());
+    }
+
+    @Test
     void aCopyThatWasTrashedAnyOtherWayFreesTheOriginalToo() {
         asAdmin();
         // lời xin vẫn ghi ACCEPTED nhưng bản sao đã vào thùng rác (ví dụ admin xóa thẳng bản sao)
