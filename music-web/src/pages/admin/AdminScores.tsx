@@ -157,14 +157,21 @@ export default function AdminScores() {
       : run(score, () => scoreApi.markOfficial(score.id), 'Đã thêm vào kho score mẫu', 'Không thêm được vào kho');
 
   const remove = async (score: ScoreSummary) => {
-    const ok = await confirm({
-      title: `Xóa vĩnh viễn "${score.title}"?`,
-      message: `Bản nhạc của ${score.ownerEmail} và toàn bộ file sẽ bị xóa. Không thể hoàn tác.`,
-      confirmLabel: 'Xóa vĩnh viễn',
+    const input = await prompt({
+      title: `Chuyển "${score.title}" vào thùng rác?`,
+      message: `Bản nhạc của ${score.ownerEmail} nằm trong thùng rác 30 ngày, chủ sở hữu có thể khôi phục và sẽ nhận thông báo kèm lý do.`,
+      label: 'Lý do (có thể bỏ trống)',
+      maxLength: 255,
+      confirmLabel: 'Chuyển vào thùng rác',
       tone: 'danger',
     });
-    if (!ok) return;
-    run(score, () => scoreApi.remove(score.id), 'Đã xóa bản nhạc', 'Không xóa được bản nhạc');
+    if (input === null) return;
+    run(
+      score,
+      () => scoreApi.remove(score.id, input.trim() || undefined),
+      'Đã chuyển vào thùng rác',
+      'Không xóa được bản nhạc',
+    );
   };
 
   const bulk = async (action: BulkAction) => {
@@ -172,13 +179,16 @@ export default function AdminScores() {
     if (ids.length === 0) return;
     let reason: string | undefined;
     if (action === 'DELETE') {
-      const ok = await confirm({
-        title: `Xóa vĩnh viễn ${ids.length} bản nhạc đã chọn?`,
-        message: 'Toàn bộ file của các bản này sẽ bị xóa. Không thể hoàn tác.',
-        confirmLabel: 'Xóa vĩnh viễn',
+      const input = await prompt({
+        title: `Chuyển ${ids.length} bản nhạc đã chọn vào thùng rác?`,
+        message: 'Các bản nằm trong thùng rác 30 ngày, chủ sở hữu có thể khôi phục và sẽ nhận thông báo kèm lý do.',
+        label: 'Lý do (có thể bỏ trống)',
+        maxLength: 255,
+        confirmLabel: 'Chuyển vào thùng rác',
         tone: 'danger',
       });
-      if (!ok) return;
+      if (input === null) return;
+      reason = input.trim() || undefined;
     } else if (action === 'PUBLIC') {
       const ok = await confirm({
         title: `Duyệt công khai ${ids.length} bản nhạc đã chọn?`,

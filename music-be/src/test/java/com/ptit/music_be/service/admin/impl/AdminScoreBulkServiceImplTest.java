@@ -27,7 +27,7 @@ class AdminScoreBulkServiceImplTest {
 
     @Test
     void oneFailureDoesNotStopTheOthers() {
-        doThrow(new AppException(ErrorCode.SCORE_BUSY)).when(scores).deleteScore("b");
+        doThrow(new AppException(ErrorCode.SCORE_BUSY)).when(scores).deleteScore("b", null);
 
         AdminScoreBulkResponse r =
                 service.apply(new AdminScoreBulkRequest(List.of("a", "b", "c"), ScoreBulkAction.DELETE, null));
@@ -36,8 +36,8 @@ class AdminScoreBulkServiceImplTest {
         assertEquals(1, r.getFailures().size());
         assertEquals("b", r.getFailures().get(0).getId());
         assertEquals(ErrorCode.SCORE_BUSY.getMessage(), r.getFailures().get(0).getMessage());
-        verify(scores).deleteScore("a");
-        verify(scores).deleteScore("c");
+        verify(scores).deleteScore("a", null);
+        verify(scores).deleteScore("c", null);
     }
 
     @Test
@@ -50,12 +50,19 @@ class AdminScoreBulkServiceImplTest {
     }
 
     @Test
+    void deleteCarriesReasonToTheOwner() {
+        service.apply(new AdminScoreBulkRequest(List.of("a"), ScoreBulkAction.DELETE, "vi phạm bản quyền"));
+
+        verify(scores).deleteScore("a", "vi phạm bản quyền");
+    }
+
+    @Test
     void duplicatesAndBlankIdsAreSkippedAndEmptyIsRejected() {
         AdminScoreBulkResponse r =
                 service.apply(new AdminScoreBulkRequest(List.of("a", "a", " "), ScoreBulkAction.DELETE, null));
 
         assertEquals(1, r.getSuccess());
-        verify(scores).deleteScore("a");
+        verify(scores).deleteScore("a", null);
         assertThrows(
                 AppException.class,
                 () -> service.apply(new AdminScoreBulkRequest(List.of(), ScoreBulkAction.DELETE, null)));

@@ -15,5 +15,7 @@ public enum NotificationType {
     /** Có người nhận xét bản nhạc của bạn. */
     NEW_REVIEW,
     /** Thông báo chung do ADMIN gửi cho một nhóm người dùng. */
-    ANNOUNCEMENT
+    ANNOUNCEMENT,
+    /** ADMIN đã chuyển bản nhạc của bạn vào thùng rác (kèm lý do nếu có). */
+    SCORE_TRASHED_BY_ADMIN
 }

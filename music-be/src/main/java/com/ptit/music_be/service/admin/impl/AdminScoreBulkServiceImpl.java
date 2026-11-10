@@ -65,7 +65,7 @@ public class AdminScoreBulkServiceImpl implements AdminScoreBulkService {
         switch (action) {
             case PUBLIC -> scoreService.setVisibilityByAdmin(id, Visibility.PUBLIC, null);
             case PRIVATE -> scoreService.setVisibilityByAdmin(id, Visibility.PRIVATE, reason);
-            case DELETE -> scoreService.deleteScore(id);
+            case DELETE -> scoreService.deleteScore(id, reason);
         }
     }
 }
