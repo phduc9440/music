@@ -79,7 +79,7 @@ export default function EditorSpike() {
           <pre style={{ whiteSpace: 'pre-wrap' }}>{report.problems.slice(0, 50).join('\n')}</pre>
         </details>
       )}
-      <div ref={hostRef} onClick={onClick} style={{ background: '#fff' }} />
+      <div ref={hostRef} onClick={onClick} style={{ background: 'var(--ui-paper)' }} />
     </div>
   );
 }

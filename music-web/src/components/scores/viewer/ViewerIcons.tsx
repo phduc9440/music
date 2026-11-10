@@ -73,6 +73,12 @@ export const IconScroll = () => (
     <path d="M3 8h18M3 16h18M7 4l-4 4 4 4M17 12l4 4-4 4" />
   </Svg>
 );
+export const IconInvert = () => (
+  <Svg>
+    <circle cx="12" cy="12" r="8" />
+    <path d="M12 4v16a8 8 0 000-16z" fill="currentColor" />
+  </Svg>
+);
 export const IconLock = () => (
   <Svg>
     <rect x="5" y="11" width="14" height="9" rx="2" />

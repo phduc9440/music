@@ -1,14 +1,14 @@
 /* Tô nốt đang chọn / đang rê chuột trên SVG của OSMD (tiền tố ed-). */
 .ed-note--selected path,
 .ed-note--selected text {
-  fill: var(--sc-accent, #d9480f) !important;
-  stroke: var(--sc-accent, #d9480f) !important;
+  fill: var(--sc-accent, var(--ui-note-selected)) !important;
+  stroke: var(--sc-accent, var(--ui-note-selected)) !important;
 }
 [data-note-id] {
   cursor: pointer;
 }
 [data-note-id]:hover:not(.ed-note--selected) path {
-  stroke: var(--sc-accent, #d9480f);
+  stroke: var(--sc-accent, var(--ui-note-selected));
   stroke-opacity: 0.45;
 }
 
@@ -19,17 +19,17 @@
 }
 .ed-issue-box {
   position: absolute;
-  border: 2px solid #dc2626;
+  border: 2px solid var(--ui-danger);
   border-radius: 8px;
-  background: rgba(220, 38, 38, 0.05);
+  background: color-mix(in srgb, var(--ui-danger) 5%, transparent);
   pointer-events: none;
 }
 /* Khung chọn vùng khi kéo chuột */
 .ed-band {
   position: fixed;
   z-index: 20;
-  border: 1px solid var(--sc-accent, #d9480f);
-  background: rgba(217, 72, 15, 0.12);
+  border: 1px solid var(--sc-accent, var(--ui-note-selected));
+  background: color-mix(in srgb, var(--ui-note-selected) 12%, transparent);
   pointer-events: none;
 }
 
@@ -41,22 +41,22 @@
 }
 .ed-ghost__head {
   position: absolute;
-  background: rgba(37, 99, 235, 0.55);
-  border: 1.5px solid #1d4ed8;
+  background: color-mix(in srgb, var(--ui-primary) 55%, transparent);
+  border: 1.5px solid var(--ui-primary-hover);
   border-radius: 50%;
   transform: rotate(-20deg);
 }
 .ed-ghost__ledger {
   position: absolute;
   height: 0;
-  border-top: 1.5px solid rgba(29, 78, 216, 0.75);
+  border-top: 1.5px solid color-mix(in srgb, var(--ui-primary-hover) 75%, transparent);
 }
 .ed-ghost__label {
   position: absolute;
   padding: 1px 6px;
   border-radius: 6px;
-  background: #1d4ed8;
-  color: #fff;
+  background: var(--ui-primary-hover);
+  color: var(--ui-on-accent);
   font:
     600 11px/1.4 system-ui,
     sans-serif;
@@ -68,11 +68,11 @@
   z-index: 40;
   width: 264px;
   padding: 0.65rem;
-  border: 1px solid var(--sc-line, #e2e8f0);
+  border: 1px solid var(--sc-line, var(--ui-border));
   border-radius: 14px;
-  background: #fff;
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.22);
-  color: var(--sc-ink, #0f172a);
+  background: var(--ui-surface);
+  box-shadow: 0 12px 32px color-mix(in srgb, var(--ui-shadow-ink) 22%, transparent);
+  color: var(--sc-ink, var(--ui-text));
   font-size: 0.85rem;
 }
 .ed-pop__head {
@@ -83,7 +83,7 @@
   margin-bottom: 0.5rem;
 }
 .ed-pop__latin {
-  color: var(--sc-muted, #64748b);
+  color: var(--sc-muted, var(--ui-text-2));
 }
 .ed-pop__step {
   display: flex;
@@ -93,9 +93,9 @@
 .ed-pop__btn {
   min-width: 36px;
   height: 36px;
-  border: 1px solid var(--sc-line, #e2e8f0);
+  border: 1px solid var(--sc-line, var(--ui-border));
   border-radius: 10px;
-  background: #f8fafc;
+  background: var(--ui-surface-muted);
   color: inherit;
   font: inherit;
   cursor: pointer;
@@ -123,9 +123,9 @@
   font-size: 1.2rem;
 }
 .ed-pop__btn.is-active {
-  border-color: var(--sc-accent, #d9480f);
-  background: #fff3e8;
-  color: var(--sc-accent, #d9480f);
+  border-color: var(--sc-accent, var(--ui-note-selected));
+  background: var(--ui-warning-soft);
+  color: var(--sc-accent, var(--ui-note-selected));
 }
 .ed-pop__actions {
   display: flex;
@@ -142,14 +142,14 @@
   cursor: pointer;
 }
 .ed-pop__cancel {
-  border: 1px solid var(--sc-line, #e2e8f0);
-  background: #fff;
+  border: 1px solid var(--sc-line, var(--ui-border));
+  background: var(--ui-surface);
   color: inherit;
 }
 .ed-pop__add {
   border: 0;
-  background: var(--sc-accent, #d9480f);
-  color: #fff;
+  background: var(--sc-accent, var(--ui-note-selected));
+  color: var(--ui-on-accent);
 }
 
 /* Dấu ✓ xác nhận ô nhịp đúng: chỉ hiện khi rê chuột / chạm vào mép trên viền đỏ */
@@ -168,10 +168,10 @@
   width: 22px;
   height: 22px;
   padding: 0;
-  border: 1.5px solid #16a34a;
+  border: 1.5px solid var(--ui-success);
   border-radius: 50%;
-  background: #fff;
-  color: #16a34a;
+  background: var(--ui-surface);
+  color: var(--ui-success);
   font-weight: 700;
   line-height: 1;
   cursor: pointer;
@@ -191,8 +191,8 @@
   cursor: text;
 }
 .ed-text-hot:hover {
-  background: rgba(37, 99, 235, 0.08);
-  outline: 1.5px dashed rgba(37, 99, 235, 0.6);
+  background: color-mix(in srgb, var(--ui-primary) 8%, transparent);
+  outline: 1.5px dashed color-mix(in srgb, var(--ui-primary) 60%, transparent);
 }
 .ed-pop--text {
   width: 320px;
@@ -204,11 +204,11 @@
   width: 100%;
   height: 36px;
   padding: 0 0.6rem;
-  border: 1px solid var(--sc-line, #e2e8f0);
+  border: 1px solid var(--sc-line, var(--ui-border));
   border-radius: 10px;
   font: inherit;
   color: inherit;
-  background: #fff;
+  background: var(--ui-surface);
   box-sizing: border-box;
 }
 .ed-pop__input--num {
@@ -225,7 +225,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
-  color: var(--sc-muted, #64748b);
+  color: var(--sc-muted, var(--ui-text-2));
   font-size: 0.75rem;
 }
 .ed-pop__field--block {
@@ -244,6 +244,6 @@
 }
 .ed-pop__error {
   margin-bottom: 0.4rem;
-  color: #dc2626;
+  color: var(--ui-danger);
   font-size: 0.8rem;
 }

@@ -35,21 +35,21 @@
 .sp-bar {
   height: 10px;
   border-radius: 999px;
-  background: #e2e8f0;
+  background: var(--ui-border);
   overflow: hidden;
 }
 .sp-bar__fill {
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--sc-accent), #7c9cff);
+  background: linear-gradient(90deg, var(--sc-accent), var(--ui-primary-border));
   transition: width 0.5s ease;
 }
 .sp-bar__fill--completed {
-  background: #22c55e;
+  background: var(--ui-success);
 }
 .sp-bar__fill--failed,
 .sp-bar__fill--cancelled {
-  background: #ef4444;
+  background: var(--ui-danger);
 }
 
 /* Danh sách các bước */
@@ -73,10 +73,10 @@
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  border: 2px solid #cbd5e1;
+  border: 2px solid var(--ui-border-strong);
   font-size: 0.8rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--ui-on-accent);
 }
 .sp-step__body {
   display: flex;
@@ -90,12 +90,12 @@
   color: var(--sc-muted);
 }
 .sp-step--done .sp-step__mark {
-  background: #22c55e;
-  border-color: #22c55e;
+  background: var(--ui-success);
+  border-color: var(--ui-success);
 }
 .sp-step--skipped .sp-step__mark {
-  border-color: #cbd5e1;
-  color: #94a3b8;
+  border-color: var(--ui-border-strong);
+  color: var(--ui-text-3);
 }
 .sp-step--active .sp-step__mark {
   border-color: var(--sc-accent);
@@ -103,8 +103,8 @@
   animation: sp-spin 0.9s linear infinite;
 }
 .sp-step--failed .sp-step__mark {
-  background: #ef4444;
-  border-color: #ef4444;
+  background: var(--ui-danger);
+  border-color: var(--ui-danger);
 }
 .sp-step--pending .sp-step__label {
   color: var(--sc-muted);
@@ -119,31 +119,31 @@
   padding: 0.7rem 0.9rem;
   border-radius: 10px;
   background: var(--sc-accent-soft);
-  color: #1e3a8a;
+  color: var(--ui-primary-hover);
   font-size: 0.9rem;
 }
 .sp-warnings {
   margin: 1rem 0 0;
   padding: 0.7rem 0.9rem 0.7rem 1.9rem;
   border-radius: 10px;
-  background: #fffbeb;
-  color: #92400e;
+  background: var(--ui-warning-soft);
+  color: var(--ui-warning);
   font-size: 0.85rem;
 }
 .sp-error {
   margin-top: 1rem;
   padding: 0.9rem 1rem;
-  border: 1px solid #fecaca;
+  border: 1px solid var(--ui-danger-border);
   border-radius: 12px;
-  background: #fef2f2;
-  color: #991b1b;
+  background: var(--ui-danger-soft);
+  color: var(--ui-danger-hover);
 }
 .sp-error p {
   margin-top: 0.25rem;
   font-size: 0.9rem;
 }
 .sp-error__detail {
-  color: #b45454;
+  color: var(--ui-danger);
 }
 .sp-actions {
   display: flex;
@@ -184,7 +184,7 @@
   overflow: hidden;
   border: 1px solid var(--sc-line);
   border-radius: 10px;
-  background: #fff;
+  background: var(--ui-surface);
   box-shadow: var(--sc-shadow);
   cursor: pointer;
   transition:
@@ -202,7 +202,7 @@
 }
 .sp-strip__item--wait {
   cursor: default;
-  background: linear-gradient(90deg, #eef2f7 25%, #f8fafc 37%, #eef2f7 63%);
+  background: linear-gradient(90deg, var(--ui-surface-hover) 25%, var(--ui-surface-muted) 37%, var(--ui-surface-hover) 63%);
   background-size: 200% 100%;
   animation: sc-shimmer 1.3s linear infinite;
 }
@@ -217,8 +217,8 @@
   min-width: 22px;
   padding: 0 6px;
   border-radius: 999px;
-  background: rgba(15, 23, 42, 0.72);
-  color: #fff;
+  background: color-mix(in srgb, var(--ui-shadow-ink) 72%, transparent);
+  color: var(--ui-on-accent);
   font-size: 0.75rem;
   line-height: 22px;
   text-align: center;
@@ -252,7 +252,7 @@
   overflow: hidden;
   border: 1px solid var(--sc-line);
   border-radius: 10px;
-  background: #fff;
+  background: var(--ui-surface);
   user-select: none;
 }
 .sp-compare__img {
@@ -261,7 +261,7 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
-  background: #fff;
+  background: var(--ui-surface);
 }
 .sp-compare__line {
   position: absolute;
@@ -270,7 +270,7 @@
   width: 2px;
   margin-left: -1px;
   background: var(--sc-accent);
-  box-shadow: 0 0 0 1px #fff;
+  box-shadow: 0 0 0 1px var(--ui-surface);
   pointer-events: none;
 }
 .sp-compare__range {

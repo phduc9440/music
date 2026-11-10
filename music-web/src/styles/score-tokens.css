@@ -1,0 +1,55 @@
+/*
+ * Token màu riêng của các trang bản nhạc (Editor, Player, Review, Xuất file). Để tạm ở đây vì tokens.css thuộc phần của
+ * Đức: khi gộp, chép cả file này vào cuối tokens.css rồi bỏ import trong main.tsx.
+ * Giá trị theme sáng khớp màu cũ nên giao diện sáng không đổi.
+ */
+:root {
+  /* trang nhạc: mặc định luôn nền giấy sáng, kể cả khi app ở theme tối (có công tắc "Đảo màu bản nhạc") */
+  --ui-paper: #ffffff;
+  --ui-staff-ink: #000000;
+  --ui-note-selected: #d9480f;
+  --ui-note-playing: #2563eb;
+  --ui-loop-region: rgb(37 99 235 / 0.18);
+  --ui-measure-error: #dc2626;
+  --ui-measure-locked: #7c3aed; /* dùng ở đồng chỉnh sửa (N13) */
+  --ui-comment-region: rgb(245 158 11 / 0.2); /* dùng ở góp ý (N7) */
+  --ui-diff-added: #15803d;
+  --ui-diff-removed: #dc2626;
+  --ui-diff-changed: #b45309;
+
+  /* 8 màu nhạc cụ / khuông */
+  --ui-instrument-1: #2563eb;
+  --ui-instrument-2: #dc2626;
+  --ui-instrument-3: #15803d;
+  --ui-instrument-4: #b45309;
+  --ui-instrument-5: #7c3aed;
+  --ui-instrument-6: #0e7490;
+  --ui-instrument-7: #be185d;
+  --ui-instrument-8: #475569;
+
+  /* vai trò còn thiếu trong tokens.css */
+  --ui-on-accent: #ffffff; /* chữ trên nền màu nhấn / nền tối */
+  --ui-primary-border: #bfdbfe;
+  --ui-danger-border: #fecaca;
+  --ui-success-border: #bbf7d0;
+  --ui-warning-border: #fde68a;
+  --ui-warning-strong: #f59e0b;
+  --ui-shadow-ink: #0f172a; /* gốc của bóng đổ và lớp phủ, trộn với độ trong suốt */
+}
+
+:root[data-theme='dark'] {
+  --ui-note-selected: #fb923c;
+  --ui-note-playing: #60a5fa;
+  --ui-measure-error: #f87171;
+  --ui-measure-locked: #a78bfa;
+  --ui-diff-added: #4ade80;
+  --ui-diff-removed: #f87171;
+  --ui-diff-changed: #fbbf24;
+  --ui-on-accent: #ffffff;
+  --ui-primary-border: #1e40af;
+  --ui-danger-border: #7f1d1d;
+  --ui-success-border: #166534;
+  --ui-warning-border: #92400e;
+  --ui-warning-strong: #fbbf24;
+  --ui-shadow-ink: #000000;
+}

@@ -30,11 +30,11 @@
   padding: 0.65rem 0.8rem;
   border: 1px solid var(--sc-line);
   border-radius: 12px;
-  background: #fff;
+  background: var(--ui-surface);
 }
 .vh-item.is-current {
   border-color: var(--sc-accent);
-  background: #f5f8ff;
+  background: var(--ui-primary-soft);
 }
 .vh-item__title {
   display: flex;
@@ -55,21 +55,21 @@
 .vh-badge {
   padding: 0.1rem 0.5rem;
   border-radius: 999px;
-  background: #f1f5f9;
+  background: var(--ui-surface-hover);
   color: var(--sc-muted);
   font-size: 0.72rem;
   font-weight: 600;
 }
 .vh-badge--current {
   background: var(--sc-accent);
-  color: #fff;
+  color: var(--ui-on-accent);
 }
 .vh-preview {
   max-height: 65vh;
   overflow: auto;
   border: 1px solid var(--sc-line);
   border-radius: 12px;
-  background: #fff;
+  background: var(--ui-surface);
 }
 
 /* So sánh hai phiên bản */
@@ -104,21 +104,21 @@
   padding: 0.2rem 0.45rem;
   border: 1px solid var(--sc-line);
   border-radius: 6px;
-  background: #f1f5f9;
+  background: var(--ui-surface-hover);
   font-size: 0.78rem;
   text-align: center;
   cursor: help;
 }
 .vh-cell--edited {
-  background: #fef3c7;
-  border-color: #f59e0b;
+  background: var(--ui-warning-soft);
+  border-color: var(--ui-warning-strong);
 }
 .vh-cell--deleted {
-  background: #fee2e2;
-  border-color: #ef4444;
+  background: var(--ui-danger-soft);
+  border-color: var(--ui-danger);
   text-decoration: line-through;
 }
 .vh-cell--added {
-  background: #dcfce7;
-  border-color: #22c55e;
+  background: var(--ui-success-soft);
+  border-color: var(--ui-success);
 }

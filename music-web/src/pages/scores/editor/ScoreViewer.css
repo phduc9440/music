@@ -3,7 +3,7 @@
  * biến màu, nút .sc-btn, menu .sc-menu); ở đây chỉ thêm bố cục toàn màn hình. Mọi class riêng có tiền tố sv-.
  */
 .sv-root {
-  --sv-bar: #fff;
+  --sv-bar: var(--ui-surface);
   display: flex;
   flex-direction: column;
   height: 100vh;
@@ -69,7 +69,7 @@
   padding: 0.8rem 1.25rem;
   background: var(--sv-bar);
   border-bottom: 1px solid var(--sc-line);
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--ui-shadow-ink) 5%, transparent);
 }
 .sv-toolbar__left,
 .sv-toolbar__center,
@@ -124,7 +124,7 @@
   flex: none;
   padding: 0.25rem 0.75rem;
   border-radius: 999px;
-  background: #f1f5f9;
+  background: var(--ui-surface-hover);
   color: var(--sc-muted);
   font-size: 0.8rem;
   font-weight: 600;
@@ -142,7 +142,7 @@
   align-items: center;
   height: 44px;
   padding: 3px;
-  background: #fff;
+  background: var(--ui-surface);
   border: 1px solid var(--sc-line);
   border-radius: 12px;
 }
@@ -172,7 +172,7 @@
 }
 .sv-segment button:hover {
   color: var(--sc-ink);
-  background: #f1f5f9;
+  background: var(--ui-surface-hover);
 }
 .sv-segment button[aria-pressed='true'] {
   background: var(--sc-accent-soft);
@@ -193,7 +193,7 @@
   cursor: pointer;
 }
 .sv-zoom__step:hover:not(:disabled) {
-  background: #f1f5f9;
+  background: var(--ui-surface-hover);
 }
 .sv-zoom__step:disabled {
   opacity: 0.3;
@@ -221,7 +221,7 @@
 }
 .sv-zoom__value:hover,
 .sv-zoom__value[aria-expanded='true'] {
-  background: #f8fafc;
+  background: var(--ui-surface-muted);
   color: var(--sc-accent);
 }
 .sv-zoom__caret {
@@ -240,10 +240,10 @@
   width: 260px;
   padding: 1rem;
   transform: translateX(-50%);
-  background: #fff;
+  background: var(--ui-surface);
   border: 1px solid var(--sc-line);
   border-radius: 16px;
-  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.18);
+  box-shadow: 0 18px 44px color-mix(in srgb, var(--ui-shadow-ink) 18%, transparent);
 }
 .sv-zoom__title {
   display: flex;
@@ -283,7 +283,7 @@
   height: 38px;
   border: 1px solid var(--sc-line);
   border-radius: 10px;
-  background: #fff;
+  background: var(--ui-surface);
   color: var(--sc-ink);
   font: inherit;
   font-size: 0.92rem;
@@ -292,7 +292,7 @@
   cursor: pointer;
 }
 .sv-zoom__presets button:hover {
-  background: #f1f5f9;
+  background: var(--ui-surface-hover);
 }
 .sv-zoom__presets button.is-active {
   border-color: var(--sc-accent);
@@ -306,9 +306,9 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.65rem 1.25rem;
-  background: #fffbeb;
-  border-bottom: 1px solid #fde68a;
-  color: #92400e;
+  background: var(--ui-warning-soft);
+  border-bottom: 1px solid var(--ui-warning-border);
+  color: var(--ui-warning);
   font-size: 0.92rem;
   line-height: 1.5;
 }
@@ -330,7 +330,7 @@
   cursor: pointer;
 }
 .sv-banner__close:hover {
-  background: rgba(146, 64, 14, 0.1);
+  background: color-mix(in srgb, var(--ui-warning) 10%, transparent);
 }
 
 /* ---- Thân: bảng công cụ + vùng vẽ ---- */
@@ -344,7 +344,7 @@
   display: flex;
   flex: 1;
   min-width: 0;
-  background: #e8edf5;
+  background: var(--ui-surface-hover);
 }
 .sv-canvas {
   flex: 1;
@@ -353,13 +353,18 @@
   outline: none;
   overscroll-behavior: contain;
 }
+/* "Đảo màu bản nhạc": nền tối, nốt sáng. Chỉ đảo hình bản nhạc, không đảo lớp tô chọn/ô lỗi phía trên. */
+.sv-canvas--inverted .sv-canvas__host svg,
+.sv-canvas--inverted .sv-canvas__host canvas {
+  filter: invert(1) hue-rotate(180deg);
+}
 .sv-canvas--page .sv-canvas__host {
   padding: 1.5rem 1.25rem 5rem;
 }
 .sv-canvas--page .sv-canvas__host svg {
   display: block;
   margin: 0 auto 1.5rem;
-  background: #fff;
+  background: var(--ui-surface);
   border-radius: 4px;
   box-shadow: var(--sc-shadow);
 }
@@ -368,7 +373,7 @@
   min-width: calc(100% - 3rem);
   margin: 1.5rem 1.5rem 5rem;
   padding: 1.5rem 1.25rem;
-  background: #fff;
+  background: var(--ui-surface);
   border-radius: 8px;
   box-shadow: var(--sc-shadow);
 }
@@ -381,7 +386,7 @@
   padding: 0.45rem 1.1rem;
   border: 1px solid var(--sc-line);
   border-radius: 999px;
-  background: #fff;
+  background: var(--ui-surface);
   color: var(--sc-ink);
   font-size: 0.9rem;
   box-shadow: var(--sc-shadow);
@@ -418,7 +423,7 @@
   transform: translateX(-50%);
   border: 1px solid var(--sc-line);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.95);
+  background: color-mix(in srgb, var(--ui-surface) 95%, transparent);
   box-shadow: var(--sc-shadow);
   color: var(--sc-ink);
   font-size: 0.92rem;
@@ -486,7 +491,7 @@
   padding: 0.6rem 0.25rem;
   border: 1px solid var(--sc-line);
   border-radius: 14px;
-  background: #f8fafc;
+  background: var(--ui-surface-muted);
   color: var(--sc-ink);
   font: inherit;
 }
@@ -607,7 +612,7 @@
     overflow-y: auto;
     border: 1px solid var(--sc-line);
     border-radius: 22px 22px 0 0;
-    box-shadow: 0 -16px 48px rgba(15, 23, 42, 0.25);
+    box-shadow: 0 -16px 48px color-mix(in srgb, var(--ui-shadow-ink) 25%, transparent);
   }
   .sv-tools.is-open {
     display: flex;
@@ -636,7 +641,7 @@
     inset: 0;
     z-index: 40;
     display: block;
-    background: rgba(15, 23, 42, 0.45);
+    background: color-mix(in srgb, var(--ui-shadow-ink) 45%, transparent);
   }
 }
 
@@ -689,7 +694,7 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: #f1f5f9;
+  background: var(--ui-surface-hover);
 }
 .sv-sr {
   position: absolute;
@@ -706,17 +711,17 @@
   width: 11px;
   height: 11px;
   border-radius: 50%;
-  background: #16a34a;
+  background: var(--ui-success);
   content: '';
 }
 .sv-savestate.is-dirty {
-  background: #fff7ed;
+  background: var(--ui-warning-soft);
 }
 .sv-savestate.is-dirty::before {
-  background: #f97316;
+  background: var(--ui-note-selected);
 }
 .sv-savestate.is-saving::before {
-  background: #94a3b8;
+  background: var(--ui-text-3);
   animation: sv-pulse 1s ease-in-out infinite;
 }
 @keyframes sv-pulse {
@@ -741,10 +746,10 @@
 .sv-status__warn {
   min-height: 32px;
   padding: 0.15rem 0.7rem;
-  border: 1px solid #fecaca;
+  border: 1px solid var(--ui-danger-border);
   border-radius: 999px;
-  background: #fef2f2;
-  color: #b91c1c;
+  background: var(--ui-danger-soft);
+  color: var(--ui-danger-hover);
   font: inherit;
   font-size: 0.88rem;
   font-weight: 700;
@@ -752,7 +757,7 @@
   cursor: pointer;
 }
 .sv-status__notice {
-  color: #b45309;
+  color: var(--ui-warning);
   font-weight: 700;
   white-space: nowrap;
   animation: sv-shake 0.35s;
@@ -824,7 +829,7 @@
   gap: 0.5rem;
   padding: 0.5rem 0.75rem;
   border-top: 1px solid var(--sc-line);
-  background: #fff;
+  background: var(--ui-surface);
 }
 .sv-lyricbar__verse {
   display: flex;
@@ -839,13 +844,13 @@
   min-width: 0;
   height: 38px;
   padding: 0 0.75rem;
-  border: 1.5px solid var(--sc-accent, #d9480f);
+  border: 1.5px solid var(--sc-accent, var(--ui-note-selected));
   border-radius: 10px;
   font: inherit;
 }
 .sv-lyricbar__input:disabled {
   border-color: var(--sc-line);
-  background: #f8fafc;
+  background: var(--ui-surface-muted);
 }
 .sv-lyricbar__paste {
   width: 100%;
@@ -902,7 +907,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
-  border: 1px solid var(--border, #ddd);
+  border: 1px solid var(--border, var(--ui-border-strong));
   border-radius: 8px;
   padding: 0.5rem 0.75rem;
 }
@@ -950,7 +955,7 @@
   padding: 0 0.5rem;
   border: 1px solid var(--sc-line);
   border-radius: 8px;
-  background: #fff;
+  background: var(--ui-surface);
   color: var(--sc-ink);
   font: inherit;
   font-size: 0.88rem;
@@ -1037,7 +1042,7 @@ h3.sv-tools__title {
     padding: 0 0.85rem;
     border: 1px solid var(--sc-line);
     border-radius: 12px;
-    background: #fff;
+    background: var(--ui-surface);
     color: var(--sc-ink);
     font: inherit;
     font-size: 0.92rem;
@@ -1110,7 +1115,7 @@ h3.sv-tools__title {
   padding: 0 0.7rem;
   border: 1px solid var(--sc-line);
   border-radius: 12px;
-  background: #fff;
+  background: var(--ui-surface);
   color: var(--sc-ink);
   font: inherit;
   font-size: 0.92rem;
