@@ -74,6 +74,8 @@ export default function NotificationBell() {
       return;
     }
     if (n.type === 'PUBLISH_REQUESTED') navigate('/admin/pending-scores');
+    // Bản nhạc đã vào thùng rác nên trang chi tiết không mở được: đưa người dùng tới thùng rác để khôi phục
+    else if (n.type === 'SCORE_TRASHED_BY_ADMIN') navigate('/scores/trash');
     else if (n.scoreId) navigate(`/scores/${n.scoreId}`);
   };
 

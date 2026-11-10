@@ -272,7 +272,8 @@ export type NotificationType =
   | 'PUBLISH_APPROVED'
   | 'PUBLISH_REJECTED'
   | 'NEW_REVIEW'
-  | 'ANNOUNCEMENT';
+  | 'ANNOUNCEMENT'
+  | 'SCORE_TRASHED_BY_ADMIN';
 
 export interface AppNotification {
   id: string;

@@ -14,7 +14,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
-/** ADMIN áp một thao tác lên nhiều bản nhạc (tối đa 100). reason chỉ dùng cho PRIVATE. */
+/** ADMIN áp một thao tác lên nhiều bản nhạc (tối đa 100). reason dùng cho PRIVATE và DELETE (gửi cho chủ). */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
