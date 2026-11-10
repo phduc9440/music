@@ -16,6 +16,25 @@ export type { IconName } from './Icon';
 
 // ------------------------------------------------------------------ bố cục trang
 
+/** Nút "quay lại" dùng chung: PageHeader và các trang chi tiết admin đều dựng từ đây để cùng một kiểu. */
+export function BackLink({ label, to, onClick }: { label: string; to?: string; onClick?: () => void }) {
+  const content = (
+    <>
+      <Icon name="arrowLeft" size={16} />
+      {label}
+    </>
+  );
+  return to ? (
+    <Link to={to} className="adm-page-header__back">
+      {content}
+    </Link>
+  ) : (
+    <button type="button" className="adm-page-header__back" onClick={onClick}>
+      {content}
+    </button>
+  );
+}
+
 export function PageHeader({
   title,
   description,
@@ -29,18 +48,7 @@ export function PageHeader({
 }) {
   return (
     <header className="adm-page-header">
-      {back &&
-        (back.to ? (
-          <Link to={back.to} className="adm-page-header__back">
-            <Icon name="arrowLeft" size={16} />
-            {back.label}
-          </Link>
-        ) : (
-          <button type="button" className="adm-page-header__back" onClick={back.onClick}>
-            <Icon name="arrowLeft" size={16} />
-            {back.label}
-          </button>
-        ))}
+      {back && <BackLink {...back} />}
       <div className="adm-page-header__row">
         <div className="adm-page-header__text">
           <h1 className="adm-page-header__title">{title}</h1>
