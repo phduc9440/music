@@ -19,7 +19,10 @@ export default function EditScoreModal({ score, onClose, onSaved }: Props) {
   const [composer, setComposer] = useState(score.composer ?? '');
   const [difficulty, setDifficulty] = useState<Difficulty | ''>(score.difficulty ?? '');
   const [studyNotes, setStudyNotes] = useState(score.studyNotes ?? '');
-  const [visibility, setVisibility] = useState<Visibility>(score.visibility === 'PENDING' ? 'PUBLIC' : score.visibility);
+  const [visibility, setVisibility] = useState<Visibility>(
+    score.visibility === 'PENDING' ? 'PUBLIC' : score.visibility,
+  );
+  const [allowDownload, setAllowDownload] = useState(score.allowDownload);
   const [allTags, setAllTags] = useState<Tag[]>([]);
   const initialTagIds = (score.tags ?? []).map((t) => t.id);
   const [tagIds, setTagIds] = useState<string[]>(initialTagIds);
@@ -55,11 +58,12 @@ export default function EditScoreModal({ score, onClose, onSaved }: Props) {
         ...(difficulty ? { difficulty } : {}),
         // Chỉ chủ sở hữu (hoặc admin) mới được đổi chế độ hiển thị
         ...(score.canDelete ? { visibility } : {}),
+        // Cho phép tải chỉ chủ sở hữu được đổi (BE trả 1002 với người khác)
+        ...(score.canManageSharing && allowDownload !== score.allowDownload ? { allowDownload } : {}),
       });
       let saved = res.data.result;
       // Chỉ gọi API thể loại khi người dùng có đổi lựa chọn
-      const tagsChanged =
-        tagIds.length !== initialTagIds.length || tagIds.some((id) => !initialTagIds.includes(id));
+      const tagsChanged = tagIds.length !== initialTagIds.length || tagIds.some((id) => !initialTagIds.includes(id));
       if (tagsChanged) saved = (await scoreApi.updateTags(score.id, tagIds)).data.result;
       toast.success('Đã lưu thông tin bản nhạc');
       onSaved(saved);
@@ -132,6 +136,13 @@ export default function EditScoreModal({ score, onClose, onSaved }: Props) {
               </p>
             )}
           </>
+        )}
+
+        {score.canManageSharing && (
+          <label className="sc-check">
+            <input type="checkbox" checked={allowDownload} onChange={(e) => setAllowDownload(e.target.checked)} />
+            <span>Cho phép người xem tải MusicXML, MIDI, âm thanh, PDF</span>
+          </label>
         )}
 
         <span className="sc-label">

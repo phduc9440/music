@@ -220,7 +220,13 @@ export default function ScoreViewer() {
               </button>
             )}
             {phase === 'parseError' && score && (
-              <DownloadMenu scoreId={score.id} files={score.files} title={score.title} staffCount={score.staffCount} />
+              <DownloadMenu
+                scoreId={score.id}
+                files={score.files}
+                title={score.title}
+                staffCount={score.staffCount}
+                canDownload={score.canDownload}
+              />
             )}
           </div>
         </div>
@@ -391,7 +397,13 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
             <button className="sc-btn sc-btn--primary" onClick={goBack}>
               Về trang chi tiết
             </button>
-            <DownloadMenu scoreId={score.id} files={score.files} title={score.title} staffCount={score.staffCount} />
+            <DownloadMenu
+              scoreId={score.id}
+              files={score.files}
+              title={score.title}
+              staffCount={score.staffCount}
+              canDownload={score.canDownload}
+            />
           </div>
         </div>
       </div>
@@ -516,6 +528,7 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
             files={score.files}
             title={score.title}
             staffCount={score.staffCount}
+            canDownload={score.canDownload}
             compact
           />
           <ToolbarMoreMenu

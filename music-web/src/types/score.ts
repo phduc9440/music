@@ -146,6 +146,10 @@ export interface ScoreDetail extends ScoreSummary {
   averageRating?: number | null;
   ratingCount?: number;
   canManageSharing: boolean;
+  /** Người xem có tải được MusicXML, MIDI, âm thanh, PDF không (chủ và người sửa luôn được). */
+  canDownload: boolean;
+  /** Chủ sở hữu đã cho người xem tải chưa; chỉ chủ sở hữu nhận giá trị thật. */
+  allowDownload: boolean;
   files: ScoreFileInfo[];
   latestTasks: AiTaskInfo[];
 }
@@ -178,6 +182,22 @@ export interface ScoreUpdateRequest {
   difficulty?: Difficulty;
   studyNotes?: string;
   visibility?: Visibility;
+  /** Cho phép người xem tải MusicXML, MIDI, âm thanh, PDF (chỉ chủ sở hữu được đổi). */
+  allowDownload?: boolean;
+}
+
+/** Một bản nhạc trong thùng rác, BE: TrashedScoreResponse. */
+export interface TrashedScore {
+  id: string;
+  title: string;
+  composer?: string | null;
+  measureCount?: number | null;
+  deletedAt: string;
+  /** Thời điểm bị xóa hẳn. */
+  purgeAt: string;
+  /** true nếu quản trị viên xóa (kiểm duyệt). */
+  deletedByAdmin: boolean;
+  deleteReason?: string | null;
 }
 
 // Body multipart của POST /omr/upload (files phải đúng thứ tự trang, ảnh đã xoay nếu người dùng xoay)
@@ -457,4 +477,3 @@ export interface AiTaskSummary {
   completedLast24h: number;
   averageRunSeconds: { taskType: string; seconds: number; count: number }[];
 }
-
