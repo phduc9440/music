@@ -13,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.ptit.music_be.dto.request.UpdateProfileRequest;
+import com.ptit.music_be.dto.request.UpdateThemeRequest;
 import com.ptit.music_be.dto.response.MemberResponse;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.exception.AppException;
@@ -56,6 +57,14 @@ public class MemberServiceImpl implements MemberService {
         member.setFullName(request.getFullName().trim());
         member.setPhone(blankToNull(request.getPhone()));
         member.setAddress(blankToNull(request.getAddress()));
+        return memberMapper.toMemberResponse(memberRepository.save(member));
+    }
+
+    @Override
+    @Transactional
+    public MemberResponse updateMyTheme(UpdateThemeRequest request) {
+        Member member = currentMember();
+        member.setUiTheme(request.getTheme());
         return memberMapper.toMemberResponse(memberRepository.save(member));
     }
 

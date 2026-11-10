@@ -3,6 +3,8 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import ChangePasswordModal from '../ChangePasswordModal';
 import NotificationBell from '../NotificationBell';
+import ThemeToggle from '../../theme/ThemeToggle';
+import { adoptServerTheme } from '../../theme/theme';
 import { authApi, scoreApi, userApi } from '../../services';
 import { AuthProvider } from '../../types';
 import type { Member } from '../../types';
@@ -74,7 +76,10 @@ export default function AdminLayout() {
   useEffect(() => {
     userApi
       .getMe()
-      .then((res) => setAdmin(res.data.result))
+      .then((res) => {
+        setAdmin(res.data.result);
+        adoptServerTheme(res.data.result.uiTheme); // giao diện đã chọn đi theo tài khoản giữa các máy
+      })
       .catch(() => toast.error('Không tải được hồ sơ quản trị viên'));
   }, []);
 
@@ -136,6 +141,7 @@ export default function AdminLayout() {
         </div>
 
         <div className="adm-header__right">
+          <ThemeToggle />
           <NotificationBell />
           <div className="adm-usermenu" ref={menuRef}>
             <button
@@ -155,7 +161,12 @@ export default function AdminLayout() {
             {menuOpen && (
               <div className="adm-usermenu__panel" role="menu">
                 {admin?.email && <div className="adm-usermenu__email">{admin.email}</div>}
-                <button type="button" role="menuitem" className="adm-usermenu__item" onClick={() => navigate('/scores')}>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="adm-usermenu__item"
+                  onClick={() => navigate('/scores')}
+                >
                   <Icon name="home" size={16} />
                   Giao diện người dùng
                 </button>

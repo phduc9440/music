@@ -8,7 +8,7 @@
   align-items: center;
   justify-content: center;
   padding: 1rem;
-  background: rgba(15, 23, 42, 0.45);
+  background: var(--ui-overlay);
   animation: ui-dialog-fade 0.12s ease-out;
 }
 
@@ -129,7 +129,7 @@
 .ui-dialog__btn--primary {
   background: var(--ui-primary);
   border-color: var(--ui-primary);
-  color: #fff;
+  color: var(--ui-on-accent);
 }
 
 .ui-dialog__btn--primary:hover:not(:disabled) {
@@ -139,7 +139,7 @@
 .ui-dialog__btn--danger {
   background: var(--ui-danger);
   border-color: var(--ui-danger);
-  color: #fff;
+  color: var(--ui-on-accent);
 }
 
 .ui-dialog__btn--danger:hover:not(:disabled) {

@@ -5,6 +5,7 @@ import { authApi } from '../services';
 import { completeLogin } from '../utils/auth';
 import GoogleAuthButton from '../components/GoogleAuthButton';
 import { Icon } from '../components/ui';
+import ThemeToggle from '../theme/ThemeToggle';
 
 type ViewMode = 'login' | 'register' | 'forgot' | 'reset';
 
@@ -108,6 +109,9 @@ export default function Login() {
 
   return (
     <div className="auth-wrapper">
+      <div className="auth-theme">
+        <ThemeToggle />
+      </div>
       <div className="auth-card">
         <div className="auth-logo" aria-hidden="true">
           <Icon name="music" size={22} />

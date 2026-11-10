@@ -15,11 +15,11 @@
 }
 
 .sys-meter__bar--ok {
-  background: #16a34a;
+  background: var(--ui-success);
 }
 
 .sys-meter__bar--warn {
-  background: #f59e0b;
+  background: var(--ui-warning-strong);
 }
 
 .sys-meter__bar--danger {
@@ -39,8 +39,8 @@
   overflow: auto;
   padding: 0.85rem 1rem;
   border-radius: var(--adm-radius);
-  background: #0f172a;
-  color: #e2e8f0;
+  background: var(--ui-console-bg);
+  color: var(--ui-console-text);
   font-size: 12px;
   line-height: 1.55;
   white-space: pre-wrap;

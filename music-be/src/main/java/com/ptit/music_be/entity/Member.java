@@ -12,6 +12,7 @@ import com.ptit.music_be.converter.AuthProviderConverter;
 import com.ptit.music_be.converter.MemberStatusConverter;
 import com.ptit.music_be.dto.enums.AuthProvider;
 import com.ptit.music_be.dto.enums.MemberStatus;
+import com.ptit.music_be.dto.enums.UiTheme;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -58,6 +59,11 @@ public class Member {
     @Convert(converter = AuthProviderConverter.class)
     @Column(name = "auth_provider")
     AuthProvider authProvider;
+
+    /** Giao diện đã chọn (sáng/tối/theo hệ thống); null là chưa chọn, hiểu là theo hệ thống. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "ui_theme", length = 10)
+    UiTheme uiTheme;
 
     /** Ngày đăng ký; null với tài khoản tạo trước khi có cột này. */
     @CreationTimestamp

@@ -5,6 +5,7 @@ import java.util.Set;
 
 import com.ptit.music_be.dto.enums.AuthProvider;
 import com.ptit.music_be.dto.enums.MemberStatus;
+import com.ptit.music_be.dto.enums.UiTheme;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -22,6 +23,8 @@ public class MemberResponse {
     String phone;
     String address;
     String avatarUrl;
+    /** Giao diện đã chọn; null là chưa chọn (theo hệ thống). */
+    UiTheme uiTheme;
     MemberStatus status;
     Boolean emailVerified;
     AuthProvider authProvider;

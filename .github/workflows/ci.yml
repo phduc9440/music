@@ -76,8 +76,7 @@ jobs:
           cache-dependency-path: music-web/package-lock.json
       - run: npm ci
       - run: npx tsc -b
-      # TODO: chạy `npx eslint src` toàn bộ khi Đức sửa xong lỗi ở Admin, Profile, Login, GoogleAuthButton,
-      # ChangePasswordModal. Tạm thời chỉ kiểm thư mục của phần bản nhạc.
-      - run: npx eslint src/pages/scores src/components/scores src/components/player src/components/editor src/components/export
+      - run: npx eslint src
       - run: npm run lint:colors
+      - run: npm run check:contrast
       - run: npm run build

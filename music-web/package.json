@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "lint:colors": "node scripts/check-colors.mjs",
     "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\"",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "check:contrast": "node scripts/check-contrast.mjs"
   },
   "dependencies": {
     "@react-oauth/google": "^0.13.5",

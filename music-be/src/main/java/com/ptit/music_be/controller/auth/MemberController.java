@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.ptit.music_be.dto.request.UpdateProfileRequest;
+import com.ptit.music_be.dto.request.UpdateThemeRequest;
 import com.ptit.music_be.dto.response.ApiResponse;
 import com.ptit.music_be.dto.response.MemberResponse;
 import com.ptit.music_be.service.auth.MemberService;
@@ -42,6 +43,16 @@ public class MemberController {
     public ApiResponse<MemberResponse> updateMyProfile(@RequestBody @Valid UpdateProfileRequest request) {
         return ApiResponse.<MemberResponse>builder()
                 .result(memberService.updateMyProfile(request))
+                .build();
+    }
+
+    @PutMapping("/me/theme")
+    @Operation(
+            summary = "Save my interface theme (LIGHT, DARK or SYSTEM) so it follows me across devices",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<MemberResponse> updateMyTheme(@RequestBody @Valid UpdateThemeRequest request) {
+        return ApiResponse.<MemberResponse>builder()
+                .result(memberService.updateMyTheme(request))
                 .build();
     }
 
