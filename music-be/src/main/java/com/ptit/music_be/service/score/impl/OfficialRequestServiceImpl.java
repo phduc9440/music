@@ -62,7 +62,7 @@ public class OfficialRequestServiceImpl implements OfficialRequestService {
             throw new AppException(ErrorCode.SCORE_NOT_PUBLIC_FOR_OFFICIAL);
         }
         if (Boolean.TRUE.equals(score.getIsOfficial())
-                || requestRepository.existsByScoreIdAndStatusIn(scoreId, Set.of(OfficialRequestStatus.ACCEPTED))) {
+                || requestRepository.hasLiveAcceptedCopy(scoreId)) {
             throw new AppException(ErrorCode.SCORE_ALREADY_OFFICIAL);
         }
         if (requestRepository.existsByScoreIdAndStatusIn(scoreId, Set.of(OfficialRequestStatus.PENDING))) {

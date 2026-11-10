@@ -137,12 +137,10 @@ class OfficialRequestServiceImplTest {
     @Test
     void acceptedBeforeMeansAlreadyInTheLibraryAndPendingMeansDuplicate() {
         login("boss@x.com", "ROLE_ADMIN");
-        when(requests.existsByScoreIdAndStatusIn("s1", Set.of(OfficialRequestStatus.ACCEPTED)))
-                .thenReturn(true);
+        when(requests.hasLiveAcceptedCopy("s1")).thenReturn(true);
         assertError(() -> service.request("s1"), ErrorCode.SCORE_ALREADY_OFFICIAL);
 
-        when(requests.existsByScoreIdAndStatusIn("s1", Set.of(OfficialRequestStatus.ACCEPTED)))
-                .thenReturn(false);
+        when(requests.hasLiveAcceptedCopy("s1")).thenReturn(false);
         when(requests.existsByScoreIdAndStatusIn("s1", Set.of(OfficialRequestStatus.PENDING)))
                 .thenReturn(true);
         assertError(() -> service.request("s1"), ErrorCode.OFFICIAL_REQUEST_DUPLICATED);

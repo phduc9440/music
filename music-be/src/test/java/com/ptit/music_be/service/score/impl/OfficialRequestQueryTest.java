@@ -156,6 +156,26 @@ class OfficialRequestQueryTest {
     }
 
     @Test
+    void aCopyThatWasTrashedAnyOtherWayFreesTheOriginalToo() {
+        asAdmin();
+        // lời xin vẫn ghi ACCEPTED nhưng bản sao đã vào thùng rác (ví dụ admin xóa thẳng bản sao)
+        copy.setDeletedAt(java.time.LocalDateTime.now());
+        scoreRepository.save(copy);
+        entityManager.flush();
+        entityManager.clear();
+
+        assertFalse(requestRepository.hasLiveAcceptedCopy(taken.getId()));
+        assertTrue(scoreService.getOfficialCandidates(0, 50, tag).getContent().stream()
+                .anyMatch(s -> s.getTitle().equals(tag + " Taken")));
+    }
+
+    @Test
+    void anAliveCopyKeepsTheOriginalOutOfTheCandidates() {
+        assertTrue(requestRepository.hasLiveAcceptedCopy(taken.getId()));
+        assertFalse(requestRepository.hasLiveAcceptedCopy(asked.getId()));
+    }
+
+    @Test
     void removingTheCopyFromTheLibraryTrashesItAndFreesTheOriginalForANewRequest() {
         asAdmin();
 

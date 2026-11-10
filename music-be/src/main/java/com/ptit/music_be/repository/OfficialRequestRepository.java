@@ -19,6 +19,19 @@ public interface OfficialRequestRepository extends JpaRepository<OfficialRequest
 
     boolean existsByScoreIdAndStatusIn(String scoreId, Collection<OfficialRequestStatus> statuses);
 
+    /**
+     * Bản nhạc đã có bản sao còn sống trong kho mẫu (lời xin ACCEPTED mà bản sao chưa bị xóa hoặc vào thùng rác).
+     * Bản sao đã vào thùng rác thì không tính, nên bản gốc xin lại được dù lời xin cũ vẫn ghi ACCEPTED.
+     */
+    @Query(
+            """
+			select count(r) > 0 from OfficialRequest r
+			where r.score.id = :scoreId
+			and r.status = com.ptit.music_be.dto.enums.OfficialRequestStatus.ACCEPTED
+			and exists (select 1 from Score c where c.id = r.copyScoreId)
+			""")
+    boolean hasLiveAcceptedCopy(@Param("scoreId") String scoreId);
+
     /** Lời xin đang chờ của một chủ sở hữu, mới nhất trước, kèm bản nhạc và người xin (tránh N+1). */
     @Query(
             """
