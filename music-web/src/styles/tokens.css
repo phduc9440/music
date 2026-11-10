@@ -51,6 +51,16 @@
   --ui-overlay: rgba(15, 23, 42, 0.45); /* nền mờ phía sau hộp thoại */
   --ui-overlay-soft: rgba(15, 23, 42, 0.35); /* nền mờ phía sau ngăn kéo trên điện thoại */
 
+  /* "sân khấu" ở đầu trang chủ (mục 5.1 Phòng hòa nhạc): luôn tối ở cả hai theme, nhấn vàng đồng và đỏ nhung */
+  --ui-stage-bg: #1b1411;
+  --ui-stage-bg-2: #2c201a;
+  --ui-stage-text: #f6efe3;
+  --ui-stage-text-2: #d3c4ab;
+  --ui-stage-line: rgb(246 239 227 / 0.16); /* năm dòng kẻ khuông */
+  --ui-brass: #d4a853;
+  --ui-velvet: #9b1c2c;
+  --ui-velvet-hover: #7f1623;
+
   /* khung nhật ký lỗi (luôn tối ở cả hai theme, như một cửa sổ terminal) */
   --ui-console-bg: #0f172a;
   --ui-console-text: #e2e8f0;

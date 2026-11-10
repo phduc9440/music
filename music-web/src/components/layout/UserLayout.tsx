@@ -94,7 +94,7 @@ export default function UserLayout() {
               <Icon name={navOpen ? 'x' : 'menu'} />
             </button>
 
-            <Link to="/scores" className="app-brand">
+            <Link to="/" className="app-brand">
               <span className="app-brand__logo">
                 <Icon name="music" size={16} />
               </span>

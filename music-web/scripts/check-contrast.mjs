@@ -61,6 +61,11 @@ const PAIRS = [
   ['--ui-danger', '--ui-danger-soft', 4.5, 'chữ lỗi'],
   ['--ui-violet', '--ui-violet-soft', 4.5, 'chữ nhãn tím'],
   ['--ui-border-strong', '--ui-surface', 1.3, 'viền đậm (chỉ cần nhìn thấy)'],
+  ['--ui-stage-text', '--ui-stage-bg', 4.5, 'chữ trên sân khấu trang chủ'],
+  ['--ui-stage-text-2', '--ui-stage-bg-2', 4.5, 'chữ phụ trên sân khấu trang chủ'],
+  ['--ui-brass', '--ui-stage-bg', 4.5, 'chữ vàng đồng trên sân khấu'],
+  ['--ui-stage-text', '--ui-velvet', 4.5, 'chữ trên nút đỏ nhung'],
+  ['--ui-stage-text', '--ui-velvet-hover', 4.5, 'chữ trên nút đỏ nhung khi rê chuột'],
 ];
 
 let failed = 0;

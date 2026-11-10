@@ -13,6 +13,7 @@ import {
   MAX_TITLE,
   UPLOAD_MAX_FILE_BYTES,
 } from '../../../utils/score';
+import { clearPendingUpload, isImportBatch, peekPendingUpload } from '../../../utils/pendingUpload';
 import '../../../components/scores/scores.css';
 import './ScoreUpload.css';
 
@@ -30,8 +31,15 @@ const validateImportFile = (file: File): string => {
 export default function ScoreImport() {
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
-  const [file, setFile] = useState<File | null>(null);
-  const [title, setTitle] = useState('');
+  // File khách đã thả vào trang chủ trước khi đăng nhập (mục 5.3): chọn sẵn để không phải chọn lại
+  const [pendingFile] = useState<File | null>(() => {
+    const pending = peekPendingUpload();
+    return pending && isImportBatch(pending) ? pending[0] : null;
+  });
+  const [file, setFile] = useState<File | null>(pendingFile);
+  const [title, setTitle] = useState(() =>
+    pendingFile ? fileNameWithoutExtension(pendingFile.name).slice(0, MAX_TITLE) : '',
+  );
   const [titleTouched, setTitleTouched] = useState(false);
   const [composer, setComposer] = useState('');
   const [allTags, setAllTags] = useState<Tag[]>([]);
@@ -50,6 +58,8 @@ export default function ScoreImport() {
       .then((res) => setAllTags(res.data.result))
       .catch(() => setAllTags([]));
   }, []);
+
+  useEffect(() => clearPendingUpload(), []);
 
   const toggleTag = (id: string) =>
     setTagIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));

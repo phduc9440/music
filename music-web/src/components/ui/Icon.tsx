@@ -169,6 +169,8 @@ const PATHS = {
       <path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4" />
     </>
   ),
+  upload: <path d="M12 16V4M7 9l5-5 5 5M4 20h16" />,
+  flame: <path d="M12 3c.8 3.5 5 5.2 5 10a5 5 0 0 1-10 0c0-2 .9-3.4 2-4.3.1 1.9 1 3 2.2 3.3C10.6 9.4 10.9 6 12 3z" />,
 } as const;
 
 export type IconName = keyof typeof PATHS;
