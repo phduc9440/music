@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.ptit.music_be.dto.enums.SharePermission;
 import com.ptit.music_be.dto.response.HomeSummaryResponse;
 import com.ptit.music_be.dto.response.PublicHomeResponse;
+import com.ptit.music_be.dto.response.ScoreSummaryResponse;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.MemberScore;
 import com.ptit.music_be.entity.PracticeSession;
@@ -33,6 +34,7 @@ import com.ptit.music_be.repository.HomeQueryRepository;
 import com.ptit.music_be.repository.MemberRepository;
 import com.ptit.music_be.repository.MemberScoreRepository;
 import com.ptit.music_be.repository.PracticeSessionRepository;
+import com.ptit.music_be.repository.ScoreCounterRepository;
 import com.ptit.music_be.repository.ScoreRepository;
 
 /**
@@ -60,6 +62,9 @@ class HomeQueryTest {
 
     @Autowired
     PracticeSessionRepository practiceSessionRepository;
+
+    @Autowired
+    ScoreCounterRepository scoreCounterRepository;
 
     private String tag;
     private Member owner;
@@ -152,6 +157,53 @@ class HomeQueryTest {
         });
         // Gọi lại trong 5 phút trả đúng bản đã nhớ
         assertSame(first, homeService.getPublicHome());
+    }
+
+    @Test
+    void featuredPutsThisWeeksMostViewedFirstAndIgnoresOlderViews() {
+        Score hot = score(owner, "Hot tuần này", "PUBLIC", null, 0);
+        Score warm = score(owner, "Ấm", "PUBLIC", null, 0);
+        Score old = score(owner, "Hot tuần trước", "PUBLIC", null, 999_999); // tổng lượt xem lớn nhưng đã nguội
+        Score hidden = score(owner, "Riêng tư", "PRIVATE", null, 0);
+        LocalDate today = LocalDate.now();
+        for (int i = 0; i < 5; i++) {
+            scoreCounterRepository.incrementDailyViews(hot.getId(), today);
+            scoreCounterRepository.incrementDailyViews(hidden.getId(), today);
+        }
+        scoreCounterRepository.incrementDailyViews(warm.getId(), today.minusDays(2));
+        for (int i = 0; i < 50; i++) {
+            scoreCounterRepository.incrementDailyViews(old.getId(), today.minusDays(10));
+        }
+        homeService.evictPublicHome();
+
+        PublicHomeResponse home = homeService.getPublicHome();
+        List<String> ids =
+                home.getFeatured().stream().map(ScoreSummaryResponse::getId).toList();
+
+        assertEquals(hot.getId(), ids.get(0));
+        assertEquals(warm.getId(), ids.get(1));
+        assertTrue(home.getFeaturedWeekly() >= 2);
+        // Bản riêng tư có lượt xem cũng không lọt vào trang của khách
+        assertEquals(false, ids.contains(hidden.getId()));
+        // Bản chỉ hot ở tuần trước không nằm trong phần "tuần", chỉ có thể xuất hiện ở phần bổ sung phía sau
+        assertTrue(!ids.contains(old.getId()) || ids.indexOf(old.getId()) >= home.getFeaturedWeekly());
+    }
+
+    @Test
+    void dailyViewsAccumulateInOneRowPerDay() {
+        Score s = score(owner, "Đếm", "PUBLIC", null, 0);
+        LocalDate today = LocalDate.now();
+        scoreCounterRepository.incrementDailyViews(s.getId(), today);
+        scoreCounterRepository.incrementDailyViews(s.getId(), today);
+        scoreCounterRepository.incrementDailyViews(s.getId(), today.minusDays(1));
+
+        List<Object[]> since =
+                homeQueryRepository.topPublicSince(today, org.springframework.data.domain.PageRequest.of(0, 500));
+        long todayViews = since.stream()
+                .filter(r -> r[0].equals(s.getId()))
+                .mapToLong(r -> ((Number) r[1]).longValue())
+                .sum();
+        assertEquals(2, todayViews);
     }
 
     @Test

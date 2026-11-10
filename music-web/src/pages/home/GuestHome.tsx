@@ -127,12 +127,23 @@ function FeaturedCover({ score }: { score: ScoreSummary }) {
   );
 }
 
-function FeaturedCard({ score, rank, onOpen }: { score: ScoreSummary; rank: number; onOpen: () => void }) {
+function FeaturedCard({
+  score,
+  rank,
+  weekly,
+  onOpen,
+}: {
+  score: ScoreSummary;
+  rank: number;
+  weekly: boolean;
+  onOpen: () => void;
+}) {
   return (
     <button type="button" className="gh-card" onClick={onOpen} aria-label={`Mở bản nhạc ${score.title}`}>
       <span className="gh-card__cover">
         <FeaturedCover score={score} />
         <span className="gh-card__rank">#{rank}</span>
+        {weekly && <span className="gh-card__hot">Tuần này</span>}
         <span className="gh-card__open">
           Mở bản nhạc
           <Icon name="chevronRight" size={14} />
@@ -337,8 +348,12 @@ export default function GuestHome() {
 
         <Section
           id="featured"
-          title="Bản nhạc nổi bật"
-          lead="Những bản được cộng đồng xem nhiều nhất. Đăng nhập để mở, nghe và luyện tập."
+          title={data && data.featuredWeekly > 0 ? 'Nổi bật tuần này' : 'Bản nhạc nổi bật'}
+          lead={
+            data && data.featuredWeekly > 0
+              ? 'Những bản được xem nhiều nhất trong 7 ngày qua. Đăng nhập để mở, nghe và luyện tập.'
+              : 'Những bản được cộng đồng xem nhiều nhất. Đăng nhập để mở, nghe và luyện tập.'
+          }
         >
           {!data && !failed && (
             <div className="gh-strip">
@@ -353,7 +368,13 @@ export default function GuestHome() {
           {data && data.featured.length > 0 && (
             <FeaturedStrip>
               {data.featured.map((s, i) => (
-                <FeaturedCard key={s.id} score={s} rank={i + 1} onOpen={() => loginThen(`/scores/${s.id}`)} />
+                <FeaturedCard
+                  key={s.id}
+                  score={s}
+                  rank={i + 1}
+                  weekly={i < data.featuredWeekly}
+                  onOpen={() => loginThen(`/scores/${s.id}`)}
+                />
               ))}
             </FeaturedStrip>
           )}

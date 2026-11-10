@@ -5,6 +5,8 @@ import type { PracticeStreak, ScoreSummary } from './score';
 export interface PublicHome {
   /** Bản công khai xem nhiều nhất; thumbnailUrl là ảnh công khai, khách tải được. */
   featured: ScoreSummary[];
+  /** Số bản đầu của featured được chọn vì có lượt xem trong 7 ngày qua; các bản sau bổ sung theo tổng lượt xem. */
+  featuredWeekly: number;
   /** Nhạc sĩ có nhiều bản công khai nhất (bảng composers, mục 5.4), kèm tối đa 3 bản tiêu biểu. */
   composers: Composer[];
   stats: HomeStats;

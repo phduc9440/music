@@ -15,7 +15,6 @@ import com.ptit.music_be.dto.enums.FileType;
 import com.ptit.music_be.dto.enums.Visibility;
 import com.ptit.music_be.dto.response.ComposerResponse;
 import com.ptit.music_be.dto.response.HomeSummaryResponse;
-import com.ptit.music_be.dto.response.PageResponse;
 import com.ptit.music_be.dto.response.PublicHomeResponse;
 import com.ptit.music_be.dto.response.ScoreSummaryResponse;
 import com.ptit.music_be.entity.Member;
@@ -45,6 +44,7 @@ public class HomeServiceImpl implements HomeService {
 
     static final long PUBLIC_CACHE_MILLIS = 5 * 60 * 1000L;
     static final int FEATURED_SIZE = 8;
+    static final int WEEK_DAYS = 7;
     static final int COMPOSER_SIZE = 6;
     static final int RECENT_SIZE = 3;
     static final int PENDING_SIZE = 5;
@@ -86,10 +86,29 @@ public class HomeServiceImpl implements HomeService {
 
     /** Mỗi câu truy vấn chạy trong transaction riêng của nó (ScoreService, repository). */
     PublicHomeResponse buildPublicHome() {
-        PageResponse<ScoreSummaryResponse> featured =
-                scoreService.getPublicScores(0, FEATURED_SIZE, null, null, null, "VIEWS");
+        // "Nổi bật tuần": bản có nhiều lượt xem nhất trong 7 ngày qua, thiếu thì bổ sung theo tổng lượt xem
+        List<String> weeklyIds =
+                homeQueryRepository
+                        .topPublicSince(LocalDate.now().minusDays(WEEK_DAYS - 1), PageRequest.of(0, FEATURED_SIZE))
+                        .stream()
+                        .map(row -> (String) row[0])
+                        .toList();
+        List<ScoreSummaryResponse> featured = new ArrayList<>(scoreService.getPublicScoresByIds(weeklyIds));
+        int weekly = featured.size();
+        if (weekly < FEATURED_SIZE) {
+            for (ScoreSummaryResponse card : scoreService
+                    .getPublicScores(0, FEATURED_SIZE, null, null, null, "VIEWS")
+                    .getContent()) {
+                if (featured.size() >= FEATURED_SIZE) {
+                    break;
+                }
+                if (featured.stream().noneMatch(f -> f.getId().equals(card.getId()))) {
+                    featured.add(card);
+                }
+            }
+        }
         // Ảnh trong thẻ phải tải được khi chưa đăng nhập: dùng đường ảnh công khai thay cho /api/files/... cần quyền
-        for (ScoreSummaryResponse card : featured.getContent()) {
+        for (ScoreSummaryResponse card : featured) {
             if (card.getThumbnailUrl() != null) {
                 card.setThumbnailUrl("/api/public/scores/" + card.getId() + "/thumbnail");
             }
@@ -106,7 +125,8 @@ public class HomeServiceImpl implements HomeService {
                 .build();
 
         return PublicHomeResponse.builder()
-                .featured(featured.getContent())
+                .featured(featured)
+                .featuredWeekly(weekly)
                 .composers(composers)
                 .stats(stats)
                 .generatedAt(LocalDateTime.now())

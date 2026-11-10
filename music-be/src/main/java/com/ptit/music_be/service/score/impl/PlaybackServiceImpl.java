@@ -56,6 +56,7 @@ public class PlaybackServiceImpl implements PlaybackService {
         }
 
         scoreCounterRepository.incrementViewCount(scoreId);
+        scoreCounterRepository.incrementDailyViews(scoreId, java.time.LocalDate.now());
         return new ViewCountResponse(currentCount(scoreId), true);
     }
 
