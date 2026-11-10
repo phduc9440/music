@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Route, createBrowserRouter, createRoutesFromElements } from 'react-router-dom';
 import Home from '../pages/Home';
 import Login from '../pages/Login';
 import UserProfile from '../pages/Profile';
@@ -34,10 +34,16 @@ import PracticeStats from '../pages/scores/practice/PracticeStats';
 import UserLayout from '../components/layout/UserLayout';
 import GuestRoute from './GuestRoute';
 import ProtectedRoute from './ProtectedRoute';
+import RootLayout from './RootLayout';
 
-const AppRoutes = () => {
-  return (
-    <Routes>
+/**
+ * Router dạng dữ liệu (createBrowserRouter) thay cho <BrowserRouter>: cần cho hiệu ứng chuyển trang bằng View
+ * Transitions (prop viewTransition của Link/navigate) và cho loader/action về sau. Mọi route nằm dưới RootLayout, nơi
+ * đặt các thành phần dùng chung (hộp thoại, thông báo nổi).
+ */
+const router = createBrowserRouter(
+  createRoutesFromElements(
+    <Route element={<RootLayout />}>
       <Route
         path="/"
         element={
@@ -131,8 +137,8 @@ const AppRoutes = () => {
         <Route path="ai-tasks" element={<AdminAiTasks />} />
         <Route path="system" element={<AdminSystem />} />
       </Route>
-    </Routes>
-  );
-};
+    </Route>,
+  ),
+);
 
-export default AppRoutes;
+export default router;
