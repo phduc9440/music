@@ -1,4 +1,5 @@
 import { authApi, userApi } from '../services';
+import { adoptServerTheme } from '../theme/theme';
 import type { AuthResponse, Member } from '../types';
 
 export type AppRole = 'USER' | 'ADMIN';
@@ -20,6 +21,7 @@ export async function completeLogin(_auth: AuthResponse): Promise<string> {
   try {
     const res = await userApi.getMe();
     const admin = isAdminMember(res.data.result);
+    adoptServerTheme(res.data.result.uiTheme); // giao diện đã chọn đi theo tài khoản giữa các máy
     localStorage.setItem('role', admin ? 'ADMIN' : 'USER');
     return admin ? '/admin' : '/profile';
   } catch {

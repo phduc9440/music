@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import ChangePasswordModal from '../ChangePasswordModal';
 import NotificationBell from '../NotificationBell';
+import ThemeToggle from '../../theme/ThemeToggle';
+import { adoptServerTheme } from '../../theme/theme';
 import { Avatar, Icon } from '../ui';
 import type { IconName } from '../ui';
 import { authApi, userApi } from '../../services';
@@ -19,7 +21,8 @@ interface NavItem {
 }
 
 /** Thư viện bao gồm cả chi tiết, tải lên, nhập file... nhưng không gồm kho mẫu và mục được chia sẻ. */
-const isLibrary = (p: string) => p === '/scores' || (p.startsWith('/scores/') && !/^\/scores\/(official|shared)(\/|$)/.test(p));
+const isLibrary = (p: string) =>
+  p === '/scores' || (p.startsWith('/scores/') && !/^\/scores\/(official|shared)(\/|$)/.test(p));
 
 const NAV: NavItem[] = [
   { to: '/scores', label: 'Thư viện', icon: 'music', match: isLibrary },
@@ -47,7 +50,10 @@ export default function UserLayout() {
   useEffect(() => {
     userApi
       .getMe()
-      .then((res) => setMe(res.data.result))
+      .then((res) => {
+        setMe(res.data.result);
+        adoptServerTheme(res.data.result.uiTheme); // giao diện đã chọn đi theo tài khoản giữa các máy
+      })
       .catch(() => undefined);
   }, []);
 
@@ -114,6 +120,7 @@ export default function UserLayout() {
           </nav>
 
           <div className="app-header__right">
+            <ThemeToggle />
             <NotificationBell />
             <div className="app-usermenu" ref={menuRef}>
               <button

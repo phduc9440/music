@@ -10,9 +10,9 @@
   --danger-color: var(--ui-danger);
   --success-color: var(--ui-success);
 
-  --glass-bg: #ffffff;
-  --glass-border: 1px solid #e2e8f0;
-  --glass-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --glass-bg: var(--ui-surface);
+  --glass-border: 1px solid var(--ui-border);
+  --glass-shadow: var(--ui-shadow);
   --glass-blur: blur(12px);
 }
 
@@ -85,7 +85,7 @@ a:hover {
 .btn-primary {
   background: var(--ui-primary);
   border-color: var(--ui-primary);
-  color: #fff;
+  color: var(--ui-on-accent);
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -96,7 +96,7 @@ a:hover {
 .btn-danger {
   background: var(--ui-danger);
   border-color: var(--ui-danger);
-  color: #fff;
+  color: var(--ui-on-accent);
 }
 
 .btn-danger:hover:not(:disabled) {
@@ -150,6 +150,12 @@ a:hover {
 }
 
 /* Auth Page layout */
+.auth-theme {
+  position: fixed;
+  top: 0.75rem;
+  right: 0.75rem;
+}
+
 .auth-wrapper {
   display: flex;
   justify-content: center;
@@ -179,7 +185,7 @@ a:hover {
   align-items: center;
   justify-content: center;
   background: var(--ui-primary);
-  color: #fff;
+  color: var(--ui-on-accent);
 }
 
 .auth-card h1 {
@@ -200,7 +206,7 @@ a:hover {
   justify-content: space-between;
   align-items: center;
   padding: 1rem 2rem;
-  background: #ffffff;
+  background: var(--ui-surface);
   border-bottom: 1px solid var(--surface-border);
   position: sticky;
   top: 0;
@@ -258,7 +264,7 @@ a:hover {
 }
 
 .table tbody tr:hover {
-  background-color: #f1f5f9;
+  background-color: var(--ui-surface-hover);
 }
 
 /* Badges */
@@ -270,13 +276,13 @@ a:hover {
 }
 
 .badge-admin {
-  background-color: #fee2e2;
-  color: #ef4444;
+  background-color: var(--ui-danger-soft);
+  color: var(--ui-danger);
 }
 
 .badge-user {
-  background-color: #dbeafe;
-  color: #2563eb;
+  background-color: var(--ui-primary-soft);
+  color: var(--ui-primary);
 }
 
 /* Utility */
@@ -306,7 +312,7 @@ a:hover {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--ui-overlay);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -349,5 +355,5 @@ a:hover {
 }
 
 .modal-close:hover {
-  color: white;
+  color: var(--ui-text);
 }

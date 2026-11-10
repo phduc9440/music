@@ -121,7 +121,7 @@
   align-items: center;
   justify-content: center;
   background: var(--adm-primary);
-  color: #fff;
+  color: var(--ui-on-accent);
 }
 
 .adm-brand__tag {
@@ -517,7 +517,7 @@
 }
 
 .adm-stat--alert {
-  border-color: #fcd34d;
+  border-color: var(--ui-warning-border);
   background: linear-gradient(0deg, var(--adm-warning-soft), var(--adm-warning-soft)), var(--adm-surface);
 }
 
@@ -629,13 +629,13 @@
 
 .adm-shell .adm-btn--primary {
   background: var(--adm-primary);
-  color: #fff;
+  color: var(--ui-on-accent);
   box-shadow: var(--adm-shadow-sm);
 }
 
 .adm-shell .adm-btn--primary:hover:not(:disabled) {
   background: var(--adm-primary-hover);
-  color: #fff;
+  color: var(--ui-on-accent);
 }
 
 .adm-shell .adm-btn--secondary {
@@ -652,13 +652,13 @@
 
 .adm-shell .adm-btn--danger {
   background: var(--adm-danger);
-  color: #fff;
+  color: var(--ui-on-accent);
   box-shadow: var(--adm-shadow-sm);
 }
 
 .adm-shell .adm-btn--danger:hover:not(:disabled) {
   background: var(--adm-danger-hover);
-  color: #fff;
+  color: var(--ui-on-accent);
 }
 
 .adm-shell .adm-btn--ghost {
@@ -718,7 +718,7 @@
   flex-shrink: 0;
   border-radius: 50%;
   background: var(--ui-primary);
-  color: #fff;
+  color: var(--ui-on-accent);
   font-weight: 600;
   object-fit: cover;
 }
@@ -873,7 +873,7 @@
   gap: 0.5rem;
   padding: 0.6rem 0.75rem 0.6rem 1rem;
   margin-bottom: 1rem;
-  border: 1px solid #bfdbfe;
+  border: 1px solid var(--ui-primary-border);
   border-radius: var(--adm-radius-lg);
   background: var(--adm-primary-soft);
 }
@@ -1175,7 +1175,7 @@
     position: fixed;
     inset: var(--adm-header-h) 0 0 0;
     z-index: 250;
-    background: rgba(15, 23, 42, 0.4);
+    background: var(--ui-overlay-soft);
   }
 
   .adm-shell--collapsed .adm-menu__label,

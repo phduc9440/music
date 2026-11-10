@@ -50,7 +50,7 @@
   align-items: center;
   justify-content: center;
   background: var(--ui-primary);
-  color: #fff;
+  color: var(--ui-on-accent);
 }
 
 .app-nav {
@@ -285,6 +285,6 @@
     position: fixed;
     inset: var(--ui-header-h) 0 0 0;
     z-index: 240;
-    background: rgba(15, 23, 42, 0.35);
+    background: var(--ui-overlay-soft);
   }
 }

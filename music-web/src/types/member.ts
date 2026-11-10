@@ -8,6 +8,8 @@ export interface Member {
   phone?: string | null;
   address?: string | null;
   avatarUrl?: string | null;
+  /** Giao diện đã lưu trên server; null là chưa chọn (theo hệ thống). */
+  uiTheme?: 'LIGHT' | 'DARK' | 'SYSTEM' | null;
   status?: MemberStatus;
   emailVerified?: boolean;
   authProvider?: AuthProvider;

@@ -1,11 +1,19 @@
 /*
- * Token thiết kế dùng chung cho toàn ứng dụng (trang người dùng và trang quản trị).
+ * Token thiết kế dùng chung cho toàn ứng dụng (trang người dùng và trang quản trị), cho cả hai theme.
  * Đổi màu, chữ, bo góc ở đây là cả app đổi theo:
  *   - admin.css map sang --adm-*      (khung và component quản trị)
  *   - scores.css map sang --sc-*      (các trang bản nhạc của người dùng)
  *   - index.css map sang biến cũ      (--primary-color, --text-primary...) cho phần còn lại
+ *
+ * Theme: <html data-theme="light|dark"> do src/theme đặt (script trong index.html đặt trước khi React chạy để không
+ * bị nháy sáng). Khối :root là theme sáng; :root[data-theme='dark'] chỉ ghi đè những giá trị khác đi.
+ *
+ * Quy ước: mọi mã màu nằm ở file này. Ở CSS và TSX khác chỉ dùng var(--ui-...) (npm run lint:colors kiểm tra), và mỗi
+ * cặp chữ/nền phải đạt độ tương phản chữ thường >= 4,5:1 ở cả hai theme (npm run check:contrast kiểm tra).
  */
 :root {
+  color-scheme: light;
+
   /* nền và chữ */
   --ui-bg: #f5f6f8;
   --ui-surface: #ffffff;
@@ -15,7 +23,7 @@
   --ui-border-strong: #d1d5db;
   --ui-text: #0f172a;
   --ui-text-2: #475569;
-  --ui-text-3: #94a3b8;
+  --ui-text-3: #64748b;
 
   /* màu nhấn và trạng thái */
   --ui-primary: #2563eb;
@@ -26,11 +34,38 @@
   --ui-success-soft: #ecfdf3;
   --ui-warning: #b45309;
   --ui-warning-soft: #fffbeb;
-  --ui-danger: #dc2626;
+  --ui-danger: #d92020;
   --ui-danger-hover: #b91c1c;
   --ui-danger-soft: #fef2f2;
   --ui-violet: #6d28d9;
   --ui-violet-soft: #f5f3ff;
+
+  /* vai trò bổ sung */
+  --ui-on-accent: #ffffff; /* chữ trên nền màu nhấn / nền tối */
+  --ui-primary-border: #bfdbfe;
+  --ui-danger-border: #fecaca;
+  --ui-success-border: #bbf7d0;
+  --ui-warning-border: #fde68a;
+  --ui-warning-strong: #f59e0b;
+  --ui-shadow-ink: #0f172a; /* gốc của bóng đổ và lớp phủ, trộn với độ trong suốt */
+  --ui-overlay: rgba(15, 23, 42, 0.45); /* nền mờ phía sau hộp thoại */
+  --ui-overlay-soft: rgba(15, 23, 42, 0.35); /* nền mờ phía sau ngăn kéo trên điện thoại */
+
+  /* khung nhật ký lỗi (luôn tối ở cả hai theme, như một cửa sổ terminal) */
+  --ui-console-bg: #0f172a;
+  --ui-console-text: #e2e8f0;
+
+  /* biểu đồ */
+  --ui-chart-scores: #2a78d6;
+  --ui-chart-practice: #1baf7a;
+  --ui-chart-members: #6250d6;
+  --ui-chart-axis: #64748b;
+  --ui-chart-grid: #e2e8f0;
+  --ui-chart-cursor: rgba(148, 163, 184, 0.12);
+  --ui-chart-neutral: #94a3b8;
+  --ui-chart-ok: #0ca30c;
+  --ui-chart-busy: #fab219;
+  --ui-chart-fail: #d03b3b;
 
   /* kích thước */
   --ui-radius-lg: 12px;
@@ -46,4 +81,91 @@
   --ui-text-xs: 0.75rem;
   --ui-text-sm: 0.8125rem;
   --ui-text-md: 0.875rem;
+
+  /* trang nhạc (Editor, Player, Review, Xuất file): mặc định luôn nền giấy sáng, kể cả khi app ở theme tối
+     (có công tắc "Đảo màu bản nhạc") */
+  --ui-paper: #ffffff;
+  --ui-staff-ink: #000000;
+  --ui-note-selected: #d9480f;
+  --ui-note-playing: #2563eb;
+  --ui-loop-region: rgb(37 99 235 / 0.18);
+  --ui-measure-error: #dc2626;
+  --ui-measure-locked: #7c3aed; /* dùng ở đồng chỉnh sửa (N13) */
+  --ui-comment-region: rgb(245 158 11 / 0.2); /* dùng ở góp ý (N7) */
+  --ui-diff-added: #15803d;
+  --ui-diff-removed: #dc2626;
+  --ui-diff-changed: #b45309;
+
+  /* 8 màu nhạc cụ / khuông */
+  --ui-instrument-1: #2563eb;
+  --ui-instrument-2: #dc2626;
+  --ui-instrument-3: #15803d;
+  --ui-instrument-4: #b45309;
+  --ui-instrument-5: #7c3aed;
+  --ui-instrument-6: #0e7490;
+  --ui-instrument-7: #be185d;
+  --ui-instrument-8: #475569;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --ui-bg: #0b1220;
+  --ui-surface: #111a2e;
+  --ui-surface-muted: #0e1626;
+  --ui-surface-hover: #1a2540;
+  --ui-border: #1f2b44;
+  --ui-border-strong: #33415c;
+  --ui-text: #e6edf7;
+  --ui-text-2: #a9b6cc;
+  --ui-text-3: #8794ad;
+
+  /* ở theme tối màu nhấn sáng hơn, nên chữ trên nền nhấn chuyển sang tối để vẫn đủ tương phản */
+  --ui-primary: #60a5fa;
+  --ui-primary-hover: #93c5fd;
+  --ui-primary-soft: #14233f;
+  --ui-primary-ring: rgba(96, 165, 250, 0.3);
+  --ui-success: #4ade80;
+  --ui-success-soft: #0f2a1c;
+  --ui-warning: #fbbf24;
+  --ui-warning-soft: #2e2410;
+  --ui-danger: #f87171;
+  --ui-danger-hover: #fca5a5;
+  --ui-danger-soft: #331616;
+  --ui-violet: #a78bfa;
+  --ui-violet-soft: #231a3d;
+
+  --ui-on-accent: #0b1220;
+  --ui-primary-border: #1e40af;
+  --ui-danger-border: #7f1d1d;
+  --ui-success-border: #166534;
+  --ui-warning-border: #92400e;
+  --ui-warning-strong: #fbbf24;
+  --ui-shadow-ink: #000000;
+  --ui-overlay: rgba(0, 0, 0, 0.6);
+  --ui-overlay-soft: rgba(0, 0, 0, 0.5);
+
+  --ui-chart-scores: #5b9cf0;
+  --ui-chart-practice: #34d399;
+  --ui-chart-members: #8b7cf0;
+  --ui-chart-axis: #94a3b8;
+  --ui-chart-grid: #1f2b44;
+  --ui-chart-cursor: rgba(148, 163, 184, 0.16);
+  --ui-chart-neutral: #64748b;
+  --ui-chart-ok: #4ade80;
+  --ui-chart-busy: #fbbf24;
+  --ui-chart-fail: #f87171;
+
+  --ui-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --ui-shadow: 0 1px 3px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.35);
+  --ui-shadow-pop: 0 10px 30px rgba(0, 0, 0, 0.6);
+
+  /* trang nhạc */
+  --ui-note-selected: #fb923c;
+  --ui-note-playing: #60a5fa;
+  --ui-measure-error: #f87171;
+  --ui-measure-locked: #a78bfa;
+  --ui-diff-added: #4ade80;
+  --ui-diff-removed: #f87171;
+  --ui-diff-changed: #fbbf24;
 }

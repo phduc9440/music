@@ -1,10 +1,15 @@
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '../components/ui';
 import type { IconName } from '../components/ui';
+import ThemeToggle from '../theme/ThemeToggle';
 import './Home.css';
 
 const FEATURES: { icon: IconName; title: string; text: string }[] = [
-  { icon: 'music', title: 'Số hóa bản nhạc', text: 'Tải ảnh chụp hoặc PDF, hệ thống chuyển thành MusicXML và MIDI để chỉnh sửa.' },
+  {
+    icon: 'music',
+    title: 'Số hóa bản nhạc',
+    text: 'Tải ảnh chụp hoặc PDF, hệ thống chuyển thành MusicXML và MIDI để chỉnh sửa.',
+  },
   { icon: 'activity', title: 'Luyện tập có chấm điểm', text: 'Theo dõi cao độ, nhịp và tiến bộ qua từng phiên tập.' },
   { icon: 'share', title: 'Chia sẻ và cộng đồng', text: 'Mời bạn bè xem, nhận xét hoặc cùng chỉnh sửa bản nhạc.' },
 ];
@@ -22,9 +27,12 @@ export default function Home() {
           </span>
           Music App
         </span>
-        <button type="button" className="btn" onClick={() => navigate('/auth/login')}>
-          Đăng nhập
-        </button>
+        <div className="home__bar-actions">
+          <ThemeToggle />
+          <button type="button" className="btn" onClick={() => navigate('/auth/login')}>
+            Đăng nhập
+          </button>
+        </div>
       </header>
 
       <main className="home__hero">

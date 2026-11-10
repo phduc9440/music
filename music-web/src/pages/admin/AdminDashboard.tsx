@@ -40,19 +40,19 @@ const VISIBILITY_ORDER = ['PUBLIC', 'PENDING', 'PRIVATE'];
 
 // Màu trạng thái cố định (không dùng chung với màu series); luôn kèm biểu tượng + nhãn chữ
 const AI_STATUS: Record<string, { label: string; color: string }> = {
-  COMPLETED: { label: '✓ Hoàn tất', color: '#0ca30c' },
-  PROCESSING: { label: '… Đang xử lý', color: '#fab219' },
-  PENDING: { label: '… Chờ xử lý', color: '#fab219' },
-  FAILED: { label: '✕ Lỗi', color: '#d03b3b' },
-  CANCELLED: { label: '– Đã hủy', color: '#94a3b8' },
+  COMPLETED: { label: '✓ Hoàn tất', color: 'var(--ui-chart-ok)' },
+  PROCESSING: { label: '… Đang xử lý', color: 'var(--ui-chart-busy)' },
+  PENDING: { label: '… Chờ xử lý', color: 'var(--ui-chart-busy)' },
+  FAILED: { label: '✕ Lỗi', color: 'var(--ui-chart-fail)' },
+  CANCELLED: { label: '– Đã hủy', color: 'var(--ui-chart-neutral)' },
 };
 const AI_ORDER = ['COMPLETED', 'PROCESSING', 'PENDING', 'FAILED', 'CANCELLED'];
 
-const SERIES_SCORES = '#2a78d6';
-const SERIES_PRACTICE = '#1baf7a';
+const SERIES_SCORES = 'var(--ui-chart-scores)';
+const SERIES_PRACTICE = 'var(--ui-chart-practice)';
 // Slot 7 (violet) của bảng màu dataviz, để thành viên không trùng màu với bản nhạc/luyện tập
-const SERIES_MEMBERS = '#6250d6';
-const AXIS = { fontSize: 12, fill: '#64748b' };
+const SERIES_MEMBERS = 'var(--ui-chart-members)';
+const AXIS = { fontSize: 12, fill: 'var(--ui-chart-axis)' };
 
 const nf = new Intl.NumberFormat('vi-VN');
 
@@ -159,7 +159,7 @@ function HBar({
           <XAxis type="number" hide domain={[0, (max: number) => Math.max(1, max) * 1.15]} />
           <YAxis type="category" dataKey="label" width={118} tick={AXIS} axisLine={false} tickLine={false} />
           <Tooltip
-            cursor={{ fill: 'rgba(148,163,184,0.12)' }}
+            cursor={{ fill: 'var(--ui-chart-cursor)' }}
             content={({ active, payload }: TipProps) =>
               active && payload?.[0] ? (
                 <Tip
@@ -177,7 +177,7 @@ function HBar({
               dataKey="count"
               position="right"
               formatter={(v) => nf.format(Number(v))}
-              style={{ fontSize: 12, fill: '#0f172a' }}
+              style={{ fontSize: 12, fill: 'var(--ui-text)' }}
             />
           </Bar>
         </BarChart>
@@ -329,7 +329,7 @@ export default function AdminDashboard() {
           <div className="dash-chart">
             <ResponsiveContainer>
               <AreaChart data={scoresDay} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
-                <CartesianGrid stroke="#e2e8f0" vertical={false} />
+                <CartesianGrid stroke="var(--ui-chart-grid)" vertical={false} />
                 <XAxis
                   dataKey="date"
                   tickFormatter={shortDate}
@@ -340,7 +340,7 @@ export default function AdminDashboard() {
                 />
                 <YAxis allowDecimals={false} tick={AXIS} axisLine={false} tickLine={false} />
                 <Tooltip
-                  cursor={{ stroke: '#94a3b8', strokeWidth: 1 }}
+                  cursor={{ stroke: 'var(--ui-chart-neutral)', strokeWidth: 1 }}
                   content={({ active, payload, label }: TipProps) =>
                     active && payload?.[0] ? (
                       <Tip
@@ -358,7 +358,7 @@ export default function AdminDashboard() {
                   fill={SERIES_SCORES}
                   fillOpacity={0.12}
                   dot={false}
-                  activeDot={{ r: 5, stroke: '#fff', strokeWidth: 2 }}
+                  activeDot={{ r: 5, stroke: 'var(--ui-surface)', strokeWidth: 2 }}
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -376,7 +376,7 @@ export default function AdminDashboard() {
           <div className="dash-chart">
             <ResponsiveContainer>
               <BarChart data={practiceDay} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
-                <CartesianGrid stroke="#e2e8f0" vertical={false} />
+                <CartesianGrid stroke="var(--ui-chart-grid)" vertical={false} />
                 <XAxis
                   dataKey="date"
                   tickFormatter={shortDate}
@@ -387,7 +387,7 @@ export default function AdminDashboard() {
                 />
                 <YAxis allowDecimals={false} tick={AXIS} axisLine={false} tickLine={false} />
                 <Tooltip
-                  cursor={{ fill: 'rgba(148,163,184,0.12)' }}
+                  cursor={{ fill: 'var(--ui-chart-cursor)' }}
                   content={({ active, payload, label }: TipProps) =>
                     active && payload?.[0] ? (
                       <Tip
@@ -423,7 +423,7 @@ export default function AdminDashboard() {
           <div className="dash-chart">
             <ResponsiveContainer>
               <BarChart data={membersDay} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
-                <CartesianGrid stroke="#e2e8f0" vertical={false} />
+                <CartesianGrid stroke="var(--ui-chart-grid)" vertical={false} />
                 <XAxis
                   dataKey="date"
                   tickFormatter={shortDate}
@@ -434,7 +434,7 @@ export default function AdminDashboard() {
                 />
                 <YAxis allowDecimals={false} tick={AXIS} axisLine={false} tickLine={false} />
                 <Tooltip
-                  cursor={{ fill: 'rgba(148,163,184,0.12)' }}
+                  cursor={{ fill: 'var(--ui-chart-cursor)' }}
                   content={({ active, payload, label }: TipProps) =>
                     active && payload?.[0] ? (
                       <Tip
@@ -481,7 +481,7 @@ export default function AdminDashboard() {
           sub="OMR, hợp âm, tổng hợp âm thanh, chuyển định dạng"
           table={{ head: ['Trạng thái', 'Số tác vụ'], rows: rowsOf(ai) }}
         >
-          <HBar rows={ai} color="#94a3b8" unit="tác vụ" />
+          <HBar rows={ai} color="var(--ui-chart-neutral)" unit="tác vụ" />
         </ChartCard>
         <ChartCard
           title="Thể loại phổ biến"
