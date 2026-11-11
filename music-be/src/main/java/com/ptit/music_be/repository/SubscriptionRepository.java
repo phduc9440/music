@@ -15,6 +15,8 @@ import com.ptit.music_be.entity.Subscription;
 @Repository
 public interface SubscriptionRepository extends JpaRepository<Subscription, String> {
 
+    boolean existsByPlanId(String planId);
+
     /** Gói đang hiệu lực của thành viên (ACTIVE và chưa hết hạn), mới nhất trước. */
     @Query("select s from Subscription s where s.member.id = :memberId and s.status = 'ACTIVE' and s.expiresAt > :now"
             + " order by s.expiresAt desc")

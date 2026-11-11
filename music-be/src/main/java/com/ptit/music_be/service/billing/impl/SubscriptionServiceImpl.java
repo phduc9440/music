@@ -285,6 +285,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 .priceMonth(plan.getPriceMonth())
                 .priceYear(plan.getPriceYear())
                 .limits(limitsParser.parse(plan))
+                .sortOrder(plan.getSortOrder())
                 .build();
     }
 }

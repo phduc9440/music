@@ -7,10 +7,20 @@ import type {
   PaymentKind,
   PaymentOrder,
   PaymentStatus,
+  PlanAudience,
   PlanInfo,
   PlanLimits,
   Revenue,
 } from '../../types';
+
+/** Dữ liệu sửa/tạo gói ở trang admin; sortOrder null = giữ nguyên (sửa) hoặc xếp cuối (tạo). */
+type PlanPayload = {
+  name: string;
+  priceMonth: number;
+  priceYear: number;
+  limits: PlanLimits;
+  sortOrder: number | null;
+};
 
 export const billingApi = {
   plans: () => apiClient.get<ApiResponse<PlanInfo[]>>('/public/plans'),
@@ -31,8 +41,10 @@ export const billingApi = {
   getOrder: (orderCode: string) => apiClient.get<ApiResponse<PaymentOrder>>(`/payments/orders/${orderCode}`),
   // Admin: tên, giá, hạn mức gói (mọi admin xem, chỉ SUPER_ADMIN sửa)
   adminPlans: () => apiClient.get<ApiResponse<PlanInfo[]>>('/admin/plans'),
-  updatePlan: (code: string, data: { name: string; priceMonth: number; priceYear: number; limits: PlanLimits }) =>
-    apiClient.put<ApiResponse<PlanInfo>>(`/admin/plans/${code}`, data),
+  updatePlan: (code: string, data: PlanPayload) => apiClient.put<ApiResponse<PlanInfo>>(`/admin/plans/${code}`, data),
+  createPlan: (data: PlanPayload & { code: string; audience: PlanAudience }) =>
+    apiClient.post<ApiResponse<PlanInfo>>('/admin/plans', data),
+  deletePlan: (code: string) => apiClient.delete<ApiResponse<void>>(`/admin/plans/${code}`),
   // Admin: doanh thu, danh sách đơn, hoàn tiền thủ công
   revenue: (params?: { from?: string; to?: string }) =>
     apiClient.get<ApiResponse<Revenue>>('/admin/payments/revenue', { params }),

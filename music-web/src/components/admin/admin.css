@@ -1301,3 +1301,7 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+.adm-plan-new {
+  margin-bottom: 1.5rem;
+  border-color: var(--adm-primary);
+}

@@ -19,6 +19,8 @@ export interface PlanInfo {
   code: string;
   name: string;
   audience: PlanAudience;
+  /** Thứ tự hiển thị (nhỏ đứng trước). */
+  sortOrder: number;
   priceMonth: number;
   priceYear: number;
   limits: PlanLimits;

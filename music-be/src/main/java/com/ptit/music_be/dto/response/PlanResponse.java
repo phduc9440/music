@@ -18,4 +18,6 @@ public class PlanResponse {
     long priceMonth;
     long priceYear;
     PlanLimits limits;
+    /** Thứ tự hiển thị trong bảng giá (nhỏ đứng trước). */
+    int sortOrder;
 }

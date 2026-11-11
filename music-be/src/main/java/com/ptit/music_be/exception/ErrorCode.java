@@ -167,6 +167,11 @@ public enum ErrorCode {
     PLAN_PRICE_INVALID(3719, "Giá không hợp lệ: gói Free phải là 0, gói trả phí từ 1 đến 1.000.000.000 đồng", HttpStatus.BAD_REQUEST),
     PLAN_NAME_INVALID(3720, "Tên gói không được trống và tối đa 100 ký tự", HttpStatus.BAD_REQUEST),
     PLAN_LIMITS_INVALID(3721, "Hạn mức không hợp lệ: mỗi số từ 0 đến 10.000.000 (để trống = không giới hạn), task cùng lúc ít nhất 1", HttpStatus.BAD_REQUEST),
+    PLAN_CODE_INVALID(3722, "Mã gói gồm 2-16 ký tự: chữ in hoa, số, dấu gạch dưới", HttpStatus.BAD_REQUEST),
+    PLAN_CODE_EXISTED(3723, "Mã gói đã tồn tại", HttpStatus.CONFLICT),
+    PLAN_AUDIENCE_INVALID(3724, "Nhóm gói phải là Cá nhân (PERSONAL) hoặc Team (TEAM)", HttpStatus.BAD_REQUEST),
+    PLAN_SYSTEM_LOCKED(3725, "Không xóa được gói Free và Pro (hệ thống dùng cho người dùng mới và quản trị viên)", HttpStatus.CONFLICT),
+    PLAN_IN_USE(3726, "Gói đã có người đăng ký hoặc có đơn thanh toán nên không xóa được", HttpStatus.CONFLICT),
     ;
 
     int code;

@@ -541,6 +541,21 @@
     "saveFailed": "Không lưu được gói",
     "loadFailed": "Không tải được danh sách gói",
     "name": "Tên gói",
-    "limits": "Hạn mức và quyền lợi"
+    "limits": "Hạn mức và quyền lợi",
+    "add": "Thêm gói",
+    "newTitle": "Gói mới",
+    "code": "Mã gói",
+    "codeHint": "2-16 ký tự: chữ in hoa, số, dấu gạch dưới. Không đổi được sau khi tạo.",
+    "audience": "Nhóm gói",
+    "sortOrder": "Thứ tự hiển thị",
+    "sortOrderAuto": "Để trống = xếp cuối",
+    "create": "Tạo gói",
+    "cancel": "Hủy",
+    "created": "Đã tạo gói {plan}",
+    "delete": "Xóa",
+    "deleteTitle": "Xóa gói {plan}?",
+    "deleteMessage": "Gói sẽ biến mất khỏi bảng giá. Chỉ xóa được gói chưa từng có người đăng ký hoặc đơn thanh toán.",
+    "deleted": "Đã xóa gói {plan}",
+    "deleteFailed": "Không xóa được gói"
   }
 }

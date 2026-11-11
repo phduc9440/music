@@ -566,6 +566,21 @@
     "saveFailed": "Could not save the plan",
     "loadFailed": "Could not load plans",
     "name": "Plan name",
-    "limits": "Limits and features"
+    "limits": "Limits and features",
+    "add": "Add plan",
+    "newTitle": "New plan",
+    "code": "Plan code",
+    "codeHint": "2-16 characters: uppercase letters, digits, underscore. Cannot be changed later.",
+    "audience": "Plan group",
+    "sortOrder": "Display order",
+    "sortOrderAuto": "Empty = last",
+    "create": "Create plan",
+    "cancel": "Cancel",
+    "created": "Created plan {plan}",
+    "delete": "Delete",
+    "deleteTitle": "Delete plan {plan}?",
+    "deleteMessage": "The plan will disappear from the pricing page. Only plans that never had a subscriber or payment order can be deleted.",
+    "deleted": "Deleted plan {plan}",
+    "deleteFailed": "Could not delete the plan"
   }
 }

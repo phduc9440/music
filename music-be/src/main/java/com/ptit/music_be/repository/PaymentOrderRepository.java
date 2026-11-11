@@ -24,6 +24,8 @@ public interface PaymentOrderRepository extends JpaRepository<PaymentOrder, Stri
 
     Optional<PaymentOrder> findByOrderCode(String orderCode);
 
+    boolean existsByPlanId(String planId);
+
     /** Khóa dòng khi xử lý IPN để hai thông báo đến cùng lúc không cùng kích hoạt gói. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select o from PaymentOrder o where o.orderCode = :code")

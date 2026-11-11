@@ -21,4 +21,6 @@ public class UpdatePlanRequest {
     Long priceMonth;
     Long priceYear;
     PlanLimits limits;
+    /** Thứ tự hiển thị (nhỏ đứng trước); null thì giữ nguyên. */
+    Integer sortOrder;
 }

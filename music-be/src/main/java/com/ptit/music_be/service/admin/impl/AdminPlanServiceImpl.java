@@ -1,6 +1,8 @@
 package com.ptit.music_be.service.admin.impl;
 
 import java.util.List;
+import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import org.springframework.stereotype.Service;
@@ -8,12 +10,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ptit.music_be.dto.request.CreatePlanRequest;
 import com.ptit.music_be.dto.request.UpdatePlanRequest;
 import com.ptit.music_be.dto.response.PlanResponse;
 import com.ptit.music_be.entity.Plan;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.repository.PaymentOrderRepository;
 import com.ptit.music_be.repository.PlanRepository;
+import com.ptit.music_be.repository.SubscriptionRepository;
 import com.ptit.music_be.service.admin.AdminPlanService;
 import com.ptit.music_be.service.billing.PlanLimits;
 import com.ptit.music_be.service.billing.SubscriptionService;
@@ -37,8 +42,15 @@ public class AdminPlanServiceImpl implements AdminPlanService {
     static final int MAX_LIMIT = 10_000_000;
 
     static final int MAX_NAME_LENGTH = 100;
+    static final int MAX_SORT_ORDER = 10_000;
+    static final Pattern CODE = Pattern.compile("^[A-Z0-9_]{2,16}$");
+    /** Gói mà code dựa vào: FREE cho người chưa mua, PRO cho quản trị viên; UNLIMITED là mã gói ảo của SUPER_ADMIN. */
+    static final Set<String> SYSTEM_CODES =
+            Set.of(SubscriptionServiceImpl.FREE, SubscriptionServiceImpl.PRO, SubscriptionServiceImpl.UNLIMITED);
 
     PlanRepository planRepository;
+    SubscriptionRepository subscriptionRepository;
+    PaymentOrderRepository paymentOrderRepository;
     SubscriptionService subscriptionService;
     ObjectMapper objectMapper;
 
@@ -51,49 +63,125 @@ public class AdminPlanServiceImpl implements AdminPlanService {
     @Override
     @Transactional
     public PlanResponse update(String code, UpdatePlanRequest request) {
-        if (!SecurityUtils.isSuperAdmin()) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
-        }
+        requireSuperAdmin();
         Plan plan = planRepository.findByCode(code).orElseThrow(() -> new AppException(ErrorCode.PLAN_NOT_EXISTED));
         if (request == null) {
             throw new AppException(ErrorCode.PLAN_PRICE_INVALID);
         }
-        String name = request.getName() == null ? "" : request.getName().trim();
-        if (name.isEmpty() || name.length() > MAX_NAME_LENGTH) {
-            throw new AppException(ErrorCode.PLAN_NAME_INVALID);
-        }
-        Long month = request.getPriceMonth();
-        Long year = request.getPriceYear();
-        boolean free = SubscriptionServiceImpl.FREE.equals(plan.getCode());
-        if (month == null || year == null || !validPrice(month, free) || !validPrice(year, free)) {
-            throw new AppException(ErrorCode.PLAN_PRICE_INVALID);
-        }
-        PlanLimits limits = request.getLimits();
-        if (limits == null || !validLimits(limits)) {
-            throw new AppException(ErrorCode.PLAN_LIMITS_INVALID);
-        }
-        String limitsJson = toJson(limits);
+        Fields f = validate(plan.getCode(), request.getName(), request.getPriceMonth(), request.getPriceYear(),
+                request.getLimits(), request.getSortOrder());
         log.info(
                 "{} sửa gói {}: tên \"{}\" -> \"{}\", giá tháng {} -> {}, giá năm {} -> {}, hạn mức {} -> {}",
                 SecurityUtils.getCurrentEmail(),
                 plan.getCode(),
                 plan.getName(),
-                name,
+                f.name(),
                 plan.getPriceMonth(),
-                month,
+                f.priceMonth(),
                 plan.getPriceYear(),
-                year,
+                f.priceYear(),
                 plan.getLimits(),
-                limitsJson);
-        plan.setName(name);
-        plan.setPriceMonth(month);
-        plan.setPriceYear(year);
-        plan.setLimits(limitsJson);
+                f.limitsJson());
+        plan.setName(f.name());
+        plan.setPriceMonth(f.priceMonth());
+        plan.setPriceYear(f.priceYear());
+        plan.setLimits(f.limitsJson());
+        if (f.sortOrder() != null) {
+            plan.setSortOrder(f.sortOrder());
+        }
         planRepository.save(plan);
+        return responseOf(plan.getCode());
+    }
+
+    @Override
+    @Transactional
+    public PlanResponse create(CreatePlanRequest request) {
+        requireSuperAdmin();
+        if (request == null) {
+            throw new AppException(ErrorCode.PLAN_CODE_INVALID);
+        }
+        String code = request.getCode() == null ? "" : request.getCode().trim().toUpperCase();
+        if (!CODE.matcher(code).matches() || SubscriptionServiceImpl.UNLIMITED.equals(code)) {
+            throw new AppException(ErrorCode.PLAN_CODE_INVALID);
+        }
+        if (planRepository.findByCode(code).isPresent()) {
+            throw new AppException(ErrorCode.PLAN_CODE_EXISTED);
+        }
+        String audience = request.getAudience() == null ? "" : request.getAudience().trim().toUpperCase();
+        if (!Plan.PERSONAL.equals(audience) && !Plan.TEAM.equals(audience)) {
+            throw new AppException(ErrorCode.PLAN_AUDIENCE_INVALID);
+        }
+        Fields f = validate(code, request.getName(), request.getPriceMonth(), request.getPriceYear(),
+                request.getLimits(), request.getSortOrder());
+        int sortOrder = f.sortOrder() != null
+                ? f.sortOrder()
+                : planRepository.findAllByOrderBySortOrderAsc().stream()
+                                .mapToInt(Plan::getSortOrder)
+                                .max()
+                                .orElse(0)
+                        + 1;
+        planRepository.save(Plan.builder()
+                .code(code)
+                .name(f.name())
+                .audience(audience)
+                .priceMonth(f.priceMonth())
+                .priceYear(f.priceYear())
+                .limits(f.limitsJson())
+                .sortOrder(sortOrder)
+                .build());
+        log.info("{} tạo gói {} ({}): {}", SecurityUtils.getCurrentEmail(), code, audience, f.limitsJson());
+        return responseOf(code);
+    }
+
+    @Override
+    @Transactional
+    public void delete(String code) {
+        requireSuperAdmin();
+        Plan plan = planRepository.findByCode(code).orElseThrow(() -> new AppException(ErrorCode.PLAN_NOT_EXISTED));
+        if (SYSTEM_CODES.contains(plan.getCode())) {
+            throw new AppException(ErrorCode.PLAN_SYSTEM_LOCKED);
+        }
+        // Còn người đăng ký (kể cả đã hết hạn) hoặc đơn thanh toán thì giữ lại để không mất lịch sử doanh thu
+        if (subscriptionRepository.existsByPlanId(plan.getId()) || paymentOrderRepository.existsByPlanId(plan.getId())) {
+            throw new AppException(ErrorCode.PLAN_IN_USE);
+        }
+        planRepository.delete(plan);
+        log.info("{} xóa gói {}", SecurityUtils.getCurrentEmail(), plan.getCode());
+    }
+
+    private static void requireSuperAdmin() {
+        if (!SecurityUtils.isSuperAdmin()) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+    }
+
+    private PlanResponse responseOf(String code) {
         return subscriptionService.listPlans().stream()
-                .filter(p -> p.getCode().equals(plan.getCode()))
+                .filter(p -> p.getCode().equals(code))
                 .findFirst()
                 .orElseThrow();
+    }
+
+    /** Dữ liệu đã kiểm tra, dùng chung cho tạo và sửa. */
+    private record Fields(String name, long priceMonth, long priceYear, String limitsJson, Integer sortOrder) {}
+
+    private Fields validate(
+            String code, String rawName, Long month, Long year, PlanLimits limits, Integer sortOrder) {
+        String name = rawName == null ? "" : rawName.trim();
+        if (name.isEmpty() || name.length() > MAX_NAME_LENGTH) {
+            throw new AppException(ErrorCode.PLAN_NAME_INVALID);
+        }
+        boolean free = SubscriptionServiceImpl.FREE.equals(code);
+        if (month == null || year == null || !validPrice(month, free) || !validPrice(year, free)) {
+            throw new AppException(ErrorCode.PLAN_PRICE_INVALID);
+        }
+        if (limits == null || !validLimits(limits)) {
+            throw new AppException(ErrorCode.PLAN_LIMITS_INVALID);
+        }
+        if (sortOrder != null && (sortOrder < 0 || sortOrder > MAX_SORT_ORDER)) {
+            throw new AppException(ErrorCode.PLAN_LIMITS_INVALID);
+        }
+        return new Fields(name, month, year, toJson(limits), sortOrder);
     }
 
     /** Gói FREE luôn 0; gói trả phí trong khoảng (0, MAX_PRICE]. */

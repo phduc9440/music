@@ -106,5 +106,10 @@
   "3718": "Tài khoản quản trị đã có quyền lợi của gói này, không cần mua",
   "3719": "Giá không hợp lệ: gói Free phải là 0, gói trả phí từ 1 đến 1.000.000.000 đồng",
   "3720": "Tên gói không được trống và tối đa 100 ký tự",
-  "3721": "Hạn mức không hợp lệ: mỗi số từ 0 đến 10.000.000 (để trống = không giới hạn), task cùng lúc ít nhất 1"
+  "3721": "Hạn mức không hợp lệ: mỗi số từ 0 đến 10.000.000 (để trống = không giới hạn), task cùng lúc ít nhất 1",
+  "3722": "Mã gói gồm 2-16 ký tự: chữ in hoa, số, dấu gạch dưới",
+  "3723": "Mã gói đã tồn tại",
+  "3724": "Nhóm gói phải là Cá nhân hoặc Team",
+  "3725": "Không xóa được gói Free và Pro (hệ thống dùng cho người dùng mới và quản trị viên)",
+  "3726": "Gói đã có người đăng ký hoặc có đơn thanh toán nên không xóa được"
 }
