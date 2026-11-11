@@ -101,5 +101,6 @@
   "3713": "Đơn thanh toán không tồn tại",
   "3714": "Chỉ hoàn tiền được đơn đã thanh toán",
   "3715": "Chu kỳ thanh toán phải là theo tháng hoặc theo năm",
-  "3716": "Khoảng ngày doanh thu không hợp lệ (tối đa 366 ngày)"
+  "3716": "Khoảng ngày doanh thu không hợp lệ (tối đa 366 ngày)",
+  "3717": "Đơn này không còn chờ thanh toán"
 }

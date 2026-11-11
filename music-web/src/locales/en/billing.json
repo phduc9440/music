@@ -45,7 +45,6 @@
     "current": "Current plan",
     "free": "Free",
     "buy": "Buy plan",
-    "renew": "Renew",
     "redirecting": "Redirecting to the payment gateway...",
     "buyFailed": "Could not create the payment order"
   },
@@ -69,6 +68,13 @@
       "FAILED": "The transaction did not complete, you were not charged for this order.",
       "EXPIRED": "The order ran out of payment time. Please create a new one.",
       "REFUNDED": "This order was refunded."
-    }
+    },
+    "success": "Payment successful, your plan is now active!"
+  },
+  "history": {
+    "title": "Plan purchase history",
+    "empty": "You have no transactions yet.",
+    "pay": "Continue payment",
+    "payFailed": "Could not reopen the payment page"
   }
 }

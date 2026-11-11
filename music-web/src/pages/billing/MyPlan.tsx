@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { Link } from '../../routes/transition-nav';
 import { billingApi } from '../../services';
-import type { MySubscription } from '../../types';
-import { formatDate, formatNumber, t } from '../../i18n/core';
+import type { MySubscription, PaymentOrder } from '../../types';
+import { formatDate, formatDateTime, formatNumber, formatVnd, t, translateError } from '../../i18n/core';
 import Skeleton from '../../components/ui/Skeleton';
 import LimitList from './LimitList';
 import '../../components/scores/scores.css';
@@ -12,13 +12,31 @@ import './billing.css';
 /** Trang /billing "Gói của tôi": gói đang dùng, ngày hết hạn và hạn mức đã dùng trong tháng (mục 7.3). */
 export default function MyPlan() {
   const [sub, setSub] = useState<MySubscription | null>(null);
+  const [orders, setOrders] = useState<PaymentOrder[] | null>(null);
+  const [paying, setPaying] = useState<string | null>(null);
 
   useEffect(() => {
     billingApi
       .mine()
       .then((res) => setSub(res.data.result))
       .catch(() => toast.error(t('billing.loadFailed')));
+    billingApi
+      .myOrders()
+      .then((res) => setOrders(res.data.result))
+      .catch(() => setOrders([]));
   }, []);
+
+  // Đơn đang chờ: lấy lại link thanh toán rồi chuyển sang cổng
+  const payAgain = async (order: PaymentOrder) => {
+    setPaying(order.orderCode);
+    try {
+      const res = await billingApi.resumeOrder(order.orderCode);
+      if (res.data.result.payUrl) window.location.assign(res.data.result.payUrl);
+    } catch (error) {
+      toast.error(translateError(error, t('billing.history.payFailed')));
+      setPaying(null);
+    }
+  };
 
   const limit = sub?.plan.limits.omrPagesPerMonth;
   const percent = sub && limit ? Math.min(100, Math.round((sub.omrPagesUsed * 100) / limit)) : 0;
@@ -69,6 +87,41 @@ export default function MyPlan() {
             </div>
           </section>
         )}
+
+        <section className="bl-card" aria-labelledby="bl-history-title">
+          <div className="bl-card__head">
+            <h2 id="bl-history-title">{t('billing.history.title')}</h2>
+          </div>
+          {!orders && <Skeleton lines={3} />}
+          {orders && orders.length === 0 && <p>{t('billing.history.empty')}</p>}
+          {orders && orders.length > 0 && (
+            <ul className="bl-limits">
+              {orders.map((o) => (
+                <li key={o.id}>
+                  <span>
+                    {formatDateTime(o.paidAt ?? o.createdAt)} · {o.planName} · {t(`billing.period.${o.period}`)}
+                    <br />
+                    <small>{o.orderCode}</small>
+                  </span>
+                  <strong>
+                    {formatVnd(o.amount)} · {t(`billing.result.status.${o.status}`)}
+                    {o.status === 'PENDING' && (
+                      <button
+                        type="button"
+                        className="sc-btn sc-btn--primary"
+                        disabled={paying === o.orderCode}
+                        onClick={() => payAgain(o)}
+                        style={{ marginLeft: 12 }}
+                      >
+                        {paying === o.orderCode ? t('billing.pricing.redirecting') : t('billing.history.pay')}
+                      </button>
+                    )}
+                  </strong>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </main>
     </div>
   );

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { Link } from '../../routes/transition-nav';
 import { billingApi } from '../../services';
 import type { PaymentOrder } from '../../types';
@@ -27,22 +28,39 @@ export default function BillingResult() {
     let cancelled = false;
     let polls = 0;
     let timer: ReturnType<typeof setTimeout>;
+    const show = (result: PaymentOrder) => {
+      setOrder(result);
+      if (result.status === 'PAID') toast.success(t('billing.result.success'));
+      else if (result.status === 'FAILED') toast.error(t('billing.result.message.FAILED'));
+    };
     const check = () => {
       billingApi
         .getOrder(orderCode)
         .then((res) => {
           if (cancelled) return;
-          setOrder(res.data.result);
-          if (res.data.result.status === 'PENDING' && ++polls < MAX_POLLS) timer = setTimeout(check, POLL_MS);
+          if (res.data.result.status === 'PENDING' && ++polls < MAX_POLLS) {
+            setOrder(res.data.result);
+            timer = setTimeout(check, POLL_MS);
+          } else show(res.data.result);
         })
         .catch(() => !cancelled && setMissing(true));
     };
-    check();
+    // Cổng đưa người dùng về kèm chữ ký: gửi cho BE kiểm (IPN có thể không tới được máy chủ, nhất là khi chạy localhost)
+    const signed: Record<string, string> = {};
+    params.forEach((value, key) => {
+      if (key.startsWith('vnp_')) signed[key] = value;
+    });
+    if (signed.vnp_SecureHash) {
+      billingApi
+        .confirmReturn(signed)
+        .then((res) => !cancelled && show(res.data.result))
+        .catch(() => !cancelled && check());
+    } else check();
     return () => {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [orderCode]);
+  }, [orderCode, params]);
 
   return (
     <div className="sc-page">

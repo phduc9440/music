@@ -1,5 +1,6 @@
 package com.ptit.music_be.controller.billing;
 
+import java.util.List;
 import java.util.Map;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -38,6 +39,38 @@ public class PaymentController {
             @RequestBody CreatePaymentOrderRequest request, HttpServletRequest http) {
         return ApiResponse.<PaymentOrderResponse>builder()
                 .result(paymentService.createOrder(request, clientIp(http)))
+                .build();
+    }
+
+    @GetMapping("/orders")
+    @Operation(
+            summary = "Lịch sử đơn mua gói của tôi, mới nhất trước",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<List<PaymentOrderResponse>> myOrders() {
+        return ApiResponse.<List<PaymentOrderResponse>>builder()
+                .result(paymentService.listMyOrders())
+                .build();
+    }
+
+    @PostMapping("/vnpay/return")
+    @Operation(
+            summary = "Trang kết quả gửi tham số VNPay đưa về; chỉ chấp nhận khi chữ ký đúng",
+            description = "Errors: 3713 sai chữ ký hoặc đơn không tồn tại / không phải của bạn",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<PaymentOrderResponse> vnpayReturn(@RequestBody Map<String, String> params) {
+        return ApiResponse.<PaymentOrderResponse>builder()
+                .result(paymentService.confirmReturn(PaymentProviderType.VNPAY, params))
+                .build();
+    }
+
+    @PostMapping("/orders/{orderCode}/pay")
+    @Operation(
+            summary = "Lấy lại link thanh toán cho đơn đang chờ của tôi",
+            description = "Errors: 3713 đơn không tồn tại hoặc không phải của bạn, 3717 đơn không còn chờ thanh toán",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<PaymentOrderResponse> resumeOrder(@PathVariable String orderCode, HttpServletRequest http) {
+        return ApiResponse.<PaymentOrderResponse>builder()
+                .result(paymentService.resumeOrder(orderCode, clientIp(http)))
                 .build();
     }
 

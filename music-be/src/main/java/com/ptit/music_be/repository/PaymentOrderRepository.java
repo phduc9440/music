@@ -32,6 +32,8 @@ public interface PaymentOrderRepository extends JpaRepository<PaymentOrder, Stri
     @Query("select o from PaymentOrder o where o.id = :id")
     Optional<PaymentOrder> findByIdForUpdate(@Param("id") String id);
 
+    List<PaymentOrder> findByMemberEmailOrderByCreatedAtDesc(String email);
+
     Page<PaymentOrder> findByStatus(PaymentStatus status, Pageable pageable);
 
     List<PaymentOrder> findByStatusAndExpiresAtBefore(PaymentStatus status, LocalDateTime time);

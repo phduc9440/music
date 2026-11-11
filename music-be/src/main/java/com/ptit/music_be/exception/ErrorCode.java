@@ -162,6 +162,7 @@ public enum ErrorCode {
     PAYMENT_ORDER_NOT_REFUNDABLE(3714, "Chỉ hoàn tiền được đơn đã thanh toán", HttpStatus.CONFLICT),
     PAYMENT_PERIOD_INVALID(3715, "Chu kỳ thanh toán phải là MONTH hoặc YEAR", HttpStatus.BAD_REQUEST),
     PAYMENT_RANGE_INVALID(3716, "Khoảng ngày doanh thu không hợp lệ (tối đa 366 ngày)", HttpStatus.BAD_REQUEST),
+    PAYMENT_ORDER_NOT_PAYABLE(3717, "Đơn này không còn chờ thanh toán", HttpStatus.CONFLICT),
     ;
 
     int code;

@@ -45,7 +45,6 @@
     "current": "Gói hiện tại",
     "free": "Miễn phí",
     "buy": "Mua gói",
-    "renew": "Gia hạn",
     "redirecting": "Đang chuyển sang cổng thanh toán...",
     "buyFailed": "Không tạo được đơn thanh toán"
   },
@@ -69,6 +68,13 @@
       "FAILED": "Giao dịch không hoàn tất, bạn chưa bị trừ tiền cho đơn này.",
       "EXPIRED": "Đơn đã quá thời gian thanh toán. Hãy tạo đơn mới.",
       "REFUNDED": "Đơn này đã được hoàn tiền."
-    }
+    },
+    "success": "Thanh toán thành công, gói của bạn đã được kích hoạt!"
+  },
+  "history": {
+    "title": "Lịch sử đăng ký gói",
+    "empty": "Bạn chưa có giao dịch nào.",
+    "pay": "Thanh toán tiếp",
+    "payFailed": "Không mở lại được trang thanh toán"
   }
 }

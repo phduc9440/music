@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -16,8 +17,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ptit.music_be.dto.enums.BillingPeriod;
@@ -42,6 +47,7 @@ class PaymentServiceImplTest {
 
     private final PaymentOrderRepository orders = mock(PaymentOrderRepository.class);
     private final PlanRepository plans = mock(PlanRepository.class);
+    private final MemberRepository members = mock(MemberRepository.class);
     private final SubscriptionService subscriptions = mock(SubscriptionService.class);
     private final PaymentProvider provider = mock(PaymentProvider.class);
     private PaymentServiceImpl service;
@@ -55,7 +61,7 @@ class PaymentServiceImplTest {
         when(provider.type()).thenReturn(PaymentProviderType.VNPAY);
         when(provider.isConfigured()).thenReturn(true);
         service = new PaymentServiceImpl(
-                orders, plans, mock(MemberRepository.class), subscriptions, new ObjectMapper(), List.of(provider));
+                orders, plans, members, subscriptions, new ObjectMapper(), List.of(provider));
         order = PaymentOrder.builder()
                 .orderCode("MU1")
                 .member(buyer)
@@ -196,5 +202,96 @@ class PaymentServiceImplTest {
 
         assertEquals(PaymentStatus.EXPIRED, order.getStatus());
         verify(subscriptions, never()).activate(any(), any(), any(), any());
+    }
+
+    @AfterEach
+    void clearSecurity() {
+        SecurityContextHolder.clearContext();
+    }
+
+    @Test
+    void confirmReturnWithValidSignatureActivatesPlanAndReturnsOrder() {
+        SecurityContextHolder.getContext()
+                .setAuthentication(new UsernamePasswordAuthenticationToken("a@x.com", null, List.of()));
+        when(orders.findByOrderCode("MU1")).thenReturn(Optional.of(order));
+        callback(true, "MU1", 99000, true);
+
+        var result = service.confirmReturn(PaymentProviderType.VNPAY, Map.of("vnp_TxnRef", "MU1"));
+
+        assertEquals("PAID", result.getStatus());
+        verify(subscriptions, times(1)).activate(any(), any(), any(), eq(SubscriptionSource.PAYMENT));
+    }
+
+    @Test
+    void confirmReturnWithBadSignatureIsRejected() {
+        callback(false, null, 0, false);
+
+        assertThrows(
+                AppException.class,
+                () -> service.confirmReturn(PaymentProviderType.VNPAY, Map.of("vnp_TxnRef", "MU1")));
+        verify(subscriptions, never()).activate(any(), any(), any(), any());
+    }
+
+    private void loginAsBuyer() {
+        SecurityContextHolder.getContext()
+                .setAuthentication(new UsernamePasswordAuthenticationToken("a@x.com", null, List.of()));
+    }
+
+    @Test
+    void buyingSamePlanAgainReusesPendingOrderInsteadOfCreatingSecondRow() {
+        loginAsBuyer();
+        when(plans.findByCode("PRO")).thenReturn(Optional.of(pro));
+        when(members.findByEmail("a@x.com")).thenReturn(Optional.of(buyer));
+        when(orders.findByMemberEmailOrderByCreatedAtDesc("a@x.com")).thenReturn(List.of(order));
+        when(provider.createPayment(any(), any())).thenReturn(new PaymentProvider.PaymentInit("https://pay/url"));
+
+        var result = service.createOrder(new CreatePaymentOrderRequest("PRO", BillingPeriod.MONTH, null), "1.1.1.1");
+
+        assertEquals("MU1", result.getOrderCode());
+        assertEquals("https://pay/url", result.getPayUrl());
+        verify(orders, never()).save(argThat(o -> !o.getOrderCode().equals("MU1")));
+    }
+
+    @Test
+    void buyingDifferentPlanSupersedesOldPendingOrder() {
+        loginAsBuyer();
+        Plan team = Plan.builder().id("t").code("TEAM").name("Team").priceMonth(199000).priceYear(1990000).build();
+        when(plans.findByCode("TEAM")).thenReturn(Optional.of(team));
+        when(members.findByEmail("a@x.com")).thenReturn(Optional.of(buyer));
+        when(orders.findByMemberEmailOrderByCreatedAtDesc("a@x.com")).thenReturn(List.of(order));
+        when(orders.save(any())).thenAnswer(i -> i.getArgument(0));
+        when(provider.createPayment(any(), any())).thenReturn(new PaymentProvider.PaymentInit("https://pay/url"));
+
+        var result = service.createOrder(new CreatePaymentOrderRequest("TEAM", BillingPeriod.MONTH, null), "1.1.1.1");
+
+        assertEquals(PaymentStatus.EXPIRED, order.getStatus());
+        assertEquals("TEAM", result.getPlanCode());
+    }
+
+    @Test
+    void resumeReturnsPayUrlForPendingOrderAndRejectsExpiredOne() {
+        loginAsBuyer();
+        when(provider.createPayment(any(), any())).thenReturn(new PaymentProvider.PaymentInit("https://pay/again"));
+
+        assertEquals("https://pay/again", service.resumeOrder("MU1", "1.1.1.1").getPayUrl());
+
+        order.setStatus(PaymentStatus.EXPIRED);
+        AppException e = assertThrows(AppException.class, () -> service.resumeOrder("MU1", "1.1.1.1"));
+        assertEquals(ErrorCode.PAYMENT_ORDER_NOT_PAYABLE, e.getErrorCode());
+    }
+
+    @Test
+    void historyHidesAbandonedOrders() {
+        loginAsBuyer();
+        PaymentOrder expired = PaymentOrder.builder()
+                .orderCode("MU2").member(buyer).plan(pro).period(BillingPeriod.MONTH).amount(99000)
+                .provider(PaymentProviderType.VNPAY).status(PaymentStatus.EXPIRED)
+                .expiresAt(LocalDateTime.now().minusDays(1)).build();
+        when(orders.findByMemberEmailOrderByCreatedAtDesc("a@x.com")).thenReturn(List.of(order, expired));
+
+        var history = service.listMyOrders();
+
+        assertEquals(1, history.size());
+        assertEquals("MU1", history.get(0).getOrderCode());
     }
 }

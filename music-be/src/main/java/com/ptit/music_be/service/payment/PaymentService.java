@@ -1,5 +1,6 @@
 package com.ptit.music_be.service.payment;
 
+import java.util.List;
 import java.util.Map;
 
 import com.ptit.music_be.dto.enums.PaymentProviderType;
@@ -28,6 +29,18 @@ public interface PaymentService {
      * PAID và bật/gia hạn gói. Gọi lại nhiều lần chỉ kích hoạt một lần.
      */
     IpnResult handleIpn(PaymentProviderType provider, Map<String, String> params);
+
+    /**
+     * Trang kết quả gửi lại các tham số cổng đưa người dùng về. Chỉ tin khi chữ ký đúng (cùng cách kiểm như IPN), nhờ
+     * vậy gói vẫn bật được khi IPN không tới máy chủ (ví dụ chạy ở localhost). Trả trạng thái đơn của chính người dùng.
+     */
+    PaymentOrderResponse confirmReturn(PaymentProviderType provider, Map<String, String> params);
+
+    /** Lấy lại link thanh toán cho đơn PENDING còn hạn của chính người dùng (bấm "Thanh toán tiếp" trong lịch sử). */
+    PaymentOrderResponse resumeOrder(String orderCode, String clientIp);
+
+    /** Lịch sử đơn mua gói của người đang đăng nhập, mới nhất trước. */
+    List<PaymentOrderResponse> listMyOrders();
 
     /** Chuyển các đơn PENDING đã quá hạn sang EXPIRED; trả số đơn đã chuyển. */
     int expirePending();

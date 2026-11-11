@@ -89,22 +89,79 @@ public class PaymentServiceImpl implements PaymentService {
                 .findByEmail(SecurityUtils.getCurrentEmail())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        PaymentOrder order = orderRepository.save(PaymentOrder.builder()
-                .orderCode("MU" + UUID.randomUUID().toString().replace("-", "").substring(0, 16).toUpperCase())
-                .member(member)
-                .plan(plan)
-                .period(request.getPeriod())
-                .amount(amount)
-                .provider(type)
-                .status(PaymentStatus.PENDING)
-                .expiresAt(LocalDateTime.now().plusMinutes(ORDER_TTL_MINUTES))
-                .build());
+        PaymentOrder order = reuseOrSupersedePending(member, plan, request.getPeriod(), type);
+        if (order == null) {
+            order = orderRepository.save(PaymentOrder.builder()
+                    .orderCode("MU" + UUID.randomUUID().toString().replace("-", "").substring(0, 16).toUpperCase())
+                    .member(member)
+                    .plan(plan)
+                    .period(request.getPeriod())
+                    .amount(amount)
+                    .provider(type)
+                    .status(PaymentStatus.PENDING)
+                    .expiresAt(LocalDateTime.now().plusMinutes(ORDER_TTL_MINUTES))
+                    .build());
+        }
 
         String locale = member.getLocale() == AppLocale.EN ? "en" : "vn";
         String payUrl = provider.createPayment(order, new PaymentContext(clientIp, locale))
                 .payUrl();
         PaymentOrderResponse response = toResponse(order, false);
         response.setPayUrl(payUrl);
+        return response;
+    }
+
+    /**
+     * Người dùng bấm mua lại khi còn đơn PENDING còn hạn: dùng lại đơn cùng gói/chu kỳ/cổng (không tạo dòng thứ hai,
+     * gia hạn thêm 15 phút); các đơn PENDING khác của họ coi như bỏ dở và chuyển EXPIRED (nếu cổng báo đã trả thì IPN
+     * muộn vẫn bật gói). Trả null nếu không có đơn để dùng lại.
+     */
+    private PaymentOrder reuseOrSupersedePending(
+            Member member, Plan plan, BillingPeriod period, PaymentProviderType type) {
+        LocalDateTime now = LocalDateTime.now();
+        PaymentOrder reuse = null;
+        for (PaymentOrder o : orderRepository.findByMemberEmailOrderByCreatedAtDesc(member.getEmail())) {
+            if (o.getStatus() != PaymentStatus.PENDING) {
+                continue;
+            }
+            boolean same = o.getExpiresAt().isAfter(now)
+                    && o.getPlan().getId().equals(plan.getId())
+                    && o.getPeriod() == period
+                    && o.getProvider() == type;
+            if (same && reuse == null) {
+                reuse = o;
+            } else {
+                o.setStatus(PaymentStatus.EXPIRED);
+                orderRepository.save(o);
+            }
+        }
+        if (reuse != null) {
+            reuse.setExpiresAt(now.plusMinutes(ORDER_TTL_MINUTES));
+            orderRepository.save(reuse);
+        }
+        return reuse;
+    }
+
+    @Override
+    @Transactional
+    public PaymentOrderResponse resumeOrder(String orderCode, String clientIp) {
+        PaymentOrder order =
+                orderRepository.findByOrderCodeForUpdate(orderCode).orElseThrow(this::notFound);
+        if (!order.getMember().getEmail().equals(SecurityUtils.getCurrentEmail())) {
+            throw notFound();
+        }
+        PaymentProvider provider = providers.get(order.getProvider());
+        if (provider == null || !provider.isConfigured()) {
+            throw new AppException(ErrorCode.PAYMENT_PROVIDER_UNAVAILABLE);
+        }
+        if (order.getStatus() != PaymentStatus.PENDING || !order.getExpiresAt().isAfter(LocalDateTime.now())) {
+            throw new AppException(ErrorCode.PAYMENT_ORDER_NOT_PAYABLE);
+        }
+        order.setExpiresAt(LocalDateTime.now().plusMinutes(ORDER_TTL_MINUTES));
+        orderRepository.save(order);
+        String locale = order.getMember().getLocale() == AppLocale.EN ? "en" : "vn";
+        PaymentOrderResponse response = toResponse(order, false);
+        response.setPayUrl(provider.createPayment(order, new PaymentContext(clientIp, locale)).payUrl());
         return response;
     }
 
@@ -118,6 +175,28 @@ public class PaymentServiceImpl implements PaymentService {
             throw notFound();
         }
         return toResponse(order, false);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PaymentOrderResponse> listMyOrders() {
+        LocalDateTime now = LocalDateTime.now();
+        // Đơn bỏ dở (hết hạn chưa trả) không đưa vào lịch sử để khỏi thành nhiều dòng trùng
+        return orderRepository.findByMemberEmailOrderByCreatedAtDesc(SecurityUtils.getCurrentEmail()).stream()
+                .filter(o -> o.getStatus() != PaymentStatus.EXPIRED
+                        && !(o.getStatus() == PaymentStatus.PENDING && !o.getExpiresAt().isAfter(now)))
+                .map(o -> toResponse(o, false))
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public PaymentOrderResponse confirmReturn(PaymentProviderType type, Map<String, String> params) {
+        IpnResult result = handleIpn(type, params);
+        if (result == IpnResult.INVALID_SIGNATURE || result == IpnResult.ORDER_NOT_FOUND) {
+            throw notFound();
+        }
+        return getMyOrder(params.getOrDefault("vnp_TxnRef", ""));
     }
 
     @Override

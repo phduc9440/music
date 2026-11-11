@@ -82,18 +82,14 @@ export default function Pricing() {
                   {price > 0 && <small>/ {t(`billing.periodUnit.${period}`)}</small>}
                 </div>
                 <LimitList limits={plan.limits} />
-                {price > 0 && (
+                {price > 0 && !current && (
                   <button
                     type="button"
                     className="sc-btn sc-btn--primary"
                     disabled={buying !== null}
                     onClick={() => buy(plan)}
                   >
-                    {buying === plan.code
-                      ? t('billing.pricing.redirecting')
-                      : current
-                        ? t('billing.pricing.renew')
-                        : t('billing.pricing.buy')}
+                    {buying === plan.code ? t('billing.pricing.redirecting') : t('billing.pricing.buy')}
                   </button>
                 )}
               </section>
