@@ -1,5 +1,5 @@
 import { useLocation } from 'react-router-dom';
-import { formatDateTime as formatDateTimeI18n, formatRelativeTime, labelMap, translateError } from '../i18n/core';
+import { formatDateTime as formatDateTimeI18n, formatRelativeTime, labelMap, t, translateError } from '../i18n/core';
 import type { AccessLevel, Difficulty, OmrSourceType, ProcessingStatus, ScoreSource, TaskStatus } from '../types';
 import type { SharePermission, Visibility } from '../types';
 
@@ -135,37 +135,24 @@ export const UPLOAD_MAX_PDF_PAGES = 20;
 export const UPLOAD_MIN_IMAGE_SIDE = 600;
 export const UPLOAD_MAX_IMAGE_PIXELS = 40_000_000;
 
-/** Câu thông báo tiếng Việt theo mã lỗi BE khi upload thất bại. */
-const UPLOAD_ERROR_MESSAGES: Record<number, string> = {
-  2003: 'Có file rỗng (0 byte)',
-  2004: 'Định dạng file không hợp lệ: chỉ nhận PDF, PNG, JPG, JPEG và nội dung phải đúng định dạng',
-  2005: 'File quá lớn: mỗi file tối đa 50MB, cả lần tải tối đa 200MB',
-  2006: 'Chỉ tải 1 file PDF, hoặc 1–20 ảnh (không trộn PDF với ảnh)',
-  2008: 'PDF bị mã hóa, đặt mật khẩu hoặc không mở được',
-  2009: `PDF phải có từ 1 đến ${UPLOAD_MAX_PDF_PAGES} trang`,
-  2010: `Ảnh không đọc được, cạnh ngắn nhỏ hơn ${UPLOAD_MIN_IMAGE_SIDE}px hoặc lớn hơn 40 megapixel`,
-  2011: 'Loại nguồn không hợp lệ',
-  2018: 'Tên tác giả tối đa 255 ký tự',
-  2202: 'Bạn đang có 3 bản nhạc chờ số hóa, hãy đợi một bản xong rồi tải tiếp',
-};
+/** Mã lỗi BE có câu riêng khi upload thất bại (chuỗi ở locales, nhóm upload.errorByCode). */
+const UPLOAD_ERROR_CODES = [2003, 2004, 2005, 2006, 2008, 2009, 2010, 2011, 2018, 2202];
 
 export const getUploadErrorMessage = (err: unknown): string => {
   const code = getErrorCode(err);
-  return (code && UPLOAD_ERROR_MESSAGES[code]) || getErrorMessage(err, 'Tải lên thất bại, vui lòng thử lại');
+  if (code && UPLOAD_ERROR_CODES.includes(code)) {
+    return t(`upload.errorByCode.${code}`, { pages: UPLOAD_MAX_PDF_PAGES, side: UPLOAD_MIN_IMAGE_SIDE });
+  }
+  return getErrorMessage(err, t('upload.failed'));
 };
-/** Câu thông báo tiếng Việt theo mã lỗi BE khi lưu MusicXML từ trình chỉnh sửa. */
-const SAVE_ERROR_MESSAGES: Record<number, string> = {
-  1002: 'Bạn không có quyền sửa bản nhạc này',
-  2001: 'Bản nhạc không còn tồn tại',
-  2005: 'Bản nhạc quá lớn để lưu (tối đa 5MB), hãy chia nhỏ hoặc xóa bớt',
-  2013: 'Nội dung bản nhạc không hợp lệ. Hãy tải lại trang; bản nháp của bạn vẫn được giữ',
-  2201: 'Bản nhạc đang được nhận diện lại, hãy đợi xong rồi lưu',
-};
+/** Mã lỗi BE có câu riêng khi lưu MusicXML từ trình chỉnh sửa (chuỗi ở locales, nhóm upload.saveByCode). */
+const SAVE_ERROR_CODES = [1002, 2001, 2005, 2013, 2201];
 
 /** Thông báo cho lỗi lưu (không gồm 2014, vì xung đột phiên bản có hộp thoại riêng). */
 export const getSaveErrorMessage = (err: unknown): string => {
   const code = getErrorCode(err);
-  return (code && SAVE_ERROR_MESSAGES[code]) || getErrorMessage(err, 'Lưu thất bại, vui lòng thử lại');
+  if (code && SAVE_ERROR_CODES.includes(code)) return t(`upload.saveByCode.${code}`);
+  return getErrorMessage(err, t('upload.saveFailed'));
 };
 
 /** Phiên bản mới nhất BE trả kèm lỗi 2014 SCORE_VERSION_CONFLICT; undefined nếu không phải lỗi này. */
@@ -182,9 +169,10 @@ export const isPdf = (file: File): boolean => getExtension(file.name) === 'pdf';
 
 /** Lỗi của riêng từng file; chuỗi rỗng nghĩa là hợp lệ. */
 export const validateUploadFile = (file: File): string => {
-  if (!UPLOAD_EXTENSIONS.includes(getExtension(file.name))) return 'Chỉ hỗ trợ PDF, PNG, JPG, JPEG';
-  if (file.size === 0) return 'File rỗng (0 byte)';
-  if (file.size > UPLOAD_MAX_FILE_BYTES) return `File quá lớn (tối đa ${UPLOAD_MAX_FILE_BYTES / 1024 / 1024}MB)`;
+  if (!UPLOAD_EXTENSIONS.includes(getExtension(file.name))) return t('upload.validate.unsupported');
+  if (file.size === 0) return t('upload.import.empty');
+  if (file.size > UPLOAD_MAX_FILE_BYTES)
+    return t('upload.import.tooLarge', { max: UPLOAD_MAX_FILE_BYTES / 1024 / 1024 });
   return '';
 };
 
@@ -192,9 +180,9 @@ export const validateUploadFile = (file: File): string => {
 export const validateUploadBatch = (files: File[]): string => {
   if (files.length === 0) return '';
   const pdfs = files.filter(isPdf).length;
-  if (pdfs > 0 && files.length > 1) return 'PDF phải tải lên một mình, không trộn với file khác';
-  if (pdfs === 0 && files.length > UPLOAD_MAX_IMAGES) return `Tối đa ${UPLOAD_MAX_IMAGES} ảnh mỗi lần`;
-  if (files.reduce((sum, f) => sum + f.size, 0) > UPLOAD_MAX_TOTAL_BYTES) return 'Tổng dung lượng vượt quá 200MB';
+  if (pdfs > 0 && files.length > 1) return t('upload.validate.pdfAlone');
+  if (pdfs === 0 && files.length > UPLOAD_MAX_IMAGES) return t('upload.validate.maxImages', { max: UPLOAD_MAX_IMAGES });
+  if (files.reduce((sum, f) => sum + f.size, 0) > UPLOAD_MAX_TOTAL_BYTES) return t('upload.validate.totalSize');
   return '';
 };
 

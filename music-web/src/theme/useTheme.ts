@@ -4,6 +4,6 @@ import type { ThemeContextValue } from './theme-context';
 
 export function useTheme(): ThemeContextValue {
   const value = useContext(ThemeContext);
-  if (!value) throw new Error('useTheme phải nằm trong <ThemeProvider>');
+  if (!value) throw new Error('useTheme phải nằm trong <ThemeProvider>'); // i18n-ignore: lỗi cho lập trình viên
   return value;
 }

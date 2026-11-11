@@ -7,6 +7,7 @@ import { scoreApi } from '../../../services';
 import type { PageResult, ScoreSummary } from '../../../types';
 import { getScorePath } from '../../../utils/score';
 import '../../../components/scores/scores.css';
+import { t } from '../../../i18n/core';
 
 const PAGE_SIZE = 12;
 
@@ -21,7 +22,7 @@ export default function SharedScores() {
     scoreApi
       .sharedWithMe({ page, size: PAGE_SIZE })
       .then((res) => setData(res.data.result))
-      .catch(() => toast.error('Không tải được danh sách bản nhạc được chia sẻ'));
+      .catch(() => toast.error(t('scores.shared.loadFailed')));
   }, [page]);
 
   return (
@@ -29,15 +30,15 @@ export default function SharedScores() {
       <main className="sc-container">
         <header className="sc-lib-head">
           <div>
-            <h1>Được chia sẻ với tôi</h1>
-            <p>{data ? `${data.totalElements} bản nhạc` : 'Bản nhạc người khác chia sẻ cho bạn'}</p>
+            <h1>{t('common.nav.items.shared')}</h1>
+            <p>{data ? t('common.pagination.scores', { count: data.totalElements }) : t('scores.shared.subtitle')}</p>
           </div>
         </header>
 
         {data && data.content.length === 0 && (
           <div className="sc-empty">
-            <h3>Chưa có bản nhạc nào được chia sẻ</h3>
-            <p>Khi ai đó gửi liên kết hoặc mời bạn, bản nhạc sẽ hiện ở đây.</p>
+            <h3>{t('scores.shared.emptyTitle')}</h3>
+            <p>{t('scores.shared.emptyHint')}</p>
           </div>
         )}
 

@@ -7,10 +7,11 @@ import { scoreApi } from '../../../services';
 import type { Difficulty, PageResult, ScoreSummary } from '../../../types';
 import { DIFFICULTY_LABELS, getScorePath } from '../../../utils/score';
 import '../../../components/scores/scores.css';
+import { t } from '../../../i18n/core';
 
 const PAGE_SIZE = 12;
 
-/** Trang /scores/official: kho score mẫu (bản nhạc chính thức) cho người mới học, từ dễ đến khó (mục 4.5). */
+/** Trang /scores/official: kho bản nhạc mẫu (bản nhạc chính thức) cho người mới học, từ dễ đến khó (mục 4.5). */
 export default function OfficialScores() {
   const navigate = useNavigate();
   const { pathname } = useLocation(); // để trang chi tiết biết người dùng đi từ đâu tới
@@ -24,7 +25,7 @@ export default function OfficialScores() {
     scoreApi
       .official({ page, size: PAGE_SIZE, keyword: keyword || undefined, difficulty })
       .then((res) => setData(res.data.result))
-      .catch(() => toast.error('Không tải được kho score mẫu'));
+      .catch(() => toast.error(t('scores.official.loadFailed')));
   }, [page, keyword, difficulty]);
 
   return (
@@ -32,8 +33,8 @@ export default function OfficialScores() {
       <main className="sc-container">
         <header className="sc-lib-head">
           <div>
-            <h1>Kho score mẫu</h1>
-            <p>{data ? `${data.totalElements} bản nhạc, sắp từ dễ đến khó` : 'Bản nhạc chọn lọc cho người mới học'}</p>
+            <h1>{t('common.nav.items.officialLibrary')}</h1>
+            <p>{data ? t('scores.official.count', { count: data.totalElements }) : t('scores.official.subtitle')}</p>
           </div>
         </header>
 
@@ -47,7 +48,7 @@ export default function OfficialScores() {
         >
           <input
             className="sc-input"
-            placeholder="Tìm theo tên hoặc tác giả"
+            placeholder={t('scores.explore.searchPlaceholder')}
             value={keywordInput}
             onChange={(e) => setKeywordInput(e.target.value)}
           />
@@ -59,7 +60,7 @@ export default function OfficialScores() {
               setDifficulty(e.target.value as Difficulty | '');
             }}
           >
-            <option value="">Mọi độ khó</option>
+            <option value="">{t('scores.filters.anyDifficulty')}</option>
             {(Object.keys(DIFFICULTY_LABELS) as Difficulty[]).map((d) => (
               <option key={d} value={d}>
                 {DIFFICULTY_LABELS[d]}
@@ -67,14 +68,14 @@ export default function OfficialScores() {
             ))}
           </select>
           <button type="submit" className="sc-btn sc-btn--primary">
-            Tìm
+            {t('common.search')}
           </button>
         </form>
 
         {data && data.content.length === 0 && (
           <div className="sc-empty">
-            <h3>Chưa có bản nhạc mẫu nào</h3>
-            <p>Quản trị viên sẽ thêm các bản nhạc chọn lọc vào kho này.</p>
+            <h3>{t('scores.official.emptyTitle')}</h3>
+            <p>{t('scores.official.emptyHint')}</p>
           </div>
         )}
 

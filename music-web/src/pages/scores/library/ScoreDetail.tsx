@@ -17,6 +17,7 @@ import type { ScoreDetail as ScoreDetailData } from '../../../types';
 import { getHttpStatus, POLL_INTERVAL_MS } from '../../../utils/score';
 import '../../../components/scores/scores.css';
 import './ScoreDetail.css';
+import { t } from '../../../i18n/core';
 
 type LoadState =
   | { phase: 'loading' }
@@ -34,10 +35,10 @@ type Tab = 'files' | 'tasks' | 'reviews';
  */
 export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
   const location = useLocation();
-  // Người dùng quay lại đúng nơi đã đi từ đó tới (Khám phá, Kho score mẫu, Được chia sẻ, playlist...), mặc định là Thư viện
+  // Người dùng quay lại đúng nơi đã đi từ đó tới (Khám phá, Kho bản nhạc mẫu, Được chia sẻ, playlist...), mặc định là Thư viện
   const back = admin
-    ? { to: '/admin/scores', label: 'Quay lại' }
-    : getBackTarget(location.state, { to: '/scores', label: 'Thư viện' });
+    ? { to: '/admin/scores', label: t('common.nav.back') }
+    : getBackTarget(location.state, { to: '/scores', label: t('common.nav.items.library') });
   const backPath = back.to;
   const backLabel = admin ? back.label : `‹ ${back.label}`;
   // Admin vào từ nhiều trang (quản lý, chờ duyệt, kho mẫu) nên quay về trang trước đó
@@ -71,7 +72,7 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
           setState({ phase: 'forbidden' });
         } else {
           setState((prev) => (prev.phase === 'ready' ? prev : { phase: 'error' }));
-          toast.error('Không tải được bản nhạc');
+          toast.error(t('scores.detail.loadFailed'));
         }
       });
     return () => {
@@ -133,10 +134,10 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
         {navbar}
         <main className="sc-container">
           <div className="sc-empty">
-            <h3>{notFound ? 'Không tìm thấy bản nhạc' : 'Không tải được bản nhạc'}</h3>
-            <p>{notFound ? 'Bản nhạc không tồn tại hoặc bạn không có quyền xem.' : 'Vui lòng thử lại sau.'}</p>
+            <h3>{notFound ? t('scores.detail.notFound') : t('scores.detail.loadFailed')}</h3>
+            <p>{notFound ? t('scores.detail.notFoundHint') : t('scores.detail.retryLater')}</p>
             <button className="sc-btn sc-btn--primary" onClick={goBack}>
-              {admin ? 'Về danh sách' : `Về ${back.label}`}
+              {admin ? t('scores.detail.toList') : t('scores.detail.backTo', { name: back.label })}
             </button>
           </div>
         </main>
@@ -175,7 +176,7 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
                     className="sc-tab"
                     onClick={() => setTab('tasks')}
                   >
-                    Lịch sử tác vụ <span className="sc-tab__count">{score.latestTasks.length}</span>
+                    {t('scores.detail.tasks')} <span className="sc-tab__count">{score.latestTasks.length}</span>
                   </button>
                 </>
               )}
@@ -185,7 +186,8 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
                 className="sc-tab"
                 onClick={() => setTab('reviews')}
               >
-                Nhận xét{score.ratingCount ? <span className="sc-tab__count">{score.ratingCount}</span> : null}
+                {t('scores.detail.reviews')}
+                {score.ratingCount ? <span className="sc-tab__count">{score.ratingCount}</span> : null}
               </button>
             </div>
 
@@ -207,7 +209,7 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
       </main>
 
       {requestingEdit && (
-        <Modal title="Xin quyền chỉnh sửa" onClose={() => setRequestingEdit(false)}>
+        <Modal title={t('scores.detail.requestEditTitle')} onClose={() => setRequestingEdit(false)}>
           <RequestAccess
             scoreId={score.id}
             levels={[3]}

@@ -57,12 +57,12 @@ public class OfficialRequestServiceImpl implements OfficialRequestService {
     public OfficialRequestResponse request(String scoreId) {
         requireAdmin();
         Member admin = currentMember();
-        Score score = scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+        Score score =
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
         if (!Visibility.PUBLIC.name().equals(score.getVisibility())) {
             throw new AppException(ErrorCode.SCORE_NOT_PUBLIC_FOR_OFFICIAL);
         }
-        if (Boolean.TRUE.equals(score.getIsOfficial())
-                || requestRepository.hasLiveAcceptedCopy(scoreId)) {
+        if (Boolean.TRUE.equals(score.getIsOfficial()) || requestRepository.hasLiveAcceptedCopy(scoreId)) {
             throw new AppException(ErrorCode.SCORE_ALREADY_OFFICIAL);
         }
         if (requestRepository.existsByScoreIdAndStatusIn(scoreId, Set.of(OfficialRequestStatus.PENDING))) {
@@ -89,7 +89,8 @@ public class OfficialRequestServiceImpl implements OfficialRequestService {
                     false);
         }
 
-        // Cần MusicXML để sao chép; kiểm tra ngay từ lúc xin để không xin những bản mà chủ có đồng ý cũng không chép được
+        // Cần MusicXML để sao chép; kiểm tra ngay từ lúc xin để không xin những bản mà chủ có đồng ý cũng không chép
+        // được
         if (scoreFileRepository
                 .findByScoreIdAndFileTypeOrderByPageNumberAsc(scoreId, FileType.MUSICXML)
                 .isEmpty()) {
@@ -106,9 +107,10 @@ public class OfficialRequestServiceImpl implements OfficialRequestService {
                 admin,
                 NotificationType.OFFICIAL_REQUESTED,
                 score.getId(),
-                "Quản trị viên muốn đưa bản nhạc \"" + score.getTitle() + "\" vào kho score mẫu. "
+                "Quản trị viên muốn đưa bản nhạc \"" + score.getTitle() + "\" vào kho bản nhạc mẫu. "
                         + "Bản của bạn giữ nguyên, hệ thống chỉ sao chép một bản và ghi tên bạn là người phối. "
-                        + "Hãy đồng ý hoặc từ chối.");
+                        + "Hãy đồng ý hoặc từ chối.",
+                NotificationService.params("title", score.getTitle()));
         return toResponse(saved, false);
     }
 
@@ -150,7 +152,8 @@ public class OfficialRequestServiceImpl implements OfficialRequestService {
                 NotificationType.OFFICIAL_ACCEPTED,
                 copy.getId(),
                 displayName(request.getOwner()) + " đã đồng ý đưa bản nhạc \"" + score.getTitle()
-                        + "\" vào kho score mẫu");
+                        + "\" vào kho bản nhạc mẫu",
+                NotificationService.params("name", displayName(request.getOwner()), "title", score.getTitle()));
         return toResponse(saved, false);
     }
 
@@ -166,8 +169,13 @@ public class OfficialRequestServiceImpl implements OfficialRequestService {
                 request.getOwner(),
                 NotificationType.OFFICIAL_DECLINED,
                 request.getScore().getId(),
-                displayName(request.getOwner()) + " đã từ chối đưa bản nhạc \"" + request.getScore().getTitle()
-                        + "\" vào kho score mẫu");
+                displayName(request.getOwner()) + " đã từ chối đưa bản nhạc \""
+                        + request.getScore().getTitle() + "\" vào kho bản nhạc mẫu",
+                NotificationService.params(
+                        "name",
+                        displayName(request.getOwner()),
+                        "title",
+                        request.getScore().getTitle()));
         return toResponse(saved, false);
     }
 
@@ -194,7 +202,8 @@ public class OfficialRequestServiceImpl implements OfficialRequestService {
         String safeStatus = "";
         if (StringUtils.hasText(status)) {
             try {
-                safeStatus = OfficialRequestStatus.valueOf(status.trim().toUpperCase()).name();
+                safeStatus = OfficialRequestStatus.valueOf(status.trim().toUpperCase())
+                        .name();
             } catch (IllegalArgumentException e) {
                 throw new AppException(ErrorCode.INVALID_FILTER);
             }
@@ -202,7 +211,9 @@ public class OfficialRequestServiceImpl implements OfficialRequestService {
         Page<OfficialRequest> result =
                 requestRepository.searchForAdmin(safeStatus, PageRequest.of(Math.max(page, 0), safeSize));
         return PageResponse.<OfficialRequestResponse>builder()
-                .content(result.getContent().stream().map(r -> toResponse(r, true)).toList())
+                .content(result.getContent().stream()
+                        .map(r -> toResponse(r, true))
+                        .toList())
                 .pageNumber(result.getNumber())
                 .pageSize(result.getSize())
                 .totalElements(result.getTotalElements())

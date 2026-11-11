@@ -1,4 +1,5 @@
 /** Giới hạn và cấu hình của trình xem bản nhạc (/scores/:id/edit, chế độ chỉ xem). */
+import { t } from '../i18n/core';
 
 /** Mức thu phóng nhỏ nhất / lớn nhất / mỗi bước (%), theo đặc tả 1.17: 50–200%. */
 export const ZOOM_MIN = 50;
@@ -84,7 +85,7 @@ export const inspectMusicXml = (xml: string): MusicXmlInfo => {
 /** Cảnh báo hiệu năng nếu MusicXML quá lớn; chuỗi rỗng nếu ổn. */
 export const performanceWarning = (info: MusicXmlInfo): string => {
   if (info.bytes > MAX_XML_BYTES || info.measureCount > MAX_MEASURES) {
-    return 'Bản nhạc khá lớn nên có thể vẽ chậm. Hãy thử chế độ "Cuộn ngang" hoặc thu nhỏ để xem nhanh hơn.';
+    return t('viewer.performanceWarning');
   }
   return '';
 };

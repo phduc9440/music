@@ -62,7 +62,7 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
             Pageable pageable);
 
     /**
-     * Kho score mẫu (is_official = true): tìm theo tên/tác giả, lọc độ khó và nhạc sĩ ("" là không lọc), sắp từ dễ đến khó rồi
+     * Kho bản nhạc mẫu (is_official = true): tìm theo tên/tác giả, lọc độ khó và nhạc sĩ ("" là không lọc), sắp từ dễ đến khó rồi
      * theo tên để người mới học bắt đầu từ bài dễ.
      */
     @Query("""
@@ -85,7 +85,7 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
     /**
      * Phần chung của trang Khám phá: bản PUBLIC, tìm tên/tác giả, lọc độ khó, thể loại, nhạc sĩ, khóa ("" là không lọc)
      * và số khuông trong [staffMin, staffMax] (staffMin = 0 là không lọc). Bản sao
-     * trong kho mẫu (có bản gốc) không liệt kê ở đây vì đã nằm ở "Kho score mẫu"; nếu không, bản gốc của người dùng và
+     * trong kho mẫu (có bản gốc) không liệt kê ở đây vì đã nằm ở "Kho bản nhạc mẫu"; nếu không, bản gốc của người dùng và
      * bản sao của nó sẽ hiện thành hai bản trùng nhau.
      */
     String PUBLIC_EXPLORE_FILTER = """
@@ -128,7 +128,7 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
             @Param("keySig") String keySig,
             Pageable pageable);
 
-    /** ADMIN: các bản nhạc công khai chưa nằm trong kho score mẫu, để chọn đưa vào (cập nhật gần nhất trước). */
+    /** ADMIN: các bản nhạc công khai chưa nằm trong kho bản nhạc mẫu, để chọn đưa vào (cập nhật gần nhất trước). */
     @Query("""
 			select s from Score s
 			where s.visibility = 'PUBLIC' and (s.isOfficial is null or s.isOfficial = false)

@@ -17,7 +17,7 @@ export const scoreApi = {
   list: (params?: ScoreListParams) => apiClient.get<ApiResponse<PageResult<ScoreSummary>>>('/scores/me', { params }),
   sharedWithMe: (params?: { page?: number; size?: number }) =>
     apiClient.get<ApiResponse<PageResult<ScoreSummary>>>('/scores/shared-with-me', { params }),
-  // 4.5: kho score mẫu (mọi người dùng xem được), từ dễ đến khó
+  // 4.5: kho bản nhạc mẫu (mọi người dùng xem được), từ dễ đến khó
   official: (params?: {
     page?: number;
     size?: number;

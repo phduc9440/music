@@ -6,7 +6,7 @@ import com.ptit.music_be.dto.response.OfficialRequestResponse;
 import com.ptit.music_be.dto.response.PageResponse;
 
 /**
- * Đưa bản nhạc của người dùng vào kho score mẫu có sự đồng ý của chủ: quản trị viên xin, chủ trả lời, đồng ý thì bản
+ * Đưa bản nhạc của người dùng vào kho bản nhạc mẫu có sự đồng ý của chủ: quản trị viên xin, chủ trả lời, đồng ý thì bản
  * nhạc được sao chép sang tài khoản hệ thống (bản gốc của chủ giữ nguyên, chủ vẫn sửa và xóa được).
  */
 public interface OfficialRequestService {

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { toast } from 'react-toastify';
 import { authApi } from '../services';
+import { t, translateError } from '../i18n/core';
 
 interface Props {
   isOpen: boolean;
@@ -18,22 +19,20 @@ export default function ChangePasswordModal({ isOpen, onClose }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
-      toast.error('Mật khẩu mới nhập lại không khớp');
+      toast.error(t('profile.password.mismatch'));
       return;
     }
 
     setIsLoading(true);
     try {
       await authApi.changePassword({ oldPassword, newPassword });
-      toast.success('Đã đổi mật khẩu. Các thiết bị khác đã bị đăng xuất.');
+      toast.success(t('profile.password.changed'));
       setOldPassword('');
       setNewPassword('');
       setConfirmPassword('');
       onClose();
     } catch (error) {
-      toast.error(
-        (error as { response?: { data?: { message?: string } } }).response?.data?.message || 'Không đổi được mật khẩu',
-      );
+      toast.error(translateError(error, t('profile.password.failed')));
     } finally {
       setIsLoading(false);
     }
@@ -43,14 +42,14 @@ export default function ChangePasswordModal({ isOpen, onClose }: Props) {
     <div className="modal-overlay active">
       <div className="auth-card modal-content" style={{ maxWidth: '400px' }}>
         <div className="modal-header">
-          <h3>Đổi mật khẩu</h3>
+          <h3>{t('common.header.changePassword')}</h3>
           <button onClick={onClose} className="modal-close" disabled={isLoading}>
             &times;
           </button>
         </div>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Mật khẩu hiện tại</label>
+            <label>{t('profile.password.current')}</label>
             <input
               type="password"
               className="form-control"
@@ -60,7 +59,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: Props) {
             />
           </div>
           <div className="form-group">
-            <label>Mật khẩu mới (ít nhất 8 ký tự)</label>
+            <label>{t('profile.password.new')}</label>
             <input
               type="password"
               className="form-control"
@@ -71,7 +70,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: Props) {
             />
           </div>
           <div className="form-group">
-            <label>Nhập lại mật khẩu mới</label>
+            <label>{t('profile.password.confirm')}</label>
             <input
               type="password"
               className="form-control"
@@ -87,7 +86,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: Props) {
             style={{ width: '100%', marginTop: '1rem' }}
             disabled={isLoading}
           >
-            {isLoading ? 'Đang lưu…' : 'Đổi mật khẩu'}
+            {isLoading ? t('scores.edit.saving') : t('common.header.changePassword')}
           </button>
         </form>
       </div>

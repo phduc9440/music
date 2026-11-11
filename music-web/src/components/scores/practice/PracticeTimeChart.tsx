@@ -3,12 +3,19 @@ import { toast } from 'react-toastify';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { practiceStatsApi } from '../../../services';
 import type { PracticePeriod, PracticeTimeBucket } from '../../../types';
+import { formatDate, monthShortName, t } from '../../../i18n/core';
 
-const PERIODS: { value: PracticePeriod; label: string; hint: string }[] = [
-  { value: 'DAY', label: 'Ngày', hint: '30 ngày gần nhất' },
-  { value: 'WEEK', label: 'Tuần', hint: '12 tuần gần nhất' },
-  { value: 'MONTH', label: 'Tháng', hint: '12 tháng gần nhất' },
-];
+const PERIODS: { value: PracticePeriod; label: string; hint: string }[] = (['DAY', 'WEEK', 'MONTH'] as const).map(
+  (value) => ({
+    value,
+    get label() {
+      return t(`practice.time.${value}.label`);
+    },
+    get hint() {
+      return t(`practice.time.${value}.hint`);
+    },
+  }),
+);
 
 /** yyyy-MM-dd -> Date theo giờ máy (không để lệch múi giờ). */
 const parseDate = (s: string) => {
@@ -18,14 +25,19 @@ const parseDate = (s: string) => {
 
 const labelOf = (b: PracticeTimeBucket, period: PracticePeriod) => {
   const d = parseDate(b.start);
-  if (period === 'MONTH') return `Th${d.getMonth() + 1}/${String(d.getFullYear()).slice(2)}`;
+  if (period === 'MONTH')
+    return t('practice.time.monthLabel', {
+      month: d.getMonth() + 1,
+      name: monthShortName(d.getMonth()),
+      year: String(d.getFullYear()).slice(2),
+    });
   return `${d.getDate()}/${d.getMonth() + 1}`;
 };
 
 const formatMinutes = (seconds: number) => {
   const minutes = Math.round(seconds / 60);
-  if (minutes < 60) return `${minutes} phút`;
-  return `${Math.floor(minutes / 60)} giờ ${minutes % 60} phút`;
+  if (minutes < 60) return t('practice.time.minutes', { count: minutes });
+  return t('practice.time.hoursMinutes', { h: Math.floor(minutes / 60), m: minutes % 60 });
 };
 
 /** Biểu đồ cột thời gian luyện tập theo Ngày / Tuần / Tháng (mục 3.13). */
@@ -38,7 +50,7 @@ export default function PracticeTimeChart() {
     practiceStatsApi
       .time(period)
       .then((res) => !cancelled && setBuckets(res.data.result))
-      .catch(() => toast.error('Không tải được biểu đồ thời gian luyện tập'));
+      .catch(() => toast.error(t('practice.time.loadFailed')));
     return () => {
       cancelled = true;
     };
@@ -48,7 +60,10 @@ export default function PracticeTimeChart() {
     () =>
       (buckets ?? []).map((b) => ({
         label: labelOf(b, period),
-        range: b.start === b.end ? parseDate(b.start).toLocaleDateString('vi-VN') : `${parseDate(b.start).toLocaleDateString('vi-VN')} – ${parseDate(b.end).toLocaleDateString('vi-VN')}`,
+        range:
+          b.start === b.end
+            ? formatDate(parseDate(b.start))
+            : `${formatDate(parseDate(b.start))} – ${formatDate(parseDate(b.end))}`,
         minutes: Math.round((b.totalSeconds / 60) * 10) / 10,
         seconds: b.totalSeconds,
         sessions: b.sessionCount,
@@ -64,10 +79,14 @@ export default function PracticeTimeChart() {
     <section className="ps-chart">
       <div className="ps-chart__head">
         <div>
-          <h2>Thời gian luyện tập</h2>
+          <h2>{t('practice.time.title')}</h2>
           <p>
-            {hint}: tổng {formatMinutes(totalSeconds)}, trung bình {formatMinutes(average)} mỗi{' '}
-            {PERIODS.find((p) => p.value === period)?.label.toLowerCase()}
+            {t('practice.time.summary', {
+              hint: hint ?? '',
+              total: formatMinutes(totalSeconds),
+              average: formatMinutes(average),
+              unit: PERIODS.find((p) => p.value === period)?.label.toLowerCase() ?? '',
+            })}
           </p>
         </div>
         <div className="ps-chart__tabs">
@@ -91,8 +110,11 @@ export default function PracticeTimeChart() {
             <YAxis tick={{ fontSize: 12 }} allowDecimals={false} unit=" p" />
             <Tooltip
               formatter={(_value, _name, item) => [
-                `${formatMinutes(item.payload.seconds)} (${item.payload.sessions} phiên)`,
-                'Thời gian tập',
+                t('practice.time.tooltip', {
+                  time: formatMinutes(item.payload.seconds),
+                  sessions: item.payload.sessions,
+                }),
+                t('practice.time.tooltipName'),
               ]}
               labelFormatter={(_label, items) => items?.[0]?.payload?.range ?? ''}
             />

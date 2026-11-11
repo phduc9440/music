@@ -5,6 +5,7 @@ import type { IconName } from './Icon';
 
 import { VISIBILITY } from './helpers';
 import type { Tone } from './helpers';
+import { formatNumber, t } from '../../i18n/core';
 
 export { default as Icon } from './Icon';
 export type { IconName } from './Icon';
@@ -276,7 +277,7 @@ export function SearchForm({
         onChange={(e) => onChange(e.target.value)}
       />
       <Button type="submit" variant="primary">
-        Tìm
+        {t('common.search')}
       </Button>
     </form>
   );
@@ -341,10 +342,10 @@ export function TableState({
         {loading ? (
           <div className="adm-empty">
             <span className="adm-spinner adm-spinner--lg" aria-hidden="true" />
-            <span className="adm-empty__desc">Đang tải…</span>
+            <span className="adm-empty__desc">{t('common.loading')}</span>
           </div>
         ) : (
-          <EmptyState icon={icon} title={title ?? 'Không có dữ liệu'} description={description} />
+          <EmptyState icon={icon} title={title ?? t('common.noData')} description={description} />
         )}
       </td>
     </tr>
@@ -390,10 +391,10 @@ export function Pager({
 }) {
   if (totalElements === 0) return null;
   return (
-    <nav className="adm-pager" aria-label="Phân trang">
+    <nav className="adm-pager" aria-label={t('common.pagination.label')}>
       <span className="adm-pager__info">
-        {totalElements.toLocaleString('vi-VN')} {unit}
-        {totalPages > 1 && ` · trang ${page + 1}/${totalPages}`}
+        {formatNumber(totalElements)} {unit}
+        {totalPages > 1 && ` · ${t('common.pagination.pageOf', { page: page + 1, total: totalPages })}`}
       </span>
       {totalPages > 1 && (
         <div className="adm-pager__buttons">
@@ -402,14 +403,14 @@ export function Pager({
             icon="chevronLeft"
             disabled={page === 0}
             onClick={() => onChange(page - 1)}
-            aria-label="Trang trước"
+            aria-label={t('common.pagination.previousPage')}
           />
           <Button
             size="sm"
             icon="chevronRight"
             disabled={page + 1 >= totalPages}
             onClick={() => onChange(page + 1)}
-            aria-label="Trang sau"
+            aria-label={t('common.pagination.nextPage')}
           />
         </div>
       )}

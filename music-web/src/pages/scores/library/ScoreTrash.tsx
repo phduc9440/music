@@ -8,6 +8,8 @@ import type { PageResult, TrashedScore } from '../../../types';
 import { getErrorMessage } from '../../../utils/score';
 import '../../../components/scores/scores.css';
 import './ScoreLibrary.css';
+import { t } from '../../../i18n/core';
+import Rich from '../../../i18n/Rich';
 
 const PAGE_SIZE = 12;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -37,7 +39,7 @@ export default function ScoreTrash() {
       }
       setData(res.data.result);
     } catch {
-      toast.error('Không tải được thùng rác');
+      toast.error(t('scores.trash.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -52,10 +54,10 @@ export default function ScoreTrash() {
     setBusyId(score.id);
     try {
       await scoreApi.restore(score.id);
-      toast.success('Đã khôi phục bản nhạc');
+      toast.success(t('scores.trash.restored'));
       await load();
     } catch (err) {
-      toast.error(getErrorMessage(err, 'Không khôi phục được, vui lòng thử lại'));
+      toast.error(getErrorMessage(err, t('scores.trash.restoreFailed')));
     } finally {
       setBusyId(null);
     }
@@ -73,11 +75,11 @@ export default function ScoreTrash() {
     setError('');
     try {
       await scoreApi.purge(purging.id);
-      toast.success('Đã xóa hẳn bản nhạc');
+      toast.success(t('scores.trash.purged'));
       closePurge();
       await load();
     } catch (err) {
-      setError(getErrorMessage(err, 'Không xóa được, vui lòng thử lại'));
+      setError(getErrorMessage(err, t('scores.trash.purgeFailed')));
     } finally {
       setBusyId(null);
     }
@@ -88,11 +90,11 @@ export default function ScoreTrash() {
       <main className="sc-container">
         <header className="sc-lib-head">
           <div>
-            <h1>Thùng rác</h1>
-            <p>Bản nhạc đã xóa được giữ 30 ngày rồi mới bị xóa hẳn.</p>
+            <h1>{t('common.nav.items.trash')}</h1>
+            <p>{t('scores.trash.subtitle')}</p>
           </div>
           <button className="sc-btn" onClick={() => navigate('/scores')}>
-            ‹ Về thư viện
+            {t('scores.trash.backToLibrary')}
           </button>
         </header>
 
@@ -100,8 +102,8 @@ export default function ScoreTrash() {
 
         {!loading && data && data.content.length === 0 && (
           <div className="sc-empty">
-            <h3>Thùng rác trống</h3>
-            <p>Bản nhạc bạn xóa sẽ nằm ở đây để có thể khôi phục.</p>
+            <h3>{t('scores.trash.emptyTitle')}</h3>
+            <p>{t('scores.trash.emptyHint')}</p>
           </div>
         )}
 
@@ -111,19 +113,19 @@ export default function ScoreTrash() {
               <li key={s.id} className="sc-trash__item">
                 <div className="sc-trash__info">
                   <h3 title={s.title}>{s.title}</h3>
-                  <p>{s.composer || 'Chưa rõ tác giả'}</p>
+                  <p>{s.composer || t('scores.card.unknownComposer')}</p>
                   <p className="sc-trash__meta">
-                    Xóa hẳn sau {daysLeft(s.purgeAt)} ngày
-                    {s.deletedByAdmin ? ' · Do quản trị viên gỡ' : ''}
-                    {s.deleteReason ? ` · Lý do: ${s.deleteReason}` : ''}
+                    {t('scores.trash.purgeIn', { count: daysLeft(s.purgeAt) })}
+                    {s.deletedByAdmin ? ` · ${t('scores.trash.byAdmin')}` : ''}
+                    {s.deleteReason ? ` · ${t('scores.trash.reason', { reason: s.deleteReason })}` : ''}
                   </p>
                 </div>
                 <div className="sc-trash__actions">
                   <button className="sc-btn" disabled={busyId !== null} onClick={() => handleRestore(s)}>
-                    Khôi phục
+                    {t('scores.trash.restore')}
                   </button>
                   <button className="sc-btn sc-btn--danger" disabled={busyId !== null} onClick={() => setPurging(s)}>
-                    Xóa hẳn
+                    {t('scores.trash.purge')}
                   </button>
                 </div>
               </li>
@@ -137,29 +139,28 @@ export default function ScoreTrash() {
       </main>
 
       {purging && (
-        <Modal title="Xóa hẳn bản nhạc" onClose={closePurge}>
+        <Modal title={t('scores.trash.purgeTitle')} onClose={closePurge}>
           <p className="sc-delete__text">
-            Toàn bộ file (ảnh gốc, MusicXML, MIDI, ...) và lịch sử xử lý sẽ bị xóa <strong>vĩnh viễn</strong>, không
-            khôi phục được. Gõ <code>{purging.title}</code> để xác nhận.
+            <Rich text={t('scores.trash.purgeWarning', { title: purging.title })} />
           </p>
           <input
             className="sc-input"
             value={typed}
             onChange={(e) => setTyped(e.target.value)}
-            placeholder="Nhập lại tên bản nhạc"
+            placeholder={t('scores.trash.retype')}
             autoFocus
           />
           {error && <div className="sc-error">{error}</div>}
           <div className="sc-modal__actions">
             <button className="sc-btn" onClick={closePurge} disabled={busyId !== null}>
-              Hủy
+              {t('common.cancel')}
             </button>
             <button
               className="sc-btn sc-btn--danger-solid"
               onClick={handlePurge}
               disabled={busyId !== null || typed.trim() !== purging.title.trim()}
             >
-              {busyId === purging.id ? 'Đang xóa...' : 'Xóa vĩnh viễn'}
+              {busyId === purging.id ? t('scores.trash.deleting') : t('scores.trash.purgeForever')}
             </button>
           </div>
         </Modal>

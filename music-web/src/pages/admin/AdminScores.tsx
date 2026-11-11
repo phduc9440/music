@@ -141,7 +141,7 @@ export default function AdminScores() {
   const unpublish = async (score: ScoreSummary) => {
     const input = await prompt({
       title: `Gỡ công khai "${score.title}"?`,
-      message: `Bản nhạc về riêng tư${score.isOfficial ? ' và rời kho score mẫu' : ''}. Chủ sở hữu sẽ nhận thông báo kèm lý do.`,
+      message: `Bản nhạc về riêng tư${score.isOfficial ? ' và rời kho bản nhạc mẫu' : ''}. Chủ sở hữu sẽ nhận thông báo kèm lý do.`,
       label: 'Lý do (có thể bỏ trống)',
       maxLength: 255,
       confirmLabel: 'Gỡ công khai',
@@ -158,11 +158,11 @@ export default function AdminScores() {
 
   const toggleOfficial = async (score: ScoreSummary) => {
     if (score.isOfficial) {
-      run(score, () => scoreApi.unmarkOfficial(score.id), 'Đã gỡ khỏi kho score mẫu', 'Không gỡ được khỏi kho');
+      run(score, () => scoreApi.unmarkOfficial(score.id), 'Đã gỡ khỏi kho bản nhạc mẫu', 'Không gỡ được khỏi kho');
       return;
     }
     const ok = await confirm({
-      title: `Xin đưa "${score.title}" vào kho score mẫu?`,
+      title: `Xin đưa "${score.title}" vào kho bản nhạc mẫu?`,
       message: `${score.ownerEmail} sẽ nhận thông báo. Họ đồng ý thì hệ thống sao chép một bản vào kho, bản của họ giữ nguyên.`,
       confirmLabel: 'Gửi lời xin',
     });

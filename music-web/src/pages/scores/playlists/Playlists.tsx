@@ -7,6 +7,8 @@ import { playlistApi } from '../../../services';
 import { getErrorMessage } from '../../../utils/score';
 import type { Playlist } from '../../../types';
 import '../../../components/scores/scores.css';
+import { t } from '../../../i18n/core';
+import Rich from '../../../i18n/Rich';
 
 /** Trang /playlists: tạo, sửa, xóa playlist luyện tập (bấm Mở để quản lý bài trong playlist, mục 3.10). */
 export default function Playlists() {
@@ -20,7 +22,7 @@ export default function Playlists() {
     playlistApi
       .list()
       .then((res) => setItems(res.data.result))
-      .catch(() => toast.error('Không tải được danh sách playlist'));
+      .catch(() => toast.error(t('playlists.loadFailed')));
   }, []);
 
   useEffect(load, [load]);
@@ -30,11 +32,11 @@ export default function Playlists() {
     setBusy(true);
     try {
       await playlistApi.remove(deleting.id);
-      toast.success('Đã xóa playlist');
+      toast.success(t('playlists.deleted'));
       setDeleting(null);
       load();
     } catch (err) {
-      toast.error(getErrorMessage(err, 'Không xóa được playlist'));
+      toast.error(getErrorMessage(err, t('playlists.deleteFailed')));
     } finally {
       setBusy(false);
     }
@@ -42,22 +44,21 @@ export default function Playlists() {
 
   return (
     <div className="sc-page">
-
       <main className="sc-container">
         <header className="sc-lib-head">
           <div>
-            <h1>Playlist của tôi</h1>
-            <p>{items ? `${items.length} playlist` : 'Playlist luyện tập theo mục tiêu'}</p>
+            <h1>{t('playlists.title')}</h1>
+            <p>{items ? t('playlists.count', { count: items.length }) : t('playlists.subtitle')}</p>
           </div>
           <button className="sc-btn sc-btn--primary" onClick={() => setEditing('new')}>
-            + Tạo playlist
+            {t('playlists.create')}
           </button>
         </header>
 
         {items && items.length === 0 && (
           <div className="sc-empty">
-            <h3>Chưa có playlist nào</h3>
-            <p>Tạo playlist để gom các bài luyện tập theo mục tiêu.</p>
+            <h3>{t('playlists.emptyTitle')}</h3>
+            <p>{t('playlists.emptyHint')}</p>
           </div>
         )}
 
@@ -66,17 +67,17 @@ export default function Playlists() {
             {items.map((p) => (
               <div key={p.id} className="sc-empty" style={{ textAlign: 'left' }}>
                 <h3>{p.name}</h3>
-                <p>{p.description || 'Chưa có mô tả'}</p>
-                <p>{p.scoreCount} bài</p>
+                <p>{p.description || t('playlists.noDescription')}</p>
+                <p>{t('scores.playlistPicker.itemCount', { count: p.scoreCount })}</p>
                 <div className="sc-modal__actions">
                   <button className="sc-btn sc-btn--sm sc-btn--primary" onClick={() => navigate(`/playlists/${p.id}`)}>
-                    Mở
+                    {t('playlists.open')}
                   </button>
                   <button className="sc-btn sc-btn--sm" onClick={() => setEditing(p)}>
-                    Sửa
+                    {t('playlists.edit')}
                   </button>
                   <button className="sc-btn sc-btn--sm sc-btn--danger" onClick={() => setDeleting(p)}>
-                    Xóa
+                    {t('common.delete')}
                   </button>
                 </div>
               </div>
@@ -97,16 +98,16 @@ export default function Playlists() {
       )}
 
       {deleting && (
-        <Modal title="Xóa playlist" onClose={() => setDeleting(null)}>
+        <Modal title={t('playlists.deleteTitle')} onClose={() => setDeleting(null)}>
           <p className="sc-delete__text">
-            Xóa playlist <strong>{deleting.name}</strong>? Các bản nhạc trong playlist vẫn được giữ trong thư viện.
+            <Rich text={t('playlists.deleteText', { name: deleting.name })} />
           </p>
           <div className="sc-modal__actions">
             <button className="sc-btn" onClick={() => setDeleting(null)} disabled={busy}>
-              Hủy
+              {t('common.cancel')}
             </button>
             <button className="sc-btn sc-btn--danger-solid" onClick={confirmDelete} disabled={busy}>
-              {busy ? 'Đang xóa...' : 'Xóa'}
+              {busy ? t('scores.trash.deleting') : t('common.delete')}
             </button>
           </div>
         </Modal>

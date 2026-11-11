@@ -1,10 +1,15 @@
 package com.ptit.music_be.service.notification.impl;
 
+import java.util.Map;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ptit.music_be.dto.enums.NotificationType;
 import com.ptit.music_be.dto.response.NotificationResponse;
 import com.ptit.music_be.dto.response.PageResponse;
@@ -30,10 +35,17 @@ public class NotificationServiceImpl implements NotificationService {
 
     NotificationRepository notificationRepository;
     MemberRepository memberRepository;
+    ObjectMapper objectMapper;
 
     @Override
     @Transactional
-    public void notify(Member recipient, Member actor, NotificationType type, String scoreId, String message) {
+    public void notify(
+            Member recipient,
+            Member actor,
+            NotificationType type,
+            String scoreId,
+            String message,
+            Map<String, String> params) {
         if (recipient == null || (actor != null && recipient.getId().equals(actor.getId()))) {
             return;
         }
@@ -42,14 +54,16 @@ public class NotificationServiceImpl implements NotificationService {
                 .type(type)
                 .scoreId(scoreId)
                 .message(truncate(message))
+                .params(toJson(params))
                 .build());
     }
 
     @Override
     @Transactional
-    public void notifyAdmins(Member actor, NotificationType type, String scoreId, String message) {
+    public void notifyAdmins(
+            Member actor, NotificationType type, String scoreId, String message, Map<String, String> params) {
         for (Member admin : memberRepository.findAllAdmins()) {
-            notify(admin, actor, type, scoreId, message);
+            notify(admin, actor, type, scoreId, message, params);
         }
     }
 
@@ -113,9 +127,32 @@ public class NotificationServiceImpl implements NotificationService {
                 .type(n.getType())
                 .scoreId(n.getScoreId())
                 .message(n.getMessage())
+                .params(fromJson(n.getParams()))
                 .read(n.isRead())
                 .createdAt(n.getCreatedAt())
                 .build();
+    }
+
+    private String toJson(Map<String, String> params) {
+        if (params == null || params.isEmpty()) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(params);
+        } catch (JsonProcessingException e) {
+            return null; // thiếu params thì web dùng câu dự phòng trong message
+        }
+    }
+
+    private Map<String, String> fromJson(String json) {
+        if (json == null || json.isBlank()) {
+            return null;
+        }
+        try {
+            return objectMapper.readValue(json, new TypeReference<Map<String, String>>() {});
+        } catch (JsonProcessingException e) {
+            return null;
+        }
     }
 
     private static String truncate(String s) {

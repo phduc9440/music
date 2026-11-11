@@ -71,7 +71,10 @@
     "next": "Next ›",
     "page": "Page",
     "scores_one": "{count} score",
-    "scores_other": "{count} scores"
+    "scores_other": "{count} scores",
+    "pageOf": "page {page} of {total}",
+    "previousPage": "Previous page",
+    "nextPage": "Next page"
   },
   "notifications": {
     "title": "Notifications",
@@ -104,5 +107,13 @@
     "hoursAgo_other": "{count} hours ago",
     "daysAgo_one": "{count} day ago",
     "daysAgo_other": "{count} days ago"
-  }
+  },
+  "cancel": "Cancel",
+  "save": "Save",
+  "delete": "Delete",
+  "confirm": "Confirm",
+  "retry": "Try again",
+  "back": "Back",
+  "yes": "Yes",
+  "no": "No"
 }

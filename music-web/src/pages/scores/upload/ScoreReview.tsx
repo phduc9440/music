@@ -19,6 +19,7 @@ import '../library/ScoreLibrary.css';
 import '../library/ScoreDetail.css';
 import './ScoreProcessing.css';
 import './ScoreReview.css';
+import { t } from '../../../i18n/core';
 
 type LoadState = 'loading' | 'ready' | 'notFound' | 'error';
 type Tab = 'score' | 'check' | 'warnings' | 'kern';
@@ -159,9 +160,7 @@ export default function ScoreReview() {
     try {
       await downloadScoreExport(id, kind, `${score.title || 'ban-nhac'}.${kind === 'midi' ? 'mid' : 'musicxml'}`);
     } catch (err) {
-      toast.error(
-        getErrorMessage(err, kind === 'midi' ? 'Không tạo hoặc tải được file MIDI' : 'Không tải được file MusicXML'),
-      );
+      toast.error(getErrorMessage(err, kind === 'midi' ? t('upload.review.midiFailed') : t('upload.review.xmlFailed')));
     } finally {
       setExporting(null);
     }
@@ -171,9 +170,9 @@ export default function ScoreReview() {
     if (kern == null) return;
     try {
       await navigator.clipboard.writeText(kern);
-      toast.success('Đã sao chép chuỗi kern');
+      toast.success(t('upload.review.kernCopied'));
     } catch {
-      toast.error('Không sao chép được, hãy bôi đen và sao chép thủ công');
+      toast.error(t('upload.review.kernCopyFailed'));
     }
   };
 
@@ -182,7 +181,7 @@ export default function ScoreReview() {
     setBusy(true);
     try {
       await omrApi.retry(id, redoPreprocess);
-      toast.success('Đã gửi nhận diện lại');
+      toast.success(t('upload.review.redoSent'));
       navigate(`${base}/${id}/processing`);
     } catch (err) {
       toast.error(getUploadErrorMessage(err));
@@ -193,7 +192,7 @@ export default function ScoreReview() {
   const navbar = (
     <div className="sc-backbar">
       <button type="button" className="sc-backlink" onClick={() => navigate(base)}>
-        ‹ Thư viện
+        {t('upload.processing.backToLibrary')}
       </button>
     </div>
   );
@@ -216,14 +215,10 @@ export default function ScoreReview() {
         {navbar}
         <main className="sc-container sr-container">
           <div className="sc-empty">
-            <h3>{notFound ? 'Chưa có kết quả số hóa' : 'Không tải được kết quả'}</h3>
-            <p>
-              {notFound
-                ? 'Bản nhạc không tồn tại, bạn không có quyền xem hoặc chưa được số hóa.'
-                : 'Vui lòng thử lại sau.'}
-            </p>
+            <h3>{notFound ? t('upload.review.noResult') : t('upload.review.loadFailed')}</h3>
+            <p>{notFound ? t('upload.review.noResultHint') : t('scores.detail.retryLater')}</p>
             <button className="sc-btn sc-btn--primary" onClick={() => navigate(base)}>
-              Về thư viện
+              {t('upload.processing.toLibrary')}
             </button>
           </div>
         </main>
@@ -232,9 +227,9 @@ export default function ScoreReview() {
   }
 
   const tabs: { key: Tab; label: string; count?: number }[] = [
-    { key: 'score', label: 'Bản nhạc' },
-    { key: 'check', label: 'Ô cần kiểm tra', count: flagged.length },
-    { key: 'warnings', label: 'Cảnh báo', count: warnings.length },
+    { key: 'score', label: t('upload.review.tabs.score') },
+    { key: 'check', label: t('upload.review.tabs.check'), count: flagged.length },
+    { key: 'warnings', label: t('upload.review.tabs.warnings'), count: warnings.length },
     { key: 'kern', label: 'Kern' },
   ];
   /** Mũi tên trái/phải, Home/End chuyển tab theo chuẩn WAI-ARIA. */
@@ -253,22 +248,33 @@ export default function ScoreReview() {
   };
   const imageMeasures = result.measureCheck?.imageMeasures ?? null;
   const summary: { label: string; value: string; tone?: 'ok' | 'warn' }[] = [
-    { label: 'Số trang', value: (result.pageCount ?? score.pageCount ?? pages.length).toString() },
-    { label: 'Số ô nhịp', value: score.measureCount?.toString() ?? '—' },
+    {
+      label: t('upload.review.summary.pages'),
+      value: (result.pageCount ?? score.pageCount ?? pages.length).toString(),
+    },
+    { label: t('upload.review.summary.measures'), value: score.measureCount?.toString() ?? '—' },
     ...(imageMeasures != null
       ? [
           {
-            label: 'Số ô đếm trên ảnh',
+            label: t('upload.review.summary.imageMeasures'),
             value: imageMeasures.toString(),
             tone: imageMeasures === score.measureCount ? ('ok' as const) : ('warn' as const),
           },
         ]
       : []),
-    { label: 'Khóa / dấu hóa', value: score.keySignature || '—' }, // dạng G, Bb, F#m
-    { label: 'Nhịp', value: score.timeSignature || '—' },
+    { label: t('scores.hero.key'), value: score.keySignature || '—' }, // dạng G, Bb, F#m
+    { label: t('scores.hero.timeSignature'), value: score.timeSignature || '—' },
     { label: 'Tempo', value: score.tempoBpm ? `${score.tempoBpm} BPM` : '—' },
-    { label: 'Ô cần kiểm tra', value: flagged.length.toString(), tone: flagged.length > 0 ? 'warn' : 'ok' },
-    { label: 'Cảnh báo', value: warnings.length.toString(), tone: warnings.length > 0 ? 'warn' : 'ok' },
+    {
+      label: t('upload.review.tabs.check'),
+      value: flagged.length.toString(),
+      tone: flagged.length > 0 ? 'warn' : 'ok',
+    },
+    {
+      label: t('upload.review.tabs.warnings'),
+      value: warnings.length.toString(),
+      tone: warnings.length > 0 ? 'warn' : 'ok',
+    },
   ];
 
   return (
@@ -278,10 +284,10 @@ export default function ScoreReview() {
         <header className="sc-lib-head">
           <div>
             <h1>{score.title}</h1>
-            <p>Kết quả số hóa · kiểm tra trước khi chỉnh sửa</p>
+            <p>{t('upload.review.subtitle')}</p>
           </div>
           <button className="sc-btn sc-btn--sm" onClick={() => navigate(`${base}/${score.id}`)}>
-            Chi tiết bản nhạc
+            {t('upload.review.details')}
           </button>
         </header>
 
@@ -295,21 +301,21 @@ export default function ScoreReview() {
         </dl>
 
         <div className="sr-grid">
-          <section className="sr-pages" aria-label="Ảnh các trang">
+          <section className="sr-pages" aria-label={t('upload.review.pageImages')}>
             <div className="sr-pages__head">
-              <h2>Các trang</h2>
+              <h2>{t('upload.processing.pages')}</h2>
               {flagged.length > 0 && (
-                <ul className="sr-legend" aria-label="Chú thích khung trên ảnh">
+                <ul className="sr-legend" aria-label={t('upload.review.legend')}>
                   <li>
-                    <i className="sr-legend__dot sr-legend__dot--flag" /> Ô nghi ngờ
+                    <i className="sr-legend__dot sr-legend__dot--flag" /> {t('upload.review.legendFlag')}
                   </li>
                   <li>
-                    <i className="sr-legend__dot sr-legend__dot--active" /> Ô đang chọn
+                    <i className="sr-legend__dot sr-legend__dot--active" /> {t('upload.review.legendActive')}
                   </li>
                 </ul>
               )}
             </div>
-            {pages.length === 0 && <p className="sp-pages__hint">Chưa có ảnh trang nào.</p>}
+            {pages.length === 0 && <p className="sp-pages__hint">{t('upload.review.noPages')}</p>}
             {pages.map((page) => (
               <figure
                 key={page.id}
@@ -319,7 +325,11 @@ export default function ScoreReview() {
                 }}
               >
                 <div className="sr-page__frame">
-                  <AuthImage src={page.downloadUrl} alt={`Trang ${page.pageNumber}`} className="sr-page__img" />
+                  <AuthImage
+                    src={page.downloadUrl}
+                    alt={t('upload.review.page', { page: page.pageNumber ?? '' })}
+                    className="sr-page__img"
+                  />
                   {(page.pageNumber != null ? (measuresByPage.get(page.pageNumber) ?? []) : []).map((m) => {
                     const style = boxToPercent(m.box);
                     const warn = m.flags.length > 0;
@@ -330,8 +340,8 @@ export default function ScoreReview() {
                         type="button"
                         style={style}
                         className={`sr-box${warn ? ' sr-box--flag' : ''}${m.measure === selected ? ' sr-box--active' : ''}`}
-                        title={`Ô ${m.measure}${warn ? `: ${m.flags.map((f) => MEASURE_FLAG_LABELS[f]).join('; ')}` : ''}`}
-                        aria-label={`Ô ${m.measure}`}
+                        title={`${t('upload.review.measure', { measure: m.measure })}${warn ? `: ${m.flags.map((f) => MEASURE_FLAG_LABELS[f]).join('; ')}` : ''}`}
+                        aria-label={t('upload.review.measure', { measure: m.measure })}
                         aria-pressed={m.measure === selected}
                         onClick={() => selectMeasure(m)}
                       />
@@ -339,9 +349,11 @@ export default function ScoreReview() {
                   })}
                 </div>
                 <figcaption>
-                  Trang {page.pageNumber}
+                  {t('upload.review.page', { page: page.pageNumber ?? '' })}
                   {page.pageNumber != null && (flaggedByPage.get(page.pageNumber) ?? 0) > 0 && (
-                    <span className="sr-page__badge">{flaggedByPage.get(page.pageNumber)} ô cần kiểm tra</span>
+                    <span className="sr-page__badge">
+                      {t('upload.review.flaggedCount', { count: flaggedByPage.get(page.pageNumber) ?? 0 })}
+                    </span>
                   )}
                 </figcaption>
               </figure>
@@ -349,7 +361,12 @@ export default function ScoreReview() {
           </section>
 
           <section className="sr-side">
-            <div className="sc-tabs sr-tabs" role="tablist" aria-label="Kết quả số hóa" onKeyDown={handleTabKey}>
+            <div
+              className="sc-tabs sr-tabs"
+              role="tablist"
+              aria-label={t('upload.review.resultLabel')}
+              onKeyDown={handleTabKey}
+            >
               {tabs.map((t) => (
                 <button
                   key={t.key}
@@ -371,11 +388,13 @@ export default function ScoreReview() {
               <div className="sr-selected">
                 <div className="sr-selected__bar">
                   <strong>
-                    Ô {selectedMeasure.measure} · Trang {selectedMeasure.page}
-                    {selectedMeasure.system != null ? `, hệ ${selectedMeasure.system}` : ''}
+                    {t('upload.review.selected', { measure: selectedMeasure.measure, page: selectedMeasure.page })}
+                    {selectedMeasure.system != null
+                      ? `, ${t('upload.review.system', { system: selectedMeasure.system })}`
+                      : ''}
                   </strong>
                   <button className="sc-btn sc-btn--sm" onClick={() => setSelected(null)}>
-                    Bỏ chọn
+                    {t('upload.review.deselect')}
                   </button>
                 </div>
                 {selectedMeasure.flags.map((f) => (
@@ -394,16 +413,18 @@ export default function ScoreReview() {
 
             {tab === 'score' && (
               <div className="sr-panel" role="tabpanel" id="sr-tabpanel" aria-labelledby={`sr-tab-${tab}`}>
-                {!hasMusicXml && <p className="sr-empty">Chưa có MusicXML cho bản nhạc này, hãy nhận diện lại.</p>}
-                {hasMusicXml && xmlError && <div className="sc-error">Không tải được MusicXML</div>}
-                {hasMusicXml && !xmlError && xml === null && <p className="sr-empty">Đang tải...</p>}
+                {!hasMusicXml && <p className="sr-empty">{t('upload.review.noXml')}</p>}
+                {hasMusicXml && xmlError && <div className="sc-error">{t('upload.review.xmlLoadFailed')}</div>}
+                {hasMusicXml && !xmlError && xml === null && <p className="sr-empty">{t('common.loading')}</p>}
                 {xml !== null &&
                   (result.pages.some((p) => p.firstMeasure != null && p.lastMeasure != null) ? (
                     [...result.pages]
                       .sort((a, b) => a.pageNumber - b.pageNumber)
                       .map((p) => (
                         <div key={p.pageNumber} className="sr-score-page">
-                          <div className="sr-score-page__label">Trang {p.pageNumber}</div>
+                          <div className="sr-score-page__label">
+                            {t('upload.review.page', { page: p.pageNumber ?? '' })}
+                          </div>
                           <MusicXmlViewer xml={xml} firstMeasure={p.firstMeasure} lastMeasure={p.lastMeasure} />
                         </div>
                       ))
@@ -417,9 +438,7 @@ export default function ScoreReview() {
               <div className="sr-panel" role="tabpanel" id="sr-tabpanel" aria-labelledby={`sr-tab-${tab}`}>
                 {flagged.length === 0 ? (
                   <p className="sr-empty">
-                    {result.measureMap?.length
-                      ? 'Không có ô nào nghi ngờ: tổng trường độ khớp số chỉ nhịp và số ô khớp ảnh.'
-                      : 'Kết quả này chưa có bản đồ ô nhịp, hãy nhận diện lại để dùng chức năng này.'}
+                    {result.measureMap?.length ? t('upload.review.noFlags') : t('upload.review.noMap')}
                   </p>
                 ) : (
                   <ul className="sr-warnings">
@@ -430,7 +449,7 @@ export default function ScoreReview() {
                           onClick={() => selectMeasure(m)}
                         >
                           <span className="sr-warning__page">
-                            Ô {m.measure} · Trang {m.page}
+                            {t('upload.review.selected', { measure: m.measure, page: m.page })}
                           </span>
                           {m.flags.map((f) => MEASURE_FLAG_LABELS[f]).join('; ')}
                         </button>
@@ -444,14 +463,14 @@ export default function ScoreReview() {
             {tab === 'warnings' && (
               <div className="sr-panel" role="tabpanel" id="sr-tabpanel" aria-labelledby={`sr-tab-${tab}`}>
                 {warnings.length === 0 ? (
-                  <p className="sr-empty">Không có cảnh báo nào. Các ô nhịp đều khớp số chỉ nhịp.</p>
+                  <p className="sr-empty">{t('upload.review.noWarnings')}</p>
                 ) : (
                   <ul className="sr-warnings">
                     {warnings.map((w, i) => (
                       <li key={i}>
                         {w.page != null ? (
                           <button className="sr-warning" onClick={() => scrollToPage(w.page)}>
-                            <span className="sr-warning__page">Trang {w.page}</span>
+                            <span className="sr-warning__page">{t('upload.review.page', { page: w.page ?? '' })}</span>
                             {w.text}
                           </button>
                         ) : (
@@ -466,17 +485,17 @@ export default function ScoreReview() {
 
             {tab === 'kern' && (
               <div className="sr-panel" role="tabpanel" id="sr-tabpanel" aria-labelledby={`sr-tab-${tab}`}>
-                {!hasKern && <p className="sr-empty">Chưa có file kern cho bản nhạc này.</p>}
-                {hasKern && kernError && <div className="sc-error">Không tải được chuỗi kern</div>}
-                {hasKern && !kernError && kern === null && <p className="sr-empty">Đang tải...</p>}
+                {!hasKern && <p className="sr-empty">{t('upload.review.noKern')}</p>}
+                {hasKern && kernError && <div className="sc-error">{t('upload.review.kernLoadFailed')}</div>}
+                {hasKern && !kernError && kern === null && <p className="sr-empty">{t('common.loading')}</p>}
                 {kern !== null && (
                   <>
                     <div className="sr-kern__bar">
                       <button className="sc-btn sc-btn--sm" onClick={handleCopyKern}>
-                        Sao chép
+                        {t('upload.review.copy')}
                       </button>
                       <button className="sc-btn sc-btn--sm sc-btn--primary" onClick={handleDownloadKern}>
-                        Tải .krn
+                        {t('upload.review.downloadKrn')}
                       </button>
                     </div>
                     <pre className="sr-kern" tabIndex={0}>
@@ -489,51 +508,49 @@ export default function ScoreReview() {
           </section>
         </div>
 
-        <div className="sp-actions sr-actions" role="toolbar" aria-label="Thao tác với kết quả">
+        <div className="sp-actions sr-actions" role="toolbar" aria-label={t('upload.review.actions')}>
           <button
             className="sc-btn sc-btn--primary"
             disabled={!hasMusicXml}
             onClick={() => navigate(`${base}/${score.id}/edit`)}
           >
-            {score.canEdit ? 'Chấp nhận và chỉnh sửa' : 'Xem bản nhạc'}
+            {score.canEdit ? t('upload.review.accept') : t('scores.hero.viewScore')}
           </button>
-          <button className="sc-btn" disabled title="Trình phát sẽ có ở bản sau">
-            Nghe thử
+          <button className="sc-btn" disabled title={t('upload.review.listenSoon')}>
+            {t('upload.review.listen')}
           </button>
           {hasMusicXml && (
             <>
               <button className="sc-btn" disabled={exporting !== null} onClick={() => handleExport('musicxml')}>
-                {exporting === 'musicxml' ? 'Đang tải...' : 'Tải MusicXML'}
+                {exporting === 'musicxml' ? t('common.loading') : t('upload.review.downloadXml')}
               </button>
               <button className="sc-btn" disabled={exporting !== null} onClick={() => handleExport('midi')}>
-                {exporting === 'midi' ? 'Đang tạo MIDI...' : 'Tải MIDI'}
+                {exporting === 'midi' ? t('upload.review.creatingMidi') : t('upload.review.downloadMidi')}
               </button>
             </>
           )}
           {score.canEdit && (
             <button className="sc-btn" onClick={() => setRedoOpen(true)}>
-              Nhận diện lại
+              {t('upload.review.redo')}
             </button>
           )}
         </div>
-        <p className="sr-hint">
-          Chỉnh sửa và nghe thử trực tiếp sẽ có ở bản sau; bạn có thể tải MIDI để nghe thử bằng phần mềm khác.
-        </p>
+        <p className="sr-hint">{t('upload.review.hint')}</p>
       </main>
 
       {redoOpen && (
-        <Modal title="Nhận diện lại?" onClose={() => !busy && setRedoOpen(false)}>
-          <p>Hệ thống sẽ chạy lại từ file gốc và thay kết quả hiện tại bằng kết quả mới.</p>
+        <Modal title={t('upload.review.redoTitle')} onClose={() => !busy && setRedoOpen(false)}>
+          <p>{t('upload.review.redoText')}</p>
           <label className="sr-check">
             <input type="checkbox" checked={redoPreprocess} onChange={(e) => setRedoPreprocess(e.target.checked)} />
-            Làm sạch và căn thẳng ảnh trước khi nhận diện
+            {t('upload.review.redoPreprocess')}
           </label>
           <div className="sc-modal__actions">
             <button className="sc-btn" disabled={busy} onClick={() => setRedoOpen(false)}>
-              Để sau
+              {t('upload.review.later')}
             </button>
             <button className="sc-btn sc-btn--primary" disabled={busy} onClick={handleRedo}>
-              {busy ? 'Đang gửi...' : 'Nhận diện lại'}
+              {busy ? t('scores.request.sending') : t('upload.review.redo')}
             </button>
           </div>
         </Modal>

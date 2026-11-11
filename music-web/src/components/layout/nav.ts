@@ -138,7 +138,7 @@ export function getNavFrom(state: unknown): string | undefined {
 }
 
 /**
- * Đường dẫn dùng để chọn mục menu đang mở. Bản nhạc mở từ Khám phá, Kho score mẫu hay Được chia sẻ vẫn thuộc mục đó
+ * Đường dẫn dùng để chọn mục menu đang mở. Bản nhạc mở từ Khám phá, Kho bản nhạc mẫu hay Được chia sẻ vẫn thuộc mục đó
  * (không nhảy về "Không gian của tôi"); mở thẳng bằng đường dẫn thì theo chính nó.
  */
 export function navContextPath(pathname: string, state: unknown): string {

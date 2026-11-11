@@ -291,7 +291,10 @@ export interface AppNotification {
   id: string;
   type: NotificationType;
   scoreId?: string | null;
+  /** Câu tiếng Việt dựng sẵn: dự phòng cho thông báo cũ và thông báo tự do của quản trị viên. */
   message: string;
+  /** Tham số (title, name, level, reason, variant) để dựng câu theo ngôn ngữ của người đọc. */
+  params?: Record<string, string> | null;
   read: boolean;
   createdAt: string;
 }
@@ -491,7 +494,7 @@ export interface AiTaskSummary {
   averageRunSeconds: { taskType: string; seconds: number; count: number }[];
 }
 
-// Lời xin đưa bản nhạc vào kho score mẫu (BE: OfficialRequestResponse)
+// Lời xin đưa bản nhạc vào kho bản nhạc mẫu (BE: OfficialRequestResponse)
 export type OfficialRequestStatus = 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'CANCELED';
 
 export interface OfficialRequest {

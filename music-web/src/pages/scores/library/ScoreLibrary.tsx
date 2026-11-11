@@ -18,6 +18,7 @@ import type {
 import { getScorePath, MAX_KEYWORD, POLL_INTERVAL_MS } from '../../../utils/score';
 import '../../../components/scores/scores.css';
 import './ScoreLibrary.css';
+import { t } from '../../../i18n/core';
 
 const PAGE_SIZE = 12;
 
@@ -81,7 +82,7 @@ export default function ScoreLibrary() {
       })
       .catch(() => {
         if (cancelled) return;
-        toast.error('Không tải được thư viện bản nhạc');
+        toast.error(t('scores.library.loadFailed'));
         setLoaded((prev) => ({ ...prev, key: requestKey }));
       });
     return () => {
@@ -126,20 +127,20 @@ export default function ScoreLibrary() {
       <main className="sc-container">
         <header className="sc-lib-head">
           <div>
-            <h1>Bản nhạc của tôi</h1>
-            <p>{data ? `${data.totalElements} bản nhạc trong thư viện` : 'Quản lý và theo dõi các bản nhạc'}</p>
+            <h1>{t('scores.library.title')}</h1>
+            <p>{data ? t('scores.library.count', { count: data.totalElements }) : t('scores.library.subtitle')}</p>
           </div>
           <div className="sc-lib-head__actions">
             {pendingOfficial > 0 && (
               <button className="sc-btn sc-btn--primary" onClick={() => navigate('/scores/official-requests')}>
-                Lời xin vào kho mẫu ({pendingOfficial})
+                {t('scores.library.officialRequests', { count: pendingOfficial })}
               </button>
             )}
             <button className="sc-btn" onClick={() => navigate('/scores/trash')}>
-              Thùng rác
+              {t('common.nav.items.trash')}
             </button>
             <button className="sc-btn sc-btn--primary" onClick={() => navigate('/scores/upload')}>
-              + Tải bản nhạc lên
+              {t('scores.library.upload')}
             </button>
           </div>
         </header>

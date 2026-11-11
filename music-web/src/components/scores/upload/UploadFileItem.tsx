@@ -1,5 +1,6 @@
 import type { DragEvent } from 'react';
 import { formatSize, isPdf } from '../../../utils/score';
+import { t } from '../../../i18n/core';
 
 /** Một file người dùng đã chọn trên trang upload, kèm kết quả kiểm tra nội dung (pdf.js / đo ảnh). */
 export interface UploadItem {
@@ -89,7 +90,7 @@ export default function UploadFileItem({
       <div className="sc-upfile__thumb">
         {!pdf && <span className="sc-upfile__order">{index + 1}</span>}
         {item.inspecting ? (
-          <span className="sc-upfile__placeholder">Đang đọc...</span>
+          <span className="sc-upfile__placeholder">{t('upload.file.reading')}</span>
         ) : item.preview ? (
           <img
             src={item.preview}
@@ -98,7 +99,7 @@ export default function UploadFileItem({
             style={item.rotation ? { transform: `rotate(${item.rotation}deg)` } : undefined}
           />
         ) : (
-          <span className="sc-upfile__placeholder">{pdf ? 'PDF' : 'Ảnh'}</span>
+          <span className="sc-upfile__placeholder">{pdf ? 'PDF' : t('upload.file.image')}</span>
         )}
       </div>
 
@@ -118,8 +119,8 @@ export default function UploadFileItem({
               className="sc-icon-btn"
               disabled={disabled || !canMoveUp}
               onClick={() => onMove(-1)}
-              aria-label="Đưa lên trang trước"
-              title="Đưa lên trang trước"
+              aria-label={t('upload.file.moveUp')}
+              title={t('upload.file.moveUp')}
             >
               ‹
             </button>
@@ -128,8 +129,8 @@ export default function UploadFileItem({
               className="sc-icon-btn"
               disabled={disabled || !canMoveDown}
               onClick={() => onMove(1)}
-              aria-label="Đưa xuống trang sau"
-              title="Đưa xuống trang sau"
+              aria-label={t('upload.file.moveDown')}
+              title={t('upload.file.moveDown')}
             >
               ›
             </button>
@@ -138,7 +139,7 @@ export default function UploadFileItem({
               className="sc-icon-btn"
               disabled={disabled || item.inspecting || !item.preview}
               onClick={onRotate}
-              aria-label="Xoay 90 độ"
+              aria-label={t('upload.file.rotate')}
               title="Xoay 90°"
             >
               ↻
@@ -150,8 +151,8 @@ export default function UploadFileItem({
           className="sc-icon-btn"
           disabled={disabled}
           onClick={onRemove}
-          aria-label="Xóa file"
-          title="Xóa"
+          aria-label={t('upload.file.remove')}
+          title={t('common.delete')}
         >
           ×
         </button>

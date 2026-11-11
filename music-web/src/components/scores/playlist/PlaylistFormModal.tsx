@@ -5,6 +5,7 @@ import { playlistApi } from '../../../services';
 import { getErrorMessage } from '../../../utils/score';
 import Modal from '../common/Modal';
 import type { Playlist } from '../../../types';
+import { t } from '../../../i18n/core';
 
 const MAX_NAME = 255; // khớp BE (mã lỗi 2602)
 const MAX_DESCRIPTION = 2000; // khớp BE (mã lỗi 2603)
@@ -25,7 +26,7 @@ export default function PlaylistFormModal({ playlist, onClose, onSaved }: Props)
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
-      setError('Tên playlist là bắt buộc');
+      setError(t('playlists.form.nameRequired'));
       return;
     }
     setSaving(true);
@@ -34,20 +35,20 @@ export default function PlaylistFormModal({ playlist, onClose, onSaved }: Props)
       const data = { name: name.trim(), description: description.trim() };
       if (playlist) await playlistApi.update(playlist.id, data);
       else await playlistApi.create(data);
-      toast.success(playlist ? 'Đã lưu playlist' : 'Đã tạo playlist');
+      toast.success(playlist ? t('playlists.form.saved') : t('playlists.form.created'));
       onSaved();
     } catch (err) {
-      setError(getErrorMessage(err, 'Không lưu được playlist, vui lòng thử lại'));
+      setError(getErrorMessage(err, t('playlists.form.saveFailed')));
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <Modal title={playlist ? 'Sửa playlist' : 'Tạo playlist'} onClose={onClose}>
+    <Modal title={playlist ? t('playlists.form.editTitle') : t('playlists.form.createTitle')} onClose={onClose}>
       <form onSubmit={handleSubmit}>
         <label className="sc-label" htmlFor="pl-name">
-          Tên playlist
+          {t('playlists.form.name')}
         </label>
         <input
           id="pl-name"
@@ -55,11 +56,11 @@ export default function PlaylistFormModal({ playlist, onClose, onSaved }: Props)
           value={name}
           maxLength={MAX_NAME}
           onChange={(e) => setName(e.target.value)}
-          placeholder="VD: Luyện ngón tuần này"
+          placeholder={t('playlists.form.namePlaceholder')}
           autoFocus
         />
         <label className="sc-label" htmlFor="pl-desc">
-          Mục tiêu / mô tả
+          {t('playlists.form.description')}
         </label>
         <textarea
           id="pl-desc"
@@ -68,15 +69,15 @@ export default function PlaylistFormModal({ playlist, onClose, onSaved }: Props)
           value={description}
           maxLength={MAX_DESCRIPTION}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="VD: Chơi sạch 3 bài Ballad ở tốc độ 80 bpm"
+          placeholder={t('playlists.form.descriptionPlaceholder')}
         />
         {error && <div className="sc-error">{error}</div>}
         <div className="sc-modal__actions">
           <button type="button" className="sc-btn" onClick={onClose} disabled={saving}>
-            Hủy
+            {t('common.cancel')}
           </button>
           <button type="submit" className="sc-btn sc-btn--primary" disabled={saving}>
-            {saving ? 'Đang lưu...' : 'Lưu'}
+            {saving ? t('scores.edit.saving') : t('common.save')}
           </button>
         </div>
       </form>

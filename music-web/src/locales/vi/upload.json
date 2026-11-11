@@ -1,0 +1,271 @@
+{
+  "steps": {
+    "later": "Sẽ có ở bản sau",
+    "skipped": "Không cần với ảnh",
+    "SPLIT_PDF": "Tách trang PDF",
+    "PREPROCESS": "Tiền xử lý ảnh",
+    "INFERENCE": "Nhận diện ký hiệu",
+    "MERGE": "Ghép các trang",
+    "EXPORT": "Xuất MusicXML và MIDI"
+  },
+  "errors": {
+    "PAGE_UNREADABLE": {
+      "title": "Không đọc được trang nhạc",
+      "hint": "Ảnh hoặc PDF bị hỏng, quá mờ hoặc không mở được. Hãy chụp hoặc quét lại rõ hơn rồi tải lên."
+    },
+    "NO_STAFF_DETECTED": {
+      "title": "Không tìm thấy khuông nhạc",
+      "hint": "Hệ thống không thấy dòng kẻ khuông nhạc nào. Hãy chụp sát trang nhạc, đủ sáng và thẳng rồi tải lại."
+    },
+    "TASK_TIMEOUT": {
+      "title": "Xử lý quá thời gian",
+      "hint": "Hệ thống không nhận được phản hồi trong thời gian cho phép. Bạn có thể thử lại."
+    },
+    "AI_SERVICE_UNAVAILABLE": {
+      "title": "Dịch vụ số hóa chưa sẵn sàng",
+      "hint": "Chưa kết nối được dịch vụ xử lý ảnh. Hãy thử lại sau ít phút."
+    },
+    "CANCELLED_BY_USER": {
+      "title": "Bạn đã hủy tác vụ",
+      "hint": "Bạn có thể chạy lại trên các file đã tải hoặc tải file khác."
+    },
+    "JOB_REJECTED": {
+      "title": "Yêu cầu bị từ chối",
+      "hint": "Dịch vụ xử lý không chấp nhận dữ liệu này. Hãy thử tải lại file khác."
+    },
+    "ORIGINAL_FILE_MISSING": {
+      "title": "Không còn file gốc",
+      "hint": "File gốc không còn trên hệ thống nên không thể chạy lại. Hãy tải file lên lại."
+    },
+    "RECOGNITION_EMPTY": {
+      "title": "Không nhận diện được nốt nhạc nào",
+      "hint": "Hệ thống không đọc ra nốt nào từ các trang. Hãy dùng ảnh rõ, thẳng, đủ sáng hoặc PDF chất lượng cao hơn."
+    },
+    "MERGE_SPINE_MISMATCH": {
+      "title": "Các trang không khớp nhau",
+      "hint": "Số khuông nhạc của các trang khác nhau nên không ghép được thành một bản nhạc. Hãy kiểm tra thứ tự và nội dung trang."
+    },
+    "KERN_PARSE_ERROR": {
+      "title": "Kết quả nhận diện bị lỗi cú pháp",
+      "hint": "Bản kern sau khi ghép không đọc được. Bạn có thể xem bản kern để gỡ lỗi hoặc thử lại."
+    },
+    "EXPORT_ERROR": {
+      "title": "Không xuất được MusicXML",
+      "hint": "Đã nhận diện xong nhưng không chuyển được sang MusicXML hoặc MIDI. Bạn có thể nhận diện lại hoặc dùng ảnh rõ hơn."
+    },
+    "MODEL_NOT_LOADED": {
+      "title": "Mô hình nhận diện chưa sẵn sàng",
+      "hint": "Dịch vụ chưa nạp xong mô hình Transcoda. Hãy đợi ít phút rồi thử lại."
+    },
+    "INTERNAL_ERROR": {
+      "title": "Có lỗi trong quá trình xử lý",
+      "hint": "Đã xảy ra lỗi ngoài dự kiến. Bạn có thể thử lại."
+    },
+    "GENERIC": {
+      "title": "Số hóa thất bại",
+      "hint": "Đã xảy ra lỗi khi xử lý. Bạn có thể thử lại hoặc tải file khác."
+    }
+  },
+  "measureFlags": {
+    "DURATION": "Tổng trường độ không khớp số chỉ nhịp",
+    "COUNT_MISMATCH": "Số ô của hệ này khác số ô trên ảnh, có thể thừa hoặc thiếu ô"
+  },
+  "dropzone": {
+    "title": "Kéo thả bản nhạc vào đây",
+    "hint": "1 file PDF (tối đa 20 trang) hoặc 1–20 ảnh PNG/JPG theo thứ tự trang, mỗi file ≤ 50MB"
+  },
+  "chooseFile": "Chọn file",
+  "pageStrip": {
+    "compare": "Xem và so sánh trang {page}",
+    "alt": "Trang {page} sau xử lý"
+  },
+  "file": {
+    "reading": "Đang đọc...",
+    "image": "Ảnh",
+    "moveUp": "Đưa lên trang trước",
+    "moveDown": "Đưa xuống trang sau",
+    "rotate": "Xoay 90 độ",
+    "remove": "Xóa file"
+  },
+  "inspect": {
+    "pdfPassword": "PDF đặt mật khẩu",
+    "pdfUnreadable": "Không mở được PDF (file hỏng?)",
+    "pdfEncrypted": "PDF bị mã hóa, hãy bỏ mã hóa rồi tải lại",
+    "pdfPages": "PDF có {pages} trang, tối đa {max} trang",
+    "imageUnreadable": "Không đọc được ảnh (file hỏng?)",
+    "imageSmall": "Ảnh quá nhỏ: cạnh ngắn {side}px, cần ≥ {min}px",
+    "imageLarge": "Ảnh quá lớn: {mp} megapixel, tối đa {max} megapixel",
+    "fileUnreadable": "Không đọc được file"
+  },
+  "rotateFailed": "Không xoay được ảnh, hãy bỏ xoay rồi thử lại",
+  "uploaded": "Đã tải lên, bản nhạc đang chờ số hóa",
+  "title": "Tải bản nhạc lên",
+  "subtitle": "Hệ thống sẽ số hóa bản nhạc thành MusicXML và MIDI",
+  "haveXml": "Đã có file MusicXML / MIDI?",
+  "images": "{count} ảnh",
+  "onePdf": "1 file PDF",
+  "pages": "{count} trang",
+  "reorderHint": "Kéo thả ảnh để đổi thứ tự trang",
+  "fieldTitle": "Tiêu đề",
+  "titlePlaceholder": "Mặc định lấy theo tên file",
+  "fieldComposer": "Tác giả",
+  "composerPlaceholder": "Ví dụ: Trịnh Công Sơn",
+  "sourceType": "Loại nguồn",
+  "sourceHintTouched": "Dùng để thống kê độ chính xác nhận diện.",
+  "sourceHintGuess": "Tự đoán theo loại file, bạn có thể đổi.",
+  "progressLabel": "Tiến độ tải lên",
+  "uploading": "Đang tải lên... {progress}%",
+  "preparing": "Đang chuẩn bị ảnh...",
+  "inspecting": "Đang kiểm tra file...",
+  "uploadingShort": "Đang tải lên...",
+  "start": "Bắt đầu số hóa",
+  "import": {
+    "unsupported": "Chỉ hỗ trợ .musicxml, .xml, .mxl, .mid, .midi",
+    "empty": "File rỗng (0 byte)",
+    "tooLarge": "File quá lớn (tối đa {max}MB)",
+    "done": "Đã nhập bản nhạc",
+    "title": "Nhập file MusicXML / MIDI",
+    "subtitle": "Dùng khi bạn đã có file số, không cần số hóa từ ảnh hoặc PDF",
+    "toOmr": "Tải PDF / ảnh (OMR)",
+    "dropTitle": "Kéo thả file vào đây",
+    "dropHint": "1 file .musicxml, .xml, .mxl hoặc .mid, .midi (≤ 50MB)",
+    "removeFile": "Bỏ file",
+    "titlePlaceholder": "Mặc định lấy từ file",
+    "composerPlaceholder": "Mặc định lấy từ file MusicXML",
+    "importing": "Đang nhập...",
+    "start": "Nhập bản nhạc"
+  },
+  "processing": {
+    "cancelled": "Đã hủy tác vụ",
+    "cantCancel": "Tác vụ đã kết thúc nên không hủy được",
+    "cancelFailed": "Không hủy được tác vụ",
+    "resent": "Đã gửi lại để số hóa",
+    "backToLibrary": "‹ Thư viện",
+    "loadFailed": "Không tải được tiến độ",
+    "toLibrary": "Về thư viện",
+    "noTask": "Bản nhạc này chưa có tác vụ số hóa",
+    "noTaskHint": "Bạn có thể xem chi tiết bản nhạc hoặc tải một file mới lên.",
+    "sourcePdf": "File PDF",
+    "sourceImage": "Ảnh chụp hoặc scan",
+    "headline": {
+      "default": "Đang xử lý ảnh...",
+      "completed": "Số hóa xong",
+      "cancelled": "Đã hủy",
+      "failed": "Số hóa thất bại",
+      "queued": "Đang xếp hàng chờ xử lý...",
+      "SPLIT_PDF": "Đang tách các trang PDF...",
+      "PREPROCESS": "Đang làm sạch và căn thẳng ảnh...",
+      "INFERENCE": "Đang nhận diện ký hiệu nhạc...",
+      "MERGE": "Đang ghép các trang...",
+      "EXPORT": "Đang xuất MusicXML và MIDI..."
+    },
+    "pagesDone": "Đã xử lý {done}/{total} trang",
+    "progress": "Tiến độ số hóa",
+    "stoppedEarly": "Quy trình đã dừng sớm theo cấu hình. Bấm \"Xem kết quả\" để xem phần đã có.",
+    "finished": "Đã nhận diện và xuất MusicXML, MIDI. Bấm \"Xem kết quả\" để xem bản nhạc.",
+    "moreWarnings": "Và {count} cảnh báo khác, xem đầy đủ ở trang kết quả.",
+    "detail": "Chi tiết: {detail}",
+    "uploadOther": "Tải file khác",
+    "viewResult": "Xem kết quả",
+    "pages": "Các trang",
+    "pagesHint": "Bấm vào một trang để so sánh với ảnh gốc.",
+    "cancelTitle": "Hủy số hóa?",
+    "cancelText": "Tác vụ đang chạy sẽ dừng lại. Bạn có thể bấm \"Thử lại\" sau đó.",
+    "keepGoing": "Tiếp tục xử lý",
+    "cancelling": "Đang hủy...",
+    "cancelTask": "Hủy tác vụ"
+  },
+  "compare": {
+    "title": "So sánh trang {page}",
+    "loadFailed": "Không tải được ảnh trang này",
+    "loading": "Đang tải ảnh...",
+    "original": "Ảnh gốc",
+    "processed": "Sau xử lý",
+    "originalAlt": "Trang {page} ảnh gốc",
+    "drag": "Kéo để so sánh ảnh gốc và ảnh đã xử lý",
+    "noOriginal": "Không còn ảnh gốc để so sánh, đang hiện ảnh đã xử lý."
+  },
+  "review": {
+    "midiFailed": "Không tạo hoặc tải được file MIDI",
+    "xmlFailed": "Không tải được file MusicXML",
+    "kernCopied": "Đã sao chép chuỗi kern",
+    "kernCopyFailed": "Không sao chép được, hãy bôi đen và sao chép thủ công",
+    "redoSent": "Đã gửi nhận diện lại",
+    "noResult": "Chưa có kết quả số hóa",
+    "loadFailed": "Không tải được kết quả",
+    "noResultHint": "Bản nhạc không tồn tại, bạn không có quyền xem hoặc chưa được số hóa.",
+    "tabs": {
+      "score": "Bản nhạc",
+      "check": "Ô cần kiểm tra",
+      "warnings": "Cảnh báo"
+    },
+    "summary": {
+      "pages": "Số trang",
+      "measures": "Số ô nhịp",
+      "imageMeasures": "Số ô đếm trên ảnh"
+    },
+    "subtitle": "Kết quả số hóa · kiểm tra trước khi chỉnh sửa",
+    "details": "Chi tiết bản nhạc",
+    "pageImages": "Ảnh các trang",
+    "legend": "Chú thích khung trên ảnh",
+    "legendFlag": "Ô nghi ngờ",
+    "legendActive": "Ô đang chọn",
+    "noPages": "Chưa có ảnh trang nào.",
+    "page": "Trang {page}",
+    "flaggedCount": "{count} ô cần kiểm tra",
+    "resultLabel": "Kết quả số hóa",
+    "selected": "Ô {measure} · Trang {page}",
+    "system": "hệ {system}",
+    "deselect": "Bỏ chọn",
+    "noXml": "Chưa có MusicXML cho bản nhạc này, hãy nhận diện lại.",
+    "xmlLoadFailed": "Không tải được MusicXML",
+    "noFlags": "Không có ô nào nghi ngờ: tổng trường độ khớp số chỉ nhịp và số ô khớp ảnh.",
+    "noMap": "Kết quả này chưa có bản đồ ô nhịp, hãy nhận diện lại để dùng chức năng này.",
+    "noWarnings": "Không có cảnh báo nào. Các ô nhịp đều khớp số chỉ nhịp.",
+    "noKern": "Chưa có file kern cho bản nhạc này.",
+    "kernLoadFailed": "Không tải được chuỗi kern",
+    "copy": "Sao chép",
+    "downloadKrn": "Tải .krn",
+    "actions": "Thao tác với kết quả",
+    "accept": "Chấp nhận và chỉnh sửa",
+    "listenSoon": "Trình phát sẽ có ở bản sau",
+    "listen": "Nghe thử",
+    "downloadXml": "Tải MusicXML",
+    "creatingMidi": "Đang tạo MIDI...",
+    "downloadMidi": "Tải MIDI",
+    "redo": "Nhận diện lại",
+    "hint": "Chỉnh sửa và nghe thử trực tiếp sẽ có ở bản sau; bạn có thể tải MIDI để nghe thử bằng phần mềm khác.",
+    "redoTitle": "Nhận diện lại?",
+    "redoText": "Hệ thống sẽ chạy lại từ file gốc và thay kết quả hiện tại bằng kết quả mới.",
+    "redoPreprocess": "Làm sạch và căn thẳng ảnh trước khi nhận diện",
+    "later": "Để sau",
+    "measure": "Ô {measure}"
+  },
+  "failed": "Tải lên thất bại, vui lòng thử lại",
+  "saveFailed": "Lưu thất bại, vui lòng thử lại",
+  "validate": {
+    "unsupported": "Chỉ hỗ trợ PDF, PNG, JPG, JPEG",
+    "pdfAlone": "PDF phải tải lên một mình, không trộn với file khác",
+    "maxImages": "Tối đa {max} ảnh mỗi lần",
+    "totalSize": "Tổng dung lượng vượt quá 200MB"
+  },
+  "errorByCode": {
+    "2003": "Có file rỗng (0 byte)",
+    "2004": "Định dạng file không hợp lệ: chỉ nhận PDF, PNG, JPG, JPEG và nội dung phải đúng định dạng",
+    "2005": "File quá lớn: mỗi file tối đa 50MB, cả lần tải tối đa 200MB",
+    "2006": "Chỉ tải 1 file PDF, hoặc 1–20 ảnh (không trộn PDF với ảnh)",
+    "2008": "PDF bị mã hóa, đặt mật khẩu hoặc không mở được",
+    "2009": "PDF phải có từ 1 đến {pages} trang",
+    "2010": "Ảnh không đọc được, cạnh ngắn nhỏ hơn {side}px hoặc lớn hơn 40 megapixel",
+    "2011": "Loại nguồn không hợp lệ",
+    "2018": "Tên tác giả tối đa 255 ký tự",
+    "2202": "Bạn đang có 3 bản nhạc chờ số hóa, hãy đợi một bản xong rồi tải tiếp"
+  },
+  "saveByCode": {
+    "1002": "Bạn không có quyền sửa bản nhạc này",
+    "2001": "Bản nhạc không còn tồn tại",
+    "2005": "Bản nhạc quá lớn để lưu (tối đa 5MB), hãy chia nhỏ hoặc xóa bớt",
+    "2013": "Nội dung bản nhạc không hợp lệ. Hãy tải lại trang; bản nháp của bạn vẫn được giữ",
+    "2201": "Bản nhạc đang được nhận diện lại, hãy đợi xong rồi lưu"
+  }
+}

@@ -4,6 +4,7 @@ import { notificationApi } from '../services';
 import { Icon } from './ui';
 import { useDialog } from './ui/dialog-context';
 import { formatDateTime, formatRelativeTime, t } from '../i18n/core';
+import { notificationText } from '../utils/notifications';
 import type { AppNotification } from '../types';
 import './scores/scores.css';
 
@@ -125,7 +126,7 @@ export default function NotificationBell() {
                       {t('common.notifications.adminTag')}
                     </span>
                   )}
-                  <span className="sc-bell__text">{n.message}</span>
+                  <span className="sc-bell__text">{notificationText(n)}</span>
                   <small>{formatRelativeTime(n.createdAt)}</small>
                 </button>
               </li>

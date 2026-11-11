@@ -141,7 +141,7 @@ JOIN members m ON m.email = t.email
 JOIN playlists p ON p.member_id = m.id AND p.name = t.playlist
 JOIN scores s ON s.title = t.title;
 
--- Lời xin đưa bản nhạc vào kho score mẫu: admin xin phép chủ, chủ đồng ý thì có bản sao (V6)
+-- Lời xin đưa bản nhạc vào kho bản nhạc mẫu: admin xin phép chủ, chủ đồng ý thì có bản sao (V6)
 INSERT INTO official_requests (id, score_id, requested_by, owner_id, status, copy_score_id, created_at, resolved_at)
 SELECT UUID(), s.id, a.id, m.id, t.status, c.id, t.created_at, t.resolved_at
 FROM (

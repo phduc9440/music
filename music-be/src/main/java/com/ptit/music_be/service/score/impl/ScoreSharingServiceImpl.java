@@ -71,7 +71,8 @@ public class ScoreSharingServiceImpl implements ScoreSharingService {
                 currentMember(),
                 NotificationType.SHARED_WITH_YOU,
                 scoreId,
-                "Bạn được chia sẻ bản nhạc \"" + score.getTitle() + "\" với quyền " + label(permission));
+                "Bạn được chia sẻ bản nhạc \"" + score.getTitle() + "\" với quyền " + label(permission),
+                NotificationService.params("title", score.getTitle(), "level", String.valueOf(permission.getCode())));
         return toResponse(score);
     }
 
@@ -135,7 +136,14 @@ public class ScoreSharingServiceImpl implements ScoreSharingService {
                 me,
                 NotificationType.ACCESS_REQUESTED,
                 scoreId,
-                displayName(me) + " xin quyền " + label(permission) + " bản nhạc \"" + score.getTitle() + "\"");
+                displayName(me) + " xin quyền " + label(permission) + " bản nhạc \"" + score.getTitle() + "\"",
+                NotificationService.params(
+                        "name",
+                        displayName(me),
+                        "title",
+                        score.getTitle(),
+                        "level",
+                        String.valueOf(permission.getCode())));
         return MyAccessResponse.builder()
                 .accessLevel(current)
                 .requestedPermission(permission)
@@ -189,7 +197,12 @@ public class ScoreSharingServiceImpl implements ScoreSharingService {
                 NotificationType.ACCESS_APPROVED,
                 scoreId,
                 "Yêu cầu của bạn đã được đồng ý: quyền " + label(share.getPermission()) + " bản nhạc \""
-                        + score.getTitle() + "\"");
+                        + score.getTitle() + "\"",
+                NotificationService.params(
+                        "title",
+                        score.getTitle(),
+                        "level",
+                        String.valueOf(share.getPermission().getCode())));
         return toResponse(score);
     }
 
@@ -210,7 +223,8 @@ public class ScoreSharingServiceImpl implements ScoreSharingService {
                 currentMember(),
                 NotificationType.ACCESS_REJECTED,
                 scoreId,
-                "Yêu cầu xin quyền bản nhạc \"" + score.getTitle() + "\" của bạn đã bị từ chối");
+                "Yêu cầu xin quyền bản nhạc \"" + score.getTitle() + "\" của bạn đã bị từ chối",
+                NotificationService.params("title", score.getTitle()));
         return toResponse(score);
     }
 

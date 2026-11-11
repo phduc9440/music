@@ -1,0 +1,23 @@
+{
+  "levels": {
+    "1": "xem",
+    "2": "nhận xét",
+    "3": "chỉnh sửa"
+  },
+  "withReason": "{text}: {reason}",
+  "NEW_REVIEW": "{name} đã nhận xét bản nhạc “{title}”",
+  "ACCESS_REQUESTED": "{name} xin quyền {level} bản nhạc “{title}”",
+  "ACCESS_APPROVED": "Yêu cầu của bạn đã được đồng ý: quyền {level} bản nhạc “{title}”",
+  "ACCESS_REJECTED": "Yêu cầu xin quyền bản nhạc “{title}” của bạn đã bị từ chối",
+  "SHARED_WITH_YOU": "Bạn được chia sẻ bản nhạc “{title}” với quyền {level}",
+  "PUBLISH_REQUESTED": "Có bản nhạc xin công khai: “{title}”",
+  "PUBLISH_APPROVED": "Bản nhạc “{title}” đã được duyệt công khai",
+  "PUBLISH_REJECTED": {
+    "rejected": "Bản nhạc “{title}” bị từ chối công khai",
+    "unpublished": "Bản nhạc “{title}” đã bị quản trị viên gỡ công khai"
+  },
+  "SCORE_TRASHED_BY_ADMIN": "Bản nhạc “{title}” đã bị quản trị viên chuyển vào thùng rác (khôi phục được trong 30 ngày)",
+  "OFFICIAL_REQUESTED": "Quản trị viên muốn đưa bản nhạc “{title}” vào kho bản nhạc mẫu. Bản của bạn giữ nguyên, hệ thống chỉ sao chép một bản và ghi tên bạn là người phối. Hãy đồng ý hoặc từ chối.",
+  "OFFICIAL_ACCEPTED": "{name} đã đồng ý đưa bản nhạc “{title}” vào kho bản nhạc mẫu",
+  "OFFICIAL_DECLINED": "{name} đã từ chối đưa bản nhạc “{title}” vào kho bản nhạc mẫu"
+}

@@ -38,13 +38,14 @@ class ScoreTrashedNotificationListenerTest {
                         null,
                         NotificationType.SCORE_TRASHED_BY_ADMIN,
                         "s1",
-                        "Bản nhạc \"Bài 1\" đã bị quản trị viên chuyển vào thùng rác (khôi phục được trong 30 ngày): spam");
+                        "Bản nhạc \"Bài 1\" đã bị quản trị viên chuyển vào thùng rác (khôi phục được trong 30 ngày): spam",
+                        java.util.Map.of("title", "Bài 1", "reason", "spam")); // web dựng câu theo ngôn ngữ từ params
     }
 
     @Test
     void messageWithoutReasonHasNoTrailingColon() {
-        String message = ScoreTrashedNotificationListener.message(
-                new ScoreTrashedByAdminEvent("s1", "owner", "Bài 1", null));
+        String message =
+                ScoreTrashedNotificationListener.message(new ScoreTrashedByAdminEvent("s1", "owner", "Bài 1", null));
 
         assertTrue(message.endsWith("(khôi phục được trong 30 ngày)"));
     }
@@ -55,15 +56,16 @@ class ScoreTrashedNotificationListenerTest {
 
         listener.onTrashedByAdmin(new ScoreTrashedByAdminEvent("s1", "gone", "Bài 1", null));
 
-        verify(notifications, never()).notify(any(), any(), any(), any(), any());
+        verify(notifications, never()).notify(any(), any(), any(), any(), any(), any());
     }
 
     @Test
     void notificationFailureDoesNotPropagate() {
         when(members.findById("owner")).thenReturn(Optional.of(owner));
-        doThrow(new IllegalStateException("db down")).when(notifications).notify(any(), any(), any(), any(), any());
+        doThrow(new IllegalStateException("db down"))
+                .when(notifications)
+                .notify(any(), any(), any(), any(), any(), any());
 
-        assertDoesNotThrow(
-                () -> listener.onTrashedByAdmin(new ScoreTrashedByAdminEvent("s1", "owner", "Bài 1", null)));
+        assertDoesNotThrow(() -> listener.onTrashedByAdmin(new ScoreTrashedByAdminEvent("s1", "owner", "Bài 1", null)));
     }
 }

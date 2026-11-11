@@ -11,7 +11,7 @@
     },
     "items": {
       "publicScores": "Bản nhạc công khai",
-      "officialLibrary": "Kho score mẫu",
+      "officialLibrary": "Kho bản nhạc mẫu",
       "composers": "Nhạc sĩ",
       "practice": "Luyện tập",
       "stats": "Thống kê",
@@ -70,7 +70,10 @@
     "prev": "‹ Trước",
     "next": "Sau ›",
     "page": "Trang",
-    "scores": "{count} bản nhạc"
+    "scores": "{count} bản nhạc",
+    "pageOf": "trang {page}/{total}",
+    "previousPage": "Trang trước",
+    "nextPage": "Trang sau"
   },
   "notifications": {
     "title": "Thông báo",
@@ -100,5 +103,13 @@
     "minutesAgo": "{count} phút trước",
     "hoursAgo": "{count} giờ trước",
     "daysAgo": "{count} ngày trước"
-  }
+  },
+  "cancel": "Hủy",
+  "save": "Lưu",
+  "delete": "Xóa",
+  "confirm": "Xác nhận",
+  "retry": "Thử lại",
+  "back": "Quay lại",
+  "yes": "Có",
+  "no": "Không"
 }

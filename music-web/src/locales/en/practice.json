@@ -1,0 +1,91 @@
+{
+  "modes": {
+    "1": "Free play",
+    "2": "Loop a section",
+    "3": "Scored"
+  },
+  "durationMinutes": "{m} min {s} s",
+  "durationSeconds": "{s} s",
+  "history": {
+    "loadFailed": "Couldn't load your practice history",
+    "detailFailed": "Couldn't load the session details",
+    "deleteTitle": "Delete this practice session?",
+    "deleteMessage": "\"{title}\" at {when}. Your statistics will be recalculated.",
+    "deleted": "Practice session deleted",
+    "deleteFailed": "Couldn't delete the practice session",
+    "title": "Practice history",
+    "count_one": "{count} session",
+    "count_other": "{count} sessions",
+    "subtitle": "Time, piece, accuracy and error log",
+    "emptyTitle": "No practice sessions yet",
+    "emptyHint": "Your practice sessions will be saved here.",
+    "started": "Started",
+    "score": "Piece",
+    "mode": "Mode",
+    "duration": "Duration",
+    "accuracy": "% correct",
+    "timing": "% on time",
+    "details": "Details",
+    "sessionTitle": "Practice session: {title}",
+    "tempo": "Speed",
+    "loop": "Loop: measures {from} – {to}",
+    "totalNotes": "Total notes",
+    "breakdown": "On time {perfect} · Early {early} · Late {late} · Wrong pitch {wrong} · Missed {missed}",
+    "points": "Score",
+    "completed": "Completed",
+    "errorLog": "Error log ({count})",
+    "noErrors": "No errors were recorded.",
+    "deleteSession": "Delete session"
+  },
+  "stats": {
+    "month": "{name}",
+    "streakFailed": "Couldn't load your streak",
+    "heatmapFailed": "Couldn't load the practice heatmap",
+    "noPractice": "{date}: no practice",
+    "dayTooltip": "{date}: {sessions} sessions, {minutes} min",
+    "subtitle": "A session of 1 minute or more counts as a practice day.",
+    "days_one": "{count} day",
+    "days_other": "{count} days",
+    "current": "Current streak",
+    "notToday": "no practice yet today",
+    "longest": "Longest streak",
+    "daysYear": "Practice days in the last 12 months",
+    "less": "Less",
+    "more": "More"
+  },
+  "radar": {
+    "loadFailed": "Couldn't load the skills chart",
+    "speed": "Finger speed",
+    "diligence": "Diligence",
+    "title": "Skills",
+    "sessions": "{sessions} sessions in the last {days} days",
+    "noSessions": "No practice sessions in the last {days} days",
+    "notePitch": "% of notes played at the right pitch.",
+    "noteTiming": "% of notes played on time.",
+    "noteSpeed": "average practice speed compared to the original (100% of the original speed is 100 points).",
+    "noteDiligence": "% of days with practice in the period."
+  },
+  "time": {
+    "DAY": {
+      "label": "Day",
+      "hint": "Last 30 days"
+    },
+    "WEEK": {
+      "label": "Week",
+      "hint": "Last 12 weeks"
+    },
+    "MONTH": {
+      "label": "Month",
+      "hint": "Last 12 months"
+    },
+    "monthLabel": "{name} {year}",
+    "minutes_one": "{count} min",
+    "minutes_other": "{count} min",
+    "hoursMinutes": "{h} h {m} min",
+    "loadFailed": "Couldn't load the practice time chart",
+    "title": "Practice time",
+    "summary": "{hint}: total {total}, average {average} per {unit}",
+    "tooltip": "{time} ({sessions} sessions)",
+    "tooltipName": "Practice time"
+  }
+}

@@ -7,6 +7,7 @@ import { getErrorMessage } from '../../../utils/score';
 import { DIFFICULTY_LABELS } from '../../../utils/score';
 import type { Playlist, PlaylistItem, ScoreSummary } from '../../../types';
 import '../../../components/scores/scores.css';
+import { t } from '../../../i18n/core';
 
 /** Trang /playlists/:id: xem bài trong playlist, thêm/xóa bài, kéo thả đổi thứ tự (mục 3.10). */
 export default function PlaylistDetail() {
@@ -26,7 +27,7 @@ export default function PlaylistDetail() {
         setItems(i.data.result);
       })
       .catch(() => {
-        toast.error('Không tải được playlist');
+        toast.error(t('scores.playlistPicker.loadFailed'));
         navigate('/playlists');
       });
   }, [id, navigate]);
@@ -45,8 +46,7 @@ export default function PlaylistDetail() {
     }
   }, []);
 
-  const remove = (scoreId: string) =>
-    run(() => playlistApi.removeScore(id, scoreId), 'Không bỏ được bài khỏi playlist');
+  const remove = (scoreId: string) => run(() => playlistApi.removeScore(id, scoreId), t('playlists.removeFailed'));
 
   const drop = async (target: number) => {
     if (!items || dragIndex === null || dragIndex === target) return;
@@ -60,7 +60,7 @@ export default function PlaylistDetail() {
           id,
           next.map((i) => i.scoreId),
         ),
-      'Không đổi được thứ tự',
+      t('playlists.reorderFailed'),
     );
     if (!ok) playlistApi.items(id).then((res) => setItems(res.data.result));
   };
@@ -76,24 +76,26 @@ export default function PlaylistDetail() {
       <main className="sc-container">
         <header className="sc-lib-head">
           <div>
-            <h1>{playlist?.name ?? 'Playlist'}</h1>
-            <p>{playlist?.description || (items ? `${items.length} bài` : '')}</p>
+            <h1>{playlist?.name ?? t('common.nav.items.playlists')}</h1>
+            <p>
+              {playlist?.description || (items ? t('scores.playlistPicker.itemCount', { count: items.length }) : '')}
+            </p>
           </div>
           <button className="sc-btn sc-btn--primary" onClick={() => setAdding(true)}>
-            + Thêm bài
+            {t('playlists.addScore')}
           </button>
         </header>
 
         {items && items.length === 0 && (
           <div className="sc-empty">
-            <h3>Playlist chưa có bài nào</h3>
-            <p>Bấm “Thêm bài” để chọn từ thư viện của bạn.</p>
+            <h3>{t('playlists.noItems')}</h3>
+            <p>{t('playlists.noItemsHint')}</p>
           </div>
         )}
 
         {items && items.length > 0 && (
           <>
-            <p>Kéo thả để đổi thứ tự luyện tập.</p>
+            <p>{t('playlists.dragHint')}</p>
             <ol style={{ listStyle: 'none', padding: 0, display: 'grid', gap: 8 }}>
               {items.map((item, index) => (
                 <li
@@ -123,24 +125,24 @@ export default function PlaylistDetail() {
                       {[
                         item.composer,
                         item.difficulty ? DIFFICULTY_LABELS[item.difficulty] : null,
-                        item.measureCount ? `${item.measureCount} ô nhịp` : null,
+                        item.measureCount ? t('scores.card.measures', { count: item.measureCount }) : null,
                       ]
                         .filter(Boolean)
-                        .join(' · ') || 'Chưa có thông tin'}
+                        .join(' · ') || t('playlists.noInfo')}
                     </p>
                   </div>
                   <button
                     className="sc-btn sc-btn--sm"
                     onClick={() => navigate(`/scores/${item.scoreId}`, { state: { from: pathname } })}
                   >
-                    Mở bài
+                    {t('playlists.openScore')}
                   </button>
                   <button
                     className="sc-btn sc-btn--sm sc-btn--danger"
                     disabled={busy}
                     onClick={() => remove(item.scoreId)}
                   >
-                    Bỏ
+                    {t('playlists.remove')}
                   </button>
                 </li>
               ))}
@@ -153,7 +155,7 @@ export default function PlaylistDetail() {
         <AddScoreModal
           existing={new Set(items.map((i) => i.scoreId))}
           onClose={() => setAdding(false)}
-          onAdd={(scoreId) => run(() => playlistApi.addScore(id, scoreId), 'Không thêm được bài')}
+          onAdd={(scoreId) => run(() => playlistApi.addScore(id, scoreId), t('playlists.addFailed'))}
         />
       )}
     </div>
@@ -176,22 +178,22 @@ function AddScoreModal({ existing, onClose, onAdd }: AddScoreModalProps) {
       scoreApi
         .list({ keyword: keyword.trim() || undefined, size: 30 })
         .then((res) => setScores(res.data.result.content))
-        .catch(() => toast.error('Không tải được thư viện'));
+        .catch(() => toast.error(t('playlists.libraryFailed')));
     }, 250);
     return () => clearTimeout(timer);
   }, [keyword]);
 
   return (
-    <Modal title="Thêm bài vào playlist" onClose={onClose}>
+    <Modal title={t('playlists.addTitle')} onClose={onClose}>
       <input
         className="sc-input"
-        placeholder="Tìm theo tên bài..."
+        placeholder={t('playlists.searchScores')}
         value={keyword}
         onChange={(e) => setKeyword(e.target.value)}
         autoFocus
       />
       <div style={{ maxHeight: 360, overflowY: 'auto', marginTop: 12, display: 'grid', gap: 8 }}>
-        {scores && scores.length === 0 && <p>Không tìm thấy bài nào.</p>}
+        {scores && scores.length === 0 && <p>{t('playlists.noneFound')}</p>}
         {scores?.map((s) => (
           <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{ flex: 1 }}>
@@ -199,7 +201,7 @@ function AddScoreModal({ existing, onClose, onAdd }: AddScoreModalProps) {
               {s.composer && <div>{s.composer}</div>}
             </div>
             <button className="sc-btn sc-btn--sm" disabled={existing.has(s.id)} onClick={() => onAdd(s.id)}>
-              {existing.has(s.id) ? 'Đã thêm' : 'Thêm'}
+              {existing.has(s.id) ? t('scores.playlistPicker.addedShort') : t('scores.playlistPicker.add')}
             </button>
           </div>
         ))}

@@ -5,6 +5,7 @@ import { sharingApi } from '../../../services';
 import { SHARE_PERMISSION_LABELS, getErrorMessage } from '../../../utils/score';
 import type { AccessRequest, ScoreSharing, SharePermission, Visibility } from '../../../types';
 import Modal from '../common/Modal';
+import { labelMap, t } from '../../../i18n/core';
 
 interface Props {
   scoreId: string;
@@ -13,11 +14,7 @@ interface Props {
 
 const LEVELS: SharePermission[] = [1, 2, 3];
 
-const VISIBILITY_HINTS: Record<Visibility, string> = {
-  PRIVATE: 'Bản nhạc đang riêng tư: chỉ bạn và những người được chia sẻ bên dưới truy cập được.',
-  PENDING: 'Bản nhạc đang chờ quản trị viên duyệt công khai. Trong lúc chờ vẫn là riêng tư.',
-  PUBLIC: 'Bản nhạc đã công khai: mọi người đăng nhập đều xem và nhận xét được.',
-};
+const VISIBILITY_HINTS: Record<Visibility, string> = labelMap('scores.share.hint', ['PRIVATE', 'PENDING', 'PUBLIC']);
 
 /** Hộp thoại "Chia sẻ": mời theo email, duyệt yêu cầu xin quyền và quản lý người được chia sẻ. */
 export default function ShareModal({ scoreId, onClose }: Props) {
@@ -34,7 +31,7 @@ export default function ShareModal({ scoreId, onClose }: Props) {
     sharingApi
       .get(scoreId)
       .then((res) => setSharing(res.data.result))
-      .catch((err) => setError(getErrorMessage(err, 'Không tải được thông tin chia sẻ')));
+      .catch((err) => setError(getErrorMessage(err, t('scores.share.loadFailed'))));
     sharingApi
       .accessRequests(scoreId)
       .then((res) => setRequests(res.data.result))
@@ -58,7 +55,7 @@ export default function ShareModal({ scoreId, onClose }: Props) {
       if (okMsg) toast.success(okMsg);
       return true;
     } catch (err) {
-      setError(getErrorMessage(err, 'Thao tác thất bại, vui lòng thử lại'));
+      setError(getErrorMessage(err, t('scores.share.failed')));
       return false;
     } finally {
       setBusy(false);
@@ -68,34 +65,36 @@ export default function ShareModal({ scoreId, onClose }: Props) {
   const invite = async (e: FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
-    if (await run(() => sharingApi.addMember(scoreId, email.trim(), inviteLevel), 'Đã chia sẻ')) setEmail('');
+    if (await run(() => sharingApi.addMember(scoreId, email.trim(), inviteLevel), t('scores.share.shared')))
+      setEmail('');
   };
 
   return (
-    <Modal title="Chia sẻ bản nhạc" onClose={onClose}>
-      {!sharing && !error && <p>Đang tải...</p>}
+    <Modal title={t('scores.share.title')} onClose={onClose}>
+      {!sharing && !error && <p>{t('common.loading')}</p>}
 
       {sharing && (
         <>
           <section>
             <p className="sc-upload__hint">
-              {VISIBILITY_HINTS[sharing.visibility]} Đổi chế độ hiển thị bằng nút cạnh nhãn quyền riêng tư ở đầu trang.
+              {VISIBILITY_HINTS[sharing.visibility]} {t('scores.share.changeHint')}
             </p>
           </section>
 
           {requests.length > 0 && (
             <section className="sc-share__requests">
-              <h4>Yêu cầu xin quyền ({requests.length})</h4>
+              <h4>{t('scores.share.requests', { count: requests.length })}</h4>
               {requests.map((r) => (
                 <div key={r.memberId} className="sc-share__request">
                   <span title={r.email}>
-                    <strong>{r.fullName || r.email}</strong> xin quyền {SHARE_PERMISSION_LABELS[r.requestedPermission]}
+                    <strong>{r.fullName || r.email}</strong>{' '}
+                    {t('scores.share.requestsLevel', { level: SHARE_PERMISSION_LABELS[r.requestedPermission] })}
                   </span>
                   {r.message && <span className="sc-upload__hint">“{r.message}”</span>}
                   <div className="sc-share__request-actions">
                     <select
                       className="sc-input"
-                      aria-label={`Quyền cấp cho ${r.email}`}
+                      aria-label={t('scores.share.grantTo', { email: r.email })}
                       value={grant[r.memberId] ?? r.requestedPermission}
                       disabled={busy}
                       onChange={(e) => setGrant({ ...grant, [r.memberId]: Number(e.target.value) as SharePermission })}
@@ -114,19 +113,21 @@ export default function ShareModal({ scoreId, onClose }: Props) {
                         run(
                           () =>
                             sharingApi.approveRequest(scoreId, r.memberId, grant[r.memberId] ?? r.requestedPermission),
-                          'Đã đồng ý',
+                          t('scores.share.approved'),
                         )
                       }
                     >
-                      Đồng ý
+                      {t('scores.officialRequests.accept')}
                     </button>
                     <button
                       type="button"
                       className="sc-btn sc-btn--sm"
                       disabled={busy}
-                      onClick={() => run(() => sharingApi.rejectRequest(scoreId, r.memberId), 'Đã từ chối')}
+                      onClick={() =>
+                        run(() => sharingApi.rejectRequest(scoreId, r.memberId), t('scores.share.rejected'))
+                      }
                     >
-                      Từ chối
+                      {t('scores.officialRequests.decline')}
                     </button>
                   </div>
                 </div>
@@ -135,17 +136,15 @@ export default function ShareModal({ scoreId, onClose }: Props) {
           )}
 
           <section className="sc-share__members">
-            <h4>Người có quyền ({sharing.members.length})</h4>
-            {sharing.members.length === 0 && <p className="sc-upload__hint">Chưa chia sẻ cho ai.</p>}
+            <h4>{t('scores.share.members', { count: sharing.members.length })}</h4>
+            {sharing.members.length === 0 && <p className="sc-upload__hint">{t('scores.share.noMembers')}</p>}
             <ul className="sc-share__list">
               {sharing.members.map((m) => (
                 <li key={m.memberId}>
-                  <span title={m.email}>
-                    {m.fullName || m.email}
-                                      </span>
+                  <span title={m.email}>{m.fullName || m.email}</span>
                   <select
                     className="sc-input"
-                    aria-label={`Quyền của ${m.email}`}
+                    aria-label={t('scores.share.levelOf', { email: m.email })}
                     value={m.permission}
                     disabled={busy}
                     onChange={(e) =>
@@ -161,9 +160,9 @@ export default function ShareModal({ scoreId, onClose }: Props) {
                   <button
                     type="button"
                     className="sc-icon-btn"
-                    aria-label={`Thu hồi quyền của ${m.email}`}
+                    aria-label={t('scores.share.revokeOf', { email: m.email })}
                     disabled={busy}
-                    onClick={() => run(() => sharingApi.removeMember(scoreId, m.memberId), 'Đã thu hồi quyền')}
+                    onClick={() => run(() => sharingApi.removeMember(scoreId, m.memberId), t('scores.share.revoked'))}
                   >
                     ×
                   </button>
@@ -175,14 +174,14 @@ export default function ShareModal({ scoreId, onClose }: Props) {
               <input
                 className="sc-input"
                 type="email"
-                placeholder="Mời theo email"
+                placeholder={t('scores.share.invitePlaceholder')}
                 value={email}
                 disabled={busy}
                 onChange={(e) => setEmail(e.target.value)}
               />
               <select
                 className="sc-input"
-                aria-label="Quyền khi mời"
+                aria-label={t('scores.share.inviteLevel')}
                 value={inviteLevel}
                 disabled={busy}
                 onChange={(e) => setInviteLevel(Number(e.target.value) as SharePermission)}
@@ -194,7 +193,7 @@ export default function ShareModal({ scoreId, onClose }: Props) {
                 ))}
               </select>
               <button type="submit" className="sc-btn sc-btn--primary" disabled={busy || !email.trim()}>
-                Mời
+                {t('scores.share.invite')}
               </button>
             </form>
           </section>

@@ -18,7 +18,8 @@ import com.ptit.music_be.repository.NotificationRepository;
 class NotificationServiceImplNotifyAllTest {
 
     private final NotificationRepository repo = mock(NotificationRepository.class);
-    private final NotificationServiceImpl service = new NotificationServiceImpl(repo, mock(MemberRepository.class));
+    private final NotificationServiceImpl service = new NotificationServiceImpl(
+            repo, mock(MemberRepository.class), new com.fasterxml.jackson.databind.ObjectMapper());
 
     @Test
     @SuppressWarnings("unchecked")

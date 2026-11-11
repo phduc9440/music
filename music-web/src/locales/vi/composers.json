@@ -34,6 +34,6 @@
   "publicSection": "Bản nhạc công khai",
   "viewAll": "Xem tất cả {count} bản",
   "noPublicOf": "Chưa có bản công khai nào của {name}.",
-  "officialSection": "Trong kho score mẫu",
-  "openOfficial": "Mở kho score mẫu"
+  "officialSection": "Trong kho bản nhạc mẫu",
+  "openOfficial": "Mở kho bản nhạc mẫu"
 }

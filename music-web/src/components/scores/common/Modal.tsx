@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import type { ReactNode } from 'react';
+import { t } from '../../../i18n/core';
 
 interface ModalProps {
   title: string;
@@ -28,7 +29,7 @@ export default function Modal({ title, onClose, children, className }: ModalProp
       >
         <div className="sc-modal__header">
           <h3>{title}</h3>
-          <button className="sc-icon-btn" onClick={onClose} aria-label="Đóng">
+          <button className="sc-icon-btn" onClick={onClose} aria-label={t('common.close')}>
             ×
           </button>
         </div>

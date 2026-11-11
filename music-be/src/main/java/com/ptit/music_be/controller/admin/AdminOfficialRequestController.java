@@ -21,7 +21,7 @@ import lombok.experimental.FieldDefaults;
 @RequestMapping("/api/admin/official-requests")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-@Tag(name = "Admin - Official requests", description = "Chỉ ROLE_ADMIN: các lời xin đưa bản nhạc vào kho score mẫu")
+@Tag(name = "Admin - Official requests", description = "Chỉ ROLE_ADMIN: các lời xin đưa bản nhạc vào kho bản nhạc mẫu")
 public class AdminOfficialRequestController {
 
     OfficialRequestService officialRequestService;

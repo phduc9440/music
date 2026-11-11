@@ -3,6 +3,7 @@ import { toast } from 'react-toastify';
 import { PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { practiceStatsApi } from '../../../services';
 import type { PracticeSkills } from '../../../types';
+import { t } from '../../../i18n/core';
 
 const RANGES = [7, 30, 90];
 
@@ -16,7 +17,7 @@ export default function PracticeSkillRadar() {
     practiceStatsApi
       .skills(days)
       .then((res) => !cancelled && setSkills(res.data.result))
-      .catch(() => toast.error('Không tải được biểu đồ kỹ năng'));
+      .catch(() => toast.error(t('practice.radar.loadFailed')));
     return () => {
       cancelled = true;
     };
@@ -28,8 +29,8 @@ export default function PracticeSkillRadar() {
         ? [
             { skill: 'Pitch Accuracy', value: skills.pitchAccuracy },
             { skill: 'Timing', value: skills.timing },
-            { skill: 'Tốc độ ngón', value: skills.speed },
-            { skill: 'Chăm chỉ', value: skills.diligence },
+            { skill: t('practice.radar.speed'), value: skills.speed },
+            { skill: t('practice.radar.diligence'), value: skills.diligence },
           ]
         : [],
     [skills],
@@ -39,11 +40,11 @@ export default function PracticeSkillRadar() {
     <section className="ps-chart">
       <div className="ps-chart__head">
         <div>
-          <h2>Kỹ năng</h2>
+          <h2>{t('practice.radar.title')}</h2>
           <p>
             {skills && skills.sessionCount > 0
-              ? `${skills.sessionCount} phiên trong ${days} ngày gần nhất`
-              : `Chưa có phiên tập nào trong ${days} ngày gần nhất`}
+              ? t('practice.radar.sessions', { sessions: skills.sessionCount, days })
+              : t('practice.radar.noSessions', { days })}
           </p>
         </div>
         <div className="ps-chart__tabs">
@@ -53,7 +54,7 @@ export default function PracticeSkillRadar() {
               className={`sc-btn sc-btn--sm${d === days ? ' sc-btn--primary' : ''}`}
               onClick={() => setDays(d)}
             >
-              {d} ngày
+              {t('practice.stats.days', { count: d })}
             </button>
           ))}
         </div>
@@ -65,7 +66,7 @@ export default function PracticeSkillRadar() {
             <PolarGrid />
             <PolarAngleAxis dataKey="skill" tick={{ fontSize: 13 }} />
             <PolarRadiusAxis angle={90} domain={[0, 100]} tickCount={5} tick={{ fontSize: 11 }} />
-            <Tooltip formatter={(value) => [`${value}/100`, 'Điểm']} />
+            <Tooltip formatter={(value) => [`${value}/100`, t('practice.history.points')]} />
             <Radar dataKey="value" stroke="#2563eb" fill="#2563eb" fillOpacity={0.35} />
           </RadarChart>
         </ResponsiveContainer>
@@ -73,16 +74,16 @@ export default function PracticeSkillRadar() {
 
       <ul className="ps-skill-notes">
         <li>
-          <strong>Pitch Accuracy:</strong> % nốt chơi đúng cao độ.
+          <strong>Pitch Accuracy:</strong> {t('practice.radar.notePitch')}
         </li>
         <li>
-          <strong>Timing:</strong> % nốt chơi đúng giờ.
+          <strong>Timing:</strong> {t('practice.radar.noteTiming')}
         </li>
         <li>
-          <strong>Tốc độ ngón:</strong> tốc độ tập trung bình so với bản gốc (100% tốc độ gốc là 100 điểm).
+          <strong>{t('practice.radar.speed')}:</strong> {t('practice.radar.noteSpeed')}
         </li>
         <li>
-          <strong>Chăm chỉ:</strong> % số ngày có tập trong kỳ.
+          <strong>{t('practice.radar.diligence')}:</strong> {t('practice.radar.noteDiligence')}
         </li>
       </ul>
     </section>

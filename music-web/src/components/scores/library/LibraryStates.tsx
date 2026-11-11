@@ -1,7 +1,9 @@
+import { t } from '../../../i18n/core';
+
 /** Khung xương hiển thị lúc đang tải lần đầu. */
 export function LibrarySkeleton() {
   return (
-    <div className="sc-grid" aria-busy="true" aria-label="Đang tải">
+    <div className="sc-grid" aria-busy="true" aria-label={t('common.loading')}>
       {Array.from({ length: 8 }).map((_, i) => (
         <div key={i} className="sc-card sc-card--skeleton">
           <div className="sc-skeleton sc-skeleton--cover" />
@@ -29,13 +31,11 @@ export function LibraryEmpty({ filtered, onReset }: EmptyProps) {
           <path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z" />
         </svg>
       </div>
-      <h3>{filtered ? 'Không có bản nhạc nào khớp' : 'Thư viện của bạn còn trống'}</h3>
-      <p>
-        {filtered ? 'Thử đổi từ khóa hoặc bỏ bớt bộ lọc.' : 'Các bản nhạc bạn tải lên hoặc soạn sẽ xuất hiện ở đây.'}
-      </p>
+      <h3>{filtered ? t('scores.library.noMatch') : t('scores.library.emptyTitle')}</h3>
+      <p>{filtered ? t('scores.library.noMatchHint') : t('scores.library.emptyHint')}</p>
       {filtered && (
         <button className="sc-btn" onClick={onReset}>
-          Xóa bộ lọc
+          {t('scores.explore.clearFilters')}
         </button>
       )}
     </div>

@@ -1,10 +1,26 @@
 import { Icon } from '../../ui';
 import type { IconName } from '../../ui';
+import { t } from '../../../i18n/core';
 
 const BADGE: Record<string, { icon: IconName; label: string }> = {
-  PUBLIC: { icon: 'globe', label: 'Công khai' },
-  PENDING: { icon: 'clock', label: 'Chờ duyệt' },
-  PRIVATE: { icon: 'lock', label: 'Riêng tư' },
+  PUBLIC: {
+    icon: 'globe',
+    get label() {
+      return t('scores.labels.visibilityShort.PUBLIC');
+    },
+  },
+  PENDING: {
+    icon: 'clock',
+    get label() {
+      return t('scores.labels.visibilityShort.PENDING');
+    },
+  },
+  PRIVATE: {
+    icon: 'lock',
+    get label() {
+      return t('scores.labels.visibilityShort.PRIVATE');
+    },
+  },
 };
 
 /** Nhãn quyền riêng tư (Công khai / Chờ duyệt / Riêng tư) có icon, dùng ở thẻ bản nhạc và trang chi tiết. */

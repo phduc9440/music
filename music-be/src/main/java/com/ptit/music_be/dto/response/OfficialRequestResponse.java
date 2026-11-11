@@ -11,7 +11,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
-/** Lời xin đưa bản nhạc vào kho score mẫu. Chủ sở hữu chỉ thấy tên người xin, quản trị viên thấy thêm email. */
+/** Lời xin đưa bản nhạc vào kho bản nhạc mẫu. Chủ sở hữu chỉ thấy tên người xin, quản trị viên thấy thêm email. */
 @Data
 @Builder
 @NoArgsConstructor

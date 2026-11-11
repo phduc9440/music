@@ -5,8 +5,10 @@ import { officialRequestApi } from '../../../services';
 import type { OfficialRequest } from '../../../types';
 import { formatRelative } from '../../../utils/score';
 import '../../../components/scores/scores.css';
+import { t } from '../../../i18n/core';
+import Rich from '../../../i18n/Rich';
 
-/** Trang /scores/official-requests: quản trị viên xin đưa bản nhạc công khai của bạn vào kho score mẫu. */
+/** Trang /scores/official-requests: quản trị viên xin đưa bản nhạc công khai của bạn vào kho bản nhạc mẫu. */
 export default function OfficialRequests() {
   const [items, setItems] = useState<OfficialRequest[] | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -15,7 +17,7 @@ export default function OfficialRequests() {
     officialRequestApi
       .mine()
       .then((res) => setItems(res.data.result))
-      .catch(() => toast.error('Không tải được các lời xin'));
+      .catch(() => toast.error(t('scores.officialRequests.loadFailed')));
   }, []);
 
   useEffect(load, [load]);
@@ -25,10 +27,10 @@ export default function OfficialRequests() {
     try {
       if (accept) await officialRequestApi.accept(request.id);
       else await officialRequestApi.decline(request.id);
-      toast.success(accept ? 'Đã đồng ý, bản nhạc đã được đưa vào kho score mẫu' : 'Đã từ chối');
+      toast.success(accept ? t('scores.officialRequests.accepted') : t('scores.officialRequests.declined'));
     } catch (error) {
       const message = (error as { response?: { data?: { message?: string } } }).response?.data?.message;
-      toast.error(message ?? 'Không xử lý được lời xin');
+      toast.error(message ?? t('scores.officialRequests.failed'));
     } finally {
       setBusyId(null);
       load();
@@ -40,20 +42,19 @@ export default function OfficialRequests() {
       <main className="sc-container">
         <header className="sc-lib-head">
           <div>
-            <h1>Lời xin vào kho score mẫu</h1>
-            <p>Quản trị viên muốn đưa bản nhạc công khai của bạn vào kho dùng chung cho người mới học.</p>
+            <h1>{t('scores.officialRequests.title')}</h1>
+            <p>{t('scores.officialRequests.subtitle')}</p>
           </div>
         </header>
 
         <p className="mb-4">
-          Nếu bạn đồng ý, hệ thống chỉ <strong>sao chép</strong> một bản vào kho và ghi bạn là người phối. Bản của bạn
-          giữ nguyên: bạn vẫn sửa, xóa và chia sẻ như trước. Từ chối cũng không ảnh hưởng gì.
+          <Rich text={t('scores.officialRequests.note')} />
         </p>
 
         {items && items.length === 0 && (
           <div className="sc-empty">
-            <h3>Không có lời xin nào đang chờ</h3>
-            <p>Khi quản trị viên xin đưa một bản nhạc của bạn vào kho, lời xin sẽ hiện ở đây.</p>
+            <h3>{t('scores.officialRequests.emptyTitle')}</h3>
+            <p>{t('scores.officialRequests.emptyHint')}</p>
           </div>
         )}
 
@@ -65,9 +66,9 @@ export default function OfficialRequests() {
                   {r.scoreTitle}
                 </Link>
               </h3>
-              <p className="sc-card__composer">{r.composer || 'Chưa rõ tác giả'}</p>
+              <p className="sc-card__composer">{r.composer || t('scores.card.unknownComposer')}</p>
               <p className="sc-card__composer">
-                {r.requestedBy} gửi lời xin {formatRelative(r.createdAt)}
+                {t('scores.officialRequests.sentBy', { name: r.requestedBy, when: formatRelative(r.createdAt) })}
               </p>
               <div className="d-flex gap-2 mt-2">
                 <button
@@ -76,10 +77,10 @@ export default function OfficialRequests() {
                   disabled={busyId === r.id}
                   onClick={() => answer(r, true)}
                 >
-                  Đồng ý
+                  {t('scores.officialRequests.accept')}
                 </button>
                 <button type="button" className="sc-btn" disabled={busyId === r.id} onClick={() => answer(r, false)}>
-                  Từ chối
+                  {t('scores.officialRequests.decline')}
                 </button>
               </div>
             </div>

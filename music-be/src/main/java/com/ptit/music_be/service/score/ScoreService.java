@@ -49,17 +49,17 @@ public interface ScoreService {
      */
     void deleteScore(String scoreId, String reason);
 
-    /** Kho score mẫu cho người mới học (mọi người đã đăng nhập xem được), từ dễ đến khó. */
+    /** Kho bản nhạc mẫu cho người mới học (mọi người đã đăng nhập xem được), từ dễ đến khó. */
     default PageResponse<ScoreSummaryResponse> getOfficialScores(
             int page, int size, String keyword, String difficulty) {
         return getOfficialScores(page, size, keyword, difficulty, null);
     }
 
-    /** Kho score mẫu, lọc thêm theo nhạc sĩ (id trong bảng composers; rỗng là không lọc). */
+    /** Kho bản nhạc mẫu, lọc thêm theo nhạc sĩ (id trong bảng composers; rỗng là không lọc). */
     PageResponse<ScoreSummaryResponse> getOfficialScores(
             int page, int size, String keyword, String difficulty, String composerId);
 
-    /** ADMIN: bản nhạc công khai chưa nằm trong kho score mẫu, để chọn đưa vào. */
+    /** ADMIN: bản nhạc công khai chưa nằm trong kho bản nhạc mẫu, để chọn đưa vào. */
     PageResponse<ScoreSummaryResponse> getOfficialCandidates(int page, int size, String keyword);
 
     /**
@@ -75,7 +75,7 @@ public interface ScoreService {
     PageResponse<ScoreSummaryResponse> getPublicScores(int page, int size, PublicScoreFilter filter, String sort);
 
     /**
-     * ADMIN: gỡ khỏi kho score mẫu. Bản sao do người dùng đồng ý đưa vào (có bản gốc) thì được chuyển vào thùng rác,
+     * ADMIN: gỡ khỏi kho bản nhạc mẫu. Bản sao do người dùng đồng ý đưa vào (có bản gốc) thì được chuyển vào thùng rác,
      * bản gốc của chủ không bị ảnh hưởng; bản gắn cờ từ trước chỉ bị bỏ cờ.
      */
     ScoreDetailResponse unmarkOfficial(String scoreId);

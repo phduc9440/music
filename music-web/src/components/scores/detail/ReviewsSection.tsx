@@ -5,6 +5,7 @@ import { reviewApi } from '../../../services';
 import { MAX_REVIEW_COMMENT, formatRelative, getErrorMessage } from '../../../utils/score';
 import type { ReviewList } from '../../../types';
 import { useDialog } from '../../ui/dialog-context';
+import { t } from '../../../i18n/core';
 
 interface Props {
   scoreId: string;
@@ -37,7 +38,7 @@ export default function ReviewsSection({ scoreId, canReview, onChanged }: Props)
         setRating(m?.rating ?? null);
         setComment(m?.comment ?? '');
       })
-      .catch((err) => setError(getErrorMessage(err, 'Không tải được nhận xét')));
+      .catch((err) => setError(getErrorMessage(err, t('scores.reviews.loadFailed'))));
   }, [scoreId]);
 
   const apply = (result: ReviewList) => {
@@ -47,15 +48,16 @@ export default function ReviewsSection({ scoreId, canReview, onChanged }: Props)
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (rating === null && !comment.trim()) return setError('Hãy chấm sao hoặc viết bình luận');
-    if (comment.length > MAX_REVIEW_COMMENT) return setError(`Bình luận tối đa ${MAX_REVIEW_COMMENT} ký tự`);
+    if (rating === null && !comment.trim()) return setError(t('scores.reviews.needContent'));
+    if (comment.length > MAX_REVIEW_COMMENT)
+      return setError(t('scores.reviews.commentMax', { max: MAX_REVIEW_COMMENT }));
     setBusy(true);
     setError('');
     try {
       apply((await reviewApi.saveMine(scoreId, rating, comment)).data.result);
-      toast.success(mine ? 'Đã cập nhật nhận xét' : 'Đã gửi nhận xét');
+      toast.success(mine ? t('scores.reviews.updated') : t('scores.reviews.sent'));
     } catch (err) {
-      setError(getErrorMessage(err, 'Không lưu được nhận xét'));
+      setError(getErrorMessage(err, t('scores.reviews.saveFailed')));
     } finally {
       setBusy(false);
     }
@@ -63,8 +65,8 @@ export default function ReviewsSection({ scoreId, canReview, onChanged }: Props)
 
   const remove = async (id: string, own: boolean) => {
     const ok = await confirm({
-      title: own ? 'Xóa nhận xét của bạn?' : 'Xóa nhận xét này?',
-      confirmLabel: 'Xóa',
+      title: own ? t('scores.reviews.deleteOwn') : t('scores.reviews.deleteOther'),
+      confirmLabel: t('common.delete'),
       tone: 'danger',
     });
     if (!ok) return;
@@ -76,15 +78,15 @@ export default function ReviewsSection({ scoreId, canReview, onChanged }: Props)
         setRating(null);
         setComment('');
       }
-      toast.success('Đã xóa nhận xét');
+      toast.success(t('scores.reviews.deleted'));
     } catch (err) {
-      toast.error(getErrorMessage(err, 'Không xóa được nhận xét'));
+      toast.error(getErrorMessage(err, t('scores.reviews.deleteFailed')));
     } finally {
       setBusy(false);
     }
   };
 
-  if (!data) return error ? <div className="sc-error">{error}</div> : <p>Đang tải...</p>;
+  if (!data) return error ? <div className="sc-error">{error}</div> : <p>{t('common.loading')}</p>;
 
   return (
     <section className="sc-reviews">
@@ -95,24 +97,24 @@ export default function ReviewsSection({ scoreId, canReview, onChanged }: Props)
             <span className="sc-reviews__stars" aria-hidden>
               {stars(Math.round(data.averageRating))}
             </span>
-            <span>({data.ratingCount} lượt chấm)</span>
+            <span>({t('scores.reviews.ratings', { count: data.ratingCount })})</span>
           </>
         ) : (
-          <span>Chưa có ai chấm sao.</span>
+          <span>{t('scores.reviews.noRatings')}</span>
         )}
       </div>
 
       {canReview ? (
         <form className="sc-reviews__form" onSubmit={submit}>
-          <h4>{mine ? 'Nhận xét của bạn' : 'Viết nhận xét'}</h4>
-          <div className="sc-reviews__pick" role="radiogroup" aria-label="Số sao">
+          <h4>{mine ? t('scores.reviews.yours') : t('scores.reviews.write')}</h4>
+          <div className="sc-reviews__pick" role="radiogroup" aria-label={t('scores.reviews.stars')}>
             {[1, 2, 3, 4, 5].map((n) => (
               <button
                 key={n}
                 type="button"
                 role="radio"
                 aria-checked={rating === n}
-                aria-label={`${n} sao`}
+                aria-label={t('scores.reviews.starCount', { count: n })}
                 className={`sc-star ${rating !== null && n <= rating ? 'is-on' : ''}`}
                 disabled={busy}
                 // Bấm lại đúng số sao đang chọn thì bỏ chấm
@@ -126,7 +128,7 @@ export default function ReviewsSection({ scoreId, canReview, onChanged }: Props)
             className="sc-input"
             rows={3}
             maxLength={MAX_REVIEW_COMMENT}
-            placeholder="Bình luận (tùy chọn nếu đã chấm sao)"
+            placeholder={t('scores.reviews.placeholder')}
             value={comment}
             disabled={busy}
             onChange={(e) => setComment(e.target.value)}
@@ -134,23 +136,23 @@ export default function ReviewsSection({ scoreId, canReview, onChanged }: Props)
           {error && <div className="sc-error">{error}</div>}
           <div>
             <button type="submit" className="sc-btn sc-btn--primary" disabled={busy}>
-              {busy ? 'Đang lưu...' : mine ? 'Cập nhật' : 'Gửi nhận xét'}
+              {busy ? t('scores.edit.saving') : mine ? t('scores.reviews.update') : t('scores.reviews.send')}
             </button>
           </div>
         </form>
       ) : (
-        <p className="sc-upload__hint">Bạn cần quyền "Người nhận xét" trở lên để viết nhận xét.</p>
+        <p className="sc-upload__hint">{t('scores.reviews.needRole')}</p>
       )}
 
-      {data.reviews.length === 0 && <p className="sc-upload__hint">Chưa có nhận xét nào.</p>}
+      {data.reviews.length === 0 && <p className="sc-upload__hint">{t('scores.reviews.none')}</p>}
       <ul className="sc-reviews__list">
         {data.reviews.map((r) => (
           <li key={r.id} className="sc-review">
             <div className="sc-review__head">
               <strong>{r.fullName || r.email}</strong>
-              {r.mine && <span className="sc-chip sc-chip--accent">Bạn</span>}
+              {r.mine && <span className="sc-chip sc-chip--accent">{t('scores.reviews.you')}</span>}
               {r.rating != null && (
-                <span className="sc-reviews__stars" aria-label={`${r.rating} sao`}>
+                <span className="sc-reviews__stars" aria-label={t('scores.reviews.starCount', { count: r.rating })}>
                   {stars(r.rating)}
                 </span>
               )}
@@ -159,7 +161,7 @@ export default function ReviewsSection({ scoreId, canReview, onChanged }: Props)
                 <button
                   type="button"
                   className="sc-icon-btn"
-                  aria-label="Xóa nhận xét"
+                  aria-label={t('scores.reviews.deleteLabel')}
                   disabled={busy}
                   onClick={() => remove(r.id, r.mine)}
                 >

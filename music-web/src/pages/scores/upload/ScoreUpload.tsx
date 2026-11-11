@@ -22,6 +22,7 @@ import {
 import { inspectFile, rotateImageFile } from '../../../utils/uploadInspect';
 import '../../../components/scores/scores.css';
 import './ScoreUpload.css';
+import { t } from '../../../i18n/core';
 
 const SOURCE_TYPES = Object.keys(OMR_SOURCE_LABELS) as OmrSourceType[];
 
@@ -87,7 +88,7 @@ export default function ScoreUpload() {
       .filter((it) => it.inspecting)
       .forEach((it) => {
         inspectFile(it.file)
-          .catch(() => ({ error: 'Không đọc được file' }))
+          .catch(() => ({ error: t('upload.inspect.fileUnreadable') }))
           .then((result) => {
             setItems((prev) =>
               prev.map((p) =>
@@ -134,7 +135,7 @@ export default function ScoreUpload() {
     try {
       finalFiles = await Promise.all(items.map((it) => rotateImageFile(it.file, it.rotation)));
     } catch {
-      toast.error('Không xoay được ảnh, hãy bỏ xoay rồi thử lại');
+      toast.error(t('upload.rotateFailed'));
       setPreparing(false);
       return;
     }
@@ -144,7 +145,7 @@ export default function ScoreUpload() {
     setProgress(0);
     try {
       const res = await omrApi.upload({ files: finalFiles, title, composer, sourceType }, setProgress);
-      toast.success('Đã tải lên, bản nhạc đang chờ số hóa');
+      toast.success(t('upload.uploaded'));
       const created = res.data.result;
       navigate(getScorePath(created.scoreId, 'PENDING'), { replace: true });
     } catch (err) {
@@ -159,11 +160,11 @@ export default function ScoreUpload() {
       <main className="sc-container sc-container--form">
         <header className="sc-lib-head">
           <div>
-            <h1>Tải bản nhạc lên</h1>
-            <p>Hệ thống sẽ số hóa bản nhạc thành MusicXML và MIDI</p>
+            <h1>{t('upload.title')}</h1>
+            <p>{t('upload.subtitle')}</p>
           </div>
           <button type="button" className="sc-btn" disabled={busy} onClick={() => navigate('/scores/import')}>
-            Đã có file MusicXML / MIDI?
+            {t('upload.haveXml')}
           </button>
         </header>
 
@@ -175,10 +176,10 @@ export default function ScoreUpload() {
               <>
                 <div className="sc-upload__summary">
                   <span>
-                    {onlyImages ? `${items.length} ảnh` : '1 file PDF'}
-                    {totalPages > 0 && ` · ${totalPages} trang`}
+                    {onlyImages ? t('upload.images', { count: items.length }) : t('upload.onePdf')}
+                    {totalPages > 0 && ` · ${t('upload.pages', { count: totalPages })}`}
                   </span>
-                  {onlyImages && items.length > 1 && <span>Kéo thả ảnh để đổi thứ tự trang</span>}
+                  {onlyImages && items.length > 1 && <span>{t('upload.reorderHint')}</span>}
                 </div>
                 <ul className={`sc-upfiles ${onlyImages ? 'sc-upfiles--grid' : ''}`}>
                   {items.map((it, i) => (
@@ -211,7 +212,7 @@ export default function ScoreUpload() {
 
           <aside className="sc-upload__side">
             <label className="sc-label" htmlFor="up-title">
-              Tiêu đề
+              {t('upload.fieldTitle')}
             </label>
             <input
               id="up-title"
@@ -219,7 +220,7 @@ export default function ScoreUpload() {
               value={title}
               maxLength={MAX_TITLE}
               disabled={busy}
-              placeholder="Mặc định lấy theo tên file"
+              placeholder={t('upload.titlePlaceholder')}
               onChange={(e) => {
                 setTitle(e.target.value);
                 setTitleTouched(true);
@@ -227,7 +228,7 @@ export default function ScoreUpload() {
             />
 
             <label className="sc-label sc-upload__field" htmlFor="up-composer">
-              Tác giả <span className="sc-upload__optional">(tùy chọn)</span>
+              {t('upload.fieldComposer')} <span className="sc-upload__optional">({t('scores.request.optional')})</span>
             </label>
             <input
               id="up-composer"
@@ -235,12 +236,12 @@ export default function ScoreUpload() {
               value={composer}
               maxLength={MAX_COMPOSER}
               disabled={busy}
-              placeholder="Ví dụ: Trịnh Công Sơn"
+              placeholder={t('upload.composerPlaceholder')}
               onChange={(e) => setComposer(e.target.value)}
             />
 
-            <span className="sc-label sc-upload__field">Loại nguồn</span>
-            <div className="sc-segment" role="radiogroup" aria-label="Loại nguồn">
+            <span className="sc-label sc-upload__field">{t('upload.sourceType')}</span>
+            <div className="sc-segment" role="radiogroup" aria-label={t('upload.sourceType')}>
               {SOURCE_TYPES.map((type) => (
                 <button
                   key={type}
@@ -259,7 +260,7 @@ export default function ScoreUpload() {
               ))}
             </div>
             <p className="sc-upload__hint">
-              {sourceTouched ? 'Dùng để thống kê độ chính xác nhận diện.' : 'Tự đoán theo loại file, bạn có thể đổi.'}
+              {sourceTouched ? t('upload.sourceHintTouched') : t('upload.sourceHintGuess')}
             </p>
 
             {(busy || inspecting) && (
@@ -271,23 +272,23 @@ export default function ScoreUpload() {
                     aria-valuemin={0}
                     aria-valuemax={100}
                     aria-valuenow={progress}
-                    aria-label="Tiến độ tải lên"
+                    aria-label={t('upload.progressLabel')}
                   >
                     <div className="sc-progress__bar" style={{ width: `${progress}%` }} />
                   </div>
                 )}
                 <span>
                   {uploading
-                    ? `Đang tải lên... ${progress}%`
+                    ? t('upload.uploading', { progress })
                     : preparing
-                      ? 'Đang chuẩn bị ảnh...'
-                      : 'Đang kiểm tra file...'}
+                      ? t('upload.preparing')
+                      : t('upload.inspecting')}
                 </span>
               </div>
             )}
 
             <button type="submit" className="sc-btn sc-btn--primary sc-upload__submit" disabled={!canSubmit}>
-              {busy ? 'Đang tải lên...' : 'Bắt đầu số hóa'}
+              {busy ? t('upload.uploadingShort') : t('upload.start')}
             </button>
           </aside>
         </form>

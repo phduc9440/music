@@ -21,6 +21,7 @@ import { getErrorMessage, getHttpStatus, getUploadErrorMessage, useScoreBase } f
 import '../../../components/scores/scores.css';
 import '../library/ScoreLibrary.css';
 import './ScoreProcessing.css';
+import { t } from '../../../i18n/core';
 
 type LoadState = 'loading' | 'ready' | 'notFound' | 'error';
 
@@ -134,10 +135,10 @@ export default function ScoreProcessing() {
     try {
       const res = await taskApi.cancel(taskId);
       setTask(res.data.result);
-      toast.info('Đã hủy tác vụ');
+      toast.info(t('upload.processing.cancelled'));
     } catch (err) {
       if (getHttpStatus(err) === NOT_CANCELLABLE_HTTP) {
-        toast.info('Tác vụ đã kết thúc nên không hủy được');
+        toast.info(t('upload.processing.cantCancel'));
         // Lấy trạng thái mới nhất để màn hình khớp với thực tế
         try {
           setTask((await taskApi.get(taskId)).data.result);
@@ -145,7 +146,7 @@ export default function ScoreProcessing() {
           /* giữ nguyên */
         }
       } else {
-        toast.error(getErrorMessage(err, 'Không hủy được tác vụ'));
+        toast.error(getErrorMessage(err, t('upload.processing.cancelFailed')));
       }
     } finally {
       setBusy(false);
@@ -160,7 +161,7 @@ export default function ScoreProcessing() {
       const res = await omrApi.retry(id);
       setTask(res.data.result);
       setPages([]);
-      toast.success('Đã gửi lại để số hóa');
+      toast.success(t('upload.processing.resent'));
     } catch (err) {
       toast.error(getUploadErrorMessage(err));
     } finally {
@@ -171,7 +172,7 @@ export default function ScoreProcessing() {
   const navbar = (
     <div className="sc-backbar">
       <button type="button" className="sc-backlink" onClick={() => navigate(base)}>
-        ‹ Thư viện
+        {t('upload.processing.backToLibrary')}
       </button>
     </div>
   );
@@ -194,10 +195,10 @@ export default function ScoreProcessing() {
         {navbar}
         <main className="sc-container sp-container">
           <div className="sc-empty">
-            <h3>{notFound ? 'Không tìm thấy bản nhạc' : 'Không tải được tiến độ'}</h3>
-            <p>{notFound ? 'Bản nhạc không tồn tại hoặc bạn không có quyền xem.' : 'Vui lòng thử lại sau.'}</p>
+            <h3>{notFound ? t('scores.detail.notFound') : t('upload.processing.loadFailed')}</h3>
+            <p>{notFound ? t('scores.detail.notFoundHint') : t('scores.detail.retryLater')}</p>
             <button className="sc-btn sc-btn--primary" onClick={() => navigate(base)}>
-              Về thư viện
+              {t('upload.processing.toLibrary')}
             </button>
           </div>
         </main>
@@ -212,10 +213,10 @@ export default function ScoreProcessing() {
         {navbar}
         <main className="sc-container sp-container">
           <div className="sc-empty">
-            <h3>Bản nhạc này chưa có tác vụ số hóa</h3>
-            <p>Bạn có thể xem chi tiết bản nhạc hoặc tải một file mới lên.</p>
+            <h3>{t('upload.processing.noTask')}</h3>
+            <p>{t('upload.processing.noTaskHint')}</p>
             <button className="sc-btn sc-btn--primary" onClick={() => navigate(`${base}/${score.id}`)}>
-              Xem bản nhạc
+              {t('scores.hero.viewScore')}
             </button>
           </div>
         </main>
@@ -229,21 +230,23 @@ export default function ScoreProcessing() {
   const stepStates = computeStepStates(task, usesPdf);
   const warnings = getTaskWarnings(task);
   const error = failed ? describeTaskError(task) : null;
-  const sourceLabel = usesPdf ? 'File PDF' : 'Ảnh chụp hoặc scan';
+  const sourceLabel = usesPdf ? t('upload.processing.sourcePdf') : t('upload.processing.sourceImage');
 
-  let headline = 'Đang xử lý ảnh...';
-  if (completed) headline = 'Số hóa xong';
-  else if (failed) headline = task.status === 'CANCELLED' ? 'Đã hủy' : 'Số hóa thất bại';
-  else if (queued) headline = 'Đang xếp hàng chờ xử lý...';
-  else if (task.step === 'SPLIT_PDF') headline = 'Đang tách các trang PDF...';
-  else if (task.step === 'PREPROCESS') headline = 'Đang làm sạch và căn thẳng ảnh...';
-  else if (task.step === 'INFERENCE') headline = 'Đang nhận diện ký hiệu nhạc...';
-  else if (task.step === 'MERGE') headline = 'Đang ghép các trang...';
-  else if (task.step === 'EXPORT') headline = 'Đang xuất MusicXML và MIDI...';
+  let headline = t('upload.processing.headline.default');
+  if (completed) headline = t('upload.processing.headline.completed');
+  else if (failed)
+    headline =
+      task.status === 'CANCELLED' ? t('upload.processing.headline.cancelled') : t('upload.processing.headline.failed');
+  else if (queued) headline = t('upload.processing.headline.queued');
+  else if (task.step === 'SPLIT_PDF') headline = t('upload.processing.headline.SPLIT_PDF');
+  else if (task.step === 'PREPROCESS') headline = t('upload.processing.headline.PREPROCESS');
+  else if (task.step === 'INFERENCE') headline = t('upload.processing.headline.INFERENCE');
+  else if (task.step === 'MERGE') headline = t('upload.processing.headline.MERGE');
+  else if (task.step === 'EXPORT') headline = t('upload.processing.headline.EXPORT');
 
   const activeNote =
     task.step === 'PREPROCESS' && totalPages > 0
-      ? `Đã xử lý ${Math.min(pages.length, totalPages)}/${totalPages} trang`
+      ? t('upload.processing.pagesDone', { done: Math.min(pages.length, totalPages), total: totalPages })
       : '';
 
   const originalFor = (page: ScoreFileInfo) =>
@@ -257,8 +260,9 @@ export default function ScoreProcessing() {
           <div>
             <h1>{score.title}</h1>
             <p>
-              Tiến độ số hóa{sourceLabel ? ` · ${sourceLabel}` : ''}
-              {totalPages > 0 ? ` · ${totalPages} trang` : ''}
+              {t('upload.processing.progress')}
+              {sourceLabel ? ` · ${sourceLabel}` : ''}
+              {totalPages > 0 ? ` · ${t('upload.pages', { count: totalPages })}` : ''}
             </p>
           </div>
         </header>
@@ -274,7 +278,7 @@ export default function ScoreProcessing() {
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={progress}
-            aria-label="Tiến độ số hóa"
+            aria-label={t('upload.processing.progress')}
           >
             <div
               className={`sp-bar__fill sp-bar__fill--${task.status.toLowerCase()}`}
@@ -286,9 +290,7 @@ export default function ScoreProcessing() {
 
           {completed && (
             <p className="sp-note">
-              {stoppedEarly(task)
-                ? 'Quy trình đã dừng sớm theo cấu hình. Bấm "Xem kết quả" để xem phần đã có.'
-                : 'Đã nhận diện và xuất MusicXML, MIDI. Bấm "Xem kết quả" để xem bản nhạc.'}
+              {stoppedEarly(task) ? t('upload.processing.stoppedEarly') : t('upload.processing.finished')}
             </p>
           )}
 
@@ -298,7 +300,7 @@ export default function ScoreProcessing() {
                 <li key={i}>{w}</li>
               ))}
               {warnings.length > MAX_WARNINGS_SHOWN && (
-                <li>Và {warnings.length - MAX_WARNINGS_SHOWN} cảnh báo khác, xem đầy đủ ở trang kết quả.</li>
+                <li>{t('upload.processing.moreWarnings', { count: warnings.length - MAX_WARNINGS_SHOWN })}</li>
               )}
             </ul>
           )}
@@ -307,25 +309,27 @@ export default function ScoreProcessing() {
             <div className="sp-error" role="alert">
               <strong>{error.title}</strong>
               <p>{error.hint}</p>
-              {error.detail && <p className="sp-error__detail">Chi tiết: {error.detail}</p>}
+              {error.detail && (
+                <p className="sp-error__detail">{t('upload.processing.detail', { detail: error.detail })}</p>
+              )}
             </div>
           )}
 
           <div className="sp-actions">
             {running && (
               <button className="sc-btn sc-btn--danger" disabled={busy} onClick={() => setConfirmCancel(true)}>
-                Hủy
+                {t('common.cancel')}
               </button>
             )}
             {failed && (
               <>
                 {score.canEdit && (
                   <button className="sc-btn sc-btn--primary" disabled={busy} onClick={handleRetry}>
-                    {busy ? 'Đang gửi...' : 'Thử lại'}
+                    {busy ? t('scores.request.sending') : t('common.retry')}
                   </button>
                 )}
                 <button className="sc-btn" disabled={busy} onClick={() => navigate('/scores/upload')}>
-                  Tải file khác
+                  {t('upload.processing.uploadOther')}
                 </button>
               </>
             )}
@@ -334,7 +338,7 @@ export default function ScoreProcessing() {
                 className="sc-btn sc-btn--primary"
                 onClick={() => navigate(`${base}/${score.id}/review`, { replace: true })}
               >
-                Xem kết quả
+                {t('upload.processing.viewResult')}
               </button>
             )}
           </div>
@@ -342,8 +346,8 @@ export default function ScoreProcessing() {
 
         {(pages.length > 0 || (running && totalPages > 0)) && (
           <section className="sp-pages">
-            <h2>Các trang</h2>
-            <p className="sp-pages__hint">Bấm vào một trang để so sánh với ảnh gốc.</p>
+            <h2>{t('upload.processing.pages')}</h2>
+            <p className="sp-pages__hint">{t('upload.processing.pagesHint')}</p>
             <PageStrip pages={pages} total={running ? totalPages : 0} onSelect={setCompare} />
           </section>
         )}
@@ -360,14 +364,14 @@ export default function ScoreProcessing() {
       )}
 
       {confirmCancel && (
-        <Modal title="Hủy số hóa?" onClose={() => !busy && setConfirmCancel(false)}>
-          <p>Tác vụ đang chạy sẽ dừng lại. Bạn có thể bấm "Thử lại" sau đó.</p>
+        <Modal title={t('upload.processing.cancelTitle')} onClose={() => !busy && setConfirmCancel(false)}>
+          <p>{t('upload.processing.cancelText')}</p>
           <div className="sc-modal__actions">
             <button className="sc-btn" disabled={busy} onClick={() => setConfirmCancel(false)}>
-              Tiếp tục xử lý
+              {t('upload.processing.keepGoing')}
             </button>
             <button className="sc-btn sc-btn--danger-solid" disabled={busy} onClick={handleCancel}>
-              {busy ? 'Đang hủy...' : 'Hủy tác vụ'}
+              {busy ? t('upload.processing.cancelling') : t('upload.processing.cancelTask')}
             </button>
           </div>
         </Modal>

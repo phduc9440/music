@@ -3,6 +3,7 @@ import { toast } from 'react-toastify';
 import { downloadFile } from '../../../services';
 import { FILE_TYPE_LABELS, formatSize, getErrorMessage } from '../../../utils/score';
 import type { ScoreFileInfo } from '../../../types';
+import { t } from '../../../i18n/core';
 
 /** Danh sách file hiện hành của bản nhạc, mỗi dòng có nút tải về. */
 export default function FilesTable({ files }: { files: ScoreFileInfo[] }) {
@@ -13,14 +14,14 @@ export default function FilesTable({ files }: { files: ScoreFileInfo[] }) {
     try {
       await downloadFile(f.downloadUrl, f.originalFileName || `${f.fileType}-${f.id}`);
     } catch (err) {
-      toast.error(getErrorMessage(err, 'Không tải được file'));
+      toast.error(getErrorMessage(err, t('scores.files.downloadFailed')));
     } finally {
       setDownloadingId(null);
     }
   };
 
   if (files.length === 0) {
-    return <div className="sc-panel sc-panel--empty">Chưa có file nào.</div>;
+    return <div className="sc-panel sc-panel--empty">{t('scores.files.none')}</div>;
   }
 
   return (
@@ -28,11 +29,11 @@ export default function FilesTable({ files }: { files: ScoreFileInfo[] }) {
       <table className="sc-table">
         <thead>
           <tr>
-            <th>Loại</th>
-            <th>Tên file</th>
-            <th>Trang</th>
-            <th>Dung lượng</th>
-            <th aria-label="Thao tác" />
+            <th>{t('scores.files.type')}</th>
+            <th>{t('scores.files.name')}</th>
+            <th>{t('scores.hero.pages')}</th>
+            <th>{t('scores.files.size')}</th>
+            <th aria-label={t('scores.files.actions')} />
           </tr>
         </thead>
         <tbody>
@@ -50,7 +51,7 @@ export default function FilesTable({ files }: { files: ScoreFileInfo[] }) {
                   disabled={downloadingId === f.id}
                   onClick={() => handleDownload(f)}
                 >
-                  {downloadingId === f.id ? 'Đang tải...' : 'Tải về'}
+                  {downloadingId === f.id ? t('common.loading') : t('scores.files.download')}
                 </button>
               </td>
             </tr>

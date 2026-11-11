@@ -129,48 +129,44 @@ FROM (
 JOIN members m ON m.email = t.email
 JOIN scores s ON s.title = t.title;
 
--- Thông báo trong ứng dụng, đủ các loại, cả đã đọc và chưa đọc
-INSERT INTO notifications (id, recipient_id, type, score_id, message, is_read, created_at)
-SELECT UUID(), m.id, t.type, s.id, t.message, t.is_read, t.created_at
+-- Thông báo trong ứng dụng, đủ các loại, cả đã đọc và chưa đọc. message là câu tiếng Việt dự phòng; params (JSON) để web
+-- dựng câu theo ngôn ngữ của người đọc (giống hệt những gì backend lưu khi có sự kiện thật).
+INSERT INTO notifications (id, recipient_id, type, score_id, message, params, is_read, created_at)
+SELECT UUID(), m.id, t.type, s.id, t.message, t.params, t.is_read, t.created_at
 FROM (
-    SELECT 'lan.nguyen@music.com' AS email, 'NEW_REVIEW' AS type, 'Für Elise' AS title, 'Demo User đã nhận xét bản nhạc "Für Elise" của bạn (5 sao).' AS message, 0 AS is_read, NOW(6) - INTERVAL 0 DAY - INTERVAL 5 HOUR - INTERVAL 3 MINUTE AS created_at
-    UNION ALL SELECT 'lan.nguyen@music.com', 'NEW_REVIEW', 'Für Elise', 'Phạm Khánh Duy đã nhận xét bản nhạc "Für Elise" của bạn (4 sao).', 1, NOW(6) - INTERVAL 0 DAY - INTERVAL 200 HOUR - INTERVAL 3 MINUTE
-    UNION ALL SELECT 'lan.nguyen@music.com', 'ACCESS_REQUESTED', 'Giáo án piano cơ bản - Bài 1', 'Hoàng Gia Bảo xin quyền xem bản nhạc "Giáo án piano cơ bản - Bài 1".', 0, NOW(6) - INTERVAL 0 DAY - INTERVAL 48 HOUR - INTERVAL 3 MINUTE
-    UNION ALL SELECT 'lan.nguyen@music.com', 'ACCESS_REQUESTED', 'Czerny Op. 599 No. 1', 'Võ Hoài An xin quyền nhận xét bản nhạc "Czerny Op. 599 No. 1".', 0, NOW(6) - INTERVAL 0 DAY - INTERVAL 24 HOUR - INTERVAL 3 MINUTE
-    UNION ALL SELECT 'lan.nguyen@music.com', 'ACCESS_REQUESTED', 'Bài tập gam Đô trưởng', 'Bạn đã xin quyền nhận xét bản "Bài tập gam Đô trưởng" của Demo User.', 1, NOW(6) - INTERVAL 0 DAY - INTERVAL 24 HOUR - INTERVAL 3 MINUTE
-    UNION ALL SELECT 'lan.nguyen@music.com', 'OFFICIAL_REQUESTED', 'Nocturne Op. 9 No. 2', 'Quản trị viên xin đưa "Nocturne Op. 9 No. 2" vào kho score mẫu.', 1, NOW(6) - INTERVAL 0 DAY - INTERVAL 240 HOUR - INTERVAL 3 MINUTE
-    UNION ALL SELECT 'lan.nguyen@music.com', 'OFFICIAL_ACCEPTED', 'Für Elise (giản lược)', 'Bản "Für Elise (giản lược)" đã vào kho score mẫu.', 1, NOW(6) - INTERVAL 0 DAY - INTERVAL 330 HOUR - INTERVAL 3 MINUTE
-    UNION ALL SELECT 'user@music.com', 'NEW_REVIEW', 'Ode to Joy', 'Lê Thu Hương đã nhận xét bản nhạc "Ode to Joy" của bạn (4 sao).', 0, NOW(6) - INTERVAL 0 DAY - INTERVAL 36 HOUR - INTERVAL 3 MINUTE
-    UNION ALL SELECT 'user@music.com', 'NEW_REVIEW', 'Ode to Joy', 'Đặng Thùy Trang đã nhận xét bản nhạc "Ode to Joy" của bạn (5 sao).', 0, NOW(6) - INTERVAL 0 DAY - INTERVAL 140 HOUR - INTERVAL 3 MINUTE
-    UNION ALL SELECT 'user@music.com', 'SHARED_WITH_YOU', 'Giáo án piano cơ bản - Bài 1', 'Nguyễn Thị Lan đã chia sẻ "Giáo án piano cơ bản - Bài 1" với bạn (quyền nhận xét).', 1, NOW(6) - INTERVAL 0 DAY - INTERVAL 480 HOUR - INTERVAL 3 MINUTE
-    UNION ALL SELECT 'user@music.com', 'SHARED_WITH_YOU', 'Czerny Op. 599 No. 1', 'Nguyễn Thị Lan đã chia sẻ "Czerny Op. 599 No. 1" với bạn (quyền xem).', 1, NOW(6) - INTERVAL 0 DAY - INTERVAL 470 HOUR - INTERVAL 3 MINUTE
-    UNION ALL SELECT 'user@music.com', 'ACCESS_REQUESTED', 'Bài tập gam Đô trưởng', 'Nguyễn Thị Lan xin quyền nhận xét bản nhạc "Bài tập gam Đô trưởng".', 0, NOW(6) - INTERVAL 0 DAY - INTERVAL 24 HOUR - INTERVAL 3 MINUTE
-    UNION ALL SELECT 'user@music.com', 'ACCESS_REQUESTED', 'Happy Birthday (bản phối đơn giản)', 'Trần Quang Minh xin quyền xem bản nhạc "Happy Birthday (bản phối đơn giản)".', 0, NOW(6) - INTERVAL 0 DAY - INTERVAL 1 HOUR - INTERVAL 3 MINUTE
-    UNION ALL SELECT 'user@music.com', 'OFFICIAL_ACCEPTED', 'Ode to Joy (bản giản lược)', 'Bản "Ode to Joy (bản giản lược)" đã vào kho score mẫu.', 1, NOW(6) - INTERVAL 0 DAY - INTERVAL 480 HOUR - INTERVAL 3 MINUTE
-    UNION ALL SELECT 'user@music.com', 'SCORE_TRASHED_BY_ADMIN', NULL, 'Quản trị viên đã chuyển một bản nhạc của bạn vào thùng rác (30 ngày để khôi phục).', 1, NOW(6) - INTERVAL 0 DAY - INTERVAL 72 HOUR - INTERVAL 3 MINUTE
-    UNION ALL SELECT 'minh.tran@music.com', 'OFFICIAL_REQUESTED', 'Turkish March', 'Quản trị viên xin đưa "Turkish March" vào kho score mẫu. Bạn có đồng ý không?', 0, NOW(6) - INTERVAL 0 DAY - INTERVAL 48 HOUR - INTERVAL 3 MINUTE
-    UNION ALL SELECT 'minh.tran@music.com', 'NEW_REVIEW', 'Turkish March', 'Demo User đã nhận xét bản nhạc "Turkish March" của bạn (5 sao).', 1, NOW(6) - INTERVAL 0 DAY - INTERVAL 310 HOUR - INTERVAL 3 MINUTE
-    UNION ALL SELECT 'minh.tran@music.com', 'SCORE_TRASHED_BY_ADMIN', NULL, 'Quản trị viên đã chuyển "Bản chép lại có bản quyền" vào thùng rác: Vi phạm bản quyền (kiểm duyệt).', 0, NOW(6) - INTERVAL 0 DAY - INTERVAL 120 HOUR - INTERVAL 3 MINUTE
-    UNION ALL SELECT 'huong.le@music.com', 'OFFICIAL_REQUESTED', 'Canon in D', 'Quản trị viên xin đưa "Canon in D" vào kho score mẫu. Bạn có đồng ý không?', 0, NOW(6) - INTERVAL 0 DAY - INTERVAL 24 HOUR - INTERVAL 3 MINUTE
-    UNION ALL SELECT 'huong.le@music.com', 'SHARED_WITH_YOU', 'Jazz Standard - Autumn Leaves (lead sheet)', 'Trần Quang Minh đã chia sẻ "Jazz Standard - Autumn Leaves (lead sheet)" với bạn (quyền chỉnh sửa).', 1, NOW(6) - INTERVAL 0 DAY - INTERVAL 400 HOUR - INTERVAL 3 MINUTE
-    UNION ALL SELECT 'huong.le@music.com', 'PUBLISH_APPROVED', 'Clair de Lune', 'Bản "Clair de Lune" của bạn đã được duyệt công khai.', 1, NOW(6) - INTERVAL 0 DAY - INTERVAL 860 HOUR - INTERVAL 3 MINUTE
-    UNION ALL SELECT 'duy.pham@music.com', 'PUBLISH_REQUESTED', 'Như có Bác trong ngày vui đại thắng', 'Bạn đã gửi yêu cầu công khai "Như có Bác trong ngày vui đại thắng", đang chờ duyệt.', 1, NOW(6) - INTERVAL 0 DAY - INTERVAL 48 HOUR - INTERVAL 3 MINUTE
-    UNION ALL SELECT 'khoa.bui@music.com', 'PUBLISH_REJECTED', 'Bản phối lại nhạc phim (chưa xin phép)', 'Yêu cầu công khai bị từ chối: Bản có nội dung từ tác phẩm còn bản quyền, chưa thể công khai.', 1, NOW(6) - INTERVAL 0 DAY - INTERVAL 340 HOUR - INTERVAL 3 MINUTE
-    UNION ALL SELECT 'trang.dang@music.com', 'ACCESS_APPROVED', 'Giáo án piano cơ bản - Bài 1', 'Nguyễn Thị Lan đã cấp quyền chỉnh sửa bản "Giáo án piano cơ bản - Bài 1" cho bạn.', 1, NOW(6) - INTERVAL 0 DAY - INTERVAL 300 HOUR - INTERVAL 3 MINUTE
-    UNION ALL SELECT 'mai.ngo@music.com', 'ACCESS_REQUESTED', 'Bài hát đám cưới (giọng + piano)', 'Bạn đã xin quyền chỉnh sửa bản "Bài hát đám cưới (giọng + piano)".', 1, NOW(6) - INTERVAL 0 DAY - INTERVAL 72 HOUR - INTERVAL 3 MINUTE
-    UNION ALL SELECT 'huong.le@music.com', 'ACCESS_REQUESTED', 'Bài hát đám cưới (giọng + piano)', 'Ngô Thanh Mai xin quyền chỉnh sửa bản nhạc "Bài hát đám cưới (giọng + piano)".', 0, NOW(6) - INTERVAL 0 DAY - INTERVAL 72 HOUR - INTERVAL 3 MINUTE
-    UNION ALL SELECT 'admin2@music.com', 'PUBLISH_REQUESTED', 'Như có Bác trong ngày vui đại thắng', 'Phạm Khánh Duy xin công khai bản "Như có Bác trong ngày vui đại thắng".', 0, NOW(6) - INTERVAL 0 DAY - INTERVAL 48 HOUR - INTERVAL 3 MINUTE
-    UNION ALL SELECT 'admin2@music.com', 'PUBLISH_REQUESTED', 'Hungarian Rhapsody No. 2', 'Võ Hoài An xin công khai bản "Hungarian Rhapsody No. 2".', 0, NOW(6) - INTERVAL 0 DAY - INTERVAL 24 HOUR - INTERVAL 3 MINUTE
-    UNION ALL SELECT 'admin2@music.com', 'PUBLISH_REQUESTED', 'Sao Mai (hợp xướng)', 'Hoàng Gia Bảo xin công khai bản "Sao Mai (hợp xướng)".', 0, NOW(6) - INTERVAL 0 DAY - INTERVAL 20 HOUR - INTERVAL 3 MINUTE
-    UNION ALL SELECT 'admin2@music.com', 'OFFICIAL_ACCEPTED', 'Für Elise (giản lược)', 'Nguyễn Thị Lan đã đồng ý đưa "Für Elise" vào kho score mẫu.', 1, NOW(6) - INTERVAL 0 DAY - INTERVAL 330 HOUR - INTERVAL 3 MINUTE
-    UNION ALL SELECT 'admin2@music.com', 'OFFICIAL_DECLINED', 'Nocturne Op. 9 No. 2', 'Nguyễn Thị Lan đã từ chối đưa "Nocturne Op. 9 No. 2" vào kho score mẫu.', 1, NOW(6) - INTERVAL 0 DAY - INTERVAL 216 HOUR - INTERVAL 3 MINUTE
+    SELECT 'lan.nguyen@music.com' AS email, 'NEW_REVIEW' AS type, 'Für Elise' AS title, 'Demo User đã nhận xét bản nhạc "Für Elise"' AS message, '{"name": "Demo User", "title": "Für Elise"}' AS params, 0 AS is_read, NOW(6) - INTERVAL 5 HOUR - INTERVAL 3 MINUTE AS created_at
+    UNION ALL SELECT 'lan.nguyen@music.com', 'NEW_REVIEW', 'Für Elise', 'Phạm Khánh Duy đã nhận xét bản nhạc "Für Elise"', '{"name": "Phạm Khánh Duy", "title": "Für Elise"}', 1, NOW(6) - INTERVAL 200 HOUR - INTERVAL 3 MINUTE
+    UNION ALL SELECT 'lan.nguyen@music.com', 'ACCESS_REQUESTED', 'Giáo án piano cơ bản - Bài 1', 'Hoàng Gia Bảo xin quyền xem bản nhạc "Giáo án piano cơ bản - Bài 1"', '{"name": "Hoàng Gia Bảo", "title": "Giáo án piano cơ bản - Bài 1", "level": "1"}', 0, NOW(6) - INTERVAL 48 HOUR - INTERVAL 3 MINUTE
+    UNION ALL SELECT 'lan.nguyen@music.com', 'ACCESS_REQUESTED', 'Czerny Op. 599 No. 1', 'Võ Hoài An xin quyền nhận xét bản nhạc "Czerny Op. 599 No. 1"', '{"name": "Võ Hoài An", "title": "Czerny Op. 599 No. 1", "level": "2"}', 0, NOW(6) - INTERVAL 24 HOUR - INTERVAL 3 MINUTE
+    UNION ALL SELECT 'lan.nguyen@music.com', 'OFFICIAL_REQUESTED', 'Nocturne Op. 9 No. 2', 'Quản trị viên muốn đưa bản nhạc "Nocturne Op. 9 No. 2" vào kho bản nhạc mẫu. Bản của bạn giữ nguyên, hệ thống chỉ sao chép một bản và ghi tên bạn là người phối. Hãy đồng ý hoặc từ chối.', '{"title": "Nocturne Op. 9 No. 2"}', 1, NOW(6) - INTERVAL 240 HOUR - INTERVAL 3 MINUTE
+    UNION ALL SELECT 'user@music.com', 'NEW_REVIEW', 'Ode to Joy', 'Lê Thu Hương đã nhận xét bản nhạc "Ode to Joy"', '{"name": "Lê Thu Hương", "title": "Ode to Joy"}', 0, NOW(6) - INTERVAL 36 HOUR - INTERVAL 3 MINUTE
+    UNION ALL SELECT 'user@music.com', 'NEW_REVIEW', 'Ode to Joy', 'Đặng Thùy Trang đã nhận xét bản nhạc "Ode to Joy"', '{"name": "Đặng Thùy Trang", "title": "Ode to Joy"}', 0, NOW(6) - INTERVAL 140 HOUR - INTERVAL 3 MINUTE
+    UNION ALL SELECT 'user@music.com', 'SHARED_WITH_YOU', 'Giáo án piano cơ bản - Bài 1', 'Bạn được chia sẻ bản nhạc "Giáo án piano cơ bản - Bài 1" với quyền nhận xét', '{"title": "Giáo án piano cơ bản - Bài 1", "level": "2"}', 1, NOW(6) - INTERVAL 480 HOUR - INTERVAL 3 MINUTE
+    UNION ALL SELECT 'user@music.com', 'SHARED_WITH_YOU', 'Czerny Op. 599 No. 1', 'Bạn được chia sẻ bản nhạc "Czerny Op. 599 No. 1" với quyền xem', '{"title": "Czerny Op. 599 No. 1", "level": "1"}', 1, NOW(6) - INTERVAL 470 HOUR - INTERVAL 3 MINUTE
+    UNION ALL SELECT 'user@music.com', 'ACCESS_REQUESTED', 'Bài tập gam Đô trưởng', 'Nguyễn Thị Lan xin quyền nhận xét bản nhạc "Bài tập gam Đô trưởng"', '{"name": "Nguyễn Thị Lan", "title": "Bài tập gam Đô trưởng", "level": "2"}', 0, NOW(6) - INTERVAL 24 HOUR - INTERVAL 3 MINUTE
+    UNION ALL SELECT 'user@music.com', 'ACCESS_REQUESTED', 'Happy Birthday (bản phối đơn giản)', 'Trần Quang Minh xin quyền xem bản nhạc "Happy Birthday (bản phối đơn giản)"', '{"name": "Trần Quang Minh", "title": "Happy Birthday (bản phối đơn giản)", "level": "1"}', 0, NOW(6) - INTERVAL 1 HOUR - INTERVAL 3 MINUTE
+    UNION ALL SELECT 'user@music.com', 'SCORE_TRASHED_BY_ADMIN', 'Bản nháp thử OMR', 'Bản nhạc "Bản nháp thử OMR" đã bị quản trị viên chuyển vào thùng rác (khôi phục được trong 30 ngày)', '{"title": "Bản nháp thử OMR"}', 1, NOW(6) - INTERVAL 72 HOUR - INTERVAL 3 MINUTE
+    UNION ALL SELECT 'minh.tran@music.com', 'OFFICIAL_REQUESTED', 'Turkish March', 'Quản trị viên muốn đưa bản nhạc "Turkish March" vào kho bản nhạc mẫu. Bản của bạn giữ nguyên, hệ thống chỉ sao chép một bản và ghi tên bạn là người phối. Hãy đồng ý hoặc từ chối.', '{"title": "Turkish March"}', 0, NOW(6) - INTERVAL 48 HOUR - INTERVAL 3 MINUTE
+    UNION ALL SELECT 'minh.tran@music.com', 'NEW_REVIEW', 'Turkish March', 'Demo User đã nhận xét bản nhạc "Turkish March"', '{"name": "Demo User", "title": "Turkish March"}', 1, NOW(6) - INTERVAL 310 HOUR - INTERVAL 3 MINUTE
+    UNION ALL SELECT 'minh.tran@music.com', 'SCORE_TRASHED_BY_ADMIN', 'Bản chép lại có bản quyền', 'Bản nhạc "Bản chép lại có bản quyền" đã bị quản trị viên chuyển vào thùng rác (khôi phục được trong 30 ngày): Vi phạm bản quyền (kiểm duyệt)', '{"title": "Bản chép lại có bản quyền", "reason": "Vi phạm bản quyền (kiểm duyệt)"}', 0, NOW(6) - INTERVAL 120 HOUR - INTERVAL 3 MINUTE
+    UNION ALL SELECT 'huong.le@music.com', 'OFFICIAL_REQUESTED', 'Canon in D', 'Quản trị viên muốn đưa bản nhạc "Canon in D" vào kho bản nhạc mẫu. Bản của bạn giữ nguyên, hệ thống chỉ sao chép một bản và ghi tên bạn là người phối. Hãy đồng ý hoặc từ chối.', '{"title": "Canon in D"}', 0, NOW(6) - INTERVAL 24 HOUR - INTERVAL 3 MINUTE
+    UNION ALL SELECT 'huong.le@music.com', 'SHARED_WITH_YOU', 'Jazz Standard - Autumn Leaves (lead sheet)', 'Bạn được chia sẻ bản nhạc "Jazz Standard - Autumn Leaves (lead sheet)" với quyền chỉnh sửa', '{"title": "Jazz Standard - Autumn Leaves (lead sheet)", "level": "3"}', 1, NOW(6) - INTERVAL 400 HOUR - INTERVAL 3 MINUTE
+    UNION ALL SELECT 'huong.le@music.com', 'PUBLISH_APPROVED', 'Clair de Lune', 'Bản nhạc "Clair de Lune" đã được duyệt công khai', '{"title": "Clair de Lune"}', 1, NOW(6) - INTERVAL 860 HOUR - INTERVAL 3 MINUTE
+    UNION ALL SELECT 'huong.le@music.com', 'ACCESS_REQUESTED', 'Bài hát đám cưới (giọng + piano)', 'Ngô Thanh Mai xin quyền chỉnh sửa bản nhạc "Bài hát đám cưới (giọng + piano)"', '{"name": "Ngô Thanh Mai", "title": "Bài hát đám cưới (giọng + piano)", "level": "3"}', 0, NOW(6) - INTERVAL 72 HOUR - INTERVAL 3 MINUTE
+    UNION ALL SELECT 'khoa.bui@music.com', 'PUBLISH_REJECTED', 'Bản phối lại nhạc phim (chưa xin phép)', 'Bản nhạc "Bản phối lại nhạc phim (chưa xin phép)" bị từ chối công khai: Bản có nội dung từ tác phẩm còn bản quyền, chưa thể công khai.', '{"title": "Bản phối lại nhạc phim (chưa xin phép)", "variant": "rejected", "reason": "Bản có nội dung từ tác phẩm còn bản quyền, chưa thể công khai."}', 1, NOW(6) - INTERVAL 340 HOUR - INTERVAL 3 MINUTE
+    UNION ALL SELECT 'trang.dang@music.com', 'ACCESS_APPROVED', 'Giáo án piano cơ bản - Bài 1', 'Yêu cầu của bạn đã được đồng ý: quyền chỉnh sửa bản nhạc "Giáo án piano cơ bản - Bài 1"', '{"title": "Giáo án piano cơ bản - Bài 1", "level": "3"}', 1, NOW(6) - INTERVAL 300 HOUR - INTERVAL 3 MINUTE
+    UNION ALL SELECT 'admin2@music.com', 'PUBLISH_REQUESTED', 'Như có Bác trong ngày vui đại thắng', 'Có bản nhạc xin công khai: "Như có Bác trong ngày vui đại thắng"', '{"title": "Như có Bác trong ngày vui đại thắng"}', 0, NOW(6) - INTERVAL 48 HOUR - INTERVAL 3 MINUTE
+    UNION ALL SELECT 'admin2@music.com', 'PUBLISH_REQUESTED', 'Hungarian Rhapsody No. 2', 'Có bản nhạc xin công khai: "Hungarian Rhapsody No. 2"', '{"title": "Hungarian Rhapsody No. 2"}', 0, NOW(6) - INTERVAL 24 HOUR - INTERVAL 3 MINUTE
+    UNION ALL SELECT 'admin2@music.com', 'PUBLISH_REQUESTED', 'Sao Mai (hợp xướng)', 'Có bản nhạc xin công khai: "Sao Mai (hợp xướng)"', '{"title": "Sao Mai (hợp xướng)"}', 0, NOW(6) - INTERVAL 20 HOUR - INTERVAL 3 MINUTE
+    UNION ALL SELECT 'admin2@music.com', 'OFFICIAL_ACCEPTED', 'Für Elise (giản lược)', 'Nguyễn Thị Lan đã đồng ý đưa bản nhạc "Für Elise" vào kho bản nhạc mẫu', '{"name": "Nguyễn Thị Lan", "title": "Für Elise"}', 1, NOW(6) - INTERVAL 330 HOUR - INTERVAL 3 MINUTE
+    UNION ALL SELECT 'admin2@music.com', 'OFFICIAL_DECLINED', 'Nocturne Op. 9 No. 2', 'Nguyễn Thị Lan đã từ chối đưa bản nhạc "Nocturne Op. 9 No. 2" vào kho bản nhạc mẫu', '{"name": "Nguyễn Thị Lan", "title": "Nocturne Op. 9 No. 2"}', 1, NOW(6) - INTERVAL 216 HOUR - INTERVAL 3 MINUTE
 ) t
 JOIN members m ON m.email = t.email
 LEFT JOIN scores s ON s.title = t.title;
 
 -- Thông báo chung của quản trị viên gửi mọi tài khoản đang hoạt động
-INSERT INTO notifications (id, recipient_id, type, score_id, message, is_read, created_at)
+INSERT INTO notifications (id, recipient_id, type, score_id, message, params, is_read, created_at)
 SELECT UUID(), m.id, 'ANNOUNCEMENT', NULL,
-       'Chào mừng bạn đến với Music App! Hãy thử số hóa bản nhạc đầu tiên và tập cùng chuỗi ngày luyện tập.',
+       'Chào mừng bạn đến với Music App! Hãy thử số hóa bản nhạc đầu tiên và tập cùng chuỗi ngày luyện tập.', NULL,
        CASE WHEN m.email = 'user@music.com' THEN 0 ELSE 1 END, NOW(6) - INTERVAL 5 DAY
 FROM members m WHERE m.status = 1 AND m.email <> 'admin2@music.com';
