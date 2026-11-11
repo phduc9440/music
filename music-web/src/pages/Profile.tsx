@@ -5,6 +5,7 @@ import { authApi, userApi } from '../services';
 import { AuthProvider } from '../types';
 import type { Member } from '../types';
 import ChangePasswordModal from '../components/ChangePasswordModal';
+import ReferralCard from '../components/ReferralCard';
 import { roleLabel } from '../utils/auth';
 import '../components/scores/scores.css';
 import './scores/library/ScoreLibrary.css';
@@ -221,6 +222,8 @@ export default function UserProfile() {
                 </div>
               )}
             </section>
+
+            <ReferralCard />
           </div>
         </div>
       </main>

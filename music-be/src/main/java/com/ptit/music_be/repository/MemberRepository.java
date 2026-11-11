@@ -30,6 +30,18 @@ public interface MemberRepository extends JpaRepository<Member, String> {
 
     boolean existsByEmail(String email);
 
+    Optional<Member> findByReferralCode(String referralCode);
+
+    boolean existsByReferralCode(String referralCode);
+
+    long countByReferredBy(String memberId);
+
+    long countByReferredByAndReferralRewardedAtIsNotNull(String memberId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select m from Member m where m.id = :id")
+    Optional<Member> findByIdForUpdate(@Param("id") String id);
+
     /** Ghi lần đăng nhập gần nhất mà không động đến các cột khác của tài khoản. */
     @org.springframework.transaction.annotation.Transactional
     // flushAutomatically: tài khoản Google mới tạo trong cùng transaction phải được ghi xuống DB trước câu update này,

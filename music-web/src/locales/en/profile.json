@@ -23,5 +23,17 @@
     "current": "Current password",
     "new": "New password (at least 8 characters)",
     "confirm": "Repeat the new password"
+  },
+  "referral": {
+    "title": "Invite friends",
+    "intro": "Share your code or link. When a friend signs up with it and digitizes their first score, you both get 50 XP and 50 Notes (up to 10 friends a month).",
+    "code": "Your code",
+    "invited": "Signed up with your code",
+    "rewarded": "Digitized a first score (rewarded)",
+    "copyCode": "Copy code",
+    "copyLink": "Copy invite link",
+    "copied": "Copied",
+    "copyFailed": "Could not copy, please select and copy it manually",
+    "loadFailed": "Could not load your referral code"
   }
 }

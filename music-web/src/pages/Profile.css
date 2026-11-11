@@ -114,3 +114,10 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Mã giới thiệu (thẻ Mời bạn) */
+.pf-referral-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}

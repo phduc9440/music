@@ -16,6 +16,8 @@ export interface RegisterRequest {
   phone?: string;
   fullName?: string;
   address?: string;
+  /** Mã giới thiệu của người mời (7.5), tùy chọn. */
+  referralCode?: string;
 }
 
 export interface ChangePasswordRequest {

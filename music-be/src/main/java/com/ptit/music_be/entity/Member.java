@@ -84,6 +84,18 @@ public class Member {
     @Column(name = "password_changed_at")
     LocalDateTime passwordChangedAt;
 
+    /** Mã giới thiệu của chính thành viên (7.5), sinh khi cần. */
+    @Column(name = "referral_code", length = 12, unique = true)
+    String referralCode;
+
+    /** Id người đã mời (nhập mã lúc đăng ký), null nếu tự đăng ký. */
+    @Column(name = "referred_by", length = 36)
+    String referredBy;
+
+    /** Đã thưởng cho lời mời lúc nào (khi số hóa xong bản đầu tiên); null = chưa. */
+    @Column(name = "referral_rewarded_at")
+    LocalDateTime referralRewardedAt;
+
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     List<MemberRole> memberRoles = new ArrayList<>();

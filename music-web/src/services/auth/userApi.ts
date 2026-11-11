@@ -8,6 +8,9 @@ export interface UpdateProfilePayload {
 }
 
 export const userApi = {
+  // Mời bạn (7.5): mã giới thiệu của tôi (sinh lần đầu) và số người đã mời
+  referral: () =>
+    apiClient.get<ApiResponse<{ code: string; invitedCount: number; rewardedCount: number }>>('/referrals/me'),
   getMe: () => apiClient.get<ApiResponse<Member>>('/users/me'),
   updateMe: (data: UpdateProfilePayload) => apiClient.put<ApiResponse<Member>>('/users/me', data),
   // Lưu giao diện sáng/tối/theo hệ thống để đồng bộ giữa các máy

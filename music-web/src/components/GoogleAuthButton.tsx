@@ -10,19 +10,24 @@ interface GoogleAuthButtonProps {
   setIsLoading: (loading: boolean) => void;
   /** Trang cần quay lại sau khi đăng nhập (mặc định theo vai trò). */
   redirectTo?: string;
+  /** Mã giới thiệu; chỉ có tác dụng khi lần đăng nhập Google này tạo tài khoản mới. */
+  referralCode?: string;
 }
 
 const errorText = (error: unknown) =>
   translateError(error, (error instanceof Error ? error.message : '') || t('auth.googleFailed'));
 
-export default function GoogleAuthButton({ setIsLoading, redirectTo }: GoogleAuthButtonProps) {
+export default function GoogleAuthButton({ setIsLoading, redirectTo, referralCode }: GoogleAuthButtonProps) {
   const navigate = useNavigate();
 
   const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
     if (!credentialResponse.credential) return;
     setIsLoading(true);
     try {
-      const response = await authApi.googleLogin({ idToken: credentialResponse.credential });
+      const response = await authApi.googleLogin({
+        idToken: credentialResponse.credential,
+        referralCode: referralCode?.trim() || undefined,
+      });
       const target = await completeLogin(response.data.result);
       toast.success(t('auth.toast.signedIn'));
       navigate(redirectTo ?? target, { replace: true });

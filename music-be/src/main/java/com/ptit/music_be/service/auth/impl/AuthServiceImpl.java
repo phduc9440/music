@@ -98,6 +98,17 @@ public class AuthServiceImpl implements AuthService {
     @Value("${google.android-client-id}")
     String googleAndroidClientId;
 
+    /** Id người mời theo mã giới thiệu (không phân biệt hoa thường); mã trống hoặc không tồn tại thì null. */
+    private String inviterId(String code) {
+        if (code == null || code.isBlank()) {
+            return null;
+        }
+        return memberRepository
+                .findByReferralCode(code.trim().toUpperCase())
+                .map(Member::getId)
+                .orElse(null);
+    }
+
     @Override
     @Transactional
     public MemberResponse register(RegisterRequest request) {
@@ -126,6 +137,7 @@ public class AuthServiceImpl implements AuthService {
                 .status(MemberStatus.ACTIVE)
                 .emailVerified(false)
                 .authProvider(AuthProvider.LOCAL)
+                .referredBy(inviterId(request.getReferralCode()))
                 .build();
 
         Member savedUser = memberRepository.save(user);
@@ -216,6 +228,7 @@ public class AuthServiceImpl implements AuthService {
                         .status(MemberStatus.ACTIVE)
                         .emailVerified(true)
                         .authProvider(AuthProvider.GOOGLE)
+                        .referredBy(inviterId(request.getReferralCode()))
                         .build();
 
                 user = memberRepository.save(user);

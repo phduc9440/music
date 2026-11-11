@@ -23,5 +23,17 @@
     "current": "Mật khẩu hiện tại",
     "new": "Mật khẩu mới (ít nhất 8 ký tự)",
     "confirm": "Nhập lại mật khẩu mới"
+  },
+  "referral": {
+    "title": "Mời bạn",
+    "intro": "Gửi mã hoặc link cho bạn bè. Khi bạn của bạn đăng ký bằng mã và số hóa xong bản nhạc đầu tiên, cả hai cùng nhận 50 XP và 50 Nốt (tối đa 10 người mỗi tháng).",
+    "code": "Mã của bạn",
+    "invited": "Đã đăng ký bằng mã",
+    "rewarded": "Đã số hóa bản đầu (được thưởng)",
+    "copyCode": "Sao chép mã",
+    "copyLink": "Sao chép link mời",
+    "copied": "Đã sao chép",
+    "copyFailed": "Không sao chép được, hãy chọn và sao chép thủ công",
+    "loadFailed": "Không tải được mã giới thiệu"
   }
 }

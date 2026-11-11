@@ -9,8 +9,10 @@ public enum RewardReason {
     SCORE_PUBLISHED(30, 20, 5, Window.WEEK),
     /** Bạn đồng ý đưa bản nhạc vào kho bản nhạc mẫu. refId = id lời xin. */
     SCORE_OFFICIAL(100, 100, 0, Window.NONE),
-    /** Người bạn mời đăng ký và số hóa xong 1 bản (thưởng cả hai bên). refId = id người được mời. Chưa phát. */
+    /** Người bạn mời đã đăng ký và số hóa xong bản đầu tiên (thưởng người mời). refId = id người được mời. */
     REFERRAL_DIGITIZED(50, 50, 10, Window.MONTH),
+    /** Bạn đăng ký bằng mã giới thiệu và số hóa xong bản đầu tiên (thưởng người được mời). refId = id chính bạn. */
+    REFERRAL_WELCOME(50, 50, 0, Window.NONE),
     /** Câu trả lời của bạn trên diễn đàn được chọn. refId = id câu trả lời. Chưa phát (chờ 5.5). */
     FORUM_ANSWER_ACCEPTED(15, 10, 5, Window.DAY);
 
