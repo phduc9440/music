@@ -59,7 +59,8 @@
     "roleNote": {
       "SUPER_ADMIN": "You are a super admin: every feature is unlimited and you do not need a plan.",
       "ADMIN": "You are an admin: you already have Pro benefits with no expiry. You can still buy a higher plan."
-    }
+    },
+    "bannedButton": "Banned"
   },
   "result": {
     "title": "Payment result",
@@ -110,5 +111,6 @@
     "PERSONAL": "For one person digitizing and editing their own scores.",
     "TEAM": "For groups working together; limits are shared by the whole team."
   },
-  "unlimitedPlan": "Unlimited"
+  "unlimitedPlan": "Unlimited",
+  "banned": "Your account is banned from paid plans until {date}. Only the Free plan is available until then."
 }

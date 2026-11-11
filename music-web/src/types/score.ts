@@ -287,7 +287,10 @@ export type NotificationType =
   | 'OFFICIAL_ACCEPTED'
   | 'OFFICIAL_DECLINED'
   | 'PLAN_ACTIVATED'
-  | 'PLAN_EXPIRING';
+  | 'PLAN_EXPIRING'
+  | 'PLAN_REVOKED'
+  | 'PLAN_BANNED'
+  | 'PLAN_BAN_LIFTED';
 
 export interface AppNotification {
   id: string;

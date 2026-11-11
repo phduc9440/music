@@ -176,3 +176,7 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+.bl-note--danger {
+  border-left-color: var(--ui-danger);
+}

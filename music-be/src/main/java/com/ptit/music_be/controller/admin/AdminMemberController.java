@@ -38,17 +38,18 @@ public class AdminMemberController {
                 .build();
     }
 
-    @GetMapping("/plain-admins")
+    @GetMapping("/with-plan")
     @Operation(
-            summary = "Danh sách quản trị viên thường (ADMIN, không phải SUPER_ADMIN) kèm gói đang dùng, lọc theo gói",
+            summary = "Danh sách thành viên kèm gói, lọc theo gói đang dùng (planCode) và người đang bị cấm (bannedOnly)",
             security = @SecurityRequirement(name = "bearerAuth"))
-    public ApiResponse<PageResponse<MemberResponse>> getPlainAdmins(
+    public ApiResponse<PageResponse<MemberResponse>> getMembersWithPlan(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String planCode) {
+            @RequestParam(required = false) String planCode,
+            @RequestParam(defaultValue = "false") boolean bannedOnly) {
         return ApiResponse.<PageResponse<MemberResponse>>builder()
-                .result(adminMemberService.getPlainAdmins(page, size, keyword, planCode))
+                .result(adminMemberService.getMembersWithPlan(page, size, keyword, planCode, bannedOnly))
                 .build();
     }
 

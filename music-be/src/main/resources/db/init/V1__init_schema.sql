@@ -309,32 +309,23 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     CONSTRAINT fk_subscriptions_plan   FOREIGN KEY (plan_id)   REFERENCES plans (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Tạm ngưng quyền lợi gói Pro theo vai trò của một ADMIN (SUPER_ADMIN thực hiện). Đang hiệu lực khi chưa mở lại sớm
--- (lifted_at NULL) và starts_at <= hiện tại < ends_at; hết ends_at thì ADMIN tự dùng lại Pro.
-CREATE TABLE IF NOT EXISTS role_plan_suspensions (
-    id         VARCHAR(36)  NOT NULL,
-    member_id  VARCHAR(36)  NOT NULL COMMENT 'ADMIN bị tạm ngưng',
-    starts_at  DATETIME(6)  NOT NULL,
-    ends_at    DATETIME(6)  NOT NULL COMMENT 'Hết thời hạn thì tự dùng lại',
-    reason     VARCHAR(255) NULL,
-    created_by VARCHAR(36)  NULL COMMENT 'SUPER_ADMIN thực hiện',
-    lifted_at  DATETIME(6)  NULL COMMENT 'Mở lại sớm lúc nào; NULL = chưa',
-    created_at DATETIME(6)  NULL,
+-- Xử lý vi phạm về gói (SUPER_ADMIN thực hiện). REVOKE: thu hồi gói đang dùng (subscription bị hủy ngay, muốn dùng lại
+-- phải mua lại; ends_at NULL). BAN: cấm dùng gói trả phí đến ends_at (chỉ dùng Free, không mua/được cấp gói, ADMIN cũng mất
+-- Pro theo vai trò); hết hạn thì tự hết cấm, lifted_at là lúc gỡ cấm sớm.
+CREATE TABLE IF NOT EXISTS plan_sanctions (
+    id              VARCHAR(36)  NOT NULL,
+    member_id       VARCHAR(36)  NOT NULL,
+    type            VARCHAR(10)  NOT NULL COMMENT 'REVOKE / BAN',
+    subscription_id VARCHAR(36)  NULL COMMENT 'REVOKE: gói bị thu hồi',
+    starts_at       DATETIME(6)  NOT NULL,
+    ends_at         DATETIME(6)  NULL COMMENT 'BAN: hết cấm lúc này',
+    reason          VARCHAR(255) NULL,
+    created_by      VARCHAR(36)  NULL COMMENT 'SUPER_ADMIN thực hiện',
+    lifted_at       DATETIME(6)  NULL COMMENT 'BAN: gỡ cấm sớm lúc nào',
+    created_at      DATETIME(6)  NULL,
     PRIMARY KEY (id),
-    KEY idx_role_plan_suspensions_member (member_id, ends_at),
-    CONSTRAINT fk_role_plan_suspensions_member FOREIGN KEY (member_id) REFERENCES members (id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- Bộ đếm hạn mức theo tháng (period = yyyy-MM), ví dụ số trang OMR đã dùng.
-CREATE TABLE IF NOT EXISTS usage_counters (
-    id        VARCHAR(36) NOT NULL,
-    member_id VARCHAR(36) NOT NULL,
-    metric    VARCHAR(32) NOT NULL,
-    period    VARCHAR(7)  NOT NULL,
-    used      INT         NOT NULL DEFAULT 0,
-    PRIMARY KEY (id),
-    UNIQUE KEY uk_usage_counters (member_id, metric, period),
-    CONSTRAINT fk_usage_counters_member FOREIGN KEY (member_id) REFERENCES members (id)
+    KEY idx_plan_sanctions_member (member_id, type, ends_at),
+    CONSTRAINT fk_plan_sanctions_member FOREIGN KEY (member_id) REFERENCES members (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Đơn thanh toán gói (mục 7.4). Số tiền là VND nguyên. provider_txn_id là mã giao dịch phía cổng (duy nhất) để chống xử

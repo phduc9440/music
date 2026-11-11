@@ -1,24 +1,28 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Badge, Button, ButtonLink, Card } from '../ui';
-import SuspendRolePlanDialog from './SuspendRolePlanDialog';
-import { useLiftRolePlan } from './useLiftRolePlan';
+import SanctionDialog from './SanctionDialog';
+import type { SanctionMode } from './SanctionDialog';
+import { useLiftBans } from './useLiftBans';
 import type { AdminOutletContext } from './AdminLayout';
 import { billingApi } from '../../services';
 import type { MySubscription } from '../../types';
 import { isSuperAdminMember } from '../../utils/auth';
 import { formatDate, t } from '../../i18n/core';
 
+/** Nguồn gói có thể thu hồi (mua hoặc được cấp, có ngày hết hạn). */
+const REVOCABLE_SOURCES = ['PAYMENT', 'ADMIN_GRANT', 'POINTS_TRIAL'];
+
 /**
- * Admin: gói đang dùng của thành viên (trang chi tiết). SUPER_ADMIN có nút tạm ngưng / mở lại gói Pro theo vai trò (với
- * ADMIN thường) và nút mở trang "Gói thành viên".
+ * Admin: gói đang dùng của thành viên (trang chi tiết). SUPER_ADMIN có nút xử lý vi phạm: thu hồi gói đang dùng, cấm dùng gói
+ * trả phí có thời hạn hoặc gỡ cấm, và nút mở trang "Gói thành viên".
  */
 export default function MemberPlanCard({ memberId, memberName }: { memberId: string; memberName: string }) {
   const { admin } = useOutletContext<AdminOutletContext>();
-  const canGrant = !!admin && isSuperAdminMember(admin);
+  const canEdit = !!admin && isSuperAdminMember(admin);
   const [current, setCurrent] = useState<MySubscription | null>(null);
-  const [suspending, setSuspending] = useState(false);
-  const lift = useLiftRolePlan();
+  const [dialog, setDialog] = useState<SanctionMode | null>(null);
+  const liftBans = useLiftBans();
 
   const load = useCallback(() => {
     billingApi
@@ -31,28 +35,35 @@ export default function MemberPlanCard({ memberId, memberName }: { memberId: str
     load();
   }, [load]);
 
-  // Chỉ quản trị viên thường mới có gói Pro theo vai trò để tạm ngưng
-  const isPlainAdmin = current?.roleGrant === 'ADMIN';
+  const target = { id: memberId, name: memberName };
+  const isSuperTarget = current?.roleGrant === 'SUPER_ADMIN';
+  const revocable = !!current?.expiresAt && REVOCABLE_SOURCES.includes(current.source ?? '');
 
   return (
     <Card
       title={t('admin.plan.title')}
       actions={
-        canGrant ? (
+        canEdit ? (
           <>
-            {isPlainAdmin &&
-              (current?.rolePlanSuspendedUntil ? (
+            {current && !isSuperTarget && revocable && !current.bannedUntil && (
+              <Button size="sm" variant="ghost" onClick={() => setDialog('revoke')}>
+                {t('admin.sanctions.revoke')}
+              </Button>
+            )}
+            {current &&
+              !isSuperTarget &&
+              (current.bannedUntil ? (
                 <Button
                   size="sm"
                   onClick={async () => {
-                    if (await lift({ id: memberId, name: memberName })) load();
+                    if (await liftBans([target])) load();
                   }}
                 >
-                  {t('admin.suspensions.lift')}
+                  {t('admin.sanctions.lift')}
                 </Button>
               ) : (
-                <Button size="sm" variant="danger" icon="lock" onClick={() => setSuspending(true)}>
-                  {t('admin.suspensions.suspend')}
+                <Button size="sm" variant="danger" icon="lock" onClick={() => setDialog('ban')}>
+                  {t('admin.sanctions.ban')}
                 </Button>
               ))}
             <ButtonLink to="/admin/member-plans" size="sm" variant="primary" icon="star">
@@ -72,23 +83,24 @@ export default function MemberPlanCard({ memberId, memberName }: { memberId: str
           {current.expiresAt && (
             <span className="adm-muted"> · {t('billing.myPlan.expires', { date: formatDate(current.expiresAt) })}</span>
           )}
-          {current.rolePlanSuspendedUntil && (
-            <span className="adm-muted">
+          {current.bannedUntil && (
+            <>
               {' '}
-              · {t('admin.suspensions.suspendedUntil', { date: formatDate(current.rolePlanSuspendedUntil) })}
-            </span>
+              <Badge tone="danger">{t('admin.sanctions.bannedUntil', { date: formatDate(current.bannedUntil) })}</Badge>
+            </>
           )}
         </p>
       ) : (
         <p className="adm-muted">—</p>
       )}
-      {!canGrant && <p className="adm-field__hint">{t('admin.plan.readOnly')}</p>}
-      {suspending && (
-        <SuspendRolePlanDialog
-          members={[{ id: memberId, name: memberName }]}
-          onClose={() => setSuspending(false)}
+      {!canEdit && <p className="adm-field__hint">{t('admin.plan.readOnly')}</p>}
+      {dialog && (
+        <SanctionDialog
+          mode={dialog}
+          members={[target]}
+          onClose={() => setDialog(null)}
           onDone={() => {
-            setSuspending(false);
+            setDialog(null);
             load();
           }}
         />

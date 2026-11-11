@@ -88,6 +88,6 @@ export interface MemberPlanSummary {
   status: 'FREE' | 'ACTIVE' | 'UNLIMITED';
   source?: 'PAYMENT' | 'POINTS_TRIAL' | 'ADMIN_GRANT' | 'ROLE' | null;
   expiresAt?: string | null;
-  /** ADMIN đang bị tạm ngưng gói Pro theo vai trò đến lúc này. */
-  rolePlanSuspendedUntil?: string | null;
+  /** Đang bị cấm dùng gói trả phí đến lúc này. */
+  bannedUntil?: string | null;
 }

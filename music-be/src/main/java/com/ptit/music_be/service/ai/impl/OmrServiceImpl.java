@@ -53,7 +53,6 @@ import com.ptit.music_be.mapper.AiTaskMapper;
 import com.ptit.music_be.mapper.ScoreFileMapper;
 import com.ptit.music_be.repository.AiTaskRepository;
 import com.ptit.music_be.service.billing.EntitlementService;
-import com.ptit.music_be.service.billing.OmrQuota;
 import com.ptit.music_be.repository.MemberRepository;
 import com.ptit.music_be.repository.ScoreFileRepository;
 import com.ptit.music_be.repository.ScoreRepository;
@@ -129,8 +128,8 @@ public class OmrServiceImpl implements OmrService {
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
         checkConcurrentTasks(member);
-        // Trừ trang OMR của tháng; tác vụ lỗi/hủy sẽ được hoàn lại (xem OmrQuota)
-        entitlementService.checkAndConsume(member.getId(), UsageMetric.OMR_PAGES, pageCount);
+        // Còn đủ trang OMR của tháng không (dòng thành viên đã khóa ở trên); task ghi bên dưới chính là phần đã dùng
+        entitlementService.checkAvailable(member.getId(), UsageMetric.OMR_PAGES, pageCount);
 
         Score score = scoreRepository.save(Score.builder()
                 .member(member)
@@ -217,7 +216,7 @@ public class OmrServiceImpl implements OmrService {
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
         checkConcurrentTasks(member);
         int pages = score.getPageCount() == null ? 0 : score.getPageCount();
-        entitlementService.checkAndConsume(member.getId(), UsageMetric.OMR_PAGES, pages);
+        entitlementService.checkAvailable(member.getId(), UsageMetric.OMR_PAGES, pages);
         return startRetry(score, member, request, pages);
     }
 
@@ -620,13 +619,16 @@ public class OmrServiceImpl implements OmrService {
     }
 
     /** input_data của task OMR, ví dụ {"sourceType":"PHOTO","preprocess":true}. */
-    /** {@code pagesCharged}: số trang đã trừ hạn mức cho task này (0 nếu không trừ), để hoàn lại khi task lỗi/hủy. */
+    /**
+     * {@code pagesCharged}: số trang task này tính vào hạn mức tháng (0 nếu không tính, ví dụ admin chạy lại). Số đã dùng
+     * được tính lại từ các task này; task lỗi/hủy tự không được tính.
+     */
     private String buildInputData(OmrSourceType sourceType, boolean preprocess, int pagesCharged) {
         Map<String, Object> input = new LinkedHashMap<>();
         input.put("sourceType", sourceType.name());
         input.put("preprocess", preprocess);
         if (pagesCharged > 0) {
-            input.put(OmrQuota.PAGES_CHARGED_KEY, pagesCharged);
+            input.put(EntitlementService.OMR_PAGES_CHARGED_KEY, pagesCharged);
         }
         try {
             return objectMapper.writeValueAsString(input);

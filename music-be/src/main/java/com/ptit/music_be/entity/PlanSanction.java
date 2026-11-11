@@ -10,18 +10,22 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 /**
- * Tạm ngưng quyền lợi gói Pro theo vai trò của một ADMIN trong một khoảng thời gian. Đang hiệu lực khi chưa mở lại sớm và
- * {@code startsAt <= hiện tại < endsAt}; hết {@code endsAt} thì ADMIN tự dùng lại Pro.
+ * Một lần xử lý vi phạm về gói. {@code REVOKE}: gói đang dùng bị thu hồi (hủy ngay, muốn dùng lại phải mua lại).
+ * {@code BAN}: cấm dùng gói trả phí từ {@code startsAt} đến {@code endsAt}; đang hiệu lực khi chưa gỡ sớm và
+ * {@code startsAt <= hiện tại < endsAt}.
  */
 @Entity
-@Table(name = "role_plan_suspensions")
+@Table(name = "plan_sanctions")
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class RolePlanSuspension {
+public class PlanSanction {
+
+    public static final String REVOKE = "REVOKE";
+    public static final String BAN = "BAN";
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -30,10 +34,16 @@ public class RolePlanSuspension {
     @Column(name = "member_id", nullable = false, length = 36)
     String memberId;
 
+    @Column(nullable = false, length = 10)
+    String type;
+
+    @Column(name = "subscription_id", length = 36)
+    String subscriptionId;
+
     @Column(name = "starts_at", nullable = false)
     LocalDateTime startsAt;
 
-    @Column(name = "ends_at", nullable = false)
+    @Column(name = "ends_at")
     LocalDateTime endsAt;
 
     @Column(length = 255)

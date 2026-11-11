@@ -21,5 +21,8 @@
   "OFFICIAL_ACCEPTED": "{name} agreed to add “{title}” to the curated library",
   "OFFICIAL_DECLINED": "{name} declined to add “{title}” to the curated library",
   "PLAN_ACTIVATED": "Payment successful, your {plan} plan is now active",
-  "PLAN_EXPIRING": "Your {plan} plan expires in {days} day(s) (on {date}). Buy it again to avoid interruption"
+  "PLAN_EXPIRING": "Your {plan} plan expires in {days} day(s) (on {date}). Buy it again to avoid interruption",
+  "PLAN_REVOKED": "Your {plan} plan has been revoked",
+  "PLAN_BANNED": "You are banned from paid plans until {date}",
+  "PLAN_BAN_LIFTED": "Your ban from paid plans has been lifted"
 }

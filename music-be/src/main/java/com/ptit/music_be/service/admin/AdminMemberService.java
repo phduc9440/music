@@ -10,10 +10,10 @@ public interface AdminMemberService {
     PageResponse<MemberResponse> getMembers(int page, int size, String keyword);
 
     /**
-     * Chỉ quản trị viên thường (ADMIN, không phải SUPER_ADMIN), kèm gói đang dùng: tab Tạm ngưng gói. {@code planCode} khác
-     * null thì chỉ lấy người đang dùng gói đó (theo gói thực tế, kể cả Pro theo vai trò).
+     * Như {@link #getMembers}, lọc thêm theo gói đang dùng ({@code planCode}, PRO gồm cả ADMIN dùng Pro theo vai trò) và
+     * chỉ người đang bị cấm ({@code bannedOnly}). Dùng ở trang Gói thành viên.
      */
-    PageResponse<MemberResponse> getPlainAdmins(int page, int size, String keyword, String planCode);
+    PageResponse<MemberResponse> getMembersWithPlan(int page, int size, String keyword, String planCode, boolean bannedOnly);
 
     MemberResponse getMember(String memberId);
 

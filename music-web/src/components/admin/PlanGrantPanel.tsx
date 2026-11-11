@@ -43,7 +43,8 @@ type Outcome =
 function outcomeOf(m: Member, planCode: string, months: number): Outcome {
   if (isSuperAdminMember(m)) return { kind: 'skip', reason: t('admin.grants.skipSuper') };
   const plan = m.plan;
-  const hasRolePro = isAdminMember(m) && plan?.source === 'ROLE' && plan.code === 'PRO' && !plan.rolePlanSuspendedUntil;
+  if (plan?.bannedUntil) return { kind: 'skip', reason: t('admin.grants.skipBanned') };
+  const hasRolePro = isAdminMember(m) && plan?.source === 'ROLE' && plan.code === 'PRO';
   if (planCode === 'PRO' && hasRolePro) return { kind: 'skip', reason: t('admin.grants.skipAdminPro') };
   const dated = !!plan?.expiresAt && DATED_SOURCES.includes(plan.source ?? '');
   if (dated && plan?.code === planCode && plan.expiresAt) {
@@ -156,14 +157,11 @@ export default function PlanGrantPanel() {
         }
       >
         <Badge tone={PLAN_TONE[p.status]}>{planLabel(p)}</Badge>
-        {p.rolePlanSuspendedUntil && (
+        {p.bannedUntil && (
           <>
             {' '}
-            <Badge
-              tone="danger"
-              title={t('admin.grants.suspendedUntil', { date: formatDate(p.rolePlanSuspendedUntil) })}
-            >
-              {t('admin.grants.suspendedBadge')}
+            <Badge tone="danger" title={t('admin.sanctions.bannedUntil', { date: formatDate(p.bannedUntil) })}>
+              {t('admin.sanctions.bannedBadge')}
             </Badge>
           </>
         )}

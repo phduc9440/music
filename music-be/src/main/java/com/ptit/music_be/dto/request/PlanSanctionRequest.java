@@ -9,14 +9,14 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
 /**
- * SUPER_ADMIN tạm ngưng (hoặc mở lại) gói Pro theo vai trò của nhiều ADMIN cùng lúc, tối đa 200 người. {@code months}: 0 =
- * đến hết tháng này, 1..120 tháng (bỏ qua khi mở lại). {@code reason} tùy chọn.
+ * SUPER_ADMIN xử lý vi phạm cho một hoặc nhiều thành viên (tối đa 200). {@code months}: số tháng cấm (1..120), chỉ dùng khi
+ * cấm. {@code reason}: lý do, tối đa 255 ký tự (gửi kèm thông báo cho người bị xử lý).
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class BulkSuspendRolePlanRequest {
+public class PlanSanctionRequest {
     List<String> memberIds;
     Integer months;
     String reason;

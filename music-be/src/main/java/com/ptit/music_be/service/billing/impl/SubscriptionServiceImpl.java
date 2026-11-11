@@ -11,22 +11,21 @@ import org.springframework.transaction.annotation.Transactional;
 import com.ptit.music_be.dto.enums.NotificationType;
 import com.ptit.music_be.dto.enums.SubscriptionSource;
 import com.ptit.music_be.dto.enums.SubscriptionStatus;
-import com.ptit.music_be.dto.enums.UsageMetric;
 import com.ptit.music_be.dto.response.BulkGrantResult;
 import com.ptit.music_be.dto.response.MemberPlanSummary;
 import com.ptit.music_be.dto.response.MySubscriptionResponse;
 import com.ptit.music_be.dto.response.PlanResponse;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Plan;
-import com.ptit.music_be.entity.RolePlanSuspension;
+import com.ptit.music_be.entity.PlanSanction;
 import com.ptit.music_be.entity.Subscription;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.repository.AiTaskRepository;
 import com.ptit.music_be.repository.MemberRepository;
 import com.ptit.music_be.repository.PlanRepository;
-import com.ptit.music_be.repository.RolePlanSuspensionRepository;
+import com.ptit.music_be.repository.PlanSanctionRepository;
 import com.ptit.music_be.repository.SubscriptionRepository;
-import com.ptit.music_be.repository.UsageCounterRepository;
 import com.ptit.music_be.service.billing.PlanLimitsParser;
 import com.ptit.music_be.service.billing.SubscriptionService;
 import com.ptit.music_be.service.notification.NotificationService;
@@ -54,11 +53,11 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
     PlanRepository planRepository;
     SubscriptionRepository subscriptionRepository;
-    UsageCounterRepository usageCounterRepository;
+    AiTaskRepository aiTaskRepository;
     MemberRepository memberRepository;
     PlanLimitsParser limitsParser;
     NotificationService notificationService;
-    RolePlanSuspensionRepository suspensionRepository;
+    PlanSanctionRepository sanctionRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -87,11 +86,9 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     }
 
     private MySubscriptionResponse subscriptionOf(Member member) {
-        int used = usageCounterRepository
-                .findByMemberIdAndMetricAndPeriod(
-                        member.getId(), UsageMetric.OMR_PAGES, java.time.YearMonth.now().toString())
-                .map(u -> u.getUsed())
-                .orElse(0);
+        // Trang OMR đã dùng tháng này: tính từ ai_tasks, không lưu bộ đếm riêng
+        LocalDateTime monthStart = java.time.YearMonth.now().atDay(1).atStartOfDay();
+        int used = (int) aiTaskRepository.sumOmrPagesCharged(member.getId(), monthStart, monthStart.plusMonths(1));
         String grant = roleGrant(member.getId());
         if (ROLE_SUPER_ADMIN.equals(grant)) {
             return MySubscriptionResponse.builder()
@@ -102,12 +99,17 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                     .omrPagesUsed(used)
                     .build();
         }
+        LocalDateTime banned = bannedUntil(member.getId());
+        if (banned != null) {
+            // Đang bị cấm: chỉ dùng Free, kể cả khi còn gói đã mua hoặc là ADMIN
+            MySubscriptionResponse response = toMine(null, freePlan(), used);
+            response.setRoleGrant(grant);
+            response.setBannedUntil(banned);
+            return response;
+        }
         Subscription current =
                 subscriptionRepository.findCurrentOne(member.getId(), LocalDateTime.now()).orElse(null);
-        LocalDateTime suspendedUntil = ROLE_ADMIN.equals(grant) ? suspendedUntil(member.getId()) : null;
-        Plan pro = ROLE_ADMIN.equals(grant) && suspendedUntil == null
-                ? planRepository.findByCode(PRO).orElse(null)
-                : null;
+        Plan pro = ROLE_ADMIN.equals(grant) ? planRepository.findByCode(PRO).orElse(null) : null;
         if (pro != null && (current == null || current.getPlan().getSortOrder() < pro.getSortOrder())) {
             // ADMIN chưa mua gói nào cao hơn Pro: dùng Pro theo vai trò, không hết hạn
             return MySubscriptionResponse.builder()
@@ -120,7 +122,6 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         }
         MySubscriptionResponse response = toMine(current, current == null ? freePlan() : current.getPlan(), used);
         response.setRoleGrant(grant);
-        response.setRolePlanSuspendedUntil(suspendedUntil);
         return response;
     }
 
@@ -131,11 +132,14 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         if (ROLE_SUPER_ADMIN.equals(grant)) {
             return unlimitedPlan();
         }
+        if (bannedUntil(memberId) != null) {
+            return freePlan();
+        }
         Plan paid = subscriptionRepository
                 .findCurrentOne(memberId, LocalDateTime.now())
                 .map(Subscription::getPlan)
                 .orElse(null);
-        if (ROLE_ADMIN.equals(grant) && suspendedUntil(memberId) == null) {
+        if (ROLE_ADMIN.equals(grant)) {
             Plan pro = planRepository.findByCode(PRO).orElse(null);
             if (pro != null && (paid == null || paid.getSortOrder() < pro.getSortOrder())) {
                 return pro;
@@ -157,9 +161,9 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         for (Subscription s : subscriptionRepository.findCurrentOfMembers(rolesByMember.keySet(), now)) {
             paid.merge(s.getMember().getId(), s, (a, b) -> a.getExpiresAt().isAfter(b.getExpiresAt()) ? a : b);
         }
-        java.util.Map<String, LocalDateTime> suspended = new java.util.HashMap<>();
-        for (RolePlanSuspension s : suspensionRepository.findActiveOfMembers(rolesByMember.keySet(), now)) {
-            suspended.merge(s.getMemberId(), s.getEndsAt(), (a, b) -> a.isAfter(b) ? a : b);
+        java.util.Map<String, LocalDateTime> bans = new java.util.HashMap<>();
+        for (PlanSanction s : sanctionRepository.findActiveBansOfMembers(rolesByMember.keySet(), now)) {
+            bans.merge(s.getMemberId(), s.getEndsAt(), (a, b) -> a.isAfter(b) ? a : b);
         }
         Plan free = null;
         Plan pro = null;
@@ -167,9 +171,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             java.util.Set<String> roles = entry.getValue() == null ? java.util.Set.of() : entry.getValue();
             Subscription sub = paid.get(entry.getKey());
             MemberPlanSummary summary;
-            LocalDateTime until = roles.contains(ROLE_ADMIN) && !roles.contains(ROLE_SUPER_ADMIN)
-                    ? suspended.get(entry.getKey())
-                    : null;
+            LocalDateTime until = roles.contains(ROLE_SUPER_ADMIN) ? null : bans.get(entry.getKey());
             if (roles.contains(ROLE_SUPER_ADMIN)) {
                 summary = new MemberPlanSummary(UNLIMITED, "Unlimited", "UNLIMITED", "ROLE", null, null);
             } else {
@@ -182,7 +184,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                         && (sub == null || sub.getPlan().getSortOrder() < pro.getSortOrder());
                 if (adminPro) {
                     summary = new MemberPlanSummary(pro.getCode(), pro.getName(), "ACTIVE", "ROLE", null, null);
-                } else if (sub != null) {
+                } else if (sub != null && until == null) {
                     summary = new MemberPlanSummary(
                             sub.getPlan().getCode(),
                             sub.getPlan().getName(),
@@ -205,29 +207,48 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     @Override
     @Transactional
     @PreAuthorize("hasRole('SUPER_ADMIN')")
-    public MySubscriptionResponse suspendRolePlan(String memberId, int months, String reason) {
-        Member member = requirePlainAdmin(memberId);
-        String note = validSuspension(months, reason);
-        saveSuspension(memberId, months, note, currentMemberId());
-        return subscriptionOf(member);
-    }
-
-    @Override
-    @Transactional
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
-    public java.util.List<BulkGrantResult> suspendRolePlans(java.util.List<String> memberIds, int months, String reason) {
+    public java.util.List<BulkGrantResult> revokePlans(java.util.List<String> memberIds, String reason) {
         requireBulkSize(memberIds);
-        String note = validSuspension(months, reason);
+        String note = validReason(reason);
         String by = currentMemberId();
+        LocalDateTime now = LocalDateTime.now();
         java.util.List<BulkGrantResult> results = new java.util.ArrayList<>();
         for (String memberId : new java.util.LinkedHashSet<>(memberIds)) {
-            BulkGrantResult skip = plainAdminCheck(memberId);
-            if (skip != null) {
-                results.add(skip);
+            Member member = memberRepository.findById(memberId).orElse(null);
+            if (member == null) {
+                results.add(new BulkGrantResult(memberId, "FAILED", ErrorCode.USER_NOT_EXISTED.name(), null));
                 continue;
             }
-            LocalDateTime endsAt = saveSuspension(memberId, months, note, by);
-            results.add(new BulkGrantResult(memberId, "SUSPENDED", null, endsAt));
+            List<Subscription> active = ROLE_SUPER_ADMIN.equals(roleGrant(memberId))
+                    ? List.of()
+                    : subscriptionRepository.findCurrent(memberId, now);
+            if (active.isEmpty()) {
+                // Không có gói mua/được cấp để thu hồi (Free, Pro theo vai trò, hoặc SUPER_ADMIN)
+                results.add(new BulkGrantResult(memberId, "SKIPPED", ErrorCode.PLAN_NOT_EXISTED.name(), null));
+                continue;
+            }
+            for (Subscription sub : active) {
+                sub.setStatus(SubscriptionStatus.CANCELED);
+                sub.setExpiresAt(now);
+                subscriptionRepository.save(sub);
+                sanctionRepository.save(PlanSanction.builder()
+                        .memberId(memberId)
+                        .type(PlanSanction.REVOKE)
+                        .subscriptionId(sub.getId())
+                        .startsAt(now)
+                        .reason(note)
+                        .createdBy(by)
+                        .build());
+            }
+            String planName = active.getFirst().getPlan().getName();
+            notificationService.notify(
+                    member,
+                    null,
+                    NotificationType.PLAN_REVOKED,
+                    null,
+                    "Gói " + planName + " của bạn đã bị thu hồi" + (note == null ? "" : ": " + note),
+                    NotificationService.params("plan", planName, "reason", note));
+            results.add(new BulkGrantResult(memberId, "REVOKED", null, null));
         }
         return results;
     }
@@ -235,20 +256,85 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     @Override
     @Transactional
     @PreAuthorize("hasRole('SUPER_ADMIN')")
-    public java.util.List<BulkGrantResult> liftRolePlanSuspensions(java.util.List<String> memberIds) {
+    public java.util.List<BulkGrantResult> banPlans(java.util.List<String> memberIds, int months, String reason) {
+        requireBulkSize(memberIds);
+        if (months < 1 || months > MAX_GRANT_MONTHS) {
+            throw new AppException(ErrorCode.PLAN_SANCTION_INVALID);
+        }
+        String note = validReason(reason);
+        String by = currentMemberId();
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime endsAt = now.plusMonths(months);
+        String date = endsAt.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        java.util.List<BulkGrantResult> results = new java.util.ArrayList<>();
+        for (String memberId : new java.util.LinkedHashSet<>(memberIds)) {
+            Member member = memberRepository.findById(memberId).orElse(null);
+            if (member == null) {
+                results.add(new BulkGrantResult(memberId, "FAILED", ErrorCode.USER_NOT_EXISTED.name(), null));
+                continue;
+            }
+            if (ROLE_SUPER_ADMIN.equals(roleGrant(memberId))) {
+                results.add(new BulkGrantResult(memberId, "SKIPPED", ErrorCode.UNAUTHORIZED.name(), null));
+                continue;
+            }
+            // Cấm lại thì thay lệnh đang hiệu lực để chỉ còn một lệnh cấm
+            liftActiveBans(memberId, now);
+            sanctionRepository.save(PlanSanction.builder()
+                    .memberId(memberId)
+                    .type(PlanSanction.BAN)
+                    .startsAt(now)
+                    .endsAt(endsAt)
+                    .reason(note)
+                    .createdBy(by)
+                    .build());
+            notificationService.notify(
+                    member,
+                    null,
+                    NotificationType.PLAN_BANNED,
+                    null,
+                    "Bạn bị cấm dùng gói trả phí đến ngày " + date + (note == null ? "" : ": " + note),
+                    NotificationService.params("date", date, "reason", note));
+            results.add(new BulkGrantResult(memberId, "BANNED", null, endsAt));
+        }
+        return results;
+    }
+
+    @Override
+    @Transactional
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public java.util.List<BulkGrantResult> liftBans(java.util.List<String> memberIds) {
         requireBulkSize(memberIds);
         LocalDateTime now = LocalDateTime.now();
         java.util.List<BulkGrantResult> results = new java.util.ArrayList<>();
         for (String memberId : new java.util.LinkedHashSet<>(memberIds)) {
-            BulkGrantResult skip = plainAdminCheck(memberId);
-            if (skip != null) {
-                results.add(skip);
+            Member member = memberRepository.findById(memberId).orElse(null);
+            if (member == null) {
+                results.add(new BulkGrantResult(memberId, "FAILED", ErrorCode.USER_NOT_EXISTED.name(), null));
                 continue;
             }
-            liftActive(memberId, now);
+            if (!liftActiveBans(memberId, now)) {
+                results.add(new BulkGrantResult(memberId, "SKIPPED", null, null));
+                continue;
+            }
+            notificationService.notify(
+                    member,
+                    null,
+                    NotificationType.PLAN_BAN_LIFTED,
+                    null,
+                    "Bạn đã được gỡ lệnh cấm dùng gói trả phí",
+                    NotificationService.params());
             results.add(new BulkGrantResult(memberId, "LIFTED", null, null));
         }
         return results;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public LocalDateTime bannedUntil(String memberId) {
+        return sanctionRepository.findActiveBans(memberId, LocalDateTime.now()).stream()
+                .map(PlanSanction::getEndsAt)
+                .findFirst()
+                .orElse(null);
     }
 
     private static void requireBulkSize(java.util.List<String> memberIds) {
@@ -257,81 +343,29 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         }
     }
 
-    /** Lý do đã cắt gọn (null nếu trống); ném lỗi nếu thời hạn hoặc lý do sai. */
-    private static String validSuspension(int months, String reason) {
+    /** Lý do đã cắt gọn (null nếu trống); quá 255 ký tự thì báo lỗi. */
+    private static String validReason(String reason) {
         String note = reason == null || reason.isBlank() ? null : reason.trim();
-        if (months < 0 || months > MAX_GRANT_MONTHS || (note != null && note.length() > 255)) {
-            throw new AppException(ErrorCode.ROLE_PLAN_SUSPENSION_INVALID);
+        if (note != null && note.length() > 255) {
+            throw new AppException(ErrorCode.PLAN_SANCTION_INVALID);
         }
         return note;
     }
 
-    /** null nếu là ADMIN thường; không thì kết quả FAILED/SKIPPED để bỏ qua người này trong thao tác hàng loạt. */
-    private BulkGrantResult plainAdminCheck(String memberId) {
-        if (memberRepository.findById(memberId).isEmpty()) {
-            return new BulkGrantResult(memberId, "FAILED", ErrorCode.USER_NOT_EXISTED.name(), null);
+    /** Gỡ mọi lệnh cấm đang hiệu lực của người này; true nếu có lệnh được gỡ. */
+    private boolean liftActiveBans(String memberId, LocalDateTime now) {
+        List<PlanSanction> active = sanctionRepository.findActiveBans(memberId, now);
+        for (PlanSanction s : active) {
+            s.setLiftedAt(now);
+            sanctionRepository.save(s);
         }
-        if (!ROLE_ADMIN.equals(roleGrant(memberId))) {
-            return new BulkGrantResult(memberId, "SKIPPED", ErrorCode.ROLE_PLAN_NOT_APPLICABLE.name(), null);
-        }
-        return null;
-    }
-
-    /** Ghi một lần tạm ngưng mới (thay lần đang hiệu lực, nếu có); trả ngày hết tạm ngưng. */
-    private LocalDateTime saveSuspension(String memberId, int months, String note, String createdBy) {
-        LocalDateTime now = LocalDateTime.now();
-        // 0 = đến hết tháng này (00:00 ngày 1 tháng sau); còn lại cộng tháng theo lịch từ bây giờ
-        LocalDateTime endsAt = months == 0
-                ? now.toLocalDate().withDayOfMonth(1).plusMonths(1).atStartOfDay()
-                : now.plusMonths(months);
-        liftActive(memberId, now);
-        suspensionRepository.save(RolePlanSuspension.builder()
-                .memberId(memberId)
-                .startsAt(now)
-                .endsAt(endsAt)
-                .reason(note)
-                .createdBy(createdBy)
-                .build());
-        return endsAt;
+        return !active.isEmpty();
     }
 
     private String currentMemberId() {
         return memberRepository
                 .findByEmail(SecurityUtils.getCurrentEmail())
                 .map(Member::getId)
-                .orElse(null);
-    }
-
-    @Override
-    @Transactional
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
-    public MySubscriptionResponse liftRolePlanSuspension(String memberId) {
-        Member member = requirePlainAdmin(memberId);
-        liftActive(memberId, LocalDateTime.now());
-        return subscriptionOf(member);
-    }
-
-    private Member requirePlainAdmin(String memberId) {
-        Member member =
-                memberRepository.findById(memberId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
-        if (!ROLE_ADMIN.equals(roleGrant(memberId))) {
-            throw new AppException(ErrorCode.ROLE_PLAN_NOT_APPLICABLE);
-        }
-        return member;
-    }
-
-    private void liftActive(String memberId, LocalDateTime now) {
-        for (RolePlanSuspension s : suspensionRepository.findActive(memberId, now)) {
-            s.setLiftedAt(now);
-            suspensionRepository.save(s);
-        }
-    }
-
-    /** Thời điểm hết tạm ngưng gói Pro theo vai trò của người này; null nếu không bị ngưng. */
-    private LocalDateTime suspendedUntil(String memberId) {
-        return suspensionRepository.findActive(memberId, LocalDateTime.now()).stream()
-                .map(RolePlanSuspension::getEndsAt)
-                .findFirst()
                 .orElse(null);
     }
 
@@ -425,6 +459,9 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         if (ROLE_SUPER_ADMIN.equals(roleGrant(memberId))) {
             throw new AppException(ErrorCode.PAYMENT_NOT_NEEDED);
         }
+        if (bannedUntil(memberId) != null) {
+            throw new AppException(ErrorCode.PLAN_BANNED);
+        }
         if (FREE.equals(plan.getCode())) {
             // Cấp Free = bỏ gói đang có
             cancel(memberId);
@@ -468,10 +505,12 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         if (ROLE_SUPER_ADMIN.equals(grant)) {
             return new BulkGrantResult(memberId, "SKIPPED", ErrorCode.PAYMENT_NOT_NEEDED.name(), null);
         }
+        if (bannedUntil(memberId) != null) {
+            return new BulkGrantResult(memberId, "SKIPPED", ErrorCode.PLAN_BANNED.name(), null);
+        }
         LocalDateTime now = LocalDateTime.now();
         Subscription current = subscriptionRepository.findCurrentOne(memberId, now).orElse(null);
-        if (ROLE_ADMIN.equals(grant) && PRO.equals(plan.getCode()) && suspendedUntil(memberId) == null
-                && current == null) {
+        if (ROLE_ADMIN.equals(grant) && PRO.equals(plan.getCode()) && current == null) {
             // ADMIN đang có Pro không thời hạn: cấp Pro không thêm gì
             return new BulkGrantResult(memberId, "SKIPPED", ErrorCode.PAYMENT_NOT_NEEDED.name(), null);
         }

@@ -59,7 +59,8 @@
     "roleNote": {
       "SUPER_ADMIN": "Bạn là quản trị viên cấp cao: dùng mọi tính năng không giới hạn, không cần mua gói.",
       "ADMIN": "Bạn là quản trị viên: đã có quyền lợi gói Pro không thời hạn. Bạn vẫn có thể mua gói cao hơn."
-    }
+    },
+    "bannedButton": "Đang bị cấm"
   },
   "result": {
     "title": "Kết quả thanh toán",
@@ -110,5 +111,6 @@
     "PERSONAL": "Cho một người số hóa và chỉnh sửa bản nhạc của mình.",
     "TEAM": "Cho nhóm làm việc chung, hạn mức dùng chung cho cả team."
   },
-  "unlimitedPlan": "Không giới hạn"
+  "unlimitedPlan": "Không giới hạn",
+  "banned": "Tài khoản đang bị cấm dùng gói trả phí đến ngày {date}. Trong thời gian này bạn chỉ dùng được gói Free."
 }

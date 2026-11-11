@@ -1400,3 +1400,11 @@
 .adm-shell .adm-filter-row select.adm-input {
   width: auto;
 }
+
+.adm-filter-row__check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+  cursor: pointer;
+}

@@ -22,8 +22,8 @@ public class MySubscriptionResponse {
     String source;
     /** SUPER_ADMIN hoặc ADMIN nếu quyền lợi đến từ vai trò; null với người dùng thường. */
     String roleGrant;
-    /** ADMIN đang bị tạm ngưng gói Pro theo vai trò đến lúc này; null = không bị ngưng. */
-    java.time.LocalDateTime rolePlanSuspendedUntil;
+    /** Đang bị cấm dùng gói trả phí đến lúc này (chỉ dùng Free); null = không bị cấm. */
+    java.time.LocalDateTime bannedUntil;
     LocalDateTime startsAt;
     LocalDateTime expiresAt;
     /** Trang OMR đã dùng trong tháng hiện tại. */

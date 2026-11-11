@@ -21,6 +21,6 @@ public class MemberPlanSummary {
     String status;
     String source;
     LocalDateTime expiresAt;
-    /** ADMIN đang bị tạm ngưng gói Pro theo vai trò đến lúc này; null = không bị ngưng. */
-    LocalDateTime rolePlanSuspendedUntil;
+    /** Đang bị cấm dùng gói trả phí đến lúc này; null = không bị cấm. */
+    LocalDateTime bannedUntil;
 }

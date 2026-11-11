@@ -3,7 +3,7 @@ import { toast } from 'react-toastify';
 import { translateError } from '../../i18n/core';
 import { billingApi } from '../../services';
 import type { MySubscription, PlanAudience, PlanInfo } from '../../types';
-import { formatNumber, t } from '../../i18n/core';
+import { formatDate, formatNumber, t } from '../../i18n/core';
 import Skeleton from '../../components/ui/Skeleton';
 import LimitList from './LimitList';
 import '../../components/scores/scores.css';
@@ -34,6 +34,7 @@ export default function Pricing() {
   // Quản trị viên không cần mua: SUPER_ADMIN không giới hạn mọi gói, ADMIN đã có Pro không thời hạn
   const blockedReason = (plan: PlanInfo): string | null => {
     if (mine?.roleGrant === 'SUPER_ADMIN') return t('billing.pricing.notNeeded');
+    if (mine?.bannedUntil) return t('billing.pricing.bannedButton');
     if (mine?.roleGrant === 'ADMIN' && plan.code === 'PRO') return t('billing.pricing.includedForAdmin');
     return null;
   };
@@ -75,6 +76,11 @@ export default function Pricing() {
           ))}
         </div>
 
+        {mine?.bannedUntil && (
+          <p className="bl-note bl-note--danger" role="alert">
+            {t('billing.banned', { date: formatDate(mine.bannedUntil) })}
+          </p>
+        )}
         {mine?.roleGrant && (
           <p className="bl-note" role="note">
             {t(`billing.pricing.roleNote.${mine.roleGrant}`)}

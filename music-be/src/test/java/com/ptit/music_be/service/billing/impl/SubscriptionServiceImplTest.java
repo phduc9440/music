@@ -31,9 +31,8 @@ import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.repository.MemberRepository;
 import com.ptit.music_be.repository.PlanRepository;
-import com.ptit.music_be.repository.RolePlanSuspensionRepository;
+import com.ptit.music_be.repository.PlanSanctionRepository;
 import com.ptit.music_be.repository.SubscriptionRepository;
-import com.ptit.music_be.repository.UsageCounterRepository;
 import com.ptit.music_be.service.billing.PlanLimitsParser;
 import com.ptit.music_be.service.notification.NotificationService;
 
@@ -48,15 +47,15 @@ class SubscriptionServiceImplTest {
     private final MemberRepository memberRepo = mock(MemberRepository.class);
     private final PlanRepository plans = mock(PlanRepository.class);
     private final NotificationService notifications = mock(NotificationService.class);
-    private final RolePlanSuspensionRepository suspensions = mock(RolePlanSuspensionRepository.class);
+    private final PlanSanctionRepository sanctions = mock(PlanSanctionRepository.class);
     private final SubscriptionServiceImpl service = new SubscriptionServiceImpl(
             plans,
             subs,
-            mock(UsageCounterRepository.class),
+            mock(com.ptit.music_be.repository.AiTaskRepository.class),
             memberRepo,
             new PlanLimitsParser(new ObjectMapper()),
             notifications,
-            suspensions);
+            sanctions);
 
     private final Member member = Member.builder().id("m").build();
     private final Plan pro = Plan.builder().id("pro").code("PRO").limits("{}").build();
@@ -262,83 +261,6 @@ class SubscriptionServiceImplTest {
     }
 
     @Test
-    void suspendedAdminLosesRolePlanUntilTheEndDate() {
-        org.springframework.security.core.context.SecurityContextHolder.getContext()
-                .setAuthentication(new org.springframework.security.authentication.TestingAuthenticationToken(
-                        "boss@x.com", "x", "ROLE_ADMIN", "ROLE_SUPER_ADMIN"));
-        Plan free = Plan.builder().id("free").code("FREE").name("Free").sortOrder(1).limits("{}").build();
-        Plan proPlan = Plan.builder().id("pro").code("PRO").name("Pro").sortOrder(2).limits("{}").build();
-        Member mod = Member.builder().id("mod").build();
-        when(memberRepo.findById("mod")).thenReturn(Optional.of(mod));
-        when(memberRepo.roleNamesOf("mod")).thenReturn(List.of("ADMIN"));
-        when(plans.findByCode("FREE")).thenReturn(Optional.of(free));
-        when(plans.findByCode("PRO")).thenReturn(Optional.of(proPlan));
-        when(subs.findCurrentOne(eq("mod"), any())).thenReturn(Optional.empty());
-        when(suspensions.findActive(eq("mod"), any())).thenReturn(List.of());
-
-        assertEquals("PRO", service.currentPlan("mod").getCode());
-
-        // Tạm ngưng 1 tháng: lưu một dòng tạm ngưng đến đúng 1 tháng sau
-        org.mockito.ArgumentCaptor<com.ptit.music_be.entity.RolePlanSuspension> saved =
-                org.mockito.ArgumentCaptor.forClass(com.ptit.music_be.entity.RolePlanSuspension.class);
-        service.suspendRolePlan("mod", 1, " vi phạm ");
-        verify(suspensions).save(saved.capture());
-        var suspension = saved.getValue();
-        assertEquals("mod", suspension.getMemberId());
-        assertEquals("vi phạm", suspension.getReason());
-        assertEquals(suspension.getStartsAt().plusMonths(1), suspension.getEndsAt());
-
-        // Trong thời hạn: về Free; hết hạn (repo không còn trả dòng hiệu lực) thì tự dùng lại Pro
-        when(suspensions.findActive(eq("mod"), any())).thenReturn(List.of(suspension));
-        assertEquals("FREE", service.currentPlan("mod").getCode());
-        when(suspensions.findActive(eq("mod"), any())).thenReturn(List.of());
-        assertEquals("PRO", service.currentPlan("mod").getCode());
-    }
-
-    @Test
-    void suspendUntilEndOfMonthAndLiftEarly() {
-        org.springframework.security.core.context.SecurityContextHolder.getContext()
-                .setAuthentication(new org.springframework.security.authentication.TestingAuthenticationToken(
-                        "boss@x.com", "x", "ROLE_ADMIN", "ROLE_SUPER_ADMIN"));
-        Member mod = Member.builder().id("mod").build();
-        when(memberRepo.findById("mod")).thenReturn(Optional.of(mod));
-        when(memberRepo.roleNamesOf("mod")).thenReturn(List.of("ADMIN"));
-        when(plans.findByCode("FREE")).thenReturn(Optional.of(Plan.builder().code("FREE").limits("{}").build()));
-        var active = com.ptit.music_be.entity.RolePlanSuspension.builder()
-                .memberId("mod")
-                .startsAt(LocalDateTime.now().minusDays(1))
-                .endsAt(LocalDateTime.now().plusDays(3))
-                .build();
-        when(suspensions.findActive(eq("mod"), any())).thenReturn(List.of(active));
-
-        org.mockito.ArgumentCaptor<com.ptit.music_be.entity.RolePlanSuspension> saved =
-                org.mockito.ArgumentCaptor.forClass(com.ptit.music_be.entity.RolePlanSuspension.class);
-        service.suspendRolePlan("mod", 0, null);
-        verify(suspensions, times(2)).save(saved.capture());
-        // lần ngưng cũ được kết thúc, lần mới kéo đến 00:00 ngày 1 tháng sau
-        assertNotNull(active.getLiftedAt());
-        var next = saved.getAllValues().get(1);
-        assertEquals(1, next.getEndsAt().getDayOfMonth());
-        assertEquals(0, next.getEndsAt().getHour());
-        assertTrue(next.getEndsAt().isAfter(LocalDateTime.now()));
-
-        AppException e = assertThrows(AppException.class, () -> service.suspendRolePlan("mod", 121, null));
-        assertEquals(ErrorCode.ROLE_PLAN_SUSPENSION_INVALID, e.getErrorCode());
-    }
-
-    @Test
-    void rolePlanOnlyAppliesToPlainAdmins() {
-        when(memberRepo.findById("u")).thenReturn(Optional.of(Member.builder().id("u").build()));
-        when(memberRepo.roleNamesOf("u")).thenReturn(List.of("USER"));
-        AppException e = assertThrows(AppException.class, () -> service.suspendRolePlan("u", 1, null));
-        assertEquals(ErrorCode.ROLE_PLAN_NOT_APPLICABLE, e.getErrorCode());
-
-        when(memberRepo.roleNamesOf("u")).thenReturn(List.of("ADMIN", "SUPER_ADMIN"));
-        e = assertThrows(AppException.class, () -> service.liftRolePlanSuspension("u"));
-        assertEquals(ErrorCode.ROLE_PLAN_NOT_APPLICABLE, e.getErrorCode());
-    }
-
-    @Test
     void grantManyGrantsRenewsAndSkipsPerMember() {
         Plan premium = Plan.builder().id("premium").code("PREMIUM").name("Premium").sortOrder(3).limits("{}").build();
         Member newbie = Member.builder().id("newbie").build();
@@ -377,29 +299,99 @@ class SubscriptionServiceImplTest {
     }
 
     @Test
-    void suspendAndLiftManyAdminsSkipsOthers() {
+    void banForcesFreeEvenForAdminsAndPaidPlansUntilItEnds() {
+        Plan free = Plan.builder().id("free").code("FREE").name("Free").sortOrder(1).limits("{}").build();
+        Plan premium = Plan.builder().id("premium").code("PREMIUM").name("Premium").sortOrder(4).limits("{}").build();
+        when(plans.findByCode("FREE")).thenReturn(Optional.of(free));
+        when(memberRepo.roleNamesOf("mod")).thenReturn(List.of("ADMIN"));
+        when(subs.findCurrentOne(eq("mod"), any()))
+                .thenReturn(Optional.of(current(premium, LocalDateTime.now().plusMonths(2))));
+        var ban = com.ptit.music_be.entity.PlanSanction.builder()
+                .memberId("mod")
+                .type("BAN")
+                .startsAt(LocalDateTime.now().minusDays(1))
+                .endsAt(LocalDateTime.now().plusMonths(1))
+                .build();
+        when(sanctions.findActiveBans(eq("mod"), any())).thenReturn(List.of(ban));
+
+        assertEquals("FREE", service.currentPlan("mod").getCode());
+        assertEquals(ban.getEndsAt(), service.bannedUntil("mod"));
+
+        when(sanctions.findActiveBans(eq("mod"), any())).thenReturn(List.of());
+        assertEquals("PREMIUM", service.currentPlan("mod").getCode());
+    }
+
+    @Test
+    void revokeCancelsPaidPlanRecordsItAndNotifies() {
+        loginSuper();
+        Plan premium = Plan.builder().id("premium").code("PREMIUM").name("Premium").sortOrder(4).limits("{}").build();
+        Member buyer = Member.builder().id("buyer").build();
+        Subscription sub = current(premium, LocalDateTime.now().plusMonths(3));
+        when(memberRepo.findById("buyer")).thenReturn(Optional.of(buyer));
+        when(memberRepo.findById("freeUser")).thenReturn(Optional.of(Member.builder().id("freeUser").build()));
+        when(memberRepo.findById("boss")).thenReturn(Optional.of(Member.builder().id("boss").build()));
+        when(memberRepo.roleNamesOf("boss")).thenReturn(List.of("ADMIN", "SUPER_ADMIN"));
+        when(subs.findCurrent(eq("buyer"), any())).thenReturn(List.of(sub));
+        when(subs.findCurrent(eq("freeUser"), any())).thenReturn(List.of());
+
+        var results = service.revokePlans(List.of("buyer", "freeUser", "boss", "ghost"), " spam ");
+
+        assertEquals(List.of("REVOKED", "SKIPPED", "SKIPPED", "FAILED"),
+                results.stream().map(r -> r.getStatus()).toList());
+        assertEquals(SubscriptionStatus.CANCELED, sub.getStatus());
+        org.mockito.ArgumentCaptor<com.ptit.music_be.entity.PlanSanction> saved =
+                org.mockito.ArgumentCaptor.forClass(com.ptit.music_be.entity.PlanSanction.class);
+        verify(sanctions).save(saved.capture());
+        assertEquals("REVOKE", saved.getValue().getType());
+        assertEquals("spam", saved.getValue().getReason());
+        verify(notifications).notify(eq(buyer), any(), eq(NotificationType.PLAN_REVOKED), any(), any(), any());
+    }
+
+    @Test
+    void banManyReplacesOldBanSkipsSuperAdminAndLiftWorks() {
+        loginSuper();
+        Member user = Member.builder().id("user").build();
+        when(memberRepo.findById("user")).thenReturn(Optional.of(user));
+        when(memberRepo.findById("boss")).thenReturn(Optional.of(Member.builder().id("boss").build()));
+        when(memberRepo.roleNamesOf("boss")).thenReturn(List.of("ADMIN", "SUPER_ADMIN"));
+        var old = com.ptit.music_be.entity.PlanSanction.builder()
+                .memberId("user").type("BAN").startsAt(LocalDateTime.now().minusDays(3))
+                .endsAt(LocalDateTime.now().plusDays(3)).build();
+        when(sanctions.findActiveBans(eq("user"), any())).thenReturn(List.of(old));
+
+        var results = service.banPlans(List.of("user", "boss"), 3, null);
+
+        assertEquals(List.of("BANNED", "SKIPPED"), results.stream().map(r -> r.getStatus()).toList());
+        assertNotNull(old.getLiftedAt());
+        assertTrue(results.get(0).getExpiresAt().isAfter(LocalDateTime.now().plusMonths(3).minusMinutes(1)));
+        verify(notifications).notify(eq(user), any(), eq(NotificationType.PLAN_BANNED), any(), any(), any());
+
+        AppException e = assertThrows(AppException.class, () -> service.banPlans(List.of("user"), 0, null));
+        assertEquals(ErrorCode.PLAN_SANCTION_INVALID, e.getErrorCode());
+
+        var activeAgain = com.ptit.music_be.entity.PlanSanction.builder()
+                .memberId("user").type("BAN").startsAt(LocalDateTime.now()).endsAt(LocalDateTime.now().plusDays(1)).build();
+        when(sanctions.findActiveBans(eq("user"), any())).thenReturn(List.of(activeAgain));
+        assertEquals("LIFTED", service.liftBans(List.of("user")).getFirst().getStatus());
+        assertNotNull(activeAgain.getLiftedAt());
+    }
+
+    @Test
+    void bannedMemberCannotBeGranted() {
+        Plan premium = Plan.builder().id("premium").code("PREMIUM").name("Premium").sortOrder(4).limits("{}").build();
+        when(plans.findByCode("PREMIUM")).thenReturn(Optional.of(premium));
+        when(memberRepo.findById("user")).thenReturn(Optional.of(Member.builder().id("user").build()));
+        when(sanctions.findActiveBans(eq("user"), any())).thenReturn(List.of(com.ptit.music_be.entity.PlanSanction.builder()
+                .memberId("user").type("BAN").startsAt(LocalDateTime.now()).endsAt(LocalDateTime.now().plusDays(5)).build()));
+
+        AppException e = assertThrows(AppException.class, () -> service.grant("user", "PREMIUM", 1));
+        assertEquals(ErrorCode.PLAN_BANNED, e.getErrorCode());
+        assertEquals("SKIPPED", service.grantMany(List.of("user"), "PREMIUM", 1).getFirst().getStatus());
+    }
+
+    private void loginSuper() {
         org.springframework.security.core.context.SecurityContextHolder.getContext()
                 .setAuthentication(new org.springframework.security.authentication.TestingAuthenticationToken(
                         "boss@x.com", "x", "ROLE_ADMIN", "ROLE_SUPER_ADMIN"));
-        when(memberRepo.findById("mod1")).thenReturn(Optional.of(Member.builder().id("mod1").build()));
-        when(memberRepo.findById("mod2")).thenReturn(Optional.of(Member.builder().id("mod2").build()));
-        when(memberRepo.findById("user")).thenReturn(Optional.of(Member.builder().id("user").build()));
-        when(memberRepo.findById("ghost")).thenReturn(Optional.empty());
-        when(memberRepo.roleNamesOf("mod1")).thenReturn(List.of("ADMIN"));
-        when(memberRepo.roleNamesOf("mod2")).thenReturn(List.of("ADMIN"));
-        when(memberRepo.roleNamesOf("user")).thenReturn(List.of("USER"));
-        when(suspensions.findActive(any(), any())).thenReturn(List.of());
-
-        var results = service.suspendRolePlans(List.of("mod1", "mod2", "user", "ghost"), 3, "dọn dẹp");
-
-        assertEquals(List.of("SUSPENDED", "SUSPENDED", "SKIPPED", "FAILED"),
-                results.stream().map(r -> r.getStatus()).toList());
-        verify(suspensions, times(2)).save(any());
-
-        var lifted = service.liftRolePlanSuspensions(List.of("mod1", "user"));
-        assertEquals(List.of("LIFTED", "SKIPPED"), lifted.stream().map(r -> r.getStatus()).toList());
-
-        AppException e = assertThrows(AppException.class, () -> service.suspendRolePlans(List.of(), 1, null));
-        assertEquals(ErrorCode.INVALID_REQUEST, e.getErrorCode());
     }
 }

@@ -47,8 +47,6 @@ public class AdminMemberServiceImpl implements AdminMemberService {
     static final String SUPER_ADMIN = "SUPER_ADMIN";
     static final int DEFAULT_PAGE_SIZE = 20;
     static final int MAX_PAGE_SIZE = 50;
-    /** Số quản trị viên thường tối đa quét khi lọc theo gói. */
-    static final int MAX_FILTER_SCAN = 1000;
 
     MemberRepository memberRepository;
     RoleRepository roleRepository;
@@ -65,28 +63,11 @@ public class AdminMemberServiceImpl implements AdminMemberService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<MemberResponse> getPlainAdmins(int page, int size, String keyword, String planCode) {
-        if (planCode == null || planCode.isBlank()) {
-            return toPage(memberRepository.searchPlainAdmins(cleanKeyword(keyword), pageOf(page, size)));
-        }
-        // Gói thực tế phụ thuộc vai trò, gói đã mua và lần tạm ngưng nên lọc sau khi tính; số quản trị viên thường ít
-        PageRequest pageable = pageOf(page, size);
-        List<MemberResponse> all = withPlans(memberRepository
-                .searchPlainAdmins(cleanKeyword(keyword), PageRequest.of(0, MAX_FILTER_SCAN, pageable.getSort()))
-                .getContent());
-        List<MemberResponse> matched = all.stream()
-                .filter(m -> m.getPlan() != null && planCode.trim().equalsIgnoreCase(m.getPlan().getCode()))
-                .toList();
-        int from = Math.min((int) pageable.getOffset(), matched.size());
-        int to = Math.min(from + pageable.getPageSize(), matched.size());
-        int totalPages = (matched.size() + pageable.getPageSize() - 1) / pageable.getPageSize();
-        return PageResponse.<MemberResponse>builder()
-                .content(matched.subList(from, to))
-                .pageNumber(pageable.getPageNumber())
-                .pageSize(pageable.getPageSize())
-                .totalElements(matched.size())
-                .totalPages(totalPages)
-                .build();
+    public PageResponse<MemberResponse> getMembersWithPlan(
+            int page, int size, String keyword, String planCode, boolean bannedOnly) {
+        String code = planCode == null || planCode.isBlank() ? null : planCode.trim().toUpperCase();
+        return toPage(memberRepository.searchWithPlan(
+                cleanKeyword(keyword), code, bannedOnly, java.time.LocalDateTime.now(), pageOf(page, size)));
     }
 
     private static String cleanKeyword(String keyword) {

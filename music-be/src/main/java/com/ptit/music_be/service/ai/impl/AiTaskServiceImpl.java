@@ -19,7 +19,6 @@ import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.mapper.AiTaskMapper;
-import com.ptit.music_be.service.billing.OmrQuota;
 import com.ptit.music_be.repository.AiTaskRepository;
 import com.ptit.music_be.repository.ScoreFileRepository;
 import com.ptit.music_be.repository.ScoreRepository;
@@ -45,7 +44,6 @@ public class AiTaskServiceImpl implements AiTaskService {
     AiTaskMapper aiTaskMapper;
     AiTaskDispatcher aiTaskDispatcher;
     MuseScoreCliService museScoreCliService;
-    OmrQuota omrQuota;
 
     @Override
     @Transactional(readOnly = true)
@@ -90,7 +88,6 @@ public class AiTaskServiceImpl implements AiTaskService {
         task.setErrorMessage(AiTaskError.CANCELLED_BY_USER.name());
         task.setFinishedAt(LocalDateTime.now());
         aiTaskRepository.save(task);
-        omrQuota.refund(task);
 
         Score score = task.getScore();
         if (score != null && task.getTaskType() == AiTaskType.OMR_CONVERSION) {

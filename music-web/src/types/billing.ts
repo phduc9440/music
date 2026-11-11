@@ -33,8 +33,8 @@ export interface MySubscription {
   /** ROLE: quyền lợi theo vai trò quản trị (ADMIN dùng Pro không thời hạn, SUPER_ADMIN không giới hạn). */
   source?: 'PAYMENT' | 'POINTS_TRIAL' | 'ADMIN_GRANT' | 'ROLE' | null;
   roleGrant?: 'SUPER_ADMIN' | 'ADMIN' | null;
-  /** ADMIN đang bị tạm ngưng gói Pro theo vai trò đến lúc này. */
-  rolePlanSuspendedUntil?: string | null;
+  /** Đang bị cấm dùng gói trả phí đến lúc này (chỉ dùng Free). */
+  bannedUntil?: string | null;
   startsAt?: string | null;
   expiresAt?: string | null;
   omrPagesUsed: number;

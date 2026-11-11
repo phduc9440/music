@@ -24,20 +24,24 @@ public interface SubscriptionService {
             java.util.Map<String, java.util.Set<String>> rolesByMember);
 
     /**
-     * SUPER_ADMIN tạm ngưng quyền lợi gói Pro không thời hạn của một ADMIN: {@code months} = 0 là đến hết tháng này, 1..120
-     * là số tháng tính theo lịch từ hôm nay. Hết hạn thì ADMIN tự dùng lại Pro. Gói đã mua/được cấp không bị ảnh hưởng.
+     * SUPER_ADMIN thu hồi gói đang dùng (mua hoặc được cấp) của từng người do vi phạm: gói bị hủy ngay, muốn dùng lại phải
+     * mua lại. Người không có gói để thu hồi hoặc là SUPER_ADMIN được bỏ qua. Kết quả từng người (REVOKED/SKIPPED/FAILED).
      */
-    com.ptit.music_be.dto.response.MySubscriptionResponse suspendRolePlan(String memberId, int months, String reason);
+    java.util.List<com.ptit.music_be.dto.response.BulkGrantResult> revokePlans(
+            java.util.List<String> memberIds, String reason);
 
-    /** Tạm ngưng nhiều ADMIN cùng lúc (tối đa 200); người không phải ADMIN thường được bỏ qua. Kết quả từng người. */
-    java.util.List<com.ptit.music_be.dto.response.BulkGrantResult> suspendRolePlans(
+    /**
+     * SUPER_ADMIN cấm dùng gói trả phí {@code months} tháng (1..120): trong thời gian cấm chỉ dùng Free, không mua hay được
+     * cấp gói, ADMIN cũng mất Pro theo vai trò. Cấm lại thì thay lệnh cũ. SUPER_ADMIN được bỏ qua.
+     */
+    java.util.List<com.ptit.music_be.dto.response.BulkGrantResult> banPlans(
             java.util.List<String> memberIds, int months, String reason);
 
-    /** Mở lại sớm cho nhiều ADMIN cùng lúc (tối đa 200). Kết quả từng người. */
-    java.util.List<com.ptit.music_be.dto.response.BulkGrantResult> liftRolePlanSuspensions(java.util.List<String> memberIds);
+    /** SUPER_ADMIN gỡ cấm sớm cho từng người. */
+    java.util.List<com.ptit.music_be.dto.response.BulkGrantResult> liftBans(java.util.List<String> memberIds);
 
-    /** SUPER_ADMIN mở lại sớm gói Pro theo vai trò của ADMIN (kết thúc mọi lần tạm ngưng đang hiệu lực). */
-    com.ptit.music_be.dto.response.MySubscriptionResponse liftRolePlanSuspension(String memberId);
+    /** Đang bị cấm dùng gói trả phí đến lúc nào; null nếu không bị cấm. */
+    java.time.LocalDateTime bannedUntil(String memberId);
 
     /** Gói hiện tại của một thành viên bất kỳ (trang chi tiết thành viên ở khu quản trị). */
     MySubscriptionResponse ofMember(String memberId);

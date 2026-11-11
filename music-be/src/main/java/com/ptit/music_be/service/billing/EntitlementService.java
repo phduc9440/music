@@ -2,21 +2,24 @@ package com.ptit.music_be.service.billing;
 
 import com.ptit.music_be.dto.enums.UsageMetric;
 
-/** Hỏi hạn mức theo gói của một thành viên và trừ hạn mức theo tháng. */
+/**
+ * Hỏi hạn mức theo gói của một thành viên. Số đã dùng không lưu bộ đếm riêng mà tính từ dữ liệu gốc mỗi lần hỏi (trang OMR =
+ * tổng {@link #OMR_PAGES_CHARGED_KEY} của các task OMR trong tháng chưa lỗi/hủy).
+ */
 public interface EntitlementService {
+
+    /** Khóa trong {@code ai_tasks.input_data}: số trang OMR tính vào hạn mức cho task đó (thiếu/0 = không tính). */
+    String OMR_PAGES_CHARGED_KEY = "pagesCharged";
 
     PlanLimits limitsOf(String memberId);
 
     /**
-     * Cộng {@code amount} vào bộ đếm tháng này nếu chưa vượt hạn mức, ngược lại ném PLAN_LIMIT_REACHED kèm
-     * {@code PlanLimitPayload}. Chạy chung transaction với hành động của người gọi: hành động lỗi thì bộ đếm cũng
-     * được hoàn lại theo.
+     * Ném PLAN_LIMIT_REACHED (kèm {@code PlanLimitPayload}) nếu dùng thêm {@code amount} sẽ vượt hạn mức tháng này. Người
+     * gọi phải khóa dòng thành viên trước rồi mới kiểm tra và ghi task, để hai yêu cầu song song không cùng lọt qua; chính
+     * task vừa ghi (có {@code pagesCharged}) là "đã dùng".
      */
-    void checkAndConsume(String memberId, UsageMetric metric, int amount);
+    void checkAvailable(String memberId, UsageMetric metric, int amount);
 
-    /** Trả lại hạn mức đã trừ (tác vụ lỗi/hủy). Tính vào đúng tháng đã trừ ({@code period} = yyyy-MM). */
-    void release(String memberId, UsageMetric metric, int amount, String period);
-
-    /** Đã dùng trong tháng hiện tại. */
+    /** Đã dùng trong tháng hiện tại (tính từ dữ liệu gốc). */
     int usedThisMonth(String memberId, UsageMetric metric);
 }

@@ -83,6 +83,8 @@ export default function NotificationBell() {
     else if (n.type === 'OFFICIAL_REQUESTED') navigate('/scores/official-requests');
     else if (n.type === 'PLAN_ACTIVATED') navigate('/billing');
     else if (n.type === 'PLAN_EXPIRING') navigate('/pricing');
+    else if (n.type === 'PLAN_REVOKED' || n.type === 'PLAN_BANNED' || n.type === 'PLAN_BAN_LIFTED')
+      navigate('/billing');
     else if (n.type === 'OFFICIAL_ACCEPTED' || n.type === 'OFFICIAL_DECLINED') navigate('/admin/official-scores');
     else if (n.scoreId) navigate(`/scores/${n.scoreId}`);
   };

@@ -92,10 +92,10 @@ public class PaymentServiceImpl implements PaymentService {
         if (amount <= 0) {
             throw new AppException(ErrorCode.PAYMENT_PLAN_NOT_PURCHASABLE);
         }
-        requirePurchaseNeeded(plan);
         Member member = memberRepository
                 .findByEmail(SecurityUtils.getCurrentEmail())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        requirePurchaseNeeded(plan, member.getId());
 
         PaymentOrder order = reuseOrSupersedePending(member, plan, request.getPeriod(), type);
         if (order == null) {
@@ -120,11 +120,17 @@ public class PaymentServiceImpl implements PaymentService {
         return response;
     }
 
-    /** SUPER_ADMIN không giới hạn nên không mua gói nào; ADMIN đã có Pro không thời hạn nên không mua Pro. */
-    private static void requirePurchaseNeeded(Plan plan) {
+    /**
+     * SUPER_ADMIN không giới hạn nên không mua gói nào; ADMIN đã có Pro không thời hạn nên không mua Pro; người đang bị cấm
+     * dùng gói trả phí thì không mua được gói nào tới khi hết cấm.
+     */
+    private void requirePurchaseNeeded(Plan plan, String memberId) {
         if (SecurityUtils.isSuperAdmin()
                 || (SecurityUtils.isAdmin() && SubscriptionServiceImpl.PRO.equals(plan.getCode()))) {
             throw new AppException(ErrorCode.PAYMENT_NOT_NEEDED);
+        }
+        if (subscriptionService.bannedUntil(memberId) != null) {
+            throw new AppException(ErrorCode.PLAN_BANNED);
         }
     }
 
@@ -181,7 +187,7 @@ public class PaymentServiceImpl implements PaymentService {
         if (order.getStatus() != PaymentStatus.PENDING || !order.getExpiresAt().isAfter(LocalDateTime.now())) {
             throw new AppException(ErrorCode.PAYMENT_ORDER_NOT_PAYABLE);
         }
-        requirePurchaseNeeded(order.getPlan());
+        requirePurchaseNeeded(order.getPlan(), order.getMember().getId());
         order.setExpiresAt(LocalDateTime.now().plusMinutes(ORDER_TTL_MINUTES));
         orderRepository.save(order);
         String locale = order.getMember().getLocale() == AppLocale.EN ? "en" : "vn";

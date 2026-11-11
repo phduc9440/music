@@ -5,9 +5,8 @@ import java.util.List;
 import org.springframework.web.bind.annotation.*;
 
 import com.ptit.music_be.dto.request.BulkGrantPlanRequest;
-import com.ptit.music_be.dto.request.BulkSuspendRolePlanRequest;
 import com.ptit.music_be.dto.request.GrantPlanRequest;
-import com.ptit.music_be.dto.request.SuspendRolePlanRequest;
+import com.ptit.music_be.dto.request.PlanSanctionRequest;
 import com.ptit.music_be.dto.response.ApiResponse;
 import com.ptit.music_be.dto.response.BulkGrantResult;
 import com.ptit.music_be.dto.response.MySubscriptionResponse;
@@ -70,57 +69,41 @@ public class AdminSubscriptionController {
                 .build();
     }
 
-    @PostMapping("/{memberId}/role-plan-suspension")
+    @PostMapping("/sanctions/revoke")
     @Operation(
-            summary = "Tạm ngưng gói Pro theo vai trò của một ADMIN (months: 0 = hết tháng này, 1..120 tháng), chỉ SUPER_ADMIN",
-            description = "Errors: 1002 không phải SUPER_ADMIN, 1004 thành viên không tồn tại, 3728 không phải ADMIN,"
-                    + " 3729 thời hạn hoặc lý do không hợp lệ",
+            summary = "Thu hồi gói đang dùng của một hoặc nhiều thành viên do vi phạm (tối đa 200), chỉ SUPER_ADMIN",
+            description = "Gói bị hủy ngay, muốn dùng lại phải mua lại. Kết quả từng người: REVOKED / SKIPPED / FAILED."
+                    + " Errors: 1002, 1009 danh sách trống hoặc quá 200, 3728 lý do quá dài",
             security = @SecurityRequirement(name = "bearerAuth"))
-    public ApiResponse<MySubscriptionResponse> suspendRolePlan(
-            @PathVariable String memberId, @RequestBody SuspendRolePlanRequest request) {
-        if (request.getMonths() == null) {
-            throw new AppException(ErrorCode.INVALID_REQUEST);
-        }
-        return ApiResponse.<MySubscriptionResponse>builder()
-                .result(subscriptionService.suspendRolePlan(memberId, request.getMonths(), request.getReason()))
+    public ApiResponse<List<BulkGrantResult>> revoke(@RequestBody PlanSanctionRequest request) {
+        return ApiResponse.<List<BulkGrantResult>>builder()
+                .result(subscriptionService.revokePlans(request.getMemberIds(), request.getReason()))
                 .build();
     }
 
-    @PostMapping("/role-plan-suspensions/bulk")
+    @PostMapping("/sanctions/ban")
     @Operation(
-            summary = "Tạm ngưng gói Pro theo vai trò của nhiều ADMIN (tối đa 200), chỉ SUPER_ADMIN",
-            description = "Người không phải ADMIN thường được bỏ qua. Errors: 1002, 1009 danh sách trống hoặc quá 200,"
-                    + " 3729 thời hạn hoặc lý do không hợp lệ",
+            summary = "Cấm dùng gói trả phí N tháng (1..120) cho một hoặc nhiều thành viên, chỉ SUPER_ADMIN",
+            description = "Trong thời gian cấm chỉ dùng Free, không mua hay được cấp gói. Kết quả từng người: BANNED /"
+                    + " SKIPPED / FAILED. Errors: 1002, 1009, 3728 thời hạn hoặc lý do không hợp lệ",
             security = @SecurityRequirement(name = "bearerAuth"))
-    public ApiResponse<List<BulkGrantResult>> suspendMany(@RequestBody BulkSuspendRolePlanRequest request) {
+    public ApiResponse<List<BulkGrantResult>> ban(@RequestBody PlanSanctionRequest request) {
         if (request.getMonths() == null) {
             throw new AppException(ErrorCode.INVALID_REQUEST);
         }
         return ApiResponse.<List<BulkGrantResult>>builder()
-                .result(subscriptionService.suspendRolePlans(
-                        request.getMemberIds(), request.getMonths(), request.getReason()))
+                .result(subscriptionService.banPlans(request.getMemberIds(), request.getMonths(), request.getReason()))
                 .build();
     }
 
-    @PostMapping("/role-plan-suspensions/bulk-lift")
+    @PostMapping("/sanctions/lift")
     @Operation(
-            summary = "Mở lại sớm gói Pro theo vai trò của nhiều ADMIN (tối đa 200), chỉ SUPER_ADMIN",
-            description = "Errors: 1002, 1009 danh sách trống hoặc quá 200",
+            summary = "Gỡ cấm sớm cho một hoặc nhiều thành viên, chỉ SUPER_ADMIN",
+            description = "Kết quả từng người: LIFTED / SKIPPED (không bị cấm) / FAILED. Errors: 1002, 1009",
             security = @SecurityRequirement(name = "bearerAuth"))
-    public ApiResponse<List<BulkGrantResult>> liftMany(@RequestBody BulkSuspendRolePlanRequest request) {
+    public ApiResponse<List<BulkGrantResult>> lift(@RequestBody PlanSanctionRequest request) {
         return ApiResponse.<List<BulkGrantResult>>builder()
-                .result(subscriptionService.liftRolePlanSuspensions(request.getMemberIds()))
-                .build();
-    }
-
-    @DeleteMapping("/{memberId}/role-plan-suspension")
-    @Operation(
-            summary = "Mở lại sớm gói Pro theo vai trò của ADMIN, chỉ SUPER_ADMIN",
-            description = "Errors: 1002 không phải SUPER_ADMIN, 1004 thành viên không tồn tại, 3728 không phải ADMIN",
-            security = @SecurityRequirement(name = "bearerAuth"))
-    public ApiResponse<MySubscriptionResponse> liftRolePlanSuspension(@PathVariable String memberId) {
-        return ApiResponse.<MySubscriptionResponse>builder()
-                .result(subscriptionService.liftRolePlanSuspension(memberId))
+                .result(subscriptionService.liftBans(request.getMemberIds()))
                 .build();
     }
 

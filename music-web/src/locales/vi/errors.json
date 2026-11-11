@@ -113,6 +113,6 @@
   "3725": "Không xóa được gói Free và Pro (hệ thống dùng cho người dùng mới và quản trị viên)",
   "3726": "Gói đã có người đăng ký hoặc có đơn thanh toán nên không xóa được",
   "3727": "Hiện chỉ cấp được gói cá nhân; cấp gói team sẽ có khi làm tính năng Team",
-  "3728": "Chỉ tạm ngưng hoặc mở lại gói Pro theo vai trò cho tài khoản ADMIN (không phải SUPER_ADMIN)",
-  "3729": "Thời hạn tạm ngưng phải từ hết tháng này đến 120 tháng, lý do tối đa 255 ký tự"
+  "3728": "Thời hạn cấm phải từ 1 đến 120 tháng, lý do tối đa 255 ký tự",
+  "3729": "Tài khoản đang bị cấm dùng gói trả phí"
 }

@@ -23,9 +23,14 @@ export const adminApi = {
     apiClient.get<ApiResponse<PageResult<Member>>>('/admin/members', {
       params: { page: 0, size: 20, ...params },
     }),
-  // Quản trị viên thường (ADMIN, không phải SUPER_ADMIN) kèm gói: trang Tạm ngưng gói
-  getPlainAdmins: (params?: { page?: number; size?: number; keyword?: string; planCode?: string }) =>
-    apiClient.get<ApiResponse<PageResult<Member>>>('/admin/members/plain-admins', { params }),
+  // Thành viên kèm gói, lọc theo gói đang dùng và người đang bị cấm: trang Gói thành viên
+  getMembersWithPlan: (params?: {
+    page?: number;
+    size?: number;
+    keyword?: string;
+    planCode?: string;
+    bannedOnly?: boolean;
+  }) => apiClient.get<ApiResponse<PageResult<Member>>>('/admin/members/with-plan', { params }),
   getMember: (id: string) => apiClient.get<ApiResponse<Member>>(`/admin/members/${id}`),
   getMemberDetail: (id: string) => apiClient.get<ApiResponse<AdminMemberDetail>>(`/admin/members/${id}/detail`),
   updateMember: (id: string, data: AdminUpdateMemberRequest) =>
