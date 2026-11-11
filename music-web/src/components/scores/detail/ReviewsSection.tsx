@@ -6,6 +6,7 @@ import { MAX_REVIEW_COMMENT, formatRelative, getErrorMessage } from '../../../ut
 import type { ReviewList } from '../../../types';
 import { useDialog } from '../../ui/dialog-context';
 import { t } from '../../../i18n/core';
+import Skeleton from '../../ui/Skeleton';
 
 interface Props {
   scoreId: string;
@@ -86,7 +87,7 @@ export default function ReviewsSection({ scoreId, canReview, onChanged }: Props)
     }
   };
 
-  if (!data) return error ? <div className="sc-error">{error}</div> : <p>{t('common.loading')}</p>;
+  if (!data) return error ? <div className="sc-error">{error}</div> : <Skeleton lines={4} />;
 
   return (
     <section className="sc-reviews">

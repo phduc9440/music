@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from '../../routes/transition-nav';
 import { toast } from 'react-toastify';
 import { Button, ButtonLink, Card, CellTitle, PageHeader, Pager, Table, TableState } from '../../components/ui';
 import { errorMessage, formatDateTime } from '../../components/ui/helpers';

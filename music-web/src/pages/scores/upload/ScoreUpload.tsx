@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '../../../routes/useTransitionNavigate';
 import { toast } from 'react-toastify';
 import UploadDropzone from '../../../components/scores/upload/UploadDropzone';
 import UploadFileItem from '../../../components/scores/upload/UploadFileItem';

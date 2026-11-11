@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import { useNavigate } from '../../../routes/useTransitionNavigate';
 import { toast } from 'react-toastify';
 import AuthImage from '../../../components/scores/common/AuthImage';
 import MusicXmlViewer from '../../../components/scores/viewer/MusicXmlViewer';
@@ -20,6 +21,7 @@ import '../library/ScoreDetail.css';
 import './ScoreProcessing.css';
 import './ScoreReview.css';
 import { t } from '../../../i18n/core';
+import Skeleton from '../../../components/ui/Skeleton';
 
 type LoadState = 'loading' | 'ready' | 'notFound' | 'error';
 type Tab = 'score' | 'check' | 'warnings' | 'kern';
@@ -415,7 +417,7 @@ export default function ScoreReview() {
               <div className="sr-panel" role="tabpanel" id="sr-tabpanel" aria-labelledby={`sr-tab-${tab}`}>
                 {!hasMusicXml && <p className="sr-empty">{t('upload.review.noXml')}</p>}
                 {hasMusicXml && xmlError && <div className="sc-error">{t('upload.review.xmlLoadFailed')}</div>}
-                {hasMusicXml && !xmlError && xml === null && <p className="sr-empty">{t('common.loading')}</p>}
+                {hasMusicXml && !xmlError && xml === null && <Skeleton height={220} />}
                 {xml !== null &&
                   (result.pages.some((p) => p.firstMeasure != null && p.lastMeasure != null) ? (
                     [...result.pages]
@@ -487,7 +489,7 @@ export default function ScoreReview() {
               <div className="sr-panel" role="tabpanel" id="sr-tabpanel" aria-labelledby={`sr-tab-${tab}`}>
                 {!hasKern && <p className="sr-empty">{t('upload.review.noKern')}</p>}
                 {hasKern && kernError && <div className="sc-error">{t('upload.review.kernLoadFailed')}</div>}
-                {hasKern && !kernError && kern === null && <p className="sr-empty">{t('common.loading')}</p>}
+                {hasKern && !kernError && kern === null && <Skeleton height={220} />}
                 {kern !== null && (
                   <>
                     <div className="sr-kern__bar">

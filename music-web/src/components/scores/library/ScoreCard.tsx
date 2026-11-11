@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useViewTransitionState } from 'react-router-dom';
 import AuthImage from '../common/AuthImage';
 import StatusBadge from '../common/StatusBadge';
 import { t } from '../../../i18n/core';
@@ -17,15 +18,17 @@ interface Props {
 
 /** Một thẻ bản nhạc trong lưới thư viện. */
 export default function ScoreCard({ score, onOpen, explore = false, actions }: Props) {
+  // Đang chuyển sang trang bản nhạc này: ảnh bìa mang tên dùng chung để "bay" sang vị trí mới (View Transitions)
+  const opening = useViewTransitionState(`/scores/${score.id}`);
   return (
     <article
-      className="sc-card"
+      className="sc-card reveal-item"
       role="button"
       tabIndex={0}
       onClick={() => onOpen(score)}
       onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onOpen(score)}
     >
-      <div className="sc-card__cover">
+      <div className="sc-card__cover" style={opening ? { viewTransitionName: 'ui-shared-cover' } : undefined}>
         <AuthImage src={score.thumbnailUrl} alt={score.title} className="sc-card__img" />
         {!explore && (
           <>

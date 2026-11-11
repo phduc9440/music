@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from '../../../routes/transition-nav';
 import { toast } from 'react-toastify';
 import Modal from '../common/Modal';
 import { playlistApi } from '../../../services';
@@ -8,6 +8,7 @@ import type { Playlist, ScoreSummary } from '../../../types';
 import { t } from '../../../i18n/core';
 import { getErrorMessage } from '../../../utils/score';
 import './playlist-picker.css';
+import Skeleton from '../../ui/Skeleton';
 
 interface Props {
   score: Pick<ScoreSummary, 'id' | 'title'>;
@@ -64,7 +65,7 @@ export default function PlaylistPicker({ score, onClose }: Props) {
   return (
     <Modal title={t('scores.playlistPicker.title')} onClose={onClose}>
       <p className="pl-picker__score">{score.title}</p>
-      {playlists === null && <p className="pl-picker__note">{t('common.loading')}</p>}
+      {playlists === null && <Skeleton lines={3} />}
       {playlists && playlists.length === 0 && <p className="pl-picker__note">{t('scores.playlistPicker.empty')}</p>}
       {playlists && playlists.length > 0 && (
         <ul className="pl-picker__list">

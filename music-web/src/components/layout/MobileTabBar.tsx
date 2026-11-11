@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink } from '../../routes/transition-nav';
 import { Icon } from '../ui';
 import type { IconName } from '../ui';
 import { t } from '../../i18n/core';

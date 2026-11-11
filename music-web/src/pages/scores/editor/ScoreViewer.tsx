@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import { useNavigate } from '../../../routes/useTransitionNavigate';
 import DownloadMenu from '../../../components/scores/viewer/DownloadMenu';
 import VersionHistoryPanel from '../../../components/editor/version/VersionHistoryPanel';
 import InstrumentMenu from '../../../components/scores/viewer/InstrumentMenu';

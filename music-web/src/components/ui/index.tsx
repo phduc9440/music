@@ -1,11 +1,12 @@
 import type { ButtonHTMLAttributes, CSSProperties, FormEvent, ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from '../../routes/transition-nav';
 import Icon from './Icon';
 import type { IconName } from './Icon';
 
 import { VISIBILITY } from './helpers';
 import type { Tone } from './helpers';
 import { formatNumber, t } from '../../i18n/core';
+import Skeleton from './Skeleton';
 
 export { default as Icon } from './Icon';
 export type { IconName } from './Icon';
@@ -340,10 +341,7 @@ export function TableState({
     <tr className="adm-table__state">
       <td colSpan={colSpan}>
         {loading ? (
-          <div className="adm-empty">
-            <span className="adm-spinner adm-spinner--lg" aria-hidden="true" />
-            <span className="adm-empty__desc">{t('common.loading')}</span>
-          </div>
+          <Skeleton lines={4} className="adm-table__skeleton" />
         ) : (
           <EmptyState icon={icon} title={title ?? t('common.noData')} description={description} />
         )}

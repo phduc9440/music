@@ -99,7 +99,7 @@ export default function PracticeStats() {
         </header>
 
         <div className="ps-cards">
-          <div className="ps-card">
+          <div className="ps-card reveal-item">
             <div className="ps-card__value">
               {streak ? t('practice.stats.days', { count: streak.currentStreak }) : '—'}
             </div>
@@ -108,13 +108,13 @@ export default function PracticeStats() {
               {streak && streak.currentStreak > 0 && !streak.practicedToday ? ` (${t('practice.stats.notToday')})` : ''}
             </div>
           </div>
-          <div className="ps-card">
+          <div className="ps-card reveal-item">
             <div className="ps-card__value">
               {streak ? t('practice.stats.days', { count: streak.longestStreak }) : '—'}
             </div>
             <div className="ps-card__label">{t('practice.stats.longest')}</div>
           </div>
-          <div className="ps-card">
+          <div className="ps-card reveal-item">
             <div className="ps-card__value">{days ? totalDays : '—'}</div>
             <div className="ps-card__label">{t('practice.stats.daysYear')}</div>
           </div>

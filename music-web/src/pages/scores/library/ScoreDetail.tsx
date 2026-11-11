@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useParams, useViewTransitionState } from 'react-router-dom';
+import { useNavigate } from '../../../routes/useTransitionNavigate';
 import { toast } from 'react-toastify';
 import DeleteScoreModal from '../../../components/scores/detail/DeleteScoreModal';
 import EditScoreModal from '../../../components/scores/detail/EditScoreModal';
@@ -45,6 +46,7 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
   const goBack = () => (admin && window.history.length > 1 ? navigate(-1) : navigate(backPath));
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const arriving = useViewTransitionState(useLocation().pathname);
   const [state, setState] = useState<LoadState>({ phase: 'loading' });
   const [tick, setTick] = useState(0); // tăng lên để tải lại (polling)
   const [tab, setTab] = useState<Tab>('files');
@@ -110,7 +112,10 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
       <div className="sc-page">
         {navbar}
         <main className="sc-container" aria-busy="true">
-          <div className="sc-skeleton sc-skeleton--hero" />
+          <div
+            className="sc-skeleton sc-skeleton--hero"
+            style={arriving ? { viewTransitionName: 'ui-shared-cover' } : undefined}
+          />
         </main>
       </div>
     );

@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
+import { NavLink } from '../../routes/transition-nav';
+import { useNavigate } from '../../routes/useTransitionNavigate';
 import { toast } from 'react-toastify';
 import ChangePasswordModal from '../ChangePasswordModal';
 import NotificationBell from '../NotificationBell';

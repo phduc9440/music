@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '../../routes/useTransitionNavigate';
 import { Icon } from '../ui';
 import type { IconName } from '../ui';
 import { scoreApi } from '../../services';
