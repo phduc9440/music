@@ -38,6 +38,7 @@ import Pricing from '../pages/billing/Pricing';
 import BillingResult from '../pages/billing/BillingResult';
 import AdminRevenue from '../pages/admin/AdminRevenue';
 import AdminPlans from '../pages/admin/AdminPlans';
+import AdminMemberPlans from '../pages/admin/AdminMemberPlans';
 import GuestRoute from './GuestRoute';
 import ProtectedRoute from './ProtectedRoute';
 import RootLayout from './RootLayout';
@@ -137,6 +138,7 @@ const router = createBrowserRouter(
         <Route path="tags" element={<AdminTags />} />
         <Route path="revenue" element={<AdminRevenue />} />
         <Route path="plans" element={<AdminPlans />} />
+        <Route path="member-plans" element={<AdminMemberPlans />} />
         <Route path="composers" element={<AdminComposers />} />
         <Route path="ai-tasks" element={<AdminAiTasks />} />
         <Route path="system" element={<AdminSystem />} />

@@ -155,7 +155,7 @@ public enum ErrorCode {
     // Gói dịch vụ và thanh toán 37xx
     PLAN_NOT_EXISTED(3701, "Gói dịch vụ không tồn tại", HttpStatus.NOT_FOUND),
     PLAN_LIMIT_REACHED(3702, "Bạn đã dùng hết hạn mức của gói hiện tại", HttpStatus.PAYMENT_REQUIRED),
-    SUBSCRIPTION_DAYS_INVALID(3703, "Số ngày cấp gói phải từ 1 đến 3650", HttpStatus.BAD_REQUEST),
+    SUBSCRIPTION_MONTHS_INVALID(3703, "Số tháng cấp gói phải từ 1 đến 120", HttpStatus.BAD_REQUEST),
     PAYMENT_PROVIDER_UNAVAILABLE(3711, "Cổng thanh toán chưa được cấu hình", HttpStatus.SERVICE_UNAVAILABLE),
     PAYMENT_PLAN_NOT_PURCHASABLE(3712, "Gói này không thể mua", HttpStatus.BAD_REQUEST),
     PAYMENT_ORDER_NOT_EXISTED(3713, "Đơn thanh toán không tồn tại", HttpStatus.NOT_FOUND),
@@ -171,6 +171,9 @@ public enum ErrorCode {
     PLAN_CODE_EXISTED(3723, "Mã gói đã tồn tại", HttpStatus.CONFLICT),
     PLAN_AUDIENCE_INVALID(3724, "Nhóm gói phải là Cá nhân (PERSONAL) hoặc Team (TEAM)", HttpStatus.BAD_REQUEST),
     PLAN_SYSTEM_LOCKED(3725, "Không xóa được gói Free và Pro (hệ thống dùng cho người dùng mới và quản trị viên)", HttpStatus.CONFLICT),
+    PLAN_NOT_GRANTABLE(3727, "Hiện chỉ cấp được gói cá nhân; cấp gói team sẽ có khi làm tính năng Team", HttpStatus.BAD_REQUEST),
+    PLAN_SANCTION_INVALID(3728, "Thời hạn cấm phải từ 1 đến 120 tháng, lý do tối đa 255 ký tự", HttpStatus.BAD_REQUEST),
+    PLAN_BANNED(3729, "Bạn đang bị cấm dùng gói này; vẫn có thể dùng Free hoặc mua gói khác", HttpStatus.FORBIDDEN),
     PLAN_IN_USE(3726, "Gói đã có người đăng ký hoặc có đơn thanh toán nên không xóa được", HttpStatus.CONFLICT),
     ;
 

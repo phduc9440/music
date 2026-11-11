@@ -95,7 +95,7 @@
   "3506": "The composer information is too long",
   "3701": "That plan does not exist",
   "3702": "You have used up your current plan's limit. Open \"Plans\" to upgrade.",
-  "3703": "The number of days must be between 1 and 3650",
+  "3703": "Months must be between 1 and 120",
   "3711": "The payment gateway is not configured",
   "3712": "This plan cannot be purchased",
   "3713": "Payment order not found",
@@ -111,5 +111,8 @@
   "3723": "Plan code already exists",
   "3724": "Plan group must be Personal or Team",
   "3725": "Free and Pro cannot be deleted (used for new users and admins)",
-  "3726": "This plan has subscribers or payment orders and cannot be deleted"
+  "3726": "This plan has subscribers or payment orders and cannot be deleted",
+  "3727": "Only personal plans can be granted for now; team plans will come with the Team feature",
+  "3728": "Ban length must be 1 to 120 months, reason at most 255 characters",
+  "3729": "You are banned from this plan; Free and other plans are still available"
 }

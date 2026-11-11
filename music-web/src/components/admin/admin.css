@@ -1305,3 +1305,106 @@
   margin-bottom: 1.5rem;
   border-color: var(--adm-primary);
 }
+
+/* Thẻ gói dịch vụ ở chi tiết thành viên */
+.adm-member-plan__current {
+  margin: 0;
+}
+
+/* Trang Cấp gói (AdminPlanGrants): bước 1 chọn gói, bước 2 chọn nhiều người */
+.adm-shell .adm-card + .adm-card {
+  margin-top: 1rem;
+}
+.adm-grant__step1 {
+  display: grid;
+  grid-template-columns: minmax(180px, 280px) minmax(0, 1fr);
+  gap: 0 1.25rem;
+}
+.adm-shell .adm-grant__step1 select.adm-input {
+  width: 100%;
+}
+.adm-grant__check {
+  width: 2.5rem;
+  text-align: center;
+}
+.adm-shell .adm-table tr.is-selected td {
+  background: var(--adm-primary-ring);
+}
+.adm-grant__outcome {
+  font-weight: 600;
+}
+.adm-grant__outcome.is-renew {
+  color: var(--adm-primary);
+}
+.adm-grant__months {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+.adm-shell .adm-grant__months-input {
+  width: 4.5rem;
+  text-align: center;
+}
+.adm-grant__preview {
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--adm-radius);
+  background: var(--ui-primary-soft);
+}
+.adm-grant__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+.adm-grant__bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--adm-border-strong);
+  border-radius: var(--adm-radius);
+  background: var(--adm-surface);
+  box-shadow: var(--ui-shadow-pop);
+}
+.adm-grant__bar-warn {
+  color: var(--ui-danger);
+}
+@media (max-width: 720px) {
+  .adm-grant__step1 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Trang Gói thành viên: tab Cấp gói / Tạm ngưng gói */
+.adm-member-plans__panel {
+  margin-top: 1rem;
+}
+.adm-member-plans__intro {
+  margin: 0 0 1rem;
+}
+
+/* Bộ lọc + ô tìm kiếm nằm cùng hàng ở đầu thẻ */
+.adm-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+.adm-shell .adm-filter-row select.adm-input {
+  width: auto;
+}
+
+.adm-filter-row__check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+  cursor: pointer;
+}

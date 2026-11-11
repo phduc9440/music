@@ -320,6 +320,7 @@ class PaymentServiceImplTest {
     @Test
     void superAdminCannotBuyAndAdminCannotBuyPro() {
         when(plans.findByCode("PRO")).thenReturn(Optional.of(pro));
+        when(members.findByEmail(any())).thenReturn(Optional.of(buyer));
         var request = new CreatePaymentOrderRequest("PRO", BillingPeriod.MONTH, null);
 
         SecurityContextHolder.getContext()
@@ -333,5 +334,18 @@ class PaymentServiceImplTest {
                         "mod@x.com", "x", "ROLE_ADMIN"));
         e = assertThrows(AppException.class, () -> service.createOrder(request, "1.1.1.1"));
         assertEquals(ErrorCode.PAYMENT_NOT_NEEDED, e.getErrorCode());
+    }
+
+    @Test
+    void bannedMemberCannotBuy() {
+        loginAsBuyer();
+        when(plans.findByCode("PRO")).thenReturn(Optional.of(pro));
+        when(members.findByEmail("a@x.com")).thenReturn(Optional.of(buyer));
+        when(subscriptions.planBannedUntil("m", "PRO")).thenReturn(LocalDateTime.now().plusMonths(1));
+
+        AppException e = assertThrows(
+                AppException.class,
+                () -> service.createOrder(new CreatePaymentOrderRequest("PRO", BillingPeriod.MONTH, null), "1.1.1.1"));
+        assertEquals(ErrorCode.PLAN_BANNED, e.getErrorCode());
     }
 }

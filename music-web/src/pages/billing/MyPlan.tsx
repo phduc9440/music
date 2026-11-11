@@ -59,6 +59,11 @@ export default function MyPlan() {
               <h2>{sub.status === 'UNLIMITED' ? t('billing.unlimitedPlan') : sub.plan.name}</h2>
               <span className="bl-badge">{t(`billing.status.${sub.status}`)}</span>
             </div>
+            {sub.bans?.map((b) => (
+              <p key={b.planCode} className="bl-note bl-note--danger" role="alert">
+                {t('billing.banned', { plan: b.planName, date: formatDate(b.until) })}
+              </p>
+            ))}
             {sub.source === 'ROLE' && sub.roleGrant && <p>{t(`billing.myPlan.roleGrant.${sub.roleGrant}`)}</p>}
             {sub.expiresAt && (
               <p>

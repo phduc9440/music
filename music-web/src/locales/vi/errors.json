@@ -95,7 +95,7 @@
   "3506": "Thông tin nhạc sĩ vượt quá độ dài cho phép",
   "3701": "Gói dịch vụ không tồn tại",
   "3702": "Bạn đã dùng hết hạn mức của gói hiện tại. Vào \"Gói dịch vụ\" để nâng cấp.",
-  "3703": "Số ngày cấp gói phải từ 1 đến 3650",
+  "3703": "Số tháng cấp gói phải từ 1 đến 120",
   "3711": "Cổng thanh toán chưa được cấu hình",
   "3712": "Gói này không thể mua",
   "3713": "Đơn thanh toán không tồn tại",
@@ -111,5 +111,8 @@
   "3723": "Mã gói đã tồn tại",
   "3724": "Nhóm gói phải là Cá nhân hoặc Team",
   "3725": "Không xóa được gói Free và Pro (hệ thống dùng cho người dùng mới và quản trị viên)",
-  "3726": "Gói đã có người đăng ký hoặc có đơn thanh toán nên không xóa được"
+  "3726": "Gói đã có người đăng ký hoặc có đơn thanh toán nên không xóa được",
+  "3727": "Hiện chỉ cấp được gói cá nhân; cấp gói team sẽ có khi làm tính năng Team",
+  "3728": "Thời hạn cấm phải từ 1 đến 120 tháng, lý do tối đa 255 ký tự",
+  "3729": "Bạn đang bị cấm dùng gói này; vẫn có thể dùng Free hoặc mua gói khác"
 }

@@ -282,7 +282,7 @@ CREATE TABLE IF NOT EXISTS official_requests (
 -- collab, team, omrPriority; thiếu một khóa hoặc null = không giới hạn. Giá là số nguyên VND.
 CREATE TABLE IF NOT EXISTS plans (
     id          VARCHAR(36)  NOT NULL,
-    code        VARCHAR(16)  NOT NULL COMMENT 'FREE / PRO / PREMIUM / TEAM_PRO / TEAM_PREMIUM',
+    code        VARCHAR(16)  NOT NULL COMMENT 'FREE / STUDENT / PRO / PREMIUM / ULTIMATE / TEAM_PRO / TEAM_PREMIUM',
     name        VARCHAR(100) NOT NULL,
     audience    VARCHAR(10)  NOT NULL DEFAULT 'PERSONAL' COMMENT 'PERSONAL (cá nhân) / TEAM (nhóm)',
     price_month BIGINT       NOT NULL DEFAULT 0,
@@ -309,16 +309,27 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     CONSTRAINT fk_subscriptions_plan   FOREIGN KEY (plan_id)   REFERENCES plans (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Bộ đếm hạn mức theo tháng (period = yyyy-MM), ví dụ số trang OMR đã dùng.
-CREATE TABLE IF NOT EXISTS usage_counters (
-    id        VARCHAR(36) NOT NULL,
-    member_id VARCHAR(36) NOT NULL,
-    metric    VARCHAR(32) NOT NULL,
-    period    VARCHAR(7)  NOT NULL,
-    used      INT         NOT NULL DEFAULT 0,
+-- Xử lý vi phạm về gói (SUPER_ADMIN thực hiện). REVOKE: thu hồi gói đang dùng (subscription bị hủy ngay, muốn dùng lại
+-- phải mua lại; ends_at NULL). BAN: cấm dùng gói plan_id đến ends_at (không dùng, mua hay được cấp lại gói đó; vẫn dùng Free
+-- hoặc mua gói khác; ADMIN bị cấm Pro thì mất Pro theo vai trò); hết hạn thì tự hết cấm, lifted_at là lúc gỡ cấm sớm.
+CREATE TABLE IF NOT EXISTS plan_sanctions (
+    id              VARCHAR(36)  NOT NULL,
+    member_id       VARCHAR(36)  NOT NULL,
+    type            VARCHAR(10)  NOT NULL COMMENT 'REVOKE / BAN',
+    plan_id         VARCHAR(36)  NOT NULL COMMENT 'Gói bị thu hồi / bị cấm',
+    subscription_id VARCHAR(36)  NULL COMMENT 'REVOKE: gói (subscription) bị thu hồi',
+    starts_at       DATETIME(6)  NOT NULL,
+    ends_at         DATETIME(6)  NULL COMMENT 'BAN: hết cấm lúc này',
+    reason          VARCHAR(255) NULL,
+    created_by      VARCHAR(36)  NULL COMMENT 'SUPER_ADMIN thực hiện',
+    lifted_at       DATETIME(6)  NULL COMMENT 'BAN: gỡ cấm sớm lúc nào',
+    created_at      DATETIME(6)  NULL,
     PRIMARY KEY (id),
-    UNIQUE KEY uk_usage_counters (member_id, metric, period),
-    CONSTRAINT fk_usage_counters_member FOREIGN KEY (member_id) REFERENCES members (id)
+    KEY idx_plan_sanctions_member (member_id, type, ends_at),
+    CONSTRAINT fk_plan_sanctions_member       FOREIGN KEY (member_id)       REFERENCES members (id),
+    CONSTRAINT fk_plan_sanctions_plan         FOREIGN KEY (plan_id)         REFERENCES plans (id),
+    CONSTRAINT fk_plan_sanctions_subscription FOREIGN KEY (subscription_id) REFERENCES subscriptions (id),
+    CONSTRAINT fk_plan_sanctions_created_by   FOREIGN KEY (created_by)      REFERENCES members (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Đơn thanh toán gói (mục 7.4). Số tiền là VND nguyên. provider_txn_id là mã giao dịch phía cổng (duy nhất) để chống xử

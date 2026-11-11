@@ -1,6 +1,8 @@
 package com.ptit.music_be.service.admin.impl;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -17,6 +19,7 @@ import com.ptit.music_be.configuration.MemberStatusGuard;
 import com.ptit.music_be.dto.enums.MemberStatus;
 import com.ptit.music_be.dto.request.AdminUpdateMemberRequest;
 import com.ptit.music_be.dto.response.AdminMemberDetailResponse;
+import com.ptit.music_be.dto.response.MemberPlanSummary;
 import com.ptit.music_be.dto.response.MemberResponse;
 import com.ptit.music_be.dto.response.PageResponse;
 import com.ptit.music_be.entity.Member;
@@ -28,6 +31,7 @@ import com.ptit.music_be.mapper.MemberMapper;
 import com.ptit.music_be.repository.MemberRepository;
 import com.ptit.music_be.repository.RoleRepository;
 import com.ptit.music_be.service.admin.AdminMemberService;
+import com.ptit.music_be.service.billing.SubscriptionService;
 import com.ptit.music_be.utils.SecurityUtils;
 
 import lombok.AccessLevel;
@@ -49,24 +53,48 @@ public class AdminMemberServiceImpl implements AdminMemberService {
     MemberMapper memberMapper;
     EntityManager entityManager;
     MemberStatusGuard memberStatusGuard;
+    SubscriptionService subscriptionService;
 
     @Override
     @Transactional(readOnly = true)
     public PageResponse<MemberResponse> getMembers(int page, int size, String keyword) {
+        return toPage(memberRepository.search(cleanKeyword(keyword), pageOf(page, size)));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<MemberResponse> getMembersWithPlan(
+            int page, int size, String keyword, String planCode, boolean bannedOnly) {
+        String code = planCode == null || planCode.isBlank() ? null : planCode.trim().toUpperCase();
+        return toPage(memberRepository.searchWithPlan(
+                cleanKeyword(keyword), code, bannedOnly, java.time.LocalDateTime.now(), pageOf(page, size)));
+    }
+
+    private static String cleanKeyword(String keyword) {
+        String k = keyword == null || keyword.isBlank() ? null : keyword.trim();
+        return k != null && k.length() > 100 ? k.substring(0, 100) : k;
+    }
+
+    private static PageRequest pageOf(int page, int size) {
         int safeSize = size <= 0 ? DEFAULT_PAGE_SIZE : Math.min(size, MAX_PAGE_SIZE);
-        String safeKeyword = keyword == null || keyword.isBlank() ? null : keyword.trim();
-        if (safeKeyword != null && safeKeyword.length() > 100) {
-            safeKeyword = safeKeyword.substring(0, 100);
-        }
+        return PageRequest.of(Math.max(page, 0), safeSize, Sort.by("email").ascending());
+    }
 
-        Page<Member> result = memberRepository.search(
-                safeKeyword,
-                PageRequest.of(Math.max(page, 0), safeSize, Sort.by("email").ascending()));
+    /** Đổi sang response kèm gói đang dùng của cả danh sách (một truy vấn). */
+    private List<MemberResponse> withPlans(List<Member> members) {
+        List<MemberResponse> content =
+                members.stream().map(memberMapper::toMemberResponse).toList();
+        Map<String, Set<String>> roles = new HashMap<>();
+        content.forEach(m -> roles.put(m.getId(), m.getRoles()));
+        Map<String, MemberPlanSummary> plans = subscriptionService.plansOf(roles);
+        content.forEach(m -> m.setPlan(plans.get(m.getId())));
+        return content;
+    }
 
+    /** Trang thành viên kèm gói đang dùng của cả trang (một truy vấn). */
+    private PageResponse<MemberResponse> toPage(Page<Member> result) {
         return PageResponse.<MemberResponse>builder()
-                .content(result.getContent().stream()
-                        .map(memberMapper::toMemberResponse)
-                        .toList())
+                .content(withPlans(result.getContent()))
                 .pageNumber(result.getNumber())
                 .pageSize(result.getSize())
                 .totalElements(result.getTotalElements())

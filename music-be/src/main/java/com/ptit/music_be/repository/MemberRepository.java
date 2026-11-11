@@ -88,4 +88,31 @@ public interface MemberRepository extends JpaRepository<Member, String> {
 			OR LOWER(m.fullName) LIKE LOWER(CONCAT('%', :keyword, '%'))
 			""")
     Page<Member> search(@Param("keyword") String keyword, Pageable pageable);
+
+    /**
+     * Như {@link #search}, thêm lọc theo gói đang dùng và theo lệnh cấm. {@code planCode}: gói mua/được cấp còn hạn có mã
+     * này; riêng PRO còn gồm ADMIN thường (Pro theo vai trò). {@code bannedOnly}: chỉ người đang bị cấm dùng gói trả phí.
+     */
+    @Query(
+            """
+			SELECT m FROM Member m
+			WHERE (:keyword IS NULL
+				OR LOWER(m.email) LIKE LOWER(CONCAT('%', :keyword, '%'))
+				OR LOWER(m.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')))
+			AND (:planCode IS NULL
+				OR EXISTS (SELECT 1 FROM Subscription s WHERE s.member = m AND s.status = 'ACTIVE'
+					AND s.expiresAt > :now AND s.plan.code = :planCode)
+				OR (:planCode = 'PRO'
+					AND EXISTS (SELECT 1 FROM MemberRole a WHERE a.member = m AND a.role.name = 'ADMIN')
+					AND NOT EXISTS (SELECT 1 FROM MemberRole x WHERE x.member = m AND x.role.name = 'SUPER_ADMIN')))
+			AND (:bannedOnly = false
+				OR EXISTS (SELECT 1 FROM PlanSanction b WHERE b.member = m AND b.type = 'BAN'
+					AND b.liftedAt IS NULL AND b.startsAt <= :now AND b.endsAt > :now))
+			""")
+    Page<Member> searchWithPlan(
+            @Param("keyword") String keyword,
+            @Param("planCode") String planCode,
+            @Param("bannedOnly") boolean bannedOnly,
+            @Param("now") java.time.LocalDateTime now,
+            Pageable pageable);
 }

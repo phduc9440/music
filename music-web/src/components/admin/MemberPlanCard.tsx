@@ -1,88 +1,111 @@
-import { useEffect, useState } from 'react';
-import { toast } from 'react-toastify';
-import { Button, Card } from '../ui';
-import { errorMessage } from '../ui/helpers';
-import { useDialog } from '../ui/dialog-context';
+import { useCallback, useEffect, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
+import { Badge, Button, ButtonLink, Card } from '../ui';
+import SanctionDialog from './SanctionDialog';
+import type { SanctionMode } from './SanctionDialog';
+import { useLiftBans } from './useLiftBans';
+import type { AdminOutletContext } from './AdminLayout';
 import { billingApi } from '../../services';
-import type { PlanInfo } from '../../types';
+import type { MySubscription } from '../../types';
+import { isSuperAdminMember } from '../../utils/auth';
 import { formatDate, t } from '../../i18n/core';
 
-/** Admin: cấp gói cho thành viên trong N ngày hoặc hủy gói đang dùng (mục 7.3, nguồn ADMIN_GRANT). */
-export default function MemberPlanCard({ memberId }: { memberId: string }) {
-  const { confirm } = useDialog();
-  const [plans, setPlans] = useState<PlanInfo[]>([]);
-  const [planCode, setPlanCode] = useState('PRO');
-  const [days, setDays] = useState(30);
-  const [busy, setBusy] = useState(false);
+/** Nguồn gói có thể thu hồi (mua hoặc được cấp, có ngày hết hạn). */
+const REVOCABLE_SOURCES = ['PAYMENT', 'ADMIN_GRANT', 'POINTS_TRIAL'];
+
+/**
+ * Admin: gói đang dùng của thành viên (trang chi tiết). SUPER_ADMIN có nút xử lý vi phạm: thu hồi gói đang dùng, cấm dùng gói
+ * trả phí có thời hạn hoặc gỡ cấm, và nút mở trang "Gói thành viên".
+ */
+export default function MemberPlanCard({ memberId, memberName }: { memberId: string; memberName: string }) {
+  const { admin } = useOutletContext<AdminOutletContext>();
+  const canEdit = !!admin && isSuperAdminMember(admin);
+  const [current, setCurrent] = useState<MySubscription | null>(null);
+  const [dialog, setDialog] = useState<SanctionMode | null>(null);
+  const liftBans = useLiftBans();
+
+  const load = useCallback(() => {
+    billingApi
+      .ofMember(memberId)
+      .then((res) => setCurrent(res.data.result))
+      .catch(() => setCurrent(null));
+  }, [memberId]);
 
   useEffect(() => {
-    billingApi
-      .plans()
-      .then((res) => setPlans(res.data.result.filter((p) => p.code !== 'FREE')))
-      .catch(() => setPlans([]));
-  }, []);
+    load();
+  }, [load]);
 
-  const grant = async () => {
-    setBusy(true);
-    try {
-      const res = await billingApi.grant({ memberId, planCode, days });
-      const { plan, expiresAt } = res.data.result;
-      toast.success(t('admin.plan.granted', { plan: plan.name, date: expiresAt ? formatDate(expiresAt) : '' }));
-    } catch (error) {
-      toast.error(errorMessage(error, t('admin.plan.failed')));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const cancel = async () => {
-    if (!(await confirm({ title: t('admin.plan.cancelTitle'), message: t('admin.plan.cancelMessage') }))) return;
-    setBusy(true);
-    try {
-      await billingApi.cancel(memberId);
-      toast.success(t('admin.plan.canceled'));
-    } catch (error) {
-      toast.error(errorMessage(error, t('admin.plan.failed')));
-    } finally {
-      setBusy(false);
-    }
-  };
+  const target = { id: memberId, name: memberName };
+  const isSuperTarget = current?.roleGrant === 'SUPER_ADMIN';
+  const revocable = !!current?.expiresAt && REVOCABLE_SOURCES.includes(current.source ?? '');
 
   return (
-    <Card title={t('admin.plan.title')} description={t('admin.plan.hint')}>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center' }}>
-        <select
-          className="adm-input"
-          value={planCode}
-          aria-label={t('admin.plan.plan')}
-          disabled={busy}
-          onChange={(e) => setPlanCode(e.target.value)}
-        >
-          {plans.map((p) => (
-            <option key={p.code} value={p.code}>
-              {p.name}
-            </option>
+    <Card
+      title={t('admin.plan.title')}
+      actions={
+        canEdit ? (
+          <>
+            {current && !isSuperTarget && revocable && (
+              <Button size="sm" variant="ghost" onClick={() => setDialog('revoke')}>
+                {t('admin.sanctions.revoke')}
+              </Button>
+            )}
+            {current && !isSuperTarget && (current.bans?.length ?? 0) > 0 && (
+              <Button
+                size="sm"
+                onClick={async () => {
+                  if (await liftBans([target])) load();
+                }}
+              >
+                {t('admin.sanctions.lift')}
+              </Button>
+            )}
+            {current && !isSuperTarget && (current.heldPlans?.length ?? 0) > 0 && (
+              <Button size="sm" variant="danger" icon="lock" onClick={() => setDialog('ban')}>
+                {t('admin.sanctions.ban')}
+              </Button>
+            )}
+            <ButtonLink to="/admin/member-plans" size="sm" variant="primary" icon="star">
+              {t('admin.grants.open')}
+            </ButtonLink>
+          </>
+        ) : undefined
+      }
+    >
+      {current ? (
+        <p className="adm-member-plan__current">
+          <strong>{current.status === 'UNLIMITED' ? t('billing.unlimitedPlan') : current.plan.name}</strong>{' '}
+          <Badge tone={current.status === 'FREE' ? 'neutral' : 'success'}>
+            {t(`billing.status.${current.status}`)}
+          </Badge>
+          {current.source && <span className="adm-muted"> · {t(`billing.source.${current.source}`)}</span>}
+          {current.expiresAt && (
+            <span className="adm-muted"> · {t('billing.myPlan.expires', { date: formatDate(current.expiresAt) })}</span>
+          )}
+          {current.bans?.map((b) => (
+            <span key={b.planCode}>
+              {' '}
+              <Badge tone="danger">
+                {t('admin.sanctions.banBadge', { plan: b.planName, date: formatDate(b.until) })}
+              </Badge>
+            </span>
           ))}
-        </select>
-        <input
-          className="adm-input"
-          type="number"
-          min={1}
-          max={3650}
-          style={{ width: 100 }}
-          value={days}
-          aria-label={t('admin.plan.days')}
-          disabled={busy}
-          onChange={(e) => setDays(Number(e.target.value))}
+        </p>
+      ) : (
+        <p className="adm-muted">—</p>
+      )}
+      {!canEdit && <p className="adm-field__hint">{t('admin.plan.readOnly')}</p>}
+      {dialog && (
+        <SanctionDialog
+          mode={dialog}
+          members={[target]}
+          onClose={() => setDialog(null)}
+          onDone={() => {
+            setDialog(null);
+            load();
+          }}
         />
-        <span>{t('admin.plan.daysUnit')}</span>
-        <Button variant="primary" disabled={busy || days < 1 || days > 3650} onClick={grant}>
-          {t('admin.plan.grant')}
-        </Button>
-        <Button variant="ghost" disabled={busy} onClick={cancel}>
-          {t('admin.plan.cancel')}
-        </Button>
-      </div>
+      )}
     </Card>
   );
 }

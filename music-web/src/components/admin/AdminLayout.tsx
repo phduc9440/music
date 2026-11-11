@@ -60,7 +60,11 @@ const MENU: { section: string; items: MenuItem[] }[] = [
     item('/admin/tags', 'tags', 'tag'),
     item('/admin/composers', 'composers', 'users'),
   ]),
-  section('billing', [item('/admin/revenue', 'revenue', 'chart'), item('/admin/plans', 'plans', 'star')]),
+  section('billing', [
+    item('/admin/revenue', 'revenue', 'chart'),
+    item('/admin/plans', 'plans', 'star'),
+    item('/admin/member-plans', 'memberPlans', 'users'),
+  ]),
   section('system', [item('/admin/ai-tasks', 'aiTasks', 'cpu'), item('/admin/system', 'system', 'activity')]),
 ];
 
@@ -254,7 +258,6 @@ export default function AdminLayout() {
           </div>
         </main>
       </div>
-
 
       <ChangePasswordModal isOpen={passwordOpen} onClose={() => setPasswordOpen(false)} />
     </div>

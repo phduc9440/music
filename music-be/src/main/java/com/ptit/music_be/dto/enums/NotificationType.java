@@ -27,5 +27,11 @@ public enum NotificationType {
     /** Thanh toán gói thành công, gói đã được kích hoạt. */
     PLAN_ACTIVATED,
     /** Nhắc gói sắp hết hạn (còn 7 ngày và còn 1 ngày). */
-    PLAN_EXPIRING
+    PLAN_EXPIRING,
+    /** Gói đang dùng bị thu hồi do vi phạm (kèm lý do). */
+    PLAN_REVOKED,
+    /** Bị cấm dùng gói trả phí đến một ngày (kèm lý do). */
+    PLAN_BANNED,
+    /** Được gỡ lệnh cấm dùng gói trả phí sớm. */
+    PLAN_BAN_LIFTED
 }

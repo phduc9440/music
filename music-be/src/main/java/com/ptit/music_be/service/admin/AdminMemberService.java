@@ -9,6 +9,12 @@ public interface AdminMemberService {
 
     PageResponse<MemberResponse> getMembers(int page, int size, String keyword);
 
+    /**
+     * Như {@link #getMembers}, lọc thêm theo gói đang dùng ({@code planCode}, PRO gồm cả ADMIN dùng Pro theo vai trò) và
+     * chỉ người đang bị cấm ({@code bannedOnly}). Dùng ở trang Gói thành viên.
+     */
+    PageResponse<MemberResponse> getMembersWithPlan(int page, int size, String keyword, String planCode, boolean bannedOnly);
+
     MemberResponse getMember(String memberId);
 
     /** Hồ sơ cùng số bản nhạc, playlist, nhận xét, luyện tập và các bản nhạc gần đây của thành viên. */

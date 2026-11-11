@@ -21,5 +21,8 @@
   "OFFICIAL_ACCEPTED": "{name} đã đồng ý đưa bản nhạc “{title}” vào kho bản nhạc mẫu",
   "OFFICIAL_DECLINED": "{name} đã từ chối đưa bản nhạc “{title}” vào kho bản nhạc mẫu",
   "PLAN_ACTIVATED": "Thanh toán thành công, gói {plan} đã được kích hoạt",
-  "PLAN_EXPIRING": "Gói {plan} của bạn sẽ hết hạn sau {days} ngày (ngày {date}). Hãy mua lại để không bị gián đoạn"
+  "PLAN_EXPIRING": "Gói {plan} của bạn sẽ hết hạn sau {days} ngày (ngày {date}). Hãy mua lại để không bị gián đoạn",
+  "PLAN_REVOKED": "Gói {plan} của bạn đã bị thu hồi",
+  "PLAN_BANNED": "Bạn bị cấm dùng gói {plan} đến ngày {date} (vẫn dùng được Free hoặc mua gói khác)",
+  "PLAN_BAN_LIFTED": "Bạn đã được gỡ lệnh cấm gói"
 }
