@@ -1,10 +1,14 @@
 package com.ptit.music_be.controller.admin;
 
+import java.util.List;
+
 import org.springframework.web.bind.annotation.*;
 
+import com.ptit.music_be.dto.request.BulkGrantPlanRequest;
 import com.ptit.music_be.dto.request.GrantPlanRequest;
 import com.ptit.music_be.dto.request.SuspendRolePlanRequest;
 import com.ptit.music_be.dto.response.ApiResponse;
+import com.ptit.music_be.dto.response.BulkGrantResult;
 import com.ptit.music_be.dto.response.MySubscriptionResponse;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
@@ -38,6 +42,22 @@ public class AdminSubscriptionController {
         }
         return ApiResponse.<MySubscriptionResponse>builder()
                 .result(subscriptionService.grant(request.getMemberId(), request.getPlanCode(), request.getMonths()))
+                .build();
+    }
+
+    @PostMapping("/bulk")
+    @Operation(
+            summary = "Cấp một gói cá nhân cho nhiều thành viên (tối đa 200), chỉ SUPER_ADMIN",
+            description = "Cùng gói đang dùng thì gia hạn nối tiếp. Trả kết quả từng người: GRANTED / RENEWED / SKIPPED /"
+                    + " FAILED. Errors: 1002 không phải SUPER_ADMIN, 1009 danh sách trống hoặc quá 200, 3701 gói không"
+                    + " tồn tại, 3703 số tháng sai, 3727 gói team hoặc Free",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<List<BulkGrantResult>> grantMany(@RequestBody BulkGrantPlanRequest request) {
+        if (request.getPlanCode() == null || request.getMonths() == null) {
+            throw new AppException(ErrorCode.INVALID_REQUEST);
+        }
+        return ApiResponse.<List<BulkGrantResult>>builder()
+                .result(subscriptionService.grantMany(request.getMemberIds(), request.getPlanCode(), request.getMonths()))
                 .build();
     }
 

@@ -22,6 +22,14 @@ type PlanPayload = {
   sortOrder: number | null;
 };
 
+/** Kết quả cấp gói hàng loạt cho một người. */
+type BulkGrantResult = {
+  memberId: string;
+  status: 'GRANTED' | 'RENEWED' | 'SKIPPED' | 'FAILED';
+  reason?: string | null;
+  expiresAt?: string | null;
+};
+
 export const billingApi = {
   plans: () => apiClient.get<ApiResponse<PlanInfo[]>>('/public/plans'),
   mine: () => apiClient.get<ApiResponse<MySubscription>>('/subscriptions/me'),
@@ -29,6 +37,9 @@ export const billingApi = {
   grant: (data: { memberId: string; planCode: string; months: number }) =>
     apiClient.post<ApiResponse<MySubscription>>('/admin/subscriptions', data),
   ofMember: (memberId: string) => apiClient.get<ApiResponse<MySubscription>>(`/admin/subscriptions/${memberId}`),
+  // Cấp một gói cá nhân cho nhiều người (tối đa 200), kết quả từng người
+  grantMany: (data: { planCode: string; months: number; memberIds: string[] }) =>
+    apiClient.post<ApiResponse<BulkGrantResult[]>>('/admin/subscriptions/bulk', data),
   // Tạm ngưng gói Pro theo vai trò của ADMIN (months: 0 = hết tháng này) / mở lại sớm
   suspendRolePlan: (memberId: string, data: { months: number; reason?: string }) =>
     apiClient.post<ApiResponse<MySubscription>>(`/admin/subscriptions/${memberId}/role-plan-suspension`, data),

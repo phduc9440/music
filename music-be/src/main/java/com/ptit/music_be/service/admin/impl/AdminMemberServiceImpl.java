@@ -58,16 +58,27 @@ public class AdminMemberServiceImpl implements AdminMemberService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<MemberResponse> getMembers(int page, int size, String keyword) {
+        return toPage(memberRepository.search(cleanKeyword(keyword), pageOf(page, size)));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<MemberResponse> getPlainAdmins(int page, int size, String keyword) {
+        return toPage(memberRepository.searchPlainAdmins(cleanKeyword(keyword), pageOf(page, size)));
+    }
+
+    private static String cleanKeyword(String keyword) {
+        String k = keyword == null || keyword.isBlank() ? null : keyword.trim();
+        return k != null && k.length() > 100 ? k.substring(0, 100) : k;
+    }
+
+    private static PageRequest pageOf(int page, int size) {
         int safeSize = size <= 0 ? DEFAULT_PAGE_SIZE : Math.min(size, MAX_PAGE_SIZE);
-        String safeKeyword = keyword == null || keyword.isBlank() ? null : keyword.trim();
-        if (safeKeyword != null && safeKeyword.length() > 100) {
-            safeKeyword = safeKeyword.substring(0, 100);
-        }
+        return PageRequest.of(Math.max(page, 0), safeSize, Sort.by("email").ascending());
+    }
 
-        Page<Member> result = memberRepository.search(
-                safeKeyword,
-                PageRequest.of(Math.max(page, 0), safeSize, Sort.by("email").ascending()));
-
+    /** Trang thành viên kèm gói đang dùng của cả trang (một truy vấn). */
+    private PageResponse<MemberResponse> toPage(Page<Member> result) {
         List<MemberResponse> content = result.getContent().stream()
                 .map(memberMapper::toMemberResponse)
                 .toList();

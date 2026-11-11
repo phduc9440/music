@@ -127,7 +127,7 @@ export default function AdminMemberDetail() {
         />
       </StatGrid>
 
-      {id && <MemberPlanCard memberId={id} />}
+      {id && <MemberPlanCard memberId={id} memberName={m ? m.fullName || m.email : ''} />}
 
       <div className="adm-grid-2">
         <Card title={t('admin.members.accountInfo')}>

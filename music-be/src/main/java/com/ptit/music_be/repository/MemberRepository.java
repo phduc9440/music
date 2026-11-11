@@ -88,4 +88,16 @@ public interface MemberRepository extends JpaRepository<Member, String> {
 			OR LOWER(m.fullName) LIKE LOWER(CONCAT('%', :keyword, '%'))
 			""")
     Page<Member> search(@Param("keyword") String keyword, Pageable pageable);
+
+    /** Như {@link #search} nhưng chỉ quản trị viên thường (có ADMIN, không có SUPER_ADMIN): trang Tạm ngưng gói. */
+    @Query(
+            """
+			SELECT m FROM Member m
+			WHERE (:keyword IS NULL
+				OR LOWER(m.email) LIKE LOWER(CONCAT('%', :keyword, '%'))
+				OR LOWER(m.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')))
+			AND EXISTS (SELECT 1 FROM MemberRole a WHERE a.member = m AND a.role.name = 'ADMIN')
+			AND NOT EXISTS (SELECT 1 FROM MemberRole s WHERE s.member = m AND s.role.name = 'SUPER_ADMIN')
+			""")
+    Page<Member> searchPlainAdmins(@Param("keyword") String keyword, Pageable pageable);
 }

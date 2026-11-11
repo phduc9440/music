@@ -38,6 +38,19 @@ public class AdminMemberController {
                 .build();
     }
 
+    @GetMapping("/plain-admins")
+    @Operation(
+            summary = "Danh sách quản trị viên thường (ADMIN, không phải SUPER_ADMIN) kèm gói đang dùng",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<PageResponse<MemberResponse>> getPlainAdmins(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String keyword) {
+        return ApiResponse.<PageResponse<MemberResponse>>builder()
+                .result(adminMemberService.getPlainAdmins(page, size, keyword))
+                .build();
+    }
+
     @GetMapping("/{memberId}")
     @Operation(summary = "Chi tiết thành viên", security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<MemberResponse> getMember(@PathVariable String memberId) {

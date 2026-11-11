@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Badge, ButtonLink, Card } from '../ui';
+import { Badge, Button, ButtonLink, Card } from '../ui';
+import SuspendRolePlanDialog from './SuspendRolePlanDialog';
+import { useLiftRolePlan } from './useLiftRolePlan';
 import type { AdminOutletContext } from './AdminLayout';
 import { billingApi } from '../../services';
 import type { MySubscription } from '../../types';
@@ -8,29 +10,55 @@ import { isSuperAdminMember } from '../../utils/auth';
 import { formatDate, t } from '../../i18n/core';
 
 /**
- * Admin: gói đang dùng của thành viên (trang chi tiết). Cấp, gia hạn, hủy gói và tạm ngưng Pro của ADMIN làm ở trang
- * "Cấp gói" trong sidebar; SUPER_ADMIN có nút mở thẳng trang đó cho người này.
+ * Admin: gói đang dùng của thành viên (trang chi tiết). SUPER_ADMIN có nút tạm ngưng / mở lại gói Pro theo vai trò (với
+ * ADMIN thường) và nút mở trang "Gói thành viên".
  */
-export default function MemberPlanCard({ memberId }: { memberId: string }) {
+export default function MemberPlanCard({ memberId, memberName }: { memberId: string; memberName: string }) {
   const { admin } = useOutletContext<AdminOutletContext>();
   const canGrant = !!admin && isSuperAdminMember(admin);
   const [current, setCurrent] = useState<MySubscription | null>(null);
+  const [suspending, setSuspending] = useState(false);
+  const lift = useLiftRolePlan();
 
-  useEffect(() => {
+  const load = useCallback(() => {
     billingApi
       .ofMember(memberId)
       .then((res) => setCurrent(res.data.result))
       .catch(() => setCurrent(null));
   }, [memberId]);
 
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  // Chỉ quản trị viên thường mới có gói Pro theo vai trò để tạm ngưng
+  const isPlainAdmin = current?.roleGrant === 'ADMIN';
+
   return (
     <Card
       title={t('admin.plan.title')}
       actions={
         canGrant ? (
-          <ButtonLink to={`/admin/plan-grants?member=${memberId}`} size="sm" variant="primary" icon="star">
-            {t('admin.grants.open')}
-          </ButtonLink>
+          <>
+            {isPlainAdmin &&
+              (current?.rolePlanSuspendedUntil ? (
+                <Button
+                  size="sm"
+                  onClick={async () => {
+                    if (await lift({ id: memberId, name: memberName })) load();
+                  }}
+                >
+                  {t('admin.suspensions.lift')}
+                </Button>
+              ) : (
+                <Button size="sm" variant="danger" icon="lock" onClick={() => setSuspending(true)}>
+                  {t('admin.suspensions.suspend')}
+                </Button>
+              ))}
+            <ButtonLink to="/admin/member-plans" size="sm" variant="primary" icon="star">
+              {t('admin.grants.open')}
+            </ButtonLink>
+          </>
         ) : undefined
       }
     >
@@ -47,7 +75,7 @@ export default function MemberPlanCard({ memberId }: { memberId: string }) {
           {current.rolePlanSuspendedUntil && (
             <span className="adm-muted">
               {' '}
-              · {t('admin.grants.roleSuspended', { date: formatDate(current.rolePlanSuspendedUntil) })}
+              · {t('admin.suspensions.suspendedUntil', { date: formatDate(current.rolePlanSuspendedUntil) })}
             </span>
           )}
         </p>
@@ -55,6 +83,16 @@ export default function MemberPlanCard({ memberId }: { memberId: string }) {
         <p className="adm-muted">—</p>
       )}
       {!canGrant && <p className="adm-field__hint">{t('admin.plan.readOnly')}</p>}
+      {suspending && (
+        <SuspendRolePlanDialog
+          member={{ id: memberId, name: memberName }}
+          onClose={() => setSuspending(false)}
+          onDone={() => {
+            setSuspending(false);
+            load();
+          }}
+        />
+      )}
     </Card>
   );
 }

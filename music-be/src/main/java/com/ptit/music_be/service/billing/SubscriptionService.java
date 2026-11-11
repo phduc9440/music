@@ -57,6 +57,13 @@ public interface SubscriptionService {
      */
     MySubscriptionResponse grant(String memberId, String planCode, int months);
 
+    /**
+     * Cấp một gói cá nhân cho nhiều người (cùng quy tắc với {@link #grant}). Người đang dùng đúng gói thì gia hạn nối tiếp;
+     * SUPER_ADMIN và ADMIN đang có Pro theo vai trò (khi cấp Pro) được bỏ qua. Trả kết quả từng người theo thứ tự gửi lên.
+     */
+    java.util.List<com.ptit.music_be.dto.response.BulkGrantResult> grantMany(
+            java.util.List<String> memberIds, String planCode, int months);
+
     /** SUPER_ADMIN hủy gói hiện tại của thành viên (về Free ngay). */
     void cancel(String memberId);
 

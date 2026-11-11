@@ -337,4 +337,42 @@ class SubscriptionServiceImplTest {
         e = assertThrows(AppException.class, () -> service.liftRolePlanSuspension("u"));
         assertEquals(ErrorCode.ROLE_PLAN_NOT_APPLICABLE, e.getErrorCode());
     }
+
+    @Test
+    void grantManyGrantsRenewsAndSkipsPerMember() {
+        Plan premium = Plan.builder().id("premium").code("PREMIUM").name("Premium").sortOrder(3).limits("{}").build();
+        Member newbie = Member.builder().id("newbie").build();
+        Member loyal = Member.builder().id("loyal").build();
+        Subscription loyalSub = current(premium, LocalDateTime.of(2027, 3, 31, 9, 0));
+        when(plans.findByCode("PREMIUM")).thenReturn(Optional.of(premium));
+        when(memberRepo.findById("newbie")).thenReturn(Optional.of(newbie));
+        when(memberRepo.findById("loyal")).thenReturn(Optional.of(loyal));
+        when(memberRepo.findById("boss")).thenReturn(Optional.of(Member.builder().id("boss").build()));
+        when(memberRepo.findById("ghost")).thenReturn(Optional.empty());
+        when(memberRepo.roleNamesOf("boss")).thenReturn(List.of("ADMIN", "SUPER_ADMIN"));
+        when(subs.findCurrentOne(eq("newbie"), any())).thenReturn(Optional.empty());
+        when(subs.findCurrentOne(eq("loyal"), any())).thenReturn(Optional.of(loyalSub));
+
+        var results = service.grantMany(List.of("newbie", "loyal", "boss", "ghost", "loyal"), "PREMIUM", 2);
+
+        assertEquals(4, results.size());
+        assertEquals("GRANTED", results.get(0).getStatus());
+        assertEquals("RENEWED", results.get(1).getStatus());
+        assertEquals(LocalDateTime.of(2027, 5, 31, 9, 0), loyalSub.getExpiresAt());
+        assertEquals("SKIPPED", results.get(2).getStatus());
+        assertEquals("FAILED", results.get(3).getStatus());
+    }
+
+    @Test
+    void grantManyRejectsTeamPlanAndBadInput() {
+        Plan teamPro = Plan.builder().id("tp").code("TEAM_PRO").audience(Plan.TEAM).limits("{}").build();
+        when(plans.findByCode("TEAM_PRO")).thenReturn(Optional.of(teamPro));
+
+        AppException e = assertThrows(AppException.class, () -> service.grantMany(List.of("a"), "TEAM_PRO", 1));
+        assertEquals(ErrorCode.PLAN_NOT_GRANTABLE, e.getErrorCode());
+        e = assertThrows(AppException.class, () -> service.grantMany(List.of(), "PRO", 1));
+        assertEquals(ErrorCode.INVALID_REQUEST, e.getErrorCode());
+        e = assertThrows(AppException.class, () -> service.grantMany(List.of("a"), "PRO", 0));
+        assertEquals(ErrorCode.SUBSCRIPTION_MONTHS_INVALID, e.getErrorCode());
+    }
 }

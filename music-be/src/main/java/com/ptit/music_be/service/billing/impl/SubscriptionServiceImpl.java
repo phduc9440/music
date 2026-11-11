@@ -12,6 +12,7 @@ import com.ptit.music_be.dto.enums.NotificationType;
 import com.ptit.music_be.dto.enums.SubscriptionSource;
 import com.ptit.music_be.dto.enums.SubscriptionStatus;
 import com.ptit.music_be.dto.enums.UsageMetric;
+import com.ptit.music_be.dto.response.BulkGrantResult;
 import com.ptit.music_be.dto.response.MemberPlanSummary;
 import com.ptit.music_be.dto.response.MySubscriptionResponse;
 import com.ptit.music_be.dto.response.PlanResponse;
@@ -47,6 +48,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     static final String ROLE_SUPER_ADMIN = "SUPER_ADMIN";
     static final String ROLE_ADMIN = "ADMIN";
     static final int MAX_GRANT_MONTHS = 120;
+    static final int MAX_BULK_GRANT = 200;
     /** Số ngày còn lại để nhắc, từ xa tới gần. */
     static final int[] REMIND_DAYS = {7, 1};
 
@@ -361,6 +363,54 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         Subscription current =
                 subscriptionRepository.findCurrentOne(memberId, LocalDateTime.now()).orElseThrow();
         return toMine(current, plan, 0);
+    }
+
+    @Override
+    @Transactional
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public java.util.List<BulkGrantResult> grantMany(java.util.List<String> memberIds, String planCode, int months) {
+        if (memberIds == null || memberIds.isEmpty() || memberIds.size() > MAX_BULK_GRANT) {
+            throw new AppException(ErrorCode.INVALID_REQUEST);
+        }
+        if (months < 1 || months > MAX_GRANT_MONTHS) {
+            throw new AppException(ErrorCode.SUBSCRIPTION_MONTHS_INVALID);
+        }
+        Plan plan = planRepository.findByCode(planCode).orElseThrow(() -> new AppException(ErrorCode.PLAN_NOT_EXISTED));
+        if (!Plan.PERSONAL.equals(plan.getAudience()) || FREE.equals(plan.getCode())) {
+            throw new AppException(ErrorCode.PLAN_NOT_GRANTABLE);
+        }
+        Period duration = Period.ofMonths(months);
+        java.util.List<BulkGrantResult> results = new java.util.ArrayList<>();
+        for (String memberId : new java.util.LinkedHashSet<>(memberIds)) {
+            results.add(grantOne(memberId, plan, duration));
+        }
+        return results;
+    }
+
+    /** Cấp cho một người trong lần cấp hàng loạt; không ném lỗi để một người lỗi không làm hỏng cả lần cấp. */
+    private BulkGrantResult grantOne(String memberId, Plan plan, Period duration) {
+        Member member = memberRepository.findById(memberId).orElse(null);
+        if (member == null) {
+            return new BulkGrantResult(memberId, "FAILED", ErrorCode.USER_NOT_EXISTED.name(), null);
+        }
+        String grant = roleGrant(memberId);
+        if (ROLE_SUPER_ADMIN.equals(grant)) {
+            return new BulkGrantResult(memberId, "SKIPPED", ErrorCode.PAYMENT_NOT_NEEDED.name(), null);
+        }
+        LocalDateTime now = LocalDateTime.now();
+        Subscription current = subscriptionRepository.findCurrentOne(memberId, now).orElse(null);
+        if (ROLE_ADMIN.equals(grant) && PRO.equals(plan.getCode()) && suspendedUntil(memberId) == null
+                && current == null) {
+            // ADMIN đang có Pro không thời hạn: cấp Pro không thêm gì
+            return new BulkGrantResult(memberId, "SKIPPED", ErrorCode.PAYMENT_NOT_NEEDED.name(), null);
+        }
+        boolean renew = current != null && current.getPlan().getId().equals(plan.getId());
+        activate(member, plan, duration, SubscriptionSource.ADMIN_GRANT);
+        LocalDateTime expiresAt = subscriptionRepository
+                .findCurrentOne(memberId, now)
+                .map(Subscription::getExpiresAt)
+                .orElse(null);
+        return new BulkGrantResult(memberId, renew ? "RENEWED" : "GRANTED", null, expiresAt);
     }
 
     @Override

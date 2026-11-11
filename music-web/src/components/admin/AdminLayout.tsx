@@ -63,7 +63,7 @@ const MENU: { section: string; items: MenuItem[] }[] = [
   section('billing', [
     item('/admin/revenue', 'revenue', 'chart'),
     item('/admin/plans', 'plans', 'star'),
-    item('/admin/plan-grants', 'planGrants', 'users'),
+    item('/admin/member-plans', 'memberPlans', 'users'),
   ]),
   section('system', [item('/admin/ai-tasks', 'aiTasks', 'cpu'), item('/admin/system', 'system', 'activity')]),
 ];
