@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { Badge, Button, Card, PageHeader, StatCard, StatGrid, Table, TableState } from '../../components/ui';
 import { errorMessage, formatDateTime } from '../../components/ui/helpers';
+import type { Tone } from '../../components/ui/helpers';
 import { useDialog } from '../../components/ui/dialog-context';
 import { billingApi } from '../../services';
 import type { PaymentKind, PaymentOrder, PaymentStatus, Revenue } from '../../types';
@@ -9,8 +10,14 @@ import { formatDate, formatNumber, formatVnd, t } from '../../i18n/core';
 
 const KINDS: PaymentKind[] = ['NEW', 'RENEW'];
 const STATUSES: PaymentStatus[] = ['PENDING', 'PAID', 'FAILED', 'EXPIRED', 'REFUNDED'];
-const KIND_TONE = { NEW: 'info', RENEW: 'success' } as const;
-const TONE = { PAID: 'success', PENDING: 'warning', FAILED: 'danger', EXPIRED: 'neutral', REFUNDED: 'violet' } as const;
+const KIND_TONE: Record<PaymentKind, Tone> = { NEW: 'primary', RENEW: 'success' };
+const TONE: Record<PaymentStatus, Tone> = {
+  PAID: 'success',
+  PENDING: 'warning',
+  FAILED: 'danger',
+  EXPIRED: 'neutral',
+  REFUNDED: 'violet',
+};
 const PAGE_SIZE = 15;
 
 /** Admin (mục 7.4): doanh thu theo ngày và theo gói, danh sách đơn thanh toán, hoàn tiền thủ công. */
