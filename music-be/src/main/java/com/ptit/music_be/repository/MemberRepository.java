@@ -106,7 +106,7 @@ public interface MemberRepository extends JpaRepository<Member, String> {
 					AND EXISTS (SELECT 1 FROM MemberRole a WHERE a.member = m AND a.role.name = 'ADMIN')
 					AND NOT EXISTS (SELECT 1 FROM MemberRole x WHERE x.member = m AND x.role.name = 'SUPER_ADMIN')))
 			AND (:bannedOnly = false
-				OR EXISTS (SELECT 1 FROM PlanSanction b WHERE b.memberId = m.id AND b.type = 'BAN'
+				OR EXISTS (SELECT 1 FROM PlanSanction b WHERE b.member = m AND b.type = 'BAN'
 					AND b.liftedAt IS NULL AND b.startsAt <= :now AND b.endsAt > :now))
 			""")
     Page<Member> searchWithPlan(

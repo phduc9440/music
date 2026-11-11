@@ -310,13 +310,14 @@ CREATE TABLE IF NOT EXISTS subscriptions (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Xử lý vi phạm về gói (SUPER_ADMIN thực hiện). REVOKE: thu hồi gói đang dùng (subscription bị hủy ngay, muốn dùng lại
--- phải mua lại; ends_at NULL). BAN: cấm dùng gói trả phí đến ends_at (chỉ dùng Free, không mua/được cấp gói, ADMIN cũng mất
--- Pro theo vai trò); hết hạn thì tự hết cấm, lifted_at là lúc gỡ cấm sớm.
+-- phải mua lại; ends_at NULL). BAN: cấm dùng gói plan_id đến ends_at (không dùng, mua hay được cấp lại gói đó; vẫn dùng Free
+-- hoặc mua gói khác; ADMIN bị cấm Pro thì mất Pro theo vai trò); hết hạn thì tự hết cấm, lifted_at là lúc gỡ cấm sớm.
 CREATE TABLE IF NOT EXISTS plan_sanctions (
     id              VARCHAR(36)  NOT NULL,
     member_id       VARCHAR(36)  NOT NULL,
     type            VARCHAR(10)  NOT NULL COMMENT 'REVOKE / BAN',
-    subscription_id VARCHAR(36)  NULL COMMENT 'REVOKE: gói bị thu hồi',
+    plan_id         VARCHAR(36)  NOT NULL COMMENT 'Gói bị thu hồi / bị cấm',
+    subscription_id VARCHAR(36)  NULL COMMENT 'REVOKE: gói (subscription) bị thu hồi',
     starts_at       DATETIME(6)  NOT NULL,
     ends_at         DATETIME(6)  NULL COMMENT 'BAN: hết cấm lúc này',
     reason          VARCHAR(255) NULL,
@@ -325,7 +326,10 @@ CREATE TABLE IF NOT EXISTS plan_sanctions (
     created_at      DATETIME(6)  NULL,
     PRIMARY KEY (id),
     KEY idx_plan_sanctions_member (member_id, type, ends_at),
-    CONSTRAINT fk_plan_sanctions_member FOREIGN KEY (member_id) REFERENCES members (id)
+    CONSTRAINT fk_plan_sanctions_member       FOREIGN KEY (member_id)       REFERENCES members (id),
+    CONSTRAINT fk_plan_sanctions_plan         FOREIGN KEY (plan_id)         REFERENCES plans (id),
+    CONSTRAINT fk_plan_sanctions_subscription FOREIGN KEY (subscription_id) REFERENCES subscriptions (id),
+    CONSTRAINT fk_plan_sanctions_created_by   FOREIGN KEY (created_by)      REFERENCES members (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Đơn thanh toán gói (mục 7.4). Số tiền là VND nguyên. provider_txn_id là mã giao dịch phía cổng (duy nhất) để chống xử

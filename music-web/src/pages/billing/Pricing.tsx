@@ -34,7 +34,8 @@ export default function Pricing() {
   // Quản trị viên không cần mua: SUPER_ADMIN không giới hạn mọi gói, ADMIN đã có Pro không thời hạn
   const blockedReason = (plan: PlanInfo): string | null => {
     if (mine?.roleGrant === 'SUPER_ADMIN') return t('billing.pricing.notNeeded');
-    if (mine?.bannedUntil) return t('billing.pricing.bannedButton');
+    const ban = mine?.bans?.find((b) => b.planCode === plan.code);
+    if (ban) return t('billing.pricing.bannedButton', { date: formatDate(ban.until) });
     if (mine?.roleGrant === 'ADMIN' && plan.code === 'PRO') return t('billing.pricing.includedForAdmin');
     return null;
   };
@@ -76,11 +77,11 @@ export default function Pricing() {
           ))}
         </div>
 
-        {mine?.bannedUntil && (
-          <p className="bl-note bl-note--danger" role="alert">
-            {t('billing.banned', { date: formatDate(mine.bannedUntil) })}
+        {mine?.bans?.map((b) => (
+          <p key={b.planCode} className="bl-note bl-note--danger" role="alert">
+            {t('billing.banned', { plan: b.planName, date: formatDate(b.until) })}
           </p>
-        )}
+        ))}
         {mine?.roleGrant && (
           <p className="bl-note" role="note">
             {t(`billing.pricing.roleNote.${mine.roleGrant}`)}

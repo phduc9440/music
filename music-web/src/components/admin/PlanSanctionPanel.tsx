@@ -72,7 +72,8 @@ export default function PlanSanctionPanel() {
   const togglePick = (m: Member, on: boolean) =>
     setPicked((all) => {
       const next = { ...all };
-      if (on) next[m.id] = { id: m.id, name: nameOf(m), banned: !!m.plan?.bannedUntil, revocable: revocable(m) };
+      if (on)
+        next[m.id] = { id: m.id, name: nameOf(m), banned: (m.plan?.bans?.length ?? 0) > 0, revocable: revocable(m) };
       else delete next[m.id];
       return next;
     });
@@ -165,7 +166,8 @@ export default function PlanSanctionPanel() {
             {result && rows.length === 0 && <TableState colSpan={6} icon="inbox" title={t('admin.sanctions.empty')} />}
             {rows.map((m) => {
               const name = nameOf(m);
-              const until = m.plan?.bannedUntil;
+              const bans = m.plan?.bans ?? [];
+              const banned = bans.length > 0;
               const isSuper = isSuperAdminMember(m);
               return (
                 <tr key={m.id} className={picked[m.id] ? 'is-selected' : undefined}>
@@ -204,8 +206,14 @@ export default function PlanSanctionPanel() {
                     )}
                   </td>
                   <td>
-                    {until ? (
-                      <Badge tone="danger">{t('admin.sanctions.bannedUntil', { date: formatDate(until) })}</Badge>
+                    {banned ? (
+                      bans.map((b) => (
+                        <div key={b.planCode}>
+                          <Badge tone="danger">
+                            {t('admin.sanctions.banBadge', { plan: b.planName, date: formatDate(b.until) })}
+                          </Badge>
+                        </div>
+                      ))
                     ) : (
                       <span className="adm-muted">{t('admin.sanctions.normal')}</span>
                     )}
@@ -213,7 +221,7 @@ export default function PlanSanctionPanel() {
                   <td className="adm-table__actions">
                     {canEdit && !isSuper && (
                       <div className="adm-table__actions-inner">
-                        {revocable(m) && !until && (
+                        {revocable(m) && (
                           <Button
                             size="sm"
                             variant="ghost"
@@ -223,7 +231,7 @@ export default function PlanSanctionPanel() {
                             {t('admin.sanctions.revoke')}
                           </Button>
                         )}
-                        {until ? (
+                        {banned && (
                           <Button
                             size="sm"
                             disabled={busy}
@@ -233,16 +241,15 @@ export default function PlanSanctionPanel() {
                           >
                             {t('admin.sanctions.lift')}
                           </Button>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="danger"
-                            disabled={busy}
-                            onClick={() => setDialog({ mode: 'ban', members: [{ id: m.id, name }] })}
-                          >
-                            {t('admin.sanctions.ban')}
-                          </Button>
                         )}
+                        <Button
+                          size="sm"
+                          variant="danger"
+                          disabled={busy}
+                          onClick={() => setDialog({ mode: 'ban', members: [{ id: m.id, name }] })}
+                        >
+                          {t('admin.sanctions.ban')}
+                        </Button>
                       </div>
                     )}
                   </td>

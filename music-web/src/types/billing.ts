@@ -33,8 +33,10 @@ export interface MySubscription {
   /** ROLE: quyền lợi theo vai trò quản trị (ADMIN dùng Pro không thời hạn, SUPER_ADMIN không giới hạn). */
   source?: 'PAYMENT' | 'POINTS_TRIAL' | 'ADMIN_GRANT' | 'ROLE' | null;
   roleGrant?: 'SUPER_ADMIN' | 'ADMIN' | null;
-  /** Đang bị cấm dùng gói trả phí đến lúc này (chỉ dùng Free). */
-  bannedUntil?: string | null;
+  /** Các gói đang có (chưa tính lệnh cấm): gói mua/được cấp và Pro theo vai trò của ADMIN. */
+  heldPlans?: HeldPlan[];
+  /** Các gói đang bị cấm dùng (kèm hạn). */
+  bans?: PlanBan[];
   startsAt?: string | null;
   expiresAt?: string | null;
   omrPagesUsed: number;
@@ -73,4 +75,19 @@ export interface Revenue {
   refundedCount: number;
   byDay: { date: string; amount: number; count: number }[];
   byPlan: { planCode: string; planName: string; amount: number; count: number }[];
+}
+
+/** Một lệnh cấm đang hiệu lực (BE: PlanBanInfo). */
+export interface PlanBan {
+  planCode: string;
+  planName: string;
+  until: string;
+}
+
+/** Một gói thành viên đang có, chưa tính lệnh cấm (BE: HeldPlan). source: PAYMENT / ADMIN_GRANT / POINTS_TRIAL / ROLE. */
+export interface HeldPlan {
+  code: string;
+  name: string;
+  source: string;
+  expiresAt?: string | null;
 }

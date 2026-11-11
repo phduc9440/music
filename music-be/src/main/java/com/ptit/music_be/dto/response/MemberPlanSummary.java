@@ -21,6 +21,6 @@ public class MemberPlanSummary {
     String status;
     String source;
     LocalDateTime expiresAt;
-    /** Đang bị cấm dùng gói trả phí đến lúc này; null = không bị cấm. */
-    LocalDateTime bannedUntil;
+    /** Các gói đang bị cấm dùng (kèm hạn); rỗng = không bị cấm gói nào. */
+    java.util.List<PlanBanInfo> bans;
 }

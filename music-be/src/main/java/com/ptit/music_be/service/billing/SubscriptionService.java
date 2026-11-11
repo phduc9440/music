@@ -31,17 +31,19 @@ public interface SubscriptionService {
             java.util.List<String> memberIds, String reason);
 
     /**
-     * SUPER_ADMIN cấm dùng gói trả phí {@code months} tháng (1..120): trong thời gian cấm chỉ dùng Free, không mua hay được
-     * cấp gói, ADMIN cũng mất Pro theo vai trò. Cấm lại thì thay lệnh cũ. SUPER_ADMIN được bỏ qua.
+     * SUPER_ADMIN cấm dùng một gói trong {@code months} tháng (1..120): không dùng, mua hay được cấp lại gói đó; vẫn dùng Free
+     * hoặc mua gói khác (ADMIN bị cấm Pro thì mất Pro theo vai trò). {@code planCode} null = gói đang dùng của từng người
+     * (người đang ở Free được bỏ qua); có giá trị = cấm đúng gói đó (ví dụ người có cả Pro theo vai trò lẫn Premium đã mua).
+     * Cấm lại cùng gói thì thay lệnh cũ. SUPER_ADMIN được bỏ qua.
      */
     java.util.List<com.ptit.music_be.dto.response.BulkGrantResult> banPlans(
-            java.util.List<String> memberIds, int months, String reason);
+            java.util.List<String> memberIds, int months, String reason, String planCode);
 
     /** SUPER_ADMIN gỡ cấm sớm cho từng người. */
     java.util.List<com.ptit.music_be.dto.response.BulkGrantResult> liftBans(java.util.List<String> memberIds);
 
-    /** Đang bị cấm dùng gói trả phí đến lúc nào; null nếu không bị cấm. */
-    java.time.LocalDateTime bannedUntil(String memberId);
+    /** Người này đang bị cấm dùng gói {@code planCode} đến lúc nào; null nếu không bị cấm gói đó. */
+    java.time.LocalDateTime planBannedUntil(String memberId, String planCode);
 
     /** Gói hiện tại của một thành viên bất kỳ (trang chi tiết thành viên ở khu quản trị). */
     MySubscriptionResponse ofMember(String memberId);

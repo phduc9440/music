@@ -122,14 +122,14 @@ public class PaymentServiceImpl implements PaymentService {
 
     /**
      * SUPER_ADMIN không giới hạn nên không mua gói nào; ADMIN đã có Pro không thời hạn nên không mua Pro; người đang bị cấm
-     * dùng gói trả phí thì không mua được gói nào tới khi hết cấm.
+     * dùng gói này thì không mua lại được tới khi hết cấm (gói khác vẫn mua được).
      */
     private void requirePurchaseNeeded(Plan plan, String memberId) {
         if (SecurityUtils.isSuperAdmin()
                 || (SecurityUtils.isAdmin() && SubscriptionServiceImpl.PRO.equals(plan.getCode()))) {
             throw new AppException(ErrorCode.PAYMENT_NOT_NEEDED);
         }
-        if (subscriptionService.bannedUntil(memberId) != null) {
+        if (subscriptionService.planBannedUntil(memberId, plan.getCode()) != null) {
             throw new AppException(ErrorCode.PLAN_BANNED);
         }
     }

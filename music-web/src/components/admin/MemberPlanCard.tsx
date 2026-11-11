@@ -45,27 +45,26 @@ export default function MemberPlanCard({ memberId, memberName }: { memberId: str
       actions={
         canEdit ? (
           <>
-            {current && !isSuperTarget && revocable && !current.bannedUntil && (
+            {current && !isSuperTarget && revocable && (
               <Button size="sm" variant="ghost" onClick={() => setDialog('revoke')}>
                 {t('admin.sanctions.revoke')}
               </Button>
             )}
-            {current &&
-              !isSuperTarget &&
-              (current.bannedUntil ? (
-                <Button
-                  size="sm"
-                  onClick={async () => {
-                    if (await liftBans([target])) load();
-                  }}
-                >
-                  {t('admin.sanctions.lift')}
-                </Button>
-              ) : (
-                <Button size="sm" variant="danger" icon="lock" onClick={() => setDialog('ban')}>
-                  {t('admin.sanctions.ban')}
-                </Button>
-              ))}
+            {current && !isSuperTarget && (current.bans?.length ?? 0) > 0 && (
+              <Button
+                size="sm"
+                onClick={async () => {
+                  if (await liftBans([target])) load();
+                }}
+              >
+                {t('admin.sanctions.lift')}
+              </Button>
+            )}
+            {current && !isSuperTarget && (current.heldPlans?.length ?? 0) > 0 && (
+              <Button size="sm" variant="danger" icon="lock" onClick={() => setDialog('ban')}>
+                {t('admin.sanctions.ban')}
+              </Button>
+            )}
             <ButtonLink to="/admin/member-plans" size="sm" variant="primary" icon="star">
               {t('admin.grants.open')}
             </ButtonLink>
@@ -83,12 +82,14 @@ export default function MemberPlanCard({ memberId, memberName }: { memberId: str
           {current.expiresAt && (
             <span className="adm-muted"> · {t('billing.myPlan.expires', { date: formatDate(current.expiresAt) })}</span>
           )}
-          {current.bannedUntil && (
-            <>
+          {current.bans?.map((b) => (
+            <span key={b.planCode}>
               {' '}
-              <Badge tone="danger">{t('admin.sanctions.bannedUntil', { date: formatDate(current.bannedUntil) })}</Badge>
-            </>
-          )}
+              <Badge tone="danger">
+                {t('admin.sanctions.banBadge', { plan: b.planName, date: formatDate(b.until) })}
+              </Badge>
+            </span>
+          ))}
         </p>
       ) : (
         <p className="adm-muted">—</p>

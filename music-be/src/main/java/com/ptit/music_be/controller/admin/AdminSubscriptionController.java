@@ -83,8 +83,9 @@ public class AdminSubscriptionController {
 
     @PostMapping("/sanctions/ban")
     @Operation(
-            summary = "Cấm dùng gói trả phí N tháng (1..120) cho một hoặc nhiều thành viên, chỉ SUPER_ADMIN",
-            description = "Trong thời gian cấm chỉ dùng Free, không mua hay được cấp gói. Kết quả từng người: BANNED /"
+            summary = "Cấm dùng một gói N tháng (1..120) cho một hoặc nhiều thành viên, chỉ SUPER_ADMIN",
+            description = "planCode = gói bị cấm (bỏ trống = gói đang dùng của từng người). Không dùng, mua hay được cấp lại"
+                    + " gói đó; vẫn dùng Free hoặc mua gói khác. Kết quả từng người: BANNED /"
                     + " SKIPPED / FAILED. Errors: 1002, 1009, 3728 thời hạn hoặc lý do không hợp lệ",
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<List<BulkGrantResult>> ban(@RequestBody PlanSanctionRequest request) {
@@ -92,7 +93,8 @@ public class AdminSubscriptionController {
             throw new AppException(ErrorCode.INVALID_REQUEST);
         }
         return ApiResponse.<List<BulkGrantResult>>builder()
-                .result(subscriptionService.banPlans(request.getMemberIds(), request.getMonths(), request.getReason()))
+                .result(subscriptionService.banPlans(
+                        request.getMemberIds(), request.getMonths(), request.getReason(), request.getPlanCode()))
                 .build();
     }
 

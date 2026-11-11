@@ -60,7 +60,7 @@
       "SUPER_ADMIN": "You are a super admin: every feature is unlimited and you do not need a plan.",
       "ADMIN": "You are an admin: you already have Pro benefits with no expiry. You can still buy a higher plan."
     },
-    "bannedButton": "Banned"
+    "bannedButton": "Banned until {date}"
   },
   "result": {
     "title": "Payment result",
@@ -112,5 +112,5 @@
     "TEAM": "For groups working together; limits are shared by the whole team."
   },
   "unlimitedPlan": "Unlimited",
-  "banned": "Your account is banned from paid plans until {date}. Only the Free plan is available until then."
+  "banned": "You are banned from the {plan} plan until {date}. Free and other plans are still available."
 }

@@ -1,4 +1,5 @@
 import type { AuthProvider, MemberStatus, PracticeMode, SharePermission } from './enums';
+import type { PlanBan } from './billing';
 
 /** Khớp MemberResponse của BE (entity Member). */
 export interface Member {
@@ -88,6 +89,6 @@ export interface MemberPlanSummary {
   status: 'FREE' | 'ACTIVE' | 'UNLIMITED';
   source?: 'PAYMENT' | 'POINTS_TRIAL' | 'ADMIN_GRANT' | 'ROLE' | null;
   expiresAt?: string | null;
-  /** Đang bị cấm dùng gói trả phí đến lúc này. */
-  bannedUntil?: string | null;
+  /** Các gói đang bị cấm dùng (kèm hạn). */
+  bans?: PlanBan[];
 }

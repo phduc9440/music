@@ -2,6 +2,7 @@ package com.ptit.music_be.service.billing.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -299,29 +300,6 @@ class SubscriptionServiceImplTest {
     }
 
     @Test
-    void banForcesFreeEvenForAdminsAndPaidPlansUntilItEnds() {
-        Plan free = Plan.builder().id("free").code("FREE").name("Free").sortOrder(1).limits("{}").build();
-        Plan premium = Plan.builder().id("premium").code("PREMIUM").name("Premium").sortOrder(4).limits("{}").build();
-        when(plans.findByCode("FREE")).thenReturn(Optional.of(free));
-        when(memberRepo.roleNamesOf("mod")).thenReturn(List.of("ADMIN"));
-        when(subs.findCurrentOne(eq("mod"), any()))
-                .thenReturn(Optional.of(current(premium, LocalDateTime.now().plusMonths(2))));
-        var ban = com.ptit.music_be.entity.PlanSanction.builder()
-                .memberId("mod")
-                .type("BAN")
-                .startsAt(LocalDateTime.now().minusDays(1))
-                .endsAt(LocalDateTime.now().plusMonths(1))
-                .build();
-        when(sanctions.findActiveBans(eq("mod"), any())).thenReturn(List.of(ban));
-
-        assertEquals("FREE", service.currentPlan("mod").getCode());
-        assertEquals(ban.getEndsAt(), service.bannedUntil("mod"));
-
-        when(sanctions.findActiveBans(eq("mod"), any())).thenReturn(List.of());
-        assertEquals("PREMIUM", service.currentPlan("mod").getCode());
-    }
-
-    @Test
     void revokeCancelsPaidPlanRecordsItAndNotifies() {
         loginSuper();
         Plan premium = Plan.builder().id("premium").code("PREMIUM").name("Premium").sortOrder(4).limits("{}").build();
@@ -343,51 +321,118 @@ class SubscriptionServiceImplTest {
                 org.mockito.ArgumentCaptor.forClass(com.ptit.music_be.entity.PlanSanction.class);
         verify(sanctions).save(saved.capture());
         assertEquals("REVOKE", saved.getValue().getType());
+        assertEquals(buyer, saved.getValue().getMember());
+        assertEquals(sub, saved.getValue().getSubscription());
         assertEquals("spam", saved.getValue().getReason());
         verify(notifications).notify(eq(buyer), any(), eq(NotificationType.PLAN_REVOKED), any(), any(), any());
     }
 
-    @Test
-    void banManyReplacesOldBanSkipsSuperAdminAndLiftWorks() {
-        loginSuper();
-        Member user = Member.builder().id("user").build();
-        when(memberRepo.findById("user")).thenReturn(Optional.of(user));
-        when(memberRepo.findById("boss")).thenReturn(Optional.of(Member.builder().id("boss").build()));
-        when(memberRepo.roleNamesOf("boss")).thenReturn(List.of("ADMIN", "SUPER_ADMIN"));
-        var old = com.ptit.music_be.entity.PlanSanction.builder()
-                .memberId("user").type("BAN").startsAt(LocalDateTime.now().minusDays(3))
-                .endsAt(LocalDateTime.now().plusDays(3)).build();
-        when(sanctions.findActiveBans(eq("user"), any())).thenReturn(List.of(old));
+    private static Plan planOf(String id, String code, int order) {
+        return Plan.builder().id(id).code(code).name(code).sortOrder(order).limits("{}").build();
+    }
 
-        var results = service.banPlans(List.of("user", "boss"), 3, null);
-
-        assertEquals(List.of("BANNED", "SKIPPED"), results.stream().map(r -> r.getStatus()).toList());
-        assertNotNull(old.getLiftedAt());
-        assertTrue(results.get(0).getExpiresAt().isAfter(LocalDateTime.now().plusMonths(3).minusMinutes(1)));
-        verify(notifications).notify(eq(user), any(), eq(NotificationType.PLAN_BANNED), any(), any(), any());
-
-        AppException e = assertThrows(AppException.class, () -> service.banPlans(List.of("user"), 0, null));
-        assertEquals(ErrorCode.PLAN_SANCTION_INVALID, e.getErrorCode());
-
-        var activeAgain = com.ptit.music_be.entity.PlanSanction.builder()
-                .memberId("user").type("BAN").startsAt(LocalDateTime.now()).endsAt(LocalDateTime.now().plusDays(1)).build();
-        when(sanctions.findActiveBans(eq("user"), any())).thenReturn(List.of(activeAgain));
-        assertEquals("LIFTED", service.liftBans(List.of("user")).getFirst().getStatus());
-        assertNotNull(activeAgain.getLiftedAt());
+    private static com.ptit.music_be.entity.PlanSanction banOf(String memberId, Plan plan, LocalDateTime until) {
+        return com.ptit.music_be.entity.PlanSanction.builder()
+                .member(Member.builder().id(memberId).build())
+                .type("BAN")
+                .plan(plan)
+                .startsAt(LocalDateTime.now().minusDays(1))
+                .endsAt(until)
+                .build();
     }
 
     @Test
-    void bannedMemberCannotBeGranted() {
-        Plan premium = Plan.builder().id("premium").code("PREMIUM").name("Premium").sortOrder(4).limits("{}").build();
+    void banOnlyBlocksTheBannedPlan() {
+        Plan free = planOf("free", "FREE", 1);
+        Plan proPlan = planOf("pro", "PRO", 3);
+        Plan premium = planOf("premium", "PREMIUM", 4);
+        when(plans.findByCode("FREE")).thenReturn(Optional.of(free));
+        when(plans.findByCode("PRO")).thenReturn(Optional.of(proPlan));
+        when(memberRepo.roleNamesOf("mod")).thenReturn(List.of("ADMIN"));
+        when(subs.findCurrentOne(eq("mod"), any()))
+                .thenReturn(Optional.of(current(premium, LocalDateTime.now().plusMonths(2))));
+        LocalDateTime until = LocalDateTime.now().plusMonths(1);
+
+        // ADMIN có Pro theo vai trò + Premium đã mua: cấm Premium thì còn Pro
+        when(sanctions.findActiveBans(eq("mod"), any())).thenReturn(List.of(banOf("mod", premium, until)));
+        assertEquals("PRO", service.currentPlan("mod").getCode());
+        assertEquals(until, service.planBannedUntil("mod", "PREMIUM"));
+        assertNull(service.planBannedUntil("mod", "PRO"));
+
+        // Cấm cả hai thì về Free
+        when(sanctions.findActiveBans(eq("mod"), any()))
+                .thenReturn(List.of(banOf("mod", premium, until), banOf("mod", proPlan, until)));
+        assertEquals("FREE", service.currentPlan("mod").getCode());
+
+        // Hết cấm thì dùng lại Premium
+        when(sanctions.findActiveBans(eq("mod"), any())).thenReturn(List.of());
+        assertEquals("PREMIUM", service.currentPlan("mod").getCode());
+    }
+
+    @Test
+    void banCurrentPlanOrChosenPlanAndLift() {
+        loginSuper();
+        Plan free = planOf("free", "FREE", 1);
+        Plan proPlan = planOf("pro", "PRO", 3);
+        Plan premium = planOf("premium", "PREMIUM", 4);
+        when(plans.findByCode("FREE")).thenReturn(Optional.of(free));
+        when(plans.findByCode("PRO")).thenReturn(Optional.of(proPlan));
+        Member user = Member.builder().id("user").build();
+        when(memberRepo.findById("user")).thenReturn(Optional.of(user));
+        when(memberRepo.findById("freeUser")).thenReturn(Optional.of(Member.builder().id("freeUser").build()));
+        when(memberRepo.findById("boss")).thenReturn(Optional.of(Member.builder().id("boss").build()));
+        when(memberRepo.roleNamesOf("boss")).thenReturn(List.of("ADMIN", "SUPER_ADMIN"));
+        when(subs.findCurrentOne(eq("user"), any()))
+                .thenReturn(Optional.of(current(premium, LocalDateTime.now().plusMonths(2))));
+        when(subs.findCurrentOne(eq("freeUser"), any())).thenReturn(Optional.empty());
+        var old = banOf("user", premium, LocalDateTime.now().plusDays(3));
+        when(sanctions.findActiveBans(eq("user"), any())).thenReturn(List.of(old));
+
+        // Không chọn gói: cấm gói đang dùng. Lệnh cũ cùng gói bị thay; người dùng Free và SUPER_ADMIN bỏ qua
+        when(sanctions.findActiveBans(eq("user"), any())).thenReturn(List.of());
+        var results = service.banPlans(List.of("user", "freeUser", "boss"), 3, null, null);
+        assertEquals(List.of("BANNED", "SKIPPED", "SKIPPED"), results.stream().map(r -> r.getStatus()).toList());
+        org.mockito.ArgumentCaptor<com.ptit.music_be.entity.PlanSanction> saved =
+                org.mockito.ArgumentCaptor.forClass(com.ptit.music_be.entity.PlanSanction.class);
+        verify(sanctions).save(saved.capture());
+        assertEquals("PREMIUM", saved.getValue().getPlan().getCode());
+        verify(notifications).notify(eq(user), any(), eq(NotificationType.PLAN_BANNED), any(), any(), any());
+
+        // Chọn gói: cấm đúng gói đó, lệnh cũ cùng gói được thay
         when(plans.findByCode("PREMIUM")).thenReturn(Optional.of(premium));
-        when(memberRepo.findById("user")).thenReturn(Optional.of(Member.builder().id("user").build()));
-        when(sanctions.findActiveBans(eq("user"), any())).thenReturn(List.of(com.ptit.music_be.entity.PlanSanction.builder()
-                .memberId("user").type("BAN").startsAt(LocalDateTime.now()).endsAt(LocalDateTime.now().plusDays(5)).build()));
+        when(sanctions.findActiveBans(eq("user"), any())).thenReturn(List.of(old));
+        assertEquals("BANNED", service.banPlans(List.of("user"), 1, "spam", "premium").getFirst().getStatus());
+        assertNotNull(old.getLiftedAt());
+
+        AppException e = assertThrows(AppException.class, () -> service.banPlans(List.of("user"), 0, null, null));
+        assertEquals(ErrorCode.PLAN_SANCTION_INVALID, e.getErrorCode());
+        e = assertThrows(AppException.class, () -> service.banPlans(List.of("user"), 1, null, "FREE"));
+        assertEquals(ErrorCode.PLAN_SANCTION_INVALID, e.getErrorCode());
+
+        var active = banOf("user", premium, LocalDateTime.now().plusDays(1));
+        when(sanctions.findActiveBans(eq("user"), any())).thenReturn(List.of(active));
+        assertEquals("LIFTED", service.liftBans(List.of("user")).getFirst().getStatus());
+        assertNotNull(active.getLiftedAt());
+    }
+
+    @Test
+    void bannedPlanCannotBeGrantedButOtherPlansCan() {
+        Plan proPlan = planOf("pro", "PRO", 3);
+        Plan premium = planOf("premium", "PREMIUM", 4);
+        when(plans.findByCode("PREMIUM")).thenReturn(Optional.of(premium));
+        when(plans.findByCode("PRO")).thenReturn(Optional.of(proPlan));
+        Member user = Member.builder().id("user").build();
+        when(memberRepo.findById("user")).thenReturn(Optional.of(user));
+        when(sanctions.findActiveBans(eq("user"), any()))
+                .thenReturn(List.of(banOf("user", premium, LocalDateTime.now().plusDays(5))));
+        when(subs.findCurrentOne(eq("user"), any())).thenReturn(Optional.empty());
 
         AppException e = assertThrows(AppException.class, () -> service.grant("user", "PREMIUM", 1));
         assertEquals(ErrorCode.PLAN_BANNED, e.getErrorCode());
         assertEquals("SKIPPED", service.grantMany(List.of("user"), "PREMIUM", 1).getFirst().getStatus());
+        assertEquals("GRANTED", service.grantMany(List.of("user"), "PRO", 1).getFirst().getStatus());
     }
+
 
     private void loginSuper() {
         org.springframework.security.core.context.SecurityContextHolder.getContext()

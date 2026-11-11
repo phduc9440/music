@@ -43,7 +43,7 @@ export const billingApi = {
   // Xử lý vi phạm (một hoặc nhiều người, tối đa 200): thu hồi gói đang dùng / cấm dùng gói trả phí N tháng / gỡ cấm
   revokePlans: (data: { memberIds: string[]; reason?: string }) =>
     apiClient.post<ApiResponse<BulkResult[]>>('/admin/subscriptions/sanctions/revoke', data),
-  banPlans: (data: { memberIds: string[]; months: number; reason?: string }) =>
+  banPlans: (data: { memberIds: string[]; months: number; reason?: string; planCode?: string }) =>
     apiClient.post<ApiResponse<BulkResult[]>>('/admin/subscriptions/sanctions/ban', data),
   liftBans: (memberIds: string[]) =>
     apiClient.post<ApiResponse<BulkResult[]>>('/admin/subscriptions/sanctions/lift', { memberIds }),

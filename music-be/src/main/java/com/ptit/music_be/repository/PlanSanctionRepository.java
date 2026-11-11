@@ -15,12 +15,12 @@ import com.ptit.music_be.entity.PlanSanction;
 public interface PlanSanctionRepository extends JpaRepository<PlanSanction, String> {
 
     /** Lệnh cấm đang hiệu lực của một người, hết hạn muộn nhất trước. */
-    @Query("select s from PlanSanction s where s.memberId = :memberId and s.type = 'BAN' and s.liftedAt is null"
+    @Query("select s from PlanSanction s where s.member.id = :memberId and s.type = 'BAN' and s.liftedAt is null"
             + " and s.startsAt <= :now and s.endsAt > :now order by s.endsAt desc")
     List<PlanSanction> findActiveBans(@Param("memberId") String memberId, @Param("now") LocalDateTime now);
 
     /** Lệnh cấm đang hiệu lực của nhiều người một lần (danh sách thành viên). */
-    @Query("select s from PlanSanction s where s.memberId in :memberIds and s.type = 'BAN' and s.liftedAt is null"
+    @Query("select s from PlanSanction s where s.member.id in :memberIds and s.type = 'BAN' and s.liftedAt is null"
             + " and s.startsAt <= :now and s.endsAt > :now")
     List<PlanSanction> findActiveBansOfMembers(
             @Param("memberIds") Collection<String> memberIds, @Param("now") LocalDateTime now);

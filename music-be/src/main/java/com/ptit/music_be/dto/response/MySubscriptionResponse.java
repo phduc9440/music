@@ -22,8 +22,13 @@ public class MySubscriptionResponse {
     String source;
     /** SUPER_ADMIN hoặc ADMIN nếu quyền lợi đến từ vai trò; null với người dùng thường. */
     String roleGrant;
-    /** Đang bị cấm dùng gói trả phí đến lúc này (chỉ dùng Free); null = không bị cấm. */
-    java.time.LocalDateTime bannedUntil;
+    /** Các gói đang có (chưa tính lệnh cấm): gói mua/được cấp còn hạn và Pro theo vai trò của ADMIN. */
+    @Builder.Default
+    java.util.List<HeldPlan> heldPlans = new java.util.ArrayList<>();
+
+    /** Các gói đang bị cấm dùng (kèm hạn); rỗng = không bị cấm gói nào. */
+    @Builder.Default
+    java.util.List<PlanBanInfo> bans = new java.util.ArrayList<>();
     LocalDateTime startsAt;
     LocalDateTime expiresAt;
     /** Trang OMR đã dùng trong tháng hiện tại. */

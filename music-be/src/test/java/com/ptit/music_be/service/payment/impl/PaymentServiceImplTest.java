@@ -341,7 +341,7 @@ class PaymentServiceImplTest {
         loginAsBuyer();
         when(plans.findByCode("PRO")).thenReturn(Optional.of(pro));
         when(members.findByEmail("a@x.com")).thenReturn(Optional.of(buyer));
-        when(subscriptions.bannedUntil("m")).thenReturn(LocalDateTime.now().plusMonths(1));
+        when(subscriptions.planBannedUntil("m", "PRO")).thenReturn(LocalDateTime.now().plusMonths(1));
 
         AppException e = assertThrows(
                 AppException.class,

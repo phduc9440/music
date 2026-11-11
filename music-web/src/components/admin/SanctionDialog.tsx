@@ -3,6 +3,7 @@ import { toast } from 'react-toastify';
 import { Icon } from '../ui';
 import { errorMessage } from '../ui/helpers';
 import { billingApi } from '../../services';
+import type { HeldPlan, PlanInfo } from '../../types';
 import { formatDate, t } from '../../i18n/core';
 import '../ui/dialog.css';
 
@@ -30,7 +31,29 @@ export default function SanctionDialog({
   const [months, setMonths] = useState(1);
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
+  // Gói bị cấm: '' = gói đang dùng của từng người; một người thì chọn trong các gói họ đang có
+  const [planCode, setPlanCode] = useState('');
+  const [held, setHeld] = useState<HeldPlan[] | null>(null);
+  const [paidPlans, setPaidPlans] = useState<PlanInfo[]>([]);
   const single = members.length === 1 ? members[0] : null;
+
+  useEffect(() => {
+    if (mode !== 'ban') return;
+    if (single) {
+      billingApi
+        .ofMember(single.id)
+        .then((res) => {
+          const plans = res.data.result.heldPlans ?? [];
+          setHeld(plans);
+          setPlanCode((code) => code || plans[0]?.code || '');
+        })
+        .catch(() => setHeld([]));
+    }
+    billingApi
+      .plans()
+      .then((res) => setPaidPlans(res.data.result.filter((p) => p.code !== 'FREE')))
+      .catch(() => setPaidPlans([]));
+  }, [mode, single]);
   const who = single ? single.name : t('admin.sanctions.people', { count: members.length });
 
   useEffect(() => {
@@ -49,7 +72,7 @@ export default function SanctionDialog({
       const res =
         mode === 'revoke'
           ? await billingApi.revokePlans({ memberIds, reason: note })
-          : await billingApi.banPlans({ memberIds, months, reason: note });
+          : await billingApi.banPlans({ memberIds, months, reason: note, planCode: planCode || undefined });
       const okStatus = mode === 'revoke' ? 'REVOKED' : 'BANNED';
       const done = res.data.result.filter((r) => r.status === okStatus);
       const skipped = res.data.result.length - done.length;
@@ -105,6 +128,38 @@ export default function SanctionDialog({
               <p className="ui-dialog__message">
                 {t(mode === 'revoke' ? 'admin.sanctions.revokeMessage' : 'admin.sanctions.banMessage')}
               </p>
+              {mode === 'ban' && (
+                <label className="ui-dialog__field">
+                  <span>{t('admin.sanctions.planToBan')}</span>
+                  <select
+                    className="ui-dialog__input"
+                    value={planCode}
+                    disabled={busy}
+                    onChange={(e) => setPlanCode(e.target.value)}
+                  >
+                    {single && held && held.length > 0 ? (
+                      held.map((p) => (
+                        <option key={p.code} value={p.code}>
+                          {p.source === 'ROLE'
+                            ? t('admin.sanctions.heldRole', { plan: p.name })
+                            : p.expiresAt
+                              ? t('admin.sanctions.heldUntil', { plan: p.name, date: formatDate(p.expiresAt) })
+                              : p.name}
+                        </option>
+                      ))
+                    ) : (
+                      <>
+                        <option value="">{t('admin.sanctions.currentPlanEach')}</option>
+                        {paidPlans.map((p) => (
+                          <option key={p.code} value={p.code}>
+                            {p.name}
+                          </option>
+                        ))}
+                      </>
+                    )}
+                  </select>
+                </label>
+              )}
               {mode === 'ban' && (
                 <label className="ui-dialog__field">
                   <span>{t('admin.sanctions.duration')}</span>
