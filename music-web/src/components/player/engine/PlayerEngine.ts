@@ -483,10 +483,12 @@ export class PlayerEngine {
     const melody = this.instrumentOf(event.part);
     const instrument = event.trackId === CHORD_TRACK_ID ? accompanimentInstrument(melody) : melody;
     const destination = this.trackNode(event.trackId);
+    const sustain = event.sustain === true;
     const voice =
       (instrument === 'piano'
-        ? this.sampler?.play(this.ctx, { midi, start, duration, level: event.gain, destination })
-        : null) ?? scheduleVoice(this.ctx, { instrument, midi, start, duration, level: event.gain, destination });
+        ? this.sampler?.play(this.ctx, { midi, start, duration, level: event.gain, destination, sustain })
+        : null) ??
+      scheduleVoice(this.ctx, { instrument, midi, start, duration, level: event.gain, destination, sustain });
     this.voices.push({ voice, start });
   }
 
