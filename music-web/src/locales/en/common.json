@@ -18,7 +18,9 @@
       "library": "Library",
       "shared": "Shared with me",
       "playlists": "Playlists",
-      "trash": "Trash"
+      "trash": "Trash",
+      "myPlan": "My plan",
+      "pricing": "Pricing"
     },
     "back": "Back"
   },
@@ -41,7 +43,9 @@
     "profile": "My profile",
     "admin": "Admin area",
     "changePassword": "Change password",
-    "logout": "Sign out"
+    "logout": "Sign out",
+    "upgrade": "Upgrade",
+    "planTitle": "{plan} plan: see limits and renew"
   },
   "theme": {
     "label": "Theme: {name}",

@@ -18,7 +18,9 @@
       "library": "Thư viện",
       "shared": "Được chia sẻ",
       "playlists": "Playlist",
-      "trash": "Thùng rác"
+      "trash": "Thùng rác",
+      "myPlan": "Gói của tôi",
+      "pricing": "Bảng giá"
     },
     "back": "Quay lại"
   },
@@ -41,7 +43,9 @@
     "profile": "Hồ sơ của tôi",
     "admin": "Trang quản trị",
     "changePassword": "Đổi mật khẩu",
-    "logout": "Đăng xuất"
+    "logout": "Đăng xuất",
+    "upgrade": "Nâng cấp",
+    "planTitle": "Gói {plan}: xem hạn mức và gia hạn"
   },
   "theme": {
     "label": "Giao diện: {name}",

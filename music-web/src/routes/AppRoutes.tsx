@@ -33,6 +33,10 @@ import OfficialRequests from '../pages/scores/library/OfficialRequests';
 import OfficialScores from '../pages/scores/library/OfficialScores';
 import PracticeHistory from '../pages/scores/practice/PracticeHistory';
 import PracticeStats from '../pages/scores/practice/PracticeStats';
+import MyPlan from '../pages/billing/MyPlan';
+import Pricing from '../pages/billing/Pricing';
+import BillingResult from '../pages/billing/BillingResult';
+import AdminRevenue from '../pages/admin/AdminRevenue';
 import GuestRoute from './GuestRoute';
 import ProtectedRoute from './ProtectedRoute';
 import RootLayout from './RootLayout';
@@ -64,6 +68,9 @@ const router = createBrowserRouter(
         <Route path="/scores/upload" element={<ScoreUpload />} />
         <Route path="/scores/import" element={<ScoreImport />} />
         <Route path="/explore" element={<ExploreScores />} />
+        <Route path="/pricing" element={<Pricing />} />
+        <Route path="/billing" element={<MyPlan />} />
+        <Route path="/billing/result" element={<BillingResult />} />
         <Route path="/composers" element={<Composers />} />
         <Route path="/composers/:slug" element={<ComposerDetail />} />
         <Route path="/scores/official" element={<OfficialScores />} />
@@ -127,6 +134,7 @@ const router = createBrowserRouter(
         <Route path="official-scores" element={<AdminOfficialScores />} />
         <Route path="announcements" element={<AdminAnnouncements />} />
         <Route path="tags" element={<AdminTags />} />
+        <Route path="revenue" element={<AdminRevenue />} />
         <Route path="composers" element={<AdminComposers />} />
         <Route path="ai-tasks" element={<AdminAiTasks />} />
         <Route path="system" element={<AdminSystem />} />

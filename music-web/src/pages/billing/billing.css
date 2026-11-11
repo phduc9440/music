@@ -1,0 +1,87 @@
+.bl-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+.bl-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  background: var(--sc-card);
+  border: 1px solid var(--sc-line);
+  border-radius: 16px;
+  box-shadow: var(--sc-shadow);
+}
+.bl-card.is-current {
+  border-color: var(--sc-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-primary) 20%, transparent);
+}
+.bl-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.bl-card__head h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+.bl-badge {
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  background: var(--sc-accent);
+  color: var(--ui-on-accent);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.bl-price {
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+.bl-price small {
+  margin-left: 0.25rem;
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--sc-muted);
+}
+.bl-period {
+  display: inline-flex;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+}
+.bl-limits {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.9rem;
+}
+.bl-limits li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--sc-line);
+}
+.bl-limits span {
+  color: var(--sc-muted);
+}
+.bl-meter {
+  margin-top: 0.5rem;
+}
+.bl-meter__label {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.35rem;
+  font-size: 0.9rem;
+}
+.bl-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}

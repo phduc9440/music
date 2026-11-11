@@ -23,6 +23,7 @@ import { isAdminMember, isSuperAdminMember, roleLabel } from '../../utils/auth';
 import { t } from '../../i18n/core';
 import { formatNumber } from '../../i18n/core';
 import Skeleton from '../../components/ui/Skeleton';
+import MemberPlanCard from '../../components/admin/MemberPlanCard';
 
 const nf = { format: (n: number) => formatNumber(n) };
 
@@ -125,6 +126,8 @@ export default function AdminMemberDetail() {
           hint={detail ? t('admin.members.totalMinutes', { value: nf.format(detail.practiceMinutes) }) : undefined}
         />
       </StatGrid>
+
+      {id && <MemberPlanCard memberId={id} />}
 
       <div className="adm-grid-2">
         <Card title={t('admin.members.accountInfo')}>

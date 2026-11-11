@@ -1,0 +1,204 @@
+package com.ptit.music_be.service.payment.impl;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ptit.music_be.dto.enums.AppLocale;
+import com.ptit.music_be.dto.enums.BillingPeriod;
+import com.ptit.music_be.dto.enums.PaymentProviderType;
+import com.ptit.music_be.dto.enums.PaymentStatus;
+import com.ptit.music_be.dto.enums.SubscriptionSource;
+import com.ptit.music_be.dto.request.CreatePaymentOrderRequest;
+import com.ptit.music_be.dto.response.PaymentOrderResponse;
+import com.ptit.music_be.entity.Member;
+import com.ptit.music_be.entity.PaymentOrder;
+import com.ptit.music_be.entity.Plan;
+import com.ptit.music_be.exception.AppException;
+import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.repository.MemberRepository;
+import com.ptit.music_be.repository.PaymentOrderRepository;
+import com.ptit.music_be.repository.PlanRepository;
+import com.ptit.music_be.service.billing.SubscriptionService;
+import com.ptit.music_be.service.payment.PaymentProvider;
+import com.ptit.music_be.service.payment.PaymentProvider.PaymentCallback;
+import com.ptit.music_be.service.payment.PaymentProvider.PaymentContext;
+import com.ptit.music_be.service.payment.PaymentService;
+import com.ptit.music_be.utils.SecurityUtils;
+
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Service
+public class PaymentServiceImpl implements PaymentService {
+
+    static final int ORDER_TTL_MINUTES = 15;
+
+    private final PaymentOrderRepository orderRepository;
+    private final PlanRepository planRepository;
+    private final MemberRepository memberRepository;
+    private final SubscriptionService subscriptionService;
+    private final ObjectMapper objectMapper;
+    private final Map<PaymentProviderType, PaymentProvider> providers;
+
+    public PaymentServiceImpl(
+            PaymentOrderRepository orderRepository,
+            PlanRepository planRepository,
+            MemberRepository memberRepository,
+            SubscriptionService subscriptionService,
+            ObjectMapper objectMapper,
+            List<PaymentProvider> providerList) {
+        this.orderRepository = orderRepository;
+        this.planRepository = planRepository;
+        this.memberRepository = memberRepository;
+        this.subscriptionService = subscriptionService;
+        this.objectMapper = objectMapper;
+        this.providers = providerList.stream().collect(Collectors.toMap(PaymentProvider::type, Function.identity()));
+    }
+
+    @Override
+    @Transactional
+    public PaymentOrderResponse createOrder(CreatePaymentOrderRequest request, String clientIp) {
+        PaymentProviderType type = request.getProvider() == null ? PaymentProviderType.VNPAY : request.getProvider();
+        PaymentProvider provider = providers.get(type);
+        if (provider == null || !provider.isConfigured()) {
+            throw new AppException(ErrorCode.PAYMENT_PROVIDER_UNAVAILABLE);
+        }
+        if (request.getPeriod() == null) {
+            throw new AppException(ErrorCode.PAYMENT_PERIOD_INVALID);
+        }
+        Plan plan = planRepository
+                .findByCode(request.getPlanCode() == null ? "" : request.getPlanCode())
+                .orElseThrow(() -> new AppException(ErrorCode.PLAN_NOT_EXISTED));
+        long amount = request.getPeriod() == BillingPeriod.MONTH
+                ? plan.getPriceMonth()
+                : plan.getPriceYear();
+        if (amount <= 0) {
+            throw new AppException(ErrorCode.PAYMENT_PLAN_NOT_PURCHASABLE);
+        }
+        Member member = memberRepository
+                .findByEmail(SecurityUtils.getCurrentEmail())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        PaymentOrder order = orderRepository.save(PaymentOrder.builder()
+                .orderCode("MU" + UUID.randomUUID().toString().replace("-", "").substring(0, 16).toUpperCase())
+                .member(member)
+                .plan(plan)
+                .period(request.getPeriod())
+                .amount(amount)
+                .provider(type)
+                .status(PaymentStatus.PENDING)
+                .expiresAt(LocalDateTime.now().plusMinutes(ORDER_TTL_MINUTES))
+                .build());
+
+        String locale = member.getLocale() == AppLocale.EN ? "en" : "vn";
+        String payUrl = provider.createPayment(order, new PaymentContext(clientIp, locale))
+                .payUrl();
+        PaymentOrderResponse response = toResponse(order, false);
+        response.setPayUrl(payUrl);
+        return response;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PaymentOrderResponse getMyOrder(String orderCode) {
+        PaymentOrder order =
+                orderRepository.findByOrderCode(orderCode).orElseThrow(this::notFound);
+        // Đơn của người khác coi như không tồn tại
+        if (!order.getMember().getEmail().equals(SecurityUtils.getCurrentEmail())) {
+            throw notFound();
+        }
+        return toResponse(order, false);
+    }
+
+    @Override
+    @Transactional
+    public IpnResult handleIpn(PaymentProviderType type, Map<String, String> params) {
+        PaymentProvider provider = providers.get(type);
+        if (provider == null) {
+            return IpnResult.INVALID_SIGNATURE;
+        }
+        PaymentCallback callback = provider.parseCallback(params);
+        if (!callback.validSignature()) {
+            log.warn("IPN {} sai chữ ký, bỏ qua", type);
+            return IpnResult.INVALID_SIGNATURE;
+        }
+        PaymentOrder order = orderRepository
+                .findByOrderCodeForUpdate(callback.orderCode() == null ? "" : callback.orderCode())
+                .orElse(null);
+        if (order == null) {
+            return IpnResult.ORDER_NOT_FOUND;
+        }
+        if (order.getAmount() != callback.amount()) {
+            log.warn("IPN đơn {} sai số tiền: đơn {} nhưng cổng báo {}", order.getOrderCode(), order.getAmount(), callback.amount());
+            return IpnResult.INVALID_AMOUNT;
+        }
+        if (order.getStatus() == PaymentStatus.PAID || order.getStatus() == PaymentStatus.REFUNDED) {
+            return IpnResult.ALREADY_CONFIRMED;
+        }
+
+        order.setRawPayload(toJson(params));
+        if (callback.success()) {
+            // Đơn đã hết hạn/lỗi mà cổng vẫn báo tiền đã về thì vẫn bật gói: tiền đã nhận
+            order.setStatus(PaymentStatus.PAID);
+            order.setProviderTxnId(callback.providerTxnId());
+            order.setPaidAt(LocalDateTime.now());
+            orderRepository.save(order);
+            subscriptionService.activate(
+                    order.getMember(), order.getPlan(), order.getPeriod().duration(), SubscriptionSource.PAYMENT);
+        } else {
+            if (order.getStatus() == PaymentStatus.PENDING) {
+                order.setStatus(PaymentStatus.FAILED);
+            }
+            orderRepository.save(order);
+        }
+        return IpnResult.OK;
+    }
+
+    @Override
+    @Transactional
+    public int expirePending() {
+        List<PaymentOrder> due =
+                orderRepository.findByStatusAndExpiresAtBefore(PaymentStatus.PENDING, LocalDateTime.now());
+        due.forEach(o -> o.setStatus(PaymentStatus.EXPIRED));
+        orderRepository.saveAll(due);
+        return due.size();
+    }
+
+    public static PaymentOrderResponse toResponse(PaymentOrder o, boolean withEmail) {
+        return PaymentOrderResponse.builder()
+                .id(o.getId())
+                .orderCode(o.getOrderCode())
+                .planCode(o.getPlan().getCode())
+                .planName(o.getPlan().getName())
+                .period(o.getPeriod().name())
+                .amount(o.getAmount())
+                .provider(o.getProvider().name())
+                .status(o.getStatus().name())
+                .createdAt(o.getCreatedAt())
+                .expiresAt(o.getExpiresAt())
+                .paidAt(o.getPaidAt())
+                .memberEmail(withEmail ? o.getMember().getEmail() : null)
+                .build();
+    }
+
+    private AppException notFound() {
+        return new AppException(ErrorCode.PAYMENT_ORDER_NOT_EXISTED);
+    }
+
+    private String toJson(Map<String, String> params) {
+        try {
+            return objectMapper.writeValueAsString(params);
+        } catch (JsonProcessingException e) {
+            return null;
+        }
+    }
+}

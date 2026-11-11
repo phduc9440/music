@@ -1,0 +1,74 @@
+{
+  "unlimited": "Unlimited",
+  "included": "Included",
+  "notIncluded": "Not included",
+  "loadFailed": "Could not load plan information",
+  "limits": {
+    "omrPagesPerMonth": "OMR pages per month",
+    "omrConcurrent": "Concurrent OMR tasks",
+    "storageMb": "Storage",
+    "keptVersions": "Versions kept",
+    "exportsPerMonth": "Exports per month",
+    "collab": "Real-time co-editing",
+    "team": "Create teams",
+    "omrPriority": "OMR queue priority"
+  },
+  "status": {
+    "ACTIVE": "Active",
+    "FREE": "Free"
+  },
+  "source": {
+    "PAYMENT": "Purchased online",
+    "POINTS_TRIAL": "Points trial",
+    "ADMIN_GRANT": "Granted by an admin"
+  },
+  "period": {
+    "MONTH": "Monthly",
+    "YEAR": "Yearly"
+  },
+  "periodUnit": {
+    "MONTH": "month",
+    "YEAR": "year"
+  },
+  "myPlan": {
+    "title": "My plan",
+    "subtitle": "Your current plan and this month's usage",
+    "expires": "Expires on {date}",
+    "omrUsed": "OMR pages used this month",
+    "usedUnlimited": "{used} (unlimited)",
+    "viewPlans": "View plans"
+  },
+  "pricing": {
+    "title": "Plans",
+    "subtitle": "Pick the plan that fits how you digitize and edit scores",
+    "period": "Billing period",
+    "current": "Current plan",
+    "free": "Free",
+    "buy": "Buy plan",
+    "renew": "Renew",
+    "redirecting": "Redirecting to the payment gateway...",
+    "buyFailed": "Could not create the payment order"
+  },
+  "result": {
+    "title": "Payment result",
+    "notFound": "Payment order not found",
+    "plan": "Plan",
+    "amount": "Amount",
+    "paidAt": "Paid at",
+    "tryAgain": "Choose another plan",
+    "status": {
+      "PENDING": "Confirming",
+      "PAID": "Payment successful",
+      "FAILED": "Payment failed",
+      "EXPIRED": "Order expired",
+      "REFUNDED": "Refunded"
+    },
+    "message": {
+      "PENDING": "We are waiting for the payment gateway to confirm. This page updates by itself, no need to reload.",
+      "PAID": "Your plan is now active. Thank you!",
+      "FAILED": "The transaction did not complete, you were not charged for this order.",
+      "EXPIRED": "The order ran out of payment time. Please create a new one.",
+      "REFUNDED": "This order was refunded."
+    }
+  }
+}

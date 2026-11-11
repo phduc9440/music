@@ -33,6 +33,7 @@ import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreFile;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.service.billing.OmrQuota;
 import com.ptit.music_be.repository.AiTaskRepository;
 import com.ptit.music_be.repository.ScoreFileRepository;
 import com.ptit.music_be.repository.ScoreRepository;
@@ -63,6 +64,7 @@ public class InternalAiTaskServiceImpl implements InternalAiTaskService {
     FileStorageService fileStorageService;
     AiServiceProperties aiServiceProperties;
     ObjectMapper objectMapper;
+    OmrQuota omrQuota;
 
     @Override
     @Transactional
@@ -230,6 +232,7 @@ public class InternalAiTaskServiceImpl implements InternalAiTaskService {
         task.setErrorMessage(text.length() > MAX_ERROR_LENGTH ? text.substring(0, MAX_ERROR_LENGTH) : text);
         task.setFinishedAt(LocalDateTime.now());
         aiTaskRepository.save(task);
+        omrQuota.refund(task);
         syncScoreStatus(task, failedScoreStatus(task));
         log.warn("Task {} thất bại: {}", taskId, task.getErrorMessage());
     }

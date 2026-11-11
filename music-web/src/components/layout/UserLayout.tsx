@@ -19,6 +19,7 @@ import { AuthProvider } from '../../types';
 import type { Member } from '../../types';
 import { isAdminMember, roleLabel } from '../../utils/auth';
 import { CREATE_SCORE_PATH, NAV_GROUPS, navContextPath } from './nav';
+import PlanChip from './PlanChip';
 import './user-layout.css';
 
 /**
@@ -133,6 +134,7 @@ export default function UserLayout() {
               <Icon name="plus" size={16} />
               <span>{t('common.header.create')}</span>
             </Link>
+            <PlanChip />
             <LanguageToggle />
             <ThemeToggle />
             <NotificationBell />

@@ -271,3 +271,71 @@ CREATE TABLE IF NOT EXISTS official_requests (
     CONSTRAINT fk_official_requests_requester FOREIGN KEY (requested_by) REFERENCES members (id),
     CONSTRAINT fk_official_requests_owner     FOREIGN KEY (owner_id)     REFERENCES members (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Gói dịch vụ (mục 7.2/7.3). limits là JSON: omrPagesPerMonth, omrConcurrent, storageMb, keptVersions, exportsPerMonth,
+-- collab, team, omrPriority; thiếu một khóa hoặc null = không giới hạn. Giá là số nguyên VND.
+CREATE TABLE IF NOT EXISTS plans (
+    id          VARCHAR(36)  NOT NULL,
+    code        VARCHAR(16)  NOT NULL COMMENT 'FREE / PRO / TEAM',
+    name        VARCHAR(100) NOT NULL,
+    price_month BIGINT       NOT NULL DEFAULT 0,
+    price_year  BIGINT       NOT NULL DEFAULT 0,
+    limits      JSON         NOT NULL,
+    sort_order  INT          NOT NULL DEFAULT 0,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_plans_code (code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Gói đang dùng của thành viên. Không có dòng ACTIVE còn hạn thì coi như gói FREE.
+CREATE TABLE IF NOT EXISTS subscriptions (
+    id         VARCHAR(36)  NOT NULL,
+    member_id  VARCHAR(36)  NOT NULL,
+    plan_id    VARCHAR(36)  NOT NULL,
+    status     VARCHAR(16)  NOT NULL COMMENT 'ACTIVE / CANCELED / EXPIRED',
+    source     VARCHAR(16)  NOT NULL COMMENT 'PAYMENT / POINTS_TRIAL / ADMIN_GRANT',
+    starts_at  DATETIME(6)  NOT NULL,
+    expires_at DATETIME(6)  NOT NULL,
+    created_at DATETIME(6)  NULL,
+    PRIMARY KEY (id),
+    KEY idx_subscriptions_member (member_id, status, expires_at),
+    CONSTRAINT fk_subscriptions_member FOREIGN KEY (member_id) REFERENCES members (id),
+    CONSTRAINT fk_subscriptions_plan   FOREIGN KEY (plan_id)   REFERENCES plans (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Bộ đếm hạn mức theo tháng (period = yyyy-MM), ví dụ số trang OMR đã dùng.
+CREATE TABLE IF NOT EXISTS usage_counters (
+    id        VARCHAR(36) NOT NULL,
+    member_id VARCHAR(36) NOT NULL,
+    metric    VARCHAR(32) NOT NULL,
+    period    VARCHAR(7)  NOT NULL,
+    used      INT         NOT NULL DEFAULT 0,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_usage_counters (member_id, metric, period),
+    CONSTRAINT fk_usage_counters_member FOREIGN KEY (member_id) REFERENCES members (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Đơn thanh toán gói (mục 7.4). Số tiền là VND nguyên. provider_txn_id là mã giao dịch phía cổng (duy nhất) để chống xử
+-- lý trùng IPN; raw_payload giữ dữ liệu thô cổng gửi về để đối soát.
+CREATE TABLE IF NOT EXISTS payment_orders (
+    id              VARCHAR(36)  NOT NULL,
+    order_code      VARCHAR(40)  NOT NULL COMMENT 'Mã đơn do mình sinh, gửi cho cổng làm mã tham chiếu',
+    member_id       VARCHAR(36)  NOT NULL,
+    plan_id         VARCHAR(36)  NOT NULL,
+    period          VARCHAR(8)   NOT NULL COMMENT 'MONTH / YEAR',
+    amount          BIGINT       NOT NULL,
+    provider        VARCHAR(16)  NOT NULL COMMENT 'VNPAY',
+    status          VARCHAR(16)  NOT NULL COMMENT 'PENDING / PAID / FAILED / EXPIRED / REFUNDED',
+    provider_txn_id VARCHAR(64)  NULL,
+    raw_payload     TEXT         NULL,
+    created_at      DATETIME(6)  NULL,
+    expires_at      DATETIME(6)  NOT NULL,
+    paid_at         DATETIME(6)  NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_payment_orders_code (order_code),
+    UNIQUE KEY uk_payment_orders_txn (provider_txn_id),
+    KEY idx_payment_orders_status (status, expires_at),
+    KEY idx_payment_orders_paid (status, paid_at),
+    KEY idx_payment_orders_member (member_id, created_at),
+    CONSTRAINT fk_payment_orders_member FOREIGN KEY (member_id) REFERENCES members (id),
+    CONSTRAINT fk_payment_orders_plan   FOREIGN KEY (plan_id)   REFERENCES plans (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

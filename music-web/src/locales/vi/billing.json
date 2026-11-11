@@ -1,0 +1,74 @@
+{
+  "unlimited": "Không giới hạn",
+  "included": "Có",
+  "notIncluded": "Không có",
+  "loadFailed": "Không tải được thông tin gói",
+  "limits": {
+    "omrPagesPerMonth": "Trang OMR mỗi tháng",
+    "omrConcurrent": "Tác vụ OMR cùng lúc",
+    "storageMb": "Dung lượng",
+    "keptVersions": "Phiên bản giữ lại",
+    "exportsPerMonth": "Lượt xuất mỗi tháng",
+    "collab": "Cùng chỉnh sửa thời gian thực",
+    "team": "Tạo team",
+    "omrPriority": "Ưu tiên hàng đợi OMR"
+  },
+  "status": {
+    "ACTIVE": "Đang dùng",
+    "FREE": "Miễn phí"
+  },
+  "source": {
+    "PAYMENT": "Mua trực tuyến",
+    "POINTS_TRIAL": "Dùng thử bằng điểm",
+    "ADMIN_GRANT": "Quản trị viên cấp"
+  },
+  "period": {
+    "MONTH": "Theo tháng",
+    "YEAR": "Theo năm"
+  },
+  "periodUnit": {
+    "MONTH": "tháng",
+    "YEAR": "năm"
+  },
+  "myPlan": {
+    "title": "Gói của tôi",
+    "subtitle": "Gói đang dùng và hạn mức trong tháng này",
+    "expires": "Hết hạn ngày {date}",
+    "omrUsed": "Trang OMR đã dùng tháng này",
+    "usedUnlimited": "{used} (không giới hạn)",
+    "viewPlans": "Xem các gói"
+  },
+  "pricing": {
+    "title": "Gói dịch vụ",
+    "subtitle": "Chọn gói phù hợp với nhu cầu số hóa và chỉnh sửa bản nhạc của bạn",
+    "period": "Chu kỳ thanh toán",
+    "current": "Gói hiện tại",
+    "free": "Miễn phí",
+    "buy": "Mua gói",
+    "renew": "Gia hạn",
+    "redirecting": "Đang chuyển sang cổng thanh toán...",
+    "buyFailed": "Không tạo được đơn thanh toán"
+  },
+  "result": {
+    "title": "Kết quả thanh toán",
+    "notFound": "Không tìm thấy đơn thanh toán",
+    "plan": "Gói",
+    "amount": "Số tiền",
+    "paidAt": "Thanh toán lúc",
+    "tryAgain": "Chọn gói khác",
+    "status": {
+      "PENDING": "Đang xác nhận",
+      "PAID": "Thanh toán thành công",
+      "FAILED": "Thanh toán không thành công",
+      "EXPIRED": "Đơn đã hết hạn",
+      "REFUNDED": "Đã hoàn tiền"
+    },
+    "message": {
+      "PENDING": "Chúng tôi đang chờ cổng thanh toán xác nhận. Trang sẽ tự cập nhật, bạn không cần tải lại.",
+      "PAID": "Gói của bạn đã được kích hoạt. Cảm ơn bạn!",
+      "FAILED": "Giao dịch không hoàn tất, bạn chưa bị trừ tiền cho đơn này.",
+      "EXPIRED": "Đơn đã quá thời gian thanh toán. Hãy tạo đơn mới.",
+      "REFUNDED": "Đơn này đã được hoàn tiền."
+    }
+  }
+}
