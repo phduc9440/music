@@ -5,8 +5,6 @@ import { useNavigate } from '../../routes/useTransitionNavigate';
 import { toast } from 'react-toastify';
 import ChangePasswordModal from '../ChangePasswordModal';
 import NotificationBell from '../NotificationBell';
-import SiteFooter from '../layout/SiteFooter';
-import type { FooterColumn } from '../layout/SiteFooter';
 import ThemeToggle from '../../theme/ThemeToggle';
 import { adoptServerLocale, t } from '../../i18n/core';
 import LanguageToggle from '../../i18n/LanguageToggle';
@@ -67,22 +65,6 @@ const MENU: { section: string; items: MenuItem[] }[] = [
 ];
 
 const ALL_ITEMS = MENU.flatMap((g) => g.items);
-
-/** Chân trang khu quản trị: các nhóm menu bên trái, thêm lối về giao diện người dùng. */
-const footerColumns = (): FooterColumn[] => [
-  ...MENU.filter((g) => g.items.length > 1).map((g) => ({
-    title: g.section,
-    links: g.items.map((i) => ({ label: i.label, to: i.to })),
-  })),
-  {
-    title: t('admin.menu.other'),
-    links: [
-      { label: t('admin.menu.items.dashboard'), to: '/admin' },
-      { label: t('admin.menu.userSite'), to: '/' },
-      { label: t('common.header.profile'), to: '/profile' },
-    ],
-  },
-];
 
 /** Tên trang đang mở (mục menu khớp dài nhất) để hiện trên header. */
 const currentTitle = (pathname: string) =>
@@ -273,7 +255,6 @@ export default function AdminLayout() {
         </main>
       </div>
 
-      <SiteFooter variant="app" columns={footerColumns()} tip={t('admin.layout.footerTip')} />
 
       <ChangePasswordModal isOpen={passwordOpen} onClose={() => setPasswordOpen(false)} />
     </div>

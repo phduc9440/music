@@ -28,8 +28,7 @@
     "toggleSidebar": "Show or hide the sidebar",
     "menuLabel": "Admin menu",
     "pendingBadge_one": "{count} score waiting",
-    "pendingBadge_other": "{count} scores waiting",
-    "footerTip": "Admin area: moderate public content, the curated library, members and the system."
+    "pendingBadge_other": "{count} scores waiting"
   },
   "common": {
     "owner": "Owner"

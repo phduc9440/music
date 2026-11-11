@@ -380,11 +380,6 @@
   display: none;
 }
 
-/* chân trang (SiteFooter) đứng ngay dưới khung, không cần khoảng cách thêm */
-.adm-shell > .site-footer {
-  margin-top: 0;
-}
-
 /* ================================================================== page header */
 
 .adm-page-header {

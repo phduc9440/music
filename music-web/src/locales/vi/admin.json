@@ -27,8 +27,7 @@
     "profileFailed": "Không tải được hồ sơ quản trị viên",
     "toggleSidebar": "Đóng/mở thanh bên",
     "menuLabel": "Menu quản trị",
-    "pendingBadge": "{count} bản đang chờ",
-    "footerTip": "Khu quản trị: kiểm duyệt nội dung công khai, kho bản nhạc mẫu, thành viên và hệ thống."
+    "pendingBadge": "{count} bản đang chờ"
   },
   "common": {
     "owner": "Chủ sở hữu"
