@@ -32,34 +32,33 @@ export default function ReferralCard() {
   };
 
   return (
-    <section className="reveal-item pf-card">
-      <h2 className="reveal-item pf-card__title">{t('profile.referral.title')}</h2>
-      <p className="pf-hint">{t('profile.referral.intro')}</p>
+    <section className="reveal-item pf-card pf-referral">
+      <h2 className="pf-card__title">{t('profile.referral.title')}</h2>
+      <p className="pf-referral__intro">{t('profile.referral.intro')}</p>
       {failed && <p className="sc-error">{t('profile.referral.loadFailed')}</p>}
+      {!data && !failed && <div className="sc-skeleton pf-referral__skeleton" />}
       {data && (
         <>
-          <dl className="pf-dl">
-            <div>
-              <dt>{t('profile.referral.code')}</dt>
-              <dd className="pf-referral-code">{data.code}</dd>
-            </div>
-            <div>
-              <dt>{t('profile.referral.invited')}</dt>
-              <dd>{formatNumber(data.invitedCount)}</dd>
-            </div>
-            <div>
-              <dt>{t('profile.referral.rewarded')}</dt>
-              <dd>{formatNumber(data.rewardedCount)}</dd>
-            </div>
-          </dl>
-          <div className="pf-form-actions">
-            <button type="button" className="sc-btn" onClick={() => copy(data.code)}>
+          <div className="pf-referral__box">
+            <span className="pf-referral__label">{t('profile.referral.code')}</span>
+            <strong className="pf-referral__code">{data.code}</strong>
+            <button type="button" className="sc-btn sc-btn--sm" onClick={() => copy(data.code)}>
               {t('profile.referral.copyCode')}
             </button>
-            <button type="button" className="sc-btn sc-btn--primary" onClick={() => copy(link)}>
-              {t('profile.referral.copyLink')}
-            </button>
           </div>
+          <div className="pf-referral__stats">
+            <div>
+              <strong>{formatNumber(data.invitedCount)}</strong>
+              <span>{t('profile.referral.invited')}</span>
+            </div>
+            <div>
+              <strong>{formatNumber(data.rewardedCount)}</strong>
+              <span>{t('profile.referral.rewarded')}</span>
+            </div>
+          </div>
+          <button type="button" className="sc-btn sc-btn--primary pf-referral__link" onClick={() => copy(link)}>
+            {t('profile.referral.copyLink')}
+          </button>
         </>
       )}
     </section>
