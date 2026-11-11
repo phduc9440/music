@@ -6,6 +6,7 @@ import { SHARE_PERMISSION_LABELS, getErrorMessage } from '../../../utils/score';
 import type { AccessRequest, ScoreSharing, SharePermission, Visibility } from '../../../types';
 import Modal from '../common/Modal';
 import { labelMap, t } from '../../../i18n/core';
+import Skeleton from '../../ui/Skeleton';
 
 interface Props {
   scoreId: string;
@@ -71,7 +72,7 @@ export default function ShareModal({ scoreId, onClose }: Props) {
 
   return (
     <Modal title={t('scores.share.title')} onClose={onClose}>
-      {!sharing && !error && <p>{t('common.loading')}</p>}
+      {!sharing && !error && <Skeleton lines={3} />}
 
       {sharing && (
         <>

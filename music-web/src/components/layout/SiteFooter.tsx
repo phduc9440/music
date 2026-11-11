@@ -1,5 +1,5 @@
 import type React from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from '../../routes/transition-nav';
 import { t } from '../../i18n/core';
 import { Icon } from '../ui';
 import { CREATE_SCORE_PATH, NAV_GROUPS } from './nav';

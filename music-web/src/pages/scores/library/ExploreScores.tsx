@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
+import { useNavigate } from '../../../routes/useTransitionNavigate';
 import { toast } from 'react-toastify';
 import Pagination from '../../../components/scores/common/Pagination';
 import PlaylistPicker from '../../../components/scores/library/PlaylistPicker';

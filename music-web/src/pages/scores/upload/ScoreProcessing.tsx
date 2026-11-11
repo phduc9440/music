@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import { useNavigate } from '../../../routes/useTransitionNavigate';
 import { toast } from 'react-toastify';
 import CompareModal from '../../../components/scores/upload/CompareModal';
 import Modal from '../../../components/scores/common/Modal';

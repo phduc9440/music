@@ -749,19 +749,7 @@
   font-size: 1.3rem;
 }
 
-/* ---- hiện dần khi cuộn (useReveal) ---- */
-.reveal {
-  opacity: 0;
-  transform: translateY(20px);
-  transition:
-    opacity 0.6s ease,
-    transform 0.6s ease;
-}
-
-.reveal.reveal--in {
-  opacity: 1;
-  transform: none;
-}
+/* .reveal (hiện dần khi cuộn) nằm ở styles/motion.css */
 
 @media (max-width: 640px) {
   .gh-hero {

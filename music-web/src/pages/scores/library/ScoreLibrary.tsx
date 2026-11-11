@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '../../../routes/useTransitionNavigate';
 import { toast } from 'react-toastify';
 import { LibraryEmpty, LibrarySkeleton } from '../../../components/scores/library/LibraryStates';
 import Pagination from '../../../components/scores/common/Pagination';

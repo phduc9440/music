@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
+import { Link } from '../routes/transition-nav';
+import { useNavigate } from '../routes/useTransitionNavigate';
 import { toast } from 'react-toastify';
 import { authApi } from '../services';
 import { completeLogin } from '../utils/auth';

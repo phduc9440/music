@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink } from '../../routes/transition-nav';
 import { Icon } from '../ui';
 import { isGroupActive, isItemActive } from './nav';
 import type { NavGroup } from './nav';

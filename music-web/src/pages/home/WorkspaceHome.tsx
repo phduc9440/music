@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
+import { Link } from '../../routes/transition-nav';
 import AuthImage from '../../components/scores/common/AuthImage';
 import { CREATE_SCORE_PATH } from '../../components/layout/nav';
 import { Icon } from '../../components/ui';

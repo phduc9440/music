@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import { Link } from '../../../routes/transition-nav';
+import { useNavigate } from '../../../routes/useTransitionNavigate';
 import DownloadMenu from '../../../components/scores/viewer/DownloadMenu';
 import Modal from '../../../components/scores/common/Modal';
 import InstrumentMenu from '../../../components/scores/viewer/InstrumentMenu';

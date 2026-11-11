@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { DragEvent, ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from '../../routes/transition-nav';
+import { useNavigate } from '../../routes/useTransitionNavigate';
 import { CREATE_SCORE_PATH } from '../../components/layout/nav';
 import SiteFooter from '../../components/layout/SiteFooter';
 import ComposerPortrait from '../../components/composers/ComposerPortrait';

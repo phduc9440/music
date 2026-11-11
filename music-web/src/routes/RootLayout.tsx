@@ -1,6 +1,7 @@
 import { Outlet, ScrollRestoration } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import DialogProvider from '../components/ui/DialogProvider';
+import { useRevealAll } from '../hooks/useReveal';
 import { useTheme } from '../theme/useTheme';
 
 /**
@@ -9,6 +10,7 @@ import { useTheme } from '../theme/useTheme';
  */
 export default function RootLayout() {
   const { resolved } = useTheme();
+  useRevealAll();
   return (
     <DialogProvider>
       <Outlet />

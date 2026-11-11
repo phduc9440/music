@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useOutletContext } from 'react-router-dom';
+import { useOutletContext } from 'react-router-dom';
+import { Link } from '../../routes/transition-nav';
 import { toast } from 'react-toastify';
 import type { AdminOutletContext } from '../../components/admin/AdminLayout';
 import {

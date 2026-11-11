@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useParams, useViewTransitionState } from 'react-router-dom';
+import { Link } from '../../routes/transition-nav';
+import { useNavigate } from '../../routes/useTransitionNavigate';
 import ComposerPortrait from '../../components/composers/ComposerPortrait';
 import PlaylistPicker from '../../components/scores/library/PlaylistPicker';
 import ScoreCard from '../../components/scores/library/ScoreCard';
@@ -62,6 +64,7 @@ function Timeline({ composer }: { composer: Composer }) {
 /** Trang /composers/:slug: chân dung, tiểu sử, dòng thời gian, bản công khai và bản trong kho mẫu của nhạc sĩ. */
 export default function ComposerDetail() {
   const { slug = '' } = useParams();
+  const arriving = useViewTransitionState(`/composers/${slug}`);
   const navigate = useNavigate();
   const { pathname } = useLocation();
   // Kết quả gắn với slug đã tải; slug đổi thì kết quả cũ không còn khớp và tự coi là đang tải (không cần reset trong effect)
@@ -125,7 +128,7 @@ export default function ComposerDetail() {
     return (
       <div className="sc-page">
         <main className="sc-container" aria-busy="true">
-          <div className="cd-skeleton" />
+          <div className="cd-skeleton" style={arriving ? { viewTransitionName: 'ui-shared-cover' } : undefined} />
         </main>
       </div>
     );

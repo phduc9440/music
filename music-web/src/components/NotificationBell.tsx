@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '../routes/useTransitionNavigate';
 import { notificationApi } from '../services';
 import { Icon } from './ui';
 import { useDialog } from './ui/dialog-context';
@@ -7,6 +7,7 @@ import { formatDateTime, formatRelativeTime, t } from '../i18n/core';
 import { notificationText } from '../utils/notifications';
 import type { AppNotification } from '../types';
 import './scores/scores.css';
+import Skeleton from './ui/Skeleton';
 
 const POLL_MS = 30_000;
 
@@ -110,7 +111,7 @@ export default function NotificationBell() {
               {t('common.notifications.markAllRead')}
             </button>
           </div>
-          {loading && <p className="sc-bell__empty">{t('common.loading')}</p>}
+          {loading && <Skeleton lines={3} className="sc-bell__loading" />}
           {!loading && items.length === 0 && <p className="sc-bell__empty">{t('common.notifications.empty')}</p>}
           <ul className="sc-bell__list">
             {items.map((n) => (

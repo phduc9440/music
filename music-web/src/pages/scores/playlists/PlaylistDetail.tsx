@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
+import { useNavigate } from '../../../routes/useTransitionNavigate';
 import { toast } from 'react-toastify';
 import Modal from '../../../components/scores/common/Modal';
 import { playlistApi, scoreApi } from '../../../services';

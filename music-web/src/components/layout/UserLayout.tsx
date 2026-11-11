@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
+import { Link } from '../../routes/transition-nav';
+import { useNavigate } from '../../routes/useTransitionNavigate';
 import ChangePasswordModal from '../ChangePasswordModal';
 import CommandPalette from './CommandPalette';
 import MobileTabBar from './MobileTabBar';

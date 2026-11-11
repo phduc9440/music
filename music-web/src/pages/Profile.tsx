@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '../routes/useTransitionNavigate';
 import { toast } from 'react-toastify';
 import { authApi, userApi } from '../services';
 import { AuthProvider } from '../types';
@@ -121,7 +121,7 @@ export default function UserProfile() {
         </header>
 
         <div className="pf-grid">
-          <section className="pf-card pf-identity">
+          <section className="reveal-item pf-card pf-identity">
             <div className="pf-avatar">
               {user?.avatarUrl ? <img src={user.avatarUrl} alt="" /> : displayName.charAt(0).toUpperCase()}
             </div>
@@ -159,8 +159,8 @@ export default function UserProfile() {
           </section>
 
           <div className="pf-stack">
-            <section className="pf-card">
-              <h2 className="pf-card__title">{t('profile.personal')}</h2>
+            <section className="reveal-item pf-card">
+              <h2 className="reveal-item pf-card__title">{t('profile.personal')}</h2>
               <form onSubmit={handleSave}>
                 <label className="sc-label" htmlFor="pf-name">
                   {t('auth.fullName')}
@@ -201,8 +201,8 @@ export default function UserProfile() {
               </form>
             </section>
 
-            <section className="pf-card">
-              <h2 className="pf-card__title">{t('common.footer.account')}</h2>
+            <section className="reveal-item pf-card">
+              <h2 className="reveal-item pf-card__title">{t('common.footer.account')}</h2>
               <dl className="pf-dl">
                 <div>
                   <dt>{t('profile.signInWith')}</dt>

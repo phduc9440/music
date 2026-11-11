@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '../../../routes/useTransitionNavigate';
 import { toast } from 'react-toastify';
 import Modal from '../../../components/scores/common/Modal';
 import PlaylistFormModal from '../../../components/scores/playlist/PlaylistFormModal';

@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link } from '../../../routes/transition-nav';
 import AuthImage from '../common/AuthImage';
 import StatusBadge from '../common/StatusBadge';
 import { OMR_TASK_TYPE, describeTaskError } from '../../../utils/omr';
@@ -263,7 +263,7 @@ export function ScoreSidebar({
 
   return (
     <aside className="sd-side">
-      <section className="sd-card">
+      <section className="sd-card reveal-item">
         <h2 className="sd-card__title">{t('scores.hero.info')}</h2>
         <div className="sd-highlights">
           {highlights.map(([label, value]) => (
@@ -284,14 +284,14 @@ export function ScoreSidebar({
       </section>
 
       {score.studyNotes && (
-        <section className="sd-card">
+        <section className="sd-card reveal-item">
           <h2 className="sd-card__title">{t('scores.hero.studyNotes')}</h2>
           <p className="sd-notes">{score.studyNotes}</p>
         </section>
       )}
 
       {hasManage && (
-        <section className="sd-card">
+        <section className="sd-card reveal-item">
           <h2 className="sd-card__title">{t('scores.hero.manage')}</h2>
           <div className="sd-manage">
             {score.canManageSharing && (

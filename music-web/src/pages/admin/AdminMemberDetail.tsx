@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import { Link } from '../../routes/transition-nav';
 import { toast } from 'react-toastify';
 import {
   Avatar,
@@ -21,6 +22,7 @@ import type { AdminMemberDetail as MemberDetail } from '../../types';
 import { isAdminMember, isSuperAdminMember, roleLabel } from '../../utils/auth';
 import { t } from '../../i18n/core';
 import { formatNumber } from '../../i18n/core';
+import Skeleton from '../../components/ui/Skeleton';
 
 const nf = { format: (n: number) => formatNumber(n) };
 
@@ -149,7 +151,7 @@ export default function AdminMemberDetail() {
               ]}
             />
           ) : (
-            <EmptyState icon="users" title={t('common.loading')} />
+            <Skeleton lines={6} />
           )}
         </Card>
 
