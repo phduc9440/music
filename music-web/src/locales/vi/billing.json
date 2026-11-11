@@ -46,7 +46,8 @@
     "free": "Miễn phí",
     "buy": "Mua gói",
     "redirecting": "Đang chuyển sang cổng thanh toán...",
-    "buyFailed": "Không tạo được đơn thanh toán"
+    "buyFailed": "Không tạo được đơn thanh toán",
+    "renew": "Gia hạn"
   },
   "result": {
     "title": "Kết quả thanh toán",
@@ -75,6 +76,13 @@
     "title": "Lịch sử đăng ký gói",
     "empty": "Bạn chưa có giao dịch nào.",
     "pay": "Thanh toán tiếp",
-    "payFailed": "Không mở lại được trang thanh toán"
+    "payFailed": "Không mở lại được trang thanh toán",
+    "provider": "Cổng thanh toán",
+    "createdAt": "Tạo lúc",
+    "orderCode": "Mã đơn",
+    "pendingNote": "Đơn mua gói {plan} ({period}), số tiền {amount}, chưa thanh toán. Hoàn tất trước {time} hoặc đơn sẽ tự hết hạn."
+  },
+  "provider": {
+    "VNPAY": "VNPay"
   }
 }

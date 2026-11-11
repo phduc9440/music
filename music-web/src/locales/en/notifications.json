@@ -20,5 +20,6 @@
   "OFFICIAL_REQUESTED": "An administrator wants to add your score “{title}” to the curated library. Your own score stays as it is; the system only copies it and credits you as the arranger. Please accept or decline.",
   "OFFICIAL_ACCEPTED": "{name} agreed to add “{title}” to the curated library",
   "OFFICIAL_DECLINED": "{name} declined to add “{title}” to the curated library",
-  "PLAN_ACTIVATED": "Payment successful, your {plan} plan is now active"
+  "PLAN_ACTIVATED": "Payment successful, your {plan} plan is now active",
+  "PLAN_EXPIRING": "Your {plan} plan expires in {days} day(s) (on {date}). Buy it again to avoid interruption"
 }

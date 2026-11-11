@@ -34,6 +34,12 @@ public interface SubscriptionService {
     /** Admin hủy gói hiện tại của thành viên (về Free ngay). */
     void cancel(String memberId);
 
+    /**
+     * Nhắc gói sắp hết hạn: gửi thông báo cho gói còn 7 ngày và còn 1 ngày. Chạy mỗi ngày một lần nên mỗi gói rơi vào
+     * mỗi khung đúng một lần; trả số thông báo đã gửi.
+     */
+    int remindExpiring();
+
     /** Chuyển các gói đã quá hạn sang EXPIRED; trả số gói đã chuyển. */
     int expireDue();
 }

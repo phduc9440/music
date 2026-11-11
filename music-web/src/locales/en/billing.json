@@ -46,7 +46,8 @@
     "free": "Free",
     "buy": "Buy plan",
     "redirecting": "Redirecting to the payment gateway...",
-    "buyFailed": "Could not create the payment order"
+    "buyFailed": "Could not create the payment order",
+    "renew": "Renew"
   },
   "result": {
     "title": "Payment result",
@@ -75,6 +76,13 @@
     "title": "Plan purchase history",
     "empty": "You have no transactions yet.",
     "pay": "Continue payment",
-    "payFailed": "Could not reopen the payment page"
+    "payFailed": "Could not reopen the payment page",
+    "provider": "Payment gateway",
+    "createdAt": "Created at",
+    "orderCode": "Order code",
+    "pendingNote": "Order for the {plan} plan ({period}), {amount}, not paid yet. Complete it before {time} or it will expire."
+  },
+  "provider": {
+    "VNPAY": "VNPay"
   }
 }
