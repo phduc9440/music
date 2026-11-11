@@ -15,7 +15,7 @@ import { ScoreDocument } from '../../../components/editor/core/ScoreDocument';
 import { transposeDocument } from '../../../components/editor/notes/transpose';
 import { PlayerBar } from '../../../components/player/PlayerBar';
 import { usePlayer } from '../../../components/player/hooks/usePlayer';
-import { countView } from '../../../services/playbackApi';
+import { countView } from '../../../services/practice/playbackApi';
 import { fetchMusicXmlWithVersion, saveMusicXml, scoreApi } from '../../../services';
 import type { ScoreDetail as ScoreDetailData } from '../../../types';
 import { isValidScoreId } from '../../../utils/omr';

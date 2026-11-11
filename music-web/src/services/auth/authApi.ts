@@ -1,4 +1,4 @@
-import apiClient from './client';
+import apiClient from '../client';
 import type {
   ApiResponse,
   AuthResponse,
@@ -8,7 +8,7 @@ import type {
   RegisterRequest,
   ResetPasswordRequest,
   Member,
-} from '../types';
+} from '../../types';
 
 export const authApi = {
   login: (data: LoginRequest) => apiClient.post<ApiResponse<AuthResponse>>('/auth/login', data),

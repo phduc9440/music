@@ -1,5 +1,5 @@
-import apiClient from './client';
-import type { ApiResponse, Member } from '../types';
+import apiClient from '../client';
+import type { ApiResponse, Member } from '../../types';
 
 export interface UpdateProfilePayload {
   fullName: string;

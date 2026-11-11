@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { versionApi } from '../../../services/versionApi';
+import { versionApi } from '../../../services/score/versionApi';
 import type { DiffErrorType, ScoreDiff } from '../../../types/version';
 import { DIFF_ERROR_LABELS, diffMeasureLabel, diffMeasureTitle, formatRate, getDiffErrorMessage } from './versionUtils';
 import './version.css';

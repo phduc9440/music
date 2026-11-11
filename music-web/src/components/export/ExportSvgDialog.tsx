@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { toast } from 'react-toastify';
 import { downloadFile } from '../../services';
-import { exportApi } from '../../services/exportApi';
+import { exportApi } from '../../services/file/exportApi';
 import type { ExportFileInfo, SvgOptions } from '../../types/export';
 import Modal from '../scores/common/Modal';
 import ExportRunningView from './ExportRunningView';

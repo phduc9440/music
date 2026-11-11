@@ -1,5 +1,5 @@
-import apiClient from './client';
-import type { ApiResponse, Playlist, PlaylistItem } from '../types';
+import apiClient from '../client';
+import type { ApiResponse, Playlist, PlaylistItem } from '../../types';
 
 export interface PlaylistPayload {
   name: string;

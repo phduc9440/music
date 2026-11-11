@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import { downloadFile, downloadScoreExport } from '../../../services';
-import { exportApi } from '../../../services/exportApi';
+import { exportApi } from '../../../services/file/exportApi';
 import type { ScoreFileInfo } from '../../../types';
 import type { ExportFileInfo, ExportFormat } from '../../../types/export';
 import ExportAudioDialog from '../../export/ExportAudioDialog';

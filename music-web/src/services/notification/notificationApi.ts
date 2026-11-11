@@ -1,5 +1,5 @@
-import apiClient from './client';
-import type { ApiResponse, AppNotification, PageResult } from '../types';
+import apiClient from '../client';
+import type { ApiResponse, AppNotification, PageResult } from '../../types';
 
 export const notificationApi = {
   list: (params?: { page?: number; size?: number }) =>

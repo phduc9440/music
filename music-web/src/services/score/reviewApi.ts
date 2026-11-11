@@ -1,5 +1,5 @@
-import apiClient from './client';
-import type { ApiResponse, ReviewList } from '../types';
+import apiClient from '../client';
+import type { ApiResponse, ReviewList } from '../../types';
 
 export const reviewApi = {
   list: (scoreId: string) => apiClient.get<ApiResponse<ReviewList>>(`/scores/${scoreId}/reviews`),

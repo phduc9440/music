@@ -1,7 +1,7 @@
-import apiClient from './client';
+import apiClient from '../client';
 import { saveBlob, unwrapBlobError } from './fileApi';
-import type { ApiResponse } from '../types';
-import type { ExportFileInfo, ExportResult, ExportTarget } from '../types/export';
+import type { ApiResponse } from '../../types';
+import type { ExportFileInfo, ExportResult, ExportTarget } from '../../types/export';
 
 export const exportApi = {
   // Yêu cầu xuất file. Cùng tùy chọn và cùng phiên bản nhạc thì trả file ngay (cached), không thì trả task để theo dõi.

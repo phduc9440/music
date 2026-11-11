@@ -36,7 +36,7 @@ import { DURATION_LABELS, dotsLabel } from '../../../components/editor/notes/dur
 import { PlayerBar } from '../../../components/player/PlayerBar';
 import { usePlayer } from '../../../components/player/hooks/usePlayer';
 import { useScoreEditor } from '../../../components/editor/core/useScoreEditor';
-import { countView } from '../../../services/playbackApi';
+import { countView } from '../../../services/practice/playbackApi';
 import { fetchMusicXmlWithVersion, scoreApi } from '../../../services';
 import type { ScoreDetail as ScoreDetailData } from '../../../types';
 import { isValidScoreId } from '../../../utils/omr';

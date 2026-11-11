@@ -1,4 +1,4 @@
-import apiClient from './client';
+import apiClient from '../client';
 
 /**
  * Với request responseType 'blob', thân lỗi của BE cũng là Blob nên err.response.data.message không đọc được. Hàm này

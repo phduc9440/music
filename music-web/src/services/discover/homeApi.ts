@@ -1,5 +1,5 @@
-import apiClient from './client';
-import type { ApiResponse, HomeSummary, PublicHome } from '../types';
+import apiClient from '../client';
+import type { ApiResponse, HomeSummary, PublicHome } from '../../types';
 
 export const homeApi = {
   /** Trang chủ cho khách, không cần đăng nhập (BE nhớ 5 phút). */

@@ -1,6 +1,6 @@
-import apiClient from './client';
-import type { ApiResponse } from '../types';
-import type { ViewCountResponse } from '../types/playback';
+import apiClient from '../client';
+import type { ApiResponse } from '../../types';
+import type { ViewCountResponse } from '../../types/playback';
 
 const viewedKey = (scoreId: string) => `viewed:${scoreId}`;
 

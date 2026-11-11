@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { toast } from 'react-toastify';
 import { taskApi } from '../../services';
-import { exportApi } from '../../services/exportApi';
+import { exportApi } from '../../services/file/exportApi';
 import type { AiTaskInfo } from '../../types';
 import type { ExportFileInfo, ExportTarget } from '../../types/export';
 import { exportErrorMessage, isTaskFinished, translateTaskError } from './exportUtils';

@@ -1,9 +1,12 @@
-import apiClient from './client';
-import type { ApiResponse, ScoreImportResult } from '../types';
+import apiClient from '../client';
+import type { ApiResponse, ScoreImportResult } from '../../types';
 
 export const importApi = {
   // Nhập trực tiếp 1 file MusicXML (.musicxml/.xml/.mxl) hoặc MIDI (.mid/.midi), không qua OMR
-  importScore: (data: { file: File; title: string; composer: string; tagIds?: string[] }, onProgress?: (percent: number) => void) => {
+  importScore: (
+    data: { file: File; title: string; composer: string; tagIds?: string[] },
+    onProgress?: (percent: number) => void,
+  ) => {
     const form = new FormData();
     form.append('file', data.file);
     if (data.title.trim()) form.append('title', data.title.trim());

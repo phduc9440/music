@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { userApi } from '../services/userApi';
+import { userApi } from '../services/auth/userApi';
 import { ThemeContext } from './theme-context';
 import {
   THEME_CHANGE_EVENT,

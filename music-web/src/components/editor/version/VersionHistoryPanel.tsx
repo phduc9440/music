@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
-import { versionApi } from '../../../services/versionApi';
+import { versionApi } from '../../../services/score/versionApi';
 import type { ScoreVersion } from '../../../types/version';
 import { formatDateTime } from '../../../utils/score';
 import Modal from '../../scores/common/Modal';

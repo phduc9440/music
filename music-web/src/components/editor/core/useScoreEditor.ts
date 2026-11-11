@@ -6,7 +6,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import { fetchMusicXmlWithVersion, saveMusicXml } from '../../../services';
-import { versionApi } from '../../../services/versionApi';
+import { versionApi } from '../../../services/score/versionApi';
 import { getConflictVersion, getSaveErrorMessage } from '../../../utils/score';
 import { EDIT_FAILURE_MESSAGES, changePitch, removeNotes, setAlteration } from './commands';
 import { transposeDocument } from '../notes/transpose';

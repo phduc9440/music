@@ -1,7 +1,7 @@
-import apiClient from './client';
-import type { ApiResponse } from '../types';
-import type { ScoreSaveResult } from '../types';
-import type { ScoreDiff, ScoreVersion } from '../types/version';
+import apiClient from '../client';
+import type { ApiResponse } from '../../types';
+import type { ScoreSaveResult } from '../../types';
+import type { ScoreDiff, ScoreVersion } from '../../types/version';
 
 export const versionApi = {
   // Các phiên bản còn giữ (tối đa 20), mới nhất trước

@@ -1,5 +1,5 @@
-import apiClient from './client';
-import type { AccessRequest, ApiResponse, MyAccess, ScoreSharing, SharePermission } from '../types';
+import apiClient from '../client';
+import type { AccessRequest, ApiResponse, MyAccess, ScoreSharing, SharePermission } from '../../types';
 
 export const sharingApi = {
   // Chủ sở hữu hoặc ADMIN: trạng thái chia sẻ của một bản nhạc

@@ -1,5 +1,5 @@
-import apiClient from './client';
-import type { AiTaskInfo, ApiResponse, OmrResult, OmrUploadRequest, OmrUploadResult } from '../types';
+import apiClient from '../client';
+import type { AiTaskInfo, ApiResponse, OmrResult, OmrUploadRequest, OmrUploadResult } from '../../types';
 
 export const omrApi = {
   // Upload 1 PDF hoặc 1–20 ảnh (đúng thứ tự trang) để tạo bản nhạc và tác vụ OMR

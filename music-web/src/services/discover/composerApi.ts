@@ -1,5 +1,5 @@
-import apiClient from './client';
-import type { ApiResponse, Composer, ComposerPayload, ComposerPeriod, ExploreFacets } from '../types';
+import apiClient from '../client';
+import type { ApiResponse, Composer, ComposerPayload, ComposerPeriod, ExploreFacets } from '../../types';
 
 export const composerApi = {
   /** Danh sách công khai (không cần đăng nhập), nhiều bản công khai trước. */

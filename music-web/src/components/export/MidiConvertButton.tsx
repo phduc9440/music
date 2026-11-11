@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { toast } from 'react-toastify';
-import { exportApi } from '../../services/exportApi';
+import { exportApi } from '../../services/file/exportApi';
 import type { AiTaskInfo } from '../../types';
 import { exportErrorMessage, isTaskFinished, translateTaskError } from './exportUtils';
 import { useExportTask } from './useExportTask';

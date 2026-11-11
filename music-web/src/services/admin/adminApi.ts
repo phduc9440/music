@@ -1,4 +1,4 @@
-import apiClient from './client';
+import apiClient from '../client';
 import type {
   AdminAiTask,
   AdminDashboard,
@@ -15,7 +15,7 @@ import type {
   ScoreDetail,
   ScoreSummary,
   SystemMetrics,
-} from '../types';
+} from '../../types';
 
 /** Khớp AdminMemberController của BE (/api/admin/members). Chỉ ROLE_ADMIN gọi được. page bắt đầu từ 0. */
 export const adminApi = {
@@ -27,8 +27,7 @@ export const adminApi = {
   getMemberDetail: (id: string) => apiClient.get<ApiResponse<AdminMemberDetail>>(`/admin/members/${id}/detail`),
   updateMember: (id: string, data: AdminUpdateMemberRequest) =>
     apiClient.patch<ApiResponse<Member>>(`/admin/members/${id}`, data),
-  getDashboard: (days = 30) =>
-    apiClient.get<ApiResponse<AdminDashboard>>('/admin/dashboard', { params: { days } }),
+  getDashboard: (days = 30) => apiClient.get<ApiResponse<AdminDashboard>>('/admin/dashboard', { params: { days } }),
   sendAnnouncement: (message: string, audience: AnnouncementAudience, memberIds?: string[]) =>
     apiClient.post<ApiResponse<{ recipients: number }>>('/admin/announcements', { message, audience, memberIds }),
   // Quản lý toàn bộ bản nhạc (xóa dùng scoreApi.remove)

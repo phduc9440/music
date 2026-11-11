@@ -1,5 +1,5 @@
-import apiClient from './client';
-import { saveBlob, unwrapBlobError } from './fileApi';
+import apiClient from '../client';
+import { saveBlob, unwrapBlobError } from '../file/fileApi';
 import type {
   ApiResponse,
   Difficulty,
@@ -11,7 +11,7 @@ import type {
   ScoreSummary,
   ScoreUpdateRequest,
   TrashedScore,
-} from '../types';
+} from '../../types';
 
 export const scoreApi = {
   list: (params?: ScoreListParams) => apiClient.get<ApiResponse<PageResult<ScoreSummary>>>('/scores/me', { params }),

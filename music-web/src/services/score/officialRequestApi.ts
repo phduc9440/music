@@ -1,5 +1,5 @@
-import apiClient from './client';
-import type { ApiResponse, OfficialRequest, OfficialRequestStatus, PageResult } from '../types';
+import apiClient from '../client';
+import type { ApiResponse, OfficialRequest, OfficialRequestStatus, PageResult } from '../../types';
 
 export const officialRequestApi = {
   // ADMIN: xin chủ đồng ý đưa một bản nhạc công khai vào kho bản nhạc mẫu
