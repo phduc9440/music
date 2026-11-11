@@ -1,4 +1,4 @@
--- V5: seed thể loại (tags) mặc định cho thư viện bản nhạc. INSERT IGNORE nên chạy lại không bị trùng (name, slug là UNIQUE).
+-- V4: thể loại (tags) mặc định. INSERT IGNORE nên chạy lại không bị trùng (name, slug là UNIQUE).
 INSERT IGNORE INTO tags (id, name, slug)
 VALUES
     (UUID(), 'Cổ điển', 'co-dien'),

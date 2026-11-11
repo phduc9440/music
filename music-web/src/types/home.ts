@@ -3,7 +3,7 @@ import type { PracticeStreak, ScoreSummary } from './score';
 
 /** GET /api/public/home: trang chủ cho khách (không có email hay dữ liệu riêng tư). */
 export interface PublicHome {
-  /** Bản công khai xem nhiều nhất; thumbnailUrl là ảnh công khai, khách tải được. */
+  /** Bản công khai nổi bật (nhiều lượt xem so với số ngày kể từ lúc tạo); thumbnailUrl là ảnh công khai, khách tải được. */
   featured: ScoreSummary[];
   /** Nhạc sĩ có nhiều bản công khai nhất (bảng composers, mục 5.4), kèm tối đa 3 bản tiêu biểu. */
   composers: Composer[];

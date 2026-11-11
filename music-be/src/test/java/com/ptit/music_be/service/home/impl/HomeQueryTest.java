@@ -12,11 +12,14 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import jakarta.persistence.EntityManager;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.ptit.music_be.dto.enums.SharePermission;
 import com.ptit.music_be.dto.response.HomeSummaryResponse;
 import com.ptit.music_be.dto.response.PublicHomeResponse;
+import com.ptit.music_be.dto.response.ScoreSummaryResponse;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.MemberScore;
 import com.ptit.music_be.entity.PracticeSession;
@@ -60,6 +64,12 @@ class HomeQueryTest {
 
     @Autowired
     PracticeSessionRepository practiceSessionRepository;
+
+    @Autowired
+    JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    EntityManager entityManager;
 
     private String tag;
     private Member owner;
@@ -152,6 +162,50 @@ class HomeQueryTest {
         });
         // Gọi lại trong 5 phút trả đúng bản đã nhớ
         assertSame(first, homeService.getPublicHome());
+    }
+
+    @Test
+    void featuredRanksViewsPerDayOfAgeSoNewPopularScoresBeatOldOnes() {
+        Score fresh = score(owner, "Mới mà hot", "PUBLIC", null, 200_000);
+        Score old = score(owner, "Cũ nhiều lượt", "PUBLIC", null, 300_000);
+        Score hidden = score(owner, "Riêng tư", "PRIVATE", null, 900_000);
+        scoreRepository.flush(); // chèn các dòng vào DB trước khi sửa ngày tạo bằng SQL
+        // createdAt không sửa được qua entity (updatable = false), nên lùi ngày tạo bằng SQL
+        jdbcTemplate.update(
+                "update scores set created_at = ? where id = ?",
+                LocalDateTime.now().minusDays(400),
+                old.getId());
+        entityManager.clear();
+        homeService.evictPublicHome();
+
+        List<String> ids = homeService.getPublicHome().getFeatured().stream()
+                .map(ScoreSummaryResponse::getId)
+                .toList();
+
+        // 200000 lượt trong 1 ngày (200000/ngày) xếp trước 300000 lượt trong 400 ngày (~750/ngày)
+        assertTrue(ids.contains(fresh.getId()));
+        assertTrue(ids.contains(old.getId()));
+        assertTrue(ids.indexOf(fresh.getId()) < ids.indexOf(old.getId()));
+        assertEquals(false, ids.contains(hidden.getId()));
+        assertTrue(ids.size() <= HomeServiceImpl.FEATURED_SIZE);
+    }
+
+    @Test
+    void heatIsViewsPerDayOfAge() {
+        ScoreSummaryResponse card = ScoreSummaryResponse.builder()
+                .viewCount(300L)
+                .createdAt(LocalDateTime.now().minusDays(9).minusHours(1))
+                .build();
+
+        assertEquals(30.0, HomeServiceImpl.heat(card), 0.001);
+        assertEquals(0.0, HomeServiceImpl.heat(ScoreSummaryResponse.builder().build()), 0.001);
+        assertEquals(
+                5.0,
+                HomeServiceImpl.heat(ScoreSummaryResponse.builder()
+                        .viewCount(5L)
+                        .createdAt(LocalDateTime.now())
+                        .build()),
+                0.001);
     }
 
     @Test

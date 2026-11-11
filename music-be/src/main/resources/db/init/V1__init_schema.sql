@@ -1,5 +1,5 @@
--- V1: schema ban dau (tuong ung cac entity trong com.ptit.music_be.entity).
--- Dung IF NOT EXISTS de chay an toan tren DB cu da duoc Hibernate tao truoc do.
+-- V1: toan bo schema (tuong ung cac entity trong com.ptit.music_be.entity). Day la file init duy nhat: thay doi schema
+-- thi sua truc tiep o day roi xoa DB local de dung lai (khong them migration ALTER rieng le).
 
 CREATE TABLE IF NOT EXISTS roles (
     id   VARCHAR(36)  NOT NULL,
@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS members (
     created_at     DATETIME(6)  NULL COMMENT 'Ngày đăng ký (NULL với tài khoản tạo trước khi có cột này)',
     last_login_at  DATETIME(6)  NULL COMMENT 'Lần đăng nhập gần nhất (đăng nhập thường hoặc Google)',
     password_changed_at DATETIME(6) NULL COMMENT 'Lần đổi/đặt lại mật khẩu gần nhất; token cấp trước mốc này bị từ chối',
+    ui_theme       VARCHAR(10)  NULL COMMENT 'Giao diện đã chọn: LIGHT / DARK / SYSTEM; NULL = theo hệ thống',
     PRIMARY KEY (id),
     UNIQUE KEY uk_members_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -46,6 +47,25 @@ CREATE TABLE IF NOT EXISTS otps (
     CONSTRAINT fk_otps_member FOREIGN KEY (member_id) REFERENCES members (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS composers (
+    id            VARCHAR(36)   NOT NULL,
+    name          VARCHAR(255)  NOT NULL,
+    slug          VARCHAR(120)  NOT NULL,
+    aliases       VARCHAR(500)  NULL COMMENT 'Tên khác, cách nhau bằng dấu phẩy (ví dụ "Bach, J.S. Bach"), dùng để tự gắn bản nhạc',
+    birth_year    INT           NULL,
+    death_year    INT           NULL,
+    country       VARCHAR(100)  NULL,
+    period        VARCHAR(16)   NULL COMMENT 'BAROQUE / CLASSICAL / ROMANTIC / MODERN / VIETNAM',
+    bio           TEXT          NULL,
+    image_url     VARCHAR(1000) NULL COMMENT 'Ảnh chân dung: chỉ dùng ảnh phạm vi công cộng hoặc có giấy phép, luôn kèm nguồn và giấy phép',
+    image_source  VARCHAR(1000) NULL,
+    image_license VARCHAR(100)  NULL,
+    created_at    DATETIME(6)   NULL,
+    updated_at    DATETIME(6)   NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_composers_slug (slug)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS scores (
     id                VARCHAR(36)  NOT NULL,
     member_id         VARCHAR(36)  NULL,
@@ -57,6 +77,9 @@ CREATE TABLE IF NOT EXISTS scores (
     visibility        VARCHAR(255) NULL,
     is_official       TINYINT(1)   NULL,
     reject_reason     VARCHAR(255) NULL,
+    original_score_id VARCHAR(36)  NULL COMMENT 'Bản trong kho mẫu: id bản gốc của người dùng mà nó được sao chép từ',
+    arranger_name     VARCHAR(255) NULL COMMENT 'Bản trong kho mẫu: tên người phối (chủ bản gốc)',
+    composer_id       VARCHAR(36)  NULL COMMENT 'Nhạc sĩ trong bảng composers ứng với chữ tác giả (backend tự gắn khi lưu)',
     tempo_bpm         INT          NULL,
     measure_count     INT          NULL,
     key_signature     VARCHAR(16)  NULL,
@@ -68,8 +91,16 @@ CREATE TABLE IF NOT EXISTS scores (
     created_at        DATETIME(6)  NULL,
     updated_at        DATETIME(6)  NULL,
     view_count        BIGINT       NULL DEFAULT 0,
+    allow_download    TINYINT(1)   NOT NULL DEFAULT 0 COMMENT 'Chủ cho phép người xem tải MusicXML, MIDI, âm thanh, PDF',
+    deleted_at        DATETIME(6)  NULL COMMENT 'Xóa mềm: khác NULL là đang ở thùng rác (30 ngày rồi xóa hẳn)',
+    deleted_by        VARCHAR(36)  NULL,
+    delete_reason     VARCHAR(500) NULL,
     PRIMARY KEY (id),
-    CONSTRAINT fk_scores_member FOREIGN KEY (member_id) REFERENCES members (id)
+    KEY idx_scores_member_deleted (member_id, deleted_at),
+    KEY idx_scores_original (original_score_id),
+    KEY idx_scores_composer (composer_id),
+    CONSTRAINT fk_scores_member   FOREIGN KEY (member_id)   REFERENCES members (id),
+    CONSTRAINT fk_scores_composer FOREIGN KEY (composer_id) REFERENCES composers (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS score_files (
@@ -220,4 +251,21 @@ CREATE TABLE IF NOT EXISTS practice_sessions (
     KEY idx_practice_sessions_member_started (member_id, started_at),
     CONSTRAINT fk_practice_sessions_member FOREIGN KEY (member_id) REFERENCES members (id),
     CONSTRAINT fk_practice_sessions_score  FOREIGN KEY (score_id)  REFERENCES scores (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS official_requests (
+    id            VARCHAR(36) NOT NULL,
+    score_id      VARCHAR(36) NOT NULL,
+    requested_by  VARCHAR(36) NOT NULL,
+    owner_id      VARCHAR(36) NOT NULL,
+    status        VARCHAR(16) NOT NULL COMMENT 'PENDING / ACCEPTED / DECLINED / CANCELED',
+    copy_score_id VARCHAR(36) NULL COMMENT 'Bản sao trong kho mẫu khi chủ đã đồng ý',
+    created_at    DATETIME(6) NULL,
+    resolved_at   DATETIME(6) NULL,
+    PRIMARY KEY (id),
+    KEY idx_official_requests_owner (owner_id, status),
+    KEY idx_official_requests_score (score_id, status),
+    CONSTRAINT fk_official_requests_score     FOREIGN KEY (score_id)     REFERENCES scores (id) ON DELETE CASCADE,
+    CONSTRAINT fk_official_requests_requester FOREIGN KEY (requested_by) REFERENCES members (id),
+    CONSTRAINT fk_official_requests_owner     FOREIGN KEY (owner_id)     REFERENCES members (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

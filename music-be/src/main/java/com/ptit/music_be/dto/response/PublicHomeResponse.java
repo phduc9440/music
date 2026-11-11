@@ -15,7 +15,7 @@ import lombok.experimental.FieldDefaults;
 public class PublicHomeResponse {
 
     /**
-     * Bản nhạc công khai nổi bật (xem nhiều nhất). thumbnailUrl trỏ tới ảnh công khai
+     * Bản nhạc công khai nổi bật (nhiều lượt xem so với số ngày kể từ lúc tạo). thumbnailUrl trỏ tới ảnh công khai
      * /api/public/scores/{id}/thumbnail, khách tải được không cần đăng nhập.
      */
     List<ScoreSummaryResponse> featured;

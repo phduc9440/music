@@ -338,7 +338,7 @@ export default function GuestHome() {
         <Section
           id="featured"
           title="Bản nhạc nổi bật"
-          lead="Những bản được cộng đồng xem nhiều nhất. Đăng nhập để mở, nghe và luyện tập."
+          lead="Những bản được quan tâm nhiều, ưu tiên bản mới có nhiều lượt xem. Đăng nhập để mở, nghe và luyện tập."
         >
           {!data && !failed && (
             <div className="gh-strip">
