@@ -1,6 +1,7 @@
 package com.ptit.music_be.service.payment;
 
 import java.util.Map;
+import java.util.Optional;
 
 import com.ptit.music_be.dto.enums.PaymentProviderType;
 import com.ptit.music_be.entity.PaymentOrder;
@@ -18,6 +19,14 @@ public interface PaymentProvider {
 
     /** Đọc thông báo từ cổng và kiểm chữ ký. Chữ ký sai thì {@code validSignature = false}, các trường khác vô nghĩa. */
     PaymentCallback parseCallback(Map<String, String> params);
+
+    /**
+     * Hỏi lại cổng trạng thái giao dịch của đơn (đối soát khi IPN không tới). Trả rỗng nếu cổng không có giao dịch
+     * hoặc không hỏi được (lỗi mạng, chữ ký phản hồi sai); khi đó không được coi là "chưa trả tiền".
+     */
+    default Optional<PaymentCallback> queryTransaction(PaymentOrder order) {
+        return Optional.empty();
+    }
 
     /** Ngữ cảnh người mua: địa chỉ IP và ngôn ngữ ("vn" hoặc "en"). */
     record PaymentContext(String clientIp, String locale) {}

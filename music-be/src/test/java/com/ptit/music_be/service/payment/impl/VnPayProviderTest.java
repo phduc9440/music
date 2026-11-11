@@ -16,6 +16,7 @@ import javax.crypto.spec.SecretKeySpec;
 
 import org.junit.jupiter.api.Test;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ptit.music_be.dto.enums.BillingPeriod;
 import com.ptit.music_be.entity.PaymentOrder;
 import com.ptit.music_be.entity.Plan;
@@ -28,7 +29,7 @@ class VnPayProviderTest {
     private static final String SECRET = "TESTSECRETTESTSECRETTESTSECRET12";
 
     private final VnPayProvider provider =
-            new VnPayProvider(new VnPayProperties("TMN001", SECRET, "https://pay.test/vpcpay", "http://web/return"));
+            new VnPayProvider(new VnPayProperties("TMN001", SECRET, "https://pay.test/vpcpay", "http://web/return", "https://pay.test/query"), new ObjectMapper());
 
     /** Ký đúng như VNPay: các tham số vnp_* sắp theo tên, giá trị mã hóa URL, HMAC-SHA512. */
     private static String sign(Map<String, String> params) throws Exception {
@@ -96,7 +97,7 @@ class VnPayProviderTest {
     @Test
     void rejectsEverythingWhenNotConfigured() throws Exception {
         VnPayProvider unconfigured =
-                new VnPayProvider(new VnPayProperties("", "", "https://pay.test/vpcpay", "http://web/return"));
+                new VnPayProvider(new VnPayProperties("", "", "https://pay.test/vpcpay", "http://web/return", "https://pay.test/query"), new ObjectMapper());
 
         assertFalse(unconfigured.isConfigured());
         assertFalse(unconfigured.parseCallback(signed("00", "00", 99000)).validSignature());
@@ -127,5 +128,32 @@ class VnPayProviderTest {
         Map<String, String> withoutHash = new LinkedHashMap<>(query);
         String hash = withoutHash.remove("vnp_SecureHash");
         assertEquals(sign(withoutHash), hash);
+    }
+
+    @Test
+    void queryResponseWithValidSignatureIsParsedAndForgedOneIsIgnored() throws Exception {
+        ObjectMapper om = new ObjectMapper();
+        String[] f = {"vnp_ResponseId", "vnp_Command", "vnp_ResponseCode", "vnp_Message", "vnp_TmnCode", "vnp_TxnRef",
+            "vnp_Amount", "vnp_BankCode", "vnp_PayDate", "vnp_TransactionNo", "vnp_TransactionType",
+            "vnp_TransactionStatus", "vnp_OrderInfo", "vnp_PromotionCode", "vnp_PromotionAmount"};
+        Map<String, String> r = new LinkedHashMap<>();
+        for (String k : f) r.put(k, "");
+        r.put("vnp_ResponseCode", "00");
+        r.put("vnp_TmnCode", "TMN001");
+        r.put("vnp_TxnRef", "MU123");
+        r.put("vnp_Amount", "9900000");
+        r.put("vnp_TransactionNo", "14000001");
+        r.put("vnp_TransactionStatus", "00");
+        Mac mac = Mac.getInstance("HmacSHA512");
+        mac.init(new SecretKeySpec(SECRET.getBytes(StandardCharsets.UTF_8), "HmacSHA512"));
+        String data = String.join("|", r.values());
+        r.put("vnp_SecureHash", HexFormat.of().formatHex(mac.doFinal(data.getBytes(StandardCharsets.UTF_8))));
+
+        PaymentCallback ok = provider.parseQueryResponse(om.valueToTree(r), "MU123").orElseThrow();
+        assertTrue(ok.success());
+        assertEquals(99000, ok.amount());
+
+        r.put("vnp_Amount", "100");
+        assertTrue(provider.parseQueryResponse(om.valueToTree(r), "MU123").isEmpty());
     }
 }

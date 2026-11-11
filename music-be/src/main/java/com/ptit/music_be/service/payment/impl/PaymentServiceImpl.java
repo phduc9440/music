@@ -3,6 +3,7 @@ package com.ptit.music_be.service.payment.impl;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -145,7 +146,13 @@ public class PaymentServiceImpl implements PaymentService {
             return IpnResult.ALREADY_CONFIRMED;
         }
 
-        order.setRawPayload(toJson(params));
+        applyResult(order, callback, toJson(params));
+        return IpnResult.OK;
+    }
+
+    /** Ghi kết quả đã xác thực của cổng vào đơn: thành công thì PAID và bật gói, thất bại thì PENDING → FAILED. */
+    private void applyResult(PaymentOrder order, PaymentCallback callback, String rawPayload) {
+        order.setRawPayload(rawPayload);
         if (callback.success()) {
             // Đơn đã hết hạn/lỗi mà cổng vẫn báo tiền đã về thì vẫn bật gói: tiền đã nhận
             order.setStatus(PaymentStatus.PAID);
@@ -160,7 +167,6 @@ public class PaymentServiceImpl implements PaymentService {
             }
             orderRepository.save(order);
         }
-        return IpnResult.OK;
     }
 
     @Override
@@ -168,9 +174,34 @@ public class PaymentServiceImpl implements PaymentService {
     public int expirePending() {
         List<PaymentOrder> due =
                 orderRepository.findByStatusAndExpiresAtBefore(PaymentStatus.PENDING, LocalDateTime.now());
-        due.forEach(o -> o.setStatus(PaymentStatus.EXPIRED));
-        orderRepository.saveAll(due);
-        return due.size();
+        int closed = 0;
+        for (PaymentOrder candidate : due) {
+            // Khóa dòng rồi đọc lại: IPN có thể vừa xử lý xong đơn này
+            PaymentOrder order = orderRepository
+                    .findByOrderCodeForUpdate(candidate.getOrderCode())
+                    .orElse(null);
+            if (order == null || order.getStatus() != PaymentStatus.PENDING) {
+                continue;
+            }
+            PaymentProvider provider = providers.get(order.getProvider());
+            Optional<PaymentCallback> answer = provider == null ? Optional.empty() : provider.queryTransaction(order);
+            if (answer.isPresent()
+                    && answer.get().validSignature()
+                    && order.getOrderCode().equals(answer.get().orderCode())
+                    && order.getAmount() == answer.get().amount()) {
+                applyResult(order, answer.get(), null);
+                log.info("Đối soát đơn {}: cổng báo {}", order.getOrderCode(), answer.get().success() ? "đã trả tiền" : "thất bại");
+                if (order.getStatus() == PaymentStatus.PAID) {
+                    continue;
+                }
+            }
+            if (order.getStatus() == PaymentStatus.PENDING) {
+                order.setStatus(PaymentStatus.EXPIRED);
+                orderRepository.save(order);
+            }
+            closed++;
+        }
+        return closed;
     }
 
     public static PaymentOrderResponse toResponse(PaymentOrder o, boolean withEmail) {
