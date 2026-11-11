@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { toast } from 'react-toastify';
+import { useNotificationSocket } from '../hooks/useNotificationSocket';
 import { useNavigate } from '../routes/useTransitionNavigate';
 import { notificationApi } from '../services';
 import { Icon } from './ui';
@@ -11,7 +13,7 @@ import Skeleton from './ui/Skeleton';
 
 const POLL_MS = 30_000;
 
-/** Chuông thông báo trên navbar: đếm chưa đọc (poll 30 giây), mở ra xem danh sách, bấm để tới bản nhạc. */
+/** Chuông thông báo trên navbar: đếm chưa đọc (nhận tức thì qua WebSocket, mất kết nối thì poll 30 giây), mở ra xem danh sách, bấm để tới bản nhạc. */
 export default function NotificationBell() {
   const [unread, setUnread] = useState(0);
   const [open, setOpen] = useState(false);
@@ -28,11 +30,10 @@ export default function NotificationBell() {
       .catch(() => undefined);
   }, []);
 
+  const openRef = useRef(open);
   useEffect(() => {
-    refreshCount();
-    const t = setInterval(refreshCount, POLL_MS);
-    return () => clearInterval(t);
-  }, [refreshCount]);
+    openRef.current = open;
+  }, [open]);
 
   // Đóng khi bấm ra ngoài
   useEffect(() => {
@@ -83,6 +84,26 @@ export default function NotificationBell() {
     else if (n.type === 'OFFICIAL_ACCEPTED' || n.type === 'OFFICIAL_DECLINED') navigate('/admin/official-scores');
     else if (n.scoreId) navigate(`/scores/${n.scoreId}`);
   };
+
+  const connected = useNotificationSocket((n) => {
+    setUnread((c) => c + 1);
+    // Danh sách đang mở thì chèn lên đầu (bỏ trùng nếu vừa nạp xong)
+    if (openRef.current) setItems((list) => [n, ...list.filter((x) => x.id !== n.id)]);
+    toast.info(
+      n.type === 'ANNOUNCEMENT' ? `${t('common.notifications.fromAdmin')}: ${n.message}` : notificationText(n),
+      {
+        onClick: () => void openItem(n), // bấm toast: đánh dấu đã đọc và mở trang liên quan như bấm trong chuông
+      },
+    );
+  });
+
+  // Đồng bộ số chưa đọc mỗi khi (mất/có lại) kết nối; chỉ poll khi socket chưa nối được
+  useEffect(() => {
+    refreshCount();
+    if (connected) return;
+    const timer = setInterval(refreshCount, POLL_MS);
+    return () => clearInterval(timer);
+  }, [connected, refreshCount]);
 
   const readAll = async () => {
     await notificationApi.markAllRead().catch(() => undefined);

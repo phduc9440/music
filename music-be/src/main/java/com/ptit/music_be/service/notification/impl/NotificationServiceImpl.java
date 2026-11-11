@@ -19,6 +19,7 @@ import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.repository.MemberRepository;
 import com.ptit.music_be.repository.NotificationRepository;
+import com.ptit.music_be.service.notification.NotificationPusher;
 import com.ptit.music_be.service.notification.NotificationService;
 import com.ptit.music_be.utils.SecurityUtils;
 
@@ -36,6 +37,7 @@ public class NotificationServiceImpl implements NotificationService {
     NotificationRepository notificationRepository;
     MemberRepository memberRepository;
     ObjectMapper objectMapper;
+    NotificationPusher pusher;
 
     @Override
     @Transactional
@@ -49,13 +51,15 @@ public class NotificationServiceImpl implements NotificationService {
         if (recipient == null || (actor != null && recipient.getId().equals(actor.getId()))) {
             return;
         }
-        notificationRepository.save(Notification.builder()
+        Notification entity = Notification.builder()
                 .recipient(recipient)
                 .type(type)
                 .scoreId(scoreId)
                 .message(truncate(message))
                 .params(toJson(params))
-                .build());
+                .build();
+        notificationRepository.save(entity); // persist gán id và createdAt ngay trên chính đối tượng này
+        pusher.push(recipient.getEmail(), toResponse(entity));
     }
 
     @Override
@@ -80,6 +84,7 @@ public class NotificationServiceImpl implements NotificationService {
                         .build())
                 .toList();
         notificationRepository.saveAll(batch);
+        batch.forEach(n -> pusher.push(n.getRecipient().getEmail(), toResponse(n)));
         return batch.size();
     }
 

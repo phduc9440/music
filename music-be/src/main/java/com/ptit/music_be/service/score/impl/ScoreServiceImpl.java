@@ -259,8 +259,10 @@ public class ScoreServiceImpl implements ScoreService {
     public PageResponse<ScoreSummaryResponse> getPendingPublic(int page, int size) {
         requireAdmin();
         int safeSize = size <= 0 ? DEFAULT_PAGE_SIZE : Math.min(size, MAX_PAGE_SIZE);
+        // Bản gửi duyệt mới nhất lên đầu
         Page<Score> result = scoreRepository.findByVisibility(
-                Visibility.PENDING.name(), PageRequest.of(Math.max(page, 0), safeSize, Sort.by("updatedAt")));
+                Visibility.PENDING.name(),
+                PageRequest.of(Math.max(page, 0), safeSize, Sort.by(Sort.Direction.DESC, "updatedAt")));
         Map<String, ScoreFile> thumbnails = loadThumbnails(result.getContent());
         Map<String, List<TagResponse>> tagsByScore = loadTags(result.getContent());
         List<ScoreSummaryResponse> content = result.getContent().stream()
