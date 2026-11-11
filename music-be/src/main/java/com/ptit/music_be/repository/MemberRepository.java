@@ -30,6 +30,10 @@ public interface MemberRepository extends JpaRepository<Member, String> {
 
     boolean existsByEmail(String email);
 
+    /** Tên các vai trò của thành viên (USER, ADMIN, SUPER_ADMIN). */
+    @Query("select mr.role.name from MemberRole mr where mr.member.id = :id")
+    java.util.List<String> roleNamesOf(@Param("id") String id);
+
     /** Ghi lần đăng nhập gần nhất mà không động đến các cột khác của tài khoản. */
     @org.springframework.transaction.annotation.Transactional
     // flushAutomatically: tài khoản Google mới tạo trong cùng transaction phải được ghi xuống DB trước câu update này,

@@ -16,7 +16,10 @@ public interface SubscriptionService {
     /** Gói và số đã dùng của người đang đăng nhập. */
     MySubscriptionResponse mine();
 
-    /** Gói đang hiệu lực của thành viên; không có thì gói FREE. */
+    /**
+     * Gói đang hiệu lực của thành viên; không có thì gói FREE. SUPER_ADMIN nhận gói ảo UNLIMITED (mọi hạn mức không giới
+     * hạn); ADMIN tối thiểu là gói PRO không thời hạn (gói đã mua cao hơn thì dùng gói đó).
+     */
     Plan currentPlan(String memberId);
 
     /**

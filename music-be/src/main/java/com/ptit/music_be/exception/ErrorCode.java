@@ -163,6 +163,7 @@ public enum ErrorCode {
     PAYMENT_PERIOD_INVALID(3715, "Chu kỳ thanh toán phải là MONTH hoặc YEAR", HttpStatus.BAD_REQUEST),
     PAYMENT_RANGE_INVALID(3716, "Khoảng ngày doanh thu không hợp lệ (tối đa 366 ngày)", HttpStatus.BAD_REQUEST),
     PAYMENT_ORDER_NOT_PAYABLE(3717, "Đơn này không còn chờ thanh toán", HttpStatus.CONFLICT),
+    PAYMENT_NOT_NEEDED(3718, "Tài khoản quản trị đã có quyền lợi của gói này, không cần mua", HttpStatus.CONFLICT),
     ;
 
     int code;

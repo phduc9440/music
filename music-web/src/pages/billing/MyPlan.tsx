@@ -56,9 +56,10 @@ export default function MyPlan() {
         {sub && (
           <section className="bl-card">
             <div className="bl-card__head">
-              <h2>{sub.plan.name}</h2>
+              <h2>{sub.status === 'UNLIMITED' ? t('billing.unlimitedPlan') : sub.plan.name}</h2>
               <span className="bl-badge">{t(`billing.status.${sub.status}`)}</span>
             </div>
+            {sub.source === 'ROLE' && sub.roleGrant && <p>{t(`billing.myPlan.roleGrant.${sub.roleGrant}`)}</p>}
             {sub.expiresAt && (
               <p>
                 {t('billing.myPlan.expires', { date: formatDate(sub.expiresAt) })}

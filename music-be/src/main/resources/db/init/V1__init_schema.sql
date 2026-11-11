@@ -276,8 +276,9 @@ CREATE TABLE IF NOT EXISTS official_requests (
 -- collab, team, omrPriority; thiếu một khóa hoặc null = không giới hạn. Giá là số nguyên VND.
 CREATE TABLE IF NOT EXISTS plans (
     id          VARCHAR(36)  NOT NULL,
-    code        VARCHAR(16)  NOT NULL COMMENT 'FREE / PRO / TEAM',
+    code        VARCHAR(16)  NOT NULL COMMENT 'FREE / PRO / PREMIUM / TEAM_PRO / TEAM_PREMIUM',
     name        VARCHAR(100) NOT NULL,
+    audience    VARCHAR(10)  NOT NULL DEFAULT 'PERSONAL' COMMENT 'PERSONAL (cá nhân) / TEAM (nhóm)',
     price_month BIGINT       NOT NULL DEFAULT 0,
     price_year  BIGINT       NOT NULL DEFAULT 0,
     limits      JSON         NOT NULL,
