@@ -10,6 +10,7 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import com.ptit.music_be.converter.AuthProviderConverter;
 import com.ptit.music_be.converter.MemberStatusConverter;
+import com.ptit.music_be.dto.enums.AppLocale;
 import com.ptit.music_be.dto.enums.AuthProvider;
 import com.ptit.music_be.dto.enums.MemberStatus;
 import com.ptit.music_be.dto.enums.UiTheme;
@@ -64,6 +65,11 @@ public class Member {
     @Enumerated(EnumType.STRING)
     @Column(name = "ui_theme", length = 10)
     UiTheme uiTheme;
+
+    /** Ngôn ngữ đã chọn (VI / EN); null là chưa chọn, hiểu là tiếng Việt. Dùng cho giao diện và email. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "locale", length = 5)
+    AppLocale locale;
 
     /** Ngày đăng ký; null với tài khoản tạo trước khi có cột này. */
     @CreationTimestamp

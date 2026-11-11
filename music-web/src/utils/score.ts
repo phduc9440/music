@@ -1,90 +1,79 @@
 import { useLocation } from 'react-router-dom';
-import type {
-  AccessLevel,
-  Difficulty,
-  OmrSourceType,
-  ProcessingStatus,
-  ScoreSource,
-  TaskStatus,
-} from '../types';
+import { formatDateTime as formatDateTimeI18n, formatRelativeTime, labelMap, translateError } from '../i18n/core';
+import type { AccessLevel, Difficulty, OmrSourceType, ProcessingStatus, ScoreSource, TaskStatus } from '../types';
 import type { SharePermission, Visibility } from '../types';
 
-// Nhãn hiển thị tiếng Việt cho các giá trị enum của BE
-export const STATUS_LABELS: Record<ProcessingStatus, string> = {
-  NONE: 'Chưa xử lý',
-  PENDING: 'Đang chờ',
-  PROCESSING: 'Đang xử lý',
-  COMPLETED: 'Hoàn tất',
-  FAILED: 'Thất bại',
-};
+// Nhãn hiển thị cho các giá trị enum của BE, theo ngôn ngữ đang dùng (chuỗi nằm ở locales/*/scores.json)
+export const STATUS_LABELS: Record<ProcessingStatus, string> = labelMap('scores.labels.status', [
+  'NONE',
+  'PENDING',
+  'PROCESSING',
+  'COMPLETED',
+  'FAILED',
+]);
 
-export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
-  PENDING: 'Đang chờ',
-  PROCESSING: 'Đang xử lý',
-  COMPLETED: 'Hoàn tất',
-  FAILED: 'Thất bại',
-  CANCELLED: 'Đã hủy',
-};
+export const TASK_STATUS_LABELS: Record<TaskStatus, string> = labelMap('scores.labels.taskStatus', [
+  'PENDING',
+  'PROCESSING',
+  'COMPLETED',
+  'FAILED',
+  'CANCELLED',
+]);
 
-export const SOURCE_LABELS: Record<ScoreSource, string> = {
-  OMR: 'Số hóa từ file',
-  IMPORT: 'Nhập file',
-  MANUAL: 'Tự soạn',
-};
+export const SOURCE_LABELS: Record<ScoreSource, string> = labelMap('scores.labels.source', ['OMR', 'IMPORT', 'MANUAL']);
 
-export const OMR_SOURCE_LABELS: Record<OmrSourceType, string> = {
-  PHOTO: 'Ảnh chụp',
-  SCAN: 'Bản scan',
-  PDF_NATIVE: 'PDF gốc',
-};
+export const OMR_SOURCE_LABELS: Record<OmrSourceType, string> = labelMap('scores.labels.omrSource', [
+  'PHOTO',
+  'SCAN',
+  'PDF_NATIVE',
+]);
 
-export const VISIBILITY_LABELS: Record<Visibility, string> = {
-  PRIVATE: 'Riêng tư',
-  PENDING: 'Chờ duyệt công khai',
-  PUBLIC: 'Công khai',
-};
+export const VISIBILITY_LABELS: Record<Visibility, string> = labelMap('scores.labels.visibility', [
+  'PRIVATE',
+  'PENDING',
+  'PUBLIC',
+]);
 
-export const SHARE_PERMISSION_LABELS: Record<SharePermission, string> = {
-  1: 'Người xem',
-  2: 'Người nhận xét',
-  3: 'Người chỉnh sửa',
-};
+export const SHARE_PERMISSION_LABELS: Record<SharePermission, string> = labelMap(
+  'scores.labels.sharePermission',
+  [1, 2, 3],
+);
 
-export const ACCESS_LEVEL_LABELS: Record<AccessLevel, string> = {
-  OWNER: 'Chủ sở hữu',
-  EDIT: 'Người chỉnh sửa',
-  REVIEW: 'Người nhận xét',
-  VIEW: 'Người xem',
-};
+export const ACCESS_LEVEL_LABELS: Record<AccessLevel, string> = labelMap('scores.labels.accessLevel', [
+  'OWNER',
+  'EDIT',
+  'REVIEW',
+  'VIEW',
+]);
 
-export const DIFFICULTY_LABELS: Record<Difficulty, string> = {
-  EASY: 'Dễ',
-  MEDIUM: 'Trung bình',
-  HARD: 'Khó',
-  EXPERT: 'Chuyên gia',
-};
+export const DIFFICULTY_LABELS: Record<Difficulty, string> = labelMap('scores.labels.difficulty', [
+  'EASY',
+  'MEDIUM',
+  'HARD',
+  'EXPERT',
+]);
 
-export const FILE_TYPE_LABELS: Record<string, string> = {
-  ORIGINAL_IMAGE: 'Ảnh gốc',
-  ORIGINAL_PDF: 'PDF gốc',
-  ORIGINAL_MUSICXML: 'MusicXML gốc',
-  ORIGINAL_MIDI: 'MIDI gốc',
-  PNG: 'Ảnh trang',
-  KERN: 'Kern',
-  MUSICXML: 'MusicXML',
-  MIDI: 'MIDI',
-  PDF: 'PDF',
-  SVG: 'SVG',
-  MP3: 'MP3',
-  WAV: 'WAV',
-};
+export const FILE_TYPE_LABELS: Record<string, string> = labelMap('scores.labels.fileType', [
+  'ORIGINAL_IMAGE',
+  'ORIGINAL_PDF',
+  'ORIGINAL_MUSICXML',
+  'ORIGINAL_MIDI',
+  'PNG',
+  'KERN',
+  'MUSICXML',
+  'MIDI',
+  'PDF',
+  'SVG',
+  'MP3',
+  'WAV',
+]);
 
-export const TASK_TYPE_LABELS: Record<string, string> = {
-  OMR_CONVERSION: 'Nhận diện bản nhạc (OMR)',
-  CHORD_GENERATION: 'Sinh hợp âm',
-  AUDIO_SYNTHESIS: 'Xuất âm thanh',
-  FORMAT_CONVERSION: 'Chuyển định dạng',
-};
+export const TASK_TYPE_LABELS: Record<string, string> = labelMap('scores.labels.taskType', [
+  'OMR_CONVERSION',
+  'CHORD_GENERATION',
+  'AUDIO_SYNTHESIS',
+  'FORMAT_CONVERSION',
+]);
 
 // Giới hạn khớp với validate ở BE (ScoreUpdateRequest)
 export const MAX_TITLE = 255;
@@ -102,25 +91,13 @@ export const formatSize = (bytes?: number | null): string => {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 };
 
-export const formatDateTime = (iso?: string | null): string => (iso ? new Date(iso).toLocaleString('vi-VN') : '-');
+export const formatDateTime = (iso?: string | null): string => (iso ? formatDateTimeI18n(iso) : '-');
 
 /** "vừa xong", "5 phút trước", "3 ngày trước"... Quá 30 ngày thì hiện ngày tháng. */
-export const formatRelative = (iso?: string | null): string => {
-  if (!iso) return '';
-  const diffSec = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
-  if (diffSec < 60) return 'vừa xong';
-  const min = Math.floor(diffSec / 60);
-  if (min < 60) return `${min} phút trước`;
-  const hour = Math.floor(min / 60);
-  if (hour < 24) return `${hour} giờ trước`;
-  const day = Math.floor(hour / 24);
-  if (day <= 30) return `${day} ngày trước`;
-  return new Date(iso).toLocaleDateString('vi-VN');
-};
+export const formatRelative = (iso?: string | null): string => (iso ? formatRelativeTime(iso) : '');
 
-/** Lấy message lỗi từ response của BE, không có thì dùng câu mặc định. */
-export const getErrorMessage = (err: unknown, fallback: string): string =>
-  (err as { response?: { data?: { message?: string } } }).response?.data?.message ?? fallback;
+/** Câu lỗi cho người dùng: bản dịch theo mã lỗi BE nếu có, không thì message của BE, không thì câu mặc định. */
+export const getErrorMessage = (err: unknown, fallback: string): string => translateError(err, fallback);
 
 /** Mã lỗi nghiệp vụ (ErrorCode của BE) trong response, ví dụ 2004. */
 export const getErrorCode = (err: unknown): number | undefined =>

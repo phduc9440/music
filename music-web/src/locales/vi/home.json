@@ -1,0 +1,107 @@
+{
+  "guest": {
+    "openScore": "Mở bản nhạc {title}",
+    "open": "Mở bản nhạc",
+    "prev": "Xem bản trước",
+    "next": "Xem bản tiếp",
+    "composerLabel": "{name}: {count} bản nhạc công khai",
+    "composerOnSystem": "{count} bản trên hệ thống",
+    "signIn": "Đăng nhập",
+    "eyebrow": "Chụp · Sửa · Nghe · Tập",
+    "heroTitle": "Biến bản nhạc giấy thành bản nhạc số, rồi luyện tập ngay trên trình duyệt",
+    "heroLead": "Số hóa từ ảnh chụp hoặc PDF, chỉnh từng nốt, nghe lại và theo dõi tiến bộ, tất cả bằng tiếng Việt.",
+    "ctaDigitize": "Số hóa bản nhạc đầu tiên",
+    "ctaExplore": "Khám phá kho nhạc",
+    "dropNow": "Thả file để bắt đầu",
+    "dropHint": "Hoặc thả ảnh, PDF, MusicXML, MIDI vào đây",
+    "loadFailed": "Chưa tải được dữ liệu trang chủ. Bạn vẫn có thể đăng nhập để bắt đầu.",
+    "featuredTitle": "Bản nhạc nổi bật",
+    "featuredLead": "Những bản được quan tâm nhiều, ưu tiên bản mới có nhiều lượt xem. Đăng nhập để mở, nghe và luyện tập.",
+    "featuredEmpty": "Chưa có bản nhạc công khai nào. Hãy là người đầu tiên chia sẻ!",
+    "composersTitle": "Những nhạc sĩ được yêu thích",
+    "composersLead": "Nhạc sĩ có nhiều bản nhạc công khai nhất trên hệ thống.",
+    "howTitle": "Cách hoạt động",
+    "howLead": "Ba bước từ tờ nhạc giấy tới buổi tập.",
+    "step": "Bước {n}",
+    "steps": {
+      "capture": {
+        "title": "Chụp",
+        "text": "Chụp ảnh hoặc tải PDF bản nhạc giấy. Hệ thống nhận diện nốt và chuyển thành bản nhạc số."
+      },
+      "edit": {
+        "title": "Sửa",
+        "text": "Chỉnh từng nốt trong trình soạn thảo, nghe lại ngay, lưu thành nhiều phiên bản."
+      },
+      "practice": {
+        "title": "Tập",
+        "text": "Tập chậm, lặp đoạn khó, theo dõi chuỗi ngày và thời gian luyện tập của bạn."
+      }
+    },
+    "statsTitle": "Con số thật",
+    "statsLead": "Đếm trực tiếp từ hệ thống, cập nhật mỗi 5 phút.",
+    "statScores": "Bản nhạc",
+    "statPages": "Trang đã số hóa",
+    "statHours": "Giờ luyện tập",
+    "statMembers": "Thành viên",
+    "faqTitle": "Câu hỏi thường gặp",
+    "faq": {
+      "prepare": {
+        "q": "Tôi cần chuẩn bị gì để số hóa bản nhạc?",
+        "a": "Một ảnh chụp rõ nét hoặc file PDF. Bạn cũng có thể nhập thẳng file MusicXML hoặc MIDI đã có sẵn."
+      },
+      "privacy": {
+        "q": "Bản nhạc của tôi có bị người khác xem không?",
+        "a": "Không. Bản nhạc mặc định là riêng tư. Bạn chủ động chia sẻ bằng liên kết, mời theo email, hoặc gửi yêu cầu công khai để quản trị viên duyệt."
+      },
+      "price": {
+        "q": "Có mất phí không?",
+        "a": "Ứng dụng đang trong giai đoạn thử nghiệm và dùng miễn phí. Các gói dịch vụ sẽ được công bố sau."
+      },
+      "mobile": {
+        "q": "Tôi có thể dùng trên điện thoại không?",
+        "a": "Có. Giao diện tự co giãn theo màn hình; thanh tab dưới cùng giúp mở nhanh Khám phá, Thư viện và Luyện tập."
+      }
+    },
+    "finalTitle": "Sẵn sàng số hóa bản nhạc đầu tiên?",
+    "finalCta": "Bắt đầu miễn phí"
+  },
+  "workspace": {
+    "greeting": {
+      "morning": "Chào buổi sáng",
+      "noon": "Chào buổi trưa",
+      "afternoon": "Chào buổi chiều",
+      "evening": "Chào buổi tối"
+    },
+    "pendingAccess": "{name} xin quyền {level}",
+    "someone": "Ai đó",
+    "accessGeneric": "truy cập",
+    "pendingOfficial": "{name} xin đưa vào kho score mẫu",
+    "adminName": "Quản trị viên",
+    "updated": "cập nhật {when}",
+    "loadFailedTitle": "Không tải được trang chủ",
+    "loadFailedText": "Thử tải lại trang, hoặc mở Thư viện từ menu.",
+    "practicedToday": "Hôm nay bạn đã tập {count} phút. Giữ nhịp nhé!",
+    "keepStreak": "Hôm nay chưa tập. Tập vài phút để giữ chuỗi ngày.",
+    "startStreak": "Bắt đầu một buổi tập ngắn hôm nay để mở chuỗi ngày đầu tiên.",
+    "streakLabel": "ngày liên tiếp",
+    "longest": "Dài nhất: {count} ngày",
+    "continue": "Tiếp tục",
+    "noScores": "Bạn chưa có bản nhạc nào. Số hóa bản đầu tiên ở khối bên dưới.",
+    "digitize": "Số hóa bản nhạc",
+    "fromImage": "Từ ảnh hoặc PDF",
+    "fromImageHint": "Nhận diện nốt tự động",
+    "fromFile": "Từ MusicXML / MIDI",
+    "fromFileHint": "Nhập file có sẵn",
+    "pending": "Chờ bạn xử lý",
+    "noPending": "Không có yêu cầu nào đang chờ.",
+    "accessRequests": "{count} yêu cầu xin quyền",
+    "officialRequests": "{count} lời xin vào kho mẫu",
+    "awaitingReview": "{count} bản chờ duyệt công khai",
+    "suggestion": "Gợi ý luyện tập hôm nay",
+    "suggestContinue": "Tập tiếp bài gần nhất",
+    "suggestOfficial": "Bài dễ trong kho score mẫu",
+    "practiceNow": "Tập ngay",
+    "suggestEmpty": "Chưa có gợi ý. Mở {link} để chọn bài đầu tiên.",
+    "quickLinks": "Lối tắt"
+  }
+}

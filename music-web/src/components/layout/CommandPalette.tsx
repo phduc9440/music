@@ -6,6 +6,7 @@ import { scoreApi } from '../../services';
 import type { ScoreSummary } from '../../types';
 import type { ThemePreference } from '../../theme/theme';
 import { useTheme } from '../../theme/useTheme';
+import { t } from '../../i18n/core';
 import { getScorePath } from '../../utils/score';
 import { CREATE_SCORE_PATH, NAV_GROUPS } from './nav';
 import './command-palette.css';
@@ -24,7 +25,7 @@ const DEBOUNCE_MS = 300;
 const RESULTS_PER_GROUP = 5;
 
 /** So khớp không phân biệt hoa thường và dấu tiếng Việt ("kho score" khớp "Kho score mẫu", "thu vien" khớp "Thư viện"). */
-const fold = (text: string) => text.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase();
+const fold = (text: string) => text.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase(); // i18n-ignore: bỏ dấu để so khớp
 
 /**
  * Hộp tìm toàn cục (Ctrl/Cmd+K): lệnh nhanh, bản nhạc của tôi và bản nhạc công khai. Mở bằng phím tắt hoặc nút tìm
@@ -52,32 +53,53 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
     const links: Entry[] = [
       {
         id: 'cmd-create',
-        group: 'Lệnh nhanh',
-        label: 'Tạo bản nhạc',
-        hint: 'Tải ảnh, PDF, MusicXML hoặc MIDI',
+        group: t('common.cmdk.groups.commands'),
+        label: t('common.header.create'),
+        hint: t('common.cmdk.createHint'),
         icon: 'plus',
         run: () => go(CREATE_SCORE_PATH),
       },
       ...NAV_GROUPS.flatMap((g) =>
         g.items.map<Entry>((item) => ({
           id: `cmd-${item.to}`,
-          group: 'Lệnh nhanh',
+          group: t('common.cmdk.groups.commands'),
           label: item.label,
           hint: g.label,
           icon: item.icon,
           run: () => go(item.to),
         })),
       ),
-      { id: 'cmd-profile', group: 'Lệnh nhanh', label: 'Hồ sơ của tôi', icon: 'user', run: () => go('/profile') },
+      {
+        id: 'cmd-profile',
+        group: t('common.cmdk.groups.commands'),
+        label: t('common.header.profile'),
+        icon: 'user',
+        run: () => go('/profile'),
+      },
     ];
     const themeChoices: { id: string; label: string; icon: IconName; pref: ThemePreference }[] = [
-      { id: 'cmd-theme-light', label: 'Đổi giao diện: Sáng', icon: 'sun', pref: 'light' },
-      { id: 'cmd-theme-dark', label: 'Đổi giao diện: Tối', icon: 'moon', pref: 'dark' },
-      { id: 'cmd-theme-system', label: 'Đổi giao diện: Theo hệ thống', icon: 'monitor', pref: 'system' },
+      {
+        id: 'cmd-theme-light',
+        label: t('common.cmdk.theme', { name: t('common.theme.light') }),
+        icon: 'sun',
+        pref: 'light',
+      },
+      {
+        id: 'cmd-theme-dark',
+        label: t('common.cmdk.theme', { name: t('common.theme.dark') }),
+        icon: 'moon',
+        pref: 'dark',
+      },
+      {
+        id: 'cmd-theme-system',
+        label: t('common.cmdk.theme', { name: t('common.theme.system') }),
+        icon: 'monitor',
+        pref: 'system',
+      },
     ];
     const themes = themeChoices.map<Entry>(({ pref, ...rest }) => ({
       ...rest,
-      group: 'Lệnh nhanh',
+      group: t('common.cmdk.groups.commands'),
       run: () => {
         setPreference(pref);
         onClose();
@@ -125,7 +147,7 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
     return [
       ...ownResults.map<Entry>((s) => ({
         id: `mine-${s.id}`,
-        group: 'Bản nhạc của tôi',
+        group: t('common.cmdk.groups.mine'),
         label: s.title,
         hint: s.composer ?? undefined,
         icon: 'music',
@@ -133,7 +155,7 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
       })),
       ...publicResults.map<Entry>((s) => ({
         id: `public-${s.id}`,
-        group: 'Bản nhạc công khai',
+        group: t('common.cmdk.groups.public'),
         label: s.title,
         hint: s.composer ?? undefined,
         icon: 'globe',
@@ -174,7 +196,7 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
         className="cmdk"
         role="dialog"
         aria-modal="true"
-        aria-label="Tìm kiếm và lệnh nhanh"
+        aria-label={t('common.cmdk.label')}
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="cmdk__search">
@@ -182,7 +204,7 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
           <input
             ref={inputRef}
             className="cmdk__input"
-            placeholder="Tìm bản nhạc hoặc gõ một lệnh…"
+            placeholder={t('common.cmdk.placeholder')}
             role="combobox"
             aria-expanded="true"
             aria-controls={listId}
@@ -219,8 +241,10 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
               </div>
             );
           })}
-          {entries.length === 0 && !loading && <div className="cmdk__empty">Không có kết quả cho “{trimmed}”</div>}
-          {loading && <div className="cmdk__empty">Đang tìm…</div>}
+          {entries.length === 0 && !loading && (
+            <div className="cmdk__empty">{t('common.cmdk.noResults', { query: trimmed })}</div>
+          )}
+          {loading && <div className="cmdk__empty">{t('common.cmdk.searching')}</div>}
         </div>
       </div>
     </div>

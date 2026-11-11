@@ -1,5 +1,6 @@
 import axios from 'axios';
 import type { InternalAxiosRequestConfig } from 'axios';
+import { getLocale } from '../i18n/core';
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
 
@@ -10,6 +11,12 @@ const apiClient = axios.create({
   },
   // Token nằm trong cookie HttpOnly do backend set; trình duyệt tự gửi kèm.
   withCredentials: true,
+});
+
+// Cho backend biết ngôn ngữ đang dùng (email, thông báo về sau dựng theo header này)
+apiClient.interceptors.request.use((config) => {
+  config.headers.set('Accept-Language', getLocale());
+  return config;
 });
 
 let refreshPromise: Promise<void> | null = null;

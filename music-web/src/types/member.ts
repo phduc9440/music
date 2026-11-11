@@ -10,6 +10,8 @@ export interface Member {
   avatarUrl?: string | null;
   /** Giao diện đã lưu trên server; null là chưa chọn (theo hệ thống). */
   uiTheme?: 'LIGHT' | 'DARK' | 'SYSTEM' | null;
+  /** Ngôn ngữ đã chọn (mục 6.2); null là chưa chọn (tiếng Việt). */
+  locale?: 'VI' | 'EN' | null;
   status?: MemberStatus;
   emailVerified?: boolean;
   authProvider?: AuthProvider;

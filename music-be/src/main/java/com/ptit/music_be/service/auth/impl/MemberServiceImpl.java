@@ -12,6 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
+import com.ptit.music_be.dto.request.UpdateLocaleRequest;
 import com.ptit.music_be.dto.request.UpdateProfileRequest;
 import com.ptit.music_be.dto.request.UpdateThemeRequest;
 import com.ptit.music_be.dto.response.MemberResponse;
@@ -65,6 +66,14 @@ public class MemberServiceImpl implements MemberService {
     public MemberResponse updateMyTheme(UpdateThemeRequest request) {
         Member member = currentMember();
         member.setUiTheme(request.getTheme());
+        return memberMapper.toMemberResponse(memberRepository.save(member));
+    }
+
+    @Override
+    @Transactional
+    public MemberResponse updateMyLocale(UpdateLocaleRequest request) {
+        Member member = currentMember();
+        member.setLocale(request.getLocale());
         return memberMapper.toMemberResponse(memberRepository.save(member));
     }
 

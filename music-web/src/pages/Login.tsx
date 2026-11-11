@@ -6,13 +6,14 @@ import { completeLogin } from '../utils/auth';
 import GoogleAuthButton from '../components/GoogleAuthButton';
 import { Icon } from '../components/ui';
 import ThemeToggle from '../theme/ThemeToggle';
+import { t, translateError } from '../i18n/core';
+import LanguageToggle from '../i18n/LanguageToggle';
 
 type ViewMode = 'login' | 'register' | 'forgot' | 'reset';
 
 type ApiErr = { response?: { data?: { message?: string; result?: { retryAfterSeconds?: number } } }; message?: string };
 
-const apiError = (error: unknown) =>
-  (error as ApiErr).response?.data?.message || (error as ApiErr).message || 'Có lỗi xảy ra, vui lòng thử lại';
+const apiError = (error: unknown) => translateError(error, (error as ApiErr).message || t('auth.genericError'));
 
 /** Số giây phải chờ khi backend báo xin mã OTP quá sớm (OTP_REQUEST_TOO_SOON). */
 const retryAfter = (error: unknown) => (error as ApiErr).response?.data?.result?.retryAfterSeconds ?? 0;
@@ -47,20 +48,20 @@ export default function Login() {
       if (viewMode === 'login') {
         const response = await authApi.login({ username: email, password });
         const target = await completeLogin(response.data.result);
-        toast.success('Đăng nhập thành công');
+        toast.success(t('auth.toast.signedIn'));
         navigate(from ?? target, { replace: true });
       } else if (viewMode === 'register') {
         await authApi.register({ password, email, fullName });
-        toast.success('Đăng ký thành công, vui lòng đăng nhập');
+        toast.success(t('auth.toast.registered'));
         setViewMode('login');
       } else if (viewMode === 'forgot') {
         await authApi.forgotPassword({ email });
-        toast.success('Nếu email đã đăng ký, mã OTP sẽ được gửi tới hộp thư trong ít phút');
+        toast.success(t('auth.toast.otpSent'));
         setResendIn(60);
         setViewMode('reset');
       } else if (viewMode === 'reset') {
         await authApi.resetPassword({ email, otp, newPassword });
-        toast.success('Đã đặt lại mật khẩu, vui lòng đăng nhập');
+        toast.success(t('auth.toast.passwordReset'));
         setViewMode('login');
         setPassword('');
         setOtp('');
@@ -79,7 +80,7 @@ export default function Login() {
     setIsLoading(true);
     try {
       await authApi.forgotPassword({ email });
-      toast.success('Đã gửi lại mã OTP');
+      toast.success(t('auth.toast.otpResent'));
       setResendIn(60);
     } catch (error) {
       toast.error(apiError(error));
@@ -91,19 +92,19 @@ export default function Login() {
   };
 
   const getTitle = () => {
-    if (viewMode === 'login') return 'Đăng nhập để vào thư viện bản nhạc của bạn.';
-    if (viewMode === 'register') return 'Tạo tài khoản mới để bắt đầu.';
-    if (viewMode === 'forgot') return 'Nhập email để nhận mã OTP.';
-    if (viewMode === 'reset') return 'Nhập mã OTP và mật khẩu mới.';
+    if (viewMode === 'login') return t('auth.subtitle.login');
+    if (viewMode === 'register') return t('auth.subtitle.register');
+    if (viewMode === 'forgot') return t('auth.subtitle.forgot');
+    if (viewMode === 'reset') return t('auth.subtitle.reset');
     return '';
   };
 
   const getButtonText = () => {
-    if (isLoading) return 'Đang xử lý…';
-    if (viewMode === 'login') return 'Đăng nhập';
-    if (viewMode === 'register') return 'Đăng ký';
-    if (viewMode === 'forgot') return 'Gửi mã OTP';
-    if (viewMode === 'reset') return 'Đặt lại mật khẩu';
+    if (isLoading) return t('auth.button.processing');
+    if (viewMode === 'login') return t('auth.button.login');
+    if (viewMode === 'register') return t('auth.button.register');
+    if (viewMode === 'forgot') return t('auth.button.forgot');
+    if (viewMode === 'reset') return t('auth.button.reset');
     return '';
   };
 
@@ -111,9 +112,10 @@ export default function Login() {
     <div className="auth-wrapper">
       <Link to="/" className="auth-back">
         <Icon name="arrowLeft" size={16} />
-        Trang chủ
+        {t('auth.home')}
       </Link>
       <div className="auth-theme">
+        <LanguageToggle />
         <ThemeToggle />
       </div>
       <div className="auth-card">
@@ -142,12 +144,12 @@ export default function Login() {
           {/* Full Name (Used only in Register) */}
           {viewMode === 'register' && (
             <div className="form-group">
-              <label htmlFor="fullName">Họ tên</label>
+              <label htmlFor="fullName">{t('auth.fullName')}</label>
               <input
                 type="text"
                 id="fullName"
                 className="form-control"
-                placeholder="Nguyễn Văn A"
+                placeholder={t('auth.fullNamePlaceholder')}
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 required
@@ -158,12 +160,12 @@ export default function Login() {
           {/* Password (Used in Login, Register) */}
           {(viewMode === 'login' || viewMode === 'register') && (
             <div className="form-group">
-              <label htmlFor="password">Mật khẩu</label>
+              <label htmlFor="password">{t('auth.password')}</label>
               <input
                 type="password"
                 id="password"
                 className="form-control"
-                placeholder="Nhập mật khẩu"
+                placeholder={t('auth.passwordPlaceholder')}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -175,12 +177,12 @@ export default function Login() {
           {/* OTP (Used in Reset) */}
           {viewMode === 'reset' && (
             <div className="form-group">
-              <label htmlFor="otp">Mã OTP</label>
+              <label htmlFor="otp">{t('auth.otp')}</label>
               <input
                 type="text"
                 id="otp"
                 className="form-control"
-                placeholder="6 chữ số"
+                placeholder={t('auth.otpPlaceholder')}
                 value={otp}
                 onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
                 required
@@ -189,9 +191,9 @@ export default function Login() {
                 autoComplete="one-time-code"
               />
               <div style={{ marginTop: '0.4rem', fontSize: '0.8125rem', color: 'var(--ui-text-2)', textAlign: 'left' }}>
-                Không nhận được mã?{' '}
+                {t('auth.noCode')}{' '}
                 {resendIn > 0 ? (
-                  <span>Gửi lại sau {resendIn} giây</span>
+                  <span>{t('auth.resendIn', { count: resendIn })}</span>
                 ) : (
                   <a
                     href="#"
@@ -200,7 +202,7 @@ export default function Login() {
                       if (!isLoading) resendOtp();
                     }}
                   >
-                    Gửi lại mã
+                    {t('auth.resend')}
                   </a>
                 )}
               </div>
@@ -210,12 +212,12 @@ export default function Login() {
           {/* New Password (Used in Reset) */}
           {viewMode === 'reset' && (
             <div className="form-group">
-              <label htmlFor="newPassword">Mật khẩu mới</label>
+              <label htmlFor="newPassword">{t('auth.newPassword')}</label>
               <input
                 type="password"
                 id="newPassword"
                 className="form-control"
-                placeholder="Ít nhất 8 ký tự"
+                placeholder={t('auth.newPasswordPlaceholder')}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 required
@@ -234,7 +236,7 @@ export default function Login() {
                   setViewMode('forgot');
                 }}
               >
-                Quên mật khẩu?
+                {t('auth.forgotLink')}
               </a>
             </div>
           )}
@@ -254,7 +256,7 @@ export default function Login() {
           <div style={{ marginTop: '1.5rem', fontSize: '0.875rem' }}>
             {viewMode === 'login' && (
               <>
-                <span>Chưa có tài khoản? </span>
+                <span>{t('auth.noAccount')} </span>
                 <a
                   href="#"
                   onClick={(e) => {
@@ -262,13 +264,13 @@ export default function Login() {
                     setViewMode('register');
                   }}
                 >
-                  Đăng ký ngay
+                  {t('auth.registerNow')}
                 </a>
               </>
             )}
             {viewMode === 'register' && (
               <>
-                <span>Đã có tài khoản? </span>
+                <span>{t('auth.haveAccount')} </span>
                 <a
                   href="#"
                   onClick={(e) => {
@@ -276,13 +278,13 @@ export default function Login() {
                     setViewMode('login');
                   }}
                 >
-                  Đăng nhập
+                  {t('auth.button.login')}
                 </a>
               </>
             )}
             {(viewMode === 'forgot' || viewMode === 'reset') && (
               <>
-                <span>Đã nhớ mật khẩu? </span>
+                <span>{t('auth.rememberedPassword')} </span>
                 <a
                   href="#"
                   onClick={(e) => {
@@ -290,7 +292,7 @@ export default function Login() {
                     setViewMode('login');
                   }}
                 >
-                  Quay lại đăng nhập
+                  {t('auth.backToLogin')}
                 </a>
               </>
             )}

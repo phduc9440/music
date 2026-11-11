@@ -8,6 +8,7 @@ import ScoreCard from '../../../components/scores/library/ScoreCard';
 import { Icon } from '../../../components/ui';
 import { composerApi, scoreApi, tagApi } from '../../../services';
 import type { Composer, Difficulty, PageResult, ScoreSummary, Tag } from '../../../types';
+import { labelMap, t } from '../../../i18n/core';
 import { DIFFICULTY_LABELS, getScorePath } from '../../../utils/score';
 import '../../../components/scores/scores.css';
 import './explore.css';
@@ -17,17 +18,9 @@ const PAGE_SIZE = 12;
 type ExploreSort = 'NEWEST' | 'VIEWS' | 'RATING';
 type Staffs = 1 | 2 | 3;
 
-const SORT_LABELS: Record<ExploreSort, string> = {
-  NEWEST: 'Mới nhất',
-  VIEWS: 'Xem nhiều',
-  RATING: 'Đánh giá cao',
-};
+const SORT_LABELS: Record<ExploreSort, string> = labelMap('scores.explore.sort', ['NEWEST', 'VIEWS', 'RATING']);
 
-const STAFF_LABELS: Record<Staffs, string> = {
-  1: 'Một bè (giọng hát, nhạc cụ một bè)',
-  2: 'Hai khuông (piano)',
-  3: 'Từ ba khuông (hòa tấu, hợp xướng)',
-};
+const STAFF_LABELS: Record<Staffs, string> = labelMap('scores.explore.staffs', [1, 2, 3]);
 
 const DIFFICULTIES = Object.keys(DIFFICULTY_LABELS) as Difficulty[];
 
@@ -135,7 +128,7 @@ export default function ExploreScores() {
         sort,
       })
       .then((res) => !cancelled && setData(res.data.result))
-      .catch(() => !cancelled && toast.error('Không tải được danh sách bản nhạc công khai'));
+      .catch(() => !cancelled && toast.error(t('scores.explore.loadFailed')));
     return () => {
       cancelled = true;
     };
@@ -163,11 +156,13 @@ export default function ExploreScores() {
   const tagName = tags.find((t) => t.id === tagId)?.name;
   const activeChips: { label: string; clear: () => void }[] = [
     ...(keyword ? [{ label: `“${keyword}”`, clear: () => (setKeywordInput(''), setParam('q', null)) }] : []),
-    ...(tagId ? [{ label: tagName ?? 'Thể loại', clear: () => setParam('tag', null) }] : []),
+    ...(tagId ? [{ label: tagName ?? t('scores.explore.tag'), clear: () => setParam('tag', null) }] : []),
     ...(difficulty ? [{ label: DIFFICULTY_LABELS[difficulty], clear: () => setParam('difficulty', null) }] : []),
     ...(staffs ? [{ label: STAFF_LABELS[staffs].split(' (')[0], clear: () => setParam('staffs', null) }] : []),
-    ...(keySig ? [{ label: `Khóa ${keySig}`, clear: () => setParam('key', null) }] : []),
-    ...(composerSlug ? [{ label: composer?.name ?? 'Nhạc sĩ', clear: () => setParam('composer', null) }] : []),
+    ...(keySig ? [{ label: t('scores.explore.keyChip', { key: keySig }), clear: () => setParam('key', null) }] : []),
+    ...(composerSlug
+      ? [{ label: composer?.name ?? t('scores.explore.composer'), clear: () => setParam('composer', null) }]
+      : []),
   ];
 
   const visibleComposers = (composers ?? []).filter(
@@ -177,28 +172,28 @@ export default function ExploreScores() {
   const filters = (
     <>
       <FilterGroup
-        title="Thể loại"
+        title={t('scores.explore.tag')}
         options={tags.map((t) => t.id)}
         value={tagId}
         label={(id) => tags.find((t) => t.id === id)?.name ?? id}
         onChange={(v) => setParam('tag', v)}
       />
       <FilterGroup
-        title="Độ khó"
+        title={t('scores.explore.difficulty')}
         options={DIFFICULTIES}
         value={difficulty}
         label={(d) => DIFFICULTY_LABELS[d]}
         onChange={(v) => setParam('difficulty', v)}
       />
       <FilterGroup
-        title="Nhạc cụ / số khuông"
+        title={t('scores.explore.staffsTitle')}
         options={[1, 2, 3] as Staffs[]}
         value={staffs}
         label={(n) => STAFF_LABELS[n]}
         onChange={(v) => setParam('staffs', v)}
       />
       <FilterGroup
-        title="Khóa nhạc"
+        title={t('scores.explore.key')}
         options={keys}
         value={keySig}
         label={(k) => k}
@@ -206,10 +201,10 @@ export default function ExploreScores() {
       />
       {composers && composers.length > 0 && (
         <fieldset className="ex-group">
-          <legend>Nhạc sĩ</legend>
+          <legend>{t('scores.explore.composer')}</legend>
           <input
             className="sc-input ex-composer-search"
-            placeholder="Tìm nhạc sĩ"
+            placeholder={t('scores.explore.composerSearch')}
             value={composerQuery}
             onChange={(e) => setComposerQuery(e.target.value)}
           />
@@ -227,7 +222,7 @@ export default function ExploreScores() {
                 </button>
               </li>
             ))}
-            {visibleComposers.length === 0 && <li className="ex-muted">Không có nhạc sĩ khớp</li>}
+            {visibleComposers.length === 0 && <li className="ex-muted">{t('scores.explore.noComposerMatch')}</li>}
           </ul>
         </fieldset>
       )}
@@ -239,13 +234,13 @@ export default function ExploreScores() {
       <main className="sc-container">
         <header className="ex-head">
           <div>
-            <h1>Khám phá</h1>
+            <h1>{t('scores.explore.title')}</h1>
             <p>
-              {data ? `${data.totalElements} bản nhạc công khai` : 'Bản nhạc người dùng chia sẻ cho cộng đồng'}
+              {data ? t('scores.explore.countPublic', { count: data.totalElements }) : t('scores.explore.subtitle')}
               {composer && (
                 <>
                   {' '}
-                  của{' '}
+                  {t('scores.explore.by')}{' '}
                   <button type="button" className="ex-link" onClick={() => navigate(`/composers/${composer.slug}`)}>
                     {composer.name}
                   </button>
@@ -262,13 +257,13 @@ export default function ExploreScores() {
           >
             <Icon name="search" size={16} />
             <input
-              placeholder="Tìm theo tên bài hoặc tác giả"
-              aria-label="Tìm bản nhạc"
+              placeholder={t('scores.explore.searchPlaceholder')}
+              aria-label={t('scores.explore.searchLabel')}
               value={keywordInput}
               onChange={(e) => setKeywordInput(e.target.value)}
             />
             <button type="submit" className="sc-btn sc-btn--primary sc-btn--sm">
-              Tìm
+              {t('common.search')}
             </button>
           </form>
         </header>
@@ -281,7 +276,8 @@ export default function ExploreScores() {
             onClick={() => setFiltersOpen((v) => !v)}
           >
             <Icon name="list" size={16} />
-            Bộ lọc{activeChips.length > 0 ? ` (${activeChips.length})` : ''}
+            {t('scores.explore.filters')}
+            {activeChips.length > 0 ? ` (${activeChips.length})` : ''}
           </button>
           <div className="ex-chips">
             {activeChips.map((chip) => (
@@ -292,12 +288,12 @@ export default function ExploreScores() {
             ))}
             {activeChips.length > 0 && (
               <button type="button" className="ex-link" onClick={clearFilters}>
-                Xóa bộ lọc
+                {t('scores.explore.clearFilters')}
               </button>
             )}
           </div>
           <label className="ex-sort">
-            <span>Sắp xếp</span>
+            <span>{t('scores.explore.sortBy')}</span>
             <select
               className="sc-input"
               value={sort}
@@ -313,7 +309,10 @@ export default function ExploreScores() {
         </div>
 
         <div className="ex-layout">
-          <aside className={`ex-filters${filtersOpen ? ' ex-filters--open' : ''}`} aria-label="Bộ lọc">
+          <aside
+            className={`ex-filters${filtersOpen ? ' ex-filters--open' : ''}`}
+            aria-label={t('scores.explore.filters')}
+          >
             {filters}
           </aside>
 
@@ -328,15 +327,11 @@ export default function ExploreScores() {
 
             {data && data.content.length === 0 && (
               <div className="sc-empty">
-                <h3>Không có bản nhạc nào</h3>
-                <p>
-                  {activeChips.length > 0
-                    ? 'Không có bản nào khớp bộ lọc. Thử bỏ bớt điều kiện.'
-                    : 'Khi người dùng chia sẻ bản nhạc và được quản trị viên duyệt, chúng sẽ xuất hiện ở đây.'}
-                </p>
+                <h3>{t('scores.explore.emptyTitle')}</h3>
+                <p>{activeChips.length > 0 ? t('scores.explore.emptyFiltered') : t('scores.explore.emptyNone')}</p>
                 {activeChips.length > 0 && (
                   <button type="button" className="sc-btn" onClick={clearFilters}>
-                    Xóa bộ lọc
+                    {t('scores.explore.clearFilters')}
                   </button>
                 )}
               </div>
@@ -355,7 +350,7 @@ export default function ExploreScores() {
                     actions={
                       <button type="button" className="sc-btn sc-btn--sm" onClick={() => setSaving(s)}>
                         <Icon name="plus" size={14} />
-                        Lưu vào playlist
+                        {t('scores.playlistPicker.title')}
                       </button>
                     }
                   />

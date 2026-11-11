@@ -1,0 +1,128 @@
+{
+  "labels": {
+    "status": {
+      "NONE": "Chưa xử lý",
+      "PENDING": "Đang chờ",
+      "PROCESSING": "Đang xử lý",
+      "COMPLETED": "Hoàn tất",
+      "FAILED": "Thất bại"
+    },
+    "taskStatus": {
+      "PENDING": "Đang chờ",
+      "PROCESSING": "Đang xử lý",
+      "COMPLETED": "Hoàn tất",
+      "FAILED": "Thất bại",
+      "CANCELLED": "Đã hủy"
+    },
+    "source": {
+      "OMR": "Số hóa từ file",
+      "IMPORT": "Nhập file",
+      "MANUAL": "Tự soạn"
+    },
+    "omrSource": {
+      "PHOTO": "Ảnh chụp",
+      "SCAN": "Bản scan",
+      "PDF_NATIVE": "PDF gốc"
+    },
+    "visibility": {
+      "PRIVATE": "Riêng tư",
+      "PENDING": "Chờ duyệt công khai",
+      "PUBLIC": "Công khai"
+    },
+    "sharePermission": {
+      "1": "Người xem",
+      "2": "Người nhận xét",
+      "3": "Người chỉnh sửa"
+    },
+    "accessLevel": {
+      "OWNER": "Chủ sở hữu",
+      "EDIT": "Người chỉnh sửa",
+      "REVIEW": "Người nhận xét",
+      "VIEW": "Người xem"
+    },
+    "difficulty": {
+      "EASY": "Dễ",
+      "MEDIUM": "Trung bình",
+      "HARD": "Khó",
+      "EXPERT": "Chuyên gia"
+    },
+    "fileType": {
+      "ORIGINAL_IMAGE": "Ảnh gốc",
+      "ORIGINAL_PDF": "PDF gốc",
+      "ORIGINAL_MUSICXML": "MusicXML gốc",
+      "ORIGINAL_MIDI": "MIDI gốc",
+      "PNG": "Ảnh trang",
+      "KERN": "Kern",
+      "MUSICXML": "MusicXML",
+      "MIDI": "MIDI",
+      "PDF": "PDF",
+      "SVG": "SVG",
+      "MP3": "MP3",
+      "WAV": "WAV"
+    },
+    "taskType": {
+      "OMR_CONVERSION": "Nhận diện bản nhạc (OMR)",
+      "CHORD_GENERATION": "Sinh hợp âm",
+      "AUDIO_SYNTHESIS": "Xuất âm thanh",
+      "FORMAT_CONVERSION": "Chuyển định dạng"
+    }
+  },
+  "card": {
+    "unknownComposer": "Chưa rõ tác giả",
+    "sharedBy": "Chia sẻ bởi {name}",
+    "arrangedBy": "Bản phối của {name}",
+    "viewsTitle": "Lượt xem",
+    "views": "{count} lượt xem",
+    "ratingTitle": "Điểm sao trung bình",
+    "noRating": "Chưa có đánh giá",
+    "measures": "{count} ô nhịp"
+  },
+  "playlistPicker": {
+    "title": "Lưu vào playlist",
+    "loadFailed": "Không tải được playlist",
+    "added": "Đã thêm vào \"{name}\"",
+    "addFailed": "Không thêm được vào playlist",
+    "createFailed": "Không tạo được playlist",
+    "empty": "Bạn chưa có playlist nào.",
+    "itemCount": "{count} bài",
+    "addedShort": "Đã thêm",
+    "adding": "Đang thêm…",
+    "add": "Thêm",
+    "newName": "Tên playlist mới",
+    "createAndAdd": "Tạo và thêm",
+    "openPlaylists": "Mở trang Playlist"
+  },
+  "explore": {
+    "title": "Khám phá",
+    "subtitle": "Bản nhạc người dùng chia sẻ cho cộng đồng",
+    "countPublic": "{count} bản nhạc công khai",
+    "by": "của",
+    "searchPlaceholder": "Tìm theo tên bài hoặc tác giả",
+    "searchLabel": "Tìm bản nhạc",
+    "filters": "Bộ lọc",
+    "clearFilters": "Xóa bộ lọc",
+    "sortBy": "Sắp xếp",
+    "sort": {
+      "NEWEST": "Mới nhất",
+      "VIEWS": "Xem nhiều",
+      "RATING": "Đánh giá cao"
+    },
+    "staffsTitle": "Nhạc cụ / số khuông",
+    "staffs": {
+      "1": "Một bè (giọng hát, nhạc cụ một bè)",
+      "2": "Hai khuông (piano)",
+      "3": "Từ ba khuông (hòa tấu, hợp xướng)"
+    },
+    "tag": "Thể loại",
+    "difficulty": "Độ khó",
+    "key": "Khóa nhạc",
+    "keyChip": "Khóa {key}",
+    "composer": "Nhạc sĩ",
+    "composerSearch": "Tìm nhạc sĩ",
+    "noComposerMatch": "Không có nhạc sĩ khớp",
+    "emptyTitle": "Không có bản nhạc nào",
+    "emptyFiltered": "Không có bản nào khớp bộ lọc. Thử bỏ bớt điều kiện.",
+    "emptyNone": "Khi người dùng chia sẻ bản nhạc và được quản trị viên duyệt, chúng sẽ xuất hiện ở đây.",
+    "loadFailed": "Không tải được danh sách bản nhạc công khai"
+  }
+}

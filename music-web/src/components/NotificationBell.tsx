@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { notificationApi } from '../services';
 import { Icon } from './ui';
 import { useDialog } from './ui/dialog-context';
-import { formatRelative } from '../utils/score';
+import { formatDateTime, formatRelativeTime, t } from '../i18n/core';
 import type { AppNotification } from '../types';
 import './scores/scores.css';
 
@@ -66,8 +66,8 @@ export default function NotificationBell() {
     // Thông báo chung của quản trị viên không dẫn tới trang nào: mở hộp thoại để đọc toàn văn
     if (n.type === 'ANNOUNCEMENT') {
       await dialog.alert({
-        title: 'Thông báo từ quản trị viên',
-        meta: new Date(n.createdAt).toLocaleString('vi-VN'),
+        title: t('common.notifications.fromAdmin'),
+        meta: formatDateTime(n.createdAt),
         message: n.message,
         icon: 'megaphone',
       });
@@ -93,7 +93,7 @@ export default function NotificationBell() {
       <button
         type="button"
         className="sc-bell__btn"
-        aria-label={`Thông báo${unread ? `, ${unread} chưa đọc` : ''}`}
+        aria-label={unread ? t('common.notifications.labelUnread', { count: unread }) : t('common.notifications.title')}
         aria-expanded={open}
         onClick={toggle}
       >
@@ -104,13 +104,13 @@ export default function NotificationBell() {
       {open && (
         <div className="sc-bell__panel" role="menu">
           <div className="sc-bell__head">
-            <strong>Thông báo</strong>
+            <strong>{t('common.notifications.title')}</strong>
             <button type="button" className="sc-bell__link" disabled={unread === 0} onClick={readAll}>
-              Đánh dấu đã đọc
+              {t('common.notifications.markAllRead')}
             </button>
           </div>
-          {loading && <p className="sc-bell__empty">Đang tải...</p>}
-          {!loading && items.length === 0 && <p className="sc-bell__empty">Chưa có thông báo nào.</p>}
+          {loading && <p className="sc-bell__empty">{t('common.loading')}</p>}
+          {!loading && items.length === 0 && <p className="sc-bell__empty">{t('common.notifications.empty')}</p>}
           <ul className="sc-bell__list">
             {items.map((n) => (
               <li key={n.id}>
@@ -122,11 +122,11 @@ export default function NotificationBell() {
                   {n.type === 'ANNOUNCEMENT' && (
                     <span className="sc-bell__tag">
                       <Icon name="megaphone" size={12} />
-                      Quản trị viên
+                      {t('common.notifications.adminTag')}
                     </span>
                   )}
                   <span className="sc-bell__text">{n.message}</span>
-                  <small>{formatRelative(n.createdAt)}</small>
+                  <small>{formatRelativeTime(n.createdAt)}</small>
                 </button>
               </li>
             ))}

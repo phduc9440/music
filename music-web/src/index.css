@@ -154,6 +154,9 @@ a:hover {
   position: fixed;
   top: 0.75rem;
   right: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 /* Nút quay về trang chủ ở góc trái trang đăng nhập */

@@ -1,12 +1,13 @@
+import { labelMap, t } from '../i18n/core';
 import type { Composer, ComposerPeriod } from '../types';
 
-export const PERIOD_LABELS: Record<ComposerPeriod, string> = {
-  BAROQUE: 'Baroque',
-  CLASSICAL: 'Cổ điển',
-  ROMANTIC: 'Lãng mạn',
-  MODERN: 'Hiện đại',
-  VIETNAM: 'Việt Nam',
-};
+export const PERIOD_LABELS: Record<ComposerPeriod, string> = labelMap('composers.periods', [
+  'BAROQUE',
+  'CLASSICAL',
+  'ROMANTIC',
+  'MODERN',
+  'VIETNAM',
+]);
 
 export const PERIODS = Object.keys(PERIOD_LABELS) as ComposerPeriod[];
 
@@ -21,8 +22,8 @@ export const PERIOD_SPANS: { period: ComposerPeriod; from: number; to: number }[
 /** "1685 – 1750", "1939 – 2001", "sinh 1950"... */
 export function lifespan(c: Pick<Composer, 'birthYear' | 'deathYear'>): string {
   if (c.birthYear && c.deathYear) return `${c.birthYear} – ${c.deathYear}`;
-  if (c.birthYear) return `sinh ${c.birthYear}`;
-  if (c.deathYear) return `mất ${c.deathYear}`;
+  if (c.birthYear) return t('composers.born', { year: c.birthYear });
+  if (c.deathYear) return t('composers.died', { year: c.deathYear });
   return '';
 }
 

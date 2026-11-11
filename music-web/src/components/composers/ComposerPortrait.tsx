@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { t } from '../../i18n/core';
 import { initials } from '../../utils/composer';
 import './composers.css';
 
@@ -15,7 +16,7 @@ export default function ComposerPortrait({ name, imageUrl, className = '' }: Pro
     return (
       <img
         src={imageUrl}
-        alt={`Chân dung ${name}`}
+        alt={t('composers.portraitAlt', { name })}
         className={`composer-portrait ${className}`}
         loading="lazy"
         referrerPolicy="no-referrer"

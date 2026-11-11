@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { Icon } from '../ui';
 import type { IconName } from '../ui';
+import { t } from '../../i18n/core';
 import { CREATE_SCORE_PATH, isLibrary } from './nav';
 
 interface Tab {
@@ -15,16 +16,43 @@ interface Tab {
 
 /** Năm mục dưới cùng trên điện thoại: Khám phá, Thư viện, Tạo, Luyện tập, Tôi. */
 const TABS: Tab[] = [
-  { to: '/explore', label: 'Khám phá', icon: 'globe' },
+  {
+    to: '/explore',
+    get label() {
+      return t('common.tabbar.explore');
+    },
+    icon: 'globe',
+  },
   {
     to: '/scores',
-    label: 'Thư viện',
+    get label() {
+      return t('common.tabbar.library');
+    },
     icon: 'music', // trang tải lên đã có tab "Tạo" riêng nên không tính vào Thư viện
     match: (p) => isLibrary(p) && !p.startsWith(CREATE_SCORE_PATH),
   },
-  { to: CREATE_SCORE_PATH, label: 'Tạo', icon: 'plus', primary: true },
-  { to: '/practice-history', label: 'Luyện tập', icon: 'clock' },
-  { to: '/profile', label: 'Tôi', icon: 'user' },
+  {
+    to: CREATE_SCORE_PATH,
+    get label() {
+      return t('common.tabbar.create');
+    },
+    icon: 'plus',
+    primary: true,
+  },
+  {
+    to: '/practice-history',
+    get label() {
+      return t('common.tabbar.practice');
+    },
+    icon: 'clock',
+  },
+  {
+    to: '/profile',
+    get label() {
+      return t('common.tabbar.me');
+    },
+    icon: 'user',
+  },
 ];
 
 const isTabActive = (tab: Tab, path: string) =>
@@ -33,7 +61,7 @@ const isTabActive = (tab: Tab, path: string) =>
 /** Thanh tab dưới cùng, chỉ hiện trên màn hình nhỏ (CSS). activePath là đường dẫn dùng để tô sáng tab đang mở. */
 export default function MobileTabBar({ activePath }: { activePath: string }) {
   return (
-    <nav className="app-tabbar" aria-label="Điều hướng nhanh">
+    <nav className="app-tabbar" aria-label={t('common.tabbar.label')}>
       {TABS.map((tab) => (
         <NavLink
           key={tab.to}

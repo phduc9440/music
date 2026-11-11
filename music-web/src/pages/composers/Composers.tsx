@@ -4,6 +4,7 @@ import ComposerPortrait from '../../components/composers/ComposerPortrait';
 import { Icon } from '../../components/ui';
 import { composerApi } from '../../services';
 import type { Composer, ComposerPeriod } from '../../types';
+import { t } from '../../i18n/core';
 import { PERIOD_LABELS, PERIODS, lifespan } from '../../utils/composer';
 import '../../components/scores/scores.css';
 import './composers.css';
@@ -43,27 +44,27 @@ export default function Composers() {
       <main className="sc-container">
         <header className="cp-head">
           <div>
-            <h1>Nhạc sĩ</h1>
-            <p>Những người viết nên các bản nhạc trong kho, từ thời Baroque tới nhạc Việt.</p>
+            <h1>{t('composers.title')}</h1>
+            <p>{t('composers.subtitle')}</p>
           </div>
           <label className="cp-search">
             <Icon name="search" size={16} />
             <input
-              placeholder="Tìm nhạc sĩ"
-              aria-label="Tìm nhạc sĩ"
+              placeholder={t('composers.search')}
+              aria-label={t('composers.search')}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
           </label>
         </header>
 
-        <nav className="cp-tabs" aria-label="Thời kỳ">
+        <nav className="cp-tabs" aria-label={t('composers.period')}>
           <button
             type="button"
             className={`cp-tab${period === null ? ' cp-tab--on' : ''}`}
             onClick={() => setParams({})}
           >
-            Tất cả
+            {t('composers.all')}
           </button>
           {PERIODS.map((p) => (
             <button
@@ -80,8 +81,8 @@ export default function Composers() {
 
         {failed && (
           <div className="sc-empty">
-            <h3>Không tải được danh sách nhạc sĩ</h3>
-            <p>Thử tải lại trang.</p>
+            <h3>{t('composers.loadFailed')}</h3>
+            <p>{t('composers.reload')}</p>
           </div>
         )}
 
@@ -95,8 +96,8 @@ export default function Composers() {
 
         {list && shown.length === 0 && (
           <div className="sc-empty">
-            <h3>Không có nhạc sĩ nào</h3>
-            <p>{q ? 'Thử tìm bằng tên khác.' : 'Chưa có nhạc sĩ ở thời kỳ này.'}</p>
+            <h3>{t('composers.emptyTitle')}</h3>
+            <p>{q ? t('composers.emptySearch') : t('composers.emptyPeriod')}</p>
           </div>
         )}
 
@@ -112,7 +113,9 @@ export default function Composers() {
                   <strong>{c.name}</strong>
                   <span>{[lifespan(c), c.country].filter(Boolean).join(' · ')}</span>
                   <span className="cp-card__count">
-                    {c.scoreCount > 0 ? `${c.scoreCount} bản công khai` : 'Chưa có bản công khai'}
+                    {c.scoreCount > 0
+                      ? t('composers.publicScores', { count: c.scoreCount })
+                      : t('composers.noPublicScores')}
                   </span>
                 </span>
               </Link>

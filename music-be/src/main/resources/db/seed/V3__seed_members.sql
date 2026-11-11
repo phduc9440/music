@@ -39,3 +39,6 @@ FROM (
 ) t
 JOIN members m ON m.email = t.email
 JOIN roles r ON r.name = t.role;
+
+-- Vài tài khoản dùng giao diện tiếng Anh (mục 6.2); các tài khoản còn lại chưa chọn nên mặc định tiếng Việt
+UPDATE members SET locale = 'EN' WHERE email IN ('mai.ngo@music.com', 'nam.do@music.com');

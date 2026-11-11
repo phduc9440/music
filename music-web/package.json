@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "lint:colors": "node scripts/check-colors.mjs",
+    "lint:i18n": "node scripts/check-i18n.mjs",
     "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\"",
     "preview": "vite preview",
     "check:contrast": "node scripts/check-contrast.mjs"
