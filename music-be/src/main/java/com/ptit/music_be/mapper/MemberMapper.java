@@ -15,6 +15,7 @@ import com.ptit.music_be.entity.MemberRole;
 public interface MemberMapper {
 
     @Mapping(target = "roles", source = "memberRoles", qualifiedByName = "mapRoles")
+    @Mapping(target = "plan", ignore = true)
     MemberResponse toMemberResponse(Member member);
 
     @Named("mapRoles")

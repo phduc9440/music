@@ -19,7 +19,8 @@
       "aiTasks": "Tác vụ AI",
       "system": "Giám sát hệ thống",
       "revenue": "Doanh thu",
-      "plans": "Gói dịch vụ"
+      "plans": "Gói dịch vụ",
+      "planGrants": "Cấp gói"
     },
     "other": "Khác",
     "userSite": "Giao diện người dùng"
@@ -247,7 +248,8 @@
     "privacy": "Quyền riêng tư",
     "updated": "Cập nhật",
     "curated": "Kho mẫu",
-    "noScores": "Chưa có bản nhạc nào"
+    "noScores": "Chưa có bản nhạc nào",
+    "planUntil": "đến {date}"
   },
   "composers": {
     "errName": "Nhập tên nhạc sĩ",
@@ -490,10 +492,8 @@
   },
   "plan": {
     "title": "Gói dịch vụ",
-    "hint": "Cấp gói cá nhân thủ công (nguồn: quản trị viên cấp). Cấp cùng gói đang dùng thì cộng thêm ngày.",
+    "hint": "Cấp gói cá nhân theo số tháng. Cấp đúng gói đang dùng thì gia hạn nối tiếp từ ngày hết hạn.",
     "plan": "Gói",
-    "days": "Số ngày",
-    "daysUnit": "ngày",
     "grant": "Cấp gói",
     "cancel": "Hủy gói",
     "granted": "Đã cấp gói {plan}, hết hạn ngày {date}",
@@ -504,7 +504,8 @@
     "readOnly": "Chỉ quản trị viên cấp cao (SUPER_ADMIN) được cấp hoặc hủy gói.",
     "current": "Gói hiện tại:",
     "superAdminTarget": "Tài khoản này là quản trị viên cấp cao, đã không giới hạn nên không cần cấp gói.",
-    "teamLater": "Cấp gói team sẽ có khi làm tính năng Team."
+    "teamLater": "Cấp gói team sẽ có khi làm tính năng Team.",
+    "grantTitle": "Cấp gói cho {name}"
   },
   "revenue": {
     "loadFailed": "Không tải được dữ liệu doanh thu",
@@ -561,5 +562,37 @@
     "deleteMessage": "Gói sẽ biến mất khỏi bảng giá. Chỉ xóa được gói chưa từng có người đăng ký hoặc đơn thanh toán.",
     "deleted": "Đã xóa gói {plan}",
     "deleteFailed": "Không xóa được gói"
+  },
+  "grants": {
+    "subtitle": "Tìm thành viên, xem gói đang dùng, cấp hoặc gia hạn gói cá nhân theo tháng, và tạm ngưng gói Pro của quản trị viên.",
+    "pickTitle": "Chọn thành viên",
+    "pick": "Chọn",
+    "pickHint": "Chọn một thành viên ở danh sách bên cạnh để cấp gói.",
+    "open": "Cấp / gia hạn gói",
+    "months": "Thời hạn",
+    "monthsOption": "{count} tháng",
+    "monthsUnit": "tháng",
+    "monthsInvalid": "Số tháng phải từ 1 đến 120.",
+    "preview": "Gói có hiệu lực từ {from} đến {to}.",
+    "previewRenew": "Gia hạn nối tiếp: từ {from} đến {to}.",
+    "replaceWarning": "Gói {plan} hiện tại sẽ bị thay ngay.",
+    "renew": "Gia hạn",
+    "renewed": "Đã gia hạn gói {plan} đến ngày {date}",
+    "includedProHint": "Người này là quản trị viên, đã có gói Pro không thời hạn nên không cần cấp. Muốn ngừng tạm thời thì dùng \"Tạm ngưng\" ở trên.",
+    "roleActive": "Đang có gói Pro không thời hạn theo vai trò quản trị viên.",
+    "roleSuspended": "Gói Pro theo vai trò đang tạm ngưng đến {date}.",
+    "suspendDuration": "Thời hạn tạm ngưng",
+    "untilMonthEnd": "Đến hết tháng này",
+    "reasonPlaceholder": "Lý do (không bắt buộc)",
+    "suspend": "Tạm ngưng",
+    "suspendTitle": "Tạm ngưng gói Pro của {name}?",
+    "suspendMessage": "Trong thời gian tạm ngưng ({duration}), người này dùng gói đã mua (nếu có) hoặc Free. Hết hạn thì tự dùng lại Pro.",
+    "suspended": "Đã tạm ngưng gói Pro của {name} đến ngày {date}",
+    "lift": "Mở lại ngay",
+    "liftTitle": "Mở lại gói Pro cho {name}?",
+    "liftMessage": "Người này dùng lại gói Pro không thời hạn ngay lập tức.",
+    "lifted": "Đã mở lại gói Pro cho {name}",
+    "suspendedBadge": "Tạm ngưng",
+    "suspendedUntil": "Tạm ngưng đến {date}"
   }
 }

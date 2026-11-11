@@ -309,6 +309,22 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     CONSTRAINT fk_subscriptions_plan   FOREIGN KEY (plan_id)   REFERENCES plans (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Tạm ngưng quyền lợi gói Pro theo vai trò của một ADMIN (SUPER_ADMIN thực hiện). Đang hiệu lực khi chưa mở lại sớm
+-- (lifted_at NULL) và starts_at <= hiện tại < ends_at; hết ends_at thì ADMIN tự dùng lại Pro.
+CREATE TABLE IF NOT EXISTS role_plan_suspensions (
+    id         VARCHAR(36)  NOT NULL,
+    member_id  VARCHAR(36)  NOT NULL COMMENT 'ADMIN bị tạm ngưng',
+    starts_at  DATETIME(6)  NOT NULL,
+    ends_at    DATETIME(6)  NOT NULL COMMENT 'Hết thời hạn thì tự dùng lại',
+    reason     VARCHAR(255) NULL,
+    created_by VARCHAR(36)  NULL COMMENT 'SUPER_ADMIN thực hiện',
+    lifted_at  DATETIME(6)  NULL COMMENT 'Mở lại sớm lúc nào; NULL = chưa',
+    created_at DATETIME(6)  NULL,
+    PRIMARY KEY (id),
+    KEY idx_role_plan_suspensions_member (member_id, ends_at),
+    CONSTRAINT fk_role_plan_suspensions_member FOREIGN KEY (member_id) REFERENCES members (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- Bộ đếm hạn mức theo tháng (period = yyyy-MM), ví dụ số trang OMR đã dùng.
 CREATE TABLE IF NOT EXISTS usage_counters (
     id        VARCHAR(36) NOT NULL,

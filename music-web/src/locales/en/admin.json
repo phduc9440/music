@@ -19,7 +19,8 @@
       "aiTasks": "AI tasks",
       "system": "System monitoring",
       "revenue": "Revenue",
-      "plans": "Plans"
+      "plans": "Plans",
+      "planGrants": "Grant plans"
     },
     "other": "Other",
     "userSite": "User site"
@@ -258,7 +259,8 @@
     "updated": "Updated",
     "curated": "Curated",
     "noScores": "No scores yet",
-    "unit": "members"
+    "unit": "members",
+    "planUntil": "until {date}"
   },
   "composers": {
     "errName": "Enter the composer's name",
@@ -515,10 +517,8 @@
   },
   "plan": {
     "title": "Plan",
-    "hint": "Grant a personal plan manually (source: admin grant). Granting the current plan adds more days.",
+    "hint": "Grant a personal plan by months. Granting the current plan extends it from its end date.",
     "plan": "Plan",
-    "days": "Days",
-    "daysUnit": "days",
     "grant": "Grant plan",
     "cancel": "Cancel plan",
     "granted": "Granted the {plan} plan, expires on {date}",
@@ -529,7 +529,8 @@
     "readOnly": "Only super admins can grant or cancel plans.",
     "current": "Current plan:",
     "superAdminTarget": "This account is a super admin and already unlimited, no plan needed.",
-    "teamLater": "Granting team plans will come with the Team feature."
+    "teamLater": "Granting team plans will come with the Team feature.",
+    "grantTitle": "Grant a plan to {name}"
   },
   "revenue": {
     "loadFailed": "Could not load revenue data",
@@ -586,5 +587,37 @@
     "deleteMessage": "The plan will disappear from the pricing page. Only plans that never had a subscriber or payment order can be deleted.",
     "deleted": "Deleted plan {plan}",
     "deleteFailed": "Could not delete the plan"
+  },
+  "grants": {
+    "subtitle": "Find a member, see their plan, grant or extend a personal plan by months, and suspend an admin's Pro plan.",
+    "pickTitle": "Choose a member",
+    "pick": "Choose",
+    "pickHint": "Choose a member from the list to grant a plan.",
+    "open": "Grant / extend plan",
+    "months": "Duration",
+    "monthsOption": "{count} month(s)",
+    "monthsUnit": "month(s)",
+    "monthsInvalid": "Months must be between 1 and 120.",
+    "preview": "The plan is active from {from} to {to}.",
+    "previewRenew": "Extension: from {from} to {to}.",
+    "replaceWarning": "The current {plan} plan will be replaced immediately.",
+    "renew": "Extend",
+    "renewed": "Extended {plan} until {date}",
+    "includedProHint": "This member is an admin and already has Pro with no expiry, no grant needed. To stop it temporarily, use \"Suspend\" above.",
+    "roleActive": "Has Pro with no expiry from the admin role.",
+    "roleSuspended": "Role-based Pro is suspended until {date}.",
+    "suspendDuration": "Suspension length",
+    "untilMonthEnd": "Until the end of this month",
+    "reasonPlaceholder": "Reason (optional)",
+    "suspend": "Suspend",
+    "suspendTitle": "Suspend {name}'s Pro plan?",
+    "suspendMessage": "During the suspension ({duration}) this member uses their purchased plan (if any) or Free. Pro comes back automatically afterwards.",
+    "suspended": "Suspended {name}'s Pro until {date}",
+    "lift": "Lift now",
+    "liftTitle": "Restore Pro for {name}?",
+    "liftMessage": "This member gets Pro with no expiry back immediately.",
+    "lifted": "Restored Pro for {name}",
+    "suspendedBadge": "Suspended",
+    "suspendedUntil": "Suspended until {date}"
   }
 }

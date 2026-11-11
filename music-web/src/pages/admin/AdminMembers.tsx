@@ -24,6 +24,7 @@ import { isAdminMember, isSuperAdminMember, roleLabel } from '../../utils/auth';
 import { useDialog } from '../../components/ui/dialog-context';
 import { t } from '../../i18n/core';
 
+const PLAN_TONE = { FREE: 'neutral', ACTIVE: 'success', UNLIMITED: 'violet' } as const;
 const PAGE_SIZE = 20;
 
 /** Admin: danh sách thành viên, khóa/mở khóa; SUPER ADMIN còn cấp/thu hồi quyền ADMIN. */
@@ -118,11 +119,12 @@ export default function AdminMembers() {
       />
 
       <Card flush>
-        <Table minWidth={900}>
+        <Table minWidth={1040}>
           <thead>
             <tr>
               <th>{t('admin.menu.items.members')}</th>
               <th>{t('profile.role')}</th>
+              <th>{t('admin.plan.title')}</th>
               <th>{t('admin.official.statusColumn')}</th>
               <th>{t('admin.members.registered')}</th>
               <th>{t('admin.members.lastLogin')}</th>
@@ -130,7 +132,7 @@ export default function AdminMembers() {
             </tr>
           </thead>
           <tbody>
-            {!result && <TableState colSpan={6} loading />}
+            {!result && <TableState colSpan={7} loading />}
             {result?.content.map((m) => {
               const isSelf = m.id === admin?.id;
               const locked = m.status === MemberStatus.INACTIVE;
@@ -150,6 +152,23 @@ export default function AdminMembers() {
                   </td>
                   <td>
                     <Badge tone={roleTone(m)}>{roleLabel(m)}</Badge>
+                  </td>
+                  <td>
+                    {m.plan && (
+                      <CellTitle
+                        sub={
+                          m.plan.expiresAt
+                            ? t('admin.members.planUntil', { date: formatDate(m.plan.expiresAt) })
+                            : m.plan.source
+                              ? t(`billing.source.${m.plan.source}`)
+                              : undefined
+                        }
+                      >
+                        <Badge tone={PLAN_TONE[m.plan.status]}>
+                          {m.plan.status === 'UNLIMITED' ? t('billing.unlimitedPlan') : m.plan.name}
+                        </Badge>
+                      </CellTitle>
+                    )}
                   </td>
                   <td>
                     <Badge tone={locked ? 'danger' : 'success'}>

@@ -26,9 +26,14 @@ export const billingApi = {
   plans: () => apiClient.get<ApiResponse<PlanInfo[]>>('/public/plans'),
   mine: () => apiClient.get<ApiResponse<MySubscription>>('/subscriptions/me'),
   // Admin: cấp gói thủ công N ngày / hủy gói hiện tại
-  grant: (data: { memberId: string; planCode: string; days: number }) =>
+  grant: (data: { memberId: string; planCode: string; months: number }) =>
     apiClient.post<ApiResponse<MySubscription>>('/admin/subscriptions', data),
   ofMember: (memberId: string) => apiClient.get<ApiResponse<MySubscription>>(`/admin/subscriptions/${memberId}`),
+  // Tạm ngưng gói Pro theo vai trò của ADMIN (months: 0 = hết tháng này) / mở lại sớm
+  suspendRolePlan: (memberId: string, data: { months: number; reason?: string }) =>
+    apiClient.post<ApiResponse<MySubscription>>(`/admin/subscriptions/${memberId}/role-plan-suspension`, data),
+  liftRolePlanSuspension: (memberId: string) =>
+    apiClient.delete<ApiResponse<MySubscription>>(`/admin/subscriptions/${memberId}/role-plan-suspension`),
   cancel: (memberId: string) => apiClient.delete<ApiResponse<void>>(`/admin/subscriptions/${memberId}`),
   // 7.4: tạo đơn (trả payUrl để chuyển sang cổng), hỏi trạng thái đơn của tôi
   createOrder: (data: { planCode: string; period: BillingPeriod }) =>

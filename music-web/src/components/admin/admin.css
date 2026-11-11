@@ -1308,11 +1308,71 @@
 
 /* Thẻ gói dịch vụ ở chi tiết thành viên */
 .adm-member-plan__current {
-  margin: 0 0 0.75rem;
+  margin: 0;
 }
-.adm-member-plan__form {
+
+/* Trang Cấp gói (AdminPlanGrants) */
+.adm-grant {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+.adm-grant .adm-table tr.is-selected td {
+  background: var(--adm-primary-ring);
+}
+.adm-grant__current {
+  margin-bottom: 1rem;
+}
+.adm-grant__role {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  border: 1px solid var(--adm-border-strong);
+  border-radius: var(--adm-radius);
+}
+.adm-grant__role.is-suspended {
+  border-color: var(--ui-danger);
+}
+.adm-grant__suspend {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 0.5rem;
   align-items: center;
+}
+.adm-shell .adm-grant__suspend select.adm-input {
+  width: auto;
+}
+.adm-grant__months {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+.adm-shell .adm-grant__months-input {
+  width: 4.5rem;
+  text-align: center;
+}
+.adm-grant__preview {
+  margin: 0 0 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--adm-radius);
+  background: var(--ui-primary-soft);
+}
+.adm-grant__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+@media (max-width: 1100px) {
+  .adm-grant {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 520px) {
+  .adm-grant__suspend {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

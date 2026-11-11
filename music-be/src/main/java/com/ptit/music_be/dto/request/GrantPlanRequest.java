@@ -10,5 +10,6 @@ import lombok.experimental.FieldDefaults;
 public class GrantPlanRequest {
     String memberId;
     String planCode;
-    Integer days;
+    /** Số tháng (1..120), tính theo lịch từ ngày bắt đầu: hôm nay, hoặc ngày hết hạn hiện tại nếu gia hạn cùng gói. */
+    Integer months;
 }

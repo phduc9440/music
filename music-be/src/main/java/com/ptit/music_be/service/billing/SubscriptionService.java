@@ -16,6 +16,22 @@ public interface SubscriptionService {
     /** Gói và số đã dùng của người đang đăng nhập. */
     MySubscriptionResponse mine();
 
+    /**
+     * Gói đang dùng của nhiều thành viên một lần (cùng quy tắc với {@link #currentPlan}: SUPER_ADMIN không giới hạn, ADMIN
+     * tối thiểu Pro). {@code rolesByMember}: id thành viên -> tên vai trò. Trả map id -> tóm tắt gói.
+     */
+    java.util.Map<String, com.ptit.music_be.dto.response.MemberPlanSummary> plansOf(
+            java.util.Map<String, java.util.Set<String>> rolesByMember);
+
+    /**
+     * SUPER_ADMIN tạm ngưng quyền lợi gói Pro không thời hạn của một ADMIN: {@code months} = 0 là đến hết tháng này, 1..120
+     * là số tháng tính theo lịch từ hôm nay. Hết hạn thì ADMIN tự dùng lại Pro. Gói đã mua/được cấp không bị ảnh hưởng.
+     */
+    com.ptit.music_be.dto.response.MySubscriptionResponse suspendRolePlan(String memberId, int months, String reason);
+
+    /** SUPER_ADMIN mở lại sớm gói Pro theo vai trò của ADMIN (kết thúc mọi lần tạm ngưng đang hiệu lực). */
+    com.ptit.music_be.dto.response.MySubscriptionResponse liftRolePlanSuspension(String memberId);
+
     /** Gói hiện tại của một thành viên bất kỳ (trang chi tiết thành viên ở khu quản trị). */
     MySubscriptionResponse ofMember(String memberId);
 
@@ -35,7 +51,11 @@ public interface SubscriptionService {
     void revoke(String memberId, Plan plan, Period duration);
 
     /** SUPER_ADMIN cấp gói cá nhân thủ công (nguồn ADMIN_GRANT). Gói team để sau (chờ tính năng Team). */
-    MySubscriptionResponse grant(String memberId, String planCode, int days);
+    /**
+     * {@code months} tháng tính theo lịch: cùng gói đang dùng thì cộng nối tiếp từ ngày hết hạn hiện tại (gia hạn), gói khác
+     * thì bắt đầu từ hôm nay và thay gói hiện tại.
+     */
+    MySubscriptionResponse grant(String memberId, String planCode, int months);
 
     /** SUPER_ADMIN hủy gói hiện tại của thành viên (về Free ngay). */
     void cancel(String memberId);

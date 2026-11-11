@@ -35,4 +35,6 @@ public class MemberResponse {
     Set<String> roles;
     LocalDateTime createdAt;
     LocalDateTime lastLoginAt;
+    /** Gói đang dùng; chỉ có ở danh sách thành viên khu quản trị, null ở chỗ khác. */
+    MemberPlanSummary plan;
 }

@@ -1,6 +1,8 @@
 package com.ptit.music_be.service.admin.impl;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -17,6 +19,7 @@ import com.ptit.music_be.configuration.MemberStatusGuard;
 import com.ptit.music_be.dto.enums.MemberStatus;
 import com.ptit.music_be.dto.request.AdminUpdateMemberRequest;
 import com.ptit.music_be.dto.response.AdminMemberDetailResponse;
+import com.ptit.music_be.dto.response.MemberPlanSummary;
 import com.ptit.music_be.dto.response.MemberResponse;
 import com.ptit.music_be.dto.response.PageResponse;
 import com.ptit.music_be.entity.Member;
@@ -28,6 +31,7 @@ import com.ptit.music_be.mapper.MemberMapper;
 import com.ptit.music_be.repository.MemberRepository;
 import com.ptit.music_be.repository.RoleRepository;
 import com.ptit.music_be.service.admin.AdminMemberService;
+import com.ptit.music_be.service.billing.SubscriptionService;
 import com.ptit.music_be.utils.SecurityUtils;
 
 import lombok.AccessLevel;
@@ -49,6 +53,7 @@ public class AdminMemberServiceImpl implements AdminMemberService {
     MemberMapper memberMapper;
     EntityManager entityManager;
     MemberStatusGuard memberStatusGuard;
+    SubscriptionService subscriptionService;
 
     @Override
     @Transactional(readOnly = true)
@@ -63,10 +68,16 @@ public class AdminMemberServiceImpl implements AdminMemberService {
                 safeKeyword,
                 PageRequest.of(Math.max(page, 0), safeSize, Sort.by("email").ascending()));
 
+        List<MemberResponse> content = result.getContent().stream()
+                .map(memberMapper::toMemberResponse)
+                .toList();
+        // Gói đang dùng của cả trang trong một lần truy vấn
+        Map<String, Set<String>> roles = new HashMap<>();
+        content.forEach(m -> roles.put(m.getId(), m.getRoles()));
+        Map<String, MemberPlanSummary> plans = subscriptionService.plansOf(roles);
+        content.forEach(m -> m.setPlan(plans.get(m.getId())));
         return PageResponse.<MemberResponse>builder()
-                .content(result.getContent().stream()
-                        .map(memberMapper::toMemberResponse)
-                        .toList())
+                .content(content)
                 .pageNumber(result.getNumber())
                 .pageSize(result.getSize())
                 .totalElements(result.getTotalElements())

@@ -19,6 +19,8 @@ export interface Member {
   /** Ngày đăng ký; null với tài khoản tạo trước khi có cột này. */
   createdAt?: string | null;
   lastLoginAt?: string | null;
+  /** Gói đang dùng; chỉ có ở danh sách thành viên khu quản trị. */
+  plan?: MemberPlanSummary | null;
 }
 
 /** Khớp AdminMemberDetailResponse của BE. */
@@ -77,4 +79,15 @@ export interface PracticeSession {
 export interface AdminUpdateMemberRequest {
   status?: MemberStatus;
   roles?: string[];
+}
+
+/** BE: MemberPlanSummary. status: FREE / ACTIVE / UNLIMITED; source: PAYMENT / ADMIN_GRANT / POINTS_TRIAL / ROLE. */
+export interface MemberPlanSummary {
+  code: string;
+  name: string;
+  status: 'FREE' | 'ACTIVE' | 'UNLIMITED';
+  source?: 'PAYMENT' | 'POINTS_TRIAL' | 'ADMIN_GRANT' | 'ROLE' | null;
+  expiresAt?: string | null;
+  /** ADMIN đang bị tạm ngưng gói Pro theo vai trò đến lúc này. */
+  rolePlanSuspendedUntil?: string | null;
 }
