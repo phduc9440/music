@@ -24,5 +24,9 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Stri
         return findCurrent(memberId, now).stream().findFirst();
     }
 
+    /** Gói đang hiệu lực sẽ hết hạn trong khoảng (from, to]. */
+    List<Subscription> findByStatusAndExpiresAtGreaterThanAndExpiresAtLessThanEqual(
+            SubscriptionStatus status, LocalDateTime from, LocalDateTime to);
+
     List<Subscription> findByStatusAndExpiresAtBefore(SubscriptionStatus status, LocalDateTime time);
 }

@@ -32,6 +32,7 @@ export interface MySubscription {
 
 export type PaymentStatus = 'PENDING' | 'PAID' | 'FAILED' | 'EXPIRED' | 'REFUNDED';
 export type BillingPeriod = 'MONTH' | 'YEAR';
+export type PaymentKind = 'NEW' | 'RENEW';
 
 // BE: PaymentOrderResponse. memberEmail chỉ có ở admin, payUrl chỉ có khi vừa tạo đơn.
 export interface PaymentOrder {
@@ -40,6 +41,8 @@ export interface PaymentOrder {
   planCode: string;
   planName: string;
   period: BillingPeriod;
+  /** NEW: mua mới hoặc đổi gói; RENEW: gia hạn đúng gói đang dùng. */
+  kind: PaymentKind;
   amount: number;
   provider: string;
   status: PaymentStatus;

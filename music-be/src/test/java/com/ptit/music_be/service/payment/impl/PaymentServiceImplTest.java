@@ -299,4 +299,21 @@ class PaymentServiceImplTest {
         assertEquals(1, history.size());
         assertEquals("MU1", history.get(0).getOrderCode());
     }
+
+    @Test
+    void orderIsRenewalOnlyWhenBuyerAlreadyHasThatPlan() {
+        loginAsBuyer();
+        when(plans.findByCode("PRO")).thenReturn(Optional.of(pro));
+        when(members.findByEmail("a@x.com")).thenReturn(Optional.of(buyer));
+        when(orders.findByMemberEmailOrderByCreatedAtDesc("a@x.com")).thenReturn(List.of());
+        when(orders.save(any())).thenAnswer(i -> i.getArgument(0));
+        when(provider.createPayment(any(), any())).thenReturn(new PaymentProvider.PaymentInit("https://pay/url"));
+        var request = new CreatePaymentOrderRequest("PRO", BillingPeriod.MONTH, null);
+
+        when(subscriptions.currentPlan("m")).thenReturn(Plan.builder().id("free").code("FREE").build());
+        assertEquals("NEW", service.createOrder(request, "1.1.1.1").getKind());
+
+        when(subscriptions.currentPlan("m")).thenReturn(pro);
+        assertEquals("RENEW", service.createOrder(request, "1.1.1.1").getKind());
+    }
 }

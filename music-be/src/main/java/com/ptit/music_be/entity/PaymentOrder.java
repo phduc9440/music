@@ -7,6 +7,7 @@ import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import com.ptit.music_be.dto.enums.BillingPeriod;
+import com.ptit.music_be.dto.enums.PaymentKind;
 import com.ptit.music_be.dto.enums.PaymentProviderType;
 import com.ptit.music_be.dto.enums.PaymentStatus;
 
@@ -46,6 +47,12 @@ public class PaymentOrder {
     /** Số tiền VND (số nguyên). */
     @Column(nullable = false)
     long amount;
+
+    /** Mua mới hay gia hạn (tính lúc tạo đơn: đang dùng đúng gói này còn hạn thì là gia hạn). */
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 8)
+    PaymentKind kind = PaymentKind.NEW;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 16)

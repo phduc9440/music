@@ -25,5 +25,7 @@ public enum NotificationType {
     /** Gửi quản trị viên: chủ đã từ chối. */
     OFFICIAL_DECLINED,
     /** Thanh toán gói thành công, gói đã được kích hoạt. */
-    PLAN_ACTIVATED
+    PLAN_ACTIVATED,
+    /** Nhắc gói sắp hết hạn (còn 7 ngày và còn 1 ngày). */
+    PLAN_EXPIRING
 }

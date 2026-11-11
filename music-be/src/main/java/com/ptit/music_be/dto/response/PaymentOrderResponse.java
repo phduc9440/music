@@ -16,6 +16,8 @@ public class PaymentOrderResponse {
     String planCode;
     String planName;
     String period;
+    /** NEW (mua mới / đổi gói) hoặc RENEW (gia hạn). */
+    String kind;
     long amount;
     String provider;
     String status;

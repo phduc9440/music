@@ -4,8 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -18,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ptit.music_be.dto.enums.NotificationType;
 import com.ptit.music_be.dto.enums.SubscriptionSource;
 import com.ptit.music_be.dto.enums.SubscriptionStatus;
 import com.ptit.music_be.entity.Member;
@@ -30,17 +33,20 @@ import com.ptit.music_be.repository.PlanRepository;
 import com.ptit.music_be.repository.SubscriptionRepository;
 import com.ptit.music_be.repository.UsageCounterRepository;
 import com.ptit.music_be.service.billing.PlanLimitsParser;
+import com.ptit.music_be.service.notification.NotificationService;
 
 class SubscriptionServiceImplTest {
 
     private final SubscriptionRepository subs = mock(SubscriptionRepository.class);
     private final PlanRepository plans = mock(PlanRepository.class);
+    private final NotificationService notifications = mock(NotificationService.class);
     private final SubscriptionServiceImpl service = new SubscriptionServiceImpl(
             plans,
             subs,
             mock(UsageCounterRepository.class),
             mock(MemberRepository.class),
-            new PlanLimitsParser(new ObjectMapper()));
+            new PlanLimitsParser(new ObjectMapper()),
+            notifications);
 
     private final Member member = Member.builder().id("m").build();
     private final Plan pro = Plan.builder().id("pro").code("PRO").limits("{}").build();
@@ -128,5 +134,21 @@ class SubscriptionServiceImplTest {
 
         assertEquals(1, service.expireDue());
         assertEquals(SubscriptionStatus.EXPIRED, sub.getStatus());
+    }
+
+    @Test
+    void remindExpiringNotifiesPlansInSevenDayAndOneDayWindows() {
+        Subscription seven = current(pro, LocalDateTime.now().plusDays(7).minusHours(2));
+        Subscription one = current(pro, LocalDateTime.now().plusHours(10));
+        when(subs.findByStatusAndExpiresAtGreaterThanAndExpiresAtLessThanEqual(
+                        eq(SubscriptionStatus.ACTIVE), any(), any()))
+                .thenAnswer(inv -> {
+                    LocalDateTime to = inv.getArgument(2);
+                    return to.isAfter(LocalDateTime.now().plusDays(2)) ? List.of(seven) : List.of(one);
+                });
+
+        assertEquals(2, service.remindExpiring());
+        verify(notifications, times(2))
+                .notify(any(), any(), eq(NotificationType.PLAN_EXPIRING), any(), any(), any());
     }
 }

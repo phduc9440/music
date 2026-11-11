@@ -8,6 +8,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ptit.music_be.dto.enums.NotificationType;
 import com.ptit.music_be.dto.enums.SubscriptionSource;
 import com.ptit.music_be.dto.enums.SubscriptionStatus;
 import com.ptit.music_be.dto.enums.UsageMetric;
@@ -24,6 +25,7 @@ import com.ptit.music_be.repository.SubscriptionRepository;
 import com.ptit.music_be.repository.UsageCounterRepository;
 import com.ptit.music_be.service.billing.PlanLimitsParser;
 import com.ptit.music_be.service.billing.SubscriptionService;
+import com.ptit.music_be.service.notification.NotificationService;
 import com.ptit.music_be.utils.SecurityUtils;
 
 import lombok.AccessLevel;
@@ -37,12 +39,15 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
     public static final String FREE = "FREE";
     static final int MAX_GRANT_DAYS = 3650;
+    /** Số ngày còn lại để nhắc, từ xa tới gần. */
+    static final int[] REMIND_DAYS = {7, 1};
 
     PlanRepository planRepository;
     SubscriptionRepository subscriptionRepository;
     UsageCounterRepository usageCounterRepository;
     MemberRepository memberRepository;
     PlanLimitsParser limitsParser;
+    NotificationService notificationService;
 
     @Override
     @Transactional(readOnly = true)
@@ -162,6 +167,32 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         due.forEach(s -> s.setStatus(SubscriptionStatus.EXPIRED));
         subscriptionRepository.saveAll(due);
         return due.size();
+    }
+
+    @Override
+    @Transactional
+    public int remindExpiring() {
+        LocalDateTime now = LocalDateTime.now();
+        int sent = 0;
+        for (int days : REMIND_DAYS) {
+            List<Subscription> expiring = subscriptionRepository
+                    .findByStatusAndExpiresAtGreaterThanAndExpiresAtLessThanEqual(
+                            SubscriptionStatus.ACTIVE, now.plusDays(days - 1L), now.plusDays(days));
+            for (Subscription s : expiring) {
+                String date = s.getExpiresAt().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+                notificationService.notify(
+                        s.getMember(),
+                        null,
+                        NotificationType.PLAN_EXPIRING,
+                        null,
+                        "Gói " + s.getPlan().getName() + " sẽ hết hạn sau " + days + " ngày (" + date
+                                + "). Hãy mua lại để không bị gián đoạn.",
+                        NotificationService.params(
+                                "plan", s.getPlan().getName(), "days", String.valueOf(days), "date", date));
+                sent++;
+            }
+        }
+        return sent;
     }
 
     private Plan freePlan() {

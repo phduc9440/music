@@ -85,3 +85,64 @@
   gap: 0.5rem;
   margin-top: 1rem;
 }
+
+/* Lịch sử đơn mua gói */
+.bl-orders {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.bl-order {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--sc-line);
+  border-radius: 10px;
+}
+.bl-order__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.bl-order__info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.4rem 1rem;
+  margin: 0;
+  font-size: 0.85rem;
+}
+.bl-order__info dt {
+  color: var(--sc-muted);
+}
+.bl-order__info dd {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.bl-order__pending {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed var(--sc-line);
+}
+.bl-order__pending p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--sc-muted);
+}
+.bl-countdown {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--sc-accent);
+}
+.bl-countdown.is-urgent {
+  color: var(--ui-danger);
+}

@@ -322,6 +322,7 @@ CREATE TABLE IF NOT EXISTS payment_orders (
     member_id       VARCHAR(36)  NOT NULL,
     plan_id         VARCHAR(36)  NOT NULL,
     period          VARCHAR(8)   NOT NULL COMMENT 'MONTH / YEAR',
+    kind            VARCHAR(8)   NOT NULL DEFAULT 'NEW' COMMENT 'NEW mua mới/đổi gói, RENEW gia hạn',
     amount          BIGINT       NOT NULL,
     provider        VARCHAR(16)  NOT NULL COMMENT 'VNPAY',
     status          VARCHAR(16)  NOT NULL COMMENT 'PENDING / PAID / FAILED / EXPIRED / REFUNDED',

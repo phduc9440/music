@@ -6,6 +6,7 @@ import type { MySubscription, PaymentOrder } from '../../types';
 import { formatDate, formatDateTime, formatNumber, formatVnd, t, translateError } from '../../i18n/core';
 import Skeleton from '../../components/ui/Skeleton';
 import LimitList from './LimitList';
+import PaymentCountdown from './PaymentCountdown';
 import '../../components/scores/scores.css';
 import './billing.css';
 
@@ -95,28 +96,64 @@ export default function MyPlan() {
           {!orders && <Skeleton lines={3} />}
           {orders && orders.length === 0 && <p>{t('billing.history.empty')}</p>}
           {orders && orders.length > 0 && (
-            <ul className="bl-limits">
+            <ul className="bl-orders">
               {orders.map((o) => (
-                <li key={o.id}>
-                  <span>
-                    {formatDateTime(o.paidAt ?? o.createdAt)} · {o.planName} · {t(`billing.period.${o.period}`)}
-                    <br />
-                    <small>{o.orderCode}</small>
-                  </span>
-                  <strong>
-                    {formatVnd(o.amount)} · {t(`billing.result.status.${o.status}`)}
-                    {o.status === 'PENDING' && (
+                <li key={o.id} className={`bl-order bl-order--${o.status.toLowerCase()}`}>
+                  <div className="bl-order__head">
+                    <strong>
+                      {t(`billing.kind.${o.kind}`)} · {o.planName} · {t(`billing.period.${o.period}`)}
+                    </strong>
+                    <span className="bl-badge">{t(`billing.result.status.${o.status}`)}</span>
+                  </div>
+                  <dl className="bl-order__info">
+                    <div>
+                      <dt>{t('billing.result.amount')}</dt>
+                      <dd>{formatVnd(o.amount)}</dd>
+                    </div>
+                    <div>
+                      <dt>{t('billing.history.provider')}</dt>
+                      <dd>{t(`billing.provider.${o.provider}`)}</dd>
+                    </div>
+                    <div>
+                      <dt>{t('billing.history.createdAt')}</dt>
+                      <dd>{formatDateTime(o.createdAt)}</dd>
+                    </div>
+                    {o.paidAt && (
+                      <div>
+                        <dt>{t('billing.result.paidAt')}</dt>
+                        <dd>{formatDateTime(o.paidAt)}</dd>
+                      </div>
+                    )}
+                    <div>
+                      <dt>{t('billing.history.orderCode')}</dt>
+                      <dd>{o.orderCode}</dd>
+                    </div>
+                  </dl>
+                  {o.status === 'PENDING' && (
+                    <div className="bl-order__pending">
+                      <p>
+                        {t('billing.history.pendingNote', {
+                          kind: t(`billing.kind.${o.kind}`).toLowerCase(),
+                          plan: o.planName,
+                          period: t(`billing.periodUnit.${o.period}`),
+                          amount: formatVnd(o.amount),
+                          time: formatDateTime(o.expiresAt),
+                        })}
+                      </p>
+                      <PaymentCountdown
+                        expiresAt={o.expiresAt}
+                        onExpire={() => setOrders((list) => list?.filter((x) => x.id !== o.id) ?? null)}
+                      />
                       <button
                         type="button"
                         className="sc-btn sc-btn--primary"
                         disabled={paying === o.orderCode}
                         onClick={() => payAgain(o)}
-                        style={{ marginLeft: 12 }}
                       >
                         {paying === o.orderCode ? t('billing.pricing.redirecting') : t('billing.history.pay')}
                       </button>
-                    )}
-                  </strong>
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
