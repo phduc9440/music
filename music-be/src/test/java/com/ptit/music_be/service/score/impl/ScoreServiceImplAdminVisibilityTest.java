@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
+import org.springframework.context.ApplicationEventPublisher;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -25,6 +26,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import com.ptit.music_be.dto.enums.ScoreAccess;
 import com.ptit.music_be.dto.enums.Visibility;
 import com.ptit.music_be.entity.Member;
+import com.ptit.music_be.event.RewardEarnedEvent;
+import com.ptit.music_be.event.RewardReason;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
@@ -46,6 +49,9 @@ class ScoreServiceImplAdminVisibilityTest {
 
     @Mock
     ScorePermissionService permissionService;
+
+    @Mock
+    ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     ScoreServiceImpl service;
@@ -108,6 +114,19 @@ class ScoreServiceImplAdminVisibilityTest {
         verify(scoreRepository).save(saved.capture());
         assertThat(saved.getValue().getVisibility()).isEqualTo("PUBLIC");
         verify(notificationService).notify(any(), any(), any(), any(), any(), any());
+        // duyệt công khai thì phát sự kiện thưởng điểm cho chủ bản
+        verify(eventPublisher).publishEvent(new RewardEarnedEvent("owner", RewardReason.SCORE_PUBLISHED, "s1"));
+    }
+
+    @Test
+    void takingDownDoesNotRewardTheOwner() {
+        score.setVisibility("PUBLIC");
+        try {
+            service.setVisibilityByAdmin("s1", Visibility.PRIVATE, "vi phạm");
+        } catch (RuntimeException ignored) {
+            // như trên
+        }
+        verify(eventPublisher, org.mockito.Mockito.never()).publishEvent(any(RewardEarnedEvent.class));
     }
 
     @Test

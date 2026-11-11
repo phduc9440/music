@@ -16,6 +16,7 @@ import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -25,6 +26,8 @@ import com.ptit.music_be.dto.enums.NotificationType;
 import com.ptit.music_be.dto.enums.OfficialRequestStatus;
 import com.ptit.music_be.dto.response.OfficialRequestResponse;
 import com.ptit.music_be.entity.Member;
+import com.ptit.music_be.event.RewardEarnedEvent;
+import com.ptit.music_be.event.RewardReason;
 import com.ptit.music_be.entity.OfficialRequest;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreFile;
@@ -46,8 +49,9 @@ class OfficialRequestServiceImplTest {
     private final MemberRepository members = mock(MemberRepository.class);
     private final ScoreCopyService copier = mock(ScoreCopyService.class);
     private final NotificationService notifications = mock(NotificationService.class);
+    private final ApplicationEventPublisher events = mock(ApplicationEventPublisher.class);
     private final OfficialRequestServiceImpl service =
-            new OfficialRequestServiceImpl(requests, scores, files, members, copier, notifications);
+            new OfficialRequestServiceImpl(requests, scores, files, members, copier, notifications, events);
 
     private final Member admin = Member.builder()
             .id("admin")
@@ -195,6 +199,8 @@ class OfficialRequestServiceImplTest {
         assertThat(score.getVisibility()).isEqualTo("PUBLIC");
         verify(notifications)
                 .notify(eq(admin), eq(owner), eq(NotificationType.OFFICIAL_ACCEPTED), eq("c1"), any(), any());
+        // chủ bản được thưởng điểm một lần cho lời xin này
+        verify(events).publishEvent(new RewardEarnedEvent("owner", RewardReason.SCORE_OFFICIAL, request.getId()));
     }
 
     @Test
