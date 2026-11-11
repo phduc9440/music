@@ -6,6 +6,7 @@ import { adminApi } from '../../services';
 import type { ErrorLogEntry, SystemMetrics } from '../../types';
 import './AdminSystem.css';
 import { useDialog } from '../../components/ui/dialog-context';
+import { formatDateTime, t } from '../../i18n/core';
 
 const formatBytes = (bytes?: number | null) => {
   if (bytes == null) return '—';
@@ -23,15 +24,36 @@ const formatUptime = (seconds: number) => {
   const d = Math.floor(seconds / 86400);
   const h = Math.floor((seconds % 86400) / 3600);
   const m = Math.floor((seconds % 3600) / 60);
-  return [d > 0 ? `${d} ngày` : '', h > 0 ? `${h} giờ` : '', `${m} phút`].filter(Boolean).join(' ');
+  return [
+    d > 0 ? t('admin.system.days', { count: d }) : '',
+    h > 0 ? t('admin.system.hours', { count: h }) : '',
+    t('admin.system.minutes', { count: m }),
+  ]
+    .filter(Boolean)
+    .join(' ');
 };
 
 const formatPercent = (v?: number | null) => (v == null ? '—' : `${v.toFixed(1)}%`);
 
 const LEVELS = {
-  ok: { label: 'Bình thường', tone: 'success' as const },
-  warn: { label: 'Cao', tone: 'warning' as const },
-  danger: { label: 'Quá tải', tone: 'danger' as const },
+  ok: {
+    get label() {
+      return t('admin.system.level.ok');
+    },
+    tone: 'success' as const,
+  },
+  warn: {
+    get label() {
+      return t('admin.system.level.warn');
+    },
+    tone: 'warning' as const,
+  },
+  danger: {
+    get label() {
+      return t('admin.system.level.danger');
+    },
+    tone: 'danger' as const,
+  },
 };
 
 /** Thẻ đo mức sử dụng: số phần trăm, thanh đo và nhãn mức (màu luôn đi kèm chữ). */
@@ -91,14 +113,14 @@ export default function AdminSystem() {
     return adminApi
       .getMetrics()
       .then((res) => setMetrics(res.data.result))
-      .catch(() => toast.error('Không tải được thông số máy chủ'));
+      .catch(() => toast.error(t('admin.system.metricsFailed')));
   }, []);
 
   const loadLogs = useCallback(() => {
     return adminApi
       .getErrorLogs(100)
       .then((res) => setLogs(res.data.result))
-      .catch(() => toast.error('Không tải được nhật ký lỗi'));
+      .catch(() => toast.error(t('admin.system.logsFailed')));
   }, []);
 
   useEffect(() => {
@@ -126,19 +148,19 @@ export default function AdminSystem() {
 
   const clear = async () => {
     const ok = await confirm({
-      title: 'Xóa toàn bộ nhật ký lỗi?',
-      message: 'Các bản ghi lỗi đang lưu trong bộ nhớ sẽ bị xóa.',
-      confirmLabel: 'Xóa log',
+      title: t('admin.system.clearTitle'),
+      message: t('admin.system.clearMessage'),
+      confirmLabel: t('admin.system.clear'),
       tone: 'danger',
     });
     if (!ok) return;
     try {
       await adminApi.clearErrorLogs();
-      toast.success('Đã xóa nhật ký lỗi');
+      toast.success(t('admin.system.cleared'));
       loadLogs();
       loadMetrics();
     } catch {
-      toast.error('Không xóa được nhật ký lỗi');
+      toast.error(t('admin.system.clearFailed'));
     }
   };
 
@@ -158,20 +180,24 @@ export default function AdminSystem() {
   return (
     <>
       <PageHeader
-        title="Giám sát hệ thống"
+        title={t('admin.menu.items.system')}
         description={
           m
-            ? `Đã chạy ${formatUptime(m.uptimeSeconds)} · Java ${m.javaVersion} · ${m.availableProcessors} nhân CPU`
-            : 'Thông số máy chủ và nhật ký lỗi'
+            ? t('admin.system.summary', {
+                uptime: formatUptime(m.uptimeSeconds),
+                java: m.javaVersion,
+                cpus: m.availableProcessors,
+              })
+            : t('admin.system.subtitle')
         }
         actions={
           <>
             <label className="adm-muted" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
               <input type="checkbox" checked={auto} onChange={(e) => setAuto(e.target.checked)} />
-              Tự làm mới mỗi {REFRESH_MS / 1000} giây
+              {t('admin.system.autoRefresh', { count: REFRESH_MS / 1000 })}
             </label>
             <Button icon="refresh" loading={refreshing} onClick={refresh}>
-              Làm mới
+              {t('admin.system.refresh')}
             </Button>
           </>
         }
@@ -179,10 +205,10 @@ export default function AdminSystem() {
 
       <StatGrid minWidth={280}>
         <Meter
-          label="CPU của backend"
+          label={t('admin.system.cpu')}
           icon="cpu"
           percent={m?.processCpuPercent ?? null}
-          detail={`Cả máy: ${formatPercent(m?.systemCpuPercent)}${m?.loadAverage != null ? ` · load ${m.loadAverage}` : ''}`}
+          detail={`${t('admin.system.wholeMachine', { value: formatPercent(m?.systemCpuPercent) })}${m?.loadAverage != null ? ` · load ${m.loadAverage}` : ''}`}
         />
         <Meter
           label="Heap Java"
@@ -191,48 +217,55 @@ export default function AdminSystem() {
           detail={m ? `${formatBytes(m.heapUsedBytes)} / ${formatBytes(m.heapMaxBytes)}` : '—'}
         />
         <Meter
-          label="RAM máy chủ"
+          label={t('admin.system.ram')}
           icon="server"
           percent={ratio(memUsed, m?.physicalMemoryTotalBytes)}
           detail={m ? `${formatBytes(memUsed)} / ${formatBytes(m.physicalMemoryTotalBytes)}` : '—'}
         />
         <Meter
-          label="Ổ đĩa lưu file"
+          label={t('admin.system.disk')}
           icon="inbox"
           percent={ratio(diskUsed, m?.diskTotalBytes)}
-          detail={m ? `Còn trống ${formatBytes(m.diskUsableBytes)} / ${formatBytes(m.diskTotalBytes)}` : '—'}
+          detail={
+            m
+              ? t('admin.system.diskFree', {
+                  free: formatBytes(m.diskUsableBytes),
+                  total: formatBytes(m.diskTotalBytes),
+                })
+              : '—'
+          }
         />
         <StatCard
-          label="Luồng (thread)"
+          label={t('admin.system.threads')}
           icon="server"
           value={m?.threadCount ?? '—'}
-          hint={`Cao nhất: ${m?.peakThreadCount ?? '—'}`}
+          hint={t('admin.system.peak', { value: m?.peakThreadCount ?? '—' })}
         />
         <StatCard
-          label="Lỗi từ lúc khởi động"
+          label={t('admin.system.errorsSinceStart')}
           icon="alert"
           tone={m && m.errorCountSinceStart > 0 ? 'danger' : 'neutral'}
           value={m?.errorCountSinceStart ?? '—'}
-          hint="Mức ERROR trong log"
+          hint={t('admin.system.errorLevel')}
         />
       </StatGrid>
 
       <Card
         flush
-        title="Nhật ký lỗi"
-        description={`${logs ? `${logs.length} bản ghi gần nhất. ` : ''}Chỉ lưu trong bộ nhớ, mất khi khởi động lại backend.`}
+        title={t('admin.system.logTitle')}
+        description={`${logs ? `${t('admin.system.logCount', { count: logs.length })} ` : ''}${t('admin.system.logNote')}`}
         actions={
           <>
             <input
               className="adm-input"
               style={{ width: 280 }}
-              placeholder="Lọc theo nội dung, logger, exception"
-              aria-label="Lọc nhật ký lỗi"
+              placeholder={t('admin.system.filterPlaceholder')}
+              aria-label={t('admin.system.filterLabel')}
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
             />
             <Button variant="ghost" icon="trash" onClick={clear} disabled={!logs || logs.length === 0}>
-              Xóa log
+              {t('admin.system.clear')}
             </Button>
           </>
         }
@@ -240,9 +273,9 @@ export default function AdminSystem() {
         <Table minWidth={800}>
           <thead>
             <tr>
-              <th>Thời gian</th>
+              <th>{t('admin.system.time')}</th>
               <th>Logger</th>
-              <th>Nội dung</th>
+              <th>{t('admin.system.message')}</th>
               <th className="adm-table__actions" />
             </tr>
           </thead>
@@ -251,7 +284,7 @@ export default function AdminSystem() {
             {shown.map((l) => (
               <Fragment key={l.id}>
                 <tr>
-                  <td className="adm-nowrap adm-muted">{new Date(l.timestamp).toLocaleString('vi-VN')}</td>
+                  <td className="adm-nowrap adm-muted">{formatDateTime(l.timestamp)}</td>
                   <td className="sys-logger" title={l.logger}>
                     {l.logger.split('.').pop()}
                   </td>
@@ -262,7 +295,7 @@ export default function AdminSystem() {
                   <td className="adm-table__actions">
                     {l.stackTrace && (
                       <Button size="sm" variant="ghost" onClick={() => setOpenId(openId === l.id ? null : l.id)}>
-                        {openId === l.id ? 'Ẩn' : 'Chi tiết'}
+                        {openId === l.id ? t('admin.system.hide') : t('practice.history.details')}
                       </Button>
                     )}
                   </td>
@@ -280,7 +313,7 @@ export default function AdminSystem() {
               <TableState
                 colSpan={4}
                 icon={logs.length === 0 ? 'check' : 'search'}
-                title={logs.length === 0 ? 'Chưa có lỗi nào' : 'Không có bản ghi khớp bộ lọc'}
+                title={logs.length === 0 ? t('admin.system.noErrors') : t('admin.system.noMatch')}
               />
             )}
           </tbody>

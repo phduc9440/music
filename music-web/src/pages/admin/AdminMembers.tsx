@@ -21,6 +21,7 @@ import { MemberStatus } from '../../types';
 import type { Member, PageResult } from '../../types';
 import { isAdminMember, isSuperAdminMember, roleLabel } from '../../utils/auth';
 import { useDialog } from '../../components/ui/dialog-context';
+import { t } from '../../i18n/core';
 
 const PAGE_SIZE = 20;
 
@@ -41,7 +42,7 @@ export default function AdminMembers() {
     adminApi
       .getMembers({ page, size: PAGE_SIZE, keyword: keyword || undefined })
       .then((res) => setResult(res.data.result))
-      .catch((error) => toast.error(errorMessage(error, 'Không tải được danh sách thành viên')));
+      .catch((error) => toast.error(errorMessage(error, t('admin.members.loadFailed'))));
   }, [page, keyword, reloadKey]);
 
   const update = async (member: Member, data: Parameters<typeof adminApi.updateMember>[1], okMsg: string) => {
@@ -51,7 +52,7 @@ export default function AdminMembers() {
       toast.success(okMsg);
       reload();
     } catch (error) {
-      toast.error(errorMessage(error, 'Cập nhật thất bại'));
+      toast.error(errorMessage(error, t('profile.updateFailed')));
     } finally {
       setBusyId(null);
     }
@@ -62,9 +63,9 @@ export default function AdminMembers() {
     if (
       lock &&
       !(await confirm({
-        title: `Khóa tài khoản ${m.email}?`,
-        message: 'Người này sẽ bị đăng xuất ngay và không đăng nhập lại được cho đến khi được mở khóa.',
-        confirmLabel: 'Khóa tài khoản',
+        title: t('admin.members.lockTitle', { email: m.email }),
+        message: t('admin.members.lockMessage'),
+        confirmLabel: t('admin.members.lockAccount'),
         tone: 'danger',
       }))
     )
@@ -72,7 +73,7 @@ export default function AdminMembers() {
     update(
       m,
       { status: lock ? MemberStatus.INACTIVE : MemberStatus.ACTIVE },
-      lock ? 'Đã khóa tài khoản' : 'Đã mở khóa tài khoản',
+      lock ? t('admin.members.locked') : t('admin.members.unlocked'),
     );
   };
 
@@ -81,14 +82,18 @@ export default function AdminMembers() {
     const ok = await confirm(
       makeAdmin
         ? {
-            title: `Cấp quyền ADMIN cho ${m.email}?`,
-            message: 'Người này sẽ vào được trang quản trị.',
-            confirmLabel: 'Cấp ADMIN',
+            title: t('admin.members.grantTitle', { email: m.email }),
+            message: t('admin.members.grantMessage'),
+            confirmLabel: t('admin.members.grant'),
           }
-        : { title: `Thu hồi quyền ADMIN của ${m.email}?`, confirmLabel: 'Thu hồi', tone: 'danger' },
+        : {
+            title: t('admin.members.revokeTitle', { email: m.email }),
+            confirmLabel: t('admin.members.revokeConfirm'),
+            tone: 'danger',
+          },
     );
     if (!ok) return;
-    update(m, { roles: makeAdmin ? ['ADMIN', 'USER'] : ['USER'] }, 'Đã cập nhật vai trò');
+    update(m, { roles: makeAdmin ? ['ADMIN', 'USER'] : ['USER'] }, t('admin.members.roleUpdated'));
   };
 
   const roleTone = (m: Member) => (isSuperAdminMember(m) ? 'violet' : isAdminMember(m) ? 'primary' : 'neutral');
@@ -96,8 +101,8 @@ export default function AdminMembers() {
   return (
     <>
       <PageHeader
-        title="Thành viên"
-        description="Xem tài khoản, khóa hoặc mở khóa. Chỉ SUPER ADMIN được cấp hoặc thu hồi quyền ADMIN."
+        title={t('admin.menu.items.members')}
+        description={t('admin.members.description')}
         actions={
           <SearchForm
             value={keywordInput}
@@ -106,7 +111,7 @@ export default function AdminMembers() {
               setPage(0);
               setKeyword(keywordInput.trim());
             }}
-            placeholder="Tìm theo email hoặc tên"
+            placeholder={t('admin.announcements.searchPlaceholder')}
           />
         }
       />
@@ -115,12 +120,12 @@ export default function AdminMembers() {
         <Table minWidth={900}>
           <thead>
             <tr>
-              <th>Thành viên</th>
-              <th>Vai trò</th>
-              <th>Trạng thái</th>
-              <th>Ngày đăng ký</th>
-              <th>Đăng nhập cuối</th>
-              <th className="adm-table__actions">Thao tác</th>
+              <th>{t('admin.menu.items.members')}</th>
+              <th>{t('profile.role')}</th>
+              <th>{t('admin.official.statusColumn')}</th>
+              <th>{t('admin.members.registered')}</th>
+              <th>{t('admin.members.lastLogin')}</th>
+              <th className="adm-table__actions">{t('scores.files.actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -138,7 +143,7 @@ export default function AdminMembers() {
                       <Avatar name={m.fullName || m.email} src={m.avatarUrl} size={32} />
                       <CellTitle sub={m.fullName ? m.email : undefined}>
                         <Link to={`/admin/members/${m.id}`}>{m.fullName || m.email}</Link>
-                        {isSelf && <span className="adm-subtle"> (bạn)</span>}
+                        {isSelf && <span className="adm-subtle"> ({t('admin.members.you')})</span>}
                       </CellTitle>
                     </div>
                   </td>
@@ -146,7 +151,9 @@ export default function AdminMembers() {
                     <Badge tone={roleTone(m)}>{roleLabel(m)}</Badge>
                   </td>
                   <td>
-                    <Badge tone={locked ? 'danger' : 'success'}>{locked ? 'Đã khóa' : 'Hoạt động'}</Badge>
+                    <Badge tone={locked ? 'danger' : 'success'}>
+                      {locked ? t('admin.announcements.locked') : t('admin.members.active')}
+                    </Badge>
                   </td>
                   <td className="adm-nowrap adm-muted">{formatDate(m.createdAt)}</td>
                   <td className="adm-nowrap adm-muted">{formatDateTime(m.lastLoginAt)}</td>
@@ -157,7 +164,7 @@ export default function AdminMembers() {
                         size="sm"
                         variant="ghost"
                         icon="eye"
-                        title="Xem chi tiết"
+                        title={t('admin.members.viewDetails')}
                       />
                       {viewerIsSuper && !targetSuper && (
                         <Button
@@ -166,7 +173,7 @@ export default function AdminMembers() {
                           disabled={isSelf || busyId === m.id}
                           onClick={() => toggleAdmin(m)}
                         >
-                          {isAdminMember(m) ? 'Thu hồi ADMIN' : 'Cấp ADMIN'}
+                          {isAdminMember(m) ? t('admin.members.revokeAdmin') : t('admin.members.grant')}
                         </Button>
                       )}
                       <Button
@@ -176,14 +183,14 @@ export default function AdminMembers() {
                         disabled={isSelf || protectedTarget || busyId === m.id}
                         title={
                           isSelf
-                            ? 'Không thể khóa chính mình'
+                            ? t('admin.members.cantLockSelf')
                             : protectedTarget
-                              ? 'Không thể khóa SUPER ADMIN'
+                              ? t('admin.members.cantLockSuper')
                               : undefined
                         }
                         onClick={() => toggleStatus(m)}
                       >
-                        {locked ? 'Mở khóa' : 'Khóa'}
+                        {locked ? t('admin.members.unlock') : t('admin.members.lock')}
                       </Button>
                     </div>
                   </td>
@@ -191,7 +198,12 @@ export default function AdminMembers() {
               );
             })}
             {result && result.content.length === 0 && (
-              <TableState colSpan={6} icon="users" title="Không tìm thấy thành viên" description="Thử từ khóa khác." />
+              <TableState
+                colSpan={6}
+                icon="users"
+                title={t('admin.members.notFound')}
+                description={t('admin.members.tryOther')}
+              />
             )}
           </tbody>
         </Table>
@@ -200,7 +212,7 @@ export default function AdminMembers() {
             page={result.pageNumber}
             totalPages={result.totalPages}
             totalElements={result.totalElements}
-            unit="thành viên"
+            unit={t('admin.members.unit')}
             onChange={setPage}
           />
         )}

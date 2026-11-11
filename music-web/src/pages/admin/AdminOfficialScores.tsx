@@ -19,6 +19,7 @@ import { officialRequestApi, scoreApi } from '../../services';
 import type { OfficialRequest, OfficialRequestStatus, PageResult, ScoreSummary } from '../../types';
 import { DIFFICULTY_LABELS } from '../../utils/score';
 import { useDialog } from '../../components/ui/dialog-context';
+import { t } from '../../i18n/core';
 
 const PAGE_SIZE = 20;
 
@@ -28,10 +29,30 @@ const REQUEST_STATUS: Record<
   OfficialRequestStatus,
   { label: string; tone: 'warning' | 'success' | 'danger' | 'neutral' }
 > = {
-  PENDING: { label: 'Chờ chủ trả lời', tone: 'warning' },
-  ACCEPTED: { label: 'Đã đồng ý', tone: 'success' },
-  DECLINED: { label: 'Bị từ chối', tone: 'danger' },
-  CANCELED: { label: 'Đã rút lại', tone: 'neutral' },
+  PENDING: {
+    get label() {
+      return t('admin.official.status.PENDING');
+    },
+    tone: 'warning',
+  },
+  ACCEPTED: {
+    get label() {
+      return t('admin.official.status.ACCEPTED');
+    },
+    tone: 'success',
+  },
+  DECLINED: {
+    get label() {
+      return t('admin.official.status.DECLINED');
+    },
+    tone: 'danger',
+  },
+  CANCELED: {
+    get label() {
+      return t('admin.official.status.CANCELED');
+    },
+    tone: 'neutral',
+  },
 };
 
 /**
@@ -63,7 +84,7 @@ export default function AdminOfficialScores() {
       officialRequestApi
         .list({ page, size: PAGE_SIZE })
         .then((res) => setRequests(res.data.result))
-        .catch(() => toast.error('Không tải được danh sách lời xin'));
+        .catch(() => toast.error(t('admin.official.loadRequestsFailed')));
       return;
     }
     const request =
@@ -77,7 +98,7 @@ export default function AdminOfficialScores() {
         if (data.content.length === 0 && page > 0) setPage(page - 1);
         else setResult(data);
       })
-      .catch(() => toast.error('Không tải được danh sách bản nhạc'));
+      .catch(() => toast.error(t('admin.official.loadScoresFailed')));
   }, [tab, page, keyword, reload]);
 
   const toggle = useCallback(
@@ -86,16 +107,14 @@ export default function AdminOfficialScores() {
       const ok = await confirm(
         adding
           ? {
-              title: `Xin đưa "${score.title}" vào kho bản nhạc mẫu?`,
-              message: `${score.ownerEmail} sẽ nhận thông báo. Họ đồng ý thì hệ thống sao chép một bản vào kho, ghi tên họ là người phối; bản của họ giữ nguyên.`,
-              confirmLabel: 'Gửi lời xin',
+              title: t('admin.official.askTitle', { title: score.title }),
+              message: t('admin.official.askMessage', { owner: score.ownerEmail ?? '' }),
+              confirmLabel: t('admin.official.send'),
             }
           : {
-              title: `Gỡ "${score.title}" khỏi kho bản nhạc mẫu?`,
-              message: score.isOfficial
-                ? 'Bản trong kho vào thùng rác. Bản gốc của chủ sở hữu không bị ảnh hưởng.'
-                : 'Bản nhạc vẫn được giữ và vẫn công khai.',
-              confirmLabel: 'Gỡ khỏi kho',
+              title: t('admin.official.removeTitle', { title: score.title }),
+              message: score.isOfficial ? t('admin.official.removeCopyMessage') : t('admin.official.removeFlagMessage'),
+              confirmLabel: t('admin.official.remove'),
             },
       );
       if (!ok) return;
@@ -103,9 +122,9 @@ export default function AdminOfficialScores() {
       try {
         if (adding) await officialRequestApi.request(score.id);
         else await scoreApi.unmarkOfficial(score.id);
-        toast.success(adding ? 'Đã gửi lời xin tới chủ sở hữu' : 'Đã gỡ khỏi kho bản nhạc mẫu');
+        toast.success(adding ? t('admin.official.asked') : t('admin.official.removed'));
       } catch (error) {
-        toast.error(errorMessage(error, 'Thao tác thất bại'));
+        toast.error(errorMessage(error, t('scores.share.failed')));
       } finally {
         setBusyId(null);
         setReload((n) => n + 1);
@@ -117,17 +136,17 @@ export default function AdminOfficialScores() {
   const cancelRequest = useCallback(
     async (request: OfficialRequest) => {
       const ok = await confirm({
-        title: `Rút lại lời xin "${request.scoreTitle}"?`,
-        message: 'Chủ sở hữu sẽ không còn thấy lời xin này.',
-        confirmLabel: 'Rút lại',
+        title: t('admin.official.withdrawTitle', { title: request.scoreTitle }),
+        message: t('admin.official.withdrawMessage'),
+        confirmLabel: t('admin.official.withdraw'),
       });
       if (!ok) return;
       setBusyId(request.id);
       try {
         await officialRequestApi.cancel(request.id);
-        toast.success('Đã rút lại lời xin');
+        toast.success(t('admin.official.withdrawn'));
       } catch (error) {
-        toast.error(errorMessage(error, 'Không rút lại được lời xin'));
+        toast.error(errorMessage(error, t('admin.official.withdrawFailed')));
       } finally {
         setBusyId(null);
         setReload((n) => n + 1);
@@ -141,8 +160,8 @@ export default function AdminOfficialScores() {
   return (
     <>
       <PageHeader
-        title="Kho bản nhạc mẫu"
-        description="Bản nhạc chọn lọc cho người mới học. Người dùng xem ở mục “Kho bản nhạc mẫu” trong thư viện."
+        title={t('common.nav.items.officialLibrary')}
+        description={t('admin.official.description')}
         actions={
           <SearchForm
             value={keywordInput}
@@ -151,7 +170,7 @@ export default function AdminOfficialScores() {
               setPage(0);
               setKeyword(keywordInput.trim());
             }}
-            placeholder="Tìm theo tên hoặc tác giả"
+            placeholder={t('scores.explore.searchPlaceholder')}
           />
         }
       />
@@ -160,9 +179,9 @@ export default function AdminOfficialScores() {
         value={tab}
         onChange={switchTab}
         items={[
-          { value: 'library', label: 'Trong kho' },
-          { value: 'candidates', label: 'Xin đưa vào kho' },
-          { value: 'requests', label: 'Lời xin đã gửi' },
+          { value: 'library', label: t('admin.official.tabLibrary') },
+          { value: 'candidates', label: t('admin.official.ask') },
+          { value: 'requests', label: t('admin.official.tabRequests') },
         ]}
       />
 
@@ -171,11 +190,11 @@ export default function AdminOfficialScores() {
           <Table minWidth={720}>
             <thead>
               <tr>
-                <th>Bản nhạc</th>
-                <th>Chủ sở hữu</th>
-                <th>Trạng thái</th>
-                <th>Ngày gửi</th>
-                <th className="adm-table__actions">Thao tác</th>
+                <th>{t('upload.review.tabs.score')}</th>
+                <th>{t('admin.common.owner')}</th>
+                <th>{t('admin.official.statusColumn')}</th>
+                <th>{t('admin.official.sentDate')}</th>
+                <th className="adm-table__actions">{t('scores.files.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -196,12 +215,12 @@ export default function AdminOfficialScores() {
                     <div className="adm-table__actions-inner">
                       {r.status === 'PENDING' && (
                         <Button size="sm" icon="x" disabled={busyId === r.id} onClick={() => cancelRequest(r)}>
-                          Rút lại
+                          {t('admin.official.withdraw')}
                         </Button>
                       )}
                       {r.status === 'ACCEPTED' && r.copyScoreId && (
                         <ButtonLink to={`/admin/scores/${r.copyScoreId}`} size="sm" variant="ghost" icon="eye">
-                          Xem bản trong kho
+                          {t('admin.official.viewCopy')}
                         </ButtonLink>
                       )}
                     </div>
@@ -212,8 +231,8 @@ export default function AdminOfficialScores() {
                 <TableState
                   colSpan={5}
                   icon="library"
-                  title="Chưa có lời xin nào"
-                  description="Sang tab “Xin đưa vào kho” để chọn bản nhạc công khai và gửi lời xin tới chủ sở hữu."
+                  title={t('admin.official.noRequestsTitle')}
+                  description={t('admin.official.noRequestsHint')}
                 />
               )}
             </tbody>
@@ -223,7 +242,7 @@ export default function AdminOfficialScores() {
               page={requests.pageNumber}
               totalPages={requests.totalPages}
               totalElements={requests.totalElements}
-              unit="lời xin"
+              unit={t('admin.official.unitRequests')}
               onChange={setPage}
             />
           )}
@@ -233,10 +252,10 @@ export default function AdminOfficialScores() {
           <Table minWidth={720}>
             <thead>
               <tr>
-                <th>Bản nhạc</th>
-                <th>Độ khó</th>
-                {tab === 'candidates' && <th>Chủ sở hữu</th>}
-                <th className="adm-table__actions">Thao tác</th>
+                <th>{t('upload.review.tabs.score')}</th>
+                <th>{t('scores.hero.difficulty')}</th>
+                {tab === 'candidates' && <th>{t('admin.common.owner')}</th>}
+                <th className="adm-table__actions">{t('scores.files.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -258,10 +277,16 @@ export default function AdminOfficialScores() {
                   {tab === 'candidates' && <td className="adm-muted">{s.ownerEmail}</td>}
                   <td className="adm-table__actions">
                     <div className="adm-table__actions-inner">
-                      <ButtonLink to={`/admin/scores/${s.id}`} size="sm" variant="ghost" icon="eye" title="Xem" />
+                      <ButtonLink
+                        to={`/admin/scores/${s.id}`}
+                        size="sm"
+                        variant="ghost"
+                        icon="eye"
+                        title={t('admin.official.view')}
+                      />
                       {tab === 'library' ? (
                         <Button size="sm" icon="x" disabled={busyId === s.id} onClick={() => toggle(s)}>
-                          Gỡ khỏi kho
+                          {t('admin.official.remove')}
                         </Button>
                       ) : (
                         <Button
@@ -271,7 +296,7 @@ export default function AdminOfficialScores() {
                           disabled={busyId === s.id}
                           onClick={() => toggle(s)}
                         >
-                          Xin đưa vào kho
+                          {t('admin.official.ask')}
                         </Button>
                       )}
                     </div>
@@ -282,11 +307,9 @@ export default function AdminOfficialScores() {
                 <TableState
                   colSpan={colSpan}
                   icon="library"
-                  title={tab === 'library' ? 'Kho chưa có bản nhạc nào' : 'Không có bản nhạc nào để thêm'}
+                  title={tab === 'library' ? t('admin.official.emptyLibrary') : t('admin.official.emptyCandidates')}
                   description={
-                    tab === 'library'
-                      ? 'Chuyển sang tab “Xin đưa vào kho” để chọn từ các bản đã công khai.'
-                      : 'Chỉ bản đã công khai, chưa có lời xin và chưa nằm trong kho mới hiện ở đây.'
+                    tab === 'library' ? t('admin.official.emptyLibraryHint') : t('admin.official.emptyCandidatesHint')
                   }
                 />
               )}
@@ -297,7 +320,7 @@ export default function AdminOfficialScores() {
               page={result.pageNumber}
               totalPages={result.totalPages}
               totalElements={result.totalElements}
-              unit="bản nhạc"
+              unit={t('admin.official.unitScores')}
               onChange={setPage}
             />
           )}

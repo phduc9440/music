@@ -24,32 +24,39 @@ import type { AdminAiTask, AiTaskInfo, AiTaskSummary, PageResult } from '../../t
 import { OMR_STEPS, describeTaskError } from '../../utils/omr';
 import { TASK_TYPE_LABELS } from '../../utils/score';
 import './AdminSystem.css';
+import { labelMap, t } from '../../i18n/core';
 
 const PAGE_SIZE = 20;
 const REFRESH_MS = 10000;
 
-const STATUS: Record<string, { label: string; tone: Tone }> = {
-  PENDING: { label: 'Chờ xử lý', tone: 'warning' },
-  PROCESSING: { label: 'Đang chạy', tone: 'primary' },
-  COMPLETED: { label: 'Hoàn tất', tone: 'success' },
-  FAILED: { label: 'Lỗi', tone: 'danger' },
-  CANCELLED: { label: 'Đã hủy', tone: 'neutral' },
+const STATUS_TONE: Record<string, Tone> = {
+  PENDING: 'warning',
+  PROCESSING: 'primary',
+  COMPLETED: 'success',
+  FAILED: 'danger',
+  CANCELLED: 'neutral',
 };
+const STATUS_LABEL: Record<string, string> = labelMap('admin.ai.status', [
+  'PENDING',
+  'PROCESSING',
+  'COMPLETED',
+  'FAILED',
+  'CANCELLED',
+]);
 
-const STEP_LABELS: Record<string, string> = {
-  QUEUED: 'Đang xếp hàng',
-  ...Object.fromEntries(OMR_STEPS.map((s) => [s.key, s.label])),
-};
+/** Nhãn bước: "QUEUED" hoặc một trong các bước OMR. */
+const stepLabel = (key: string): string =>
+  key === 'QUEUED' ? t('admin.ai.queued') : (OMR_STEPS.find((s) => s.key === key)?.label ?? key);
 
-/** 75 -> "1 phút 15 giây". */
+/** 75 -> "1 phút 15 giây" / "1 min 15 s". */
 const formatDuration = (seconds?: number | null) => {
   if (seconds == null) return '—';
-  if (seconds < 60) return `${seconds} giây`;
+  if (seconds < 60) return t('admin.ai.seconds', { count: seconds });
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
   const s = seconds % 60;
-  if (h > 0) return `${h} giờ ${m} phút`;
-  return s > 0 ? `${m} phút ${s} giây` : `${m} phút`;
+  if (h > 0) return t('admin.ai.hoursMinutes', { hours: h, minutes: m });
+  return s > 0 ? t('admin.ai.minutesSeconds', { minutes: m, seconds: s }) : t('admin.ai.minutes', { count: m });
 };
 
 const toJson = (value: unknown) => {
@@ -62,9 +69,9 @@ const toJson = (value: unknown) => {
 };
 
 /** Câu lỗi tiếng Việt (dùng lại bảng dịch lỗi của trang tiến độ số hóa). */
-const errorText = (t: AdminAiTask) => {
-  if (t.status !== 'FAILED' && t.status !== 'CANCELLED') return null;
-  const e = describeTaskError(t as unknown as AiTaskInfo);
+const errorText = (task: AdminAiTask) => {
+  if (task.status !== 'FAILED' && task.status !== 'CANCELLED') return null;
+  const e = describeTaskError(task as unknown as AiTaskInfo);
   return `${e.title}${e.detail ? ` (${e.detail})` : ''}`;
 };
 
@@ -99,7 +106,7 @@ export default function AdminAiTasks() {
         to: to || undefined,
       })
       .then((res) => !cancelled && setResult(res.data.result))
-      .catch((error) => !cancelled && toast.error(errorMessage(error, 'Không tải được danh sách tác vụ')));
+      .catch((error) => !cancelled && toast.error(errorMessage(error, t('admin.ai.loadFailed'))));
     adminApi
       .getAiTaskSummary()
       .then((res) => !cancelled && setSummary(res.data.result))
@@ -128,55 +135,58 @@ export default function AdminAiTasks() {
   const filtered = !!(keyword || status || type || from || to);
 
   const toggleDetail = useCallback(
-    (t: AdminAiTask) => {
-      if (openId === t.id) {
+    (task: AdminAiTask) => {
+      if (openId === task.id) {
         setOpenId(null);
         return;
       }
-      setOpenId(t.id);
+      setOpenId(task.id);
       setDetail(null);
       adminApi
-        .getAiTask(t.id)
+        .getAiTask(task.id)
         .then((res) => setDetail(res.data.result))
-        .catch((error) => toast.error(errorMessage(error, 'Không tải được chi tiết tác vụ')));
+        .catch((error) => toast.error(errorMessage(error, t('admin.ai.detailFailed'))));
     },
     [openId],
   );
 
-  const cancel = async (t: AdminAiTask) => {
+  const cancel = async (task: AdminAiTask) => {
     const ok = await confirm({
-      title: 'Hủy tác vụ này?',
-      message: `${TASK_TYPE_LABELS[t.taskType] ?? t.taskType} của "${t.scoreTitle ?? 'bản nhạc'}" sẽ dừng lại.`,
-      confirmLabel: 'Hủy tác vụ',
-      cancelLabel: 'Không',
+      title: t('admin.ai.cancelTitle'),
+      message: t('admin.ai.cancelMessage', {
+        type: TASK_TYPE_LABELS[task.taskType] ?? task.taskType,
+        score: task.scoreTitle ?? t('admin.ai.aScore'),
+      }),
+      confirmLabel: t('admin.ai.cancelConfirm'),
+      cancelLabel: t('common.no'),
       tone: 'danger',
     });
     if (!ok) return;
-    setBusyId(t.id);
+    setBusyId(task.id);
     try {
-      await taskApi.cancel(t.id);
-      toast.success('Đã hủy tác vụ');
+      await taskApi.cancel(task.id);
+      toast.success(t('admin.ai.canceled'));
     } catch (error) {
-      toast.error(errorMessage(error, 'Không hủy được tác vụ'));
+      toast.error(errorMessage(error, t('admin.ai.cancelFailed')));
     } finally {
       setBusyId(null);
       setReload((n) => n + 1);
     }
   };
 
-  const retry = async (t: AdminAiTask) => {
+  const retry = async (task: AdminAiTask) => {
     const ok = await confirm({
-      title: `Chạy lại số hóa "${t.scoreTitle ?? 'bản nhạc'}"?`,
-      message: `Tạo tác vụ mới với tham số lần trước, gán cho chủ bản nhạc (${t.memberEmail ?? '—'}).`,
-      confirmLabel: 'Chạy lại',
+      title: t('admin.ai.retryTitle', { score: task.scoreTitle ?? t('admin.ai.aScore') }),
+      message: t('admin.ai.retryMessage', { owner: task.memberEmail ?? '—' }),
+      confirmLabel: t('admin.ai.retry'),
     });
     if (!ok) return;
-    setBusyId(t.id);
+    setBusyId(task.id);
     try {
-      await adminApi.retryAiTask(t.id);
-      toast.success('Đã tạo tác vụ chạy lại');
+      await adminApi.retryAiTask(task.id);
+      toast.success(t('admin.ai.retried'));
     } catch (error) {
-      toast.error(errorMessage(error, 'Không chạy lại được tác vụ'));
+      toast.error(errorMessage(error, t('admin.ai.retryFailed')));
     } finally {
       setBusyId(null);
       setReload((n) => n + 1);
@@ -184,7 +194,12 @@ export default function AdminAiTasks() {
   };
 
   const select = (label: string, value: string, onChange: (v: string) => void, options: [string, string][]) => (
-    <select className="adm-input" aria-label={label} value={value} onChange={(e) => changeFilter(() => onChange(e.target.value))}>
+    <select
+      className="adm-input"
+      aria-label={label}
+      value={value}
+      onChange={(e) => changeFilter(() => onChange(e.target.value))}
+    >
       {options.map(([v, l]) => (
         <option key={v} value={v}>
           {l}
@@ -198,40 +213,57 @@ export default function AdminAiTasks() {
       ? summary.averageRunSeconds
           .map((a) => `${TASK_TYPE_LABELS[a.taskType] ?? a.taskType}: ${formatDuration(Math.round(a.seconds))}`)
           .join(' · ')
-      : 'Chưa có tác vụ hoàn tất trong 7 ngày';
+      : t('admin.ai.noAverage');
 
   return (
     <>
       <PageHeader
-        title="Tác vụ AI"
-        description="Hàng đợi số hóa (OMR), sinh hợp âm, xuất âm thanh và chuyển định dạng của mọi người dùng."
+        title={t('admin.menu.items.aiTasks')}
+        description={t('admin.ai.description')}
         actions={
           <>
             <label className="adm-muted" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
               <input type="checkbox" checked={auto} onChange={(e) => setAuto(e.target.checked)} />
-              Tự làm mới khi có tác vụ đang chạy
+              {t('admin.ai.autoRefresh')}
             </label>
             <Button icon="refresh" onClick={() => setReload((n) => n + 1)}>
-              Làm mới
+              {t('admin.system.refresh')}
             </Button>
           </>
         }
       />
 
       <StatGrid>
-        <StatCard label="Đang chờ" icon="clock" tone="warning" value={summary?.pending ?? '—'} hint="Chưa được xử lý" />
-        <StatCard label="Đang chạy" icon="cpu" tone="primary" value={summary?.processing ?? '—'} hint="music-ai đang xử lý" />
         <StatCard
-          label="Lỗi trong 24 giờ"
+          label={t('admin.ai.waiting')}
+          icon="clock"
+          tone="warning"
+          value={summary?.pending ?? '—'}
+          hint={t('admin.ai.waitingHint')}
+        />
+        <StatCard
+          label={t('admin.ai.running')}
+          icon="cpu"
+          tone="primary"
+          value={summary?.processing ?? '—'}
+          hint={t('admin.ai.runningHint')}
+        />
+        <StatCard
+          label={t('admin.ai.failed24')}
           icon="alert"
           tone={summary && summary.failedLast24h > 0 ? 'danger' : 'neutral'}
           value={summary?.failedLast24h ?? '—'}
           alert={!!summary && summary.failedLast24h > 0}
         />
-        <StatCard label="Hoàn tất trong 24 giờ" icon="check" tone="success" value={summary?.completedLast24h ?? '—'} />
+        <StatCard
+          label={t('admin.ai.completed24')}
+          icon="check"
+          tone="success"
+          value={summary?.completedLast24h ?? '—'}
+        />
       </StatGrid>
       <p className="adm-muted" style={{ margin: '-0.25rem 0 1rem', fontSize: 'var(--adm-text-sm)' }}>
-        Thời gian chạy trung bình (7 ngày): {avgHint}
+        {t('admin.ai.average', { value: avgHint })}
       </p>
 
       <Toolbar>
@@ -239,18 +271,21 @@ export default function AdminAiTasks() {
           value={keywordInput}
           onChange={setKeywordInput}
           onSubmit={() => changeFilter(() => setKeyword(keywordInput.trim()))}
-          placeholder="Tên bản nhạc hoặc email người tạo"
+          placeholder={t('admin.ai.searchPlaceholder')}
         />
-        {select('Trạng thái', status, setStatus, [
-          ['', 'Mọi trạng thái'],
-          ...Object.entries(STATUS).map(([v, s]) => [v, s.label] as [string, string]),
+        {select(t('admin.official.statusColumn'), status, setStatus, [
+          ['', t('admin.ai.anyStatus')],
+          ...Object.entries(STATUS_LABEL),
         ])}
-        {select('Loại tác vụ', type, setType, [['', 'Mọi loại'], ...Object.entries(TASK_TYPE_LABELS)])}
+        {select(t('admin.ai.taskType'), type, setType, [
+          ['', t('admin.ai.anyType')],
+          ...Object.entries(TASK_TYPE_LABELS),
+        ])}
         <input
           type="date"
           className="adm-input"
           style={{ width: 'auto' }}
-          aria-label="Từ ngày"
+          aria-label={t('admin.ai.fromDate')}
           value={from}
           max={to || undefined}
           onChange={(e) => changeFilter(() => setFrom(e.target.value))}
@@ -260,7 +295,7 @@ export default function AdminAiTasks() {
           type="date"
           className="adm-input"
           style={{ width: 'auto' }}
-          aria-label="Đến ngày"
+          aria-label={t('admin.ai.toDate')}
           value={to}
           min={from || undefined}
           onChange={(e) => changeFilter(() => setTo(e.target.value))}
@@ -280,7 +315,7 @@ export default function AdminAiTasks() {
               })
             }
           >
-            Xóa bộ lọc
+            {t('admin.scores.clearFilters')}
           </Button>
         )}
       </Toolbar>
@@ -289,87 +324,108 @@ export default function AdminAiTasks() {
         <Table minWidth={1050}>
           <thead>
             <tr>
-              <th>Bản nhạc</th>
-              <th>Loại</th>
-              <th>Trạng thái</th>
-              <th>Tạo lúc</th>
-              <th className="adm-table__num">Chờ</th>
-              <th className="adm-table__num">Chạy</th>
-              <th className="adm-table__actions">Thao tác</th>
+              <th>{t('upload.review.tabs.score')}</th>
+              <th>{t('admin.ai.type')}</th>
+              <th>{t('admin.official.statusColumn')}</th>
+              <th>{t('admin.ai.createdAt')}</th>
+              <th className="adm-table__num">{t('admin.ai.wait')}</th>
+              <th className="adm-table__num">{t('admin.ai.run')}</th>
+              <th className="adm-table__actions">{t('scores.files.actions')}</th>
             </tr>
           </thead>
           <tbody>
             {!result && <TableState colSpan={7} loading />}
-            {result?.content.map((t) => {
-              const st = STATUS[t.status] ?? { label: t.status, tone: 'neutral' as Tone };
-              const err = errorText(t);
-              const running = t.status === 'PENDING' || t.status === 'PROCESSING';
+            {result?.content.map((task) => {
+              const st = {
+                label: STATUS_LABEL[task.status] ?? task.status,
+                tone: STATUS_TONE[task.status] ?? ('neutral' as Tone),
+              };
+              const err = errorText(task);
+              const running = task.status === 'PENDING' || task.status === 'PROCESSING';
               return (
-                <Fragment key={t.id}>
+                <Fragment key={task.id}>
                   <tr>
                     <td>
-                      <CellTitle sub={t.memberEmail ?? undefined}>
-                        {t.scoreId ? <Link to={`/admin/scores/${t.scoreId}`}>{t.scoreTitle}</Link> : '—'}
+                      <CellTitle sub={task.memberEmail ?? undefined}>
+                        {task.scoreId ? <Link to={`/admin/scores/${task.scoreId}`}>{task.scoreTitle}</Link> : '—'}
                       </CellTitle>
                     </td>
-                    <td className="adm-muted">{TASK_TYPE_LABELS[t.taskType] ?? t.taskType}</td>
+                    <td className="adm-muted">{TASK_TYPE_LABELS[task.taskType] ?? task.taskType}</td>
                     <td>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', alignItems: 'flex-start' }}>
+                      <div
+                        style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', alignItems: 'flex-start' }}
+                      >
                         <Badge tone={st.tone}>{st.label}</Badge>
-                        {running && t.step && (
+                        {running && task.step && (
                           <span className="adm-subtle" style={{ fontSize: 'var(--adm-text-xs)' }}>
-                            {STEP_LABELS[t.step] ?? t.step}
-                            {t.progress != null && t.progress > 0 ? ` · ${t.progress}%` : ''}
+                            {stepLabel(task.step)}
+                            {task.progress != null && task.progress > 0 ? ` · ${task.progress}%` : ''}
                           </span>
                         )}
                         {err && (
-                          <span style={{ color: 'var(--adm-danger)', fontSize: 'var(--adm-text-xs)', maxWidth: 260 }}>{err}</span>
+                          <span style={{ color: 'var(--adm-danger)', fontSize: 'var(--adm-text-xs)', maxWidth: 260 }}>
+                            {err}
+                          </span>
                         )}
                       </div>
                     </td>
-                    <td className="adm-nowrap adm-muted">{formatDateTime(t.createdAt)}</td>
-                    <td className="adm-table__num adm-muted">{formatDuration(t.waitSeconds)}</td>
-                    <td className="adm-table__num adm-muted">{formatDuration(t.runSeconds)}</td>
+                    <td className="adm-nowrap adm-muted">{formatDateTime(task.createdAt)}</td>
+                    <td className="adm-table__num adm-muted">{formatDuration(task.waitSeconds)}</td>
+                    <td className="adm-table__num adm-muted">{formatDuration(task.runSeconds)}</td>
                     <td className="adm-table__actions">
                       <div className="adm-table__actions-inner">
-                        <Button size="sm" variant="ghost" onClick={() => toggleDetail(t)} aria-expanded={openId === t.id}>
-                          {openId === t.id ? 'Ẩn' : 'Chi tiết'}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => toggleDetail(task)}
+                          aria-expanded={openId === task.id}
+                        >
+                          {openId === task.id ? t('admin.system.hide') : t('practice.history.details')}
                         </Button>
-                        {t.canRetry && (
-                          <Button size="sm" icon="refresh" disabled={busyId === t.id} onClick={() => retry(t)}>
-                            Chạy lại
+                        {task.canRetry && (
+                          <Button size="sm" icon="refresh" disabled={busyId === task.id} onClick={() => retry(task)}>
+                            {t('admin.ai.retry')}
                           </Button>
                         )}
-                        {t.canCancel && (
-                          <Button size="sm" variant="ghost" icon="x" disabled={busyId === t.id} onClick={() => cancel(t)}>
-                            Hủy
+                        {task.canCancel && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            icon="x"
+                            disabled={busyId === task.id}
+                            onClick={() => cancel(task)}
+                          >
+                            {t('common.cancel')}
                           </Button>
                         )}
                       </div>
                     </td>
                   </tr>
-                  {openId === t.id && (
+                  {openId === task.id && (
                     <tr className="adm-table__state">
                       <td colSpan={7} style={{ background: 'var(--adm-surface-muted)' }}>
                         {!detail ? (
-                          <span className="adm-muted">Đang tải chi tiết…</span>
+                          <span className="adm-muted">{t('admin.ai.loadingDetail')}</span>
                         ) : (
                           <div className="adm-grid-2" style={{ margin: 0 }}>
                             <DescriptionList
                               items={[
-                                ['Mã tác vụ', <span className="adm-code">{detail.id}</span>],
-                                ['Bước', detail.step ? (STEP_LABELS[detail.step] ?? detail.step) : '—'],
-                                ['Tiến độ', detail.progress != null ? `${detail.progress}%` : '—'],
-                                ['Số lần tự gửi lại', String(detail.retryCount ?? 0)],
-                                ['Bắt đầu', formatDateTime(detail.startedAt)],
-                                ['Kết thúc', formatDateTime(detail.finishedAt)],
-                                ['Lỗi gốc', detail.errorMessage ? <span className="adm-code">{detail.errorMessage}</span> : '—'],
+                                [t('admin.ai.taskId'), <span className="adm-code">{detail.id}</span>],
+                                [t('admin.ai.step'), detail.step ? stepLabel(detail.step) : '—'],
+                                [t('admin.ai.progress'), detail.progress != null ? `${detail.progress}%` : '—'],
+                                [t('admin.ai.autoRetries'), String(detail.retryCount ?? 0)],
+                                [t('admin.ai.startedAt'), formatDateTime(detail.startedAt)],
+                                [t('admin.ai.finishedAt'), formatDateTime(detail.finishedAt)],
+                                [
+                                  t('admin.ai.rootError'),
+                                  detail.errorMessage ? <span className="adm-code">{detail.errorMessage}</span> : '—',
+                                ],
                               ]}
                             />
                             <div style={{ display: 'grid', gap: '0.75rem', minWidth: 0 }}>
                               <div>
                                 <div className="adm-field__label" style={{ marginBottom: '0.3rem' }}>
-                                  Dữ liệu vào
+                                  {t('admin.ai.input')}
                                 </div>
                                 <pre className="sys-stack" style={{ maxHeight: 160 }}>
                                   {toJson(detail.inputData)}
@@ -377,7 +433,7 @@ export default function AdminAiTasks() {
                               </div>
                               <div>
                                 <div className="adm-field__label" style={{ marginBottom: '0.3rem' }}>
-                                  Kết quả
+                                  {t('admin.ai.result')}
                                 </div>
                                 <pre className="sys-stack" style={{ maxHeight: 200 }}>
                                   {toJson(detail.resultData)}
@@ -396,8 +452,8 @@ export default function AdminAiTasks() {
               <TableState
                 colSpan={7}
                 icon="cpu"
-                title="Không có tác vụ nào"
-                description={filtered ? 'Không có tác vụ khớp bộ lọc.' : undefined}
+                title={t('admin.ai.emptyTitle')}
+                description={filtered ? t('admin.ai.noMatch') : undefined}
               />
             )}
           </tbody>
@@ -407,7 +463,7 @@ export default function AdminAiTasks() {
             page={result.pageNumber}
             totalPages={result.totalPages}
             totalElements={result.totalElements}
-            unit="tác vụ"
+            unit={t('admin.dashboard.taskUnit')}
             onChange={(p) => {
               setOpenId(null);
               setPage(p);

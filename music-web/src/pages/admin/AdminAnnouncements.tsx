@@ -6,16 +6,22 @@ import { adminApi } from '../../services';
 import { MemberStatus } from '../../types';
 import type { AnnouncementAudience, Member } from '../../types';
 import { useDialog } from '../../components/ui/dialog-context';
+import { t } from '../../i18n/core';
 
 const MAX_LENGTH = 500;
 const MAX_SELECTED = 200;
 
-const AUDIENCES: { value: AnnouncementAudience; label: string; hint: string }[] = [
-  { value: 'ALL', label: 'Tất cả người dùng', hint: 'Mọi tài khoản đang hoạt động, kể cả admin' },
-  { value: 'USERS', label: 'Chỉ người dùng thường', hint: 'Tài khoản đang hoạt động không phải admin' },
-  { value: 'ADMINS', label: 'Chỉ quản trị viên', hint: 'ADMIN và SUPER ADMIN đang hoạt động' },
-  { value: 'SELECTED', label: 'Chọn người nhận', hint: `Chọn từng tài khoản (tối đa ${MAX_SELECTED} người)` },
-];
+const AUDIENCES: { value: AnnouncementAudience; label: string; hint: string }[] = (
+  ['ALL', 'USERS', 'ADMINS', 'SELECTED'] as const
+).map((value) => ({
+  value,
+  get label() {
+    return t(`admin.announcements.audience.${value}.label`);
+  },
+  get hint() {
+    return t(`admin.announcements.audience.${value}.hint`, { max: MAX_SELECTED });
+  },
+}));
 
 /** Admin: gửi thông báo chung, hiện ở chuông thông báo của người nhận (poll 30 giây một lần). */
 export default function AdminAnnouncements() {
@@ -50,7 +56,7 @@ export default function AdminAnnouncements() {
   const add = (m: Member) => {
     if (isSelected(m)) return;
     if (selected.length >= MAX_SELECTED) {
-      toast.warn(`Chỉ chọn tối đa ${MAX_SELECTED} người`);
+      toast.warn(t('admin.announcements.maxSelected', { max: MAX_SELECTED }));
       return;
     }
     setSelected((list) => [...list, m]);
@@ -59,7 +65,8 @@ export default function AdminAnnouncements() {
 
   const trimmed = message.trim();
   const baseLabel = AUDIENCES.find((a) => a.value === audience)?.label ?? '';
-  const audienceLabel = audience === 'SELECTED' ? `${selected.length} người đã chọn` : baseLabel;
+  const audienceLabel =
+    audience === 'SELECTED' ? t('admin.announcements.selectedCount', { count: selected.length }) : baseLabel;
   const canSend = !!trimmed && (audience !== 'SELECTED' || selected.length > 0);
 
   const send = async (e: React.FormEvent) => {
@@ -67,9 +74,9 @@ export default function AdminAnnouncements() {
     if (!canSend) return;
     // Gửi xong không thu hồi được, nên luôn hỏi lại
     const ok = await confirm({
-      title: 'Gửi thông báo?',
-      message: `Người nhận: ${audienceLabel}.\nThông báo không thể thu hồi sau khi gửi.`,
-      confirmLabel: 'Gửi thông báo',
+      title: t('admin.announcements.confirmTitle'),
+      message: t('admin.announcements.confirmMessage', { audience: audienceLabel }),
+      confirmLabel: t('admin.announcements.send'),
     });
     if (!ok) return;
     setSending(true);
@@ -80,13 +87,13 @@ export default function AdminAnnouncements() {
         audience === 'SELECTED' ? selected.map((m) => m.id) : undefined,
       );
       const n = res.data.result.recipients;
-      toast.success(`Đã gửi cho ${n} người`);
-      setLastSent(`Đã gửi cho ${n} người (${audienceLabel.toLowerCase()}).`);
+      toast.success(t('admin.announcements.sent', { count: n }));
+      setLastSent(t('admin.announcements.sentTo', { count: n, audience: audienceLabel.toLowerCase() }));
       setMessage('');
       setSelected([]);
       setSearch('');
     } catch (error) {
-      toast.error(errorMessage(error, 'Không gửi được thông báo'));
+      toast.error(errorMessage(error, t('admin.announcements.failed')));
     } finally {
       setSending(false);
     }
@@ -94,16 +101,13 @@ export default function AdminAnnouncements() {
 
   return (
     <>
-      <PageHeader
-        title="Gửi thông báo"
-        description="Thông báo hiện ở biểu tượng chuông của người nhận. Tài khoản bị khóa không nhận được."
-      />
+      <PageHeader title={t('admin.announcements.title')} description={t('admin.announcements.description')} />
 
       <div className="adm-grid-2" style={{ gridTemplateColumns: 'minmax(0, 3fr) minmax(0, 2fr)', alignItems: 'start' }}>
-        <Card title="Soạn thông báo">
+        <Card title={t('admin.announcements.compose')}>
           <form onSubmit={send}>
-            <Field label="Người nhận">
-              <div className="adm-choice-list" role="radiogroup" aria-label="Người nhận">
+            <Field label={t('admin.announcements.recipients')}>
+              <div className="adm-choice-list" role="radiogroup" aria-label={t('admin.announcements.recipients')}>
                 {AUDIENCES.map((a) => (
                   <label key={a.value} className={`adm-choice${audience === a.value ? ' adm-choice--active' : ''}`}>
                     <input
@@ -124,11 +128,15 @@ export default function AdminAnnouncements() {
             </Field>
 
             {audience === 'SELECTED' && (
-              <Field label="Tìm và thêm người nhận" htmlFor="ann-search" hint="Gõ ít nhất 2 ký tự của email hoặc tên">
+              <Field
+                label={t('admin.announcements.searchLabel')}
+                htmlFor="ann-search"
+                hint={t('admin.announcements.searchHint')}
+              >
                 <input
                   id="ann-search"
                   className="adm-input"
-                  placeholder="Email hoặc tên"
+                  placeholder={t('admin.announcements.searchPlaceholder')}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
@@ -145,16 +153,16 @@ export default function AdminAnnouncements() {
                               <span style={{ display: 'block', fontWeight: 500 }}>{m.fullName || m.email}</span>
                               {m.fullName && <span className="adm-subtle">{m.email}</span>}
                             </span>
-                            {locked && <Badge tone="danger">Đã khóa</Badge>}
+                            {locked && <Badge tone="danger">{t('admin.announcements.locked')}</Badge>}
                           </span>
                           <Button
                             size="sm"
                             icon={chosen ? 'check' : 'plus'}
                             disabled={locked || chosen}
-                            title={locked ? 'Tài khoản bị khóa không nhận được thông báo' : undefined}
+                            title={locked ? t('admin.announcements.lockedHint') : undefined}
                             onClick={() => add(m)}
                           >
-                            {chosen ? 'Đã chọn' : 'Thêm'}
+                            {chosen ? t('admin.announcements.chosen') : t('scores.playlistPicker.add')}
                           </Button>
                         </li>
                       );
@@ -162,11 +170,15 @@ export default function AdminAnnouncements() {
                   </ul>
                 )}
                 <div className="adm-chips" aria-live="polite" style={{ marginTop: '0.5rem' }}>
-                  {selected.length === 0 && <span className="adm-subtle">Chưa chọn ai</span>}
+                  {selected.length === 0 && <span className="adm-subtle">{t('admin.announcements.noneChosen')}</span>}
                   {selected.map((m) => (
                     <span key={m.id} className="adm-chip">
                       {m.email}
-                      <button type="button" aria-label={`Bỏ ${m.email}`} onClick={() => remove(m)}>
+                      <button
+                        type="button"
+                        aria-label={t('admin.announcements.removeOne', { email: m.email })}
+                        onClick={() => remove(m)}
+                      >
                         <Icon name="x" size={14} />
                       </button>
                     </span>
@@ -175,13 +187,17 @@ export default function AdminAnnouncements() {
               </Field>
             )}
 
-            <Field label="Nội dung" htmlFor="ann-message" hint={`${message.length}/${MAX_LENGTH} ký tự`}>
+            <Field
+              label={t('admin.announcements.content')}
+              htmlFor="ann-message"
+              hint={t('admin.announcements.chars', { used: message.length, max: MAX_LENGTH })}
+            >
               <textarea
                 id="ann-message"
                 className="adm-input"
                 rows={5}
                 maxLength={MAX_LENGTH}
-                placeholder="Ví dụ: Hệ thống bảo trì lúc 22:00 tối nay, có thể gián đoạn khoảng 15 phút."
+                placeholder={t('admin.announcements.example')}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
               />
@@ -192,13 +208,13 @@ export default function AdminAnnouncements() {
                 {lastSent}
               </span>
               <Button type="submit" variant="primary" icon="send" loading={sending} disabled={!canSend}>
-                Gửi thông báo
+                {t('admin.announcements.send')}
               </Button>
             </div>
           </form>
         </Card>
 
-        <Card title="Xem trước" description="Người nhận sẽ thấy trong chuông thông báo">
+        <Card title={t('admin.pending.preview')} description={t('admin.announcements.previewHint')}>
           <div
             style={{
               display: 'flex',
@@ -214,10 +230,10 @@ export default function AdminAnnouncements() {
             </span>
             <div style={{ minWidth: 0 }}>
               <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                {trimmed || <span className="adm-subtle">Nội dung thông báo sẽ hiện ở đây</span>}
+                {trimmed || <span className="adm-subtle">{t('admin.announcements.previewEmpty')}</span>}
               </div>
               <div className="adm-subtle" style={{ marginTop: '0.25rem', fontSize: 'var(--adm-text-xs)' }}>
-                Vừa xong
+                {t('common.time.justNow')}
               </div>
             </div>
           </div>
@@ -225,9 +241,9 @@ export default function AdminAnnouncements() {
             className="adm-muted"
             style={{ margin: '1rem 0 0', paddingLeft: '1.1rem', fontSize: 'var(--adm-text-sm)' }}
           >
-            <li>Gửi tới: {audienceLabel}</li>
-            <li>Không gửi cho chính bạn.</li>
-            <li>Không thu hồi được sau khi gửi.</li>
+            <li>{t('admin.announcements.noteTo', { audience: audienceLabel })}</li>
+            <li>{t('admin.announcements.noteSelf')}</li>
+            <li>{t('admin.announcements.noteFinal')}</li>
           </ul>
         </Card>
       </div>
