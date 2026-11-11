@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import type { DragEvent } from 'react';
+import { t } from '../../../i18n/core';
 
 interface Props {
   disabled?: boolean;
@@ -34,15 +35,15 @@ export default function UploadDropzone({ disabled, onFiles }: Props) {
           strokeLinejoin="round"
         />
       </svg>
-      <h3>Kéo thả bản nhạc vào đây</h3>
-      <p>1 file PDF (tối đa 20 trang) hoặc 1–20 ảnh PNG/JPG theo thứ tự trang, mỗi file ≤ 50MB</p>
+      <h3>{t('upload.dropzone.title')}</h3>
+      <p>{t('upload.dropzone.hint')}</p>
       <button
         type="button"
         className="sc-btn sc-btn--primary"
         disabled={disabled}
         onClick={() => inputRef.current?.click()}
       >
-        Chọn file
+        {t('upload.chooseFile')}
       </button>
       <input
         ref={inputRef}

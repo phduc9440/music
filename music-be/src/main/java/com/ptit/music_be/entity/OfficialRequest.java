@@ -28,7 +28,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.FieldDefaults;
 
-/** Lời xin của quản trị viên: đưa bản nhạc công khai của một người dùng vào kho score mẫu (chủ đồng ý mới sao chép). */
+/** Lời xin của quản trị viên: đưa bản nhạc công khai của một người dùng vào kho bản nhạc mẫu (chủ đồng ý mới sao chép). */
 @Entity
 @Table(name = "official_requests")
 @Getter

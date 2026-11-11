@@ -41,6 +41,6 @@ export const DialogContext = createContext<DialogApi | null>(null);
 /** Dùng trong component nằm dưới DialogProvider (đã gắn ở App). */
 export function useDialog(): DialogApi {
   const api = useContext(DialogContext);
-  if (!api) throw new Error('useDialog phải dùng bên trong DialogProvider');
+  if (!api) throw new Error('useDialog phải dùng bên trong DialogProvider'); // i18n-ignore: lỗi cho lập trình viên
   return api;
 }

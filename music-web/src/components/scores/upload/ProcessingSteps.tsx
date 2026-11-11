@@ -1,4 +1,5 @@
-import { OMR_STEPS, STEP_LATER_HINT } from '../../../utils/omr';
+import { t } from '../../../i18n/core';
+import { OMR_STEPS, stepLaterHint } from '../../../utils/omr';
 import type { StepState } from '../../../utils/omr';
 
 interface Props {
@@ -23,8 +24,8 @@ export default function ProcessingSteps({ states, activeNote }: Props) {
       {OMR_STEPS.map((step, index) => {
         const state = states[index] ?? 'pending';
         let note = '';
-        if (state === 'later') note = STEP_LATER_HINT;
-        else if (state === 'skipped') note = 'Không cần với ảnh';
+        if (state === 'later') note = stepLaterHint();
+        else if (state === 'skipped') note = t('upload.steps.skipped');
         else if (state === 'active') note = activeNote ?? '';
         return (
           <li

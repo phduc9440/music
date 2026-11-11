@@ -42,7 +42,7 @@ const MENU: { section: string; items: MenuItem[] }[] = [
     items: [
       { to: '/admin/scores', label: 'Quản lý bản nhạc', icon: 'music' },
       { to: '/admin/pending-scores', label: 'Chờ duyệt công khai', icon: 'clock', pendingBadge: true },
-      { to: '/admin/official-scores', label: 'Kho score mẫu', icon: 'library' },
+      { to: '/admin/official-scores', label: 'Kho bản nhạc mẫu', icon: 'library' },
       { to: '/admin/tags', label: 'Thể loại', icon: 'tag' },
       { to: '/admin/composers', label: 'Nhạc sĩ', icon: 'users' },
     ],
@@ -261,7 +261,7 @@ export default function AdminLayout() {
       <SiteFooter
         variant="app"
         columns={FOOTER_COLUMNS}
-        tip="Khu quản trị: kiểm duyệt nội dung công khai, kho score mẫu, thành viên và hệ thống."
+        tip="Khu quản trị: kiểm duyệt nội dung công khai, kho bản nhạc mẫu, thành viên và hệ thống."
       />
 
       <ChangePasswordModal isOpen={passwordOpen} onClose={() => setPasswordOpen(false)} />

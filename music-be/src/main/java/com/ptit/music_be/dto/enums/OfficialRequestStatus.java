@@ -1,6 +1,6 @@
 package com.ptit.music_be.dto.enums;
 
-/** Trạng thái lời xin đưa một bản nhạc vào kho score mẫu. */
+/** Trạng thái lời xin đưa một bản nhạc vào kho bản nhạc mẫu. */
 public enum OfficialRequestStatus {
     /** Đang chờ chủ sở hữu trả lời. */
     PENDING,

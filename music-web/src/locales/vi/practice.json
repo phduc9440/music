@@ -1,0 +1,88 @@
+{
+  "modes": {
+    "1": "Tự do",
+    "2": "Lặp đoạn",
+    "3": "Chấm điểm"
+  },
+  "durationMinutes": "{m} phút {s} giây",
+  "durationSeconds": "{s} giây",
+  "history": {
+    "loadFailed": "Không tải được lịch sử phiên tập",
+    "detailFailed": "Không tải được chi tiết phiên tập",
+    "deleteTitle": "Xóa phiên tập này?",
+    "deleteMessage": "\"{title}\" lúc {when}. Số liệu thống kê sẽ tính lại.",
+    "deleted": "Đã xóa phiên tập",
+    "deleteFailed": "Không xóa được phiên tập",
+    "title": "Lịch sử phiên tập",
+    "count": "{count} phiên",
+    "subtitle": "Thời gian, bài tập, % đúng và log lỗi",
+    "emptyTitle": "Chưa có phiên tập nào",
+    "emptyHint": "Các phiên luyện tập của bạn sẽ được lưu ở đây.",
+    "started": "Bắt đầu",
+    "score": "Bài tập",
+    "mode": "Chế độ",
+    "duration": "Thời lượng",
+    "accuracy": "% đúng",
+    "timing": "% đúng nhịp",
+    "details": "Chi tiết",
+    "sessionTitle": "Phiên tập: {title}",
+    "tempo": "Tốc độ",
+    "loop": "Đoạn lặp: ô nhịp {from} – {to}",
+    "totalNotes": "Tổng số nốt",
+    "breakdown": "Đúng giờ {perfect} · Sớm {early} · Trễ {late} · Sai cao độ {wrong} · Bỏ lỡ {missed}",
+    "points": "Điểm",
+    "completed": "Hoàn thành",
+    "errorLog": "Log lỗi ({count})",
+    "noErrors": "Không có lỗi nào được ghi lại.",
+    "deleteSession": "Xóa phiên"
+  },
+  "stats": {
+    "month": "Th{month}",
+    "streakFailed": "Không tải được chuỗi luyện tập",
+    "heatmapFailed": "Không tải được heatmap luyện tập",
+    "noPractice": "{date}: không tập",
+    "dayTooltip": "{date}: {sessions} phiên, {minutes} phút",
+    "subtitle": "Phiên tập từ 1 phút trở lên mới được tính là một ngày có tập.",
+    "days": "{count} ngày",
+    "current": "Chuỗi hiện tại",
+    "notToday": "hôm nay chưa tập",
+    "longest": "Chuỗi dài nhất",
+    "daysYear": "Ngày có tập trong 12 tháng qua",
+    "less": "Ít",
+    "more": "Nhiều"
+  },
+  "radar": {
+    "loadFailed": "Không tải được biểu đồ kỹ năng",
+    "speed": "Tốc độ ngón",
+    "diligence": "Chăm chỉ",
+    "title": "Kỹ năng",
+    "sessions": "{sessions} phiên trong {days} ngày gần nhất",
+    "noSessions": "Chưa có phiên tập nào trong {days} ngày gần nhất",
+    "notePitch": "% nốt chơi đúng cao độ.",
+    "noteTiming": "% nốt chơi đúng giờ.",
+    "noteSpeed": "tốc độ tập trung bình so với bản gốc (100% tốc độ gốc là 100 điểm).",
+    "noteDiligence": "% số ngày có tập trong kỳ."
+  },
+  "time": {
+    "DAY": {
+      "label": "Ngày",
+      "hint": "30 ngày gần nhất"
+    },
+    "WEEK": {
+      "label": "Tuần",
+      "hint": "12 tuần gần nhất"
+    },
+    "MONTH": {
+      "label": "Tháng",
+      "hint": "12 tháng gần nhất"
+    },
+    "monthLabel": "Th{month}/{year}",
+    "minutes": "{count} phút",
+    "hoursMinutes": "{h} giờ {m} phút",
+    "loadFailed": "Không tải được biểu đồ thời gian luyện tập",
+    "title": "Thời gian luyện tập",
+    "summary": "{hint}: tổng {total}, trung bình {average} mỗi {unit}",
+    "tooltip": "{time} ({sessions} phiên)",
+    "tooltipName": "Thời gian tập"
+  }
+}

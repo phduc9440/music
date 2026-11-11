@@ -78,8 +78,8 @@ class ScoreServiceImplAdminVisibilityTest {
     private void expectRejected(String current, Visibility target, ErrorCode code) {
         score.setVisibility(current);
         assertThatThrownBy(() -> service.setVisibilityByAdmin("s1", target, null))
-                .isInstanceOfSatisfying(AppException.class, e -> assertThat(e.getErrorCode())
-                        .isEqualTo(code));
+                .isInstanceOfSatisfying(
+                        AppException.class, e -> assertThat(e.getErrorCode()).isEqualTo(code));
         verify(scoreRepository, never()).save(any(Score.class));
         verify(notificationService, never()).notify(any(), any(), any(), any(), any());
         assertThat(score.getVisibility()).isEqualTo(current);
@@ -107,7 +107,7 @@ class ScoreServiceImplAdminVisibilityTest {
         ArgumentCaptor<Score> saved = ArgumentCaptor.forClass(Score.class);
         verify(scoreRepository).save(saved.capture());
         assertThat(saved.getValue().getVisibility()).isEqualTo("PUBLIC");
-        verify(notificationService).notify(any(), any(), any(), any(), any());
+        verify(notificationService).notify(any(), any(), any(), any(), any(), any());
     }
 
     @Test

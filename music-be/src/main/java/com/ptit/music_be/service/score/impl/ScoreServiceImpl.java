@@ -248,7 +248,8 @@ public class ScoreServiceImpl implements ScoreService {
                         me,
                         NotificationType.PUBLISH_REQUESTED,
                         score.getId(),
-                        "Có bản nhạc xin công khai: \"" + score.getTitle() + "\"");
+                        "Có bản nhạc xin công khai: \"" + score.getTitle() + "\"",
+                        NotificationService.params("title", score.getTitle()));
             }
         }
     }
@@ -345,7 +346,7 @@ public class ScoreServiceImpl implements ScoreService {
             score.setVisibility(Visibility.PUBLIC.name());
             score.setRejectReason(null);
         } else {
-            // Gỡ công khai: bản không còn public thì cũng rời kho score mẫu
+            // Gỡ công khai: bản không còn public thì cũng rời kho bản nhạc mẫu
             score.setVisibility(Visibility.PRIVATE.name());
             score.setRejectReason(blankToNull(reason));
             score.setIsOfficial(false);
@@ -363,7 +364,14 @@ public class ScoreServiceImpl implements ScoreService {
                     score.getId(),
                     "Bản nhạc \"" + score.getTitle() + "\""
                             + (makePublic ? " đã được duyệt công khai" : " đã bị quản trị viên gỡ công khai")
-                            + (!makePublic && saved.getRejectReason() != null ? ": " + saved.getRejectReason() : ""));
+                            + (!makePublic && saved.getRejectReason() != null ? ": " + saved.getRejectReason() : ""),
+                    NotificationService.params(
+                            "title",
+                            score.getTitle(),
+                            "variant",
+                            makePublic ? null : "unpublished",
+                            "reason",
+                            makePublic ? null : saved.getRejectReason()));
         }
         return toDetail(saved);
     }
@@ -496,7 +504,7 @@ public class ScoreServiceImpl implements ScoreService {
             score.setVisibility(Visibility.PRIVATE.name());
             score.setDeletedAt(LocalDateTime.now());
             score.setDeletedBy(actor.getId());
-            score.setDeleteReason("Gỡ khỏi kho score mẫu");
+            score.setDeleteReason("Gỡ khỏi kho bản nhạc mẫu");
         }
         Score saved = scoreRepository.save(score);
         // Rút lời xin đã nhận để quản trị viên có thể xin lại bản gốc sau này
@@ -542,7 +550,8 @@ public class ScoreServiceImpl implements ScoreService {
                 null,
                 NotificationType.PUBLISH_APPROVED,
                 score.getId(),
-                "Bản nhạc \"" + score.getTitle() + "\" đã được duyệt công khai");
+                "Bản nhạc \"" + score.getTitle() + "\" đã được duyệt công khai",
+                NotificationService.params("title", score.getTitle()));
         return toDetail(saved);
     }
 
@@ -560,7 +569,9 @@ public class ScoreServiceImpl implements ScoreService {
                 NotificationType.PUBLISH_REJECTED,
                 score.getId(),
                 "Bản nhạc \"" + score.getTitle() + "\" bị từ chối công khai"
-                        + (score.getRejectReason() == null ? "" : ": " + score.getRejectReason()));
+                        + (score.getRejectReason() == null ? "" : ": " + score.getRejectReason()),
+                NotificationService.params(
+                        "title", score.getTitle(), "variant", "rejected", "reason", score.getRejectReason()));
         return toDetail(saved);
     }
 
@@ -647,7 +658,7 @@ public class ScoreServiceImpl implements ScoreService {
         if (!scorePermissionService.canDelete(score, decision)) {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
-        // Bản trong kho score mẫu chỉ ADMIN được xóa (chủ sở hữu muốn xóa thì nhờ admin gỡ khỏi kho trước)
+        // Bản trong kho bản nhạc mẫu chỉ ADMIN được xóa (chủ sở hữu muốn xóa thì nhờ admin gỡ khỏi kho trước)
         if (Boolean.TRUE.equals(score.getIsOfficial()) && !SecurityUtils.isAdmin()) {
             throw new AppException(ErrorCode.SCORE_OFFICIAL_LOCKED);
         }
@@ -669,7 +680,7 @@ public class ScoreServiceImpl implements ScoreService {
         score.setDeletedAt(LocalDateTime.now());
         score.setDeletedBy(actor.getId());
         score.setDeleteReason(cleanReason);
-        // Yêu cầu công khai đang chờ bị hủy; bản bị ADMIN gỡ thì không còn công khai và rời kho score mẫu
+        // Yêu cầu công khai đang chờ bị hủy; bản bị ADMIN gỡ thì không còn công khai và rời kho bản nhạc mẫu
         if (!byOwner || Visibility.PENDING.name().equals(score.getVisibility())) {
             score.setVisibility(Visibility.PRIVATE.name());
         }

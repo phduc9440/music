@@ -17,14 +17,16 @@ import {
 import { clearPendingUpload, isImportBatch, peekPendingUpload } from '../../../utils/pendingUpload';
 import '../../../components/scores/scores.css';
 import './ScoreUpload.css';
+import { t } from '../../../i18n/core';
 
 const MAX_TAGS = 10; // khớp BE (mã lỗi 2302)
 const IMPORT_EXTENSIONS = ['musicxml', 'xml', 'mxl', 'mid', 'midi'];
 
 const validateImportFile = (file: File): string => {
-  if (!IMPORT_EXTENSIONS.includes(getExtension(file.name))) return 'Chỉ hỗ trợ .musicxml, .xml, .mxl, .mid, .midi';
-  if (file.size === 0) return 'File rỗng (0 byte)';
-  if (file.size > UPLOAD_MAX_FILE_BYTES) return `File quá lớn (tối đa ${UPLOAD_MAX_FILE_BYTES / 1024 / 1024}MB)`;
+  if (!IMPORT_EXTENSIONS.includes(getExtension(file.name))) return t('upload.import.unsupported');
+  if (file.size === 0) return t('upload.import.empty');
+  if (file.size > UPLOAD_MAX_FILE_BYTES)
+    return t('upload.import.tooLarge', { max: UPLOAD_MAX_FILE_BYTES / 1024 / 1024 });
   return '';
 };
 
@@ -83,7 +85,7 @@ export default function ScoreImport() {
         { file, title: titleTouched ? title : '', composer, tagIds },
         setProgress,
       );
-      toast.success('Đã nhập bản nhạc');
+      toast.success(t('upload.import.done'));
       navigate(`/scores/${res.data.result.scoreId}`, { replace: true });
     } catch (err) {
       toast.error(getUploadErrorMessage(err));
@@ -96,11 +98,11 @@ export default function ScoreImport() {
       <main className="sc-container sc-container--form">
         <header className="sc-lib-head">
           <div>
-            <h1>Nhập file MusicXML / MIDI</h1>
-            <p>Dùng khi bạn đã có file số, không cần số hóa từ ảnh hoặc PDF</p>
+            <h1>{t('upload.import.title')}</h1>
+            <p>{t('upload.import.subtitle')}</p>
           </div>
           <button type="button" className="sc-btn" disabled={uploading} onClick={() => navigate('/scores/upload')}>
-            Tải PDF / ảnh (OMR)
+            {t('upload.import.toOmr')}
           </button>
         </header>
 
@@ -119,15 +121,15 @@ export default function ScoreImport() {
                 if (!uploading) pick(Array.from(e.dataTransfer.files));
               }}
             >
-              <h3>Kéo thả file vào đây</h3>
-              <p>1 file .musicxml, .xml, .mxl hoặc .mid, .midi (≤ 50MB)</p>
+              <h3>{t('upload.import.dropTitle')}</h3>
+              <p>{t('upload.import.dropHint')}</p>
               <button
                 type="button"
                 className="sc-btn sc-btn--primary"
                 disabled={uploading}
                 onClick={() => inputRef.current?.click()}
               >
-                Chọn file
+                {t('upload.chooseFile')}
               </button>
               <input
                 ref={inputRef}
@@ -146,7 +148,7 @@ export default function ScoreImport() {
                   {file.name} · {formatSize(file.size)}
                 </span>
                 <button type="button" className="sc-btn sc-btn--sm" disabled={uploading} onClick={() => setFile(null)}>
-                  Bỏ file
+                  {t('upload.import.removeFile')}
                 </button>
               </div>
             )}
@@ -155,7 +157,7 @@ export default function ScoreImport() {
 
           <aside className="sc-upload__side">
             <label className="sc-label" htmlFor="im-title">
-              Tiêu đề
+              {t('upload.fieldTitle')}
             </label>
             <input
               id="im-title"
@@ -163,7 +165,7 @@ export default function ScoreImport() {
               value={title}
               maxLength={MAX_TITLE}
               disabled={uploading}
-              placeholder="Mặc định lấy từ file"
+              placeholder={t('upload.import.titlePlaceholder')}
               onChange={(e) => {
                 setTitle(e.target.value);
                 setTitleTouched(true);
@@ -171,7 +173,7 @@ export default function ScoreImport() {
             />
 
             <label className="sc-label sc-upload__field" htmlFor="im-composer">
-              Tác giả <span className="sc-upload__optional">(tùy chọn)</span>
+              {t('upload.fieldComposer')} <span className="sc-upload__optional">({t('scores.request.optional')})</span>
             </label>
             <input
               id="im-composer"
@@ -180,7 +182,7 @@ export default function ScoreImport() {
               value={composer}
               maxLength={MAX_COMPOSER}
               disabled={uploading}
-              placeholder="Mặc định lấy từ file MusicXML"
+              placeholder={t('upload.import.composerPlaceholder')}
               onChange={(e) => setComposer(e.target.value)}
             />
             <ComposerDatalist id="im-composer-list" />
@@ -188,12 +190,13 @@ export default function ScoreImport() {
             {allTags.length > 0 && (
               <>
                 <span className="sc-label sc-upload__field">
-                  Thể loại <span className="sc-upload__optional">(tùy chọn)</span>
+                  {t('scores.explore.tag')}{' '}
+                  <span className="sc-upload__optional">({t('scores.request.optional')})</span>
                   <span className="sc-counter">
                     {tagIds.length}/{MAX_TAGS}
                   </span>
                 </span>
-                <div className="sc-tagpick" role="group" aria-label="Thể loại">
+                <div className="sc-tagpick" role="group" aria-label={t('scores.explore.tag')}>
                   {allTags.map((t) => {
                     const active = tagIds.includes(t.id);
                     return (
@@ -218,12 +221,12 @@ export default function ScoreImport() {
                 <div className="sc-progress sc-progress--wide" role="progressbar" aria-valuenow={progress}>
                   <div className="sc-progress__bar" style={{ width: `${progress}%` }} />
                 </div>
-                <span>Đang tải lên... {progress}%</span>
+                <span>{t('upload.uploading', { progress })}</span>
               </div>
             )}
 
             <button type="submit" className="sc-btn sc-btn--primary sc-upload__submit" disabled={!canSubmit}>
-              {uploading ? 'Đang nhập...' : 'Nhập bản nhạc'}
+              {uploading ? t('upload.import.importing') : t('upload.import.start')}
             </button>
           </aside>
         </form>

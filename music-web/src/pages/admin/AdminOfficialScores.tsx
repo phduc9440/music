@@ -35,7 +35,7 @@ const REQUEST_STATUS: Record<
 };
 
 /**
- * Admin (mục 4.5): quản lý kho score mẫu. Bản của người dùng chỉ vào kho khi chủ đồng ý: admin gửi lời xin, chủ đồng ý
+ * Admin (mục 4.5): quản lý kho bản nhạc mẫu. Bản của người dùng chỉ vào kho khi chủ đồng ý: admin gửi lời xin, chủ đồng ý
  * thì hệ thống sao chép sang tài khoản hệ thống (bản gốc của chủ giữ nguyên) và ghi tên chủ là người phối.
  */
 export default function AdminOfficialScores() {
@@ -86,12 +86,12 @@ export default function AdminOfficialScores() {
       const ok = await confirm(
         adding
           ? {
-              title: `Xin đưa "${score.title}" vào kho score mẫu?`,
+              title: `Xin đưa "${score.title}" vào kho bản nhạc mẫu?`,
               message: `${score.ownerEmail} sẽ nhận thông báo. Họ đồng ý thì hệ thống sao chép một bản vào kho, ghi tên họ là người phối; bản của họ giữ nguyên.`,
               confirmLabel: 'Gửi lời xin',
             }
           : {
-              title: `Gỡ "${score.title}" khỏi kho score mẫu?`,
+              title: `Gỡ "${score.title}" khỏi kho bản nhạc mẫu?`,
               message: score.isOfficial
                 ? 'Bản trong kho vào thùng rác. Bản gốc của chủ sở hữu không bị ảnh hưởng.'
                 : 'Bản nhạc vẫn được giữ và vẫn công khai.',
@@ -103,7 +103,7 @@ export default function AdminOfficialScores() {
       try {
         if (adding) await officialRequestApi.request(score.id);
         else await scoreApi.unmarkOfficial(score.id);
-        toast.success(adding ? 'Đã gửi lời xin tới chủ sở hữu' : 'Đã gỡ khỏi kho score mẫu');
+        toast.success(adding ? 'Đã gửi lời xin tới chủ sở hữu' : 'Đã gỡ khỏi kho bản nhạc mẫu');
       } catch (error) {
         toast.error(errorMessage(error, 'Thao tác thất bại'));
       } finally {
@@ -141,8 +141,8 @@ export default function AdminOfficialScores() {
   return (
     <>
       <PageHeader
-        title="Kho score mẫu"
-        description="Bản nhạc chọn lọc cho người mới học. Người dùng xem ở mục “Kho score mẫu” trong thư viện."
+        title="Kho bản nhạc mẫu"
+        description="Bản nhạc chọn lọc cho người mới học. Người dùng xem ở mục “Kho bản nhạc mẫu” trong thư viện."
         actions={
           <SearchForm
             value={keywordInput}

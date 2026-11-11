@@ -1,0 +1,27 @@
+{
+  "updated": "Profile updated",
+  "updateFailed": "Couldn't update your profile",
+  "avatarUpdated": "Avatar updated",
+  "avatarFailed": "Couldn't upload the image",
+  "avatarRemoved": "Avatar removed",
+  "avatarRemoveFailed": "Couldn't remove the image",
+  "loadFailed": "Couldn't load your profile",
+  "subtitle": "Personal details shown to the people you share scores with.",
+  "changeAvatar": "Change photo",
+  "removeAvatar": "Remove photo",
+  "avatarHint": "JPG or PNG, up to 2MB",
+  "personal": "Personal details",
+  "phone": "Phone number",
+  "address": "Address",
+  "signInWith": "Signed in with",
+  "emailPassword": "Email / password",
+  "role": "Role",
+  "password": {
+    "mismatch": "The new passwords don't match",
+    "changed": "Password changed. Your other devices have been signed out.",
+    "failed": "Couldn't change the password",
+    "current": "Current password",
+    "new": "New password (at least 8 characters)",
+    "confirm": "Repeat the new password"
+  }
+}

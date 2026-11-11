@@ -3,6 +3,7 @@ import { downloadFile } from '../../../services';
 import { TASK_STATUS_LABELS, TASK_TYPE_LABELS, formatDateTime } from '../../../utils/score';
 import type { AiTaskInfo, ScoreFileInfo } from '../../../types';
 import { EXPORT_TASK_TYPES, stepLabel, translateTaskError } from '../../export/exportUtils';
+import { t as tr } from '../../../i18n/core';
 
 /** File do tác vụ xuất tạo ra (id nằm trong resultData.fileId), nếu còn trong danh sách file của bản nhạc. */
 const exportedFileOf = (task: AiTaskInfo, files: ScoreFileInfo[]): ScoreFileInfo | undefined => {
@@ -16,7 +17,7 @@ const exportedFileOf = (task: AiTaskInfo, files: ScoreFileInfo[]): ScoreFileInfo
 /** Tác vụ mới nhất của mỗi loại, kèm thanh tiến độ. Tác vụ xuất file đã xong có nút Tải xuống. */
 export default function TasksTable({ tasks, files = [] }: { tasks: AiTaskInfo[]; files?: ScoreFileInfo[] }) {
   if (tasks.length === 0) {
-    return <div className="sc-panel sc-panel--empty">Chưa có tác vụ nào.</div>;
+    return <div className="sc-panel sc-panel--empty">{tr('scores.tasks.none')}</div>;
   }
 
   return (
@@ -24,11 +25,11 @@ export default function TasksTable({ tasks, files = [] }: { tasks: AiTaskInfo[];
       <table className="sc-table">
         <thead>
           <tr>
-            <th>Tác vụ</th>
-            <th>Trạng thái</th>
-            <th>Tiến độ</th>
-            <th>Bắt đầu</th>
-            <th>Kết thúc</th>
+            <th>{tr('scores.tasks.task')}</th>
+            <th>{tr('scores.tasks.status')}</th>
+            <th>{tr('scores.tasks.progress')}</th>
+            <th>{tr('scores.tasks.started')}</th>
+            <th>{tr('scores.tasks.finished')}</th>
           </tr>
         </thead>
         <tbody>
@@ -40,7 +41,11 @@ export default function TasksTable({ tasks, files = [] }: { tasks: AiTaskInfo[];
               <tr key={t.id}>
                 <td>
                   <div className="sc-table__name">{TASK_TYPE_LABELS[t.taskType] ?? t.taskType}</div>
-                  {t.step && <div className="sc-table__sub">Bước: {isExport ? stepLabel(t.step) : t.step}</div>}
+                  {t.step && (
+                    <div className="sc-table__sub">
+                      {tr('scores.tasks.step')}: {isExport ? stepLabel(t.step) : t.step}
+                    </div>
+                  )}
                   {t.errorMessage && (
                     <div className="sc-table__error">
                       {isExport ? translateTaskError(t.errorMessage) : t.errorMessage}
@@ -51,11 +56,11 @@ export default function TasksTable({ tasks, files = [] }: { tasks: AiTaskInfo[];
                       className="sc-btn sc-btn--sm"
                       onClick={() =>
                         downloadFile(exported.downloadUrl, exported.originalFileName || exported.id).catch(() =>
-                          toast.error('Không tải được file'),
+                          toast.error(tr('scores.files.downloadFailed')),
                         )
                       }
                     >
-                      Tải xuống
+                      {tr('scores.tasks.download')}
                     </button>
                   )}
                 </td>

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { fetchFileBlob } from '../../../services';
 import { renderPdfPageToUrl } from '../../../utils/pdfRender';
 import { useOverlayClose } from '../common/useOverlayClose';
+import { t } from '../../../i18n/core';
 
 interface Props {
   /** Số trang đang xem (bắt đầu từ 1). */
@@ -74,33 +75,37 @@ export default function CompareModal({ pageNumber, processedUrl, originalUrl, or
         className="sc-modal sp-compare"
         role="dialog"
         aria-modal="true"
-        aria-label={`So sánh trang ${pageNumber}`}
+        aria-label={t('upload.compare.title', { page: pageNumber })}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sc-modal__header">
-          <h3>So sánh trang {pageNumber}</h3>
-          <button ref={closeButton} className="sc-icon-btn" onClick={onClose} aria-label="Đóng">
+          <h3>{t('upload.compare.title', { page: pageNumber })}</h3>
+          <button ref={closeButton} className="sc-icon-btn" onClick={onClose} aria-label={t('common.close')}>
             ×
           </button>
         </div>
 
-        {failed && <div className="sc-error">Không tải được ảnh trang này</div>}
-        {!failed && !loaded && <div className="sp-compare__loading">Đang tải ảnh...</div>}
+        {failed && <div className="sc-error">{t('upload.compare.loadFailed')}</div>}
+        {!failed && !loaded && <div className="sp-compare__loading">{t('upload.compare.loading')}</div>}
 
         {loaded && (
           <>
             <div className="sp-compare__labels">
-              <span>{canCompare ? 'Ảnh gốc' : ''}</span>
-              <span>Sau xử lý</span>
+              <span>{canCompare ? t('upload.compare.original') : ''}</span>
+              <span>{t('upload.compare.processed')}</span>
             </div>
             <div className="sp-compare__stage">
-              <img className="sp-compare__img" src={loaded.processed} alt={`Trang ${pageNumber} sau xử lý`} />
+              <img
+                className="sp-compare__img"
+                src={loaded.processed}
+                alt={t('upload.pageStrip.alt', { page: pageNumber })}
+              />
               {canCompare && (
                 <>
                   <img
                     className="sp-compare__img sp-compare__img--top"
                     src={loaded.original ?? ''}
-                    alt={`Trang ${pageNumber} ảnh gốc`}
+                    alt={t('upload.compare.originalAlt', { page: pageNumber })}
                     style={{ clipPath: `inset(0 ${100 - split}% 0 0)` }}
                   />
                   <span className="sp-compare__line" style={{ left: `${split}%` }} aria-hidden="true" />
@@ -111,12 +116,12 @@ export default function CompareModal({ pageNumber, processedUrl, originalUrl, or
                     max={100}
                     value={split}
                     onChange={(e) => setSplit(Number(e.target.value))}
-                    aria-label="Kéo để so sánh ảnh gốc và ảnh đã xử lý"
+                    aria-label={t('upload.compare.drag')}
                   />
                 </>
               )}
             </div>
-            {!canCompare && <p className="sp-compare__note">Không còn ảnh gốc để so sánh, đang hiện ảnh đã xử lý.</p>}
+            {!canCompare && <p className="sp-compare__note">{t('upload.compare.noOriginal')}</p>}
           </>
         )}
       </div>

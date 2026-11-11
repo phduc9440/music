@@ -93,7 +93,7 @@ class ScoreServiceImplOwnerVisibilityTest {
         assertThat(score.getVisibility()).isEqualTo("PENDING");
         assertThat(score.getRejectReason()).isNull();
         verify(notificationService)
-                .notifyAdmins(eq(owner), eq(NotificationType.PUBLISH_REQUESTED), eq("s1"), any());
+                .notifyAdmins(eq(owner), eq(NotificationType.PUBLISH_REQUESTED), eq("s1"), any(), any());
     }
 
     @Test

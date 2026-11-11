@@ -1,6 +1,6 @@
 /** Hàm và hằng số dùng chung cho các trang admin (để riêng khỏi file component). */
 
-import { formatDate as formatDateI18n, formatDateTime as formatDateTimeI18n, translateError } from '../../i18n/core';
+import { formatDate as formatDateI18n, formatDateTime as formatDateTimeI18n, t, translateError } from '../../i18n/core';
 
 export type Tone = 'neutral' | 'primary' | 'success' | 'warning' | 'danger' | 'violet';
 
@@ -11,7 +11,22 @@ export const formatDateTime = (iso?: string | null) => (iso ? formatDateTimeI18n
 export const formatDate = (iso?: string | null) => (iso ? formatDateI18n(iso) : '—');
 
 export const VISIBILITY: Record<string, { label: string; tone: Tone }> = {
-  PUBLIC: { label: 'Công khai', tone: 'success' },
-  PENDING: { label: 'Chờ duyệt', tone: 'warning' },
-  PRIVATE: { label: 'Riêng tư', tone: 'neutral' },
+  PUBLIC: {
+    get label() {
+      return t('scores.labels.visibilityShort.PUBLIC');
+    },
+    tone: 'success',
+  },
+  PENDING: {
+    get label() {
+      return t('scores.labels.visibilityShort.PENDING');
+    },
+    tone: 'warning',
+  },
+  PRIVATE: {
+    get label() {
+      return t('scores.labels.visibilityShort.PRIVATE');
+    },
+    tone: 'neutral',
+  },
 };

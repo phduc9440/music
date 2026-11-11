@@ -4,6 +4,7 @@ import { DialogContext } from './dialog-context';
 import type { AlertOptions, ConfirmOptions, DialogApi, PromptOptions } from './dialog-context';
 import Icon from './Icon';
 import './dialog.css';
+import { t } from '../../i18n/core';
 
 type Pending =
   | { kind: 'confirm'; options: ConfirmOptions; resolve: (value: boolean) => void }
@@ -113,7 +114,7 @@ export default function DialogProvider({ children }: { children: ReactNode }) {
                 className="ui-dialog__btn ui-dialog__btn--primary"
                 onClick={() => close(true)}
               >
-                {pending.options.closeLabel ?? 'Đóng'}
+                {pending.options.closeLabel ?? t('common.close')}
               </button>
             </div>
           </div>
@@ -172,7 +173,7 @@ export default function DialogProvider({ children }: { children: ReactNode }) {
               </div>
               <div className="ui-dialog__actions">
                 <button type="button" className="ui-dialog__btn" onClick={() => close(false)}>
-                  {o.cancelLabel ?? 'Hủy'}
+                  {o.cancelLabel ?? t('common.cancel')}
                 </button>
                 <button
                   ref={confirmRef}
@@ -180,7 +181,7 @@ export default function DialogProvider({ children }: { children: ReactNode }) {
                   className={`ui-dialog__btn ui-dialog__btn--${danger ? 'danger' : 'primary'}`}
                   disabled={blocked}
                 >
-                  {o.confirmLabel ?? 'Xác nhận'}
+                  {o.confirmLabel ?? t('common.confirm')}
                 </button>
               </div>
             </form>

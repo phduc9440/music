@@ -17,6 +17,7 @@ import { isTaskFinished } from '../../export/exportUtils';
 import { Icon } from '../../ui';
 import OfficialRequestBanner from './OfficialRequestBanner';
 import PublishToggle from './PublishToggle';
+import { t } from '../../../i18n/core';
 
 interface Props {
   score: ScoreDetail;
@@ -67,9 +68,9 @@ export default function ScoreHero({
     score.canManageSharing && score.accessLevel === 'OWNER' && !base.startsWith('/admin') && !score.isOfficial;
 
   const meta = [
-    score.composer || 'Chưa rõ tác giả',
-    score.ownerEmail ? `Chủ sở hữu: ${score.ownerEmail}` : null,
-    `Cập nhật ${formatDateTime(score.updatedAt)}`,
+    score.composer || t('scores.card.unknownComposer'),
+    score.ownerEmail ? t('scores.hero.owner', { name: score.ownerEmail }) : null,
+    t('scores.hero.updated', { when: formatDateTime(score.updatedAt) }),
   ].filter(Boolean);
 
   return (
@@ -80,9 +81,13 @@ export default function ScoreHero({
             <StatusBadge status={score.processingStatus} />
             <VisibilityBadge value={score.visibility} />
             {canChangeVisibility && <PublishToggle score={score} onChanged={onVisibilityChanged} />}
-            {score.isOfficial && <span className="sc-chip sc-chip--accent">Kho score mẫu</span>}
+            {score.isOfficial && (
+              <span className="sc-chip sc-chip--accent">{t('common.nav.items.officialLibrary')}</span>
+            )}
             {score.accessLevel && score.accessLevel !== 'OWNER' && (
-              <span className="sc-chip sc-chip--accent">Bạn là: {ACCESS_LEVEL_LABELS[score.accessLevel]}</span>
+              <span className="sc-chip sc-chip--accent">
+                {t('scores.hero.youAre', { role: ACCESS_LEVEL_LABELS[score.accessLevel] })}
+              </span>
             )}
           </div>
           <h1 className="sd-title">{score.title}</h1>
@@ -108,21 +113,21 @@ export default function ScoreHero({
             className={`sc-btn${ready ? '' : ' is-disabled'}`}
             to={`${base}/${score.id}/play`}
             aria-disabled={!ready}
-            title={ready ? undefined : 'Bản nhạc chưa có MusicXML để phát'}
+            title={ready ? undefined : t('scores.hero.noXmlPlay')}
             onClick={(e) => !ready && e.preventDefault()}
           >
             <Icon name="play" size={16} />
-            Phát
+            {t('scores.hero.play')}
           </Link>
           <Link
             className={`sc-btn sc-btn--primary${ready ? '' : ' is-disabled'}`}
             to={`${base}/${score.id}/edit`}
             aria-disabled={!ready}
-            title={ready ? undefined : 'Bản nhạc chưa có MusicXML để mở'}
+            title={ready ? undefined : t('scores.hero.noXmlOpen')}
             onClick={(e) => !ready && e.preventDefault()}
           >
             <Icon name={score.canEdit ? 'edit' : 'eye'} size={16} />
-            {score.canEdit ? 'Mở trình chỉnh sửa' : 'Xem bản nhạc'}
+            {score.canEdit ? t('scores.hero.openEditor') : t('scores.hero.viewScore')}
           </Link>
         </div>
       </div>
@@ -131,38 +136,35 @@ export default function ScoreHero({
       {score.myOriginalScoreId && (
         <div className="sd-alert sd-alert--info" role="status">
           <Icon name="library" size={16} />
-          <span>
-            Đây là bản sao trong kho score mẫu, ghi bạn là người phối. Bản gốc của bạn vẫn là của bạn và bạn vẫn sửa,
-            chia sẻ, xóa được như trước.
-          </span>
-          <Link to={`/scores/${score.myOriginalScoreId}`}>Mở bản của tôi →</Link>
+          <span>{t('scores.hero.officialCopy')}</span>
+          <Link to={`/scores/${score.myOriginalScoreId}`}>{t('scores.hero.openMine')} →</Link>
         </div>
       )}
 
       {processing && (
         <div className="sd-alert sd-alert--info" role="status">
           <Icon name="clock" size={16} />
-          <span>Bản nhạc đang được số hóa.</span>
-          <Link to={`${base}/${score.id}/processing`}>Xem tiến độ →</Link>
+          <span>{t('scores.hero.digitizing')}</span>
+          <Link to={`${base}/${score.id}/processing`}>{t('scores.hero.viewProgress')} →</Link>
         </div>
       )}
       {score.processingStatus === 'COMPLETED' && score.sourceType === 'OMR' && (
         <div className="sd-alert sd-alert--info">
           <Icon name="check" size={16} />
-          <span>Số hóa xong. Nên xem lại kết quả trước khi dùng.</span>
-          <Link to={`${base}/${score.id}/review`}>Xem kết quả số hóa →</Link>
+          <span>{t('scores.hero.digitized')}</span>
+          <Link to={`${base}/${score.id}/review`}>{t('scores.hero.viewResult')} →</Link>
         </div>
       )}
       {score.processingStatus === 'FAILED' && failureReason && (
         <div className="sd-alert sd-alert--danger" role="alert">
           <Icon name="alert" size={16} />
-          <span>Xử lý thất bại: {failureReason}</span>
+          <span>{t('scores.hero.failed', { reason: failureReason })}</span>
         </div>
       )}
       {score.visibility === 'PRIVATE' && score.processingStatus !== 'FAILED' && score.rejectReason && (
         <div className="sd-alert sd-alert--warning" role="alert">
           <Icon name="alert" size={16} />
-          <span>Yêu cầu công khai bị từ chối: {score.rejectReason}</span>
+          <span>{t('scores.hero.rejected', { reason: score.rejectReason })}</span>
         </div>
       )}
     </header>
@@ -180,26 +182,35 @@ export function ScorePreview({ score }: { score: ScoreDetail }) {
         <span className="sd-preview__empty-icon">
           <Icon name="music" size={22} />
         </span>
-        <strong>Chưa có ảnh xem trước</strong>
-        <span>Bản nhạc nhập từ file không có ảnh trang.{ready ? ' Mở bản nhạc để xem nốt.' : ''}</span>
+        <strong>{t('scores.hero.noPreview')}</strong>
+        <span>
+          {t('scores.hero.noPreviewHint')}
+          {ready ? ` ${t('scores.hero.noPreviewOpen')}` : ''}
+        </span>
         {ready && (
           <Link to={`${base}/${score.id}/edit`} className="sc-btn sc-btn--sm">
             <Icon name="eye" size={14} />
-            Mở bản nhạc
+            {t('scores.hero.openScore')}
           </Link>
         )}
       </section>
     );
   }
-  const image = <AuthImage src={score.thumbnailUrl} alt={`Trang 1 của ${score.title}`} className="sd-preview__img" />;
+  const image = (
+    <AuthImage
+      src={score.thumbnailUrl}
+      alt={t('scores.hero.pageOneAlt', { title: score.title })}
+      className="sd-preview__img"
+    />
+  );
   return (
     <section className="sd-card sd-preview">
       {ready ? (
-        <Link to={`${base}/${score.id}/edit`} className="sd-preview__link" title="Mở bản nhạc">
+        <Link to={`${base}/${score.id}/edit`} className="sd-preview__link" title={t('scores.hero.openScore')}>
           {image}
           <span className="sd-preview__hint">
             <Icon name="eye" size={16} />
-            Mở bản nhạc
+            {t('scores.hero.openScore')}
           </span>
         </Link>
       ) : (
@@ -219,19 +230,19 @@ export function ScoreSidebar({
 }: Omit<Props, 'onConverted' | 'onVisibilityChanged'>) {
   const base = useScoreBase();
   const highlights: [string, string][] = [
-    ['Ô nhịp', score.measureCount?.toString() ?? '—'],
-    ['Trang', score.pageCount?.toString() ?? '—'],
-    ['Đánh giá', score.averageRating != null ? `${score.averageRating.toFixed(1)}★` : '—'],
+    [t('scores.hero.measures'), score.measureCount?.toString() ?? '—'],
+    [t('scores.hero.pages'), score.pageCount?.toString() ?? '—'],
+    [t('scores.hero.rating'), score.averageRating != null ? `${score.averageRating.toFixed(1)}★` : '—'],
   ];
   const facts: [string, React.ReactNode][] = [
-    ['Khóa / dấu hóa', score.keySignature || '—'],
-    ['Nhịp', score.timeSignature || '—'],
+    [t('scores.hero.key'), score.keySignature || '—'],
+    [t('scores.hero.timeSignature'), score.timeSignature || '—'],
     ['Tempo', score.tempoBpm ? `${score.tempoBpm} BPM` : '—'],
-    ['Độ khó', score.difficulty ? DIFFICULTY_LABELS[score.difficulty] : '—'],
-    ['Nguồn', score.sourceType ? SOURCE_LABELS[score.sourceType] : '—'],
-    ['Lượt đánh giá', `${score.ratingCount ?? 0}`],
+    [t('scores.hero.difficulty'), score.difficulty ? DIFFICULTY_LABELS[score.difficulty] : '—'],
+    [t('scores.hero.source'), score.sourceType ? SOURCE_LABELS[score.sourceType] : '—'],
+    [t('scores.hero.ratingCount'), `${score.ratingCount ?? 0}`],
     [
-      'Thể loại',
+      t('scores.explore.tag'),
       score.tags && score.tags.length > 0 ? (
         <span className="sd-tags">
           {score.tags.map((t) => (
@@ -253,7 +264,7 @@ export function ScoreSidebar({
   return (
     <aside className="sd-side">
       <section className="sd-card">
-        <h2 className="sd-card__title">Thông tin</h2>
+        <h2 className="sd-card__title">{t('scores.hero.info')}</h2>
         <div className="sd-highlights">
           {highlights.map(([label, value]) => (
             <div key={label} className="sd-highlight">
@@ -274,37 +285,37 @@ export function ScoreSidebar({
 
       {score.studyNotes && (
         <section className="sd-card">
-          <h2 className="sd-card__title">Ghi chú luyện tập</h2>
+          <h2 className="sd-card__title">{t('scores.hero.studyNotes')}</h2>
           <p className="sd-notes">{score.studyNotes}</p>
         </section>
       )}
 
       {hasManage && (
         <section className="sd-card">
-          <h2 className="sd-card__title">Quản lý</h2>
+          <h2 className="sd-card__title">{t('scores.hero.manage')}</h2>
           <div className="sd-manage">
             {score.canManageSharing && (
               <button type="button" className="sd-manage__item" onClick={onShare}>
                 <Icon name="share" size={16} />
-                Chia sẻ
+                {t('scores.hero.share')}
               </button>
             )}
             {canRequestEdit && (
               <button type="button" className="sd-manage__item" onClick={onRequestEdit}>
                 <Icon name="key" size={16} />
-                Xin quyền chỉnh sửa
+                {t('scores.detail.requestEditTitle')}
               </button>
             )}
             {score.canEdit && (
               <button type="button" className="sd-manage__item" onClick={onEdit}>
                 <Icon name="edit" size={16} />
-                Sửa thông tin
+                {t('scores.hero.editInfo')}
               </button>
             )}
             {score.canDelete && (
               <button type="button" className="sd-manage__item sd-manage__item--danger" onClick={onDelete}>
                 <Icon name="trash" size={16} />
-                Xóa bản nhạc
+                {t('scores.hero.delete')}
               </button>
             )}
           </div>

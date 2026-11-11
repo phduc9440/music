@@ -148,6 +148,10 @@ export function labelMap<K extends string | number>(prefix: string, keys: readon
 /** Mã ngôn ngữ cho Intl. */
 const intlLocale = (): string => (current === 'vi' ? 'vi-VN' : 'en-US');
 
+/** Tên tháng viết ngắn theo ngôn ngữ đang dùng (month: 0 – 11), dùng cho nhãn biểu đồ. */
+export const monthShortName = (month: number): string =>
+  new Intl.DateTimeFormat(intlLocale(), { month: 'short' }).format(new Date(2000, month, 1));
+
 export const formatNumber = (value: number): string => new Intl.NumberFormat(intlLocale()).format(value);
 
 export const formatDate = (value: string | number | Date): string => new Date(value).toLocaleDateString(intlLocale());

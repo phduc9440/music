@@ -29,8 +29,15 @@ public class ScoreTrashedNotificationListener {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void onTrashedByAdmin(ScoreTrashedByAdminEvent event) {
         try {
-            memberRepository.findById(event.ownerId()).ifPresent(owner -> notificationService.notify(
-                    owner, null, NotificationType.SCORE_TRASHED_BY_ADMIN, event.scoreId(), message(event)));
+            memberRepository
+                    .findById(event.ownerId())
+                    .ifPresent(owner -> notificationService.notify(
+                            owner,
+                            null,
+                            NotificationType.SCORE_TRASHED_BY_ADMIN,
+                            event.scoreId(),
+                            message(event),
+                            NotificationService.params("title", event.scoreTitle(), "reason", event.reason())));
         } catch (RuntimeException e) {
             // Thông báo là phần phụ: không để lỗi ở đây làm hỏng thao tác đã commit
             log.warn("Không gửi được thông báo xóa bản nhạc {}: {}", event.scoreId(), e.getMessage());

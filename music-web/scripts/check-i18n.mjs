@@ -69,7 +69,10 @@ for (const key of en.keys()) {
 
 // Tham số {name} phải giống nhau giữa hai ngôn ngữ (không tính khóa số nhiều, vì mỗi dạng có thể bỏ {count})
 const params = (text) => [...text.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort().join(',');
+// Ngoại lệ có chủ đích: mỗi ngôn ngữ dùng một tham số khác nhau của cùng lời gọi (ví dụ tháng "Th3" và "Mar")
+const PARAM_EXCEPTIONS = new Set(['practice.stats.month', 'practice.time.monthLabel']);
 for (const [key, text] of vi) {
+  if (PARAM_EXCEPTIONS.has(key)) continue;
   if (en.has(key) && params(text) !== params(en.get(key))) {
     fail(`Tham số khác nhau giữa vi và en: ${key} (vi: {${params(text)}}, en: {${params(en.get(key))}})`);
   }

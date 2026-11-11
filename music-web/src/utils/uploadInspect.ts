@@ -1,5 +1,6 @@
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { UPLOAD_MAX_IMAGE_PIXELS, UPLOAD_MAX_PDF_PAGES, UPLOAD_MIN_IMAGE_SIDE, getExtension, isPdf } from './score';
+import { t } from '../i18n/core';
 
 /**
  * Kiểm tra nội dung file ngay ở trình duyệt trước khi upload (doc mục 2.1), khớp với kiểm tra của server:
@@ -49,17 +50,22 @@ export const inspectPdf = async (file: File): Promise<FileInspection> => {
     doc = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
   } catch (err) {
     const name = (err as { name?: string }).name;
-    return { error: name === 'PasswordException' ? 'PDF đặt mật khẩu' : 'Không mở được PDF (file hỏng?)' };
+    return {
+      error: name === 'PasswordException' ? t('upload.inspect.pdfPassword') : t('upload.inspect.pdfUnreadable'),
+    };
   }
 
   try {
     // PDF chỉ khóa quyền (owner password) vẫn mở được nhưng server từ chối, nên chặn luôn ở đây
     const { info } = await doc.getMetadata();
     if ((info as { EncryptFilterName?: string } | undefined)?.EncryptFilterName) {
-      return { pageCount: doc.numPages, error: 'PDF bị mã hóa, hãy bỏ mã hóa rồi tải lại' };
+      return { pageCount: doc.numPages, error: t('upload.inspect.pdfEncrypted') };
     }
     if (doc.numPages < 1 || doc.numPages > UPLOAD_MAX_PDF_PAGES) {
-      return { pageCount: doc.numPages, error: `PDF có ${doc.numPages} trang, tối đa ${UPLOAD_MAX_PDF_PAGES} trang` };
+      return {
+        pageCount: doc.numPages,
+        error: t('upload.inspect.pdfPages', { pages: doc.numPages, max: UPLOAD_MAX_PDF_PAGES }),
+      };
     }
 
     // Vẽ trang 1 ra canvas nhỏ làm ảnh xem trước; lỗi vẽ thì vẫn cho tải lên
@@ -92,17 +98,20 @@ export const inspectImage = async (file: File): Promise<FileInspection> => {
     preview = await readAsDataUrl(file);
     img = await loadImage(preview);
   } catch {
-    return { error: 'Không đọc được ảnh (file hỏng?)' };
+    return { error: t('upload.inspect.imageUnreadable') };
   }
   const width = img.naturalWidth;
   const height = img.naturalHeight;
   const base = { preview, width, height };
   if (Math.min(width, height) < UPLOAD_MIN_IMAGE_SIDE) {
-    return { ...base, error: `Ảnh quá nhỏ: cạnh ngắn ${Math.min(width, height)}px, cần ≥ ${UPLOAD_MIN_IMAGE_SIDE}px` };
+    return {
+      ...base,
+      error: t('upload.inspect.imageSmall', { side: Math.min(width, height), min: UPLOAD_MIN_IMAGE_SIDE }),
+    };
   }
   if (width * height > UPLOAD_MAX_IMAGE_PIXELS) {
     const mp = ((width * height) / 1_000_000).toFixed(1);
-    return { ...base, error: `Ảnh quá lớn: ${mp} megapixel, tối đa ${UPLOAD_MAX_IMAGE_PIXELS / 1_000_000} megapixel` };
+    return { ...base, error: t('upload.inspect.imageLarge', { mp, max: UPLOAD_MAX_IMAGE_PIXELS / 1_000_000 }) };
   }
   return { ...base, error: '' };
 };

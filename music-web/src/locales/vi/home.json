@@ -75,7 +75,7 @@
     "pendingAccess": "{name} xin quyền {level}",
     "someone": "Ai đó",
     "accessGeneric": "truy cập",
-    "pendingOfficial": "{name} xin đưa vào kho score mẫu",
+    "pendingOfficial": "{name} xin đưa vào kho bản nhạc mẫu",
     "adminName": "Quản trị viên",
     "updated": "cập nhật {when}",
     "loadFailedTitle": "Không tải được trang chủ",
@@ -99,7 +99,7 @@
     "awaitingReview": "{count} bản chờ duyệt công khai",
     "suggestion": "Gợi ý luyện tập hôm nay",
     "suggestContinue": "Tập tiếp bài gần nhất",
-    "suggestOfficial": "Bài dễ trong kho score mẫu",
+    "suggestOfficial": "Bài dễ trong kho bản nhạc mẫu",
     "practiceNow": "Tập ngay",
     "suggestEmpty": "Chưa có gợi ý. Mở {link} để chọn bài đầu tiên.",
     "quickLinks": "Lối tắt"

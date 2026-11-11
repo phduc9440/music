@@ -26,7 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ApplicationInitConfig {
 
-    /** Tài khoản gốc: SUPER_ADMIN và cũng là chủ sở hữu các bản nhạc của kho score mẫu. */
+    /** Tài khoản gốc: SUPER_ADMIN và cũng là chủ sở hữu các bản nhạc của kho bản nhạc mẫu. */
     public static final String ROOT_ADMIN_EMAIL = "admin@music.com";
 
     PasswordEncoder passwordEncoder;

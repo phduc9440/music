@@ -3,6 +3,8 @@ import { toast } from 'react-toastify';
 import { scoreApi } from '../../../services';
 import Modal from '../common/Modal';
 import { getErrorMessage } from '../../../utils/score';
+import { t } from '../../../i18n/core';
+import Rich from '../../../i18n/Rich';
 
 interface Props {
   scoreId: string;
@@ -27,32 +29,31 @@ export default function DeleteScoreModal({ scoreId, title, moderating = false, o
     setError('');
     try {
       await scoreApi.remove(scoreId, moderating ? reason.trim() : undefined);
-      toast.success('Đã chuyển bản nhạc vào thùng rác');
+      toast.success(t('scores.delete.done'));
       onDeleted();
     } catch (err) {
-      setError(getErrorMessage(err, 'Không xóa được, vui lòng thử lại'));
+      setError(getErrorMessage(err, t('scores.trash.purgeFailed')));
     } finally {
       setDeleting(false);
     }
   };
 
   return (
-    <Modal title="Xóa bản nhạc" onClose={onClose}>
+    <Modal title={t('scores.hero.delete')} onClose={onClose}>
       <p className="sc-delete__text">
-        Chuyển vào thùng rác. Bản nhạc sẽ bị xóa hẳn sau 30 ngày, trong thời gian đó chủ sở hữu có thể khôi phục. Gõ{' '}
-        <code>{title}</code> để xác nhận.
+        <Rich text={t('scores.delete.text', { title })} />
       </p>
       <input
         className="sc-input"
         value={typed}
         onChange={(e) => setTyped(e.target.value)}
-        placeholder="Nhập lại tên bản nhạc"
+        placeholder={t('scores.trash.retype')}
         autoFocus
       />
       {moderating && (
         <>
           <label className="sc-label" htmlFor="sc-delete-reason">
-            Lý do (gửi tới chủ sở hữu)
+            {t('scores.delete.reason')}
             <span className="sc-counter">
               {reason.length}/{MAX_REASON}
             </span>
@@ -70,14 +71,14 @@ export default function DeleteScoreModal({ scoreId, title, moderating = false, o
       {error && <div className="sc-error">{error}</div>}
       <div className="sc-modal__actions">
         <button className="sc-btn" onClick={onClose} disabled={deleting}>
-          Hủy
+          {t('common.cancel')}
         </button>
         <button
           className="sc-btn sc-btn--danger-solid"
           onClick={handleDelete}
           disabled={deleting || typed.trim() !== title.trim()}
         >
-          {deleting ? 'Đang chuyển...' : 'Chuyển vào thùng rác'}
+          {deleting ? t('scores.delete.moving') : t('scores.delete.move')}
         </button>
       </div>
     </Modal>

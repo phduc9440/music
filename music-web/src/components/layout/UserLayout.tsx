@@ -27,7 +27,7 @@ export default function UserLayout() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const { pathname, state } = useLocation();
-  // Bản nhạc mở từ Khám phá, Kho score mẫu... vẫn tô sáng mục đó thay vì nhảy về Thư viện
+  // Bản nhạc mở từ Khám phá, Kho bản nhạc mẫu... vẫn tô sáng mục đó thay vì nhảy về Thư viện
   const navPath = navContextPath(pathname, state);
   const [me, setMe] = useState<Member | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);

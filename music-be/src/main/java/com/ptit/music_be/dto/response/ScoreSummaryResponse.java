@@ -30,7 +30,7 @@ public class ScoreSummaryResponse {
     /** PRIVATE / PUBLIC (xem Visibility). */
     String visibility;
 
-    /** Có nằm trong kho score mẫu không (trang admin dùng). */
+    /** Có nằm trong kho bản nhạc mẫu không (trang admin dùng). */
     Boolean isOfficial;
 
     Integer measureCount;

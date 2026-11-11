@@ -75,7 +75,8 @@ public class ScoreReviewServiceImpl implements ScoreReviewService {
                     me,
                     NotificationType.NEW_REVIEW,
                     scoreId,
-                    who + " đã nhận xét bản nhạc \"" + score.getTitle() + "\"");
+                    who + " đã nhận xét bản nhạc \"" + score.getTitle() + "\"",
+                    NotificationService.params("name", who, "title", score.getTitle()));
         }
         reviewRepository.flush();
         return toResponse(score);

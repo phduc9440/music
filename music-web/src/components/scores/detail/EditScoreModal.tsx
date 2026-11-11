@@ -6,6 +6,7 @@ import { MAX_COMPOSER, MAX_NOTES, MAX_TITLE, getErrorMessage } from '../../../ut
 import Modal from '../common/Modal';
 import ComposerDatalist from '../../composers/ComposerDatalist';
 import type { Difficulty, ScoreDetail, Tag, Visibility } from '../../../types';
+import { t } from '../../../i18n/core';
 
 const MAX_TAGS = 10; // khớp BE (mã lỗi 2302)
 
@@ -34,7 +35,7 @@ export default function EditScoreModal({ score, onClose, onSaved }: Props) {
     tagApi
       .list()
       .then((res) => setAllTags(res.data.result))
-      .catch(() => setError('Không tải được danh sách thể loại'));
+      .catch(() => setError(t('scores.edit.tagsFailed')));
   }, []);
 
   const toggleTag = (id: string) =>
@@ -43,10 +44,10 @@ export default function EditScoreModal({ score, onClose, onSaved }: Props) {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     // Validate phía client trước khi gọi API (BE vẫn validate lại)
-    if (!title.trim()) return setError('Tên bản nhạc không được để trống');
-    if (title.length > MAX_TITLE) return setError(`Tên tối đa ${MAX_TITLE} ký tự`);
-    if (composer.length > MAX_COMPOSER) return setError(`Tác giả tối đa ${MAX_COMPOSER} ký tự`);
-    if (studyNotes.length > MAX_NOTES) return setError(`Ghi chú tối đa ${MAX_NOTES} ký tự`);
+    if (!title.trim()) return setError(t('scores.edit.titleRequired'));
+    if (title.length > MAX_TITLE) return setError(t('scores.edit.titleMax', { max: MAX_TITLE }));
+    if (composer.length > MAX_COMPOSER) return setError(t('scores.edit.composerMax', { max: MAX_COMPOSER }));
+    if (studyNotes.length > MAX_NOTES) return setError(t('scores.edit.notesMax', { max: MAX_NOTES }));
 
     setError('');
     setSaving(true);
@@ -66,20 +67,20 @@ export default function EditScoreModal({ score, onClose, onSaved }: Props) {
       // Chỉ gọi API thể loại khi người dùng có đổi lựa chọn
       const tagsChanged = tagIds.length !== initialTagIds.length || tagIds.some((id) => !initialTagIds.includes(id));
       if (tagsChanged) saved = (await scoreApi.updateTags(score.id, tagIds)).data.result;
-      toast.success('Đã lưu thông tin bản nhạc');
+      toast.success(t('scores.edit.saved'));
       onSaved(saved);
     } catch (err) {
-      setError(getErrorMessage(err, 'Không lưu được, vui lòng thử lại'));
+      setError(getErrorMessage(err, t('scores.edit.saveFailed')));
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <Modal title="Sửa thông tin bản nhạc" onClose={onClose}>
+    <Modal title={t('scores.edit.title')} onClose={onClose}>
       <form onSubmit={handleSubmit}>
         <label className="sc-label" htmlFor="sc-title">
-          Tên bản nhạc *
+          {t('scores.edit.scoreTitle')}
         </label>
         <input
           id="sc-title"
@@ -91,7 +92,7 @@ export default function EditScoreModal({ score, onClose, onSaved }: Props) {
         />
 
         <label className="sc-label" htmlFor="sc-composer">
-          Tác giả
+          {t('scores.edit.composer')}
         </label>
         <input
           id="sc-composer"
@@ -104,7 +105,7 @@ export default function EditScoreModal({ score, onClose, onSaved }: Props) {
         <ComposerDatalist id="sc-composer-list" />
 
         <label className="sc-label" htmlFor="sc-difficulty">
-          Độ khó
+          {t('scores.hero.difficulty')}
         </label>
         <select
           id="sc-difficulty"
@@ -112,17 +113,17 @@ export default function EditScoreModal({ score, onClose, onSaved }: Props) {
           value={difficulty}
           onChange={(e) => setDifficulty(e.target.value as Difficulty | '')}
         >
-          <option value="">-- Không đổi --</option>
-          <option value="EASY">Dễ</option>
-          <option value="MEDIUM">Trung bình</option>
-          <option value="HARD">Khó</option>
-          <option value="EXPERT">Chuyên gia</option>
+          <option value="">{t('scores.edit.keep')}</option>
+          <option value="EASY">{t('scores.labels.difficulty.EASY')}</option>
+          <option value="MEDIUM">{t('scores.labels.difficulty.MEDIUM')}</option>
+          <option value="HARD">{t('scores.labels.difficulty.HARD')}</option>
+          <option value="EXPERT">{t('scores.labels.difficulty.EXPERT')}</option>
         </select>
 
         {score.canDelete && (
           <>
             <label className="sc-label" htmlFor="sc-visibility">
-              Hiển thị
+              {t('scores.edit.visibility')}
             </label>
             <select
               id="sc-visibility"
@@ -130,13 +131,11 @@ export default function EditScoreModal({ score, onClose, onSaved }: Props) {
               value={visibility}
               onChange={(e) => setVisibility(e.target.value as Visibility)}
             >
-              <option value="PRIVATE">Riêng tư (chỉ mình tôi)</option>
-              <option value="PUBLIC">Công khai (cần quản trị viên duyệt)</option>
+              <option value="PRIVATE">{t('scores.edit.visPrivate')}</option>
+              <option value="PUBLIC">{t('scores.edit.visPublic')}</option>
             </select>
             {visibility === 'PUBLIC' && score.visibility !== 'PUBLIC' && (
-              <p className="sc-upload__hint">
-                Sau khi được duyệt, mọi người đăng nhập đều xem và nhận xét được. Trong lúc chờ bản nhạc vẫn riêng tư.
-              </p>
+              <p className="sc-upload__hint">{t('scores.edit.visHint')}</p>
             )}
           </>
         )}
@@ -144,17 +143,17 @@ export default function EditScoreModal({ score, onClose, onSaved }: Props) {
         {score.canManageSharing && (
           <label className="sc-check">
             <input type="checkbox" checked={allowDownload} onChange={(e) => setAllowDownload(e.target.checked)} />
-            <span>Cho phép người xem tải MusicXML, MIDI, âm thanh, PDF</span>
+            <span>{t('scores.edit.allowDownload')}</span>
           </label>
         )}
 
         <span className="sc-label">
-          Thể loại
+          {t('scores.explore.tag')}
           <span className="sc-counter">
             {tagIds.length}/{MAX_TAGS}
           </span>
         </span>
-        <div className="sc-tagpick" role="group" aria-label="Thể loại">
+        <div className="sc-tagpick" role="group" aria-label={t('scores.explore.tag')}>
           {allTags.map((t) => {
             const active = tagIds.includes(t.id);
             return (
@@ -173,7 +172,7 @@ export default function EditScoreModal({ score, onClose, onSaved }: Props) {
         </div>
 
         <label className="sc-label" htmlFor="sc-notes">
-          Ghi chú luyện tập
+          {t('scores.hero.studyNotes')}
           <span className="sc-counter">
             {studyNotes.length}/{MAX_NOTES}
           </span>
@@ -191,10 +190,10 @@ export default function EditScoreModal({ score, onClose, onSaved }: Props) {
 
         <div className="sc-modal__actions">
           <button type="button" className="sc-btn" onClick={onClose} disabled={saving}>
-            Hủy
+            {t('common.cancel')}
           </button>
           <button type="submit" className="sc-btn sc-btn--primary" disabled={saving}>
-            {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
+            {saving ? t('scores.edit.saving') : t('scores.edit.saveChanges')}
           </button>
         </div>
       </form>

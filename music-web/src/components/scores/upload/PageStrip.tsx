@@ -1,5 +1,6 @@
 import AuthImage from '../common/AuthImage';
 import type { ScoreFileInfo } from '../../../types';
+import { t } from '../../../i18n/core';
 
 interface Props {
   /** Các ảnh trang đã xử lý (PNG), theo thứ tự trang. */
@@ -22,9 +23,9 @@ export default function PageStrip({ pages: rawPages, total, onSelect }: Props) {
             type="button"
             className="sp-strip__item"
             onClick={() => onSelect(page)}
-            aria-label={`Xem và so sánh trang ${page.pageNumber ?? index + 1}`}
+            aria-label={t('upload.pageStrip.compare', { page: page.pageNumber ?? index + 1 })}
           >
-            <AuthImage src={page.downloadUrl} alt={`Trang ${page.pageNumber ?? index + 1} sau xử lý`} />
+            <AuthImage src={page.downloadUrl} alt={t('upload.pageStrip.alt', { page: page.pageNumber ?? index + 1 })} />
             <span className="sp-strip__no">{page.pageNumber ?? index + 1}</span>
           </button>
         </li>

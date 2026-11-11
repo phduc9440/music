@@ -6,6 +6,7 @@ import { practiceStatsApi } from '../../../services';
 import type { PracticeHeatmapDay, PracticeStreak } from '../../../types';
 import '../../../components/scores/scores.css';
 import './PracticeStats.css';
+import { formatDate, monthShortName, t } from '../../../i18n/core';
 
 const WEEKS = 53;
 const DAY_MS = 24 * 3600 * 1000;
@@ -53,11 +54,11 @@ export default function PracticeStats() {
     practiceStatsApi
       .streak()
       .then((res) => setStreak(res.data.result))
-      .catch(() => toast.error('Không tải được chuỗi luyện tập'));
+      .catch(() => toast.error(t('practice.stats.streakFailed')));
     practiceStatsApi
       .heatmap({ from: cells[0].key, to: toKey(new Date()) })
       .then((res) => setDays(new Map(res.data.result.map((d) => [d.date, d]))))
-      .catch(() => toast.error('Không tải được heatmap luyện tập'));
+      .catch(() => toast.error(t('practice.stats.heatmapFailed')));
   }, [cells]);
 
   // Nhãn tháng đặt ở cột tuần đầu tiên của mỗi tháng
@@ -67,7 +68,7 @@ export default function PracticeStats() {
     for (let w = 0; w < WEEKS; w++) {
       const month = cells[w * 7].date.getMonth();
       if (month !== last) {
-        labels[w] = `Th${month + 1}`;
+        labels[w] = t('practice.stats.month', { month: month + 1, name: monthShortName(month) });
         last = month;
       }
     }
@@ -78,37 +79,44 @@ export default function PracticeStats() {
 
   const tooltip = (cell: Cell) => {
     const d = days?.get(cell.key);
-    const label = cell.date.toLocaleDateString('vi-VN');
-    if (!d) return `${label}: không tập`;
-    return `${label}: ${d.sessionCount} phiên, ${Math.round(d.totalSeconds / 60)} phút`;
+    const label = formatDate(cell.date);
+    if (!d) return t('practice.stats.noPractice', { date: label });
+    return t('practice.stats.dayTooltip', {
+      date: label,
+      sessions: d.sessionCount,
+      minutes: Math.round(d.totalSeconds / 60),
+    });
   };
 
   return (
     <div className="sc-page">
-
       <main className="sc-container">
         <header className="sc-lib-head">
           <div>
-            <h1>Thống kê luyện tập</h1>
-            <p>Phiên tập từ 1 phút trở lên mới được tính là một ngày có tập.</p>
+            <h1>{t('common.footer.practiceStats')}</h1>
+            <p>{t('practice.stats.subtitle')}</p>
           </div>
         </header>
 
         <div className="ps-cards">
           <div className="ps-card">
-            <div className="ps-card__value">{streak ? `${streak.currentStreak} ngày` : '—'}</div>
+            <div className="ps-card__value">
+              {streak ? t('practice.stats.days', { count: streak.currentStreak }) : '—'}
+            </div>
             <div className="ps-card__label">
-              Chuỗi hiện tại
-              {streak && streak.currentStreak > 0 && !streak.practicedToday ? ' (hôm nay chưa tập)' : ''}
+              {t('practice.stats.current')}
+              {streak && streak.currentStreak > 0 && !streak.practicedToday ? ` (${t('practice.stats.notToday')})` : ''}
             </div>
           </div>
           <div className="ps-card">
-            <div className="ps-card__value">{streak ? `${streak.longestStreak} ngày` : '—'}</div>
-            <div className="ps-card__label">Chuỗi dài nhất</div>
+            <div className="ps-card__value">
+              {streak ? t('practice.stats.days', { count: streak.longestStreak }) : '—'}
+            </div>
+            <div className="ps-card__label">{t('practice.stats.longest')}</div>
           </div>
           <div className="ps-card">
             <div className="ps-card__value">{days ? totalDays : '—'}</div>
-            <div className="ps-card__label">Ngày có tập trong 12 tháng qua</div>
+            <div className="ps-card__label">{t('practice.stats.daysYear')}</div>
           </div>
         </div>
 
@@ -132,11 +140,11 @@ export default function PracticeStats() {
             ))}
           </div>
           <div className="ps-legend">
-            Ít
+            {t('practice.stats.less')}
             {[0, 1, 2, 3, 4].map((l) => (
               <span key={l} className={`ps-cell ps-cell--l${l}`} />
             ))}
-            Nhiều
+            {t('practice.stats.more')}
           </div>
         </div>
 

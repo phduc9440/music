@@ -2,7 +2,7 @@ import apiClient from './client';
 import type { ApiResponse, OfficialRequest, OfficialRequestStatus, PageResult } from '../types';
 
 export const officialRequestApi = {
-  // ADMIN: xin chủ đồng ý đưa một bản nhạc công khai vào kho score mẫu
+  // ADMIN: xin chủ đồng ý đưa một bản nhạc công khai vào kho bản nhạc mẫu
   request: (scoreId: string) => apiClient.post<ApiResponse<OfficialRequest>>(`/scores/${scoreId}/official-request`),
   // ADMIN: mọi lời xin, lọc theo trạng thái
   list: (params?: { page?: number; size?: number; status?: OfficialRequestStatus | '' }) =>

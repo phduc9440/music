@@ -9,6 +9,7 @@ import { roleLabel } from '../utils/auth';
 import '../components/scores/scores.css';
 import './scores/library/ScoreLibrary.css';
 import './Profile.css';
+import { t } from '../i18n/core';
 
 export default function UserProfile() {
   const [user, setUser] = useState<Member | null>(null);
@@ -40,9 +41,9 @@ export default function UserProfile() {
     try {
       const res = await userApi.updateMe(form);
       applyMember(res.data.result);
-      toast.success('Đã cập nhật thông tin');
+      toast.success(t('profile.updated'));
     } catch (error) {
-      toast.error(errMsg(error, 'Cập nhật thất bại'));
+      toast.error(errMsg(error, t('profile.updateFailed')));
     } finally {
       setIsSaving(false);
     }
@@ -53,16 +54,16 @@ export default function UserProfile() {
     e.target.value = '';
     if (!file) return;
     if (!['image/jpeg', 'image/png'].includes(file.type) || file.size > 2 * 1024 * 1024) {
-      toast.error('Ảnh đại diện phải là JPG hoặc PNG, tối đa 2MB');
+      toast.error(t('errors.1014'));
       return;
     }
     setIsUploading(true);
     try {
       const res = await userApi.uploadAvatar(file);
       setUser(res.data.result);
-      toast.success('Đã cập nhật ảnh đại diện');
+      toast.success(t('profile.avatarUpdated'));
     } catch (error) {
-      toast.error(errMsg(error, 'Tải ảnh thất bại'));
+      toast.error(errMsg(error, t('profile.avatarFailed')));
     } finally {
       setIsUploading(false);
     }
@@ -73,9 +74,9 @@ export default function UserProfile() {
     try {
       const res = await userApi.deleteAvatar();
       setUser(res.data.result);
-      toast.success('Đã xóa ảnh đại diện');
+      toast.success(t('profile.avatarRemoved'));
     } catch (error) {
-      toast.error(errMsg(error, 'Xóa ảnh thất bại'));
+      toast.error(errMsg(error, t('profile.avatarRemoveFailed')));
     } finally {
       setIsUploading(false);
     }
@@ -87,7 +88,7 @@ export default function UserProfile() {
         const response = await userApi.getMe();
         applyMember(response.data.result);
       } catch {
-        toast.error('Không tải được hồ sơ');
+        toast.error(t('profile.loadFailed'));
         handleLogout();
       } finally {
         setIsLoading(false);
@@ -106,7 +107,7 @@ export default function UserProfile() {
     );
   }
 
-  const displayName = user?.fullName || user?.email || 'Tài khoản';
+  const displayName = user?.fullName || user?.email || t('common.header.account');
   const isGoogle = user?.authProvider === AuthProvider.GOOGLE;
 
   return (
@@ -114,8 +115,8 @@ export default function UserProfile() {
       <main className="sc-container sc-container--form">
         <header className="sc-lib-head">
           <div>
-            <h1>Hồ sơ của tôi</h1>
-            <p>Thông tin cá nhân hiển thị với những người bạn chia sẻ bản nhạc.</p>
+            <h1>{t('common.header.profile')}</h1>
+            <p>{t('profile.subtitle')}</p>
           </div>
         </header>
 
@@ -141,7 +142,7 @@ export default function UserProfile() {
                 disabled={isUploading}
                 onClick={() => fileInput.current?.click()}
               >
-                {isUploading ? 'Đang tải…' : 'Đổi ảnh'}
+                {isUploading ? t('common.loading') : t('profile.changeAvatar')}
               </button>
               {user?.avatarUrl && (
                 <button
@@ -150,19 +151,19 @@ export default function UserProfile() {
                   disabled={isUploading}
                   onClick={handleAvatarDelete}
                 >
-                  Xóa ảnh
+                  {t('profile.removeAvatar')}
                 </button>
               )}
             </div>
-            <p className="pf-hint">JPG hoặc PNG, tối đa 2MB</p>
+            <p className="pf-hint">{t('profile.avatarHint')}</p>
           </section>
 
           <div className="pf-stack">
             <section className="pf-card">
-              <h2 className="pf-card__title">Thông tin cá nhân</h2>
+              <h2 className="pf-card__title">{t('profile.personal')}</h2>
               <form onSubmit={handleSave}>
                 <label className="sc-label" htmlFor="pf-name">
-                  Họ tên
+                  {t('auth.fullName')}
                 </label>
                 <input
                   id="pf-name"
@@ -173,7 +174,7 @@ export default function UserProfile() {
                   maxLength={255}
                 />
                 <label className="sc-label" htmlFor="pf-phone">
-                  Số điện thoại
+                  {t('profile.phone')}
                 </label>
                 <input
                   id="pf-phone"
@@ -183,7 +184,7 @@ export default function UserProfile() {
                   maxLength={30}
                 />
                 <label className="sc-label" htmlFor="pf-address">
-                  Địa chỉ
+                  {t('profile.address')}
                 </label>
                 <input
                   id="pf-address"
@@ -194,28 +195,28 @@ export default function UserProfile() {
                 />
                 <div className="pf-form-actions">
                   <button type="submit" className="sc-btn sc-btn--primary" disabled={isSaving}>
-                    {isSaving ? 'Đang lưu…' : 'Lưu thay đổi'}
+                    {isSaving ? t('scores.edit.saving') : t('scores.edit.saveChanges')}
                   </button>
                 </div>
               </form>
             </section>
 
             <section className="pf-card">
-              <h2 className="pf-card__title">Tài khoản</h2>
+              <h2 className="pf-card__title">{t('common.footer.account')}</h2>
               <dl className="pf-dl">
                 <div>
-                  <dt>Đăng nhập bằng</dt>
-                  <dd>{isGoogle ? 'Google' : 'Email / mật khẩu'}</dd>
+                  <dt>{t('profile.signInWith')}</dt>
+                  <dd>{isGoogle ? 'Google' : t('profile.emailPassword')}</dd>
                 </div>
                 <div>
-                  <dt>Vai trò</dt>
+                  <dt>{t('profile.role')}</dt>
                   <dd>{user ? roleLabel(user) : '—'}</dd>
                 </div>
               </dl>
               {!isGoogle && (
                 <div className="pf-form-actions">
                   <button type="button" className="sc-btn" onClick={() => setIsPasswordModalOpen(true)}>
-                    Đổi mật khẩu
+                    {t('common.header.changePassword')}
                   </button>
                 </div>
               )}

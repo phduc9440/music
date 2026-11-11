@@ -24,7 +24,7 @@ const MIN_QUERY = 2;
 const DEBOUNCE_MS = 300;
 const RESULTS_PER_GROUP = 5;
 
-/** So khớp không phân biệt hoa thường và dấu tiếng Việt ("kho score" khớp "Kho score mẫu", "thu vien" khớp "Thư viện"). */
+/** So khớp không phân biệt hoa thường và dấu tiếng Việt ("kho score" khớp "Kho bản nhạc mẫu", "thu vien" khớp "Thư viện"). */
 const fold = (text: string) => text.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase(); // i18n-ignore: bỏ dấu để so khớp
 
 /**

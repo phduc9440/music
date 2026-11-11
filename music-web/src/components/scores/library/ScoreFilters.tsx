@@ -1,5 +1,6 @@
 import { MAX_KEYWORD } from '../../../utils/score';
 import type { Difficulty, ProcessingStatus, ScoreSort, ScoreSource, Tag } from '../../../types';
+import { t } from '../../../i18n/core';
 
 interface Props {
   keyword: string;
@@ -28,7 +29,7 @@ export default function ScoreFilters(p: Props) {
         </svg>
         <input
           className="sc-input"
-          placeholder="Tìm theo tên hoặc tác giả..."
+          placeholder={t('scores.filters.search')}
           value={p.keyword}
           maxLength={MAX_KEYWORD}
           onChange={(e) => p.onKeyword(e.target.value)}
@@ -36,46 +37,46 @@ export default function ScoreFilters(p: Props) {
       </label>
       <select
         className="sc-input"
-        aria-label="Lọc theo trạng thái"
+        aria-label={t('scores.filters.byStatus')}
         value={p.status}
         onChange={(e) => p.onStatus(e.target.value as ProcessingStatus | '')}
       >
-        <option value="">Mọi trạng thái</option>
-        <option value="PENDING">Đang chờ</option>
-        <option value="PROCESSING">Đang xử lý</option>
-        <option value="COMPLETED">Hoàn tất</option>
-        <option value="FAILED">Thất bại</option>
+        <option value="">{t('scores.filters.anyStatus')}</option>
+        <option value="PENDING">{t('scores.labels.status.PENDING')}</option>
+        <option value="PROCESSING">{t('scores.labels.status.PROCESSING')}</option>
+        <option value="COMPLETED">{t('scores.labels.status.COMPLETED')}</option>
+        <option value="FAILED">{t('scores.labels.status.FAILED')}</option>
       </select>
       <select
         className="sc-input"
-        aria-label="Lọc theo nguồn"
+        aria-label={t('scores.filters.bySource')}
         value={p.source}
         onChange={(e) => p.onSource(e.target.value as ScoreSource | '')}
       >
-        <option value="">Mọi nguồn</option>
-        <option value="OMR">Số hóa từ file</option>
-        <option value="IMPORT">Nhập file</option>
-        <option value="MANUAL">Tự soạn</option>
+        <option value="">{t('scores.filters.anySource')}</option>
+        <option value="OMR">{t('scores.labels.source.OMR')}</option>
+        <option value="IMPORT">{t('scores.labels.source.IMPORT')}</option>
+        <option value="MANUAL">{t('scores.labels.source.MANUAL')}</option>
       </select>
       <select
         className="sc-input"
-        aria-label="Lọc theo độ khó"
+        aria-label={t('scores.filters.byDifficulty')}
         value={p.difficulty}
         onChange={(e) => p.onDifficulty(e.target.value as Difficulty | '')}
       >
-        <option value="">Mọi độ khó</option>
-        <option value="EASY">Dễ</option>
-        <option value="MEDIUM">Trung bình</option>
-        <option value="HARD">Khó</option>
-        <option value="EXPERT">Chuyên gia</option>
+        <option value="">{t('scores.filters.anyDifficulty')}</option>
+        <option value="EASY">{t('scores.labels.difficulty.EASY')}</option>
+        <option value="MEDIUM">{t('scores.labels.difficulty.MEDIUM')}</option>
+        <option value="HARD">{t('scores.labels.difficulty.HARD')}</option>
+        <option value="EXPERT">{t('scores.labels.difficulty.EXPERT')}</option>
       </select>
       <select
         className="sc-input"
-        aria-label="Lọc theo thể loại"
+        aria-label={t('scores.filters.byTag')}
         value={p.tagId}
         onChange={(e) => p.onTag(e.target.value)}
       >
-        <option value="">Mọi thể loại</option>
+        <option value="">{t('scores.filters.anyTag')}</option>
         {p.tags.map((t) => (
           <option key={t.id} value={t.id}>
             {t.name}
@@ -84,14 +85,14 @@ export default function ScoreFilters(p: Props) {
       </select>
       <select
         className="sc-input"
-        aria-label="Sắp xếp"
+        aria-label={t('scores.explore.sortBy')}
         value={p.sort}
         onChange={(e) => p.onSort(e.target.value as ScoreSort)}
       >
-        <option value="newest">Mới cập nhật</option>
-        <option value="created">Mới tạo</option>
-        <option value="oldest">Cũ nhất</option>
-        <option value="title">Tên A → Z</option>
+        <option value="newest">{t('scores.filters.sort.newest')}</option>
+        <option value="created">{t('scores.filters.sort.created')}</option>
+        <option value="oldest">{t('scores.filters.sort.oldest')}</option>
+        <option value="title">{t('scores.filters.sort.title')}</option>
       </select>
     </div>
   );

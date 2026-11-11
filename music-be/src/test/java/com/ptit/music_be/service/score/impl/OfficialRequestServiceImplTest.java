@@ -49,12 +49,17 @@ class OfficialRequestServiceImplTest {
     private final OfficialRequestServiceImpl service =
             new OfficialRequestServiceImpl(requests, scores, files, members, copier, notifications);
 
-    private final Member admin =
-            Member.builder().id("admin").email("boss@x.com").fullName("Quản trị").build();
+    private final Member admin = Member.builder()
+            .id("admin")
+            .email("boss@x.com")
+            .fullName("Quản trị")
+            .build();
     private final Member owner =
             Member.builder().id("owner").email("owner@x.com").fullName("Lan").build();
-    private final Member system =
-            Member.builder().id("sys").email(ApplicationInitConfig.ROOT_ADMIN_EMAIL).build();
+    private final Member system = Member.builder()
+            .id("sys")
+            .email(ApplicationInitConfig.ROOT_ADMIN_EMAIL)
+            .build();
     private Score score;
 
     @BeforeEach
@@ -86,9 +91,8 @@ class OfficialRequestServiceImplTest {
     }
 
     private static void assertError(Runnable call, ErrorCode code) {
-        assertThatThrownBy(call::run)
-                .isInstanceOfSatisfying(
-                        AppException.class, e -> assertThat(e.getErrorCode()).isEqualTo(code));
+        assertThatThrownBy(call::run).isInstanceOfSatisfying(AppException.class, e -> assertThat(e.getErrorCode())
+                .isEqualTo(code));
     }
 
     private OfficialRequest pending() {
@@ -112,7 +116,7 @@ class OfficialRequestServiceImplTest {
         assertThat(r.getStatus()).isEqualTo(OfficialRequestStatus.PENDING);
         assertThat(r.getOwnerEmail()).isNull(); // trả cho cả hai phía nên không kèm email chủ
         verify(notifications)
-                .notify(eq(owner), eq(admin), eq(NotificationType.OFFICIAL_REQUESTED), eq("s1"), any());
+                .notify(eq(owner), eq(admin), eq(NotificationType.OFFICIAL_REQUESTED), eq("s1"), any(), any());
         verify(scores, never()).save(any(Score.class)); // chưa đụng tới bản của chủ
     }
 
@@ -190,14 +194,15 @@ class OfficialRequestServiceImplTest {
         assertThat(score.getIsOfficial()).isFalse();
         assertThat(score.getVisibility()).isEqualTo("PUBLIC");
         verify(notifications)
-                .notify(eq(admin), eq(owner), eq(NotificationType.OFFICIAL_ACCEPTED), eq("c1"), any());
+                .notify(eq(admin), eq(owner), eq(NotificationType.OFFICIAL_ACCEPTED), eq("c1"), any(), any());
     }
 
     @Test
     void anotherUserCannotAnswerAndLearnsNothing() {
         login("someone@x.com", "ROLE_USER");
         when(members.findByEmail("someone@x.com"))
-                .thenReturn(Optional.of(Member.builder().id("other").email("someone@x.com").build()));
+                .thenReturn(Optional.of(
+                        Member.builder().id("other").email("someone@x.com").build()));
         when(requests.findById("r1")).thenReturn(Optional.of(pending()));
 
         assertError(() -> service.accept("r1"), ErrorCode.OFFICIAL_REQUEST_NOT_EXISTED);
@@ -237,7 +242,7 @@ class OfficialRequestServiceImplTest {
         assertThat(r.getStatus()).isEqualTo(OfficialRequestStatus.DECLINED);
         verify(copier, never()).copy(any(), any(), any());
         verify(notifications)
-                .notify(eq(admin), eq(owner), eq(NotificationType.OFFICIAL_DECLINED), eq("s1"), any());
+                .notify(eq(admin), eq(owner), eq(NotificationType.OFFICIAL_DECLINED), eq("s1"), any(), any());
     }
 
     @Test

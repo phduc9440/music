@@ -1,0 +1,23 @@
+{
+  "levels": {
+    "1": "view",
+    "2": "review",
+    "3": "edit"
+  },
+  "withReason": "{text}: {reason}",
+  "NEW_REVIEW": "{name} reviewed your score “{title}”",
+  "ACCESS_REQUESTED": "{name} requested {level} access to “{title}”",
+  "ACCESS_APPROVED": "Your request was approved: {level} access to “{title}”",
+  "ACCESS_REJECTED": "Your access request for “{title}” was declined",
+  "SHARED_WITH_YOU": "“{title}” was shared with you ({level} access)",
+  "PUBLISH_REQUESTED": "A score is waiting to be published: “{title}”",
+  "PUBLISH_APPROVED": "“{title}” was approved and is now public",
+  "PUBLISH_REJECTED": {
+    "rejected": "“{title}” was not approved for publishing",
+    "unpublished": "“{title}” was unpublished by an administrator"
+  },
+  "SCORE_TRASHED_BY_ADMIN": "“{title}” was moved to the trash by an administrator (you can restore it for 30 days)",
+  "OFFICIAL_REQUESTED": "An administrator wants to add your score “{title}” to the curated library. Your own score stays as it is; the system only copies it and credits you as the arranger. Please accept or decline.",
+  "OFFICIAL_ACCEPTED": "{name} agreed to add “{title}” to the curated library",
+  "OFFICIAL_DECLINED": "{name} declined to add “{title}” to the curated library"
+}

@@ -4,6 +4,8 @@ import { toast } from 'react-toastify';
 import { sharingApi } from '../../../services';
 import { SHARE_PERMISSION_LABELS, getErrorCode, getErrorMessage } from '../../../utils/score';
 import type { SharePermission } from '../../../types';
+import { t } from '../../../i18n/core';
+import Rich from '../../../i18n/Rich';
 
 interface Props {
   scoreId: string;
@@ -43,15 +45,15 @@ export default function RequestAccess({ scoreId, onGranted, levels = DEFAULT_LEV
     try {
       const res = await sharingApi.requestAccess(scoreId, level, message.trim() || undefined);
       setPending(res.data.result.requestedPermission);
-      toast.success('Đã gửi yêu cầu, hãy chờ chủ sở hữu duyệt');
+      toast.success(t('scores.request.sent'));
     } catch (err) {
       if (getErrorCode(err) === 2404) {
         // Bản công khai (hoặc đã được cấp): yêu cầu xem thì chỉ cần báo là xem được ngay
-        toast.info('Bản nhạc đã công khai, bạn có thể xem ngay');
+        toast.info(t('scores.request.alreadyPublic'));
         if (level === 1) onGranted();
-        else setError('Bạn đã có quyền này hoặc cao hơn.');
+        else setError(t('scores.request.alreadyHas'));
       } else {
-        setError(getErrorMessage(err, 'Không gửi được yêu cầu, vui lòng thử lại'));
+        setError(getErrorMessage(err, t('scores.request.failed')));
       }
     } finally {
       setBusy(false);
@@ -60,16 +62,15 @@ export default function RequestAccess({ scoreId, onGranted, levels = DEFAULT_LEV
 
   return (
     <div className="sc-empty">
-      <h3>{hasViewAccess ? 'Xin quyền chỉnh sửa' : 'Bạn chưa có quyền với bản nhạc này'}</h3>
+      <h3>{hasViewAccess ? t('scores.detail.requestEditTitle') : t('scores.request.noAccess')}</h3>
       {pending && (
         <p>
-          Yêu cầu <strong>{SHARE_PERMISSION_LABELS[pending]}</strong> của bạn đang chờ chủ sở hữu duyệt. Bạn có thể gửi
-          lại để đổi cấp.
+          <Rich text={t('scores.request.pending', { level: SHARE_PERMISSION_LABELS[pending] })} />
         </p>
       )}
       <form onSubmit={submit} className="sc-request">
         <label className="sc-label" htmlFor="rq-level">
-          Quyền muốn xin
+          {t('scores.request.level')}
         </label>
         <select
           id="rq-level"
@@ -85,7 +86,7 @@ export default function RequestAccess({ scoreId, onGranted, levels = DEFAULT_LEV
           ))}
         </select>
         <label className="sc-label" htmlFor="rq-message">
-          Lời nhắn <span className="sc-upload__optional">(tùy chọn)</span>
+          {t('scores.request.message')} <span className="sc-upload__optional">({t('scores.request.optional')})</span>
         </label>
         <textarea
           id="rq-message"
@@ -98,7 +99,7 @@ export default function RequestAccess({ scoreId, onGranted, levels = DEFAULT_LEV
         />
         {error && <div className="sc-error">{error}</div>}
         <button type="submit" className="sc-btn sc-btn--primary" disabled={busy}>
-          {busy ? 'Đang gửi...' : pending ? 'Gửi lại yêu cầu' : 'Xin quyền'}
+          {busy ? t('scores.request.sending') : pending ? t('scores.request.resend') : t('scores.request.ask')}
         </button>
       </form>
     </div>

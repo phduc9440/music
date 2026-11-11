@@ -4,9 +4,10 @@ import { officialRequestApi } from '../../../services';
 import type { OfficialRequest } from '../../../types';
 import { getErrorMessage } from '../../../utils/score';
 import { Icon } from '../../ui';
+import { t } from '../../../i18n/core';
 
 /**
- * Thanh nhắc ở đầu trang chi tiết: quản trị viên đang xin đưa bản nhạc này vào kho score mẫu. Chủ sở hữu đồng ý hoặc
+ * Thanh nhắc ở đầu trang chi tiết: quản trị viên đang xin đưa bản nhạc này vào kho bản nhạc mẫu. Chủ sở hữu đồng ý hoặc
  * từ chối ngay tại đây (cùng lời xin với trang /scores/official-requests). Không có lời xin thì không hiện gì.
  */
 export default function OfficialRequestBanner({ scoreId }: { scoreId: string }) {
@@ -31,10 +32,10 @@ export default function OfficialRequestBanner({ scoreId }: { scoreId: string }) 
     try {
       if (accept) await officialRequestApi.accept(request.id);
       else await officialRequestApi.decline(request.id);
-      toast.success(accept ? 'Đã đồng ý, bản nhạc đã được đưa vào kho score mẫu' : 'Đã từ chối lời xin');
+      toast.success(accept ? t('scores.officialRequests.accepted') : t('scores.officialRequests.declined'));
       setRequest(null);
     } catch (error) {
-      toast.error(getErrorMessage(error, 'Không xử lý được lời xin'));
+      toast.error(getErrorMessage(error, t('scores.officialRequests.failed')));
     } finally {
       setBusy(false);
     }
@@ -43,10 +44,7 @@ export default function OfficialRequestBanner({ scoreId }: { scoreId: string }) 
   return (
     <div className="sd-alert sd-alert--info" role="status">
       <Icon name="library" size={16} />
-      <span>
-        {request.requestedBy} xin đưa bản nhạc này vào kho score mẫu. Hệ thống chỉ sao chép một bản và ghi bạn là người
-        phối; bản của bạn giữ nguyên.
-      </span>
+      <span>{t('scores.banner.text', { name: request.requestedBy })}</span>
       <span className="sd-alert__actions">
         <button
           type="button"
@@ -54,10 +52,10 @@ export default function OfficialRequestBanner({ scoreId }: { scoreId: string }) 
           disabled={busy}
           onClick={() => answer(true)}
         >
-          Đồng ý
+          {t('scores.officialRequests.accept')}
         </button>
         <button type="button" className="sc-btn sc-btn--sm" disabled={busy} onClick={() => answer(false)}>
-          Từ chối
+          {t('scores.officialRequests.decline')}
         </button>
       </span>
     </div>

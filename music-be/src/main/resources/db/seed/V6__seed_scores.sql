@@ -1,5 +1,5 @@
 -- V6: bản nhạc mẫu (~40 bản) cho mọi trạng thái: công khai, chờ duyệt, bị từ chối, riêng tư, đang xử lý OMR, lỗi OMR,
--- kho score mẫu (gồm bản sao từ bản của người dùng), thùng rác. Nhiều tác giả khớp bảng nhạc sĩ (V5).
+-- kho bản nhạc mẫu (gồm bản sao từ bản của người dùng), thùng rác. Nhiều tác giả khớp bảng nhạc sĩ (V5).
 -- Seed chưa kèm file (MusicXML, ảnh trang...): danh sách, Khám phá, thống kê chạy bình thường; muốn mở Editor/Player
 -- thì tải một bản lên qua web. current_version = 0 nghĩa là chưa có MusicXML.
 INSERT INTO scores
