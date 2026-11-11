@@ -103,5 +103,6 @@
   "3715": "The billing period must be monthly or yearly",
   "3716": "Invalid revenue date range (at most 366 days)",
   "3717": "This order is no longer awaiting payment",
-  "3718": "Your admin account already includes this plan, no purchase needed"
+  "3718": "Your admin account already includes this plan, no purchase needed",
+  "3719": "Invalid price: Free must be 0, paid plans from 1 to 1,000,000,000 VND"
 }

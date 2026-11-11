@@ -1226,3 +1226,20 @@
     flex: 1;
   }
 }
+
+/* Trang giá gói (AdminPlans) */
+.adm-plans-note {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--ui-border);
+  border-left: 4px solid var(--ui-primary);
+  border-radius: var(--ui-radius);
+  background: var(--ui-primary-soft);
+}
+.adm-shell .adm-plans-price {
+  width: 9rem;
+  font-variant-numeric: tabular-nums;
+}
+.adm-shell .adm-card + .adm-card {
+  margin-top: 1rem;
+}

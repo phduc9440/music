@@ -149,6 +149,7 @@ public class PaymentServiceImpl implements PaymentService {
             }
             boolean same = o.getExpiresAt().isAfter(now)
                     && o.getPlan().getId().equals(plan.getId())
+                    && o.getAmount() == (period == BillingPeriod.MONTH ? plan.getPriceMonth() : plan.getPriceYear())
                     && o.getPeriod() == period
                     && o.getProvider() == type;
             if (same && reuse == null) {

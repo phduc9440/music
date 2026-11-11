@@ -18,7 +18,8 @@
       "composers": "Composers",
       "aiTasks": "AI tasks",
       "system": "System monitoring",
-      "revenue": "Revenue"
+      "revenue": "Revenue",
+      "plans": "Plan prices"
     },
     "other": "Other",
     "userSite": "User site"
@@ -553,5 +554,16 @@
     "refundFailed": "Could not refund",
     "kind": "Order type",
     "allKinds": "All order types"
+  },
+  "plans": {
+    "subtitle": "Monthly and yearly price of each plan. Orders created before a change keep their old amount.",
+    "readOnly": "Only super admins can change prices. You are viewing in read-only mode.",
+    "priceMonth": "Monthly price (₫)",
+    "priceYear": "Yearly price (₫)",
+    "save": "Save",
+    "reset": "Undo",
+    "saved": "Updated the price of {plan}",
+    "saveFailed": "Could not save the price",
+    "loadFailed": "Could not load plans"
   }
 }

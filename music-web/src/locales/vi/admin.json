@@ -18,7 +18,8 @@
       "composers": "Nhạc sĩ",
       "aiTasks": "Tác vụ AI",
       "system": "Giám sát hệ thống",
-      "revenue": "Doanh thu"
+      "revenue": "Doanh thu",
+      "plans": "Giá gói dịch vụ"
     },
     "other": "Khác",
     "userSite": "Giao diện người dùng"
@@ -528,5 +529,16 @@
     "refundFailed": "Không hoàn tiền được",
     "kind": "Loại đơn",
     "allKinds": "Tất cả loại đơn"
+  },
+  "plans": {
+    "subtitle": "Giá theo tháng và theo năm của từng gói. Đơn đã tạo trước khi đổi giá vẫn giữ số tiền cũ.",
+    "readOnly": "Chỉ quản trị viên cấp cao (SUPER_ADMIN) được sửa giá. Bạn đang xem ở chế độ chỉ đọc.",
+    "priceMonth": "Giá tháng (₫)",
+    "priceYear": "Giá năm (₫)",
+    "save": "Lưu",
+    "reset": "Hoàn tác",
+    "saved": "Đã cập nhật giá gói {plan}",
+    "saveFailed": "Không lưu được giá",
+    "loadFailed": "Không tải được danh sách gói"
   }
 }

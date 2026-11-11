@@ -23,12 +23,15 @@ export const billingApi = {
     apiClient.post<ApiResponse<PaymentOrder>>('/payments/orders', data),
   myOrders: () => apiClient.get<ApiResponse<PaymentOrder[]>>('/payments/orders'),
   // Lấy lại link thanh toán cho đơn PENDING còn hạn (nút "Thanh toán tiếp" ở lịch sử)
-  resumeOrder: (orderCode: string) =>
-    apiClient.post<ApiResponse<PaymentOrder>>(`/payments/orders/${orderCode}/pay`),
+  resumeOrder: (orderCode: string) => apiClient.post<ApiResponse<PaymentOrder>>(`/payments/orders/${orderCode}/pay`),
   // Gửi nguyên các tham số vnp_* cổng đưa về; BE chỉ tin khi chữ ký đúng (bật gói khi IPN không tới được)
   confirmReturn: (params: Record<string, string>) =>
     apiClient.post<ApiResponse<PaymentOrder>>('/payments/vnpay/return', params),
   getOrder: (orderCode: string) => apiClient.get<ApiResponse<PaymentOrder>>(`/payments/orders/${orderCode}`),
+  // Admin: giá gói (mọi admin xem, chỉ SUPER_ADMIN sửa)
+  adminPlans: () => apiClient.get<ApiResponse<PlanInfo[]>>('/admin/plans'),
+  updatePlanPrice: (code: string, data: { priceMonth: number; priceYear: number }) =>
+    apiClient.put<ApiResponse<PlanInfo>>(`/admin/plans/${code}/price`, data),
   // Admin: doanh thu, danh sách đơn, hoàn tiền thủ công
   revenue: (params?: { from?: string; to?: string }) =>
     apiClient.get<ApiResponse<Revenue>>('/admin/payments/revenue', { params }),
