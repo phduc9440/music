@@ -16,6 +16,9 @@ public interface SubscriptionService {
     /** Gói và số đã dùng của người đang đăng nhập. */
     MySubscriptionResponse mine();
 
+    /** Gói hiện tại của một thành viên bất kỳ (trang chi tiết thành viên ở khu quản trị). */
+    MySubscriptionResponse ofMember(String memberId);
+
     /**
      * Gói đang hiệu lực của thành viên; không có thì gói FREE. SUPER_ADMIN nhận gói ảo UNLIMITED (mọi hạn mức không giới
      * hạn); ADMIN tối thiểu là gói PRO không thời hạn (gói đã mua cao hơn thì dùng gói đó).
@@ -31,10 +34,10 @@ public interface SubscriptionService {
     /** Trừ bớt thời gian (hoàn tiền một đơn): hết hạn sau khi trừ thì hủy gói. Gói khác với {@code plan} thì bỏ qua. */
     void revoke(String memberId, Plan plan, Period duration);
 
-    /** Admin cấp gói thủ công (nguồn ADMIN_GRANT). */
+    /** SUPER_ADMIN cấp gói cá nhân thủ công (nguồn ADMIN_GRANT). Gói team để sau (chờ tính năng Team). */
     MySubscriptionResponse grant(String memberId, String planCode, int days);
 
-    /** Admin hủy gói hiện tại của thành viên (về Free ngay). */
+    /** SUPER_ADMIN hủy gói hiện tại của thành viên (về Free ngay). */
     void cancel(String memberId);
 
     /**

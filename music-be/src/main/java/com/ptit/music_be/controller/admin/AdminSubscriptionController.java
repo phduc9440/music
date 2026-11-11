@@ -20,7 +20,7 @@ import lombok.experimental.FieldDefaults;
 @RequestMapping("/api/admin/subscriptions")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-@Tag(name = "Admin - Subscriptions", description = "Chỉ ROLE_ADMIN: cấp hoặc hủy gói thủ công")
+@Tag(name = "Admin - Subscriptions", description = "ADMIN xem gói của thành viên; chỉ SUPER_ADMIN cấp hoặc hủy gói")
 public class AdminSubscriptionController {
 
     SubscriptionService subscriptionService;
@@ -28,7 +28,8 @@ public class AdminSubscriptionController {
     @PostMapping
     @Operation(
             summary = "Cấp gói cho thành viên trong N ngày (nguồn ADMIN_GRANT)",
-            description = "Errors: 3701 gói không tồn tại, 3703 số ngày sai, 1004 thành viên không tồn tại",
+            description = "Chỉ SUPER_ADMIN, chỉ gói cá nhân. Errors: 1002 không phải SUPER_ADMIN, 3701 gói không tồn tại,"
+                    + " 3703 số ngày sai, 3718 thành viên là SUPER_ADMIN, 3727 gói team, 1004 thành viên không tồn tại",
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<MySubscriptionResponse> grant(@RequestBody GrantPlanRequest request) {
         if (request.getMemberId() == null || request.getPlanCode() == null || request.getDays() == null) {
@@ -39,8 +40,18 @@ public class AdminSubscriptionController {
                 .build();
     }
 
+    @GetMapping("/{memberId}")
+    @Operation(summary = "Gói hiện tại của thành viên", security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<MySubscriptionResponse> ofMember(@PathVariable String memberId) {
+        return ApiResponse.<MySubscriptionResponse>builder()
+                .result(subscriptionService.ofMember(memberId))
+                .build();
+    }
+
     @DeleteMapping("/{memberId}")
-    @Operation(summary = "Hủy gói hiện tại của thành viên (về Free)", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(
+            summary = "Hủy gói hiện tại của thành viên (về Free), chỉ SUPER_ADMIN",
+            security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<Void> cancel(@PathVariable String memberId) {
         subscriptionService.cancel(memberId);
         return ApiResponse.<Void>builder().build();

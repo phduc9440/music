@@ -28,6 +28,7 @@ export const billingApi = {
   // Admin: cấp gói thủ công N ngày / hủy gói hiện tại
   grant: (data: { memberId: string; planCode: string; days: number }) =>
     apiClient.post<ApiResponse<MySubscription>>('/admin/subscriptions', data),
+  ofMember: (memberId: string) => apiClient.get<ApiResponse<MySubscription>>(`/admin/subscriptions/${memberId}`),
   cancel: (memberId: string) => apiClient.delete<ApiResponse<void>>(`/admin/subscriptions/${memberId}`),
   // 7.4: tạo đơn (trả payUrl để chuyển sang cổng), hỏi trạng thái đơn của tôi
   createOrder: (data: { planCode: string; period: BillingPeriod }) =>

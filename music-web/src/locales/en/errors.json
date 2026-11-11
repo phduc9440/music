@@ -111,5 +111,6 @@
   "3723": "Plan code already exists",
   "3724": "Plan group must be Personal or Team",
   "3725": "Free and Pro cannot be deleted (used for new users and admins)",
-  "3726": "This plan has subscribers or payment orders and cannot be deleted"
+  "3726": "This plan has subscribers or payment orders and cannot be deleted",
+  "3727": "Only personal plans can be granted for now; team plans will come with the Team feature"
 }

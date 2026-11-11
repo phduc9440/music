@@ -515,7 +515,7 @@
   },
   "plan": {
     "title": "Plan",
-    "hint": "Grant a plan by hand (source: admin grant). Granting the plan already in use adds days.",
+    "hint": "Grant a personal plan manually (source: admin grant). Granting the current plan adds more days.",
     "plan": "Plan",
     "days": "Days",
     "daysUnit": "days",
@@ -525,7 +525,11 @@
     "canceled": "Plan canceled, the account is back on Free",
     "failed": "Could not complete the action",
     "cancelTitle": "Cancel the current plan?",
-    "cancelMessage": "The account returns to the Free plan immediately. Data over the limit is not deleted."
+    "cancelMessage": "The account returns to the Free plan immediately. Data over the limit is not deleted.",
+    "readOnly": "Only super admins can grant or cancel plans.",
+    "current": "Current plan:",
+    "superAdminTarget": "This account is a super admin and already unlimited, no plan needed.",
+    "teamLater": "Granting team plans will come with the Team feature."
   },
   "revenue": {
     "loadFailed": "Could not load revenue data",

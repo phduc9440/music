@@ -68,6 +68,19 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         Member member = memberRepository
                 .findByEmail(SecurityUtils.getCurrentEmail())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        return subscriptionOf(member);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasRole('ADMIN')")
+    public MySubscriptionResponse ofMember(String memberId) {
+        Member member =
+                memberRepository.findById(memberId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        return subscriptionOf(member);
+    }
+
+    private MySubscriptionResponse subscriptionOf(Member member) {
         int used = usageCounterRepository
                 .findByMemberIdAndMetricAndPeriod(
                         member.getId(), UsageMetric.OMR_PAGES, java.time.YearMonth.now().toString())
@@ -195,7 +208,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
     @Override
     @Transactional
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public MySubscriptionResponse grant(String memberId, String planCode, int days) {
         if (days < 1 || days > MAX_GRANT_DAYS) {
             throw new AppException(ErrorCode.SUBSCRIPTION_DAYS_INVALID);
@@ -203,6 +216,14 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         Member member =
                 memberRepository.findById(memberId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
         Plan plan = planRepository.findByCode(planCode).orElseThrow(() -> new AppException(ErrorCode.PLAN_NOT_EXISTED));
+        // Gói team cần có team thật (mục 4.1) nên tạm thời chỉ cấp gói cá nhân
+        if (!Plan.PERSONAL.equals(plan.getAudience())) {
+            throw new AppException(ErrorCode.PLAN_NOT_GRANTABLE);
+        }
+        // SUPER_ADMIN đã không giới hạn, cấp gói cũng không đổi gì
+        if (ROLE_SUPER_ADMIN.equals(roleGrant(memberId))) {
+            throw new AppException(ErrorCode.PAYMENT_NOT_NEEDED);
+        }
         if (FREE.equals(plan.getCode())) {
             // Cấp Free = bỏ gói đang có
             cancel(memberId);
@@ -216,7 +237,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
     @Override
     @Transactional
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public void cancel(String memberId) {
         LocalDateTime now = LocalDateTime.now();
         for (Subscription s : subscriptionRepository.findCurrent(memberId, now)) {

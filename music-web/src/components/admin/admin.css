@@ -1305,3 +1305,14 @@
   margin-bottom: 1.5rem;
   border-color: var(--adm-primary);
 }
+
+/* Thẻ gói dịch vụ ở chi tiết thành viên */
+.adm-member-plan__current {
+  margin: 0 0 0.75rem;
+}
+.adm-member-plan__form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}

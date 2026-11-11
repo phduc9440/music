@@ -490,7 +490,7 @@
   },
   "plan": {
     "title": "Gói dịch vụ",
-    "hint": "Cấp gói thủ công (nguồn: quản trị viên cấp). Cấp cùng gói đang dùng thì cộng thêm ngày.",
+    "hint": "Cấp gói cá nhân thủ công (nguồn: quản trị viên cấp). Cấp cùng gói đang dùng thì cộng thêm ngày.",
     "plan": "Gói",
     "days": "Số ngày",
     "daysUnit": "ngày",
@@ -500,7 +500,11 @@
     "canceled": "Đã hủy gói, tài khoản về Free",
     "failed": "Không thực hiện được",
     "cancelTitle": "Hủy gói hiện tại?",
-    "cancelMessage": "Tài khoản sẽ về gói Free ngay lập tức. Dữ liệu vượt hạn mức không bị xóa."
+    "cancelMessage": "Tài khoản sẽ về gói Free ngay lập tức. Dữ liệu vượt hạn mức không bị xóa.",
+    "readOnly": "Chỉ quản trị viên cấp cao (SUPER_ADMIN) được cấp hoặc hủy gói.",
+    "current": "Gói hiện tại:",
+    "superAdminTarget": "Tài khoản này là quản trị viên cấp cao, đã không giới hạn nên không cần cấp gói.",
+    "teamLater": "Cấp gói team sẽ có khi làm tính năng Team."
   },
   "revenue": {
     "loadFailed": "Không tải được dữ liệu doanh thu",

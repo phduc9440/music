@@ -187,4 +187,20 @@ class SubscriptionServiceImplTest {
 
         assertEquals("FREE", service.currentPlan("m").getCode());
     }
+
+    @Test
+    void grantRejectsTeamPlansAndSuperAdminTargets() {
+        Plan teamPro = Plan.builder().id("tp").code("TEAM_PRO").audience(Plan.TEAM).limits("{}").build();
+        when(memberRepo.findById("m")).thenReturn(Optional.of(member));
+        when(plans.findByCode("TEAM_PRO")).thenReturn(Optional.of(teamPro));
+        when(plans.findByCode("PRO")).thenReturn(Optional.of(pro));
+
+        AppException e = assertThrows(AppException.class, () -> service.grant("m", "TEAM_PRO", 30));
+        assertEquals(ErrorCode.PLAN_NOT_GRANTABLE, e.getErrorCode());
+
+        when(memberRepo.roleNamesOf("m")).thenReturn(List.of("ADMIN", "SUPER_ADMIN"));
+        e = assertThrows(AppException.class, () -> service.grant("m", "PRO", 30));
+        assertEquals(ErrorCode.PAYMENT_NOT_NEEDED, e.getErrorCode());
+        verify(subs, never()).save(any());
+    }
 }
