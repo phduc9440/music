@@ -37,6 +37,15 @@ public class AdminDashboardResponse {
     List<KeyCount> topTags;
     List<TopScore> topViewed;
 
+    /** Gói dịch vụ và doanh thu; số tiền tính trong days ngày gần nhất, còn lại là trạng thái hiện tại. */
+    Billing billing;
+    /** Doanh thu mỗi ngày theo ngày thanh toán (chỉ đơn PAID, đủ days ngày). */
+    List<DayRevenue> revenueByDay;
+    /** Gói đang hiệu lực (ACTIVE, chưa hết hạn) theo tên gói, xếp theo thứ tự gói. */
+    List<KeyCount> subscriptionsByPlan;
+    /** Gói đang hiệu lực theo nguồn: PAYMENT / POINTS_TRIAL / ADMIN_GRANT. */
+    List<KeyCount> subscriptionsBySource;
+
     @Data
     @Builder
     @NoArgsConstructor
@@ -58,6 +67,38 @@ public class AdminDashboardResponse {
         long practiceSessions;
         long aiTasksRunning;
         long aiTasksFailed;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @FieldDefaults(level = AccessLevel.PRIVATE)
+    public static class Billing {
+        /** Tổng tiền các đơn PAID có ngày thanh toán trong khoảng (VND). */
+        long revenue;
+        long paidOrders;
+        /** Đơn đã hoàn tiền có ngày thanh toán trong khoảng (không tính vào revenue). */
+        long refundedAmount;
+        long refundedOrders;
+        /** Số gói đang hiệu lực (một người có thể có cả gói cá nhân và gói nhóm). */
+        long activeSubscriptions;
+        /** Số thành viên đang có ít nhất một gói hiệu lực. */
+        long subscribedMembers;
+        /** Đơn đang chờ thanh toán, chưa quá hạn. */
+        long pendingOrders;
+        /** Lệnh cấm dùng gói đang có hiệu lực. */
+        long activeBans;
+    }
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @FieldDefaults(level = AccessLevel.PRIVATE)
+    public static class DayRevenue {
+        LocalDate date;
+        long amount;
+        long orders;
     }
 
     @Data

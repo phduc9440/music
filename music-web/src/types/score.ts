@@ -465,6 +465,24 @@ export interface AdminDashboard {
   aiTasksByStatus: DashboardKeyCount[];
   topTags: DashboardKeyCount[];
   topViewed: { id: string; title: string; ownerEmail: string | null; viewCount: number }[];
+  billing: DashboardBilling;
+  revenueByDay: { date: string; amount: number; orders: number }[];
+  /** Khóa là tên gói. */
+  subscriptionsByPlan: DashboardKeyCount[];
+  /** Khóa là SubscriptionSource: PAYMENT / POINTS_TRIAL / ADMIN_GRANT. */
+  subscriptionsBySource: DashboardKeyCount[];
+}
+
+/** Số tiền tính trong `days` ngày gần nhất; gói, đơn chờ và lệnh cấm là trạng thái hiện tại. */
+export interface DashboardBilling {
+  revenue: number;
+  paidOrders: number;
+  refundedAmount: number;
+  refundedOrders: number;
+  activeSubscriptions: number;
+  subscribedMembers: number;
+  pendingOrders: number;
+  activeBans: number;
 }
 
 // Giám sát tác vụ AI của admin, BE: AdminAiTaskResponse

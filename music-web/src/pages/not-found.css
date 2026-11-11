@@ -1,0 +1,133 @@
+/* Trang 404: chỉ dùng token --ui-* nên tự theo theme sáng/tối. */
+
+.nf {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 16px;
+  background: var(--ui-bg);
+  color: var(--ui-text);
+  font-family: var(--ui-font);
+}
+
+.nf--embedded {
+  min-height: 60vh;
+  background: transparent;
+}
+
+.nf__card {
+  width: 100%;
+  max-width: 460px;
+  text-align: center;
+}
+
+/* "404" đặt trên năm dòng kẻ khuông nhạc, dấu lặng ở cuối */
+.nf__staff {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  margin-bottom: 1.5rem;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(20% - 1px),
+    var(--ui-border-strong) calc(20% - 1px),
+    var(--ui-border-strong) 20%
+  );
+}
+
+.nf__code {
+  padding: 0 0.5rem;
+  background: var(--ui-bg);
+  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  font-size: clamp(4rem, 18vw, 6.5rem);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--ui-primary);
+  font-variant-numeric: lining-nums;
+}
+
+.nf--embedded .nf__code,
+.nf--embedded .nf__rest {
+  background: var(--ui-surface-muted);
+}
+
+.nf__rest {
+  display: inline-flex;
+  padding: 0.35rem;
+  border-radius: 50%;
+  background: var(--ui-bg);
+  color: var(--ui-text-2);
+}
+
+.nf__title {
+  margin: 0 0 0.5rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.nf__desc {
+  margin: 0 0 1rem;
+  color: var(--ui-text-2);
+  line-height: 1.55;
+}
+
+.nf__path {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0.2rem 0.6rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--ui-border);
+  border-radius: 6px;
+  background: var(--ui-surface);
+  color: var(--ui-text-2);
+  font-size: 0.85rem;
+}
+
+.nf__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.nf__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.6rem 1.1rem;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: 8px;
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.nf__btn:hover {
+  background: var(--ui-surface-hover);
+}
+
+.nf__btn:focus-visible {
+  outline: 2px solid var(--ui-primary-ring, var(--ui-primary));
+  outline-offset: 2px;
+}
+
+.nf__btn--primary {
+  border-color: var(--ui-primary);
+  background: var(--ui-primary);
+  color: var(--ui-on-accent);
+}
+
+.nf__btn--primary:hover {
+  background: var(--ui-primary-hover);
+}

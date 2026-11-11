@@ -119,5 +119,11 @@
   "retry": "Try again",
   "back": "Back",
   "yes": "Yes",
-  "no": "No"
+  "no": "No",
+  "notFound": {
+    "title": "Page not found",
+    "description": "This address doesn't exist or has moved. Check the URL, or head back home.",
+    "home": "Back to home",
+    "adminHome": "Back to dashboard"
+  }
 }

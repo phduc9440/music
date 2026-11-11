@@ -115,5 +115,11 @@
   "retry": "Thử lại",
   "back": "Quay lại",
   "yes": "Có",
-  "no": "Không"
+  "no": "Không",
+  "notFound": {
+    "title": "Không tìm thấy trang",
+    "description": "Đường dẫn này không tồn tại hoặc đã bị đổi. Kiểm tra lại địa chỉ, hoặc quay về trang chủ.",
+    "home": "Về trang chủ",
+    "adminHome": "Về bảng điều khiển"
+  }
 }
