@@ -25,14 +25,16 @@ import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Notification;
 import com.ptit.music_be.repository.MemberRepository;
 import com.ptit.music_be.repository.NotificationRepository;
+import com.ptit.music_be.service.notification.NotificationPusher;
 import com.ptit.music_be.service.notification.NotificationService;
 
 /** Thông báo lưu kèm params (JSON) để web dựng câu theo ngôn ngữ; bản ghi cũ không có params vẫn đọc được. */
 class NotificationParamsTest {
 
     private final NotificationRepository repo = mock(NotificationRepository.class);
+    private final NotificationPusher pusher = mock(NotificationPusher.class);
     private final NotificationServiceImpl service =
-            new NotificationServiceImpl(repo, mock(MemberRepository.class), new ObjectMapper());
+            new NotificationServiceImpl(repo, mock(MemberRepository.class), new ObjectMapper(), pusher);
     private final Member owner = Member.builder().id("o").email("o@x.com").build();
 
     @Test

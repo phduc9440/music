@@ -33,6 +33,9 @@ public class SecurityConfig {
         "/api/auth/**", "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**",
     };
 
+    /** Bắt tay WebSocket: không qua bộ lọc JWT của API mà tự xác thực trong WebSocketAuthHandshake. */
+    static final String WEBSOCKET_ENDPOINT = "/ws/**";
+
     static final String[] PUBLIC_READ_ENDPOINTS = {"/api/public/**"};
 
     CustomJwtDecoder customJwtDecoder;
@@ -41,6 +44,8 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         http.authorizeHttpRequests(request -> request.requestMatchers(PUBLIC_ENDPOINTS)
+                .permitAll()
+                .requestMatchers(WEBSOCKET_ENDPOINT)
                 .permitAll()
                 // API đọc cho khách chưa đăng nhập (trang chủ...), chỉ trả dữ liệu của bản PUBLIC
                 .requestMatchers(HttpMethod.GET, PUBLIC_READ_ENDPOINTS)

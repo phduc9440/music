@@ -18,6 +18,8 @@ public class CookieBearerTokenResolver implements BearerTokenResolver {
         if (path.startsWith("/api/auth/") && !path.equals("/api/auth/change-password")) return null;
         // API cho khách không cần biết ai đang xem; bỏ qua token để cookie hết hạn không làm khách bị 401
         if (path.startsWith("/api/public/")) return null;
+        // Bắt tay WebSocket tự đọc và kiểm tra cookie trong WebSocketAuthHandshake
+        if (path.startsWith("/ws")) return null;
 
         String header = headerResolver.resolve(request);
         return header != null ? header : AuthCookies.read(request, AuthCookies.ACCESS);

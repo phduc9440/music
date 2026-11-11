@@ -19,7 +19,10 @@ class NotificationServiceImplNotifyAllTest {
 
     private final NotificationRepository repo = mock(NotificationRepository.class);
     private final NotificationServiceImpl service = new NotificationServiceImpl(
-            repo, mock(MemberRepository.class), new com.fasterxml.jackson.databind.ObjectMapper());
+            repo,
+            mock(MemberRepository.class),
+            new com.fasterxml.jackson.databind.ObjectMapper(),
+            mock(com.ptit.music_be.service.notification.NotificationPusher.class));
 
     @Test
     @SuppressWarnings("unchecked")
