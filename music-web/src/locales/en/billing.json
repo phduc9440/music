@@ -15,12 +15,14 @@
   },
   "status": {
     "ACTIVE": "Active",
-    "FREE": "Free"
+    "FREE": "Free",
+    "UNLIMITED": "Unlimited"
   },
   "source": {
     "PAYMENT": "Purchased online",
     "POINTS_TRIAL": "Points trial",
-    "ADMIN_GRANT": "Granted by an admin"
+    "ADMIN_GRANT": "Granted by an admin",
+    "ROLE": "From admin role"
   },
   "period": {
     "MONTH": "Monthly",
@@ -36,7 +38,11 @@
     "expires": "Expires on {date}",
     "omrUsed": "OMR pages used this month",
     "usedUnlimited": "{used} (unlimited)",
-    "viewPlans": "View plans"
+    "viewPlans": "View plans",
+    "roleGrant": {
+      "SUPER_ADMIN": "Super admin benefits: unlimited, never expires.",
+      "ADMIN": "Admin benefits: Pro plan with no expiry."
+    }
   },
   "pricing": {
     "title": "Plans",
@@ -47,7 +53,13 @@
     "buy": "Buy plan",
     "redirecting": "Redirecting to the payment gateway...",
     "buyFailed": "Could not create the payment order",
-    "renew": "Renew"
+    "renew": "Renew",
+    "notNeeded": "Not needed",
+    "includedForAdmin": "Included (admin)",
+    "roleNote": {
+      "SUPER_ADMIN": "You are a super admin: every feature is unlimited and you do not need a plan.",
+      "ADMIN": "You are an admin: you already have Pro benefits with no expiry. You can still buy a higher plan."
+    }
   },
   "result": {
     "title": "Payment result",
@@ -89,5 +101,14 @@
   "kind": {
     "NEW": "New purchase",
     "RENEW": "Renewal"
-  }
+  },
+  "audience": {
+    "PERSONAL": "Personal",
+    "TEAM": "Team"
+  },
+  "audienceDesc": {
+    "PERSONAL": "For one person digitizing and editing their own scores.",
+    "TEAM": "For groups working together; limits are shared by the whole team."
+  },
+  "unlimitedPlan": "Unlimited"
 }

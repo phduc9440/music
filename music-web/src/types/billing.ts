@@ -12,9 +12,13 @@ export interface PlanLimits {
   omrPriority?: boolean | null;
 }
 
+/** PERSONAL: gói cá nhân; TEAM: gói nhóm; UNLIMITED: gói ảo của SUPER_ADMIN. */
+export type PlanAudience = 'PERSONAL' | 'TEAM' | 'UNLIMITED';
+
 export interface PlanInfo {
   code: string;
   name: string;
+  audience: PlanAudience;
   priceMonth: number;
   priceYear: number;
   limits: PlanLimits;
@@ -23,8 +27,10 @@ export interface PlanInfo {
 export interface MySubscription {
   plan: PlanInfo;
   /** ACTIVE (có gói trả phí hoặc được cấp) hoặc FREE. */
-  status: 'ACTIVE' | 'FREE';
-  source?: 'PAYMENT' | 'POINTS_TRIAL' | 'ADMIN_GRANT' | null;
+  status: 'ACTIVE' | 'FREE' | 'UNLIMITED';
+  /** ROLE: quyền lợi theo vai trò quản trị (ADMIN dùng Pro không thời hạn, SUPER_ADMIN không giới hạn). */
+  source?: 'PAYMENT' | 'POINTS_TRIAL' | 'ADMIN_GRANT' | 'ROLE' | null;
+  roleGrant?: 'SUPER_ADMIN' | 'ADMIN' | null;
   startsAt?: string | null;
   expiresAt?: string | null;
   omrPagesUsed: number;

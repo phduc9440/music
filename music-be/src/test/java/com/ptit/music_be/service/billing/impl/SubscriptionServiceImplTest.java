@@ -38,13 +38,14 @@ import com.ptit.music_be.service.notification.NotificationService;
 class SubscriptionServiceImplTest {
 
     private final SubscriptionRepository subs = mock(SubscriptionRepository.class);
+    private final MemberRepository memberRepo = mock(MemberRepository.class);
     private final PlanRepository plans = mock(PlanRepository.class);
     private final NotificationService notifications = mock(NotificationService.class);
     private final SubscriptionServiceImpl service = new SubscriptionServiceImpl(
             plans,
             subs,
             mock(UsageCounterRepository.class),
-            mock(MemberRepository.class),
+            memberRepo,
             new PlanLimitsParser(new ObjectMapper()),
             notifications);
 
@@ -150,5 +151,40 @@ class SubscriptionServiceImplTest {
         assertEquals(2, service.remindExpiring());
         verify(notifications, times(2))
                 .notify(any(), any(), eq(NotificationType.PLAN_EXPIRING), any(), any(), any());
+    }
+
+    @Test
+    void superAdminGetsUnlimitedPlanWithoutSubscription() {
+        when(memberRepo.roleNamesOf("m")).thenReturn(List.of("USER", "ADMIN", "SUPER_ADMIN"));
+
+        Plan plan = service.currentPlan("m");
+
+        assertEquals(SubscriptionServiceImpl.UNLIMITED, plan.getCode());
+        assertEquals(null, new PlanLimitsParser(new ObjectMapper()).parse(plan).omrPagesPerMonth());
+    }
+
+    @Test
+    void adminGetsProForeverButKeepsAHigherPaidPlan() {
+        Plan proPlan = Plan.builder().id("pro").code("PRO").sortOrder(2).limits("{}").build();
+        Plan premium = Plan.builder().id("premium").code("PREMIUM").sortOrder(3).limits("{}").build();
+        when(memberRepo.roleNamesOf("m")).thenReturn(List.of("ADMIN"));
+        when(plans.findByCode("PRO")).thenReturn(Optional.of(proPlan));
+        when(subs.findCurrentOne(eq("m"), any())).thenReturn(Optional.empty());
+
+        assertEquals("PRO", service.currentPlan("m").getCode());
+
+        when(subs.findCurrentOne(eq("m"), any()))
+                .thenReturn(Optional.of(current(premium, LocalDateTime.now().plusDays(10))));
+        assertEquals("PREMIUM", service.currentPlan("m").getCode());
+    }
+
+    @Test
+    void normalUserWithoutSubscriptionIsFree() {
+        Plan free = Plan.builder().id("free").code("FREE").sortOrder(1).limits("{}").build();
+        when(memberRepo.roleNamesOf("m")).thenReturn(List.of("USER"));
+        when(plans.findByCode("FREE")).thenReturn(Optional.of(free));
+        when(subs.findCurrentOne(eq("m"), any())).thenReturn(Optional.empty());
+
+        assertEquals("FREE", service.currentPlan("m").getCode());
     }
 }

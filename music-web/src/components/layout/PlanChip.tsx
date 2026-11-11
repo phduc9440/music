@@ -29,7 +29,9 @@ export default function PlanChip() {
       title={t('common.header.planTitle', { plan: sub.plan.name })}
     >
       <Icon name="star" size={16} />
-      <span>{free ? t('common.header.upgrade') : sub.plan.name}</span>
+      <span>
+        {free ? t('common.header.upgrade') : sub.status === 'UNLIMITED' ? t('billing.unlimitedPlan') : sub.plan.name}
+      </span>
     </Link>
   );
 }

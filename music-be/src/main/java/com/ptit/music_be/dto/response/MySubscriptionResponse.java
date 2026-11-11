@@ -13,10 +13,15 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class MySubscriptionResponse {
     PlanResponse plan;
-    /** ACTIVE (đang có gói trả phí/được cấp) hoặc FREE (không có dòng nào còn hiệu lực). */
+    /**
+     * ACTIVE (đang có gói trả phí/được cấp, hoặc ADMIN dùng Pro theo vai trò), FREE (không có dòng nào còn hiệu lực) hoặc
+     * UNLIMITED (SUPER_ADMIN: không giới hạn, không cần mua gói).
+     */
     String status;
-    /** PAYMENT / POINTS_TRIAL / ADMIN_GRANT; null khi ở gói Free mặc định. */
+    /** PAYMENT / POINTS_TRIAL / ADMIN_GRANT / ROLE (quyền lợi theo vai trò quản trị); null khi ở gói Free mặc định. */
     String source;
+    /** SUPER_ADMIN hoặc ADMIN nếu quyền lợi đến từ vai trò; null với người dùng thường. */
+    String roleGrant;
     LocalDateTime startsAt;
     LocalDateTime expiresAt;
     /** Trang OMR đã dùng trong tháng hiện tại. */

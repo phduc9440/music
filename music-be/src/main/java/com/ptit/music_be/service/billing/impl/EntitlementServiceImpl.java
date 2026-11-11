@@ -88,10 +88,11 @@ public class EntitlementServiceImpl implements EntitlementService {
         };
     }
 
-    /** Gói liền trên theo thứ tự sắp xếp; null nếu đã là gói cao nhất. */
+    /** Gói liền trên cùng nhóm (cá nhân / team) theo thứ tự sắp xếp; null nếu đã là gói cao nhất. */
     private String upgradeTo(Plan current) {
         return planRepository.findAllByOrderBySortOrderAsc().stream()
-                .filter(p -> p.getSortOrder() > current.getSortOrder())
+                .filter(p -> p.getSortOrder() > current.getSortOrder()
+                        && java.util.Objects.equals(p.getAudience(), current.getAudience()))
                 .findFirst()
                 .map(Plan::getCode)
                 .orElse(null);

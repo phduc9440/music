@@ -38,6 +38,11 @@ import lombok.experimental.FieldDefaults;
 public class SubscriptionServiceImpl implements SubscriptionService {
 
     public static final String FREE = "FREE";
+    public static final String PRO = "PRO";
+    /** Mã gói ảo của SUPER_ADMIN (không lưu trong bảng plans). */
+    public static final String UNLIMITED = "UNLIMITED";
+    static final String ROLE_SUPER_ADMIN = "SUPER_ADMIN";
+    static final String ROLE_ADMIN = "ADMIN";
     static final int MAX_GRANT_DAYS = 3650;
     /** Số ngày còn lại để nhắc, từ xa tới gần. */
     static final int[] REMIND_DAYS = {7, 1};
@@ -63,23 +68,85 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         Member member = memberRepository
                 .findByEmail(SecurityUtils.getCurrentEmail())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
-        Subscription current =
-                subscriptionRepository.findCurrentOne(member.getId(), LocalDateTime.now()).orElse(null);
         int used = usageCounterRepository
                 .findByMemberIdAndMetricAndPeriod(
                         member.getId(), UsageMetric.OMR_PAGES, java.time.YearMonth.now().toString())
                 .map(u -> u.getUsed())
                 .orElse(0);
-        return toMine(current, current == null ? freePlan() : current.getPlan(), used);
+        String grant = roleGrant(member.getId());
+        if (ROLE_SUPER_ADMIN.equals(grant)) {
+            return MySubscriptionResponse.builder()
+                    .plan(toPlanResponse(unlimitedPlan()))
+                    .status("UNLIMITED")
+                    .source("ROLE")
+                    .roleGrant(grant)
+                    .omrPagesUsed(used)
+                    .build();
+        }
+        Subscription current =
+                subscriptionRepository.findCurrentOne(member.getId(), LocalDateTime.now()).orElse(null);
+        Plan pro = ROLE_ADMIN.equals(grant) ? planRepository.findByCode(PRO).orElse(null) : null;
+        if (pro != null && (current == null || current.getPlan().getSortOrder() < pro.getSortOrder())) {
+            // ADMIN chưa mua gói nào cao hơn Pro: dùng Pro theo vai trò, không hết hạn
+            return MySubscriptionResponse.builder()
+                    .plan(toPlanResponse(pro))
+                    .status("ACTIVE")
+                    .source("ROLE")
+                    .roleGrant(grant)
+                    .omrPagesUsed(used)
+                    .build();
+        }
+        MySubscriptionResponse response = toMine(current, current == null ? freePlan() : current.getPlan(), used);
+        response.setRoleGrant(grant);
+        return response;
     }
 
     @Override
     @Transactional(readOnly = true)
     public Plan currentPlan(String memberId) {
-        return subscriptionRepository
+        String grant = roleGrant(memberId);
+        if (ROLE_SUPER_ADMIN.equals(grant)) {
+            return unlimitedPlan();
+        }
+        Plan paid = subscriptionRepository
                 .findCurrentOne(memberId, LocalDateTime.now())
                 .map(Subscription::getPlan)
-                .orElseGet(this::freePlan);
+                .orElse(null);
+        if (ROLE_ADMIN.equals(grant)) {
+            Plan pro = planRepository.findByCode(PRO).orElse(null);
+            if (pro != null && (paid == null || paid.getSortOrder() < pro.getSortOrder())) {
+                return pro;
+            }
+        }
+        return paid != null ? paid : freePlan();
+    }
+
+    /** SUPER_ADMIN, ADMIN hoặc null (người dùng thường) theo vai trò lưu trong DB. */
+    private String roleGrant(String memberId) {
+        if (memberId == null) {
+            return null;
+        }
+        List<String> roles = memberRepository.roleNamesOf(memberId);
+        if (roles == null) {
+            return null;
+        }
+        if (roles.contains(ROLE_SUPER_ADMIN)) {
+            return ROLE_SUPER_ADMIN;
+        }
+        return roles.contains(ROLE_ADMIN) ? ROLE_ADMIN : null;
+    }
+
+    /** Gói ảo của SUPER_ADMIN: thiếu mọi khóa số = không giới hạn, bật mọi quyền lợi. Không lưu DB. */
+    static Plan unlimitedPlan() {
+        return Plan.builder()
+                .code(UNLIMITED)
+                .name("Unlimited")
+                .audience(UNLIMITED)
+                .priceMonth(0)
+                .priceYear(0)
+                .limits("{\"collab\":true,\"team\":true,\"omrPriority\":true}")
+                .sortOrder(Integer.MAX_VALUE)
+                .build();
     }
 
     @Override
@@ -214,6 +281,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         return PlanResponse.builder()
                 .code(plan.getCode())
                 .name(plan.getName())
+                .audience(plan.getAudience())
                 .priceMonth(plan.getPriceMonth())
                 .priceYear(plan.getPriceYear())
                 .limits(limitsParser.parse(plan))
