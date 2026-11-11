@@ -731,9 +731,11 @@
 }
 
 .pl-note--playing,
-.pl-note--playing * {
-  fill: var(--sc-primary, var(--ui-primary)) !important;
-  stroke: var(--sc-primary, var(--ui-primary)) !important;
+.pl-note--playing *,
+.pl-note--playing.ed-note--selected path,
+.pl-note--playing.ed-note--selected text {
+  fill: var(--ui-note-playing) !important;
+  stroke: var(--ui-note-playing) !important;
 }
 
 /* Nút "⋯" và bottom sheet "Tùy chọn phát" (điện thoại, dưới 768px) */
