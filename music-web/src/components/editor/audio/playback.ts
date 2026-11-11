@@ -57,6 +57,11 @@ export interface PlayNote {
   ring?: number;
   /** Nốt phụ của láy rền / láy ngắn / láy vòng: cùng `id` với nốt gốc để tô nốt; không đưa vào dữ liệu chấm điểm. */
   ornament?: boolean;
+  /**
+   * Nốt là kết quả gộp của các nốt nối (hoặc luyến nối hai nốt cùng cao độ): chỉ một âm, vang liền suốt tổng trường độ.
+   * Bộ phát giữ cho âm không tắt dần giữa chừng (piano thật tắt rất nhanh nên nếu không nốt nối nghe như đã dứt).
+   */
+  sustain?: boolean;
 }
 
 /** Một ô nhịp trong lượt phát. */
@@ -170,8 +175,14 @@ const childNumber = (parent: Element, tag: string): number => {
 
 const hasChild = (el: Element, tag: string): boolean => Array.from(el.children).some((c) => c.tagName === tag);
 
+/** Nốt có dấu nối loại `type`: ghi bằng <tie> (phát âm) hoặc chỉ có <notations><tied> (file nhập từ OMR / phần mềm khác). */
 const hasTie = (note: Element, type: string): boolean =>
-  Array.from(note.children).some((c) => c.tagName === 'tie' && c.getAttribute('type') === type);
+  Array.from(note.children).some(
+    (c) =>
+      (c.tagName === 'tie' && c.getAttribute('type') === type) ||
+      (c.tagName === 'notations' &&
+        Array.from(c.children).some((n) => n.tagName === 'tied' && n.getAttribute('type') === type)),
+  );
 
 const hasDeep = (el: Element, tag: string): boolean => el.getElementsByTagName(tag).length > 0;
 
@@ -373,6 +384,10 @@ interface Building {
   factor: number;
   accent: boolean;
   voice: number;
+  /** Đã gộp từ nhiều nốt nối (hoặc luyến nối hai nốt cùng cao độ) thành một âm. */
+  tied: boolean;
+  /** Độ dài (giây) của đoạn nốt CUỐI cùng khi gộp: chỉ đoạn này bị bớt 10% để nhả phím, không bớt trên cả tổng độ dài. */
+  tail: number;
   /** Cắt bớt cuối nốt (giây): dấu lấy hơi. */
   trim: number;
   ornament: OrnamentKind | null;
@@ -778,6 +793,11 @@ export function buildPlayback(doc: ScoreDocument, fallbackBpm: number): Playback
     const pedals: { time: number; mode: PedalMode }[] = [];
     /** Các dấu luyến đang mở trong part này: nốt nằm trong dấu luyến được ngân liền sang nốt kế. */
     const slurs = new Set<string>();
+    /**
+     * Nốt mở đầu của từng dấu luyến đang mở (khóa khuông|số), kèm số nốt đã đi qua sau nó: luyến chỉ có đúng hai nốt cùng
+     * cao độ được hiểu như dấu nối (một âm liền).
+     */
+    const slurHeads = new Map<string, { note: Building; key: string; count: number }>();
     let previous = -1;
     order.forEach((measureIndex, k) => {
       const measure = measures[measureIndex];
@@ -785,6 +805,7 @@ export function buildPlayback(doc: ScoreDocument, fallbackBpm: number): Playback
       if (measureIndex !== previous + 1) {
         pending.clear(); // nhảy (lặp, D.C....): nốt nối và dấu luyến không đi theo
         slurs.clear();
+        slurHeads.clear();
       }
       previous = measureIndex;
       const mt = times[k];
@@ -838,6 +859,8 @@ export function buildPlayback(doc: ScoreDocument, fallbackBpm: number): Playback
                   factor: 1,
                   accent: false,
                   voice: g.info.voice,
+                  tied: false,
+                  tail: at(offset + lengths[gi], true) - at(offset),
                   trim: 0,
                   ornament: null,
                   neighbors: null,
@@ -856,16 +879,37 @@ export function buildPlayback(doc: ScoreDocument, fallbackBpm: number): Playback
         }
         if (!info || info.isRest || info.midi === null || item.duration <= 0) continue;
         const marks = slurMarks(item.child);
-        marks.starts.forEach((k) => slurs.add(`${info.staff}|${k}`));
-        marks.stops.forEach((k) => slurs.delete(`${info.staff}|${k}`));
-        const legato = slurs.size > 0; // nốt cuối của dấu luyến đã đóng nên ngắt bình thường
+        const stopKeys = marks.stops.map((k) => `${info.staff}|${k}`);
         const key = `${info.staff}|${info.voice}|${info.midi}`;
-        const held = hasTie(item.child, 'stop') ? pending.get(key) : undefined;
+        // Nốt nối: gộp vào nốt đang giữ. Luyến nối đúng hai nốt cùng cao độ cũng gộp như dấu nối.
+        let held = hasTie(item.child, 'stop') ? pending.get(key) : undefined;
+        if (!held && !item.isChord) {
+          for (const sk of stopKeys) {
+            const head = slurHeads.get(sk);
+            if (head && head.count === 0 && head.key === key) {
+              held = head.note;
+              break;
+            }
+          }
+        }
+        if (!item.isChord) {
+          for (const [sk, head] of slurHeads) if (!stopKeys.includes(sk)) head.count += 1;
+        }
+        stopKeys.forEach((sk) => slurHeads.delete(sk));
+        marks.starts.forEach((k) => slurs.add(`${info.staff}|${k}`));
+        stopKeys.forEach((sk) => slurs.delete(sk));
+        const legato = slurs.size > 0; // nốt cuối của dấu luyến đã đóng nên ngắt bình thường
         if (held) {
-          held.end = at(endQ, true);
+          const endAt = at(endQ, true);
+          held.tail = endAt - at(startQ);
+          held.end = endAt;
           held.beatEnd = mt.startBeat + endQ;
+          held.tied = true;
           if (hasDeep(item.child, 'breath-mark')) held.trim = -1;
-          if (!hasTie(item.child, 'start')) pending.delete(key);
+          if (hasTie(item.child, 'start')) pending.set(key, held);
+          else pending.delete(key);
+          if (!item.isChord)
+            marks.starts.forEach((k) => slurHeads.set(`${info.staff}|${k}`, { note: held, key, count: 0 }));
           continue;
         }
         const ornament = ornamentOf(item.child);
@@ -882,6 +926,8 @@ export function buildPlayback(doc: ScoreDocument, fallbackBpm: number): Playback
           factor: legato && articulationFactor(item.child) === LEGATO_FACTOR ? 1 : articulationFactor(item.child),
           accent: hasDeep(item.child, 'accent') || hasDeep(item.child, 'strong-accent'),
           voice: info.voice,
+          tied: false,
+          tail: at(endQ, true) - at(startQ),
           // -1: có dấu lấy hơi, độ cắt tính khi đã biết độ dài cuối cùng của nốt (nốt nối có thể dài thêm)
           trim: hasDeep(item.child, 'breath-mark') ? -1 : 0,
           ornament,
@@ -894,6 +940,7 @@ export function buildPlayback(doc: ScoreDocument, fallbackBpm: number): Playback
         };
         building.push(note);
         if (hasTie(item.child, 'start')) pending.set(key, note);
+        if (!item.isChord) marks.starts.forEach((k) => slurHeads.set(`${info.staff}|${k}`, { note, key, count: 0 }));
       }
     });
     const gains = assignGains(building, events);
@@ -903,8 +950,9 @@ export function buildPlayback(doc: ScoreDocument, fallbackBpm: number): Playback
     const onsets = onsetsByPitch(building);
     for (const note of building) {
       const span = note.end - note.start;
-      // Độ dài nốt nhả phím: theo dấu thể hiện, bớt một đoạn nếu có dấu lấy hơi
-      let held = span * note.factor;
+      // Độ dài nốt nhả phím: theo dấu thể hiện (nốt nối chỉ bớt ở đoạn cuối, không bớt trên cả tổng độ dài), bớt thêm một
+      // đoạn nếu có dấu lấy hơi
+      let held = span - Math.min(span, note.tail) * (1 - note.factor);
       if (note.trim !== 0) {
         const cut = Math.min(BREATH_MAX_S, Math.max(BREATH_MIN_S, span * BREATH_FRACTION));
         held = Math.max(span * 0.4 * note.factor, held - cut);
@@ -932,7 +980,8 @@ export function buildPlayback(doc: ScoreDocument, fallbackBpm: number): Playback
         beatEnd: note.beatEnd,
       };
       const ringsLonger = ringing > held + EPS;
-      const base: PlayNote = ringsLonger ? { ...plain, ring: ringing } : plain;
+      const withRing: PlayNote = ringsLonger ? { ...plain, ring: ringing } : plain;
+      const base: PlayNote = note.tied ? { ...withRing, sustain: true } : withRing;
       const steps = note.ornament
         ? expandOrnament(note.ornament, note.midi, note.neighbors, span)
         : note.glissTarget !== null

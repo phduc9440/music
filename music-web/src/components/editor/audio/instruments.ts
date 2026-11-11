@@ -52,7 +52,12 @@ export interface VoiceSpec {
   level: number;
   /** Nút nhận âm thanh của giọng; bỏ trống thì nối thẳng vào chuỗi chung (Player nối vào kênh riêng từng khuông). */
   destination?: AudioNode;
+  /** Nốt nối (một âm gộp từ nhiều nốt): nhạc cụ tắt dần (piano, guitar) tắt chậm hơn để vang liền suốt độ dài nốt. */
+  sustain?: boolean;
 }
+
+/** Hệ số kéo dài hằng số tắt dần của nốt nối. */
+const SUSTAIN_DECAY_FACTOR = 2.5;
 
 /** Giọng đã hẹn giờ, để cắt ngay khi bấm Dừng. */
 export interface Voice {
@@ -260,7 +265,7 @@ const sustainEnvelope = (env: GainNode, start: number, peak: number, attack: num
 
 const buildPiano = (ctx: BaseAudioContext, s: VoiceSpec, f: number, peak: number): Built => {
   const env = ctx.createGain();
-  const decay = Math.min(3.4, Math.max(0.45, 3.2 - (s.midi - 48) * 0.036)); // nốt cao tắt nhanh hơn nốt trầm
+  const decay = Math.min(3.4, Math.max(0.45, 3.2 - (s.midi - 48) * 0.036)) * (s.sustain ? SUSTAIN_DECAY_FACTOR : 1); // nốt cao tắt nhanh hơn nốt trầm
   const valueAt = decayEnvelope(env, s.start, peak, 0.004, decay);
   const filter = lowpass(ctx, Math.min(f * (4 + 9 * s.level), 11000));
   filter.frequency.setTargetAtTime(Math.min(f * 2.5, 6000), s.start + 0.01, 0.5);
@@ -275,7 +280,7 @@ const buildPiano = (ctx: BaseAudioContext, s: VoiceSpec, f: number, peak: number
 
 const buildGuitar = (ctx: BaseAudioContext, s: VoiceSpec, f: number, peak: number): Built => {
   const env = ctx.createGain();
-  const decay = Math.min(1.4, Math.max(0.3, 1.7 - (s.midi - 40) * 0.025));
+  const decay = Math.min(1.4, Math.max(0.3, 1.7 - (s.midi - 40) * 0.025)) * (s.sustain ? SUSTAIN_DECAY_FACTOR : 1);
   const valueAt = decayEnvelope(env, s.start, peak, 0.002, decay);
   const filter = lowpass(ctx, Math.min(f * 10, 9000), 1.2);
   filter.frequency.setTargetAtTime(Math.min(f * 2.2, 3500), s.start + 0.005, 0.18);
