@@ -164,6 +164,9 @@ public enum ErrorCode {
     PAYMENT_RANGE_INVALID(3716, "Khoảng ngày doanh thu không hợp lệ (tối đa 366 ngày)", HttpStatus.BAD_REQUEST),
     PAYMENT_ORDER_NOT_PAYABLE(3717, "Đơn này không còn chờ thanh toán", HttpStatus.CONFLICT),
     PAYMENT_NOT_NEEDED(3718, "Tài khoản quản trị đã có quyền lợi của gói này, không cần mua", HttpStatus.CONFLICT),
+    PLAN_PRICE_INVALID(3719, "Giá không hợp lệ: gói Free phải là 0, gói trả phí từ 1 đến 1.000.000.000 đồng", HttpStatus.BAD_REQUEST),
+    PLAN_NAME_INVALID(3720, "Tên gói không được trống và tối đa 100 ký tự", HttpStatus.BAD_REQUEST),
+    PLAN_LIMITS_INVALID(3721, "Hạn mức không hợp lệ: mỗi số từ 0 đến 10.000.000 (để trống = không giới hạn), task cùng lúc ít nhất 1", HttpStatus.BAD_REQUEST),
     ;
 
     int code;

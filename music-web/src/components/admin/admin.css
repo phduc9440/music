@@ -1226,3 +1226,78 @@
     flex: 1;
   }
 }
+
+/* Trang gói dịch vụ (AdminPlans) */
+.adm-plans-note {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--ui-border);
+  border-left: 4px solid var(--ui-primary);
+  border-radius: var(--ui-radius);
+  background: var(--ui-primary-soft);
+}
+.adm-plan-group + .adm-plan-group {
+  margin-top: 1.5rem;
+}
+.adm-plan-group__title {
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+}
+.adm-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+.adm-plan-form {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.adm-plan-form__row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 0.75rem;
+}
+.adm-shell .adm-plan-form__num {
+  font-variant-numeric: tabular-nums;
+}
+.adm-plan-form__heading {
+  margin: 0.25rem 0 0.75rem;
+  font-size: var(--adm-text-md);
+  color: var(--adm-text-3);
+}
+.adm-plan-form__limits {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 0.75rem;
+}
+.adm-plan-form__limits .adm-field {
+  margin-bottom: 0.9rem;
+}
+.adm-plan-form__check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: var(--adm-text-sm);
+  cursor: pointer;
+}
+.adm-plan-form__flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+}
+.adm-plan-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+@media (max-width: 480px) {
+  .adm-plan-grid,
+  .adm-plan-form__row,
+  .adm-plan-form__limits {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
