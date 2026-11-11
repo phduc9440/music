@@ -43,7 +43,9 @@
     "profile": "My profile",
     "admin": "Admin area",
     "changePassword": "Change password",
-    "logout": "Sign out"
+    "logout": "Sign out",
+    "upgrade": "Upgrade",
+    "planTitle": "{plan} plan: see limits and renew"
   },
   "theme": {
     "label": "Theme: {name}",
