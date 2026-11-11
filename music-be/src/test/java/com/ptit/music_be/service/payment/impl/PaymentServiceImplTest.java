@@ -171,4 +171,30 @@ class PaymentServiceImplTest {
         assertEquals(1, service.expirePending());
         assertEquals(PaymentStatus.EXPIRED, order.getStatus());
     }
+
+    @Test
+    void expirePendingActivatesPlanWhenGatewayReportsPayment() {
+        order.setExpiresAt(LocalDateTime.now().minusMinutes(1));
+        when(orders.findByStatusAndExpiresAtBefore(eq(PaymentStatus.PENDING), any())).thenReturn(List.of(order));
+        when(provider.queryTransaction(order))
+                .thenReturn(Optional.of(new PaymentCallback(true, "MU1", 99000, "TXN9", true)));
+
+        service.expirePending();
+
+        assertEquals(PaymentStatus.PAID, order.getStatus());
+        verify(subscriptions, times(1)).activate(any(), any(), any(), eq(SubscriptionSource.PAYMENT));
+    }
+
+    @Test
+    void expirePendingIgnoresGatewayAnswerWithWrongAmount() {
+        order.setExpiresAt(LocalDateTime.now().minusMinutes(1));
+        when(orders.findByStatusAndExpiresAtBefore(eq(PaymentStatus.PENDING), any())).thenReturn(List.of(order));
+        when(provider.queryTransaction(order))
+                .thenReturn(Optional.of(new PaymentCallback(true, "MU1", 1000, "TXN9", true)));
+
+        service.expirePending();
+
+        assertEquals(PaymentStatus.EXPIRED, order.getStatus());
+        verify(subscriptions, never()).activate(any(), any(), any(), any());
+    }
 }
