@@ -19,7 +19,7 @@
       "aiTasks": "AI tasks",
       "system": "System monitoring",
       "revenue": "Revenue",
-      "plans": "Plan prices"
+      "plans": "Plans"
     },
     "other": "Other",
     "userSite": "User site"
@@ -556,14 +556,16 @@
     "allKinds": "All order types"
   },
   "plans": {
-    "subtitle": "Monthly and yearly price of each plan. Orders created before a change keep their old amount.",
-    "readOnly": "Only super admins can change prices. You are viewing in read-only mode.",
+    "subtitle": "Name, price and limits of each plan. Orders created before a price change keep their old amount; new limits apply immediately to current subscribers.",
+    "readOnly": "Only super admins can edit plans. You are viewing in read-only mode.",
     "priceMonth": "Monthly price (₫)",
     "priceYear": "Yearly price (₫)",
     "save": "Save",
     "reset": "Undo",
-    "saved": "Updated the price of {plan}",
-    "saveFailed": "Could not save the price",
-    "loadFailed": "Could not load plans"
+    "saved": "Updated plan {plan}",
+    "saveFailed": "Could not save the plan",
+    "loadFailed": "Could not load plans",
+    "name": "Plan name",
+    "limits": "Limits and features"
   }
 }

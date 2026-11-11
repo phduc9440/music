@@ -1,24 +1,56 @@
 import { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { Badge, Button, Card, PageHeader, Table, TableState } from '../../components/ui';
+import { Badge, Button, Card, PageHeader } from '../../components/ui';
 import { errorMessage } from '../../components/ui/helpers';
+import Skeleton from '../../components/ui/Skeleton';
 import type { AdminOutletContext } from '../../components/admin/AdminLayout';
 import { billingApi } from '../../services';
-import type { PlanAudience, PlanInfo } from '../../types';
+import type { PlanAudience, PlanInfo, PlanLimits } from '../../types';
 import { isSuperAdminMember } from '../../utils/auth';
-import { formatVnd, t } from '../../i18n/core';
+import { t } from '../../i18n/core';
 
 const AUDIENCES: PlanAudience[] = ['PERSONAL', 'TEAM'];
 
-type Draft = { month: string; year: string };
+/** Hạn mức dạng số; để trống (tích "Không giới hạn") = null. */
+const NUMBER_LIMITS = ['omrPagesPerMonth', 'omrConcurrent', 'storageMb', 'keptVersions', 'exportsPerMonth'] as const;
+/** Quyền lợi bật/tắt. */
+const FLAG_LIMITS = ['collab', 'team', 'omrPriority'] as const;
 
-/** Chỉ nhận chữ số (giá VND nguyên). */
-const digits = (value: string) => value.replace(/\D/g, '').slice(0, 10);
+type NumberKey = (typeof NUMBER_LIMITS)[number];
+type FlagKey = (typeof FLAG_LIMITS)[number];
+
+/** Bản nháp trên form: số giữ dạng chuỗi để ô nhập trống được; null = không giới hạn. */
+type Draft = {
+  name: string;
+  priceMonth: string;
+  priceYear: string;
+  numbers: Record<NumberKey, string | null>;
+  flags: Record<FlagKey, boolean>;
+};
+
+const digits = (value: string, max = 10) => value.replace(/\D/g, '').slice(0, max);
+
+const toDraft = (p: PlanInfo): Draft => ({
+  name: p.name,
+  priceMonth: String(p.priceMonth),
+  priceYear: String(p.priceYear),
+  numbers: Object.fromEntries(
+    NUMBER_LIMITS.map((k) => [k, p.limits[k] == null ? null : String(p.limits[k])]),
+  ) as Draft['numbers'],
+  flags: Object.fromEntries(FLAG_LIMITS.map((k) => [k, !!p.limits[k]])) as Draft['flags'],
+});
+
+const toLimits = (d: Draft): PlanLimits => ({
+  ...(Object.fromEntries(
+    NUMBER_LIMITS.map((k) => [k, d.numbers[k] == null ? null : Number(d.numbers[k] || 0)]),
+  ) as Pick<PlanLimits, NumberKey>),
+  ...d.flags,
+});
 
 /**
- * Admin: giá các gói dịch vụ (Cá nhân / Team). Mọi quản trị viên xem được; chỉ SUPER_ADMIN sửa được giá. Gói Free luôn
- * miễn phí. Đơn đã tạo trước khi đổi giá vẫn giữ số tiền cũ.
+ * Admin: tên, giá và hạn mức của từng gói (Cá nhân / Team). Mọi quản trị viên xem được; chỉ SUPER_ADMIN sửa được. Gói
+ * Free luôn miễn phí. Đơn đã tạo trước khi đổi giá giữ số tiền cũ; hạn mức mới áp dụng ngay cho người đang dùng gói.
  */
 export default function AdminPlans() {
   const { admin } = useOutletContext<AdminOutletContext>();
@@ -27,26 +59,22 @@ export default function AdminPlans() {
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const [saving, setSaving] = useState<string | null>(null);
 
-  const load = () =>
+  useEffect(() => {
     billingApi
       .adminPlans()
       .then((res) => {
         setPlans(res.data.result);
-        setDrafts(
-          Object.fromEntries(
-            res.data.result.map((p) => [p.code, { month: String(p.priceMonth), year: String(p.priceYear) }]),
-          ),
-        );
+        setDrafts(Object.fromEntries(res.data.result.map((p) => [p.code, toDraft(p)])));
       })
       .catch((error) => toast.error(errorMessage(error, t('admin.plans.loadFailed'))));
-
-  useEffect(() => {
-    load();
   }, []);
+
+  const patch = (code: string, change: (d: Draft) => Draft) =>
+    setDrafts((all) => (all[code] ? { ...all, [code]: change(all[code]) } : all));
 
   const changed = (p: PlanInfo) => {
     const d = drafts[p.code];
-    return !!d && (Number(d.month) !== p.priceMonth || Number(d.year) !== p.priceYear);
+    return !!d && JSON.stringify(d) !== JSON.stringify(toDraft(p));
   };
 
   const save = async (p: PlanInfo) => {
@@ -54,12 +82,15 @@ export default function AdminPlans() {
     if (!d) return;
     setSaving(p.code);
     try {
-      const res = await billingApi.updatePlanPrice(p.code, {
-        priceMonth: Number(d.month || 0),
-        priceYear: Number(d.year || 0),
+      const res = await billingApi.updatePlan(p.code, {
+        name: d.name.trim(),
+        priceMonth: Number(d.priceMonth || 0),
+        priceYear: Number(d.priceYear || 0),
+        limits: toLimits(d),
       });
       const updated = res.data.result;
       setPlans((list) => list?.map((x) => (x.code === updated.code ? updated : x)) ?? null);
+      setDrafts((all) => ({ ...all, [updated.code]: toDraft(updated) }));
       toast.success(t('admin.plans.saved', { plan: updated.name }));
     } catch (error) {
       toast.error(errorMessage(error, t('admin.plans.saveFailed')));
@@ -68,8 +99,119 @@ export default function AdminPlans() {
     }
   };
 
-  const reset = (p: PlanInfo) =>
-    setDrafts((all) => ({ ...all, [p.code]: { month: String(p.priceMonth), year: String(p.priceYear) } }));
+  const renderPlan = (p: PlanInfo) => {
+    const d = drafts[p.code];
+    if (!d) return null;
+    const free = p.code === 'FREE';
+    return (
+      <Card
+        key={p.code}
+        title={
+          <>
+            {p.name} <span className="adm-code adm-muted">{p.code}</span>
+          </>
+        }
+        actions={free ? <Badge tone="neutral">{t('billing.pricing.free')}</Badge> : undefined}
+      >
+        <fieldset className="adm-plan-form" disabled={!canEdit || saving === p.code}>
+          <label className="adm-field">
+            <span className="adm-field__label">{t('admin.plans.name')}</span>
+            <input
+              className="adm-input"
+              value={d.name}
+              maxLength={100}
+              onChange={(e) => patch(p.code, (x) => ({ ...x, name: e.target.value }))}
+            />
+          </label>
+
+          <div className="adm-plan-form__row">
+            {(['priceMonth', 'priceYear'] as const).map((field) => (
+              <label key={field} className="adm-field">
+                <span className="adm-field__label">{t(`admin.plans.${field}`)}</span>
+                <input
+                  className="adm-input adm-plan-form__num"
+                  inputMode="numeric"
+                  value={d[field]}
+                  disabled={free}
+                  onChange={(e) => patch(p.code, (x) => ({ ...x, [field]: digits(e.target.value) }))}
+                />
+              </label>
+            ))}
+          </div>
+
+          <h4 className="adm-plan-form__heading">{t('admin.plans.limits')}</h4>
+          <div className="adm-plan-form__limits">
+            {NUMBER_LIMITS.map((k) => {
+              const unlimited = d.numbers[k] == null;
+              return (
+                <div key={k} className="adm-field">
+                  <label className="adm-field__label" htmlFor={`${p.code}-${k}`}>
+                    {t(`billing.limits.${k}`)}
+                    {k === 'storageMb' && <span className="adm-muted"> (MB)</span>}
+                  </label>
+                  <input
+                    id={`${p.code}-${k}`}
+                    className="adm-input adm-plan-form__num"
+                    inputMode="numeric"
+                    value={unlimited ? '' : (d.numbers[k] ?? '')}
+                    placeholder={unlimited ? t('billing.unlimited') : undefined}
+                    disabled={unlimited}
+                    onChange={(e) =>
+                      patch(p.code, (x) => ({ ...x, numbers: { ...x.numbers, [k]: digits(e.target.value, 8) } }))
+                    }
+                  />
+                  <label className="adm-plan-form__check">
+                    <input
+                      type="checkbox"
+                      checked={unlimited}
+                      onChange={(e) =>
+                        patch(p.code, (x) => ({
+                          ...x,
+                          numbers: { ...x.numbers, [k]: e.target.checked ? null : String(p.limits[k] ?? 1) },
+                        }))
+                      }
+                    />
+                    {t('billing.unlimited')}
+                  </label>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="adm-plan-form__flags">
+            {FLAG_LIMITS.map((k) => (
+              <label key={k} className="adm-plan-form__check">
+                <input
+                  type="checkbox"
+                  checked={d.flags[k]}
+                  onChange={(e) => patch(p.code, (x) => ({ ...x, flags: { ...x.flags, [k]: e.target.checked } }))}
+                />
+                {t(`billing.limits.${k}`)}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        {canEdit && (
+          <div className="adm-plan-form__actions">
+            {changed(p) && (
+              <Button variant="ghost" onClick={() => setDrafts((all) => ({ ...all, [p.code]: toDraft(p) }))}>
+                {t('admin.plans.reset')}
+              </Button>
+            )}
+            <Button
+              variant="primary"
+              disabled={!changed(p) || !d.name.trim()}
+              loading={saving === p.code}
+              onClick={() => save(p)}
+            >
+              {t('admin.plans.save')}
+            </Button>
+          </div>
+        )}
+      </Card>
+    );
+  };
 
   return (
     <>
@@ -79,82 +221,14 @@ export default function AdminPlans() {
           {t('admin.plans.readOnly')}
         </p>
       )}
-
-      {AUDIENCES.map((audience) => {
-        const group = plans?.filter((p) => p.audience === audience);
-        return (
-          <Card key={audience} title={t(`billing.audience.${audience}`)} flush>
-            <Table>
-              <thead>
-                <tr>
-                  <th>{t('admin.plan.plan')}</th>
-                  <th>{t('admin.plans.priceMonth')}</th>
-                  <th>{t('admin.plans.priceYear')}</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {!plans && <TableState colSpan={4} loading />}
-                {group?.map((p) => {
-                  const d = drafts[p.code] ?? { month: '', year: '' };
-                  const free = p.code === 'FREE';
-                  const locked = !canEdit || free;
-                  return (
-                    <tr key={p.code}>
-                      <td>
-                        <strong>{p.name}</strong> <span className="adm-code adm-muted">{p.code}</span>
-                        {free && (
-                          <>
-                            {' '}
-                            <Badge tone="neutral">{t('billing.pricing.free')}</Badge>
-                          </>
-                        )}
-                      </td>
-                      {(['month', 'year'] as const).map((field) => (
-                        <td key={field}>
-                          {locked ? (
-                            formatVnd(field === 'month' ? p.priceMonth : p.priceYear)
-                          ) : (
-                            <input
-                              className="adm-input adm-plans-price"
-                              inputMode="numeric"
-                              aria-label={`${p.name} · ${t(field === 'month' ? 'admin.plans.priceMonth' : 'admin.plans.priceYear')}`}
-                              value={d[field]}
-                              onChange={(e) =>
-                                setDrafts((all) => ({ ...all, [p.code]: { ...d, [field]: digits(e.target.value) } }))
-                              }
-                            />
-                          )}
-                        </td>
-                      ))}
-                      <td className="adm-nowrap">
-                        {!locked && (
-                          <>
-                            <Button
-                              size="sm"
-                              variant="primary"
-                              disabled={!changed(p)}
-                              loading={saving === p.code}
-                              onClick={() => save(p)}
-                            >
-                              {t('admin.plans.save')}
-                            </Button>{' '}
-                            {changed(p) && (
-                              <Button size="sm" variant="ghost" onClick={() => reset(p)}>
-                                {t('admin.plans.reset')}
-                              </Button>
-                            )}
-                          </>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </Table>
-          </Card>
-        );
-      })}
+      {!plans && <Skeleton lines={6} />}
+      {plans &&
+        AUDIENCES.map((audience) => (
+          <section key={audience} className="adm-plan-group">
+            <h2 className="adm-plan-group__title">{t(`billing.audience.${audience}`)}</h2>
+            <div className="adm-plan-grid">{plans.filter((p) => p.audience === audience).map(renderPlan)}</div>
+          </section>
+        ))}
     </>
   );
 }

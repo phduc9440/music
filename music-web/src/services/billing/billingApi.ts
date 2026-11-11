@@ -8,6 +8,7 @@ import type {
   PaymentOrder,
   PaymentStatus,
   PlanInfo,
+  PlanLimits,
   Revenue,
 } from '../../types';
 
@@ -28,10 +29,10 @@ export const billingApi = {
   confirmReturn: (params: Record<string, string>) =>
     apiClient.post<ApiResponse<PaymentOrder>>('/payments/vnpay/return', params),
   getOrder: (orderCode: string) => apiClient.get<ApiResponse<PaymentOrder>>(`/payments/orders/${orderCode}`),
-  // Admin: giá gói (mọi admin xem, chỉ SUPER_ADMIN sửa)
+  // Admin: tên, giá, hạn mức gói (mọi admin xem, chỉ SUPER_ADMIN sửa)
   adminPlans: () => apiClient.get<ApiResponse<PlanInfo[]>>('/admin/plans'),
-  updatePlanPrice: (code: string, data: { priceMonth: number; priceYear: number }) =>
-    apiClient.put<ApiResponse<PlanInfo>>(`/admin/plans/${code}/price`, data),
+  updatePlan: (code: string, data: { name: string; priceMonth: number; priceYear: number; limits: PlanLimits }) =>
+    apiClient.put<ApiResponse<PlanInfo>>(`/admin/plans/${code}`, data),
   // Admin: doanh thu, danh sách đơn, hoàn tiền thủ công
   revenue: (params?: { from?: string; to?: string }) =>
     apiClient.get<ApiResponse<Revenue>>('/admin/payments/revenue', { params }),

@@ -19,7 +19,7 @@
       "aiTasks": "Tác vụ AI",
       "system": "Giám sát hệ thống",
       "revenue": "Doanh thu",
-      "plans": "Giá gói dịch vụ"
+      "plans": "Gói dịch vụ"
     },
     "other": "Khác",
     "userSite": "Giao diện người dùng"
@@ -531,14 +531,16 @@
     "allKinds": "Tất cả loại đơn"
   },
   "plans": {
-    "subtitle": "Giá theo tháng và theo năm của từng gói. Đơn đã tạo trước khi đổi giá vẫn giữ số tiền cũ.",
-    "readOnly": "Chỉ quản trị viên cấp cao (SUPER_ADMIN) được sửa giá. Bạn đang xem ở chế độ chỉ đọc.",
+    "subtitle": "Tên, giá và hạn mức của từng gói. Đơn đã tạo trước khi đổi giá giữ số tiền cũ; hạn mức mới áp dụng ngay cho người đang dùng gói.",
+    "readOnly": "Chỉ quản trị viên cấp cao (SUPER_ADMIN) được sửa gói. Bạn đang xem ở chế độ chỉ đọc.",
     "priceMonth": "Giá tháng (₫)",
     "priceYear": "Giá năm (₫)",
     "save": "Lưu",
     "reset": "Hoàn tác",
-    "saved": "Đã cập nhật giá gói {plan}",
-    "saveFailed": "Không lưu được giá",
-    "loadFailed": "Không tải được danh sách gói"
+    "saved": "Đã cập nhật gói {plan}",
+    "saveFailed": "Không lưu được gói",
+    "loadFailed": "Không tải được danh sách gói",
+    "name": "Tên gói",
+    "limits": "Hạn mức và quyền lợi"
   }
 }
