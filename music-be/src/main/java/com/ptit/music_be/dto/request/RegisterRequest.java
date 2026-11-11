@@ -32,4 +32,8 @@ public class RegisterRequest {
 
     @Size(max = 255, message = "INVALID_REQUEST")
     String address;
+
+    /** Mã giới thiệu của người mời (tùy chọn). Mã sai thì vẫn đăng ký bình thường, chỉ không ghi người mời. */
+    @Size(max = 16, message = "INVALID_REQUEST")
+    String referralCode;
 }

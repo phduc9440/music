@@ -39,6 +39,8 @@ import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreFile;
 import com.ptit.music_be.entity.ScoreTag;
 import com.ptit.music_be.entity.Tag;
+import com.ptit.music_be.event.RewardEarnedEvent;
+import com.ptit.music_be.event.RewardReason;
 import com.ptit.music_be.event.ScoreTrashedByAdminEvent;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
@@ -354,6 +356,9 @@ public class ScoreServiceImpl implements ScoreService {
             score.setIsOfficial(false);
         }
         Score saved = scoreRepository.save(score);
+        if (visibility == Visibility.PUBLIC) {
+            publishRewardIfOwned(score);
+        }
         boolean selfOwned = score.getMember() != null
                 && score.getMember().getEmail() != null
                 && score.getMember().getEmail().equalsIgnoreCase(SecurityUtils.getCurrentEmail());
@@ -539,6 +544,14 @@ public class ScoreServiceImpl implements ScoreService {
                 .build();
     }
 
+    /** Bản vừa được duyệt công khai: báo cho sổ điểm để thưởng chủ bản (không phát cho bản không có chủ). */
+    private void publishRewardIfOwned(Score score) {
+        if (score.getMember() != null) {
+            eventPublisher.publishEvent(
+                    new RewardEarnedEvent(score.getMember().getId(), RewardReason.SCORE_PUBLISHED, score.getId()));
+        }
+    }
+
     @Override
     @Transactional
     public ScoreDetailResponse approvePublic(String scoreId) {
@@ -547,6 +560,7 @@ public class ScoreServiceImpl implements ScoreService {
         score.setVisibility(Visibility.PUBLIC.name());
         score.setRejectReason(null);
         Score saved = scoreRepository.save(score);
+        publishRewardIfOwned(score);
         notificationService.notify(
                 score.getMember(),
                 null,

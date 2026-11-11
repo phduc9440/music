@@ -38,6 +38,7 @@ import com.ptit.music_be.repository.AiTaskRepository;
 import com.ptit.music_be.repository.ScoreFileRepository;
 import com.ptit.music_be.repository.ScoreRepository;
 import com.ptit.music_be.service.ai.InternalAiTaskService;
+import com.ptit.music_be.service.referral.ReferralService;
 import com.ptit.music_be.service.storage.FileStorageService;
 
 import lombok.AccessLevel;
@@ -65,6 +66,7 @@ public class InternalAiTaskServiceImpl implements InternalAiTaskService {
     AiServiceProperties aiServiceProperties;
     ObjectMapper objectMapper;
     OmrQuota omrQuota;
+    ReferralService referralService;
 
     @Override
     @Transactional
@@ -216,6 +218,8 @@ public class InternalAiTaskServiceImpl implements InternalAiTaskService {
             removeStalePages(score, task);
             score.setProcessingStatus(ProcessingStatus.COMPLETED.name());
             scoreRepository.save(score);
+            // Người được mời số hóa xong bản đầu tiên: thưởng cho cả hai bên (chỉ một lần)
+            referralService.onDigitized(task.getMember());
         }
     }
 

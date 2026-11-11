@@ -5,6 +5,7 @@ import { authApi, userApi } from '../services';
 import { AuthProvider } from '../types';
 import type { Member } from '../types';
 import ChangePasswordModal from '../components/ChangePasswordModal';
+import ReferralCard from '../components/ReferralCard';
 import { roleLabel } from '../utils/auth';
 import '../components/scores/scores.css';
 import './scores/library/ScoreLibrary.css';
@@ -121,42 +122,46 @@ export default function UserProfile() {
         </header>
 
         <div className="pf-grid">
-          <section className="reveal-item pf-card pf-identity">
-            <div className="pf-avatar">
-              {user?.avatarUrl ? <img src={user.avatarUrl} alt="" /> : displayName.charAt(0).toUpperCase()}
-            </div>
-            <input
-              ref={fileInput}
-              type="file"
-              accept="image/png,image/jpeg"
-              onChange={handleAvatarChange}
-              style={{ display: 'none' }}
-            />
-            <h2 className="pf-name">{displayName}</h2>
-            <p className="pf-email">{user?.email}</p>
-            {user && <span className="sc-chip sc-chip--accent">{roleLabel(user)}</span>}
-            <div className="pf-actions">
-              <button
-                type="button"
-                className="sc-btn sc-btn--sm"
-                disabled={isUploading}
-                onClick={() => fileInput.current?.click()}
-              >
-                {isUploading ? t('common.loading') : t('profile.changeAvatar')}
-              </button>
-              {user?.avatarUrl && (
+          <div className="pf-side">
+            <section className="reveal-item pf-card pf-identity">
+              <div className="pf-avatar">
+                {user?.avatarUrl ? <img src={user.avatarUrl} alt="" /> : displayName.charAt(0).toUpperCase()}
+              </div>
+              <input
+                ref={fileInput}
+                type="file"
+                accept="image/png,image/jpeg"
+                onChange={handleAvatarChange}
+                style={{ display: 'none' }}
+              />
+              <h2 className="pf-name">{displayName}</h2>
+              <p className="pf-email">{user?.email}</p>
+              {user && <span className="sc-chip sc-chip--accent">{roleLabel(user)}</span>}
+              <div className="pf-actions">
                 <button
                   type="button"
-                  className="sc-btn sc-btn--sm sc-btn--danger"
+                  className="sc-btn sc-btn--sm"
                   disabled={isUploading}
-                  onClick={handleAvatarDelete}
+                  onClick={() => fileInput.current?.click()}
                 >
-                  {t('profile.removeAvatar')}
+                  {isUploading ? t('common.loading') : t('profile.changeAvatar')}
                 </button>
-              )}
-            </div>
-            <p className="pf-hint">{t('profile.avatarHint')}</p>
-          </section>
+                {user?.avatarUrl && (
+                  <button
+                    type="button"
+                    className="sc-btn sc-btn--sm sc-btn--danger"
+                    disabled={isUploading}
+                    onClick={handleAvatarDelete}
+                  >
+                    {t('profile.removeAvatar')}
+                  </button>
+                )}
+              </div>
+              <p className="pf-hint">{t('profile.avatarHint')}</p>
+            </section>
+
+            <ReferralCard />
+          </div>
 
           <div className="pf-stack">
             <section className="reveal-item pf-card">
@@ -173,26 +178,32 @@ export default function UserProfile() {
                   required
                   maxLength={255}
                 />
-                <label className="sc-label" htmlFor="pf-phone">
-                  {t('profile.phone')}
-                </label>
-                <input
-                  id="pf-phone"
-                  className="sc-input"
-                  value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                  maxLength={30}
-                />
-                <label className="sc-label" htmlFor="pf-address">
-                  {t('profile.address')}
-                </label>
-                <input
-                  id="pf-address"
-                  className="sc-input"
-                  value={form.address}
-                  onChange={(e) => setForm({ ...form, address: e.target.value })}
-                  maxLength={255}
-                />
+                <div className="pf-row">
+                  <div>
+                    <label className="sc-label" htmlFor="pf-phone">
+                      {t('profile.phone')}
+                    </label>
+                    <input
+                      id="pf-phone"
+                      className="sc-input"
+                      value={form.phone}
+                      onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                      maxLength={30}
+                    />
+                  </div>
+                  <div>
+                    <label className="sc-label" htmlFor="pf-address">
+                      {t('profile.address')}
+                    </label>
+                    <input
+                      id="pf-address"
+                      className="sc-input"
+                      value={form.address}
+                      onChange={(e) => setForm({ ...form, address: e.target.value })}
+                      maxLength={255}
+                    />
+                  </div>
+                </div>
                 <div className="pf-form-actions">
                   <button type="submit" className="sc-btn sc-btn--primary" disabled={isSaving}>
                     {isSaving ? t('scores.edit.saving') : t('scores.edit.saveChanges')}

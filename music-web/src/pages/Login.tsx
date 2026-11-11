@@ -21,7 +21,12 @@ const apiError = (error: unknown) => translateError(error, (error as ApiErr).mes
 const retryAfter = (error: unknown) => (error as ApiErr).response?.data?.result?.retryAfterSeconds ?? 0;
 
 export default function Login() {
-  const [viewMode, setViewMode] = useState<ViewMode>('login');
+  // Link mời dạng /auth/login?ref=MÃ: mở sẵn form đăng ký và điền mã giới thiệu
+  const [inviteCode] = useState(
+    () => new URLSearchParams(window.location.search).get('ref')?.trim().toUpperCase() ?? '',
+  );
+  const [viewMode, setViewMode] = useState<ViewMode>(inviteCode ? 'register' : 'login');
+  const [referralCode, setReferralCode] = useState(inviteCode);
 
   // Form State
   const [password, setPassword] = useState('');
@@ -53,7 +58,7 @@ export default function Login() {
         toast.success(t('auth.toast.signedIn'));
         navigate(from ?? target, { replace: true });
       } else if (viewMode === 'register') {
-        await authApi.register({ password, email, fullName });
+        await authApi.register({ password, email, fullName, referralCode: referralCode.trim() || undefined });
         toast.success(t('auth.toast.registered'));
         setViewMode('login');
       } else if (viewMode === 'forgot') {
@@ -176,6 +181,23 @@ export default function Login() {
             </div>
           )}
 
+          {/* Mã giới thiệu (chỉ khi đăng ký, không bắt buộc) */}
+          {viewMode === 'register' && (
+            <div className="form-group">
+              <label htmlFor="referralCode">{t('auth.referralCode')}</label>
+              <input
+                type="text"
+                id="referralCode"
+                className="form-control"
+                placeholder={t('auth.referralCodePlaceholder')}
+                value={referralCode}
+                onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                maxLength={16}
+                autoComplete="off"
+              />
+            </div>
+          )}
+
           {/* OTP (Used in Reset) */}
           {viewMode === 'reset' && (
             <div className="form-group">
@@ -253,6 +275,10 @@ export default function Login() {
           </button>
 
           {viewMode === 'login' && <GoogleAuthButton setIsLoading={setIsLoading} redirectTo={from} />}
+          {/* Đăng ký bằng Google vẫn giữ được mã giới thiệu đã nhập */}
+          {viewMode === 'register' && (
+            <GoogleAuthButton setIsLoading={setIsLoading} redirectTo={from} referralCode={referralCode} />
+          )}
 
           {/* Bottom links */}
           <div style={{ marginTop: '1.5rem', fontSize: '0.875rem' }}>

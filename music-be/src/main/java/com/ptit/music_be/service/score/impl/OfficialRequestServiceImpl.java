@@ -6,6 +6,7 @@ import java.util.Set;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -21,6 +22,8 @@ import com.ptit.music_be.dto.response.PageResponse;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.OfficialRequest;
 import com.ptit.music_be.entity.Score;
+import com.ptit.music_be.event.RewardEarnedEvent;
+import com.ptit.music_be.event.RewardReason;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.repository.MemberRepository;
@@ -51,6 +54,7 @@ public class OfficialRequestServiceImpl implements OfficialRequestService {
     MemberRepository memberRepository;
     ScoreCopyService scoreCopyService;
     NotificationService notificationService;
+    ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -146,6 +150,9 @@ public class OfficialRequestServiceImpl implements OfficialRequestService {
         request.setCopyScoreId(copy.getId());
         request.setResolvedAt(LocalDateTime.now());
         OfficialRequest saved = requestRepository.save(request);
+        // Chủ bản đồng ý đưa vào kho mẫu thì được thưởng (một lần cho mỗi lời xin)
+        eventPublisher.publishEvent(
+                new RewardEarnedEvent(request.getOwner().getId(), RewardReason.SCORE_OFFICIAL, request.getId()));
         notificationService.notify(
                 request.getRequestedBy(),
                 request.getOwner(),

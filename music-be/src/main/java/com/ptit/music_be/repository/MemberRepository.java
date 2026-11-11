@@ -30,6 +30,17 @@ public interface MemberRepository extends JpaRepository<Member, String> {
 
     boolean existsByEmail(String email);
 
+    Optional<Member> findByReferralCode(String referralCode);
+
+    boolean existsByReferralCode(String referralCode);
+
+    long countByReferredBy(String memberId);
+
+    long countByReferredByAndReferralRewardedAtIsNotNull(String memberId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select m from Member m where m.id = :id")
+    Optional<Member> findByIdForUpdate(@Param("id") String id);
     /** Tên các vai trò của thành viên (USER, ADMIN, SUPER_ADMIN). */
     @Query("select mr.role.name from MemberRole mr where mr.member.id = :id")
     java.util.List<String> roleNamesOf(@Param("id") String id);

@@ -24,8 +24,14 @@ CREATE TABLE IF NOT EXISTS members (
     password_changed_at DATETIME(6) NULL COMMENT 'Lần đổi/đặt lại mật khẩu gần nhất; token cấp trước mốc này bị từ chối',
     ui_theme       VARCHAR(10)  NULL COMMENT 'Giao diện đã chọn: LIGHT / DARK / SYSTEM; NULL = theo hệ thống',
     locale         VARCHAR(5)   NULL COMMENT 'Ngôn ngữ đã chọn: VI / EN; NULL = tiếng Việt',
+    referral_code  VARCHAR(12)  NULL COMMENT 'Mã giới thiệu của thành viên, sinh khi mở trang Mời bạn lần đầu',
+    referred_by    VARCHAR(36)  NULL COMMENT 'Người đã mời thành viên này (nhập mã lúc đăng ký)',
+    referral_rewarded_at DATETIME(6) NULL COMMENT 'Lúc đã thưởng cho lời mời (bản số hóa đầu tiên); NULL = chưa',
     PRIMARY KEY (id),
-    UNIQUE KEY uk_members_email (email)
+    UNIQUE KEY uk_members_email (email),
+    UNIQUE KEY uk_members_referral_code (referral_code),
+    KEY idx_members_referred_by (referred_by),
+    CONSTRAINT fk_members_referred_by FOREIGN KEY (referred_by) REFERENCES members (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS member_roles (
