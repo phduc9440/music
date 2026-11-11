@@ -6,6 +6,7 @@ import type { MySubscription, PaymentOrder } from '../../types';
 import { formatDate, formatDateTime, formatNumber, formatVnd, t, translateError } from '../../i18n/core';
 import Skeleton from '../../components/ui/Skeleton';
 import LimitList from './LimitList';
+import PaymentCountdown from './PaymentCountdown';
 import '../../components/scores/scores.css';
 import './billing.css';
 
@@ -100,7 +101,7 @@ export default function MyPlan() {
                 <li key={o.id} className={`bl-order bl-order--${o.status.toLowerCase()}`}>
                   <div className="bl-order__head">
                     <strong>
-                      {o.planName} · {t(`billing.period.${o.period}`)}
+                      {t(`billing.kind.${o.kind}`)} · {o.planName} · {t(`billing.period.${o.period}`)}
                     </strong>
                     <span className="bl-badge">{t(`billing.result.status.${o.status}`)}</span>
                   </div>
@@ -132,12 +133,17 @@ export default function MyPlan() {
                     <div className="bl-order__pending">
                       <p>
                         {t('billing.history.pendingNote', {
+                          kind: t(`billing.kind.${o.kind}`).toLowerCase(),
                           plan: o.planName,
                           period: t(`billing.periodUnit.${o.period}`),
                           amount: formatVnd(o.amount),
                           time: formatDateTime(o.expiresAt),
                         })}
                       </p>
+                      <PaymentCountdown
+                        expiresAt={o.expiresAt}
+                        onExpire={() => setOrders((list) => list?.filter((x) => x.id !== o.id) ?? null)}
+                      />
                       <button
                         type="button"
                         className="sc-btn sc-btn--primary"

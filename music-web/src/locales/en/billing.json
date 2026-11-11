@@ -80,9 +80,14 @@
     "provider": "Payment gateway",
     "createdAt": "Created at",
     "orderCode": "Order code",
-    "pendingNote": "Order for the {plan} plan ({period}), {amount}, not paid yet. Complete it before {time} or it will expire."
+    "pendingNote": "{kind} order for the {plan} plan ({period}), {amount}, not paid yet. Complete it before {time} or it will expire.",
+    "countdown": "{time} left to pay"
   },
   "provider": {
     "VNPAY": "VNPay"
+  },
+  "kind": {
+    "NEW": "New purchase",
+    "RENEW": "Renewal"
   }
 }

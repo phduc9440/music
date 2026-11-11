@@ -138,3 +138,11 @@
   font-size: 0.85rem;
   color: var(--sc-muted);
 }
+.bl-countdown {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--sc-accent);
+}
+.bl-countdown.is-urgent {
+  color: var(--ui-danger);
+}

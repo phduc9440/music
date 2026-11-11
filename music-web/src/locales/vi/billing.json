@@ -80,9 +80,14 @@
     "provider": "Cổng thanh toán",
     "createdAt": "Tạo lúc",
     "orderCode": "Mã đơn",
-    "pendingNote": "Đơn mua gói {plan} ({period}), số tiền {amount}, chưa thanh toán. Hoàn tất trước {time} hoặc đơn sẽ tự hết hạn."
+    "pendingNote": "Đơn {kind} gói {plan} ({period}), số tiền {amount}, chưa thanh toán. Hoàn tất trước {time} hoặc đơn sẽ tự hết hạn.",
+    "countdown": "Còn {time} để thanh toán"
   },
   "provider": {
     "VNPAY": "VNPay"
+  },
+  "kind": {
+    "NEW": "Mua mới",
+    "RENEW": "Gia hạn"
   }
 }

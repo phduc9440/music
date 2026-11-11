@@ -15,6 +15,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ptit.music_be.dto.enums.AppLocale;
 import com.ptit.music_be.dto.enums.BillingPeriod;
+import com.ptit.music_be.dto.enums.PaymentKind;
 import com.ptit.music_be.dto.enums.PaymentProviderType;
 import com.ptit.music_be.dto.enums.PaymentStatus;
 import com.ptit.music_be.dto.enums.SubscriptionSource;
@@ -101,6 +102,7 @@ public class PaymentServiceImpl implements PaymentService {
                     .member(member)
                     .plan(plan)
                     .period(request.getPeriod())
+                    .kind(isRenewal(member, plan) ? PaymentKind.RENEW : PaymentKind.NEW)
                     .amount(amount)
                     .provider(type)
                     .status(PaymentStatus.PENDING)
@@ -114,6 +116,12 @@ public class PaymentServiceImpl implements PaymentService {
         PaymentOrderResponse response = toResponse(order, false);
         response.setPayUrl(payUrl);
         return response;
+    }
+
+    /** Gia hạn khi người mua đang dùng đúng gói này (còn hạn); gói khác hoặc đang ở Free thì là mua mới. */
+    private boolean isRenewal(Member member, Plan plan) {
+        Plan current = subscriptionService.currentPlan(member.getId());
+        return current != null && current.getId() != null && current.getId().equals(plan.getId());
     }
 
     /**
@@ -302,6 +310,7 @@ public class PaymentServiceImpl implements PaymentService {
                 .planCode(o.getPlan().getCode())
                 .planName(o.getPlan().getName())
                 .period(o.getPeriod().name())
+                .kind(o.getKind().name())
                 .amount(o.getAmount())
                 .provider(o.getProvider().name())
                 .status(o.getStatus().name())
