@@ -81,6 +81,7 @@ export default function NotificationBell() {
     else if (n.type === 'SCORE_TRASHED_BY_ADMIN') navigate('/scores/trash');
     // Lời xin vào kho mẫu: chủ trả lời ở trang riêng; kết quả gửi tới admin thì mở tab lời xin
     else if (n.type === 'OFFICIAL_REQUESTED') navigate('/scores/official-requests');
+    else if (n.type === 'PLAN_ACTIVATED') navigate('/billing');
     else if (n.type === 'OFFICIAL_ACCEPTED' || n.type === 'OFFICIAL_DECLINED') navigate('/admin/official-scores');
     else if (n.scoreId) navigate(`/scores/${n.scoreId}`);
   };

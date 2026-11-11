@@ -285,7 +285,8 @@ export type NotificationType =
   | 'SCORE_TRASHED_BY_ADMIN'
   | 'OFFICIAL_REQUESTED'
   | 'OFFICIAL_ACCEPTED'
-  | 'OFFICIAL_DECLINED';
+  | 'OFFICIAL_DECLINED'
+  | 'PLAN_ACTIVATED';
 
 export interface AppNotification {
   id: string;

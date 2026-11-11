@@ -19,5 +19,6 @@
   "SCORE_TRASHED_BY_ADMIN": "Bản nhạc “{title}” đã bị quản trị viên chuyển vào thùng rác (khôi phục được trong 30 ngày)",
   "OFFICIAL_REQUESTED": "Quản trị viên muốn đưa bản nhạc “{title}” vào kho bản nhạc mẫu. Bản của bạn giữ nguyên, hệ thống chỉ sao chép một bản và ghi tên bạn là người phối. Hãy đồng ý hoặc từ chối.",
   "OFFICIAL_ACCEPTED": "{name} đã đồng ý đưa bản nhạc “{title}” vào kho bản nhạc mẫu",
-  "OFFICIAL_DECLINED": "{name} đã từ chối đưa bản nhạc “{title}” vào kho bản nhạc mẫu"
+  "OFFICIAL_DECLINED": "{name} đã từ chối đưa bản nhạc “{title}” vào kho bản nhạc mẫu",
+  "PLAN_ACTIVATED": "Thanh toán thành công, gói {plan} đã được kích hoạt"
 }

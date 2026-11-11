@@ -39,6 +39,8 @@ import com.ptit.music_be.repository.MemberRepository;
 import com.ptit.music_be.repository.PaymentOrderRepository;
 import com.ptit.music_be.repository.PlanRepository;
 import com.ptit.music_be.service.billing.SubscriptionService;
+import com.ptit.music_be.dto.enums.NotificationType;
+import com.ptit.music_be.service.notification.NotificationService;
 import com.ptit.music_be.service.payment.PaymentProvider;
 import com.ptit.music_be.service.payment.PaymentProvider.PaymentCallback;
 import com.ptit.music_be.service.payment.PaymentService.IpnResult;
@@ -47,6 +49,7 @@ class PaymentServiceImplTest {
 
     private final PaymentOrderRepository orders = mock(PaymentOrderRepository.class);
     private final PlanRepository plans = mock(PlanRepository.class);
+    private final NotificationService notifications = mock(NotificationService.class);
     private final MemberRepository members = mock(MemberRepository.class);
     private final SubscriptionService subscriptions = mock(SubscriptionService.class);
     private final PaymentProvider provider = mock(PaymentProvider.class);
@@ -61,7 +64,7 @@ class PaymentServiceImplTest {
         when(provider.type()).thenReturn(PaymentProviderType.VNPAY);
         when(provider.isConfigured()).thenReturn(true);
         service = new PaymentServiceImpl(
-                orders, plans, members, subscriptions, new ObjectMapper(), List.of(provider));
+                orders, plans, members, subscriptions, notifications, new ObjectMapper(), List.of(provider));
         order = PaymentOrder.builder()
                 .orderCode("MU1")
                 .member(buyer)
@@ -84,6 +87,8 @@ class PaymentServiceImplTest {
         callback(true, "MU1", 99000, true);
 
         assertEquals(IpnResult.OK, service.handleIpn(PaymentProviderType.VNPAY, Map.of()));
+        verify(notifications, times(1))
+                .notify(eq(buyer), any(), eq(NotificationType.PLAN_ACTIVATED), any(), any(), any());
         assertEquals(PaymentStatus.PAID, order.getStatus());
         assertEquals("TXN1", order.getProviderTxnId());
         verify(subscriptions).activate(eq(buyer), eq(pro), eq(BillingPeriod.MONTH.duration()), eq(SubscriptionSource.PAYMENT));

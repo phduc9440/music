@@ -23,5 +23,7 @@ public enum NotificationType {
     /** Gửi quản trị viên: chủ đã đồng ý, bản sao đã vào kho mẫu. */
     OFFICIAL_ACCEPTED,
     /** Gửi quản trị viên: chủ đã từ chối. */
-    OFFICIAL_DECLINED
+    OFFICIAL_DECLINED,
+    /** Thanh toán gói thành công, gói đã được kích hoạt. */
+    PLAN_ACTIVATED
 }

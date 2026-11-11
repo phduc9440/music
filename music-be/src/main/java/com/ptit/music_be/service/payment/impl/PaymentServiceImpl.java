@@ -28,7 +28,9 @@ import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.repository.MemberRepository;
 import com.ptit.music_be.repository.PaymentOrderRepository;
 import com.ptit.music_be.repository.PlanRepository;
+import com.ptit.music_be.dto.enums.NotificationType;
 import com.ptit.music_be.service.billing.SubscriptionService;
+import com.ptit.music_be.service.notification.NotificationService;
 import com.ptit.music_be.service.payment.PaymentProvider;
 import com.ptit.music_be.service.payment.PaymentProvider.PaymentCallback;
 import com.ptit.music_be.service.payment.PaymentProvider.PaymentContext;
@@ -47,6 +49,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final PlanRepository planRepository;
     private final MemberRepository memberRepository;
     private final SubscriptionService subscriptionService;
+    private final NotificationService notificationService;
     private final ObjectMapper objectMapper;
     private final Map<PaymentProviderType, PaymentProvider> providers;
 
@@ -55,12 +58,14 @@ public class PaymentServiceImpl implements PaymentService {
             PlanRepository planRepository,
             MemberRepository memberRepository,
             SubscriptionService subscriptionService,
+            NotificationService notificationService,
             ObjectMapper objectMapper,
             List<PaymentProvider> providerList) {
         this.orderRepository = orderRepository;
         this.planRepository = planRepository;
         this.memberRepository = memberRepository;
         this.subscriptionService = subscriptionService;
+        this.notificationService = notificationService;
         this.objectMapper = objectMapper;
         this.providers = providerList.stream().collect(Collectors.toMap(PaymentProvider::type, Function.identity()));
     }
@@ -240,6 +245,13 @@ public class PaymentServiceImpl implements PaymentService {
             orderRepository.save(order);
             subscriptionService.activate(
                     order.getMember(), order.getPlan(), order.getPeriod().duration(), SubscriptionSource.PAYMENT);
+            notificationService.notify(
+                    order.getMember(),
+                    null,
+                    NotificationType.PLAN_ACTIVATED,
+                    null,
+                    "Thanh toán thành công, gói " + order.getPlan().getName() + " đã được kích hoạt",
+                    NotificationService.params("plan", order.getPlan().getName(), "orderCode", order.getOrderCode()));
         } else {
             if (order.getStatus() == PaymentStatus.PENDING) {
                 order.setStatus(PaymentStatus.FAILED);
