@@ -6,6 +6,7 @@ import { errorMessage, formatDateTime } from '../../components/ui/helpers';
 import { scoreApi } from '../../services';
 import type { PageResult, ScoreSummary } from '../../types';
 import { useDialog } from '../../components/ui/dialog-context';
+import { t } from '../../i18n/core';
 
 const PAGE_SIZE = 20;
 
@@ -26,25 +27,25 @@ export default function AdminPendingScores() {
         if (data.content.length === 0 && page > 0) setPage(page - 1);
         else setResult(data);
       })
-      .catch(() => toast.error('Không tải được danh sách bản nhạc chờ duyệt'));
+      .catch(() => toast.error(t('admin.pending.loadFailed')));
   }, [page, reload]);
 
   const review = async (score: ScoreSummary, approve: boolean) => {
     let reason: string | undefined;
     if (approve) {
       const ok = await confirm({
-        title: `Duyệt công khai "${score.title}"?`,
-        message: 'Mọi người dùng đã đăng nhập sẽ xem được bản nhạc này. Chủ sở hữu sẽ nhận thông báo.',
-        confirmLabel: 'Duyệt',
+        title: t('admin.pending.approveTitle', { title: score.title }),
+        message: t('admin.pending.approveMessage'),
+        confirmLabel: t('admin.pending.approve'),
       });
       if (!ok) return;
     } else {
       const input = await prompt({
-        title: `Từ chối công khai "${score.title}"?`,
-        message: 'Bản nhạc về riêng tư. Chủ sở hữu sẽ nhận thông báo kèm lý do.',
-        label: 'Lý do (có thể bỏ trống)',
+        title: t('admin.pending.rejectTitle', { title: score.title }),
+        message: t('admin.pending.rejectMessage'),
+        label: t('admin.pending.rejectReason'),
         maxLength: 255,
-        confirmLabel: 'Từ chối',
+        confirmLabel: t('admin.pending.reject'),
         tone: 'danger',
       });
       if (input === null) return;
@@ -54,10 +55,10 @@ export default function AdminPendingScores() {
     try {
       if (approve) await scoreApi.approvePublic(score.id);
       else await scoreApi.rejectPublic(score.id, reason);
-      toast.success(approve ? 'Đã duyệt công khai' : 'Đã từ chối công khai');
+      toast.success(approve ? t('admin.pending.approved') : t('admin.pending.rejected'));
     } catch (error) {
       // Ví dụ admin khác đã xử lý trước: báo lỗi rồi tải lại danh sách
-      toast.error(errorMessage(error, 'Thao tác thất bại'));
+      toast.error(errorMessage(error, t('scores.share.failed')));
     } finally {
       setBusyId(null);
       setReload((n) => n + 1);
@@ -66,19 +67,16 @@ export default function AdminPendingScores() {
 
   return (
     <>
-      <PageHeader
-        title="Chờ duyệt công khai"
-        description="Bản nhạc chủ sở hữu xin công khai, cũ nhất trước. Mở bản nhạc để xem trước khi quyết định; chủ sở hữu được báo kết quả."
-      />
+      <PageHeader title={t('admin.menu.items.pending')} description={t('admin.pending.description')} />
 
       <Card flush>
         <Table minWidth={800}>
           <thead>
             <tr>
-              <th>Bản nhạc</th>
-              <th>Chủ sở hữu</th>
-              <th>Gửi yêu cầu lúc</th>
-              <th className="adm-table__actions">Thao tác</th>
+              <th>{t('upload.review.tabs.score')}</th>
+              <th>{t('admin.common.owner')}</th>
+              <th>{t('admin.pending.sentAt')}</th>
+              <th className="adm-table__actions">{t('scores.files.actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -87,7 +85,7 @@ export default function AdminPendingScores() {
               <tr key={s.id}>
                 <td>
                   <CellTitle sub={s.composer || undefined}>
-                    <Link to={`/admin/scores/${s.id}`} title="Mở để xem trước khi duyệt">
+                    <Link to={`/admin/scores/${s.id}`} title={t('admin.pending.openToReview')}>
                       {s.title}
                     </Link>
                   </CellTitle>
@@ -96,7 +94,13 @@ export default function AdminPendingScores() {
                 <td className="adm-nowrap adm-muted">{formatDateTime(s.updatedAt)}</td>
                 <td className="adm-table__actions">
                   <div className="adm-table__actions-inner">
-                    <ButtonLink to={`/admin/scores/${s.id}`} size="sm" variant="ghost" icon="eye" title="Xem trước" />
+                    <ButtonLink
+                      to={`/admin/scores/${s.id}`}
+                      size="sm"
+                      variant="ghost"
+                      icon="eye"
+                      title={t('admin.pending.preview')}
+                    />
                     <Button
                       size="sm"
                       variant="primary"
@@ -104,10 +108,10 @@ export default function AdminPendingScores() {
                       disabled={busyId === s.id}
                       onClick={() => review(s, true)}
                     >
-                      Duyệt
+                      {t('admin.pending.approve')}
                     </Button>
                     <Button size="sm" icon="x" disabled={busyId === s.id} onClick={() => review(s, false)}>
-                      Từ chối
+                      {t('admin.pending.reject')}
                     </Button>
                   </div>
                 </td>
@@ -117,8 +121,8 @@ export default function AdminPendingScores() {
               <TableState
                 colSpan={4}
                 icon="check"
-                title="Không có yêu cầu nào"
-                description="Mọi yêu cầu công khai đã được xử lý."
+                title={t('admin.pending.emptyTitle')}
+                description={t('admin.pending.emptyHint')}
               />
             )}
           </tbody>
@@ -128,7 +132,7 @@ export default function AdminPendingScores() {
             page={result.pageNumber}
             totalPages={result.totalPages}
             totalElements={result.totalElements}
-            unit="bản đang chờ"
+            unit={t('admin.pending.unit')}
             onChange={setPage}
           />
         )}

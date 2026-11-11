@@ -19,22 +19,18 @@ import { VISIBILITY, errorMessage, formatDateTime } from '../../components/ui/he
 import { adminApi, officialRequestApi, scoreApi } from '../../services';
 import type { PageResult, ScoreSummary } from '../../types';
 import { useDialog } from '../../components/ui/dialog-context';
+import { labelMap, t } from '../../i18n/core';
 
 const PAGE_SIZE = 20;
 
-const SOURCE_LABEL: Record<string, string> = { OMR: 'Số hóa (OMR)', IMPORT: 'Nhập file', MANUAL: 'Tạo trong editor' };
-const DIFFICULTY_LABEL: Record<string, string> = {
-  EASY: 'Dễ',
-  MEDIUM: 'Trung bình',
-  HARD: 'Khó',
-  EXPERT: 'Chuyên gia',
-};
-const SORT_LABEL: Record<string, string> = {
-  UPDATED: 'Mới cập nhật',
-  CREATED: 'Mới tạo',
-  TITLE: 'Tên A-Z',
-  VIEWS: 'Nhiều lượt xem',
-};
+const SOURCE_LABEL: Record<string, string> = labelMap('admin.scores.source', ['OMR', 'IMPORT', 'MANUAL']);
+const DIFFICULTY_LABEL: Record<string, string> = labelMap('admin.scores.difficulty', [
+  'EASY',
+  'MEDIUM',
+  'HARD',
+  'EXPERT',
+]);
+const SORT_LABEL: Record<string, string> = labelMap('admin.scores.sort', ['UPDATED', 'CREATED', 'TITLE', 'VIEWS']);
 
 type BulkAction = 'PUBLIC' | 'PRIVATE' | 'DELETE';
 
@@ -78,7 +74,7 @@ export default function AdminScores() {
           setSelected((prev) => (prev.size === 0 ? prev : new Set([...prev].filter((id) => ids.has(id)))));
         }
       })
-      .catch(() => toast.error('Không tải được danh sách bản nhạc'));
+      .catch(() => toast.error(t('admin.official.loadScoresFailed')));
   }, [page, keyword, visibility, official, source, difficulty, sort, reload]);
 
   // Đổi bộ lọc, trang hoặc dữ liệu thì bỏ chọn để không thao tác nhầm lên bản đã không còn hiển thị
@@ -125,66 +121,71 @@ export default function AdminScores() {
 
   const publish = async (score: ScoreSummary) => {
     const ok = await confirm({
-      title: `Duyệt công khai "${score.title}"?`,
-      message: 'Chủ sở hữu đã xin công khai bản này. Sau khi duyệt, mọi người dùng đã đăng nhập sẽ xem được.',
-      confirmLabel: 'Duyệt công khai',
+      title: t('admin.pending.approveTitle', { title: score.title }),
+      message: t('admin.scores.publishMessage'),
+      confirmLabel: t('admin.scores.publish'),
     });
     if (!ok) return;
     run(
       score,
       () => adminApi.setScoreVisibility(score.id, 'PUBLIC'),
-      'Đã duyệt công khai',
-      'Không duyệt được bản nhạc',
+      t('admin.pending.approved'),
+      t('admin.scores.publishFailed'),
     );
   };
 
   const unpublish = async (score: ScoreSummary) => {
     const input = await prompt({
-      title: `Gỡ công khai "${score.title}"?`,
-      message: `Bản nhạc về riêng tư${score.isOfficial ? ' và rời kho bản nhạc mẫu' : ''}. Chủ sở hữu sẽ nhận thông báo kèm lý do.`,
-      label: 'Lý do (có thể bỏ trống)',
+      title: t('admin.scores.unpublishTitle', { title: score.title }),
+      message: score.isOfficial ? t('admin.scores.unpublishOfficialMessage') : t('admin.scores.unpublishMessage'),
+      label: t('admin.pending.rejectReason'),
       maxLength: 255,
-      confirmLabel: 'Gỡ công khai',
+      confirmLabel: t('admin.scores.unpublish'),
       tone: 'danger',
     });
     if (input === null) return;
     run(
       score,
       () => adminApi.setScoreVisibility(score.id, 'PRIVATE', input.trim() || undefined),
-      'Đã gỡ công khai',
-      'Không đổi được quyền riêng tư',
+      t('admin.scores.unpublished'),
+      t('admin.scores.visibilityFailed'),
     );
   };
 
   const toggleOfficial = async (score: ScoreSummary) => {
     if (score.isOfficial) {
-      run(score, () => scoreApi.unmarkOfficial(score.id), 'Đã gỡ khỏi kho bản nhạc mẫu', 'Không gỡ được khỏi kho');
+      run(
+        score,
+        () => scoreApi.unmarkOfficial(score.id),
+        t('admin.official.removed'),
+        t('admin.scores.removeOfficialFailed'),
+      );
       return;
     }
     const ok = await confirm({
-      title: `Xin đưa "${score.title}" vào kho bản nhạc mẫu?`,
-      message: `${score.ownerEmail} sẽ nhận thông báo. Họ đồng ý thì hệ thống sao chép một bản vào kho, bản của họ giữ nguyên.`,
-      confirmLabel: 'Gửi lời xin',
+      title: t('admin.official.askTitle', { title: score.title }),
+      message: t('admin.scores.askMessage', { owner: score.ownerEmail ?? '' }),
+      confirmLabel: t('admin.official.send'),
     });
     if (!ok) return;
-    run(score, () => officialRequestApi.request(score.id), 'Đã gửi lời xin tới chủ sở hữu', 'Không gửi được lời xin');
+    run(score, () => officialRequestApi.request(score.id), t('admin.official.asked'), t('admin.scores.askFailed'));
   };
 
   const remove = async (score: ScoreSummary) => {
     const input = await prompt({
-      title: `Chuyển "${score.title}" vào thùng rác?`,
-      message: `Bản nhạc của ${score.ownerEmail} nằm trong thùng rác 30 ngày, chủ sở hữu có thể khôi phục và sẽ nhận thông báo kèm lý do.`,
-      label: 'Lý do (có thể bỏ trống)',
+      title: t('admin.scores.trashTitle', { title: score.title }),
+      message: t('admin.scores.trashMessage', { owner: score.ownerEmail ?? '' }),
+      label: t('admin.pending.rejectReason'),
       maxLength: 255,
-      confirmLabel: 'Chuyển vào thùng rác',
+      confirmLabel: t('admin.scores.trash'),
       tone: 'danger',
     });
     if (input === null) return;
     run(
       score,
       () => scoreApi.remove(score.id, input.trim() || undefined),
-      'Đã chuyển vào thùng rác',
-      'Không xóa được bản nhạc',
+      t('admin.scores.trashed'),
+      t('admin.scores.trashFailed'),
     );
   };
 
@@ -194,29 +195,29 @@ export default function AdminScores() {
     let reason: string | undefined;
     if (action === 'DELETE') {
       const input = await prompt({
-        title: `Chuyển ${ids.length} bản nhạc đã chọn vào thùng rác?`,
-        message: 'Các bản nằm trong thùng rác 30 ngày, chủ sở hữu có thể khôi phục và sẽ nhận thông báo kèm lý do.',
-        label: 'Lý do (có thể bỏ trống)',
+        title: t('admin.scores.bulkTrashTitle', { count: ids.length }),
+        message: t('admin.scores.bulkTrashMessage'),
+        label: t('admin.pending.rejectReason'),
         maxLength: 255,
-        confirmLabel: 'Chuyển vào thùng rác',
+        confirmLabel: t('admin.scores.trash'),
         tone: 'danger',
       });
       if (input === null) return;
       reason = input.trim() || undefined;
     } else if (action === 'PUBLIC') {
       const ok = await confirm({
-        title: `Duyệt công khai ${ids.length} bản nhạc đã chọn?`,
-        message: 'Chỉ duyệt được các bản đang chờ duyệt. Bản ở trạng thái khác sẽ báo lỗi trong danh sách.',
-        confirmLabel: 'Duyệt công khai',
+        title: t('admin.scores.bulkPublishTitle', { count: ids.length }),
+        message: t('admin.scores.bulkPublishMessage'),
+        confirmLabel: t('admin.scores.publish'),
       });
       if (!ok) return;
     } else {
       const input = await prompt({
-        title: `Gỡ công khai ${ids.length} bản nhạc đã chọn?`,
-        message: 'Các bản về riêng tư, bản trong kho mẫu sẽ rời kho. Chủ sở hữu sẽ nhận thông báo.',
-        label: 'Lý do (có thể bỏ trống)',
+        title: t('admin.scores.bulkUnpublishTitle', { count: ids.length }),
+        message: t('admin.scores.bulkUnpublishMessage'),
+        label: t('admin.pending.rejectReason'),
         maxLength: 255,
-        confirmLabel: 'Gỡ công khai',
+        confirmLabel: t('admin.scores.unpublish'),
         tone: 'danger',
       });
       if (input === null) return;
@@ -227,17 +228,17 @@ export default function AdminScores() {
       const res = await adminApi.bulkScores(ids, action, reason);
       const { success, failures } = res.data.result;
       if (failures.length === 0) {
-        toast.success(`Đã xử lý ${success} bản nhạc`);
+        toast.success(t('admin.scores.processed', { count: success }));
       } else {
         const titleOf = (id: string) => rows.find((r) => r.id === id)?.title ?? id;
         toast.warn(
-          `Thành công ${success}, lỗi ${failures.length}: ` +
+          t('admin.scores.partial', { success, failed: failures.length }) +
             failures.map((f) => `"${titleOf(f.id)}" (${f.message})`).join('; '),
           { autoClose: 10000 },
         );
       }
     } catch (error) {
-      toast.error(errorMessage(error, 'Thao tác hàng loạt thất bại'));
+      toast.error(errorMessage(error, t('admin.scores.bulkFailed')));
     } finally {
       setBulkBusy(false);
       setSelected(new Set());
@@ -263,58 +264,64 @@ export default function AdminScores() {
   return (
     <>
       <PageHeader
-        title="Quản lý bản nhạc"
-        description="Mọi bản nhạc của mọi người dùng. Chọn nhiều bản để công khai, gỡ công khai hoặc xóa cùng lúc."
+        title={t('admin.menu.items.scores')}
+        description={t('admin.scores.description')}
         actions={
           <SearchForm
             value={keywordInput}
             onChange={setKeywordInput}
             onSubmit={() => changeFilter(() => setKeyword(keywordInput.trim()))}
-            placeholder="Tên, tác giả hoặc email chủ sở hữu"
+            placeholder={t('admin.scores.searchPlaceholder')}
           />
         }
       />
 
       <Toolbar>
-        {select('Quyền riêng tư', visibility, setVisibility, [
-          ['', 'Mọi quyền riêng tư'],
+        {select(t('admin.members.privacy'), visibility, setVisibility, [
+          ['', t('admin.scores.anyPrivacy')],
           ...Object.entries(VISIBILITY).map(([v, x]) => [v, x.label] as [string, string]),
         ])}
-        {select('Kho mẫu', official, setOfficial, [
-          ['', 'Kho mẫu: tất cả'],
-          ['true', 'Trong kho mẫu'],
-          ['false', 'Ngoài kho mẫu'],
+        {select(t('admin.members.curated'), official, setOfficial, [
+          ['', t('admin.scores.officialAll')],
+          ['true', t('admin.scores.officialIn')],
+          ['false', t('admin.scores.officialOut')],
         ])}
-        {select('Nguồn', source, setSource, [['', 'Mọi nguồn'], ...Object.entries(SOURCE_LABEL)])}
-        {select('Độ khó', difficulty, setDifficulty, [['', 'Mọi độ khó'], ...Object.entries(DIFFICULTY_LABEL)])}
+        {select(t('admin.scores.sourceLabel'), source, setSource, [
+          ['', t('admin.scores.anySource')],
+          ...Object.entries(SOURCE_LABEL),
+        ])}
+        {select(t('scores.hero.difficulty'), difficulty, setDifficulty, [
+          ['', t('admin.scores.anyDifficulty')],
+          ...Object.entries(DIFFICULTY_LABEL),
+        ])}
         {filtered && (
           <Button variant="ghost" icon="x" onClick={clearFilters}>
-            Xóa bộ lọc
+            {t('admin.scores.clearFilters')}
           </Button>
         )}
         <span className="adm-toolbar__spacer" />
         {select(
-          'Sắp xếp',
+          t('admin.scores.sortLabel'),
           sort,
           setSort,
-          Object.entries(SORT_LABEL).map(([v, l]) => [v, `Sắp xếp: ${l}`] as [string, string]),
+          Object.entries(SORT_LABEL).map(([v, l]) => [v, t('admin.scores.sortBy', { label: l })] as [string, string]),
         )}
       </Toolbar>
 
       {selected.size > 0 && (
-        <div className="adm-bulkbar" role="toolbar" aria-label="Thao tác hàng loạt">
-          <span className="adm-bulkbar__count">Đã chọn {selected.size} bản</span>
+        <div className="adm-bulkbar" role="toolbar" aria-label={t('admin.scores.bulkActions')}>
+          <span className="adm-bulkbar__count">{t('admin.scores.selected', { count: selected.size })}</span>
           <Button size="sm" variant="primary" icon="globe" loading={bulkBusy} onClick={() => bulk('PUBLIC')}>
-            Duyệt các bản đang chờ
+            {t('admin.scores.approvePending')}
           </Button>
           <Button size="sm" icon="lock" disabled={bulkBusy} onClick={() => bulk('PRIVATE')}>
-            Gỡ công khai
+            {t('admin.scores.unpublish')}
           </Button>
           <Button size="sm" variant="danger" icon="trash" disabled={bulkBusy} onClick={() => bulk('DELETE')}>
-            Xóa
+            {t('common.delete')}
           </Button>
           <Button size="sm" variant="ghost" disabled={bulkBusy} onClick={() => setSelected(new Set())}>
-            Bỏ chọn
+            {t('admin.scores.deselect')}
           </Button>
         </div>
       )}
@@ -326,16 +333,16 @@ export default function AdminScores() {
               <th className="adm-table__check">
                 <input
                   type="checkbox"
-                  aria-label="Chọn tất cả bản trên trang"
+                  aria-label={t('admin.scores.selectAll')}
                   checked={allChecked}
                   onChange={toggleAll}
                 />
               </th>
-              <th>Bản nhạc</th>
-              <th>Chủ sở hữu</th>
-              <th>Trạng thái</th>
-              <th>Cập nhật</th>
-              <th className="adm-table__actions">Thao tác</th>
+              <th>{t('upload.review.tabs.score')}</th>
+              <th>{t('admin.common.owner')}</th>
+              <th>{t('admin.official.statusColumn')}</th>
+              <th>{t('admin.members.updated')}</th>
+              <th className="adm-table__actions">{t('scores.files.actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -345,7 +352,7 @@ export default function AdminScores() {
                 <td className="adm-table__check">
                   <input
                     type="checkbox"
-                    aria-label={`Chọn ${s.title}`}
+                    aria-label={t('admin.scores.selectOne', { title: s.title })}
                     checked={selected.has(s.id)}
                     onChange={() => toggleOne(s.id)}
                   />
@@ -359,20 +366,26 @@ export default function AdminScores() {
                 <td>
                   <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: '0.3rem' }}>
                     <VisibilityBadge value={s.visibility} />
-                    {s.isOfficial && <Badge tone="violet">Kho mẫu</Badge>}
+                    {s.isOfficial && <Badge tone="violet">{t('admin.members.curated')}</Badge>}
                   </span>
                 </td>
                 <td className="adm-nowrap adm-muted">{formatDateTime(s.updatedAt)}</td>
                 <td className="adm-table__actions">
                   <div className="adm-table__actions-inner">
-                    <ButtonLink to={`/admin/scores/${s.id}`} size="sm" variant="ghost" icon="eye" title="Xem" />
+                    <ButtonLink
+                      to={`/admin/scores/${s.id}`}
+                      size="sm"
+                      variant="ghost"
+                      icon="eye"
+                      title={t('admin.official.view')}
+                    />
                     {s.visibility === 'PUBLIC' ? (
                       <>
                         <Button size="sm" icon="library" disabled={busyId === s.id} onClick={() => toggleOfficial(s)}>
-                          {s.isOfficial ? 'Gỡ khỏi kho' : 'Xin đưa vào kho'}
+                          {s.isOfficial ? t('admin.official.remove') : t('admin.official.ask')}
                         </Button>
                         <Button size="sm" icon="lock" disabled={busyId === s.id} onClick={() => unpublish(s)}>
-                          Gỡ công khai
+                          {t('admin.scores.unpublish')}
                         </Button>
                       </>
                     ) : s.visibility === 'PENDING' ? (
@@ -383,15 +396,15 @@ export default function AdminScores() {
                         disabled={busyId === s.id}
                         onClick={() => publish(s)}
                       >
-                        Duyệt công khai
+                        {t('admin.scores.publish')}
                       </Button>
                     ) : null}
                     <Button
                       size="sm"
                       variant="ghost"
                       icon="trash"
-                      aria-label={`Xóa ${s.title}`}
-                      title="Xóa"
+                      aria-label={t('admin.scores.deleteOne', { title: s.title })}
+                      title={t('common.delete')}
                       disabled={busyId === s.id}
                       onClick={() => remove(s)}
                     />
@@ -403,8 +416,8 @@ export default function AdminScores() {
               <TableState
                 colSpan={6}
                 icon="music"
-                title="Không có bản nhạc nào"
-                description={filtered ? 'Không có bản nào khớp bộ lọc. Thử bỏ bớt điều kiện.' : undefined}
+                title={t('admin.official.emptyCandidates')}
+                description={filtered ? t('admin.scores.noMatch') : undefined}
               />
             )}
           </tbody>
@@ -414,7 +427,7 @@ export default function AdminScores() {
             page={result.pageNumber}
             totalPages={result.totalPages}
             totalElements={result.totalElements}
-            unit="bản nhạc"
+            unit={t('admin.official.unitScores')}
             onChange={(p) => {
               setSelected(new Set());
               setPage(p);

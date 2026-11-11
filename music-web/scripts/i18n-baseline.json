@@ -1,5 +1,4 @@
 {
-  "src/components/admin/AdminLayout.tsx": 26,
   "src/components/editor/audio/instruments.ts": 14,
   "src/components/editor/core/ScoreDocument.ts": 2,
   "src/components/editor/core/commands.ts": 48,
@@ -55,17 +54,6 @@
   "src/components/scores/viewer/MusicXmlViewer.tsx": 2,
   "src/components/scores/viewer/ScoreCanvas.tsx": 5,
   "src/components/scores/viewer/ZoomControl.tsx": 9,
-  "src/pages/admin/AdminAiTasks.tsx": 62,
-  "src/pages/admin/AdminAnnouncements.tsx": 33,
-  "src/pages/admin/AdminComposers.tsx": 50,
-  "src/pages/admin/AdminDashboard.tsx": 74,
-  "src/pages/admin/AdminMemberDetail.tsx": 28,
-  "src/pages/admin/AdminMembers.tsx": 29,
-  "src/pages/admin/AdminOfficialScores.tsx": 45,
-  "src/pages/admin/AdminPendingScores.tsx": 23,
-  "src/pages/admin/AdminScores.tsx": 82,
-  "src/pages/admin/AdminSystem.tsx": 33,
-  "src/pages/admin/AdminTags.tsx": 24,
   "src/pages/scores/editor/EditorSpike.tsx": 4,
   "src/pages/scores/editor/ScoreViewer.tsx": 105,
   "src/pages/scores/player/ScorePlayer.tsx": 33

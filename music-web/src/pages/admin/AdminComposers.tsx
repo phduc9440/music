@@ -10,6 +10,7 @@ import { adminComposerApi } from '../../services';
 import type { Composer, ComposerPayload, ComposerPeriod } from '../../types';
 import { PERIOD_LABELS, PERIODS, lifespan } from '../../utils/composer';
 import './admin-composers.css';
+import { t } from '../../i18n/core';
 
 interface FormState {
   name: string;
@@ -67,17 +68,17 @@ const toPayload = (f: FormState): ComposerPayload => ({
 
 /** Kiểm tra phía web trước khi gửi (BE vẫn kiểm tra lại); trả câu lỗi hoặc chuỗi rỗng. */
 function validate(f: FormState): string {
-  if (!f.name.trim()) return 'Nhập tên nhạc sĩ';
+  if (!f.name.trim()) return t('admin.composers.errName');
   const thisYear = new Date().getFullYear();
   const birth = f.birthYear ? Number(f.birthYear) : null;
   const death = f.deathYear ? Number(f.deathYear) : null;
   if ((birth !== null && (birth < 1 || birth > thisYear)) || (death !== null && (death < 1 || death > thisYear)))
-    return 'Năm sinh, năm mất không hợp lệ';
-  if (birth !== null && death !== null && death < birth) return 'Năm mất phải sau năm sinh';
+    return t('admin.composers.errYears');
+  if (birth !== null && death !== null && death < birth) return t('admin.composers.errDeathBeforeBirth');
   if (f.imageUrl.trim()) {
-    if (!f.imageUrl.trim().startsWith('https://')) return 'Link ảnh phải bắt đầu bằng https://';
-    if (!/^https?:\/\//.test(f.imageSource.trim())) return 'Có ảnh thì phải ghi trang nguồn của ảnh (link)';
-    if (!f.imageLicense.trim()) return 'Có ảnh thì phải ghi giấy phép của ảnh';
+    if (!f.imageUrl.trim().startsWith('https://')) return t('admin.composers.errHttps');
+    if (!/^https?:\/\//.test(f.imageSource.trim())) return t('admin.composers.errSource');
+    if (!f.imageLicense.trim()) return t('admin.composers.errLicense');
   }
   return '';
 }
@@ -96,7 +97,7 @@ export default function AdminComposers() {
     adminComposerApi
       .list()
       .then((res) => setList(res.data.result))
-      .catch(() => toast.error('Không tải được danh sách nhạc sĩ'));
+      .catch(() => toast.error(t('composers.loadFailed')));
   }, []);
 
   useEffect(load, [load]);
@@ -119,11 +120,11 @@ export default function AdminComposers() {
       const payload = toPayload(form);
       if (editing === 'new') await adminComposerApi.create(payload);
       else if (editing) await adminComposerApi.update(editing.id, payload);
-      toast.success(editing === 'new' ? 'Đã thêm nhạc sĩ' : 'Đã lưu thay đổi');
+      toast.success(editing === 'new' ? t('admin.composers.added') : t('admin.composers.saved'));
       setEditing(null);
       load();
     } catch (err) {
-      setError(errorMessage(err, 'Không lưu được nhạc sĩ'));
+      setError(errorMessage(err, t('admin.composers.saveFailed')));
     } finally {
       setBusy(false);
     }
@@ -131,22 +132,19 @@ export default function AdminComposers() {
 
   const remove = async (c: Composer) => {
     const ok = await confirm({
-      title: `Xóa nhạc sĩ "${c.name}"?`,
-      message:
-        c.scoreCount > 0
-          ? `${c.scoreCount} bản nhạc đang gắn sẽ chỉ mất liên kết; chữ tác giả trên bản nhạc vẫn giữ nguyên.`
-          : undefined,
-      confirmLabel: 'Xóa',
+      title: t('admin.composers.deleteTitle', { name: c.name }),
+      message: c.scoreCount > 0 ? t('admin.composers.deleteMessage', { count: c.scoreCount }) : undefined,
+      confirmLabel: t('common.delete'),
       tone: 'danger',
     });
     if (!ok) return;
     try {
       await adminComposerApi.remove(c.id);
-      toast.success('Đã xóa nhạc sĩ');
+      toast.success(t('admin.composers.deleted'));
       if (editing !== 'new' && editing?.id === c.id) setEditing(null);
       load();
     } catch (err) {
-      toast.error(errorMessage(err, 'Không xóa được nhạc sĩ'));
+      toast.error(errorMessage(err, t('admin.composers.deleteFailed')));
     }
   };
 
@@ -154,10 +152,14 @@ export default function AdminComposers() {
     setBusy(true);
     try {
       const res = await adminComposerApi.relink();
-      toast.success(res.data.result > 0 ? `Đã gắn lại ${res.data.result} bản nhạc` : 'Mọi bản nhạc đã đúng liên kết');
+      toast.success(
+        res.data.result > 0
+          ? t('admin.composers.relinked', { count: res.data.result })
+          : t('admin.composers.relinkedNone'),
+      );
       load();
     } catch (err) {
-      toast.error(errorMessage(err, 'Không gắn lại được'));
+      toast.error(errorMessage(err, t('admin.composers.relinkFailed')));
     } finally {
       setBusy(false);
     }
@@ -171,15 +173,15 @@ export default function AdminComposers() {
   return (
     <>
       <PageHeader
-        title="Nhạc sĩ"
-        description="Bản nhạc tự gắn với nhạc sĩ khi chữ tác giả khớp tên hoặc tên khác. Ảnh chỉ dùng loại thuộc phạm vi công cộng hoặc có giấy phép, luôn ghi nguồn."
+        title={t('composers.title')}
+        description={t('admin.composers.description')}
         actions={
           <>
-            <Button icon="refresh" disabled={busy} onClick={relink} title="Gắn lại mọi bản nhạc theo tên tác giả">
-              Gắn lại bản nhạc
+            <Button icon="refresh" disabled={busy} onClick={relink} title={t('admin.composers.relinkHint')}>
+              {t('admin.composers.relink')}
             </Button>
             <Button variant="primary" icon="plus" onClick={() => openForm('new')}>
-              Thêm nhạc sĩ
+              {t('admin.composers.add')}
             </Button>
           </>
         }
@@ -187,10 +189,10 @@ export default function AdminComposers() {
 
       {editing && (
         <Card
-          title={editing === 'new' ? 'Thêm nhạc sĩ' : `Sửa: ${editing.name}`}
+          title={editing === 'new' ? t('admin.composers.add') : t('admin.composers.editing', { name: editing.name })}
           actions={
             <Button variant="ghost" icon="x" onClick={() => setEditing(null)}>
-              Đóng
+              {t('common.close')}
             </Button>
           }
           className="acp-form-card"
@@ -204,7 +206,7 @@ export default function AdminComposers() {
             </div>
             <div className="acp-form__fields">
               <div className="acp-grid">
-                <Field label="Tên nhạc sĩ *" htmlFor="acp-name">
+                <Field label={t('admin.composers.fieldName')} htmlFor="acp-name">
                   <input
                     id="acp-name"
                     className="adm-input"
@@ -214,14 +216,14 @@ export default function AdminComposers() {
                     autoFocus
                   />
                 </Field>
-                <Field label="Thời kỳ" htmlFor="acp-period">
+                <Field label={t('composers.period')} htmlFor="acp-period">
                   <select
                     id="acp-period"
                     className="adm-input"
                     value={form.period}
                     onChange={(e) => set('period', e.target.value as ComposerPeriod | '')}
                   >
-                    <option value="">Chưa chọn</option>
+                    <option value="">{t('admin.composers.notChosen')}</option>
                     {PERIODS.map((p) => (
                       <option key={p} value={p}>
                         {PERIOD_LABELS[p]}
@@ -229,7 +231,7 @@ export default function AdminComposers() {
                     ))}
                   </select>
                 </Field>
-                <Field label="Năm sinh" htmlFor="acp-birth">
+                <Field label={t('admin.composers.birth')} htmlFor="acp-birth">
                   <input
                     id="acp-birth"
                     className="adm-input"
@@ -238,7 +240,7 @@ export default function AdminComposers() {
                     onChange={(e) => set('birthYear', e.target.value.replace(/\D/g, '').slice(0, 4))}
                   />
                 </Field>
-                <Field label="Năm mất" htmlFor="acp-death">
+                <Field label={t('admin.composers.death')} htmlFor="acp-death">
                   <input
                     id="acp-death"
                     className="adm-input"
@@ -247,7 +249,7 @@ export default function AdminComposers() {
                     onChange={(e) => set('deathYear', e.target.value.replace(/\D/g, '').slice(0, 4))}
                   />
                 </Field>
-                <Field label="Quốc gia" htmlFor="acp-country">
+                <Field label={t('admin.composers.country')} htmlFor="acp-country">
                   <input
                     id="acp-country"
                     className="adm-input"
@@ -257,9 +259,9 @@ export default function AdminComposers() {
                   />
                 </Field>
                 <Field
-                  label="Tên khác"
+                  label={t('admin.composers.aliases')}
                   htmlFor="acp-aliases"
-                  hint="Cách nhau bằng dấu phẩy, ví dụ: Bach, J.S. Bach. Dùng để gắn bản nhạc."
+                  hint={t('admin.composers.aliasesHint')}
                 >
                   <input
                     id="acp-aliases"
@@ -270,7 +272,11 @@ export default function AdminComposers() {
                   />
                 </Field>
               </div>
-              <Field label="Tiểu sử ngắn" htmlFor="acp-bio" hint={`${form.bio.length}/4000 ký tự`}>
+              <Field
+                label={t('admin.composers.bio')}
+                htmlFor="acp-bio"
+                hint={t('admin.announcements.chars', { used: form.bio.length, max: 4000 })}
+              >
                 <textarea
                   id="acp-bio"
                   className="adm-input"
@@ -281,7 +287,7 @@ export default function AdminComposers() {
                 />
               </Field>
               <div className="acp-grid acp-grid--image">
-                <Field label="Link ảnh (https)" htmlFor="acp-image">
+                <Field label={t('admin.composers.imageUrl')} htmlFor="acp-image">
                   <input
                     id="acp-image"
                     className="adm-input"
@@ -291,7 +297,7 @@ export default function AdminComposers() {
                     onChange={(e) => set('imageUrl', e.target.value)}
                   />
                 </Field>
-                <Field label="Trang nguồn của ảnh" htmlFor="acp-source">
+                <Field label={t('admin.composers.imageSource')} htmlFor="acp-source">
                   <input
                     id="acp-source"
                     className="adm-input"
@@ -301,7 +307,7 @@ export default function AdminComposers() {
                     onChange={(e) => set('imageSource', e.target.value)}
                   />
                 </Field>
-                <Field label="Giấy phép ảnh" htmlFor="acp-license">
+                <Field label={t('admin.composers.imageLicense')} htmlFor="acp-license">
                   <input
                     id="acp-license"
                     className="adm-input"
@@ -324,10 +330,10 @@ export default function AdminComposers() {
               )}
               <div className="acp-form__actions">
                 <Button variant="ghost" onClick={() => setEditing(null)}>
-                  Hủy
+                  {t('common.cancel')}
                 </Button>
                 <Button type="submit" variant="primary" icon="check" loading={busy}>
-                  {editing === 'new' ? 'Thêm nhạc sĩ' : 'Lưu thay đổi'}
+                  {editing === 'new' ? t('admin.composers.add') : t('scores.edit.saveChanges')}
                 </Button>
               </div>
             </div>
@@ -337,12 +343,12 @@ export default function AdminComposers() {
 
       <Card
         flush
-        title={list ? `${list.length} nhạc sĩ` : 'Danh sách'}
+        title={list ? t('admin.composers.count', { count: list.length }) : t('admin.composers.list')}
         actions={
           <input
             className="adm-input"
-            placeholder="Tìm theo tên"
-            aria-label="Tìm nhạc sĩ"
+            placeholder={t('admin.composers.searchPlaceholder')}
+            aria-label={t('composers.search')}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
@@ -351,16 +357,16 @@ export default function AdminComposers() {
         <Table minWidth={760}>
           <thead>
             <tr>
-              <th>Nhạc sĩ</th>
-              <th>Thời kỳ</th>
-              <th>Ảnh</th>
-              <th className="adm-table__num">Bản nhạc gắn</th>
-              <th className="adm-table__actions">Thao tác</th>
+              <th>{t('composers.title')}</th>
+              <th>{t('composers.period')}</th>
+              <th>{t('admin.composers.photo')}</th>
+              <th className="adm-table__num">{t('admin.composers.linked')}</th>
+              <th className="adm-table__actions">{t('scores.files.actions')}</th>
             </tr>
           </thead>
           <tbody>
             {!list && <TableState colSpan={5} loading />}
-            {list && shown.length === 0 && <TableState colSpan={5} title="Không có nhạc sĩ nào" />}
+            {list && shown.length === 0 && <TableState colSpan={5} title={t('composers.emptyTitle')} />}
             {shown.map((c) => (
               <tr key={c.id}>
                 <td>
@@ -379,10 +385,10 @@ export default function AdminComposers() {
                 <td>
                   {c.imageUrl ? (
                     <Badge tone="success" title={c.imageLicense ?? undefined}>
-                      {c.imageLicense ?? 'Có ảnh'}
+                      {c.imageLicense ?? t('admin.composers.hasPhoto')}
                     </Badge>
                   ) : (
-                    <Badge>Chưa có</Badge>
+                    <Badge>{t('admin.composers.noPhoto')}</Badge>
                   )}
                 </td>
                 <td className="adm-table__num">
@@ -391,10 +397,10 @@ export default function AdminComposers() {
                 <td className="adm-table__actions">
                   <div className="adm-table__actions-inner">
                     <Button size="sm" icon="edit" onClick={() => openForm(c)}>
-                      Sửa
+                      {t('playlists.edit')}
                     </Button>
                     <Button size="sm" variant="ghost" icon="trash" onClick={() => remove(c)}>
-                      Xóa
+                      {t('common.delete')}
                     </Button>
                   </div>
                 </td>

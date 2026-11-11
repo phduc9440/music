@@ -5,6 +5,7 @@ import { errorMessage } from '../../components/ui/helpers';
 import { adminApi } from '../../services';
 import type { AdminTag } from '../../types';
 import { useDialog } from '../../components/ui/dialog-context';
+import { t, t as tr } from '../../i18n/core';
 
 const MAX_NAME = 50;
 
@@ -21,7 +22,7 @@ export default function AdminTags() {
     adminApi
       .getTags()
       .then((res) => setTags(res.data.result))
-      .catch(() => toast.error('Không tải được danh sách thể loại'));
+      .catch(() => toast.error(t('admin.tags.loadFailed')));
   }, []);
 
   useEffect(load, [load]);
@@ -44,7 +45,7 @@ export default function AdminTags() {
     e.preventDefault();
     const name = newName.trim();
     if (!name) return;
-    if (await run(() => adminApi.createTag(name), 'Đã thêm thể loại', 'Không thêm được thể loại')) {
+    if (await run(() => adminApi.createTag(name), t('admin.tags.added'), t('admin.tags.addFailed'))) {
       setNewName('');
       load();
     }
@@ -56,7 +57,7 @@ export default function AdminTags() {
       setEditingId(null);
       return;
     }
-    if (await run(() => adminApi.updateTag(tag.id, name), 'Đã đổi tên thể loại', 'Không đổi được tên')) {
+    if (await run(() => adminApi.updateTag(tag.id, name), t('admin.tags.renamed'), t('admin.tags.renameFailed'))) {
       setEditingId(null);
       load();
     }
@@ -64,40 +65,33 @@ export default function AdminTags() {
 
   const remove = async (tag: AdminTag) => {
     const ok = await confirm({
-      title: `Xóa thể loại "${tag.name}"?`,
-      message:
-        tag.scoreCount > 0
-          ? `Thể loại sẽ bị gỡ khỏi ${tag.scoreCount} bản nhạc đang dùng (bản nhạc vẫn được giữ).`
-          : undefined,
-      confirmLabel: 'Xóa',
+      title: t('admin.tags.deleteTitle', { name: tag.name }),
+      message: tag.scoreCount > 0 ? t('admin.tags.deleteMessage', { count: tag.scoreCount }) : undefined,
+      confirmLabel: t('common.delete'),
       tone: 'danger',
     });
     if (!ok) return;
-    if (await run(() => adminApi.deleteTag(tag.id), 'Đã xóa thể loại', 'Không xóa được thể loại')) load();
+    if (await run(() => adminApi.deleteTag(tag.id), t('admin.tags.deleted'), t('admin.tags.deleteFailed'))) load();
   };
 
   return (
     <>
       <PageHeader
-        title="Thể loại"
-        description={
-          tags
-            ? `${tags.length} thể loại dùng để gắn nhãn và lọc bản nhạc`
-            : 'Thể loại dùng để gắn nhãn và lọc bản nhạc'
-        }
+        title={t('scores.explore.tag')}
+        description={tags ? t('admin.tags.count', { count: tags.length }) : t('admin.tags.subtitle')}
         actions={
           <form onSubmit={add} style={{ display: 'flex', gap: '0.5rem' }}>
             <input
               className="adm-input"
               style={{ minWidth: 240 }}
-              placeholder="Tên thể loại mới"
-              aria-label="Tên thể loại mới"
+              placeholder={t('admin.tags.newName')}
+              aria-label={t('admin.tags.newName')}
               maxLength={MAX_NAME}
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
             />
             <Button type="submit" variant="primary" icon="plus" disabled={busy || !newName.trim()}>
-              Thêm
+              {t('scores.playlistPicker.add')}
             </Button>
           </form>
         }
@@ -107,10 +101,10 @@ export default function AdminTags() {
         <Table minWidth={640}>
           <thead>
             <tr>
-              <th>Tên thể loại</th>
+              <th>{t('admin.tags.name')}</th>
               <th>Slug</th>
-              <th className="adm-table__num">Số bản nhạc</th>
-              <th className="adm-table__actions">Thao tác</th>
+              <th className="adm-table__num">{t('admin.tags.scoreCount')}</th>
+              <th className="adm-table__actions">{t('scores.files.actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -123,7 +117,7 @@ export default function AdminTags() {
                       className="adm-input"
                       value={editName}
                       maxLength={MAX_NAME}
-                      aria-label={`Tên mới cho ${t.name}`}
+                      aria-label={tr('admin.tags.newNameFor', { name: t.name })}
                       autoFocus
                       onChange={(e) => setEditName(e.target.value)}
                       onKeyDown={(e) => {
@@ -146,10 +140,10 @@ export default function AdminTags() {
                     {editingId === t.id ? (
                       <>
                         <Button size="sm" variant="primary" icon="check" disabled={busy} onClick={() => saveEdit(t)}>
-                          Lưu
+                          {tr('common.save')}
                         </Button>
                         <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>
-                          Hủy
+                          {tr('common.cancel')}
                         </Button>
                       </>
                     ) : (
@@ -162,14 +156,14 @@ export default function AdminTags() {
                             setEditName(t.name);
                           }}
                         >
-                          Đổi tên
+                          {tr('admin.tags.rename')}
                         </Button>
                         <Button
                           size="sm"
                           variant="ghost"
                           icon="trash"
-                          aria-label={`Xóa ${t.name}`}
-                          title="Xóa"
+                          aria-label={tr('admin.tags.deleteOne', { name: t.name })}
+                          title={tr('common.delete')}
                           disabled={busy}
                           onClick={() => remove(t)}
                         />
@@ -183,8 +177,8 @@ export default function AdminTags() {
               <TableState
                 colSpan={4}
                 icon="tag"
-                title="Chưa có thể loại nào"
-                description="Thêm thể loại đầu tiên ở ô phía trên."
+                title={t('admin.tags.emptyTitle')}
+                description={t('admin.tags.emptyHint')}
               />
             )}
           </tbody>

@@ -6,6 +6,8 @@ import NotificationBell from '../NotificationBell';
 import SiteFooter from '../layout/SiteFooter';
 import type { FooterColumn } from '../layout/SiteFooter';
 import ThemeToggle from '../../theme/ThemeToggle';
+import { adoptServerLocale, t } from '../../i18n/core';
+import LanguageToggle from '../../i18n/LanguageToggle';
 import { adoptServerTheme } from '../../theme/theme';
 import { authApi, scoreApi, userApi } from '../../services';
 import { AuthProvider } from '../../types';
@@ -28,48 +30,53 @@ interface MenuItem {
   pendingBadge?: boolean;
 }
 
+/** Mục menu: nhãn là getter nên luôn lấy theo ngôn ngữ đang dùng (chuỗi ở locales, nhóm admin.menu). */
+const item = (to: string, key: string, icon: IconName, extra: Partial<MenuItem> = {}): MenuItem => ({
+  to,
+  icon,
+  ...extra,
+  get label() {
+    return t(`admin.menu.items.${key}`);
+  },
+});
+
+const section = (key: string, items: MenuItem[]) => ({
+  items,
+  get section() {
+    return t(`admin.menu.sections.${key}`);
+  },
+});
+
 const MENU: { section: string; items: MenuItem[] }[] = [
-  { section: 'Tổng quan', items: [{ to: '/admin', label: 'Bảng điều khiển', icon: 'dashboard', end: true }] },
-  {
-    section: 'Người dùng',
-    items: [
-      { to: '/admin/members', label: 'Thành viên', icon: 'users' },
-      { to: '/admin/announcements', label: 'Gửi thông báo', icon: 'megaphone' },
-    ],
-  },
-  {
-    section: 'Nội dung',
-    items: [
-      { to: '/admin/scores', label: 'Quản lý bản nhạc', icon: 'music' },
-      { to: '/admin/pending-scores', label: 'Chờ duyệt công khai', icon: 'clock', pendingBadge: true },
-      { to: '/admin/official-scores', label: 'Kho bản nhạc mẫu', icon: 'library' },
-      { to: '/admin/tags', label: 'Thể loại', icon: 'tag' },
-      { to: '/admin/composers', label: 'Nhạc sĩ', icon: 'users' },
-    ],
-  },
-  {
-    section: 'Hệ thống',
-    items: [
-      { to: '/admin/ai-tasks', label: 'Tác vụ AI', icon: 'cpu' },
-      { to: '/admin/system', label: 'Giám sát hệ thống', icon: 'activity' },
-    ],
-  },
+  section('overview', [item('/admin', 'dashboard', 'dashboard', { end: true })]),
+  section('users', [
+    item('/admin/members', 'members', 'users'),
+    item('/admin/announcements', 'announcements', 'megaphone'),
+  ]),
+  section('content', [
+    item('/admin/scores', 'scores', 'music'),
+    item('/admin/pending-scores', 'pending', 'clock', { pendingBadge: true }),
+    item('/admin/official-scores', 'official', 'library'),
+    item('/admin/tags', 'tags', 'tag'),
+    item('/admin/composers', 'composers', 'users'),
+  ]),
+  section('system', [item('/admin/ai-tasks', 'aiTasks', 'cpu'), item('/admin/system', 'system', 'activity')]),
 ];
 
 const ALL_ITEMS = MENU.flatMap((g) => g.items);
 
 /** Chân trang khu quản trị: các nhóm menu bên trái, thêm lối về giao diện người dùng. */
-const FOOTER_COLUMNS: FooterColumn[] = [
+const footerColumns = (): FooterColumn[] => [
   ...MENU.filter((g) => g.items.length > 1).map((g) => ({
     title: g.section,
     links: g.items.map((i) => ({ label: i.label, to: i.to })),
   })),
   {
-    title: 'Khác',
+    title: t('admin.menu.other'),
     links: [
-      { label: 'Bảng điều khiển', to: '/admin' },
-      { label: 'Giao diện người dùng', to: '/' },
-      { label: 'Hồ sơ của tôi', to: '/profile' },
+      { label: t('admin.menu.items.dashboard'), to: '/admin' },
+      { label: t('admin.menu.userSite'), to: '/' },
+      { label: t('common.header.profile'), to: '/profile' },
     ],
   },
 ];
@@ -98,8 +105,9 @@ export default function AdminLayout() {
       .then((res) => {
         setAdmin(res.data.result);
         adoptServerTheme(res.data.result.uiTheme); // giao diện đã chọn đi theo tài khoản giữa các máy
+        adoptServerLocale(res.data.result.locale); // ngôn ngữ cũng đi theo tài khoản
       })
-      .catch(() => toast.error('Không tải được hồ sơ quản trị viên'));
+      .catch(() => toast.error(t('admin.layout.profileFailed')));
   }, []);
 
   // Số bản chờ duyệt: tải lại mỗi khi chuyển trang (duyệt xong quay lại là thấy số mới)
@@ -140,7 +148,7 @@ export default function AdminLayout() {
           <button
             type="button"
             className="adm-btn adm-btn--ghost adm-btn--md adm-btn--icon"
-            aria-label="Đóng/mở thanh bên"
+            aria-label={t('admin.layout.toggleSidebar')}
             onClick={() => (window.innerWidth <= 900 ? setMobileOpen((v) => !v) : setCollapsed((v) => !v))}
           >
             <Icon name="menu" />
@@ -160,6 +168,7 @@ export default function AdminLayout() {
         </div>
 
         <div className="adm-header__right">
+          <LanguageToggle />
           <ThemeToggle />
           <NotificationBell />
           <div className="adm-usermenu" ref={menuRef}>
@@ -182,7 +191,7 @@ export default function AdminLayout() {
                 {admin?.email && <div className="adm-usermenu__email">{admin.email}</div>}
                 <button type="button" role="menuitem" className="adm-usermenu__item" onClick={() => navigate('/')}>
                   <Icon name="home" size={16} />
-                  Giao diện người dùng
+                  {t('admin.menu.userSite')}
                 </button>
                 {admin?.authProvider !== AuthProvider.GOOGLE && (
                   <button
@@ -195,7 +204,7 @@ export default function AdminLayout() {
                     }}
                   >
                     <Icon name="key" size={16} />
-                    Đổi mật khẩu
+                    {t('common.header.changePassword')}
                   </button>
                 )}
                 <button
@@ -205,7 +214,7 @@ export default function AdminLayout() {
                   onClick={handleLogout}
                 >
                   <Icon name="logout" size={16} />
-                  Đăng xuất
+                  {t('common.header.logout')}
                 </button>
               </div>
             )}
@@ -215,7 +224,7 @@ export default function AdminLayout() {
 
       <div className="adm-body">
         <aside className={`adm-sidebar ui-stage${mobileOpen ? ' adm-sidebar--open' : ''}`}>
-          <nav className="adm-menu" aria-label="Menu quản trị">
+          <nav className="adm-menu" aria-label={t('admin.layout.menuLabel')}>
             {MENU.map((group) => (
               <div key={group.section} className="adm-menu">
                 <div className="adm-menu__section">{group.section}</div>
@@ -233,7 +242,10 @@ export default function AdminLayout() {
                     </span>
                     <span className="adm-menu__label">{item.label}</span>
                     {item.pendingBadge && pendingCount > 0 && (
-                      <span className="adm-menu__count" aria-label={`${pendingCount} bản đang chờ`}>
+                      <span
+                        className="adm-menu__count"
+                        aria-label={t('admin.layout.pendingBadge', { count: pendingCount })}
+                      >
                         {pendingCount > 99 ? '99+' : pendingCount}
                       </span>
                     )}
@@ -246,7 +258,7 @@ export default function AdminLayout() {
             <span className="adm-menu__icon">
               <Icon name="home" />
             </span>
-            <span className="adm-menu__label">Giao diện người dùng</span>
+            <span className="adm-menu__label">{t('admin.menu.userSite')}</span>
           </button>
         </aside>
         {mobileOpen && <div className="adm-backdrop" onClick={() => setMobileOpen(false)} />}
@@ -258,11 +270,7 @@ export default function AdminLayout() {
         </main>
       </div>
 
-      <SiteFooter
-        variant="app"
-        columns={FOOTER_COLUMNS}
-        tip="Khu quản trị: kiểm duyệt nội dung công khai, kho bản nhạc mẫu, thành viên và hệ thống."
-      />
+      <SiteFooter variant="app" columns={footerColumns()} tip={t('admin.layout.footerTip')} />
 
       <ChangePasswordModal isOpen={passwordOpen} onClose={() => setPasswordOpen(false)} />
     </div>
