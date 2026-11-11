@@ -316,4 +316,22 @@ class PaymentServiceImplTest {
         when(subscriptions.currentPlan("m")).thenReturn(pro);
         assertEquals("RENEW", service.createOrder(request, "1.1.1.1").getKind());
     }
+
+    @Test
+    void superAdminCannotBuyAndAdminCannotBuyPro() {
+        when(plans.findByCode("PRO")).thenReturn(Optional.of(pro));
+        var request = new CreatePaymentOrderRequest("PRO", BillingPeriod.MONTH, null);
+
+        SecurityContextHolder.getContext()
+                .setAuthentication(new org.springframework.security.authentication.TestingAuthenticationToken(
+                        "boss@x.com", "x", "ROLE_ADMIN", "ROLE_SUPER_ADMIN"));
+        AppException e = assertThrows(AppException.class, () -> service.createOrder(request, "1.1.1.1"));
+        assertEquals(ErrorCode.PAYMENT_NOT_NEEDED, e.getErrorCode());
+
+        SecurityContextHolder.getContext()
+                .setAuthentication(new org.springframework.security.authentication.TestingAuthenticationToken(
+                        "mod@x.com", "x", "ROLE_ADMIN"));
+        e = assertThrows(AppException.class, () -> service.createOrder(request, "1.1.1.1"));
+        assertEquals(ErrorCode.PAYMENT_NOT_NEEDED, e.getErrorCode());
+    }
 }

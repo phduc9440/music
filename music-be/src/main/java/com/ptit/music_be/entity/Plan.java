@@ -16,6 +16,9 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class Plan {
 
+    public static final String PERSONAL = "PERSONAL";
+    public static final String TEAM = "TEAM";
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     String id;
@@ -25,6 +28,11 @@ public class Plan {
 
     @Column(nullable = false, length = 100)
     String name;
+
+    /** PERSONAL (gói cá nhân) hoặc TEAM (gói nhóm). */
+    @Builder.Default
+    @Column(nullable = false, length = 10)
+    String audience = PERSONAL;
 
     @Column(name = "price_month", nullable = false)
     long priceMonth;

@@ -41,6 +41,9 @@ public interface MemberRepository extends JpaRepository<Member, String> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select m from Member m where m.id = :id")
     Optional<Member> findByIdForUpdate(@Param("id") String id);
+    /** Tên các vai trò của thành viên (USER, ADMIN, SUPER_ADMIN). */
+    @Query("select mr.role.name from MemberRole mr where mr.member.id = :id")
+    java.util.List<String> roleNamesOf(@Param("id") String id);
 
     /** Ghi lần đăng nhập gần nhất mà không động đến các cột khác của tài khoản. */
     @org.springframework.transaction.annotation.Transactional

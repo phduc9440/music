@@ -15,12 +15,14 @@
   },
   "status": {
     "ACTIVE": "Đang dùng",
-    "FREE": "Miễn phí"
+    "FREE": "Miễn phí",
+    "UNLIMITED": "Không giới hạn"
   },
   "source": {
     "PAYMENT": "Mua trực tuyến",
     "POINTS_TRIAL": "Dùng thử bằng điểm",
-    "ADMIN_GRANT": "Quản trị viên cấp"
+    "ADMIN_GRANT": "Quản trị viên cấp",
+    "ROLE": "Theo vai trò quản trị"
   },
   "period": {
     "MONTH": "Theo tháng",
@@ -36,7 +38,11 @@
     "expires": "Hết hạn ngày {date}",
     "omrUsed": "Trang OMR đã dùng tháng này",
     "usedUnlimited": "{used} (không giới hạn)",
-    "viewPlans": "Xem các gói"
+    "viewPlans": "Xem các gói",
+    "roleGrant": {
+      "SUPER_ADMIN": "Quyền lợi của quản trị viên cấp cao: không giới hạn, không hết hạn.",
+      "ADMIN": "Quyền lợi của quản trị viên: gói Pro không thời hạn."
+    }
   },
   "pricing": {
     "title": "Gói dịch vụ",
@@ -47,7 +53,13 @@
     "buy": "Mua gói",
     "redirecting": "Đang chuyển sang cổng thanh toán...",
     "buyFailed": "Không tạo được đơn thanh toán",
-    "renew": "Gia hạn"
+    "renew": "Gia hạn",
+    "notNeeded": "Không cần mua",
+    "includedForAdmin": "Đã có (quản trị viên)",
+    "roleNote": {
+      "SUPER_ADMIN": "Bạn là quản trị viên cấp cao: dùng mọi tính năng không giới hạn, không cần mua gói.",
+      "ADMIN": "Bạn là quản trị viên: đã có quyền lợi gói Pro không thời hạn. Bạn vẫn có thể mua gói cao hơn."
+    }
   },
   "result": {
     "title": "Kết quả thanh toán",
@@ -89,5 +101,14 @@
   "kind": {
     "NEW": "Mua mới",
     "RENEW": "Gia hạn"
-  }
+  },
+  "audience": {
+    "PERSONAL": "Cá nhân",
+    "TEAM": "Team"
+  },
+  "audienceDesc": {
+    "PERSONAL": "Cho một người số hóa và chỉnh sửa bản nhạc của mình.",
+    "TEAM": "Cho nhóm làm việc chung, hạn mức dùng chung cho cả team."
+  },
+  "unlimitedPlan": "Không giới hạn"
 }

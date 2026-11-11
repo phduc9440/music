@@ -31,6 +31,7 @@ import com.ptit.music_be.repository.PaymentOrderRepository;
 import com.ptit.music_be.repository.PlanRepository;
 import com.ptit.music_be.dto.enums.NotificationType;
 import com.ptit.music_be.service.billing.SubscriptionService;
+import com.ptit.music_be.service.billing.impl.SubscriptionServiceImpl;
 import com.ptit.music_be.service.notification.NotificationService;
 import com.ptit.music_be.service.payment.PaymentProvider;
 import com.ptit.music_be.service.payment.PaymentProvider.PaymentCallback;
@@ -91,6 +92,7 @@ public class PaymentServiceImpl implements PaymentService {
         if (amount <= 0) {
             throw new AppException(ErrorCode.PAYMENT_PLAN_NOT_PURCHASABLE);
         }
+        requirePurchaseNeeded(plan);
         Member member = memberRepository
                 .findByEmail(SecurityUtils.getCurrentEmail())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
@@ -118,6 +120,14 @@ public class PaymentServiceImpl implements PaymentService {
         return response;
     }
 
+    /** SUPER_ADMIN không giới hạn nên không mua gói nào; ADMIN đã có Pro không thời hạn nên không mua Pro. */
+    private static void requirePurchaseNeeded(Plan plan) {
+        if (SecurityUtils.isSuperAdmin()
+                || (SecurityUtils.isAdmin() && SubscriptionServiceImpl.PRO.equals(plan.getCode()))) {
+            throw new AppException(ErrorCode.PAYMENT_NOT_NEEDED);
+        }
+    }
+
     /** Gia hạn khi người mua đang dùng đúng gói này (còn hạn); gói khác hoặc đang ở Free thì là mua mới. */
     private boolean isRenewal(Member member, Plan plan) {
         Plan current = subscriptionService.currentPlan(member.getId());
@@ -139,6 +149,7 @@ public class PaymentServiceImpl implements PaymentService {
             }
             boolean same = o.getExpiresAt().isAfter(now)
                     && o.getPlan().getId().equals(plan.getId())
+                    && o.getAmount() == (period == BillingPeriod.MONTH ? plan.getPriceMonth() : plan.getPriceYear())
                     && o.getPeriod() == period
                     && o.getProvider() == type;
             if (same && reuse == null) {
@@ -170,6 +181,7 @@ public class PaymentServiceImpl implements PaymentService {
         if (order.getStatus() != PaymentStatus.PENDING || !order.getExpiresAt().isAfter(LocalDateTime.now())) {
             throw new AppException(ErrorCode.PAYMENT_ORDER_NOT_PAYABLE);
         }
+        requirePurchaseNeeded(order.getPlan());
         order.setExpiresAt(LocalDateTime.now().plusMinutes(ORDER_TTL_MINUTES));
         orderRepository.save(order);
         String locale = order.getMember().getLocale() == AppLocale.EN ? "en" : "vn";
