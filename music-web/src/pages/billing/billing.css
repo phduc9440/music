@@ -180,3 +180,29 @@
 .bl-note--danger {
   border-left-color: var(--ui-danger);
 }
+.bl-note--warning {
+  border-left-color: var(--ui-warning);
+  background: var(--ui-warning-soft);
+}
+
+/* Khối gia hạn gói trong trang Gói của tôi */
+.bl-renew {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--sc-line);
+}
+.bl-renew h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+.bl-renew .bl-note {
+  margin: 0 0 0.75rem;
+}
+.bl-renew .bl-period {
+  margin-bottom: 0.5rem;
+}
+.bl-renew__summary {
+  margin: 0;
+  color: var(--sc-muted);
+  font-size: 0.9rem;
+}

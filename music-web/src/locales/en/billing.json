@@ -42,7 +42,13 @@
     "roleGrant": {
       "SUPER_ADMIN": "Super admin benefits: unlimited, never expires.",
       "ADMIN": "Admin benefits: Pro plan with no expiry."
-    }
+    },
+    "renewTitle": "Renew plan",
+    "renew": "Renew for 1 {period}",
+    "renewSummary": "Add 1 {period} for {amount}. After payment, your plan expires on {date}.",
+    "expiringSoon_one": "Your plan expires in {count} day. Renew to avoid interruption.",
+    "expiringSoon_other": "Your plan expires in {count} days. Renew to avoid interruption.",
+    "expiresToday": "Your plan expires today. Renew to avoid interruption."
   },
   "pricing": {
     "title": "Plans",

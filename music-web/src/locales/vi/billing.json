@@ -42,7 +42,12 @@
     "roleGrant": {
       "SUPER_ADMIN": "Quyền lợi của quản trị viên cấp cao: không giới hạn, không hết hạn.",
       "ADMIN": "Quyền lợi của quản trị viên: gói Pro không thời hạn."
-    }
+    },
+    "renewTitle": "Gia hạn gói",
+    "renew": "Gia hạn 1 {period}",
+    "renewSummary": "Thêm 1 {period} với giá {amount}. Sau khi thanh toán, gói hết hạn ngày {date}.",
+    "expiringSoon": "Gói sẽ hết hạn sau {count} ngày. Gia hạn để không bị gián đoạn.",
+    "expiresToday": "Gói hết hạn trong hôm nay. Gia hạn để không bị gián đoạn."
   },
   "pricing": {
     "title": "Gói dịch vụ",
