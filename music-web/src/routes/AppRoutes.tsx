@@ -44,6 +44,7 @@ import ProtectedRoute from './ProtectedRoute';
 import RootLayout from './RootLayout';
 import UserArea from './UserArea';
 import WorkspaceHome from '../pages/home/WorkspaceHome';
+import NotFound from '../pages/NotFound';
 
 /**
  * Router dạng dữ liệu (createBrowserRouter) thay cho <BrowserRouter>: cần cho hiệu ứng chuyển trang bằng View
@@ -142,7 +143,11 @@ const router = createBrowserRouter(
         <Route path="composers" element={<AdminComposers />} />
         <Route path="ai-tasks" element={<AdminAiTasks />} />
         <Route path="system" element={<AdminSystem />} />
+        <Route path="*" element={<NotFound embedded />} />
       </Route>
+
+      {/* Đường dẫn không khớp route nào: trang 404, khách và người đã đăng nhập đều thấy (không bắt đăng nhập) */}
+      <Route path="*" element={<NotFound />} />
     </Route>,
   ),
 );

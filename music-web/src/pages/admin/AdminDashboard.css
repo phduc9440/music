@@ -91,3 +91,13 @@
   padding: 0.25rem 0.6rem;
   font-size: var(--adm-text-sm);
 }
+
+/* Tiêu đề nhóm (Gói dịch vụ và doanh thu, Hoạt động theo ngày, ...) */
+.dash-section {
+  margin: 1.75rem 0 0.75rem;
+  font-size: var(--adm-text-sm);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--adm-text-2);
+}

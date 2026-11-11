@@ -1,6 +1,7 @@
 package com.ptit.music_be.service.admin.impl;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -8,6 +9,7 @@ import java.util.Map;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.TypedQuery;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -15,12 +17,17 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.ptit.music_be.dto.enums.AiTaskStatus;
 import com.ptit.music_be.dto.enums.MemberStatus;
+import com.ptit.music_be.dto.enums.PaymentStatus;
+import com.ptit.music_be.dto.enums.SubscriptionStatus;
+import com.ptit.music_be.dto.response.AdminDashboardResponse.Billing;
 import com.ptit.music_be.dto.response.AdminDashboardResponse.DayCount;
 import com.ptit.music_be.dto.response.AdminDashboardResponse.DayPractice;
+import com.ptit.music_be.dto.response.AdminDashboardResponse.DayRevenue;
 import com.ptit.music_be.dto.response.AdminDashboardResponse.KeyCount;
 import com.ptit.music_be.dto.response.AdminDashboardResponse.TopScore;
 import com.ptit.music_be.dto.response.AdminDashboardResponse.Totals;
 import com.ptit.music_be.dto.response.AdminDashboardResponse;
+import com.ptit.music_be.entity.PlanSanction;
 import com.ptit.music_be.service.admin.AdminDashboardService;
 
 import lombok.extern.slf4j.Slf4j;
@@ -46,6 +53,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         int safeDays = days <= 0 ? DEFAULT_DAYS : Math.max(MIN_DAYS, Math.min(days, MAX_DAYS));
         LocalDate today = LocalDate.now();
         LocalDate start = today.minusDays(safeDays - 1L);
+        LocalDateTime now = LocalDateTime.now();
 
         return AdminDashboardResponse.builder()
                 .days(safeDays)
@@ -64,6 +72,24 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
                 .aiTasksByStatus(keyCounts("select cast(t.status as string), count(t) from AiTask t group by t.status"))
                 .topTags(topTags())
                 .topViewed(topViewed())
+                .billing(billing(start, today, now))
+                .revenueByDay(revenueByDay(start, today))
+                .subscriptionsByPlan(keyCounts(em.createQuery(
+                                "select s.plan.name, count(s) from Subscription s"
+                                        + " where s.status = :status and s.expiresAt > :now"
+                                        + " group by s.plan.id, s.plan.name, s.plan.sortOrder"
+                                        + " order by s.plan.sortOrder, s.plan.name",
+                                Object[].class)
+                        .setParameter("status", SubscriptionStatus.ACTIVE)
+                        .setParameter("now", now)
+                        .getResultList()))
+                .subscriptionsBySource(keyCounts(em.createQuery(
+                                "select cast(s.source as string), count(s) from Subscription s"
+                                        + " where s.status = :status and s.expiresAt > :now group by s.source",
+                                Object[].class)
+                        .setParameter("status", SubscriptionStatus.ACTIVE)
+                        .setParameter("now", now)
+                        .getResultList()))
                 .build();
     }
 
@@ -104,56 +130,52 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
     }
 
     private List<DayCount> scoresByDay(LocalDate start, LocalDate end) {
-        List<Object[]> rows = em.createQuery(
-                        "select cast(s.createdAt as date), count(s) from Score s"
-                                + " where s.createdAt >= :from and s.createdAt < :to group by cast(s.createdAt as date)",
-                        Object[].class)
-                .setParameter("from", start.atStartOfDay())
-                .setParameter("to", end.plusDays(1).atStartOfDay())
-                .getResultList();
-        Map<LocalDate, Long> byDay = new HashMap<>();
-        for (Object[] r : rows) {
-            byDay.put(LocalDate.parse(r[0].toString()), ((Number) r[1]).longValue());
-        }
-        List<DayCount> result = new ArrayList<>();
-        for (LocalDate d = start; !d.isAfter(end); d = d.plusDays(1)) {
-            result.add(new DayCount(d, byDay.getOrDefault(d, 0L)));
-        }
-        return result;
+        return dayCounts(
+                "select cast(s.createdAt as date), count(s) from Score s"
+                        + " where s.createdAt >= :from and s.createdAt < :to group by cast(s.createdAt as date)",
+                start,
+                end);
     }
 
     private List<DayCount> membersByDay(LocalDate start, LocalDate end) {
-        List<Object[]> rows = em.createQuery(
-                        "select cast(m.createdAt as date), count(m) from Member m"
-                                + " where m.createdAt >= :from and m.createdAt < :to group by cast(m.createdAt as date)",
-                        Object[].class)
-                .setParameter("from", start.atStartOfDay())
-                .setParameter("to", end.plusDays(1).atStartOfDay())
-                .getResultList();
-        Map<LocalDate, Long> byDay = new HashMap<>();
-        for (Object[] r : rows) {
-            byDay.put(LocalDate.parse(r[0].toString()), ((Number) r[1]).longValue());
-        }
+        return dayCounts(
+                "select cast(m.createdAt as date), count(m) from Member m"
+                        + " where m.createdAt >= :from and m.createdAt < :to group by cast(m.createdAt as date)",
+                start,
+                end);
+    }
+
+    /** Chạy câu nhóm theo ngày (cột 0 là ngày, cột 1 là số) và điền 0 cho ngày không có. */
+    private List<DayCount> dayCounts(String jpql, LocalDate start, LocalDate end) {
+        Map<LocalDate, Object[]> byDay = byDay(em.createQuery(jpql, Object[].class), start, end);
         List<DayCount> result = new ArrayList<>();
         for (LocalDate d = start; !d.isAfter(end); d = d.plusDays(1)) {
-            result.add(new DayCount(d, byDay.getOrDefault(d, 0L)));
+            Object[] r = byDay.get(d);
+            result.add(new DayCount(d, r == null ? 0 : ((Number) r[1]).longValue()));
         }
         return result;
     }
 
+    /** Gắn khoảng [start, end] vào câu có tham số :from/:to và gom kết quả theo ngày ở cột 0. */
+    private Map<LocalDate, Object[]> byDay(TypedQuery<Object[]> query, LocalDate start, LocalDate end) {
+        Map<LocalDate, Object[]> byDay = new HashMap<>();
+        for (Object[] r : query.setParameter("from", start.atStartOfDay())
+                .setParameter("to", end.plusDays(1).atStartOfDay())
+                .getResultList()) {
+            byDay.put(LocalDate.parse(r[0].toString()), r);
+        }
+        return byDay;
+    }
+
     private List<DayPractice> practiceByDay(LocalDate start, LocalDate end) {
-        List<Object[]> rows = em.createQuery(
+        Map<LocalDate, Object[]> byDay = byDay(
+                em.createQuery(
                         "select cast(p.startedAt as date), count(p), coalesce(sum(p.durationSeconds), 0)"
                                 + " from PracticeSession p where p.startedAt >= :from and p.startedAt < :to"
                                 + " group by cast(p.startedAt as date)",
-                        Object[].class)
-                .setParameter("from", start.atStartOfDay())
-                .setParameter("to", end.plusDays(1).atStartOfDay())
-                .getResultList();
-        Map<LocalDate, Object[]> byDay = new HashMap<>();
-        for (Object[] r : rows) {
-            byDay.put(LocalDate.parse(r[0].toString()), r);
-        }
+                        Object[].class),
+                start,
+                end);
         List<DayPractice> result = new ArrayList<>();
         for (LocalDate d = start; !d.isAfter(end); d = d.plusDays(1)) {
             Object[] r = byDay.get(d);
@@ -164,8 +186,83 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         return result;
     }
 
+    /** Tổng tiền/số đơn theo trạng thái trong khoảng, gói và đơn đang chờ tính tại thời điểm now. */
+    private Billing billing(LocalDate start, LocalDate end, LocalDateTime now) {
+        long[] paid = paidSum(PaymentStatus.PAID, start, end);
+        long[] refunded = paidSum(PaymentStatus.REFUNDED, start, end);
+        return Billing.builder()
+                .revenue(paid[0])
+                .paidOrders(paid[1])
+                .refundedAmount(refunded[0])
+                .refundedOrders(refunded[1])
+                .activeSubscriptions(em.createQuery(
+                                "select count(s) from Subscription s where s.status = :status and s.expiresAt > :now",
+                                Long.class)
+                        .setParameter("status", SubscriptionStatus.ACTIVE)
+                        .setParameter("now", now)
+                        .getSingleResult())
+                .subscribedMembers(em.createQuery(
+                                "select count(distinct s.member) from Subscription s"
+                                        + " where s.status = :status and s.expiresAt > :now",
+                                Long.class)
+                        .setParameter("status", SubscriptionStatus.ACTIVE)
+                        .setParameter("now", now)
+                        .getSingleResult())
+                .pendingOrders(em.createQuery(
+                                "select count(o) from PaymentOrder o where o.status = :status and o.expiresAt > :now",
+                                Long.class)
+                        .setParameter("status", PaymentStatus.PENDING)
+                        .setParameter("now", now)
+                        .getSingleResult())
+                .activeBans(em.createQuery(
+                                "select count(s) from PlanSanction s where s.type = :type and s.liftedAt is null"
+                                        + " and s.startsAt <= :now and s.endsAt > :now",
+                                Long.class)
+                        .setParameter("type", PlanSanction.BAN)
+                        .setParameter("now", now)
+                        .getSingleResult())
+                .build();
+    }
+
+    /** {tổng tiền, số đơn} của các đơn ở trạng thái status có ngày thanh toán trong [start, end]. */
+    private long[] paidSum(PaymentStatus status, LocalDate start, LocalDate end) {
+        Object[] r = em.createQuery(
+                        "select coalesce(sum(o.amount), 0), count(o) from PaymentOrder o"
+                                + " where o.status = :status and o.paidAt >= :from and o.paidAt < :to",
+                        Object[].class)
+                .setParameter("status", status)
+                .setParameter("from", start.atStartOfDay())
+                .setParameter("to", end.plusDays(1).atStartOfDay())
+                .getSingleResult();
+        return new long[] {((Number) r[0]).longValue(), ((Number) r[1]).longValue()};
+    }
+
+    private List<DayRevenue> revenueByDay(LocalDate start, LocalDate end) {
+        Map<LocalDate, Object[]> byDay = byDay(
+                em.createQuery(
+                                "select cast(o.paidAt as date), coalesce(sum(o.amount), 0), count(o) from PaymentOrder o"
+                                        + " where o.status = :status and o.paidAt >= :from and o.paidAt < :to"
+                                        + " group by cast(o.paidAt as date)",
+                                Object[].class)
+                        .setParameter("status", PaymentStatus.PAID),
+                start,
+                end);
+        List<DayRevenue> result = new ArrayList<>();
+        for (LocalDate d = start; !d.isAfter(end); d = d.plusDays(1)) {
+            Object[] r = byDay.get(d);
+            result.add(r == null
+                    ? new DayRevenue(d, 0, 0)
+                    : new DayRevenue(d, ((Number) r[1]).longValue(), ((Number) r[2]).longValue()));
+        }
+        return result;
+    }
+
     private List<KeyCount> keyCounts(String jpql) {
-        return em.createQuery(jpql, Object[].class).getResultList().stream()
+        return keyCounts(em.createQuery(jpql, Object[].class).getResultList());
+    }
+
+    private static List<KeyCount> keyCounts(List<Object[]> rows) {
+        return rows.stream()
                 .map(r -> new KeyCount(String.valueOf(r[0]), ((Number) r[1]).longValue()))
                 .toList();
     }

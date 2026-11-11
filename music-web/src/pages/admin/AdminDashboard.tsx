@@ -18,7 +18,7 @@ import { Button, Card, CellTitle, PageHeader, StatCard, StatGrid, Table, TableSt
 import { adminApi } from '../../services';
 import type { AdminDashboard as DashboardData, DashboardKeyCount } from '../../types';
 import './AdminDashboard.css';
-import { formatDate, formatNumber, labelMap, t } from '../../i18n/core';
+import { formatCompact, formatDate, formatNumber, formatVnd, labelMap, t } from '../../i18n/core';
 
 const RANGES = [7, 30, 90];
 
@@ -55,10 +55,14 @@ const AI_STATUS_LABEL: Record<string, string> = labelMap('admin.dashboard.aiStat
 ]);
 const AI_ORDER = ['COMPLETED', 'PROCESSING', 'PENDING', 'FAILED', 'CANCELLED'];
 
+const SUB_SOURCE_LABEL: Record<string, string> = labelMap('billing.source', ['PAYMENT', 'POINTS_TRIAL', 'ADMIN_GRANT']);
+const SUB_SOURCE_ORDER = ['PAYMENT', 'POINTS_TRIAL', 'ADMIN_GRANT'];
+
 const SERIES_SCORES = 'var(--ui-chart-scores)';
 const SERIES_PRACTICE = 'var(--ui-chart-practice)';
 // Slot 7 (violet) của bảng màu dataviz, để thành viên không trùng màu với bản nhạc/luyện tập
 const SERIES_MEMBERS = 'var(--ui-chart-members)';
+const SERIES_REVENUE = 'var(--ui-chart-revenue)';
 const AXIS = { fontSize: 12, fill: 'var(--ui-chart-axis)' };
 
 const nf = { format: (n: number) => formatNumber(n) };
@@ -68,6 +72,11 @@ const shortDate = (iso: string) => {
   return t('admin.dashboard.shortDate', { day: Number(d), month: Number(m) });
 };
 const longDate = (iso: string) => formatDate(`${iso}T00:00:00`);
+
+/** Tiêu đề nhóm, chia trang thành các phần (thẻ số liệu + biểu đồ cùng chủ đề). */
+function Section({ title }: { title: string }) {
+  return <h2 className="dash-section">{title}</h2>;
+}
 
 const orderBy = (rows: DashboardKeyCount[], order: string[]) =>
   [...rows].sort((a, b) => {
@@ -98,11 +107,13 @@ function ChartCard({
   title,
   sub,
   table,
+  className,
   children,
 }: {
   title: string;
   sub?: string;
   table: { head: [string, string]; rows: [string, string][] };
+  className?: string;
   children: React.ReactNode;
 }) {
   const [asTable, setAsTable] = useState(false);
@@ -110,6 +121,7 @@ function ChartCard({
     <Card
       title={title}
       description={sub}
+      className={className}
       actions={
         <Tabs
           value={asTable ? 'table' : 'chart'}
@@ -243,6 +255,13 @@ export default function AdminDashboard() {
     color: AI_COLOR[r.key],
   }));
   const tags = (data?.topTags ?? []).map((r) => ({ label: r.key, count: r.count }));
+  const bill = data?.billing;
+  const revenueDay = data?.revenueByDay ?? [];
+  const subsByPlan = (data?.subscriptionsByPlan ?? []).map((r) => ({ label: r.key, count: r.count }));
+  const subsBySource = orderBy(data?.subscriptionsBySource ?? [], SUB_SOURCE_ORDER).map((r) => ({
+    label: SUB_SOURCE_LABEL[r.key] ?? r.key,
+    count: r.count,
+  }));
   const rowsOf = (rows: { label: string; count: number }[]): [string, string][] =>
     rows.map((r) => [r.label, nf.format(r.count)]);
 
@@ -343,6 +362,153 @@ export default function AdminDashboard() {
         />
       </StatGrid>
 
+      <Section title={t('admin.dashboard.sectionBilling')} />
+      <StatGrid>
+        <StatCard
+          label={t('admin.dashboard.revenue')}
+          icon="chart"
+          tone="success"
+          value={bill ? formatVnd(bill.revenue) : '—'}
+          hint={
+            bill
+              ? [
+                  t('admin.dashboard.revenueHint', { count: bill.paidOrders, n: nf.format(bill.paidOrders), days }),
+                  bill.refundedOrders > 0
+                    ? t('admin.dashboard.refundedHint', { amount: formatVnd(bill.refundedAmount) })
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')
+              : undefined
+          }
+          to="/admin/revenue"
+        />
+        <StatCard
+          label={t('admin.dashboard.activeSubs')}
+          icon="star"
+          tone="primary"
+          value={bill ? nf.format(bill.activeSubscriptions) : '—'}
+          hint={
+            bill
+              ? t('admin.dashboard.activeSubsHint', {
+                  count: bill.subscribedMembers,
+                  n: nf.format(bill.subscribedMembers),
+                })
+              : undefined
+          }
+          to="/admin/member-plans"
+        />
+        <StatCard
+          label={t('admin.dashboard.pendingOrders')}
+          icon="clock"
+          tone="warning"
+          value={bill ? nf.format(bill.pendingOrders) : '—'}
+          hint={t('admin.dashboard.pendingOrdersHint')}
+          to="/admin/revenue"
+        />
+        <StatCard
+          label={t('admin.dashboard.activeBans')}
+          icon="lock"
+          tone={bill && bill.activeBans > 0 ? 'danger' : 'neutral'}
+          value={bill ? nf.format(bill.activeBans) : '—'}
+          hint={bill && bill.activeBans > 0 ? t('admin.dashboard.activeBansHint') : t('admin.dashboard.noBans')}
+          to="/admin/member-plans?tab=sanction"
+        />
+      </StatGrid>
+
+      <div className="adm-grid-2">
+        <ChartCard
+          title={t('admin.dashboard.revenueByDay')}
+          sub={
+            bill
+              ? t('admin.dashboard.revenueByDaySub', {
+                  amount: formatVnd(bill.revenue),
+                  count: bill.paidOrders,
+                  n: nf.format(bill.paidOrders),
+                  days,
+                })
+              : undefined
+          }
+          table={{
+            head: [t('admin.dashboard.date'), t('admin.dashboard.amountOrders')],
+            rows: revenueDay.map((d) => [longDate(d.date), `${formatVnd(d.amount)} (${nf.format(d.orders)})`]),
+          }}
+          className="adm-span-all"
+        >
+          <div className="dash-chart">
+            <ResponsiveContainer>
+              <AreaChart data={revenueDay} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+                <CartesianGrid stroke="var(--ui-chart-grid)" vertical={false} />
+                <XAxis
+                  dataKey="date"
+                  tickFormatter={shortDate}
+                  tick={AXIS}
+                  axisLine={false}
+                  tickLine={false}
+                  minTickGap={24}
+                />
+                <YAxis
+                  allowDecimals={false}
+                  tick={AXIS}
+                  axisLine={false}
+                  tickLine={false}
+                  width={56}
+                  tickFormatter={(v) => formatCompact(Number(v))}
+                />
+                <Tooltip
+                  cursor={{ stroke: 'var(--ui-chart-neutral)', strokeWidth: 1 }}
+                  content={({ active, payload, label }: TipProps) =>
+                    active && payload?.[0] ? (
+                      <Tip
+                        title={longDate(String(label))}
+                        lines={[
+                          formatVnd(Number(payload[0].value)),
+                          t('admin.dashboard.ordersTip', {
+                            count: Number(payload[0].payload?.orders ?? 0),
+                            n: nf.format(Number(payload[0].payload?.orders ?? 0)),
+                          }),
+                        ]}
+                      />
+                    ) : null
+                  }
+                />
+                <Area
+                  type="monotone"
+                  dataKey="amount"
+                  stroke={SERIES_REVENUE}
+                  strokeWidth={2}
+                  fill={SERIES_REVENUE}
+                  fillOpacity={0.12}
+                  dot={false}
+                  activeDot={{ r: 5, stroke: 'var(--ui-surface)', strokeWidth: 2 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </ChartCard>
+      </div>
+
+      <div className="adm-grid-2">
+        <ChartCard
+          title={t('admin.dashboard.subsByPlan')}
+          sub={t('admin.dashboard.subsByPlanSub')}
+          table={{ head: [t('admin.dashboard.planColumn'), t('admin.dashboard.subsCount')], rows: rowsOf(subsByPlan) }}
+        >
+          <HBar rows={subsByPlan} color={SERIES_REVENUE} unit={t('admin.dashboard.subsUnit')} />
+        </ChartCard>
+        <ChartCard
+          title={t('admin.dashboard.subsBySource')}
+          sub={t('admin.dashboard.subsBySourceSub')}
+          table={{
+            head: [t('admin.dashboard.sourceColumn'), t('admin.dashboard.subsCount')],
+            rows: rowsOf(subsBySource),
+          }}
+        >
+          <HBar rows={subsBySource} color={SERIES_REVENUE} unit={t('admin.dashboard.subsUnit')} />
+        </ChartCard>
+      </div>
+
+      <Section title={t('admin.dashboard.sectionActivity')} />
       <div className="adm-grid-2">
         <ChartCard
           title={t('admin.dashboard.newScores')}
@@ -500,6 +666,7 @@ export default function AdminDashboard() {
         </ChartCard>
       </div>
 
+      <Section title={t('admin.dashboard.sectionBreakdown')} />
       <div className="adm-grid-2">
         <ChartCard
           title={t('admin.dashboard.sourceTitle')}

@@ -154,6 +154,10 @@ export const monthShortName = (month: number): string =>
 
 export const formatNumber = (value: number): string => new Intl.NumberFormat(intlLocale()).format(value);
 
+/** Số gọn cho trục biểu đồ: "1,2 Tr" / "1.2M". */
+export const formatCompact = (value: number): string =>
+  new Intl.NumberFormat(intlLocale(), { notation: 'compact', maximumFractionDigits: 1 }).format(value);
+
 export const formatDate = (value: string | number | Date): string => new Date(value).toLocaleDateString(intlLocale());
 
 export const formatDateTime = (value: string | number | Date): string => new Date(value).toLocaleString(intlLocale());
