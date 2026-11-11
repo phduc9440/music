@@ -224,15 +224,15 @@ function ComposerCard({ composer }: { composer: Composer }) {
       className="gh-composer"
       aria-label={`${composer.name}: ${composer.scoreCount} bản nhạc công khai`}
     >
-      <span className="gh-composer__inner">
-        <span className="gh-composer__face gh-composer__face--front">
+      <div className="gh-composer__inner">
+        <div className="gh-composer__face gh-composer__face--front">
           <span className="gh-composer__portrait">
             <ComposerPortrait name={composer.name} imageUrl={composer.imageUrl} />
           </span>
           <strong>{composer.name}</strong>
           <span>{composer.scoreCount} bản nhạc</span>
-        </span>
-        <span className="gh-composer__face gh-composer__face--back">
+        </div>
+        <div className="gh-composer__face gh-composer__face--back">
           <strong>{composer.name}</strong>
           {lifespan(composer) && <span>{lifespan(composer)}</span>}
           {titles.length > 0 && (
@@ -243,8 +243,8 @@ function ComposerCard({ composer }: { composer: Composer }) {
             </ul>
           )}
           <span>{composer.scoreCount} bản trên hệ thống</span>
-        </span>
-      </span>
+        </div>
+      </div>
     </Link>
   );
 }

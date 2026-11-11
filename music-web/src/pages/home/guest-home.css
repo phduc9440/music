@@ -540,6 +540,7 @@
 }
 
 .gh-composer__inner {
+  display: block;
   position: relative;
   width: 100%;
   height: 100%;
@@ -599,16 +600,23 @@
 }
 
 .gh-composer__portrait {
+  display: block;
+  flex: none;
   width: 84px;
   height: 84px;
   margin-bottom: 0.4rem;
   border-radius: 50%;
   overflow: hidden;
-  font-size: 1.6rem;
 }
 
 .gh-composer__portrait .composer-portrait {
   object-position: top;
+}
+
+/* chữ lồng khi chưa có ảnh: thắng quy tắc ".gh-composer__face span" ở trên (chữ nhỏ, màu xám) */
+.gh-composer__face .gh-composer__portrait .composer-portrait--empty {
+  color: var(--ui-brass);
+  font-size: 1.6rem;
 }
 
 /* ---- ba bước ---- */
