@@ -4,9 +4,10 @@ import { Badge, Button, Card, PageHeader, StatCard, StatGrid, Table, TableState 
 import { errorMessage, formatDateTime } from '../../components/ui/helpers';
 import { useDialog } from '../../components/ui/dialog-context';
 import { billingApi } from '../../services';
-import type { PaymentOrder, PaymentStatus, Revenue } from '../../types';
+import type { PaymentKind, PaymentOrder, PaymentStatus, Revenue } from '../../types';
 import { formatDate, formatNumber, formatVnd, t } from '../../i18n/core';
 
+const KINDS: PaymentKind[] = ['NEW', 'RENEW'];
 const STATUSES: PaymentStatus[] = ['PENDING', 'PAID', 'FAILED', 'EXPIRED', 'REFUNDED'];
 const KIND_TONE = { NEW: 'info', RENEW: 'success' } as const;
 const TONE = { PAID: 'success', PENDING: 'warning', FAILED: 'danger', EXPIRED: 'neutral', REFUNDED: 'violet' } as const;
@@ -18,6 +19,7 @@ export default function AdminRevenue() {
   const [revenue, setRevenue] = useState<Revenue | null>(null);
   const [orders, setOrders] = useState<PaymentOrder[] | null>(null);
   const [status, setStatus] = useState<PaymentStatus | ''>('');
+  const [kind, setKind] = useState<PaymentKind | ''>('');
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -31,13 +33,13 @@ export default function AdminRevenue() {
 
   const loadOrders = useCallback(() => {
     billingApi
-      .orders({ status: status || undefined, page, size: PAGE_SIZE })
+      .orders({ status: status || undefined, kind: kind || undefined, page, size: PAGE_SIZE })
       .then((res) => {
         setOrders(res.data.result.content);
         setTotalPages(res.data.result.totalPages);
       })
       .catch(() => toast.error(t('admin.revenue.loadFailed')));
-  }, [status, page]);
+  }, [status, kind, page]);
 
   useEffect(loadRevenue, [loadRevenue]);
   useEffect(loadOrders, [loadOrders]);
@@ -149,22 +151,40 @@ export default function AdminRevenue() {
         title={t('admin.revenue.ordersTitle')}
         flush
         actions={
-          <select
-            className="adm-input"
-            value={status}
-            aria-label={t('admin.revenue.status')}
-            onChange={(e) => {
-              setStatus(e.target.value as PaymentStatus | '');
-              setPage(0);
-            }}
-          >
-            <option value="">{t('admin.revenue.allStatuses')}</option>
-            {STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {t(`billing.result.status.${s}`)}
-              </option>
-            ))}
-          </select>
+          <>
+            <select
+              className="adm-input"
+              value={kind}
+              aria-label={t('admin.revenue.kind')}
+              onChange={(e) => {
+                setKind(e.target.value as PaymentKind | '');
+                setPage(0);
+              }}
+            >
+              <option value="">{t('admin.revenue.allKinds')}</option>
+              {KINDS.map((k) => (
+                <option key={k} value={k}>
+                  {t(`billing.kind.${k}`)}
+                </option>
+              ))}
+            </select>
+            <select
+              className="adm-input"
+              value={status}
+              aria-label={t('admin.revenue.status')}
+              onChange={(e) => {
+                setStatus(e.target.value as PaymentStatus | '');
+                setPage(0);
+              }}
+            >
+              <option value="">{t('admin.revenue.allStatuses')}</option>
+              {STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {t(`billing.result.status.${s}`)}
+                </option>
+              ))}
+            </select>
+          </>
         }
       >
         <Table>

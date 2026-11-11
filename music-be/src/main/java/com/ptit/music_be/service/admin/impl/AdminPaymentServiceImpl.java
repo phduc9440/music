@@ -16,6 +16,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ptit.music_be.dto.enums.PaymentKind;
 import com.ptit.music_be.dto.enums.PaymentStatus;
 import com.ptit.music_be.dto.response.PageResponse;
 import com.ptit.music_be.dto.response.PaymentOrderResponse;
@@ -104,11 +105,10 @@ public class AdminPaymentServiceImpl implements AdminPaymentService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<PaymentOrderResponse> orders(PaymentStatus status, int page, int size) {
+    public PageResponse<PaymentOrderResponse> orders(PaymentStatus status, PaymentKind kind, int page, int size) {
         int safeSize = size <= 0 ? 20 : Math.min(size, MAX_PAGE_SIZE);
         PageRequest pageable = PageRequest.of(Math.max(page, 0), safeSize, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<PaymentOrder> result =
-                status == null ? orderRepository.findAll(pageable) : orderRepository.findByStatus(status, pageable);
+        Page<PaymentOrder> result = orderRepository.search(status, kind, pageable);
         return PageResponse.<PaymentOrderResponse>builder()
                 .content(result.getContent().stream()
                         .map(o -> PaymentServiceImpl.toResponse(o, true))

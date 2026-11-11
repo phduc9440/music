@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
+import com.ptit.music_be.dto.enums.PaymentKind;
 import com.ptit.music_be.dto.enums.PaymentStatus;
 import com.ptit.music_be.dto.response.ApiResponse;
 import com.ptit.music_be.dto.response.PageResponse;
@@ -42,13 +43,14 @@ public class AdminPaymentController {
     }
 
     @GetMapping("/orders")
-    @Operation(summary = "Danh sách đơn, mới nhất trước, lọc theo trạng thái", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Danh sách đơn, mới nhất trước, lọc theo trạng thái và loại đơn (NEW/RENEW)", security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<PageResponse<PaymentOrderResponse>> orders(
             @RequestParam(required = false) PaymentStatus status,
+            @RequestParam(required = false) PaymentKind kind,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         return ApiResponse.<PageResponse<PaymentOrderResponse>>builder()
-                .result(adminPaymentService.orders(status, page, size))
+                .result(adminPaymentService.orders(status, kind, page, size))
                 .build();
     }
 
