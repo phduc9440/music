@@ -8,6 +8,9 @@ import SiteFooter from './SiteFooter';
 import NotificationBell from '../NotificationBell';
 import ThemeToggle from '../../theme/ThemeToggle';
 import { adoptServerTheme } from '../../theme/theme';
+import { adoptServerLocale } from '../../i18n/core';
+import LanguageToggle from '../../i18n/LanguageToggle';
+import { useI18n } from '../../i18n/useI18n';
 import { Avatar, Icon } from '../ui';
 import { authApi, userApi } from '../../services';
 import { AuthProvider } from '../../types';
@@ -21,6 +24,7 @@ import './user-layout.css';
  * chuông, tài khoản), thanh tab dưới cùng trên điện thoại và vùng nội dung.
  */
 export default function UserLayout() {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const { pathname, state } = useLocation();
   // Bản nhạc mở từ Khám phá, Kho score mẫu... vẫn tô sáng mục đó thay vì nhảy về Thư viện
@@ -38,6 +42,7 @@ export default function UserLayout() {
       .then((res) => {
         setMe(res.data.result);
         adoptServerTheme(res.data.result.uiTheme); // giao diện đã chọn đi theo tài khoản giữa các máy
+        adoptServerLocale(res.data.result.locale); // ngôn ngữ cũng đi theo tài khoản
       })
       .catch(() => undefined);
   }, []);
@@ -76,7 +81,7 @@ export default function UserLayout() {
     navigate(to);
   };
 
-  const displayName = me?.fullName || me?.email || 'Tài khoản';
+  const displayName = me?.fullName || me?.email || t('common.header.account');
   // localStorage chỉ dùng cho giao diện; quyền thật do backend kiểm tra
   const isAdmin = me ? isAdminMember(me) : localStorage.getItem('role') === 'ADMIN';
 
@@ -88,7 +93,7 @@ export default function UserLayout() {
             <button
               type="button"
               className="app-iconbtn app-header__burger"
-              aria-label="Mở menu điều hướng"
+              aria-label={t('common.header.openMenu')}
               aria-expanded={navOpen}
               onClick={() => setNavOpen((v) => !v)}
             >
@@ -105,17 +110,17 @@ export default function UserLayout() {
             <button
               type="button"
               className="app-search"
-              aria-label="Tìm kiếm (Ctrl+K)"
-              title="Tìm kiếm (Ctrl+K)"
+              aria-label={t('common.header.searchHint')}
+              title={t('common.header.searchHint')}
               onClick={() => setSearchOpen(true)}
             >
               <Icon name="search" size={16} />
-              <span className="app-search__text">Tìm kiếm</span>
+              <span className="app-search__text">{t('common.header.search')}</span>
               <kbd className="app-search__kbd">Ctrl K</kbd>
             </button>
           </div>
 
-          <nav className={`app-nav${navOpen ? ' app-nav--open' : ''}`} aria-label="Điều hướng chính">
+          <nav className={`app-nav${navOpen ? ' app-nav--open' : ''}`} aria-label={t('common.header.mainNav')}>
             {NAV_GROUPS.map((group) => (
               <NavDropdown key={group.id} group={group} pathname={navPath} onNavigate={() => setNavOpen(false)} />
             ))}
@@ -124,8 +129,9 @@ export default function UserLayout() {
           <div className="app-header__right">
             <Link to={CREATE_SCORE_PATH} className="app-create">
               <Icon name="plus" size={16} />
-              <span>Tạo bản nhạc</span>
+              <span>{t('common.header.create')}</span>
             </Link>
+            <LanguageToggle />
             <ThemeToggle />
             <NotificationBell />
             <div className="app-usermenu" ref={menuRef}>
@@ -134,7 +140,7 @@ export default function UserLayout() {
                 className="app-usermenu__trigger"
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
-                aria-label={`Tài khoản: ${displayName}`}
+                aria-label={t('common.header.accountOf', { name: displayName })}
                 onClick={() => setMenuOpen((v) => !v)}
               >
                 <Avatar name={displayName} src={me?.avatarUrl} size={30} />
@@ -152,12 +158,12 @@ export default function UserLayout() {
                   </div>
                   <button type="button" role="menuitem" className="app-usermenu__item" onClick={() => go('/profile')}>
                     <Icon name="user" size={16} />
-                    Hồ sơ của tôi
+                    {t('common.header.profile')}
                   </button>
                   {isAdmin && (
                     <button type="button" role="menuitem" className="app-usermenu__item" onClick={() => go('/admin')}>
                       <Icon name="shield" size={16} />
-                      Trang quản trị
+                      {t('common.header.admin')}
                     </button>
                   )}
                   {me?.authProvider !== AuthProvider.GOOGLE && (
@@ -171,7 +177,7 @@ export default function UserLayout() {
                       }}
                     >
                       <Icon name="key" size={16} />
-                      Đổi mật khẩu
+                      {t('common.header.changePassword')}
                     </button>
                   )}
                   <button
@@ -181,7 +187,7 @@ export default function UserLayout() {
                     onClick={logout}
                   >
                     <Icon name="logout" size={16} />
-                    Đăng xuất
+                    {t('common.header.logout')}
                   </button>
                 </div>
               )}

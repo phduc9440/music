@@ -1,3 +1,4 @@
+import { t } from '../../i18n/core';
 import type { IconName } from '../ui';
 
 export interface NavLinkItem {
@@ -25,29 +26,90 @@ export const isLibrary = (p: string) =>
 export const NAV_GROUPS: NavGroup[] = [
   {
     id: 'explore',
-    label: 'Khám phá',
+    get label() {
+      return t('common.nav.groups.explore');
+    },
     items: [
-      { to: '/explore', label: 'Bản nhạc công khai', icon: 'globe' },
-      { to: '/scores/official', label: 'Kho score mẫu', icon: 'library' },
-      { to: '/composers', label: 'Nhạc sĩ', icon: 'users' },
+      {
+        to: '/explore',
+        get label() {
+          return t('common.nav.items.publicScores');
+        },
+        icon: 'globe',
+      },
+      {
+        to: '/scores/official',
+        get label() {
+          return t('common.nav.items.officialLibrary');
+        },
+        icon: 'library',
+      },
+      {
+        to: '/composers',
+        get label() {
+          return t('common.nav.items.composers');
+        },
+        icon: 'users',
+      },
     ],
   },
   {
     id: 'learn',
-    label: 'Học tập',
+    get label() {
+      return t('common.nav.groups.learn');
+    },
     items: [
-      { to: '/practice-history', label: 'Luyện tập', icon: 'clock' },
-      { to: '/practice-stats', label: 'Thống kê', icon: 'chart' },
+      {
+        to: '/practice-history',
+        get label() {
+          return t('common.nav.items.practice');
+        },
+        icon: 'clock',
+      },
+      {
+        to: '/practice-stats',
+        get label() {
+          return t('common.nav.items.stats');
+        },
+        icon: 'chart',
+      },
     ],
   },
   {
     id: 'mine',
-    label: 'Không gian của tôi',
+    get label() {
+      return t('common.nav.groups.mine');
+    },
     items: [
-      { to: '/scores', label: 'Thư viện', icon: 'music', match: isLibrary },
-      { to: '/scores/shared', label: 'Được chia sẻ', icon: 'share' },
-      { to: '/playlists', label: 'Playlist', icon: 'list' },
-      { to: '/scores/trash', label: 'Thùng rác', icon: 'trash' },
+      {
+        to: '/scores',
+        get label() {
+          return t('common.nav.items.library');
+        },
+        icon: 'music',
+        match: isLibrary,
+      },
+      {
+        to: '/scores/shared',
+        get label() {
+          return t('common.nav.items.shared');
+        },
+        icon: 'share',
+      },
+      {
+        to: '/playlists',
+        get label() {
+          return t('common.nav.items.playlists');
+        },
+        icon: 'list',
+      },
+      {
+        to: '/scores/trash',
+        get label() {
+          return t('common.nav.items.trash');
+        },
+        icon: 'trash',
+      },
     ],
   },
 ];
@@ -89,5 +151,5 @@ export function getBackTarget(state: unknown, fallback: { to: string; label: str
   const from = getNavFrom(state);
   if (!from) return fallback;
   const item = NAV_GROUPS.flatMap((g) => g.items).find((i) => isItemActive(i, from));
-  return { to: from, label: item?.label ?? 'Quay lại' };
+  return { to: from, label: item?.label ?? t('common.nav.back') };
 }

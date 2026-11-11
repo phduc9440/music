@@ -1,15 +1,31 @@
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../components/ui';
 import type { IconName } from '../components/ui';
+import { t } from '../i18n/core';
 import { THEME_PREFERENCES } from './theme';
 import type { ThemePreference } from './theme';
 import { useTheme } from './useTheme';
 import './theme-toggle.css';
 
 const OPTIONS: Record<ThemePreference, { label: string; icon: IconName }> = {
-  light: { label: 'Sáng', icon: 'sun' },
-  dark: { label: 'Tối', icon: 'moon' },
-  system: { label: 'Theo hệ thống', icon: 'monitor' },
+  light: {
+    get label() {
+      return t('common.theme.light');
+    },
+    icon: 'sun',
+  },
+  dark: {
+    get label() {
+      return t('common.theme.dark');
+    },
+    icon: 'moon',
+  },
+  system: {
+    get label() {
+      return t('common.theme.system');
+    },
+    icon: 'monitor',
+  },
 };
 
 /** Nút chọn giao diện Sáng / Tối / Theo hệ thống, dùng ở thanh trên của trang người dùng, quản trị và trang khách. */
@@ -38,8 +54,8 @@ export default function ThemeToggle() {
         className="theme-toggle__trigger"
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label={`Giao diện: ${OPTIONS[preference].label}`}
-        title={`Giao diện: ${OPTIONS[preference].label}`}
+        aria-label={t('common.theme.label', { name: OPTIONS[preference].label })}
+        title={t('common.theme.label', { name: OPTIONS[preference].label })}
         onClick={() => setOpen((v) => !v)}
       >
         <Icon name={resolved === 'dark' ? 'moon' : 'sun'} size={18} />

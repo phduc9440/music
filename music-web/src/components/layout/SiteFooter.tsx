@@ -1,5 +1,6 @@
 import type React from 'react';
 import { Link } from 'react-router-dom';
+import { t } from '../../i18n/core';
 import { Icon } from '../ui';
 import { CREATE_SCORE_PATH, NAV_GROUPS } from './nav';
 import './site-footer.css';
@@ -15,49 +16,47 @@ export interface FooterColumn {
 }
 
 /**
- * Các cột liên kết. Trang cần đăng nhập vẫn liệt kê: khách bấm vào sẽ được đưa tới đăng nhập rồi quay lại đúng trang
- * (ProtectedRoute nhớ trang định vào). Khi có Diễn đàn, Nhạc sĩ, Bảng giá... thì thêm vào đây.
+ * Các cột liên kết của trang giới thiệu. Trang cần đăng nhập vẫn liệt kê: khách bấm vào sẽ được đưa tới đăng nhập rồi
+ * quay lại đúng trang (ProtectedRoute nhớ trang định vào). Khi có Diễn đàn, Bảng giá... thì thêm vào đây.
  */
-const SITE_COLUMNS: FooterColumn[] = [
+const siteColumns = (): FooterColumn[] => [
   {
-    title: 'Khám phá',
+    title: t('common.nav.groups.explore'),
     links: [
-      { label: 'Bản nhạc công khai', to: '/explore' },
-      { label: 'Kho score mẫu', to: '/scores/official' },
+      { label: t('common.nav.items.publicScores'), to: '/explore' },
+      { label: t('common.nav.items.officialLibrary'), to: '/scores/official' },
+      { label: t('common.nav.items.composers'), to: '/composers' },
     ],
   },
   {
-    title: 'Công cụ',
+    title: t('common.footer.tools'),
     links: [
-      { label: 'Số hóa từ ảnh / PDF', to: CREATE_SCORE_PATH },
-      { label: 'Nhập MusicXML / MIDI', to: '/scores/import' },
-      { label: 'Luyện tập', to: '/practice-history' },
-      { label: 'Thống kê luyện tập', to: '/practice-stats' },
+      { label: t('common.footer.digitize'), to: CREATE_SCORE_PATH },
+      { label: t('common.footer.import'), to: '/scores/import' },
+      { label: t('common.nav.items.practice'), to: '/practice-history' },
+      { label: t('common.footer.practiceStats'), to: '/practice-stats' },
     ],
   },
   {
-    title: 'Hỗ trợ',
+    title: t('common.footer.support'),
     links: [
-      { label: 'Câu hỏi thường gặp', to: '/#faq' },
-      { label: 'Đăng nhập / Đăng ký', to: '/auth/login' },
+      { label: t('common.footer.faq'), to: '/#faq' },
+      { label: t('common.footer.signIn'), to: '/auth/login' },
     ],
   },
 ];
 
 /** Trang đã đăng nhập: lấy đúng các nhóm của menu chính (thêm trang vào menu là chân trang có theo) và mục tài khoản. */
-const APP_COLUMNS: FooterColumn[] = [
+const appColumns = (): FooterColumn[] => [
   ...NAV_GROUPS.map((g) => ({ title: g.label, links: g.items.map((i) => ({ label: i.label, to: i.to })) })),
   {
-    title: 'Tài khoản',
+    title: t('common.footer.account'),
     links: [
-      { label: 'Trang chủ', to: '/' },
-      { label: 'Hồ sơ của tôi', to: '/profile' },
+      { label: t('common.footer.home'), to: '/' },
+      { label: t('common.header.profile'), to: '/profile' },
     ],
   },
 ];
-
-const APP_TIP = 'Mẹo: nhấn Ctrl + K (Cmd + K trên Mac) để tìm nhanh bản nhạc và lệnh.';
-const SITE_TIP = 'Chụp bản nhạc giấy, sửa, nghe và luyện tập, cùng nhóm, bằng tiếng Việt.';
 
 interface SiteFooterProps {
   /**
@@ -74,7 +73,7 @@ interface SiteFooterProps {
 /** Chân trang nền "sân khấu" tối: logo, các cột liên kết, bản quyền. */
 export default function SiteFooter({ variant = 'site', columns, tip }: SiteFooterProps) {
   const app = variant === 'app';
-  const cols = columns ?? (app ? APP_COLUMNS : SITE_COLUMNS);
+  const cols = columns ?? (app ? appColumns() : siteColumns());
   return (
     <footer className={`site-footer ui-stage${app ? ' site-footer--app' : ''}`}>
       <div className="site-footer__inner" style={{ '--sf-cols': cols.length } as React.CSSProperties}>
@@ -85,7 +84,7 @@ export default function SiteFooter({ variant = 'site', columns, tip }: SiteFoote
             </span>
             Music App
           </Link>
-          <p>{tip ?? (app ? APP_TIP : SITE_TIP)}</p>
+          <p>{tip ?? (app ? t('common.footer.tipApp') : t('common.footer.tipSite'))}</p>
         </div>
 
         {cols.map((col) => (
@@ -105,8 +104,8 @@ export default function SiteFooter({ variant = 'site', columns, tip }: SiteFoote
       <div className="site-footer__bottom">
         <span className="site-footer__staff" aria-hidden="true" />
         <div className="site-footer__legal">
-          <span>© {new Date().getFullYear()} Music App · Đồ án tốt nghiệp PTIT</span>
-          <span>Bản nhạc của bạn mặc định là riêng tư.</span>
+          <span>{t('common.footer.copyright', { year: new Date().getFullYear() })}</span>
+          <span>{t('common.footer.privacy')}</span>
         </div>
       </div>
     </footer>

@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS members (
     last_login_at  DATETIME(6)  NULL COMMENT 'Lần đăng nhập gần nhất (đăng nhập thường hoặc Google)',
     password_changed_at DATETIME(6) NULL COMMENT 'Lần đổi/đặt lại mật khẩu gần nhất; token cấp trước mốc này bị từ chối',
     ui_theme       VARCHAR(10)  NULL COMMENT 'Giao diện đã chọn: LIGHT / DARK / SYSTEM; NULL = theo hệ thống',
+    locale         VARCHAR(5)   NULL COMMENT 'Ngôn ngữ đã chọn: VI / EN; NULL = tiếng Việt',
     PRIMARY KEY (id),
     UNIQUE KEY uk_members_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

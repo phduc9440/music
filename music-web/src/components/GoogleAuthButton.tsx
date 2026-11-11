@@ -3,6 +3,7 @@ import { toast } from 'react-toastify';
 import { GoogleLogin } from '@react-oauth/google';
 import type { CredentialResponse } from '@react-oauth/google';
 import { authApi } from '../services';
+import { t, translateError } from '../i18n/core';
 import { completeLogin } from '../utils/auth';
 
 interface GoogleAuthButtonProps {
@@ -12,9 +13,7 @@ interface GoogleAuthButtonProps {
 }
 
 const errorText = (error: unknown) =>
-  (error as { response?: { data?: { message?: string } } }).response?.data?.message ||
-  (error instanceof Error ? error.message : '') ||
-  'Đăng nhập bằng Google thất bại';
+  translateError(error, (error instanceof Error ? error.message : '') || t('auth.googleFailed'));
 
 export default function GoogleAuthButton({ setIsLoading, redirectTo }: GoogleAuthButtonProps) {
   const navigate = useNavigate();
@@ -25,7 +24,7 @@ export default function GoogleAuthButton({ setIsLoading, redirectTo }: GoogleAut
     try {
       const response = await authApi.googleLogin({ idToken: credentialResponse.credential });
       const target = await completeLogin(response.data.result);
-      toast.success('Đăng nhập thành công');
+      toast.success(t('auth.toast.signedIn'));
       navigate(redirectTo ?? target, { replace: true });
     } catch (error) {
       toast.error(errorText(error));
@@ -47,12 +46,12 @@ export default function GoogleAuthButton({ setIsLoading, redirectTo }: GoogleAut
       {/* Đường kẻ "hoặc" (màu lấy từ token để thấy rõ trên nền sáng) */}
       <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: '0.75rem' }}>
         <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--ui-border)' }} />
-        <span style={{ fontSize: 'var(--ui-text-sm)', color: 'var(--ui-text-3)' }}>hoặc</span>
+        <span style={{ fontSize: 'var(--ui-text-sm)', color: 'var(--ui-text-3)' }}>{t('auth.or')}</span>
         <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--ui-border)' }} />
       </div>
       <GoogleLogin
         onSuccess={handleGoogleSuccess}
-        onError={() => toast.error('Đăng nhập bằng Google thất bại')}
+        onError={() => toast.error(t('auth.googleFailed'))}
         theme="outline"
         shape="rectangular"
         text="signin_with"

@@ -3,6 +3,7 @@ package com.ptit.music_be.dto.response;
 import java.time.LocalDateTime;
 import java.util.Set;
 
+import com.ptit.music_be.dto.enums.AppLocale;
 import com.ptit.music_be.dto.enums.AuthProvider;
 import com.ptit.music_be.dto.enums.MemberStatus;
 import com.ptit.music_be.dto.enums.UiTheme;
@@ -25,6 +26,9 @@ public class MemberResponse {
     String avatarUrl;
     /** Giao diện đã chọn; null là chưa chọn (theo hệ thống). */
     UiTheme uiTheme;
+    /** Ngôn ngữ đã chọn; null là chưa chọn (tiếng Việt). */
+    AppLocale locale;
+
     MemberStatus status;
     Boolean emailVerified;
     AuthProvider authProvider;

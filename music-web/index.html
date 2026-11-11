@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="vi">
   <head>
     <meta charset="UTF-8" />
     <!-- Đặt theme trước khi React chạy để không bị nháy sáng. Cùng logic với src/theme/theme.ts. -->
@@ -12,6 +12,10 @@
         } catch (e) {}
         var dark = preference === 'dark' || (preference === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
         document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+        // Ngôn ngữ đã chọn (src/i18n/core.ts); chưa chọn thì tiếng Việt
+        try {
+          document.documentElement.lang = localStorage.getItem('locale') === 'en' ? 'en' : 'vi';
+        } catch (e) {}
       })();
     </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />

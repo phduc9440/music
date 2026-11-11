@@ -6,6 +6,7 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.ptit.music_be.dto.request.UpdateLocaleRequest;
 import com.ptit.music_be.dto.request.UpdateProfileRequest;
 import com.ptit.music_be.dto.request.UpdateThemeRequest;
 import com.ptit.music_be.dto.response.ApiResponse;
@@ -53,6 +54,16 @@ public class MemberController {
     public ApiResponse<MemberResponse> updateMyTheme(@RequestBody @Valid UpdateThemeRequest request) {
         return ApiResponse.<MemberResponse>builder()
                 .result(memberService.updateMyTheme(request))
+                .build();
+    }
+
+    @PutMapping("/me/locale")
+    @Operation(
+            summary = "Save my interface language (VI or EN) so it follows me across devices",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<MemberResponse> updateMyLocale(@RequestBody @Valid UpdateLocaleRequest request) {
+        return ApiResponse.<MemberResponse>builder()
+                .result(memberService.updateMyLocale(request))
                 .build();
     }
 

@@ -12,43 +12,18 @@ import type { Composer, PublicHome, ScoreSummary } from '../../types';
 import { useReveal } from '../../hooks/useReveal';
 import { lifespan } from '../../utils/composer';
 import { DIFFICULTY_LABELS } from '../../utils/score';
+import { formatNumber, t } from '../../i18n/core';
+import LanguageToggle from '../../i18n/LanguageToggle';
 import { isImportBatch, setPendingUpload } from '../../utils/pendingUpload';
 import './guest-home.css';
 
-const STEPS: { icon: IconName; title: string; text: string }[] = [
-  {
-    icon: 'upload',
-    title: 'Chụp',
-    text: 'Chụp ảnh hoặc tải PDF bản nhạc giấy. Hệ thống nhận diện nốt và chuyển thành bản nhạc số.',
-  },
-  {
-    icon: 'edit',
-    title: 'Sửa',
-    text: 'Chỉnh từng nốt trong trình soạn thảo, nghe lại ngay, lưu thành nhiều phiên bản.',
-  },
-  { icon: 'play', title: 'Tập', text: 'Tập chậm, lặp đoạn khó, theo dõi chuỗi ngày và thời gian luyện tập của bạn.' },
+const STEPS: { icon: IconName; key: 'capture' | 'edit' | 'practice' }[] = [
+  { icon: 'upload', key: 'capture' },
+  { icon: 'edit', key: 'edit' },
+  { icon: 'play', key: 'practice' },
 ];
 
-const FAQ: { q: string; a: string }[] = [
-  {
-    q: 'Tôi cần chuẩn bị gì để số hóa bản nhạc?',
-    a: 'Một ảnh chụp rõ nét hoặc file PDF. Bạn cũng có thể nhập thẳng file MusicXML hoặc MIDI đã có sẵn.',
-  },
-  {
-    q: 'Bản nhạc của tôi có bị người khác xem không?',
-    a: 'Không. Bản nhạc mặc định là riêng tư. Bạn chủ động chia sẻ bằng liên kết, mời theo email, hoặc gửi yêu cầu công khai để quản trị viên duyệt.',
-  },
-  {
-    q: 'Có mất phí không?',
-    a: 'Ứng dụng đang trong giai đoạn thử nghiệm và dùng miễn phí. Các gói dịch vụ sẽ được công bố sau.',
-  },
-  {
-    q: 'Tôi có thể dùng trên điện thoại không?',
-    a: 'Có. Giao diện tự co giãn theo màn hình; thanh tab dưới cùng giúp mở nhanh Khám phá, Thư viện và Luyện tập.',
-  },
-];
-
-const formatNumber = (n: number) => new Intl.NumberFormat('vi-VN').format(n);
+const FAQ_KEYS = ['prepare', 'privacy', 'price', 'mobile'] as const;
 
 /** Khối có tiêu đề, hiện dần khi cuộn tới. */
 function Section({ id, title, lead, children }: { id?: string; title: string; lead?: string; children: ReactNode }) {
@@ -129,12 +104,17 @@ function FeaturedCover({ score }: { score: ScoreSummary }) {
 
 function FeaturedCard({ score, rank, onOpen }: { score: ScoreSummary; rank: number; onOpen: () => void }) {
   return (
-    <button type="button" className="gh-card" onClick={onOpen} aria-label={`Mở bản nhạc ${score.title}`}>
+    <button
+      type="button"
+      className="gh-card"
+      onClick={onOpen}
+      aria-label={t('home.guest.openScore', { title: score.title })}
+    >
       <span className="gh-card__cover">
         <FeaturedCover score={score} />
         <span className="gh-card__rank">#{rank}</span>
         <span className="gh-card__open">
-          Mở bản nhạc
+          {t('home.guest.open')}
           <Icon name="chevronRight" size={14} />
         </span>
       </span>
@@ -142,15 +122,15 @@ function FeaturedCard({ score, rank, onOpen }: { score: ScoreSummary; rank: numb
         <strong className="gh-card__title" title={score.title}>
           {score.title}
         </strong>
-        <span className="gh-card__composer">{score.composer || 'Chưa rõ tác giả'}</span>
+        <span className="gh-card__composer">{score.composer || t('scores.card.unknownComposer')}</span>
         <span className="gh-card__meta">
           {score.difficulty && <span className="gh-chip">{DIFFICULTY_LABELS[score.difficulty]}</span>}
-          <span className="gh-card__stat" title="Lượt xem">
+          <span className="gh-card__stat" title={t('scores.card.viewsTitle')}>
             <Icon name="eye" size={14} />
             {formatNumber(score.viewCount ?? 0)}
           </span>
           {score.ratingAverage != null && (
-            <span className="gh-card__stat" title="Điểm sao trung bình">
+            <span className="gh-card__stat" title={t('scores.card.ratingTitle')}>
               <Icon name="star" size={14} />
               {score.ratingAverage.toFixed(1)}
             </span>
@@ -192,7 +172,7 @@ function FeaturedStrip({ children }: { children: ReactNode }) {
         <button
           type="button"
           className="gh-strip__nav gh-strip__nav--prev"
-          aria-label="Xem bản trước"
+          aria-label={t('home.guest.prev')}
           onClick={() => scrollBy(-1)}
         >
           <Icon name="chevronLeft" size={20} />
@@ -205,7 +185,7 @@ function FeaturedStrip({ children }: { children: ReactNode }) {
         <button
           type="button"
           className="gh-strip__nav gh-strip__nav--next"
-          aria-label="Xem bản tiếp"
+          aria-label={t('home.guest.next')}
           onClick={() => scrollBy(1)}
         >
           <Icon name="chevronRight" size={20} />
@@ -222,7 +202,7 @@ function ComposerCard({ composer }: { composer: Composer }) {
     <Link
       to={`/composers/${composer.slug}`}
       className="gh-composer"
-      aria-label={`${composer.name}: ${composer.scoreCount} bản nhạc công khai`}
+      aria-label={t('home.guest.composerLabel', { name: composer.name, count: composer.scoreCount })}
     >
       <div className="gh-composer__inner">
         <div className="gh-composer__face gh-composer__face--front">
@@ -230,7 +210,7 @@ function ComposerCard({ composer }: { composer: Composer }) {
             <ComposerPortrait name={composer.name} imageUrl={composer.imageUrl} />
           </span>
           <strong>{composer.name}</strong>
-          <span>{composer.scoreCount} bản nhạc</span>
+          <span>{t('composers.scoreCount', { count: composer.scoreCount })}</span>
         </div>
         <div className="gh-composer__face gh-composer__face--back">
           <strong>{composer.name}</strong>
@@ -242,7 +222,7 @@ function ComposerCard({ composer }: { composer: Composer }) {
               ))}
             </ul>
           )}
-          <span>{composer.scoreCount} bản trên hệ thống</span>
+          <span>{t('home.guest.composerOnSystem', { count: composer.scoreCount })}</span>
         </div>
       </div>
     </Link>
@@ -292,9 +272,10 @@ export default function GuestHome() {
           Music App
         </span>
         <div className="gh-bar__actions">
+          <LanguageToggle />
           <ThemeToggle />
           <button type="button" className="gh-btn gh-btn--ghost" onClick={() => navigate('/auth/login')}>
-            Đăng nhập
+            {t('home.guest.signIn')}
           </button>
         </div>
       </header>
@@ -312,34 +293,26 @@ export default function GuestHome() {
       >
         <StaffBackdrop />
         <div className="gh-hero__content">
-          <p className="gh-hero__eyebrow">Chụp · Sửa · Nghe · Tập</p>
-          <h1>Biến bản nhạc giấy thành bản nhạc số, rồi luyện tập ngay trên trình duyệt</h1>
-          <p className="gh-hero__lead">
-            Số hóa từ ảnh chụp hoặc PDF, chỉnh từng nốt, nghe lại và theo dõi tiến bộ, tất cả bằng tiếng Việt.
-          </p>
+          <p className="gh-hero__eyebrow">{t('home.guest.eyebrow')}</p>
+          <h1>{t('home.guest.heroTitle')}</h1>
+          <p className="gh-hero__lead">{t('home.guest.heroLead')}</p>
           <div className="gh-hero__cta">
             <button type="button" className="gh-btn gh-btn--velvet" onClick={() => loginThen(CREATE_SCORE_PATH)}>
               <Icon name="upload" size={18} />
-              Số hóa bản nhạc đầu tiên
+              {t('home.guest.ctaDigitize')}
             </button>
             <a className="gh-btn gh-btn--brass" href="#featured">
-              Khám phá kho nhạc
+              {t('home.guest.ctaExplore')}
             </a>
           </div>
-          <p className="gh-hero__hint">
-            {dragging ? 'Thả file để bắt đầu' : 'Hoặc thả ảnh, PDF, MusicXML, MIDI vào đây'}
-          </p>
+          <p className="gh-hero__hint">{dragging ? t('home.guest.dropNow') : t('home.guest.dropHint')}</p>
         </div>
       </section>
 
       <main className="gh-main">
-        {failed && <p className="gh-note">Chưa tải được dữ liệu trang chủ. Bạn vẫn có thể đăng nhập để bắt đầu.</p>}
+        {failed && <p className="gh-note">{t('home.guest.loadFailed')}</p>}
 
-        <Section
-          id="featured"
-          title="Bản nhạc nổi bật"
-          lead="Những bản được quan tâm nhiều, ưu tiên bản mới có nhiều lượt xem. Đăng nhập để mở, nghe và luyện tập."
-        >
+        <Section id="featured" title={t('home.guest.featuredTitle')} lead={t('home.guest.featuredLead')}>
           {!data && !failed && (
             <div className="gh-strip">
               {Array.from({ length: 4 }, (_, i) => (
@@ -347,9 +320,7 @@ export default function GuestHome() {
               ))}
             </div>
           )}
-          {data && data.featured.length === 0 && (
-            <p className="gh-note">Chưa có bản nhạc công khai nào. Hãy là người đầu tiên chia sẻ!</p>
-          )}
+          {data && data.featured.length === 0 && <p className="gh-note">{t('home.guest.featuredEmpty')}</p>}
           {data && data.featured.length > 0 && (
             <FeaturedStrip>
               {data.featured.map((s, i) => (
@@ -360,7 +331,7 @@ export default function GuestHome() {
         </Section>
 
         {data && data.composers.length > 0 && (
-          <Section title="Những nhạc sĩ được yêu thích" lead="Nhạc sĩ có nhiều bản nhạc công khai nhất trên hệ thống.">
+          <Section title={t('home.guest.composersTitle')} lead={t('home.guest.composersLead')}>
             <div className="gh-composers">
               {data.composers.map((c) => (
                 <ComposerCard key={c.id} composer={c} />
@@ -369,57 +340,57 @@ export default function GuestHome() {
           </Section>
         )}
 
-        <Section title="Cách hoạt động" lead="Ba bước từ tờ nhạc giấy tới buổi tập.">
+        <Section title={t('home.guest.howTitle')} lead={t('home.guest.howLead')}>
           <ol className="gh-steps">
             {STEPS.map((s, i) => (
-              <li key={s.title} className="gh-step" style={{ transitionDelay: `${i * 120}ms` }}>
+              <li key={s.key} className="gh-step" style={{ transitionDelay: `${i * 120}ms` }}>
                 <span className="gh-step__icon">
                   <Icon name={s.icon} size={22} />
                 </span>
-                <span className="gh-step__no">Bước {i + 1}</span>
-                <strong>{s.title}</strong>
-                <p>{s.text}</p>
+                <span className="gh-step__no">{t('home.guest.step', { n: i + 1 })}</span>
+                <strong>{t(`home.guest.steps.${s.key}.title`)}</strong>
+                <p>{t(`home.guest.steps.${s.key}.text`)}</p>
               </li>
             ))}
           </ol>
         </Section>
 
         {stats && (
-          <Section title="Con số thật" lead="Đếm trực tiếp từ hệ thống, cập nhật mỗi 5 phút.">
+          <Section title={t('home.guest.statsTitle')} lead={t('home.guest.statsLead')}>
             <dl className="gh-stats">
               <div>
-                <dt>Bản nhạc</dt>
+                <dt>{t('home.guest.statScores')}</dt>
                 <dd>{formatNumber(stats.scores)}</dd>
               </div>
               <div>
-                <dt>Trang đã số hóa</dt>
+                <dt>{t('home.guest.statPages')}</dt>
                 <dd>{formatNumber(stats.digitizedPages)}</dd>
               </div>
               <div>
-                <dt>Giờ luyện tập</dt>
+                <dt>{t('home.guest.statHours')}</dt>
                 <dd>{formatNumber(stats.practiceHours)}</dd>
               </div>
               <div>
-                <dt>Thành viên</dt>
+                <dt>{t('home.guest.statMembers')}</dt>
                 <dd>{formatNumber(stats.members)}</dd>
               </div>
             </dl>
           </Section>
         )}
 
-        <Section id="faq" title="Câu hỏi thường gặp">
+        <Section id="faq" title={t('home.guest.faqTitle')}>
           <div className="gh-faq">
-            {FAQ.map((f) => (
-              <details key={f.q}>
-                <summary>{f.q}</summary>
-                <p>{f.a}</p>
+            {FAQ_KEYS.map((key) => (
+              <details key={key}>
+                <summary>{t(`home.guest.faq.${key}.q`)}</summary>
+                <p>{t(`home.guest.faq.${key}.a`)}</p>
               </details>
             ))}
           </div>
           <div className="gh-final">
-            <p>Sẵn sàng số hóa bản nhạc đầu tiên?</p>
+            <p>{t('home.guest.finalTitle')}</p>
             <button type="button" className="gh-btn gh-btn--velvet" onClick={() => loginThen(CREATE_SCORE_PATH)}>
-              Bắt đầu miễn phí
+              {t('home.guest.finalCta')}
             </button>
           </div>
         </Section>

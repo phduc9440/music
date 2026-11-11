@@ -6,6 +6,7 @@ import ScoreCard from '../../components/scores/library/ScoreCard';
 import { BackLink, Icon } from '../../components/ui';
 import { composerApi, scoreApi } from '../../services';
 import type { Composer, PageResult, ScoreSummary } from '../../types';
+import { t } from '../../i18n/core';
 import { PERIOD_LABELS, PERIOD_SPANS, lifespan } from '../../utils/composer';
 import { getScorePath } from '../../utils/score';
 import '../../components/scores/scores.css';
@@ -24,7 +25,7 @@ function Timeline({ composer }: { composer: Composer }) {
   if (!birth) return null;
   const end = composer.deathYear ?? new Date().getFullYear();
   return (
-    <section className="cd-timeline" aria-label="Dòng thời gian">
+    <section className="cd-timeline" aria-label={t('composers.timeline')}>
       <div className="cd-timeline__track">
         {PERIOD_SPANS.map((p) => (
           <span
@@ -52,7 +53,7 @@ function Timeline({ composer }: { composer: Composer }) {
       </div>
       <p className="cd-timeline__caption">
         {composer.name}: {lifespan(composer)}
-        {composer.deathYear ? ` (${composer.deathYear - birth} năm)` : ''}
+        {composer.deathYear ? ` (${t('composers.years', { count: composer.deathYear - birth })})` : ''}
       </p>
     </section>
   );
@@ -110,10 +111,10 @@ export default function ComposerDetail() {
     return (
       <div className="sc-page">
         <main className="sc-container">
-          <BackLink label="Nhạc sĩ" to="/composers" />
+          <BackLink label={t('composers.title')} to="/composers" />
           <div className="sc-empty">
-            <h3>Không tìm thấy nhạc sĩ</h3>
-            <p>Đường dẫn có thể đã thay đổi.</p>
+            <h3>{t('composers.notFoundTitle')}</h3>
+            <p>{t('composers.notFoundText')}</p>
           </div>
         </main>
       </div>
@@ -135,16 +136,16 @@ export default function ComposerDetail() {
   return (
     <div className="sc-page">
       <main className="sc-container">
-        <BackLink label="Nhạc sĩ" to="/composers" />
+        <BackLink label={t('composers.title')} to="/composers" />
 
         <section className="cd-hero">
           <figure className="cd-hero__portrait">
             <ComposerPortrait name={composer.name} imageUrl={composer.imageUrl} />
             {composer.imageUrl && composer.imageSource && (
               <figcaption>
-                Ảnh:{' '}
+                {t('composers.photo')}{' '}
                 <a href={composer.imageSource} target="_blank" rel="noopener noreferrer">
-                  nguồn
+                  {t('composers.photoSource')}
                 </a>
                 {composer.imageLicense && ` · ${composer.imageLicense}`}
               </figcaption>
@@ -154,16 +155,18 @@ export default function ComposerDetail() {
             {composer.period && <span className="cd-hero__period">{PERIOD_LABELS[composer.period]}</span>}
             <h1>{composer.name}</h1>
             {meta && <p className="cd-hero__meta">{meta}</p>}
-            {composer.aliases && <p className="cd-hero__aliases">Còn được ghi là: {composer.aliases}</p>}
+            {composer.aliases && (
+              <p className="cd-hero__aliases">{t('composers.aliases', { names: composer.aliases })}</p>
+            )}
             {composer.bio ? (
               <p className="cd-hero__bio">{composer.bio}</p>
             ) : (
-              <p className="cd-hero__bio cd-hero__bio--empty">Chưa có tiểu sử.</p>
+              <p className="cd-hero__bio cd-hero__bio--empty">{t('composers.noBio')}</p>
             )}
             <div className="cd-hero__actions">
               <Link to={`/explore?composer=${composer.slug}`} className="sc-btn sc-btn--primary">
                 <Icon name="globe" size={16} />
-                Bản công khai trong Khám phá
+                {t('composers.openInExplore')}
               </Link>
             </div>
           </div>
@@ -173,16 +176,16 @@ export default function ComposerDetail() {
 
         <section className="cd-section">
           <header className="cd-section__head">
-            <h2>Bản nhạc công khai</h2>
+            <h2>{t('composers.publicSection')}</h2>
             {publicScores && publicScores.totalElements > SHOWN && (
               <Link to={`/explore?composer=${composer.slug}`} className="cd-section__more">
-                Xem tất cả {publicScores.totalElements} bản
+                {t('composers.viewAll', { count: publicScores.totalElements })}
                 <Icon name="chevronRight" size={14} />
               </Link>
             )}
           </header>
           {publicScores && publicScores.content.length === 0 && (
-            <p className="cd-empty">Chưa có bản công khai nào của {composer.name}.</p>
+            <p className="cd-empty">{t('composers.noPublicOf', { name: composer.name })}</p>
           )}
           {publicScores && publicScores.content.length > 0 && (
             <div className="sc-grid">
@@ -195,7 +198,7 @@ export default function ComposerDetail() {
                   actions={
                     <button type="button" className="sc-btn sc-btn--sm" onClick={() => setSaving(s)}>
                       <Icon name="plus" size={14} />
-                      Lưu vào playlist
+                      {t('scores.playlistPicker.title')}
                     </button>
                   }
                 />
@@ -207,10 +210,10 @@ export default function ComposerDetail() {
         {official && official.content.length > 0 && (
           <section className="cd-section">
             <header className="cd-section__head">
-              <h2>Trong kho score mẫu</h2>
+              <h2>{t('composers.officialSection')}</h2>
               {official.totalElements > SHOWN && (
                 <Link to="/scores/official" className="cd-section__more">
-                  Mở kho score mẫu
+                  {t('composers.openOfficial')}
                   <Icon name="chevronRight" size={14} />
                 </Link>
               )}

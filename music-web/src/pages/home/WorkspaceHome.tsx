@@ -6,23 +6,24 @@ import { Icon } from '../../components/ui';
 import type { IconName } from '../../components/ui';
 import { homeApi } from '../../services';
 import type { HomePendingItem, HomeSummary, ScoreSummary } from '../../types';
+import { t } from '../../i18n/core';
 import { ACCESS_LEVEL_LABELS, DIFFICULTY_LABELS, formatRelative, getScorePath } from '../../utils/score';
 import '../../components/scores/scores.css';
 import './workspace-home.css';
 
-const QUICK_LINKS: { to: string; label: string; icon: IconName }[] = [
-  { to: '/explore', label: 'Bản nhạc công khai', icon: 'globe' },
-  { to: '/scores/official', label: 'Kho score mẫu', icon: 'library' },
-  { to: '/practice-stats', label: 'Thống kê luyện tập', icon: 'chart' },
-  { to: '/playlists', label: 'Playlist', icon: 'list' },
+const QUICK_LINKS: { to: string; labelKey: string; icon: IconName }[] = [
+  { to: '/explore', labelKey: 'common.nav.items.publicScores', icon: 'globe' },
+  { to: '/scores/official', labelKey: 'common.nav.items.officialLibrary', icon: 'library' },
+  { to: '/practice-stats', labelKey: 'common.footer.practiceStats', icon: 'chart' },
+  { to: '/playlists', labelKey: 'common.nav.items.playlists', icon: 'list' },
 ];
 
 const greeting = () => {
   const h = new Date().getHours();
-  if (h < 11) return 'Chào buổi sáng';
-  if (h < 14) return 'Chào buổi trưa';
-  if (h < 18) return 'Chào buổi chiều';
-  return 'Chào buổi tối';
+  if (h < 11) return t('home.workspace.greeting.morning');
+  if (h < 14) return t('home.workspace.greeting.noon');
+  if (h < 18) return t('home.workspace.greeting.afternoon');
+  return t('home.workspace.greeting.evening');
 };
 
 const minutes = (seconds: number) => Math.floor(seconds / 60);
@@ -33,10 +34,11 @@ const pendingTarget = (item: HomePendingItem) =>
 
 const pendingText = (item: HomePendingItem) =>
   item.type === 'ACCESS_REQUEST'
-    ? `${item.actorName ?? 'Ai đó'} xin quyền ${
-        item.permission ? ACCESS_LEVEL_LABELS[item.permission].toLowerCase() : 'truy cập'
-      }`
-    : `${item.actorName ?? 'Quản trị viên'} xin đưa vào kho score mẫu`;
+    ? t('home.workspace.pendingAccess', {
+        name: item.actorName ?? t('home.workspace.someone'),
+        level: item.permission ? ACCESS_LEVEL_LABELS[item.permission].toLowerCase() : t('home.workspace.accessGeneric'),
+      })
+    : t('home.workspace.pendingOfficial', { name: item.actorName ?? t('home.workspace.adminName') });
 
 function Panel({
   title,
@@ -75,7 +77,8 @@ function RecentRow({ score, from }: { score: ScoreSummary; from: string }) {
         <span className="wh-recent__body">
           <strong title={score.title}>{score.title}</strong>
           <span>
-            {score.composer || 'Chưa rõ tác giả'} · cập nhật {formatRelative(score.updatedAt)}
+            {score.composer || t('scores.card.unknownComposer')} ·{' '}
+            {t('home.workspace.updated', { when: formatRelative(score.updatedAt) })}
           </span>
         </span>
         <Icon name="chevronRight" size={16} />
@@ -109,8 +112,8 @@ export default function WorkspaceHome() {
       <div className="sc-page">
         <main className="sc-container">
           <div className="sc-empty">
-            <h3>Không tải được trang chủ</h3>
-            <p>Thử tải lại trang, hoặc mở Thư viện từ menu.</p>
+            <h3>{t('home.workspace.loadFailedTitle')}</h3>
+            <p>{t('home.workspace.loadFailedText')}</p>
           </div>
         </main>
       </div>
@@ -132,6 +135,8 @@ export default function WorkspaceHome() {
   }
 
   const { streak } = data;
+  // Câu có một liên kết ở giữa: chuỗi dịch ghi {link} tại chỗ đặt liên kết
+  const suggestEmpty = t('home.workspace.suggestEmpty').split('{link}');
   const todayMinutes = minutes(data.todayPracticeSeconds);
   const suggestion = data.suggestion;
 
@@ -144,27 +149,30 @@ export default function WorkspaceHome() {
             <h1>{data.displayName}</h1>
             <p className="wh-hero__sub">
               {streak.practicedToday
-                ? `Hôm nay bạn đã tập ${todayMinutes} phút. Giữ nhịp nhé!`
+                ? t('home.workspace.practicedToday', { count: todayMinutes })
                 : streak.currentStreak > 0
-                  ? 'Hôm nay chưa tập. Tập vài phút để giữ chuỗi ngày.'
-                  : 'Bắt đầu một buổi tập ngắn hôm nay để mở chuỗi ngày đầu tiên.'}
+                  ? t('home.workspace.keepStreak')
+                  : t('home.workspace.startStreak')}
             </p>
           </div>
-          <Link to="/practice-stats" className="wh-streak" title="Xem thống kê luyện tập">
+          <Link to="/practice-stats" className="wh-streak" title={t('common.footer.practiceStats')}>
             <Icon name="flame" size={26} />
             <span className="wh-streak__num">{streak.currentStreak}</span>
             <span className="wh-streak__label">
-              ngày liên tiếp
-              <small>Dài nhất: {streak.longestStreak} ngày</small>
+              {t('home.workspace.streakLabel', { count: streak.currentStreak })}
+              <small>{t('home.workspace.longest', { count: streak.longestStreak })}</small>
             </span>
           </Link>
         </header>
 
         <div className="wh-grid">
           <div className="wh-col">
-            <Panel title="Tiếp tục" action={{ to: '/scores', label: 'Thư viện' }}>
+            <Panel
+              title={t('home.workspace.continue')}
+              action={{ to: '/scores', label: t('common.nav.items.library') }}
+            >
               {data.recentScores.length === 0 ? (
-                <p className="wh-empty">Bạn chưa có bản nhạc nào. Số hóa bản đầu tiên ở khối bên dưới.</p>
+                <p className="wh-empty">{t('home.workspace.noScores')}</p>
               ) : (
                 <ul className="wh-list">
                   {data.recentScores.map((s) => (
@@ -174,26 +182,26 @@ export default function WorkspaceHome() {
               )}
             </Panel>
 
-            <Panel title="Số hóa bản nhạc">
+            <Panel title={t('home.workspace.digitize')}>
               <div className="wh-create">
                 <Link to={CREATE_SCORE_PATH} className="wh-create__item">
                   <Icon name="upload" size={22} />
-                  <strong>Từ ảnh hoặc PDF</strong>
-                  <span>Nhận diện nốt tự động</span>
+                  <strong>{t('home.workspace.fromImage')}</strong>
+                  <span>{t('home.workspace.fromImageHint')}</span>
                 </Link>
                 <Link to="/scores/import" className="wh-create__item">
                   <Icon name="music" size={22} />
-                  <strong>Từ MusicXML / MIDI</strong>
-                  <span>Nhập file có sẵn</span>
+                  <strong>{t('home.workspace.fromFile')}</strong>
+                  <span>{t('home.workspace.fromFileHint')}</span>
                 </Link>
               </div>
             </Panel>
           </div>
 
           <div className="wh-col">
-            <Panel title="Chờ bạn xử lý">
+            <Panel title={t('home.workspace.pending')}>
               {data.pending.length === 0 ? (
-                <p className="wh-empty">Không có yêu cầu nào đang chờ.</p>
+                <p className="wh-empty">{t('home.workspace.noPending')}</p>
               ) : (
                 <ul className="wh-list">
                   {data.pending.map((item) => (
@@ -213,43 +221,53 @@ export default function WorkspaceHome() {
               )}
               {(data.accessRequestCount > 0 || data.officialRequestCount > 0 || data.pendingPublicCount > 0) && (
                 <p className="wh-counts">
-                  {data.accessRequestCount > 0 && <span>{data.accessRequestCount} yêu cầu xin quyền</span>}
-                  {data.officialRequestCount > 0 && <span>{data.officialRequestCount} lời xin vào kho mẫu</span>}
-                  {data.pendingPublicCount > 0 && <span>{data.pendingPublicCount} bản chờ duyệt công khai</span>}
+                  {data.accessRequestCount > 0 && (
+                    <span>{t('home.workspace.accessRequests', { count: data.accessRequestCount })}</span>
+                  )}
+                  {data.officialRequestCount > 0 && (
+                    <span>{t('home.workspace.officialRequests', { count: data.officialRequestCount })}</span>
+                  )}
+                  {data.pendingPublicCount > 0 && (
+                    <span>{t('home.workspace.awaitingReview', { count: data.pendingPublicCount })}</span>
+                  )}
                 </p>
               )}
             </Panel>
 
-            <Panel title="Gợi ý luyện tập hôm nay">
+            <Panel title={t('home.workspace.suggestion')}>
               {suggestion ? (
                 <div className="wh-suggest">
                   <div>
                     <span className="wh-suggest__reason">
-                      {suggestion.reason === 'CONTINUE' ? 'Tập tiếp bài gần nhất' : 'Bài dễ trong kho score mẫu'}
+                      {suggestion.reason === 'CONTINUE'
+                        ? t('home.workspace.suggestContinue')
+                        : t('home.workspace.suggestOfficial')}
                     </span>
                     <strong>{suggestion.score.title}</strong>
                     <span className="wh-suggest__meta">
-                      {suggestion.score.composer || 'Chưa rõ tác giả'}
+                      {suggestion.score.composer || t('scores.card.unknownComposer')}
                       {suggestion.score.difficulty && ` · ${DIFFICULTY_LABELS[suggestion.score.difficulty]}`}
                     </span>
                   </div>
                   <Link to={`/scores/${suggestion.score.id}/play`} className="sc-btn sc-btn--primary">
                     <Icon name="play" size={16} />
-                    Tập ngay
+                    {t('home.workspace.practiceNow')}
                   </Link>
                 </div>
               ) : (
                 <p className="wh-empty">
-                  Chưa có gợi ý. Mở <Link to="/scores/official">Kho score mẫu</Link> để chọn bài đầu tiên.
+                  {suggestEmpty[0]}
+                  <Link to="/scores/official">{t('common.nav.items.officialLibrary')}</Link>
+                  {suggestEmpty[1]}
                 </p>
               )}
             </Panel>
 
-            <nav className="wh-quick" aria-label="Lối tắt">
+            <nav className="wh-quick" aria-label={t('home.workspace.quickLinks')}>
               {QUICK_LINKS.map((l) => (
                 <Link key={l.to} to={l.to} className="wh-quick__item">
                   <Icon name={l.icon} size={18} />
-                  {l.label}
+                  {t(l.labelKey)}
                 </Link>
               ))}
             </nav>

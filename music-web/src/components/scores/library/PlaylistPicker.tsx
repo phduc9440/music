@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import Modal from '../common/Modal';
 import { playlistApi } from '../../../services';
 import type { Playlist, ScoreSummary } from '../../../types';
+import { t } from '../../../i18n/core';
 import { getErrorMessage } from '../../../utils/score';
 import './playlist-picker.css';
 
@@ -25,7 +26,7 @@ export default function PlaylistPicker({ score, onClose }: Props) {
       .list()
       .then((res) => setPlaylists(res.data.result))
       .catch(() => {
-        toast.error('Không tải được playlist');
+        toast.error(t('scores.playlistPicker.loadFailed'));
         setPlaylists([]);
       });
   }, []);
@@ -35,9 +36,9 @@ export default function PlaylistPicker({ score, onClose }: Props) {
     try {
       await playlistApi.addScore(playlist.id, score.id);
       setAdded((prev) => [...prev, playlist.id]);
-      toast.success(`Đã thêm vào "${playlist.name}"`);
+      toast.success(t('scores.playlistPicker.added', { name: playlist.name }));
     } catch (err) {
-      toast.error(getErrorMessage(err, 'Không thêm được vào playlist'));
+      toast.error(getErrorMessage(err, t('scores.playlistPicker.addFailed')));
     } finally {
       setBusy('');
     }
@@ -55,16 +56,16 @@ export default function PlaylistPicker({ score, onClose }: Props) {
       setNewName('');
       await add(created);
     } catch (err) {
-      toast.error(getErrorMessage(err, 'Không tạo được playlist'));
+      toast.error(getErrorMessage(err, t('scores.playlistPicker.createFailed')));
       setBusy('');
     }
   };
 
   return (
-    <Modal title="Lưu vào playlist" onClose={onClose}>
+    <Modal title={t('scores.playlistPicker.title')} onClose={onClose}>
       <p className="pl-picker__score">{score.title}</p>
-      {playlists === null && <p className="pl-picker__note">Đang tải…</p>}
-      {playlists && playlists.length === 0 && <p className="pl-picker__note">Bạn chưa có playlist nào.</p>}
+      {playlists === null && <p className="pl-picker__note">{t('common.loading')}</p>}
+      {playlists && playlists.length === 0 && <p className="pl-picker__note">{t('scores.playlistPicker.empty')}</p>}
       {playlists && playlists.length > 0 && (
         <ul className="pl-picker__list">
           {playlists.map((p) => {
@@ -73,7 +74,7 @@ export default function PlaylistPicker({ score, onClose }: Props) {
               <li key={p.id}>
                 <span>
                   <strong>{p.name}</strong>
-                  <small>{p.scoreCount} bài</small>
+                  <small>{t('scores.playlistPicker.itemCount', { count: p.scoreCount })}</small>
                 </span>
                 <button
                   type="button"
@@ -81,7 +82,11 @@ export default function PlaylistPicker({ score, onClose }: Props) {
                   disabled={done || busy !== ''}
                   onClick={() => add(p)}
                 >
-                  {done ? 'Đã thêm' : busy === p.id ? 'Đang thêm…' : 'Thêm'}
+                  {done
+                    ? t('scores.playlistPicker.addedShort')
+                    : busy === p.id
+                      ? t('scores.playlistPicker.adding')
+                      : t('scores.playlistPicker.add')}
                 </button>
               </li>
             );
@@ -91,18 +96,18 @@ export default function PlaylistPicker({ score, onClose }: Props) {
       <form className="pl-picker__new" onSubmit={createAndAdd}>
         <input
           className="sc-input"
-          placeholder="Tên playlist mới"
+          placeholder={t('scores.playlistPicker.newName')}
           maxLength={255}
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
         />
         <button type="submit" className="sc-btn" disabled={!newName.trim() || busy !== ''}>
-          Tạo và thêm
+          {t('scores.playlistPicker.createAndAdd')}
         </button>
       </form>
       <div className="sc-modal__actions">
         <Link to="/playlists" className="sc-btn" onClick={onClose}>
-          Mở trang Playlist
+          {t('scores.playlistPicker.openPlaylists')}
         </Link>
         <button type="button" className="sc-btn sc-btn--primary" onClick={onClose}>
           Xong

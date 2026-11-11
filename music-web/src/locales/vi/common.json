@@ -1,0 +1,104 @@
+{
+  "loading": "Đang tải…",
+  "search": "Tìm",
+  "noData": "Không có dữ liệu",
+  "close": "Đóng",
+  "nav": {
+    "groups": {
+      "explore": "Khám phá",
+      "learn": "Học tập",
+      "mine": "Không gian của tôi"
+    },
+    "items": {
+      "publicScores": "Bản nhạc công khai",
+      "officialLibrary": "Kho score mẫu",
+      "composers": "Nhạc sĩ",
+      "practice": "Luyện tập",
+      "stats": "Thống kê",
+      "library": "Thư viện",
+      "shared": "Được chia sẻ",
+      "playlists": "Playlist",
+      "trash": "Thùng rác"
+    },
+    "back": "Quay lại"
+  },
+  "tabbar": {
+    "label": "Điều hướng nhanh",
+    "explore": "Khám phá",
+    "library": "Thư viện",
+    "create": "Tạo",
+    "practice": "Luyện tập",
+    "me": "Tôi"
+  },
+  "header": {
+    "account": "Tài khoản",
+    "accountOf": "Tài khoản: {name}",
+    "openMenu": "Mở menu điều hướng",
+    "search": "Tìm kiếm",
+    "searchHint": "Tìm kiếm (Ctrl+K)",
+    "mainNav": "Điều hướng chính",
+    "create": "Tạo bản nhạc",
+    "profile": "Hồ sơ của tôi",
+    "admin": "Trang quản trị",
+    "changePassword": "Đổi mật khẩu",
+    "logout": "Đăng xuất"
+  },
+  "theme": {
+    "label": "Giao diện: {name}",
+    "light": "Sáng",
+    "dark": "Tối",
+    "system": "Theo hệ thống"
+  },
+  "language": {
+    "label": "Ngôn ngữ: {name}"
+  },
+  "cmdk": {
+    "groups": {
+      "commands": "Lệnh nhanh",
+      "mine": "Bản nhạc của tôi",
+      "public": "Bản nhạc công khai"
+    },
+    "createHint": "Tải ảnh, PDF, MusicXML hoặc MIDI",
+    "theme": "Đổi giao diện: {name}",
+    "label": "Tìm kiếm và lệnh nhanh",
+    "placeholder": "Tìm bản nhạc hoặc gõ một lệnh…",
+    "noResults": "Không có kết quả cho “{query}”",
+    "searching": "Đang tìm…"
+  },
+  "pagination": {
+    "label": "Phân trang",
+    "prev": "‹ Trước",
+    "next": "Sau ›",
+    "page": "Trang",
+    "scores": "{count} bản nhạc"
+  },
+  "notifications": {
+    "title": "Thông báo",
+    "labelUnread": "Thông báo, {count} chưa đọc",
+    "markAllRead": "Đánh dấu đã đọc",
+    "empty": "Chưa có thông báo nào.",
+    "adminTag": "Quản trị viên",
+    "fromAdmin": "Thông báo từ quản trị viên"
+  },
+  "footer": {
+    "tools": "Công cụ",
+    "digitize": "Số hóa từ ảnh / PDF",
+    "import": "Nhập MusicXML / MIDI",
+    "practiceStats": "Thống kê luyện tập",
+    "support": "Hỗ trợ",
+    "faq": "Câu hỏi thường gặp",
+    "signIn": "Đăng nhập / Đăng ký",
+    "account": "Tài khoản",
+    "home": "Trang chủ",
+    "tipApp": "Mẹo: nhấn Ctrl + K (Cmd + K trên Mac) để tìm nhanh bản nhạc và lệnh.",
+    "tipSite": "Chụp bản nhạc giấy, sửa, nghe và luyện tập, cùng nhóm, bằng tiếng Việt.",
+    "copyright": "© {year} Music App · Đồ án tốt nghiệp PTIT",
+    "privacy": "Bản nhạc của bạn mặc định là riêng tư."
+  },
+  "time": {
+    "justNow": "vừa xong",
+    "minutesAgo": "{count} phút trước",
+    "hoursAgo": "{count} giờ trước",
+    "daysAgo": "{count} ngày trước"
+  }
+}

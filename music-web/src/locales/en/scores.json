@@ -1,0 +1,132 @@
+{
+  "labels": {
+    "status": {
+      "NONE": "Not processed",
+      "PENDING": "Pending",
+      "PROCESSING": "Processing",
+      "COMPLETED": "Completed",
+      "FAILED": "Failed"
+    },
+    "taskStatus": {
+      "PENDING": "Pending",
+      "PROCESSING": "Processing",
+      "COMPLETED": "Completed",
+      "FAILED": "Failed",
+      "CANCELLED": "Cancelled"
+    },
+    "source": {
+      "OMR": "Digitized from file",
+      "IMPORT": "Imported file",
+      "MANUAL": "Written by hand"
+    },
+    "omrSource": {
+      "PHOTO": "Photo",
+      "SCAN": "Scan",
+      "PDF_NATIVE": "Original PDF"
+    },
+    "visibility": {
+      "PRIVATE": "Private",
+      "PENDING": "Awaiting approval",
+      "PUBLIC": "Public"
+    },
+    "sharePermission": {
+      "1": "Viewer",
+      "2": "Reviewer",
+      "3": "Editor"
+    },
+    "accessLevel": {
+      "OWNER": "Owner",
+      "EDIT": "Editor",
+      "REVIEW": "Reviewer",
+      "VIEW": "Viewer"
+    },
+    "difficulty": {
+      "EASY": "Easy",
+      "MEDIUM": "Medium",
+      "HARD": "Hard",
+      "EXPERT": "Expert"
+    },
+    "fileType": {
+      "ORIGINAL_IMAGE": "Original image",
+      "ORIGINAL_PDF": "Original PDF",
+      "ORIGINAL_MUSICXML": "Original MusicXML",
+      "ORIGINAL_MIDI": "Original MIDI",
+      "PNG": "Page image",
+      "KERN": "Kern",
+      "MUSICXML": "MusicXML",
+      "MIDI": "MIDI",
+      "PDF": "PDF",
+      "SVG": "SVG",
+      "MP3": "MP3",
+      "WAV": "WAV"
+    },
+    "taskType": {
+      "OMR_CONVERSION": "Score recognition (OMR)",
+      "CHORD_GENERATION": "Chord generation",
+      "AUDIO_SYNTHESIS": "Audio export",
+      "FORMAT_CONVERSION": "Format conversion"
+    }
+  },
+  "card": {
+    "unknownComposer": "Unknown composer",
+    "sharedBy": "Shared by {name}",
+    "arrangedBy": "Arranged by {name}",
+    "viewsTitle": "Views",
+    "views_one": "{count} view",
+    "views_other": "{count} views",
+    "ratingTitle": "Average rating",
+    "noRating": "No ratings yet",
+    "measures_one": "{count} measure",
+    "measures_other": "{count} measures"
+  },
+  "playlistPicker": {
+    "title": "Save to playlist",
+    "loadFailed": "Couldn't load your playlists",
+    "added": "Added to \"{name}\"",
+    "addFailed": "Couldn't add to the playlist",
+    "createFailed": "Couldn't create the playlist",
+    "empty": "You don't have any playlists yet.",
+    "itemCount_one": "{count} piece",
+    "itemCount_other": "{count} pieces",
+    "addedShort": "Added",
+    "adding": "Adding…",
+    "add": "Add",
+    "newName": "New playlist name",
+    "createAndAdd": "Create and add",
+    "openPlaylists": "Open Playlists"
+  },
+  "explore": {
+    "title": "Explore",
+    "subtitle": "Scores shared by users with the community",
+    "countPublic_one": "{count} public score",
+    "countPublic_other": "{count} public scores",
+    "by": "by",
+    "searchPlaceholder": "Search by title or composer",
+    "searchLabel": "Search scores",
+    "filters": "Filters",
+    "clearFilters": "Clear filters",
+    "sortBy": "Sort by",
+    "sort": {
+      "NEWEST": "Newest",
+      "VIEWS": "Most viewed",
+      "RATING": "Top rated"
+    },
+    "staffsTitle": "Instrument / staves",
+    "staffs": {
+      "1": "Single part (voice, one-line instrument)",
+      "2": "Two staves (piano)",
+      "3": "Three or more staves (ensemble, choir)"
+    },
+    "tag": "Genre",
+    "difficulty": "Difficulty",
+    "key": "Key",
+    "keyChip": "Key {key}",
+    "composer": "Composer",
+    "composerSearch": "Search composers",
+    "noComposerMatch": "No matching composers",
+    "emptyTitle": "No scores found",
+    "emptyFiltered": "No scores match these filters. Try removing some.",
+    "emptyNone": "When users share scores and an administrator approves them, they will show up here.",
+    "loadFailed": "Couldn't load the public scores"
+  }
+}

@@ -1,0 +1,115 @@
+{
+  "guest": {
+    "openScore": "Open score {title}",
+    "open": "Open score",
+    "prev": "Previous scores",
+    "next": "Next scores",
+    "composerLabel_one": "{name}: {count} public score",
+    "composerLabel_other": "{name}: {count} public scores",
+    "composerOnSystem_one": "{count} score on the platform",
+    "composerOnSystem_other": "{count} scores on the platform",
+    "signIn": "Sign in",
+    "eyebrow": "Capture · Edit · Listen · Practice",
+    "heroTitle": "Turn paper sheet music into digital scores, then practice right in your browser",
+    "heroLead": "Digitize from photos or PDFs, fix every note, listen back and track your progress, all in your own language.",
+    "ctaDigitize": "Digitize your first score",
+    "ctaExplore": "Explore the library",
+    "dropNow": "Drop the file to get started",
+    "dropHint": "Or drop images, PDF, MusicXML or MIDI here",
+    "loadFailed": "Couldn't load the home page data. You can still sign in to get started.",
+    "featuredTitle": "Featured scores",
+    "featuredLead": "The scores people care about most, favoring new ones with many views. Sign in to open, listen and practice.",
+    "featuredEmpty": "No public scores yet. Be the first to share one!",
+    "composersTitle": "Favorite composers",
+    "composersLead": "The composers with the most public scores on the platform.",
+    "howTitle": "How it works",
+    "howLead": "Three steps from a paper score to a practice session.",
+    "step": "Step {n}",
+    "steps": {
+      "capture": {
+        "title": "Capture",
+        "text": "Take a photo or upload a PDF of your paper score. The system recognizes the notes and turns them into a digital score."
+      },
+      "edit": {
+        "title": "Edit",
+        "text": "Fix each note in the editor, listen back right away and save multiple versions."
+      },
+      "practice": {
+        "title": "Practice",
+        "text": "Practice slowly, loop the hard parts and track your streak and practice time."
+      }
+    },
+    "statsTitle": "Real numbers",
+    "statsLead": "Counted live from the system, refreshed every 5 minutes.",
+    "statScores": "Scores",
+    "statPages": "Pages digitized",
+    "statHours": "Practice hours",
+    "statMembers": "Members",
+    "faqTitle": "Frequently asked questions",
+    "faq": {
+      "prepare": {
+        "q": "What do I need to digitize a score?",
+        "a": "A clear photo or a PDF file. You can also import an existing MusicXML or MIDI file directly."
+      },
+      "privacy": {
+        "q": "Can other people see my scores?",
+        "a": "No. Scores are private by default. You choose to share them with a link, invite people by email, or request publishing for an administrator to approve."
+      },
+      "price": {
+        "q": "Does it cost anything?",
+        "a": "The app is in a trial period and free to use. Paid plans will be announced later."
+      },
+      "mobile": {
+        "q": "Can I use it on my phone?",
+        "a": "Yes. The interface adapts to your screen, and the bottom tab bar opens Explore, Library and Practice quickly."
+      }
+    },
+    "finalTitle": "Ready to digitize your first score?",
+    "finalCta": "Get started for free"
+  },
+  "workspace": {
+    "greeting": {
+      "morning": "Good morning",
+      "noon": "Good afternoon",
+      "afternoon": "Good afternoon",
+      "evening": "Good evening"
+    },
+    "pendingAccess": "{name} is requesting {level} access",
+    "someone": "Someone",
+    "accessGeneric": "access",
+    "pendingOfficial": "{name} wants to add it to the curated library",
+    "adminName": "An administrator",
+    "updated": "updated {when}",
+    "loadFailedTitle": "Couldn't load the home page",
+    "loadFailedText": "Try reloading the page, or open the Library from the menu.",
+    "practicedToday_one": "You practiced {count} minute today. Keep it going!",
+    "practicedToday_other": "You practiced {count} minutes today. Keep it going!",
+    "keepStreak": "No practice yet today. A few minutes keeps your streak alive.",
+    "startStreak": "Start a short practice session today to begin your first streak.",
+    "streakLabel_one": "day in a row",
+    "streakLabel_other": "days in a row",
+    "longest_one": "Longest: {count} day",
+    "longest_other": "Longest: {count} days",
+    "continue": "Continue",
+    "noScores": "You don't have any scores yet. Digitize your first one in the panel below.",
+    "digitize": "Digitize a score",
+    "fromImage": "From a photo or PDF",
+    "fromImageHint": "Automatic note recognition",
+    "fromFile": "From MusicXML / MIDI",
+    "fromFileHint": "Import an existing file",
+    "pending": "Waiting for you",
+    "noPending": "No pending requests.",
+    "accessRequests_one": "{count} access request",
+    "accessRequests_other": "{count} access requests",
+    "officialRequests_one": "{count} curated-library request",
+    "officialRequests_other": "{count} curated-library requests",
+    "awaitingReview_one": "{count} score awaiting review",
+    "awaitingReview_other": "{count} scores awaiting review",
+    "suggestion": "Today's practice suggestion",
+    "suggestContinue": "Continue your latest piece",
+    "suggestOfficial": "An easy piece from the curated library",
+    "practiceNow": "Practice now",
+    "suggestEmpty": "No suggestion yet. Open the {link} to pick your first piece.",
+    "quickLinks": "Shortcuts"
+  }
+}

@@ -1,0 +1,108 @@
+{
+  "loading": "Loading…",
+  "search": "Search",
+  "noData": "No data",
+  "close": "Close",
+  "nav": {
+    "groups": {
+      "explore": "Explore",
+      "learn": "Learn",
+      "mine": "My space"
+    },
+    "items": {
+      "publicScores": "Public scores",
+      "officialLibrary": "Curated library",
+      "composers": "Composers",
+      "practice": "Practice",
+      "stats": "Statistics",
+      "library": "Library",
+      "shared": "Shared with me",
+      "playlists": "Playlists",
+      "trash": "Trash"
+    },
+    "back": "Back"
+  },
+  "tabbar": {
+    "label": "Quick navigation",
+    "explore": "Explore",
+    "library": "Library",
+    "create": "Create",
+    "practice": "Practice",
+    "me": "Me"
+  },
+  "header": {
+    "account": "Account",
+    "accountOf": "Account: {name}",
+    "openMenu": "Open navigation menu",
+    "search": "Search",
+    "searchHint": "Search (Ctrl+K)",
+    "mainNav": "Main navigation",
+    "create": "Create score",
+    "profile": "My profile",
+    "admin": "Admin area",
+    "changePassword": "Change password",
+    "logout": "Sign out"
+  },
+  "theme": {
+    "label": "Theme: {name}",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "language": {
+    "label": "Language: {name}"
+  },
+  "cmdk": {
+    "groups": {
+      "commands": "Quick commands",
+      "mine": "My scores",
+      "public": "Public scores"
+    },
+    "createHint": "Upload a photo, PDF, MusicXML or MIDI",
+    "theme": "Switch theme: {name}",
+    "label": "Search and quick commands",
+    "placeholder": "Search scores or type a command…",
+    "noResults": "No results for “{query}”",
+    "searching": "Searching…"
+  },
+  "pagination": {
+    "label": "Pagination",
+    "prev": "‹ Previous",
+    "next": "Next ›",
+    "page": "Page",
+    "scores_one": "{count} score",
+    "scores_other": "{count} scores"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "labelUnread": "Notifications, {count} unread",
+    "markAllRead": "Mark all as read",
+    "empty": "No notifications yet.",
+    "adminTag": "Admin",
+    "fromAdmin": "Message from the administrators"
+  },
+  "footer": {
+    "tools": "Tools",
+    "digitize": "Digitize from photo / PDF",
+    "import": "Import MusicXML / MIDI",
+    "practiceStats": "Practice statistics",
+    "support": "Support",
+    "faq": "Frequently asked questions",
+    "signIn": "Sign in / Sign up",
+    "account": "Account",
+    "home": "Home",
+    "tipApp": "Tip: press Ctrl + K (Cmd + K on Mac) to quickly find scores and commands.",
+    "tipSite": "Photograph sheet music, edit, listen and practice, together with your team, in your own language.",
+    "copyright": "© {year} Music App · PTIT graduation project",
+    "privacy": "Your scores are private by default."
+  },
+  "time": {
+    "justNow": "just now",
+    "minutesAgo_one": "{count} minute ago",
+    "minutesAgo_other": "{count} minutes ago",
+    "hoursAgo_one": "{count} hour ago",
+    "hoursAgo_other": "{count} hours ago",
+    "daysAgo_one": "{count} day ago",
+    "daysAgo_other": "{count} days ago"
+  }
+}
