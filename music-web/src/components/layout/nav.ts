@@ -51,6 +51,13 @@ export const NAV_GROUPS: NavGroup[] = [
         },
         icon: 'users',
       },
+      {
+        to: '/pricing',
+        get label() {
+          return t('common.nav.items.pricing');
+        },
+        icon: 'tag',
+      },
     ],
   },
   {
@@ -109,6 +116,13 @@ export const NAV_GROUPS: NavGroup[] = [
           return t('common.nav.items.trash');
         },
         icon: 'trash',
+      },
+      {
+        to: '/billing',
+        get label() {
+          return t('common.nav.items.myPlan');
+        },
+        icon: 'star',
       },
     ],
   },

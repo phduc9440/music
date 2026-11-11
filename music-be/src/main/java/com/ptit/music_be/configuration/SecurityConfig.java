@@ -36,6 +36,9 @@ public class SecurityConfig {
     /** Bắt tay WebSocket: không qua bộ lọc JWT của API mà tự xác thực trong WebSocketAuthHandshake. */
     static final String WEBSOCKET_ENDPOINT = "/ws/**";
 
+    /** IPN do cổng thanh toán gọi (không có JWT); mỗi thông báo bắt buộc đúng chữ ký, kiểm trong PaymentProvider. */
+    static final String PAYMENT_IPN_ENDPOINT = "/api/payments/*/ipn";
+
     static final String[] PUBLIC_READ_ENDPOINTS = {"/api/public/**"};
 
     CustomJwtDecoder customJwtDecoder;
@@ -46,6 +49,8 @@ public class SecurityConfig {
         http.authorizeHttpRequests(request -> request.requestMatchers(PUBLIC_ENDPOINTS)
                 .permitAll()
                 .requestMatchers(WEBSOCKET_ENDPOINT)
+                .permitAll()
+                .requestMatchers(HttpMethod.GET, PAYMENT_IPN_ENDPOINT)
                 .permitAll()
                 // API đọc cho khách chưa đăng nhập (trang chủ...), chỉ trả dữ liệu của bản PUBLIC
                 .requestMatchers(HttpMethod.GET, PUBLIC_READ_ENDPOINTS)

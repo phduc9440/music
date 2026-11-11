@@ -92,5 +92,14 @@
   "3503": "A composer with the same name (URL) already exists",
   "3504": "Invalid birth or death year",
   "3505": "The image must be an https link with a source and license",
-  "3506": "The composer information is too long"
+  "3506": "The composer information is too long",
+  "3701": "That plan does not exist",
+  "3702": "You have used up your current plan's limit. Open \"Plans\" to upgrade.",
+  "3703": "The number of days must be between 1 and 3650",
+  "3711": "The payment gateway is not configured",
+  "3712": "This plan cannot be purchased",
+  "3713": "Payment order not found",
+  "3714": "Only paid orders can be refunded",
+  "3715": "The billing period must be monthly or yearly",
+  "3716": "Invalid revenue date range (at most 366 days)"
 }

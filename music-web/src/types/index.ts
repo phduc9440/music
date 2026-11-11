@@ -5,3 +5,4 @@ export * from './member';
 export * from './score';
 export * from './home';
 export * from './composer';
+export * from './billing';

@@ -37,6 +37,7 @@ import com.ptit.music_be.dto.enums.FileType;
 import com.ptit.music_be.dto.enums.OmrSourceType;
 import com.ptit.music_be.dto.enums.ProcessingStatus;
 import com.ptit.music_be.dto.enums.ScoreSource;
+import com.ptit.music_be.dto.enums.UsageMetric;
 import com.ptit.music_be.dto.request.OmrRetryRequest;
 import com.ptit.music_be.dto.response.AiTaskResponse;
 import com.ptit.music_be.dto.response.OmrResultResponse;
@@ -51,6 +52,8 @@ import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.mapper.AiTaskMapper;
 import com.ptit.music_be.mapper.ScoreFileMapper;
 import com.ptit.music_be.repository.AiTaskRepository;
+import com.ptit.music_be.service.billing.EntitlementService;
+import com.ptit.music_be.service.billing.OmrQuota;
 import com.ptit.music_be.repository.MemberRepository;
 import com.ptit.music_be.repository.ScoreFileRepository;
 import com.ptit.music_be.repository.ScoreRepository;
@@ -87,6 +90,7 @@ public class OmrServiceImpl implements OmrService {
     AiTaskMapper aiTaskMapper;
     ObjectMapper objectMapper;
     ApplicationEventPublisher eventPublisher;
+    EntitlementService entitlementService;
 
     @NonFinal
     @Value("${app.omr.max-images:20}")
@@ -106,11 +110,6 @@ public class OmrServiceImpl implements OmrService {
     @Value("${app.omr.max-image-pixels:40000000}")
     long maxImagePixels;
 
-    /** Mỗi người tối đa bấy nhiêu task OMR PENDING/PROCESSING cùng lúc. */
-    @NonFinal
-    @Value("${app.omr.max-active-tasks:3}")
-    int maxActiveTasks;
-
     @Override
     @Transactional
     public OmrUploadResponse upload(List<MultipartFile> files, String title, String composer, String sourceType) {
@@ -129,11 +128,9 @@ public class OmrServiceImpl implements OmrService {
                 .findByEmailForUpdate(SecurityUtils.getCurrentEmail())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        long activeTasks = aiTaskRepository.countByMemberIdAndTaskTypeAndStatusIn(
-                member.getId(), AiTaskType.OMR_CONVERSION, ACTIVE_STATUSES);
-        if (activeTasks >= maxActiveTasks) {
-            throw new AppException(ErrorCode.TASK_LIMIT_EXCEEDED);
-        }
+        checkConcurrentTasks(member);
+        // Trừ trang OMR của tháng; tác vụ lỗi/hủy sẽ được hoàn lại (xem OmrQuota)
+        entitlementService.checkAndConsume(member.getId(), UsageMetric.OMR_PAGES, pageCount);
 
         Score score = scoreRepository.save(Score.builder()
                 .member(member)
@@ -189,7 +186,7 @@ public class OmrServiceImpl implements OmrService {
                 .taskType(AiTaskType.OMR_CONVERSION)
                 .status(AiTaskStatus.PENDING)
                 .progress(0)
-                .inputData(buildInputData(resolvedSourceType))
+                .inputData(buildInputData(resolvedSourceType, true, pageCount))
                 .build());
 
         // Bộ điều phối (nhánh feature/omr-preprocess) chỉ gửi task sang music-ai sau khi transaction commit
@@ -218,12 +215,10 @@ public class OmrServiceImpl implements OmrService {
         Member member = memberRepository
                 .findByEmailForUpdate(SecurityUtils.getCurrentEmail())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
-        long activeTasks = aiTaskRepository.countByMemberIdAndTaskTypeAndStatusIn(
-                member.getId(), AiTaskType.OMR_CONVERSION, ACTIVE_STATUSES);
-        if (activeTasks >= maxActiveTasks) {
-            throw new AppException(ErrorCode.TASK_LIMIT_EXCEEDED);
-        }
-        return startRetry(score, member, request);
+        checkConcurrentTasks(member);
+        int pages = score.getPageCount() == null ? 0 : score.getPageCount();
+        entitlementService.checkAndConsume(member.getId(), UsageMetric.OMR_PAGES, pages);
+        return startRetry(score, member, request, pages);
     }
 
     @Override
@@ -243,11 +238,11 @@ public class OmrServiceImpl implements OmrService {
         if (score.getMember() == null) {
             throw new AppException(ErrorCode.USER_NOT_EXISTED);
         }
-        return startRetry(score, score.getMember(), null);
+        return startRetry(score, score.getMember(), null, 0);
     }
 
     /** Phần chung của chạy lại OMR: kiểm tra file gốc, kế thừa tham số lần trước, tạo task mới và gửi đi. */
-    private AiTaskResponse startRetry(Score score, Member member, OmrRetryRequest request) {
+    private AiTaskResponse startRetry(Score score, Member member, OmrRetryRequest request, int pagesCharged) {
         String scoreId = score.getId();
 
         // File gốc (1 PDF hoặc các ảnh) phải còn trên đĩa mới chạy lại được
@@ -295,7 +290,7 @@ public class OmrServiceImpl implements OmrService {
                 .taskType(AiTaskType.OMR_CONVERSION)
                 .status(AiTaskStatus.PENDING)
                 .progress(0)
-                .inputData(buildInputData(sourceType, preprocess))
+                .inputData(buildInputData(sourceType, preprocess, pagesCharged))
                 .build());
 
         eventPublisher.publishEvent(new OmrTaskCreatedEvent(task.getId(), score.getId()));
@@ -625,14 +620,14 @@ public class OmrServiceImpl implements OmrService {
     }
 
     /** input_data của task OMR, ví dụ {"sourceType":"PHOTO","preprocess":true}. */
-    private String buildInputData(OmrSourceType sourceType) {
-        return buildInputData(sourceType, true);
-    }
-
-    private String buildInputData(OmrSourceType sourceType, boolean preprocess) {
+    /** {@code pagesCharged}: số trang đã trừ hạn mức cho task này (0 nếu không trừ), để hoàn lại khi task lỗi/hủy. */
+    private String buildInputData(OmrSourceType sourceType, boolean preprocess, int pagesCharged) {
         Map<String, Object> input = new LinkedHashMap<>();
         input.put("sourceType", sourceType.name());
         input.put("preprocess", preprocess);
+        if (pagesCharged > 0) {
+            input.put(OmrQuota.PAGES_CHARGED_KEY, pagesCharged);
+        }
         try {
             return objectMapper.writeValueAsString(input);
         } catch (JsonProcessingException e) {
@@ -641,6 +636,19 @@ public class OmrServiceImpl implements OmrService {
     }
 
     // ---------------------------------------------------------------- helpers
+
+    /** Số task OMR chạy cùng lúc tối đa theo gói của người dùng (null = không giới hạn). */
+    private void checkConcurrentTasks(Member member) {
+        Integer limit = entitlementService.limitsOf(member.getId()).omrConcurrent();
+        if (limit == null) {
+            return;
+        }
+        long activeTasks = aiTaskRepository.countByMemberIdAndTaskTypeAndStatusIn(
+                member.getId(), AiTaskType.OMR_CONVERSION, ACTIVE_STATUSES);
+        if (activeTasks >= limit) {
+            throw new AppException(ErrorCode.TASK_LIMIT_EXCEEDED);
+        }
+    }
 
     private String resolveTitle(String title, MultipartFile firstFile) {
         String resolved = StringUtils.hasText(title)

@@ -4,7 +4,8 @@
       "overview": "Overview",
       "users": "Users",
       "content": "Content",
-      "system": "System"
+      "system": "System",
+      "billing": "Revenue"
     },
     "items": {
       "dashboard": "Dashboard",
@@ -16,7 +17,8 @@
       "tags": "Genres",
       "composers": "Composers",
       "aiTasks": "AI tasks",
-      "system": "System monitoring"
+      "system": "System monitoring",
+      "revenue": "Revenue"
     },
     "other": "Other",
     "userSite": "User site"
@@ -510,5 +512,45 @@
     "result": "Result",
     "emptyTitle": "No tasks",
     "noMatch": "No tasks match the filters."
+  },
+  "plan": {
+    "title": "Plan",
+    "hint": "Grant a plan by hand (source: admin grant). Granting the plan already in use adds days.",
+    "plan": "Plan",
+    "days": "Days",
+    "daysUnit": "days",
+    "grant": "Grant plan",
+    "cancel": "Cancel plan",
+    "granted": "Granted the {plan} plan, expires on {date}",
+    "canceled": "Plan canceled, the account is back on Free",
+    "failed": "Could not complete the action",
+    "cancelTitle": "Cancel the current plan?",
+    "cancelMessage": "The account returns to the Free plan immediately. Data over the limit is not deleted."
+  },
+  "revenue": {
+    "loadFailed": "Could not load revenue data",
+    "subtitle": "Plan payment orders",
+    "range": "From {from} to {to}",
+    "total": "Revenue",
+    "refundedTotal": "Refunded",
+    "orders": "{count} orders",
+    "byDay": "By day",
+    "byPlan": "By plan",
+    "date": "Date",
+    "orderCount": "Orders",
+    "amount": "Amount",
+    "empty": "No payment orders yet",
+    "ordersTitle": "Payment orders",
+    "status": "Status",
+    "allStatuses": "All statuses",
+    "code": "Order code",
+    "buyer": "Buyer",
+    "created": "Created",
+    "noOrders": "No orders",
+    "refund": "Refund",
+    "refundTitle": "Refund order {code}?",
+    "refundMessage": "The {amount} order from {email} becomes \"Refunded\" and the plan loses the matching time. Return the money to the buyer directly in the payment gateway.",
+    "refunded": "Marked as refunded",
+    "refundFailed": "Could not refund"
   }
 }

@@ -18,7 +18,9 @@
       "library": "Library",
       "shared": "Shared with me",
       "playlists": "Playlists",
-      "trash": "Trash"
+      "trash": "Trash",
+      "myPlan": "My plan",
+      "pricing": "Pricing"
     },
     "back": "Back"
   },

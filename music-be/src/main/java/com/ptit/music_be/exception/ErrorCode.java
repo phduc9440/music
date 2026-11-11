@@ -151,6 +151,17 @@ public enum ErrorCode {
     COMPOSER_YEARS_INVALID(3504, "Năm sinh, năm mất không hợp lệ", HttpStatus.BAD_REQUEST),
     COMPOSER_IMAGE_INVALID(3505, "Ảnh phải là đường dẫn https và có ghi nguồn, giấy phép", HttpStatus.BAD_REQUEST),
     COMPOSER_FIELD_TOO_LONG(3506, "Thông tin nhạc sĩ vượt quá độ dài cho phép", HttpStatus.BAD_REQUEST),
+
+    // Gói dịch vụ và thanh toán 37xx
+    PLAN_NOT_EXISTED(3701, "Gói dịch vụ không tồn tại", HttpStatus.NOT_FOUND),
+    PLAN_LIMIT_REACHED(3702, "Bạn đã dùng hết hạn mức của gói hiện tại", HttpStatus.PAYMENT_REQUIRED),
+    SUBSCRIPTION_DAYS_INVALID(3703, "Số ngày cấp gói phải từ 1 đến 3650", HttpStatus.BAD_REQUEST),
+    PAYMENT_PROVIDER_UNAVAILABLE(3711, "Cổng thanh toán chưa được cấu hình", HttpStatus.SERVICE_UNAVAILABLE),
+    PAYMENT_PLAN_NOT_PURCHASABLE(3712, "Gói này không thể mua", HttpStatus.BAD_REQUEST),
+    PAYMENT_ORDER_NOT_EXISTED(3713, "Đơn thanh toán không tồn tại", HttpStatus.NOT_FOUND),
+    PAYMENT_ORDER_NOT_REFUNDABLE(3714, "Chỉ hoàn tiền được đơn đã thanh toán", HttpStatus.CONFLICT),
+    PAYMENT_PERIOD_INVALID(3715, "Chu kỳ thanh toán phải là MONTH hoặc YEAR", HttpStatus.BAD_REQUEST),
+    PAYMENT_RANGE_INVALID(3716, "Khoảng ngày doanh thu không hợp lệ (tối đa 366 ngày)", HttpStatus.BAD_REQUEST),
     ;
 
     int code;
