@@ -8,6 +8,7 @@ import type { PaymentOrder, PaymentStatus, Revenue } from '../../types';
 import { formatDate, formatNumber, formatVnd, t } from '../../i18n/core';
 
 const STATUSES: PaymentStatus[] = ['PENDING', 'PAID', 'FAILED', 'EXPIRED', 'REFUNDED'];
+const KIND_TONE = { NEW: 'info', RENEW: 'success' } as const;
 const TONE = { PAID: 'success', PENDING: 'warning', FAILED: 'danger', EXPIRED: 'neutral', REFUNDED: 'violet' } as const;
 const PAGE_SIZE = 15;
 
@@ -172,6 +173,7 @@ export default function AdminRevenue() {
               <th>{t('admin.revenue.code')}</th>
               <th>{t('admin.revenue.buyer')}</th>
               <th>{t('admin.plan.plan')}</th>
+              <th>{t('admin.revenue.kind')}</th>
               <th>{t('admin.revenue.amount')}</th>
               <th>{t('admin.revenue.status')}</th>
               <th>{t('admin.revenue.created')}</th>
@@ -179,9 +181,9 @@ export default function AdminRevenue() {
             </tr>
           </thead>
           <tbody>
-            {!orders && <TableState colSpan={7} loading />}
+            {!orders && <TableState colSpan={8} loading />}
             {orders && orders.length === 0 && (
-              <TableState colSpan={7} icon="inbox" title={t('admin.revenue.noOrders')} />
+              <TableState colSpan={8} icon="inbox" title={t('admin.revenue.noOrders')} />
             )}
             {orders?.map((o) => (
               <tr key={o.id}>
@@ -189,6 +191,9 @@ export default function AdminRevenue() {
                 <td>{o.memberEmail}</td>
                 <td>
                   {o.planName} · {t(`billing.period.${o.period}`)}
+                </td>
+                <td>
+                  <Badge tone={KIND_TONE[o.kind]}>{t(`billing.kind.${o.kind}`)}</Badge>
                 </td>
                 <td>{formatVnd(o.amount)}</td>
                 <td>

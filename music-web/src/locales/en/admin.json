@@ -550,6 +550,7 @@
     "refundTitle": "Refund order {code}?",
     "refundMessage": "The {amount} order from {email} becomes \"Refunded\" and the plan loses the matching time. Return the money to the buyer directly in the payment gateway.",
     "refunded": "Marked as refunded",
-    "refundFailed": "Could not refund"
+    "refundFailed": "Could not refund",
+    "kind": "Order type"
   }
 }

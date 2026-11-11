@@ -525,6 +525,7 @@
     "refundTitle": "Hoàn tiền đơn {code}?",
     "refundMessage": "Đơn {amount} của {email} sẽ chuyển sang \"Đã hoàn tiền\" và gói bị trừ thời gian tương ứng. Tiền trả lại cho người mua làm trực tiếp ở cổng thanh toán.",
     "refunded": "Đã đánh dấu hoàn tiền",
-    "refundFailed": "Không hoàn tiền được"
+    "refundFailed": "Không hoàn tiền được",
+    "kind": "Loại đơn"
   }
 }
