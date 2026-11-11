@@ -40,14 +40,15 @@ public class AdminMemberController {
 
     @GetMapping("/plain-admins")
     @Operation(
-            summary = "Danh sách quản trị viên thường (ADMIN, không phải SUPER_ADMIN) kèm gói đang dùng",
+            summary = "Danh sách quản trị viên thường (ADMIN, không phải SUPER_ADMIN) kèm gói đang dùng, lọc theo gói",
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<PageResponse<MemberResponse>> getPlainAdmins(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(required = false) String keyword) {
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String planCode) {
         return ApiResponse.<PageResponse<MemberResponse>>builder()
-                .result(adminMemberService.getPlainAdmins(page, size, keyword))
+                .result(adminMemberService.getPlainAdmins(page, size, keyword, planCode))
                 .build();
     }
 

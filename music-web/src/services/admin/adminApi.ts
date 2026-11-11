@@ -24,7 +24,7 @@ export const adminApi = {
       params: { page: 0, size: 20, ...params },
     }),
   // Quản trị viên thường (ADMIN, không phải SUPER_ADMIN) kèm gói: trang Tạm ngưng gói
-  getPlainAdmins: (params?: { page?: number; size?: number; keyword?: string }) =>
+  getPlainAdmins: (params?: { page?: number; size?: number; keyword?: string; planCode?: string }) =>
     apiClient.get<ApiResponse<PageResult<Member>>>('/admin/members/plain-admins', { params }),
   getMember: (id: string) => apiClient.get<ApiResponse<Member>>(`/admin/members/${id}`),
   getMemberDetail: (id: string) => apiClient.get<ApiResponse<AdminMemberDetail>>(`/admin/members/${id}/detail`),

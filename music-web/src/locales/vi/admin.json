@@ -609,7 +609,15 @@
     "lift": "Mở lại",
     "liftTitle": "Mở lại gói Pro cho {name}?",
     "liftMessage": "Người này dùng lại gói Pro không thời hạn ngay lập tức.",
-    "lifted": "Đã mở lại gói Pro cho {name}"
+    "lifted": "Đã mở lại gói Pro cho {name}",
+    "planFilter": "Lọc theo gói",
+    "allPlans": "Tất cả gói",
+    "titleMany": "Tạm ngưng gói Pro của {count} quản trị viên",
+    "doneMany": "Đã tạm ngưng {done} người, bỏ qua {skipped}",
+    "suspendMany": "Tạm ngưng {count} người",
+    "liftMany": "Mở lại {count} người",
+    "liftManyTitle": "Mở lại gói Pro cho {count} quản trị viên?",
+    "liftedMany": "Đã mở lại gói Pro cho {count} người"
   },
   "memberPlans": {
     "subtitle": "Chọn chức năng: cấp gói cho thành viên, hoặc tạm ngưng gói Pro của quản trị viên.",

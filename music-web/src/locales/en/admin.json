@@ -634,7 +634,15 @@
     "lift": "Restore",
     "liftTitle": "Restore Pro for {name}?",
     "liftMessage": "This member gets Pro with no expiry back immediately.",
-    "lifted": "Restored Pro for {name}"
+    "lifted": "Restored Pro for {name}",
+    "planFilter": "Filter by plan",
+    "allPlans": "All plans",
+    "titleMany": "Suspend Pro for {count} admin(s)",
+    "doneMany": "Suspended {done}, skipped {skipped}",
+    "suspendMany": "Suspend {count}",
+    "liftMany": "Restore {count}",
+    "liftManyTitle": "Restore Pro for {count} admin(s)?",
+    "liftedMany": "Restored Pro for {count}"
   },
   "memberPlans": {
     "subtitle": "Choose a task: grant plans to members, or suspend an admin's Pro plan.",

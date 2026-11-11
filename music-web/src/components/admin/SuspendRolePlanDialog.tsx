@@ -10,21 +10,22 @@ import '../ui/dialog.css';
 const OPTIONS = [0, 1, 3, 6, 12];
 
 /**
- * Hộp thoại tạm ngưng gói Pro theo vai trò của một ADMIN (chỉ SUPER_ADMIN): chọn thời hạn và lý do. Hết hạn thì người đó tự
- * dùng lại Pro. Dùng ở trang "Tạm ngưng gói" và trang chi tiết thành viên.
+ * Hộp thoại tạm ngưng gói Pro theo vai trò của một hoặc nhiều ADMIN (chỉ SUPER_ADMIN): chọn thời hạn và lý do. Hết hạn thì
+ * họ tự dùng lại Pro. Dùng ở tab "Tạm ngưng gói" và trang chi tiết thành viên.
  */
 export default function SuspendRolePlanDialog({
-  member,
+  members,
   onClose,
   onDone,
 }: {
-  member: { id: string; name: string };
+  members: { id: string; name: string }[];
   onClose: () => void;
   onDone: () => void;
 }) {
   const [months, setMonths] = useState(0);
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
+  const single = members.length === 1 ? members[0] : null;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -36,10 +37,17 @@ export default function SuspendRolePlanDialog({
 
   const submit = async () => {
     setBusy(true);
+    const note = reason.trim() || undefined;
     try {
-      const res = await billingApi.suspendRolePlan(member.id, { months, reason: reason.trim() || undefined });
-      const until = res.data.result.rolePlanSuspendedUntil;
-      toast.success(t('admin.suspensions.done', { name: member.name, date: until ? formatDate(until) : '' }));
+      if (single) {
+        const res = await billingApi.suspendRolePlan(single.id, { months, reason: note });
+        const until = res.data.result.rolePlanSuspendedUntil;
+        toast.success(t('admin.suspensions.done', { name: single.name, date: until ? formatDate(until) : '' }));
+      } else {
+        const res = await billingApi.suspendRolePlans({ memberIds: members.map((m) => m.id), months, reason: note });
+        const done = res.data.result.filter((r) => r.status === 'SUSPENDED').length;
+        toast.success(t('admin.suspensions.doneMany', { done, skipped: res.data.result.length - done }));
+      }
       onDone();
     } catch (error) {
       toast.error(errorMessage(error, t('admin.plan.failed')));
@@ -68,7 +76,9 @@ export default function SuspendRolePlanDialog({
             </span>
             <div className="ui-dialog__text">
               <h2 id="suspend-title" className="ui-dialog__title">
-                {t('admin.suspensions.title', { name: member.name })}
+                {single
+                  ? t('admin.suspensions.title', { name: single.name })
+                  : t('admin.suspensions.titleMany', { count: members.length })}
               </h2>
               <p className="ui-dialog__message">{t('admin.suspensions.message')}</p>
               <label className="ui-dialog__field">

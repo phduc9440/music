@@ -1389,3 +1389,14 @@
 .adm-member-plans__intro {
   margin: 0 0 1rem;
 }
+
+/* Bộ lọc + ô tìm kiếm nằm cùng hàng ở đầu thẻ */
+.adm-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+.adm-shell .adm-filter-row select.adm-input {
+  width: auto;
+}

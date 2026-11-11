@@ -375,4 +375,31 @@ class SubscriptionServiceImplTest {
         e = assertThrows(AppException.class, () -> service.grantMany(List.of("a"), "PRO", 0));
         assertEquals(ErrorCode.SUBSCRIPTION_MONTHS_INVALID, e.getErrorCode());
     }
+
+    @Test
+    void suspendAndLiftManyAdminsSkipsOthers() {
+        org.springframework.security.core.context.SecurityContextHolder.getContext()
+                .setAuthentication(new org.springframework.security.authentication.TestingAuthenticationToken(
+                        "boss@x.com", "x", "ROLE_ADMIN", "ROLE_SUPER_ADMIN"));
+        when(memberRepo.findById("mod1")).thenReturn(Optional.of(Member.builder().id("mod1").build()));
+        when(memberRepo.findById("mod2")).thenReturn(Optional.of(Member.builder().id("mod2").build()));
+        when(memberRepo.findById("user")).thenReturn(Optional.of(Member.builder().id("user").build()));
+        when(memberRepo.findById("ghost")).thenReturn(Optional.empty());
+        when(memberRepo.roleNamesOf("mod1")).thenReturn(List.of("ADMIN"));
+        when(memberRepo.roleNamesOf("mod2")).thenReturn(List.of("ADMIN"));
+        when(memberRepo.roleNamesOf("user")).thenReturn(List.of("USER"));
+        when(suspensions.findActive(any(), any())).thenReturn(List.of());
+
+        var results = service.suspendRolePlans(List.of("mod1", "mod2", "user", "ghost"), 3, "dọn dẹp");
+
+        assertEquals(List.of("SUSPENDED", "SUSPENDED", "SKIPPED", "FAILED"),
+                results.stream().map(r -> r.getStatus()).toList());
+        verify(suspensions, times(2)).save(any());
+
+        var lifted = service.liftRolePlanSuspensions(List.of("mod1", "user"));
+        assertEquals(List.of("LIFTED", "SKIPPED"), lifted.stream().map(r -> r.getStatus()).toList());
+
+        AppException e = assertThrows(AppException.class, () -> service.suspendRolePlans(List.of(), 1, null));
+        assertEquals(ErrorCode.INVALID_REQUEST, e.getErrorCode());
+    }
 }

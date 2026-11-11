@@ -9,8 +9,11 @@ public interface AdminMemberService {
 
     PageResponse<MemberResponse> getMembers(int page, int size, String keyword);
 
-    /** Chỉ quản trị viên thường (ADMIN, không phải SUPER_ADMIN), kèm gói đang dùng: trang Tạm ngưng gói. */
-    PageResponse<MemberResponse> getPlainAdmins(int page, int size, String keyword);
+    /**
+     * Chỉ quản trị viên thường (ADMIN, không phải SUPER_ADMIN), kèm gói đang dùng: tab Tạm ngưng gói. {@code planCode} khác
+     * null thì chỉ lấy người đang dùng gói đó (theo gói thực tế, kể cả Pro theo vai trò).
+     */
+    PageResponse<MemberResponse> getPlainAdmins(int page, int size, String keyword, String planCode);
 
     MemberResponse getMember(String memberId);
 

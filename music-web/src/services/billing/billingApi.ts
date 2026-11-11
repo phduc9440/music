@@ -22,10 +22,10 @@ type PlanPayload = {
   sortOrder: number | null;
 };
 
-/** Kết quả cấp gói hàng loạt cho một người. */
-type BulkGrantResult = {
+/** Kết quả một người trong thao tác hàng loạt (cấp gói, tạm ngưng, mở lại). */
+type BulkResult = {
   memberId: string;
-  status: 'GRANTED' | 'RENEWED' | 'SKIPPED' | 'FAILED';
+  status: 'GRANTED' | 'RENEWED' | 'SUSPENDED' | 'LIFTED' | 'SKIPPED' | 'FAILED';
   reason?: string | null;
   expiresAt?: string | null;
 };
@@ -39,10 +39,14 @@ export const billingApi = {
   ofMember: (memberId: string) => apiClient.get<ApiResponse<MySubscription>>(`/admin/subscriptions/${memberId}`),
   // Cấp một gói cá nhân cho nhiều người (tối đa 200), kết quả từng người
   grantMany: (data: { planCode: string; months: number; memberIds: string[] }) =>
-    apiClient.post<ApiResponse<BulkGrantResult[]>>('/admin/subscriptions/bulk', data),
+    apiClient.post<ApiResponse<BulkResult[]>>('/admin/subscriptions/bulk', data),
   // Tạm ngưng gói Pro theo vai trò của ADMIN (months: 0 = hết tháng này) / mở lại sớm
   suspendRolePlan: (memberId: string, data: { months: number; reason?: string }) =>
     apiClient.post<ApiResponse<MySubscription>>(`/admin/subscriptions/${memberId}/role-plan-suspension`, data),
+  suspendRolePlans: (data: { memberIds: string[]; months: number; reason?: string }) =>
+    apiClient.post<ApiResponse<BulkResult[]>>('/admin/subscriptions/role-plan-suspensions/bulk', data),
+  liftRolePlanSuspensions: (memberIds: string[]) =>
+    apiClient.post<ApiResponse<BulkResult[]>>('/admin/subscriptions/role-plan-suspensions/bulk-lift', { memberIds }),
   liftRolePlanSuspension: (memberId: string) =>
     apiClient.delete<ApiResponse<MySubscription>>(`/admin/subscriptions/${memberId}/role-plan-suspension`),
   cancel: (memberId: string) => apiClient.delete<ApiResponse<void>>(`/admin/subscriptions/${memberId}`),

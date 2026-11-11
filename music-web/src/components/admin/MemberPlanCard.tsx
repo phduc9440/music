@@ -85,7 +85,7 @@ export default function MemberPlanCard({ memberId, memberName }: { memberId: str
       {!canGrant && <p className="adm-field__hint">{t('admin.plan.readOnly')}</p>}
       {suspending && (
         <SuspendRolePlanDialog
-          member={{ id: memberId, name: memberName }}
+          members={[{ id: memberId, name: memberName }]}
           onClose={() => setSuspending(false)}
           onDone={() => {
             setSuspending(false);

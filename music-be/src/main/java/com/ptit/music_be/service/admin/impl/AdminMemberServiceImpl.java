@@ -47,6 +47,8 @@ public class AdminMemberServiceImpl implements AdminMemberService {
     static final String SUPER_ADMIN = "SUPER_ADMIN";
     static final int DEFAULT_PAGE_SIZE = 20;
     static final int MAX_PAGE_SIZE = 50;
+    /** Số quản trị viên thường tối đa quét khi lọc theo gói. */
+    static final int MAX_FILTER_SCAN = 1000;
 
     MemberRepository memberRepository;
     RoleRepository roleRepository;
@@ -63,8 +65,28 @@ public class AdminMemberServiceImpl implements AdminMemberService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<MemberResponse> getPlainAdmins(int page, int size, String keyword) {
-        return toPage(memberRepository.searchPlainAdmins(cleanKeyword(keyword), pageOf(page, size)));
+    public PageResponse<MemberResponse> getPlainAdmins(int page, int size, String keyword, String planCode) {
+        if (planCode == null || planCode.isBlank()) {
+            return toPage(memberRepository.searchPlainAdmins(cleanKeyword(keyword), pageOf(page, size)));
+        }
+        // Gói thực tế phụ thuộc vai trò, gói đã mua và lần tạm ngưng nên lọc sau khi tính; số quản trị viên thường ít
+        PageRequest pageable = pageOf(page, size);
+        List<MemberResponse> all = withPlans(memberRepository
+                .searchPlainAdmins(cleanKeyword(keyword), PageRequest.of(0, MAX_FILTER_SCAN, pageable.getSort()))
+                .getContent());
+        List<MemberResponse> matched = all.stream()
+                .filter(m -> m.getPlan() != null && planCode.trim().equalsIgnoreCase(m.getPlan().getCode()))
+                .toList();
+        int from = Math.min((int) pageable.getOffset(), matched.size());
+        int to = Math.min(from + pageable.getPageSize(), matched.size());
+        int totalPages = (matched.size() + pageable.getPageSize() - 1) / pageable.getPageSize();
+        return PageResponse.<MemberResponse>builder()
+                .content(matched.subList(from, to))
+                .pageNumber(pageable.getPageNumber())
+                .pageSize(pageable.getPageSize())
+                .totalElements(matched.size())
+                .totalPages(totalPages)
+                .build();
     }
 
     private static String cleanKeyword(String keyword) {
@@ -77,18 +99,21 @@ public class AdminMemberServiceImpl implements AdminMemberService {
         return PageRequest.of(Math.max(page, 0), safeSize, Sort.by("email").ascending());
     }
 
-    /** Trang thành viên kèm gói đang dùng của cả trang (một truy vấn). */
-    private PageResponse<MemberResponse> toPage(Page<Member> result) {
-        List<MemberResponse> content = result.getContent().stream()
-                .map(memberMapper::toMemberResponse)
-                .toList();
-        // Gói đang dùng của cả trang trong một lần truy vấn
+    /** Đổi sang response kèm gói đang dùng của cả danh sách (một truy vấn). */
+    private List<MemberResponse> withPlans(List<Member> members) {
+        List<MemberResponse> content =
+                members.stream().map(memberMapper::toMemberResponse).toList();
         Map<String, Set<String>> roles = new HashMap<>();
         content.forEach(m -> roles.put(m.getId(), m.getRoles()));
         Map<String, MemberPlanSummary> plans = subscriptionService.plansOf(roles);
         content.forEach(m -> m.setPlan(plans.get(m.getId())));
+        return content;
+    }
+
+    /** Trang thành viên kèm gói đang dùng của cả trang (một truy vấn). */
+    private PageResponse<MemberResponse> toPage(Page<Member> result) {
         return PageResponse.<MemberResponse>builder()
-                .content(content)
+                .content(withPlans(result.getContent()))
                 .pageNumber(result.getNumber())
                 .pageSize(result.getSize())
                 .totalElements(result.getTotalElements())

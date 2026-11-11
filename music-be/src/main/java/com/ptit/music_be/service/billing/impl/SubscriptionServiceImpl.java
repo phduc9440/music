@@ -207,28 +207,99 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public MySubscriptionResponse suspendRolePlan(String memberId, int months, String reason) {
         Member member = requirePlainAdmin(memberId);
+        String note = validSuspension(months, reason);
+        saveSuspension(memberId, months, note, currentMemberId());
+        return subscriptionOf(member);
+    }
+
+    @Override
+    @Transactional
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public java.util.List<BulkGrantResult> suspendRolePlans(java.util.List<String> memberIds, int months, String reason) {
+        requireBulkSize(memberIds);
+        String note = validSuspension(months, reason);
+        String by = currentMemberId();
+        java.util.List<BulkGrantResult> results = new java.util.ArrayList<>();
+        for (String memberId : new java.util.LinkedHashSet<>(memberIds)) {
+            BulkGrantResult skip = plainAdminCheck(memberId);
+            if (skip != null) {
+                results.add(skip);
+                continue;
+            }
+            LocalDateTime endsAt = saveSuspension(memberId, months, note, by);
+            results.add(new BulkGrantResult(memberId, "SUSPENDED", null, endsAt));
+        }
+        return results;
+    }
+
+    @Override
+    @Transactional
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public java.util.List<BulkGrantResult> liftRolePlanSuspensions(java.util.List<String> memberIds) {
+        requireBulkSize(memberIds);
+        LocalDateTime now = LocalDateTime.now();
+        java.util.List<BulkGrantResult> results = new java.util.ArrayList<>();
+        for (String memberId : new java.util.LinkedHashSet<>(memberIds)) {
+            BulkGrantResult skip = plainAdminCheck(memberId);
+            if (skip != null) {
+                results.add(skip);
+                continue;
+            }
+            liftActive(memberId, now);
+            results.add(new BulkGrantResult(memberId, "LIFTED", null, null));
+        }
+        return results;
+    }
+
+    private static void requireBulkSize(java.util.List<String> memberIds) {
+        if (memberIds == null || memberIds.isEmpty() || memberIds.size() > MAX_BULK_GRANT) {
+            throw new AppException(ErrorCode.INVALID_REQUEST);
+        }
+    }
+
+    /** Lý do đã cắt gọn (null nếu trống); ném lỗi nếu thời hạn hoặc lý do sai. */
+    private static String validSuspension(int months, String reason) {
         String note = reason == null || reason.isBlank() ? null : reason.trim();
         if (months < 0 || months > MAX_GRANT_MONTHS || (note != null && note.length() > 255)) {
             throw new AppException(ErrorCode.ROLE_PLAN_SUSPENSION_INVALID);
         }
+        return note;
+    }
+
+    /** null nếu là ADMIN thường; không thì kết quả FAILED/SKIPPED để bỏ qua người này trong thao tác hàng loạt. */
+    private BulkGrantResult plainAdminCheck(String memberId) {
+        if (memberRepository.findById(memberId).isEmpty()) {
+            return new BulkGrantResult(memberId, "FAILED", ErrorCode.USER_NOT_EXISTED.name(), null);
+        }
+        if (!ROLE_ADMIN.equals(roleGrant(memberId))) {
+            return new BulkGrantResult(memberId, "SKIPPED", ErrorCode.ROLE_PLAN_NOT_APPLICABLE.name(), null);
+        }
+        return null;
+    }
+
+    /** Ghi một lần tạm ngưng mới (thay lần đang hiệu lực, nếu có); trả ngày hết tạm ngưng. */
+    private LocalDateTime saveSuspension(String memberId, int months, String note, String createdBy) {
         LocalDateTime now = LocalDateTime.now();
         // 0 = đến hết tháng này (00:00 ngày 1 tháng sau); còn lại cộng tháng theo lịch từ bây giờ
         LocalDateTime endsAt = months == 0
                 ? now.toLocalDate().withDayOfMonth(1).plusMonths(1).atStartOfDay()
                 : now.plusMonths(months);
-        // Đang bị ngưng thì thay bằng thời hạn mới để chỉ còn một lần ngưng hiệu lực
         liftActive(memberId, now);
         suspensionRepository.save(RolePlanSuspension.builder()
                 .memberId(memberId)
                 .startsAt(now)
                 .endsAt(endsAt)
                 .reason(note)
-                .createdBy(memberRepository
-                        .findByEmail(SecurityUtils.getCurrentEmail())
-                        .map(Member::getId)
-                        .orElse(null))
+                .createdBy(createdBy)
                 .build());
-        return subscriptionOf(member);
+        return endsAt;
+    }
+
+    private String currentMemberId() {
+        return memberRepository
+                .findByEmail(SecurityUtils.getCurrentEmail())
+                .map(Member::getId)
+                .orElse(null);
     }
 
     @Override

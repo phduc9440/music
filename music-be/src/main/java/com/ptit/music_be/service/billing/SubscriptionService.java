@@ -29,6 +29,13 @@ public interface SubscriptionService {
      */
     com.ptit.music_be.dto.response.MySubscriptionResponse suspendRolePlan(String memberId, int months, String reason);
 
+    /** Tạm ngưng nhiều ADMIN cùng lúc (tối đa 200); người không phải ADMIN thường được bỏ qua. Kết quả từng người. */
+    java.util.List<com.ptit.music_be.dto.response.BulkGrantResult> suspendRolePlans(
+            java.util.List<String> memberIds, int months, String reason);
+
+    /** Mở lại sớm cho nhiều ADMIN cùng lúc (tối đa 200). Kết quả từng người. */
+    java.util.List<com.ptit.music_be.dto.response.BulkGrantResult> liftRolePlanSuspensions(java.util.List<String> memberIds);
+
     /** SUPER_ADMIN mở lại sớm gói Pro theo vai trò của ADMIN (kết thúc mọi lần tạm ngưng đang hiệu lực). */
     com.ptit.music_be.dto.response.MySubscriptionResponse liftRolePlanSuspension(String memberId);
 

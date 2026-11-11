@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.web.bind.annotation.*;
 
 import com.ptit.music_be.dto.request.BulkGrantPlanRequest;
+import com.ptit.music_be.dto.request.BulkSuspendRolePlanRequest;
 import com.ptit.music_be.dto.request.GrantPlanRequest;
 import com.ptit.music_be.dto.request.SuspendRolePlanRequest;
 import com.ptit.music_be.dto.response.ApiResponse;
@@ -82,6 +83,33 @@ public class AdminSubscriptionController {
         }
         return ApiResponse.<MySubscriptionResponse>builder()
                 .result(subscriptionService.suspendRolePlan(memberId, request.getMonths(), request.getReason()))
+                .build();
+    }
+
+    @PostMapping("/role-plan-suspensions/bulk")
+    @Operation(
+            summary = "Tạm ngưng gói Pro theo vai trò của nhiều ADMIN (tối đa 200), chỉ SUPER_ADMIN",
+            description = "Người không phải ADMIN thường được bỏ qua. Errors: 1002, 1009 danh sách trống hoặc quá 200,"
+                    + " 3729 thời hạn hoặc lý do không hợp lệ",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<List<BulkGrantResult>> suspendMany(@RequestBody BulkSuspendRolePlanRequest request) {
+        if (request.getMonths() == null) {
+            throw new AppException(ErrorCode.INVALID_REQUEST);
+        }
+        return ApiResponse.<List<BulkGrantResult>>builder()
+                .result(subscriptionService.suspendRolePlans(
+                        request.getMemberIds(), request.getMonths(), request.getReason()))
+                .build();
+    }
+
+    @PostMapping("/role-plan-suspensions/bulk-lift")
+    @Operation(
+            summary = "Mở lại sớm gói Pro theo vai trò của nhiều ADMIN (tối đa 200), chỉ SUPER_ADMIN",
+            description = "Errors: 1002, 1009 danh sách trống hoặc quá 200",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<List<BulkGrantResult>> liftMany(@RequestBody BulkSuspendRolePlanRequest request) {
+        return ApiResponse.<List<BulkGrantResult>>builder()
+                .result(subscriptionService.liftRolePlanSuspensions(request.getMemberIds()))
                 .build();
     }
 
