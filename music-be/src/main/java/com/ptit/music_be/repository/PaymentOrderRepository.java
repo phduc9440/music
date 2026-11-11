@@ -15,6 +15,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import com.ptit.music_be.dto.enums.PaymentKind;
 import com.ptit.music_be.dto.enums.PaymentStatus;
 import com.ptit.music_be.entity.PaymentOrder;
 
@@ -34,7 +35,11 @@ public interface PaymentOrderRepository extends JpaRepository<PaymentOrder, Stri
 
     List<PaymentOrder> findByMemberEmailOrderByCreatedAtDesc(String email);
 
-    Page<PaymentOrder> findByStatus(PaymentStatus status, Pageable pageable);
+    /** Lọc theo trạng thái và/hoặc loại đơn; tham số null thì không lọc theo tiêu chí đó. */
+    @Query("select o from PaymentOrder o where (:status is null or o.status = :status)"
+            + " and (:kind is null or o.kind = :kind)")
+    Page<PaymentOrder> search(
+            @Param("status") PaymentStatus status, @Param("kind") PaymentKind kind, Pageable pageable);
 
     List<PaymentOrder> findByStatusAndExpiresAtBefore(PaymentStatus status, LocalDateTime time);
 

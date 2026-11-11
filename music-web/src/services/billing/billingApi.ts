@@ -4,6 +4,7 @@ import type {
   BillingPeriod,
   MySubscription,
   PageResult,
+  PaymentKind,
   PaymentOrder,
   PaymentStatus,
   PlanInfo,
@@ -31,7 +32,7 @@ export const billingApi = {
   // Admin: doanh thu, danh sách đơn, hoàn tiền thủ công
   revenue: (params?: { from?: string; to?: string }) =>
     apiClient.get<ApiResponse<Revenue>>('/admin/payments/revenue', { params }),
-  orders: (params?: { status?: PaymentStatus; page?: number; size?: number }) =>
+  orders: (params?: { status?: PaymentStatus; kind?: PaymentKind; page?: number; size?: number }) =>
     apiClient.get<ApiResponse<PageResult<PaymentOrder>>>('/admin/payments/orders', { params }),
   refund: (id: string) => apiClient.post<ApiResponse<PaymentOrder>>(`/admin/payments/orders/${id}/refund`),
 };
