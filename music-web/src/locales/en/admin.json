@@ -654,8 +654,10 @@
     "lifted": "Lifted the ban for {count}",
     "banBadge": "{plan} banned until {date}",
     "planToBan": "Plan to ban",
-    "currentPlanEach": "Each member's current plan",
+    "currentPlanEach": "Each member's current plan (Free members are skipped)",
     "heldRole": "{plan} (admin role)",
-    "heldUntil": "{plan} (until {date})"
+    "heldUntil": "{plan} (until {date})",
+    "onlyHolders": "{plan} (only members subscribed to it)",
+    "noHeldPlan": "This member has no plan to ban."
   }
 }

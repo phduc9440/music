@@ -343,9 +343,20 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 results.add(new BulkGrantResult(memberId, "SKIPPED", ErrorCode.UNAUTHORIZED.name(), null));
                 continue;
             }
-            // Cấm gói được chọn, hoặc chính gói người này đang dùng; đang ở Free thì không có gì để cấm
-            Plan plan = chosen != null ? chosen : currentPlan(memberId);
-            if (FREE.equals(plan.getCode())) {
+            // Chỉ cấm gói người này đã đăng ký: gói được chọn (phải nằm trong các gói họ đang có), hoặc gói đang dùng
+            Plan plan;
+            if (chosen != null) {
+                Subscription current = subscriptionRepository.findCurrentOne(memberId, now).orElse(null);
+                String code = chosen.getCode();
+                boolean holds = heldPlans(roleGrant(memberId), current).stream()
+                        .anyMatch(h -> h.getCode().equals(code));
+                plan = holds ? chosen : null;
+            } else {
+                Plan using = currentPlan(memberId);
+                plan = FREE.equals(using.getCode()) ? null : using;
+            }
+            if (plan == null) {
+                // Không đăng ký gói đó (hoặc đang ở Free): không có gì để cấm
                 results.add(new BulkGrantResult(memberId, "SKIPPED", ErrorCode.PLAN_NOT_EXISTED.name(), null));
                 continue;
             }

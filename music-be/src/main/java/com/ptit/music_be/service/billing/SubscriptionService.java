@@ -32,8 +32,9 @@ public interface SubscriptionService {
 
     /**
      * SUPER_ADMIN cấm dùng một gói trong {@code months} tháng (1..120): không dùng, mua hay được cấp lại gói đó; vẫn dùng Free
-     * hoặc mua gói khác (ADMIN bị cấm Pro thì mất Pro theo vai trò). {@code planCode} null = gói đang dùng của từng người
-     * (người đang ở Free được bỏ qua); có giá trị = cấm đúng gói đó (ví dụ người có cả Pro theo vai trò lẫn Premium đã mua).
+     * hoặc mua gói khác (ADMIN bị cấm Pro thì mất Pro theo vai trò). Chỉ cấm gói người đó đã đăng ký: {@code planCode} null =
+     * gói đang dùng của từng người (người đang ở Free được bỏ qua); có giá trị = gói đó, chỉ áp cho người đang có gói này
+     * (ví dụ người có cả Pro theo vai trò lẫn Premium đã mua), người không có thì bỏ qua.
      * Cấm lại cùng gói thì thay lệnh cũ. SUPER_ADMIN được bỏ qua.
      */
     java.util.List<com.ptit.music_be.dto.response.BulkGrantResult> banPlans(

@@ -434,6 +434,37 @@ class SubscriptionServiceImplTest {
     }
 
 
+    @Test
+    void chosenPlanIsOnlyBannedForMembersWhoHoldIt() {
+        loginSuper();
+        Plan free = planOf("free", "FREE", 1);
+        Plan proPlan = planOf("pro", "PRO", 3);
+        Plan premium = planOf("premium", "PREMIUM", 4);
+        when(plans.findByCode("FREE")).thenReturn(Optional.of(free));
+        when(plans.findByCode("PRO")).thenReturn(Optional.of(proPlan));
+        when(plans.findByCode("PREMIUM")).thenReturn(Optional.of(premium));
+        when(memberRepo.findById("buyer")).thenReturn(Optional.of(Member.builder().id("buyer").build()));
+        when(memberRepo.findById("proUser")).thenReturn(Optional.of(Member.builder().id("proUser").build()));
+        when(memberRepo.findById("mod")).thenReturn(Optional.of(Member.builder().id("mod").build()));
+        when(memberRepo.roleNamesOf("mod")).thenReturn(List.of("ADMIN"));
+        when(subs.findCurrentOne(eq("buyer"), any()))
+                .thenReturn(Optional.of(current(premium, LocalDateTime.now().plusMonths(1))));
+        when(subs.findCurrentOne(eq("proUser"), any()))
+                .thenReturn(Optional.of(current(proPlan, LocalDateTime.now().plusMonths(1))));
+        when(subs.findCurrentOne(eq("mod"), any()))
+                .thenReturn(Optional.of(current(premium, LocalDateTime.now().plusMonths(1))));
+        when(sanctions.findActiveBans(any(), any())).thenReturn(List.of());
+
+        // Cấm Premium: người mua Premium và ADMIN có Premium bị cấm; người dùng Pro không có Premium thì bỏ qua
+        var premiumBan = service.banPlans(List.of("buyer", "proUser", "mod"), 1, null, "PREMIUM");
+        assertEquals(List.of("BANNED", "SKIPPED", "BANNED"), premiumBan.stream().map(r -> r.getStatus()).toList());
+
+        // Cấm Pro: ADMIN có Pro theo vai trò nên bị cấm; người chỉ có Premium thì bỏ qua
+        var proBan = service.banPlans(List.of("buyer", "mod"), 1, null, "PRO");
+        assertEquals(List.of("SKIPPED", "BANNED"), proBan.stream().map(r -> r.getStatus()).toList());
+    }
+
+
     private void loginSuper() {
         org.springframework.security.core.context.SecurityContextHolder.getContext()
                 .setAuthentication(new org.springframework.security.authentication.TestingAuthenticationToken(

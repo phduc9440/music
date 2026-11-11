@@ -629,8 +629,10 @@
     "lifted": "Đã gỡ cấm cho {count} người",
     "banBadge": "Cấm {plan} đến {date}",
     "planToBan": "Gói bị cấm",
-    "currentPlanEach": "Gói đang dùng của từng người",
+    "currentPlanEach": "Gói đang dùng của từng người (bỏ qua người dùng Free)",
     "heldRole": "{plan} (theo vai trò quản trị)",
-    "heldUntil": "{plan} (đến {date})"
+    "heldUntil": "{plan} (đến {date})",
+    "onlyHolders": "{plan} (chỉ người đang đăng ký gói này)",
+    "noHeldPlan": "Người này chưa đăng ký gói nào nên không có gì để cấm."
   }
 }

@@ -36,6 +36,8 @@ export default function SanctionDialog({
   const [held, setHeld] = useState<HeldPlan[] | null>(null);
   const [paidPlans, setPaidPlans] = useState<PlanInfo[]>([]);
   const single = members.length === 1 ? members[0] : null;
+  // Một người mà không đăng ký gói nào thì không có gì để cấm
+  const nothingHeld = mode === 'ban' && !!single && held !== null && held.length === 0;
 
   useEffect(() => {
     if (mode !== 'ban') return;
@@ -128,6 +130,7 @@ export default function SanctionDialog({
               <p className="ui-dialog__message">
                 {t(mode === 'revoke' ? 'admin.sanctions.revokeMessage' : 'admin.sanctions.banMessage')}
               </p>
+              {nothingHeld && <p className="ui-dialog__message">{t('admin.sanctions.noHeldPlan')}</p>}
               {mode === 'ban' && (
                 <label className="ui-dialog__field">
                   <span>{t('admin.sanctions.planToBan')}</span>
@@ -152,7 +155,7 @@ export default function SanctionDialog({
                         <option value="">{t('admin.sanctions.currentPlanEach')}</option>
                         {paidPlans.map((p) => (
                           <option key={p.code} value={p.code}>
-                            {p.name}
+                            {t('admin.sanctions.onlyHolders', { plan: p.name })}
                           </option>
                         ))}
                       </>
@@ -194,7 +197,7 @@ export default function SanctionDialog({
             <button type="button" className="ui-dialog__btn" disabled={busy} onClick={onClose}>
               {t('admin.plans.cancel')}
             </button>
-            <button type="submit" className="ui-dialog__btn ui-dialog__btn--danger" disabled={busy}>
+            <button type="submit" className="ui-dialog__btn ui-dialog__btn--danger" disabled={busy || nothingHeld}>
               {busy ? t('common.loading') : t(mode === 'revoke' ? 'admin.sanctions.revoke' : 'admin.sanctions.ban')}
             </button>
           </div>

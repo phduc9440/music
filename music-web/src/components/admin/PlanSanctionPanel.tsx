@@ -242,14 +242,16 @@ export default function PlanSanctionPanel() {
                             {t('admin.sanctions.lift')}
                           </Button>
                         )}
-                        <Button
-                          size="sm"
-                          variant="danger"
-                          disabled={busy}
-                          onClick={() => setDialog({ mode: 'ban', members: [{ id: m.id, name }] })}
-                        >
-                          {t('admin.sanctions.ban')}
-                        </Button>
+                        {m.plan && m.plan.status !== 'FREE' && (
+                          <Button
+                            size="sm"
+                            variant="danger"
+                            disabled={busy}
+                            onClick={() => setDialog({ mode: 'ban', members: [{ id: m.id, name }] })}
+                          >
+                            {t('admin.sanctions.ban')}
+                          </Button>
+                        )}
                       </div>
                     )}
                   </td>
