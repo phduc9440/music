@@ -35,21 +35,6 @@ export default function NotificationBell() {
     openRef.current = open;
   }, [open]);
 
-  const connected = useNotificationSocket((n) => {
-    setUnread((c) => c + 1);
-    // Danh sách đang mở thì chèn lên đầu (bỏ trùng nếu vừa nạp xong)
-    if (openRef.current) setItems((list) => [n, ...list.filter((x) => x.id !== n.id)]);
-    if (n.type === 'ANNOUNCEMENT') toast.info(`${t('common.notifications.fromAdmin')}: ${n.message}`);
-  });
-
-  // Đồng bộ số chưa đọc mỗi khi (mất/có lại) kết nối; chỉ poll khi socket chưa nối được
-  useEffect(() => {
-    refreshCount();
-    if (connected) return;
-    const timer = setInterval(refreshCount, POLL_MS);
-    return () => clearInterval(timer);
-  }, [connected, refreshCount]);
-
   // Đóng khi bấm ra ngoài
   useEffect(() => {
     if (!open) return;
@@ -99,6 +84,26 @@ export default function NotificationBell() {
     else if (n.type === 'OFFICIAL_ACCEPTED' || n.type === 'OFFICIAL_DECLINED') navigate('/admin/official-scores');
     else if (n.scoreId) navigate(`/scores/${n.scoreId}`);
   };
+
+  const connected = useNotificationSocket((n) => {
+    setUnread((c) => c + 1);
+    // Danh sách đang mở thì chèn lên đầu (bỏ trùng nếu vừa nạp xong)
+    if (openRef.current) setItems((list) => [n, ...list.filter((x) => x.id !== n.id)]);
+    toast.info(
+      n.type === 'ANNOUNCEMENT' ? `${t('common.notifications.fromAdmin')}: ${n.message}` : notificationText(n),
+      {
+        onClick: () => void openItem(n), // bấm toast: đánh dấu đã đọc và mở trang liên quan như bấm trong chuông
+      },
+    );
+  });
+
+  // Đồng bộ số chưa đọc mỗi khi (mất/có lại) kết nối; chỉ poll khi socket chưa nối được
+  useEffect(() => {
+    refreshCount();
+    if (connected) return;
+    const timer = setInterval(refreshCount, POLL_MS);
+    return () => clearInterval(timer);
+  }, [connected, refreshCount]);
 
   const readAll = async () => {
     await notificationApi.markAllRead().catch(() => undefined);
