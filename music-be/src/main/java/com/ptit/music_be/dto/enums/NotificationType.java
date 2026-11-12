@@ -52,5 +52,7 @@ public enum NotificationType {
     /** Gửi người phối: bài bị trả lại kèm góp ý. */
     SHOW_ITEM_RETURNED,
     /** Nhắc hạn: còn 2 ngày (variant soon) hoặc hôm nay là hạn (variant today). */
-    SHOW_ITEM_DUE
+    SHOW_ITEM_DUE,
+    /** Quản trị viên đã xóa team bạn đang ở (kèm lý do nếu có). */
+    TEAM_DELETED_BY_ADMIN
 }

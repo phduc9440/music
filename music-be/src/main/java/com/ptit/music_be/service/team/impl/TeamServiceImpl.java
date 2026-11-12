@@ -196,8 +196,7 @@ public class TeamServiceImpl implements TeamService {
         if (tm.getRole() != TeamRole.OWNER) {
             throw new AppException(ErrorCode.TEAM_FORBIDDEN);
         }
-        // Thành viên, lời mời, show, bài trong show, nhật ký xóa theo bằng ON DELETE CASCADE; scores.team_id SET NULL
-        teamRepository.delete(tm.getTeam());
+        teamRepository.deleteDirectly(teamId);
     }
 
     // ------------------------------------------------------------------------------------------------ thành viên
@@ -691,7 +690,7 @@ public class TeamServiceImpl implements TeamService {
                 .build();
     }
 
-    static TeamMemberResponse toMemberResponse(TeamMember tm) {
+    public static TeamMemberResponse toMemberResponse(TeamMember tm) {
         Member m = tm.getMember();
         return TeamMemberResponse.builder()
                 .memberId(m.getId())

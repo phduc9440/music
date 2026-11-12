@@ -299,7 +299,8 @@ export type NotificationType =
   | 'SHOW_ITEM_SUBMITTED'
   | 'SHOW_ITEM_APPROVED'
   | 'SHOW_ITEM_RETURNED'
-  | 'SHOW_ITEM_DUE';
+  | 'SHOW_ITEM_DUE'
+  | 'TEAM_DELETED_BY_ADMIN';
 
 export interface AppNotification {
   id: string;

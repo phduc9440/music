@@ -51,6 +51,7 @@ const MENU: { section: string; items: MenuItem[] }[] = [
   section('overview', [item('/admin', 'dashboard', 'dashboard', { end: true })]),
   section('users', [
     item('/admin/members', 'members', 'users'),
+    item('/admin/teams', 'teams', 'share'),
     item('/admin/announcements', 'announcements', 'megaphone'),
   ]),
   section('content', [

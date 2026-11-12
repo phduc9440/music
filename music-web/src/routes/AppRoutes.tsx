@@ -39,6 +39,8 @@ import BillingResult from '../pages/billing/BillingResult';
 import AdminRevenue from '../pages/admin/AdminRevenue';
 import AdminPlans from '../pages/admin/AdminPlans';
 import AdminMemberPlans from '../pages/admin/AdminMemberPlans';
+import AdminTeams from '../pages/admin/AdminTeams';
+import AdminTeamDetail from '../pages/admin/AdminTeamDetail';
 import GuestRoute from './GuestRoute';
 import ProtectedRoute from './ProtectedRoute';
 import RootLayout from './RootLayout';
@@ -136,6 +138,8 @@ const router = createBrowserRouter(
         <Route index element={<AdminDashboard />} />
         <Route path="members" element={<AdminMembers />} />
         <Route path="members/:id" element={<AdminMemberDetail />} />
+        <Route path="teams" element={<AdminTeams />} />
+        <Route path="teams/:id" element={<AdminTeamDetail />} />
         <Route path="scores" element={<AdminScores />} />
         <Route path="scores/:id" element={<ScoreDetail admin />} />
         <Route path="scores/:id/edit" element={<ScoreViewer />} />

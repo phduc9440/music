@@ -89,7 +89,8 @@ export default function NotificationBell() {
     // Team và Show: bài trong show mở bảng show, còn lại mở team (lời mời và bị xóa khỏi team thì về /teams)
     else if (n.type.startsWith('SHOW_ITEM_') && n.params?.teamId && n.params.showId)
       navigate(`/teams/${n.params.teamId}/shows/${n.params.showId}`);
-    else if (n.type === 'TEAM_INVITED' || n.type === 'TEAM_REMOVED') navigate('/teams');
+    else if (n.type === 'TEAM_INVITED' || n.type === 'TEAM_REMOVED' || n.type === 'TEAM_DELETED_BY_ADMIN')
+      navigate('/teams');
     else if (n.type.startsWith('TEAM_') && n.params?.teamId) navigate(`/teams/${n.params.teamId}`);
     else if (n.scoreId) navigate(`/scores/${n.scoreId}`);
   };

@@ -29,6 +29,7 @@
   "TEAM_MEMBER_JOINED": "{name} joined {team}",
   "TEAM_ROLE_CHANGED": "Your role in {team} is now {role}",
   "TEAM_REMOVED": "You were removed from {team}",
+  "TEAM_DELETED_BY_ADMIN": "An administrator deleted the team {team}",
   "SHOW_ITEM_ASSIGNED": {
     "arranger": "You were assigned to arrange “{title}” in {show}",
     "reviewer": "You were assigned to review “{title}” in {show}"

@@ -17,3 +17,4 @@ export * from './discover/homeApi';
 export * from './discover/composerApi';
 export * from './billing/billingApi';
 export * from './team/teamApi';
+export * from './team/adminTeamApi';

@@ -173,3 +173,44 @@ export interface ShowItemPayload {
   dueDate?: string | null;
   notes?: string | null;
 }
+
+// Quản lý team của admin, BE: AdminTeamResponse, AdminTeamSummaryResponse, AdminTeamDetailResponse
+export interface AdminTeam {
+  id: string;
+  name: string;
+  description?: string | null;
+  creatorId: string;
+  creatorName: string;
+  creatorEmail: string;
+  memberCount: number;
+  scoreCount: number;
+  showCount: number;
+  preparingShows: number;
+  createdAt?: string | null;
+  lastActivityAt?: string | null;
+  planActive: boolean;
+  memberLimit?: number | null;
+}
+
+export interface AdminTeamSummary {
+  teams: number;
+  activeTeams7d: number;
+  teamMembers: number;
+  preparingShows: number;
+  openItems: number;
+  overdueItems: number;
+}
+
+export interface AdminTeamDetail {
+  team: AdminTeam;
+  members: TeamMember[];
+  shows: Show[];
+  scores: {
+    id: string;
+    title: string;
+    ownerName?: string | null;
+    visibility?: string | null;
+    updatedAt?: string | null;
+  }[];
+  recentActivities: TeamActivity[];
+}

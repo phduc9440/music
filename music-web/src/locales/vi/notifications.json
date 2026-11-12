@@ -29,6 +29,7 @@
   "TEAM_MEMBER_JOINED": "{name} đã tham gia team {team}",
   "TEAM_ROLE_CHANGED": "Vai trò của bạn trong team {team} đã đổi thành {role}",
   "TEAM_REMOVED": "Bạn đã bị xóa khỏi team {team}",
+  "TEAM_DELETED_BY_ADMIN": "Quản trị viên đã xóa team {team}",
   "SHOW_ITEM_ASSIGNED": {
     "arranger": "Bạn được giao phối bài “{title}” trong show {show}",
     "reviewer": "Bạn được giao duyệt bài “{title}” trong show {show}"

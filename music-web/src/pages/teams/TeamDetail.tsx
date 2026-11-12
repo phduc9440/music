@@ -10,10 +10,10 @@ import { useDialog } from '../../components/ui/dialog-context';
 import { teamApi, userApi } from '../../services';
 import { canManageTeam, TEAM_ROLES } from '../../types';
 import type { Show, Team, TeamActivity, TeamInvitation, TeamMember, TeamRole, TeamScore } from '../../types';
-import { formatDate, formatDateTime, formatNumber, formatRelativeTime, hasKey, t } from '../../i18n/core';
+import { formatDate, formatDateTime, formatNumber, formatRelativeTime, t } from '../../i18n/core';
 import { getErrorCode, getErrorMessage } from '../../utils/score';
 import { MemberAvatar, RoleBadge, StatusBadge } from './shared';
-import { memberName } from './teamUtils';
+import { activityText, memberName } from './teamUtils';
 import { TeamFormModal } from './Teams';
 import { ShowFormModal } from './ShowBoard';
 import '../../components/scores/scores.css';
@@ -660,25 +660,6 @@ function MembersTab({ team, meId, onChanged }: { team: Team; meId: string | null
 // ------------------------------------------------------------------------------------------------ Hoạt động
 
 const PAGE_SIZE = 20;
-
-/** Câu của một dòng hoạt động theo ngôn ngữ đang dùng (vai trò, trạng thái được dịch). */
-function activityText(a: TeamActivity): string {
-  const p = a.params ?? {};
-  const translated: Record<string, string> = { ...p, actor: a.actorName ?? t('teams.activity.someone') };
-  for (const key of ['role', 'from'] as const) {
-    if (p[key] && hasKey(`teams.roles.${p[key]}`)) translated[key] = t(`teams.roles.${p[key]}`);
-  }
-  if (a.type === 'ITEM_STATUS_CHANGED') {
-    translated.status = p.status ? t(`teams.status.${p.status}`) : '';
-    translated.from = p.from ? t(`teams.status.${p.from}`) : '';
-  }
-  if (a.type === 'ITEM_ASSIGNED') {
-    translated.arranger = p.arranger ?? t('teams.item.nobody');
-    translated.reviewer = p.reviewer ?? t('teams.item.nobody');
-  }
-  const variant = a.type === 'INVITATION_SENT' && !p.email ? '_link' : '';
-  return t(`teams.activity.${a.type}${variant}`, translated);
-}
 
 function ActivityTab({ team }: { team: Team }) {
   const [items, setItems] = useState<TeamActivity[] | null>(null);

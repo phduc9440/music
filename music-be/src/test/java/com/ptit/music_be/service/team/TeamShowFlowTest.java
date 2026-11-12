@@ -251,5 +251,13 @@ class TeamShowFlowTest {
         assertEquals(
                 ErrorCode.TEAM_FORBIDDEN,
                 codeOf(() -> teamService.changeRole(team.getId(), ownerId, TeamRole.VIEWER)));
+
+        // Chỉ chủ team xóa được team; xóa xong thì không còn ai vào được
+        assertEquals(ErrorCode.TEAM_FORBIDDEN, codeOf(() -> teamService.delete(team.getId())));
+        asOwner();
+        teamService.delete(team.getId());
+        em.flush();
+        em.clear();
+        assertEquals(ErrorCode.TEAM_NOT_EXISTED, codeOf(() -> teamService.get(team.getId())));
     }
 }
