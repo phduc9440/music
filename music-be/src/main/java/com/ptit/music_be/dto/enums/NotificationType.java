@@ -58,5 +58,10 @@ public enum NotificationType {
     /** Chủ team đã xóa team bạn đang ở (khôi phục được trong 30 ngày). */
     TEAM_DELETED,
     /** Team bạn đang ở đã được khôi phục (bởi chủ team hoặc quản trị viên). */
-    TEAM_RESTORED
+    TEAM_RESTORED,
+    // ---- Góp ý gắn vào ô nhịp (mục 4.2); params: name, title, measures ("12–16"), commentId (góp ý gốc)
+    /** Bạn được @nhắc trong một góp ý hoặc trả lời. */
+    COMMENT_MENTION,
+    /** Có người trả lời góp ý bạn viết hoặc đã tham gia trả lời. */
+    COMMENT_REPLY
 }

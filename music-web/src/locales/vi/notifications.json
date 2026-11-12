@@ -42,5 +42,7 @@
     "today": "Hôm nay là hạn của bài “{title}” (buổi diễn {show})"
   },
   "TEAM_DELETED": "{name} đã xóa nhóm {team}",
-  "TEAM_RESTORED": "Nhóm {team} đã được khôi phục"
+  "TEAM_RESTORED": "Nhóm {team} đã được khôi phục",
+  "COMMENT_MENTION": "{name} đã nhắc tới bạn trong góp ý ở ô {measures} của “{title}”",
+  "COMMENT_REPLY": "{name} đã trả lời góp ý ở ô {measures} của “{title}”"
 }

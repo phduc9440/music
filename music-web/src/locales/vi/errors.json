@@ -145,5 +145,12 @@
   "3819": "Nhóm do quản trị viên xóa vì vi phạm; chỉ quản trị viên khôi phục được",
   "3829": "Đã quá 30 ngày kể từ lúc xóa buổi diễn nên không khôi phục được nữa",
   "2025": "Ảnh bìa phải là JPG hoặc PNG, tối đa 3MB",
-  "1019": "Phiên đặt lại mật khẩu đã hết hạn hoặc không hợp lệ, vui lòng yêu cầu mã OTP mới"
+  "1019": "Phiên đặt lại mật khẩu đã hết hạn hoặc không hợp lệ, vui lòng yêu cầu mã OTP mới",
+  "3901": "Không tìm thấy góp ý",
+  "3902": "Nội dung góp ý từ 1 đến 2000 ký tự",
+  "3903": "Ô nhịp phải nằm trong bản nhạc (từ 1 đến số ô) và ô bắt đầu không lớn hơn ô kết thúc",
+  "3904": "Cần quyền nhận xét trở lên để góp ý vào bản nhạc này",
+  "3905": "Bạn không sửa, xóa hoặc đánh dấu được góp ý này",
+  "3906": "Chỉ nhắc được người xem được bản nhạc này (tối đa 20 người)",
+  "3907": "Bè hoặc danh sách nốt đã chọn không hợp lệ"
 }

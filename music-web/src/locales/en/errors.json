@@ -145,5 +145,12 @@
   "3819": "This team was deleted by an administrator for a violation; only an administrator can restore it",
   "3829": "More than 30 days have passed since the show was deleted, so it can no longer be restored",
   "2025": "The cover must be a JPG or PNG image, up to 3MB",
-  "1019": "Your password reset session has expired or is invalid, please request a new OTP code"
+  "1019": "Your password reset session has expired or is invalid, please request a new OTP code",
+  "3901": "Comment not found",
+  "3902": "A comment must be 1 to 2000 characters",
+  "3903": "Bars must be inside the score (1 to the bar count) and the start bar can't be after the end bar",
+  "3904": "You need review access or higher to comment on this score",
+  "3905": "You can't edit, delete or resolve this comment",
+  "3906": "You can only mention people who can view this score (up to 20)",
+  "3907": "The selected part or notes are invalid"
 }
