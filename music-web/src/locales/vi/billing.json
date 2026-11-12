@@ -35,7 +35,7 @@
   },
   "myPlan": {
     "title": "Gói của tôi",
-    "subtitle": "Gói đang dùng và hạn mức trong tháng này",
+    "subtitle": "Các gói đã đăng ký và hạn mức trong tháng này",
     "expires": "Hết hạn ngày {date}",
     "omrUsed": "Trang OMR đã dùng tháng này",
     "usedUnlimited": "{used} (không giới hạn)",
@@ -48,7 +48,14 @@
     "renew": "Gia hạn 1 {period}",
     "renewSummary": "Thêm 1 {period} với giá {amount}. Sau khi thanh toán, gói hết hạn ngày {date}.",
     "expiringSoon": "Gói sẽ hết hạn sau {count} ngày. Gia hạn để không bị gián đoạn.",
-    "expiresToday": "Gói hết hạn trong hôm nay. Gia hạn để không bị gián đoạn."
+    "expiresToday": "Gói hết hạn trong hôm nay. Gia hạn để không bị gián đoạn.",
+    "heldTitle": "Gói đã đăng ký",
+    "heldDesc": "Bạn có thể giữ cùng lúc một gói cá nhân và một gói team; mỗi gói có hạn và gia hạn riêng.",
+    "freeNote": "Bạn đang dùng gói Free.",
+    "addPlan": "Đăng ký thêm gói",
+    "bannedPlan": "Gói này đang bị cấm dùng nên không gia hạn được.",
+    "limitsTitle": "Hạn mức đang áp dụng",
+    "mergedNote": "Bạn có nhiều gói: mỗi hạn mức lấy theo gói cao hơn."
   },
   "pricing": {
     "title": "Gói dịch vụ",
@@ -66,7 +73,9 @@
       "SUPER_ADMIN": "Bạn là quản trị viên cấp cao: dùng mọi tính năng không giới hạn, không cần mua gói.",
       "ADMIN": "Bạn là quản trị viên: đã có quyền lợi gói Pro không thời hạn. Bạn vẫn có thể mua gói cao hơn."
     },
-    "bannedButton": "Bị cấm đến {date}"
+    "bannedButton": "Bị cấm đến {date}",
+    "switch": "Đổi sang gói này",
+    "switchHint": "Gói {plan} đang dùng sẽ dừng ngay khi mua gói này."
   },
   "result": {
     "title": "Kết quả thanh toán",

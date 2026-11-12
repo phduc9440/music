@@ -35,13 +35,20 @@ class EntitlementServiceImplTest {
     private final AiTaskRepository tasks = mock(AiTaskRepository.class);
     private final PlanRepository plans = mock(PlanRepository.class);
     private final EntitlementServiceImpl service =
-            new EntitlementServiceImpl(subscriptions, new PlanLimitsParser(new ObjectMapper()), tasks, plans);
+            new EntitlementServiceImpl(subscriptions, tasks, plans);
+    private final PlanLimitsParser parser = new PlanLimitsParser(new ObjectMapper());
 
     private final Plan free = plan("FREE", 1, "{\"omrPagesPerMonth\":20}");
     private final Plan pro = plan("PRO", 2, "{\"omrPagesPerMonth\":null}");
 
     private static Plan plan(String code, int order, String limits) {
         return Plan.builder().code(code).sortOrder(order).limits(limits).build();
+    }
+
+    /** Người dùng chỉ có gói này: gói chính và hạn mức gộp đều là của gói đó. */
+    private void use(Plan plan) {
+        when(subscriptions.currentPlan("m")).thenReturn(plan);
+        when(subscriptions.effectiveLimits("m")).thenReturn(parser.parse(plan));
     }
 
     @BeforeEach
@@ -53,14 +60,14 @@ class EntitlementServiceImplTest {
 
     @Test
     void allowsWithinLimit() {
-        when(subscriptions.currentPlan("m")).thenReturn(free);
+        use(free);
 
         assertDoesNotThrow(() -> service.checkAvailable("m", UsageMetric.OMR_PAGES, 2));
     }
 
     @Test
     void rejectsOverLimitWithUpgradeHint() {
-        when(subscriptions.currentPlan("m")).thenReturn(free);
+        use(free);
 
         AppException e =
                 assertThrows(AppException.class, () -> service.checkAvailable("m", UsageMetric.OMR_PAGES, 3));
@@ -74,7 +81,7 @@ class EntitlementServiceImplTest {
 
     @Test
     void unlimitedPlanNeverRejects() {
-        when(subscriptions.currentPlan("m")).thenReturn(pro);
+        use(pro);
 
         assertDoesNotThrow(() -> service.checkAvailable("m", UsageMetric.OMR_PAGES, 100_000));
     }
@@ -82,7 +89,7 @@ class EntitlementServiceImplTest {
     @Test
     void highestPlanHasNoUpgrade() {
         Plan capped = plan("PRO", 2, "{\"omrPagesPerMonth\":10}");
-        when(subscriptions.currentPlan("m")).thenReturn(capped);
+        use(capped);
 
         AppException e =
                 assertThrows(AppException.class, () -> service.checkAvailable("m", UsageMetric.OMR_PAGES, 1));

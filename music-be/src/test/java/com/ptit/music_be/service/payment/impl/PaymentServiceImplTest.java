@@ -310,10 +310,11 @@ class PaymentServiceImplTest {
         when(provider.createPayment(any(), any())).thenReturn(new PaymentProvider.PaymentInit("https://pay/url"));
         var request = new CreatePaymentOrderRequest("PRO", BillingPeriod.MONTH, null);
 
-        when(subscriptions.currentPlan("m")).thenReturn(Plan.builder().id("free").code("FREE").build());
+        when(subscriptions.holdsPlan("m", pro.getId())).thenReturn(false);
         assertEquals("NEW", service.createOrder(request, "1.1.1.1").getKind());
 
-        when(subscriptions.currentPlan("m")).thenReturn(pro);
+        // Có gói Pro (kể cả khi gói chính là gói team cao hơn) thì mua Pro là gia hạn
+        when(subscriptions.holdsPlan("m", pro.getId())).thenReturn(true);
         assertEquals("RENEW", service.createOrder(request, "1.1.1.1").getKind());
     }
 

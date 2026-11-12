@@ -134,10 +134,12 @@ public class PaymentServiceImpl implements PaymentService {
         }
     }
 
-    /** Gia hạn khi người mua đang dùng đúng gói này (còn hạn); gói khác hoặc đang ở Free thì là mua mới. */
+    /**
+     * Gia hạn khi người mua đang có đúng gói này (còn hạn), kể cả khi đó không phải gói chính (ví dụ gia hạn gói cá nhân
+     * trong lúc có thêm gói team); gói khác hoặc đang ở Free thì là mua mới.
+     */
     private boolean isRenewal(Member member, Plan plan) {
-        Plan current = subscriptionService.currentPlan(member.getId());
-        return current != null && current.getId() != null && current.getId().equals(plan.getId());
+        return subscriptionService.holdsPlan(member.getId(), plan.getId());
     }
 
     /**

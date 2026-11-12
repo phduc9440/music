@@ -28,8 +28,23 @@ export interface PlanInfo {
   limits: PlanLimits;
 }
 
-export interface MySubscription {
+/** Một gói mua/được cấp còn hạn (BE: HeldSubscription). Mỗi người có tối đa một gói cá nhân và một gói team. */
+export interface HeldSubscription {
   plan: PlanInfo;
+  source: 'PAYMENT' | 'POINTS_TRIAL' | 'ADMIN_GRANT';
+  startsAt?: string | null;
+  expiresAt: string;
+  /** Gói đang bị cấm dùng: còn hạn nhưng không dùng hay gia hạn được tới khi hết cấm. */
+  banned: boolean;
+}
+
+export interface MySubscription {
+  /** Gói chính: gói cao nhất đang dùng (Free nếu không có gói nào). */
+  plan: PlanInfo;
+  /** Hạn mức đang áp dụng, gộp từ mọi gói đang dùng (mỗi chỉ số lấy mức cao hơn). */
+  limits: PlanLimits;
+  /** Các gói mua/được cấp còn hạn, gói chính trước. */
+  subscriptions?: HeldSubscription[];
   /** ACTIVE (có gói trả phí hoặc được cấp) hoặc FREE. */
   status: 'ACTIVE' | 'FREE' | 'UNLIMITED';
   /** ROLE: quyền lợi theo vai trò quản trị (ADMIN dùng Pro không thời hạn, SUPER_ADMIN không giới hạn). */

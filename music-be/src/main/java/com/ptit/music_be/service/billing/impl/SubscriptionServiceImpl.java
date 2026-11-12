@@ -13,6 +13,7 @@ import com.ptit.music_be.dto.enums.SubscriptionSource;
 import com.ptit.music_be.dto.enums.SubscriptionStatus;
 import com.ptit.music_be.dto.response.BulkGrantResult;
 import com.ptit.music_be.dto.response.HeldPlan;
+import com.ptit.music_be.dto.response.HeldSubscription;
 import com.ptit.music_be.dto.response.MemberPlanSummary;
 import com.ptit.music_be.dto.response.PlanBanInfo;
 import com.ptit.music_be.dto.response.MySubscriptionResponse;
@@ -28,6 +29,7 @@ import com.ptit.music_be.repository.MemberRepository;
 import com.ptit.music_be.repository.PlanRepository;
 import com.ptit.music_be.repository.PlanSanctionRepository;
 import com.ptit.music_be.repository.SubscriptionRepository;
+import com.ptit.music_be.service.billing.PlanLimits;
 import com.ptit.music_be.service.billing.PlanLimitsParser;
 import com.ptit.music_be.service.billing.SubscriptionService;
 import com.ptit.music_be.service.notification.NotificationService;
@@ -101,43 +103,55 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                     .omrPagesUsed(used)
                     .build();
         }
-        List<PlanSanction> bans = sanctionRepository.findActiveBans(member.getId(), LocalDateTime.now());
-        Subscription current =
-                subscriptionRepository.findCurrentOne(member.getId(), LocalDateTime.now()).orElse(null);
-        Effective e = effective(grant, current, bannedPlanIds(bans), this::proPlan);
+        LocalDateTime now = LocalDateTime.now();
+        List<PlanSanction> bans = sanctionRepository.findActiveBans(member.getId(), now);
+        java.util.Set<String> banned = bannedPlanIds(bans);
+        List<Subscription> held = heldSubscriptions(member.getId(), now);
+        Effective e = effective(grant, held, banned, this::proPlan);
         MySubscriptionResponse response;
-        if (e.rolePro()) {
-            // ADMIN chưa mua gói nào cao hơn Pro: dùng Pro theo vai trò, không hết hạn
+        if (e.primary() == null) {
+            response = toMine(null, freePlan(), used);
+        } else if (e.primary() == e.rolePro()) {
+            // ADMIN chưa có gói cá nhân nào cao hơn Pro: dùng Pro theo vai trò, không hết hạn
             response = MySubscriptionResponse.builder()
-                    .plan(toPlanResponse(e.plan()))
+                    .plan(toPlanResponse(e.primary()))
                     .status("ACTIVE")
                     .source("ROLE")
                     .omrPagesUsed(used)
                     .build();
         } else {
-            response = toMine(e.sub(), e.sub() == null ? freePlan() : e.plan(), used);
+            response = toMine(e.subOf(e.primary()), e.primary(), used);
         }
+        response.setLimits(mergedLimits(e));
+        response.setSubscriptions(held.stream()
+                .sorted(java.util.Comparator.comparing(
+                        (Subscription s) -> s.getPlan() != e.primary()))
+                .map(s -> HeldSubscription.builder()
+                        .plan(toPlanResponse(s.getPlan()))
+                        .source(s.getSource().name())
+                        .startsAt(s.getStartsAt())
+                        .expiresAt(s.getExpiresAt())
+                        .banned(banned.contains(s.getPlan().getId()))
+                        .build())
+                .toList());
         response.setRoleGrant(grant);
         response.setBans(banInfos(bans));
-        response.setHeldPlans(heldPlans(grant, current));
+        response.setHeldPlans(heldPlans(grant, held));
         return response;
     }
 
     /** Các gói đang có, chưa tính lệnh cấm: gói mua/được cấp còn hạn và Pro theo vai trò của ADMIN. */
-    private List<HeldPlan> heldPlans(String grant, Subscription current) {
-        List<HeldPlan> held = new java.util.ArrayList<>();
-        if (current != null) {
-            held.add(new HeldPlan(
-                    current.getPlan().getCode(),
-                    current.getPlan().getName(),
-                    current.getSource().name(),
-                    current.getExpiresAt()));
+    private List<HeldPlan> heldPlans(String grant, List<Subscription> held) {
+        List<HeldPlan> result = new java.util.ArrayList<>();
+        for (Subscription s : held) {
+            result.add(new HeldPlan(
+                    s.getPlan().getCode(), s.getPlan().getName(), s.getSource().name(), s.getExpiresAt()));
         }
         Plan pro = ROLE_ADMIN.equals(grant) ? proPlan() : null;
-        if (pro != null && (current == null || !current.getPlan().getId().equals(pro.getId()))) {
-            held.add(new HeldPlan(pro.getCode(), pro.getName(), "ROLE", null));
+        if (pro != null && held.stream().noneMatch(s -> s.getPlan().getId().equals(pro.getId()))) {
+            result.add(new HeldPlan(pro.getCode(), pro.getName(), "ROLE", null));
         }
-        return held;
+        return result;
     }
 
     @Override
@@ -147,34 +161,117 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         if (ROLE_SUPER_ADMIN.equals(grant)) {
             return unlimitedPlan();
         }
-        Subscription current = subscriptionRepository.findCurrentOne(memberId, LocalDateTime.now()).orElse(null);
-        Effective e = effective(
-                grant,
-                current,
-                bannedPlanIds(sanctionRepository.findActiveBans(memberId, LocalDateTime.now())),
-                this::proPlan);
-        return e.plan() != null ? e.plan() : freePlan();
+        Effective e = effectiveOf(memberId, grant);
+        return e.primary() != null ? e.primary() : freePlan();
     }
 
-    /** Gói đang dùng thực tế: {@code plan} null = Free; {@code rolePro} = ADMIN dùng Pro theo vai trò. */
-    private record Effective(Plan plan, Subscription sub, boolean rolePro) {}
+    @Override
+    @Transactional(readOnly = true)
+    public PlanLimits effectiveLimits(String memberId) {
+        String grant = roleGrant(memberId);
+        if (ROLE_SUPER_ADMIN.equals(grant)) {
+            return limitsParser.parse(unlimitedPlan());
+        }
+        return mergedLimits(effectiveOf(memberId, grant));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean holdsPlan(String memberId, String planId) {
+        return heldSubscriptions(memberId, LocalDateTime.now()).stream()
+                .anyMatch(s -> s.getPlan().getId().equals(planId));
+    }
+
+    private Effective effectiveOf(String memberId, String grant) {
+        LocalDateTime now = LocalDateTime.now();
+        return effective(
+                grant,
+                heldSubscriptions(memberId, now),
+                bannedPlanIds(sanctionRepository.findActiveBans(memberId, now)),
+                this::proPlan);
+    }
+
+    /** Hạn mức gộp của các gói đang dùng, luôn có gói Free làm nền (gói team không làm mất quyền lợi tối thiểu của Free). */
+    private PlanLimits mergedLimits(Effective e) {
+        List<PlanLimits> all = new java.util.ArrayList<>();
+        planRepository.findByCode(FREE).map(limitsParser::parse).ifPresent(all::add);
+        e.plans().forEach(p -> all.add(limitsParser.parse(p)));
+        return PlanLimits.merge(all);
+    }
+
+    /**
+     * Gói mua/được cấp còn hạn, mỗi nhóm (cá nhân / team) một gói. Dữ liệu cũ (trước khi cho giữ hai nhóm) chỉ có một gói;
+     * nếu lỡ có hai gói cùng nhóm thì lấy gói hết hạn muộn nhất (truy vấn đã xếp theo hạn giảm dần).
+     */
+    private List<Subscription> heldSubscriptions(String memberId, LocalDateTime now) {
+        return onePerAudience(subscriptionRepository.findCurrent(memberId, now));
+    }
+
+    private static List<Subscription> onePerAudience(List<Subscription> subs) {
+        java.util.Map<String, Subscription> byAudience = new java.util.LinkedHashMap<>();
+        for (Subscription s : subs) {
+            byAudience.putIfAbsent(audienceOf(s.getPlan()), s);
+        }
+        return new java.util.ArrayList<>(byAudience.values());
+    }
+
+    /** PERSONAL hoặc TEAM; gói không ghi nhóm coi là gói cá nhân. */
+    static String audienceOf(Plan plan) {
+        return Plan.TEAM.equals(plan.getAudience()) ? Plan.TEAM : Plan.PERSONAL;
+    }
+
+    /**
+     * Gói đang dùng thực tế. {@code subs}: các gói mua/được cấp không bị cấm (tối đa một gói mỗi nhóm); {@code rolePro}:
+     * Pro theo vai trò của ADMIN khi nó đang được dùng, null nếu không; {@code primary}: gói cao nhất trong số đó (null =
+     * Free).
+     */
+    private record Effective(List<Subscription> subs, Plan rolePro, Plan primary) {
+        List<Plan> plans() {
+            List<Plan> all = new java.util.ArrayList<>(subs.stream().map(Subscription::getPlan).toList());
+            if (rolePro != null) {
+                all.add(rolePro);
+            }
+            return all;
+        }
+
+        Subscription subOf(Plan plan) {
+            return subs.stream().filter(s -> s.getPlan() == plan).findFirst().orElse(null);
+        }
+    }
 
     /**
      * Áp vai trò và lệnh cấm: gói mua/được cấp đang bị cấm thì bỏ qua; ADMIN dùng Pro theo vai trò nếu Pro không bị cấm và
-     * chưa có gói cao hơn; còn lại là gói đã mua hoặc Free.
+     * chưa có gói cá nhân cao hơn (Pro thay gói cá nhân thấp hơn, gói team vẫn giữ); gói chính là gói cao nhất còn lại.
      */
     private static Effective effective(
-            String grant, Subscription sub, java.util.Set<String> bannedPlanIds, java.util.function.Supplier<Plan> pro) {
-        Subscription usable = sub != null && !bannedPlanIds.contains(sub.getPlan().getId()) ? sub : null;
+            String grant,
+            List<Subscription> held,
+            java.util.Set<String> bannedPlanIds,
+            java.util.function.Supplier<Plan> pro) {
+        List<Subscription> usable = new java.util.ArrayList<>(onePerAudience(held).stream()
+                .filter(s -> !bannedPlanIds.contains(s.getPlan().getId()))
+                .toList());
+        Plan rolePro = null;
         if (ROLE_ADMIN.equals(grant)) {
             Plan p = pro.get();
+            Subscription personal = usable.stream()
+                    .filter(s -> Plan.PERSONAL.equals(audienceOf(s.getPlan())))
+                    .findFirst()
+                    .orElse(null);
             if (p != null
                     && !bannedPlanIds.contains(p.getId())
-                    && (usable == null || usable.getPlan().getSortOrder() < p.getSortOrder())) {
-                return new Effective(p, null, true);
+                    && (personal == null || personal.getPlan().getSortOrder() < p.getSortOrder())) {
+                rolePro = p;
+                usable.remove(personal);
             }
         }
-        return usable != null ? new Effective(usable.getPlan(), usable, false) : new Effective(null, null, false);
+        Plan primary = null;
+        for (Plan p : new Effective(usable, rolePro, null).plans()) {
+            if (primary == null || p.getSortOrder() > primary.getSortOrder()) {
+                primary = p;
+            }
+        }
+        return new Effective(usable, rolePro, primary);
     }
 
     private Plan proPlan() {
@@ -207,11 +304,12 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             return result;
         }
         LocalDateTime now = LocalDateTime.now();
-        // Gói còn hạn mới nhất và lệnh cấm của mỗi người (hai truy vấn cho cả trang)
-        java.util.Map<String, Subscription> paid = new java.util.HashMap<>();
-        for (Subscription s : subscriptionRepository.findCurrentOfMembers(rolesByMember.keySet(), now)) {
-            paid.merge(s.getMember().getId(), s, (a, b) -> a.getExpiresAt().isAfter(b.getExpiresAt()) ? a : b);
-        }
+        // Gói còn hạn (hạn muộn trước, để mỗi nhóm giữ gói hạn muộn nhất) và lệnh cấm của mỗi người: hai truy vấn cho cả trang
+        java.util.Map<String, List<Subscription>> paid = new java.util.HashMap<>();
+        subscriptionRepository.findCurrentOfMembers(rolesByMember.keySet(), now).stream()
+                .sorted(java.util.Comparator.comparing(Subscription::getExpiresAt).reversed())
+                .forEach(s -> paid.computeIfAbsent(s.getMember().getId(), k -> new java.util.ArrayList<>())
+                        .add(s));
         java.util.Map<String, List<PlanSanction>> bans = new java.util.HashMap<>();
         for (PlanSanction s : sanctionRepository.findActiveBansOfMembers(rolesByMember.keySet(), now)) {
             bans.computeIfAbsent(s.getMember().getId(), k -> new java.util.ArrayList<>()).add(s);
@@ -234,18 +332,21 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             }
             List<PlanSanction> memberBans = bans.getOrDefault(entry.getKey(), List.of());
             String grant = roles.contains(ROLE_ADMIN) ? ROLE_ADMIN : null;
-            Effective e = effective(grant, paid.get(entry.getKey()), bannedPlanIds(memberBans), proOnce);
+            Effective e = effective(
+                    grant, paid.getOrDefault(entry.getKey(), List.of()), bannedPlanIds(memberBans), proOnce);
             List<PlanBanInfo> infos = banInfos(memberBans);
             MemberPlanSummary summary;
-            if (e.rolePro()) {
-                summary = new MemberPlanSummary(e.plan().getCode(), e.plan().getName(), "ACTIVE", "ROLE", null, infos);
-            } else if (e.sub() != null) {
+            Subscription primarySub = e.primary() == null ? null : e.subOf(e.primary());
+            if (e.primary() != null && e.primary() == e.rolePro()) {
                 summary = new MemberPlanSummary(
-                        e.plan().getCode(),
-                        e.plan().getName(),
+                        e.primary().getCode(), e.primary().getName(), "ACTIVE", "ROLE", null, infos);
+            } else if (primarySub != null) {
+                summary = new MemberPlanSummary(
+                        e.primary().getCode(),
+                        e.primary().getName(),
                         "ACTIVE",
-                        e.sub().getSource().name(),
-                        e.sub().getExpiresAt(),
+                        primarySub.getSource().name(),
+                        primarySub.getExpiresAt(),
                         infos);
             } else {
                 if (free == null) {
@@ -346,9 +447,8 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             // Chỉ cấm gói người này đã đăng ký: gói được chọn (phải nằm trong các gói họ đang có), hoặc gói đang dùng
             Plan plan;
             if (chosen != null) {
-                Subscription current = subscriptionRepository.findCurrentOne(memberId, now).orElse(null);
                 String code = chosen.getCode();
-                boolean holds = heldPlans(roleGrant(memberId), current).stream()
+                boolean holds = heldPlans(roleGrant(memberId), heldSubscriptions(memberId, now)).stream()
                         .anyMatch(h -> h.getCode().equals(code));
                 plan = holds ? chosen : null;
             } else {
@@ -490,17 +590,24 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     @Transactional
     public void activate(Member member, Plan plan, Period duration, SubscriptionSource source) {
         LocalDateTime now = LocalDateTime.now();
-        Subscription current =
-                subscriptionRepository.findCurrentOne(member.getId(), now).orElse(null);
-        if (current != null && current.getPlan().getId().equals(plan.getId())) {
-            current.setExpiresAt(current.getExpiresAt().plus(duration));
-            subscriptionRepository.save(current);
+        List<Subscription> current = subscriptionRepository.findCurrent(member.getId(), now);
+        Subscription same = current.stream()
+                .filter(s -> s.getPlan().getId().equals(plan.getId()))
+                .findFirst()
+                .orElse(null);
+        if (same != null) {
+            same.setExpiresAt(same.getExpiresAt().plus(duration));
+            subscriptionRepository.save(same);
             return;
         }
-        if (current != null) {
-            current.setStatus(SubscriptionStatus.CANCELED);
-            current.setExpiresAt(now);
-            subscriptionRepository.save(current);
+        // Đổi gói trong cùng nhóm thì gói cũ của nhóm đó dừng ngay; gói của nhóm kia (cá nhân / team) giữ nguyên
+        String audience = audienceOf(plan);
+        for (Subscription s : current) {
+            if (audienceOf(s.getPlan()).equals(audience)) {
+                s.setStatus(SubscriptionStatus.CANCELED);
+                s.setExpiresAt(now);
+                subscriptionRepository.save(s);
+            }
         }
         subscriptionRepository.save(Subscription.builder()
                 .member(member)
@@ -516,8 +623,8 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     @Transactional
     public void revoke(String memberId, Plan plan, Period duration) {
         LocalDateTime now = LocalDateTime.now();
-        Subscription current = subscriptionRepository.findCurrentOne(memberId, now).orElse(null);
-        if (current == null || !current.getPlan().getId().equals(plan.getId())) {
+        Subscription current = currentOf(memberId, plan, now);
+        if (current == null) {
             return;
         }
         LocalDateTime reduced = current.getExpiresAt().minus(duration);
@@ -540,7 +647,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         Member member =
                 memberRepository.findById(memberId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
         Plan plan = planRepository.findByCode(planCode).orElseThrow(() -> new AppException(ErrorCode.PLAN_NOT_EXISTED));
-        // Gói team cấp như gói cá nhân (mục 4.1): người nhận tạo được team; giống khi tự mua, gói này thay gói đang dùng
+        // Giống khi tự mua: gói chỉ thay gói cùng nhóm (cá nhân / team), gói của nhóm kia giữ nguyên
         // SUPER_ADMIN đã không giới hạn, cấp gói cũng không đổi gì
         if (ROLE_SUPER_ADMIN.equals(roleGrant(memberId))) {
             throw new AppException(ErrorCode.PAYMENT_NOT_NEEDED);
@@ -549,14 +656,27 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             throw new AppException(ErrorCode.PLAN_BANNED);
         }
         if (FREE.equals(plan.getCode())) {
-            // Cấp Free = bỏ gói đang có
-            cancel(memberId);
+            // Cấp Free = bỏ gói cá nhân đang có (gói team giữ nguyên; muốn bỏ hết thì dùng Hủy gói)
+            LocalDateTime now = LocalDateTime.now();
+            for (Subscription s : subscriptionRepository.findCurrent(memberId, now)) {
+                if (Plan.PERSONAL.equals(audienceOf(s.getPlan()))) {
+                    s.setStatus(SubscriptionStatus.CANCELED);
+                    s.setExpiresAt(now);
+                    subscriptionRepository.save(s);
+                }
+            }
             return toMine(null, plan, 0);
         }
         activate(member, plan, Period.ofMonths(months), SubscriptionSource.ADMIN_GRANT);
-        Subscription current =
-                subscriptionRepository.findCurrentOne(memberId, LocalDateTime.now()).orElseThrow();
-        return toMine(current, plan, 0);
+        return toMine(currentOf(memberId, plan, LocalDateTime.now()), plan, 0);
+    }
+
+    /** Gói {@code plan} còn hạn của thành viên; null nếu họ không có gói đó. */
+    private Subscription currentOf(String memberId, Plan plan, LocalDateTime now) {
+        return subscriptionRepository.findCurrent(memberId, now).stream()
+                .filter(s -> s.getPlan().getId().equals(plan.getId()))
+                .findFirst()
+                .orElse(null);
     }
 
     @Override
@@ -596,18 +716,18 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             return new BulkGrantResult(memberId, "SKIPPED", ErrorCode.PLAN_BANNED.name(), null);
         }
         LocalDateTime now = LocalDateTime.now();
-        Subscription current = subscriptionRepository.findCurrentOne(memberId, now).orElse(null);
-        if (ROLE_ADMIN.equals(grant) && PRO.equals(plan.getCode()) && current == null) {
+        List<Subscription> current = subscriptionRepository.findCurrent(memberId, now);
+        boolean hasPersonal =
+                current.stream().anyMatch(s -> Plan.PERSONAL.equals(audienceOf(s.getPlan())));
+        if (ROLE_ADMIN.equals(grant) && PRO.equals(plan.getCode()) && !hasPersonal) {
             // ADMIN đang có Pro không thời hạn: cấp Pro không thêm gì
             return new BulkGrantResult(memberId, "SKIPPED", ErrorCode.PAYMENT_NOT_NEEDED.name(), null);
         }
-        boolean renew = current != null && current.getPlan().getId().equals(plan.getId());
+        boolean renew = current.stream().anyMatch(s -> s.getPlan().getId().equals(plan.getId()));
         activate(member, plan, duration, SubscriptionSource.ADMIN_GRANT);
-        LocalDateTime expiresAt = subscriptionRepository
-                .findCurrentOne(memberId, now)
-                .map(Subscription::getExpiresAt)
-                .orElse(null);
-        return new BulkGrantResult(memberId, renew ? "RENEWED" : "GRANTED", null, expiresAt);
+        Subscription after = currentOf(memberId, plan, now);
+        return new BulkGrantResult(
+                memberId, renew ? "RENEWED" : "GRANTED", null, after == null ? null : after.getExpiresAt());
     }
 
     @Override

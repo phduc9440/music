@@ -47,7 +47,8 @@ export default function Teams() {
     load();
     billingApi
       .mine()
-      .then((res) => setCanCreate(!!res.data.result.plan.limits.team))
+      // Hạn mức gộp: người có gói cá nhân và gói team vẫn tạo được team
+      .then((res) => setCanCreate(!!(res.data.result.limits ?? res.data.result.plan.limits).team))
       .catch(() => setCanCreate(false));
   }, [load]);
 
