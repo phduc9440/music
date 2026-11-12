@@ -105,6 +105,7 @@ export default function Pricing() {
           AUDIENCES.map((audience) => {
             const group = plans.filter((p) => p.audience === audience);
             if (group.length === 0) return null;
+            const heldPlan = heldInGroup(audience);
             return (
               <section key={audience} className="bl-group" aria-labelledby={`bl-group-${audience}`}>
                 <h2 id={`bl-group-${audience}`} className="bl-group__title">
@@ -129,32 +130,42 @@ export default function Pricing() {
                           {price > 0 && <small>/ {t(`billing.periodUnit.${period}`)}</small>}
                         </div>
                         <LimitList limits={plan.limits} />
-                        {price > 0 && (
-                          <button
-                            type="button"
-                            className="sc-btn sc-btn--primary"
-                            disabled={buying !== null || blocked !== null}
-                            aria-disabled={blocked !== null}
-                            title={
-                              blocked ??
-                              (replaces ? t('billing.pricing.switchHint', { plan: replaces.plan.name }) : undefined)
-                            }
-                            onClick={() => buy(plan)}
-                          >
-                            {blocked
-                              ? blocked
-                              : buying === plan.code
-                                ? t('billing.pricing.redirecting')
-                                : current
-                                  ? t('billing.pricing.renew')
-                                  : replaces
-                                    ? t('billing.pricing.switch')
-                                    : t('billing.pricing.buy')}
-                          </button>
-                        )}
-                        {replaces && !blocked && (
-                          <p className="bl-note">{t('billing.pricing.switchHint', { plan: replaces.plan.name })}</p>
-                        )}
+                        {/* Nút và ghi chú luôn nằm sát đáy thẻ để các thẻ trong cùng hàng thẳng nhau */}
+                        <div className="bl-card__foot">
+                          {price > 0 && (
+                            <button
+                              type="button"
+                              className="sc-btn sc-btn--primary"
+                              disabled={buying !== null || blocked !== null}
+                              aria-disabled={blocked !== null}
+                              title={
+                                blocked ??
+                                (replaces ? t('billing.pricing.switchHint', { plan: replaces.plan.name }) : undefined)
+                              }
+                              onClick={() => buy(plan)}
+                            >
+                              {blocked
+                                ? blocked
+                                : buying === plan.code
+                                  ? t('billing.pricing.redirecting')
+                                  : current
+                                    ? t('billing.pricing.renew')
+                                    : replaces
+                                      ? t('billing.pricing.switch')
+                                      : t('billing.pricing.buy')}
+                            </button>
+                          )}
+                          {replaces && !blocked ? (
+                            <p className="bl-note">{t('billing.pricing.switchHint', { plan: replaces.plan.name })}</p>
+                          ) : (
+                            // Thẻ không có ghi chú giữ chỗ bằng đúng ghi chú đó (ẩn) để nút ngang hàng các thẻ khác
+                            heldPlan && (
+                              <p className="bl-note bl-note--placeholder" aria-hidden="true">
+                                {t('billing.pricing.switchHint', { plan: heldPlan.plan.name })}
+                              </p>
+                            )
+                          )}
+                        </div>
                       </section>
                     );
                   })}

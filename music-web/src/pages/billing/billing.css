@@ -198,6 +198,18 @@
   border-radius: var(--ui-radius);
   background: var(--ui-primary-soft);
 }
+.bl-card__foot {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: auto;
+}
+.bl-card__foot .bl-note {
+  margin: 0;
+}
+.bl-note--placeholder {
+  visibility: hidden;
+}
 .bl-card .sc-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
