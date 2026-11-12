@@ -1,13 +1,10 @@
 import { useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import { scoreApi } from '../../../services';
-import { getErrorMessage } from '../../../utils/score';
+import { COVER_MAX_BYTES, COVER_TYPES, getErrorMessage } from '../../../utils/score';
 import type { ScoreDetail } from '../../../types';
 import { Icon } from '../../ui';
 import { t } from '../../../i18n/core';
-
-const MAX_BYTES = 3 * 1024 * 1024; // khớp BE (lỗi 2025)
-const TYPES = ['image/jpeg', 'image/png'];
 
 /**
  * Ô ảnh bìa ở đầu trang chi tiết. Người có quyền sửa tải ảnh lên (lưu trên Cloudinary như ảnh đại diện) hoặc gỡ;
@@ -29,7 +26,7 @@ export default function ScoreCover({
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    if (!TYPES.includes(file.type) || file.size > MAX_BYTES) {
+    if (!COVER_TYPES.includes(file.type) || file.size > COVER_MAX_BYTES) {
       toast.error(t('errors.2025'));
       return;
     }

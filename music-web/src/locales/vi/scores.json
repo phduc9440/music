@@ -400,6 +400,9 @@
     "updated": "Đã cập nhật ảnh bìa",
     "removed": "Đã gỡ ảnh bìa",
     "failed": "Không tải được ảnh bìa, vui lòng thử lại",
-    "removeFailed": "Không gỡ được ảnh bìa"
+    "removeFailed": "Không gỡ được ảnh bìa",
+    "label": "Ảnh bìa",
+    "hint": "JPG hoặc PNG, tối đa 3MB. Không có ảnh bìa thì dùng ảnh trang 1.",
+    "pending": "Thay đổi ảnh bìa sẽ được lưu khi bấm Lưu thay đổi."
   }
 }

@@ -411,6 +411,9 @@
     "updated": "Cover updated",
     "removed": "Cover removed",
     "failed": "Couldn't upload the cover, please try again",
-    "removeFailed": "Couldn't remove the cover"
+    "removeFailed": "Couldn't remove the cover",
+    "label": "Cover",
+    "hint": "JPG or PNG, up to 3MB. Without a cover the first page image is used.",
+    "pending": "Cover changes are saved when you press Save changes."
   }
 }

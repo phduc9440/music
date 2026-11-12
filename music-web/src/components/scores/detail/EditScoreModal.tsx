@@ -1,9 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { toast } from 'react-toastify';
 import { scoreApi, tagApi } from '../../../services';
-import { MAX_COMPOSER, MAX_NOTES, MAX_TITLE, getErrorMessage } from '../../../utils/score';
+import {
+  COVER_MAX_BYTES,
+  COVER_TYPES,
+  MAX_COMPOSER,
+  MAX_NOTES,
+  MAX_TITLE,
+  getErrorMessage,
+} from '../../../utils/score';
 import Modal from '../common/Modal';
+import { Icon } from '../../ui';
 import ComposerDatalist from '../../composers/ComposerDatalist';
 import type { Difficulty, ScoreDetail, Tag, Visibility } from '../../../types';
 import { t } from '../../../i18n/core';
@@ -30,6 +38,34 @@ export default function EditScoreModal({ score, onClose, onSaved }: Props) {
   const [tagIds, setTagIds] = useState<string[]>(initialTagIds);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  // Ảnh bìa: chọn hoặc gỡ chỉ có hiệu lực khi bấm Lưu (như các trường khác); previewUrl là ảnh vừa chọn, chưa tải lên
+  const coverInput = useRef<HTMLInputElement>(null);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverRemoved, setCoverRemoved] = useState(false);
+  const previewUrl = useMemo(() => (coverFile ? URL.createObjectURL(coverFile) : null), [coverFile]);
+  const shownCover = coverRemoved ? null : (previewUrl ?? score.coverUrl ?? null);
+
+  useEffect(() => {
+    // Giải phóng địa chỉ xem trước khi đổi ảnh hoặc đóng hộp thoại
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
+  const pickCover = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (!COVER_TYPES.includes(file.type) || file.size > COVER_MAX_BYTES) return setError(t('errors.2025'));
+    setError('');
+    setCoverRemoved(false);
+    setCoverFile(file);
+  };
+
+  const removeCover = () => {
+    setCoverFile(null);
+    setCoverRemoved(true);
+  };
 
   useEffect(() => {
     tagApi
@@ -67,6 +103,8 @@ export default function EditScoreModal({ score, onClose, onSaved }: Props) {
       // Chỉ gọi API thể loại khi người dùng có đổi lựa chọn
       const tagsChanged = tagIds.length !== initialTagIds.length || tagIds.some((id) => !initialTagIds.includes(id));
       if (tagsChanged) saved = (await scoreApi.updateTags(score.id, tagIds)).data.result;
+      if (coverFile) saved = (await scoreApi.uploadCover(score.id, coverFile)).data.result;
+      else if (coverRemoved && score.coverUrl) saved = (await scoreApi.removeCover(score.id)).data.result;
       toast.success(t('scores.edit.saved'));
       onSaved(saved);
     } catch (err) {
@@ -79,6 +117,34 @@ export default function EditScoreModal({ score, onClose, onSaved }: Props) {
   return (
     <Modal title={t('scores.edit.title')} onClose={onClose}>
       <form onSubmit={handleSubmit}>
+        <span className="sc-label">{t('scores.cover.label')}</span>
+        <div className="sc-coveredit">
+          <span className="sc-coveredit__thumb">
+            {shownCover ? (
+              <img src={shownCover} alt={t('scores.cover.alt', { title: score.title })} />
+            ) : (
+              <Icon name="music" size={26} />
+            )}
+          </span>
+          <div className="sc-coveredit__body">
+            <div className="sc-coveredit__btns">
+              <button type="button" className="sc-btn sc-btn--sm" onClick={() => coverInput.current?.click()}>
+                <Icon name="upload" size={14} />
+                {shownCover ? t('scores.cover.change') : t('scores.cover.add')}
+              </button>
+              {shownCover && (
+                <button type="button" className="sc-btn sc-btn--sm sc-btn--danger" onClick={removeCover}>
+                  {t('scores.cover.remove')}
+                </button>
+              )}
+            </div>
+            <p className="sc-upload__hint">
+              {coverFile || coverRemoved ? t('scores.cover.pending') : t('scores.cover.hint')}
+            </p>
+          </div>
+          <input ref={coverInput} type="file" accept="image/jpeg,image/png" hidden onChange={pickCover} />
+        </div>
+
         <label className="sc-label" htmlFor="sc-title">
           {t('scores.edit.scoreTitle')}
         </label>
