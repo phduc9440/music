@@ -10,13 +10,13 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.ptit.music_be.dto.request.TagRequest;
-import com.ptit.music_be.dto.response.AdminTagResponse;
+import com.ptit.music_be.dto.request.admin.TagRequest;
+import com.ptit.music_be.dto.response.admin.AdminTagResponse;
 import com.ptit.music_be.entity.Tag;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
-import com.ptit.music_be.repository.ScoreTagRepository;
-import com.ptit.music_be.repository.TagRepository;
+import com.ptit.music_be.repository.library.TagRepository;
+import com.ptit.music_be.repository.score.ScoreTagRepository;
 import com.ptit.music_be.service.admin.AdminTagService;
 
 import lombok.AccessLevel;

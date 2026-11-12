@@ -21,22 +21,22 @@ import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.ptit.music_be.dto.enums.CommentStatus;
-import com.ptit.music_be.dto.enums.NotificationType;
-import com.ptit.music_be.dto.enums.SharePermission;
-import com.ptit.music_be.dto.request.ScoreCommentReplyRequest;
-import com.ptit.music_be.dto.request.ScoreCommentRequest;
-import com.ptit.music_be.dto.request.ScoreCommentUpdateRequest;
-import com.ptit.music_be.dto.response.ScoreCommentResponse;
-import com.ptit.music_be.dto.response.ScoreCommentsResponse;
+import com.ptit.music_be.dto.enums.notification.NotificationType;
+import com.ptit.music_be.dto.enums.score.CommentStatus;
+import com.ptit.music_be.dto.enums.score.SharePermission;
+import com.ptit.music_be.dto.request.score.ScoreCommentReplyRequest;
+import com.ptit.music_be.dto.request.score.ScoreCommentRequest;
+import com.ptit.music_be.dto.request.score.ScoreCommentUpdateRequest;
+import com.ptit.music_be.dto.response.score.ScoreCommentResponse;
+import com.ptit.music_be.dto.response.score.ScoreCommentsResponse;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.MemberScore;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
-import com.ptit.music_be.repository.MemberRepository;
-import com.ptit.music_be.repository.MemberScoreRepository;
-import com.ptit.music_be.repository.ScoreRepository;
+import com.ptit.music_be.repository.auth.MemberRepository;
+import com.ptit.music_be.repository.score.MemberScoreRepository;
+import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.service.score.ScoreCommentService;
 
 /**

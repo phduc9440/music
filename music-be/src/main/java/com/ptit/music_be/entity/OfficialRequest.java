@@ -18,7 +18,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
-import com.ptit.music_be.dto.enums.OfficialRequestStatus;
+import com.ptit.music_be.dto.enums.score.OfficialRequestStatus;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;

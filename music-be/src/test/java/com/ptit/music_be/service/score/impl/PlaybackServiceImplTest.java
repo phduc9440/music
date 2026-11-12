@@ -20,13 +20,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import com.ptit.music_be.dto.response.ViewCountResponse;
+import com.ptit.music_be.dto.response.score.ViewCountResponse;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
-import com.ptit.music_be.repository.ScoreCounterRepository;
-import com.ptit.music_be.repository.ScoreRepository;
+import com.ptit.music_be.repository.score.ScoreCounterRepository;
+import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.service.score.ScoreFileService;
 
 @ExtendWith(MockitoExtension.class)

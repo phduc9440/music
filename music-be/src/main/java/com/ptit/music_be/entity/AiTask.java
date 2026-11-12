@@ -10,8 +10,8 @@ import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import com.ptit.music_be.dto.enums.AiTaskStatus;
-import com.ptit.music_be.dto.enums.AiTaskType;
+import com.ptit.music_be.dto.enums.ai.AiTaskStatus;
+import com.ptit.music_be.dto.enums.ai.AiTaskType;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;

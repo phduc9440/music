@@ -12,7 +12,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-import com.ptit.music_be.dto.response.NotificationResponse;
+import com.ptit.music_be.dto.response.notification.NotificationResponse;
 
 /** Thông báo realtime chỉ được gửi sau khi giao dịch ghi thông báo đã commit. */
 class NotificationPusherTest {

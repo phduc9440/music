@@ -2,8 +2,8 @@ package com.ptit.music_be.service.score;
 
 import java.util.List;
 
-import com.ptit.music_be.dto.response.PageResponse;
-import com.ptit.music_be.dto.response.TrashedScoreResponse;
+import com.ptit.music_be.dto.response.common.PageResponse;
+import com.ptit.music_be.dto.response.score.TrashedScoreResponse;
 
 /** Thùng rác của bản nhạc: xem, khôi phục, xóa hẳn. Việc chuyển vào thùng rác nằm ở {@code ScoreService#deleteScore}. */
 public interface ScoreTrashService {

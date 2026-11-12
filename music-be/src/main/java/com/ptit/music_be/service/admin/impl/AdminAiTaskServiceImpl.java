@@ -13,15 +13,15 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.ptit.music_be.dto.enums.AiTaskStatus;
-import com.ptit.music_be.dto.enums.AiTaskType;
-import com.ptit.music_be.dto.response.AdminAiTaskResponse;
-import com.ptit.music_be.dto.response.AiTaskResponse;
-import com.ptit.music_be.dto.response.PageResponse;
+import com.ptit.music_be.dto.enums.ai.AiTaskStatus;
+import com.ptit.music_be.dto.enums.ai.AiTaskType;
+import com.ptit.music_be.dto.response.admin.AdminAiTaskResponse;
+import com.ptit.music_be.dto.response.ai.AiTaskResponse;
+import com.ptit.music_be.dto.response.common.PageResponse;
 import com.ptit.music_be.entity.AiTask;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
-import com.ptit.music_be.repository.AiTaskRepository;
+import com.ptit.music_be.repository.ai.AiTaskRepository;
 import com.ptit.music_be.service.admin.AdminAiTaskService;
 import com.ptit.music_be.service.ai.OmrService;
 

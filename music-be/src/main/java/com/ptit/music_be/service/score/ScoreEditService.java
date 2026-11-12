@@ -2,9 +2,9 @@ package com.ptit.music_be.service.score;
 
 import java.util.List;
 
-import com.ptit.music_be.dto.response.ScoreContent;
-import com.ptit.music_be.dto.response.ScoreSaveResponse;
-import com.ptit.music_be.dto.response.ScoreVersionResponse;
+import com.ptit.music_be.dto.response.score.ScoreContent;
+import com.ptit.music_be.dto.response.score.ScoreSaveResponse;
+import com.ptit.music_be.dto.response.score.ScoreVersionResponse;
 
 /** Lưu chỉnh sửa của Editor: ghi MusicXML phiên bản mới cho bản nhạc (đặc tả mục 3.6). */
 public interface ScoreEditService {

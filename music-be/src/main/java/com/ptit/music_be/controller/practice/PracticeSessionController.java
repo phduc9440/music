@@ -2,10 +2,10 @@ package com.ptit.music_be.controller.practice;
 
 import org.springframework.web.bind.annotation.*;
 
-import com.ptit.music_be.dto.request.PracticeSessionRequest;
-import com.ptit.music_be.dto.response.ApiResponse;
-import com.ptit.music_be.dto.response.PageResponse;
-import com.ptit.music_be.dto.response.PracticeSessionResponse;
+import com.ptit.music_be.dto.request.practice.PracticeSessionRequest;
+import com.ptit.music_be.dto.response.common.ApiResponse;
+import com.ptit.music_be.dto.response.common.PageResponse;
+import com.ptit.music_be.dto.response.practice.PracticeSessionResponse;
 import com.ptit.music_be.service.practice.PracticeSessionService;
 
 import io.swagger.v3.oas.annotations.Operation;

@@ -25,24 +25,24 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ptit.music_be.dto.enums.BillingPeriod;
-import com.ptit.music_be.dto.enums.PaymentProviderType;
-import com.ptit.music_be.dto.enums.PaymentStatus;
-import com.ptit.music_be.dto.enums.SubscriptionSource;
-import com.ptit.music_be.dto.request.CreatePaymentOrderRequest;
+import com.ptit.music_be.dto.enums.billing.BillingPeriod;
+import com.ptit.music_be.dto.enums.billing.PaymentProviderType;
+import com.ptit.music_be.dto.enums.billing.PaymentStatus;
+import com.ptit.music_be.dto.enums.billing.SubscriptionSource;
+import com.ptit.music_be.dto.enums.notification.NotificationType;
+import com.ptit.music_be.dto.request.billing.CreatePaymentOrderRequest;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.PaymentOrder;
 import com.ptit.music_be.entity.Plan;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
-import com.ptit.music_be.repository.MemberRepository;
-import com.ptit.music_be.repository.PaymentOrderRepository;
-import com.ptit.music_be.repository.PlanRepository;
+import com.ptit.music_be.repository.auth.MemberRepository;
+import com.ptit.music_be.repository.billing.PaymentOrderRepository;
+import com.ptit.music_be.repository.billing.PlanRepository;
 import com.ptit.music_be.service.billing.SubscriptionService;
-import com.ptit.music_be.dto.enums.NotificationType;
 import com.ptit.music_be.service.notification.NotificationService;
-import com.ptit.music_be.service.payment.PaymentProvider;
 import com.ptit.music_be.service.payment.PaymentProvider.PaymentCallback;
+import com.ptit.music_be.service.payment.PaymentProvider;
 import com.ptit.music_be.service.payment.PaymentService.IpnResult;
 
 class PaymentServiceImplTest {

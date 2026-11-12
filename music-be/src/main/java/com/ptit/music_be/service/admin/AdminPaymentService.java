@@ -2,11 +2,11 @@ package com.ptit.music_be.service.admin;
 
 import java.time.LocalDate;
 
-import com.ptit.music_be.dto.enums.PaymentKind;
-import com.ptit.music_be.dto.enums.PaymentStatus;
-import com.ptit.music_be.dto.response.PageResponse;
-import com.ptit.music_be.dto.response.PaymentOrderResponse;
-import com.ptit.music_be.dto.response.RevenueResponse;
+import com.ptit.music_be.dto.enums.billing.PaymentKind;
+import com.ptit.music_be.dto.enums.billing.PaymentStatus;
+import com.ptit.music_be.dto.response.admin.RevenueResponse;
+import com.ptit.music_be.dto.response.billing.PaymentOrderResponse;
+import com.ptit.music_be.dto.response.common.PageResponse;
 
 public interface AdminPaymentService {
 

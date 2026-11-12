@@ -7,13 +7,13 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.ptit.music_be.dto.response.ReferralResponse;
+import com.ptit.music_be.dto.response.referral.ReferralResponse;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.event.RewardEarnedEvent;
 import com.ptit.music_be.event.RewardReason;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
-import com.ptit.music_be.repository.MemberRepository;
+import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.service.referral.ReferralService;
 import com.ptit.music_be.utils.SecurityUtils;
 

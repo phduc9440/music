@@ -10,9 +10,9 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import com.ptit.music_be.dto.enums.FileType;
-import com.ptit.music_be.dto.response.ApiResponse;
-import com.ptit.music_be.dto.response.ScoreFileResponse;
+import com.ptit.music_be.dto.enums.score.FileType;
+import com.ptit.music_be.dto.response.common.ApiResponse;
+import com.ptit.music_be.dto.response.score.ScoreFileResponse;
 import com.ptit.music_be.service.score.ScoreFileService;
 
 import io.swagger.v3.oas.annotations.Operation;

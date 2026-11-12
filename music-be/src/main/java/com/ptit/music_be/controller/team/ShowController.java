@@ -2,13 +2,13 @@ package com.ptit.music_be.controller.team;
 
 import org.springframework.web.bind.annotation.*;
 
-import com.ptit.music_be.dto.request.ShowItemOrderRequest;
-import com.ptit.music_be.dto.request.ShowItemRequest;
-import com.ptit.music_be.dto.request.ShowItemStatusRequest;
-import com.ptit.music_be.dto.request.ShowRequest;
-import com.ptit.music_be.dto.response.ApiResponse;
-import com.ptit.music_be.dto.response.ShowDetailResponse;
-import com.ptit.music_be.dto.response.ShowResponse;
+import com.ptit.music_be.dto.request.team.ShowItemOrderRequest;
+import com.ptit.music_be.dto.request.team.ShowItemRequest;
+import com.ptit.music_be.dto.request.team.ShowItemStatusRequest;
+import com.ptit.music_be.dto.request.team.ShowRequest;
+import com.ptit.music_be.dto.response.common.ApiResponse;
+import com.ptit.music_be.dto.response.team.ShowDetailResponse;
+import com.ptit.music_be.dto.response.team.ShowResponse;
 import com.ptit.music_be.service.team.ShowService;
 
 import io.swagger.v3.oas.annotations.Operation;

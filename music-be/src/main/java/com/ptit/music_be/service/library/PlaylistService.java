@@ -2,10 +2,10 @@ package com.ptit.music_be.service.library;
 
 import java.util.List;
 
-import com.ptit.music_be.dto.request.PlaylistOrderRequest;
-import com.ptit.music_be.dto.request.PlaylistRequest;
-import com.ptit.music_be.dto.response.PlaylistItemResponse;
-import com.ptit.music_be.dto.response.PlaylistResponse;
+import com.ptit.music_be.dto.request.library.PlaylistOrderRequest;
+import com.ptit.music_be.dto.request.library.PlaylistRequest;
+import com.ptit.music_be.dto.response.library.PlaylistItemResponse;
+import com.ptit.music_be.dto.response.library.PlaylistResponse;
 
 public interface PlaylistService {
 

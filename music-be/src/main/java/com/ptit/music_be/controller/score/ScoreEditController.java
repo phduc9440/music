@@ -18,11 +18,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.ptit.music_be.dto.response.ApiResponse;
-import com.ptit.music_be.dto.response.ScoreContent;
-import com.ptit.music_be.dto.response.ScoreDiffResponse;
-import com.ptit.music_be.dto.response.ScoreSaveResponse;
-import com.ptit.music_be.dto.response.ScoreVersionResponse;
+import com.ptit.music_be.dto.response.common.ApiResponse;
+import com.ptit.music_be.dto.response.score.ScoreContent;
+import com.ptit.music_be.dto.response.score.ScoreDiffResponse;
+import com.ptit.music_be.dto.response.score.ScoreSaveResponse;
+import com.ptit.music_be.dto.response.score.ScoreVersionResponse;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.service.score.ScoreDiffService;

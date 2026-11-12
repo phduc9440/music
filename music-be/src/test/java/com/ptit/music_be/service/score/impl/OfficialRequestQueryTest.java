@@ -20,13 +20,13 @@ import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.ptit.music_be.dto.enums.OfficialRequestStatus;
+import com.ptit.music_be.dto.enums.score.OfficialRequestStatus;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.OfficialRequest;
 import com.ptit.music_be.entity.Score;
-import com.ptit.music_be.repository.MemberRepository;
-import com.ptit.music_be.repository.OfficialRequestRepository;
-import com.ptit.music_be.repository.ScoreRepository;
+import com.ptit.music_be.repository.auth.MemberRepository;
+import com.ptit.music_be.repository.score.OfficialRequestRepository;
+import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.service.score.ScoreService;
 
 /**

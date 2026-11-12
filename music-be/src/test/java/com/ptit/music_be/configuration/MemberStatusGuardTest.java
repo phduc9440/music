@@ -14,8 +14,8 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 
-import com.ptit.music_be.dto.enums.MemberStatus;
-import com.ptit.music_be.repository.MemberRepository;
+import com.ptit.music_be.dto.enums.auth.MemberStatus;
+import com.ptit.music_be.repository.auth.MemberRepository;
 
 class MemberStatusGuardTest {
 

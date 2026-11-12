@@ -1,6 +1,6 @@
 package com.ptit.music_be.service.score;
 
-import com.ptit.music_be.dto.response.ScoreContent;
+import com.ptit.music_be.dto.response.score.ScoreContent;
 
 /** Đọc nội dung các file kết quả của bản nhạc: kern, MusicXML và MIDI (đặc tả mục 2.4 và 7.1). */
 public interface ScoreContentService {

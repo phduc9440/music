@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.springframework.web.multipart.MultipartFile;
 
-import com.ptit.music_be.dto.response.ScoreImportResponse;
+import com.ptit.music_be.dto.response.score.ScoreImportResponse;
 
 public interface ScoreImportService {
 

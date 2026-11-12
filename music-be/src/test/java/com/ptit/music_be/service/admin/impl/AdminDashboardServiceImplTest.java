@@ -11,7 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import com.ptit.music_be.dto.response.AdminDashboardResponse;
+import com.ptit.music_be.dto.response.admin.AdminDashboardResponse;
 import com.ptit.music_be.service.admin.AdminDashboardService;
 
 /** Chạy các câu JPQL của dashboard với DB thật (giống MusicBeApplicationTests, cần MySQL đang chạy). */

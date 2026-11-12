@@ -6,10 +6,10 @@ import java.util.List;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
-import com.ptit.music_be.dto.enums.ScoreBulkAction;
-import com.ptit.music_be.dto.enums.Visibility;
-import com.ptit.music_be.dto.request.AdminScoreBulkRequest;
-import com.ptit.music_be.dto.response.AdminScoreBulkResponse;
+import com.ptit.music_be.dto.enums.admin.ScoreBulkAction;
+import com.ptit.music_be.dto.enums.score.Visibility;
+import com.ptit.music_be.dto.request.admin.AdminScoreBulkRequest;
+import com.ptit.music_be.dto.response.admin.AdminScoreBulkResponse;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.service.admin.AdminScoreBulkService;

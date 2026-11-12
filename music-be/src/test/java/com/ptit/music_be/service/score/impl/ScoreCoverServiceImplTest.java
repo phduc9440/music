@@ -30,11 +30,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.Uploader;
-import com.ptit.music_be.dto.response.ScoreDetailResponse;
+import com.ptit.music_be.dto.response.score.ScoreDetailResponse;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
-import com.ptit.music_be.repository.MemberRepository;
-import com.ptit.music_be.repository.ScoreRepository;
+import com.ptit.music_be.repository.auth.MemberRepository;
+import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.service.score.ScoreCoverService;
 
 /** Ảnh bìa bản nhạc với DB thật (dữ liệu mẫu: user@music.com là chủ "Ode to Joy"); Cloudinary được giả lập. Mỗi test rollback. */

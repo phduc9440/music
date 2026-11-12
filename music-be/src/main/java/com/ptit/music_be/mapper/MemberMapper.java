@@ -7,7 +7,7 @@ import java.util.stream.Collectors;
 
 import org.mapstruct.*;
 
-import com.ptit.music_be.dto.response.MemberResponse;
+import com.ptit.music_be.dto.response.auth.MemberResponse;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.MemberRole;
 

@@ -1,6 +1,6 @@
 package com.ptit.music_be.exception;
 
-import com.ptit.music_be.dto.enums.AiTaskError;
+import com.ptit.music_be.dto.enums.ai.AiTaskError;
 
 /** Lỗi khi chạy MuseScore CLI. {@link #getError()} là mã ghi vào đầu {@code ai_tasks.error_message}. */
 public class MuseScoreException extends RuntimeException {

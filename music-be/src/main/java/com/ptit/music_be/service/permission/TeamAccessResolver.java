@@ -2,7 +2,7 @@ package com.ptit.music_be.service.permission;
 
 import java.util.Optional;
 
-import com.ptit.music_be.dto.enums.ScoreAccess;
+import com.ptit.music_be.dto.enums.score.ScoreAccess;
 import com.ptit.music_be.entity.Score;
 
 /**

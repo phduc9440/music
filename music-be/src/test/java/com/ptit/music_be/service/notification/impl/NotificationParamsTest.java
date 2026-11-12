@@ -19,12 +19,12 @@ import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ptit.music_be.dto.enums.NotificationType;
-import com.ptit.music_be.dto.response.NotificationResponse;
+import com.ptit.music_be.dto.enums.notification.NotificationType;
+import com.ptit.music_be.dto.response.notification.NotificationResponse;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Notification;
-import com.ptit.music_be.repository.MemberRepository;
-import com.ptit.music_be.repository.NotificationRepository;
+import com.ptit.music_be.repository.auth.MemberRepository;
+import com.ptit.music_be.repository.notification.NotificationRepository;
 import com.ptit.music_be.service.notification.NotificationPusher;
 import com.ptit.music_be.service.notification.NotificationService;
 

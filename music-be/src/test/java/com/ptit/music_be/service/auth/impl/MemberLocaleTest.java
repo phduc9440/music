@@ -16,10 +16,10 @@ import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.ptit.music_be.dto.enums.AppLocale;
-import com.ptit.music_be.dto.request.UpdateLocaleRequest;
+import com.ptit.music_be.dto.enums.auth.AppLocale;
+import com.ptit.music_be.dto.request.auth.UpdateLocaleRequest;
 import com.ptit.music_be.entity.Member;
-import com.ptit.music_be.repository.MemberRepository;
+import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.service.auth.MemberService;
 
 /** Lưu ngôn ngữ giao diện (VI / EN) vào cột members.locale (cần MySQL đang chạy, schema ở V1). */

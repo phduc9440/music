@@ -12,7 +12,7 @@ import org.springframework.security.web.access.AccessDeniedHandler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.ptit.music_be.dto.response.ApiResponse;
+import com.ptit.music_be.dto.response.common.ApiResponse;
 import com.ptit.music_be.exception.ErrorCode;
 
 /** Trả 403 dạng JSON khi user đã đăng nhập nhưng không đủ quyền (ví dụ USER gọi /api/admin/**). */

@@ -22,7 +22,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.event.RewardEarnedEvent;
 import com.ptit.music_be.event.RewardReason;
-import com.ptit.music_be.repository.MemberRepository;
+import com.ptit.music_be.repository.auth.MemberRepository;
 
 class ReferralServiceImplTest {
 

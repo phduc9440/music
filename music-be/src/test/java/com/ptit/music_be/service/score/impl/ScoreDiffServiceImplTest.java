@@ -22,14 +22,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ptit.music_be.client.AiServiceClient;
-import com.ptit.music_be.dto.enums.FileType;
-import com.ptit.music_be.dto.response.ScoreDiffResponse;
+import com.ptit.music_be.dto.enums.score.FileType;
+import com.ptit.music_be.dto.response.score.ScoreDiffResponse;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreFile;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
-import com.ptit.music_be.repository.ScoreFileRepository;
-import com.ptit.music_be.repository.ScoreRepository;
+import com.ptit.music_be.repository.score.ScoreFileRepository;
+import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.service.score.ScoreFileService;
 
 @ExtendWith(MockitoExtension.class)

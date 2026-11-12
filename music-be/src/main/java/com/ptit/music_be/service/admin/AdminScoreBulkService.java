@@ -1,7 +1,7 @@
 package com.ptit.music_be.service.admin;
 
-import com.ptit.music_be.dto.request.AdminScoreBulkRequest;
-import com.ptit.music_be.dto.response.AdminScoreBulkResponse;
+import com.ptit.music_be.dto.request.admin.AdminScoreBulkRequest;
+import com.ptit.music_be.dto.response.admin.AdminScoreBulkResponse;
 
 public interface AdminScoreBulkService {
 

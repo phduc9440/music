@@ -4,12 +4,12 @@ import java.util.List;
 
 import org.springframework.web.bind.annotation.*;
 
-import com.ptit.music_be.dto.request.PlaylistAddScoreRequest;
-import com.ptit.music_be.dto.request.PlaylistOrderRequest;
-import com.ptit.music_be.dto.request.PlaylistRequest;
-import com.ptit.music_be.dto.response.ApiResponse;
-import com.ptit.music_be.dto.response.PlaylistItemResponse;
-import com.ptit.music_be.dto.response.PlaylistResponse;
+import com.ptit.music_be.dto.request.library.PlaylistAddScoreRequest;
+import com.ptit.music_be.dto.request.library.PlaylistOrderRequest;
+import com.ptit.music_be.dto.request.library.PlaylistRequest;
+import com.ptit.music_be.dto.response.common.ApiResponse;
+import com.ptit.music_be.dto.response.library.PlaylistItemResponse;
+import com.ptit.music_be.dto.response.library.PlaylistResponse;
 import com.ptit.music_be.service.library.PlaylistService;
 
 import io.swagger.v3.oas.annotations.Operation;

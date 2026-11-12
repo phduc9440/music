@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.ptit.music_be.dto.response.ScoreContent;
+import com.ptit.music_be.dto.response.score.ScoreContent;
 import com.ptit.music_be.service.score.ScoreContentService;
 
 import io.swagger.v3.oas.annotations.Operation;

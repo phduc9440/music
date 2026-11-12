@@ -21,25 +21,25 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.ptit.music_be.dto.enums.NotificationType;
-import com.ptit.music_be.dto.enums.ScoreAccess;
-import com.ptit.music_be.dto.enums.ShowItemStatus;
-import com.ptit.music_be.dto.enums.TeamRole;
-import com.ptit.music_be.dto.request.ShowItemRequest;
-import com.ptit.music_be.dto.request.ShowItemStatusRequest;
-import com.ptit.music_be.dto.request.ShowRequest;
-import com.ptit.music_be.dto.request.TeamInviteRequest;
-import com.ptit.music_be.dto.request.TeamRequest;
-import com.ptit.music_be.dto.response.ShowDetailResponse;
-import com.ptit.music_be.dto.response.ShowItemResponse;
-import com.ptit.music_be.dto.response.TeamInvitationResponse;
-import com.ptit.music_be.dto.response.TeamResponse;
+import com.ptit.music_be.dto.enums.notification.NotificationType;
+import com.ptit.music_be.dto.enums.score.ScoreAccess;
+import com.ptit.music_be.dto.enums.team.ShowItemStatus;
+import com.ptit.music_be.dto.enums.team.TeamRole;
+import com.ptit.music_be.dto.request.team.ShowItemRequest;
+import com.ptit.music_be.dto.request.team.ShowItemStatusRequest;
+import com.ptit.music_be.dto.request.team.ShowRequest;
+import com.ptit.music_be.dto.request.team.TeamInviteRequest;
+import com.ptit.music_be.dto.request.team.TeamRequest;
+import com.ptit.music_be.dto.response.team.ShowDetailResponse;
+import com.ptit.music_be.dto.response.team.ShowItemResponse;
+import com.ptit.music_be.dto.response.team.TeamInvitationResponse;
+import com.ptit.music_be.dto.response.team.TeamResponse;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
-import com.ptit.music_be.repository.MemberRepository;
-import com.ptit.music_be.repository.ScoreRepository;
+import com.ptit.music_be.repository.auth.MemberRepository;
+import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.service.auth.EmailService;
 import com.ptit.music_be.service.permission.ScorePermissionService;
 
@@ -72,7 +72,7 @@ class TeamShowFlowTest {
     MemberRepository memberRepository;
 
     @Autowired
-    com.ptit.music_be.repository.TeamMemberRepository teamMemberRepository;
+    com.ptit.music_be.repository.team.TeamMemberRepository teamMemberRepository;
 
     @PersistenceContext
     EntityManager em;

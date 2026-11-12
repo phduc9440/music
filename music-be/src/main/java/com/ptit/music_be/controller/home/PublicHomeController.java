@@ -11,8 +11,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.ptit.music_be.dto.response.ApiResponse;
-import com.ptit.music_be.dto.response.PublicHomeResponse;
+import com.ptit.music_be.dto.response.common.ApiResponse;
+import com.ptit.music_be.dto.response.home.PublicHomeResponse;
 import com.ptit.music_be.service.home.HomeService;
 
 import io.swagger.v3.oas.annotations.Operation;

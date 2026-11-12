@@ -3,9 +3,9 @@ package com.ptit.music_be.service.payment;
 import java.util.List;
 import java.util.Map;
 
-import com.ptit.music_be.dto.enums.PaymentProviderType;
-import com.ptit.music_be.dto.request.CreatePaymentOrderRequest;
-import com.ptit.music_be.dto.response.PaymentOrderResponse;
+import com.ptit.music_be.dto.enums.billing.PaymentProviderType;
+import com.ptit.music_be.dto.request.billing.CreatePaymentOrderRequest;
+import com.ptit.music_be.dto.response.billing.PaymentOrderResponse;
 
 public interface PaymentService {
 

@@ -11,7 +11,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
 
-import com.ptit.music_be.dto.response.AuthResponse;
+import com.ptit.music_be.dto.response.auth.AuthResponse;
 
 /** Đọc/ghi cookie HttpOnly chứa access token và refresh token. */
 @Component

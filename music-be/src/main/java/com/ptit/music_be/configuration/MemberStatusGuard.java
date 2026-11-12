@@ -7,8 +7,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.stereotype.Component;
 
-import com.ptit.music_be.dto.enums.MemberStatus;
-import com.ptit.music_be.repository.MemberRepository;
+import com.ptit.music_be.dto.enums.auth.MemberStatus;
+import com.ptit.music_be.repository.auth.MemberRepository;
 
 import lombok.RequiredArgsConstructor;
 

@@ -4,8 +4,8 @@ import java.util.List;
 
 import org.springframework.core.io.Resource;
 
-import com.ptit.music_be.dto.enums.FileType;
-import com.ptit.music_be.dto.response.ScoreFileResponse;
+import com.ptit.music_be.dto.enums.score.FileType;
+import com.ptit.music_be.dto.response.score.ScoreFileResponse;
 import com.ptit.music_be.entity.Score;
 
 /**

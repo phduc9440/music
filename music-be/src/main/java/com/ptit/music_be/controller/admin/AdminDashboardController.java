@@ -2,8 +2,8 @@ package com.ptit.music_be.controller.admin;
 
 import org.springframework.web.bind.annotation.*;
 
-import com.ptit.music_be.dto.response.AdminDashboardResponse;
-import com.ptit.music_be.dto.response.ApiResponse;
+import com.ptit.music_be.dto.response.admin.AdminDashboardResponse;
+import com.ptit.music_be.dto.response.common.ApiResponse;
 import com.ptit.music_be.service.admin.AdminDashboardService;
 
 import io.swagger.v3.oas.annotations.Operation;

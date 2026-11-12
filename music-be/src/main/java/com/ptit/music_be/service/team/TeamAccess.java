@@ -6,8 +6,8 @@ import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.TeamMember;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
-import com.ptit.music_be.repository.MemberRepository;
-import com.ptit.music_be.repository.TeamMemberRepository;
+import com.ptit.music_be.repository.auth.MemberRepository;
+import com.ptit.music_be.repository.team.TeamMemberRepository;
 import com.ptit.music_be.utils.SecurityUtils;
 
 import lombok.AccessLevel;

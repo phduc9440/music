@@ -6,9 +6,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import com.ptit.music_be.dto.enums.MemberStatus;
+import com.ptit.music_be.dto.enums.auth.MemberStatus;
 import com.ptit.music_be.entity.Member;
-import com.ptit.music_be.repository.MemberRepository;
+import com.ptit.music_be.repository.auth.MemberRepository;
 
 /** Chạy các câu JPQL chọn người nhận thông báo chung với DB thật (cần MySQL đang chạy). */
 @SpringBootTest

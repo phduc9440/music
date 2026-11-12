@@ -5,8 +5,8 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
-import com.ptit.music_be.dto.enums.ShowItemStatus;
-import com.ptit.music_be.dto.enums.TeamRole;
+import com.ptit.music_be.dto.enums.team.ShowItemStatus;
+import com.ptit.music_be.dto.enums.team.TeamRole;
 import com.ptit.music_be.entity.ShowItem;
 
 /**

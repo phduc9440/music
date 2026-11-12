@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
-import com.ptit.music_be.dto.response.ApiResponse;
+import com.ptit.music_be.dto.response.common.ApiResponse;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {

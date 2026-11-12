@@ -15,16 +15,16 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 
-import com.ptit.music_be.dto.enums.BillingPeriod;
-import com.ptit.music_be.dto.enums.PaymentProviderType;
-import com.ptit.music_be.dto.enums.PaymentStatus;
-import com.ptit.music_be.dto.response.RevenueResponse;
+import com.ptit.music_be.dto.enums.billing.BillingPeriod;
+import com.ptit.music_be.dto.enums.billing.PaymentProviderType;
+import com.ptit.music_be.dto.enums.billing.PaymentStatus;
+import com.ptit.music_be.dto.response.admin.RevenueResponse;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.PaymentOrder;
 import com.ptit.music_be.entity.Plan;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
-import com.ptit.music_be.repository.PaymentOrderRepository;
+import com.ptit.music_be.repository.billing.PaymentOrderRepository;
 import com.ptit.music_be.service.billing.SubscriptionService;
 
 class AdminPaymentServiceImplTest {

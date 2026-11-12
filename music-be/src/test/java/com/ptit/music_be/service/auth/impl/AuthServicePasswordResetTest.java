@@ -25,21 +25,21 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import com.ptit.music_be.configuration.MemberStatusGuard;
 import com.ptit.music_be.configuration.OtpRequestLimiter;
-import com.ptit.music_be.dto.enums.AuthProvider;
-import com.ptit.music_be.dto.enums.MemberStatus;
-import com.ptit.music_be.dto.request.ForgotPasswordRequest;
-import com.ptit.music_be.dto.request.ResetPasswordRequest;
-import com.ptit.music_be.dto.request.VerifyResetOtpRequest;
-import com.ptit.music_be.dto.response.VerifyResetOtpResponse;
+import com.ptit.music_be.dto.enums.auth.AuthProvider;
+import com.ptit.music_be.dto.enums.auth.MemberStatus;
+import com.ptit.music_be.dto.request.auth.ForgotPasswordRequest;
+import com.ptit.music_be.dto.request.auth.ResetPasswordRequest;
+import com.ptit.music_be.dto.request.auth.VerifyResetOtpRequest;
+import com.ptit.music_be.dto.response.auth.VerifyResetOtpResponse;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Otp;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.mapper.MemberMapper;
-import com.ptit.music_be.repository.MemberRepository;
-import com.ptit.music_be.repository.MemberRoleRepository;
-import com.ptit.music_be.repository.OtpRepository;
-import com.ptit.music_be.repository.RoleRepository;
+import com.ptit.music_be.repository.auth.MemberRepository;
+import com.ptit.music_be.repository.auth.MemberRoleRepository;
+import com.ptit.music_be.repository.auth.OtpRepository;
+import com.ptit.music_be.repository.auth.RoleRepository;
 import com.ptit.music_be.service.auth.EmailService;
 
 /**

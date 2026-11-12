@@ -4,8 +4,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.ptit.music_be.dto.response.ApiResponse;
-import com.ptit.music_be.dto.response.HomeSummaryResponse;
+import com.ptit.music_be.dto.response.common.ApiResponse;
+import com.ptit.music_be.dto.response.home.HomeSummaryResponse;
 import com.ptit.music_be.service.home.HomeService;
 
 import io.swagger.v3.oas.annotations.Operation;

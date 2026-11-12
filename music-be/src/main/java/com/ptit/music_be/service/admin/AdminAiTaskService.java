@@ -2,8 +2,8 @@ package com.ptit.music_be.service.admin;
 
 import java.time.LocalDate;
 
-import com.ptit.music_be.dto.response.AdminAiTaskResponse;
-import com.ptit.music_be.dto.response.PageResponse;
+import com.ptit.music_be.dto.response.admin.AdminAiTaskResponse;
+import com.ptit.music_be.dto.response.common.PageResponse;
 
 public interface AdminAiTaskService {
 

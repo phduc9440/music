@@ -2,10 +2,10 @@ package com.ptit.music_be.service.score;
 
 import java.util.List;
 
-import com.ptit.music_be.dto.enums.SharePermission;
-import com.ptit.music_be.dto.response.AccessRequestResponse;
-import com.ptit.music_be.dto.response.MyAccessResponse;
-import com.ptit.music_be.dto.response.ScoreSharingResponse;
+import com.ptit.music_be.dto.enums.score.SharePermission;
+import com.ptit.music_be.dto.response.score.AccessRequestResponse;
+import com.ptit.music_be.dto.response.score.MyAccessResponse;
+import com.ptit.music_be.dto.response.score.ScoreSharingResponse;
 
 /** Chia sẻ bản nhạc: quản lý người được chia sẻ và yêu cầu xin quyền. */
 public interface ScoreSharingService {

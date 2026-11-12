@@ -8,7 +8,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
-import com.ptit.music_be.dto.enums.CommentStatus;
+import com.ptit.music_be.dto.enums.score.CommentStatus;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;

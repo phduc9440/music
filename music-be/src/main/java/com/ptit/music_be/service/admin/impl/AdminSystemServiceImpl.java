@@ -9,8 +9,8 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import com.ptit.music_be.dto.response.ErrorLogResponse;
-import com.ptit.music_be.dto.response.SystemMetricsResponse;
+import com.ptit.music_be.dto.response.admin.ErrorLogResponse;
+import com.ptit.music_be.dto.response.admin.SystemMetricsResponse;
 import com.ptit.music_be.monitoring.ErrorLogStore;
 import com.ptit.music_be.service.admin.AdminSystemService;
 

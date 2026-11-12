@@ -21,9 +21,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 
-import com.ptit.music_be.dto.enums.DifficultyLevel;
-import com.ptit.music_be.dto.enums.FileType;
-import com.ptit.music_be.dto.enums.ScoreSource;
+import com.ptit.music_be.dto.enums.score.DifficultyLevel;
+import com.ptit.music_be.dto.enums.score.FileType;
+import com.ptit.music_be.dto.enums.score.ScoreSource;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreFile;
@@ -31,8 +31,8 @@ import com.ptit.music_be.entity.ScoreTag;
 import com.ptit.music_be.entity.Tag;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
-import com.ptit.music_be.repository.ScoreFileRepository;
-import com.ptit.music_be.repository.ScoreRepository;
+import com.ptit.music_be.repository.score.ScoreFileRepository;
+import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.service.score.CopyOptions;
 import com.ptit.music_be.service.storage.impl.LocalFileStorageService;
 

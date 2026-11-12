@@ -8,10 +8,10 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import com.ptit.music_be.dto.request.ExportRequest;
-import com.ptit.music_be.dto.response.ApiResponse;
-import com.ptit.music_be.dto.response.ExportFileResponse;
-import com.ptit.music_be.dto.response.ExportResponse;
+import com.ptit.music_be.dto.request.export.ExportRequest;
+import com.ptit.music_be.dto.response.common.ApiResponse;
+import com.ptit.music_be.dto.response.export.ExportFileResponse;
+import com.ptit.music_be.dto.response.export.ExportResponse;
 import com.ptit.music_be.service.export.ExportService;
 
 import io.swagger.v3.oas.annotations.Operation;

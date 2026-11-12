@@ -13,16 +13,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.ptit.music_be.dto.enums.DifficultyLevel;
-import com.ptit.music_be.dto.response.PageResponse;
-import com.ptit.music_be.dto.response.ScoreSummaryResponse;
+import com.ptit.music_be.dto.enums.score.DifficultyLevel;
+import com.ptit.music_be.dto.response.common.PageResponse;
+import com.ptit.music_be.dto.response.score.ScoreSummaryResponse;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreReview;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.repository.MemberRepository;
-import com.ptit.music_be.repository.ScoreRepository;
-import com.ptit.music_be.repository.ScoreReviewRepository;
+import com.ptit.music_be.repository.auth.MemberRepository;
+import com.ptit.music_be.repository.score.ScoreRepository;
+import com.ptit.music_be.repository.score.ScoreReviewRepository;
 import com.ptit.music_be.service.score.ScoreService;
 
 /**

@@ -2,8 +2,8 @@ package com.ptit.music_be.service.admin;
 
 import java.util.List;
 
-import com.ptit.music_be.dto.response.ErrorLogResponse;
-import com.ptit.music_be.dto.response.SystemMetricsResponse;
+import com.ptit.music_be.dto.response.admin.ErrorLogResponse;
+import com.ptit.music_be.dto.response.admin.SystemMetricsResponse;
 
 public interface AdminSystemService {
 

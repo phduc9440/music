@@ -3,10 +3,10 @@ package com.ptit.music_be.service.practice;
 import java.time.LocalDate;
 import java.util.List;
 
-import com.ptit.music_be.dto.response.PracticeHeatmapDayResponse;
-import com.ptit.music_be.dto.response.PracticeSkillsResponse;
-import com.ptit.music_be.dto.response.PracticeStreakResponse;
-import com.ptit.music_be.dto.response.PracticeTimeBucketResponse;
+import com.ptit.music_be.dto.response.practice.PracticeHeatmapDayResponse;
+import com.ptit.music_be.dto.response.practice.PracticeSkillsResponse;
+import com.ptit.music_be.dto.response.practice.PracticeStreakResponse;
+import com.ptit.music_be.dto.response.practice.PracticeTimeBucketResponse;
 
 public interface PracticeStatsService {
 

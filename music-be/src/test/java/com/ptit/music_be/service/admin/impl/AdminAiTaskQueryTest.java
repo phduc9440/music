@@ -15,8 +15,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import com.ptit.music_be.dto.response.AdminAiTaskResponse;
-import com.ptit.music_be.dto.response.PageResponse;
+import com.ptit.music_be.dto.response.admin.AdminAiTaskResponse;
+import com.ptit.music_be.dto.response.common.PageResponse;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.service.admin.AdminAiTaskService;
 

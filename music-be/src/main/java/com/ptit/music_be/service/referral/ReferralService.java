@@ -1,6 +1,6 @@
 package com.ptit.music_be.service.referral;
 
-import com.ptit.music_be.dto.response.ReferralResponse;
+import com.ptit.music_be.dto.response.referral.ReferralResponse;
 import com.ptit.music_be.entity.Member;
 
 /** Mời bạn (7.5): mã giới thiệu và thưởng khi người được mời số hóa xong bản đầu tiên. */

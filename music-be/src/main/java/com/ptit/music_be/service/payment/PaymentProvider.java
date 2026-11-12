@@ -3,7 +3,7 @@ package com.ptit.music_be.service.payment;
 import java.util.Map;
 import java.util.Optional;
 
-import com.ptit.music_be.dto.enums.PaymentProviderType;
+import com.ptit.music_be.dto.enums.billing.PaymentProviderType;
 import com.ptit.music_be.entity.PaymentOrder;
 
 /** Một cổng thanh toán: tạo giao dịch và xác thực thông báo kết quả (IPN) từ cổng. */

@@ -6,8 +6,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.ptit.music_be.dto.response.TagResponse;
-import com.ptit.music_be.repository.TagRepository;
+import com.ptit.music_be.dto.response.library.TagResponse;
+import com.ptit.music_be.repository.library.TagRepository;
 import com.ptit.music_be.service.library.TagService;
 
 import lombok.AccessLevel;

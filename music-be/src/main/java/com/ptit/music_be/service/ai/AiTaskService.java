@@ -2,7 +2,7 @@ package com.ptit.music_be.service.ai;
 
 import java.util.List;
 
-import com.ptit.music_be.dto.response.AiTaskResponse;
+import com.ptit.music_be.dto.response.ai.AiTaskResponse;
 
 public interface AiTaskService {
 

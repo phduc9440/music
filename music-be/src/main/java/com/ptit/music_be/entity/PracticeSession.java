@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 import jakarta.persistence.*;
 
 import com.ptit.music_be.converter.PracticeModeConverter;
-import com.ptit.music_be.dto.enums.PracticeMode;
+import com.ptit.music_be.dto.enums.practice.PracticeMode;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;

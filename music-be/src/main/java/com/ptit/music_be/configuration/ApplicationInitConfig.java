@@ -6,14 +6,14 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import com.ptit.music_be.dto.enums.AuthProvider;
-import com.ptit.music_be.dto.enums.MemberStatus;
+import com.ptit.music_be.dto.enums.auth.AuthProvider;
+import com.ptit.music_be.dto.enums.auth.MemberStatus;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.MemberRole;
 import com.ptit.music_be.entity.Role;
-import com.ptit.music_be.repository.MemberRepository;
-import com.ptit.music_be.repository.MemberRoleRepository;
-import com.ptit.music_be.repository.RoleRepository;
+import com.ptit.music_be.repository.auth.MemberRepository;
+import com.ptit.music_be.repository.auth.MemberRoleRepository;
+import com.ptit.music_be.repository.auth.RoleRepository;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;

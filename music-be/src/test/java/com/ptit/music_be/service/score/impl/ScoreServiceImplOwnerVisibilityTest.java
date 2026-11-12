@@ -21,13 +21,13 @@ import org.mockito.quality.Strictness;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import com.ptit.music_be.dto.enums.NotificationType;
-import com.ptit.music_be.dto.enums.Visibility;
-import com.ptit.music_be.dto.request.ScoreUpdateRequest;
+import com.ptit.music_be.dto.enums.notification.NotificationType;
+import com.ptit.music_be.dto.enums.score.Visibility;
+import com.ptit.music_be.dto.request.score.ScoreUpdateRequest;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
-import com.ptit.music_be.repository.MemberRepository;
-import com.ptit.music_be.repository.ScoreRepository;
+import com.ptit.music_be.repository.auth.MemberRepository;
+import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.service.notification.NotificationService;
 import com.ptit.music_be.service.score.ScoreFileService;
 

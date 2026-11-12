@@ -6,7 +6,7 @@ import jakarta.persistence.*;
 
 import org.hibernate.annotations.CreationTimestamp;
 
-import com.ptit.music_be.dto.enums.NotificationType;
+import com.ptit.music_be.dto.enums.notification.NotificationType;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;

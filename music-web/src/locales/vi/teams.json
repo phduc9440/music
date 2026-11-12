@@ -203,7 +203,7 @@
     "deleteFailed": "Không xóa được buổi diễn",
     "viewLabel": "Cách xem",
     "view": {
-      "board": "Bảng Kanban",
+      "board": "Bảng tiến độ",
       "list": "Thứ tự diễn"
     },
     "dragHint": "Kéo thẻ sang cột khác để đổi trạng thái (chỉ các cột bạn được chuyển tới mới sáng lên).",

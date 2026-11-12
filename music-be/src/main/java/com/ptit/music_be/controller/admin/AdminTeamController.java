@@ -2,11 +2,11 @@ package com.ptit.music_be.controller.admin;
 
 import org.springframework.web.bind.annotation.*;
 
-import com.ptit.music_be.dto.response.AdminTeamDetailResponse;
-import com.ptit.music_be.dto.response.AdminTeamResponse;
-import com.ptit.music_be.dto.response.AdminTeamSummaryResponse;
-import com.ptit.music_be.dto.response.ApiResponse;
-import com.ptit.music_be.dto.response.PageResponse;
+import com.ptit.music_be.dto.response.admin.AdminTeamDetailResponse;
+import com.ptit.music_be.dto.response.admin.AdminTeamResponse;
+import com.ptit.music_be.dto.response.admin.AdminTeamSummaryResponse;
+import com.ptit.music_be.dto.response.common.ApiResponse;
+import com.ptit.music_be.dto.response.common.PageResponse;
 import com.ptit.music_be.service.admin.AdminTeamService;
 
 import io.swagger.v3.oas.annotations.Operation;

@@ -1,6 +1,6 @@
 package com.ptit.music_be.service.auth;
 
-import com.ptit.music_be.dto.request.SendEmailRequest;
+import com.ptit.music_be.dto.request.auth.SendEmailRequest;
 
 public interface EmailService {
 

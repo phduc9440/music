@@ -9,7 +9,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.HtmlUtils;
 
-import com.ptit.music_be.dto.request.SendEmailRequest;
+import com.ptit.music_be.dto.request.auth.SendEmailRequest;
 import com.ptit.music_be.service.auth.EmailService;
 
 import lombok.AccessLevel;

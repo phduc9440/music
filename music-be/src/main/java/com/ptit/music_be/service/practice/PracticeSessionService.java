@@ -1,8 +1,8 @@
 package com.ptit.music_be.service.practice;
 
-import com.ptit.music_be.dto.request.PracticeSessionRequest;
-import com.ptit.music_be.dto.response.PageResponse;
-import com.ptit.music_be.dto.response.PracticeSessionResponse;
+import com.ptit.music_be.dto.request.practice.PracticeSessionRequest;
+import com.ptit.music_be.dto.response.common.PageResponse;
+import com.ptit.music_be.dto.response.practice.PracticeSessionResponse;
 
 public interface PracticeSessionService {
 

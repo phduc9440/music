@@ -16,14 +16,14 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.client.RestClientException;
 
 import com.ptit.music_be.client.AiServiceClient;
-import com.ptit.music_be.dto.enums.FileType;
-import com.ptit.music_be.dto.response.ScoreContent;
+import com.ptit.music_be.dto.enums.score.FileType;
+import com.ptit.music_be.dto.response.score.ScoreContent;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreFile;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
-import com.ptit.music_be.repository.ScoreFileRepository;
-import com.ptit.music_be.repository.ScoreRepository;
+import com.ptit.music_be.repository.score.ScoreFileRepository;
+import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.service.score.ScoreContentService;
 import com.ptit.music_be.service.score.ScoreFileService;
 import com.ptit.music_be.service.storage.FileStorageService;

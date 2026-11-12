@@ -3,9 +3,9 @@ package com.ptit.music_be.service.billing;
 import java.time.Period;
 import java.util.List;
 
-import com.ptit.music_be.dto.enums.SubscriptionSource;
-import com.ptit.music_be.dto.response.MySubscriptionResponse;
-import com.ptit.music_be.dto.response.PlanResponse;
+import com.ptit.music_be.dto.enums.billing.SubscriptionSource;
+import com.ptit.music_be.dto.response.billing.MySubscriptionResponse;
+import com.ptit.music_be.dto.response.billing.PlanResponse;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Plan;
 
@@ -20,14 +20,14 @@ public interface SubscriptionService {
      * Gói đang dùng của nhiều thành viên một lần (cùng quy tắc với {@link #currentPlan}: SUPER_ADMIN không giới hạn, ADMIN
      * tối thiểu Pro). {@code rolesByMember}: id thành viên -> tên vai trò. Trả map id -> tóm tắt gói.
      */
-    java.util.Map<String, com.ptit.music_be.dto.response.MemberPlanSummary> plansOf(
+    java.util.Map<String, com.ptit.music_be.dto.response.billing.MemberPlanSummary> plansOf(
             java.util.Map<String, java.util.Set<String>> rolesByMember);
 
     /**
      * SUPER_ADMIN thu hồi gói đang dùng (mua hoặc được cấp) của từng người do vi phạm: gói bị hủy ngay, muốn dùng lại phải
      * mua lại. Người không có gói để thu hồi hoặc là SUPER_ADMIN được bỏ qua. Kết quả từng người (REVOKED/SKIPPED/FAILED).
      */
-    java.util.List<com.ptit.music_be.dto.response.BulkGrantResult> revokePlans(
+    java.util.List<com.ptit.music_be.dto.response.billing.BulkGrantResult> revokePlans(
             java.util.List<String> memberIds, String reason);
 
     /**
@@ -37,11 +37,11 @@ public interface SubscriptionService {
      * (ví dụ người có cả Pro theo vai trò lẫn Premium đã mua), người không có thì bỏ qua.
      * Cấm lại cùng gói thì thay lệnh cũ. SUPER_ADMIN được bỏ qua.
      */
-    java.util.List<com.ptit.music_be.dto.response.BulkGrantResult> banPlans(
+    java.util.List<com.ptit.music_be.dto.response.billing.BulkGrantResult> banPlans(
             java.util.List<String> memberIds, int months, String reason, String planCode);
 
     /** SUPER_ADMIN gỡ cấm sớm cho từng người. */
-    java.util.List<com.ptit.music_be.dto.response.BulkGrantResult> liftBans(java.util.List<String> memberIds);
+    java.util.List<com.ptit.music_be.dto.response.billing.BulkGrantResult> liftBans(java.util.List<String> memberIds);
 
     /** Người này đang bị cấm dùng gói {@code planCode} đến lúc nào; null nếu không bị cấm gói đó. */
     java.time.LocalDateTime planBannedUntil(String memberId, String planCode);
@@ -86,7 +86,7 @@ public interface SubscriptionService {
      * Cấp một gói cá nhân cho nhiều người (cùng quy tắc với {@link #grant}). Người đang dùng đúng gói thì gia hạn nối tiếp;
      * SUPER_ADMIN và ADMIN đang có Pro theo vai trò (khi cấp Pro) được bỏ qua. Trả kết quả từng người theo thứ tự gửi lên.
      */
-    java.util.List<com.ptit.music_be.dto.response.BulkGrantResult> grantMany(
+    java.util.List<com.ptit.music_be.dto.response.billing.BulkGrantResult> grantMany(
             java.util.List<String> memberIds, String planCode, int months);
 
     /** SUPER_ADMIN hủy gói hiện tại của thành viên (về Free ngay). */

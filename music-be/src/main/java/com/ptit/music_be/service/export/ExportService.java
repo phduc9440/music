@@ -2,9 +2,9 @@ package com.ptit.music_be.service.export;
 
 import java.util.List;
 
-import com.ptit.music_be.dto.request.ExportRequest;
-import com.ptit.music_be.dto.response.ExportFileResponse;
-import com.ptit.music_be.dto.response.ExportResponse;
+import com.ptit.music_be.dto.request.export.ExportRequest;
+import com.ptit.music_be.dto.response.export.ExportFileResponse;
+import com.ptit.music_be.dto.response.export.ExportResponse;
 
 /** API xuất file chung (đặc tả 5.2): MP3/WAV ở nhánh export-audio, các định dạng khác thêm sau. */
 public interface ExportService {

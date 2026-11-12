@@ -1,6 +1,6 @@
 package com.ptit.music_be.service.score;
 
-import com.ptit.music_be.dto.response.ViewCountResponse;
+import com.ptit.music_be.dto.response.score.ViewCountResponse;
 
 public interface PlaybackService {
 

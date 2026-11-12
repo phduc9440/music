@@ -13,10 +13,10 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 
-import com.ptit.music_be.dto.enums.NotificationType;
+import com.ptit.music_be.dto.enums.notification.NotificationType;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.event.ScoreTrashedByAdminEvent;
-import com.ptit.music_be.repository.MemberRepository;
+import com.ptit.music_be.repository.auth.MemberRepository;
 
 class ScoreTrashedNotificationListenerTest {
 

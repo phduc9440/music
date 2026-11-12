@@ -1,6 +1,6 @@
 package com.ptit.music_be.service.score;
 
-import com.ptit.music_be.dto.enums.ScoreSource;
+import com.ptit.music_be.dto.enums.score.ScoreSource;
 
 /**
  * Tùy chọn khi sao chép bản nhạc.

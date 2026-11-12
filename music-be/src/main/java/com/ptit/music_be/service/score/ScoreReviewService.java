@@ -1,6 +1,6 @@
 package com.ptit.music_be.service.score;
 
-import com.ptit.music_be.dto.response.ReviewListResponse;
+import com.ptit.music_be.dto.response.score.ReviewListResponse;
 
 /** Nhận xét bản nhạc (chấm sao, bình luận). Xem cần quyền xem; viết cần quyền nhận xét trở lên. */
 public interface ScoreReviewService {

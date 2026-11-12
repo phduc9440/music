@@ -8,7 +8,7 @@ import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import com.ptit.music_be.dto.enums.ShowItemStatus;
+import com.ptit.music_be.dto.enums.team.ShowItemStatus;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;

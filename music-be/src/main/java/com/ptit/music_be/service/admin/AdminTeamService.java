@@ -1,9 +1,9 @@
 package com.ptit.music_be.service.admin;
 
-import com.ptit.music_be.dto.response.AdminTeamDetailResponse;
-import com.ptit.music_be.dto.response.AdminTeamResponse;
-import com.ptit.music_be.dto.response.AdminTeamSummaryResponse;
-import com.ptit.music_be.dto.response.PageResponse;
+import com.ptit.music_be.dto.response.admin.AdminTeamDetailResponse;
+import com.ptit.music_be.dto.response.admin.AdminTeamResponse;
+import com.ptit.music_be.dto.response.admin.AdminTeamSummaryResponse;
+import com.ptit.music_be.dto.response.common.PageResponse;
 
 /** Admin quản lý Team và Show (mục 4.1): xem danh sách, chi tiết, số liệu tổng quan; xóa team vi phạm. */
 public interface AdminTeamService {

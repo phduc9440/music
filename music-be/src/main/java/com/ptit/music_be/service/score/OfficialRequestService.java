@@ -2,8 +2,8 @@ package com.ptit.music_be.service.score;
 
 import java.util.List;
 
-import com.ptit.music_be.dto.response.OfficialRequestResponse;
-import com.ptit.music_be.dto.response.PageResponse;
+import com.ptit.music_be.dto.response.common.PageResponse;
+import com.ptit.music_be.dto.response.score.OfficialRequestResponse;
 
 /**
  * Đưa bản nhạc của người dùng vào kho bản nhạc mẫu có sự đồng ý của chủ: quản trị viên xin, chủ trả lời, đồng ý thì bản

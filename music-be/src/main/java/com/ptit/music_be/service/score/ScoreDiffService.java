@@ -1,6 +1,6 @@
 package com.ptit.music_be.service.score;
 
-import com.ptit.music_be.dto.response.ScoreDiffResponse;
+import com.ptit.music_be.dto.response.score.ScoreDiffResponse;
 
 /** So sánh hai phiên bản MusicXML để đo công sửa sau khi số hóa (OMR). */
 public interface ScoreDiffService {

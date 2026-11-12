@@ -6,11 +6,11 @@ import java.util.List;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
-import com.ptit.music_be.dto.response.ApiResponse;
-import com.ptit.music_be.dto.response.PracticeHeatmapDayResponse;
-import com.ptit.music_be.dto.response.PracticeSkillsResponse;
-import com.ptit.music_be.dto.response.PracticeStreakResponse;
-import com.ptit.music_be.dto.response.PracticeTimeBucketResponse;
+import com.ptit.music_be.dto.response.common.ApiResponse;
+import com.ptit.music_be.dto.response.practice.PracticeHeatmapDayResponse;
+import com.ptit.music_be.dto.response.practice.PracticeSkillsResponse;
+import com.ptit.music_be.dto.response.practice.PracticeStreakResponse;
+import com.ptit.music_be.dto.response.practice.PracticeTimeBucketResponse;
 import com.ptit.music_be.service.practice.PracticeStatsService;
 
 import io.swagger.v3.oas.annotations.Operation;

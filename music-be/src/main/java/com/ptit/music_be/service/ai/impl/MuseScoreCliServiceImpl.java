@@ -19,7 +19,7 @@ import java.util.stream.Stream;
 import org.springframework.stereotype.Service;
 
 import com.ptit.music_be.configuration.MuseScoreProperties;
-import com.ptit.music_be.dto.enums.AiTaskError;
+import com.ptit.music_be.dto.enums.ai.AiTaskError;
 import com.ptit.music_be.exception.MuseScoreException;
 import com.ptit.music_be.service.ai.MuseScoreCliService;
 

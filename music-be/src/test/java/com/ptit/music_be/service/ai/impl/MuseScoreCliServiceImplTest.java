@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import com.ptit.music_be.configuration.MuseScoreProperties;
-import com.ptit.music_be.dto.enums.AiTaskError;
+import com.ptit.music_be.dto.enums.ai.AiTaskError;
 import com.ptit.music_be.exception.MuseScoreException;
 
 class MuseScoreCliServiceImplTest {

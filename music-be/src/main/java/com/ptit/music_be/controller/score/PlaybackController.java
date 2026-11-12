@@ -5,8 +5,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.ptit.music_be.dto.response.ApiResponse;
-import com.ptit.music_be.dto.response.ViewCountResponse;
+import com.ptit.music_be.dto.response.common.ApiResponse;
+import com.ptit.music_be.dto.response.score.ViewCountResponse;
 import com.ptit.music_be.service.score.PlaybackService;
 
 import io.swagger.v3.oas.annotations.Operation;

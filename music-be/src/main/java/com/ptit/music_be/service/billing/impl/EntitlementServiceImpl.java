@@ -6,13 +6,13 @@ import java.time.YearMonth;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.ptit.music_be.dto.enums.UsageMetric;
-import com.ptit.music_be.dto.response.PlanLimitPayload;
+import com.ptit.music_be.dto.enums.billing.UsageMetric;
+import com.ptit.music_be.dto.response.billing.PlanLimitPayload;
 import com.ptit.music_be.entity.Plan;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
-import com.ptit.music_be.repository.AiTaskRepository;
-import com.ptit.music_be.repository.PlanRepository;
+import com.ptit.music_be.repository.ai.AiTaskRepository;
+import com.ptit.music_be.repository.billing.PlanRepository;
 import com.ptit.music_be.service.billing.EntitlementService;
 import com.ptit.music_be.service.billing.PlanLimits;
 import com.ptit.music_be.service.billing.SubscriptionService;
