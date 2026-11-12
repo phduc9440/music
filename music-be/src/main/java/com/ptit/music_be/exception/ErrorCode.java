@@ -66,6 +66,7 @@ public enum ErrorCode {
     SCORE_NOT_PUBLIC_FOR_OFFICIAL(2022, "Chỉ đưa vào kho bản nhạc mẫu được bản nhạc đã công khai", HttpStatus.CONFLICT),
     SCORE_OFFICIAL_LOCKED(2023, "Bản nhạc trong kho bản nhạc mẫu chỉ ADMIN được xóa", HttpStatus.FORBIDDEN),
     SCORE_NOT_PENDING_PUBLIC(2021, "Bản nhạc này không ở trạng thái chờ duyệt công khai", HttpStatus.CONFLICT),
+    SCORE_COVER_INVALID(2025, "Ảnh bìa phải là JPG hoặc PNG, tối đa 3MB", HttpStatus.BAD_REQUEST),
     SCORE_NOT_PUBLIC(2024, "Bản nhạc này chưa được công khai nên không thể gỡ", HttpStatus.CONFLICT),
     SCORE_BUSY(2201, "Bản nhạc đang được xử lý, vui lòng thử lại sau", HttpStatus.CONFLICT),
     TASK_LIMIT_EXCEEDED(

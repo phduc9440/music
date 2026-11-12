@@ -79,16 +79,9 @@ const publicUrl = (path: string) => `${API_BASE_URL.replace(/\/api\/?$/, '')}${p
  */
 function FeaturedCover({ score }: { score: ScoreSummary }) {
   const [broken, setBroken] = useState(false);
-  if (score.thumbnailUrl && !broken) {
-    return (
-      <img
-        src={publicUrl(score.thumbnailUrl)}
-        alt=""
-        className="gh-card__img"
-        loading="lazy"
-        onError={() => setBroken(true)}
-      />
-    );
+  const image = score.coverUrl ?? (score.thumbnailUrl ? publicUrl(score.thumbnailUrl) : null);
+  if (image && !broken) {
+    return <img src={image} alt="" className="gh-card__img" loading="lazy" onError={() => setBroken(true)} />;
   }
   return (
     <span className="gh-sheet" aria-hidden="true">

@@ -743,6 +743,7 @@ public class ScoreServiceImpl implements ScoreService {
                 .measureCount(score.getMeasureCount())
                 .tags(tags)
                 .thumbnailUrl(thumbnail == null ? null : "/api/files/" + thumbnail.getId() + "/download?inline=true")
+                .coverUrl(score.getCoverUrl())
                 .createdAt(score.getCreatedAt())
                 .updatedAt(score.getUpdatedAt())
                 .build();
@@ -833,6 +834,7 @@ public class ScoreServiceImpl implements ScoreService {
                                 : decision.level().name())
                 .canDownload(canEdit || (decision.can(ScoreAccess.VIEW) && score.isAllowDownload()))
                 .allowDownload(isOwner && score.isAllowDownload())
+                .coverUrl(score.getCoverUrl())
                 // Team đã xóa mềm coi như không còn: bản nhạc hiện như bản cá nhân
                 .teamId(activeTeam == null ? null : activeTeam.getId())
                 .teamName(activeTeam == null ? null : activeTeam.getName())

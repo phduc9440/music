@@ -14,9 +14,11 @@ interface AuthImageProps {
  */
 export default function AuthImage({ src, alt, className = '' }: AuthImageProps) {
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
+  // Ảnh bìa trên Cloudinary là địa chỉ tuyệt đối, công khai: dùng thẳng, không cần token
+  const direct = !!src && /^https?:\/\//.test(src);
 
   useEffect(() => {
-    if (!src) return;
+    if (!src || direct) return;
     let cancelled = false;
     let created: string | null = null;
     fetchFileBlob(src)
@@ -33,8 +35,11 @@ export default function AuthImage({ src, alt, className = '' }: AuthImageProps) 
       cancelled = true;
       if (created) URL.revokeObjectURL(created);
     };
-  }, [src]);
+  }, [src, direct]);
 
+  if (direct) {
+    return <img src={src} alt={alt} className={`sc-thumb ${className}`} loading="lazy" />;
+  }
   if (!src || !objectUrl) {
     return (
       <div className={`sc-thumb sc-thumb--empty ${className}`} role="img" aria-label={alt}>

@@ -102,6 +102,7 @@ CREATE TABLE IF NOT EXISTS scores (
     deleted_at        DATETIME(6)  NULL COMMENT 'Xóa mềm: khác NULL là đang ở thùng rác (30 ngày rồi xóa hẳn)',
     deleted_by        VARCHAR(36)  NULL,
     delete_reason     VARCHAR(500) NULL,
+    cover_url         VARCHAR(512) NULL COMMENT 'Ảnh bìa do người dùng tải lên (Cloudinary, public id score-covers/{id}); NULL = dùng ảnh trang 1',
     team_id           VARCHAR(36)  NULL COMMENT 'Team chứa bản nhạc (mục 4.1); NULL = bản cá nhân. Ràng buộc khóa ngoại thêm ở cuối file',
     PRIMARY KEY (id),
     KEY idx_scores_member_deleted (member_id, deleted_at),

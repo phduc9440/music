@@ -402,5 +402,18 @@
   },
   "banner": {
     "text": "{name} wants to add this score to the curated library. The system only copies it and credits you as the arranger; your own score stays as it is."
+  },
+  "cover": {
+    "alt": "Cover of {title}",
+    "add": "Add cover",
+    "change": "Change cover",
+    "remove": "Remove cover",
+    "updated": "Cover updated",
+    "removed": "Cover removed",
+    "failed": "Couldn't upload the cover, please try again",
+    "removeFailed": "Couldn't remove the cover",
+    "label": "Cover",
+    "hint": "JPG or PNG, up to 3MB. Without a cover the first page image is used.",
+    "pending": "Cover changes are saved when you press Save changes."
   }
 }

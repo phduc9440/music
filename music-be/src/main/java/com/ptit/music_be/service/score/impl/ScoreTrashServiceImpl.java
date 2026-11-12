@@ -19,6 +19,7 @@ import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.repository.MemberRepository;
 import com.ptit.music_be.repository.ScoreTrashRepository;
+import com.ptit.music_be.service.score.ScoreCoverService;
 import com.ptit.music_be.service.score.ScoreTrashService;
 import com.ptit.music_be.service.storage.ScoreStorageCleaner;
 import com.ptit.music_be.utils.SecurityUtils;
@@ -35,6 +36,7 @@ public class ScoreTrashServiceImpl implements ScoreTrashService {
     private final ScoreTrashRepository scoreTrashRepository;
     private final MemberRepository memberRepository;
     private final ScoreStorageCleaner scoreStorageCleaner;
+    private final ScoreCoverService scoreCoverService;
     private final int retentionDays;
 
     @PersistenceContext
@@ -44,10 +46,12 @@ public class ScoreTrashServiceImpl implements ScoreTrashService {
             ScoreTrashRepository scoreTrashRepository,
             MemberRepository memberRepository,
             ScoreStorageCleaner scoreStorageCleaner,
+            ScoreCoverService scoreCoverService,
             @Value("${score.trash.retention-days:30}") int retentionDays) {
         this.scoreTrashRepository = scoreTrashRepository;
         this.memberRepository = memberRepository;
         this.scoreStorageCleaner = scoreStorageCleaner;
+        this.scoreCoverService = scoreCoverService;
         this.retentionDays = retentionDays;
     }
 
@@ -109,8 +113,12 @@ public class ScoreTrashServiceImpl implements ScoreTrashService {
      * score_files, ai_tasks, score_reviews xóa theo bằng ON DELETE CASCADE. File trên đĩa xóa sau khi commit.
      */
     private void removeForGood(Score score) {
+        boolean hasCover = score.getCoverUrl() != null;
         entityManager.remove(score);
         scoreStorageCleaner.deleteScoreDirAfterCommit(score.getId());
+        if (hasCover) {
+            scoreCoverService.deleteQuietly(score.getId()); // ảnh bìa trên Cloudinary không còn ai dùng
+        }
     }
 
     private Score findMyTrashed(String scoreId) {

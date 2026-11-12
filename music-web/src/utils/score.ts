@@ -78,6 +78,9 @@ export const TASK_TYPE_LABELS: Record<string, string> = labelMap('scores.labels.
 // Giới hạn khớp với validate ở BE (ScoreUpdateRequest)
 export const MAX_TITLE = 255;
 export const MAX_COMPOSER = 255;
+/** Ảnh bìa bản nhạc: loại và dung lượng tối đa, khớp BE (lỗi 2025). */
+export const COVER_TYPES = ['image/jpeg', 'image/png'];
+export const COVER_MAX_BYTES = 3 * 1024 * 1024;
 export const MAX_NOTES = 5000;
 export const MAX_REVIEW_COMMENT = 2000;
 export const MAX_KEYWORD = 100;

@@ -2,6 +2,7 @@ package com.ptit.music_be.controller.score;
 
 import jakarta.validation.Valid;
 
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ptit.music_be.dto.request.RejectPublishRequest;
@@ -21,6 +23,7 @@ import com.ptit.music_be.dto.response.PageResponse;
 import com.ptit.music_be.dto.response.ScoreDetailResponse;
 import com.ptit.music_be.dto.response.ScoreSummaryResponse;
 import com.ptit.music_be.service.score.PublicScoreFilter;
+import com.ptit.music_be.service.score.ScoreCoverService;
 import com.ptit.music_be.service.score.ScoreService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -38,6 +41,7 @@ import lombok.experimental.FieldDefaults;
 public class ScoreController {
 
     ScoreService scoreService;
+    ScoreCoverService scoreCoverService;
 
     @GetMapping("/me")
     @Operation(
@@ -183,6 +187,28 @@ public class ScoreController {
             @PathVariable String scoreId, @Valid @RequestBody ScoreUpdateRequest request) {
         return ApiResponse.<ScoreDetailResponse>builder()
                 .result(scoreService.updateScore(scoreId, request))
+                .build();
+    }
+
+    @PostMapping(value = "/{scoreId}/cover", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(
+            summary = "Upload the score cover image (JPG/PNG, max 3MB; needs edit permission); replaces the old one",
+            description = "Stored on Cloudinary like member avatars. Errors: 2025 invalid image, 2007 storage error",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<ScoreDetailResponse> uploadCover(
+            @PathVariable String scoreId, @RequestParam("file") MultipartFile file) {
+        return ApiResponse.<ScoreDetailResponse>builder()
+                .result(scoreCoverService.upload(scoreId, file))
+                .build();
+    }
+
+    @DeleteMapping("/{scoreId}/cover")
+    @Operation(
+            summary = "Remove the score cover image (falls back to the first page image)",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<ScoreDetailResponse> removeCover(@PathVariable String scoreId) {
+        return ApiResponse.<ScoreDetailResponse>builder()
+                .result(scoreCoverService.remove(scoreId))
                 .build();
     }
 

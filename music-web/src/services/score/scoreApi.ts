@@ -46,6 +46,15 @@ export const scoreApi = {
   unmarkOfficial: (id: string) => apiClient.delete<ApiResponse<ScoreDetail>>(`/scores/${id}/official`),
   detail: (id: string) => apiClient.get<ApiResponse<ScoreDetail>>(`/scores/${id}`),
   update: (id: string, data: ScoreUpdateRequest) => apiClient.patch<ApiResponse<ScoreDetail>>(`/scores/${id}`, data),
+  /** Tải ảnh bìa (JPG/PNG, tối đa 3MB); lưu trên Cloudinary như ảnh đại diện. */
+  uploadCover: (id: string, file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return apiClient.post<ApiResponse<ScoreDetail>>(`/scores/${id}/cover`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  removeCover: (id: string) => apiClient.delete<ApiResponse<ScoreDetail>>(`/scores/${id}/cover`),
   // Thay toàn bộ thể loại của bản nhạc (tối đa 10, mảng rỗng = gỡ hết)
   updateTags: (id: string, tagIds: string[]) =>
     apiClient.put<ApiResponse<ScoreDetail>>(`/scores/${id}/tags`, { tagIds }),

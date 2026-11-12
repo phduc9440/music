@@ -30,6 +30,7 @@ import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.repository.MemberRepository;
 import com.ptit.music_be.repository.ScoreTrashRepository;
+import com.ptit.music_be.service.score.ScoreCoverService;
 import com.ptit.music_be.service.storage.ScoreStorageCleaner;
 
 class ScoreTrashServiceImplTest {
@@ -37,9 +38,10 @@ class ScoreTrashServiceImplTest {
     private final ScoreTrashRepository trashRepository = mock(ScoreTrashRepository.class);
     private final MemberRepository memberRepository = mock(MemberRepository.class);
     private final ScoreStorageCleaner cleaner = mock(ScoreStorageCleaner.class);
+    private final ScoreCoverService coverService = mock(ScoreCoverService.class);
     private final EntityManager entityManager = mock(EntityManager.class);
     private final ScoreTrashServiceImpl service =
-            new ScoreTrashServiceImpl(trashRepository, memberRepository, cleaner, 30);
+            new ScoreTrashServiceImpl(trashRepository, memberRepository, cleaner, coverService, 30);
 
     private final Member me = Member.builder().id("m1").email("a@x.com").build();
 
@@ -113,6 +115,19 @@ class ScoreTrashServiceImplTest {
 
         verify(entityManager).remove(score);
         verify(cleaner).deleteScoreDirAfterCommit("s1");
+        // Không có ảnh bìa thì không gọi Cloudinary
+        verify(coverService, never()).deleteQuietly("s1");
+    }
+
+    @Test
+    void purgeAlsoDeletesCoverImageOnCloudinary() {
+        Score score = trashed("s1", LocalDateTime.now(), "m1");
+        score.setCoverUrl("https://res.cloudinary.com/demo/image/upload/score-covers/s1.png?v=1");
+        when(trashRepository.findTrashedByIdAndMember("s1", "m1")).thenReturn(Optional.of(score));
+
+        service.purge("s1");
+
+        verify(coverService).deleteQuietly("s1");
     }
 
     @Test

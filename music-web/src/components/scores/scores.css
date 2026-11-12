@@ -735,3 +735,39 @@ select.sc-input {
   padding-top: 0.6rem;
   border-top: 1px solid var(--sc-line);
 }
+
+/* Ô ảnh bìa trong hộp thoại sửa bản nhạc: ảnh nhỏ bên trái, nút chọn / gỡ bên phải */
+.sc-coveredit {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin-bottom: 0.25rem;
+}
+.sc-coveredit__thumb {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 84px;
+  height: 84px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-surface-muted);
+  color: var(--ui-text-3);
+  overflow: hidden;
+}
+.sc-coveredit__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.sc-coveredit__body {
+  min-width: 0;
+}
+.sc-coveredit__btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.sc-coveredit__body .sc-upload__hint {
+  margin: 0.4rem 0 0;
+}

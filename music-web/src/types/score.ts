@@ -97,6 +97,8 @@ export interface ScoreSummary {
   /** Chỉ có trong danh sách "Được chia sẻ với tôi". */
   accessLevel?: AccessLevel | null;
   thumbnailUrl?: string | null;
+  /** Ảnh bìa người dùng tải lên (Cloudinary, địa chỉ tuyệt đối); null thì dùng thumbnailUrl. */
+  coverUrl?: string | null;
   /** Bản trong kho mẫu: tên người phối (chủ bản gốc). */
   arrangerName?: string | null;
   /** Chỉ có trong trang Khám phá: tên người chia sẻ (không có email), lượt xem, điểm sao trung bình và số lượt chấm. */
