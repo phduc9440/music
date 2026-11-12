@@ -391,5 +391,15 @@
   },
   "banner": {
     "text": "{name} xin đưa bản nhạc này vào kho bản nhạc mẫu. Hệ thống chỉ sao chép một bản và ghi bạn là người phối; bản của bạn giữ nguyên."
+  },
+  "cover": {
+    "alt": "Ảnh bìa {title}",
+    "add": "Thêm ảnh bìa",
+    "change": "Đổi ảnh bìa",
+    "remove": "Gỡ ảnh bìa",
+    "updated": "Đã cập nhật ảnh bìa",
+    "removed": "Đã gỡ ảnh bìa",
+    "failed": "Không tải được ảnh bìa, vui lòng thử lại",
+    "removeFailed": "Không gỡ được ảnh bìa"
   }
 }

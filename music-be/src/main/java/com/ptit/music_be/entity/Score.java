@@ -139,6 +139,10 @@ public class Score {
     @Column(name = "delete_reason", length = 500)
     String deleteReason;
 
+    /** Ảnh bìa người dùng tải lên (Cloudinary); null thì giao diện dùng ảnh trang 1 làm bìa. */
+    @Column(name = "cover_url", length = 512)
+    String coverUrl;
+
     /** Team chứa bản nhạc (mục 4.1); null là bản cá nhân. Quyền qua team tính ở TeamAccessResolverImpl. */
     @Column(name = "team_id", length = 36)
     String teamId;

@@ -16,6 +16,7 @@ import MidiConvertButton from '../../export/MidiConvertButton';
 import { isTaskFinished } from '../../export/exportUtils';
 import { Icon } from '../../ui';
 import OfficialRequestBanner from './OfficialRequestBanner';
+import ScoreCover from './ScoreCover';
 import PublishToggle from './PublishToggle';
 import { t } from '../../../i18n/core';
 
@@ -43,6 +44,7 @@ export default function ScoreHero({
   onConverted,
   onVisibilityChanged,
 }: Pick<Props, 'score' | 'onConverted' | 'onVisibilityChanged'>) {
+  // Đổi hoặc gỡ ảnh bìa trả về bản nhạc đã cập nhật, dùng chung đường cập nhật với đổi chế độ hiển thị
   const base = useScoreBase();
   const ready = hasMusicXml(score);
   // Bản nhạc nhập từ MIDI chưa có MusicXML: cho chuyển đổi để mở được trình chỉnh sửa và trình phát
@@ -76,26 +78,29 @@ export default function ScoreHero({
   return (
     <header className="sd-head">
       <div className="sd-head__row">
-        <div className="sd-head__text">
-          <div className="sd-badges">
-            <StatusBadge status={score.processingStatus} />
-            <VisibilityBadge value={score.visibility} />
-            {canChangeVisibility && <PublishToggle score={score} onChanged={onVisibilityChanged} />}
-            {score.isOfficial && (
-              <span className="sc-chip sc-chip--accent">{t('common.nav.items.officialLibrary')}</span>
-            )}
-            {score.accessLevel && score.accessLevel !== 'OWNER' && (
-              <span className="sc-chip sc-chip--accent">
-                {t('scores.hero.youAre', { role: ACCESS_LEVEL_LABELS[score.accessLevel] })}
-              </span>
-            )}
+        <div className="sd-head__lead">
+          <ScoreCover score={score} onChanged={onVisibilityChanged} />
+          <div className="sd-head__text">
+            <div className="sd-badges">
+              <StatusBadge status={score.processingStatus} />
+              <VisibilityBadge value={score.visibility} />
+              {canChangeVisibility && <PublishToggle score={score} onChanged={onVisibilityChanged} />}
+              {score.isOfficial && (
+                <span className="sc-chip sc-chip--accent">{t('common.nav.items.officialLibrary')}</span>
+              )}
+              {score.accessLevel && score.accessLevel !== 'OWNER' && (
+                <span className="sc-chip sc-chip--accent">
+                  {t('scores.hero.youAre', { role: ACCESS_LEVEL_LABELS[score.accessLevel] })}
+                </span>
+              )}
+            </div>
+            <h1 className="sd-title">{score.title}</h1>
+            <p className="sd-meta">
+              {meta.map((m, i) => (
+                <span key={i}>{m}</span>
+              ))}
+            </p>
           </div>
-          <h1 className="sd-title">{score.title}</h1>
-          <p className="sd-meta">
-            {meta.map((m, i) => (
-              <span key={i}>{m}</span>
-            ))}
-          </p>
         </div>
 
         <div className="sd-actions">

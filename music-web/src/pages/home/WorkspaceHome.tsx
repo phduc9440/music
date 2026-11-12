@@ -73,7 +73,7 @@ function RecentRow({ score, from }: { score: ScoreSummary; from: string }) {
     <li>
       <Link to={getScorePath(score.id, score.processingStatus)} state={{ from }} className="wh-recent">
         <span className="wh-recent__thumb">
-          <AuthImage src={score.thumbnailUrl} alt={score.title} className="wh-recent__img" />
+          <AuthImage src={score.coverUrl ?? score.thumbnailUrl} alt={score.title} className="wh-recent__img" />
         </span>
         <span className="wh-recent__body">
           <strong title={score.title}>{score.title}</strong>

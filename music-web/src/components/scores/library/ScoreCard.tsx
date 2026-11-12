@@ -29,7 +29,7 @@ export default function ScoreCard({ score, onOpen, explore = false, actions }: P
       onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onOpen(score)}
     >
       <div className="sc-card__cover" style={opening ? { viewTransitionName: 'ui-shared-cover' } : undefined}>
-        <AuthImage src={score.thumbnailUrl} alt={score.title} className="sc-card__img" />
+        <AuthImage src={score.coverUrl ?? score.thumbnailUrl} alt={score.title} className="sc-card__img" />
         {!explore && (
           <>
             <VisibilityBadge value={score.visibility} className="sc-card__visibility" />

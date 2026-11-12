@@ -66,6 +66,8 @@ public class ScoreDetailResponse {
     boolean canDownload;
     /** Chủ sở hữu đã cho người xem tải chưa (chỉ chủ sở hữu thấy giá trị thật). */
     boolean allowDownload;
+    /** Ảnh bìa người dùng tải lên; null nếu chưa có. */
+    String coverUrl;
     /** Team chứa bản nhạc (mục 4.1); null là bản cá nhân. */
     String teamId;
     String teamName;

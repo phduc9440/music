@@ -214,6 +214,7 @@ public class HomeServiceImpl implements HomeService {
                 .visibility(score.getVisibility())
                 .isOfficial(score.getIsOfficial())
                 .measureCount(score.getMeasureCount())
+                .coverUrl(score.getCoverUrl())
                 .createdAt(score.getCreatedAt())
                 .updatedAt(score.getUpdatedAt())
                 .build();

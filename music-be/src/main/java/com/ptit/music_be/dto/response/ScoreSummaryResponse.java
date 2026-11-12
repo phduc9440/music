@@ -51,6 +51,8 @@ public class ScoreSummaryResponse {
     Long ratingCount;
     /** Ảnh trang 1 (đường dẫn tương đối so với host, ví dụ /api/files/{id}/download?inline=true); null nếu chưa có. */
     String thumbnailUrl;
+    /** Ảnh bìa người dùng tải lên (đường dẫn tuyệt đối, ai cũng xem được); null thì dùng thumbnailUrl. */
+    String coverUrl;
 
     LocalDateTime createdAt;
     LocalDateTime updatedAt;
