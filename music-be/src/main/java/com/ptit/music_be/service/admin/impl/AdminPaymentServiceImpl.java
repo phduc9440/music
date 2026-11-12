@@ -36,7 +36,7 @@ import lombok.experimental.FieldDefaults;
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("@perm.has('REVENUE_VIEW')")
 public class AdminPaymentServiceImpl implements AdminPaymentService {
 
     static final int MAX_DAYS = 366;
@@ -120,6 +120,7 @@ public class AdminPaymentServiceImpl implements AdminPaymentService {
                 .build();
     }
 
+    @PreAuthorize("@perm.has('PAYMENTS_REFUND')")
     @Override
     @Transactional
     public PaymentOrderResponse refund(String orderId) {

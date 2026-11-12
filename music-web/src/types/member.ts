@@ -1,6 +1,62 @@
 import type { AuthProvider, MemberStatus, PracticeMode, SharePermission } from './enums';
 import type { PlanBan } from './billing';
 
+/** Quyền quản trị gán cho vai trò tài khoản (BE: AdminPermission). Thứ tự = thứ tự hàng trên bảng quyền. */
+export type AdminPermission =
+  | 'DASHBOARD_VIEW'
+  | 'MEMBERS_VIEW'
+  | 'MEMBERS_LOCK'
+  | 'TEAMS_MANAGE'
+  | 'ANNOUNCEMENTS_SEND'
+  | 'SCORES_MODERATE'
+  | 'SCORES_APPROVE'
+  | 'OFFICIAL_LIBRARY'
+  | 'TAGS_MANAGE'
+  | 'COMPOSERS_MANAGE'
+  | 'REVENUE_VIEW'
+  | 'PAYMENTS_REFUND'
+  | 'SUBSCRIPTIONS_MANAGE'
+  | 'PLANS_MANAGE'
+  | 'AI_TASKS_MANAGE'
+  | 'SYSTEM_MONITOR';
+
+/** Quyền theo nhóm menu quản trị (nhãn nhóm: admin.menu.sections.<nhóm>, nhãn quyền: admin.roles.permissions.<quyền>). */
+export const ADMIN_PERMISSION_GROUPS: { section: string; permissions: AdminPermission[] }[] = [
+  { section: 'overview', permissions: ['DASHBOARD_VIEW'] },
+  { section: 'users', permissions: ['MEMBERS_VIEW', 'MEMBERS_LOCK', 'TEAMS_MANAGE', 'ANNOUNCEMENTS_SEND'] },
+  {
+    section: 'content',
+    permissions: ['SCORES_MODERATE', 'SCORES_APPROVE', 'OFFICIAL_LIBRARY', 'TAGS_MANAGE', 'COMPOSERS_MANAGE'],
+  },
+  {
+    section: 'billing',
+    permissions: ['REVENUE_VIEW', 'PAYMENTS_REFUND', 'SUBSCRIPTIONS_MANAGE', 'PLANS_MANAGE'],
+  },
+  { section: 'system', permissions: ['AI_TASKS_MANAGE', 'SYSTEM_MONITOR'] },
+];
+
+/** Bật quyền ở khóa thì phải bật cả quyền ở giá trị (giống AdminPermission.requires ở BE). */
+export const ADMIN_PERMISSION_REQUIRES: Partial<Record<AdminPermission, AdminPermission[]>> = {
+  MEMBERS_LOCK: ['MEMBERS_VIEW'],
+  SUBSCRIPTIONS_MANAGE: ['MEMBERS_VIEW'],
+  PAYMENTS_REFUND: ['REVENUE_VIEW'],
+};
+
+/** Vai trò tài khoản kèm quyền quản trị. BE: RoleResponse */
+export interface RoleItem {
+  id: string;
+  /** Mã vai trò: USER, ADMIN, SUPER_ADMIN hoặc mã sinh từ tên. */
+  name: string;
+  /** Tên hiển thị của vai trò tự tạo; null với vai trò có sẵn. */
+  label?: string | null;
+  description?: string | null;
+  builtIn: boolean;
+  /** Chỉnh được quyền (false với USER, SUPER_ADMIN). */
+  editable: boolean;
+  memberCount: number;
+  permissions: AdminPermission[];
+}
+
 /** Khớp MemberResponse của BE (entity Member). */
 export interface Member {
   id: string;
@@ -17,6 +73,8 @@ export interface Member {
   emailVerified?: boolean;
   authProvider?: AuthProvider;
   roles?: string[];
+  /** Quyền quản trị suy ra từ vai trò (BE: AdminPermission); rỗng với tài khoản thường. */
+  permissions?: AdminPermission[];
   /** Ngày đăng ký; null với tài khoản tạo trước khi có cột này. */
   createdAt?: string | null;
   lastLoginAt?: string | null;

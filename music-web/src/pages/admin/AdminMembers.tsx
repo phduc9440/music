@@ -19,7 +19,8 @@ import {
 import { errorMessage, formatDate, formatDateTime } from '../../components/ui/helpers';
 import { adminApi } from '../../services';
 import { MemberStatus } from '../../types';
-import type { Member, PageResult } from '../../types';
+import type { Member, PageResult, RoleItem } from '../../types';
+import { roleName } from '../../utils/roles';
 import { isAdminMember, isSuperAdminMember, roleLabel } from '../../utils/auth';
 import { useDialog } from '../../components/ui/dialog-context';
 import { t } from '../../i18n/core';
@@ -31,6 +32,14 @@ const PAGE_SIZE = 20;
 export default function AdminMembers() {
   const { admin } = useOutletContext<AdminOutletContext>();
   const viewerIsSuper = !!admin && isSuperAdminMember(admin);
+  const [roles, setRoles] = useState<RoleItem[] | null>(null);
+  useEffect(() => {
+    if (!viewerIsSuper) return;
+    adminApi
+      .getRoles()
+      .then((res) => setRoles(res.data.result.filter((r) => r.name !== 'SUPER_ADMIN')))
+      .catch(() => setRoles(null));
+  }, [viewerIsSuper]);
   const { confirm } = useDialog();
   const [result, setResult] = useState<PageResult<Member> | null>(null);
   const [page, setPage] = useState(0);
@@ -79,23 +88,19 @@ export default function AdminMembers() {
     );
   };
 
-  const toggleAdmin = async (m: Member) => {
-    const makeAdmin = !isAdminMember(m);
-    const ok = await confirm(
-      makeAdmin
-        ? {
-            title: t('admin.members.grantTitle', { email: m.email }),
-            message: t('admin.members.grantMessage'),
-            confirmLabel: t('admin.members.grant'),
-          }
-        : {
-            title: t('admin.members.revokeTitle', { email: m.email }),
-            confirmLabel: t('admin.members.revokeConfirm'),
-            tone: 'danger',
-          },
-    );
+  /** Vai trò chính của thành viên: vai trò đầu tiên khác USER (không có thì USER). */
+  const mainRole = (m: Member) => m.roles?.find((r) => r !== 'USER') ?? 'USER';
+
+  const changeRole = async (m: Member, code: string) => {
+    if (code === mainRole(m)) return;
+    const target = roles?.find((r) => r.name === code);
+    const ok = await confirm({
+      title: t('admin.members.roleChangeTitle', { email: m.email }),
+      message: t('admin.members.roleChangeMessage', { role: target ? roleName(target) : code }),
+      confirmLabel: t('admin.members.roleChangeConfirm'),
+    });
     if (!ok) return;
-    update(m, { roles: makeAdmin ? ['ADMIN', 'USER'] : ['USER'] }, t('admin.members.roleUpdated'));
+    update(m, { roles: code === 'USER' ? ['USER'] : [code, 'USER'] }, t('admin.members.roleUpdated'));
   };
 
   const roleTone = (m: Member) => (isSuperAdminMember(m) ? 'violet' : isAdminMember(m) ? 'primary' : 'neutral');
@@ -186,15 +191,20 @@ export default function AdminMembers() {
                         icon="eye"
                         title={t('admin.members.viewDetails')}
                       />
-                      {viewerIsSuper && !targetSuper && (
-                        <Button
-                          size="sm"
-                          icon="shield"
+                      {viewerIsSuper && !targetSuper && roles && (
+                        <select
+                          className="adm-input"
+                          aria-label={t('admin.roles.assign')}
+                          value={mainRole(m)}
                           disabled={isSelf || busyId === m.id}
-                          onClick={() => toggleAdmin(m)}
+                          onChange={(e) => changeRole(m, e.target.value)}
                         >
-                          {isAdminMember(m) ? t('admin.members.revokeAdmin') : t('admin.members.grant')}
-                        </Button>
+                          {roles.map((r) => (
+                            <option key={r.id} value={r.name}>
+                              {roleName(r)}
+                            </option>
+                          ))}
+                        </select>
                       )}
                       <Button
                         size="sm"

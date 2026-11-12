@@ -35,7 +35,7 @@ import lombok.extern.slf4j.Slf4j;
 /** Gom số liệu bằng các câu JPQL đếm/nhóm; chỉ đọc nên dùng EntityManager thay vì thêm hàng loạt repository. */
 @Service
 @Slf4j
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("@perm.has('DASHBOARD_VIEW')")
 public class AdminDashboardServiceImpl implements AdminDashboardService {
 
     static final int DEFAULT_DAYS = 30;

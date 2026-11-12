@@ -1414,3 +1414,93 @@
   white-space: nowrap;
   cursor: pointer;
 }
+
+/* ---- Vai trò: bảng tích quyền (cuộn ngang trong khung, trang không bị cuộn ngang) */
+.adm-roles__scroll {
+  overflow-x: auto;
+}
+
+.adm-roles__table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+  font-size: var(--ui-text-sm);
+}
+
+.adm-roles__table th,
+.adm-roles__table td {
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--ui-border);
+  text-align: center;
+  vertical-align: middle;
+}
+
+.adm-roles__table th[scope='row'],
+.adm-roles__table thead th:first-child {
+  text-align: left;
+  font-weight: 500;
+}
+
+.adm-roles__table tbody th[scope='colgroup'] {
+  padding-top: 0.9rem;
+  background: var(--ui-surface-muted);
+  color: var(--ui-text-2);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.adm-roles__head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.adm-roles__count {
+  color: var(--ui-text-2);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+.adm-roles__tools {
+  display: inline-flex;
+  gap: 0.15rem;
+}
+
+.adm-roles__table input[type='checkbox'] {
+  width: 1.05rem;
+  height: 1.05rem;
+  margin: 0;
+  accent-color: var(--ui-primary);
+  cursor: pointer;
+}
+
+.adm-roles__table td.is-changed {
+  box-shadow: inset 0 0 0 2px var(--ui-primary);
+}
+
+.adm-roles__yes {
+  display: inline-flex;
+  color: var(--ui-success);
+}
+
+.adm-roles__no {
+  color: var(--ui-text-3);
+}
+
+.adm-roles__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+}
+
+.adm-roles__note {
+  margin-right: auto;
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-sm);
+}

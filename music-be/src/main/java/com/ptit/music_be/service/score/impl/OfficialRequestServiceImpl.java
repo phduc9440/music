@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import com.ptit.music_be.configuration.ApplicationInitConfig;
+import com.ptit.music_be.dto.enums.auth.AdminPermission;
 import com.ptit.music_be.dto.enums.notification.NotificationType;
 import com.ptit.music_be.dto.enums.score.FileType;
 import com.ptit.music_be.dto.enums.score.OfficialRequestStatus;
@@ -59,7 +60,7 @@ public class OfficialRequestServiceImpl implements OfficialRequestService {
     @Override
     @Transactional
     public OfficialRequestResponse request(String scoreId) {
-        requireAdmin();
+        SecurityUtils.requirePermission(AdminPermission.OFFICIAL_LIBRARY);
         Member admin = currentMember();
         Score score =
                 scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
@@ -189,7 +190,7 @@ public class OfficialRequestServiceImpl implements OfficialRequestService {
     @Override
     @Transactional
     public OfficialRequestResponse cancel(String requestId) {
-        requireAdmin();
+        SecurityUtils.requirePermission(AdminPermission.OFFICIAL_LIBRARY);
         OfficialRequest request = requestRepository
                 .findById(requestId)
                 .orElseThrow(() -> new AppException(ErrorCode.OFFICIAL_REQUEST_NOT_EXISTED));
@@ -204,7 +205,7 @@ public class OfficialRequestServiceImpl implements OfficialRequestService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<OfficialRequestResponse> getForAdmin(int page, int size, String status) {
-        requireAdmin();
+        SecurityUtils.requirePermission(AdminPermission.OFFICIAL_LIBRARY);
         int safeSize = size <= 0 ? DEFAULT_PAGE_SIZE : Math.min(size, MAX_PAGE_SIZE);
         String safeStatus = "";
         if (StringUtils.hasText(status)) {
@@ -286,9 +287,4 @@ public class OfficialRequestServiceImpl implements OfficialRequestService {
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
     }
 
-    private static void requireAdmin() {
-        if (!SecurityUtils.isAdmin()) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
-        }
-    }
 }

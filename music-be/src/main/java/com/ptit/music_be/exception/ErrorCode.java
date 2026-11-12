@@ -25,6 +25,10 @@ public enum ErrorCode {
     PASSWORD_SAME_AS_OLD(1012, "Mật khẩu mới phải khác mật khẩu hiện tại", HttpStatus.BAD_REQUEST),
     CANNOT_MODIFY_SELF(1013, "Quản trị viên không thể khóa hoặc hạ quyền chính mình", HttpStatus.BAD_REQUEST),
     ROLE_NOT_EXISTED(1015, "Vai trò không tồn tại", HttpStatus.BAD_REQUEST),
+    ROLE_BUILT_IN(1020, "Vai trò có sẵn: không đổi tên, không xóa; USER và SUPER_ADMIN cũng không chỉnh quyền", HttpStatus.BAD_REQUEST),
+    ROLE_IN_USE(1021, "Vai trò đang được gán cho thành viên, hãy gỡ khỏi họ trước khi xóa", HttpStatus.CONFLICT),
+    ROLE_LABEL_INVALID(1022, "Tên vai trò từ 2 đến 100 ký tự, mô tả tối đa 255 ký tự", HttpStatus.BAD_REQUEST),
+    ROLE_LABEL_DUPLICATED(1023, "Đã có vai trò trùng tên này", HttpStatus.CONFLICT),
     ACCOUNT_LOCKED(1016, "Tài khoản đã bị khóa", HttpStatus.FORBIDDEN),
     OTP_INVALID(
             1017,

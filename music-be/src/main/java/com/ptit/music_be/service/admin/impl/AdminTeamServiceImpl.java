@@ -56,7 +56,7 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("@perm.has('TEAMS_MANAGE')")
 public class AdminTeamServiceImpl implements AdminTeamService {
 
     static final int DEFAULT_PAGE_SIZE = 20;

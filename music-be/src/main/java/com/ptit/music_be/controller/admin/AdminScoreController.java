@@ -3,6 +3,7 @@ package com.ptit.music_be.controller.admin;
 import jakarta.validation.Valid;
 
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.ptit.music_be.dto.request.admin.AdminScoreBulkRequest;
 import com.ptit.music_be.dto.request.admin.AdminScoreVisibilityRequest;
@@ -26,6 +27,7 @@ import lombok.experimental.FieldDefaults;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Tag(name = "Admin - Scores", description = "Chỉ ROLE_ADMIN: quản lý toàn bộ bản nhạc trong hệ thống")
+@PreAuthorize("@perm.has('SCORES_MODERATE')")
 public class AdminScoreController {
 
     ScoreService scoreService;

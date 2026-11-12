@@ -1,6 +1,7 @@
 package com.ptit.music_be.controller.admin;
 
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,6 +23,7 @@ import lombok.experimental.FieldDefaults;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Tag(name = "Admin - Official requests", description = "Chỉ ROLE_ADMIN: các lời xin đưa bản nhạc vào kho bản nhạc mẫu")
+@PreAuthorize("@perm.has('OFFICIAL_LIBRARY')")
 public class AdminOfficialRequestController {
 
     OfficialRequestService officialRequestService;

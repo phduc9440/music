@@ -21,7 +21,8 @@
       "system": "Giám sát hệ thống",
       "revenue": "Doanh thu",
       "plans": "Gói dịch vụ",
-      "memberPlans": "Gói thành viên"
+      "memberPlans": "Gói thành viên",
+      "roles": "Vai trò"
     },
     "other": "Khác",
     "userSite": "Giao diện người dùng"
@@ -273,7 +274,10 @@
       "deleted": "Đã xóa",
       "empty": "Chưa tham gia nhóm nào",
       "count": "{count} nhóm"
-    }
+    },
+    "roleChangeTitle": "Đổi vai trò của {email}?",
+    "roleChangeMessage": "Vai trò mới: {role}. Quyền mới có hiệu lực ngay.",
+    "roleChangeConfirm": "Đổi vai trò"
   },
   "composers": {
     "errName": "Nhập tên nhạc sĩ",
@@ -769,5 +773,58 @@
     "emptyDeleted": "Chưa có nhóm nào bị xóa",
     "deletedBanner": "Nhóm này đã bị xóa (khôi phục được đến {date}).",
     "deletedBannerExpired": "Nhóm này đã bị xóa và quá hạn khôi phục 30 ngày."
+  },
+  "roles": {
+    "description": "Thêm, sửa, xóa vai trò tài khoản và tích quyền quản trị cho từng vai trò. Chỉ tài khoản gốc (SUPER ADMIN) làm được; gán vai trò cho thành viên ở trang Thành viên.",
+    "add": "Thêm vai trò",
+    "addTitle": "Thêm vai trò mới",
+    "editTitle": "Sửa vai trò",
+    "nameLabel": "Tên vai trò",
+    "descriptionLabel": "Mô tả (không bắt buộc)",
+    "createHint": "Tạo xong, tích quyền cho vai trò ở bảng rồi bấm Lưu thay đổi.",
+    "permission": "Quyền",
+    "members_one": "{count} thành viên",
+    "members_other": "{count} thành viên",
+    "builtInTag": "Có sẵn",
+    "always": "Luôn có",
+    "no": "Không",
+    "save": "Lưu thay đổi",
+    "unsaved": "Có thay đổi chưa lưu",
+    "note": "USER không có quyền quản trị; SUPER ADMIN luôn có mọi quyền; ADMIN chỉnh quyền được nhưng không đổi tên hay xóa. Thay đổi có hiệu lực ngay, không cần đăng nhập lại.",
+    "saved": "Đã lưu quyền của vai trò",
+    "saveFailed": "Không lưu được vai trò",
+    "loadFailed": "Không tải được danh sách vai trò",
+    "created": "Đã thêm vai trò",
+    "updated": "Đã cập nhật vai trò",
+    "deleteTitle": "Xóa vai trò “{name}”?",
+    "deleteInUse_one": "{count} thành viên đang có vai trò này, hãy gỡ trước khi xóa.",
+    "deleteInUse_other": "{count} thành viên đang có vai trò này, hãy gỡ trước khi xóa.",
+    "deleted": "Đã xóa vai trò",
+    "deleteFailed": "Không xóa được vai trò",
+    "builtIn": {
+      "USER": "Người dùng",
+      "ADMIN": "Quản trị viên",
+      "SUPER_ADMIN": "Quản trị gốc"
+    },
+    "assign": "Vai trò",
+    "assigned": "Đã đổi vai trò",
+    "permissions": {
+      "DASHBOARD_VIEW": "Xem bảng điều khiển (số liệu, biểu đồ)",
+      "MEMBERS_VIEW": "Xem danh sách và chi tiết thành viên",
+      "MEMBERS_LOCK": "Khóa, mở khóa tài khoản",
+      "TEAMS_MANAGE": "Xem, xóa (vi phạm), khôi phục nhóm",
+      "ANNOUNCEMENTS_SEND": "Gửi thông báo tới thành viên",
+      "SCORES_MODERATE": "Kiểm duyệt bản nhạc: đổi công khai, gỡ, xóa, thao tác hàng loạt, xóa nhận xét",
+      "SCORES_APPROVE": "Duyệt hoặc từ chối bản nhạc xin công khai",
+      "OFFICIAL_LIBRARY": "Kho bản nhạc mẫu: xin đưa vào, gỡ, sửa, xóa",
+      "TAGS_MANAGE": "Quản lý thể loại",
+      "COMPOSERS_MANAGE": "Quản lý nhạc sĩ",
+      "REVENUE_VIEW": "Xem doanh thu và đơn thanh toán",
+      "PAYMENTS_REFUND": "Hoàn tiền đơn thanh toán",
+      "SUBSCRIPTIONS_MANAGE": "Cấp, hủy, cấm, bỏ cấm gói của thành viên",
+      "PLANS_MANAGE": "Tạo, sửa, xóa gói dịch vụ",
+      "AI_TASKS_MANAGE": "Xem, hủy, chạy lại tác vụ AI của mọi người",
+      "SYSTEM_MONITOR": "Giám sát hệ thống, nhật ký lỗi"
+    }
   }
 }

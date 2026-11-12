@@ -3,6 +3,7 @@ package com.ptit.music_be.controller.admin;
 import java.util.List;
 
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.ptit.music_be.dto.request.admin.CreatePlanRequest;
 import com.ptit.music_be.dto.request.admin.UpdatePlanRequest;
@@ -26,6 +27,7 @@ public class AdminPlanController {
 
     AdminPlanService adminPlanService;
 
+    @PreAuthorize("@perm.any('PLANS_MANAGE,SUBSCRIPTIONS_MANAGE,REVENUE_VIEW')")
     @GetMapping
     @Operation(summary = "Danh sách gói kèm giá", security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<List<PlanResponse>> list() {

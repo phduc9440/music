@@ -21,7 +21,8 @@
       "system": "System monitoring",
       "revenue": "Revenue",
       "plans": "Plans",
-      "memberPlans": "Member plans"
+      "memberPlans": "Member plans",
+      "roles": "Roles"
     },
     "other": "Other",
     "userSite": "User site"
@@ -287,7 +288,10 @@
       "deleted": "Deleted",
       "empty": "Not in any team",
       "count": "{count} teams"
-    }
+    },
+    "roleChangeTitle": "Change the role of {email}?",
+    "roleChangeMessage": "New role: {role}. The new permissions apply immediately.",
+    "roleChangeConfirm": "Change role"
   },
   "composers": {
     "errName": "Enter the composer's name",
@@ -805,5 +809,58 @@
     "emptyDeleted": "No deleted teams",
     "deletedBanner": "This team was deleted (restorable until {date}).",
     "deletedBannerExpired": "This team was deleted and the 30-day restore window has passed."
+  },
+  "roles": {
+    "description": "Add, edit and delete account roles and tick the admin permissions of each role. Only the root account (SUPER ADMIN) can; assign roles to members on the Members page.",
+    "add": "Add role",
+    "addTitle": "Add a new role",
+    "editTitle": "Edit role",
+    "nameLabel": "Role name",
+    "descriptionLabel": "Description (optional)",
+    "createHint": "After creating it, tick the role's permissions in the table and press Save changes.",
+    "permission": "Permission",
+    "members_one": "{count} member",
+    "members_other": "{count} members",
+    "builtInTag": "Built-in",
+    "always": "Always",
+    "no": "No",
+    "save": "Save changes",
+    "unsaved": "Unsaved changes",
+    "note": "USER has no admin permission; SUPER ADMIN always has every permission; ADMIN can be changed but not renamed or deleted. Changes apply immediately, no re-login needed.",
+    "saved": "Role permissions saved",
+    "saveFailed": "Couldn't save the role",
+    "loadFailed": "Couldn't load the roles",
+    "created": "Role added",
+    "updated": "Role updated",
+    "deleteTitle": "Delete the role “{name}”?",
+    "deleteInUse_one": "{count} member has this role; remove it from them before deleting.",
+    "deleteInUse_other": "{count} members have this role; remove it from them before deleting.",
+    "deleted": "Role deleted",
+    "deleteFailed": "Couldn't delete the role",
+    "builtIn": {
+      "USER": "User",
+      "ADMIN": "Administrator",
+      "SUPER_ADMIN": "Root admin"
+    },
+    "assign": "Role",
+    "assigned": "Role changed",
+    "permissions": {
+      "DASHBOARD_VIEW": "View the dashboard (numbers, charts)",
+      "MEMBERS_VIEW": "View the member list and details",
+      "MEMBERS_LOCK": "Lock and unlock accounts",
+      "TEAMS_MANAGE": "View, delete (violations) and restore teams",
+      "ANNOUNCEMENTS_SEND": "Send announcements to members",
+      "SCORES_MODERATE": "Moderate scores: change visibility, remove, delete, bulk actions, delete reviews",
+      "SCORES_APPROVE": "Approve or reject scores awaiting publication",
+      "OFFICIAL_LIBRARY": "Curated library: request, remove, edit, delete",
+      "TAGS_MANAGE": "Manage tags",
+      "COMPOSERS_MANAGE": "Manage composers",
+      "REVENUE_VIEW": "View revenue and payment orders",
+      "PAYMENTS_REFUND": "Refund payment orders",
+      "SUBSCRIPTIONS_MANAGE": "Grant, cancel, ban and unban members' plans",
+      "PLANS_MANAGE": "Create, edit and delete plans",
+      "AI_TASKS_MANAGE": "View, cancel and retry everyone's AI tasks",
+      "SYSTEM_MONITOR": "Monitor the system and error logs"
+    }
   }
 }

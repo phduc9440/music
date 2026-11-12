@@ -28,7 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("@perm.has('SCORES_MODERATE')")
 public class AdminScoreBulkServiceImpl implements AdminScoreBulkService {
 
     ScoreService scoreService;

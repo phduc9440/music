@@ -16,7 +16,6 @@ import PlaylistDetail from '../pages/scores/playlists/PlaylistDetail';
 import Playlists from '../pages/scores/playlists/Playlists';
 import AdminAiTasks from '../pages/admin/AdminAiTasks';
 import AdminAnnouncements from '../pages/admin/AdminAnnouncements';
-import AdminDashboard from '../pages/admin/AdminDashboard';
 import AdminLayout from '../components/admin/AdminLayout';
 import AdminMemberDetail from '../pages/admin/AdminMemberDetail';
 import AdminMembers from '../pages/admin/AdminMembers';
@@ -40,6 +39,8 @@ import AdminRevenue from '../pages/admin/AdminRevenue';
 import AdminPlans from '../pages/admin/AdminPlans';
 import AdminMemberPlans from '../pages/admin/AdminMemberPlans';
 import AdminTeams from '../pages/admin/AdminTeams';
+import AdminRoles from '../pages/admin/AdminRoles';
+import AdminHome from '../pages/admin/AdminHome';
 import AdminTeamDetail from '../pages/admin/AdminTeamDetail';
 import GuestRoute from './GuestRoute';
 import ProtectedRoute from './ProtectedRoute';
@@ -135,8 +136,9 @@ const router = createBrowserRouter(
           </ProtectedRoute>
         }
       >
-        <Route index element={<AdminDashboard />} />
+        <Route index element={<AdminHome />} />
         <Route path="members" element={<AdminMembers />} />
+        <Route path="roles" element={<AdminRoles />} />
         <Route path="members/:id" element={<AdminMemberDetail />} />
         <Route path="teams" element={<AdminTeams />} />
         <Route path="teams/:id" element={<AdminTeamDetail />} />

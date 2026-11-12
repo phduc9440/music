@@ -155,5 +155,9 @@
   "3904": "You need review access or higher to comment on this score",
   "3905": "You can't edit, delete or resolve this comment",
   "3906": "You can only mention people who can view this score (up to 20)",
-  "3907": "The selected part or notes are invalid"
+  "3907": "The selected part or notes are invalid",
+  "1020": "Built-in role: it cannot be renamed or deleted; USER and SUPER_ADMIN permissions are locked too",
+  "1021": "The role is assigned to members; remove it from them before deleting",
+  "1022": "Role name is 2-100 characters, description up to 255",
+  "1023": "A role with this name already exists"
 }

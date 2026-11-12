@@ -155,5 +155,9 @@
   "3904": "Cần quyền nhận xét trở lên để góp ý vào bản nhạc này",
   "3905": "Bạn không sửa, xóa hoặc đánh dấu được góp ý này",
   "3906": "Chỉ nhắc được người xem được bản nhạc này (tối đa 20 người)",
-  "3907": "Bè hoặc danh sách nốt đã chọn không hợp lệ"
+  "3907": "Bè hoặc danh sách nốt đã chọn không hợp lệ",
+  "1020": "Vai trò có sẵn: không đổi tên, không xóa; USER và SUPER_ADMIN cũng không chỉnh quyền",
+  "1021": "Vai trò đang được gán cho thành viên, hãy gỡ khỏi họ trước khi xóa",
+  "1022": "Tên vai trò từ 2 đến 100 ký tự, mô tả tối đa 255 ký tự",
+  "1023": "Đã có vai trò trùng tên này"
 }

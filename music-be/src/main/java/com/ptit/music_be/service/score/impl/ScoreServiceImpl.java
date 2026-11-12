@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import com.ptit.music_be.dto.enums.auth.AdminPermission;
 import com.ptit.music_be.dto.enums.ai.AiTaskStatus;
 import com.ptit.music_be.dto.enums.ai.ProcessingStatus;
 import com.ptit.music_be.dto.enums.notification.NotificationType;
@@ -239,7 +240,7 @@ public class ScoreServiceImpl implements ScoreService {
         if (requested == Visibility.PRIVATE) {
             score.setVisibility(Visibility.PRIVATE.name());
             score.setRejectReason(null);
-        } else if (SecurityUtils.isAdmin()) {
+        } else if (SecurityUtils.hasPermission(AdminPermission.SCORES_APPROVE)) {
             score.setVisibility(Visibility.PUBLIC.name());
             score.setRejectReason(null);
         } else if (!Visibility.PUBLIC.name().equals(current)) {
@@ -262,7 +263,7 @@ public class ScoreServiceImpl implements ScoreService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<ScoreSummaryResponse> getPendingPublic(int page, int size) {
-        requireAdmin();
+        SecurityUtils.requirePermission(AdminPermission.SCORES_APPROVE);
         int safeSize = size <= 0 ? DEFAULT_PAGE_SIZE : Math.min(size, MAX_PAGE_SIZE);
         // Bản gửi duyệt mới nhất lên đầu
         Page<Score> result = scoreRepository.findByVisibility(
@@ -299,7 +300,7 @@ public class ScoreServiceImpl implements ScoreService {
             String source,
             String difficulty,
             String sort) {
-        requireAdmin();
+        SecurityUtils.requirePermission(AdminPermission.SCORES_MODERATE);
         int safeSize = size <= 0 ? DEFAULT_PAGE_SIZE : Math.min(size, MAX_PAGE_SIZE);
         String safeOfficial = official == null ? "" : official.trim().toLowerCase();
         if (!safeOfficial.isEmpty() && !"true".equals(safeOfficial) && !"false".equals(safeOfficial)) {
@@ -332,7 +333,7 @@ public class ScoreServiceImpl implements ScoreService {
     @Override
     @Transactional
     public ScoreDetailResponse setVisibilityByAdmin(String scoreId, Visibility visibility, String reason) {
-        requireAdmin();
+        SecurityUtils.requirePermission(AdminPermission.SCORES_MODERATE);
         if (visibility == null || visibility == Visibility.PENDING) {
             throw new AppException(ErrorCode.INVALID_REQUEST);
         }
@@ -493,7 +494,7 @@ public class ScoreServiceImpl implements ScoreService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<ScoreSummaryResponse> getOfficialCandidates(int page, int size, String keyword) {
-        requireAdmin();
+        SecurityUtils.requirePermission(AdminPermission.OFFICIAL_LIBRARY);
         int safeSize = size <= 0 ? DEFAULT_PAGE_SIZE : Math.min(size, MAX_PAGE_SIZE);
         Page<Score> result = scoreRepository.searchOfficialCandidates(
                 normalizeKeyword(keyword), PageRequest.of(Math.max(page, 0), safeSize));
@@ -503,7 +504,7 @@ public class ScoreServiceImpl implements ScoreService {
     @Override
     @Transactional
     public ScoreDetailResponse unmarkOfficial(String scoreId) {
-        requireAdmin();
+        SecurityUtils.requirePermission(AdminPermission.OFFICIAL_LIBRARY);
         Score score = findScore(scoreId);
         score.setIsOfficial(false);
         if (score.getOriginalScoreId() != null) {
@@ -558,7 +559,7 @@ public class ScoreServiceImpl implements ScoreService {
     @Override
     @Transactional
     public ScoreDetailResponse approvePublic(String scoreId) {
-        requireAdmin();
+        SecurityUtils.requirePermission(AdminPermission.SCORES_APPROVE);
         Score score = findPending(scoreId);
         score.setVisibility(Visibility.PUBLIC.name());
         score.setRejectReason(null);
@@ -577,7 +578,7 @@ public class ScoreServiceImpl implements ScoreService {
     @Override
     @Transactional
     public ScoreDetailResponse rejectPublic(String scoreId, String reason) {
-        requireAdmin();
+        SecurityUtils.requirePermission(AdminPermission.SCORES_APPROVE);
         Score score = findPending(scoreId);
         score.setVisibility(Visibility.PRIVATE.name());
         score.setRejectReason(blankToNull(reason));
@@ -594,11 +595,6 @@ public class ScoreServiceImpl implements ScoreService {
         return toDetail(saved);
     }
 
-    private static void requireAdmin() {
-        if (!SecurityUtils.isAdmin()) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
-        }
-    }
 
     // ------------------------------------------------------------------ thể loại (tags)
 
@@ -678,7 +674,7 @@ public class ScoreServiceImpl implements ScoreService {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
         // Bản trong kho bản nhạc mẫu chỉ ADMIN được xóa (chủ sở hữu muốn xóa thì nhờ admin gỡ khỏi kho trước)
-        if (Boolean.TRUE.equals(score.getIsOfficial()) && !SecurityUtils.isAdmin()) {
+        if (Boolean.TRUE.equals(score.getIsOfficial()) && !SecurityUtils.hasPermission(AdminPermission.OFFICIAL_LIBRARY)) {
             throw new AppException(ErrorCode.SCORE_OFFICIAL_LOCKED);
         }
         // Đang có tác vụ chạy thì không cho xóa (worker/AI service còn đang ghi file vào thư mục của score)

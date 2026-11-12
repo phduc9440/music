@@ -3,6 +3,7 @@ package com.ptit.music_be.controller.admin;
 import java.util.List;
 
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.ptit.music_be.dto.request.admin.TagRequest;
 import com.ptit.music_be.dto.response.admin.AdminTagResponse;
@@ -21,6 +22,7 @@ import lombok.experimental.FieldDefaults;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Tag(name = "Admin - Tags", description = "Chỉ ROLE_ADMIN: quản lý thể loại (tag) của bản nhạc")
+@PreAuthorize("@perm.has('TAGS_MANAGE')")
 public class AdminTagController {
 
     AdminTagService adminTagService;

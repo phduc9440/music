@@ -1,11 +1,25 @@
 -- V1: toan bo schema (tuong ung cac entity trong com.ptit.music_be.entity). Day la file init duy nhat: thay doi schema
 -- thi sua truc tiep o day roi xoa DB local de dung lai (khong them migration ALTER rieng le).
 
+-- Vai trò tài khoản. Có sẵn USER (mọi tài khoản), ADMIN, SUPER_ADMIN (tài khoản gốc, mọi quyền); SUPER_ADMIN tạo thêm
+-- vai trò khác ở trang "Vai trò". name là mã không dấu cách (quyền ROLE_<name>), label là tên hiển thị của vai trò tự tạo
+-- (vai trò có sẵn dùng nhãn dịch sẵn ở web).
 CREATE TABLE IF NOT EXISTS roles (
-    id   VARCHAR(36)  NOT NULL,
-    name VARCHAR(255) NOT NULL,
+    id          VARCHAR(36)  NOT NULL,
+    name        VARCHAR(255) NOT NULL COMMENT 'Mã vai trò: USER, ADMIN, SUPER_ADMIN hoặc mã sinh từ tên (chữ hoa, số, _)',
+    label       VARCHAR(100) NULL COMMENT 'Tên hiển thị của vai trò tự tạo',
+    description VARCHAR(255) NULL,
     PRIMARY KEY (id),
     UNIQUE KEY uk_roles_name (name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Quyền quản trị của từng vai trò (enum AdminPermission: DASHBOARD_VIEW, MEMBERS_VIEW, SCORES_APPROVE...). SUPER_ADMIN không
+-- cần dòng nào (luôn đủ quyền), USER không có quyền quản trị.
+CREATE TABLE IF NOT EXISTS role_permissions (
+    role_id    VARCHAR(36) NOT NULL,
+    permission VARCHAR(40) NOT NULL,
+    PRIMARY KEY (role_id, permission),
+    CONSTRAINT fk_role_permissions_role FOREIGN KEY (role_id) REFERENCES roles (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS members (

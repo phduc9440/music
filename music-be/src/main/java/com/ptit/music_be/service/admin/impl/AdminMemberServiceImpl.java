@@ -15,6 +15,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ptit.music_be.dto.enums.auth.AdminPermission;
 import com.ptit.music_be.configuration.MemberStatusGuard;
 import com.ptit.music_be.dto.enums.auth.MemberStatus;
 import com.ptit.music_be.dto.enums.billing.PaymentStatus;
@@ -42,7 +43,7 @@ import lombok.experimental.FieldDefaults;
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("@perm.has('MEMBERS_VIEW')")
 public class AdminMemberServiceImpl implements AdminMemberService {
 
     static final String SUPER_ADMIN = "SUPER_ADMIN";
@@ -219,6 +220,7 @@ public class AdminMemberServiceImpl implements AdminMemberService {
         }
 
         if (request.getStatus() != null) {
+            SecurityUtils.requirePermission(AdminPermission.MEMBERS_LOCK);
             if (isSelf && request.getStatus() != MemberStatus.ACTIVE) {
                 throw new AppException(ErrorCode.CANNOT_MODIFY_SELF);
             }
@@ -256,6 +258,7 @@ public class AdminMemberServiceImpl implements AdminMemberService {
                 member.getMemberRoles()
                         .add(MemberRole.builder().member(member).role(role).build());
             }
+            memberStatusGuard.evict(member.getEmail()); // vai trò mới có hiệu lực ngay, không cần đăng nhập lại
         }
 
         return memberMapper.toMemberResponse(memberRepository.save(member));
