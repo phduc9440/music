@@ -16,7 +16,7 @@ import { getBackTarget } from '../../../components/layout/nav';
 import { BackLink } from '../../../components/ui';
 import { commentApi, scoreApi } from '../../../services';
 import type { ScoreDetail as ScoreDetailData } from '../../../types';
-import { getHttpStatus, POLL_INTERVAL_MS } from '../../../utils/score';
+import { getHttpStatus, POLL_INTERVAL_MS, useScoreBase } from '../../../utils/score';
 import '../../../components/scores/scores.css';
 import './ScoreDetail.css';
 import { t } from '../../../i18n/core';
@@ -55,6 +55,7 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
   const focusCommentId = searchParams.get('comment');
   const [tab, setTab] = useState<Tab>(searchParams.get('tab') === 'comments' || focusCommentId ? 'comments' : 'files');
   const [openComments, setOpenComments] = useState<number | null>(null);
+  const scoreBase = useScoreBase();
   const onOpenComments = useCallback((n: number) => setOpenComments(n), []);
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -228,7 +229,17 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
             {activeTab === 'files' && <FilesTable files={score.files} />}
             {activeTab === 'tasks' && <TasksTable tasks={score.latestTasks} files={score.files} />}
             {activeTab === 'comments' && (
-              <CommentsSection scoreId={score.id} focusId={focusCommentId} onOpenCount={onOpenComments} />
+              <CommentsSection
+                scoreId={score.id}
+                focusId={focusCommentId}
+                onOpenCount={onOpenComments}
+                // Bản đã có MusicXML: bấm nhãn ô để mở trang xem bản nhạc tại đúng góp ý
+                viewerHref={
+                  score.files.some((f) => f.fileType === 'MUSICXML')
+                    ? (c) => `${scoreBase}/${score.id}/edit?comment=${c.id}`
+                    : undefined
+                }
+              />
             )}
             {activeTab === 'reviews' && (
               <ReviewsSection scoreId={score.id} canReview={score.canReview} onChanged={() => setTick((n) => n + 1)} />

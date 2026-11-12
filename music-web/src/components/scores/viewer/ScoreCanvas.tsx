@@ -80,11 +80,23 @@ interface Props {
   loopRange?: LoopRange | null;
   /** Shift + kéo qua các ô nhịp (khi không có `onSelectNotes`): trả về ô đầu và ô cuối (từ 0, đầu ≤ cuối). */
   onMeasureRange?: (startMeasure: number, endMeasure: number) => void;
+  /** Các đoạn ô nhịp có góp ý đang mở (mục 4.2): tô nền nhạt, bong bóng số lượng ở ô cuối mỗi đoạn. */
+  commentRanges?: readonly CommentRange[];
+  /** Bấm bong bóng góp ý: trả về id các góp ý kết thúc ở ô đó. */
+  onCommentBubble?: (ids: string[]) => void;
   /** Thêm nốt tại vị trí trên khuông (bấm hoặc kéo-thả); trả về true nếu thêm được. Có prop này thì canvas nhận kéo-thả. */
   onInsertNote?: (target: InsertTarget, choice: DurationChoice, accidental: AccidentalChoice) => boolean;
 }
 
 /** Đoạn A-B tô trên bản nhạc: chỉ số ô từ 0 (gồm cả hai đầu); `active` = đang bật lặp. */
+/** Một đoạn có góp ý: chỉ số ô từ 0, gồm cả hai đầu. `active`: góp ý đang được chọn ở bảng Góp ý (tô đậm hơn). */
+export interface CommentRange {
+  id: string;
+  start: number;
+  end: number;
+  active?: boolean;
+}
+
 export interface LoopRange {
   start: number;
   end: number;
@@ -132,6 +144,9 @@ const ISSUE_PAD_X = 10;
 const ISSUE_PAD_Y = 22;
 
 const TEXT_HOT_CLASS = 'ed-text-hot';
+const COMMENT_BOX_CLASS = 'ed-comment-box';
+const COMMENT_BUBBLE_CLASS = 'ed-comment-bubble';
+const EMPTY_COMMENTS: readonly CommentRange[] = [];
 
 /**
  * Phủ vùng bấm lên các chữ đầu bản nhạc (tiêu đề, tác giả, tempo) để mở khung sửa. Tìm chữ trong SVG theo nội dung
@@ -268,6 +283,55 @@ const drawIssueBoxes = (
 };
 
 /**
+ * Tô nền các ô nhịp có góp ý (mục 4.2) và đặt bong bóng số lượng ở góc trên bên phải ô cuối của mỗi đoạn (các góp ý cùng
+ * kết thúc ở một ô gộp chung một bong bóng). Nền không bắt sự kiện nên vẫn bấm chọn nốt bình thường.
+ */
+const drawCommentBoxes = (
+  host: HTMLElement,
+  ranges: readonly CommentRange[],
+  onBubble?: (ids: string[]) => void,
+): void => {
+  host.querySelectorAll(`.${COMMENT_BOX_CLASS}, .${COMMENT_BUBBLE_CLASS}`).forEach((el) => el.remove());
+  if (ranges.length === 0) return;
+  const covered = new Map<number, boolean>(); // ô → có góp ý đang chọn phủ lên không
+  for (const r of ranges) {
+    for (let i = r.start; i <= r.end; i++) covered.set(i, (covered.get(i) ?? false) || !!r.active);
+  }
+  const origin = host.getBoundingClientRect();
+  const boxes = collectMeasureBoxes(host, (i) => covered.has(i));
+  for (const [measureIndex, box] of boxes) {
+    const div = document.createElement('div');
+    div.className = covered.get(measureIndex) ? `${COMMENT_BOX_CLASS} is-active` : COMMENT_BOX_CLASS;
+    div.style.left = `${box.l - origin.left - LOOP_PAD_X}px`;
+    div.style.top = `${box.t - origin.top - LOOP_PAD_Y}px`;
+    div.style.width = `${box.r - box.l + LOOP_PAD_X * 2}px`;
+    div.style.height = `${box.b - box.t + LOOP_PAD_Y * 2}px`;
+    host.appendChild(div);
+  }
+  const byEnd = new Map<number, string[]>();
+  for (const r of ranges) byEnd.set(r.end, [...(byEnd.get(r.end) ?? []), r.id]);
+  for (const [end, ids] of byEnd) {
+    const box = boxes.get(end);
+    if (!box) continue;
+    const bubble = document.createElement('button');
+    bubble.type = 'button';
+    bubble.className = COMMENT_BUBBLE_CLASS;
+    bubble.textContent = String(ids.length);
+    bubble.title = `${ids.length} góp ý ở ô ${end + 1}`;
+    bubble.setAttribute('aria-label', bubble.title);
+    bubble.style.left = `${box.r - origin.left + LOOP_PAD_X - 10}px`;
+    bubble.style.top = `${box.t - origin.top - LOOP_PAD_Y - 10}px`;
+    // Không để cử chỉ chọn vùng / bỏ chọn của khung nhạc bắt sự kiện này
+    bubble.addEventListener('pointerdown', (e) => e.stopPropagation());
+    bubble.addEventListener('click', (e) => {
+      e.stopPropagation();
+      onBubble?.(ids);
+    });
+    host.appendChild(bubble);
+  }
+};
+
+/**
  * Đưa bản nhạc của OSMD về `semitones` nửa cung (so với giọng viết trong file). Chỉ dựng lại đồ họa khi giá trị đổi; `load()`
  * tạo bản nhạc mới ở giọng gốc nên sau mỗi lần nạp phải gọi lại.
  */
@@ -329,6 +393,8 @@ export default function ScoreCanvas({
   transpose = 0,
   inverted = false,
   onMeasureRange,
+  commentRanges = EMPTY_COMMENTS,
+  onCommentBubble,
   onSelectNotes,
   onDragPitch,
   inputMode = false,
@@ -407,6 +473,8 @@ export default function ScoreCanvas({
     issueMeasures,
     onConfirmMeasure,
     openText,
+    commentRanges,
+    onCommentBubble,
   });
   useEffect(() => {
     latest.current = {
@@ -426,6 +494,8 @@ export default function ScoreCanvas({
       issueMeasures,
       onConfirmMeasure,
       openText,
+      commentRanges,
+      onCommentBubble,
     };
   });
 
@@ -461,6 +531,7 @@ export default function ScoreCanvas({
       applyMutedTracks(host, latest.current.mutedStaves);
       drawLoopBoxes(host, latest.current.loopRange);
       drawIssueBoxes(host, latest.current.issueMeasures, (i) => latest.current.onConfirmMeasure?.(i));
+      drawCommentBoxes(host, latest.current.commentRanges, (ids) => latest.current.onCommentBubble?.(ids));
       if (latest.current.openText) drawTextHotspots(host, current, (k, r) => latest.current.openText?.(k, r));
     } catch {
       // chỉ mất khả năng chọn nốt, bản nhạc vẫn xem được
@@ -638,6 +709,13 @@ export default function ScoreCanvas({
     const host = hostRef.current;
     if (host) drawIssueBoxes(host, issueMeasures, (i) => latest.current.onConfirmMeasure?.(i));
   }, [issueMeasures]);
+
+  // Tô lại các đoạn có góp ý khi danh sách đổi (so theo nội dung, không theo tham chiếu mảng)
+  const commentKey = commentRanges.map((r) => `${r.id}:${r.start}-${r.end}${r.active ? '*' : ''}`).join('|');
+  useEffect(() => {
+    const host = hostRef.current;
+    if (host) drawCommentBoxes(host, latest.current.commentRanges, (ids) => latest.current.onCommentBubble?.(ids));
+  }, [commentKey]);
 
   // Cuộn tới ô nhịp được yêu cầu (bấm cảnh báo trên thanh trạng thái)
   useEffect(() => {

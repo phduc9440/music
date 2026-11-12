@@ -192,6 +192,11 @@ export class ScoreDocument {
     return this.parts().length;
   }
 
+  /** Mã part trong MusicXML (thuộc tính id của <part>, ví dụ "P1"); null nếu không có. Dùng để neo góp ý vào một bè. */
+  partIdOf(partIndex: number): string | null {
+    return this.parts()[partIndex]?.getAttribute('id') ?? null;
+  }
+
   /** Các thẻ <measure> của một part (mảng rỗng nếu part không tồn tại). */
   getMeasures(partIndex: number): Element[] {
     return this.measuresOf(partIndex);

@@ -104,6 +104,12 @@ export const IconMore = () => (
     <circle cx="19" cy="12" r="1.4" fill="currentColor" />
   </Svg>
 );
+export const IconComment = () => (
+  <Svg>
+    <path d="M5 5h14a1 1 0 011 1v9a1 1 0 01-1 1h-7l-4 3v-3H5a1 1 0 01-1-1V6a1 1 0 011-1z" />
+    <path d="M8 9.5h8M8 12.5h5" />
+  </Svg>
+);
 export const IconHistory = () => (
   <Svg>
     <path d="M4 12a8 8 0 108-8 8 8 0 00-6 2.7M4 4v4h4M12 8v4l3 2" />

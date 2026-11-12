@@ -470,6 +470,20 @@
     "deleted": "Comment deleted",
     "created": "Comment posted",
     "resolved": "Marked as resolved",
-    "reopened": "Comment reopened"
+    "reopened": "Comment reopened",
+    "selectHint": "Drag over or click notes on the score, then use the Comment button next to them, or right-click a note.",
+    "fromSelection": "From your selection on the score",
+    "showOnScore": "Scroll to this passage on the score",
+    "openInViewer": "See this passage on the score",
+    "saveFirst": "The score has unsaved changes. Save first so the bar numbers match the version others see.",
+    "panelToggle": "Comments",
+    "panelClose": "Close comments",
+    "shortcut": "Comment on the selection",
+    "commentHere": "Comment",
+    "contextComment": "Comment on the selection",
+    "contextView": "Show comments on bar {measure} ({count})",
+    "contextNoAccess": "You need review access to comment",
+    "composerTitle": "Comment on bar {measures}",
+    "sendHint": "Ctrl/Cmd + Enter to post"
   }
 }

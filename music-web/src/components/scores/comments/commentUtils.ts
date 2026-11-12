@@ -1,5 +1,15 @@
 import type { CommentMember } from '../../../types';
 
+/** Vùng neo góp ý lấy từ vùng chọn trên bản nhạc (số ô từ 1, như API). */
+export interface CommentAnchor {
+  start: number;
+  end: number;
+  /** Mã part (MusicXML) khi mọi nốt chọn cùng một bè. */
+  partId?: string | null;
+  /** Id các nốt đã chọn (Editor). */
+  noteIds?: string[];
+}
+
 /** "12" hoặc "12–16" (khớp tham số measures của thông báo). */
 export const measureLabel = (start?: number | null, end?: number | null): string => {
   if (start == null) return '';

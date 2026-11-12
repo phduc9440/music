@@ -459,6 +459,20 @@
     "deleted": "Đã xóa góp ý",
     "created": "Đã gửi góp ý",
     "resolved": "Đã đánh dấu đã xử lý",
-    "reopened": "Đã mở lại góp ý"
+    "reopened": "Đã mở lại góp ý",
+    "selectHint": "Bôi đen hoặc bấm chọn nốt trên bản nhạc rồi bấm nút Góp ý hiện ngay cạnh, hoặc bấm chuột phải vào nốt.",
+    "fromSelection": "Theo vùng đang chọn trên bản nhạc",
+    "showOnScore": "Cuộn tới đoạn này trên bản nhạc",
+    "openInViewer": "Xem đoạn này trên bản nhạc",
+    "saveFirst": "Bản nhạc đang có thay đổi chưa lưu. Lưu trước khi góp ý để số ô khớp với phiên bản người khác đang xem.",
+    "panelToggle": "Góp ý",
+    "panelClose": "Đóng bảng góp ý",
+    "shortcut": "Góp ý vào vùng đang chọn",
+    "commentHere": "Góp ý",
+    "contextComment": "Góp ý vào đoạn đã chọn",
+    "contextView": "Xem góp ý ở ô {measure} ({count})",
+    "contextNoAccess": "Cần quyền nhận xét để góp ý",
+    "composerTitle": "Góp ý ô {measures}",
+    "sendHint": "Ctrl/Cmd + Enter để gửi"
   }
 }

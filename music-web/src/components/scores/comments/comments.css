@@ -390,3 +390,168 @@
     border-color: var(--ui-primary);
   }
 }
+
+/* Nhãn ô bấm được: cuộn bản nhạc tới vùng (trang xem) hoặc mở trang xem tại góp ý (trang chi tiết) */
+.cm-measure--link {
+  border: 0;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.cm-measure--link:hover,
+.cm-measure--link:focus-visible {
+  background: var(--ui-primary);
+  color: var(--ui-on-accent);
+  outline: none;
+}
+
+/* Bảng Góp ý bên phải trang xem bản nhạc: hẹp, cuộn riêng */
+.cm-section--panel {
+  gap: 0.6rem;
+}
+
+.cm-section--panel .cm-filter {
+  padding: 0.25rem 0.6rem;
+}
+
+.cm-section--panel .cm-thread {
+  padding: 0.65rem 0.7rem;
+}
+
+.cm-section--panel .cm-replies {
+  margin-left: 0.6rem;
+  padding-left: 0.8rem;
+}
+
+.cm-section--panel .cm-reply-form {
+  margin-left: 0;
+}
+
+/* ---- Góp ý ngay trên bản nhạc (trang xem): nút nổi cạnh vùng bôi đen, menu chuột phải, ô nhập nổi */
+.cm-float {
+  position: fixed;
+  z-index: 45;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--ui-primary);
+  border-radius: 999px;
+  background: var(--ui-primary);
+  color: var(--ui-on-accent);
+  font: inherit;
+  font-size: var(--ui-text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--ui-shadow-pop);
+  animation: cm-pop 0.15s ease-out;
+}
+
+.cm-float:hover {
+  background: var(--ui-primary-hover, var(--ui-primary));
+}
+
+.cm-menu {
+  position: fixed;
+  z-index: 60;
+  min-width: 220px;
+  padding: 0.3rem;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  background: var(--ui-surface);
+  box-shadow: var(--ui-shadow-pop);
+  animation: cm-pop 0.12s ease-out;
+}
+
+.cm-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  border: 0;
+  border-radius: var(--ui-radius);
+  background: transparent;
+  color: var(--ui-text);
+  font: inherit;
+  font-size: var(--ui-text-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.cm-menu__item:hover:not(:disabled),
+.cm-menu__item:focus-visible {
+  background: var(--ui-primary-soft);
+  color: var(--ui-primary);
+  outline: none;
+}
+
+.cm-menu__item:disabled {
+  color: var(--ui-text-3);
+  cursor: not-allowed;
+}
+
+.cm-menu__hint {
+  padding: 0 0.6rem 0.4rem;
+  color: var(--ui-text-3);
+  font-size: 0.75rem;
+}
+
+.cm-popover {
+  position: fixed;
+  z-index: 55;
+  display: grid;
+  gap: 0.55rem;
+  width: 340px;
+  max-width: calc(100vw - 16px);
+  padding: 0.75rem;
+  border: 1px solid var(--ui-primary-border, var(--ui-border-strong));
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-surface);
+  box-shadow: var(--ui-shadow-pop);
+  animation: cm-pop 0.15s ease-out;
+}
+
+.cm-popover__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cm-popover__close {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: var(--ui-radius);
+  background: transparent;
+  color: var(--ui-text-2);
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.cm-popover__close:hover {
+  background: var(--ui-surface-hover);
+}
+
+.cm-popover__hint {
+  margin-top: -0.25rem;
+  font-size: 0.72rem;
+}
+
+@keyframes cm-pop {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cm-float,
+  .cm-menu,
+  .cm-popover {
+    animation: none;
+  }
+}

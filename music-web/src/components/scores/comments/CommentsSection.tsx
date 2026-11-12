@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Link } from '../../../routes/transition-nav';
 import { toast } from 'react-toastify';
 import { commentApi } from '../../../services';
 import type { CommentFilter, CommentMember, ScoreComment, ScoreComments } from '../../../types';
@@ -9,6 +10,7 @@ import { t } from '../../../i18n/core';
 import MentionInput, { MemberAvatar } from './MentionInput';
 import CommentCompareModal from './CommentCompareModal';
 import { measureLabel, mentionIdsIn, splitMentions } from './commentUtils';
+import type { CommentAnchor } from './commentUtils';
 import './comments.css';
 
 const FILTERS: CommentFilter[] = ['OPEN', 'RESOLVED', 'MENTIONED', 'ALL'];
@@ -19,13 +21,39 @@ interface Props {
   focusId?: string | null;
   /** Báo trang cha số góp ý đang mở để hiện trên tab. */
   onOpenCount?: (count: number) => void;
+  // ---- dùng trong trang xem bản nhạc
+  /** Vùng đang chọn trên bản nhạc: điền sẵn ô từ–đến (và bè, nốt) cho góp ý mới. */
+  anchor?: CommentAnchor | null;
+  /** Tăng lên để mở form góp ý (phím tắt Ctrl/Cmd+Alt+M). */
+  composeKey?: number;
+  /** Có giá trị: chưa cho viết góp ý, hiện lý do (ví dụ bản nhạc đang có thay đổi chưa lưu). */
+  composeBlockedReason?: string | null;
+  /** Bấm nhãn ô của một góp ý: trang cha cuộn bản nhạc tới vùng đó. */
+  onSelectThread?: (comment: ScoreComment) => void;
+  /** Gọi sau mỗi lần tải lại (thêm, sửa, xử lý, xóa) để trang cha cập nhật vùng tô trên bản nhạc. */
+  onChanged?: () => void;
+  /** Trang chi tiết: đường dẫn mở trang xem bản nhạc tại góp ý (null nếu bản chưa có MusicXML). */
+  viewerHref?: (comment: ScoreComment) => string | null;
+  /** Bố cục hẹp cho bảng bên phải trang xem bản nhạc. */
+  compact?: boolean;
 }
 
 /**
- * Tab "Góp ý" (mục 4.2): góp ý gắn vào đoạn ô nhịp, trả lời, @nhắc tên, đánh dấu đã xử lý, nhãn "Viết trên phiên bản vN"
- * khi số ô đã đổi. Chọn vùng trực tiếp trên bản nhạc làm ở Editor/Viewer; ở đây nhập số ô.
+ * Bảng "Góp ý" (mục 4.2): góp ý gắn vào đoạn ô nhịp, trả lời, @nhắc tên, đánh dấu đã xử lý, nhãn "Viết trên phiên bản vN"
+ * khi số ô đã đổi. Dùng ở tab của trang chi tiết (nhập số ô) và ở bảng bên phải trang xem bản nhạc (điền theo vùng chọn).
  */
-export default function CommentsSection({ scoreId, focusId, onOpenCount }: Props) {
+export default function CommentsSection({
+  scoreId,
+  focusId,
+  onOpenCount,
+  anchor,
+  composeKey = 0,
+  composeBlockedReason = null,
+  onSelectThread,
+  onChanged,
+  viewerHref,
+  compact = false,
+}: Props) {
   const [filter, setFilter] = useState<CommentFilter>(focusId ? 'ALL' : 'OPEN');
   const [data, setData] = useState<ScoreComments | null>(null);
   const [composing, setComposing] = useState(false);
@@ -36,22 +64,36 @@ export default function CommentsSection({ scoreId, focusId, onOpenCount }: Props
       .then((res) => {
         setData(res.data.result);
         onOpenCount?.(res.data.result.openCount);
+        onChanged?.();
       })
       .catch((err) => toast.error(getErrorMessage(err, t('scores.comments.loadFailed'))));
-  }, [scoreId, filter, onOpenCount]);
+  }, [scoreId, filter, onOpenCount, onChanged]);
 
   useEffect(load, [load]);
 
-  // Cuộn tới góp ý được chỉ định một lần sau khi tải xong
-  const focused = useRef(false);
+  // Cuộn tới góp ý được chỉ định (từ thông báo, hoặc bấm bong bóng trên bản nhạc) mỗi khi id đổi
+  const focusedId = useRef<string | null>(null);
   useEffect(() => {
-    if (!focusId || !data || focused.current) return;
+    if (!focusId || !data || focusedId.current === focusId) return;
     const el = document.getElementById(`cm-${focusId}`);
     if (el) {
-      focused.current = true;
+      focusedId.current = focusId;
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }, [focusId, data]);
+
+  // Phím tắt ở trang xem bản nhạc: mỗi lần composeKey tăng thì mở form góp ý (điều chỉnh state khi prop đổi, không dùng effect)
+  // (bảng vừa mở bằng phím tắt thì chờ tải xong rồi mới mở form)
+  const [seenComposeKey, setSeenComposeKey] = useState(0);
+  const [wantCompose, setWantCompose] = useState(false);
+  if (composeKey !== seenComposeKey) {
+    setSeenComposeKey(composeKey);
+    if (composeKey > 0) setWantCompose(true);
+  }
+  if (wantCompose && data) {
+    setWantCompose(false);
+    if (data.canComment && !composeBlockedReason) setComposing(true);
+  }
 
   const counts: Record<CommentFilter, number | null> = {
     OPEN: data?.openCount ?? null,
@@ -61,7 +103,7 @@ export default function CommentsSection({ scoreId, focusId, onOpenCount }: Props
   };
 
   return (
-    <section className="cm-section" aria-label={t('scores.comments.tab')}>
+    <section className={`cm-section${compact ? ' cm-section--panel' : ''}`} aria-label={t('scores.comments.tab')}>
       <div className="cm-toolbar">
         <div className="cm-filters" role="group" aria-label={t('scores.comments.tab')}>
           {FILTERS.map((f) => (
@@ -78,7 +120,13 @@ export default function CommentsSection({ scoreId, focusId, onOpenCount }: Props
           ))}
         </div>
         {data?.canComment && !composing && (
-          <button type="button" className="sc-btn sc-btn--primary sc-btn--sm" onClick={() => setComposing(true)}>
+          <button
+            type="button"
+            className="sc-btn sc-btn--primary sc-btn--sm"
+            disabled={!!composeBlockedReason}
+            title={composeBlockedReason ?? undefined}
+            onClick={() => setComposing(true)}
+          >
             {t('scores.comments.add')}
           </button>
         )}
@@ -91,9 +139,15 @@ export default function CommentsSection({ scoreId, focusId, onOpenCount }: Props
         </p>
       )}
 
-      {composing && data && (
+      {data?.canComment && composeBlockedReason && <p className="cm-note">{composeBlockedReason}</p>}
+      {data?.canComment && onSelectThread && !anchor && !composing && !composeBlockedReason && (
+        <p className="cm-muted cm-hint">{t('scores.comments.selectHint')}</p>
+      )}
+
+      {composing && data && !composeBlockedReason && (
         <NewCommentForm
           scoreId={scoreId}
+          anchor={anchor ?? null}
           measureCount={data.measureCount ?? 1}
           onCancel={() => setComposing(false)}
           onCreated={() => {
@@ -126,6 +180,8 @@ export default function CommentsSection({ scoreId, focusId, onOpenCount }: Props
               currentVersion={data.currentVersion ?? null}
               focused={focusId === c.id || (c.replies ?? []).some((r) => r.id === focusId)}
               onChanged={load}
+              onSelect={onSelectThread}
+              viewerHref={viewerHref?.(c) ?? null}
             />
           ))}
         </ol>
@@ -138,17 +194,29 @@ export default function CommentsSection({ scoreId, focusId, onOpenCount }: Props
 
 function NewCommentForm({
   scoreId,
+  anchor,
   measureCount,
   onCancel,
   onCreated,
 }: {
   scoreId: string;
+  anchor: CommentAnchor | null;
   measureCount: number;
   onCancel: () => void;
   onCreated: () => void;
 }) {
-  const [start, setStart] = useState(1);
-  const [end, setEnd] = useState(1);
+  const [start, setStart] = useState(anchor?.start ?? 1);
+  const [end, setEnd] = useState(anchor?.end ?? anchor?.start ?? 1);
+  // Chọn vùng khác trên bản nhạc khi form đang mở: điền lại ô từ–đến
+  const [anchorKey, setAnchorKey] = useState(anchor ? `${anchor.start}-${anchor.end}` : '');
+  const nextKey = anchor ? `${anchor.start}-${anchor.end}` : '';
+  if (anchor && nextKey !== anchorKey) {
+    setAnchorKey(nextKey);
+    setStart(anchor.start);
+    setEnd(anchor.end);
+  }
+  // Bè và nốt đã chọn chỉ gửi kèm khi ô từ–đến vẫn đúng vùng chọn (người dùng sửa tay thì bỏ)
+  const fromSelection = !!anchor && anchor.start === start && anchor.end === end;
   const [content, setContent] = useState('');
   const [picked, setPicked] = useState(() => new Map<string, CommentMember>());
   const [busy, setBusy] = useState(false);
@@ -162,6 +230,8 @@ function NewCommentForm({
         content: content.trim(),
         startMeasure: start,
         endMeasure: end,
+        partId: fromSelection ? (anchor?.partId ?? null) : null,
+        noteIds: fromSelection && anchor?.noteIds?.length ? anchor.noteIds : null,
         mentionIds: mentionIdsIn(content, picked),
       });
       toast.success(t('scores.comments.created'));
@@ -209,7 +279,9 @@ function NewCommentForm({
             onChange={(e) => setEnd(Math.max(clamp(e.target.valueAsNumber), start))}
           />
         </label>
-        <span className="cm-muted">{t('scores.comments.measureOf', { count: measureCount })}</span>
+        <span className="cm-muted">
+          {fromSelection ? t('scores.comments.fromSelection') : t('scores.comments.measureOf', { count: measureCount })}
+        </span>
       </div>
       <MentionInput
         scoreId={scoreId}
@@ -245,6 +317,8 @@ function Thread({
   currentVersion,
   focused,
   onChanged,
+  onSelect,
+  viewerHref,
 }: {
   scoreId: string;
   comment: ScoreComment;
@@ -252,6 +326,8 @@ function Thread({
   currentVersion: number | null;
   focused: boolean;
   onChanged: () => void;
+  onSelect?: (comment: ScoreComment) => void;
+  viewerHref: string | null;
 }) {
   const resolved = comment.status === 'RESOLVED';
   const [expanded, setExpanded] = useState(!resolved || focused);
@@ -281,9 +357,30 @@ function Thread({
   return (
     <li id={`cm-${comment.id}`} className={`cm-thread${resolved ? ' is-resolved' : ''}${focused ? ' is-focused' : ''}`}>
       <div className="cm-thread__head">
-        <span className="cm-measure">
-          {t('scores.comments.measure', { measures: measureLabel(comment.startMeasure, comment.endMeasure) })}
-        </span>
+        {(() => {
+          const label = t('scores.comments.measure', {
+            measures: measureLabel(comment.startMeasure, comment.endMeasure),
+          });
+          // Trang xem bản nhạc: bấm để cuộn tới vùng; trang chi tiết: mở trang xem tại góp ý
+          if (onSelect)
+            return (
+              <button
+                type="button"
+                className="cm-measure cm-measure--link"
+                title={t('scores.comments.showOnScore')}
+                onClick={() => onSelect(comment)}
+              >
+                {label}
+              </button>
+            );
+          if (viewerHref)
+            return (
+              <Link to={viewerHref} className="cm-measure cm-measure--link" title={t('scores.comments.openInViewer')}>
+                {label}
+              </Link>
+            );
+          return <span className="cm-measure">{label}</span>;
+        })()}
         {comment.outdated && comment.scoreVersion != null && (
           <span className="cm-outdated">
             {t('scores.comments.outdated', { version: comment.scoreVersion })}
