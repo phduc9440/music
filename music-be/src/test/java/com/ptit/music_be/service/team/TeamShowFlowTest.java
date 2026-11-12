@@ -71,6 +71,9 @@ class TeamShowFlowTest {
     @Autowired
     MemberRepository memberRepository;
 
+    @Autowired
+    com.ptit.music_be.repository.TeamMemberRepository teamMemberRepository;
+
     @PersistenceContext
     EntityManager em;
 
@@ -137,6 +140,23 @@ class TeamShowFlowTest {
         asOwner();
         assertEquals(3, teamService.members(team.getId()).size());
         assertEquals(2, notifications(OWNER, NotificationType.TEAM_MEMBER_JOINED));
+        // Thành viên, lời mời và nhật ký chung bảng team_members: truy vấn của từng loại chỉ thấy dòng của kind đó
+        em.flush();
+        assertEquals(3, teamMemberRepository.countByTeamId(team.getId()));
+        assertEquals(3L, ((Number) em.createNativeQuery(
+                                "select count(*) from team_members where team_id = ?1 and kind = 'MEMBER'")
+                        .setParameter(1, team.getId())
+                        .getSingleResult())
+                .longValue());
+        assertEquals(2L, ((Number) em.createNativeQuery(
+                                "select count(*) from team_members where team_id = ?1 and kind = 'INVITATION'")
+                        .setParameter(1, team.getId())
+                        .getSingleResult())
+                .longValue());
+        assertTrue(teamMemberRepository
+                        .findActivities(team.getId(), org.springframework.data.domain.PageRequest.of(0, 50))
+                        .getTotalElements()
+                > 0);
 
         // 3. Chủ team chuyển 5 bản nhạc của mình vào team, tạo show 5 bài
         Member owner = member(OWNER);

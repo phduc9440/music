@@ -32,7 +32,6 @@ import com.ptit.music_be.repository.MemberRepository;
 import com.ptit.music_be.repository.ScoreRepository;
 import com.ptit.music_be.repository.ShowItemRepository;
 import com.ptit.music_be.repository.ShowRepository;
-import com.ptit.music_be.repository.TeamActivityRepository;
 import com.ptit.music_be.repository.TeamMemberRepository;
 import com.ptit.music_be.repository.TeamRepository;
 import com.ptit.music_be.service.admin.AdminTeamService;
@@ -70,11 +69,11 @@ public class AdminTeamServiceImpl implements AdminTeamService {
 
     /** Cột: id, tên, mô tả, ngày tạo, id/tên/email người tạo, số thành viên, bản nhạc, show, show đang chuẩn bị, hoạt động gần nhất. */
     static final String ROW_SELECT = "select t.id, t.name, t.description, t.createdAt, c.id, c.fullName, c.email,"
-            + " (select count(tm) from TeamMember tm where tm.team = t),"
+            + " (select count(tm) from TeamMember tm where tm.team = t and tm.kind = 'MEMBER'),"
             + " (select count(s) from Score s where s.teamId = t.id),"
             + " (select count(sh) from Show sh where sh.team = t),"
             + " (select count(sp) from Show sp where sp.team = t and sp.status = 'PREPARING'),"
-            + " (select max(a.createdAt) from TeamActivity a where a.teamId = t.id)"
+            + " (select max(a.createdAt) from TeamMember a where a.team = t and a.kind = 'ACTIVITY')"
             + " from Team t join t.createdBy c";
     static final String KEYWORD_FILTER = " where (:kw is null or lower(t.name) like :kw or lower(c.email) like :kw"
             + " or lower(c.fullName) like :kw)";
@@ -87,7 +86,6 @@ public class AdminTeamServiceImpl implements AdminTeamService {
     ShowRepository showRepository;
     ShowItemRepository showItemRepository;
     ScoreRepository scoreRepository;
-    TeamActivityRepository activityRepository;
     MemberRepository memberRepository;
     EntitlementService entitlementService;
     NotificationService notificationService;
@@ -100,11 +98,12 @@ public class AdminTeamServiceImpl implements AdminTeamService {
         return AdminTeamSummaryResponse.builder()
                 .teams(count("select count(t) from Team t"))
                 .activeTeams7d(em.createQuery(
-                                "select count(distinct a.teamId) from TeamActivity a where a.createdAt >= :since",
+                                "select count(distinct a.team.id) from TeamMember a where a.kind = 'ACTIVITY'"
+                                        + " and a.createdAt >= :since",
                                 Long.class)
                         .setParameter("since", now.minusDays(ACTIVE_DAYS))
                         .getSingleResult())
-                .teamMembers(count("select count(distinct tm.member) from TeamMember tm"))
+                .teamMembers(count("select count(distinct tm.member) from TeamMember tm where tm.kind = 'MEMBER'"))
                 .preparingShows(count("select count(s) from Show s where s.status = 'PREPARING'"))
                 .openItems(count("select count(i) from ShowItem i where i.status <> 'APPROVED'"
                         + " and i.show.status = 'PREPARING'"))
@@ -197,11 +196,11 @@ public class AdminTeamServiceImpl implements AdminTeamService {
                                 s.getUpdatedAt()))
                         .toList())
                 .recentActivities(
-                        activityRepository.findByTeam(team.getId(), PageRequest.of(0, DETAIL_ACTIVITIES)).stream()
+                        teamMemberRepository.findActivities(team.getId(), PageRequest.of(0, DETAIL_ACTIVITIES)).stream()
                                 .map(a -> TeamActivityResponse.builder()
                                         .id(a.getId())
                                         .type(a.getType())
-                                        .actorName(TeamAccess.displayName(a.getActor()))
+                                        .actorName(TeamAccess.displayName(a.getMember()))
                                         .params(activityLog.paramsOf(a))
                                         .createdAt(a.getCreatedAt())
                                         .build())
