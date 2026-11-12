@@ -210,6 +210,18 @@ public enum ErrorCode {
     SHOW_ITEM_NOTE_REQUIRED(3827, "Trả lại bài cần kèm góp ý (tối đa 500 ký tự)", HttpStatus.BAD_REQUEST),
     SHOW_ORDER_INVALID(3828, "Danh sách thứ tự phải gồm đủ và đúng các bài của buổi diễn", HttpStatus.BAD_REQUEST),
     SHOW_RESTORE_EXPIRED(3829, "Đã quá 30 ngày kể từ lúc xóa buổi diễn nên không khôi phục được nữa", HttpStatus.GONE),
+    // ---- 39xx: Góp ý gắn vào ô nhịp (mục 4.2)
+    COMMENT_NOT_EXISTED(3901, "Không tìm thấy góp ý", HttpStatus.NOT_FOUND),
+    COMMENT_CONTENT_INVALID(3902, "Nội dung góp ý từ 1 đến 2000 ký tự", HttpStatus.BAD_REQUEST),
+    COMMENT_MEASURE_INVALID(
+            3903,
+            "Ô nhịp phải nằm trong bản nhạc (từ 1 đến số ô) và ô bắt đầu không lớn hơn ô kết thúc; bản chưa có ô nhịp thì chưa góp ý được",
+            HttpStatus.BAD_REQUEST),
+    COMMENT_WRITE_FORBIDDEN(3904, "Cần quyền nhận xét trở lên để góp ý vào bản nhạc này", HttpStatus.FORBIDDEN),
+    COMMENT_FORBIDDEN(3905, "Bạn không sửa, xóa hoặc đánh dấu được góp ý này", HttpStatus.FORBIDDEN),
+    COMMENT_MENTION_INVALID(
+            3906, "Chỉ nhắc được người xem được bản nhạc này (tối đa 20 người)", HttpStatus.BAD_REQUEST),
+    COMMENT_ANCHOR_INVALID(3907, "Bè hoặc danh sách nốt đã chọn không hợp lệ", HttpStatus.BAD_REQUEST),
     ;
 
     int code;

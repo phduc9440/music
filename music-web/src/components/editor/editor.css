@@ -24,6 +24,38 @@
   background: color-mix(in srgb, var(--ui-danger) 5%, transparent);
   pointer-events: none;
 }
+/* Góp ý gắn vào ô nhịp (mục 4.2): nền nhạt các ô có góp ý, bong bóng số lượng */
+.ed-comment-box {
+  position: absolute;
+  border-radius: 8px;
+  background: var(--ui-comment-region, color-mix(in srgb, var(--ui-warning) 20%, transparent));
+  pointer-events: none;
+}
+.ed-comment-box.is-active {
+  background: color-mix(in srgb, var(--ui-warning) 32%, transparent);
+  box-shadow: inset 0 0 0 2px var(--ui-warning);
+}
+.ed-comment-bubble {
+  position: absolute;
+  z-index: 3;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border: 2px solid var(--ui-surface);
+  border-radius: 999px;
+  background: var(--ui-warning);
+  color: var(--ui-on-accent, #fff);
+  font:
+    700 0.75rem/18px system-ui,
+    sans-serif;
+  cursor: pointer;
+  box-shadow: var(--ui-shadow-sm);
+}
+.ed-comment-bubble:hover,
+.ed-comment-bubble:focus-visible {
+  transform: scale(1.12);
+  outline: none;
+}
 /* Khung chọn vùng khi kéo chuột */
 .ed-band {
   position: fixed;

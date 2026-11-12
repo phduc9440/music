@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useLocation, useParams, useViewTransitionState } from 'react-router-dom';
+import { useCallback, useEffect, useState } from 'react';
+import { useLocation, useParams, useSearchParams, useViewTransitionState } from 'react-router-dom';
 import { useNavigate } from '../../../routes/useTransitionNavigate';
 import { toast } from 'react-toastify';
 import DeleteScoreModal from '../../../components/scores/detail/DeleteScoreModal';
@@ -7,15 +7,16 @@ import EditScoreModal from '../../../components/scores/detail/EditScoreModal';
 import FilesTable from '../../../components/scores/detail/FilesTable';
 import RequestAccess from '../../../components/scores/detail/RequestAccess';
 import ReviewsSection from '../../../components/scores/detail/ReviewsSection';
+import CommentsSection from '../../../components/scores/comments/CommentsSection';
 import ScoreHero, { ScorePreview, ScoreSidebar } from '../../../components/scores/detail/ScoreHero';
 import Modal from '../../../components/scores/common/Modal';
 import ShareModal from '../../../components/scores/detail/ShareModal';
 import TasksTable from '../../../components/scores/detail/TasksTable';
 import { getBackTarget } from '../../../components/layout/nav';
 import { BackLink } from '../../../components/ui';
-import { scoreApi } from '../../../services';
+import { commentApi, scoreApi } from '../../../services';
 import type { ScoreDetail as ScoreDetailData } from '../../../types';
-import { getHttpStatus, POLL_INTERVAL_MS } from '../../../utils/score';
+import { getHttpStatus, POLL_INTERVAL_MS, useScoreBase } from '../../../utils/score';
 import '../../../components/scores/scores.css';
 import './ScoreDetail.css';
 import { t } from '../../../i18n/core';
@@ -27,7 +28,7 @@ type LoadState =
   | { phase: 'forbidden' }
   | { phase: 'error' };
 
-type Tab = 'files' | 'tasks' | 'reviews';
+type Tab = 'files' | 'tasks' | 'reviews' | 'comments';
 
 /**
  * Trang /scores/:id: chi tiết bản nhạc (doc mục 2.0).
@@ -49,7 +50,13 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
   const arriving = useViewTransitionState(useLocation().pathname);
   const [state, setState] = useState<LoadState>({ phase: 'loading' });
   const [tick, setTick] = useState(0); // tăng lên để tải lại (polling)
-  const [tab, setTab] = useState<Tab>('files');
+  // ?tab=comments&comment=ID (từ thông báo góp ý): mở tab Góp ý và cuộn tới góp ý đó
+  const [searchParams] = useSearchParams();
+  const focusCommentId = searchParams.get('comment');
+  const [tab, setTab] = useState<Tab>(searchParams.get('tab') === 'comments' || focusCommentId ? 'comments' : 'files');
+  const [openComments, setOpenComments] = useState<number | null>(null);
+  const scoreBase = useScoreBase();
+  const onOpenComments = useCallback((n: number) => setOpenComments(n), []);
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [sharing, setSharing] = useState(false);
@@ -87,7 +94,21 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
   const running = score?.processingStatus === 'PENDING' || score?.processingStatus === 'PROCESSING';
   // File gốc và lịch sử tác vụ chỉ dành cho người có quyền sửa; người xem chỉ thấy tab Nhận xét
   const canSeeSources = score?.accessLevel === 'OWNER' || score?.accessLevel === 'EDIT';
-  const activeTab: Tab = canSeeSources ? tab : 'reviews';
+  // Người không có quyền sửa không thấy tab File / Tác vụ: rơi về tab Nhận xét
+  const activeTab: Tab = canSeeSources || tab === 'reviews' || tab === 'comments' ? tab : 'reviews';
+
+  // Số góp ý đang mở hiện trên tab (tab Góp ý cập nhật lại khi người dùng thêm / xử lý góp ý)
+  useEffect(() => {
+    if (!id || state.phase !== 'ready') return;
+    let cancelled = false;
+    commentApi
+      .list(id, 'OPEN')
+      .then((res) => !cancelled && setOpenComments(res.data.result.openCount))
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [id, state.phase]);
   useEffect(() => {
     if (!running) return;
     const t = setInterval(() => setTick((n) => n + 1), POLL_INTERVAL_MS);
@@ -194,10 +215,32 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
                 {t('scores.detail.reviews')}
                 {score.ratingCount ? <span className="sc-tab__count">{score.ratingCount}</span> : null}
               </button>
+              <button
+                role="tab"
+                aria-selected={activeTab === 'comments'}
+                className="sc-tab"
+                onClick={() => setTab('comments')}
+              >
+                {t('scores.comments.tab')}
+                {openComments ? <span className="sc-tab__count">{openComments}</span> : null}
+              </button>
             </div>
 
             {activeTab === 'files' && <FilesTable files={score.files} />}
             {activeTab === 'tasks' && <TasksTable tasks={score.latestTasks} files={score.files} />}
+            {activeTab === 'comments' && (
+              <CommentsSection
+                scoreId={score.id}
+                focusId={focusCommentId}
+                onOpenCount={onOpenComments}
+                // Bản đã có MusicXML: bấm nhãn ô để mở trang xem bản nhạc tại đúng góp ý
+                viewerHref={
+                  score.files.some((f) => f.fileType === 'MUSICXML')
+                    ? (c) => `${scoreBase}/${score.id}/edit?comment=${c.id}`
+                    : undefined
+                }
+              />
+            )}
             {activeTab === 'reviews' && (
               <ReviewsSection scoreId={score.id} canReview={score.canReview} onChanged={() => setTick((n) => n + 1)} />
             )}

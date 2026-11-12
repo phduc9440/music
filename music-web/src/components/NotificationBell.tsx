@@ -96,6 +96,9 @@ export default function NotificationBell() {
       n.type === 'TEAM_DELETED_BY_ADMIN'
     )
       navigate('/teams');
+    // Góp ý: mở tab Góp ý của bản nhạc và cuộn tới đúng góp ý
+    else if (n.type.startsWith('COMMENT_') && n.scoreId)
+      navigate(`/scores/${n.scoreId}?tab=comments${n.params?.commentId ? `&comment=${n.params.commentId}` : ''}`);
     else if (n.type.startsWith('TEAM_') && n.params?.teamId) navigate(`/teams/${n.params.teamId}`);
     else if (n.scoreId) navigate(`/scores/${n.scoreId}`);
   };

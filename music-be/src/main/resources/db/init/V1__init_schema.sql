@@ -185,6 +185,49 @@ CREATE TABLE IF NOT EXISTS score_reviews (
     CONSTRAINT fk_score_reviews_member FOREIGN KEY (member_id) REFERENCES members (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Góp ý gắn vào ô nhịp (mục 4.2), khác Đánh giá (score_reviews: sao + nhận xét chung cho cả bản). Góp ý gốc có vùng neo
+-- (ô bắt đầu–kết thúc, bè và noteId nếu chọn nốt) và trạng thái OPEN / RESOLVED; trả lời (parent_id khác NULL) chỉ một cấp,
+-- không có vùng neo và trạng thái riêng. Vị trí không tự dịch khi bản nhạc đổi: giữ version và số ô lúc viết để giao diện
+-- báo "Viết trên phiên bản vN" khi số ô đã khác. Xóa góp ý gốc thì xóa theo trả lời và @nhắc tên (ON DELETE CASCADE).
+CREATE TABLE IF NOT EXISTS score_comments (
+    id               VARCHAR(36)   NOT NULL,
+    score_id         VARCHAR(36)   NOT NULL,
+    parent_id        VARCHAR(36)   NULL COMMENT 'Góp ý gốc được trả lời; NULL = góp ý gốc',
+    author_id        VARCHAR(36)   NOT NULL,
+    content          VARCHAR(2000) NOT NULL,
+    start_measure    INT           NULL COMMENT 'Góp ý gốc: ô bắt đầu (1..measure_count)',
+    end_measure      INT           NULL COMMENT 'Góp ý gốc: ô kết thúc (>= ô bắt đầu)',
+    part_id          VARCHAR(64)   NULL COMMENT 'Chỉ góp ý một bè: id part trong MusicXML',
+    note_ids         JSON          NULL COMMENT 'Danh sách noteId nếu chọn nốt trong Editor',
+    score_version    INT           NULL COMMENT 'scores.current_version lúc viết',
+    measure_count_at INT           NULL COMMENT 'scores.measure_count lúc viết: khác số ô hiện tại thì vị trí có thể đã lệch',
+    status           VARCHAR(10)   NULL COMMENT 'Góp ý gốc: OPEN / RESOLVED',
+    resolved_by      VARCHAR(36)   NULL,
+    resolved_at      DATETIME(6)   NULL,
+    edited_at        DATETIME(6)   NULL COMMENT 'Lần sửa nội dung gần nhất (nhãn "đã sửa")',
+    created_at       DATETIME(6)   NULL,
+    PRIMARY KEY (id),
+    KEY idx_score_comments_score (score_id, parent_id, status),
+    KEY idx_score_comments_parent (parent_id, created_at),
+    CONSTRAINT fk_score_comments_score    FOREIGN KEY (score_id)    REFERENCES scores (id) ON DELETE CASCADE,
+    CONSTRAINT fk_score_comments_parent   FOREIGN KEY (parent_id)   REFERENCES score_comments (id) ON DELETE CASCADE,
+    CONSTRAINT fk_score_comments_author   FOREIGN KEY (author_id)   REFERENCES members (id),
+    CONSTRAINT fk_score_comments_resolver FOREIGN KEY (resolved_by) REFERENCES members (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- @nhắc tên trong góp ý (mục 4.2): người được nhắc nhận thông báo COMMENT_MENTION; dùng cho bộ lọc "Nhắc tới tôi".
+CREATE TABLE IF NOT EXISTS score_comment_mentions (
+    id         VARCHAR(36) NOT NULL,
+    comment_id VARCHAR(36) NOT NULL,
+    member_id  VARCHAR(36) NOT NULL,
+    created_at DATETIME(6) NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_score_comment_mentions (comment_id, member_id),
+    KEY idx_score_comment_mentions_member (member_id),
+    CONSTRAINT fk_score_comment_mentions_comment FOREIGN KEY (comment_id) REFERENCES score_comments (id) ON DELETE CASCADE,
+    CONSTRAINT fk_score_comment_mentions_member  FOREIGN KEY (member_id)  REFERENCES members (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS tags (
     id   VARCHAR(36)  NOT NULL,
     name VARCHAR(255) NOT NULL,

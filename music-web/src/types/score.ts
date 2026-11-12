@@ -304,7 +304,9 @@ export type NotificationType =
   | 'SHOW_ITEM_DUE'
   | 'TEAM_DELETED_BY_ADMIN'
   | 'TEAM_DELETED'
-  | 'TEAM_RESTORED';
+  | 'TEAM_RESTORED'
+  | 'COMMENT_MENTION'
+  | 'COMMENT_REPLY';
 
 export interface AppNotification {
   id: string;

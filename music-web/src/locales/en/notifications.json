@@ -42,5 +42,7 @@
     "today": "“{title}” ({show}) is due today"
   },
   "TEAM_DELETED": "{name} deleted the team {team}",
-  "TEAM_RESTORED": "The team {team} was restored"
+  "TEAM_RESTORED": "The team {team} was restored",
+  "COMMENT_MENTION": "{name} mentioned you in a comment on bar {measures} of “{title}”",
+  "COMMENT_REPLY": "{name} replied to a comment on bar {measures} of “{title}”"
 }

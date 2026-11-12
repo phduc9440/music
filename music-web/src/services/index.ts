@@ -10,6 +10,7 @@ export * from './file/importApi';
 export * from './score/tagApi';
 export * from './score/sharingApi';
 export * from './score/reviewApi';
+export * from './score/commentApi';
 export * from './notification/notificationApi';
 export * from './practice/playlistApi';
 export * from './practice/practiceApi';

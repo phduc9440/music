@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { useNavigate } from '../../../routes/useTransitionNavigate';
 import DownloadMenu from '../../../components/scores/viewer/DownloadMenu';
 import VersionHistoryPanel from '../../../components/editor/version/VersionHistoryPanel';
@@ -12,10 +12,22 @@ import type { NotationChange } from '../../../components/editor/structure/staves
 import LyricBar from '../../../components/scores/toolbar/LyricBar';
 import Modal from '../../../components/scores/common/Modal';
 import ScoreCanvas from '../../../components/scores/viewer/ScoreCanvas';
+import type { CommentRange } from '../../../components/scores/viewer/ScoreCanvas';
+import CommentsSection from '../../../components/scores/comments/CommentsSection';
+import { anchorFromNotes } from '../../../components/scores/comments/viewerAnchor';
+import {
+  CommentContextMenu,
+  InlineCommentComposer,
+  SelectionCommentButton,
+} from '../../../components/scores/comments/ViewerCommentTools';
+import type { ContextMenuState, ScreenRect } from '../../../components/scores/comments/ViewerCommentTools';
+import { SELECTED_CLASS, noteIdsFromEvent } from '../../../components/editor/core/osmdBridge';
+import type { CommentAnchor } from '../../../components/scores/comments/commentUtils';
 import ToolbarMoreMenu from '../../../components/scores/toolbar/ToolbarMoreMenu';
 import ZoomControl from '../../../components/scores/viewer/ZoomControl';
 import {
   IconBack,
+  IconComment,
   IconEdit,
   IconExpand,
   IconHistory,
@@ -37,8 +49,9 @@ import { PlayerBar } from '../../../components/player/PlayerBar';
 import { usePlayer } from '../../../components/player/hooks/usePlayer';
 import { useScoreEditor } from '../../../components/editor/core/useScoreEditor';
 import { countView } from '../../../services/practice/playbackApi';
-import { fetchMusicXmlWithVersion, scoreApi } from '../../../services';
-import type { ScoreDetail as ScoreDetailData } from '../../../types';
+import { commentApi, fetchMusicXmlWithVersion, scoreApi } from '../../../services';
+import type { ScoreComment, ScoreDetail as ScoreDetailData } from '../../../types';
+import { t } from '../../../i18n/core';
 import { isValidScoreId } from '../../../utils/omr';
 import { getHttpStatus, useScoreBase } from '../../../utils/score';
 import {
@@ -107,6 +120,9 @@ const SHORTCUTS: [string, string][] = [
   ['T', 'Dấu nối: nối nốt đang chọn với nốt cùng cao độ liền sau (bấm lại để bỏ)'],
   ['S', 'Dấu luyến: chọn từ nốt đầu đến nốt cuối rồi bấm (bấm lại để bỏ)'],
   ['Delete', 'Xóa nốt đang chọn (hợp âm còn nốt khác thì giữ lại)'],
+  ['Bôi đen nốt → nút "Góp ý" cạnh vùng chọn', 'Góp ý ngay tại chỗ (ô nhập hiện cạnh các nốt đã chọn)'],
+  ['Chuột phải vào nốt', 'Menu: Góp ý vào đoạn đã chọn, Xem góp ý ở ô này'],
+  [`${MOD} + ${ALT} + M`, 'Góp ý vào nốt / ô đang chọn (mở bảng Góp ý bên phải)'],
   ['Esc', 'Bỏ chọn'],
   ['+  /  -  /  0', 'Phóng to / thu nhỏ / về 100%'],
   ['?', 'Mở bảng này'],
@@ -271,6 +287,20 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
   const [playerOpen, setPlayerOpen] = useState(false);
   const playAfterLoad = useRef(false);
 
+  // ---- Góp ý gắn vào ô nhịp (mục 4.2). ?comment=ID (từ trang chi tiết): mở bảng và cuộn tới góp ý đó
+  const [searchParams] = useSearchParams();
+  const linkedComment = searchParams.get('comment');
+  const [commentsOpen, setCommentsOpen] = useState(!!linkedComment);
+  const [focusCommentId, setFocusCommentId] = useState<string | null>(linkedComment);
+  const [openThreads, setOpenThreads] = useState<ScoreComment[]>([]);
+  const [canComment, setCanComment] = useState(false);
+  const [composeKey, setComposeKey] = useState(0);
+  /** Khung bao vùng đang bôi đen (toạ độ màn hình) để đặt nút "Góp ý" nổi; null khi không có vùng chọn hiện trên màn hình. */
+  const [selRect, setSelRect] = useState<ScreenRect | null>(null);
+  /** Ô nhập góp ý nổi cạnh vùng chọn (mở từ nút nổi hoặc menu chuột phải). */
+  const [composer, setComposer] = useState<{ anchor: CommentAnchor; rect: ScreenRect } | null>(null);
+  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
+
   const { zoom, mode, invert } = prefs;
   const canEdit = score.canEdit;
 
@@ -330,6 +360,160 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
     setPlayerOpen(false);
   };
   const issueMeasures = useMemo(() => new Set(editor.issues.map((i) => i.measureIndex)), [editor.issues]);
+
+  // Góp ý đang mở để tô nền trên bản nhạc; tải lại mỗi khi bảng Góp ý đổi (thêm, xử lý, xóa).
+  // Lần đầu: nếu mở từ đường dẫn ?comment=ID thì cuộn bản nhạc tới vùng của góp ý đó.
+  const linkedScrolled = useRef(false);
+  const refreshComments = useCallback(() => {
+    commentApi
+      .list(score.id, 'OPEN')
+      .then((res) => {
+        const { comments, canComment: allowed } = res.data.result;
+        setOpenThreads(comments);
+        setCanComment(allowed);
+        if (linkedComment && !linkedScrolled.current) {
+          linkedScrolled.current = true;
+          const target = comments.find((c) => c.id === linkedComment);
+          if (target?.startMeasure != null) setFocusMeasure({ index: target.startMeasure - 1, key: Date.now() });
+        }
+      })
+      .catch(() => undefined);
+  }, [score.id, linkedComment]);
+  useEffect(refreshComments, [refreshComments]);
+
+  const commentRanges = useMemo<CommentRange[]>(
+    () =>
+      openThreads
+        .filter((c) => c.startMeasure != null)
+        .map((c) => ({
+          id: c.id,
+          start: (c.startMeasure as number) - 1,
+          end: (c.endMeasure ?? c.startMeasure ?? 1) - 1,
+          active: c.id === focusCommentId,
+        })),
+    [openThreads, focusCommentId],
+  );
+
+  // Vùng neo cho góp ý mới: các nốt đang bôi đen (người sửa và người nhận xét chọn nốt như nhau)
+  const commentAnchor = useMemo<CommentAnchor | null>(
+    () => anchorFromNotes(doc, editor.selection),
+    [doc, editor.selection],
+  );
+  const commentBlocked = canEdit && editor.dirty ? t('scores.comments.saveFirst') : null;
+
+  // Khung bao các nốt đang chọn trên màn hình: tính lại khi chọn khác, đổi zoom / chế độ, sửa, cuộn, đổi cỡ cửa sổ
+  const stageRef = useRef<HTMLDivElement>(null);
+  const measureSelection = useCallback(() => {
+    const stage = stageRef.current;
+    if (!stage || selectionRef.current.size === 0) {
+      setSelRect(null);
+      return;
+    }
+    let rect: ScreenRect | null = null;
+    stage.querySelectorAll(`.${SELECTED_CLASS}`).forEach((el) => {
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 && r.height === 0) return;
+      rect = rect
+        ? {
+            left: Math.min(rect.left, r.left),
+            top: Math.min(rect.top, r.top),
+            right: Math.max(rect.right, r.right),
+            bottom: Math.max(rect.bottom, r.bottom),
+          }
+        : { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
+    });
+    // Vùng chọn đã cuộn ra ngoài khung nhạc thì ẩn nút
+    const box = stage.getBoundingClientRect();
+    const visible =
+      rect !== null &&
+      (rect as ScreenRect).bottom > box.top &&
+      (rect as ScreenRect).top < box.bottom &&
+      (rect as ScreenRect).right > box.left &&
+      (rect as ScreenRect).left < box.right;
+    setSelRect(visible ? rect : null);
+  }, []);
+  useEffect(() => {
+    // Bản nhạc vẽ lại sau ~200ms khi đổi zoom / chế độ: đo ngay và đo lại sau khi vẽ xong
+    const frame = requestAnimationFrame(measureSelection);
+    const timer = setTimeout(measureSelection, 400);
+    return () => {
+      cancelAnimationFrame(frame);
+      clearTimeout(timer);
+    };
+  }, [editor.selection, editor.revision, zoom, mode, commentsOpen, measureSelection]);
+  useEffect(() => {
+    window.addEventListener('scroll', measureSelection, true);
+    window.addEventListener('resize', measureSelection);
+    return () => {
+      window.removeEventListener('scroll', measureSelection, true);
+      window.removeEventListener('resize', measureSelection);
+    };
+  }, [measureSelection]);
+
+  /** Mở ô nhập góp ý nổi cho vùng đang chọn, cạnh `rect` (vùng chọn, hoặc chỗ bấm chuột phải). */
+  const openComposer = (rect: ScreenRect | null) => {
+    if (!commentAnchor || !canComment || commentBlocked) return;
+    setContextMenu(null);
+    setComposer({ anchor: commentAnchor, rect: rect ?? selRect ?? { left: 200, top: 160, right: 200, bottom: 160 } });
+  };
+
+  // Chuột phải vào nốt: chọn nốt đó (nếu chưa nằm trong vùng đang chọn) rồi hiện menu Góp ý
+  const onStageContextMenu = (e: React.MouseEvent<HTMLDivElement>) => {
+    const ids = noteIdsFromEvent(e.nativeEvent);
+    if (ids.length === 0) return; // ngoài nốt: để menu mặc định của trình duyệt
+    e.preventDefault();
+    if (canEdit || canComment) {
+      if (!ids.some((id) => editor.selection.has(id))) editor.select(ids, false);
+    }
+    const info = doc.getInfo(ids[0]);
+    setComposer(null);
+    setContextMenu({ x: e.clientX, y: e.clientY, measureIndex: info ? info.measureIndex : null });
+  };
+  const threadsAtMenu =
+    contextMenu?.measureIndex == null
+      ? []
+      : openThreads.filter(
+          (c) =>
+            c.startMeasure != null &&
+            contextMenu.measureIndex! + 1 >= c.startMeasure &&
+            contextMenu.measureIndex! + 1 <= (c.endMeasure ?? c.startMeasure),
+        );
+
+  // Người chỉ nhận xét không có phím tắt của Editor: Esc bỏ chọn (khi không có ô nhập / menu đang mở)
+  useEffect(() => {
+    if (canEdit) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || composer || contextMenu) return;
+      const target = e.target as HTMLElement | null;
+      if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
+      editor.clearSelection();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [canEdit, composer, contextMenu, editor]);
+
+  // Ctrl/Cmd + Alt + M: mở bảng Góp ý và form góp ý cho vùng đang chọn (dùng e.code vì Alt+M trên Mac ra ký tự khác)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || !e.altKey || e.code !== 'KeyM') return;
+      e.preventDefault();
+      setCommentsOpen(true);
+      setComposeKey((k) => k + 1);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  // Đóng bảng thì đặt lại bộ đếm phím tắt để lần mở sau (bằng nút) không tự mở form
+  const closeComments = () => {
+    setCommentsOpen(false);
+    setComposeKey(0);
+  };
+
+  const selectThread = useCallback((c: ScoreComment) => {
+    setFocusCommentId(c.id);
+    if (c.startMeasure != null) setFocusMeasure({ index: c.startMeasure - 1, key: Date.now() });
+  }, []);
 
   const updatePrefs = useCallback((patch: Partial<typeof prefs>) => {
     setPrefs((prev) => {
@@ -520,6 +704,15 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
             </button>
           )}
           <button
+            className={`sc-btn${commentsOpen ? ' is-active' : ''}`}
+            aria-pressed={commentsOpen}
+            onClick={() => (commentsOpen ? closeComments() : setCommentsOpen(true))}
+            title={`${t('scores.comments.panelToggle')} (${MOD}+${ALT}+M)`}
+          >
+            <IconComment /> <span className="sv-desktop-only">{t('scores.comments.panelToggle')}</span>
+            {openThreads.length > 0 && <span className="sv-count">{openThreads.length}</span>}
+          </button>
+          <button
             className="sc-btn"
             onClick={onPlayButton}
             aria-pressed={player.status === 'playing'}
@@ -627,7 +820,7 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
             onSave={() => void editor.save()}
           />
         )}
-        <div className="sv-stage">
+        <div className="sv-stage" ref={stageRef} onContextMenu={onStageContextMenu}>
           <ScoreCanvas
             xml={xml}
             zoom={zoom}
@@ -637,7 +830,8 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
             onRendered={setPageCount}
             onProgress={setProgress}
             onError={() => setParseFailed(true)}
-            doc={canEdit ? doc : null}
+            // Luôn gắn id nốt (cần để tô vùng góp ý, chọn ô để góp ý, tô nốt đang phát); sửa vẫn chỉ khi canEdit
+            doc={doc}
             revision={editor.revision}
             selected={editor.selection}
             issueMeasures={issueMeasures}
@@ -646,7 +840,8 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
             mutedStaves={player.mutedStaves}
             loopRange={loopRange}
             followMeasure={player.status === 'playing' ? player.followMeasure : null}
-            onSelectNotes={canEdit ? editor.select : undefined}
+            // Người nhận xét cũng bôi đen / bấm chọn nốt được (để góp ý), nhưng không sửa được
+            onSelectNotes={canEdit || canComment ? editor.select : undefined}
             onDragPitch={canEdit ? editor.dragPitch : undefined}
             inputMode={editor.inputMode}
             inputDuration={editor.inputDuration}
@@ -654,11 +849,45 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
             onConfirmMeasure={canEdit ? editor.confirmMeasureOk : undefined}
             onEditHeader={canEdit ? editor.editHeader : undefined}
             onEditTempo={canEdit ? editor.editTempo : undefined}
+            commentRanges={commentRanges}
+            onCommentBubble={(ids) => {
+              setCommentsOpen(true);
+              setFocusCommentId(ids[0]);
+            }}
           />
+          {selRect && commentAnchor && canComment && !commentBlocked && !composer && !contextMenu && (
+            <SelectionCommentButton rect={selRect} onClick={() => openComposer(selRect)} />
+          )}
           <div className="sv-pos" aria-live="polite">
             {progressLabel}
           </div>
         </div>
+        {commentsOpen && (
+          <aside className="sv-comments" aria-label={t('scores.comments.panelToggle')}>
+            <div className="sv-comments__head">
+              <h2>{t('scores.comments.panelToggle')}</h2>
+              <button
+                type="button"
+                className="sv-comments__close"
+                onClick={closeComments}
+                aria-label={t('scores.comments.panelClose')}
+                title={t('scores.comments.panelClose')}
+              >
+                ×
+              </button>
+            </div>
+            <CommentsSection
+              scoreId={score.id}
+              compact
+              focusId={focusCommentId}
+              anchor={commentAnchor}
+              composeKey={composeKey}
+              composeBlockedReason={commentBlocked}
+              onSelectThread={selectThread}
+              onChanged={refreshComments}
+            />
+          </aside>
+        )}
       </div>
 
       {canEdit && notationOpen && (
@@ -710,6 +939,36 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
               : undefined
           }
           applyTransposeHint="Bạn có thể hoàn tác (Ctrl+Z) và cần bấm Lưu để giữ lại."
+        />
+      )}
+      {contextMenu && (
+        <CommentContextMenu
+          menu={contextMenu}
+          canComment={canComment && !!commentAnchor}
+          blockedReason={commentBlocked}
+          threadsHere={threadsAtMenu}
+          onComment={() =>
+            openComposer({ left: contextMenu.x, top: contextMenu.y, right: contextMenu.x, bottom: contextMenu.y })
+          }
+          onShowThreads={() => {
+            setCommentsOpen(true);
+            if (threadsAtMenu[0]) setFocusCommentId(threadsAtMenu[0].id);
+            setContextMenu(null);
+          }}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
+      {composer && (
+        <InlineCommentComposer
+          scoreId={score.id}
+          anchor={composer.anchor}
+          rect={composer.rect}
+          onClose={() => setComposer(null)}
+          onCreated={(created) => {
+            setComposer(null);
+            setFocusCommentId(created.id);
+            refreshComments();
+          }}
         />
       )}
       <footer className="sv-status">
