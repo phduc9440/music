@@ -290,7 +290,16 @@ export type NotificationType =
   | 'PLAN_EXPIRING'
   | 'PLAN_REVOKED'
   | 'PLAN_BANNED'
-  | 'PLAN_BAN_LIFTED';
+  | 'PLAN_BAN_LIFTED'
+  | 'TEAM_INVITED'
+  | 'TEAM_MEMBER_JOINED'
+  | 'TEAM_ROLE_CHANGED'
+  | 'TEAM_REMOVED'
+  | 'SHOW_ITEM_ASSIGNED'
+  | 'SHOW_ITEM_SUBMITTED'
+  | 'SHOW_ITEM_APPROVED'
+  | 'SHOW_ITEM_RETURNED'
+  | 'SHOW_ITEM_DUE';
 
 export interface AppNotification {
   id: string;

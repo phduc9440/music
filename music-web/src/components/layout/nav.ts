@@ -21,7 +21,7 @@ export const isLibrary = (p: string) =>
 
 /**
  * Điều hướng chính của người dùng, gom theo nhóm (menu thả xuống ở máy tính, danh sách có tiêu đề ở điện thoại).
- * Chỉ liệt kê trang đã có; khi làm thêm Diễn đàn, Team và Show, Bảng giá... thì thêm vào đây.
+ * Chỉ liệt kê trang đã có; khi làm thêm Diễn đàn, Thử thách... thì thêm vào đây.
  */
 export const NAV_GROUPS: NavGroup[] = [
   {
@@ -109,6 +109,13 @@ export const NAV_GROUPS: NavGroup[] = [
           return t('common.nav.items.playlists');
         },
         icon: 'list',
+      },
+      {
+        to: '/teams',
+        get label() {
+          return t('common.nav.items.teams');
+        },
+        icon: 'users',
       },
       {
         to: '/scores/trash',

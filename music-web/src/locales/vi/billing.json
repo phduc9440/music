@@ -11,7 +11,8 @@
     "exportsPerMonth": "Lượt xuất mỗi tháng",
     "collab": "Cùng chỉnh sửa thời gian thực",
     "team": "Tạo team",
-    "omrPriority": "Ưu tiên hàng đợi OMR"
+    "omrPriority": "Ưu tiên hàng đợi OMR",
+    "teamMembers": "Thành viên mỗi team"
   },
   "status": {
     "ACTIVE": "Đang dùng",

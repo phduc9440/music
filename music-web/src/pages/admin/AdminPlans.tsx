@@ -18,7 +18,14 @@ const AUDIENCES: PlanAudience[] = ['PERSONAL', 'TEAM'];
 const NEW_KEY = '__new__';
 
 /** Hạn mức dạng số; để trống (tích "Không giới hạn") = null. */
-const NUMBER_LIMITS = ['omrPagesPerMonth', 'omrConcurrent', 'storageMb', 'keptVersions', 'exportsPerMonth'] as const;
+const NUMBER_LIMITS = [
+  'omrPagesPerMonth',
+  'omrConcurrent',
+  'storageMb',
+  'keptVersions',
+  'exportsPerMonth',
+  'teamMembers',
+] as const;
 /** Quyền lợi bật/tắt. */
 const FLAG_LIMITS = ['collab', 'team', 'omrPriority'] as const;
 
@@ -68,6 +75,7 @@ const emptyDraft = (): Draft => ({
     storageMb: '1024',
     keptVersions: '10',
     exportsPerMonth: null,
+    teamMembers: null,
   },
   flags: { collab: false, team: false, omrPriority: false },
 });

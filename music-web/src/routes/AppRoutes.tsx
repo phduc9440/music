@@ -45,6 +45,10 @@ import RootLayout from './RootLayout';
 import UserArea from './UserArea';
 import WorkspaceHome from '../pages/home/WorkspaceHome';
 import NotFound from '../pages/NotFound';
+import Teams from '../pages/teams/Teams';
+import TeamDetail from '../pages/teams/TeamDetail';
+import TeamInvite from '../pages/teams/TeamInvite';
+import ShowBoard from '../pages/teams/ShowBoard';
 
 /**
  * Router dạng dữ liệu (createBrowserRouter) thay cho <BrowserRouter>: cần cho hiệu ứng chuyển trang bằng View
@@ -87,6 +91,11 @@ const router = createBrowserRouter(
         <Route path="/playlists/:id" element={<PlaylistDetail />} />
         <Route path="/practice-history" element={<PracticeHistory />} />
         <Route path="/practice-stats" element={<PracticeStats />} />
+        {/* Team và Show (mục 4.1) */}
+        <Route path="/teams" element={<Teams />} />
+        <Route path="/teams/invite/:token" element={<TeamInvite />} />
+        <Route path="/teams/:id" element={<TeamDetail />} />
+        <Route path="/teams/:teamId/shows/:showId" element={<ShowBoard />} />
       </Route>
 
       {/* Trình chỉnh sửa và trình phát dùng toàn màn hình, có thanh công cụ riêng */}

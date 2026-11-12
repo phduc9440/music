@@ -102,8 +102,10 @@ CREATE TABLE IF NOT EXISTS scores (
     deleted_at        DATETIME(6)  NULL COMMENT 'Xóa mềm: khác NULL là đang ở thùng rác (30 ngày rồi xóa hẳn)',
     deleted_by        VARCHAR(36)  NULL,
     delete_reason     VARCHAR(500) NULL,
+    team_id           VARCHAR(36)  NULL COMMENT 'Team chứa bản nhạc (mục 4.1); NULL = bản cá nhân. Ràng buộc khóa ngoại thêm ở cuối file',
     PRIMARY KEY (id),
     KEY idx_scores_member_deleted (member_id, deleted_at),
+    KEY idx_scores_team (team_id),
     KEY idx_scores_original (original_score_id),
     KEY idx_scores_composer (composer_id),
     CONSTRAINT fk_scores_member   FOREIGN KEY (member_id)   REFERENCES members (id),
@@ -358,3 +360,112 @@ CREATE TABLE IF NOT EXISTS payment_orders (
     CONSTRAINT fk_payment_orders_member FOREIGN KEY (member_id) REFERENCES members (id),
     CONSTRAINT fk_payment_orders_plan   FOREIGN KEY (plan_id)   REFERENCES plans (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Team và Show (mục 4.1). Quyền trên bản nhạc của team suy ra từ vai trò (TeamAccessResolverImpl): OWNER/MANAGER = chủ,
+-- ARRANGER = sửa bài được giao + nhận xét bài khác, VIEWER = xem. Xóa team thì xóa theo thành viên, lời mời, show, hoạt
+-- động (ON DELETE CASCADE) và bản nhạc trở về bản cá nhân (scores.team_id SET NULL).
+CREATE TABLE IF NOT EXISTS teams (
+    id          VARCHAR(36)   NOT NULL,
+    name        VARCHAR(100)  NOT NULL,
+    description VARCHAR(1000) NULL,
+    avatar_url  VARCHAR(512)  NULL,
+    created_by  VARCHAR(36)   NOT NULL COMMENT 'Người tạo; hạn mức số thành viên lấy theo gói của người này',
+    created_at  DATETIME(6)   NULL,
+    updated_at  DATETIME(6)   NULL,
+    PRIMARY KEY (id),
+    CONSTRAINT fk_teams_created_by FOREIGN KEY (created_by) REFERENCES members (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS team_members (
+    id        VARCHAR(36) NOT NULL,
+    team_id   VARCHAR(36) NOT NULL,
+    member_id VARCHAR(36) NOT NULL,
+    role      VARCHAR(10) NOT NULL COMMENT 'OWNER / MANAGER / ARRANGER / VIEWER',
+    joined_at DATETIME(6) NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_team_members (team_id, member_id),
+    KEY idx_team_members_member (member_id),
+    CONSTRAINT fk_team_members_team   FOREIGN KEY (team_id)   REFERENCES teams (id) ON DELETE CASCADE,
+    CONSTRAINT fk_team_members_member FOREIGN KEY (member_id) REFERENCES members (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Lời mời: chỉ lưu SHA-256 của mã mời (mã gốc chỉ hiện một lần lúc tạo), dùng một lần, hết hạn sau 7 ngày.
+-- email NULL = link mời ai có link cũng dùng được (vẫn chỉ một lần).
+CREATE TABLE IF NOT EXISTS team_invitations (
+    id          VARCHAR(36)  NOT NULL,
+    team_id     VARCHAR(36)  NOT NULL,
+    email       VARCHAR(255) NULL,
+    role        VARCHAR(10)  NOT NULL COMMENT 'MANAGER / ARRANGER / VIEWER (không mời làm OWNER)',
+    token_hash  CHAR(64)     NOT NULL,
+    status      VARCHAR(10)  NOT NULL COMMENT 'PENDING / ACCEPTED / REVOKED (hết hạn suy ra từ expires_at)',
+    invited_by  VARCHAR(36)  NOT NULL,
+    accepted_by VARCHAR(36)  NULL,
+    created_at  DATETIME(6)  NULL,
+    expires_at  DATETIME(6)  NOT NULL,
+    accepted_at DATETIME(6)  NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_team_invitations_token (token_hash),
+    KEY idx_team_invitations_team (team_id, status),
+    CONSTRAINT fk_team_invitations_team        FOREIGN KEY (team_id)     REFERENCES teams (id) ON DELETE CASCADE,
+    CONSTRAINT fk_team_invitations_invited_by  FOREIGN KEY (invited_by)  REFERENCES members (id),
+    CONSTRAINT fk_team_invitations_accepted_by FOREIGN KEY (accepted_by) REFERENCES members (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS shows (
+    id         VARCHAR(36)   NOT NULL,
+    team_id    VARCHAR(36)   NOT NULL,
+    name       VARCHAR(255)  NOT NULL,
+    show_date  DATE          NULL COMMENT 'Ngày diễn',
+    venue      VARCHAR(255)  NULL,
+    notes      VARCHAR(2000) NULL,
+    status     VARCHAR(10)   NOT NULL COMMENT 'PREPARING (đang chuẩn bị) / DONE (đã diễn)',
+    created_by VARCHAR(36)   NULL,
+    created_at DATETIME(6)   NULL,
+    updated_at DATETIME(6)   NULL,
+    PRIMARY KEY (id),
+    KEY idx_shows_team (team_id, show_date),
+    CONSTRAINT fk_shows_team       FOREIGN KEY (team_id)    REFERENCES teams (id) ON DELETE CASCADE,
+    CONSTRAINT fk_shows_created_by FOREIGN KEY (created_by) REFERENCES members (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Bài trong show. score_id ON DELETE CASCADE: bản nhạc bị xóa hẳn khỏi thùng rác thì bài cũng mất khỏi show.
+CREATE TABLE IF NOT EXISTS show_items (
+    id          VARCHAR(36)  NOT NULL,
+    show_id     VARCHAR(36)  NOT NULL,
+    score_id    VARCHAR(36)  NOT NULL,
+    position    INT          NOT NULL,
+    arranger_id VARCHAR(36)  NULL COMMENT 'Người phối (được sửa bản nhạc này)',
+    reviewer_id VARCHAR(36)  NULL COMMENT 'Người duyệt (nhận thông báo khi bài gửi duyệt)',
+    due_date    DATE         NULL COMMENT 'Hạn; job nhắc trước 2 ngày và đúng ngày',
+    status      VARCHAR(10)  NOT NULL COMMENT 'TODO / ARRANGING / IN_REVIEW / APPROVED',
+    notes       VARCHAR(500) NULL COMMENT 'Tone, ca sĩ, độ dài...',
+    review_note VARCHAR(500) NULL COMMENT 'Góp ý lần trả lại gần nhất',
+    created_at  DATETIME(6)  NULL,
+    updated_at  DATETIME(6)  NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_show_items (show_id, score_id),
+    KEY idx_show_items_arranger (arranger_id, status),
+    KEY idx_show_items_reviewer (reviewer_id, status),
+    KEY idx_show_items_due (due_date, status),
+    CONSTRAINT fk_show_items_show     FOREIGN KEY (show_id)     REFERENCES shows (id) ON DELETE CASCADE,
+    CONSTRAINT fk_show_items_score    FOREIGN KEY (score_id)    REFERENCES scores (id) ON DELETE CASCADE,
+    CONSTRAINT fk_show_items_arranger FOREIGN KEY (arranger_id) REFERENCES members (id) ON DELETE SET NULL,
+    CONSTRAINT fk_show_items_reviewer FOREIGN KEY (reviewer_id) REFERENCES members (id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Nhật ký hoạt động của team (tab Hoạt động): type + params JSON, web dựng câu theo ngôn ngữ người đọc.
+CREATE TABLE IF NOT EXISTS team_activities (
+    id         VARCHAR(36)  NOT NULL,
+    team_id    VARCHAR(36)  NOT NULL,
+    actor_id   VARCHAR(36)  NULL,
+    type       VARCHAR(32)  NOT NULL,
+    params     JSON         NULL,
+    created_at DATETIME(6)  NULL,
+    PRIMARY KEY (id),
+    KEY idx_team_activities_team (team_id, created_at),
+    CONSTRAINT fk_team_activities_team  FOREIGN KEY (team_id)  REFERENCES teams (id) ON DELETE CASCADE,
+    CONSTRAINT fk_team_activities_actor FOREIGN KEY (actor_id) REFERENCES members (id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+ALTER TABLE scores
+    ADD CONSTRAINT fk_scores_team FOREIGN KEY (team_id) REFERENCES teams (id) ON DELETE SET NULL;

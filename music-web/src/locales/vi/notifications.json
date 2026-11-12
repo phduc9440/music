@@ -24,5 +24,20 @@
   "PLAN_EXPIRING": "Gói {plan} của bạn sẽ hết hạn sau {days} ngày (ngày {date}). Hãy mua lại để không bị gián đoạn",
   "PLAN_REVOKED": "Gói {plan} của bạn đã bị thu hồi",
   "PLAN_BANNED": "Bạn bị cấm dùng gói {plan} đến ngày {date} (vẫn dùng được Free hoặc mua gói khác)",
-  "PLAN_BAN_LIFTED": "Bạn đã được gỡ lệnh cấm gói"
+  "PLAN_BAN_LIFTED": "Bạn đã được gỡ lệnh cấm gói",
+  "TEAM_INVITED": "{name} mời bạn vào team {team} với vai trò {role}",
+  "TEAM_MEMBER_JOINED": "{name} đã tham gia team {team}",
+  "TEAM_ROLE_CHANGED": "Vai trò của bạn trong team {team} đã đổi thành {role}",
+  "TEAM_REMOVED": "Bạn đã bị xóa khỏi team {team}",
+  "SHOW_ITEM_ASSIGNED": {
+    "arranger": "Bạn được giao phối bài “{title}” trong show {show}",
+    "reviewer": "Bạn được giao duyệt bài “{title}” trong show {show}"
+  },
+  "SHOW_ITEM_SUBMITTED": "{name} đã gửi duyệt bài “{title}” (show {show})",
+  "SHOW_ITEM_APPROVED": "Bài “{title}” (show {show}) đã được duyệt",
+  "SHOW_ITEM_RETURNED": "Bài “{title}” (show {show}) bị trả lại",
+  "SHOW_ITEM_DUE": {
+    "soon": "Bài “{title}” (show {show}) tới hạn sau {days} ngày",
+    "today": "Hôm nay là hạn của bài “{title}” (show {show})"
+  }
 }

@@ -15,4 +15,6 @@ public record PlanLimits(
         Integer exportsPerMonth,
         Boolean collab,
         Boolean team,
-        Boolean omrPriority) {}
+        Boolean omrPriority,
+        /** Số thành viên tối đa của mỗi team do người dùng gói này tạo (chỉ có nghĩa khi team = true). */
+        Integer teamMembers) {}

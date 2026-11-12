@@ -86,6 +86,11 @@ export default function NotificationBell() {
     else if (n.type === 'PLAN_REVOKED' || n.type === 'PLAN_BANNED' || n.type === 'PLAN_BAN_LIFTED')
       navigate('/billing');
     else if (n.type === 'OFFICIAL_ACCEPTED' || n.type === 'OFFICIAL_DECLINED') navigate('/admin/official-scores');
+    // Team và Show: bài trong show mở bảng show, còn lại mở team (lời mời và bị xóa khỏi team thì về /teams)
+    else if (n.type.startsWith('SHOW_ITEM_') && n.params?.teamId && n.params.showId)
+      navigate(`/teams/${n.params.teamId}/shows/${n.params.showId}`);
+    else if (n.type === 'TEAM_INVITED' || n.type === 'TEAM_REMOVED') navigate('/teams');
+    else if (n.type.startsWith('TEAM_') && n.params?.teamId) navigate(`/teams/${n.params.teamId}`);
     else if (n.scoreId) navigate(`/scores/${n.scoreId}`);
   };
 

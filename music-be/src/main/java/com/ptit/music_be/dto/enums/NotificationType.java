@@ -33,5 +33,24 @@ public enum NotificationType {
     /** Bị cấm dùng gói trả phí đến một ngày (kèm lý do). */
     PLAN_BANNED,
     /** Được gỡ lệnh cấm dùng gói trả phí sớm. */
-    PLAN_BAN_LIFTED
+    PLAN_BAN_LIFTED,
+    // ---- Team và Show (mục 4.1); params có teamId (và showId với thông báo về bài trong show) để web mở đúng trang
+    /** Được mời vào team (lời mời theo email của tài khoản đã có). */
+    TEAM_INVITED,
+    /** Gửi người mời: có người đã chấp nhận lời mời. */
+    TEAM_MEMBER_JOINED,
+    /** Vai trò của bạn trong team đã đổi. */
+    TEAM_ROLE_CHANGED,
+    /** Bạn bị xóa khỏi team. */
+    TEAM_REMOVED,
+    /** Được giao phối (variant arranger) hoặc duyệt (variant reviewer) một bài trong show. */
+    SHOW_ITEM_ASSIGNED,
+    /** Gửi người duyệt: người phối đã gửi duyệt. */
+    SHOW_ITEM_SUBMITTED,
+    /** Gửi người phối: bài đã được duyệt. */
+    SHOW_ITEM_APPROVED,
+    /** Gửi người phối: bài bị trả lại kèm góp ý. */
+    SHOW_ITEM_RETURNED,
+    /** Nhắc hạn: còn 2 ngày (variant soon) hoặc hôm nay là hạn (variant today). */
+    SHOW_ITEM_DUE
 }

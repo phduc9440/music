@@ -10,6 +10,8 @@ export interface PlanLimits {
   collab?: boolean | null;
   team?: boolean | null;
   omrPriority?: boolean | null;
+  /** Số thành viên tối đa mỗi team (gói có team = true); null = không giới hạn. */
+  teamMembers?: number | null;
 }
 
 /** PERSONAL: gói cá nhân; TEAM: gói nhóm; UNLIMITED: gói ảo của SUPER_ADMIN. */

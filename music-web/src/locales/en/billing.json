@@ -11,7 +11,8 @@
     "exportsPerMonth": "Exports per month",
     "collab": "Real-time co-editing",
     "team": "Create teams",
-    "omrPriority": "OMR queue priority"
+    "omrPriority": "OMR queue priority",
+    "teamMembers": "Members per team"
   },
   "status": {
     "ACTIVE": "Active",
