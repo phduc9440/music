@@ -1,7 +1,9 @@
 package com.ptit.music_be.service.auth.impl;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
+import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.text.ParseException;
 import java.time.Instant;
@@ -32,6 +34,7 @@ import com.ptit.music_be.dto.enums.MemberStatus;
 import com.ptit.music_be.dto.request.*;
 import com.ptit.music_be.dto.response.AuthResponse;
 import com.ptit.music_be.dto.response.MemberResponse;
+import com.ptit.music_be.dto.response.VerifyResetOtpResponse;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.MemberRole;
 import com.ptit.music_be.entity.Otp;
@@ -70,6 +73,8 @@ public class AuthServiceImpl implements AuthService {
 
     static final SecureRandom RANDOM = new SecureRandom();
     static final int MAX_OTP_ATTEMPTS = 5;
+    /** Hạn của mã phiên đặt mật khẩu mới, tính từ lúc xác minh đúng OTP. */
+    static final int RESET_SESSION_MINUTES = 10;
     static final String TOKEN_TYPE_CLAIM = "typ";
     static final String TYPE_ACCESS = "access";
     static final String TYPE_REFRESH = "refresh";
@@ -415,13 +420,16 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional(noRollbackFor = AppException.class)
-    public void resetPassword(ResetPasswordRequest request) {
-        // Mọi trường hợp sai (email không tồn tại, không có mã, hết hạn, sai mã) đều báo cùng một lỗi
+    public VerifyResetOtpResponse verifyResetOtp(VerifyResetOtpRequest request) {
+        // Mọi trường hợp sai (email không tồn tại, không có mã, hết hạn, sai mã, mã đã dùng) đều báo cùng một lỗi
         Member user = memberRepository
                 .findByEmail(request.getEmail().trim().toLowerCase())
                 .orElseThrow(() -> new AppException(ErrorCode.OTP_INVALID));
 
-        Otp otp = otpRepository.findByMember(user).orElseThrow(() -> new AppException(ErrorCode.OTP_INVALID));
+        Otp otp = otpRepository
+                .findByMember(user)
+                .filter(o -> o.getResetTokenHash() == null) // OTP đã đổi thành mã phiên thì không xác minh lại được
+                .orElseThrow(() -> new AppException(ErrorCode.OTP_INVALID));
 
         int attempts = otp.getAttempts() == null ? 0 : otp.getAttempts();
         if (otp.getExpiryTime().isBefore(LocalDateTime.now()) || attempts >= MAX_OTP_ATTEMPTS) {
@@ -435,8 +443,54 @@ public class AuthServiceImpl implements AuthService {
             throw new AppException(ErrorCode.OTP_INVALID);
         }
 
+        // OTP đúng: đổi thành mã phiên ngẫu nhiên dùng một lần, chỉ lưu bản băm; OTP cũ không dùng lại được nữa
+        byte[] raw = new byte[32];
+        RANDOM.nextBytes(raw);
+        String token = Base64.getUrlEncoder().withoutPadding().encodeToString(raw);
+        otp.setResetTokenHash(sha256(token));
+        otp.setExpiryTime(LocalDateTime.now().plusMinutes(RESET_SESSION_MINUTES));
+        otpRepository.save(otp);
+        return VerifyResetOtpResponse.builder()
+                .resetToken(token)
+                .expiresInSeconds(RESET_SESSION_MINUTES * 60L)
+                .build();
+    }
+
+    @Override
+    @Transactional(noRollbackFor = AppException.class)
+    public void resetPassword(ResetPasswordRequest request) {
+        // Chỉ nhận mã phiên của bước xác minh OTP; mọi trường hợp sai báo cùng một lỗi để giao diện quay lại bước nhập OTP
+        Member user = memberRepository
+                .findByEmail(request.getEmail().trim().toLowerCase())
+                .orElseThrow(() -> new AppException(ErrorCode.RESET_SESSION_INVALID));
+
+        Otp session = otpRepository
+                .findByMember(user)
+                .filter(o -> o.getResetTokenHash() != null)
+                .orElseThrow(() -> new AppException(ErrorCode.RESET_SESSION_INVALID));
+
+        if (session.getExpiryTime().isBefore(LocalDateTime.now())) {
+            otpRepository.delete(session);
+            throw new AppException(ErrorCode.RESET_SESSION_INVALID);
+        }
+        // So sánh thời gian hằng để không lộ thông tin qua thời gian phản hồi
+        if (!MessageDigest.isEqual(
+                sha256(request.getResetToken().trim()).getBytes(StandardCharsets.US_ASCII),
+                session.getResetTokenHash().getBytes(StandardCharsets.US_ASCII))) {
+            throw new AppException(ErrorCode.RESET_SESSION_INVALID);
+        }
+
         applyNewPassword(user, request.getNewPassword());
-        otpRepository.delete(otp);
+        otpRepository.delete(session);
         emailService.sendPasswordChangedEmail(user.getEmail(), user.getFullName(), true);
+    }
+
+    private static String sha256(String value) {
+        try {
+            return HexFormat.of()
+                    .formatHex(MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8)));
+        } catch (java.security.NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
     }
 }
