@@ -1,19 +1,29 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { Link } from '../../routes/transition-nav';
 import { useNavigate } from '../../routes/useTransitionNavigate';
 import Modal from '../../components/scores/common/Modal';
+import Icon from '../../components/ui/Icon';
 import Skeleton from '../../components/ui/Skeleton';
 import { useDialog } from '../../components/ui/dialog-context';
 import { showApi, teamApi, userApi } from '../../services';
 import { canManageTeam, SHOW_ITEM_STATUSES } from '../../types';
-import type { Show, ShowDetail, ShowItem, ShowItemStatus, ShowPayload, ShowStatus, TeamScore } from '../../types';
+import type {
+  Show,
+  ShowDetail,
+  ShowItem,
+  ShowItemStatus,
+  ShowPayload,
+  ShowStatus,
+  TeamMember,
+  TeamScore,
+} from '../../types';
 import { formatDate, formatNumber, t } from '../../i18n/core';
 import { getErrorMessage } from '../../utils/score';
-import { DueDate, StatusBadge } from './shared';
-import { memberName } from './teamUtils';
+import { DueDate, MemberAvatar, StatusBadge } from './shared';
+import { daysUntil, memberName } from './teamUtils';
 import '../../components/scores/scores.css';
 import './teams.css';
 
@@ -27,6 +37,9 @@ const ACTION_LABEL: Partial<Record<`${ShowItemStatus}>${ShowItemStatus}`, string
   'IN_REVIEW>ARRANGING': 'teams.item.return',
   'APPROVED>IN_REVIEW': 'teams.item.reopen',
 };
+
+/** Bước đi tới (bắt đầu, gửi duyệt, duyệt) tô nút chính; lùi lại (trả lại, mở lại) dùng nút thường. */
+const PRIMARY_ACTIONS = new Set(['TODO>ARRANGING', 'ARRANGING>IN_REVIEW', 'IN_REVIEW>APPROVED']);
 
 /** Trang /teams/:teamId/shows/:showId: bảng Kanban theo trạng thái và danh sách theo thứ tự diễn (mục 4.1). */
 export default function ShowBoard() {
@@ -149,6 +162,8 @@ export default function ShowBoard() {
 
   const dragged = data?.items.find((i) => i.id === dragId) ?? null;
   const show = data?.show;
+  /** Người được giao (để lấy ảnh đại diện trên thẻ bài). */
+  const people = useMemo(() => new Map((data?.assignees ?? []).map((m) => [m.memberId, m])), [data?.assignees]);
 
   return (
     <div className="sc-page">
@@ -158,55 +173,76 @@ export default function ShowBoard() {
         </Link>
       </div>
       <main className="sc-container">
-        <header className="sc-lib-head">
-          <div>
-            <h1>
-              {show?.name ?? t('teams.tabs.shows')} {show && <StatusBadge status={show.status} />}
-            </h1>
-            <p>
-              {show
-                ? [
-                    show.showDate ? formatDate(`${show.showDate}T00:00:00`) : t('teams.shows.noDate'),
-                    show.venue,
-                    t('teams.shows.progress', { done: show.approvedCount, total: show.itemCount }),
-                  ]
-                    .filter(Boolean)
-                    .join(' · ')
-                : ''}
-            </p>
-            {show?.notes && <p className="tm-muted">{show.notes}</p>}
+        <header className="tm-show">
+          <div className="tm-show__intro">
+            <div className="tm-show__titlerow">
+              <h1>{show?.name ?? t('teams.tabs.shows')}</h1>
+              {show && <StatusBadge status={show.status} />}
+            </div>
+            {show && (
+              <ul className="tm-show__meta">
+                <li>
+                  <Icon name="calendar" size={16} />
+                  {show.showDate ? (
+                    <>
+                      {formatDate(`${show.showDate}T00:00:00`)}
+                      <ShowCountdown date={show.showDate} done={show.status === 'DONE'} now={now} />
+                    </>
+                  ) : (
+                    t('teams.shows.noDate')
+                  )}
+                </li>
+                {show.venue && (
+                  <li>
+                    <Icon name="mapPin" size={16} />
+                    {show.venue}
+                  </li>
+                )}
+              </ul>
+            )}
+            {show?.notes && <p className="tm-show__notes">{show.notes}</p>}
           </div>
           {manager && (
-            <div className="tm-row__actions">
+            <div className="tm-show__actions">
               <button type="button" className="sc-btn sc-btn--primary" onClick={() => setEditingItem('new')}>
+                <Icon name="plus" size={16} />
                 {t('teams.board.addItem')}
               </button>
               <button type="button" className="sc-btn" onClick={() => setEditingShow(true)}>
+                <Icon name="edit" size={16} />
                 {t('teams.board.editShow')}
               </button>
               <button type="button" className="sc-btn sc-btn--danger" onClick={deleteShow}>
+                <Icon name="trash" size={16} />
                 {t('teams.board.deleteShow')}
               </button>
             </div>
           )}
         </header>
 
+        {data && data.items.length > 0 && <ShowSummary items={data.items} now={now} />}
+
         <div className="tm-toolbar">
-          <div className="tm-tabs" role="tablist" aria-label={t('teams.board.viewLabel')} style={{ margin: 0 }}>
+          <div className="tm-segment" role="tablist" aria-label={t('teams.board.viewLabel')}>
             {(['board', 'list'] as View[]).map((v) => (
               <button
                 key={v}
                 type="button"
                 role="tab"
                 aria-selected={view === v}
-                className="tm-tab"
+                className="tm-segment__btn"
                 onClick={() => setView(v)}
               >
+                <Icon name={v === 'board' ? 'dashboard' : 'list'} size={16} />
                 {t(`teams.board.view.${v}`)}
               </button>
             ))}
           </div>
-          <span className="tm-muted">{view === 'board' ? t('teams.board.dragHint') : t('teams.board.orderHint')}</span>
+          {data && data.items.length > 0 && (
+            <span className="tm-toolbar__hint">
+              {view === 'board' ? t('teams.board.dragHint') : t('teams.board.orderHint')}
+            </span>
+          )}
         </div>
 
         {!data && <Skeleton lines={5} />}
@@ -225,7 +261,7 @@ export default function ShowBoard() {
               return (
                 <section
                   key={status}
-                  className={`tm-col${target ? ' tm-col--target' : ''}${target && overCol === status ? ' tm-col--over' : ''}`}
+                  className={`tm-col tm-col--${status}${target ? ' tm-col--target' : ''}${target && overCol === status ? ' tm-col--over' : ''}`}
                   aria-label={t(`teams.status.${status}`)}
                   onDragOver={(e) => {
                     if (!target) return;
@@ -241,14 +277,18 @@ export default function ShowBoard() {
                   }}
                 >
                   <div className="tm-col__head">
-                    <span>{t(`teams.status.${status}`)}</span>
-                    <span className="tm-muted">{formatNumber(items.length)}</span>
+                    <span className={`tm-dot tm-dot--${status}`} aria-hidden="true" />
+                    <span className="tm-col__title">{t(`teams.status.${status}`)}</span>
+                    <span className="tm-col__count">{formatNumber(items.length)}</span>
                   </div>
-                  {items.length === 0 && <p className="tm-col__empty">{t('teams.board.columnEmpty')}</p>}
+                  {items.length === 0 && (
+                    <p className="tm-col__empty">{target ? t('teams.board.dropHere') : t('teams.board.columnEmpty')}</p>
+                  )}
                   {items.map((item) => (
                     <ItemCard
                       key={item.id}
                       item={item}
+                      people={people}
                       manager={manager}
                       busy={busy}
                       now={now}
@@ -271,11 +311,11 @@ export default function ShowBoard() {
         )}
 
         {data && data.items.length > 0 && view === 'list' && (
-          <ol className="tm-list">
+          <ol className="tm-list tm-setlist">
             {data.items.map((item, index) => (
               <li
                 key={item.id}
-                className={`tm-row${manager ? ' tm-row--drag' : ''}${dragId === item.id ? ' tm-row--dragging' : ''}`}
+                className={`tm-row tm-set${manager ? ' tm-row--drag' : ''}${dragId === item.id ? ' tm-row--dragging' : ''}`}
                 draggable={manager && !busy}
                 onDragStart={() => setDragId(item.id)}
                 onDragOver={(e) => manager && e.preventDefault()}
@@ -285,41 +325,49 @@ export default function ShowBoard() {
                 }}
                 onDragEnd={() => setDragId(null)}
               >
-                <span className="tm-pos">{index + 1}</span>
+                {manager && (
+                  <span className="tm-set__grip" aria-hidden="true">
+                    <Icon name="grip" size={16} />
+                  </span>
+                )}
+                <span className={`tm-set__pos tm-set__pos--${item.status}`}>{index + 1}</span>
                 <div className="tm-row__main">
                   <Link className="tm-row__title" to={`/scores/${item.scoreId}`} state={{ from: pathname }}>
                     {item.scoreTitle}
+                    {item.scoreComposer && <span className="tm-set__composer"> · {item.scoreComposer}</span>}
                   </Link>
                   <span className="tm-row__sub">
-                    {t('teams.item.arranger')}: {item.arrangerName ?? t('teams.item.nobody')} ·{' '}
-                    {t('teams.item.reviewer')}: {item.reviewerName ?? t('teams.item.nobody')}
+                    {t('teams.board.arrangerShort')}: {item.arrangerName ?? t('teams.item.nobody')} ·{' '}
+                    {t('teams.board.reviewerShort')}: {item.reviewerName ?? t('teams.item.nobody')}
                     {item.notes ? ` · ${item.notes}` : ''}
                   </span>
                 </div>
                 <div className="tm-row__actions">
-                  <DueDate date={item.dueDate} done={item.status === 'APPROVED'} now={now} />
+                  <DueDate date={item.dueDate} done={item.status === 'APPROVED'} now={now} chip />
                   <StatusBadge status={item.status} />
                   {manager && (
-                    <>
+                    <span className="tm-set__order">
                       <button
                         type="button"
-                        className="sc-btn sc-btn--sm"
+                        className="tm-icon-btn"
                         disabled={busy || index === 0}
                         aria-label={t('teams.board.moveUp', { title: item.scoreTitle })}
+                        title={t('teams.board.moveUp', { title: item.scoreTitle })}
                         onClick={() => reorder(item.id, index - 1)}
                       >
-                        ↑
+                        <Icon name="chevronUp" size={16} />
                       </button>
                       <button
                         type="button"
-                        className="sc-btn sc-btn--sm"
+                        className="tm-icon-btn"
                         disabled={busy || index === data.items.length - 1}
                         aria-label={t('teams.board.moveDown', { title: item.scoreTitle })}
+                        title={t('teams.board.moveDown', { title: item.scoreTitle })}
                         onClick={() => reorder(item.id, index + 1)}
                       >
-                        ↓
+                        <Icon name="chevronDown" size={16} />
                       </button>
-                    </>
+                    </span>
                   )}
                 </div>
               </li>
@@ -355,8 +403,108 @@ export default function ShowBoard() {
   );
 }
 
+/** "còn 20 ngày" / "diễn hôm nay" / "10 ngày trước" cạnh ngày diễn; show đã diễn thì không hiện. */
+function ShowCountdown({ date, done, now }: { date: string; done: boolean; now: number }) {
+  if (done || !now) return null;
+  const days = daysUntil(date, now);
+  const text =
+    days === 0
+      ? t('teams.board.showToday')
+      : days > 0
+        ? t('teams.board.showIn', { count: days })
+        : t('teams.board.showPast', { count: -days });
+  const tone = days < 0 ? ' tm-show__countdown--past' : days <= 3 ? ' tm-show__countdown--soon' : '';
+  return <span className={`tm-show__countdown${tone}`}>{text}</span>;
+}
+
+/** Khung tiến độ: số bài đã duyệt, thanh màu theo trạng thái, số bài quá hạn / sắp đến hạn. */
+function ShowSummary({ items, now }: { items: ShowItem[]; now: number }) {
+  const counts = SHOW_ITEM_STATUSES.map((status) => ({
+    status,
+    count: items.filter((i) => i.status === status).length,
+  }));
+  const done = counts[counts.length - 1].count;
+  const percent = Math.round((done / items.length) * 100);
+  let overdue = 0;
+  let soon = 0;
+  if (now) {
+    for (const item of items) {
+      if (!item.dueDate || item.status === 'APPROVED') continue;
+      const days = daysUntil(item.dueDate, now);
+      if (days < 0) overdue++;
+      else if (days <= 2) soon++;
+    }
+  }
+  return (
+    <section className="tm-summary" aria-label={t('teams.board.summary')}>
+      <div className="tm-summary__top">
+        <strong className="tm-summary__done">{t('teams.shows.progress', { done, total: items.length })}</strong>
+        <span className="tm-summary__percent">{t('teams.board.percent', { value: formatNumber(percent) })}</span>
+        <span className="tm-summary__flags">
+          {overdue > 0 && (
+            <span className="tm-flag tm-flag--late">
+              <Icon name="alert" size={14} />
+              {t('teams.board.overdueCount', { count: overdue })}
+            </span>
+          )}
+          {soon > 0 && (
+            <span className="tm-flag tm-flag--soon">
+              <Icon name="clock" size={14} />
+              {t('teams.board.soonCount', { count: soon })}
+            </span>
+          )}
+        </span>
+      </div>
+      <div className="tm-stack" aria-hidden="true">
+        {counts.map(
+          ({ status, count }) =>
+            count > 0 && (
+              <span key={status} className={`tm-stack__seg tm-stack__seg--${status}`} style={{ flexGrow: count }} />
+            ),
+        )}
+      </div>
+      <ul className="tm-summary__legend">
+        {counts.map(({ status, count }) => (
+          <li key={status}>
+            <span className={`tm-dot tm-dot--${status}`} aria-hidden="true" />
+            {t(`teams.status.${status}`)}
+            <strong>{formatNumber(count)}</strong>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/** Một dòng người được giao trên thẻ: ảnh đại diện, vai (Phối / Duyệt), tên; chưa giao thì vòng tròn nét đứt. */
+function Person({
+  role,
+  id,
+  name,
+  people,
+}: {
+  role: string;
+  id?: string | null;
+  name?: string | null;
+  people: Map<string, TeamMember>;
+}) {
+  const member = id ? people.get(id) : undefined;
+  return (
+    <li className={`tm-person${name ? '' : ' tm-person--empty'}`}>
+      {name ? (
+        <MemberAvatar member={member ?? { fullName: name, email: name, avatarUrl: null }} small />
+      ) : (
+        <span className="tm-avatar tm-avatar--sm tm-avatar--empty" aria-hidden="true" />
+      )}
+      <span className="tm-person__role">{role}</span>
+      <span className="tm-person__name">{name ?? t('teams.item.nobody')}</span>
+    </li>
+  );
+}
+
 interface ItemCardProps {
   item: ShowItem;
+  people: Map<string, TeamMember>;
   manager: boolean;
   busy: boolean;
   now: number;
@@ -369,9 +517,10 @@ interface ItemCardProps {
   onRemove: () => void;
 }
 
-/** Thẻ một bài trên Kanban: phân công, hạn, góp ý lần trả lại, nút hành động theo quyền của người xem. */
+/** Thẻ một bài trên bảng: người phối / duyệt, ghi chú, góp ý lần trả lại, hạn, nút hành động theo quyền người xem. */
 function ItemCard({
   item,
+  people,
   manager,
   busy,
   now,
@@ -395,79 +544,153 @@ function ItemCard({
       }}
       onDragEnd={onDragEnd}
     >
-      <h3 className="tm-item__title">
-        <span className="tm-muted">{item.position}. </span>
-        <Link to={`/scores/${item.scoreId}`} state={{ from }}>
-          {item.scoreTitle}
-        </Link>
-      </h3>
-      <dl className="tm-item__meta">
-        <div>
-          <dt>{t('teams.item.arranger')}:</dt>
-          <dd>{item.arrangerName ?? t('teams.item.nobody')}</dd>
+      <div className="tm-item__head">
+        <span className="tm-item__pos" title={t('teams.board.view.list')}>
+          {item.position}
+        </span>
+        <div className="tm-item__heading">
+          <h3 className="tm-item__title">
+            <Link to={`/scores/${item.scoreId}`} state={{ from }} draggable={false}>
+              {item.scoreTitle}
+            </Link>
+          </h3>
+          {item.scoreComposer && <p className="tm-item__composer">{item.scoreComposer}</p>}
         </div>
-        <div>
-          <dt>{t('teams.item.reviewer')}:</dt>
-          <dd>{item.reviewerName ?? t('teams.item.nobody')}</dd>
-        </div>
-        <div>
-          <dt>{t('teams.item.due')}:</dt>
-          <dd>
-            <DueDate date={item.dueDate} done={item.status === 'APPROVED'} now={now} />
-          </dd>
-        </div>
-        {item.notes && (
-          <div>
-            <dt>{t('teams.item.notes')}:</dt>
-            <dd>{item.notes}</dd>
-          </div>
-        )}
-      </dl>
+        {manager && <ItemMenu item={item} busy={busy} onMove={onMove} onEdit={onEdit} onRemove={onRemove} />}
+      </div>
+      <ul className="tm-people">
+        <Person role={t('teams.board.arrangerShort')} id={item.arrangerId} name={item.arrangerName} people={people} />
+        <Person role={t('teams.board.reviewerShort')} id={item.reviewerId} name={item.reviewerName} people={people} />
+      </ul>
+      {item.notes && <p className="tm-item__notes">{item.notes}</p>}
       {item.reviewNote && item.status !== 'APPROVED' && (
         <p className="tm-item__feedback">
           <strong>{t('teams.item.feedback')}:</strong> {item.reviewNote}
         </p>
       )}
-      {(actions.length > 0 || manager) && (
-        <div className="tm-item__actions">
-          {actions.map((to) => (
-            <button
-              key={to}
-              type="button"
-              className={`sc-btn sc-btn--sm${to === 'APPROVED' || to === 'IN_REVIEW' ? ' sc-btn--primary' : ''}`}
-              disabled={busy}
-              onClick={() => onMove(to)}
-            >
-              {t(ACTION_LABEL[`${item.status}>${to}`] as string)}
-            </button>
-          ))}
-          {manager && (
-            <>
-              <select
-                className="tm-select"
-                aria-label={t('teams.item.moveTo', { title: item.scoreTitle })}
-                value=""
+      <div className="tm-item__foot">
+        <DueDate date={item.dueDate} done={item.status === 'APPROVED'} now={now} chip />
+        {actions.length > 0 && (
+          <div className="tm-item__actions">
+            {actions.map((to) => (
+              <button
+                key={to}
+                type="button"
+                className={`sc-btn sc-btn--sm${PRIMARY_ACTIONS.has(`${item.status}>${to}`) ? ' sc-btn--primary' : ''}`}
                 disabled={busy}
-                onChange={(e) => e.target.value && onMove(e.target.value as ShowItemStatus)}
+                onClick={() => onMove(to)}
               >
-                <option value="">{t('teams.item.moveToShort')}</option>
-                {item.allowedStatuses.map((s) => (
-                  <option key={s} value={s}>
-                    {t(`teams.status.${s}`)}
-                  </option>
-                ))}
-              </select>
-              <button type="button" className="sc-btn sc-btn--sm" onClick={onEdit}>
-                {t('teams.item.assign')}
+                {t(ACTION_LABEL[`${item.status}>${to}`] as string)}
               </button>
-              <button type="button" className="sc-btn sc-btn--sm sc-btn--danger" onClick={onRemove}>
-                {t('teams.item.remove')}
-              </button>
-            </>
-          )}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
     </article>
+  );
+}
+
+/**
+ * Menu "⋯" của quản lý trên thẻ: chuyển sang trạng thái khác (thay cho kéo thả, dùng được bằng bàn phím), phân công,
+ * gỡ bài. Bấm ra ngoài hoặc Esc thì đóng.
+ */
+function ItemMenu({
+  item,
+  busy,
+  onMove,
+  onEdit,
+  onRemove,
+}: {
+  item: ShowItem;
+  busy: boolean;
+  onMove: (to: ShowItemStatus) => void;
+  onEdit: () => void;
+  onRemove: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onClick = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    document.addEventListener('mousedown', onClick);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onClick);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  const pick = (action: () => void) => {
+    setOpen(false);
+    action();
+  };
+  const targets = SHOW_ITEM_STATUSES.filter((s) => item.allowedStatuses.includes(s));
+  const label = t('teams.board.itemActions', { title: item.scoreTitle });
+
+  return (
+    <div className="sc-menu tm-item__menu" ref={ref}>
+      <button
+        type="button"
+        className="tm-icon-btn"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={label}
+        title={label}
+        onClick={() => setOpen(!open)}
+      >
+        <Icon name="more" size={18} />
+      </button>
+      {open && (
+        <ul className="sc-menu__list tm-menu" role="menu" aria-label={label}>
+          {targets.length > 0 && (
+            <li role="presentation" className="tm-menu__label">
+              {t('teams.board.moveSection')}
+            </li>
+          )}
+          {targets.map((s) => (
+            <li key={s} role="none">
+              <button
+                type="button"
+                role="menuitem"
+                className="sc-menu__item"
+                disabled={busy}
+                onClick={() => pick(() => onMove(s))}
+              >
+                <span className="tm-menu__text">
+                  <span className={`tm-dot tm-dot--${s}`} aria-hidden="true" />
+                  {t(`teams.status.${s}`)}
+                </span>
+              </button>
+            </li>
+          ))}
+          {targets.length > 0 && <li role="separator" className="tm-menu__sep" />}
+          <li role="none">
+            <button type="button" role="menuitem" className="sc-menu__item" onClick={() => pick(onEdit)}>
+              <span className="tm-menu__text">
+                <Icon name="users" size={16} />
+                {t('teams.item.assign')}
+              </span>
+            </button>
+          </li>
+          <li role="none">
+            <button
+              type="button"
+              role="menuitem"
+              className="sc-menu__item tm-menu__danger"
+              disabled={busy}
+              onClick={() => pick(onRemove)}
+            >
+              <span className="tm-menu__text">
+                <Icon name="trash" size={16} />
+                {t('teams.board.removeFromShow')}
+              </span>
+            </button>
+          </li>
+        </ul>
+      )}
+    </div>
   );
 }
 

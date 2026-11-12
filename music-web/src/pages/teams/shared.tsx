@@ -1,5 +1,6 @@
 import { formatDate, t } from '../../i18n/core';
 import { useState } from 'react';
+import Icon from '../../components/ui/Icon';
 import type { RestorableItem, ShowItemStatus, ShowStatus, TeamMember, TeamRole } from '../../types';
 import { daysUntil, memberName } from './teamUtils';
 
@@ -75,10 +76,28 @@ export function StatusBadge({ status }: { status: ShowItemStatus | ShowStatus })
 
 /**
  * Hạn của bài: tô vàng khi còn 2 ngày trở xuống, đỏ khi quá hạn (bài đã duyệt thì không tô). `now` truyền từ trang
- * (lấy một lần lúc tải) để không gọi Date.now khi vẽ.
+ * (lấy một lần lúc tải) để không gọi Date.now khi vẽ. `chip`: dạng nhãn có icon đồng hồ (thẻ bài, danh sách thứ tự).
  */
-export function DueDate({ date, done, now }: { date?: string | null; done?: boolean; now: number }) {
-  if (!date) return <span className="tm-muted">{t('teams.item.noDue')}</span>;
+export function DueDate({
+  date,
+  done,
+  now,
+  chip,
+}: {
+  date?: string | null;
+  done?: boolean;
+  now: number;
+  chip?: boolean;
+}) {
+  const icon = chip && <Icon name="clock" size={13} />;
+  if (!date) {
+    return (
+      <span className={chip ? 'tm-due tm-due--chip tm-due--none' : 'tm-muted'}>
+        {icon}
+        {t('teams.item.noDue')}
+      </span>
+    );
+  }
   const days = daysUntil(date, now);
   const tone = done ? '' : days < 0 ? ' tm-due--late' : days <= 2 ? ' tm-due--soon' : '';
   const text =
@@ -88,18 +107,28 @@ export function DueDate({ date, done, now }: { date?: string | null; done?: bool
         ? t('teams.item.dueToday')
         : t('teams.item.dueIn', { count: days });
   return (
-    <span className={`tm-due${tone}`}>
+    <span
+      className={`tm-due${chip ? ' tm-due--chip' : ''}${tone}`}
+      title={`${t('teams.item.due')}: ${formatDate(`${date}T00:00:00`)}`}
+    >
+      {icon}
       {text}
       {!done && days < 0 && ` · ${t('teams.item.overdue')}`}
     </span>
   );
 }
 
-/** Ảnh đại diện nhỏ; không có ảnh thì chữ cái đầu của tên. */
-export function MemberAvatar({ member }: { member: Pick<TeamMember, 'fullName' | 'email' | 'avatarUrl'> }) {
+/** Ảnh đại diện nhỏ; không có ảnh thì chữ cái đầu của tên. `small`: cỡ 24px (thẻ bài trên bảng). */
+export function MemberAvatar({
+  member,
+  small,
+}: {
+  member: Pick<TeamMember, 'fullName' | 'email' | 'avatarUrl'>;
+  small?: boolean;
+}) {
   const name = memberName(member);
   return (
-    <span className="tm-avatar" aria-hidden="true">
+    <span className={`tm-avatar${small ? ' tm-avatar--sm' : ''}`} aria-hidden="true">
       {member.avatarUrl ? <img src={member.avatarUrl} alt="" /> : name.charAt(0).toUpperCase()}
     </span>
   );
