@@ -7,6 +7,8 @@ import java.util.stream.Collectors;
 
 import org.mapstruct.*;
 
+import com.ptit.music_be.configuration.RolePermissionRegistry;
+import com.ptit.music_be.dto.enums.auth.AdminPermission;
 import com.ptit.music_be.dto.response.auth.MemberResponse;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.MemberRole;
@@ -15,8 +17,14 @@ import com.ptit.music_be.entity.MemberRole;
 public interface MemberMapper {
 
     @Mapping(target = "roles", source = "memberRoles", qualifiedByName = "mapRoles")
+    @Mapping(target = "permissions", source = "memberRoles", qualifiedByName = "mapPermissions")
     @Mapping(target = "plan", ignore = true)
     MemberResponse toMemberResponse(Member member);
+
+    @Named("mapPermissions")
+    default Set<AdminPermission> mapPermissions(List<MemberRole> memberRoles) {
+        return RolePermissionRegistry.permissionsOf(mapRoles(memberRoles));
+    }
 
     @Named("mapRoles")
     default Set<String> mapRoles(List<MemberRole> memberRoles) {

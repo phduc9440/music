@@ -17,7 +17,7 @@ import { Avatar, Icon } from '../ui';
 import { authApi, userApi } from '../../services';
 import { AuthProvider } from '../../types';
 import type { Member } from '../../types';
-import { isAdminMember, roleLabel } from '../../utils/auth';
+import { hasAdminAccess, roleLabel } from '../../utils/auth';
 import { CREATE_SCORE_PATH, NAV_GROUPS, navContextPath } from './nav';
 import PlanChip from './PlanChip';
 import './user-layout.css';
@@ -86,7 +86,7 @@ export default function UserLayout() {
 
   const displayName = me?.fullName || me?.email || t('common.header.account');
   // localStorage chỉ dùng cho giao diện; quyền thật do backend kiểm tra
-  const isAdmin = me ? isAdminMember(me) : localStorage.getItem('role') === 'ADMIN';
+  const isAdmin = me ? hasAdminAccess(me) : localStorage.getItem('role') === 'ADMIN';
 
   return (
     <div className="app-shell">

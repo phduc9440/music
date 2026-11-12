@@ -7,10 +7,14 @@ import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.Collection;
+import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -25,8 +29,10 @@ import com.ptit.music_be.dto.enums.notification.NotificationType;
 import com.ptit.music_be.dto.enums.team.TeamActivityType;
 import com.ptit.music_be.dto.enums.team.TeamInvitationStatus;
 import com.ptit.music_be.dto.enums.team.TeamMemberKind;
+import com.ptit.music_be.dto.enums.team.TeamPermission;
 import com.ptit.music_be.dto.enums.team.TeamRole;
 import com.ptit.music_be.dto.request.team.TeamInviteRequest;
+import com.ptit.music_be.dto.request.team.TeamPermissionsRequest;
 import com.ptit.music_be.dto.request.team.TeamRequest;
 import com.ptit.music_be.dto.response.common.PageResponse;
 import com.ptit.music_be.dto.response.team.RestorableItemResponse;
@@ -34,6 +40,7 @@ import com.ptit.music_be.dto.response.team.TeamActivityResponse;
 import com.ptit.music_be.dto.response.team.TeamInvitationPreviewResponse;
 import com.ptit.music_be.dto.response.team.TeamInvitationResponse;
 import com.ptit.music_be.dto.response.team.TeamMemberResponse;
+import com.ptit.music_be.dto.response.team.TeamPermissionsResponse;
 import com.ptit.music_be.dto.response.team.TeamResponse;
 import com.ptit.music_be.dto.response.team.TeamScoreResponse;
 import com.ptit.music_be.dto.response.team.TeamTaskResponse;
@@ -54,8 +61,10 @@ import com.ptit.music_be.service.auth.EmailService;
 import com.ptit.music_be.service.billing.EntitlementService;
 import com.ptit.music_be.service.billing.PlanLimits;
 import com.ptit.music_be.service.notification.NotificationService;
+import com.ptit.music_be.service.team.RolePermissions;
 import com.ptit.music_be.service.team.TeamAccess;
 import com.ptit.music_be.service.team.TeamActivityLog;
+import com.ptit.music_be.service.team.TeamPermissionStore;
 import com.ptit.music_be.service.team.TeamService;
 
 import lombok.AccessLevel;
@@ -89,6 +98,7 @@ public class TeamServiceImpl implements TeamService {
     EmailService emailService;
     TeamAccess access;
     TeamActivityLog activityLog;
+    TeamPermissionStore permissionStore;
     String webUrl;
 
     public TeamServiceImpl(
@@ -103,6 +113,7 @@ public class TeamServiceImpl implements TeamService {
             EmailService emailService,
             TeamAccess access,
             TeamActivityLog activityLog,
+            TeamPermissionStore permissionStore,
             @Value("${app.web-url:http://localhost:5173}") String webUrl) {
         this.teamRepository = teamRepository;
         this.teamMemberRepository = teamMemberRepository;
@@ -115,6 +126,7 @@ public class TeamServiceImpl implements TeamService {
         this.emailService = emailService;
         this.access = access;
         this.activityLog = activityLog;
+        this.permissionStore = permissionStore;
         this.webUrl = webUrl.endsWith("/") ? webUrl.substring(0, webUrl.length() - 1) : webUrl;
     }
 
@@ -132,10 +144,11 @@ public class TeamServiceImpl implements TeamService {
         Map<String, Long> members = countMap(teamMemberRepository.countByTeams(ids));
         Map<String, Long> scores = countMap(scoreRepository.countByTeams(ids));
         Map<String, Long> shows = countMap(showRepository.countPreparingByTeams(ids));
+        Map<String, Map<TeamRole, Set<TeamPermission>>> matrices = permissionStore.matrices(ids);
         return mine.stream()
                 .map(tm -> toResponse(
                         tm.getTeam(),
-                        tm.getRole(),
+                        new RolePermissions(tm.getRole(), matrices.get(tm.getTeam().getId()).get(tm.getRole())),
                         members.getOrDefault(tm.getTeam().getId(), 0L),
                         scores.getOrDefault(tm.getTeam().getId(), 0L),
                         shows.getOrDefault(tm.getTeam().getId(), 0L)))
@@ -159,7 +172,7 @@ public class TeamServiceImpl implements TeamService {
                 .role(TeamRole.OWNER)
                 .build());
         activityLog.log(team.getId(), me, TeamActivityType.TEAM_CREATED, "team", team.getName());
-        return toResponse(team, TeamRole.OWNER, 1, 0, 0);
+        return toResponse(team, new RolePermissions(TeamRole.OWNER, null), 1, 0, 0);
     }
 
     @Override
@@ -174,7 +187,7 @@ public class TeamServiceImpl implements TeamService {
     @Transactional
     public TeamResponse update(String teamId, TeamRequest request) {
         Member me = access.currentMember();
-        TeamMember tm = access.requireManager(teamId, me);
+        TeamMember tm = access.require(teamId, me, TeamPermission.EDIT_TEAM);
         Team team = tm.getTeam();
         apply(team, request);
         teamRepository.save(team);
@@ -186,10 +199,7 @@ public class TeamServiceImpl implements TeamService {
     @Transactional
     public void delete(String teamId) {
         Member me = access.currentMember();
-        TeamMember tm = access.membership(teamId, me);
-        if (tm.getRole() != TeamRole.OWNER) {
-            throw new AppException(ErrorCode.TEAM_FORBIDDEN);
-        }
+        TeamMember tm = access.requireOwner(teamId, me);
         // Xóa mềm: mọi dữ liệu giữ nguyên, team biến mất với thành viên; chủ team khôi phục được trong 30 ngày
         Team team = tm.getTeam();
         team.markDeleted(me, false, null);
@@ -227,7 +237,7 @@ public class TeamServiceImpl implements TeamService {
                 .filter(m -> m.getTeam().isDeleted())
                 .orElseThrow(() -> new AppException(ErrorCode.TEAM_NOT_EXISTED));
         if (tm.getRole() != TeamRole.OWNER) {
-            throw new AppException(ErrorCode.TEAM_FORBIDDEN);
+            throw new AppException(ErrorCode.TEAM_OWNER_ONLY);
         }
         Team team = tm.getTeam();
         if (team.isDeletedByAdmin()) {
@@ -290,7 +300,11 @@ public class TeamServiceImpl implements TeamService {
     @Transactional
     public TeamMemberResponse changeRole(String teamId, String memberId, TeamRole role) {
         Member me = access.currentMember();
-        TeamMember mine = access.requireManager(teamId, me);
+        TeamMember mine = access.membership(teamId, me);
+        RolePermissions perms = access.permissions(mine);
+        if (!perms.canInvite()) {
+            throw new AppException(ErrorCode.TEAM_FORBIDDEN);
+        }
         if (role == null) {
             throw new AppException(ErrorCode.TEAM_ROLE_INVALID);
         }
@@ -301,10 +315,10 @@ public class TeamServiceImpl implements TeamService {
         if (target.getId().equals(mine.getId())) {
             throw new AppException(ErrorCode.TEAM_ROLE_INVALID);
         }
-        // MANAGER không cấp OWNER và không đụng tới OWNER
-        if (mine.getRole() != TeamRole.OWNER
-                && (role == TeamRole.OWNER || target.getRole() == TeamRole.OWNER)) {
-            throw new AppException(ErrorCode.TEAM_FORBIDDEN);
+        // Phải được đụng tới cả vai trò cũ lẫn vai trò mới (mặc định quản lý chỉ đổi qua lại người phối / người xem;
+        // cấp hay thu hồi chủ nhóm luôn là việc của chủ nhóm)
+        if (!perms.canAssign(target.getRole()) || !perms.canAssign(role)) {
+            throw new AppException(ErrorCode.TEAM_ROLE_SCOPE);
         }
         if (target.getRole() == role) {
             return toMemberResponse(target);
@@ -351,11 +365,13 @@ public class TeamServiceImpl implements TeamService {
                 .orElseThrow(() -> new AppException(ErrorCode.TEAM_MEMBER_NOT_EXISTED));
         boolean self = target.getId().equals(mine.getId());
         if (!self) {
-            if (!mine.getRole().canManage()) {
+            RolePermissions perms = access.permissions(mine);
+            if (!perms.canInvite()) {
                 throw new AppException(ErrorCode.TEAM_FORBIDDEN);
             }
-            if (mine.getRole() != TeamRole.OWNER && target.getRole() == TeamRole.OWNER) {
-                throw new AppException(ErrorCode.TEAM_FORBIDDEN);
+            // Mặc định quản lý chỉ xóa người phối, người xem; chủ nhóm chỉ chủ nhóm xóa được
+            if (!perms.canAssign(target.getRole())) {
+                throw new AppException(ErrorCode.TEAM_ROLE_SCOPE);
             }
         }
         if (target.getRole() == TeamRole.OWNER && teamMemberRepository.countByTeamIdAndRole(teamId, TeamRole.OWNER) <= 1) {
@@ -382,12 +398,91 @@ public class TeamServiceImpl implements TeamService {
         }
     }
 
+    // ------------------------------------------------------------------------------------------------ bảng quyền
+
+    @Override
+    @Transactional(readOnly = true)
+    public TeamPermissionsResponse permissions(String teamId) {
+        TeamMember mine = access.membership(teamId, access.currentMember());
+        return toPermissionsResponse(teamId, mine.getRole() == TeamRole.OWNER);
+    }
+
+    @Override
+    @Transactional
+    public TeamPermissionsResponse updatePermissions(String teamId, TeamPermissionsRequest request) {
+        Member me = access.currentMember();
+        TeamMember mine = access.requireOwner(teamId, me);
+        Map<TeamRole, List<TeamPermission>> roles = request == null || request.getRoles() == null
+                ? Map.of()
+                : request.getRoles();
+        // Chủ nhóm luôn đủ quyền, không chỉnh được
+        if (roles.keySet().stream().anyMatch(r -> r == null || r == TeamRole.OWNER)) {
+            throw new AppException(ErrorCode.TEAM_ROLE_INVALID);
+        }
+        Map<TeamRole, Set<TeamPermission>> before = permissionStore.matrix(teamId);
+        for (TeamRole role : TeamPermissionStore.CONFIGURABLE) {
+            if (!roles.containsKey(role)) {
+                continue;
+            }
+            Set<TeamPermission> wanted = roles.get(role) == null
+                    ? EnumSet.noneOf(TeamPermission.class)
+                    : roles.get(role).stream()
+                            .filter(Objects::nonNull)
+                            .collect(Collectors.toCollection(() -> EnumSet.noneOf(TeamPermission.class)));
+            Set<TeamPermission> old = before.get(role);
+            Set<TeamPermission> saved = permissionStore.save(mine.getTeam(), role, wanted);
+            if (saved.equals(old)) {
+                continue;
+            }
+            activityLog.log(
+                    teamId,
+                    me,
+                    TeamActivityType.PERMISSIONS_CHANGED,
+                    "role",
+                    role.name(),
+                    "added",
+                    joinNames(saved, old),
+                    "removed",
+                    joinNames(old, saved));
+        }
+        return toPermissionsResponse(teamId, true);
+    }
+
+    private TeamPermissionsResponse toPermissionsResponse(String teamId, boolean editable) {
+        Map<TeamRole, List<TeamPermission>> roles = new EnumMap<>(TeamRole.class);
+        Map<TeamRole, List<TeamPermission>> defaults = new EnumMap<>(TeamRole.class);
+        permissionStore.matrix(teamId).forEach((role, perms) -> roles.put(role, List.copyOf(perms)));
+        for (TeamRole role : TeamPermissionStore.CONFIGURABLE) {
+            defaults.put(role, List.copyOf(TeamPermission.defaultsOf(role)));
+        }
+        return TeamPermissionsResponse.builder()
+                .roles(roles)
+                .defaults(defaults)
+                .editable(editable)
+                .build();
+    }
+
+    /** Tên các quyền có trong {@code a} mà không có trong {@code b}, cách nhau bởi dấu phẩy; không có thì null. */
+    private static String joinNames(Set<TeamPermission> a, Set<TeamPermission> b) {
+        String joined = a.stream().filter(p -> !b.contains(p)).map(Enum::name).collect(Collectors.joining(","));
+        return joined.isEmpty() ? null : joined;
+    }
+
+    /** Có quyền mời / quản lý thành viên ở ít nhất một vai trò; trả về quyền để kiểm tra tiếp theo vai trò cụ thể. */
+    private RolePermissions requireInviter(String teamId, Member me) {
+        RolePermissions perms = access.permissions(access.membership(teamId, me));
+        if (!perms.canInvite()) {
+            throw new AppException(ErrorCode.TEAM_FORBIDDEN);
+        }
+        return perms;
+    }
+
     // ------------------------------------------------------------------------------------------------ lời mời
 
     @Override
     @Transactional(readOnly = true)
     public List<TeamInvitationResponse> invitations(String teamId) {
-        access.requireManager(teamId, access.currentMember());
+        requireInviter(teamId, access.currentMember());
         return teamMemberRepository.findUsableInvitations(teamId, LocalDateTime.now()).stream()
                 .map(i -> toInvitationResponse(i, null))
                 .toList();
@@ -397,7 +492,7 @@ public class TeamServiceImpl implements TeamService {
     @Transactional
     public TeamInvitationResponse invite(String teamId, TeamInviteRequest request) {
         Member me = access.currentMember();
-        access.requireManager(teamId, me);
+        RolePermissions perms = requireInviter(teamId, me);
         Team team = teamRepository
                 .findByIdForUpdate(teamId)
                 .orElseThrow(() -> new AppException(ErrorCode.TEAM_NOT_EXISTED));
@@ -405,6 +500,10 @@ public class TeamServiceImpl implements TeamService {
         // Không mời thẳng làm OWNER: vào team rồi chủ team mới cấp
         if (role == null || role == TeamRole.OWNER) {
             throw new AppException(ErrorCode.TEAM_ROLE_INVALID);
+        }
+        // Mời người phối / người xem cần MANAGE_MEMBERS, mời làm quản lý cần MANAGE_MANAGERS
+        if (!perms.canAssign(role)) {
+            throw new AppException(ErrorCode.TEAM_ROLE_SCOPE);
         }
         LocalDateTime now = LocalDateTime.now();
         PlanLimits limits = entitlementService.limitsOf(team.getCreatedBy().getId());
@@ -466,11 +565,15 @@ public class TeamServiceImpl implements TeamService {
     @Override
     @Transactional
     public void revokeInvitation(String teamId, String invitationId) {
-        access.requireManager(teamId, access.currentMember());
+        RolePermissions perms = requireInviter(teamId, access.currentMember());
         TeamMember invitation = teamMemberRepository
                 .findInvitationById(invitationId == null ? "" : invitationId)
                 .filter(i -> i.getTeam().getId().equals(teamId))
                 .orElseThrow(() -> new AppException(ErrorCode.TEAM_INVITATION_INVALID));
+        // Thu hồi theo cùng luật với mời
+        if (!perms.canAssign(invitation.getRole())) {
+            throw new AppException(ErrorCode.TEAM_ROLE_SCOPE);
+        }
         if (invitation.getStatus() == TeamInvitationStatus.PENDING) {
             invitation.setStatus(TeamInvitationStatus.REVOKED);
             teamMemberRepository.save(invitation);
@@ -606,8 +709,9 @@ public class TeamServiceImpl implements TeamService {
     public List<TeamScoreResponse> scores(String teamId) {
         Member me = access.currentMember();
         TeamMember mine = access.membership(teamId, me);
+        boolean removeAny = access.permissions(mine).has(TeamPermission.REMOVE_SCORES);
         return scoreRepository.findByTeamWithOwner(teamId).stream()
-                .map(s -> toScoreResponse(s, mine.getRole().canManage() || isOwner(s, me)))
+                .map(s -> toScoreResponse(s, removeAny || isOwner(s, me)))
                 .toList();
     }
 
@@ -625,10 +729,7 @@ public class TeamServiceImpl implements TeamService {
     @Transactional
     public TeamScoreResponse addScore(String teamId, String scoreId) {
         Member me = access.currentMember();
-        TeamMember mine = access.membership(teamId, me);
-        if (mine.getRole() == TeamRole.VIEWER) {
-            throw new AppException(ErrorCode.TEAM_FORBIDDEN);
-        }
+        access.require(teamId, me, TeamPermission.ADD_SCORES);
         Score score = scoreRepository
                 .findById(scoreId == null ? "" : scoreId)
                 .orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
@@ -662,7 +763,7 @@ public class TeamServiceImpl implements TeamService {
                 .findById(scoreId == null ? "" : scoreId)
                 .filter(s -> teamId.equals(s.getTeamId()))
                 .orElseThrow(() -> new AppException(ErrorCode.TEAM_SCORE_NOT_IN_TEAM));
-        if (!mine.getRole().canManage() && !isOwner(score, me)) {
+        if (!isOwner(score, me) && !access.permissions(mine).has(TeamPermission.REMOVE_SCORES)) {
             throw new AppException(ErrorCode.TEAM_FORBIDDEN);
         }
         showItemRepository.deleteByTeamAndScore(teamId, score.getId());
@@ -747,21 +848,22 @@ public class TeamServiceImpl implements TeamService {
     private TeamResponse toResponse(Team team, TeamRole role) {
         return toResponse(
                 team,
-                role,
+                permissionStore.of(team.getId(), role),
                 teamMemberRepository.countByTeamId(team.getId()),
                 countMap(scoreRepository.countByTeams(List.of(team.getId()))).getOrDefault(team.getId(), 0L),
                 countMap(showRepository.countPreparingByTeams(List.of(team.getId())))
                         .getOrDefault(team.getId(), 0L));
     }
 
-    private TeamResponse toResponse(Team team, TeamRole role, long members, long scores, long shows) {
+    private TeamResponse toResponse(Team team, RolePermissions perms, long members, long scores, long shows) {
         PlanLimits limits = entitlementService.limitsOf(team.getCreatedBy().getId());
         return TeamResponse.builder()
                 .id(team.getId())
                 .name(team.getName())
                 .description(team.getDescription())
                 .avatarUrl(team.getAvatarUrl())
-                .myRole(role)
+                .myRole(perms.role())
+                .myPermissions(List.copyOf(perms.granted()))
                 .memberCount(members)
                 .scoreCount(scores)
                 .preparingShows(shows)

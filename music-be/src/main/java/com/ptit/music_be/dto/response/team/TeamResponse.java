@@ -1,7 +1,9 @@
 package com.ptit.music_be.dto.response.team;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
+import com.ptit.music_be.dto.enums.team.TeamPermission;
 import com.ptit.music_be.dto.enums.team.TeamRole;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -18,6 +20,8 @@ public class TeamResponse {
     String description;
     String avatarUrl;
     TeamRole myRole;
+    /** Quyền của tôi theo bảng quyền của team (chủ nhóm: mọi quyền); web dùng để hiện / ẩn nút. */
+    List<TeamPermission> myPermissions;
     long memberCount;
     long scoreCount;
     /** Số show đang chuẩn bị. */

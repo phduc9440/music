@@ -3,6 +3,7 @@ package com.ptit.music_be.controller.admin;
 import java.util.List;
 
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.ptit.music_be.dto.response.admin.ErrorLogResponse;
 import com.ptit.music_be.dto.response.admin.SystemMetricsResponse;
@@ -21,6 +22,7 @@ import lombok.experimental.FieldDefaults;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Tag(name = "Admin - System", description = "Chỉ ROLE_ADMIN: nhật ký lỗi và thông số tải máy chủ")
+@PreAuthorize("@perm.has('SYSTEM_MONITOR')")
 public class AdminSystemController {
 
     AdminSystemService adminSystemService;

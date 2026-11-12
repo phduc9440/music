@@ -21,5 +21,7 @@ public enum TeamActivityType {
     ITEM_ADDED,
     ITEM_REMOVED,
     ITEM_ASSIGNED,
-    ITEM_STATUS_CHANGED
+    ITEM_STATUS_CHANGED,
+    /** Chủ nhóm đổi bảng quyền của một vai trò; params: role, added, removed (tên quyền cách nhau bởi dấu phẩy). */
+    PERMISSIONS_CHANGED
 }

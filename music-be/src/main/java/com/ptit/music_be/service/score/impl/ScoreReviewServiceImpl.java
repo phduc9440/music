@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import com.ptit.music_be.dto.enums.auth.AdminPermission;
 import com.ptit.music_be.dto.enums.notification.NotificationType;
 import com.ptit.music_be.dto.response.score.ReviewListResponse;
 import com.ptit.music_be.dto.response.score.ReviewResponse;
@@ -111,7 +112,7 @@ public class ScoreReviewServiceImpl implements ScoreReviewService {
 
     /** Tác giả nhận xét, chủ sở hữu bản nhạc hoặc ADMIN được xóa. */
     private boolean canDelete(Score score, ScoreReview review) {
-        return isMine(review) || SecurityUtils.isAdmin() || scoreFileService.canManageSharing(score);
+        return isMine(review) || SecurityUtils.hasPermission(AdminPermission.SCORES_MODERATE) || scoreFileService.canManageSharing(score);
     }
 
     private ReviewListResponse toResponse(Score score) {

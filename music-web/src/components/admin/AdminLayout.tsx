@@ -12,62 +12,14 @@ import { adoptServerTheme } from '../../theme/theme';
 import { authApi, scoreApi, userApi } from '../../services';
 import { AuthProvider } from '../../types';
 import type { Member } from '../../types';
-import { roleLabel } from '../../utils/auth';
+import { hasAdminPermission, roleLabel } from '../../utils/auth';
+import { MENU, visibleMenu } from './adminMenu';
 import { Avatar, Icon } from '../ui';
-import type { IconName } from '../ui';
 import './admin.css';
 
 export interface AdminOutletContext {
   admin: Member | null;
 }
-
-interface MenuItem {
-  to: string;
-  label: string;
-  icon: IconName;
-  end?: boolean;
-  /** Hiện số bản chờ duyệt cạnh mục này. */
-  pendingBadge?: boolean;
-}
-
-/** Mục menu: nhãn là getter nên luôn lấy theo ngôn ngữ đang dùng (chuỗi ở locales, nhóm admin.menu). */
-const item = (to: string, key: string, icon: IconName, extra: Partial<MenuItem> = {}): MenuItem => ({
-  to,
-  icon,
-  ...extra,
-  get label() {
-    return t(`admin.menu.items.${key}`);
-  },
-});
-
-const section = (key: string, items: MenuItem[]) => ({
-  items,
-  get section() {
-    return t(`admin.menu.sections.${key}`);
-  },
-});
-
-const MENU: { section: string; items: MenuItem[] }[] = [
-  section('overview', [item('/admin', 'dashboard', 'dashboard', { end: true })]),
-  section('users', [
-    item('/admin/members', 'members', 'users'),
-    item('/admin/teams', 'teams', 'share'),
-    item('/admin/announcements', 'announcements', 'megaphone'),
-  ]),
-  section('content', [
-    item('/admin/scores', 'scores', 'music'),
-    item('/admin/pending-scores', 'pending', 'clock', { pendingBadge: true }),
-    item('/admin/official-scores', 'official', 'library'),
-    item('/admin/tags', 'tags', 'tag'),
-    item('/admin/composers', 'composers', 'users'),
-  ]),
-  section('billing', [
-    item('/admin/revenue', 'revenue', 'chart'),
-    item('/admin/plans', 'plans', 'star'),
-    item('/admin/member-plans', 'memberPlans', 'users'),
-  ]),
-  section('system', [item('/admin/ai-tasks', 'aiTasks', 'cpu'), item('/admin/system', 'system', 'activity')]),
-];
 
 const ALL_ITEMS = MENU.flatMap((g) => g.items);
 
@@ -102,6 +54,7 @@ export default function AdminLayout() {
 
   // Số bản chờ duyệt: tải lại mỗi khi chuyển trang (duyệt xong quay lại là thấy số mới)
   useEffect(() => {
+    if (!hasAdminPermission(admin, 'SCORES_APPROVE')) return; // không có quyền duyệt thì không có số chờ duyệt
     let cancelled = false;
     scoreApi
       .pendingPublic({ page: 0, size: 1 })
@@ -110,7 +63,7 @@ export default function AdminLayout() {
     return () => {
       cancelled = true;
     };
-  }, [pathname]);
+  }, [pathname, admin]);
 
   // Đóng menu tài khoản khi bấm ra ngoài
   useEffect(() => {
@@ -215,7 +168,7 @@ export default function AdminLayout() {
       <div className="adm-body">
         <aside className={`adm-sidebar ui-stage${mobileOpen ? ' adm-sidebar--open' : ''}`}>
           <nav className="adm-menu" aria-label={t('admin.layout.menuLabel')}>
-            {MENU.map((group) => (
+            {visibleMenu(admin).map((group) => (
               <div key={group.section} className="adm-menu">
                 <div className="adm-menu__section">{group.section}</div>
                 {group.items.map((item) => (

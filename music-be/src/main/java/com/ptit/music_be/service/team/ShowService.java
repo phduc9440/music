@@ -12,7 +12,7 @@ import com.ptit.music_be.dto.response.team.ShowResponse;
 
 /**
  * Show của team (mục 4.1): danh sách bài theo thứ tự diễn, mỗi bài có người phối, người duyệt, hạn và trạng thái
- * TODO / ARRANGING / IN_REVIEW / APPROVED. Mọi thành viên xem được; OWNER/MANAGER quản lý show và phân công; người phối
+ * TODO / ARRANGING / IN_REVIEW / APPROVED. Mọi thành viên xem được; người có quyền MANAGE_SHOWS (mặc định quản lý) quản lý show và phân công; người phối
  * và người duyệt chỉ chuyển trạng thái theo vai trò của mình trên bài đó.
  */
 public interface ShowService {
@@ -25,13 +25,13 @@ public interface ShowService {
 
     ShowResponse update(String showId, ShowRequest request);
 
-    /** OWNER/MANAGER xóa mềm show (bài giữ nguyên); khôi phục được trong 30 ngày. */
+    /** Người có quyền MANAGE_SHOWS xóa mềm show (bài giữ nguyên); khôi phục được trong 30 ngày. */
     void delete(String showId);
 
-    /** OWNER/MANAGER: show đã xóa của team còn trong hạn khôi phục, mới xóa trước. */
+    /** Người có quyền MANAGE_SHOWS: show đã xóa của team còn trong hạn khôi phục, mới xóa trước. */
     List<RestorableItemResponse> deletedShows(String teamId);
 
-    /** OWNER/MANAGER khôi phục show đã xóa (trong 30 ngày). */
+    /** Người có quyền MANAGE_SHOWS khôi phục show đã xóa (trong 30 ngày). */
     ShowResponse restore(String showId);
 
     /** Thêm một bản nhạc của team vào cuối show (kèm phân công nếu có). */

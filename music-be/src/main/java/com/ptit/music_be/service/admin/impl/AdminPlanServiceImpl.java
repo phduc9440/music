@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ptit.music_be.dto.enums.auth.AdminPermission;
 import com.ptit.music_be.dto.request.admin.CreatePlanRequest;
 import com.ptit.music_be.dto.request.admin.UpdatePlanRequest;
 import com.ptit.music_be.dto.response.billing.PlanResponse;
@@ -63,7 +64,7 @@ public class AdminPlanServiceImpl implements AdminPlanService {
     @Override
     @Transactional
     public PlanResponse update(String code, UpdatePlanRequest request) {
-        requireSuperAdmin();
+        requirePlansPermission();
         Plan plan = planRepository.findByCode(code).orElseThrow(() -> new AppException(ErrorCode.PLAN_NOT_EXISTED));
         if (request == null) {
             throw new AppException(ErrorCode.PLAN_PRICE_INVALID);
@@ -96,7 +97,7 @@ public class AdminPlanServiceImpl implements AdminPlanService {
     @Override
     @Transactional
     public PlanResponse create(CreatePlanRequest request) {
-        requireSuperAdmin();
+        requirePlansPermission();
         if (request == null) {
             throw new AppException(ErrorCode.PLAN_CODE_INVALID);
         }
@@ -136,7 +137,7 @@ public class AdminPlanServiceImpl implements AdminPlanService {
     @Override
     @Transactional
     public void delete(String code) {
-        requireSuperAdmin();
+        requirePlansPermission();
         Plan plan = planRepository.findByCode(code).orElseThrow(() -> new AppException(ErrorCode.PLAN_NOT_EXISTED));
         if (SYSTEM_CODES.contains(plan.getCode())) {
             throw new AppException(ErrorCode.PLAN_SYSTEM_LOCKED);
@@ -149,8 +150,8 @@ public class AdminPlanServiceImpl implements AdminPlanService {
         log.info("{} xóa gói {}", SecurityUtils.getCurrentEmail(), plan.getCode());
     }
 
-    private static void requireSuperAdmin() {
-        if (!SecurityUtils.isSuperAdmin()) {
+    private static void requirePlansPermission() {
+        if (!SecurityUtils.hasPermission(AdminPermission.PLANS_MANAGE)) {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
     }

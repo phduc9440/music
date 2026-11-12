@@ -29,5 +29,20 @@ export function activityText(a: TeamActivity): string {
     translated.reviewer = p.reviewer ?? t('teams.item.nobody');
   }
   const variant = a.type === 'INVITATION_SENT' && !p.email ? '_link' : '';
-  return t(`teams.activity.${a.type}${variant}`, translated);
+  const text = t(`teams.activity.${a.type}${variant}`, translated);
+  if (a.type === 'PERMISSIONS_CHANGED') {
+    // added / removed: tên quyền cách nhau bởi dấu phẩy -> “nhãn”, “nhãn”
+    const labels = (names?: string) =>
+      (names ?? '')
+        .split(',')
+        .filter(Boolean)
+        .map((n) => `“${hasKey(`teams.permissions.rows.${n}`) ? t(`teams.permissions.rows.${n}`) : n}”`)
+        .join(', ');
+    const parts = [
+      p.added && t('teams.activity.permissionsAdded', { list: labels(p.added) }),
+      p.removed && t('teams.activity.permissionsRemoved', { list: labels(p.removed) }),
+    ].filter(Boolean);
+    return parts.length ? `${text}: ${parts.join('; ')}` : text;
+  }
+  return text;
 }

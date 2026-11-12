@@ -7,8 +7,72 @@ export type ShowItemStatus = 'TODO' | 'ARRANGING' | 'IN_REVIEW' | 'APPROVED';
 export const TEAM_ROLES: TeamRole[] = ['OWNER', 'MANAGER', 'ARRANGER', 'VIEWER'];
 export const SHOW_ITEM_STATUSES: ShowItemStatus[] = ['TODO', 'ARRANGING', 'IN_REVIEW', 'APPROVED'];
 
-/** OWNER hoặc MANAGER: mời, đổi vai trò, quản lý show và phân công. */
-export const canManageTeam = (role?: TeamRole | null) => role === 'OWNER' || role === 'MANAGER';
+/** Quyền chủ nhóm tích / bỏ tích cho từng vai trò (BE: TeamPermission). Thứ tự = thứ tự hàng trên bảng quyền. */
+export type TeamPermission =
+  | 'EDIT_TEAM'
+  | 'MANAGE_MANAGERS'
+  | 'MANAGE_MEMBERS'
+  | 'MANAGE_SHOWS'
+  | 'APPROVE_ANY'
+  | 'EDIT_SCORES'
+  | 'MANAGE_SCORES'
+  | 'REMOVE_SCORES'
+  | 'ADD_SCORES'
+  | 'COMMENT';
+
+export const TEAM_PERMISSIONS: TeamPermission[] = [
+  'EDIT_TEAM',
+  'MANAGE_MANAGERS',
+  'MANAGE_MEMBERS',
+  'MANAGE_SHOWS',
+  'APPROVE_ANY',
+  'EDIT_SCORES',
+  'MANAGE_SCORES',
+  'REMOVE_SCORES',
+  'ADD_SCORES',
+  'COMMENT',
+];
+
+/** Vai trò chủ nhóm chỉnh được quyền (chủ nhóm luôn đủ quyền). */
+export type ConfigurableTeamRole = Exclude<TeamRole, 'OWNER'>;
+export const CONFIGURABLE_TEAM_ROLES: ConfigurableTeamRole[] = ['MANAGER', 'ARRANGER', 'VIEWER'];
+
+/** Bật quyền ở khóa thì phải bật cả các quyền ở giá trị (giống TeamPermission.requires ở BE). */
+export const TEAM_PERMISSION_REQUIRES: Partial<Record<TeamPermission, TeamPermission[]>> = {
+  MANAGE_MANAGERS: ['MANAGE_MEMBERS'],
+  MANAGE_SCORES: ['EDIT_SCORES'],
+  EDIT_SCORES: ['COMMENT'],
+};
+
+/** Người có danh sách quyền `perms` có quyền `p` không (danh sách lấy từ BE, chủ nhóm đã có đủ). */
+export const hasTeamPermission = (perms: readonly TeamPermission[] | null | undefined, p: TeamPermission) =>
+  !!perms?.includes(p);
+
+/**
+ * Có được mời, đổi vai trò, xóa người mang vai trò `role` (hoặc gán `role` cho người khác) không, theo bảng quyền: vai trò
+ * chủ nhóm chỉ chủ nhóm; quản lý cần MANAGE_MANAGERS; người phối, người xem cần MANAGE_MEMBERS. Giống
+ * RolePermissions.canAssign ở BE.
+ */
+export const canAssignTeamRole = (
+  myRole: TeamRole | null | undefined,
+  perms: readonly TeamPermission[] | null | undefined,
+  role: TeamRole,
+) => {
+  if (role === 'OWNER') return myRole === 'OWNER';
+  return hasTeamPermission(perms, role === 'MANAGER' ? 'MANAGE_MANAGERS' : 'MANAGE_MEMBERS');
+};
+
+/** Có quyền mời ít nhất một vai trò (thấy khung mời và lời mời đang chờ). */
+export const canInviteToTeam = (perms: readonly TeamPermission[] | null | undefined) =>
+  hasTeamPermission(perms, 'MANAGE_MEMBERS') || hasTeamPermission(perms, 'MANAGE_MANAGERS');
+
+/** Bảng quyền của team. BE: TeamPermissionsResponse */
+export interface TeamPermissionTable {
+  roles: Record<ConfigurableTeamRole, TeamPermission[]>;
+  defaults: Record<ConfigurableTeamRole, TeamPermission[]>;
+  /** Người đang xem là chủ nhóm: được tích / bỏ tích. */
+  editable: boolean;
+}
 
 export interface Team {
   id: string;
@@ -16,6 +80,8 @@ export interface Team {
   description?: string | null;
   avatarUrl?: string | null;
   myRole: TeamRole;
+  /** Quyền của tôi theo bảng quyền của team (chủ nhóm: mọi quyền). */
+  myPermissions: TeamPermission[];
   memberCount: number;
   scoreCount: number;
   preparingShows: number;
@@ -112,6 +178,7 @@ export interface ShowDetail {
   show: Show;
   teamName: string;
   myRole: TeamRole;
+  myPermissions: TeamPermission[];
   items: ShowItem[];
   /** Thành viên giao việc được (không gồm VIEWER). */
   assignees: TeamMember[];
@@ -135,7 +202,8 @@ export type TeamActivityType =
   | 'ITEM_ADDED'
   | 'ITEM_REMOVED'
   | 'ITEM_ASSIGNED'
-  | 'ITEM_STATUS_CHANGED';
+  | 'ITEM_STATUS_CHANGED'
+  | 'PERMISSIONS_CHANGED';
 
 export interface TeamActivity {
   id: string;

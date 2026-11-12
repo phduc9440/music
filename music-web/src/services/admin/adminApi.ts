@@ -1,6 +1,7 @@
 import apiClient from '../client';
 import type {
   AdminAiTask,
+  AdminPermission,
   AdminDashboard,
   AiTaskSummary,
   AnnouncementAudience,
@@ -12,6 +13,7 @@ import type {
   ErrorLogEntry,
   Member,
   PageResult,
+  RoleItem,
   ScoreDetail,
   ScoreSummary,
   SystemMetrics,
@@ -19,6 +21,14 @@ import type {
 
 /** Khớp AdminMemberController của BE (/api/admin/members). Chỉ ROLE_ADMIN gọi được. page bắt đầu từ 0. */
 export const adminApi = {
+  // Vai trò tài khoản và quyền quản trị (chỉ SUPER_ADMIN)
+  getRoles: () => apiClient.get<ApiResponse<RoleItem[]>>('/admin/roles'),
+  createRole: (data: { label: string; description?: string | null; permissions: AdminPermission[] }) =>
+    apiClient.post<ApiResponse<RoleItem>>('/admin/roles', data),
+  updateRole: (id: string, data: { label?: string; description?: string | null; permissions: AdminPermission[] }) =>
+    apiClient.put<ApiResponse<RoleItem>>(`/admin/roles/${id}`, data),
+  deleteRole: (id: string) => apiClient.delete<ApiResponse<void>>(`/admin/roles/${id}`),
+
   getMembers: (params?: { page?: number; size?: number; keyword?: string }) =>
     apiClient.get<ApiResponse<PageResult<Member>>>('/admin/members', {
       params: { page: 0, size: 20, ...params },

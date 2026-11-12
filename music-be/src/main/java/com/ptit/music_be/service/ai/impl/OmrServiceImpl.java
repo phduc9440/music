@@ -31,6 +31,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ptit.music_be.dto.enums.auth.AdminPermission;
 import com.ptit.music_be.dto.enums.ai.AiTaskStatus;
 import com.ptit.music_be.dto.enums.ai.AiTaskType;
 import com.ptit.music_be.dto.enums.ai.OmrSourceType;
@@ -225,7 +226,7 @@ public class OmrServiceImpl implements OmrService {
     public AiTaskResponse retryAsAdmin(String scoreId) {
         // Kiểm duyệt: admin chạy lại cả bản của người khác (không cần quyền sửa nội dung), không tính vào giới hạn số
         // task của chủ; task mới vẫn gán cho chủ bản nhạc để họ thấy trong lịch sử và trang tiến độ của mình
-        if (!SecurityUtils.isAdmin()) {
+        if (!SecurityUtils.hasPermission(AdminPermission.AI_TASKS_MANAGE)) {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
         Score score =

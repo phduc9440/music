@@ -82,7 +82,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
     @Override
     @Transactional(readOnly = true)
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.has('MEMBERS_VIEW')")
     public MySubscriptionResponse ofMember(String memberId) {
         Member member =
                 memberRepository.findById(memberId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
@@ -361,7 +361,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
     @Override
     @Transactional
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("@perm.has('SUBSCRIPTIONS_MANAGE')")
     public java.util.List<BulkGrantResult> revokePlans(java.util.List<String> memberIds, String reason) {
         requireBulkSize(memberIds);
         String note = validReason(reason);
@@ -411,7 +411,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
     @Override
     @Transactional
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("@perm.has('SUBSCRIPTIONS_MANAGE')")
     public java.util.List<BulkGrantResult> banPlans(
             java.util.List<String> memberIds, int months, String reason, String planCode) {
         requireBulkSize(memberIds);
@@ -491,7 +491,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
     @Override
     @Transactional
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("@perm.has('SUBSCRIPTIONS_MANAGE')")
     public java.util.List<BulkGrantResult> liftBans(java.util.List<String> memberIds) {
         requireBulkSize(memberIds);
         LocalDateTime now = LocalDateTime.now();
@@ -639,7 +639,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
     @Override
     @Transactional
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("@perm.has('SUBSCRIPTIONS_MANAGE')")
     public MySubscriptionResponse grant(String memberId, String planCode, int months) {
         if (months < 1 || months > MAX_GRANT_MONTHS) {
             throw new AppException(ErrorCode.SUBSCRIPTION_MONTHS_INVALID);
@@ -681,7 +681,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
     @Override
     @Transactional
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("@perm.has('SUBSCRIPTIONS_MANAGE')")
     public java.util.List<BulkGrantResult> grantMany(java.util.List<String> memberIds, String planCode, int months) {
         if (memberIds == null || memberIds.isEmpty() || memberIds.size() > MAX_BULK_GRANT) {
             throw new AppException(ErrorCode.INVALID_REQUEST);
@@ -732,7 +732,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
     @Override
     @Transactional
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("@perm.has('SUBSCRIPTIONS_MANAGE')")
     public void cancel(String memberId) {
         LocalDateTime now = LocalDateTime.now();
         for (Subscription s : subscriptionRepository.findCurrent(memberId, now)) {

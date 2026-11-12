@@ -3,20 +3,23 @@ package com.ptit.music_be.configuration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.stereotype.Component;
 
 import com.ptit.music_be.dto.enums.auth.MemberStatus;
 import com.ptit.music_be.repository.auth.MemberRepository;
+import com.ptit.music_be.repository.auth.MemberRoleRepository;
 
 import lombok.RequiredArgsConstructor;
 
 /**
  * Quyết định một token đã cấp có còn dùng được không: tài khoản bị khóa, hoặc token được cấp trước lần đổi/đặt lại mật
- * khẩu gần nhất, thì từ chối. Kết quả được nhớ ngắn ({@link #TTL_MILLIS}) để không truy vấn DB ở mọi request; khi
- * khóa/mở khóa hay đổi mật khẩu thì gọi {@link #evict} nên có hiệu lực ngay trên máy chủ này (nhiều máy chủ thì chậm
- * nhất sau TTL).
+ * khẩu gần nhất, thì từ chối. Đồng thời cho biết vai trò hiện tại của tài khoản ({@link #roleNames}): quyền của request lấy
+ * từ đây chứ không từ vai trò ghi sẵn trong token, nên cấp / thu hồi vai trò có hiệu lực mà không cần đăng nhập lại. Kết
+ * quả được nhớ ngắn ({@link #TTL_MILLIS}) để không truy vấn DB ở mọi request; khi khóa/mở khóa, đổi mật khẩu hay đổi vai
+ * trò thì gọi {@link #evict} nên có hiệu lực ngay trên máy chủ này (nhiều máy chủ thì chậm nhất sau TTL).
  */
 @Component
 @RequiredArgsConstructor
@@ -25,10 +28,17 @@ public class MemberStatusGuard {
     static final long TTL_MILLIS = 15_000;
 
     /** passwordChangedAt tính bằng giây epoch (null nếu chưa từng đổi), cùng đơn vị với claim iat của JWT. */
-    private record Entry(boolean locked, Long passwordChangedAt, long expiresAt) {}
+    private record Entry(boolean locked, Long passwordChangedAt, List<String> roles, long expiresAt) {}
 
     private final MemberRepository memberRepository;
+    private final MemberRoleRepository memberRoleRepository;
     private final ConcurrentHashMap<String, Entry> cache = new ConcurrentHashMap<>();
+
+    /** Mã vai trò hiện tại của tài khoản (USER, ADMIN, SUPER_ADMIN, vai trò tự tạo); không có tài khoản thì rỗng. */
+    public List<String> roleNames(String email) {
+        Entry e = load(email);
+        return e == null ? List.of() : e.roles();
+    }
 
     public boolean isLocked(String email) {
         Entry e = load(email);
@@ -75,6 +85,7 @@ public class MemberStatusGuard {
                 .map(s -> new Entry(
                         s.getStatus() != null && s.getStatus() != MemberStatus.ACTIVE,
                         toEpochSecond(s.getPasswordChangedAt()),
+                        List.copyOf(memberRoleRepository.findRoleNamesByEmail(email)),
                         now + TTL_MILLIS))
                 .orElse(null);
         if (fresh != null) {

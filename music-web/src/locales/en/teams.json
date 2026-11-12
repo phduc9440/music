@@ -23,10 +23,10 @@
     "VIEWER": "Viewer"
   },
   "roleHint": {
-    "OWNER": "Full control over the team and all of its scores.",
-    "MANAGER": "Invites members, creates shows, assigns work; owns every team score.",
-    "ARRANGER": "Edits the songs assigned to them; other songs are view and comment only.",
-    "VIEWER": "Can only view scores and shows."
+    "OWNER": "Full control: edits and deletes the team, grants or revokes the manager role, approves any song, owns every team score.",
+    "MANAGER": "By default: runs shows and assignments, invites arrangers and viewers, edits every team score; the owner can change this in the permission table.",
+    "ARRANGER": "By default: edits the songs assigned to them; other songs are view and comment only.",
+    "VIEWER": "By default: can only view scores and shows."
   },
   "status": {
     "TODO": "To do",
@@ -146,7 +146,7 @@
     "roleOf": "Role of {name}",
     "sendInvite": "Send invitation",
     "createLink": "Create invite link",
-    "roleHint": "Arrangers edit assigned songs; viewers can only view. Invitations last 7 days and work once.",
+    "roleHint": "Invitations expire after 7 days and can be used once. See the table at the bottom for what each role can do.",
     "invited": "Invitation sent to {email}",
     "inviteFailed": "Could not invite",
     "linkTitle": "Invite link (shown only once)",
@@ -167,6 +167,38 @@
     "pendingSub": "{role} · invited by {name} · expires {date}",
     "revoke": "Revoke",
     "revokeFailed": "Could not revoke the invitation"
+  },
+  "permissions": {
+    "title": "What can each role do?",
+    "titleEditable": "What can each role do? (the owner ticks or unticks to change it)",
+    "ownerHint": "The owner always has every permission. Tick to allow, untick to deny for each role, then press Save changes. Allowing a permission also allows what it needs (e.g. “Edit scores” needs “Comment”).",
+    "action": "Action",
+    "yourRole": "Your role",
+    "yes": "Allowed",
+    "no": "Not allowed",
+    "always": "Always allowed",
+    "toggle": "{role}: {permission}",
+    "rows": {
+      "ownerOnly": "Delete or restore the team; grant the owner role; edit this table",
+      "EDIT_TEAM": "Rename and describe the team",
+      "MANAGE_MANAGERS": "Invite, change the role of, or remove managers",
+      "MANAGE_MEMBERS": "Invite, change the role of, or remove arrangers and viewers",
+      "MANAGE_SHOWS": "Create, edit, delete shows; add songs, assign, reorder",
+      "APPROVE_ANY": "Approve, send back, reopen any song (in place of its reviewer)",
+      "EDIT_SCORES": "Edit every team score",
+      "MANAGE_SCORES": "Delete, publish or share other people's scores outside the team",
+      "REMOVE_SCORES": "Remove other people's scores from the team",
+      "ADD_SCORES": "Move own scores into the team",
+      "COMMENT": "Comment on team scores",
+      "view": "View scores, shows and activity"
+    },
+    "note": "Whoever is assigned to arrange a song can always edit it; a song's reviewer can always approve or send it back. Whoever approves a song becomes its reviewer, and only that person (or someone allowed to approve any song) can reopen it.",
+    "reset": "Reset to defaults",
+    "unsaved": "Unsaved changes",
+    "save": "Save changes",
+    "saved": "Permission table saved",
+    "saveFailed": "Couldn't save the permission table",
+    "loadFailed": "Couldn't load the permission table"
   },
   "activity": {
     "loadFailed": "Could not load activity",
@@ -191,7 +223,10 @@
     "ITEM_REMOVED": "{actor} removed “{score}” from “{show}”",
     "ITEM_ASSIGNED": "{actor} assigned “{score}” (“{show}”): arranger {arranger}, reviewer {reviewer}",
     "ITEM_STATUS_CHANGED": "{actor} moved “{score}” (“{show}”) from {from} to {status}",
-    "INVITATION_SENT_link": "{actor} created an invite link as {role}"
+    "INVITATION_SENT_link": "{actor} created an invite link as {role}",
+    "PERMISSIONS_CHANGED": "{actor} changed the permissions of {role}",
+    "permissionsAdded": "allowed {list}",
+    "permissionsRemoved": "denied {list}"
   },
   "board": {
     "loadFailed": "Could not load the show",
@@ -272,7 +307,8 @@
     "noScores": "Every team score is already in this show. Move more scores into the team on the Scores tab.",
     "saved": "Assignment saved",
     "added": "Song added",
-    "saveFailed": "Could not save"
+    "saveFailed": "Could not save",
+    "reviewerLocked": "This song is approved: only its reviewer (or someone allowed to approve any song) can change the reviewer."
   },
   "showForm": {
     "createTitle": "Create show",

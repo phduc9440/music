@@ -3,6 +3,7 @@ package com.ptit.music_be.controller.admin;
 import java.util.List;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,6 +30,7 @@ import lombok.experimental.FieldDefaults;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Tag(name = "Admin - Composers", description = "Chỉ ROLE_ADMIN: quản lý nhạc sĩ (mục 5.4)")
+@PreAuthorize("@perm.has('COMPOSERS_MANAGE')")
 public class AdminComposerController {
 
     ComposerService composerService;

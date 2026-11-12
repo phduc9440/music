@@ -32,7 +32,7 @@ import lombok.experimental.FieldDefaults;
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("@perm.has('AI_TASKS_MANAGE')")
 public class AdminAiTaskServiceImpl implements AdminAiTaskService {
 
     static final int DEFAULT_PAGE_SIZE = 20;

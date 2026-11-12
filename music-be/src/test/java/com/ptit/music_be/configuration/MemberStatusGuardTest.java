@@ -1,5 +1,6 @@
 package com.ptit.music_be.configuration;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -16,11 +17,13 @@ import org.junit.jupiter.api.Test;
 
 import com.ptit.music_be.dto.enums.auth.MemberStatus;
 import com.ptit.music_be.repository.auth.MemberRepository;
+import com.ptit.music_be.repository.auth.MemberRoleRepository;
 
 class MemberStatusGuardTest {
 
     private final MemberRepository repo = mock(MemberRepository.class);
-    private final MemberStatusGuard guard = new MemberStatusGuard(repo);
+    private final MemberRoleRepository roles = mock(MemberRoleRepository.class);
+    private final MemberStatusGuard guard = new MemberStatusGuard(repo, roles);
 
     private static MemberRepository.AuthState state(MemberStatus status, LocalDateTime changedAt) {
         return new MemberRepository.AuthState() {
@@ -80,5 +83,13 @@ class MemberStatusGuardTest {
         when(repo.findAuthStateByEmail("a@x.com")).thenReturn(Optional.of(state(MemberStatus.INACTIVE, null)));
         guard.evict("a@x.com");
         assertTrue(guard.isLocked("a@x.com"));
+    }
+
+    @Test
+    void rolesComeFromTheDatabaseNotTheToken() {
+        when(repo.findAuthStateByEmail("a@x")).thenReturn(Optional.of(state(MemberStatus.ACTIVE, null)));
+        when(roles.findRoleNamesByEmail("a@x")).thenReturn(java.util.List.of("USER", "MODERATOR"));
+        assertEquals(java.util.List.of("USER", "MODERATOR"), guard.roleNames("a@x"));
+        assertEquals(java.util.List.of(), guard.roleNames("nobody@x"));
     }
 }

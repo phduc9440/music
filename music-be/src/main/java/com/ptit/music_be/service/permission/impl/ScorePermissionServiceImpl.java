@@ -5,6 +5,7 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ptit.music_be.dto.enums.auth.AdminPermission;
 import com.ptit.music_be.dto.enums.score.ScoreAccess;
 import com.ptit.music_be.dto.enums.score.Visibility;
 import com.ptit.music_be.entity.Member;
@@ -36,7 +37,6 @@ public class ScorePermissionServiceImpl implements ScorePermissionService {
     @Transactional(readOnly = true)
     public AccessDecision resolve(Score score) {
         String email = SecurityUtils.getCurrentEmail();
-        boolean admin = SecurityUtils.isAdmin();
         boolean superAdmin = SecurityUtils.isSuperAdmin();
 
         // 1. Chủ sở hữu
@@ -52,14 +52,15 @@ public class ScorePermissionServiceImpl implements ScorePermissionService {
             level = ScoreAccess.max(level, ScoreAccess.REVIEW);
         }
 
-        // 3. Kho mẫu: ADMIN sửa được
-        if (admin && Boolean.TRUE.equals(score.getIsOfficial())) {
+        // 3. Kho mẫu: người có quyền quản lý kho mẫu sửa được
+        if (Boolean.TRUE.equals(score.getIsOfficial()) && SecurityUtils.hasPermission(AdminPermission.OFFICIAL_LIBRARY)) {
             level = ScoreAccess.max(level, ScoreAccess.EDIT);
         }
 
-        // 4. ADMIN kiểm duyệt: chỉ xem bản đang PUBLIC hoặc PENDING, tuyệt đối không xem bản PRIVATE
+        // 4. Kiểm duyệt (quyền duyệt công khai / kiểm duyệt bản nhạc): chỉ xem bản đang PUBLIC hoặc PENDING, tuyệt đối không
+        //    xem bản PRIVATE
         boolean moderator = false;
-        if (admin
+        if (isModerator()
                 && !level.includes(ScoreAccess.VIEW)
                 && (Visibility.PUBLIC.name().equals(visibility)
                         || Visibility.PENDING.name().equals(visibility))) {
@@ -77,7 +78,7 @@ public class ScorePermissionServiceImpl implements ScorePermissionService {
             return false;
         }
         // Bản kho mẫu là bản chuẩn của hệ thống: chủ sở hữu hay người được chia sẻ cũng không sửa được
-        return !Boolean.TRUE.equals(score.getIsOfficial()) || SecurityUtils.isAdmin();
+        return !Boolean.TRUE.equals(score.getIsOfficial()) || SecurityUtils.hasPermission(AdminPermission.OFFICIAL_LIBRARY);
     }
 
     @Override
@@ -85,8 +86,8 @@ public class ScorePermissionServiceImpl implements ScorePermissionService {
         if (decision.level() == ScoreAccess.OWNER) {
             return true;
         }
-        // ADMIN chỉ được xóa để kiểm duyệt: bản đang công khai hoặc chờ duyệt
-        return SecurityUtils.isAdmin()
+        // Người kiểm duyệt chỉ được xóa để kiểm duyệt: bản đang công khai hoặc chờ duyệt
+        return SecurityUtils.hasPermission(AdminPermission.SCORES_MODERATE)
                 && (Visibility.PUBLIC.name().equals(score.getVisibility())
                         || Visibility.PENDING.name().equals(score.getVisibility()));
     }
@@ -94,9 +95,15 @@ public class ScorePermissionServiceImpl implements ScorePermissionService {
     @Override
     public void auditModeratorAccess(Score score, String action) {
         String email = SecurityUtils.getCurrentEmail();
-        if (SecurityUtils.isAdmin() && !isOwner(score, email)) {
+        if (isModerator() && !isOwner(score, email)) {
             scoreAccessAuditor.onModeratorAccess(score, email, action);
         }
+    }
+
+    /** Có quyền xem bản người khác để kiểm duyệt (duyệt công khai, kiểm duyệt bản nhạc, kho mẫu). */
+    private static boolean isModerator() {
+        return SecurityUtils.hasAnyPermission(
+                AdminPermission.SCORES_APPROVE, AdminPermission.SCORES_MODERATE, AdminPermission.OFFICIAL_LIBRARY);
     }
 
     private static boolean isOwner(Score score, String email) {

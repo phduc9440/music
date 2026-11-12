@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import com.ptit.music_be.dto.enums.auth.AdminPermission;
 import com.ptit.music_be.dto.enums.auth.AuthProvider;
 import com.ptit.music_be.dto.enums.auth.MemberStatus;
 import com.ptit.music_be.entity.Member;
@@ -47,10 +48,13 @@ public class ApplicationInitConfig {
                     .orElseGet(() ->
                             roleRepository.save(Role.builder().name("USER").build()));
 
+            // DB chưa chạy seed V2: tạo ADMIN kèm quyền mặc định (giống seed)
             Role roleAdmin = roleRepository
                     .findByName("ADMIN")
-                    .orElseGet(() ->
-                            roleRepository.save(Role.builder().name("ADMIN").build()));
+                    .orElseGet(() -> roleRepository.save(Role.builder()
+                            .name("ADMIN")
+                            .permissions(AdminPermission.adminDefaults())
+                            .build()));
 
             Role roleSuperAdmin = roleRepository
                     .findByName("SUPER_ADMIN")

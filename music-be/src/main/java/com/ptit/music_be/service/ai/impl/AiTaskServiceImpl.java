@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import com.ptit.music_be.dto.enums.auth.AdminPermission;
 import com.ptit.music_be.dto.enums.ai.AiTaskError;
 import com.ptit.music_be.dto.enums.ai.AiTaskStatus;
 import com.ptit.music_be.dto.enums.ai.AiTaskType;
@@ -50,7 +51,7 @@ public class AiTaskServiceImpl implements AiTaskService {
     public AiTaskResponse getTask(String taskId) {
         AiTask task =
                 aiTaskRepository.findById(taskId).orElseThrow(() -> new AppException(ErrorCode.AI_TASK_NOT_EXISTED));
-        if (!SecurityUtils.isAdmin()
+        if (!SecurityUtils.hasPermission(AdminPermission.AI_TASKS_MANAGE)
                 && !SecurityUtils.getCurrentEmail().equals(task.getMember().getEmail())) {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
@@ -76,7 +77,7 @@ public class AiTaskServiceImpl implements AiTaskService {
         AiTask task = aiTaskRepository
                 .findByIdForUpdate(taskId)
                 .orElseThrow(() -> new AppException(ErrorCode.AI_TASK_NOT_EXISTED));
-        if (!SecurityUtils.isAdmin()
+        if (!SecurityUtils.hasPermission(AdminPermission.AI_TASKS_MANAGE)
                 && !SecurityUtils.getCurrentEmail().equals(task.getMember().getEmail())) {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }

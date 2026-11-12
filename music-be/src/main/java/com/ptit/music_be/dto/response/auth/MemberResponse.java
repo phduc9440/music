@@ -3,6 +3,7 @@ package com.ptit.music_be.dto.response.auth;
 import java.time.LocalDateTime;
 import java.util.Set;
 
+import com.ptit.music_be.dto.enums.auth.AdminPermission;
 import com.ptit.music_be.dto.enums.auth.AppLocale;
 import com.ptit.music_be.dto.enums.auth.AuthProvider;
 import com.ptit.music_be.dto.enums.auth.MemberStatus;
@@ -34,6 +35,8 @@ public class MemberResponse {
     Boolean emailVerified;
     AuthProvider authProvider;
     Set<String> roles;
+    /** Quyền quản trị suy ra từ vai trò (web ẩn / hiện menu và nút); rỗng với tài khoản thường. */
+    Set<AdminPermission> permissions;
     LocalDateTime createdAt;
     LocalDateTime lastLoginAt;
     /** Gói đang dùng; chỉ có ở danh sách thành viên khu quản trị, null ở chỗ khác. */

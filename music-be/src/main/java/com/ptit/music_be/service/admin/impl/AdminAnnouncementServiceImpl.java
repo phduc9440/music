@@ -25,7 +25,7 @@ import lombok.experimental.FieldDefaults;
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("@perm.has('ANNOUNCEMENTS_SEND')")
 public class AdminAnnouncementServiceImpl implements AdminAnnouncementService {
 
     MemberRepository memberRepository;

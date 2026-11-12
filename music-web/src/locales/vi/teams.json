@@ -23,10 +23,10 @@
     "VIEWER": "Người xem"
   },
   "roleHint": {
-    "OWNER": "Toàn quyền với nhóm và mọi bản nhạc của nhóm.",
-    "MANAGER": "Mời thành viên, tạo buổi diễn, phân công; là chủ mọi bản nhạc của nhóm.",
-    "ARRANGER": "Sửa được bài được giao phối, các bài khác chỉ xem và nhận xét.",
-    "VIEWER": "Chỉ xem bản nhạc và buổi diễn."
+    "OWNER": "Toàn quyền: sửa và xóa nhóm, cấp hoặc thu hồi vai trò quản lý, duyệt mọi bài, là chủ mọi bản nhạc của nhóm.",
+    "MANAGER": "Mặc định: điều phối buổi diễn và phân công, mời người phối / người xem, sửa mọi bản nhạc của nhóm; chủ nhóm chỉnh được trong bảng quyền.",
+    "ARRANGER": "Mặc định: sửa được bài được giao phối, các bài khác chỉ xem và nhận xét.",
+    "VIEWER": "Mặc định: chỉ xem bản nhạc và buổi diễn."
   },
   "status": {
     "TODO": "Chưa làm",
@@ -145,7 +145,7 @@
     "roleOf": "Vai trò của {name}",
     "sendInvite": "Gửi lời mời",
     "createLink": "Tạo link mời",
-    "roleHint": "Người phối sửa được bài được giao; người xem chỉ xem. Lời mời có hạn 7 ngày, dùng một lần.",
+    "roleHint": "Lời mời có hạn 7 ngày, dùng một lần. Mỗi vai trò làm được gì xem ở bảng cuối trang.",
     "invited": "Đã gửi lời mời tới {email}",
     "inviteFailed": "Không mời được",
     "linkTitle": "Link mời (chỉ hiện một lần)",
@@ -166,6 +166,38 @@
     "pendingSub": "{role} · do {name} mời · hết hạn {date}",
     "revoke": "Thu hồi",
     "revokeFailed": "Không thu hồi được lời mời"
+  },
+  "permissions": {
+    "title": "Mỗi vai trò làm được gì?",
+    "titleEditable": "Mỗi vai trò làm được gì? (chủ nhóm tích hoặc bỏ tích để chỉnh)",
+    "ownerHint": "Chủ nhóm luôn có mọi quyền. Tích để bật, bỏ tích để tắt quyền của từng vai trò rồi bấm Lưu thay đổi. Bật một quyền sẽ tự bật các quyền nó cần (ví dụ “Sửa bản nhạc” cần “Góp ý”).",
+    "action": "Việc",
+    "yourRole": "Vai trò của bạn",
+    "yes": "Được",
+    "no": "Không",
+    "always": "Luôn được",
+    "toggle": "{role}: {permission}",
+    "rows": {
+      "ownerOnly": "Xóa, khôi phục nhóm; cấp vai trò chủ nhóm; chỉnh bảng quyền này",
+      "EDIT_TEAM": "Sửa tên, mô tả nhóm",
+      "MANAGE_MANAGERS": "Mời, đổi vai trò, xóa quản lý",
+      "MANAGE_MEMBERS": "Mời, đổi vai trò, xóa người phối và người xem",
+      "MANAGE_SHOWS": "Tạo, sửa, xóa buổi diễn; thêm bài, phân công, sắp thứ tự",
+      "APPROVE_ANY": "Duyệt, trả lại, mở lại mọi bài (thay người duyệt đã giao)",
+      "EDIT_SCORES": "Sửa mọi bản nhạc của nhóm",
+      "MANAGE_SCORES": "Xóa, công khai, chia sẻ ra ngoài bản nhạc của người khác",
+      "REMOVE_SCORES": "Gỡ bản nhạc của người khác khỏi nhóm",
+      "ADD_SCORES": "Chuyển bản nhạc của mình vào nhóm",
+      "COMMENT": "Nhận xét, góp ý vào bản nhạc của nhóm",
+      "view": "Xem bản nhạc, buổi diễn và hoạt động"
+    },
+    "note": "Người được giao phối một bài luôn sửa được bài đó; người duyệt của bài luôn duyệt, trả lại được bài đó. Ai bấm duyệt thì thành người duyệt của bài, và bài đã duyệt chỉ người đó (hoặc người có quyền duyệt thay) mới mở lại được.",
+    "reset": "Đặt lại mặc định",
+    "unsaved": "Có thay đổi chưa lưu",
+    "save": "Lưu thay đổi",
+    "saved": "Đã lưu bảng quyền",
+    "saveFailed": "Không lưu được bảng quyền",
+    "loadFailed": "Không tải được bảng quyền"
   },
   "activity": {
     "loadFailed": "Không tải được hoạt động",
@@ -190,7 +222,10 @@
     "ITEM_REMOVED": "{actor} đã gỡ “{score}” khỏi buổi diễn “{show}”",
     "ITEM_ASSIGNED": "{actor} đã giao “{score}” (buổi diễn “{show}”): phối {arranger}, duyệt {reviewer}",
     "ITEM_STATUS_CHANGED": "{actor} đã chuyển “{score}” (buổi diễn “{show}”) từ {from} sang {status}",
-    "INVITATION_SENT_link": "{actor} đã tạo link mời làm {role}"
+    "INVITATION_SENT_link": "{actor} đã tạo link mời làm {role}",
+    "PERMISSIONS_CHANGED": "{actor} đã đổi quyền của {role}",
+    "permissionsAdded": "bật {list}",
+    "permissionsRemoved": "tắt {list}"
   },
   "board": {
     "loadFailed": "Không tải được buổi diễn",
@@ -271,7 +306,8 @@
     "noScores": "Mọi bản nhạc của nhóm đã có trong buổi diễn. Chuyển thêm bản nhạc vào nhóm ở tab Bản nhạc.",
     "saved": "Đã lưu phân công",
     "added": "Đã thêm bài",
-    "saveFailed": "Không lưu được"
+    "saveFailed": "Không lưu được",
+    "reviewerLocked": "Bài đã duyệt: chỉ người duyệt của bài (hoặc người có quyền duyệt thay) mới đổi được người duyệt."
   },
   "showForm": {
     "createTitle": "Tạo buổi diễn",

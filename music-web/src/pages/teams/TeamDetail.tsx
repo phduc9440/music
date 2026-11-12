@@ -8,7 +8,7 @@ import Modal from '../../components/scores/common/Modal';
 import Skeleton from '../../components/ui/Skeleton';
 import { useDialog } from '../../components/ui/dialog-context';
 import { showApi, teamApi, userApi } from '../../services';
-import { canManageTeam, TEAM_ROLES } from '../../types';
+import { canAssignTeamRole, canInviteToTeam, hasTeamPermission, TEAM_ROLES } from '../../types';
 import type {
   RestorableItem,
   Show,
@@ -22,6 +22,7 @@ import type {
 import { formatDate, formatDateTime, formatNumber, formatRelativeTime, t } from '../../i18n/core';
 import { getErrorCode, getErrorMessage } from '../../utils/score';
 import { MemberAvatar, RestorableList, RoleBadge, StatusBadge } from './shared';
+import RolePermissions from './RolePermissions';
 import { activityText, memberName } from './teamUtils';
 import { TeamFormModal } from './Teams';
 import { ShowFormModal } from './ShowBoard';
@@ -61,7 +62,8 @@ export default function TeamDetail() {
       .catch(() => undefined);
   }, []);
 
-  const manager = canManageTeam(team?.myRole);
+  const owner = team?.myRole === 'OWNER';
+  const canEditTeam = hasTeamPermission(team?.myPermissions, 'EDIT_TEAM');
 
   const deleteTeam = async () => {
     if (!team) return;
@@ -132,12 +134,12 @@ export default function TeamDetail() {
           </div>
           {team && (
             <div className="tm-row__actions">
-              {manager && (
+              {canEditTeam && (
                 <button type="button" className="sc-btn" onClick={() => setEditing(true)}>
                   {t('teams.detail.edit')}
                 </button>
               )}
-              {team.myRole === 'OWNER' && (
+              {owner && (
                 <button type="button" className="sc-btn sc-btn--danger" onClick={deleteTeam}>
                   {t('teams.detail.delete')}
                 </button>
@@ -228,7 +230,7 @@ function ScoresTab({ team }: { team: Team }) {
     <>
       <div className="tm-section__head">
         <p className="tm-muted">{t('teams.scores.hint')}</p>
-        {team.myRole !== 'VIEWER' && (
+        {hasTeamPermission(team.myPermissions, 'ADD_SCORES') && (
           <button type="button" className="sc-btn sc-btn--primary" onClick={() => setAdding(true)}>
             {t('teams.scores.add')}
           </button>
@@ -355,26 +357,27 @@ function ShowsTab({ team }: { team: Team }) {
   const [deletedShows, setDeletedShows] = useState<RestorableItem[]>([]);
   const [creating, setCreating] = useState(false);
   const [reload, setReload] = useState(0);
+  const canManageShows = hasTeamPermission(team.myPermissions, 'MANAGE_SHOWS');
 
   useEffect(() => {
     teamApi
       .shows(team.id)
       .then((res) => setShows(res.data.result))
       .catch(() => toast.error(t('teams.shows.loadFailed')));
-    // Show đã xóa chỉ OWNER/MANAGER thấy và khôi phục được
-    if (canManageTeam(team.myRole)) {
+    // Show đã xóa chỉ người có quyền quản lý buổi diễn thấy và khôi phục được
+    if (canManageShows) {
       teamApi
         .deletedShows(team.id)
         .then((res) => setDeletedShows(res.data.result))
         .catch(() => setDeletedShows([]));
     }
-  }, [team.id, team.myRole, reload]);
+  }, [team.id, canManageShows, reload]);
 
   return (
     <>
       <div className="tm-section__head">
         <p className="tm-muted">{t('teams.shows.hint')}</p>
-        {canManageTeam(team.myRole) && (
+        {canManageShows && (
           <button type="button" className="sc-btn sc-btn--primary" onClick={() => setCreating(true)}>
             {t('teams.shows.create')}
           </button>
@@ -418,7 +421,7 @@ function ShowsTab({ team }: { team: Team }) {
           ))}
         </div>
       )}
-      {canManageTeam(team.myRole) && (
+      {canManageShows && (
         <RestorableList
           title={t('teams.trash.showsTitle')}
           hint={t('teams.trash.showsHint')}
@@ -449,15 +452,18 @@ function ShowsTab({ team }: { team: Team }) {
 
 // ------------------------------------------------------------------------------------------------ Thành viên
 
+/** Vai trò chọn được khi mời (không mời thẳng làm chủ nhóm); lọc thêm theo vai trò của người mời. */
 const INVITE_ROLES: TeamRole[] = ['ARRANGER', 'VIEWER', 'MANAGER'];
 
 function MembersTab({ team, meId, onChanged }: { team: Team; meId: string | null; onChanged: () => void }) {
   const { confirm } = useDialog();
-  const manager = canManageTeam(team.myRole);
+  const manager = canInviteToTeam(team.myPermissions);
+  const canAssign = (r: TeamRole) => canAssignTeamRole(team.myRole, team.myPermissions, r);
+  const inviteRoles = INVITE_ROLES.filter(canAssign);
   const [members, setMembers] = useState<TeamMember[] | null>(null);
   const [invitations, setInvitations] = useState<TeamInvitation[]>([]);
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<TeamRole>('ARRANGER');
+  const [role, setRole] = useState<TeamRole>(inviteRoles[0] ?? 'ARRANGER');
   const [inviting, setInviting] = useState(false);
   const [link, setLink] = useState<string | null>(null);
 
@@ -545,9 +551,9 @@ function MembersTab({ team, meId, onChanged }: { team: Team; meId: string | null
     }
   };
 
-  // OWNER đổi được mọi vai trò; MANAGER không cấp OWNER và không đụng người là OWNER
-  const editable = (m: TeamMember) => manager && m.memberId !== meId && (team.myRole === 'OWNER' || m.role !== 'OWNER');
-  const roleOptions = team.myRole === 'OWNER' ? TEAM_ROLES : TEAM_ROLES.filter((r) => r !== 'OWNER');
+  // Đổi / xóa theo bảng quyền: phải được đụng tới vai trò hiện tại của người đó, và chỉ chọn được vai trò mình gán được
+  const editable = (m: TeamMember) => m.memberId !== meId && canAssign(m.role);
+  const roleOptions = TEAM_ROLES.filter(canAssign);
 
   return (
     <>
@@ -580,7 +586,7 @@ function MembersTab({ team, meId, onChanged }: { team: Team; meId: string | null
               value={role}
               onChange={(e) => setRole(e.target.value as TeamRole)}
             >
-              {INVITE_ROLES.map((r) => (
+              {inviteRoles.map((r) => (
                 <option key={r} value={r}>
                   {t(`teams.roles.${r}`)}
                 </option>
@@ -602,7 +608,9 @@ function MembersTab({ team, meId, onChanged }: { team: Team; meId: string | null
               {t('teams.members.createLink')}
             </button>
           </form>
-          <p className="tm-muted">{t('teams.members.roleHint')}</p>
+          <p className="tm-muted">
+            {t(`teams.roleHint.${role}`)} {t('teams.members.roleHint')}
+          </p>
           {link && (
             <div className="tm-note">
               <strong>{t('teams.members.linkTitle')}</strong>
@@ -679,16 +687,20 @@ function MembersTab({ team, meId, onChanged }: { team: Team; meId: string | null
                     })}
                   </span>
                 </div>
-                <div className="tm-row__actions">
-                  <button type="button" className="sc-btn sc-btn--sm" onClick={() => revoke(i)}>
-                    {t('teams.members.revoke')}
-                  </button>
-                </div>
+                {canAssign(i.role) && (
+                  <div className="tm-row__actions">
+                    <button type="button" className="sc-btn sc-btn--sm" onClick={() => revoke(i)}>
+                      {t('teams.members.revoke')}
+                    </button>
+                  </div>
+                )}
               </li>
             ))}
           </ul>
         </section>
       )}
+
+      <RolePermissions team={team} onSaved={onChanged} />
     </>
   );
 }

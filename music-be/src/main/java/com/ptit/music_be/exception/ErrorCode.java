@@ -25,6 +25,10 @@ public enum ErrorCode {
     PASSWORD_SAME_AS_OLD(1012, "Mật khẩu mới phải khác mật khẩu hiện tại", HttpStatus.BAD_REQUEST),
     CANNOT_MODIFY_SELF(1013, "Quản trị viên không thể khóa hoặc hạ quyền chính mình", HttpStatus.BAD_REQUEST),
     ROLE_NOT_EXISTED(1015, "Vai trò không tồn tại", HttpStatus.BAD_REQUEST),
+    ROLE_BUILT_IN(1020, "Vai trò có sẵn: không đổi tên, không xóa; USER và SUPER_ADMIN cũng không chỉnh quyền", HttpStatus.BAD_REQUEST),
+    ROLE_IN_USE(1021, "Vai trò đang được gán cho thành viên, hãy gỡ khỏi họ trước khi xóa", HttpStatus.CONFLICT),
+    ROLE_LABEL_INVALID(1022, "Tên vai trò từ 2 đến 100 ký tự, mô tả tối đa 255 ký tự", HttpStatus.BAD_REQUEST),
+    ROLE_LABEL_DUPLICATED(1023, "Đã có vai trò trùng tên này", HttpStatus.CONFLICT),
     ACCOUNT_LOCKED(1016, "Tài khoản đã bị khóa", HttpStatus.FORBIDDEN),
     OTP_INVALID(
             1017,
@@ -182,7 +186,7 @@ public enum ErrorCode {
     PLAN_IN_USE(3726, "Gói đã có người đăng ký hoặc có đơn thanh toán nên không xóa được", HttpStatus.CONFLICT),
     // ---- 38xx: Team và Show (mục 4.1)
     TEAM_NOT_EXISTED(3801, "Không tìm thấy nhóm hoặc bạn không ở trong nhóm này", HttpStatus.NOT_FOUND),
-    TEAM_FORBIDDEN(3802, "Chỉ chủ nhóm hoặc quản lý mới làm được việc này", HttpStatus.FORBIDDEN),
+    TEAM_FORBIDDEN(3802, "Vai trò của bạn trong nhóm chưa được cấp quyền làm việc này", HttpStatus.FORBIDDEN),
     TEAM_PLAN_REQUIRED(3803, "Cần gói nhóm để tạo nhóm hoặc mời thêm thành viên", HttpStatus.PAYMENT_REQUIRED),
     TEAM_NAME_INVALID(3804, "Tên nhóm từ 1 đến 100 ký tự, mô tả tối đa 1000 ký tự", HttpStatus.BAD_REQUEST),
     TEAM_MEMBER_LIMIT(3805, "Nhóm đã đủ số thành viên theo gói (tính cả lời mời đang chờ)", HttpStatus.CONFLICT),
@@ -210,6 +214,9 @@ public enum ErrorCode {
     SHOW_ITEM_NOTE_REQUIRED(3827, "Trả lại bài cần kèm góp ý (tối đa 500 ký tự)", HttpStatus.BAD_REQUEST),
     SHOW_ORDER_INVALID(3828, "Danh sách thứ tự phải gồm đủ và đúng các bài của buổi diễn", HttpStatus.BAD_REQUEST),
     SHOW_RESTORE_EXPIRED(3829, "Đã quá 30 ngày kể từ lúc xóa buổi diễn nên không khôi phục được nữa", HttpStatus.GONE),
+    TEAM_OWNER_ONLY(3830, "Chỉ chủ nhóm mới làm được việc này", HttpStatus.FORBIDDEN),
+    TEAM_ROLE_SCOPE(3831, "Vai trò của bạn không được mời, đổi vai trò hoặc xóa người có vai trò này", HttpStatus.FORBIDDEN),
+    SHOW_ITEM_APPROVED_LOCKED(3832, "Bài đã duyệt: chỉ người duyệt của bài mới mở lại hoặc đổi người duyệt được", HttpStatus.FORBIDDEN),
     // ---- 39xx: Góp ý gắn vào ô nhịp (mục 4.2)
     COMMENT_NOT_EXISTED(3901, "Không tìm thấy góp ý", HttpStatus.NOT_FOUND),
     COMMENT_CONTENT_INVALID(3902, "Nội dung góp ý từ 1 đến 2000 ký tự", HttpStatus.BAD_REQUEST),

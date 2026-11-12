@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.ptit.music_be.dto.request.team.ShowRequest;
 import com.ptit.music_be.dto.request.team.TeamInviteRequest;
+import com.ptit.music_be.dto.request.team.TeamPermissionsRequest;
 import com.ptit.music_be.dto.request.team.TeamRequest;
 import com.ptit.music_be.dto.request.team.TeamRoleRequest;
 import com.ptit.music_be.dto.request.team.TeamScoreRequest;
@@ -16,6 +17,7 @@ import com.ptit.music_be.dto.response.team.ShowResponse;
 import com.ptit.music_be.dto.response.team.TeamActivityResponse;
 import com.ptit.music_be.dto.response.team.TeamInvitationResponse;
 import com.ptit.music_be.dto.response.team.TeamMemberResponse;
+import com.ptit.music_be.dto.response.team.TeamPermissionsResponse;
 import com.ptit.music_be.dto.response.team.TeamResponse;
 import com.ptit.music_be.dto.response.team.TeamScoreResponse;
 import com.ptit.music_be.dto.response.team.TeamTaskResponse;
@@ -74,13 +76,13 @@ public class TeamController {
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Rename / describe team (OWNER, MANAGER)", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Rename / describe team (needs EDIT_TEAM, by default OWNER only; 3802)", security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<TeamResponse> update(@PathVariable String id, @RequestBody TeamRequest request) {
         return ok(teamService.update(id, request));
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Soft-delete team (OWNER); restorable for 30 days, 3801 not found, 3802 not owner", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Soft-delete team (OWNER); restorable for 30 days, 3801 not found, 3830 not owner", security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<Void> delete(@PathVariable String id) {
         teamService.delete(id);
         return ApiResponse.<Void>builder().build();
@@ -101,35 +103,50 @@ public class TeamController {
     }
 
     @PatchMapping("/{id}/members/{memberId}")
-    @Operation(summary = "Change a member's role (OWNER, MANAGER)", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Change a member's role per the team permission table (MANAGE_MEMBERS / MANAGE_MANAGERS; OWNER role only by OWNER; 3831)", security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<TeamMemberResponse> changeRole(
             @PathVariable String id, @PathVariable String memberId, @RequestBody TeamRoleRequest request) {
         return ok(teamService.changeRole(id, memberId, request == null ? null : request.getRole()));
     }
 
     @DeleteMapping("/{id}/members/{memberId}")
-    @Operation(summary = "Remove a member (OWNER, MANAGER) or leave the team (own id)", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Remove a member (same rules as changing roles, 3831) or leave the team (own id)", security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<Void> removeMember(@PathVariable String id, @PathVariable String memberId) {
         teamService.removeMember(id, memberId);
         return ApiResponse.<Void>builder().build();
     }
 
+    // ---- bảng quyền
+
+    @GetMapping("/{id}/permissions")
+    @Operation(summary = "What each role can do in this team (any member); editable = I am the owner", security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<TeamPermissionsResponse> permissions(@PathVariable String id) {
+        return ok(teamService.permissions(id));
+    }
+
+    @PutMapping("/{id}/permissions")
+    @Operation(summary = "Tick / untick permissions of MANAGER, ARRANGER, VIEWER (OWNER only, 3830)", security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<TeamPermissionsResponse> updatePermissions(
+            @PathVariable String id, @RequestBody TeamPermissionsRequest request) {
+        return ok(teamService.updatePermissions(id, request));
+    }
+
     // ---- lời mời
 
     @GetMapping("/{id}/invitations")
-    @Operation(summary = "Pending invitations (OWNER, MANAGER)", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Pending invitations (MANAGE_MEMBERS or MANAGE_MANAGERS)", security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<List<TeamInvitationResponse>> invitations(@PathVariable String id) {
         return ok(teamService.invitations(id));
     }
 
     @PostMapping("/{id}/invitations")
-    @Operation(summary = "Invite by email or create a one-time link (token returned once)", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Invite by email or create a one-time link (token returned once); inviting a MANAGER needs MANAGE_MANAGERS (3831)", security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<TeamInvitationResponse> invite(@PathVariable String id, @RequestBody TeamInviteRequest request) {
         return ok(teamService.invite(id, request));
     }
 
     @DeleteMapping("/{id}/invitations/{invitationId}")
-    @Operation(summary = "Revoke an invitation", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Revoke an invitation (same rules as inviting, 3831)", security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<Void> revoke(@PathVariable String id, @PathVariable String invitationId) {
         teamService.revokeInvitation(id, invitationId);
         return ApiResponse.<Void>builder().build();
@@ -156,7 +173,7 @@ public class TeamController {
     }
 
     @DeleteMapping("/{id}/scores/{scoreId}")
-    @Operation(summary = "Move a score out of the team (score owner, OWNER, MANAGER)", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Move a score out of the team (score owner or REMOVE_SCORES)", security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<Void> removeScore(@PathVariable String id, @PathVariable String scoreId) {
         teamService.removeScore(id, scoreId);
         return ApiResponse.<Void>builder().build();
@@ -171,13 +188,13 @@ public class TeamController {
     }
 
     @GetMapping("/{id}/shows/deleted")
-    @Operation(summary = "Deleted shows of the team, still restorable (OWNER, MANAGER; 30 days)", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Deleted shows of the team, still restorable (MANAGE_SHOWS; 30 days)", security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<List<RestorableItemResponse>> deletedShows(@PathVariable String id) {
         return ok(showService.deletedShows(id));
     }
 
     @PostMapping("/{id}/shows")
-    @Operation(summary = "Create a show (OWNER, MANAGER)", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Create a show (needs MANAGE_SHOWS)", security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<ShowResponse> createShow(@PathVariable String id, @RequestBody ShowRequest request) {
         return ok(showService.create(id, request));
     }
