@@ -32,6 +32,10 @@ public enum ErrorCode {
             HttpStatus.BAD_REQUEST),
     OTP_REQUEST_TOO_SOON(
             1018, "Bạn vừa yêu cầu mã OTP, vui lòng chờ một lát rồi thử lại", HttpStatus.TOO_MANY_REQUESTS),
+    RESET_SESSION_INVALID(
+            1019,
+            "Phiên đặt lại mật khẩu đã hết hạn hoặc không hợp lệ, vui lòng yêu cầu mã OTP mới",
+            HttpStatus.BAD_REQUEST),
     AVATAR_INVALID(1014, "Ảnh đại diện phải là JPG hoặc PNG, tối đa 2MB", HttpStatus.BAD_REQUEST),
 
     // Score files & OMR (2xxx)

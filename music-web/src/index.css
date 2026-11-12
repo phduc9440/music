@@ -230,6 +230,18 @@ a:hover {
   margin-bottom: 1.75rem;
 }
 
+/* Nhãn "Bước 1/3" của luồng quên mật khẩu (email → OTP → mật khẩu mới) */
+.auth-step {
+  display: inline-block;
+  margin-bottom: 0.5rem;
+  padding: 0.15rem 0.65rem;
+  border-radius: 999px;
+  background: var(--ui-primary-soft);
+  color: var(--ui-primary);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
 /* Navbar */
 .navbar {
   display: flex;

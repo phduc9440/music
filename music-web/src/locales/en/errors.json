@@ -144,5 +144,6 @@
   "3818": "More than 30 days have passed since deletion, so it can no longer be restored",
   "3819": "This team was deleted by an administrator for a violation; only an administrator can restore it",
   "3829": "More than 30 days have passed since the show was deleted, so it can no longer be restored",
-  "2025": "The cover must be a JPG or PNG image, up to 3MB"
+  "2025": "The cover must be a JPG or PNG image, up to 3MB",
+  "1019": "Your password reset session has expired or is invalid, please request a new OTP code"
 }

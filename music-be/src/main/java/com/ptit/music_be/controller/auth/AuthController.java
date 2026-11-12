@@ -16,7 +16,9 @@ import com.ptit.music_be.dto.request.LoginRequest;
 import com.ptit.music_be.dto.request.RefreshRequest;
 import com.ptit.music_be.dto.request.RegisterRequest;
 import com.ptit.music_be.dto.request.ResetPasswordRequest;
+import com.ptit.music_be.dto.request.VerifyResetOtpRequest;
 import com.ptit.music_be.dto.response.ApiResponse;
+import com.ptit.music_be.dto.response.VerifyResetOtpResponse;
 import com.ptit.music_be.dto.response.AuthResponse;
 import com.ptit.music_be.dto.response.MemberResponse;
 import com.ptit.music_be.exception.AppException;
@@ -109,8 +111,21 @@ public class AuthController {
         return ApiResponse.<Void>builder().build();
     }
 
+    @PostMapping("/verify-reset-otp")
+    @Operation(
+            summary = "Step 2 of forgot password: check the OTP and get a one-time reset token (valid 10 minutes)",
+            description = "Errors: 1017 wrong/expired OTP (5 wrong tries cancel the code)")
+    public ApiResponse<VerifyResetOtpResponse> verifyResetOtp(
+            @RequestBody @Valid VerifyResetOtpRequest request) {
+        return ApiResponse.<VerifyResetOtpResponse>builder()
+                .result(authService.verifyResetOtp(request))
+                .build();
+    }
+
     @PostMapping("/reset-password")
-    @Operation(summary = "Reset password using OTP")
+    @Operation(
+            summary = "Step 3 of forgot password: set the new password with the reset token from verify-reset-otp",
+            description = "Errors: 1019 reset session expired or invalid (request a new OTP), 1007 password too short")
     public ApiResponse<Void> resetPassword(@RequestBody @Valid ResetPasswordRequest request) {
         authService.resetPassword(request);
         return ApiResponse.<Void>builder().build();

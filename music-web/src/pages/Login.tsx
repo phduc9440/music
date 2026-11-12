@@ -11,9 +11,17 @@ import ThemeToggle from '../theme/ThemeToggle';
 import { t, translateError } from '../i18n/core';
 import LanguageToggle from '../i18n/LanguageToggle';
 
-type ViewMode = 'login' | 'register' | 'forgot' | 'reset';
+/** Quên mật khẩu đi ba bước tách riêng: forgot (nhập email) → verify (nhập OTP) → reset (đặt mật khẩu mới). */
+type ViewMode = 'login' | 'register' | 'forgot' | 'verify' | 'reset';
 
-type ApiErr = { response?: { data?: { message?: string; result?: { retryAfterSeconds?: number } } }; message?: string };
+const RESET_STEPS: Partial<Record<ViewMode, number>> = { forgot: 1, verify: 2, reset: 3 };
+/** Mã lỗi phiên đặt lại mật khẩu hết hạn hoặc sai (BE: RESET_SESSION_INVALID): phải xin mã OTP mới. */
+const RESET_SESSION_INVALID = 1019;
+
+type ApiErr = {
+  response?: { data?: { code?: number; message?: string; result?: { retryAfterSeconds?: number } } };
+  message?: string;
+};
 
 const apiError = (error: unknown) => translateError(error, (error as ApiErr).message || t('auth.genericError'));
 
@@ -34,6 +42,9 @@ export default function Login() {
   const [fullName, setFullName] = useState('');
   const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  // Mã phiên nhận được sau khi OTP đúng; chỉ có nó mới đặt được mật khẩu mới
+  const [resetToken, setResetToken] = useState('');
 
   const [isLoading, setIsLoading] = useState(false);
   // Đếm ngược trước khi được xin mã OTP mới (khớp giới hạn 60 giây của backend)
@@ -47,8 +58,23 @@ export default function Login() {
   const location = useLocation();
   const from = (location.state as { from?: string } | null)?.from; // trang đang định vào trước khi bị chuyển sang đăng nhập
 
+  /** Chuyển màn hình; rời luồng quên mật khẩu thì xóa OTP, mã phiên và mật khẩu đã gõ. */
+  const goTo = (mode: ViewMode) => {
+    if (!RESET_STEPS[mode]) {
+      setOtp('');
+      setResetToken('');
+      setNewPassword('');
+      setConfirmPassword('');
+    }
+    setViewMode(mode);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (viewMode === 'reset' && newPassword !== confirmPassword) {
+      toast.error(t('auth.passwordMismatch'));
+      return;
+    }
     setIsLoading(true);
 
     try {
@@ -65,17 +91,28 @@ export default function Login() {
         await authApi.forgotPassword({ email });
         toast.success(t('auth.toast.otpSent'));
         setResendIn(60);
+        setOtp('');
+        setViewMode('verify');
+      } else if (viewMode === 'verify') {
+        // Bước 2: chỉ kiểm tra OTP; đúng mới mở bước đặt mật khẩu mới
+        const res = await authApi.verifyResetOtp({ email, otp: otp.trim() });
+        setResetToken(res.data.result.resetToken);
+        setOtp('');
+        toast.success(t('auth.toast.otpVerified'));
         setViewMode('reset');
       } else if (viewMode === 'reset') {
-        await authApi.resetPassword({ email, otp, newPassword });
+        await authApi.resetPassword({ email, resetToken, newPassword });
         toast.success(t('auth.toast.passwordReset'));
-        setViewMode('login');
         setPassword('');
-        setOtp('');
-        setNewPassword('');
+        goTo('login');
       }
     } catch (error) {
       toast.error(apiError(error));
+      // Phiên đặt mật khẩu hết hạn (quá 10 phút): OTP cũ đã dùng, quay lại bước nhập mã để xin mã mới
+      if (viewMode === 'reset' && (error as ApiErr).response?.data?.code === RESET_SESSION_INVALID) {
+        setResetToken('');
+        setViewMode('verify');
+      }
       const wait = retryAfter(error);
       if (wait) setResendIn(wait);
     } finally {
@@ -102,6 +139,7 @@ export default function Login() {
     if (viewMode === 'login') return t('auth.subtitle.login');
     if (viewMode === 'register') return t('auth.subtitle.register');
     if (viewMode === 'forgot') return t('auth.subtitle.forgot');
+    if (viewMode === 'verify') return t('auth.subtitle.verify');
     if (viewMode === 'reset') return t('auth.subtitle.reset');
     return '';
   };
@@ -111,6 +149,7 @@ export default function Login() {
     if (viewMode === 'login') return t('auth.button.login');
     if (viewMode === 'register') return t('auth.button.register');
     if (viewMode === 'forgot') return t('auth.button.forgot');
+    if (viewMode === 'verify') return t('auth.button.verify');
     if (viewMode === 'reset') return t('auth.button.reset');
     return '';
   };
@@ -130,6 +169,9 @@ export default function Login() {
           <Icon name="music" size={22} />
         </div>
         <h1>Music App</h1>
+        {RESET_STEPS[viewMode] && (
+          <div className="auth-step">{t('auth.step', { current: RESET_STEPS[viewMode], total: 3 })}</div>
+        )}
         <p>{getTitle()}</p>
 
         <form onSubmit={handleSubmit}>
@@ -144,8 +186,22 @@ export default function Login() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              disabled={viewMode === 'reset' && email !== ''}
+              // Đã gửi mã thì khóa email; muốn đổi email bấm "Đổi email" để quay lại bước 1
+              disabled={(viewMode === 'verify' || viewMode === 'reset') && email !== ''}
             />
+            {viewMode === 'verify' && (
+              <div style={{ marginTop: '0.4rem', fontSize: '0.8125rem', textAlign: 'left' }}>
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    goTo('forgot');
+                  }}
+                >
+                  {t('auth.changeEmail')}
+                </a>
+              </div>
+            )}
           </div>
 
           {/* Full Name (Used only in Register) */}
@@ -198,8 +254,8 @@ export default function Login() {
             </div>
           )}
 
-          {/* OTP (Used in Reset) */}
-          {viewMode === 'reset' && (
+          {/* Bước 2: chỉ nhập mã OTP */}
+          {viewMode === 'verify' && (
             <div className="form-group">
               <label htmlFor="otp">{t('auth.otp')}</label>
               <input
@@ -213,6 +269,8 @@ export default function Login() {
                 maxLength={6}
                 inputMode="numeric"
                 autoComplete="one-time-code"
+                autoFocus
+                pattern="\d{6}"
               />
               <div style={{ marginTop: '0.4rem', fontSize: '0.8125rem', color: 'var(--ui-text-2)', textAlign: 'left' }}>
                 {t('auth.noCode')}{' '}
@@ -233,21 +291,48 @@ export default function Login() {
             </div>
           )}
 
-          {/* New Password (Used in Reset) */}
+          {/* Bước 3: chỉ hiện sau khi OTP đúng; đặt mật khẩu mới và nhập lại để kiểm tra */}
           {viewMode === 'reset' && (
-            <div className="form-group">
-              <label htmlFor="newPassword">{t('auth.newPassword')}</label>
-              <input
-                type="password"
-                id="newPassword"
-                className="form-control"
-                placeholder={t('auth.newPasswordPlaceholder')}
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                required
-                minLength={8}
-              />
-            </div>
+            <>
+              <div className="form-group">
+                <label htmlFor="newPassword">{t('auth.newPassword')}</label>
+                <input
+                  type="password"
+                  id="newPassword"
+                  className="form-control"
+                  placeholder={t('auth.newPasswordPlaceholder')}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                  minLength={8}
+                  autoComplete="new-password"
+                  autoFocus
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="confirmPassword">{t('auth.confirmPassword')}</label>
+                <input
+                  type="password"
+                  id="confirmPassword"
+                  className="form-control"
+                  placeholder={t('auth.confirmPasswordPlaceholder')}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  minLength={8}
+                  autoComplete="new-password"
+                  aria-invalid={confirmPassword !== '' && confirmPassword !== newPassword}
+                />
+                {confirmPassword !== '' && confirmPassword !== newPassword && (
+                  <div
+                    role="alert"
+                    style={{ marginTop: '0.4rem', fontSize: '0.8125rem', color: 'var(--ui-danger)', textAlign: 'left' }}
+                  >
+                    {t('auth.passwordMismatch')}
+                  </div>
+                )}
+              </div>
+            </>
           )}
 
           {/* Forgot Password Link (Only in Login) */}
@@ -257,7 +342,7 @@ export default function Login() {
                 href="#"
                 onClick={(e) => {
                   e.preventDefault();
-                  setViewMode('forgot');
+                  goTo('forgot');
                 }}
               >
                 {t('auth.forgotLink')}
@@ -310,14 +395,14 @@ export default function Login() {
                 </a>
               </>
             )}
-            {(viewMode === 'forgot' || viewMode === 'reset') && (
+            {RESET_STEPS[viewMode] && (
               <>
                 <span>{t('auth.rememberedPassword')} </span>
                 <a
                   href="#"
                   onClick={(e) => {
                     e.preventDefault();
-                    setViewMode('login');
+                    goTo('login');
                   }}
                 >
                   {t('auth.backToLogin')}

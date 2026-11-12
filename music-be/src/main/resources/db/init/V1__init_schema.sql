@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS otps (
     otp_code    VARCHAR(255) NOT NULL,
     expiry_time DATETIME(6)  NOT NULL,
     attempts    INT          NULL,
+    reset_token_hash CHAR(64) NULL COMMENT 'Có sau khi xác minh đúng OTP: SHA-256 của mã phiên dùng một lần để đặt mật khẩu mới',
     member_id   VARCHAR(36)  NOT NULL,
     PRIMARY KEY (id),
     CONSTRAINT fk_otps_member FOREIGN KEY (member_id) REFERENCES members (id)
