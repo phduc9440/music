@@ -1,4 +1,4 @@
-package com.ptit.music_be.dto.enums;
+package com.ptit.music_be.dto.enums.ai;
 
 /** Values stored in {@code Score.processingStatus}. */
 public enum ProcessingStatus {

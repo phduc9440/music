@@ -1,4 +1,4 @@
-package com.ptit.music_be.dto.request;
+package com.ptit.music_be.dto.request.team;
 
 import java.time.LocalDate;
 import lombok.*;

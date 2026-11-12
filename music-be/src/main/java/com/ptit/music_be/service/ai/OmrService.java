@@ -4,10 +4,10 @@ import java.util.List;
 
 import org.springframework.web.multipart.MultipartFile;
 
-import com.ptit.music_be.dto.request.OmrRetryRequest;
-import com.ptit.music_be.dto.response.AiTaskResponse;
-import com.ptit.music_be.dto.response.OmrResultResponse;
-import com.ptit.music_be.dto.response.OmrUploadResponse;
+import com.ptit.music_be.dto.request.ai.OmrRetryRequest;
+import com.ptit.music_be.dto.response.ai.AiTaskResponse;
+import com.ptit.music_be.dto.response.ai.OmrResultResponse;
+import com.ptit.music_be.dto.response.ai.OmrUploadResponse;
 
 public interface OmrService {
 

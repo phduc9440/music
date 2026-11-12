@@ -1,8 +1,8 @@
 package com.ptit.music_be.service.notification;
 
-import com.ptit.music_be.dto.enums.NotificationType;
-import com.ptit.music_be.dto.response.NotificationResponse;
-import com.ptit.music_be.dto.response.PageResponse;
+import com.ptit.music_be.dto.enums.notification.NotificationType;
+import com.ptit.music_be.dto.response.common.PageResponse;
+import com.ptit.music_be.dto.response.notification.NotificationResponse;
 import com.ptit.music_be.entity.Member;
 
 /** Thông báo trong ứng dụng (chuông). Các service nghiệp vụ gọi {@code notify*} cùng transaction với thao tác gốc. */

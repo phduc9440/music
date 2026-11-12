@@ -1,4 +1,4 @@
-package com.ptit.music_be.dto.enums;
+package com.ptit.music_be.dto.enums.score;
 
 import java.util.Arrays;
 

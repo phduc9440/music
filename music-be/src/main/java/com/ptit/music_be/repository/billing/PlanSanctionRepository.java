@@ -1,4 +1,4 @@
-package com.ptit.music_be.repository;
+package com.ptit.music_be.repository.billing;
 
 import java.time.LocalDateTime;
 import java.util.Collection;

@@ -8,12 +8,12 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ptit.music_be.dto.enums.TeamActivityType;
-import com.ptit.music_be.dto.enums.TeamMemberKind;
+import com.ptit.music_be.dto.enums.team.TeamActivityType;
+import com.ptit.music_be.dto.enums.team.TeamMemberKind;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.TeamMember;
-import com.ptit.music_be.repository.TeamMemberRepository;
-import com.ptit.music_be.repository.TeamRepository;
+import com.ptit.music_be.repository.team.TeamMemberRepository;
+import com.ptit.music_be.repository.team.TeamRepository;
 import com.ptit.music_be.service.notification.NotificationService;
 
 import lombok.AccessLevel;

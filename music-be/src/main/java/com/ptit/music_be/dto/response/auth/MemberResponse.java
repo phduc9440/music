@@ -1,12 +1,13 @@
-package com.ptit.music_be.dto.response;
+package com.ptit.music_be.dto.response.auth;
 
 import java.time.LocalDateTime;
 import java.util.Set;
 
-import com.ptit.music_be.dto.enums.AppLocale;
-import com.ptit.music_be.dto.enums.AuthProvider;
-import com.ptit.music_be.dto.enums.MemberStatus;
-import com.ptit.music_be.dto.enums.UiTheme;
+import com.ptit.music_be.dto.enums.auth.AppLocale;
+import com.ptit.music_be.dto.enums.auth.AuthProvider;
+import com.ptit.music_be.dto.enums.auth.MemberStatus;
+import com.ptit.music_be.dto.enums.auth.UiTheme;
+import com.ptit.music_be.dto.response.billing.MemberPlanSummary;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;

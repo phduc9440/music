@@ -10,10 +10,10 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import com.ptit.music_be.converter.AuthProviderConverter;
 import com.ptit.music_be.converter.MemberStatusConverter;
-import com.ptit.music_be.dto.enums.AppLocale;
-import com.ptit.music_be.dto.enums.AuthProvider;
-import com.ptit.music_be.dto.enums.MemberStatus;
-import com.ptit.music_be.dto.enums.UiTheme;
+import com.ptit.music_be.dto.enums.auth.AppLocale;
+import com.ptit.music_be.dto.enums.auth.AuthProvider;
+import com.ptit.music_be.dto.enums.auth.MemberStatus;
+import com.ptit.music_be.dto.enums.auth.UiTheme;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;

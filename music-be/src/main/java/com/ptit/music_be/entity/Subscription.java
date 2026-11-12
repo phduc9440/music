@@ -6,8 +6,8 @@ import jakarta.persistence.*;
 
 import org.hibernate.annotations.CreationTimestamp;
 
-import com.ptit.music_be.dto.enums.SubscriptionSource;
-import com.ptit.music_be.dto.enums.SubscriptionStatus;
+import com.ptit.music_be.dto.enums.billing.SubscriptionSource;
+import com.ptit.music_be.dto.enums.billing.SubscriptionStatus;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;

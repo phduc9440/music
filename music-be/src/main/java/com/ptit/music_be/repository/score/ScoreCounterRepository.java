@@ -1,4 +1,4 @@
-package com.ptit.music_be.repository;
+package com.ptit.music_be.repository.score;
 
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;

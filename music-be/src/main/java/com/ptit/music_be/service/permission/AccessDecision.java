@@ -1,6 +1,6 @@
 package com.ptit.music_be.service.permission;
 
-import com.ptit.music_be.dto.enums.ScoreAccess;
+import com.ptit.music_be.dto.enums.score.ScoreAccess;
 
 /**
  * Kết quả quyết định quyền của người đang đăng nhập với một bản nhạc.

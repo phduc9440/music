@@ -1,6 +1,8 @@
-package com.ptit.music_be.dto.response;
+package com.ptit.music_be.dto.response.score;
 
 import java.util.List;
+
+import com.ptit.music_be.dto.response.library.TagResponse;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;

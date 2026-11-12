@@ -2,18 +2,18 @@ package com.ptit.music_be.service.team;
 
 import java.util.List;
 
-import com.ptit.music_be.dto.request.TeamInviteRequest;
-import com.ptit.music_be.dto.request.TeamRequest;
-import com.ptit.music_be.dto.response.PageResponse;
-import com.ptit.music_be.dto.response.RestorableItemResponse;
-import com.ptit.music_be.dto.response.TeamActivityResponse;
-import com.ptit.music_be.dto.response.TeamInvitationPreviewResponse;
-import com.ptit.music_be.dto.response.TeamInvitationResponse;
-import com.ptit.music_be.dto.response.TeamMemberResponse;
-import com.ptit.music_be.dto.response.TeamResponse;
-import com.ptit.music_be.dto.response.TeamScoreResponse;
-import com.ptit.music_be.dto.response.TeamTaskResponse;
-import com.ptit.music_be.dto.enums.TeamRole;
+import com.ptit.music_be.dto.enums.team.TeamRole;
+import com.ptit.music_be.dto.request.team.TeamInviteRequest;
+import com.ptit.music_be.dto.request.team.TeamRequest;
+import com.ptit.music_be.dto.response.common.PageResponse;
+import com.ptit.music_be.dto.response.team.RestorableItemResponse;
+import com.ptit.music_be.dto.response.team.TeamActivityResponse;
+import com.ptit.music_be.dto.response.team.TeamInvitationPreviewResponse;
+import com.ptit.music_be.dto.response.team.TeamInvitationResponse;
+import com.ptit.music_be.dto.response.team.TeamMemberResponse;
+import com.ptit.music_be.dto.response.team.TeamResponse;
+import com.ptit.music_be.dto.response.team.TeamScoreResponse;
+import com.ptit.music_be.dto.response.team.TeamTaskResponse;
 
 /** Team (mục 4.1): team, thành viên, lời mời, bản nhạc của team, nhật ký hoạt động, việc của tôi trong Show. */
 public interface TeamService {

@@ -1,4 +1,4 @@
-package com.ptit.music_be.dto.request;
+package com.ptit.music_be.dto.request.admin;
 
 import java.util.List;
 
@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-import com.ptit.music_be.dto.enums.AnnouncementAudience;
+import com.ptit.music_be.dto.enums.admin.AnnouncementAudience;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;

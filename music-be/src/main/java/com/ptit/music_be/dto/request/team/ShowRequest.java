@@ -1,8 +1,8 @@
-package com.ptit.music_be.dto.request;
+package com.ptit.music_be.dto.request.team;
 
 import java.time.LocalDate;
 
-import com.ptit.music_be.dto.enums.ShowStatus;
+import com.ptit.music_be.dto.enums.team.ShowStatus;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 

@@ -2,13 +2,13 @@ package com.ptit.music_be.service.score;
 
 import java.util.List;
 
-import com.ptit.music_be.dto.enums.CommentStatus;
-import com.ptit.music_be.dto.request.ScoreCommentReplyRequest;
-import com.ptit.music_be.dto.request.ScoreCommentRequest;
-import com.ptit.music_be.dto.request.ScoreCommentUpdateRequest;
-import com.ptit.music_be.dto.response.CommentMemberResponse;
-import com.ptit.music_be.dto.response.ScoreCommentResponse;
-import com.ptit.music_be.dto.response.ScoreCommentsResponse;
+import com.ptit.music_be.dto.enums.score.CommentStatus;
+import com.ptit.music_be.dto.request.score.ScoreCommentReplyRequest;
+import com.ptit.music_be.dto.request.score.ScoreCommentRequest;
+import com.ptit.music_be.dto.request.score.ScoreCommentUpdateRequest;
+import com.ptit.music_be.dto.response.score.CommentMemberResponse;
+import com.ptit.music_be.dto.response.score.ScoreCommentResponse;
+import com.ptit.music_be.dto.response.score.ScoreCommentsResponse;
 
 /**
  * Góp ý gắn vào ô nhịp (mục 4.2). Xem cần VIEW; viết và trả lời cần REVIEW trở lên; sửa nội dung chỉ người viết; xóa

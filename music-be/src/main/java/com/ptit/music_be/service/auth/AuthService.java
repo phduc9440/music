@@ -1,16 +1,16 @@
 package com.ptit.music_be.service.auth;
 
-import com.ptit.music_be.dto.request.ChangePasswordRequest;
-import com.ptit.music_be.dto.request.ForgotPasswordRequest;
-import com.ptit.music_be.dto.request.GoogleLoginRequest;
-import com.ptit.music_be.dto.request.LoginRequest;
-import com.ptit.music_be.dto.request.RefreshRequest;
-import com.ptit.music_be.dto.request.RegisterRequest;
-import com.ptit.music_be.dto.request.ResetPasswordRequest;
-import com.ptit.music_be.dto.request.VerifyResetOtpRequest;
-import com.ptit.music_be.dto.response.AuthResponse;
-import com.ptit.music_be.dto.response.MemberResponse;
-import com.ptit.music_be.dto.response.VerifyResetOtpResponse;
+import com.ptit.music_be.dto.request.auth.ChangePasswordRequest;
+import com.ptit.music_be.dto.request.auth.ForgotPasswordRequest;
+import com.ptit.music_be.dto.request.auth.GoogleLoginRequest;
+import com.ptit.music_be.dto.request.auth.LoginRequest;
+import com.ptit.music_be.dto.request.auth.RefreshRequest;
+import com.ptit.music_be.dto.request.auth.RegisterRequest;
+import com.ptit.music_be.dto.request.auth.ResetPasswordRequest;
+import com.ptit.music_be.dto.request.auth.VerifyResetOtpRequest;
+import com.ptit.music_be.dto.response.auth.AuthResponse;
+import com.ptit.music_be.dto.response.auth.MemberResponse;
+import com.ptit.music_be.dto.response.auth.VerifyResetOtpResponse;
 
 public interface AuthService {
 

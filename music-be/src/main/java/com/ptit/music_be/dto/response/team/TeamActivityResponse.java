@@ -1,9 +1,9 @@
-package com.ptit.music_be.dto.response;
+package com.ptit.music_be.dto.response.team;
 
 import java.time.LocalDateTime;
 import java.util.Map;
 
-import com.ptit.music_be.dto.enums.TeamActivityType;
+import com.ptit.music_be.dto.enums.team.TeamActivityType;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 

@@ -21,13 +21,13 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import com.ptit.music_be.dto.enums.ScoreAccess;
-import com.ptit.music_be.dto.enums.SharePermission;
+import com.ptit.music_be.dto.enums.score.ScoreAccess;
+import com.ptit.music_be.dto.enums.score.SharePermission;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.MemberScore;
 import com.ptit.music_be.entity.Score;
-import com.ptit.music_be.repository.MemberRepository;
-import com.ptit.music_be.repository.MemberScoreRepository;
+import com.ptit.music_be.repository.auth.MemberRepository;
+import com.ptit.music_be.repository.score.MemberScoreRepository;
 import com.ptit.music_be.service.permission.impl.ScorePermissionServiceImpl;
 
 /** Bảng quyết định quyền: mỗi dòng là (vai trò, visibility, kho mẫu, chia sẻ/team) → mức truy cập mong đợi. */

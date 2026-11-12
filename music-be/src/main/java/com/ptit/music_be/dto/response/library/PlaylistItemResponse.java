@@ -1,6 +1,6 @@
-package com.ptit.music_be.dto.response;
+package com.ptit.music_be.dto.response.library;
 
-import com.ptit.music_be.dto.enums.DifficultyLevel;
+import com.ptit.music_be.dto.enums.score.DifficultyLevel;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;

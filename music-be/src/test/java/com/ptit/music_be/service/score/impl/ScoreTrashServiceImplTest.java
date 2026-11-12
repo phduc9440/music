@@ -28,8 +28,8 @@ import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
-import com.ptit.music_be.repository.MemberRepository;
-import com.ptit.music_be.repository.ScoreTrashRepository;
+import com.ptit.music_be.repository.auth.MemberRepository;
+import com.ptit.music_be.repository.score.ScoreTrashRepository;
 import com.ptit.music_be.service.score.ScoreCoverService;
 import com.ptit.music_be.service.storage.ScoreStorageCleaner;
 

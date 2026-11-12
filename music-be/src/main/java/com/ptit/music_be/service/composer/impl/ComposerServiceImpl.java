@@ -13,14 +13,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import com.ptit.music_be.dto.enums.ComposerPeriod;
-import com.ptit.music_be.dto.request.ComposerRequest;
-import com.ptit.music_be.dto.response.ComposerResponse;
+import com.ptit.music_be.dto.enums.composer.ComposerPeriod;
+import com.ptit.music_be.dto.request.composer.ComposerRequest;
+import com.ptit.music_be.dto.response.composer.ComposerResponse;
 import com.ptit.music_be.entity.Composer;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
-import com.ptit.music_be.repository.ComposerRepository;
+import com.ptit.music_be.repository.composer.ComposerRepository;
 import com.ptit.music_be.service.composer.ComposerMatcher;
 import com.ptit.music_be.service.composer.ComposerService;
 

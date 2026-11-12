@@ -1,4 +1,4 @@
-package com.ptit.music_be.dto.enums;
+package com.ptit.music_be.dto.enums.score;
 
 /** Giá trị lưu trong {@code Score.sourceType}: bản nhạc được tạo bằng cách nào. */
 public enum ScoreSource {

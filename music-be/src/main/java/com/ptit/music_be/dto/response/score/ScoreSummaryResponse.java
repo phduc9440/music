@@ -1,9 +1,10 @@
-package com.ptit.music_be.dto.response;
+package com.ptit.music_be.dto.response.score;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
-import com.ptit.music_be.dto.enums.DifficultyLevel;
+import com.ptit.music_be.dto.enums.score.DifficultyLevel;
+import com.ptit.music_be.dto.response.library.TagResponse;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;

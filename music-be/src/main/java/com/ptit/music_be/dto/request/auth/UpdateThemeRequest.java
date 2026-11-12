@@ -1,8 +1,8 @@
-package com.ptit.music_be.dto.request;
+package com.ptit.music_be.dto.request.auth;
 
 import jakarta.validation.constraints.NotNull;
 
-import com.ptit.music_be.dto.enums.UiTheme;
+import com.ptit.music_be.dto.enums.auth.UiTheme;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;

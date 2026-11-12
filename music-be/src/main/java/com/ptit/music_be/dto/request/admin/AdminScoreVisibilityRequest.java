@@ -1,9 +1,9 @@
-package com.ptit.music_be.dto.request;
+package com.ptit.music_be.dto.request.admin;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-import com.ptit.music_be.dto.enums.Visibility;
+import com.ptit.music_be.dto.enums.score.Visibility;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;

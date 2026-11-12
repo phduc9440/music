@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-import com.ptit.music_be.dto.response.NotificationResponse;
+import com.ptit.music_be.dto.response.notification.NotificationResponse;
 import com.ptit.music_be.websocket.WebSocketConfig;
 
 import lombok.RequiredArgsConstructor;

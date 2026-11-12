@@ -4,21 +4,21 @@ import java.util.List;
 
 import org.springframework.web.bind.annotation.*;
 
-import com.ptit.music_be.dto.request.ShowRequest;
-import com.ptit.music_be.dto.request.TeamInviteRequest;
-import com.ptit.music_be.dto.request.TeamRequest;
-import com.ptit.music_be.dto.request.TeamRoleRequest;
-import com.ptit.music_be.dto.request.TeamScoreRequest;
-import com.ptit.music_be.dto.response.ApiResponse;
-import com.ptit.music_be.dto.response.PageResponse;
-import com.ptit.music_be.dto.response.RestorableItemResponse;
-import com.ptit.music_be.dto.response.ShowResponse;
-import com.ptit.music_be.dto.response.TeamActivityResponse;
-import com.ptit.music_be.dto.response.TeamInvitationResponse;
-import com.ptit.music_be.dto.response.TeamMemberResponse;
-import com.ptit.music_be.dto.response.TeamResponse;
-import com.ptit.music_be.dto.response.TeamScoreResponse;
-import com.ptit.music_be.dto.response.TeamTaskResponse;
+import com.ptit.music_be.dto.request.team.ShowRequest;
+import com.ptit.music_be.dto.request.team.TeamInviteRequest;
+import com.ptit.music_be.dto.request.team.TeamRequest;
+import com.ptit.music_be.dto.request.team.TeamRoleRequest;
+import com.ptit.music_be.dto.request.team.TeamScoreRequest;
+import com.ptit.music_be.dto.response.common.ApiResponse;
+import com.ptit.music_be.dto.response.common.PageResponse;
+import com.ptit.music_be.dto.response.team.RestorableItemResponse;
+import com.ptit.music_be.dto.response.team.ShowResponse;
+import com.ptit.music_be.dto.response.team.TeamActivityResponse;
+import com.ptit.music_be.dto.response.team.TeamInvitationResponse;
+import com.ptit.music_be.dto.response.team.TeamMemberResponse;
+import com.ptit.music_be.dto.response.team.TeamResponse;
+import com.ptit.music_be.dto.response.team.TeamScoreResponse;
+import com.ptit.music_be.dto.response.team.TeamTaskResponse;
 import com.ptit.music_be.service.team.ShowService;
 import com.ptit.music_be.service.team.TeamService;
 

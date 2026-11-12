@@ -1,8 +1,8 @@
-package com.ptit.music_be.dto.request;
+package com.ptit.music_be.dto.request.admin;
 
 import java.util.Set;
 
-import com.ptit.music_be.dto.enums.MemberStatus;
+import com.ptit.music_be.dto.enums.auth.MemberStatus;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;

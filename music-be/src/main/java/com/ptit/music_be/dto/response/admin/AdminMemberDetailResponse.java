@@ -1,7 +1,9 @@
-package com.ptit.music_be.dto.response;
+package com.ptit.music_be.dto.response.admin;
 
 import java.time.LocalDateTime;
 import java.util.List;
+
+import com.ptit.music_be.dto.response.auth.MemberResponse;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;

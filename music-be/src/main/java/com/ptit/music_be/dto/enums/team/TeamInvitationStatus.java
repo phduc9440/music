@@ -1,4 +1,4 @@
-package com.ptit.music_be.dto.enums;
+package com.ptit.music_be.dto.enums.team;
 
 /** Trạng thái lời mời vào team. Hết hạn không lưu thành trạng thái riêng mà suy ra từ {@code expires_at}. */
 public enum TeamInvitationStatus {

@@ -14,15 +14,15 @@ import jakarta.persistence.EntityManager;
 
 import org.junit.jupiter.api.Test;
 
-import com.ptit.music_be.dto.enums.AiTaskStatus;
-import com.ptit.music_be.dto.enums.AiTaskType;
-import com.ptit.music_be.dto.response.AiTaskResponse;
+import com.ptit.music_be.dto.enums.ai.AiTaskStatus;
+import com.ptit.music_be.dto.enums.ai.AiTaskType;
+import com.ptit.music_be.dto.response.ai.AiTaskResponse;
 import com.ptit.music_be.entity.AiTask;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
-import com.ptit.music_be.repository.AiTaskRepository;
+import com.ptit.music_be.repository.ai.AiTaskRepository;
 import com.ptit.music_be.service.ai.OmrService;
 
 class AdminAiTaskRetryTest {

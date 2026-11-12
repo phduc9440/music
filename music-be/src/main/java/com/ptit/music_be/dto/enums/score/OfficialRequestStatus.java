@@ -1,4 +1,4 @@
-package com.ptit.music_be.dto.enums;
+package com.ptit.music_be.dto.enums.score;
 
 /** Trạng thái lời xin đưa một bản nhạc vào kho bản nhạc mẫu. */
 public enum OfficialRequestStatus {

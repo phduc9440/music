@@ -1,8 +1,8 @@
-package com.ptit.music_be.dto.response;
+package com.ptit.music_be.dto.response.team;
 
 import java.util.List;
 
-import com.ptit.music_be.dto.enums.TeamRole;
+import com.ptit.music_be.dto.enums.team.TeamRole;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 

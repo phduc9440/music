@@ -4,9 +4,9 @@ import java.util.List;
 
 import org.springframework.web.bind.annotation.*;
 
-import com.ptit.music_be.dto.response.ApiResponse;
-import com.ptit.music_be.dto.response.ErrorLogResponse;
-import com.ptit.music_be.dto.response.SystemMetricsResponse;
+import com.ptit.music_be.dto.response.admin.ErrorLogResponse;
+import com.ptit.music_be.dto.response.admin.SystemMetricsResponse;
+import com.ptit.music_be.dto.response.common.ApiResponse;
 import com.ptit.music_be.service.admin.AdminSystemService;
 
 import io.swagger.v3.oas.annotations.Operation;

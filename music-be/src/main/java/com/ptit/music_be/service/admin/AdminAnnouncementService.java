@@ -1,7 +1,7 @@
 package com.ptit.music_be.service.admin;
 
-import com.ptit.music_be.dto.request.AnnouncementRequest;
-import com.ptit.music_be.dto.response.AnnouncementResponse;
+import com.ptit.music_be.dto.request.admin.AnnouncementRequest;
+import com.ptit.music_be.dto.response.admin.AnnouncementResponse;
 
 public interface AdminAnnouncementService {
 

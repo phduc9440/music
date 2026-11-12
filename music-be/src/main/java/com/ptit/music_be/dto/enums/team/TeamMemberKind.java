@@ -1,4 +1,4 @@
-package com.ptit.music_be.dto.enums;
+package com.ptit.music_be.dto.enums.team;
 
 /** Loại dòng trong bảng team_members: thành viên, lời mời hay nhật ký hoạt động. */
 public enum TeamMemberKind {

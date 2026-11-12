@@ -9,7 +9,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
-import com.ptit.music_be.dto.enums.FileType;
+import com.ptit.music_be.dto.enums.score.FileType;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;

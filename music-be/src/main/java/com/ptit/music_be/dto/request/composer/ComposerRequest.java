@@ -1,6 +1,6 @@
-package com.ptit.music_be.dto.request;
+package com.ptit.music_be.dto.request.composer;
 
-import com.ptit.music_be.dto.enums.ComposerPeriod;
+import com.ptit.music_be.dto.enums.composer.ComposerPeriod;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;

@@ -2,13 +2,13 @@ package com.ptit.music_be.service.team;
 
 import java.util.List;
 
-import com.ptit.music_be.dto.request.ShowItemOrderRequest;
-import com.ptit.music_be.dto.request.ShowItemRequest;
-import com.ptit.music_be.dto.request.ShowItemStatusRequest;
-import com.ptit.music_be.dto.request.ShowRequest;
-import com.ptit.music_be.dto.response.RestorableItemResponse;
-import com.ptit.music_be.dto.response.ShowDetailResponse;
-import com.ptit.music_be.dto.response.ShowResponse;
+import com.ptit.music_be.dto.request.team.ShowItemOrderRequest;
+import com.ptit.music_be.dto.request.team.ShowItemRequest;
+import com.ptit.music_be.dto.request.team.ShowItemStatusRequest;
+import com.ptit.music_be.dto.request.team.ShowRequest;
+import com.ptit.music_be.dto.response.team.RestorableItemResponse;
+import com.ptit.music_be.dto.response.team.ShowDetailResponse;
+import com.ptit.music_be.dto.response.team.ShowResponse;
 
 /**
  * Show của team (mục 4.1): danh sách bài theo thứ tự diễn, mỗi bài có người phối, người duyệt, hạn và trạng thái

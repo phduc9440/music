@@ -8,10 +8,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.ptit.music_be.dto.response.ApiResponse;
-import com.ptit.music_be.dto.response.ComposerResponse;
-import com.ptit.music_be.dto.response.ExploreFacetsResponse;
-import com.ptit.music_be.repository.HomeQueryRepository;
+import com.ptit.music_be.dto.response.common.ApiResponse;
+import com.ptit.music_be.dto.response.composer.ComposerResponse;
+import com.ptit.music_be.dto.response.home.ExploreFacetsResponse;
+import com.ptit.music_be.repository.home.HomeQueryRepository;
 import com.ptit.music_be.service.composer.ComposerService;
 
 import io.swagger.v3.oas.annotations.Operation;

@@ -7,12 +7,12 @@ import jakarta.servlet.http.HttpServletRequest;
 
 import org.springframework.web.bind.annotation.*;
 
-import com.ptit.music_be.dto.enums.PaymentProviderType;
-import com.ptit.music_be.dto.request.CreatePaymentOrderRequest;
-import com.ptit.music_be.dto.response.ApiResponse;
-import com.ptit.music_be.dto.response.PaymentOrderResponse;
-import com.ptit.music_be.service.payment.PaymentService;
+import com.ptit.music_be.dto.enums.billing.PaymentProviderType;
+import com.ptit.music_be.dto.request.billing.CreatePaymentOrderRequest;
+import com.ptit.music_be.dto.response.billing.PaymentOrderResponse;
+import com.ptit.music_be.dto.response.common.ApiResponse;
 import com.ptit.music_be.service.payment.PaymentService.IpnResult;
+import com.ptit.music_be.service.payment.PaymentService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;

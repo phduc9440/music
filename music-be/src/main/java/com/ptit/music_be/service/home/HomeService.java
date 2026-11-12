@@ -2,8 +2,8 @@ package com.ptit.music_be.service.home;
 
 import org.springframework.core.io.Resource;
 
-import com.ptit.music_be.dto.response.HomeSummaryResponse;
-import com.ptit.music_be.dto.response.PublicHomeResponse;
+import com.ptit.music_be.dto.response.home.HomeSummaryResponse;
+import com.ptit.music_be.dto.response.home.PublicHomeResponse;
 
 /** Trang chủ (mục 5.3): trang giới thiệu cho khách và trang làm việc cho người đã đăng nhập. */
 public interface HomeService {

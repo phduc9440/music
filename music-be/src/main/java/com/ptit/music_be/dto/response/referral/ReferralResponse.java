@@ -1,4 +1,4 @@
-package com.ptit.music_be.dto.response;
+package com.ptit.music_be.dto.response.referral;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;

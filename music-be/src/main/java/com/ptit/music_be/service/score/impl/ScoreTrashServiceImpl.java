@@ -11,14 +11,14 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.ptit.music_be.dto.response.PageResponse;
-import com.ptit.music_be.dto.response.TrashedScoreResponse;
+import com.ptit.music_be.dto.response.common.PageResponse;
+import com.ptit.music_be.dto.response.score.TrashedScoreResponse;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
-import com.ptit.music_be.repository.MemberRepository;
-import com.ptit.music_be.repository.ScoreTrashRepository;
+import com.ptit.music_be.repository.auth.MemberRepository;
+import com.ptit.music_be.repository.score.ScoreTrashRepository;
 import com.ptit.music_be.service.score.ScoreCoverService;
 import com.ptit.music_be.service.score.ScoreTrashService;
 import com.ptit.music_be.service.storage.ScoreStorageCleaner;

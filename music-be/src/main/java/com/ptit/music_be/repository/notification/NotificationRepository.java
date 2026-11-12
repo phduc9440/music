@@ -1,4 +1,4 @@
-package com.ptit.music_be.repository;
+package com.ptit.music_be.repository.notification;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

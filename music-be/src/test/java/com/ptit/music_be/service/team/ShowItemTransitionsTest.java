@@ -11,8 +11,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.api.Test;
 
-import com.ptit.music_be.dto.enums.ShowItemStatus;
-import com.ptit.music_be.dto.enums.TeamRole;
+import com.ptit.music_be.dto.enums.team.ShowItemStatus;
+import com.ptit.music_be.dto.enums.team.TeamRole;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.ShowItem;
 

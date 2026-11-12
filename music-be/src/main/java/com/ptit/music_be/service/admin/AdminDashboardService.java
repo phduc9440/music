@@ -1,6 +1,6 @@
 package com.ptit.music_be.service.admin;
 
-import com.ptit.music_be.dto.response.AdminDashboardResponse;
+import com.ptit.music_be.dto.response.admin.AdminDashboardResponse;
 
 public interface AdminDashboardService {
 

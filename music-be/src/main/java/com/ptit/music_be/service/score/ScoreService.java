@@ -2,11 +2,11 @@ package com.ptit.music_be.service.score;
 
 import java.util.List;
 
-import com.ptit.music_be.dto.enums.Visibility;
-import com.ptit.music_be.dto.request.ScoreUpdateRequest;
-import com.ptit.music_be.dto.response.PageResponse;
-import com.ptit.music_be.dto.response.ScoreDetailResponse;
-import com.ptit.music_be.dto.response.ScoreSummaryResponse;
+import com.ptit.music_be.dto.enums.score.Visibility;
+import com.ptit.music_be.dto.request.score.ScoreUpdateRequest;
+import com.ptit.music_be.dto.response.common.PageResponse;
+import com.ptit.music_be.dto.response.score.ScoreDetailResponse;
+import com.ptit.music_be.dto.response.score.ScoreSummaryResponse;
 
 /** Quản lý bản nhạc: danh sách, chi tiết, sửa thông tin, xóa. */
 public interface ScoreService {

@@ -1,9 +1,9 @@
-package com.ptit.music_be.dto.response;
+package com.ptit.music_be.dto.response.export;
 
 import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.ptit.music_be.dto.enums.FileType;
+import com.ptit.music_be.dto.enums.score.FileType;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;

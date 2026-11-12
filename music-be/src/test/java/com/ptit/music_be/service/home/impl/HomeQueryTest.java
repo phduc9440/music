@@ -24,20 +24,20 @@ import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.ptit.music_be.dto.enums.SharePermission;
-import com.ptit.music_be.dto.response.HomeSummaryResponse;
-import com.ptit.music_be.dto.response.PublicHomeResponse;
-import com.ptit.music_be.dto.response.ScoreSummaryResponse;
+import com.ptit.music_be.dto.enums.score.SharePermission;
+import com.ptit.music_be.dto.response.home.HomeSummaryResponse;
+import com.ptit.music_be.dto.response.home.PublicHomeResponse;
+import com.ptit.music_be.dto.response.score.ScoreSummaryResponse;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.MemberScore;
 import com.ptit.music_be.entity.PracticeSession;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.repository.HomeQueryRepository;
-import com.ptit.music_be.repository.MemberRepository;
-import com.ptit.music_be.repository.MemberScoreRepository;
-import com.ptit.music_be.repository.PracticeSessionRepository;
-import com.ptit.music_be.repository.ScoreRepository;
+import com.ptit.music_be.repository.auth.MemberRepository;
+import com.ptit.music_be.repository.home.HomeQueryRepository;
+import com.ptit.music_be.repository.practice.PracticeSessionRepository;
+import com.ptit.music_be.repository.score.MemberScoreRepository;
+import com.ptit.music_be.repository.score.ScoreRepository;
 
 /**
  * Chạy các câu truy vấn của trang chủ với DB thật (cần MySQL đang chạy). Mỗi ca tự tạo dữ liệu trong transaction rồi

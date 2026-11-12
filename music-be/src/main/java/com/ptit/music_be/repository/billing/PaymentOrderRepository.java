@@ -1,4 +1,4 @@
-package com.ptit.music_be.repository;
+package com.ptit.music_be.repository.billing;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -15,8 +15,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import com.ptit.music_be.dto.enums.PaymentKind;
-import com.ptit.music_be.dto.enums.PaymentStatus;
+import com.ptit.music_be.dto.enums.billing.PaymentKind;
+import com.ptit.music_be.dto.enums.billing.PaymentStatus;
 import com.ptit.music_be.entity.PaymentOrder;
 
 @Repository

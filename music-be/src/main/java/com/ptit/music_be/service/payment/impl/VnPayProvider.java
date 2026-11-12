@@ -27,7 +27,7 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import com.ptit.music_be.dto.enums.PaymentProviderType;
+import com.ptit.music_be.dto.enums.billing.PaymentProviderType;
 import com.ptit.music_be.entity.PaymentOrder;
 import com.ptit.music_be.service.payment.PaymentProvider;
 import com.ptit.music_be.service.payment.VnPayProperties;

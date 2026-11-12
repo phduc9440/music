@@ -12,12 +12,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-import com.ptit.music_be.dto.enums.ScoreAccess;
-import com.ptit.music_be.dto.enums.TeamRole;
+import com.ptit.music_be.dto.enums.score.ScoreAccess;
+import com.ptit.music_be.dto.enums.team.TeamRole;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.TeamMember;
-import com.ptit.music_be.repository.ShowItemRepository;
-import com.ptit.music_be.repository.TeamMemberRepository;
+import com.ptit.music_be.repository.team.ShowItemRepository;
+import com.ptit.music_be.repository.team.TeamMemberRepository;
 
 /** Quyền qua team theo vai trò (ma trận 2.3 + mục 4.1). */
 class TeamAccessResolverImplTest {

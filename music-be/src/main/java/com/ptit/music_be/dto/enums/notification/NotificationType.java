@@ -1,4 +1,4 @@
-package com.ptit.music_be.dto.enums;
+package com.ptit.music_be.dto.enums.notification;
 
 /** Loại thông báo trong ứng dụng (lưu dạng chuỗi trong {@code notifications.type}). */
 public enum NotificationType {

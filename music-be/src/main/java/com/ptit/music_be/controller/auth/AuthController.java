@@ -10,17 +10,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ptit.music_be.configuration.AuthCookies;
-import com.ptit.music_be.dto.request.ForgotPasswordRequest;
-import com.ptit.music_be.dto.request.GoogleLoginRequest;
-import com.ptit.music_be.dto.request.LoginRequest;
-import com.ptit.music_be.dto.request.RefreshRequest;
-import com.ptit.music_be.dto.request.RegisterRequest;
-import com.ptit.music_be.dto.request.ResetPasswordRequest;
-import com.ptit.music_be.dto.request.VerifyResetOtpRequest;
-import com.ptit.music_be.dto.response.ApiResponse;
-import com.ptit.music_be.dto.response.VerifyResetOtpResponse;
-import com.ptit.music_be.dto.response.AuthResponse;
-import com.ptit.music_be.dto.response.MemberResponse;
+import com.ptit.music_be.dto.request.auth.ForgotPasswordRequest;
+import com.ptit.music_be.dto.request.auth.GoogleLoginRequest;
+import com.ptit.music_be.dto.request.auth.LoginRequest;
+import com.ptit.music_be.dto.request.auth.RefreshRequest;
+import com.ptit.music_be.dto.request.auth.RegisterRequest;
+import com.ptit.music_be.dto.request.auth.ResetPasswordRequest;
+import com.ptit.music_be.dto.request.auth.VerifyResetOtpRequest;
+import com.ptit.music_be.dto.response.auth.AuthResponse;
+import com.ptit.music_be.dto.response.auth.MemberResponse;
+import com.ptit.music_be.dto.response.auth.VerifyResetOtpResponse;
+import com.ptit.music_be.dto.response.common.ApiResponse;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.service.auth.AuthService;
@@ -97,7 +97,7 @@ public class AuthController {
             summary = "Change password (logs out other devices; this device gets new cookies)",
             security = @io.swagger.v3.oas.annotations.security.SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<Void> changePassword(
-            @RequestBody @Valid com.ptit.music_be.dto.request.ChangePasswordRequest request,
+            @RequestBody @Valid com.ptit.music_be.dto.request.auth.ChangePasswordRequest request,
             HttpServletResponse response) {
         // Thiết bị hiện tại nhận cookie token mới; các thiết bị khác bị đăng xuất vì token cũ bị thu hồi
         authCookies.write(response, authService.changePassword(request));

@@ -1,8 +1,9 @@
-package com.ptit.music_be.dto.response;
+package com.ptit.music_be.dto.response.export;
 
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.ptit.music_be.dto.response.ai.AiTaskResponse;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;

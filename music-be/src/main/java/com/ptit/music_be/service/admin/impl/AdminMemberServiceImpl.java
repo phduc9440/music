@@ -16,21 +16,21 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.ptit.music_be.configuration.MemberStatusGuard;
-import com.ptit.music_be.dto.enums.MemberStatus;
-import com.ptit.music_be.dto.enums.PaymentStatus;
-import com.ptit.music_be.dto.request.AdminUpdateMemberRequest;
-import com.ptit.music_be.dto.response.AdminMemberDetailResponse;
-import com.ptit.music_be.dto.response.MemberPlanSummary;
-import com.ptit.music_be.dto.response.MemberResponse;
-import com.ptit.music_be.dto.response.PageResponse;
+import com.ptit.music_be.dto.enums.auth.MemberStatus;
+import com.ptit.music_be.dto.enums.billing.PaymentStatus;
+import com.ptit.music_be.dto.request.admin.AdminUpdateMemberRequest;
+import com.ptit.music_be.dto.response.admin.AdminMemberDetailResponse;
+import com.ptit.music_be.dto.response.auth.MemberResponse;
+import com.ptit.music_be.dto.response.billing.MemberPlanSummary;
+import com.ptit.music_be.dto.response.common.PageResponse;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.MemberRole;
 import com.ptit.music_be.entity.Role;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.mapper.MemberMapper;
-import com.ptit.music_be.repository.MemberRepository;
-import com.ptit.music_be.repository.RoleRepository;
+import com.ptit.music_be.repository.auth.MemberRepository;
+import com.ptit.music_be.repository.auth.RoleRepository;
 import com.ptit.music_be.service.admin.AdminMemberService;
 import com.ptit.music_be.service.billing.SubscriptionService;
 import com.ptit.music_be.utils.SecurityUtils;
@@ -125,7 +125,7 @@ public class AdminMemberServiceImpl implements AdminMemberService {
                 .longValue();
         List<AdminMemberDetailResponse.RecentScore> recent = entityManager
                 .createQuery(
-                        "select new com.ptit.music_be.dto.response.AdminMemberDetailResponse$RecentScore("
+                        "select new com.ptit.music_be.dto.response.admin.AdminMemberDetailResponse$RecentScore("
                                 + "s.id, s.title, s.composer, s.visibility, s.isOfficial, s.updatedAt)"
                                 + " from Score s where s.member.id = :id order by s.updatedAt desc, s.id",
                         AdminMemberDetailResponse.RecentScore.class)
@@ -159,7 +159,7 @@ public class AdminMemberServiceImpl implements AdminMemberService {
     private List<AdminMemberDetailResponse.TeamRow> teams(String memberId) {
         return entityManager
                 .createQuery(
-                        "select new com.ptit.music_be.dto.response.AdminMemberDetailResponse$TeamRow("
+                        "select new com.ptit.music_be.dto.response.admin.AdminMemberDetailResponse$TeamRow("
                                 + "t.id, t.name, str(tm.role), tm.joinedAt,"
                                 + " (select count(m) from TeamMember m where m.team = t and m.kind = 'MEMBER'),"
                                 + " t.deletedAt)"
@@ -188,7 +188,7 @@ public class AdminMemberServiceImpl implements AdminMemberService {
     private List<AdminMemberDetailResponse.Purchase> purchases(String memberId) {
         return entityManager
                 .createQuery(
-                        "select new com.ptit.music_be.dto.response.AdminMemberDetailResponse$Purchase("
+                        "select new com.ptit.music_be.dto.response.admin.AdminMemberDetailResponse$Purchase("
                                 + "o.orderCode, o.plan.name, cast(o.period as string), cast(o.kind as string),"
                                 + " cast(o.status as string), o.amount, o.paidAt)"
                                 + " from PaymentOrder o where o.member.id = :id and o.status in :statuses"

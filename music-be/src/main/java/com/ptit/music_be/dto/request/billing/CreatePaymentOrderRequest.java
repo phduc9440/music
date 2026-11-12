@@ -1,7 +1,7 @@
-package com.ptit.music_be.dto.request;
+package com.ptit.music_be.dto.request.billing;
 
-import com.ptit.music_be.dto.enums.BillingPeriod;
-import com.ptit.music_be.dto.enums.PaymentProviderType;
+import com.ptit.music_be.dto.enums.billing.BillingPeriod;
+import com.ptit.music_be.dto.enums.billing.PaymentProviderType;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;

@@ -1,7 +1,7 @@
-package com.ptit.music_be.dto.response;
+package com.ptit.music_be.dto.response.score;
 
-import com.ptit.music_be.dto.enums.SharePermission;
-import com.ptit.music_be.dto.enums.ShareSource;
+import com.ptit.music_be.dto.enums.score.SharePermission;
+import com.ptit.music_be.dto.enums.score.ShareSource;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;

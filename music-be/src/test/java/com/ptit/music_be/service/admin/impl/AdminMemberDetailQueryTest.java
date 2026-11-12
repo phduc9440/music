@@ -14,8 +14,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import com.ptit.music_be.dto.response.AdminMemberDetailResponse;
-import com.ptit.music_be.repository.MemberRepository;
+import com.ptit.music_be.dto.response.admin.AdminMemberDetailResponse;
+import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.service.admin.AdminMemberService;
 
 /** Chạy các câu JPQL của chi tiết thành viên với DB thật (cần MySQL đang chạy). */

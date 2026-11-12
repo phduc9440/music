@@ -17,7 +17,7 @@ import javax.crypto.spec.SecretKeySpec;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ptit.music_be.dto.enums.BillingPeriod;
+import com.ptit.music_be.dto.enums.billing.BillingPeriod;
 import com.ptit.music_be.entity.PaymentOrder;
 import com.ptit.music_be.entity.Plan;
 import com.ptit.music_be.service.payment.PaymentProvider.PaymentCallback;

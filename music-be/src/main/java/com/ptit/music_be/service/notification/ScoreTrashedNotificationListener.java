@@ -6,9 +6,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
-import com.ptit.music_be.dto.enums.NotificationType;
+import com.ptit.music_be.dto.enums.notification.NotificationType;
 import com.ptit.music_be.event.ScoreTrashedByAdminEvent;
-import com.ptit.music_be.repository.MemberRepository;
+import com.ptit.music_be.repository.auth.MemberRepository;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;

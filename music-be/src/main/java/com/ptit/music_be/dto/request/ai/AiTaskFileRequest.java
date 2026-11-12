@@ -1,4 +1,4 @@
-package com.ptit.music_be.dto.request;
+package com.ptit.music_be.dto.request.ai;
 
 import java.util.Map;
 
@@ -7,7 +7,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-import com.ptit.music_be.dto.enums.FileType;
+import com.ptit.music_be.dto.enums.score.FileType;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;

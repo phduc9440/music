@@ -4,10 +4,10 @@ import java.util.List;
 
 import org.springframework.web.bind.annotation.*;
 
-import com.ptit.music_be.dto.response.ApiResponse;
-import com.ptit.music_be.dto.response.TeamInvitationPreviewResponse;
-import com.ptit.music_be.dto.response.TeamInvitationResponse;
-import com.ptit.music_be.dto.response.TeamResponse;
+import com.ptit.music_be.dto.response.common.ApiResponse;
+import com.ptit.music_be.dto.response.team.TeamInvitationPreviewResponse;
+import com.ptit.music_be.dto.response.team.TeamInvitationResponse;
+import com.ptit.music_be.dto.response.team.TeamResponse;
 import com.ptit.music_be.service.team.TeamService;
 
 import io.swagger.v3.oas.annotations.Operation;

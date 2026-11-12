@@ -11,15 +11,15 @@ import java.util.TreeSet;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.ptit.music_be.dto.response.PracticeHeatmapDayResponse;
-import com.ptit.music_be.dto.response.PracticeSkillsResponse;
-import com.ptit.music_be.dto.response.PracticeStreakResponse;
-import com.ptit.music_be.dto.response.PracticeTimeBucketResponse;
+import com.ptit.music_be.dto.response.practice.PracticeHeatmapDayResponse;
+import com.ptit.music_be.dto.response.practice.PracticeSkillsResponse;
+import com.ptit.music_be.dto.response.practice.PracticeStreakResponse;
+import com.ptit.music_be.dto.response.practice.PracticeTimeBucketResponse;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
-import com.ptit.music_be.repository.MemberRepository;
-import com.ptit.music_be.repository.PracticeSessionRepository;
+import com.ptit.music_be.repository.auth.MemberRepository;
+import com.ptit.music_be.repository.practice.PracticeSessionRepository;
 import com.ptit.music_be.service.practice.PracticeStatsService;
 import com.ptit.music_be.utils.SecurityUtils;
 

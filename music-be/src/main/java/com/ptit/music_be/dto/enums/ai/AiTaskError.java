@@ -1,4 +1,4 @@
-package com.ptit.music_be.dto.enums;
+package com.ptit.music_be.dto.enums.ai;
 
 /**
  * Mã lỗi nằm ở đầu {@code ai_tasks.error_message}, dạng "MÃ" hoặc "MÃ: chi tiết" (ví dụ "PAGE_UNREADABLE: trang 3").

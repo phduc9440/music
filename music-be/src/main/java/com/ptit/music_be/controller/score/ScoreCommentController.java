@@ -4,14 +4,14 @@ import java.util.List;
 
 import org.springframework.web.bind.annotation.*;
 
-import com.ptit.music_be.dto.enums.CommentStatus;
-import com.ptit.music_be.dto.request.ScoreCommentReplyRequest;
-import com.ptit.music_be.dto.request.ScoreCommentRequest;
-import com.ptit.music_be.dto.request.ScoreCommentUpdateRequest;
-import com.ptit.music_be.dto.response.ApiResponse;
-import com.ptit.music_be.dto.response.CommentMemberResponse;
-import com.ptit.music_be.dto.response.ScoreCommentResponse;
-import com.ptit.music_be.dto.response.ScoreCommentsResponse;
+import com.ptit.music_be.dto.enums.score.CommentStatus;
+import com.ptit.music_be.dto.request.score.ScoreCommentReplyRequest;
+import com.ptit.music_be.dto.request.score.ScoreCommentRequest;
+import com.ptit.music_be.dto.request.score.ScoreCommentUpdateRequest;
+import com.ptit.music_be.dto.response.common.ApiResponse;
+import com.ptit.music_be.dto.response.score.CommentMemberResponse;
+import com.ptit.music_be.dto.response.score.ScoreCommentResponse;
+import com.ptit.music_be.dto.response.score.ScoreCommentsResponse;
 import com.ptit.music_be.service.score.ScoreCommentService;
 
 import io.swagger.v3.oas.annotations.Operation;

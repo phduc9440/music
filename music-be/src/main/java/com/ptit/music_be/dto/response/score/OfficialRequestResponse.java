@@ -1,8 +1,8 @@
-package com.ptit.music_be.dto.response;
+package com.ptit.music_be.dto.response.score;
 
 import java.time.LocalDateTime;
 
-import com.ptit.music_be.dto.enums.OfficialRequestStatus;
+import com.ptit.music_be.dto.enums.score.OfficialRequestStatus;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;

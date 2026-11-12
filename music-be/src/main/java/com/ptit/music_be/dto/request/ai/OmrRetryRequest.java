@@ -1,4 +1,4 @@
-package com.ptit.music_be.dto.request;
+package com.ptit.music_be.dto.request.ai;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;

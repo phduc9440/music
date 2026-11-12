@@ -11,9 +11,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.ptit.music_be.dto.request.ComposerRequest;
-import com.ptit.music_be.dto.response.ApiResponse;
-import com.ptit.music_be.dto.response.ComposerResponse;
+import com.ptit.music_be.dto.request.composer.ComposerRequest;
+import com.ptit.music_be.dto.response.common.ApiResponse;
+import com.ptit.music_be.dto.response.composer.ComposerResponse;
 import com.ptit.music_be.service.composer.ComposerService;
 
 import io.swagger.v3.oas.annotations.Operation;

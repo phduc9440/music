@@ -1,4 +1,4 @@
-package com.ptit.music_be.dto.request;
+package com.ptit.music_be.dto.request.auth;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

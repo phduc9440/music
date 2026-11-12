@@ -2,8 +2,8 @@ package com.ptit.music_be.service.admin;
 
 import java.util.List;
 
-import com.ptit.music_be.dto.request.TagRequest;
-import com.ptit.music_be.dto.response.AdminTagResponse;
+import com.ptit.music_be.dto.request.admin.TagRequest;
+import com.ptit.music_be.dto.response.admin.AdminTagResponse;
 
 public interface AdminTagService {
 

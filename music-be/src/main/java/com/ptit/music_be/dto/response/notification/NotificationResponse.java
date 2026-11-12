@@ -1,8 +1,8 @@
-package com.ptit.music_be.dto.response;
+package com.ptit.music_be.dto.response.notification;
 
 import java.time.LocalDateTime;
 
-import com.ptit.music_be.dto.enums.NotificationType;
+import com.ptit.music_be.dto.enums.notification.NotificationType;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;

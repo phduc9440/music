@@ -1,7 +1,10 @@
-package com.ptit.music_be.dto.response;
+package com.ptit.music_be.dto.response.home;
 
 import java.time.LocalDateTime;
 import java.util.List;
+
+import com.ptit.music_be.dto.response.practice.PracticeStreakResponse;
+import com.ptit.music_be.dto.response.score.ScoreSummaryResponse;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;

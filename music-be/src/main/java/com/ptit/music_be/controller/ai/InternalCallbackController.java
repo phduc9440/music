@@ -8,11 +8,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.ptit.music_be.dto.request.AiTaskCompleteRequest;
-import com.ptit.music_be.dto.request.AiTaskFailRequest;
-import com.ptit.music_be.dto.request.AiTaskFileRequest;
-import com.ptit.music_be.dto.request.AiTaskProgressRequest;
-import com.ptit.music_be.dto.response.ApiResponse;
+import com.ptit.music_be.dto.request.ai.AiTaskCompleteRequest;
+import com.ptit.music_be.dto.request.ai.AiTaskFailRequest;
+import com.ptit.music_be.dto.request.ai.AiTaskFileRequest;
+import com.ptit.music_be.dto.request.ai.AiTaskProgressRequest;
+import com.ptit.music_be.dto.response.common.ApiResponse;
 import com.ptit.music_be.service.ai.InternalAiTaskService;
 
 import io.swagger.v3.oas.annotations.Operation;

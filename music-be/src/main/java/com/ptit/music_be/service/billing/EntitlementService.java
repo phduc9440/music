@@ -1,6 +1,6 @@
 package com.ptit.music_be.service.billing;
 
-import com.ptit.music_be.dto.enums.UsageMetric;
+import com.ptit.music_be.dto.enums.billing.UsageMetric;
 
 /**
  * Hỏi hạn mức theo gói của một thành viên. Số đã dùng không lưu bộ đếm riêng mà tính từ dữ liệu gốc mỗi lần hỏi (trang OMR =

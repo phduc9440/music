@@ -1,9 +1,9 @@
-package com.ptit.music_be.dto.response;
+package com.ptit.music_be.dto.response.score;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
-import com.ptit.music_be.dto.enums.CommentStatus;
+import com.ptit.music_be.dto.enums.score.CommentStatus;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;

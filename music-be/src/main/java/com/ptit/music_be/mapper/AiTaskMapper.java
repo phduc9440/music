@@ -3,7 +3,7 @@ package com.ptit.music_be.mapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-import com.ptit.music_be.dto.response.AiTaskResponse;
+import com.ptit.music_be.dto.response.ai.AiTaskResponse;
 import com.ptit.music_be.entity.AiTask;
 
 @Mapper(componentModel = "spring")

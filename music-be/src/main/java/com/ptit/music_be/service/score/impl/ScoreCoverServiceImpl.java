@@ -13,11 +13,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
-import com.ptit.music_be.dto.response.ScoreDetailResponse;
+import com.ptit.music_be.dto.response.score.ScoreDetailResponse;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
-import com.ptit.music_be.repository.ScoreRepository;
+import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.service.score.ScoreCoverService;
 import com.ptit.music_be.service.score.ScoreFileService;
 import com.ptit.music_be.service.score.ScoreService;

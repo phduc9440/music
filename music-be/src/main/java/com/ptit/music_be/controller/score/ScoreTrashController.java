@@ -8,9 +8,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.ptit.music_be.dto.response.ApiResponse;
-import com.ptit.music_be.dto.response.PageResponse;
-import com.ptit.music_be.dto.response.TrashedScoreResponse;
+import com.ptit.music_be.dto.response.common.ApiResponse;
+import com.ptit.music_be.dto.response.common.PageResponse;
+import com.ptit.music_be.dto.response.score.TrashedScoreResponse;
 import com.ptit.music_be.service.score.ScoreTrashService;
 
 import io.swagger.v3.oas.annotations.Operation;

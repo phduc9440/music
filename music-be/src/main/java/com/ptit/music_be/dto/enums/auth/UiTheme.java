@@ -1,4 +1,4 @@
-package com.ptit.music_be.dto.enums;
+package com.ptit.music_be.dto.enums.auth;
 
 /** Giao diện thành viên chọn. Chưa chọn (null) được hiểu là {@link #SYSTEM}. */
 public enum UiTheme {

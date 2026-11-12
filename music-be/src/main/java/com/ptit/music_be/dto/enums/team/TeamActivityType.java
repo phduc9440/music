@@ -1,4 +1,4 @@
-package com.ptit.music_be.dto.enums;
+package com.ptit.music_be.dto.enums.team;
 
 /** Loại hoạt động trong nhật ký team (tab Hoạt động); params đi kèm ghi ở từng chỗ ghi nhật ký trong TeamActivityLog. */
 public enum TeamActivityType {

@@ -1,8 +1,8 @@
 package com.ptit.music_be.service.ai;
 
-import com.ptit.music_be.dto.request.AiTaskCompleteRequest;
-import com.ptit.music_be.dto.request.AiTaskFileRequest;
-import com.ptit.music_be.dto.request.AiTaskProgressRequest;
+import com.ptit.music_be.dto.request.ai.AiTaskCompleteRequest;
+import com.ptit.music_be.dto.request.ai.AiTaskFileRequest;
+import com.ptit.music_be.dto.request.ai.AiTaskProgressRequest;
 
 /**
  * Các thay đổi trạng thái tác vụ AI do music-ai (callback {@code /internal/ai-tasks/**}) hoặc do bộ điều phối/job

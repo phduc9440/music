@@ -1,4 +1,4 @@
-package com.ptit.music_be.dto.enums;
+package com.ptit.music_be.dto.enums.admin;
 
 /** Nhóm nhận thông báo chung của admin (chỉ tính tài khoản đang hoạt động). */
 public enum AnnouncementAudience {

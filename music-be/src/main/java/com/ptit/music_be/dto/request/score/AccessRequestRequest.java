@@ -1,9 +1,9 @@
-package com.ptit.music_be.dto.request;
+package com.ptit.music_be.dto.request.score;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-import com.ptit.music_be.dto.enums.SharePermission;
+import com.ptit.music_be.dto.enums.score.SharePermission;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;

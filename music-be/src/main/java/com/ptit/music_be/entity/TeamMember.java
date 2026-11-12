@@ -6,10 +6,10 @@ import jakarta.persistence.*;
 
 import org.hibernate.annotations.CreationTimestamp;
 
-import com.ptit.music_be.dto.enums.TeamActivityType;
-import com.ptit.music_be.dto.enums.TeamInvitationStatus;
-import com.ptit.music_be.dto.enums.TeamMemberKind;
-import com.ptit.music_be.dto.enums.TeamRole;
+import com.ptit.music_be.dto.enums.team.TeamActivityType;
+import com.ptit.music_be.dto.enums.team.TeamInvitationStatus;
+import com.ptit.music_be.dto.enums.team.TeamMemberKind;
+import com.ptit.music_be.dto.enums.team.TeamRole;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;

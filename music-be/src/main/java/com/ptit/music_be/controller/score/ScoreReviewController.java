@@ -4,9 +4,9 @@ import jakarta.validation.Valid;
 
 import org.springframework.web.bind.annotation.*;
 
-import com.ptit.music_be.dto.request.ReviewRequest;
-import com.ptit.music_be.dto.response.ApiResponse;
-import com.ptit.music_be.dto.response.ReviewListResponse;
+import com.ptit.music_be.dto.request.score.ReviewRequest;
+import com.ptit.music_be.dto.response.common.ApiResponse;
+import com.ptit.music_be.dto.response.score.ReviewListResponse;
 import com.ptit.music_be.service.score.ScoreReviewService;
 
 import io.swagger.v3.oas.annotations.Operation;

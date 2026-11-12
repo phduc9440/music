@@ -22,18 +22,18 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ptit.music_be.dto.enums.NotificationType;
-import com.ptit.music_be.dto.enums.SubscriptionSource;
-import com.ptit.music_be.dto.enums.SubscriptionStatus;
+import com.ptit.music_be.dto.enums.billing.SubscriptionSource;
+import com.ptit.music_be.dto.enums.billing.SubscriptionStatus;
+import com.ptit.music_be.dto.enums.notification.NotificationType;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Plan;
 import com.ptit.music_be.entity.Subscription;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
-import com.ptit.music_be.repository.MemberRepository;
-import com.ptit.music_be.repository.PlanRepository;
-import com.ptit.music_be.repository.PlanSanctionRepository;
-import com.ptit.music_be.repository.SubscriptionRepository;
+import com.ptit.music_be.repository.auth.MemberRepository;
+import com.ptit.music_be.repository.billing.PlanRepository;
+import com.ptit.music_be.repository.billing.PlanSanctionRepository;
+import com.ptit.music_be.repository.billing.SubscriptionRepository;
 import com.ptit.music_be.service.billing.PlanLimitsParser;
 import com.ptit.music_be.service.notification.NotificationService;
 
@@ -52,7 +52,7 @@ class SubscriptionServiceImplTest {
     private final SubscriptionServiceImpl service = new SubscriptionServiceImpl(
             plans,
             subs,
-            mock(com.ptit.music_be.repository.AiTaskRepository.class),
+            mock(com.ptit.music_be.repository.ai.AiTaskRepository.class),
             memberRepo,
             new PlanLimitsParser(new ObjectMapper()),
             notifications,

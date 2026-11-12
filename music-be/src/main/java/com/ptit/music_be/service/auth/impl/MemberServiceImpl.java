@@ -12,15 +12,15 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
-import com.ptit.music_be.dto.request.UpdateLocaleRequest;
-import com.ptit.music_be.dto.request.UpdateProfileRequest;
-import com.ptit.music_be.dto.request.UpdateThemeRequest;
-import com.ptit.music_be.dto.response.MemberResponse;
+import com.ptit.music_be.dto.request.auth.UpdateLocaleRequest;
+import com.ptit.music_be.dto.request.auth.UpdateProfileRequest;
+import com.ptit.music_be.dto.request.auth.UpdateThemeRequest;
+import com.ptit.music_be.dto.response.auth.MemberResponse;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.mapper.MemberMapper;
-import com.ptit.music_be.repository.MemberRepository;
+import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.service.auth.MemberService;
 import com.ptit.music_be.utils.SecurityUtils;
 

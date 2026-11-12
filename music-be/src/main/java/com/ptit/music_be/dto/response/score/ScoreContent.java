@@ -1,4 +1,4 @@
-package com.ptit.music_be.dto.response;
+package com.ptit.music_be.dto.response.score;
 
 /**
  * Nội dung nhị phân/văn bản của một file kết quả cùng phiên bản MusicXML tương ứng (đặc tả mục 2.4). Dùng để controller

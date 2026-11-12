@@ -20,13 +20,13 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import com.ptit.music_be.dto.enums.AnnouncementAudience;
-import com.ptit.music_be.dto.enums.MemberStatus;
-import com.ptit.music_be.dto.enums.NotificationType;
-import com.ptit.music_be.dto.request.AnnouncementRequest;
+import com.ptit.music_be.dto.enums.admin.AnnouncementAudience;
+import com.ptit.music_be.dto.enums.auth.MemberStatus;
+import com.ptit.music_be.dto.enums.notification.NotificationType;
+import com.ptit.music_be.dto.request.admin.AnnouncementRequest;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.repository.MemberRepository;
+import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.service.notification.NotificationService;
 
 class AdminAnnouncementServiceImplTest {

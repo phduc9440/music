@@ -33,11 +33,11 @@ import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import com.ptit.music_be.dto.enums.NotificationType;
-import com.ptit.music_be.dto.response.NotificationResponse;
+import com.ptit.music_be.dto.enums.notification.NotificationType;
+import com.ptit.music_be.dto.response.notification.NotificationResponse;
 import com.ptit.music_be.entity.Member;
-import com.ptit.music_be.repository.MemberRepository;
-import com.ptit.music_be.repository.NotificationRepository;
+import com.ptit.music_be.repository.auth.MemberRepository;
+import com.ptit.music_be.repository.notification.NotificationRepository;
 import com.ptit.music_be.service.notification.NotificationService;
 
 /**

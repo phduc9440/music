@@ -4,12 +4,12 @@ import java.util.List;
 
 import org.springframework.web.bind.annotation.*;
 
-import com.ptit.music_be.dto.request.BulkGrantPlanRequest;
-import com.ptit.music_be.dto.request.GrantPlanRequest;
-import com.ptit.music_be.dto.request.PlanSanctionRequest;
-import com.ptit.music_be.dto.response.ApiResponse;
-import com.ptit.music_be.dto.response.BulkGrantResult;
-import com.ptit.music_be.dto.response.MySubscriptionResponse;
+import com.ptit.music_be.dto.request.admin.BulkGrantPlanRequest;
+import com.ptit.music_be.dto.request.admin.GrantPlanRequest;
+import com.ptit.music_be.dto.request.admin.PlanSanctionRequest;
+import com.ptit.music_be.dto.response.billing.BulkGrantResult;
+import com.ptit.music_be.dto.response.billing.MySubscriptionResponse;
+import com.ptit.music_be.dto.response.common.ApiResponse;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.service.billing.SubscriptionService;

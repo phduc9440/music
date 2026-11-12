@@ -13,7 +13,7 @@ import jakarta.annotation.PreDestroy;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import com.ptit.music_be.dto.response.ErrorLogResponse;
+import com.ptit.music_be.dto.response.admin.ErrorLogResponse;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;

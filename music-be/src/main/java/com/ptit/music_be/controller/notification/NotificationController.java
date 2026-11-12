@@ -2,9 +2,9 @@ package com.ptit.music_be.controller.notification;
 
 import org.springframework.web.bind.annotation.*;
 
-import com.ptit.music_be.dto.response.ApiResponse;
-import com.ptit.music_be.dto.response.NotificationResponse;
-import com.ptit.music_be.dto.response.PageResponse;
+import com.ptit.music_be.dto.response.common.ApiResponse;
+import com.ptit.music_be.dto.response.common.PageResponse;
+import com.ptit.music_be.dto.response.notification.NotificationResponse;
 import com.ptit.music_be.service.notification.NotificationService;
 
 import io.swagger.v3.oas.annotations.Operation;

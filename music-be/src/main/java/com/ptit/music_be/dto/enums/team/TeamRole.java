@@ -1,4 +1,4 @@
-package com.ptit.music_be.dto.enums;
+package com.ptit.music_be.dto.enums.team;
 
 /**
  * Vai trò trong team (mục 4.1). OWNER/MANAGER quản lý team và là chủ mọi bản nhạc của team; ARRANGER (người phối) sửa

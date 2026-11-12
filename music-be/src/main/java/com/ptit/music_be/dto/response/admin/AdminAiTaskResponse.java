@@ -1,12 +1,12 @@
-package com.ptit.music_be.dto.response;
+package com.ptit.music_be.dto.response.admin;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonRawValue;
-import com.ptit.music_be.dto.enums.AiTaskStatus;
-import com.ptit.music_be.dto.enums.AiTaskType;
+import com.ptit.music_be.dto.enums.ai.AiTaskStatus;
+import com.ptit.music_be.dto.enums.ai.AiTaskType;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;

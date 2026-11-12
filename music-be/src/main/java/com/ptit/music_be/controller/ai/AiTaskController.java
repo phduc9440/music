@@ -4,8 +4,8 @@ import java.util.List;
 
 import org.springframework.web.bind.annotation.*;
 
-import com.ptit.music_be.dto.response.AiTaskResponse;
-import com.ptit.music_be.dto.response.ApiResponse;
+import com.ptit.music_be.dto.response.ai.AiTaskResponse;
+import com.ptit.music_be.dto.response.common.ApiResponse;
 import com.ptit.music_be.service.ai.AiTaskService;
 
 import io.swagger.v3.oas.annotations.Operation;

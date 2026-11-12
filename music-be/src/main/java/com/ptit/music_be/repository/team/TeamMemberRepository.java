@@ -1,4 +1,4 @@
-package com.ptit.music_be.repository;
+package com.ptit.music_be.repository.team;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -14,7 +14,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.ptit.music_be.dto.enums.TeamRole;
+import com.ptit.music_be.dto.enums.team.TeamRole;
 import com.ptit.music_be.entity.TeamMember;
 
 /**

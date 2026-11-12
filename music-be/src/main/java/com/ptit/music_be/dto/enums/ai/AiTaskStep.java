@@ -1,4 +1,4 @@
-package com.ptit.music_be.dto.enums;
+package com.ptit.music_be.dto.enums.ai;
 
 /**
  * Bước hiện tại của một tác vụ, lưu ở {@code ai_tasks.step} để web hiển thị tiến độ (đặc tả mục 1.3 và 2.2).

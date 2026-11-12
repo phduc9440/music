@@ -5,10 +5,10 @@ import java.time.LocalDateTime;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import com.ptit.music_be.dto.enums.AiTaskError;
-import com.ptit.music_be.dto.enums.AiTaskStatus;
+import com.ptit.music_be.dto.enums.ai.AiTaskError;
+import com.ptit.music_be.dto.enums.ai.AiTaskStatus;
 import com.ptit.music_be.entity.AiTask;
-import com.ptit.music_be.repository.AiTaskRepository;
+import com.ptit.music_be.repository.ai.AiTaskRepository;
 import com.ptit.music_be.service.ai.MuseScoreCliService;
 import com.ptit.music_be.service.export.impl.ExportServiceImpl;
 

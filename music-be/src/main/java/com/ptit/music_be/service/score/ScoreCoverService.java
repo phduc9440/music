@@ -2,7 +2,7 @@ package com.ptit.music_be.service.score;
 
 import org.springframework.web.multipart.MultipartFile;
 
-import com.ptit.music_be.dto.response.ScoreDetailResponse;
+import com.ptit.music_be.dto.response.score.ScoreDetailResponse;
 
 /** Ảnh bìa của bản nhạc: người có quyền sửa tải lên Cloudinary (JPG/PNG, tối đa 3MB), giống ảnh đại diện của thành viên. */
 public interface ScoreCoverService {

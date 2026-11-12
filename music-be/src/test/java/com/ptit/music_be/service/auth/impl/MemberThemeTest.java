@@ -16,10 +16,10 @@ import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.ptit.music_be.dto.enums.UiTheme;
-import com.ptit.music_be.dto.request.UpdateThemeRequest;
+import com.ptit.music_be.dto.enums.auth.UiTheme;
+import com.ptit.music_be.dto.request.auth.UpdateThemeRequest;
 import com.ptit.music_be.entity.Member;
-import com.ptit.music_be.repository.MemberRepository;
+import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.service.auth.MemberService;
 
 /** Lưu giao diện sáng/tối/theo hệ thống vào cột members.ui_theme (cần MySQL đang chạy, migration tự áp dụng). */

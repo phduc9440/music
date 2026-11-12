@@ -1,9 +1,9 @@
 package com.ptit.music_be.service.admin;
 
-import com.ptit.music_be.dto.request.AdminUpdateMemberRequest;
-import com.ptit.music_be.dto.response.AdminMemberDetailResponse;
-import com.ptit.music_be.dto.response.MemberResponse;
-import com.ptit.music_be.dto.response.PageResponse;
+import com.ptit.music_be.dto.request.admin.AdminUpdateMemberRequest;
+import com.ptit.music_be.dto.response.admin.AdminMemberDetailResponse;
+import com.ptit.music_be.dto.response.auth.MemberResponse;
+import com.ptit.music_be.dto.response.common.PageResponse;
 
 public interface AdminMemberService {
 

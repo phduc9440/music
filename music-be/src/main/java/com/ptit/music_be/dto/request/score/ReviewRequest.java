@@ -1,4 +1,4 @@
-package com.ptit.music_be.dto.request;
+package com.ptit.music_be.dto.request.score;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;

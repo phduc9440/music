@@ -1,8 +1,8 @@
-package com.ptit.music_be.dto.response;
+package com.ptit.music_be.dto.response.ai;
 
 import java.util.List;
 
-import com.ptit.music_be.dto.enums.AiTaskStatus;
+import com.ptit.music_be.dto.enums.ai.AiTaskStatus;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;

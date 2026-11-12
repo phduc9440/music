@@ -6,10 +6,10 @@ import jakarta.persistence.*;
 
 import org.hibernate.annotations.CreationTimestamp;
 
-import com.ptit.music_be.dto.enums.BillingPeriod;
-import com.ptit.music_be.dto.enums.PaymentKind;
-import com.ptit.music_be.dto.enums.PaymentProviderType;
-import com.ptit.music_be.dto.enums.PaymentStatus;
+import com.ptit.music_be.dto.enums.billing.BillingPeriod;
+import com.ptit.music_be.dto.enums.billing.PaymentKind;
+import com.ptit.music_be.dto.enums.billing.PaymentProviderType;
+import com.ptit.music_be.dto.enums.billing.PaymentStatus;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;

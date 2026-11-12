@@ -1,4 +1,4 @@
-package com.ptit.music_be.dto.enums;
+package com.ptit.music_be.dto.enums.admin;
 
 /** Thao tác hàng loạt của admin trên nhiều bản nhạc. */
 public enum ScoreBulkAction {

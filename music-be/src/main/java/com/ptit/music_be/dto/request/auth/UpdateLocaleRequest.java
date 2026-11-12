@@ -1,8 +1,8 @@
-package com.ptit.music_be.dto.request;
+package com.ptit.music_be.dto.request.auth;
 
 import jakarta.validation.constraints.NotNull;
 
-import com.ptit.music_be.dto.enums.AppLocale;
+import com.ptit.music_be.dto.enums.auth.AppLocale;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;

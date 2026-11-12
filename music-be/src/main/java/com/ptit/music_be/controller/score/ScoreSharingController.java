@@ -6,14 +6,14 @@ import jakarta.validation.Valid;
 
 import org.springframework.web.bind.annotation.*;
 
-import com.ptit.music_be.dto.request.AccessRequestRequest;
-import com.ptit.music_be.dto.request.ScoreLinkRequest;
-import com.ptit.music_be.dto.request.ShareMemberRequest;
-import com.ptit.music_be.dto.request.SharePermissionRequest;
-import com.ptit.music_be.dto.response.AccessRequestResponse;
-import com.ptit.music_be.dto.response.ApiResponse;
-import com.ptit.music_be.dto.response.MyAccessResponse;
-import com.ptit.music_be.dto.response.ScoreSharingResponse;
+import com.ptit.music_be.dto.request.score.AccessRequestRequest;
+import com.ptit.music_be.dto.request.score.ScoreLinkRequest;
+import com.ptit.music_be.dto.request.score.ShareMemberRequest;
+import com.ptit.music_be.dto.request.score.SharePermissionRequest;
+import com.ptit.music_be.dto.response.common.ApiResponse;
+import com.ptit.music_be.dto.response.score.AccessRequestResponse;
+import com.ptit.music_be.dto.response.score.MyAccessResponse;
+import com.ptit.music_be.dto.response.score.ScoreSharingResponse;
 import com.ptit.music_be.service.score.ScoreSharingService;
 
 import io.swagger.v3.oas.annotations.Operation;

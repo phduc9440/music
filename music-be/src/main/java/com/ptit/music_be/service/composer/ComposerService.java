@@ -2,8 +2,8 @@ package com.ptit.music_be.service.composer;
 
 import java.util.List;
 
-import com.ptit.music_be.dto.request.ComposerRequest;
-import com.ptit.music_be.dto.response.ComposerResponse;
+import com.ptit.music_be.dto.request.composer.ComposerRequest;
+import com.ptit.music_be.dto.response.composer.ComposerResponse;
 
 /** Nhạc sĩ (mục 5.4). */
 public interface ComposerService {

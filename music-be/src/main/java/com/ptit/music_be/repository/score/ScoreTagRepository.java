@@ -1,4 +1,4 @@
-package com.ptit.music_be.repository;
+package com.ptit.music_be.repository.score;
 
 import java.util.Collection;
 import java.util.List;

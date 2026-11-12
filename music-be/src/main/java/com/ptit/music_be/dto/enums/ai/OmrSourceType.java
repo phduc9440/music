@@ -1,4 +1,4 @@
-package com.ptit.music_be.dto.enums;
+package com.ptit.music_be.dto.enums.ai;
 
 /**
  * Loại bản gốc người dùng tải lên cho OMR. Lưu trong {@code ai_tasks.input_data.sourceType}, dùng cho thống kê

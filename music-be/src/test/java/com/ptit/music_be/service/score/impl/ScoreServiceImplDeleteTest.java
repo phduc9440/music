@@ -23,15 +23,15 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import com.ptit.music_be.dto.enums.ScoreAccess;
+import com.ptit.music_be.dto.enums.score.ScoreAccess;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.event.ScoreTrashedByAdminEvent;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
-import com.ptit.music_be.repository.AiTaskRepository;
-import com.ptit.music_be.repository.MemberRepository;
-import com.ptit.music_be.repository.ScoreRepository;
+import com.ptit.music_be.repository.ai.AiTaskRepository;
+import com.ptit.music_be.repository.auth.MemberRepository;
+import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.service.permission.AccessDecision;
 import com.ptit.music_be.service.permission.ScorePermissionService;
 

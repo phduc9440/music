@@ -6,11 +6,11 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.ptit.music_be.dto.request.UpdateLocaleRequest;
-import com.ptit.music_be.dto.request.UpdateProfileRequest;
-import com.ptit.music_be.dto.request.UpdateThemeRequest;
-import com.ptit.music_be.dto.response.ApiResponse;
-import com.ptit.music_be.dto.response.MemberResponse;
+import com.ptit.music_be.dto.request.auth.UpdateLocaleRequest;
+import com.ptit.music_be.dto.request.auth.UpdateProfileRequest;
+import com.ptit.music_be.dto.request.auth.UpdateThemeRequest;
+import com.ptit.music_be.dto.response.auth.MemberResponse;
+import com.ptit.music_be.dto.response.common.ApiResponse;
 import com.ptit.music_be.service.auth.MemberService;
 
 import io.swagger.v3.oas.annotations.Operation;

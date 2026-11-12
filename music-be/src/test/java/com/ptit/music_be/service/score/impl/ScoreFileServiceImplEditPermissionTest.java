@@ -15,10 +15,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
-import com.ptit.music_be.repository.MemberRepository;
-import com.ptit.music_be.repository.MemberScoreRepository;
-import com.ptit.music_be.repository.ScoreFileRepository;
-import com.ptit.music_be.repository.ScoreRepository;
+import com.ptit.music_be.repository.auth.MemberRepository;
+import com.ptit.music_be.repository.score.MemberScoreRepository;
+import com.ptit.music_be.repository.score.ScoreFileRepository;
+import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.service.permission.ScoreAccessAuditor;
 import com.ptit.music_be.service.permission.impl.ScorePermissionServiceImpl;
 

@@ -1,4 +1,4 @@
-package com.ptit.music_be.dto.response;
+package com.ptit.music_be.dto.response.admin;
 
 import java.time.LocalDate;
 import java.util.List;

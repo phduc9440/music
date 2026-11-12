@@ -4,13 +4,13 @@ import jakarta.validation.Valid;
 
 import org.springframework.web.bind.annotation.*;
 
-import com.ptit.music_be.dto.request.AdminScoreBulkRequest;
-import com.ptit.music_be.dto.request.AdminScoreVisibilityRequest;
-import com.ptit.music_be.dto.response.AdminScoreBulkResponse;
-import com.ptit.music_be.dto.response.ApiResponse;
-import com.ptit.music_be.dto.response.PageResponse;
-import com.ptit.music_be.dto.response.ScoreDetailResponse;
-import com.ptit.music_be.dto.response.ScoreSummaryResponse;
+import com.ptit.music_be.dto.request.admin.AdminScoreBulkRequest;
+import com.ptit.music_be.dto.request.admin.AdminScoreVisibilityRequest;
+import com.ptit.music_be.dto.response.admin.AdminScoreBulkResponse;
+import com.ptit.music_be.dto.response.common.ApiResponse;
+import com.ptit.music_be.dto.response.common.PageResponse;
+import com.ptit.music_be.dto.response.score.ScoreDetailResponse;
+import com.ptit.music_be.dto.response.score.ScoreSummaryResponse;
 import com.ptit.music_be.service.admin.AdminScoreBulkService;
 import com.ptit.music_be.service.score.ScoreService;
 

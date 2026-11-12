@@ -1,4 +1,4 @@
-package com.ptit.music_be.dto.enums;
+package com.ptit.music_be.dto.enums.score;
 
 /**
  * Mức truy cập của một người với một bản nhạc, tính ra bởi {@code ScorePermissionService}. Cấp bậc từ thấp lên cao,

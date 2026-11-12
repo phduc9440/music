@@ -1,6 +1,6 @@
-package com.ptit.music_be.dto.request;
+package com.ptit.music_be.dto.request.team;
 
-import com.ptit.music_be.dto.enums.ShowItemStatus;
+import com.ptit.music_be.dto.enums.team.ShowItemStatus;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 

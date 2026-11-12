@@ -1,10 +1,10 @@
-package com.ptit.music_be.dto.request;
+package com.ptit.music_be.dto.request.ai;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
-import com.ptit.music_be.dto.enums.AiTaskStep;
+import com.ptit.music_be.dto.enums.ai.AiTaskStep;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;

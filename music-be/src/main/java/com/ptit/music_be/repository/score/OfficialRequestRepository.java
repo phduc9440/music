@@ -1,4 +1,4 @@
-package com.ptit.music_be.repository;
+package com.ptit.music_be.repository.score;
 
 import java.util.Collection;
 import java.util.List;
@@ -11,7 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import com.ptit.music_be.dto.enums.OfficialRequestStatus;
+import com.ptit.music_be.dto.enums.score.OfficialRequestStatus;
 import com.ptit.music_be.entity.OfficialRequest;
 
 @Repository
@@ -27,7 +27,7 @@ public interface OfficialRequestRepository extends JpaRepository<OfficialRequest
             """
 			select count(r) > 0 from OfficialRequest r
 			where r.score.id = :scoreId
-			and r.status = com.ptit.music_be.dto.enums.OfficialRequestStatus.ACCEPTED
+			and r.status = com.ptit.music_be.dto.enums.score.OfficialRequestStatus.ACCEPTED
 			and exists (select 1 from Score c where c.id = r.copyScoreId)
 			""")
     boolean hasLiveAcceptedCopy(@Param("scoreId") String scoreId);
@@ -36,7 +36,7 @@ public interface OfficialRequestRepository extends JpaRepository<OfficialRequest
     @Query(
             """
 			select r from OfficialRequest r join fetch r.score join fetch r.requestedBy
-			where r.owner.id = :ownerId and r.status = com.ptit.music_be.dto.enums.OfficialRequestStatus.PENDING
+			where r.owner.id = :ownerId and r.status = com.ptit.music_be.dto.enums.score.OfficialRequestStatus.PENDING
 			order by r.createdAt desc, r.id
 			""")
     List<OfficialRequest> findPendingOfOwner(@Param("ownerId") String ownerId);
@@ -45,10 +45,10 @@ public interface OfficialRequestRepository extends JpaRepository<OfficialRequest
     @Modifying
     @Query(
             """
-			update OfficialRequest r set r.status = com.ptit.music_be.dto.enums.OfficialRequestStatus.CANCELED,
+			update OfficialRequest r set r.status = com.ptit.music_be.dto.enums.score.OfficialRequestStatus.CANCELED,
 				r.resolvedAt = CURRENT_TIMESTAMP
 			where r.copyScoreId = :copyScoreId
-			and r.status = com.ptit.music_be.dto.enums.OfficialRequestStatus.ACCEPTED
+			and r.status = com.ptit.music_be.dto.enums.score.OfficialRequestStatus.ACCEPTED
 			""")
     int cancelAcceptedByCopy(@Param("copyScoreId") String copyScoreId);
 

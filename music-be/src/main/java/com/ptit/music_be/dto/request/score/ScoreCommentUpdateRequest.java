@@ -1,8 +1,8 @@
-package com.ptit.music_be.dto.request;
+package com.ptit.music_be.dto.request.score;
 
 import java.util.List;
 
-import com.ptit.music_be.dto.enums.CommentStatus;
+import com.ptit.music_be.dto.enums.score.CommentStatus;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;

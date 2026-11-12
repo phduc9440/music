@@ -1,4 +1,4 @@
-package com.ptit.music_be.dto.enums;
+package com.ptit.music_be.dto.enums.billing;
 
 /** Đơn mua gói lần đầu hoặc đổi gói (NEW) hay gia hạn đúng gói đang dùng (RENEW). */
 public enum PaymentKind {

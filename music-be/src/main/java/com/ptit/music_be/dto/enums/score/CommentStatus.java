@@ -1,4 +1,4 @@
-package com.ptit.music_be.dto.enums;
+package com.ptit.music_be.dto.enums.score;
 
 /** Trạng thái của góp ý gốc (mục 4.2). Trả lời không có trạng thái riêng. */
 public enum CommentStatus {
