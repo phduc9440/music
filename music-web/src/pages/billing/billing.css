@@ -86,6 +86,32 @@
   margin-top: 1rem;
 }
 
+/* Tổng đã chi cho gói, đầu khối lịch sử */
+.bl-spent {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--sc-line);
+  border-radius: 10px;
+  background: var(--ui-surface-muted);
+}
+.bl-spent__label {
+  color: var(--sc-muted);
+  font-size: 0.9rem;
+}
+.bl-spent__value {
+  font-size: 1.35rem;
+  font-variant-numeric: tabular-nums;
+}
+.bl-spent__hint {
+  flex-basis: 100%;
+  color: var(--sc-muted);
+  font-size: 0.85rem;
+}
+
 /* Lịch sử đơn mua gói */
 .bl-orders {
   display: flex;

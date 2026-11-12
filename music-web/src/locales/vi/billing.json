@@ -99,7 +99,10 @@
     "createdAt": "Tạo lúc",
     "orderCode": "Mã đơn",
     "pendingNote": "Đơn {kind} gói {plan} ({period}), số tiền {amount}, chưa thanh toán. Hoàn tất trước {time} hoặc đơn sẽ tự hết hạn.",
-    "countdown": "Còn {time} để thanh toán"
+    "countdown": "Còn {time} để thanh toán",
+    "spent": "Tổng đã chi cho gói",
+    "spentOrders": "{count} đơn đã thanh toán",
+    "spentRefunded": "đã hoàn {amount} ({count} đơn, không tính vào tổng)"
   },
   "provider": {
     "VNPAY": "VNPay"

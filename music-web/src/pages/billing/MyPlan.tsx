@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 import { Link } from '../../routes/transition-nav';
 import { billingApi } from '../../services';
@@ -92,6 +92,18 @@ export default function MyPlan() {
     sub.plan.priceMonth + sub.plan.priceYear > 0;
   const renewBan = sub?.bans?.find((b) => b.planCode === sub.plan.code);
   const renewPrice = sub ? (renewPeriod === 'MONTH' ? sub.plan.priceMonth : sub.plan.priceYear) : 0;
+
+  // Tổng đã chi: cộng các đơn đã thanh toán trong lịch sử (API trả đủ mọi đơn, không phân trang); đơn đã hoàn tách riêng
+  const spent = useMemo(() => {
+    const paid = (orders ?? []).filter((o) => o.status === 'PAID');
+    const refunded = (orders ?? []).filter((o) => o.status === 'REFUNDED');
+    return {
+      total: paid.reduce((sum, o) => sum + o.amount, 0),
+      count: paid.length,
+      refundedTotal: refunded.reduce((sum, o) => sum + o.amount, 0),
+      refundedCount: refunded.length,
+    };
+  }, [orders]);
 
   const limit = sub?.plan.limits.omrPagesPerMonth;
   const percent = sub && limit ? Math.min(100, Math.round((sub.omrPagesUsed * 100) / limit)) : 0;
@@ -204,6 +216,17 @@ export default function MyPlan() {
           <div className="bl-card__head">
             <h2 id="bl-history-title">{t('billing.history.title')}</h2>
           </div>
+          {orders && orders.length > 0 && (
+            <div className="bl-spent">
+              <span className="bl-spent__label">{t('billing.history.spent')}</span>
+              <strong className="bl-spent__value">{formatVnd(spent.total)}</strong>
+              <span className="bl-spent__hint">
+                {t('billing.history.spentOrders', { count: spent.count })}
+                {spent.refundedCount > 0 &&
+                  ` · ${t('billing.history.spentRefunded', { amount: formatVnd(spent.refundedTotal), count: spent.refundedCount })}`}
+              </span>
+            </div>
+          )}
           {!orders && <Skeleton lines={3} />}
           {orders && orders.length === 0 && <p>{t('billing.history.empty')}</p>}
           {orders && orders.length > 0 && (

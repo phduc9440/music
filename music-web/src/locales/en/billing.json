@@ -100,7 +100,12 @@
     "createdAt": "Created at",
     "orderCode": "Order code",
     "pendingNote": "{kind} order for the {plan} plan ({period}), {amount}, not paid yet. Complete it before {time} or it will expire.",
-    "countdown": "{time} left to pay"
+    "countdown": "{time} left to pay",
+    "spent": "Total spent on plans",
+    "spentOrders_one": "{count} paid order",
+    "spentOrders_other": "{count} paid orders",
+    "spentRefunded_one": "{amount} refunded ({count} order, not counted)",
+    "spentRefunded_other": "{amount} refunded ({count} orders, not counted)"
   },
   "provider": {
     "VNPAY": "VNPay"
