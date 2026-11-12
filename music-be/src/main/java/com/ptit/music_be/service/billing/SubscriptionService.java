@@ -64,7 +64,7 @@ public interface SubscriptionService {
     /** Trừ bớt thời gian (hoàn tiền một đơn): hết hạn sau khi trừ thì hủy gói. Gói khác với {@code plan} thì bỏ qua. */
     void revoke(String memberId, Plan plan, Period duration);
 
-    /** SUPER_ADMIN cấp gói cá nhân thủ công (nguồn ADMIN_GRANT). Gói team để sau (chờ tính năng Team). */
+    /** SUPER_ADMIN cấp gói cá nhân hoặc gói team thủ công (nguồn ADMIN_GRANT). */
     /**
      * {@code months} tháng tính theo lịch: cùng gói đang dùng thì cộng nối tiếp từ ngày hết hạn hiện tại (gia hạn), gói khác
      * thì bắt đầu từ hôm nay và thay gói hiện tại.

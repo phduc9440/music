@@ -112,7 +112,7 @@
   "3724": "Plan group must be Personal or Team",
   "3725": "Free and Pro cannot be deleted (used for new users and admins)",
   "3726": "This plan has subscribers or payment orders and cannot be deleted",
-  "3727": "Only personal plans can be granted for now; team plans will come with the Team feature",
+  "3727": "The Free plan can't be granted in bulk; cancel a member's plan instead",
   "3728": "Ban length must be 1 to 120 months, reason at most 255 characters",
   "3729": "You are banned from this plan; Free and other plans are still available",
   "3801": "Team not found, or you are not a member",

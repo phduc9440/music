@@ -573,7 +573,6 @@
     "readOnly": "Only super admins can grant or cancel plans.",
     "current": "Current plan:",
     "superAdminTarget": "This account is a super admin and already unlimited, no plan needed.",
-    "teamLater": "Granting team plans will come with the Team feature.",
     "grantTitle": "Grant a plan to {name}"
   },
   "revenue": {
@@ -657,7 +656,13 @@
     "bulkTitle": "Grant {plan} to {count} member(s)?",
     "bulkMessage": "Each member gets {months} month(s). Members already on this plan get it extended; members on another plan are switched immediately.",
     "bulkDone": "Granted {granted}, extended {renewed}, skipped {skipped}",
-    "skipBanned": "Skipped: banned from paid plans"
+    "skipBanned": "Skipped: banned from paid plans",
+    "audience": {
+      "PERSONAL": "Personal plans",
+      "TEAM": "Team plans"
+    },
+    "teamNote": "Team plan: the member can create teams (up to {count} members each). It replaces their current personal plan, just like buying it.",
+    "teamNoteUnlimited": "Team plan: the member can create teams (no member limit). It replaces their current personal plan, just like buying it."
   },
   "memberPlans": {
     "subtitle": "Choose a task: grant plans to members, or handle violations (revoke plans, ban paid plans).",

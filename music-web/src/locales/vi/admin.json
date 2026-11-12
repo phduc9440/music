@@ -541,7 +541,6 @@
     "readOnly": "Chỉ quản trị viên cấp cao (SUPER_ADMIN) được cấp hoặc hủy gói.",
     "current": "Gói hiện tại:",
     "superAdminTarget": "Tài khoản này là quản trị viên cấp cao, đã không giới hạn nên không cần cấp gói.",
-    "teamLater": "Cấp gói team sẽ có khi làm tính năng Team.",
     "grantTitle": "Cấp gói cho {name}"
   },
   "revenue": {
@@ -625,7 +624,13 @@
     "bulkTitle": "Cấp gói {plan} cho {count} người?",
     "bulkMessage": "Mỗi người nhận {months} tháng. Ai đang dùng đúng gói này được gia hạn nối tiếp; ai đang dùng gói khác sẽ được thay ngay.",
     "bulkDone": "Đã cấp mới {granted}, gia hạn {renewed}, bỏ qua {skipped} người",
-    "skipBanned": "Bỏ qua: đang bị cấm dùng gói"
+    "skipBanned": "Bỏ qua: đang bị cấm dùng gói",
+    "audience": {
+      "PERSONAL": "Gói cá nhân",
+      "TEAM": "Gói Team"
+    },
+    "teamNote": "Gói Team: người nhận tạo được team (tối đa {count} thành viên mỗi team). Gói này thay gói cá nhân họ đang dùng, giống khi tự mua.",
+    "teamNoteUnlimited": "Gói Team: người nhận tạo được team (không giới hạn số thành viên). Gói này thay gói cá nhân họ đang dùng, giống khi tự mua."
   },
   "memberPlans": {
     "subtitle": "Chọn chức năng: cấp gói cho thành viên, hoặc xử lý vi phạm (thu hồi gói, cấm dùng gói trả phí).",

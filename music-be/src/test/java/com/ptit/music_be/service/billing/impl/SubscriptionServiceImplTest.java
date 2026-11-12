@@ -214,17 +214,35 @@ class SubscriptionServiceImplTest {
     }
 
     @Test
-    void grantRejectsTeamPlansAndSuperAdminTargets() {
+    void grantGivesTeamPlansLikePersonalOnes() {
         Plan teamPro = Plan.builder().id("tp").code("TEAM_PRO").audience(Plan.TEAM).limits("{}").build();
         when(memberRepo.findById("m")).thenReturn(Optional.of(member));
         when(plans.findByCode("TEAM_PRO")).thenReturn(Optional.of(teamPro));
+        Subscription granted = Subscription.builder()
+                .member(member)
+                .plan(teamPro)
+                .status(SubscriptionStatus.ACTIVE)
+                .source(SubscriptionSource.ADMIN_GRANT)
+                .startsAt(LocalDateTime.now())
+                .expiresAt(LocalDateTime.now().plusMonths(1))
+                .build();
+        when(subs.findCurrentOne(eq("m"), any())).thenReturn(Optional.empty(), Optional.of(granted));
+
+        service.grant("m", "TEAM_PRO", 1);
+
+        ArgumentCaptor<Subscription> saved = ArgumentCaptor.forClass(Subscription.class);
+        verify(subs).save(saved.capture());
+        assertEquals("TEAM_PRO", saved.getValue().getPlan().getCode());
+        assertEquals(SubscriptionSource.ADMIN_GRANT, saved.getValue().getSource());
+    }
+
+    @Test
+    void grantRejectsSuperAdminTargets() {
+        when(memberRepo.findById("m")).thenReturn(Optional.of(member));
         when(plans.findByCode("PRO")).thenReturn(Optional.of(pro));
 
-        AppException e = assertThrows(AppException.class, () -> service.grant("m", "TEAM_PRO", 1));
-        assertEquals(ErrorCode.PLAN_NOT_GRANTABLE, e.getErrorCode());
-
         when(memberRepo.roleNamesOf("m")).thenReturn(List.of("ADMIN", "SUPER_ADMIN"));
-        e = assertThrows(AppException.class, () -> service.grant("m", "PRO", 1));
+        AppException e = assertThrows(AppException.class, () -> service.grant("m", "PRO", 1));
         assertEquals(ErrorCode.PAYMENT_NOT_NEEDED, e.getErrorCode());
         verify(subs, never()).save(any());
     }
@@ -287,11 +305,11 @@ class SubscriptionServiceImplTest {
     }
 
     @Test
-    void grantManyRejectsTeamPlanAndBadInput() {
-        Plan teamPro = Plan.builder().id("tp").code("TEAM_PRO").audience(Plan.TEAM).limits("{}").build();
-        when(plans.findByCode("TEAM_PRO")).thenReturn(Optional.of(teamPro));
+    void grantManyRejectsFreePlanAndBadInput() {
+        Plan free = Plan.builder().id("free").code("FREE").limits("{}").build();
+        when(plans.findByCode("FREE")).thenReturn(Optional.of(free));
 
-        AppException e = assertThrows(AppException.class, () -> service.grantMany(List.of("a"), "TEAM_PRO", 1));
+        AppException e = assertThrows(AppException.class, () -> service.grantMany(List.of("a"), "FREE", 1));
         assertEquals(ErrorCode.PLAN_NOT_GRANTABLE, e.getErrorCode());
         e = assertThrows(AppException.class, () -> service.grantMany(List.of(), "PRO", 1));
         assertEquals(ErrorCode.INVALID_REQUEST, e.getErrorCode());

@@ -540,10 +540,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         Member member =
                 memberRepository.findById(memberId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
         Plan plan = planRepository.findByCode(planCode).orElseThrow(() -> new AppException(ErrorCode.PLAN_NOT_EXISTED));
-        // Gói team cần có team thật (mục 4.1) nên tạm thời chỉ cấp gói cá nhân
-        if (!Plan.PERSONAL.equals(plan.getAudience())) {
-            throw new AppException(ErrorCode.PLAN_NOT_GRANTABLE);
-        }
+        // Gói team cấp như gói cá nhân (mục 4.1): người nhận tạo được team; giống khi tự mua, gói này thay gói đang dùng
         // SUPER_ADMIN đã không giới hạn, cấp gói cũng không đổi gì
         if (ROLE_SUPER_ADMIN.equals(roleGrant(memberId))) {
             throw new AppException(ErrorCode.PAYMENT_NOT_NEEDED);
@@ -573,7 +570,8 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             throw new AppException(ErrorCode.SUBSCRIPTION_MONTHS_INVALID);
         }
         Plan plan = planRepository.findByCode(planCode).orElseThrow(() -> new AppException(ErrorCode.PLAN_NOT_EXISTED));
-        if (!Plan.PERSONAL.equals(plan.getAudience()) || FREE.equals(plan.getCode())) {
+        // Cấp Free hàng loạt không có nghĩa (muốn bỏ gói thì dùng Hủy gói từng người); gói cá nhân và gói team đều cấp được
+        if (FREE.equals(plan.getCode())) {
             throw new AppException(ErrorCode.PLAN_NOT_GRANTABLE);
         }
         Period duration = Period.ofMonths(months);

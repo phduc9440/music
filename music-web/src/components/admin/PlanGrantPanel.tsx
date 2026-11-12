@@ -55,8 +55,8 @@ function outcomeOf(m: Member, planCode: string, months: number): Outcome {
 
 /**
  * Tab "Cấp gói" của trang "Gói thành viên" (chỉ SUPER_ADMIN thao tác). Bước 1: chọn gói cá nhân và số tháng. Bước 2: tích chọn nhiều thành
- * viên rồi cấp một lần (ai đang dùng đúng gói thì gia hạn nối tiếp). Tạm ngưng gói Pro của quản trị viên ở trang riêng.
- * Gói team để sau.
+ * viên rồi cấp một lần (ai đang dùng đúng gói thì gia hạn nối tiếp). Gói team cấp được như gói cá nhân: người nhận tạo
+ * được team và gói team thay gói cá nhân đang dùng (giống khi tự mua). Tạm ngưng gói Pro của quản trị viên ở trang riêng.
  */
 export default function PlanGrantPanel() {
   const { admin } = useOutletContext<AdminOutletContext>();
@@ -81,9 +81,12 @@ export default function PlanGrantPanel() {
     billingApi
       .plans()
       .then((res) => {
-        const personal = res.data.result.filter((p) => p.audience === 'PERSONAL' && p.code !== 'FREE');
-        setPlans(personal);
-        setPlanCode((code) => code || personal[0]?.code || '');
+        // Gói cá nhân trước, gói team sau (thứ tự gói giữ nguyên trong từng nhóm); Free không cấp hàng loạt
+        const grantable = res.data.result
+          .filter((p) => p.code !== 'FREE' && (p.audience === 'PERSONAL' || p.audience === 'TEAM'))
+          .sort((a, b) => Number(a.audience === 'TEAM') - Number(b.audience === 'TEAM') || a.sortOrder - b.sortOrder);
+        setPlans(grantable);
+        setPlanCode((code) => code || grantable[0]?.code || '');
       })
       .catch(() => setPlans([]));
   }, []);
@@ -199,11 +202,18 @@ export default function PlanGrantPanel() {
               disabled={busy || !canGrant}
               onChange={(e) => setPlanCode(e.target.value)}
             >
-              {plans.map((p) => (
-                <option key={p.code} value={p.code}>
-                  {p.name}
-                </option>
-              ))}
+              {(['PERSONAL', 'TEAM'] as const).map((audience) => {
+                const group = plans.filter((p) => p.audience === audience);
+                return group.length === 0 ? null : (
+                  <optgroup key={audience} label={t(`admin.grants.audience.${audience}`)}>
+                    {group.map((p) => (
+                      <option key={p.code} value={p.code}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                );
+              })}
             </select>
           </label>
           <div className="adm-field">
@@ -234,6 +244,13 @@ export default function PlanGrantPanel() {
             </div>
           </div>
         </div>
+        {plan?.audience === 'TEAM' && (
+          <p className="adm-grant__preview">
+            {plan.limits.teamMembers == null
+              ? t('admin.grants.teamNoteUnlimited')
+              : t('admin.grants.teamNote', { count: plan.limits.teamMembers })}
+          </p>
+        )}
         <p className="adm-grant__preview">
           {monthsValid
             ? t('admin.grants.step1Preview', {

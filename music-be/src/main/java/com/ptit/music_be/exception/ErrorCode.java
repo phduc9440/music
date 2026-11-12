@@ -171,7 +171,7 @@ public enum ErrorCode {
     PLAN_CODE_EXISTED(3723, "Mã gói đã tồn tại", HttpStatus.CONFLICT),
     PLAN_AUDIENCE_INVALID(3724, "Nhóm gói phải là Cá nhân (PERSONAL) hoặc Team (TEAM)", HttpStatus.BAD_REQUEST),
     PLAN_SYSTEM_LOCKED(3725, "Không xóa được gói Free và Pro (hệ thống dùng cho người dùng mới và quản trị viên)", HttpStatus.CONFLICT),
-    PLAN_NOT_GRANTABLE(3727, "Hiện chỉ cấp được gói cá nhân; cấp gói team sẽ có khi làm tính năng Team", HttpStatus.BAD_REQUEST),
+    PLAN_NOT_GRANTABLE(3727, "Không cấp hàng loạt gói Free được; muốn bỏ gói thì dùng Hủy gói", HttpStatus.BAD_REQUEST),
     PLAN_SANCTION_INVALID(3728, "Thời hạn cấm phải từ 1 đến 120 tháng, lý do tối đa 255 ký tự", HttpStatus.BAD_REQUEST),
     PLAN_BANNED(3729, "Bạn đang bị cấm dùng gói này; vẫn có thể dùng Free hoặc mua gói khác", HttpStatus.FORBIDDEN),
     PLAN_IN_USE(3726, "Gói đã có người đăng ký hoặc có đơn thanh toán nên không xóa được", HttpStatus.CONFLICT),
