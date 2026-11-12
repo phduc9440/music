@@ -7,7 +7,10 @@ import { playlistApi, scoreApi } from '../../../services';
 import { getErrorMessage } from '../../../utils/score';
 import { DIFFICULTY_LABELS } from '../../../utils/score';
 import type { Playlist, PlaylistItem, ScoreSummary } from '../../../types';
+import Icon from '../../../components/ui/Icon';
 import '../../../components/scores/scores.css';
+import './playlists.css';
+import { coverHue } from './playlistUtils';
 import { t } from '../../../i18n/core';
 
 /** Trang /playlists/:id: xem bài trong playlist, thêm/xóa bài, kéo thả đổi thứ tự (mục 3.10). */
@@ -19,6 +22,7 @@ export default function PlaylistDetail() {
   const [items, setItems] = useState<PlaylistItem[] | null>(null);
   const [adding, setAdding] = useState(false);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [overIndex, setOverIndex] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -70,17 +74,27 @@ export default function PlaylistDetail() {
     <div className="sc-page">
       <div className="sc-backbar">
         <button type="button" className="sc-backlink" onClick={() => navigate('/playlists')}>
-          ‹ Playlist
+          ‹ {t('playlists.backToList')}
         </button>
       </div>
 
       <main className="sc-container">
-        <header className="sc-lib-head">
-          <div>
+        <header className="pl-hero">
+          <span
+            className="pl-cover pl-cover--lg"
+            style={{ ['--pl-hue' as string]: coverHue(playlist?.name ?? '') }}
+            aria-hidden="true"
+          >
+            <Icon name="music" size={40} />
+          </span>
+          <div className="pl-hero__text">
             <h1>{playlist?.name ?? t('common.nav.items.playlists')}</h1>
-            <p>
-              {playlist?.description || (items ? t('scores.playlistPicker.itemCount', { count: items.length }) : '')}
-            </p>
+            {playlist?.description && <p>{playlist.description}</p>}
+            {items && (
+              <div className="pl-hero__meta">
+                <span className="pl-count">{t('scores.playlistPicker.itemCount', { count: items.length })}</span>
+              </div>
+            )}
           </div>
           <button className="sc-btn sc-btn--primary" onClick={() => setAdding(true)}>
             {t('playlists.addScore')}
@@ -88,63 +102,81 @@ export default function PlaylistDetail() {
         </header>
 
         {items && items.length === 0 && (
-          <div className="sc-empty">
+          <div className="pl-empty">
             <h3>{t('playlists.noItems')}</h3>
             <p>{t('playlists.noItemsHint')}</p>
+            <button className="sc-btn sc-btn--primary" onClick={() => setAdding(true)}>
+              {t('playlists.addScore')}
+            </button>
           </div>
         )}
 
         {items && items.length > 0 && (
           <>
-            <p>{t('playlists.dragHint')}</p>
-            <ol style={{ listStyle: 'none', padding: 0, display: 'grid', gap: 8 }}>
+            <p className="pl-hint">{t('playlists.dragHint')}</p>
+            <ol className="pl-list">
               {items.map((item, index) => (
                 <li
                   key={item.scoreId}
                   draggable={!busy}
                   onDragStart={() => setDragIndex(index)}
-                  onDragOver={(e) => e.preventDefault()}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    if (overIndex !== index) setOverIndex(index);
+                  }}
                   onDrop={() => {
                     drop(index);
                     setDragIndex(null);
+                    setOverIndex(null);
                   }}
-                  onDragEnd={() => setDragIndex(null)}
-                  className="sc-empty"
-                  style={{
-                    textAlign: 'left',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 12,
-                    cursor: 'grab',
-                    opacity: dragIndex === index ? 0.5 : 1,
+                  onDragEnd={() => {
+                    setDragIndex(null);
+                    setOverIndex(null);
                   }}
+                  className={`pl-row${dragIndex === index ? ' is-dragging' : ''}${
+                    overIndex === index && dragIndex !== null && dragIndex !== index ? ' is-over' : ''
+                  }`}
                 >
-                  <strong>{index + 1}</strong>
-                  <div style={{ flex: 1 }}>
-                    <h3 style={{ margin: 0 }}>{item.title}</h3>
-                    <p style={{ margin: 0 }}>
-                      {[
-                        item.composer,
-                        item.difficulty ? DIFFICULTY_LABELS[item.difficulty] : null,
-                        item.measureCount ? t('scores.card.measures', { count: item.measureCount }) : null,
-                      ]
-                        .filter(Boolean)
-                        .join(' · ') || t('playlists.noInfo')}
-                    </p>
+                  <span className="pl-grip" title={t('playlists.dragLabel')} aria-hidden="true" />
+                  <span className="pl-pos">{index + 1}</span>
+                  <div className="pl-row__main">
+                    <span className="pl-row__title" title={item.title}>
+                      {item.title}
+                    </span>
+                    <div className="pl-row__meta">
+                      {item.composer && <span>{item.composer}</span>}
+                      {item.difficulty && (
+                        <span className={`pl-chip pl-chip--${item.difficulty}`}>
+                          {DIFFICULTY_LABELS[item.difficulty]}
+                        </span>
+                      )}
+                      {item.measureCount ? (
+                        <span>{t('scores.card.measures', { count: item.measureCount })}</span>
+                      ) : null}
+                      {!item.composer && !item.difficulty && !item.measureCount && <span>{t('playlists.noInfo')}</span>}
+                    </div>
                   </div>
-                  <button
-                    className="sc-btn sc-btn--sm"
-                    onClick={() => navigate(`/scores/${item.scoreId}`, { state: { from: pathname } })}
-                  >
-                    {t('playlists.openScore')}
-                  </button>
-                  <button
-                    className="sc-btn sc-btn--sm sc-btn--danger"
-                    disabled={busy}
-                    onClick={() => remove(item.scoreId)}
-                  >
-                    {t('playlists.remove')}
-                  </button>
+                  <div className="pl-actions">
+                    <button
+                      type="button"
+                      className="pl-icon-btn"
+                      title={t('playlists.openScore')}
+                      aria-label={`${t('playlists.openScore')}: ${item.title}`}
+                      onClick={() => navigate(`/scores/${item.scoreId}`, { state: { from: pathname } })}
+                    >
+                      <Icon name="play" />
+                    </button>
+                    <button
+                      type="button"
+                      className="pl-icon-btn pl-icon-btn--danger"
+                      title={t('playlists.remove')}
+                      aria-label={`${t('playlists.remove')}: ${item.title}`}
+                      disabled={busy}
+                      onClick={() => remove(item.scoreId)}
+                    >
+                      <Icon name="x" />
+                    </button>
+                  </div>
                 </li>
               ))}
             </ol>
@@ -193,13 +225,13 @@ function AddScoreModal({ existing, onClose, onAdd }: AddScoreModalProps) {
         onChange={(e) => setKeyword(e.target.value)}
         autoFocus
       />
-      <div style={{ maxHeight: 360, overflowY: 'auto', marginTop: 12, display: 'grid', gap: 8 }}>
-        {scores && scores.length === 0 && <p>{t('playlists.noneFound')}</p>}
+      <div className="pl-picker">
+        {scores && scores.length === 0 && <p className="pl-hint">{t('playlists.noneFound')}</p>}
         {scores?.map((s) => (
-          <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ flex: 1 }}>
+          <div key={s.id} className="pl-pick">
+            <div className="pl-pick__main">
               <strong>{s.title}</strong>
-              {s.composer && <div>{s.composer}</div>}
+              {s.composer && <span>{s.composer}</span>}
             </div>
             <button className="sc-btn sc-btn--sm" disabled={existing.has(s.id)} onClick={() => onAdd(s.id)}>
               {existing.has(s.id) ? t('scores.playlistPicker.addedShort') : t('scores.playlistPicker.add')}
@@ -209,7 +241,7 @@ function AddScoreModal({ existing, onClose, onAdd }: AddScoreModalProps) {
       </div>
       <div className="sc-modal__actions">
         <button className="sc-btn" onClick={onClose}>
-          Xong
+          {t('playlists.done')}
         </button>
       </div>
     </Modal>

@@ -39,5 +39,10 @@
     "namePlaceholder": "e.g. Finger work this week",
     "description": "Goal / description",
     "descriptionPlaceholder": "e.g. Play 3 ballads cleanly at 80 bpm"
-  }
+  },
+  "backToList": "Playlists",
+  "done": "Done",
+  "new": "New playlist",
+  "dragLabel": "Drag to reorder",
+  "openPlaylist": "Open playlist"
 }

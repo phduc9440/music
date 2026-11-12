@@ -38,5 +38,10 @@
     "namePlaceholder": "VD: Luyện ngón tuần này",
     "description": "Mục tiêu / mô tả",
     "descriptionPlaceholder": "VD: Chơi sạch 3 bài Ballad ở tốc độ 80 bpm"
-  }
+  },
+  "backToList": "Playlist",
+  "done": "Xong",
+  "new": "Tạo playlist mới",
+  "dragLabel": "Kéo để đổi thứ tự",
+  "openPlaylist": "Mở playlist"
 }

@@ -1,0 +1,437 @@
+/*
+ * Playlist luyện tập (mục 3.9, 3.10). Tiền tố pl-; màu lấy từ token --ui-* nên tự theo theme sáng/tối. Nút, ô nhập, hộp thoại
+ * dùng lại sc-* của các trang bản nhạc.
+ */
+
+/* Bìa playlist: ô gradient, màu theo tên (đặt --pl-hue bằng style) nên mỗi playlist một màu cố định */
+.pl-cover {
+  --pl-hue: 30;
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--ui-radius-lg);
+  background: linear-gradient(135deg, hsl(var(--pl-hue) 70% 58%), hsl(calc(var(--pl-hue) + 40) 65% 42%));
+  color: #fff;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.18);
+}
+
+.pl-cover--lg {
+  width: 88px;
+  height: 88px;
+  border-radius: 20px;
+}
+
+/* ---- danh sách playlist */
+.pl-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.pl-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 1.1rem;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-surface);
+  box-shadow: var(--ui-shadow-sm);
+  transition:
+    border-color var(--ui-motion-fast, 0.15s) var(--ui-ease, ease),
+    box-shadow var(--ui-motion-fast, 0.15s) var(--ui-ease, ease);
+}
+
+.pl-card:hover,
+.pl-card:focus-within {
+  border-color: var(--ui-primary-border, var(--ui-border-strong));
+  box-shadow: var(--ui-shadow);
+}
+
+.pl-card__top {
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-start;
+}
+
+.pl-card__body {
+  min-width: 0;
+  flex: 1;
+}
+
+.pl-card__title {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.3;
+}
+
+/* Cả thẻ bấm được: liên kết ở tiêu đề phủ kín thẻ, các nút bên dưới nổi lên trên */
+.pl-card__link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.pl-card__link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.pl-card__link:focus-visible {
+  outline: none;
+}
+
+.pl-card:has(.pl-card__link:focus-visible) {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 2px;
+}
+
+.pl-card__desc {
+  margin: 0.3rem 0 0;
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-sm);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.pl-card__desc--empty {
+  color: var(--ui-text-3);
+  font-style: italic;
+}
+
+.pl-card__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: auto;
+}
+
+.pl-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background: var(--ui-primary-soft);
+  color: var(--ui-primary);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.pl-actions {
+  position: relative; /* nổi lên trên liên kết phủ kín thẻ */
+  z-index: 1;
+  display: flex;
+  gap: 0.35rem;
+}
+
+.pl-icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius);
+  background: transparent;
+  color: var(--ui-text-2);
+  cursor: pointer;
+}
+
+.pl-icon-btn:hover:not(:disabled) {
+  background: var(--ui-surface-hover);
+  color: var(--ui-text);
+}
+
+.pl-icon-btn--danger:hover:not(:disabled) {
+  background: var(--ui-danger-soft);
+  color: var(--ui-danger);
+}
+
+.pl-icon-btn:focus-visible {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 1px;
+}
+
+.pl-icon-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Thẻ "tạo playlist mới" cuối lưới */
+.pl-new {
+  display: grid;
+  place-items: center;
+  gap: 0.4rem;
+  min-height: 150px;
+  border: 2px dashed var(--ui-border-strong);
+  border-radius: var(--ui-radius-lg);
+  background: transparent;
+  color: var(--ui-text-2);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pl-new:hover {
+  border-color: var(--ui-primary);
+  background: var(--ui-primary-soft);
+  color: var(--ui-primary);
+}
+
+/* ---- trạng thái trống */
+.pl-empty {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+  padding: 3rem 1.5rem;
+  border: 1px dashed var(--ui-border-strong);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-surface);
+  text-align: center;
+}
+
+.pl-empty h3 {
+  margin: 0.4rem 0 0;
+}
+
+.pl-empty p {
+  margin: 0 0 0.6rem;
+  color: var(--ui-text-2);
+}
+
+.pl-empty .pl-cover {
+  opacity: 0.85;
+}
+
+/* ---- trang chi tiết */
+.pl-hero {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  margin: 0.5rem 0 1.5rem;
+  flex-wrap: wrap;
+}
+
+.pl-hero__text {
+  min-width: 0;
+  flex: 1 1 260px;
+}
+
+.pl-hero__text h1 {
+  margin: 0;
+  font-size: 1.6rem;
+  line-height: 1.2;
+}
+
+.pl-hero__text p {
+  margin: 0.35rem 0 0;
+  color: var(--ui-text-2);
+}
+
+.pl-hero__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.pl-hint {
+  margin: 0 0 0.6rem;
+  color: var(--ui-text-3);
+  font-size: var(--ui-text-sm);
+}
+
+.pl-list {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pl-row {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.7rem 0.9rem 0.7rem 0.5rem;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-surface);
+  box-shadow: var(--ui-shadow-sm);
+  transition:
+    opacity 0.12s ease,
+    border-color 0.12s ease,
+    background 0.12s ease;
+}
+
+.pl-row:hover {
+  border-color: var(--ui-border-strong);
+}
+
+.pl-row.is-dragging {
+  opacity: 0.45;
+}
+
+/* Chỗ sẽ thả: viền trên đậm báo bài được chèn vào trước hàng này */
+.pl-row.is-over {
+  border-color: var(--ui-primary);
+  background: var(--ui-primary-soft);
+}
+
+.pl-grip {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  align-self: stretch;
+  color: var(--ui-text-3);
+  cursor: grab;
+}
+
+.pl-grip::before {
+  content: '';
+  width: 10px;
+  height: 16px;
+  background: radial-gradient(circle, currentColor 1.4px, transparent 1.6px) 0 0 / 5px 5.33px;
+}
+
+.pl-row:active .pl-grip {
+  cursor: grabbing;
+}
+
+.pl-pos {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: var(--ui-surface-muted);
+  color: var(--ui-text-2);
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.pl-row__main {
+  min-width: 0;
+  flex: 1;
+}
+
+.pl-row__title {
+  display: block;
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pl-row__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.6rem;
+  margin-top: 0.15rem;
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-sm);
+}
+
+.pl-chip {
+  padding: 0.05rem 0.5rem;
+  border: 1px solid var(--ui-border);
+  border-radius: 999px;
+  background: var(--ui-surface-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.pl-chip--EASY {
+  border-color: transparent;
+  background: var(--ui-success-soft);
+  color: var(--ui-success);
+}
+
+.pl-chip--MEDIUM {
+  border-color: transparent;
+  background: var(--ui-warning-soft);
+  color: var(--ui-warning);
+}
+
+.pl-chip--HARD,
+.pl-chip--EXPERT {
+  border-color: transparent;
+  background: var(--ui-danger-soft);
+  color: var(--ui-danger);
+}
+
+/* ---- hộp thoại thêm bài */
+.pl-picker {
+  display: grid;
+  gap: 0.35rem;
+  max-height: 360px;
+  margin-top: 0.75rem;
+  overflow-y: auto;
+}
+
+.pl-pick {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: var(--ui-radius);
+}
+
+.pl-pick:hover {
+  background: var(--ui-surface-hover);
+}
+
+.pl-pick__main {
+  min-width: 0;
+  flex: 1;
+}
+
+.pl-pick__main strong,
+.pl-pick__main span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pl-pick__main span {
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-sm);
+}
+
+@media (max-width: 560px) {
+  .pl-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pl-row {
+    gap: 0.6rem;
+    padding-right: 0.6rem;
+  }
+
+  .pl-pos {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pl-card,
+  .pl-row {
+    transition: none;
+  }
+}
