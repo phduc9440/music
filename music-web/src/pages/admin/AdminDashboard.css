@@ -92,6 +92,36 @@
   font-size: var(--adm-text-sm);
 }
 
+/* Chú thích màu dưới biểu đồ (màu luôn đi kèm nhãn chữ) */
+.dash-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--adm-text-sm);
+  color: var(--adm-text-2);
+}
+
+.dash-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.dash-legend__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.dash-footnote {
+  margin: 0.5rem 0 0;
+  font-size: var(--adm-text-sm);
+  color: var(--adm-text-2);
+}
+
 /* Tiêu đề nhóm (Gói dịch vụ và doanh thu, Hoạt động theo ngày, ...) */
 .dash-section {
   margin: 1.75rem 0 0.75rem;

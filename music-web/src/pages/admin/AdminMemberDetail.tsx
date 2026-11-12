@@ -21,9 +21,10 @@ import { AuthProvider, MemberStatus } from '../../types';
 import type { AdminMemberDetail as MemberDetail } from '../../types';
 import { isAdminMember, isSuperAdminMember, roleLabel } from '../../utils/auth';
 import { t } from '../../i18n/core';
-import { formatNumber } from '../../i18n/core';
+import { formatDate, formatNumber, formatVnd } from '../../i18n/core';
 import Skeleton from '../../components/ui/Skeleton';
 import MemberPlanCard from '../../components/admin/MemberPlanCard';
+import MemberPurchasesCard from '../../components/admin/MemberPurchasesCard';
 
 const nf = { format: (n: number) => formatNumber(n) };
 
@@ -68,6 +69,8 @@ export default function AdminMemberDetail() {
 
   const m = detail?.member;
   const locked = m?.status === MemberStatus.INACTIVE;
+  // Lần mua gần nhất còn hiệu lực (API trả mới nhất trước); null nếu 50 đơn gần nhất đều đã hoàn
+  const lastPaid = detail?.purchases.find((p) => p.status === 'PAID')?.paidAt ?? null;
 
   return (
     <>
@@ -125,9 +128,35 @@ export default function AdminMemberDetail() {
           value={detail ? nf.format(detail.practiceSessions) : '—'}
           hint={detail ? t('admin.members.totalMinutes', { value: nf.format(detail.practiceMinutes) }) : undefined}
         />
+        <StatCard
+          label={t('admin.members.purchases.spent')}
+          icon="chart"
+          tone="success"
+          value={detail ? formatVnd(detail.purchaseTotal) : '—'}
+          hint={
+            detail
+              ? detail.purchaseCount === 0
+                ? t('admin.members.purchases.none')
+                : lastPaid
+                  ? t('admin.members.purchases.spentHint', { count: detail.purchaseCount, date: formatDate(lastPaid) })
+                  : t('admin.members.purchases.summary', {
+                      amount: formatVnd(detail.purchaseTotal),
+                      count: detail.purchaseCount,
+                    })
+              : undefined
+          }
+        />
       </StatGrid>
 
       {id && <MemberPlanCard memberId={id} memberName={m ? m.fullName || m.email : ''} />}
+
+      <MemberPurchasesCard
+        purchases={detail?.purchases ?? null}
+        total={detail?.purchaseTotal ?? 0}
+        count={detail?.purchaseCount ?? 0}
+        refundedTotal={detail?.refundedTotal ?? 0}
+        refundedCount={detail?.refundedCount ?? 0}
+      />
 
       <div className="adm-grid-2">
         <Card title={t('admin.members.accountInfo')}>

@@ -249,7 +249,19 @@
     "updated": "Cập nhật",
     "curated": "Kho mẫu",
     "noScores": "Chưa có bản nhạc nào",
-    "planUntil": "đến {date}"
+    "planUntil": "đến {date}",
+    "purchases": {
+      "title": "Lịch sử mua gói",
+      "spent": "Đã chi cho gói",
+      "spentHint": "{count} đơn · lần mua gần nhất {date}",
+      "none": "Chưa mua gói nào",
+      "summary": "Tổng {amount} từ {count} đơn",
+      "refunded": "đã hoàn {amount} ({count} đơn)",
+      "paidAt": "Ngày mua",
+      "kind": "Loại đơn",
+      "legend": "Chú thích màu",
+      "latestOnly": "Chỉ hiện {count} lần mua gần nhất (từ {from})"
+    }
   },
   "composers": {
     "errName": "Nhập tên nhạc sĩ",

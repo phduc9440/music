@@ -260,7 +260,22 @@
     "curated": "Curated",
     "noScores": "No scores yet",
     "unit": "members",
-    "planUntil": "until {date}"
+    "planUntil": "until {date}",
+    "purchases": {
+      "title": "Plan purchases",
+      "spent": "Spent on plans",
+      "spentHint_one": "{count} order · last purchase {date}",
+      "spentHint_other": "{count} orders · last purchase {date}",
+      "none": "No plan purchases yet",
+      "summary_one": "{amount} total from {count} order",
+      "summary_other": "{amount} total from {count} orders",
+      "refunded_one": "{amount} refunded ({count} order)",
+      "refunded_other": "{amount} refunded ({count} orders)",
+      "paidAt": "Purchase date",
+      "kind": "Order type",
+      "legend": "Color legend",
+      "latestOnly": "Showing the latest {count} purchases (since {from})"
+    }
   },
   "composers": {
     "errName": "Enter the composer's name",

@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.ptit.music_be.configuration.MemberStatusGuard;
 import com.ptit.music_be.dto.enums.MemberStatus;
+import com.ptit.music_be.dto.enums.PaymentStatus;
 import com.ptit.music_be.dto.request.AdminUpdateMemberRequest;
 import com.ptit.music_be.dto.response.AdminMemberDetailResponse;
 import com.ptit.music_be.dto.response.MemberPlanSummary;
@@ -47,6 +48,7 @@ public class AdminMemberServiceImpl implements AdminMemberService {
     static final String SUPER_ADMIN = "SUPER_ADMIN";
     static final int DEFAULT_PAGE_SIZE = 20;
     static final int MAX_PAGE_SIZE = 50;
+    static final int MAX_PURCHASES = 50;
 
     MemberRepository memberRepository;
     RoleRepository roleRepository;
@@ -130,6 +132,8 @@ public class AdminMemberServiceImpl implements AdminMemberService {
                 .setParameter("id", id)
                 .setMaxResults(10)
                 .getResultList();
+        long[] paid = paidSum(id, PaymentStatus.PAID);
+        long[] refunded = paidSum(id, PaymentStatus.REFUNDED);
         return AdminMemberDetailResponse.builder()
                 .member(memberMapper.toMemberResponse(member))
                 .scoreCount(scores)
@@ -142,7 +146,41 @@ public class AdminMemberServiceImpl implements AdminMemberService {
                 .practiceSessions(count("select count(p) from PracticeSession p where p.member.id = :id", id))
                 .practiceMinutes(Math.round(seconds / 6.0) / 10.0)
                 .recentScores(recent)
+                .purchaseTotal(paid[0])
+                .purchaseCount(paid[1])
+                .refundedTotal(refunded[0])
+                .refundedCount(refunded[1])
+                .purchases(purchases(id))
                 .build();
+    }
+
+    /** {tổng tiền, số đơn} các đơn mua gói của thành viên ở trạng thái status (tính thẳng từ payment_orders). */
+    private long[] paidSum(String memberId, PaymentStatus status) {
+        Object[] r = entityManager
+                .createQuery(
+                        "select coalesce(sum(o.amount), 0), count(o) from PaymentOrder o"
+                                + " where o.member.id = :id and o.status = :status",
+                        Object[].class)
+                .setParameter("id", memberId)
+                .setParameter("status", status)
+                .getSingleResult();
+        return new long[] {((Number) r[0]).longValue(), ((Number) r[1]).longValue()};
+    }
+
+    /** Các lần mua gói đã thanh toán (kể cả đã hoàn tiền), mới nhất trước. */
+    private List<AdminMemberDetailResponse.Purchase> purchases(String memberId) {
+        return entityManager
+                .createQuery(
+                        "select new com.ptit.music_be.dto.response.AdminMemberDetailResponse$Purchase("
+                                + "o.orderCode, o.plan.name, cast(o.period as string), cast(o.kind as string),"
+                                + " cast(o.status as string), o.amount, o.paidAt)"
+                                + " from PaymentOrder o where o.member.id = :id and o.status in :statuses"
+                                + " and o.paidAt is not null order by o.paidAt desc",
+                        AdminMemberDetailResponse.Purchase.class)
+                .setParameter("id", memberId)
+                .setParameter("statuses", List.of(PaymentStatus.PAID, PaymentStatus.REFUNDED))
+                .setMaxResults(MAX_PURCHASES)
+                .getResultList();
     }
 
     private long count(String jpql, String memberId) {

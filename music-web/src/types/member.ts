@@ -42,6 +42,24 @@ export interface AdminMemberDetail {
     isOfficial?: boolean | null;
     updatedAt?: string | null;
   }[];
+  /** Tổng tiền các đơn mua gói đã thanh toán (không tính đơn đã hoàn), VND. */
+  purchaseTotal: number;
+  purchaseCount: number;
+  refundedTotal: number;
+  refundedCount: number;
+  /** Các lần mua gói đã thanh toán (kể cả đã hoàn), mới nhất trước, tối đa 50. */
+  purchases: MemberPurchase[];
+}
+
+/** Một lần mua gói của thành viên (BE: AdminMemberDetailResponse.Purchase). */
+export interface MemberPurchase {
+  orderCode: string;
+  planName: string;
+  period: 'MONTH' | 'YEAR';
+  kind: 'NEW' | 'RENEW';
+  status: 'PAID' | 'REFUNDED';
+  amount: number;
+  paidAt: string;
 }
 
 /** Khớp entity MemberScore: quyền của người được chia sẻ bản nhạc. */
