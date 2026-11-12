@@ -40,6 +40,18 @@ export default function Pricing() {
     return null;
   };
 
+  // Gói đang có theo từng nhóm: mỗi người giữ tối đa một gói cá nhân và một gói team, mỗi gói gia hạn riêng
+  const held = mine?.subscriptions ?? [];
+  const heldInGroup = (audience: PlanAudience) => held.find((h) => h.plan.audience === audience) ?? null;
+  const isCurrent = (plan: PlanInfo): boolean => {
+    if (!mine || mine.status === 'UNLIMITED') return false;
+    if (held.some((h) => h.plan.code === plan.code)) return true;
+    // Pro theo vai trò của ADMIN là gói cá nhân đang dùng
+    if (mine.source === 'ROLE') return plan.code === mine.plan.code;
+    // Chưa có gói cá nhân nào thì đang ở Free (dù có gói team)
+    return plan.code === 'FREE' && !heldInGroup('PERSONAL');
+  };
+
   // Tạo đơn rồi chuyển sang trang thanh toán của cổng; gói chỉ được bật khi cổng báo lại cho máy chủ (IPN)
   const buy = async (plan: PlanInfo) => {
     setBuying(plan.code);
@@ -93,6 +105,7 @@ export default function Pricing() {
           AUDIENCES.map((audience) => {
             const group = plans.filter((p) => p.audience === audience);
             if (group.length === 0) return null;
+            const heldPlan = heldInGroup(audience);
             return (
               <section key={audience} className="bl-group" aria-labelledby={`bl-group-${audience}`}>
                 <h2 id={`bl-group-${audience}`} className="bl-group__title">
@@ -102,8 +115,10 @@ export default function Pricing() {
                 <div className="bl-grid">
                   {group.map((plan) => {
                     const price = period === 'MONTH' ? plan.priceMonth : plan.priceYear;
-                    const current = mine?.plan.code === plan.code;
+                    const current = isCurrent(plan);
                     const blocked = blockedReason(plan);
+                    // Mua gói khác trong nhóm đang có gói thì gói cũ của nhóm đó dừng ngay (gói nhóm kia giữ nguyên)
+                    const replaces = current ? null : heldInGroup(plan.audience);
                     return (
                       <section key={plan.code} className={`bl-card${current ? ' is-current' : ''}`}>
                         <div className="bl-card__head">
@@ -115,24 +130,42 @@ export default function Pricing() {
                           {price > 0 && <small>/ {t(`billing.periodUnit.${period}`)}</small>}
                         </div>
                         <LimitList limits={plan.limits} />
-                        {price > 0 && (
-                          <button
-                            type="button"
-                            className="sc-btn sc-btn--primary"
-                            disabled={buying !== null || blocked !== null}
-                            aria-disabled={blocked !== null}
-                            title={blocked ?? undefined}
-                            onClick={() => buy(plan)}
-                          >
-                            {blocked
-                              ? blocked
-                              : buying === plan.code
-                                ? t('billing.pricing.redirecting')
-                                : current
-                                  ? t('billing.pricing.renew')
-                                  : t('billing.pricing.buy')}
-                          </button>
-                        )}
+                        {/* Nút và ghi chú luôn nằm sát đáy thẻ để các thẻ trong cùng hàng thẳng nhau */}
+                        <div className="bl-card__foot">
+                          {price > 0 && (
+                            <button
+                              type="button"
+                              className="sc-btn sc-btn--primary"
+                              disabled={buying !== null || blocked !== null}
+                              aria-disabled={blocked !== null}
+                              title={
+                                blocked ??
+                                (replaces ? t('billing.pricing.switchHint', { plan: replaces.plan.name }) : undefined)
+                              }
+                              onClick={() => buy(plan)}
+                            >
+                              {blocked
+                                ? blocked
+                                : buying === plan.code
+                                  ? t('billing.pricing.redirecting')
+                                  : current
+                                    ? t('billing.pricing.renew')
+                                    : replaces
+                                      ? t('billing.pricing.switch')
+                                      : t('billing.pricing.buy')}
+                            </button>
+                          )}
+                          {replaces && !blocked ? (
+                            <p className="bl-note">{t('billing.pricing.switchHint', { plan: replaces.plan.name })}</p>
+                          ) : (
+                            // Thẻ không có ghi chú giữ chỗ bằng đúng ghi chú đó (ẩn) để nút ngang hàng các thẻ khác
+                            heldPlan && (
+                              <p className="bl-note bl-note--placeholder" aria-hidden="true">
+                                {t('billing.pricing.switchHint', { plan: heldPlan.plan.name })}
+                              </p>
+                            )
+                          )}
+                        </div>
                       </section>
                     );
                   })}

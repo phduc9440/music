@@ -2,7 +2,6 @@ package com.ptit.music_be.repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -22,14 +21,10 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Stri
     List<Subscription> findCurrentOfMembers(
             @Param("memberIds") java.util.Collection<String> memberIds, @Param("now") LocalDateTime now);
 
-    /** Gói đang hiệu lực của thành viên (ACTIVE và chưa hết hạn), mới nhất trước. */
+    /** Các gói đang hiệu lực của thành viên (ACTIVE và chưa hết hạn; tối đa một gói cá nhân và một gói team), hạn muộn trước. */
     @Query("select s from Subscription s where s.member.id = :memberId and s.status = 'ACTIVE' and s.expiresAt > :now"
             + " order by s.expiresAt desc")
     List<Subscription> findCurrent(@Param("memberId") String memberId, @Param("now") LocalDateTime now);
-
-    default Optional<Subscription> findCurrentOne(String memberId, LocalDateTime now) {
-        return findCurrent(memberId, now).stream().findFirst();
-    }
 
     /** Gói đang hiệu lực sẽ hết hạn trong khoảng (from, to]. */
     List<Subscription> findByStatusAndExpiresAtGreaterThanAndExpiresAtLessThanEqual(

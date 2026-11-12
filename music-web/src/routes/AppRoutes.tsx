@@ -39,12 +39,18 @@ import BillingResult from '../pages/billing/BillingResult';
 import AdminRevenue from '../pages/admin/AdminRevenue';
 import AdminPlans from '../pages/admin/AdminPlans';
 import AdminMemberPlans from '../pages/admin/AdminMemberPlans';
+import AdminTeams from '../pages/admin/AdminTeams';
+import AdminTeamDetail from '../pages/admin/AdminTeamDetail';
 import GuestRoute from './GuestRoute';
 import ProtectedRoute from './ProtectedRoute';
 import RootLayout from './RootLayout';
 import UserArea from './UserArea';
 import WorkspaceHome from '../pages/home/WorkspaceHome';
 import NotFound from '../pages/NotFound';
+import Teams from '../pages/teams/Teams';
+import TeamDetail from '../pages/teams/TeamDetail';
+import TeamInvite from '../pages/teams/TeamInvite';
+import ShowBoard from '../pages/teams/ShowBoard';
 
 /**
  * Router dạng dữ liệu (createBrowserRouter) thay cho <BrowserRouter>: cần cho hiệu ứng chuyển trang bằng View
@@ -87,6 +93,11 @@ const router = createBrowserRouter(
         <Route path="/playlists/:id" element={<PlaylistDetail />} />
         <Route path="/practice-history" element={<PracticeHistory />} />
         <Route path="/practice-stats" element={<PracticeStats />} />
+        {/* Team và Show (mục 4.1) */}
+        <Route path="/teams" element={<Teams />} />
+        <Route path="/teams/invite/:token" element={<TeamInvite />} />
+        <Route path="/teams/:id" element={<TeamDetail />} />
+        <Route path="/teams/:teamId/shows/:showId" element={<ShowBoard />} />
       </Route>
 
       {/* Trình chỉnh sửa và trình phát dùng toàn màn hình, có thanh công cụ riêng */}
@@ -127,6 +138,8 @@ const router = createBrowserRouter(
         <Route index element={<AdminDashboard />} />
         <Route path="members" element={<AdminMembers />} />
         <Route path="members/:id" element={<AdminMemberDetail />} />
+        <Route path="teams" element={<AdminTeams />} />
+        <Route path="teams/:id" element={<AdminTeamDetail />} />
         <Route path="scores" element={<AdminScores />} />
         <Route path="scores/:id" element={<ScoreDetail admin />} />
         <Route path="scores/:id/edit" element={<ScoreViewer />} />

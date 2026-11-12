@@ -6,3 +6,4 @@ export * from './score';
 export * from './home';
 export * from './composer';
 export * from './billing';
+export * from './team';

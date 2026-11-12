@@ -94,6 +94,20 @@ export default function MemberPlanCard({ memberId, memberName }: { memberId: str
       ) : (
         <p className="adm-muted">—</p>
       )}
+      {current && (current.subscriptions?.length ?? 0) > 1 && (
+        // Có cả gói cá nhân và gói team: liệt kê từng gói kèm hạn (dòng trên là gói chính)
+        <ul className="adm-member-plan__held">
+          {current.subscriptions?.map((h) => (
+            <li key={h.plan.code}>
+              <strong>{h.plan.name}</strong> <Badge>{t(`billing.audience.${h.plan.audience}`)}</Badge>
+              <span className="adm-muted">
+                {' '}
+                · {t(`billing.source.${h.source}`)} · {t('billing.myPlan.expires', { date: formatDate(h.expiresAt) })}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
       {!canEdit && <p className="adm-field__hint">{t('admin.plan.readOnly')}</p>}
       {dialog && (
         <SanctionDialog

@@ -5,14 +5,24 @@ import java.time.LocalDateTime;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-/** Gói hiện tại của người đang đăng nhập kèm số đã dùng trong tháng (trang "Gói của tôi"). */
+/**
+ * Gói của người đang đăng nhập kèm số đã dùng trong tháng (trang "Gói của tôi"). Một người có thể có cùng lúc một gói cá
+ * nhân và một gói team: {@code subscriptions} liệt kê từng gói, {@code limits} là hạn mức gộp đang áp dụng, còn
+ * {@code plan}/{@code status}/{@code source}/{@code expiresAt} là gói chính (gói cao nhất) để hiện tên gói ngắn gọn.
+ */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class MySubscriptionResponse {
+    /** Gói chính: gói cao nhất đang dùng (Free nếu không có gói nào). */
     PlanResponse plan;
+    /** Hạn mức đang áp dụng, gộp từ mọi gói đang dùng (mỗi chỉ số lấy mức cao hơn). */
+    com.ptit.music_be.service.billing.PlanLimits limits;
+    /** Các gói mua/được cấp còn hạn (tối đa một gói cá nhân và một gói team), gói chính trước. */
+    @Builder.Default
+    java.util.List<HeldSubscription> subscriptions = new java.util.ArrayList<>();
     /**
      * ACTIVE (đang có gói trả phí/được cấp, hoặc ADMIN dùng Pro theo vai trò), FREE (không có dòng nào còn hiệu lực) hoặc
      * UNLIMITED (SUPER_ADMIN: không giới hạn, không cần mua gói).

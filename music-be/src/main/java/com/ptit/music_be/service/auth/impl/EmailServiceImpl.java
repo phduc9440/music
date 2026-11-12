@@ -106,4 +106,25 @@ public class EmailServiceImpl implements EmailService {
                                 + "chức năng “Quên mật khẩu” để đặt lại ngay và liên hệ quản trị viên.</p>"),
                 "Password changed");
     }
+
+    @Override
+    @Async
+    public void sendTeamInvitationEmail(
+            String to, String teamName, String inviterName, String roleLabel, String link) {
+        String safeLink = escape(link);
+        send(
+                to,
+                "Lời mời tham gia nhóm " + teamName + " trên Music App",
+                layout(
+                        "Bạn được mời vào nhóm " + escape(teamName),
+                        "<p><strong>" + escape(inviterName) + "</strong> mời bạn tham gia nhóm <strong>"
+                                + escape(teamName) + "</strong> với vai trò <strong>" + escape(roleLabel)
+                                + "</strong>.</p>"
+                                + "<p><a href=\"" + safeLink + "\" style=\"display:inline-block;background:#8a5a2b;"
+                                + "color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none\">"
+                                + "Xem lời mời</a></p>"
+                                + "<p style=\"color:#475569\">Lời mời có hạn 7 ngày và chỉ dùng được một lần. Nếu chưa có"
+                                + " tài khoản, hãy đăng ký bằng chính email này rồi mở lại link.</p>"),
+                "Team invitation");
+    }
 }

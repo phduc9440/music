@@ -15,7 +15,6 @@ import com.ptit.music_be.repository.AiTaskRepository;
 import com.ptit.music_be.repository.PlanRepository;
 import com.ptit.music_be.service.billing.EntitlementService;
 import com.ptit.music_be.service.billing.PlanLimits;
-import com.ptit.music_be.service.billing.PlanLimitsParser;
 import com.ptit.music_be.service.billing.SubscriptionService;
 
 import lombok.AccessLevel;
@@ -28,14 +27,13 @@ import lombok.experimental.FieldDefaults;
 public class EntitlementServiceImpl implements EntitlementService {
 
     SubscriptionService subscriptionService;
-    PlanLimitsParser limitsParser;
     AiTaskRepository aiTaskRepository;
     PlanRepository planRepository;
 
     @Override
     @Transactional(readOnly = true)
     public PlanLimits limitsOf(String memberId) {
-        return limitsParser.parse(subscriptionService.currentPlan(memberId));
+        return subscriptionService.effectiveLimits(memberId);
     }
 
     @Override
@@ -44,15 +42,15 @@ public class EntitlementServiceImpl implements EntitlementService {
         if (amount <= 0) {
             return;
         }
-        Plan plan = subscriptionService.currentPlan(memberId);
-        Integer limit = limitFor(limitsParser.parse(plan), metric);
+        Integer limit = limitFor(subscriptionService.effectiveLimits(memberId), metric);
         if (limit == null) {
             return;
         }
         int used = usedThisMonth(memberId, metric);
         if (used + amount > limit) {
             throw new AppException(
-                    ErrorCode.PLAN_LIMIT_REACHED, new PlanLimitPayload(metric.name(), limit, used, upgradeTo(plan)));
+                    ErrorCode.PLAN_LIMIT_REACHED, new PlanLimitPayload(
+                            metric.name(), limit, used, upgradeTo(subscriptionService.currentPlan(memberId))));
         }
     }
 

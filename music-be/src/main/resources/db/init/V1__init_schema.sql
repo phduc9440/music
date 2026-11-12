@@ -102,8 +102,10 @@ CREATE TABLE IF NOT EXISTS scores (
     deleted_at        DATETIME(6)  NULL COMMENT 'Xóa mềm: khác NULL là đang ở thùng rác (30 ngày rồi xóa hẳn)',
     deleted_by        VARCHAR(36)  NULL,
     delete_reason     VARCHAR(500) NULL,
+    team_id           VARCHAR(36)  NULL COMMENT 'Team chứa bản nhạc (mục 4.1); NULL = bản cá nhân. Ràng buộc khóa ngoại thêm ở cuối file',
     PRIMARY KEY (id),
     KEY idx_scores_member_deleted (member_id, deleted_at),
+    KEY idx_scores_team (team_id),
     KEY idx_scores_original (original_score_id),
     KEY idx_scores_composer (composer_id),
     CONSTRAINT fk_scores_member   FOREIGN KEY (member_id)   REFERENCES members (id),
@@ -358,3 +360,111 @@ CREATE TABLE IF NOT EXISTS payment_orders (
     CONSTRAINT fk_payment_orders_member FOREIGN KEY (member_id) REFERENCES members (id),
     CONSTRAINT fk_payment_orders_plan   FOREIGN KEY (plan_id)   REFERENCES plans (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Team và Show (mục 4.1). Quyền trên bản nhạc của team suy ra từ vai trò (TeamAccessResolverImpl): OWNER/MANAGER = chủ,
+-- ARRANGER = sửa bài được giao + nhận xét bài khác, VIEWER = xem. Xóa team là xóa mềm (deleted_at): team biến mất với
+-- mọi thành viên, mọi dữ liệu (thành viên, show, bản nhạc vẫn giữ team_id) nằm nguyên để khôi phục được trong 30 ngày;
+-- quá 30 ngày thì không khôi phục được nữa nhưng cũng không xóa cứng. Bản nhạc vẫn ở thư viện của chủ từng bản suốt thời gian
+-- đó. Các ON DELETE CASCADE bên dưới chỉ còn để giữ toàn vẹn dữ liệu, ứng dụng không xóa cứng team.
+CREATE TABLE IF NOT EXISTS teams (
+    id          VARCHAR(36)   NOT NULL,
+    name        VARCHAR(100)  NOT NULL,
+    description VARCHAR(1000) NULL,
+    avatar_url  VARCHAR(512)  NULL,
+    created_by  VARCHAR(36)   NOT NULL COMMENT 'Người tạo; hạn mức số thành viên lấy theo gói của người này',
+    created_at  DATETIME(6)   NULL,
+    updated_at  DATETIME(6)   NULL,
+    deleted_at       DATETIME(6)  NULL COMMENT 'Xóa mềm: khác NULL = đã xóa, khôi phục được trong 30 ngày kể từ lúc này',
+    deleted_by       VARCHAR(36)  NULL COMMENT 'Người xóa (chủ team hoặc quản trị viên)',
+    deleted_by_admin BOOLEAN      NOT NULL DEFAULT FALSE COMMENT 'TRUE = quản trị viên xóa (vi phạm): chỉ quản trị viên khôi phục',
+    deleted_reason   VARCHAR(500) NULL COMMENT 'Lý do quản trị viên ghi khi xóa',
+    PRIMARY KEY (id),
+    KEY idx_teams_deleted (deleted_at),
+    CONSTRAINT fk_teams_created_by FOREIGN KEY (created_by) REFERENCES members (id),
+    CONSTRAINT fk_teams_deleted_by FOREIGN KEY (deleted_by) REFERENCES members (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Mọi liên kết giữa team và người nằm chung một bảng (entity TeamMember), phân biệt bằng kind; truy vấn nào cũng phải
+-- lọc theo kind (các truy vấn trong TeamMemberRepository đều đã lọc).
+--   MEMBER     thành viên: member_id, role, joined_at.
+--   INVITATION lời mời: email (NULL = link mời, ai có link cũng dùng được), role (không mời làm OWNER), token_hash (chỉ lưu
+--              SHA-256, mã gốc hiện một lần lúc tạo), status, invited_by, expires_at (7 ngày, dùng một lần); khi chấp
+--              nhận thì member_id = người chấp nhận, joined_at = lúc chấp nhận.
+--   ACTIVITY   nhật ký hoạt động: member_id = người làm, type, params (JSON để web dựng câu).
+-- Mỗi người chỉ có một dòng MEMBER trong một team: khóa trên cột sinh member_key (chỉ có giá trị khi kind = MEMBER, các
+-- loại khác là NULL nên không vướng). Cột sinh không cho FK của cột gốc có ON DELETE SET NULL, nên member_id dùng FK thường
+-- (tài khoản không bị xóa cứng, chỉ khóa).
+CREATE TABLE IF NOT EXISTS team_members (
+    id         VARCHAR(36)  NOT NULL,
+    team_id    VARCHAR(36)  NOT NULL,
+    kind       VARCHAR(12)  NOT NULL COMMENT 'MEMBER / INVITATION / ACTIVITY',
+    member_id  VARCHAR(36)  NULL COMMENT 'MEMBER: thành viên; INVITATION: người đã chấp nhận; ACTIVITY: người làm',
+    email      VARCHAR(255) NULL COMMENT 'INVITATION: email được mời, NULL = link mời',
+    role       VARCHAR(10)  NULL COMMENT 'MEMBER, INVITATION: OWNER / MANAGER / ARRANGER / VIEWER',
+    status     VARCHAR(10)  NULL COMMENT 'INVITATION: PENDING / ACCEPTED / REVOKED (hết hạn suy ra từ expires_at)',
+    token_hash CHAR(64)     NULL COMMENT 'INVITATION: SHA-256 của mã mời',
+    invited_by VARCHAR(36)  NULL COMMENT 'INVITATION: người mời',
+    expires_at DATETIME(6)  NULL COMMENT 'INVITATION: hết hạn lúc này',
+    type       VARCHAR(32)  NULL COMMENT 'ACTIVITY: loại hoạt động',
+    params     JSON         NULL COMMENT 'ACTIVITY: tham số để dựng câu',
+    joined_at  DATETIME(6)  NULL COMMENT 'MEMBER: lúc vào team; INVITATION: lúc được chấp nhận',
+    created_at DATETIME(6)  NULL,
+    member_key VARCHAR(36)  GENERATED ALWAYS AS (CASE WHEN kind = 'MEMBER' THEN member_id END) STORED,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_team_members_member (team_id, member_key),
+    UNIQUE KEY uk_team_members_token (token_hash),
+    KEY idx_team_members_team (team_id, kind, created_at),
+    KEY idx_team_members_member (member_id, kind),
+    KEY idx_team_members_email (email, kind),
+    CONSTRAINT fk_team_members_team       FOREIGN KEY (team_id)    REFERENCES teams (id) ON DELETE CASCADE,
+    CONSTRAINT fk_team_members_member     FOREIGN KEY (member_id)  REFERENCES members (id),
+    CONSTRAINT fk_team_members_invited_by FOREIGN KEY (invited_by) REFERENCES members (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS shows (
+    id         VARCHAR(36)   NOT NULL,
+    team_id    VARCHAR(36)   NOT NULL,
+    name       VARCHAR(255)  NOT NULL,
+    show_date  DATE          NULL COMMENT 'Ngày diễn',
+    venue      VARCHAR(255)  NULL,
+    notes      VARCHAR(2000) NULL,
+    status     VARCHAR(10)   NOT NULL COMMENT 'PREPARING (đang chuẩn bị) / DONE (đã diễn)',
+    created_by VARCHAR(36)   NULL,
+    created_at DATETIME(6)   NULL,
+    updated_at DATETIME(6)   NULL,
+    deleted_at DATETIME(6)   NULL COMMENT 'Xóa mềm: khác NULL = đã xóa, quản lý team khôi phục được trong 30 ngày (bài giữ nguyên)',
+    deleted_by VARCHAR(36)   NULL COMMENT 'Người xóa',
+    PRIMARY KEY (id),
+    KEY idx_shows_team (team_id, show_date),
+    CONSTRAINT fk_shows_team       FOREIGN KEY (team_id)    REFERENCES teams (id) ON DELETE CASCADE,
+    CONSTRAINT fk_shows_created_by FOREIGN KEY (created_by) REFERENCES members (id),
+    CONSTRAINT fk_shows_deleted_by FOREIGN KEY (deleted_by) REFERENCES members (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Bài trong show. score_id ON DELETE CASCADE: bản nhạc bị xóa hẳn khỏi thùng rác thì bài cũng mất khỏi show.
+CREATE TABLE IF NOT EXISTS show_items (
+    id          VARCHAR(36)  NOT NULL,
+    show_id     VARCHAR(36)  NOT NULL,
+    score_id    VARCHAR(36)  NOT NULL,
+    position    INT          NOT NULL,
+    arranger_id VARCHAR(36)  NULL COMMENT 'Người phối (được sửa bản nhạc này)',
+    reviewer_id VARCHAR(36)  NULL COMMENT 'Người duyệt (nhận thông báo khi bài gửi duyệt)',
+    due_date    DATE         NULL COMMENT 'Hạn; job nhắc trước 2 ngày và đúng ngày',
+    status      VARCHAR(10)  NOT NULL COMMENT 'TODO / ARRANGING / IN_REVIEW / APPROVED',
+    notes       VARCHAR(500) NULL COMMENT 'Tone, ca sĩ, độ dài...',
+    review_note VARCHAR(500) NULL COMMENT 'Góp ý lần trả lại gần nhất',
+    created_at  DATETIME(6)  NULL,
+    updated_at  DATETIME(6)  NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_show_items (show_id, score_id),
+    KEY idx_show_items_arranger (arranger_id, status),
+    KEY idx_show_items_reviewer (reviewer_id, status),
+    KEY idx_show_items_due (due_date, status),
+    CONSTRAINT fk_show_items_show     FOREIGN KEY (show_id)     REFERENCES shows (id) ON DELETE CASCADE,
+    CONSTRAINT fk_show_items_score    FOREIGN KEY (score_id)    REFERENCES scores (id) ON DELETE CASCADE,
+    CONSTRAINT fk_show_items_arranger FOREIGN KEY (arranger_id) REFERENCES members (id) ON DELETE SET NULL,
+    CONSTRAINT fk_show_items_reviewer FOREIGN KEY (reviewer_id) REFERENCES members (id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+ALTER TABLE scores
+    ADD CONSTRAINT fk_scores_team FOREIGN KEY (team_id) REFERENCES teams (id) ON DELETE SET NULL;

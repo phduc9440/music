@@ -24,5 +24,23 @@
   "PLAN_EXPIRING": "Your {plan} plan expires in {days} day(s) (on {date}). Buy it again to avoid interruption",
   "PLAN_REVOKED": "Your {plan} plan has been revoked",
   "PLAN_BANNED": "You are banned from the {plan} plan until {date} (Free and other plans are still available)",
-  "PLAN_BAN_LIFTED": "Your plan ban has been lifted"
+  "PLAN_BAN_LIFTED": "Your plan ban has been lifted",
+  "TEAM_INVITED": "{name} invited you to {team} as {role}",
+  "TEAM_MEMBER_JOINED": "{name} joined {team}",
+  "TEAM_ROLE_CHANGED": "Your role in {team} is now {role}",
+  "TEAM_REMOVED": "You were removed from {team}",
+  "TEAM_DELETED_BY_ADMIN": "An administrator deleted the team {team}",
+  "SHOW_ITEM_ASSIGNED": {
+    "arranger": "You were assigned to arrange “{title}” in {show}",
+    "reviewer": "You were assigned to review “{title}” in {show}"
+  },
+  "SHOW_ITEM_SUBMITTED": "{name} submitted “{title}” ({show}) for review",
+  "SHOW_ITEM_APPROVED": "“{title}” ({show}) was approved",
+  "SHOW_ITEM_RETURNED": "“{title}” ({show}) was sent back",
+  "SHOW_ITEM_DUE": {
+    "soon": "“{title}” ({show}) is due in {days} days",
+    "today": "“{title}” ({show}) is due today"
+  },
+  "TEAM_DELETED": "{name} deleted the team {team}",
+  "TEAM_RESTORED": "The team {team} was restored"
 }

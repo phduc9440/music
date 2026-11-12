@@ -21,6 +21,26 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
 
     List<Score> findByMember(Member member);
 
+    /** Bản nhạc của một team (mục 4.1), mới cập nhật trước; bản trong thùng rác đã bị lọc bởi @SQLRestriction. */
+    @Query(
+            "select s from Score s left join fetch s.member where s.teamId = :teamId order by s.updatedAt desc, s.id")
+    List<Score> findByTeamWithOwner(@Param("teamId") String teamId);
+
+    /**
+     * Bản cá nhân của một người (chưa thuộc team nào, hoặc team cũ đã xóa mềm; không phải bản kho mẫu): để chọn chuyển vào
+     * team.
+     */
+    @Query("select s from Score s where s.member.id = :memberId"
+            + " and (s.teamId is null or s.teamId in (select t.id from Team t where t.deletedAt is not null))"
+            + " and (s.isOfficial is null or s.isOfficial = false) order by s.updatedAt desc, s.id")
+    List<Score> findPersonalOf(@Param("memberId") String memberId);
+
+    /** Số bản nhạc mỗi team. Hàng: [teamId, count]. */
+    @Query(
+            "select s.teamId, count(s) from Score s where s.teamId in :teamIds group by s.teamId")
+    List<Object[]> countByTeams(
+            @Param("teamIds") java.util.Collection<String> teamIds);
+
     List<Score> findByVisibility(String visibility);
 
     Page<Score> findByVisibility(String visibility, Pageable pageable);

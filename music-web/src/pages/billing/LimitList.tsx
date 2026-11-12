@@ -26,6 +26,12 @@ export default function LimitList({ limits }: { limits: PlanLimits }) {
         <span>{t('billing.limits.storageMb')}</span>
         <strong>{limits.storageMb == null ? unlimited : formatStorage(limits.storageMb)}</strong>
       </li>
+      {limits.team && (
+        <li>
+          <span>{t('billing.limits.teamMembers')}</span>
+          <strong>{limits.teamMembers == null ? unlimited : formatNumber(limits.teamMembers)}</strong>
+        </li>
+      )}
       {FLAGS.map((key) => (
         <li key={key}>
           <span>{t(`billing.limits.${key}`)}</span>

@@ -11,7 +11,8 @@
     "exportsPerMonth": "Exports per month",
     "collab": "Real-time co-editing",
     "team": "Create teams",
-    "omrPriority": "OMR queue priority"
+    "omrPriority": "OMR queue priority",
+    "teamMembers": "Members per team"
   },
   "status": {
     "ACTIVE": "Active",
@@ -34,7 +35,7 @@
   },
   "myPlan": {
     "title": "My plan",
-    "subtitle": "Your current plan and this month's usage",
+    "subtitle": "Your plans and this month's usage",
     "expires": "Expires on {date}",
     "omrUsed": "OMR pages used this month",
     "usedUnlimited": "{used} (unlimited)",
@@ -48,7 +49,14 @@
     "renewSummary": "Add 1 {period} for {amount}. After payment, your plan expires on {date}.",
     "expiringSoon_one": "Your plan expires in {count} day. Renew to avoid interruption.",
     "expiringSoon_other": "Your plan expires in {count} days. Renew to avoid interruption.",
-    "expiresToday": "Your plan expires today. Renew to avoid interruption."
+    "expiresToday": "Your plan expires today. Renew to avoid interruption.",
+    "heldTitle": "Your plans",
+    "heldDesc": "You can hold one personal plan and one team plan at the same time; each has its own expiry and renewal.",
+    "freeNote": "You are on the Free plan.",
+    "addPlan": "Add a plan",
+    "bannedPlan": "This plan is banned, so it cannot be renewed.",
+    "limitsTitle": "Limits in effect",
+    "mergedNote": "You have several plans: each limit uses the higher plan."
   },
   "pricing": {
     "title": "Plans",
@@ -66,7 +74,9 @@
       "SUPER_ADMIN": "You are a super admin: every feature is unlimited and you do not need a plan.",
       "ADMIN": "You are an admin: you already have Pro benefits with no expiry. You can still buy a higher plan."
     },
-    "bannedButton": "Banned until {date}"
+    "bannedButton": "Banned until {date}",
+    "switch": "Switch to this plan",
+    "switchHint": "Your current {plan} plan stops as soon as you buy this one."
   },
   "result": {
     "title": "Payment result",

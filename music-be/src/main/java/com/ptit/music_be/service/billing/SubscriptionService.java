@@ -50,24 +50,35 @@ public interface SubscriptionService {
     MySubscriptionResponse ofMember(String memberId);
 
     /**
-     * Gói đang hiệu lực của thành viên; không có thì gói FREE. SUPER_ADMIN nhận gói ảo UNLIMITED (mọi hạn mức không giới
-     * hạn); ADMIN tối thiểu là gói PRO không thời hạn (gói đã mua cao hơn thì dùng gói đó).
+     * Gói chính của thành viên: gói cao nhất đang dùng (một người có thể có cùng lúc một gói cá nhân và một gói team);
+     * không có thì gói FREE. SUPER_ADMIN nhận gói ảo UNLIMITED (mọi hạn mức không giới hạn); ADMIN tối thiểu là gói PRO
+     * không thời hạn (gói cá nhân đã mua cao hơn thì dùng gói đó). Hạn mức thực tế lấy ở {@link #effectiveLimits}.
      */
     Plan currentPlan(String memberId);
 
     /**
-     * Bật hoặc gia hạn gói. Cùng gói đang hiệu lực thì cộng thêm thời gian vào ngày hết hạn; khác gói thì gói cũ bị
-     * hủy ngay và gói mới tính từ bây giờ.
+     * Hạn mức đang áp dụng: gộp gói Free, gói cá nhân, gói team và Pro theo vai trò (gói bị cấm không tính), mỗi chỉ số lấy
+     * mức cao hơn. SUPER_ADMIN không giới hạn.
+     */
+    PlanLimits effectiveLimits(String memberId);
+
+    /** Thành viên đang có gói này (mua/được cấp, còn hạn); dùng để ghi đơn là gia hạn hay mua mới. */
+    boolean holdsPlan(String memberId, String planId);
+
+    /**
+     * Bật hoặc gia hạn gói. Mỗi người giữ tối đa một gói cá nhân và một gói team cùng lúc. Cùng gói đang hiệu lực thì cộng
+     * thêm thời gian vào ngày hết hạn; khác gói cùng nhóm thì gói cũ của nhóm đó bị hủy ngay và gói mới tính từ bây giờ;
+     * gói của nhóm kia giữ nguyên.
      */
     void activate(Member member, Plan plan, Period duration, SubscriptionSource source);
 
     /** Trừ bớt thời gian (hoàn tiền một đơn): hết hạn sau khi trừ thì hủy gói. Gói khác với {@code plan} thì bỏ qua. */
     void revoke(String memberId, Plan plan, Period duration);
 
-    /** SUPER_ADMIN cấp gói cá nhân thủ công (nguồn ADMIN_GRANT). Gói team để sau (chờ tính năng Team). */
     /**
-     * {@code months} tháng tính theo lịch: cùng gói đang dùng thì cộng nối tiếp từ ngày hết hạn hiện tại (gia hạn), gói khác
-     * thì bắt đầu từ hôm nay và thay gói hiện tại.
+     * SUPER_ADMIN cấp gói cá nhân hoặc gói team thủ công (nguồn ADMIN_GRANT). {@code months} tháng tính theo lịch: cùng gói
+     * đang dùng thì cộng nối tiếp từ ngày hết hạn hiện tại (gia hạn), gói khác thì bắt đầu từ hôm nay và chỉ thay gói cùng
+     * nhóm. Cấp Free = bỏ gói cá nhân (gói team giữ nguyên).
      */
     MySubscriptionResponse grant(String memberId, String planCode, int months);
 

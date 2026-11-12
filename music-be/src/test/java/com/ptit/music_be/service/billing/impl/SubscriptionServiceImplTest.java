@@ -77,7 +77,7 @@ class SubscriptionServiceImplTest {
     void activateSamePlanExtendsFromExpiry() {
         LocalDateTime expires = LocalDateTime.now().plusDays(10);
         Subscription sub = current(pro, expires);
-        when(subs.findCurrentOne(any(), any())).thenReturn(Optional.of(sub));
+        when(subs.findCurrent(any(), any())).thenReturn(List.of(sub));
 
         service.activate(member, pro, Period.ofMonths(1), SubscriptionSource.PAYMENT);
 
@@ -85,9 +85,9 @@ class SubscriptionServiceImplTest {
     }
 
     @Test
-    void activateDifferentPlanCancelsOldAndStartsNew() {
+    void activateDifferentPlanOfSameGroupCancelsOldAndStartsNew() {
         Subscription old = current(pro, LocalDateTime.now().plusDays(10));
-        when(subs.findCurrentOne(any(), any())).thenReturn(Optional.of(old));
+        when(subs.findCurrent(any(), any())).thenReturn(List.of(old));
 
         service.activate(member, team, Period.ofYears(1), SubscriptionSource.PAYMENT);
 
@@ -103,7 +103,7 @@ class SubscriptionServiceImplTest {
     @Test
     void revokeCancelsWhenNothingLeft() {
         Subscription sub = current(pro, LocalDateTime.now().plusDays(20));
-        when(subs.findCurrentOne(any(), any())).thenReturn(Optional.of(sub));
+        when(subs.findCurrent(any(), any())).thenReturn(List.of(sub));
 
         service.revoke("m", pro, Period.ofMonths(1));
 
@@ -114,7 +114,7 @@ class SubscriptionServiceImplTest {
     void revokeOnlyShortensWhenTimeRemains() {
         LocalDateTime expires = LocalDateTime.now().plusMonths(3);
         Subscription sub = current(pro, expires);
-        when(subs.findCurrentOne(any(), any())).thenReturn(Optional.of(sub));
+        when(subs.findCurrent(any(), any())).thenReturn(List.of(sub));
 
         service.revoke("m", pro, Period.ofMonths(1));
 
@@ -124,7 +124,7 @@ class SubscriptionServiceImplTest {
 
     @Test
     void revokeIgnoresDifferentPlan() {
-        when(subs.findCurrentOne(any(), any())).thenReturn(Optional.of(current(team, LocalDateTime.now().plusDays(5))));
+        when(subs.findCurrent(any(), any())).thenReturn(List.of(current(team, LocalDateTime.now().plusDays(5))));
 
         service.revoke("m", pro, Period.ofMonths(1));
 
@@ -145,7 +145,7 @@ class SubscriptionServiceImplTest {
         Subscription sub = current(pro, end);
         when(memberRepo.findById("m")).thenReturn(Optional.of(member));
         when(plans.findByCode("PRO")).thenReturn(Optional.of(pro));
-        when(subs.findCurrentOne(eq("m"), any())).thenReturn(Optional.of(sub));
+        when(subs.findCurrent(eq("m"), any())).thenReturn(List.of(sub));
 
         service.grant("m", "PRO", 1);
 
@@ -194,12 +194,12 @@ class SubscriptionServiceImplTest {
         Plan premium = Plan.builder().id("premium").code("PREMIUM").sortOrder(3).limits("{}").build();
         when(memberRepo.roleNamesOf("m")).thenReturn(List.of("ADMIN"));
         when(plans.findByCode("PRO")).thenReturn(Optional.of(proPlan));
-        when(subs.findCurrentOne(eq("m"), any())).thenReturn(Optional.empty());
+        when(subs.findCurrent(eq("m"), any())).thenReturn(List.of());
 
         assertEquals("PRO", service.currentPlan("m").getCode());
 
-        when(subs.findCurrentOne(eq("m"), any()))
-                .thenReturn(Optional.of(current(premium, LocalDateTime.now().plusDays(10))));
+        when(subs.findCurrent(eq("m"), any()))
+                .thenReturn(List.of(current(premium, LocalDateTime.now().plusDays(10))));
         assertEquals("PREMIUM", service.currentPlan("m").getCode());
     }
 
@@ -208,23 +208,41 @@ class SubscriptionServiceImplTest {
         Plan free = Plan.builder().id("free").code("FREE").sortOrder(1).limits("{}").build();
         when(memberRepo.roleNamesOf("m")).thenReturn(List.of("USER"));
         when(plans.findByCode("FREE")).thenReturn(Optional.of(free));
-        when(subs.findCurrentOne(eq("m"), any())).thenReturn(Optional.empty());
+        when(subs.findCurrent(eq("m"), any())).thenReturn(List.of());
 
         assertEquals("FREE", service.currentPlan("m").getCode());
     }
 
     @Test
-    void grantRejectsTeamPlansAndSuperAdminTargets() {
+    void grantGivesTeamPlansLikePersonalOnes() {
         Plan teamPro = Plan.builder().id("tp").code("TEAM_PRO").audience(Plan.TEAM).limits("{}").build();
         when(memberRepo.findById("m")).thenReturn(Optional.of(member));
         when(plans.findByCode("TEAM_PRO")).thenReturn(Optional.of(teamPro));
+        Subscription granted = Subscription.builder()
+                .member(member)
+                .plan(teamPro)
+                .status(SubscriptionStatus.ACTIVE)
+                .source(SubscriptionSource.ADMIN_GRANT)
+                .startsAt(LocalDateTime.now())
+                .expiresAt(LocalDateTime.now().plusMonths(1))
+                .build();
+        when(subs.findCurrent(eq("m"), any())).thenReturn(List.of(), List.of(granted));
+
+        service.grant("m", "TEAM_PRO", 1);
+
+        ArgumentCaptor<Subscription> saved = ArgumentCaptor.forClass(Subscription.class);
+        verify(subs).save(saved.capture());
+        assertEquals("TEAM_PRO", saved.getValue().getPlan().getCode());
+        assertEquals(SubscriptionSource.ADMIN_GRANT, saved.getValue().getSource());
+    }
+
+    @Test
+    void grantRejectsSuperAdminTargets() {
+        when(memberRepo.findById("m")).thenReturn(Optional.of(member));
         when(plans.findByCode("PRO")).thenReturn(Optional.of(pro));
 
-        AppException e = assertThrows(AppException.class, () -> service.grant("m", "TEAM_PRO", 1));
-        assertEquals(ErrorCode.PLAN_NOT_GRANTABLE, e.getErrorCode());
-
         when(memberRepo.roleNamesOf("m")).thenReturn(List.of("ADMIN", "SUPER_ADMIN"));
-        e = assertThrows(AppException.class, () -> service.grant("m", "PRO", 1));
+        AppException e = assertThrows(AppException.class, () -> service.grant("m", "PRO", 1));
         assertEquals(ErrorCode.PAYMENT_NOT_NEEDED, e.getErrorCode());
         verify(subs, never()).save(any());
     }
@@ -273,8 +291,8 @@ class SubscriptionServiceImplTest {
         when(memberRepo.findById("boss")).thenReturn(Optional.of(Member.builder().id("boss").build()));
         when(memberRepo.findById("ghost")).thenReturn(Optional.empty());
         when(memberRepo.roleNamesOf("boss")).thenReturn(List.of("ADMIN", "SUPER_ADMIN"));
-        when(subs.findCurrentOne(eq("newbie"), any())).thenReturn(Optional.empty());
-        when(subs.findCurrentOne(eq("loyal"), any())).thenReturn(Optional.of(loyalSub));
+        when(subs.findCurrent(eq("newbie"), any())).thenReturn(List.of());
+        when(subs.findCurrent(eq("loyal"), any())).thenReturn(List.of(loyalSub));
 
         var results = service.grantMany(List.of("newbie", "loyal", "boss", "ghost", "loyal"), "PREMIUM", 2);
 
@@ -287,11 +305,11 @@ class SubscriptionServiceImplTest {
     }
 
     @Test
-    void grantManyRejectsTeamPlanAndBadInput() {
-        Plan teamPro = Plan.builder().id("tp").code("TEAM_PRO").audience(Plan.TEAM).limits("{}").build();
-        when(plans.findByCode("TEAM_PRO")).thenReturn(Optional.of(teamPro));
+    void grantManyRejectsFreePlanAndBadInput() {
+        Plan free = Plan.builder().id("free").code("FREE").limits("{}").build();
+        when(plans.findByCode("FREE")).thenReturn(Optional.of(free));
 
-        AppException e = assertThrows(AppException.class, () -> service.grantMany(List.of("a"), "TEAM_PRO", 1));
+        AppException e = assertThrows(AppException.class, () -> service.grantMany(List.of("a"), "FREE", 1));
         assertEquals(ErrorCode.PLAN_NOT_GRANTABLE, e.getErrorCode());
         e = assertThrows(AppException.class, () -> service.grantMany(List.of(), "PRO", 1));
         assertEquals(ErrorCode.INVALID_REQUEST, e.getErrorCode());
@@ -349,8 +367,8 @@ class SubscriptionServiceImplTest {
         when(plans.findByCode("FREE")).thenReturn(Optional.of(free));
         when(plans.findByCode("PRO")).thenReturn(Optional.of(proPlan));
         when(memberRepo.roleNamesOf("mod")).thenReturn(List.of("ADMIN"));
-        when(subs.findCurrentOne(eq("mod"), any()))
-                .thenReturn(Optional.of(current(premium, LocalDateTime.now().plusMonths(2))));
+        when(subs.findCurrent(eq("mod"), any()))
+                .thenReturn(List.of(current(premium, LocalDateTime.now().plusMonths(2))));
         LocalDateTime until = LocalDateTime.now().plusMonths(1);
 
         // ADMIN có Pro theo vai trò + Premium đã mua: cấm Premium thì còn Pro
@@ -382,9 +400,9 @@ class SubscriptionServiceImplTest {
         when(memberRepo.findById("freeUser")).thenReturn(Optional.of(Member.builder().id("freeUser").build()));
         when(memberRepo.findById("boss")).thenReturn(Optional.of(Member.builder().id("boss").build()));
         when(memberRepo.roleNamesOf("boss")).thenReturn(List.of("ADMIN", "SUPER_ADMIN"));
-        when(subs.findCurrentOne(eq("user"), any()))
-                .thenReturn(Optional.of(current(premium, LocalDateTime.now().plusMonths(2))));
-        when(subs.findCurrentOne(eq("freeUser"), any())).thenReturn(Optional.empty());
+        when(subs.findCurrent(eq("user"), any()))
+                .thenReturn(List.of(current(premium, LocalDateTime.now().plusMonths(2))));
+        when(subs.findCurrent(eq("freeUser"), any())).thenReturn(List.of());
         var old = banOf("user", premium, LocalDateTime.now().plusDays(3));
         when(sanctions.findActiveBans(eq("user"), any())).thenReturn(List.of(old));
 
@@ -425,7 +443,7 @@ class SubscriptionServiceImplTest {
         when(memberRepo.findById("user")).thenReturn(Optional.of(user));
         when(sanctions.findActiveBans(eq("user"), any()))
                 .thenReturn(List.of(banOf("user", premium, LocalDateTime.now().plusDays(5))));
-        when(subs.findCurrentOne(eq("user"), any())).thenReturn(Optional.empty());
+        when(subs.findCurrent(eq("user"), any())).thenReturn(List.of());
 
         AppException e = assertThrows(AppException.class, () -> service.grant("user", "PREMIUM", 1));
         assertEquals(ErrorCode.PLAN_BANNED, e.getErrorCode());
@@ -447,12 +465,12 @@ class SubscriptionServiceImplTest {
         when(memberRepo.findById("proUser")).thenReturn(Optional.of(Member.builder().id("proUser").build()));
         when(memberRepo.findById("mod")).thenReturn(Optional.of(Member.builder().id("mod").build()));
         when(memberRepo.roleNamesOf("mod")).thenReturn(List.of("ADMIN"));
-        when(subs.findCurrentOne(eq("buyer"), any()))
-                .thenReturn(Optional.of(current(premium, LocalDateTime.now().plusMonths(1))));
-        when(subs.findCurrentOne(eq("proUser"), any()))
-                .thenReturn(Optional.of(current(proPlan, LocalDateTime.now().plusMonths(1))));
-        when(subs.findCurrentOne(eq("mod"), any()))
-                .thenReturn(Optional.of(current(premium, LocalDateTime.now().plusMonths(1))));
+        when(subs.findCurrent(eq("buyer"), any()))
+                .thenReturn(List.of(current(premium, LocalDateTime.now().plusMonths(1))));
+        when(subs.findCurrent(eq("proUser"), any()))
+                .thenReturn(List.of(current(proPlan, LocalDateTime.now().plusMonths(1))));
+        when(subs.findCurrent(eq("mod"), any()))
+                .thenReturn(List.of(current(premium, LocalDateTime.now().plusMonths(1))));
         when(sanctions.findActiveBans(any(), any())).thenReturn(List.of());
 
         // Cấm Premium: người mua Premium và ADMIN có Premium bị cấm; người dùng Pro không có Premium thì bỏ qua
@@ -464,6 +482,122 @@ class SubscriptionServiceImplTest {
         assertEquals(List.of("SKIPPED", "BANNED"), proBan.stream().map(r -> r.getStatus()).toList());
     }
 
+
+    private static Plan personalPlan(String code, int order, String limits) {
+        return Plan.builder().id(code).code(code).name(code).audience(Plan.PERSONAL).sortOrder(order).limits(limits).build();
+    }
+
+    private static Plan teamPlan(String code, int order, String limits) {
+        return Plan.builder().id(code).code(code).name(code).audience(Plan.TEAM).sortOrder(order).limits(limits).build();
+    }
+
+    private final Plan ultimate = personalPlan(
+            "ULTIMATE", 5, "{\"omrPagesPerMonth\":5000,\"omrConcurrent\":10,\"collab\":true,\"team\":false}");
+    private final Plan teamPremium = teamPlan(
+            "TEAM_PREMIUM",
+            7,
+            "{\"omrPagesPerMonth\":3000,\"omrConcurrent\":8,\"collab\":true,\"team\":true,\"teamMembers\":50}");
+
+    @Test
+    void buyingATeamPlanKeepsThePersonalPlan() {
+        Subscription personal = current(ultimate, LocalDateTime.now().plusDays(30));
+        when(subs.findCurrent(any(), any())).thenReturn(List.of(personal));
+
+        service.activate(member, teamPremium, Period.ofMonths(1), SubscriptionSource.PAYMENT);
+
+        // Gói cá nhân vẫn chạy; chỉ thêm một dòng gói team
+        assertEquals(SubscriptionStatus.ACTIVE, personal.getStatus());
+        ArgumentCaptor<Subscription> saved = ArgumentCaptor.forClass(Subscription.class);
+        verify(subs, times(1)).save(saved.capture());
+        assertEquals("TEAM_PREMIUM", saved.getValue().getPlan().getCode());
+    }
+
+    @Test
+    void renewingThePersonalPlanWhileHoldingATeamPlanExtendsOnlyThatPlan() {
+        LocalDateTime personalEnd = LocalDateTime.now().plusDays(10);
+        LocalDateTime teamEnd = LocalDateTime.now().plusDays(20);
+        Subscription personal = current(ultimate, personalEnd);
+        Subscription teamSub = current(teamPremium, teamEnd);
+        when(subs.findCurrent(eq("m"), any())).thenReturn(List.of(teamSub, personal));
+
+        assertTrue(service.holdsPlan("m", "ULTIMATE"));
+        service.activate(member, ultimate, Period.ofMonths(1), SubscriptionSource.PAYMENT);
+
+        assertEquals(personalEnd.plusMonths(1), personal.getExpiresAt());
+        assertEquals(teamEnd, teamSub.getExpiresAt());
+        assertEquals(SubscriptionStatus.ACTIVE, teamSub.getStatus());
+    }
+
+    @Test
+    void refundOfThePersonalPlanDoesNotTouchTheTeamPlan() {
+        Subscription personal = current(ultimate, LocalDateTime.now().plusDays(10));
+        Subscription teamSub = current(teamPremium, LocalDateTime.now().plusDays(20));
+        when(subs.findCurrent(eq("m"), any())).thenReturn(List.of(teamSub, personal));
+
+        service.revoke("m", ultimate, Period.ofMonths(1));
+
+        assertEquals(SubscriptionStatus.CANCELED, personal.getStatus());
+        assertEquals(SubscriptionStatus.ACTIVE, teamSub.getStatus());
+    }
+
+    @Test
+    void personalAndTeamPlansAddUpToTheHigherLimitOfEach() {
+        Plan free = personalPlan("FREE", 1, "{\"omrPagesPerMonth\":20,\"omrConcurrent\":1,\"team\":false}");
+        when(plans.findByCode("FREE")).thenReturn(Optional.of(free));
+        when(memberRepo.roleNamesOf("m")).thenReturn(List.of("USER"));
+        when(subs.findCurrent(eq("m"), any()))
+                .thenReturn(List.of(
+                        current(teamPremium, LocalDateTime.now().plusDays(20)),
+                        current(ultimate, LocalDateTime.now().plusDays(10))));
+
+        var limits = service.effectiveLimits("m");
+
+        assertEquals(5000, limits.omrPagesPerMonth()); // của Ultimate
+        assertEquals(10, limits.omrConcurrent());
+        assertEquals(Boolean.TRUE, limits.team()); // của Team Premium
+        assertEquals(50, limits.teamMembers());
+        assertEquals("TEAM_PREMIUM", service.currentPlan("m").getCode()); // gói chính = gói cao nhất
+
+        // Gói team bị cấm thì chỉ còn quyền lợi gói cá nhân
+        when(sanctions.findActiveBans(eq("m"), any()))
+                .thenReturn(List.of(banOf("m", teamPremium, LocalDateTime.now().plusDays(3))));
+        limits = service.effectiveLimits("m");
+        assertEquals(Boolean.FALSE, limits.team());
+        assertNull(limits.teamMembers());
+        assertEquals("ULTIMATE", service.currentPlan("m").getCode());
+    }
+
+    @Test
+    void grantingFreeDropsOnlyThePersonalPlan() {
+        Plan free = personalPlan("FREE", 1, "{}");
+        Subscription personal = current(ultimate, LocalDateTime.now().plusDays(10));
+        Subscription teamSub = current(teamPremium, LocalDateTime.now().plusDays(20));
+        when(memberRepo.findById("m")).thenReturn(Optional.of(member));
+        when(plans.findByCode("FREE")).thenReturn(Optional.of(free));
+        when(subs.findCurrent(eq("m"), any())).thenReturn(List.of(teamSub, personal));
+
+        service.grant("m", "FREE", 1);
+
+        assertEquals(SubscriptionStatus.CANCELED, personal.getStatus());
+        assertEquals(SubscriptionStatus.ACTIVE, teamSub.getStatus());
+    }
+
+    @Test
+    void mergedLimitsTreatUnlimitedAsHighestAndTakeTeamSizeOnlyFromTeamPlans() {
+        var personal = new com.ptit.music_be.service.billing.PlanLimits(null, 3, 100, 5, 10, true, false, false, null);
+        var team = new com.ptit.music_be.service.billing.PlanLimits(1000, 5, 50, 20, null, false, true, true, 15);
+
+        var merged = com.ptit.music_be.service.billing.PlanLimits.merge(List.of(personal, team));
+
+        assertNull(merged.omrPagesPerMonth()); // null = không giới hạn thắng 1000
+        assertEquals(5, merged.omrConcurrent());
+        assertEquals(100, merged.storageMb());
+        assertNull(merged.exportsPerMonth());
+        assertEquals(Boolean.TRUE, merged.collab());
+        assertEquals(Boolean.TRUE, merged.omrPriority());
+        // Gói cá nhân thiếu teamMembers không có nghĩa team không giới hạn người
+        assertEquals(15, merged.teamMembers());
+    }
 
     private void loginSuper() {
         org.springframework.security.core.context.SecurityContextHolder.getContext()

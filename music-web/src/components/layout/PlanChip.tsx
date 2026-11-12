@@ -22,16 +22,17 @@ export default function PlanChip() {
 
   if (!sub) return null;
   const free = sub.status === 'FREE';
+  // Có cả gói cá nhân và gói team thì hiện tên cả hai
+  const held = sub.subscriptions ?? [];
+  const name = held.length > 1 ? held.map((h) => h.plan.name).join(' + ') : sub.plan.name;
   return (
     <Link
       to={free ? '/pricing' : '/billing'}
       className={`app-plan${free ? ' app-plan--free' : ''}`}
-      title={t('common.header.planTitle', { plan: sub.plan.name })}
+      title={t('common.header.planTitle', { plan: name })}
     >
       <Icon name="star" size={16} />
-      <span>
-        {free ? t('common.header.upgrade') : sub.status === 'UNLIMITED' ? t('billing.unlimitedPlan') : sub.plan.name}
-      </span>
+      <span>{free ? t('common.header.upgrade') : sub.status === 'UNLIMITED' ? t('billing.unlimitedPlan') : name}</span>
     </Link>
   );
 }

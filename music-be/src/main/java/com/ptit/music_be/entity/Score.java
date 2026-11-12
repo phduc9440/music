@@ -139,6 +139,10 @@ public class Score {
     @Column(name = "delete_reason", length = 500)
     String deleteReason;
 
+    /** Team chứa bản nhạc (mục 4.1); null là bản cá nhân. Quyền qua team tính ở TeamAccessResolverImpl. */
+    @Column(name = "team_id", length = 36)
+    String teamId;
+
     @OneToMany(mappedBy = "score", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     List<PlaylistItem> playlistItems = new ArrayList<>();

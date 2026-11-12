@@ -38,6 +38,7 @@ import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreFile;
 import com.ptit.music_be.entity.ScoreTag;
+import com.ptit.music_be.entity.Team;
 import com.ptit.music_be.entity.Tag;
 import com.ptit.music_be.event.RewardEarnedEvent;
 import com.ptit.music_be.event.RewardReason;
@@ -52,6 +53,7 @@ import com.ptit.music_be.repository.MemberScoreRepository;
 import com.ptit.music_be.repository.OfficialRequestRepository;
 import com.ptit.music_be.repository.ScoreFileRepository;
 import com.ptit.music_be.repository.ScoreRepository;
+import com.ptit.music_be.repository.TeamRepository;
 import com.ptit.music_be.repository.ScoreReviewRepository;
 import com.ptit.music_be.repository.ScoreTagRepository;
 import com.ptit.music_be.repository.TagRepository;
@@ -80,6 +82,7 @@ public class ScoreServiceImpl implements ScoreService {
 
     MemberRepository memberRepository;
     ScoreRepository scoreRepository;
+    TeamRepository teamRepository;
     ScoreFileRepository scoreFileRepository;
     AiTaskRepository aiTaskRepository;
     TagRepository tagRepository;
@@ -766,6 +769,9 @@ public class ScoreServiceImpl implements ScoreService {
         AccessDecision decision = scorePermissionService.resolve(score);
         boolean canEdit = scorePermissionService.canEdit(score, decision);
         boolean isOwner = decision.level() == ScoreAccess.OWNER;
+        Team activeTeam = score.getTeamId() == null
+                ? null
+                : teamRepository.findById(score.getTeamId()).filter(t -> !t.isDeleted()).orElse(null);
         // Chỉ hiện các file hiện hành (is_current null coi như hiện hành, vì dữ liệu cũ chưa có cột này).
         // Người xem dưới quyền sửa không thấy file gốc (PDF/ảnh/MusicXML/MIDI gốc, kern, ảnh trang)
         List<ScoreFile> currentFiles =
@@ -827,6 +833,9 @@ public class ScoreServiceImpl implements ScoreService {
                                 : decision.level().name())
                 .canDownload(canEdit || (decision.can(ScoreAccess.VIEW) && score.isAllowDownload()))
                 .allowDownload(isOwner && score.isAllowDownload())
+                // Team đã xóa mềm coi như không còn: bản nhạc hiện như bản cá nhân
+                .teamId(activeTeam == null ? null : activeTeam.getId())
+                .teamName(activeTeam == null ? null : activeTeam.getName())
                 .createdAt(score.getCreatedAt())
                 .updatedAt(score.getUpdatedAt())
                 .files(scoreFileMapper.toResponses(currentFiles))

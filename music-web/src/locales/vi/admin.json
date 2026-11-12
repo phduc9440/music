@@ -10,6 +10,7 @@
     "items": {
       "dashboard": "Bảng điều khiển",
       "members": "Thành viên",
+      "teams": "Nhóm và buổi diễn",
       "announcements": "Gửi thông báo",
       "scores": "Quản lý bản nhạc",
       "pending": "Chờ duyệt công khai",
@@ -541,7 +542,6 @@
     "readOnly": "Chỉ quản trị viên cấp cao (SUPER_ADMIN) được cấp hoặc hủy gói.",
     "current": "Gói hiện tại:",
     "superAdminTarget": "Tài khoản này là quản trị viên cấp cao, đã không giới hạn nên không cần cấp gói.",
-    "teamLater": "Cấp gói team sẽ có khi làm tính năng Team.",
     "grantTitle": "Cấp gói cho {name}"
   },
   "revenue": {
@@ -625,7 +625,13 @@
     "bulkTitle": "Cấp gói {plan} cho {count} người?",
     "bulkMessage": "Mỗi người nhận {months} tháng. Ai đang dùng đúng gói này được gia hạn nối tiếp; ai đang dùng gói khác sẽ được thay ngay.",
     "bulkDone": "Đã cấp mới {granted}, gia hạn {renewed}, bỏ qua {skipped} người",
-    "skipBanned": "Bỏ qua: đang bị cấm dùng gói"
+    "skipBanned": "Bỏ qua: đang bị cấm dùng gói",
+    "audience": {
+      "PERSONAL": "Gói cá nhân",
+      "TEAM": "Gói nhóm"
+    },
+    "teamNote": "Gói nhóm: người nhận tạo được nhóm (tối đa {count} thành viên mỗi nhóm). Gói này không thay gói cá nhân họ đang dùng (giữ được cả hai).",
+    "teamNoteUnlimited": "Gói nhóm: người nhận tạo được nhóm (không giới hạn số thành viên). Gói này không thay gói cá nhân họ đang dùng (giữ được cả hai)."
   },
   "memberPlans": {
     "subtitle": "Chọn chức năng: cấp gói cho thành viên, hoặc xử lý vi phạm (thu hồi gói, cấm dùng gói trả phí).",
@@ -671,5 +677,86 @@
     "heldUntil": "{plan} (đến {date})",
     "onlyHolders": "{plan} (chỉ người đang đăng ký gói này)",
     "noHeldPlan": "Người này chưa đăng ký gói nào nên không có gì để cấm."
+  },
+  "teams": {
+    "description": "Xem mọi nhóm, thành viên, buổi diễn và tiến độ. Xóa nhóm vi phạm (thành viên được báo kèm lý do).",
+    "searchPlaceholder": "Tên nhóm, tên hoặc email người tạo",
+    "loadFailed": "Không tải được danh sách nhóm",
+    "stats": {
+      "teams": "Nhóm",
+      "active": "{count} nhóm hoạt động trong 7 ngày",
+      "members": "Người trong nhóm",
+      "membersHint": "Mỗi người chỉ đếm một lần",
+      "shows": "Buổi diễn đang chuẩn bị",
+      "openItems": "{count} bài chưa duyệt",
+      "overdue": "Bài quá hạn",
+      "overdueHint": "Chưa duyệt, đã qua hạn, trong buổi diễn đang chuẩn bị"
+    },
+    "team": "Nhóm",
+    "creator": "Người tạo",
+    "members": "Thành viên",
+    "scores": "Bản nhạc",
+    "shows": "Buổi diễn",
+    "showsCell": "{preparing} / {total}",
+    "plan": "Gói người tạo",
+    "planActive": "Còn quyền tạo nhóm",
+    "planInactive": "Hết quyền tạo nhóm",
+    "lastActivity": "Hoạt động gần nhất",
+    "noActivity": "Chưa có hoạt động",
+    "createdOn": "Tạo ngày {date}",
+    "view": "Xem chi tiết",
+    "delete": "Xóa nhóm",
+    "deleteTitle": "Xóa nhóm {name}?",
+    "deleteMessage": "Nhóm sẽ bị ẩn với mọi thành viên; {count} thành viên nhận thông báo kèm lý do. Dữ liệu (thành viên, buổi diễn, bản nhạc) được giữ nguyên và khôi phục được trong 30 ngày.",
+    "reason": "Lý do (gửi cho thành viên)",
+    "reasonPlaceholder": "Ví dụ: nội dung vi phạm điều khoản",
+    "deleted": "Đã xóa nhóm {name}",
+    "deleteFailed": "Không xóa được nhóm",
+    "notFound": "Không tìm thấy nhóm",
+    "empty": "Chưa có nhóm nào",
+    "unit": "nhóm",
+    "detail": {
+      "loadFailed": "Không tải được thông tin nhóm",
+      "backToList": "Danh sách nhóm",
+      "notFound": "Nhóm không tồn tại",
+      "notFoundHint": "Có thể nhóm đã bị xóa hoặc đường dẫn sai.",
+      "createdBy": "Tạo bởi",
+      "memberLimit": "Tối đa {limit} người theo gói",
+      "noMemberLimit": "Không giới hạn số người",
+      "preparing": "{count} buổi diễn đang chuẩn bị",
+      "membersTitle": "Thành viên",
+      "member": "Thành viên",
+      "role": "Vai trò",
+      "joined": "Ngày vào",
+      "noMembers": "Không có thành viên",
+      "showsTitle": "Buổi diễn",
+      "show": "Buổi diễn",
+      "status": "Trạng thái",
+      "progress": "Đã duyệt",
+      "progressCell": "{approved} / {total} bài",
+      "noShows": "Chưa có buổi diễn nào",
+      "scoresTitle": "Bản nhạc của nhóm",
+      "scoresHint": "Chỉ hiện tên; bản công khai mới mở được",
+      "activityTitle": "Hoạt động gần đây",
+      "activityHint": "20 hoạt động gần nhất"
+    },
+    "tabs": {
+      "active": "Đang hoạt động",
+      "deleted": "Đã xóa"
+    },
+    "deletedOn": "Xóa {date}",
+    "restorableUntil": "Khôi phục được đến {date}",
+    "restoreExpired": "Đã quá hạn khôi phục (30 ngày)",
+    "deletedByAdmin": "Quản trị viên xóa",
+    "deletedByOwner": "Chủ nhóm tự xóa",
+    "deletedReasonLabel": "Lý do: {reason}",
+    "restore": "Khôi phục",
+    "restoreTitle": "Khôi phục nhóm {name}?",
+    "restoreMessage": "Nhóm sẽ hoạt động lại với toàn bộ dữ liệu cũ; các thành viên được báo.",
+    "restored": "Đã khôi phục nhóm {name}",
+    "restoreFailed": "Không khôi phục được nhóm",
+    "emptyDeleted": "Chưa có nhóm nào bị xóa",
+    "deletedBanner": "Nhóm này đã bị xóa (khôi phục được đến {date}).",
+    "deletedBannerExpired": "Nhóm này đã bị xóa và quá hạn khôi phục 30 ngày."
   }
 }

@@ -11,6 +11,11 @@ export function notificationText(n: AppNotification): string {
   if (!p || n.type === 'ANNOUNCEMENT') return n.message;
   const key = `notifications.${n.type}${p.variant ? `.${p.variant}` : ''}`;
   if (!hasKey(key)) return n.message;
-  const text = t(key, { ...p, level: p.level ? t(`notifications.levels.${p.level}`) : '' });
+  const text = t(key, {
+    ...p,
+    level: p.level ? t(`notifications.levels.${p.level}`) : '',
+    // Vai trò trong team (Team và Show) gửi dạng mã OWNER / MANAGER / ARRANGER / VIEWER
+    role: p.role && hasKey(`teams.roles.${p.role}`) ? t(`teams.roles.${p.role}`) : (p.role ?? ''),
+  });
   return p.reason ? t('notifications.withReason', { text, reason: p.reason }) : text;
 }
