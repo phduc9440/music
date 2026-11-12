@@ -34,6 +34,25 @@ public class AdminMemberDetailResponse {
     /** Các lần mua gói đã thanh toán (PAID và REFUNDED), mới nhất trước, tối đa 50. */
     List<Purchase> purchases;
 
+    /** Các team người này đang ở (kể cả team đã xóa mềm, đánh dấu deletedAt), team đang hoạt động trước, tối đa 50. */
+    List<TeamRow> teams;
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @FieldDefaults(level = AccessLevel.PRIVATE)
+    public static class TeamRow {
+        String id;
+        String name;
+        /** Vai trò của người này trong team: OWNER / MANAGER / ARRANGER / VIEWER. */
+        String role;
+        LocalDateTime joinedAt;
+        /** Số thành viên của team. */
+        long memberCount;
+        /** Có giá trị = team đã bị xóa mềm. */
+        LocalDateTime deletedAt;
+    }
+
     @Data
     @AllArgsConstructor
     @NoArgsConstructor

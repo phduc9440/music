@@ -276,6 +276,17 @@
       "kind": "Order type",
       "legend": "Color legend",
       "latestOnly": "Showing the latest {count} purchases (since {from})"
+    },
+    "teams": {
+      "title": "Teams",
+      "hint": "The member's role in each team, including deleted teams",
+      "name": "Team",
+      "role": "Role",
+      "joined": "Joined",
+      "members": "Members",
+      "deleted": "Deleted",
+      "empty": "Not in any team",
+      "count": "{count} teams"
     }
   },
   "composers": {

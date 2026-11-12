@@ -51,6 +51,39 @@ class AdminMemberDetailQueryTest {
         assertTrue(d.getScoreCount() >= d.getPublicScores() + d.getPendingScores());
     }
 
+    /** Dữ liệu mẫu V10: huong.le là chủ Ban nhạc Sao Mai (đang hoạt động); mai.ngo chỉ ở Lớp piano cô Mai (chủ đã xóa mềm). */
+    @Test
+    void detailListsTeamsOfMemberIncludingDeletedOnes() {
+        SecurityContextHolder.getContext()
+                .setAuthentication(new TestingAuthenticationToken("admin@music.com", "x", "ROLE_ADMIN"));
+
+        var huong = service.getMemberDetail(
+                memberRepository.findByEmail("huong.le@music.com").orElseThrow().getId());
+        var band = huong.getTeams().stream()
+                .filter(t -> t.getName().equals("Ban nhạc Sao Mai"))
+                .findFirst()
+                .orElseThrow();
+        assertEquals("OWNER", band.getRole());
+        assertEquals(5, band.getMemberCount());
+        assertEquals(null, band.getDeletedAt());
+
+        var mai = service.getMemberDetail(
+                memberRepository.findByEmail("mai.ngo@music.com").orElseThrow().getId());
+        assertTrue(mai.getTeams().stream()
+                .anyMatch(t -> t.getName().equals("Lớp piano cô Mai") && t.getDeletedAt() != null));
+        // Team đang hoạt động xếp trước team đã xóa
+        boolean seenDeleted = false;
+        for (var t : mai.getTeams()) {
+            if (t.getDeletedAt() != null) seenDeleted = true;
+            else assertTrue(!seenDeleted);
+        }
+
+        // Người chưa ở team nào thì danh sách rỗng (không null)
+        var nam = service.getMemberDetail(
+                memberRepository.findByEmail("nam.do@music.com").orElseThrow().getId());
+        assertTrue(nam.getTeams().isEmpty());
+    }
+
     @Test
     void purchaseTotalsMatchPurchaseList() {
         SecurityContextHolder.getContext()

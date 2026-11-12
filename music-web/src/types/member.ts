@@ -49,6 +49,19 @@ export interface AdminMemberDetail {
   refundedCount: number;
   /** Các lần mua gói đã thanh toán (kể cả đã hoàn), mới nhất trước, tối đa 50. */
   purchases: MemberPurchase[];
+  /** Các team người này đang ở (kể cả team đã xóa mềm), team đang hoạt động trước. */
+  teams: MemberTeam[];
+}
+
+/** Một team của thành viên (BE: AdminMemberDetailResponse.TeamRow). */
+export interface MemberTeam {
+  id: string;
+  name: string;
+  role: 'OWNER' | 'MANAGER' | 'ARRANGER' | 'VIEWER';
+  joinedAt?: string | null;
+  memberCount: number;
+  /** Có giá trị = team đã bị xóa mềm. */
+  deletedAt?: string | null;
 }
 
 /** Một lần mua gói của thành viên (BE: AdminMemberDetailResponse.Purchase). */

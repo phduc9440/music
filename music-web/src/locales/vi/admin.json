@@ -262,6 +262,17 @@
       "kind": "Loại đơn",
       "legend": "Chú thích màu",
       "latestOnly": "Chỉ hiện {count} lần mua gần nhất (từ {from})"
+    },
+    "teams": {
+      "title": "Nhóm đang tham gia",
+      "hint": "Vai trò của thành viên trong từng nhóm, gồm cả nhóm đã xóa",
+      "name": "Nhóm",
+      "role": "Vai trò",
+      "joined": "Ngày vào",
+      "members": "Thành viên",
+      "deleted": "Đã xóa",
+      "empty": "Chưa tham gia nhóm nào",
+      "count": "{count} nhóm"
     }
   },
   "composers": {

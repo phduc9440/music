@@ -158,6 +158,43 @@ export default function AdminMemberDetail() {
         refundedCount={detail?.refundedCount ?? 0}
       />
 
+      <Card title={t('admin.members.teams.title')} description={t('admin.members.teams.hint')} flush>
+        <Table>
+          <thead>
+            <tr>
+              <th>{t('admin.members.teams.name')}</th>
+              <th>{t('admin.members.teams.role')}</th>
+              <th className="adm-table__num">{t('admin.members.teams.members')}</th>
+              <th>{t('admin.members.teams.joined')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {!detail && <TableState colSpan={4} loading />}
+            {detail?.teams.map((team) => (
+              <tr key={team.id}>
+                <td>
+                  <Link to={`/admin/teams/${team.id}`}>{team.name}</Link>
+                  {team.deletedAt && (
+                    <>
+                      {' '}
+                      <Badge tone="danger">{t('admin.members.teams.deleted')}</Badge>
+                    </>
+                  )}
+                </td>
+                <td>
+                  <Badge tone={team.role === 'OWNER' ? 'violet' : 'neutral'}>{t(`teams.roles.${team.role}`)}</Badge>
+                </td>
+                <td className="adm-table__num">{formatNumber(team.memberCount)}</td>
+                <td className="adm-nowrap adm-muted">{team.joinedAt ? formatDate(team.joinedAt) : '—'}</td>
+              </tr>
+            ))}
+            {detail && detail.teams.length === 0 && (
+              <TableState colSpan={4} icon="share" title={t('admin.members.teams.empty')} />
+            )}
+          </tbody>
+        </Table>
+      </Card>
+
       <div className="adm-grid-2">
         <Card title={t('admin.members.accountInfo')}>
           {m ? (

@@ -151,7 +151,24 @@ public class AdminMemberServiceImpl implements AdminMemberService {
                 .refundedTotal(refunded[0])
                 .refundedCount(refunded[1])
                 .purchases(purchases(id))
+                .teams(teams(id))
                 .build();
+    }
+
+    /** Team người này đang ở: đang hoạt động trước, team đã xóa mềm sau; số thành viên đếm thẳng từ team_members. */
+    private List<AdminMemberDetailResponse.TeamRow> teams(String memberId) {
+        return entityManager
+                .createQuery(
+                        "select new com.ptit.music_be.dto.response.AdminMemberDetailResponse$TeamRow("
+                                + "t.id, t.name, str(tm.role), tm.joinedAt,"
+                                + " (select count(m) from TeamMember m where m.team = t and m.kind = 'MEMBER'),"
+                                + " t.deletedAt)"
+                                + " from TeamMember tm join tm.team t where tm.kind = 'MEMBER' and tm.member.id = :id"
+                                + " order by case when t.deletedAt is null then 0 else 1 end, t.name",
+                        AdminMemberDetailResponse.TeamRow.class)
+                .setParameter("id", memberId)
+                .setMaxResults(50)
+                .getResultList();
     }
 
     /** {tổng tiền, số đơn} các đơn mua gói của thành viên ở trạng thái status (tính thẳng từ payment_orders). */
