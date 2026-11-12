@@ -1,6 +1,66 @@
 import { formatDate, t } from '../../i18n/core';
-import type { ShowItemStatus, ShowStatus, TeamMember, TeamRole } from '../../types';
+import { useState } from 'react';
+import type { RestorableItem, ShowItemStatus, ShowStatus, TeamMember, TeamRole } from '../../types';
 import { daysUntil, memberName } from './teamUtils';
+
+/**
+ * Danh sách team / show đã xóa mềm còn khôi phục được (30 ngày): tên, ai xóa lúc nào, hạn khôi phục và nút Khôi phục.
+ * {@code onRestore} tự báo lỗi / thành công; trả về true nếu đã khôi phục (danh sách do nơi gọi tải lại).
+ */
+export function RestorableList({
+  title,
+  hint,
+  items,
+  onRestore,
+}: {
+  title: string;
+  hint: string;
+  items: RestorableItem[];
+  onRestore: (item: RestorableItem) => Promise<boolean>;
+}) {
+  const [busyId, setBusyId] = useState<string | null>(null);
+  if (items.length === 0) return null;
+  return (
+    <section className="tm-section" aria-label={title}>
+      <div className="tm-section__head">
+        <h2>{title}</h2>
+      </div>
+      <p className="tm-muted">{hint}</p>
+      <ul className="tm-list">
+        {items.map((item) => (
+          <li key={item.id} className="tm-row">
+            <div className="tm-row__main">
+              <span className="tm-row__title">{item.name}</span>
+              <span className="tm-row__sub">
+                {[
+                  t('teams.trash.deletedOn', { date: formatDate(item.deletedAt) }),
+                  item.deletedByName,
+                  t('teams.trash.until', { date: formatDate(item.restorableUntil) }),
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </span>
+            </div>
+            <div className="tm-row__actions">
+              <button
+                type="button"
+                className="sc-btn"
+                disabled={busyId === item.id}
+                onClick={async () => {
+                  setBusyId(item.id);
+                  await onRestore(item);
+                  setBusyId(null);
+                }}
+              >
+                {t('teams.trash.restore')}
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
 
 /** Nhãn vai trò trong team. */
 export function RoleBadge({ role }: { role: TeamRole }) {

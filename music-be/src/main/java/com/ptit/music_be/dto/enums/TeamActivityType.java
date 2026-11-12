@@ -4,6 +4,8 @@ package com.ptit.music_be.dto.enums;
 public enum TeamActivityType {
     TEAM_CREATED,
     TEAM_UPDATED,
+    /** Team được khôi phục sau khi xóa mềm; params: team, byAdmin ("true" nếu quản trị viên khôi phục). */
+    TEAM_RESTORED,
     MEMBER_JOINED,
     MEMBER_LEFT,
     MEMBER_REMOVED,
@@ -14,6 +16,8 @@ public enum TeamActivityType {
     SHOW_CREATED,
     SHOW_UPDATED,
     SHOW_DELETED,
+    /** Show được khôi phục; params: show, showId. */
+    SHOW_RESTORED,
     ITEM_ADDED,
     ITEM_REMOVED,
     ITEM_ASSIGNED,

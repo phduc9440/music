@@ -24,7 +24,7 @@ import { adminTeamApi } from '../../services';
 import type { AdminTeamDetail as TeamDetail, ShowStatus, TeamRole } from '../../types';
 import { formatNumber, formatRelativeTime, t } from '../../i18n/core';
 import { activityText, memberName } from '../teams/teamUtils';
-import { deleteTeamAsAdmin } from './adminTeamActions';
+import { deleteTeamAsAdmin, restoreTeamAsAdmin } from './adminTeamActions';
 
 const ROLE_TONE: Record<TeamRole, Tone> = {
   OWNER: 'violet',
@@ -41,7 +41,8 @@ const SHOW_TONE: Record<ShowStatus, Tone> = { PREPARING: 'warning', DONE: 'succe
 export default function AdminTeamDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { prompt } = useDialog();
+  const { prompt, confirm } = useDialog();
+  const [reload, setReload] = useState(0);
   const [detail, setDetail] = useState<TeamDetail | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -60,7 +61,7 @@ export default function AdminTeamDetail() {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, reload]);
 
   const back = { label: t('admin.teams.detail.backToList'), to: '/admin/teams' };
 
@@ -89,6 +90,14 @@ export default function AdminTeamDetail() {
     if (ok) navigate('/admin/teams');
   };
 
+  const restore = async () => {
+    if (!team) return;
+    setDeleting(true);
+    const ok = await restoreTeamAsAdmin(team, confirm);
+    setDeleting(false);
+    if (ok) setReload((n) => n + 1);
+  };
+
   return (
     <>
       <PageHeader
@@ -108,11 +117,29 @@ export default function AdminTeamDetail() {
           )
         }
         actions={
-          <Button variant="danger" icon="trash" disabled={!team} loading={deleting} onClick={remove}>
-            {t('admin.teams.delete')}
-          </Button>
+          team?.deletedAt ? (
+            <Button icon="refresh" disabled={!team.restorable} loading={deleting} onClick={restore}>
+              {t('admin.teams.restore')}
+            </Button>
+          ) : (
+            <Button variant="danger" icon="trash" disabled={!team} loading={deleting} onClick={remove}>
+              {t('admin.teams.delete')}
+            </Button>
+          )
         }
       />
+
+      {team?.deletedAt && (
+        <Card>
+          <p style={{ margin: 0 }}>
+            {team.restorable
+              ? t('admin.teams.deletedBanner', { date: formatDate(team.restorableUntil) })
+              : t('admin.teams.deletedBannerExpired')}{' '}
+            {team.deletedByAdmin ? t('admin.teams.deletedByAdmin') : t('admin.teams.deletedByOwner')}
+            {team.deletedReason ? ` · ${t('admin.teams.deletedReasonLabel', { reason: team.deletedReason })}` : ''}
+          </p>
+        </Card>
+      )}
 
       {team?.description && (
         <Card>

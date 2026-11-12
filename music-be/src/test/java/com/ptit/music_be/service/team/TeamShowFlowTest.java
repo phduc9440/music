@@ -279,5 +279,10 @@ class TeamShowFlowTest {
         em.flush();
         em.clear();
         assertEquals(ErrorCode.TEAM_NOT_EXISTED, codeOf(() -> teamService.get(team.getId())));
+        // Xóa mềm: chủ team thấy trong danh sách đã xóa và khôi phục được
+        assertEquals(1, teamService.deletedTeams().size());
+        assertEquals(team.getId(), teamService.restore(team.getId()).getId());
+        assertEquals(team.getId(), teamService.get(team.getId()).getId());
+        assertTrue(teamService.deletedTeams().isEmpty());
     }
 }

@@ -1,6 +1,7 @@
 package com.ptit.music_be.service.team.impl;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -23,11 +24,13 @@ import com.ptit.music_be.dto.request.ShowItemStatusRequest;
 import com.ptit.music_be.dto.request.ShowRequest;
 import com.ptit.music_be.dto.response.ShowDetailResponse;
 import com.ptit.music_be.dto.response.ShowItemResponse;
+import com.ptit.music_be.dto.response.RestorableItemResponse;
 import com.ptit.music_be.dto.response.ShowResponse;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.Show;
 import com.ptit.music_be.entity.ShowItem;
+import com.ptit.music_be.entity.Team;
 import com.ptit.music_be.entity.TeamMember;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
@@ -127,8 +130,61 @@ public class ShowServiceImpl implements ShowService {
         Member me = access.currentMember();
         Show show = findShow(showId);
         access.requireManager(show.getTeam().getId(), me);
-        showRepository.delete(show); // bài trong show xóa theo bằng ON DELETE CASCADE
-        activityLog.log(show.getTeam().getId(), me, TeamActivityType.SHOW_DELETED, "show", show.getName());
+        // Xóa mềm: bài, phân công, trạng thái giữ nguyên để khôi phục
+        show.setDeletedAt(LocalDateTime.now());
+        show.setDeletedBy(me);
+        showRepository.save(show);
+        activityLog.log(
+                show.getTeam().getId(),
+                me,
+                TeamActivityType.SHOW_DELETED,
+                "show",
+                show.getName(),
+                "showId",
+                show.getId());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<RestorableItemResponse> deletedShows(String teamId) {
+        access.requireManager(teamId, access.currentMember());
+        return showRepository.findDeletedByTeam(teamId, LocalDateTime.now().minusDays(Team.RESTORE_DAYS)).stream()
+                .map(s -> RestorableItemResponse.builder()
+                        .id(s.getId())
+                        .name(s.getName())
+                        .description(s.getVenue())
+                        .deletedAt(s.getDeletedAt())
+                        .deletedByName(TeamAccess.displayName(s.getDeletedBy()))
+                        .restorableUntil(Team.restorableUntil(s.getDeletedAt()))
+                        .build())
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public ShowResponse restore(String showId) {
+        Member me = access.currentMember();
+        Show show = showRepository
+                .findById(showId == null ? "" : showId)
+                .filter(s -> s.getDeletedAt() != null)
+                .orElseThrow(() -> new AppException(ErrorCode.SHOW_NOT_EXISTED));
+        // requireManager đã lọc team đã xóa: team bị xóa thì phải khôi phục team trước
+        access.requireManager(show.getTeam().getId(), me);
+        if (!Team.restorable(show.getDeletedAt(), LocalDateTime.now())) {
+            throw new AppException(ErrorCode.SHOW_RESTORE_EXPIRED);
+        }
+        show.setDeletedAt(null);
+        show.setDeletedBy(null);
+        showRepository.save(show);
+        activityLog.log(
+                show.getTeam().getId(),
+                me,
+                TeamActivityType.SHOW_RESTORED,
+                "show",
+                show.getName(),
+                "showId",
+                show.getId());
+        return toShowResponse(show, progress(List.of(show.getId())).getOrDefault(show.getId(), new long[2]));
     }
 
     // ------------------------------------------------------------------------------------------------ bài trong show
@@ -380,9 +436,10 @@ public class ShowServiceImpl implements ShowService {
 
     // ------------------------------------------------------------------------------------------------ helpers
 
+    /** Show chưa xóa; show đã xóa coi như không tồn tại. */
     private Show findShow(String showId) {
         return showRepository
-                .findById(showId == null ? "" : showId)
+                .findActiveById(showId == null ? "" : showId)
                 .orElseThrow(() -> new AppException(ErrorCode.SHOW_NOT_EXISTED));
     }
 

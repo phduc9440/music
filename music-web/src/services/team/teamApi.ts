@@ -2,6 +2,7 @@ import apiClient from '../client';
 import type {
   ApiResponse,
   PageResult,
+  RestorableItem,
   Show,
   ShowDetail,
   ShowItemPayload,
@@ -25,7 +26,11 @@ export const teamApi = {
   create: (data: TeamPayload) => apiClient.post<ApiResponse<Team>>('/teams', data),
   get: (id: string) => apiClient.get<ApiResponse<Team>>(`/teams/${id}`),
   update: (id: string, data: TeamPayload) => apiClient.put<ApiResponse<Team>>(`/teams/${id}`, data),
+  /** Xóa mềm: khôi phục được trong 30 ngày. */
   remove: (id: string) => apiClient.delete<ApiResponse<void>>(`/teams/${id}`),
+  deleted: () => apiClient.get<ApiResponse<RestorableItem[]>>('/teams/deleted'),
+  restore: (id: string) => apiClient.post<ApiResponse<Team>>(`/teams/${id}/restore`),
+  deletedShows: (id: string) => apiClient.get<ApiResponse<RestorableItem[]>>(`/teams/${id}/shows/deleted`),
   myTasks: () => apiClient.get<ApiResponse<TeamTask[]>>('/teams/my-tasks'),
 
   members: (id: string) => apiClient.get<ApiResponse<TeamMember[]>>(`/teams/${id}/members`),
@@ -67,6 +72,7 @@ export const showApi = {
   get: (id: string) => apiClient.get<ApiResponse<ShowDetail>>(`/shows/${id}`),
   update: (id: string, data: ShowPayload) => apiClient.put<ApiResponse<Show>>(`/shows/${id}`, data),
   remove: (id: string) => apiClient.delete<ApiResponse<void>>(`/shows/${id}`),
+  restore: (id: string) => apiClient.post<ApiResponse<Show>>(`/shows/${id}/restore`),
   addItem: (id: string, data: ShowItemPayload) => apiClient.post<ApiResponse<ShowDetail>>(`/shows/${id}/items`, data),
   updateItem: (id: string, itemId: string, data: ShowItemPayload) =>
     apiClient.put<ApiResponse<ShowDetail>>(`/shows/${id}/items/${itemId}`, data),

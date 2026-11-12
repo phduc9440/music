@@ -54,5 +54,9 @@ public enum NotificationType {
     /** Nhắc hạn: còn 2 ngày (variant soon) hoặc hôm nay là hạn (variant today). */
     SHOW_ITEM_DUE,
     /** Quản trị viên đã xóa team bạn đang ở (kèm lý do nếu có). */
-    TEAM_DELETED_BY_ADMIN
+    TEAM_DELETED_BY_ADMIN,
+    /** Chủ team đã xóa team bạn đang ở (khôi phục được trong 30 ngày). */
+    TEAM_DELETED,
+    /** Team bạn đang ở đã được khôi phục (bởi chủ team hoặc quản trị viên). */
+    TEAM_RESTORED
 }

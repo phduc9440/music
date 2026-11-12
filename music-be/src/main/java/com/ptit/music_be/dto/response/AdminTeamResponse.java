@@ -29,4 +29,13 @@ public class AdminTeamResponse {
     boolean planActive;
     /** Số thành viên tối đa theo gói của người tạo; null = không giới hạn. */
     Integer memberLimit;
+    /** Lúc xóa mềm; null = team đang hoạt động. */
+    LocalDateTime deletedAt;
+    /** Hạn cuối khôi phục (30 ngày sau lúc xóa); null nếu chưa xóa. */
+    LocalDateTime restorableUntil;
+    /** Còn trong hạn khôi phục. */
+    boolean restorable;
+    /** Quản trị viên xóa (vi phạm) hay chủ team tự xóa. */
+    boolean deletedByAdmin;
+    String deletedReason;
 }

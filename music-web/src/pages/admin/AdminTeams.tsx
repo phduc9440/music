@@ -14,19 +14,21 @@ import {
   StatGrid,
   Table,
   TableState,
+  Tabs,
 } from '../../components/ui';
 import { errorMessage, formatDate } from '../../components/ui/helpers';
 import { useDialog } from '../../components/ui/dialog-context';
 import { adminTeamApi } from '../../services';
-import { deleteTeamAsAdmin } from './adminTeamActions';
+import { deleteTeamAsAdmin, restoreTeamAsAdmin } from './adminTeamActions';
 import type { AdminTeam, AdminTeamSummary, PageResult } from '../../types';
 import { formatNumber, formatRelativeTime, t } from '../../i18n/core';
 
 const PAGE_SIZE = 20;
 
-/** Admin: danh sách mọi team (tìm theo tên team, tên / email người tạo), số liệu tổng quan, xóa team vi phạm. */
+/** Admin: danh sách team (tìm theo tên team, tên / email người tạo), số liệu tổng quan, xóa mềm team vi phạm và khôi phục trong 30 ngày. */
 export default function AdminTeams() {
-  const { prompt } = useDialog();
+  const { prompt, confirm } = useDialog();
+  const [view, setView] = useState<'active' | 'deleted'>('active');
   const [summary, setSummary] = useState<AdminTeamSummary | null>(null);
   const [result, setResult] = useState<PageResult<AdminTeam> | null>(null);
   const [keywordInput, setKeywordInput] = useState('');
@@ -44,10 +46,10 @@ export default function AdminTeams() {
 
   const load = useCallback(() => {
     adminTeamApi
-      .search({ keyword: keyword || undefined, page, size: PAGE_SIZE })
+      .search({ keyword: keyword || undefined, deleted: view === 'deleted', page, size: PAGE_SIZE })
       .then((res) => setResult(res.data.result))
       .catch((error) => toast.error(errorMessage(error, t('admin.teams.loadFailed'))));
-  }, [keyword, page]);
+  }, [keyword, page, view]);
 
   useEffect(load, [load, reload]);
 
@@ -57,6 +59,15 @@ export default function AdminTeams() {
     setBusyId(null);
     if (ok) setReload((n) => n + 1);
   };
+
+  const restore = async (team: AdminTeam) => {
+    setBusyId(team.id);
+    const ok = await restoreTeamAsAdmin(team, confirm);
+    setBusyId(null);
+    if (ok) setReload((n) => n + 1);
+  };
+
+  const deletedView = view === 'deleted';
 
   return (
     <>
@@ -107,6 +118,19 @@ export default function AdminTeams() {
         />
       </StatGrid>
 
+      <Tabs
+        value={view}
+        onChange={(v) => {
+          setView(v);
+          setPage(0);
+          setResult(null);
+        }}
+        items={[
+          { value: 'active', label: t('admin.teams.tabs.active') },
+          { value: 'deleted', label: t('admin.teams.tabs.deleted') },
+        ]}
+      />
+
       <Card flush>
         <Table minWidth={1080}>
           <thead>
@@ -116,7 +140,7 @@ export default function AdminTeams() {
               <th className="adm-table__num">{t('admin.teams.members')}</th>
               <th className="adm-table__num">{t('admin.teams.scores')}</th>
               <th className="adm-table__num">{t('admin.teams.shows')}</th>
-              <th>{t('admin.teams.plan')}</th>
+              <th>{deletedView ? t('admin.teams.tabs.deleted') : t('admin.teams.plan')}</th>
               <th>{t('admin.teams.lastActivity')}</th>
               <th className="adm-table__actions">{t('scores.files.actions')}</th>
             </tr>
@@ -144,9 +168,31 @@ export default function AdminTeams() {
                   {t('admin.teams.showsCell', { preparing: team.preparingShows, total: team.showCount })}
                 </td>
                 <td>
-                  <Badge tone={team.planActive ? 'success' : 'warning'}>
-                    {team.planActive ? t('admin.teams.planActive') : t('admin.teams.planInactive')}
-                  </Badge>
+                  {deletedView ? (
+                    <CellTitle
+                      sub={
+                        team.restorable
+                          ? t('admin.teams.restorableUntil', { date: formatDate(team.restorableUntil) })
+                          : t('admin.teams.restoreExpired')
+                      }
+                    >
+                      <Badge tone={team.deletedByAdmin ? 'danger' : 'neutral'}>
+                        {team.deletedByAdmin ? t('admin.teams.deletedByAdmin') : t('admin.teams.deletedByOwner')}
+                      </Badge>{' '}
+                      <span className="adm-muted">
+                        {t('admin.teams.deletedOn', { date: formatDate(team.deletedAt) })}
+                      </span>
+                      {team.deletedReason && (
+                        <div className="adm-muted">
+                          {t('admin.teams.deletedReasonLabel', { reason: team.deletedReason })}
+                        </div>
+                      )}
+                    </CellTitle>
+                  ) : (
+                    <Badge tone={team.planActive ? 'success' : 'warning'}>
+                      {team.planActive ? t('admin.teams.planActive') : t('admin.teams.planInactive')}
+                    </Badge>
+                  )}
                 </td>
                 <td className="adm-nowrap adm-muted">
                   {team.lastActivityAt ? formatRelativeTime(team.lastActivityAt) : t('admin.teams.noActivity')}
@@ -160,14 +206,25 @@ export default function AdminTeams() {
                       icon="eye"
                       title={t('admin.teams.view')}
                     />
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      icon="trash"
-                      disabled={busyId === team.id}
-                      title={t('admin.teams.delete')}
-                      onClick={() => remove(team)}
-                    />
+                    {deletedView ? (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        icon="refresh"
+                        disabled={busyId === team.id || !team.restorable}
+                        title={team.restorable ? t('admin.teams.restore') : t('admin.teams.restoreExpired')}
+                        onClick={() => restore(team)}
+                      />
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        icon="trash"
+                        disabled={busyId === team.id}
+                        title={t('admin.teams.delete')}
+                        onClick={() => remove(team)}
+                      />
+                    )}
                   </div>
                 </td>
               </tr>
@@ -176,7 +233,13 @@ export default function AdminTeams() {
               <TableState
                 colSpan={8}
                 icon="share"
-                title={keyword ? t('admin.teams.notFound') : t('admin.teams.empty')}
+                title={
+                  keyword
+                    ? t('admin.teams.notFound')
+                    : deletedView
+                      ? t('admin.teams.emptyDeleted')
+                      : t('admin.teams.empty')
+                }
                 description={keyword ? t('admin.members.tryOther') : undefined}
               />
             )}

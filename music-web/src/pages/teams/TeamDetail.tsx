@@ -7,12 +7,21 @@ import { useNavigate } from '../../routes/useTransitionNavigate';
 import Modal from '../../components/scores/common/Modal';
 import Skeleton from '../../components/ui/Skeleton';
 import { useDialog } from '../../components/ui/dialog-context';
-import { teamApi, userApi } from '../../services';
+import { showApi, teamApi, userApi } from '../../services';
 import { canManageTeam, TEAM_ROLES } from '../../types';
-import type { Show, Team, TeamActivity, TeamInvitation, TeamMember, TeamRole, TeamScore } from '../../types';
+import type {
+  RestorableItem,
+  Show,
+  Team,
+  TeamActivity,
+  TeamInvitation,
+  TeamMember,
+  TeamRole,
+  TeamScore,
+} from '../../types';
 import { formatDate, formatDateTime, formatNumber, formatRelativeTime, t } from '../../i18n/core';
 import { getErrorCode, getErrorMessage } from '../../utils/score';
-import { MemberAvatar, RoleBadge, StatusBadge } from './shared';
+import { MemberAvatar, RestorableList, RoleBadge, StatusBadge } from './shared';
 import { activityText, memberName } from './teamUtils';
 import { TeamFormModal } from './Teams';
 import { ShowFormModal } from './ShowBoard';
@@ -343,14 +352,23 @@ function AddScoresModal({ teamId, onClose, onAdded }: { teamId: string; onClose:
 function ShowsTab({ team }: { team: Team }) {
   const navigate = useNavigate();
   const [shows, setShows] = useState<Show[] | null>(null);
+  const [deletedShows, setDeletedShows] = useState<RestorableItem[]>([]);
   const [creating, setCreating] = useState(false);
+  const [reload, setReload] = useState(0);
 
   useEffect(() => {
     teamApi
       .shows(team.id)
       .then((res) => setShows(res.data.result))
       .catch(() => toast.error(t('teams.shows.loadFailed')));
-  }, [team.id]);
+    // Show đã xóa chỉ OWNER/MANAGER thấy và khôi phục được
+    if (canManageTeam(team.myRole)) {
+      teamApi
+        .deletedShows(team.id)
+        .then((res) => setDeletedShows(res.data.result))
+        .catch(() => setDeletedShows([]));
+    }
+  }, [team.id, team.myRole, reload]);
 
   return (
     <>
@@ -399,6 +417,24 @@ function ShowsTab({ team }: { team: Team }) {
             </Link>
           ))}
         </div>
+      )}
+      {canManageTeam(team.myRole) && (
+        <RestorableList
+          title={t('teams.trash.showsTitle')}
+          hint={t('teams.trash.showsHint')}
+          items={deletedShows}
+          onRestore={async (item) => {
+            try {
+              await showApi.restore(item.id);
+              toast.success(t('teams.trash.restored', { name: item.name }));
+              setReload((n) => n + 1);
+              return true;
+            } catch (err) {
+              toast.error(getErrorMessage(err, t('teams.trash.restoreFailed')));
+              return false;
+            }
+          }}
+        />
       )}
       {creating && (
         <ShowFormModal

@@ -13,7 +13,11 @@ import com.ptit.music_be.dto.enums.ShowStatus;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-/** Một buổi diễn của team: danh sách bài, mỗi bài giao người phối, người duyệt, hạn (mục 4.1). */
+/**
+ * Một buổi diễn của team: danh sách bài, mỗi bài giao người phối, người duyệt, hạn (mục 4.1). Xóa là xóa mềm
+ * ({@code deletedAt}, bài giữ nguyên): truy vấn phải lọc {@code deletedAt is null}; khôi phục được trong
+ * {@link Team#RESTORE_DAYS} ngày.
+ */
 @Entity
 @Table(name = "shows")
 @Getter
@@ -59,4 +63,11 @@ public class Show {
     @UpdateTimestamp
     @Column(name = "updated_at")
     LocalDateTime updatedAt;
+
+    @Column(name = "deleted_at")
+    LocalDateTime deletedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "deleted_by")
+    Member deletedBy;
 }

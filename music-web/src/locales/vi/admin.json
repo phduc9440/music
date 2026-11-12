@@ -707,7 +707,7 @@
     "view": "Xem chi tiết",
     "delete": "Xóa nhóm",
     "deleteTitle": "Xóa nhóm {name}?",
-    "deleteMessage": "Nhóm, buổi diễn và lời mời sẽ bị xóa vĩnh viễn; {count} thành viên nhận thông báo kèm lý do. Bản nhạc của nhóm trở về bản cá nhân của chủ từng bản.",
+    "deleteMessage": "Nhóm sẽ bị ẩn với mọi thành viên; {count} thành viên nhận thông báo kèm lý do. Dữ liệu (thành viên, buổi diễn, bản nhạc) được giữ nguyên và khôi phục được trong 30 ngày.",
     "reason": "Lý do (gửi cho thành viên)",
     "reasonPlaceholder": "Ví dụ: nội dung vi phạm điều khoản",
     "deleted": "Đã xóa nhóm {name}",
@@ -739,6 +739,24 @@
       "scoresHint": "Chỉ hiện tên; bản công khai mới mở được",
       "activityTitle": "Hoạt động gần đây",
       "activityHint": "20 hoạt động gần nhất"
-    }
+    },
+    "tabs": {
+      "active": "Đang hoạt động",
+      "deleted": "Đã xóa"
+    },
+    "deletedOn": "Xóa {date}",
+    "restorableUntil": "Khôi phục được đến {date}",
+    "restoreExpired": "Đã quá hạn khôi phục (30 ngày)",
+    "deletedByAdmin": "Quản trị viên xóa",
+    "deletedByOwner": "Chủ nhóm tự xóa",
+    "deletedReasonLabel": "Lý do: {reason}",
+    "restore": "Khôi phục",
+    "restoreTitle": "Khôi phục nhóm {name}?",
+    "restoreMessage": "Nhóm sẽ hoạt động lại với toàn bộ dữ liệu cũ; các thành viên được báo.",
+    "restored": "Đã khôi phục nhóm {name}",
+    "restoreFailed": "Không khôi phục được nhóm",
+    "emptyDeleted": "Chưa có nhóm nào bị xóa",
+    "deletedBanner": "Nhóm này đã bị xóa (khôi phục được đến {date}).",
+    "deletedBannerExpired": "Nhóm này đã bị xóa và quá hạn khôi phục 30 ngày."
   }
 }

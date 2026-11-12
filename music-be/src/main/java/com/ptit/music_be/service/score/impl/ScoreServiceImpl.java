@@ -769,6 +769,9 @@ public class ScoreServiceImpl implements ScoreService {
         AccessDecision decision = scorePermissionService.resolve(score);
         boolean canEdit = scorePermissionService.canEdit(score, decision);
         boolean isOwner = decision.level() == ScoreAccess.OWNER;
+        Team activeTeam = score.getTeamId() == null
+                ? null
+                : teamRepository.findById(score.getTeamId()).filter(t -> !t.isDeleted()).orElse(null);
         // Chỉ hiện các file hiện hành (is_current null coi như hiện hành, vì dữ liệu cũ chưa có cột này).
         // Người xem dưới quyền sửa không thấy file gốc (PDF/ảnh/MusicXML/MIDI gốc, kern, ảnh trang)
         List<ScoreFile> currentFiles =
@@ -830,14 +833,9 @@ public class ScoreServiceImpl implements ScoreService {
                                 : decision.level().name())
                 .canDownload(canEdit || (decision.can(ScoreAccess.VIEW) && score.isAllowDownload()))
                 .allowDownload(isOwner && score.isAllowDownload())
-                .teamId(score.getTeamId())
-                .teamName(
-                        score.getTeamId() == null
-                                ? null
-                                : teamRepository
-                                        .findById(score.getTeamId())
-                                        .map(Team::getName)
-                                        .orElse(null))
+                // Team đã xóa mềm coi như không còn: bản nhạc hiện như bản cá nhân
+                .teamId(activeTeam == null ? null : activeTeam.getId())
+                .teamName(activeTeam == null ? null : activeTeam.getName())
                 .createdAt(score.getCreatedAt())
                 .updatedAt(score.getUpdatedAt())
                 .files(scoreFileMapper.toResponses(currentFiles))

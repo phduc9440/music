@@ -34,13 +34,14 @@ public class AdminTeamController {
     }
 
     @GetMapping
-    @Operation(summary = "Search teams by name or creator (newest first)", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Search teams by name or creator; deleted=true lists soft-deleted teams", security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<PageResponse<AdminTeamResponse>> search(
             @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "false") boolean deleted,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         return ApiResponse.<PageResponse<AdminTeamResponse>>builder()
-                .result(adminTeamService.search(keyword, page, size))
+                .result(adminTeamService.search(keyword, deleted, page, size))
                 .build();
     }
 
@@ -53,9 +54,16 @@ public class AdminTeamController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Delete a team (violation); members are notified with the reason", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Soft-delete a team (violation); restorable for 30 days; members are notified with the reason", security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<Void> delete(@PathVariable String id, @RequestParam(required = false) String reason) {
         adminTeamService.delete(id, reason);
+        return ApiResponse.<Void>builder().build();
+    }
+
+    @PostMapping("/{id}/restore")
+    @Operation(summary = "Restore a soft-deleted team within 30 days; 3818 expired", security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<Void> restore(@PathVariable String id) {
+        adminTeamService.restore(id);
         return ApiResponse.<Void>builder().build();
     }
 }

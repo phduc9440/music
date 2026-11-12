@@ -40,5 +40,7 @@
   "SHOW_ITEM_DUE": {
     "soon": "“{title}” ({show}) is due in {days} days",
     "today": "“{title}” ({show}) is due today"
-  }
+  },
+  "TEAM_DELETED": "{name} deleted the team {team}",
+  "TEAM_RESTORED": "The team {team} was restored"
 }

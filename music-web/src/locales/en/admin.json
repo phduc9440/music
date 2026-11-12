@@ -741,8 +741,8 @@
     "view": "View details",
     "delete": "Delete team",
     "deleteTitle": "Delete team {name}?",
-    "deleteMessage_one": "The team, its shows and invitations will be deleted permanently; {count} member will be notified with the reason. Team scores go back to their owners as personal scores.",
-    "deleteMessage_other": "The team, its shows and invitations will be deleted permanently; {count} members will be notified with the reason. Team scores go back to their owners as personal scores.",
+    "deleteMessage_one": "The team will be hidden from everyone; {count} member will be notified with the reason. Data (members, shows, scores) is kept and can be restored within 30 days.",
+    "deleteMessage_other": "The team will be hidden from everyone; {count} members will be notified with the reason. Data (members, shows, scores) is kept and can be restored within 30 days.",
     "reason": "Reason (sent to members)",
     "reasonPlaceholder": "e.g. content violates the terms",
     "deleted": "Deleted team {name}",
@@ -775,6 +775,24 @@
       "scoresHint": "Titles only; only public scores can be opened",
       "activityTitle": "Recent activity",
       "activityHint": "Latest 20 activities"
-    }
+    },
+    "tabs": {
+      "active": "Active",
+      "deleted": "Deleted"
+    },
+    "deletedOn": "Deleted {date}",
+    "restorableUntil": "Restorable until {date}",
+    "restoreExpired": "Restore window (30 days) has passed",
+    "deletedByAdmin": "Deleted by an administrator",
+    "deletedByOwner": "Deleted by the team owner",
+    "deletedReasonLabel": "Reason: {reason}",
+    "restore": "Restore",
+    "restoreTitle": "Restore team {name}?",
+    "restoreMessage": "The team will be active again with all its old data; members will be notified.",
+    "restored": "Restored team {name}",
+    "restoreFailed": "Could not restore the team",
+    "emptyDeleted": "No deleted teams",
+    "deletedBanner": "This team was deleted (restorable until {date}).",
+    "deletedBannerExpired": "This team was deleted and the 30-day restore window has passed."
   }
 }

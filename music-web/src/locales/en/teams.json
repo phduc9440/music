@@ -94,7 +94,7 @@
     "delete": "Delete team",
     "leave": "Leave team",
     "deleteTitle": "Delete team?",
-    "deleteMessage": "Delete “{name}” with all its shows and invitations. Team scores go back to their owners as personal scores.",
+    "deleteMessage": "Delete “{name}”. Everything is kept and you can restore it within 30 days; members will no longer see the team.",
     "deleted": "Team deleted",
     "deleteFailed": "Could not delete the team",
     "leaveTitle": "Leave team?",
@@ -175,6 +175,7 @@
     "someone": "A member",
     "TEAM_CREATED": "{actor} created the team “{team}”",
     "TEAM_UPDATED": "{actor} updated the team details",
+    "TEAM_RESTORED": "{actor} restored the team",
     "MEMBER_JOINED": "{name} joined as {role}",
     "MEMBER_LEFT": "{name} left the team",
     "MEMBER_REMOVED": "{actor} removed {name} from the team",
@@ -185,6 +186,7 @@
     "SHOW_CREATED": "{actor} created the show “{show}”",
     "SHOW_UPDATED": "{actor} updated the show “{show}”",
     "SHOW_DELETED": "{actor} deleted the show “{show}”",
+    "SHOW_RESTORED": "{actor} restored the show “{show}”",
     "ITEM_ADDED": "{actor} added “{score}” to “{show}”",
     "ITEM_REMOVED": "{actor} removed “{score}” from “{show}”",
     "ITEM_ASSIGNED": "{actor} assigned “{score}” (“{show}”): arranger {arranger}, reviewer {reviewer}",
@@ -197,7 +199,7 @@
     "editShow": "Edit show",
     "deleteShow": "Delete show",
     "deleteTitle": "Delete show?",
-    "deleteMessage": "Delete “{name}” with its song list and assignments (scores stay in the team).",
+    "deleteMessage": "Delete “{name}”. Its song list and assignments are kept and can be restored within 30 days.",
     "deleted": "Show deleted",
     "deleteFailed": "Could not delete the show",
     "viewLabel": "View",
@@ -268,5 +270,17 @@
     "saved": "Show saved",
     "created": "Show created",
     "saveFailed": "Could not save the show"
+  },
+  "trash": {
+    "title": "Deleted teams",
+    "hint": "Teams you deleted can be restored for 30 days after deletion.",
+    "deletedOn": "Deleted {date}",
+    "until": "Restorable until {date}",
+    "restore": "Restore",
+    "restored": "Restored “{name}”",
+    "restoreFailed": "Could not restore",
+    "showsTitle": "Deleted shows",
+    "showsHint": "Restorable for 30 days after deletion, with their song list and assignments.",
+    "toggle": "Recently deleted"
   }
 }

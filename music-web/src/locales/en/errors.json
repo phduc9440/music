@@ -140,5 +140,8 @@
   "3825": "You can't move the song to this status",
   "3826": "The song has no reviewer yet; ask a manager to assign one before submitting",
   "3827": "Sending a song back needs feedback (up to 500 characters)",
-  "3828": "The order must list exactly the songs of this show"
+  "3828": "The order must list exactly the songs of this show",
+  "3818": "More than 30 days have passed since deletion, so it can no longer be restored",
+  "3819": "This team was deleted by an administrator for a violation; only an administrator can restore it",
+  "3829": "More than 30 days have passed since the show was deleted, so it can no longer be restored"
 }

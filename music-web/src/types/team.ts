@@ -120,6 +120,7 @@ export interface ShowDetail {
 export type TeamActivityType =
   | 'TEAM_CREATED'
   | 'TEAM_UPDATED'
+  | 'TEAM_RESTORED'
   | 'MEMBER_JOINED'
   | 'MEMBER_LEFT'
   | 'MEMBER_REMOVED'
@@ -130,6 +131,7 @@ export type TeamActivityType =
   | 'SHOW_CREATED'
   | 'SHOW_UPDATED'
   | 'SHOW_DELETED'
+  | 'SHOW_RESTORED'
   | 'ITEM_ADDED'
   | 'ITEM_REMOVED'
   | 'ITEM_ASSIGNED'
@@ -174,6 +176,16 @@ export interface ShowItemPayload {
   notes?: string | null;
 }
 
+/** Team hoặc show đã xóa mềm còn khôi phục được (30 ngày). BE: RestorableItemResponse */
+export interface RestorableItem {
+  id: string;
+  name: string;
+  description?: string | null;
+  deletedAt: string;
+  deletedByName?: string | null;
+  restorableUntil: string;
+}
+
 // Quản lý team của admin, BE: AdminTeamResponse, AdminTeamSummaryResponse, AdminTeamDetailResponse
 export interface AdminTeam {
   id: string;
@@ -190,6 +202,12 @@ export interface AdminTeam {
   lastActivityAt?: string | null;
   planActive: boolean;
   memberLimit?: number | null;
+  /** Xóa mềm: có giá trị = đã xóa. */
+  deletedAt?: string | null;
+  restorableUntil?: string | null;
+  restorable: boolean;
+  deletedByAdmin: boolean;
+  deletedReason?: string | null;
 }
 
 export interface AdminTeamSummary {

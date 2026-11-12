@@ -193,6 +193,8 @@ public enum ErrorCode {
     TEAM_SCORE_IN_OTHER_TEAM(3815, "Bản nhạc đã thuộc một nhóm khác", HttpStatus.CONFLICT),
     TEAM_SCORE_NOT_IN_TEAM(3816, "Bản nhạc không thuộc nhóm này", HttpStatus.BAD_REQUEST),
     TEAM_SCORE_OFFICIAL(3817, "Bản trong kho bản nhạc mẫu không chuyển vào nhóm được", HttpStatus.BAD_REQUEST),
+    TEAM_RESTORE_EXPIRED(3818, "Đã quá 30 ngày kể từ lúc xóa nên không khôi phục được nữa", HttpStatus.GONE),
+    TEAM_RESTORE_BY_ADMIN_ONLY(3819, "Nhóm do quản trị viên xóa vì vi phạm; chỉ quản trị viên khôi phục được", HttpStatus.FORBIDDEN),
     SHOW_NOT_EXISTED(3820, "Không tìm thấy buổi diễn", HttpStatus.NOT_FOUND),
     SHOW_INVALID(3821, "Tên buổi diễn từ 1 đến 255 ký tự; địa điểm tối đa 255, ghi chú tối đa 2000 ký tự", HttpStatus.BAD_REQUEST),
     SHOW_ITEM_NOT_EXISTED(3822, "Không tìm thấy bài trong buổi diễn", HttpStatus.NOT_FOUND),
@@ -202,6 +204,7 @@ public enum ErrorCode {
     SHOW_ITEM_NO_REVIEWER(3826, "Bài chưa có người duyệt; nhờ quản lý nhóm giao người duyệt trước khi gửi", HttpStatus.CONFLICT),
     SHOW_ITEM_NOTE_REQUIRED(3827, "Trả lại bài cần kèm góp ý (tối đa 500 ký tự)", HttpStatus.BAD_REQUEST),
     SHOW_ORDER_INVALID(3828, "Danh sách thứ tự phải gồm đủ và đúng các bài của buổi diễn", HttpStatus.BAD_REQUEST),
+    SHOW_RESTORE_EXPIRED(3829, "Đã quá 30 ngày kể từ lúc xóa buổi diễn nên không khôi phục được nữa", HttpStatus.GONE),
     ;
 
     int code;

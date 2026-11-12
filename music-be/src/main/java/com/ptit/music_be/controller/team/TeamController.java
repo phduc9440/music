@@ -11,6 +11,7 @@ import com.ptit.music_be.dto.request.TeamRoleRequest;
 import com.ptit.music_be.dto.request.TeamScoreRequest;
 import com.ptit.music_be.dto.response.ApiResponse;
 import com.ptit.music_be.dto.response.PageResponse;
+import com.ptit.music_be.dto.response.RestorableItemResponse;
 import com.ptit.music_be.dto.response.ShowResponse;
 import com.ptit.music_be.dto.response.TeamActivityResponse;
 import com.ptit.music_be.dto.response.TeamInvitationResponse;
@@ -54,6 +55,12 @@ public class TeamController {
         return ok(teamService.create(request));
     }
 
+    @GetMapping("/deleted")
+    @Operation(summary = "Teams I own and deleted myself, still restorable (30 days)", security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<List<RestorableItemResponse>> deleted() {
+        return ok(teamService.deletedTeams());
+    }
+
     @GetMapping("/my-tasks")
     @Operation(summary = "Show items assigned to me (arranger or reviewer), not approved yet", security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<List<TeamTaskResponse>> myTasks() {
@@ -73,10 +80,16 @@ public class TeamController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Delete team (OWNER); its scores go back to their owners", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Soft-delete team (OWNER); restorable for 30 days, 3801 not found, 3802 not owner", security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<Void> delete(@PathVariable String id) {
         teamService.delete(id);
         return ApiResponse.<Void>builder().build();
+    }
+
+    @PostMapping("/{id}/restore")
+    @Operation(summary = "Restore a team I deleted (OWNER, within 30 days); 3818 expired, 3819 deleted by admin", security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<TeamResponse> restore(@PathVariable String id) {
+        return ok(teamService.restore(id));
     }
 
     // ---- thành viên
@@ -155,6 +168,12 @@ public class TeamController {
     @Operation(summary = "Shows of the team (preparing first)", security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<List<ShowResponse>> shows(@PathVariable String id) {
         return ok(showService.shows(id));
+    }
+
+    @GetMapping("/{id}/shows/deleted")
+    @Operation(summary = "Deleted shows of the team, still restorable (OWNER, MANAGER; 30 days)", security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<List<RestorableItemResponse>> deletedShows(@PathVariable String id) {
+        return ok(showService.deletedShows(id));
     }
 
     @PostMapping("/{id}/shows")

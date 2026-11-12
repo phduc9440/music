@@ -6,6 +6,7 @@ import com.ptit.music_be.dto.request.ShowItemOrderRequest;
 import com.ptit.music_be.dto.request.ShowItemRequest;
 import com.ptit.music_be.dto.request.ShowItemStatusRequest;
 import com.ptit.music_be.dto.request.ShowRequest;
+import com.ptit.music_be.dto.response.RestorableItemResponse;
 import com.ptit.music_be.dto.response.ShowDetailResponse;
 import com.ptit.music_be.dto.response.ShowResponse;
 
@@ -24,7 +25,14 @@ public interface ShowService {
 
     ShowResponse update(String showId, ShowRequest request);
 
+    /** OWNER/MANAGER xóa mềm show (bài giữ nguyên); khôi phục được trong 30 ngày. */
     void delete(String showId);
+
+    /** OWNER/MANAGER: show đã xóa của team còn trong hạn khôi phục, mới xóa trước. */
+    List<RestorableItemResponse> deletedShows(String teamId);
+
+    /** OWNER/MANAGER khôi phục show đã xóa (trong 30 ngày). */
+    ShowResponse restore(String showId);
 
     /** Thêm một bản nhạc của team vào cuối show (kèm phân công nếu có). */
     ShowDetailResponse addItem(String showId, ShowItemRequest request);

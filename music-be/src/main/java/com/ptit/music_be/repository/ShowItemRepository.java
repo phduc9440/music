@@ -21,7 +21,7 @@ public interface ShowItemRepository extends JpaRepository<ShowItem, String> {
 
     /** Người này có được giao phối bản nhạc này trong một show của team không (quyền EDIT qua team). */
     @Query("select count(i) > 0 from ShowItem i where i.scoreId = :scoreId and i.arranger.id = :memberId"
-            + " and i.show.team.id = :teamId")
+            + " and i.show.team.id = :teamId and i.show.deletedAt is null")
     boolean isArrangerOf(
             @Param("scoreId") String scoreId, @Param("memberId") String memberId, @Param("teamId") String teamId);
 
@@ -33,14 +33,14 @@ public interface ShowItemRepository extends JpaRepository<ShowItem, String> {
     /** Việc của tôi: bài tôi phối hoặc duyệt, chưa xong, thuộc show đang chuẩn bị. */
     @Query("select i from ShowItem i join fetch i.show s join fetch s.team left join fetch i.arranger"
             + " left join fetch i.reviewer where (i.arranger.id = :memberId or i.reviewer.id = :memberId)"
-            + " and i.status <> 'APPROVED' and s.status = 'PREPARING'"
+            + " and i.status <> 'APPROVED' and s.status = 'PREPARING' and s.deletedAt is null and s.team.deletedAt is null"
             + " order by case when i.dueDate is null then 1 else 0 end, i.dueDate, s.showDate")
     List<ShowItem> findOpenTasksOf(@Param("memberId") String memberId);
 
     /** Bài chưa duyệt có hạn đúng ngày này, thuộc show đang chuẩn bị (job nhắc hạn). */
     @Query("select i from ShowItem i join fetch i.show s join fetch s.team left join fetch i.arranger"
             + " left join fetch i.reviewer where i.dueDate = :day and i.status <> 'APPROVED'"
-            + " and s.status = 'PREPARING'")
+            + " and s.status = 'PREPARING' and s.deletedAt is null and s.team.deletedAt is null")
     List<ShowItem> findDueOn(@Param("day") LocalDate day);
 
     /** Bỏ người khỏi mọi bài của team khi họ rời/bị xóa khỏi team. */

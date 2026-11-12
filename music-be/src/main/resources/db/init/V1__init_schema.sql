@@ -362,8 +362,10 @@ CREATE TABLE IF NOT EXISTS payment_orders (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Team và Show (mục 4.1). Quyền trên bản nhạc của team suy ra từ vai trò (TeamAccessResolverImpl): OWNER/MANAGER = chủ,
--- ARRANGER = sửa bài được giao + nhận xét bài khác, VIEWER = xem. Xóa team thì xóa theo thành viên, lời mời, hoạt động
--- (cùng bảng team_members) và show (ON DELETE CASCADE); bản nhạc trở về bản cá nhân (scores.team_id SET NULL).
+-- ARRANGER = sửa bài được giao + nhận xét bài khác, VIEWER = xem. Xóa team là xóa mềm (deleted_at): team biến mất với
+-- mọi thành viên, mọi dữ liệu (thành viên, show, bản nhạc vẫn giữ team_id) nằm nguyên để khôi phục được trong 30 ngày;
+-- quá 30 ngày thì không khôi phục được nữa nhưng cũng không xóa cứng. Bản nhạc vẫn ở thư viện của chủ từng bản suốt thời gian
+-- đó. Các ON DELETE CASCADE bên dưới chỉ còn để giữ toàn vẹn dữ liệu, ứng dụng không xóa cứng team.
 CREATE TABLE IF NOT EXISTS teams (
     id          VARCHAR(36)   NOT NULL,
     name        VARCHAR(100)  NOT NULL,
@@ -372,8 +374,14 @@ CREATE TABLE IF NOT EXISTS teams (
     created_by  VARCHAR(36)   NOT NULL COMMENT 'Người tạo; hạn mức số thành viên lấy theo gói của người này',
     created_at  DATETIME(6)   NULL,
     updated_at  DATETIME(6)   NULL,
+    deleted_at       DATETIME(6)  NULL COMMENT 'Xóa mềm: khác NULL = đã xóa, khôi phục được trong 30 ngày kể từ lúc này',
+    deleted_by       VARCHAR(36)  NULL COMMENT 'Người xóa (chủ team hoặc quản trị viên)',
+    deleted_by_admin BOOLEAN      NOT NULL DEFAULT FALSE COMMENT 'TRUE = quản trị viên xóa (vi phạm): chỉ quản trị viên khôi phục',
+    deleted_reason   VARCHAR(500) NULL COMMENT 'Lý do quản trị viên ghi khi xóa',
     PRIMARY KEY (id),
-    CONSTRAINT fk_teams_created_by FOREIGN KEY (created_by) REFERENCES members (id)
+    KEY idx_teams_deleted (deleted_at),
+    CONSTRAINT fk_teams_created_by FOREIGN KEY (created_by) REFERENCES members (id),
+    CONSTRAINT fk_teams_deleted_by FOREIGN KEY (deleted_by) REFERENCES members (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Mọi liên kết giữa team và người nằm chung một bảng (entity TeamMember), phân biệt bằng kind; truy vấn nào cũng phải
@@ -424,10 +432,13 @@ CREATE TABLE IF NOT EXISTS shows (
     created_by VARCHAR(36)   NULL,
     created_at DATETIME(6)   NULL,
     updated_at DATETIME(6)   NULL,
+    deleted_at DATETIME(6)   NULL COMMENT 'Xóa mềm: khác NULL = đã xóa, quản lý team khôi phục được trong 30 ngày (bài giữ nguyên)',
+    deleted_by VARCHAR(36)   NULL COMMENT 'Người xóa',
     PRIMARY KEY (id),
     KEY idx_shows_team (team_id, show_date),
     CONSTRAINT fk_shows_team       FOREIGN KEY (team_id)    REFERENCES teams (id) ON DELETE CASCADE,
-    CONSTRAINT fk_shows_created_by FOREIGN KEY (created_by) REFERENCES members (id)
+    CONSTRAINT fk_shows_created_by FOREIGN KEY (created_by) REFERENCES members (id),
+    CONSTRAINT fk_shows_deleted_by FOREIGN KEY (deleted_by) REFERENCES members (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Bài trong show. score_id ON DELETE CASCADE: bản nhạc bị xóa hẳn khỏi thùng rác thì bài cũng mất khỏi show.

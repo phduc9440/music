@@ -29,6 +29,7 @@ import com.ptit.music_be.dto.enums.TeamRole;
 import com.ptit.music_be.dto.request.TeamInviteRequest;
 import com.ptit.music_be.dto.request.TeamRequest;
 import com.ptit.music_be.dto.response.PageResponse;
+import com.ptit.music_be.dto.response.RestorableItemResponse;
 import com.ptit.music_be.dto.response.TeamActivityResponse;
 import com.ptit.music_be.dto.response.TeamInvitationPreviewResponse;
 import com.ptit.music_be.dto.response.TeamInvitationResponse;
@@ -189,7 +190,89 @@ public class TeamServiceImpl implements TeamService {
         if (tm.getRole() != TeamRole.OWNER) {
             throw new AppException(ErrorCode.TEAM_FORBIDDEN);
         }
-        teamRepository.deleteDirectly(teamId);
+        // Xóa mềm: mọi dữ liệu giữ nguyên, team biến mất với thành viên; chủ team khôi phục được trong 30 ngày
+        Team team = tm.getTeam();
+        team.markDeleted(me, false, null);
+        teamRepository.save(team);
+        for (TeamMember m : teamMemberRepository.findByTeamWithMember(teamId)) {
+            if (m.getMember().getId().equals(me.getId())) {
+                continue;
+            }
+            notificationService.notify(
+                    m.getMember(),
+                    me,
+                    NotificationType.TEAM_DELETED,
+                    null,
+                    TeamAccess.displayName(me) + " đã xóa nhóm " + team.getName(),
+                    NotificationService.params("name", TeamAccess.displayName(me), "team", team.getName()));
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<RestorableItemResponse> deletedTeams() {
+        Member me = access.currentMember();
+        LocalDateTime since = LocalDateTime.now().minusDays(Team.RESTORE_DAYS);
+        return teamMemberRepository.findRestorableOwnedBy(me.getId(), since).stream()
+                .map(tm -> toRestorable(tm.getTeam()))
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public TeamResponse restore(String teamId) {
+        Member me = access.currentMember();
+        TeamMember tm = teamMemberRepository
+                .findAnyStateByTeamIdAndMemberId(teamId == null ? "" : teamId, me.getId())
+                .filter(m -> m.getTeam().isDeleted())
+                .orElseThrow(() -> new AppException(ErrorCode.TEAM_NOT_EXISTED));
+        if (tm.getRole() != TeamRole.OWNER) {
+            throw new AppException(ErrorCode.TEAM_FORBIDDEN);
+        }
+        Team team = tm.getTeam();
+        if (team.isDeletedByAdmin()) {
+            throw new AppException(ErrorCode.TEAM_RESTORE_BY_ADMIN_ONLY);
+        }
+        restoreTeam(team, me, false);
+        return toResponse(team, tm.getRole());
+    }
+
+    /**
+     * Khôi phục team đã xóa mềm (chủ team hoặc quản trị viên gọi, đã kiểm tra quyền): kiểm tra còn hạn 30 ngày, bỏ dấu xóa,
+     * ghi nhật ký và báo cho các thành viên khác.
+     */
+    public void restoreTeam(Team team, Member actor, boolean byAdmin) {
+        if (!Team.restorable(team.getDeletedAt(), LocalDateTime.now())) {
+            throw new AppException(ErrorCode.TEAM_RESTORE_EXPIRED);
+        }
+        team.restore();
+        teamRepository.save(team);
+        activityLog.log(
+                team.getId(), actor, TeamActivityType.TEAM_RESTORED, "team", team.getName(), "byAdmin",
+                String.valueOf(byAdmin));
+        for (TeamMember m : teamMemberRepository.findByTeamWithMember(team.getId())) {
+            if (m.getMember().getId().equals(actor.getId())) {
+                continue;
+            }
+            notificationService.notify(
+                    m.getMember(),
+                    actor,
+                    NotificationType.TEAM_RESTORED,
+                    null,
+                    "Nhóm " + team.getName() + " đã được khôi phục",
+                    NotificationService.params("team", team.getName(), "teamId", team.getId()));
+        }
+    }
+
+    public static RestorableItemResponse toRestorable(Team team) {
+        return RestorableItemResponse.builder()
+                .id(team.getId())
+                .name(team.getName())
+                .description(team.getDescription())
+                .deletedAt(team.getDeletedAt())
+                .deletedByName(TeamAccess.displayName(team.getDeletedBy()))
+                .restorableUntil(Team.restorableUntil(team.getDeletedAt()))
+                .build();
     }
 
     // ------------------------------------------------------------------------------------------------ thành viên
@@ -476,9 +559,10 @@ public class TeamServiceImpl implements TeamService {
         if (invitation.getEmail() != null && !invitation.getEmail().equalsIgnoreCase(me.getEmail())) {
             throw new AppException(ErrorCode.TEAM_INVITATION_EMAIL_MISMATCH);
         }
-        // Khóa team để hai người chấp nhận cùng lúc không vượt hạn mức thành viên
+        // Khóa team để hai người chấp nhận cùng lúc không vượt hạn mức thành viên; team đã xóa thì lời mời hết giá trị
         Team team = teamRepository
                 .findByIdForUpdate(invitation.getTeam().getId())
+                .filter(t -> !t.isDeleted())
                 .orElseThrow(() -> new AppException(ErrorCode.TEAM_INVITATION_INVALID));
         if (teamMemberRepository.existsByTeamIdAndMemberId(team.getId(), me.getId())) {
             throw new AppException(ErrorCode.TEAM_ALREADY_MEMBER);
@@ -557,7 +641,9 @@ public class TeamServiceImpl implements TeamService {
         if (teamId.equals(score.getTeamId())) {
             return toScoreResponse(score, true);
         }
-        if (score.getTeamId() != null) {
+        // Team cũ đã xóa mềm thì bản nhạc coi như bản cá nhân, chuyển sang team khác được
+        if (score.getTeamId() != null
+                && teamRepository.findById(score.getTeamId()).filter(t -> !t.isDeleted()).isPresent()) {
             throw new AppException(ErrorCode.TEAM_SCORE_IN_OTHER_TEAM);
         }
         score.setTeamId(teamId);

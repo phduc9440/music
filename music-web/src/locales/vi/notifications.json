@@ -40,5 +40,7 @@
   "SHOW_ITEM_DUE": {
     "soon": "Bài “{title}” (buổi diễn {show}) tới hạn sau {days} ngày",
     "today": "Hôm nay là hạn của bài “{title}” (buổi diễn {show})"
-  }
+  },
+  "TEAM_DELETED": "{name} đã xóa nhóm {team}",
+  "TEAM_RESTORED": "Nhóm {team} đã được khôi phục"
 }

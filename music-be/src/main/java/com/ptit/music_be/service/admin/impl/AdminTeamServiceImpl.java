@@ -71,12 +71,15 @@ public class AdminTeamServiceImpl implements AdminTeamService {
     static final String ROW_SELECT = "select t.id, t.name, t.description, t.createdAt, c.id, c.fullName, c.email,"
             + " (select count(tm) from TeamMember tm where tm.team = t and tm.kind = 'MEMBER'),"
             + " (select count(s) from Score s where s.teamId = t.id),"
-            + " (select count(sh) from Show sh where sh.team = t),"
-            + " (select count(sp) from Show sp where sp.team = t and sp.status = 'PREPARING'),"
-            + " (select max(a.createdAt) from TeamMember a where a.team = t and a.kind = 'ACTIVITY')"
+            + " (select count(sh) from Show sh where sh.team = t and sh.deletedAt is null),"
+            + " (select count(sp) from Show sp where sp.team = t and sp.status = 'PREPARING' and sp.deletedAt is null),"
+            + " (select max(a.createdAt) from TeamMember a where a.team = t and a.kind = 'ACTIVITY'),"
+            + " t.deletedAt, t.deletedByAdmin, t.deletedReason"
             + " from Team t join t.createdBy c";
     static final String KEYWORD_FILTER = " where (:kw is null or lower(t.name) like :kw or lower(c.email) like :kw"
             + " or lower(c.fullName) like :kw)";
+    static final String ACTIVE_FILTER = " and t.deletedAt is null";
+    static final String DELETED_FILTER = " and t.deletedAt is not null";
 
     @PersistenceContext
     EntityManager em;
@@ -90,26 +93,31 @@ public class AdminTeamServiceImpl implements AdminTeamService {
     EntitlementService entitlementService;
     NotificationService notificationService;
     TeamActivityLog activityLog;
+    TeamServiceImpl teamService;
 
     @Override
     @Transactional(readOnly = true)
     public AdminTeamSummaryResponse summary() {
         LocalDateTime now = LocalDateTime.now();
         return AdminTeamSummaryResponse.builder()
-                .teams(count("select count(t) from Team t"))
+                .teams(count("select count(t) from Team t where t.deletedAt is null"))
                 .activeTeams7d(em.createQuery(
                                 "select count(distinct a.team.id) from TeamMember a where a.kind = 'ACTIVITY'"
-                                        + " and a.createdAt >= :since",
+                                        + " and a.team.deletedAt is null and a.createdAt >= :since",
                                 Long.class)
                         .setParameter("since", now.minusDays(ACTIVE_DAYS))
                         .getSingleResult())
-                .teamMembers(count("select count(distinct tm.member) from TeamMember tm where tm.kind = 'MEMBER'"))
-                .preparingShows(count("select count(s) from Show s where s.status = 'PREPARING'"))
+                .teamMembers(count("select count(distinct tm.member) from TeamMember tm where tm.kind = 'MEMBER'"
+                        + " and tm.team.deletedAt is null"))
+                .preparingShows(count("select count(s) from Show s where s.status = 'PREPARING'"
+                        + " and s.deletedAt is null and s.team.deletedAt is null"))
                 .openItems(count("select count(i) from ShowItem i where i.status <> 'APPROVED'"
-                        + " and i.show.status = 'PREPARING'"))
+                        + " and i.show.status = 'PREPARING' and i.show.deletedAt is null"
+                        + " and i.show.team.deletedAt is null"))
                 .overdueItems(em.createQuery(
                                 "select count(i) from ShowItem i where i.status <> 'APPROVED'"
-                                        + " and i.show.status = 'PREPARING' and i.dueDate < :today",
+                                        + " and i.show.status = 'PREPARING' and i.show.deletedAt is null"
+                                        + " and i.show.team.deletedAt is null and i.dueDate < :today",
                                 Long.class)
                         .setParameter("today", LocalDate.now())
                         .getSingleResult())
@@ -118,18 +126,20 @@ public class AdminTeamServiceImpl implements AdminTeamService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<AdminTeamResponse> search(String keyword, int page, int size) {
+    public PageResponse<AdminTeamResponse> search(String keyword, boolean deleted, int page, int size) {
         int safeSize = size <= 0 ? DEFAULT_PAGE_SIZE : Math.min(size, MAX_PAGE_SIZE);
         int safePage = Math.max(page, 0);
         String kw = keyword == null || keyword.isBlank()
                 ? null
                 : "%" + keyword.trim().toLowerCase(Locale.ROOT).substring(0, Math.min(keyword.trim().length(), MAX_KEYWORD))
                         + "%";
-        long total = em.createQuery("select count(t) from Team t join t.createdBy c" + KEYWORD_FILTER, Long.class)
+        String state = deleted ? DELETED_FILTER : ACTIVE_FILTER;
+        String order = deleted ? " order by t.deletedAt desc, t.id" : " order by t.createdAt desc, t.id";
+        long total = em.createQuery("select count(t) from Team t join t.createdBy c" + KEYWORD_FILTER + state, Long.class)
                 .setParameter("kw", kw)
                 .getSingleResult();
         List<Object[]> rows = em.createQuery(
-                        ROW_SELECT + KEYWORD_FILTER + " order by t.createdAt desc, t.id", Object[].class)
+                        ROW_SELECT + KEYWORD_FILTER + state + order, Object[].class)
                 .setParameter("kw", kw)
                 .setFirstResult(safePage * safeSize)
                 .setMaxResults(safeSize)
@@ -225,7 +235,12 @@ public class AdminTeamServiceImpl implements AdminTeamService {
                 .toList();
         String name = team.getName();
         String deletedId = team.getId();
-        teamRepository.deleteDirectly(deletedId);
+        if (team.isDeleted()) {
+            throw new AppException(ErrorCode.TEAM_NOT_EXISTED);
+        }
+        // Xóa mềm: dữ liệu giữ nguyên, khôi phục được trong 30 ngày
+        team.markDeleted(admin, true, cleanReason);
+        teamRepository.save(team);
         for (Member m : members) {
             notificationService.notify(
                     m,
@@ -235,7 +250,21 @@ public class AdminTeamServiceImpl implements AdminTeamService {
                     "Quản trị viên đã xóa nhóm " + name + (cleanReason == null ? "" : ": " + cleanReason),
                     NotificationService.params("team", name, "reason", cleanReason));
         }
-        log.info("Admin {} đã xóa team {} ({}), lý do: {}", admin.getEmail(), deletedId, name, cleanReason);
+        log.info("Admin {} đã xóa mềm team {} ({}), lý do: {}", admin.getEmail(), deletedId, name, cleanReason);
+    }
+
+    @Override
+    @Transactional
+    public void restore(String teamId) {
+        Team team = teamRepository
+                .findById(teamId == null ? "" : teamId)
+                .filter(Team::isDeleted)
+                .orElseThrow(() -> new AppException(ErrorCode.TEAM_NOT_EXISTED));
+        Member admin = memberRepository
+                .findByEmail(SecurityUtils.getCurrentEmail())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        teamService.restoreTeam(team, admin, true);
+        log.info("Admin {} đã khôi phục team {} ({})", admin.getEmail(), team.getId(), team.getName());
     }
 
     private long count(String jpql) {
@@ -261,6 +290,11 @@ public class AdminTeamServiceImpl implements AdminTeamService {
                 .lastActivityAt((LocalDateTime) r[11])
                 .planActive(Boolean.TRUE.equals(limits.team()))
                 .memberLimit(limits.teamMembers())
+                .deletedAt((LocalDateTime) r[12])
+                .restorableUntil(Team.restorableUntil((LocalDateTime) r[12]))
+                .restorable(Team.restorable((LocalDateTime) r[12], LocalDateTime.now()))
+                .deletedByAdmin(Boolean.TRUE.equals(r[13]))
+                .deletedReason((String) r[14])
                 .build();
     }
 }

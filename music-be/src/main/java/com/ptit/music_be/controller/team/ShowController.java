@@ -44,10 +44,16 @@ public class ShowController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Delete show (OWNER, MANAGER)", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Soft-delete show (OWNER, MANAGER); restorable for 30 days", security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<Void> delete(@PathVariable String id) {
         showService.delete(id);
         return ApiResponse.<Void>builder().build();
+    }
+
+    @PostMapping("/{id}/restore")
+    @Operation(summary = "Restore a deleted show (OWNER, MANAGER; within 30 days); 3829 expired", security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<ShowResponse> restore(@PathVariable String id) {
+        return ApiResponse.<ShowResponse>builder().result(showService.restore(id)).build();
     }
 
     @PostMapping("/{id}/items")

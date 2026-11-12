@@ -5,6 +5,7 @@ import java.util.List;
 import com.ptit.music_be.dto.request.TeamInviteRequest;
 import com.ptit.music_be.dto.request.TeamRequest;
 import com.ptit.music_be.dto.response.PageResponse;
+import com.ptit.music_be.dto.response.RestorableItemResponse;
 import com.ptit.music_be.dto.response.TeamActivityResponse;
 import com.ptit.music_be.dto.response.TeamInvitationPreviewResponse;
 import com.ptit.music_be.dto.response.TeamInvitationResponse;
@@ -27,8 +28,14 @@ public interface TeamService {
     /** OWNER/MANAGER sửa tên, mô tả. */
     TeamResponse update(String teamId, TeamRequest request);
 
-    /** Chỉ OWNER: xóa team, bản nhạc của team trở về bản cá nhân của chủ từng bản. */
+    /** Chỉ OWNER: xóa mềm team (báo cho các thành viên); khôi phục được trong 30 ngày. Bản nhạc vẫn ở thư viện của chủ. */
     void delete(String teamId);
+
+    /** Team tôi là chủ đã tự xóa, còn trong hạn 30 ngày khôi phục (không gồm team bị quản trị viên xóa). */
+    List<RestorableItemResponse> deletedTeams();
+
+    /** Chỉ OWNER khôi phục team mình đã xóa (trong 30 ngày, không phải team bị quản trị viên xóa). */
+    TeamResponse restore(String teamId);
 
     List<TeamMemberResponse> members(String teamId);
 

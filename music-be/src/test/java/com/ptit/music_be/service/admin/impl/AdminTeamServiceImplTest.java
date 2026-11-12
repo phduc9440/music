@@ -108,7 +108,7 @@ class AdminTeamServiceImplTest {
         assertTrue(after.getActiveTeams7d() >= 1);
         assertEquals(before.getPreparingShows() + 1, after.getPreparingShows());
 
-        var page = adminTeamService.search("kiểm thử zq", 0, 20);
+        var page = adminTeamService.search("kiểm thử zq", false, 0, 20);
         assertEquals(1, page.getTotalElements());
         AdminTeamResponse row = page.getContent().get(0);
         assertEquals(team.getId(), row.getId());
@@ -120,7 +120,7 @@ class AdminTeamServiceImplTest {
         assertTrue(row.isPlanActive());
         assertTrue(row.getLastActivityAt() != null);
         // Tìm theo email người tạo cũng ra
-        assertTrue(adminTeamService.search("ADMIN@music.com", 0, 50).getTotalElements() >= 1);
+        assertTrue(adminTeamService.search("ADMIN@music.com", false, 0, 50).getTotalElements() >= 1);
 
         AdminTeamDetailResponse detail = adminTeamService.detail(team.getId());
         assertEquals(2, detail.getMembers().size());
@@ -131,7 +131,7 @@ class AdminTeamServiceImplTest {
     }
 
     @Test
-    void deleteNotifiesMembersAndReturnsScoresToOwners() {
+    void deleteIsSoftHidesTeamFromMembersAndRestoreBringsEverythingBack() {
         TeamResponse team = seedTeam("Team bị xóa");
         String scoreId = adminTeamService.detail(team.getId()).getScores().get(0).getId();
 
@@ -139,10 +139,26 @@ class AdminTeamServiceImplTest {
         em.flush();
         em.clear();
 
+        // Dữ liệu còn nguyên trong DB (không xóa cứng), chỉ đánh dấu xóa
+        assertEquals(1L, em.createQuery("select count(t) from Team t where t.id = :id and t.deletedAt is not null", Long.class)
+                .setParameter("id", team.getId()).getSingleResult());
+        assertEquals(2L, em.createQuery("select count(m) from TeamMember m where m.team.id = :id and m.kind = 'MEMBER'", Long.class)
+                .setParameter("id", team.getId()).getSingleResult());
+        assertEquals(team.getId(), scoreRepository.findById(scoreId).orElseThrow().getTeamId());
+
+        // Thành viên không còn vào được; team nằm trong danh sách đã xóa của admin, không còn trong danh sách đang hoạt động
+        as(MEMBER, "ROLE_USER");
         assertEquals(
                 ErrorCode.TEAM_NOT_EXISTED,
-                assertThrows(AppException.class, () -> adminTeamService.detail(team.getId())).getErrorCode());
-        assertNull(scoreRepository.findById(scoreId).orElseThrow().getTeamId());
+                assertThrows(AppException.class, () -> teamService.get(team.getId())).getErrorCode());
+        assertTrue(teamService.myTeams().stream().noneMatch(t -> t.getId().equals(team.getId())));
+        asSuperAdmin();
+        assertEquals(0, adminTeamService.search("Team bị xóa", false, 0, 20).getTotalElements());
+        AdminTeamResponse deleted = adminTeamService.search("Team bị xóa", true, 0, 20).getContent().get(0);
+        assertTrue(deleted.isRestorable());
+        assertTrue(deleted.isDeletedByAdmin());
+        assertEquals("Nội dung vi phạm", deleted.getDeletedReason());
+
         // Người xóa (chủ team ở đây) không tự nhận thông báo; thành viên còn lại nhận
         long notified = em.createQuery(
                         "select count(n) from Notification n where n.recipient.email = :e and n.type = :t", Long.class)
@@ -150,6 +166,36 @@ class AdminTeamServiceImplTest {
                 .setParameter("t", NotificationType.TEAM_DELETED_BY_ADMIN)
                 .getSingleResult();
         assertEquals(1, notified);
+
+        // Chủ team không tự khôi phục được team do quản trị viên xóa
+        assertEquals(
+                ErrorCode.TEAM_RESTORE_BY_ADMIN_ONLY,
+                assertThrows(AppException.class, () -> teamService.restore(team.getId())).getErrorCode());
+
+        adminTeamService.restore(team.getId());
+        em.flush();
+        em.clear();
+        as(MEMBER, "ROLE_USER");
+        assertEquals(team.getId(), teamService.get(team.getId()).getId());
+        assertEquals(1, showService.shows(team.getId()).size());
+        assertEquals(1, teamService.scores(team.getId()).size());
+    }
+
+    @Test
+    void restoreFailsAfter30Days() {
+        TeamResponse team = seedTeam("Team quá hạn");
+        adminTeamService.delete(team.getId(), null);
+        em.flush();
+        em.createQuery("update Team t set t.deletedAt = :d where t.id = :id")
+                .setParameter("d", java.time.LocalDateTime.now().minusDays(31))
+                .setParameter("id", team.getId())
+                .executeUpdate();
+        em.clear();
+        assertEquals(
+                ErrorCode.TEAM_RESTORE_EXPIRED,
+                assertThrows(AppException.class, () -> adminTeamService.restore(team.getId())).getErrorCode());
+        // Quá hạn thì không xóa cứng: dòng vẫn còn, chỉ không khôi phục được
+        assertTrue(adminTeamService.search("Team quá hạn", true, 0, 20).getContent().get(0).getDeletedAt() != null);
     }
 
     @Test

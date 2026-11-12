@@ -19,21 +19,36 @@ import com.ptit.music_be.entity.TeamMember;
 
 /**
  * Bảng team_members chứa ba loại dòng (thành viên, lời mời, nhật ký); mọi truy vấn ở đây đều lọc theo kind. Đừng dùng
- * findById / findAll / count có sẵn của JpaRepository cho một loại cụ thể vì chúng không lọc kind.
+ * findById / findAll / count có sẵn của JpaRepository cho một loại cụ thể vì chúng không lọc kind. Các truy vấn mở cửa vào
+ * team (tư cách thành viên, team của tôi, lời mời) bỏ qua team đã xóa mềm ({@code team.deletedAt is not null}).
  */
 public interface TeamMemberRepository extends JpaRepository<TeamMember, String> {
 
     // ------------------------------------------------------------------------------------------------ thành viên
 
-    @Query("select tm from TeamMember tm where tm.kind = 'MEMBER' and tm.team.id = :teamId and tm.member.id = :memberId")
+    /** Tư cách thành viên trong team chưa bị xóa: cửa vào mọi quyền trên team (TeamAccess, quyền bản nhạc của team). */
+    @Query("select tm from TeamMember tm join fetch tm.team t where tm.kind = 'MEMBER' and t.id = :teamId"
+            + " and tm.member.id = :memberId and t.deletedAt is null")
     Optional<TeamMember> findByTeamIdAndMemberId(@Param("teamId") String teamId, @Param("memberId") String memberId);
+
+    /** Như {@link #findByTeamIdAndMemberId} nhưng tính cả team đã xóa (để khôi phục). */
+    @Query("select tm from TeamMember tm join fetch tm.team t where tm.kind = 'MEMBER' and t.id = :teamId"
+            + " and tm.member.id = :memberId")
+    Optional<TeamMember> findAnyStateByTeamIdAndMemberId(
+            @Param("teamId") String teamId, @Param("memberId") String memberId);
+
+    /** Team tôi là chủ, do chủ team xóa (không phải quản trị viên), xóa sau {@code since}: còn khôi phục được. */
+    @Query("select tm from TeamMember tm join fetch tm.team t left join fetch t.deletedBy where tm.kind = 'MEMBER'"
+            + " and tm.member.id = :memberId and tm.role = 'OWNER' and t.deletedAt is not null and t.deletedAt > :since"
+            + " and t.deletedByAdmin = false order by t.deletedAt desc")
+    List<TeamMember> findRestorableOwnedBy(@Param("memberId") String memberId, @Param("since") LocalDateTime since);
 
     @Query("select tm from TeamMember tm join fetch tm.member where tm.kind = 'MEMBER' and tm.team.id = :teamId"
             + " order by tm.joinedAt, tm.id")
     List<TeamMember> findByTeamWithMember(@Param("teamId") String teamId);
 
-    @Query("select tm from TeamMember tm join fetch tm.team where tm.kind = 'MEMBER' and tm.member.id = :memberId"
-            + " order by tm.team.name")
+    @Query("select tm from TeamMember tm join fetch tm.team t where tm.kind = 'MEMBER' and tm.member.id = :memberId"
+            + " and t.deletedAt is null order by t.name")
     List<TeamMember> findByMemberWithTeam(@Param("memberId") String memberId);
 
     @Query("select count(tm) from TeamMember tm where tm.kind = 'MEMBER' and tm.team.id = :teamId")
@@ -56,7 +71,8 @@ public interface TeamMemberRepository extends JpaRepository<TeamMember, String> 
     @Query("select i from TeamMember i where i.kind = 'INVITATION' and i.id = :id")
     Optional<TeamMember> findInvitationById(@Param("id") String id);
 
-    @Query("select i from TeamMember i join fetch i.team where i.kind = 'INVITATION' and i.tokenHash = :hash")
+    @Query("select i from TeamMember i join fetch i.team t where i.kind = 'INVITATION' and i.tokenHash = :hash"
+            + " and t.deletedAt is null")
     Optional<TeamMember> findInvitationByTokenHash(@Param("hash") String hash);
 
     /** Khóa lời mời lúc chấp nhận để mã chỉ dùng được một lần kể cả khi bấm hai lần cùng lúc. */
@@ -76,7 +92,8 @@ public interface TeamMemberRepository extends JpaRepository<TeamMember, String> 
             @Param("teamId") String teamId, @Param("email") String email, @Param("now") LocalDateTime now);
 
     /** Lời mời theo email gửi cho tôi còn dùng được (mọi team), mới nhất trước. */
-    @Query("select i from TeamMember i join fetch i.team join fetch i.invitedBy where i.kind = 'INVITATION'"
+    @Query("select i from TeamMember i join fetch i.team t join fetch i.invitedBy where i.kind = 'INVITATION'"
+            + " and t.deletedAt is null"
             + " and lower(i.email) = lower(:email) and i.status = 'PENDING' and i.expiresAt > :now"
             + " order by i.createdAt desc")
     List<TeamMember> findUsableInvitationsForEmail(@Param("email") String email, @Param("now") LocalDateTime now);

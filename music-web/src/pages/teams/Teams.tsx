@@ -6,10 +6,10 @@ import { useNavigate } from '../../routes/useTransitionNavigate';
 import Modal from '../../components/scores/common/Modal';
 import Skeleton from '../../components/ui/Skeleton';
 import { billingApi, teamApi } from '../../services';
-import type { Team, TeamInvitation, TeamTask } from '../../types';
+import type { RestorableItem, Team, TeamInvitation, TeamTask } from '../../types';
 import { formatDate, formatNumber, t } from '../../i18n/core';
 import { getErrorMessage } from '../../utils/score';
-import { DueDate, RoleBadge, StatusBadge } from './shared';
+import { DueDate, RestorableList, RoleBadge, StatusBadge } from './shared';
 import '../../components/scores/scores.css';
 import './teams.css';
 
@@ -19,6 +19,7 @@ export default function Teams() {
   const [teams, setTeams] = useState<Team[] | null>(null);
   const [invitations, setInvitations] = useState<TeamInvitation[]>([]);
   const [tasks, setTasks] = useState<TeamTask[] | null>(null);
+  const [deletedTeams, setDeletedTeams] = useState<RestorableItem[]>([]);
   const [canCreate, setCanCreate] = useState<boolean | null>(null);
   const [creating, setCreating] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -34,6 +35,10 @@ export default function Teams() {
       .myInvitations()
       .then((res) => setInvitations(res.data.result))
       .catch(() => setInvitations([]));
+    teamApi
+      .deleted()
+      .then((res) => setDeletedTeams(res.data.result))
+      .catch(() => setDeletedTeams([]));
     teamApi
       .myTasks()
       .then((res) => {
@@ -208,6 +213,23 @@ export default function Teams() {
             </div>
           )}
         </section>
+
+        <RestorableList
+          title={t('teams.trash.title')}
+          hint={t('teams.trash.hint')}
+          items={deletedTeams}
+          onRestore={async (item) => {
+            try {
+              await teamApi.restore(item.id);
+              toast.success(t('teams.trash.restored', { name: item.name }));
+              load();
+              return true;
+            } catch (err) {
+              toast.error(getErrorMessage(err, t('teams.trash.restoreFailed')));
+              return false;
+            }
+          }}
+        />
       </main>
 
       {creating && (
