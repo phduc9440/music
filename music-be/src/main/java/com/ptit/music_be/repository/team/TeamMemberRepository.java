@@ -18,8 +18,8 @@ import com.ptit.music_be.dto.enums.team.TeamRole;
 import com.ptit.music_be.entity.TeamMember;
 
 /**
- * Bảng team_members chứa ba loại dòng (thành viên, lời mời, nhật ký); mọi truy vấn ở đây đều lọc theo kind. Đừng dùng
- * findById / findAll / count có sẵn của JpaRepository cho một loại cụ thể vì chúng không lọc kind. Các truy vấn mở cửa vào
+ * Bảng team_members chứa bốn loại dòng (thành viên, lời mời, nhật ký, bảng quyền); mọi truy vấn ở đây đều lọc theo
+ * kind. Đừng dùng findById / findAll / count có sẵn của JpaRepository cho một loại cụ thể vì chúng không lọc kind. Các truy vấn mở cửa vào
  * team (tư cách thành viên, team của tôi, lời mời) bỏ qua team đã xóa mềm ({@code team.deletedAt is not null}).
  */
 public interface TeamMemberRepository extends JpaRepository<TeamMember, String> {
@@ -109,4 +109,14 @@ public interface TeamMemberRepository extends JpaRepository<TeamMember, String> 
                     + " and a.team.id = :teamId order by a.createdAt desc, a.id desc",
             countQuery = "select count(a) from TeamMember a where a.kind = 'ACTIVITY' and a.team.id = :teamId")
     Page<TeamMember> findActivities(@Param("teamId") String teamId, Pageable pageable);
+
+    // ------------------------------------------------------------------------------------------------ bảng quyền
+
+    /** Các dòng bảng quyền (mỗi vai trò tối đa một dòng) của các team. */
+    @Query("select p from TeamMember p join fetch p.team where p.kind = 'PERMISSION' and p.team.id in :teamIds")
+    List<TeamMember> findPermissions(@Param("teamIds") Collection<String> teamIds);
+
+    /** Dòng bảng quyền của một vai trò trong team (chưa có = vai trò đó dùng quyền mặc định). */
+    @Query("select p from TeamMember p where p.kind = 'PERMISSION' and p.team.id = :teamId and p.role = :role")
+    Optional<TeamMember> findPermission(@Param("teamId") String teamId, @Param("role") TeamRole role);
 }

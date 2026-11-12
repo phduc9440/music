@@ -13,6 +13,8 @@ import type {
   TeamInvitation,
   TeamInvitationPreview,
   TeamMember,
+  TeamPermission,
+  TeamPermissionTable,
   TeamRole,
   TeamScore,
   TeamTask,
@@ -39,6 +41,12 @@ export const teamApi = {
   /** Xóa thành viên, hoặc tự rời team khi memberId là chính mình. */
   removeMember: (id: string, memberId: string) =>
     apiClient.delete<ApiResponse<void>>(`/teams/${id}/members/${memberId}`),
+
+  /** Bảng "Mỗi vai trò làm được gì" của team (mọi thành viên xem được). */
+  permissions: (id: string) => apiClient.get<ApiResponse<TeamPermissionTable>>(`/teams/${id}/permissions`),
+  /** Chỉ chủ nhóm: đặt lại quyền của các vai trò gửi lên (vai trò không gửi thì giữ nguyên). */
+  updatePermissions: (id: string, roles: Partial<Record<TeamRole, TeamPermission[]>>) =>
+    apiClient.put<ApiResponse<TeamPermissionTable>>(`/teams/${id}/permissions`, { roles }),
 
   invitations: (id: string) => apiClient.get<ApiResponse<TeamInvitation[]>>(`/teams/${id}/invitations`),
   /** email trống = tạo link mời; token chỉ trả về một lần. */

@@ -38,26 +38,26 @@ public class ShowController {
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Update show (OWNER, MANAGER)", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Update show (needs MANAGE_SHOWS)", security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<ShowResponse> update(@PathVariable String id, @RequestBody ShowRequest request) {
         return ok(showService.update(id, request));
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Soft-delete show (OWNER, MANAGER); restorable for 30 days", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Soft-delete show (needs MANAGE_SHOWS); restorable for 30 days", security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<Void> delete(@PathVariable String id) {
         showService.delete(id);
         return ApiResponse.<Void>builder().build();
     }
 
     @PostMapping("/{id}/restore")
-    @Operation(summary = "Restore a deleted show (OWNER, MANAGER; within 30 days); 3829 expired", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Restore a deleted show (needs MANAGE_SHOWS; within 30 days); 3829 expired", security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<ShowResponse> restore(@PathVariable String id) {
         return ApiResponse.<ShowResponse>builder().result(showService.restore(id)).build();
     }
 
     @PostMapping("/{id}/items")
-    @Operation(summary = "Add a team score to the show (OWNER, MANAGER)", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Add a team score to the show (needs MANAGE_SHOWS)", security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<ShowDetailResponse> addItem(@PathVariable String id, @RequestBody ShowItemRequest request) {
         return ok(showService.addItem(id, request));
     }
@@ -69,14 +69,14 @@ public class ShowController {
     }
 
     @PutMapping("/{id}/items/{itemId}")
-    @Operation(summary = "Assign arranger, reviewer, due date, notes (OWNER, MANAGER)", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Assign arranger, reviewer, due date, notes (needs MANAGE_SHOWS)", security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<ShowDetailResponse> updateItem(
             @PathVariable String id, @PathVariable String itemId, @RequestBody ShowItemRequest request) {
         return ok(showService.updateItem(id, itemId, request));
     }
 
     @DeleteMapping("/{id}/items/{itemId}")
-    @Operation(summary = "Remove an item from the show (OWNER, MANAGER)", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Remove an item from the show (needs MANAGE_SHOWS)", security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<ShowDetailResponse> removeItem(@PathVariable String id, @PathVariable String itemId) {
         return ok(showService.removeItem(id, itemId));
     }

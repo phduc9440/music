@@ -7,7 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -24,15 +26,18 @@ import org.springframework.transaction.annotation.Transactional;
 import com.ptit.music_be.dto.enums.notification.NotificationType;
 import com.ptit.music_be.dto.enums.score.ScoreAccess;
 import com.ptit.music_be.dto.enums.team.ShowItemStatus;
+import com.ptit.music_be.dto.enums.team.TeamPermission;
 import com.ptit.music_be.dto.enums.team.TeamRole;
 import com.ptit.music_be.dto.request.team.ShowItemRequest;
 import com.ptit.music_be.dto.request.team.ShowItemStatusRequest;
 import com.ptit.music_be.dto.request.team.ShowRequest;
 import com.ptit.music_be.dto.request.team.TeamInviteRequest;
+import com.ptit.music_be.dto.request.team.TeamPermissionsRequest;
 import com.ptit.music_be.dto.request.team.TeamRequest;
 import com.ptit.music_be.dto.response.team.ShowDetailResponse;
 import com.ptit.music_be.dto.response.team.ShowItemResponse;
 import com.ptit.music_be.dto.response.team.TeamInvitationResponse;
+import com.ptit.music_be.dto.response.team.TeamPermissionsResponse;
 import com.ptit.music_be.dto.response.team.TeamResponse;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
@@ -266,14 +271,14 @@ class TeamShowFlowTest {
         assertEquals(
                 ErrorCode.TEAM_SCORE_NOT_OWNER,
                 codeOf(() -> teamService.addScore(team.getId(), ownersScore.getId())));
-        // MANAGER không cấp được vai trò OWNER
+        // MANAGER không đụng tới OWNER
         String ownerId = member(OWNER).getId();
         assertEquals(
-                ErrorCode.TEAM_FORBIDDEN,
+                ErrorCode.TEAM_ROLE_SCOPE,
                 codeOf(() -> teamService.changeRole(team.getId(), ownerId, TeamRole.VIEWER)));
 
         // Chỉ chủ team xóa được team; xóa xong thì không còn ai vào được
-        assertEquals(ErrorCode.TEAM_FORBIDDEN, codeOf(() -> teamService.delete(team.getId())));
+        assertEquals(ErrorCode.TEAM_OWNER_ONLY, codeOf(() -> teamService.delete(team.getId())));
         asOwner();
         teamService.delete(team.getId());
         em.flush();
@@ -284,5 +289,174 @@ class TeamShowFlowTest {
         assertEquals(team.getId(), teamService.restore(team.getId()).getId());
         assertEquals(team.getId(), teamService.get(team.getId()).getId());
         assertTrue(teamService.deletedTeams().isEmpty());
+    }
+    @Test
+    void managerCoordinatesWorkButOwnerKeepsTeamManagersAndOthersScores() {
+        asOwner();
+        TeamResponse team = teamService.create(new TeamRequest("Team C", null));
+        String teamId = team.getId();
+        TeamInvitationResponse managerLink = teamService.invite(teamId, new TeamInviteRequest(null, TeamRole.MANAGER));
+        TeamInvitationResponse arrangerLink = teamService.invite(teamId, new TeamInviteRequest(null, TeamRole.ARRANGER));
+        Score ownersScore = scoreRepository.save(Score.builder()
+                .member(member(OWNER))
+                .title("Bản của chủ nhóm")
+                .visibility("PRIVATE")
+                .build());
+        teamService.addScore(teamId, ownersScore.getId());
+        as(REVIEWER);
+        teamService.accept(managerLink.getToken());
+        as(ARRANGER);
+        teamService.accept(arrangerLink.getToken());
+        String ownerId = member(OWNER).getId();
+        String managerId = member(REVIEWER).getId();
+        String arrangerId = member(ARRANGER).getId();
+
+        as(REVIEWER);
+        // Việc điều phối: tạo buổi diễn, thêm bài, phân công, mời và đổi vai trò người phối / người xem
+        String showId = showService
+                .create(teamId, new ShowRequest("Tập dượt", null, null, null, null))
+                .getId();
+        showService.addItem(showId, new ShowItemRequest(ownersScore.getId(), arrangerId, managerId, null, null));
+        assertNotNull(teamService.invite(teamId, new TeamInviteRequest(null, TeamRole.VIEWER)).getToken());
+        assertEquals(TeamRole.VIEWER, teamService.changeRole(teamId, arrangerId, TeamRole.VIEWER).getRole());
+        assertEquals(TeamRole.ARRANGER, teamService.changeRole(teamId, arrangerId, TeamRole.ARRANGER).getRole());
+
+        // Việc của chủ nhóm (mặc định): sửa thông tin nhóm, tạo thêm quản lý, đụng tới chủ nhóm, chỉnh bảng quyền
+        assertEquals(
+                ErrorCode.TEAM_FORBIDDEN, codeOf(() -> teamService.update(teamId, new TeamRequest("Đổi tên", null))));
+        assertEquals(
+                ErrorCode.TEAM_OWNER_ONLY,
+                codeOf(() -> teamService.updatePermissions(teamId, new TeamPermissionsRequest(Map.of()))));
+        assertEquals(
+                ErrorCode.TEAM_ROLE_SCOPE,
+                codeOf(() -> teamService.invite(teamId, new TeamInviteRequest(null, TeamRole.MANAGER))));
+        assertEquals(
+                ErrorCode.TEAM_ROLE_SCOPE,
+                codeOf(() -> teamService.changeRole(teamId, arrangerId, TeamRole.MANAGER)));
+        assertEquals(ErrorCode.TEAM_ROLE_SCOPE, codeOf(() -> teamService.removeMember(teamId, ownerId)));
+
+        // Bản nhạc của người khác trong team: quản lý sửa được nhưng không xóa, không chia sẻ / công khai
+        Score score = scoreRepository.findById(ownersScore.getId()).orElseThrow();
+        assertEquals(ScoreAccess.EDIT, permissionService.resolve(score).level());
+        assertTrue(permissionService.canEdit(score));
+        assertFalse(permissionService.canDelete(score));
+
+        // Lời mời làm quản lý chỉ chủ nhóm thu hồi
+        asOwner();
+        TeamInvitationResponse secondManager = teamService.invite(teamId, new TeamInviteRequest(null, TeamRole.MANAGER));
+        as(REVIEWER);
+        assertEquals(
+                ErrorCode.TEAM_ROLE_SCOPE, codeOf(() -> teamService.revokeInvitation(teamId, secondManager.getId())));
+
+        // Chủ nhóm làm được hết: đổi tên, hạ quản lý xuống người phối, thu hồi lời mời quản lý
+        asOwner();
+        assertEquals("Team C mới", teamService.update(teamId, new TeamRequest("Team C mới", null)).getName());
+        teamService.revokeInvitation(teamId, secondManager.getId());
+        assertEquals(TeamRole.ARRANGER, teamService.changeRole(teamId, managerId, TeamRole.ARRANGER).getRole());
+        em.flush();
+        em.clear();
+        // Hết là quản lý thì không tạo buổi diễn được nữa
+        as(REVIEWER);
+        assertEquals(
+                ErrorCode.TEAM_FORBIDDEN,
+                codeOf(() -> showService.create(teamId, new ShowRequest("Không được", null, null, null, null))));
+    }
+    @Test
+    void onlyTheReviewerReopensAndOwnerTicksWhatEachRoleCanDo() {
+        asOwner();
+        String teamId = teamService.create(new TeamRequest("Team D", null)).getId();
+        TeamInvitationResponse managerLink = teamService.invite(teamId, new TeamInviteRequest(null, TeamRole.MANAGER));
+        Score ownersScore = scoreRepository.save(Score.builder()
+                .member(member(OWNER))
+                .title("Bản để duyệt")
+                .visibility("PRIVATE")
+                .build());
+        teamService.addScore(teamId, ownersScore.getId());
+        String showId = showService
+                .create(teamId, new ShowRequest("Hòa nhạc", null, null, null, null))
+                .getId();
+        ShowDetailResponse detail =
+                showService.addItem(showId, new ShowItemRequest(ownersScore.getId(), null, null, null, null));
+        String itemId = itemOf(detail, ownersScore.getId()).getId();
+        as(REVIEWER);
+        teamService.accept(managerLink.getToken());
+        String managerId = member(REVIEWER).getId();
+
+        // 1. Chủ nhóm duyệt bài (chưa giao người duyệt): chủ nhóm thành người duyệt của bài
+        asOwner();
+        ShowDetailResponse approved =
+                showService.changeStatus(showId, itemId, new ShowItemStatusRequest(ShowItemStatus.APPROVED, null));
+        assertEquals(member(OWNER).getId(), itemOf(approved, ownersScore.getId()).getReviewerId());
+
+        // 2. Quản lý không mở lại được bài chủ nhóm đã duyệt, cũng không đổi người duyệt sang mình để mở lại
+        as(REVIEWER);
+        assertTrue(itemOf(showService.get(showId), ownersScore.getId()).getAllowedStatuses().isEmpty());
+        assertEquals(
+                ErrorCode.SHOW_ITEM_APPROVED_LOCKED,
+                codeOf(() -> showService.changeStatus(
+                        showId, itemId, new ShowItemStatusRequest(ShowItemStatus.IN_REVIEW, null))));
+        assertEquals(
+                ErrorCode.SHOW_ITEM_APPROVED_LOCKED,
+                codeOf(() -> showService.updateItem(
+                        showId, itemId, new ShowItemRequest(null, null, managerId, null, null))));
+
+        // 3. Ai cũng xem được bảng quyền; chỉ chủ nhóm sửa
+        TeamPermissionsResponse seen = teamService.permissions(teamId);
+        assertFalse(seen.isEditable());
+        assertEquals(
+                EnumSet.copyOf(TeamPermission.defaultsOf(TeamRole.MANAGER)),
+                EnumSet.copyOf(seen.getRoles().get(TeamRole.MANAGER)));
+
+        // 4. Chủ nhóm tích lại quyền của quản lý: sửa thông tin nhóm, duyệt thay, xóa / chia sẻ bản của người khác;
+        //    bỏ tích quản lý buổi diễn và quản lý thành viên. Quyền phải có kèm tự bật.
+        asOwner();
+        assertEquals(
+                ErrorCode.TEAM_ROLE_INVALID,
+                codeOf(() -> teamService.updatePermissions(
+                        teamId, new TeamPermissionsRequest(Map.of(TeamRole.OWNER, List.of())))));
+        TeamPermissionsResponse saved = teamService.updatePermissions(
+                teamId,
+                new TeamPermissionsRequest(Map.of(
+                        TeamRole.MANAGER,
+                        List.of(TeamPermission.EDIT_TEAM, TeamPermission.APPROVE_ANY, TeamPermission.MANAGE_SCORES))));
+        assertTrue(saved.isEditable());
+        assertEquals(
+                EnumSet.of(
+                        TeamPermission.EDIT_TEAM,
+                        TeamPermission.APPROVE_ANY,
+                        TeamPermission.MANAGE_SCORES,
+                        TeamPermission.EDIT_SCORES,
+                        TeamPermission.COMMENT),
+                EnumSet.copyOf(saved.getRoles().get(TeamRole.MANAGER)));
+        // Vai trò không gửi lên thì giữ nguyên
+        assertEquals(
+                EnumSet.copyOf(TeamPermission.defaultsOf(TeamRole.ARRANGER)),
+                EnumSet.copyOf(saved.getRoles().get(TeamRole.ARRANGER)));
+        em.flush();
+        em.clear();
+
+        // 5. Quản lý giờ làm đúng theo bảng: đổi tên nhóm, duyệt thay, như chủ với bản của người khác; không tạo buổi
+        //    diễn, không mời được nữa
+        as(REVIEWER);
+        assertTrue(teamService.get(teamId).getMyPermissions().contains(TeamPermission.EDIT_TEAM));
+        assertEquals("Team D mới", teamService.update(teamId, new TeamRequest("Team D mới", null)).getName());
+        assertEquals(
+                ErrorCode.TEAM_FORBIDDEN,
+                codeOf(() -> showService.create(teamId, new ShowRequest("Không được", null, null, null, null))));
+        assertEquals(
+                ErrorCode.TEAM_FORBIDDEN,
+                codeOf(() -> teamService.invite(teamId, new TeamInviteRequest(null, TeamRole.VIEWER))));
+        Score score = scoreRepository.findById(ownersScore.getId()).orElseThrow();
+        assertEquals(ScoreAccess.OWNER, permissionService.resolve(score).level());
+        assertTrue(permissionService.canDelete(score));
+        ShowDetailResponse reopened =
+                showService.changeStatus(showId, itemId, new ShowItemStatusRequest(ShowItemStatus.IN_REVIEW, null));
+        assertEquals(ShowItemStatus.IN_REVIEW, itemOf(reopened, ownersScore.getId()).getStatus());
+        assertTrue(reopened.getMyPermissions().contains(TeamPermission.APPROVE_ANY));
+
+        // 6. Đổi bảng quyền có ghi nhật ký
+        assertTrue(teamService.activities(teamId, 0, 50).getContent().stream()
+                .anyMatch(a -> a.getType() == com.ptit.music_be.dto.enums.team.TeamActivityType.PERMISSIONS_CHANGED
+                        && "MANAGER".equals(a.getParams().get("role"))));
     }
 }

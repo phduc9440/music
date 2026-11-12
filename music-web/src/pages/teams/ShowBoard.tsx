@@ -9,7 +9,7 @@ import Icon from '../../components/ui/Icon';
 import Skeleton from '../../components/ui/Skeleton';
 import { useDialog } from '../../components/ui/dialog-context';
 import { showApi, teamApi, userApi } from '../../services';
-import { canManageTeam, SHOW_ITEM_STATUSES } from '../../types';
+import { hasTeamPermission, SHOW_ITEM_STATUSES } from '../../types';
 import type {
   Show,
   ShowDetail,
@@ -75,7 +75,8 @@ export default function ShowBoard() {
       .catch(() => undefined);
   }, []);
 
-  const manager = canManageTeam(data?.myRole);
+  // Người điều phối: có quyền quản lý buổi diễn theo bảng quyền của nhóm (mặc định chủ nhóm, quản lý)
+  const manager = hasTeamPermission(data?.myPermissions, 'MANAGE_SHOWS');
 
   /** Gọi API trả về cả show (thêm, sửa, gỡ, đổi trạng thái, đổi thứ tự) rồi vẽ lại. */
   const run = async (action: () => Promise<{ data: { result: ShowDetail } }>, failKey: string) => {
@@ -380,6 +381,7 @@ export default function ShowBoard() {
         <ItemModal
           teamId={teamId}
           detail={data}
+          meId={meId}
           item={editingItem === 'new' ? undefined : editingItem}
           onClose={() => setEditingItem(null)}
           onSaved={(next) => {
@@ -698,12 +700,14 @@ function ItemMenu({
 function ItemModal({
   teamId,
   detail,
+  meId,
   item,
   onClose,
   onSaved,
 }: {
   teamId: string;
   detail: ShowDetail;
+  meId: string | null;
   item?: ShowItem;
   onClose: () => void;
   onSaved: (detail: ShowDetail) => void;
@@ -716,6 +720,11 @@ function ItemModal({
   const [notes, setNotes] = useState(item?.notes ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  // Bài đã duyệt: chỉ người duyệt của bài (hoặc người duyệt thay được mọi bài) đổi người duyệt, tránh tự gán rồi mở lại
+  const reviewerLocked =
+    item?.status === 'APPROVED' &&
+    item.reviewerId !== meId &&
+    !hasTeamPermission(detail.myPermissions, 'APPROVE_ANY');
 
   useEffect(() => {
     if (item) return;
@@ -752,12 +761,25 @@ function ItemModal({
     }
   };
 
-  const memberSelect = (id: string, value: string, onChange: (v: string) => void, label: string) => (
+  const memberSelect = (
+    id: string,
+    value: string,
+    onChange: (v: string) => void,
+    label: string,
+    disabled = false,
+  ) => (
     <>
       <label className="sc-label" htmlFor={id}>
         {label}
       </label>
-      <select id={id} className="sc-input" value={value} onChange={(e) => onChange(e.target.value)}>
+      <select
+        id={id}
+        className="sc-input"
+        value={value}
+        disabled={disabled}
+        aria-describedby={disabled ? `${id}-hint` : undefined}
+        onChange={(e) => onChange(e.target.value)}
+      >
         <option value="">{t('teams.item.nobody')}</option>
         {detail.assignees.map((m) => (
           <option key={m.memberId} value={m.memberId}>
@@ -801,7 +823,12 @@ function ItemModal({
           </>
         )}
         {memberSelect('tm-item-arranger', arrangerId, setArrangerId, t('teams.item.arranger'))}
-        {memberSelect('tm-item-reviewer', reviewerId, setReviewerId, t('teams.item.reviewer'))}
+        {memberSelect('tm-item-reviewer', reviewerId, setReviewerId, t('teams.item.reviewer'), reviewerLocked)}
+        {reviewerLocked && (
+          <p id="tm-item-reviewer-hint" className="tm-muted">
+            {t('teams.item.reviewerLocked')}
+          </p>
+        )}
         <label className="sc-label" htmlFor="tm-item-due">
           {t('teams.item.due')}
         </label>

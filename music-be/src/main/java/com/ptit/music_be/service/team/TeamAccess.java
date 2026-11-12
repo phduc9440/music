@@ -2,6 +2,8 @@ package com.ptit.music_be.service.team;
 
 import org.springframework.stereotype.Component;
 
+import com.ptit.music_be.dto.enums.team.TeamPermission;
+import com.ptit.music_be.dto.enums.team.TeamRole;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.TeamMember;
 import com.ptit.music_be.exception.AppException;
@@ -25,6 +27,7 @@ public class TeamAccess {
 
     MemberRepository memberRepository;
     TeamMemberRepository teamMemberRepository;
+    TeamPermissionStore permissionStore;
 
     public Member currentMember() {
         return memberRepository
@@ -39,11 +42,25 @@ public class TeamAccess {
                 .orElseThrow(() -> new AppException(ErrorCode.TEAM_NOT_EXISTED));
     }
 
-    /** Như {@link #membership} nhưng phải là OWNER hoặc MANAGER. */
-    public TeamMember requireManager(String teamId, Member me) {
+    /** Quyền của tư cách thành viên này theo bảng quyền của team. */
+    public RolePermissions permissions(TeamMember tm) {
+        return permissionStore.of(tm);
+    }
+
+    /** Như {@link #membership} nhưng vai trò phải đang được bật quyền {@code permission}, không thì TEAM_FORBIDDEN. */
+    public TeamMember require(String teamId, Member me, TeamPermission permission) {
         TeamMember tm = membership(teamId, me);
-        if (!tm.getRole().canManage()) {
+        if (!permissions(tm).has(permission)) {
             throw new AppException(ErrorCode.TEAM_FORBIDDEN);
+        }
+        return tm;
+    }
+
+    /** Như {@link #membership} nhưng phải là OWNER (việc của riêng chủ nhóm, quản lý nhận TEAM_OWNER_ONLY). */
+    public TeamMember requireOwner(String teamId, Member me) {
+        TeamMember tm = membership(teamId, me);
+        if (tm.getRole() != TeamRole.OWNER) {
+            throw new AppException(ErrorCode.TEAM_OWNER_ONLY);
         }
         return tm;
     }

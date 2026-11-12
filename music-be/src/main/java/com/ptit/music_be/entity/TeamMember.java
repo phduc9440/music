@@ -15,7 +15,8 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 /**
- * Một dòng của bảng team_members: thành viên, lời mời hoặc nhật ký hoạt động của team, phân biệt bằng {@link #kind}. Mỗi
+ * Một dòng của bảng team_members: thành viên, lời mời, nhật ký hoạt động hoặc bảng quyền của một vai trò trong team, phân
+ * biệt bằng {@link #kind}. Mỗi
  * loại chỉ dùng một phần các trường (xem {@link TeamMemberKind}); mọi truy vấn phải lọc theo kind (các truy vấn đã viết sẵn
  * trong TeamMemberRepository đều lọc).
  */
@@ -51,7 +52,7 @@ public class TeamMember {
     @Column(length = 255)
     String email;
 
-    /** MEMBER, INVITATION: vai trò trong team (không mời thẳng làm OWNER). */
+    /** MEMBER, INVITATION: vai trò trong team (không mời thẳng làm OWNER); PERMISSION: vai trò được cấu hình. */
     @Enumerated(EnumType.STRING)
     @Column(length = 10)
     TeamRole role;
@@ -79,7 +80,7 @@ public class TeamMember {
     @Column(length = 32)
     TeamActivityType type;
 
-    /** ACTIVITY: tham số JSON (tên bài, tên người, vai trò...) để web dựng câu. */
+    /** ACTIVITY: tham số JSON (tên bài, tên người, vai trò...) để web dựng câu; PERMISSION: mảng JSON tên quyền. */
     @Column(name = "params", columnDefinition = "JSON")
     String params;
 

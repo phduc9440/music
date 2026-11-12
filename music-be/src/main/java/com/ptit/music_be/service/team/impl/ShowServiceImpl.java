@@ -17,6 +17,7 @@ import com.ptit.music_be.dto.enums.notification.NotificationType;
 import com.ptit.music_be.dto.enums.team.ShowItemStatus;
 import com.ptit.music_be.dto.enums.team.ShowStatus;
 import com.ptit.music_be.dto.enums.team.TeamActivityType;
+import com.ptit.music_be.dto.enums.team.TeamPermission;
 import com.ptit.music_be.dto.enums.team.TeamRole;
 import com.ptit.music_be.dto.request.team.ShowItemOrderRequest;
 import com.ptit.music_be.dto.request.team.ShowItemRequest;
@@ -39,6 +40,7 @@ import com.ptit.music_be.repository.team.ShowItemRepository;
 import com.ptit.music_be.repository.team.ShowRepository;
 import com.ptit.music_be.repository.team.TeamMemberRepository;
 import com.ptit.music_be.service.notification.NotificationService;
+import com.ptit.music_be.service.team.RolePermissions;
 import com.ptit.music_be.service.team.ShowItemTransitions;
 import com.ptit.music_be.service.team.ShowService;
 import com.ptit.music_be.service.team.TeamAccess;
@@ -84,7 +86,7 @@ public class ShowServiceImpl implements ShowService {
     @Transactional
     public ShowResponse create(String teamId, ShowRequest request) {
         Member me = access.currentMember();
-        TeamMember tm = access.requireManager(teamId, me);
+        TeamMember tm = access.require(teamId, me, TeamPermission.MANAGE_SHOWS);
         Show show = Show.builder()
                 .team(tm.getTeam())
                 .createdBy(me)
@@ -110,7 +112,7 @@ public class ShowServiceImpl implements ShowService {
     public ShowResponse update(String showId, ShowRequest request) {
         Member me = access.currentMember();
         Show show = findShow(showId);
-        access.requireManager(show.getTeam().getId(), me);
+        access.require(show.getTeam().getId(), me, TeamPermission.MANAGE_SHOWS);
         apply(show, request);
         showRepository.save(show);
         activityLog.log(
@@ -129,7 +131,7 @@ public class ShowServiceImpl implements ShowService {
     public void delete(String showId) {
         Member me = access.currentMember();
         Show show = findShow(showId);
-        access.requireManager(show.getTeam().getId(), me);
+        access.require(show.getTeam().getId(), me, TeamPermission.MANAGE_SHOWS);
         // Xóa mềm: bài, phân công, trạng thái giữ nguyên để khôi phục
         show.setDeletedAt(LocalDateTime.now());
         show.setDeletedBy(me);
@@ -147,7 +149,7 @@ public class ShowServiceImpl implements ShowService {
     @Override
     @Transactional(readOnly = true)
     public List<RestorableItemResponse> deletedShows(String teamId) {
-        access.requireManager(teamId, access.currentMember());
+        access.require(teamId, access.currentMember(), TeamPermission.MANAGE_SHOWS);
         return showRepository.findDeletedByTeam(teamId, LocalDateTime.now().minusDays(Team.RESTORE_DAYS)).stream()
                 .map(s -> RestorableItemResponse.builder()
                         .id(s.getId())
@@ -168,8 +170,8 @@ public class ShowServiceImpl implements ShowService {
                 .findById(showId == null ? "" : showId)
                 .filter(s -> s.getDeletedAt() != null)
                 .orElseThrow(() -> new AppException(ErrorCode.SHOW_NOT_EXISTED));
-        // requireManager đã lọc team đã xóa: team bị xóa thì phải khôi phục team trước
-        access.requireManager(show.getTeam().getId(), me);
+        // membership đã lọc team đã xóa: team bị xóa thì phải khôi phục team trước
+        access.require(show.getTeam().getId(), me, TeamPermission.MANAGE_SHOWS);
         if (!Team.restorable(show.getDeletedAt(), LocalDateTime.now())) {
             throw new AppException(ErrorCode.SHOW_RESTORE_EXPIRED);
         }
@@ -195,7 +197,7 @@ public class ShowServiceImpl implements ShowService {
         Member me = access.currentMember();
         Show show = findShow(showId);
         String teamId = show.getTeam().getId();
-        TeamMember tm = access.requireManager(teamId, me);
+        TeamMember tm = access.require(teamId, me, TeamPermission.MANAGE_SHOWS);
         String scoreId = request == null ? null : request.getScoreId();
         Score score = scoreRepository
                 .findById(scoreId == null ? "" : scoreId)
@@ -233,11 +235,17 @@ public class ShowServiceImpl implements ShowService {
         Member me = access.currentMember();
         Show show = findShow(showId);
         String teamId = show.getTeam().getId();
-        TeamMember tm = access.requireManager(teamId, me);
+        TeamMember tm = access.require(teamId, me, TeamPermission.MANAGE_SHOWS);
         ShowItem item = findItem(show, itemId);
         Member oldArranger = item.getArranger();
         Member oldReviewer = item.getReviewer();
         assign(item, request, teamId);
+        // Bài đã duyệt: đổi người duyệt (để rồi tự mở lại) chỉ người duyệt của bài hoặc người có quyền duyệt thay
+        if (item.getStatus() == ShowItemStatus.APPROVED
+                && !sameMember(oldReviewer, item.getReviewer())
+                && !(sameMember(oldReviewer, me) || access.permissions(tm).has(TeamPermission.APPROVE_ANY))) {
+            throw new AppException(ErrorCode.SHOW_ITEM_APPROVED_LOCKED);
+        }
         itemRepository.save(item);
         String title = scoreTitle(item.getScoreId());
         if (!sameMember(oldArranger, item.getArranger()) || !sameMember(oldReviewer, item.getReviewer())) {
@@ -265,7 +273,7 @@ public class ShowServiceImpl implements ShowService {
     public ShowDetailResponse removeItem(String showId, String itemId) {
         Member me = access.currentMember();
         Show show = findShow(showId);
-        TeamMember tm = access.requireManager(show.getTeam().getId(), me);
+        TeamMember tm = access.require(show.getTeam().getId(), me, TeamPermission.MANAGE_SHOWS);
         ShowItem item = findItem(show, itemId);
         String title = scoreTitle(item.getScoreId());
         itemRepository.delete(item);
@@ -293,7 +301,7 @@ public class ShowServiceImpl implements ShowService {
     public ShowDetailResponse reorder(String showId, ShowItemOrderRequest request) {
         Member me = access.currentMember();
         Show show = findShow(showId);
-        TeamMember tm = access.requireManager(show.getTeam().getId(), me);
+        TeamMember tm = access.require(show.getTeam().getId(), me, TeamPermission.MANAGE_SHOWS);
         List<ShowItem> items = itemRepository.findByShowOrdered(showId);
         List<String> ids = request == null || request.getItemIds() == null ? List.of() : request.getItemIds();
         Map<String, ShowItem> byId = items.stream().collect(Collectors.toMap(ShowItem::getId, Function.identity()));
@@ -318,8 +326,13 @@ public class ShowServiceImpl implements ShowService {
         if (to == null || to == item.getStatus()) {
             return detail(show, tm);
         }
-        if (!ShowItemTransitions.allowed(item, tm.getRole(), me.getId()).contains(to)) {
-            throw new AppException(ErrorCode.SHOW_ITEM_TRANSITION_INVALID);
+        RolePermissions perms = access.permissions(tm);
+        if (!ShowItemTransitions.allowed(item, perms, me.getId()).contains(to)) {
+            // Bài đã duyệt mà không phải người duyệt: báo rõ lý do thay vì "không chuyển được"
+            throw new AppException(
+                    item.getStatus() == ShowItemStatus.APPROVED
+                            ? ErrorCode.SHOW_ITEM_APPROVED_LOCKED
+                            : ErrorCode.SHOW_ITEM_TRANSITION_INVALID);
         }
         String note = request.getNote() == null || request.getNote().isBlank()
                 ? null
@@ -327,7 +340,7 @@ public class ShowServiceImpl implements ShowService {
         if (note != null && note.length() > MAX_ITEM_NOTE) {
             throw new AppException(ErrorCode.SHOW_ITEM_NOTE_REQUIRED);
         }
-        if (ShowItemTransitions.isReturnByReviewer(item, tm.getRole(), me.getId(), to) && note == null) {
+        if (ShowItemTransitions.isReturnByReviewer(item, perms, me.getId(), to) && note == null) {
             throw new AppException(ErrorCode.SHOW_ITEM_NOTE_REQUIRED);
         }
         if (to == ShowItemStatus.IN_REVIEW && item.getReviewer() == null) {
@@ -342,6 +355,8 @@ public class ShowServiceImpl implements ShowService {
             item.setReviewNote(note);
         } else if (to == ShowItemStatus.APPROVED) {
             item.setReviewNote(null);
+            // Ai duyệt thì là người duyệt của bài: chỉ người đó (hoặc người duyệt thay được mọi bài) mở lại được
+            item.setReviewer(me);
         }
         itemRepository.save(item);
 
@@ -529,16 +544,18 @@ public class ShowServiceImpl implements ShowService {
         List<ShowItem> items = itemRepository.findByShowOrdered(show.getId());
         Map<String, Score> scores = scoresById(items.stream().map(ShowItem::getScoreId).toList());
         String memberId = me.getMember().getId();
+        RolePermissions perms = access.permissions(me);
         // Bản nhạc đang ở thùng rác không hiện trong show (khôi phục thì hiện lại)
         List<ShowItemResponse> rows = items.stream()
                 .filter(i -> scores.containsKey(i.getScoreId()))
-                .map(i -> toItemResponse(i, scores.get(i.getScoreId()), me.getRole(), memberId))
+                .map(i -> toItemResponse(i, scores.get(i.getScoreId()), perms, memberId))
                 .toList();
         long approved = rows.stream().filter(r -> r.getStatus() == ShowItemStatus.APPROVED).count();
         return ShowDetailResponse.builder()
                 .show(toShowResponse(show, new long[] {rows.size(), approved}))
                 .teamName(show.getTeam().getName())
                 .myRole(me.getRole())
+                .myPermissions(List.copyOf(perms.granted()))
                 .items(rows)
                 .assignees(teamMemberRepository.findByTeamWithMember(show.getTeam().getId()).stream()
                         .filter(tm -> tm.getRole() != TeamRole.VIEWER)
@@ -547,7 +564,7 @@ public class ShowServiceImpl implements ShowService {
                 .build();
     }
 
-    private static ShowItemResponse toItemResponse(ShowItem i, Score score, TeamRole role, String memberId) {
+    private static ShowItemResponse toItemResponse(ShowItem i, Score score, RolePermissions perms, String memberId) {
         return ShowItemResponse.builder()
                 .id(i.getId())
                 .scoreId(i.getScoreId())
@@ -562,7 +579,7 @@ public class ShowServiceImpl implements ShowService {
                 .status(i.getStatus())
                 .notes(i.getNotes())
                 .reviewNote(i.getReviewNote())
-                .allowedStatuses(ShowItemTransitions.allowed(i, role, memberId))
+                .allowedStatuses(ShowItemTransitions.allowed(i, perms, memberId))
                 .build();
     }
 
