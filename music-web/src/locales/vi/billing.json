@@ -10,9 +10,9 @@
     "keptVersions": "Phiên bản giữ lại",
     "exportsPerMonth": "Lượt xuất mỗi tháng",
     "collab": "Cùng chỉnh sửa thời gian thực",
-    "team": "Tạo team",
+    "team": "Tạo nhóm",
     "omrPriority": "Ưu tiên hàng đợi OMR",
-    "teamMembers": "Thành viên mỗi team"
+    "teamMembers": "Thành viên mỗi nhóm"
   },
   "status": {
     "ACTIVE": "Đang dùng",
@@ -50,7 +50,7 @@
     "expiringSoon": "Gói sẽ hết hạn sau {count} ngày. Gia hạn để không bị gián đoạn.",
     "expiresToday": "Gói hết hạn trong hôm nay. Gia hạn để không bị gián đoạn.",
     "heldTitle": "Gói đã đăng ký",
-    "heldDesc": "Bạn có thể giữ cùng lúc một gói cá nhân và một gói team; mỗi gói có hạn và gia hạn riêng.",
+    "heldDesc": "Bạn có thể giữ cùng lúc một gói cá nhân và một gói nhóm; mỗi gói có hạn và gia hạn riêng.",
     "freeNote": "Bạn đang dùng gói Free.",
     "addPlan": "Đăng ký thêm gói",
     "bannedPlan": "Gói này đang bị cấm dùng nên không gia hạn được.",
@@ -123,11 +123,11 @@
   },
   "audience": {
     "PERSONAL": "Cá nhân",
-    "TEAM": "Team"
+    "TEAM": "Nhóm"
   },
   "audienceDesc": {
     "PERSONAL": "Cho một người số hóa và chỉnh sửa bản nhạc của mình.",
-    "TEAM": "Cho nhóm làm việc chung, hạn mức dùng chung cho cả team."
+    "TEAM": "Cho nhóm làm việc chung, hạn mức dùng chung cho cả nhóm."
   },
   "unlimitedPlan": "Không giới hạn",
   "banned": "Bạn đang bị cấm dùng gói {plan} đến ngày {date}. Bạn vẫn dùng được Free hoặc mua gói khác."

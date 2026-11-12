@@ -662,8 +662,8 @@
       "PERSONAL": "Personal plans",
       "TEAM": "Team plans"
     },
-    "teamNote": "Team plan: the member can create teams (up to {count} members each). It replaces their current personal plan, just like buying it.",
-    "teamNoteUnlimited": "Team plan: the member can create teams (no member limit). It replaces their current personal plan, just like buying it."
+    "teamNote": "Team plan: the member can create teams (up to {count} members each). It does not replace their current personal plan (they keep both).",
+    "teamNoteUnlimited": "Team plan: the member can create teams (no member limit). It does not replace their current personal plan (they keep both)."
   },
   "memberPlans": {
     "subtitle": "Choose a task: grant plans to members, or handle violations (revoke plans, ban paid plans).",

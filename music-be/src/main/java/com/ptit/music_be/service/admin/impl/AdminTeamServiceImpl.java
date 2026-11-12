@@ -232,7 +232,7 @@ public class AdminTeamServiceImpl implements AdminTeamService {
                     admin,
                     NotificationType.TEAM_DELETED_BY_ADMIN,
                     null,
-                    "Quản trị viên đã xóa team " + name + (cleanReason == null ? "" : ": " + cleanReason),
+                    "Quản trị viên đã xóa nhóm " + name + (cleanReason == null ? "" : ": " + cleanReason),
                     NotificationService.params("team", name, "reason", cleanReason));
         }
         log.info("Admin {} đã xóa team {} ({}), lý do: {}", admin.getEmail(), deletedId, name, cleanReason);

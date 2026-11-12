@@ -114,10 +114,10 @@ public class EmailServiceImpl implements EmailService {
         String safeLink = escape(link);
         send(
                 to,
-                "Lời mời tham gia team " + teamName + " trên Music App",
+                "Lời mời tham gia nhóm " + teamName + " trên Music App",
                 layout(
-                        "Bạn được mời vào team " + escape(teamName),
-                        "<p><strong>" + escape(inviterName) + "</strong> mời bạn tham gia team <strong>"
+                        "Bạn được mời vào nhóm " + escape(teamName),
+                        "<p><strong>" + escape(inviterName) + "</strong> mời bạn tham gia nhóm <strong>"
                                 + escape(teamName) + "</strong> với vai trò <strong>" + escape(roleLabel)
                                 + "</strong>.</p>"
                                 + "<p><a href=\"" + safeLink + "\" style=\"display:inline-block;background:#8a5a2b;"

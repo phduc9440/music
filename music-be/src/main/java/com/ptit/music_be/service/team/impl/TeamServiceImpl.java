@@ -72,7 +72,7 @@ public class TeamServiceImpl implements TeamService {
     static final SecureRandom RANDOM = new SecureRandom();
     /** Tên vai trò trong email (email hiện chỉ có tiếng Việt, như các email khác). */
     static final Map<TeamRole, String> ROLE_LABEL_VI = Map.of(
-            TeamRole.OWNER, "Chủ team",
+            TeamRole.OWNER, "Chủ nhóm",
             TeamRole.MANAGER, "Quản lý",
             TeamRole.ARRANGER, "Người phối",
             TeamRole.VIEWER, "Người xem");
@@ -253,7 +253,7 @@ public class TeamServiceImpl implements TeamService {
                 me,
                 NotificationType.TEAM_ROLE_CHANGED,
                 null,
-                "Vai trò của bạn trong team " + team.getName() + " đã đổi thành " + ROLE_LABEL_VI.get(role),
+                "Vai trò của bạn trong nhóm " + team.getName() + " đã đổi thành " + ROLE_LABEL_VI.get(role),
                 NotificationService.params("team", team.getName(), "teamId", teamId, "role", role.name()));
         return toMemberResponse(target);
     }
@@ -294,7 +294,7 @@ public class TeamServiceImpl implements TeamService {
                     me,
                     NotificationType.TEAM_REMOVED,
                     null,
-                    "Bạn đã bị xóa khỏi team " + team.getName(),
+                    "Bạn đã bị xóa khỏi nhóm " + team.getName(),
                     NotificationService.params("team", team.getName()));
         }
     }
@@ -372,7 +372,7 @@ public class TeamServiceImpl implements TeamService {
                     me,
                     NotificationType.TEAM_INVITED,
                     null,
-                    inviter + " mời bạn vào team " + team.getName() + " với vai trò " + ROLE_LABEL_VI.get(role),
+                    inviter + " mời bạn vào nhóm " + team.getName() + " với vai trò " + ROLE_LABEL_VI.get(role),
                     NotificationService.params("name", inviter, "team", team.getName(), "role", role.name()));
         }
         activityLog.log(
@@ -510,7 +510,7 @@ public class TeamServiceImpl implements TeamService {
                 me,
                 NotificationType.TEAM_MEMBER_JOINED,
                 null,
-                name + " đã tham gia team " + team.getName(),
+                name + " đã tham gia nhóm " + team.getName(),
                 NotificationService.params("name", name, "team", team.getName(), "teamId", team.getId()));
         return toResponse(team, invitation.getRole());
     }

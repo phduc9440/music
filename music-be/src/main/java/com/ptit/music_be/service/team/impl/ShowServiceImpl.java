@@ -314,7 +314,7 @@ public class ShowServiceImpl implements ShowService {
                     me,
                     NotificationType.SHOW_ITEM_SUBMITTED,
                     item.getScoreId(),
-                    TeamAccess.displayName(me) + " đã gửi duyệt bài “" + title + "” (show " + show.getName() + ")",
+                    TeamAccess.displayName(me) + " đã gửi duyệt bài “" + title + "” (buổi diễn " + show.getName() + ")",
                     params);
         } else if (to == ShowItemStatus.APPROVED) {
             notificationService.notify(
@@ -322,7 +322,7 @@ public class ShowServiceImpl implements ShowService {
                     me,
                     NotificationType.SHOW_ITEM_APPROVED,
                     item.getScoreId(),
-                    "Bài “" + title + "” (show " + show.getName() + ") đã được duyệt",
+                    "Bài “" + title + "” (buổi diễn " + show.getName() + ") đã được duyệt",
                     params);
         } else if (returned) {
             params.put("reason", note);
@@ -331,7 +331,7 @@ public class ShowServiceImpl implements ShowService {
                     me,
                     NotificationType.SHOW_ITEM_RETURNED,
                     item.getScoreId(),
-                    "Bài “" + title + "” (show " + show.getName() + ") bị trả lại: " + note,
+                    "Bài “" + title + "” (buổi diễn " + show.getName() + ") bị trả lại: " + note,
                     params);
         }
         return detail(show, tm);
@@ -365,7 +365,7 @@ public class ShowServiceImpl implements ShowService {
                     null,
                     NotificationType.SHOW_ITEM_DUE,
                     score.getId(),
-                    "Bài “" + score.getTitle() + "” (show " + show.getName() + ") tới hạn " + when,
+                    "Bài “" + score.getTitle() + "” (buổi diễn " + show.getName() + ") tới hạn " + when,
                     NotificationService.params(
                             "variant", variant,
                             "title", score.getTitle(),
@@ -450,7 +450,7 @@ public class ShowServiceImpl implements ShowService {
                     actor,
                     NotificationType.SHOW_ITEM_ASSIGNED,
                     item.getScoreId(),
-                    "Bạn được giao phối bài “" + title + "” trong show " + show.getName(),
+                    "Bạn được giao phối bài “" + title + "” trong buổi diễn " + show.getName(),
                     NotificationService.params(
                             "variant", "arranger", "title", title, "show", show.getName(), "teamId", teamId,
                             "showId", show.getId()));
@@ -461,7 +461,7 @@ public class ShowServiceImpl implements ShowService {
                     actor,
                     NotificationType.SHOW_ITEM_ASSIGNED,
                     item.getScoreId(),
-                    "Bạn được giao duyệt bài “" + title + "” trong show " + show.getName(),
+                    "Bạn được giao duyệt bài “" + title + "” trong buổi diễn " + show.getName(),
                     NotificationService.params(
                             "variant", "reviewer", "title", title, "show", show.getName(), "teamId", teamId,
                             "showId", show.getId()));
