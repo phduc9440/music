@@ -32,6 +32,9 @@ public interface MemberRoleRepository extends JpaRepository<MemberRole, String> 
     @Query("select mr.member.email from MemberRole mr where mr.role.id = :roleId")
     List<String> findEmailsByRoleId(@Param("roleId") String roleId);
 
+    @Query("select mr from MemberRole mr join fetch mr.member where mr.role.id = :roleId")
+    List<MemberRole> findByRoleId(@Param("roleId") String roleId);
+
     /** Bỏ vai trò khỏi mọi tài khoản (trước khi xóa vai trò). */
     @Transactional
     @Modifying

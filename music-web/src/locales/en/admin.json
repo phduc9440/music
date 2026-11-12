@@ -833,8 +833,8 @@
     "created": "Role added",
     "updated": "Role updated",
     "deleteTitle": "Delete the role “{name}”?",
-    "deleteInUse_one": "{count} member has this role; remove it from them before deleting.",
-    "deleteInUse_other": "{count} members have this role; remove it from them before deleting.",
+    "deleteInUse_one": "This removes the role from {count} member(s); they go back to a regular user and lose its permissions.",
+    "deleteInUse_other": "This removes the role from {count} member(s); they go back to a regular user and lose its permissions.",
     "deleted": "Role deleted",
     "deleteFailed": "Couldn't delete the role",
     "builtIn": {

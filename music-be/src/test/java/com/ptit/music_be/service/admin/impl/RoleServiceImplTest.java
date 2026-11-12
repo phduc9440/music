@@ -116,4 +116,22 @@ class RoleServiceImplTest {
     private RoleResponse byName(String name) {
         return roleService.list().stream().filter(r -> r.getName().equals(name)).findFirst().orElseThrow();
     }
+
+    @Test
+    void deletingARoleStripsItFromHoldersAndKeepsUser(@org.springframework.beans.factory.annotation.Autowired
+            com.ptit.music_be.repository.auth.MemberRepository members,
+            @org.springframework.beans.factory.annotation.Autowired
+            com.ptit.music_be.repository.auth.MemberRoleRepository memberRoles,
+            @org.springframework.beans.factory.annotation.Autowired
+            com.ptit.music_be.repository.auth.RoleRepository roleRepo) {
+        as("ROLE_SUPER_ADMIN", "ROLE_ADMIN");
+        RoleResponse created = roleService.create(new RoleRequest("Tạm thời", null, List.of(AdminPermission.TAGS_MANAGE)));
+        var member = members.findByEmail("lan.nguyen@music.com").orElseThrow();
+        memberRoles.save(com.ptit.music_be.entity.MemberRole.builder()
+                .member(member).role(roleRepo.findById(created.getId()).orElseThrow()).build());
+        roleService.delete(created.getId());
+        var names = memberRoles.findRoleNamesByEmail("lan.nguyen@music.com");
+        assertFalse(names.contains(created.getName()));
+        assertTrue(names.contains("USER"));
+    }
 }

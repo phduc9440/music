@@ -19,6 +19,8 @@ import com.ptit.music_be.configuration.RolePermissionRegistry;
 import com.ptit.music_be.dto.enums.auth.AdminPermission;
 import com.ptit.music_be.dto.request.admin.RoleRequest;
 import com.ptit.music_be.dto.response.admin.RoleResponse;
+import com.ptit.music_be.entity.Member;
+import com.ptit.music_be.entity.MemberRole;
 import com.ptit.music_be.entity.Role;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
@@ -109,8 +111,22 @@ public class RoleServiceImpl implements RoleService {
         if (role.isBuiltIn()) {
             throw new AppException(ErrorCode.ROLE_BUILT_IN);
         }
-        if (countMembers(role.getId()) > 0) {
-            throw new AppException(ErrorCode.ROLE_IN_USE);
+        // Gỡ vai trò khỏi người đang giữ: họ mất quyền của vai trò này, luôn còn USER (kể cả dữ liệu cũ thiếu USER)
+        List<String> holders = memberRoleRepository.findEmailsByRoleId(role.getId());
+        if (!holders.isEmpty()) {
+            Role user = roleRepository.findByName(Role.USER).orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_EXISTED));
+            List<MemberRole> links = memberRoleRepository.findByRoleId(role.getId());
+            for (MemberRole mr : links) {
+                Member m = mr.getMember();
+                if (!memberRoleRepository.existsByMemberAndRole(m, user)) {
+                    memberRoleRepository.save(MemberRole.builder().member(m).role(user).build());
+                }
+                m.getMemberRoles().remove(mr);
+            }
+            role.getMemberRoles().removeAll(links);
+            memberRoleRepository.deleteAll(links);
+            memberRoleRepository.flush();
+            holders.forEach(memberStatusGuard::evict);
         }
         roleRepository.delete(role);
         registry.invalidate();

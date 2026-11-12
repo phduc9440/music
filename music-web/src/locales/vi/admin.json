@@ -797,8 +797,8 @@
     "created": "Đã thêm vai trò",
     "updated": "Đã cập nhật vai trò",
     "deleteTitle": "Xóa vai trò “{name}”?",
-    "deleteInUse_one": "{count} thành viên đang có vai trò này, hãy gỡ trước khi xóa.",
-    "deleteInUse_other": "{count} thành viên đang có vai trò này, hãy gỡ trước khi xóa.",
+    "deleteInUse_one": "Gỡ vai trò khỏi {count} thành viên đang giữ, họ về người dùng thường và mất quyền của vai trò này.",
+    "deleteInUse_other": "Gỡ vai trò khỏi {count} thành viên đang giữ, họ về người dùng thường và mất quyền của vai trò này.",
     "deleted": "Đã xóa vai trò",
     "deleteFailed": "Không xóa được vai trò",
     "builtIn": {
