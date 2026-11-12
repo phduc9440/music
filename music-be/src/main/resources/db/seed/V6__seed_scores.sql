@@ -2,6 +2,7 @@
 -- kho bản nhạc mẫu (gồm bản sao từ bản của người dùng), thùng rác. Nhiều tác giả khớp bảng nhạc sĩ (V5).
 -- Seed chưa kèm file (MusicXML, ảnh trang...): danh sách, Khám phá, thống kê chạy bình thường; muốn mở Editor/Player
 -- thì tải một bản lên qua web. current_version = 0 nghĩa là chưa có MusicXML.
+-- Cuối file gán ảnh bìa (scores.cover_url) cho 8 bản công khai để có cả bản có bìa và bản không có bìa.
 INSERT INTO scores
     (id, member_id, title, composer, difficulty, study_notes, processing_status, visibility, is_official, reject_reason,
      arranger_name, tempo_bpm, measure_count, key_signature, time_signature, staff_count, page_count, source_type,
@@ -128,3 +129,25 @@ FROM (
 ) t
 JOIN scores s ON s.title = t.title
 JOIN tags g ON g.slug = t.slug;
+
+-- Ảnh bìa mẫu cho một số bản nhạc công khai (scores.cover_url) để thẻ bản nhạc, trang chủ và trang chi tiết có cả hai trường hợp:
+-- có bìa tải lên và không có bìa (dùng ảnh trang 1 hoặc khung trống). Ảnh lấy từ cloud mẫu "demo" công khai của Cloudinary,
+-- không phải cloud của dự án: mở app thấy ảnh thật, còn đổi hoặc gỡ bìa trong app thì ảnh mới nằm ở cloud cấu hình trong
+-- CLOUDINARY_*. Chỉ gán khi chưa có bìa (chạy lại không đè ảnh người dùng đã tải). "Ode to Joy" của user@music.com để trống
+-- có chủ đích (test ScoreCoverServiceImplTest cần một bản chưa có bìa).
+UPDATE scores SET cover_url = 'https://res.cloudinary.com/demo/image/upload/cld-sample.jpg'
+WHERE member_id = (SELECT id FROM members WHERE email = 'huong.le@music.com') AND title = 'Clair de Lune' AND cover_url IS NULL AND deleted_at IS NULL;
+UPDATE scores SET cover_url = 'https://res.cloudinary.com/demo/image/upload/cld-sample-2.jpg'
+WHERE member_id = (SELECT id FROM members WHERE email = 'huong.le@music.com') AND title = 'Canon in D' AND cover_url IS NULL AND deleted_at IS NULL;
+UPDATE scores SET cover_url = 'https://res.cloudinary.com/demo/image/upload/cld-sample-3.jpg'
+WHERE member_id = (SELECT id FROM members WHERE email = 'huong.le@music.com') AND title = 'Swan Lake - Theme' AND cover_url IS NULL AND deleted_at IS NULL;
+UPDATE scores SET cover_url = 'https://res.cloudinary.com/demo/image/upload/cld-sample-4.jpg'
+WHERE member_id = (SELECT id FROM members WHERE email = 'minh.tran@music.com') AND title = 'Moonlight Sonata (Mvt. 1)' AND cover_url IS NULL AND deleted_at IS NULL;
+UPDATE scores SET cover_url = 'https://res.cloudinary.com/demo/image/upload/cld-sample-5.jpg'
+WHERE member_id = (SELECT id FROM members WHERE email = 'lan.nguyen@music.com') AND title = 'Für Elise' AND cover_url IS NULL AND deleted_at IS NULL;
+UPDATE scores SET cover_url = 'https://res.cloudinary.com/demo/image/upload/sample.jpg'
+WHERE member_id = (SELECT id FROM members WHERE email = 'lan.nguyen@music.com') AND title = 'Nocturne Op. 9 No. 2' AND cover_url IS NULL AND deleted_at IS NULL;
+UPDATE scores SET cover_url = 'https://res.cloudinary.com/demo/image/upload/cld-sample-2.jpg'
+WHERE member_id = (SELECT id FROM members WHERE email = 'an.vo@music.com') AND title = 'Gymnopédie No. 1' AND cover_url IS NULL AND deleted_at IS NULL;
+UPDATE scores SET cover_url = 'https://res.cloudinary.com/demo/image/upload/cld-sample-3.jpg'
+WHERE member_id = (SELECT id FROM members WHERE email = 'trang.dang@music.com') AND title = 'Hallelujah (Messiah)' AND cover_url IS NULL AND deleted_at IS NULL;
