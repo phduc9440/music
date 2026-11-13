@@ -8,3 +8,6 @@ music-be/src/main/resources/application.yaml
 music-web/.env
 # Biến môi trường thật cho docker compose (có mật khẩu, khóa): chỉ commit .env.example
 /.env
+
+# Cache Python của skill
+__pycache__/

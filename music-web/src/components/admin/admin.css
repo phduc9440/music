@@ -1514,3 +1514,253 @@
   width: auto;
   min-width: 150px;
 }
+
+/* ================================================================== thiết kế lại v2
+ * Bảng điều khiển sáng theo phong cách Swiss: nền phẳng, đường kẻ mảnh, số liệu to và đều cột, màu nhấn chỉ để báo
+ * trạng thái. Giữ nguyên token (không mã màu riêng) nên đổi theme sáng / tối vẫn đúng. Khối này đặt cuối file để
+ * ghi đè các luật cũ phía trên. */
+
+.adm-shell {
+  --adm-radius-lg: 10px;
+  --adm-radius: 7px;
+  --adm-radius-sm: 5px;
+  --adm-sidebar-w: 232px;
+  --adm-rule: var(--adm-border);
+}
+
+/* ---- khung: header và sidebar sáng, tách khỏi nội dung bằng đường kẻ ---- */
+.adm-header {
+  background: var(--adm-surface);
+  border-bottom: 1px solid var(--adm-border);
+}
+.adm-brand__logo {
+  border-radius: 8px;
+}
+.adm-brand__tag {
+  background: var(--adm-danger-soft);
+  color: var(--adm-danger);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 0.6875rem;
+}
+.adm-sidebar {
+  background: var(--adm-surface);
+  padding: 1rem 0.75rem;
+}
+.adm-menu {
+  gap: 0.1rem;
+}
+.adm-menu__section {
+  margin: 1.1rem 0.7rem 0.4rem;
+  color: var(--adm-text-3);
+  font-size: 0.6875rem;
+  letter-spacing: 0.09em;
+}
+.adm-shell .adm-menu__item {
+  padding: 0.5rem 0.7rem;
+  border-radius: var(--adm-radius);
+  color: var(--adm-text-2);
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+.adm-shell .adm-menu__item--active,
+.adm-shell .adm-menu__item--active:hover {
+  background: var(--adm-primary-soft);
+  color: var(--adm-text);
+  font-weight: 600;
+}
+.adm-shell .adm-menu__item--active .adm-menu__icon {
+  color: var(--adm-primary);
+}
+.adm-shell .adm-menu__item--active::before {
+  content: '';
+  position: absolute;
+  left: -0.75rem;
+  top: 22%;
+  bottom: 22%;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--adm-primary);
+}
+.adm-menu__count {
+  background: var(--ui-velvet);
+  color: var(--ui-on-accent);
+}
+.adm-main {
+  padding: 1.5rem 1.5rem 3rem;
+}
+
+/* ---- đầu trang: tiêu đề lớn, đường kẻ dưới ---- */
+.adm-page-header {
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--adm-rule);
+}
+.adm-page-header__title {
+  font-size: 1.65rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.adm-page-header__desc {
+  max-width: 70ch;
+  font-size: var(--adm-text-md);
+}
+
+/* Thẻ trong lưới nằm cùng hàng: không cộng khoảng cách của thẻ xếp dọc (luật cũ `.adm-shell .adm-card + .adm-card` đè mất) */
+.adm-shell :is(.adm-grid-2, .adm-plan-grid) > .adm-card + .adm-card {
+  margin-top: 0;
+}
+
+/* ---- thẻ phẳng ---- */
+.adm-card {
+  box-shadow: none;
+  border-color: var(--adm-border);
+}
+.adm-card__header {
+  padding: 0.9rem 1.25rem;
+}
+.adm-card__title {
+  font-size: 0.9375rem;
+  font-weight: 650;
+  letter-spacing: -0.005em;
+}
+
+/* ---- thẻ số liệu: vạch màu ở trên theo trạng thái, số to ---- */
+.adm-stat {
+  position: relative;
+  padding: 1rem 1.15rem 1.05rem;
+  border-top: 3px solid var(--adm-border-strong);
+  border-radius: var(--adm-radius-lg);
+  box-shadow: none;
+}
+.adm-stat:has(.adm-tone--success) {
+  border-top-color: var(--adm-success);
+}
+.adm-stat:has(.adm-tone--warning) {
+  border-top-color: var(--adm-warning);
+}
+.adm-stat:has(.adm-tone--danger) {
+  border-top-color: var(--adm-danger);
+}
+.adm-stat:has(.adm-tone--violet) {
+  border-top-color: var(--adm-violet);
+}
+.adm-stat:has(.adm-tone--primary) {
+  border-top-color: var(--adm-primary);
+}
+.adm-stat--alert {
+  background: var(--adm-surface);
+  border-color: var(--adm-border);
+  border-top-color: var(--adm-warning);
+}
+.adm-stat__label {
+  color: var(--adm-text-2);
+  font-size: var(--adm-text-sm);
+  font-weight: 600;
+}
+.adm-stat__icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+}
+.adm-stat__value {
+  margin-top: 0.4rem;
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+.adm-stat--link:hover {
+  border-color: var(--adm-border-strong);
+  box-shadow: none;
+  background: var(--adm-surface-muted);
+}
+
+/* ---- tab dạng gạch chân ---- */
+.adm-tabs {
+  display: inline-flex;
+  gap: 1.35rem;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--adm-rule);
+  border-radius: 0;
+  box-shadow: none;
+}
+.adm-shell .adm-tab {
+  padding: 0.55rem 0.1rem;
+  margin-bottom: -1px;
+  border-radius: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--adm-text-2);
+  font-weight: 600;
+}
+.adm-shell .adm-tab:hover {
+  background: transparent;
+  color: var(--adm-text);
+}
+.adm-shell .adm-tab--active,
+.adm-shell .adm-tab--active:hover {
+  background: transparent;
+  color: var(--adm-primary);
+  border-bottom-color: var(--adm-primary);
+  box-shadow: none;
+}
+
+/* ---- nút phẳng ---- */
+.adm-shell .adm-btn--primary,
+.adm-shell .adm-btn--secondary,
+.adm-shell .adm-btn--danger {
+  box-shadow: none;
+}
+.adm-shell .adm-btn--secondary {
+  border-color: var(--adm-border-strong);
+}
+
+/* ---- bảng: tiêu đề cột chữ nhỏ có đường kẻ đậm, hàng gọn, hover rõ ---- */
+.adm-table th {
+  padding: 0.6rem 0.7rem;
+  background: var(--adm-surface-muted);
+  border-bottom: 1px solid var(--adm-border-strong);
+  font-size: 0.6875rem;
+  letter-spacing: 0.07em;
+}
+.adm-table td {
+  padding: 0.7rem 0.7rem;
+}
+.adm-table tbody tr:not(.adm-table__state):hover td {
+  background: color-mix(in srgb, var(--adm-primary-soft) 55%, transparent);
+}
+
+/* ---- nhãn trạng thái có chấm màu ---- */
+.adm-badge {
+  padding: 0.12rem 0.55rem;
+  border-radius: 6px;
+  font-weight: 600;
+}
+.adm-badge.adm-tone--success::before,
+.adm-badge.adm-tone--warning::before,
+.adm-badge.adm-tone--danger::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+/* ---- hộp thoại dùng chung trong khu admin ---- */
+.adm-shell .sc-modal {
+  border-radius: var(--adm-radius-lg);
+  box-shadow: var(--adm-shadow-pop);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .adm-shell .adm-menu__item,
+  .adm-shell .adm-btn,
+  .adm-stat--link {
+    transition: none;
+  }
+}
