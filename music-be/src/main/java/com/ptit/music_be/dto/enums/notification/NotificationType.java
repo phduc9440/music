@@ -63,5 +63,10 @@ public enum NotificationType {
     /** Bạn được @nhắc trong một góp ý hoặc trả lời. */
     COMMENT_MENTION,
     /** Có người trả lời góp ý bạn viết hoặc đã tham gia trả lời. */
-    COMMENT_REPLY
+    COMMENT_REPLY,
+    // ---- Đề xuất sửa (mục 4.3); params: name, title, suggestionId (và count / status / accepted / total)
+    /** Gửi chủ bản nhạc và người có quyền sửa: có đề xuất sửa mới. */
+    SUGGESTION_NEW,
+    /** Gửi người đề xuất: đề xuất đã được nhận (một phần hoặc tất cả) hoặc bị từ chối. */
+    SUGGESTION_DECIDED
 }
