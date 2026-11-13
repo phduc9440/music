@@ -154,6 +154,11 @@ public enum ErrorCode {
     SCORE_SYSTEM_OWNER_MISSING(
             3405, "Chưa có tài khoản hệ thống để chứa bản nhạc của kho bản nhạc mẫu", HttpStatus.INTERNAL_SERVER_ERROR),
     SCORE_NOT_IN_TRASH(3301, "Bản nhạc không nằm trong thùng rác của bạn", HttpStatus.NOT_FOUND),
+    BLANK_SCORE_OPTION_INVALID(
+            3302,
+            "Tùy chọn bản nhạc trống không hợp lệ (khóa -7..7, tử số nhịp 1..12, mẫu số 2/4/8/16, tempo 20..300,"
+                    + " 1..200 ô)",
+            HttpStatus.BAD_REQUEST),
     COMPOSER_NOT_EXISTED(3501, "Nhạc sĩ không tồn tại", HttpStatus.NOT_FOUND),
     COMPOSER_NAME_INVALID(3502, "Tên nhạc sĩ là bắt buộc và tối đa 255 ký tự", HttpStatus.BAD_REQUEST),
     COMPOSER_DUPLICATED(3503, "Đã có nhạc sĩ trùng tên (đường dẫn)", HttpStatus.CONFLICT),
