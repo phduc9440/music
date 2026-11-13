@@ -44,7 +44,7 @@
   border: 2px solid var(--ui-surface);
   border-radius: 999px;
   background: var(--ui-warning);
-  color: var(--ui-on-accent, #fff);
+  color: var(--ui-on-accent);
   font:
     700 0.75rem/18px system-ui,
     sans-serif;
