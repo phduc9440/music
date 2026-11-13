@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { OpenSheetMusicDisplay } from 'opensheetmusicdisplay';
+import { t } from '../../../i18n/core';
 
 interface Props {
   /** Nội dung MusicXML cần vẽ. */
@@ -81,8 +82,8 @@ export default function MusicXmlViewer({ xml, firstMeasure, lastMeasure }: Props
 
   return (
     <div className="sr-score">
-      {state === 'loading' && <p className="sr-empty">Đang vẽ bản nhạc...</p>}
-      {state === 'error' && <div className="sc-error">Không vẽ được bản nhạc từ MusicXML</div>}
+      {state === 'loading' && <p className="sr-empty">{t('viewer.canvas.drawing')}</p>}
+      {state === 'error' && <div className="sc-error">{t('viewer.canvas.drawFailed')}</div>}
       {/* Không dùng hidden: khung bị ẩn có độ rộng 0 nên OSMD sẽ xếp mỗi dòng một ô khi vẽ lần đầu */}
       <div
         ref={hostRef}

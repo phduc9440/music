@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ZOOM_MAX, ZOOM_MIN, ZOOM_STEP } from '../../../utils/viewer';
 import { IconMinus, IconPlus } from './ViewerIcons';
+import { t } from '../../../i18n/core';
 
 interface Props {
   /** Mức thu phóng hiện tại (%). */
@@ -32,13 +33,13 @@ export default function ZoomControl({ zoom, onChange }: Props) {
   }, [open]);
 
   return (
-    <div className="sv-zoom" ref={ref} role="group" aria-label="Thu phóng">
+    <div className="sv-zoom" ref={ref} role="group" aria-label={t('viewer.zoom.group')}>
       <button
         className="sv-zoom__step"
         onClick={() => onChange(zoom - ZOOM_STEP)}
         disabled={zoom <= ZOOM_MIN}
-        aria-label="Thu nhỏ"
-        title="Thu nhỏ (phím -)"
+        aria-label={t('viewer.zoom.out')}
+        title={t('viewer.zoom.outTitle')}
       >
         <IconMinus />
       </button>
@@ -47,7 +48,7 @@ export default function ZoomControl({ zoom, onChange }: Props) {
         onClick={() => setOpen(!open)}
         aria-haspopup="menu"
         aria-expanded={open}
-        title="Chọn mức thu phóng"
+        title={t('viewer.zoom.pick')}
       >
         {zoom}%<span className="sv-zoom__caret" aria-hidden="true" />
       </button>
@@ -55,16 +56,16 @@ export default function ZoomControl({ zoom, onChange }: Props) {
         className="sv-zoom__step"
         onClick={() => onChange(zoom + ZOOM_STEP)}
         disabled={zoom >= ZOOM_MAX}
-        aria-label="Phóng to"
-        title="Phóng to (phím +)"
+        aria-label={t('viewer.zoom.in')}
+        title={t('viewer.zoom.inTitle')}
       >
         <IconPlus />
       </button>
 
       {open && (
-        <div className="sv-zoom__pop" role="dialog" aria-label="Mức thu phóng">
+        <div className="sv-zoom__pop" role="dialog" aria-label={t('viewer.zoom.level')}>
           <div className="sv-zoom__title">
-            Thu phóng <span>{zoom}%</span>
+            {t('viewer.zoom.group')} <span>{zoom}%</span>
           </div>
           <input
             type="range"
@@ -73,7 +74,7 @@ export default function ZoomControl({ zoom, onChange }: Props) {
             step={5}
             value={zoom}
             onChange={(e) => onChange(Number(e.target.value))}
-            aria-label="Mức thu phóng"
+            aria-label={t('viewer.zoom.level')}
           />
           <div className="sv-zoom__scale" aria-hidden="true">
             <span>{ZOOM_MIN}%</span>

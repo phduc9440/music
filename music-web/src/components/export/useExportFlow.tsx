@@ -8,6 +8,7 @@ import type { ExportFileInfo, ExportTarget } from '../../types/export';
 import { exportErrorMessage, isTaskFinished, translateTaskError } from './exportUtils';
 import { reportPlanLimit } from '../../utils/planLimit';
 import { useExportTask } from './useExportTask';
+import { t } from '../../i18n/core';
 
 interface FlowOptions {
   scoreId: string;
@@ -54,7 +55,7 @@ export function useExportFlow({ scoreId, isOpen, readyMessage, reopen, resume }:
           );
         }
       } catch {
-        if (!open.current) toast.error('Không lấy được file đã xuất');
+        if (!open.current) toast.error(t('export.fetchFailed'));
       }
     } else if (finishedTask.status === 'FAILED' && !open.current) {
       toast.error(translateTaskError(finishedTask.errorMessage));
@@ -82,9 +83,9 @@ export function useExportFlow({ scoreId, isOpen, readyMessage, reopen, resume }:
     try {
       await taskApi.cancel(task.id);
       reset();
-      toast.info('Đã hủy xuất file');
+      toast.info(t('export.cancelled'));
     } catch {
-      toast.error('Không hủy được, tác vụ có thể đã xong');
+      toast.error(t('export.cancelFailed'));
     } finally {
       setCancelling(false);
     }

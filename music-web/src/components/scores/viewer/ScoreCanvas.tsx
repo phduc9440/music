@@ -171,7 +171,7 @@ const drawTextHotspots = (
     const rect = el.getBoundingClientRect();
     const div = document.createElement('div');
     div.className = TEXT_HOT_CLASS;
-    div.title = 'Bấm để sửa';
+    div.title = t('viewer.canvas.clickToEdit');
     div.style.left = `${rect.left - origin.left - 6 - padLeft}px`;
     div.style.top = `${rect.top - origin.top - 4}px`;
     div.style.width = `${rect.width + 12 + padLeft}px`;
@@ -267,8 +267,8 @@ const drawIssueBoxes = (
       ok.type = 'button';
       ok.className = 'ed-issue-ok';
       ok.textContent = '✓';
-      ok.title = 'Ô nhịp này đúng (ví dụ ô lấy đà): bỏ cảnh báo';
-      ok.setAttribute('aria-label', `Xác nhận ô ${measureIndex + 1} đúng`);
+      ok.title = t('viewer.canvas.measureOkTitle');
+      ok.setAttribute('aria-label', t('viewer.canvas.measureOkLabel', { n: measureIndex + 1 }));
       hot.appendChild(ok);
       // Không để cử chỉ chọn vùng / bỏ chọn của khung nhạc bắt sự kiện này
       hot.addEventListener('pointerdown', (e) => e.stopPropagation());
@@ -1026,11 +1026,11 @@ export default function ScoreCanvas({
       onDrop={handleDrop}
       aria-busy={busy}
       tabIndex={0}
-      aria-label="Bản nhạc"
+      aria-label={t('viewer.canvas.label')}
     >
       {busy && (
         <div className="sv-canvas__busy" role="status">
-          <span className="sv-spinner" aria-hidden="true" /> Đang vẽ bản nhạc...
+          <span className="sv-spinner" aria-hidden="true" /> {t('viewer.canvas.drawing')}
         </div>
       )}
       <div ref={hostRef} className="sv-canvas__host" />

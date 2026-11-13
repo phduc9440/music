@@ -4,6 +4,7 @@ import { exportApi } from '../../services/file/exportApi';
 import type { AiTaskInfo } from '../../types';
 import { exportErrorMessage, isTaskFinished, translateTaskError } from './exportUtils';
 import { useExportTask } from './useExportTask';
+import { t } from '../../i18n/core';
 
 interface Props {
   scoreId: string;
@@ -25,8 +26,9 @@ export default function MidiConvertButton({ scoreId, resume, autoStart = false, 
   const handleFinished = (finished: AiTaskInfo) => {
     if (finished.status === 'COMPLETED') {
       const warnings = (finished.resultData as { warnings?: string[] } | null | undefined)?.warnings ?? [];
-      toast.success('Đã chuyển MIDI thành bản nhạc');
-      if (warnings.length > 0) toast.info(`Lưu ý: ${warnings.join('; ')}`, { autoClose: 10000 });
+      toast.success(t('export.midi.done'));
+      if (warnings.length > 0)
+        toast.info(t('export.midi.warnings', { warnings: warnings.join('; ') }), { autoClose: 10000 });
       onDone();
     } else if (finished.status === 'FAILED') {
       toast.error(translateTaskError(finished.errorMessage));
@@ -58,13 +60,8 @@ export default function MidiConvertButton({ scoreId, resume, autoStart = false, 
   }, [autoStart, start]);
 
   return (
-    <button
-      className="sc-btn"
-      disabled={busy || running}
-      onClick={() => void start()}
-      title="Đổi file MIDI đã nhập thành bản nhạc để mở trong trình chỉnh sửa và trình phát"
-    >
-      {running ? `Đang chuyển... ${progress}%` : 'Chuyển MIDI thành bản nhạc'}
+    <button className="sc-btn" disabled={busy || running} onClick={() => void start()} title={t('export.midi.title')}>
+      {running ? t('export.midi.running', { progress }) : t('export.midi.button')}
     </button>
   );
 }

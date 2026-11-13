@@ -20,6 +20,7 @@ import {
 import { reportPlanLimit } from '../../utils/planLimit';
 import ExportRunningView from './ExportRunningView';
 import { useExportTask } from './useExportTask';
+import { t } from '../../i18n/core';
 import './export.css';
 
 interface Props {
@@ -31,7 +32,7 @@ interface Props {
   onClose: () => void;
 }
 
-const HAND_LABELS: Record<ExportHands, string> = { BOTH: 'Cả hai tay', RIGHT: 'Tay phải', LEFT: 'Tay trái' };
+const HANDS: ExportHands[] = ['BOTH', 'RIGHT', 'LEFT'];
 
 const formatSize = (bytes?: number | null): string =>
   bytes
@@ -57,12 +58,12 @@ export default function ExportAudioDialog({ scoreId, title, staffCount, format, 
     const name = exportFileName(title, file.fileType as ExportFormat, file.options ?? {});
     toast.success(
       <span>
-        File {file.fileType} đã sẵn sàng.{' '}
+        {t('export.fileReady', { type: file.fileType })}{' '}
         <button
           className="ex-toast-btn"
-          onClick={() => void downloadFile(file.downloadUrl, name).catch(() => toast.error('Không tải được file'))}
+          onClick={() => void downloadFile(file.downloadUrl, name).catch(() => toast.error(t('export.downloadFailed')))}
         >
-          Tải xuống
+          {t('export.download')}
         </button>
       </span>,
       { toastId: `export-${file.id}`, autoClose: 10000 },
@@ -78,7 +79,7 @@ export default function ExportAudioDialog({ scoreId, title, staffCount, format, 
         setResult(file);
         if (file && !open.current) notifyReady(file);
       } catch {
-        if (!open.current) toast.error('Không lấy được file đã xuất');
+        if (!open.current) toast.error(t('export.fetchFailed'));
       }
     } else if (finishedTask.status === 'FAILED' && !open.current) {
       toast.error(translateTaskError(finishedTask.errorMessage));
@@ -105,9 +106,9 @@ export default function ExportAudioDialog({ scoreId, title, staffCount, format, 
     try {
       await taskApi.cancel(task.id);
       reset();
-      toast.info('Đã hủy xuất file');
+      toast.info(t('export.cancelled'));
     } catch {
-      toast.error('Không hủy được, tác vụ có thể đã xong');
+      toast.error(t('export.cancelFailed'));
     } finally {
       setCancelling(false);
     }
@@ -124,7 +125,7 @@ export default function ExportAudioDialog({ scoreId, title, staffCount, format, 
   const failed = task !== null && (task.status === 'FAILED' || task.status === 'CANCELLED') && result === null;
 
   return (
-    <Modal title="Xuất âm thanh" onClose={onClose}>
+    <Modal title={t('export.audio.title')} onClose={onClose}>
       {result ? (
         <ResultView key={result.id} file={result} title={title} onAgain={again} onClose={onClose} />
       ) : running ? (
@@ -136,10 +137,10 @@ export default function ExportAudioDialog({ scoreId, title, staffCount, format, 
           </p>
           <div className="sc-modal__actions">
             <button className="sc-btn" onClick={onClose}>
-              Đóng
+              {t('common.close')}
             </button>
             <button className="sc-btn sc-btn--primary" onClick={again}>
-              Thử lại
+              {t('common.retry')}
             </button>
           </div>
         </div>
@@ -201,10 +202,10 @@ function ExportForm({
 
   return (
     <div className="ex-body">
-      <p className="ex-hint">Mặc định lấy theo cài đặt đang dùng trong trình phát của bản nhạc này.</p>
+      <p className="ex-hint">{t('export.audio.hint')}</p>
 
-      <span className="sc-label">Định dạng</span>
-      <div className="ex-segment" role="group" aria-label="Định dạng">
+      <span className="sc-label">{t('export.audio.format')}</span>
+      <div className="ex-segment" role="group" aria-label={t('export.audio.format')}>
         {(['MP3', 'WAV'] as const).map((f) => (
           <button key={f} type="button" aria-pressed={format === f} onClick={() => setFormat(f)}>
             {f}
@@ -215,7 +216,7 @@ function ExportForm({
       {format === 'MP3' && (
         <>
           <label className="sc-label" htmlFor="ex-bitrate">
-            Chất lượng
+            {t('export.audio.quality')}
           </label>
           <select
             id="ex-bitrate"
@@ -247,7 +248,10 @@ function ExportForm({
       />
 
       <label className="sc-label" htmlFor="ex-transpose">
-        Chuyển giọng: <strong>{transpose > 0 ? `+${transpose}` : transpose} nửa cung</strong>
+        {t('export.audio.transpose')}:{' '}
+        <strong>
+          {transpose > 0 ? `+${transpose}` : transpose} {t('export.audio.semitones')}
+        </strong>
       </label>
       <input
         id="ex-transpose"
@@ -264,9 +268,9 @@ function ExportForm({
         <>
           <span className="sc-label">Tay</span>
           <div className="ex-segment" role="group" aria-label="Tay">
-            {(Object.keys(HAND_LABELS) as ExportHands[]).map((h) => (
+            {HANDS.map((h) => (
               <button key={h} type="button" aria-pressed={hands === h} onClick={() => setHands(h)}>
-                {HAND_LABELS[h]}
+                {t(`export.hands.${h}`)}
               </button>
             ))}
           </div>
@@ -280,10 +284,10 @@ function ExportForm({
       )}
       <div className="sc-modal__actions">
         <button className="sc-btn" onClick={onClose} disabled={busy}>
-          Hủy
+          {t('common.cancel')}
         </button>
         <button className="sc-btn sc-btn--primary" onClick={() => void submit()} disabled={busy}>
-          {busy ? 'Đang gửi...' : 'Xuất file'}
+          {busy ? t('export.sending') : t('export.audio.submit')}
         </button>
       </div>
     </div>
@@ -332,7 +336,7 @@ function ResultView({
     try {
       await downloadFile(file.downloadUrl, name);
     } catch {
-      toast.error('Không tải được file');
+      toast.error(t('export.downloadFailed'));
     } finally {
       setDownloading(false);
     }
@@ -340,26 +344,26 @@ function ResultView({
 
   return (
     <div className="ex-body">
-      <p className="ex-ok">File {file.fileType} đã sẵn sàng.</p>
+      <p className="ex-ok">{t('export.fileReady', { type: file.fileType })}</p>
       <p className="ex-hint">
         {name} {formatSize(file.sizeBytes) && `· ${formatSize(file.sizeBytes)}`}
       </p>
       {audioUrl ? (
         <audio className="ex-audio" controls src={audioUrl} />
       ) : previewFailed ? (
-        <p className="ex-hint">Không nghe thử được, bạn vẫn có thể tải về.</p>
+        <p className="ex-hint">{t('export.audio.noPreview')}</p>
       ) : (
-        <p className="ex-hint">Đang tải để nghe thử...</p>
+        <p className="ex-hint">{t('export.audio.loadingPreview')}</p>
       )}
       <div className="sc-modal__actions">
         <button className="sc-btn" onClick={onAgain}>
-          Xuất với tùy chọn khác
+          {t('export.again')}
         </button>
         <button className="sc-btn" onClick={onClose}>
-          Đóng
+          {t('common.close')}
         </button>
         <button className="sc-btn sc-btn--primary" onClick={() => void download()} disabled={downloading}>
-          {downloading ? 'Đang tải...' : 'Tải xuống'}
+          {downloading ? t('export.downloading') : t('export.download')}
         </button>
       </div>
     </div>
