@@ -174,5 +174,15 @@
   "3123": "The score owner's plan does not include real-time co-editing",
   "3124": "The co-editing operation is invalid",
   "3125": "You need to hold the measure lock before editing it",
-  "3126": "You are sending edits too fast, please slow down"
+  "3126": "You are sending edits too fast, please slow down",
+  "4001": "Report not found",
+  "4002": "Choose a reason; details are limited to 1000 characters and required for Other",
+  "4003": "You cannot report your own content",
+  "4004": "You already reported this and the report is still pending",
+  "4005": "You reported too much in the last 24 hours, please try again later",
+  "4006": "This kind of content cannot be reported yet",
+  "4007": "This report has already been handled",
+  "4008": "This action does not apply to the reported content",
+  "4009": "The reported content no longer exists; only Dismiss is available",
+  "4010": "The note is limited to 500 characters"
 }

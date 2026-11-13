@@ -24,6 +24,8 @@ import AdminMemberDetail from '../pages/admin/AdminMemberDetail';
 import AdminMembers from '../pages/admin/AdminMembers';
 import AdminOfficialScores from '../pages/admin/AdminOfficialScores';
 import AdminPendingScores from '../pages/admin/AdminPendingScores';
+import AdminReports from '../pages/admin/AdminReports';
+import AdminActivity from '../pages/admin/AdminActivity';
 import AdminScores from '../pages/admin/AdminScores';
 import AdminSystem from '../pages/admin/AdminSystem';
 import AdminTags from '../pages/admin/AdminTags';
@@ -162,6 +164,8 @@ const router = createBrowserRouter(
         <Route path="scores/:id/processing" element={<ScoreProcessing />} />
         <Route path="scores/:id/review" element={<ScoreReview />} />
         <Route path="pending-scores" element={<AdminPendingScores />} />
+        <Route path="reports" element={<AdminReports />} />
+        <Route path="activity" element={<AdminActivity />} />
         <Route path="official-scores" element={<AdminOfficialScores />} />
         <Route path="announcements" element={<AdminAnnouncements />} />
         <Route path="tags" element={<AdminTags />} />

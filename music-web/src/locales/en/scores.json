@@ -496,5 +496,26 @@
     "text": "Piece in show {show} · {status}",
     "due": "due {date}",
     "open": "Open the show board"
+  },
+  "report": {
+    "menu": "Report a problem",
+    "commentLink": "Report",
+    "title": "Report this score",
+    "commentTitle": "Report this comment",
+    "intro": "Your report goes to the administrators for review. The owner is not told who reported it.",
+    "reason": "Reason",
+    "reasons": {
+      "COPYRIGHT": "Copyright violation",
+      "SPAM": "Spam or advertising",
+      "INAPPROPRIATE": "Inappropriate content",
+      "OTHER": "Other reason"
+    },
+    "details": "Details",
+    "detailsOptional": "(optional)",
+    "detailsPlaceholder": "Briefly describe what is wrong",
+    "send": "Send report",
+    "sending": "Sending...",
+    "sent": "Report sent. Thank you.",
+    "failed": "Could not send the report"
   }
 }

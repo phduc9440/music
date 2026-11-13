@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from '../../../routes/transition-nav';
 import { toast } from 'react-toastify';
-import { commentApi } from '../../../services';
+import { commentApi, reportApi } from '../../../services';
+import ReportModal from '../common/ReportModal';
 import type { CommentFilter, CommentMember, ScoreComment, ScoreComments } from '../../../types';
 import { formatRelative, getErrorMessage } from '../../../utils/score';
 import { useDialog } from '../../ui/dialog-context';
@@ -479,6 +480,7 @@ function CommentItem({
 }) {
   const { confirm } = useDialog();
   const [editing, setEditing] = useState(false);
+  const [reporting, setReporting] = useState(false);
   const [content, setContent] = useState(comment.content);
   const [picked, setPicked] = useState(() => new Map(comment.mentions.map((m) => [m.id, m])));
   const [busy, setBusy] = useState(false);
@@ -583,10 +585,22 @@ function CommentItem({
                 {t('scores.comments.delete')}
               </button>
             )}
+            {!comment.canEdit && (
+              <button type="button" className="cm-link" onClick={() => setReporting(true)}>
+                {t('scores.report.commentLink')}
+              </button>
+            )}
           </div>
         )}
         {!editing && collapsed && extraActions && <div className="cm-item__actions">{extraActions}</div>}
       </div>
+      {reporting && (
+        <ReportModal
+          title={t('scores.report.commentTitle')}
+          onSubmit={(payload) => reportApi.reportComment(comment.id, payload)}
+          onClose={() => setReporting(false)}
+        />
+      )}
     </div>
   );
 }

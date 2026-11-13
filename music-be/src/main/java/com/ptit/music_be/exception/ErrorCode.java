@@ -287,6 +287,17 @@ public enum ErrorCode {
     LIVE_LOCK_REQUIRED(
             3125, "Bạn chưa giữ khóa các ô nhịp này nên chưa gửi thay đổi được", HttpStatus.CONFLICT),
     LIVE_RATE_LIMITED(3126, "Bạn gửi thay đổi quá nhanh, hãy chậm lại một chút", HttpStatus.TOO_MANY_REQUESTS),
+    // ---- 40xx: Báo cáo vi phạm và nhật ký quản trị (R5)
+    REPORT_NOT_EXISTED(4001, "Không tìm thấy báo cáo", HttpStatus.NOT_FOUND),
+    REPORT_REASON_INVALID(4002, "Hãy chọn lý do báo cáo; chi tiết tối đa 1000 ký tự và bắt buộc khi chọn lý do Khác", HttpStatus.BAD_REQUEST),
+    REPORT_OWN_CONTENT(4003, "Bạn không báo cáo được nội dung của chính mình", HttpStatus.BAD_REQUEST),
+    REPORT_DUPLICATED(4004, "Bạn đã báo cáo nội dung này và báo cáo đang chờ xử lý", HttpStatus.CONFLICT),
+    REPORT_RATE_LIMITED(4005, "Bạn báo cáo quá nhiều trong 24 giờ qua, hãy thử lại sau", HttpStatus.TOO_MANY_REQUESTS),
+    REPORT_TARGET_UNSUPPORTED(4006, "Loại nội dung này chưa nhận báo cáo", HttpStatus.BAD_REQUEST),
+    REPORT_ALREADY_HANDLED(4007, "Báo cáo này đã được xử lý", HttpStatus.CONFLICT),
+    REPORT_ACTION_INVALID(4008, "Cách xử lý này không áp dụng cho loại nội dung bị báo cáo", HttpStatus.BAD_REQUEST),
+    REPORT_TARGET_GONE(4009, "Nội dung bị báo cáo không còn nữa; chỉ chọn được Bỏ qua", HttpStatus.CONFLICT),
+    REPORT_NOTE_INVALID(4010, "Ghi chú xử lý tối đa 500 ký tự", HttpStatus.BAD_REQUEST),
     ;
 
     int code;

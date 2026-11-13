@@ -485,5 +485,26 @@
     "text": "Bài trong buổi diễn {show} · {status}",
     "due": "hạn {date}",
     "open": "Mở bảng buổi diễn"
+  },
+  "report": {
+    "menu": "Báo cáo vi phạm",
+    "commentLink": "Báo cáo",
+    "title": "Báo cáo bản nhạc",
+    "commentTitle": "Báo cáo góp ý",
+    "intro": "Báo cáo sẽ được gửi tới quản trị viên xem xét. Người sở hữu không biết ai đã báo cáo.",
+    "reason": "Lý do",
+    "reasons": {
+      "COPYRIGHT": "Vi phạm bản quyền",
+      "SPAM": "Spam hoặc quảng cáo",
+      "INAPPROPRIATE": "Nội dung không phù hợp",
+      "OTHER": "Lý do khác"
+    },
+    "details": "Chi tiết",
+    "detailsOptional": "(không bắt buộc)",
+    "detailsPlaceholder": "Mô tả ngắn điều bạn thấy chưa ổn",
+    "send": "Gửi báo cáo",
+    "sending": "Đang gửi...",
+    "sent": "Đã gửi báo cáo. Cảm ơn bạn.",
+    "failed": "Không gửi được báo cáo"
   }
 }

@@ -22,7 +22,9 @@
       "revenue": "Doanh thu",
       "plans": "Gói dịch vụ",
       "memberPlans": "Gói thành viên",
-      "roles": "Vai trò"
+      "roles": "Vai trò",
+      "reports": "Báo cáo vi phạm",
+      "audit": "Nhật ký"
     },
     "other": "Khác",
     "userSite": "Giao diện người dùng"
@@ -31,7 +33,8 @@
     "profileFailed": "Không tải được hồ sơ quản trị viên",
     "toggleSidebar": "Đóng/mở thanh bên",
     "menuLabel": "Menu quản trị",
-    "pendingBadge": "{count} bản đang chờ"
+    "pendingBadge": "{count} bản đang chờ",
+    "reportsBadge": "{count} báo cáo đang chờ"
   },
   "common": {
     "owner": "Chủ sở hữu"
@@ -824,7 +827,104 @@
       "SUBSCRIPTIONS_MANAGE": "Cấp, hủy, cấm, bỏ cấm gói của thành viên",
       "PLANS_MANAGE": "Tạo, sửa, xóa gói dịch vụ",
       "AI_TASKS_MANAGE": "Xem, hủy, chạy lại tác vụ AI của mọi người",
-      "SYSTEM_MONITOR": "Giám sát hệ thống, nhật ký lỗi"
+      "SYSTEM_MONITOR": "Giám sát hệ thống, nhật ký lỗi",
+      "REPORTS_MODERATE": "Xử lý báo cáo vi phạm: bỏ qua, ẩn góp ý, gỡ / xóa bản nhạc, khóa tài khoản",
+      "AUDIT_VIEW": "Xem nhật ký quản trị"
     }
+  },
+  "reports": {
+    "description": "Báo cáo của người dùng về bản nhạc và góp ý. Xử lý một báo cáo thì mọi báo cáo đang chờ trên cùng nội dung đóng theo.",
+    "loadFailed": "Không tải được danh sách báo cáo",
+    "tabs": {
+      "PENDING": "Đang chờ",
+      "RESOLVED": "Đã xử lý",
+      "DISMISSED": "Đã bỏ qua",
+      "ALL": "Tất cả"
+    },
+    "allTypes": "Mọi loại nội dung",
+    "targets": {
+      "SCORE": "Bản nhạc",
+      "COMMENT": "Góp ý",
+      "FORUM_POST": "Bài diễn đàn"
+    },
+    "reasons": {
+      "COPYRIGHT": "Vi phạm bản quyền",
+      "SPAM": "Spam hoặc quảng cáo",
+      "INAPPROPRIATE": "Nội dung không phù hợp",
+      "OTHER": "Lý do khác"
+    },
+    "columns": {
+      "target": "Nội dung bị báo cáo",
+      "reason": "Lý do",
+      "reporter": "Người báo cáo",
+      "owner": "Chủ nội dung",
+      "time": "Thời gian"
+    },
+    "reporterCount": "{count} người báo cáo",
+    "unavailable": "Không còn nữa",
+    "openScore": "Mở bản nhạc",
+    "handledBy": "Xử lý bởi {name}",
+    "actions": {
+      "DISMISS": "Bỏ qua",
+      "UNPUBLISH": "Gỡ công khai",
+      "HIDE": "Ẩn góp ý",
+      "SOFT_DELETE": "Xóa mềm (vào thùng rác)",
+      "LOCK_ACCOUNT": "Khóa tài khoản chủ nội dung"
+    },
+    "actionHints": {
+      "DISMISS": "Báo cáo không đúng, không làm gì với nội dung.",
+      "UNPUBLISH": "Đưa bản nhạc về riêng tư và gỡ khỏi kho mẫu; chủ sở hữu được báo kèm lý do.",
+      "HIDE": "Góp ý biến khỏi mọi nơi hiển thị.",
+      "SOFT_DELETE": "Chuyển bản nhạc vào thùng rác của chủ sở hữu.",
+      "LOCK_ACCOUNT": "Người này không đăng nhập được nữa cho tới khi mở khóa."
+    },
+    "resolveTitle": "Xử lý báo cáo",
+    "choose": "Cách xử lý",
+    "note": "Ghi chú (gửi kèm cho chủ sở hữu nếu gỡ hoặc xóa)",
+    "confirm": "Xác nhận xử lý",
+    "resolved": "Đã xử lý báo cáo",
+    "resolveFailed": "Không xử lý được báo cáo",
+    "reportOf": "Báo cáo về \"{label}\"",
+    "emptyTitle": "Không có báo cáo nào",
+    "emptyHint": "Báo cáo mới của người dùng sẽ hiện ở đây.",
+    "unit": "báo cáo"
+  },
+  "audit": {
+    "description": "Việc quản trị đã làm, suy ra từ các bảng gốc: báo cáo, bản nhạc bị gỡ, góp ý bị ẩn, nhóm bị xóa vì vi phạm, chế tài gói. Không lưu riêng nên luôn khớp dữ liệu thật; chỉ đọc.",
+    "loadFailed": "Không tải được nhật ký",
+    "types": {
+      "REPORT_CREATED": "Có báo cáo mới",
+      "REPORT_RESOLVED": "Xử lý báo cáo",
+      "SCORE_DELETED_BY_ADMIN": "Admin xóa bản nhạc",
+      "COMMENT_HIDDEN": "Ẩn góp ý",
+      "TEAM_DELETED_BY_ADMIN": "Admin xóa nhóm",
+      "PLAN_SANCTION": "Chế tài gói dịch vụ"
+    },
+    "targets": {
+      "SCORE": "Bản nhạc",
+      "COMMENT": "Góp ý",
+      "TEAM": "Nhóm",
+      "MEMBER": "Thành viên"
+    },
+    "filters": {
+      "actor": "Email người thực hiện",
+      "type": "Loại",
+      "allTypes": "Mọi loại",
+      "targetType": "Đối tượng",
+      "allTargets": "Mọi đối tượng",
+      "from": "Từ ngày",
+      "to": "Đến ngày",
+      "clear": "Xóa lọc"
+    },
+    "columns": {
+      "time": "Thời gian",
+      "actor": "Người thực hiện",
+      "type": "Việc đã làm",
+      "target": "Đối tượng",
+      "detail": "Chi tiết"
+    },
+    "emptyTitle": "Chưa có dòng nào",
+    "emptyHint": "Thử bỏ bớt bộ lọc.",
+    "unit": "dòng"
   }
 }

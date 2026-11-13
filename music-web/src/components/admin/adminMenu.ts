@@ -8,8 +8,8 @@ export interface MenuItem {
   label: string;
   icon: IconName;
   end?: boolean;
-  /** Hiện số bản chờ duyệt cạnh mục này. */
-  pendingBadge?: boolean;
+  /** Hiện số việc đang chờ cạnh mục này: bản chờ duyệt công khai hoặc báo cáo chờ xử lý. */
+  pendingBadge?: 'scores' | 'reports';
   /** Chỉ hiện khi có ít nhất một trong các quyền này; bỏ trống = ai vào được khu quản trị cũng thấy. */
   permissions?: AdminPermission[];
   /** Chỉ SUPER_ADMIN thấy (trang Vai trò). */
@@ -43,7 +43,8 @@ export const MENU: { section: string; items: MenuItem[] }[] = [
   ]),
   section('content', [
     item('/admin/scores', 'scores', 'music', { permissions: ['SCORES_MODERATE'] }),
-    item('/admin/pending-scores', 'pending', 'clock', { pendingBadge: true, permissions: ['SCORES_APPROVE'] }),
+    item('/admin/pending-scores', 'pending', 'clock', { pendingBadge: 'scores', permissions: ['SCORES_APPROVE'] }),
+    item('/admin/reports', 'reports', 'alert', { pendingBadge: 'reports', permissions: ['REPORTS_MODERATE'] }),
     item('/admin/official-scores', 'official', 'library', { permissions: ['OFFICIAL_LIBRARY'] }),
     item('/admin/tags', 'tags', 'tag', { permissions: ['TAGS_MANAGE'] }),
     item('/admin/composers', 'composers', 'users', { permissions: ['COMPOSERS_MANAGE'] }),
@@ -56,6 +57,7 @@ export const MENU: { section: string; items: MenuItem[] }[] = [
   section('system', [
     item('/admin/ai-tasks', 'aiTasks', 'cpu', { permissions: ['AI_TASKS_MANAGE'] }),
     item('/admin/system', 'system', 'activity', { permissions: ['SYSTEM_MONITOR'] }),
+    item('/admin/activity', 'audit', 'list', { permissions: ['AUDIT_VIEW'] }),
   ]),
 ];
 
@@ -69,4 +71,3 @@ export const visibleMenu = (admin: Member | null) =>
         : !it.permissions || it.permissions.some((p) => hasAdminPermission(admin, p)),
     ),
   })).filter((g) => g.items.length > 0);
-
