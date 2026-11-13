@@ -5,6 +5,7 @@
 import { commitEdit } from '../core/commands';
 import type { EditResult, Touched } from '../core/commands';
 import type { ScoreDocument } from '../core/ScoreDocument';
+import { t } from '../../../i18n/core';
 
 const child = (parent: Element, tag: string, pred?: (el: Element) => boolean): Element | undefined =>
   Array.from(parent.children).find((c) => c.tagName === tag && (!pred || pred(c)));
@@ -76,22 +77,28 @@ export function toggleRepeat(doc: ScoreDocument, measureIndex: number, side: 'st
     const b = barlineAt(m, location);
     return b && child(b, 'repeat', (r) => r.getAttribute('direction') === direction);
   });
-  const command = commitEdit(doc, side === 'start' ? 'Dấu lặp đầu ô' : 'Dấu lặp cuối ô', touched, [], () => {
-    for (const m of measures) {
-      if (present) {
-        const b = barlineAt(m, location);
-        if (!b) continue;
-        child(b, 'repeat')?.remove();
-        child(b, 'bar-style')?.remove();
-        tidyBarline(b);
-      } else {
-        const b = ensureBarline(m, location);
-        child(b, 'repeat')?.remove();
-        setBarStyle(b, side === 'start' ? 'heavy-light' : 'light-heavy');
-        addToBarline(b, make(m.ownerDocument, 'repeat', { direction }));
+  const command = commitEdit(
+    doc,
+    t(side === 'start' ? 'editor.cmd.repeat.start' : 'editor.cmd.repeat.end'),
+    touched,
+    [],
+    () => {
+      for (const m of measures) {
+        if (present) {
+          const b = barlineAt(m, location);
+          if (!b) continue;
+          child(b, 'repeat')?.remove();
+          child(b, 'bar-style')?.remove();
+          tidyBarline(b);
+        } else {
+          const b = ensureBarline(m, location);
+          child(b, 'repeat')?.remove();
+          setBarStyle(b, side === 'start' ? 'heavy-light' : 'light-heavy');
+          addToBarline(b, make(m.ownerDocument, 'repeat', { direction }));
+        }
       }
-    }
-  });
+    },
+  );
   return { ok: true, command };
 }
 
@@ -116,7 +123,7 @@ export function toggleEnding(
     const b = barlineAt(m, 'left');
     return b && child(b, 'ending', isStart);
   });
-  const command = commitEdit(doc, `Nhà ${number}`, touched, [], () => {
+  const command = commitEdit(doc, t('editor.cmd.ending', { number }), touched, [], () => {
     if (present) {
       for (const m of first.measures) {
         const b = barlineAt(m, 'left');
@@ -241,18 +248,24 @@ export function toggleDoubleBar(doc: ScoreDocument, measureIndex: number): EditR
     const b = barlineAt(m, 'right');
     return !!b && child(b, 'bar-style')?.textContent === 'light-light';
   });
-  const command = commitEdit(doc, present ? 'Bỏ vạch đôi' : 'Thêm vạch đôi', touched, [], () => {
-    for (const m of measures) {
-      if (present) {
-        const b = barlineAt(m, 'right');
-        if (!b) continue;
-        child(b, 'bar-style')?.remove();
-        tidyBarline(b);
-      } else {
-        setBarStyle(ensureBarline(m, 'right'), 'light-light');
+  const command = commitEdit(
+    doc,
+    t(present ? 'editor.cmd.doubleBar.remove' : 'editor.cmd.doubleBar.add'),
+    touched,
+    [],
+    () => {
+      for (const m of measures) {
+        if (present) {
+          const b = barlineAt(m, 'right');
+          if (!b) continue;
+          child(b, 'bar-style')?.remove();
+          tidyBarline(b);
+        } else {
+          setBarStyle(ensureBarline(m, 'right'), 'light-light');
+        }
       }
-    }
-  });
+    },
+  );
   return { ok: true, command };
 }
 
@@ -266,8 +279,8 @@ export function toggleBreak(doc: ScoreDocument, measureIndex: number, kind: 'sys
   if (measures.length === 0) return { ok: false, reason: 'noMeasure' };
   const attr = kind === 'page' ? 'new-page' : 'new-system';
   const present = measures.every((m) => child(m, 'print')?.getAttribute(attr) === 'yes');
-  const label = kind === 'page' ? 'sang trang tại ô' : 'xuống dòng tại ô';
-  const command = commitEdit(doc, `${present ? 'Bỏ' : 'Đặt'} ${label} ${measureIndex + 1}`, touched, [], () => {
+  const label = t(`editor.cmd.break.${kind}.${present ? 'remove' : 'set'}`, { n: measureIndex + 1 });
+  const command = commitEdit(doc, label, touched, [], () => {
     for (const m of measures) {
       let print = child(m, 'print');
       if (present) {
@@ -296,7 +309,7 @@ export function setRepeatTimes(doc: ScoreDocument, measureIndex: number, times: 
   if (repeats.some((r) => !r)) return { ok: false, reason: 'noRepeat' };
   const ends = repeats.filter((r): r is Element => r !== undefined);
   if (ends.every((r) => (r.getAttribute('times') ?? '2') === String(times))) return { ok: false, reason: 'unchanged' };
-  const command = commitEdit(doc, `Lặp ${times} lần`, touched, [], () => {
+  const command = commitEdit(doc, t('editor.cmd.repeatTimes', { times }), touched, [], () => {
     for (const r of ends) {
       if (times <= 2) r.removeAttribute('times');
       else r.setAttribute('times', String(times));

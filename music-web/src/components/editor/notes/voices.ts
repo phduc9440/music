@@ -7,6 +7,7 @@ import type { EditResult, Touched } from '../core/commands';
 import { movePitch, pitchToMidi } from './pitch';
 import type { Pitch } from './pitch';
 import type { NoteInfo, ScoreDocument } from '../core/ScoreDocument';
+import { t } from '../../../i18n/core';
 
 /** Thao tác viết bè trên bảng công cụ. */
 export type VoiceOp = 'chordBelow' | 'chordAbove' | 'addBelow' | 'addAbove' | 'blank' | 'cue' | 'remove';
@@ -77,7 +78,7 @@ export function addHarmonyVoice(doc: ScoreDocument, ids: readonly string[], step
     };
   });
 
-  const command = commitEdit(doc, 'Viết bè', touched, [], () => {
+  const command = commitEdit(doc, t('editor.cmd.voice.write'), touched, [], () => {
     for (const job of jobs) {
       const measure = job.first.element.closest('measure') as Element;
       const owner = measure.ownerDocument;
@@ -158,7 +159,7 @@ export function addChordNote(doc: ScoreDocument, ids: readonly string[], steps: 
   const created: Element[] = [];
   const plans = [...members.values()];
   plans.forEach((chord) => touch(touched, chord[0]));
-  const result = commitEdit(doc, 'Viết bè cùng thân', touched, [], () => {
+  const result = commitEdit(doc, t('editor.cmd.voice.writeSame'), touched, [], () => {
     for (const chord of plans) {
       const head = chord[0];
       const fifths = doc.keyAtPart(head.partIndex, head.measureIndex);
@@ -200,7 +201,7 @@ export function toggleCue(doc: ScoreDocument, ids: readonly string[]): EditResul
   targets.forEach((n) => touch(touched, n));
   const command = commitEdit(
     doc,
-    allCue ? 'Về nốt thường' : 'Nốt nhỏ',
+    t(allCue ? 'editor.cmd.voice.normal' : 'editor.cmd.voice.cue'),
     touched,
     targets.map((n) => n.id),
     () => {
@@ -233,7 +234,7 @@ export function removeVoice(doc: ScoreDocument, ids: readonly string[]): EditRes
 
   const touched: Touched = new Map();
   jobs.forEach((n) => touch(touched, n));
-  const command = commitEdit(doc, 'Xóa bè', touched, [], () => {
+  const command = commitEdit(doc, t('editor.cmd.voice.remove'), touched, [], () => {
     for (const n of jobs) {
       const measure = n.element.closest('measure') as Element;
       const mine = Array.from(measure.children).filter((c) => {

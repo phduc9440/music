@@ -112,7 +112,7 @@ export function bindNoteIds(osmd: OpenSheetMusicDisplay, doc: ScoreDocument, hos
   for (const [key, domList] of domGroups) {
     const osmdList = osmdGroups.get(key);
     if (!osmdList || osmdList.length !== domList.length) {
-      report.problems.push(`Nhóm ${key}: DOM ${domList.length} nốt, OSMD ${osmdList?.length ?? 0} nốt`);
+      report.problems.push(`Group ${key}: DOM ${domList.length} notes, OSMD ${osmdList?.length ?? 0} notes`);
       continue;
     }
     const isGraceGroup = key.endsWith('|g');
@@ -125,7 +125,7 @@ export function bindNoteIds(osmd: OpenSheetMusicDisplay, doc: ScoreDocument, hos
     domSorted.forEach((info, i) => {
       const svg = osmdSorted[i].svg;
       if (!svg) {
-        report.problems.push(`Nốt ${info.id}: OSMD không cho phần tử SVG`);
+        report.problems.push(`Note ${info.id}: OSMD gave no SVG element`);
         return;
       }
       const ids = idsBySvg.get(svg) ?? [];

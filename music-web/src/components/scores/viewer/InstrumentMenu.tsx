@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { INSTRUMENTS } from '../../editor/audio/instruments';
+import { INSTRUMENTS, instrumentLabel } from '../../editor/audio/instruments';
 import type { InstrumentId } from '../../editor/audio/instruments';
 import type { PartInstrument } from '../../player/hooks/usePlayer';
 import { IconInstrument } from './ViewerIcons';
@@ -64,7 +64,7 @@ export default function InstrumentMenu({
               >
                 {INSTRUMENTS.map((i) => (
                   <option key={i.id} value={i.id}>
-                    {i.label}
+                    {instrumentLabel(i.id)}
                   </option>
                 ))}
               </select>

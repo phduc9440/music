@@ -10,13 +10,12 @@
 import { levelAmplitude } from './loudness';
 import { midiToFrequency } from '../notes/pitch';
 import type { ScoreDocument } from '../core/ScoreDocument';
+import { t } from '../../../i18n/core';
 
 export type InstrumentId = 'piano' | 'strings' | 'flute' | 'organ' | 'guitar' | 'choir' | 'brass' | 'bells';
 
 export interface InstrumentInfo {
   id: InstrumentId;
-  /** Tên tiếng Việt hiển thị. */
-  label: string;
 }
 
 /**
@@ -27,15 +26,18 @@ export const accompanimentInstrument = (melody: InstrumentId): InstrumentId =>
   melody === 'organ' || melody === 'guitar' ? melody : 'piano';
 
 export const INSTRUMENTS: readonly InstrumentInfo[] = [
-  { id: 'piano', label: 'Piano' },
-  { id: 'strings', label: 'Đàn dây' },
-  { id: 'flute', label: 'Sáo / kèn gỗ' },
-  { id: 'organ', label: 'Đàn organ' },
-  { id: 'guitar', label: 'Guitar / đàn gảy' },
-  { id: 'choir', label: 'Giọng hát / hợp xướng' },
-  { id: 'brass', label: 'Kèn đồng' },
-  { id: 'bells', label: 'Chuông / glockenspiel' },
+  { id: 'piano' },
+  { id: 'strings' },
+  { id: 'flute' },
+  { id: 'organ' },
+  { id: 'guitar' },
+  { id: 'choir' },
+  { id: 'brass' },
+  { id: 'bells' },
 ];
+
+/** Tên hiển thị của nhạc cụ theo ngôn ngữ hiện tại. */
+export const instrumentLabel = (id: InstrumentId): string => t(`editor.instruments.${id}`);
 
 export const DEFAULT_INSTRUMENT: InstrumentId = 'piano';
 
@@ -449,13 +451,13 @@ export function scheduleVoice(ctx: BaseAudioContext, spec: VoiceSpec): Voice {
 /** Tên nhạc cụ → InstrumentId (dùng khi file không có chương trình MIDI); quy tắc đứng trước ưu tiên hơn. */
 const NAME_RULES: [RegExp, InstrumentId][] = [
   [/organ/i, 'organ'],
-  [/sopran|mezzo|alto|tenor|bariton|\bbass?\b|voice|vocal|choir|chorus|singer|giọng|hát|hợp xướng/i, 'choir'],
-  [/violin|viola|cello|contrabass|double bass|string|vĩ cầm|đàn dây/i, 'strings'],
-  [/flute|piccolo|clarinet|oboe|bassoon|sax|recorder|whistle|sáo|kèn/i, 'flute'],
+  [/sopran|mezzo|alto|tenor|bariton|\bbass?\b|voice|vocal|choir|chorus|singer|giọng|hát|hợp xướng/i, 'choir'], // i18n-ignore
+  [/violin|viola|cello|contrabass|double bass|string|vĩ cầm|đàn dây/i, 'strings'], // i18n-ignore
+  [/flute|piccolo|clarinet|oboe|bassoon|sax|recorder|whistle|sáo|kèn/i, 'flute'], // i18n-ignore
   [/trumpet|horn|trombone|tuba|cornet|brass/i, 'brass'],
-  [/guitar|harp|lute|mandolin|banjo|ukulele|đàn tranh|ghi-?ta/i, 'guitar'],
-  [/bell|glock|celesta|marimba|xylophone|vibraphone|chime|chuông/i, 'bells'],
-  [/piano|keyboard|harpsichord|đàn phím/i, 'piano'],
+  [/guitar|harp|lute|mandolin|banjo|ukulele|đàn tranh|ghi-?ta/i, 'guitar'], // i18n-ignore
+  [/bell|glock|celesta|marimba|xylophone|vibraphone|chime|chuông/i, 'bells'], // i18n-ignore
+  [/piano|keyboard|harpsichord|đàn phím/i, 'piano'], // i18n-ignore
 ];
 
 /** Chương trình MIDI (1–128, như `<midi-program>`) → nhạc cụ gần nhất. */
@@ -478,7 +480,7 @@ const textOf = (el: Element | undefined, tag: string): string =>
 
 /** Tên hiển thị của part `partIndex`: `<part-name>` hoặc "Khuông N". */
 export const partLabel = (doc: ScoreDocument, partIndex: number): string =>
-  textOf(scoreParts(doc)[partIndex], 'part-name') || `Khuông ${partIndex + 1}`;
+  textOf(scoreParts(doc)[partIndex], 'part-name') || t('player.track.staff', { n: partIndex + 1 });
 
 /**
  * Nhạc cụ mặc định của một part: theo `<midi-program>` nếu file có, không thì theo tên (part-name / instrument-name),

@@ -7,6 +7,7 @@ import type { EditResult, Touched } from '../core/commands';
 import { DURATION_QUARTERS } from '../notes/durations';
 import type { DurationType } from '../notes/durations';
 import type { ScoreDocument } from '../core/ScoreDocument';
+import { t } from '../../../i18n/core';
 
 export interface TempoInfo {
   bpm: number;
@@ -83,7 +84,7 @@ export function setTempo(doc: ScoreDocument, info: TempoInfo): EditResult {
   const { direction } = found;
   const owner = direction.ownerDocument;
   const touched: Touched = new Map([[`0|${found.measureIndex}`, { partIndex: 0, measureIndex: found.measureIndex }]]);
-  const command = commitEdit(doc, 'Sửa nhịp độ', touched, [], () => {
+  const command = commitEdit(doc, t('editor.cmd.tempo'), touched, [], () => {
     // <metronome>
     let metronome = direction.getElementsByTagName('metronome')[0];
     if (!metronome) {

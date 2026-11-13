@@ -3,6 +3,7 @@ import type { KeyboardEvent, PointerEvent } from 'react';
 import type { LoopSegment } from '../state/loop';
 import type { Timeline } from '../engine/timeline';
 import { measureOrderAt } from '../engine/timeline';
+import { t } from '../../../i18n/core';
 
 const MAX_TICKS = 160;
 
@@ -70,11 +71,11 @@ export function TransportProgress({ timeline, position, disabled, onSeek, loopSe
       className={`pl-progress${disabled ? ' pl-progress--disabled' : ''}${drag !== null ? ' pl-progress--drag' : ''}`}
       role="slider"
       tabIndex={disabled ? -1 : 0}
-      aria-label="Vị trí phát"
+      aria-label={t('player.transport.position')}
       aria-valuemin={1}
       aria-valuemax={Math.max(count, 1)}
       aria-valuenow={order + 1}
-      aria-valuetext={`Ô ${order + 1} trên ${count}`}
+      aria-valuetext={t('player.transport.valueText', { n: order + 1, count })}
       aria-disabled={disabled}
       onPointerDown={onDown}
       onPointerMove={onMove}

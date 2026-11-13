@@ -7,6 +7,7 @@ import { childOf, commitEdit, hasTie, readPitch, slursOf, touch } from '../core/
 import type { EditResult, Touched } from '../core/commands';
 import { pitchToMidi } from './pitch';
 import type { NoteInfo, ScoreDocument } from '../core/ScoreDocument';
+import { t } from '../../../i18n/core';
 
 /** Thẻ <notations> của nốt, tạo mới (đúng chỗ: trước <lyric>/<play>) nếu chưa có. */
 export const notationsOf = (note: Element): Element => {
@@ -112,7 +113,7 @@ export function toggleTie(doc: ScoreDocument, ids: readonly string[]): EditResul
   });
   const command = commitEdit(
     doc,
-    tiedAlready ? 'Bỏ dấu nối' : 'Thêm dấu nối',
+    t(tiedAlready ? 'editor.cmd.tie.remove' : 'editor.cmd.tie.add'),
     touched,
     [...chosen].map((n) => n.id),
     () => {
@@ -171,7 +172,7 @@ export function toggleSlur(doc: ScoreDocument, ids: readonly string[]): EditResu
   const touched: Touched = new Map();
   touch(touched, start);
   touch(touched, stop);
-  const label = existing ? 'Bỏ dấu luyến' : 'Thêm dấu luyến';
+  const label = t(existing ? 'editor.cmd.slur.remove' : 'editor.cmd.slur.add');
 
   // Số hiệu dấu luyến chưa dùng trong đoạn (để các dấu luyến chồng nhau không lẫn)
   const used = new Set<string>();

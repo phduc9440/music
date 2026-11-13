@@ -27,21 +27,26 @@ import type { Dots, DurationChoice, Entry, Plan, Ratio } from './durationCore';
 import type { NoteInfo, ScoreDocument } from '../core/ScoreDocument';
 import { runStructural } from '../structure/structure';
 import { notationsOf, removeNotation } from './ties';
+import { t } from '../../../i18n/core';
 
 /** Các kiểu chùm có sẵn trên bảng công cụ. */
-export const TUPLET_PRESETS: { actual: number; normal: number; label: string; name: string }[] = [
-  { actual: 3, normal: 2, label: 'Chùm ba (3:2)', name: 'chùm ba' },
-  { actual: 2, normal: 3, label: 'Chùm hai (2:3)', name: 'chùm hai' },
-  { actual: 4, normal: 3, label: 'Chùm bốn (4:3)', name: 'chùm bốn' },
-  { actual: 5, normal: 4, label: 'Chùm năm (5:4)', name: 'chùm năm' },
-  { actual: 6, normal: 4, label: 'Chùm sáu (6:4)', name: 'chùm sáu' },
-  { actual: 7, normal: 4, label: 'Chùm bảy (7:4)', name: 'chùm bảy' },
+export const TUPLET_PRESETS: { actual: number; normal: number }[] = [
+  { actual: 3, normal: 2 },
+  { actual: 2, normal: 3 },
+  { actual: 4, normal: 3 },
+  { actual: 5, normal: 4 },
+  { actual: 6, normal: 4 },
+  { actual: 7, normal: 4 },
 ];
 
-/** Tên tiếng Việt của chùm, ví dụ "chùm ba"; kiểu lạ thì ghi tỉ lệ "chùm 9:8". */
+/** Nhãn của một kiểu chùm trên bảng công cụ, ví dụ "Chùm ba (3:2)". */
+export const tupletPresetLabel = (preset: { actual: number }): string => t(`editor.tuplet.label.${preset.actual}`);
+
+/** Tên của chùm, ví dụ "chùm ba"; kiểu lạ thì ghi tỉ lệ "chùm 9:8". */
 export const tupletName = (ratio: Ratio): string =>
-  TUPLET_PRESETS.find((p) => p.actual === ratio.actual && p.normal === ratio.normal)?.name ??
-  `chùm ${ratio.actual}:${ratio.normal}`;
+  TUPLET_PRESETS.some((p) => p.actual === ratio.actual && p.normal === ratio.normal)
+    ? t(`editor.tuplet.name.${ratio.actual}`)
+    : t('editor.tuplet.other', { actual: ratio.actual, normal: ratio.normal });
 
 /** Thao tác chùm trên bảng công cụ. */
 export type TupletOp = { kind: 'make'; actual: number; normal: number } | { kind: 'remove' };
@@ -347,7 +352,7 @@ export function makeTuplet(doc: ScoreDocument, id: string, actual: number, norma
     addMark(anchor, 'stop');
   };
 
-  const label = `Tạo ${tupletName(ratio)}`;
+  const label = t('editor.cmd.tuplet.make', { name: tupletName(ratio) });
   let command: EditCommand;
   if (factor > 1) {
     const result = runStructural(doc, label, () => {
@@ -431,7 +436,7 @@ export function removeTuplet(doc: ScoreDocument, id: string): EditResult {
   const touched: Touched = new Map();
   touch(touched, headInfo);
   const keeperHead = keeper.members[0];
-  const command = commitEdit(doc, `Bỏ ${tupletName(range)}`, touched, [], () => {
+  const command = commitEdit(doc, t('editor.cmd.tuplet.remove', { name: tupletName(range) }), touched, [], () => {
     const removed = group.filter((e) => e !== keeper).flatMap((e) => e.members);
     carrySlurs(removed, keeperHead);
     removed.forEach((m) => m.remove());

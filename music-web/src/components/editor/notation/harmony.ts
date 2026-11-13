@@ -5,6 +5,7 @@
 import { commitEdit, touch } from '../core/commands';
 import type { EditResult, Touched } from '../core/commands';
 import type { NoteInfo, ScoreDocument } from '../core/ScoreDocument';
+import { t } from '../../../i18n/core';
 
 interface Note {
   step: string;
@@ -275,7 +276,7 @@ export function setChord(doc: ScoreDocument, id: string, text: string): EditResu
   if (existing === wanted) return { ok: false, reason: 'unchanged' };
   const touched: Touched = new Map();
   touch(touched, info);
-  const command = commitEdit(doc, spec ? 'Nhập hợp âm' : 'Xóa hợp âm', touched, [id], () =>
+  const command = commitEdit(doc, t(spec ? 'editor.cmd.chord.set' : 'editor.cmd.chord.clear'), touched, [id], () =>
     writeChord(info.element, spec),
   );
   command.selectAfter = [id];
@@ -311,7 +312,7 @@ export function pasteChords(
   let placed = 0;
   const command = commitEdit(
     doc,
-    'Dán hợp âm',
+    t('editor.cmd.chord.paste'),
     touched,
     targets.map((n) => n.id),
     () => {

@@ -9,19 +9,21 @@ import { runStructural } from './structure';
 import type { NoteInfo, ScoreDocument } from '../core/ScoreDocument';
 import { measureEnd } from '../notes/voices';
 import { clampFifths, intervalFifths } from '../notes/pitch';
+import { t } from '../../../i18n/core';
 
 /** Các khóa nhạc chọn được: Sol, Sol 8 dưới (Tenor), Fa, Đô dòng 3 (Alto), Đô dòng 4 (Tenor). */
 export type ClefSign = 'G' | 'G8b' | 'F' | 'C' | 'C4';
-export const CLEFS: Record<
-  ClefSign,
-  { sign: string; line: number; octaveChange: number; label: string; short: string }
-> = {
-  G: { sign: 'G', line: 2, octaveChange: 0, label: 'Khóa Sol', short: 'Sol' },
-  G8b: { sign: 'G', line: 2, octaveChange: -1, label: 'Khóa Sol số 8 dưới (Tenor)', short: 'Tenor (Sol 8)' },
-  F: { sign: 'F', line: 4, octaveChange: 0, label: 'Khóa Fa', short: 'Fa' },
-  C: { sign: 'C', line: 3, octaveChange: 0, label: 'Khóa Đô dòng 3 (Alto)', short: 'Đô' },
-  C4: { sign: 'C', line: 4, octaveChange: 0, label: 'Khóa Đô dòng 4 (Tenor)', short: 'Đô dòng 4' },
+export const CLEFS: Record<ClefSign, { sign: string; line: number; octaveChange: number }> = {
+  G: { sign: 'G', line: 2, octaveChange: 0 },
+  G8b: { sign: 'G', line: 2, octaveChange: -1 },
+  F: { sign: 'F', line: 4, octaveChange: 0 },
+  C: { sign: 'C', line: 3, octaveChange: 0 },
+  C4: { sign: 'C', line: 4, octaveChange: 0 },
 };
+
+/** Tên đầy đủ và tên ngắn của khóa nhạc theo ngôn ngữ hiện tại. */
+export const clefLabel = (clef: ClefSign): string => t(`editor.clef.${clef}.label`);
+export const clefShort = (clef: ClefSign): string => t(`editor.clef.${clef}.short`);
 
 /** Dựng thẻ <clef> theo `spec` (có <clef-octave-change> khi khác 0, đúng thứ tự sign, line, clef-octave-change). */
 const makeClef = (owner: Document, spec: (typeof CLEFS)[ClefSign], number: number | null): Element => {
@@ -180,15 +182,19 @@ export function changeNotation(
     return { ok: false, reason: 'badValue' };
   }
   const range =
-    from === to ? `ô ${from + 1}` : to === doc.measureCount - 1 ? `từ ô ${from + 1}` : `ô ${from + 1}–${to + 1}`;
+    from === to
+      ? t('editor.range.one', { n: from + 1 })
+      : to === doc.measureCount - 1
+        ? t('editor.range.from', { n: from + 1 })
+        : t('editor.range.span', { from: from + 1, to: to + 1 });
   const label =
     change.kind === 'clef'
-      ? `${CLEFS[change.sign].label} (${range})`
+      ? t('editor.cmd.clef', { clef: clefLabel(change.sign), range })
       : change.kind === 'key'
-        ? `Đổi dấu hóa đầu khuông (${range})`
+        ? t('editor.cmd.key', { range })
         : change.free
-          ? `Nhịp tự do (${range})`
-          : `Đổi nhịp ${change.beats}/${change.beatType} (${range})`;
+          ? t('editor.cmd.timeFree', { range })
+          : t('editor.cmd.time', { beats: change.beats, beatType: change.beatType, range });
 
   const command = commitEdit(doc, label, touchRange(doc, parts, from, to), [], () => {
     for (const partIndex of parts) {
@@ -306,7 +312,7 @@ export function addBassStaff(doc: ScoreDocument, partIndex: number): EditResult 
   const measures = doc.getMeasures(partIndex);
   const lengths = measures.map((_, m) => measureLength(doc, partIndex, m));
   const voice = Math.max(5, ...doc.notes.filter((n) => n.partIndex === partIndex).map((n) => n.voice + 1));
-  const result = runStructural(doc, 'Thêm khuông Fa (đàn hai khuông)', () => {
+  const result = runStructural(doc, t('editor.cmd.staff.addBass'), () => {
     const owner = measures[0].ownerDocument;
     const first = attributesOf(measures[0], true) as Element;
     measures.forEach((m) =>
@@ -341,7 +347,7 @@ export function addBassStaff(doc: ScoreDocument, partIndex: number): EditResult 
 export function addPart(doc: ScoreDocument, clefKey: ClefSign): EditResult {
   const source = doc.getMeasures(0);
   const lengths = source.map((_, m) => measureLength(doc, 0, m));
-  const result = runStructural(doc, `Thêm khuông ${CLEFS[clefKey].short}`, () => {
+  const result = runStructural(doc, t('editor.cmd.staff.addPart', { name: clefShort(clefKey) }), () => {
     const owner = source[0].ownerDocument;
     const root = doc.root;
     const list = Array.from(root.children).find((c) => c.tagName === 'part-list') as Element;
@@ -351,7 +357,7 @@ export function addPart(doc: ScoreDocument, clefKey: ClefSign): EditResult {
     const id = `P${n}`;
     const scorePart = el(owner, 'score-part');
     scorePart.setAttribute('id', id);
-    scorePart.appendChild(el(owner, 'part-name', `Khuông ${doc.partCount + 1}`));
+    scorePart.appendChild(el(owner, 'part-name', t('player.track.staff', { n: doc.partCount + 1 })));
     list.appendChild(scorePart);
 
     const part = el(owner, 'part');
@@ -397,7 +403,7 @@ export function removeStaff(doc: ScoreDocument, partIndex: number, staff: number
   const staves = doc.staffCountOfPart(partIndex);
   if (staves >= 2 && staff === staves) {
     const measures = doc.getMeasures(partIndex);
-    return runStructural(doc, 'Xóa khuông Fa của đàn', () => {
+    return runStructural(doc, t('editor.cmd.staff.removeBass'), () => {
       for (const measure of measures) {
         for (const child of Array.from(measure.children)) {
           const inStaff = Number(childOf(child, 'staff')?.textContent) === staff;
@@ -418,7 +424,7 @@ export function removeStaff(doc: ScoreDocument, partIndex: number, staff: number
     });
   }
   if (doc.partCount < 2) return { ok: false, reason: 'lastStaff' };
-  return runStructural(doc, 'Xóa khuông', () => {
+  return runStructural(doc, t('editor.cmd.staff.remove'), () => {
     const part = Array.from(doc.root.children).filter((c) => c.tagName === 'part')[partIndex];
     const id = part.getAttribute('id');
     part.remove();

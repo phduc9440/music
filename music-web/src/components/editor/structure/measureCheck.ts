@@ -4,8 +4,10 @@
  */
 import { commitEdit } from '../core/commands';
 import type { EditResult, Touched } from '../core/commands';
-import { DURATION_LABELS, splitRests } from '../notes/durationCore';
+import { durationLabel, splitRests } from '../notes/durationCore';
+import { formatNumber } from '../../../i18n/core';
 import type { ScoreDocument } from '../core/ScoreDocument';
+import { t } from '../../../i18n/core';
 
 /** Một ô nhịp có độ dài sai. */
 export interface MeasureIssue {
@@ -27,8 +29,8 @@ const numberOf = (parent: Element, tag: string): number => {
   return text && Number.isFinite(value) ? value : 0;
 };
 
-/** Định dạng số phách theo kiểu Việt (dấu phẩy thập phân, tối đa 2 chữ số). */
-const formatBeats = (value: number): string => String(Math.round(Math.abs(value) * 100) / 100).replace('.', ',');
+/** Định dạng số phách theo ngôn ngữ hiện tại (tối đa 2 chữ số thập phân). */
+const formatBeats = (value: number): string => formatNumber(Math.round(Math.abs(value) * 100) / 100);
 
 /** Nhịp kép (6/8, 9/8, 12/8, 6/16...): phách là nốt chấm dôi, dài 3 đơn vị của loại phách. */
 export const isCompound = (beats: number, beatType: number): boolean => beatType >= 8 && beats > 3 && beats % 3 === 0;
@@ -43,23 +45,24 @@ const describeGap = (diffQuarters: number, beatType: number, compound: boolean):
   const unit = 4 / beatType;
   const beat = compound ? unit * 3 : unit;
   const near = (x: number) => Math.abs(x - Math.round(x)) < 1e-9;
-  if (near(diffQuarters / beat)) return `${Math.round(diffQuarters / beat)} phách`;
+  if (near(diffQuarters / beat)) return t('editor.check.beats', { count: Math.round(diffQuarters / beat) });
   // Nhịp kép: đếm theo đơn vị của loại phách (2 móc đơn) thay vì ghép thành nốt chấm dôi
   if (compound && near(diffQuarters / unit)) {
     const type = beatType === 8 ? 'eighth' : beatType === 16 ? '16th' : beatType === 32 ? '32nd' : null;
-    if (type) return `${Math.round(diffQuarters / unit)} ${DURATION_LABELS[type]}`;
+    if (type) return t('editor.check.group', { count: Math.round(diffQuarters / unit), text: durationLabel(type) });
   }
   const pieces = splitRests(Math.round(diffQuarters * 64), 64);
   if (!pieces) return null;
   const groups: { text: string; count: number }[] = [];
   for (const p of pieces) {
-    const name = DURATION_LABELS[p.type];
-    const text = `${WHOLE_NOTE_NAMES.has(p.type) ? 'nốt ' : ''}${name}${p.dots === 1 ? ' chấm' : p.dots === 2 ? ' chấm kép' : ''}`;
+    const name = durationLabel(p.type);
+    const dots = p.dots === 1 ? t('editor.check.dot') : p.dots === 2 ? t('editor.check.dotDouble') : '';
+    const text = WHOLE_NOTE_NAMES.has(p.type) ? t('editor.check.noteOf', { name, dots }) : `${name}${dots}`;
     const last = groups[groups.length - 1];
     if (last && last.text === text) last.count += 1;
     else groups.push({ text, count: 1 });
   }
-  return groups.map((g) => `${g.count} ${g.text}`).join(' và ');
+  return groups.map((g) => t('editor.check.group', { count: g.count, text: g.text })).join(t('editor.check.and'));
 };
 
 /**
@@ -100,9 +103,12 @@ export function checkMeasures(doc: ScoreDocument): MeasureIssue[] {
           measureIndex,
           partIndex,
           diffBeats,
-          message: `Ô ${measureIndex + 1} ${diffBeats < 0 ? 'thiếu' : 'thừa'} ${
-            describeGap(Math.abs(total - expected) / divisions, beatType, compound) ?? `${formatBeats(diffBeats)} phách`
-          }`,
+          message: t(diffBeats < 0 ? 'editor.check.short' : 'editor.check.long', {
+            n: measureIndex + 1,
+            gap:
+              describeGap(Math.abs(total - expected) / divisions, beatType, compound) ??
+              t('editor.check.beatsDecimal', { value: formatBeats(diffBeats) }),
+          }),
         });
       }
     });
@@ -124,7 +130,7 @@ export function confirmMeasure(doc: ScoreDocument, measureIndex: number): EditRe
     touched.set(`${partIndex}|${measureIndex}`, { partIndex, measureIndex });
   }
   if (targets.length === 0) return { ok: false, reason: 'unchanged' };
-  const command = commitEdit(doc, `Xác nhận ô ${measureIndex + 1} đúng`, touched, [], () => {
+  const command = commitEdit(doc, t('editor.cmd.measure.confirm', { n: measureIndex + 1 }), touched, [], () => {
     targets.forEach((m) => m.setAttribute('implicit', 'yes'));
   });
   return { ok: true, command };

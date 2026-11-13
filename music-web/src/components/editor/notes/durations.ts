@@ -9,7 +9,7 @@
 import { chordKey, childOf, commitEdit, hasTie, readPitch, touch, writePitch } from '../core/commands';
 import type { EditFailure, EditResult, Touched } from '../core/commands';
 import {
-  DURATION_LABELS,
+  durationLabel,
   DURATION_QUARTERS,
   choiceQuarters,
   divisionsAt,
@@ -34,8 +34,9 @@ import { inRange, keyAlter, pitchToMidi, isStep } from './pitch';
 import type { Pitch, Step } from './pitch';
 import type { NoteInfo, ScoreDocument } from '../core/ScoreDocument';
 import { groupRange, planTupletDuration, ratioOf } from './tuplets';
+import { t } from '../../../i18n/core';
 
-export { DURATION_LABELS, DURATION_QUARTERS, dotsLabel, nextDots };
+export { durationLabel, DURATION_QUARTERS, dotsLabel, nextDots };
 export type { Dots, DurationChoice, DurationType };
 
 /**
@@ -192,8 +193,6 @@ function withRescale(doc: ScoreDocument, partIndex: number, run: () => EditResul
   return first;
 }
 
-const DURATION_LABEL_PREFIX = 'Đổi trường độ';
-
 /**
  * Đổi trường độ các nốt (hoặc dấu lặng) đã chọn. Có bước nào không làm được thì không đổi gì.
  * Đổi thẳng đúng trường độ đã chọn: độ dài ô nhịp thay đổi theo (ô sai phách được viền đỏ để sửa tiếp).
@@ -220,7 +219,7 @@ function setDurationOnce(doc: ScoreDocument, ids: readonly string[], choice: Dur
 
   let failure = null as EditFailure | null;
   let changedCount = 0;
-  const label = `${DURATION_LABEL_PREFIX}: ${DURATION_LABELS[choice.type]}${dotsLabel(choice.dots)}`;
+  const label = t('editor.cmd.duration.change', { duration: `${durationLabel(choice.type)}${dotsLabel(choice.dots)}` });
   const command = commitEdit(doc, label, touched, [...ids], () => {
     for (const h of ordered) {
       const plan = planDuration(h.element, choice, false);
@@ -307,7 +306,7 @@ function enterNoteOnce(doc: ScoreDocument, id: string, letter: string, choice: D
 
   const touched: Touched = new Map();
   touch(touched, headInfo);
-  const label = `Nhập nốt ${step}`;
+  const label = t('editor.cmd.note.enter', { step });
   const command = commitEdit(doc, label, touched, [headInfo.id], () => {
     if (durationPlan && 'run' in durationPlan) durationPlan.run();
     if (hasChild(head, 'rest')) {
@@ -421,7 +420,9 @@ function insertNoteOnce(
     partIndex: target.partIndex,
     measureIndex: target.measureIndex,
   });
-  const label = `Thêm nốt ${pitch.step}${alter > 0 ? '#' : alter < 0 ? 'b' : ''}${pitch.octave}`;
+  const label = t('editor.cmd.note.add', {
+    pitch: `${pitch.step}${alter > 0 ? '#' : alter < 0 ? 'b' : ''}${pitch.octave}`,
+  });
 
   // Thay dấu lặng bằng nốt
   if (target.restEntry !== null) {

@@ -22,6 +22,7 @@ import { TransportProgress } from './controls/TransportProgress';
 import { useMediaQuery } from './hooks/useMediaQuery';
 import { useEnginePosition } from './hooks/usePlayer';
 import type { PlayerApi } from './hooks/usePlayer';
+import { t } from '../../i18n/core';
 import './player.css';
 
 /** Dưới mức này các tùy chọn dồn vào nút "⋯" và bottom sheet (khớp @media trong player.css). */
@@ -61,12 +62,10 @@ export function PlayerBar({
 }: Props) {
   if (!player.engine || !player.timeline) {
     return (
-      <div className="pl-bar pl-bar--notice" role="region" aria-label="Trình phát">
-        <span className="pl-notice">
-          {player.supported ? 'Đang chuẩn bị trình phát…' : 'Trình duyệt này không hỗ trợ phát nhạc (Web Audio).'}
-        </span>
+      <div className="pl-bar pl-bar--notice" role="region" aria-label={t('player.bar.region')}>
+        <span className="pl-notice">{player.supported ? t('player.bar.preparing') : t('player.bar.unsupported')}</span>
         {onClose && (
-          <button type="button" className="pl-btn pl-btn--ghost" onClick={onClose} aria-label="Đóng trình phát">
+          <button type="button" className="pl-btn pl-btn--ghost" onClick={onClose} aria-label={t('player.bar.close')}>
             <IconClose />
           </button>
         )}
@@ -107,7 +106,7 @@ function BarBody({
   // Ô đang phát theo chỉ số trong bản nhạc (khác thứ tự lượt phát khi có dấu lặp lại)
   const currentMeasure = timeline.measures[Math.max(0, order < 0 ? timeline.measures.length - 1 : order)]?.index ?? 0;
   const percent = Math.round(player.sampler.progress * 100);
-  /** Đệm hợp âm đang bật (track "Hợp âm" không bị tắt tiếng); mặc định bật. */
+  /** Đệm hợp âm đang bật (track Hợp âm không bị tắt tiếng); mặc định bật. */
   const chordsOn = !mixOf(player.mixer, CHORD_TRACK_ID).mute;
   // Thời gian hiển thị là giây thật: ở 50% bài dài gấp đôi
   const speed = player.tempoPercent / 100;
@@ -122,11 +121,11 @@ function BarBody({
   const hasChords = timeline.tracks.some((t) => t.id === CHORD_TRACK_ID);
   const hasMixer = timeline.tracks.length >= 2;
   const tabs: SheetTab[] = [
-    { id: 'tempo', label: 'Tốc độ' },
-    { id: 'loop', label: 'Lặp' },
-    { id: 'transpose', label: 'Giọng' },
+    { id: 'tempo', label: t('player.tabs.tempo') },
+    { id: 'loop', label: t('player.tabs.loop') },
+    { id: 'transpose', label: t('player.tabs.transpose') },
     ...(hasMixer ? [{ id: 'mixer', label: 'Mixer' }] : []),
-    ...(hasChords ? [{ id: 'chords', label: 'Hợp âm' }] : []),
+    ...(hasChords ? [{ id: 'chords', label: t('player.tabs.chords') }] : []),
   ];
   const activeTab = tabs.some((t) => t.id === tab) ? tab : 'tempo';
   /** Có cài đặt khác mặc định (tempo, lặp, chuyển giọng, mixer, hợp âm) thì nút "⋯" có chấm báo. */
@@ -205,28 +204,28 @@ function BarBody({
   };
 
   let notice: React.ReactNode = null;
-  if (player.empty) notice = <span className="pl-notice">Bản nhạc trống, chưa có nốt để phát.</span>;
-  else if (loading) notice = <span className="pl-notice">Đang tải âm piano… {percent}%</span>;
+  if (player.empty) notice = <span className="pl-notice">{t('player.bar.empty')}</span>;
+  else if (loading) notice = <span className="pl-notice">{t('player.bar.loadingPiano', { percent })}</span>;
   else if (player.sampler.state === 'error' || player.sampler.state === 'unsupported')
     notice = (
       <span className="pl-notice pl-notice--warn">
-        Đang dùng âm thanh thay thế
+        {t('player.bar.fallbackSound')}
         <button type="button" className="pl-link" onClick={player.retrySamples}>
-          Tải lại
+          {t('player.bar.reload')}
         </button>
       </span>
     );
 
   return (
-    <div className="pl-bar" role="region" aria-label="Trình phát">
+    <div className="pl-bar" role="region" aria-label={t('player.bar.region')}>
       <div className="pl-transport">
         <button
           type="button"
           className="pl-btn"
           onClick={() => player.step(-1)}
           disabled={!player.canPlay}
-          aria-label="Ô trước"
-          title="Ô trước (←)"
+          aria-label={t('player.bar.prev')}
+          title={t('player.bar.prevTitle')}
         >
           <IconPrevMeasure />
         </button>
@@ -235,8 +234,8 @@ function BarBody({
           className={`pl-btn pl-btn--play${loading ? ' pl-btn--loading' : ''}`}
           onClick={player.toggle}
           disabled={!player.canPlay}
-          aria-label={playing ? 'Tạm dừng' : 'Phát'}
-          title={playing ? 'Tạm dừng (Space)' : 'Phát (Space)'}
+          aria-label={playing ? t('player.bar.pause') : t('player.bar.play')}
+          title={playing ? t('player.bar.pauseTitle') : t('player.bar.playTitle')}
         >
           {playing ? <IconPauseBig /> : <IconPlayBig />}
         </button>
@@ -245,8 +244,8 @@ function BarBody({
           className="pl-btn"
           onClick={() => player.step(1)}
           disabled={!player.canPlay}
-          aria-label="Ô sau"
-          title="Ô sau (→)"
+          aria-label={t('player.bar.next')}
+          title={t('player.bar.nextTitle')}
         >
           <IconNextMeasure />
         </button>
@@ -255,8 +254,8 @@ function BarBody({
           className="pl-btn pl-btn--stop"
           onClick={player.stop}
           disabled={player.status === 'stopped' && position === 0}
-          aria-label="Dừng"
-          title="Dừng"
+          aria-label={t('player.bar.stop')}
+          title={t('player.bar.stop')}
         >
           <IconStopSmall />
         </button>
@@ -272,8 +271,11 @@ function BarBody({
         />
         <div className="pl-meta">
           <span className="pl-time" aria-live="off">
-            Ô {Math.min(current, timeline.measures.length)} / {timeline.measures.length} · {fmt(position / speed)} /{' '}
-            {fmt(timeline.total / speed)}
+            {t('player.bar.measureOf', {
+              current: Math.min(current, timeline.measures.length),
+              total: timeline.measures.length,
+            })}{' '}
+            · {fmt(position / speed)} / {fmt(timeline.total / speed)}
           </span>
           {notice}
         </div>
@@ -288,8 +290,8 @@ function BarBody({
             disabled={!player.canPlay}
             aria-haspopup="dialog"
             aria-expanded={sheetOpen}
-            aria-label={customized ? 'Tùy chọn phát (có cài đặt khác mặc định)' : 'Tùy chọn phát'}
-            title="Tùy chọn phát"
+            aria-label={customized ? t('player.bar.optionsCustom') : t('player.bar.options')}
+            title={t('player.bar.options')}
           >
             <IconMore />
             {customized && <span className="pl-btn__dot" aria-hidden="true" />}
@@ -305,7 +307,7 @@ function BarBody({
         )}
         {extra}
         {onClose && (
-          <button type="button" className="pl-btn pl-btn--ghost" onClick={onClose} aria-label="Đóng trình phát">
+          <button type="button" className="pl-btn pl-btn--ghost" onClick={onClose} aria-label={t('player.bar.close')}>
             <IconClose />
           </button>
         )}

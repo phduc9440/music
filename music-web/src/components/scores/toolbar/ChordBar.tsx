@@ -3,6 +3,7 @@ import type { ClipboardEvent, KeyboardEvent } from 'react';
 import { canHoldChord, readChord } from '../../editor/notation/harmony';
 import type { ScoreDocument } from '../../editor/core/ScoreDocument';
 import Modal from '../common/Modal';
+import { t } from '../../../i18n/core';
 
 interface Props {
   doc: ScoreDocument;
@@ -63,9 +64,15 @@ export default function ChordBar({ doc, revision, selectedId, onEnter, onMove, o
   };
 
   return (
-    <div className="sv-lyricbar" role="group" aria-label="Nhập hợp âm">
-      <span className="sv-lyricbar__verse">Hợp âm</span>
-      <button type="button" className="sc-btn" onClick={() => onMove(-1)} disabled={!usable} aria-label="Nốt trước">
+    <div className="sv-lyricbar" role="group" aria-label={t('editor.toolbar.chord.group')}>
+      <span className="sv-lyricbar__verse">{t('editor.toolbar.chord.label')}</span>
+      <button
+        type="button"
+        className="sc-btn"
+        onClick={() => onMove(-1)}
+        disabled={!usable}
+        aria-label={t('editor.toolbar.prevNote')}
+      >
         ‹
       </button>
       <input
@@ -74,31 +81,30 @@ export default function ChordBar({ doc, revision, selectedId, onEnter, onMove, o
         defaultValue={current}
         disabled={!usable}
         autoFocus
-        placeholder={
-          usable
-            ? 'Gõ hợp âm, ví dụ C, Am7, G/B, C6/9, N.C. · Space: sang nốt kế · Enter: ghi · Esc: thoát'
-            : 'Hãy chọn một nốt để nhập hợp âm'
-        }
+        placeholder={usable ? t('editor.toolbar.chord.hint') : t('editor.toolbar.chord.hintNone')}
         onKeyDown={onKeyDown}
         onPaste={onPasteInput}
-        aria-label="Hợp âm cho nốt đang chọn"
+        aria-label={t('editor.toolbar.chord.input')}
       />
-      <button type="button" className="sc-btn" onClick={() => onMove(1)} disabled={!usable} aria-label="Nốt sau">
+      <button
+        type="button"
+        className="sc-btn"
+        onClick={() => onMove(1)}
+        disabled={!usable}
+        aria-label={t('editor.toolbar.nextNote')}
+      >
         ›
       </button>
       <button type="button" className="sc-btn" onClick={() => setPasteOpen(true)}>
-        Dán dãy hợp âm…
+        {t('editor.toolbar.chord.paste')}
       </button>
       <button type="button" className="sc-btn sc-btn--primary" onClick={onExit}>
-        Xong
+        {t('editor.toolbar.done')}
       </button>
 
       {pasteOpen && (
-        <Modal title="Dán dãy hợp âm" onClose={() => setPasteOpen(false)}>
-          <p className="sv-modal-text">
-            Dán các hợp âm cách nhau bằng dấu cách hoặc "|": chúng được gán lần lượt lên các nốt, bắt đầu từ nốt đang
-            chọn. Dùng "_" để bỏ qua một nốt.
-          </p>
+        <Modal title={t('editor.toolbar.chord.pasteTitle')} onClose={() => setPasteOpen(false)}>
+          <p className="sv-modal-text">{t('editor.toolbar.chord.pasteHelp')}</p>
           <textarea
             className="sv-lyricbar__paste"
             rows={4}
@@ -109,10 +115,10 @@ export default function ChordBar({ doc, revision, selectedId, onEnter, onMove, o
           />
           <div className="sc-modal__actions">
             <button className="sc-btn" onClick={() => setPasteOpen(false)}>
-              Hủy
+              {t('common.cancel')}
             </button>
             <button className="sc-btn sc-btn--primary" onClick={submitPaste} disabled={!pasteText.trim()}>
-              Gán hợp âm
+              {t('editor.toolbar.chord.assign')}
             </button>
           </div>
         </Modal>

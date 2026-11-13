@@ -9,7 +9,7 @@ import InstrumentMenu from '../../../components/scores/viewer/InstrumentMenu';
 import ScoreCanvas from '../../../components/scores/viewer/ScoreCanvas';
 import ZoomControl from '../../../components/scores/viewer/ZoomControl';
 import { IconBack, IconInvert, IconPages, IconScroll } from '../../../components/scores/viewer/ViewerIcons';
-import { EDIT_FAILURE_MESSAGES } from '../../../components/editor/core/commands';
+import { editFailureMessage } from '../../../components/editor/core/commands';
 import { syncTitle } from '../../../components/editor/structure/header';
 import { ScoreDocument } from '../../../components/editor/core/ScoreDocument';
 import { transposeDocument } from '../../../components/editor/notes/transpose';
@@ -22,6 +22,7 @@ import { isValidScoreId } from '../../../utils/omr';
 import { getConflictVersion, getHttpStatus, getSaveErrorMessage, useScoreBase } from '../../../utils/score';
 import { clampZoom, inspectMusicXml, loadViewerPrefs, saveViewerPrefs } from '../../../utils/viewer';
 import type { ViewMode } from '../../../utils/viewer';
+import { t } from '../../../i18n/core';
 import '../../../components/scores/scores.css';
 import '../editor/ScoreViewer.css';
 import './ScorePlayer.css';
@@ -95,24 +96,24 @@ export default function ScorePlayer() {
       />
     );
 
-  let title = 'Đang tải bản nhạc...';
+  let title = t('player.scorePlayer.loading');
   let text = '';
   let action: { label: string; to: string } | null = null;
   if (phase === 'notFound') {
-    title = 'Không tìm thấy bản nhạc';
-    text = 'Bản nhạc không tồn tại hoặc bạn không có quyền xem.';
-    action = { label: 'Về thư viện', to: base };
+    title = t('player.scorePlayer.notFound.title');
+    text = t('player.scorePlayer.notFound.text');
+    action = { label: t('player.scorePlayer.notFound.action'), to: base };
   } else if (phase === 'notReady') {
-    title = 'Bản nhạc chưa số hóa xong';
-    text = 'Bản nhạc chưa có MusicXML để phát. Hãy đợi nhận diện xong hoặc xem trang tiến độ.';
-    action = { label: 'Về trang tiến độ', to: `${base}/${id}/processing` };
+    title = t('player.scorePlayer.notReady.title');
+    text = t('player.scorePlayer.notReady.text');
+    action = { label: t('player.scorePlayer.notReady.action'), to: `${base}/${id}/processing` };
   } else if (phase === 'parseError') {
-    title = 'Không đọc được bản nhạc';
-    text = 'File MusicXML bị lỗi nên không phát được.';
-    action = { label: 'Về trang chi tiết', to: `${base}/${id}` };
+    title = t('player.scorePlayer.parseError.title');
+    text = t('player.scorePlayer.parseError.text');
+    action = { label: t('player.scorePlayer.toDetail'), to: `${base}/${id}` };
   } else if (phase === 'error') {
-    title = 'Không tải được bản nhạc';
-    text = 'Vui lòng thử lại sau.';
+    title = t('player.scorePlayer.error.title');
+    text = t('player.scorePlayer.error.text');
   }
   return (
     <div className="sc-page sv-root sv-root--center">
@@ -132,7 +133,7 @@ export default function ScorePlayer() {
               </button>
             ) : (
               <button className="sc-btn sc-btn--primary" onClick={() => window.location.reload()}>
-                Tải lại
+                {t('player.scorePlayer.reload')}
               </button>
             )}
           </div>
@@ -182,17 +183,17 @@ function PlayerWorkspace({
     try {
       copy = ScoreDocument.parse(xml);
     } catch {
-      toast.error('Không đọc được bản nhạc để chuyển giọng');
+      toast.error(t('player.scorePlayer.parseForTranspose'));
       return false;
     }
     const result = transposeDocument(copy, semitones);
     if (!result.ok) {
-      toast.warn(EDIT_FAILURE_MESSAGES[result.reason]);
+      toast.warn(editFailureMessage(result.reason));
       return false;
     }
     try {
       const saved = await saveMusicXml(score.id, copy.serialize(), version);
-      toast.success(`Đã chuyển giọng và lưu (phiên bản ${saved.version})`);
+      toast.success(t('player.scorePlayer.transposeSaved', { version: saved.version }));
       player.setTranspose(0);
       onReload();
       return true;
@@ -216,9 +217,9 @@ function PlayerWorkspace({
     return (
       <div className="sc-page sv-root sv-root--center">
         <div className="sv-state" role="alert">
-          <h2>Không vẽ được bản nhạc</h2>
+          <h2>{t('player.scorePlayer.drawFailed')}</h2>
           <Link className="sc-btn sc-btn--primary" to={`${base}/${score.id}`}>
-            Về trang chi tiết
+            {t('player.scorePlayer.toDetail')}
           </Link>
         </div>
       </div>
@@ -232,31 +233,31 @@ function PlayerWorkspace({
           <Link
             className="sc-btn sv-icon"
             to={`${base}/${score.id}`}
-            aria-label="Về trang chi tiết"
-            title="Về trang chi tiết"
+            aria-label={t('player.scorePlayer.toDetail')}
+            title={t('player.scorePlayer.toDetail')}
           >
             <IconBack />
           </Link>
           <div className="sv-title">
             <h1 title={score.title}>{score.title}</h1>
-            <p>{score.composer || 'Chưa rõ tác giả'}</p>
+            <p>{score.composer || t('player.scorePlayer.unknownComposer')}</p>
           </div>
         </div>
         <div className="sv-toolbar__center">
-          <div className="sv-segment" role="group" aria-label="Chế độ xem">
+          <div className="sv-segment" role="group" aria-label={t('player.scorePlayer.viewMode')}>
             <button aria-pressed={mode === 'page'} onClick={() => setMode('page')}>
-              <IconPages /> Trang
+              <IconPages /> {t('player.scorePlayer.pages')}
             </button>
             <button aria-pressed={mode === 'scroll'} onClick={() => setMode('scroll')}>
-              <IconScroll /> Cuộn ngang
+              <IconScroll /> {t('player.scorePlayer.scroll')}
             </button>
           </div>
           <ZoomControl zoom={zoom} onChange={(z) => update({ zoom: clampZoom(z) })} />
-          <div className="sv-segment sv-segment--icons" role="group" aria-label="Màu bản nhạc">
+          <div className="sv-segment sv-segment--icons" role="group" aria-label={t('player.scorePlayer.colors')}>
             <button
               aria-pressed={invert}
-              aria-label="Đảo màu bản nhạc"
-              title="Đảo màu bản nhạc (nền tối, nốt sáng)"
+              aria-label={t('player.scorePlayer.invert')}
+              title={t('player.scorePlayer.invertTitle')}
               onClick={() => update({ invert: !invert })}
             >
               <IconInvert />
@@ -275,7 +276,7 @@ function PlayerWorkspace({
           />
           {score.canEdit && (
             <Link className="sc-btn" to={`${base}/${score.id}/edit`}>
-              Mở trình chỉnh sửa
+              {t('player.scorePlayer.openEditor')}
             </Link>
           )}
         </div>
@@ -307,15 +308,14 @@ function PlayerWorkspace({
         canDragLoop
         transposeRedraws
         onApplyTranspose={score.canEdit ? applyTranspose : undefined}
-        applyTransposeHint="Sẽ lưu ngay thành một phiên bản mới của bản nhạc."
+        applyTransposeHint={t('player.scorePlayer.applyHint')}
       />
       {conflict && (
-        <Modal title="Bản nhạc vừa được lưu ở nơi khác" onClose={() => setConflict(null)}>
+        <Modal title={t('player.scorePlayer.conflict.title')} onClose={() => setConflict(null)}>
           <p className="sv-modal-text">
             {conflict.latestVersion > 0
-              ? `Trên máy chủ đã có phiên bản ${conflict.latestVersion}, mới hơn bản bạn đang nghe (phiên bản ${version}). `
-              : 'Trên máy chủ đã có phiên bản mới hơn bản bạn đang nghe. '}
-            Hãy tải bản mới nhất rồi chuyển giọng lại.
+              ? t('player.scorePlayer.conflict.known', { latest: conflict.latestVersion, version })
+              : t('player.scorePlayer.conflict.unknown')}
           </p>
           <div className="sc-modal__actions">
             <button
@@ -325,10 +325,10 @@ function PlayerWorkspace({
                 onReload();
               }}
             >
-              Tải bản mới nhất
+              {t('player.scorePlayer.conflict.load')}
             </button>
             <button className="sc-btn" onClick={() => setConflict(null)}>
-              Đóng
+              {t('common.close')}
             </button>
           </div>
         </Modal>

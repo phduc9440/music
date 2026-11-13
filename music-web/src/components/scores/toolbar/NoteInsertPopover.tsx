@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
-import { DURATION_LABELS, nextDots } from '../../editor/notes/durations';
+import { durationLabel, nextDots } from '../../editor/notes/durations';
 import type { AccidentalChoice, DurationChoice, DurationType, InsertTarget } from '../../editor/notes/durations';
 import { STEPS } from '../../editor/notes/pitch';
 import { solfegeName } from '../../editor/core/staffHit';
@@ -16,6 +16,7 @@ import {
   ToolThirtySecond,
   ToolWhole,
 } from './ToolIcons';
+import { t } from '../../../i18n/core';
 
 interface Props {
   /** Vị trí khuông được bấm (kèm cao độ ban đầu). */
@@ -39,11 +40,11 @@ const DURATIONS: { type: DurationType; icon: ReactNode; key: string }[] = [
   { type: '64th', icon: <ToolSixtyFourth />, key: '7' },
 ];
 
-const ACCIDENTALS: { value: AccidentalChoice; label: string; icon?: ReactNode }[] = [
-  { value: 'auto', label: 'Theo cung' },
-  { value: 'sharp', label: 'Thăng', icon: <ToolSharp /> },
-  { value: 'flat', label: 'Giáng', icon: <ToolFlat /> },
-  { value: 'natural', label: 'Bình', icon: <ToolNatural /> },
+const ACCIDENTALS: { value: AccidentalChoice; icon?: ReactNode }[] = [
+  { value: 'auto' },
+  { value: 'sharp', icon: <ToolSharp /> },
+  { value: 'flat', icon: <ToolFlat /> },
+  { value: 'natural', icon: <ToolNatural /> },
 ];
 
 /** Khung nhỏ hiện khi bấm vào khuông ở chế độ Nhập nốt: chọn trường độ, dấu hóa, chỉnh cao độ rồi bấm "Thêm". */
@@ -89,14 +90,15 @@ export default function NoteInsertPopover({ target, left, top, initialDuration, 
       className="ed-pop"
       style={{ left, top }}
       role="dialog"
-      aria-label="Thêm nốt"
+      aria-label={t('editor.toolbar.insert.title')}
       onKeyDown={onKeyDown}
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
     >
       <div className="ed-pop__head">
         <div className="ed-pop__name">
-          {target.restEntry !== null ? 'Thay dấu lặng bằng' : 'Thêm nốt'} <strong>{name}</strong>
+          {t(target.restEntry !== null ? 'editor.toolbar.insert.replaceRest' : 'editor.toolbar.insert.title')}{' '}
+          <strong>{name}</strong>
           <span className="ed-pop__latin">
             {' '}
             ({step}
@@ -104,28 +106,33 @@ export default function NoteInsertPopover({ target, left, top, initialDuration, 
           </span>
         </div>
         <div className="ed-pop__step">
-          <button type="button" onClick={() => setShift((s) => s + 1)} aria-label="Cao hơn một bậc" title="Cao hơn (↑)">
+          <button
+            type="button"
+            onClick={() => setShift((s) => s + 1)}
+            aria-label={t('editor.toolbar.insert.higher')}
+            title={t('editor.toolbar.insert.higherTitle')}
+          >
             ▲
           </button>
           <button
             type="button"
             onClick={() => setShift((s) => s - 1)}
-            aria-label="Thấp hơn một bậc"
-            title="Thấp hơn (↓)"
+            aria-label={t('editor.toolbar.insert.lower')}
+            title={t('editor.toolbar.insert.lowerTitle')}
           >
             ▼
           </button>
         </div>
       </div>
 
-      <div className="ed-pop__row" role="group" aria-label="Trường độ">
+      <div className="ed-pop__row" role="group" aria-label={t('editor.toolbar.insert.durationGroup')}>
         {DURATIONS.map((d) => (
           <button
             key={d.type}
             type="button"
             className={`ed-pop__btn${duration.type === d.type ? ' is-active' : ''}`}
             aria-pressed={duration.type === d.type}
-            title={`${DURATION_LABELS[d.type]} (${d.key})`}
+            title={`${durationLabel(d.type)} (${d.key})`}
             onClick={() => setDuration((cur) => ({ ...cur, type: d.type }))}
           >
             {d.icon}
@@ -135,34 +142,34 @@ export default function NoteInsertPopover({ target, left, top, initialDuration, 
           type="button"
           className={`ed-pop__btn ed-pop__btn--dot${duration.dots > 0 ? ' is-active' : ''}`}
           aria-pressed={duration.dots > 0}
-          title="Chấm dôi (.): bấm thêm lần nữa để chấm dôi kép"
+          title={t('editor.toolbar.insert.dotTitle')}
           onClick={() => setDuration((cur) => ({ ...cur, dots: nextDots(cur.dots) }))}
         >
           {'•'.repeat(Math.max(duration.dots, 1))}
         </button>
       </div>
 
-      <div className="ed-pop__row" role="group" aria-label="Dấu hóa">
+      <div className="ed-pop__row" role="group" aria-label={t('editor.toolbar.insert.accidentalGroup')}>
         {ACCIDENTALS.map((a) => (
           <button
             key={a.value}
             type="button"
             className={`ed-pop__btn ed-pop__btn--wide${accidental === a.value ? ' is-active' : ''}`}
             aria-pressed={accidental === a.value}
-            title={a.label}
+            title={t(`editor.toolbar.accidental.${a.value}`)}
             onClick={() => setAccidental(a.value)}
           >
-            {a.icon ?? a.label}
+            {a.icon ?? t(`editor.toolbar.accidental.${a.value}`)}
           </button>
         ))}
       </div>
 
       <div className="ed-pop__actions">
         <button type="button" className="ed-pop__cancel" onClick={onClose}>
-          Hủy
+          {t('common.cancel')}
         </button>
         <button ref={addRef} type="button" className="ed-pop__add" onClick={add}>
-          Thêm
+          {t('editor.toolbar.insert.add')}
         </button>
       </div>
     </div>
