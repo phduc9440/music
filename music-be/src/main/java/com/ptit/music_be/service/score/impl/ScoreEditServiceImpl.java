@@ -42,6 +42,8 @@ import com.ptit.music_be.repository.ai.AiTaskRepository;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.ScoreFileRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
+import com.ptit.music_be.service.billing.EntitlementService;
+import com.ptit.music_be.service.collab.live.LiveSessionRegistry;
 import com.ptit.music_be.service.score.ScoreEditService;
 import com.ptit.music_be.service.score.ScoreFileService;
 import com.ptit.music_be.service.storage.FileStorageService;
@@ -54,9 +56,6 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Slf4j
 public class ScoreEditServiceImpl implements ScoreEditService {
-
-    /** Số version MusicXML mới nhất được giữ lại cho mỗi bản nhạc (đặc tả mục 3.6). */
-    static final int MAX_KEPT_VERSIONS = 20;
 
     static final String MUSICXML_CONTENT_TYPE = "application/vnd.recordare.musicxml+xml";
 
@@ -77,6 +76,9 @@ public class ScoreEditServiceImpl implements ScoreEditService {
     private final ScoreFileService scoreFileService;
     private final FileStorageService fileStorageService;
     private final MemberRepository memberRepository;
+    private final EntitlementService entitlementService;
+    private final VersionRetention versionRetention;
+    private final LiveSessionRegistry liveSessions;
     private final long maxMusicXmlBytes;
 
     public ScoreEditServiceImpl(
@@ -86,6 +88,9 @@ public class ScoreEditServiceImpl implements ScoreEditService {
             ScoreFileService scoreFileService,
             FileStorageService fileStorageService,
             MemberRepository memberRepository,
+            EntitlementService entitlementService,
+            VersionRetention versionRetention,
+            LiveSessionRegistry liveSessions,
             @Value("${app.editor.max-musicxml-bytes:5242880}") long maxMusicXmlBytes) {
         this.scoreRepository = scoreRepository;
         this.scoreFileRepository = scoreFileRepository;
@@ -93,6 +98,9 @@ public class ScoreEditServiceImpl implements ScoreEditService {
         this.scoreFileService = scoreFileService;
         this.fileStorageService = fileStorageService;
         this.memberRepository = memberRepository;
+        this.entitlementService = entitlementService;
+        this.versionRetention = versionRetention;
+        this.liveSessions = liveSessions;
         this.maxMusicXmlBytes = maxMusicXmlBytes;
     }
 
@@ -100,17 +108,44 @@ public class ScoreEditServiceImpl implements ScoreEditService {
     @Transactional
     public ScoreSaveResponse saveMusicXml(
             String scoreId, byte[] body, String contentType, String ifMatch, boolean force) {
-        return save(scoreId, body, contentType, ifMatch, force, null);
+        return save(scoreId, body, contentType, ifMatch, force, null, Map.of(), false);
     }
 
-    /** Luồng lưu chung cho lưu từ Editor và khôi phục; {@code restoredFrom} khác null là khôi phục từ version đó. */
+    @Override
+    @Transactional
+    public ScoreSaveResponse saveWithMeta(String scoreId, byte[] body, String ifMatch, Map<String, Object> extraMeta) {
+        return save(scoreId, body, MUSICXML_CONTENT_TYPE, ifMatch, false, null, extraMeta, false);
+    }
+
+    @Override
+    @Transactional
+    public ScoreSaveResponse saveLiveSnapshot(
+            String scoreId, byte[] body, String ifMatch, Map<String, Object> extraMeta) {
+        return save(scoreId, body, MUSICXML_CONTENT_TYPE, ifMatch, false, null, extraMeta, true);
+    }
+
+    /**
+     * Luồng lưu chung cho lưu từ Editor, khôi phục và nội dung server dựng; {@code restoredFrom} khác null là khôi phục
+     * từ version đó, {@code extraMeta} được ghi thêm vào meta của version mới. Khi bản nhạc đang có phiên cộng tác thì chỉ
+     * {@code fromLiveSession} (chính dịch vụ cộng tác) được lưu; mọi đường khác nhận LIVE_SESSION_ACTIVE.
+     */
     private ScoreSaveResponse save(
-            String scoreId, byte[] body, String contentType, String ifMatch, boolean force, Integer restoredFrom) {
+            String scoreId,
+            byte[] body,
+            String contentType,
+            String ifMatch,
+            boolean force,
+            Integer restoredFrom,
+            Map<String, Object> extraMeta,
+            boolean fromLiveSession) {
         // Khóa dòng ngay từ đầu để hai lần lưu cùng lúc được xếp hàng và không cùng ra một version
         Score score = scoreRepository
                 .findByIdForUpdate(scoreId)
                 .orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
         scoreFileService.checkCanEdit(score);
+        if (!fromLiveSession && liveSessions.isActive(scoreId)) {
+            throw new AppException(ErrorCode.LIVE_SESSION_ACTIVE);
+        }
 
         if (body == null || body.length == 0 || body.length > maxMusicXmlBytes) {
             throw new AppException(ErrorCode.FILE_TOO_LARGE);
@@ -119,6 +154,10 @@ public class ScoreEditServiceImpl implements ScoreEditService {
         if (aiTaskRepository.existsByScoreIdAndTaskTypeAndStatusIn(
                 scoreId, AiTaskType.OMR_CONVERSION, ACTIVE_STATUSES)) {
             throw new AppException(ErrorCode.SCORE_BUSY);
+        }
+        // Dung lượng tính cho chủ bản nhạc; không khóa dòng thành viên vì đã khóa dòng bản nhạc (tránh khóa chéo)
+        if (score.getMember() != null) {
+            entitlementService.checkStorage(score.getMember().getId(), body.length);
         }
 
         List<ScoreFile> xmlFiles = new ArrayList<>(
@@ -162,7 +201,7 @@ public class ScoreEditServiceImpl implements ScoreEditService {
                 .sizeBytes((long) body.length)
                 .version(newVersion)
                 .isCurrent(true)
-                .meta(buildMeta(summary, restoredFrom))
+                .meta(buildMeta(summary, restoredFrom, extraMeta))
                 .build();
         if (!changed.isEmpty()) {
             scoreFileRepository.saveAll(changed);
@@ -179,7 +218,7 @@ public class ScoreEditServiceImpl implements ScoreEditService {
         score.setUpdatedAt(now);
         scoreRepository.save(score);
 
-        pruneOldVersions(scoreId, xmlFiles, created, pathsToDeleteAfterCommit);
+        pruneOldVersions(score, xmlFiles, created, pathsToDeleteAfterCommit);
 
         return ScoreSaveResponse.builder()
                 .version(newVersion)
@@ -282,22 +321,26 @@ public class ScoreEditServiceImpl implements ScoreEditService {
     }
 
     /**
-     * Chỉ giữ {@value #MAX_KEPT_VERSIONS} version MusicXML mới nhất: xóa dòng cũ hơn và các MIDI có version nhỏ hơn
-     * version cũ nhất còn giữ; đường dẫn file được đưa vào danh sách để xóa sau khi commit.
+     * Xóa các version MusicXML đã hết hạn giữ (xem {@link VersionRetention#expired}) và các MIDI có version nhỏ hơn
+     * version cũ nhất còn lại; đường dẫn file được đưa vào danh sách để xóa sau khi commit.
      */
     private void pruneOldVersions(
-            String scoreId, List<ScoreFile> existing, ScoreFile created, List<String> pathsToDeleteAfterCommit) {
+            Score score, List<ScoreFile> existing, ScoreFile created, List<String> pathsToDeleteAfterCommit) {
         List<ScoreFile> all = new ArrayList<>(existing);
         all.add(created);
         all.sort(Comparator.comparingInt(this::versionOf).reversed());
-        if (all.size() <= MAX_KEPT_VERSIONS) {
+        List<ScoreFile> expired = versionRetention.expired(score, all);
+        if (expired.isEmpty()) {
             return;
         }
-        List<ScoreFile> dropped = all.subList(MAX_KEPT_VERSIONS, all.size());
-        int oldestKept = versionOf(all.get(MAX_KEPT_VERSIONS - 1));
+        int oldestKept = all.stream()
+                .filter(f -> !expired.contains(f))
+                .mapToInt(this::versionOf)
+                .min()
+                .orElseThrow();
 
-        List<ScoreFile> rowsToDelete = new ArrayList<>(dropped);
-        scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(scoreId, FileType.MIDI).stream()
+        List<ScoreFile> rowsToDelete = new ArrayList<>(expired);
+        scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(score.getId(), FileType.MIDI).stream()
                 .filter(midi -> versionOf(midi) < oldestKept)
                 .forEach(rowsToDelete::add);
 
@@ -309,7 +352,7 @@ public class ScoreEditServiceImpl implements ScoreEditService {
         }
     }
 
-    private String buildMeta(MusicXmlSummary summary, Integer restoredFrom) {
+    private String buildMeta(MusicXmlSummary summary, Integer restoredFrom, Map<String, Object> extraMeta) {
         String email = SecurityUtils.getCurrentEmail();
         Map<String, Object> meta = new LinkedHashMap<>();
         meta.put("savedBy", email);
@@ -318,6 +361,7 @@ public class ScoreEditServiceImpl implements ScoreEditService {
         if (restoredFrom != null) {
             meta.put("restoredFrom", restoredFrom);
         }
+        meta.putAll(extraMeta);
         try {
             return JSON.writeValueAsString(meta);
         } catch (JsonProcessingException e) {
@@ -341,9 +385,7 @@ public class ScoreEditServiceImpl implements ScoreEditService {
                 .mapToInt(this::versionOf)
                 .max()
                 .orElse(0);
-        return xmlFiles.stream()
-                .sorted(Comparator.comparingInt(this::versionOf).reversed())
-                .limit(MAX_KEPT_VERSIONS)
+        return versionRetention.visible(score, xmlFiles).stream()
                 .map(file -> toVersionResponse(file, score, versionOf(file) == current))
                 .toList();
     }
@@ -354,7 +396,7 @@ public class ScoreEditServiceImpl implements ScoreEditService {
         Score score =
                 scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
         scoreFileService.checkCanView(score);
-        return new ScoreContent(readVersion(scoreId, version), version);
+        return new ScoreContent(readVersion(score, version), version);
     }
 
     @Override
@@ -365,17 +407,19 @@ public class ScoreEditServiceImpl implements ScoreEditService {
                 .findByIdForUpdate(scoreId)
                 .orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
         scoreFileService.checkCanEdit(score);
-        byte[] body = readVersion(scoreId, version);
-        return save(scoreId, body, MUSICXML_CONTENT_TYPE, ifMatch, false, version);
+        byte[] body = readVersion(score, version);
+        return save(scoreId, body, MUSICXML_CONTENT_TYPE, ifMatch, false, version, Map.of(), false);
     }
 
     /** Đọc nội dung một version MusicXML: 2801 nếu không có dòng, 2002 nếu file đã mất trên đĩa. */
-    private byte[] readVersion(String scoreId, int version) {
-        ScoreFile file =
-                scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(scoreId, FileType.MUSICXML).stream()
-                        .filter(f -> versionOf(f) == version)
-                        .findFirst()
-                        .orElseThrow(() -> new AppException(ErrorCode.SCORE_VERSION_NOT_EXISTED));
+    private byte[] readVersion(Score score, int version) {
+        String scoreId = score.getId();
+        List<ScoreFile> xmlFiles =
+                scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(scoreId, FileType.MUSICXML);
+        ScoreFile file = versionRetention.visible(score, xmlFiles).stream()
+                .filter(f -> versionOf(f) == version)
+                .findFirst()
+                .orElseThrow(() -> new AppException(ErrorCode.SCORE_VERSION_NOT_EXISTED));
         try {
             return Files.readAllBytes(fileStorageService.resolve(file.getStoragePath()));
         } catch (IOException e) {
@@ -391,6 +435,8 @@ public class ScoreEditServiceImpl implements ScoreEditService {
         String source;
         if (restoredFrom != null) {
             source = "RESTORE";
+        } else if (meta.hasNonNull("suggestionId")) {
+            source = "SUGGESTION";
         } else if (meta.has("savedBy")) {
             source = "EDITOR";
         } else if ("OMR".equals(score.getSourceType()) || "IMPORT".equals(score.getSourceType())) {
@@ -411,6 +457,14 @@ public class ScoreEditServiceImpl implements ScoreEditService {
                 .isCurrent(isCurrent)
                 .source(source)
                 .restoredFrom(restoredFrom)
+                .suggestionId(
+                        meta.hasNonNull("suggestionId")
+                                ? meta.get("suggestionId").asText()
+                                : null)
+                .suggestionAuthorName(
+                        meta.hasNonNull("suggestionAuthorName")
+                                ? meta.get("suggestionAuthorName").asText()
+                                : null)
                 .build();
     }
 

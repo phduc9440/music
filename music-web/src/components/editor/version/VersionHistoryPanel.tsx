@@ -9,6 +9,7 @@ import VersionDiffView from './VersionDiffView';
 import { formatVersionSize, getVersionErrorMessage, versionSourceLabel } from './versionUtils';
 import './version.css';
 import { useDialog } from '../../ui/dialog-context';
+import { t } from '../../../i18n/core';
 
 interface Props {
   scoreId: string;
@@ -47,11 +48,11 @@ export default function VersionHistoryPanel({ scoreId, canEdit, dirty, busy, onR
   }, [scoreId]);
 
   const restore = async (version: number) => {
-    const warning = dirty ? 'Bạn có thay đổi chưa lưu, chúng sẽ bị bỏ. ' : '';
+    const warning = dirty ? t('editor.version.panel.warning') : '';
     const ok = await confirm({
-      title: `Khôi phục phiên bản ${version}?`,
-      message: `${warning}Nội dung của nó sẽ được lưu thành phiên bản mới nhất, các phiên bản hiện có vẫn nằm trong lịch sử.`,
-      confirmLabel: 'Khôi phục',
+      title: t('editor.version.panel.restoreTitle', { version }),
+      message: t('editor.version.panel.restoreMessage', { warning }),
+      confirmLabel: t('editor.version.panel.restore'),
       tone: dirty ? 'danger' : 'primary',
     });
     if (!ok) return;
@@ -65,11 +66,15 @@ export default function VersionHistoryPanel({ scoreId, canEdit, dirty, busy, onR
 
   if (compare !== null) {
     return (
-      <Modal title={`So sánh phiên bản ${compare.version}`} onClose={onClose} className="vh-modal--wide">
+      <Modal
+        title={t('editor.version.panel.compareTitle', { version: compare.version })}
+        onClose={onClose}
+        className="vh-modal--wide"
+      >
         <VersionDiffView scoreId={scoreId} version={compare.version} base={compare.base} />
         <div className="sc-modal__actions">
           <button className="sc-btn" onClick={() => setCompare(null)}>
-            Quay lại danh sách
+            {t('editor.version.panel.back')}
           </button>
         </div>
       </Modal>
@@ -79,11 +84,15 @@ export default function VersionHistoryPanel({ scoreId, canEdit, dirty, busy, onR
   if (preview !== null) {
     const target = versions?.find((v) => v.version === preview);
     return (
-      <Modal title={`Xem phiên bản ${preview}`} onClose={onClose} className="vh-modal--wide">
+      <Modal
+        title={t('editor.version.panel.viewTitle', { version: preview })}
+        onClose={onClose}
+        className="vh-modal--wide"
+      >
         <VersionPreview scoreId={scoreId} version={preview} />
         <div className="sc-modal__actions">
           <button className="sc-btn" onClick={() => setPreview(null)}>
-            Quay lại danh sách
+            {t('editor.version.panel.back')}
           </button>
           {canEdit && target && !target.isCurrent && (
             <button
@@ -91,7 +100,7 @@ export default function VersionHistoryPanel({ scoreId, canEdit, dirty, busy, onR
               disabled={busy || restoring !== null}
               onClick={() => void restore(preview)}
             >
-              {restoring === preview ? 'Đang khôi phục...' : 'Khôi phục phiên bản này'}
+              {restoring === preview ? t('editor.version.panel.restoring') : t('editor.version.panel.restoreThis')}
             </button>
           )}
         </div>
@@ -100,20 +109,20 @@ export default function VersionHistoryPanel({ scoreId, canEdit, dirty, busy, onR
   }
 
   return (
-    <Modal title="Lịch sử phiên bản" onClose={onClose}>
+    <Modal title={t('editor.version.panel.title')} onClose={onClose}>
       {error ? (
         <p className="vh-empty" role="alert">
           {error}
         </p>
       ) : versions === null ? (
         <p className="vh-empty" aria-busy="true">
-          Đang tải...
+          {t('editor.version.panel.loading')}
         </p>
       ) : versions.length === 0 ? (
-        <p className="vh-empty">Bản nhạc chưa có phiên bản nào.</p>
+        <p className="vh-empty">{t('editor.version.panel.empty')}</p>
       ) : (
         <>
-          <p className="vh-hint">Chỉ giữ 20 phiên bản mới nhất. Khôi phục không xóa các phiên bản hiện có.</p>
+          <p className="vh-hint">{t('editor.version.panel.hint')}</p>
           <ul className="vh-list">
             {versions.map((v, index) => {
               const previous = versions[index + 1]; // danh sách mới nhất trước nên bản kế tiếp là bản trước đó
@@ -121,23 +130,25 @@ export default function VersionHistoryPanel({ scoreId, canEdit, dirty, busy, onR
                 <li key={v.version} className={`vh-item${v.isCurrent ? ' is-current' : ''}`}>
                   <div className="vh-item__main">
                     <div className="vh-item__title">
-                      <strong>Phiên bản {v.version}</strong>
-                      {v.isCurrent && <span className="vh-badge vh-badge--current">Hiện tại</span>}
+                      <strong>{t('editor.version.panel.version', { version: v.version })}</strong>
+                      {v.isCurrent && (
+                        <span className="vh-badge vh-badge--current">{t('editor.version.panel.current')}</span>
+                      )}
                       <span className="vh-badge">{versionSourceLabel(v)}</span>
                     </div>
                     <div className="vh-item__meta">
                       {formatDateTime(v.createdAt)} · {v.savedByName || '—'}
-                      {v.measureCount ? ` · ${v.measureCount} ô nhịp` : ''}
+                      {v.measureCount ? ` · ${t('editor.version.panel.measures', { count: v.measureCount })}` : ''}
                       {formatVersionSize(v.sizeBytes) ? ` · ${formatVersionSize(v.sizeBytes)}` : ''}
                     </div>
                   </div>
                   <div className="vh-item__actions">
                     <button className="sc-btn sc-btn--sm" onClick={() => setPreview(v.version)}>
-                      Xem
+                      {t('editor.version.panel.view')}
                     </button>
                     {hasOmr && v.source !== 'OMR' && (
                       <button className="sc-btn sc-btn--sm" onClick={() => setCompare({ version: v.version })}>
-                        So với bản OMR
+                        {t('editor.version.panel.vsOmr')}
                       </button>
                     )}
                     {previous && (
@@ -145,7 +156,7 @@ export default function VersionHistoryPanel({ scoreId, canEdit, dirty, busy, onR
                         className="sc-btn sc-btn--sm"
                         onClick={() => setCompare({ version: v.version, base: previous.version })}
                       >
-                        So với bản trước
+                        {t('editor.version.panel.vsPrevious')}
                       </button>
                     )}
                     {canEdit && !v.isCurrent && (
@@ -154,7 +165,9 @@ export default function VersionHistoryPanel({ scoreId, canEdit, dirty, busy, onR
                         disabled={busy || restoring !== null}
                         onClick={() => void restore(v.version)}
                       >
-                        {restoring === v.version ? 'Đang khôi phục...' : 'Khôi phục'}
+                        {restoring === v.version
+                          ? t('editor.version.panel.restoring')
+                          : t('editor.version.panel.restore')}
                       </button>
                     )}
                   </div>
@@ -166,7 +179,7 @@ export default function VersionHistoryPanel({ scoreId, canEdit, dirty, busy, onR
       )}
       <div className="sc-modal__actions">
         <button className="sc-btn" onClick={onClose}>
-          Đóng
+          {t('editor.version.panel.close')}
         </button>
       </div>
     </Modal>
@@ -194,7 +207,7 @@ function VersionPreview({ scoreId, version }: { scoreId: string; version: number
   }, [scoreId, version]);
 
   if (error) return <p className="vh-empty">{error}</p>;
-  if (xml === null) return <p className="vh-empty">Đang tải phiên bản...</p>;
+  if (xml === null) return <p className="vh-empty">{t('editor.version.panel.loadingVersion')}</p>;
   return (
     <div className="vh-preview">
       <MusicXmlViewer xml={xml} />

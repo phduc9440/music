@@ -484,6 +484,17 @@
     "contextView": "Show comments on bar {measure} ({count})",
     "contextNoAccess": "You need review access to comment",
     "composerTitle": "Comment on bar {measures}",
-    "sendHint": "Ctrl/Cmd + Enter to post"
+    "sendHint": "Ctrl/Cmd + Enter to post",
+    "helpSelectKeys": "Select notes → \"Comment\" button beside the selection",
+    "helpSelectText": "Comment in place (the input opens next to the selected notes)",
+    "helpContextKeys": "Right-click a note",
+    "helpContextText": "Menu: Comment on the selected passage, Show comments on this bar",
+    "helpPanelText": "Comment on the selected note / bar (opens the Comments panel on the right)",
+    "bubbleTitle": "{count} comments on bar {measure}"
+  },
+  "assignment": {
+    "text": "Piece in show {show} · {status}",
+    "due": "due {date}",
+    "open": "Open the show board"
   }
 }

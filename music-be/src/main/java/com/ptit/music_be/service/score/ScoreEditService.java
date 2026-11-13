@@ -1,6 +1,7 @@
 package com.ptit.music_be.service.score;
 
 import java.util.List;
+import java.util.Map;
 
 import com.ptit.music_be.dto.response.score.ScoreContent;
 import com.ptit.music_be.dto.response.score.ScoreSaveResponse;
@@ -28,6 +29,22 @@ public interface ScoreEditService {
      * @return version mới và metadata đã cập nhật
      */
     ScoreSaveResponse saveMusicXml(String scoreId, byte[] body, String contentType, String ifMatch, boolean force);
+
+    /**
+     * Lưu nội dung do server dựng (nhận đề xuất sửa, sau này nhập đè và đồng chỉnh sửa) qua đúng luồng lưu của Editor:
+     * khóa dòng {@code scores}, kiểm quyền sửa, task OMR, nội dung và If-Match, ghi file, dọn version cũ. Không có
+     * {@code force}. Lỗi như {@link #saveMusicXml}; thêm LIVE_SESSION_ACTIVE (3122) khi bản nhạc đang có phiên cộng tác.
+     *
+     * @param extraMeta các khóa ghi thêm vào meta của version mới (ví dụ {@code suggestionId}); không được null
+     */
+    ScoreSaveResponse saveWithMeta(String scoreId, byte[] body, String ifMatch, Map<String, Object> extraMeta);
+
+    /**
+     * Lưu bản nhạc đang cùng chỉnh sửa trực tiếp thành version mới (mục 4.4). Giống {@link #saveWithMeta} nhưng được phép
+     * lưu khi bản nhạc đang có phiên cộng tác; mọi đường lưu khác bị chặn bằng LIVE_SESSION_ACTIVE (3122) trong lúc đó.
+     * Chỉ gọi từ dịch vụ cộng tác.
+     */
+    ScoreSaveResponse saveLiveSnapshot(String scoreId, byte[] body, String ifMatch, Map<String, Object> extraMeta);
 
     /**
      * Lịch sử các version MusicXML còn giữ (tối đa 20), mới nhất trước. Cần quyền xem bản nhạc. Lỗi:

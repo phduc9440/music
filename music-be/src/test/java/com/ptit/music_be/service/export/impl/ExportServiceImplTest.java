@@ -4,8 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -33,6 +35,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ptit.music_be.configuration.MuseScoreProperties;
 import com.ptit.music_be.dto.enums.ai.AiTaskStatus;
 import com.ptit.music_be.dto.enums.ai.AiTaskType;
+import com.ptit.music_be.dto.enums.billing.UsageMetric;
 import com.ptit.music_be.dto.enums.score.FileType;
 import com.ptit.music_be.dto.request.export.ExportRequest;
 import com.ptit.music_be.dto.response.ai.AiTaskResponse;
@@ -50,6 +53,7 @@ import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.ScoreFileRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.service.ai.MuseScoreCliService;
+import com.ptit.music_be.service.billing.EntitlementService;
 import com.ptit.music_be.service.export.ExportOptionsValidator;
 import com.ptit.music_be.service.export.ExportService;
 import com.ptit.music_be.service.score.ScoreContentService;
@@ -93,6 +97,9 @@ class ExportServiceImplTest {
     @Mock
     ApplicationEventPublisher eventPublisher;
 
+    @Mock
+    EntitlementService entitlementService;
+
     @TempDir
     Path dir;
 
@@ -118,7 +125,8 @@ class ExportServiceImplTest {
                 new ExportOptionsValidator(objectMapper),
                 aiTaskMapper,
                 objectMapper,
-                eventPublisher);
+                eventPublisher,
+                entitlementService);
 
         SecurityContextHolder.getContext()
                 .setAuthentication(new TestingAuthenticationToken("user@example.com", "n/a", "ROLE_USER"));
@@ -230,6 +238,7 @@ class ExportServiceImplTest {
         assertThat(response.getFile().isOutdated()).isFalse();
         verify(aiTaskRepository, never()).save(any());
         verify(eventPublisher, never()).publishEvent(any(Object.class));
+        verify(entitlementService, never()).checkAvailable(any(), any(), anyInt());
     }
 
     @Test
@@ -273,6 +282,35 @@ class ExportServiceImplTest {
 
         assertThat(response.getTask().getId()).isEqualTo("running-1");
         verify(aiTaskRepository, never()).save(any());
+    }
+
+    @Test
+    void exportOverMonthlyQuotaIsRejectedWithoutCreatingATask() {
+        doThrow(new AppException(ErrorCode.PLAN_LIMIT_REACHED))
+                .when(entitlementService)
+                .checkAvailable("member-1", UsageMetric.EXPORTS, 1);
+
+        assertThatThrownBy(() -> service.requestExport(SCORE_ID, request("MP3", null)))
+                .satisfies(e -> assertError(e, ErrorCode.PLAN_LIMIT_REACHED));
+        verify(aiTaskRepository, never()).save(any());
+    }
+
+    @Test
+    void newExportChargesOneUnitOfTheQuota() throws Exception {
+        service.requestExport(SCORE_ID, request("MP3", null));
+
+        verify(entitlementService).checkAvailable("member-1", UsageMetric.EXPORTS, 1);
+    }
+
+    @Test
+    void midiConversionIsNotChargedAsAnExport() {
+        givenOnlyOriginalMidi();
+        when(memberRepository.findById("member-1")).thenReturn(Optional.of(member));
+
+        service.requestMidiConversion(SCORE_ID);
+        service.startMidiConversionForImport(SCORE_ID, "member-1");
+
+        verify(entitlementService, never()).checkAvailable(any(), any(), anyInt());
     }
 
     @Test
@@ -551,6 +589,43 @@ class ExportServiceImplTest {
         givenOnlyOriginalMidi();
         when(museScoreCliService.isAvailable()).thenReturn(false);
         assertThatThrownBy(() -> service.requestMidiConversion(SCORE_ID))
+                .satisfies(e -> assertError(e, ErrorCode.EXPORT_NOT_AVAILABLE));
+    }
+
+    @Test
+    void importConversionCreatesTaskWithoutSecurityContextOrLimits() {
+        givenOnlyOriginalMidi();
+        when(memberRepository.findById("member-1")).thenReturn(Optional.of(member));
+        when(aiTaskRepository.countByMemberIdAndTaskTypeInAndStatusIn(eq("member-1"), anyCollection(), anyCollection()))
+                .thenReturn(5L);
+
+        ExportResponse response = service.startMidiConversionForImport(SCORE_ID, "member-1");
+
+        assertThat(response.getTask().getId()).isEqualTo("task-1");
+        assertThat(captureSavedTask().getTaskType()).isEqualTo(AiTaskType.FORMAT_CONVERSION);
+        verify(eventPublisher).publishEvent(new ExportTaskCreatedEvent("task-1", SCORE_ID));
+        verify(scoreFileService, never()).checkCanEdit(any());
+    }
+
+    @Test
+    void importConversionIsRefusedWithoutMidiOrWithMusicXml() {
+        when(scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(SCORE_ID, FileType.MUSICXML))
+                .thenReturn(List.of());
+        assertThatThrownBy(() -> service.startMidiConversionForImport(SCORE_ID, "member-1"))
+                .satisfies(e -> assertError(e, ErrorCode.EXPORT_SOURCE_NOT_SUPPORTED));
+
+        when(scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(SCORE_ID, FileType.MUSICXML))
+                .thenReturn(List.of(musicXml));
+        assertThatThrownBy(() -> service.startMidiConversionForImport(SCORE_ID, "member-1"))
+                .satisfies(e -> assertError(e, ErrorCode.EXPORT_SOURCE_NOT_SUPPORTED));
+        verify(aiTaskRepository, never()).save(any());
+    }
+
+    @Test
+    void importConversionNeedsMuseScore() {
+        givenOnlyOriginalMidi();
+        when(museScoreCliService.isAvailable()).thenReturn(false);
+        assertThatThrownBy(() -> service.startMidiConversionForImport(SCORE_ID, "member-1"))
                 .satisfies(e -> assertError(e, ErrorCode.EXPORT_NOT_AVAILABLE));
     }
 

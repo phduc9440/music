@@ -1,3 +1,39 @@
 {
-  "performanceWarning": "This score is quite large, so it may render slowly. Try the \"Horizontal scroll\" mode or zoom out to view it faster."
+  "performanceWarning": "This score is quite large, so it may render slowly. Try the \"Horizontal scroll\" mode or zoom out to view it faster.",
+  "download": {
+    "failed": "Could not download the file",
+    "audio": "Export audio",
+    "button": "Download",
+    "create": "Create file",
+    "outdated": "Outdated · Export again",
+    "exportOrDownload": "Export / download",
+    "creatingMidi": "Creating MIDI...",
+    "loading": "Downloading...",
+    "get": "Download",
+    "missing": "Not available"
+  },
+  "instrument": {
+    "label": "Instrument",
+    "title": "Choose the instrument used for playback",
+    "dialog": "Choose an instrument for each staff",
+    "resetTitle": "Back to the instrument detected from the file",
+    "reset": "From file"
+  },
+  "zoom": {
+    "group": "Zoom",
+    "out": "Zoom out",
+    "outTitle": "Zoom out (key -)",
+    "pick": "Choose a zoom level",
+    "in": "Zoom in",
+    "inTitle": "Zoom in (key +)",
+    "level": "Zoom level"
+  },
+  "canvas": {
+    "label": "Score",
+    "drawing": "Drawing the score...",
+    "drawFailed": "Could not draw the score from the MusicXML",
+    "clickToEdit": "Click to edit",
+    "measureOkTitle": "This measure is correct (for example a pickup measure): dismiss the warning",
+    "measureOkLabel": "Confirm that measure {n} is correct"
+  }
 }

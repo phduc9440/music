@@ -1,5 +1,6 @@
 package com.ptit.music_be.websocket;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
@@ -24,9 +25,11 @@ import org.springframework.web.socket.handler.WebSocketHandlerDecorator;
 import lombok.RequiredArgsConstructor;
 
 /**
- * STOMP qua WebSocket (R8): endpoint {@code /ws}, broker trong bộ nhớ, heartbeat 10 giây. Hiện chỉ có một kênh:
- * {@code /user/queue/notifications} (máy chủ gửi, người dùng chỉ nghe). Chạy nhiều máy chủ thì thay broker trong bộ nhớ
- * bằng broker ngoài (RabbitMQ/Redis relay).
+ * STOMP qua WebSocket (R8): endpoint {@code /ws}, broker trong bộ nhớ, heartbeat 10 giây. Kênh thông báo
+ * {@code /user/queue/notifications} (máy chủ gửi, người dùng chỉ nghe) luôn mở. Mọi đích khác (SUBSCRIBE hoặc tin client
+ * gửi lên {@code /app/**}) mặc định bị chặn và chỉ mở khi có một {@link StompAccessRule} nhận đích đó và cho phép; hiện
+ * có {@link LiveScoreStompRule} cho đồng chỉnh sửa. Chạy nhiều máy chủ thì thay broker trong bộ nhớ bằng broker ngoài
+ * (RabbitMQ/Redis relay).
  */
 @Configuration
 @EnableWebSocketMessageBroker
@@ -38,8 +41,18 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private static final long HEARTBEAT_MILLIS = 10_000;
 
+    /** Gói lớn nhất client được gửi: thao tác cấu trúc mang cả bài (mặc định của Spring chỉ 64KB). */
+    private static final int MESSAGE_SIZE_LIMIT = 1024 * 1024;
+
+    private static final int SEND_BUFFER_SIZE_LIMIT = 4 * MESSAGE_SIZE_LIMIT;
+
     private final WebSocketAuthHandshake handshake;
     private final WebSocketSessions sessions;
+    /**
+     * Lấy lười: luật cần dịch vụ quyền, mà chuỗi phụ thuộc của nó có thể kéo theo {@code SimpMessagingTemplate}, vốn lại
+     * cần chính lớp cấu hình này (vòng phụ thuộc nếu tiêm sớm).
+     */
+    private final ObjectProvider<StompAccessRule> accessRules;
 
     @org.springframework.context.annotation.Bean
     TaskScheduler webSocketHeartbeatScheduler() {
@@ -60,11 +73,11 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
-        registry.enableSimpleBroker("/queue")
+        registry.enableSimpleBroker("/queue", "/topic")
                 .setHeartbeatValue(new long[] {HEARTBEAT_MILLIS, HEARTBEAT_MILLIS})
                 .setTaskScheduler(webSocketHeartbeatScheduler());
         registry.setUserDestinationPrefix("/user");
-        // Không có điểm nhận tin từ client: client chỉ được đăng ký nghe
+        // Tin client gửi lên /app/** chỉ qua được khi có StompAccessRule cho đích đó (xem configureClientInboundChannel)
         registry.setApplicationDestinationPrefixes("/app");
     }
 
@@ -81,11 +94,13 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 if (command == StompCommand.CONNECT && accessor.getUser() == null) {
                     throw new MessagingException("Unauthenticated");
                 }
-                if (command == StompCommand.SUBSCRIBE && !NOTIFICATIONS_DESTINATION.equals(accessor.getDestination())) {
-                    throw new MessagingException("Destination not allowed");
+                boolean subscribe = command == StompCommand.SUBSCRIBE;
+                boolean send = accessor.getMessageType() == SimpMessageType.MESSAGE;
+                if (subscribe && NOTIFICATIONS_DESTINATION.equals(accessor.getDestination())) {
+                    return message;
                 }
-                if (accessor.getMessageType() == SimpMessageType.MESSAGE) {
-                    throw new MessagingException("Clients cannot send messages");
+                if (subscribe || send) {
+                    authorize(accessor, subscribe ? StompCommand.SUBSCRIBE : StompCommand.SEND);
                 }
                 return message;
             }
@@ -94,7 +109,25 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureWebSocketTransport(WebSocketTransportRegistration registration) {
-        registration.addDecoratorFactory(this::track);
+        registration
+                .setMessageSizeLimit(MESSAGE_SIZE_LIMIT)
+                .setSendBufferSizeLimit(SEND_BUFFER_SIZE_LIMIT)
+                .addDecoratorFactory(this::track);
+    }
+
+    /** Đích ngoài kênh thông báo: phải có luật nhận đích đó và luật phải cho phép, không thì ngắt. */
+    private void authorize(StompHeaderAccessor accessor, StompCommand command) {
+        String destination = accessor.getDestination();
+        String email = accessor.getUser() == null ? null : accessor.getUser().getName();
+        if (email == null) {
+            throw new MessagingException("Unauthenticated");
+        }
+        StompAccessRule rule = accessRules.orderedStream()
+                .filter(r -> r.handles(destination))
+                .findFirst()
+                .orElseThrow(() -> new MessagingException(
+                        command == StompCommand.SEND ? "Clients cannot send messages" : "Destination not allowed"));
+        rule.authorize(command, destination, email);
     }
 
     /** Ghi nhận phiên đang mở theo email để ngắt được khi tài khoản bị khóa. */

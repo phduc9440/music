@@ -10,6 +10,7 @@ import { octaveShiftAt } from '../notes/octave';
 import { NOTE_ID_ATTR } from './osmdBridge';
 import type { Step } from '../notes/pitch';
 import type { ScoreDocument } from './ScoreDocument';
+import { t } from '../../../i18n/core';
 
 /** Kiểu dữ liệu kéo-thả của nút trường độ trên bảng công cụ. */
 export const DURATION_DRAG_TYPE = 'application/x-score-duration';
@@ -200,8 +201,7 @@ export function locateSpot(
 }
 
 /** Tên nốt theo tiếng Việt (Đô Rê Mi...) kèm quãng tám, ví dụ "Mi4". */
-export const solfegeName = (step: Step, octave: number): string =>
-  `${{ C: 'Đô', D: 'Rê', E: 'Mi', F: 'Fa', G: 'Sol', A: 'La', B: 'Si' }[step]}${octave}`;
+export const solfegeName = (step: Step, octave: number): string => `${t(`editor.solfege.${step}`)}${octave}`;
 
 /** Bỏ phần toạ độ màn hình, chỉ giữ vị trí để chèn nốt. */
 export const spotTarget = (spot: StaffSpot): InsertTarget => ({

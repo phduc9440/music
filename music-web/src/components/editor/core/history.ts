@@ -2,7 +2,7 @@
  * Lịch sử hoàn tác / làm lại (tối đa 100 bước). Mỗi bước là một {@link EditCommand} chứa bản sao ô nhịp trước và
  * sau, nên hoàn tác chỉ việc thay ô nhịp về bản cũ. Nhiều nốt đổi cùng lúc là một lệnh nên là một bước.
  */
-import type { EditCommand } from './commands';
+import { resolveLabel, type EditCommand } from './commands';
 import type { ScoreDocument } from './ScoreDocument';
 
 /** Số bước hoàn tác tối đa. */
@@ -43,11 +43,13 @@ export class History {
 
   /** Nhãn của bước sẽ được hoàn tác / làm lại tiếp theo (để hiện trên thanh trạng thái). */
   get undoLabel(): string {
-    return this.stack[this.cursor - 1]?.label ?? '';
+    const label = this.stack[this.cursor - 1]?.label;
+    return label === undefined ? '' : resolveLabel(label);
   }
 
   get redoLabel(): string {
-    return this.stack[this.cursor]?.label ?? '';
+    const label = this.stack[this.cursor]?.label;
+    return label === undefined ? '' : resolveLabel(label);
   }
 
   /** Vị trí hiện tại trong lịch sử, để {@link markSaved} biết bản nào đã được lưu dù người dùng sửa tiếp lúc đang lưu. */
@@ -63,6 +65,30 @@ export class History {
   /** Đánh dấu có thay đổi chưa lưu dù lịch sử không có bước nào (ví dụ vừa khôi phục bản nháp). */
   markUnsaved(): void {
     this.savedCursor = -1;
+  }
+
+  /** Lệnh sẽ bị hoàn tác / làm lại ở bước kế tiếp (để kiểm tra khóa ô trước khi thực hiện). */
+  get nextUndo(): EditCommand | null {
+    return this.stack[this.cursor - 1] ?? null;
+  }
+
+  get nextRedo(): EditCommand | null {
+    return this.stack[this.cursor] ?? null;
+  }
+
+  /**
+   * Bỏ các lệnh mà `affected` trả về true (đồng chỉnh sửa: người khác vừa đổi các ô mà lệnh đó nhớ bản trước/sau, nên
+   * hoàn tác sẽ đè lên công của họ). Các lệnh còn lại chạm ô khác nên vẫn độc lập với nhau.
+   */
+  discard(affected: (command: EditCommand) => boolean): void {
+    let removedBefore = 0;
+    this.stack = this.stack.filter((command, index) => {
+      if (!affected(command)) return true;
+      if (index < this.cursor) removedBefore += 1;
+      return false;
+    });
+    this.cursor -= removedBefore;
+    if (this.savedCursor > this.cursor) this.savedCursor = -1;
   }
 
   /** Xóa toàn bộ lịch sử (ví dụ sau khi tải lại bản mới nhất). */

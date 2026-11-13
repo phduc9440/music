@@ -527,3 +527,61 @@ CREATE TABLE IF NOT EXISTS show_items (
 
 ALTER TABLE scores
     ADD CONSTRAINT fk_scores_team FOREIGN KEY (team_id) REFERENCES teams (id) ON DELETE SET NULL;
+
+-- Đề xuất sửa (mục 4.3): người có quyền nhận xét gửi bản sửa; người có quyền sửa nhận/từ chối từng ô nhịp. Nhận thì tạo
+-- version MusicXML mới ghi tên người đề xuất (score_files.meta). File đề xuất xóa sau 30 ngày kể từ lúc đóng (storage_path = NULL).
+CREATE TABLE IF NOT EXISTS score_suggestions (
+    id              VARCHAR(36)   NOT NULL,
+    score_id        VARCHAR(36)   NOT NULL,
+    author_id       VARCHAR(36)   NULL COMMENT 'NULL = hệ thống (gợi ý hợp âm)',
+    source          VARCHAR(20)   NOT NULL COMMENT 'EDITOR / CHORD_GENERATION',
+    base_version    INT           NOT NULL COMMENT 'Version MusicXML người gửi sửa trên đó',
+    base_shape      JSON          NOT NULL COMMENT '{"parts":["P1"],"measures":[48]} của version gốc',
+    title           VARCHAR(200)  NOT NULL,
+    description     VARCHAR(2000) NULL,
+    status          VARCHAR(10)   NOT NULL COMMENT 'OPEN / ACCEPTED / PARTIAL / REJECTED / WITHDRAWN / OUTDATED',
+    structural      TINYINT(1)    NOT NULL DEFAULT 0 COMMENT '1 = đổi khung/khóa/nhịp: chỉ nhận tất cả',
+    storage_path    VARCHAR(512)  NULL COMMENT 'File MusicXML đề xuất; NULL khi đã dọn',
+    decided_by      VARCHAR(36)   NULL,
+    decided_at      DATETIME(6)   NULL COMMENT 'Lúc đóng đề xuất (nhận, từ chối hoặc rút lại)',
+    decision_note   VARCHAR(500)  NULL,
+    applied_version INT           NULL COMMENT 'Version tạo ra khi nhận',
+    created_at      DATETIME(6)   NULL,
+    updated_at      DATETIME(6)   NULL,
+    PRIMARY KEY (id),
+    KEY idx_score_suggestions_score (score_id, status, created_at),
+    KEY idx_score_suggestions_author (author_id, score_id, status),
+    KEY idx_score_suggestions_cleanup (status, decided_at),
+    CONSTRAINT fk_score_suggestions_score   FOREIGN KEY (score_id)   REFERENCES scores (id) ON DELETE CASCADE,
+    CONSTRAINT fk_score_suggestions_author  FOREIGN KEY (author_id)  REFERENCES members (id),
+    CONSTRAINT fk_score_suggestions_decider FOREIGN KEY (decided_by) REFERENCES members (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS score_suggestion_changes (
+    id             VARCHAR(36)  NOT NULL,
+    suggestion_id  VARCHAR(36)  NOT NULL,
+    part_index     INT          NOT NULL COMMENT 'Thứ tự part, từ 0',
+    measure_index  INT          NOT NULL COMMENT 'Thứ tự ô trong part, từ 0',
+    measure_number VARCHAR(16)  NULL COMMENT 'Thuộc tính number để hiển thị',
+    base_hash      CHAR(64)     NOT NULL COMMENT 'MeasureHasher của ô ở version gốc',
+    context_hash   CHAR(64)     NOT NULL COMMENT 'Hash divisions/khóa/nhịp/khóa nhạc hiệu lực đầu ô',
+    proposed_xml   MEDIUMTEXT   NOT NULL COMMENT 'Phần tử <measure> đề xuất',
+    status         VARCHAR(10)  NOT NULL COMMENT 'PENDING / ACCEPTED / REJECTED',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_score_suggestion_changes (suggestion_id, part_index, measure_index),
+    CONSTRAINT fk_score_suggestion_changes_suggestion FOREIGN KEY (suggestion_id) REFERENCES score_suggestions (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Đồng chỉnh sửa thời gian thực (mục 4.4): nhật ký thao tác theo ô nhịp của một phiên; server là nơi duy nhất cấp seq.
+CREATE TABLE IF NOT EXISTS score_live_ops (
+    score_id   VARCHAR(36)  NOT NULL,
+    seq        BIGINT       NOT NULL COMMENT 'Số thứ tự thao tác trong bản nhạc, tăng dần, do server cấp',
+    op_id      VARCHAR(36)  NOT NULL COMMENT 'Mã thao tác do client sinh, chống gửi trùng khi mất mạng',
+    member_id  VARCHAR(36)  NULL,
+    payload    JSON         NOT NULL COMMENT 'Các ô thay đổi: [{partIndex, measureIndex, xml}] hoặc {structuralXml}',
+    created_at DATETIME(6)  NULL,
+    PRIMARY KEY (score_id, seq),
+    UNIQUE KEY uk_score_live_ops_op (op_id),
+    KEY idx_score_live_ops_created (created_at),
+    CONSTRAINT fk_score_live_ops_score FOREIGN KEY (score_id) REFERENCES scores (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

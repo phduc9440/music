@@ -3,6 +3,7 @@ import { IconMixer } from './PlayerIcons';
 import { DEFAULT_TRACK_MIX, hasSolo, mixOf, silentTracks } from '../state/mixer';
 import type { MixerState, TrackMix } from '../state/mixer';
 import type { TimelineTrack } from '../engine/timeline';
+import { t } from '../../../i18n/core';
 
 interface Props {
   tracks: readonly TimelineTrack[];
@@ -29,8 +30,8 @@ export function MixerPopover({ tracks, mixer, onChange, onReset, disabled, inlin
   return (
     <PlayerPopover
       inline={inline}
-      label="Mixer các khuông"
-      title={single ? 'Bản nhạc chỉ có một khuông' : 'Tắt tiếng, chỉ nghe một khuông, chỉnh âm lượng'}
+      label={t('player.mixer.label')}
+      title={single ? t('player.mixer.single') : t('player.mixer.hint')}
       disabled={disabled || single}
       buttonClassName={touched ? 'pl-chip--on' : undefined}
       trigger={
@@ -42,9 +43,9 @@ export function MixerPopover({ tracks, mixer, onChange, onReset, disabled, inlin
     >
       <div className="pl-mix">
         <div className="pl-mix__head">
-          <span>Khuông</span>
+          <span>{t('player.mixer.staff')}</span>
           <button type="button" className="pl-link pl-mix__reset" onClick={onReset} disabled={!touched}>
-            Đặt lại
+            {t('player.mixer.reset')}
           </button>
         </div>
         {tracks.map((track) => {
@@ -59,8 +60,8 @@ export function MixerPopover({ tracks, mixer, onChange, onReset, disabled, inlin
                 type="button"
                 className={`pl-mix__btn pl-mix__btn--mute${mix.mute ? ' pl-mix__btn--on' : ''}`}
                 aria-pressed={mix.mute}
-                aria-label={`Tắt tiếng ${track.label}`}
-                title="Tắt tiếng (M)"
+                aria-label={t('player.mixer.muteLabel', { name: track.label })}
+                title={t('player.mixer.muteTitle')}
                 onClick={() => onChange(track.id, { mute: !mix.mute })}
               >
                 M
@@ -69,8 +70,8 @@ export function MixerPopover({ tracks, mixer, onChange, onReset, disabled, inlin
                 type="button"
                 className={`pl-mix__btn pl-mix__btn--solo${mix.solo ? ' pl-mix__btn--on' : ''}`}
                 aria-pressed={mix.solo}
-                aria-label={`Chỉ nghe ${track.label}`}
-                title="Chỉ nghe khuông này (S)"
+                aria-label={t('player.mixer.soloLabel', { name: track.label })}
+                title={t('player.mixer.soloTitle')}
                 onClick={() => onChange(track.id, { solo: !mix.solo })}
               >
                 S
@@ -82,7 +83,7 @@ export function MixerPopover({ tracks, mixer, onChange, onReset, disabled, inlin
                 max={100}
                 step={5}
                 value={mix.volume}
-                aria-label={`Âm lượng ${track.label}`}
+                aria-label={t('player.mixer.volume', { name: track.label })}
                 aria-valuetext={`${mix.volume}%`}
                 onChange={(e) => onChange(track.id, { volume: Number(e.target.value) })}
                 onDoubleClick={() => onChange(track.id, { volume: DEFAULT_TRACK_MIX.volume })}
@@ -93,12 +94,12 @@ export function MixerPopover({ tracks, mixer, onChange, onReset, disabled, inlin
         })}
         {allSilent && (
           <p className="pl-mix__note" role="status">
-            Đang tắt tiếng toàn bộ
+            {t('player.mixer.allSilent')}
           </p>
         )}
         {soloActive && !allSilent && (
           <p className="pl-mix__note" role="status">
-            Đang chỉ nghe các khuông Solo
+            {t('player.mixer.soloActive')}
           </p>
         )}
       </div>

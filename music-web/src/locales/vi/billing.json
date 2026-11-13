@@ -130,5 +130,16 @@
     "TEAM": "Cho nhóm làm việc chung, hạn mức dùng chung cho cả nhóm."
   },
   "unlimitedPlan": "Không giới hạn",
-  "banned": "Bạn đang bị cấm dùng gói {plan} đến ngày {date}. Bạn vẫn dùng được Free hoặc mua gói khác."
+  "banned": "Bạn đang bị cấm dùng gói {plan} đến ngày {date}. Bạn vẫn dùng được Free hoặc mua gói khác.",
+  "upgrade": {
+    "title": "Đã hết hạn mức của gói",
+    "viewPlans": "Xem các gói",
+    "suggest": "Nâng cấp lên gói {plan} để dùng tiếp.",
+    "reason": {
+      "OMR_PAGES": "Bạn đã dùng {used}/{limit} trang OMR trong tháng này.",
+      "EXPORTS": "Bạn đã dùng {used}/{limit} lượt xuất trong tháng này.",
+      "STORAGE_MB": "Dung lượng lưu trữ đã dùng {used} MB trên tối đa {limit} MB.",
+      "DEFAULT": "Bạn đã dùng hết hạn mức của gói hiện tại."
+    }
+  }
 }

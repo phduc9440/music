@@ -94,8 +94,7 @@ public class ShowServiceImpl implements ShowService {
                 .build();
         apply(show, request);
         show = showRepository.save(show);
-        activityLog.log(
-                teamId, me, TeamActivityType.SHOW_CREATED, "show", show.getName(), "showId", show.getId());
+        activityLog.log(teamId, me, TeamActivityType.SHOW_CREATED, "show", show.getName(), "showId", show.getId());
         return toShowResponse(show, new long[2]);
     }
 
@@ -377,7 +376,15 @@ public class ShowServiceImpl implements ShowService {
                 "showId",
                 showId);
         Map<String, String> params = NotificationService.params(
-                "title", title, "show", show.getName(), "teamId", teamId, "showId", showId, "name",
+                "title",
+                title,
+                "show",
+                show.getName(),
+                "teamId",
+                teamId,
+                "showId",
+                showId,
+                "name",
                 TeamAccess.displayName(me));
         if (to == ShowItemStatus.IN_REVIEW) {
             notificationService.notify(
@@ -420,7 +427,8 @@ public class ShowServiceImpl implements ShowService {
         if (items.isEmpty()) {
             return 0;
         }
-        Map<String, Score> scores = scoresById(items.stream().map(ShowItem::getScoreId).toList());
+        Map<String, Score> scores =
+                scoresById(items.stream().map(ShowItem::getScoreId).toList());
         int sent = 0;
         for (ShowItem item : items) {
             Score score = scores.get(item.getScoreId());
@@ -524,8 +532,16 @@ public class ShowServiceImpl implements ShowService {
                     item.getScoreId(),
                     "Bạn được giao phối bài “" + title + "” trong buổi diễn " + show.getName(),
                     NotificationService.params(
-                            "variant", "arranger", "title", title, "show", show.getName(), "teamId", teamId,
-                            "showId", show.getId()));
+                            "variant",
+                            "arranger",
+                            "title",
+                            title,
+                            "show",
+                            show.getName(),
+                            "teamId",
+                            teamId,
+                            "showId",
+                            show.getId()));
         }
         if (item.getReviewer() != null && !sameMember(oldReviewer, item.getReviewer())) {
             notificationService.notify(
@@ -535,14 +551,23 @@ public class ShowServiceImpl implements ShowService {
                     item.getScoreId(),
                     "Bạn được giao duyệt bài “" + title + "” trong buổi diễn " + show.getName(),
                     NotificationService.params(
-                            "variant", "reviewer", "title", title, "show", show.getName(), "teamId", teamId,
-                            "showId", show.getId()));
+                            "variant",
+                            "reviewer",
+                            "title",
+                            title,
+                            "show",
+                            show.getName(),
+                            "teamId",
+                            teamId,
+                            "showId",
+                            show.getId()));
         }
     }
 
     private ShowDetailResponse detail(Show show, TeamMember me) {
         List<ShowItem> items = itemRepository.findByShowOrdered(show.getId());
-        Map<String, Score> scores = scoresById(items.stream().map(ShowItem::getScoreId).toList());
+        Map<String, Score> scores =
+                scoresById(items.stream().map(ShowItem::getScoreId).toList());
         String memberId = me.getMember().getId();
         RolePermissions perms = access.permissions(me);
         // Bản nhạc đang ở thùng rác không hiện trong show (khôi phục thì hiện lại)
@@ -550,17 +575,20 @@ public class ShowServiceImpl implements ShowService {
                 .filter(i -> scores.containsKey(i.getScoreId()))
                 .map(i -> toItemResponse(i, scores.get(i.getScoreId()), perms, memberId))
                 .toList();
-        long approved = rows.stream().filter(r -> r.getStatus() == ShowItemStatus.APPROVED).count();
+        long approved = rows.stream()
+                .filter(r -> r.getStatus() == ShowItemStatus.APPROVED)
+                .count();
         return ShowDetailResponse.builder()
                 .show(toShowResponse(show, new long[] {rows.size(), approved}))
                 .teamName(show.getTeam().getName())
                 .myRole(me.getRole())
                 .myPermissions(List.copyOf(perms.granted()))
                 .items(rows)
-                .assignees(teamMemberRepository.findByTeamWithMember(show.getTeam().getId()).stream()
-                        .filter(tm -> tm.getRole() != TeamRole.VIEWER)
-                        .map(TeamServiceImpl::toMemberResponse)
-                        .toList())
+                .assignees(
+                        teamMemberRepository.findByTeamWithMember(show.getTeam().getId()).stream()
+                                .filter(tm -> tm.getRole() != TeamRole.VIEWER)
+                                .map(TeamServiceImpl::toMemberResponse)
+                                .toList())
                 .build();
     }
 
@@ -605,7 +633,9 @@ public class ShowServiceImpl implements ShowService {
             return map;
         }
         for (Object[] r : itemRepository.progressByShows(showIds)) {
-            map.put((String) r[0], new long[] {((Number) r[1]).longValue(), r[2] == null ? 0 : ((Number) r[2]).longValue()});
+            map.put(
+                    (String) r[0],
+                    new long[] {((Number) r[1]).longValue(), r[2] == null ? 0 : ((Number) r[2]).longValue()});
         }
         return map;
     }

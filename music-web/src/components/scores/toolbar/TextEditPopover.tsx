@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
-import { DURATION_LABELS } from '../../editor/notes/durations';
+import { durationLabel } from '../../editor/notes/durations';
 import type { DurationType } from '../../editor/notes/durations';
 import { DEFAULT_SIZE, SIZE_MAX, SIZE_MIN } from '../../editor/structure/header';
 import type { HeaderField, HeaderState, TextStyle } from '../../editor/structure/header';
 import { BPM_MAX, BPM_MIN } from '../../editor/structure/tempo';
 import type { TempoInfo } from '../../editor/structure/tempo';
+import { t } from '../../../i18n/core';
 
 export type TextKind = HeaderField | 'tempo';
 
@@ -24,10 +25,10 @@ interface Props {
 
 const UNITS: DurationType[] = ['whole', 'half', 'quarter', 'eighth', '16th'];
 
-const TITLES: Record<TextKind, string> = {
-  title: 'Sửa tiêu đề',
-  composer: 'Sửa tên tác giả',
-  tempo: 'Sửa nhịp độ',
+const TITLE_KEYS: Record<TextKind, string> = {
+  title: 'editor.cmd.header.title',
+  composer: 'editor.cmd.header.composer',
+  tempo: 'editor.cmd.tempo',
 };
 
 /** Khung sửa chữ ở đầu bản nhạc: tiêu đề, tác giả (nội dung, cỡ chữ, đậm, nghiêng) và nhịp độ (tempo). */
@@ -62,7 +63,7 @@ export default function TextEditPopover({
     if (field) {
       const value = size.trim() === '' ? null : Number(size);
       if (value !== null && (!Number.isFinite(value) || value < SIZE_MIN || value > SIZE_MAX)) {
-        setError(`Cỡ chữ từ ${SIZE_MIN} đến ${SIZE_MAX}`);
+        setError(t('editor.toolbar.text.sizeRange', { min: SIZE_MIN, max: SIZE_MAX }));
         return;
       }
       if (onApplyHeader(field, text, { size: value, bold, italic })) onClose();
@@ -70,7 +71,7 @@ export default function TextEditPopover({
     }
     const value = Number(bpm);
     if (!Number.isFinite(value) || value < BPM_MIN || value > BPM_MAX) {
-      setError(`Nhịp độ từ ${BPM_MIN} đến ${BPM_MAX}`);
+      setError(t('editor.toolbar.text.bpmRange', { min: BPM_MIN, max: BPM_MAX }));
       return;
     }
     if (onApplyTempo({ bpm: value, unit, dotted, words })) onClose();
@@ -94,13 +95,13 @@ export default function TextEditPopover({
       className="ed-pop ed-pop--text"
       style={{ left, top }}
       role="dialog"
-      aria-label={TITLES[kind]}
+      aria-label={t(TITLE_KEYS[kind])}
       onKeyDown={onKeyDown}
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
     >
       <div className="ed-pop__name">
-        <strong>{TITLES[kind]}</strong>
+        <strong>{t(TITLE_KEYS[kind])}</strong>
       </div>
 
       {field ? (
@@ -110,12 +111,12 @@ export default function TextEditPopover({
             className="ed-pop__input"
             value={text}
             onChange={(e) => setText(e.target.value)}
-            aria-label="Nội dung"
+            aria-label={t('editor.toolbar.text.content')}
             maxLength={200}
           />
           <div className="ed-pop__row ed-pop__row--text">
             <label className="ed-pop__field">
-              Cỡ chữ
+              {t('editor.toolbar.text.size')}
               <input
                 className="ed-pop__input ed-pop__input--num"
                 type="number"
@@ -130,7 +131,7 @@ export default function TextEditPopover({
               type="button"
               className={`ed-pop__btn${bold ? ' is-active' : ''}`}
               aria-pressed={bold}
-              title="In đậm"
+              title={t('editor.toolbar.text.bold')}
               onClick={() => setBold((v) => !v)}
               style={{ fontWeight: 700 }}
             >
@@ -140,7 +141,7 @@ export default function TextEditPopover({
               type="button"
               className={`ed-pop__btn${italic ? ' is-active' : ''}`}
               aria-pressed={italic}
-              title="In nghiêng"
+              title={t('editor.toolbar.text.italic')}
               onClick={() => setItalic((v) => !v)}
               style={{ fontStyle: 'italic' }}
             >
@@ -152,17 +153,18 @@ export default function TextEditPopover({
         <>
           <div className="ed-pop__row ed-pop__row--text">
             <label className="ed-pop__field">
-              Nốt
+              {t('editor.toolbar.text.note')}
               <select className="ed-pop__input" value={unit} onChange={(e) => setUnit(e.target.value as DurationType)}>
                 {UNITS.map((u) => (
                   <option key={u} value={u}>
-                    {DURATION_LABELS[u]}
+                    {durationLabel(u)}
                   </option>
                 ))}
               </select>
             </label>
             <label className="ed-pop__check">
-              <input type="checkbox" checked={dotted} onChange={(e) => setDotted(e.target.checked)} /> chấm dôi
+              <input type="checkbox" checked={dotted} onChange={(e) => setDotted(e.target.checked)} />{' '}
+              {t('editor.toolbar.text.dotted').trim()}
             </label>
             <label className="ed-pop__field">
               = BPM
@@ -178,11 +180,11 @@ export default function TextEditPopover({
             </label>
           </div>
           <label className="ed-pop__field ed-pop__field--block">
-            Chữ tốc độ (không bắt buộc)
+            {t('editor.toolbar.text.words')}
             <input
               className="ed-pop__input"
               value={words}
-              placeholder="Ví dụ: Allegro, Vui tươi"
+              placeholder={t('editor.toolbar.text.wordsPlaceholder')}
               onChange={(e) => setWords(e.target.value)}
               maxLength={60}
             />
@@ -197,10 +199,10 @@ export default function TextEditPopover({
       )}
       <div className="ed-pop__actions">
         <button type="button" className="ed-pop__cancel" onClick={onClose}>
-          Hủy
+          {t('common.cancel')}
         </button>
         <button type="button" className="ed-pop__add" onClick={apply}>
-          Lưu
+          {t('editor.toolbar.text.save')}
         </button>
       </div>
     </div>

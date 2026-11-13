@@ -147,7 +147,11 @@ class ScoreCommentServiceImplTest {
         // Người nhận xét trả lời và nhắc người chỉ xem: chủ nhận COMMENT_REPLY, người chỉ xem nhận COMMENT_MENTION
         as(REVIEWER);
         ScoreCommentResponse thread = commentService.reply(
-                root.getId(), ScoreCommentReplyRequest.builder().content("Hạ một cung nhé").mentionIds(List.of(viewerId)).build());
+                root.getId(),
+                ScoreCommentReplyRequest.builder()
+                        .content("Hạ một cung nhé")
+                        .mentionIds(List.of(viewerId))
+                        .build());
         assertEquals(1, thread.getReplies().size());
         assertEquals(1, notifications(OWNER, NotificationType.COMMENT_REPLY));
         assertEquals(1, notifications(VIEWER, NotificationType.COMMENT_MENTION));
@@ -156,7 +160,8 @@ class ScoreCommentServiceImplTest {
         // Chủ trả lời tiếp (trả lời vào trả lời thì gắn về góp ý gốc): người nhận xét đã tham gia nhận COMMENT_REPLY
         as(OWNER);
         thread = commentService.reply(
-                thread.getReplies().get(0).getId(), ScoreCommentReplyRequest.builder().content("Ok").build());
+                thread.getReplies().get(0).getId(),
+                ScoreCommentReplyRequest.builder().content("Ok").build());
         assertEquals(2, thread.getReplies().size());
         assertEquals(root.getId(), thread.getReplies().get(1).getParentId());
         assertEquals(1, notifications(REVIEWER, NotificationType.COMMENT_REPLY));
@@ -173,7 +178,8 @@ class ScoreCommentServiceImplTest {
         score.setMeasureCount(34);
         score.setCurrentVersion(4);
         scoreRepository.saveAndFlush(score);
-        ScoreCommentResponse after = commentService.list(scoreId, null, false).getComments().get(0);
+        ScoreCommentResponse after =
+                commentService.list(scoreId, null, false).getComments().get(0);
         assertTrue(after.isOutdated());
         assertEquals(3, after.getScoreVersion());
         assertEquals(12, after.getStartMeasure());
@@ -182,7 +188,8 @@ class ScoreCommentServiceImplTest {
     @Test
     void permissionsForWritingResolvingEditingAndDeleting() {
         as(VIEWER);
-        assertEquals(ErrorCode.COMMENT_WRITE_FORBIDDEN, codeOf(() -> commentService.create(scoreId, comment("x", 1, 1))));
+        assertEquals(
+                ErrorCode.COMMENT_WRITE_FORBIDDEN, codeOf(() -> commentService.create(scoreId, comment("x", 1, 1))));
         as(STRANGER);
         assertEquals(ErrorCode.UNAUTHORIZED, codeOf(() -> commentService.list(scoreId, null, false)));
 
@@ -194,15 +201,20 @@ class ScoreCommentServiceImplTest {
 
         // Chủ không sửa được nội dung của người khác nhưng đánh dấu đã xử lý và xóa được
         as(OWNER);
-        ScoreCommentResponse ownerView = commentService.list(scoreId, null, false).getComments().get(0);
+        ScoreCommentResponse ownerView =
+                commentService.list(scoreId, null, false).getComments().get(0);
         assertFalse(ownerView.isCanEdit());
         assertTrue(ownerView.isCanDelete());
         assertEquals(
                 ErrorCode.COMMENT_FORBIDDEN,
                 codeOf(() -> commentService.update(
-                        root.getId(), ScoreCommentUpdateRequest.builder().content("sửa hộ").build())));
+                        root.getId(),
+                        ScoreCommentUpdateRequest.builder().content("sửa hộ").build())));
         ScoreCommentResponse resolved = commentService.update(
-                root.getId(), ScoreCommentUpdateRequest.builder().status(CommentStatus.RESOLVED).build());
+                root.getId(),
+                ScoreCommentUpdateRequest.builder()
+                        .status(CommentStatus.RESOLVED)
+                        .build());
         assertEquals(CommentStatus.RESOLVED, resolved.getStatus());
         assertEquals(member(OWNER).getId(), resolved.getResolvedBy().getId());
         assertNotNull(resolved.getResolvedAt());
@@ -216,14 +228,19 @@ class ScoreCommentServiceImplTest {
         as(REVIEWER);
         ScoreCommentResponse edited = commentService.update(
                 root.getId(),
-                ScoreCommentUpdateRequest.builder().content("Ô 3 thiếu dấu lặng đen").status(CommentStatus.OPEN).build());
+                ScoreCommentUpdateRequest.builder()
+                        .content("Ô 3 thiếu dấu lặng đen")
+                        .status(CommentStatus.OPEN)
+                        .build());
         assertEquals("Ô 3 thiếu dấu lặng đen", edited.getContent());
         assertNotNull(edited.getEditedAt());
         assertEquals(CommentStatus.OPEN, edited.getStatus());
         assertNull(edited.getResolvedBy());
 
         // Người chỉ xem không xóa được; chủ xóa góp ý gốc thì trả lời mất theo
-        commentService.reply(root.getId(), ScoreCommentReplyRequest.builder().content("bổ sung").build());
+        commentService.reply(
+                root.getId(),
+                ScoreCommentReplyRequest.builder().content("bổ sung").build());
         as(VIEWER);
         assertEquals(ErrorCode.COMMENT_FORBIDDEN, codeOf(() -> commentService.delete(root.getId())));
         as(OWNER);
@@ -240,20 +257,26 @@ class ScoreCommentServiceImplTest {
     @Test
     void validatesContentMeasuresAndMentions() {
         as(OWNER);
-        assertEquals(ErrorCode.COMMENT_CONTENT_INVALID, codeOf(() -> commentService.create(scoreId, comment("   ", 1, 2))));
+        assertEquals(
+                ErrorCode.COMMENT_CONTENT_INVALID, codeOf(() -> commentService.create(scoreId, comment("   ", 1, 2))));
         assertEquals(
                 ErrorCode.COMMENT_CONTENT_INVALID,
                 codeOf(() -> commentService.create(scoreId, comment("a".repeat(2001), 1, 2))));
-        assertEquals(ErrorCode.COMMENT_MEASURE_INVALID, codeOf(() -> commentService.create(scoreId, comment("x", 0, 2))));
-        assertEquals(ErrorCode.COMMENT_MEASURE_INVALID, codeOf(() -> commentService.create(scoreId, comment("x", 5, 4))));
-        assertEquals(ErrorCode.COMMENT_MEASURE_INVALID, codeOf(() -> commentService.create(scoreId, comment("x", 30, 33))));
+        assertEquals(
+                ErrorCode.COMMENT_MEASURE_INVALID, codeOf(() -> commentService.create(scoreId, comment("x", 0, 2))));
+        assertEquals(
+                ErrorCode.COMMENT_MEASURE_INVALID, codeOf(() -> commentService.create(scoreId, comment("x", 5, 4))));
+        assertEquals(
+                ErrorCode.COMMENT_MEASURE_INVALID, codeOf(() -> commentService.create(scoreId, comment("x", 30, 33))));
         // Người không xem được bản nhạc thì không nhắc được
         String strangerId = member(STRANGER).getId();
         assertEquals(
                 ErrorCode.COMMENT_MENTION_INVALID,
                 codeOf(() -> commentService.create(scoreId, comment("x", 1, 2, strangerId))));
         // Gợi ý @nhắc tên: người được chia sẻ, không có chính mình và người ngoài
-        var names = commentService.mentionable(scoreId, null).stream().map(m -> m.getId()).toList();
+        var names = commentService.mentionable(scoreId, null).stream()
+                .map(m -> m.getId())
+                .toList();
         assertTrue(names.contains(member(REVIEWER).getId()));
         assertTrue(names.contains(member(VIEWER).getId()));
         assertFalse(names.contains(member(OWNER).getId()));
@@ -265,6 +288,7 @@ class ScoreCommentServiceImplTest {
         score.setMeasureCount(null);
         scoreRepository.saveAndFlush(score);
         assertFalse(commentService.list(scoreId, null, false).isCanComment());
-        assertEquals(ErrorCode.COMMENT_MEASURE_INVALID, codeOf(() -> commentService.create(scoreId, comment("x", 1, 1))));
+        assertEquals(
+                ErrorCode.COMMENT_MEASURE_INVALID, codeOf(() -> commentService.create(scoreId, comment("x", 1, 1))));
     }
 }

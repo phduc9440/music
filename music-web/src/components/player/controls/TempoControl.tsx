@@ -1,5 +1,6 @@
 import { PlayerPopover } from './PlayerPopover';
 import { DEFAULT_TEMPO_PERCENT, MAX_TEMPO_PERCENT, MIN_TEMPO_PERCENT } from '../state/settings';
+import { t } from '../../../i18n/core';
 
 const PRESETS = [50, 75, 100];
 const STEP = 5;
@@ -22,8 +23,8 @@ export function TempoControl({ percent, baseBpm, onChange, disabled, inline }: P
   return (
     <PlayerPopover
       inline={inline}
-      label={`Tốc độ phát: ${percent}% (${bpm} BPM)`}
-      title="Tốc độ phát"
+      label={t('player.tempo.label', { percent, bpm })}
+      title={t('player.tempo.title')}
       disabled={disabled}
       buttonClassName={changed ? 'pl-chip--on' : undefined}
       trigger={
@@ -35,7 +36,7 @@ export function TempoControl({ percent, baseBpm, onChange, disabled, inline }: P
     >
       <div className="pl-tempo">
         <div className="pl-tempo__head">
-          <span>Tốc độ</span>
+          <span>{t('player.tempo.head')}</span>
           <output className="pl-tempo__out" aria-live="off">
             {percent}% · {bpm} BPM
           </output>
@@ -47,7 +48,7 @@ export function TempoControl({ percent, baseBpm, onChange, disabled, inline }: P
           max={MAX_TEMPO_PERCENT}
           step={STEP}
           value={percent}
-          aria-label="Tốc độ phát (%)"
+          aria-label={t('player.tempo.slider')}
           aria-valuetext={`${percent}%, ${bpm} BPM`}
           onChange={(e) => onChange(Number(e.target.value))}
           onDoubleClick={() => onChange(DEFAULT_TEMPO_PERCENT)}
@@ -56,7 +57,7 @@ export function TempoControl({ percent, baseBpm, onChange, disabled, inline }: P
           <span>{MIN_TEMPO_PERCENT}%</span>
           <span>{MAX_TEMPO_PERCENT}%</span>
         </div>
-        <div className="pl-tempo__presets" role="group" aria-label="Mức tốc độ nhanh">
+        <div className="pl-tempo__presets" role="group" aria-label={t('player.tempo.presets')}>
           {PRESETS.map((value) => (
             <button
               key={value}

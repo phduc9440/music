@@ -1,6 +1,7 @@
 import { Outlet, ScrollRestoration } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import DialogProvider from '../components/ui/DialogProvider';
+import PlanLimitHost from '../components/billing/PlanLimitHost';
 import { useRevealAll } from '../hooks/useReveal';
 import { useTheme } from '../theme/useTheme';
 
@@ -14,6 +15,7 @@ export default function RootLayout() {
   return (
     <DialogProvider>
       <Outlet />
+      <PlanLimitHost />
       <ScrollRestoration />
       <ToastContainer theme={resolved} position="bottom-right" />
     </DialogProvider>

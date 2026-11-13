@@ -319,6 +319,17 @@
   min-height: 36px;
   font-size: 0.88rem;
 }
+.sv-banner--suggest {
+  background: var(--ui-primary-soft);
+  border-bottom-color: var(--ui-primary);
+  color: var(--ui-primary);
+  font-weight: 600;
+}
+.sv-badge--suggest {
+  border-color: var(--ui-primary);
+  background: var(--ui-primary-soft);
+  color: var(--ui-primary);
+}
 .sv-banner__close {
   width: 32px;
   height: 32px;
@@ -382,7 +393,7 @@
   padding: 0 0.35rem;
   border-radius: 999px;
   background: var(--ui-warning);
-  color: var(--ui-on-accent, #fff);
+  color: var(--ui-on-accent);
   font-size: 0.72rem;
   font-weight: 700;
   line-height: 1.2rem;

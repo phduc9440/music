@@ -5,6 +5,7 @@
 import { commitEdit } from '../core/commands';
 import type { EditResult, Touched } from '../core/commands';
 import type { ScoreDocument } from '../core/ScoreDocument';
+import { t } from '../../../i18n/core';
 
 /** Các <direction> có <rehearsal> của ô nhịp. */
 const rehearsalDirections = (measure: Element): Element[] =>
@@ -26,7 +27,10 @@ export function setSectionLabel(doc: ScoreDocument, measureIndex: number, text: 
   const same = label !== null && existing.some((d) => d.getElementsByTagName('rehearsal')[0]?.textContent === label);
 
   const touched: Touched = new Map([[`0|${measureIndex}`, { partIndex: 0, measureIndex }]]);
-  const name = label === null ? 'Bỏ nhãn đoạn' : same ? `Bỏ nhãn "${label}"` : `Đặt nhãn "${label}"`;
+  const name =
+    label === null
+      ? t('editor.cmd.section.remove')
+      : t(same ? 'editor.cmd.section.removeNamed' : 'editor.cmd.section.set', { label });
   const command = commitEdit(doc, name, touched, [], () => {
     existing.forEach((d) => d.remove());
     if (label === null || same) return;

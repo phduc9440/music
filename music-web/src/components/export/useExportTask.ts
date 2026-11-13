@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { taskApi } from '../../services';
 import type { AiTaskInfo } from '../../types';
 import { isTaskFinished } from './exportUtils';
+import { t } from '../../i18n/core';
 
 const POLL_MS = 2000;
 /** Hỏi trạng thái lỗi liên tiếp bấy nhiêu lần (mất mạng, task không còn) thì coi như thất bại. */
@@ -40,7 +41,11 @@ export function useExportTask(onFinished: (task: AiTaskInfo) => void, resume?: A
         if (run.current !== id) return;
         errors += 1;
         if (errors >= MAX_POLL_ERRORS) {
-          const failed: AiTaskInfo = { ...initial, status: 'FAILED', errorMessage: 'EXPORT_ERROR: mất kết nối' };
+          const failed: AiTaskInfo = {
+            ...initial,
+            status: 'FAILED',
+            errorMessage: `EXPORT_ERROR: ${t('export.connectionLost')}`,
+          };
           setTask(failed);
           finished.current(failed);
           return;

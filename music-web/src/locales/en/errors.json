@@ -82,6 +82,7 @@
   "3004": "The period must be DAY, WEEK or MONTH",
   "3005": "The number of days must be between 7 and 90",
   "3301": "This score isn't in your trash",
+  "3302": "Invalid blank score options (key, time signature, tempo or measures)",
   "3401": "This curated-library request doesn't exist",
   "3402": "This request has already been handled",
   "3403": "This score already has a request waiting for the owner's reply",
@@ -159,5 +160,19 @@
   "1020": "Built-in role: it cannot be renamed or deleted; USER and SUPER_ADMIN permissions are locked too",
   "1021": "The role is assigned to members; remove it from them before deleting",
   "1022": "Role name is 2-100 characters, description up to 255",
-  "1023": "A role with this name already exists"
+  "1023": "A role with this name already exists",
+  "3110": "Suggestion title is 1-200 characters, description up to 2000, note up to 500",
+  "3111": "The suggestion has no changes compared with the base version",
+  "3112": "You already have 10 open suggestions on this score; wait for them or withdraw some",
+  "3113": "The main score changed structure after this suggestion was sent, so it cannot be applied; reject it and ask the author to redo it",
+  "3114": "This suggestion was already handled or withdrawn",
+  "3115": "Suggestion not found",
+  "3116": "The selected measures are invalid",
+  "3117": "You sent more than 30 suggestions in the last 24 hours, try again later",
+  "3121": "This co-editing session is full (10 editors)",
+  "3122": "This score is being edited together; use co-editing mode or wait until everyone leaves before saving",
+  "3123": "The score owner's plan does not include real-time co-editing",
+  "3124": "The co-editing operation is invalid",
+  "3125": "You need to hold the measure lock before editing it",
+  "3126": "You are sending edits too fast, please slow down"
 }

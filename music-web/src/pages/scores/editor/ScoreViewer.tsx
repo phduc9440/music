@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useNavigate } from '../../../routes/useTransitionNavigate';
+import { toast } from 'react-toastify';
 import DownloadMenu from '../../../components/scores/viewer/DownloadMenu';
+import ShowAssignmentBanner from '../../../components/scores/viewer/ShowAssignmentBanner';
 import VersionHistoryPanel from '../../../components/editor/version/VersionHistoryPanel';
 import InstrumentMenu from '../../../components/scores/viewer/InstrumentMenu';
 import EditorToolPanel from '../../../components/scores/toolbar/EditorToolPanel';
@@ -11,6 +13,8 @@ import { readNotation } from '../../../components/editor/structure/staves';
 import type { NotationChange } from '../../../components/editor/structure/staves';
 import LyricBar from '../../../components/scores/toolbar/LyricBar';
 import Modal from '../../../components/scores/common/Modal';
+import SuggestSubmitDialog from '../../../components/scores/suggestions/SuggestSubmitDialog';
+import { suggestionPath } from '../../../components/scores/suggestions/suggestionUtils';
 import ScoreCanvas from '../../../components/scores/viewer/ScoreCanvas';
 import type { CommentRange } from '../../../components/scores/viewer/ScoreCanvas';
 import CommentsSection from '../../../components/scores/comments/CommentsSection';
@@ -44,14 +48,18 @@ import {
 } from '../../../components/scores/viewer/ViewerIcons';
 import { syncTitle } from '../../../components/editor/structure/header';
 import { ScoreDocument } from '../../../components/editor/core/ScoreDocument';
-import { DURATION_LABELS, dotsLabel } from '../../../components/editor/notes/durations';
+import { durationLabel, dotsLabel } from '../../../components/editor/notes/durations';
 import { PlayerBar } from '../../../components/player/PlayerBar';
 import { usePlayer } from '../../../components/player/hooks/usePlayer';
 import { useScoreEditor } from '../../../components/editor/core/useScoreEditor';
+import LiveBar from '../../../components/editor/live/LiveBar';
+import { useLiveCollab } from '../../../components/editor/live/useLiveCollab';
+import type { LockBox } from '../../../components/scores/viewer/ScoreCanvas';
+import type { LiveSelection } from '../../../types';
 import { countView } from '../../../services/practice/playbackApi';
 import { commentApi, fetchMusicXmlWithVersion, scoreApi } from '../../../services';
 import type { ScoreComment, ScoreDetail as ScoreDetailData } from '../../../types';
-import { t } from '../../../i18n/core';
+import { formatDateTime, t } from '../../../i18n/core';
 import { isValidScoreId } from '../../../utils/omr';
 import { getHttpStatus, useScoreBase } from '../../../utils/score';
 import {
@@ -73,59 +81,49 @@ const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigat
 const MOD = isMac ? '⌘' : 'Ctrl';
 const ALT = isMac ? '⌥' : 'Alt';
 
-/** Danh sách phím tắt trong hộp thoại "Phím tắt" (mở bằng phím ?). */
-const SHORTCUTS: [string, string][] = [
-  ['Bấm / Shift + bấm', 'Chọn nốt / chọn thêm hoặc bỏ bớt'],
-  ['Kéo khung / kéo nốt (chuột, bút)', 'Chọn vùng / kéo nốt lên xuống để đổi cao độ'],
-  ['Tab / Shift + Tab', 'Sang nốt kế tiếp / trước đó'],
-  ['[  /  ]', 'Chọn nốt thấp hơn / cao hơn trong hợp âm'],
-  ['↑ / ↓', 'Lên / xuống một bậc'],
-  [`${ALT} + ↑ / ↓`, 'Lên / xuống nửa cung'],
-  [`${MOD} + ↑ / ↓`, 'Lên / xuống một quãng tám'],
-  [`${MOD} + Z`, 'Hoàn tác'],
-  [`${MOD} + Shift + Z  hoặc  ${MOD} + Y`, 'Làm lại'],
-  [`${MOD} + S`, 'Lưu'],
-  [
-    '1 – 7',
-    'Trường độ: móc kép, móc đơn, đen, trắng, tròn (1–5), móc ba, móc tứ (6–7); tròn đôi ở nút "Khác" (áp lên nốt chọn)',
-  ],
-  ['.', 'Chấm dôi: bấm lần 1 chấm dôi, lần 2 chấm dôi kép, lần 3 bỏ chấm'],
-  [
-    `${MOD} + 3`,
-    'Chùm ba từ nốt/dấu lặng đang chọn (nhóm Trường độ → "Chùm…" còn có chùm hai, bốn, năm, sáu, bảy và "Bỏ chùm")',
-  ],
-  ['Bấm vào khuông (chế độ Nhập nốt)', 'Mở khung chọn nốt tại đúng dòng/khe đã bấm rồi bấm Thêm'],
-  ['Kéo nút trường độ vào khuông', 'Thêm nốt có trường độ đó tại chỗ thả'],
-  ['A – G (chế độ Nhập nốt)', 'Biến nốt/dấu lặng đang chọn thành nốt đó rồi sang mục kế tiếp'],
-  ['Bấm vào tiêu đề, tên tác giả hoặc nhịp độ', 'Sửa nội dung; tiêu đề và tác giả sửa được cả cỡ chữ, đậm, nghiêng'],
-  ['Chế độ Lời', 'Chọn nốt, gõ âm tiết rồi Space sang nốt kế; "-" khi một chữ trải qua nhiều nốt; Esc để thoát'],
-  ['Chế độ Hợp âm', 'Chọn nốt, gõ hợp âm (C, Am7, G/B, C6/9, N.C....) rồi Space sang nốt kế; ô trống để xóa'],
-  [
-    'Nhóm Khuông nhạc',
-    'Thêm khuông Fa cho đàn, thêm khuông Sol/Fa/Tenor riêng (SATB), xóa khuông; "Khóa · Dấu hóa · Nhịp…" đổi khóa (Sol, Sol 8 dưới, Fa, Đô), dấu hóa đầu khuông, nhịp giữa bài',
-  ],
-  ['Nhóm Ô nhịp', 'Thêm ô sau / chèn ô trước / xóa các ô đang chọn (hoàn tác được)'],
-  [
-    'Nhóm Viết bè',
-    'Bè thân: thêm nốt chung thân cùng trường độ. Bè riêng: bè mới nhịp điệu riêng (bấm vào dấu lặng để nhập). Chép bè: sao cả ô sang bè mới',
-  ],
-  [
-    'Nhóm Sắc thái',
-    'Staccato, Accent, Tenuto, Fermata, Cresc./Dim. (chọn nốt đầu đến nốt cuối), pp…ff (đặt ở nốt đầu)',
-  ],
-  [
-    'Nhóm Lặp lại & chỉ dẫn',
-    'Dấu lặp |: :|, Nhà 1 / Nhà 2 (lời 2 hát đoạn khác), Segno, Coda, D.C., D.S., Fine, To Coda',
-  ],
-  ['T', 'Dấu nối: nối nốt đang chọn với nốt cùng cao độ liền sau (bấm lại để bỏ)'],
-  ['S', 'Dấu luyến: chọn từ nốt đầu đến nốt cuối rồi bấm (bấm lại để bỏ)'],
-  ['Delete', 'Xóa nốt đang chọn (hợp âm còn nốt khác thì giữ lại)'],
-  ['Bôi đen nốt → nút "Góp ý" cạnh vùng chọn', 'Góp ý ngay tại chỗ (ô nhập hiện cạnh các nốt đã chọn)'],
-  ['Chuột phải vào nốt', 'Menu: Góp ý vào đoạn đã chọn, Xem góp ý ở ô này'],
-  [`${MOD} + ${ALT} + M`, 'Góp ý vào nốt / ô đang chọn (mở bảng Góp ý bên phải)'],
-  ['Esc', 'Bỏ chọn'],
-  ['+  /  -  /  0', 'Phóng to / thu nhỏ / về 100%'],
-  ['?', 'Mở bảng này'],
+/** Danh sách phím tắt trong hộp thoại "Phím tắt" (mở bằng phím ?): dựng lúc hiển thị để đổi ngôn ngữ có hiệu lực ngay. */
+const editShortcuts = (): [string, string][] => [
+  [t('editor.view.help.select.keys'), t('editor.view.help.select.desc')],
+  [t('editor.view.help.drag.keys'), t('editor.view.help.drag.desc')],
+  ['Tab / Shift + Tab', t('editor.view.help.tab.desc')],
+  ['[  /  ]', t('editor.view.help.chord.desc')],
+  ['↑ / ↓', t('editor.view.help.step.desc')],
+  [`${ALT} + ↑ / ↓`, t('editor.view.help.semitone.desc')],
+  [`${MOD} + ↑ / ↓`, t('editor.view.help.octave.desc')],
+  [`${MOD} + Z`, t('editor.view.help.undo.desc')],
+  [t('editor.view.help.redo.keys', { mod: MOD }), t('editor.view.help.redo.desc')],
+  [`${MOD} + S`, t('editor.view.help.save.desc')],
+  ['1 – 7', t('editor.view.help.duration.desc')],
+  ['.', t('editor.view.help.dot.desc')],
+  [`${MOD} + 3`, t('editor.view.help.tuplet.desc')],
+  [t('editor.view.help.clickStaff.keys'), t('editor.view.help.clickStaff.desc')],
+  [t('editor.view.help.dragDuration.keys'), t('editor.view.help.dragDuration.desc')],
+  [t('editor.view.help.letters.keys'), t('editor.view.help.letters.desc')],
+  [t('editor.view.help.header.keys'), t('editor.view.help.header.desc')],
+  [t('editor.view.help.lyricMode.keys'), t('editor.view.help.lyricMode.desc')],
+  [t('editor.view.help.chordMode.keys'), t('editor.view.help.chordMode.desc')],
+  [t('editor.view.help.staves.keys'), t('editor.view.help.staves.desc')],
+  [t('editor.view.help.measures.keys'), t('editor.view.help.measures.desc')],
+  [t('editor.view.help.voices.keys'), t('editor.view.help.voices.desc')],
+  [t('editor.view.help.dynamics.keys'), t('editor.view.help.dynamics.desc')],
+  [t('editor.view.help.repeats.keys'), t('editor.view.help.repeats.desc')],
+  ['T', t('editor.view.help.tie.desc')],
+  ['S', t('editor.view.help.slur.desc')],
+  ['Delete', t('editor.view.help.delete.desc')],
+];
+
+/** Phím tắt xếp cuối hộp thoại, sau các phím tắt Góp ý: dựng lúc hiển thị để đổi ngôn ngữ có hiệu lực ngay. */
+const endShortcuts = (): [string, string][] => [
+  ['Esc', t('editor.view.help.esc.desc')],
+  ['+  /  -  /  0', t('editor.view.help.zoom.desc')],
+  ['?', t('editor.view.help.help.desc')],
+];
+
+/** Phím tắt Góp ý (mục 4.2): dựng lúc hiển thị để đổi ngôn ngữ có hiệu lực ngay. */
+const commentShortcuts = (): [string, string][] => [
+  [t('scores.comments.helpSelectKeys'), t('scores.comments.helpSelectText')],
+  [t('scores.comments.helpContextKeys'), t('scores.comments.helpContextText')],
+  [`${MOD} + ${ALT} + M`, t('scores.comments.helpPanelText')],
 ];
 
 /**
@@ -200,25 +198,25 @@ export default function ScoreViewer() {
   }
 
   // ---- Các màn hình không xem được ----
-  let title = 'Đang tải bản nhạc...';
+  let title = t('editor.view.state.loading');
   let text = '';
   let action: { label: string; run: () => void } | null = null;
   if (phase === 'notFound') {
-    title = 'Không tìm thấy bản nhạc';
-    text = 'Bản nhạc không tồn tại hoặc bạn không có quyền xem.';
-    action = { label: 'Về thư viện', run: () => navigate(base) };
+    title = t('editor.view.state.notFound.title');
+    text = t('editor.view.state.notFound.text');
+    action = { label: t('editor.view.state.notFound.action'), run: () => navigate(base) };
   } else if (phase === 'notReady') {
-    title = 'Bản nhạc chưa số hóa xong';
-    text = 'Bản nhạc chưa có MusicXML. Hãy đợi nhận diện xong hoặc xem trang tiến độ.';
-    action = { label: 'Về trang tiến độ', run: () => navigate(`${base}/${id}/processing`) };
+    title = t('editor.view.state.notReady.title');
+    text = t('editor.view.state.notReady.text');
+    action = { label: t('editor.view.state.notReady.action'), run: () => navigate(`${base}/${id}/processing`) };
   } else if (phase === 'parseError' || (phase === 'ready' && !doc)) {
-    title = 'Không đọc được bản nhạc';
-    text = 'File MusicXML bị lỗi nên không vẽ được. Bạn có thể tải file về để kiểm tra.';
-    action = { label: 'Về trang chi tiết', run: goBack };
+    title = t('editor.view.state.parseError.title');
+    text = t('editor.view.state.parseError.text');
+    action = { label: t('editor.view.state.parseError.action'), run: goBack };
   } else if (phase === 'error') {
-    title = 'Không tải được bản nhạc';
-    text = 'Vui lòng thử lại sau.';
-    action = { label: 'Tải lại', run: () => window.location.reload() };
+    title = t('editor.view.state.error.title');
+    text = t('editor.view.state.error.text');
+    action = { label: t('editor.view.state.error.action'), run: () => window.location.reload() };
   }
   return (
     <div className="sc-page sv-root sv-root--center">
@@ -302,9 +300,30 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
 
   const { zoom, mode, invert } = prefs;
-  const canEdit = score.canEdit;
+  // Đề xuất sửa (mục 4.3): người có quyền nhận xét trở lên bật chế độ Đề xuất để dùng công cụ sửa; thay đổi không vào bản
+  // chính mà gửi đi dưới dạng đề xuất. Người sửa được cũng có thể bật để đề xuất thay vì ghi thẳng.
+  const [suggesting, setSuggesting] = useState(false);
+  const [suggestXml, setSuggestXml] = useState<string | null>(null);
+  const canEdit = score.canEdit || suggesting;
+
+  // Đồng chỉnh sửa (chỉ người sửa được, không kèm chế độ đề xuất): bật tay, và chỉ khi không còn thay đổi chưa lưu
+  const [liveOn, setLiveOn] = useState(false);
+  const selectionRef = useRef<ReadonlySet<string>>(new Set());
+  const getLiveSelection = useCallback((): LiveSelection | null => {
+    const infos = [...selectionRef.current].map((id) => doc.getInfo(id)).filter((i) => i !== undefined);
+    if (infos.length === 0) return null;
+    const measures = infos.map((i) => i.measureIndex);
+    return { partIndex: infos[0].partIndex, from: Math.min(...measures), to: Math.max(...measures) };
+  }, [doc]);
+  const live = useLiveCollab({
+    scoreId: score.id,
+    doc,
+    enabled: liveOn && score.canEdit && !suggesting,
+    getSelection: getLiveSelection,
+  });
 
   const editor = useScoreEditor({
+    live,
     scoreId: score.id,
     title: score.title,
     doc,
@@ -312,6 +331,8 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
     canEdit,
     canForce: score.canDelete,
     blocked: helpOpen,
+    mode: suggesting ? 'suggest' : 'direct',
+    onSuggest: setSuggestXml,
   });
 
   const player = usePlayer(doc, {
@@ -321,10 +342,20 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
     revision: editor.revision,
     onFirstPlay: () => void countView(score.id),
   });
-  const selectionRef = useRef(editor.selection);
   useEffect(() => {
     selectionRef.current = editor.selection;
   });
+  const lockBoxes = useMemo<LockBox[]>(() => {
+    const { locks, participants, selfSessionId } = live.state;
+    if (!locks) return [];
+    const boxes: LockBox[] = [];
+    for (const entry of locks.locks) {
+      if (entry.sessionId === selfSessionId) continue;
+      const holder = participants.find((p) => p.sessionId === entry.sessionId);
+      boxes.push({ measureIndex: entry.measureIndex, label: holder?.name ?? '', colorIndex: holder?.colorIndex ?? 0 });
+    }
+    return boxes;
+  }, [live.state]);
   const { canPlay, playFrom, stop: stopPlayer, status: playerStatus } = player;
   const { a: loopA, b: loopB, enabled: loopOn } = player.loop;
   const loopRange = useMemo(
@@ -577,11 +608,11 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
     return (
       <div className="sc-page sv-root sv-root--center">
         <div className="sv-state" role="alert">
-          <h2>Không đọc được bản nhạc</h2>
-          <p>File MusicXML bị lỗi nên không vẽ được. Bạn có thể tải file về để kiểm tra.</p>
+          <h2>{t('editor.view.state.parseError.title')}</h2>
+          <p>{t('editor.view.state.parseError.text')}</p>
           <div className="sv-state__actions">
             <button className="sc-btn sc-btn--primary" onClick={goBack}>
-              Về trang chi tiết
+              {t('editor.view.state.parseError.action')}
             </button>
             <DownloadMenu
               scoreId={score.id}
@@ -597,21 +628,34 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
   }
 
   const progressLabel =
-    mode === 'scroll' ? `Vị trí ${progress}%` : `Trang ${Math.min(progress, pageCount)}/${pageCount}`;
+    mode === 'scroll'
+      ? t('editor.view.progress.scroll', { progress })
+      : t('editor.view.progress.page', { page: Math.min(progress, pageCount), total: pageCount });
   const measures = score.measureCount ?? info.measureCount;
   const summary = [
-    measures ? `${measures} ô nhịp` : '',
-    score.keySignature ? `Khóa ${score.keySignature}` : '',
-    score.timeSignature ? `Nhịp ${score.timeSignature}` : '',
+    measures ? t('editor.view.summary.measures', { count: measures }) : '',
+    score.keySignature ? t('editor.view.summary.key', { key: score.keySignature }) : '',
+    score.timeSignature ? t('editor.view.summary.time', { time: score.timeSignature }) : '',
     score.tempoBpm ? `${score.tempoBpm} BPM` : '',
-    canEdit ? `Phiên bản ${editor.version}` : score.currentVersion ? `Phiên bản ${score.currentVersion}` : '',
+    canEdit
+      ? t('editor.view.summary.version', { version: editor.version })
+      : score.currentVersion
+        ? t('editor.view.summary.version', { version: score.currentVersion })
+        : '',
   ].filter(Boolean);
 
+  const onSuggestionSent = (suggestionId: string) => {
+    editor.finishSuggestion();
+    setSuggestXml(null);
+    toast.success(t('suggestions.mode.sent'));
+    navigate(suggestionPath(base, score.id, suggestionId));
+  };
+
   const saveLabel = editor.saving
-    ? 'Đang lưu…'
+    ? t('editor.view.save.saving')
     : editor.dirty
-      ? 'Có thay đổi chưa lưu'
-      : `Đã lưu · phiên bản ${editor.version}`;
+      ? t('editor.view.save.dirty')
+      : t('editor.view.save.saved', { version: editor.version });
   const saveClass = editor.saving ? ' is-saving' : editor.dirty ? ' is-dirty' : '';
   const firstIssue = editor.issues[0];
 
@@ -619,24 +663,31 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
     <div className="sc-page sv-root" ref={rootRef}>
       <header className="sv-toolbar">
         <div className="sv-toolbar__left">
-          <button className="sc-btn sv-icon" onClick={goBack} aria-label="Về trang chi tiết" title="Về trang chi tiết">
+          <button
+            className="sc-btn sv-icon"
+            onClick={goBack}
+            aria-label={t('editor.view.header.back')}
+            title={t('editor.view.header.back')}
+          >
             <IconBack />
           </button>
           <div className="sv-title">
             <h1 title={score.title}>{score.title}</h1>
-            <p>{score.composer || 'Chưa rõ tác giả'}</p>
+            <p>{score.composer || t('editor.view.header.unknownComposer')}</p>
           </div>
           {canEdit ? (
             <span className={`sv-savestate${saveClass}`} role="status" aria-live="polite" title={saveLabel}>
               <span className="sv-sr">{saveLabel}</span>
             </span>
           ) : (
-            <span className="sv-badge">Chỉ xem</span>
+            <span className="sv-badge">{t('editor.view.header.readOnly')}</span>
           )}
+          {suggesting && <span className="sv-badge sv-badge--suggest">{t('suggestions.mode.suggest')}</span>}
+          {live.active && <LiveBar state={live.state} />}
         </div>
 
         <div className="sv-toolbar__center">
-          <div className="sv-segment sv-segment--icons" role="group" aria-label="Chế độ xem">
+          <div className="sv-segment sv-segment--icons" role="group" aria-label={t('editor.view.header.modeGroup')}>
             <button
               aria-pressed={mode === 'page'}
               aria-label="Xem theo trang"
@@ -647,19 +698,19 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
             </button>
             <button
               aria-pressed={mode === 'scroll'}
-              aria-label="Cuộn ngang"
-              title="Cuộn ngang"
+              aria-label={t('editor.view.header.scroll')}
+              title={t('editor.view.header.scroll')}
               onClick={() => setMode('scroll')}
             >
               <IconScroll />
             </button>
           </div>
           <ZoomControl zoom={zoom} onChange={setZoom} />
-          <div className="sv-segment sv-segment--icons" role="group" aria-label="Màu bản nhạc">
+          <div className="sv-segment sv-segment--icons" role="group" aria-label={t('editor.view.header.colorGroup')}>
             <button
               aria-pressed={invert}
-              aria-label="Đảo màu bản nhạc"
-              title="Đảo màu bản nhạc (nền tối, nốt sáng)"
+              aria-label={t('editor.view.header.invert')}
+              title={t('editor.view.header.invertTitle')}
               onClick={() => updatePrefs({ invert: !invert })}
             >
               <IconInvert />
@@ -668,14 +719,46 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
         </div>
 
         <div className="sv-toolbar__right">
+          {score.canEdit && !suggesting && (
+            <button
+              className={`sc-btn${liveOn ? ' is-active' : ''}`}
+              aria-pressed={liveOn}
+              disabled={editor.dirty || editor.saving}
+              onClick={() => setLiveOn((on) => !on)}
+              title={editor.dirty ? t('live.toggle.saveFirst') : liveOn ? t('live.toggle.off') : t('live.toggle.on')}
+            >
+              {liveOn ? t('live.toggle.stop') : t('live.toggle.start')}
+            </button>
+          )}
+          {score.canReview && (
+            <button
+              className={`sc-btn${suggesting ? ' is-active' : ''}`}
+              aria-pressed={suggesting}
+              disabled={editor.dirty || editor.saving || liveOn}
+              onClick={() => setSuggesting((on) => !on)}
+              title={
+                editor.dirty
+                  ? t('suggestions.mode.saveFirst')
+                  : suggesting
+                    ? t('suggestions.mode.switchToDirect')
+                    : t('suggestions.mode.switchToSuggest')
+              }
+            >
+              {suggesting
+                ? score.canEdit
+                  ? t('suggestions.mode.direct')
+                  : t('suggestions.mode.exit')
+                : t('suggestions.mode.suggest')}
+            </button>
+          )}
           {canEdit && (
             <div className="sv-group sv-desktop-only">
               <button
                 className="sc-btn sv-icon"
                 disabled={!editor.canUndo || editor.saving}
                 onClick={editor.undo}
-                title={`Hoàn tác (${MOD}+Z)`}
-                aria-label="Hoàn tác"
+                title={`${t('editor.tool.undo')} (${MOD}+Z)`}
+                aria-label={t('editor.tool.undo')}
               >
                 <IconUndo />
               </button>
@@ -683,24 +766,24 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
                 className="sc-btn sv-icon"
                 disabled={!editor.canRedo || editor.saving}
                 onClick={editor.redo}
-                title={`Làm lại (${MOD}+Shift+Z)`}
-                aria-label="Làm lại"
+                title={`${t('editor.tool.redo')} (${MOD}+Shift+Z)`}
+                aria-label={t('editor.tool.redo')}
               >
                 <IconRedo />
               </button>
               <button
                 className="sc-btn sc-btn--primary"
-                disabled={!editor.dirty || editor.saving}
+                disabled={(live.active ? !live.state.unsaved && live.state.pending === 0 : !editor.dirty) || editor.saving}
                 onClick={() => void editor.save()}
-                title={`Lưu (${MOD}+S)`}
+                title={suggesting ? t('suggestions.mode.sendTitle', { shortcut: `${MOD}+S` }) : `Lưu (${MOD}+S)`}
               >
-                <IconSave /> Lưu
+                <IconSave /> {suggesting ? t('suggestions.mode.send') : 'Lưu'}
               </button>
             </div>
           )}
           {canEdit && (
             <button className="sc-btn sv-mobile-only" onClick={() => setToolsOpen(true)}>
-              <IconEdit /> Sửa
+              <IconEdit /> {t('editor.view.header.edit')}
             </button>
           )}
           <button
@@ -718,14 +801,14 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
             aria-pressed={player.status === 'playing'}
             title={
               player.status === 'playing'
-                ? 'Tạm dừng'
+                ? t('editor.view.play.pause')
                 : editor.selection.size > 0
-                  ? 'Phát từ nốt đang chọn'
-                  : 'Phát cả bản nhạc'
+                  ? t('editor.view.play.fromSelection')
+                  : t('editor.view.play.all')
             }
           >
             {player.status === 'playing' ? <IconStop /> : <IconPlay />}{' '}
-            {player.status === 'playing' ? 'Tạm dừng' : 'Phát'}
+            {player.status === 'playing' ? t('editor.view.play.pause') : t('editor.view.play.play')}
           </button>
           <InstrumentMenu parts={player.parts} onChange={player.setInstrument} compact />
           <DownloadMenu
@@ -740,13 +823,13 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
             items={[
               {
                 key: 'history',
-                label: 'Lịch sử phiên bản',
+                label: t('editor.version.panel.title'),
                 icon: <IconHistory />,
                 onClick: () => setHistoryOpen(true),
               },
               {
                 key: 'fullscreen',
-                label: fullscreen ? 'Thoát toàn màn hình' : 'Toàn màn hình',
+                label: fullscreen ? t('editor.view.menu.fullscreenExit') : t('editor.view.menu.fullscreen'),
                 icon: fullscreen ? <IconShrink /> : <IconExpand />,
                 hint: fullscreen ? 'Esc' : undefined,
                 onClick: () => void toggleFullscreen(),
@@ -755,7 +838,7 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
                 ? [
                     {
                       key: 'shortcuts',
-                      label: 'Phím tắt',
+                      label: t('editor.view.menu.shortcuts'),
                       icon: <IconKeyboard />,
                       hint: '?',
                       onClick: () => setHelpOpen(true),
@@ -767,24 +850,35 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
         </div>
       </header>
 
+      {suggesting && (
+        <div className="sv-banner sv-banner--suggest" role="status">
+          <span>{t('suggestions.mode.banner')}</span>
+        </div>
+      )}
+
       {(warning || notTwoStaves) && !hideWarning && (
         <div className="sv-banner" role="status">
           <span>
             {warning}
             {warning && notTwoStaves ? ' ' : ''}
-            {notTwoStaves &&
-              `Bản nhạc có ${info.staves} khuông (không phải 2) nên sau này không tách được tay trái/phải.`}
+            {notTwoStaves && t('editor.view.banner.notTwoStaves', { staves: info.staves })}
           </span>
           {warning && mode === 'page' && (
             <button className="sc-btn" onClick={() => setMode('scroll')}>
-              Chuyển sang cuộn ngang
+              {t('editor.view.banner.switchScroll')}
             </button>
           )}
-          <button className="sv-banner__close" onClick={() => setHideWarning(true)} aria-label="Ẩn cảnh báo">
+          <button
+            className="sv-banner__close"
+            onClick={() => setHideWarning(true)}
+            aria-label={t('editor.view.banner.hide')}
+          >
             ×
           </button>
         </div>
       )}
+
+      <ShowAssignmentBanner scoreId={score.id} />
 
       <div className={`sv-body${canEdit ? ' has-tools' : ''}`}>
         {canEdit && (
@@ -835,6 +929,7 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
             revision={editor.revision}
             selected={editor.selection}
             issueMeasures={issueMeasures}
+            lockBoxes={lockBoxes}
             focusMeasure={focusMeasure}
             playing={player.activeIds}
             mutedStaves={player.mutedStaves}
@@ -938,7 +1033,7 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
                 }
               : undefined
           }
-          applyTransposeHint="Bạn có thể hoàn tác (Ctrl+Z) và cần bấm Lưu để giữ lại."
+          applyTransposeHint={t('editor.view.transposeHint')}
         />
       )}
       {contextMenu && (
@@ -972,12 +1067,13 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
         />
       )}
       <footer className="sv-status">
-        <span>{summary.join(' · ') || 'Bản nhạc'}</span>
+        <span>{summary.join(' · ') || t('editor.view.summary.score')}</span>
         <div className="sv-status__right">
           {canEdit && editor.inputMode && (
             <span className="sv-status__sel">
-              Nhập nốt · trường độ {DURATION_LABELS[editor.inputDuration.type]}
-              {dotsLabel(editor.inputDuration.dots)} · bấm vào khuông để thêm nốt, hoặc chọn dấu lặng rồi bấm A–G
+              {t('editor.view.status.inputMode', {
+                duration: `${durationLabel(editor.inputDuration.type)}${dotsLabel(editor.inputDuration.dots)}`,
+              })}
             </span>
           )}
           {canEdit && editor.statusText && <span className="sv-status__sel">{editor.statusText}</span>}
@@ -985,11 +1081,11 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
             <button
               className="sv-status__warn"
               onClick={goToIssue}
-              title="Bấm để cuộn tới ô nhịp sai"
-              aria-label={`Cảnh báo: ${firstIssue.message}. Bấm để cuộn tới ô nhịp`}
+              title={t('editor.view.status.issueTitle')}
+              aria-label={t('editor.view.status.issueAria', { message: firstIssue.message })}
             >
               {firstIssue.message}
-              {editor.issues.length > 1 ? ` (+${editor.issues.length - 1} ô khác)` : ''}
+              {editor.issues.length > 1 ? t('editor.view.status.issueMore', { count: editor.issues.length - 1 }) : ''}
             </button>
           )}
           {editor.notice && (
@@ -998,15 +1094,16 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
             </span>
           )}
           <span className="sv-status__hint">
-            {canEdit ? 'Phím ? xem phím tắt · ' : ''}Ctrl + cuộn hoặc chụm hai ngón để thu phóng
+            {canEdit ? t('editor.view.status.hintEdit') : ''}
+            {t('editor.view.status.hintZoom')}
           </span>
         </div>
       </footer>
 
       {helpOpen && (
-        <Modal title="Phím tắt" onClose={() => setHelpOpen(false)}>
+        <Modal title={t('editor.view.menu.shortcuts')} onClose={() => setHelpOpen(false)}>
           <dl className="sv-help-list">
-            {SHORTCUTS.map(([keys, text]) => (
+            {[...editShortcuts(), ...commentShortcuts(), ...endShortcuts()].map(([keys, text]) => (
               <div key={keys} style={{ display: 'contents' }}>
                 <dt>{keys}</dt>
                 <dd>{text}</dd>
@@ -1015,23 +1112,21 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
           </dl>
           <div className="sc-modal__actions">
             <button className="sc-btn sc-btn--primary" onClick={() => setHelpOpen(false)}>
-              Đóng
+              {t('common.close')}
             </button>
           </div>
         </Modal>
       )}
 
       {editor.draft && (
-        <Modal title="Khôi phục bản nháp chưa lưu?" onClose={() => undefined}>
-          <p className="sv-modal-text">
-            Lần sửa trước chưa được lưu. Bản nháp tự lưu lúc {new Date(editor.draft.savedAt).toLocaleString('vi-VN')}.
-          </p>
+        <Modal title={t('editor.view.draft.title')} onClose={() => undefined}>
+          <p className="sv-modal-text">{t('editor.view.draft.text', { time: formatDateTime(editor.draft.savedAt) })}</p>
           <div className="sc-modal__actions">
             <button className="sc-btn" onClick={editor.discardDraft}>
-              Bỏ nháp
+              {t('editor.view.draft.discard')}
             </button>
             <button className="sc-btn sc-btn--primary" onClick={editor.restoreDraft}>
-              Khôi phục
+              {t('editor.view.draft.restore')}
             </button>
           </div>
         </Modal>
@@ -1040,7 +1135,7 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
       {historyOpen && (
         <VersionHistoryPanel
           scoreId={score.id}
-          canEdit={canEdit}
+          canEdit={score.canEdit && !suggesting}
           dirty={editor.dirty}
           busy={editor.saving}
           onRestore={editor.restoreVersion}
@@ -1048,20 +1143,30 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
         />
       )}
 
+      {suggestXml !== null && (
+        <SuggestSubmitDialog
+          scoreId={score.id}
+          baseVersion={editor.version}
+          xml={suggestXml}
+          onClose={() => setSuggestXml(null)}
+          onSent={onSuggestionSent}
+        />
+      )}
+
       {editor.conflict && (
-        <Modal title="Bản nhạc vừa được lưu ở nơi khác" onClose={editor.dismissConflict}>
+        <Modal title={t('editor.view.conflict.title')} onClose={editor.dismissConflict}>
           <p className="sv-modal-text">
             {editor.conflict.latestVersion > 0
-              ? `Trên máy chủ đã có phiên bản ${editor.conflict.latestVersion}, mới hơn bản bạn đang sửa (phiên bản ${editor.version}). `
-              : 'Trên máy chủ đã có phiên bản mới hơn bản bạn đang sửa. '}
-            Hãy chọn cách xử lý thay đổi chưa lưu của bạn.
+              ? t('editor.view.conflict.newer', { latest: editor.conflict.latestVersion, mine: editor.version })
+              : t('editor.view.conflict.newerUnknown')}
+            {t('editor.view.conflict.choose')}
           </p>
           <div className="sc-modal__actions">
             <button className="sc-btn" onClick={editor.downloadMine}>
-              Tải bản của tôi về máy
+              {t('editor.view.conflict.downloadMine')}
             </button>
             <button className="sc-btn" onClick={editor.reloadLatest}>
-              Tải bản mới nhất (bỏ thay đổi của tôi)
+              {t('editor.view.conflict.reloadLatest')}
             </button>
             {score.canDelete && (
               <button
@@ -1069,7 +1174,7 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
                 disabled={editor.saving}
                 onClick={() => void editor.overwrite()}
               >
-                Ghi đè bản của tôi
+                {t('editor.view.conflict.overwrite')}
               </button>
             )}
           </div>

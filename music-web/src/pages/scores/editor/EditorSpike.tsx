@@ -34,7 +34,7 @@ export default function EditorSpike() {
         if (cancelled) return;
         setReport(bindNoteIds(osmd, doc, host));
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : 'Lỗi không xác định');
+        if (!cancelled) setError(e instanceof Error ? e.message : 'Unknown error');
       }
     })();
     return () => {
@@ -59,11 +59,11 @@ export default function EditorSpike() {
 
   return (
     <div className="sc-page" style={{ padding: '1rem' }}>
-      <h1 style={{ fontSize: '1.1rem' }}>Thử ghép id nốt OSMD ↔ MusicXML</h1>
+      <h1 style={{ fontSize: '1.1rem' }}>OSMD ↔ MusicXML note id matching test</h1>
       {error && <p role="alert">{error}</p>}
       {report && (
         <p>
-          Gắn được {report.bound}/{report.domNotes} nốt; {report.problems.length} nhóm không khớp.
+          Bound {report.bound}/{report.domNotes} notes; {report.problems.length} groups do not match.
         </p>
       )}
       {clicked.length > 0 && (
@@ -75,7 +75,7 @@ export default function EditorSpike() {
       )}
       {report && report.problems.length > 0 && (
         <details>
-          <summary>Chi tiết nhóm không khớp</summary>
+          <summary>Details of the groups that do not match</summary>
           <pre style={{ whiteSpace: 'pre-wrap' }}>{report.problems.slice(0, 50).join('\n')}</pre>
         </details>
       )}

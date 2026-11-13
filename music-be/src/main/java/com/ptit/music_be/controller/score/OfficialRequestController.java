@@ -54,7 +54,8 @@ public class OfficialRequestController {
 
     @PostMapping("/official-requests/{requestId}/accept")
     @Operation(
-            summary = "Owner agrees: a copy goes to the curated library credited to the owner, the original is untouched",
+            summary =
+                    "Owner agrees: a copy goes to the curated library credited to the owner, the original is untouched",
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<OfficialRequestResponse> accept(@PathVariable String requestId) {
         return ApiResponse.<OfficialRequestResponse>builder()
@@ -73,9 +74,7 @@ public class OfficialRequestController {
     }
 
     @DeleteMapping("/official-requests/{requestId}")
-    @Operation(
-            summary = "ADMIN: withdraw a pending request",
-            security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "ADMIN: withdraw a pending request", security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<OfficialRequestResponse> cancel(@PathVariable String requestId) {
         return ApiResponse.<OfficialRequestResponse>builder()
                 .result(officialRequestService.cancel(requestId))

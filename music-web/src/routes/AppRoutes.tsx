@@ -3,12 +3,15 @@ import Login from '../pages/Login';
 import UserProfile from '../pages/Profile';
 import ScoreLibrary from '../pages/scores/library/ScoreLibrary';
 import ScoreDetail from '../pages/scores/library/ScoreDetail';
+import SuggestionReview from '../pages/scores/suggestions/SuggestionReview';
 import ScoreTrash from '../pages/scores/library/ScoreTrash';
+import ScoreCreate from '../pages/scores/create/ScoreCreate';
 import ScoreUpload from '../pages/scores/upload/ScoreUpload';
 import ScoreProcessing from '../pages/scores/upload/ScoreProcessing';
 import ScoreReview from '../pages/scores/upload/ScoreReview';
 import ScoreViewer from '../pages/scores/editor/ScoreViewer';
 import ScorePlayer from '../pages/scores/player/ScorePlayer';
+import ShowPerform from '../pages/scores/perform/ShowPerform';
 import EditorSpike from '../pages/scores/editor/EditorSpike';
 import ScoreImport from '../pages/scores/upload/ScoreImport';
 import SharedScores from '../pages/scores/library/SharedScores';
@@ -75,6 +78,7 @@ const router = createBrowserRouter(
         <Route index element={<WorkspaceHome />} />
         <Route path="/profile" element={<UserProfile />} />
         <Route path="/scores" element={<ScoreLibrary />} />
+        <Route path="/scores/new" element={<ScoreCreate />} />
         <Route path="/scores/upload" element={<ScoreUpload />} />
         <Route path="/scores/import" element={<ScoreImport />} />
         <Route path="/explore" element={<ExploreScores />} />
@@ -88,6 +92,7 @@ const router = createBrowserRouter(
         <Route path="/scores/shared" element={<SharedScores />} />
         <Route path="/scores/trash" element={<ScoreTrash />} />
         <Route path="/scores/:id" element={<ScoreDetail />} />
+        <Route path="/scores/:id/suggestions/:suggestionId" element={<SuggestionReview />} />
         <Route path="/scores/:id/processing" element={<ScoreProcessing />} />
         <Route path="/scores/:id/review" element={<ScoreReview />} />
         <Route path="/playlists" element={<Playlists />} />
@@ -115,6 +120,14 @@ const router = createBrowserRouter(
         element={
           <ProtectedRoute allowedRole="USER">
             <ScorePlayer />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/teams/:teamId/shows/:showId/perform"
+        element={
+          <ProtectedRoute allowedRole="USER">
+            <ShowPerform />
           </ProtectedRoute>
         }
       />

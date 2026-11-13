@@ -19,9 +19,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import com.ptit.music_be.dto.enums.auth.AdminPermission;
 import com.ptit.music_be.dto.enums.ai.AiTaskStatus;
 import com.ptit.music_be.dto.enums.ai.ProcessingStatus;
+import com.ptit.music_be.dto.enums.auth.AdminPermission;
 import com.ptit.music_be.dto.enums.notification.NotificationType;
 import com.ptit.music_be.dto.enums.score.DifficultyLevel;
 import com.ptit.music_be.dto.enums.score.FileType;
@@ -429,42 +429,35 @@ public class ScoreServiceImpl implements ScoreService {
         String key = sort == null ? "" : sort.trim().toUpperCase(Locale.ROOT);
         Page<Score> result =
                 switch (key) {
-                    case "", "NEWEST" ->
-                        scoreRepository.searchPublic(
-                                safeKeyword,
-                                safeDifficulty,
-                                safeTagId,
-                                safeComposerId,
-                                staffMin,
-                                staffMax,
-                                safeKey,
-                                PageRequest.of(
-                                        safePage,
-                                        safeSize,
-                                        Sort.by(Sort.Order.desc("createdAt"), Sort.Order.asc("id"))));
-                    case "VIEWS" ->
-                        scoreRepository.searchPublic(
-                                safeKeyword,
-                                safeDifficulty,
-                                safeTagId,
-                                safeComposerId,
-                                staffMin,
-                                staffMax,
-                                safeKey,
-                                PageRequest.of(
-                                        safePage,
-                                        safeSize,
-                                        Sort.by(Sort.Order.desc("viewCount"), Sort.Order.asc("id"))));
-                    case "RATING" ->
-                        scoreRepository.searchPublicTopRated(
-                                safeKeyword,
-                                safeDifficulty,
-                                safeTagId,
-                                safeComposerId,
-                                staffMin,
-                                staffMax,
-                                safeKey,
-                                PageRequest.of(safePage, safeSize));
+                    case "", "NEWEST" -> scoreRepository.searchPublic(
+                            safeKeyword,
+                            safeDifficulty,
+                            safeTagId,
+                            safeComposerId,
+                            staffMin,
+                            staffMax,
+                            safeKey,
+                            PageRequest.of(
+                                    safePage, safeSize, Sort.by(Sort.Order.desc("createdAt"), Sort.Order.asc("id"))));
+                    case "VIEWS" -> scoreRepository.searchPublic(
+                            safeKeyword,
+                            safeDifficulty,
+                            safeTagId,
+                            safeComposerId,
+                            staffMin,
+                            staffMax,
+                            safeKey,
+                            PageRequest.of(
+                                    safePage, safeSize, Sort.by(Sort.Order.desc("viewCount"), Sort.Order.asc("id"))));
+                    case "RATING" -> scoreRepository.searchPublicTopRated(
+                            safeKeyword,
+                            safeDifficulty,
+                            safeTagId,
+                            safeComposerId,
+                            staffMin,
+                            staffMax,
+                            safeKey,
+                            PageRequest.of(safePage, safeSize));
                     default -> throw new AppException(ErrorCode.INVALID_REQUEST);
                 };
         return toExplorePage(result);
@@ -595,7 +588,6 @@ public class ScoreServiceImpl implements ScoreService {
         return toDetail(saved);
     }
 
-
     // ------------------------------------------------------------------ thể loại (tags)
 
     @Override
@@ -674,7 +666,8 @@ public class ScoreServiceImpl implements ScoreService {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
         // Bản trong kho bản nhạc mẫu chỉ ADMIN được xóa (chủ sở hữu muốn xóa thì nhờ admin gỡ khỏi kho trước)
-        if (Boolean.TRUE.equals(score.getIsOfficial()) && !SecurityUtils.hasPermission(AdminPermission.OFFICIAL_LIBRARY)) {
+        if (Boolean.TRUE.equals(score.getIsOfficial())
+                && !SecurityUtils.hasPermission(AdminPermission.OFFICIAL_LIBRARY)) {
             throw new AppException(ErrorCode.SCORE_OFFICIAL_LOCKED);
         }
         // Đang có tác vụ chạy thì không cho xóa (worker/AI service còn đang ghi file vào thư mục của score)
@@ -768,7 +761,10 @@ public class ScoreServiceImpl implements ScoreService {
         boolean isOwner = decision.level() == ScoreAccess.OWNER;
         Team activeTeam = score.getTeamId() == null
                 ? null
-                : teamRepository.findById(score.getTeamId()).filter(t -> !t.isDeleted()).orElse(null);
+                : teamRepository
+                        .findById(score.getTeamId())
+                        .filter(t -> !t.isDeleted())
+                        .orElse(null);
         // Chỉ hiện các file hiện hành (is_current null coi như hiện hành, vì dữ liệu cũ chưa có cột này).
         // Người xem dưới quyền sửa không thấy file gốc (PDF/ảnh/MusicXML/MIDI gốc, kern, ảnh trang)
         List<ScoreFile> currentFiles =
@@ -890,7 +886,7 @@ public class ScoreServiceImpl implements ScoreService {
             case "created" -> Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"));
             case "oldest" -> Sort.by(Sort.Order.asc("createdAt"), Sort.Order.asc("id"));
             case "title" -> Sort.by(Sort.Order.asc("title").ignoreCase(), Sort.Order.asc("id"));
-            // Mặc định (và mọi giá trị lạ): cập nhật gần nhất trước
+                // Mặc định (và mọi giá trị lạ): cập nhật gần nhất trước
             default -> Sort.by(Sort.Order.desc("updatedAt"), Sort.Order.desc("id"));
         };
     }

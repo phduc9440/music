@@ -115,8 +115,7 @@ public class AuthController {
     @Operation(
             summary = "Step 2 of forgot password: check the OTP and get a one-time reset token (valid 10 minutes)",
             description = "Errors: 1017 wrong/expired OTP (5 wrong tries cancel the code)")
-    public ApiResponse<VerifyResetOtpResponse> verifyResetOtp(
-            @RequestBody @Valid VerifyResetOtpRequest request) {
+    public ApiResponse<VerifyResetOtpResponse> verifyResetOtp(@RequestBody @Valid VerifyResetOtpRequest request) {
         return ApiResponse.<VerifyResetOtpResponse>builder()
                 .result(authService.verifyResetOtp(request))
                 .build();

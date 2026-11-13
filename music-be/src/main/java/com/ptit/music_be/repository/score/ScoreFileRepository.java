@@ -33,6 +33,17 @@ public interface ScoreFileRepository extends JpaRepository<ScoreFile, String> {
     boolean existsCurrentFileFromOtherTask(
             @Param("scoreId") String scoreId, @Param("fileType") FileType fileType, @Param("taskId") String taskId);
 
+    /**
+     * Tổng dung lượng (byte) các file nội dung của mọi bản nhạc một người sở hữu, kể cả bản trong thùng rác (người dùng
+     * phải xóa hẳn mới lấy lại chỗ). Truy vấn thuần SQL nên không bị {@code @SQLRestriction} của {@code Score} loại bỏ.
+     * Chỉ tính các loại do người dùng tạo ra; MP3/WAV/PDF/SVG là bộ nhớ đệm có job dọn nên không tính.
+     */
+    @Query(
+            value = "SELECT COALESCE(SUM(f.size_bytes), 0) FROM score_files f JOIN scores s ON s.id = f.score_id"
+                    + " WHERE s.member_id = :memberId AND f.file_type IN (:types)",
+            nativeQuery = true)
+    long sumBytesOwnedBy(@Param("memberId") String memberId, @Param("types") Collection<String> types);
+
     /** File của bản nhạc thuộc các loại cho trước (danh sách file xuất). */
     List<ScoreFile> findByScoreIdAndFileTypeIn(String scoreId, Collection<FileType> fileTypes);
 

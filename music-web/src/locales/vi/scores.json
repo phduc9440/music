@@ -473,6 +473,17 @@
     "contextView": "Xem góp ý ở ô {measure} ({count})",
     "contextNoAccess": "Cần quyền nhận xét để góp ý",
     "composerTitle": "Góp ý ô {measures}",
-    "sendHint": "Ctrl/Cmd + Enter để gửi"
+    "sendHint": "Ctrl/Cmd + Enter để gửi",
+    "helpSelectKeys": "Bôi đen nốt → nút \"Góp ý\" cạnh vùng chọn",
+    "helpSelectText": "Góp ý ngay tại chỗ (ô nhập hiện cạnh các nốt đã chọn)",
+    "helpContextKeys": "Chuột phải vào nốt",
+    "helpContextText": "Menu: Góp ý vào đoạn đã chọn, Xem góp ý ở ô này",
+    "helpPanelText": "Góp ý vào nốt / ô đang chọn (mở bảng Góp ý bên phải)",
+    "bubbleTitle": "{count} góp ý ở ô {measure}"
+  },
+  "assignment": {
+    "text": "Bài trong buổi diễn {show} · {status}",
+    "due": "hạn {date}",
+    "open": "Mở bảng buổi diễn"
   }
 }

@@ -20,6 +20,7 @@ import type { NavKind } from '../structure/repeats';
 import { setSectionLabel } from '../structure/sections';
 import type { NoteInfo, ScoreDocument } from '../core/ScoreDocument';
 import { notationsOf, removeNotation } from '../notes/ties';
+import { t } from '../../../i18n/core';
 
 export type Articulation =
   | 'staccato'
@@ -104,22 +105,8 @@ const NOTATION_DEF: Record<
   turn: { group: 'ornaments', tag: 'turn' },
 };
 
-export const ARTICULATION_LABELS: Record<NotationMark | 'arpeggio', string> = {
-  staccato: 'Staccato',
-  accent: 'Accent',
-  tenuto: 'Tenuto',
-  fermata: 'Fermata',
-  fermataBelow: 'Fermata ngược',
-  marcato: 'Marcato',
-  staccatissimo: 'Staccatissimo',
-  breath: 'Lấy hơi',
-  caesura: 'Ngắt nghỉ',
-  trill: 'Láy rền',
-  mordent: 'Láy ngắn',
-  invMordent: 'Láy ngắn ngược',
-  turn: 'Láy vòng',
-  arpeggio: 'Rải hợp âm',
-};
+/** Tên ký hiệu theo ngôn ngữ hiện tại. */
+export const articulationLabel = (kind: NotationMark | 'arpeggio'): string => t(`editor.mark.${kind}`);
 
 const isNotationMark = (op: string): op is NotationMark => Object.prototype.hasOwnProperty.call(NOTATION_DEF, op);
 
@@ -213,7 +200,7 @@ export function toggleArticulation(doc: ScoreDocument, ids: readonly string[], k
   heads.forEach((h) => touch(touched, h));
   const command = commitEdit(
     doc,
-    `${all ? 'Bỏ' : 'Thêm'} ${ARTICULATION_LABELS[kind]}`,
+    t(all ? 'editor.cmd.mark.remove' : 'editor.cmd.mark.add', { name: articulationLabel(kind) }),
     touched,
     heads.map((h) => h.id),
     () => {
@@ -230,11 +217,11 @@ export function toggleArticulation(doc: ScoreDocument, ids: readonly string[], k
   return { ok: true, command };
 }
 
-/** Dấu hóa của láy rền: giá trị trong <accidental-mark> và nhãn tiếng Việt. */
+/** Dấu hóa của láy rền: giá trị trong <accidental-mark> và tên để dịch (`editor.trillAcc.<name>`). */
 const TRILL_ACCIDENTAL = {
-  trillSharp: { value: 'sharp', label: 'thăng' },
-  trillFlat: { value: 'flat', label: 'giáng' },
-  trillNatural: { value: 'natural', label: 'bình' },
+  trillSharp: { value: 'sharp', name: 'sharp' },
+  trillFlat: { value: 'flat', name: 'flat' },
+  trillNatural: { value: 'natural', name: 'natural' },
 } as const;
 type TrillAccidental = keyof typeof TRILL_ACCIDENTAL;
 
@@ -252,13 +239,13 @@ const trillAccidentalOf = (note: Element): string | null => {
 export function setTrillAccidental(doc: ScoreDocument, ids: readonly string[], kind: TrillAccidental): EditResult {
   const heads = selectedHeads(doc, ids);
   if (heads.length === 0) return { ok: false, reason: 'empty' };
-  const { value, label } = TRILL_ACCIDENTAL[kind];
+  const { value, name } = TRILL_ACCIDENTAL[kind];
   const all = heads.every((h) => hasMark(h.element, 'trill') && trillAccidentalOf(h.element) === value);
   const touched: Touched = new Map();
   heads.forEach((h) => touch(touched, h));
   const command = commitEdit(
     doc,
-    `${all ? 'Bỏ' : 'Đặt'} dấu ${label} cho láy rền`,
+    t(all ? 'editor.cmd.trillAcc.remove' : 'editor.cmd.trillAcc.set', { accidental: t(`editor.trillAcc.${name}`) }),
     touched,
     heads.map((h) => h.id),
     () => {
@@ -304,10 +291,9 @@ export function toggleArpeggio(
   const all = chords.every((c) => c.members.every((m) => hasSame(m.element)));
   const touched: Touched = new Map();
   chords.forEach((c) => touch(touched, c.head));
-  const name = ARTICULATION_LABELS.arpeggio.toLowerCase() + (direction === 'down' ? ' xuống' : '');
   const command = commitEdit(
     doc,
-    `${all ? 'Bỏ' : 'Thêm'} ${name}`,
+    t(`editor.cmd.arpeggio.${direction === 'down' ? 'down' : 'up'}.${all ? 'remove' : 'add'}`),
     touched,
     chords.map((c) => c.head.id),
     () => {
@@ -327,8 +313,8 @@ export function toggleArpeggio(
 
 /** Hai kiểu đường nối giữa hai nốt: glissando (đường lượn, chữ "gliss.") và trượt/slide (đường thẳng). */
 const LINE_DEF = {
-  glissando: { tag: 'glissando', label: 'glissando', lineType: 'wavy' },
-  slide: { tag: 'slide', label: 'đường trượt', lineType: 'solid' },
+  glissando: { tag: 'glissando', lineType: 'wavy' },
+  slide: { tag: 'slide', lineType: 'solid' },
 } as const;
 type LineKind = keyof typeof LINE_DEF;
 
@@ -398,7 +384,9 @@ export function toggleLine(doc: ScoreDocument, ids: readonly string[], kind: Lin
   const touched: Touched = new Map();
   touch(touched, start);
   if (end) touch(touched, end);
-  const label = removeOnly ? `Bỏ ${def.label}` : current ? `Đổi sang ${def.label}` : `Thêm ${def.label}`;
+  const label = t(removeOnly ? 'editor.cmd.line.remove' : current ? 'editor.cmd.line.change' : 'editor.cmd.line.add', {
+    name: t(`editor.line.${kind}`),
+  });
   const command = commitEdit(doc, label, touched, end ? [start.id, end.id] : [start.id], () => {
     if (current) {
       removeNotation(start.element, current.tag, (el) => el.getAttribute('type') === 'start');
@@ -437,7 +425,7 @@ export function toggleGraceSlash(doc: ScoreDocument, ids: readonly string[]): Ed
   graces.forEach((g) => touch(touched, g));
   const command = commitEdit(
     doc,
-    all ? 'Bỏ gạch chéo nốt hoa mỹ' : 'Thêm gạch chéo nốt hoa mỹ',
+    t(all ? 'editor.cmd.grace.slashOff' : 'editor.cmd.grace.slashOn'),
     touched,
     graces.map((g) => g.id),
     () => {
@@ -503,16 +491,22 @@ export function setDynamic(doc: ScoreDocument, ids: readonly string[], dynamic: 
   const same = existing.some((d) => d.getElementsByTagName(dynamic).length > 0);
   const touched: Touched = new Map();
   touch(touched, target);
-  const command = commitEdit(doc, same ? `Bỏ ${dynamic}` : `Đặt ${dynamic}`, touched, [target.id], () => {
-    existing.forEach((d) => d.remove());
-    if (same) return;
-    const owner = target.element.ownerDocument;
-    const dynamics = owner.createElement('dynamics');
-    dynamics.appendChild(owner.createElement(dynamic));
-    const velocity = DYNAMIC_VELOCITY[dynamic];
-    const sound = velocity === undefined ? undefined : { dynamics: String(velocity) };
-    target.element.before(makeDirection(owner, dynamics, target.staff, sound));
-  });
+  const command = commitEdit(
+    doc,
+    same ? t('editor.cmd.mark.remove', { name: dynamic }) : t('editor.cmd.dynamic.set', { name: dynamic }),
+    touched,
+    [target.id],
+    () => {
+      existing.forEach((d) => d.remove());
+      if (same) return;
+      const owner = target.element.ownerDocument;
+      const dynamics = owner.createElement('dynamics');
+      dynamics.appendChild(owner.createElement(dynamic));
+      const velocity = DYNAMIC_VELOCITY[dynamic];
+      const sound = velocity === undefined ? undefined : { dynamics: String(velocity) };
+      target.element.before(makeDirection(owner, dynamics, target.staff, sound));
+    },
+  );
   return { ok: true, command };
 }
 
@@ -595,7 +589,7 @@ function toggleSpan(doc: ScoreDocument, ids: readonly string[], def: SpanDef): E
 
   const command = commitEdit(
     doc,
-    `${startDirs.length > 0 ? 'Bỏ' : 'Thêm'} ${def.label}`,
+    t(startDirs.length > 0 ? 'editor.cmd.mark.remove' : 'editor.cmd.mark.add', { name: def.label }),
     touched,
     [first.id, last.id],
     () => {
@@ -670,7 +664,7 @@ export function addGrace(doc: ScoreDocument, ids: readonly string[], slash: bool
   const created: Element[] = [];
   const command = commitEdit(
     doc,
-    slash ? 'Thêm nốt hoa mỹ (có gạch)' : 'Thêm nốt hoa mỹ',
+    t(slash ? 'editor.cmd.grace.addSlash' : 'editor.cmd.grace.add'),
     touched,
     planned.map((p) => p.head.id),
     () => {

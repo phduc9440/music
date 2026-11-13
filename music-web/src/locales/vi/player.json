@@ -1,0 +1,181 @@
+{
+  "perform": {
+    "loading": "Đang tải {done}/{total} bài",
+    "ready": "Đã sẵn sàng {count} bài",
+    "start": "Bắt đầu",
+    "hint": "Lật trang bằng PageDown/PageUp, phím mũi tên, Space hoặc chạm nửa phải/trái màn hình. Phím L mở danh sách bài, Esc để thoát.",
+    "empty": "Buổi diễn chưa có bài",
+    "skipped": "{count} bài không mở được sẽ bị bỏ qua",
+    "noneOpenable": "Không có bài nào mở được",
+    "wrongTeam": "Buổi diễn này không thuộc nhóm trong đường dẫn",
+    "loadFailed": "Không tải được buổi diễn",
+    "backToTeams": "Về danh sách nhóm",
+    "backToShow": "Về trang buổi diễn",
+    "setList": "Danh sách bài",
+    "unavailableShort": "Không mở được",
+    "settings": "Cài đặt",
+    "transpose": "Dịch giọng",
+    "zoom": "Cỡ chữ",
+    "invert": "Đảo màu bản nhạc",
+    "exit": "Thoát",
+    "page": "Trang {page}/{total}",
+    "songOf": "Bài {n}/{total}",
+    "nextUp": "Bài tiếp: {title}",
+    "tapToContinue": "Chạm để vào ngay",
+    "end": "Hết buổi diễn",
+    "unavailable": "Không mở được bài này"
+  },
+  "bar": {
+    "region": "Trình phát",
+    "close": "Đóng trình phát",
+    "preparing": "Đang chuẩn bị trình phát…",
+    "unsupported": "Trình duyệt này không hỗ trợ phát nhạc (Web Audio).",
+    "empty": "Bản nhạc trống, chưa có nốt để phát.",
+    "loadingPiano": "Đang tải âm piano… {percent}%",
+    "fallbackSound": "Đang dùng âm thanh thay thế",
+    "reload": "Tải lại",
+    "prev": "Ô trước",
+    "prevTitle": "Ô trước (←)",
+    "next": "Ô sau",
+    "nextTitle": "Ô sau (→)",
+    "pause": "Tạm dừng",
+    "play": "Phát",
+    "pauseTitle": "Tạm dừng (Space)",
+    "playTitle": "Phát (Space)",
+    "stop": "Dừng",
+    "options": "Tùy chọn phát",
+    "optionsCustom": "Tùy chọn phát (có cài đặt khác mặc định)",
+    "measureOf": "Ô {current} / {total}"
+  },
+  "tabs": {
+    "tempo": "Tốc độ",
+    "loop": "Lặp",
+    "transpose": "Giọng",
+    "chords": "Hợp âm",
+    "group": "Nhóm tùy chọn"
+  },
+  "chords": {
+    "label": {
+      "on": "Đệm hợp âm: đang bật",
+      "off": "Đệm hợp âm: đang tắt"
+    },
+    "title": "Đệm hợp âm",
+    "trigger": "Hợp âm",
+    "carry": "Đánh lại ở ô không ghi hợp âm",
+    "carryOn": "Ô nào không ghi hợp âm sẽ đánh lại hợp âm đang hiệu lực ở đầu ô.",
+    "carryOff": "Ô nào không ghi hợp âm sẽ im phần đệm; hợp âm chỉ đánh ở ô có ghi.",
+    "note": "Chỉnh to nhỏ của phần đệm trong Mixer (hàng \"Hợp âm\")."
+  },
+  "loop": {
+    "summary": "Lặp đoạn {summary}",
+    "title": "Lặp đoạn A-B",
+    "marks": "Đặt điểm A và B tại ô đang phát",
+    "setA": "Đặt A (ô {n})",
+    "setB": "Đặt B (ô {n})",
+    "from": "Từ ô",
+    "to": "Đến ô",
+    "needBoth": "Đặt cả A và B để bật lặp",
+    "needBothNote": "Đặt cả A và B để bật lặp.",
+    "on": "Đang lặp",
+    "enable": "Bật lặp",
+    "options": "Tùy chọn khi lặp",
+    "countInTitle": "Đếm một ô bằng tiếng gõ trước mỗi vòng",
+    "countIn": "Đếm nhịp vào",
+    "speedUpTitle": "Mỗi vòng nhanh thêm 5% cho tới 100%, bắt đầu từ tốc độ đang chọn",
+    "speedUp": "Tăng tốc dần",
+    "unreachable": "Đoạn này không được phát theo thứ tự lặp lại của bản nhạc nên chưa lặp được.",
+    "dragHint": "Mẹo: giữ Shift rồi kéo qua các ô trên bản nhạc (hoặc Shift + bấm hai ô) để chọn đoạn.",
+    "clear": "Xóa A-B",
+    "range": "Ô {a}–{b}"
+  },
+  "mixer": {
+    "label": "Mixer các khuông",
+    "single": "Bản nhạc chỉ có một khuông",
+    "hint": "Tắt tiếng, chỉ nghe một khuông, chỉnh âm lượng",
+    "staff": "Khuông",
+    "reset": "Đặt lại",
+    "muteLabel": "Tắt tiếng {name}",
+    "muteTitle": "Tắt tiếng (M)",
+    "soloLabel": "Chỉ nghe {name}",
+    "soloTitle": "Chỉ nghe khuông này (S)",
+    "volume": "Âm lượng {name}",
+    "allSilent": "Đang tắt tiếng toàn bộ",
+    "soloActive": "Đang chỉ nghe các khuông Solo"
+  },
+  "tempo": {
+    "label": "Tốc độ phát: {percent}% ({bpm} BPM)",
+    "title": "Tốc độ phát",
+    "head": "Tốc độ",
+    "slider": "Tốc độ phát (%)",
+    "presets": "Mức tốc độ nhanh"
+  },
+  "transport": {
+    "position": "Vị trí phát",
+    "valueText": "Ô {n} trên {count}"
+  },
+  "transpose": {
+    "label": "Chuyển giọng",
+    "labelChanged": "Chuyển giọng: đang nghe {value} nửa cung",
+    "title": "Chuyển giọng khi nghe",
+    "down": "Hạ nửa cung",
+    "up": "Nâng nửa cung",
+    "select": "Số nửa cung chuyển giọng",
+    "original": "0 (giọng gốc)",
+    "option": "{value} nửa cung",
+    "outOfRange": "{count} nốt vượt âm vực đàn piano sẽ bị bỏ khi phát.",
+    "listening": "Đang nghe {value} nửa cung. Bản nhạc ở đây giữ nguyên để bạn sửa.",
+    "apply": "Áp dụng vào bản nhạc",
+    "confirm": "Xác nhận áp dụng chuyển giọng",
+    "rewrite": "Bản nhạc sẽ được viết lại ở giọng mới ({key}). {hint}",
+    "applying": "Đang áp dụng…",
+    "applyShort": "Áp dụng",
+    "reset": "Về giọng gốc"
+  },
+  "track": {
+    "rightHand": "Tay phải",
+    "leftHand": "Tay trái",
+    "staff": "Khuông {n}",
+    "chords": "Hợp âm"
+  },
+  "scorePlayer": {
+    "loading": "Đang tải bản nhạc...",
+    "notFound": {
+      "title": "Không tìm thấy bản nhạc",
+      "text": "Bản nhạc không tồn tại hoặc bạn không có quyền xem.",
+      "action": "Về thư viện"
+    },
+    "notReady": {
+      "title": "Bản nhạc chưa số hóa xong",
+      "text": "Bản nhạc chưa có MusicXML để phát. Hãy đợi nhận diện xong hoặc xem trang tiến độ.",
+      "action": "Về trang tiến độ"
+    },
+    "parseError": {
+      "title": "Không đọc được bản nhạc",
+      "text": "File MusicXML bị lỗi nên không phát được."
+    },
+    "error": {
+      "title": "Không tải được bản nhạc",
+      "text": "Vui lòng thử lại sau."
+    },
+    "toDetail": "Về trang chi tiết",
+    "reload": "Tải lại",
+    "drawFailed": "Không vẽ được bản nhạc",
+    "unknownComposer": "Chưa rõ tác giả",
+    "viewMode": "Chế độ xem",
+    "pages": "Trang",
+    "scroll": "Cuộn ngang",
+    "colors": "Màu bản nhạc",
+    "invert": "Đảo màu bản nhạc",
+    "invertTitle": "Đảo màu bản nhạc (nền tối, nốt sáng)",
+    "openEditor": "Mở trình chỉnh sửa",
+    "parseForTranspose": "Không đọc được bản nhạc để chuyển giọng",
+    "transposeSaved": "Đã chuyển giọng và lưu (phiên bản {version})",
+    "applyHint": "Sẽ lưu ngay thành một phiên bản mới của bản nhạc.",
+    "conflict": {
+      "title": "Bản nhạc vừa được lưu ở nơi khác",
+      "known": "Trên máy chủ đã có phiên bản {latest}, mới hơn bản bạn đang nghe (phiên bản {version}). Hãy tải bản mới nhất rồi chuyển giọng lại.",
+      "unknown": "Trên máy chủ đã có phiên bản mới hơn bản bạn đang nghe. Hãy tải bản mới nhất rồi chuyển giọng lại.",
+      "load": "Tải bản mới nhất"
+    }
+  }
+}

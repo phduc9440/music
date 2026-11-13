@@ -8,3 +8,6 @@ export * from './composer';
 export * from './billing';
 export * from './team';
 export * from './comment';
+export * from './scoreCreate';
+export * from './suggestion';
+export * from './live';

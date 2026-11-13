@@ -99,9 +99,11 @@ class AdminPaymentServiceImplTest {
 
         assertEquals(
                 ErrorCode.PAYMENT_RANGE_INVALID,
-                assertThrows(AppException.class, () -> service.revenue(today.minusDays(400), today)).getErrorCode());
+                assertThrows(AppException.class, () -> service.revenue(today.minusDays(400), today))
+                        .getErrorCode());
         assertEquals(
                 ErrorCode.PAYMENT_RANGE_INVALID,
-                assertThrows(AppException.class, () -> service.revenue(today, today.minusDays(1))).getErrorCode());
+                assertThrows(AppException.class, () -> service.revenue(today, today.minusDays(1)))
+                        .getErrorCode());
     }
 }

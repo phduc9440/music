@@ -37,6 +37,7 @@ public class MemberResponse {
     Set<String> roles;
     /** Quyền quản trị suy ra từ vai trò (web ẩn / hiện menu và nút); rỗng với tài khoản thường. */
     Set<AdminPermission> permissions;
+
     LocalDateTime createdAt;
     LocalDateTime lastLoginAt;
     /** Gói đang dùng; chỉ có ở danh sách thành viên khu quản trị, null ở chỗ khác. */

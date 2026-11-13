@@ -20,7 +20,6 @@ import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -41,8 +40,8 @@ import com.ptit.music_be.repository.billing.PaymentOrderRepository;
 import com.ptit.music_be.repository.billing.PlanRepository;
 import com.ptit.music_be.service.billing.SubscriptionService;
 import com.ptit.music_be.service.notification.NotificationService;
-import com.ptit.music_be.service.payment.PaymentProvider.PaymentCallback;
 import com.ptit.music_be.service.payment.PaymentProvider;
+import com.ptit.music_be.service.payment.PaymentProvider.PaymentCallback;
 import com.ptit.music_be.service.payment.PaymentService.IpnResult;
 
 class PaymentServiceImplTest {
@@ -56,7 +55,13 @@ class PaymentServiceImplTest {
     private PaymentServiceImpl service;
 
     private final Member buyer = Member.builder().id("m").email("a@x.com").build();
-    private final Plan pro = Plan.builder().id("p").code("PRO").name("Pro").priceMonth(99000).priceYear(990000).build();
+    private final Plan pro = Plan.builder()
+            .id("p")
+            .code("PRO")
+            .name("Pro")
+            .priceMonth(99000)
+            .priceYear(990000)
+            .build();
     private PaymentOrder order;
 
     @BeforeEach
@@ -91,7 +96,8 @@ class PaymentServiceImplTest {
                 .notify(eq(buyer), any(), eq(NotificationType.PLAN_ACTIVATED), any(), any(), any());
         assertEquals(PaymentStatus.PAID, order.getStatus());
         assertEquals("TXN1", order.getProviderTxnId());
-        verify(subscriptions).activate(eq(buyer), eq(pro), eq(BillingPeriod.MONTH.duration()), eq(SubscriptionSource.PAYMENT));
+        verify(subscriptions)
+                .activate(eq(buyer), eq(pro), eq(BillingPeriod.MONTH.duration()), eq(SubscriptionSource.PAYMENT));
 
         // Cổng gọi lại lần hai: không kích hoạt thêm
         assertEquals(IpnResult.ALREADY_CONFIRMED, service.handleIpn(PaymentProviderType.VNPAY, Map.of()));
@@ -177,7 +183,8 @@ class PaymentServiceImplTest {
     @Test
     void expirePendingMarksOverdueOrders() {
         order.setExpiresAt(LocalDateTime.now().minusMinutes(1));
-        when(orders.findByStatusAndExpiresAtBefore(eq(PaymentStatus.PENDING), any())).thenReturn(List.of(order));
+        when(orders.findByStatusAndExpiresAtBefore(eq(PaymentStatus.PENDING), any()))
+                .thenReturn(List.of(order));
 
         assertEquals(1, service.expirePending());
         assertEquals(PaymentStatus.EXPIRED, order.getStatus());
@@ -186,7 +193,8 @@ class PaymentServiceImplTest {
     @Test
     void expirePendingActivatesPlanWhenGatewayReportsPayment() {
         order.setExpiresAt(LocalDateTime.now().minusMinutes(1));
-        when(orders.findByStatusAndExpiresAtBefore(eq(PaymentStatus.PENDING), any())).thenReturn(List.of(order));
+        when(orders.findByStatusAndExpiresAtBefore(eq(PaymentStatus.PENDING), any()))
+                .thenReturn(List.of(order));
         when(provider.queryTransaction(order))
                 .thenReturn(Optional.of(new PaymentCallback(true, "MU1", 99000, "TXN9", true)));
 
@@ -199,7 +207,8 @@ class PaymentServiceImplTest {
     @Test
     void expirePendingIgnoresGatewayAnswerWithWrongAmount() {
         order.setExpiresAt(LocalDateTime.now().minusMinutes(1));
-        when(orders.findByStatusAndExpiresAtBefore(eq(PaymentStatus.PENDING), any())).thenReturn(List.of(order));
+        when(orders.findByStatusAndExpiresAtBefore(eq(PaymentStatus.PENDING), any()))
+                .thenReturn(List.of(order));
         when(provider.queryTransaction(order))
                 .thenReturn(Optional.of(new PaymentCallback(true, "MU1", 1000, "TXN9", true)));
 
@@ -260,7 +269,13 @@ class PaymentServiceImplTest {
     @Test
     void buyingDifferentPlanSupersedesOldPendingOrder() {
         loginAsBuyer();
-        Plan team = Plan.builder().id("t").code("TEAM").name("Team").priceMonth(199000).priceYear(1990000).build();
+        Plan team = Plan.builder()
+                .id("t")
+                .code("TEAM")
+                .name("Team")
+                .priceMonth(199000)
+                .priceYear(1990000)
+                .build();
         when(plans.findByCode("TEAM")).thenReturn(Optional.of(team));
         when(members.findByEmail("a@x.com")).thenReturn(Optional.of(buyer));
         when(orders.findByMemberEmailOrderByCreatedAtDesc("a@x.com")).thenReturn(List.of(order));
@@ -289,9 +304,15 @@ class PaymentServiceImplTest {
     void historyHidesAbandonedOrders() {
         loginAsBuyer();
         PaymentOrder expired = PaymentOrder.builder()
-                .orderCode("MU2").member(buyer).plan(pro).period(BillingPeriod.MONTH).amount(99000)
-                .provider(PaymentProviderType.VNPAY).status(PaymentStatus.EXPIRED)
-                .expiresAt(LocalDateTime.now().minusDays(1)).build();
+                .orderCode("MU2")
+                .member(buyer)
+                .plan(pro)
+                .period(BillingPeriod.MONTH)
+                .amount(99000)
+                .provider(PaymentProviderType.VNPAY)
+                .status(PaymentStatus.EXPIRED)
+                .expiresAt(LocalDateTime.now().minusDays(1))
+                .build();
         when(orders.findByMemberEmailOrderByCreatedAtDesc("a@x.com")).thenReturn(List.of(order, expired));
 
         var history = service.listMyOrders();
@@ -342,7 +363,8 @@ class PaymentServiceImplTest {
         loginAsBuyer();
         when(plans.findByCode("PRO")).thenReturn(Optional.of(pro));
         when(members.findByEmail("a@x.com")).thenReturn(Optional.of(buyer));
-        when(subscriptions.planBannedUntil("m", "PRO")).thenReturn(LocalDateTime.now().plusMonths(1));
+        when(subscriptions.planBannedUntil("m", "PRO"))
+                .thenReturn(LocalDateTime.now().plusMonths(1));
 
         AppException e = assertThrows(
                 AppException.class,

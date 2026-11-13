@@ -3,12 +3,13 @@ import { IconLoop } from './PlayerIcons';
 import { PlayerPopover } from './PlayerPopover';
 import { isLoopComplete } from '../state/loop';
 import type { LoopSettings } from '../state/loop';
+import { t } from '../../../i18n/core';
 
 interface Props {
   loop: LoopSettings;
   /** Số ô nhịp của bản nhạc. */
   measureCount: number;
-  /** Chỉ số ô (từ 0) đang phát, dùng cho nút "Đặt A / B". */
+  /** Chỉ số ô (từ 0) đang phát, dùng cho nút Đặt A hoặc B. */
   currentMeasure: number;
   /** Đã đặt đủ A và B nhưng B không bao giờ được phát sau A (do thứ tự lặp lại của bản nhạc). */
   unreachable: boolean;
@@ -83,7 +84,7 @@ export function LoopControl({
   const complete = isLoopComplete(loop);
   const hasAny = loop.a !== null || loop.b !== null;
   const summary = complete
-    ? `Ô ${(loop.a ?? 0) + 1}–${(loop.b ?? 0) + 1}`
+    ? t('player.loop.range', { a: (loop.a ?? 0) + 1, b: (loop.b ?? 0) + 1 })
     : loop.a !== null
       ? `A ${loop.a + 1}`
       : 'A–B';
@@ -91,8 +92,8 @@ export function LoopControl({
   return (
     <PlayerPopover
       inline={inline}
-      label={loop.enabled ? `Lặp đoạn ${summary}` : 'Lặp đoạn A-B'}
-      title="Lặp đoạn A-B"
+      label={loop.enabled ? t('player.loop.summary', { summary }) : t('player.loop.title')}
+      title={t('player.loop.title')}
       disabled={disabled}
       buttonClassName={loop.enabled ? 'pl-chip--on' : undefined}
       trigger={
@@ -103,64 +104,70 @@ export function LoopControl({
       }
     >
       <div className="pl-loop">
-        <div className="pl-loop__head">Lặp đoạn A-B</div>
-        <div className="pl-loop__marks" role="group" aria-label="Đặt điểm A và B tại ô đang phát">
+        <div className="pl-loop__head">{t('player.loop.title')}</div>
+        <div className="pl-loop__marks" role="group" aria-label={t('player.loop.marks')}>
           <button type="button" className="pl-preset" onClick={() => onMark('a')}>
-            Đặt A (ô {currentMeasure + 1})
+            {t('player.loop.setA', { n: currentMeasure + 1 })}
           </button>
           <button type="button" className="pl-preset" onClick={() => onMark('b')}>
-            Đặt B (ô {currentMeasure + 1})
+            {t('player.loop.setB', { n: currentMeasure + 1 })}
           </button>
         </div>
         <div className="pl-loop__fields">
-          <MeasureField label="Từ ô" value={loop.a} max={measureCount} onCommit={(a) => onChange({ a })} />
-          <MeasureField label="Đến ô" value={loop.b} max={measureCount} onCommit={(b) => onChange({ b })} />
+          <MeasureField
+            label={t('player.loop.from')}
+            value={loop.a}
+            max={measureCount}
+            onCommit={(a) => onChange({ a })}
+          />
+          <MeasureField
+            label={t('player.loop.to')}
+            value={loop.b}
+            max={measureCount}
+            onCommit={(b) => onChange({ b })}
+          />
         </div>
         <button
           type="button"
           className={`pl-loop__toggle${loop.enabled ? ' pl-loop__toggle--on' : ''}`}
           aria-pressed={loop.enabled}
           disabled={!complete}
-          title={complete ? undefined : 'Đặt cả A và B để bật lặp'}
+          title={complete ? undefined : t('player.loop.needBoth')}
           onClick={() => onChange({ enabled: !loop.enabled })}
         >
-          {loop.enabled ? 'Đang lặp' : 'Bật lặp'}
+          {loop.enabled ? t('player.loop.on') : t('player.loop.enable')}
         </button>
-        <div className="pl-loop__opts" role="group" aria-label="Tùy chọn khi lặp">
+        <div className="pl-loop__opts" role="group" aria-label={t('player.loop.options')}>
           <button
             type="button"
             className={`pl-loop__opt${loop.countIn ? ' pl-loop__opt--on' : ''}`}
             aria-pressed={loop.countIn}
             disabled={!complete}
-            title="Đếm một ô bằng tiếng gõ trước mỗi vòng"
+            title={t('player.loop.countInTitle')}
             onClick={() => onChange({ countIn: !loop.countIn })}
           >
-            Đếm nhịp vào
+            {t('player.loop.countIn')}
           </button>
           <button
             type="button"
             className={`pl-loop__opt${loop.speedUp ? ' pl-loop__opt--on' : ''}`}
             aria-pressed={loop.speedUp}
             disabled={!complete}
-            title="Mỗi vòng nhanh thêm 5% cho tới 100%, bắt đầu từ tốc độ đang chọn"
+            title={t('player.loop.speedUpTitle')}
             onClick={() => onChange({ speedUp: !loop.speedUp })}
           >
-            Tăng tốc dần
+            {t('player.loop.speedUp')}
           </button>
         </div>
-        {!complete && <p className="pl-loop__note">Đặt cả A và B để bật lặp.</p>}
+        {!complete && <p className="pl-loop__note">{t('player.loop.needBothNote')}</p>}
         {unreachable && (
           <p className="pl-loop__note pl-loop__note--warn" role="status">
-            Đoạn này không được phát theo thứ tự lặp lại của bản nhạc nên chưa lặp được.
+            {t('player.loop.unreachable')}
           </p>
         )}
-        {showDragHint && (
-          <p className="pl-loop__note">
-            Mẹo: giữ Shift rồi kéo qua các ô trên bản nhạc (hoặc Shift + bấm hai ô) để chọn đoạn.
-          </p>
-        )}
+        {showDragHint && <p className="pl-loop__note">{t('player.loop.dragHint')}</p>}
         <button type="button" className="pl-link pl-loop__clear" onClick={onClear} disabled={!hasAny}>
-          Xóa A-B
+          {t('player.loop.clear')}
         </button>
       </div>
     </PlayerPopover>

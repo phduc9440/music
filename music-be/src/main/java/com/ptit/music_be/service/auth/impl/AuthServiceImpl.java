@@ -83,6 +83,7 @@ public class AuthServiceImpl implements AuthService {
     static final int MAX_OTP_ATTEMPTS = 5;
     /** Hạn của mã phiên đặt mật khẩu mới, tính từ lúc xác minh đúng OTP. */
     static final int RESET_SESSION_MINUTES = 10;
+
     static final String TOKEN_TYPE_CLAIM = "typ";
     static final String TYPE_ACCESS = "access";
     static final String TYPE_REFRESH = "refresh";
@@ -467,7 +468,8 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional(noRollbackFor = AppException.class)
     public void resetPassword(ResetPasswordRequest request) {
-        // Chỉ nhận mã phiên của bước xác minh OTP; mọi trường hợp sai báo cùng một lỗi để giao diện quay lại bước nhập OTP
+        // Chỉ nhận mã phiên của bước xác minh OTP; mọi trường hợp sai báo cùng một lỗi để giao diện quay lại bước nhập
+        // OTP
         Member user = memberRepository
                 .findByEmail(request.getEmail().trim().toLowerCase())
                 .orElseThrow(() -> new AppException(ErrorCode.RESET_SESSION_INVALID));

@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
 import java.util.Set;
-
 import javax.imageio.ImageIO;
 
 import org.springframework.stereotype.Service;
@@ -55,10 +54,14 @@ public class ScoreCoverServiceImpl implements ScoreCoverService {
                     .upload(
                             file.getBytes(),
                             ObjectUtils.asMap(
-                                    "public_id", publicId(score.getId()),
-                                    "overwrite", true,
-                                    "invalidate", true,
-                                    "resource_type", "image"));
+                                    "public_id",
+                                    publicId(score.getId()),
+                                    "overwrite",
+                                    true,
+                                    "invalidate",
+                                    true,
+                                    "resource_type",
+                                    "image"));
             url = (String) result.get("secure_url");
         } catch (Exception e) {
             log.warn("Không tải được ảnh bìa bản nhạc {}: {}", scoreId, e.getMessage());

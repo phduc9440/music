@@ -5,6 +5,7 @@
 import type { NoteInfo, ScoreDocument } from './ScoreDocument';
 import { AccidentalState, accidentalName, inRange, isStep, movePitch, pitchToMidi } from '../notes/pitch';
 import type { Pitch, PitchOp } from '../notes/pitch';
+import { t } from '../../../i18n/core';
 
 /** Bản sao một ô nhịp trước và sau khi sửa. */
 export interface MeasureSnapshot {
@@ -16,8 +17,8 @@ export interface MeasureSnapshot {
 
 /** Một thao tác đã áp dụng, đủ dữ liệu để hoàn tác / làm lại. */
 export interface EditCommand {
-  /** Nhãn tiếng Việt, ví dụ "Lên nửa cung". */
-  label: string;
+  /** Nhãn của lệnh, ví dụ "Lên nửa cung". */
+  label: EditLabel;
   snapshots: MeasureSnapshot[];
   /** Id các nốt bị đổi (kể cả nốt nối kéo theo). */
   changedIds: string[];
@@ -68,54 +69,14 @@ export type EditFailure =
 
 export type EditResult = { ok: true; command: EditCommand } | { ok: false; reason: EditFailure };
 
-/** Nhãn hiển thị của từng thao tác cao độ. */
-export const PITCH_OP_LABELS: Record<PitchOp, string> = {
-  stepUp: 'Lên một bậc',
-  stepDown: 'Xuống một bậc',
-  semitoneUp: 'Lên nửa cung',
-  semitoneDown: 'Xuống nửa cung',
-  octaveUp: 'Lên một quãng tám',
-  octaveDown: 'Xuống một quãng tám',
-};
+/** Nhãn lệnh hoàn tác: chuỗi có sẵn, hoặc khóa dịch được đổi sang ngôn ngữ hiện tại lúc hiển thị. */
+export type EditLabel = string | { key: string; params?: Record<string, string | number> };
 
-/** Thông báo tiếng Việt cho từng lý do thất bại. */
-export const EDIT_FAILURE_MESSAGES: Record<EditFailure, string> = {
-  range: 'Không thể đổi: cao độ vượt quá khoảng A0–C8',
-  rest: 'Dấu lặng không có cao độ nên không đổi được',
-  duplicate: 'Không thể đổi: hợp âm đã có nốt cùng cao độ',
-  unchanged: 'Nốt đã ở đúng trạng thái này rồi',
-  empty: 'Hãy chọn ít nhất một nốt (không phải dấu lặng)',
-  tuplet: 'Nốt này đã nằm trong chùm, hoặc vị trí chèn nằm giữa một chùm (chưa hỗ trợ chùm lồng nhau)',
-  tupletFit: 'Trường độ mới không vừa chùm; hãy bỏ chùm trước',
-  tupletType: 'Không viết được chùm này bằng các hình nốt hiện có (thử chùm khác hoặc trường độ khác)',
-  noTuplet: 'Nốt đang chọn không nằm trong chùm nào',
-  tie: 'Chưa hỗ trợ đổi trường độ khi có nốt dính dấu nối (nốt đang sửa hoặc nốt bị đè)',
-  noSpace: 'Không kéo dài được: nốt sẽ vượt quá cuối ô nhịp',
-  divisions: 'Bản nhạc chia nhịp quá thô nên không đổi sang trường độ này được',
-  unsupported: 'Cấu trúc ô nhịp này chưa hỗ trợ đổi trường độ',
-  tieTarget: 'Dấu nối cần hai nốt liền nhau cùng cao độ trong cùng bè: hãy chọn nốt trước (hoặc cả hai nốt)',
-  slurTarget: 'Dấu luyến cần chọn từ hai nốt trở lên trong cùng một khuông',
-  lyricTarget: 'Hãy chọn một nốt (không phải dấu lặng hay nốt nối tiếp) để nhập lời',
-  badValue: 'Giá trị không hợp lệ',
-  badChord: 'Không hiểu hợp âm này. Ví dụ: C, Am7, G/B, F#m, Bbmaj7, Dsus4, C6/9, N.C.',
-  hairpinTarget: 'Cresc./dim. cần chọn từ hai nốt trở lên (từ nốt bắt đầu đến nốt kết thúc)',
-  spanTarget: 'Vùng chọn phải nằm trong cùng một khuông của cùng một phần nhạc',
-  arpeggioTarget: 'Dấu rải cần một hợp âm có từ hai nốt trở lên: hãy chọn hợp âm',
-  glissTarget:
-    'Glissando cần hai nốt trong cùng một khuông và bè: chọn nốt bắt đầu (nốt liền sau là nốt kết thúc) hoặc chọn cả hai nốt',
-  graceTarget: 'Hãy chọn một nốt hoa mỹ (nốt nhỏ) để đổi giữa có gạch chéo và không gạch',
-  noSection: 'Ô nhịp này chưa có nhãn đoạn',
-  barRepeat: 'Ô này đã có dấu lặp ở cuối nên không đặt thêm vạch đôi được',
-  breakFirst: 'Ô đầu bài luôn mở đầu dòng và trang đầu: hãy chọn một ô phía sau',
-  noRepeat: 'Ô cuối của vùng chọn chưa có dấu lặp cuối (:|): hãy đặt dấu lặp cuối trước',
-  noMeasure: 'Hãy chọn một nốt để biết thao tác này áp dụng cho ô nhịp nào',
-  lastMeasure: 'Bản nhạc phải còn ít nhất một ô nhịp',
-  voiceMain: 'Đây là bè chính của khuông nên không xóa theo cách này (hãy dùng nút Xóa nốt / Dấu lặng)',
-  hasBass: 'Phần nhạc này đã có hai khuông rồi (dùng "Thêm khuông Sol/Fa" để thêm khuông riêng)',
-  lastStaff: 'Bản nhạc phải còn ít nhất một khuông (khuông 1 của đàn chỉ xóa được khi còn phần nhạc khác)',
-  noStaff: 'Hãy chọn một nốt hoặc dấu lặng để biết thao tác này áp dụng cho khuông nào',
-  voiceNone: 'Hãy chọn các nốt (không phải dấu lặng hay nốt trang trí) để viết bè',
-};
+export const resolveLabel = (label: EditLabel): string =>
+  typeof label === 'string' ? label : t(label.key, label.params);
+
+/** Thông báo cho từng lý do thất bại, theo ngôn ngữ hiện tại. */
+export const editFailureMessage = (reason: EditFailure): string => t(`editor.failure.${reason}`);
 
 export const childOf = (parent: Element, tag: string): Element | undefined =>
   Array.from(parent.children).find((c) => c.tagName === tag);
@@ -245,16 +206,7 @@ export const chordKey = (n: NoteInfo): string =>
 /** Ký hiệu áp lên nốt đang chọn. */
 export type SymbolOp = 'sharp' | 'flat' | 'natural' | 'rest' | 'delete' | 'tie' | 'slur';
 
-/** Nhãn hiển thị của từng ký hiệu (dùng cho thông báo hoàn tác / làm lại). */
-export const SYMBOL_OP_LABELS: Record<SymbolOp, string> = {
-  sharp: 'Thêm dấu thăng',
-  flat: 'Thêm dấu giáng',
-  natural: 'Thêm dấu bình',
-  rest: 'Đổi thành dấu lặng',
-  delete: 'Xóa nốt',
-  tie: 'Dấu nối',
-  slur: 'Dấu luyến',
-};
+const symbolLabel = (op: SymbolOp): EditLabel => ({ key: `editor.cmd.symbol.${op}` });
 
 export type Touched = Map<string, { partIndex: number; measureIndex: number }>;
 
@@ -267,7 +219,7 @@ export const touch = (touched: Touched, info: NoteInfo): void => {
  */
 export function commitEdit(
   doc: ScoreDocument,
-  label: string,
+  label: EditLabel,
   touched: Touched,
   changedIds: string[],
   apply: () => void,
@@ -290,7 +242,7 @@ type Mover = (old: Pitch, info: NoteInfo) => Pitch | 'range';
  * Đổi cao độ từng nốt đã chọn theo `mover`. Dấu lặng bị bỏ qua; nốt có dấu nối kéo theo cả chuỗi nốt nối (nhận cùng
  * cao độ mới). Nếu có nốt vượt A0–C8, làm trùng cao độ trong hợp âm, hoặc không có gì thay đổi thì không sửa gì.
  */
-function transformPitches(doc: ScoreDocument, ids: readonly string[], label: string, mover: Mover): EditResult {
+function transformPitches(doc: ScoreDocument, ids: readonly string[], label: EditLabel, mover: Mover): EditResult {
   const selected = ids.map((id) => doc.getInfo(id)).filter((n): n is NoteInfo => n !== undefined);
   const pitched = selected.filter((n) => !n.isRest && readPitch(n.element));
   if (pitched.length === 0) return { ok: false, reason: 'rest' };
@@ -352,7 +304,8 @@ function transformPitches(doc: ScoreDocument, ids: readonly string[], label: str
  * @returns lệnh đã áp dụng (để đưa vào lịch sử) hoặc lý do thất bại; khi thất bại DOM không thay đổi
  */
 export function changePitch(doc: ScoreDocument, ids: readonly string[], op: PitchOp, count = 1): EditResult {
-  const label = count > 1 ? `${PITCH_OP_LABELS[op]} (${count} lần)` : PITCH_OP_LABELS[op];
+  const label: EditLabel =
+    count > 1 ? { key: `editor.cmd.pitchMany.${op}`, params: { count } } : { key: `editor.cmd.pitch.${op}` };
   return transformPitches(doc, ids, label, (old, info) => {
     let moved: Pitch = old;
     for (let i = 0; i < count; i++) {
@@ -374,7 +327,7 @@ export function setAlteration(
   kind: 'sharp' | 'flat' | 'natural',
 ): EditResult {
   const target = kind === 'sharp' ? 1 : kind === 'flat' ? -1 : 0;
-  return transformPitches(doc, ids, SYMBOL_OP_LABELS[kind], (old) => {
+  return transformPitches(doc, ids, symbolLabel(kind), (old) => {
     const moved = { ...old, alter: old.alter === target ? 0 : target };
     return inRange(pitchToMidi(moved)) ? moved : 'range';
   });
@@ -467,7 +420,7 @@ export function removeNotes(doc: ScoreDocument, ids: readonly string[], mode: 'r
   const removedSet = new Set(plan.flatMap((p) => p.remove));
   const partners = slurPartners(doc, removedSet);
   partners.forEach((p) => touch(touched, p.info));
-  const command = commitEdit(doc, SYMBOL_OP_LABELS[mode], touched, [...chosen.keys()], () => {
+  const command = commitEdit(doc, symbolLabel(mode), touched, [...chosen.keys()], () => {
     for (const p of partners) {
       slursOf(p.info.element)
         .filter((x) => x.getAttribute('type') === p.type && (x.getAttribute('number') ?? '1') === p.number)

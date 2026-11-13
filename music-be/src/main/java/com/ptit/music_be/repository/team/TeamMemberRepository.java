@@ -105,7 +105,8 @@ public interface TeamMemberRepository extends JpaRepository<TeamMember, String> 
 
     // ------------------------------------------------------------------------------------------------ nhật ký
 
-    @Query(value = "select a from TeamMember a left join fetch a.member where a.kind = 'ACTIVITY'"
+    @Query(
+            value = "select a from TeamMember a left join fetch a.member where a.kind = 'ACTIVITY'"
                     + " and a.team.id = :teamId order by a.createdAt desc, a.id desc",
             countQuery = "select count(a) from TeamMember a where a.kind = 'ACTIVITY' and a.team.id = :teamId")
     Page<TeamMember> findActivities(@Param("teamId") String teamId, Pageable pageable);

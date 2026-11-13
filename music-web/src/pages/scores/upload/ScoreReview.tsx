@@ -8,6 +8,7 @@ import Modal from '../../../components/scores/common/Modal';
 import { downloadScoreExport, fetchKern, fetchMusicXml, omrApi, scoreApi } from '../../../services';
 import type { OmrMeasure, OmrResult, ScoreDetail as ScoreDetailData, ScoreFileInfo } from '../../../types';
 import { boxToPercent, flaggedMeasures, isValidScoreId, MEASURE_FLAG_LABELS, parseWarning } from '../../../utils/omr';
+import { reportPlanLimit } from '../../../utils/planLimit';
 import {
   getErrorMessage,
   getHttpStatus,
@@ -186,7 +187,7 @@ export default function ScoreReview() {
       toast.success(t('upload.review.redoSent'));
       navigate(`${base}/${id}/processing`);
     } catch (err) {
-      toast.error(getUploadErrorMessage(err));
+      if (!reportPlanLimit(err)) toast.error(getUploadErrorMessage(err));
       setBusy(false);
     }
   };

@@ -4,6 +4,7 @@
  */
 import type { EditCommand, EditResult } from '../core/commands';
 import type { ScoreDocument } from '../core/ScoreDocument';
+import { t } from '../../../i18n/core';
 
 const LEADING = ['attributes', 'direction', 'print', 'sound'];
 
@@ -57,7 +58,7 @@ export function insertMeasure(doc: ScoreDocument, measureIndex: number, where: '
     lengths.push(length);
   }
 
-  return runStructural(doc, `Thêm ô nhịp ${pos + 2}`, () => {
+  return runStructural(doc, t('editor.cmd.measure.add', { n: pos + 2 }), () => {
     const newIndex = pos + 1;
     for (let p = 0; p < doc.partCount; p++) {
       const measures = doc.getMeasures(p);
@@ -121,7 +122,10 @@ export function deleteMeasures(doc: ScoreDocument, from: number, to: number): Ed
   const hi = Math.min(count - 1, Math.max(from, to));
   if (hi - lo + 1 >= count) return { ok: false, reason: 'lastMeasure' };
 
-  const label = lo === hi ? `Xóa ô nhịp ${lo + 1}` : `Xóa ô nhịp ${lo + 1}–${hi + 1}`;
+  const label =
+    lo === hi
+      ? t('editor.cmd.measure.remove', { n: lo + 1 })
+      : t('editor.cmd.measure.removeRange', { from: lo + 1, to: hi + 1 });
   return runStructural(doc, label, () => {
     for (let p = 0; p < doc.partCount; p++) {
       const measures = doc.getMeasures(p);

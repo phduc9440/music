@@ -19,6 +19,7 @@ public class ScoreCommentResponse {
     String scoreId;
     /** Null là góp ý gốc. */
     String parentId;
+
     CommentMemberResponse author;
     String content;
     List<CommentMemberResponse> mentions;
@@ -35,6 +36,7 @@ public class ScoreCommentResponse {
     Integer scoreVersion;
     /** Số ô của bản nhạc đã khác lúc viết (thêm/xóa ô): vị trí có thể đã lệch, giao diện hiện "Viết trên phiên bản vN". */
     boolean outdated;
+
     CommentStatus status;
     CommentMemberResponse resolvedBy;
     LocalDateTime resolvedAt;

@@ -2,8 +2,8 @@ package com.ptit.music_be.controller.admin;
 
 import jakarta.validation.Valid;
 
-import org.springframework.web.bind.annotation.*;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
 
 import com.ptit.music_be.dto.request.admin.AdminScoreBulkRequest;
 import com.ptit.music_be.dto.request.admin.AdminScoreVisibilityRequest;

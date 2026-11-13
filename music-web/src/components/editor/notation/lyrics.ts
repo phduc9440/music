@@ -6,6 +6,7 @@
 import { childOf, commitEdit, hasTie, touch } from '../core/commands';
 import type { EditResult, Touched } from '../core/commands';
 import type { NoteInfo, ScoreDocument } from '../core/ScoreDocument';
+import { t } from '../../../i18n/core';
 
 export const MAX_VERSE = 4;
 
@@ -104,7 +105,7 @@ export function setLyric(doc: ScoreDocument, id: string, text: string, end: Lyri
   }
   const touched: Touched = new Map();
   touch(touched, info);
-  const command = commitEdit(doc, clean ? 'Nhập lời' : 'Xóa lời', touched, [id], () => {
+  const command = commitEdit(doc, t(clean ? 'editor.cmd.lyric.set' : 'editor.cmd.lyric.clear'), touched, [id], () => {
     removeLyric(info.element, verse);
     if (clean) addLyric(info.element, verse, clean, syllabic);
   });
@@ -171,7 +172,7 @@ export function pasteLyrics(
   let placed = 0;
   const command = commitEdit(
     doc,
-    'Dán lời',
+    t('editor.cmd.lyric.paste'),
     touched,
     targets.map((n) => n.id),
     () => {

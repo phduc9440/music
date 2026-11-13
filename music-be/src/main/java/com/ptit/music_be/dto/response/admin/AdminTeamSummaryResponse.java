@@ -15,6 +15,7 @@ public class AdminTeamSummaryResponse {
     long activeTeams7d;
     /** Số người đang ở trong ít nhất một team. */
     long teamMembers;
+
     long preparingShows;
     /** Bài chưa duyệt trong các show đang chuẩn bị. */
     long openItems;
