@@ -17,6 +17,8 @@ public enum RewardReason {
     FORUM_ANSWER_ACCEPTED(15, 10, 5, Window.DAY),
     /** Bạn số hóa xong bản nhạc đầu tiên bằng OMR. refId = id chính bạn nên chỉ cộng một lần. */
     FIRST_DIGITIZED(50, 50, 0, Window.NONE);
+    /** Đề xuất sửa của bạn được chủ bản nhạc hoặc người có quyền sửa nhận (không tính bản của chính bạn). refId = id đề xuất. */
+    SUGGESTION_ACCEPTED(15, 10, 10, Window.DAY);
 
     public enum Window {
         NONE,

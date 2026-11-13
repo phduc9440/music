@@ -104,12 +104,27 @@ public class ScoreEditServiceImpl implements ScoreEditService {
     @Transactional
     public ScoreSaveResponse saveMusicXml(
             String scoreId, byte[] body, String contentType, String ifMatch, boolean force) {
-        return save(scoreId, body, contentType, ifMatch, force, null);
+        return save(scoreId, body, contentType, ifMatch, force, null, Map.of());
     }
 
-    /** Luồng lưu chung cho lưu từ Editor và khôi phục; {@code restoredFrom} khác null là khôi phục từ version đó. */
+    @Override
+    @Transactional
+    public ScoreSaveResponse saveWithMeta(String scoreId, byte[] body, String ifMatch, Map<String, Object> extraMeta) {
+        return save(scoreId, body, MUSICXML_CONTENT_TYPE, ifMatch, false, null, extraMeta);
+    }
+
+    /**
+     * Luồng lưu chung cho lưu từ Editor, khôi phục và nội dung server dựng; {@code restoredFrom} khác null là khôi phục
+     * từ version đó, {@code extraMeta} được ghi thêm vào meta của version mới.
+     */
     private ScoreSaveResponse save(
-            String scoreId, byte[] body, String contentType, String ifMatch, boolean force, Integer restoredFrom) {
+            String scoreId,
+            byte[] body,
+            String contentType,
+            String ifMatch,
+            boolean force,
+            Integer restoredFrom,
+            Map<String, Object> extraMeta) {
         // Khóa dòng ngay từ đầu để hai lần lưu cùng lúc được xếp hàng và không cùng ra một version
         Score score = scoreRepository
                 .findByIdForUpdate(scoreId)
@@ -170,7 +185,7 @@ public class ScoreEditServiceImpl implements ScoreEditService {
                 .sizeBytes((long) body.length)
                 .version(newVersion)
                 .isCurrent(true)
-                .meta(buildMeta(summary, restoredFrom))
+                .meta(buildMeta(summary, restoredFrom, extraMeta))
                 .build();
         if (!changed.isEmpty()) {
             scoreFileRepository.saveAll(changed);
@@ -321,7 +336,7 @@ public class ScoreEditServiceImpl implements ScoreEditService {
         }
     }
 
-    private String buildMeta(MusicXmlSummary summary, Integer restoredFrom) {
+    private String buildMeta(MusicXmlSummary summary, Integer restoredFrom, Map<String, Object> extraMeta) {
         String email = SecurityUtils.getCurrentEmail();
         Map<String, Object> meta = new LinkedHashMap<>();
         meta.put("savedBy", email);
@@ -330,6 +345,7 @@ public class ScoreEditServiceImpl implements ScoreEditService {
         if (restoredFrom != null) {
             meta.put("restoredFrom", restoredFrom);
         }
+        meta.putAll(extraMeta);
         try {
             return JSON.writeValueAsString(meta);
         } catch (JsonProcessingException e) {
@@ -377,6 +393,8 @@ public class ScoreEditServiceImpl implements ScoreEditService {
         scoreFileService.checkCanEdit(score);
         byte[] body = readVersion(score, version);
         return save(scoreId, body, MUSICXML_CONTENT_TYPE, ifMatch, false, version);
+        byte[] body = readVersion(scoreId, version);
+        return save(scoreId, body, MUSICXML_CONTENT_TYPE, ifMatch, false, version, Map.of());
     }
 
     /** Đọc nội dung một version MusicXML: 2801 nếu không có dòng, 2002 nếu file đã mất trên đĩa. */
@@ -403,6 +421,8 @@ public class ScoreEditServiceImpl implements ScoreEditService {
         String source;
         if (restoredFrom != null) {
             source = "RESTORE";
+        } else if (meta.hasNonNull("suggestionId")) {
+            source = "SUGGESTION";
         } else if (meta.has("savedBy")) {
             source = "EDITOR";
         } else if ("OMR".equals(score.getSourceType()) || "IMPORT".equals(score.getSourceType())) {
@@ -423,6 +443,14 @@ public class ScoreEditServiceImpl implements ScoreEditService {
                 .isCurrent(isCurrent)
                 .source(source)
                 .restoredFrom(restoredFrom)
+                .suggestionId(
+                        meta.hasNonNull("suggestionId")
+                                ? meta.get("suggestionId").asText()
+                                : null)
+                .suggestionAuthorName(
+                        meta.hasNonNull("suggestionAuthorName")
+                                ? meta.get("suggestionAuthorName").asText()
+                                : null)
                 .build();
     }
 

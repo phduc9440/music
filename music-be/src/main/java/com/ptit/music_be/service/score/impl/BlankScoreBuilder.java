@@ -1,17 +1,9 @@
 package com.ptit.music_be.service.score.impl;
 
-import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -72,22 +64,7 @@ final class BlankScoreBuilder {
         for (int p = 0; p < parts.size(); p++) {
             appendPart(root, partId(p), parts.get(p), request, p == 0);
         }
-        return serialize(document);
-    }
-
-    /** Serialize ra UTF-8, có khai báo XML và không có DOCTYPE (MusicXML lưu từ Editor cũng không có). */
-    private static byte[] serialize(Document document) {
-        try {
-            TransformerFactory factory = TransformerFactory.newInstance();
-            factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-            Transformer transformer = factory.newTransformer();
-            transformer.setOutputProperty(OutputKeys.ENCODING, StandardCharsets.UTF_8.name());
-            StringWriter writer = new StringWriter();
-            transformer.transform(new DOMSource(document), new StreamResult(writer));
-            return writer.toString().getBytes(StandardCharsets.UTF_8);
-        } catch (TransformerException e) {
-            throw new AppException(ErrorCode.MUSICXML_INVALID);
-        }
+        return SuggestionDiffer.serialize(document, false).getBytes(StandardCharsets.UTF_8);
     }
 
     private static List<PartSpec> partsOf(BlankScoreRequest request) {
