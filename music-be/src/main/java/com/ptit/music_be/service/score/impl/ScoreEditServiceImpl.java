@@ -392,8 +392,6 @@ public class ScoreEditServiceImpl implements ScoreEditService {
                 .orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
         scoreFileService.checkCanEdit(score);
         byte[] body = readVersion(score, version);
-        return save(scoreId, body, MUSICXML_CONTENT_TYPE, ifMatch, false, version);
-        byte[] body = readVersion(scoreId, version);
         return save(scoreId, body, MUSICXML_CONTENT_TYPE, ifMatch, false, version, Map.of());
     }
 

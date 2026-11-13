@@ -15,10 +15,10 @@ public enum RewardReason {
     REFERRAL_WELCOME(50, 50, 0, Window.NONE),
     /** Câu trả lời của bạn trên diễn đàn được chọn. refId = id câu trả lời. Chưa phát (chờ 5.5). */
     FORUM_ANSWER_ACCEPTED(15, 10, 5, Window.DAY),
+    /** Đề xuất sửa của bạn được chủ bản nhạc hoặc người có quyền sửa nhận (không tính bản của chính bạn). refId = id đề xuất. */
+    SUGGESTION_ACCEPTED(15, 10, 10, Window.DAY),
     /** Bạn số hóa xong bản nhạc đầu tiên bằng OMR. refId = id chính bạn nên chỉ cộng một lần. */
     FIRST_DIGITIZED(50, 50, 0, Window.NONE);
-    /** Đề xuất sửa của bạn được chủ bản nhạc hoặc người có quyền sửa nhận (không tính bản của chính bạn). refId = id đề xuất. */
-    SUGGESTION_ACCEPTED(15, 10, 10, Window.DAY);
 
     public enum Window {
         NONE,
