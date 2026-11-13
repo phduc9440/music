@@ -15,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.junit.jupiter.api.AfterEach;
@@ -131,6 +132,22 @@ class ScoreEditServiceImplTest {
 
     private AppException catchError(Runnable action) {
         return (AppException) org.assertj.core.api.Assertions.catchThrowable(action::run);
+    }
+
+    @Test
+    void saveWithMetaRecordsExtraMetaInTheNewVersion() {
+        givenXmlVersions(3);
+
+        ScoreSaveResponse response = service.saveWithMeta(
+                SCORE_ID, VALID_XML, "\"v3\"", Map.of("suggestionId", "sug-1", "suggestionAuthorName", "An"));
+
+        assertThat(response.getVersion()).isEqualTo(4);
+        ArgumentCaptor<ScoreFile> created = ArgumentCaptor.forClass(ScoreFile.class);
+        verify(scoreFileRepository).save(created.capture());
+        assertThat(created.getValue().getMeta())
+                .contains("\"suggestionId\":\"sug-1\"")
+                .contains("\"suggestionAuthorName\":\"An\"")
+                .contains("owner@mail.com");
     }
 
     @Test

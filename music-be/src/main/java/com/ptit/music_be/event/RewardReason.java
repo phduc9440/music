@@ -14,7 +14,9 @@ public enum RewardReason {
     /** Bạn đăng ký bằng mã giới thiệu và số hóa xong bản đầu tiên (thưởng người được mời). refId = id chính bạn. */
     REFERRAL_WELCOME(50, 50, 0, Window.NONE),
     /** Câu trả lời của bạn trên diễn đàn được chọn. refId = id câu trả lời. Chưa phát (chờ 5.5). */
-    FORUM_ANSWER_ACCEPTED(15, 10, 5, Window.DAY);
+    FORUM_ANSWER_ACCEPTED(15, 10, 5, Window.DAY),
+    /** Đề xuất sửa của bạn được chủ bản nhạc hoặc người có quyền sửa nhận (không tính bản của chính bạn). refId = id đề xuất. */
+    SUGGESTION_ACCEPTED(15, 10, 10, Window.DAY);
 
     public enum Window {
         NONE,

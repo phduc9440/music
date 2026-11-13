@@ -252,6 +252,23 @@ public enum ErrorCode {
     COMMENT_MENTION_INVALID(
             3906, "Chỉ nhắc được người xem được bản nhạc này (tối đa 20 người)", HttpStatus.BAD_REQUEST),
     COMMENT_ANCHOR_INVALID(3907, "Bè hoặc danh sách nốt đã chọn không hợp lệ", HttpStatus.BAD_REQUEST),
+    // ---- 31xx: Đề xuất sửa (mục 4.3)
+    SUGGESTION_FIELDS_INVALID(
+            3110,
+            "Tiêu đề đề xuất từ 1 đến 200 ký tự, mô tả tối đa 2000 ký tự, ghi chú tối đa 500 ký tự",
+            HttpStatus.BAD_REQUEST),
+    SUGGESTION_EMPTY(3111, "Đề xuất chưa có thay đổi nào so với phiên bản gốc", HttpStatus.BAD_REQUEST),
+    SUGGESTION_TOO_MANY_OPEN(
+            3112, "Bạn đang có 10 đề xuất chưa xử lý trên bản nhạc này, hãy đợi hoặc rút bớt", HttpStatus.CONFLICT),
+    SUGGESTION_OUTDATED(
+            3113,
+            "Bản chính đã đổi cấu trúc kể từ khi gửi đề xuất nên không áp dụng được; hãy từ chối và nhờ người gửi làm lại",
+            HttpStatus.CONFLICT),
+    SUGGESTION_NOT_OPEN(3114, "Đề xuất này đã được xử lý hoặc đã bị rút lại", HttpStatus.CONFLICT),
+    SUGGESTION_NOT_EXISTED(3115, "Không tìm thấy đề xuất", HttpStatus.NOT_FOUND),
+    SUGGESTION_CHANGES_INVALID(3116, "Danh sách ô được chọn không hợp lệ", HttpStatus.BAD_REQUEST),
+    SUGGESTION_RATE_LIMITED(
+            3117, "Bạn đã gửi quá 30 đề xuất trong 24 giờ qua, hãy thử lại sau", HttpStatus.TOO_MANY_REQUESTS),
     ;
 
     int code;

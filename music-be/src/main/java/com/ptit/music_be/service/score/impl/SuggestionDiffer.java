@@ -2,6 +2,7 @@ package com.ptit.music_be.service.score.impl;
 
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -97,7 +98,7 @@ final class SuggestionDiffer {
                             proposedMeasure.getAttribute("number"),
                             baseHash,
                             baseContexts.get(p).get(i),
-                            serialize(proposedMeasure)));
+                            serialize(proposedMeasure, true)));
                 }
             }
         }
@@ -144,16 +145,41 @@ final class SuggestionDiffer {
         return result;
     }
 
-    /** Serialize một phần tử (không khai báo XML) để lưu và đọc lại bằng {@link MusicXmlInspector#parseStored}. */
-    static String serialize(Element element) {
+    /**
+     * Tên hiển thị của từng part: id → {@code <part-name>} trong {@code <part-list>}. Part không có tên thì không có
+     * trong kết quả.
+     */
+    static Map<String, String> partNames(Document document) {
+        Map<String, String> names = new HashMap<>();
+        Element root = document.getDocumentElement();
+        for (Element partList : MusicXmlInspector.childElements(root, "part-list")) {
+            for (Element scorePart : MusicXmlInspector.childElements(partList, "score-part")) {
+                List<Element> name = MusicXmlInspector.childElements(scorePart, "part-name");
+                if (!name.isEmpty() && !name.get(0).getTextContent().isBlank()) {
+                    names.put(
+                            scorePart.getAttribute("id"),
+                            name.get(0).getTextContent().trim());
+                }
+            }
+        }
+        return names;
+    }
+
+    /**
+     * Serialize một nút ra UTF-8 để lưu hoặc đọc lại bằng {@link MusicXmlInspector#parseStored}. Không bao giờ ghi
+     * DOCTYPE (MusicXML lưu từ Editor không có DOCTYPE).
+     *
+     * @param omitXmlDeclaration {@code true} để bỏ dòng {@code <?xml ...?>} (khi chỉ serialize một phần tử)
+     */
+    static String serialize(Node node, boolean omitXmlDeclaration) {
         try {
             TransformerFactory factory = TransformerFactory.newInstance();
             factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
             Transformer transformer = factory.newTransformer();
-            transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+            transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, omitXmlDeclaration ? "yes" : "no");
             transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
             StringWriter writer = new StringWriter();
-            transformer.transform(new DOMSource(element), new StreamResult(writer));
+            transformer.transform(new DOMSource(node), new StreamResult(writer));
             return writer.toString();
         } catch (TransformerException e) {
             throw new AppException(ErrorCode.MUSICXML_INVALID);
