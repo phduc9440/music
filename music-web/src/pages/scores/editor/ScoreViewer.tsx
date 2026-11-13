@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useNavigate } from '../../../routes/useTransitionNavigate';
+import { toast } from 'react-toastify';
 import DownloadMenu from '../../../components/scores/viewer/DownloadMenu';
 import ShowAssignmentBanner from '../../../components/scores/viewer/ShowAssignmentBanner';
 import VersionHistoryPanel from '../../../components/editor/version/VersionHistoryPanel';
@@ -12,6 +13,8 @@ import { readNotation } from '../../../components/editor/structure/staves';
 import type { NotationChange } from '../../../components/editor/structure/staves';
 import LyricBar from '../../../components/scores/toolbar/LyricBar';
 import Modal from '../../../components/scores/common/Modal';
+import SuggestSubmitDialog from '../../../components/scores/suggestions/SuggestSubmitDialog';
+import { suggestionPath } from '../../../components/scores/suggestions/suggestionUtils';
 import ScoreCanvas from '../../../components/scores/viewer/ScoreCanvas';
 import type { CommentRange } from '../../../components/scores/viewer/ScoreCanvas';
 import CommentsSection from '../../../components/scores/comments/CommentsSection';
@@ -293,7 +296,11 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
 
   const { zoom, mode, invert } = prefs;
-  const canEdit = score.canEdit;
+  // Đề xuất sửa (mục 4.3): người có quyền nhận xét trở lên bật chế độ Đề xuất để dùng công cụ sửa; thay đổi không vào bản
+  // chính mà gửi đi dưới dạng đề xuất. Người sửa được cũng có thể bật để đề xuất thay vì ghi thẳng.
+  const [suggesting, setSuggesting] = useState(false);
+  const [suggestXml, setSuggestXml] = useState<string | null>(null);
+  const canEdit = score.canEdit || suggesting;
 
   const editor = useScoreEditor({
     scoreId: score.id,
@@ -303,6 +310,8 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
     canEdit,
     canForce: score.canDelete,
     blocked: helpOpen,
+    mode: suggesting ? 'suggest' : 'direct',
+    onSuggest: setSuggestXml,
   });
 
   const player = usePlayer(doc, {
@@ -604,6 +613,13 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
         : '',
   ].filter(Boolean);
 
+  const onSuggestionSent = (suggestionId: string) => {
+    editor.finishSuggestion();
+    setSuggestXml(null);
+    toast.success(t('suggestions.mode.sent'));
+    navigate(suggestionPath(base, score.id, suggestionId));
+  };
+
   const saveLabel = editor.saving
     ? t('editor.view.save.saving')
     : editor.dirty
@@ -635,6 +651,7 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
           ) : (
             <span className="sv-badge">{t('editor.view.header.readOnly')}</span>
           )}
+          {suggesting && <span className="sv-badge sv-badge--suggest">{t('suggestions.mode.suggest')}</span>}
         </div>
 
         <div className="sv-toolbar__center">
@@ -670,6 +687,27 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
         </div>
 
         <div className="sv-toolbar__right">
+          {score.canReview && (
+            <button
+              className={`sc-btn${suggesting ? ' is-active' : ''}`}
+              aria-pressed={suggesting}
+              disabled={editor.dirty || editor.saving}
+              onClick={() => setSuggesting((on) => !on)}
+              title={
+                editor.dirty
+                  ? t('suggestions.mode.saveFirst')
+                  : suggesting
+                    ? t('suggestions.mode.switchToDirect')
+                    : t('suggestions.mode.switchToSuggest')
+              }
+            >
+              {suggesting
+                ? score.canEdit
+                  ? t('suggestions.mode.direct')
+                  : t('suggestions.mode.exit')
+                : t('suggestions.mode.suggest')}
+            </button>
+          )}
           {canEdit && (
             <div className="sv-group sv-desktop-only">
               <button
@@ -694,9 +732,9 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
                 className="sc-btn sc-btn--primary"
                 disabled={!editor.dirty || editor.saving}
                 onClick={() => void editor.save()}
-                title={`${t('common.save')} (${MOD}+S)`}
+                title={suggesting ? t('suggestions.mode.sendTitle', { shortcut: `${MOD}+S` }) : `Lưu (${MOD}+S)`}
               >
-                <IconSave /> {t('common.save')}
+                <IconSave /> {suggesting ? t('suggestions.mode.send') : 'Lưu'}
               </button>
             </div>
           )}
@@ -768,6 +806,12 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
           />
         </div>
       </header>
+
+      {suggesting && (
+        <div className="sv-banner sv-banner--suggest" role="status">
+          <span>{t('suggestions.mode.banner')}</span>
+        </div>
+      )}
 
       {(warning || notTwoStaves) && !hideWarning && (
         <div className="sv-banner" role="status">
@@ -1047,11 +1091,21 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
       {historyOpen && (
         <VersionHistoryPanel
           scoreId={score.id}
-          canEdit={canEdit}
+          canEdit={score.canEdit && !suggesting}
           dirty={editor.dirty}
           busy={editor.saving}
           onRestore={editor.restoreVersion}
           onClose={() => setHistoryOpen(false)}
+        />
+      )}
+
+      {suggestXml !== null && (
+        <SuggestSubmitDialog
+          scoreId={score.id}
+          baseVersion={editor.version}
+          xml={suggestXml}
+          onClose={() => setSuggestXml(null)}
+          onSent={onSuggestionSent}
         />
       )}
 

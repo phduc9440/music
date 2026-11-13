@@ -1,6 +1,7 @@
 package com.ptit.music_be.service.score;
 
 import java.util.List;
+import java.util.Map;
 
 import com.ptit.music_be.dto.response.score.ScoreContent;
 import com.ptit.music_be.dto.response.score.ScoreSaveResponse;
@@ -28,6 +29,15 @@ public interface ScoreEditService {
      * @return version mới và metadata đã cập nhật
      */
     ScoreSaveResponse saveMusicXml(String scoreId, byte[] body, String contentType, String ifMatch, boolean force);
+
+    /**
+     * Lưu nội dung do server dựng (nhận đề xuất sửa, sau này nhập đè và đồng chỉnh sửa) qua đúng luồng lưu của Editor:
+     * khóa dòng {@code scores}, kiểm quyền sửa, task OMR, nội dung và If-Match, ghi file, dọn version cũ. Không có
+     * {@code force}. Lỗi như {@link #saveMusicXml}.
+     *
+     * @param extraMeta các khóa ghi thêm vào meta của version mới (ví dụ {@code suggestionId}); không được null
+     */
+    ScoreSaveResponse saveWithMeta(String scoreId, byte[] body, String ifMatch, Map<String, Object> extraMeta);
 
     /**
      * Lịch sử các version MusicXML còn giữ (tối đa 20), mới nhất trước. Cần quyền xem bản nhạc. Lỗi:

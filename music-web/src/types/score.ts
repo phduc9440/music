@@ -306,7 +306,9 @@ export type NotificationType =
   | 'TEAM_DELETED'
   | 'TEAM_RESTORED'
   | 'COMMENT_MENTION'
-  | 'COMMENT_REPLY';
+  | 'COMMENT_REPLY'
+  | 'SUGGESTION_NEW'
+  | 'SUGGESTION_DECIDED';
 
 export interface AppNotification {
   id: string;

@@ -2,6 +2,7 @@ package com.ptit.music_be.utils;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
 import javax.xml.XMLConstants;
@@ -14,6 +15,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.ErrorHandler;
+import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
@@ -55,7 +57,7 @@ public final class MusicXmlInspector {
      *     có {@code <measure>} nào
      */
     public static MusicXmlSummary inspect(byte[] xml) {
-        Document document = parse(xml);
+        Document document = parseSecure(xml);
         Element root = document.getDocumentElement();
         if (root == null || !ROOT_ELEMENT.equals(root.getTagName())) {
             throw new AppException(ErrorCode.MUSICXML_INVALID);
@@ -122,13 +124,37 @@ public final class MusicXmlInspector {
 
     // ---------------------------------------------------------------- phân tích an toàn
 
-    private static Document parse(byte[] xml) {
+    /**
+     * Phân tích MusicXML do client gửi lên: cấm hoàn toàn DOCTYPE (Editor luôn bỏ DOCTYPE khi xuất).
+     *
+     * @throws AppException MUSICXML_INVALID khi XML hỏng hoặc có DOCTYPE
+     */
+    public static Document parseSecure(byte[] xml) {
+        return parse(xml, false);
+    }
+
+    /**
+     * Phân tích MusicXML đã lưu trong kho: file do OMR hay Editor lưu đều kèm {@code <!DOCTYPE>} công khai, nên cho phép
+     * DOCTYPE nhưng vẫn chặn thực thể ngoài và DTD ngoài (XXE).
+     *
+     * @throws AppException MUSICXML_INVALID khi XML hỏng
+     */
+    public static Document parseStored(byte[] xml) {
+        return parse(xml, true);
+    }
+
+    private static Document parse(byte[] xml, boolean allowDoctype) {
         try {
-            DocumentBuilder builder = newSecureFactory().newDocumentBuilder();
-            builder.setEntityResolver((publicId, systemId) -> {
-                // Không bao giờ nạp tài nguyên ngoài; DOCTYPE đã bị cấm nên đây chỉ là lớp bảo vệ thứ hai
-                throw new SAXException("Không cho phép tài nguyên ngoài");
-            });
+            DocumentBuilder builder = newSecureFactory(allowDoctype).newDocumentBuilder();
+            if (allowDoctype) {
+                // DTD công khai không được nạp: trả nội dung rỗng
+                builder.setEntityResolver((publicId, systemId) -> new InputSource(new StringReader("")));
+            } else {
+                builder.setEntityResolver((publicId, systemId) -> {
+                    // Không bao giờ nạp tài nguyên ngoài; DOCTYPE đã bị cấm nên đây chỉ là lớp bảo vệ thứ hai
+                    throw new SAXException("Không cho phép tài nguyên ngoài");
+                });
+            }
             builder.setErrorHandler(new ErrorHandler() {
                 @Override
                 public void warning(SAXParseException exception) {
@@ -151,10 +177,10 @@ public final class MusicXmlInspector {
         }
     }
 
-    private static DocumentBuilderFactory newSecureFactory() throws ParserConfigurationException {
+    private static DocumentBuilderFactory newSecureFactory(boolean allowDoctype) throws ParserConfigurationException {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", !allowDoctype);
         factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
         factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
         factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
@@ -162,12 +188,17 @@ public final class MusicXmlInspector {
         factory.setExpandEntityReferences(false);
         factory.setNamespaceAware(false);
         factory.setValidating(false);
+        if (allowDoctype) {
+            factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+            factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
+        }
         return factory;
     }
 
     // ---------------------------------------------------------------- đọc DOM
 
-    private static List<Element> childElements(Element parent, String name) {
+    /** Các phần tử con trực tiếp tên {@code name}, theo thứ tự trong tài liệu. */
+    public static List<Element> childElements(Element parent, String name) {
         List<Element> result = new ArrayList<>();
         NodeList children = parent.getChildNodes();
         for (int i = 0; i < children.getLength(); i++) {

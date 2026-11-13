@@ -24,7 +24,15 @@ import {
 } from '../notes/durations';
 import { dotCount } from '../notes/durationCore';
 import type { AccidentalChoice, DurationChoice, DurationType, InsertTarget } from '../notes/durations';
-import { DRAFT_INTERVAL_MS, clearDraft, loadDraft, purgeOtherDrafts, saveDraft } from './draft';
+import {
+  DRAFT_INTERVAL_MS,
+  DRAFT_PREFIX,
+  SUGGEST_DRAFT_PREFIX,
+  clearDraft,
+  loadDraft,
+  purgeOtherDrafts,
+  saveDraft,
+} from './draft';
 import type { Draft } from './draft';
 import { describeSelection } from './describe';
 import { History } from './history';
@@ -91,6 +99,13 @@ export interface UseScoreEditorOptions {
   canForce: boolean;
   /** true khi có hộp thoại khác đang mở: tạm tắt phím tắt sửa. */
   blocked: boolean;
+  /**
+   * `direct` (mặc định): Lưu ghi thẳng lên bản nhạc. `suggest`: Lưu không gọi máy chủ mà đưa MusicXML đã sửa cho
+   * `onSuggest` (mở hộp gửi đề xuất); nháp dùng tiền tố riêng.
+   */
+  mode?: 'direct' | 'suggest';
+  /** Chế độ `suggest`: nhận MusicXML đã sửa khi người dùng bấm Gửi đề xuất / Ctrl+S. */
+  onSuggest?: (xml: string) => void;
 }
 
 /** Thông báo ngắn; `key` đổi mỗi lần để giao diện chạy lại hiệu ứng rung. */
@@ -185,6 +200,8 @@ export interface ScoreEditor {
   undo: () => void;
   redo: () => void;
   save: (force?: boolean) => Promise<void>;
+  /** Chế độ `suggest`: đề xuất đã gửi xong, coi như đã lưu và xóa nháp. */
+  finishSuggestion: () => void;
   restoreDraft: () => void;
   discardDraft: () => void;
   /** Xung đột: bỏ thay đổi của tôi, tải lại bản mới nhất. */
@@ -203,7 +220,8 @@ export interface ScoreEditor {
 
 export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
   const { confirm: confirmDialog } = useDialog();
-  const { scoreId, title, doc, initialVersion, canEdit, canForce, blocked } = options;
+  const { scoreId, title, doc, initialVersion, canEdit, canForce, blocked, mode = 'direct', onSuggest } = options;
+  const draftPrefix = mode === 'suggest' ? SUGGEST_DRAFT_PREFIX : DRAFT_PREFIX;
   const historyRef = useRef(new History());
   const savingRef = useRef(false);
   const allowLeaveRef = useRef(false);
@@ -224,8 +242,8 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
   const [conflict, setConflict] = useState<{ latestVersion: number } | null>(null);
   const [draft, setDraft] = useState<Draft | null>(() => {
     if (!canEdit) return null;
-    purgeOtherDrafts(scoreId, initialVersion); // nháp của phiên bản cũ không còn khôi phục được
-    const found = loadDraft(scoreId, initialVersion);
+    purgeOtherDrafts(scoreId, initialVersion, draftPrefix); // nháp của phiên bản cũ không còn khôi phục được
+    const found = loadDraft(scoreId, initialVersion, draftPrefix);
     return found && found.xml !== doc.serialize() ? found : null;
   });
 
@@ -718,14 +736,18 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
         flash(t('editor.flash.nothingToSave'));
         return;
       }
+      if (mode === 'suggest') {
+        onSuggest?.(doc.serialize());
+        return;
+      }
       savingRef.current = true;
       setSaving(true);
       const position = historyRef.current.position;
       try {
         const result = await saveMusicXml(scoreId, doc.serialize(), version, force);
         historyRef.current.markSaved(position);
-        clearDraft(scoreId, version);
-        purgeOtherDrafts(scoreId, result.version);
+        clearDraft(scoreId, version, draftPrefix);
+        purgeOtherDrafts(scoreId, result.version, draftPrefix);
         setVersion(result.version);
         setConflict(null);
         setFlags({
@@ -743,8 +765,18 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
         setSaving(false);
       }
     },
-    [canEdit, doc, scoreId, version, flash],
+    [canEdit, doc, scoreId, version, flash, mode, onSuggest, draftPrefix],
   );
+
+  const finishSuggestion = useCallback(() => {
+    historyRef.current.markSaved(historyRef.current.position);
+    clearDraft(scoreId, version, draftPrefix);
+    setFlags({
+      dirty: historyRef.current.dirty,
+      canUndo: historyRef.current.canUndo,
+      canRedo: historyRef.current.canRedo,
+    });
+  }, [scoreId, version, draftPrefix]);
 
   const overwrite = useCallback(async () => {
     if (!canForce) return;
@@ -752,10 +784,10 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
   }, [canForce, save]);
 
   const reloadLatest = useCallback(() => {
-    clearDraft(scoreId, version);
+    clearDraft(scoreId, version, draftPrefix);
     allowLeaveRef.current = true;
     window.location.reload();
-  }, [scoreId, version]);
+  }, [scoreId, version, draftPrefix]);
 
   /**
    * Khôi phục một phiên bản cũ từ bảng lịch sử: BE lưu nó thành phiên bản mới, sau đó tải lại nội dung vào tài liệu
@@ -777,8 +809,8 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
           return false;
         }
         historyRef.current.clear();
-        clearDraft(scoreId, version);
-        purgeOtherDrafts(scoreId, result.version);
+        clearDraft(scoreId, version, draftPrefix);
+        purgeOtherDrafts(scoreId, result.version, draftPrefix);
         setVersion(result.version);
         setConflict(null);
         setSelection(new Set());
@@ -795,7 +827,7 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
         setSaving(false);
       }
     },
-    [canEdit, doc, scoreId, version, sync],
+    [canEdit, doc, scoreId, version, sync, draftPrefix],
   );
 
   const downloadMine = useCallback(() => {
@@ -824,14 +856,16 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     } catch {
       toast.error(t('editor.toast.draftBroken'));
       clearDraft(scoreId, version);
+      toast.error('Bản nháp bị hỏng nên không khôi phục được');
+      clearDraft(scoreId, version, draftPrefix);
     }
     setDraft(null);
-  }, [draft, doc, sync, scoreId, version]);
+  }, [draft, doc, sync, scoreId, version, draftPrefix]);
 
   const discardDraft = useCallback(() => {
-    clearDraft(scoreId, version);
+    clearDraft(scoreId, version, draftPrefix);
     setDraft(null);
-  }, [scoreId, version]);
+  }, [scoreId, version, draftPrefix]);
 
   const confirmLeave = useCallback(
     async () => !historyRef.current.dirty || confirmDialog(leaveDialogOptions()),
@@ -842,25 +876,25 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
   useEffect(() => {
     if (!canEdit || !flags.dirty) return;
     const timer = window.setInterval(() => {
-      if (!saveDraft(scoreId, version, doc.serialize()) && !draftWarnedRef.current) {
+      if (!saveDraft(scoreId, version, doc.serialize(), draftPrefix) && !draftWarnedRef.current) {
         draftWarnedRef.current = true;
         toast.warn(t('editor.toast.draftFull'));
       }
     }, DRAFT_INTERVAL_MS);
     return () => window.clearInterval(timer);
-  }, [canEdit, flags.dirty, scoreId, version, doc]);
+  }, [canEdit, flags.dirty, scoreId, version, doc, draftPrefix]);
 
   // Rời hoặc đóng tab khi chưa lưu: lưu nháp ngay và hỏi xác nhận
   useEffect(() => {
     if (!canEdit || !flags.dirty) return;
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
       if (allowLeaveRef.current) return;
-      saveDraft(scoreId, version, doc.serialize());
+      saveDraft(scoreId, version, doc.serialize(), draftPrefix);
       e.preventDefault();
     };
     window.addEventListener('beforeunload', onBeforeUnload);
     return () => window.removeEventListener('beforeunload', onBeforeUnload);
-  }, [canEdit, flags.dirty, scoreId, version, doc]);
+  }, [canEdit, flags.dirty, scoreId, version, doc, draftPrefix]);
 
   // Nút Back của trình duyệt khi chưa lưu: thêm một mục lịch sử đệm để chặn và hỏi xác nhận
   useEffect(() => {
@@ -1023,6 +1057,7 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     undo,
     redo,
     save,
+    finishSuggestion,
     restoreDraft,
     discardDraft,
     reloadLatest,

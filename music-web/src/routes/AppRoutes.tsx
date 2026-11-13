@@ -3,6 +3,7 @@ import Login from '../pages/Login';
 import UserProfile from '../pages/Profile';
 import ScoreLibrary from '../pages/scores/library/ScoreLibrary';
 import ScoreDetail from '../pages/scores/library/ScoreDetail';
+import SuggestionReview from '../pages/scores/suggestions/SuggestionReview';
 import ScoreTrash from '../pages/scores/library/ScoreTrash';
 import ScoreCreate from '../pages/scores/create/ScoreCreate';
 import ScoreUpload from '../pages/scores/upload/ScoreUpload';
@@ -91,6 +92,7 @@ const router = createBrowserRouter(
         <Route path="/scores/shared" element={<SharedScores />} />
         <Route path="/scores/trash" element={<ScoreTrash />} />
         <Route path="/scores/:id" element={<ScoreDetail />} />
+        <Route path="/scores/:id/suggestions/:suggestionId" element={<SuggestionReview />} />
         <Route path="/scores/:id/processing" element={<ScoreProcessing />} />
         <Route path="/scores/:id/review" element={<ScoreReview />} />
         <Route path="/playlists" element={<Playlists />} />
