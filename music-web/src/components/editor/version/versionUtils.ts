@@ -1,7 +1,8 @@
 import type { DiffErrorType, DiffMeasure, DiffStatus, ScoreVersion, VersionSource } from '../../../types/version';
+import { t } from '../../../i18n/core';
 import { getErrorCode, getSaveErrorMessage } from '../../../utils/score';
 
-export const VERSION_SOURCE_LABELS: Record<VersionSource, string> = {
+export const VERSION_SOURCE_LABELS: Record<Exclude<VersionSource, 'SUGGESTION'>, string> = {
   EDITOR: 'Chỉnh sửa',
   OMR: 'Số hóa từ file',
   IMPORT: 'Nhập file',
@@ -9,8 +10,14 @@ export const VERSION_SOURCE_LABELS: Record<VersionSource, string> = {
 };
 
 /** Nhãn mô tả nguồn của phiên bản, ví dụ "Khôi phục từ v2". */
-export const versionSourceLabel = (v: ScoreVersion): string =>
-  v.source === 'RESTORE' && v.restoredFrom ? `Khôi phục từ v${v.restoredFrom}` : VERSION_SOURCE_LABELS[v.source];
+export const versionSourceLabel = (v: ScoreVersion): string => {
+  if (v.source === 'SUGGESTION') {
+    return v.suggestionAuthorName
+      ? t('suggestions.history.accepted', { name: v.suggestionAuthorName })
+      : t('suggestions.history.acceptedAnonymous');
+  }
+  return v.source === 'RESTORE' && v.restoredFrom ? `Khôi phục từ v${v.restoredFrom}` : VERSION_SOURCE_LABELS[v.source];
+};
 
 export const formatVersionSize = (bytes?: number | null): string =>
   bytes

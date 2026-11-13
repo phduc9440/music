@@ -8,13 +8,14 @@ import FilesTable from '../../../components/scores/detail/FilesTable';
 import RequestAccess from '../../../components/scores/detail/RequestAccess';
 import ReviewsSection from '../../../components/scores/detail/ReviewsSection';
 import CommentsSection from '../../../components/scores/comments/CommentsSection';
+import SuggestionsSection from '../../../components/scores/suggestions/SuggestionsSection';
 import ScoreHero, { ScorePreview, ScoreSidebar } from '../../../components/scores/detail/ScoreHero';
 import Modal from '../../../components/scores/common/Modal';
 import ShareModal from '../../../components/scores/detail/ShareModal';
 import TasksTable from '../../../components/scores/detail/TasksTable';
 import { getBackTarget } from '../../../components/layout/nav';
 import { BackLink } from '../../../components/ui';
-import { commentApi, scoreApi } from '../../../services';
+import { commentApi, scoreApi, suggestionApi } from '../../../services';
 import type { ScoreDetail as ScoreDetailData } from '../../../types';
 import { getHttpStatus, POLL_INTERVAL_MS, useScoreBase } from '../../../utils/score';
 import '../../../components/scores/scores.css';
@@ -28,7 +29,7 @@ type LoadState =
   | { phase: 'forbidden' }
   | { phase: 'error' };
 
-type Tab = 'files' | 'tasks' | 'reviews' | 'comments';
+type Tab = 'files' | 'tasks' | 'reviews' | 'comments' | 'suggestions';
 
 /**
  * Trang /scores/:id: chi tiết bản nhạc (doc mục 2.0).
@@ -53,10 +54,18 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
   // ?tab=comments&comment=ID (từ thông báo góp ý): mở tab Góp ý và cuộn tới góp ý đó
   const [searchParams] = useSearchParams();
   const focusCommentId = searchParams.get('comment');
-  const [tab, setTab] = useState<Tab>(searchParams.get('tab') === 'comments' || focusCommentId ? 'comments' : 'files');
+  const [tab, setTab] = useState<Tab>(
+    searchParams.get('tab') === 'suggestions'
+      ? 'suggestions'
+      : searchParams.get('tab') === 'comments' || focusCommentId
+        ? 'comments'
+        : 'files',
+  );
   const [openComments, setOpenComments] = useState<number | null>(null);
+  const [openSuggestions, setOpenSuggestions] = useState<number | null>(null);
   const scoreBase = useScoreBase();
   const onOpenComments = useCallback((n: number) => setOpenComments(n), []);
+  const onOpenSuggestions = useCallback((n: number) => setOpenSuggestions(n), []);
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [sharing, setSharing] = useState(false);
@@ -95,7 +104,8 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
   // File gốc và lịch sử tác vụ chỉ dành cho người có quyền sửa; người xem chỉ thấy tab Nhận xét
   const canSeeSources = score?.accessLevel === 'OWNER' || score?.accessLevel === 'EDIT';
   // Người không có quyền sửa không thấy tab File / Tác vụ: rơi về tab Nhận xét
-  const activeTab: Tab = canSeeSources || tab === 'reviews' || tab === 'comments' ? tab : 'reviews';
+  const activeTab: Tab =
+    canSeeSources || tab === 'reviews' || tab === 'comments' || tab === 'suggestions' ? tab : 'reviews';
 
   // Số góp ý đang mở hiện trên tab (tab Góp ý cập nhật lại khi người dùng thêm / xử lý góp ý)
   useEffect(() => {
@@ -109,6 +119,19 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
       cancelled = true;
     };
   }, [id, state.phase]);
+  // Số đề xuất đang mở hiện trên tab Đề xuất (chỉ người có quyền nhận xét trở lên xem được)
+  const canSuggest = score?.canReview === true;
+  useEffect(() => {
+    if (!id || state.phase !== 'ready' || !canSuggest) return;
+    let cancelled = false;
+    suggestionApi
+      .list(id, 'OPEN', 0, 1)
+      .then((res) => !cancelled && setOpenSuggestions(res.data.result.totalElements))
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [id, state.phase, canSuggest]);
   useEffect(() => {
     if (!running) return;
     const t = setInterval(() => setTick((n) => n + 1), POLL_INTERVAL_MS);
@@ -224,6 +247,17 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
                 {t('scores.comments.tab')}
                 {openComments ? <span className="sc-tab__count">{openComments}</span> : null}
               </button>
+              {score.canReview && (
+                <button
+                  role="tab"
+                  aria-selected={activeTab === 'suggestions'}
+                  className="sc-tab"
+                  onClick={() => setTab('suggestions')}
+                >
+                  {t('suggestions.section.tab')}
+                  {openSuggestions ? <span className="sc-tab__count">{openSuggestions}</span> : null}
+                </button>
+              )}
             </div>
 
             {activeTab === 'files' && <FilesTable files={score.files} />}
@@ -240,6 +274,9 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
                     : undefined
                 }
               />
+            )}
+            {activeTab === 'suggestions' && score.canReview && (
+              <SuggestionsSection scoreId={score.id} onOpenCount={onOpenSuggestions} />
             )}
             {activeTab === 'reviews' && (
               <ReviewsSection scoreId={score.id} canReview={score.canReview} onChanged={() => setTick((n) => n + 1)} />
