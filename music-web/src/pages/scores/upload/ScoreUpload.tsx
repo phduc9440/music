@@ -20,6 +20,7 @@ import {
   validateUploadFile,
 } from '../../../utils/score';
 import { clearPendingUpload, isImportBatch, peekPendingUpload } from '../../../utils/pendingUpload';
+import { reportPlanLimit } from '../../../utils/planLimit';
 import { inspectFile, rotateImageFile } from '../../../utils/uploadInspect';
 import '../../../components/scores/scores.css';
 import './ScoreUpload.css';
@@ -164,7 +165,7 @@ export default function ScoreUpload() {
       navigate(getScorePath(created.scoreId, 'PENDING'), { replace: true });
     } catch (err) {
       // Giữ nguyên các file đã chọn để người dùng sửa rồi thử lại
-      toast.error(getUploadErrorMessage(err));
+      if (!reportPlanLimit(err)) toast.error(getUploadErrorMessage(err));
       setUploading(false);
     }
   };

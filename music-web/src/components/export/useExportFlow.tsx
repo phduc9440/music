@@ -6,6 +6,7 @@ import { exportApi } from '../../services/file/exportApi';
 import type { AiTaskInfo } from '../../types';
 import type { ExportFileInfo, ExportTarget } from '../../types/export';
 import { exportErrorMessage, isTaskFinished, translateTaskError } from './exportUtils';
+import { reportPlanLimit } from '../../utils/planLimit';
 import { useExportTask } from './useExportTask';
 
 interface FlowOptions {
@@ -70,6 +71,7 @@ export function useExportFlow({ scoreId, isOpen, readyMessage, reopen, resume }:
       else if (response.task) track(response.task);
       return null;
     } catch (err) {
+      reportPlanLimit(err);
       return exportErrorMessage(err);
     }
   };

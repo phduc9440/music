@@ -19,6 +19,7 @@ import {
   stoppedEarly,
 } from '../../../utils/omr';
 import { getErrorMessage, getHttpStatus, getUploadErrorMessage, useScoreBase } from '../../../utils/score';
+import { reportPlanLimit } from '../../../utils/planLimit';
 import '../../../components/scores/scores.css';
 import '../library/ScoreLibrary.css';
 import './ScoreProcessing.css';
@@ -164,7 +165,7 @@ export default function ScoreProcessing() {
       setPages([]);
       toast.success(t('upload.processing.resent'));
     } catch (err) {
-      toast.error(getUploadErrorMessage(err));
+      if (!reportPlanLimit(err)) toast.error(getUploadErrorMessage(err));
     } finally {
       setBusy(false);
     }

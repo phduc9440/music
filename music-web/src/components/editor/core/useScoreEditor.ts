@@ -8,6 +8,7 @@ import { toast } from 'react-toastify';
 import { fetchMusicXmlWithVersion, saveMusicXml } from '../../../services';
 import { versionApi } from '../../../services/score/versionApi';
 import { getConflictVersion, getSaveErrorMessage } from '../../../utils/score';
+import { reportPlanLimit } from '../../../utils/planLimit';
 import { EDIT_FAILURE_MESSAGES, changePitch, removeNotes, setAlteration } from './commands';
 import { transposeDocument } from '../notes/transpose';
 import type { EditResult, SymbolOp } from './commands';
@@ -728,7 +729,7 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
       } catch (err) {
         const latest = getConflictVersion(err);
         if (latest !== undefined) setConflict({ latestVersion: latest });
-        else toast.error(getSaveErrorMessage(err));
+        else if (!reportPlanLimit(err)) toast.error(getSaveErrorMessage(err));
       } finally {
         savingRef.current = false;
         setSaving(false);

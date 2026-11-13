@@ -17,6 +17,7 @@ import {
   translateTaskError,
   validateExportOptions,
 } from './exportUtils';
+import { reportPlanLimit } from '../../utils/planLimit';
 import ExportRunningView from './ExportRunningView';
 import { useExportTask } from './useExportTask';
 import './export.css';
@@ -93,6 +94,7 @@ export default function ExportAudioDialog({ scoreId, title, staffCount, format, 
       else if (response.task) track(response.task);
       return null;
     } catch (err) {
+      reportPlanLimit(err);
       return exportErrorMessage(err);
     }
   };

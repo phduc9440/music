@@ -5,6 +5,7 @@ import ComposerDatalist from '../../composers/ComposerDatalist';
 import { scoreCreateApi } from '../../../services';
 import type { BlankPreset, KeyMode } from '../../../types';
 import { getErrorMessage, MAX_COMPOSER, MAX_TITLE } from '../../../utils/score';
+import { reportPlanLimit } from '../../../utils/planLimit';
 import { accidentalsLabel, KEY_FIFTHS, keyName } from './keySignatures';
 import { t } from '../../../i18n/core';
 
@@ -72,7 +73,7 @@ export default function BlankScoreForm({ onCreated, onCancel }: Props) {
       });
       onCreated(res.data.result.scoreId);
     } catch (err) {
-      toast.error(getErrorMessage(err, t('upload.create.blank.failed')));
+      if (!reportPlanLimit(err)) toast.error(getErrorMessage(err, t('upload.create.blank.failed')));
       setBusy(false);
     }
   };
