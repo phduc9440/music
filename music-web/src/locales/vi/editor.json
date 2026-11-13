@@ -1,0 +1,206 @@
+{
+  "failure": {
+    "range": "Không thể đổi: cao độ vượt quá khoảng A0–C8",
+    "rest": "Dấu lặng không có cao độ nên không đổi được",
+    "duplicate": "Không thể đổi: hợp âm đã có nốt cùng cao độ",
+    "unchanged": "Nốt đã ở đúng trạng thái này rồi",
+    "empty": "Hãy chọn ít nhất một nốt (không phải dấu lặng)",
+    "tuplet": "Nốt này đã nằm trong chùm, hoặc vị trí chèn nằm giữa một chùm (chưa hỗ trợ chùm lồng nhau)",
+    "tupletFit": "Trường độ mới không vừa chùm; hãy bỏ chùm trước",
+    "tupletType": "Không viết được chùm này bằng các hình nốt hiện có (thử chùm khác hoặc trường độ khác)",
+    "noTuplet": "Nốt đang chọn không nằm trong chùm nào",
+    "tie": "Chưa hỗ trợ đổi trường độ khi có nốt dính dấu nối (nốt đang sửa hoặc nốt bị đè)",
+    "noSpace": "Không kéo dài được: nốt sẽ vượt quá cuối ô nhịp",
+    "divisions": "Bản nhạc chia nhịp quá thô nên không đổi sang trường độ này được",
+    "unsupported": "Cấu trúc ô nhịp này chưa hỗ trợ đổi trường độ",
+    "tieTarget": "Dấu nối cần hai nốt liền nhau cùng cao độ trong cùng bè: hãy chọn nốt trước (hoặc cả hai nốt)",
+    "slurTarget": "Dấu luyến cần chọn từ hai nốt trở lên trong cùng một khuông",
+    "lyricTarget": "Hãy chọn một nốt (không phải dấu lặng hay nốt nối tiếp) để nhập lời",
+    "badValue": "Giá trị không hợp lệ",
+    "badChord": "Không hiểu hợp âm này. Ví dụ: C, Am7, G/B, F#m, Bbmaj7, Dsus4, C6/9, N.C.",
+    "hairpinTarget": "Cresc./dim. cần chọn từ hai nốt trở lên (từ nốt bắt đầu đến nốt kết thúc)",
+    "spanTarget": "Vùng chọn phải nằm trong cùng một khuông của cùng một phần nhạc",
+    "arpeggioTarget": "Dấu rải cần một hợp âm có từ hai nốt trở lên: hãy chọn hợp âm",
+    "glissTarget": "Glissando cần hai nốt trong cùng một khuông và bè: chọn nốt bắt đầu (nốt liền sau là nốt kết thúc) hoặc chọn cả hai nốt",
+    "graceTarget": "Hãy chọn một nốt hoa mỹ (nốt nhỏ) để đổi giữa có gạch chéo và không gạch",
+    "noSection": "Ô nhịp này chưa có nhãn đoạn",
+    "barRepeat": "Ô này đã có dấu lặp ở cuối nên không đặt thêm vạch đôi được",
+    "breakFirst": "Ô đầu bài luôn mở đầu dòng và trang đầu: hãy chọn một ô phía sau",
+    "noRepeat": "Ô cuối của vùng chọn chưa có dấu lặp cuối (:|): hãy đặt dấu lặp cuối trước",
+    "noMeasure": "Hãy chọn một nốt để biết thao tác này áp dụng cho ô nhịp nào",
+    "lastMeasure": "Bản nhạc phải còn ít nhất một ô nhịp",
+    "voiceMain": "Đây là bè chính của khuông nên không xóa theo cách này (hãy dùng nút Xóa nốt / Dấu lặng)",
+    "hasBass": "Phần nhạc này đã có hai khuông rồi (dùng \"Thêm khuông Sol/Fa\" để thêm khuông riêng)",
+    "lastStaff": "Bản nhạc phải còn ít nhất một khuông (khuông 1 của đàn chỉ xóa được khi còn phần nhạc khác)",
+    "noStaff": "Hãy chọn một nốt hoặc dấu lặng để biết thao tác này áp dụng cho khuông nào",
+    "voiceNone": "Hãy chọn các nốt (không phải dấu lặng hay nốt trang trí) để viết bè"
+  },
+  "cmd": {
+    "pitch": {
+      "stepUp": "Lên một bậc",
+      "stepDown": "Xuống một bậc",
+      "semitoneUp": "Lên nửa cung",
+      "semitoneDown": "Xuống nửa cung",
+      "octaveUp": "Lên một quãng tám",
+      "octaveDown": "Xuống một quãng tám"
+    },
+    "pitchMany": {
+      "stepUp": "Lên một bậc ({count} lần)",
+      "stepDown": "Xuống một bậc ({count} lần)",
+      "semitoneUp": "Lên nửa cung ({count} lần)",
+      "semitoneDown": "Xuống nửa cung ({count} lần)",
+      "octaveUp": "Lên một quãng tám ({count} lần)",
+      "octaveDown": "Xuống một quãng tám ({count} lần)"
+    },
+    "symbol": {
+      "sharp": "Thêm dấu thăng",
+      "flat": "Thêm dấu giáng",
+      "natural": "Thêm dấu bình",
+      "rest": "Đổi thành dấu lặng",
+      "delete": "Xóa nốt",
+      "tie": "Dấu nối",
+      "slur": "Dấu luyến"
+    }
+  },
+  "doc": {
+    "invalid": "MusicXML không hợp lệ",
+    "noMeasures": "MusicXML không có ô nhịp nào"
+  },
+  "describe": {
+    "type": {
+      "whole": "tròn",
+      "half": "trắng",
+      "quarter": "đen",
+      "eighth": "móc đơn",
+      "16th": "móc kép",
+      "32nd": "móc ba",
+      "64th": "móc tứ",
+      "breve": "tròn đôi"
+    },
+    "selected": "{count} nốt đã chọn",
+    "heard": "nghe là {pitch}",
+    "rest": "Dấu lặng",
+    "noteOf": "nốt {duration}",
+    "restOf": "lặng {duration}",
+    "measure": "ô {n}",
+    "rightHand": "tay phải",
+    "leftHand": "tay trái"
+  },
+  "solfege": {
+    "C": "Đô",
+    "D": "Rê",
+    "E": "Mi",
+    "F": "Fa",
+    "G": "Sol",
+    "A": "La",
+    "B": "Si"
+  },
+  "instruments": {
+    "piano": "Piano",
+    "strings": "Đàn dây",
+    "flute": "Sáo / kèn gỗ",
+    "organ": "Đàn organ",
+    "guitar": "Guitar / đàn gảy",
+    "choir": "Giọng hát / hợp xướng",
+    "brass": "Kèn đồng",
+    "bells": "Chuông / glockenspiel"
+  },
+  "flash": {
+    "inputDuration": "Trường độ nhập: {duration}",
+    "dotUnsupported": "Chưa đổi được chấm dôi cho trường độ này",
+    "tupletInput": "{name}: trường độ nhập {duration}, bấm vào dấu lặng để nhập nốt",
+    "undone": "Đã hoàn tác: {label}",
+    "redone": "Đã làm lại: {label}",
+    "nothingToSave": "Không có thay đổi để lưu"
+  },
+  "toast": {
+    "chordsPlaced": "Đã gán {count} hợp âm",
+    "chordsLeft": "Còn {count} hợp âm không có nốt để gán",
+    "lyricsPlaced": "Đã gán {count} âm tiết",
+    "lyricsLeft": "Còn {count} âm tiết không có nốt để gán",
+    "saved": "Đã lưu (phiên bản {version})",
+    "restoredNoReload": "Đã khôi phục thành phiên bản {version} nhưng chưa tải lại được, hãy tải lại trang",
+    "restored": "Đã khôi phục phiên bản {from} thành phiên bản {version}",
+    "draftRestored": "Đã khôi phục bản nháp, hãy bấm Lưu để giữ lại",
+    "draftBroken": "Bản nháp bị hỏng nên không khôi phục được",
+    "draftFull": "Không tự lưu nháp được (trình duyệt hết dung lượng). Hãy bấm Lưu để giữ thay đổi."
+  },
+  "leave": {
+    "title": "Rời trang khi chưa lưu?",
+    "message": "Các thay đổi chưa lưu sẽ bị mất.",
+    "confirm": "Rời trang",
+    "stay": "Ở lại"
+  },
+  "version": {
+    "source": {
+      "EDITOR": "Chỉnh sửa",
+      "OMR": "Số hóa từ file",
+      "IMPORT": "Nhập file",
+      "RESTORE": "Khôi phục"
+    },
+    "restoredFrom": "Khôi phục từ v{version}",
+    "gone": "Phiên bản này không còn (chỉ giữ 20 phiên bản mới nhất)",
+    "status": {
+      "same": "Giữ nguyên",
+      "edited": "Đã sửa",
+      "deleted": "OMR sinh thừa, đã xóa",
+      "added": "OMR bỏ sót, đã thêm"
+    },
+    "error": {
+      "PITCH": "Sai cao độ",
+      "ACCIDENTAL": "Sai dấu hóa",
+      "DURATION": "Sai trường độ",
+      "TIMING": "Lệch vị trí trong ô",
+      "EXTRA": "Nốt thừa",
+      "MISSING": "Nốt thiếu"
+    },
+    "cellTitle": "Ô {label}: {status}",
+    "errorLine": "{type}{detail} (khuông {staff}, phách {beat})",
+    "diff": {
+      "2901": "Không có phiên bản do nhận diện sinh ra để so sánh (bản nhạc không từ OMR hoặc đã quá 20 phiên bản)",
+      "2902": "Không thể so sánh một phiên bản với chính nó",
+      "2903": "Không so sánh được hai phiên bản này (MusicXML không đọc được)",
+      "2103": "Dịch vụ nhận diện tạm thời không khả dụng, vui lòng thử lại sau"
+    },
+    "panel": {
+      "comparing": "Đang so sánh...",
+      "kept": "Ô giữ nguyên",
+      "edited": "Ô đã sửa",
+      "extra": "Ô OMR sinh thừa",
+      "missed": "Ô OMR bỏ sót",
+      "noteErrors": "Lỗi nốt",
+      "keptValue": "{rate} ({same}/{total})",
+      "noteErrorsValue": "{count} ({rate} số nốt)",
+      "summary": "So phiên bản {target} với phiên bản {base}{cached}.",
+      "cached": " (kết quả đã lưu)",
+      "strip": "Các ô nhịp",
+      "legend": {
+        "same": "Giữ nguyên",
+        "edited": "Đã sửa",
+        "extra": "OMR sinh thừa",
+        "missed": "OMR bỏ sót"
+      },
+      "warning": "Bạn có thay đổi chưa lưu, chúng sẽ bị bỏ. ",
+      "restoreTitle": "Khôi phục phiên bản {version}?",
+      "restoreMessage": "{warning}Nội dung của nó sẽ được lưu thành phiên bản mới nhất, các phiên bản hiện có vẫn nằm trong lịch sử.",
+      "restore": "Khôi phục",
+      "restoring": "Đang khôi phục...",
+      "restoreThis": "Khôi phục phiên bản này",
+      "compareTitle": "So sánh phiên bản {version}",
+      "viewTitle": "Xem phiên bản {version}",
+      "back": "Quay lại danh sách",
+      "title": "Lịch sử phiên bản",
+      "loading": "Đang tải...",
+      "empty": "Bản nhạc chưa có phiên bản nào.",
+      "hint": "Chỉ giữ 20 phiên bản mới nhất. Khôi phục không xóa các phiên bản hiện có.",
+      "version": "Phiên bản {version}",
+      "current": "Hiện tại",
+      "measures": "{count} ô nhịp",
+      "view": "Xem",
+      "vsOmr": "So với bản OMR",
+      "vsPrevious": "So với bản trước",
+      "close": "Đóng",
+      "loadingVersion": "Đang tải phiên bản..."
+    }
+  }
+}

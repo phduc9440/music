@@ -2,7 +2,7 @@
  * Lịch sử hoàn tác / làm lại (tối đa 100 bước). Mỗi bước là một {@link EditCommand} chứa bản sao ô nhịp trước và
  * sau, nên hoàn tác chỉ việc thay ô nhịp về bản cũ. Nhiều nốt đổi cùng lúc là một lệnh nên là một bước.
  */
-import type { EditCommand } from './commands';
+import { resolveLabel, type EditCommand } from './commands';
 import type { ScoreDocument } from './ScoreDocument';
 
 /** Số bước hoàn tác tối đa. */
@@ -43,11 +43,13 @@ export class History {
 
   /** Nhãn của bước sẽ được hoàn tác / làm lại tiếp theo (để hiện trên thanh trạng thái). */
   get undoLabel(): string {
-    return this.stack[this.cursor - 1]?.label ?? '';
+    const label = this.stack[this.cursor - 1]?.label;
+    return label === undefined ? '' : resolveLabel(label);
   }
 
   get redoLabel(): string {
-    return this.stack[this.cursor]?.label ?? '';
+    const label = this.stack[this.cursor]?.label;
+    return label === undefined ? '' : resolveLabel(label);
   }
 
   /** Vị trí hiện tại trong lịch sử, để {@link markSaved} biết bản nào đã được lưu dù người dùng sửa tiếp lúc đang lưu. */

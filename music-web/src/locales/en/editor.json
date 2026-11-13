@@ -1,0 +1,206 @@
+{
+  "failure": {
+    "range": "Cannot change: the pitch would leave the A0–C8 range",
+    "rest": "Rests have no pitch, so they cannot be changed",
+    "duplicate": "Cannot change: the chord already has a note with that pitch",
+    "unchanged": "The note is already in this state",
+    "empty": "Select at least one note (not a rest)",
+    "tuplet": "This note is already in a tuplet, or the insertion point is inside a tuplet (nested tuplets are not supported yet)",
+    "tupletFit": "The new duration does not fit the tuplet; remove the tuplet first",
+    "tupletType": "This tuplet cannot be written with the available note shapes (try another tuplet or duration)",
+    "noTuplet": "The selected note is not in any tuplet",
+    "tie": "Changing the duration is not supported yet when a note has a tie (the note being edited or one it overlaps)",
+    "noSpace": "Cannot lengthen: the note would run past the end of the measure",
+    "divisions": "The score is divided too coarsely to change to this duration",
+    "unsupported": "This measure structure does not support duration changes yet",
+    "tieTarget": "A tie needs two adjacent notes of the same pitch in the same voice: select the first note (or both notes)",
+    "slurTarget": "A slur needs two or more notes selected on the same staff",
+    "lyricTarget": "Select one note (not a rest or a tied continuation) to enter lyrics",
+    "badValue": "Invalid value",
+    "badChord": "This chord is not recognized. Examples: C, Am7, G/B, F#m, Bbmaj7, Dsus4, C6/9, N.C.",
+    "hairpinTarget": "Cresc./dim. needs two or more notes selected (from the first note to the last)",
+    "spanTarget": "The selection must be on the same staff of the same part",
+    "arpeggioTarget": "An arpeggio needs a chord of two or more notes: select a chord",
+    "glissTarget": "A glissando needs two notes on the same staff and voice: select the starting note (the next note is the end) or select both notes",
+    "graceTarget": "Select a grace note (small note) to toggle the slash",
+    "noSection": "This measure has no section label",
+    "barRepeat": "This measure already ends with a repeat sign, so a double barline cannot be added",
+    "breakFirst": "The first measure always starts a system and the first page: pick a later measure",
+    "noRepeat": "The last measure of the selection has no end repeat (:|): add an end repeat first",
+    "noMeasure": "Select a note so the app knows which measure this applies to",
+    "lastMeasure": "The score must keep at least one measure",
+    "voiceMain": "This is the main voice of the staff and cannot be removed this way (use the Delete note / Rest button)",
+    "hasBass": "This part already has two staves (use \"Add Treble/Bass staff\" to add a separate staff)",
+    "lastStaff": "The score must keep at least one staff (staff 1 of an instrument can only be removed when another part remains)",
+    "noStaff": "Select a note or rest so the app knows which staff this applies to",
+    "voiceNone": "Select notes (not rests or ornaments) to write a voice"
+  },
+  "cmd": {
+    "pitch": {
+      "stepUp": "Up one step",
+      "stepDown": "Down one step",
+      "semitoneUp": "Up a semitone",
+      "semitoneDown": "Down a semitone",
+      "octaveUp": "Up an octave",
+      "octaveDown": "Down an octave"
+    },
+    "pitchMany": {
+      "stepUp": "Up one step ({count} times)",
+      "stepDown": "Down one step ({count} times)",
+      "semitoneUp": "Up a semitone ({count} times)",
+      "semitoneDown": "Down a semitone ({count} times)",
+      "octaveUp": "Up an octave ({count} times)",
+      "octaveDown": "Down an octave ({count} times)"
+    },
+    "symbol": {
+      "sharp": "Add sharp",
+      "flat": "Add flat",
+      "natural": "Add natural",
+      "rest": "Change to rest",
+      "delete": "Delete note",
+      "tie": "Tie",
+      "slur": "Slur"
+    }
+  },
+  "doc": {
+    "invalid": "Invalid MusicXML",
+    "noMeasures": "The MusicXML has no measures"
+  },
+  "describe": {
+    "type": {
+      "whole": "whole",
+      "half": "half",
+      "quarter": "quarter",
+      "eighth": "eighth",
+      "16th": "16th",
+      "32nd": "32nd",
+      "64th": "64th",
+      "breve": "breve"
+    },
+    "selected": "{count} notes selected",
+    "heard": "sounds as {pitch}",
+    "rest": "Rest",
+    "noteOf": "{duration} note",
+    "restOf": "{duration} rest",
+    "measure": "measure {n}",
+    "rightHand": "right hand",
+    "leftHand": "left hand"
+  },
+  "solfege": {
+    "C": "C",
+    "D": "D",
+    "E": "E",
+    "F": "F",
+    "G": "G",
+    "A": "A",
+    "B": "B"
+  },
+  "instruments": {
+    "piano": "Piano",
+    "strings": "Strings",
+    "flute": "Flute / woodwinds",
+    "organ": "Organ",
+    "guitar": "Guitar / plucked strings",
+    "choir": "Voice / choir",
+    "brass": "Brass",
+    "bells": "Bells / glockenspiel"
+  },
+  "flash": {
+    "inputDuration": "Input duration: {duration}",
+    "dotUnsupported": "Cannot change the dot for this duration yet",
+    "tupletInput": "{name}: input duration {duration}, click a rest to enter notes",
+    "undone": "Undone: {label}",
+    "redone": "Redone: {label}",
+    "nothingToSave": "There are no changes to save"
+  },
+  "toast": {
+    "chordsPlaced": "Assigned {count} chords",
+    "chordsLeft": "{count} chords have no note to attach to",
+    "lyricsPlaced": "Assigned {count} syllables",
+    "lyricsLeft": "{count} syllables have no note to attach to",
+    "saved": "Saved (version {version})",
+    "restoredNoReload": "Restored as version {version} but the score could not be reloaded, please reload the page",
+    "restored": "Restored version {from} as version {version}",
+    "draftRestored": "Draft restored, press Save to keep it",
+    "draftBroken": "The draft is corrupted and could not be restored",
+    "draftFull": "Could not auto-save the draft (the browser is out of space). Press Save to keep your changes."
+  },
+  "leave": {
+    "title": "Leave without saving?",
+    "message": "Unsaved changes will be lost.",
+    "confirm": "Leave",
+    "stay": "Stay"
+  },
+  "version": {
+    "source": {
+      "EDITOR": "Edit",
+      "OMR": "Digitized from file",
+      "IMPORT": "File import",
+      "RESTORE": "Restore"
+    },
+    "restoredFrom": "Restored from v{version}",
+    "gone": "This version no longer exists (only the latest 20 versions are kept)",
+    "status": {
+      "same": "Unchanged",
+      "edited": "Edited",
+      "deleted": "Extra from OMR, deleted",
+      "added": "Missed by OMR, added"
+    },
+    "error": {
+      "PITCH": "Wrong pitch",
+      "ACCIDENTAL": "Wrong accidental",
+      "DURATION": "Wrong duration",
+      "TIMING": "Misplaced in the measure",
+      "EXTRA": "Extra note",
+      "MISSING": "Missing note"
+    },
+    "cellTitle": "Measure {label}: {status}",
+    "errorLine": "{type}{detail} (staff {staff}, beat {beat})",
+    "diff": {
+      "2901": "There is no recognition-generated version to compare with (the score is not from OMR or it is past 20 versions)",
+      "2902": "A version cannot be compared with itself",
+      "2903": "These two versions cannot be compared (the MusicXML cannot be read)",
+      "2103": "The recognition service is temporarily unavailable, please try again later"
+    },
+    "panel": {
+      "comparing": "Comparing...",
+      "kept": "Unchanged measures",
+      "edited": "Edited measures",
+      "extra": "Extra measures from OMR",
+      "missed": "Measures missed by OMR",
+      "noteErrors": "Note errors",
+      "keptValue": "{rate} ({same}/{total})",
+      "noteErrorsValue": "{count} ({rate} of notes)",
+      "summary": "Comparing version {target} with version {base}{cached}.",
+      "cached": " (saved result)",
+      "strip": "Measures",
+      "legend": {
+        "same": "Unchanged",
+        "edited": "Edited",
+        "extra": "Extra from OMR",
+        "missed": "Missed by OMR"
+      },
+      "warning": "You have unsaved changes; they will be discarded. ",
+      "restoreTitle": "Restore version {version}?",
+      "restoreMessage": "{warning}Its content will be saved as the newest version; existing versions stay in the history.",
+      "restore": "Restore",
+      "restoring": "Restoring...",
+      "restoreThis": "Restore this version",
+      "compareTitle": "Compare version {version}",
+      "viewTitle": "View version {version}",
+      "back": "Back to the list",
+      "title": "Version history",
+      "loading": "Loading...",
+      "empty": "The score has no versions yet.",
+      "hint": "Only the latest 20 versions are kept. Restoring does not delete existing versions.",
+      "version": "Version {version}",
+      "current": "Current",
+      "measures": "{count} measures",
+      "view": "View",
+      "vsOmr": "Compare with OMR",
+      "vsPrevious": "Compare with previous",
+      "close": "Close",
+      "loadingVersion": "Loading the version..."
+    }
+  }
+}

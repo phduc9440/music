@@ -9,7 +9,7 @@ import InstrumentMenu from '../../../components/scores/viewer/InstrumentMenu';
 import ScoreCanvas from '../../../components/scores/viewer/ScoreCanvas';
 import ZoomControl from '../../../components/scores/viewer/ZoomControl';
 import { IconBack, IconInvert, IconPages, IconScroll } from '../../../components/scores/viewer/ViewerIcons';
-import { EDIT_FAILURE_MESSAGES } from '../../../components/editor/core/commands';
+import { editFailureMessage } from '../../../components/editor/core/commands';
 import { syncTitle } from '../../../components/editor/structure/header';
 import { ScoreDocument } from '../../../components/editor/core/ScoreDocument';
 import { transposeDocument } from '../../../components/editor/notes/transpose';
@@ -188,7 +188,7 @@ function PlayerWorkspace({
     }
     const result = transposeDocument(copy, semitones);
     if (!result.ok) {
-      toast.warn(EDIT_FAILURE_MESSAGES[result.reason]);
+      toast.warn(editFailureMessage(result.reason));
       return false;
     }
     try {

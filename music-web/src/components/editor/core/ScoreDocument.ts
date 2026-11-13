@@ -1,3 +1,4 @@
+import { t } from '../../../i18n/core';
 /**
  * Lõi dữ liệu của trình chỉnh sửa: bọc DOM MusicXML và gán id ổn định cho từng nốt.
  * Không phụ thuộc React hay OSMD nên dễ kiểm thử.
@@ -102,10 +103,10 @@ export class ScoreDocument {
   static parse(xml: string): ScoreDocument {
     const doc = new DOMParser().parseFromString(xml, 'application/xml');
     if (doc.getElementsByTagName('parsererror').length > 0 || doc.documentElement.nodeName !== 'score-partwise') {
-      throw new Error('MusicXML không hợp lệ');
+      throw new Error(t('editor.doc.invalid'));
     }
     if (doc.getElementsByTagName('measure').length === 0) {
-      throw new Error('MusicXML không có ô nhịp nào');
+      throw new Error(t('editor.doc.noMeasures'));
     }
     return new ScoreDocument(doc);
   }
