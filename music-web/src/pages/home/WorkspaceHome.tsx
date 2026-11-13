@@ -29,9 +29,9 @@ const greeting = () => {
 
 const minutes = (seconds: number) => Math.floor(seconds / 60);
 
-/** Đường tới nơi xử lý một việc đang chờ: yêu cầu xin quyền nằm ở trang chi tiết, lời xin vào kho mẫu có trang riêng. */
+/** Đường tới nơi xử lý một việc đang chờ: yêu cầu xin quyền nằm ở tab Cài đặt của trang chi tiết, lời xin vào kho mẫu có trang riêng. */
 const pendingTarget = (item: HomePendingItem) =>
-  item.type === 'ACCESS_REQUEST' ? `/scores/${item.scoreId}` : '/scores/official-requests';
+  item.type === 'ACCESS_REQUEST' ? `/scores/${item.scoreId}?tab=settings` : '/scores/official-requests';
 
 const pendingText = (item: HomePendingItem) =>
   item.type === 'ACCESS_REQUEST'

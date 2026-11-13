@@ -513,7 +513,6 @@
   border-radius: var(--ui-radius-lg);
 }
 
-
 /* Nút dạng liên kết (ví dụ "Mở trình chỉnh sửa") */
 a.sc-btn {
   text-decoration: none;
@@ -591,5 +590,49 @@ a.sc-btn.is-disabled {
   .sd-cover {
     width: 80px;
     height: 80px;
+  }
+}
+
+/* ---- Bố cục kiểu trang repo GitHub: tên và nút hành động ở trên (nút bên phải), hàng tab chạy hết chiều ngang ---- */
+.sd-head__row {
+  align-items: flex-start;
+}
+.sd-head__lead {
+  align-items: flex-start;
+}
+.sd-head .sd-actions {
+  justify-content: flex-end;
+}
+.sd-tabs {
+  margin-bottom: 1.25rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.sd-tabs::-webkit-scrollbar {
+  display: none;
+}
+.sd-tabs .sc-tab {
+  white-space: nowrap;
+}
+/* Tab Cài đặt nằm tận cùng bên phải như mục Settings của GitHub */
+.sc-tab--end {
+  margin-left: auto;
+}
+/* Tab Thông tin: ảnh xem trước bên trái, thông số bên phải */
+.sd-info {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 1.25rem;
+  align-items: start;
+}
+.sd-info .sd-side {
+  position: static;
+}
+@media (max-width: 1000px) {
+  .sd-info {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sd-head .sd-actions {
+    justify-content: flex-start;
   }
 }

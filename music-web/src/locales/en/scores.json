@@ -224,7 +224,9 @@
     "tasks": "Task history",
     "reviews": "Reviews",
     "requestEditTitle": "Request edit access",
-    "requestMoreTitle": "Request more access"
+    "requestMoreTitle": "Request more access",
+    "settings": "Settings",
+    "info": "Info"
   },
   "hero": {
     "owner": "Owner: {name}",
@@ -309,7 +311,9 @@
     "invitePlaceholder": "Invite by email",
     "inviteLevel": "Access level when inviting",
     "invite": "Invite",
-    "requestsHint": "Approve to grant access (pick a different level if you want) or decline. They get a notification."
+    "requestsHint": "Approve to grant access (pick a different level if you want) or decline. They get a notification.",
+    "addPeople": "Invite people",
+    "revoke": "Revoke"
   },
   "reviews": {
     "loadFailed": "Couldn't load the reviews",
@@ -519,5 +523,20 @@
     "sending": "Sending...",
     "sent": "Report sent. Thank you.",
     "failed": "Could not send the report"
+  },
+  "settings": {
+    "noRequests": "No access requests are waiting.",
+    "nav": {
+      "general": "General",
+      "people": "People with access",
+      "requests": "Access requests",
+      "danger": "Danger zone"
+    },
+    "editTitle": "Score details",
+    "editHint": "Change the title, composer, difficulty, tags and practice notes.",
+    "shareTitle": "Sharing",
+    "shareHint": "Invite people by email and set view, review or edit access.",
+    "dangerTitle": "Delete this score",
+    "dangerHint": "Moves the score to the trash; you can restore it within 30 days."
   }
 }
