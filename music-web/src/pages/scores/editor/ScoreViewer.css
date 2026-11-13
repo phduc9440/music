@@ -1192,3 +1192,131 @@ h3.sv-tools__title {
   flex: none;
   min-width: 64px;
 }
+
+/* ---- Làm đẹp giao diện chỉnh sửa (gọn hơn, có thứ bậc rõ hơn) ---- */
+.sv-toolbar {
+  box-shadow: 0 1px 0 var(--sc-line);
+}
+.sv-title h1 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.sv-group {
+  align-items: center;
+}
+.sv-segment,
+.sv-zoom {
+  background: var(--ui-surface-muted);
+  border-color: transparent;
+}
+.sv-segment button[aria-pressed='true'] {
+  background: var(--ui-surface);
+  box-shadow: var(--ui-shadow-sm);
+}
+
+/* Giấy nhạc nổi trên nền xám ấm, bo góc và đổ bóng nhẹ */
+.sv-stage {
+  background: color-mix(in srgb, var(--ui-surface-hover) 70%, var(--ui-border));
+}
+.sv-canvas--page .sv-canvas__host svg {
+  border-radius: 6px;
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--ui-shadow-ink) 10%, transparent),
+    0 8px 24px color-mix(in srgb, var(--ui-shadow-ink) 10%, transparent);
+}
+.sv-canvas--scroll .sv-canvas__host {
+  border-radius: 10px;
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--ui-shadow-ink) 10%, transparent),
+    0 8px 24px color-mix(in srgb, var(--ui-shadow-ink) 10%, transparent);
+}
+
+/* Bảng công cụ: nhãn mục dạng chữ hoa nhỏ, ô công cụ thấp và đều hơn */
+.sv-tools__head strong {
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+}
+.sv-tools__note {
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+}
+.sv-tools__title,
+.sv-tools__toggle {
+  color: var(--sc-muted);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.sv-tool {
+  border-color: transparent;
+  border-radius: 10px;
+  background: var(--ui-surface-muted);
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s,
+    transform 0.1s;
+}
+.sv-tool:not(:disabled):hover:not(.is-active) {
+  background: var(--ui-surface-hover);
+  border-color: var(--sc-line);
+}
+.sv-tool:not(:disabled):active {
+  transform: scale(0.97);
+}
+.sv-tool.is-active {
+  box-shadow: inset 0 0 0 1.5px var(--sc-accent);
+}
+.sv-tool__label {
+  font-size: 0.74rem;
+  line-height: 1.2;
+  text-align: center;
+}
+.sv-status {
+  background: var(--ui-surface-muted);
+  font-size: 0.82rem;
+}
+
+@media (min-width: 1280px) {
+  .sv-tools {
+    width: 272px;
+    padding: 1rem 1rem 1.5rem;
+    scrollbar-width: thin;
+  }
+  .sv-tools__row {
+    gap: 0.4rem;
+  }
+  .sv-tool {
+    min-height: 66px;
+    gap: 0.25rem;
+    padding: 0.45rem 0.2rem;
+  }
+  .sv-tool svg {
+    width: 22px;
+    height: 22px;
+  }
+  .sv-tool--text {
+    min-height: 36px;
+  }
+  .sv-tools__search input {
+    min-height: 38px;
+    border-radius: 10px;
+    background: var(--ui-surface-muted);
+    border-color: transparent;
+  }
+  .sv-tools__search input:focus {
+    background: var(--ui-surface);
+    border-color: var(--sc-accent);
+  }
+  .sv-tools__toggle {
+    min-height: 40px;
+  }
+  .sv-tools__body {
+    padding-bottom: 0.8rem;
+  }
+  .sv-tools__check {
+    min-height: 36px;
+  }
+}
