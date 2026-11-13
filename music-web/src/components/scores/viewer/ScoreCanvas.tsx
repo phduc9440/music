@@ -14,6 +14,7 @@ import type { AccidentalChoice, DurationChoice, DurationType, InsertTarget } fro
 import type { ScoreDocument } from '../../editor/core/ScoreDocument';
 import { DURATION_DRAG_TYPE, ledgerLines, locateSpot, solfegeName, spotTarget } from '../../editor/core/staffHit';
 import type { StaffSpot } from '../../editor/core/staffHit';
+import { t } from '../../../i18n/core';
 import { ZOOM_MAX, ZOOM_MIN, clampZoom } from '../../../utils/viewer';
 import type { ViewMode } from '../../../utils/viewer';
 import { applyHeaderStyle, readHeader } from '../../editor/structure/header';
@@ -317,7 +318,7 @@ const drawCommentBoxes = (
     bubble.type = 'button';
     bubble.className = COMMENT_BUBBLE_CLASS;
     bubble.textContent = String(ids.length);
-    bubble.title = `${ids.length} góp ý ở ô ${end + 1}`;
+    bubble.title = t('scores.comments.bubbleTitle', { count: ids.length, measure: end + 1 });
     bubble.setAttribute('aria-label', bubble.title);
     bubble.style.left = `${box.r - origin.left + LOOP_PAD_X - 10}px`;
     bubble.style.top = `${box.t - origin.top - LOOP_PAD_Y - 10}px`;

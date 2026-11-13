@@ -382,7 +382,7 @@
   padding: 0 0.35rem;
   border-radius: 999px;
   background: var(--ui-warning);
-  color: var(--ui-on-accent, #fff);
+  color: var(--ui-on-accent);
   font-size: 0.72rem;
   font-weight: 700;
   line-height: 1.2rem;

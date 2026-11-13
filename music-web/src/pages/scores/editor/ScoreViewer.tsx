@@ -120,12 +120,20 @@ const SHORTCUTS: [string, string][] = [
   ['T', 'Dấu nối: nối nốt đang chọn với nốt cùng cao độ liền sau (bấm lại để bỏ)'],
   ['S', 'Dấu luyến: chọn từ nốt đầu đến nốt cuối rồi bấm (bấm lại để bỏ)'],
   ['Delete', 'Xóa nốt đang chọn (hợp âm còn nốt khác thì giữ lại)'],
-  ['Bôi đen nốt → nút "Góp ý" cạnh vùng chọn', 'Góp ý ngay tại chỗ (ô nhập hiện cạnh các nốt đã chọn)'],
-  ['Chuột phải vào nốt', 'Menu: Góp ý vào đoạn đã chọn, Xem góp ý ở ô này'],
-  [`${MOD} + ${ALT} + M`, 'Góp ý vào nốt / ô đang chọn (mở bảng Góp ý bên phải)'],
+];
+
+/** Phím tắt xếp cuối hộp thoại, sau các phím tắt Góp ý. */
+const SHORTCUTS_END: [string, string][] = [
   ['Esc', 'Bỏ chọn'],
   ['+  /  -  /  0', 'Phóng to / thu nhỏ / về 100%'],
   ['?', 'Mở bảng này'],
+];
+
+/** Phím tắt Góp ý (mục 4.2): dựng lúc hiển thị để đổi ngôn ngữ có hiệu lực ngay. */
+const commentShortcuts = (): [string, string][] => [
+  [t('scores.comments.helpSelectKeys'), t('scores.comments.helpSelectText')],
+  [t('scores.comments.helpContextKeys'), t('scores.comments.helpContextText')],
+  [`${MOD} + ${ALT} + M`, t('scores.comments.helpPanelText')],
 ];
 
 /**
@@ -1006,7 +1014,7 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
       {helpOpen && (
         <Modal title="Phím tắt" onClose={() => setHelpOpen(false)}>
           <dl className="sv-help-list">
-            {SHORTCUTS.map(([keys, text]) => (
+            {[...SHORTCUTS, ...commentShortcuts(), ...SHORTCUTS_END].map(([keys, text]) => (
               <div key={keys} style={{ display: 'contents' }}>
                 <dt>{keys}</dt>
                 <dd>{text}</dd>
