@@ -5,6 +5,7 @@
 import { childOf } from '../core/commands';
 import type { EditFailure } from '../core/commands';
 import type { NoteInfo, ScoreDocument } from '../core/ScoreDocument';
+import { t } from '../../../i18n/core';
 
 /** Các trường độ cơ bản của bảng công cụ (từ tròn đôi đến móc tứ). */
 export type DurationType = 'breve' | 'whole' | 'half' | 'quarter' | 'eighth' | '16th' | '32nd' | '64th';
@@ -29,23 +30,15 @@ export const DURATION_QUARTERS: Record<DurationType, number> = {
   '64th': 0.0625,
 };
 
-/** Tên tiếng Việt hiển thị. */
-export const DURATION_LABELS: Record<DurationType, string> = {
-  breve: 'tròn đôi',
-  whole: 'tròn',
-  half: 'trắng',
-  quarter: 'đen',
-  eighth: 'móc đơn',
-  '16th': 'móc kép',
-  '32nd': 'móc ba',
-  '64th': 'móc tứ',
-};
+/** Tên trường độ theo ngôn ngữ hiện tại. */
+export const durationLabel = (type: DurationType): string => t(`editor.duration.${type}`);
 
 /** Hệ số độ dài do chấm dôi: 1, 1,5 hoặc 1,75. */
 export const dotFactor = (dots: Dots): number => 2 - 1 / 2 ** dots;
 
-/** Hậu tố tên tiếng Việt của chấm dôi: "", " chấm dôi" hoặc " chấm dôi kép". */
-export const dotsLabel = (dots: Dots): string => (dots === 0 ? '' : dots === 1 ? ' chấm dôi' : ' chấm dôi kép');
+/** Hậu tố tên của chấm dôi (rỗng nếu không có chấm). */
+export const dotsLabel = (dots: Dots): string =>
+  dots === 0 ? '' : t(dots === 1 ? 'editor.dots.one' : 'editor.dots.two');
 
 /** Số chấm dôi (<dot/>) của một thẻ <note>, tối đa 2. */
 export const dotCount = (note: Element): Dots => {

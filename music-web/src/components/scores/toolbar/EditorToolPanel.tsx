@@ -3,12 +3,13 @@ import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import type { SymbolOp } from '../../editor/core/commands';
 import { DYNAMICS, EXTRA_DYNAMICS } from '../../editor/notation/marks';
 import type { MarkOp } from '../../editor/notation/marks';
-import { TUPLET_PRESETS } from '../../editor/notes/tuplets';
+import { TUPLET_PRESETS, tupletPresetLabel } from '../../editor/notes/tuplets';
 import type { TupletOp } from '../../editor/notes/tuplets';
 import type { VoiceOp } from '../../editor/notes/voices';
 import type { DurationChoice, DurationType } from '../../editor/notes/durations';
 import type { PitchOp } from '../../editor/notes/pitch';
 import { DURATION_DRAG_TYPE } from '../../editor/core/staffHit';
+import { hasKey, t } from '../../../i18n/core';
 import { useMediaQuery } from '../../player/hooks/useMediaQuery';
 import {
   ToolDelete,
@@ -86,10 +87,13 @@ interface Props {
   onSave: () => void;
 }
 
+const pitchLabel = (op: PitchOp): string => t(`editor.tool.pitch.${op}`);
+const symbolLabel = (op: SymbolOp): string => t(`editor.tool.symbol.${op}`);
+const durationToolLabel = (type: DurationType): string => t(`editor.tool.durationLabel.${type}`);
+
 interface PitchTool {
   op: PitchOp;
   icon: ReactNode;
-  label: string;
   /** Phím tắt hiện trong tooltip. */
   shortcut: string;
 }
@@ -99,282 +103,131 @@ const MOD = isMac ? '⌘' : 'Ctrl';
 const ALT = isMac ? '⌥' : 'Alt';
 
 const PITCH_TOOLS: PitchTool[] = [
-  { op: 'stepUp', icon: <ToolStepUp />, label: 'Lên bậc', shortcut: '↑' },
-  { op: 'stepDown', icon: <ToolStepDown />, label: 'Xuống bậc', shortcut: '↓' },
-  { op: 'semitoneUp', icon: <ToolSemitoneUp />, label: 'Lên ½ cung', shortcut: `${ALT}+↑` },
-  { op: 'semitoneDown', icon: <ToolSemitoneDown />, label: 'Xuống ½ cung', shortcut: `${ALT}+↓` },
-  { op: 'octaveUp', icon: <ToolOctaveUp />, label: 'Lên quãng 8', shortcut: `${MOD}+↑` },
-  { op: 'octaveDown', icon: <ToolOctaveDown />, label: 'Xuống quãng 8', shortcut: `${MOD}+↓` },
+  { op: 'stepUp', icon: <ToolStepUp />, shortcut: '↑' },
+  { op: 'stepDown', icon: <ToolStepDown />, shortcut: '↓' },
+  { op: 'semitoneUp', icon: <ToolSemitoneUp />, shortcut: `${ALT}+↑` },
+  { op: 'semitoneDown', icon: <ToolSemitoneDown />, shortcut: `${ALT}+↓` },
+  { op: 'octaveUp', icon: <ToolOctaveUp />, shortcut: `${MOD}+↑` },
+  { op: 'octaveDown', icon: <ToolOctaveDown />, shortcut: `${MOD}+↓` },
 ];
 
 interface SymbolTool {
   op: SymbolOp;
   icon: ReactNode;
-  label: string;
   /** Phím tắt hiện trong tooltip (nếu có). */
   shortcut?: string;
 }
 
 const SYMBOL_TOOLS: SymbolTool[] = [
-  { op: 'sharp', icon: <ToolSharp />, label: 'Thăng' },
-  { op: 'flat', icon: <ToolFlat />, label: 'Giáng' },
-  { op: 'natural', icon: <ToolNatural />, label: 'Bình' },
-  { op: 'tie', icon: <ToolTie />, label: 'Nối', shortcut: 'T' },
-  { op: 'slur', icon: <ToolSlur />, label: 'Luyến', shortcut: 'S' },
-  { op: 'rest', icon: <ToolRest />, label: 'Dấu lặng' },
-  { op: 'delete', icon: <ToolDelete />, label: 'Xóa', shortcut: 'Delete' },
+  { op: 'sharp', icon: <ToolSharp /> },
+  { op: 'flat', icon: <ToolFlat /> },
+  { op: 'natural', icon: <ToolNatural /> },
+  { op: 'tie', icon: <ToolTie />, shortcut: 'T' },
+  { op: 'slur', icon: <ToolSlur />, shortcut: 'S' },
+  { op: 'rest', icon: <ToolRest /> },
+  { op: 'delete', icon: <ToolDelete />, shortcut: 'Delete' },
 ];
 
-const MARK_TOOLS: { op: MarkOp; label: string; title: string }[] = [
-  { op: 'staccato', label: 'Staccato', title: 'Staccato: ngắt, gọn (bấm lại để bỏ)' },
-  { op: 'accent', label: 'Accent', title: 'Accent: nhấn nốt (bấm lại để bỏ)' },
-  { op: 'tenuto', label: 'Tenuto', title: 'Tenuto: giữ đủ độ dài (bấm lại để bỏ)' },
-  { op: 'fermata', label: 'Fermata', title: 'Fermata: ngân tự do (bấm lại để bỏ)' },
-  { op: 'cresc', label: 'Cresc.', title: 'Cresc.: to dần, từ nốt đầu đến nốt cuối của vùng chọn' },
-  { op: 'dim', label: 'Dim.', title: 'Dim.: nhỏ dần, từ nốt đầu đến nốt cuối của vùng chọn' },
+const REPEAT_OPS: MarkOp[] = [
+  'repeatStart',
+  'repeatEnd',
+  'volta1',
+  'volta2',
+  'volta3',
+  'repeatTimes:2',
+  'repeatTimes:3',
+  'repeatTimes:4',
+  'segno',
+  'coda',
+  'dc',
+  'ds',
+  'fine',
+  'tocoda',
+];
+const BREAK_OPS: MarkOp[] = ['lineBreak', 'pageBreak', 'barDouble'];
+
+/** Nhãn đoạn đặt sẵn; tên (cũng là chữ ghi vào bản nhạc) và từ khóa tìm kiếm nằm trong `editor.tool.preset.<id>`. */
+const SECTION_IDS = ['intro', 'verse1', 'verse2', 'chorus', 'bridge', 'outro'] as const;
+const sectionName = (id: (typeof SECTION_IDS)[number]): string => t(`editor.tool.preset.${id}.name`);
+const sectionOp = (id: (typeof SECTION_IDS)[number]): MarkOp => `section:${sectionName(id)}`;
+const SECTION_OPS = (): MarkOp[] => [...SECTION_IDS.map(sectionOp), 'sectionRemove'];
+
+/** Nhãn và chú thích của một ký hiệu dạng MarkOp theo ngôn ngữ hiện tại; undefined nếu không có trong bảng. */
+const markDef = (op: MarkOp): { label: string; title: string } | undefined => {
+  if (op.startsWith('dyn:')) {
+    const d = op.slice(4);
+    return { label: d, title: t(`editor.tool.dyn.${d === 'ppp' || d === 'fff' ? d : 'accent'}`, { d }) };
+  }
+  const preset = SECTION_IDS.find((id) => sectionOp(id) === op);
+  if (preset) {
+    const name = sectionName(preset);
+    return {
+      label: name,
+      title: t('editor.tool.sectionTitle', { name, keywords: t(`editor.tool.preset.${preset}.keywords`) }),
+    };
+  }
+  const key = `editor.tool.mark.${op.replace(':', '_')}`;
+  return hasKey(`${key}.label`) ? { label: t(`${key}.label`), title: t(`${key}.title`) } : undefined;
+};
+
+const DURATION_TOOLS: { type: DurationType; icon: ReactNode; key: string }[] = [
+  { type: 'whole', icon: <ToolWhole />, key: '5' },
+  { type: 'half', icon: <ToolHalf />, key: '4' },
+  { type: 'quarter', icon: <ToolQuarter />, key: '3' },
+  { type: 'eighth', icon: <ToolEighth />, key: '2' },
+  { type: '16th', icon: <ToolSixteenth />, key: '1' },
+  { type: '32nd', icon: <ToolThirtySecond />, key: '6' },
+  { type: '64th', icon: <ToolSixtyFourth />, key: '7' },
 ];
 
-/** Menu "Thêm ký hiệu…": các ký hiệu ít dùng, chia nhóm. */
-const MORE_MARK_GROUPS: { title: string; tools: { op: MarkOp; label: string; title: string }[] }[] = [
-  {
-    title: 'Sắc thái',
-    tools: EXTRA_DYNAMICS.map((d) => ({
-      op: `dyn:${d}` as MarkOp,
-      label: d,
-      title:
-        d === 'ppp' || d === 'fff'
-          ? `${d}: ${d === 'ppp' ? 'rất rất nhỏ' : 'rất rất to'} (đặt ở nốt đầu của vùng chọn)`
-          : `${d}: nhấn mạnh một nốt rồi trở lại mức cũ (đặt ở nốt đầu của vùng chọn)`,
-    })),
-  },
-  {
-    title: 'Kỹ thuật',
-    tools: [
-      { op: 'fermataBelow', label: 'Fermata ngược', title: 'Fermata ngược (vẽ dưới nốt): ngân tự do (bấm lại để bỏ)' },
-      { op: 'marcato', label: 'Marcato', title: 'Marcato: nhấn mạnh và ngắt (bấm lại để bỏ)' },
-      { op: 'staccatissimo', label: 'Staccatissimo', title: 'Staccatissimo: ngắt rất ngắn (bấm lại để bỏ)' },
-      { op: 'breath', label: 'Lấy hơi', title: 'Dấu lấy hơi sau nốt: nốt ngắt sớm một chút khi phát (bấm lại để bỏ)' },
-      {
-        op: 'caesura',
-        label: 'Ngắt nghỉ',
-        title: 'Dấu ngắt nghỉ //: nghỉ thêm một phách sau nốt khi phát (bấm lại để bỏ; bản xem trước chưa vẽ dấu này)',
-      },
-      { op: 'arpeggio', label: 'Rải hợp âm', title: 'Rải các nốt của hợp âm đang chọn từ dưới lên (bấm lại để bỏ)' },
-    ],
-  },
-  {
-    title: 'Láy',
-    tools: [
-      { op: 'trill', label: 'Láy rền', title: 'Láy rền (tr): luân phiên với nốt liền trên (bấm lại để bỏ)' },
-      {
-        op: 'trillSharp',
-        label: 'Láy rền ♯',
-        title: 'Dấu thăng cho láy rền: nốt liền trên được nâng nửa cung (thêm láy rền nếu chưa có; bấm lại để bỏ dấu)',
-      },
-      {
-        op: 'trillFlat',
-        label: 'Láy rền ♭',
-        title: 'Dấu giáng cho láy rền: nốt liền trên được hạ nửa cung (thêm láy rền nếu chưa có; bấm lại để bỏ dấu)',
-      },
-      {
-        op: 'trillNatural',
-        label: 'Láy rền ♮',
-        title:
-          'Dấu bình cho láy rền: nốt liền trên theo âm gốc, bỏ qua hóa biểu (thêm láy rền nếu chưa có; bấm lại để bỏ dấu)',
-      },
-      { op: 'mordent', label: 'Láy ngắn', title: 'Láy ngắn (mordent): nốt - nốt dưới - nốt (bấm lại để bỏ)' },
-      {
-        op: 'invMordent',
-        label: 'Láy ngắn ngược',
-        title: 'Láy ngắn ngược: nốt - nốt trên - nốt (bấm lại để bỏ)',
-      },
-      { op: 'turn', label: 'Láy vòng', title: 'Láy vòng: nốt trên - nốt - nốt dưới - nốt (bấm lại để bỏ)' },
-    ],
-  },
-  {
-    title: 'Khác',
-    tools: [
-      { op: 'pedal', label: 'Pedal', title: 'Pedal: nhấn từ nốt đầu đến hết nốt cuối của vùng chọn (bấm lại để bỏ)' },
-      { op: 'ottava8va', label: '8va', title: '8va: viết thấp hơn một quãng tám, đàn/hát cao hơn (bấm lại để bỏ)' },
-      { op: 'ottava8vb', label: '8vb', title: '8vb: viết cao hơn một quãng tám, đàn/hát thấp hơn (bấm lại để bỏ)' },
-      {
-        op: 'graceSlash',
-        label: 'Hoa mỹ (gạch)',
-        title: 'Nốt hoa mỹ có gạch chéo (acciaccatura): thêm trước nốt đang chọn, cao hơn một bậc',
-      },
-      {
-        op: 'gracePlain',
-        label: 'Hoa mỹ (không gạch)',
-        title: 'Nốt hoa mỹ không gạch (appoggiatura): thêm trước nốt đang chọn, cao hơn một bậc',
-      },
-      {
-        op: 'graceToggle',
-        label: 'Đổi gạch (hoa mỹ)',
-        title: 'Đổi nốt hoa mỹ đang chọn giữa có gạch chéo (acciaccatura) và không gạch (appoggiatura)',
-      },
-      {
-        op: 'arpeggioDown',
-        label: 'Rải xuống',
-        title: 'Rải các nốt của hợp âm đang chọn từ trên xuống (bấm lại để bỏ)',
-      },
-      {
-        op: 'glissando',
-        label: 'Glissando',
-        title:
-          'Glissando: đường lượn từ nốt đang chọn tới nốt liền sau (hoặc tới nốt cuối của vùng chọn); bấm lại để bỏ',
-      },
-      {
-        op: 'slide',
-        label: 'Trượt',
-        title: 'Trượt (slide): đường thẳng nối hai nốt như glissando, không có chữ; bấm lại để bỏ',
-      },
-    ],
-  },
-];
-
-const REPEAT_TOOLS: { op: MarkOp; label: string; title: string }[] = [
-  { op: 'repeatStart', label: '|:', title: 'Dấu lặp ở đầu ô nhịp (ô đầu của vùng chọn)' },
-  { op: 'repeatEnd', label: ':|', title: 'Dấu lặp ở cuối ô nhịp (ô cuối của vùng chọn)' },
-  { op: 'volta1', label: 'Nhà 1', title: 'Nhà 1 (1.) trải qua các ô của vùng chọn, đóng bằng dấu lặp' },
-  {
-    op: 'volta2',
-    label: 'Nhà 2',
-    title: 'Nhà 2 (2.) trải qua các ô của vùng chọn: dùng khi lần hát sau (lời 2) khác đoạn cuối',
-  },
-  {
-    op: 'volta3',
-    label: 'Nhà 3',
-    title: 'Nhà 3 (3.) trải qua các ô của vùng chọn, để hở: dùng khi có lần chơi thứ ba',
-  },
-  {
-    op: 'repeatTimes:2',
-    label: 'Lặp ×2',
-    title: 'Chơi đoạn lặp 2 lần (mặc định). Chọn ô có dấu lặp cuối :|',
-  },
-  {
-    op: 'repeatTimes:3',
-    label: 'Lặp ×3',
-    title: 'Chơi đoạn lặp 3 lần: đặt ở dấu lặp cuối của ô cuối vùng chọn (cần có :| trước)',
-  },
-  {
-    op: 'repeatTimes:4',
-    label: 'Lặp ×4',
-    title: 'Chơi đoạn lặp 4 lần: đặt ở dấu lặp cuối của ô cuối vùng chọn (cần có :| trước)',
-  },
-  { op: 'segno', label: 'Segno', title: 'Dấu Segno ở ô đầu của vùng chọn' },
-  { op: 'coda', label: 'Coda', title: 'Dấu Coda ở ô đầu của vùng chọn' },
-  { op: 'dc', label: 'D.C.', title: 'D.C.: quay lại từ đầu (ở cuối ô cuối của vùng chọn)' },
-  { op: 'ds', label: 'D.S.', title: 'D.S.: quay lại dấu Segno' },
-  { op: 'fine', label: 'Fine', title: 'Fine: kết thúc' },
-  { op: 'tocoda', label: 'To Coda', title: 'To Coda: nhảy tới Coda' },
-];
-
-const DURATION_TOOLS: { type: DurationType; icon: ReactNode; label: string; key: string }[] = [
-  { type: 'whole', icon: <ToolWhole />, label: 'Tròn', key: '5' },
-  { type: 'half', icon: <ToolHalf />, label: 'Trắng', key: '4' },
-  { type: 'quarter', icon: <ToolQuarter />, label: 'Đen', key: '3' },
-  { type: 'eighth', icon: <ToolEighth />, label: 'Móc đơn', key: '2' },
-  { type: '16th', icon: <ToolSixteenth />, label: 'Móc kép', key: '1' },
-  { type: '32nd', icon: <ToolThirtySecond />, label: 'Móc ba', key: '6' },
-  { type: '64th', icon: <ToolSixtyFourth />, label: 'Móc tứ', key: '7' },
-];
-
-/** Nhãn đoạn đặt sẵn (kèm tên tiếng Anh để ô tìm kiếm gõ kiểu nào cũng ra). */
-const SECTION_PRESETS: { name: string; en: string }[] = [
-  { name: 'Intro', en: 'intro mở đầu' },
-  { name: 'Phiên khúc 1', en: 'verse 1' },
-  { name: 'Phiên khúc 2', en: 'verse 2' },
-  { name: 'Điệp khúc', en: 'chorus' },
-  { name: 'Cầu', en: 'bridge' },
-  { name: 'Kết', en: 'outro ending kết thúc' },
-];
-
-const SECTION_TOOLS: { op: MarkOp; label: string; title: string }[] = [
-  ...SECTION_PRESETS.map(({ name, en }) => ({
-    op: `section:${name}` as MarkOp,
-    label: name,
-    title: `Nhãn đoạn "${name}" (${en}) ở đầu ô đang chọn: bấm lại để bỏ, nhãn khác sẽ thay nhãn cũ`,
-  })),
-  { op: 'sectionRemove', label: 'Bỏ nhãn', title: 'Bỏ nhãn đoạn ở ô đang chọn' },
-];
-
-const BREAK_TOOLS: { op: MarkOp; label: string; title: string }[] = [
-  {
-    op: 'lineBreak',
-    label: 'Xuống dòng',
-    title: 'Bắt đầu dòng mới tại ô đang chọn (bấm lại để bỏ); chỉ có tác dụng ở chế độ xem theo trang',
-  },
-  {
-    op: 'pageBreak',
-    label: 'Sang trang',
-    title: 'Bắt đầu trang mới tại ô đang chọn (bấm lại để bỏ); chỉ có tác dụng ở chế độ xem theo trang',
-  },
-  {
-    op: 'barDouble',
-    label: 'Vạch đôi',
-    title: 'Vạch đôi ở cuối ô cuối của vùng chọn để ngăn đoạn (bấm lại để bỏ; ô có dấu lặp cuối thì không đặt được)',
-  },
-];
-
-/** Tra nhanh nhãn và chú thích của mọi ký hiệu dạng MarkOp (gộp từ các bảng ở trên). */
-const MARK_INDEX = new Map<MarkOp, { label: string; title: string }>(
-  [
-    ...MARK_TOOLS,
-    ...MORE_MARK_GROUPS.flatMap((group) => group.tools),
-    ...REPEAT_TOOLS,
-    ...SECTION_TOOLS,
-    ...BREAK_TOOLS,
-  ].map((tool) => [tool.op, tool]),
-);
-
-/** Từ khóa thêm (tên tiếng Anh, tên gọi khác) để ô "Tìm ký hiệu" gõ kiểu nào cũng ra. */
+/** Từ khóa thêm (tên tiếng Anh, tên gọi khác; giữ cả từ tiếng Việt để gõ kiểu nào cũng ra) để ô "Tìm ký hiệu" gõ kiểu nào cũng ra. */
 const KEYWORDS: Partial<Record<MarkOp, string>> = {
-  staccato: 'staccato ngắt',
-  accent: 'accent nhấn',
+  staccato: 'staccato ngắt', // i18n-ignore
+  accent: 'accent nhấn', // i18n-ignore
   tenuto: 'tenuto',
   marcato: 'marcato',
   staccatissimo: 'staccatissimo',
-  fermata: 'fermata ngân dấu nghỉ',
-  fermataBelow: 'fermata ngược inverted fermata ngân dấu nghỉ',
-  trillSharp: 'trill sharp thăng dấu hóa láy rền',
-  trillFlat: 'trill flat giáng dấu hóa láy rền',
-  trillNatural: 'trill natural bình dấu hóa láy rền',
-  breath: 'breath mark lấy hơi',
-  caesura: 'caesura ngắt nghỉ',
-  trill: 'trill tr láy hoa mỹ',
-  mordent: 'mordent láy hoa mỹ',
-  invMordent: 'inverted mordent láy hoa mỹ',
-  turn: 'turn gruppetto láy hoa mỹ',
-  graceSlash: 'grace note acciaccatura nốt hoa mỹ trang trí',
-  gracePlain: 'grace note appoggiatura nốt hoa mỹ trang trí',
-  arpeggio: 'arpeggio rải hợp âm hoa mỹ',
-  arpeggioDown: 'arpeggio rải hợp âm xuống hoa mỹ',
-  glissando: 'glissando gliss trượt hoa mỹ',
-  slide: 'slide trượt glissando hoa mỹ',
-  graceToggle: 'grace note đổi gạch chéo acciaccatura appoggiatura hoa mỹ',
-  cresc: 'crescendo to dần',
-  dim: 'diminuendo decrescendo nhỏ dần',
+  fermata: 'fermata ngân dấu nghỉ', // i18n-ignore
+  fermataBelow: 'fermata ngược inverted fermata ngân dấu nghỉ', // i18n-ignore
+  trillSharp: 'trill sharp thăng dấu hóa láy rền', // i18n-ignore
+  trillFlat: 'trill flat giáng dấu hóa láy rền', // i18n-ignore
+  trillNatural: 'trill natural bình dấu hóa láy rền', // i18n-ignore
+  breath: 'breath mark lấy hơi', // i18n-ignore
+  caesura: 'caesura ngắt nghỉ', // i18n-ignore
+  trill: 'trill tr láy hoa mỹ', // i18n-ignore
+  mordent: 'mordent láy hoa mỹ', // i18n-ignore
+  invMordent: 'inverted mordent láy hoa mỹ', // i18n-ignore
+  turn: 'turn gruppetto láy hoa mỹ', // i18n-ignore
+  graceSlash: 'grace note acciaccatura nốt hoa mỹ trang trí', // i18n-ignore
+  gracePlain: 'grace note appoggiatura nốt hoa mỹ trang trí', // i18n-ignore
+  arpeggio: 'arpeggio rải hợp âm hoa mỹ', // i18n-ignore
+  arpeggioDown: 'arpeggio rải hợp âm xuống hoa mỹ', // i18n-ignore
+  glissando: 'glissando gliss trượt hoa mỹ', // i18n-ignore
+  slide: 'slide trượt glissando hoa mỹ', // i18n-ignore
+  graceToggle: 'grace note đổi gạch chéo acciaccatura appoggiatura hoa mỹ', // i18n-ignore
+  cresc: 'crescendo to dần', // i18n-ignore
+  dim: 'diminuendo decrescendo nhỏ dần', // i18n-ignore
   pedal: 'pedal',
-  ottava8va: 'ottava octave quãng tám',
-  ottava8vb: 'ottava octave quãng tám',
-  repeatStart: 'repeat lặp lại dấu lặp',
-  repeatEnd: 'repeat lặp lại dấu lặp',
-  volta1: 'volta ending nhà 1',
-  volta2: 'volta ending nhà 2',
-  volta3: 'volta ending nhà 3',
-  'repeatTimes:2': 'repeat lặp lần số lần',
-  'repeatTimes:3': 'repeat lặp lần số lần',
-  'repeatTimes:4': 'repeat lặp lần số lần',
-  sectionRemove: 'nhãn đoạn section rehearsal bỏ',
-  barDouble: 'double bar vạch đôi vạch kép ngăn đoạn',
-  lineBreak: 'line break xuống dòng ngắt dòng',
-  pageBreak: 'page break sang trang ngắt trang',
+  ottava8va: 'ottava octave quãng tám', // i18n-ignore
+  ottava8vb: 'ottava octave quãng tám', // i18n-ignore
+  repeatStart: 'repeat lặp lại dấu lặp', // i18n-ignore
+  repeatEnd: 'repeat lặp lại dấu lặp', // i18n-ignore
+  volta1: 'volta ending nhà 1', // i18n-ignore
+  volta2: 'volta ending nhà 2', // i18n-ignore
+  volta3: 'volta ending nhà 3', // i18n-ignore
+  'repeatTimes:2': 'repeat lặp lần số lần', // i18n-ignore
+  'repeatTimes:3': 'repeat lặp lần số lần', // i18n-ignore
+  'repeatTimes:4': 'repeat lặp lần số lần', // i18n-ignore
+  sectionRemove: 'nhãn đoạn section rehearsal bỏ', // i18n-ignore
+  barDouble: 'double bar vạch đôi vạch kép ngăn đoạn', // i18n-ignore
+  lineBreak: 'line break xuống dòng ngắt dòng', // i18n-ignore
+  pageBreak: 'page break sang trang ngắt trang', // i18n-ignore
   segno: 'segno',
   coda: 'coda',
-  dc: 'da capo quay lại đầu',
-  ds: 'dal segno quay lại segno',
-  fine: 'fine kết thúc',
-  tocoda: 'to coda nhảy tới coda',
+  dc: 'da capo quay lại đầu', // i18n-ignore
+  ds: 'dal segno quay lại segno', // i18n-ignore
+  fine: 'fine kết thúc', // i18n-ignore
+  tocoda: 'to coda nhảy tới coda', // i18n-ignore
 };
 
 const ARTICULATION_OPS: MarkOp[] = [
@@ -407,7 +260,7 @@ const ORNAMENT_OPS: MarkOp[] = [
 const PEDAL_OPS: MarkOp[] = ['pedal', 'ottava8va', 'ottava8vb'];
 
 /** Bỏ dấu, hạ chữ thường để "lay", "Láy", "LÁY" cùng khớp. */
-const normalize = (text: string): string => text.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd');
+const normalize = (text: string): string => text.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd'); // i18n-ignore
 
 const OPEN_KEY = 'sv-tools-open';
 /** Các mục mở sẵn lần đầu; những mục khác thu gọn như bảng Palettes của MuseScore. */
@@ -526,12 +379,12 @@ export default function EditorToolPanel({
   };
 
   const needSelection = !hasSelection || busy;
-  const selectionHint = hasSelection ? '' : ' - hãy chọn nốt trước';
+  const selectionHint = hasSelection ? '' : t('editor.tool.selectFirst');
   const selectMode = !inputMode && !lyricMode && !chordMode;
 
   /** Nút chữ của một ký hiệu MarkOp; null nếu không có trong bảng tra. */
   const markEntry = (op: MarkOp, extraClass = ''): ToolEntry | null => {
-    const def = MARK_INDEX.get(op);
+    const def = markDef(op);
     if (!def) return null;
     return {
       key: op,
@@ -553,13 +406,13 @@ export default function EditorToolPanel({
 
   const dynamicEntry = (d: (typeof DYNAMICS)[number]): ToolEntry => ({
     key: `dyn:${d}`,
-    text: `${d} sắc thái to nhỏ dynamics`,
+    text: `${d} sắc thái to nhỏ dynamics`, // i18n-ignore
     node: (
       <button
         className="sv-tool sv-tool--text sv-tool--dyn"
         disabled={needSelection}
         onClick={() => onMark(`dyn:${d}`)}
-        title={`Mức to nhỏ ${d} (đặt ở nốt đầu của vùng chọn)${selectionHint}`}
+        title={`${t('editor.tool.dynamicTitle', { d })}${selectionHint}`}
       >
         {d}
       </button>
@@ -580,7 +433,7 @@ export default function EditorToolPanel({
   const sections: ToolSection[] = [
     {
       id: 'mode',
-      title: 'Chế độ',
+      title: t('editor.tool.section.mode'),
       mod: 'mode',
       blocks: [
         {
@@ -588,57 +441,57 @@ export default function EditorToolPanel({
           entries: [
             {
               key: 'select',
-              text: 'Chọn nốt chế độ chọn select',
+              text: 'Chọn nốt chế độ chọn select', // i18n-ignore
               node: (
                 <IconTool
                   className={`sv-tool${selectMode ? ' is-active' : ''}`}
                   aria-pressed={selectMode}
                   onClick={() => onInputModeChange(false)}
-                  title="Chọn nốt"
+                  title={t('editor.tool.mode.select.title')}
                   icon={<ToolSelect />}
-                  label="Chọn"
+                  label={t('editor.tool.mode.select.label')}
                 />
               ),
             },
             {
               key: 'input',
-              text: 'Nhập nốt chế độ nhập pencil',
+              text: 'Nhập nốt chế độ nhập pencil', // i18n-ignore
               node: (
                 <IconTool
                   className={`sv-tool${inputMode ? ' is-active' : ''}`}
                   aria-pressed={inputMode}
                   onClick={() => onInputModeChange(true)}
-                  title="Nhập nốt: chọn dấu lặng rồi bấm phím A–G (Esc để thoát)"
+                  title={t('editor.tool.mode.input.title')}
                   icon={<ToolPencil />}
-                  label="Nhập nốt"
+                  label={t('editor.tool.mode.input.label')}
                 />
               ),
             },
             {
               key: 'lyric',
-              text: 'Lời nhập lời bài hát lyrics',
+              text: 'Lời nhập lời bài hát lyrics', // i18n-ignore
               node: (
                 <IconTool
                   className={`sv-tool${lyricMode ? ' is-active' : ''}`}
                   aria-pressed={lyricMode}
                   onClick={() => onLyricModeChange(true)}
-                  title="Nhập lời bài hát: chọn nốt rồi gõ âm tiết, Space sang nốt kế (Esc để thoát)"
+                  title={t('editor.tool.mode.lyric.title')}
                   icon={<ToolLyric />}
-                  label="Lời"
+                  label={t('editor.tool.mode.lyric.label')}
                 />
               ),
             },
             {
               key: 'chord',
-              text: 'Hợp âm nhập hợp âm chord',
+              text: 'Hợp âm nhập hợp âm chord', // i18n-ignore
               node: (
                 <IconTool
                   className={`sv-tool${chordMode ? ' is-active' : ''}`}
                   aria-pressed={chordMode}
                   onClick={() => onChordModeChange(true)}
-                  title="Nhập hợp âm: chọn nốt rồi gõ Am7, C/G... (Esc để thoát)"
+                  title={t('editor.tool.mode.chord.title')}
                   icon={<ToolChord />}
-                  label="Hợp âm"
+                  label={t('editor.tool.mode.chord.label')}
                 />
               ),
             },
@@ -648,22 +501,22 @@ export default function EditorToolPanel({
     },
     {
       id: 'pitch',
-      title: 'Cao độ',
+      title: t('editor.tool.section.pitch'),
       mod: 'pitch',
       blocks: [
         {
           kind: 'icon',
           entries: PITCH_TOOLS.map((tool) => ({
             key: tool.op,
-            text: `${tool.label} cao độ pitch`,
+            text: `${pitchLabel(tool.op)} cao độ pitch`, // i18n-ignore
             node: (
               <IconTool
                 className="sv-tool"
                 disabled={needSelection}
                 onClick={() => onPitch(tool.op)}
-                title={`${tool.label} (${tool.shortcut})${selectionHint}`}
+                title={`${pitchLabel(tool.op)} (${tool.shortcut})${selectionHint}`}
                 icon={tool.icon}
-                label={tool.label}
+                label={pitchLabel(tool.op)}
               />
             ),
           })),
@@ -672,32 +525,32 @@ export default function EditorToolPanel({
       extra: (
         <label className="sv-tools__check">
           <input type="checkbox" checked={previewTone} onChange={(e) => onPreviewToneChange(e.target.checked)} />
-          Nghe khi sửa
+          {t('editor.tool.previewTone')}
         </label>
       ),
     },
     {
       id: 'actions',
-      title: 'Thao tác',
+      title: t('editor.tool.section.actions'),
       mod: 'actions',
       blocks: [],
       extra: (
         <div className="sv-tools__actions">
           <button className="sc-btn" disabled={!canUndo || busy} onClick={onUndo}>
-            <IconUndo /> Hoàn tác
+            <IconUndo /> {t('editor.tool.undo')}
           </button>
           <button className="sc-btn" disabled={!canRedo || busy} onClick={onRedo}>
-            <IconRedo /> Làm lại
+            <IconRedo /> {t('editor.tool.redo')}
           </button>
           <button className="sc-btn sc-btn--primary" disabled={!canSave || busy} onClick={onSave}>
-            <IconSave /> Lưu
+            <IconSave /> {t('common.save')}
           </button>
         </div>
       ),
     },
     {
       id: 'duration',
-      title: 'Trường độ',
+      title: t('editor.tool.section.duration'),
       mod: 'soon',
       blocks: [
         {
@@ -705,7 +558,7 @@ export default function EditorToolPanel({
           entries: [
             ...DURATION_TOOLS.map((tool) => ({
               key: tool.type,
-              text: `${tool.label} trường độ nốt duration`,
+              text: `${durationToolLabel(tool.type)} trường độ nốt duration`, // i18n-ignore
               node: (
                 <IconTool
                   className={`sv-tool${inputMode && inputDuration.type === tool.type ? ' is-active' : ''}`}
@@ -720,24 +573,24 @@ export default function EditorToolPanel({
                   }}
                   aria-pressed={inputMode ? inputDuration.type === tool.type : undefined}
                   onClick={() => onDuration(tool.type)}
-                  title={`${tool.label} (${tool.key}) · bấm: đổi trường độ nốt đang chọn · kéo vào khuông: thêm nốt`}
+                  title={t('editor.tool.durationTitle', { label: durationToolLabel(tool.type), key: tool.key })}
                   icon={tool.icon}
-                  label={tool.label}
+                  label={durationToolLabel(tool.type)}
                 />
               ),
             })),
             {
               key: 'dot',
-              text: 'Chấm dôi dot',
+              text: 'Chấm dôi dot', // i18n-ignore
               node: (
                 <IconTool
                   className={`sv-tool${inputMode && inputDuration.dots > 0 ? ' is-active' : ''}`}
                   disabled={(!hasSelection && !inputMode) || busy}
                   aria-pressed={inputMode ? inputDuration.dots > 0 : undefined}
                   onClick={onDot}
-                  title="Chấm dôi (.): bấm lần 2 chấm dôi kép, lần 3 bỏ chấm"
+                  title={t('editor.tool.dot.title')}
                   icon={<ToolDot />}
-                  label="Chấm dôi"
+                  label={t('editor.tool.dot.label')}
                 />
               ),
             },
@@ -748,15 +601,15 @@ export default function EditorToolPanel({
           entries: [
             {
               key: 'breve',
-              text: 'Tròn đôi breve trường độ',
+              text: 'Tròn đôi breve trường độ', // i18n-ignore
               node: (
                 <button
                   className={`sv-tool sv-tool--text${inputMode && inputDuration.type === 'breve' ? ' is-active' : ''}`}
                   disabled={busy}
                   onClick={() => onDuration('breve')}
-                  title="Tròn đôi (dài 2 nốt tròn): bấm để đổi trường độ nốt đang chọn, hoặc đặt trường độ nhập"
+                  title={t('editor.tool.breveTitle')}
                 >
-                  Tròn đôi
+                  {durationToolLabel('breve')}
                 </button>
               ),
             },
@@ -764,26 +617,26 @@ export default function EditorToolPanel({
         },
         {
           kind: 'text',
-          sub: `Chùm (${MOD}+3 = chùm ba)`,
+          sub: t('editor.tool.sub.tuplet', { mod: MOD }),
           entries: [
             ...TUPLET_PRESETS.map((preset) => ({
-              key: preset.label,
-              text: `${preset.label} chùm tuplet triplet`,
+              key: tupletPresetLabel(preset),
+              text: `${tupletPresetLabel(preset)} chùm tuplet triplet`, // i18n-ignore
               node: (
                 <button
                   className="sv-tool sv-tool--text"
                   disabled={needSelection}
                   onClick={() => onTuplet({ kind: 'make', actual: preset.actual, normal: preset.normal })}
-                  title={`${preset.label}: ${preset.actual} nốt trong thời gian của ${preset.normal} nốt cùng loại (nốt đang chọn giữ chỗ đầu, các chỗ còn lại là dấu lặng để nhập)${selectionHint}`}
+                  title={`${t('editor.tool.tupletTitle', { label: tupletPresetLabel(preset), actual: preset.actual, normal: preset.normal })}${selectionHint}`}
                 >
-                  {preset.label}
+                  {tupletPresetLabel(preset)}
                 </button>
               ),
             })),
             textEntry(
               'tuplet-remove',
-              'Bỏ chùm',
-              `Bỏ chùm: gộp cả chùm chứa nốt đang chọn về một nốt (giữ cao độ nốt đầu tiên có cao độ)${selectionHint}`,
+              t('editor.tool.text.tuplet-remove.label'),
+              `${t('editor.tool.text.tuplet-remove.title')}${selectionHint}`,
               () => onTuplet({ kind: 'remove' }),
               needSelection,
             ),
@@ -793,22 +646,22 @@ export default function EditorToolPanel({
     },
     {
       id: 'symbols',
-      title: 'Dấu hóa & nối',
+      title: t('editor.tool.section.symbols'),
       mod: 'soon',
       blocks: [
         {
           kind: 'icon',
           entries: SYMBOL_TOOLS.map((tool) => ({
             key: tool.op,
-            text: `${tool.label} dấu hóa nối luyến lặng xóa sharp flat natural tie slur rest delete`,
+            text: `${symbolLabel(tool.op)} dấu hóa nối luyến lặng xóa sharp flat natural tie slur rest delete`, // i18n-ignore
             node: (
               <IconTool
                 className="sv-tool"
                 disabled={needSelection}
                 onClick={() => onSymbol(tool.op)}
-                title={`${tool.label}${tool.shortcut ? ` (${tool.shortcut})` : ''}${selectionHint}`}
+                title={`${symbolLabel(tool.op)}${tool.shortcut ? ` (${tool.shortcut})` : ''}${selectionHint}`}
                 icon={tool.icon}
-                label={tool.label}
+                label={symbolLabel(tool.op)}
               />
             ),
           })),
@@ -817,19 +670,19 @@ export default function EditorToolPanel({
     },
     {
       id: 'articulation',
-      title: 'Dấu nhấn & kỹ thuật',
+      title: t('editor.tool.section.articulation'),
       mod: 'soon',
       blocks: [{ kind: 'text', entries: markEntries(ARTICULATION_OPS) }],
     },
     {
       id: 'ornament',
-      title: 'Hoa mỹ',
+      title: t('editor.tool.section.ornament'),
       mod: 'soon',
       blocks: [{ kind: 'text', entries: markEntries(ORNAMENT_OPS) }],
     },
     {
       id: 'dynamics',
-      title: 'Sắc thái',
+      title: t('editor.tool.section.dynamics'),
       mod: 'soon',
       blocks: [
         {
@@ -843,26 +696,26 @@ export default function EditorToolPanel({
             ...markEntries(['cresc', 'dim']),
           ],
         },
-        { kind: 'text', sub: 'Pedal & quãng tám', entries: markEntries(PEDAL_OPS) },
+        { kind: 'text', sub: t('editor.tool.sub.pedal'), entries: markEntries(PEDAL_OPS) },
       ],
     },
     {
       id: 'repeats',
-      title: 'Lặp lại & chỉ dẫn',
+      title: t('editor.tool.section.repeats'),
       mod: 'soon',
-      blocks: [{ kind: 'text', entries: markEntries(REPEAT_TOOLS.map((tool) => tool.op)) }],
+      blocks: [{ kind: 'text', entries: markEntries(REPEAT_OPS) }],
     },
     {
       id: 'structure',
-      title: 'Cấu trúc bài',
+      title: t('editor.tool.section.structure'),
       mod: 'soon',
       blocks: [
         {
           kind: 'text',
-          sub: 'Nhãn đoạn (đặt ở đầu ô đang chọn)',
-          entries: markEntries(SECTION_TOOLS.map((tool) => tool.op)),
+          sub: t('editor.tool.sub.section'),
+          entries: markEntries(SECTION_OPS()),
         },
-        { kind: 'text', sub: 'Ngắt đoạn', entries: markEntries(BREAK_TOOLS.map((tool) => tool.op)) },
+        { kind: 'text', sub: t('editor.tool.sub.breaks'), entries: markEntries(BREAK_OPS) },
       ],
       extra: (
         <form
@@ -879,23 +732,23 @@ export default function EditorToolPanel({
             value={sectionText}
             onChange={(e) => setSectionText(e.target.value)}
             maxLength={30}
-            placeholder="Nhãn tự đặt (ví dụ: Rap)"
-            aria-label="Nhãn đoạn tự đặt"
+            placeholder={t('editor.tool.sectionForm.placeholder')}
+            aria-label={t('editor.tool.sectionForm.aria')}
           />
           <button
             type="submit"
             className="sv-tool sv-tool--text"
             disabled={needSelection || !sectionText.trim()}
-            title={`Đặt nhãn tự đặt ở đầu ô đang chọn${selectionHint}`}
+            title={`${t('editor.tool.sectionForm.title')}${selectionHint}`}
           >
-            Đặt
+            {t('editor.tool.sectionForm.submit')}
           </button>
         </form>
       ),
     },
     {
       id: 'staves',
-      title: 'Khuông nhạc',
+      title: t('editor.tool.section.staves'),
       mod: 'soon',
       blocks: [
         {
@@ -903,43 +756,43 @@ export default function EditorToolPanel({
           entries: [
             textEntry(
               'addBass',
-              'Thêm Fa (đàn)',
-              'Thêm khuông Fa dưới khuông hiện tại: đàn hai khuông (khuông của nốt đang chọn, mặc định khuông đầu)',
+              t('editor.tool.text.addBass.label'),
+              t('editor.tool.text.addBass.title'),
               () => onStaves('addBass'),
               busy,
             ),
             textEntry(
               'addG',
-              'Thêm khuông Sol',
-              'Thêm một khuông riêng khóa Sol (ví dụ bè S/A) phía dưới cùng',
+              t('editor.tool.text.addG.label'),
+              t('editor.tool.text.addG.title'),
               () => onStaves('addG'),
               busy,
             ),
             textEntry(
               'addF',
-              'Thêm khuông Fa',
-              'Thêm một khuông riêng khóa Fa (ví dụ bè T/B) phía dưới cùng',
+              t('editor.tool.text.addF.label'),
+              t('editor.tool.text.addF.title'),
               () => onStaves('addF'),
               busy,
             ),
             textEntry(
               'addTenor',
-              'Thêm khuông Tenor',
-              'Thêm một khuông riêng khóa Sol số 8 dưới (bè Tenor trong SATB) phía dưới cùng',
+              t('editor.tool.text.addTenor.label'),
+              t('editor.tool.text.addTenor.title'),
               () => onStaves('addTenor'),
               busy,
             ),
             textEntry(
               'removeStaff',
-              'Xóa khuông',
-              'Xóa khuông của nốt đang chọn (khuông Fa của đàn, hoặc cả khuông riêng)',
+              t('editor.tool.text.removeStaff.label'),
+              t('editor.tool.text.removeStaff.title'),
               () => onStaves('remove'),
               needSelection,
             ),
             textEntry(
               'notation',
-              'Khóa · Dấu hóa · Nhịp…',
-              'Đổi khóa Sol/Fa/Đô, dấu hóa đầu khuông, chỉ số nhịp (kể cả đổi nhịp giữa bài và nhịp tự do)',
+              t('editor.tool.text.notation.label'),
+              t('editor.tool.text.notation.title'),
               onOpenNotation,
               needSelection,
             ),
@@ -949,7 +802,7 @@ export default function EditorToolPanel({
     },
     {
       id: 'measures',
-      title: 'Ô nhịp',
+      title: t('editor.tool.section.measures'),
       mod: 'soon',
       blocks: [
         {
@@ -957,22 +810,22 @@ export default function EditorToolPanel({
           entries: [
             textEntry(
               'insertAfter',
-              'Thêm ô sau',
-              'Thêm một ô nhịp trống sau ô đang chọn (không chọn gì: thêm vào cuối bài)',
+              t('editor.tool.text.insertAfter.label'),
+              t('editor.tool.text.insertAfter.title'),
               () => onMeasures('insertAfter'),
               busy,
             ),
             textEntry(
               'insertBefore',
-              'Chèn ô trước',
-              'Chèn một ô nhịp trống trước ô đang chọn',
+              t('editor.tool.text.insertBefore.label'),
+              t('editor.tool.text.insertBefore.title'),
               () => onMeasures('insertBefore'),
               needSelection,
             ),
             textEntry(
               'deleteMeasure',
-              'Xóa ô nhịp',
-              'Xóa các ô nhịp có nốt đang chọn (bấm Hoàn tác nếu lỡ tay)',
+              t('editor.tool.text.deleteMeasure.label'),
+              t('editor.tool.text.deleteMeasure.title'),
               () => onMeasures('delete'),
               needSelection,
             ),
@@ -982,7 +835,7 @@ export default function EditorToolPanel({
     },
     {
       id: 'voices',
-      title: 'Viết bè',
+      title: t('editor.tool.section.voices'),
       mod: 'soon',
       blocks: [
         {
@@ -990,50 +843,50 @@ export default function EditorToolPanel({
           entries: [
             textEntry(
               'chordBelow',
-              'Bè thân ↓',
-              'Bè cùng thân: thêm vào mỗi nốt đang chọn một nốt cùng trường độ, thấp hơn một quãng ba (hai nốt chung một thân)',
+              t('editor.tool.text.chordBelow.label'),
+              t('editor.tool.text.chordBelow.title'),
               () => onVoice('chordBelow'),
               needSelection,
             ),
             textEntry(
               'chordAbove',
-              'Bè thân ↑',
-              'Bè cùng thân: thêm nốt cùng trường độ, cao hơn một quãng ba',
+              t('editor.tool.text.chordAbove.label'),
+              t('editor.tool.text.chordAbove.title'),
               () => onVoice('chordAbove'),
               needSelection,
             ),
             textEntry(
               'blank',
-              'Bè riêng',
-              'Thêm một bè riêng (ô trống): bấm vào dấu lặng của bè mới để nhập nốt với nhịp điệu khác bè chính',
+              t('editor.tool.text.blank.label'),
+              t('editor.tool.text.blank.title'),
               () => onVoice('blank'),
               needSelection,
             ),
             textEntry(
               'addBelow',
-              'Chép bè ↓',
-              'Chép cả ô nhịp sang bè riêng thấp hơn một quãng ba, rồi sửa trường độ, cao độ từng nốt',
+              t('editor.tool.text.addBelow.label'),
+              t('editor.tool.text.addBelow.title'),
               () => onVoice('addBelow'),
               needSelection,
             ),
             textEntry(
               'addAbove',
-              'Chép bè ↑',
-              'Chép cả ô nhịp sang bè riêng cao hơn một quãng ba',
+              t('editor.tool.text.addAbove.label'),
+              t('editor.tool.text.addAbove.title'),
               () => onVoice('addAbove'),
               needSelection,
             ),
             textEntry(
               'cue',
-              'Nốt nhỏ',
-              'Bật/tắt hình nốt nhỏ cho các nốt đang chọn (thường dùng cho nốt bè)',
+              t('editor.tool.text.cue.label'),
+              t('editor.tool.text.cue.title'),
               () => onVoice('cue'),
               needSelection,
             ),
             textEntry(
               'removeVoice',
-              'Xóa bè',
-              'Xóa bè riêng chứa nốt đang chọn (bè chính không xóa được)',
+              t('editor.tool.text.removeVoice.label'),
+              t('editor.tool.text.removeVoice.title'),
               () => onVoice('remove'),
               needSelection,
             ),
@@ -1061,16 +914,14 @@ export default function EditorToolPanel({
   return (
     <>
       {open && <div className="sv-sheet-backdrop" onClick={onClose} aria-hidden="true" />}
-      <aside className={`sv-tools${open ? ' is-open' : ''}`} aria-label="Công cụ chỉnh sửa">
+      <aside className={`sv-tools${open ? ' is-open' : ''}`} aria-label={t('editor.tool.panel')}>
         <div className="sv-tools__head">
-          <strong>Công cụ chỉnh sửa</strong>
+          <strong>{t('editor.tool.panel')}</strong>
           <button className="sc-btn sv-tools__close" onClick={onClose}>
-            Đóng
+            {t('common.close')}
           </button>
         </div>
-        <p className="sv-tools__note">
-          Bấm vào nốt để chọn (Shift để chọn thêm), rồi dùng nhóm Cao độ hoặc phím mũi tên.
-        </p>
+        <p className="sv-tools__note">{t('editor.tool.note')}</p>
         <div className="sv-tools__search">
           <input
             type="search"
@@ -1082,14 +933,14 @@ export default function EditorToolPanel({
                 setQuery('');
               }
             }}
-            placeholder="Tìm ký hiệu (láy, fermata, lặp...)"
-            aria-label="Tìm ký hiệu"
+            placeholder={t('editor.tool.searchPlaceholder')}
+            aria-label={t('editor.tool.searchAria')}
           />
         </div>
 
         {searching && visible.length === 0 && (
           <p className="sv-tools__empty" role="status">
-            Không có ký hiệu nào khớp “{query.trim()}”.
+            {t('editor.tool.empty', { query: query.trim() })}
           </p>
         )}
 

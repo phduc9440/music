@@ -8,6 +8,7 @@ import { inRange, keyAlter, pitchToMidi, spellMidiRelative } from './pitch';
 import type { Pitch, Step } from './pitch';
 import type { ScoreDocument } from '../core/ScoreDocument';
 import { runStructural } from '../structure/structure';
+import { t } from '../../../i18n/core';
 
 /** Khóa nhạc: số dấu hóa (dương = thăng, âm = giáng) và thể trưởng / thứ. */
 export interface KeySignature {
@@ -63,7 +64,9 @@ const pretty = (tonic: string): string => tonic.replace('#', '♯').replace(/^([
 /** Tên giọng tiếng Việt, ví dụ "G trưởng", "B♭ thứ". */
 export function keyName(key: KeySignature): string {
   const index = Math.max(-MAX_FIFTHS, Math.min(MAX_FIFTHS, key.fifths)) + MAX_FIFTHS;
-  return `${pretty((key.minor ? MINOR_TONICS : MAJOR_TONICS)[index])} ${key.minor ? 'thứ' : 'trưởng'}`;
+  return t(key.minor ? 'editor.key.minor' : 'editor.key.major', {
+    tonic: pretty((key.minor ? MINOR_TONICS : MAJOR_TONICS)[index]),
+  });
 }
 
 /** "+2" / "-3" / "0" (dấu trừ là ký tự "−" cho dễ nhìn). */
@@ -71,7 +74,7 @@ export const signedSemitones = (n: number): string => (n > 0 ? `+${n}` : n < 0 ?
 
 /** Nhãn mô tả giọng: "G trưởng → A trưởng"; chưa chuyển thì chỉ "G trưởng (giọng gốc)". */
 export function describeTranspose(key: KeySignature, semitones: number): string {
-  if (semitones === 0) return `${keyName(key)} (giọng gốc)`;
+  if (semitones === 0) return t('editor.key.original', { key: keyName(key) });
   return `${keyName(key)} → ${keyName(transposeKey(key, semitones))}`;
 }
 
@@ -197,7 +200,7 @@ export function transposeDocument(doc: ScoreDocument, semitones: number): EditRe
   }
 
   const start = readStartingKey(doc);
-  const label = `Chuyển giọng ${signedSemitones(n)} nửa cung (${describeTranspose(start, n)})`;
+  const label = t('editor.cmd.transpose', { semitones: signedSemitones(n), description: describeTranspose(start, n) });
   return runStructural(doc, label, () => {
     for (const k of keys) {
       k.fifthsEl.textContent = String(k.value);

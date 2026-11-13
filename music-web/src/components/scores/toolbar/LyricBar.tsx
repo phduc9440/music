@@ -4,6 +4,7 @@ import { canHoldLyric, MAX_VERSE, readLyric } from '../../editor/notation/lyrics
 import type { LyricEnd } from '../../editor/notation/lyrics';
 import type { ScoreDocument } from '../../editor/core/ScoreDocument';
 import Modal from '../common/Modal';
+import { t } from '../../../i18n/core';
 
 interface Props {
   doc: ScoreDocument;
@@ -86,9 +87,9 @@ export default function LyricBar({
   };
 
   return (
-    <div className="sv-lyricbar" role="group" aria-label="Nhập lời bài hát">
+    <div className="sv-lyricbar" role="group" aria-label={t('editor.toolbar.lyric.group')}>
       <label className="sv-lyricbar__verse">
-        Lời
+        {t('editor.toolbar.lyric.verse')}
         <select value={verse} onChange={(e) => onVerseChange(Number(e.target.value))}>
           {Array.from({ length: MAX_VERSE }, (_, i) => i + 1).map((v) => (
             <option key={v} value={v}>
@@ -97,7 +98,13 @@ export default function LyricBar({
           ))}
         </select>
       </label>
-      <button type="button" className="sc-btn" onClick={() => onMove(-1)} disabled={!usable} aria-label="Nốt trước">
+      <button
+        type="button"
+        className="sc-btn"
+        onClick={() => onMove(-1)}
+        disabled={!usable}
+        aria-label={t('editor.toolbar.prevNote')}
+      >
         ‹
       </button>
       <input
@@ -106,46 +113,44 @@ export default function LyricBar({
         defaultValue={current}
         disabled={!usable}
         autoFocus
-        placeholder={
-          usable
-            ? 'Gõ lời cho nốt đang chọn · Space: sang nốt kế · "-": chữ còn tiếp · Esc: thoát'
-            : 'Hãy chọn một nốt (không phải dấu lặng) để nhập lời'
-        }
+        placeholder={usable ? t('editor.toolbar.lyric.hint') : t('editor.toolbar.lyric.hintNone')}
         onKeyDown={onKeyDown}
         onPaste={onPasteInput}
-        aria-label="Lời cho nốt đang chọn"
+        aria-label={t('editor.toolbar.lyric.input')}
       />
-      <button type="button" className="sc-btn" onClick={() => onMove(1)} disabled={!usable} aria-label="Nốt sau">
+      <button
+        type="button"
+        className="sc-btn"
+        onClick={() => onMove(1)}
+        disabled={!usable}
+        aria-label={t('editor.toolbar.nextNote')}
+      >
         ›
       </button>
       <button type="button" className="sc-btn" onClick={() => setPasteOpen(true)}>
-        Dán lời…
+        {t('editor.toolbar.lyric.paste')}
       </button>
       <button type="button" className="sc-btn sc-btn--primary" onClick={onExit}>
-        Xong
+        {t('editor.toolbar.done')}
       </button>
 
       {pasteOpen && (
-        <Modal title="Dán lời bài hát" onClose={() => setPasteOpen(false)}>
-          <p className="sv-modal-text">
-            Dán cả đoạn lời: mỗi chữ cách nhau bằng dấu cách sẽ được gán lần lượt lên các nốt, bắt đầu từ nốt đang chọn
-            (bỏ qua dấu lặng và nốt nối tiếp). Dùng "-" khi một chữ trải qua nhiều nốt (ví dụ "xin-chào"), dùng "_" đứng
-            riêng để bỏ qua một nốt. Dùng "_" giữa hai chữ (ví dụ "xin_chào") để đặt hai chữ trên cùng một nốt.
-          </p>
+        <Modal title={t('editor.toolbar.lyric.pasteTitle')} onClose={() => setPasteOpen(false)}>
+          <p className="sv-modal-text">{t('editor.toolbar.lyric.pasteHelp')}</p>
           <textarea
             className="sv-lyricbar__paste"
             rows={6}
             value={pasteText}
             onChange={(e) => setPasteText(e.target.value)}
-            placeholder="Một con vịt xòe ra hai cái cánh..."
+            placeholder={t('editor.toolbar.lyric.pastePlaceholder')}
             autoFocus
           />
           <div className="sc-modal__actions">
             <button className="sc-btn" onClick={() => setPasteOpen(false)}>
-              Hủy
+              {t('common.cancel')}
             </button>
             <button className="sc-btn sc-btn--primary" onClick={submitPaste} disabled={!pasteText.trim()}>
-              Gán lời
+              {t('editor.toolbar.lyric.assign')}
             </button>
           </div>
         </Modal>

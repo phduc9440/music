@@ -13,7 +13,7 @@ import { changePitch, editFailureMessage, removeNotes, setAlteration } from './c
 import { transposeDocument } from '../notes/transpose';
 import type { EditResult, SymbolOp } from './commands';
 import {
-  DURATION_LABELS,
+  durationLabel,
   DURATION_QUARTERS,
   dotsLabel,
   enterNote,
@@ -342,7 +342,7 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
       const choice: DurationChoice = { type, dots: 0 };
       setInputDuration(choice);
       if (inputMode) {
-        flash(t('editor.flash.inputDuration', { duration: DURATION_LABELS[type] }));
+        flash(t('editor.flash.inputDuration', { duration: durationLabel(type) }));
         return;
       }
       if (canEdit && selection.size > 0) commit(setDuration(doc, [...selection], choice), false);
@@ -354,7 +354,7 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     if (inputMode) {
       const next: DurationChoice = { ...inputDuration, dots: nextDots(inputDuration.dots) };
       setInputDuration(next);
-      flash(t('editor.flash.inputDuration', { duration: `${DURATION_LABELS[next.type]}${dotsLabel(next.dots)}` }));
+      flash(t('editor.flash.inputDuration', { duration: `${durationLabel(next.type)}${dotsLabel(next.dots)}` }));
       return;
     }
     if (!canEdit || selection.size === 0) return;
@@ -624,7 +624,7 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
       const type = first?.element.querySelector(':scope > type')?.textContent?.trim() ?? '';
       if (first && type in DURATION_QUARTERS) {
         setInputDuration({ type: type as DurationType, dots: dotCount(first.element) });
-        flash(t('editor.flash.tupletInput', { name: tupletName(op), duration: DURATION_LABELS[type as DurationType] }));
+        flash(t('editor.flash.tupletInput', { name: tupletName(op), duration: durationLabel(type as DurationType) }));
       }
     },
     [canEdit, selection, doc, commit, flash],

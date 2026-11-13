@@ -5,6 +5,7 @@
  */
 import type { EditResult } from '../core/commands';
 import type { ScoreDocument } from '../core/ScoreDocument';
+import { t } from '../../../i18n/core';
 
 export type HeaderField = 'title' | 'composer';
 
@@ -180,7 +181,7 @@ export function setHeaderText(doc: ScoreDocument, field: HeaderField, text: stri
   return {
     ok: true,
     command: {
-      label: field === 'title' ? 'Sửa tiêu đề' : 'Sửa tên tác giả',
+      label: t(field === 'title' ? 'editor.cmd.header.title' : 'editor.cmd.header.composer'),
       snapshots: [],
       changedIds: [],
       head: { before, after: doc.headSnapshot() },

@@ -60,6 +60,121 @@
       "delete": "Delete note",
       "tie": "Tie",
       "slur": "Slur"
+    },
+    "duration": {
+      "change": "Change duration: {duration}"
+    },
+    "note": {
+      "enter": "Enter note {step}",
+      "add": "Add note {pitch}"
+    },
+    "tie": {
+      "remove": "Remove tie",
+      "add": "Add tie"
+    },
+    "slur": {
+      "remove": "Remove slur",
+      "add": "Add slur"
+    },
+    "transpose": "Transpose {semitones} semitones ({description})",
+    "tuplet": {
+      "make": "Create {name}",
+      "remove": "Remove {name}"
+    },
+    "voice": {
+      "write": "Write voice",
+      "writeSame": "Write voice with same stem",
+      "cue": "Cue notes",
+      "normal": "Back to normal notes",
+      "remove": "Remove voice"
+    },
+    "header": {
+      "title": "Edit title",
+      "composer": "Edit composer"
+    },
+    "measure": {
+      "add": "Add measure {n}",
+      "remove": "Delete measure {n}",
+      "removeRange": "Delete measures {from}–{to}",
+      "confirm": "Confirm measure {n} is correct"
+    },
+    "key": "Change key signature ({range})",
+    "timeFree": "Free time ({range})",
+    "time": "Change time signature {beats}/{beatType} ({range})",
+    "clef": "{clef} ({range})",
+    "staff": {
+      "addBass": "Add bass staff (two-staff instrument)",
+      "addPart": "Add {name} staff",
+      "removeBass": "Remove the instrument's bass staff",
+      "remove": "Delete staff"
+    },
+    "repeat": {
+      "start": "Start repeat",
+      "end": "End repeat"
+    },
+    "ending": "Ending {number}",
+    "doubleBar": {
+      "remove": "Remove double barline",
+      "add": "Add double barline"
+    },
+    "repeatTimes": "Repeat {times} times",
+    "break": {
+      "page": {
+        "set": "Add page break at measure {n}",
+        "remove": "Remove page break at measure {n}"
+      },
+      "system": {
+        "set": "Add line break at measure {n}",
+        "remove": "Remove line break at measure {n}"
+      }
+    },
+    "section": {
+      "remove": "Remove section label",
+      "removeNamed": "Remove label \"{label}\"",
+      "set": "Set label \"{label}\""
+    },
+    "tempo": "Edit tempo",
+    "mark": {
+      "add": "Add {name}",
+      "remove": "Remove {name}"
+    },
+    "arpeggio": {
+      "up": {
+        "add": "Add arpeggio",
+        "remove": "Remove arpeggio"
+      },
+      "down": {
+        "add": "Add downward arpeggio",
+        "remove": "Remove downward arpeggio"
+      }
+    },
+    "trillAcc": {
+      "set": "Set {accidental} on trill",
+      "remove": "Remove {accidental} from trill"
+    },
+    "line": {
+      "add": "Add {name}",
+      "remove": "Remove {name}",
+      "change": "Change to {name}"
+    },
+    "dynamic": {
+      "set": "Set {name}"
+    },
+    "grace": {
+      "slashOff": "Remove grace note slash",
+      "slashOn": "Add grace note slash",
+      "addSlash": "Add grace note (slashed)",
+      "add": "Add grace note"
+    },
+    "chord": {
+      "set": "Enter chord",
+      "clear": "Delete chord",
+      "paste": "Paste chords"
+    },
+    "lyric": {
+      "set": "Enter lyrics",
+      "clear": "Delete lyrics",
+      "paste": "Paste lyrics"
     }
   },
   "doc": {
@@ -201,6 +316,761 @@
       "vsPrevious": "Compare with previous",
       "close": "Close",
       "loadingVersion": "Loading the version..."
+    }
+  },
+  "duration": {
+    "breve": "breve",
+    "whole": "whole",
+    "half": "half",
+    "quarter": "quarter",
+    "eighth": "eighth",
+    "16th": "16th",
+    "32nd": "32nd",
+    "64th": "64th"
+  },
+  "dots": {
+    "one": " dotted",
+    "two": " double-dotted"
+  },
+  "key": {
+    "major": "{tonic} major",
+    "minor": "{tonic} minor",
+    "original": "{key} (original key)"
+  },
+  "tuplet": {
+    "name": {
+      "3": "triplet",
+      "2": "duplet",
+      "4": "quadruplet",
+      "5": "quintuplet",
+      "6": "sextuplet",
+      "7": "septuplet"
+    },
+    "label": {
+      "3": "Triplet (3:2)",
+      "2": "Duplet (2:3)",
+      "4": "Quadruplet (4:3)",
+      "5": "Quintuplet (5:4)",
+      "6": "Sextuplet (6:4)",
+      "7": "Septuplet (7:4)"
+    },
+    "other": "tuplet {actual}:{normal}"
+  },
+  "clef": {
+    "G": {
+      "label": "Treble clef",
+      "short": "Treble"
+    },
+    "G8b": {
+      "label": "Treble clef 8vb (Tenor)",
+      "short": "Tenor (G 8vb)"
+    },
+    "F": {
+      "label": "Bass clef",
+      "short": "Bass"
+    },
+    "C": {
+      "label": "Alto clef (C on line 3)",
+      "short": "Alto"
+    },
+    "C4": {
+      "label": "Tenor clef (C on line 4)",
+      "short": "C line 4"
+    }
+  },
+  "range": {
+    "one": "measure {n}",
+    "from": "from measure {n}",
+    "span": "measures {from}–{to}"
+  },
+  "check": {
+    "beats_one": "{count} beat",
+    "beats_other": "{count} beats",
+    "group": "{count} × {text}",
+    "and": " and ",
+    "noteOf": "{name} note{dots}",
+    "dot": " dotted",
+    "dotDouble": " double-dotted",
+    "short": "Measure {n} is short by {gap}",
+    "long": "Measure {n} is over by {gap}",
+    "beatsDecimal": "{value} beats"
+  },
+  "mark": {
+    "fermataBelow": "Inverted fermata",
+    "breath": "Breath mark",
+    "caesura": "Caesura",
+    "trill": "Trill",
+    "mordent": "Mordent",
+    "invMordent": "Inverted mordent",
+    "turn": "Turn",
+    "arpeggio": "Arpeggio",
+    "staccato": "Staccato",
+    "accent": "Accent",
+    "tenuto": "Tenuto",
+    "fermata": "Fermata",
+    "marcato": "Marcato",
+    "staccatissimo": "Staccatissimo"
+  },
+  "trillAcc": {
+    "sharp": "sharp",
+    "flat": "flat",
+    "natural": "natural"
+  },
+  "line": {
+    "glissando": "glissando",
+    "slide": "slide"
+  },
+  "toolbar": {
+    "prevNote": "Previous note",
+    "nextNote": "Next note",
+    "done": "Done",
+    "more": "More",
+    "lyric": {
+      "group": "Enter lyrics",
+      "verse": "Verse",
+      "hint": "Type the lyric for the selected note · Space: next note · \"-\": word continues · Esc: exit",
+      "hintNone": "Select a note (not a rest) to enter lyrics",
+      "input": "Lyric for the selected note",
+      "paste": "Paste lyrics…",
+      "pasteTitle": "Paste song lyrics",
+      "pasteHelp": "Paste a whole passage: words separated by spaces are assigned to the notes in turn, starting from the selected note (rests and tied continuations are skipped). Use \"-\" when a word spans several notes (for example \"hel-lo\"), and a standalone \"_\" to skip a note. Use \"_\" between two words (for example \"hel_lo\") to put both on the same note.",
+      "pastePlaceholder": "Twinkle twinkle little star...",
+      "assign": "Assign lyrics"
+    },
+    "chord": {
+      "group": "Enter chords",
+      "label": "Chords",
+      "hint": "Type a chord, e.g. C, Am7, G/B, C6/9, N.C. · Space: next note · Enter: write · Esc: exit",
+      "hintNone": "Select a note to enter a chord",
+      "input": "Chord for the selected note",
+      "paste": "Paste chords…",
+      "pasteTitle": "Paste a chord sequence",
+      "pasteHelp": "Paste chords separated by spaces or \"|\": they are assigned to the notes in turn, starting from the selected note. Use \"_\" to skip a note.",
+      "assign": "Assign chords"
+    },
+    "text": {
+      "sizeRange": "Font size from {min} to {max}",
+      "bpmRange": "Tempo from {min} to {max}",
+      "content": "Content",
+      "size": "Font size",
+      "bold": "Bold",
+      "italic": "Italic",
+      "note": "Note",
+      "dotted": " dotted",
+      "words": "Tempo text (optional)",
+      "wordsPlaceholder": "e.g. Allegro, Cheerful",
+      "save": "Save"
+    },
+    "accidental": {
+      "auto": "Auto",
+      "sharp": "Sharp",
+      "flat": "Flat",
+      "natural": "Natural"
+    },
+    "insert": {
+      "title": "Add note",
+      "replaceRest": "Replace rest with",
+      "higher": "Up one step",
+      "higherTitle": "Higher (↑)",
+      "lower": "Down one step",
+      "lowerTitle": "Lower (↓)",
+      "durationGroup": "Duration",
+      "dotTitle": "Dot (.): press again for a double dot",
+      "accidentalGroup": "Accidental",
+      "add": "Add"
+    },
+    "notation": {
+      "title": "Clef, key signature & time",
+      "scope": "Apply to",
+      "toEnd": "From measure {n} to the end",
+      "selected": "Only {range} (then back to how it was)",
+      "clefTitle": "Clef (staff {staff})",
+      "apply": "Apply",
+      "keyTitle": "Key signature (all staves)",
+      "keyAria": "Key signature",
+      "noAccidentals": "no accidentals",
+      "timeTitle": "Time signature (all staves)",
+      "free": "Free time",
+      "beats": "Beats",
+      "beatType": "Beat unit",
+      "help": "Changing the time signature does not re-flow notes: measures that no longer add up get a red outline for you to fix (or press ✓ to keep them). With free time, measures can be any length and no short/long warning is shown."
+    }
+  },
+  "tool": {
+    "mark": {
+      "staccato": {
+        "label": "Staccato",
+        "title": "Staccato: short, detached (press again to remove)"
+      },
+      "accent": {
+        "label": "Accent",
+        "title": "Accent: emphasize the note (press again to remove)"
+      },
+      "tenuto": {
+        "label": "Tenuto",
+        "title": "Tenuto: hold the full length (press again to remove)"
+      },
+      "fermata": {
+        "label": "Fermata",
+        "title": "Fermata: hold freely (press again to remove)"
+      },
+      "cresc": {
+        "label": "Cresc.",
+        "title": "Cresc.: gradually louder, from the first to the last note of the selection"
+      },
+      "dim": {
+        "label": "Dim.",
+        "title": "Dim.: gradually softer, from the first to the last note of the selection"
+      },
+      "fermataBelow": {
+        "label": "Inverted fermata",
+        "title": "Inverted fermata (drawn below the note): hold freely (press again to remove)"
+      },
+      "marcato": {
+        "label": "Marcato",
+        "title": "Marcato: strongly accented and detached (press again to remove)"
+      },
+      "staccatissimo": {
+        "label": "Staccatissimo",
+        "title": "Staccatissimo: very short (press again to remove)"
+      },
+      "breath": {
+        "label": "Breath mark",
+        "title": "Breath mark after the note: the note is cut slightly short in playback (press again to remove)"
+      },
+      "caesura": {
+        "label": "Caesura",
+        "title": "Caesura //: adds a beat of silence after the note in playback (press again to remove; the preview does not draw this mark yet)"
+      },
+      "arpeggio": {
+        "label": "Arpeggio",
+        "title": "Roll the notes of the selected chord from bottom to top (press again to remove)"
+      },
+      "trill": {
+        "label": "Trill",
+        "title": "Trill (tr): alternates with the note above (press again to remove)"
+      },
+      "trillSharp": {
+        "label": "Trill ♯",
+        "title": "Sharp on the trill: the upper note is raised a semitone (adds a trill if missing; press again to remove the accidental)"
+      },
+      "trillFlat": {
+        "label": "Trill ♭",
+        "title": "Flat on the trill: the upper note is lowered a semitone (adds a trill if missing; press again to remove the accidental)"
+      },
+      "trillNatural": {
+        "label": "Trill ♮",
+        "title": "Natural on the trill: the upper note follows the natural scale, ignoring the key signature (adds a trill if missing; press again to remove the accidental)"
+      },
+      "mordent": {
+        "label": "Mordent",
+        "title": "Mordent: note – lower note – note (press again to remove)"
+      },
+      "invMordent": {
+        "label": "Inverted mordent",
+        "title": "Inverted mordent: note – upper note – note (press again to remove)"
+      },
+      "turn": {
+        "label": "Turn",
+        "title": "Turn: upper note – note – lower note – note (press again to remove)"
+      },
+      "pedal": {
+        "label": "Pedal",
+        "title": "Pedal: pressed from the first to the last note of the selection (press again to remove)"
+      },
+      "ottava8va": {
+        "label": "8va",
+        "title": "8va: written an octave lower, sounds an octave higher (press again to remove)"
+      },
+      "ottava8vb": {
+        "label": "8vb",
+        "title": "8vb: written an octave higher, sounds an octave lower (press again to remove)"
+      },
+      "graceSlash": {
+        "label": "Grace (slash)",
+        "title": "Slashed grace note (acciaccatura): added before the selected note, one step higher"
+      },
+      "gracePlain": {
+        "label": "Grace (no slash)",
+        "title": "Unslashed grace note (appoggiatura): added before the selected note, one step higher"
+      },
+      "graceToggle": {
+        "label": "Toggle grace slash",
+        "title": "Toggle the selected grace note between slashed (acciaccatura) and unslashed (appoggiatura)"
+      },
+      "arpeggioDown": {
+        "label": "Roll down",
+        "title": "Roll the notes of the selected chord from top to bottom (press again to remove)"
+      },
+      "glissando": {
+        "label": "Glissando",
+        "title": "Glissando: a wavy line from the selected note to the next one (or to the last note of the selection); press again to remove"
+      },
+      "slide": {
+        "label": "Slide",
+        "title": "Slide: a straight line joining two notes like a glissando, without text; press again to remove"
+      },
+      "repeatStart": {
+        "label": "|:",
+        "title": "Repeat sign at the start of the measure (first measure of the selection)"
+      },
+      "repeatEnd": {
+        "label": ":|",
+        "title": "Repeat sign at the end of the measure (last measure of the selection)"
+      },
+      "volta1": {
+        "label": "Ending 1",
+        "title": "Ending 1 (1.) spans the selected measures and closes with a repeat sign"
+      },
+      "volta2": {
+        "label": "Ending 2",
+        "title": "Ending 2 (2.) spans the selected measures: use when the second pass (verse 2) differs at the end"
+      },
+      "volta3": {
+        "label": "Ending 3",
+        "title": "Ending 3 (3.) spans the selected measures, left open: use when there is a third pass"
+      },
+      "repeatTimes_2": {
+        "label": "Repeat ×2",
+        "title": "Play the repeated section 2 times (default). Select a measure that has an end repeat :|"
+      },
+      "repeatTimes_3": {
+        "label": "Repeat ×3",
+        "title": "Play the repeated section 3 times: set on the end repeat of the last selected measure (needs a preceding :|)"
+      },
+      "repeatTimes_4": {
+        "label": "Repeat ×4",
+        "title": "Play the repeated section 4 times: set on the end repeat of the last selected measure (needs a preceding :|)"
+      },
+      "segno": {
+        "label": "Segno",
+        "title": "Segno sign at the first measure of the selection"
+      },
+      "coda": {
+        "label": "Coda",
+        "title": "Coda sign at the first measure of the selection"
+      },
+      "dc": {
+        "label": "D.C.",
+        "title": "D.C.: go back to the beginning (at the end of the last selected measure)"
+      },
+      "ds": {
+        "label": "D.S.",
+        "title": "D.S.: go back to the Segno"
+      },
+      "fine": {
+        "label": "Fine",
+        "title": "Fine: the end"
+      },
+      "tocoda": {
+        "label": "To Coda",
+        "title": "To Coda: jump to the Coda"
+      },
+      "sectionRemove": {
+        "label": "Remove label",
+        "title": "Remove the section label from the selected measure"
+      },
+      "lineBreak": {
+        "label": "Line break",
+        "title": "Start a new system at the selected measure (press again to remove); only affects page view"
+      },
+      "pageBreak": {
+        "label": "Page break",
+        "title": "Start a new page at the selected measure (press again to remove); only affects page view"
+      },
+      "barDouble": {
+        "label": "Double barline",
+        "title": "Double barline at the end of the last selected measure to separate sections (press again to remove; not allowed on a measure with an end repeat)"
+      }
+    },
+    "text": {
+      "tuplet-remove": {
+        "label": "Remove tuplet",
+        "title": "Remove tuplet: merge the whole tuplet containing the selected note into one note (keeps the pitch of the first pitched note)"
+      },
+      "addBass": {
+        "label": "Add bass (piano)",
+        "title": "Add a bass staff below the current staff: two-staff instrument (the staff of the selected note, the first staff by default)"
+      },
+      "addG": {
+        "label": "Add treble staff",
+        "title": "Add a separate treble-clef staff (e.g. S/A voices) at the bottom"
+      },
+      "addF": {
+        "label": "Add separate bass staff",
+        "title": "Add a separate bass-clef staff (e.g. T/B voices) at the bottom"
+      },
+      "addTenor": {
+        "label": "Add tenor staff",
+        "title": "Add a separate staff with a treble clef 8vb (Tenor in SATB) at the bottom"
+      },
+      "removeStaff": {
+        "label": "Delete staff",
+        "title": "Delete the staff of the selected note (the instrument's bass staff, or a separate staff entirely)"
+      },
+      "notation": {
+        "label": "Clef · Key · Time…",
+        "title": "Change the treble/bass/C clef, key signature and time signature (including mid-piece time changes and free time)"
+      },
+      "insertAfter": {
+        "label": "Add measure after",
+        "title": "Add an empty measure after the selected one (nothing selected: add at the end)"
+      },
+      "insertBefore": {
+        "label": "Insert measure before",
+        "title": "Insert an empty measure before the selected one"
+      },
+      "deleteMeasure": {
+        "label": "Delete measure",
+        "title": "Delete the measures containing the selected notes (press Undo if you slip)"
+      },
+      "chordBelow": {
+        "label": "Stacked voice ↓",
+        "title": "Stacked voice: add to each selected note a note of the same duration a third lower (two notes share one stem)"
+      },
+      "chordAbove": {
+        "label": "Stacked voice ↑",
+        "title": "Stacked voice: add a note of the same duration a third higher"
+      },
+      "blank": {
+        "label": "Separate voice",
+        "title": "Add a separate (empty) voice: click a rest of the new voice to enter notes with a rhythm different from the main voice"
+      },
+      "addBelow": {
+        "label": "Copy voice ↓",
+        "title": "Copy the whole measure to a separate voice a third lower, then edit each note's duration and pitch"
+      },
+      "addAbove": {
+        "label": "Copy voice ↑",
+        "title": "Copy the whole measure to a separate voice a third higher"
+      },
+      "cue": {
+        "label": "Cue notes",
+        "title": "Toggle small note heads for the selected notes (often used for secondary voices)"
+      },
+      "removeVoice": {
+        "label": "Delete voice",
+        "title": "Delete the separate voice containing the selected note (the main voice cannot be deleted)"
+      }
+    },
+    "panel": "Editing tools",
+    "note": "Click a note to select it (Shift to add more), then use the Pitch group or the arrow keys.",
+    "searchPlaceholder": "Search symbols (trill, fermata, repeat...)",
+    "searchAria": "Search symbols",
+    "empty": "No symbols match “{query}”.",
+    "selectFirst": " - select a note first",
+    "section": {
+      "mode": "Mode",
+      "pitch": "Pitch",
+      "actions": "Actions",
+      "duration": "Duration",
+      "symbols": "Accidentals & ties",
+      "articulation": "Articulation & technique",
+      "ornament": "Ornaments",
+      "dynamics": "Dynamics",
+      "repeats": "Repeats & directions",
+      "structure": "Song structure",
+      "staves": "Staves",
+      "measures": "Measures",
+      "voices": "Voices"
+    },
+    "sub": {
+      "tuplet": "Tuplets ({mod}+3 = triplet)",
+      "pedal": "Pedal & octaves",
+      "section": "Section labels (placed at the start of the selected measure)",
+      "breaks": "Breaks"
+    },
+    "mode": {
+      "select": {
+        "title": "Select notes",
+        "label": "Select"
+      },
+      "input": {
+        "title": "Enter notes: select a rest then press A–G (Esc to exit)",
+        "label": "Enter notes"
+      },
+      "lyric": {
+        "title": "Enter lyrics: select a note then type a syllable, Space for the next note (Esc to exit)",
+        "label": "Lyrics"
+      },
+      "chord": {
+        "title": "Enter chords: select a note then type Am7, C/G... (Esc to exit)",
+        "label": "Chords"
+      }
+    },
+    "pitch": {
+      "stepUp": "Step up",
+      "stepDown": "Step down",
+      "semitoneUp": "Up ½ step",
+      "semitoneDown": "Down ½ step",
+      "octaveUp": "Octave up",
+      "octaveDown": "Octave down"
+    },
+    "symbol": {
+      "sharp": "Sharp",
+      "flat": "Flat",
+      "natural": "Natural",
+      "tie": "Tie",
+      "slur": "Slur",
+      "rest": "Rest",
+      "delete": "Delete"
+    },
+    "previewTone": "Hear while editing",
+    "undo": "Undo",
+    "redo": "Redo",
+    "durationLabel": {
+      "breve": "Breve",
+      "whole": "Whole",
+      "half": "Half",
+      "quarter": "Quarter",
+      "eighth": "Eighth",
+      "16th": "16th",
+      "32nd": "32nd",
+      "64th": "64th"
+    },
+    "durationTitle": "{label} ({key}) · click: change the duration of the selected notes · drag onto the staff: add a note",
+    "dot": {
+      "label": "Dot",
+      "title": "Dot (.): press twice for a double dot, a third time to remove"
+    },
+    "breveTitle": "Breve (2 whole notes long): click to change the selected notes, or set the input duration",
+    "tupletTitle": "{label}: {actual} notes in the time of {normal} notes of the same kind (the selected note keeps the first slot, the others are rests to fill in)",
+    "dynamicTitle": "Dynamic level {d} (placed at the first note of the selection)",
+    "dyn": {
+      "ppp": "{d}: extremely soft (placed at the first note of the selection)",
+      "fff": "{d}: extremely loud (placed at the first note of the selection)",
+      "accent": "{d}: emphasize one note then return to the previous level (placed at the first note of the selection)"
+    },
+    "sectionForm": {
+      "placeholder": "Custom label (e.g. Rap)",
+      "aria": "Custom section label",
+      "submit": "Set",
+      "title": "Set a custom label at the start of the selected measure"
+    },
+    "sectionTitle": "Section label \"{name}\" ({keywords}) at the start of the selected measure: press again to remove, another label replaces the old one",
+    "preset": {
+      "intro": {
+        "name": "Intro",
+        "keywords": "intro opening"
+      },
+      "verse1": {
+        "name": "Verse 1",
+        "keywords": "verse 1"
+      },
+      "verse2": {
+        "name": "Verse 2",
+        "keywords": "verse 2"
+      },
+      "chorus": {
+        "name": "Chorus",
+        "keywords": "chorus"
+      },
+      "bridge": {
+        "name": "Bridge",
+        "keywords": "bridge"
+      },
+      "outro": {
+        "name": "Outro",
+        "keywords": "outro ending"
+      }
+    }
+  },
+  "view": {
+    "state": {
+      "loading": "Loading the score...",
+      "notFound": {
+        "title": "Score not found",
+        "text": "The score does not exist or you do not have permission to view it.",
+        "action": "Back to the library"
+      },
+      "notReady": {
+        "title": "The score is not digitized yet",
+        "text": "The score has no MusicXML yet. Wait for recognition to finish or check the progress page.",
+        "action": "Go to the progress page"
+      },
+      "parseError": {
+        "title": "Cannot read the score",
+        "text": "The MusicXML file is broken so it cannot be drawn. You can download the file to check it.",
+        "action": "Back to the details page"
+      },
+      "error": {
+        "title": "Cannot load the score",
+        "text": "Please try again later.",
+        "action": "Reload"
+      }
+    },
+    "progress": {
+      "scroll": "Position {progress}%",
+      "page": "Page {page}/{total}"
+    },
+    "summary": {
+      "measures": "{count} measures",
+      "key": "Key {key}",
+      "time": "Time {time}",
+      "version": "Version {version}",
+      "score": "Score"
+    },
+    "save": {
+      "saving": "Saving…",
+      "dirty": "Unsaved changes",
+      "saved": "Saved · version {version}"
+    },
+    "header": {
+      "back": "Back to the details page",
+      "unknownComposer": "Composer unknown",
+      "readOnly": "View only",
+      "modeGroup": "View mode",
+      "scroll": "Horizontal scroll",
+      "colorGroup": "Score colors",
+      "invert": "Invert score colors",
+      "invertTitle": "Invert score colors (dark background, light notes)",
+      "edit": "Edit"
+    },
+    "play": {
+      "pause": "Pause",
+      "fromSelection": "Play from the selected note",
+      "all": "Play the whole score",
+      "play": "Play"
+    },
+    "menu": {
+      "fullscreenExit": "Exit full screen",
+      "fullscreen": "Full screen",
+      "shortcuts": "Keyboard shortcuts"
+    },
+    "banner": {
+      "notTwoStaves": "The score has {staves} staves (not 2), so the left/right hand cannot be separated later.",
+      "switchScroll": "Switch to horizontal scroll",
+      "hide": "Hide warning"
+    },
+    "transposeHint": "You can undo (Ctrl+Z) and must press Save to keep it.",
+    "status": {
+      "inputMode": "Enter notes · duration {duration} · click the staff to add a note, or select a rest then press A–G",
+      "issueTitle": "Click to scroll to the wrong measure",
+      "issueAria": "Warning: {message}. Click to scroll to the measure",
+      "issueMore": " (+{count} more)",
+      "hintEdit": "Press ? for shortcuts · ",
+      "hintZoom": "Ctrl + scroll or pinch to zoom"
+    },
+    "draft": {
+      "title": "Restore the unsaved draft?",
+      "text": "The previous edit was not saved. The draft was auto-saved at {time}.",
+      "discard": "Discard draft",
+      "restore": "Restore"
+    },
+    "conflict": {
+      "title": "The score was just saved elsewhere",
+      "newer": "The server already has version {latest}, newer than the one you are editing (version {mine}). ",
+      "newerUnknown": "The server already has a newer version than the one you are editing. ",
+      "choose": "Choose how to handle your unsaved changes.",
+      "downloadMine": "Download my version",
+      "reloadLatest": "Load the latest version (discard my changes)",
+      "overwrite": "Overwrite with mine"
+    },
+    "help": {
+      "select": {
+        "keys": "Click / Shift + click",
+        "desc": "Select a note / add to or remove from the selection"
+      },
+      "drag": {
+        "keys": "Drag a box / drag a note (mouse, pen)",
+        "desc": "Select an area / drag a note up or down to change its pitch"
+      },
+      "tab": {
+        "desc": "Next / previous note"
+      },
+      "chord": {
+        "desc": "Select the lower / higher note in a chord"
+      },
+      "step": {
+        "desc": "Up / down one step"
+      },
+      "semitone": {
+        "desc": "Up / down a semitone"
+      },
+      "octave": {
+        "desc": "Up / down an octave"
+      },
+      "undo": {
+        "desc": "Undo"
+      },
+      "redo": {
+        "keys": "{mod} + Shift + Z  or  {mod} + Y",
+        "desc": "Redo"
+      },
+      "save": {
+        "desc": "Save"
+      },
+      "duration": {
+        "desc": "Duration: 16th, eighth, quarter, half, whole (1–5), 32nd, 64th (6–7); breve is under the \"Other\" button (applies to the selected notes)"
+      },
+      "dot": {
+        "desc": "Dot: press once for a dot, twice for a double dot, a third time to remove"
+      },
+      "tuplet": {
+        "desc": "Triplet from the selected note/rest (the Duration group → \"Tuplets…\" also has duplet, quadruplet, quintuplet, sextuplet, septuplet and \"Remove tuplet\")"
+      },
+      "clickStaff": {
+        "keys": "Click the staff (Enter notes mode)",
+        "desc": "Open the note picker at the exact line/space you clicked, then press Add"
+      },
+      "dragDuration": {
+        "keys": "Drag a duration button onto the staff",
+        "desc": "Add a note of that duration where you drop it"
+      },
+      "letters": {
+        "keys": "A – G (Enter notes mode)",
+        "desc": "Turn the selected note/rest into that note, then move on to the next item"
+      },
+      "header": {
+        "keys": "Click the title, composer or tempo",
+        "desc": "Edit the text; title and composer also have font size, bold and italic"
+      },
+      "lyricMode": {
+        "keys": "Lyrics mode",
+        "desc": "Select a note, type a syllable then Space for the next note; \"-\" when a word spans several notes; Esc to exit"
+      },
+      "chordMode": {
+        "keys": "Chords mode",
+        "desc": "Select a note, type a chord (C, Am7, G/B, C6/9, N.C....) then Space for the next note; leave empty to delete"
+      },
+      "staves": {
+        "keys": "Staves group",
+        "desc": "Add a bass staff for a keyboard instrument, add a separate treble/bass/Tenor staff (SATB), delete a staff; \"Clef · Key · Time…\" changes the clef (treble, treble 8vb, bass, C), the key signature and mid-piece time changes"
+      },
+      "measures": {
+        "keys": "Measures group",
+        "desc": "Add after / insert before / delete the selected measures (can be undone)"
+      },
+      "voices": {
+        "keys": "Voices group",
+        "desc": "Stacked voice: add notes of the same duration sharing one stem. Separate voice: a new voice with its own rhythm (click a rest to enter notes). Copy voice: copy the whole measure to a new voice"
+      },
+      "dynamics": {
+        "keys": "Dynamics group",
+        "desc": "Staccato, Accent, Tenuto, Fermata, Cresc./Dim. (first to last selected note), pp…ff (placed at the first note)"
+      },
+      "repeats": {
+        "keys": "Repeats & directions group",
+        "desc": "Repeat signs |: :|, Ending 1 / Ending 2 (verse 2 sings a different ending), Segno, Coda, D.C., D.S., Fine, To Coda"
+      },
+      "tie": {
+        "desc": "Tie: join the selected note to the next note of the same pitch (press again to remove)"
+      },
+      "slur": {
+        "desc": "Slur: select from the first to the last note then press (press again to remove)"
+      },
+      "delete": {
+        "desc": "Delete the selected note (a chord with other notes keeps them)"
+      },
+      "esc": {
+        "desc": "Deselect"
+      },
+      "zoom": {
+        "desc": "Zoom in / zoom out / reset to 100%"
+      },
+      "help": {
+        "desc": "Open this panel"
+      }
     }
   }
 }

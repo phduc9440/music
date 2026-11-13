@@ -60,6 +60,121 @@
       "delete": "Xóa nốt",
       "tie": "Dấu nối",
       "slur": "Dấu luyến"
+    },
+    "duration": {
+      "change": "Đổi trường độ: {duration}"
+    },
+    "note": {
+      "enter": "Nhập nốt {step}",
+      "add": "Thêm nốt {pitch}"
+    },
+    "tie": {
+      "remove": "Bỏ dấu nối",
+      "add": "Thêm dấu nối"
+    },
+    "slur": {
+      "remove": "Bỏ dấu luyến",
+      "add": "Thêm dấu luyến"
+    },
+    "transpose": "Chuyển giọng {semitones} nửa cung ({description})",
+    "tuplet": {
+      "make": "Tạo {name}",
+      "remove": "Bỏ {name}"
+    },
+    "voice": {
+      "write": "Viết bè",
+      "writeSame": "Viết bè cùng thân",
+      "cue": "Nốt nhỏ",
+      "normal": "Về nốt thường",
+      "remove": "Xóa bè"
+    },
+    "header": {
+      "title": "Sửa tiêu đề",
+      "composer": "Sửa tên tác giả"
+    },
+    "measure": {
+      "add": "Thêm ô nhịp {n}",
+      "remove": "Xóa ô nhịp {n}",
+      "removeRange": "Xóa ô nhịp {from}–{to}",
+      "confirm": "Xác nhận ô {n} đúng"
+    },
+    "key": "Đổi dấu hóa đầu khuông ({range})",
+    "timeFree": "Nhịp tự do ({range})",
+    "time": "Đổi nhịp {beats}/{beatType} ({range})",
+    "clef": "{clef} ({range})",
+    "staff": {
+      "addBass": "Thêm khuông Fa (đàn hai khuông)",
+      "addPart": "Thêm khuông {name}",
+      "removeBass": "Xóa khuông Fa của đàn",
+      "remove": "Xóa khuông"
+    },
+    "repeat": {
+      "start": "Dấu lặp đầu ô",
+      "end": "Dấu lặp cuối ô"
+    },
+    "ending": "Nhà {number}",
+    "doubleBar": {
+      "remove": "Bỏ vạch đôi",
+      "add": "Thêm vạch đôi"
+    },
+    "repeatTimes": "Lặp {times} lần",
+    "break": {
+      "page": {
+        "set": "Đặt sang trang tại ô {n}",
+        "remove": "Bỏ sang trang tại ô {n}"
+      },
+      "system": {
+        "set": "Đặt xuống dòng tại ô {n}",
+        "remove": "Bỏ xuống dòng tại ô {n}"
+      }
+    },
+    "section": {
+      "remove": "Bỏ nhãn đoạn",
+      "removeNamed": "Bỏ nhãn \"{label}\"",
+      "set": "Đặt nhãn \"{label}\""
+    },
+    "tempo": "Sửa nhịp độ",
+    "mark": {
+      "add": "Thêm {name}",
+      "remove": "Bỏ {name}"
+    },
+    "arpeggio": {
+      "up": {
+        "add": "Thêm rải hợp âm",
+        "remove": "Bỏ rải hợp âm"
+      },
+      "down": {
+        "add": "Thêm rải hợp âm xuống",
+        "remove": "Bỏ rải hợp âm xuống"
+      }
+    },
+    "trillAcc": {
+      "set": "Đặt dấu {accidental} cho láy rền",
+      "remove": "Bỏ dấu {accidental} cho láy rền"
+    },
+    "line": {
+      "add": "Thêm {name}",
+      "remove": "Bỏ {name}",
+      "change": "Đổi sang {name}"
+    },
+    "dynamic": {
+      "set": "Đặt {name}"
+    },
+    "grace": {
+      "slashOff": "Bỏ gạch chéo nốt hoa mỹ",
+      "slashOn": "Thêm gạch chéo nốt hoa mỹ",
+      "addSlash": "Thêm nốt hoa mỹ (có gạch)",
+      "add": "Thêm nốt hoa mỹ"
+    },
+    "chord": {
+      "set": "Nhập hợp âm",
+      "clear": "Xóa hợp âm",
+      "paste": "Dán hợp âm"
+    },
+    "lyric": {
+      "set": "Nhập lời",
+      "clear": "Xóa lời",
+      "paste": "Dán lời"
     }
   },
   "doc": {
@@ -201,6 +316,761 @@
       "vsPrevious": "So với bản trước",
       "close": "Đóng",
       "loadingVersion": "Đang tải phiên bản..."
+    }
+  },
+  "duration": {
+    "breve": "tròn đôi",
+    "whole": "tròn",
+    "half": "trắng",
+    "quarter": "đen",
+    "eighth": "móc đơn",
+    "16th": "móc kép",
+    "32nd": "móc ba",
+    "64th": "móc tứ"
+  },
+  "dots": {
+    "one": " chấm dôi",
+    "two": " chấm dôi kép"
+  },
+  "key": {
+    "major": "{tonic} trưởng",
+    "minor": "{tonic} thứ",
+    "original": "{key} (giọng gốc)"
+  },
+  "tuplet": {
+    "name": {
+      "3": "chùm ba",
+      "2": "chùm hai",
+      "4": "chùm bốn",
+      "5": "chùm năm",
+      "6": "chùm sáu",
+      "7": "chùm bảy"
+    },
+    "label": {
+      "3": "Chùm ba (3:2)",
+      "2": "Chùm hai (2:3)",
+      "4": "Chùm bốn (4:3)",
+      "5": "Chùm năm (5:4)",
+      "6": "Chùm sáu (6:4)",
+      "7": "Chùm bảy (7:4)"
+    },
+    "other": "chùm {actual}:{normal}"
+  },
+  "clef": {
+    "G": {
+      "label": "Khóa Sol",
+      "short": "Sol"
+    },
+    "G8b": {
+      "label": "Khóa Sol số 8 dưới (Tenor)",
+      "short": "Tenor (Sol 8)"
+    },
+    "F": {
+      "label": "Khóa Fa",
+      "short": "Fa"
+    },
+    "C": {
+      "label": "Khóa Đô dòng 3 (Alto)",
+      "short": "Đô"
+    },
+    "C4": {
+      "label": "Khóa Đô dòng 4 (Tenor)",
+      "short": "Đô dòng 4"
+    }
+  },
+  "range": {
+    "one": "ô {n}",
+    "from": "từ ô {n}",
+    "span": "ô {from}–{to}"
+  },
+  "check": {
+    "beats_one": "{count} phách",
+    "beats_other": "{count} phách",
+    "group": "{count} {text}",
+    "and": " và ",
+    "noteOf": "nốt {name}{dots}",
+    "dot": " chấm",
+    "dotDouble": " chấm kép",
+    "short": "Ô {n} thiếu {gap}",
+    "long": "Ô {n} thừa {gap}",
+    "beatsDecimal": "{value} phách"
+  },
+  "mark": {
+    "fermataBelow": "Fermata ngược",
+    "breath": "Lấy hơi",
+    "caesura": "Ngắt nghỉ",
+    "trill": "Láy rền",
+    "mordent": "Láy ngắn",
+    "invMordent": "Láy ngắn ngược",
+    "turn": "Láy vòng",
+    "arpeggio": "Rải hợp âm",
+    "staccato": "Staccato",
+    "accent": "Accent",
+    "tenuto": "Tenuto",
+    "fermata": "Fermata",
+    "marcato": "Marcato",
+    "staccatissimo": "Staccatissimo"
+  },
+  "trillAcc": {
+    "sharp": "thăng",
+    "flat": "giáng",
+    "natural": "bình"
+  },
+  "line": {
+    "glissando": "glissando",
+    "slide": "đường trượt"
+  },
+  "toolbar": {
+    "prevNote": "Nốt trước",
+    "nextNote": "Nốt sau",
+    "done": "Xong",
+    "more": "Thêm",
+    "lyric": {
+      "group": "Nhập lời bài hát",
+      "verse": "Lời",
+      "hint": "Gõ lời cho nốt đang chọn · Space: sang nốt kế · \"-\": chữ còn tiếp · Esc: thoát",
+      "hintNone": "Hãy chọn một nốt (không phải dấu lặng) để nhập lời",
+      "input": "Lời cho nốt đang chọn",
+      "paste": "Dán lời…",
+      "pasteTitle": "Dán lời bài hát",
+      "pasteHelp": "Dán cả đoạn lời: mỗi chữ cách nhau bằng dấu cách sẽ được gán lần lượt lên các nốt, bắt đầu từ nốt đang chọn (bỏ qua dấu lặng và nốt nối tiếp). Dùng \"-\" khi một chữ trải qua nhiều nốt (ví dụ \"xin-chào\"), dùng \"_\" đứng riêng để bỏ qua một nốt. Dùng \"_\" giữa hai chữ (ví dụ \"xin_chào\") để đặt hai chữ trên cùng một nốt.",
+      "pastePlaceholder": "Một con vịt xòe ra hai cái cánh...",
+      "assign": "Gán lời"
+    },
+    "chord": {
+      "group": "Nhập hợp âm",
+      "label": "Hợp âm",
+      "hint": "Gõ hợp âm, ví dụ C, Am7, G/B, C6/9, N.C. · Space: sang nốt kế · Enter: ghi · Esc: thoát",
+      "hintNone": "Hãy chọn một nốt để nhập hợp âm",
+      "input": "Hợp âm cho nốt đang chọn",
+      "paste": "Dán dãy hợp âm…",
+      "pasteTitle": "Dán dãy hợp âm",
+      "pasteHelp": "Dán các hợp âm cách nhau bằng dấu cách hoặc \"|\": chúng được gán lần lượt lên các nốt, bắt đầu từ nốt đang chọn. Dùng \"_\" để bỏ qua một nốt.",
+      "assign": "Gán hợp âm"
+    },
+    "text": {
+      "sizeRange": "Cỡ chữ từ {min} đến {max}",
+      "bpmRange": "Nhịp độ từ {min} đến {max}",
+      "content": "Nội dung",
+      "size": "Cỡ chữ",
+      "bold": "In đậm",
+      "italic": "In nghiêng",
+      "note": "Nốt",
+      "dotted": " chấm dôi",
+      "words": "Chữ tốc độ (không bắt buộc)",
+      "wordsPlaceholder": "Ví dụ: Allegro, Vui tươi",
+      "save": "Lưu"
+    },
+    "accidental": {
+      "auto": "Theo cung",
+      "sharp": "Thăng",
+      "flat": "Giáng",
+      "natural": "Bình"
+    },
+    "insert": {
+      "title": "Thêm nốt",
+      "replaceRest": "Thay dấu lặng bằng",
+      "higher": "Cao hơn một bậc",
+      "higherTitle": "Cao hơn (↑)",
+      "lower": "Thấp hơn một bậc",
+      "lowerTitle": "Thấp hơn (↓)",
+      "durationGroup": "Trường độ",
+      "dotTitle": "Chấm dôi (.): bấm thêm lần nữa để chấm dôi kép",
+      "accidentalGroup": "Dấu hóa",
+      "add": "Thêm"
+    },
+    "notation": {
+      "title": "Khóa nhạc, dấu hóa & nhịp",
+      "scope": "Áp dụng cho",
+      "toEnd": "Từ ô {n} đến hết bài",
+      "selected": "Chỉ {range} (sau đó trở lại như cũ)",
+      "clefTitle": "Khóa nhạc (khuông {staff})",
+      "apply": "Áp dụng",
+      "keyTitle": "Dấu hóa đầu khuông (mọi khuông)",
+      "keyAria": "Dấu hóa đầu khuông",
+      "noAccidentals": "không dấu",
+      "timeTitle": "Chỉ số nhịp (mọi khuông)",
+      "free": "Nhịp tự do",
+      "beats": "Số phách",
+      "beatType": "Loại phách",
+      "help": "Đổi nhịp không tự sắp lại nốt: ô nào không còn đủ phách sẽ viền đỏ để bạn sửa (hoặc bấm ✓ nếu muốn giữ). Nhịp tự do thì ô nhịp dài tùy ý, không báo thiếu/thừa phách."
+    }
+  },
+  "tool": {
+    "mark": {
+      "staccato": {
+        "label": "Staccato",
+        "title": "Staccato: ngắt, gọn (bấm lại để bỏ)"
+      },
+      "accent": {
+        "label": "Accent",
+        "title": "Accent: nhấn nốt (bấm lại để bỏ)"
+      },
+      "tenuto": {
+        "label": "Tenuto",
+        "title": "Tenuto: giữ đủ độ dài (bấm lại để bỏ)"
+      },
+      "fermata": {
+        "label": "Fermata",
+        "title": "Fermata: ngân tự do (bấm lại để bỏ)"
+      },
+      "cresc": {
+        "label": "Cresc.",
+        "title": "Cresc.: to dần, từ nốt đầu đến nốt cuối của vùng chọn"
+      },
+      "dim": {
+        "label": "Dim.",
+        "title": "Dim.: nhỏ dần, từ nốt đầu đến nốt cuối của vùng chọn"
+      },
+      "fermataBelow": {
+        "label": "Fermata ngược",
+        "title": "Fermata ngược (vẽ dưới nốt): ngân tự do (bấm lại để bỏ)"
+      },
+      "marcato": {
+        "label": "Marcato",
+        "title": "Marcato: nhấn mạnh và ngắt (bấm lại để bỏ)"
+      },
+      "staccatissimo": {
+        "label": "Staccatissimo",
+        "title": "Staccatissimo: ngắt rất ngắn (bấm lại để bỏ)"
+      },
+      "breath": {
+        "label": "Lấy hơi",
+        "title": "Dấu lấy hơi sau nốt: nốt ngắt sớm một chút khi phát (bấm lại để bỏ)"
+      },
+      "caesura": {
+        "label": "Ngắt nghỉ",
+        "title": "Dấu ngắt nghỉ //: nghỉ thêm một phách sau nốt khi phát (bấm lại để bỏ; bản xem trước chưa vẽ dấu này)"
+      },
+      "arpeggio": {
+        "label": "Rải hợp âm",
+        "title": "Rải các nốt của hợp âm đang chọn từ dưới lên (bấm lại để bỏ)"
+      },
+      "trill": {
+        "label": "Láy rền",
+        "title": "Láy rền (tr): luân phiên với nốt liền trên (bấm lại để bỏ)"
+      },
+      "trillSharp": {
+        "label": "Láy rền ♯",
+        "title": "Dấu thăng cho láy rền: nốt liền trên được nâng nửa cung (thêm láy rền nếu chưa có; bấm lại để bỏ dấu)"
+      },
+      "trillFlat": {
+        "label": "Láy rền ♭",
+        "title": "Dấu giáng cho láy rền: nốt liền trên được hạ nửa cung (thêm láy rền nếu chưa có; bấm lại để bỏ dấu)"
+      },
+      "trillNatural": {
+        "label": "Láy rền ♮",
+        "title": "Dấu bình cho láy rền: nốt liền trên theo âm gốc, bỏ qua hóa biểu (thêm láy rền nếu chưa có; bấm lại để bỏ dấu)"
+      },
+      "mordent": {
+        "label": "Láy ngắn",
+        "title": "Láy ngắn (mordent): nốt - nốt dưới - nốt (bấm lại để bỏ)"
+      },
+      "invMordent": {
+        "label": "Láy ngắn ngược",
+        "title": "Láy ngắn ngược: nốt - nốt trên - nốt (bấm lại để bỏ)"
+      },
+      "turn": {
+        "label": "Láy vòng",
+        "title": "Láy vòng: nốt trên - nốt - nốt dưới - nốt (bấm lại để bỏ)"
+      },
+      "pedal": {
+        "label": "Pedal",
+        "title": "Pedal: nhấn từ nốt đầu đến hết nốt cuối của vùng chọn (bấm lại để bỏ)"
+      },
+      "ottava8va": {
+        "label": "8va",
+        "title": "8va: viết thấp hơn một quãng tám, đàn/hát cao hơn (bấm lại để bỏ)"
+      },
+      "ottava8vb": {
+        "label": "8vb",
+        "title": "8vb: viết cao hơn một quãng tám, đàn/hát thấp hơn (bấm lại để bỏ)"
+      },
+      "graceSlash": {
+        "label": "Hoa mỹ (gạch)",
+        "title": "Nốt hoa mỹ có gạch chéo (acciaccatura): thêm trước nốt đang chọn, cao hơn một bậc"
+      },
+      "gracePlain": {
+        "label": "Hoa mỹ (không gạch)",
+        "title": "Nốt hoa mỹ không gạch (appoggiatura): thêm trước nốt đang chọn, cao hơn một bậc"
+      },
+      "graceToggle": {
+        "label": "Đổi gạch (hoa mỹ)",
+        "title": "Đổi nốt hoa mỹ đang chọn giữa có gạch chéo (acciaccatura) và không gạch (appoggiatura)"
+      },
+      "arpeggioDown": {
+        "label": "Rải xuống",
+        "title": "Rải các nốt của hợp âm đang chọn từ trên xuống (bấm lại để bỏ)"
+      },
+      "glissando": {
+        "label": "Glissando",
+        "title": "Glissando: đường lượn từ nốt đang chọn tới nốt liền sau (hoặc tới nốt cuối của vùng chọn); bấm lại để bỏ"
+      },
+      "slide": {
+        "label": "Trượt",
+        "title": "Trượt (slide): đường thẳng nối hai nốt như glissando, không có chữ; bấm lại để bỏ"
+      },
+      "repeatStart": {
+        "label": "|:",
+        "title": "Dấu lặp ở đầu ô nhịp (ô đầu của vùng chọn)"
+      },
+      "repeatEnd": {
+        "label": ":|",
+        "title": "Dấu lặp ở cuối ô nhịp (ô cuối của vùng chọn)"
+      },
+      "volta1": {
+        "label": "Nhà 1",
+        "title": "Nhà 1 (1.) trải qua các ô của vùng chọn, đóng bằng dấu lặp"
+      },
+      "volta2": {
+        "label": "Nhà 2",
+        "title": "Nhà 2 (2.) trải qua các ô của vùng chọn: dùng khi lần hát sau (lời 2) khác đoạn cuối"
+      },
+      "volta3": {
+        "label": "Nhà 3",
+        "title": "Nhà 3 (3.) trải qua các ô của vùng chọn, để hở: dùng khi có lần chơi thứ ba"
+      },
+      "repeatTimes_2": {
+        "label": "Lặp ×2",
+        "title": "Chơi đoạn lặp 2 lần (mặc định). Chọn ô có dấu lặp cuối :|"
+      },
+      "repeatTimes_3": {
+        "label": "Lặp ×3",
+        "title": "Chơi đoạn lặp 3 lần: đặt ở dấu lặp cuối của ô cuối vùng chọn (cần có :| trước)"
+      },
+      "repeatTimes_4": {
+        "label": "Lặp ×4",
+        "title": "Chơi đoạn lặp 4 lần: đặt ở dấu lặp cuối của ô cuối vùng chọn (cần có :| trước)"
+      },
+      "segno": {
+        "label": "Segno",
+        "title": "Dấu Segno ở ô đầu của vùng chọn"
+      },
+      "coda": {
+        "label": "Coda",
+        "title": "Dấu Coda ở ô đầu của vùng chọn"
+      },
+      "dc": {
+        "label": "D.C.",
+        "title": "D.C.: quay lại từ đầu (ở cuối ô cuối của vùng chọn)"
+      },
+      "ds": {
+        "label": "D.S.",
+        "title": "D.S.: quay lại dấu Segno"
+      },
+      "fine": {
+        "label": "Fine",
+        "title": "Fine: kết thúc"
+      },
+      "tocoda": {
+        "label": "To Coda",
+        "title": "To Coda: nhảy tới Coda"
+      },
+      "sectionRemove": {
+        "label": "Bỏ nhãn",
+        "title": "Bỏ nhãn đoạn ở ô đang chọn"
+      },
+      "lineBreak": {
+        "label": "Xuống dòng",
+        "title": "Bắt đầu dòng mới tại ô đang chọn (bấm lại để bỏ); chỉ có tác dụng ở chế độ xem theo trang"
+      },
+      "pageBreak": {
+        "label": "Sang trang",
+        "title": "Bắt đầu trang mới tại ô đang chọn (bấm lại để bỏ); chỉ có tác dụng ở chế độ xem theo trang"
+      },
+      "barDouble": {
+        "label": "Vạch đôi",
+        "title": "Vạch đôi ở cuối ô cuối của vùng chọn để ngăn đoạn (bấm lại để bỏ; ô có dấu lặp cuối thì không đặt được)"
+      }
+    },
+    "text": {
+      "tuplet-remove": {
+        "label": "Bỏ chùm",
+        "title": "Bỏ chùm: gộp cả chùm chứa nốt đang chọn về một nốt (giữ cao độ nốt đầu tiên có cao độ)"
+      },
+      "addBass": {
+        "label": "Thêm Fa (đàn)",
+        "title": "Thêm khuông Fa dưới khuông hiện tại: đàn hai khuông (khuông của nốt đang chọn, mặc định khuông đầu)"
+      },
+      "addG": {
+        "label": "Thêm khuông Sol",
+        "title": "Thêm một khuông riêng khóa Sol (ví dụ bè S/A) phía dưới cùng"
+      },
+      "addF": {
+        "label": "Thêm khuông Fa",
+        "title": "Thêm một khuông riêng khóa Fa (ví dụ bè T/B) phía dưới cùng"
+      },
+      "addTenor": {
+        "label": "Thêm khuông Tenor",
+        "title": "Thêm một khuông riêng khóa Sol số 8 dưới (bè Tenor trong SATB) phía dưới cùng"
+      },
+      "removeStaff": {
+        "label": "Xóa khuông",
+        "title": "Xóa khuông của nốt đang chọn (khuông Fa của đàn, hoặc cả khuông riêng)"
+      },
+      "notation": {
+        "label": "Khóa · Dấu hóa · Nhịp…",
+        "title": "Đổi khóa Sol/Fa/Đô, dấu hóa đầu khuông, chỉ số nhịp (kể cả đổi nhịp giữa bài và nhịp tự do)"
+      },
+      "insertAfter": {
+        "label": "Thêm ô sau",
+        "title": "Thêm một ô nhịp trống sau ô đang chọn (không chọn gì: thêm vào cuối bài)"
+      },
+      "insertBefore": {
+        "label": "Chèn ô trước",
+        "title": "Chèn một ô nhịp trống trước ô đang chọn"
+      },
+      "deleteMeasure": {
+        "label": "Xóa ô nhịp",
+        "title": "Xóa các ô nhịp có nốt đang chọn (bấm Hoàn tác nếu lỡ tay)"
+      },
+      "chordBelow": {
+        "label": "Bè thân ↓",
+        "title": "Bè cùng thân: thêm vào mỗi nốt đang chọn một nốt cùng trường độ, thấp hơn một quãng ba (hai nốt chung một thân)"
+      },
+      "chordAbove": {
+        "label": "Bè thân ↑",
+        "title": "Bè cùng thân: thêm nốt cùng trường độ, cao hơn một quãng ba"
+      },
+      "blank": {
+        "label": "Bè riêng",
+        "title": "Thêm một bè riêng (ô trống): bấm vào dấu lặng của bè mới để nhập nốt với nhịp điệu khác bè chính"
+      },
+      "addBelow": {
+        "label": "Chép bè ↓",
+        "title": "Chép cả ô nhịp sang bè riêng thấp hơn một quãng ba, rồi sửa trường độ, cao độ từng nốt"
+      },
+      "addAbove": {
+        "label": "Chép bè ↑",
+        "title": "Chép cả ô nhịp sang bè riêng cao hơn một quãng ba"
+      },
+      "cue": {
+        "label": "Nốt nhỏ",
+        "title": "Bật/tắt hình nốt nhỏ cho các nốt đang chọn (thường dùng cho nốt bè)"
+      },
+      "removeVoice": {
+        "label": "Xóa bè",
+        "title": "Xóa bè riêng chứa nốt đang chọn (bè chính không xóa được)"
+      }
+    },
+    "panel": "Công cụ chỉnh sửa",
+    "note": "Bấm vào nốt để chọn (Shift để chọn thêm), rồi dùng nhóm Cao độ hoặc phím mũi tên.",
+    "searchPlaceholder": "Tìm ký hiệu (láy, fermata, lặp...)",
+    "searchAria": "Tìm ký hiệu",
+    "empty": "Không có ký hiệu nào khớp “{query}”.",
+    "selectFirst": " - hãy chọn nốt trước",
+    "section": {
+      "mode": "Chế độ",
+      "pitch": "Cao độ",
+      "actions": "Thao tác",
+      "duration": "Trường độ",
+      "symbols": "Dấu hóa & nối",
+      "articulation": "Dấu nhấn & kỹ thuật",
+      "ornament": "Hoa mỹ",
+      "dynamics": "Sắc thái",
+      "repeats": "Lặp lại & chỉ dẫn",
+      "structure": "Cấu trúc bài",
+      "staves": "Khuông nhạc",
+      "measures": "Ô nhịp",
+      "voices": "Viết bè"
+    },
+    "sub": {
+      "tuplet": "Chùm ({mod}+3 = chùm ba)",
+      "pedal": "Pedal & quãng tám",
+      "section": "Nhãn đoạn (đặt ở đầu ô đang chọn)",
+      "breaks": "Ngắt đoạn"
+    },
+    "mode": {
+      "select": {
+        "title": "Chọn nốt",
+        "label": "Chọn"
+      },
+      "input": {
+        "title": "Nhập nốt: chọn dấu lặng rồi bấm phím A–G (Esc để thoát)",
+        "label": "Nhập nốt"
+      },
+      "lyric": {
+        "title": "Nhập lời bài hát: chọn nốt rồi gõ âm tiết, Space sang nốt kế (Esc để thoát)",
+        "label": "Lời"
+      },
+      "chord": {
+        "title": "Nhập hợp âm: chọn nốt rồi gõ Am7, C/G... (Esc để thoát)",
+        "label": "Hợp âm"
+      }
+    },
+    "pitch": {
+      "stepUp": "Lên bậc",
+      "stepDown": "Xuống bậc",
+      "semitoneUp": "Lên ½ cung",
+      "semitoneDown": "Xuống ½ cung",
+      "octaveUp": "Lên quãng 8",
+      "octaveDown": "Xuống quãng 8"
+    },
+    "symbol": {
+      "sharp": "Thăng",
+      "flat": "Giáng",
+      "natural": "Bình",
+      "tie": "Nối",
+      "slur": "Luyến",
+      "rest": "Dấu lặng",
+      "delete": "Xóa"
+    },
+    "previewTone": "Nghe khi sửa",
+    "undo": "Hoàn tác",
+    "redo": "Làm lại",
+    "durationLabel": {
+      "breve": "Tròn đôi",
+      "whole": "Tròn",
+      "half": "Trắng",
+      "quarter": "Đen",
+      "eighth": "Móc đơn",
+      "16th": "Móc kép",
+      "32nd": "Móc ba",
+      "64th": "Móc tứ"
+    },
+    "durationTitle": "{label} ({key}) · bấm: đổi trường độ nốt đang chọn · kéo vào khuông: thêm nốt",
+    "dot": {
+      "label": "Chấm dôi",
+      "title": "Chấm dôi (.): bấm lần 2 chấm dôi kép, lần 3 bỏ chấm"
+    },
+    "breveTitle": "Tròn đôi (dài 2 nốt tròn): bấm để đổi trường độ nốt đang chọn, hoặc đặt trường độ nhập",
+    "tupletTitle": "{label}: {actual} nốt trong thời gian của {normal} nốt cùng loại (nốt đang chọn giữ chỗ đầu, các chỗ còn lại là dấu lặng để nhập)",
+    "dynamicTitle": "Mức to nhỏ {d} (đặt ở nốt đầu của vùng chọn)",
+    "dyn": {
+      "ppp": "{d}: rất rất nhỏ (đặt ở nốt đầu của vùng chọn)",
+      "fff": "{d}: rất rất to (đặt ở nốt đầu của vùng chọn)",
+      "accent": "{d}: nhấn mạnh một nốt rồi trở lại mức cũ (đặt ở nốt đầu của vùng chọn)"
+    },
+    "sectionForm": {
+      "placeholder": "Nhãn tự đặt (ví dụ: Rap)",
+      "aria": "Nhãn đoạn tự đặt",
+      "submit": "Đặt",
+      "title": "Đặt nhãn tự đặt ở đầu ô đang chọn"
+    },
+    "sectionTitle": "Nhãn đoạn \"{name}\" ({keywords}) ở đầu ô đang chọn: bấm lại để bỏ, nhãn khác sẽ thay nhãn cũ",
+    "preset": {
+      "intro": {
+        "name": "Intro",
+        "keywords": "intro mở đầu"
+      },
+      "verse1": {
+        "name": "Phiên khúc 1",
+        "keywords": "verse 1 phiên khúc 1"
+      },
+      "verse2": {
+        "name": "Phiên khúc 2",
+        "keywords": "verse 2 phiên khúc 2"
+      },
+      "chorus": {
+        "name": "Điệp khúc",
+        "keywords": "chorus điệp khúc"
+      },
+      "bridge": {
+        "name": "Cầu",
+        "keywords": "bridge cầu"
+      },
+      "outro": {
+        "name": "Kết",
+        "keywords": "outro ending kết thúc"
+      }
+    }
+  },
+  "view": {
+    "state": {
+      "loading": "Đang tải bản nhạc...",
+      "notFound": {
+        "title": "Không tìm thấy bản nhạc",
+        "text": "Bản nhạc không tồn tại hoặc bạn không có quyền xem.",
+        "action": "Về thư viện"
+      },
+      "notReady": {
+        "title": "Bản nhạc chưa số hóa xong",
+        "text": "Bản nhạc chưa có MusicXML. Hãy đợi nhận diện xong hoặc xem trang tiến độ.",
+        "action": "Về trang tiến độ"
+      },
+      "parseError": {
+        "title": "Không đọc được bản nhạc",
+        "text": "File MusicXML bị lỗi nên không vẽ được. Bạn có thể tải file về để kiểm tra.",
+        "action": "Về trang chi tiết"
+      },
+      "error": {
+        "title": "Không tải được bản nhạc",
+        "text": "Vui lòng thử lại sau.",
+        "action": "Tải lại"
+      }
+    },
+    "progress": {
+      "scroll": "Vị trí {progress}%",
+      "page": "Trang {page}/{total}"
+    },
+    "summary": {
+      "measures": "{count} ô nhịp",
+      "key": "Khóa {key}",
+      "time": "Nhịp {time}",
+      "version": "Phiên bản {version}",
+      "score": "Bản nhạc"
+    },
+    "save": {
+      "saving": "Đang lưu…",
+      "dirty": "Có thay đổi chưa lưu",
+      "saved": "Đã lưu · phiên bản {version}"
+    },
+    "header": {
+      "back": "Về trang chi tiết",
+      "unknownComposer": "Chưa rõ tác giả",
+      "readOnly": "Chỉ xem",
+      "modeGroup": "Chế độ xem",
+      "scroll": "Cuộn ngang",
+      "colorGroup": "Màu bản nhạc",
+      "invert": "Đảo màu bản nhạc",
+      "invertTitle": "Đảo màu bản nhạc (nền tối, nốt sáng)",
+      "edit": "Sửa"
+    },
+    "play": {
+      "pause": "Tạm dừng",
+      "fromSelection": "Phát từ nốt đang chọn",
+      "all": "Phát cả bản nhạc",
+      "play": "Phát"
+    },
+    "menu": {
+      "fullscreenExit": "Thoát toàn màn hình",
+      "fullscreen": "Toàn màn hình",
+      "shortcuts": "Phím tắt"
+    },
+    "banner": {
+      "notTwoStaves": "Bản nhạc có {staves} khuông (không phải 2) nên sau này không tách được tay trái/phải.",
+      "switchScroll": "Chuyển sang cuộn ngang",
+      "hide": "Ẩn cảnh báo"
+    },
+    "transposeHint": "Bạn có thể hoàn tác (Ctrl+Z) và cần bấm Lưu để giữ lại.",
+    "status": {
+      "inputMode": "Nhập nốt · trường độ {duration} · bấm vào khuông để thêm nốt, hoặc chọn dấu lặng rồi bấm A–G",
+      "issueTitle": "Bấm để cuộn tới ô nhịp sai",
+      "issueAria": "Cảnh báo: {message}. Bấm để cuộn tới ô nhịp",
+      "issueMore": " (+{count} ô khác)",
+      "hintEdit": "Phím ? xem phím tắt · ",
+      "hintZoom": "Ctrl + cuộn hoặc chụm hai ngón để thu phóng"
+    },
+    "draft": {
+      "title": "Khôi phục bản nháp chưa lưu?",
+      "text": "Lần sửa trước chưa được lưu. Bản nháp tự lưu lúc {time}.",
+      "discard": "Bỏ nháp",
+      "restore": "Khôi phục"
+    },
+    "conflict": {
+      "title": "Bản nhạc vừa được lưu ở nơi khác",
+      "newer": "Trên máy chủ đã có phiên bản {latest}, mới hơn bản bạn đang sửa (phiên bản {mine}). ",
+      "newerUnknown": "Trên máy chủ đã có phiên bản mới hơn bản bạn đang sửa. ",
+      "choose": "Hãy chọn cách xử lý thay đổi chưa lưu của bạn.",
+      "downloadMine": "Tải bản của tôi về máy",
+      "reloadLatest": "Tải bản mới nhất (bỏ thay đổi của tôi)",
+      "overwrite": "Ghi đè bản của tôi"
+    },
+    "help": {
+      "select": {
+        "keys": "Bấm / Shift + bấm",
+        "desc": "Chọn nốt / chọn thêm hoặc bỏ bớt"
+      },
+      "drag": {
+        "keys": "Kéo khung / kéo nốt (chuột, bút)",
+        "desc": "Chọn vùng / kéo nốt lên xuống để đổi cao độ"
+      },
+      "tab": {
+        "desc": "Sang nốt kế tiếp / trước đó"
+      },
+      "chord": {
+        "desc": "Chọn nốt thấp hơn / cao hơn trong hợp âm"
+      },
+      "step": {
+        "desc": "Lên / xuống một bậc"
+      },
+      "semitone": {
+        "desc": "Lên / xuống nửa cung"
+      },
+      "octave": {
+        "desc": "Lên / xuống một quãng tám"
+      },
+      "undo": {
+        "desc": "Hoàn tác"
+      },
+      "redo": {
+        "keys": "{mod} + Shift + Z  hoặc  {mod} + Y",
+        "desc": "Làm lại"
+      },
+      "save": {
+        "desc": "Lưu"
+      },
+      "duration": {
+        "desc": "Trường độ: móc kép, móc đơn, đen, trắng, tròn (1–5), móc ba, móc tứ (6–7); tròn đôi ở nút \"Khác\" (áp lên nốt chọn)"
+      },
+      "dot": {
+        "desc": "Chấm dôi: bấm lần 1 chấm dôi, lần 2 chấm dôi kép, lần 3 bỏ chấm"
+      },
+      "tuplet": {
+        "desc": "Chùm ba từ nốt/dấu lặng đang chọn (nhóm Trường độ → \"Chùm…\" còn có chùm hai, bốn, năm, sáu, bảy và \"Bỏ chùm\")"
+      },
+      "clickStaff": {
+        "keys": "Bấm vào khuông (chế độ Nhập nốt)",
+        "desc": "Mở khung chọn nốt tại đúng dòng/khe đã bấm rồi bấm Thêm"
+      },
+      "dragDuration": {
+        "keys": "Kéo nút trường độ vào khuông",
+        "desc": "Thêm nốt có trường độ đó tại chỗ thả"
+      },
+      "letters": {
+        "keys": "A – G (chế độ Nhập nốt)",
+        "desc": "Biến nốt/dấu lặng đang chọn thành nốt đó rồi sang mục kế tiếp"
+      },
+      "header": {
+        "keys": "Bấm vào tiêu đề, tên tác giả hoặc nhịp độ",
+        "desc": "Sửa nội dung; tiêu đề và tác giả sửa được cả cỡ chữ, đậm, nghiêng"
+      },
+      "lyricMode": {
+        "keys": "Chế độ Lời",
+        "desc": "Chọn nốt, gõ âm tiết rồi Space sang nốt kế; \"-\" khi một chữ trải qua nhiều nốt; Esc để thoát"
+      },
+      "chordMode": {
+        "keys": "Chế độ Hợp âm",
+        "desc": "Chọn nốt, gõ hợp âm (C, Am7, G/B, C6/9, N.C....) rồi Space sang nốt kế; ô trống để xóa"
+      },
+      "staves": {
+        "keys": "Nhóm Khuông nhạc",
+        "desc": "Thêm khuông Fa cho đàn, thêm khuông Sol/Fa/Tenor riêng (SATB), xóa khuông; \"Khóa · Dấu hóa · Nhịp…\" đổi khóa (Sol, Sol 8 dưới, Fa, Đô), dấu hóa đầu khuông, nhịp giữa bài"
+      },
+      "measures": {
+        "keys": "Nhóm Ô nhịp",
+        "desc": "Thêm ô sau / chèn ô trước / xóa các ô đang chọn (hoàn tác được)"
+      },
+      "voices": {
+        "keys": "Nhóm Viết bè",
+        "desc": "Bè thân: thêm nốt chung thân cùng trường độ. Bè riêng: bè mới nhịp điệu riêng (bấm vào dấu lặng để nhập). Chép bè: sao cả ô sang bè mới"
+      },
+      "dynamics": {
+        "keys": "Nhóm Sắc thái",
+        "desc": "Staccato, Accent, Tenuto, Fermata, Cresc./Dim. (chọn nốt đầu đến nốt cuối), pp…ff (đặt ở nốt đầu)"
+      },
+      "repeats": {
+        "keys": "Nhóm Lặp lại & chỉ dẫn",
+        "desc": "Dấu lặp |: :|, Nhà 1 / Nhà 2 (lời 2 hát đoạn khác), Segno, Coda, D.C., D.S., Fine, To Coda"
+      },
+      "tie": {
+        "desc": "Dấu nối: nối nốt đang chọn với nốt cùng cao độ liền sau (bấm lại để bỏ)"
+      },
+      "slur": {
+        "desc": "Dấu luyến: chọn từ nốt đầu đến nốt cuối rồi bấm (bấm lại để bỏ)"
+      },
+      "delete": {
+        "desc": "Xóa nốt đang chọn (hợp âm còn nốt khác thì giữ lại)"
+      },
+      "esc": {
+        "desc": "Bỏ chọn"
+      },
+      "zoom": {
+        "desc": "Phóng to / thu nhỏ / về 100%"
+      },
+      "help": {
+        "desc": "Mở bảng này"
+      }
     }
   }
 }

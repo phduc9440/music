@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { IconMore } from '../viewer/ViewerIcons';
+import { t } from '../../../i18n/core';
 
 export interface MoreMenuItem {
   key: string;
@@ -37,8 +38,8 @@ export default function ToolbarMoreMenu({ items }: { items: MoreMenuItem[] }) {
         className="sc-btn sv-icon"
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label="Thêm"
-        title="Thêm"
+        aria-label={t('editor.toolbar.more')}
+        title={t('editor.toolbar.more')}
         onClick={() => setOpen(!open)}
       >
         <IconMore />
