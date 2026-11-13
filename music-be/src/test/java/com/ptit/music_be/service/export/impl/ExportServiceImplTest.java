@@ -554,6 +554,43 @@ class ExportServiceImplTest {
                 .satisfies(e -> assertError(e, ErrorCode.EXPORT_NOT_AVAILABLE));
     }
 
+    @Test
+    void importConversionCreatesTaskWithoutSecurityContextOrLimits() {
+        givenOnlyOriginalMidi();
+        when(memberRepository.findById("member-1")).thenReturn(Optional.of(member));
+        when(aiTaskRepository.countByMemberIdAndTaskTypeInAndStatusIn(eq("member-1"), anyCollection(), anyCollection()))
+                .thenReturn(5L);
+
+        ExportResponse response = service.startMidiConversionForImport(SCORE_ID, "member-1");
+
+        assertThat(response.getTask().getId()).isEqualTo("task-1");
+        assertThat(captureSavedTask().getTaskType()).isEqualTo(AiTaskType.FORMAT_CONVERSION);
+        verify(eventPublisher).publishEvent(new ExportTaskCreatedEvent("task-1", SCORE_ID));
+        verify(scoreFileService, never()).checkCanEdit(any());
+    }
+
+    @Test
+    void importConversionIsRefusedWithoutMidiOrWithMusicXml() {
+        when(scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(SCORE_ID, FileType.MUSICXML))
+                .thenReturn(List.of());
+        assertThatThrownBy(() -> service.startMidiConversionForImport(SCORE_ID, "member-1"))
+                .satisfies(e -> assertError(e, ErrorCode.EXPORT_SOURCE_NOT_SUPPORTED));
+
+        when(scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(SCORE_ID, FileType.MUSICXML))
+                .thenReturn(List.of(musicXml));
+        assertThatThrownBy(() -> service.startMidiConversionForImport(SCORE_ID, "member-1"))
+                .satisfies(e -> assertError(e, ErrorCode.EXPORT_SOURCE_NOT_SUPPORTED));
+        verify(aiTaskRepository, never()).save(any());
+    }
+
+    @Test
+    void importConversionNeedsMuseScore() {
+        givenOnlyOriginalMidi();
+        when(museScoreCliService.isAvailable()).thenReturn(false);
+        assertThatThrownBy(() -> service.startMidiConversionForImport(SCORE_ID, "member-1"))
+                .satisfies(e -> assertError(e, ErrorCode.EXPORT_NOT_AVAILABLE));
+    }
+
     // ---------------------------------------------------------------- PDF
 
     @Test

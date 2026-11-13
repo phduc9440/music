@@ -14,6 +14,7 @@ import java.util.zip.ZipOutputStream;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -196,8 +197,32 @@ public class ExportServiceImpl implements ExportService {
         return convertMidi(score, validator.validate("MUSICXML", null, score));
     }
 
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public ExportResponse startMidiConversionForImport(String scoreId, String memberId) {
+        Score score =
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+        if (currentMusicXml(scoreId).isPresent()) {
+            throw new AppException(ErrorCode.EXPORT_SOURCE_NOT_SUPPORTED);
+        }
+        ScoreFile midi = midiSource(score);
+        Member member =
+                memberRepository.findById(memberId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        // Tự chuyển sau khi import không tính vào hạn mức xuất file của người dùng
+        return enqueueConversion(score, member, midi, validator.validate("MUSICXML", null, score), false);
+    }
+
     /** Tạo (hoặc trả lại) task chuyển MIDI gốc thành MusicXML. Người gọi đã kiểm tra quyền sửa và bản nhạc chưa có MusicXML. */
     private ExportResponse convertMidi(Score score, ExportSpec spec) {
+        ScoreFile midi = midiSource(score);
+        Member member = memberRepository
+                .findByEmailForUpdate(SecurityUtils.getCurrentEmail())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        return enqueueConversion(score, member, midi, spec, true);
+    }
+
+    /** MIDI gốc mới nhất của bản nhạc; cần MuseScore để chuyển đổi. */
+    private ScoreFile midiSource(Score score) {
         ScoreFile midi =
                 scoreFileRepository
                         .findByScoreIdAndFileTypeOrderByPageNumberAsc(score.getId(), FileType.ORIGINAL_MIDI)
@@ -208,10 +233,11 @@ public class ExportServiceImpl implements ExportService {
         if (!museScoreCliService.isAvailable()) {
             throw new AppException(ErrorCode.EXPORT_NOT_AVAILABLE);
         }
-        Member member = memberRepository
-                .findByEmailForUpdate(SecurityUtils.getCurrentEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        return midi;
+    }
 
+    private ExportResponse enqueueConversion(
+            Score score, Member member, ScoreFile midi, ExportSpec spec, boolean enforceLimits) {
         Optional<AiTask> duplicate = findDuplicateTask(score.getId(), spec, 0);
         if (duplicate.isPresent()) {
             return ExportResponse.builder()
@@ -219,7 +245,9 @@ public class ExportServiceImpl implements ExportService {
                     .task(aiTaskMapper.toResponse(duplicate.get()))
                     .build();
         }
-        checkLimits(member);
+        if (enforceLimits) {
+            checkLimits(member);
+        }
 
         ObjectNode input = objectMapper.createObjectNode();
         input.put("targetFormat", FileType.MUSICXML.name());

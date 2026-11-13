@@ -52,6 +52,8 @@ export default function ScoreHero({
   const activeConversion = score.latestTasks.find(
     (t) => t.taskType === 'FORMAT_CONVERSION' && !isTaskFinished(t.status),
   );
+  // Chưa từng chuyển (kể cả thất bại) thì tự chuyển ngay, để file MIDI vừa nhập không phải bấm tay
+  const autoConvert = !score.latestTasks.some((t) => t.taskType === 'FORMAT_CONVERSION');
 
   // Lý do thất bại lấy từ tác vụ OMR mới nhất (cột reject_reason của bản nhạc không được ghi)
   const failedTask =
@@ -105,7 +107,12 @@ export default function ScoreHero({
 
         <div className="sd-actions">
           {canConvertMidi && (
-            <MidiConvertButton scoreId={score.id} resume={activeConversion} onDone={() => onConverted?.()} />
+            <MidiConvertButton
+              scoreId={score.id}
+              resume={activeConversion}
+              autoStart={autoConvert}
+              onDone={() => onConverted?.()}
+            />
           )}
           <DownloadMenu
             scoreId={score.id}

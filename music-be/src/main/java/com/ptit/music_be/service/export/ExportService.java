@@ -25,6 +25,13 @@ public interface ExportService {
      */
     ExportResponse requestMidiConversion(String scoreId);
 
+    /**
+     * Tự chuyển MIDI gốc thành MusicXML ngay sau khi import (không có người dùng đang đăng nhập trong luồng này, không
+     * tính hạn mức xuất file). Chạy trong giao dịch riêng để lỗi không ảnh hưởng việc import. Lỗi:
+     * SCORE_NOT_EXISTED (2001), USER_NOT_EXISTED (1004), EXPORT_SOURCE_NOT_SUPPORTED (2705), EXPORT_NOT_AVAILABLE (2704).
+     */
+    ExportResponse startMidiConversionForImport(String scoreId, String memberId);
+
     /** File xuất còn trên đĩa của bản nhạc, kèm cờ {@code outdated}. Cần quyền xem. */
     List<ExportFileResponse> listExports(String scoreId);
 
