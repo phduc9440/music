@@ -571,3 +571,17 @@ CREATE TABLE IF NOT EXISTS score_suggestion_changes (
     UNIQUE KEY uk_score_suggestion_changes (suggestion_id, part_index, measure_index),
     CONSTRAINT fk_score_suggestion_changes_suggestion FOREIGN KEY (suggestion_id) REFERENCES score_suggestions (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Đồng chỉnh sửa thời gian thực (mục 4.4): nhật ký thao tác theo ô nhịp của một phiên; server là nơi duy nhất cấp seq.
+CREATE TABLE IF NOT EXISTS score_live_ops (
+    score_id   VARCHAR(36)  NOT NULL,
+    seq        BIGINT       NOT NULL COMMENT 'Số thứ tự thao tác trong bản nhạc, tăng dần, do server cấp',
+    op_id      VARCHAR(36)  NOT NULL COMMENT 'Mã thao tác do client sinh, chống gửi trùng khi mất mạng',
+    member_id  VARCHAR(36)  NULL,
+    payload    JSON         NOT NULL COMMENT 'Các ô thay đổi: [{partIndex, measureIndex, xml}] hoặc {structuralXml}',
+    created_at DATETIME(6)  NULL,
+    PRIMARY KEY (score_id, seq),
+    UNIQUE KEY uk_score_live_ops_op (op_id),
+    KEY idx_score_live_ops_created (created_at),
+    CONSTRAINT fk_score_live_ops_score FOREIGN KEY (score_id) REFERENCES scores (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

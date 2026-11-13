@@ -274,6 +274,19 @@ public enum ErrorCode {
     SUGGESTION_CHANGES_INVALID(3116, "Danh sách ô được chọn không hợp lệ", HttpStatus.BAD_REQUEST),
     SUGGESTION_RATE_LIMITED(
             3117, "Bạn đã gửi quá 30 đề xuất trong 24 giờ qua, hãy thử lại sau", HttpStatus.TOO_MANY_REQUESTS),
+    // ---- 312x: Đồng chỉnh sửa thời gian thực (mục 4.4)
+    LIVE_SESSION_FULL(
+            3121, "Phiên cộng tác đã đủ 10 người đang sửa; bạn vào xem được nhưng chưa sửa được", HttpStatus.CONFLICT),
+    LIVE_SESSION_ACTIVE(
+            3122,
+            "Bản nhạc đang có người cùng chỉnh sửa trực tiếp; hãy vào chế độ cộng tác để sửa",
+            HttpStatus.CONFLICT),
+    LIVE_COLLAB_NOT_AVAILABLE(
+            3123, "Gói của chủ bản nhạc chưa có tính năng đồng chỉnh sửa thời gian thực", HttpStatus.FORBIDDEN),
+    LIVE_OP_INVALID(3124, "Gói thay đổi cộng tác không hợp lệ hoặc quá lớn", HttpStatus.BAD_REQUEST),
+    LIVE_LOCK_REQUIRED(
+            3125, "Bạn chưa giữ khóa các ô nhịp này nên chưa gửi thay đổi được", HttpStatus.CONFLICT),
+    LIVE_RATE_LIMITED(3126, "Bạn gửi thay đổi quá nhanh, hãy chậm lại một chút", HttpStatus.TOO_MANY_REQUESTS),
     ;
 
     int code;
