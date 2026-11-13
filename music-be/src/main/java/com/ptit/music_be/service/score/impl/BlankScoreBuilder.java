@@ -1,17 +1,9 @@
 package com.ptit.music_be.service.score.impl;
 
-import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -21,27 +13,37 @@ import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 
 /**
- * Dựng MusicXML {@code score-partwise} cho bản nhạc trống: part theo mẫu nhạc cụ, ô đầu có khóa, nhịp, khóa nhạc,
- * tempo; mỗi ô là một dấu lặng nguyên ô đúng trường độ. Chỉ dựng, không kiểm tùy chọn (việc của
+ * Dựng MusicXML {@code score-partwise} cho bản nhạc trống: part theo mẫu nhạc
+ * cụ, ô đầu có khóa, nhịp, khóa nhạc,
+ * tempo; mỗi ô là một dấu lặng nguyên ô đúng trường độ. Chỉ dựng, không kiểm
+ * tùy chọn (việc của
  * {@link ScoreCreateServiceImpl}). Lớp không giữ trạng thái.
  */
 final class BlankScoreBuilder {
 
-    /** Số đơn vị trường độ của một nốt đen; đủ để mọi mẫu số 2/4/8/16 ra số nguyên. */
+    /**
+     * Số đơn vị trường độ của một nốt đen; đủ để mọi mẫu số 2/4/8/16 ra số nguyên.
+     */
     static final int DIVISIONS = 4;
 
-    /** Bè của dấu lặng ở khuông thứ nhất và thứ hai (cùng quy ước MuseScore: khuông 2 dùng bè 5). */
-    private static final int[] STAFF_VOICES = {1, 5};
+    /**
+     * Bè của dấu lặng ở khuông thứ nhất và thứ hai (cùng quy ước MuseScore: khuông
+     * 2 dùng bè 5).
+     */
+    private static final int[] STAFF_VOICES = { 1, 5 };
 
-    private record Clef(String sign, int line, int octaveChange) {}
+    private record Clef(String sign, int line, int octaveChange) {
+    }
 
-    private record PartSpec(String name, List<Clef> clefs) {}
+    private record PartSpec(String name, List<Clef> clefs) {
+    }
 
     private static final Clef TREBLE = new Clef("G", 2, 0);
     private static final Clef TREBLE_OCTAVE_DOWN = new Clef("G", 2, -1);
     private static final Clef BASS = new Clef("F", 4, 0);
 
-    private BlankScoreBuilder() {}
+    private BlankScoreBuilder() {
+    }
 
     /** Trường độ của một ô, tính theo {@link #DIVISIONS}. */
     static int measureDuration(int beats, int beatType) {
@@ -55,8 +57,7 @@ final class BlankScoreBuilder {
         document.appendChild(root);
 
         add(add(root, "work"), "work-title", request.getTitle().strip());
-        String composer =
-                request.getComposer() == null ? "" : request.getComposer().strip();
+        String composer = request.getComposer() == null ? "" : request.getComposer().strip();
         if (!composer.isEmpty()) {
             Element creator = add(add(root, "identification"), "creator", composer);
             creator.setAttribute("type", "composer");
@@ -72,22 +73,7 @@ final class BlankScoreBuilder {
         for (int p = 0; p < parts.size(); p++) {
             appendPart(root, partId(p), parts.get(p), request, p == 0);
         }
-        return serialize(document);
-    }
-
-    /** Serialize ra UTF-8, có khai báo XML và không có DOCTYPE (MusicXML lưu từ Editor cũng không có). */
-    private static byte[] serialize(Document document) {
-        try {
-            TransformerFactory factory = TransformerFactory.newInstance();
-            factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-            Transformer transformer = factory.newTransformer();
-            transformer.setOutputProperty(OutputKeys.ENCODING, StandardCharsets.UTF_8.name());
-            StringWriter writer = new StringWriter();
-            transformer.transform(new DOMSource(document), new StreamResult(writer));
-            return writer.toString().getBytes(StandardCharsets.UTF_8);
-        } catch (TransformerException e) {
-            throw new AppException(ErrorCode.MUSICXML_INVALID);
-        }
+        return SuggestionDiffer.serialize(document, false).getBytes(StandardCharsets.UTF_8);
     }
 
     private static List<PartSpec> partsOf(BlankScoreRequest request) {
@@ -153,7 +139,10 @@ final class BlankScoreBuilder {
         }
     }
 
-    /** Dấu tempo theo nốt đen: hiện chữ ♩ = n và để {@code <sound tempo>} cho phát nhạc. */
+    /**
+     * Dấu tempo theo nốt đen: hiện chữ ♩ = n và để {@code <sound tempo>} cho phát
+     * nhạc.
+     */
     private static void appendTempo(Element measure, int bpm) {
         Element direction = add(measure, "direction");
         direction.setAttribute("placement", "above");
@@ -163,7 +152,10 @@ final class BlankScoreBuilder {
         add(direction, "sound").setAttribute("tempo", String.valueOf(bpm));
     }
 
-    /** Một dấu lặng nguyên ô cho mỗi khuông; khuông sau lùi {@code <backup>} về đầu ô. */
+    /**
+     * Một dấu lặng nguyên ô cho mỗi khuông; khuông sau lùi {@code <backup>} về đầu
+     * ô.
+     */
     private static void appendRests(Element measure, int staves, int duration) {
         for (int s = 0; s < staves; s++) {
             if (s > 0) {

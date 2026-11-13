@@ -99,6 +99,9 @@ export default function NotificationBell() {
     // Góp ý: mở tab Góp ý của bản nhạc và cuộn tới đúng góp ý
     else if (n.type.startsWith('COMMENT_') && n.scoreId)
       navigate(`/scores/${n.scoreId}?tab=comments${n.params?.commentId ? `&comment=${n.params.commentId}` : ''}`);
+    // Đề xuất sửa: mở trang xem xét đề xuất
+    else if (n.type.startsWith('SUGGESTION_') && n.scoreId && n.params?.suggestionId)
+      navigate(`/scores/${n.scoreId}/suggestions/${n.params.suggestionId}`);
     else if (n.type.startsWith('TEAM_') && n.params?.teamId) navigate(`/teams/${n.params.teamId}`);
     else if (n.scoreId) navigate(`/scores/${n.scoreId}`);
   };

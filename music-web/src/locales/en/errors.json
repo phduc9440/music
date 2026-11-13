@@ -160,5 +160,13 @@
   "1020": "Built-in role: it cannot be renamed or deleted; USER and SUPER_ADMIN permissions are locked too",
   "1021": "The role is assigned to members; remove it from them before deleting",
   "1022": "Role name is 2-100 characters, description up to 255",
-  "1023": "A role with this name already exists"
+  "1023": "A role with this name already exists",
+  "3110": "Suggestion title is 1-200 characters, description up to 2000, note up to 500",
+  "3111": "The suggestion has no changes compared with the base version",
+  "3112": "You already have 10 open suggestions on this score; wait for them or withdraw some",
+  "3113": "The main score changed structure after this suggestion was sent, so it cannot be applied; reject it and ask the author to redo it",
+  "3114": "This suggestion was already handled or withdrawn",
+  "3115": "Suggestion not found",
+  "3116": "The selected measures are invalid",
+  "3117": "You sent more than 30 suggestions in the last 24 hours, try again later"
 }

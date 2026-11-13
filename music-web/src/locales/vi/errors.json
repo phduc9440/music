@@ -160,5 +160,13 @@
   "1020": "Vai trò có sẵn: không đổi tên, không xóa; USER và SUPER_ADMIN cũng không chỉnh quyền",
   "1021": "Vai trò đang được gán cho thành viên, hãy gỡ khỏi họ trước khi xóa",
   "1022": "Tên vai trò từ 2 đến 100 ký tự, mô tả tối đa 255 ký tự",
-  "1023": "Đã có vai trò trùng tên này"
+  "1023": "Đã có vai trò trùng tên này",
+  "3110": "Tiêu đề đề xuất từ 1 đến 200 ký tự, mô tả tối đa 2000 ký tự, ghi chú tối đa 500 ký tự",
+  "3111": "Đề xuất chưa có thay đổi nào so với phiên bản gốc",
+  "3112": "Bạn đang có 10 đề xuất chưa xử lý trên bản nhạc này, hãy đợi hoặc rút bớt",
+  "3113": "Bản chính đã đổi cấu trúc kể từ khi gửi đề xuất nên không áp dụng được; hãy từ chối và nhờ người gửi làm lại",
+  "3114": "Đề xuất này đã được xử lý hoặc đã bị rút lại",
+  "3115": "Không tìm thấy đề xuất",
+  "3116": "Danh sách ô được chọn không hợp lệ",
+  "3117": "Bạn đã gửi quá 30 đề xuất trong 24 giờ qua, hãy thử lại sau"
 }
