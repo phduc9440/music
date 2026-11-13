@@ -24,5 +24,158 @@
     "tapToContinue": "Tap to continue",
     "end": "End of the show",
     "unavailable": "This piece could not be opened"
+  },
+  "bar": {
+    "region": "Player",
+    "close": "Close the player",
+    "preparing": "Preparing the player…",
+    "unsupported": "This browser does not support audio playback (Web Audio).",
+    "empty": "The score is empty, there are no notes to play.",
+    "loadingPiano": "Loading piano sounds… {percent}%",
+    "fallbackSound": "Using a fallback sound",
+    "reload": "Reload",
+    "prev": "Previous measure",
+    "prevTitle": "Previous measure (←)",
+    "next": "Next measure",
+    "nextTitle": "Next measure (→)",
+    "pause": "Pause",
+    "play": "Play",
+    "pauseTitle": "Pause (Space)",
+    "playTitle": "Play (Space)",
+    "stop": "Stop",
+    "options": "Playback options",
+    "optionsCustom": "Playback options (some settings differ from the defaults)",
+    "measureOf": "Measure {current} / {total}"
+  },
+  "tabs": {
+    "tempo": "Speed",
+    "loop": "Loop",
+    "transpose": "Key",
+    "chords": "Chords",
+    "group": "Option groups"
+  },
+  "chords": {
+    "label": {
+      "on": "Chord accompaniment: on",
+      "off": "Chord accompaniment: off"
+    },
+    "title": "Chord accompaniment",
+    "trigger": "Chords",
+    "carry": "Repeat the chord in measures without one",
+    "carryOn": "Measures without a chord repeat the chord in effect at the start of the measure.",
+    "carryOff": "Measures without a chord stay silent; chords only play where they are written.",
+    "note": "Adjust the accompaniment volume in the Mixer (the \"Chords\" row)."
+  },
+  "loop": {
+    "summary": "Loop {summary}",
+    "title": "Loop section A-B",
+    "marks": "Set points A and B at the current measure",
+    "setA": "Set A (measure {n})",
+    "setB": "Set B (measure {n})",
+    "from": "From measure",
+    "to": "To measure",
+    "needBoth": "Set both A and B to turn looping on",
+    "needBothNote": "Set both A and B to turn looping on.",
+    "on": "Looping",
+    "enable": "Loop",
+    "options": "Loop options",
+    "countInTitle": "Count in one measure with clicks before each pass",
+    "countIn": "Count-in",
+    "speedUpTitle": "Each pass gets 5% faster up to 100%, starting from the selected speed",
+    "speedUp": "Speed up gradually",
+    "unreachable": "This section is not played in the score's repeat order, so it cannot be looped yet.",
+    "dragHint": "Tip: hold Shift and drag across the measures (or Shift-click two measures) to pick a section.",
+    "clear": "Clear A-B",
+    "range": "Measure {a}–{b}"
+  },
+  "mixer": {
+    "label": "Staff mixer",
+    "single": "The score has only one staff",
+    "hint": "Mute, solo a staff, adjust the volume",
+    "staff": "Staff",
+    "reset": "Reset",
+    "muteLabel": "Mute {name}",
+    "muteTitle": "Mute (M)",
+    "soloLabel": "Solo {name}",
+    "soloTitle": "Solo this staff (S)",
+    "volume": "Volume {name}",
+    "allSilent": "Everything is muted",
+    "soloActive": "Only the soloed staves are playing"
+  },
+  "tempo": {
+    "label": "Playback speed: {percent}% ({bpm} BPM)",
+    "title": "Playback speed",
+    "head": "Speed",
+    "slider": "Playback speed (%)",
+    "presets": "Speed presets"
+  },
+  "transport": {
+    "position": "Playback position",
+    "valueText": "Measure {n} of {count}"
+  },
+  "transpose": {
+    "label": "Transpose",
+    "labelChanged": "Transpose: listening at {value} semitones",
+    "title": "Transpose while listening",
+    "down": "Down a semitone",
+    "up": "Up a semitone",
+    "select": "Number of semitones",
+    "original": "0 (original key)",
+    "option": "{value} semitones",
+    "outOfRange": "{count} notes outside the piano range will be skipped during playback.",
+    "listening": "Listening at {value} semitones. The score here stays unchanged so you can edit it.",
+    "apply": "Apply to the score",
+    "confirm": "Confirm applying the transposition",
+    "rewrite": "The score will be rewritten in the new key ({key}). {hint}",
+    "applying": "Applying…",
+    "applyShort": "Apply",
+    "reset": "Back to the original key"
+  },
+  "track": {
+    "rightHand": "Right hand",
+    "leftHand": "Left hand",
+    "staff": "Staff {n}",
+    "chords": "Chords"
+  },
+  "scorePlayer": {
+    "loading": "Loading the score...",
+    "notFound": {
+      "title": "Score not found",
+      "text": "The score does not exist or you do not have permission to view it.",
+      "action": "Back to the library"
+    },
+    "notReady": {
+      "title": "The score is not digitized yet",
+      "text": "The score has no MusicXML to play yet. Wait for recognition to finish or check the progress page.",
+      "action": "Go to the progress page"
+    },
+    "parseError": {
+      "title": "Could not read the score",
+      "text": "The MusicXML file is broken, so it cannot be played."
+    },
+    "error": {
+      "title": "Could not load the score",
+      "text": "Please try again later."
+    },
+    "toDetail": "Back to the details page",
+    "reload": "Reload",
+    "drawFailed": "Could not draw the score",
+    "unknownComposer": "Unknown composer",
+    "viewMode": "View mode",
+    "pages": "Pages",
+    "scroll": "Scroll",
+    "colors": "Score colors",
+    "invert": "Invert score colors",
+    "invertTitle": "Invert score colors (dark background, light notes)",
+    "openEditor": "Open the editor",
+    "parseForTranspose": "Could not read the score to transpose it",
+    "transposeSaved": "Transposed and saved (version {version})",
+    "applyHint": "This is saved right away as a new version of the score.",
+    "conflict": {
+      "title": "The score was just saved elsewhere",
+      "known": "The server already has version {latest}, newer than the one you are listening to (version {version}). Load the latest version and transpose again.",
+      "unknown": "The server already has a newer version than the one you are listening to. Load the latest version and transpose again.",
+      "load": "Load the latest version"
+    }
   }
 }

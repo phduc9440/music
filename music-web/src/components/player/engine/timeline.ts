@@ -8,6 +8,7 @@ import { partLabel } from '../../editor/audio/instruments';
 import { buildPlayback } from '../../editor/audio/playback';
 import type { PlayMeasure, PlayNote } from '../../editor/audio/playback';
 import type { ScoreDocument } from '../../editor/core/ScoreDocument';
+import { t } from '../../../i18n/core';
 
 export const MIN_BPM = 20;
 export const MAX_BPM = 300;
@@ -60,15 +61,15 @@ export function readBaseBpm(doc: ScoreDocument, fallbackBpm: number | null | und
 }
 
 const warnBpm = (bpm: number): number => {
-  console.warn(`Tempo ${bpm} ngoài khoảng ${MIN_BPM}-${MAX_BPM}, dùng ${DEFAULT_BPM}`);
+  console.warn(`Tempo ${bpm} is outside ${MIN_BPM}-${MAX_BPM}, using ${DEFAULT_BPM}`);
   return DEFAULT_BPM;
 };
 
 const trackLabel = (doc: ScoreDocument, part: number, staff: number, staves: number): string => {
   const prefix = doc.partCount > 1 ? `${partLabel(doc, part)} · ` : '';
   if (staves === 1) return partLabel(doc, part);
-  if (staves === 2) return `${prefix}${staff === 1 ? 'Tay phải' : 'Tay trái'}`;
-  return `${prefix}Khuông ${staff}`;
+  if (staves === 2) return `${prefix}${staff === 1 ? t('player.track.rightHand') : t('player.track.leftHand')}`;
+  return `${prefix}${t('player.track.staff', { n: staff })}`;
 };
 
 const buildTracks = (doc: ScoreDocument): TimelineTrack[] => {
@@ -102,7 +103,9 @@ export function buildTimeline(doc: ScoreDocument, fallbackBpm: number | null | u
     events,
     tracks: [
       ...buildTracks(doc),
-      ...(chordEvents.length > 0 ? [{ id: CHORD_TRACK_ID, part: chordEvents[0].part, staff: 0, label: 'Hợp âm' }] : []),
+      ...(chordEvents.length > 0
+        ? [{ id: CHORD_TRACK_ID, part: chordEvents[0].part, staff: 0, label: t('player.track.chords') }]
+        : []),
     ],
     // Chỉ tính nốt trên bản nhạc: nốt đệm hợp âm không tô trên bản nhạc nên không cần tra
     maxDuration: noteEvents.reduce((max, e) => Math.max(max, e.duration), 0),

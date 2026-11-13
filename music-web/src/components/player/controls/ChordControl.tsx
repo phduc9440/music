@@ -1,4 +1,5 @@
 import { PlayerPopover } from './PlayerPopover';
+import { t } from '../../../i18n/core';
 
 interface Props {
   /** Đệm hợp âm đang bật. */
@@ -55,27 +56,23 @@ export function ChordControl({ on, carry, onToggle, onCarryChange, disabled, inl
   return (
     <PlayerPopover
       inline={inline}
-      label={on ? 'Đệm hợp âm: đang bật' : 'Đệm hợp âm: đang tắt'}
-      title="Đệm hợp âm"
+      label={on ? t('player.chords.label.on') : t('player.chords.label.off')}
+      title={t('player.chords.title')}
       disabled={disabled}
       buttonClassName={on ? 'pl-chip--on' : undefined}
-      trigger={<span>Hợp âm</span>}
+      trigger={<span>{t('player.chords.trigger')}</span>}
     >
       <div className="pl-chords">
-        <div className="pl-chords__head">Đệm hợp âm</div>
-        <Switch label="Đệm hợp âm" checked={on} onChange={onToggle} />
+        <div className="pl-chords__head">{t('player.chords.title')}</div>
+        <Switch label={t('player.chords.title')} checked={on} onChange={onToggle} />
         <Switch
-          label="Đánh lại ở ô không ghi hợp âm"
-          hint={
-            carry
-              ? 'Ô nào không ghi hợp âm sẽ đánh lại hợp âm đang hiệu lực ở đầu ô.'
-              : 'Ô nào không ghi hợp âm sẽ im phần đệm; hợp âm chỉ đánh ở ô có ghi.'
-          }
+          label={t('player.chords.carry')}
+          hint={carry ? t('player.chords.carryOn') : t('player.chords.carryOff')}
           checked={carry}
           disabled={!on}
           onChange={() => onCarryChange(!carry)}
         />
-        <p className="pl-chords__note">Chỉnh to nhỏ của phần đệm trong Mixer (hàng "Hợp âm").</p>
+        <p className="pl-chords__note">{t('player.chords.note')}</p>
       </div>
     </PlayerPopover>
   );

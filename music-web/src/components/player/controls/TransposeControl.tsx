@@ -4,6 +4,7 @@ import type { KeySignature } from '../../editor/notes/transpose';
 import { IconTranspose } from './PlayerIcons';
 import { PlayerPopover } from './PlayerPopover';
 import { MAX_TRANSPOSE, MIN_TRANSPOSE } from '../state/transposeRange';
+import { t } from '../../../i18n/core';
 
 interface Props {
   /** Số nửa cung đang chuyển (−12…+12). */
@@ -57,8 +58,12 @@ export function TransposeControl({
   return (
     <PlayerPopover
       inline={inline}
-      label={changed ? `Chuyển giọng: đang nghe ${signedSemitones(semitones)} nửa cung` : 'Chuyển giọng'}
-      title="Chuyển giọng khi nghe"
+      label={
+        changed
+          ? t('player.transpose.labelChanged', { value: signedSemitones(semitones) })
+          : t('player.transpose.label')
+      }
+      title={t('player.transpose.title')}
       disabled={disabled}
       buttonClassName={changed ? 'pl-chip--on' : undefined}
       trigger={
@@ -69,27 +74,27 @@ export function TransposeControl({
       }
     >
       <div className="pl-tr">
-        <div className="pl-tr__head">Chuyển giọng</div>
+        <div className="pl-tr__head">{t('player.transpose.label')}</div>
         <div className="pl-tr__stepper">
           <button
             type="button"
             className="pl-tr__step"
             onClick={() => onChange(semitones - 1)}
             disabled={semitones <= MIN_TRANSPOSE}
-            aria-label="Hạ nửa cung"
-            title="Hạ nửa cung"
+            aria-label={t('player.transpose.down')}
+            title={t('player.transpose.down')}
           >
             −
           </button>
           <select
             className="pl-tr__select"
             value={semitones}
-            aria-label="Số nửa cung chuyển giọng"
+            aria-label={t('player.transpose.select')}
             onChange={(e) => onChange(Number(e.target.value))}
           >
             {OPTIONS.map((n) => (
               <option key={n} value={n}>
-                {n === 0 ? '0 (giọng gốc)' : `${signedSemitones(n)} nửa cung`}
+                {n === 0 ? t('player.transpose.original') : t('player.transpose.option', { value: signedSemitones(n) })}
               </option>
             ))}
           </select>
@@ -98,8 +103,8 @@ export function TransposeControl({
             className="pl-tr__step"
             onClick={() => onChange(semitones + 1)}
             disabled={semitones >= MAX_TRANSPOSE}
-            aria-label="Nâng nửa cung"
-            title="Nâng nửa cung"
+            aria-label={t('player.transpose.up')}
+            title={t('player.transpose.up')}
           >
             +
           </button>
@@ -109,36 +114,34 @@ export function TransposeControl({
         </p>
         {outOfRange > 0 && (
           <p className="pl-tr__note pl-tr__note--warn" role="status">
-            {outOfRange} nốt vượt âm vực đàn piano sẽ bị bỏ khi phát.
+            {t('player.transpose.outOfRange', { count: outOfRange })}
           </p>
         )}
         {changed && !redraws && (
-          <p className="pl-tr__note">
-            Đang nghe {signedSemitones(semitones)} nửa cung. Bản nhạc ở đây giữ nguyên để bạn sửa.
-          </p>
+          <p className="pl-tr__note">{t('player.transpose.listening', { value: signedSemitones(semitones) })}</p>
         )}
         {onApply && changed && !confirming && (
           <button type="button" className="pl-tr__apply" onClick={() => setConfirming(true)} disabled={outOfRange > 0}>
-            Áp dụng vào bản nhạc
+            {t('player.transpose.apply')}
           </button>
         )}
         {onApply && changed && confirming && (
-          <div className="pl-tr__confirm" role="group" aria-label="Xác nhận áp dụng chuyển giọng">
+          <div className="pl-tr__confirm" role="group" aria-label={t('player.transpose.confirm')}>
             <p className="pl-tr__note">
-              Bản nhạc sẽ được viết lại ở giọng mới ({describeTranspose(startKey, semitones)}). {applyHint}
+              {t('player.transpose.rewrite', { key: describeTranspose(startKey, semitones), hint: applyHint ?? '' })}
             </p>
             <div className="pl-tr__confirm-actions">
               <button type="button" className="pl-tr__apply" onClick={() => void apply()} disabled={busy}>
-                {busy ? 'Đang áp dụng…' : 'Áp dụng'}
+                {busy ? t('player.transpose.applying') : t('player.transpose.applyShort')}
               </button>
               <button type="button" className="pl-tr__cancel" onClick={() => setConfirming(false)} disabled={busy}>
-                Hủy
+                {t('common.cancel')}
               </button>
             </div>
           </div>
         )}
         <button type="button" className="pl-link pl-tr__reset" onClick={() => onChange(0)} disabled={!changed}>
-          Về giọng gốc
+          {t('player.transpose.reset')}
         </button>
       </div>
     </PlayerPopover>
