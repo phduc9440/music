@@ -3,6 +3,7 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import { useNavigate } from '../../../routes/useTransitionNavigate';
 import { toast } from 'react-toastify';
 import DownloadMenu from '../../../components/scores/viewer/DownloadMenu';
+import ShowAssignmentBanner from '../../../components/scores/viewer/ShowAssignmentBanner';
 import VersionHistoryPanel from '../../../components/editor/version/VersionHistoryPanel';
 import InstrumentMenu from '../../../components/scores/viewer/InstrumentMenu';
 import EditorToolPanel from '../../../components/scores/toolbar/EditorToolPanel';
@@ -837,6 +838,8 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
           </button>
         </div>
       )}
+
+      <ShowAssignmentBanner scoreId={score.id} />
 
       <div className={`sv-body${canEdit ? ' has-tools' : ''}`}>
         {canEdit && (

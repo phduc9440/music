@@ -82,6 +82,7 @@
   "3004": "The period must be DAY, WEEK or MONTH",
   "3005": "The number of days must be between 7 and 90",
   "3301": "This score isn't in your trash",
+  "3302": "Invalid blank score options (key, time signature, tempo or measures)",
   "3401": "This curated-library request doesn't exist",
   "3402": "This request has already been handled",
   "3403": "This score already has a request waiting for the owner's reply",

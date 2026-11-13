@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { FormEvent } from 'react';
+import type { Dispatch, FormEvent, SetStateAction } from 'react';
 import { useNavigate } from '../../../routes/useTransitionNavigate';
 import { toast } from 'react-toastify';
 import UploadDropzone from '../../../components/scores/upload/UploadDropzone';
@@ -19,6 +19,8 @@ import {
   validateUploadBatch,
   validateUploadFile,
 } from '../../../utils/score';
+import { clearPendingUpload, isImportBatch, peekPendingUpload } from '../../../utils/pendingUpload';
+import { reportPlanLimit } from '../../../utils/planLimit';
 import { inspectFile, rotateImageFile } from '../../../utils/uploadInspect';
 import '../../../components/scores/scores.css';
 import './ScoreUpload.css';
@@ -34,14 +36,38 @@ const newItem = (file: File): UploadItem => ({
   inspecting: !validateUploadFile(file),
 });
 
+/** Đọc nội dung từng file mới (pdf.js / kích thước ảnh), xong cái nào cập nhật cái đó. */
+const inspectItems = (added: UploadItem[], setItems: Dispatch<SetStateAction<UploadItem[]>>) => {
+  added
+    .filter((it) => it.inspecting)
+    .forEach((it) => {
+      inspectFile(it.file)
+        .catch(() => ({ error: t('upload.inspect.fileUnreadable') }))
+        .then((result) => {
+          setItems((prev) =>
+            prev.map((p) => (p.id === it.id ? { ...p, ...result, inspectError: result.error, inspecting: false } : p)),
+          );
+        });
+    });
+};
+
+/** File chờ từ trang /scores/new hoặc trang chủ của khách (nhóm PDF/ảnh); nhóm nhập file thuộc trang /scores/import. */
+const takePendingScan = (): File[] => {
+  const pending = peekPendingUpload();
+  return pending && !isImportBatch(pending) ? pending : [];
+};
+
 /** Trang /scores/upload: chọn PDF hoặc ảnh, kiểm tra ngay ở client rồi gửi lên /omr/upload (doc mục 2.1). */
 export default function ScoreUpload() {
   const navigate = useNavigate();
-  const [items, setItems] = useState<UploadItem[]>([]);
-  const [title, setTitle] = useState('');
+  const [initial] = useState<UploadItem[]>(() => takePendingScan().map(newItem));
+  const [items, setItems] = useState<UploadItem[]>(initial);
+  const [title, setTitle] = useState(() =>
+    initial.length ? fileNameWithoutExtension(initial[0].file.name).slice(0, MAX_TITLE) : '',
+  );
   const [titleTouched, setTitleTouched] = useState(false); // người dùng đã tự sửa tiêu đề thì không tự điền nữa
   const [composer, setComposer] = useState('');
-  const [sourceType, setSourceType] = useState<OmrSourceType>('PHOTO');
+  const [sourceType, setSourceType] = useState<OmrSourceType>(() => guessSourceType(initial.map((it) => it.file)));
   const [sourceTouched, setSourceTouched] = useState(false); // tương tự: đã tự chọn loại nguồn thì không tự đoán
   const [uploading, setUploading] = useState(false);
   const [preparing, setPreparing] = useState(false); // đang xoay ảnh trước khi gửi
@@ -66,6 +92,12 @@ export default function ScoreUpload() {
   const onlyImages = items.length > 0 && !items.some((it) => isPdf(it.file));
   const totalPages = onlyImages ? items.length : (items.find((it) => isPdf(it.file))?.pageCount ?? 0);
 
+  // File chờ đã được lấy vào danh sách: đọc nội dung chúng rồi xóa khỏi bộ nhớ để lần mở sau không điền lại
+  useEffect(() => {
+    inspectItems(initial, setItems);
+    clearPendingUpload();
+  }, [initial]);
+
   // Đang tải lên mà thoát trang thì trình duyệt cảnh báo
   useEffect(() => {
     if (!busy) return;
@@ -82,23 +114,6 @@ export default function ScoreUpload() {
     if (!sourceTouched) setSourceType(guessSourceType(nextFiles));
   };
 
-  // Đọc nội dung từng file mới (pdf.js / kích thước ảnh), xong cái nào cập nhật cái đó
-  const inspect = (added: UploadItem[]) => {
-    added
-      .filter((it) => it.inspecting)
-      .forEach((it) => {
-        inspectFile(it.file)
-          .catch(() => ({ error: t('upload.inspect.fileUnreadable') }))
-          .then((result) => {
-            setItems((prev) =>
-              prev.map((p) =>
-                p.id === it.id ? { ...p, ...result, inspectError: result.error, inspecting: false } : p,
-              ),
-            );
-          });
-      });
-  };
-
   const handleAdd = (added: File[]) => {
     if (added.length === 0) return;
     const addedItems = added.map(newItem);
@@ -106,7 +121,7 @@ export default function ScoreUpload() {
     // validateUploadBatch báo lỗi cho người dùng tự bỏ bớt)
     const next = added.some(isPdf) ? addedItems : [...items.filter((it) => !isPdf(it.file)), ...addedItems];
     updateItems(next);
-    inspect(addedItems);
+    inspectItems(addedItems, setItems);
   };
 
   const moveItem = (from: number, to: number) => {
@@ -150,7 +165,7 @@ export default function ScoreUpload() {
       navigate(getScorePath(created.scoreId, 'PENDING'), { replace: true });
     } catch (err) {
       // Giữ nguyên các file đã chọn để người dùng sửa rồi thử lại
-      toast.error(getUploadErrorMessage(err));
+      if (!reportPlanLimit(err)) toast.error(getUploadErrorMessage(err));
       setUploading(false);
     }
   };

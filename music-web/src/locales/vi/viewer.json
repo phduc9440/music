@@ -1,3 +1,39 @@
 {
-  "performanceWarning": "Bản nhạc khá lớn nên có thể vẽ chậm. Hãy thử chế độ \"Cuộn ngang\" hoặc thu nhỏ để xem nhanh hơn."
+  "performanceWarning": "Bản nhạc khá lớn nên có thể vẽ chậm. Hãy thử chế độ \"Cuộn ngang\" hoặc thu nhỏ để xem nhanh hơn.",
+  "download": {
+    "failed": "Không tải được file",
+    "audio": "Xuất âm thanh",
+    "button": "Tải xuống",
+    "create": "Tạo file",
+    "outdated": "Cũ · Xuất lại",
+    "exportOrDownload": "Xuất / tải",
+    "creatingMidi": "Đang tạo MIDI...",
+    "loading": "Đang tải...",
+    "get": "Tải về",
+    "missing": "Chưa có"
+  },
+  "instrument": {
+    "label": "Nhạc cụ",
+    "title": "Chọn nhạc cụ khi phát",
+    "dialog": "Chọn nhạc cụ cho từng khuông",
+    "resetTitle": "Về nhạc cụ nhận diện từ file",
+    "reset": "Theo file"
+  },
+  "zoom": {
+    "group": "Thu phóng",
+    "out": "Thu nhỏ",
+    "outTitle": "Thu nhỏ (phím -)",
+    "pick": "Chọn mức thu phóng",
+    "in": "Phóng to",
+    "inTitle": "Phóng to (phím +)",
+    "level": "Mức thu phóng"
+  },
+  "canvas": {
+    "label": "Bản nhạc",
+    "drawing": "Đang vẽ bản nhạc...",
+    "drawFailed": "Không vẽ được bản nhạc từ MusicXML",
+    "clickToEdit": "Bấm để sửa",
+    "measureOkTitle": "Ô nhịp này đúng (ví dụ ô lấy đà): bỏ cảnh báo",
+    "measureOkLabel": "Xác nhận ô {n} đúng"
+  }
 }

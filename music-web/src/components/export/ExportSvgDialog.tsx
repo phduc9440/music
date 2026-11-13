@@ -7,6 +7,7 @@ import Modal from '../scores/common/Modal';
 import ExportRunningView from './ExportRunningView';
 import { translateTaskError } from './exportUtils';
 import { useExportFlow } from './useExportFlow';
+import { t } from '../../i18n/core';
 import './export.css';
 
 interface Props {
@@ -23,14 +24,14 @@ interface Props {
  * trang cần tải chỉ là lựa chọn của người dùng nên không làm đổi kết quả đã lưu.
  */
 export default function ExportSvgDialog({ scoreId, title, open, onOpen, onClose }: Props) {
-  const flow = useExportFlow({ scoreId, isOpen: open, readyMessage: 'File SVG đã sẵn sàng.', reopen: onOpen });
+  const flow = useExportFlow({ scoreId, isOpen: open, readyMessage: t('export.svg.ready'), reopen: onOpen });
   /** Trang người dùng đã chọn lúc gửi yêu cầu (null là tất cả); dùng để chọn nút tải chính ở màn hình kết quả. */
   const [wantedPage, setWantedPage] = useState<number | null>(null);
   if (!open) return null;
 
   const files = flow.results;
   return (
-    <Modal title="Xuất SVG" onClose={onClose}>
+    <Modal title={t('export.svg.title')} onClose={onClose}>
       {files && files.length > 0 ? (
         <SvgResultView
           files={files}
@@ -54,10 +55,10 @@ export default function ExportSvgDialog({ scoreId, title, open, onOpen, onClose 
           </p>
           <div className="sc-modal__actions">
             <button className="sc-btn" onClick={onClose}>
-              Đóng
+              {t('common.close')}
             </button>
             <button className="sc-btn sc-btn--primary" onClick={flow.again}>
-              Thử lại
+              {t('common.retry')}
             </button>
           </div>
         </div>
@@ -87,26 +88,24 @@ function SvgForm({
   const [error, setError] = useState<string | null>(null);
 
   const submit = async () => {
-    if (!all && (!Number.isInteger(page) || page < 1)) return setError('Số trang phải từ 1 trở lên');
+    if (!all && (!Number.isInteger(page) || page < 1)) return setError(t('export.validation.page'));
     setBusy(true);
     setError(null);
     const message = await onSubmit({ page: all ? 'ALL' : page });
     setBusy(false);
-    if (message) setError(all ? message : `${message}. Kiểm tra lại số trang, bản nhạc có thể ít trang hơn.`);
+    if (message) setError(all ? message : t('export.svg.retryHint', { message }));
   };
 
   return (
     <div className="ex-body">
-      <p className="ex-hint">
-        SVG là ảnh vector, mỗi trang nhạc một file. Bạn có thể tải tất cả trang trong một file ZIP.
-      </p>
+      <p className="ex-hint">{t('export.svg.hint')}</p>
       <label className="ex-radio">
         <input type="radio" name="svg-scope" checked={all} onChange={() => setAll(true)} />
-        Tất cả trang (tải ZIP)
+        {t('export.svg.all')}
       </label>
       <label className="ex-radio">
         <input type="radio" name="svg-scope" checked={!all} onChange={() => setAll(false)} />
-        Một trang, số
+        {t('export.svg.one')}
         <input
           className="sc-input"
           type="number"
@@ -114,7 +113,7 @@ function SvgForm({
           step={1}
           value={page}
           disabled={all}
-          aria-label="Số trang"
+          aria-label={t('export.svg.pageNumber')}
           onChange={(e) => setPage(Math.max(1, Math.floor(Number(e.target.value)) || 1))}
         />
       </label>
@@ -125,10 +124,10 @@ function SvgForm({
       )}
       <div className="sc-modal__actions">
         <button className="sc-btn" onClick={onClose} disabled={busy}>
-          Hủy
+          {t('common.cancel')}
         </button>
         <button className="sc-btn sc-btn--primary" onClick={() => void submit()} disabled={busy}>
-          {busy ? 'Đang gửi...' : 'Xuất SVG'}
+          {busy ? t('export.sending') : t('export.svg.submit')}
         </button>
       </div>
     </div>
@@ -160,7 +159,7 @@ function SvgResultView({
     try {
       await action();
     } catch {
-      toast.error('Không tải được file');
+      toast.error(t('export.downloadFailed'));
     } finally {
       setBusy(false);
     }
@@ -172,33 +171,33 @@ function SvgResultView({
 
   return (
     <div className="ex-body">
-      <p className="ex-ok">Đã xuất {files.length} trang SVG.</p>
+      <p className="ex-ok">{t('export.svg.done', { count: files.length })}</p>
       {tooFar && (
         <p className="ex-error" role="alert">
-          Bản nhạc chỉ có {files.length} trang nên không có trang {wantedPage}.
+          {t('export.svg.tooFar', { count: files.length, page: wantedPage })}
         </p>
       )}
-      <div className="ex-pages" aria-label="Các trang">
+      <div className="ex-pages" aria-label={t('export.svg.pages')}>
         {files.map((file) => (
           <button key={file.id} className="sc-btn sc-btn--sm" disabled={busy} onClick={() => void downloadPage(file)}>
-            Trang {file.pageNumber ?? '?'}
+            {t('export.svg.page', { n: file.pageNumber ?? '?' })}
           </button>
         ))}
       </div>
       <div className="sc-modal__actions">
         <button className="sc-btn" onClick={onAgain}>
-          Xuất lại
+          {t('export.svg.again')}
         </button>
         <button className="sc-btn" onClick={onClose}>
-          Đóng
+          {t('common.close')}
         </button>
         {wanted ? (
           <button className="sc-btn sc-btn--primary" disabled={busy} onClick={() => void downloadPage(wanted)}>
-            Tải trang {wantedPage}
+            {t('export.svg.downloadPage', { page: wantedPage ?? '' })}
           </button>
         ) : (
           <button className="sc-btn sc-btn--primary" disabled={busy || !taskId} onClick={() => void downloadZip()}>
-            {busy ? 'Đang tải...' : `Tải ZIP (${files.length} trang)`}
+            {busy ? t('export.downloading') : t('export.svg.downloadZip', { count: files.length })}
           </button>
         )}
       </div>

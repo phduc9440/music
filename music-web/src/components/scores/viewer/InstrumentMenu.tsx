@@ -3,6 +3,7 @@ import { INSTRUMENTS } from '../../editor/audio/instruments';
 import type { InstrumentId } from '../../editor/audio/instruments';
 import type { PartInstrument } from '../../player/hooks/usePlayer';
 import { IconInstrument } from './ViewerIcons';
+import { t } from '../../../i18n/core';
 
 /**
  * Menu "Nhạc cụ" cạnh nút Phát: mỗi part (khuông/đàn/giọng hát) chọn một âm sắc riêng. Mặc định theo file
@@ -42,14 +43,14 @@ export default function InstrumentMenu({
         className={`sc-btn${compact ? ' sv-icon' : ''}`}
         aria-haspopup="dialog"
         aria-expanded={open}
-        aria-label="Nhạc cụ"
+        aria-label={t('viewer.instrument.label')}
         onClick={() => setOpen(!open)}
-        title="Chọn nhạc cụ khi phát"
+        title={t('viewer.instrument.title')}
       >
-        {compact ? <IconInstrument /> : 'Nhạc cụ'}
+        {compact ? <IconInstrument /> : t('viewer.instrument.label')}
       </button>
       {open && (
-        <div className="sc-menu__list sv-instruments" role="dialog" aria-label="Chọn nhạc cụ cho từng khuông">
+        <div className="sc-menu__list sv-instruments" role="dialog" aria-label={t('viewer.instrument.dialog')}>
           {parts.map((part) => (
             <div key={part.index} className="sv-instrument-row">
               <label htmlFor={`sv-instrument-${part.index}`} className="sv-instrument-row__name">
@@ -71,9 +72,9 @@ export default function InstrumentMenu({
                 <button
                   className="sv-instrument-row__reset"
                   onClick={() => onChange(part.index, null)}
-                  title="Về nhạc cụ nhận diện từ file"
+                  title={t('viewer.instrument.resetTitle')}
                 >
-                  Theo file
+                  {t('viewer.instrument.reset')}
                 </button>
               )}
             </div>

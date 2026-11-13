@@ -480,5 +480,10 @@
     "helpContextText": "Menu: Góp ý vào đoạn đã chọn, Xem góp ý ở ô này",
     "helpPanelText": "Góp ý vào nốt / ô đang chọn (mở bảng Góp ý bên phải)",
     "bubbleTitle": "{count} góp ý ở ô {measure}"
+  },
+  "assignment": {
+    "text": "Bài trong buổi diễn {show} · {status}",
+    "due": "hạn {date}",
+    "open": "Mở bảng buổi diễn"
   }
 }

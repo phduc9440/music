@@ -14,6 +14,7 @@ import java.util.zip.ZipOutputStream;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -22,6 +23,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.ptit.music_be.configuration.MuseScoreProperties;
 import com.ptit.music_be.dto.enums.ai.AiTaskStatus;
 import com.ptit.music_be.dto.enums.ai.AiTaskType;
+import com.ptit.music_be.dto.enums.billing.UsageMetric;
 import com.ptit.music_be.dto.enums.score.FileType;
 import com.ptit.music_be.dto.request.export.ExportRequest;
 import com.ptit.music_be.dto.response.export.ExportFileResponse;
@@ -39,6 +41,7 @@ import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.ScoreFileRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.service.ai.MuseScoreCliService;
+import com.ptit.music_be.service.billing.EntitlementService;
 import com.ptit.music_be.service.export.ExportNames;
 import com.ptit.music_be.service.export.ExportOptionsValidator;
 import com.ptit.music_be.service.export.ExportService;
@@ -89,6 +92,7 @@ public class ExportServiceImpl implements ExportService {
     AiTaskMapper aiTaskMapper;
     ObjectMapper objectMapper;
     ApplicationEventPublisher eventPublisher;
+    EntitlementService entitlementService;
 
     @Override
     @Transactional
@@ -175,6 +179,9 @@ public class ExportServiceImpl implements ExportService {
         }
 
         checkLimits(member);
+        // Lấy file có sẵn hoặc nhận lại task đang chạy ở trên thì không tính; dòng thành viên đã khóa nên đếm không bị
+        // đua
+        entitlementService.checkAvailable(member.getId(), UsageMetric.EXPORTS, 1);
 
         ObjectNode input = objectMapper.createObjectNode();
         input.put("targetFormat", spec.fileType().name());
@@ -196,8 +203,32 @@ public class ExportServiceImpl implements ExportService {
         return convertMidi(score, validator.validate("MUSICXML", null, score));
     }
 
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public ExportResponse startMidiConversionForImport(String scoreId, String memberId) {
+        Score score =
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+        if (currentMusicXml(scoreId).isPresent()) {
+            throw new AppException(ErrorCode.EXPORT_SOURCE_NOT_SUPPORTED);
+        }
+        ScoreFile midi = midiSource(score);
+        Member member =
+                memberRepository.findById(memberId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        // Tự chuyển sau khi import không tính vào hạn mức xuất file của người dùng
+        return enqueueConversion(score, member, midi, validator.validate("MUSICXML", null, score), false);
+    }
+
     /** Tạo (hoặc trả lại) task chuyển MIDI gốc thành MusicXML. Người gọi đã kiểm tra quyền sửa và bản nhạc chưa có MusicXML. */
     private ExportResponse convertMidi(Score score, ExportSpec spec) {
+        ScoreFile midi = midiSource(score);
+        Member member = memberRepository
+                .findByEmailForUpdate(SecurityUtils.getCurrentEmail())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        return enqueueConversion(score, member, midi, spec, true);
+    }
+
+    /** MIDI gốc mới nhất của bản nhạc; cần MuseScore để chuyển đổi. */
+    private ScoreFile midiSource(Score score) {
         ScoreFile midi =
                 scoreFileRepository
                         .findByScoreIdAndFileTypeOrderByPageNumberAsc(score.getId(), FileType.ORIGINAL_MIDI)
@@ -208,10 +239,11 @@ public class ExportServiceImpl implements ExportService {
         if (!museScoreCliService.isAvailable()) {
             throw new AppException(ErrorCode.EXPORT_NOT_AVAILABLE);
         }
-        Member member = memberRepository
-                .findByEmailForUpdate(SecurityUtils.getCurrentEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        return midi;
+    }
 
+    private ExportResponse enqueueConversion(
+            Score score, Member member, ScoreFile midi, ExportSpec spec, boolean enforceLimits) {
         Optional<AiTask> duplicate = findDuplicateTask(score.getId(), spec, 0);
         if (duplicate.isPresent()) {
             return ExportResponse.builder()
@@ -219,7 +251,9 @@ public class ExportServiceImpl implements ExportService {
                     .task(aiTaskMapper.toResponse(duplicate.get()))
                     .build();
         }
-        checkLimits(member);
+        if (enforceLimits) {
+            checkLimits(member);
+        }
 
         ObjectNode input = objectMapper.createObjectNode();
         input.put("targetFormat", FileType.MUSICXML.name());

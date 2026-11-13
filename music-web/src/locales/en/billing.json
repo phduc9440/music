@@ -133,5 +133,16 @@
     "TEAM": "For groups working together; limits are shared by the whole team."
   },
   "unlimitedPlan": "Unlimited",
-  "banned": "You are banned from the {plan} plan until {date}. Free and other plans are still available."
+  "banned": "You are banned from the {plan} plan until {date}. Free and other plans are still available.",
+  "upgrade": {
+    "title": "Plan limit reached",
+    "viewPlans": "View plans",
+    "suggest": "Upgrade to the {plan} plan to keep going.",
+    "reason": {
+      "OMR_PAGES": "You have used {used}/{limit} OMR pages this month.",
+      "EXPORTS": "You have used {used}/{limit} exports this month.",
+      "STORAGE_MB": "You are using {used} MB of {limit} MB storage.",
+      "DEFAULT": "You have reached the limit of your current plan."
+    }
+  }
 }

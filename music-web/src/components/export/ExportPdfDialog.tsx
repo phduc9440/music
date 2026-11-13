@@ -7,6 +7,7 @@ import Modal from '../scores/common/Modal';
 import ExportRunningView from './ExportRunningView';
 import { translateTaskError, validatePdfOptions } from './exportUtils';
 import { useExportFlow } from './useExportFlow';
+import { t } from '../../i18n/core';
 import './export.css';
 
 interface Props {
@@ -27,23 +28,19 @@ const DEFAULT_OPTIONS: PdfOptions = {
   showChords: true,
 };
 
-const MEASURE_NUMBER_LABELS: Record<MeasureNumbers, string> = {
-  SYSTEM: 'Đầu mỗi hàng nhạc',
-  EVERY: 'Mọi ô nhịp',
-  NONE: 'Không đánh số',
-};
+const MEASURE_NUMBERS: MeasureNumbers[] = ['SYSTEM', 'EVERY', 'NONE'];
 
 /**
  * Hộp thoại "Xuất PDF" (mục 1.30): chọn khổ giấy, hướng, cỡ khuông, lề, tiêu đề, đánh số ô nhịp, hợp âm; chạy nền;
  * xong thì xem trước trang 1 và tải về. Luôn được gắn khi trang còn mở để đóng hộp thoại không dừng theo dõi tác vụ.
  */
 export default function ExportPdfDialog({ scoreId, open, onOpen, onClose }: Props) {
-  const flow = useExportFlow({ scoreId, isOpen: open, readyMessage: 'File PDF đã sẵn sàng.', reopen: onOpen });
+  const flow = useExportFlow({ scoreId, isOpen: open, readyMessage: t('export.pdf.ready'), reopen: onOpen });
   if (!open) return null;
 
   const file = flow.results?.[0] ?? null;
   return (
-    <Modal title="Xuất PDF" onClose={onClose}>
+    <Modal title={t('export.pdf.title')} onClose={onClose}>
       {file ? (
         <PdfResultView key={file.id} file={file} onAgain={flow.again} onClose={onClose} />
       ) : flow.running && flow.task ? (
@@ -60,10 +57,10 @@ export default function ExportPdfDialog({ scoreId, open, onOpen, onClose }: Prop
           </p>
           <div className="sc-modal__actions">
             <button className="sc-btn" onClick={onClose}>
-              Đóng
+              {t('common.close')}
             </button>
             <button className="sc-btn sc-btn--primary" onClick={flow.again}>
-              Thử lại
+              {t('common.retry')}
             </button>
           </div>
         </div>
@@ -99,8 +96,8 @@ function PdfForm({
 
   return (
     <div className="ex-body">
-      <span className="sc-label">Khổ giấy</span>
-      <div className="ex-segment" role="group" aria-label="Khổ giấy">
+      <span className="sc-label">{t('export.pdf.paper')}</span>
+      <div className="ex-segment" role="group" aria-label={t('export.pdf.paper')}>
         {(['A4', 'LETTER'] as PdfPageSize[]).map((size) => (
           <button
             key={size}
@@ -113,8 +110,8 @@ function PdfForm({
         ))}
       </div>
 
-      <span className="sc-label">Hướng giấy</span>
-      <div className="ex-segment" role="group" aria-label="Hướng giấy">
+      <span className="sc-label">{t('export.pdf.orientation')}</span>
+      <div className="ex-segment" role="group" aria-label={t('export.pdf.orientation')}>
         {(['PORTRAIT', 'LANDSCAPE'] as PdfOrientation[]).map((orientation) => (
           <button
             key={orientation}
@@ -122,13 +119,13 @@ function PdfForm({
             aria-pressed={options.orientation === orientation}
             onClick={() => patch({ orientation })}
           >
-            {orientation === 'PORTRAIT' ? 'Dọc' : 'Ngang'}
+            {t(`export.pdf.${orientation}`)}
           </button>
         ))}
       </div>
 
       <label className="sc-label" htmlFor="ex-staff">
-        Cỡ khuông nhạc: <strong>{options.staffSpaceMm.toFixed(2)} mm</strong>
+        {t('export.pdf.staffSize')}: <strong>{options.staffSpaceMm.toFixed(2)} mm</strong>
       </label>
       <input
         id="ex-staff"
@@ -142,7 +139,7 @@ function PdfForm({
       />
 
       <label className="sc-label" htmlFor="ex-margin">
-        Lề: <strong>{options.marginMm} mm</strong>
+        {t('export.pdf.margin')}: <strong>{options.marginMm} mm</strong>
       </label>
       <input
         id="ex-margin"
@@ -156,7 +153,7 @@ function PdfForm({
       />
 
       <label className="sc-label" htmlFor="ex-measures">
-        Đánh số ô nhịp
+        {t('export.pdf.measureNumbers')}
       </label>
       <select
         id="ex-measures"
@@ -164,20 +161,20 @@ function PdfForm({
         value={options.measureNumbers}
         onChange={(e) => patch({ measureNumbers: e.target.value as MeasureNumbers })}
       >
-        {(Object.keys(MEASURE_NUMBER_LABELS) as MeasureNumbers[]).map((value) => (
+        {MEASURE_NUMBERS.map((value) => (
           <option key={value} value={value}>
-            {MEASURE_NUMBER_LABELS[value]}
+            {t(`export.pdf.numbering.${value}`)}
           </option>
         ))}
       </select>
 
       <label className="ex-check">
         <input type="checkbox" checked={options.showTitle} onChange={(e) => patch({ showTitle: e.target.checked })} />
-        Hiện tiêu đề và tác giả
+        {t('export.pdf.showTitle')}
       </label>
       <label className="ex-check">
         <input type="checkbox" checked={options.showChords} onChange={(e) => patch({ showChords: e.target.checked })} />
-        Hiện hợp âm
+        {t('export.pdf.showChords')}
       </label>
 
       {error && (
@@ -187,10 +184,10 @@ function PdfForm({
       )}
       <div className="sc-modal__actions">
         <button className="sc-btn" onClick={onClose} disabled={busy}>
-          Hủy
+          {t('common.cancel')}
         </button>
         <button className="sc-btn sc-btn--primary" onClick={() => void submit()} disabled={busy}>
-          {busy ? 'Đang gửi...' : 'Xuất PDF'}
+          {busy ? t('export.sending') : t('export.pdf.submit')}
         </button>
       </div>
     </div>
@@ -228,7 +225,7 @@ function PdfResultView({ file, onAgain, onClose }: { file: ExportFileInfo; onAga
     try {
       await downloadFile(file.downloadUrl, name);
     } catch {
-      toast.error('Không tải được file');
+      toast.error(t('export.downloadFailed'));
     } finally {
       setDownloading(false);
     }
@@ -236,23 +233,23 @@ function PdfResultView({ file, onAgain, onClose }: { file: ExportFileInfo; onAga
 
   return (
     <div className="ex-body">
-      <p className="ex-ok">File PDF đã sẵn sàng.</p>
+      <p className="ex-ok">{t('export.pdf.ready')}</p>
       {previewUrl ? (
-        <img className="ex-preview" src={previewUrl} alt="Xem trước trang 1 của file PDF" />
+        <img className="ex-preview" src={previewUrl} alt={t('export.pdf.previewAlt')} />
       ) : previewFailed ? (
-        <p className="ex-hint">Không xem trước được, bạn vẫn có thể tải về.</p>
+        <p className="ex-hint">{t('export.pdf.noPreview')}</p>
       ) : (
-        <p className="ex-hint">Đang dựng bản xem trước trang 1...</p>
+        <p className="ex-hint">{t('export.pdf.loadingPreview')}</p>
       )}
       <div className="sc-modal__actions">
         <button className="sc-btn" onClick={onAgain}>
-          Xuất với tùy chọn khác
+          {t('export.again')}
         </button>
         <button className="sc-btn" onClick={onClose}>
-          Đóng
+          {t('common.close')}
         </button>
         <button className="sc-btn sc-btn--primary" onClick={() => void download()} disabled={downloading}>
-          {downloading ? 'Đang tải...' : 'Tải xuống'}
+          {downloading ? t('export.downloading') : t('export.download')}
         </button>
       </div>
     </div>

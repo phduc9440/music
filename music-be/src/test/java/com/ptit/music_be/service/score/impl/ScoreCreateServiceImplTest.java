@@ -3,7 +3,9 @@ package com.ptit.music_be.service.score.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -37,6 +39,7 @@ import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.ScoreFileRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
+import com.ptit.music_be.service.billing.EntitlementService;
 import com.ptit.music_be.service.storage.FileStorageService;
 
 /** CR-1, CR-3, CR-4: tạo bản trống lưu đúng dòng dữ liệu và file; sai tùy chọn thì không lưu gì. */
@@ -56,18 +59,21 @@ class ScoreCreateServiceImplTest {
     @Mock
     FileStorageService fileStorageService;
 
+    @Mock
+    EntitlementService entitlementService;
+
     ScoreCreateServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        service =
-                new ScoreCreateServiceImpl(scoreRepository, scoreFileRepository, memberRepository, fileStorageService);
+        service = new ScoreCreateServiceImpl(
+                scoreRepository, scoreFileRepository, memberRepository, fileStorageService, entitlementService);
         Member owner = Member.builder()
                 .id("m-1")
                 .email("owner@mail.com")
                 .fullName("Chủ bản")
                 .build();
-        when(memberRepository.findByEmail("owner@mail.com")).thenReturn(Optional.of(owner));
+        when(memberRepository.findByEmailForUpdate("owner@mail.com")).thenReturn(Optional.of(owner));
         when(scoreRepository.save(any())).thenAnswer(inv -> {
             Score saved = inv.getArgument(0);
             saved.setId("score-1");
@@ -169,6 +175,28 @@ class ScoreCreateServiceImplTest {
 
         verify(scoreRepository, never()).save(any());
         verify(fileStorageService, never()).store(any(), any());
+    }
+
+    /** PL-5: kho đã đầy thì không tạo gì. */
+    @Test
+    void storageLimitStopsTheCreationBeforeAnythingIsSaved() {
+        doThrow(new AppException(ErrorCode.PLAN_LIMIT_REACHED))
+                .when(entitlementService)
+                .checkStorage(eq("m-1"), anyLong());
+
+        assertThat(errorOf(valid())).isEqualTo(ErrorCode.PLAN_LIMIT_REACHED);
+
+        verify(scoreRepository, never()).save(any());
+        verify(fileStorageService, never()).store(any(), any());
+    }
+
+    @Test
+    void storageIsCheckedForTheSizeOfTheNewFile() {
+        service.createBlank(valid());
+
+        ArgumentCaptor<ScoreFile> row = ArgumentCaptor.forClass(ScoreFile.class);
+        verify(scoreFileRepository).save(row.capture());
+        verify(entitlementService).checkStorage("m-1", row.getValue().getSizeBytes());
     }
 
     @Test

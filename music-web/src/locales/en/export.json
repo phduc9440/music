@@ -1,0 +1,111 @@
+{
+  "steps": {
+    "PREPARE": "Preparing the score",
+    "RENDER": "Synthesizing audio",
+    "SAVE": "Saving the file",
+    "WAITING": "Waiting"
+  },
+  "failed": "Could not export the file, please try again",
+  "taskErrors": {
+    "EXPORT_ERROR": "Could not export the file, please try again",
+    "MUSESCORE_TIMEOUT": "The export took too long and was stopped. Try again or raise the tempo to shorten the score",
+    "TASK_TIMEOUT": "The export task timed out, please try again",
+    "AI_SERVICE_UNAVAILABLE": "The music processing service is temporarily unavailable, please try again later",
+    "CANCELLED_BY_USER": "Cancelled"
+  },
+  "connectionLost": "connection lost",
+  "apiErrors": {
+    "1002": "You do not have permission to export this score",
+    "2001": "The score does not exist",
+    "2012": "The score has no MusicXML yet, wait for digitization to finish",
+    "2701": "Invalid export options",
+    "2702": "The score is too long to export as audio (20 minutes max), raise the tempo",
+    "2703": "You are exporting too many files, wait for the running tasks to finish",
+    "2704": "The server is not ready to export files, please contact an administrator"
+  },
+  "validation": {
+    "tempo": "Tempo must be between 20% and 200%",
+    "transpose": "Transpose must be between -12 and +12 semitones",
+    "bitrate": "MP3 quality must be 128, 192 or 320 kbps",
+    "hands": "A single hand can only be chosen for a score with 2 staves",
+    "staffSize": "Staff size must be between 1.5 and 2.2 mm",
+    "margin": "Margin must be between 10 and 25 mm",
+    "page": "The page number must be 1 or more"
+  },
+  "sending": "Sending...",
+  "downloading": "Downloading...",
+  "download": "Download",
+  "downloadFailed": "Could not download the file",
+  "fetchFailed": "Could not get the exported file",
+  "cancelled": "Export cancelled",
+  "cancelFailed": "Could not cancel, the task may already be done",
+  "again": "Export with other options",
+  "fileReady": "The {type} file is ready.",
+  "running": {
+    "hint": "You can close this dialog; the export keeps running in the background and you will be notified when it is done.",
+    "cancelling": "Cancelling...",
+    "cancel": "Cancel export"
+  },
+  "audio": {
+    "title": "Export audio",
+    "hint": "Defaults to the settings currently used in this score's player.",
+    "format": "Format",
+    "quality": "Quality",
+    "transpose": "Transpose",
+    "semitones": "semitones",
+    "submit": "Export file",
+    "noPreview": "Preview is not available, you can still download it.",
+    "loadingPreview": "Loading the preview..."
+  },
+  "hands": {
+    "BOTH": "Both hands",
+    "RIGHT": "Right hand",
+    "LEFT": "Left hand"
+  },
+  "pdf": {
+    "title": "Export PDF",
+    "ready": "The PDF file is ready.",
+    "paper": "Paper size",
+    "orientation": "Orientation",
+    "PORTRAIT": "Portrait",
+    "LANDSCAPE": "Landscape",
+    "staffSize": "Staff size",
+    "margin": "Margin",
+    "measureNumbers": "Measure numbers",
+    "numbering": {
+      "SYSTEM": "At the start of each system",
+      "EVERY": "Every measure",
+      "NONE": "No numbers"
+    },
+    "showTitle": "Show title and composer",
+    "showChords": "Show chords",
+    "submit": "Export PDF",
+    "previewAlt": "Preview of page 1 of the PDF file",
+    "noPreview": "Preview is not available, you can still download it.",
+    "loadingPreview": "Building the page 1 preview..."
+  },
+  "svg": {
+    "title": "Export SVG",
+    "ready": "The SVG file is ready.",
+    "hint": "SVG is a vector image, one file per page. You can download all pages in one ZIP file.",
+    "all": "All pages (ZIP download)",
+    "one": "A single page, number",
+    "pageNumber": "Page number",
+    "retryHint": "{message}. Check the page number, the score may have fewer pages.",
+    "submit": "Export SVG",
+    "done": "Exported {count} SVG pages.",
+    "tooFar": "The score only has {count} pages, so there is no page {page}.",
+    "pages": "Pages",
+    "page": "Page {n}",
+    "again": "Export again",
+    "downloadPage": "Download page {page}",
+    "downloadZip": "Download ZIP ({count} pages)"
+  },
+  "midi": {
+    "done": "The MIDI was converted into a score",
+    "warnings": "Note: {warnings}",
+    "title": "Turn the imported MIDI file into a score you can open in the editor and the player",
+    "running": "Converting... {progress}%",
+    "button": "Convert MIDI to a score"
+  }
+}

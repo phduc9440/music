@@ -35,6 +35,21 @@ public interface AiTaskRepository extends JpaRepository<AiTask, String> {
             @Param("from") java.time.LocalDateTime from,
             @Param("to") java.time.LocalDateTime to);
 
+    /**
+     * Số lần xuất file một người đã dùng trong khoảng [from, to): task xuất (tổng hợp âm thanh, chuyển định dạng) chưa lỗi
+     * hoặc bị hủy. Chuyển MIDI sang MusicXML không phải xuất file nên không tính.
+     */
+    @Query(
+            value = "SELECT COUNT(*) FROM ai_tasks t WHERE t.member_id = :memberId"
+                    + " AND t.task_type IN ('AUDIO_SYNTHESIS', 'FORMAT_CONVERSION')"
+                    + " AND COALESCE(JSON_UNQUOTE(JSON_EXTRACT(t.input_data, '$.targetFormat')), '') <> 'MUSICXML'"
+                    + " AND t.status NOT IN ('FAILED', 'CANCELLED') AND t.created_at >= :from AND t.created_at < :to",
+            nativeQuery = true)
+    long countExportsCharged(
+            @Param("memberId") String memberId,
+            @Param("from") java.time.LocalDateTime from,
+            @Param("to") java.time.LocalDateTime to);
+
     List<AiTask> findByScoreIdOrderByCreatedAtDesc(String scoreId);
 
     List<AiTask> findByStatusOrderByCreatedAtAsc(AiTaskStatus status);

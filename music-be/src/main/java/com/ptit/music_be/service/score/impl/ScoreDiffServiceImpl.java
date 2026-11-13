@@ -38,6 +38,7 @@ public class ScoreDiffServiceImpl implements ScoreDiffService {
     private final ScoreFileRepository scoreFileRepository;
     private final ScoreFileService scoreFileService;
     private final AiServiceClient aiServiceClient;
+    private final VersionRetention versionRetention;
 
     @Override
     @Transactional
@@ -46,11 +47,13 @@ public class ScoreDiffServiceImpl implements ScoreDiffService {
                 scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
         scoreFileService.checkCanView(score);
 
-        List<ScoreFile> files =
+        List<ScoreFile> allFiles =
                 scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(scoreId, FileType.MUSICXML);
+        // Version ngoài số gói của chủ bản nhạc cho xem coi như không còn (2801)
+        List<ScoreFile> files = versionRetention.visible(score, allFiles);
         ScoreFile target =
                 find(files, version).orElseThrow(() -> new AppException(ErrorCode.SCORE_VERSION_NOT_EXISTED));
-        int baseVersion = base != null ? base : omrVersion(score, files);
+        int baseVersion = base != null ? base : omrVersion(score, allFiles);
         if (baseVersion == version) {
             throw new AppException(ErrorCode.SCORE_DIFF_SAME_VERSION);
         }

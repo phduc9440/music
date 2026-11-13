@@ -1,4 +1,5 @@
 import { Link } from '../../../routes/transition-nav';
+import { useNavigate } from '../../../routes/useTransitionNavigate';
 import AuthImage from '../common/AuthImage';
 import StatusBadge from '../common/StatusBadge';
 import { OMR_TASK_TYPE, describeTaskError } from '../../../utils/omr';
@@ -28,8 +29,6 @@ interface Props {
   onRequestEdit: () => void;
   /** Gọi khi chủ sở hữu đổi chế độ hiển thị (công khai, hủy yêu cầu, về riêng tư) với bản nhạc đã cập nhật. */
   onVisibilityChanged: (score: ScoreDetail) => void;
-  /** Gọi khi bản nhạc nhập từ MIDI chuyển xong thành MusicXML để trang tải lại. */
-  onConverted?: () => void;
 }
 
 /** Mở được trình chỉnh sửa/trình phát khi đã có MusicXML hiện hành (nhận diện lại lỗi vẫn giữ bản cũ dùng được). */
@@ -39,19 +38,18 @@ const hasMusicXml = (score: ScoreDetail) => score.files.some((f) => f.fileType =
  * Đầu trang chi tiết: nhãn trạng thái, tiêu đề, dòng phụ, ba thao tác chính (mở, phát, tải xuống) và các thông báo
  * (đang số hóa, xử lý lỗi, bị từ chối công khai).
  */
-export default function ScoreHero({
-  score,
-  onConverted,
-  onVisibilityChanged,
-}: Pick<Props, 'score' | 'onConverted' | 'onVisibilityChanged'>) {
+export default function ScoreHero({ score, onVisibilityChanged }: Pick<Props, 'score' | 'onVisibilityChanged'>) {
   // Đổi hoặc gỡ ảnh bìa trả về bản nhạc đã cập nhật, dùng chung đường cập nhật với đổi chế độ hiển thị
   const base = useScoreBase();
+  const navigate = useNavigate();
   const ready = hasMusicXml(score);
   // Bản nhạc nhập từ MIDI chưa có MusicXML: cho chuyển đổi để mở được trình chỉnh sửa và trình phát
   const canConvertMidi = score.canEdit && !ready && score.files.some((f) => f.fileType === 'ORIGINAL_MIDI');
   const activeConversion = score.latestTasks.find(
     (t) => t.taskType === 'FORMAT_CONVERSION' && !isTaskFinished(t.status),
   );
+  // Chuyển xong thì mở luôn trình chỉnh sửa. Chưa từng chuyển (kể cả thất bại) thì tự chuyển ngay, để file MIDI vừa nhập không phải bấm tay
+  const autoConvert = !score.latestTasks.some((t) => t.taskType === 'FORMAT_CONVERSION');
 
   // Lý do thất bại lấy từ tác vụ OMR mới nhất (cột reject_reason của bản nhạc không được ghi)
   const failedTask =
@@ -105,7 +103,12 @@ export default function ScoreHero({
 
         <div className="sd-actions">
           {canConvertMidi && (
-            <MidiConvertButton scoreId={score.id} resume={activeConversion} onDone={() => onConverted?.()} />
+            <MidiConvertButton
+              scoreId={score.id}
+              resume={activeConversion}
+              autoStart={autoConvert}
+              onDone={() => navigate(`${base}/${score.id}/edit`)}
+            />
           )}
           <DownloadMenu
             scoreId={score.id}
@@ -226,13 +229,7 @@ export function ScorePreview({ score }: { score: ScoreDetail }) {
 }
 
 /** Cột phải: số liệu nổi bật, thông số, ghi chú luyện tập và các thao tác quản lý. */
-export function ScoreSidebar({
-  score,
-  onEdit,
-  onDelete,
-  onShare,
-  onRequestEdit,
-}: Omit<Props, 'onConverted' | 'onVisibilityChanged'>) {
+export function ScoreSidebar({ score, onEdit, onDelete, onShare, onRequestEdit }: Omit<Props, 'onVisibilityChanged'>) {
   const base = useScoreBase();
   const highlights: [string, string][] = [
     [t('scores.hero.measures'), score.measureCount?.toString() ?? '—'],

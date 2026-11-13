@@ -7,6 +7,7 @@ export * from './score/officialRequestApi';
 export * from './file/omrApi';
 export * from './file/fileApi';
 export * from './file/importApi';
+export * from './score/scoreCreateApi';
 export * from './score/tagApi';
 export * from './score/sharingApi';
 export * from './score/reviewApi';

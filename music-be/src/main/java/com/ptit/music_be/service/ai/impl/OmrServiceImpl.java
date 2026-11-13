@@ -131,6 +131,8 @@ public class OmrServiceImpl implements OmrService {
         checkConcurrentTasks(member);
         // Còn đủ trang OMR của tháng không (dòng thành viên đã khóa ở trên); task ghi bên dưới chính là phần đã dùng
         entitlementService.checkAvailable(member.getId(), UsageMetric.OMR_PAGES, pageCount);
+        entitlementService.checkStorage(
+                member.getId(), files.stream().mapToLong(MultipartFile::getSize).sum());
 
         Score score = scoreRepository.save(Score.builder()
                 .member(member)
@@ -218,6 +220,10 @@ public class OmrServiceImpl implements OmrService {
         checkConcurrentTasks(member);
         int pages = score.getPageCount() == null ? 0 : score.getPageCount();
         entitlementService.checkAvailable(member.getId(), UsageMetric.OMR_PAGES, pages);
+        // Nhận diện lại sinh thêm file cho chủ bản nhạc; không cho chạy khi kho của họ đã vượt hạn mức
+        if (score.getMember() != null) {
+            entitlementService.checkStorage(score.getMember().getId(), 0);
+        }
         return startRetry(score, member, request, pages);
     }
 

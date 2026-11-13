@@ -9,6 +9,7 @@ import ExportPdfDialog from '../../export/ExportPdfDialog';
 import ExportSvgDialog from '../../export/ExportSvgDialog';
 import { DOWNLOAD_FORMATS, getErrorMessage } from '../../../utils/score';
 import { IconDownload } from './ViewerIcons';
+import { t } from '../../../i18n/core';
 
 interface DownloadMenuProps {
   scoreId: string;
@@ -84,7 +85,7 @@ export default function DownloadMenu({
         await downloadFile(file.downloadUrl, fileName);
       }
     } catch (err) {
-      toast.error(getErrorMessage(err, 'Không tải được file'));
+      toast.error(getErrorMessage(err, t('viewer.download.failed')));
     } finally {
       setBusyType(null);
     }
@@ -96,7 +97,7 @@ export default function DownloadMenu({
     <>
       {audioShortcut && (
         <button className="sc-btn" onClick={() => setDialog('MP3')}>
-          Xuất âm thanh
+          {t('viewer.download.audio')}
         </button>
       )}
       <div className="sc-menu" ref={ref}>
@@ -104,11 +105,11 @@ export default function DownloadMenu({
           className={`sc-btn${compact ? ' sv-icon' : ''}`}
           aria-haspopup="menu"
           aria-expanded={open}
-          aria-label="Tải xuống"
-          title="Tải xuống"
+          aria-label={t('viewer.download.button')}
+          title={t('viewer.download.button')}
           onClick={toggle}
         >
-          {compact ? <IconDownload /> : 'Tải xuống'}
+          {compact ? <IconDownload /> : t('viewer.download.button')}
         </button>
         {open && (
           <ul className="sc-menu__list" role="menu">
@@ -116,7 +117,11 @@ export default function DownloadMenu({
               if ((DIALOG_FORMATS as readonly string[]).includes(fileType)) {
                 const made = exports.filter((f) => f.fileType === fileType);
                 const hint =
-                  made.length === 0 ? 'Tạo file' : made.every((f) => f.outdated) ? 'Cũ · Xuất lại' : 'Xuất / tải';
+                  made.length === 0
+                    ? t('viewer.download.create')
+                    : made.every((f) => f.outdated)
+                      ? t('viewer.download.outdated')
+                      : t('viewer.download.exportOrDownload');
                 return (
                   <li key={fileType} role="none">
                     <button
@@ -145,13 +150,17 @@ export default function DownloadMenu({
                     >
                       <span>{label}</span>
                       <span className="sc-menu__hint">
-                        {busyType === fileType ? (fileType === 'MIDI' ? 'Đang tạo MIDI...' : 'Đang tải...') : 'Tải về'}
+                        {busyType === fileType
+                          ? fileType === 'MIDI'
+                            ? t('viewer.download.creatingMidi')
+                            : t('viewer.download.loading')
+                          : t('viewer.download.get')}
                       </span>
                     </button>
                   ) : (
                     <button role="menuitem" className="sc-menu__item is-missing" disabled>
                       <span>{label}</span>
-                      <span className="sc-menu__hint">Chưa có</span>
+                      <span className="sc-menu__hint">{t('viewer.download.missing')}</span>
                     </button>
                   )}
                 </li>
