@@ -162,6 +162,16 @@ export const formatDate = (value: string | number | Date): string => new Date(va
 
 export const formatDateTime = (value: string | number | Date): string => new Date(value).toLocaleString(intlLocale());
 
+/** Ngày giờ gọn (không có giây) cho bảng quản trị, ví dụ 14/11/2026 03:43. */
+export const formatDateTimeShort = (value: string | number | Date): string =>
+  new Date(value).toLocaleString(intlLocale(), {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
 /** Tiền luôn là VND, chỉ cách ngăn số theo ngôn ngữ. */
 export const formatVnd = (value: number): string =>
   new Intl.NumberFormat(intlLocale(), { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(value);

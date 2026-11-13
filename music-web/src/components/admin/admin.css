@@ -543,9 +543,11 @@
 
 .adm-stat__top {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 0.5rem;
+  /* Nhãn dài xuống hai dòng thì số liệu vẫn nằm cùng hàng với các thẻ bên cạnh */
+  min-height: 2.4rem;
 }
 
 .adm-stat__label {
@@ -950,7 +952,7 @@
 }
 
 .adm-table th {
-  padding: 0.65rem 1rem;
+  padding: 0.65rem 0.8rem;
   background: var(--adm-surface-muted);
   border-bottom: 1px solid var(--adm-border);
   color: var(--adm-text-2);
@@ -963,7 +965,7 @@
 }
 
 .adm-table td {
-  padding: 0.75rem 1rem;
+  padding: 0.75rem 0.8rem;
   border-bottom: 1px solid var(--adm-border);
   vertical-align: middle;
 }
@@ -997,13 +999,15 @@
 
 .adm-table__actions-inner {
   display: inline-flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  align-items: center;
   justify-content: flex-end;
   gap: 0.35rem;
 }
 
 .adm-nowrap {
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .adm-muted {
