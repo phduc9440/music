@@ -34,7 +34,7 @@
 .app-shell .sc-lib-head h1,
 .app-shell .ex-head h1,
 .app-shell .cp-head h1 {
-  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  font-family: var(--ui-font);
   font-size: clamp(1.8rem, 3vw, 2.35rem);
   font-weight: 700;
   letter-spacing: -0.01em;
@@ -269,4 +269,40 @@
   background:
     radial-gradient(34rem 12rem at 0% 100%, color-mix(in srgb, var(--ui-hue-rose) 12%, transparent), transparent 70%),
     radial-gradient(34rem 12rem at 100% 0%, color-mix(in srgb, var(--ui-hue-amber) 14%, transparent), transparent 70%);
+}
+
+/* ---- bảng, trạng thái trống và hộp thoại dùng chung ---- */
+.app-shell .table-responsive {
+  overflow: hidden;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-surface);
+}
+.app-shell .table thead th {
+  background: linear-gradient(90deg, var(--ui-primary-soft), var(--ui-surface-muted));
+  border-bottom: 2px solid var(--ui-hue-amber);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.app-shell .table tbody tr {
+  transition: background 0.15s ease;
+}
+.app-shell .table tbody tr:hover {
+  background: var(--ui-surface-hover);
+}
+.app-shell .sc-empty {
+  padding: 2.5rem 1.5rem;
+  border: 2px dashed var(--ui-border-strong);
+  border-radius: var(--ui-radius-lg);
+  background:
+    radial-gradient(24rem 10rem at 50% 0%, color-mix(in srgb, var(--ui-hue-amber) 14%, transparent), transparent 70%),
+    var(--ui-surface);
+  text-align: center;
+}
+.app-shell .sc-empty h3 {
+  font-family: var(--ui-font);
+}
+.sc-modal {
+  border-top: 4px solid var(--ui-hue-amber);
 }

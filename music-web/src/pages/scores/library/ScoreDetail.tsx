@@ -331,6 +331,8 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
           {activeTab === 'settings' && showSettings && (
             <ScoreSettingsSection
               scoreId={score.id}
+              score={score}
+              onVisibilityChanged={(updated) => setState({ phase: 'ready', score: updated })}
               isOwner={isOwnerView}
               canShare={!!score.canManageSharing}
               canEdit={!!score.canEdit}

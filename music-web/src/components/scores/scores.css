@@ -989,7 +989,7 @@ select.sc-input {
 /* Tab Cài đặt kiểu trang Settings của GitHub: thanh bên trái chọn chức năng, nội dung bên phải */
 .sc-settings {
   display: grid;
-  grid-template-columns: 220px minmax(0, 1fr);
+  grid-template-columns: 250px minmax(0, 1fr);
   gap: 1.5rem;
   align-items: start;
 }
@@ -1016,6 +1016,14 @@ select.sc-input {
   text-align: left;
   cursor: pointer;
 }
+.sc-settings__link > span:not(.sc-settings__badge) {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+}
+.sc-settings__link > svg {
+  flex-shrink: 0;
+}
 .sc-settings__link:hover {
   background: var(--ui-surface-hover);
 }
@@ -1038,6 +1046,7 @@ select.sc-input {
 }
 .sc-settings__badge {
   margin-left: auto;
+  flex-shrink: 0;
   min-width: 20px;
   padding: 0 0.4rem;
   border-radius: 999px;

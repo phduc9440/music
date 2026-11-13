@@ -18,7 +18,6 @@ import { isTaskFinished } from '../../export/exportUtils';
 import { Icon } from '../../ui';
 import OfficialRequestBanner from './OfficialRequestBanner';
 import ScoreCover from './ScoreCover';
-import PublishToggle from './PublishToggle';
 import { t } from '../../../i18n/core';
 
 interface Props {
@@ -62,11 +61,6 @@ export default function ScoreHero({ score, onVisibilityChanged, onRequestMore, o
     : score.rejectReason;
   const processing = score.processingStatus === 'PENDING' || score.processingStatus === 'PROCESSING';
 
-  // Chỉ chủ sở hữu đổi được chế độ hiển thị; admin kiểm duyệt có nút riêng ở trang quản trị. Bản trong kho mẫu do
-  // hệ thống quản lý nên không có nút này.
-  const canChangeVisibility =
-    score.canManageSharing && score.accessLevel === 'OWNER' && !base.startsWith('/admin') && !score.isOfficial;
-
   // Bản trong kho mẫu do hệ thống quản lý, chỉ admin sửa: không có chuyện xin quyền chỉnh sửa
   const canRequestMore =
     !score.canEdit && score.accessLevel !== 'OWNER' && !base.startsWith('/admin') && !score.isOfficial;
@@ -87,7 +81,6 @@ export default function ScoreHero({ score, onVisibilityChanged, onRequestMore, o
             <div className="sd-badges">
               <StatusBadge status={score.processingStatus} />
               <VisibilityBadge value={score.visibility} />
-              {canChangeVisibility && <PublishToggle score={score} onChanged={onVisibilityChanged} />}
               {score.isOfficial && (
                 <span className="sc-chip sc-chip--accent">{t('common.nav.items.officialLibrary')}</span>
               )}

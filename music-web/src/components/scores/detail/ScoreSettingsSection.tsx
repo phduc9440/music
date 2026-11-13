@@ -3,12 +3,18 @@ import { Icon } from '../../ui';
 import type { IconName } from '../../ui';
 import AccessMembersPanel from './AccessMembersPanel';
 import AccessRequestsPanel from './AccessRequestsPanel';
+import PublishToggle from './PublishToggle';
+import VisibilityBadge from '../common/VisibilityBadge';
+import type { ScoreDetail } from '../../../types';
 import { t } from '../../../i18n/core';
 
 type Section = 'general' | 'people' | 'requests' | 'danger';
 
 interface Props {
   scoreId: string;
+  /** Bản nhạc đang xem, để đổi chế độ hiển thị (công khai / riêng tư) ngay trong Cài đặt. */
+  score: ScoreDetail;
+  onVisibilityChanged: (score: ScoreDetail) => void;
   /** Chủ bản nhạc: có thêm mục người có quyền và yêu cầu xin quyền. */
   isOwner: boolean;
   canShare: boolean;
@@ -31,6 +37,8 @@ interface Props {
  */
 export default function ScoreSettingsSection({
   scoreId,
+  score,
+  onVisibilityChanged,
   isOwner,
   canShare,
   canEdit,
@@ -42,8 +50,11 @@ export default function ScoreSettingsSection({
   onEdit,
   onDelete,
 }: Props) {
+  // Chỉ chủ đổi được chế độ hiển thị; bản trong kho mẫu do hệ thống quản lý nên không có nút này
+  const canPublish = isOwner && !score.isOfficial;
   const items: { key: Section; label: string; icon: IconName; badge?: number }[] = [];
-  if (canShare || canEdit) items.push({ key: 'general', label: t('scores.settings.nav.general'), icon: 'sliders' });
+  if (canShare || canEdit || canPublish)
+    items.push({ key: 'general', label: t('scores.settings.nav.general'), icon: 'sliders' });
   if (isOwner) {
     items.push({ key: 'people', label: t('scores.settings.nav.people'), icon: 'users' });
     items.push({
@@ -81,6 +92,17 @@ export default function ScoreSettingsSection({
       <div className="sc-settings__body">
         {active === 'general' && (
           <>
+            {canPublish && (
+              <section className="sc-settings__card">
+                <div>
+                  <h2>
+                    {t('scores.settings.publishTitle')} <VisibilityBadge value={score.visibility} />
+                  </h2>
+                  <p>{t('scores.settings.publishHint')}</p>
+                </div>
+                <PublishToggle score={score} onChanged={onVisibilityChanged} />
+              </section>
+            )}
             {canEdit && (
               <section className="sc-settings__card">
                 <div>

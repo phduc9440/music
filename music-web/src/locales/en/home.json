@@ -65,7 +65,35 @@
       }
     },
     "finalTitle": "Ready to digitize your first score?",
-    "finalCta": "Get started for free"
+    "finalCta": "Get started for free",
+    "featuresTitle": "Everything for your practice",
+    "featuresLead": "From paper sheet to stage, in a single app.",
+    "features": {
+      "ocr": {
+        "title": "Digitize from photos and PDFs",
+        "text": "Snap a page of music; the system recognizes the notes and builds an editable digital score."
+      },
+      "editor": {
+        "title": "Score editor",
+        "text": "Edit notes, staves and lyrics; keep multiple versions and compare them."
+      },
+      "player": {
+        "title": "Instant playback",
+        "text": "Play with many instruments, change tempo, loop the hard parts."
+      },
+      "practice": {
+        "title": "Scored practice",
+        "text": "Play along, get accuracy and timing scores, review your history and practice streak."
+      },
+      "teams": {
+        "title": "Teams and shows",
+        "text": "Assign roles and parts, and follow the whole group on one score."
+      },
+      "export": {
+        "title": "Export anywhere",
+        "text": "PDF, MIDI, audio, SVG, MusicXML in a few clicks."
+      }
+    }
   },
   "workspace": {
     "greeting": {

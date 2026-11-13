@@ -20,7 +20,7 @@
 
 .wh-hero h1 {
   margin: 0.1rem 0 0;
-  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  font-family: var(--ui-font);
   font-size: clamp(1.5rem, 3vw, 2.1rem);
 }
 

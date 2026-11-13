@@ -526,6 +526,8 @@
     "shareTitle": "Chia sẻ",
     "shareHint": "Mời người khác theo email, đặt quyền xem, nhận xét hoặc chỉnh sửa.",
     "dangerTitle": "Xóa bản nhạc",
-    "dangerHint": "Chuyển bản nhạc vào thùng rác, khôi phục được trong 30 ngày."
+    "dangerHint": "Chuyển bản nhạc vào thùng rác, khôi phục được trong 30 ngày.",
+    "publishTitle": "Chế độ hiển thị",
+    "publishHint": "Công khai để mọi người tìm thấy (cần quản trị viên duyệt), hoặc giữ riêng tư."
   }
 }

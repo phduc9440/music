@@ -63,7 +63,35 @@
       }
     },
     "finalTitle": "Sẵn sàng số hóa bản nhạc đầu tiên?",
-    "finalCta": "Bắt đầu miễn phí"
+    "finalCta": "Bắt đầu miễn phí",
+    "featuresTitle": "Mọi thứ cho buổi tập của bạn",
+    "featuresLead": "Từ tờ nhạc giấy đến sân khấu, gói gọn trong một ứng dụng.",
+    "features": {
+      "ocr": {
+        "title": "Số hóa từ ảnh và PDF",
+        "text": "Chụp một trang nhạc, hệ thống nhận diện nốt và dựng thành bản nhạc số có thể chỉnh sửa."
+      },
+      "editor": {
+        "title": "Trình soạn nhạc",
+        "text": "Chỉnh từng nốt, khuông, lời; lưu nhiều phiên bản và so sánh."
+      },
+      "player": {
+        "title": "Nghe lại ngay",
+        "text": "Phát bằng nhiều nhạc cụ, đổi tốc độ, lặp đoạn khó."
+      },
+      "practice": {
+        "title": "Luyện tập có chấm điểm",
+        "text": "Chơi cùng bản nhạc, nhận điểm độ chính xác và nhịp, xem lại lịch sử và chuỗi ngày tập."
+      },
+      "teams": {
+        "title": "Nhóm và buổi diễn",
+        "text": "Chia vai, chia bè và theo dõi cả đội trên cùng một bản nhạc."
+      },
+      "export": {
+        "title": "Xuất mọi định dạng",
+        "text": "PDF, MIDI, âm thanh, SVG, MusicXML chỉ với vài cú nhấp."
+      }
+    }
   },
   "workspace": {
     "greeting": {

@@ -34,7 +34,11 @@
     "completed": "Hoàn thành",
     "errorLog": "Log lỗi ({count})",
     "noErrors": "Không có lỗi nào được ghi lại.",
-    "deleteSession": "Xóa phiên"
+    "deleteSession": "Xóa phiên",
+    "statSessions": "Phiên đã tập",
+    "statAccuracy": "Chính xác TB (trang này)",
+    "statTime": "Thời gian (trang này)",
+    "statBest": "Cao nhất (trang này)"
   },
   "stats": {
     "month": "Th{month}",

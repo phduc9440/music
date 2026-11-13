@@ -24,6 +24,28 @@ const STEPS: { icon: IconName; key: 'capture' | 'edit' | 'practice' }[] = [
   { icon: 'play', key: 'practice' },
 ];
 
+const FEATURES: { icon: IconName; key: string; hue: string; wide?: boolean }[] = [
+  { icon: 'upload', key: 'ocr', hue: 'rose', wide: true },
+  { icon: 'edit', key: 'editor', hue: 'indigo' },
+  { icon: 'play', key: 'player', hue: 'teal' },
+  { icon: 'flame', key: 'practice', hue: 'amber', wide: true },
+  { icon: 'users', key: 'teams', hue: 'violet' },
+  { icon: 'share', key: 'export', hue: 'sky' },
+];
+
+const TERMS = [
+  'Allegro',
+  'Adagio',
+  'Crescendo',
+  'Legato',
+  'Staccato',
+  'Fortissimo',
+  'Andante',
+  'Vivace',
+  'Cantabile',
+  'Dolce',
+];
+
 const FAQ_KEYS = ['prepare', 'privacy', 'price', 'mobile'] as const;
 
 /** Khối có tiêu đề, hiện dần khi cuộn tới. */
@@ -38,6 +60,40 @@ function Section({ id, title, lead, children }: { id?: string; title: string; le
       </header>
       {children}
     </section>
+  );
+}
+
+/** Thanh equalizer nhảy theo nhịp (trang trí). */
+function Equalizer() {
+  return (
+    <div className="gh-eq" aria-hidden="true">
+      {Array.from({ length: 40 }, (_, i) => (
+        <span
+          key={i}
+          style={{
+            animationDelay: `${((i * 37) % 17) * -0.13}s`,
+            animationDuration: `${0.9 + ((i * 13) % 7) * 0.12}s`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/** Băng chạy ngang các thuật ngữ âm nhạc. */
+function TermsMarquee() {
+  const row = [...TERMS, ...TERMS];
+  return (
+    <div className="gh-marquee" aria-hidden="true">
+      <div className="gh-marquee__track">
+        {row.concat(row).map((w, i) => (
+          <span key={i}>
+            <Icon name="music" size={14} />
+            {w}
+          </span>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -285,6 +341,8 @@ export default function GuestHome() {
         }}
         onDrop={onDrop}
       >
+        <span className="gh-hero__glow gh-hero__glow--a" aria-hidden="true" />
+        <span className="gh-hero__glow gh-hero__glow--b" aria-hidden="true" />
         <StaffBackdrop />
         <div className="gh-hero__content">
           <p className="gh-hero__eyebrow">{t('home.guest.eyebrow')}</p>
@@ -301,7 +359,9 @@ export default function GuestHome() {
           </div>
           <p className="gh-hero__hint">{dragging ? t('home.guest.dropNow') : t('home.guest.dropHint')}</p>
         </div>
+        <Equalizer />
       </section>
+      <TermsMarquee />
 
       <main className="gh-main">
         {failed && <p className="gh-note">{t('home.guest.loadFailed')}</p>}
@@ -333,6 +393,24 @@ export default function GuestHome() {
             </div>
           </Section>
         )}
+
+        <Section title={t('home.guest.featuresTitle')} lead={t('home.guest.featuresLead')}>
+          <div className="gh-bento">
+            {FEATURES.map((f, i) => (
+              <article
+                key={f.key}
+                className={`gh-tile gh-tile--${f.hue}${f.wide ? ' gh-tile--wide' : ''}`}
+                style={{ transitionDelay: `${i * 70}ms` }}
+              >
+                <span className="gh-tile__icon">
+                  <Icon name={f.icon} size={22} />
+                </span>
+                <h3>{t(`home.guest.features.${f.key}.title`)}</h3>
+                <p>{t(`home.guest.features.${f.key}.text`)}</p>
+              </article>
+            ))}
+          </div>
+        </Section>
 
         <Section title={t('home.guest.howTitle')} lead={t('home.guest.howLead')}>
           <ol className="gh-steps">

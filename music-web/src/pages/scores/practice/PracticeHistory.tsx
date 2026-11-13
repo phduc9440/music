@@ -6,6 +6,8 @@ import { practiceApi } from '../../../services';
 import { getErrorMessage } from '../../../utils/score';
 import type { PageResult, PracticeSessionRecord } from '../../../types';
 import '../../../components/scores/scores.css';
+import './practice-history.css';
+import { Icon } from '../../../components/ui';
 import { useDialog } from '../../../components/ui/dialog-context';
 import { formatDateTime, labelMap, t } from '../../../i18n/core';
 
@@ -20,6 +22,26 @@ const formatDuration = (seconds?: number | null) => {
 };
 const formatDate = (iso?: string | null) => (iso ? formatDateTime(iso) : '—');
 const formatPct = (v?: number | null) => (v == null ? '—' : `${v.toFixed(1)}%`);
+const tone = (v?: number | null) => (v == null ? 'none' : v >= 85 ? 'good' : v >= 60 ? 'mid' : 'low');
+const avg = (xs: (number | null | undefined)[]) => {
+  const v = xs.filter((x): x is number => x != null);
+  return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
+};
+
+/** Thanh tiến độ phần trăm, màu theo mức: tốt / khá / cần luyện. */
+function Meter({ label, value }: { label: string; value?: number | null }) {
+  return (
+    <div className="ph-meter" data-tone={tone(value)}>
+      <div className="ph-meter__row">
+        <span>{label}</span>
+        <strong>{formatPct(value)}</strong>
+      </div>
+      <div className="ph-meter__bar">
+        <i style={{ width: `${Math.max(0, Math.min(100, value ?? 0))}%` }} />
+      </div>
+    </div>
+  );
+}
 
 /** Trang /practice-history: lịch sử phiên tập của tôi, xem log lỗi chi tiết và xóa phiên (mục 3.11). */
 export default function PracticeHistory() {
@@ -75,51 +97,83 @@ export default function PracticeHistory() {
           </div>
         </header>
 
+        {result && result.content.length > 0 && (
+          <div className="ph-stats">
+            <div className="ph-stat ph-stat--rose">
+              <Icon name="activity" size={20} />
+              <strong>{result.totalElements}</strong>
+              <span>{t('practice.history.statSessions')}</span>
+            </div>
+            <div className="ph-stat ph-stat--teal">
+              <Icon name="check" size={20} />
+              <strong>{formatPct(avg(result.content.map((s) => s.accuracyPct)))}</strong>
+              <span>{t('practice.history.statAccuracy')}</span>
+            </div>
+            <div className="ph-stat ph-stat--indigo">
+              <Icon name="clock" size={20} />
+              <strong>{formatDuration(result.content.reduce((a, s) => a + (s.durationSeconds ?? 0), 0))}</strong>
+              <span>{t('practice.history.statTime')}</span>
+            </div>
+            <div className="ph-stat ph-stat--amber">
+              <Icon name="star" size={20} />
+              <strong>
+                {formatPct(
+                  result.content.reduce<number | null>(
+                    (m, s) => (s.accuracyPct != null && (m == null || s.accuracyPct > m) ? s.accuracyPct : m),
+                    null,
+                  ),
+                )}
+              </strong>
+              <span>{t('practice.history.statBest')}</span>
+            </div>
+          </div>
+        )}
+
         {result && result.content.length === 0 && (
-          <div className="sc-empty">
+          <div className="sc-empty ph-empty">
+            <span className="ph-empty__icon">
+              <Icon name="music" size={30} />
+            </span>
             <h3>{t('practice.history.emptyTitle')}</h3>
             <p>{t('practice.history.emptyHint')}</p>
           </div>
         )}
 
         {result && result.content.length > 0 && (
-          <div className="table-responsive">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>{t('practice.history.started')}</th>
-                  <th>{t('practice.history.score')}</th>
-                  <th>{t('practice.history.mode')}</th>
-                  <th>{t('practice.history.duration')}</th>
-                  <th>{t('practice.history.accuracy')}</th>
-                  <th>{t('practice.history.timing')}</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {result.content.map((s) => (
-                  <tr key={s.id}>
-                    <td>{formatDate(s.startedAt)}</td>
-                    <td>{s.scoreTitle}</td>
-                    <td>{MODE_LABELS[s.mode] ?? s.mode}</td>
-                    <td>{formatDuration(s.durationSeconds)}</td>
-                    <td>{formatPct(s.accuracyPct)}</td>
-                    <td>{formatPct(s.timingAccuracyPct)}</td>
-                    <td>
-                      <div className="d-flex gap-2">
-                        <button className="sc-btn sc-btn--sm" onClick={() => openDetail(s.id)}>
-                          {t('practice.history.details')}
-                        </button>
-                        <button className="sc-btn sc-btn--sm sc-btn--danger" onClick={() => remove(s)}>
-                          {t('common.delete')}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ul className="ph-list">
+            {result.content.map((s) => (
+              <li key={s.id} className="ph-item" data-tone={tone(s.accuracyPct)}>
+                <div className="ph-item__main">
+                  <strong className="ph-item__title" title={s.scoreTitle}>
+                    {s.scoreTitle}
+                  </strong>
+                  <span className="ph-item__meta">
+                    <span className={`ph-mode ph-mode--${s.mode}`}>{MODE_LABELS[s.mode] ?? s.mode}</span>
+                    <span>{formatDate(s.startedAt)}</span>
+                    <span>
+                      <Icon name="clock" size={13} /> {formatDuration(s.durationSeconds)}
+                    </span>
+                  </span>
+                </div>
+                <div className="ph-item__meters">
+                  <Meter label={t('practice.history.accuracy')} value={s.accuracyPct} />
+                  <Meter label={t('practice.history.timing')} value={s.timingAccuracyPct} />
+                </div>
+                <div className="ph-item__actions">
+                  <button className="sc-btn sc-btn--sm" onClick={() => openDetail(s.id)}>
+                    {t('practice.history.details')}
+                  </button>
+                  <button
+                    className="sc-btn sc-btn--sm sc-btn--danger"
+                    onClick={() => remove(s)}
+                    aria-label={t('common.delete')}
+                  >
+                    <Icon name="trash" size={14} />
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
         )}
 
         {result && (

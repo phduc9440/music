@@ -537,6 +537,8 @@
     "shareTitle": "Sharing",
     "shareHint": "Invite people by email and set view, review or edit access.",
     "dangerTitle": "Delete this score",
-    "dangerHint": "Moves the score to the trash; you can restore it within 30 days."
+    "dangerHint": "Moves the score to the trash; you can restore it within 30 days.",
+    "publishTitle": "Visibility",
+    "publishHint": "Make it public so everyone can find it (requires admin approval), or keep it private."
   }
 }
