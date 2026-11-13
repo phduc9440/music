@@ -87,13 +87,11 @@ public class TeamPermissionStore {
     /** Ghi quyền của một vai trò (đã thêm quyền phải có kèm); trả về bộ quyền đã lưu. */
     public Set<TeamPermission> save(Team team, TeamRole role, Set<TeamPermission> permissions) {
         Set<TeamPermission> normalized = TeamPermission.withRequired(permissions);
-        TeamMember row = repository
-                .findPermission(team.getId(), role)
-                .orElseGet(() -> TeamMember.builder()
-                        .kind(TeamMemberKind.PERMISSION)
-                        .team(team)
-                        .role(role)
-                        .build());
+        TeamMember row = repository.findPermission(team.getId(), role).orElseGet(() -> TeamMember.builder()
+                .kind(TeamMemberKind.PERMISSION)
+                .team(team)
+                .role(role)
+                .build());
         List<String> names = new ArrayList<>();
         // Ghi theo thứ tự khai báo để dễ đọc khi xem thẳng trong DB
         for (TeamPermission p : TeamPermission.values()) {
@@ -124,7 +122,10 @@ public class TeamPermissionStore {
                 }
             }
         } catch (JsonProcessingException e) {
-            log.warn("Bảng quyền team {} vai trò {} không đọc được, dùng mặc định", row.getTeam().getId(), row.getRole());
+            log.warn(
+                    "Bảng quyền team {} vai trò {} không đọc được, dùng mặc định",
+                    row.getTeam().getId(),
+                    row.getRole());
             return TeamPermission.defaultsOf(row.getRole());
         }
         return result;

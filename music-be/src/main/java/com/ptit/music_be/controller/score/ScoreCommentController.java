@@ -82,7 +82,8 @@ public class ScoreCommentController {
 
     @PatchMapping("/comments/{commentId}")
     @Operation(
-            summary = "Edit content / mentions (author) or mark resolved / reopen (author, owner, EDIT); returns the thread",
+            summary =
+                    "Edit content / mentions (author) or mark resolved / reopen (author, owner, EDIT); returns the thread",
             description = "Errors: 3901 not found, 3905 not allowed",
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<ScoreCommentResponse> update(

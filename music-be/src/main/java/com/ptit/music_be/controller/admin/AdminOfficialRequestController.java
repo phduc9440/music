@@ -1,7 +1,7 @@
 package com.ptit.music_be.controller.admin;
 
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -30,7 +30,8 @@ public class AdminOfficialRequestController {
 
     @GetMapping
     @Operation(
-            summary = "Requests to add scores to the curated library (newest first); status: PENDING|ACCEPTED|DECLINED|CANCELED",
+            summary =
+                    "Requests to add scores to the curated library (newest first); status: PENDING|ACCEPTED|DECLINED|CANCELED",
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<PageResponse<OfficialRequestResponse>> list(
             @RequestParam(defaultValue = "0") int page,

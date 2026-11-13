@@ -17,7 +17,8 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Stri
     boolean existsByPlanId(String planId);
 
     /** Gói đang hiệu lực của nhiều thành viên một lần (danh sách thành viên khu quản trị). */
-    @Query("select s from Subscription s where s.member.id in :memberIds and s.status = 'ACTIVE' and s.expiresAt > :now")
+    @Query(
+            "select s from Subscription s where s.member.id in :memberIds and s.status = 'ACTIVE' and s.expiresAt > :now")
     List<Subscription> findCurrentOfMembers(
             @Param("memberIds") java.util.Collection<String> memberIds, @Param("now") LocalDateTime now);
 

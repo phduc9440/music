@@ -76,6 +76,7 @@ public class AdminTeamServiceImpl implements AdminTeamService {
             + " (select max(a.createdAt) from TeamMember a where a.team = t and a.kind = 'ACTIVITY'),"
             + " t.deletedAt, t.deletedByAdmin, t.deletedReason"
             + " from Team t join t.createdBy c";
+
     static final String KEYWORD_FILTER = " where (:kw is null or lower(t.name) like :kw or lower(c.email) like :kw"
             + " or lower(c.fullName) like :kw)";
     static final String ACTIVE_FILTER = " and t.deletedAt is null";
@@ -131,15 +132,18 @@ public class AdminTeamServiceImpl implements AdminTeamService {
         int safePage = Math.max(page, 0);
         String kw = keyword == null || keyword.isBlank()
                 ? null
-                : "%" + keyword.trim().toLowerCase(Locale.ROOT).substring(0, Math.min(keyword.trim().length(), MAX_KEYWORD))
+                : "%"
+                        + keyword.trim()
+                                .toLowerCase(Locale.ROOT)
+                                .substring(0, Math.min(keyword.trim().length(), MAX_KEYWORD))
                         + "%";
         String state = deleted ? DELETED_FILTER : ACTIVE_FILTER;
         String order = deleted ? " order by t.deletedAt desc, t.id" : " order by t.createdAt desc, t.id";
-        long total = em.createQuery("select count(t) from Team t join t.createdBy c" + KEYWORD_FILTER + state, Long.class)
+        long total = em.createQuery(
+                        "select count(t) from Team t join t.createdBy c" + KEYWORD_FILTER + state, Long.class)
                 .setParameter("kw", kw)
                 .getSingleResult();
-        List<Object[]> rows = em.createQuery(
-                        ROW_SELECT + KEYWORD_FILTER + state + order, Object[].class)
+        List<Object[]> rows = em.createQuery(ROW_SELECT + KEYWORD_FILTER + state + order, Object[].class)
                 .setParameter("kw", kw)
                 .setFirstResult(safePage * safeSize)
                 .setMaxResults(safeSize)
@@ -168,10 +172,11 @@ public class AdminTeamServiceImpl implements AdminTeamService {
         List<Show> shows = showRepository.findByTeamOrdered(team.getId());
         Map<String, long[]> progress = new HashMap<>();
         if (!shows.isEmpty()) {
-            for (Object[] r : showItemRepository.progressByShows(shows.stream().map(Show::getId).toList())) {
-                progress.put((String) r[0], new long[] {
-                    ((Number) r[1]).longValue(), r[2] == null ? 0 : ((Number) r[2]).longValue()
-                });
+            for (Object[] r : showItemRepository.progressByShows(
+                    shows.stream().map(Show::getId).toList())) {
+                progress.put(
+                        (String) r[0],
+                        new long[] {((Number) r[1]).longValue(), r[2] == null ? 0 : ((Number) r[2]).longValue()});
             }
         }
         return AdminTeamDetailResponse.builder()

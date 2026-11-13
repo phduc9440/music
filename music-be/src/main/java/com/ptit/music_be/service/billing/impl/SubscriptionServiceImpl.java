@@ -48,6 +48,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     public static final String PRO = "PRO";
     /** Mã gói ảo của SUPER_ADMIN (không lưu trong bảng plans). */
     public static final String UNLIMITED = "UNLIMITED";
+
     static final String ROLE_SUPER_ADMIN = "SUPER_ADMIN";
     static final String ROLE_ADMIN = "ADMIN";
     static final int MAX_GRANT_MONTHS = 120;
@@ -124,8 +125,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         }
         response.setLimits(mergedLimits(e));
         response.setSubscriptions(held.stream()
-                .sorted(java.util.Comparator.comparing(
-                        (Subscription s) -> s.getPlan() != e.primary()))
+                .sorted(java.util.Comparator.comparing((Subscription s) -> s.getPlan() != e.primary()))
                 .map(s -> HeldSubscription.builder()
                         .plan(toPlanResponse(s.getPlan()))
                         .source(s.getSource().name())
@@ -227,7 +227,8 @@ public class SubscriptionServiceImpl implements SubscriptionService {
      */
     private record Effective(List<Subscription> subs, Plan rolePro, Plan primary) {
         List<Plan> plans() {
-            List<Plan> all = new java.util.ArrayList<>(subs.stream().map(Subscription::getPlan).toList());
+            List<Plan> all = new java.util.ArrayList<>(
+                    subs.stream().map(Subscription::getPlan).toList());
             if (rolePro != null) {
                 all.add(rolePro);
             }
@@ -298,21 +299,25 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
     @Override
     @Transactional(readOnly = true)
-    public java.util.Map<String, MemberPlanSummary> plansOf(java.util.Map<String, java.util.Set<String>> rolesByMember) {
+    public java.util.Map<String, MemberPlanSummary> plansOf(
+            java.util.Map<String, java.util.Set<String>> rolesByMember) {
         java.util.Map<String, MemberPlanSummary> result = new java.util.HashMap<>();
         if (rolesByMember.isEmpty()) {
             return result;
         }
         LocalDateTime now = LocalDateTime.now();
-        // Gói còn hạn (hạn muộn trước, để mỗi nhóm giữ gói hạn muộn nhất) và lệnh cấm của mỗi người: hai truy vấn cho cả trang
+        // Gói còn hạn (hạn muộn trước, để mỗi nhóm giữ gói hạn muộn nhất) và lệnh cấm của mỗi người: hai truy vấn cho
+        // cả trang
         java.util.Map<String, List<Subscription>> paid = new java.util.HashMap<>();
         subscriptionRepository.findCurrentOfMembers(rolesByMember.keySet(), now).stream()
-                .sorted(java.util.Comparator.comparing(Subscription::getExpiresAt).reversed())
+                .sorted(java.util.Comparator.comparing(Subscription::getExpiresAt)
+                        .reversed())
                 .forEach(s -> paid.computeIfAbsent(s.getMember().getId(), k -> new java.util.ArrayList<>())
                         .add(s));
         java.util.Map<String, List<PlanSanction>> bans = new java.util.HashMap<>();
         for (PlanSanction s : sanctionRepository.findActiveBansOfMembers(rolesByMember.keySet(), now)) {
-            bans.computeIfAbsent(s.getMember().getId(), k -> new java.util.ArrayList<>()).add(s);
+            bans.computeIfAbsent(s.getMember().getId(), k -> new java.util.ArrayList<>())
+                    .add(s);
         }
         Plan[] pro = {null};
         java.util.function.Supplier<Plan> proOnce = () -> {
@@ -332,8 +337,8 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             }
             List<PlanSanction> memberBans = bans.getOrDefault(entry.getKey(), List.of());
             String grant = roles.contains(ROLE_ADMIN) ? ROLE_ADMIN : null;
-            Effective e = effective(
-                    grant, paid.getOrDefault(entry.getKey(), List.of()), bannedPlanIds(memberBans), proOnce);
+            Effective e =
+                    effective(grant, paid.getOrDefault(entry.getKey(), List.of()), bannedPlanIds(memberBans), proOnce);
             List<PlanBanInfo> infos = banInfos(memberBans);
             MemberPlanSummary summary;
             Subscription primarySub = e.primary() == null ? null : e.subOf(e.primary());
@@ -690,7 +695,8 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             throw new AppException(ErrorCode.SUBSCRIPTION_MONTHS_INVALID);
         }
         Plan plan = planRepository.findByCode(planCode).orElseThrow(() -> new AppException(ErrorCode.PLAN_NOT_EXISTED));
-        // Cấp Free hàng loạt không có nghĩa (muốn bỏ gói thì dùng Hủy gói từng người); gói cá nhân và gói team đều cấp được
+        // Cấp Free hàng loạt không có nghĩa (muốn bỏ gói thì dùng Hủy gói từng người); gói cá nhân và gói team đều cấp
+        // được
         if (FREE.equals(plan.getCode())) {
             throw new AppException(ErrorCode.PLAN_NOT_GRANTABLE);
         }
@@ -717,8 +723,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         }
         LocalDateTime now = LocalDateTime.now();
         List<Subscription> current = subscriptionRepository.findCurrent(memberId, now);
-        boolean hasPersonal =
-                current.stream().anyMatch(s -> Plan.PERSONAL.equals(audienceOf(s.getPlan())));
+        boolean hasPersonal = current.stream().anyMatch(s -> Plan.PERSONAL.equals(audienceOf(s.getPlan())));
         if (ROLE_ADMIN.equals(grant) && PRO.equals(plan.getCode()) && !hasPersonal) {
             // ADMIN đang có Pro không thời hạn: cấp Pro không thêm gì
             return new BulkGrantResult(memberId, "SKIPPED", ErrorCode.PAYMENT_NOT_NEEDED.name(), null);
@@ -758,8 +763,8 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         LocalDateTime now = LocalDateTime.now();
         int sent = 0;
         for (int days : REMIND_DAYS) {
-            List<Subscription> expiring = subscriptionRepository
-                    .findByStatusAndExpiresAtGreaterThanAndExpiresAtLessThanEqual(
+            List<Subscription> expiring =
+                    subscriptionRepository.findByStatusAndExpiresAtGreaterThanAndExpiresAtLessThanEqual(
                             SubscriptionStatus.ACTIVE, now.plusDays(days - 1L), now.plusDays(days));
             for (Subscription s : expiring) {
                 String date = s.getExpiresAt().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));

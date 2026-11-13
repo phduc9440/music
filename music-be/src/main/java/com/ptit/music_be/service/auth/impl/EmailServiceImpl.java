@@ -109,8 +109,7 @@ public class EmailServiceImpl implements EmailService {
 
     @Override
     @Async
-    public void sendTeamInvitationEmail(
-            String to, String teamName, String inviterName, String roleLabel, String link) {
+    public void sendTeamInvitationEmail(String to, String teamName, String inviterName, String roleLabel, String link) {
         String safeLink = escape(link);
         send(
                 to,

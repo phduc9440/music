@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.ptit.music_be.dto.enums.team.TeamPermission;
 import com.ptit.music_be.dto.enums.team.TeamRole;
+
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -22,10 +23,12 @@ public class TeamResponse {
     TeamRole myRole;
     /** Quyền của tôi theo bảng quyền của team (chủ nhóm: mọi quyền); web dùng để hiện / ẩn nút. */
     List<TeamPermission> myPermissions;
+
     long memberCount;
     long scoreCount;
     /** Số show đang chuẩn bị. */
     long preparingShows;
+
     String createdByName;
     LocalDateTime createdAt;
     /** Số thành viên tối đa theo gói của người tạo; null = không giới hạn. */

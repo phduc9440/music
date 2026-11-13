@@ -48,13 +48,17 @@ class AdminDashboardServiceImplTest {
                 r.getScoresByVisibility().stream().mapToLong(k -> k.getCount()).sum());
         assertEquals(30, r.getRevenueByDay().size());
         assertNotNull(r.getBilling());
-        assertEquals(r.getBilling().getRevenue(), r.getRevenueByDay().stream().mapToLong(d -> d.getAmount()).sum());
+        assertEquals(
+                r.getBilling().getRevenue(),
+                r.getRevenueByDay().stream().mapToLong(d -> d.getAmount()).sum());
         assertEquals(
                 r.getBilling().getActiveSubscriptions(),
                 r.getSubscriptionsByPlan().stream().mapToLong(k -> k.getCount()).sum());
         assertEquals(
                 r.getBilling().getActiveSubscriptions(),
-                r.getSubscriptionsBySource().stream().mapToLong(k -> k.getCount()).sum());
+                r.getSubscriptionsBySource().stream()
+                        .mapToLong(k -> k.getCount())
+                        .sum());
         assertTrue(r.getBilling().getSubscribedMembers() <= r.getBilling().getActiveSubscriptions());
         assertEquals(7, service.getDashboard(1).getDays());
     }

@@ -60,7 +60,8 @@ class SubscriptionServiceImplTest {
 
     private final Member member = Member.builder().id("m").build();
     private final Plan pro = Plan.builder().id("pro").code("PRO").limits("{}").build();
-    private final Plan team = Plan.builder().id("team").code("TEAM").limits("{}").build();
+    private final Plan team =
+            Plan.builder().id("team").code("TEAM").limits("{}").build();
 
     private Subscription current(Plan plan, LocalDateTime expires) {
         return Subscription.builder()
@@ -124,7 +125,8 @@ class SubscriptionServiceImplTest {
 
     @Test
     void revokeIgnoresDifferentPlan() {
-        when(subs.findCurrent(any(), any())).thenReturn(List.of(current(team, LocalDateTime.now().plusDays(5))));
+        when(subs.findCurrent(any(), any()))
+                .thenReturn(List.of(current(team, LocalDateTime.now().plusDays(5))));
 
         service.revoke("m", pro, Period.ofMonths(1));
 
@@ -174,8 +176,7 @@ class SubscriptionServiceImplTest {
                 });
 
         assertEquals(2, service.remindExpiring());
-        verify(notifications, times(2))
-                .notify(any(), any(), eq(NotificationType.PLAN_EXPIRING), any(), any(), any());
+        verify(notifications, times(2)).notify(any(), any(), eq(NotificationType.PLAN_EXPIRING), any(), any(), any());
     }
 
     @Test
@@ -190,8 +191,14 @@ class SubscriptionServiceImplTest {
 
     @Test
     void adminGetsProForeverButKeepsAHigherPaidPlan() {
-        Plan proPlan = Plan.builder().id("pro").code("PRO").sortOrder(2).limits("{}").build();
-        Plan premium = Plan.builder().id("premium").code("PREMIUM").sortOrder(3).limits("{}").build();
+        Plan proPlan =
+                Plan.builder().id("pro").code("PRO").sortOrder(2).limits("{}").build();
+        Plan premium = Plan.builder()
+                .id("premium")
+                .code("PREMIUM")
+                .sortOrder(3)
+                .limits("{}")
+                .build();
         when(memberRepo.roleNamesOf("m")).thenReturn(List.of("ADMIN"));
         when(plans.findByCode("PRO")).thenReturn(Optional.of(proPlan));
         when(subs.findCurrent(eq("m"), any())).thenReturn(List.of());
@@ -205,7 +212,8 @@ class SubscriptionServiceImplTest {
 
     @Test
     void normalUserWithoutSubscriptionIsFree() {
-        Plan free = Plan.builder().id("free").code("FREE").sortOrder(1).limits("{}").build();
+        Plan free =
+                Plan.builder().id("free").code("FREE").sortOrder(1).limits("{}").build();
         when(memberRepo.roleNamesOf("m")).thenReturn(List.of("USER"));
         when(plans.findByCode("FREE")).thenReturn(Optional.of(free));
         when(subs.findCurrent(eq("m"), any())).thenReturn(List.of());
@@ -215,7 +223,12 @@ class SubscriptionServiceImplTest {
 
     @Test
     void grantGivesTeamPlansLikePersonalOnes() {
-        Plan teamPro = Plan.builder().id("tp").code("TEAM_PRO").audience(Plan.TEAM).limits("{}").build();
+        Plan teamPro = Plan.builder()
+                .id("tp")
+                .code("TEAM_PRO")
+                .audience(Plan.TEAM)
+                .limits("{}")
+                .build();
         when(memberRepo.findById("m")).thenReturn(Optional.of(member));
         when(plans.findByCode("TEAM_PRO")).thenReturn(Optional.of(teamPro));
         Subscription granted = Subscription.builder()
@@ -249,9 +262,27 @@ class SubscriptionServiceImplTest {
 
     @Test
     void plansOfSummarisesEachMemberInOneQuery() {
-        Plan free = Plan.builder().id("free").code("FREE").name("Free").sortOrder(1).limits("{}").build();
-        Plan proPlan = Plan.builder().id("pro").code("PRO").name("Pro").sortOrder(2).limits("{}").build();
-        Plan premium = Plan.builder().id("premium").code("PREMIUM").name("Premium").sortOrder(3).limits("{}").build();
+        Plan free = Plan.builder()
+                .id("free")
+                .code("FREE")
+                .name("Free")
+                .sortOrder(1)
+                .limits("{}")
+                .build();
+        Plan proPlan = Plan.builder()
+                .id("pro")
+                .code("PRO")
+                .name("Pro")
+                .sortOrder(2)
+                .limits("{}")
+                .build();
+        Plan premium = Plan.builder()
+                .id("premium")
+                .code("PREMIUM")
+                .name("Premium")
+                .sortOrder(3)
+                .limits("{}")
+                .build();
         Member buyer = Member.builder().id("buyer").build();
         Subscription bought = Subscription.builder()
                 .member(buyer)
@@ -281,14 +312,21 @@ class SubscriptionServiceImplTest {
 
     @Test
     void grantManyGrantsRenewsAndSkipsPerMember() {
-        Plan premium = Plan.builder().id("premium").code("PREMIUM").name("Premium").sortOrder(3).limits("{}").build();
+        Plan premium = Plan.builder()
+                .id("premium")
+                .code("PREMIUM")
+                .name("Premium")
+                .sortOrder(3)
+                .limits("{}")
+                .build();
         Member newbie = Member.builder().id("newbie").build();
         Member loyal = Member.builder().id("loyal").build();
         Subscription loyalSub = current(premium, LocalDateTime.of(2027, 3, 31, 9, 0));
         when(plans.findByCode("PREMIUM")).thenReturn(Optional.of(premium));
         when(memberRepo.findById("newbie")).thenReturn(Optional.of(newbie));
         when(memberRepo.findById("loyal")).thenReturn(Optional.of(loyal));
-        when(memberRepo.findById("boss")).thenReturn(Optional.of(Member.builder().id("boss").build()));
+        when(memberRepo.findById("boss"))
+                .thenReturn(Optional.of(Member.builder().id("boss").build()));
         when(memberRepo.findById("ghost")).thenReturn(Optional.empty());
         when(memberRepo.roleNamesOf("boss")).thenReturn(List.of("ADMIN", "SUPER_ADMIN"));
         when(subs.findCurrent(eq("newbie"), any())).thenReturn(List.of());
@@ -320,19 +358,28 @@ class SubscriptionServiceImplTest {
     @Test
     void revokeCancelsPaidPlanRecordsItAndNotifies() {
         loginSuper();
-        Plan premium = Plan.builder().id("premium").code("PREMIUM").name("Premium").sortOrder(4).limits("{}").build();
+        Plan premium = Plan.builder()
+                .id("premium")
+                .code("PREMIUM")
+                .name("Premium")
+                .sortOrder(4)
+                .limits("{}")
+                .build();
         Member buyer = Member.builder().id("buyer").build();
         Subscription sub = current(premium, LocalDateTime.now().plusMonths(3));
         when(memberRepo.findById("buyer")).thenReturn(Optional.of(buyer));
-        when(memberRepo.findById("freeUser")).thenReturn(Optional.of(Member.builder().id("freeUser").build()));
-        when(memberRepo.findById("boss")).thenReturn(Optional.of(Member.builder().id("boss").build()));
+        when(memberRepo.findById("freeUser"))
+                .thenReturn(Optional.of(Member.builder().id("freeUser").build()));
+        when(memberRepo.findById("boss"))
+                .thenReturn(Optional.of(Member.builder().id("boss").build()));
         when(memberRepo.roleNamesOf("boss")).thenReturn(List.of("ADMIN", "SUPER_ADMIN"));
         when(subs.findCurrent(eq("buyer"), any())).thenReturn(List.of(sub));
         when(subs.findCurrent(eq("freeUser"), any())).thenReturn(List.of());
 
         var results = service.revokePlans(List.of("buyer", "freeUser", "boss", "ghost"), " spam ");
 
-        assertEquals(List.of("REVOKED", "SKIPPED", "SKIPPED", "FAILED"),
+        assertEquals(
+                List.of("REVOKED", "SKIPPED", "SKIPPED", "FAILED"),
                 results.stream().map(r -> r.getStatus()).toList());
         assertEquals(SubscriptionStatus.CANCELED, sub.getStatus());
         org.mockito.ArgumentCaptor<com.ptit.music_be.entity.PlanSanction> saved =
@@ -346,7 +393,13 @@ class SubscriptionServiceImplTest {
     }
 
     private static Plan planOf(String id, String code, int order) {
-        return Plan.builder().id(id).code(code).name(code).sortOrder(order).limits("{}").build();
+        return Plan.builder()
+                .id(id)
+                .code(code)
+                .name(code)
+                .sortOrder(order)
+                .limits("{}")
+                .build();
     }
 
     private static com.ptit.music_be.entity.PlanSanction banOf(String memberId, Plan plan, LocalDateTime until) {
@@ -397,8 +450,10 @@ class SubscriptionServiceImplTest {
         when(plans.findByCode("PRO")).thenReturn(Optional.of(proPlan));
         Member user = Member.builder().id("user").build();
         when(memberRepo.findById("user")).thenReturn(Optional.of(user));
-        when(memberRepo.findById("freeUser")).thenReturn(Optional.of(Member.builder().id("freeUser").build()));
-        when(memberRepo.findById("boss")).thenReturn(Optional.of(Member.builder().id("boss").build()));
+        when(memberRepo.findById("freeUser"))
+                .thenReturn(Optional.of(Member.builder().id("freeUser").build()));
+        when(memberRepo.findById("boss"))
+                .thenReturn(Optional.of(Member.builder().id("boss").build()));
         when(memberRepo.roleNamesOf("boss")).thenReturn(List.of("ADMIN", "SUPER_ADMIN"));
         when(subs.findCurrent(eq("user"), any()))
                 .thenReturn(List.of(current(premium, LocalDateTime.now().plusMonths(2))));
@@ -409,7 +464,9 @@ class SubscriptionServiceImplTest {
         // Không chọn gói: cấm gói đang dùng. Lệnh cũ cùng gói bị thay; người dùng Free và SUPER_ADMIN bỏ qua
         when(sanctions.findActiveBans(eq("user"), any())).thenReturn(List.of());
         var results = service.banPlans(List.of("user", "freeUser", "boss"), 3, null, null);
-        assertEquals(List.of("BANNED", "SKIPPED", "SKIPPED"), results.stream().map(r -> r.getStatus()).toList());
+        assertEquals(
+                List.of("BANNED", "SKIPPED", "SKIPPED"),
+                results.stream().map(r -> r.getStatus()).toList());
         org.mockito.ArgumentCaptor<com.ptit.music_be.entity.PlanSanction> saved =
                 org.mockito.ArgumentCaptor.forClass(com.ptit.music_be.entity.PlanSanction.class);
         verify(sanctions).save(saved.capture());
@@ -419,7 +476,11 @@ class SubscriptionServiceImplTest {
         // Chọn gói: cấm đúng gói đó, lệnh cũ cùng gói được thay
         when(plans.findByCode("PREMIUM")).thenReturn(Optional.of(premium));
         when(sanctions.findActiveBans(eq("user"), any())).thenReturn(List.of(old));
-        assertEquals("BANNED", service.banPlans(List.of("user"), 1, "spam", "premium").getFirst().getStatus());
+        assertEquals(
+                "BANNED",
+                service.banPlans(List.of("user"), 1, "spam", "premium")
+                        .getFirst()
+                        .getStatus());
         assertNotNull(old.getLiftedAt());
 
         AppException e = assertThrows(AppException.class, () -> service.banPlans(List.of("user"), 0, null, null));
@@ -447,10 +508,13 @@ class SubscriptionServiceImplTest {
 
         AppException e = assertThrows(AppException.class, () -> service.grant("user", "PREMIUM", 1));
         assertEquals(ErrorCode.PLAN_BANNED, e.getErrorCode());
-        assertEquals("SKIPPED", service.grantMany(List.of("user"), "PREMIUM", 1).getFirst().getStatus());
-        assertEquals("GRANTED", service.grantMany(List.of("user"), "PRO", 1).getFirst().getStatus());
+        assertEquals(
+                "SKIPPED",
+                service.grantMany(List.of("user"), "PREMIUM", 1).getFirst().getStatus());
+        assertEquals(
+                "GRANTED",
+                service.grantMany(List.of("user"), "PRO", 1).getFirst().getStatus());
     }
-
 
     @Test
     void chosenPlanIsOnlyBannedForMembersWhoHoldIt() {
@@ -461,9 +525,12 @@ class SubscriptionServiceImplTest {
         when(plans.findByCode("FREE")).thenReturn(Optional.of(free));
         when(plans.findByCode("PRO")).thenReturn(Optional.of(proPlan));
         when(plans.findByCode("PREMIUM")).thenReturn(Optional.of(premium));
-        when(memberRepo.findById("buyer")).thenReturn(Optional.of(Member.builder().id("buyer").build()));
-        when(memberRepo.findById("proUser")).thenReturn(Optional.of(Member.builder().id("proUser").build()));
-        when(memberRepo.findById("mod")).thenReturn(Optional.of(Member.builder().id("mod").build()));
+        when(memberRepo.findById("buyer"))
+                .thenReturn(Optional.of(Member.builder().id("buyer").build()));
+        when(memberRepo.findById("proUser"))
+                .thenReturn(Optional.of(Member.builder().id("proUser").build()));
+        when(memberRepo.findById("mod"))
+                .thenReturn(Optional.of(Member.builder().id("mod").build()));
         when(memberRepo.roleNamesOf("mod")).thenReturn(List.of("ADMIN"));
         when(subs.findCurrent(eq("buyer"), any()))
                 .thenReturn(List.of(current(premium, LocalDateTime.now().plusMonths(1))));
@@ -475,20 +542,37 @@ class SubscriptionServiceImplTest {
 
         // Cấm Premium: người mua Premium và ADMIN có Premium bị cấm; người dùng Pro không có Premium thì bỏ qua
         var premiumBan = service.banPlans(List.of("buyer", "proUser", "mod"), 1, null, "PREMIUM");
-        assertEquals(List.of("BANNED", "SKIPPED", "BANNED"), premiumBan.stream().map(r -> r.getStatus()).toList());
+        assertEquals(
+                List.of("BANNED", "SKIPPED", "BANNED"),
+                premiumBan.stream().map(r -> r.getStatus()).toList());
 
         // Cấm Pro: ADMIN có Pro theo vai trò nên bị cấm; người chỉ có Premium thì bỏ qua
         var proBan = service.banPlans(List.of("buyer", "mod"), 1, null, "PRO");
-        assertEquals(List.of("SKIPPED", "BANNED"), proBan.stream().map(r -> r.getStatus()).toList());
+        assertEquals(
+                List.of("SKIPPED", "BANNED"),
+                proBan.stream().map(r -> r.getStatus()).toList());
     }
 
-
     private static Plan personalPlan(String code, int order, String limits) {
-        return Plan.builder().id(code).code(code).name(code).audience(Plan.PERSONAL).sortOrder(order).limits(limits).build();
+        return Plan.builder()
+                .id(code)
+                .code(code)
+                .name(code)
+                .audience(Plan.PERSONAL)
+                .sortOrder(order)
+                .limits(limits)
+                .build();
     }
 
     private static Plan teamPlan(String code, int order, String limits) {
-        return Plan.builder().id(code).code(code).name(code).audience(Plan.TEAM).sortOrder(order).limits(limits).build();
+        return Plan.builder()
+                .id(code)
+                .code(code)
+                .name(code)
+                .audience(Plan.TEAM)
+                .sortOrder(order)
+                .limits(limits)
+                .build();
     }
 
     private final Plan ultimate = personalPlan(

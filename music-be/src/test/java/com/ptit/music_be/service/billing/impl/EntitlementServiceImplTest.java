@@ -34,8 +34,7 @@ class EntitlementServiceImplTest {
     private final SubscriptionService subscriptions = mock(SubscriptionService.class);
     private final AiTaskRepository tasks = mock(AiTaskRepository.class);
     private final PlanRepository plans = mock(PlanRepository.class);
-    private final EntitlementServiceImpl service =
-            new EntitlementServiceImpl(subscriptions, tasks, plans);
+    private final EntitlementServiceImpl service = new EntitlementServiceImpl(subscriptions, tasks, plans);
     private final PlanLimitsParser parser = new PlanLimitsParser(new ObjectMapper());
 
     private final Plan free = plan("FREE", 1, "{\"omrPagesPerMonth\":20}");
@@ -69,8 +68,7 @@ class EntitlementServiceImplTest {
     void rejectsOverLimitWithUpgradeHint() {
         use(free);
 
-        AppException e =
-                assertThrows(AppException.class, () -> service.checkAvailable("m", UsageMetric.OMR_PAGES, 3));
+        AppException e = assertThrows(AppException.class, () -> service.checkAvailable("m", UsageMetric.OMR_PAGES, 3));
 
         assertEquals(ErrorCode.PLAN_LIMIT_REACHED, e.getErrorCode());
         PlanLimitPayload payload = (PlanLimitPayload) e.getPayload();
@@ -91,8 +89,7 @@ class EntitlementServiceImplTest {
         Plan capped = plan("PRO", 2, "{\"omrPagesPerMonth\":10}");
         use(capped);
 
-        AppException e =
-                assertThrows(AppException.class, () -> service.checkAvailable("m", UsageMetric.OMR_PAGES, 1));
+        AppException e = assertThrows(AppException.class, () -> service.checkAvailable("m", UsageMetric.OMR_PAGES, 1));
 
         assertNull(((PlanLimitPayload) e.getPayload()).upgradeTo());
     }

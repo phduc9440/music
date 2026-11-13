@@ -49,7 +49,8 @@ public class EntitlementServiceImpl implements EntitlementService {
         int used = usedThisMonth(memberId, metric);
         if (used + amount > limit) {
             throw new AppException(
-                    ErrorCode.PLAN_LIMIT_REACHED, new PlanLimitPayload(
+                    ErrorCode.PLAN_LIMIT_REACHED,
+                    new PlanLimitPayload(
                             metric.name(), limit, used, upgradeTo(subscriptionService.currentPlan(memberId))));
         }
     }

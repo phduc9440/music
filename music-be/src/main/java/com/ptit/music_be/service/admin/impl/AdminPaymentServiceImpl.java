@@ -1,7 +1,6 @@
 package com.ptit.music_be.service.admin.impl;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -89,8 +88,8 @@ public class AdminPaymentServiceImpl implements AdminPaymentService {
         List<RevenueResponse.Day> byDay = new ArrayList<>();
         days.forEach((d, v) -> byDay.add(new RevenueResponse.Day(d, v[0], v[1])));
         List<RevenueResponse.ByPlan> byPlan = new ArrayList<>();
-        plans.forEach((code, v) ->
-                byPlan.add(new RevenueResponse.ByPlan(code, (String) v[0], (Long) v[1], (Long) v[2])));
+        plans.forEach(
+                (code, v) -> byPlan.add(new RevenueResponse.ByPlan(code, (String) v[0], (Long) v[1], (Long) v[2])));
         return RevenueResponse.builder()
                 .from(start)
                 .to(end)
@@ -132,7 +131,8 @@ public class AdminPaymentServiceImpl implements AdminPaymentService {
         }
         order.setStatus(PaymentStatus.REFUNDED);
         orderRepository.save(order);
-        subscriptionService.revoke(order.getMember().getId(), order.getPlan(), order.getPeriod().duration());
+        subscriptionService.revoke(
+                order.getMember().getId(), order.getPlan(), order.getPeriod().duration());
         return PaymentServiceImpl.toResponse(order, true);
     }
 }

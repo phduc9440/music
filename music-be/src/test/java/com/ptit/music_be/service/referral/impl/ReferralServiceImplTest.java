@@ -68,7 +68,11 @@ class ReferralServiceImplTest {
 
     @Test
     void alreadyRewardedOrNotInvitedGivesNothing() {
-        Member rewarded = Member.builder().id("a").referredBy("inviter").referralRewardedAt(LocalDateTime.now()).build();
+        Member rewarded = Member.builder()
+                .id("a")
+                .referredBy("inviter")
+                .referralRewardedAt(LocalDateTime.now())
+                .build();
         Member selfJoined = Member.builder().id("b").build();
         when(members.findByIdForUpdate("a")).thenReturn(Optional.of(rewarded));
         when(members.findByIdForUpdate("b")).thenReturn(Optional.of(selfJoined));

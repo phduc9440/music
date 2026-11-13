@@ -42,15 +42,23 @@ class AdminPlanServiceImplTest {
     private final AdminPlanServiceImpl service =
             new AdminPlanServiceImpl(plans, subscriptionRepo, orderRepo, subscriptions, objectMapper);
 
-    private final Plan pro = Plan.builder().code("PRO").name("Pro").priceMonth(99000).priceYear(990000).limits("{}").build();
-    private final Plan free = Plan.builder().code("FREE").name("Free").limits("{}").build();
+    private final Plan pro = Plan.builder()
+            .code("PRO")
+            .name("Pro")
+            .priceMonth(99000)
+            .priceYear(990000)
+            .limits("{}")
+            .build();
+    private final Plan free =
+            Plan.builder().code("FREE").name("Free").limits("{}").build();
     private final PlanLimits limits = new PlanLimits(500, 4, 10240, 30, null, true, false, true, null);
 
     @BeforeEach
     void setUp() {
         when(plans.findByCode("PRO")).thenReturn(Optional.of(pro));
         when(plans.findByCode("FREE")).thenReturn(Optional.of(free));
-        when(subscriptions.listPlans()).thenReturn(List.of(PlanResponse.builder().code("PRO").build()));
+        when(subscriptions.listPlans())
+                .thenReturn(List.of(PlanResponse.builder().code("PRO").build()));
     }
 
     @AfterEach
@@ -125,8 +133,11 @@ class AdminPlanServiceImplTest {
         login("ROLE_ADMIN", "ROLE_SUPER_ADMIN");
         when(plans.findByCode("STUDENT")).thenReturn(Optional.empty());
         when(plans.findAllByOrderBySortOrderAsc())
-                .thenReturn(List.of(Plan.builder().code("FREE").sortOrder(1).build(), Plan.builder().code("PRO").sortOrder(5).build()));
-        when(subscriptions.listPlans()).thenReturn(List.of(PlanResponse.builder().code("STUDENT").build()));
+                .thenReturn(List.of(
+                        Plan.builder().code("FREE").sortOrder(1).build(),
+                        Plan.builder().code("PRO").sortOrder(5).build()));
+        when(subscriptions.listPlans())
+                .thenReturn(List.of(PlanResponse.builder().code("STUDENT").build()));
 
         PlanResponse r = service.create(newPlan(" student ", "personal"));
 

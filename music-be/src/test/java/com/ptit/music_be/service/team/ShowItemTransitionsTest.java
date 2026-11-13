@@ -123,15 +123,18 @@ class ShowItemTransitionsTest {
 
     @Test
     void approveAnyActsAsReviewerOfEveryItem() {
-        // Chủ nhóm tích "Duyệt thay" cho người phối: duyệt / trả lại / mở lại mọi bài như người duyệt, nhưng không kéo tự do
-        RolePermissions arrangerWithApprove = new RolePermissions(
-                TeamRole.ARRANGER, EnumSet.of(TeamPermission.COMMENT, TeamPermission.APPROVE_ANY));
+        // Chủ nhóm tích "Duyệt thay" cho người phối: duyệt / trả lại / mở lại mọi bài như người duyệt, nhưng không kéo
+        // tự do
+        RolePermissions arrangerWithApprove =
+                new RolePermissions(TeamRole.ARRANGER, EnumSet.of(TeamPermission.COMMENT, TeamPermission.APPROVE_ANY));
         assertEquals(
                 EnumSet.of(ShowItemStatus.APPROVED, ShowItemStatus.ARRANGING),
                 allowed(item(ShowItemStatus.IN_REVIEW), arrangerWithApprove, OTHER));
         assertEquals(
-                EnumSet.of(ShowItemStatus.IN_REVIEW), allowed(item(ShowItemStatus.APPROVED), arrangerWithApprove, OTHER));
-        assertEquals(EnumSet.noneOf(ShowItemStatus.class), allowed(item(ShowItemStatus.TODO), arrangerWithApprove, OTHER));
+                EnumSet.of(ShowItemStatus.IN_REVIEW),
+                allowed(item(ShowItemStatus.APPROVED), arrangerWithApprove, OTHER));
+        assertEquals(
+                EnumSet.noneOf(ShowItemStatus.class), allowed(item(ShowItemStatus.TODO), arrangerWithApprove, OTHER));
     }
 
     @Test

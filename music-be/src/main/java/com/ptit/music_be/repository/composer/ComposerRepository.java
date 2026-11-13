@@ -24,7 +24,8 @@ public interface ComposerRepository extends JpaRepository<Composer, String> {
      * Nhạc sĩ kèm số bản công khai (bỏ bản sao trong kho mẫu, như trang Khám phá): [Composer, số bản]. Lọc theo tên/tên
      * khác và thời kỳ ("" là không lọc); nhiều bản công khai trước, rồi theo tên.
      */
-    @Query("""
+    @Query(
+            """
 			select c, (select count(s) from Score s where s.composerId = c.id
 				and s.visibility = 'PUBLIC' and s.originalScoreId is null) as publicCount
 			from Composer c
@@ -37,14 +38,16 @@ public interface ComposerRepository extends JpaRepository<Composer, String> {
             @Param("keyword") String keyword, @Param("period") String period, Pageable pageable);
 
     /** Admin: mọi nhạc sĩ kèm tổng số bản nhạc đang gắn (cả riêng tư), theo tên. */
-    @Query("""
+    @Query(
+            """
 			select c, (select count(s) from Score s where s.composerId = c.id)
 			from Composer c order by c.name
 			""")
     List<Object[]> findAllWithScoreCount();
 
     /** Các bản công khai của một nhạc sĩ, xem nhiều nhất trước. */
-    @Query("""
+    @Query(
+            """
 			select s.title from Score s where s.composerId = :composerId
 			and s.visibility = 'PUBLIC' and s.originalScoreId is null
 			order by coalesce(s.viewCount, 0) desc, s.id
@@ -52,7 +55,8 @@ public interface ComposerRepository extends JpaRepository<Composer, String> {
     List<String> publicTitlesOf(@Param("composerId") String composerId, Pageable pageable);
 
     /** Bản nhạc cần gắn lại sau khi danh sách nhạc sĩ đổi: chưa gắn mà có tên tác giả, hoặc đang gắn với {@code id}. */
-    @Query("""
+    @Query(
+            """
 			select s from Score s
 			where (s.composerId is null and s.composer is not null and trim(s.composer) <> '')
 			or s.composerId = :composerId

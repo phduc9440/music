@@ -113,7 +113,10 @@ class TeamShowFlowTest {
     }
 
     private static ShowItemResponse itemOf(ShowDetailResponse d, String scoreId) {
-        return d.getItems().stream().filter(i -> i.getScoreId().equals(scoreId)).findFirst().orElseThrow();
+        return d.getItems().stream()
+                .filter(i -> i.getScoreId().equals(scoreId))
+                .findFirst()
+                .orElseThrow();
     }
 
     private static ErrorCode codeOf(Runnable action) {
@@ -148,16 +151,20 @@ class TeamShowFlowTest {
         // Thành viên, lời mời và nhật ký chung bảng team_members: truy vấn của từng loại chỉ thấy dòng của kind đó
         em.flush();
         assertEquals(3, teamMemberRepository.countByTeamId(team.getId()));
-        assertEquals(3L, ((Number) em.createNativeQuery(
-                                "select count(*) from team_members where team_id = ?1 and kind = 'MEMBER'")
-                        .setParameter(1, team.getId())
-                        .getSingleResult())
-                .longValue());
-        assertEquals(2L, ((Number) em.createNativeQuery(
-                                "select count(*) from team_members where team_id = ?1 and kind = 'INVITATION'")
-                        .setParameter(1, team.getId())
-                        .getSingleResult())
-                .longValue());
+        assertEquals(
+                3L,
+                ((Number) em.createNativeQuery(
+                                        "select count(*) from team_members where team_id = ?1 and kind = 'MEMBER'")
+                                .setParameter(1, team.getId())
+                                .getSingleResult())
+                        .longValue());
+        assertEquals(
+                2L,
+                ((Number) em.createNativeQuery(
+                                        "select count(*) from team_members where team_id = ?1 and kind = 'INVITATION'")
+                                .setParameter(1, team.getId())
+                                .getSingleResult())
+                        .longValue());
         assertTrue(teamMemberRepository
                         .findActivities(team.getId(), org.springframework.data.domain.PageRequest.of(0, 50))
                         .getTotalElements()
@@ -246,7 +253,8 @@ class TeamShowFlowTest {
         em.flush();
         em.clear();
         as(ARRANGER);
-        assertFalse(permissionService.canEdit(scoreRepository.findById(scoreIds.get(0)).orElseThrow()));
+        assertFalse(permissionService.canEdit(
+                scoreRepository.findById(scoreIds.get(0)).orElseThrow()));
         assertEquals(ErrorCode.TEAM_NOT_EXISTED, codeOf(() -> teamService.get(team.getId())));
     }
 
@@ -269,8 +277,7 @@ class TeamShowFlowTest {
                 .visibility("PRIVATE")
                 .build());
         assertEquals(
-                ErrorCode.TEAM_SCORE_NOT_OWNER,
-                codeOf(() -> teamService.addScore(team.getId(), ownersScore.getId())));
+                ErrorCode.TEAM_SCORE_NOT_OWNER, codeOf(() -> teamService.addScore(team.getId(), ownersScore.getId())));
         // MANAGER không đụng tới OWNER
         String ownerId = member(OWNER).getId();
         assertEquals(
@@ -290,13 +297,15 @@ class TeamShowFlowTest {
         assertEquals(team.getId(), teamService.get(team.getId()).getId());
         assertTrue(teamService.deletedTeams().isEmpty());
     }
+
     @Test
     void managerCoordinatesWorkButOwnerKeepsTeamManagersAndOthersScores() {
         asOwner();
         TeamResponse team = teamService.create(new TeamRequest("Team C", null));
         String teamId = team.getId();
         TeamInvitationResponse managerLink = teamService.invite(teamId, new TeamInviteRequest(null, TeamRole.MANAGER));
-        TeamInvitationResponse arrangerLink = teamService.invite(teamId, new TeamInviteRequest(null, TeamRole.ARRANGER));
+        TeamInvitationResponse arrangerLink =
+                teamService.invite(teamId, new TeamInviteRequest(null, TeamRole.ARRANGER));
         Score ownersScore = scoreRepository.save(Score.builder()
                 .member(member(OWNER))
                 .title("Bản của chủ nhóm")
@@ -317,9 +326,15 @@ class TeamShowFlowTest {
                 .create(teamId, new ShowRequest("Tập dượt", null, null, null, null))
                 .getId();
         showService.addItem(showId, new ShowItemRequest(ownersScore.getId(), arrangerId, managerId, null, null));
-        assertNotNull(teamService.invite(teamId, new TeamInviteRequest(null, TeamRole.VIEWER)).getToken());
-        assertEquals(TeamRole.VIEWER, teamService.changeRole(teamId, arrangerId, TeamRole.VIEWER).getRole());
-        assertEquals(TeamRole.ARRANGER, teamService.changeRole(teamId, arrangerId, TeamRole.ARRANGER).getRole());
+        assertNotNull(teamService
+                .invite(teamId, new TeamInviteRequest(null, TeamRole.VIEWER))
+                .getToken());
+        assertEquals(
+                TeamRole.VIEWER,
+                teamService.changeRole(teamId, arrangerId, TeamRole.VIEWER).getRole());
+        assertEquals(
+                TeamRole.ARRANGER,
+                teamService.changeRole(teamId, arrangerId, TeamRole.ARRANGER).getRole());
 
         // Việc của chủ nhóm (mặc định): sửa thông tin nhóm, tạo thêm quản lý, đụng tới chủ nhóm, chỉnh bảng quyền
         assertEquals(
@@ -331,8 +346,7 @@ class TeamShowFlowTest {
                 ErrorCode.TEAM_ROLE_SCOPE,
                 codeOf(() -> teamService.invite(teamId, new TeamInviteRequest(null, TeamRole.MANAGER))));
         assertEquals(
-                ErrorCode.TEAM_ROLE_SCOPE,
-                codeOf(() -> teamService.changeRole(teamId, arrangerId, TeamRole.MANAGER)));
+                ErrorCode.TEAM_ROLE_SCOPE, codeOf(() -> teamService.changeRole(teamId, arrangerId, TeamRole.MANAGER)));
         assertEquals(ErrorCode.TEAM_ROLE_SCOPE, codeOf(() -> teamService.removeMember(teamId, ownerId)));
 
         // Bản nhạc của người khác trong team: quản lý sửa được nhưng không xóa, không chia sẻ / công khai
@@ -343,16 +357,21 @@ class TeamShowFlowTest {
 
         // Lời mời làm quản lý chỉ chủ nhóm thu hồi
         asOwner();
-        TeamInvitationResponse secondManager = teamService.invite(teamId, new TeamInviteRequest(null, TeamRole.MANAGER));
+        TeamInvitationResponse secondManager =
+                teamService.invite(teamId, new TeamInviteRequest(null, TeamRole.MANAGER));
         as(REVIEWER);
         assertEquals(
                 ErrorCode.TEAM_ROLE_SCOPE, codeOf(() -> teamService.revokeInvitation(teamId, secondManager.getId())));
 
         // Chủ nhóm làm được hết: đổi tên, hạ quản lý xuống người phối, thu hồi lời mời quản lý
         asOwner();
-        assertEquals("Team C mới", teamService.update(teamId, new TeamRequest("Team C mới", null)).getName());
+        assertEquals(
+                "Team C mới",
+                teamService.update(teamId, new TeamRequest("Team C mới", null)).getName());
         teamService.revokeInvitation(teamId, secondManager.getId());
-        assertEquals(TeamRole.ARRANGER, teamService.changeRole(teamId, managerId, TeamRole.ARRANGER).getRole());
+        assertEquals(
+                TeamRole.ARRANGER,
+                teamService.changeRole(teamId, managerId, TeamRole.ARRANGER).getRole());
         em.flush();
         em.clear();
         // Hết là quản lý thì không tạo buổi diễn được nữa
@@ -361,6 +380,7 @@ class TeamShowFlowTest {
                 ErrorCode.TEAM_FORBIDDEN,
                 codeOf(() -> showService.create(teamId, new ShowRequest("Không được", null, null, null, null))));
     }
+
     @Test
     void onlyTheReviewerReopensAndOwnerTicksWhatEachRoleCanDo() {
         asOwner();
@@ -386,11 +406,14 @@ class TeamShowFlowTest {
         asOwner();
         ShowDetailResponse approved =
                 showService.changeStatus(showId, itemId, new ShowItemStatusRequest(ShowItemStatus.APPROVED, null));
-        assertEquals(member(OWNER).getId(), itemOf(approved, ownersScore.getId()).getReviewerId());
+        assertEquals(
+                member(OWNER).getId(), itemOf(approved, ownersScore.getId()).getReviewerId());
 
         // 2. Quản lý không mở lại được bài chủ nhóm đã duyệt, cũng không đổi người duyệt sang mình để mở lại
         as(REVIEWER);
-        assertTrue(itemOf(showService.get(showId), ownersScore.getId()).getAllowedStatuses().isEmpty());
+        assertTrue(itemOf(showService.get(showId), ownersScore.getId())
+                .getAllowedStatuses()
+                .isEmpty());
         assertEquals(
                 ErrorCode.SHOW_ITEM_APPROVED_LOCKED,
                 codeOf(() -> showService.changeStatus(
@@ -439,7 +462,9 @@ class TeamShowFlowTest {
         //    diễn, không mời được nữa
         as(REVIEWER);
         assertTrue(teamService.get(teamId).getMyPermissions().contains(TeamPermission.EDIT_TEAM));
-        assertEquals("Team D mới", teamService.update(teamId, new TeamRequest("Team D mới", null)).getName());
+        assertEquals(
+                "Team D mới",
+                teamService.update(teamId, new TeamRequest("Team D mới", null)).getName());
         assertEquals(
                 ErrorCode.TEAM_FORBIDDEN,
                 codeOf(() -> showService.create(teamId, new ShowRequest("Không được", null, null, null, null))));
@@ -451,7 +476,8 @@ class TeamShowFlowTest {
         assertTrue(permissionService.canDelete(score));
         ShowDetailResponse reopened =
                 showService.changeStatus(showId, itemId, new ShowItemStatusRequest(ShowItemStatus.IN_REVIEW, null));
-        assertEquals(ShowItemStatus.IN_REVIEW, itemOf(reopened, ownersScore.getId()).getStatus());
+        assertEquals(
+                ShowItemStatus.IN_REVIEW, itemOf(reopened, ownersScore.getId()).getStatus());
         assertTrue(reopened.getMyPermissions().contains(TeamPermission.APPROVE_ANY));
 
         // 6. Đổi bảng quyền có ghi nhật ký

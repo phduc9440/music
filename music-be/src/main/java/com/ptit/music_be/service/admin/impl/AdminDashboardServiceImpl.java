@@ -19,6 +19,7 @@ import com.ptit.music_be.dto.enums.ai.AiTaskStatus;
 import com.ptit.music_be.dto.enums.auth.MemberStatus;
 import com.ptit.music_be.dto.enums.billing.PaymentStatus;
 import com.ptit.music_be.dto.enums.billing.SubscriptionStatus;
+import com.ptit.music_be.dto.response.admin.AdminDashboardResponse;
 import com.ptit.music_be.dto.response.admin.AdminDashboardResponse.Billing;
 import com.ptit.music_be.dto.response.admin.AdminDashboardResponse.DayCount;
 import com.ptit.music_be.dto.response.admin.AdminDashboardResponse.DayPractice;
@@ -26,7 +27,6 @@ import com.ptit.music_be.dto.response.admin.AdminDashboardResponse.DayRevenue;
 import com.ptit.music_be.dto.response.admin.AdminDashboardResponse.KeyCount;
 import com.ptit.music_be.dto.response.admin.AdminDashboardResponse.TopScore;
 import com.ptit.music_be.dto.response.admin.AdminDashboardResponse.Totals;
-import com.ptit.music_be.dto.response.admin.AdminDashboardResponse;
 import com.ptit.music_be.entity.PlanSanction;
 import com.ptit.music_be.service.admin.AdminDashboardService;
 
@@ -250,9 +250,10 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         List<DayRevenue> result = new ArrayList<>();
         for (LocalDate d = start; !d.isAfter(end); d = d.plusDays(1)) {
             Object[] r = byDay.get(d);
-            result.add(r == null
-                    ? new DayRevenue(d, 0, 0)
-                    : new DayRevenue(d, ((Number) r[1]).longValue(), ((Number) r[2]).longValue()));
+            result.add(
+                    r == null
+                            ? new DayRevenue(d, 0, 0)
+                            : new DayRevenue(d, ((Number) r[1]).longValue(), ((Number) r[2]).longValue()));
         }
         return result;
     }

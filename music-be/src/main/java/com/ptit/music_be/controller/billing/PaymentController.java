@@ -11,8 +11,8 @@ import com.ptit.music_be.dto.enums.billing.PaymentProviderType;
 import com.ptit.music_be.dto.request.billing.CreatePaymentOrderRequest;
 import com.ptit.music_be.dto.response.billing.PaymentOrderResponse;
 import com.ptit.music_be.dto.response.common.ApiResponse;
-import com.ptit.music_be.service.payment.PaymentService.IpnResult;
 import com.ptit.music_be.service.payment.PaymentService;
+import com.ptit.music_be.service.payment.PaymentService.IpnResult;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -33,7 +33,8 @@ public class PaymentController {
     @PostMapping("/orders")
     @Operation(
             summary = "Tạo đơn mua gói, trả payUrl của cổng để chuyển hướng người dùng",
-            description = "Errors: 3701 gói không tồn tại, 3711 cổng chưa cấu hình, 3712 gói không mua được, 3715 chu kỳ sai",
+            description =
+                    "Errors: 3701 gói không tồn tại, 3711 cổng chưa cấu hình, 3712 gói không mua được, 3715 chu kỳ sai",
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<PaymentOrderResponse> createOrder(
             @RequestBody CreatePaymentOrderRequest request, HttpServletRequest http) {

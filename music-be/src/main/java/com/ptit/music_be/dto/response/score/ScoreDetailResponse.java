@@ -72,6 +72,7 @@ public class ScoreDetailResponse {
     String coverUrl;
     /** Team chứa bản nhạc (mục 4.1); null là bản cá nhân. */
     String teamId;
+
     String teamName;
 
     LocalDateTime createdAt;

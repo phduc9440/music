@@ -53,11 +53,13 @@ public class ScorePermissionServiceImpl implements ScorePermissionService {
         }
 
         // 3. Kho mẫu: người có quyền quản lý kho mẫu sửa được
-        if (Boolean.TRUE.equals(score.getIsOfficial()) && SecurityUtils.hasPermission(AdminPermission.OFFICIAL_LIBRARY)) {
+        if (Boolean.TRUE.equals(score.getIsOfficial())
+                && SecurityUtils.hasPermission(AdminPermission.OFFICIAL_LIBRARY)) {
             level = ScoreAccess.max(level, ScoreAccess.EDIT);
         }
 
-        // 4. Kiểm duyệt (quyền duyệt công khai / kiểm duyệt bản nhạc): chỉ xem bản đang PUBLIC hoặc PENDING, tuyệt đối không
+        // 4. Kiểm duyệt (quyền duyệt công khai / kiểm duyệt bản nhạc): chỉ xem bản đang PUBLIC hoặc PENDING, tuyệt đối
+        // không
         //    xem bản PRIVATE
         boolean moderator = false;
         if (isModerator()
@@ -78,7 +80,8 @@ public class ScorePermissionServiceImpl implements ScorePermissionService {
             return false;
         }
         // Bản kho mẫu là bản chuẩn của hệ thống: chủ sở hữu hay người được chia sẻ cũng không sửa được
-        return !Boolean.TRUE.equals(score.getIsOfficial()) || SecurityUtils.hasPermission(AdminPermission.OFFICIAL_LIBRARY);
+        return !Boolean.TRUE.equals(score.getIsOfficial())
+                || SecurityUtils.hasPermission(AdminPermission.OFFICIAL_LIBRARY);
     }
 
     @Override

@@ -33,9 +33,7 @@ public class BillingController {
     }
 
     @GetMapping("/api/subscriptions/me")
-    @Operation(
-            summary = "Gói hiện tại và số đã dùng trong tháng",
-            security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Gói hiện tại và số đã dùng trong tháng", security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<MySubscriptionResponse> mine() {
         return ApiResponse.<MySubscriptionResponse>builder()
                 .result(subscriptionService.mine())

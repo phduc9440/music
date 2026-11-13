@@ -94,10 +94,13 @@ class AdminMemberDetailQueryTest {
                         "select o.member.id from PaymentOrder o where o.status = 'PAID' order by o.paidAt desc",
                         String.class)
                 .setMaxResults(1)
-                .getResultList().stream()
+                .getResultList()
+                .stream()
                 .findFirst()
-                .orElseGet(() ->
-                        memberRepository.findByEmail("admin@music.com").orElseThrow().getId());
+                .orElseGet(() -> memberRepository
+                        .findByEmail("admin@music.com")
+                        .orElseThrow()
+                        .getId());
 
         AdminMemberDetailResponse d = service.getMemberDetail(id);
 
@@ -105,7 +108,9 @@ class AdminMemberDetailQueryTest {
         assertTrue(d.getPurchases().size() <= 50);
         assertTrue(d.getPurchases().stream().allMatch(p -> p.getPaidAt() != null));
         if (d.getPurchaseCount() + d.getRefundedCount() <= 50) {
-            assertEquals(d.getPurchaseCount() + d.getRefundedCount(), d.getPurchases().size());
+            assertEquals(
+                    d.getPurchaseCount() + d.getRefundedCount(),
+                    d.getPurchases().size());
             assertEquals(
                     d.getPurchaseTotal(),
                     d.getPurchases().stream()

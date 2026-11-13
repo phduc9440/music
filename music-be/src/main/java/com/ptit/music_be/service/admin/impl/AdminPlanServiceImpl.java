@@ -69,8 +69,13 @@ public class AdminPlanServiceImpl implements AdminPlanService {
         if (request == null) {
             throw new AppException(ErrorCode.PLAN_PRICE_INVALID);
         }
-        Fields f = validate(plan.getCode(), request.getName(), request.getPriceMonth(), request.getPriceYear(),
-                request.getLimits(), request.getSortOrder());
+        Fields f = validate(
+                plan.getCode(),
+                request.getName(),
+                request.getPriceMonth(),
+                request.getPriceYear(),
+                request.getLimits(),
+                request.getSortOrder());
         log.info(
                 "{} sửa gói {}: tên \"{}\" -> \"{}\", giá tháng {} -> {}, giá năm {} -> {}, hạn mức {} -> {}",
                 SecurityUtils.getCurrentEmail(),
@@ -108,12 +113,19 @@ public class AdminPlanServiceImpl implements AdminPlanService {
         if (planRepository.findByCode(code).isPresent()) {
             throw new AppException(ErrorCode.PLAN_CODE_EXISTED);
         }
-        String audience = request.getAudience() == null ? "" : request.getAudience().trim().toUpperCase();
+        String audience = request.getAudience() == null
+                ? ""
+                : request.getAudience().trim().toUpperCase();
         if (!Plan.PERSONAL.equals(audience) && !Plan.TEAM.equals(audience)) {
             throw new AppException(ErrorCode.PLAN_AUDIENCE_INVALID);
         }
-        Fields f = validate(code, request.getName(), request.getPriceMonth(), request.getPriceYear(),
-                request.getLimits(), request.getSortOrder());
+        Fields f = validate(
+                code,
+                request.getName(),
+                request.getPriceMonth(),
+                request.getPriceYear(),
+                request.getLimits(),
+                request.getSortOrder());
         int sortOrder = f.sortOrder() != null
                 ? f.sortOrder()
                 : planRepository.findAllByOrderBySortOrderAsc().stream()
@@ -143,7 +155,8 @@ public class AdminPlanServiceImpl implements AdminPlanService {
             throw new AppException(ErrorCode.PLAN_SYSTEM_LOCKED);
         }
         // Còn người đăng ký (kể cả đã hết hạn) hoặc đơn thanh toán thì giữ lại để không mất lịch sử doanh thu
-        if (subscriptionRepository.existsByPlanId(plan.getId()) || paymentOrderRepository.existsByPlanId(plan.getId())) {
+        if (subscriptionRepository.existsByPlanId(plan.getId())
+                || paymentOrderRepository.existsByPlanId(plan.getId())) {
             throw new AppException(ErrorCode.PLAN_IN_USE);
         }
         planRepository.delete(plan);
@@ -166,8 +179,7 @@ public class AdminPlanServiceImpl implements AdminPlanService {
     /** Dữ liệu đã kiểm tra, dùng chung cho tạo và sửa. */
     private record Fields(String name, long priceMonth, long priceYear, String limitsJson, Integer sortOrder) {}
 
-    private Fields validate(
-            String code, String rawName, Long month, Long year, PlanLimits limits, Integer sortOrder) {
+    private Fields validate(String code, String rawName, Long month, Long year, PlanLimits limits, Integer sortOrder) {
         String name = rawName == null ? "" : rawName.trim();
         if (name.isEmpty() || name.length() > MAX_NAME_LENGTH) {
             throw new AppException(ErrorCode.PLAN_NAME_INVALID);

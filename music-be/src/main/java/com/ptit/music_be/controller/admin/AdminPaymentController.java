@@ -43,7 +43,9 @@ public class AdminPaymentController {
     }
 
     @GetMapping("/orders")
-    @Operation(summary = "Danh sách đơn, mới nhất trước, lọc theo trạng thái và loại đơn (NEW/RENEW)", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(
+            summary = "Danh sách đơn, mới nhất trước, lọc theo trạng thái và loại đơn (NEW/RENEW)",
+            security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<PageResponse<PaymentOrderResponse>> orders(
             @RequestParam(required = false) PaymentStatus status,
             @RequestParam(required = false) PaymentKind kind,
