@@ -39,6 +39,7 @@ public class MySubscriptionResponse {
     /** Các gói đang bị cấm dùng (kèm hạn); rỗng = không bị cấm gói nào. */
     @Builder.Default
     java.util.List<PlanBanInfo> bans = new java.util.ArrayList<>();
+
     LocalDateTime startsAt;
     LocalDateTime expiresAt;
     /** Trang OMR đã dùng trong tháng hiện tại. */

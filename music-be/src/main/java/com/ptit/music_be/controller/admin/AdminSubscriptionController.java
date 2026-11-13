@@ -33,8 +33,9 @@ public class AdminSubscriptionController {
     @PostMapping
     @Operation(
             summary = "Cấp gói cho thành viên N tháng (nguồn ADMIN_GRANT); cùng gói đang dùng thì cộng nối tiếp",
-            description = "Chỉ SUPER_ADMIN, chỉ gói cá nhân. Errors: 1002 không phải SUPER_ADMIN, 3701 gói không tồn tại,"
-                    + " 3703 số tháng sai, 3718 thành viên là SUPER_ADMIN, 3727 gói team, 1004 thành viên không tồn tại",
+            description =
+                    "Chỉ SUPER_ADMIN, chỉ gói cá nhân. Errors: 1002 không phải SUPER_ADMIN, 3701 gói không tồn tại,"
+                            + " 3703 số tháng sai, 3718 thành viên là SUPER_ADMIN, 3727 gói team, 1004 thành viên không tồn tại",
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<MySubscriptionResponse> grant(@RequestBody GrantPlanRequest request) {
         if (request.getMemberId() == null || request.getPlanCode() == null || request.getMonths() == null) {
@@ -48,16 +49,18 @@ public class AdminSubscriptionController {
     @PostMapping("/bulk")
     @Operation(
             summary = "Cấp một gói cá nhân cho nhiều thành viên (tối đa 200), chỉ SUPER_ADMIN",
-            description = "Cùng gói đang dùng thì gia hạn nối tiếp. Trả kết quả từng người: GRANTED / RENEWED / SKIPPED /"
-                    + " FAILED. Errors: 1002 không phải SUPER_ADMIN, 1009 danh sách trống hoặc quá 200, 3701 gói không"
-                    + " tồn tại, 3703 số tháng sai, 3727 gói team hoặc Free",
+            description =
+                    "Cùng gói đang dùng thì gia hạn nối tiếp. Trả kết quả từng người: GRANTED / RENEWED / SKIPPED /"
+                            + " FAILED. Errors: 1002 không phải SUPER_ADMIN, 1009 danh sách trống hoặc quá 200, 3701 gói không"
+                            + " tồn tại, 3703 số tháng sai, 3727 gói team hoặc Free",
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<List<BulkGrantResult>> grantMany(@RequestBody BulkGrantPlanRequest request) {
         if (request.getPlanCode() == null || request.getMonths() == null) {
             throw new AppException(ErrorCode.INVALID_REQUEST);
         }
         return ApiResponse.<List<BulkGrantResult>>builder()
-                .result(subscriptionService.grantMany(request.getMemberIds(), request.getPlanCode(), request.getMonths()))
+                .result(subscriptionService.grantMany(
+                        request.getMemberIds(), request.getPlanCode(), request.getMonths()))
                 .build();
     }
 
@@ -84,9 +87,10 @@ public class AdminSubscriptionController {
     @PostMapping("/sanctions/ban")
     @Operation(
             summary = "Cấm dùng một gói N tháng (1..120) cho một hoặc nhiều thành viên, chỉ SUPER_ADMIN",
-            description = "planCode = gói bị cấm (bỏ trống = gói đang dùng của từng người). Không dùng, mua hay được cấp lại"
-                    + " gói đó; vẫn dùng Free hoặc mua gói khác. Kết quả từng người: BANNED /"
-                    + " SKIPPED / FAILED. Errors: 1002, 1009, 3728 thời hạn hoặc lý do không hợp lệ",
+            description =
+                    "planCode = gói bị cấm (bỏ trống = gói đang dùng của từng người). Không dùng, mua hay được cấp lại"
+                            + " gói đó; vẫn dùng Free hoặc mua gói khác. Kết quả từng người: BANNED /"
+                            + " SKIPPED / FAILED. Errors: 1002, 1009, 3728 thời hạn hoặc lý do không hợp lệ",
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<List<BulkGrantResult>> ban(@RequestBody PlanSanctionRequest request) {
         if (request.getMonths() == null) {

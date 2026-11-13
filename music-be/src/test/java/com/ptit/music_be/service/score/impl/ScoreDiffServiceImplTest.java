@@ -24,12 +24,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ptit.music_be.client.AiServiceClient;
 import com.ptit.music_be.dto.enums.score.FileType;
 import com.ptit.music_be.dto.response.score.ScoreDiffResponse;
+import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreFile;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.repository.score.ScoreFileRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
+import com.ptit.music_be.service.billing.EntitlementService;
+import com.ptit.music_be.service.billing.PlanLimits;
 import com.ptit.music_be.service.score.ScoreFileService;
 
 @ExtendWith(MockitoExtension.class)
@@ -50,12 +53,20 @@ class ScoreDiffServiceImplTest {
     @Mock
     AiServiceClient aiServiceClient;
 
+    @Mock
+    EntitlementService entitlementService;
+
     ScoreDiffServiceImpl service;
     Score score;
 
     @BeforeEach
     void setUp() {
-        service = new ScoreDiffServiceImpl(scoreRepository, scoreFileRepository, scoreFileService, aiServiceClient);
+        service = new ScoreDiffServiceImpl(
+                scoreRepository,
+                scoreFileRepository,
+                scoreFileService,
+                aiServiceClient,
+                new VersionRetention(entitlementService));
         score = Score.builder().id(SCORE_ID).sourceType("OMR").build();
         lenient().when(scoreRepository.findById(SCORE_ID)).thenReturn(Optional.of(score));
     }
@@ -136,5 +147,20 @@ class ScoreDiffServiceImplTest {
         givenFiles(xml(1, null));
         AppException error = (AppException) catchThrowable(() -> service.diff(SCORE_ID, 5, 1));
         assertThat(error.getErrorCode()).isEqualTo(ErrorCode.SCORE_VERSION_NOT_EXISTED);
+    }
+
+    @Test
+    void versionsOutsideTheOwnersPlanAreTreatedAsGone() {
+        score.setMember(Member.builder().id("owner-1").build());
+        when(entitlementService.limitsOf("owner-1"))
+                .thenReturn(new PlanLimits(null, null, null, 2, null, null, null, null, null));
+        givenFiles(xml(1, null), xml(2, "{\"savedBy\":\"a@b.c\"}"), xml(3, "{\"savedBy\":\"a@b.c\"}"));
+
+        // v1 là bản OMR gốc nhưng gói chỉ giữ 2 version mới nhất (v3, v2)
+        AppException noBase = (AppException) catchThrowable(() -> service.diff(SCORE_ID, 3, null));
+        AppException hiddenTarget = (AppException) catchThrowable(() -> service.diff(SCORE_ID, 1, 2));
+
+        assertThat(noBase.getErrorCode()).isEqualTo(ErrorCode.SCORE_VERSION_NOT_EXISTED);
+        assertThat(hiddenTarget.getErrorCode()).isEqualTo(ErrorCode.SCORE_VERSION_NOT_EXISTED);
     }
 }

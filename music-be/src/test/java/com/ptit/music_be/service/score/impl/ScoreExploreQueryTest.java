@@ -110,14 +110,12 @@ class ScoreExploreQueryTest {
 
     @Test
     void topRatedFirstAndUnratedLast() {
-        assertEquals(
-                List.of(tag + " Loved", tag + " Viewed", tag + " Quiet"), titles(explore(tag, null, "RATING")));
+        assertEquals(List.of(tag + " Loved", tag + " Viewed", tag + " Quiet"), titles(explore(tag, null, "RATING")));
     }
 
     @Test
     void mostViewedFirst() {
-        assertEquals(
-                List.of(tag + " Viewed", tag + " Quiet", tag + " Loved"), titles(explore(tag, null, "VIEWS")));
+        assertEquals(List.of(tag + " Viewed", tag + " Quiet", tag + " Loved"), titles(explore(tag, null, "VIEWS")));
     }
 
     @Test
@@ -142,7 +140,11 @@ class ScoreExploreQueryTest {
         assertEquals(2, explore(tag, "EASY", null).getTotalElements());
         // "%" là ký tự thường, không khớp mọi tên
         assertEquals(0, explore(tag + "%", null, null).getTotalElements());
-        assertEquals(0, scoreService.getPublicScores(0, 50, tag, null, "no-such-tag", null).getTotalElements());
+        assertEquals(
+                0,
+                scoreService
+                        .getPublicScores(0, 50, tag, null, "no-such-tag", null)
+                        .getTotalElements());
     }
 
     @Test

@@ -20,6 +20,13 @@ public interface EntitlementService {
      */
     void checkAvailable(String memberId, UsageMetric metric, int amount);
 
+    /**
+     * Ném PLAN_LIMIT_REACHED (metric {@code STORAGE_MB}, số liệu tính bằng MB làm tròn lên) nếu thêm {@code incomingBytes}
+     * byte vào kho của {@code memberId} sẽ vượt {@code storageMb} của gói. Dung lượng đã dùng là tổng các file nội dung
+     * (ảnh/PDF gốc, MusicXML, MIDI, PNG, KERN) của mọi bản nhạc người đó sở hữu, kể cả bản trong thùng rác.
+     */
+    void checkStorage(String memberId, long incomingBytes);
+
     /** Đã dùng trong tháng hiện tại (tính từ dữ liệu gốc). */
     int usedThisMonth(String memberId, UsageMetric metric);
 }

@@ -135,9 +135,11 @@ class OfficialRequestQueryTest {
 
     @Test
     void adminListFiltersByStatus() {
-        assertEquals(2, requestRepository.searchForAdmin("", PageRequest.of(0, 50)).stream()
-                .filter(r -> r.getOwner().getId().equals(owner.getId()))
-                .count());
+        assertEquals(
+                2,
+                requestRepository.searchForAdmin("", PageRequest.of(0, 50)).stream()
+                        .filter(r -> r.getOwner().getId().equals(owner.getId()))
+                        .count());
         List<OfficialRequest> accepted = requestRepository
                 .searchForAdmin("ACCEPTED", PageRequest.of(0, 50))
                 .getContent();
@@ -147,12 +149,10 @@ class OfficialRequestQueryTest {
 
     @Test
     void duplicateChecksSeeTheRightStatuses() {
-        assertTrue(requestRepository.existsByScoreIdAndStatusIn(
-                asked.getId(), Set.of(OfficialRequestStatus.PENDING)));
-        assertFalse(requestRepository.existsByScoreIdAndStatusIn(
-                asked.getId(), Set.of(OfficialRequestStatus.ACCEPTED)));
-        assertTrue(requestRepository.existsByScoreIdAndStatusIn(
-                taken.getId(), Set.of(OfficialRequestStatus.ACCEPTED)));
+        assertTrue(requestRepository.existsByScoreIdAndStatusIn(asked.getId(), Set.of(OfficialRequestStatus.PENDING)));
+        assertFalse(
+                requestRepository.existsByScoreIdAndStatusIn(asked.getId(), Set.of(OfficialRequestStatus.ACCEPTED)));
+        assertTrue(requestRepository.existsByScoreIdAndStatusIn(taken.getId(), Set.of(OfficialRequestStatus.ACCEPTED)));
     }
 
     @Test

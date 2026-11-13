@@ -40,7 +40,8 @@ public class AdminMemberController {
 
     @GetMapping("/with-plan")
     @Operation(
-            summary = "Danh sách thành viên kèm gói, lọc theo gói đang dùng (planCode) và người đang bị cấm (bannedOnly)",
+            summary =
+                    "Danh sách thành viên kèm gói, lọc theo gói đang dùng (planCode) và người đang bị cấm (bannedOnly)",
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<PageResponse<MemberResponse>> getMembersWithPlan(
             @RequestParam(defaultValue = "0") int page,

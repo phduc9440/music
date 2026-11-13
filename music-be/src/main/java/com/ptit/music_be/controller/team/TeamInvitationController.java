@@ -28,7 +28,9 @@ public class TeamInvitationController {
     TeamService teamService;
 
     @GetMapping("/mine")
-    @Operation(summary = "Pending email invitations sent to my email", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(
+            summary = "Pending email invitations sent to my email",
+            security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<List<TeamInvitationResponse>> mine() {
         return ApiResponse.<List<TeamInvitationResponse>>builder()
                 .result(teamService.myInvitations())
@@ -38,7 +40,9 @@ public class TeamInvitationController {
     @PostMapping("/mine/{id}/accept")
     @Operation(summary = "Accept an email invitation sent to me", security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<TeamResponse> acceptMine(@PathVariable String id) {
-        return ApiResponse.<TeamResponse>builder().result(teamService.acceptMine(id)).build();
+        return ApiResponse.<TeamResponse>builder()
+                .result(teamService.acceptMine(id))
+                .build();
     }
 
     @PostMapping("/mine/{id}/decline")
@@ -49,7 +53,9 @@ public class TeamInvitationController {
     }
 
     @GetMapping("/token/{token}")
-    @Operation(summary = "Preview an invitation from its link token", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(
+            summary = "Preview an invitation from its link token",
+            security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<TeamInvitationPreviewResponse> preview(@PathVariable String token) {
         return ApiResponse.<TeamInvitationPreviewResponse>builder()
                 .result(teamService.preview(token))
@@ -57,8 +63,12 @@ public class TeamInvitationController {
     }
 
     @PostMapping("/token/{token}/accept")
-    @Operation(summary = "Accept an invitation from its link token (one-time)", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(
+            summary = "Accept an invitation from its link token (one-time)",
+            security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<TeamResponse> accept(@PathVariable String token) {
-        return ApiResponse.<TeamResponse>builder().result(teamService.accept(token)).build();
+        return ApiResponse.<TeamResponse>builder()
+                .result(teamService.accept(token))
+                .build();
     }
 }

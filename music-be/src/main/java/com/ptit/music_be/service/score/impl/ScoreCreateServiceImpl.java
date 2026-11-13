@@ -25,6 +25,7 @@ import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.ScoreFileRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
+import com.ptit.music_be.service.billing.EntitlementService;
 import com.ptit.music_be.service.score.ScoreCreateService;
 import com.ptit.music_be.service.storage.FileStorageService;
 import com.ptit.music_be.utils.MusicXmlInspector;
@@ -57,17 +58,20 @@ public class ScoreCreateServiceImpl implements ScoreCreateService {
     private final ScoreFileRepository scoreFileRepository;
     private final MemberRepository memberRepository;
     private final FileStorageService fileStorageService;
+    private final EntitlementService entitlementService;
 
     @Override
     @Transactional
     public BlankScoreResponse createBlank(BlankScoreRequest request) {
         BlankScoreRequest clean = validated(request);
+        // Khóa dòng thành viên để hai yêu cầu cùng lúc không cùng lọt qua hạn mức dung lượng
         Member member = memberRepository
-                .findByEmail(SecurityUtils.getCurrentEmail())
+                .findByEmailForUpdate(SecurityUtils.getCurrentEmail())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
         byte[] xml = BlankScoreBuilder.build(clean);
         MusicXmlSummary summary = MusicXmlInspector.inspect(xml); // tự kiểm: lỗi ở đây là lỗi của builder
+        entitlementService.checkStorage(member.getId(), xml.length);
 
         Score score = scoreRepository.save(Score.builder()
                 .member(member)

@@ -42,6 +42,7 @@ import com.ptit.music_be.repository.ai.AiTaskRepository;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.ScoreFileRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
+import com.ptit.music_be.service.billing.EntitlementService;
 import com.ptit.music_be.service.score.ScoreEditService;
 import com.ptit.music_be.service.score.ScoreFileService;
 import com.ptit.music_be.service.storage.FileStorageService;
@@ -54,9 +55,6 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Slf4j
 public class ScoreEditServiceImpl implements ScoreEditService {
-
-    /** Số version MusicXML mới nhất được giữ lại cho mỗi bản nhạc (đặc tả mục 3.6). */
-    static final int MAX_KEPT_VERSIONS = 20;
 
     static final String MUSICXML_CONTENT_TYPE = "application/vnd.recordare.musicxml+xml";
 
@@ -77,6 +75,8 @@ public class ScoreEditServiceImpl implements ScoreEditService {
     private final ScoreFileService scoreFileService;
     private final FileStorageService fileStorageService;
     private final MemberRepository memberRepository;
+    private final EntitlementService entitlementService;
+    private final VersionRetention versionRetention;
     private final long maxMusicXmlBytes;
 
     public ScoreEditServiceImpl(
@@ -86,6 +86,8 @@ public class ScoreEditServiceImpl implements ScoreEditService {
             ScoreFileService scoreFileService,
             FileStorageService fileStorageService,
             MemberRepository memberRepository,
+            EntitlementService entitlementService,
+            VersionRetention versionRetention,
             @Value("${app.editor.max-musicxml-bytes:5242880}") long maxMusicXmlBytes) {
         this.scoreRepository = scoreRepository;
         this.scoreFileRepository = scoreFileRepository;
@@ -93,6 +95,8 @@ public class ScoreEditServiceImpl implements ScoreEditService {
         this.scoreFileService = scoreFileService;
         this.fileStorageService = fileStorageService;
         this.memberRepository = memberRepository;
+        this.entitlementService = entitlementService;
+        this.versionRetention = versionRetention;
         this.maxMusicXmlBytes = maxMusicXmlBytes;
     }
 
@@ -119,6 +123,10 @@ public class ScoreEditServiceImpl implements ScoreEditService {
         if (aiTaskRepository.existsByScoreIdAndTaskTypeAndStatusIn(
                 scoreId, AiTaskType.OMR_CONVERSION, ACTIVE_STATUSES)) {
             throw new AppException(ErrorCode.SCORE_BUSY);
+        }
+        // Dung lượng tính cho chủ bản nhạc; không khóa dòng thành viên vì đã khóa dòng bản nhạc (tránh khóa chéo)
+        if (score.getMember() != null) {
+            entitlementService.checkStorage(score.getMember().getId(), body.length);
         }
 
         List<ScoreFile> xmlFiles = new ArrayList<>(
@@ -179,7 +187,7 @@ public class ScoreEditServiceImpl implements ScoreEditService {
         score.setUpdatedAt(now);
         scoreRepository.save(score);
 
-        pruneOldVersions(scoreId, xmlFiles, created, pathsToDeleteAfterCommit);
+        pruneOldVersions(score, xmlFiles, created, pathsToDeleteAfterCommit);
 
         return ScoreSaveResponse.builder()
                 .version(newVersion)
@@ -282,22 +290,26 @@ public class ScoreEditServiceImpl implements ScoreEditService {
     }
 
     /**
-     * Chỉ giữ {@value #MAX_KEPT_VERSIONS} version MusicXML mới nhất: xóa dòng cũ hơn và các MIDI có version nhỏ hơn
-     * version cũ nhất còn giữ; đường dẫn file được đưa vào danh sách để xóa sau khi commit.
+     * Xóa các version MusicXML đã hết hạn giữ (xem {@link VersionRetention#expired}) và các MIDI có version nhỏ hơn
+     * version cũ nhất còn lại; đường dẫn file được đưa vào danh sách để xóa sau khi commit.
      */
     private void pruneOldVersions(
-            String scoreId, List<ScoreFile> existing, ScoreFile created, List<String> pathsToDeleteAfterCommit) {
+            Score score, List<ScoreFile> existing, ScoreFile created, List<String> pathsToDeleteAfterCommit) {
         List<ScoreFile> all = new ArrayList<>(existing);
         all.add(created);
         all.sort(Comparator.comparingInt(this::versionOf).reversed());
-        if (all.size() <= MAX_KEPT_VERSIONS) {
+        List<ScoreFile> expired = versionRetention.expired(score, all);
+        if (expired.isEmpty()) {
             return;
         }
-        List<ScoreFile> dropped = all.subList(MAX_KEPT_VERSIONS, all.size());
-        int oldestKept = versionOf(all.get(MAX_KEPT_VERSIONS - 1));
+        int oldestKept = all.stream()
+                .filter(f -> !expired.contains(f))
+                .mapToInt(this::versionOf)
+                .min()
+                .orElseThrow();
 
-        List<ScoreFile> rowsToDelete = new ArrayList<>(dropped);
-        scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(scoreId, FileType.MIDI).stream()
+        List<ScoreFile> rowsToDelete = new ArrayList<>(expired);
+        scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(score.getId(), FileType.MIDI).stream()
                 .filter(midi -> versionOf(midi) < oldestKept)
                 .forEach(rowsToDelete::add);
 
@@ -341,9 +353,7 @@ public class ScoreEditServiceImpl implements ScoreEditService {
                 .mapToInt(this::versionOf)
                 .max()
                 .orElse(0);
-        return xmlFiles.stream()
-                .sorted(Comparator.comparingInt(this::versionOf).reversed())
-                .limit(MAX_KEPT_VERSIONS)
+        return versionRetention.visible(score, xmlFiles).stream()
                 .map(file -> toVersionResponse(file, score, versionOf(file) == current))
                 .toList();
     }
@@ -354,7 +364,7 @@ public class ScoreEditServiceImpl implements ScoreEditService {
         Score score =
                 scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
         scoreFileService.checkCanView(score);
-        return new ScoreContent(readVersion(scoreId, version), version);
+        return new ScoreContent(readVersion(score, version), version);
     }
 
     @Override
@@ -365,17 +375,19 @@ public class ScoreEditServiceImpl implements ScoreEditService {
                 .findByIdForUpdate(scoreId)
                 .orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
         scoreFileService.checkCanEdit(score);
-        byte[] body = readVersion(scoreId, version);
+        byte[] body = readVersion(score, version);
         return save(scoreId, body, MUSICXML_CONTENT_TYPE, ifMatch, false, version);
     }
 
     /** Đọc nội dung một version MusicXML: 2801 nếu không có dòng, 2002 nếu file đã mất trên đĩa. */
-    private byte[] readVersion(String scoreId, int version) {
-        ScoreFile file =
-                scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(scoreId, FileType.MUSICXML).stream()
-                        .filter(f -> versionOf(f) == version)
-                        .findFirst()
-                        .orElseThrow(() -> new AppException(ErrorCode.SCORE_VERSION_NOT_EXISTED));
+    private byte[] readVersion(Score score, int version) {
+        String scoreId = score.getId();
+        List<ScoreFile> xmlFiles =
+                scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(scoreId, FileType.MUSICXML);
+        ScoreFile file = versionRetention.visible(score, xmlFiles).stream()
+                .filter(f -> versionOf(f) == version)
+                .findFirst()
+                .orElseThrow(() -> new AppException(ErrorCode.SCORE_VERSION_NOT_EXISTED));
         try {
             return Files.readAllBytes(fileStorageService.resolve(file.getStoragePath()));
         } catch (IOException e) {

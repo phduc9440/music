@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.ptit.music_be.configuration.MuseScoreProperties;
 import com.ptit.music_be.dto.enums.ai.AiTaskStatus;
 import com.ptit.music_be.dto.enums.ai.AiTaskType;
+import com.ptit.music_be.dto.enums.billing.UsageMetric;
 import com.ptit.music_be.dto.enums.score.FileType;
 import com.ptit.music_be.dto.request.export.ExportRequest;
 import com.ptit.music_be.dto.response.export.ExportFileResponse;
@@ -40,6 +41,7 @@ import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.ScoreFileRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.service.ai.MuseScoreCliService;
+import com.ptit.music_be.service.billing.EntitlementService;
 import com.ptit.music_be.service.export.ExportNames;
 import com.ptit.music_be.service.export.ExportOptionsValidator;
 import com.ptit.music_be.service.export.ExportService;
@@ -90,6 +92,7 @@ public class ExportServiceImpl implements ExportService {
     AiTaskMapper aiTaskMapper;
     ObjectMapper objectMapper;
     ApplicationEventPublisher eventPublisher;
+    EntitlementService entitlementService;
 
     @Override
     @Transactional
@@ -176,6 +179,9 @@ public class ExportServiceImpl implements ExportService {
         }
 
         checkLimits(member);
+        // Lấy file có sẵn hoặc nhận lại task đang chạy ở trên thì không tính; dòng thành viên đã khóa nên đếm không bị
+        // đua
+        entitlementService.checkAvailable(member.getId(), UsageMetric.EXPORTS, 1);
 
         ObjectNode input = objectMapper.createObjectNode();
         input.put("targetFormat", spec.fileType().name());

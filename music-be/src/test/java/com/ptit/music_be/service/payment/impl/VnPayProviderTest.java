@@ -28,8 +28,10 @@ class VnPayProviderTest {
 
     private static final String SECRET = "TESTSECRETTESTSECRETTESTSECRET12";
 
-    private final VnPayProvider provider =
-            new VnPayProvider(new VnPayProperties("TMN001", SECRET, "https://pay.test/vpcpay", "http://web/return", "https://pay.test/query"), new ObjectMapper());
+    private final VnPayProvider provider = new VnPayProvider(
+            new VnPayProperties(
+                    "TMN001", SECRET, "https://pay.test/vpcpay", "http://web/return", "https://pay.test/query"),
+            new ObjectMapper());
 
     /** Ký đúng như VNPay: các tham số vnp_* sắp theo tên, giá trị mã hóa URL, HMAC-SHA512. */
     private static String sign(Map<String, String> params) throws Exception {
@@ -96,8 +98,9 @@ class VnPayProviderTest {
 
     @Test
     void rejectsEverythingWhenNotConfigured() throws Exception {
-        VnPayProvider unconfigured =
-                new VnPayProvider(new VnPayProperties("", "", "https://pay.test/vpcpay", "http://web/return", "https://pay.test/query"), new ObjectMapper());
+        VnPayProvider unconfigured = new VnPayProvider(
+                new VnPayProperties("", "", "https://pay.test/vpcpay", "http://web/return", "https://pay.test/query"),
+                new ObjectMapper());
 
         assertFalse(unconfigured.isConfigured());
         assertFalse(unconfigured.parseCallback(signed("00", "00", 99000)).validSignature());
@@ -113,7 +116,8 @@ class VnPayProviderTest {
                 .expiresAt(LocalDateTime.now().plusMinutes(15))
                 .build();
 
-        String url = provider.createPayment(order, new PaymentContext("203.0.113.5", "vn")).payUrl();
+        String url = provider.createPayment(order, new PaymentContext("203.0.113.5", "vn"))
+                .payUrl();
 
         assertTrue(url.startsWith("https://pay.test/vpcpay?"));
         Map<String, String> query = new LinkedHashMap<>();
@@ -133,9 +137,23 @@ class VnPayProviderTest {
     @Test
     void queryResponseWithValidSignatureIsParsedAndForgedOneIsIgnored() throws Exception {
         ObjectMapper om = new ObjectMapper();
-        String[] f = {"vnp_ResponseId", "vnp_Command", "vnp_ResponseCode", "vnp_Message", "vnp_TmnCode", "vnp_TxnRef",
-            "vnp_Amount", "vnp_BankCode", "vnp_PayDate", "vnp_TransactionNo", "vnp_TransactionType",
-            "vnp_TransactionStatus", "vnp_OrderInfo", "vnp_PromotionCode", "vnp_PromotionAmount"};
+        String[] f = {
+            "vnp_ResponseId",
+            "vnp_Command",
+            "vnp_ResponseCode",
+            "vnp_Message",
+            "vnp_TmnCode",
+            "vnp_TxnRef",
+            "vnp_Amount",
+            "vnp_BankCode",
+            "vnp_PayDate",
+            "vnp_TransactionNo",
+            "vnp_TransactionType",
+            "vnp_TransactionStatus",
+            "vnp_OrderInfo",
+            "vnp_PromotionCode",
+            "vnp_PromotionAmount"
+        };
         Map<String, String> r = new LinkedHashMap<>();
         for (String k : f) r.put(k, "");
         r.put("vnp_ResponseCode", "00");
@@ -149,7 +167,8 @@ class VnPayProviderTest {
         String data = String.join("|", r.values());
         r.put("vnp_SecureHash", HexFormat.of().formatHex(mac.doFinal(data.getBytes(StandardCharsets.UTF_8))));
 
-        PaymentCallback ok = provider.parseQueryResponse(om.valueToTree(r), "MU123").orElseThrow();
+        PaymentCallback ok =
+                provider.parseQueryResponse(om.valueToTree(r), "MU123").orElseThrow();
         assertTrue(ok.success());
         assertEquals(99000, ok.amount());
 

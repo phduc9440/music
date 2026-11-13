@@ -77,8 +77,7 @@ public final class ShowItemTransitions {
      * Đây là "Trả lại" (bắt buộc góp ý) khi người duyệt (không đồng thời là người phối, không phải người điều phối) đưa bài
      * từ chờ duyệt về đang phối.
      */
-    public static boolean isReturnByReviewer(
-            ShowItem item, RolePermissions perms, String memberId, ShowItemStatus to) {
+    public static boolean isReturnByReviewer(ShowItem item, RolePermissions perms, String memberId, ShowItemStatus to) {
         return item.getStatus() == ShowItemStatus.IN_REVIEW
                 && to == ShowItemStatus.ARRANGING
                 && actsAsReviewer(item, perms, memberId)

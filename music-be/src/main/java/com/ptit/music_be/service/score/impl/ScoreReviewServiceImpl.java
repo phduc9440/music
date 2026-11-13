@@ -112,7 +112,9 @@ public class ScoreReviewServiceImpl implements ScoreReviewService {
 
     /** Tác giả nhận xét, chủ sở hữu bản nhạc hoặc ADMIN được xóa. */
     private boolean canDelete(Score score, ScoreReview review) {
-        return isMine(review) || SecurityUtils.hasPermission(AdminPermission.SCORES_MODERATE) || scoreFileService.canManageSharing(score);
+        return isMine(review)
+                || SecurityUtils.hasPermission(AdminPermission.SCORES_MODERATE)
+                || scoreFileService.canManageSharing(score);
     }
 
     private ReviewListResponse toResponse(Score score) {

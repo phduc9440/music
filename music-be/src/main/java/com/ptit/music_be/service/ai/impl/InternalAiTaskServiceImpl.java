@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -29,8 +30,11 @@ import com.ptit.music_be.dto.request.ai.AiTaskCompleteRequest;
 import com.ptit.music_be.dto.request.ai.AiTaskFileRequest;
 import com.ptit.music_be.dto.request.ai.AiTaskProgressRequest;
 import com.ptit.music_be.entity.AiTask;
+import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreFile;
+import com.ptit.music_be.event.RewardEarnedEvent;
+import com.ptit.music_be.event.RewardReason;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.repository.ai.AiTaskRepository;
@@ -65,6 +69,7 @@ public class InternalAiTaskServiceImpl implements InternalAiTaskService {
     AiServiceProperties aiServiceProperties;
     ObjectMapper objectMapper;
     ReferralService referralService;
+    ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -218,6 +223,15 @@ public class InternalAiTaskServiceImpl implements InternalAiTaskService {
             scoreRepository.save(score);
             // Người được mời số hóa xong bản đầu tiên: thưởng cho cả hai bên (chỉ một lần)
             referralService.onDigitized(task.getMember());
+            rewardFirstDigitized(task.getMember());
+        }
+    }
+
+    /** Thưởng điểm số hóa bản đầu tiên; refId là chính người dùng nên sổ điểm chỉ cộng một lần dù OMR chạy nhiều lần. */
+    private void rewardFirstDigitized(Member member) {
+        if (member != null && member.getId() != null) {
+            eventPublisher.publishEvent(
+                    new RewardEarnedEvent(member.getId(), RewardReason.FIRST_DIGITIZED, member.getId()));
         }
     }
 

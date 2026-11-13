@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -36,6 +37,7 @@ import com.ptit.music_be.dto.response.score.ScoreContent;
 import com.ptit.music_be.dto.response.score.ScoreSaveResponse;
 import com.ptit.music_be.dto.response.score.ScoreVersionConflict;
 import com.ptit.music_be.dto.response.score.ScoreVersionResponse;
+import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreFile;
 import com.ptit.music_be.exception.AppException;
@@ -44,6 +46,8 @@ import com.ptit.music_be.repository.ai.AiTaskRepository;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.ScoreFileRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
+import com.ptit.music_be.service.billing.EntitlementService;
+import com.ptit.music_be.service.billing.PlanLimits;
 import com.ptit.music_be.service.score.ScoreFileService;
 import com.ptit.music_be.service.storage.FileStorageService;
 
@@ -76,6 +80,9 @@ class ScoreEditServiceImplTest {
     @Mock
     MemberRepository memberRepository;
 
+    @Mock
+    EntitlementService entitlementService;
+
     @TempDir
     Path storage;
 
@@ -91,6 +98,8 @@ class ScoreEditServiceImplTest {
                 scoreFileService,
                 fileStorageService,
                 memberRepository,
+                entitlementService,
+                new VersionRetention(entitlementService),
                 1024 * 1024);
         score = Score.builder().id(SCORE_ID).currentVersion(3).build();
         lenient().when(scoreRepository.findByIdForUpdate(SCORE_ID)).thenReturn(Optional.of(score));
@@ -110,13 +119,18 @@ class ScoreEditServiceImplTest {
         }
     }
 
-    /** Tạo các dòng MusicXML version 1..count; version cuối cùng là hiện hành. */
+    /** Tạo các dòng MusicXML version 1..count (tạo cách đây 40 ngày, quá hạn giữ); version cuối cùng là hiện hành. */
     private List<ScoreFile> xmlVersions(int count) {
+        return xmlVersions(count, LocalDateTime.now().minusDays(40));
+    }
+
+    private List<ScoreFile> xmlVersions(int count, LocalDateTime createdAt) {
         List<ScoreFile> files = new ArrayList<>();
         for (int v = 1; v <= count; v++) {
             files.add(ScoreFile.builder()
                     .fileType(FileType.MUSICXML)
                     .version(v)
+                    .createdAt(createdAt)
                     .isCurrent(v == count)
                     .storagePath("scores/%s/musicxml/v%d.musicxml".formatted(SCORE_ID, v))
                     .build());
@@ -391,15 +405,80 @@ class ScoreEditServiceImplTest {
         assertThat(versions.get(4).getSavedByName()).isNull();
     }
 
+    /** Gói của chủ bản nhạc giữ {@code keptVersions} version (null = không giới hạn). */
+    private void givenOwnerPlanKeeps(Integer keptVersions) {
+        score.setMember(Member.builder().id("owner-1").build());
+        lenient()
+                .when(entitlementService.limitsOf("owner-1"))
+                .thenReturn(new PlanLimits(null, null, null, keptVersions, null, null, null, null, null));
+    }
+
     @Test
-    void listVersionsKeepsOnlyTwentyNewest() {
-        givenXmlVersions(25);
+    void listVersionsShowsOnlyTheVersionsTheOwnersPlanKeeps() {
+        givenOwnerPlanKeeps(5);
+        givenXmlVersions(8);
 
         List<ScoreVersionResponse> versions = service.listVersions(SCORE_ID);
 
-        assertThat(versions).hasSize(20);
-        assertThat(versions.get(0).getVersion()).isEqualTo(25);
-        assertThat(versions.get(19).getVersion()).isEqualTo(6);
+        assertThat(versions).extracting(ScoreVersionResponse::getVersion).containsExactly(8, 7, 6, 5, 4);
+    }
+
+    @Test
+    void upgradingThePlanBringsOlderVersionsBack() {
+        givenOwnerPlanKeeps(20);
+        givenXmlVersions(8);
+
+        assertThat(service.listVersions(SCORE_ID)).hasSize(8);
+    }
+
+    @Test
+    void unlimitedPlanAndOwnerlessScoresShowEveryVersion() {
+        givenXmlVersions(25);
+        assertThat(service.listVersions(SCORE_ID)).hasSize(25);
+
+        givenOwnerPlanKeeps(null);
+        assertThat(service.listVersions(SCORE_ID)).hasSize(25);
+    }
+
+    @Test
+    void hiddenVersionCannotBeOpenedOrRestored() {
+        givenOwnerPlanKeeps(5);
+        score.setCurrentVersion(8);
+        givenXmlVersions(8);
+
+        assertThat(catchError(() -> service.getVersionContent(SCORE_ID, 3)).getErrorCode())
+                .isEqualTo(ErrorCode.SCORE_VERSION_NOT_EXISTED);
+        assertThat(catchError(() -> service.restoreVersion(SCORE_ID, 3, "\"v8\""))
+                        .getErrorCode())
+                .isEqualTo(ErrorCode.SCORE_VERSION_NOT_EXISTED);
+        verify(scoreFileRepository, never()).save(any());
+    }
+
+    @Test
+    void hiddenButStoredVersionsAreNotDeletedWhileFreshOrWithinTheStoredFloor() {
+        givenOwnerPlanKeeps(5);
+        score.setCurrentVersion(25);
+        // Gói chỉ cho xem 5 nhưng đĩa giữ tối thiểu 20 version; 25 version mới tạo hôm nay thì chưa xóa gì
+        when(scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(SCORE_ID, FileType.MUSICXML))
+                .thenReturn(xmlVersions(25, LocalDateTime.now()));
+
+        service.saveMusicXml(SCORE_ID, VALID_XML, XML_TYPE, "\"v25\"", false);
+
+        verify(scoreFileRepository, never()).deleteAll(anyCollection());
+    }
+
+    @Test
+    void storageIsCheckedAgainstTheOwnersPlanBeforeWriting() {
+        givenOwnerPlanKeeps(5);
+        doThrow(new AppException(ErrorCode.PLAN_LIMIT_REACHED))
+                .when(entitlementService)
+                .checkStorage("owner-1", VALID_XML.length);
+
+        AppException error = catchError(() -> service.saveMusicXml(SCORE_ID, VALID_XML, XML_TYPE, "\"v3\"", false));
+
+        assertThat(error.getErrorCode()).isEqualTo(ErrorCode.PLAN_LIMIT_REACHED);
+        assertThat(storage.resolve("scores/score-1/musicxml/v4.musicxml")).doesNotExist();
+        verify(scoreFileRepository, never()).save(any());
     }
 
     @Test

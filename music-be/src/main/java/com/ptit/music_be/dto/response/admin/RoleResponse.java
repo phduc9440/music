@@ -3,6 +3,7 @@ package com.ptit.music_be.dto.response.admin;
 import java.util.List;
 
 import com.ptit.music_be.dto.enums.auth.AdminPermission;
+
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -18,10 +19,12 @@ public class RoleResponse {
     String name;
     /** Tên hiển thị của vai trò tự tạo; null với vai trò có sẵn. */
     String label;
+
     String description;
     boolean builtIn;
     /** Quyền chỉnh được trong bảng (false với USER, SUPER_ADMIN). */
     boolean editable;
+
     long memberCount;
     List<AdminPermission> permissions;
 }
