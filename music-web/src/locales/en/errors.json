@@ -168,5 +168,11 @@
   "3114": "This suggestion was already handled or withdrawn",
   "3115": "Suggestion not found",
   "3116": "The selected measures are invalid",
-  "3117": "You sent more than 30 suggestions in the last 24 hours, try again later"
+  "3117": "You sent more than 30 suggestions in the last 24 hours, try again later",
+  "3121": "This co-editing session is full (10 editors)",
+  "3122": "This score is being edited together; use co-editing mode or wait until everyone leaves before saving",
+  "3123": "The score owner's plan does not include real-time co-editing",
+  "3124": "The co-editing operation is invalid",
+  "3125": "You need to hold the measure lock before editing it",
+  "3126": "You are sending edits too fast, please slow down"
 }
