@@ -1504,3 +1504,9 @@
   color: var(--ui-text-2);
   font-size: var(--ui-text-sm);
 }
+
+/* Ô chọn ngày trong thanh lọc: vừa nội dung, không kéo hết chiều ngang */
+.adm-shell .adm-toolbar input.adm-input[type='date'] {
+  width: auto;
+  min-width: 150px;
+}

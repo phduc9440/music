@@ -159,5 +159,15 @@
   "1020": "Built-in role: it cannot be renamed or deleted; USER and SUPER_ADMIN permissions are locked too",
   "1021": "The role is assigned to members; remove it from them before deleting",
   "1022": "Role name is 2-100 characters, description up to 255",
-  "1023": "A role with this name already exists"
+  "1023": "A role with this name already exists",
+  "4001": "Report not found",
+  "4002": "Choose a reason; details are limited to 1000 characters and required for Other",
+  "4003": "You cannot report your own content",
+  "4004": "You already reported this and the report is still pending",
+  "4005": "You reported too much in the last 24 hours, please try again later",
+  "4006": "This kind of content cannot be reported yet",
+  "4007": "This report has already been handled",
+  "4008": "This action does not apply to the reported content",
+  "4009": "The reported content no longer exists; only Dismiss is available",
+  "4010": "The note is limited to 500 characters"
 }

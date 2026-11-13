@@ -47,7 +47,11 @@ public enum AdminPermission {
     /** Tác vụ AI: xem, hủy, chạy lại task của mọi người. */
     AI_TASKS_MANAGE("system"),
     /** Giám sát hệ thống, nhật ký lỗi. */
-    SYSTEM_MONITOR("system");
+    SYSTEM_MONITOR("system"),
+    /** Hàng chờ báo cáo vi phạm: xem, bỏ qua, ẩn góp ý, gỡ / xóa bản nhạc, khóa tài khoản (từng việc còn cần quyền riêng). */
+    REPORTS_MODERATE("content"),
+    /** Trang "Nhật ký" quản trị: xem và lọc nhật ký. */
+    AUDIT_VIEW("system");
 
     private final String section;
 
@@ -65,6 +69,7 @@ public enum AdminPermission {
         return switch (this) {
             case MEMBERS_LOCK, SUBSCRIPTIONS_MANAGE -> List.of(MEMBERS_VIEW);
             case PAYMENTS_REFUND -> List.of(REVENUE_VIEW);
+            case REPORTS_MODERATE -> List.of(SCORES_MODERATE);
             default -> List.of();
         };
     }

@@ -771,3 +771,22 @@ select.sc-input {
 .sc-coveredit__body .sc-upload__hint {
   margin: 0.4rem 0 0;
 }
+
+/* Hộp thoại báo cáo vi phạm: các lý do xếp dọc, dễ bấm */
+.rp-reasons {
+  margin: 0 0 0.5rem;
+  padding: 0;
+  border: 0;
+}
+.rp-reason {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 40px;
+  cursor: pointer;
+}
+.rp-reason input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--sc-accent);
+}

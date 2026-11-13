@@ -219,6 +219,8 @@ CREATE TABLE IF NOT EXISTS score_comments (
     resolved_by      VARCHAR(36)   NULL,
     resolved_at      DATETIME(6)   NULL,
     edited_at        DATETIME(6)   NULL COMMENT 'Lần sửa nội dung gần nhất (nhãn "đã sửa")',
+    hidden_at        DATETIME(6)   NULL COMMENT 'Admin ẩn góp ý vi phạm (R5): khác NULL thì biến khỏi mọi truy vấn',
+    hidden_by        VARCHAR(36)   NULL COMMENT 'Admin đã ẩn góp ý',
     created_at       DATETIME(6)   NULL,
     PRIMARY KEY (id),
     KEY idx_score_comments_score (score_id, parent_id, status),
@@ -226,7 +228,35 @@ CREATE TABLE IF NOT EXISTS score_comments (
     CONSTRAINT fk_score_comments_score    FOREIGN KEY (score_id)    REFERENCES scores (id) ON DELETE CASCADE,
     CONSTRAINT fk_score_comments_parent   FOREIGN KEY (parent_id)   REFERENCES score_comments (id) ON DELETE CASCADE,
     CONSTRAINT fk_score_comments_author   FOREIGN KEY (author_id)   REFERENCES members (id),
-    CONSTRAINT fk_score_comments_resolver FOREIGN KEY (resolved_by) REFERENCES members (id)
+    CONSTRAINT fk_score_comments_resolver FOREIGN KEY (resolved_by) REFERENCES members (id),
+    CONSTRAINT fk_score_comments_hider    FOREIGN KEY (hidden_by)   REFERENCES members (id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Báo cáo vi phạm (R5). Đối tượng bị báo cáo: bản nhạc (score_id) hoặc góp ý (comment_id). Tên bản nhạc, trích góp ý và chủ
+-- nội dung không lưu lại ở đây mà tra từ scores / score_comments khi trả về.
+CREATE TABLE IF NOT EXISTS content_reports (
+    id            VARCHAR(36)   NOT NULL,
+    target_type   VARCHAR(20)   NOT NULL COMMENT 'SCORE / COMMENT / FORUM_POST',
+    score_id      VARCHAR(36)   NULL,
+    comment_id    VARCHAR(36)   NULL,
+    reporter_id   VARCHAR(36)   NOT NULL,
+    reason        VARCHAR(20)   NOT NULL COMMENT 'COPYRIGHT / SPAM / INAPPROPRIATE / OTHER',
+    details       VARCHAR(1000) NULL,
+    status        VARCHAR(12)   NOT NULL COMMENT 'PENDING / RESOLVED / DISMISSED',
+    action        VARCHAR(16)   NULL COMMENT 'Cách xử lý: DISMISS / UNPUBLISH / HIDE / SOFT_DELETE / LOCK_ACCOUNT',
+    resolution_note VARCHAR(500) NULL,
+    resolved_by   VARCHAR(36)   NULL,
+    resolved_at   DATETIME(6)   NULL,
+    created_at    DATETIME(6)   NULL,
+    PRIMARY KEY (id),
+    KEY idx_content_reports_status (status, created_at),
+    KEY idx_content_reports_score (score_id, status),
+    KEY idx_content_reports_comment (comment_id, status),
+    KEY idx_content_reports_reporter (reporter_id, created_at),
+    CONSTRAINT fk_content_reports_score    FOREIGN KEY (score_id)    REFERENCES scores (id) ON DELETE SET NULL,
+    CONSTRAINT fk_content_reports_comment  FOREIGN KEY (comment_id)  REFERENCES score_comments (id) ON DELETE SET NULL,
+    CONSTRAINT fk_content_reports_reporter FOREIGN KEY (reporter_id) REFERENCES members (id),
+    CONSTRAINT fk_content_reports_resolver FOREIGN KEY (resolved_by) REFERENCES members (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- @nhắc tên trong góp ý (mục 4.2): người được nhắc nhận thông báo COMMENT_MENTION; dùng cho bộ lọc "Nhắc tới tôi".

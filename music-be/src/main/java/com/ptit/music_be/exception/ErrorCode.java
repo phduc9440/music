@@ -229,6 +229,17 @@ public enum ErrorCode {
     COMMENT_MENTION_INVALID(
             3906, "Chỉ nhắc được người xem được bản nhạc này (tối đa 20 người)", HttpStatus.BAD_REQUEST),
     COMMENT_ANCHOR_INVALID(3907, "Bè hoặc danh sách nốt đã chọn không hợp lệ", HttpStatus.BAD_REQUEST),
+    // ---- 40xx: Báo cáo vi phạm và nhật ký quản trị (R5)
+    REPORT_NOT_EXISTED(4001, "Không tìm thấy báo cáo", HttpStatus.NOT_FOUND),
+    REPORT_REASON_INVALID(4002, "Hãy chọn lý do báo cáo; chi tiết tối đa 1000 ký tự và bắt buộc khi chọn lý do Khác", HttpStatus.BAD_REQUEST),
+    REPORT_OWN_CONTENT(4003, "Bạn không báo cáo được nội dung của chính mình", HttpStatus.BAD_REQUEST),
+    REPORT_DUPLICATED(4004, "Bạn đã báo cáo nội dung này và báo cáo đang chờ xử lý", HttpStatus.CONFLICT),
+    REPORT_RATE_LIMITED(4005, "Bạn báo cáo quá nhiều trong 24 giờ qua, hãy thử lại sau", HttpStatus.TOO_MANY_REQUESTS),
+    REPORT_TARGET_UNSUPPORTED(4006, "Loại nội dung này chưa nhận báo cáo", HttpStatus.BAD_REQUEST),
+    REPORT_ALREADY_HANDLED(4007, "Báo cáo này đã được xử lý", HttpStatus.CONFLICT),
+    REPORT_ACTION_INVALID(4008, "Cách xử lý này không áp dụng cho loại nội dung bị báo cáo", HttpStatus.BAD_REQUEST),
+    REPORT_TARGET_GONE(4009, "Nội dung bị báo cáo không còn nữa; chỉ chọn được Bỏ qua", HttpStatus.CONFLICT),
+    REPORT_NOTE_INVALID(4010, "Ghi chú xử lý tối đa 500 ký tự", HttpStatus.BAD_REQUEST),
     ;
 
     int code;

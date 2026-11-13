@@ -7,6 +7,7 @@ import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
+import org.hibernate.annotations.SQLRestriction;
 
 import com.ptit.music_be.dto.enums.score.CommentStatus;
 
@@ -18,6 +19,8 @@ import lombok.experimental.FieldDefaults;
  * góp ý gốc. {@code Score} lọc bản trong thùng rác bằng {@code @SQLRestriction} nên quan hệ để LAZY: service luôn nạp bản
  * nhạc qua {@code ScoreRepository} (đọc {@code getScore().getId()} không khởi tạo proxy).
  */
+// Góp ý bị admin ẩn (hidden_at khác null, R5) biến khỏi mọi truy vấn JPA, giống bản nhạc trong thùng rác
+@SQLRestriction("hidden_at IS NULL")
 @Entity
 @Table(name = "score_comments")
 @Getter
@@ -85,6 +88,15 @@ public class ScoreComment {
 
     @Column(name = "edited_at")
     LocalDateTime editedAt;
+
+    /** Lúc admin ẩn góp ý vi phạm; khác null thì góp ý không còn hiện ở đâu. */
+    @Column(name = "hidden_at")
+    LocalDateTime hiddenAt;
+
+    /** Admin đã ẩn góp ý (nguồn của dòng "Ẩn góp ý" ở trang Nhật ký). */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "hidden_by")
+    Member hiddenBy;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

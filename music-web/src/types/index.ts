@@ -8,3 +8,4 @@ export * from './composer';
 export * from './billing';
 export * from './team';
 export * from './comment';
+export * from './report';

@@ -159,5 +159,15 @@
   "1020": "Vai trò có sẵn: không đổi tên, không xóa; USER và SUPER_ADMIN cũng không chỉnh quyền",
   "1021": "Vai trò đang được gán cho thành viên, hãy gỡ khỏi họ trước khi xóa",
   "1022": "Tên vai trò từ 2 đến 100 ký tự, mô tả tối đa 255 ký tự",
-  "1023": "Đã có vai trò trùng tên này"
+  "1023": "Đã có vai trò trùng tên này",
+  "4001": "Không tìm thấy báo cáo",
+  "4002": "Hãy chọn lý do báo cáo; chi tiết tối đa 1000 ký tự và bắt buộc khi chọn lý do Khác",
+  "4003": "Bạn không báo cáo được nội dung của chính mình",
+  "4004": "Bạn đã báo cáo nội dung này và báo cáo đang chờ xử lý",
+  "4005": "Bạn báo cáo quá nhiều trong 24 giờ qua, hãy thử lại sau",
+  "4006": "Loại nội dung này chưa nhận báo cáo",
+  "4007": "Báo cáo này đã được xử lý",
+  "4008": "Cách xử lý này không áp dụng cho loại nội dung bị báo cáo",
+  "4009": "Nội dung bị báo cáo không còn nữa; chỉ chọn được Bỏ qua",
+  "4010": "Ghi chú xử lý tối đa 500 ký tự"
 }

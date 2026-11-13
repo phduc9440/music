@@ -18,7 +18,9 @@ export type AdminPermission =
   | 'SUBSCRIPTIONS_MANAGE'
   | 'PLANS_MANAGE'
   | 'AI_TASKS_MANAGE'
-  | 'SYSTEM_MONITOR';
+  | 'SYSTEM_MONITOR'
+  | 'REPORTS_MODERATE'
+  | 'AUDIT_VIEW';
 
 /** Quyền theo nhóm menu quản trị (nhãn nhóm: admin.menu.sections.<nhóm>, nhãn quyền: admin.roles.permissions.<quyền>). */
 export const ADMIN_PERMISSION_GROUPS: { section: string; permissions: AdminPermission[] }[] = [
@@ -26,13 +28,20 @@ export const ADMIN_PERMISSION_GROUPS: { section: string; permissions: AdminPermi
   { section: 'users', permissions: ['MEMBERS_VIEW', 'MEMBERS_LOCK', 'TEAMS_MANAGE', 'ANNOUNCEMENTS_SEND'] },
   {
     section: 'content',
-    permissions: ['SCORES_MODERATE', 'SCORES_APPROVE', 'OFFICIAL_LIBRARY', 'TAGS_MANAGE', 'COMPOSERS_MANAGE'],
+    permissions: [
+      'SCORES_MODERATE',
+      'SCORES_APPROVE',
+      'OFFICIAL_LIBRARY',
+      'TAGS_MANAGE',
+      'COMPOSERS_MANAGE',
+      'REPORTS_MODERATE',
+    ],
   },
   {
     section: 'billing',
     permissions: ['REVENUE_VIEW', 'PAYMENTS_REFUND', 'SUBSCRIPTIONS_MANAGE', 'PLANS_MANAGE'],
   },
-  { section: 'system', permissions: ['AI_TASKS_MANAGE', 'SYSTEM_MONITOR'] },
+  { section: 'system', permissions: ['AI_TASKS_MANAGE', 'SYSTEM_MONITOR', 'AUDIT_VIEW'] },
 ];
 
 /** Bật quyền ở khóa thì phải bật cả quyền ở giá trị (giống AdminPermission.requires ở BE). */
@@ -40,6 +49,7 @@ export const ADMIN_PERMISSION_REQUIRES: Partial<Record<AdminPermission, AdminPer
   MEMBERS_LOCK: ['MEMBERS_VIEW'],
   SUBSCRIPTIONS_MANAGE: ['MEMBERS_VIEW'],
   PAYMENTS_REFUND: ['REVENUE_VIEW'],
+  REPORTS_MODERATE: ['SCORES_MODERATE'],
 };
 
 /** Vai trò tài khoản kèm quyền quản trị. BE: RoleResponse */

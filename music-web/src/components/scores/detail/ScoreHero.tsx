@@ -26,6 +26,8 @@ interface Props {
   onDelete: () => void;
   onShare: () => void;
   onRequestEdit: () => void;
+  /** Mở hộp thoại báo cáo vi phạm (chỉ hiện cho người không phải chủ sở hữu). */
+  onReport?: () => void;
   /** Gọi khi chủ sở hữu đổi chế độ hiển thị (công khai, hủy yêu cầu, về riêng tư) với bản nhạc đã cập nhật. */
   onVisibilityChanged: (score: ScoreDetail) => void;
   /** Gọi khi bản nhạc nhập từ MIDI chuyển xong thành MusicXML để trang tải lại. */
@@ -232,6 +234,7 @@ export function ScoreSidebar({
   onDelete,
   onShare,
   onRequestEdit,
+  onReport,
 }: Omit<Props, 'onConverted' | 'onVisibilityChanged'>) {
   const base = useScoreBase();
   const highlights: [string, string][] = [
@@ -264,7 +267,8 @@ export function ScoreSidebar({
   // Bản trong kho mẫu do hệ thống quản lý, chỉ admin sửa: không có chuyện xin quyền chỉnh sửa
   const canRequestEdit =
     !score.canEdit && score.accessLevel !== 'OWNER' && !base.startsWith('/admin') && !score.isOfficial;
-  const hasManage = score.canManageSharing || score.canEdit || canRequestEdit || score.canDelete;
+  const canReport = !!onReport && score.accessLevel !== 'OWNER' && !base.startsWith('/admin');
+  const hasManage = score.canManageSharing || score.canEdit || canRequestEdit || score.canDelete || canReport;
 
   return (
     <aside className="sd-side">
@@ -315,6 +319,12 @@ export function ScoreSidebar({
               <button type="button" className="sd-manage__item" onClick={onEdit}>
                 <Icon name="edit" size={16} />
                 {t('scores.hero.editInfo')}
+              </button>
+            )}
+            {canReport && (
+              <button type="button" className="sd-manage__item" onClick={onReport}>
+                <Icon name="alert" size={16} />
+                {t('scores.report.menu')}
               </button>
             )}
             {score.canDelete && (

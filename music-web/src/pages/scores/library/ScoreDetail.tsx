@@ -11,10 +11,11 @@ import CommentsSection from '../../../components/scores/comments/CommentsSection
 import ScoreHero, { ScorePreview, ScoreSidebar } from '../../../components/scores/detail/ScoreHero';
 import Modal from '../../../components/scores/common/Modal';
 import ShareModal from '../../../components/scores/detail/ShareModal';
+import ReportModal from '../../../components/scores/common/ReportModal';
 import TasksTable from '../../../components/scores/detail/TasksTable';
 import { getBackTarget } from '../../../components/layout/nav';
 import { BackLink } from '../../../components/ui';
-import { commentApi, scoreApi } from '../../../services';
+import { commentApi, reportApi, scoreApi } from '../../../services';
 import type { ScoreDetail as ScoreDetailData } from '../../../types';
 import { getHttpStatus, POLL_INTERVAL_MS, useScoreBase } from '../../../utils/score';
 import '../../../components/scores/scores.css';
@@ -60,6 +61,7 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [reporting, setReporting] = useState(false);
   const [requestingEdit, setRequestingEdit] = useState(false);
 
   // Tải chi tiết bản nhạc
@@ -252,6 +254,7 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
             onDelete={() => setDeleting(true)}
             onShare={() => setSharing(true)}
             onRequestEdit={() => setRequestingEdit(true)}
+            onReport={() => setReporting(true)}
           />
         </div>
       </main>
@@ -271,6 +274,14 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
       )}
 
       {sharing && <ShareModal scoreId={score.id} onClose={() => setSharing(false)} />}
+
+      {reporting && (
+        <ReportModal
+          title={t('scores.report.title')}
+          onSubmit={(payload) => reportApi.reportScore(score.id, payload)}
+          onClose={() => setReporting(false)}
+        />
+      )}
 
       {editing && (
         <EditScoreModal
