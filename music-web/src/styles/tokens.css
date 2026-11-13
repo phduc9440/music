@@ -109,6 +109,15 @@
   --ui-loop-region: rgb(37 99 235 / 0.18);
   --ui-measure-error: #dc2626;
   --ui-measure-locked: #7c3aed; /* dùng ở đồng chỉnh sửa (N13) */
+  /* Màu của từng người đang cùng sửa (khớp colorIndex 0..7 của máy chủ) */
+  --ui-live-0: #2563eb;
+  --ui-live-1: #db2777;
+  --ui-live-2: #059669;
+  --ui-live-3: #d97706;
+  --ui-live-4: #7c3aed;
+  --ui-live-5: #0891b2;
+  --ui-live-6: #dc2626;
+  --ui-live-7: #65a30d;
   --ui-comment-region: rgb(245 158 11 / 0.2); /* dùng ở góp ý (N7) */
   --ui-diff-added: #15803d;
   --ui-diff-removed: #dc2626;
@@ -188,6 +197,14 @@
   --ui-note-playing: #60a5fa;
   --ui-measure-error: #f87171;
   --ui-measure-locked: #a78bfa;
+  --ui-live-0: #60a5fa;
+  --ui-live-1: #f472b6;
+  --ui-live-2: #34d399;
+  --ui-live-3: #fbbf24;
+  --ui-live-4: #a78bfa;
+  --ui-live-5: #22d3ee;
+  --ui-live-6: #f87171;
+  --ui-live-7: #a3e635;
   --ui-diff-added: #4ade80;
   --ui-diff-removed: #f87171;
   --ui-diff-changed: #fbbf24;

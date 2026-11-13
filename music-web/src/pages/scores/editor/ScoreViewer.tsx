@@ -52,6 +52,10 @@ import { durationLabel, dotsLabel } from '../../../components/editor/notes/durat
 import { PlayerBar } from '../../../components/player/PlayerBar';
 import { usePlayer } from '../../../components/player/hooks/usePlayer';
 import { useScoreEditor } from '../../../components/editor/core/useScoreEditor';
+import LiveBar from '../../../components/editor/live/LiveBar';
+import { useLiveCollab } from '../../../components/editor/live/useLiveCollab';
+import type { LockBox } from '../../../components/scores/viewer/ScoreCanvas';
+import type { LiveSelection } from '../../../types';
 import { countView } from '../../../services/practice/playbackApi';
 import { commentApi, fetchMusicXmlWithVersion, scoreApi } from '../../../services';
 import type { ScoreComment, ScoreDetail as ScoreDetailData } from '../../../types';
@@ -302,7 +306,24 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
   const [suggestXml, setSuggestXml] = useState<string | null>(null);
   const canEdit = score.canEdit || suggesting;
 
+  // Đồng chỉnh sửa (chỉ người sửa được, không kèm chế độ đề xuất): bật tay, và chỉ khi không còn thay đổi chưa lưu
+  const [liveOn, setLiveOn] = useState(false);
+  const selectionRef = useRef<ReadonlySet<string>>(new Set());
+  const getLiveSelection = useCallback((): LiveSelection | null => {
+    const infos = [...selectionRef.current].map((id) => doc.getInfo(id)).filter((i) => i !== undefined);
+    if (infos.length === 0) return null;
+    const measures = infos.map((i) => i.measureIndex);
+    return { partIndex: infos[0].partIndex, from: Math.min(...measures), to: Math.max(...measures) };
+  }, [doc]);
+  const live = useLiveCollab({
+    scoreId: score.id,
+    doc,
+    enabled: liveOn && score.canEdit && !suggesting,
+    getSelection: getLiveSelection,
+  });
+
   const editor = useScoreEditor({
+    live,
     scoreId: score.id,
     title: score.title,
     doc,
@@ -321,10 +342,20 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
     revision: editor.revision,
     onFirstPlay: () => void countView(score.id),
   });
-  const selectionRef = useRef(editor.selection);
   useEffect(() => {
     selectionRef.current = editor.selection;
   });
+  const lockBoxes = useMemo<LockBox[]>(() => {
+    const { locks, participants, selfSessionId } = live.state;
+    if (!locks) return [];
+    const boxes: LockBox[] = [];
+    for (const entry of locks.locks) {
+      if (entry.sessionId === selfSessionId) continue;
+      const holder = participants.find((p) => p.sessionId === entry.sessionId);
+      boxes.push({ measureIndex: entry.measureIndex, label: holder?.name ?? '', colorIndex: holder?.colorIndex ?? 0 });
+    }
+    return boxes;
+  }, [live.state]);
   const { canPlay, playFrom, stop: stopPlayer, status: playerStatus } = player;
   const { a: loopA, b: loopB, enabled: loopOn } = player.loop;
   const loopRange = useMemo(
@@ -652,6 +683,7 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
             <span className="sv-badge">{t('editor.view.header.readOnly')}</span>
           )}
           {suggesting && <span className="sv-badge sv-badge--suggest">{t('suggestions.mode.suggest')}</span>}
+          {live.active && <LiveBar state={live.state} />}
         </div>
 
         <div className="sv-toolbar__center">
@@ -687,11 +719,22 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
         </div>
 
         <div className="sv-toolbar__right">
+          {score.canEdit && !suggesting && (
+            <button
+              className={`sc-btn${liveOn ? ' is-active' : ''}`}
+              aria-pressed={liveOn}
+              disabled={editor.dirty || editor.saving}
+              onClick={() => setLiveOn((on) => !on)}
+              title={editor.dirty ? t('live.toggle.saveFirst') : liveOn ? t('live.toggle.off') : t('live.toggle.on')}
+            >
+              {liveOn ? t('live.toggle.stop') : t('live.toggle.start')}
+            </button>
+          )}
           {score.canReview && (
             <button
               className={`sc-btn${suggesting ? ' is-active' : ''}`}
               aria-pressed={suggesting}
-              disabled={editor.dirty || editor.saving}
+              disabled={editor.dirty || editor.saving || liveOn}
               onClick={() => setSuggesting((on) => !on)}
               title={
                 editor.dirty
@@ -730,7 +773,7 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
               </button>
               <button
                 className="sc-btn sc-btn--primary"
-                disabled={!editor.dirty || editor.saving}
+                disabled={(live.active ? !live.state.unsaved && live.state.pending === 0 : !editor.dirty) || editor.saving}
                 onClick={() => void editor.save()}
                 title={suggesting ? t('suggestions.mode.sendTitle', { shortcut: `${MOD}+S` }) : `Lưu (${MOD}+S)`}
               >
@@ -886,6 +929,7 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
             revision={editor.revision}
             selected={editor.selection}
             issueMeasures={issueMeasures}
+            lockBoxes={lockBoxes}
             focusMeasure={focusMeasure}
             playing={player.activeIds}
             mutedStaves={player.mutedStaves}

@@ -67,6 +67,30 @@ export class History {
     this.savedCursor = -1;
   }
 
+  /** Lệnh sẽ bị hoàn tác / làm lại ở bước kế tiếp (để kiểm tra khóa ô trước khi thực hiện). */
+  get nextUndo(): EditCommand | null {
+    return this.stack[this.cursor - 1] ?? null;
+  }
+
+  get nextRedo(): EditCommand | null {
+    return this.stack[this.cursor] ?? null;
+  }
+
+  /**
+   * Bỏ các lệnh mà `affected` trả về true (đồng chỉnh sửa: người khác vừa đổi các ô mà lệnh đó nhớ bản trước/sau, nên
+   * hoàn tác sẽ đè lên công của họ). Các lệnh còn lại chạm ô khác nên vẫn độc lập với nhau.
+   */
+  discard(affected: (command: EditCommand) => boolean): void {
+    let removedBefore = 0;
+    this.stack = this.stack.filter((command, index) => {
+      if (!affected(command)) return true;
+      if (index < this.cursor) removedBefore += 1;
+      return false;
+    });
+    this.cursor -= removedBefore;
+    if (this.savedCursor > this.cursor) this.savedCursor = -1;
+  }
+
   /** Xóa toàn bộ lịch sử (ví dụ sau khi tải lại bản mới nhất). */
   clear(): void {
     this.stack = [];
