@@ -1,0 +1,28 @@
+{
+  "perform": {
+    "loading": "Loading {done}/{total} pieces",
+    "ready": "{count} pieces ready",
+    "start": "Start",
+    "hint": "Turn pages with PageDown/PageUp, arrow keys, Space, or by tapping the right/left half of the screen. Press L for the piece list, Esc to leave.",
+    "empty": "This show has no pieces yet",
+    "skipped": "{count} pieces could not be opened and will be skipped",
+    "noneOpenable": "None of the pieces can be opened",
+    "wrongTeam": "This show does not belong to the team in the link",
+    "loadFailed": "Could not load the show",
+    "backToTeams": "Back to teams",
+    "backToShow": "Back to the show",
+    "setList": "Set list",
+    "unavailableShort": "Unavailable",
+    "settings": "Settings",
+    "transpose": "Transpose",
+    "zoom": "Size",
+    "invert": "Invert score colors",
+    "exit": "Exit",
+    "page": "Page {page}/{total}",
+    "songOf": "Piece {n}/{total}",
+    "nextUp": "Up next: {title}",
+    "tapToContinue": "Tap to continue",
+    "end": "End of the show",
+    "unavailable": "This piece could not be opened"
+  }
+}

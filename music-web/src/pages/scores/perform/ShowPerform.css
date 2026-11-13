@@ -1,0 +1,195 @@
+/* Chế độ biểu diễn: chỉ dùng token màu của theme, nền theo theme đang chọn (mặc định đảo màu bản nhạc khi theme tối). */
+.pf {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100dvh;
+  background: var(--ui-bg);
+  color: var(--ui-text);
+  overflow: hidden;
+}
+.pf-center {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 2rem;
+  text-align: center;
+}
+.pf-intro h1 {
+  margin: 0;
+}
+.pf-hint {
+  max-width: 32rem;
+  color: var(--ui-text-3);
+  font-size: var(--ui-text-sm);
+}
+.pf-warn {
+  color: var(--ui-text-2);
+}
+.pf-btn {
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: 8px;
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  font: inherit;
+  cursor: pointer;
+}
+.pf-btn:hover:not(:disabled) {
+  background: var(--ui-surface-hover);
+}
+.pf-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.pf-btn--primary {
+  border-color: var(--ui-primary);
+  background: var(--ui-primary);
+  color: var(--ui-on-accent);
+}
+.pf-btn--primary:hover:not(:disabled) {
+  background: var(--ui-primary-hover);
+}
+.pf-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--ui-border);
+  background: var(--ui-surface);
+}
+.pf-bar__title {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+  min-width: 0;
+}
+.pf-bar__title span {
+  color: var(--ui-text-3);
+  font-size: var(--ui-text-sm);
+}
+.pf-bar__notes {
+  padding: 0.1rem 0.5rem;
+  border-radius: 6px;
+  background: var(--ui-primary-soft);
+  color: var(--ui-text-2);
+}
+.pf-bar__page {
+  color: var(--ui-text-2);
+  font-variant-numeric: tabular-nums;
+}
+.pf-stage {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  background: var(--ui-surface-hover);
+}
+.pf-settings {
+  position: absolute;
+  top: 3.5rem;
+  right: 0.75rem;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: 10px;
+  background: var(--ui-surface);
+}
+.pf-settings__row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.pf-settings__row span {
+  flex: 1;
+}
+.pf-settings__row output {
+  min-width: 3.5rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.pf-interlude {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: var(--ui-bg);
+  font-size: 1.75rem;
+  text-align: center;
+}
+.pf-interlude p {
+  margin: 0;
+}
+.pf-interlude span {
+  color: var(--ui-text-3);
+  font-size: var(--ui-text-md);
+}
+.pf-list {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  background: var(--ui-bg);
+}
+.pf-list__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--ui-border);
+}
+.pf-list__header h2 {
+  margin: 0;
+}
+.pf-list__items {
+  margin: 0;
+  padding: 0.5rem 1rem;
+  overflow: auto;
+  list-style: none;
+}
+.pf-list__item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.85rem 0.75rem;
+  border: 0;
+  border-bottom: 1px solid var(--ui-border);
+  background: transparent;
+  color: var(--ui-text);
+  font: inherit;
+  font-size: 1.1rem;
+  text-align: left;
+  cursor: pointer;
+}
+.pf-list__item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.pf-list__item--current {
+  background: var(--ui-primary-soft);
+}
+.pf-list__no {
+  min-width: 2rem;
+  color: var(--ui-text-3);
+}
+.pf-list__title {
+  flex: 1;
+}
+.pf-list__tag {
+  color: var(--ui-text-3);
+  font-size: var(--ui-text-sm);
+}

@@ -10,6 +10,7 @@ import ScoreProcessing from '../pages/scores/upload/ScoreProcessing';
 import ScoreReview from '../pages/scores/upload/ScoreReview';
 import ScoreViewer from '../pages/scores/editor/ScoreViewer';
 import ScorePlayer from '../pages/scores/player/ScorePlayer';
+import ShowPerform from '../pages/scores/perform/ShowPerform';
 import EditorSpike from '../pages/scores/editor/EditorSpike';
 import ScoreImport from '../pages/scores/upload/ScoreImport';
 import SharedScores from '../pages/scores/library/SharedScores';
@@ -117,6 +118,14 @@ const router = createBrowserRouter(
         element={
           <ProtectedRoute allowedRole="USER">
             <ScorePlayer />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/teams/:teamId/shows/:showId/perform"
+        element={
+          <ProtectedRoute allowedRole="USER">
+            <ShowPerform />
           </ProtectedRoute>
         }
       />

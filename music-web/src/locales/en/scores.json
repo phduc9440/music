@@ -491,5 +491,10 @@
     "helpContextText": "Menu: Comment on the selected passage, Show comments on this bar",
     "helpPanelText": "Comment on the selected note / bar (opens the Comments panel on the right)",
     "bubbleTitle": "{count} comments on bar {measure}"
+  },
+  "assignment": {
+    "text": "Piece in show {show} · {status}",
+    "due": "due {date}",
+    "open": "Open the show board"
   }
 }

@@ -1,0 +1,28 @@
+{
+  "perform": {
+    "loading": "Đang tải {done}/{total} bài",
+    "ready": "Đã sẵn sàng {count} bài",
+    "start": "Bắt đầu",
+    "hint": "Lật trang bằng PageDown/PageUp, phím mũi tên, Space hoặc chạm nửa phải/trái màn hình. Phím L mở danh sách bài, Esc để thoát.",
+    "empty": "Buổi diễn chưa có bài",
+    "skipped": "{count} bài không mở được sẽ bị bỏ qua",
+    "noneOpenable": "Không có bài nào mở được",
+    "wrongTeam": "Buổi diễn này không thuộc nhóm trong đường dẫn",
+    "loadFailed": "Không tải được buổi diễn",
+    "backToTeams": "Về danh sách nhóm",
+    "backToShow": "Về trang buổi diễn",
+    "setList": "Danh sách bài",
+    "unavailableShort": "Không mở được",
+    "settings": "Cài đặt",
+    "transpose": "Dịch giọng",
+    "zoom": "Cỡ chữ",
+    "invert": "Đảo màu bản nhạc",
+    "exit": "Thoát",
+    "page": "Trang {page}/{total}",
+    "songOf": "Bài {n}/{total}",
+    "nextUp": "Bài tiếp: {title}",
+    "tapToContinue": "Chạm để vào ngay",
+    "end": "Hết buổi diễn",
+    "unavailable": "Không mở được bài này"
+  }
+}

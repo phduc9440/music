@@ -1,0 +1,22 @@
+.sv-assign {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem 1.25rem;
+  border-bottom: 1px solid var(--ui-primary-border);
+  background: var(--ui-primary-soft);
+  color: var(--ui-text-2);
+  font-size: 0.9rem;
+}
+.sv-assign__row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.sv-assign__row > span {
+  flex: 1;
+}
+.sv-assign a {
+  color: var(--ui-primary);
+  font-weight: 600;
+}
