@@ -4,6 +4,7 @@ import UserProfile from '../pages/Profile';
 import ScoreLibrary from '../pages/scores/library/ScoreLibrary';
 import ScoreDetail from '../pages/scores/library/ScoreDetail';
 import ScoreTrash from '../pages/scores/library/ScoreTrash';
+import ScoreCreate from '../pages/scores/create/ScoreCreate';
 import ScoreUpload from '../pages/scores/upload/ScoreUpload';
 import ScoreProcessing from '../pages/scores/upload/ScoreProcessing';
 import ScoreReview from '../pages/scores/upload/ScoreReview';
@@ -75,6 +76,7 @@ const router = createBrowserRouter(
         <Route index element={<WorkspaceHome />} />
         <Route path="/profile" element={<UserProfile />} />
         <Route path="/scores" element={<ScoreLibrary />} />
+        <Route path="/scores/new" element={<ScoreCreate />} />
         <Route path="/scores/upload" element={<ScoreUpload />} />
         <Route path="/scores/import" element={<ScoreImport />} />
         <Route path="/explore" element={<ExploreScores />} />

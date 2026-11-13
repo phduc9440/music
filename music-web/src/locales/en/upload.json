@@ -291,5 +291,74 @@
     "2005": "The score is too large to save (5MB max), split it up or remove some parts",
     "2013": "The score content is invalid. Reload the page; your draft is kept",
     "2201": "This score is being recognized again, wait for it to finish and then save"
+  },
+  "create": {
+    "title": "Create a score",
+    "subtitle": "Pick a way to start, or drop files anywhere in this box",
+    "dropHint": "Drop PDF, image, MusicXML or MIDI files here",
+    "checking": "Checking files...",
+    "tooMany": "You can drop at most {max} files at a time",
+    "empty": "The file is empty (0 bytes)",
+    "unsupported": "Unrecognized format. Only PDF, PNG, JPG, MusicXML, MXL and MIDI are supported",
+    "mixed": "Don't mix PDF/images with MusicXML/MIDI. Create each group separately",
+    "scan": {
+      "title": "From an image or PDF (digitize)",
+      "hint": "Recognizes printed or photographed sheet music as MusicXML"
+    },
+    "import": {
+      "title": "From a MusicXML / MIDI file",
+      "hint": "Use this when you already have a digital file, no digitizing needed"
+    },
+    "notes": {
+      "C": "C",
+      "D": "D",
+      "E": "E",
+      "F": "F",
+      "G": "G",
+      "A": "A",
+      "B": "B"
+    },
+    "sharp": "sharp",
+    "flat": "flat",
+    "major": "major",
+    "minor": "minor",
+    "noAccidentals": "no accidentals",
+    "preset": {
+      "PIANO": {
+        "name": "Piano",
+        "hint": "2 staves, treble and bass clefs"
+      },
+      "VOICE_PIANO": {
+        "name": "Voice + Piano",
+        "hint": "A vocal staff plus a two-staff piano"
+      },
+      "GUITAR": {
+        "name": "Guitar",
+        "hint": "1 staff, treble clef"
+      },
+      "SATB": {
+        "name": "SATB choir",
+        "hint": "Soprano, Alto, Tenor, Bass"
+      }
+    },
+    "blank": {
+      "card": "Blank score",
+      "cardHint": "Start from an empty page and enter notes directly",
+      "title": "Blank score",
+      "preset": "Instrument template",
+      "titlePlaceholder": "e.g. Draft no. 1",
+      "key": "Key",
+      "mode": "Mode",
+      "time": "Time signature",
+      "beats": "Beats per measure",
+      "beatType": "Note value of one beat",
+      "tempo": "Tempo (BPM)",
+      "measures": "Number of measures",
+      "range": "Enter a whole number from {min} to {max}",
+      "back": "Back",
+      "submit": "Create score",
+      "creating": "Creating...",
+      "failed": "Couldn't create the score"
+    }
   }
 }

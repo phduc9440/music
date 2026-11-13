@@ -82,6 +82,7 @@
   "3004": "Chu kỳ thống kê phải là DAY, WEEK hoặc MONTH",
   "3005": "Số ngày thống kê phải từ 7 đến 90",
   "3301": "Bản nhạc không nằm trong thùng rác của bạn",
+  "3302": "Tùy chọn bản nhạc trống không hợp lệ (khóa, nhịp, tempo hoặc số ô)",
   "3401": "Lời xin đưa vào kho bản nhạc mẫu không tồn tại",
   "3402": "Lời xin này đã được xử lý",
   "3403": "Bản nhạc này đang có lời xin chờ chủ sở hữu trả lời",
