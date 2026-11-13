@@ -1,0 +1,25 @@
+{
+  "toggle": {
+    "start": "Cùng sửa",
+    "stop": "Dừng cùng sửa",
+    "on": "Bật chế độ cùng sửa theo thời gian thực",
+    "off": "Tắt chế độ cùng sửa",
+    "saveFirst": "Lưu thay đổi hiện tại trước khi bật chế độ cùng sửa"
+  },
+  "status": {
+    "synced": "Đã đồng bộ",
+    "syncing": "Đang gửi {count} thay đổi",
+    "offline": "Mất kết nối, đang thử lại",
+    "connecting": "Đang kết nối"
+  },
+  "you": "{name} (bạn)",
+  "notice": {
+    "heldBy": "{name} đang sửa ô nhịp này",
+    "locked": "{name} đang giữ ô nhịp này, thay đổi của bạn bị hủy",
+    "conflict": "Ô nhịp vừa được người khác sửa, thay đổi của bạn bị hủy",
+    "lockLost": "Bạn không còn giữ khóa ô nhịp này, thay đổi bị hủy",
+    "invalid": "Thay đổi không hợp lệ, đã tải lại bản nhạc chung",
+    "resync": "Bản nhạc chung đã thay đổi, đang đồng bộ lại",
+    "saving": "Đang lưu thành phiên bản mới"
+  }
+}

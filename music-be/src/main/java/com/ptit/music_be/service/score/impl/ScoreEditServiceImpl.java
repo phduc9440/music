@@ -43,6 +43,7 @@ import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.ScoreFileRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.service.billing.EntitlementService;
+import com.ptit.music_be.service.collab.live.LiveSessionRegistry;
 import com.ptit.music_be.service.score.ScoreEditService;
 import com.ptit.music_be.service.score.ScoreFileService;
 import com.ptit.music_be.service.storage.FileStorageService;
@@ -77,6 +78,7 @@ public class ScoreEditServiceImpl implements ScoreEditService {
     private final MemberRepository memberRepository;
     private final EntitlementService entitlementService;
     private final VersionRetention versionRetention;
+    private final LiveSessionRegistry liveSessions;
     private final long maxMusicXmlBytes;
 
     public ScoreEditServiceImpl(
@@ -88,6 +90,7 @@ public class ScoreEditServiceImpl implements ScoreEditService {
             MemberRepository memberRepository,
             EntitlementService entitlementService,
             VersionRetention versionRetention,
+            LiveSessionRegistry liveSessions,
             @Value("${app.editor.max-musicxml-bytes:5242880}") long maxMusicXmlBytes) {
         this.scoreRepository = scoreRepository;
         this.scoreFileRepository = scoreFileRepository;
@@ -97,6 +100,7 @@ public class ScoreEditServiceImpl implements ScoreEditService {
         this.memberRepository = memberRepository;
         this.entitlementService = entitlementService;
         this.versionRetention = versionRetention;
+        this.liveSessions = liveSessions;
         this.maxMusicXmlBytes = maxMusicXmlBytes;
     }
 
@@ -104,18 +108,26 @@ public class ScoreEditServiceImpl implements ScoreEditService {
     @Transactional
     public ScoreSaveResponse saveMusicXml(
             String scoreId, byte[] body, String contentType, String ifMatch, boolean force) {
-        return save(scoreId, body, contentType, ifMatch, force, null, Map.of());
+        return save(scoreId, body, contentType, ifMatch, force, null, Map.of(), false);
     }
 
     @Override
     @Transactional
     public ScoreSaveResponse saveWithMeta(String scoreId, byte[] body, String ifMatch, Map<String, Object> extraMeta) {
-        return save(scoreId, body, MUSICXML_CONTENT_TYPE, ifMatch, false, null, extraMeta);
+        return save(scoreId, body, MUSICXML_CONTENT_TYPE, ifMatch, false, null, extraMeta, false);
+    }
+
+    @Override
+    @Transactional
+    public ScoreSaveResponse saveLiveSnapshot(
+            String scoreId, byte[] body, String ifMatch, Map<String, Object> extraMeta) {
+        return save(scoreId, body, MUSICXML_CONTENT_TYPE, ifMatch, false, null, extraMeta, true);
     }
 
     /**
      * Luồng lưu chung cho lưu từ Editor, khôi phục và nội dung server dựng; {@code restoredFrom} khác null là khôi phục
-     * từ version đó, {@code extraMeta} được ghi thêm vào meta của version mới.
+     * từ version đó, {@code extraMeta} được ghi thêm vào meta của version mới. Khi bản nhạc đang có phiên cộng tác thì chỉ
+     * {@code fromLiveSession} (chính dịch vụ cộng tác) được lưu; mọi đường khác nhận LIVE_SESSION_ACTIVE.
      */
     private ScoreSaveResponse save(
             String scoreId,
@@ -124,12 +136,16 @@ public class ScoreEditServiceImpl implements ScoreEditService {
             String ifMatch,
             boolean force,
             Integer restoredFrom,
-            Map<String, Object> extraMeta) {
+            Map<String, Object> extraMeta,
+            boolean fromLiveSession) {
         // Khóa dòng ngay từ đầu để hai lần lưu cùng lúc được xếp hàng và không cùng ra một version
         Score score = scoreRepository
                 .findByIdForUpdate(scoreId)
                 .orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
         scoreFileService.checkCanEdit(score);
+        if (!fromLiveSession && liveSessions.isActive(scoreId)) {
+            throw new AppException(ErrorCode.LIVE_SESSION_ACTIVE);
+        }
 
         if (body == null || body.length == 0 || body.length > maxMusicXmlBytes) {
             throw new AppException(ErrorCode.FILE_TOO_LARGE);
@@ -392,7 +408,7 @@ public class ScoreEditServiceImpl implements ScoreEditService {
                 .orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
         scoreFileService.checkCanEdit(score);
         byte[] body = readVersion(score, version);
-        return save(scoreId, body, MUSICXML_CONTENT_TYPE, ifMatch, false, version, Map.of());
+        return save(scoreId, body, MUSICXML_CONTENT_TYPE, ifMatch, false, version, Map.of(), false);
     }
 
     /** Đọc nội dung một version MusicXML: 2801 nếu không có dòng, 2002 nếu file đã mất trên đĩa. */

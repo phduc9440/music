@@ -36,6 +36,9 @@ import {
 import type { Draft } from './draft';
 import { describeSelection } from './describe';
 import { History } from './history';
+import { measureKey } from '../live/LiveSession';
+import type { LiveCollab } from '../live/useLiveCollab';
+import type { EditCommand } from './commands';
 import { getVersionErrorMessage } from '../version/versionUtils';
 import { checkMeasures, confirmMeasure } from '../structure/measureCheck';
 import { setHeaderText } from '../structure/header';
@@ -106,6 +109,11 @@ export interface UseScoreEditorOptions {
   mode?: 'direct' | 'suggest';
   /** Chế độ `suggest`: nhận MusicXML đã sửa khi người dùng bấm Gửi đề xuất / Ctrl+S. */
   onSuggest?: (xml: string) => void;
+  /**
+   * Đồng chỉnh sửa thời gian thực: khi `live.active`, mọi lệnh được gửi lên máy chủ theo từng ô, Lưu tạo phiên bản từ
+   * trạng thái chung, và bản nháp trong trình duyệt bị tắt (máy chủ giữ bản nhạc).
+   */
+  live?: LiveCollab | null;
 }
 
 /** Thông báo ngắn; `key` đổi mỗi lần để giao diện chạy lại hiệu ứng rung. */
@@ -220,7 +228,13 @@ export interface ScoreEditor {
 
 export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
   const { confirm: confirmDialog } = useDialog();
-  const { scoreId, title, doc, initialVersion, canEdit, canForce, blocked, mode = 'direct', onSuggest } = options;
+  const { scoreId, title, doc, initialVersion, canEdit, canForce, blocked, mode = 'direct', onSuggest, live = null } = options;
+  const liveActive = live?.active ?? false;
+  const bind = live?.bind;
+  const liveRef = useRef(live);
+  useEffect(() => {
+    liveRef.current = live;
+  });
   const draftPrefix = mode === 'suggest' ? SUGGEST_DRAFT_PREFIX : DRAFT_PREFIX;
   const historyRef = useRef(new History());
   const savingRef = useRef(false);
@@ -272,6 +286,60 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     setFlags({ dirty: h.dirty, canUndo: h.canUndo, canRedo: h.canRedo });
     setRevision((r) => r + 1);
   }, []);
+
+  // Nhận thay đổi từ người khác: bỏ các bước hoàn tác đã bị họ đè lên, vẽ lại, cập nhật số phiên bản
+  useEffect(() => {
+    if (!bind) return;
+    bind({
+      onDocChanged: (touched) => {
+        const history = historyRef.current;
+        if (touched === 'all') history.clear();
+        else {
+          history.discard(
+            (c) =>
+              c.head !== undefined ||
+              c.parts !== undefined ||
+              c.snapshots.some((s) => touched.has(measureKey(s.partIndex, s.measureIndex))),
+          );
+        }
+        sync();
+        setSelection((prev) => new Set([...prev].filter((id) => doc.getInfo(id) !== undefined)));
+      },
+      onVersion: setVersion,
+      onNotice: flash,
+    });
+    return () => bind(null);
+  }, [bind, doc, sync, flash]);
+
+  // Các ô của vùng chọn là các ô cần giữ khóa
+  const liveSession = live?.session ?? null;
+  useEffect(() => {
+    if (!liveSession) return;
+    const seen = new Set<string>();
+    const refs: Array<{ partIndex: number; measureIndex: number }> = [];
+    for (const id of selection) {
+      const info = doc.getInfo(id);
+      if (!info) continue;
+      const key = measureKey(info.partIndex, info.measureIndex);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      refs.push({ partIndex: info.partIndex, measureIndex: info.measureIndex });
+    }
+    liveSession.setFocus(refs);
+  }, [liveSession, selection, doc, revision]);
+
+  /** Lệnh chạm ô đang bị người khác khóa thì báo và không cho thực hiện. */
+  const heldByOther = useCallback(
+    (command: EditCommand | null): boolean => {
+      const session = liveRef.current?.session;
+      if (!command || !session) return false;
+      const holder = session.heldByOther(command);
+      if (holder === null) return false;
+      flash(t('live.notice.heldBy', { name: holder }));
+      return true;
+    },
+    [flash],
+  );
 
   const setPreviewTone = useCallback((enabled: boolean) => {
     setPreviewToneState(enabled);
@@ -335,7 +403,19 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
         toast.warn(message, { toastId: `edit-${result.reason}` });
         return;
       }
+      if (heldByOther(result.command)) {
+        // Lệnh đã sửa DOM: trả các ô về như cũ rồi bỏ lệnh
+        for (const s of result.command.snapshots) {
+          doc.replaceMeasure(s.partIndex, s.measureIndex, s.before.cloneNode(true) as Element, false);
+        }
+        if (result.command.head) doc.restoreHead(result.command.head.before);
+        if (result.command.parts) doc.restoreParts(result.command.parts.before);
+        doc.reindex();
+        sync();
+        return;
+      }
       historyRef.current.push(result.command);
+      liveRef.current?.session?.enqueue(result.command, 'do');
       sync();
       const after = result.command.selectAfter;
       setSelection((prev) =>
@@ -343,7 +423,7 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
       );
       if (preview && previewTone) playPreviewGroups(selectionGroups(doc, result.command.changedIds));
     },
-    [doc, flash, sync, previewTone],
+    [doc, flash, sync, previewTone, heldByOther],
   );
 
   /** Áp một thao tác cao độ lên `targets`. */
@@ -712,26 +792,35 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
   );
 
   const undo = useCallback(() => {
-    if (!canEdit || !historyRef.current.canUndo) return;
+    if (!canEdit || !historyRef.current.canUndo || heldByOther(historyRef.current.nextUndo)) return;
     const label = historyRef.current.undoLabel;
-    historyRef.current.undo(doc);
+    const command = historyRef.current.undo(doc);
+    if (command) liveRef.current?.session?.enqueue(command, 'undo');
     sync();
     setSelection((prev) => new Set([...prev].filter((id) => doc.getInfo(id) !== undefined)));
     flash(t('editor.flash.undone', { label }));
-  }, [canEdit, doc, sync, flash]);
+  }, [canEdit, doc, sync, flash, heldByOther]);
 
   const redo = useCallback(() => {
-    if (!canEdit || !historyRef.current.canRedo) return;
+    if (!canEdit || !historyRef.current.canRedo || heldByOther(historyRef.current.nextRedo)) return;
     const label = historyRef.current.redoLabel;
-    historyRef.current.redo(doc);
+    const command = historyRef.current.redo(doc);
+    if (command) liveRef.current?.session?.enqueue(command, 'redo');
     sync();
     setSelection((prev) => new Set([...prev].filter((id) => doc.getInfo(id) !== undefined)));
     flash(t('editor.flash.redone', { label }));
-  }, [canEdit, doc, sync, flash]);
+  }, [canEdit, doc, sync, flash, heldByOther]);
 
   const save = useCallback(
     async (force = false) => {
       if (!canEdit || savingRef.current) return;
+      const liveSessionNow = liveRef.current?.session;
+      if (liveSessionNow) {
+        // Đồng chỉnh sửa: máy chủ giữ bản nhạc chung, Lưu chỉ yêu cầu chốt thành một phiên bản
+        liveSessionNow.save();
+        flash(t('live.notice.saving'));
+        return;
+      }
       if (!force && !historyRef.current.dirty) {
         flash(t('editor.flash.nothingToSave'));
         return;
@@ -868,13 +957,15 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
   }, [scoreId, version, draftPrefix]);
 
   const confirmLeave = useCallback(
-    async () => !historyRef.current.dirty || confirmDialog(leaveDialogOptions()),
+    async () =>
+      !(liveRef.current?.active ? liveRef.current.state.pending > 0 : historyRef.current.dirty) ||
+      confirmDialog(leaveDialogOptions()),
     [confirmDialog],
   );
 
   // Tự lưu nháp mỗi 30 giây khi có thay đổi chưa lưu
   useEffect(() => {
-    if (!canEdit || !flags.dirty) return;
+    if (!canEdit || !flags.dirty || liveActive) return;
     const timer = window.setInterval(() => {
       if (!saveDraft(scoreId, version, doc.serialize(), draftPrefix) && !draftWarnedRef.current) {
         draftWarnedRef.current = true;
@@ -882,23 +973,25 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
       }
     }, DRAFT_INTERVAL_MS);
     return () => window.clearInterval(timer);
-  }, [canEdit, flags.dirty, scoreId, version, doc, draftPrefix]);
+  }, [canEdit, flags.dirty, liveActive, scoreId, version, doc, draftPrefix]);
 
   // Rời hoặc đóng tab khi chưa lưu: lưu nháp ngay và hỏi xác nhận
   useEffect(() => {
-    if (!canEdit || !flags.dirty) return;
+    if (!canEdit || !(liveActive ? (live?.state.pending ?? 0) > 0 : flags.dirty)) return;
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
       if (allowLeaveRef.current) return;
-      saveDraft(scoreId, version, doc.serialize(), draftPrefix);
+      if (!liveActive) saveDraft(scoreId, version, doc.serialize(), draftPrefix);
       e.preventDefault();
     };
     window.addEventListener('beforeunload', onBeforeUnload);
     return () => window.removeEventListener('beforeunload', onBeforeUnload);
-  }, [canEdit, flags.dirty, scoreId, version, doc, draftPrefix]);
+  }, [canEdit, flags.dirty, liveActive, live?.state.pending, scoreId, version, doc, draftPrefix]);
 
   // Nút Back của trình duyệt khi chưa lưu: thêm một mục lịch sử đệm để chặn và hỏi xác nhận
+  const livePending = live?.state.pending ?? 0;
+  const hasUnsent = liveActive ? livePending > 0 : flags.dirty;
   useEffect(() => {
-    if (!canEdit || !flags.dirty) return;
+    if (!canEdit || !hasUnsent) return;
     window.history.pushState(null, '', window.location.href);
     const onPopState = async () => {
       if (allowLeaveRef.current) return;
@@ -912,7 +1005,7 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
-  }, [canEdit, flags.dirty, confirmDialog]);
+  }, [canEdit, hasUnsent, confirmDialog]);
 
   // Phím tắt
   useEffect(() => {
@@ -1007,7 +1100,7 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
   return {
     selection,
     revision,
-    dirty: flags.dirty,
+    dirty: liveActive ? (live?.state.pending ?? 0) > 0 : flags.dirty,
     saving,
     version,
     canUndo: flags.canUndo,

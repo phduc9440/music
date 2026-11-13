@@ -49,6 +49,7 @@ import com.ptit.music_be.repository.score.ScoreFileRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.service.billing.EntitlementService;
 import com.ptit.music_be.service.billing.PlanLimits;
+import com.ptit.music_be.service.collab.live.LiveSessionRegistry;
 import com.ptit.music_be.service.score.ScoreFileService;
 import com.ptit.music_be.service.storage.FileStorageService;
 
@@ -101,6 +102,7 @@ class ScoreEditServiceImplTest {
                 memberRepository,
                 entitlementService,
                 new VersionRetention(entitlementService),
+                new LiveSessionRegistry(),
                 1024 * 1024);
         score = Score.builder().id(SCORE_ID).currentVersion(3).build();
         lenient().when(scoreRepository.findByIdForUpdate(SCORE_ID)).thenReturn(Optional.of(score));

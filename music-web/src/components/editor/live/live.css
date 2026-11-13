@@ -1,0 +1,65 @@
+/* Đồng chỉnh sửa thời gian thực: viền khóa ô nhịp, thanh người cùng sửa, trạng thái đồng bộ */
+.ed-lock-box {
+  --live-color: var(--ui-measure-locked);
+  position: absolute;
+  border: 2px solid var(--live-color);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--live-color) 8%, transparent);
+  pointer-events: none;
+}
+.ed-lock-box::after {
+  content: attr(data-label);
+  position: absolute;
+  top: -10px;
+  left: 6px;
+  max-width: 70%;
+  padding: 0 6px;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--live-color);
+  color: var(--ui-surface);
+  font-size: 11px;
+  line-height: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ed-lock-box[data-color='0'] { --live-color: var(--ui-live-0); }
+.ed-lock-box[data-color='1'] { --live-color: var(--ui-live-1); }
+.ed-lock-box[data-color='2'] { --live-color: var(--ui-live-2); }
+.ed-lock-box[data-color='3'] { --live-color: var(--ui-live-3); }
+.ed-lock-box[data-color='4'] { --live-color: var(--ui-live-4); }
+.ed-lock-box[data-color='5'] { --live-color: var(--ui-live-5); }
+.ed-lock-box[data-color='6'] { --live-color: var(--ui-live-6); }
+.ed-lock-box[data-color='7'] { --live-color: var(--ui-live-7); }
+
+.live-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.live-avatars {
+  display: inline-flex;
+}
+.live-avatar {
+  --live-color: var(--ui-live-0);
+  margin-left: -6px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--live-color);
+}
+.live-avatar:first-child {
+  margin-left: 0;
+}
+.live-avatar[data-color='1'] { --live-color: var(--ui-live-1); }
+.live-avatar[data-color='2'] { --live-color: var(--ui-live-2); }
+.live-avatar[data-color='3'] { --live-color: var(--ui-live-3); }
+.live-avatar[data-color='4'] { --live-color: var(--ui-live-4); }
+.live-avatar[data-color='5'] { --live-color: var(--ui-live-5); }
+.live-avatar[data-color='6'] { --live-color: var(--ui-live-6); }
+.live-avatar[data-color='7'] { --live-color: var(--ui-live-7); }
+.live-status {
+  font-size: 12px;
+  color: var(--ui-text-3);
+}
+.live-status.is-offline {
+  color: var(--ui-danger);
+}

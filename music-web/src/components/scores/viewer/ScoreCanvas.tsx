@@ -26,6 +26,7 @@ import NoteInsertPopover from '../toolbar/NoteInsertPopover';
 import TextEditPopover from '../toolbar/TextEditPopover';
 import type { TextKind } from '../toolbar/TextEditPopover';
 import '../../editor/editor.css';
+import '../../editor/live/live.css';
 
 interface Props {
   /** Nội dung MusicXML (dùng khi chưa có `doc`, tức là chỉ xem). */
@@ -49,6 +50,8 @@ interface Props {
   selected?: ReadonlySet<string>;
   /** Chỉ số (từ 0) các ô nhịp sai độ dài, tô đỏ. */
   issueMeasures?: ReadonlySet<number>;
+  /** Các ô nhịp đang bị người khác giữ khóa (đồng chỉnh sửa): viền màu và tên người đang sửa. */
+  lockBoxes?: readonly LockBox[];
   /** Cuộn tới một ô nhịp; `key` đổi để yêu cầu lại cùng một ô. */
   focusMeasure?: { index: number; key: number } | null;
   /** Bấm vào nốt (ids rỗng = bấm ra ngoài); additive = giữ Shift. Có prop này thì canvas cho chọn nốt. */
@@ -135,6 +138,8 @@ const EMPTY_NUMBERS: ReadonlySet<number> = new Set();
 
 const MEASURE_OF_ID = /^(?:p\d+-)?m(\d+)-/;
 const ISSUE_BOX_CLASS = 'ed-issue-box';
+const LOCK_BOX_CLASS = 'ed-lock-box';
+const EMPTY_LOCKS: readonly LockBox[] = [];
 const LOOP_BOX_CLASS = 'pl-loop-box';
 const LOOP_PAD_X = 6;
 const LOOP_PAD_Y = 18;
@@ -231,6 +236,36 @@ const drawLoopBoxes = (host: HTMLElement, range: LoopRange | null): void => {
     div.style.top = `${box.t - origin.top - LOOP_PAD_Y}px`;
     div.style.width = `${box.r - box.l + LOOP_PAD_X * 2}px`;
     div.style.height = `${box.b - box.t + LOOP_PAD_Y * 2}px`;
+    host.appendChild(div);
+  }
+};
+
+/** Viền một ô nhịp đang bị người khác khóa. */
+export interface LockBox {
+  measureIndex: number;
+  /** Tên người đang giữ khóa. */
+  label: string;
+  /** Màu của người đó (0..7, khớp `--ui-live-N`). */
+  colorIndex: number;
+}
+
+/** Vẽ viền màu quanh các ô nhịp mà người khác đang sửa, kèm nhãn tên ở góc trên. Không bắt sự kiện chuột. */
+const drawLockBoxes = (host: HTMLElement, locks: readonly LockBox[]): void => {
+  host.querySelectorAll(`.${LOCK_BOX_CLASS}`).forEach((el) => el.remove());
+  if (locks.length === 0) return;
+  const byMeasure = new Map(locks.map((l) => [l.measureIndex, l]));
+  const origin = host.getBoundingClientRect();
+  for (const [measureIndex, box] of collectMeasureBoxes(host, (i) => byMeasure.has(i))) {
+    const lock = byMeasure.get(measureIndex);
+    if (!lock) continue;
+    const div = document.createElement('div');
+    div.className = LOCK_BOX_CLASS;
+    div.dataset.color = String(lock.colorIndex);
+    div.dataset.label = lock.label;
+    div.style.left = `${box.l - origin.left - ISSUE_PAD_X}px`;
+    div.style.top = `${box.t - origin.top - ISSUE_PAD_Y}px`;
+    div.style.width = `${box.r - box.l + ISSUE_PAD_X * 2}px`;
+    div.style.height = `${box.b - box.t + ISSUE_PAD_Y * 2}px`;
     host.appendChild(div);
   }
 };
@@ -385,6 +420,7 @@ export default function ScoreCanvas({
   revision = 0,
   selected = EMPTY_SET,
   issueMeasures = EMPTY_NUMBERS,
+  lockBoxes = EMPTY_LOCKS,
   focusMeasure = null,
   playing = EMPTY_SET,
   mutedStaves = EMPTY_SET,
@@ -472,6 +508,7 @@ export default function ScoreCanvas({
     loopRange,
     transpose,
     issueMeasures,
+    lockBoxes,
     onConfirmMeasure,
     openText,
     commentRanges,
@@ -493,6 +530,7 @@ export default function ScoreCanvas({
       loopRange,
       transpose,
       issueMeasures,
+      lockBoxes,
       onConfirmMeasure,
       openText,
       commentRanges,
@@ -533,6 +571,7 @@ export default function ScoreCanvas({
       drawLoopBoxes(host, latest.current.loopRange);
       drawIssueBoxes(host, latest.current.issueMeasures, (i) => latest.current.onConfirmMeasure?.(i));
       drawCommentBoxes(host, latest.current.commentRanges, (ids) => latest.current.onCommentBubble?.(ids));
+      drawLockBoxes(host, latest.current.lockBoxes);
       if (latest.current.openText) drawTextHotspots(host, current, (k, r) => latest.current.openText?.(k, r));
     } catch {
       // chỉ mất khả năng chọn nốt, bản nhạc vẫn xem được
@@ -717,6 +756,13 @@ export default function ScoreCanvas({
     const host = hostRef.current;
     if (host) drawCommentBoxes(host, latest.current.commentRanges, (ids) => latest.current.onCommentBubble?.(ids));
   }, [commentKey]);
+
+  // Vẽ lại viền khóa khi người khác đổi vùng đang sửa (so theo nội dung, không theo tham chiếu mảng)
+  const lockKey = lockBoxes.map((l) => `${l.measureIndex}:${l.colorIndex}:${l.label}`).join('|');
+  useEffect(() => {
+    const host = hostRef.current;
+    if (host) drawLockBoxes(host, latest.current.lockBoxes);
+  }, [lockKey]);
 
   // Cuộn tới ô nhịp được yêu cầu (bấm cảnh báo trên thanh trạng thái)
   useEffect(() => {
