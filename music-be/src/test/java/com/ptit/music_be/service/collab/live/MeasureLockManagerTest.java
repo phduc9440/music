@@ -60,9 +60,9 @@ class MeasureLockManagerTest {
         locks.renew("s", "A", T0.plusSeconds(50));
         Instant later = T0.plusSeconds(61);
 
+        assertThat(locks.expire(later)).contains("s");
         assertThat(locks.holds("s", "A", List.of(M3), false, later)).isTrue();
         assertThat(locks.holds("s", "B", List.of(M4), false, later)).isFalse();
-        assertThat(locks.expire(later)).contains("s");
         assertThat(locks.acquire("s", "C", List.of(M4), false, later).granted()).isTrue();
     }
 

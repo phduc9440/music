@@ -303,7 +303,7 @@ class LiveCollabServiceTest {
         ArgumentCaptor<Map<String, Object>> meta = ArgumentCaptor.forClass(Map.class);
         verify(scoreEditService).saveLiveSnapshot(eq(SCORE), any(byte[].class), eq("\"v3\""), meta.capture());
         assertThat(meta.getValue()).containsEntry("source", "LIVE").containsEntry("seqFrom", 1L).containsEntry("seqTo", 1L);
-        assertThat((List<?>) meta.getValue().get("editors")).containsExactly("Owner");
+        assertThat(meta.getValue().get("editors")).isEqualTo(List.of("Owner"));
         verify(messaging).convertAndSend(eq("/topic/scores/" + SCORE + "/version"), eq(new VersionBroadcast(SCORE, 4, 1, false)));
 
         // Người cuối rời: không còn gì chưa lưu nên chỉ đóng phiên
