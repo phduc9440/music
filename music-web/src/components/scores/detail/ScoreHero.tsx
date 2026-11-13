@@ -315,7 +315,7 @@ export function ScoreSidebar({
             {canRequestEdit && (
               <button type="button" className="sd-manage__item" onClick={onRequestEdit}>
                 <Icon name="key" size={16} />
-                {t('scores.detail.requestEditTitle')}
+                {t('scores.detail.requestMoreTitle')}
               </button>
             )}
             {score.canEdit && (

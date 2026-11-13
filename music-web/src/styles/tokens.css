@@ -41,6 +41,14 @@
   --ui-violet: #6d28d9;
   --ui-violet-soft: #f5f3ff;
 
+  /* bảng màu trang trí (giao diện người dùng): bìa bản nhạc, ô gói, nhấn đầu trang. Không dùng cho chữ nhỏ. */
+  --ui-hue-rose: #e11d48;
+  --ui-hue-amber: #d97706;
+  --ui-hue-indigo: #4f46e5;
+  --ui-hue-teal: #0d9488;
+  --ui-hue-violet: #7c3aed;
+  --ui-hue-sky: #0284c7;
+
   /* vai trò bổ sung */
   --ui-on-accent: #fffaf2; /* chữ trên nền màu nhấn / nền tối */
   --ui-primary-border: #dcc7aa;
@@ -161,6 +169,13 @@
   --ui-danger-soft: #331616;
   --ui-violet: #a78bfa;
   --ui-violet-soft: #231a3d;
+
+  --ui-hue-rose: #fb7185;
+  --ui-hue-amber: #fbbf24;
+  --ui-hue-indigo: #818cf8;
+  --ui-hue-teal: #2dd4bf;
+  --ui-hue-violet: #a78bfa;
+  --ui-hue-sky: #38bdf8;
 
   --ui-on-accent: #1a1310;
   --ui-primary-border: #7a5c2a;

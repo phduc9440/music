@@ -223,7 +223,8 @@
     "backTo": "Back to {name}",
     "tasks": "Task history",
     "reviews": "Reviews",
-    "requestEditTitle": "Request edit access"
+    "requestEditTitle": "Request edit access",
+    "requestMoreTitle": "Request more access"
   },
   "hero": {
     "owner": "Owner: {name}",
@@ -307,7 +308,8 @@
     "revoked": "Access revoked",
     "invitePlaceholder": "Invite by email",
     "inviteLevel": "Access level when inviting",
-    "invite": "Invite"
+    "invite": "Invite",
+    "requestsHint": "Approve to grant access (pick a different level if you want) or decline. They get a notification."
   },
   "reviews": {
     "loadFailed": "Couldn't load the reviews",

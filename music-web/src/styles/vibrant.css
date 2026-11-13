@@ -1,0 +1,272 @@
+/*
+ * Lớp màu sắc cho giao diện người dùng (.app-shell): nhấn màu, bìa bản nhạc nhiều màu, ô gói dịch vụ theo bậc.
+ * Phong cách "Vibrant & Block-based" (skill ui-ux-pro-max) nhưng giữ nền kem, thanh trên nâu đen và vàng đồng của
+ * thương hiệu. Chỉ dùng token (--ui-hue-* ở tokens.css) nên theme sáng / tối đều đúng. Không đụng khu admin.
+ */
+
+/* ---- nền: hai vệt sáng màu ở góc trên, mờ dần ---- */
+.app-shell .app-main {
+  background:
+    radial-gradient(55rem 24rem at 6% -8%, color-mix(in srgb, var(--ui-hue-rose) 11%, transparent), transparent 62%),
+    radial-gradient(50rem 24rem at 98% -6%, color-mix(in srgb, var(--ui-hue-amber) 15%, transparent), transparent 62%),
+    var(--ui-bg);
+}
+
+/* ---- đầu trang: tiêu đề chữ serif lớn, vạch đôi màu bên dưới ---- */
+.app-shell .sc-lib-head,
+.app-shell .ex-head,
+.app-shell .cp-head {
+  position: relative;
+  padding-bottom: 1rem;
+}
+.app-shell .sc-lib-head::after,
+.app-shell .ex-head::after,
+.app-shell .cp-head::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 76px;
+  height: 4px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--ui-hue-rose), var(--ui-hue-amber));
+}
+.app-shell .sc-lib-head h1,
+.app-shell .ex-head h1,
+.app-shell .cp-head h1 {
+  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  font-size: clamp(1.8rem, 3vw, 2.35rem);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+
+/* ---- bìa bản nhạc chưa có ảnh: màu đôi theo thứ tự thẻ ---- */
+.app-shell .sc-thumb--empty {
+  color: var(--ui-on-accent);
+  background: linear-gradient(135deg, var(--ui-hue-rose), var(--ui-hue-amber));
+}
+.app-shell :nth-child(6n + 2) > .sc-card__cover .sc-thumb--empty,
+.app-shell :nth-child(6n + 2) > * .sc-thumb--empty {
+  background: linear-gradient(135deg, var(--ui-hue-indigo), var(--ui-hue-violet));
+}
+.app-shell :nth-child(6n + 3) > .sc-card__cover .sc-thumb--empty,
+.app-shell :nth-child(6n + 3) > * .sc-thumb--empty {
+  background: linear-gradient(135deg, var(--ui-hue-teal), var(--ui-hue-sky));
+}
+.app-shell :nth-child(6n + 4) > .sc-card__cover .sc-thumb--empty,
+.app-shell :nth-child(6n + 4) > * .sc-thumb--empty {
+  background: linear-gradient(135deg, var(--ui-hue-amber), var(--ui-hue-rose));
+}
+.app-shell :nth-child(6n + 5) > .sc-card__cover .sc-thumb--empty,
+.app-shell :nth-child(6n + 5) > * .sc-thumb--empty {
+  background: linear-gradient(135deg, var(--ui-hue-violet), var(--ui-hue-rose));
+}
+.app-shell :nth-child(6n + 6) > .sc-card__cover .sc-thumb--empty,
+.app-shell :nth-child(6n + 6) > * .sc-thumb--empty {
+  background: linear-gradient(135deg, var(--ui-hue-sky), var(--ui-hue-indigo));
+}
+
+/* ---- thẻ: nổi lên khi rê chuột, viền nhấn màu ---- */
+.app-shell .sc-card {
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+.app-shell .sc-card:hover,
+.app-shell .sc-card:focus-visible {
+  border-color: var(--ui-hue-rose);
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--ui-hue-rose) 18%, transparent);
+}
+
+/* ---- trang làm việc: lời chào có vệt màu, ô nhanh có chấm màu theo thứ tự ---- */
+.app-shell .wh-hero {
+  background:
+    radial-gradient(40rem 16rem at 100% 0%, color-mix(in srgb, var(--ui-velvet) 55%, transparent), transparent 70%),
+    radial-gradient(30rem 14rem at 0% 120%, color-mix(in srgb, var(--ui-brass) 28%, transparent), transparent 70%),
+    var(--ui-stage-bg);
+}
+.app-shell .wh-panel {
+  border-top: 3px solid var(--ui-hue-amber);
+}
+.app-shell .wh-col:nth-child(2) .wh-panel {
+  border-top-color: var(--ui-hue-rose);
+}
+.app-shell .wh-quick__item {
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease;
+}
+.app-shell .wh-quick__item:hover {
+  transform: translateY(-2px);
+  border-color: var(--ui-hue-teal);
+}
+.app-shell .wh-quick__item:nth-child(1) svg {
+  color: var(--ui-hue-sky);
+}
+.app-shell .wh-quick__item:nth-child(2) svg {
+  color: var(--ui-hue-amber);
+}
+.app-shell .wh-quick__item:nth-child(3) svg {
+  color: var(--ui-hue-teal);
+}
+.app-shell .wh-quick__item:nth-child(4) svg {
+  color: var(--ui-hue-violet);
+}
+
+/* ---- gói dịch vụ: mỗi bậc một màu, gói giữa nổi bật ---- */
+.app-shell .bl-card {
+  --tier: var(--ui-hue-teal);
+  position: relative;
+  overflow: hidden;
+  border-top: 4px solid var(--tier);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.app-shell .bl-card:nth-child(2) {
+  --tier: var(--ui-hue-indigo);
+}
+.app-shell .bl-card:nth-child(3) {
+  --tier: var(--ui-hue-rose);
+}
+.app-shell .bl-card:nth-child(4) {
+  --tier: var(--ui-hue-amber);
+}
+.app-shell .bl-card:nth-child(5) {
+  --tier: var(--ui-hue-violet);
+}
+.app-shell .bl-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 90px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--tier) 14%, transparent), transparent);
+  pointer-events: none;
+}
+.app-shell .bl-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px color-mix(in srgb, var(--tier) 22%, transparent);
+}
+.app-shell .bl-price {
+  color: var(--ui-text);
+}
+.app-shell .bl-card > .sc-btn--primary,
+.app-shell .bl-actions .sc-btn--primary {
+  background: var(--tier);
+  border-color: var(--tier);
+}
+
+/* ---- thẻ nhóm: vạch màu trái ---- */
+.app-shell .tm-card {
+  border-left: 4px solid var(--ui-hue-indigo);
+}
+
+/* ---- thống kê luyện tập: ba thẻ số liệu mỗi thẻ một màu ---- */
+.app-shell .ps-card {
+  border-top: 4px solid var(--ui-hue-amber);
+}
+.app-shell .ps-card:nth-child(2) {
+  border-top-color: var(--ui-hue-rose);
+}
+.app-shell .ps-card:nth-child(3) {
+  border-top-color: var(--ui-hue-teal);
+}
+.app-shell .ps-card:nth-child(1) > :first-child {
+  color: var(--ui-hue-amber);
+}
+.app-shell .ps-card:nth-child(2) > :first-child {
+  color: var(--ui-hue-rose);
+}
+.app-shell .ps-card:nth-child(3) > :first-child {
+  color: var(--ui-hue-teal);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-shell .sc-card,
+  .app-shell .bl-card,
+  .app-shell .wh-quick__item {
+    transition: none;
+  }
+  .app-shell .sc-card:hover,
+  .app-shell .bl-card:hover,
+  .app-shell .wh-quick__item:hover {
+    transform: none;
+  }
+}
+
+/* ================================================================== trang giới thiệu cho khách */
+
+/* ---- ba bước: mỗi bước một màu, vạch trên đầu ---- */
+.gh-step {
+  --tone: var(--ui-hue-rose);
+  border-top: 4px solid var(--tone);
+}
+.gh-step:nth-child(2) {
+  --tone: var(--ui-hue-amber);
+}
+.gh-step:nth-child(3) {
+  --tone: var(--ui-hue-teal);
+}
+.gh-step .gh-step__icon {
+  background: color-mix(in srgb, var(--tone) 16%, transparent);
+  color: var(--tone);
+}
+.gh-step .gh-step__no {
+  color: var(--tone);
+}
+
+/* ---- con số: mỗi ô một màu ---- */
+.gh-stats > div {
+  border-top: 4px solid var(--ui-hue-rose);
+}
+.gh-stats > div:nth-child(2) {
+  border-top-color: var(--ui-hue-amber);
+}
+.gh-stats > div:nth-child(3) {
+  border-top-color: var(--ui-hue-teal);
+}
+.gh-stats > div:nth-child(4) {
+  border-top-color: var(--ui-hue-indigo);
+}
+.gh-stats dd {
+  color: var(--ui-hue-rose);
+}
+.gh-stats > div:nth-child(2) dd {
+  color: var(--ui-hue-amber);
+}
+.gh-stats > div:nth-child(3) dd {
+  color: var(--ui-hue-teal);
+}
+.gh-stats > div:nth-child(4) dd {
+  color: var(--ui-hue-indigo);
+}
+
+/* ---- bản nhạc nổi bật và nhạc sĩ: viền nhấn khi rê chuột ---- */
+.gh-card:hover,
+.gh-card:focus-visible {
+  border-color: var(--ui-hue-rose);
+}
+.gh-composer:nth-child(5n + 1) .gh-composer__portrait {
+  box-shadow: 0 0 0 3px var(--ui-hue-rose);
+}
+.gh-composer:nth-child(5n + 2) .gh-composer__portrait {
+  box-shadow: 0 0 0 3px var(--ui-hue-amber);
+}
+.gh-composer:nth-child(5n + 3) .gh-composer__portrait {
+  box-shadow: 0 0 0 3px var(--ui-hue-teal);
+}
+.gh-composer:nth-child(5n + 4) .gh-composer__portrait {
+  box-shadow: 0 0 0 3px var(--ui-hue-indigo);
+}
+.gh-composer:nth-child(5n + 5) .gh-composer__portrait {
+  box-shadow: 0 0 0 3px var(--ui-hue-violet);
+}
+
+/* ---- khối mời gọi cuối trang: nền nhạt có vệt màu ---- */
+.gh-final {
+  background:
+    radial-gradient(34rem 12rem at 0% 100%, color-mix(in srgb, var(--ui-hue-rose) 12%, transparent), transparent 70%),
+    radial-gradient(34rem 12rem at 100% 0%, color-mix(in srgb, var(--ui-hue-amber) 14%, transparent), transparent 70%);
+}

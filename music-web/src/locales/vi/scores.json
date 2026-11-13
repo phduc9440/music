@@ -216,7 +216,8 @@
     "backTo": "Về {name}",
     "tasks": "Lịch sử tác vụ",
     "reviews": "Nhận xét",
-    "requestEditTitle": "Xin quyền chỉnh sửa"
+    "requestEditTitle": "Xin quyền chỉnh sửa",
+    "requestMoreTitle": "Xin thêm quyền"
   },
   "hero": {
     "owner": "Chủ sở hữu: {name}",
@@ -298,7 +299,8 @@
     "revoked": "Đã thu hồi quyền",
     "invitePlaceholder": "Mời theo email",
     "inviteLevel": "Quyền khi mời",
-    "invite": "Mời"
+    "invite": "Mời",
+    "requestsHint": "Đồng ý để cấp quyền cho người này (chọn cấp khác nếu muốn), hoặc từ chối. Họ sẽ nhận thông báo."
   },
   "reviews": {
     "loadFailed": "Không tải được nhận xét",

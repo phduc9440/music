@@ -12,6 +12,7 @@ import SuggestionsSection from '../../../components/scores/suggestions/Suggestio
 import ScoreHero, { ScorePreview, ScoreSidebar } from '../../../components/scores/detail/ScoreHero';
 import Modal from '../../../components/scores/common/Modal';
 import ShareModal from '../../../components/scores/detail/ShareModal';
+import AccessRequestsPanel from '../../../components/scores/detail/AccessRequestsPanel';
 import ReportModal from '../../../components/scores/common/ReportModal';
 import TasksTable from '../../../components/scores/detail/TasksTable';
 import { getBackTarget } from '../../../components/layout/nav';
@@ -202,6 +203,8 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
       <main className="sc-container">
         <ScoreHero score={score} onVisibilityChanged={(updated) => setState({ phase: 'ready', score: updated })} />
 
+        {score.accessLevel === 'OWNER' && score.canManageSharing && <AccessRequestsPanel scoreId={score.id} />}
+
         <div className="sd-layout">
           <div className="sd-main">
             <ScorePreview score={score} />
@@ -293,10 +296,10 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
       </main>
 
       {requestingEdit && (
-        <Modal title={t('scores.detail.requestEditTitle')} onClose={() => setRequestingEdit(false)}>
+        <Modal title={t('scores.detail.requestMoreTitle')} onClose={() => setRequestingEdit(false)}>
           <RequestAccess
             scoreId={score.id}
-            levels={[3]}
+            levels={score.accessLevel === 'VIEW' ? [2, 3] : [3]}
             hasViewAccess
             onGranted={() => {
               setRequestingEdit(false);
