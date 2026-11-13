@@ -26,7 +26,6 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import com.ptit.music_be.dto.enums.billing.PaymentProviderType;
 import com.ptit.music_be.entity.PaymentOrder;
 import com.ptit.music_be.service.payment.PaymentProvider;
@@ -50,7 +49,8 @@ public class VnPayProvider implements PaymentProvider {
 
     private final VnPayProperties props;
     private final ObjectMapper objectMapper;
-    private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
+    private final HttpClient http =
+            HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
 
     @Override
     public PaymentProviderType type() {
@@ -66,8 +66,8 @@ public class VnPayProvider implements PaymentProvider {
     public PaymentInit createPayment(PaymentOrder order, PaymentContext context) {
         ZonedDateTime now = ZonedDateTime.now(VN_ZONE);
         // Hết hạn tính theo thời gian còn lại của đơn để không phụ thuộc múi giờ máy chủ
-        ZonedDateTime expire =
-                now.plus(Duration.between(LocalDateTime.now(), order.getExpiresAt()).abs());
+        ZonedDateTime expire = now.plus(
+                Duration.between(LocalDateTime.now(), order.getExpiresAt()).abs());
 
         Map<String, String> p = new TreeMap<>();
         p.put("vnp_Version", "2.1.0");
@@ -78,7 +78,8 @@ public class VnPayProvider implements PaymentProvider {
         p.put("vnp_TxnRef", order.getOrderCode());
         p.put(
                 "vnp_OrderInfo",
-                "Thanh toan goi " + order.getPlan().getCode() + " " + order.getPeriod().name());
+                "Thanh toan goi " + order.getPlan().getCode() + " "
+                        + order.getPeriod().name());
         p.put("vnp_OrderType", "other");
         p.put("vnp_Locale", "en".equals(context.locale()) ? "en" : "vn");
         p.put("vnp_ReturnUrl", props.getReturnUrl());
@@ -133,7 +134,15 @@ public class VnPayProvider implements PaymentProvider {
         String ip = "127.0.0.1";
         // Thứ tự trường ký theo tài liệu VNPay querydr
         String data = String.join(
-                "|", requestId, "2.1.0", "querydr", props.getTmnCode(), order.getOrderCode(), txnDate, createDate, ip,
+                "|",
+                requestId,
+                "2.1.0",
+                "querydr",
+                props.getTmnCode(),
+                order.getOrderCode(),
+                txnDate,
+                createDate,
+                ip,
                 orderInfo);
         Map<String, String> body = new TreeMap<>();
         body.put("vnp_RequestId", requestId);
@@ -170,9 +179,21 @@ public class VnPayProvider implements PaymentProvider {
     /** Đọc phản hồi querydr và kiểm chữ ký; chữ ký sai hoặc cổng không có giao dịch thì trả rỗng. */
     Optional<PaymentCallback> parseQueryResponse(JsonNode json, String orderCode) {
         String[] fields = {
-            "vnp_ResponseId", "vnp_Command", "vnp_ResponseCode", "vnp_Message", "vnp_TmnCode", "vnp_TxnRef",
-            "vnp_Amount", "vnp_BankCode", "vnp_PayDate", "vnp_TransactionNo", "vnp_TransactionType",
-            "vnp_TransactionStatus", "vnp_OrderInfo", "vnp_PromotionCode", "vnp_PromotionAmount"
+            "vnp_ResponseId",
+            "vnp_Command",
+            "vnp_ResponseCode",
+            "vnp_Message",
+            "vnp_TmnCode",
+            "vnp_TxnRef",
+            "vnp_Amount",
+            "vnp_BankCode",
+            "vnp_PayDate",
+            "vnp_TransactionNo",
+            "vnp_TransactionType",
+            "vnp_TransactionStatus",
+            "vnp_OrderInfo",
+            "vnp_PromotionCode",
+            "vnp_PromotionAmount"
         };
         StringBuilder data = new StringBuilder();
         for (int i = 0; i < fields.length; i++) {
@@ -202,7 +223,11 @@ public class VnPayProvider implements PaymentProvider {
         }
         boolean success = SUCCESS_CODE.equals(json.path("vnp_TransactionStatus").asText());
         return Optional.of(new PaymentCallback(
-                true, json.path("vnp_TxnRef").asText(null), amount, json.path("vnp_TransactionNo").asText(null), success));
+                true,
+                json.path("vnp_TxnRef").asText(null),
+                amount,
+                json.path("vnp_TransactionNo").asText(null),
+                success));
     }
 
     private static String canonical(Map<String, String> sorted) {

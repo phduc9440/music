@@ -114,12 +114,15 @@ public class RoleServiceImpl implements RoleService {
         // Gỡ vai trò khỏi người đang giữ: họ mất quyền của vai trò này, luôn còn USER (kể cả dữ liệu cũ thiếu USER)
         List<String> holders = memberRoleRepository.findEmailsByRoleId(role.getId());
         if (!holders.isEmpty()) {
-            Role user = roleRepository.findByName(Role.USER).orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_EXISTED));
+            Role user = roleRepository
+                    .findByName(Role.USER)
+                    .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_EXISTED));
             List<MemberRole> links = memberRoleRepository.findByRoleId(role.getId());
             for (MemberRole mr : links) {
                 Member m = mr.getMember();
                 if (!memberRoleRepository.existsByMemberAndRole(m, user)) {
-                    memberRoleRepository.save(MemberRole.builder().member(m).role(user).build());
+                    memberRoleRepository.save(
+                            MemberRole.builder().member(m).role(user).build());
                 }
                 m.getMemberRoles().remove(mr);
             }
@@ -163,7 +166,9 @@ public class RoleServiceImpl implements RoleService {
     }
 
     private static String cleanLabel(RoleRequest request) {
-        String label = request == null || request.getLabel() == null ? "" : request.getLabel().trim();
+        String label = request == null || request.getLabel() == null
+                ? ""
+                : request.getLabel().trim();
         if (label.length() < 2 || label.length() > MAX_LABEL) {
             throw new AppException(ErrorCode.ROLE_LABEL_INVALID);
         }
@@ -171,7 +176,8 @@ public class RoleServiceImpl implements RoleService {
     }
 
     private static String cleanDescription(RoleRequest request) {
-        String d = request.getDescription() == null ? "" : request.getDescription().trim();
+        String d =
+                request.getDescription() == null ? "" : request.getDescription().trim();
         if (d.length() > MAX_DESCRIPTION) {
             throw new AppException(ErrorCode.ROLE_LABEL_INVALID);
         }
@@ -200,9 +206,8 @@ public class RoleServiceImpl implements RoleService {
     }
 
     private RoleResponse toResponse(Role r, long memberCount) {
-        Set<AdminPermission> perms = Role.SUPER_ADMIN.equals(r.getName())
-                ? EnumSet.allOf(AdminPermission.class)
-                : r.getPermissions();
+        Set<AdminPermission> perms =
+                Role.SUPER_ADMIN.equals(r.getName()) ? EnumSet.allOf(AdminPermission.class) : r.getPermissions();
         return RoleResponse.builder()
                 .id(r.getId())
                 .name(r.getName())
@@ -211,7 +216,8 @@ public class RoleServiceImpl implements RoleService {
                 .builtIn(r.isBuiltIn())
                 .editable(!Role.USER.equals(r.getName()) && !Role.SUPER_ADMIN.equals(r.getName()))
                 .memberCount(memberCount)
-                .permissions(List.copyOf(perms.isEmpty() ? EnumSet.noneOf(AdminPermission.class) : EnumSet.copyOf(perms)))
+                .permissions(
+                        List.copyOf(perms.isEmpty() ? EnumSet.noneOf(AdminPermission.class) : EnumSet.copyOf(perms)))
                 .build();
     }
 }

@@ -77,9 +77,11 @@ public class AdminDashboardResponse {
     public static class Billing {
         /** Tổng tiền các đơn PAID có ngày thanh toán trong khoảng (VND). */
         long revenue;
+
         long paidOrders;
         /** Đơn đã hoàn tiền có ngày thanh toán trong khoảng (không tính vào revenue). */
         long refundedAmount;
+
         long refundedOrders;
         /** Số gói đang hiệu lực (một người có thể có cả gói cá nhân và gói nhóm). */
         long activeSubscriptions;

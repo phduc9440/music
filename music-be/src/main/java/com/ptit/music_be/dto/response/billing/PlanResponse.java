@@ -15,6 +15,7 @@ public class PlanResponse {
     String name;
     /** PERSONAL (cá nhân) hoặc TEAM (nhóm); UNLIMITED chỉ có ở gói ảo của SUPER_ADMIN. */
     String audience;
+
     long priceMonth;
     long priceYear;
     PlanLimits limits;

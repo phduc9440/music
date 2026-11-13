@@ -14,7 +14,6 @@ import static org.mockito.Mockito.when;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.util.Map;
-
 import javax.imageio.ImageIO;
 
 import org.junit.jupiter.api.AfterEach;
@@ -104,11 +103,18 @@ class ScoreCoverServiceImplTest {
         assertTrue(scoreRepository.findById(scoreId).orElseThrow().getCoverUrl().startsWith(URL));
 
         // Mỗi bản nhạc một public id cố định, ghi đè khi tải lại
-        verify(uploader).upload(any(byte[].class), eq(Map.of(
-                "public_id", "score-covers/" + scoreId,
-                "overwrite", true,
-                "invalidate", true,
-                "resource_type", "image")));
+        verify(uploader)
+                .upload(
+                        any(byte[].class),
+                        eq(Map.of(
+                                "public_id",
+                                "score-covers/" + scoreId,
+                                "overwrite",
+                                true,
+                                "invalidate",
+                                true,
+                                "resource_type",
+                                "image")));
 
         ScoreDetailResponse removed = coverService.remove(scoreId);
         assertNull(removed.getCoverUrl());
@@ -119,32 +125,33 @@ class ScoreCoverServiceImplTest {
     void rejectsBadFilesAndNeverCallsCloudinary() throws Exception {
         assertEquals(
                 ErrorCode.SCORE_COVER_INVALID,
-                codeOf(() -> coverService.upload(scoreId, new MockMultipartFile("file", "a.gif", "image/gif", new byte[] {1}))));
+                codeOf(() -> coverService.upload(
+                        scoreId, new MockMultipartFile("file", "a.gif", "image/gif", new byte[] {1}))));
         // Content-Type nói là PNG nhưng nội dung không phải ảnh
         assertEquals(
                 ErrorCode.SCORE_COVER_INVALID,
-                codeOf(() -> coverService.upload(scoreId, new MockMultipartFile("file", "a.png", "image/png", new byte[] {1, 2, 3}))));
+                codeOf(() -> coverService.upload(
+                        scoreId, new MockMultipartFile("file", "a.png", "image/png", new byte[] {1, 2, 3}))));
         // Quá 3MB
         assertEquals(
                 ErrorCode.SCORE_COVER_INVALID,
-                codeOf(() -> coverService.upload(scoreId, new MockMultipartFile("file", "a.png", "image/png", new byte[3 * 1024 * 1024 + 1]))));
+                codeOf(() -> coverService.upload(
+                        scoreId, new MockMultipartFile("file", "a.png", "image/png", new byte[3 * 1024 * 1024 + 1]))));
         verify(uploader, never()).upload(any(byte[].class), anyMap());
     }
 
     @Test
     void personWithoutEditPermissionCannotChangeCover() throws Exception {
         as(STRANGER);
-        assertEquals(
-                ErrorCode.UNAUTHORIZED,
-                codeOf(() -> {
-                    try {
-                        coverService.upload(scoreId, new MockMultipartFile("file", "a.png", "image/png", png()));
-                    } catch (AppException e) {
-                        throw e;
-                    } catch (Exception e) {
-                        throw new IllegalStateException(e);
-                    }
-                }));
+        assertEquals(ErrorCode.UNAUTHORIZED, codeOf(() -> {
+            try {
+                coverService.upload(scoreId, new MockMultipartFile("file", "a.png", "image/png", png()));
+            } catch (AppException e) {
+                throw e;
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
+        }));
         assertEquals(ErrorCode.UNAUTHORIZED, codeOf(() -> coverService.remove(scoreId)));
         verify(uploader, never()).upload(any(byte[].class), anyMap());
     }
@@ -152,17 +159,15 @@ class ScoreCoverServiceImplTest {
     @Test
     void storageFailureKeepsOldCover() throws Exception {
         when(uploader.upload(any(byte[].class), anyMap())).thenThrow(new RuntimeException("cloud down"));
-        assertEquals(
-                ErrorCode.FILE_STORAGE_ERROR,
-                codeOf(() -> {
-                    try {
-                        coverService.upload(scoreId, new MockMultipartFile("file", "a.png", "image/png", png()));
-                    } catch (AppException e) {
-                        throw e;
-                    } catch (Exception e) {
-                        throw new IllegalStateException(e);
-                    }
-                }));
+        assertEquals(ErrorCode.FILE_STORAGE_ERROR, codeOf(() -> {
+            try {
+                coverService.upload(scoreId, new MockMultipartFile("file", "a.png", "image/png", png()));
+            } catch (AppException e) {
+                throw e;
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
+        }));
         assertNull(scoreRepository.findById(scoreId).orElseThrow().getCoverUrl());
     }
 }

@@ -37,5 +37,6 @@ public class AdminTeamResponse {
     boolean restorable;
     /** Quản trị viên xóa (vi phạm) hay chủ team tự xóa. */
     boolean deletedByAdmin;
+
     String deletedReason;
 }

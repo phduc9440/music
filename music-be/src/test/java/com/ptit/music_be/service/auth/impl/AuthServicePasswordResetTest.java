@@ -93,7 +93,11 @@ class AuthServicePasswordResetTest {
     }
 
     private Otp pendingOtp(String code, LocalDateTime expiry) {
-        return Otp.builder().otpCode(encoder.encode(code)).expiryTime(expiry).member(user).build();
+        return Otp.builder()
+                .otpCode(encoder.encode(code))
+                .expiryTime(expiry)
+                .member(user)
+                .build();
     }
 
     @Test
@@ -145,7 +149,8 @@ class AuthServicePasswordResetTest {
         // OTP đã đổi thành mã phiên thì nhập lại OTP không được nữa
         assertEquals(
                 ErrorCode.OTP_INVALID,
-                assertThrows(AppException.class, () -> service.verifyResetOtp(otpOf("123456"))).getErrorCode());
+                assertThrows(AppException.class, () -> service.verifyResetOtp(otpOf("123456")))
+                        .getErrorCode());
     }
 
     @Test
@@ -216,7 +221,8 @@ class AuthServicePasswordResetTest {
         // Đúng mã nhưng đã sai đủ 5 lần: mã bị hủy, phải xin mã mới
         assertEquals(
                 ErrorCode.OTP_INVALID,
-                assertThrows(AppException.class, () -> service.verifyResetOtp(otpOf("123456"))).getErrorCode());
+                assertThrows(AppException.class, () -> service.verifyResetOtp(otpOf("123456")))
+                        .getErrorCode());
         verify(otps).delete(otp);
     }
 
@@ -227,12 +233,14 @@ class AuthServicePasswordResetTest {
         when(otps.findByMember(user)).thenReturn(Optional.of(expired));
         assertEquals(
                 ErrorCode.OTP_INVALID,
-                assertThrows(AppException.class, () -> service.verifyResetOtp(otpOf("123456"))).getErrorCode());
+                assertThrows(AppException.class, () -> service.verifyResetOtp(otpOf("123456")))
+                        .getErrorCode());
         verify(otps).delete(expired);
 
         when(members.findByEmail("a@x.com")).thenReturn(Optional.empty());
         assertEquals(
                 ErrorCode.OTP_INVALID,
-                assertThrows(AppException.class, () -> service.verifyResetOtp(otpOf("123456"))).getErrorCode());
+                assertThrows(AppException.class, () -> service.verifyResetOtp(otpOf("123456")))
+                        .getErrorCode());
     }
 }

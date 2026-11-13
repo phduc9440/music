@@ -26,7 +26,9 @@ public class AdminTeamController {
     AdminTeamService adminTeamService;
 
     @GetMapping("/summary")
-    @Operation(summary = "Teams, active teams (7 days), members in teams, preparing shows, open/overdue items", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(
+            summary = "Teams, active teams (7 days), members in teams, preparing shows, open/overdue items",
+            security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<AdminTeamSummaryResponse> summary() {
         return ApiResponse.<AdminTeamSummaryResponse>builder()
                 .result(adminTeamService.summary())
@@ -34,7 +36,9 @@ public class AdminTeamController {
     }
 
     @GetMapping
-    @Operation(summary = "Search teams by name or creator; deleted=true lists soft-deleted teams", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(
+            summary = "Search teams by name or creator; deleted=true lists soft-deleted teams",
+            security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<PageResponse<AdminTeamResponse>> search(
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "false") boolean deleted,
@@ -46,7 +50,9 @@ public class AdminTeamController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Team detail: members, shows, score titles, recent activity", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(
+            summary = "Team detail: members, shows, score titles, recent activity",
+            security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<AdminTeamDetailResponse> detail(@PathVariable String id) {
         return ApiResponse.<AdminTeamDetailResponse>builder()
                 .result(adminTeamService.detail(id))
@@ -54,14 +60,18 @@ public class AdminTeamController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Soft-delete a team (violation); restorable for 30 days; members are notified with the reason", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(
+            summary = "Soft-delete a team (violation); restorable for 30 days; members are notified with the reason",
+            security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<Void> delete(@PathVariable String id, @RequestParam(required = false) String reason) {
         adminTeamService.delete(id, reason);
         return ApiResponse.<Void>builder().build();
     }
 
     @PostMapping("/{id}/restore")
-    @Operation(summary = "Restore a soft-deleted team within 30 days; 3818 expired", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(
+            summary = "Restore a soft-deleted team within 30 days; 3818 expired",
+            security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<Void> restore(@PathVariable String id) {
         adminTeamService.restore(id);
         return ApiResponse.<Void>builder().build();

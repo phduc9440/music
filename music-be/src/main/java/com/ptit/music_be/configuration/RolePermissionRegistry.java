@@ -52,9 +52,8 @@ public class RolePermissionRegistry {
             if (name == null || Role.USER.equals(name)) {
                 continue;
             }
-            Set<AdminPermission> granted = map == null
-                    ? (Role.ADMIN.equals(name) ? AdminPermission.adminDefaults() : null)
-                    : map.get(name);
+            Set<AdminPermission> granted =
+                    map == null ? (Role.ADMIN.equals(name) ? AdminPermission.adminDefaults() : null) : map.get(name);
             if (granted != null) {
                 result.addAll(granted);
             }

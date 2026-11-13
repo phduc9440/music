@@ -15,8 +15,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.ptit.music_be.dto.enums.auth.AdminPermission;
 import com.ptit.music_be.configuration.MemberStatusGuard;
+import com.ptit.music_be.dto.enums.auth.AdminPermission;
 import com.ptit.music_be.dto.enums.auth.MemberStatus;
 import com.ptit.music_be.dto.enums.billing.PaymentStatus;
 import com.ptit.music_be.dto.request.admin.AdminUpdateMemberRequest;
@@ -68,7 +68,8 @@ public class AdminMemberServiceImpl implements AdminMemberService {
     @Transactional(readOnly = true)
     public PageResponse<MemberResponse> getMembersWithPlan(
             int page, int size, String keyword, String planCode, boolean bannedOnly) {
-        String code = planCode == null || planCode.isBlank() ? null : planCode.trim().toUpperCase();
+        String code =
+                planCode == null || planCode.isBlank() ? null : planCode.trim().toUpperCase();
         return toPage(memberRepository.searchWithPlan(
                 cleanKeyword(keyword), code, bannedOnly, java.time.LocalDateTime.now(), pageOf(page, size)));
     }

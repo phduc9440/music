@@ -44,5 +44,7 @@
   "TEAM_DELETED": "{name} đã xóa nhóm {team}",
   "TEAM_RESTORED": "Nhóm {team} đã được khôi phục",
   "COMMENT_MENTION": "{name} đã nhắc tới bạn trong góp ý ở ô {measures} của “{title}”",
-  "COMMENT_REPLY": "{name} đã trả lời góp ý ở ô {measures} của “{title}”"
+  "COMMENT_REPLY": "{name} đã trả lời góp ý ở ô {measures} của “{title}”",
+  "SUGGESTION_NEW": "{name} đã đề xuất sửa trong bản nhạc “{title}”",
+  "SUGGESTION_DECIDED": "{name} đã xử lý đề xuất sửa của bạn trong bản nhạc “{title}”"
 }

@@ -33,9 +33,9 @@ import com.ptit.music_be.repository.billing.PlanRepository;
 import com.ptit.music_be.service.billing.SubscriptionService;
 import com.ptit.music_be.service.billing.impl.SubscriptionServiceImpl;
 import com.ptit.music_be.service.notification.NotificationService;
+import com.ptit.music_be.service.payment.PaymentProvider;
 import com.ptit.music_be.service.payment.PaymentProvider.PaymentCallback;
 import com.ptit.music_be.service.payment.PaymentProvider.PaymentContext;
-import com.ptit.music_be.service.payment.PaymentProvider;
 import com.ptit.music_be.service.payment.PaymentService;
 import com.ptit.music_be.utils.SecurityUtils;
 
@@ -86,9 +86,7 @@ public class PaymentServiceImpl implements PaymentService {
         Plan plan = planRepository
                 .findByCode(request.getPlanCode() == null ? "" : request.getPlanCode())
                 .orElseThrow(() -> new AppException(ErrorCode.PLAN_NOT_EXISTED));
-        long amount = request.getPeriod() == BillingPeriod.MONTH
-                ? plan.getPriceMonth()
-                : plan.getPriceYear();
+        long amount = request.getPeriod() == BillingPeriod.MONTH ? plan.getPriceMonth() : plan.getPriceYear();
         if (amount <= 0) {
             throw new AppException(ErrorCode.PAYMENT_PLAN_NOT_PURCHASABLE);
         }
@@ -100,7 +98,12 @@ public class PaymentServiceImpl implements PaymentService {
         PaymentOrder order = reuseOrSupersedePending(member, plan, request.getPeriod(), type);
         if (order == null) {
             order = orderRepository.save(PaymentOrder.builder()
-                    .orderCode("MU" + UUID.randomUUID().toString().replace("-", "").substring(0, 16).toUpperCase())
+                    .orderCode("MU"
+                            + UUID.randomUUID()
+                                    .toString()
+                                    .replace("-", "")
+                                    .substring(0, 16)
+                                    .toUpperCase())
                     .member(member)
                     .plan(plan)
                     .period(request.getPeriod())
@@ -177,8 +180,7 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     @Transactional
     public PaymentOrderResponse resumeOrder(String orderCode, String clientIp) {
-        PaymentOrder order =
-                orderRepository.findByOrderCodeForUpdate(orderCode).orElseThrow(this::notFound);
+        PaymentOrder order = orderRepository.findByOrderCodeForUpdate(orderCode).orElseThrow(this::notFound);
         if (!order.getMember().getEmail().equals(SecurityUtils.getCurrentEmail())) {
             throw notFound();
         }
@@ -194,15 +196,15 @@ public class PaymentServiceImpl implements PaymentService {
         orderRepository.save(order);
         String locale = order.getMember().getLocale() == AppLocale.EN ? "en" : "vn";
         PaymentOrderResponse response = toResponse(order, false);
-        response.setPayUrl(provider.createPayment(order, new PaymentContext(clientIp, locale)).payUrl());
+        response.setPayUrl(provider.createPayment(order, new PaymentContext(clientIp, locale))
+                .payUrl());
         return response;
     }
 
     @Override
     @Transactional(readOnly = true)
     public PaymentOrderResponse getMyOrder(String orderCode) {
-        PaymentOrder order =
-                orderRepository.findByOrderCode(orderCode).orElseThrow(this::notFound);
+        PaymentOrder order = orderRepository.findByOrderCode(orderCode).orElseThrow(this::notFound);
         // Đơn của người khác coi như không tồn tại
         if (!order.getMember().getEmail().equals(SecurityUtils.getCurrentEmail())) {
             throw notFound();
@@ -217,7 +219,8 @@ public class PaymentServiceImpl implements PaymentService {
         // Đơn bỏ dở (hết hạn chưa trả) không đưa vào lịch sử để khỏi thành nhiều dòng trùng
         return orderRepository.findByMemberEmailOrderByCreatedAtDesc(SecurityUtils.getCurrentEmail()).stream()
                 .filter(o -> o.getStatus() != PaymentStatus.EXPIRED
-                        && !(o.getStatus() == PaymentStatus.PENDING && !o.getExpiresAt().isAfter(now)))
+                        && !(o.getStatus() == PaymentStatus.PENDING
+                                && !o.getExpiresAt().isAfter(now)))
                 .map(o -> toResponse(o, false))
                 .toList();
     }
@@ -251,7 +254,11 @@ public class PaymentServiceImpl implements PaymentService {
             return IpnResult.ORDER_NOT_FOUND;
         }
         if (order.getAmount() != callback.amount()) {
-            log.warn("IPN đơn {} sai số tiền: đơn {} nhưng cổng báo {}", order.getOrderCode(), order.getAmount(), callback.amount());
+            log.warn(
+                    "IPN đơn {} sai số tiền: đơn {} nhưng cổng báo {}",
+                    order.getOrderCode(),
+                    order.getAmount(),
+                    callback.amount());
             return IpnResult.INVALID_AMOUNT;
         }
         if (order.getStatus() == PaymentStatus.PAID || order.getStatus() == PaymentStatus.REFUNDED) {
@@ -309,7 +316,10 @@ public class PaymentServiceImpl implements PaymentService {
                     && order.getOrderCode().equals(answer.get().orderCode())
                     && order.getAmount() == answer.get().amount()) {
                 applyResult(order, answer.get(), null);
-                log.info("Đối soát đơn {}: cổng báo {}", order.getOrderCode(), answer.get().success() ? "đã trả tiền" : "thất bại");
+                log.info(
+                        "Đối soát đơn {}: cổng báo {}",
+                        order.getOrderCode(),
+                        answer.get().success() ? "đã trả tiền" : "thất bại");
                 if (order.getStatus() == PaymentStatus.PAID) {
                     continue;
                 }

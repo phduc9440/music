@@ -30,25 +30,34 @@ public class AdminRoleController {
     }
 
     @GetMapping
-    @Operation(summary = "All roles with permissions and member counts", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(
+            summary = "All roles with permissions and member counts",
+            security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<List<RoleResponse>> list() {
         return ok(roleService.list());
     }
 
     @PostMapping
-    @Operation(summary = "Create a role (code generated from the label)", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(
+            summary = "Create a role (code generated from the label)",
+            security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<RoleResponse> create(@RequestBody RoleRequest request) {
         return ok(roleService.create(request));
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Edit a role: label, description, permissions (ADMIN: permissions only; USER, SUPER_ADMIN: locked)", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(
+            summary =
+                    "Edit a role: label, description, permissions (ADMIN: permissions only; USER, SUPER_ADMIN: locked)",
+            security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<RoleResponse> update(@PathVariable String id, @RequestBody RoleRequest request) {
         return ok(roleService.update(id, request));
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Delete a custom role nobody holds (1021 if in use)", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(
+            summary = "Delete a custom role nobody holds (1021 if in use)",
+            security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<Void> delete(@PathVariable String id) {
         roleService.delete(id);
         return ApiResponse.<Void>builder().build();

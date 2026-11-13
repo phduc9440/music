@@ -29,9 +29,11 @@ public class AdminMemberDetailResponse {
 
     /** Tổng tiền các đơn mua gói đã thanh toán (PAID, không tính đơn đã hoàn), VND. */
     long purchaseTotal;
+
     long purchaseCount;
     /** Đơn đã hoàn tiền (không tính vào purchaseTotal). */
     long refundedTotal;
+
     long refundedCount;
     /** Các lần mua gói đã thanh toán (PAID và REFUNDED), mới nhất trước, tối đa 50. */
     List<Purchase> purchases;
@@ -48,6 +50,7 @@ public class AdminMemberDetailResponse {
         String name;
         /** Vai trò của người này trong team: OWNER / MANAGER / ARRANGER / VIEWER. */
         String role;
+
         LocalDateTime joinedAt;
         /** Số thành viên của team. */
         long memberCount;
@@ -68,6 +71,7 @@ public class AdminMemberDetailResponse {
         String kind;
         /** PAID / REFUNDED. */
         String status;
+
         long amount;
         LocalDateTime paidAt;
     }

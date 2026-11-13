@@ -2,8 +2,8 @@ package com.ptit.music_be.controller.admin;
 
 import java.util.List;
 
-import org.springframework.web.bind.annotation.*;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
 
 import com.ptit.music_be.dto.request.admin.CreatePlanRequest;
 import com.ptit.music_be.dto.request.admin.UpdatePlanRequest;
@@ -39,8 +39,9 @@ public class AdminPlanController {
     @PostMapping
     @Operation(
             summary = "Tạo gói mới (chỉ SUPER_ADMIN)",
-            description = "Errors: 1002 không phải SUPER_ADMIN, 3719 giá, 3720 tên, 3721 hạn mức, 3722 mã gói không hợp lệ,"
-                    + " 3723 mã đã tồn tại, 3724 nhóm gói không hợp lệ",
+            description =
+                    "Errors: 1002 không phải SUPER_ADMIN, 3719 giá, 3720 tên, 3721 hạn mức, 3722 mã gói không hợp lệ,"
+                            + " 3723 mã đã tồn tại, 3724 nhóm gói không hợp lệ",
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<PlanResponse> create(@RequestBody CreatePlanRequest request) {
         return ApiResponse.<PlanResponse>builder()
@@ -51,8 +52,9 @@ public class AdminPlanController {
     @DeleteMapping("/{code}")
     @Operation(
             summary = "Xóa gói (chỉ SUPER_ADMIN)",
-            description = "Errors: 1002 không phải SUPER_ADMIN, 3701 gói không tồn tại, 3725 gói Free/Pro không xóa được,"
-                    + " 3726 gói đã có người đăng ký hoặc có đơn",
+            description =
+                    "Errors: 1002 không phải SUPER_ADMIN, 3701 gói không tồn tại, 3725 gói Free/Pro không xóa được,"
+                            + " 3726 gói đã có người đăng ký hoặc có đơn",
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<Void> delete(@PathVariable String code) {
         adminPlanService.delete(code);

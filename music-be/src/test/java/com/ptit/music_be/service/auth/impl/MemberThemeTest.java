@@ -59,13 +59,19 @@ class MemberThemeTest {
 
     @Test
     void theChosenThemeIsSavedAndComesBackWithTheProfile() {
-        assertEquals(UiTheme.DARK, memberService.updateMyTheme(new UpdateThemeRequest(UiTheme.DARK)).getUiTheme());
+        assertEquals(
+                UiTheme.DARK,
+                memberService
+                        .updateMyTheme(new UpdateThemeRequest(UiTheme.DARK))
+                        .getUiTheme());
 
         entityManager.flush();
         entityManager.clear();
 
         assertEquals(UiTheme.DARK, memberService.getMyInfo().getUiTheme());
-        assertEquals(UiTheme.DARK, memberRepository.findById(member.getId()).orElseThrow().getUiTheme());
+        assertEquals(
+                UiTheme.DARK,
+                memberRepository.findById(member.getId()).orElseThrow().getUiTheme());
     }
 
     @Test

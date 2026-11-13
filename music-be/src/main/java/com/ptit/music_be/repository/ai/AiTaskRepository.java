@@ -25,9 +25,10 @@ public interface AiTaskRepository extends JpaRepository<AiTask, String> {
      * hoặc bị hủy. Tính từ dữ liệu gốc, không lưu bộ đếm riêng (task lỗi/hủy tự không được tính).
      */
     @Query(
-            value = "SELECT COALESCE(SUM(CAST(JSON_UNQUOTE(JSON_EXTRACT(t.input_data, '$.pagesCharged')) AS UNSIGNED)), 0)"
-                    + " FROM ai_tasks t WHERE t.member_id = :memberId AND t.task_type = 'OMR_CONVERSION'"
-                    + " AND t.status NOT IN ('FAILED', 'CANCELLED') AND t.created_at >= :from AND t.created_at < :to",
+            value =
+                    "SELECT COALESCE(SUM(CAST(JSON_UNQUOTE(JSON_EXTRACT(t.input_data, '$.pagesCharged')) AS UNSIGNED)), 0)"
+                            + " FROM ai_tasks t WHERE t.member_id = :memberId AND t.task_type = 'OMR_CONVERSION'"
+                            + " AND t.status NOT IN ('FAILED', 'CANCELLED') AND t.created_at >= :from AND t.created_at < :to",
             nativeQuery = true)
     long sumOmrPagesCharged(
             @Param("memberId") String memberId,

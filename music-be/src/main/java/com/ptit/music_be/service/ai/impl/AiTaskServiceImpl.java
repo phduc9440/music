@@ -8,11 +8,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-import com.ptit.music_be.dto.enums.auth.AdminPermission;
 import com.ptit.music_be.dto.enums.ai.AiTaskError;
 import com.ptit.music_be.dto.enums.ai.AiTaskStatus;
 import com.ptit.music_be.dto.enums.ai.AiTaskType;
 import com.ptit.music_be.dto.enums.ai.ProcessingStatus;
+import com.ptit.music_be.dto.enums.auth.AdminPermission;
 import com.ptit.music_be.dto.enums.score.FileType;
 import com.ptit.music_be.dto.response.ai.AiTaskResponse;
 import com.ptit.music_be.entity.AiTask;

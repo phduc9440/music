@@ -93,14 +93,16 @@ public class ScoreCommentServiceImpl implements ScoreCommentService {
         List<ScoreComment> roots = commentRepository.findRootsOfScore(score.getId());
         Set<String> mentioningMe = new HashSet<>(mentionRepository.findThreadIdsMentioning(score.getId(), me.getId()));
         // Số đếm tính từ danh sách vừa nạp (không lưu bảng thống kê)
-        long open = roots.stream().filter(c -> c.getStatus() != CommentStatus.RESOLVED).count();
+        long open = roots.stream()
+                .filter(c -> c.getStatus() != CommentStatus.RESOLVED)
+                .count();
         long resolved = roots.size() - open;
-        long mentionedCount = roots.stream().filter(c -> mentioningMe.contains(c.getId())).count();
+        long mentionedCount =
+                roots.stream().filter(c -> mentioningMe.contains(c.getId())).count();
 
         List<ScoreComment> shown = roots.stream()
-                .filter(c -> mentioned
-                        ? mentioningMe.contains(c.getId())
-                        : status == null || effectiveStatus(c) == status)
+                .filter(c ->
+                        mentioned ? mentioningMe.contains(c.getId()) : status == null || effectiveStatus(c) == status)
                 .toList();
         return ScoreCommentsResponse.builder()
                 .canComment(canWrite(score, decision))
@@ -127,7 +129,8 @@ public class ScoreCommentServiceImpl implements ScoreCommentService {
                 .filter(m -> !m.getId().equals(me.getId()))
                 .filter(m -> kw.isEmpty()
                         || displayName(m).toLowerCase(Locale.ROOT).contains(kw)
-                        || (m.getEmail() != null && m.getEmail().toLowerCase(Locale.ROOT).startsWith(kw)))
+                        || (m.getEmail() != null
+                                && m.getEmail().toLowerCase(Locale.ROOT).startsWith(kw)))
                 .limit(MAX_SUGGESTIONS)
                 .map(ScoreCommentServiceImpl::toMember)
                 .toList();
@@ -149,7 +152,12 @@ public class ScoreCommentServiceImpl implements ScoreCommentService {
         Integer measureCount = score.getMeasureCount();
         Integer start = request.getStartMeasure();
         Integer end = request.getEndMeasure() == null ? start : request.getEndMeasure();
-        if (measureCount == null || measureCount < 1 || start == null || start < 1 || end < start || end > measureCount) {
+        if (measureCount == null
+                || measureCount < 1
+                || start == null
+                || start < 1
+                || end < start
+                || end > measureCount) {
             throw new AppException(ErrorCode.COMMENT_MEASURE_INVALID);
         }
         Map<String, Member> mentions = resolveMentions(score, me, request.getMentionIds());
@@ -213,7 +221,13 @@ public class ScoreCommentServiceImpl implements ScoreCommentService {
                     score.getId(),
                     name + " đã trả lời góp ý ở ô " + measures(root) + " của “" + score.getTitle() + "”",
                     NotificationService.params(
-                            "name", name, "title", score.getTitle(), "measures", measures(root), "commentId",
+                            "name",
+                            name,
+                            "title",
+                            score.getTitle(),
+                            "measures",
+                            measures(root),
+                            "commentId",
                             root.getId()));
         }
         return thread(root, score, decision, me);
@@ -253,7 +267,9 @@ public class ScoreCommentServiceImpl implements ScoreCommentService {
                 saveMentions(comment, mentions.values());
                 // Chỉ người mới được thêm nhận thông báo
                 notifyMentions(
-                        mentions.values().stream().filter(m -> !before.contains(m.getId())).toList(),
+                        mentions.values().stream()
+                                .filter(m -> !before.contains(m.getId()))
+                                .toList(),
                         me,
                         score,
                         root);
@@ -321,7 +337,10 @@ public class ScoreCommentServiceImpl implements ScoreCommentService {
             result.putIfAbsent(share.getMember().getId(), share.getMember());
         }
         if (score.getTeamId() != null
-                && teamRepository.findById(score.getTeamId()).filter(t -> !t.isDeleted()).isPresent()) {
+                && teamRepository
+                        .findById(score.getTeamId())
+                        .filter(t -> !t.isDeleted())
+                        .isPresent()) {
             for (TeamMember tm : teamMemberRepository.findByTeamWithMember(score.getTeamId())) {
                 result.putIfAbsent(tm.getMember().getId(), tm.getMember());
             }
@@ -368,7 +387,8 @@ public class ScoreCommentServiceImpl implements ScoreCommentService {
 
     private void saveMentions(ScoreComment comment, Collection<Member> members) {
         for (Member m : members) {
-            mentionRepository.save(ScoreCommentMention.builder().comment(comment).member(m).build());
+            mentionRepository.save(
+                    ScoreCommentMention.builder().comment(comment).member(m).build());
         }
     }
 
@@ -382,7 +402,13 @@ public class ScoreCommentServiceImpl implements ScoreCommentService {
                     score.getId(),
                     name + " đã nhắc tới bạn trong góp ý ở ô " + measures(root) + " của “" + score.getTitle() + "”",
                     NotificationService.params(
-                            "name", name, "title", score.getTitle(), "measures", measures(root), "commentId",
+                            "name",
+                            name,
+                            "title",
+                            score.getTitle(),
+                            "measures",
+                            measures(root),
+                            "commentId",
                             root.getId()));
         }
     }

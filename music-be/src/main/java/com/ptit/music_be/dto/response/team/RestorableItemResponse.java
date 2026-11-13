@@ -16,6 +16,7 @@ public class RestorableItemResponse {
     String name;
     /** Mô tả của team hoặc địa điểm của show. */
     String description;
+
     LocalDateTime deletedAt;
     String deletedByName;
     /** Hạn cuối khôi phục (30 ngày sau lúc xóa). */

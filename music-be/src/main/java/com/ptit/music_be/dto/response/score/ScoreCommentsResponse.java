@@ -16,10 +16,12 @@ public class ScoreCommentsResponse {
     boolean canComment;
     /** Số ô hiện tại (giới hạn khi chọn vùng); null nếu bản nhạc chưa có MusicXML. */
     Integer measureCount;
+
     Integer currentVersion;
     long openCount;
     long resolvedCount;
     /** Số góp ý gốc có nhắc tới người đang xem. */
     long mentionedCount;
+
     List<ScoreCommentResponse> comments;
 }

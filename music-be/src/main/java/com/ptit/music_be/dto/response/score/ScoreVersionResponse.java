@@ -28,8 +28,12 @@ public class ScoreVersionResponse {
     Long sizeBytes;
     /** Boolean (không phải boolean) để JSON giữ tên "isCurrent" như các DTO file khác. */
     Boolean isCurrent;
-    /** EDITOR (lưu từ trình chỉnh sửa), OMR, IMPORT, RESTORE (khôi phục từ phiên bản cũ). */
+    /** EDITOR (lưu từ trình chỉnh sửa), OMR, IMPORT, RESTORE (khôi phục từ phiên bản cũ), SUGGESTION (nhận đề xuất sửa). */
     String source;
     /** Khi source = RESTORE: version được khôi phục. */
     Integer restoredFrom;
+    /** Khi source = SUGGESTION: đề xuất được nhận. */
+    String suggestionId;
+    /** Khi source = SUGGESTION: tên người đề xuất; null nếu đề xuất của hệ thống. */
+    String suggestionAuthorName;
 }

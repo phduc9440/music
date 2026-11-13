@@ -25,7 +25,10 @@ public enum ErrorCode {
     PASSWORD_SAME_AS_OLD(1012, "Mật khẩu mới phải khác mật khẩu hiện tại", HttpStatus.BAD_REQUEST),
     CANNOT_MODIFY_SELF(1013, "Quản trị viên không thể khóa hoặc hạ quyền chính mình", HttpStatus.BAD_REQUEST),
     ROLE_NOT_EXISTED(1015, "Vai trò không tồn tại", HttpStatus.BAD_REQUEST),
-    ROLE_BUILT_IN(1020, "Vai trò có sẵn: không đổi tên, không xóa; USER và SUPER_ADMIN cũng không chỉnh quyền", HttpStatus.BAD_REQUEST),
+    ROLE_BUILT_IN(
+            1020,
+            "Vai trò có sẵn: không đổi tên, không xóa; USER và SUPER_ADMIN cũng không chỉnh quyền",
+            HttpStatus.BAD_REQUEST),
     ROLE_IN_USE(1021, "Vai trò đang được gán cho thành viên, hãy gỡ khỏi họ trước khi xóa", HttpStatus.CONFLICT),
     ROLE_LABEL_INVALID(1022, "Tên vai trò từ 2 đến 100 ký tự, mô tả tối đa 255 ký tự", HttpStatus.BAD_REQUEST),
     ROLE_LABEL_DUPLICATED(1023, "Đã có vai trò trùng tên này", HttpStatus.CONFLICT),
@@ -154,6 +157,11 @@ public enum ErrorCode {
     SCORE_SYSTEM_OWNER_MISSING(
             3405, "Chưa có tài khoản hệ thống để chứa bản nhạc của kho bản nhạc mẫu", HttpStatus.INTERNAL_SERVER_ERROR),
     SCORE_NOT_IN_TRASH(3301, "Bản nhạc không nằm trong thùng rác của bạn", HttpStatus.NOT_FOUND),
+    BLANK_SCORE_OPTION_INVALID(
+            3302,
+            "Tùy chọn bản nhạc trống không hợp lệ (khóa -7..7, tử số nhịp 1..12, mẫu số 2/4/8/16, tempo 20..300,"
+                    + " 1..200 ô)",
+            HttpStatus.BAD_REQUEST),
     COMPOSER_NOT_EXISTED(3501, "Nhạc sĩ không tồn tại", HttpStatus.NOT_FOUND),
     COMPOSER_NAME_INVALID(3502, "Tên nhạc sĩ là bắt buộc và tối đa 255 ký tự", HttpStatus.BAD_REQUEST),
     COMPOSER_DUPLICATED(3503, "Đã có nhạc sĩ trùng tên (đường dẫn)", HttpStatus.CONFLICT),
@@ -173,13 +181,22 @@ public enum ErrorCode {
     PAYMENT_RANGE_INVALID(3716, "Khoảng ngày doanh thu không hợp lệ (tối đa 366 ngày)", HttpStatus.BAD_REQUEST),
     PAYMENT_ORDER_NOT_PAYABLE(3717, "Đơn này không còn chờ thanh toán", HttpStatus.CONFLICT),
     PAYMENT_NOT_NEEDED(3718, "Tài khoản quản trị đã có quyền lợi của gói này, không cần mua", HttpStatus.CONFLICT),
-    PLAN_PRICE_INVALID(3719, "Giá không hợp lệ: gói Free phải là 0, gói trả phí từ 1 đến 1.000.000.000 đồng", HttpStatus.BAD_REQUEST),
+    PLAN_PRICE_INVALID(
+            3719,
+            "Giá không hợp lệ: gói Free phải là 0, gói trả phí từ 1 đến 1.000.000.000 đồng",
+            HttpStatus.BAD_REQUEST),
     PLAN_NAME_INVALID(3720, "Tên gói không được trống và tối đa 100 ký tự", HttpStatus.BAD_REQUEST),
-    PLAN_LIMITS_INVALID(3721, "Hạn mức không hợp lệ: mỗi số từ 0 đến 10.000.000 (để trống = không giới hạn), task cùng lúc ít nhất 1", HttpStatus.BAD_REQUEST),
+    PLAN_LIMITS_INVALID(
+            3721,
+            "Hạn mức không hợp lệ: mỗi số từ 0 đến 10.000.000 (để trống = không giới hạn), task cùng lúc ít nhất 1",
+            HttpStatus.BAD_REQUEST),
     PLAN_CODE_INVALID(3722, "Mã gói gồm 2-16 ký tự: chữ in hoa, số, dấu gạch dưới", HttpStatus.BAD_REQUEST),
     PLAN_CODE_EXISTED(3723, "Mã gói đã tồn tại", HttpStatus.CONFLICT),
     PLAN_AUDIENCE_INVALID(3724, "Loại gói phải là Cá nhân (PERSONAL) hoặc Nhóm (TEAM)", HttpStatus.BAD_REQUEST),
-    PLAN_SYSTEM_LOCKED(3725, "Không xóa được gói Free và Pro (hệ thống dùng cho người dùng mới và quản trị viên)", HttpStatus.CONFLICT),
+    PLAN_SYSTEM_LOCKED(
+            3725,
+            "Không xóa được gói Free và Pro (hệ thống dùng cho người dùng mới và quản trị viên)",
+            HttpStatus.CONFLICT),
     PLAN_NOT_GRANTABLE(3727, "Không cấp hàng loạt gói Free được; muốn bỏ gói thì dùng Hủy gói", HttpStatus.BAD_REQUEST),
     PLAN_SANCTION_INVALID(3728, "Thời hạn cấm phải từ 1 đến 120 tháng, lý do tối đa 255 ký tự", HttpStatus.BAD_REQUEST),
     PLAN_BANNED(3729, "Bạn đang bị cấm dùng gói này; vẫn có thể dùng Free hoặc mua gói khác", HttpStatus.FORBIDDEN),
@@ -195,7 +212,8 @@ public enum ErrorCode {
     TEAM_MEMBER_NOT_EXISTED(3808, "Người này không ở trong nhóm", HttpStatus.NOT_FOUND),
     TEAM_ALREADY_MEMBER(3809, "Người này đã ở trong nhóm", HttpStatus.CONFLICT),
     TEAM_INVITATION_INVALID(3810, "Lời mời không tồn tại, đã hết hạn hoặc đã được dùng", HttpStatus.GONE),
-    TEAM_INVITATION_EMAIL_MISMATCH(3811, "Lời mời này gửi cho một email khác; hãy đăng nhập đúng tài khoản được mời", HttpStatus.FORBIDDEN),
+    TEAM_INVITATION_EMAIL_MISMATCH(
+            3811, "Lời mời này gửi cho một email khác; hãy đăng nhập đúng tài khoản được mời", HttpStatus.FORBIDDEN),
     TEAM_INVITATION_DUPLICATED(3812, "Email này đang có lời mời chờ chấp nhận", HttpStatus.CONFLICT),
     TEAM_EMAIL_INVALID(3813, "Email không hợp lệ", HttpStatus.BAD_REQUEST),
     TEAM_SCORE_NOT_OWNER(3814, "Chỉ chủ bản nhạc mới chuyển được bản đó vào nhóm", HttpStatus.FORBIDDEN),
@@ -203,20 +221,30 @@ public enum ErrorCode {
     TEAM_SCORE_NOT_IN_TEAM(3816, "Bản nhạc không thuộc nhóm này", HttpStatus.BAD_REQUEST),
     TEAM_SCORE_OFFICIAL(3817, "Bản trong kho bản nhạc mẫu không chuyển vào nhóm được", HttpStatus.BAD_REQUEST),
     TEAM_RESTORE_EXPIRED(3818, "Đã quá 30 ngày kể từ lúc xóa nên không khôi phục được nữa", HttpStatus.GONE),
-    TEAM_RESTORE_BY_ADMIN_ONLY(3819, "Nhóm do quản trị viên xóa vì vi phạm; chỉ quản trị viên khôi phục được", HttpStatus.FORBIDDEN),
+    TEAM_RESTORE_BY_ADMIN_ONLY(
+            3819, "Nhóm do quản trị viên xóa vì vi phạm; chỉ quản trị viên khôi phục được", HttpStatus.FORBIDDEN),
     SHOW_NOT_EXISTED(3820, "Không tìm thấy buổi diễn", HttpStatus.NOT_FOUND),
-    SHOW_INVALID(3821, "Tên buổi diễn từ 1 đến 255 ký tự; địa điểm tối đa 255, ghi chú tối đa 2000 ký tự", HttpStatus.BAD_REQUEST),
+    SHOW_INVALID(
+            3821,
+            "Tên buổi diễn từ 1 đến 255 ký tự; địa điểm tối đa 255, ghi chú tối đa 2000 ký tự",
+            HttpStatus.BAD_REQUEST),
     SHOW_ITEM_NOT_EXISTED(3822, "Không tìm thấy bài trong buổi diễn", HttpStatus.NOT_FOUND),
     SHOW_ITEM_DUPLICATED(3823, "Bài này đã có trong buổi diễn", HttpStatus.CONFLICT),
-    SHOW_ITEM_ASSIGNEE_INVALID(3824, "Người phối và người duyệt phải là thành viên nhóm (không phải người chỉ xem)", HttpStatus.BAD_REQUEST),
+    SHOW_ITEM_ASSIGNEE_INVALID(
+            3824,
+            "Người phối và người duyệt phải là thành viên nhóm (không phải người chỉ xem)",
+            HttpStatus.BAD_REQUEST),
     SHOW_ITEM_TRANSITION_INVALID(3825, "Bạn không chuyển được bài sang trạng thái này", HttpStatus.FORBIDDEN),
-    SHOW_ITEM_NO_REVIEWER(3826, "Bài chưa có người duyệt; nhờ quản lý nhóm giao người duyệt trước khi gửi", HttpStatus.CONFLICT),
+    SHOW_ITEM_NO_REVIEWER(
+            3826, "Bài chưa có người duyệt; nhờ quản lý nhóm giao người duyệt trước khi gửi", HttpStatus.CONFLICT),
     SHOW_ITEM_NOTE_REQUIRED(3827, "Trả lại bài cần kèm góp ý (tối đa 500 ký tự)", HttpStatus.BAD_REQUEST),
     SHOW_ORDER_INVALID(3828, "Danh sách thứ tự phải gồm đủ và đúng các bài của buổi diễn", HttpStatus.BAD_REQUEST),
     SHOW_RESTORE_EXPIRED(3829, "Đã quá 30 ngày kể từ lúc xóa buổi diễn nên không khôi phục được nữa", HttpStatus.GONE),
     TEAM_OWNER_ONLY(3830, "Chỉ chủ nhóm mới làm được việc này", HttpStatus.FORBIDDEN),
-    TEAM_ROLE_SCOPE(3831, "Vai trò của bạn không được mời, đổi vai trò hoặc xóa người có vai trò này", HttpStatus.FORBIDDEN),
-    SHOW_ITEM_APPROVED_LOCKED(3832, "Bài đã duyệt: chỉ người duyệt của bài mới mở lại hoặc đổi người duyệt được", HttpStatus.FORBIDDEN),
+    TEAM_ROLE_SCOPE(
+            3831, "Vai trò của bạn không được mời, đổi vai trò hoặc xóa người có vai trò này", HttpStatus.FORBIDDEN),
+    SHOW_ITEM_APPROVED_LOCKED(
+            3832, "Bài đã duyệt: chỉ người duyệt của bài mới mở lại hoặc đổi người duyệt được", HttpStatus.FORBIDDEN),
     // ---- 39xx: Góp ý gắn vào ô nhịp (mục 4.2)
     COMMENT_NOT_EXISTED(3901, "Không tìm thấy góp ý", HttpStatus.NOT_FOUND),
     COMMENT_CONTENT_INVALID(3902, "Nội dung góp ý từ 1 đến 2000 ký tự", HttpStatus.BAD_REQUEST),
@@ -229,6 +257,23 @@ public enum ErrorCode {
     COMMENT_MENTION_INVALID(
             3906, "Chỉ nhắc được người xem được bản nhạc này (tối đa 20 người)", HttpStatus.BAD_REQUEST),
     COMMENT_ANCHOR_INVALID(3907, "Bè hoặc danh sách nốt đã chọn không hợp lệ", HttpStatus.BAD_REQUEST),
+    // ---- 31xx: Đề xuất sửa (mục 4.3)
+    SUGGESTION_FIELDS_INVALID(
+            3110,
+            "Tiêu đề đề xuất từ 1 đến 200 ký tự, mô tả tối đa 2000 ký tự, ghi chú tối đa 500 ký tự",
+            HttpStatus.BAD_REQUEST),
+    SUGGESTION_EMPTY(3111, "Đề xuất chưa có thay đổi nào so với phiên bản gốc", HttpStatus.BAD_REQUEST),
+    SUGGESTION_TOO_MANY_OPEN(
+            3112, "Bạn đang có 10 đề xuất chưa xử lý trên bản nhạc này, hãy đợi hoặc rút bớt", HttpStatus.CONFLICT),
+    SUGGESTION_OUTDATED(
+            3113,
+            "Bản chính đã đổi cấu trúc kể từ khi gửi đề xuất nên không áp dụng được; hãy từ chối và nhờ người gửi làm lại",
+            HttpStatus.CONFLICT),
+    SUGGESTION_NOT_OPEN(3114, "Đề xuất này đã được xử lý hoặc đã bị rút lại", HttpStatus.CONFLICT),
+    SUGGESTION_NOT_EXISTED(3115, "Không tìm thấy đề xuất", HttpStatus.NOT_FOUND),
+    SUGGESTION_CHANGES_INVALID(3116, "Danh sách ô được chọn không hợp lệ", HttpStatus.BAD_REQUEST),
+    SUGGESTION_RATE_LIMITED(
+            3117, "Bạn đã gửi quá 30 đề xuất trong 24 giờ qua, hãy thử lại sau", HttpStatus.TOO_MANY_REQUESTS),
     ;
 
     int code;

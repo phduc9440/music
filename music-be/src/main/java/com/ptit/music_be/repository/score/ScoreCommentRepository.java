@@ -19,7 +19,8 @@ public interface ScoreCommentRepository extends JpaRepository<ScoreComment, Stri
     List<ScoreComment> findRootsOfScore(@Param("scoreId") String scoreId);
 
     /** Trả lời của các góp ý gốc, cũ trước. */
-    @Query("select c from ScoreComment c join fetch c.author where c.parent.id in :parentIds order by c.createdAt, c.id")
+    @Query(
+            "select c from ScoreComment c join fetch c.author where c.parent.id in :parentIds order by c.createdAt, c.id")
     List<ScoreComment> findRepliesOf(@Param("parentIds") Collection<String> parentIds);
 
     @Query("select c from ScoreComment c join fetch c.author where c.parent.id = :parentId order by c.createdAt, c.id")
