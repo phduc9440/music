@@ -964,7 +964,7 @@
 }
 .sv-tool--dyn {
   font-style: italic;
-  font-family: Georgia, serif;
+  font-family: var(--ui-font-display);
 }
 
 /* Hộp thoại khóa nhạc, dấu hóa, nhịp */

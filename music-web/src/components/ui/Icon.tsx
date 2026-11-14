@@ -109,6 +109,7 @@ const PATHS = {
     </>
   ),
   chevronDown: <path d="M6 9l6 6 6-6" />,
+  sliders: <path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1M15 4v4M7 10v4M17 16v4" />,
   chevronUp: <path d="M6 15l6-6 6 6" />,
   calendar: (
     <>

@@ -108,8 +108,8 @@ public class ScoreSharingServiceImpl implements ScoreSharingService {
     @Override
     @Transactional
     public MyAccessResponse requestAccess(String scoreId, SharePermission permission, String message) {
-        if (permission != SharePermission.VIEW && permission != SharePermission.EDIT) {
-            throw new AppException(ErrorCode.SHARE_PERMISSION_INVALID); // chỉ xin xem hoặc chỉnh sửa
+        if (permission == null) {
+            throw new AppException(ErrorCode.SHARE_PERMISSION_INVALID);
         }
         Score score =
                 scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));

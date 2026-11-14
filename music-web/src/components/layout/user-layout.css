@@ -1,6 +1,7 @@
 /* Khung chung của các trang người dùng. Màu và kích thước lấy từ styles/tokens.css (cùng bộ với trang quản trị). */
 
 .app-shell {
+  isolation: isolate; /* để ảnh đàn nền (z-index -1) nằm dưới nội dung nhưng trên nền khung */
   min-height: 100vh;
   width: 100%;
   display: flex;
@@ -23,7 +24,8 @@
   height: var(--ui-header-h);
   padding: 0 1rem;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  /* hai bên vừa nội dung, điều hướng chiếm phần giữa: bên phải nhiều nút (Nâng cấp, thông báo...) cũng không đè lên menu */
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 1rem;
 }

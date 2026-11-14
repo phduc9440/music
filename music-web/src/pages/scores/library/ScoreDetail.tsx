@@ -12,11 +12,12 @@ import SuggestionsSection from '../../../components/scores/suggestions/Suggestio
 import ScoreHero, { ScorePreview, ScoreSidebar } from '../../../components/scores/detail/ScoreHero';
 import Modal from '../../../components/scores/common/Modal';
 import ShareModal from '../../../components/scores/detail/ShareModal';
+import ScoreSettingsSection from '../../../components/scores/detail/ScoreSettingsSection';
 import ReportModal from '../../../components/scores/common/ReportModal';
 import TasksTable from '../../../components/scores/detail/TasksTable';
 import { getBackTarget } from '../../../components/layout/nav';
 import { BackLink } from '../../../components/ui';
-import { commentApi, reportApi, scoreApi, suggestionApi } from '../../../services';
+import { commentApi, reportApi, scoreApi, sharingApi, suggestionApi } from '../../../services';
 import type { ScoreDetail as ScoreDetailData } from '../../../types';
 import { getHttpStatus, POLL_INTERVAL_MS, useScoreBase } from '../../../utils/score';
 import '../../../components/scores/scores.css';
@@ -30,7 +31,7 @@ type LoadState =
   | { phase: 'forbidden' }
   | { phase: 'error' };
 
-type Tab = 'files' | 'tasks' | 'reviews' | 'comments' | 'suggestions';
+type Tab = 'info' | 'files' | 'tasks' | 'reviews' | 'comments' | 'suggestions' | 'settings';
 
 /**
  * Trang /scores/:id: chi tiết bản nhạc (doc mục 2.0).
@@ -55,13 +56,15 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
   // ?tab=comments&comment=ID (từ thông báo góp ý): mở tab Góp ý và cuộn tới góp ý đó
   const [searchParams] = useSearchParams();
   const focusCommentId = searchParams.get('comment');
+  const requestedTab = searchParams.get('tab');
   const [tab, setTab] = useState<Tab>(
-    searchParams.get('tab') === 'suggestions'
-      ? 'suggestions'
-      : searchParams.get('tab') === 'comments' || focusCommentId
+    requestedTab === 'settings' || requestedTab === 'suggestions' || requestedTab === 'info'
+      ? requestedTab
+      : requestedTab === 'comments' || focusCommentId
         ? 'comments'
-        : 'files',
+        : 'info',
   );
+  const [pendingRequests, setPendingRequests] = useState(0); // số yêu cầu xin quyền đang chờ (nhãn trên tab Cài đặt)
   const [openComments, setOpenComments] = useState<number | null>(null);
   const [openSuggestions, setOpenSuggestions] = useState<number | null>(null);
   const scoreBase = useScoreBase();
@@ -71,6 +74,7 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
   const [deleting, setDeleting] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [reporting, setReporting] = useState(false);
+  const [shareTick, setShareTick] = useState(0); // đổi khi đóng hộp Chia sẻ để danh sách người có quyền tải lại
   const [requestingEdit, setRequestingEdit] = useState(false);
 
   // Tải chi tiết bản nhạc
@@ -105,9 +109,33 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
   const running = score?.processingStatus === 'PENDING' || score?.processingStatus === 'PROCESSING';
   // File gốc và lịch sử tác vụ chỉ dành cho người có quyền sửa; người xem chỉ thấy tab Nhận xét
   const canSeeSources = score?.accessLevel === 'OWNER' || score?.accessLevel === 'EDIT';
+  const isOwnerView = score?.accessLevel === 'OWNER' && !!score.canManageSharing && !scoreBase.startsWith('/admin');
+  // Ai có việc quản lý (chia sẻ, sửa thông tin, xóa) thì có tab Cài đặt; riêng danh sách người có quyền chỉ chủ thấy
+  const showSettings = !!score && (isOwnerView || !!score.canEdit || !!score.canDelete);
+
   // Người không có quyền sửa không thấy tab File / Tác vụ: rơi về tab Nhận xét
   const activeTab: Tab =
-    canSeeSources || tab === 'reviews' || tab === 'comments' || tab === 'suggestions' ? tab : 'reviews';
+    canSeeSources ||
+    tab === 'info' ||
+    tab === 'reviews' ||
+    tab === 'comments' ||
+    tab === 'suggestions' ||
+    (tab === 'settings' && showSettings)
+      ? tab
+      : 'info';
+
+  // Số yêu cầu xin quyền đang chờ, hiện trên tab Cài đặt để chủ bản nhạc biết có việc cần xử lý
+  useEffect(() => {
+    if (!id || !isOwnerView) return;
+    let cancelled = false;
+    sharingApi
+      .get(id)
+      .then((res) => !cancelled && setPendingRequests(res.data.result.pendingRequests))
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [id, isOwnerView, shareTick]);
 
   // Số góp ý đang mở hiện trên tab (tab Góp ý cập nhật lại khi người dùng thêm / xử lý góp ý)
   useEffect(() => {
@@ -200,103 +228,134 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
     <div className="sc-page">
       {navbar}
       <main className="sc-container">
-        <ScoreHero score={score} onVisibilityChanged={(updated) => setState({ phase: 'ready', score: updated })} />
+        <ScoreHero
+          score={score}
+          onVisibilityChanged={(updated) => setState({ phase: 'ready', score: updated })}
+          onRequestMore={() => setRequestingEdit(true)}
+          onReport={() => setReporting(true)}
+        />
 
-        <div className="sd-layout">
-          <div className="sd-main">
-            <ScorePreview score={score} />
-
-            <div className="sc-tabs" role="tablist">
-              {canSeeSources && (
-                <>
-                  <button
-                    role="tab"
-                    aria-selected={activeTab === 'files'}
-                    className="sc-tab"
-                    onClick={() => setTab('files')}
-                  >
-                    File <span className="sc-tab__count">{score.files.length}</span>
-                  </button>
-                  <button
-                    role="tab"
-                    aria-selected={activeTab === 'tasks'}
-                    className="sc-tab"
-                    onClick={() => setTab('tasks')}
-                  >
-                    {t('scores.detail.tasks')} <span className="sc-tab__count">{score.latestTasks.length}</span>
-                  </button>
-                </>
-              )}
-              <button
-                role="tab"
-                aria-selected={activeTab === 'reviews'}
-                className="sc-tab"
-                onClick={() => setTab('reviews')}
-              >
-                {t('scores.detail.reviews')}
-                {score.ratingCount ? <span className="sc-tab__count">{score.ratingCount}</span> : null}
-              </button>
-              <button
-                role="tab"
-                aria-selected={activeTab === 'comments'}
-                className="sc-tab"
-                onClick={() => setTab('comments')}
-              >
-                {t('scores.comments.tab')}
-                {openComments ? <span className="sc-tab__count">{openComments}</span> : null}
-              </button>
-              {score.canReview && (
+        <div className="sd-repo">
+          <div className="sc-tabs sd-tabs" role="tablist">
+            <button role="tab" aria-selected={activeTab === 'info'} className="sc-tab" onClick={() => setTab('info')}>
+              {t('scores.detail.info')}
+            </button>
+            {canSeeSources && (
+              <>
                 <button
                   role="tab"
-                  aria-selected={activeTab === 'suggestions'}
+                  aria-selected={activeTab === 'files'}
                   className="sc-tab"
-                  onClick={() => setTab('suggestions')}
+                  onClick={() => setTab('files')}
                 >
-                  {t('suggestions.section.tab')}
-                  {openSuggestions ? <span className="sc-tab__count">{openSuggestions}</span> : null}
+                  File <span className="sc-tab__count">{score.files.length}</span>
                 </button>
-              )}
-            </div>
-
-            {activeTab === 'files' && <FilesTable files={score.files} />}
-            {activeTab === 'tasks' && <TasksTable tasks={score.latestTasks} files={score.files} />}
-            {activeTab === 'comments' && (
-              <CommentsSection
-                scoreId={score.id}
-                focusId={focusCommentId}
-                onOpenCount={onOpenComments}
-                // Bản đã có MusicXML: bấm nhãn ô để mở trang xem bản nhạc tại đúng góp ý
-                viewerHref={
-                  score.files.some((f) => f.fileType === 'MUSICXML')
-                    ? (c) => `${scoreBase}/${score.id}/edit?comment=${c.id}`
-                    : undefined
-                }
-              />
+                <button
+                  role="tab"
+                  aria-selected={activeTab === 'tasks'}
+                  className="sc-tab"
+                  onClick={() => setTab('tasks')}
+                >
+                  {t('scores.detail.tasks')} <span className="sc-tab__count">{score.latestTasks.length}</span>
+                </button>
+              </>
             )}
-            {activeTab === 'suggestions' && score.canReview && (
-              <SuggestionsSection scoreId={score.id} onOpenCount={onOpenSuggestions} />
+            <button
+              role="tab"
+              aria-selected={activeTab === 'reviews'}
+              className="sc-tab"
+              onClick={() => setTab('reviews')}
+            >
+              {t('scores.detail.reviews')}
+              {score.ratingCount ? <span className="sc-tab__count">{score.ratingCount}</span> : null}
+            </button>
+            <button
+              role="tab"
+              aria-selected={activeTab === 'comments'}
+              className="sc-tab"
+              onClick={() => setTab('comments')}
+            >
+              {t('scores.comments.tab')}
+              {openComments ? <span className="sc-tab__count">{openComments}</span> : null}
+            </button>
+            {score.canReview && (
+              <button
+                role="tab"
+                aria-selected={activeTab === 'suggestions'}
+                className="sc-tab"
+                onClick={() => setTab('suggestions')}
+              >
+                {t('suggestions.section.tab')}
+                {openSuggestions ? <span className="sc-tab__count">{openSuggestions}</span> : null}
+              </button>
             )}
-            {activeTab === 'reviews' && (
-              <ReviewsSection scoreId={score.id} canReview={score.canReview} onChanged={() => setTick((n) => n + 1)} />
+            {showSettings && (
+              <button
+                role="tab"
+                aria-selected={activeTab === 'settings'}
+                className="sc-tab sc-tab--end"
+                onClick={() => setTab('settings')}
+              >
+                {t('scores.detail.settings')}
+                {pendingRequests > 0 ? (
+                  <span className="sc-tab__count sc-tab__count--alert">{pendingRequests}</span>
+                ) : null}
+              </button>
             )}
           </div>
 
-          <ScoreSidebar
-            score={score}
-            onEdit={() => setEditing(true)}
-            onDelete={() => setDeleting(true)}
-            onShare={() => setSharing(true)}
-            onRequestEdit={() => setRequestingEdit(true)}
-            onReport={() => setReporting(true)}
-          />
+          {activeTab === 'info' && (
+            <div className="sd-info">
+              <ScorePreview score={score} />
+              <ScoreSidebar score={score} />
+            </div>
+          )}
+          {activeTab === 'files' && <FilesTable files={score.files} />}
+          {activeTab === 'tasks' && <TasksTable tasks={score.latestTasks} files={score.files} />}
+          {activeTab === 'comments' && (
+            <CommentsSection
+              scoreId={score.id}
+              focusId={focusCommentId}
+              onOpenCount={onOpenComments}
+              // Bản đã có MusicXML: bấm nhãn ô để mở trang xem bản nhạc tại đúng góp ý
+              viewerHref={
+                score.files.some((f) => f.fileType === 'MUSICXML')
+                  ? (c) => `${scoreBase}/${score.id}/edit?comment=${c.id}`
+                  : undefined
+              }
+            />
+          )}
+          {activeTab === 'suggestions' && score.canReview && (
+            <SuggestionsSection scoreId={score.id} onOpenCount={onOpenSuggestions} />
+          )}
+          {activeTab === 'settings' && showSettings && (
+            <ScoreSettingsSection
+              scoreId={score.id}
+              score={score}
+              onVisibilityChanged={(updated) => setState({ phase: 'ready', score: updated })}
+              isOwner={isOwnerView}
+              canShare={!!score.canManageSharing}
+              canEdit={!!score.canEdit}
+              canDelete={!!score.canDelete}
+              pendingRequests={pendingRequests}
+              refreshKey={shareTick}
+              onChanged={() => setShareTick((n) => n + 1)}
+              onShare={() => setSharing(true)}
+              onEdit={() => setEditing(true)}
+              onDelete={() => setDeleting(true)}
+            />
+          )}
+          {activeTab === 'reviews' && (
+            <ReviewsSection scoreId={score.id} canReview={score.canReview} onChanged={() => setTick((n) => n + 1)} />
+          )}
         </div>
       </main>
 
       {requestingEdit && (
-        <Modal title={t('scores.detail.requestEditTitle')} onClose={() => setRequestingEdit(false)}>
+        <Modal title={t('scores.detail.requestMoreTitle')} onClose={() => setRequestingEdit(false)}>
           <RequestAccess
             scoreId={score.id}
-            levels={[3]}
+            levels={score.accessLevel === 'VIEW' ? [2, 3] : [3]}
             hasViewAccess
             onGranted={() => {
               setRequestingEdit(false);
@@ -306,7 +365,15 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
         </Modal>
       )}
 
-      {sharing && <ShareModal scoreId={score.id} onClose={() => setSharing(false)} />}
+      {sharing && (
+        <ShareModal
+          scoreId={score.id}
+          onClose={() => {
+            setSharing(false);
+            setShareTick((n) => n + 1);
+          }}
+        />
+      )}
 
       {reporting && (
         <ReportModal

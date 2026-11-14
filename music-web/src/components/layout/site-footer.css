@@ -21,7 +21,7 @@
   align-items: center;
   gap: 0.6rem;
   color: var(--ui-stage-text);
-  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  font-family: var(--ui-font-display);
   font-size: 1.15rem;
   font-weight: 700;
   text-decoration: none;
@@ -115,49 +115,6 @@
 }
 
 /* ---- bản cho trang đã đăng nhập và khu quản trị: gọn hơn ---- */
-.site-footer--app {
-  margin-top: 3rem;
-}
-
-.site-footer--app .site-footer__inner {
-  padding: 2rem 16px 1.25rem;
-  grid-template-columns: minmax(0, 1.4fr) repeat(var(--sf-cols, 4), minmax(0, 1fr));
-  gap: 1.5rem;
-}
-
-.site-footer--app .site-footer__col ul {
-  gap: 0.4rem;
-}
-
-@media (max-width: 1000px) {
-  .site-footer--app .site-footer__inner {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .site-footer--app .site-footer__brand {
-    grid-column: 1 / -1;
-  }
-}
-
-/* Điện thoại đã có thanh tab dưới và ngăn điều hướng: chỉ giữ dòng bản quyền */
-@media (max-width: 900px) {
-  .site-footer--app {
-    margin-top: 2rem;
-  }
-
-  .site-footer--app .site-footer__inner {
-    display: none;
-  }
-
-  .site-footer--app .site-footer__bottom {
-    padding-top: 1rem;
-  }
-
-  .site-footer--app .site-footer__staff {
-    display: none;
-  }
-}
-
 @media (max-width: 480px) {
   .site-footer__inner {
     grid-template-columns: minmax(0, 1fr);

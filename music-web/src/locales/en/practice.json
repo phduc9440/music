@@ -35,7 +35,11 @@
     "completed": "Completed",
     "errorLog": "Error log ({count})",
     "noErrors": "No errors were recorded.",
-    "deleteSession": "Delete session"
+    "deleteSession": "Delete session",
+    "statSessions": "Sessions",
+    "statAccuracy": "Avg accuracy (this page)",
+    "statTime": "Time (this page)",
+    "statBest": "Best (this page)"
   },
   "stats": {
     "month": "{name}",

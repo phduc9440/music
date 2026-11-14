@@ -1,0 +1,50 @@
+/* Hàng phím đàn piano (PianoBackdrop). Mặc định theo nền sân khấu tối; khung chứa đổi màu bằng các biến --pk-*. */
+.piano {
+  --pk-white: var(--ui-stage-text);
+  --pk-white-op: 0.16;
+  --pk-black: var(--ui-stage-bg);
+  --pk-line: var(--ui-stage-border);
+  --pk-hot: var(--ui-brass);
+  position: absolute;
+  inset: auto 0 0;
+  width: 100%;
+  height: clamp(90px, 14vw, 150px);
+  pointer-events: none;
+  mask-image: linear-gradient(to top, var(--ui-stage-bg) 30%, transparent);
+}
+.piano__white {
+  fill: var(--pk-white);
+  opacity: var(--pk-white-op);
+}
+.piano__black {
+  fill: var(--pk-black);
+  stroke: var(--pk-line);
+  stroke-width: 1.5;
+}
+.piano__white--press {
+  animation: piano-key 6.6s ease-in-out infinite;
+}
+@keyframes piano-key {
+  0%,
+  72%,
+  100% {
+    fill: var(--pk-white);
+    opacity: var(--pk-white-op);
+    transform: translateY(0);
+  }
+  78% {
+    fill: var(--pk-hot);
+    opacity: 0.85;
+    transform: translateY(6px);
+  }
+  90% {
+    fill: var(--pk-hot);
+    opacity: 0.4;
+    transform: translateY(2px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .piano__white--press {
+    animation: none;
+  }
+}

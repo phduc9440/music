@@ -18,15 +18,12 @@ import { isTaskFinished } from '../../export/exportUtils';
 import { Icon } from '../../ui';
 import OfficialRequestBanner from './OfficialRequestBanner';
 import ScoreCover from './ScoreCover';
-import PublishToggle from './PublishToggle';
 import { t } from '../../../i18n/core';
 
 interface Props {
   score: ScoreDetail;
-  onEdit: () => void;
-  onDelete: () => void;
-  onShare: () => void;
-  onRequestEdit: () => void;
+  /** Mở hộp xin thêm quyền (người không phải chủ, chưa có quyền sửa). */
+  onRequestMore?: () => void;
   /** Mở hộp thoại báo cáo vi phạm (chỉ hiện cho người không phải chủ sở hữu). */
   onReport?: () => void;
   /** Gọi khi chủ sở hữu đổi chế độ hiển thị (công khai, hủy yêu cầu, về riêng tư) với bản nhạc đã cập nhật. */
@@ -40,7 +37,7 @@ const hasMusicXml = (score: ScoreDetail) => score.files.some((f) => f.fileType =
  * Đầu trang chi tiết: nhãn trạng thái, tiêu đề, dòng phụ, ba thao tác chính (mở, phát, tải xuống) và các thông báo
  * (đang số hóa, xử lý lỗi, bị từ chối công khai).
  */
-export default function ScoreHero({ score, onVisibilityChanged }: Pick<Props, 'score' | 'onVisibilityChanged'>) {
+export default function ScoreHero({ score, onVisibilityChanged, onRequestMore, onReport }: Props) {
   // Đổi hoặc gỡ ảnh bìa trả về bản nhạc đã cập nhật, dùng chung đường cập nhật với đổi chế độ hiển thị
   const base = useScoreBase();
   const navigate = useNavigate();
@@ -64,10 +61,10 @@ export default function ScoreHero({ score, onVisibilityChanged }: Pick<Props, 's
     : score.rejectReason;
   const processing = score.processingStatus === 'PENDING' || score.processingStatus === 'PROCESSING';
 
-  // Chỉ chủ sở hữu đổi được chế độ hiển thị; admin kiểm duyệt có nút riêng ở trang quản trị. Bản trong kho mẫu do
-  // hệ thống quản lý nên không có nút này.
-  const canChangeVisibility =
-    score.canManageSharing && score.accessLevel === 'OWNER' && !base.startsWith('/admin') && !score.isOfficial;
+  // Bản trong kho mẫu do hệ thống quản lý, chỉ admin sửa: không có chuyện xin quyền chỉnh sửa
+  const canRequestMore =
+    !score.canEdit && score.accessLevel !== 'OWNER' && !base.startsWith('/admin') && !score.isOfficial;
+  const canReport = !!onReport && score.accessLevel !== 'OWNER' && !base.startsWith('/admin');
 
   const meta = [
     score.composer || t('scores.card.unknownComposer'),
@@ -84,7 +81,6 @@ export default function ScoreHero({ score, onVisibilityChanged }: Pick<Props, 's
             <div className="sd-badges">
               <StatusBadge status={score.processingStatus} />
               <VisibilityBadge value={score.visibility} />
-              {canChangeVisibility && <PublishToggle score={score} onChanged={onVisibilityChanged} />}
               {score.isOfficial && (
                 <span className="sc-chip sc-chip--accent">{t('common.nav.items.officialLibrary')}</span>
               )}
@@ -139,6 +135,18 @@ export default function ScoreHero({ score, onVisibilityChanged }: Pick<Props, 's
             <Icon name={score.canEdit ? 'edit' : 'eye'} size={16} />
             {score.canEdit ? t('scores.hero.openEditor') : t('scores.hero.viewScore')}
           </Link>
+          {canRequestMore && onRequestMore && (
+            <button type="button" className="sc-btn" onClick={onRequestMore}>
+              <Icon name="key" size={16} />
+              {t('scores.detail.requestMoreTitle')}
+            </button>
+          )}
+          {canReport && (
+            <button type="button" className="sc-btn" onClick={onReport}>
+              <Icon name="alert" size={16} />
+              {t('scores.report.menu')}
+            </button>
+          )}
         </div>
       </div>
 
@@ -231,15 +239,7 @@ export function ScorePreview({ score }: { score: ScoreDetail }) {
 }
 
 /** Cột phải: số liệu nổi bật, thông số, ghi chú luyện tập và các thao tác quản lý. */
-export function ScoreSidebar({
-  score,
-  onEdit,
-  onDelete,
-  onShare,
-  onRequestEdit,
-  onReport,
-}: Omit<Props, 'onVisibilityChanged'>) {
-  const base = useScoreBase();
+export function ScoreSidebar({ score }: { score: ScoreDetail }) {
   const highlights: [string, string][] = [
     [t('scores.hero.measures'), score.measureCount?.toString() ?? '—'],
     [t('scores.hero.pages'), score.pageCount?.toString() ?? '—'],
@@ -267,12 +267,6 @@ export function ScoreSidebar({
       ),
     ],
   ];
-  // Bản trong kho mẫu do hệ thống quản lý, chỉ admin sửa: không có chuyện xin quyền chỉnh sửa
-  const canRequestEdit =
-    !score.canEdit && score.accessLevel !== 'OWNER' && !base.startsWith('/admin') && !score.isOfficial;
-  const canReport = !!onReport && score.accessLevel !== 'OWNER' && !base.startsWith('/admin');
-  const hasManage = score.canManageSharing || score.canEdit || canRequestEdit || score.canDelete || canReport;
-
   return (
     <aside className="sd-side">
       <section className="sd-card reveal-item">
@@ -299,44 +293,6 @@ export function ScoreSidebar({
         <section className="sd-card reveal-item">
           <h2 className="sd-card__title">{t('scores.hero.studyNotes')}</h2>
           <p className="sd-notes">{score.studyNotes}</p>
-        </section>
-      )}
-
-      {hasManage && (
-        <section className="sd-card reveal-item">
-          <h2 className="sd-card__title">{t('scores.hero.manage')}</h2>
-          <div className="sd-manage">
-            {score.canManageSharing && (
-              <button type="button" className="sd-manage__item" onClick={onShare}>
-                <Icon name="share" size={16} />
-                {t('scores.hero.share')}
-              </button>
-            )}
-            {canRequestEdit && (
-              <button type="button" className="sd-manage__item" onClick={onRequestEdit}>
-                <Icon name="key" size={16} />
-                {t('scores.detail.requestEditTitle')}
-              </button>
-            )}
-            {score.canEdit && (
-              <button type="button" className="sd-manage__item" onClick={onEdit}>
-                <Icon name="edit" size={16} />
-                {t('scores.hero.editInfo')}
-              </button>
-            )}
-            {canReport && (
-              <button type="button" className="sd-manage__item" onClick={onReport}>
-                <Icon name="alert" size={16} />
-                {t('scores.report.menu')}
-              </button>
-            )}
-            {score.canDelete && (
-              <button type="button" className="sd-manage__item sd-manage__item--danger" onClick={onDelete}>
-                <Icon name="trash" size={16} />
-                {t('scores.hero.delete')}
-              </button>
-            )}
-          </div>
         </section>
       )}
     </aside>

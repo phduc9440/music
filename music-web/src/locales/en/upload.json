@@ -293,22 +293,6 @@
     "2201": "This score is being recognized again, wait for it to finish and then save"
   },
   "create": {
-    "title": "Create a score",
-    "subtitle": "Pick a way to start, or drop files anywhere in this box",
-    "dropHint": "Drop PDF, image, MusicXML or MIDI files here",
-    "checking": "Checking files...",
-    "tooMany": "You can drop at most {max} files at a time",
-    "empty": "The file is empty (0 bytes)",
-    "unsupported": "Unrecognized format. Only PDF, PNG, JPG, MusicXML, MXL and MIDI are supported",
-    "mixed": "Don't mix PDF/images with MusicXML/MIDI. Create each group separately",
-    "scan": {
-      "title": "From an image or PDF (digitize)",
-      "hint": "Recognizes printed or photographed sheet music as MusicXML"
-    },
-    "import": {
-      "title": "From a MusicXML / MIDI file",
-      "hint": "Use this when you already have a digital file, no digitizing needed"
-    },
     "notes": {
       "C": "C",
       "D": "D",
@@ -342,8 +326,6 @@
       }
     },
     "blank": {
-      "card": "Blank score",
-      "cardHint": "Start from an empty page and enter notes directly",
       "title": "Blank score",
       "preset": "Instrument template",
       "titlePlaceholder": "e.g. Draft no. 1",
@@ -359,6 +341,69 @@
       "submit": "Create score",
       "creating": "Creating...",
       "failed": "Couldn't create the score"
+    }
+  },
+  "guide": {
+    "formats": "Supported formats",
+    "scan": {
+      "howLead": "Three steps from paper sheet to practice session.",
+      "tipsTitle": "Tips for more accurate digitizing",
+      "tipsLead": "The clearer the photo, the less you have to fix.",
+      "tips": {
+        "light": {
+          "title": "Even light, no shadows",
+          "text": "Shoot where light is even, and keep hand or phone shadows off the staves."
+        },
+        "flat": {
+          "title": "Flat and straight",
+          "text": "Keep the sheet flat and the camera parallel to the paper so staff lines don't curve."
+        },
+        "sharp": {
+          "title": "Sharp and large enough",
+          "text": "Get close enough to read small notes and accidentals; for scanned PDFs use a high resolution."
+        },
+        "single": {
+          "title": "One piece at a time",
+          "text": "Drop pages of the same piece only; photos and MusicXML/MIDI files can't be mixed in one go."
+        }
+      }
+    },
+    "import": {
+      "howTitle": "How importing works",
+      "tipsTitle": "Tips for importing",
+      "tipsLead": "Pick the right file type to keep the most information.",
+      "steps": {
+        "export": {
+          "title": "Export",
+          "text": "From your notation software, export the score as MusicXML (.musicxml, .mxl) or MIDI."
+        },
+        "import": {
+          "title": "Import",
+          "text": "Drop the file in the box above, name it and import; no recognition from photos needed."
+        },
+        "edit": {
+          "title": "Edit and practice",
+          "text": "Open it in the editor to fix, listen back and practice right away."
+        }
+      },
+      "tips": {
+        "prefer": {
+          "title": "Prefer MusicXML",
+          "text": "MusicXML keeps accidentals, lyrics and layout; MIDI mostly has just notes and timing."
+        },
+        "export": {
+          "title": "Export from notation software",
+          "text": "Common notation programs offer MusicXML in their save or export menu."
+        },
+        "batch": {
+          "title": "Import many at once",
+          "text": "Pick up to {count} files per round; any that fail are reported individually to retry."
+        },
+        "scan": {
+          "title": "Only have paper?",
+          "text": "Use the digitize button at the top to photograph or upload a PDF instead."
+        }
+      }
     }
   }
 }

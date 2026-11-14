@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { Dispatch, FormEvent, SetStateAction } from 'react';
 import { useNavigate } from '../../../routes/useTransitionNavigate';
 import { toast } from 'react-toastify';
+import CreateGuide from '../../../components/scores/create/CreateGuide';
 import UploadDropzone from '../../../components/scores/upload/UploadDropzone';
 import UploadFileItem from '../../../components/scores/upload/UploadFileItem';
 import type { UploadItem } from '../../../components/scores/upload/UploadFileItem';
@@ -51,7 +52,7 @@ const inspectItems = (added: UploadItem[], setItems: Dispatch<SetStateAction<Upl
     });
 };
 
-/** File chờ từ trang /scores/new hoặc trang chủ của khách (nhóm PDF/ảnh); nhóm nhập file thuộc trang /scores/import. */
+/** File chờ từ trang chủ của khách (nhóm PDF/ảnh); nhóm nhập file thuộc trang /scores/import. */
 const takePendingScan = (): File[] => {
   const pending = peekPendingUpload();
   return pending && !isImportBatch(pending) ? pending : [];
@@ -307,6 +308,8 @@ export default function ScoreUpload() {
             </button>
           </aside>
         </form>
+
+        <CreateGuide variant="scan" />
       </main>
     </div>
   );

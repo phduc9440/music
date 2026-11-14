@@ -103,6 +103,8 @@ export default function NotificationBell() {
     else if (n.type.startsWith('SUGGESTION_') && n.scoreId && n.params?.suggestionId)
       navigate(`/scores/${n.scoreId}/suggestions/${n.params.suggestionId}`);
     else if (n.type.startsWith('TEAM_') && n.params?.teamId) navigate(`/teams/${n.params.teamId}`);
+    // Có người xin quyền: mở tab Cài đặt để đồng ý hoặc từ chối
+    else if (n.type === 'ACCESS_REQUESTED' && n.scoreId) navigate(`/scores/${n.scoreId}?tab=settings`);
     else if (n.scoreId) navigate(`/scores/${n.scoreId}`);
   };
 

@@ -1,0 +1,131 @@
+/* Minh họa nhạc động (NoteField) và các hiệu ứng gắn với thanh cuộn. Hiệu ứng cuộn chỉ chạy khi trình duyệt hỗ trợ
+   animation-timeline; không hỗ trợ thì mọi thứ đứng yên và vẫn đọc được bình thường. */
+.notef {
+  display: block;
+  overflow: visible;
+  width: 100%;
+  height: 100%;
+  color: inherit;
+  pointer-events: none;
+}
+.notef__staff line {
+  stroke: currentColor;
+  stroke-width: 1.2;
+  opacity: 0.28;
+}
+.notef__layer {
+  fill: currentColor;
+}
+.notef__layer--1 {
+  opacity: 0.55;
+}
+.notef__layer--2 {
+  opacity: 0.38;
+}
+.notef__layer--3 {
+  opacity: 0.22;
+}
+.notef__note {
+  animation: nf-bob 3.2s ease-in-out infinite alternate;
+}
+@keyframes nf-bob {
+  to {
+    transform: translateY(-14px) rotate(5deg);
+  }
+}
+/* dòng nốt trôi ngang liên tục, lớp gần trôi nhanh hơn lớp xa */
+.notef__flow {
+  animation: nf-flow 60s linear infinite;
+}
+.notef__layer--1 .notef__flow {
+  animation-duration: 38s;
+}
+.notef__layer--3 .notef__flow {
+  animation-duration: 90s;
+}
+@keyframes nf-flow {
+  to {
+    transform: translateX(-1200px);
+  }
+}
+
+@supports (animation-timeline: scroll()) {
+  .notef__layer {
+    animation: nf-slide linear both;
+    animation-timeline: scroll(root block);
+    animation-range: 0 120vh;
+  }
+  .notef__layer--1 {
+    --nf-shift: -140px;
+  }
+  .notef__layer--2 {
+    --nf-shift: -80px;
+  }
+  .notef__layer--3 {
+    --nf-shift: -36px;
+  }
+  @keyframes nf-slide {
+    to {
+      transform: translateX(var(--nf-shift, -60px));
+    }
+  }
+}
+
+/* Vạch / đường nối được "vẽ" theo vị trí cuộn thay vì theo giờ (skill: scrub gắn với thanh cuộn) */
+@supports (animation-timeline: view()) {
+  .wh-sec__head h2::after,
+  .sc-cr-sec h2::after,
+  .gh-section__head h2::after {
+    transition: none;
+    animation: sd-draw linear both;
+    animation-timeline: view();
+    animation-range: entry 10% entry 80%;
+  }
+  .wh-journey::before,
+  .sc-cr-steps::before {
+    transition: none;
+    animation: sd-line linear both;
+    animation-timeline: view();
+    animation-range: entry 25% cover 50%;
+  }
+  @keyframes sd-draw {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(0.2);
+    }
+  }
+  @keyframes sd-line {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notef__note,
+  .notef__flow,
+  .notef__layer {
+    animation: none;
+  }
+  .wh-sec__head h2::after,
+  .sc-cr-sec h2::after,
+  .wh-journey::before,
+  .sc-cr-steps::before {
+    animation: none;
+  }
+}
+
+/* dải phân cách có minh họa nhạc giữa các mục */
+.notef-band {
+  position: relative;
+  height: 110px;
+  margin: 1.5rem 0 0;
+  overflow: hidden;
+  color: var(--ui-border-strong);
+  mask-image: linear-gradient(to right, transparent, var(--ui-stage-bg) 12%, var(--ui-stage-bg) 88%, transparent);
+}

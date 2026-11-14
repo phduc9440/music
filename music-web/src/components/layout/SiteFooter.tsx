@@ -2,7 +2,7 @@ import type React from 'react';
 import { Link } from '../../routes/transition-nav';
 import { t } from '../../i18n/core';
 import { Icon } from '../ui';
-import { CREATE_SCORE_PATH, NAV_GROUPS } from './nav';
+import { CREATE_SCORE_PATH } from './nav';
 import './site-footer.css';
 
 export interface FooterLink {
@@ -47,35 +47,18 @@ const siteColumns = (): FooterColumn[] => [
 ];
 
 /** Trang đã đăng nhập: lấy đúng các nhóm của menu chính (thêm trang vào menu là chân trang có theo) và mục tài khoản. */
-const appColumns = (): FooterColumn[] => [
-  ...NAV_GROUPS.map((g) => ({ title: g.label, links: g.items.map((i) => ({ label: i.label, to: i.to })) })),
-  {
-    title: t('common.footer.account'),
-    links: [
-      { label: t('common.footer.home'), to: '/' },
-      { label: t('common.header.profile'), to: '/profile' },
-    ],
-  },
-];
-
 interface SiteFooterProps {
-  /**
-   * "site": trang giới thiệu của khách. "app": trang sau khi đăng nhập và khu quản trị (gọn hơn; trên điện thoại chỉ
-   * giữ dòng bản quyền vì đã có thanh tab dưới hoặc ngăn menu).
-   */
-  variant?: 'site' | 'app';
-  /** Cột liên kết riêng (khu quản trị truyền menu của nó); bỏ trống thì dùng cột mặc định của variant. */
+  /** Cột liên kết riêng; bỏ trống thì dùng cột mặc định. */
   columns?: FooterColumn[];
   /** Dòng chữ dưới logo. */
   tip?: string;
 }
 
-/** Chân trang nền "sân khấu" tối: logo, các cột liên kết, bản quyền. */
-export default function SiteFooter({ variant = 'site', columns, tip }: SiteFooterProps) {
-  const app = variant === 'app';
-  const cols = columns ?? (app ? appColumns() : siteColumns());
+/** Chân trang nền "sân khấu" tối của trang giới thiệu cho khách: logo, các cột liên kết, bản quyền. */
+export default function SiteFooter({ columns, tip }: SiteFooterProps) {
+  const cols = columns ?? siteColumns();
   return (
-    <footer className={`site-footer ui-stage${app ? ' site-footer--app' : ''}`}>
+    <footer className="site-footer ui-stage">
       <div className="site-footer__inner" style={{ '--sf-cols': cols.length } as React.CSSProperties}>
         <div className="site-footer__brand">
           <Link to="/" className="site-footer__logo">
@@ -84,7 +67,7 @@ export default function SiteFooter({ variant = 'site', columns, tip }: SiteFoote
             </span>
             Music App
           </Link>
-          <p>{tip ?? (app ? t('common.footer.tipApp') : t('common.footer.tipSite'))}</p>
+          <p>{tip ?? t('common.footer.tipSite')}</p>
         </div>
 
         {cols.map((col) => (
