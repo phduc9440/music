@@ -289,22 +289,6 @@
     "2201": "Bản nhạc đang được nhận diện lại, hãy đợi xong rồi lưu"
   },
   "create": {
-    "title": "Tạo bản nhạc",
-    "subtitle": "Chọn cách bắt đầu, hoặc thả file vào bất kỳ đâu trong khung này",
-    "dropHint": "Thả file PDF, ảnh, MusicXML hoặc MIDI vào đây",
-    "checking": "Đang kiểm tra file...",
-    "tooMany": "Chỉ thả được tối đa {max} file một lần",
-    "empty": "File rỗng (0 byte)",
-    "unsupported": "Không nhận ra định dạng. Chỉ hỗ trợ PDF, PNG, JPG, MusicXML, MXL và MIDI",
-    "mixed": "Không thả lẫn PDF/ảnh với MusicXML/MIDI. Hãy tạo riêng từng nhóm",
-    "scan": {
-      "title": "Từ ảnh hoặc PDF (số hóa)",
-      "hint": "Hệ thống nhận diện bản nhạc in hoặc chụp thành MusicXML"
-    },
-    "import": {
-      "title": "Từ file MusicXML / MIDI",
-      "hint": "Dùng khi bạn đã có file số, không cần số hóa"
-    },
     "notes": {
       "C": "Đô",
       "D": "Rê",
@@ -338,8 +322,6 @@
       }
     },
     "blank": {
-      "card": "Bản trống",
-      "cardHint": "Bắt đầu từ trang giấy trắng và nhập nốt trực tiếp",
       "title": "Bản nhạc trống",
       "preset": "Mẫu nhạc cụ",
       "titlePlaceholder": "Ví dụ: Bản nháp số 1",
@@ -355,6 +337,69 @@
       "submit": "Tạo bản nhạc",
       "creating": "Đang tạo...",
       "failed": "Không tạo được bản nhạc"
+    }
+  },
+  "guide": {
+    "formats": "Định dạng hỗ trợ",
+    "scan": {
+      "howLead": "Ba bước từ tờ nhạc giấy tới buổi tập.",
+      "tipsTitle": "Mẹo để số hóa chính xác hơn",
+      "tipsLead": "Ảnh càng rõ, bản nhạc số càng ít phải sửa.",
+      "tips": {
+        "light": {
+          "title": "Đủ sáng, không đổ bóng",
+          "text": "Chụp nơi có ánh sáng đều, tránh bóng tay hoặc bóng điện thoại phủ lên khuông."
+        },
+        "flat": {
+          "title": "Đặt phẳng, chụp thẳng",
+          "text": "Giữ tờ nhạc phẳng và máy song song với mặt giấy để dòng kẻ không bị cong."
+        },
+        "sharp": {
+          "title": "Nét và đủ lớn",
+          "text": "Chụp gần vừa đủ để thấy rõ nốt nhỏ và dấu hóa; PDF quét thì chọn độ phân giải cao."
+        },
+        "single": {
+          "title": "Mỗi lượt một bản",
+          "text": "Chỉ thả các trang của cùng một bản nhạc; ảnh và file MusicXML/MIDI không trộn chung lượt."
+        }
+      }
+    },
+    "import": {
+      "howTitle": "Cách nhập file",
+      "tipsTitle": "Mẹo khi nhập file",
+      "tipsLead": "Chọn đúng loại file để giữ được nhiều thông tin nhất.",
+      "steps": {
+        "export": {
+          "title": "Xuất file",
+          "text": "Từ phần mềm soạn nhạc của bạn, xuất bản nhạc ra MusicXML (.musicxml, .mxl) hoặc MIDI."
+        },
+        "import": {
+          "title": "Nhập vào",
+          "text": "Thả file vào khung bên trên, đặt tên rồi nhập; không cần nhận diện từ ảnh."
+        },
+        "edit": {
+          "title": "Chỉnh và tập",
+          "text": "Mở trong trình soạn thảo để sửa, nghe lại và luyện tập ngay."
+        }
+      },
+      "tips": {
+        "prefer": {
+          "title": "Ưu tiên MusicXML",
+          "text": "MusicXML giữ cả dấu hóa, lời và bố cục; MIDI chủ yếu chỉ có nốt và nhịp."
+        },
+        "export": {
+          "title": "Xuất từ phần mềm soạn nhạc",
+          "text": "Các phần mềm soạn nhạc phổ biến đều có mục xuất MusicXML trong menu lưu hoặc xuất file."
+        },
+        "batch": {
+          "title": "Nhập nhiều file một lần",
+          "text": "Chọn tối đa {count} file mỗi lượt; file nào lỗi sẽ được báo riêng để thử lại."
+        },
+        "scan": {
+          "title": "Chỉ có bản giấy?",
+          "text": "Dùng nút số hóa ở đầu trang để chụp ảnh hoặc tải PDF thay vì nhập file."
+        }
+      }
     }
   }
 }

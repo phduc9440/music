@@ -1,3 +1,4 @@
+import CreateGuide from '../../../components/scores/create/CreateGuide';
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate } from '../../../routes/useTransitionNavigate';
@@ -411,6 +412,8 @@ export default function ScoreImport() {
             )}
           </aside>
         </form>
+
+        <CreateGuide variant="import" maxFiles={MAX_FILES} />
       </main>
     </div>
   );

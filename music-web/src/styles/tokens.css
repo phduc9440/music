@@ -16,21 +16,21 @@
 
   /* nền và chữ */
   /* bảng màu "Phòng hòa nhạc" (mục 5.1): nền giấy ngà, chữ nâu đen, nhấn nâu gỗ; theme tối nhấn vàng đồng */
-  --ui-bg: #f6f1e9;
-  --ui-surface: #fffdf9;
-  --ui-surface-muted: #faf6ef;
-  --ui-surface-hover: #f1e9dd;
-  --ui-border: #e6dccd;
-  --ui-border-strong: #cdbca5;
-  --ui-text: #1f1612;
-  --ui-text-2: #57473c;
-  --ui-text-3: #6c5b4e;
+  --ui-bg: #fffbeb;
+  --ui-surface: #ffffff;
+  --ui-surface-muted: #fff6dd;
+  --ui-surface-hover: #fdecc4;
+  --ui-border: #f3dfba;
+  --ui-border-strong: #e3c58a;
+  --ui-text: #0f172a;
+  --ui-text-2: #475569;
+  --ui-text-3: #5b6678;
 
   /* màu nhấn và trạng thái */
-  --ui-primary: #5a3d2b;
-  --ui-primary-hover: #3f2a1e;
-  --ui-primary-soft: #f3e8d8;
-  --ui-primary-ring: rgba(90, 61, 43, 0.2);
+  --ui-primary: #6b5a4c;
+  --ui-primary-hover: #55463a;
+  --ui-primary-soft: #f6efe2;
+  --ui-primary-ring: rgba(107, 90, 76, 0.25);
   --ui-success: #15803d;
   --ui-success-soft: #ecfdf3;
   --ui-warning: #b45309;
@@ -50,8 +50,8 @@
   --ui-hue-sky: #0284c7;
 
   /* vai trò bổ sung */
-  --ui-on-accent: #fffaf2; /* chữ trên nền màu nhấn / nền tối */
-  --ui-primary-border: #dcc7aa;
+  --ui-on-accent: #ffffff; /* chữ trên nền màu nhấn / nền tối */
+  --ui-primary-border: #d8ccb8;
   --ui-danger-border: #fecaca;
   --ui-success-border: #bbf7d0;
   --ui-warning-border: #fde68a;
@@ -103,7 +103,9 @@
   --ui-content-max: 1200px; /* bề ngang tối đa của phần nội dung chính (thanh trên thì tràn hết màn hình) */
 
   /* chữ */
-  --ui-font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --ui-font: 'Be Vietnam Pro', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  /* cặp font chọn theo skill ui-ux-pro-max (nhạc, năng động); cả hai đều có bộ ký tự tiếng Việt */
+  --ui-font-display: 'Bricolage Grotesque', 'Be Vietnam Pro', system-ui, sans-serif;
   --ui-text-xs: 0.75rem;
   --ui-text-sm: 0.8125rem;
   --ui-text-md: 0.875rem;

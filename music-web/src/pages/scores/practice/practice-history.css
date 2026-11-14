@@ -31,7 +31,7 @@
   opacity: 0.85;
 }
 .ph-stat strong {
-  font-family: var(--ui-font);
+  font-family: var(--ui-font-display);
   font-size: 1.9rem;
   line-height: 1.15;
 }
@@ -96,7 +96,7 @@
 }
 .ph-item__title {
   overflow: hidden;
-  font-family: var(--ui-font);
+  font-family: var(--ui-font-display);
   font-size: 1.1rem;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -181,4 +181,54 @@
     grid-template-columns: minmax(0, 1fr);
     gap: 0.8rem;
   }
+}
+
+/* ---- bảng màu gọn, đồng bộ với trang chủ: thẻ trắng, chip nâu be, màu chỉ dùng để báo mức (tốt / khá / cần luyện) ---- */
+.ph-stat,
+.ph-stat--teal,
+.ph-stat--indigo,
+.ph-stat--amber {
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  border-top: 4px solid var(--ui-hue-amber);
+  color: var(--ui-text);
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--ui-shadow-ink) 7%, transparent);
+}
+.ph-stat::after {
+  display: none;
+}
+.ph-stat svg {
+  box-sizing: content-box;
+  padding: 8px;
+  border-radius: 12px;
+  background: var(--ui-primary-soft);
+  color: var(--ui-primary);
+  opacity: 1;
+}
+.ph-stat span {
+  color: var(--ui-text-2);
+  opacity: 1;
+}
+.ph-mode,
+.ph-mode--2,
+.ph-mode--3 {
+  background: var(--ui-primary-soft);
+  color: var(--ui-primary);
+  border: 1px solid var(--ui-primary-border);
+}
+.ph-item[data-tone='good'],
+.ph-meter[data-tone='good'] {
+  --ph-tone: var(--ui-success);
+}
+.ph-item[data-tone='mid'],
+.ph-meter[data-tone='mid'] {
+  --ph-tone: var(--ui-hue-amber);
+}
+.ph-item[data-tone='low'],
+.ph-meter[data-tone='low'] {
+  --ph-tone: var(--ui-danger);
+}
+.ph-empty__icon {
+  background: var(--ui-primary-soft);
+  color: var(--ui-primary);
 }

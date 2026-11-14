@@ -10,7 +10,7 @@
 
 .ex-head h1 {
   margin: 0;
-  font-family: var(--ui-font);
+  font-family: var(--ui-font-display);
   font-size: clamp(1.6rem, 3vw, 2.2rem);
 }
 

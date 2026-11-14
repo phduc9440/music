@@ -14,7 +14,7 @@
   justify-content: center;
   background: radial-gradient(circle at 50% 35%, var(--ui-stage-bg-2), transparent 70%), var(--ui-stage-bg);
   color: var(--ui-brass);
-  font-family: var(--ui-font);
+  font-family: var(--ui-font-display);
   font-size: clamp(1.4rem, 4vw, 2.6rem);
   font-weight: 700;
   letter-spacing: 0.04em;

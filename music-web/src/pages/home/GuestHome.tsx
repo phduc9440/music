@@ -6,6 +6,10 @@ import { CREATE_SCORE_PATH } from '../../components/layout/nav';
 import SiteFooter from '../../components/layout/SiteFooter';
 import ComposerPortrait from '../../components/composers/ComposerPortrait';
 import { Icon } from '../../components/ui';
+import CountUp from '../../components/ui/CountUp';
+import NoteField from '../../components/ui/NoteField';
+import PianoBackdrop from '../../components/ui/PianoBackdrop';
+import PianoBackground from '../../components/ui/PianoBackground';
 import type { IconName } from '../../components/ui';
 import { API_BASE_URL, homeApi } from '../../services';
 import ThemeToggle from '../../theme/ThemeToggle';
@@ -63,20 +67,66 @@ function Section({ id, title, lead, children }: { id?: string; title: string; le
   );
 }
 
-/** Thanh equalizer nhảy theo nhịp (trang trí). */
-function Equalizer() {
+const DEMO_NOTES = [96, 84, 72, 84, 60, 72, 84, 96, 72, 60, 72, 84];
+const DEMO_SECONDS = 8;
+
+/**
+ * Mô phỏng trình xem bản nhạc: đầu phát quét qua khuông, nốt sáng lên khi đầu phát đi tới (skill: Product Demo, có nút
+ * Phát/Tạm dừng nhìn thấy được, tạm dừng khi ra khỏi màn hình, không tự chạy khi bật "Giảm chuyển động").
+ */
+function ScoreDemo() {
+  const ref = useRef<HTMLElement>(null);
+  const [playing, setPlaying] = useState(() => !window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const [inView, setInView] = useState(true);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const io = new IntersectionObserver(([e]) => setInView(e.isIntersecting), { threshold: 0.2 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  const running = playing && inView;
   return (
-    <div className="gh-eq" aria-hidden="true">
-      {Array.from({ length: 40 }, (_, i) => (
-        <span
-          key={i}
-          style={{
-            animationDelay: `${((i * 37) % 17) * -0.13}s`,
-            animationDuration: `${0.9 + ((i * 13) % 7) * 0.12}s`,
-          }}
-        />
-      ))}
-    </div>
+    <figure ref={ref} className={`gh-demo${running ? '' : ' is-paused'}`}>
+      <div className="gh-demo__window">
+        <div className="gh-demo__bar" aria-hidden="true">
+          <i />
+          <i />
+          <i />
+          <span>Für Elise</span>
+        </div>
+        <svg className="gh-demo__score" viewBox="0 0 600 170" role="img" aria-label={t('home.guest.demoCaption')}>
+          {[0, 1, 2, 3, 4].map((i) => (
+            <line key={i} x1="20" x2="580" y1={40 + i * 20} y2={40 + i * 20} />
+          ))}
+          {DEMO_NOTES.map((y, i) => {
+            const x = 40 + ((i + 0.5) / DEMO_NOTES.length) * 520;
+            const at = ((i + 0.5) / DEMO_NOTES.length) * DEMO_SECONDS - 0.15;
+            return (
+              <g key={i} className="gh-demo__note" style={{ animationDelay: `${at.toFixed(2)}s` }}>
+                <ellipse cx={x} cy={y + 24} rx="10" ry="7.5" transform={`rotate(-20 ${x} ${y + 24})`} />
+                <rect x={x + 8} y={y - 12} width="2.4" height="36" />
+              </g>
+            );
+          })}
+          <rect className="gh-demo__head" x="40" y="24" width="3" height="112" rx="1.5" />
+        </svg>
+        <div className="gh-demo__foot">
+          <button type="button" className="gh-demo__btn" aria-pressed={playing} onClick={() => setPlaying((p) => !p)}>
+            <Icon name={playing ? 'x' : 'play'} size={16} />
+            {playing ? t('home.guest.demoPause') : t('home.guest.demoPlay')}
+          </button>
+          <span className="gh-demo__chip">♩ = 96</span>
+          <span className="gh-demo__meter" aria-hidden="true">
+            <i />
+          </span>
+          <span className="gh-demo__chip gh-demo__chip--ok">{t('home.guest.demoScore')}</span>
+        </div>
+      </div>
+      <figcaption>{t('home.guest.demoCaption')}</figcaption>
+    </figure>
   );
 }
 
@@ -94,35 +144,6 @@ function TermsMarquee() {
         ))}
       </div>
     </div>
-  );
-}
-
-/** Năm dòng kẻ khuông chạy ngang và vài nốt nhạc trôi chậm (trang trí, ẩn với trình đọc màn hình). */
-function StaffBackdrop() {
-  return (
-    <svg className="gh-hero__staff" viewBox="0 0 1200 160" preserveAspectRatio="none" aria-hidden="true">
-      {[0, 1, 2, 3, 4].map((i) => (
-        <line key={i} x1="0" x2="1200" y1={30 + i * 25} y2={30 + i * 25} />
-      ))}
-      <g className="gh-hero__notes">
-        <g transform="translate(180 92)">
-          <ellipse rx="11" ry="8" transform="rotate(-20)" />
-          <rect x="9" y="-62" width="2.5" height="62" />
-        </g>
-        <g transform="translate(420 67)">
-          <ellipse rx="11" ry="8" transform="rotate(-20)" />
-          <rect x="9" y="-62" width="2.5" height="62" />
-        </g>
-        <g transform="translate(700 117)">
-          <ellipse rx="11" ry="8" transform="rotate(-20)" />
-          <rect x="9" y="-62" width="2.5" height="62" />
-        </g>
-        <g transform="translate(960 80)">
-          <ellipse rx="11" ry="8" transform="rotate(-20)" />
-          <rect x="9" y="-62" width="2.5" height="62" />
-        </g>
-      </g>
-    </svg>
   );
 }
 
@@ -311,9 +332,47 @@ export default function GuestHome() {
   };
 
   const stats = data?.stats;
+  const rootRef = useRef<HTMLDivElement>(null);
+  const signInRef = useRef<HTMLButtonElement>(null);
+  // Nút Đăng nhập trên thanh đầu trang đã cuộn khuất: hiện nút Đăng nhập dính ở góc dưới phải
+  const [past, setPast] = useState(false);
+
+  useEffect(() => {
+    const el = signInRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const io = new IntersectionObserver(([e]) => setPast(!e.isIntersecting && e.boundingClientRect.bottom <= 0));
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  // Thanh tiến độ cuộn và parallax nhiều lớp cho phần trang trí (không động vào chữ)
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      const y = window.scrollY;
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      root.style.setProperty('--gh-progress', String(max > 0 ? Math.min(1, y / max) : 0));
+      if (!reduce) root.style.setProperty('--gh-par', `${Math.min(y, 900)}px`);
+    };
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      cancelAnimationFrame(raf);
+    };
+  }, []);
 
   return (
-    <div className="gh">
+    <div className="gh" ref={rootRef}>
+      <PianoBackground />
+      <div className="gh-progress" aria-hidden="true" />
       <header className="gh-bar">
         <span className="gh-brand">
           <span className="gh-brand__logo">
@@ -324,7 +383,12 @@ export default function GuestHome() {
         <div className="gh-bar__actions">
           <LanguageToggle />
           <ThemeToggle />
-          <button type="button" className="gh-btn gh-btn--ghost" onClick={() => navigate('/auth/login')}>
+          <button
+            ref={signInRef}
+            type="button"
+            className="gh-btn gh-btn--ghost"
+            onClick={() => navigate('/auth/login')}
+          >
             {t('home.guest.signIn')}
           </button>
         </div>
@@ -343,7 +407,9 @@ export default function GuestHome() {
       >
         <span className="gh-hero__glow gh-hero__glow--a" aria-hidden="true" />
         <span className="gh-hero__glow gh-hero__glow--b" aria-hidden="true" />
-        <StaffBackdrop />
+        <span className="gh-hero__notefield" aria-hidden="true">
+          <NoteField />
+        </span>
         <div className="gh-hero__content">
           <p className="gh-hero__eyebrow">{t('home.guest.eyebrow')}</p>
           <h1>{t('home.guest.heroTitle')}</h1>
@@ -359,7 +425,7 @@ export default function GuestHome() {
           </div>
           <p className="gh-hero__hint">{dragging ? t('home.guest.dropNow') : t('home.guest.dropHint')}</p>
         </div>
-        <Equalizer />
+        <PianoBackdrop />
       </section>
       <TermsMarquee />
 
@@ -393,6 +459,14 @@ export default function GuestHome() {
             </div>
           </Section>
         )}
+
+        <Section title={t('home.guest.demoTitle')} lead={t('home.guest.demoLead')}>
+          <ScoreDemo />
+        </Section>
+
+        <div className="notef-band" aria-hidden="true">
+          <NoteField />
+        </div>
 
         <Section title={t('home.guest.featuresTitle')} lead={t('home.guest.featuresLead')}>
           <div className="gh-bento">
@@ -432,19 +506,27 @@ export default function GuestHome() {
             <dl className="gh-stats">
               <div>
                 <dt>{t('home.guest.statScores')}</dt>
-                <dd>{formatNumber(stats.scores)}</dd>
+                <dd>
+                  <CountUp value={stats.scores} />
+                </dd>
               </div>
               <div>
                 <dt>{t('home.guest.statPages')}</dt>
-                <dd>{formatNumber(stats.digitizedPages)}</dd>
+                <dd>
+                  <CountUp value={stats.digitizedPages} />
+                </dd>
               </div>
               <div>
                 <dt>{t('home.guest.statHours')}</dt>
-                <dd>{formatNumber(stats.practiceHours)}</dd>
+                <dd>
+                  <CountUp value={stats.practiceHours} />
+                </dd>
               </div>
               <div>
                 <dt>{t('home.guest.statMembers')}</dt>
-                <dd>{formatNumber(stats.members)}</dd>
+                <dd>
+                  <CountUp value={stats.members} />
+                </dd>
               </div>
             </dl>
           </Section>
@@ -467,6 +549,17 @@ export default function GuestHome() {
           </div>
         </Section>
       </main>
+
+      <button
+        type="button"
+        className={`gh-sticky${past ? ' is-on' : ''}`}
+        tabIndex={past ? 0 : -1}
+        aria-hidden={!past}
+        onClick={() => navigate('/auth/login')}
+      >
+        <Icon name="user" size={16} />
+        {t('home.guest.signIn')}
+      </button>
 
       <SiteFooter />
     </div>

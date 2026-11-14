@@ -228,7 +228,18 @@ export interface ScoreEditor {
 
 export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
   const { confirm: confirmDialog } = useDialog();
-  const { scoreId, title, doc, initialVersion, canEdit, canForce, blocked, mode = 'direct', onSuggest, live = null } = options;
+  const {
+    scoreId,
+    title,
+    doc,
+    initialVersion,
+    canEdit,
+    canForce,
+    blocked,
+    mode = 'direct',
+    onSuggest,
+    live = null,
+  } = options;
   const liveActive = live?.active ?? false;
   const bind = live?.bind;
   const liveRef = useRef(live);

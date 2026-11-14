@@ -91,7 +91,13 @@
         "title": "Xuất mọi định dạng",
         "text": "PDF, MIDI, âm thanh, SVG, MusicXML chỉ với vài cú nhấp."
       }
-    }
+    },
+    "demoTitle": "Xem thử trình xem bản nhạc",
+    "demoLead": "Đầu phát chạy qua khuông, từng nốt sáng lên đúng lúc, và bạn nhận điểm khi tập cùng.",
+    "demoPlay": "Phát",
+    "demoPause": "Tạm dừng",
+    "demoCaption": "Minh họa: đầu phát quét qua khuông nhạc và các nốt sáng lên lần lượt khi được phát.",
+    "demoScore": "Chính xác 96%"
   },
   "workspace": {
     "greeting": {
@@ -130,6 +136,9 @@
     "suggestOfficial": "Bài dễ trong kho bản nhạc mẫu",
     "practiceNow": "Tập ngay",
     "suggestEmpty": "Chưa có gợi ý. Mở {link} để chọn bài đầu tiên.",
-    "quickLinks": "Lối tắt"
+    "quickLinks": "Lối tắt",
+    "ctaTitle": "Có bản nhạc mới trên giá?",
+    "ctaText": "Chụp một trang hoặc tải PDF, vài phút sau bạn đã có bản nhạc số để chỉnh sửa và luyện tập.",
+    "ctaButton": "Số hóa ngay"
   }
 }

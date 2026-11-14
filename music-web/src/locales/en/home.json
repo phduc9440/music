@@ -93,7 +93,13 @@
         "title": "Export anywhere",
         "text": "PDF, MIDI, audio, SVG, MusicXML in a few clicks."
       }
-    }
+    },
+    "demoTitle": "See the score viewer in action",
+    "demoLead": "The playhead sweeps the staff, each note lights up on cue, and you get scored as you play along.",
+    "demoPlay": "Play",
+    "demoPause": "Pause",
+    "demoCaption": "Illustration: a playhead sweeps across the staff and notes light up one by one as they play.",
+    "demoScore": "96% accurate"
   },
   "workspace": {
     "greeting": {
@@ -138,6 +144,9 @@
     "suggestOfficial": "An easy piece from the curated library",
     "practiceNow": "Practice now",
     "suggestEmpty": "No suggestion yet. Open the {link} to pick your first piece.",
-    "quickLinks": "Shortcuts"
+    "quickLinks": "Shortcuts",
+    "ctaTitle": "A new piece on your stand?",
+    "ctaText": "Snap a page or upload a PDF; minutes later you have a digital score to edit and practice.",
+    "ctaButton": "Digitize now"
   }
 }

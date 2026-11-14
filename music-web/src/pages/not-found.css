@@ -43,7 +43,7 @@
 .nf__code {
   padding: 0 0.5rem;
   background: var(--ui-bg);
-  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  font-family: var(--ui-font-display);
   font-size: clamp(4rem, 18vw, 6.5rem);
   font-weight: 700;
   line-height: 1;

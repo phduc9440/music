@@ -1,0 +1,229 @@
+/* Khối hướng dẫn kiểu landing page dưới trang tải lên / nhập file */
+.sc-cr-sec {
+  margin-top: 2.5rem;
+}
+.sc-cr-sec > header {
+  margin-bottom: 1rem;
+}
+.sc-cr-sec h2 {
+  position: relative;
+  display: inline-block;
+  margin: 0;
+  padding-bottom: 0.4rem;
+  font-size: clamp(1.3rem, 2.6vw, 1.7rem);
+}
+.sc-cr-sec h2::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--ui-hue-amber);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.2s;
+}
+.reveal--in.sc-cr-sec h2::after {
+  transform: scaleX(0.2);
+}
+.sc-cr-sec > header p {
+  max-width: 40rem;
+  margin: 0.35rem 0 0;
+  color: var(--ui-text-2);
+}
+
+.sc-cr-steps {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sc-cr-steps::before {
+  content: '';
+  position: absolute;
+  top: 2.9rem;
+  left: 14%;
+  right: 14%;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--ui-border-strong);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 1.2s ease 0.3s;
+}
+.reveal--in .sc-cr-steps::before {
+  transform: scaleX(1);
+}
+.sc-cr-steps li {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 1.25rem;
+  border: 1px solid var(--ui-border);
+  border-radius: 24px;
+  background: var(--ui-surface);
+  text-align: center;
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity 0.5s ease,
+    transform 0.5s ease;
+}
+.reveal--in .sc-cr-steps li {
+  opacity: 1;
+  transform: none;
+}
+.sc-cr-steps__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--ui-primary);
+  box-shadow: 0 0 0 6px var(--ui-surface);
+  color: var(--ui-on-accent);
+}
+.sc-cr-steps__no {
+  color: var(--ui-text-3);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.sc-cr-steps li strong {
+  font-family: var(--ui-font-display);
+  font-size: 1.2rem;
+}
+.sc-cr-steps li p {
+  margin: 0;
+  color: var(--ui-text-2);
+  line-height: 1.5;
+}
+
+.sc-cr-tips {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+.sc-cr-tips article {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.2rem 0.9rem;
+  padding: 1.1rem 1.25rem;
+  border: 1px solid var(--ui-border);
+  border-radius: 20px;
+  background: var(--ui-surface);
+  opacity: 0;
+  transform: translateY(14px);
+  transition:
+    opacity 0.5s ease,
+    transform 0.5s ease;
+}
+.reveal--in .sc-cr-tips article {
+  opacity: 1;
+  transform: none;
+}
+.sc-cr-tips__no {
+  grid-row: span 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: var(--ui-primary-soft);
+  color: var(--ui-primary);
+  font-family: var(--ui-font-display);
+  font-weight: 800;
+}
+.sc-cr-tips strong {
+  font-size: 1rem;
+}
+.sc-cr-tips p {
+  grid-column: 2;
+  margin: 0;
+  color: var(--ui-text-2);
+  line-height: 1.5;
+}
+
+.sc-cr-faq {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.sc-cr-faq details {
+  padding: 0.9rem 1.15rem;
+  border: 1px solid var(--ui-border);
+  border-radius: 16px;
+  background: var(--ui-surface);
+}
+.sc-cr-faq summary {
+  min-height: 24px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.sc-cr-faq details[open] {
+  border-color: var(--ui-border-strong);
+}
+.sc-cr-faq p {
+  margin: 0.6rem 0 0;
+  color: var(--ui-text-2);
+  line-height: 1.55;
+}
+
+@media (max-width: 700px) {
+  .sc-cr-steps,
+  .sc-cr-tips {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sc-cr-steps::before {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sc-cr-steps li,
+  .sc-cr-tips article {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .sc-cr-steps::before {
+    transform: scaleX(1);
+    transition: none;
+  }
+  .sc-cr-sec h2::after {
+    transform: scaleX(0.2);
+    transition: none;
+  }
+}
+
+.sc-cr-formats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1.25rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.sc-cr-formats li {
+  padding: 0.2rem 0.75rem;
+  border: 1px solid var(--ui-primary-border);
+  border-radius: 999px;
+  background: var(--ui-primary-soft);
+  color: var(--ui-primary);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.sc-cr-formats .sc-cr-formats__label {
+  border-color: transparent;
+  background: transparent;
+  color: var(--ui-text-2);
+  font-weight: 500;
+}
