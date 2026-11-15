@@ -122,7 +122,7 @@ public final class MusicXmlInspector {
 
     // ---------------------------------------------------------------- phân tích an toàn
 
-    private static Document parse(byte[] xml) {
+    static Document parse(byte[] xml) {
         try {
             DocumentBuilder builder = newSecureFactory().newDocumentBuilder();
             builder.setEntityResolver((publicId, systemId) -> {
