@@ -25,12 +25,16 @@ import com.ptit.music_be.dto.request.report.ResolveReportRequest;
 import com.ptit.music_be.dto.response.common.PageResponse;
 import com.ptit.music_be.dto.response.report.ReportResponse;
 import com.ptit.music_be.entity.ContentReport;
+import com.ptit.music_be.entity.ForumPost;
+import com.ptit.music_be.entity.ForumThread;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreComment;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
+import com.ptit.music_be.repository.forum.ForumPostRepository;
+import com.ptit.music_be.repository.forum.ForumThreadRepository;
 import com.ptit.music_be.repository.report.ContentReportRepository;
 import com.ptit.music_be.repository.score.ScoreCommentRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
@@ -59,6 +63,8 @@ public class ContentReportServiceImpl implements ContentReportService {
     ScoreRepository scoreRepository;
     ScoreCommentRepository commentRepository;
     MemberRepository memberRepository;
+    ForumThreadRepository forumThreadRepository;
+    ForumPostRepository forumPostRepository;
     ScoreFileService scoreFileService;
     ScoreService scoreService;
     AdminMemberService adminMemberService;
@@ -109,6 +115,55 @@ public class ContentReportServiceImpl implements ContentReportService {
                 .targetType(ReportTargetType.COMMENT)
                 .comment(comment)
                 .score(score)
+                .reporter(me)
+                .reason(valid.reason())
+                .details(valid.details())
+                .status(ReportStatus.PENDING)
+                .build());
+    }
+
+    @Override
+    @Transactional
+    public void reportForumThread(String threadId, ReportRequest request) {
+        ForumThread thread = forumThreadRepository
+                .findById(threadId)
+                .orElseThrow(() -> new AppException(ErrorCode.FORUM_THREAD_NOT_EXISTED));
+        Member me = currentMember();
+        if (thread.getAuthor() != null && thread.getAuthor().getId().equals(me.getId())) {
+            throw new AppException(ErrorCode.REPORT_OWN_CONTENT);
+        }
+        ValidRequest valid = validate(request);
+        guard(me, reportRepository.existsByReporterIdAndForumThreadIdAndStatus(me.getId(), threadId, ReportStatus.PENDING));
+        reportRepository.save(ContentReport.builder()
+                .targetType(ReportTargetType.FORUM_THREAD)
+                .forumThread(thread)
+                .reporter(me)
+                .reason(valid.reason())
+                .details(valid.details())
+                .status(ReportStatus.PENDING)
+                .build());
+    }
+
+    @Override
+    @Transactional
+    public void reportForumPost(String postId, ReportRequest request) {
+        ForumPost post = forumPostRepository
+                .findById(postId)
+                .orElseThrow(() -> new AppException(ErrorCode.FORUM_POST_NOT_EXISTED));
+        // Chủ đề chứa bài đã bị ẩn thì bài cũng coi như không còn
+        ForumThread thread = forumThreadRepository
+                .findById(post.getThread().getId())
+                .orElseThrow(() -> new AppException(ErrorCode.FORUM_POST_NOT_EXISTED));
+        Member me = currentMember();
+        if (post.getAuthor() != null && post.getAuthor().getId().equals(me.getId())) {
+            throw new AppException(ErrorCode.REPORT_OWN_CONTENT);
+        }
+        ValidRequest valid = validate(request);
+        guard(me, reportRepository.existsByReporterIdAndForumPostIdAndStatus(me.getId(), postId, ReportStatus.PENDING));
+        reportRepository.save(ContentReport.builder()
+                .targetType(ReportTargetType.FORUM_POST)
+                .forumPost(post)
+                .forumThread(thread)
                 .reporter(me)
                 .reason(valid.reason())
                 .details(valid.details())
@@ -185,7 +240,6 @@ public class ContentReportServiceImpl implements ContentReportService {
             throw new AppException(ErrorCode.REPORT_NOTE_INVALID);
         }
         Member me = currentMember();
-        boolean scoreType = report.getTargetType() == ReportTargetType.SCORE;
         ContentReportRepository.TargetInfo info = targetInfo(report);
         boolean targetGone = info == null || info.getAvailable() == null || info.getAvailable() == 0;
         if (targetGone && action != ReportAction.DISMISS && action != ReportAction.LOCK_ACCOUNT) {
@@ -200,11 +254,7 @@ public class ContentReportServiceImpl implements ContentReportService {
                             .orElseThrow(() -> new AppException(ErrorCode.REPORT_TARGET_GONE)),
                     note);
             case SOFT_DELETE -> scoreService.deleteScore(report.getScore().getId(), note);
-            case HIDE -> hideComment(
-                    commentRepository
-                            .findById(report.getComment().getId())
-                            .orElseThrow(() -> new AppException(ErrorCode.REPORT_TARGET_GONE)),
-                    me);
+            case HIDE -> hide(report, me);
             case LOCK_ACCOUNT -> {
                 if (info == null || info.getOwnerId() == null) {
                     throw new AppException(ErrorCode.REPORT_TARGET_GONE);
@@ -216,10 +266,7 @@ public class ContentReportServiceImpl implements ContentReportService {
         }
 
         // Một báo cáo xử lý xong thì mọi báo cáo đang chờ trên cùng đối tượng đóng theo
-        List<ContentReport> batch = new ArrayList<>(
-                scoreType
-                        ? reportRepository.findPendingOfScore(report.getScore().getId())
-                        : reportRepository.findPendingOfComment(report.getComment().getId()));
+        List<ContentReport> batch = new ArrayList<>(pendingOfSameTarget(report));
         if (batch.stream().noneMatch(r -> r.getId().equals(report.getId()))) {
             batch.add(report);
         }
@@ -249,10 +296,55 @@ public class ContentReportServiceImpl implements ContentReportService {
         }
     }
 
-    private void hideComment(ScoreComment comment, Member admin) {
-        comment.setHiddenAt(LocalDateTime.now());
-        comment.setHiddenBy(admin);
-        commentRepository.save(comment);
+    private void hide(ContentReport report, Member admin) {
+        LocalDateTime now = LocalDateTime.now();
+        switch (report.getTargetType()) {
+            case COMMENT -> {
+                ScoreComment comment = commentRepository
+                        .findById(report.getComment().getId())
+                        .orElseThrow(() -> new AppException(ErrorCode.REPORT_TARGET_GONE));
+                comment.setHiddenAt(now);
+                comment.setHiddenBy(admin);
+                commentRepository.save(comment);
+            }
+            case FORUM_THREAD -> {
+                ForumThread thread = forumThreadRepository
+                        .findById(report.getForumThread().getId())
+                        .orElseThrow(() -> new AppException(ErrorCode.REPORT_TARGET_GONE));
+                thread.setHiddenAt(now);
+                thread.setHiddenBy(admin);
+                forumThreadRepository.save(thread);
+            }
+            case FORUM_POST -> {
+                ForumPost post = forumPostRepository
+                        .findById(report.getForumPost().getId())
+                        .orElseThrow(() -> new AppException(ErrorCode.REPORT_TARGET_GONE));
+                post.setHiddenAt(now);
+                post.setHiddenBy(admin);
+                forumPostRepository.save(post);
+                // Bài bị ẩn không còn là đáp án hay nhất
+                ForumThread parent = forumThreadRepository
+                        .findById(post.getThread().getId())
+                        .orElse(null);
+                if (parent != null
+                        && parent.getAcceptedPost() != null
+                        && parent.getAcceptedPost().getId().equals(post.getId())) {
+                    parent.setAcceptedPost(null);
+                    forumThreadRepository.save(parent);
+                }
+            }
+            default -> throw new AppException(ErrorCode.REPORT_ACTION_INVALID);
+        }
+    }
+
+    /** Mọi báo cáo đang chờ trên cùng đối tượng với báo cáo này (gồm chính nó nếu còn chờ). */
+    private List<ContentReport> pendingOfSameTarget(ContentReport r) {
+        return switch (r.getTargetType()) {
+            case SCORE -> reportRepository.findPendingOfScore(r.getScore().getId());
+            case COMMENT -> reportRepository.findPendingOfComment(r.getComment().getId());
+            case FORUM_THREAD -> reportRepository.findPendingOfForumThread(r.getForumThread().getId());
+            case FORUM_POST -> reportRepository.findPendingOfForumPost(r.getForumPost().getId());
+        };
     }
 
     // ------------------------------------------------------------------ helpers
@@ -286,20 +378,27 @@ public class ContentReportServiceImpl implements ContentReportService {
     }
 
     private ReportResponse toResponse(ContentReport r) {
-        boolean scoreType = r.getTargetType() == ReportTargetType.SCORE;
         ContentReportRepository.TargetInfo info = targetInfo(r);
         String scoreId = r.getScore() == null ? null : r.getScore().getId();
         String commentId = r.getComment() == null ? null : r.getComment().getId();
+        String threadId = r.getForumThread() == null ? null : r.getForumThread().getId();
+        String postId = r.getForumPost() == null ? null : r.getForumPost().getId();
         long pending = 0;
         if (r.getStatus() == ReportStatus.PENDING) {
-            if (scoreType && scoreId != null) pending = reportRepository.countPendingOfScore(scoreId);
-            if (!scoreType && commentId != null) pending = reportRepository.countPendingOfComment(commentId);
+            pending = switch (r.getTargetType()) {
+                case SCORE -> scoreId == null ? 0 : reportRepository.countPendingOfScore(scoreId);
+                case COMMENT -> commentId == null ? 0 : reportRepository.countPendingOfComment(commentId);
+                case FORUM_THREAD -> threadId == null ? 0 : reportRepository.findPendingOfForumThread(threadId).size();
+                case FORUM_POST -> postId == null ? 0 : reportRepository.findPendingOfForumPost(postId).size();
+            };
         }
         return ReportResponse.builder()
                 .id(r.getId())
                 .targetType(r.getTargetType().name())
                 .scoreId(scoreId)
                 .commentId(commentId)
+                .forumThreadId(threadId)
+                .forumPostId(postId)
                 .targetLabel(info == null ? null : info.getLabel())
                 .targetAvailable(info != null && info.getAvailable() != null && info.getAvailable() == 1)
                 .owner(
@@ -330,7 +429,12 @@ public class ContentReportServiceImpl implements ContentReportService {
             case COMMENT -> r.getComment() == null
                     ? null
                     : reportRepository.findCommentInfo(r.getComment().getId()).orElse(null);
-            case FORUM_POST -> null;
+            case FORUM_THREAD -> r.getForumThread() == null
+                    ? null
+                    : reportRepository.findForumThreadInfo(r.getForumThread().getId()).orElse(null);
+            case FORUM_POST -> r.getForumPost() == null
+                    ? null
+                    : reportRepository.findForumPostInfo(r.getForumPost().getId()).orElse(null);
         };
     }
 

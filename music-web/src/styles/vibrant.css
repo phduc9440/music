@@ -237,3 +237,36 @@
   outline: 3px solid var(--ui-primary-ring);
   outline-offset: 2px;
 }
+
+
+/* ---- khung thẻ: viền và bóng rõ hơn để thẻ không hòa vào nền kem (token --ui-card-*) ----
+ * Gồm thẻ bản nhạc, playlist, team, hồ sơ, cài đặt bản nhạc, thùng rác, bộ lọc Khám phá, hướng dẫn tạo bản nhạc... */
+.app-shell
+  :is(
+    .sc-card,
+    .cp-card,
+    .sd-card,
+    .pf-card,
+    .pl-card,
+    .pl-row,
+    .tm-card,
+    .tm-summary,
+    .tm-item,
+    .tm-invitation,
+    .sc-settings__card,
+    .sc-trash__item,
+    .ex-filters,
+    .sr-change,
+    .sr-score,
+    .sr-selected,
+    .sc-cr-steps li,
+    .sc-cr-tips article,
+    .sc-cr-faq details,
+    .fm-row,
+    .fm-post,
+    .fm-reply,
+    .bl-card
+  ) {
+  border-color: var(--ui-card-border);
+  box-shadow: var(--ui-card-shadow);
+}

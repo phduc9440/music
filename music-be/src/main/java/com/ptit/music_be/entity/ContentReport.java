@@ -45,6 +45,14 @@ public class ContentReport {
     @JoinColumn(name = "comment_id")
     ScoreComment comment;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "forum_thread_id")
+    ForumThread forumThread;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "forum_post_id")
+    ForumPost forumPost;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "reporter_id", nullable = false)
     Member reporter;

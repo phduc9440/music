@@ -96,6 +96,9 @@ export default function NotificationBell() {
       n.type === 'TEAM_DELETED_BY_ADMIN'
     )
       navigate('/teams');
+    // Diễn đàn: mở đúng chủ đề
+    else if (n.type.startsWith('FORUM_') && n.params?.threadId)
+      navigate(`/forum/threads/${n.params.threadId}${n.params.postId ? `?post=${n.params.postId}` : ''}`);
     // Góp ý: mở tab Góp ý của bản nhạc và cuộn tới đúng góp ý
     else if (n.type.startsWith('COMMENT_') && n.scoreId)
       navigate(`/scores/${n.scoreId}?tab=comments${n.params?.commentId ? `&comment=${n.params.commentId}` : ''}`);

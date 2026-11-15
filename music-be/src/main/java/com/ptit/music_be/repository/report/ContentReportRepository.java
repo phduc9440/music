@@ -17,6 +17,10 @@ public interface ContentReportRepository extends JpaRepository<ContentReport, St
 
     boolean existsByReporterIdAndCommentIdAndStatus(String reporterId, String commentId, ReportStatus status);
 
+    boolean existsByReporterIdAndForumThreadIdAndStatus(String reporterId, String threadId, ReportStatus status);
+
+    boolean existsByReporterIdAndForumPostIdAndStatus(String reporterId, String postId, ReportStatus status);
+
     long countByReporterIdAndCreatedAtAfter(String reporterId, LocalDateTime after);
 
     long countByStatus(ReportStatus status);
@@ -27,6 +31,15 @@ public interface ContentReportRepository extends JpaRepository<ContentReport, St
 
     @Query("select r from ContentReport r where r.status = 'PENDING' and r.comment.id = :commentId")
     List<ContentReport> findPendingOfComment(@Param("commentId") String commentId);
+
+    /** Báo cáo chờ của chính chủ đề (báo cáo bài trả lời trong chủ đề đó là đối tượng khác). */
+    @Query("select r from ContentReport r where r.status = 'PENDING' and r.targetType = 'FORUM_THREAD'"
+            + " and r.forumThread.id = :threadId")
+    List<ContentReport> findPendingOfForumThread(@Param("threadId") String threadId);
+
+    @Query("select r from ContentReport r where r.status = 'PENDING' and r.targetType = 'FORUM_POST'"
+            + " and r.forumPost.id = :postId")
+    List<ContentReport> findPendingOfForumPost(@Param("postId") String postId);
 
     /** Số báo cáo đang chờ trên cùng một đối tượng, để hàng chờ hiện "n người báo cáo". */
     @Query("select count(r) from ContentReport r where r.status = 'PENDING' and r.score.id = :scoreId")
@@ -52,6 +65,23 @@ public interface ContentReportRepository extends JpaRepository<ContentReport, St
                     + " m.full_name AS ownerName, CASE WHEN c.hidden_at IS NULL THEN 1 ELSE 0 END AS available"
                     + " FROM score_comments c LEFT JOIN members m ON m.id = c.author_id WHERE c.id = :id")
     Optional<TargetInfo> findCommentInfo(@Param("id") String id);
+
+    @Query(
+            nativeQuery = true,
+            value = "SELECT t.title AS label, t.author_id AS ownerId, m.email AS ownerEmail, m.full_name AS ownerName,"
+                    + " CASE WHEN t.hidden_at IS NULL THEN 1 ELSE 0 END AS available"
+                    + " FROM forum_threads t LEFT JOIN members m ON m.id = t.author_id WHERE t.id = :id")
+    Optional<TargetInfo> findForumThreadInfo(@Param("id") String id);
+
+    /** Bài trả lời chỉ còn hiển thị khi cả bài và chủ đề chứa nó đều chưa bị ẩn. */
+    @Query(
+            nativeQuery = true,
+            value = "SELECT LEFT(p.body, 100) AS label, p.author_id AS ownerId, m.email AS ownerEmail,"
+                    + " m.full_name AS ownerName,"
+                    + " CASE WHEN p.hidden_at IS NULL AND t.hidden_at IS NULL THEN 1 ELSE 0 END AS available"
+                    + " FROM forum_posts p JOIN forum_threads t ON t.id = p.thread_id"
+                    + " LEFT JOIN members m ON m.id = p.author_id WHERE p.id = :id")
+    Optional<TargetInfo> findForumPostInfo(@Param("id") String id);
 
     /** Kết quả tra cứu đối tượng bị báo cáo; available = 1 khi bản nhạc / góp ý còn hiển thị. */
     interface TargetInfo {

@@ -34,6 +34,25 @@ public class ReportController {
         return ApiResponse.<Void>builder().build();
     }
 
+    @PostMapping("/forum/threads/{threadId}/reports")
+    @Operation(
+            summary = "Report a forum thread (same rules and errors as reporting a score)",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<Void> reportForumThread(
+            @PathVariable String threadId, @Valid @RequestBody ReportRequest request) {
+        reportService.reportForumThread(threadId, request);
+        return ApiResponse.<Void>builder().build();
+    }
+
+    @PostMapping("/forum/posts/{postId}/reports")
+    @Operation(
+            summary = "Report a forum reply (same rules and errors as reporting a score)",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<Void> reportForumPost(@PathVariable String postId, @Valid @RequestBody ReportRequest request) {
+        reportService.reportForumPost(postId, request);
+        return ApiResponse.<Void>builder().build();
+    }
+
     @PostMapping("/comments/{commentId}/reports")
     @Operation(
             summary = "Report a comment on a score you can view (same rules and errors as reporting a score)",

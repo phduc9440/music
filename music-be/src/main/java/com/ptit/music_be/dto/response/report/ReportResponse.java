@@ -16,6 +16,9 @@ public class ReportResponse {
     /** Bản nhạc bị báo cáo, hoặc bản nhạc chứa góp ý bị báo cáo; null khi đã không còn. */
     String scoreId;
     String commentId;
+    /** Chủ đề diễn đàn bị báo cáo, hoặc chủ đề chứa bài trả lời bị báo cáo. */
+    String forumThreadId;
+    String forumPostId;
     /** Tên bản nhạc / trích đoạn góp ý chụp lúc báo cáo. */
     String targetLabel;
     /** false khi đối tượng đã gỡ vào thùng rác hoặc bị ẩn: chỉ còn chọn được Bỏ qua. */

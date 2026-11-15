@@ -881,7 +881,8 @@
     "targets": {
       "SCORE": "Score",
       "COMMENT": "Comment",
-      "FORUM_POST": "Forum post"
+      "FORUM_THREAD": "Forum thread",
+      "FORUM_POST": "Forum reply"
     },
     "reasons": {
       "COPYRIGHT": "Copyright violation",
@@ -903,14 +904,14 @@
     "actions": {
       "DISMISS": "Dismiss",
       "UNPUBLISH": "Unpublish",
-      "HIDE": "Hide comment",
+      "HIDE": "Hide comment or forum post",
       "SOFT_DELETE": "Soft delete (to trash)",
       "LOCK_ACCOUNT": "Lock the owner's account"
     },
     "actionHints": {
       "DISMISS": "The report is unfounded; leave the content alone.",
       "UNPUBLISH": "Make the score private and remove it from the curated library; the owner is told why.",
-      "HIDE": "The comment disappears everywhere.",
+      "HIDE": "The content disappears everywhere.",
       "SOFT_DELETE": "Move the score to its owner's trash.",
       "LOCK_ACCOUNT": "This person can no longer sign in until unlocked."
     },
@@ -923,7 +924,8 @@
     "reportOf": "Report about \"{label}\"",
     "emptyTitle": "No reports",
     "emptyHint": "New user reports will show up here.",
-    "unit": "reports"
+    "unit": "reports",
+    "openThread": "Open the thread in the forum"
   },
   "audit": {
     "description": "Moderation work derived from the source data: reports, removed scores, hidden comments, teams removed for violations, plan sanctions. Nothing is stored separately, so it always matches the real data; read only.",

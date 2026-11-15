@@ -301,6 +301,20 @@ public enum ErrorCode {
     REPORT_ACTION_INVALID(4008, "Cách xử lý này không áp dụng cho loại nội dung bị báo cáo", HttpStatus.BAD_REQUEST),
     REPORT_TARGET_GONE(4009, "Nội dung bị báo cáo không còn nữa; chỉ chọn được Bỏ qua", HttpStatus.CONFLICT),
     REPORT_NOTE_INVALID(4010, "Ghi chú xử lý tối đa 500 ký tự", HttpStatus.BAD_REQUEST),
+    // ---- 41xx: Diễn đàn (mục 5.5)
+    FORUM_CATEGORY_NOT_EXISTED(4101, "Không tìm thấy chuyên mục", HttpStatus.NOT_FOUND),
+    FORUM_THREAD_NOT_EXISTED(4102, "Không tìm thấy chủ đề", HttpStatus.NOT_FOUND),
+    FORUM_POST_NOT_EXISTED(4103, "Không tìm thấy bài trả lời", HttpStatus.NOT_FOUND),
+    FORUM_CONTENT_INVALID(
+            4104, "Tiêu đề từ 3 đến 150 ký tự, nội dung từ 1 đến 10000 ký tự", HttpStatus.BAD_REQUEST),
+    FORUM_SCORE_NOT_PUBLIC(4105, "Chỉ gắn được bản nhạc đang công khai vào chủ đề", HttpStatus.BAD_REQUEST),
+    FORUM_NOT_AUTHOR(4106, "Bạn không phải người viết nội dung này", HttpStatus.FORBIDDEN),
+    FORUM_NEW_ACCOUNT_LIMIT(
+            4107, "Tài khoản dưới 3 ngày tuổi chỉ đặt được tối đa 3 chủ đề mỗi ngày", HttpStatus.TOO_MANY_REQUESTS),
+    FORUM_THREAD_HAS_REPLIES(
+            4108, "Chủ đề đã có người khác trả lời nên không xóa được, hãy báo quản trị viên nếu cần gỡ", HttpStatus.CONFLICT),
+    FORUM_ACCEPT_OWN_POST(4109, "Bạn không chọn được câu trả lời của chính mình", HttpStatus.BAD_REQUEST),
+    FORUM_VOTE_OWN_CONTENT(4110, "Bạn không bình chọn được nội dung của chính mình", HttpStatus.BAD_REQUEST),
     ;
 
     int code;

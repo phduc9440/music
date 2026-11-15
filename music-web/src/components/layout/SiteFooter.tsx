@@ -26,6 +26,7 @@ const siteColumns = (): FooterColumn[] => [
       { label: t('common.nav.items.publicScores'), to: '/explore' },
       { label: t('common.nav.items.officialLibrary'), to: '/scores/official' },
       { label: t('common.nav.items.composers'), to: '/composers' },
+      { label: t('common.nav.items.forum'), to: '/forum' },
     ],
   },
   {

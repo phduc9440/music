@@ -636,3 +636,38 @@ a.sc-btn.is-disabled {
     justify-content: flex-start;
   }
 }
+
+/* Nút sao chép liên kết: biểu tượng nhỏ ở góc trên phải ảnh bìa */
+.sd-head__cover {
+  position: relative;
+  flex: none;
+}
+.sd-copylink {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--ui-card-border);
+  border-radius: 50%;
+  background: var(--ui-surface);
+  color: var(--ui-text-2);
+  box-shadow: var(--ui-shadow);
+  cursor: pointer;
+}
+.sd-copylink:hover {
+  background: var(--ui-surface-hover);
+  color: var(--ui-text);
+}
+.sd-copylink:focus-visible {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 2px;
+}
+.sd-copylink.is-done {
+  border-color: var(--ui-success);
+  color: var(--ui-success);
+}

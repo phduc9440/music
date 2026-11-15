@@ -105,6 +105,7 @@
 }
 .sc-card__body {
   display: flex;
+  flex: 1; /* giãn hết chiều cao thẻ để chân thẻ và nút hành động dồn xuống đáy, thẳng hàng giữa các thẻ */
   flex-direction: column;
   gap: 0.35rem;
   padding: 0.9rem 1rem 1rem;
@@ -130,6 +131,7 @@
 .sc-card__foot {
   display: flex;
   justify-content: space-between;
+  margin-top: auto; /* dồn xuống đáy thẻ */
   padding-top: 0.5rem;
   border-top: 1px dashed var(--sc-line);
   font-size: 0.75rem;

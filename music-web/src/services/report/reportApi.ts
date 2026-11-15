@@ -19,6 +19,10 @@ export interface ReportPayload {
 export const reportApi = {
   reportScore: (scoreId: string, data: ReportPayload) =>
     apiClient.post<ApiResponse<void>>(`/scores/${scoreId}/reports`, data),
+  reportForumThread: (threadId: string, data: ReportPayload) =>
+    apiClient.post<ApiResponse<void>>(`/forum/threads/${threadId}/reports`, data),
+  reportForumPost: (postId: string, data: ReportPayload) =>
+    apiClient.post<ApiResponse<void>>(`/forum/posts/${postId}/reports`, data),
   reportComment: (commentId: string, data: ReportPayload) =>
     apiClient.post<ApiResponse<void>>(`/comments/${commentId}/reports`, data),
 };

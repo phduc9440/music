@@ -16,6 +16,12 @@ public interface ContentReportService {
     /** Báo cáo một góp ý trên bản nhạc mình xem được (không phải của mình). */
     void reportComment(String commentId, ReportRequest request);
 
+    /** Báo cáo một chủ đề diễn đàn (không phải của mình). */
+    void reportForumThread(String threadId, ReportRequest request);
+
+    /** Báo cáo một bài trả lời diễn đàn (không phải của mình). */
+    void reportForumPost(String postId, ReportRequest request);
+
     /** Hàng chờ cho admin: lọc theo trạng thái, loại đối tượng; chờ xử lý thì cũ nhất trước. Cần REPORTS_MODERATE. */
     PageResponse<ReportResponse> list(int page, int size, ReportStatus status, ReportTargetType targetType);
 

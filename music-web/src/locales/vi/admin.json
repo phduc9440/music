@@ -845,7 +845,8 @@
     "targets": {
       "SCORE": "Bản nhạc",
       "COMMENT": "Góp ý",
-      "FORUM_POST": "Bài diễn đàn"
+      "FORUM_THREAD": "Chủ đề diễn đàn",
+      "FORUM_POST": "Trả lời diễn đàn"
     },
     "reasons": {
       "COPYRIGHT": "Vi phạm bản quyền",
@@ -867,14 +868,14 @@
     "actions": {
       "DISMISS": "Bỏ qua",
       "UNPUBLISH": "Gỡ công khai",
-      "HIDE": "Ẩn góp ý",
+      "HIDE": "Ẩn góp ý hoặc bài diễn đàn",
       "SOFT_DELETE": "Xóa mềm (vào thùng rác)",
       "LOCK_ACCOUNT": "Khóa tài khoản chủ nội dung"
     },
     "actionHints": {
       "DISMISS": "Báo cáo không đúng, không làm gì với nội dung.",
       "UNPUBLISH": "Đưa bản nhạc về riêng tư và gỡ khỏi kho mẫu; chủ sở hữu được báo kèm lý do.",
-      "HIDE": "Góp ý biến khỏi mọi nơi hiển thị.",
+      "HIDE": "Nội dung biến khỏi mọi nơi hiển thị.",
       "SOFT_DELETE": "Chuyển bản nhạc vào thùng rác của chủ sở hữu.",
       "LOCK_ACCOUNT": "Người này không đăng nhập được nữa cho tới khi mở khóa."
     },
@@ -887,7 +888,8 @@
     "reportOf": "Báo cáo về \"{label}\"",
     "emptyTitle": "Không có báo cáo nào",
     "emptyHint": "Báo cáo mới của người dùng sẽ hiện ở đây.",
-    "unit": "báo cáo"
+    "unit": "báo cáo",
+    "openThread": "Mở chủ đề trong diễn đàn"
   },
   "audit": {
     "description": "Việc quản trị đã làm, suy ra từ các bảng gốc: báo cáo, bản nhạc bị gỡ, góp ý bị ẩn, nhóm bị xóa vì vi phạm, chế tài gói. Không lưu riêng nên luôn khớp dữ liệu thật; chỉ đọc.",

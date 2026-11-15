@@ -184,5 +184,15 @@
   "4007": "This report has already been handled",
   "4008": "This action does not apply to the reported content",
   "4009": "The reported content no longer exists; only Dismiss is available",
-  "4010": "The note is limited to 500 characters"
+  "4010": "The note is limited to 500 characters",
+  "4101": "Category not found",
+  "4102": "Thread not found",
+  "4103": "Reply not found",
+  "4104": "The title must be 3 to 150 characters and the body 1 to 10000",
+  "4105": "Only a public score can be attached to a thread",
+  "4106": "You are not the author of this content",
+  "4107": "Accounts under 3 days old can start at most 3 threads per day",
+  "4108": "Others have replied, so this thread cannot be deleted; report it to an admin if it must go",
+  "4109": "You cannot pick your own reply",
+  "4110": "You cannot vote on your own content"
 }

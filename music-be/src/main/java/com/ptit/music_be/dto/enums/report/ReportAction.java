@@ -6,7 +6,7 @@ public enum ReportAction {
     DISMISS,
     /** Gỡ công khai bản nhạc (về riêng tư, rời kho mẫu). */
     UNPUBLISH,
-    /** Ẩn góp ý. */
+    /** Ẩn góp ý hoặc bài diễn đàn. */
     HIDE,
     /** Xóa mềm bản nhạc (vào thùng rác của chủ). */
     SOFT_DELETE,
@@ -17,7 +17,7 @@ public enum ReportAction {
         return switch (this) {
             case DISMISS, LOCK_ACCOUNT -> true;
             case UNPUBLISH, SOFT_DELETE -> type == ReportTargetType.SCORE;
-            case HIDE -> type == ReportTargetType.COMMENT;
+            case HIDE -> type != ReportTargetType.SCORE;
         };
     }
 }

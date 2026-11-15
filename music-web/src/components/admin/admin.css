@@ -435,9 +435,9 @@
 
 .adm-card {
   background: var(--adm-surface);
-  border: 1px solid var(--adm-border);
+  border: 1px solid var(--ui-card-border);
   border-radius: var(--adm-radius-lg);
-  box-shadow: var(--adm-shadow-sm);
+  box-shadow: var(--ui-card-shadow);
   min-width: 0;
 }
 
@@ -1630,9 +1630,10 @@
 .adm-stat {
   position: relative;
   padding: 1rem 1.15rem 1.05rem;
+  border-color: var(--ui-card-border);
   border-top: 3px solid var(--adm-border-strong);
   border-radius: var(--adm-radius-lg);
-  box-shadow: none;
+  box-shadow: var(--ui-card-shadow);
 }
 .adm-stat:has(.adm-tone--success) {
   border-top-color: var(--adm-success);

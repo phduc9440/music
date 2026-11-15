@@ -308,7 +308,10 @@ export type NotificationType =
   | 'COMMENT_MENTION'
   | 'COMMENT_REPLY'
   | 'SUGGESTION_NEW'
-  | 'SUGGESTION_DECIDED';
+  | 'SUGGESTION_DECIDED'
+  | 'FORUM_REPLY'
+  | 'FORUM_POST_REPLY'
+  | 'FORUM_ANSWER_ACCEPTED';
 
 export interface AppNotification {
   id: string;
