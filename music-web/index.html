@@ -1,10 +1,37 @@
 <!doctype html>
-<html lang="en">
+<html lang="vi">
   <head>
     <meta charset="UTF-8" />
+    <!-- Đặt theme trước khi React chạy để không bị nháy sáng. Cùng logic với src/theme/theme.ts. -->
+    <script>
+      (function () {
+        var preference = 'system';
+        try {
+          var stored = localStorage.getItem('theme');
+          if (stored === 'light' || stored === 'dark' || stored === 'system') preference = stored;
+        } catch (e) {}
+        var dark = preference === 'dark' || (preference === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+        // Ngôn ngữ đã chọn (src/i18n/core.ts); chưa chọn thì tiếng Việt
+        try {
+          document.documentElement.lang = localStorage.getItem('locale') === 'en' ? 'en' : 'vi';
+        } catch (e) {}
+      })();
+    </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>music-web</title>
+    <meta
+      name="description"
+      content="Chụp bản nhạc giấy, số hóa thành bản nhạc số, chỉnh sửa, nghe và luyện tập ngay trên trình duyệt."
+    />
+    <!-- Font tiêu đề (có bộ ký tự tiếng Việt); display=swap để chữ hiện ngay bằng font dự phòng rồi mới đổi -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Bricolage+Grotesque:wght@600;700;800&display=swap"
+    />
+    <title>Music App</title>
   </head>
   <body>
     <div id="root"></div>

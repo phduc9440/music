@@ -1,93 +1,86 @@
-import type {
-  AccessLevel,
-  Difficulty,
-  OmrSourceType,
-  ProcessingStatus,
-  ScoreSource,
-  TaskStatus,
-} from '../types';
+import { useLocation } from 'react-router-dom';
+import { formatDateTime as formatDateTimeI18n, formatRelativeTime, labelMap, t, translateError } from '../i18n/core';
+import type { AccessLevel, Difficulty, OmrSourceType, ProcessingStatus, ScoreSource, TaskStatus } from '../types';
 import type { SharePermission, Visibility } from '../types';
 
-// Nhãn hiển thị tiếng Việt cho các giá trị enum của BE
-export const STATUS_LABELS: Record<ProcessingStatus, string> = {
-  NONE: 'Chưa xử lý',
-  PENDING: 'Đang chờ',
-  PROCESSING: 'Đang xử lý',
-  COMPLETED: 'Hoàn tất',
-  FAILED: 'Thất bại',
-};
+// Nhãn hiển thị cho các giá trị enum của BE, theo ngôn ngữ đang dùng (chuỗi nằm ở locales/*/scores.json)
+export const STATUS_LABELS: Record<ProcessingStatus, string> = labelMap('scores.labels.status', [
+  'NONE',
+  'PENDING',
+  'PROCESSING',
+  'COMPLETED',
+  'FAILED',
+]);
 
-export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
-  PENDING: 'Đang chờ',
-  PROCESSING: 'Đang xử lý',
-  COMPLETED: 'Hoàn tất',
-  FAILED: 'Thất bại',
-  CANCELLED: 'Đã hủy',
-};
+export const TASK_STATUS_LABELS: Record<TaskStatus, string> = labelMap('scores.labels.taskStatus', [
+  'PENDING',
+  'PROCESSING',
+  'COMPLETED',
+  'FAILED',
+  'CANCELLED',
+]);
 
-export const SOURCE_LABELS: Record<ScoreSource, string> = {
-  OMR: 'Số hóa từ file',
-  IMPORT: 'Nhập file',
-  MANUAL: 'Tự soạn',
-};
+export const SOURCE_LABELS: Record<ScoreSource, string> = labelMap('scores.labels.source', ['OMR', 'IMPORT', 'MANUAL']);
 
-export const OMR_SOURCE_LABELS: Record<OmrSourceType, string> = {
-  PHOTO: 'Ảnh chụp',
-  SCAN: 'Bản scan',
-  PDF_NATIVE: 'PDF gốc',
-};
+export const OMR_SOURCE_LABELS: Record<OmrSourceType, string> = labelMap('scores.labels.omrSource', [
+  'PHOTO',
+  'SCAN',
+  'PDF_NATIVE',
+]);
 
-export const VISIBILITY_LABELS: Record<Visibility, string> = {
-  PRIVATE: 'Riêng tư',
-  PENDING: 'Chờ duyệt công khai',
-  PUBLIC: 'Công khai',
-};
+export const VISIBILITY_LABELS: Record<Visibility, string> = labelMap('scores.labels.visibility', [
+  'PRIVATE',
+  'PENDING',
+  'PUBLIC',
+]);
 
-export const SHARE_PERMISSION_LABELS: Record<SharePermission, string> = {
-  1: 'Người xem',
-  2: 'Người nhận xét',
-  3: 'Người chỉnh sửa',
-};
+export const SHARE_PERMISSION_LABELS: Record<SharePermission, string> = labelMap(
+  'scores.labels.sharePermission',
+  [1, 2, 3],
+);
 
-export const ACCESS_LEVEL_LABELS: Record<AccessLevel, string> = {
-  OWNER: 'Chủ sở hữu',
-  EDIT: 'Người chỉnh sửa',
-  REVIEW: 'Người nhận xét',
-  VIEW: 'Người xem',
-};
+export const ACCESS_LEVEL_LABELS: Record<AccessLevel, string> = labelMap('scores.labels.accessLevel', [
+  'OWNER',
+  'EDIT',
+  'REVIEW',
+  'VIEW',
+]);
 
-export const DIFFICULTY_LABELS: Record<Difficulty, string> = {
-  EASY: 'Dễ',
-  MEDIUM: 'Trung bình',
-  HARD: 'Khó',
-  EXPERT: 'Chuyên gia',
-};
+export const DIFFICULTY_LABELS: Record<Difficulty, string> = labelMap('scores.labels.difficulty', [
+  'EASY',
+  'MEDIUM',
+  'HARD',
+  'EXPERT',
+]);
 
-export const FILE_TYPE_LABELS: Record<string, string> = {
-  ORIGINAL_IMAGE: 'Ảnh gốc',
-  ORIGINAL_PDF: 'PDF gốc',
-  ORIGINAL_MUSICXML: 'MusicXML gốc',
-  ORIGINAL_MIDI: 'MIDI gốc',
-  PNG: 'Ảnh trang',
-  KERN: 'Kern',
-  MUSICXML: 'MusicXML',
-  MIDI: 'MIDI',
-  PDF: 'PDF',
-  SVG: 'SVG',
-  MP3: 'MP3',
-  WAV: 'WAV',
-};
+export const FILE_TYPE_LABELS: Record<string, string> = labelMap('scores.labels.fileType', [
+  'ORIGINAL_IMAGE',
+  'ORIGINAL_PDF',
+  'ORIGINAL_MUSICXML',
+  'ORIGINAL_MIDI',
+  'PNG',
+  'KERN',
+  'MUSICXML',
+  'MIDI',
+  'PDF',
+  'SVG',
+  'MP3',
+  'WAV',
+]);
 
-export const TASK_TYPE_LABELS: Record<string, string> = {
-  OMR_CONVERSION: 'Nhận diện bản nhạc (OMR)',
-  CHORD_GENERATION: 'Sinh hợp âm',
-  AUDIO_SYNTHESIS: 'Xuất âm thanh',
-  FORMAT_CONVERSION: 'Chuyển định dạng',
-};
+export const TASK_TYPE_LABELS: Record<string, string> = labelMap('scores.labels.taskType', [
+  'OMR_CONVERSION',
+  'CHORD_GENERATION',
+  'AUDIO_SYNTHESIS',
+  'FORMAT_CONVERSION',
+]);
 
 // Giới hạn khớp với validate ở BE (ScoreUpdateRequest)
 export const MAX_TITLE = 255;
 export const MAX_COMPOSER = 255;
+/** Ảnh bìa bản nhạc: loại và dung lượng tối đa, khớp BE (lỗi 2025). */
+export const COVER_TYPES = ['image/jpeg', 'image/png'];
+export const COVER_MAX_BYTES = 3 * 1024 * 1024;
 export const MAX_NOTES = 5000;
 export const MAX_REVIEW_COMMENT = 2000;
 export const MAX_KEYWORD = 100;
@@ -101,25 +94,13 @@ export const formatSize = (bytes?: number | null): string => {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 };
 
-export const formatDateTime = (iso?: string | null): string => (iso ? new Date(iso).toLocaleString('vi-VN') : '-');
+export const formatDateTime = (iso?: string | null): string => (iso ? formatDateTimeI18n(iso) : '-');
 
 /** "vừa xong", "5 phút trước", "3 ngày trước"... Quá 30 ngày thì hiện ngày tháng. */
-export const formatRelative = (iso?: string | null): string => {
-  if (!iso) return '';
-  const diffSec = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
-  if (diffSec < 60) return 'vừa xong';
-  const min = Math.floor(diffSec / 60);
-  if (min < 60) return `${min} phút trước`;
-  const hour = Math.floor(min / 60);
-  if (hour < 24) return `${hour} giờ trước`;
-  const day = Math.floor(hour / 24);
-  if (day <= 30) return `${day} ngày trước`;
-  return new Date(iso).toLocaleDateString('vi-VN');
-};
+export const formatRelative = (iso?: string | null): string => (iso ? formatRelativeTime(iso) : '');
 
-/** Lấy message lỗi từ response của BE, không có thì dùng câu mặc định. */
-export const getErrorMessage = (err: unknown, fallback: string): string =>
-  (err as { response?: { data?: { message?: string } } }).response?.data?.message ?? fallback;
+/** Câu lỗi cho người dùng: bản dịch theo mã lỗi BE nếu có, không thì message của BE, không thì câu mặc định. */
+export const getErrorMessage = (err: unknown, fallback: string): string => translateError(err, fallback);
 
 /** Mã lỗi nghiệp vụ (ErrorCode của BE) trong response, ví dụ 2004. */
 export const getErrorCode = (err: unknown): number | undefined =>
@@ -157,37 +138,24 @@ export const UPLOAD_MAX_PDF_PAGES = 20;
 export const UPLOAD_MIN_IMAGE_SIDE = 600;
 export const UPLOAD_MAX_IMAGE_PIXELS = 40_000_000;
 
-/** Câu thông báo tiếng Việt theo mã lỗi BE khi upload thất bại. */
-const UPLOAD_ERROR_MESSAGES: Record<number, string> = {
-  2003: 'Có file rỗng (0 byte)',
-  2004: 'Định dạng file không hợp lệ: chỉ nhận PDF, PNG, JPG, JPEG và nội dung phải đúng định dạng',
-  2005: 'File quá lớn: mỗi file tối đa 50MB, cả lần tải tối đa 200MB',
-  2006: 'Chỉ tải 1 file PDF, hoặc 1–20 ảnh (không trộn PDF với ảnh)',
-  2008: 'PDF bị mã hóa, đặt mật khẩu hoặc không mở được',
-  2009: `PDF phải có từ 1 đến ${UPLOAD_MAX_PDF_PAGES} trang`,
-  2010: `Ảnh không đọc được, cạnh ngắn nhỏ hơn ${UPLOAD_MIN_IMAGE_SIDE}px hoặc lớn hơn 40 megapixel`,
-  2011: 'Loại nguồn không hợp lệ',
-  2018: 'Tên tác giả tối đa 255 ký tự',
-  2202: 'Bạn đang có 3 bản nhạc chờ số hóa, hãy đợi một bản xong rồi tải tiếp',
-};
+/** Mã lỗi BE có câu riêng khi upload thất bại (chuỗi ở locales, nhóm upload.errorByCode). */
+const UPLOAD_ERROR_CODES = [2003, 2004, 2005, 2006, 2008, 2009, 2010, 2011, 2018, 2202];
 
 export const getUploadErrorMessage = (err: unknown): string => {
   const code = getErrorCode(err);
-  return (code && UPLOAD_ERROR_MESSAGES[code]) || getErrorMessage(err, 'Tải lên thất bại, vui lòng thử lại');
+  if (code && UPLOAD_ERROR_CODES.includes(code)) {
+    return t(`upload.errorByCode.${code}`, { pages: UPLOAD_MAX_PDF_PAGES, side: UPLOAD_MIN_IMAGE_SIDE });
+  }
+  return getErrorMessage(err, t('upload.failed'));
 };
-/** Câu thông báo tiếng Việt theo mã lỗi BE khi lưu MusicXML từ trình chỉnh sửa. */
-const SAVE_ERROR_MESSAGES: Record<number, string> = {
-  1002: 'Bạn không có quyền sửa bản nhạc này',
-  2001: 'Bản nhạc không còn tồn tại',
-  2005: 'Bản nhạc quá lớn để lưu (tối đa 5MB), hãy chia nhỏ hoặc xóa bớt',
-  2013: 'Nội dung bản nhạc không hợp lệ. Hãy tải lại trang; bản nháp của bạn vẫn được giữ',
-  2201: 'Bản nhạc đang được nhận diện lại, hãy đợi xong rồi lưu',
-};
+/** Mã lỗi BE có câu riêng khi lưu MusicXML từ trình chỉnh sửa (chuỗi ở locales, nhóm upload.saveByCode). */
+const SAVE_ERROR_CODES = [1002, 2001, 2005, 2013, 2201];
 
 /** Thông báo cho lỗi lưu (không gồm 2014, vì xung đột phiên bản có hộp thoại riêng). */
 export const getSaveErrorMessage = (err: unknown): string => {
   const code = getErrorCode(err);
-  return (code && SAVE_ERROR_MESSAGES[code]) || getErrorMessage(err, 'Lưu thất bại, vui lòng thử lại');
+  if (code && SAVE_ERROR_CODES.includes(code)) return t(`upload.saveByCode.${code}`);
+  return getErrorMessage(err, t('upload.saveFailed'));
 };
 
 /** Phiên bản mới nhất BE trả kèm lỗi 2014 SCORE_VERSION_CONFLICT; undefined nếu không phải lỗi này. */
@@ -204,9 +172,10 @@ export const isPdf = (file: File): boolean => getExtension(file.name) === 'pdf';
 
 /** Lỗi của riêng từng file; chuỗi rỗng nghĩa là hợp lệ. */
 export const validateUploadFile = (file: File): string => {
-  if (!UPLOAD_EXTENSIONS.includes(getExtension(file.name))) return 'Chỉ hỗ trợ PDF, PNG, JPG, JPEG';
-  if (file.size === 0) return 'File rỗng (0 byte)';
-  if (file.size > UPLOAD_MAX_FILE_BYTES) return `File quá lớn (tối đa ${UPLOAD_MAX_FILE_BYTES / 1024 / 1024}MB)`;
+  if (!UPLOAD_EXTENSIONS.includes(getExtension(file.name))) return t('upload.validate.unsupported');
+  if (file.size === 0) return t('upload.import.empty');
+  if (file.size > UPLOAD_MAX_FILE_BYTES)
+    return t('upload.import.tooLarge', { max: UPLOAD_MAX_FILE_BYTES / 1024 / 1024 });
   return '';
 };
 
@@ -214,9 +183,9 @@ export const validateUploadFile = (file: File): string => {
 export const validateUploadBatch = (files: File[]): string => {
   if (files.length === 0) return '';
   const pdfs = files.filter(isPdf).length;
-  if (pdfs > 0 && files.length > 1) return 'PDF phải tải lên một mình, không trộn với file khác';
-  if (pdfs === 0 && files.length > UPLOAD_MAX_IMAGES) return `Tối đa ${UPLOAD_MAX_IMAGES} ảnh mỗi lần`;
-  if (files.reduce((sum, f) => sum + f.size, 0) > UPLOAD_MAX_TOTAL_BYTES) return 'Tổng dung lượng vượt quá 200MB';
+  if (pdfs > 0 && files.length > 1) return t('upload.validate.pdfAlone');
+  if (pdfs === 0 && files.length > UPLOAD_MAX_IMAGES) return t('upload.validate.maxImages', { max: UPLOAD_MAX_IMAGES });
+  if (files.reduce((sum, f) => sum + f.size, 0) > UPLOAD_MAX_TOTAL_BYTES) return t('upload.validate.totalSize');
   return '';
 };
 
@@ -235,4 +204,12 @@ export function toSafeFileName(name: string | null | undefined, fallback = 'ban-
     .trim()
     .slice(0, 120);
   return cleaned || fallback;
+}
+
+/**
+ * Đường dẫn gốc của các trang bản nhạc: admin xem trong /admin/scores/..., người dùng trong /scores/...
+ * Dùng chung để các trang chi tiết, trình xem, phát, tiến độ, kết quả số hóa không phải nhân đôi cho admin.
+ */
+export function useScoreBase(): string {
+  return useLocation().pathname.startsWith('/admin/') ? '/admin/scores' : '/scores';
 }

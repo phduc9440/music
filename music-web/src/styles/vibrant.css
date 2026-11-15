@@ -1,0 +1,239 @@
+/*
+ * Lớp màu sắc cho giao diện người dùng (.app-shell): nhấn màu, bìa bản nhạc nhiều màu, ô gói dịch vụ theo bậc.
+ * Phong cách "Vibrant & Block-based" (skill ui-ux-pro-max) nhưng giữ nền kem, thanh trên nâu đen và vàng đồng của
+ * thương hiệu. Chỉ dùng token (--ui-hue-* ở tokens.css) nên theme sáng / tối đều đúng. Không đụng khu admin.
+ */
+
+/* ---- nền: hai vệt sáng màu ở góc trên, mờ dần ---- */
+.app-shell .app-main {
+  background:
+    radial-gradient(55rem 24rem at 6% -8%, color-mix(in srgb, var(--ui-hue-amber) 10%, transparent), transparent 62%),
+    radial-gradient(50rem 24rem at 98% -6%, color-mix(in srgb, var(--ui-hue-amber) 15%, transparent), transparent 62%);
+}
+
+/* ---- đầu trang: thẻ be đậm hơn nền, viền rõ, giống khung chào ở trang chủ ---- */
+.app-shell .sc-lib-head,
+.app-shell .ex-head,
+.app-shell .cp-head {
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+  padding: clamp(1.1rem, 3vw, 1.6rem) clamp(1.1rem, 3vw, 1.75rem);
+  border: 1px solid var(--ui-border-strong);
+  border-radius: 24px;
+  background:
+    radial-gradient(28rem 10rem at 100% 0%, color-mix(in srgb, var(--ui-hue-amber) 24%, transparent), transparent 70%),
+    color-mix(in srgb, var(--ui-primary) 10%, var(--ui-primary-soft));
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--ui-shadow-ink) 10%, transparent);
+}
+.app-shell .sc-lib-head h1,
+.app-shell .ex-head h1,
+.app-shell .cp-head h1 {
+  font-family: var(--ui-font-display);
+  font-size: clamp(1.7rem, 3vw, 2.2rem);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+.app-shell .sc-lib-head p,
+.app-shell .ex-head p,
+.app-shell .cp-head p {
+  color: var(--ui-text-2);
+}
+
+/* ---- bìa bản nhạc chưa có ảnh: ba sắc ấm (nâu be, vàng cam, nâu đậm) luân phiên ---- */
+.app-shell .sc-thumb--empty {
+  color: var(--ui-on-accent);
+  background: linear-gradient(
+    135deg,
+    var(--ui-primary),
+    color-mix(in srgb, var(--ui-primary) 60%, var(--ui-hue-amber))
+  );
+}
+.app-shell :nth-child(3n + 2) > .sc-card__cover .sc-thumb--empty,
+.app-shell :nth-child(3n + 2) > * .sc-thumb--empty {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--ui-hue-amber) 70%, var(--ui-primary)),
+    var(--ui-primary)
+  );
+}
+.app-shell :nth-child(3n + 3) > .sc-card__cover .sc-thumb--empty,
+.app-shell :nth-child(3n + 3) > * .sc-thumb--empty {
+  background: linear-gradient(
+    135deg,
+    var(--ui-primary-hover),
+    color-mix(in srgb, var(--ui-primary) 70%, var(--ui-hue-sky))
+  );
+}
+
+/* ---- thẻ: nổi lên khi rê chuột, viền nhấn màu ---- */
+.app-shell .sc-card {
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+.app-shell .sc-card:hover,
+.app-shell .sc-card:focus-visible {
+  border-color: var(--ui-border-strong);
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--ui-shadow-ink) 12%, transparent);
+}
+
+/* ---- gói dịch vụ: mỗi bậc một màu, gói giữa nổi bật ---- */
+.app-shell .bl-card {
+  --tier: var(--ui-border-strong);
+  position: relative;
+  overflow: hidden;
+  border-top: 4px solid var(--tier);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.app-shell .bl-card:nth-child(3) {
+  --tier: var(--ui-hue-amber);
+}
+.app-shell .bl-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 90px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--tier) 14%, transparent), transparent);
+  pointer-events: none;
+}
+.app-shell .bl-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px color-mix(in srgb, var(--tier) 22%, transparent);
+}
+.app-shell .bl-price {
+  color: var(--ui-text);
+}
+.app-shell .bl-card > .sc-btn--primary,
+.app-shell .bl-actions .sc-btn--primary {
+  background: var(--ui-primary);
+  border-color: var(--ui-primary);
+}
+
+/* ---- thẻ nhóm: vạch màu trái ---- */
+.app-shell .tm-card {
+  border-left: 4px solid var(--ui-border-strong);
+}
+
+/* ---- thống kê luyện tập: ba thẻ số liệu mỗi thẻ một màu ---- */
+.app-shell .ps-card {
+  border-top: 4px solid var(--ui-hue-amber);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-shell .sc-card,
+  .app-shell .bl-card,
+  .app-shell .wh-quick__item {
+    transition: none;
+  }
+  .app-shell .sc-card:hover,
+  .app-shell .bl-card:hover,
+  .app-shell .wh-quick__item:hover {
+    transform: none;
+  }
+}
+
+/* ================================================================== trang giới thiệu cho khách */
+
+/* ---- ba bước, con số, thẻ: một tông nâu be, vạch vàng cam ---- */
+.gh-step {
+  border-top: 4px solid var(--ui-hue-amber);
+}
+.gh-step .gh-step__icon {
+  background: var(--ui-primary-soft);
+  color: var(--ui-primary);
+}
+.gh-step .gh-step__no {
+  color: var(--ui-primary);
+}
+.gh-stats > div {
+  border-top: 4px solid var(--ui-hue-amber);
+}
+.gh-stats dd {
+  color: var(--ui-text);
+}
+.gh-card:hover,
+.gh-card:focus-visible {
+  border-color: var(--ui-border-strong);
+}
+.gh-composer .gh-composer__portrait {
+  box-shadow: 0 0 0 3px var(--ui-border-strong);
+}
+
+/* ---- khối mời gọi cuối trang: nền nhạt có vệt màu ---- */
+.gh-final {
+  background:
+    radial-gradient(34rem 12rem at 0% 100%, color-mix(in srgb, var(--ui-hue-amber) 12%, transparent), transparent 70%),
+    radial-gradient(34rem 12rem at 100% 0%, color-mix(in srgb, var(--ui-hue-amber) 14%, transparent), transparent 70%);
+}
+
+/* ---- bảng, trạng thái trống và hộp thoại dùng chung ---- */
+.app-shell .table-responsive {
+  overflow: hidden;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-surface);
+}
+.app-shell .table thead th {
+  background: linear-gradient(90deg, var(--ui-primary-soft), var(--ui-surface-muted));
+  border-bottom: 2px solid var(--ui-hue-amber);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.app-shell .table tbody tr {
+  transition: background 0.15s ease;
+}
+.app-shell .table tbody tr:hover {
+  background: var(--ui-surface-hover);
+}
+.app-shell .sc-empty {
+  padding: 2.5rem 1.5rem;
+  border: 2px dashed var(--ui-border-strong);
+  border-radius: var(--ui-radius-lg);
+  background:
+    radial-gradient(24rem 10rem at 50% 0%, color-mix(in srgb, var(--ui-hue-amber) 14%, transparent), transparent 70%),
+    var(--ui-surface);
+  text-align: center;
+}
+.app-shell .sc-empty h3 {
+  font-family: var(--ui-font-display);
+}
+.sc-modal {
+  border-top: 4px solid var(--ui-hue-amber);
+}
+
+/* ---- nền trang bừng sáng hơn ---- */
+.app-shell .app-main {
+  background:
+    radial-gradient(55rem 26rem at 4% -8%, color-mix(in srgb, var(--ui-hue-amber) 14%, transparent), transparent 62%),
+    radial-gradient(50rem 26rem at 98% -6%, color-mix(in srgb, var(--ui-hue-amber) 24%, transparent), transparent 62%),
+    radial-gradient(60rem 30rem at 50% 108%, color-mix(in srgb, var(--ui-hue-sky) 14%, transparent), transparent 65%);
+}
+
+/* ---- chữ: cặp Bricolage Grotesque (tiêu đề) / Be Vietnam Pro (nội dung), một bộ cho toàn app ---- */
+.app-shell h1,
+.app-shell h2,
+.app-shell h3 {
+  font-family: var(--ui-font-display);
+  letter-spacing: -0.01em;
+}
+/* nhãn nhỏ luôn nằm trên một dòng (skill: compact label overflow) */
+.app-shell .sc-chip,
+.app-shell .sc-badge,
+.app-shell .gh-chip,
+.app-shell .ph-mode,
+.app-shell .wh-counts span {
+  white-space: nowrap;
+}
+/* con trỏ và trạng thái focus rõ cho mọi phần tử bấm được */
+.app-shell a:focus-visible,
+.app-shell button:focus-visible,
+.app-shell [role='button']:focus-visible {
+  outline: 3px solid var(--ui-primary-ring);
+  outline-offset: 2px;
+}

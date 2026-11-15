@@ -1,8 +1,8 @@
 package com.ptit.music_be.service.export;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.ptit.music_be.dto.enums.AiTaskType;
-import com.ptit.music_be.dto.enums.FileType;
+import com.ptit.music_be.dto.enums.ai.AiTaskType;
+import com.ptit.music_be.dto.enums.score.FileType;
 
 /**
  * Yêu cầu xuất đã chuẩn hóa. {@code options} có khóa sắp xếp cố định và đủ giá trị mặc định nên dùng được làm khóa cache

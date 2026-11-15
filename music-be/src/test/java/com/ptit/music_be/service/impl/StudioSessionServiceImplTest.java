@@ -19,7 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import com.ptit.music_be.dto.enums.PracticeMode;
+import com.ptit.music_be.dto.enums.practice.PracticeMode;
 import com.ptit.music_be.dto.enums.PracticeSessionStatus;
 import com.ptit.music_be.dto.enums.StudioHandMode;
 import com.ptit.music_be.dto.enums.StudioInputSource;
@@ -31,10 +31,10 @@ import com.ptit.music_be.entity.PracticeSession;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
-import com.ptit.music_be.repository.MemberRepository;
-import com.ptit.music_be.repository.PracticeSessionRepository;
-import com.ptit.music_be.repository.ScoreRepository;
-import com.ptit.music_be.service.ScoreFileService;
+import com.ptit.music_be.repository.auth.MemberRepository;
+import com.ptit.music_be.repository.practice.PracticeSessionRepository;
+import com.ptit.music_be.repository.score.ScoreRepository;
+import com.ptit.music_be.service.score.ScoreFileService;
 import com.ptit.music_be.service.StudioTimelineService;
 
 @ExtendWith(MockitoExtension.class)

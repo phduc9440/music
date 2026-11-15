@@ -1,0 +1,123 @@
+/* Hộp tìm toàn cục (Ctrl/Cmd+K). Màu lấy từ styles/tokens.css. */
+.cmdk-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 12vh 1rem 1rem;
+  background: var(--ui-overlay);
+}
+
+.cmdk {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 560px;
+  max-height: 70vh;
+  overflow: hidden;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-surface);
+  box-shadow: var(--ui-shadow-pop);
+}
+
+.cmdk__search {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--ui-border);
+  color: var(--ui-text-2);
+}
+
+.cmdk__input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ui-text);
+  font: inherit;
+  font-size: 1rem;
+}
+
+.cmdk__input::placeholder {
+  color: var(--ui-text-3);
+}
+
+.cmdk__kbd {
+  padding: 0.1rem 0.4rem;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius-sm);
+  color: var(--ui-text-3);
+  font-family: inherit;
+  font-size: var(--ui-text-xs);
+}
+
+.cmdk__list {
+  overflow-y: auto;
+  padding: 0.35rem;
+}
+
+.cmdk__group {
+  padding: 0.55rem 0.65rem 0.25rem;
+  color: var(--ui-text-3);
+  font-size: var(--ui-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.cmdk__item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.55rem 0.65rem;
+  border: 0;
+  border-radius: var(--ui-radius-sm);
+  background: transparent;
+  color: var(--ui-text);
+  font: inherit;
+  font-size: var(--ui-text-md);
+  text-align: left;
+  cursor: pointer;
+}
+
+.cmdk__item--active {
+  background: var(--ui-primary-soft);
+  color: var(--ui-primary);
+}
+
+.cmdk__label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cmdk__hint {
+  flex-shrink: 0;
+  max-width: 40%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ui-text-3);
+  font-size: var(--ui-text-xs);
+}
+
+.cmdk__empty {
+  padding: 1rem;
+  color: var(--ui-text-3);
+  font-size: var(--ui-text-md);
+  text-align: center;
+}
+
+@media (max-width: 600px) {
+  .cmdk-overlay {
+    padding-top: 4rem;
+  }
+}

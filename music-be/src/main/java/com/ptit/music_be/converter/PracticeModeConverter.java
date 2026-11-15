@@ -3,7 +3,7 @@ package com.ptit.music_be.converter;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 
-import com.ptit.music_be.dto.enums.PracticeMode;
+import com.ptit.music_be.dto.enums.practice.PracticeMode;
 
 /** Lưu {@link PracticeMode} xuống DB dưới dạng số. */
 @Converter

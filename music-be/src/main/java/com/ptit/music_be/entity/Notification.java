@@ -6,7 +6,7 @@ import jakarta.persistence.*;
 
 import org.hibernate.annotations.CreationTimestamp;
 
-import com.ptit.music_be.dto.enums.NotificationType;
+import com.ptit.music_be.dto.enums.notification.NotificationType;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -39,6 +39,10 @@ public class Notification {
 
     @Column(nullable = false, length = 500)
     String message;
+
+    /** Tham số của thông báo dạng JSON (title, name, level, reason...), để web dựng câu theo ngôn ngữ của người đọc. */
+    @Column(name = "params", columnDefinition = "JSON")
+    String params;
 
     @Column(name = "is_read", nullable = false)
     @Builder.Default

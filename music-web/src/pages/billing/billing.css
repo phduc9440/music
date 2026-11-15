@@ -1,0 +1,246 @@
+.bl-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+.bl-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  background: var(--sc-card);
+  border: 1px solid var(--sc-line);
+  border-radius: 16px;
+  box-shadow: var(--sc-shadow);
+}
+.bl-card.is-current {
+  border-color: var(--sc-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-primary) 20%, transparent);
+}
+.bl-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.bl-card__head h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+.bl-badge {
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  background: var(--sc-accent);
+  color: var(--ui-on-accent);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.bl-price {
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+.bl-price small {
+  margin-left: 0.25rem;
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--sc-muted);
+}
+.bl-period {
+  display: inline-flex;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+}
+.bl-limits {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.9rem;
+}
+.bl-limits li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--sc-line);
+}
+.bl-limits span {
+  color: var(--sc-muted);
+}
+.bl-meter {
+  margin-top: 0.5rem;
+}
+.bl-meter__label {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.35rem;
+  font-size: 0.9rem;
+}
+.bl-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+/* Tổng đã chi cho gói, đầu khối lịch sử */
+.bl-spent {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--sc-line);
+  border-radius: 10px;
+  background: var(--ui-surface-muted);
+}
+.bl-spent__label {
+  color: var(--sc-muted);
+  font-size: 0.9rem;
+}
+.bl-spent__value {
+  font-size: 1.35rem;
+  font-variant-numeric: tabular-nums;
+}
+.bl-spent__hint {
+  flex-basis: 100%;
+  color: var(--sc-muted);
+  font-size: 0.85rem;
+}
+
+/* Lịch sử đơn mua gói */
+.bl-orders {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.bl-order {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--sc-line);
+  border-radius: 10px;
+}
+.bl-order__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.bl-order__info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.4rem 1rem;
+  margin: 0;
+  font-size: 0.85rem;
+}
+.bl-order__info dt {
+  color: var(--sc-muted);
+}
+.bl-order__info dd {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.bl-order__pending {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed var(--sc-line);
+}
+.bl-order__pending p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--sc-muted);
+}
+.bl-countdown {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--sc-accent);
+}
+.bl-countdown.is-urgent {
+  color: var(--ui-danger);
+}
+
+/* Bảng giá chia nhóm Cá nhân / Team */
+.bl-group {
+  margin-top: 1.5rem;
+}
+.bl-group__title {
+  margin: 0;
+  font-size: 1.15rem;
+}
+.bl-group__desc {
+  margin: 0.25rem 0 0.75rem;
+  color: var(--sc-muted, var(--ui-text-2));
+  font-size: 0.9rem;
+}
+.bl-card__head h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+.bl-note {
+  margin: 1rem 0 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--ui-border);
+  border-left: 4px solid var(--sc-accent, var(--ui-primary));
+  border-radius: var(--ui-radius);
+  background: var(--ui-primary-soft);
+}
+.bl-card__foot {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: auto;
+}
+.bl-card__foot .bl-note {
+  margin: 0;
+}
+.bl-note--placeholder {
+  visibility: hidden;
+}
+.bl-card .sc-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.bl-note--danger {
+  border-left-color: var(--ui-danger);
+}
+.bl-note--warning {
+  border-left-color: var(--ui-warning);
+  background: var(--ui-warning-soft);
+}
+
+/* Khối gia hạn gói trong trang Gói của tôi */
+.bl-renew {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--sc-line);
+}
+.bl-renew h4 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+.bl-renew .bl-note {
+  margin: 0 0 0.75rem;
+}
+.bl-renew .bl-period {
+  margin-bottom: 0.5rem;
+}
+.bl-renew__summary {
+  margin: 0;
+  color: var(--sc-muted);
+  font-size: 0.9rem;
+}

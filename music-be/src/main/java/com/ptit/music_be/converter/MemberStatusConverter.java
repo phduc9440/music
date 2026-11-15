@@ -3,7 +3,7 @@ package com.ptit.music_be.converter;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 
-import com.ptit.music_be.dto.enums.MemberStatus;
+import com.ptit.music_be.dto.enums.auth.MemberStatus;
 
 /** Lưu {@link MemberStatus} xuống DB dưới dạng số (1 = ACTIVE, 2 = INACTIVE). */
 @Converter

@@ -15,9 +15,9 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.ptit.music_be.entity.ScoreFile;
-import com.ptit.music_be.repository.ScoreFileRepository;
-import com.ptit.music_be.service.FileStorageService;
-import com.ptit.music_be.service.impl.ExportServiceImpl;
+import com.ptit.music_be.repository.score.ScoreFileRepository;
+import com.ptit.music_be.service.export.impl.ExportServiceImpl;
+import com.ptit.music_be.service.storage.FileStorageService;
 
 import lombok.extern.slf4j.Slf4j;
 

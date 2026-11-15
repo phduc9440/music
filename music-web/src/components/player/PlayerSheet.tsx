@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode, RefObject } from 'react';
 import { createPortal } from 'react-dom';
+import { t } from '../../i18n/core';
 
 export interface SheetTab {
   id: string;
@@ -97,9 +98,9 @@ export function PlayerSheet({ tabs, active, onSelect, onClose, returnFocusRef, c
   return createPortal(
     <div className="pl-sheet-root">
       <div className="pl-sheet__backdrop" onClick={onClose} aria-hidden="true" />
-      <div ref={sheetRef} className="pl-sheet" role="dialog" aria-modal="true" aria-label="Tùy chọn phát">
+      <div ref={sheetRef} className="pl-sheet" role="dialog" aria-modal="true" aria-label={t('player.bar.options')}>
         <div className="pl-sheet__grip" aria-hidden="true" />
-        <div className="pl-sheet__tabs" role="tablist" aria-label="Nhóm tùy chọn">
+        <div className="pl-sheet__tabs" role="tablist" aria-label={t('player.tabs.group')}>
           {tabs.map((tab, i) => {
             const selected = tab.id === active;
             return (

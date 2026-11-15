@@ -15,14 +15,14 @@
 .ex-ok {
   margin: 0.6rem 0 0;
   font-weight: 600;
-  color: #15803d;
+  color: var(--ui-success);
 }
 .ex-error {
   margin: 0.9rem 0 0;
   padding: 0.6rem 0.8rem;
   border-radius: 10px;
-  background: #fef2f2;
-  color: #b91c1c;
+  background: var(--ui-danger-soft);
+  color: var(--ui-danger-hover);
   font-size: 0.88rem;
 }
 .ex-range {
@@ -43,7 +43,7 @@
 .ex-segment button {
   padding: 0.45rem 1rem;
   border: 0;
-  background: #fff;
+  background: var(--ui-surface);
   color: var(--sc-ink);
   font: inherit;
   font-size: 0.88rem;
@@ -54,7 +54,7 @@
 }
 .ex-segment button[aria-pressed='true'] {
   background: var(--sc-accent);
-  color: #fff;
+  color: var(--ui-on-accent);
 }
 .ex-toast-btn {
   padding: 0;
@@ -84,7 +84,7 @@
   object-fit: contain;
   border: 1px solid var(--sc-line);
   border-radius: 10px;
-  background: #fff;
+  background: var(--ui-surface);
 }
 .ex-pages {
   display: flex;

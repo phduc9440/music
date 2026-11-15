@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.ptit.music_be.dto.enums.PracticeSessionStatus;
-import com.ptit.music_be.repository.PracticeSessionRepository;
+import com.ptit.music_be.repository.practice.PracticeSessionRepository;
 
 import lombok.RequiredArgsConstructor;
 

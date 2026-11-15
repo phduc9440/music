@@ -1,0 +1,25 @@
+{
+  "toggle": {
+    "start": "Edit together",
+    "stop": "Stop editing together",
+    "on": "Turn on real-time co-editing",
+    "off": "Turn off co-editing",
+    "saveFirst": "Save your current changes before turning on co-editing"
+  },
+  "status": {
+    "synced": "Synced",
+    "syncing": "Sending {count} changes",
+    "offline": "Offline, retrying",
+    "connecting": "Connecting"
+  },
+  "you": "{name} (you)",
+  "notice": {
+    "heldBy": "{name} is editing this measure",
+    "locked": "{name} holds this measure, your change was discarded",
+    "conflict": "Someone just edited this measure, your change was discarded",
+    "lockLost": "You no longer hold this measure, your change was discarded",
+    "invalid": "The change was invalid, the shared score was reloaded",
+    "resync": "The shared score changed, syncing again",
+    "saving": "Saving as a new version"
+  }
+}

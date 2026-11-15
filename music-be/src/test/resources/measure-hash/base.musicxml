@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 4.0 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">
+<score-partwise version="4.0">
+  <movement-title>Bài thử</movement-title>
+  <identification>
+    <creator type="composer">Tác giả</creator>
+    <encoding><software>music21 v.10.5.2</software></encoding>
+  </identification>
+  <defaults>
+    <scaling><millimeters>7.0</millimeters><tenths>40</tenths></scaling>
+  </defaults>
+  <part-list>
+    <score-part id="P1"><part-name>Piano</part-name></score-part>
+  </part-list>
+  <part id="P1">
+    <measure number="1" width="250.5">
+      <print new-system="yes"/>
+      <attributes>
+        <divisions>4</divisions>
+        <key><fifths>0</fifths></key>
+        <time><beats>4</beats><beat-type>4</beat-type></time>
+        <staves>2</staves>
+        <clef number="1"><sign>G</sign><line>2</line></clef>
+        <clef number="2"><sign>F</sign><line>4</line></clef>
+      </attributes>
+      <harmony default-y="40"><root><root-step>C</root-step></root><kind>major</kind></harmony>
+      <note default-x="20.0">
+        <pitch><step>C</step><octave>4</octave></pitch>
+        <duration>16</duration><voice>1</voice><type>whole</type><staff>1</staff>
+      </note>
+      <backup><duration>16</duration></backup>
+      <note>
+        <rest measure="yes"/>
+        <duration>16</duration><voice>5</voice><staff>2</staff>
+      </note>
+    </measure>
+    <measure number="2" width="180.0">
+      <note default-x="15.0">
+        <pitch><step>D</step><octave>4</octave></pitch>
+        <duration>8</duration><voice>1</voice><type>half</type><staff>1</staff>
+      </note>
+      <note>
+        <pitch><step>E</step><octave>4</octave></pitch>
+        <duration>8</duration><voice>1</voice><type>half</type><staff>1</staff>
+      </note>
+      <backup><duration>16</duration></backup>
+      <note>
+        <rest measure="yes"/>
+        <duration>16</duration><voice>5</voice><staff>2</staff>
+      </note>
+    </measure>
+    <measure number="3" width="200.0">
+      <print new-page="yes"/>
+      <note>
+        <pitch><step>G</step><octave>4</octave></pitch>
+        <duration>16</duration><voice>1</voice><type>whole</type><staff>1</staff>
+      </note>
+      <backup><duration>16</duration></backup>
+      <note>
+        <pitch><step>C</step><octave>3</octave></pitch>
+        <duration>16</duration><voice>5</voice><type>whole</type><staff>2</staff>
+      </note>
+    </measure>
+  </part>
+</score-partwise>

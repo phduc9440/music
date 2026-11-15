@@ -30,6 +30,13 @@ public class Otp {
     @Column(name = "attempts")
     Integer attempts;
 
+    /**
+     * Null: đang chờ nhập OTP. Có giá trị: OTP đã xác minh, đây là SHA-256 của mã phiên dùng một lần để đặt mật khẩu mới
+     * (expiryTime lúc này là hạn của mã phiên).
+     */
+    @Column(name = "reset_token_hash", length = 64)
+    String resetTokenHash;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", nullable = false)
     Member member;

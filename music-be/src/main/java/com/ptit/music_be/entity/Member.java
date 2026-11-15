@@ -1,14 +1,19 @@
 package com.ptit.music_be.entity;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 import jakarta.persistence.*;
 
+import org.hibernate.annotations.CreationTimestamp;
+
 import com.ptit.music_be.converter.AuthProviderConverter;
 import com.ptit.music_be.converter.MemberStatusConverter;
-import com.ptit.music_be.dto.enums.AuthProvider;
-import com.ptit.music_be.dto.enums.MemberStatus;
+import com.ptit.music_be.dto.enums.auth.AppLocale;
+import com.ptit.music_be.dto.enums.auth.AuthProvider;
+import com.ptit.music_be.dto.enums.auth.MemberStatus;
+import com.ptit.music_be.dto.enums.auth.UiTheme;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -55,6 +60,41 @@ public class Member {
     @Convert(converter = AuthProviderConverter.class)
     @Column(name = "auth_provider")
     AuthProvider authProvider;
+
+    /** Giao diện đã chọn (sáng/tối/theo hệ thống); null là chưa chọn, hiểu là theo hệ thống. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "ui_theme", length = 10)
+    UiTheme uiTheme;
+
+    /** Ngôn ngữ đã chọn (VI / EN); null là chưa chọn, hiểu là tiếng Việt. Dùng cho giao diện và email. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "locale", length = 5)
+    AppLocale locale;
+
+    /** Ngày đăng ký; null với tài khoản tạo trước khi có cột này. */
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    LocalDateTime createdAt;
+
+    /** Lần đăng nhập gần nhất (đăng nhập thường hoặc Google). */
+    @Column(name = "last_login_at")
+    LocalDateTime lastLoginAt;
+
+    /** Lần đổi/đặt lại mật khẩu gần nhất (làm tròn xuống giây); mọi token cấp trước mốc này bị từ chối. */
+    @Column(name = "password_changed_at")
+    LocalDateTime passwordChangedAt;
+
+    /** Mã giới thiệu của chính thành viên (7.5), sinh khi cần. */
+    @Column(name = "referral_code", length = 12, unique = true)
+    String referralCode;
+
+    /** Id người đã mời (nhập mã lúc đăng ký), null nếu tự đăng ký. */
+    @Column(name = "referred_by", length = 36)
+    String referredBy;
+
+    /** Đã thưởng cho lời mời lúc nào (khi số hóa xong bản đầu tiên); null = chưa. */
+    @Column(name = "referral_rewarded_at")
+    LocalDateTime referralRewardedAt;
 
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

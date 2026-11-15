@@ -8,15 +8,21 @@ import jakarta.persistence.*;
 
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import com.ptit.music_be.dto.enums.DifficultyLevel;
+import com.ptit.music_be.dto.enums.score.DifficultyLevel;
+import com.ptit.music_be.service.composer.ScoreComposerListener;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 @Entity
 @Table(name = "scores")
+// Bản nhạc trong thùng rác (deleted_at khác null) tự biến mất khỏi mọi truy vấn JPA; xem ScoreTrashRepository
+@SQLRestriction("deleted_at IS NULL")
+// Tự gắn composer_id theo chữ tác giả mỗi lần lưu (mục 5.4)
+@EntityListeners(ScoreComposerListener.class)
 @Getter
 @Setter
 @Builder
@@ -39,6 +45,10 @@ public class Score {
     @Column(name = "composer")
     String composer;
 
+    /** Nhạc sĩ trong bảng composers ứng với chữ tác giả (null nếu không khớp ai). Do ScoreComposerListener gắn. */
+    @Column(name = "composer_id", length = 36)
+    String composerId;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "difficulty")
     DifficultyLevel difficulty;
@@ -55,6 +65,14 @@ public class Score {
 
     @Column(name = "is_official")
     Boolean isOfficial;
+
+    /** Với bản trong kho mẫu: id bản gốc của người dùng mà nó được sao chép từ. */
+    @Column(name = "original_score_id", length = 36)
+    String originalScoreId;
+
+    /** Với bản trong kho mẫu: tên người phối (chủ bản gốc), để ghi nhận tác giả bản phối. */
+    @Column(name = "arranger_name")
+    String arrangerName;
 
     @Column(name = "reject_reason")
     String rejectReason;
@@ -104,6 +122,30 @@ public class Score {
     @Column(name = "view_count")
     @Builder.Default
     Long viewCount = 0L;
+
+    /** Người xem có được tải MusicXML, MIDI, âm thanh, PDF, SVG không (chủ sở hữu và người sửa luôn được). */
+    @Column(name = "allow_download", nullable = false)
+    @Builder.Default
+    boolean allowDownload = false;
+
+    /** Thời điểm chuyển vào thùng rác; null là bản nhạc bình thường. */
+    @Column(name = "deleted_at")
+    LocalDateTime deletedAt;
+
+    /** Id người đã xóa (chủ sở hữu hoặc ADMIN kiểm duyệt). */
+    @Column(name = "deleted_by", length = 36)
+    String deletedBy;
+
+    @Column(name = "delete_reason", length = 500)
+    String deleteReason;
+
+    /** Ảnh bìa người dùng tải lên (Cloudinary); null thì giao diện dùng ảnh trang 1 làm bìa. */
+    @Column(name = "cover_url", length = 512)
+    String coverUrl;
+
+    /** Team chứa bản nhạc (mục 4.1); null là bản cá nhân. Quyền qua team tính ở TeamAccessResolverImpl. */
+    @Column(name = "team_id", length = 36)
+    String teamId;
 
     @OneToMany(mappedBy = "score", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

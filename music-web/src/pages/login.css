@@ -1,0 +1,244 @@
+/*
+ * Trang đăng nhập / đăng ký / quên mật khẩu. Bố cục hai cột theo skill ui-ux-pro-max: bên trái là "sân khấu" tối có
+ * phím đàn piano và dòng nốt nhạc, bên phải là form trên nền kem. Điện thoại: cột sân khấu thu thành dải trên đầu.
+ */
+.auth-wrapper {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  min-height: 100vh;
+  background:
+    radial-gradient(34rem 20rem at 100% 0%, color-mix(in srgb, var(--ui-hue-amber) 18%, transparent), transparent 70%),
+    var(--ui-bg);
+}
+
+/* ---- cột sân khấu ---- */
+.auth-stage {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 4.5rem clamp(1.5rem, 5vw, 4rem) 11rem;
+  color: var(--ui-stage-text);
+  background:
+    radial-gradient(
+      ellipse 70% 55% at 40% 45%,
+      color-mix(in srgb, var(--ui-stage-bg) 80%, transparent),
+      transparent 100%
+    ),
+    conic-gradient(
+      from 180deg at 50% -10%,
+      transparent 150deg,
+      color-mix(in srgb, var(--ui-brass) 24%, transparent) 180deg,
+      transparent 210deg
+    ),
+    radial-gradient(34rem 22rem at 10% 6%, color-mix(in srgb, var(--ui-brass) 22%, transparent), transparent 65%),
+    linear-gradient(to bottom, var(--ui-stage-bg-2), var(--ui-stage-bg) 75%);
+}
+.auth-stage__notes {
+  position: absolute;
+  inset: auto 0;
+  top: 50%;
+  height: 220px;
+  color: var(--ui-brass);
+  opacity: 0.55;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+.auth-stage__glow {
+  position: absolute;
+  right: -10rem;
+  bottom: -12rem;
+  width: 28rem;
+  height: 28rem;
+  border-radius: 50%;
+  background: var(--ui-brass);
+  filter: blur(80px);
+  opacity: 0.18;
+  pointer-events: none;
+}
+.auth-stage__body {
+  position: relative;
+  max-width: 30rem;
+}
+.auth-stage__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1.75rem;
+  font-family: var(--ui-font-display);
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+.auth-stage__logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--ui-brass);
+  color: var(--ui-stage-bg);
+}
+.auth-stage h2 {
+  margin: 0;
+  font-family: var(--ui-font-display);
+  font-size: clamp(1.7rem, 3.2vw, 2.5rem);
+  font-weight: 800;
+  line-height: 1.15;
+}
+.auth-stage p {
+  margin: 1rem 0 0;
+  color: var(--ui-stage-text-2);
+  line-height: 1.6;
+}
+.auth-stage__points {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 1.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.auth-stage__points li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.9rem 0.35rem 0.4rem;
+  border: 1px solid var(--ui-stage-border-strong);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ui-stage-bg) 55%, transparent);
+  font-size: var(--ui-text-md);
+}
+.auth-stage__points li span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--ui-brass);
+  color: var(--ui-stage-bg);
+}
+
+/* nút về trang chủ nằm trên cột sân khấu */
+.auth-back {
+  position: absolute;
+  top: 0.9rem;
+  left: 0.9rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 40px;
+  padding: 0 0.85rem;
+  border-radius: var(--ui-radius);
+  color: var(--ui-stage-text-2);
+  font-size: var(--ui-text-md);
+  font-weight: 500;
+  text-decoration: none;
+}
+.auth-back:hover {
+  background: color-mix(in srgb, var(--ui-stage-text) 12%, transparent);
+  color: var(--ui-stage-text);
+}
+.auth-back:focus-visible {
+  outline: 3px solid var(--ui-brass);
+  outline-offset: 2px;
+}
+
+/* ---- cột form ---- */
+.auth-theme {
+  position: fixed;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.auth-main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4.5rem 1.25rem 2rem;
+}
+.auth-main .auth-card {
+  max-width: 420px;
+  padding: 2rem 2rem 1.75rem;
+  border-radius: 24px;
+  box-shadow: 0 18px 44px color-mix(in srgb, var(--ui-shadow-ink) 12%, transparent);
+  animation: auth-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes auth-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+.auth-card h1 {
+  font-family: var(--ui-font-display);
+}
+
+/* ô mật khẩu có nút hiện / ẩn */
+.pw-field {
+  position: relative;
+}
+.pw-field .form-control {
+  padding-right: 2.75rem;
+}
+.pw-field__toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 100%;
+  border: 0;
+  border-radius: 0 var(--ui-radius) var(--ui-radius) 0;
+  background: transparent;
+  color: var(--ui-text-2);
+  cursor: pointer;
+}
+.pw-field__toggle:hover {
+  color: var(--ui-text);
+}
+.pw-field__toggle[aria-pressed='true'] {
+  color: var(--ui-primary);
+}
+.pw-field__toggle:focus-visible {
+  outline: 3px solid var(--ui-primary-ring);
+  outline-offset: -3px;
+}
+
+/* ---- điện thoại / màn hẹp: sân khấu thu thành dải trên đầu ---- */
+@media (max-width: 880px) {
+  .auth-wrapper {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .auth-stage {
+    padding: 4rem 1.25rem 5.5rem;
+  }
+  .auth-stage p,
+  .auth-stage__points,
+  .auth-stage__notes {
+    display: none;
+  }
+  .auth-stage h2 {
+    font-size: 1.4rem;
+  }
+  .auth-stage__brand {
+    margin-bottom: 0.75rem;
+  }
+  .auth-main {
+    padding-top: 1.5rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-main .auth-card {
+    animation: none;
+  }
+}
