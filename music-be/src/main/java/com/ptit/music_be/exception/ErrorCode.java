@@ -136,6 +136,9 @@ public enum ErrorCode {
     PRACTICE_STATS_DAYS_INVALID(3005, "Số ngày thống kê phải từ 7 đến 90", HttpStatus.BAD_REQUEST),
     PRACTICE_STATS_PERIOD_INVALID(3004, "Chu kỳ thống kê phải là DAY, WEEK hoặc MONTH", HttpStatus.BAD_REQUEST),
     PRACTICE_STATS_RANGE_INVALID(3003, "Khoảng ngày thống kê không hợp lệ (tối đa 400 ngày)", HttpStatus.BAD_REQUEST),
+    STUDIO_SESSION_ALREADY_ACTIVE(3010, "Bạn đang có một phiên luyện tập đang chạy", HttpStatus.CONFLICT),
+    STUDIO_SESSION_NOT_ACTIVE(3011, "Phiên luyện tập không còn hoạt động", HttpStatus.CONFLICT),
+    STUDIO_SESSION_NOT_EXISTED(3012, "Phiên luyện tập không tồn tại", HttpStatus.NOT_FOUND),
 
     // Score versions 28xx
     SCORE_VERSION_NOT_EXISTED(2801, "Phiên bản bản nhạc không tồn tại hoặc đã bị xóa", HttpStatus.NOT_FOUND),

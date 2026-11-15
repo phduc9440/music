@@ -33,7 +33,7 @@ public final class MusicXmlTimelineParser {
 
     public static StudioTimelineResponse parse(
             String scoreId, String contentHash, String title, int fallbackTempoBpm, byte[] xml) {
-        Document document = MusicXmlInspector.parse(xml);
+        Document document = MusicXmlInspector.parseStored(xml);
         Element root = document.getDocumentElement();
         if (root == null || !"score-partwise".equals(root.getTagName())) {
             throw new AppException(ErrorCode.MUSICXML_INVALID);
