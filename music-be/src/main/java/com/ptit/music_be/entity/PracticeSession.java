@@ -6,6 +6,9 @@ import jakarta.persistence.*;
 
 import com.ptit.music_be.converter.PracticeModeConverter;
 import com.ptit.music_be.dto.enums.PracticeMode;
+import com.ptit.music_be.dto.enums.PracticeSessionStatus;
+import com.ptit.music_be.dto.enums.StudioHandMode;
+import com.ptit.music_be.dto.enums.StudioInputSource;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -35,6 +38,18 @@ public class PracticeSession {
     @Convert(converter = PracticeModeConverter.class)
     @Column(name = "mode")
     PracticeMode mode;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    PracticeSessionStatus status;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "input_source")
+    StudioInputSource inputSource;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "hand_mode")
+    StudioHandMode handMode;
 
     @Column(name = "tempo_percent")
     Double tempoPercent;

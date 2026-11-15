@@ -108,6 +108,11 @@ public enum ErrorCode {
     SCORE_DIFF_SAME_VERSION(2902, "Không thể so sánh một phiên bản với chính nó", HttpStatus.BAD_REQUEST),
     SCORE_DIFF_FAILED(
             2903, "Không so sánh được hai phiên bản (MusicXML không đọc được)", HttpStatus.UNPROCESSABLE_ENTITY),
+
+    // Interactive Studio sessions 30xx
+    STUDIO_SESSION_ALREADY_ACTIVE(3001, "Bạn đang có một phiên luyện tập đang chạy", HttpStatus.CONFLICT),
+    STUDIO_SESSION_NOT_ACTIVE(3002, "Phiên luyện tập không còn hoạt động", HttpStatus.CONFLICT),
+    STUDIO_SESSION_NOT_EXISTED(3003, "Phiên luyện tập không tồn tại", HttpStatus.NOT_FOUND),
     ;
 
     int code;
