@@ -1,0 +1,111 @@
+{
+  "steps": {
+    "PREPARE": "Chuẩn bị bản nhạc",
+    "RENDER": "Đang tổng hợp âm thanh",
+    "SAVE": "Lưu file",
+    "WAITING": "Đang chờ"
+  },
+  "failed": "Không xuất được file, vui lòng thử lại",
+  "taskErrors": {
+    "EXPORT_ERROR": "Không xuất được file, vui lòng thử lại",
+    "MUSESCORE_TIMEOUT": "Xuất file quá lâu nên đã dừng. Hãy thử lại hoặc tăng tempo để bản nhạc ngắn hơn",
+    "TASK_TIMEOUT": "Tác vụ xuất file quá hạn, vui lòng thử lại",
+    "AI_SERVICE_UNAVAILABLE": "Dịch vụ xử lý nhạc tạm thời không khả dụng, vui lòng thử lại sau",
+    "CANCELLED_BY_USER": "Đã hủy"
+  },
+  "connectionLost": "mất kết nối",
+  "apiErrors": {
+    "1002": "Bạn không có quyền xuất bản nhạc này",
+    "2001": "Bản nhạc không tồn tại",
+    "2012": "Bản nhạc chưa có MusicXML, hãy đợi số hóa xong",
+    "2701": "Tùy chọn xuất file không hợp lệ",
+    "2702": "Bản nhạc quá dài để xuất âm thanh (tối đa 20 phút), hãy tăng tempo",
+    "2703": "Bạn đang xuất quá nhiều file, vui lòng đợi các tác vụ đang chạy hoàn tất",
+    "2704": "Máy chủ chưa sẵn sàng xuất file, vui lòng liên hệ quản trị viên"
+  },
+  "validation": {
+    "tempo": "Tempo phải từ 20% đến 200%",
+    "transpose": "Chuyển giọng phải từ -12 đến +12 nửa cung",
+    "bitrate": "Chất lượng MP3 phải là 128, 192 hoặc 320 kbps",
+    "hands": "Chỉ chọn riêng một tay được với bản nhạc có 2 khuông",
+    "staffSize": "Cỡ khuông phải từ 1,5 đến 2,2 mm",
+    "margin": "Lề phải từ 10 đến 25 mm",
+    "page": "Số trang phải từ 1 trở lên"
+  },
+  "sending": "Đang gửi...",
+  "downloading": "Đang tải...",
+  "download": "Tải xuống",
+  "downloadFailed": "Không tải được file",
+  "fetchFailed": "Không lấy được file đã xuất",
+  "cancelled": "Đã hủy xuất file",
+  "cancelFailed": "Không hủy được, tác vụ có thể đã xong",
+  "again": "Xuất với tùy chọn khác",
+  "fileReady": "File {type} đã sẵn sàng.",
+  "running": {
+    "hint": "Bạn có thể đóng hộp thoại, việc xuất file vẫn chạy nền và sẽ có thông báo khi xong.",
+    "cancelling": "Đang hủy...",
+    "cancel": "Hủy xuất file"
+  },
+  "audio": {
+    "title": "Xuất âm thanh",
+    "hint": "Mặc định lấy theo cài đặt đang dùng trong trình phát của bản nhạc này.",
+    "format": "Định dạng",
+    "quality": "Chất lượng",
+    "transpose": "Chuyển giọng",
+    "semitones": "nửa cung",
+    "submit": "Xuất file",
+    "noPreview": "Không nghe thử được, bạn vẫn có thể tải về.",
+    "loadingPreview": "Đang tải để nghe thử..."
+  },
+  "hands": {
+    "BOTH": "Cả hai tay",
+    "RIGHT": "Tay phải",
+    "LEFT": "Tay trái"
+  },
+  "pdf": {
+    "title": "Xuất PDF",
+    "ready": "File PDF đã sẵn sàng.",
+    "paper": "Khổ giấy",
+    "orientation": "Hướng giấy",
+    "PORTRAIT": "Dọc",
+    "LANDSCAPE": "Ngang",
+    "staffSize": "Cỡ khuông nhạc",
+    "margin": "Lề",
+    "measureNumbers": "Đánh số ô nhịp",
+    "numbering": {
+      "SYSTEM": "Đầu mỗi hàng nhạc",
+      "EVERY": "Mọi ô nhịp",
+      "NONE": "Không đánh số"
+    },
+    "showTitle": "Hiện tiêu đề và tác giả",
+    "showChords": "Hiện hợp âm",
+    "submit": "Xuất PDF",
+    "previewAlt": "Xem trước trang 1 của file PDF",
+    "noPreview": "Không xem trước được, bạn vẫn có thể tải về.",
+    "loadingPreview": "Đang dựng bản xem trước trang 1..."
+  },
+  "svg": {
+    "title": "Xuất SVG",
+    "ready": "File SVG đã sẵn sàng.",
+    "hint": "SVG là ảnh vector, mỗi trang nhạc một file. Bạn có thể tải tất cả trang trong một file ZIP.",
+    "all": "Tất cả trang (tải ZIP)",
+    "one": "Một trang, số",
+    "pageNumber": "Số trang",
+    "retryHint": "{message}. Kiểm tra lại số trang, bản nhạc có thể ít trang hơn.",
+    "submit": "Xuất SVG",
+    "done": "Đã xuất {count} trang SVG.",
+    "tooFar": "Bản nhạc chỉ có {count} trang nên không có trang {page}.",
+    "pages": "Các trang",
+    "page": "Trang {n}",
+    "again": "Xuất lại",
+    "downloadPage": "Tải trang {page}",
+    "downloadZip": "Tải ZIP ({count} trang)"
+  },
+  "midi": {
+    "done": "Đã chuyển MIDI thành bản nhạc",
+    "warnings": "Lưu ý: {warnings}",
+    "title": "Đổi file MIDI đã nhập thành bản nhạc để mở trong trình chỉnh sửa và trình phát",
+    "running": "Đang chuyển... {progress}%",
+    "button": "Chuyển MIDI thành bản nhạc"
+  }
+}

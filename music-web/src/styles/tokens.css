@@ -1,0 +1,251 @@
+/*
+ * Token thiết kế dùng chung cho toàn ứng dụng (trang người dùng và trang quản trị), cho cả hai theme.
+ * Đổi màu, chữ, bo góc ở đây là cả app đổi theo:
+ *   - admin.css map sang --adm-*      (khung và component quản trị)
+ *   - scores.css map sang --sc-*      (các trang bản nhạc của người dùng)
+ *   - index.css map sang biến cũ      (--primary-color, --text-primary...) cho phần còn lại
+ *
+ * Theme: <html data-theme="light|dark"> do src/theme đặt (script trong index.html đặt trước khi React chạy để không
+ * bị nháy sáng). Khối :root là theme sáng; :root[data-theme='dark'] chỉ ghi đè những giá trị khác đi.
+ *
+ * Quy ước: mọi mã màu nằm ở file này. Ở CSS và TSX khác chỉ dùng var(--ui-...) (npm run lint:colors kiểm tra), và mỗi
+ * cặp chữ/nền phải đạt độ tương phản chữ thường >= 4,5:1 ở cả hai theme (npm run check:contrast kiểm tra).
+ */
+:root {
+  color-scheme: light;
+
+  /* nền và chữ */
+  /* bảng màu "Phòng hòa nhạc" (mục 5.1): nền giấy ngà, chữ nâu đen, nhấn nâu gỗ; theme tối nhấn vàng đồng */
+  --ui-bg: #fffbeb;
+  --ui-surface: #ffffff;
+  --ui-surface-muted: #fff6dd;
+  --ui-surface-hover: #fdecc4;
+  --ui-border: #f3dfba;
+  --ui-border-strong: #e3c58a;
+  --ui-text: #0f172a;
+  --ui-text-2: #475569;
+  --ui-text-3: #5b6678;
+
+  /* màu nhấn và trạng thái */
+  --ui-primary: #6b5a4c;
+  --ui-primary-hover: #55463a;
+  --ui-primary-soft: #f6efe2;
+  --ui-primary-ring: rgba(107, 90, 76, 0.25);
+  --ui-success: #15803d;
+  --ui-success-soft: #ecfdf3;
+  --ui-warning: #b45309;
+  --ui-warning-soft: #fffbeb;
+  --ui-danger: #d92020;
+  --ui-danger-hover: #b91c1c;
+  --ui-danger-soft: #fef2f2;
+  --ui-violet: #6d28d9;
+  --ui-violet-soft: #f5f3ff;
+
+  /* bảng màu trang trí (giao diện người dùng): bìa bản nhạc, ô gói, nhấn đầu trang. Không dùng cho chữ nhỏ. */
+  --ui-hue-rose: #e11d48;
+  --ui-hue-amber: #d97706;
+  --ui-hue-indigo: #4f46e5;
+  --ui-hue-teal: #0d9488;
+  --ui-hue-violet: #7c3aed;
+  --ui-hue-sky: #0284c7;
+
+  /* vai trò bổ sung */
+  --ui-on-accent: #ffffff; /* chữ trên nền màu nhấn / nền tối */
+  --ui-primary-border: #d8ccb8;
+  --ui-danger-border: #fecaca;
+  --ui-success-border: #bbf7d0;
+  --ui-warning-border: #fde68a;
+  --ui-warning-strong: #f59e0b;
+  --ui-shadow-ink: #1f1612; /* gốc của bóng đổ và lớp phủ, trộn với độ trong suốt */
+  --ui-overlay: rgba(31, 22, 18, 0.5); /* nền mờ phía sau hộp thoại */
+  --ui-overlay-soft: rgba(31, 22, 18, 0.38); /* nền mờ phía sau ngăn kéo trên điện thoại */
+
+  /* "sân khấu" ở đầu trang chủ (mục 5.1 Phòng hòa nhạc): luôn tối ở cả hai theme, nhấn vàng đồng và đỏ nhung */
+  --ui-stage-bg: #1b1411;
+  --ui-stage-bg-2: #2c201a;
+  --ui-stage-text: #f6efe3;
+  --ui-stage-text-2: #d3c4ab;
+  --ui-stage-line: rgb(246 239 227 / 0.16); /* năm dòng kẻ khuông */
+  --ui-stage-border: #3a2c24;
+  --ui-stage-border-strong: #5a473b;
+  --ui-brass: #d4a853;
+  --ui-brass-hover: #e3bf74;
+  --ui-brass-soft: #3a2c1a;
+  --ui-velvet: #9b1c2c;
+  --ui-velvet-hover: #7f1623;
+  --ui-stage-danger: #f08a8a;
+
+  /* khung nhật ký lỗi (luôn tối ở cả hai theme, như một cửa sổ terminal) */
+  --ui-console-bg: #1b1411;
+  --ui-console-text: #efe6d8;
+
+  /* biểu đồ */
+  --ui-chart-scores: #8a5a2b;
+  --ui-chart-practice: #2f8f5b;
+  --ui-chart-members: #9b1c2c;
+  --ui-chart-revenue: #2f6f9f;
+  --ui-chart-axis: #6c5b4e;
+  --ui-chart-grid: #e9dfd1;
+  --ui-chart-cursor: rgba(108, 91, 78, 0.12);
+  --ui-chart-neutral: #a8998a;
+  --ui-chart-ok: #0ca30c;
+  --ui-chart-busy: #fab219;
+  --ui-chart-fail: #d03b3b;
+
+  /* kích thước */
+  --ui-radius-lg: 12px;
+  --ui-radius: 8px;
+  --ui-radius-sm: 6px;
+  --ui-shadow-sm: 0 1px 2px rgba(31, 22, 18, 0.06);
+  --ui-shadow: 0 1px 3px rgba(31, 22, 18, 0.07), 0 4px 12px rgba(31, 22, 18, 0.05);
+  --ui-shadow-pop: 0 10px 30px rgba(31, 22, 18, 0.16);
+  --ui-header-h: 60px;
+  --ui-content-max: 1200px; /* bề ngang tối đa của phần nội dung chính (thanh trên thì tràn hết màn hình) */
+
+  /* chữ */
+  --ui-font: 'Be Vietnam Pro', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  /* cặp font chọn theo skill ui-ux-pro-max (nhạc, năng động); cả hai đều có bộ ký tự tiếng Việt */
+  --ui-font-display: 'Bricolage Grotesque', 'Be Vietnam Pro', system-ui, sans-serif;
+  --ui-text-xs: 0.75rem;
+  --ui-text-sm: 0.8125rem;
+  --ui-text-md: 0.875rem;
+
+  /* trang nhạc (Editor, Player, Review, Xuất file): mặc định luôn nền giấy sáng, kể cả khi app ở theme tối
+     (có công tắc "Đảo màu bản nhạc") */
+  --ui-paper: #ffffff;
+  --ui-staff-ink: #000000;
+  --ui-note-selected: #d9480f;
+  --ui-note-playing: #2563eb;
+  --ui-loop-region: rgb(37 99 235 / 0.18);
+  --ui-measure-error: #dc2626;
+  --ui-measure-locked: #7c3aed; /* dùng ở đồng chỉnh sửa (N13) */
+  /* Màu của từng người đang cùng sửa (khớp colorIndex 0..7 của máy chủ) */
+  --ui-live-0: #2563eb;
+  --ui-live-1: #db2777;
+  --ui-live-2: #059669;
+  --ui-live-3: #d97706;
+  --ui-live-4: #7c3aed;
+  --ui-live-5: #0891b2;
+  --ui-live-6: #dc2626;
+  --ui-live-7: #65a30d;
+  --ui-comment-region: rgb(245 158 11 / 0.2); /* dùng ở góp ý (N7) */
+  --ui-diff-added: #15803d;
+  --ui-diff-removed: #dc2626;
+  --ui-diff-changed: #b45309;
+
+  /* 8 màu nhạc cụ / khuông */
+  --ui-instrument-1: #2563eb;
+  --ui-instrument-2: #dc2626;
+  --ui-instrument-3: #15803d;
+  --ui-instrument-4: #b45309;
+  --ui-instrument-5: #7c3aed;
+  --ui-instrument-6: #0e7490;
+  --ui-instrument-7: #be185d;
+  --ui-instrument-8: #475569;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --ui-bg: #110c0a;
+  --ui-surface: #1a1310;
+  --ui-surface-muted: #150f0d;
+  --ui-surface-hover: #271d18;
+  --ui-border: #2e231d;
+  --ui-border-strong: #4a3a30;
+  --ui-text: #f3ece1;
+  --ui-text-2: #cdbfa8;
+  --ui-text-3: #a8998a;
+
+  /* ở theme tối màu nhấn sáng hơn, nên chữ trên nền nhấn chuyển sang tối để vẫn đủ tương phản */
+  --ui-primary: #d4a853;
+  --ui-primary-hover: #e3bf74;
+  --ui-primary-soft: #2c2216;
+  --ui-primary-ring: rgba(212, 168, 83, 0.3);
+  --ui-success: #4ade80;
+  --ui-success-soft: #0f2a1c;
+  --ui-warning: #fbbf24;
+  --ui-warning-soft: #2e2410;
+  --ui-danger: #f87171;
+  --ui-danger-hover: #fca5a5;
+  --ui-danger-soft: #331616;
+  --ui-violet: #a78bfa;
+  --ui-violet-soft: #231a3d;
+
+  --ui-hue-rose: #fb7185;
+  --ui-hue-amber: #fbbf24;
+  --ui-hue-indigo: #818cf8;
+  --ui-hue-teal: #2dd4bf;
+  --ui-hue-violet: #a78bfa;
+  --ui-hue-sky: #38bdf8;
+
+  --ui-on-accent: #1a1310;
+  --ui-primary-border: #7a5c2a;
+  --ui-danger-border: #7f1d1d;
+  --ui-success-border: #166534;
+  --ui-warning-border: #92400e;
+  --ui-warning-strong: #fbbf24;
+  --ui-shadow-ink: #000000;
+  --ui-overlay: rgba(0, 0, 0, 0.6);
+  --ui-overlay-soft: rgba(0, 0, 0, 0.5);
+
+  --ui-chart-scores: #d4a853;
+  --ui-chart-practice: #4fbf8a;
+  --ui-chart-members: #e07a88;
+  --ui-chart-revenue: #6fa8d6;
+  --ui-chart-axis: #a8998a;
+  --ui-chart-grid: #2e231d;
+  --ui-chart-cursor: rgba(168, 153, 138, 0.16);
+  --ui-chart-neutral: #6c5b4e;
+  --ui-chart-ok: #4ade80;
+  --ui-chart-busy: #fbbf24;
+  --ui-chart-fail: #f87171;
+
+  /* sân khấu ở theme tối tối hơn nền trang một chút để vẫn tách khỏi nội dung */
+  --ui-stage-bg: #0b0806;
+  --ui-stage-bg-2: #1f1712;
+
+  --ui-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --ui-shadow: 0 1px 3px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.35);
+  --ui-shadow-pop: 0 10px 30px rgba(0, 0, 0, 0.6);
+
+  /* trang nhạc */
+  --ui-note-selected: #fb923c;
+  --ui-note-playing: #60a5fa;
+  --ui-measure-error: #f87171;
+  --ui-measure-locked: #a78bfa;
+  --ui-live-0: #60a5fa;
+  --ui-live-1: #f472b6;
+  --ui-live-2: #34d399;
+  --ui-live-3: #fbbf24;
+  --ui-live-4: #a78bfa;
+  --ui-live-5: #22d3ee;
+  --ui-live-6: #f87171;
+  --ui-live-7: #a3e635;
+  --ui-diff-added: #4ade80;
+  --ui-diff-removed: #f87171;
+  --ui-diff-changed: #fbbf24;
+}
+
+/*
+ * Vùng "sân khấu" tối giữa trang sáng: thanh trên của trang người dùng, header và sidebar quản trị. Gắn class ui-stage
+ * là mọi component bên trong (menu, ô tìm, chuông, nút giao diện) tự đổi sang chữ ngà trên nền nâu đen, nhấn vàng đồng.
+ */
+.ui-stage {
+  color-scheme: dark;
+  --ui-surface: var(--ui-stage-bg);
+  --ui-surface-muted: var(--ui-stage-bg-2);
+  --ui-surface-hover: var(--ui-stage-bg-2);
+  --ui-border: var(--ui-stage-border);
+  --ui-border-strong: var(--ui-stage-border-strong);
+  --ui-text: var(--ui-stage-text);
+  --ui-text-2: var(--ui-stage-text-2);
+  --ui-text-3: var(--ui-stage-text-2);
+  --ui-primary: var(--ui-brass);
+  --ui-primary-hover: var(--ui-brass-hover);
+  --ui-primary-soft: var(--ui-brass-soft);
+  --ui-primary-ring: color-mix(in srgb, var(--ui-brass) 30%, transparent);
+  --ui-on-accent: var(--ui-stage-bg);
+  --ui-danger: var(--ui-stage-danger);
+  --ui-danger-soft: var(--ui-stage-bg-2);
+}

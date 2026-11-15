@@ -1,5 +1,5 @@
 /** Nguồn của một phiên bản MusicXML (khớp BE: ScoreVersionResponse.source). */
-export type VersionSource = 'EDITOR' | 'OMR' | 'IMPORT' | 'RESTORE';
+export type VersionSource = 'EDITOR' | 'OMR' | 'IMPORT' | 'RESTORE' | 'SUGGESTION';
 
 /** Một phiên bản MusicXML trong lịch sử của bản nhạc (đặc tả 3.6). */
 export interface ScoreVersion {
@@ -13,6 +13,9 @@ export interface ScoreVersion {
   source: VersionSource;
   /** Khi source = RESTORE: version được khôi phục. */
   restoredFrom?: number | null;
+  /** Khi source = SUGGESTION: đề xuất được nhận và tên người đề xuất. */
+  suggestionId?: string | null;
+  suggestionAuthorName?: string | null;
 }
 
 /** Trạng thái của một ô khi so hai phiên bản (BE: ScoreDiffResponse.measures[].status). */

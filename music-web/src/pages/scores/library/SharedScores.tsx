@@ -1,0 +1,64 @@
+import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
+import { useNavigate } from '../../../routes/useTransitionNavigate';
+import { toast } from 'react-toastify';
+import Pagination from '../../../components/scores/common/Pagination';
+import ScoreCard from '../../../components/scores/library/ScoreCard';
+import { scoreApi } from '../../../services';
+import type { PageResult, ScoreSummary } from '../../../types';
+import { getScorePath } from '../../../utils/score';
+import '../../../components/scores/scores.css';
+import { t } from '../../../i18n/core';
+
+const PAGE_SIZE = 12;
+
+/** Trang /scores/shared: bản nhạc người khác chia sẻ cho tôi. */
+export default function SharedScores() {
+  const navigate = useNavigate();
+  const { pathname } = useLocation(); // để trang chi tiết biết người dùng đi từ đâu tới
+  const [page, setPage] = useState(0);
+  const [data, setData] = useState<PageResult<ScoreSummary> | null>(null);
+
+  useEffect(() => {
+    scoreApi
+      .sharedWithMe({ page, size: PAGE_SIZE })
+      .then((res) => setData(res.data.result))
+      .catch(() => toast.error(t('scores.shared.loadFailed')));
+  }, [page]);
+
+  return (
+    <div className="sc-page">
+      <main className="sc-container">
+        <header className="sc-lib-head">
+          <div>
+            <h1>{t('common.nav.items.shared')}</h1>
+            <p>{data ? t('common.pagination.scores', { count: data.totalElements }) : t('scores.shared.subtitle')}</p>
+          </div>
+        </header>
+
+        {data && data.content.length === 0 && (
+          <div className="sc-empty">
+            <h3>{t('scores.shared.emptyTitle')}</h3>
+            <p>{t('scores.shared.emptyHint')}</p>
+          </div>
+        )}
+
+        {data && data.content.length > 0 && (
+          <div className="sc-grid">
+            {data.content.map((s) => (
+              <ScoreCard
+                key={s.id}
+                score={s}
+                onOpen={(item) => navigate(getScorePath(item.id, item.processingStatus), { state: { from: pathname } })}
+              />
+            ))}
+          </div>
+        )}
+
+        {data && (
+          <Pagination page={page} totalPages={data.totalPages} totalElements={data.totalElements} onChange={setPage} />
+        )}
+      </main>
+    </div>
+  );
+}

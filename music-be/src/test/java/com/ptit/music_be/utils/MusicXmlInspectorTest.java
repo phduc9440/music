@@ -128,4 +128,41 @@ class MusicXmlInspectorTest {
                 .isInstanceOfSatisfying(
                         AppException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.MUSICXML_INVALID));
     }
+
+    @Test
+    void parseSecureRejectsDoctype() {
+        byte[] withDoctype =
+                bytes("<?xml version=\"1.0\"?><!DOCTYPE score-partwise PUBLIC \"-//Recordare//DTD MusicXML 4.0"
+                        + " Partwise//EN\" \"http://www.musicxml.org/dtds/partwise.dtd\"><score-partwise/>");
+
+        assertThatThrownBy(() -> MusicXmlInspector.parseSecure(withDoctype))
+                .isInstanceOfSatisfying(
+                        AppException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.MUSICXML_INVALID));
+    }
+
+    /** File đã lưu (OMR, Editor) luôn kèm DOCTYPE công khai nên phải đọc được. */
+    @Test
+    void parseStoredAcceptsPublicDoctype() {
+        byte[] stored = bytes("<?xml version=\"1.0\"?><!DOCTYPE score-partwise PUBLIC \"-//Recordare//DTD MusicXML 4.0"
+                + " Partwise//EN\" \"http://www.musicxml.org/dtds/partwise.dtd\"><score-partwise version=\"4.0\"/>");
+
+        assertThat(MusicXmlInspector.parseStored(stored).getDocumentElement().getTagName())
+                .isEqualTo("score-partwise");
+    }
+
+    @Test
+    void parseStoredDoesNotLoadExternalEntities() {
+        byte[] xxe =
+                bytes("<?xml version=\"1.0\"?><!DOCTYPE score-partwise [<!ENTITY leak SYSTEM \"file:///etc/passwd\">]>"
+                        + "<score-partwise>&leak;</score-partwise>");
+
+        assertThat(MusicXmlInspector.parseStored(xxe).getDocumentElement().getTextContent())
+                .doesNotContain("root:");
+    }
+
+    @Test
+    void parseStoredRejectsMalformedXml() {
+        assertThatThrownBy(() -> MusicXmlInspector.parseStored(bytes("<score-partwise>")))
+                .isInstanceOf(AppException.class);
+    }
 }

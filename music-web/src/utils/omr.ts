@@ -1,3 +1,4 @@
+import { labelMap, t } from '../i18n/core';
 import type { AiTaskInfo, OmrMeasure, TaskStatus } from '../types';
 
 /** Loại tác vụ OMR (khớp AiTaskType.OMR_CONVERSION của BE). */
@@ -7,7 +8,7 @@ export const OMR_TASK_TYPE = 'OMR_CONVERSION';
 export const PROCESSING_POLL_MS = 2000;
 
 /** Nhãn dòng chữ phụ của bước chưa được hỗ trợ ở bản hiện tại. */
-export const STEP_LATER_HINT = 'Sẽ có ở bản sau';
+export const stepLaterHint = (): string => t('upload.steps.later');
 
 export interface OmrStepDef {
   /** Trùng với AiTaskStep của BE. */
@@ -18,13 +19,15 @@ export interface OmrStepDef {
 }
 
 /** 5 bước của quy trình số hóa (đặc tả mục 2.2), cả 5 bước đều chạy thật. */
-export const OMR_STEPS: OmrStepDef[] = [
-  { key: 'SPLIT_PDF', label: 'Tách trang PDF', available: true },
-  { key: 'PREPROCESS', label: 'Tiền xử lý ảnh', available: true },
-  { key: 'INFERENCE', label: 'Nhận diện ký hiệu', available: true },
-  { key: 'MERGE', label: 'Ghép các trang', available: true },
-  { key: 'EXPORT', label: 'Xuất MusicXML và MIDI', available: true },
-];
+export const OMR_STEPS: OmrStepDef[] = (['SPLIT_PDF', 'PREPROCESS', 'INFERENCE', 'MERGE', 'EXPORT'] as const).map(
+  (key) => ({
+    key,
+    get label() {
+      return t(`upload.steps.${key}`);
+    },
+    available: true,
+  }),
+);
 
 export type StepState = 'done' | 'active' | 'pending' | 'failed' | 'skipped' | 'later';
 
@@ -89,72 +92,33 @@ interface ErrorText {
   hint: string;
 }
 
-const TASK_ERROR_TEXTS: Record<string, ErrorText> = {
-  PAGE_UNREADABLE: {
-    title: 'Không đọc được trang nhạc',
-    hint: 'Ảnh hoặc PDF bị hỏng, quá mờ hoặc không mở được. Hãy chụp hoặc quét lại rõ hơn rồi tải lên.',
-  },
-  NO_STAFF_DETECTED: {
-    title: 'Không tìm thấy khuông nhạc',
-    hint: 'Hệ thống không thấy dòng kẻ khuông nhạc nào. Hãy chụp sát trang nhạc, đủ sáng và thẳng rồi tải lại.',
-  },
-  TASK_TIMEOUT: {
-    title: 'Xử lý quá thời gian',
-    hint: 'Hệ thống không nhận được phản hồi trong thời gian cho phép. Bạn có thể thử lại.',
-  },
-  AI_SERVICE_UNAVAILABLE: {
-    title: 'Dịch vụ số hóa chưa sẵn sàng',
-    hint: 'Chưa kết nối được dịch vụ xử lý ảnh. Hãy thử lại sau ít phút.',
-  },
-  CANCELLED_BY_USER: {
-    title: 'Bạn đã hủy tác vụ',
-    hint: 'Bạn có thể chạy lại trên các file đã tải hoặc tải file khác.',
-  },
-  JOB_REJECTED: {
-    title: 'Yêu cầu bị từ chối',
-    hint: 'Dịch vụ xử lý không chấp nhận dữ liệu này. Hãy thử tải lại file khác.',
-  },
-  ORIGINAL_FILE_MISSING: {
-    title: 'Không còn file gốc',
-    hint: 'File gốc không còn trên hệ thống nên không thể chạy lại. Hãy tải file lên lại.',
-  },
-  RECOGNITION_EMPTY: {
-    title: 'Không nhận diện được nốt nhạc nào',
-    hint: 'Hệ thống không đọc ra nốt nào từ các trang. Hãy dùng ảnh rõ, thẳng, đủ sáng hoặc PDF chất lượng cao hơn.',
-  },
-  MERGE_SPINE_MISMATCH: {
-    title: 'Các trang không khớp nhau',
-    hint: 'Số khuông nhạc của các trang khác nhau nên không ghép được thành một bản nhạc. Hãy kiểm tra thứ tự và nội dung trang.',
-  },
-  KERN_PARSE_ERROR: {
-    title: 'Kết quả nhận diện bị lỗi cú pháp',
-    hint: 'Bản kern sau khi ghép không đọc được. Bạn có thể xem bản kern để gỡ lỗi hoặc thử lại.',
-  },
-  EXPORT_ERROR: {
-    title: 'Không xuất được MusicXML',
-    hint: 'Đã nhận diện xong nhưng không chuyển được sang MusicXML hoặc MIDI. Bạn có thể nhận diện lại hoặc dùng ảnh rõ hơn.',
-  },
-  MODEL_NOT_LOADED: {
-    title: 'Mô hình nhận diện chưa sẵn sàng',
-    hint: 'Dịch vụ chưa nạp xong mô hình Transcoda. Hãy đợi ít phút rồi thử lại.',
-  },
-  INTERNAL_ERROR: {
-    title: 'Có lỗi trong quá trình xử lý',
-    hint: 'Đã xảy ra lỗi ngoài dự kiến. Bạn có thể thử lại.',
-  },
-};
+const KNOWN_TASK_ERRORS = [
+  'PAGE_UNREADABLE',
+  'NO_STAFF_DETECTED',
+  'TASK_TIMEOUT',
+  'AI_SERVICE_UNAVAILABLE',
+  'CANCELLED_BY_USER',
+  'JOB_REJECTED',
+  'ORIGINAL_FILE_MISSING',
+  'RECOGNITION_EMPTY',
+  'MERGE_SPINE_MISMATCH',
+  'KERN_PARSE_ERROR',
+  'EXPORT_ERROR',
+  'MODEL_NOT_LOADED',
+  'INTERNAL_ERROR',
+];
 
-const GENERIC_ERROR: ErrorText = {
-  title: 'Số hóa thất bại',
-  hint: 'Đã xảy ra lỗi khi xử lý. Bạn có thể thử lại hoặc tải file khác.',
-};
+/** Tiêu đề và gợi ý của một mã lỗi OMR, theo ngôn ngữ đang dùng (chuỗi ở locales, nhóm upload). */
+const errorText = (code: string): ErrorText => ({
+  title: t(`upload.errors.${code}.title`),
+  hint: t(`upload.errors.${code}.hint`),
+});
 
-/** Câu thông báo tiếng Việt cho tác vụ FAILED hoặc CANCELLED, kèm chi tiết (ví dụ số trang) nếu có. */
+/** Câu thông báo cho tác vụ FAILED hoặc CANCELLED, kèm chi tiết (ví dụ số trang) nếu có. */
 export const describeTaskError = (task: AiTaskInfo): ErrorText & { detail: string } => {
   const { code, detail } = parseTaskError(task.errorMessage);
-  const fallback = task.status === 'CANCELLED' ? TASK_ERROR_TEXTS.CANCELLED_BY_USER : GENERIC_ERROR;
-  const text = TASK_ERROR_TEXTS[code] ?? fallback;
-  return { ...text, detail };
+  const key = KNOWN_TASK_ERRORS.includes(code) ? code : task.status === 'CANCELLED' ? 'CANCELLED_BY_USER' : 'GENERIC';
+  return { ...errorText(key), detail };
 };
 
 /** Các cảnh báo (trang bị bỏ qua, góc nghiêng quá lớn...) trong resultData.warnings. */
@@ -181,10 +145,10 @@ export const PAGE_IMAGE_WIDTH = 1050;
 export const PAGE_IMAGE_HEIGHT = 1485;
 
 /** Nhãn của cờ cần kiểm tra trong measureMap. */
-export const MEASURE_FLAG_LABELS: Record<OmrMeasure['flags'][number], string> = {
-  DURATION: 'Tổng trường độ không khớp số chỉ nhịp',
-  COUNT_MISMATCH: 'Số ô của hệ này khác số ô trên ảnh, có thể thừa hoặc thiếu ô',
-};
+export const MEASURE_FLAG_LABELS: Record<OmrMeasure['flags'][number], string> = labelMap('upload.measureFlags', [
+  'DURATION',
+  'COUNT_MISMATCH',
+]);
 
 /** Các ô cần kiểm tra (có ít nhất một cờ), theo số ô tăng dần. */
 export const flaggedMeasures = (map: OmrMeasure[] | undefined): OmrMeasure[] =>

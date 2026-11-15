@@ -1,0 +1,128 @@
+/* Trang xem xét đề xuất sửa (/scores/:id/suggestions/:suggestionId). Tiền tố sr-; huy hiệu dùng lại sg-badge. */
+
+.sr-page {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.sr-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.sr-head__text {
+  min-width: 0;
+  flex: 1 1 420px;
+}
+
+.sr-head__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.sr-title {
+  margin: 0;
+  font-size: 1.5rem;
+  line-height: 1.25;
+  word-break: break-word;
+}
+
+.sr-meta {
+  margin: 0.35rem 0 0;
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-sm);
+}
+
+.sr-desc {
+  margin: 0.6rem 0 0;
+  white-space: pre-wrap;
+}
+
+.sr-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.sr-subtitle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin: 0 0 0.6rem;
+  font-size: 1.05rem;
+}
+
+.sr-selected {
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-sm);
+  font-weight: 400;
+}
+
+.sr-changes {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sr-change {
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  background: var(--ui-surface);
+}
+
+.sr-change.is-skipped {
+  opacity: 0.65;
+}
+
+.sr-change__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.sr-change__label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sr-change__actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.sr-preview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.sr-preview figure {
+  min-width: 0;
+  margin: 0;
+  padding: 0.5rem;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  background: var(--ui-surface-muted);
+  overflow-x: auto;
+}
+
+.sr-preview figcaption {
+  margin-bottom: 0.35rem;
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-sm);
+  font-weight: 600;
+}

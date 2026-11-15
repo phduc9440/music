@@ -1,15 +1,17 @@
-import { BrowserRouter as Router } from 'react-router-dom';
-import { ToastContainer } from 'react-toastify';
+import { RouterProvider } from 'react-router-dom';
 import 'react-toastify/dist/ReactToastify.css';
 
-import AppRoutes from './routes/AppRoutes';
+import I18nProvider from './i18n/I18nProvider';
+import router from './routes/AppRoutes';
+import ThemeProvider from './theme/ThemeProvider';
 
 function App() {
   return (
-    <Router>
-      <AppRoutes />
-      <ToastContainer theme="dark" position="bottom-right" />
-    </Router>
+    <ThemeProvider>
+      <I18nProvider>
+        <RouterProvider router={router} />
+      </I18nProvider>
+    </ThemeProvider>
   );
 }
 

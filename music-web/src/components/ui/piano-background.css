@@ -1,0 +1,59 @@
+/* Ảnh đàn piano thật làm nền (PianoBackground): vùng phím nét của ảnh, phủ kín và hơi nghiêng. Ảnh: assets/PIANO-CREDITS.md (CC0). */
+.pbg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background: var(--ui-stage-bg);
+}
+.pbg__photo {
+  position: absolute;
+  inset: -8%;
+  background-position: center;
+  background-size: cover;
+  transform: rotate(-4deg) scale(1.08);
+  /* giữ độ nét và độ tương phản của ảnh, chỉ ấm lên một chút */
+  filter: sepia(0.15) contrast(1.08);
+  opacity: 0.9;
+}
+/* tối nhẹ phía trên (dưới thanh menu) */
+.pbg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--ui-stage-bg) 55%, transparent), transparent 30%);
+}
+
+/* trôi nhẹ khi cuộn (parallax: nền chậm hơn nội dung); trình duyệt chưa hỗ trợ thì đứng yên */
+@supports (animation-timeline: scroll()) {
+  .pbg__photo {
+    animation: pbg-drift linear both;
+    animation-timeline: scroll(root block);
+    animation-range: 0 200vh;
+  }
+  @keyframes pbg-drift {
+    from {
+      transform: rotate(-4deg) scale(1.08) translateY(0);
+    }
+    to {
+      transform: rotate(-4deg) scale(1.08) translateY(-60px);
+    }
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pbg__photo {
+    animation: none;
+  }
+}
+
+/* bản nhạt cho các trang nhiều chữ (thư viện, khám phá, cài đặt...): nền theo màu trang, ảnh chỉ hiện mờ phía sau */
+.pbg--soft {
+  background: var(--ui-bg);
+}
+.pbg--soft .pbg__photo {
+  opacity: 0.22;
+}
+.pbg--soft::after {
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--ui-bg) 45%, transparent), transparent 40%);
+}

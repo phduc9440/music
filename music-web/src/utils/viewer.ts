@@ -1,4 +1,5 @@
 /** Giới hạn và cấu hình của trình xem bản nhạc (/scores/:id/edit, chế độ chỉ xem). */
+import { t } from '../i18n/core';
 
 /** Mức thu phóng nhỏ nhất / lớn nhất / mỗi bước (%), theo đặc tả 1.17: 50–200%. */
 export const ZOOM_MIN = 50;
@@ -20,6 +21,8 @@ export type ViewMode = 'page' | 'scroll';
 export interface ViewerPrefs {
   zoom: number;
   mode: ViewMode;
+  /** Đảo màu bản nhạc (nền tối, nốt sáng) cho theme tối. */
+  invert: boolean;
 }
 
 const PREFS_KEY = 'score-viewer-prefs';
@@ -32,7 +35,7 @@ export const clampZoom = (value: number): number => {
 
 /** Đọc lựa chọn thu phóng và chế độ xem đã lưu; lỗi hoặc dữ liệu lạ thì trả mặc định. */
 export const loadViewerPrefs = (): ViewerPrefs => {
-  const fallback: ViewerPrefs = { zoom: ZOOM_DEFAULT, mode: 'page' };
+  const fallback: ViewerPrefs = { zoom: ZOOM_DEFAULT, mode: 'page', invert: false };
   try {
     const raw = localStorage.getItem(PREFS_KEY);
     if (!raw) return fallback;
@@ -40,6 +43,7 @@ export const loadViewerPrefs = (): ViewerPrefs => {
     return {
       zoom: typeof data.zoom === 'number' ? clampZoom(data.zoom) : fallback.zoom,
       mode: data.mode === 'scroll' ? 'scroll' : 'page',
+      invert: data.invert === true,
     };
   } catch {
     return fallback;
@@ -81,7 +85,7 @@ export const inspectMusicXml = (xml: string): MusicXmlInfo => {
 /** Cảnh báo hiệu năng nếu MusicXML quá lớn; chuỗi rỗng nếu ổn. */
 export const performanceWarning = (info: MusicXmlInfo): string => {
   if (info.bytes > MAX_XML_BYTES || info.measureCount > MAX_MEASURES) {
-    return 'Bản nhạc khá lớn nên có thể vẽ chậm. Hãy thử chế độ "Cuộn ngang" hoặc thu nhỏ để xem nhanh hơn.';
+    return t('viewer.performanceWarning');
   }
   return '';
 };
