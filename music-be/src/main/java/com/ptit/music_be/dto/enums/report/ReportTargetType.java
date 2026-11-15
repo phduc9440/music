@@ -1,8 +1,9 @@
 package com.ptit.music_be.dto.enums.report;
 
-/** Loại đối tượng bị báo cáo. FORUM_POST có chỗ sẵn cho diễn đàn (5.5), chưa nhận báo cáo cho tới khi diễn đàn có bảng bài. */
+/** Loại đối tượng bị báo cáo: bản nhạc, góp ý, chủ đề diễn đàn hoặc bài trả lời diễn đàn (5.5). */
 public enum ReportTargetType {
     SCORE,
     COMMENT,
+    FORUM_THREAD,
     FORUM_POST
 }

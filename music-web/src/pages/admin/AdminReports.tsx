@@ -23,7 +23,7 @@ import { t } from '../../i18n/core';
 const PAGE_SIZE = 20;
 type Tab = ReportStatus | 'ALL';
 
-const TARGET_TYPES: ReportTargetType[] = ['SCORE', 'COMMENT'];
+const TARGET_TYPES: ReportTargetType[] = ['SCORE', 'COMMENT', 'FORUM_THREAD', 'FORUM_POST'];
 
 /** Admin (R5): hàng chờ báo cáo vi phạm của người dùng về bản nhạc và góp ý; cũ nhất xử lý trước. */
 export default function AdminReports() {
@@ -119,6 +119,10 @@ export default function AdminReports() {
                     {r.scoreId && r.targetAvailable ? (
                       <Link to={`/admin/scores/${r.scoreId}`} title={t('admin.reports.openScore')}>
                         {r.targetLabel || r.scoreId}
+                      </Link>
+                    ) : r.forumThreadId && r.targetAvailable ? (
+                      <Link to={`/forum/threads/${r.forumThreadId}`} title={t('admin.reports.openThread')}>
+                        {r.targetLabel || r.forumThreadId}
                       </Link>
                     ) : (
                       <span>{r.targetLabel || '—'}</span>

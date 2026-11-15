@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { toast } from 'react-toastify';
 import { Link } from '../../../routes/transition-nav';
 import { useNavigate } from '../../../routes/useTransitionNavigate';
 import AuthImage from '../common/AuthImage';
@@ -42,6 +44,32 @@ export default function ScoreHero({ score, onVisibilityChanged, onRequestMore, o
   const base = useScoreBase();
   const navigate = useNavigate();
   const ready = hasMusicXml(score);
+  const [linkCopied, setLinkCopied] = useState(false);
+  // Đường dẫn trang chi tiết của bản nhạc (người nhận cần đăng nhập và có quyền xem bản này)
+  const copyLink = async () => {
+    const url = `${window.location.origin}/scores/${score.id}`;
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      // Trình duyệt chặn Clipboard API (http, không có quyền): chép bằng ô nhập tạm
+      const input = document.createElement('textarea');
+      input.value = url;
+      input.setAttribute('readonly', '');
+      input.style.position = 'fixed';
+      input.style.opacity = '0';
+      document.body.appendChild(input);
+      input.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(input);
+      if (!ok) {
+        toast.error(t('scores.hero.copyLinkFailed'));
+        return;
+      }
+    }
+    toast.success(t('scores.hero.copyLinkDone'));
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
+  };
   // Bản nhạc nhập từ MIDI chưa có MusicXML: cho chuyển đổi để mở được trình chỉnh sửa và trình phát
   const canConvertMidi = score.canEdit && !ready && score.files.some((f) => f.fileType === 'ORIGINAL_MIDI');
   const activeConversion = score.latestTasks.find(
@@ -76,7 +104,19 @@ export default function ScoreHero({ score, onVisibilityChanged, onRequestMore, o
     <header className="sd-head">
       <div className="sd-head__row">
         <div className="sd-head__lead">
-          <ScoreCover score={score} onChanged={onVisibilityChanged} />
+          <div className="sd-head__cover">
+            <ScoreCover score={score} onChanged={onVisibilityChanged} />
+            {/* Chỉ một biểu tượng nhỏ ở góc ảnh bìa: bấm để chép đường dẫn bản nhạc gửi cho người khác */}
+            <button
+              type="button"
+              className={`sd-copylink${linkCopied ? ' is-done' : ''}`}
+              onClick={copyLink}
+              title={linkCopied ? t('scores.hero.copyLinkCopied') : t('scores.hero.copyLinkHint')}
+              aria-label={t('scores.hero.copyLink')}
+            >
+              <Icon name={linkCopied ? 'check' : 'copy'} size={14} />
+            </button>
+          </div>
           <div className="sd-head__text">
             <div className="sd-badges">
               <StatusBadge status={score.processingStatus} />

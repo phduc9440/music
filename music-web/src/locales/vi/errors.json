@@ -184,5 +184,15 @@
   "4007": "Báo cáo này đã được xử lý",
   "4008": "Cách xử lý này không áp dụng cho loại nội dung bị báo cáo",
   "4009": "Nội dung bị báo cáo không còn nữa; chỉ chọn được Bỏ qua",
-  "4010": "Ghi chú xử lý tối đa 500 ký tự"
+  "4010": "Ghi chú xử lý tối đa 500 ký tự",
+  "4101": "Không tìm thấy chuyên mục",
+  "4102": "Không tìm thấy chủ đề",
+  "4103": "Không tìm thấy câu trả lời",
+  "4104": "Tiêu đề từ 3 đến 150 ký tự, nội dung từ 1 đến 10000 ký tự",
+  "4105": "Chỉ gắn được bản nhạc đang công khai vào chủ đề",
+  "4106": "Bạn không phải người viết nội dung này",
+  "4107": "Tài khoản dưới 3 ngày tuổi chỉ đặt được tối đa 3 chủ đề mỗi ngày",
+  "4108": "Chủ đề đã có người khác trả lời nên không xóa được, hãy báo quản trị viên nếu cần gỡ",
+  "4109": "Bạn không chọn được câu trả lời của chính mình",
+  "4110": "Bạn không bình chọn được nội dung của chính mình"
 }

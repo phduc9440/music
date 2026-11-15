@@ -207,10 +207,11 @@ a.tm-card:hover {
 }
 
 .tm-stats {
+  margin-top: auto; /* số liệu luôn nằm đáy thẻ, thẳng hàng dù thẻ có hay không có mô tả */
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem 1rem;
-  margin: 0;
+  margin-bottom: 0;
   padding: 0;
   list-style: none;
   color: var(--ui-text-2);

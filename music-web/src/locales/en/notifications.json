@@ -46,5 +46,8 @@
   "COMMENT_MENTION": "{name} mentioned you in a comment on bar {measures} of “{title}”",
   "COMMENT_REPLY": "{name} replied to a comment on bar {measures} of “{title}”",
   "SUGGESTION_NEW": "{name} suggested edits to “{title}”",
-  "SUGGESTION_DECIDED": "{name} handled your suggestion on “{title}”"
+  "SUGGESTION_DECIDED": "{name} handled your suggestion on “{title}”",
+  "FORUM_REPLY": "{name} replied in the thread “{title}”: “{excerpt}”",
+  "FORUM_POST_REPLY": "{name} replied to your comment in “{title}”: “{excerpt}”",
+  "FORUM_ANSWER_ACCEPTED": "{name} marked your reply as the best answer in “{title}”"
 }

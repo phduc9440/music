@@ -56,6 +56,9 @@ import Teams from '../pages/teams/Teams';
 import TeamDetail from '../pages/teams/TeamDetail';
 import TeamInvite from '../pages/teams/TeamInvite';
 import ShowBoard from '../pages/teams/ShowBoard';
+import Forum from '../pages/forum/Forum';
+import ForumCompose from '../pages/forum/ForumCompose';
+import ForumThread from '../pages/forum/ForumThread';
 
 /**
  * Router dạng dữ liệu (createBrowserRouter) thay cho <BrowserRouter>: cần cho hiệu ứng chuyển trang bằng View
@@ -99,6 +102,11 @@ const router = createBrowserRouter(
         <Route path="/playlists/:id" element={<PlaylistDetail />} />
         <Route path="/practice-history" element={<PracticeHistory />} />
         <Route path="/practice-stats" element={<PracticeStats />} />
+        {/* Diễn đàn (mục 5.5) */}
+        <Route path="/forum" element={<Forum />} />
+        <Route path="/forum/new" element={<ForumCompose />} />
+        <Route path="/forum/threads/:id" element={<ForumThread />} />
+        <Route path="/forum/threads/:id/edit" element={<ForumCompose />} />
         {/* Team và Show (mục 4.1) */}
         <Route path="/teams" element={<Teams />} />
         <Route path="/teams/invite/:token" element={<TeamInvite />} />

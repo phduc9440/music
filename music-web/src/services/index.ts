@@ -22,3 +22,4 @@ export * from './billing/billingApi';
 export * from './team/teamApi';
 export * from './team/adminTeamApi';
 export * from './report/reportApi';
+export * from './forum/forumApi';

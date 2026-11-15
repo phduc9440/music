@@ -52,6 +52,13 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: 'users',
       },
       {
+        to: '/forum',
+        get label() {
+          return t('common.nav.items.forum');
+        },
+        icon: 'inbox',
+      },
+      {
         to: '/pricing',
         get label() {
           return t('common.nav.items.pricing');

@@ -21,7 +21,8 @@
       "trash": "Trash",
       "myPlan": "My plan",
       "pricing": "Pricing",
-      "teams": "Teams & Shows"
+      "teams": "Teams & Shows",
+      "forum": "Forum"
     },
     "back": "Back"
   },
@@ -125,5 +126,6 @@
     "description": "This address doesn't exist or has moved. Check the URL, or head back home.",
     "home": "Back to home",
     "adminHome": "Back to dashboard"
-  }
+  },
+  "edit": "Edit"
 }

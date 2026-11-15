@@ -1,5 +1,5 @@
 /** Báo cáo vi phạm và nhật ký quản trị (R5). Khớp ReportResponse / AuditLogResponse của BE. */
-export type ReportTargetType = 'SCORE' | 'COMMENT' | 'FORUM_POST';
+export type ReportTargetType = 'SCORE' | 'COMMENT' | 'FORUM_THREAD' | 'FORUM_POST';
 export type ReportReason = 'COPYRIGHT' | 'SPAM' | 'INAPPROPRIATE' | 'OTHER';
 export type ReportStatus = 'PENDING' | 'RESOLVED' | 'DISMISSED';
 export type ReportAction = 'DISMISS' | 'UNPUBLISH' | 'HIDE' | 'SOFT_DELETE' | 'LOCK_ACCOUNT';
@@ -10,7 +10,8 @@ export const REPORT_REASONS: ReportReason[] = ['COPYRIGHT', 'SPAM', 'INAPPROPRIA
 export const REPORT_ACTIONS_BY_TARGET: Record<ReportTargetType, ReportAction[]> = {
   SCORE: ['DISMISS', 'UNPUBLISH', 'SOFT_DELETE', 'LOCK_ACCOUNT'],
   COMMENT: ['DISMISS', 'HIDE', 'LOCK_ACCOUNT'],
-  FORUM_POST: ['DISMISS', 'LOCK_ACCOUNT'],
+  FORUM_THREAD: ['DISMISS', 'HIDE', 'LOCK_ACCOUNT'],
+  FORUM_POST: ['DISMISS', 'HIDE', 'LOCK_ACCOUNT'],
 };
 
 export interface ReportParty {
@@ -24,6 +25,9 @@ export interface ContentReport {
   targetType: ReportTargetType;
   scoreId: string | null;
   commentId: string | null;
+  /** Chủ đề diễn đàn bị báo cáo, hoặc chủ đề chứa bài trả lời bị báo cáo. */
+  forumThreadId: string | null;
+  forumPostId: string | null;
   targetLabel: string | null;
   /** false khi bản nhạc đã vào thùng rác hoặc góp ý đã bị ẩn: chỉ còn chọn được Bỏ qua. */
   targetAvailable: boolean;
