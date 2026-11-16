@@ -19,10 +19,12 @@ import type {
   ShowStatus,
   TeamMember,
   TeamScore,
+  TeamTask,
 } from '../../types';
 import { formatDate, formatNumber, t } from '../../i18n/core';
 import { getErrorMessage } from '../../utils/score';
 import { DueDate, MemberAvatar, StatusBadge } from './shared';
+import TasksPanel from './TasksPanel';
 import { daysUntil, memberName } from './teamUtils';
 import '../../components/scores/scores.css';
 import './teams.css';
@@ -56,6 +58,9 @@ export default function ShowBoard() {
   const [editingItem, setEditingItem] = useState<ShowItem | 'new' | null>(null);
   const [editingShow, setEditingShow] = useState(false);
   const [now, setNow] = useState(0);
+  // Việc được giao cho mình trong buổi diễn này, và bộ lọc "chỉ bài của tôi" trên bảng tiến độ
+  const [myTasks, setMyTasks] = useState<TeamTask[]>([]);
+  const [mineOnly, setMineOnly] = useState(false);
 
   const load = useCallback(() => {
     showApi
@@ -68,6 +73,17 @@ export default function ShowBoard() {
   }, [showId]);
 
   useEffect(load, [load]);
+  // Nạp lại việc của tôi mỗi khi bảng đổi (chuyển trạng thái, giao lại bài) để khung luôn khớp
+  useEffect(() => {
+    let cancelled = false;
+    teamApi
+      .myTasks()
+      .then((res) => !cancelled && setMyTasks(res.data.result.filter((task) => task.showId === showId)))
+      .catch(() => !cancelled && setMyTasks([]));
+    return () => {
+      cancelled = true;
+    };
+  }, [showId, data]);
   useEffect(() => {
     userApi
       .getMe()
@@ -162,6 +178,11 @@ export default function ShowBoard() {
   };
 
   const dragged = data?.items.find((i) => i.id === dragId) ?? null;
+  /** Bài mình phối hoặc duyệt (kể cả bài đã duyệt xong, khác với danh sách việc chỉ gồm bài chưa duyệt). */
+  const mineIds = useMemo(
+    () => new Set((data?.items ?? []).filter((i) => i.arrangerId === meId || i.reviewerId === meId).map((i) => i.id)),
+    [data?.items, meId],
+  );
   const show = data?.show;
   /** Người được giao (để lấy ảnh đại diện trên thẻ bài). */
   const people = useMemo(() => new Map((data?.assignees ?? []).map((m) => [m.memberId, m])), [data?.assignees]);
@@ -223,158 +244,184 @@ export default function ShowBoard() {
 
         {data && data.items.length > 0 && <ShowSummary items={data.items} now={now} />}
 
-        <div className="tm-toolbar">
-          <div className="tm-segment" role="tablist" aria-label={t('teams.board.viewLabel')}>
-            {(['board', 'list'] as View[]).map((v) => (
-              <button
-                key={v}
-                type="button"
-                role="tab"
-                aria-selected={view === v}
-                className="tm-segment__btn"
-                onClick={() => setView(v)}
-              >
-                <Icon name={v === 'board' ? 'dashboard' : 'list'} size={16} />
-                {t(`teams.board.view.${v}`)}
-              </button>
-            ))}
-          </div>
-          {data && data.items.length > 0 && (
-            <span className="tm-toolbar__hint">
-              {view === 'board' ? t('teams.board.dragHint') : t('teams.board.orderHint')}
-            </span>
-          )}
-        </div>
-
-        {!data && <Skeleton lines={5} />}
-        {data && data.items.length === 0 && (
-          <div className="sc-empty">
-            <h3>{t('teams.board.emptyTitle')}</h3>
-            <p>{manager ? t('teams.board.emptyHintManager') : t('teams.board.emptyHint')}</p>
-          </div>
+        {myTasks.length > 0 && (
+          <section className="tm-mytasks" aria-labelledby="tm-mytasks-title">
+            <div className="tm-mytasks__head">
+              <h2 id="tm-mytasks-title">{t('tasks.inShowTitle')}</h2>
+              <span className="tm-mytasks__count">{t('tasks.count', { count: myTasks.length })}</span>
+            </div>
+            <TasksPanel tasks={myTasks} now={now} scope="show" from={pathname} />
+          </section>
         )}
 
-        {data && data.items.length > 0 && view === 'board' && (
-          <div className="tm-board">
-            {SHOW_ITEM_STATUSES.map((status) => {
-              const items = data.items.filter((i) => i.status === status);
-              const target = !!dragged && dragged.status !== status && dragged.allowedStatuses.includes(status);
-              return (
-                <section
-                  key={status}
-                  className={`tm-col tm-col--${status}${target ? ' tm-col--target' : ''}${target && overCol === status ? ' tm-col--over' : ''}`}
-                  aria-label={t(`teams.status.${status}`)}
-                  onDragOver={(e) => {
-                    if (!target) return;
-                    e.preventDefault();
-                    setOverCol(status);
-                  }}
-                  onDragLeave={() => setOverCol((c) => (c === status ? null : c))}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    setOverCol(null);
-                    if (dragged && target) moveTo(dragged, status);
+        {/* Thanh chọn cách xem và bảng / danh sách nằm chung một khung nền đặc, không nổi trên ảnh nền trang */}
+        <section className="tm-workspace">
+          <div className="tm-toolbar">
+            <div className="tm-segment" role="tablist" aria-label={t('teams.board.viewLabel')}>
+              {(['board', 'list'] as View[]).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  role="tab"
+                  aria-selected={view === v}
+                  className="tm-segment__btn"
+                  onClick={() => setView(v)}
+                >
+                  <Icon name={v === 'board' ? 'dashboard' : 'list'} size={16} />
+                  {t(`teams.board.view.${v}`)}
+                </button>
+              ))}
+            </div>
+            {data && view === 'board' && mineIds.size > 0 && (
+              <button
+                type="button"
+                className={`tm-mine${mineOnly ? ' is-on' : ''}`}
+                aria-pressed={mineOnly}
+                onClick={() => setMineOnly((v) => !v)}
+              >
+                <Icon name="check" size={14} />
+                {t('tasks.mineOnly', { count: mineIds.size })}
+              </button>
+            )}
+            {data && data.items.length > 0 && (
+              <span className="tm-toolbar__hint">
+                {view === 'board' ? t('teams.board.dragHint') : t('teams.board.orderHint')}
+              </span>
+            )}
+          </div>
+
+          {!data && <Skeleton lines={5} />}
+          {data && data.items.length === 0 && (
+            <div className="sc-empty">
+              <h3>{t('teams.board.emptyTitle')}</h3>
+              <p>{manager ? t('teams.board.emptyHintManager') : t('teams.board.emptyHint')}</p>
+            </div>
+          )}
+
+          {data && data.items.length > 0 && view === 'board' && (
+            <div className="tm-board">
+              {SHOW_ITEM_STATUSES.map((status) => {
+                const items = data.items.filter((i) => i.status === status && (!mineOnly || mineIds.has(i.id)));
+                const target = !!dragged && dragged.status !== status && dragged.allowedStatuses.includes(status);
+                return (
+                  <section
+                    key={status}
+                    className={`tm-col tm-col--${status}${target ? ' tm-col--target' : ''}${target && overCol === status ? ' tm-col--over' : ''}`}
+                    aria-label={t(`teams.status.${status}`)}
+                    onDragOver={(e) => {
+                      if (!target) return;
+                      e.preventDefault();
+                      setOverCol(status);
+                    }}
+                    onDragLeave={() => setOverCol((c) => (c === status ? null : c))}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setOverCol(null);
+                      if (dragged && target) moveTo(dragged, status);
+                      setDragId(null);
+                    }}
+                  >
+                    <div className="tm-col__head">
+                      <span className={`tm-dot tm-dot--${status}`} aria-hidden="true" />
+                      <span className="tm-col__title">{t(`teams.status.${status}`)}</span>
+                      <span className="tm-col__count">{formatNumber(items.length)}</span>
+                    </div>
+                    {items.length === 0 && (
+                      <p className="tm-col__empty">
+                        {target ? t('teams.board.dropHere') : t('teams.board.columnEmpty')}
+                      </p>
+                    )}
+                    {items.map((item) => (
+                      <ItemCard
+                        key={item.id}
+                        item={item}
+                        people={people}
+                        manager={manager}
+                        busy={busy}
+                        now={now}
+                        from={pathname}
+                        dragging={dragId === item.id}
+                        onDragStart={() => setDragId(item.id)}
+                        onDragEnd={() => {
+                          setDragId(null);
+                          setOverCol(null);
+                        }}
+                        onMove={(to) => moveTo(item, to)}
+                        onEdit={() => setEditingItem(item)}
+                        onRemove={() => removeItem(item)}
+                      />
+                    ))}
+                  </section>
+                );
+              })}
+            </div>
+          )}
+
+          {data && data.items.length > 0 && view === 'list' && (
+            <ol className="tm-list tm-setlist">
+              {data.items.map((item, index) => (
+                <li
+                  key={item.id}
+                  className={`tm-row tm-set${manager ? ' tm-row--drag' : ''}${dragId === item.id ? ' tm-row--dragging' : ''}`}
+                  draggable={manager && !busy}
+                  onDragStart={() => setDragId(item.id)}
+                  onDragOver={(e) => manager && e.preventDefault()}
+                  onDrop={() => {
+                    if (dragId) reorder(dragId, index);
                     setDragId(null);
                   }}
+                  onDragEnd={() => setDragId(null)}
                 >
-                  <div className="tm-col__head">
-                    <span className={`tm-dot tm-dot--${status}`} aria-hidden="true" />
-                    <span className="tm-col__title">{t(`teams.status.${status}`)}</span>
-                    <span className="tm-col__count">{formatNumber(items.length)}</span>
-                  </div>
-                  {items.length === 0 && (
-                    <p className="tm-col__empty">{target ? t('teams.board.dropHere') : t('teams.board.columnEmpty')}</p>
-                  )}
-                  {items.map((item) => (
-                    <ItemCard
-                      key={item.id}
-                      item={item}
-                      people={people}
-                      manager={manager}
-                      busy={busy}
-                      now={now}
-                      from={pathname}
-                      dragging={dragId === item.id}
-                      onDragStart={() => setDragId(item.id)}
-                      onDragEnd={() => {
-                        setDragId(null);
-                        setOverCol(null);
-                      }}
-                      onMove={(to) => moveTo(item, to)}
-                      onEdit={() => setEditingItem(item)}
-                      onRemove={() => removeItem(item)}
-                    />
-                  ))}
-                </section>
-              );
-            })}
-          </div>
-        )}
-
-        {data && data.items.length > 0 && view === 'list' && (
-          <ol className="tm-list tm-setlist">
-            {data.items.map((item, index) => (
-              <li
-                key={item.id}
-                className={`tm-row tm-set${manager ? ' tm-row--drag' : ''}${dragId === item.id ? ' tm-row--dragging' : ''}`}
-                draggable={manager && !busy}
-                onDragStart={() => setDragId(item.id)}
-                onDragOver={(e) => manager && e.preventDefault()}
-                onDrop={() => {
-                  if (dragId) reorder(dragId, index);
-                  setDragId(null);
-                }}
-                onDragEnd={() => setDragId(null)}
-              >
-                {manager && (
-                  <span className="tm-set__grip" aria-hidden="true">
-                    <Icon name="grip" size={16} />
-                  </span>
-                )}
-                <span className={`tm-set__pos tm-set__pos--${item.status}`}>{index + 1}</span>
-                <div className="tm-row__main">
-                  <Link className="tm-row__title" to={`/scores/${item.scoreId}`} state={{ from: pathname }}>
-                    {item.scoreTitle}
-                    {item.scoreComposer && <span className="tm-set__composer"> · {item.scoreComposer}</span>}
-                  </Link>
-                  <span className="tm-row__sub">
-                    {t('teams.board.arrangerShort')}: {item.arrangerName ?? t('teams.item.nobody')} ·{' '}
-                    {t('teams.board.reviewerShort')}: {item.reviewerName ?? t('teams.item.nobody')}
-                    {item.notes ? ` · ${item.notes}` : ''}
-                  </span>
-                </div>
-                <div className="tm-row__actions">
-                  <DueDate date={item.dueDate} done={item.status === 'APPROVED'} now={now} chip />
-                  <StatusBadge status={item.status} />
                   {manager && (
-                    <span className="tm-set__order">
-                      <button
-                        type="button"
-                        className="tm-icon-btn"
-                        disabled={busy || index === 0}
-                        aria-label={t('teams.board.moveUp', { title: item.scoreTitle })}
-                        title={t('teams.board.moveUp', { title: item.scoreTitle })}
-                        onClick={() => reorder(item.id, index - 1)}
-                      >
-                        <Icon name="chevronUp" size={16} />
-                      </button>
-                      <button
-                        type="button"
-                        className="tm-icon-btn"
-                        disabled={busy || index === data.items.length - 1}
-                        aria-label={t('teams.board.moveDown', { title: item.scoreTitle })}
-                        title={t('teams.board.moveDown', { title: item.scoreTitle })}
-                        onClick={() => reorder(item.id, index + 1)}
-                      >
-                        <Icon name="chevronDown" size={16} />
-                      </button>
+                    <span className="tm-set__grip" aria-hidden="true">
+                      <Icon name="grip" size={16} />
                     </span>
                   )}
-                </div>
-              </li>
-            ))}
-          </ol>
-        )}
+                  <span className={`tm-set__pos tm-set__pos--${item.status}`}>{index + 1}</span>
+                  <div className="tm-row__main">
+                    <Link className="tm-row__title" to={`/scores/${item.scoreId}`} state={{ from: pathname }}>
+                      {item.scoreTitle}
+                      {item.scoreComposer && <span className="tm-set__composer"> · {item.scoreComposer}</span>}
+                    </Link>
+                    <span className="tm-row__sub">
+                      {t('teams.board.arrangerShort')}: {item.arrangerName ?? t('teams.item.nobody')} ·{' '}
+                      {t('teams.board.reviewerShort')}: {item.reviewerName ?? t('teams.item.nobody')}
+                      {item.notes ? ` · ${item.notes}` : ''}
+                    </span>
+                  </div>
+                  <div className="tm-row__actions">
+                    <DueDate date={item.dueDate} done={item.status === 'APPROVED'} now={now} chip />
+                    <StatusBadge status={item.status} />
+                    {manager && (
+                      <span className="tm-set__order">
+                        <button
+                          type="button"
+                          className="tm-icon-btn"
+                          disabled={busy || index === 0}
+                          aria-label={t('teams.board.moveUp', { title: item.scoreTitle })}
+                          title={t('teams.board.moveUp', { title: item.scoreTitle })}
+                          onClick={() => reorder(item.id, index - 1)}
+                        >
+                          <Icon name="chevronUp" size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          className="tm-icon-btn"
+                          disabled={busy || index === data.items.length - 1}
+                          aria-label={t('teams.board.moveDown', { title: item.scoreTitle })}
+                          title={t('teams.board.moveDown', { title: item.scoreTitle })}
+                          onClick={() => reorder(item.id, index + 1)}
+                        >
+                          <Icon name="chevronDown" size={16} />
+                        </button>
+                      </span>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ol>
+          )}
+        </section>
       </main>
 
       {editingItem && data && (
@@ -722,9 +769,7 @@ function ItemModal({
   const [error, setError] = useState('');
   // Bài đã duyệt: chỉ người duyệt của bài (hoặc người duyệt thay được mọi bài) đổi người duyệt, tránh tự gán rồi mở lại
   const reviewerLocked =
-    item?.status === 'APPROVED' &&
-    item.reviewerId !== meId &&
-    !hasTeamPermission(detail.myPermissions, 'APPROVE_ANY');
+    item?.status === 'APPROVED' && item.reviewerId !== meId && !hasTeamPermission(detail.myPermissions, 'APPROVE_ANY');
 
   useEffect(() => {
     if (item) return;
@@ -761,13 +806,7 @@ function ItemModal({
     }
   };
 
-  const memberSelect = (
-    id: string,
-    value: string,
-    onChange: (v: string) => void,
-    label: string,
-    disabled = false,
-  ) => (
+  const memberSelect = (id: string, value: string, onChange: (v: string) => void, label: string, disabled = false) => (
     <>
       <label className="sc-label" htmlFor={id}>
         {label}

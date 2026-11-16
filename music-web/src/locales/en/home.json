@@ -147,6 +147,8 @@
     "quickLinks": "Shortcuts",
     "ctaTitle": "A new piece on your stand?",
     "ctaText": "Snap a page or upload a PDF; minutes later you have a digital score to edit and practice.",
-    "ctaButton": "Digitize now"
+    "ctaButton": "Digitize now",
+    "tasks": "My tasks",
+    "tasksAll": "View all ({count})"
   }
 }

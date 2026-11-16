@@ -56,6 +56,7 @@ import NotFound from '../pages/NotFound';
 import Teams from '../pages/teams/Teams';
 import TeamDetail from '../pages/teams/TeamDetail';
 import TeamInvite from '../pages/teams/TeamInvite';
+import MyTasks from '../pages/teams/MyTasks';
 import ShowBoard from '../pages/teams/ShowBoard';
 import Forum from '../pages/forum/Forum';
 import ForumCompose from '../pages/forum/ForumCompose';
@@ -109,6 +110,7 @@ const router = createBrowserRouter(
         <Route path="/forum/threads/:id" element={<ForumThread />} />
         <Route path="/forum/threads/:id/edit" element={<ForumCompose />} />
         {/* Team và Show (mục 4.1) */}
+        <Route path="/my-tasks" element={<MyTasks />} />
         <Route path="/teams" element={<Teams />} />
         <Route path="/teams/invite/:token" element={<TeamInvite />} />
         <Route path="/teams/:id" element={<TeamDetail />} />

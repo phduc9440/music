@@ -390,18 +390,29 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
+  min-height: 36px;
   margin-bottom: 0.5rem;
-  padding: 0;
-  border: 0;
-  background: none;
+  padding: 0 0.9rem 0 0.7rem;
+  border: 1px solid var(--ui-card-border);
+  border-radius: 999px;
+  background: var(--adm-surface);
+  box-shadow: var(--adm-shadow-sm);
   color: var(--adm-text-2);
   font: inherit;
   font-size: var(--adm-text-sm);
+  font-weight: 600;
+  text-decoration: none;
   cursor: pointer;
 }
 
 .adm-shell .adm-page-header__back:hover {
+  background: var(--ui-surface-hover);
   color: var(--adm-text);
+}
+
+.adm-shell .adm-page-header__back:focus-visible {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 2px;
 }
 
 .adm-page-header__row {
