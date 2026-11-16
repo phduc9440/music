@@ -78,6 +78,13 @@ public enum ErrorCode {
     SCORE_OFFICIAL_LOCKED(2023, "Bản nhạc trong kho bản nhạc mẫu chỉ ADMIN được xóa", HttpStatus.FORBIDDEN),
     SCORE_NOT_PENDING_PUBLIC(2021, "Bản nhạc này không ở trạng thái chờ duyệt công khai", HttpStatus.CONFLICT),
     SCORE_COVER_INVALID(2025, "Ảnh bìa phải là JPG hoặc PNG, tối đa 3MB", HttpStatus.BAD_REQUEST),
+    SCORE_LICENSE_REQUIRED(
+            2026, "Chọn giấy phép khác \"Bảo lưu mọi quyền\" thì mới cho phép tạo bản phối", HttpStatus.BAD_REQUEST),
+    SCORE_FORK_NOT_ALLOWED(
+            2027, "Bản nhạc này không cho phép tạo bản phối (chưa công khai hoặc chủ chưa cho phép)", HttpStatus.FORBIDDEN),
+    SCORE_FORK_RATE_LIMITED(2028, "Bạn đã tạo quá 20 bản phối trong 24 giờ, hãy thử lại sau", HttpStatus.TOO_MANY_REQUESTS),
+    SCORE_LICENSE_LOCKED(
+            2029, "Bản phối giữ nguyên giấy phép của bản gốc (CC BY-SA hoặc CC BY-NC), không đổi được", HttpStatus.CONFLICT),
     SCORE_NOT_PUBLIC(2024, "Bản nhạc này chưa được công khai nên không thể gỡ", HttpStatus.CONFLICT),
     SCORE_BUSY(2201, "Bản nhạc đang được xử lý, vui lòng thử lại sau", HttpStatus.CONFLICT),
     TASK_LIMIT_EXCEEDED(

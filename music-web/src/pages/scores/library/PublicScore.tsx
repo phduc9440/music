@@ -107,6 +107,12 @@ export default function PublicScore() {
                       {t('scores.card.sharedBy', { name: score.ownerName })}
                     </li>
                   )}
+                  {score.license && (
+                    <li>
+                      <Icon name="lock" size={14} />
+                      {t('scores.fork.license', { license: t(`scores.license.${score.license}`) })}
+                    </li>
+                  )}
                 </ul>
               </div>
             </div>
@@ -127,6 +133,12 @@ export default function PublicScore() {
                   <Icon name="upload" size={14} />
                   {t('publicScore.perkDownload')}
                 </li>
+                {score?.allowArrange && (
+                  <li>
+                    <Icon name="copy" size={14} />
+                    {t('scores.fork.loginHint')}
+                  </li>
+                )}
               </ul>
               <Link to="/auth/login" state={loginState} className="sc-btn sc-btn--primary">
                 {t('publicScore.signIn')}

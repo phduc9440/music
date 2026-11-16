@@ -14,6 +14,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -37,6 +38,7 @@ import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreFile;
 import com.ptit.music_be.entity.ScoreTag;
 import com.ptit.music_be.entity.Tag;
+import com.ptit.music_be.event.ScoreImportedEvent;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.mapper.ScoreFileMapper;
@@ -71,6 +73,7 @@ public class ScoreImportServiceImpl implements ScoreImportService {
     ScoreFileRepository scoreFileRepository;
     FileStorageService fileStorageService;
     ScoreFileMapper scoreFileMapper;
+    ApplicationEventPublisher eventPublisher;
 
     enum ImportKind {
         MUSICXML("musicxml", "application/vnd.recordare.musicxml+xml"),
@@ -204,6 +207,11 @@ public class ScoreImportServiceImpl implements ScoreImportService {
                     xmlPath,
                     ImportKind.MUSICXML.contentType,
                     xmlBytes));
+        }
+
+        if (kind.isMidi()) {
+            // Sau khi commit, MidiAutoConvertListener tự tạo task chuyển MIDI sang MusicXML (mục I2)
+            eventPublisher.publishEvent(new ScoreImportedEvent(score.getId(), member.getId(), true));
         }
 
         return ScoreImportResponse.builder()

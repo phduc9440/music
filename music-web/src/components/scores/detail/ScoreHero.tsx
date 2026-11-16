@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { scoreApi } from '../../../services';
 import { toast } from 'react-toastify';
 import { Link } from '../../../routes/transition-nav';
 import { useNavigate } from '../../../routes/useTransitionNavigate';
@@ -10,6 +11,7 @@ import {
   DIFFICULTY_LABELS,
   SOURCE_LABELS,
   formatDateTime,
+  getErrorMessage,
   useScoreBase,
 } from '../../../utils/score';
 import type { ScoreDetail } from '../../../types';
@@ -43,6 +45,20 @@ export default function ScoreHero({ score, onVisibilityChanged, onRequestMore }:
   const navigate = useNavigate();
   const ready = hasMusicXml(score);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [forking, setForking] = useState(false);
+  // Tạo bản phối riêng tư từ bản công khai chủ cho phép (R4), xong thì mở bản mới
+  const fork = async () => {
+    setForking(true);
+    try {
+      const res = await scoreApi.fork(score.id);
+      toast.success(t('scores.fork.done'));
+      navigate(`/scores/${res.data.result.id}`);
+    } catch (err) {
+      toast.error(getErrorMessage(err, t('scores.fork.failed')));
+    } finally {
+      setForking(false);
+    }
+  };
   // Đường dẫn trang chi tiết của bản nhạc (người nhận cần đăng nhập và có quyền xem bản này)
   const copyLink = async () => {
     const url = `${window.location.origin}/scores/${score.id}`;
@@ -154,6 +170,12 @@ export default function ScoreHero({ score, onVisibilityChanged, onRequestMore }:
             staffCount={score.staffCount}
             canDownload={score.canDownload}
           />
+          {score.canFork && (
+            <button type="button" className="sc-btn" disabled={forking} onClick={fork} title={t('scores.fork.hint')}>
+              <Icon name="copy" size={16} />
+              {forking ? t('scores.fork.working') : t('scores.fork.button')}
+            </button>
+          )}
           <Link
             className={`sc-btn${ready ? '' : ' is-disabled'}`}
             to={`${base}/${score.id}/play`}
@@ -184,6 +206,19 @@ export default function ScoreHero({ score, onVisibilityChanged, onRequestMore }:
       </div>
 
       {score.accessLevel === 'OWNER' && !base.startsWith('/admin') && <OfficialRequestBanner scoreId={score.id} />}
+      {score.forkedFrom && (
+        <div className="sd-alert sd-alert--info" role="status">
+          <Icon name="copy" size={16} />
+          <span>
+            {t('scores.fork.attribution', {
+              title: score.forkedFrom.title,
+              owner: score.forkedFrom.ownerName ?? t('scores.fork.unknownOwner'),
+              license: t(`scores.license.${score.forkedFrom.license}`),
+            })}
+          </span>
+          <Link to={`/scores/${score.forkedFrom.id}`}>{t('scores.fork.openSource')} →</Link>
+        </div>
+      )}
       {score.myOriginalScoreId && (
         <div className="sd-alert sd-alert--info" role="status">
           <Icon name="library" size={16} />

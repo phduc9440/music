@@ -50,6 +50,8 @@ export const scoreApi = {
     apiClient.get<ApiResponse<PageResult<ScoreSummary>>>('/scores/official/candidates', { params }),
   unmarkOfficial: (id: string) => apiClient.delete<ApiResponse<ScoreDetail>>(`/scores/${id}/official`),
   detail: (id: string) => apiClient.get<ApiResponse<ScoreDetail>>(`/scores/${id}`),
+  /** Tạo bản phối riêng tư từ bản công khai chủ cho phép (R4). */
+  fork: (id: string) => apiClient.post<ApiResponse<ScoreDetail>>(`/scores/${id}/fork`),
   update: (id: string, data: ScoreUpdateRequest) => apiClient.patch<ApiResponse<ScoreDetail>>(`/scores/${id}`, data),
   /** Tải ảnh bìa (JPG/PNG, tối đa 3MB); lưu trên Cloudinary như ảnh đại diện. */
   uploadCover: (id: string, file: File) => {

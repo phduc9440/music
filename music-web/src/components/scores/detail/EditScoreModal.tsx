@@ -13,7 +13,8 @@ import {
 import Modal from '../common/Modal';
 import { Icon } from '../../ui';
 import ComposerDatalist from '../../composers/ComposerDatalist';
-import type { Difficulty, ScoreDetail, Tag, Visibility } from '../../../types';
+import { SCORE_LICENSES } from '../../../types';
+import type { Difficulty, ScoreDetail, ScoreLicense, Tag, Visibility } from '../../../types';
 import { t } from '../../../i18n/core';
 
 const MAX_TAGS = 10; // khớp BE (mã lỗi 2302)
@@ -33,6 +34,10 @@ export default function EditScoreModal({ score, onClose, onSaved }: Props) {
     score.visibility === 'PENDING' ? 'PUBLIC' : score.visibility,
   );
   const [allowDownload, setAllowDownload] = useState(score.allowDownload);
+  const [license, setLicense] = useState<ScoreLicense>(score.license ?? 'ALL_RIGHTS_RESERVED');
+  const [allowArrange, setAllowArrange] = useState(score.allowArrange);
+  // Bản phối của CC BY-SA / CC BY-NC phải giữ nguyên giấy phép của bản gốc
+  const licenseLocked = score.forkedFrom != null && ['CC_BY_SA', 'CC_BY_NC'].includes(score.forkedFrom.license);
   const [allTags, setAllTags] = useState<Tag[]>([]);
   const initialTagIds = (score.tags ?? []).map((t) => t.id);
   const [tagIds, setTagIds] = useState<string[]>(initialTagIds);
@@ -98,6 +103,9 @@ export default function EditScoreModal({ score, onClose, onSaved }: Props) {
         ...(score.canDelete ? { visibility } : {}),
         // Cho phép tải chỉ chủ sở hữu được đổi (BE trả 1002 với người khác)
         ...(score.canManageSharing && allowDownload !== score.allowDownload ? { allowDownload } : {}),
+        // Giấy phép và cho phép tạo bản phối (R4): chỉ chủ sở hữu, chỉ gửi khi có đổi
+        ...(score.canManageSharing && license !== (score.license ?? 'ALL_RIGHTS_RESERVED') ? { license } : {}),
+        ...(score.canManageSharing && allowArrange !== score.allowArrange ? { allowArrange } : {}),
       });
       let saved = res.data.result;
       // Chỉ gọi API thể loại khi người dùng có đổi lựa chọn
@@ -211,6 +219,43 @@ export default function EditScoreModal({ score, onClose, onSaved }: Props) {
             <input type="checkbox" checked={allowDownload} onChange={(e) => setAllowDownload(e.target.checked)} />
             <span>{t('scores.edit.allowDownload')}</span>
           </label>
+        )}
+
+        {score.canManageSharing && (
+          <>
+            <label className="sc-label" htmlFor="edit-license">
+              {t('scores.edit.license')}
+            </label>
+            <select
+              id="edit-license"
+              className="sc-input"
+              value={license}
+              disabled={licenseLocked}
+              onChange={(e) => {
+                const next = e.target.value as ScoreLicense;
+                setLicense(next);
+                if (next === 'ALL_RIGHTS_RESERVED') setAllowArrange(false);
+              }}
+            >
+              {SCORE_LICENSES.map((l) => (
+                <option key={l} value={l}>
+                  {t(`scores.license.${l}`)}
+                </option>
+              ))}
+            </select>
+            <p className="sc-upload__hint">
+              {licenseLocked ? t('scores.edit.licenseLocked') : t(`scores.licenseHint.${license}`)}
+            </p>
+            <label className="sc-check">
+              <input
+                type="checkbox"
+                checked={allowArrange}
+                disabled={license === 'ALL_RIGHTS_RESERVED'}
+                onChange={(e) => setAllowArrange(e.target.checked)}
+              />
+              <span>{t('scores.edit.allowArrange')}</span>
+            </label>
+          </>
         )}
 
         <span className="sc-label">

@@ -114,6 +114,9 @@ CREATE TABLE IF NOT EXISTS scores (
     updated_at        DATETIME(6)  NULL,
     view_count        BIGINT       NULL DEFAULT 0,
     allow_download    TINYINT(1)   NOT NULL DEFAULT 0 COMMENT 'Chủ cho phép người xem tải MusicXML, MIDI, âm thanh, PDF',
+    license           VARCHAR(24)  NULL COMMENT 'Giấy phép (R4): ALL_RIGHTS_RESERVED, CC0, CC_BY, CC_BY_SA, CC_BY_NC; NULL = bảo lưu mọi quyền',
+    allow_arrange     TINYINT(1)   NOT NULL DEFAULT 0 COMMENT 'Chủ cho phép người khác tạo bản phối từ bản công khai này (R4)',
+    forked_from_score_id VARCHAR(36) NULL COMMENT 'Bản phối: bản nhạc gốc nó được tạo từ (R4); bản gốc bị xóa hẳn thì về NULL',
     deleted_at        DATETIME(6)  NULL COMMENT 'Xóa mềm: khác NULL là đang ở thùng rác (30 ngày rồi xóa hẳn)',
     deleted_by        VARCHAR(36)  NULL,
     delete_reason     VARCHAR(500) NULL,
@@ -124,8 +127,10 @@ CREATE TABLE IF NOT EXISTS scores (
     KEY idx_scores_team (team_id),
     KEY idx_scores_original (original_score_id),
     KEY idx_scores_composer (composer_id),
+    KEY idx_scores_forked_from (forked_from_score_id),
     CONSTRAINT fk_scores_member   FOREIGN KEY (member_id)   REFERENCES members (id),
-    CONSTRAINT fk_scores_composer FOREIGN KEY (composer_id) REFERENCES composers (id) ON DELETE SET NULL
+    CONSTRAINT fk_scores_composer FOREIGN KEY (composer_id) REFERENCES composers (id) ON DELETE SET NULL,
+    CONSTRAINT fk_scores_forked_from FOREIGN KEY (forked_from_score_id) REFERENCES scores (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS score_files (

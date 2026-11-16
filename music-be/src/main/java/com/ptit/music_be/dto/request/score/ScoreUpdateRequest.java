@@ -3,6 +3,7 @@ package com.ptit.music_be.dto.request.score;
 import jakarta.validation.constraints.Size;
 
 import com.ptit.music_be.dto.enums.score.DifficultyLevel;
+import com.ptit.music_be.dto.enums.score.ScoreLicense;
 import com.ptit.music_be.dto.enums.score.Visibility;
 
 import lombok.AccessLevel;
@@ -36,4 +37,10 @@ public class ScoreUpdateRequest {
 
     /** Cho phép người xem tải MusicXML, MIDI, âm thanh, PDF. Chỉ chủ sở hữu được đổi. */
     Boolean allowDownload;
+
+    /** Giấy phép (mục R4). Chỉ chủ sở hữu được đổi; bản phối của CC BY-SA / CC BY-NC không đổi được. */
+    ScoreLicense license;
+
+    /** Cho phép người khác tạo bản phối từ bản công khai này (R4). Cần giấy phép khác "bảo lưu mọi quyền". */
+    Boolean allowArrange;
 }

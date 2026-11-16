@@ -75,6 +75,14 @@ public interface ScoreService {
     PageResponse<ScoreSummaryResponse> getPublicScores(int page, int size, PublicScoreFilter filter, String sort);
 
     /**
+     * Tạo bản phối từ một bản nhạc công khai cho người đang đăng nhập (mục R4): bản sao riêng tư ghi bản gốc
+     * ({@code forkedFrom}) và thừa hưởng giấy phép. Lỗi: SCORE_NOT_EXISTED (2001) nếu không công khai, SCORE_FORK_NOT_ALLOWED
+     * (2027) khi chủ chưa cho phép phối hoặc giấy phép bảo lưu mọi quyền, SCORE_FORK_RATE_LIMITED (2028) quá 20 bản mỗi 24 giờ,
+     * MUSICXML_NOT_READY nếu bản gốc chưa có MusicXML.
+     */
+    ScoreDetailResponse forkScore(String scoreId);
+
+    /**
      * Thẻ của một bản nhạc đang công khai cho khách chưa đăng nhập (trang /s/:id): tên, tác giả, độ khó, thể loại, số ô,
      * lượt xem, điểm sao, tên người chia sẻ (không lộ email). Bản riêng tư, đang chờ duyệt hoặc đã xóa báo không tồn tại.
      */

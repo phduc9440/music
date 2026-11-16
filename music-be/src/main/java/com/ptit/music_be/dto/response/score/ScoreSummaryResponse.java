@@ -6,6 +6,7 @@ import java.util.List;
 import com.ptit.music_be.dto.enums.score.DifficultyLevel;
 import com.ptit.music_be.dto.response.library.TagResponse;
 
+import com.ptit.music_be.dto.enums.score.ScoreLicense;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -30,6 +31,11 @@ public class ScoreSummaryResponse {
     String sourceType;
     /** PRIVATE / PUBLIC (xem Visibility). */
     String visibility;
+
+    /** Giấy phép (R4); chưa chọn là ALL_RIGHTS_RESERVED. */
+    ScoreLicense license;
+    /** Cho phép tạo bản phối từ bản này (R4). */
+    Boolean allowArrange;
 
     /** Có nằm trong kho bản nhạc mẫu không (trang admin dùng). */
     Boolean isOfficial;

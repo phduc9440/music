@@ -221,6 +221,32 @@
     "settings": "Cài đặt",
     "info": "Thông tin"
   },
+  "license": {
+    "ALL_RIGHTS_RESERVED": "Bảo lưu mọi quyền",
+    "CC0": "Phạm vi công cộng (CC0)",
+    "CC_BY": "Ghi công (CC BY)",
+    "CC_BY_SA": "Ghi công, chia sẻ giống nhau (CC BY-SA)",
+    "CC_BY_NC": "Ghi công, phi thương mại (CC BY-NC)"
+  },
+  "licenseHint": {
+    "ALL_RIGHTS_RESERVED": "Người khác không được tạo bản phối từ bản nhạc của bạn.",
+    "CC0": "Ai cũng được phối lại, không cần ghi công.",
+    "CC_BY": "Được phối lại nếu ghi công bạn.",
+    "CC_BY_SA": "Được phối lại nếu ghi công bạn và giữ cùng giấy phép này.",
+    "CC_BY_NC": "Được phối lại nếu ghi công bạn, giữ cùng giấy phép và không dùng thương mại."
+  },
+  "fork": {
+    "button": "Tạo bản phối",
+    "working": "Đang tạo...",
+    "hint": "Tạo một bản sao riêng tư của riêng bạn để phối lại, có ghi công bản gốc",
+    "done": "Đã tạo bản phối, bạn mở được trong thư viện của mình",
+    "failed": "Không tạo được bản phối",
+    "attribution": "Bản phối từ “{title}” của {owner}, giấy phép {license}",
+    "unknownOwner": "một thành viên",
+    "openSource": "Mở bản gốc",
+    "loginHint": "Đăng nhập để tạo bản phối từ bản nhạc này",
+    "license": "Giấy phép: {license}"
+  },
   "hero": {
     "owner": "Chủ sở hữu: {name}",
     "updated": "Cập nhật {when}",
@@ -280,6 +306,9 @@
     "visPublic": "Công khai (cần quản trị viên duyệt)",
     "visHint": "Sau khi được duyệt, mọi người đăng nhập đều xem và nhận xét được. Trong lúc chờ bản nhạc vẫn riêng tư.",
     "allowDownload": "Cho phép người xem tải MusicXML, MIDI, âm thanh, PDF",
+    "license": "Giấy phép",
+    "allowArrange": "Cho phép người khác tạo bản phối từ bản công khai này",
+    "licenseLocked": "Bản phối giữ nguyên giấy phép của bản gốc nên không đổi được.",
     "saving": "Đang lưu...",
     "saveChanges": "Lưu thay đổi"
   },
