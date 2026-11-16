@@ -83,5 +83,8 @@
   "replyingTo": "Replying to {name}",
   "cancelReplyTo": "Stop replying to this post",
   "inReplyTo": "Replying to {name}",
-  "deletedPost": "(post deleted)"
+  "deletedPost": "(post deleted)",
+  "pinned": "Pinned",
+  "locked": "Locked",
+  "lockedNotice": "An administrator locked this thread, so it takes no new replies."
 }

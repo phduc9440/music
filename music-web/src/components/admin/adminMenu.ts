@@ -45,6 +45,7 @@ export const MENU: { section: string; items: MenuItem[] }[] = [
     item('/admin/scores', 'scores', 'music', { permissions: ['SCORES_MODERATE'] }),
     item('/admin/pending-scores', 'pending', 'clock', { pendingBadge: 'scores', permissions: ['SCORES_APPROVE'] }),
     item('/admin/reports', 'reports', 'alert', { pendingBadge: 'reports', permissions: ['REPORTS_MODERATE'] }),
+    item('/admin/forum', 'forum', 'inbox', { permissions: ['FORUM_MANAGE'] }),
     item('/admin/official-scores', 'official', 'library', { permissions: ['OFFICIAL_LIBRARY'] }),
     item('/admin/tags', 'tags', 'tag', { permissions: ['TAGS_MANAGE'] }),
     item('/admin/composers', 'composers', 'users', { permissions: ['COMPOSERS_MANAGE'] }),

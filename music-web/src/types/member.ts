@@ -20,6 +20,7 @@ export type AdminPermission =
   | 'AI_TASKS_MANAGE'
   | 'SYSTEM_MONITOR'
   | 'REPORTS_MODERATE'
+  | 'FORUM_MANAGE'
   | 'AUDIT_VIEW';
 
 /** Quyền theo nhóm menu quản trị (nhãn nhóm: admin.menu.sections.<nhóm>, nhãn quyền: admin.roles.permissions.<quyền>). */
@@ -35,6 +36,7 @@ export const ADMIN_PERMISSION_GROUPS: { section: string; permissions: AdminPermi
       'TAGS_MANAGE',
       'COMPOSERS_MANAGE',
       'REPORTS_MODERATE',
+      'FORUM_MANAGE',
     ],
   },
   {

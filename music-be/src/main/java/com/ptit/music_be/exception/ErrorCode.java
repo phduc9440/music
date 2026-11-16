@@ -315,6 +315,12 @@ public enum ErrorCode {
             4108, "Chủ đề đã có người khác trả lời nên không xóa được, hãy báo quản trị viên nếu cần gỡ", HttpStatus.CONFLICT),
     FORUM_ACCEPT_OWN_POST(4109, "Bạn không chọn được câu trả lời của chính mình", HttpStatus.BAD_REQUEST),
     FORUM_VOTE_OWN_CONTENT(4110, "Bạn không bình chọn được nội dung của chính mình", HttpStatus.BAD_REQUEST),
+    FORUM_THREAD_LOCKED(4111, "Chủ đề đã bị khóa, không trả lời thêm được", HttpStatus.FORBIDDEN),
+    FORUM_CATEGORY_NOT_EMPTY(
+            4112, "Chuyên mục còn chủ đề nên không xóa được, hãy chuyển hoặc ẩn các chủ đề trước", HttpStatus.CONFLICT),
+    FORUM_CATEGORY_INVALID(
+            4113, "Tên chuyên mục từ 2 đến 100 ký tự, mô tả tối đa 300 ký tự", HttpStatus.BAD_REQUEST),
+    FORUM_CATEGORY_SLUG_TAKEN(4114, "Đã có chuyên mục trùng đường dẫn, hãy đổi tên khác", HttpStatus.CONFLICT),
     ;
 
     int code;

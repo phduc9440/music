@@ -135,9 +135,13 @@ public class ForumServiceImpl implements ForumService {
         params.forEach(count::setParameter);
         long total = count.getSingleResult();
 
+        // Chủ đề được ghim luôn đứng đầu, rồi mới tới thứ tự đã chọn
+        String pinnedFirst = " order by case when t.pinnedAt is null then 1 else 0 end, ";
         String order = sort == Sort.TOP
-                ? " order by (select count(v) from ForumVote v where v.thread = t) desc, t.createdAt desc, t.id desc"
-                : " order by coalesce((select max(p.createdAt) from ForumPost p where p.thread = t), t.createdAt) desc,"
+                ? pinnedFirst
+                        + "(select count(v) from ForumVote v where v.thread = t) desc, t.createdAt desc, t.id desc"
+                : pinnedFirst
+                        + "coalesce((select max(p.createdAt) from ForumPost p where p.thread = t), t.createdAt) desc,"
                         + " t.id desc";
         TypedQuery<ForumThread> query = entityManager.createQuery(
                 "select t from ForumThread t join fetch t.author join fetch t.category" + where + order,
@@ -237,6 +241,9 @@ public class ForumServiceImpl implements ForumService {
     public ForumPostResponse reply(String threadId, ForumPostRequest request) {
         Member me = currentMember();
         ForumThread thread = findThread(threadId);
+        if (thread.getLockedAt() != null) {
+            throw new AppException(ErrorCode.FORUM_THREAD_LOCKED);
+        }
         String body = cleanBody(request == null ? null : request.getBody());
         ForumPost replyTo = null;
         if (request.getReplyToPostId() != null && !request.getReplyToPostId().isBlank()) {
@@ -552,6 +559,8 @@ public class ForumServiceImpl implements ForumService {
                     .votedByMe(voted.contains(t.getId()))
                     .mine(t.getAuthor().getId().equals(me.getId()))
                     .answered(acceptedId != null)
+                    .pinned(t.getPinnedAt() != null)
+                    .locked(t.getLockedAt() != null)
                     .subscribed(subscribed.contains(t.getId()))
                     .acceptedPostId(acceptedId)
                     .createdAt(t.getCreatedAt())

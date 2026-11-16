@@ -28,6 +28,10 @@ public class ForumThreadResponse {
     boolean votedByMe;
     boolean mine;
     boolean answered;
+    /** Admin đã ghim: nổi lên đầu danh sách. */
+    boolean pinned;
+    /** Admin đã khóa: không trả lời thêm được. */
+    boolean locked;
     boolean subscribed;
     String acceptedPostId;
     LocalDateTime createdAt;

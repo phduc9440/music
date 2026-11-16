@@ -16,7 +16,7 @@ const TYPES: ActivityType[] = [
   'TEAM_DELETED_BY_ADMIN',
   'PLAN_SANCTION',
 ];
-const TARGETS = ['SCORE', 'COMMENT', 'TEAM', 'MEMBER'];
+const TARGETS = ['SCORE', 'COMMENT', 'FORUM_THREAD', 'FORUM_POST', 'TEAM', 'MEMBER'];
 
 interface Filters {
   actor: string;
@@ -32,6 +32,9 @@ const TONE: Record<ActivityType, 'neutral' | 'warning' | 'danger' | 'success'> =
   REPORT_RESOLVED: 'success',
   SCORE_DELETED_BY_ADMIN: 'danger',
   COMMENT_HIDDEN: 'danger',
+  FORUM_THREAD_HIDDEN: 'danger',
+  FORUM_POST_HIDDEN: 'danger',
+  FORUM_THREAD_LOCKED: 'warning',
   TEAM_DELETED_BY_ADMIN: 'danger',
   PLAN_SANCTION: 'warning',
 };
@@ -41,6 +44,7 @@ const targetLink = (e: ActivityEntry): string | null => {
   if (!e.targetId) return null;
   if (e.targetType === 'MEMBER') return `/admin/members/${e.targetId}`;
   if (e.targetType === 'TEAM') return `/admin/teams/${e.targetId}`;
+  if (e.targetType === 'FORUM_THREAD') return `/admin/forum?thread=${e.targetId}`;
   return null;
 };
 

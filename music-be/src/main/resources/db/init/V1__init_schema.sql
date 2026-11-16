@@ -256,6 +256,10 @@ CREATE TABLE IF NOT EXISTS forum_threads (
     edited_at        DATETIME(6)   NULL,
     hidden_at        DATETIME(6)   NULL,
     hidden_by        VARCHAR(36)   NULL,
+    pinned_at        DATETIME(6)   NULL COMMENT 'Admin ghim chủ đề: nổi lên đầu danh sách',
+    pinned_by        VARCHAR(36)   NULL,
+    locked_at        DATETIME(6)   NULL COMMENT 'Admin khóa chủ đề: không ai trả lời thêm được',
+    locked_by        VARCHAR(36)   NULL,
     created_at       DATETIME(6)   NULL,
     PRIMARY KEY (id),
     KEY idx_forum_threads_category (category_id, created_at),
@@ -264,7 +268,9 @@ CREATE TABLE IF NOT EXISTS forum_threads (
     CONSTRAINT fk_forum_threads_category FOREIGN KEY (category_id) REFERENCES forum_categories (id),
     CONSTRAINT fk_forum_threads_author   FOREIGN KEY (author_id)   REFERENCES members (id),
     CONSTRAINT fk_forum_threads_score    FOREIGN KEY (score_id)    REFERENCES scores (id) ON DELETE SET NULL,
-    CONSTRAINT fk_forum_threads_hider    FOREIGN KEY (hidden_by)   REFERENCES members (id) ON DELETE SET NULL
+    CONSTRAINT fk_forum_threads_hider    FOREIGN KEY (hidden_by)   REFERENCES members (id) ON DELETE SET NULL,
+    CONSTRAINT fk_forum_threads_pinner   FOREIGN KEY (pinned_by)   REFERENCES members (id) ON DELETE SET NULL,
+    CONSTRAINT fk_forum_threads_locker   FOREIGN KEY (locked_by)   REFERENCES members (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS forum_posts (

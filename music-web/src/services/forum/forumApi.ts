@@ -1,5 +1,9 @@
 import apiClient from '../client';
 import type {
+  AdminForumCategory,
+  AdminForumStatus,
+  AdminForumThread,
+  AdminForumThreadDetail,
   ApiResponse,
   ForumCategory,
   ForumPost,
@@ -39,4 +43,31 @@ export const forumApi = {
   accept: (postId: string) => apiClient.post<ApiResponse<ForumThread>>(`/forum/posts/${postId}/accept`),
   subscribe: (threadId: string, subscribed: boolean) =>
     apiClient.put<ApiResponse<void>>(`/forum/threads/${threadId}/subscription`, { subscribed }),
+};
+
+/** Quản lý diễn đàn của admin (quyền FORUM_MANAGE). */
+export const adminForumApi = {
+  categories: () => apiClient.get<ApiResponse<AdminForumCategory[]>>('/admin/forum/categories'),
+  createCategory: (data: { name: string; description?: string }) =>
+    apiClient.post<ApiResponse<AdminForumCategory>>('/admin/forum/categories', data),
+  updateCategory: (id: string, data: { name: string; description?: string }) =>
+    apiClient.put<ApiResponse<AdminForumCategory>>(`/admin/forum/categories/${id}`, data),
+  deleteCategory: (id: string) => apiClient.delete<ApiResponse<void>>(`/admin/forum/categories/${id}`),
+  reorderCategories: (ids: string[]) => apiClient.put<ApiResponse<void>>('/admin/forum/categories/order', ids),
+  threads: (params: {
+    keyword?: string;
+    categoryId?: string;
+    status?: AdminForumStatus;
+    page?: number;
+    size?: number;
+  }) => apiClient.get<ApiResponse<PageResult<AdminForumThread>>>('/admin/forum/threads', { params }),
+  thread: (id: string) => apiClient.get<ApiResponse<AdminForumThreadDetail>>(`/admin/forum/threads/${id}`),
+  setThreadHidden: (id: string, value: boolean) =>
+    apiClient.put<ApiResponse<void>>(`/admin/forum/threads/${id}/hidden`, null, { params: { value } }),
+  setThreadPinned: (id: string, value: boolean) =>
+    apiClient.put<ApiResponse<void>>(`/admin/forum/threads/${id}/pinned`, null, { params: { value } }),
+  setThreadLocked: (id: string, value: boolean) =>
+    apiClient.put<ApiResponse<void>>(`/admin/forum/threads/${id}/locked`, null, { params: { value } }),
+  setPostHidden: (id: string, value: boolean) =>
+    apiClient.put<ApiResponse<void>>(`/admin/forum/posts/${id}/hidden`, null, { params: { value } }),
 };
