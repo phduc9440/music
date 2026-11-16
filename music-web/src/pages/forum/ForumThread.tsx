@@ -14,6 +14,7 @@ import { forumApi, reportApi } from '../../services';
 import type { ForumPost, ForumThreadDetail } from '../../types';
 import { getErrorCode, getErrorMessage } from '../../utils/score';
 import { formatDateTime, formatNumber, formatRelativeTime, t } from '../../i18n/core';
+import { isGuest } from '../../utils/session';
 import '../../components/scores/scores.css';
 import './forum.css';
 
@@ -22,6 +23,8 @@ type Reporting = { kind: 'thread' } | { kind: 'post'; id: string } | null;
 /** Trang /forum/threads/:id: chủ đề, các câu trả lời (bài hay nhất đứng đầu), bình chọn, báo cáo và ô trả lời. */
 export default function ForumThread() {
   const { id = '' } = useParams();
+  // Khách chưa đăng nhập đọc được chủ đề nhưng không bình chọn, trả lời, theo dõi hay báo cáo
+  const guest = isGuest();
   const [params] = useSearchParams();
   const focusPostId = params.get('post');
   const navigate = useNavigate();
@@ -178,6 +181,7 @@ export default function ForumThread() {
             count={thread.voteCount}
             voted={thread.votedByMe}
             own={thread.mine}
+            readOnly={guest}
             busy={busy}
             onToggle={() => act(() => forumApi.voteThread(thread.id), t('forum.actionFailed'))}
           />
@@ -223,35 +227,37 @@ export default function ForumThread() {
               </Link>
             )}
 
-            <div className="fm-actions">
-              <button
-                type="button"
-                className="sc-btn sc-btn--sm"
-                aria-pressed={thread.subscribed}
-                disabled={busy}
-                onClick={() => act(() => forumApi.subscribe(thread.id, !thread.subscribed), t('forum.actionFailed'))}
-              >
-                <Icon name="bell" size={14} />
-                {thread.subscribed ? t('forum.unfollow') : t('forum.follow')}
-              </button>
-              {thread.mine ? (
-                <>
-                  <Link to={`/forum/threads/${thread.id}/edit`} className="sc-btn sc-btn--sm">
-                    <Icon name="edit" size={14} />
-                    {t('common.edit')}
-                  </Link>
-                  <button type="button" className="sc-btn sc-btn--sm sc-btn--danger" onClick={removeThread}>
-                    <Icon name="trash" size={14} />
-                    {t('common.delete')}
-                  </button>
-                </>
-              ) : (
-                <button type="button" className="sc-btn sc-btn--sm" onClick={() => setReporting({ kind: 'thread' })}>
-                  <Icon name="alert" size={14} />
-                  {t('scores.report.commentLink')}
+            {!guest && (
+              <div className="fm-actions">
+                <button
+                  type="button"
+                  className="sc-btn sc-btn--sm"
+                  aria-pressed={thread.subscribed}
+                  disabled={busy}
+                  onClick={() => act(() => forumApi.subscribe(thread.id, !thread.subscribed), t('forum.actionFailed'))}
+                >
+                  <Icon name="bell" size={14} />
+                  {thread.subscribed ? t('forum.unfollow') : t('forum.follow')}
                 </button>
-              )}
-            </div>
+                {thread.mine ? (
+                  <>
+                    <Link to={`/forum/threads/${thread.id}/edit`} className="sc-btn sc-btn--sm">
+                      <Icon name="edit" size={14} />
+                      {t('common.edit')}
+                    </Link>
+                    <button type="button" className="sc-btn sc-btn--sm sc-btn--danger" onClick={removeThread}>
+                      <Icon name="trash" size={14} />
+                      {t('common.delete')}
+                    </button>
+                  </>
+                ) : (
+                  <button type="button" className="sc-btn sc-btn--sm" onClick={() => setReporting({ kind: 'thread' })}>
+                    <Icon name="alert" size={14} />
+                    {t('scores.report.commentLink')}
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </article>
 
@@ -269,6 +275,7 @@ export default function ForumThread() {
                   count={p.voteCount}
                   voted={p.votedByMe}
                   own={p.mine}
+                  readOnly={guest}
                   busy={busy}
                   onToggle={() => act(() => forumApi.votePost(p.id), t('forum.actionFailed'))}
                 />
@@ -328,7 +335,7 @@ export default function ForumThread() {
                     <Markdown source={p.body} />
                   )}
 
-                  {editing?.id !== p.id && (
+                  {!guest && editing?.id !== p.id && (
                     <div className="fm-actions">
                       {!p.mine && !thread.locked && (
                         <button
@@ -392,7 +399,17 @@ export default function ForumThread() {
           ))}
         </ol>
 
-        {thread.locked ? (
+        {guest ? (
+          <p className="fm-locked" role="status">
+            <Icon name="key" size={16} />
+            <span>
+              {t('forum.guest.replyPrompt')}{' '}
+              <Link to="/auth/login" state={{ from: `/forum/threads/${id}` }}>
+                {t('forum.guest.signIn')}
+              </Link>
+            </span>
+          </p>
+        ) : thread.locked ? (
           <p className="fm-locked" role="status">
             <Icon name="lock" size={16} /> {t('forum.lockedNotice')}
           </p>

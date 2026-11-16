@@ -29,6 +29,13 @@ public interface ForumService {
 
     ForumThreadDetailResponse thread(String threadId);
 
+    /** Như {@link #threads} cho khách chưa đăng nhập: chỉ đọc, không có bộ lọc "của tôi" và không có dấu cá nhân. */
+    PageResponse<ForumThreadResponse> publicThreads(
+            String categoryId, String keyword, Sort sort, boolean unanswered, int page, int size);
+
+    /** Như {@link #thread} cho khách chưa đăng nhập. */
+    ForumThreadDetailResponse publicThread(String threadId);
+
     ForumThreadResponse createThread(ForumThreadRequest request);
 
     ForumThreadResponse updateThread(String threadId, ForumThreadRequest request);

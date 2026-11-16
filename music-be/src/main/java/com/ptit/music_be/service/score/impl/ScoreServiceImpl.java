@@ -463,6 +463,18 @@ public class ScoreServiceImpl implements ScoreService {
         return toExplorePage(result);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public ScoreSummaryResponse getPublicScore(String scoreId) {
+        Score score = scoreRepository
+                .findById(scoreId)
+                .filter(s -> Visibility.PUBLIC.name().equals(s.getVisibility()))
+                .orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+        return toExplorePage(new org.springframework.data.domain.PageImpl<>(List.of(score)))
+                .getContent()
+                .get(0);
+    }
+
     /** Thẻ ở trang Khám phá: thêm tên người chia sẻ, lượt xem và điểm sao; không lộ email chủ sở hữu. */
     private PageResponse<ScoreSummaryResponse> toExplorePage(Page<Score> result) {
         PageResponse<ScoreSummaryResponse> page = toSummaryPage(result, false);

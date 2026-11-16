@@ -7,6 +7,7 @@ import { Icon } from '../../components/ui';
 import { forumApi } from '../../services';
 import type { ForumCategory, ForumSort, ForumThread, PageResult } from '../../types';
 import { formatNumber, formatRelativeTime, t } from '../../i18n/core';
+import { isGuest } from '../../utils/session';
 import '../../components/scores/scores.css';
 import './forum.css';
 
@@ -19,7 +20,9 @@ export default function Forum() {
   const keywordParam = params.get('q') ?? '';
   const sort: ForumSort = params.get('sort') === 'TOP' ? 'TOP' : 'LATEST';
   const unanswered = params.get('unanswered') === '1';
-  const mine = params.get('mine') === '1';
+  // Khách chỉ đọc: không có bộ lọc "của tôi" và nút đặt chủ đề dẫn tới đăng nhập
+  const guest = isGuest();
+  const mine = !guest && params.get('mine') === '1';
   const page = Math.max(0, Number(params.get('page')) || 0);
 
   const [keyword, setKeyword] = useState(keywordParam);
@@ -86,10 +89,16 @@ export default function Forum() {
             <h1>{t('forum.title')}</h1>
             <p>{t('forum.subtitle')}</p>
           </div>
-          <Link to={`/forum/new${categoryId ? `?category=${categoryId}` : ''}`} className="sc-btn sc-btn--primary">
-            <Icon name="plus" size={16} />
-            {t('forum.newThread')}
-          </Link>
+          {guest ? (
+            <Link to="/auth/login" state={{ from: '/forum/new' }} className="sc-btn sc-btn--primary">
+              {t('forum.guest.signInToPost')}
+            </Link>
+          ) : (
+            <Link to={`/forum/new${categoryId ? `?category=${categoryId}` : ''}`} className="sc-btn sc-btn--primary">
+              <Icon name="plus" size={16} />
+              {t('forum.newThread')}
+            </Link>
+          )}
         </header>
 
         <nav className="fm-cats" aria-label={t('forum.categories')}>
@@ -135,14 +144,16 @@ export default function Forum() {
             >
               {t('forum.unanswered')}
             </button>
-            <button
-              type="button"
-              className={`fm-chip${mine ? ' fm-chip--on' : ''}`}
-              aria-pressed={mine}
-              onClick={() => update({ mine: mine ? null : '1' })}
-            >
-              {t('forum.mine')}
-            </button>
+            {!guest && (
+              <button
+                type="button"
+                className={`fm-chip${mine ? ' fm-chip--on' : ''}`}
+                aria-pressed={mine}
+                onClick={() => update({ mine: mine ? null : '1' })}
+              >
+                {t('forum.mine')}
+              </button>
+            )}
             <label className="fm-sort">
               <span className="fm-muted">{t('forum.sort.label')}</span>
               <select

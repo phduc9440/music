@@ -11,3 +11,7 @@ music-web/.env
 
 # Cache Python của skill
 __pycache__/
+
+# Cấu hình/skill của Claude: không đẩy lên GitHub
+.claude/
+CLAUDE.md

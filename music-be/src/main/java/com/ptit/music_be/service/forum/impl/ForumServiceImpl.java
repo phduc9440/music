@@ -108,7 +108,26 @@ public class ForumServiceImpl implements ForumService {
     @Transactional(readOnly = true)
     public PageResponse<ForumThreadResponse> threads(
             String categoryId, String keyword, Sort sort, boolean unanswered, boolean mine, int page, int size) {
-        Member me = currentMember();
+        return searchThreads(currentMember(), categoryId, keyword, sort, unanswered, mine, page, size);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<ForumThreadResponse> publicThreads(
+            String categoryId, String keyword, Sort sort, boolean unanswered, int page, int size) {
+        return searchThreads(null, categoryId, keyword, sort, unanswered, false, page, size);
+    }
+
+    /** {@code me} null là khách chưa đăng nhập: không có bộ lọc "của tôi", không có dấu đã bình chọn / theo dõi. */
+    private PageResponse<ForumThreadResponse> searchThreads(
+            Member me,
+            String categoryId,
+            String keyword,
+            Sort sort,
+            boolean unanswered,
+            boolean mine,
+            int page,
+            int size) {
         int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
         int safePage = Math.max(page, 0);
 
@@ -126,7 +145,7 @@ public class ForumServiceImpl implements ForumService {
         if (unanswered) {
             where.append(" and t.acceptedPost is null");
         }
-        if (mine) {
+        if (mine && me != null) {
             where.append(" and t.author.id = :me");
             params.put("me", me.getId());
         }
@@ -165,7 +184,16 @@ public class ForumServiceImpl implements ForumService {
     @Override
     @Transactional(readOnly = true)
     public ForumThreadDetailResponse thread(String threadId) {
-        Member me = currentMember();
+        return loadThread(currentMember(), threadId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ForumThreadDetailResponse publicThread(String threadId) {
+        return loadThread(null, threadId);
+    }
+
+    private ForumThreadDetailResponse loadThread(Member me, String threadId) {
         ForumThread thread = findThread(threadId);
         ForumThreadResponse head = toThreadResponses(List.of(thread), me, true).get(0);
         List<ForumPost> posts = postRepository.findOfThread(threadId);
@@ -507,6 +535,7 @@ public class ForumServiceImpl implements ForumService {
     // ------------------------------------------------------------------ helpers: dựng phản hồi
 
     private List<ForumThreadResponse> toThreadResponses(List<ForumThread> threads, Member me, boolean detail) {
+        String meId = me == null ? null : me.getId();
         if (threads.isEmpty()) {
             return List.of();
         }
@@ -517,8 +546,9 @@ public class ForumServiceImpl implements ForumService {
         for (Object[] row : postRepository.lastPostAtByThreadIds(ids)) {
             lastPost.put((String) row[0], (LocalDateTime) row[1]);
         }
-        Set<String> voted = new HashSet<>(voteRepository.threadIdsVotedBy(me.getId(), ids));
-        Set<String> subscribed = new HashSet<>(subscriptionRepository.threadIdsSubscribedBy(me.getId(), ids));
+        Set<String> voted = meId == null ? Set.of() : new HashSet<>(voteRepository.threadIdsVotedBy(meId, ids));
+        Set<String> subscribed =
+                meId == null ? Set.of() : new HashSet<>(subscriptionRepository.threadIdsSubscribedBy(meId, ids));
 
         Set<String> scoreIds = threads.stream()
                 .map(ForumThread::getScore)
@@ -557,7 +587,7 @@ public class ForumServiceImpl implements ForumService {
                     .replyCount(replies.getOrDefault(t.getId(), 0L))
                     .voteCount(votes.getOrDefault(t.getId(), 0L))
                     .votedByMe(voted.contains(t.getId()))
-                    .mine(t.getAuthor().getId().equals(me.getId()))
+                    .mine(t.getAuthor().getId().equals(meId))
                     .answered(acceptedId != null)
                     .pinned(t.getPinnedAt() != null)
                     .locked(t.getLockedAt() != null)
@@ -574,6 +604,7 @@ public class ForumServiceImpl implements ForumService {
     /** Bài hay nhất đứng đầu, còn lại theo thời gian (đầu vào đã sắp theo thời gian). */
     private List<ForumPostResponse> toPostResponses(
             List<ForumPost> posts, Member me, String acceptedId, Collection<ForumPost> visibleInThread) {
+        String meId = me == null ? null : me.getId();
         if (posts.isEmpty()) {
             return List.of();
         }
@@ -584,7 +615,7 @@ public class ForumServiceImpl implements ForumService {
         }
         List<String> ids = posts.stream().map(ForumPost::getId).toList();
         Map<String, Long> votes = toCountMap(voteRepository.countByPostIds(ids));
-        Set<String> voted = new HashSet<>(voteRepository.postIdsVotedBy(me.getId(), ids));
+        Set<String> voted = meId == null ? Set.of() : new HashSet<>(voteRepository.postIdsVotedBy(meId, ids));
         List<ForumPostResponse> out = new ArrayList<>();
         for (ForumPost p : posts) {
             out.add(ForumPostResponse.builder()
@@ -594,7 +625,7 @@ public class ForumServiceImpl implements ForumService {
                     .author(author(p.getAuthor()))
                     .voteCount(votes.getOrDefault(p.getId(), 0L))
                     .votedByMe(voted.contains(p.getId()))
-                    .mine(p.getAuthor().getId().equals(me.getId()))
+                    .mine(p.getAuthor().getId().equals(meId))
                     .accepted(p.getId().equals(acceptedId))
                     .replyTo(replyRef(p, visible))
                     .createdAt(p.getCreatedAt())
