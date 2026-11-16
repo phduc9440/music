@@ -228,6 +228,32 @@
     "settings": "Settings",
     "info": "Info"
   },
+  "license": {
+    "ALL_RIGHTS_RESERVED": "All rights reserved",
+    "CC0": "Public domain (CC0)",
+    "CC_BY": "Attribution (CC BY)",
+    "CC_BY_SA": "Attribution, ShareAlike (CC BY-SA)",
+    "CC_BY_NC": "Attribution, NonCommercial (CC BY-NC)"
+  },
+  "licenseHint": {
+    "ALL_RIGHTS_RESERVED": "Others cannot create arrangements from your score.",
+    "CC0": "Anyone can rearrange it, no credit needed.",
+    "CC_BY": "May be rearranged if you are credited.",
+    "CC_BY_SA": "May be rearranged if you are credited and the same license is kept.",
+    "CC_BY_NC": "May be rearranged if you are credited, the same license is kept and it is not used commercially."
+  },
+  "fork": {
+    "button": "Create arrangement",
+    "working": "Creating...",
+    "hint": "Make your own private copy to rearrange, with credit to the original",
+    "done": "Arrangement created, find it in your library",
+    "failed": "Could not create the arrangement",
+    "attribution": "Arrangement of “{title}” by {owner}, license {license}",
+    "unknownOwner": "a member",
+    "openSource": "Open the original",
+    "loginHint": "Sign in to create an arrangement from this score",
+    "license": "License: {license}"
+  },
   "hero": {
     "owner": "Owner: {name}",
     "updated": "Updated {when}",
@@ -287,6 +313,9 @@
     "visPublic": "Public (needs administrator approval)",
     "visHint": "Once approved, everyone who is signed in can view and review it. Until then the score stays private.",
     "allowDownload": "Let viewers download MusicXML, MIDI, audio and PDF",
+    "license": "License",
+    "allowArrange": "Let others create arrangements from this public score",
+    "licenseLocked": "An arrangement keeps the license of the original, so it can't be changed.",
     "saving": "Saving...",
     "saveChanges": "Save changes"
   },

@@ -8,11 +8,15 @@ import jakarta.persistence.*;
 
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import com.ptit.music_be.dto.enums.score.DifficultyLevel;
 import com.ptit.music_be.service.composer.ScoreComposerListener;
+
+import com.ptit.music_be.dto.enums.score.ScoreLicense;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -127,6 +131,25 @@ public class Score {
     @Column(name = "allow_download", nullable = false)
     @Builder.Default
     boolean allowDownload = false;
+
+    /** Giấy phép do chủ chọn (mục R4); null = bảo lưu mọi quyền. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "license", length = 24)
+    ScoreLicense license;
+
+    /** Chủ cho phép người khác tạo bản phối từ bản công khai này (cần giấy phép khác bảo lưu mọi quyền). */
+    @Column(name = "allow_arrange", nullable = false)
+    @Builder.Default
+    boolean allowArrange = false;
+
+    /**
+     * Bản nhạc gốc mà bản này là bản phối của (mục R4). Bản gốc bị xóa hẳn thì về null; bản gốc ở thùng rác cũng coi như
+     * không còn (@SQLRestriction), nên chỉ hiện ghi công khi bản gốc còn công khai.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "forked_from_score_id")
+    @NotFound(action = NotFoundAction.IGNORE)
+    Score forkedFrom;
 
     /** Thời điểm chuyển vào thùng rác; null là bản nhạc bình thường. */
     @Column(name = "deleted_at")
