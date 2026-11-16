@@ -26,8 +26,6 @@ interface Props {
   score: ScoreDetail;
   /** Mở hộp xin thêm quyền (người không phải chủ, chưa có quyền sửa). */
   onRequestMore?: () => void;
-  /** Mở hộp thoại báo cáo vi phạm (chỉ hiện cho người không phải chủ sở hữu). */
-  onReport?: () => void;
   /** Gọi khi chủ sở hữu đổi chế độ hiển thị (công khai, hủy yêu cầu, về riêng tư) với bản nhạc đã cập nhật. */
   onVisibilityChanged: (score: ScoreDetail) => void;
 }
@@ -39,7 +37,7 @@ const hasMusicXml = (score: ScoreDetail) => score.files.some((f) => f.fileType =
  * Đầu trang chi tiết: nhãn trạng thái, tiêu đề, dòng phụ, ba thao tác chính (mở, phát, tải xuống) và các thông báo
  * (đang số hóa, xử lý lỗi, bị từ chối công khai).
  */
-export default function ScoreHero({ score, onVisibilityChanged, onRequestMore, onReport }: Props) {
+export default function ScoreHero({ score, onVisibilityChanged, onRequestMore }: Props) {
   // Đổi hoặc gỡ ảnh bìa trả về bản nhạc đã cập nhật, dùng chung đường cập nhật với đổi chế độ hiển thị
   const base = useScoreBase();
   const navigate = useNavigate();
@@ -92,7 +90,6 @@ export default function ScoreHero({ score, onVisibilityChanged, onRequestMore, o
   // Bản trong kho mẫu do hệ thống quản lý, chỉ admin sửa: không có chuyện xin quyền chỉnh sửa
   const canRequestMore =
     !score.canEdit && score.accessLevel !== 'OWNER' && !base.startsWith('/admin') && !score.isOfficial;
-  const canReport = !!onReport && score.accessLevel !== 'OWNER' && !base.startsWith('/admin');
 
   const meta = [
     score.composer || t('scores.card.unknownComposer'),
@@ -106,7 +103,7 @@ export default function ScoreHero({ score, onVisibilityChanged, onRequestMore, o
         <div className="sd-head__lead">
           <div className="sd-head__cover">
             <ScoreCover score={score} onChanged={onVisibilityChanged} />
-            {/* Hai biểu tượng nhỏ ở góc ảnh bìa: chép đường dẫn bản nhạc để gửi cho người khác, và báo cáo vi phạm */}
+            {/* Biểu tượng nhỏ ở góc ảnh bìa: chép đường dẫn bản nhạc để gửi cho người khác (báo cáo vi phạm nằm ở tab Cài đặt) */}
             <div className="sd-cover-tools">
               <button
                 type="button"
@@ -117,17 +114,6 @@ export default function ScoreHero({ score, onVisibilityChanged, onRequestMore, o
               >
                 <Icon name={linkCopied ? 'check' : 'copy'} size={14} />
               </button>
-              {canReport && (
-                <button
-                  type="button"
-                  className="sd-iconbtn sd-iconbtn--report"
-                  onClick={onReport}
-                  title={t('scores.report.menu')}
-                  aria-label={t('scores.report.menu')}
-                >
-                  <Icon name="alert" size={14} />
-                </button>
-              )}
             </div>
           </div>
           <div className="sd-head__text">

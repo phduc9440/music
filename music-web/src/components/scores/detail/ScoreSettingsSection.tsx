@@ -8,7 +8,7 @@ import VisibilityBadge from '../common/VisibilityBadge';
 import type { ScoreDetail } from '../../../types';
 import { t } from '../../../i18n/core';
 
-type Section = 'general' | 'people' | 'requests' | 'danger';
+type Section = 'general' | 'people' | 'requests' | 'report' | 'danger';
 
 interface Props {
   scoreId: string;
@@ -29,11 +29,14 @@ interface Props {
   onShare: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  /** Người không phải chủ: có mục Báo cáo vi phạm (mở hộp thoại báo cáo bản nhạc). */
+  canReport: boolean;
+  onReport: () => void;
 }
 
 /**
  * Tab "Cài đặt" của trang chi tiết, bố cục như trang Settings của GitHub: thanh bên trái chọn chức năng (Chung, Người có
- * quyền, Yêu cầu xin quyền, Vùng nguy hiểm), bên phải là nội dung của mục đang chọn. Mỗi mục chỉ hiện khi có quyền làm.
+ * quyền, Yêu cầu xin quyền, Báo cáo vi phạm, Vùng nguy hiểm), bên phải là nội dung của mục đang chọn. Mỗi mục chỉ hiện khi có quyền làm.
  */
 export default function ScoreSettingsSection({
   scoreId,
@@ -49,6 +52,8 @@ export default function ScoreSettingsSection({
   onShare,
   onEdit,
   onDelete,
+  canReport,
+  onReport,
 }: Props) {
   // Chỉ chủ đổi được chế độ hiển thị; bản trong kho mẫu do hệ thống quản lý nên không có nút này
   const canPublish = isOwner && !score.isOfficial;
@@ -64,6 +69,7 @@ export default function ScoreSettingsSection({
       badge: pendingRequests,
     });
   }
+  if (canReport) items.push({ key: 'report', label: t('scores.settings.nav.report'), icon: 'alert' });
   if (canDelete) items.push({ key: 'danger', label: t('scores.settings.nav.danger'), icon: 'alert' });
 
   // Có yêu cầu đang chờ thì mở thẳng mục đó để chủ thấy ngay
@@ -131,6 +137,17 @@ export default function ScoreSettingsSection({
           <AccessMembersPanel scoreId={scoreId} onInvite={onShare} refreshKey={refreshKey} onChanged={onChanged} />
         )}
         {active === 'requests' && isOwner && <AccessRequestsPanel scoreId={scoreId} showEmpty onChanged={onChanged} />}
+        {active === 'report' && canReport && (
+          <section className="sc-settings__card">
+            <div>
+              <h2>{t('scores.settings.reportTitle')}</h2>
+              <p>{t('scores.settings.reportHint')}</p>
+            </div>
+            <button type="button" className="sc-btn sc-btn--danger" onClick={onReport}>
+              <Icon name="alert" size={16} /> {t('scores.settings.reportButton')}
+            </button>
+          </section>
+        )}
         {active === 'danger' && canDelete && (
           <section className="sc-settings__card sc-settings__card--danger">
             <div>

@@ -112,6 +112,9 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
   const isOwnerView = score?.accessLevel === 'OWNER' && !!score.canManageSharing && !scoreBase.startsWith('/admin');
   // Ai có việc quản lý (chia sẻ, sửa thông tin, xóa) thì có tab Cài đặt; riêng danh sách người có quyền chỉ chủ thấy
   const showSettings = !!score && (isOwnerView || !!score.canEdit || !!score.canDelete);
+  // Báo cáo vi phạm nằm trong Cài đặt: người không phải chủ (kể cả chỉ có quyền xem) cũng thấy tab này để báo cáo
+  const canReport = !!score && score.accessLevel !== 'OWNER' && !scoreBase.startsWith('/admin');
+  const showSettingsTab = showSettings || canReport;
 
   // Người không có quyền sửa không thấy tab File / Tác vụ: rơi về tab Nhận xét
   const activeTab: Tab =
@@ -120,7 +123,7 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
     tab === 'reviews' ||
     tab === 'comments' ||
     tab === 'suggestions' ||
-    (tab === 'settings' && showSettings)
+    (tab === 'settings' && showSettingsTab)
       ? tab
       : 'info';
 
@@ -232,7 +235,6 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
           score={score}
           onVisibilityChanged={(updated) => setState({ phase: 'ready', score: updated })}
           onRequestMore={() => setRequestingEdit(true)}
-          onReport={() => setReporting(true)}
         />
 
         <div className="sd-repo">
@@ -289,7 +291,7 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
                 {openSuggestions ? <span className="sc-tab__count">{openSuggestions}</span> : null}
               </button>
             )}
-            {showSettings && (
+            {showSettingsTab && (
               <button
                 role="tab"
                 aria-selected={activeTab === 'settings'}
@@ -328,7 +330,7 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
           {activeTab === 'suggestions' && score.canReview && (
             <SuggestionsSection scoreId={score.id} onOpenCount={onOpenSuggestions} />
           )}
-          {activeTab === 'settings' && showSettings && (
+          {activeTab === 'settings' && showSettingsTab && (
             <ScoreSettingsSection
               scoreId={score.id}
               score={score}
@@ -343,6 +345,8 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
               onShare={() => setSharing(true)}
               onEdit={() => setEditing(true)}
               onDelete={() => setDeleting(true)}
+              canReport={canReport}
+              onReport={() => setReporting(true)}
             />
           )}
           {activeTab === 'reviews' && (

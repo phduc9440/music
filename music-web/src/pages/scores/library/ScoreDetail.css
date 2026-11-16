@@ -675,9 +675,3 @@ a.sc-btn.is-disabled {
   border-color: var(--ui-success);
   color: var(--ui-success);
 }
-/* Báo cáo là hành động cảnh báo nên rê chuột / focus thì chuyển sang màu đỏ */
-.sd-iconbtn--report:hover {
-  border-color: var(--ui-danger-border);
-  background: var(--ui-danger-soft);
-  color: var(--ui-danger);
-}

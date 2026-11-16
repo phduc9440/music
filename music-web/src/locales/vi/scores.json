@@ -524,7 +524,8 @@
       "general": "Chung",
       "people": "Người có quyền",
       "requests": "Yêu cầu xin quyền",
-      "danger": "Vùng nguy hiểm"
+      "danger": "Vùng nguy hiểm",
+      "report": "Báo cáo vi phạm"
     },
     "editTitle": "Thông tin bản nhạc",
     "editHint": "Đổi tên, tác giả, độ khó, thể loại và ghi chú luyện tập.",
@@ -533,6 +534,9 @@
     "dangerTitle": "Xóa bản nhạc",
     "dangerHint": "Chuyển bản nhạc vào thùng rác, khôi phục được trong 30 ngày.",
     "publishTitle": "Chế độ hiển thị",
-    "publishHint": "Công khai để mọi người tìm thấy (cần quản trị viên duyệt), hoặc giữ riêng tư."
+    "publishHint": "Công khai để mọi người tìm thấy (cần quản trị viên duyệt), hoặc giữ riêng tư.",
+    "reportTitle": "Báo cáo vi phạm",
+    "reportHint": "Gửi báo cáo tới quản trị viên nếu bản nhạc vi phạm bản quyền, là spam hoặc có nội dung không phù hợp. Chủ bản nhạc không biết ai đã báo cáo.",
+    "reportButton": "Báo cáo bản nhạc"
   }
 }

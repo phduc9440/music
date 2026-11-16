@@ -535,7 +535,8 @@
       "general": "General",
       "people": "People with access",
       "requests": "Access requests",
-      "danger": "Danger zone"
+      "danger": "Danger zone",
+      "report": "Report"
     },
     "editTitle": "Score details",
     "editHint": "Change the title, composer, difficulty, tags and practice notes.",
@@ -544,6 +545,9 @@
     "dangerTitle": "Delete this score",
     "dangerHint": "Moves the score to the trash; you can restore it within 30 days.",
     "publishTitle": "Visibility",
-    "publishHint": "Make it public so everyone can find it (requires admin approval), or keep it private."
+    "publishHint": "Make it public so everyone can find it (requires admin approval), or keep it private.",
+    "reportTitle": "Report this score",
+    "reportHint": "Send a report to the administrators if the score infringes copyright, is spam or has inappropriate content. The owner will not know who reported it.",
+    "reportButton": "Report score"
   }
 }
