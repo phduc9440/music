@@ -223,158 +223,163 @@ export default function ShowBoard() {
 
         {data && data.items.length > 0 && <ShowSummary items={data.items} now={now} />}
 
-        <div className="tm-toolbar">
-          <div className="tm-segment" role="tablist" aria-label={t('teams.board.viewLabel')}>
-            {(['board', 'list'] as View[]).map((v) => (
-              <button
-                key={v}
-                type="button"
-                role="tab"
-                aria-selected={view === v}
-                className="tm-segment__btn"
-                onClick={() => setView(v)}
-              >
-                <Icon name={v === 'board' ? 'dashboard' : 'list'} size={16} />
-                {t(`teams.board.view.${v}`)}
-              </button>
-            ))}
+        {/* Thanh chọn cách xem và bảng / danh sách nằm chung một khung nền đặc, không nổi trên ảnh nền trang */}
+        <section className="tm-workspace">
+          <div className="tm-toolbar">
+            <div className="tm-segment" role="tablist" aria-label={t('teams.board.viewLabel')}>
+              {(['board', 'list'] as View[]).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  role="tab"
+                  aria-selected={view === v}
+                  className="tm-segment__btn"
+                  onClick={() => setView(v)}
+                >
+                  <Icon name={v === 'board' ? 'dashboard' : 'list'} size={16} />
+                  {t(`teams.board.view.${v}`)}
+                </button>
+              ))}
+            </div>
+            {data && data.items.length > 0 && (
+              <span className="tm-toolbar__hint">
+                {view === 'board' ? t('teams.board.dragHint') : t('teams.board.orderHint')}
+              </span>
+            )}
           </div>
-          {data && data.items.length > 0 && (
-            <span className="tm-toolbar__hint">
-              {view === 'board' ? t('teams.board.dragHint') : t('teams.board.orderHint')}
-            </span>
+
+          {!data && <Skeleton lines={5} />}
+          {data && data.items.length === 0 && (
+            <div className="sc-empty">
+              <h3>{t('teams.board.emptyTitle')}</h3>
+              <p>{manager ? t('teams.board.emptyHintManager') : t('teams.board.emptyHint')}</p>
+            </div>
           )}
-        </div>
 
-        {!data && <Skeleton lines={5} />}
-        {data && data.items.length === 0 && (
-          <div className="sc-empty">
-            <h3>{t('teams.board.emptyTitle')}</h3>
-            <p>{manager ? t('teams.board.emptyHintManager') : t('teams.board.emptyHint')}</p>
-          </div>
-        )}
+          {data && data.items.length > 0 && view === 'board' && (
+            <div className="tm-board">
+              {SHOW_ITEM_STATUSES.map((status) => {
+                const items = data.items.filter((i) => i.status === status);
+                const target = !!dragged && dragged.status !== status && dragged.allowedStatuses.includes(status);
+                return (
+                  <section
+                    key={status}
+                    className={`tm-col tm-col--${status}${target ? ' tm-col--target' : ''}${target && overCol === status ? ' tm-col--over' : ''}`}
+                    aria-label={t(`teams.status.${status}`)}
+                    onDragOver={(e) => {
+                      if (!target) return;
+                      e.preventDefault();
+                      setOverCol(status);
+                    }}
+                    onDragLeave={() => setOverCol((c) => (c === status ? null : c))}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setOverCol(null);
+                      if (dragged && target) moveTo(dragged, status);
+                      setDragId(null);
+                    }}
+                  >
+                    <div className="tm-col__head">
+                      <span className={`tm-dot tm-dot--${status}`} aria-hidden="true" />
+                      <span className="tm-col__title">{t(`teams.status.${status}`)}</span>
+                      <span className="tm-col__count">{formatNumber(items.length)}</span>
+                    </div>
+                    {items.length === 0 && (
+                      <p className="tm-col__empty">
+                        {target ? t('teams.board.dropHere') : t('teams.board.columnEmpty')}
+                      </p>
+                    )}
+                    {items.map((item) => (
+                      <ItemCard
+                        key={item.id}
+                        item={item}
+                        people={people}
+                        manager={manager}
+                        busy={busy}
+                        now={now}
+                        from={pathname}
+                        dragging={dragId === item.id}
+                        onDragStart={() => setDragId(item.id)}
+                        onDragEnd={() => {
+                          setDragId(null);
+                          setOverCol(null);
+                        }}
+                        onMove={(to) => moveTo(item, to)}
+                        onEdit={() => setEditingItem(item)}
+                        onRemove={() => removeItem(item)}
+                      />
+                    ))}
+                  </section>
+                );
+              })}
+            </div>
+          )}
 
-        {data && data.items.length > 0 && view === 'board' && (
-          <div className="tm-board">
-            {SHOW_ITEM_STATUSES.map((status) => {
-              const items = data.items.filter((i) => i.status === status);
-              const target = !!dragged && dragged.status !== status && dragged.allowedStatuses.includes(status);
-              return (
-                <section
-                  key={status}
-                  className={`tm-col tm-col--${status}${target ? ' tm-col--target' : ''}${target && overCol === status ? ' tm-col--over' : ''}`}
-                  aria-label={t(`teams.status.${status}`)}
-                  onDragOver={(e) => {
-                    if (!target) return;
-                    e.preventDefault();
-                    setOverCol(status);
-                  }}
-                  onDragLeave={() => setOverCol((c) => (c === status ? null : c))}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    setOverCol(null);
-                    if (dragged && target) moveTo(dragged, status);
+          {data && data.items.length > 0 && view === 'list' && (
+            <ol className="tm-list tm-setlist">
+              {data.items.map((item, index) => (
+                <li
+                  key={item.id}
+                  className={`tm-row tm-set${manager ? ' tm-row--drag' : ''}${dragId === item.id ? ' tm-row--dragging' : ''}`}
+                  draggable={manager && !busy}
+                  onDragStart={() => setDragId(item.id)}
+                  onDragOver={(e) => manager && e.preventDefault()}
+                  onDrop={() => {
+                    if (dragId) reorder(dragId, index);
                     setDragId(null);
                   }}
+                  onDragEnd={() => setDragId(null)}
                 >
-                  <div className="tm-col__head">
-                    <span className={`tm-dot tm-dot--${status}`} aria-hidden="true" />
-                    <span className="tm-col__title">{t(`teams.status.${status}`)}</span>
-                    <span className="tm-col__count">{formatNumber(items.length)}</span>
-                  </div>
-                  {items.length === 0 && (
-                    <p className="tm-col__empty">{target ? t('teams.board.dropHere') : t('teams.board.columnEmpty')}</p>
-                  )}
-                  {items.map((item) => (
-                    <ItemCard
-                      key={item.id}
-                      item={item}
-                      people={people}
-                      manager={manager}
-                      busy={busy}
-                      now={now}
-                      from={pathname}
-                      dragging={dragId === item.id}
-                      onDragStart={() => setDragId(item.id)}
-                      onDragEnd={() => {
-                        setDragId(null);
-                        setOverCol(null);
-                      }}
-                      onMove={(to) => moveTo(item, to)}
-                      onEdit={() => setEditingItem(item)}
-                      onRemove={() => removeItem(item)}
-                    />
-                  ))}
-                </section>
-              );
-            })}
-          </div>
-        )}
-
-        {data && data.items.length > 0 && view === 'list' && (
-          <ol className="tm-list tm-setlist">
-            {data.items.map((item, index) => (
-              <li
-                key={item.id}
-                className={`tm-row tm-set${manager ? ' tm-row--drag' : ''}${dragId === item.id ? ' tm-row--dragging' : ''}`}
-                draggable={manager && !busy}
-                onDragStart={() => setDragId(item.id)}
-                onDragOver={(e) => manager && e.preventDefault()}
-                onDrop={() => {
-                  if (dragId) reorder(dragId, index);
-                  setDragId(null);
-                }}
-                onDragEnd={() => setDragId(null)}
-              >
-                {manager && (
-                  <span className="tm-set__grip" aria-hidden="true">
-                    <Icon name="grip" size={16} />
-                  </span>
-                )}
-                <span className={`tm-set__pos tm-set__pos--${item.status}`}>{index + 1}</span>
-                <div className="tm-row__main">
-                  <Link className="tm-row__title" to={`/scores/${item.scoreId}`} state={{ from: pathname }}>
-                    {item.scoreTitle}
-                    {item.scoreComposer && <span className="tm-set__composer"> · {item.scoreComposer}</span>}
-                  </Link>
-                  <span className="tm-row__sub">
-                    {t('teams.board.arrangerShort')}: {item.arrangerName ?? t('teams.item.nobody')} ·{' '}
-                    {t('teams.board.reviewerShort')}: {item.reviewerName ?? t('teams.item.nobody')}
-                    {item.notes ? ` · ${item.notes}` : ''}
-                  </span>
-                </div>
-                <div className="tm-row__actions">
-                  <DueDate date={item.dueDate} done={item.status === 'APPROVED'} now={now} chip />
-                  <StatusBadge status={item.status} />
                   {manager && (
-                    <span className="tm-set__order">
-                      <button
-                        type="button"
-                        className="tm-icon-btn"
-                        disabled={busy || index === 0}
-                        aria-label={t('teams.board.moveUp', { title: item.scoreTitle })}
-                        title={t('teams.board.moveUp', { title: item.scoreTitle })}
-                        onClick={() => reorder(item.id, index - 1)}
-                      >
-                        <Icon name="chevronUp" size={16} />
-                      </button>
-                      <button
-                        type="button"
-                        className="tm-icon-btn"
-                        disabled={busy || index === data.items.length - 1}
-                        aria-label={t('teams.board.moveDown', { title: item.scoreTitle })}
-                        title={t('teams.board.moveDown', { title: item.scoreTitle })}
-                        onClick={() => reorder(item.id, index + 1)}
-                      >
-                        <Icon name="chevronDown" size={16} />
-                      </button>
+                    <span className="tm-set__grip" aria-hidden="true">
+                      <Icon name="grip" size={16} />
                     </span>
                   )}
-                </div>
-              </li>
-            ))}
-          </ol>
-        )}
+                  <span className={`tm-set__pos tm-set__pos--${item.status}`}>{index + 1}</span>
+                  <div className="tm-row__main">
+                    <Link className="tm-row__title" to={`/scores/${item.scoreId}`} state={{ from: pathname }}>
+                      {item.scoreTitle}
+                      {item.scoreComposer && <span className="tm-set__composer"> · {item.scoreComposer}</span>}
+                    </Link>
+                    <span className="tm-row__sub">
+                      {t('teams.board.arrangerShort')}: {item.arrangerName ?? t('teams.item.nobody')} ·{' '}
+                      {t('teams.board.reviewerShort')}: {item.reviewerName ?? t('teams.item.nobody')}
+                      {item.notes ? ` · ${item.notes}` : ''}
+                    </span>
+                  </div>
+                  <div className="tm-row__actions">
+                    <DueDate date={item.dueDate} done={item.status === 'APPROVED'} now={now} chip />
+                    <StatusBadge status={item.status} />
+                    {manager && (
+                      <span className="tm-set__order">
+                        <button
+                          type="button"
+                          className="tm-icon-btn"
+                          disabled={busy || index === 0}
+                          aria-label={t('teams.board.moveUp', { title: item.scoreTitle })}
+                          title={t('teams.board.moveUp', { title: item.scoreTitle })}
+                          onClick={() => reorder(item.id, index - 1)}
+                        >
+                          <Icon name="chevronUp" size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          className="tm-icon-btn"
+                          disabled={busy || index === data.items.length - 1}
+                          aria-label={t('teams.board.moveDown', { title: item.scoreTitle })}
+                          title={t('teams.board.moveDown', { title: item.scoreTitle })}
+                          onClick={() => reorder(item.id, index + 1)}
+                        >
+                          <Icon name="chevronDown" size={16} />
+                        </button>
+                      </span>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ol>
+          )}
+        </section>
       </main>
 
       {editingItem && data && (
@@ -722,9 +727,7 @@ function ItemModal({
   const [error, setError] = useState('');
   // Bài đã duyệt: chỉ người duyệt của bài (hoặc người duyệt thay được mọi bài) đổi người duyệt, tránh tự gán rồi mở lại
   const reviewerLocked =
-    item?.status === 'APPROVED' &&
-    item.reviewerId !== meId &&
-    !hasTeamPermission(detail.myPermissions, 'APPROVE_ANY');
+    item?.status === 'APPROVED' && item.reviewerId !== meId && !hasTeamPermission(detail.myPermissions, 'APPROVE_ANY');
 
   useEffect(() => {
     if (item) return;
@@ -761,13 +764,7 @@ function ItemModal({
     }
   };
 
-  const memberSelect = (
-    id: string,
-    value: string,
-    onChange: (v: string) => void,
-    label: string,
-    disabled = false,
-  ) => (
+  const memberSelect = (id: string, value: string, onChange: (v: string) => void, label: string, disabled = false) => (
     <>
       <label className="sc-label" htmlFor={id}>
         {label}

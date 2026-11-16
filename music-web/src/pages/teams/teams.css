@@ -1375,3 +1375,102 @@ a.tm-card:hover {
     margin-left: 0;
   }
 }
+
+/* ---- trang buổi diễn: phần đầu là một thẻ có khung, bảng và danh sách nằm chung một khung nền đặc ---- */
+.tm-show {
+  position: relative;
+  margin: 0.5rem 0 1rem;
+  padding: 1.25rem 1.5rem;
+  border: 1px solid var(--ui-card-border);
+  border-radius: 20px;
+  background:
+    radial-gradient(26rem 9rem at 100% 0%, color-mix(in srgb, var(--ui-hue-amber) 20%, transparent), transparent 70%),
+    color-mix(in srgb, var(--ui-primary) 8%, var(--ui-surface));
+  box-shadow: var(--ui-card-shadow);
+}
+
+/* Meta (ngày, địa điểm) thành các nhãn nhỏ có viền cho dễ quét mắt */
+.tm-show__meta {
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+}
+
+.tm-show__meta li {
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: 999px;
+  background: var(--ui-surface);
+  font-size: var(--ui-text-sm);
+  font-weight: 600;
+}
+
+.tm-show__notes {
+  padding: 0.5rem 0.85rem;
+  border-left: 3px solid var(--ui-card-border);
+  border-radius: var(--ui-radius-sm);
+  background: color-mix(in srgb, var(--ui-surface) 70%, transparent);
+}
+
+.tm-show__actions {
+  align-self: center;
+}
+
+.tm-summary {
+  margin-bottom: 1rem;
+  border-color: var(--ui-card-border);
+}
+
+.tm-summary__percent {
+  font-weight: 700;
+}
+
+.tm-workspace {
+  padding: 1rem;
+  border: 1px solid var(--ui-card-border);
+  border-radius: 20px;
+  background: var(--ui-surface);
+  box-shadow: var(--ui-card-shadow);
+}
+
+.tm-workspace .tm-toolbar {
+  margin: 0 0 1rem;
+}
+
+.tm-workspace .tm-col {
+  border-color: var(--ui-card-border);
+  border-top-color: var(--tm-status);
+}
+
+.tm-workspace .tm-item {
+  border-color: var(--ui-card-border);
+}
+
+/* Danh sách thứ tự diễn nằm trong khung chung nên bỏ bóng của chính nó, giữ viền mảnh */
+.tm-workspace .tm-list {
+  border-color: var(--ui-card-border);
+  box-shadow: none;
+}
+
+.tm-workspace .tm-set {
+  border-top-color: var(--ui-border-strong);
+}
+
+@media (max-width: 640px) {
+  .tm-show {
+    padding: 1rem;
+  }
+
+  .tm-show__actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+
+  .tm-show__actions .sc-btn--primary {
+    grid-column: 1 / -1;
+  }
+
+  .tm-workspace {
+    padding: 0.75rem;
+  }
+}
