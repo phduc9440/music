@@ -29,6 +29,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.ptit.music_be.configuration.MemberStatusGuard;
 import com.ptit.music_be.configuration.OtpRequestLimiter;
+import com.ptit.music_be.dto.enums.auth.AppLocale;
 import com.ptit.music_be.dto.enums.auth.AuthProvider;
 import com.ptit.music_be.dto.enums.auth.MemberStatus;
 import com.ptit.music_be.dto.request.auth.ChangePasswordRequest;
@@ -56,6 +57,7 @@ import com.ptit.music_be.repository.auth.OtpRepository;
 import com.ptit.music_be.repository.auth.RoleRepository;
 import com.ptit.music_be.service.auth.AuthService;
 import com.ptit.music_be.service.auth.EmailService;
+import com.ptit.music_be.utils.RequestLocale;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -142,6 +144,8 @@ public class AuthServiceImpl implements AuthService {
                 .findByName("USER")
                 .orElseGet(() -> roleRepository.save(Role.builder().name("USER").build()));
 
+        // Ngôn ngữ giao diện lúc đăng ký (header Accept-Language) thành lựa chọn ban đầu, dùng cho email
+        AppLocale locale = RequestLocale.resolve();
         Member user = Member.builder()
                 .email(email)
                 .fullName(blankToNull(request.getFullName()))
@@ -152,6 +156,7 @@ public class AuthServiceImpl implements AuthService {
                 .emailVerified(false)
                 .authProvider(AuthProvider.LOCAL)
                 .referredBy(inviterId(request.getReferralCode()))
+                .locale(locale)
                 .build();
 
         Member savedUser = memberRepository.save(user);
@@ -167,6 +172,7 @@ public class AuthServiceImpl implements AuthService {
             emailService.sendWelcomeEmail(SendEmailRequest.builder()
                     .to(email)
                     .fullName(request.getFullName() != null ? request.getFullName() : email)
+                    .locale(locale)
                     .build());
         }
 
@@ -236,6 +242,7 @@ public class AuthServiceImpl implements AuthService {
                         .orElseGet(() ->
                                 roleRepository.save(Role.builder().name("USER").build()));
 
+                AppLocale locale = RequestLocale.resolve();
                 user = Member.builder()
                         .email(email)
                         .fullName(blankToNull(name))
@@ -243,6 +250,7 @@ public class AuthServiceImpl implements AuthService {
                         .emailVerified(true)
                         .authProvider(AuthProvider.GOOGLE)
                         .referredBy(inviterId(request.getReferralCode()))
+                        .locale(locale)
                         .build();
 
                 user = memberRepository.save(user);
@@ -257,6 +265,7 @@ public class AuthServiceImpl implements AuthService {
                     emailService.sendWelcomeEmail(SendEmailRequest.builder()
                             .to(email)
                             .fullName(name != null ? name : email)
+                            .locale(locale)
                             .build());
                 }
             }
