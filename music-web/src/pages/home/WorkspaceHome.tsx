@@ -10,13 +10,18 @@ import CountUp from '../../components/ui/CountUp';
 import NoteField from '../../components/ui/NoteField';
 import PianoBackground from '../../components/ui/PianoBackground';
 import type { IconName } from '../../components/ui';
-import { homeApi } from '../../services';
-import type { HomePendingItem, HomeSummary, ScoreSummary } from '../../types';
+import { homeApi, teamApi } from '../../services';
+import type { HomePendingItem, HomeSummary, ScoreSummary, TeamTask } from '../../types';
+import { DueDate, StatusBadge } from '../teams/shared';
 import { useReveal } from '../../hooks/useReveal';
 import { t } from '../../i18n/core';
 import { ACCESS_LEVEL_LABELS, DIFFICULTY_LABELS, formatRelative, getScorePath } from '../../utils/score';
 import '../../components/scores/scores.css';
+import '../teams/teams.css';
 import './workspace-home.css';
+
+/** Số việc hiện trên trang chủ; xem hết ở trang Team. */
+const MAX_TASKS = 4;
 
 const QUICK_LINKS: { to: string; labelKey: string; icon: IconName }[] = [
   { to: '/explore', labelKey: 'common.nav.items.publicScores', icon: 'globe' },
@@ -165,7 +170,32 @@ export default function WorkspaceHome() {
   const { pathname } = useLocation();
   const [data, setData] = useState<HomeSummary | null>(null);
   const [failed, setFailed] = useState(false);
+  // Việc được giao trong các buổi diễn (4.1): tải riêng để lỗi ở đây không làm hỏng cả trang chủ
+  const [tasks, setTasks] = useState<TeamTask[]>([]);
+  const [now, setNow] = useState(0);
   const rootRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    teamApi
+      .myTasks()
+      .then((res) => {
+        if (cancelled) return;
+        // Hạn gần nhất trước, bài chưa có hạn xuống cuối
+        const sorted = [...res.data.result].sort((a, b) => {
+          if (!a.dueDate && !b.dueDate) return 0;
+          if (!a.dueDate) return 1;
+          if (!b.dueDate) return -1;
+          return a.dueDate.localeCompare(b.dueDate);
+        });
+        setNow(Date.now());
+        setTasks(sorted);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -397,6 +427,39 @@ export default function WorkspaceHome() {
               </p>
             )}
           </Panel>
+
+          {tasks.length > 0 && (
+            <Panel
+              className="wh-tile wh-tile--tasks"
+              title={t('home.workspace.tasks')}
+              action={{ to: '/teams', label: t('home.workspace.tasksAll', { count: tasks.length }) }}
+            >
+              <ul className="wh-list">
+                {tasks.slice(0, MAX_TASKS).map((task) => (
+                  <li key={task.itemId}>
+                    <Link to={`/teams/${task.teamId}/shows/${task.showId}`} className="wh-task">
+                      <span className="wh-task__body">
+                        <strong title={task.scoreTitle}>{task.scoreTitle}</strong>
+                        <span>
+                          {task.teamName} · {task.showName} ·{' '}
+                          {[
+                            task.asArranger && t('teams.tasks.asArranger'),
+                            task.asReviewer && t('teams.tasks.asReviewer'),
+                          ]
+                            .filter(Boolean)
+                            .join(', ')}
+                        </span>
+                      </span>
+                      <span className="wh-task__side">
+                        <DueDate date={task.dueDate} now={now} />
+                        <StatusBadge status={task.status} />
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </Panel>
+          )}
 
           <nav className="wh-quick" aria-label={t('home.workspace.quickLinks')}>
             {QUICK_LINKS.map((l, i) => (

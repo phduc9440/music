@@ -13,17 +13,17 @@ import type {
   RestorableItem,
   Show,
   Team,
-  TeamActivity,
   TeamInvitation,
   TeamMember,
   TeamRole,
   TeamScore,
 } from '../../types';
-import { formatDate, formatDateTime, formatNumber, formatRelativeTime, t } from '../../i18n/core';
+import { formatDate, formatDateTime, formatNumber, t } from '../../i18n/core';
 import { getErrorCode, getErrorMessage } from '../../utils/score';
 import { MemberAvatar, RestorableList, RoleBadge, StatusBadge } from './shared';
 import RolePermissions from './RolePermissions';
-import { activityText, memberName } from './teamUtils';
+import { memberName } from './teamUtils';
+import TeamActivityTab from './TeamActivity';
 import { TeamFormModal } from './Teams';
 import { ShowFormModal } from './ShowBoard';
 import '../../components/scores/scores.css';
@@ -175,7 +175,7 @@ export default function TeamDetail() {
           {team && tab === 'scores' && <ScoresTab team={team} />}
           {team && tab === 'shows' && <ShowsTab team={team} />}
           {team && tab === 'members' && <MembersTab team={team} meId={meId} onChanged={loadTeam} />}
-          {team && tab === 'activity' && <ActivityTab team={team} />}
+          {team && tab === 'activity' && <TeamActivityTab team={team} />}
         </div>
       </main>
 
@@ -701,65 +701,6 @@ function MembersTab({ team, meId, onChanged }: { team: Team; meId: string | null
       )}
 
       <RolePermissions team={team} onSaved={onChanged} />
-    </>
-  );
-}
-
-// ------------------------------------------------------------------------------------------------ Hoạt động
-
-const PAGE_SIZE = 20;
-
-function ActivityTab({ team }: { team: Team }) {
-  const [items, setItems] = useState<TeamActivity[] | null>(null);
-  const [page, setPage] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    teamApi
-      .activities(team.id, { page, size: PAGE_SIZE })
-      .then((res) => {
-        if (cancelled) return;
-        setItems((prev) => (page === 0 ? res.data.result.content : [...(prev ?? []), ...res.data.result.content]));
-        setTotalPages(res.data.result.totalPages);
-      })
-      .catch(() => !cancelled && toast.error(t('teams.activity.loadFailed')))
-      .finally(() => !cancelled && setLoading(false));
-    return () => {
-      cancelled = true;
-    };
-  }, [team.id, page]);
-
-  if (!items) return <Skeleton lines={4} />;
-  if (items.length === 0) return <p className="tm-muted">{t('teams.activity.empty')}</p>;
-  return (
-    <>
-      <ul className="tm-activity">
-        {items.map((a) => (
-          <li key={a.id}>
-            <time dateTime={a.createdAt} title={formatDateTime(a.createdAt)}>
-              {formatRelativeTime(a.createdAt)}
-            </time>
-            <span>{activityText(a)}</span>
-          </li>
-        ))}
-      </ul>
-      {page + 1 < totalPages && (
-        <div className="sc-modal__actions" style={{ justifyContent: 'center' }}>
-          <button
-            type="button"
-            className="sc-btn"
-            disabled={loading}
-            onClick={() => {
-              setLoading(true);
-              setPage((p) => p + 1);
-            }}
-          >
-            {t('teams.activity.more')}
-          </button>
-        </div>
-      )}
     </>
   );
 }

@@ -225,7 +225,22 @@
     "INVITATION_SENT_link": "{actor} đã tạo link mời làm {role}",
     "PERMISSIONS_CHANGED": "{actor} đã đổi quyền của {role}",
     "permissionsAdded": "bật {list}",
-    "permissionsRemoved": "tắt {list}"
+    "permissionsRemoved": "tắt {list}",
+    "emptyHint": "Khi có người tham gia, thêm bản nhạc hay tạo buổi diễn, hoạt động sẽ hiện ở đây.",
+    "emptyFiltered": "Chưa có hoạt động nào thuộc nhóm này trong các mục đã tải.",
+    "filter": "Lọc hoạt động",
+    "today": "Hôm nay",
+    "yesterday": "Hôm qua",
+    "openShow": "Mở buổi diễn",
+    "openScore": "Mở bản nhạc",
+    "groups": {
+      "all": "Tất cả",
+      "team": "Nhóm",
+      "members": "Thành viên",
+      "scores": "Bản nhạc",
+      "shows": "Buổi diễn",
+      "permissions": "Phân quyền"
+    }
   },
   "board": {
     "loadFailed": "Không tải được buổi diễn",

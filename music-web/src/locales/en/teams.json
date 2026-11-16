@@ -226,7 +226,22 @@
     "INVITATION_SENT_link": "{actor} created an invite link as {role}",
     "PERMISSIONS_CHANGED": "{actor} changed the permissions of {role}",
     "permissionsAdded": "allowed {list}",
-    "permissionsRemoved": "denied {list}"
+    "permissionsRemoved": "denied {list}",
+    "emptyHint": "When people join, scores are added or shows are created, the activity appears here.",
+    "emptyFiltered": "Nothing in this group among the items loaded so far.",
+    "filter": "Filter activity",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "openShow": "Open show",
+    "openScore": "Open score",
+    "groups": {
+      "all": "All",
+      "team": "Team",
+      "members": "Members",
+      "scores": "Scores",
+      "shows": "Shows",
+      "permissions": "Permissions"
+    }
   },
   "board": {
     "loadFailed": "Could not load the show",

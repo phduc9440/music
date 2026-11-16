@@ -139,6 +139,8 @@
     "quickLinks": "Lối tắt",
     "ctaTitle": "Có bản nhạc mới trên giá?",
     "ctaText": "Chụp một trang hoặc tải PDF, vài phút sau bạn đã có bản nhạc số để chỉnh sửa và luyện tập.",
-    "ctaButton": "Số hóa ngay"
+    "ctaButton": "Số hóa ngay",
+    "tasks": "Việc của tôi",
+    "tasksAll": "Xem tất cả ({count})"
   }
 }
