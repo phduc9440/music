@@ -1,6 +1,8 @@
 {
   "title": "Notification settings",
   "subtitle": "Choose which groups show in the bell and which send a summary email every morning.",
+  "loadFailed": "Could not load notification settings",
+  "saveFailed": "Could not save notification settings",
   "channel": {
     "inApp": "In the app",
     "email": "Email digest"
