@@ -13,3 +13,4 @@ export * from './suggestion';
 export * from './live';
 export * from './report';
 export * from './forum';
+export * from './forumAdmin';

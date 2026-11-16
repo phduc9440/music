@@ -50,6 +50,8 @@ public enum AdminPermission {
     SYSTEM_MONITOR("system"),
     /** Hàng chờ báo cáo vi phạm: xem, bỏ qua, ẩn góp ý, gỡ / xóa bản nhạc, khóa tài khoản (từng việc còn cần quyền riêng). */
     REPORTS_MODERATE("content"),
+    /** Quản lý diễn đàn: chuyên mục, ghim / khóa chủ đề, ẩn và khôi phục chủ đề, bài trả lời. */
+    FORUM_MANAGE("content"),
     /** Trang "Nhật ký" quản trị: xem và lọc nhật ký. */
     AUDIT_VIEW("system");
 

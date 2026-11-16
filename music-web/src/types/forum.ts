@@ -30,6 +30,10 @@ export interface ForumThread {
   votedByMe: boolean;
   mine: boolean;
   answered: boolean;
+  /** Admin đã ghim: nổi lên đầu danh sách. */
+  pinned: boolean;
+  /** Admin đã khóa: không trả lời thêm được. */
+  locked: boolean;
   subscribed: boolean;
   acceptedPostId: string | null;
   createdAt: string;

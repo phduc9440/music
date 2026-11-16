@@ -1,0 +1,250 @@
+/* Hàng đợi báo cáo vi phạm của admin (R5): mỗi báo cáo là một thẻ có vạch màu theo lý do. Màu lấy từ token --ui-*. */
+.ar-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.ar-filters .adm-tabs {
+  margin-bottom: 0;
+  align-self: flex-start;
+}
+
+.ar-types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.ar-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 36px;
+  padding: 0 0.85rem;
+  border: 1px solid var(--ui-card-border);
+  border-radius: 999px;
+  background: var(--ui-surface);
+  color: var(--ui-text-2);
+  font: inherit;
+  font-size: var(--ui-text-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ar-type:hover {
+  background: var(--ui-surface-hover);
+  color: var(--ui-text);
+}
+
+.ar-type:focus-visible {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 2px;
+}
+
+.ar-type.is-on {
+  border-color: var(--ui-primary);
+  background: var(--ui-primary);
+  color: var(--ui-on-accent);
+}
+
+.ar-type__n {
+  min-width: 1.4rem;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  background: var(--ui-surface-muted);
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-xs);
+  line-height: 1.4rem;
+  text-align: center;
+}
+
+.ar-type__n--alert {
+  background: var(--ui-danger);
+  color: var(--ui-on-accent);
+}
+
+.ar-type.is-on .ar-type__n:not(.ar-type__n--alert) {
+  background: color-mix(in srgb, var(--ui-on-accent) 22%, transparent);
+  color: var(--ui-on-accent);
+}
+
+/* ---- danh sách thẻ ---- */
+.ar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+}
+
+.ar-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 1rem 1.15rem;
+  border: 1px solid var(--ui-card-border);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-surface);
+  box-shadow:
+    inset 4px 0 0 var(--ui-warning-strong),
+    var(--ui-card-shadow);
+}
+
+/* Vạch màu theo lý do: bản quyền đỏ, spam vàng đồng, không phù hợp tím, khác xám */
+.ar-card--copyright {
+  box-shadow:
+    inset 4px 0 0 var(--ui-danger),
+    var(--ui-card-shadow);
+}
+
+.ar-card--spam {
+  box-shadow:
+    inset 4px 0 0 var(--ui-warning-strong),
+    var(--ui-card-shadow);
+}
+
+.ar-card--inappropriate {
+  box-shadow:
+    inset 4px 0 0 var(--ui-violet),
+    var(--ui-card-shadow);
+}
+
+.ar-card--other {
+  box-shadow:
+    inset 4px 0 0 var(--ui-border-strong),
+    var(--ui-card-shadow);
+}
+
+.ar-card.is-done {
+  background: var(--ui-surface-muted);
+}
+
+.ar-card--skeleton {
+  min-height: 150px;
+  background: var(--ui-surface-muted);
+  box-shadow: none;
+}
+
+.ar-card__head,
+.ar-actions,
+.ar-outcome {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ar-kind {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-sm);
+  font-weight: 700;
+}
+
+.ar-card__time {
+  margin-left: auto;
+  color: var(--ui-text-3);
+  font-size: var(--ui-text-sm);
+}
+
+/* ---- nội dung bị báo cáo ---- */
+.ar-quote {
+  margin: 0;
+  padding: 0.7rem 0.95rem;
+  border-left: 3px solid var(--ui-card-border);
+  border-radius: var(--ui-radius-sm);
+  background: var(--ui-surface-muted);
+}
+
+.ar-quote p {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  margin: 0;
+  overflow: hidden;
+  color: var(--ui-text);
+  overflow-wrap: anywhere;
+}
+
+.ar-quote footer {
+  margin-top: 0.35rem;
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-sm);
+}
+
+.ar-reporter {
+  margin: 0;
+  font-size: var(--ui-text-sm);
+}
+
+.ar-reporter__note {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--ui-text-2);
+  font-style: italic;
+  overflow-wrap: anywhere;
+}
+
+/* ---- thao tác ---- */
+.ar-actions {
+  padding-top: 0.7rem;
+  border-top: 1px dashed var(--ui-card-border);
+}
+
+.ar-actions__end {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-left: auto;
+}
+
+.ar-outcome {
+  padding-top: 0.6rem;
+  border-top: 1px dashed var(--ui-card-border);
+  font-size: var(--ui-text-sm);
+}
+
+.ar-outcome__note {
+  color: var(--ui-text-2);
+  font-style: italic;
+}
+
+.ar-outcome__link {
+  margin-left: auto;
+  color: var(--ui-primary);
+  font-weight: 600;
+}
+
+.ar-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  margin-bottom: 1rem;
+  padding: 2.5rem 1rem;
+  border: 1px dashed var(--ui-card-border);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-surface);
+  color: var(--ui-text-2);
+  text-align: center;
+}
+
+.ar-empty strong {
+  color: var(--ui-text);
+}
+
+@media (max-width: 640px) {
+  .ar-actions__end {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .ar-card__time {
+    margin-left: 0;
+  }
+}

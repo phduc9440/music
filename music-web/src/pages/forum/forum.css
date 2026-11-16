@@ -686,3 +686,21 @@
     border-color: var(--ui-primary);
   }
 }
+
+.fm-tag--pin {
+  border-color: var(--ui-warning-border);
+  background: var(--ui-warning-soft);
+  color: var(--ui-warning);
+}
+
+.fm-locked {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0.8rem 1rem;
+  border: 1px dashed var(--ui-card-border);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-surface-muted);
+  color: var(--ui-text-2);
+}

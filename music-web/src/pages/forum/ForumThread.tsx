@@ -69,7 +69,10 @@ export default function ForumThread() {
       }
       return;
     }
-    el.scrollIntoView({ block: 'center', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    el.scrollIntoView({
+      block: 'center',
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+    });
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setFocusedId(focusPostId);
     const timer = setTimeout(() => setFocusedId(null), 2600);
@@ -183,6 +186,16 @@ export default function ForumThread() {
               <Link to={`/forum?category=${thread.categoryId}`} className="fm-tag">
                 {thread.categoryName}
               </Link>
+              {thread.pinned && (
+                <span className="fm-tag fm-tag--pin">
+                  <Icon name="star" size={12} /> {t('forum.pinned')}
+                </span>
+              )}
+              {thread.locked && (
+                <span className="fm-tag">
+                  <Icon name="lock" size={12} /> {t('forum.locked')}
+                </span>
+              )}
               {thread.answered && (
                 <span className="fm-tag fm-tag--ok">
                   <Icon name="check" size={12} /> {t('forum.answered')}
@@ -216,9 +229,7 @@ export default function ForumThread() {
                 className="sc-btn sc-btn--sm"
                 aria-pressed={thread.subscribed}
                 disabled={busy}
-                onClick={() =>
-                  act(() => forumApi.subscribe(thread.id, !thread.subscribed), t('forum.actionFailed'))
-                }
+                onClick={() => act(() => forumApi.subscribe(thread.id, !thread.subscribed), t('forum.actionFailed'))}
               >
                 <Icon name="bell" size={14} />
                 {thread.subscribed ? t('forum.unfollow') : t('forum.follow')}
@@ -319,7 +330,7 @@ export default function ForumThread() {
 
                   {editing?.id !== p.id && (
                     <div className="fm-actions">
-                      {!p.mine && (
+                      {!p.mine && !thread.locked && (
                         <button
                           type="button"
                           className="sc-btn sc-btn--sm"
@@ -381,45 +392,51 @@ export default function ForumThread() {
           ))}
         </ol>
 
-        <section className="fm-reply" aria-label={t('forum.yourReply')} ref={replyBox}>
-          {replyTarget && (
-            <div className="fm-replying" role="status">
-              <span>
-                <strong>
-                  {t('forum.replyingTo', { name: replyTarget.author.fullName || t('forum.anonymous') })}
-                </strong>
-                <span className="fm-muted"> “{replyTarget.body.replace(/\s+/g, ' ').slice(0, 100)}”</span>
-              </span>
+        {thread.locked ? (
+          <p className="fm-locked" role="status">
+            <Icon name="lock" size={16} /> {t('forum.lockedNotice')}
+          </p>
+        ) : (
+          <section className="fm-reply" aria-label={t('forum.yourReply')} ref={replyBox}>
+            {replyTarget && (
+              <div className="fm-replying" role="status">
+                <span>
+                  <strong>
+                    {t('forum.replyingTo', { name: replyTarget.author.fullName || t('forum.anonymous') })}
+                  </strong>
+                  <span className="fm-muted"> “{replyTarget.body.replace(/\s+/g, ' ').slice(0, 100)}”</span>
+                </span>
+                <button
+                  type="button"
+                  className="sc-icon-btn"
+                  aria-label={t('forum.cancelReplyTo')}
+                  onClick={() => setReplyTarget(null)}
+                >
+                  ×
+                </button>
+              </div>
+            )}
+            <MarkdownEditor
+              label={t('forum.yourReply')}
+              value={reply}
+              rows={6}
+              placeholder={t('forum.replyPlaceholder')}
+              onChange={setReply}
+              disabled={sending}
+            />
+            <div className="fm-actions fm-actions--end">
+              <span className="fm-muted">{t('forum.replyCount', { count: formatNumber(posts.length) })}</span>
               <button
                 type="button"
-                className="sc-icon-btn"
-                aria-label={t('forum.cancelReplyTo')}
-                onClick={() => setReplyTarget(null)}
+                className="sc-btn sc-btn--primary"
+                disabled={sending || !reply.trim()}
+                onClick={submitReply}
               >
-                ×
+                {sending ? t('forum.sending') : t('forum.send')}
               </button>
             </div>
-          )}
-          <MarkdownEditor
-            label={t('forum.yourReply')}
-            value={reply}
-            rows={6}
-            placeholder={t('forum.replyPlaceholder')}
-            onChange={setReply}
-            disabled={sending}
-          />
-          <div className="fm-actions fm-actions--end">
-            <span className="fm-muted">{t('forum.replyCount', { count: formatNumber(posts.length) })}</span>
-            <button
-              type="button"
-              className="sc-btn sc-btn--primary"
-              disabled={sending || !reply.trim()}
-              onClick={submitReply}
-            >
-              {sending ? t('forum.sending') : t('forum.send')}
-            </button>
-          </div>
-        </section>
+          </section>
+        )}
       </main>
 
       {reporting && (

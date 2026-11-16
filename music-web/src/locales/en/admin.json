@@ -24,7 +24,8 @@
       "memberPlans": "Member plans",
       "roles": "Roles",
       "reports": "Reports",
-      "audit": "Audit log"
+      "audit": "Audit log",
+      "forum": "Forum"
     },
     "other": "Other",
     "userSite": "User site"
@@ -865,11 +866,12 @@
       "AI_TASKS_MANAGE": "View, cancel and retry everyone's AI tasks",
       "SYSTEM_MONITOR": "Monitor the system and error logs",
       "REPORTS_MODERATE": "Handle reports: dismiss, hide comments, unpublish / delete scores, lock accounts",
+      "FORUM_MANAGE": "Manage the forum: categories, pin / lock threads, hide and restore posts",
       "AUDIT_VIEW": "View the audit log"
     }
   },
   "reports": {
-    "description": "Reports from users about scores and comments. Handling one report closes every pending report on the same content.",
+    "description": "User reports about scores, comments and forum posts. Handling one report closes every pending report on the same content.",
     "loadFailed": "Could not load the reports",
     "tabs": {
       "PENDING": "Pending",
@@ -925,7 +927,23 @@
     "emptyTitle": "No reports",
     "emptyHint": "New user reports will show up here.",
     "unit": "reports",
-    "openThread": "Open the thread in the forum"
+    "openThread": "Open the thread in the forum",
+    "openContent": "Open content",
+    "moreActions": "Handle…",
+    "quick": {
+      "DISMISS": {
+        "title": "Dismiss this report?",
+        "text": "“{label}” stays as it is and every pending report on it is closed."
+      },
+      "HIDE": {
+        "title": "Hide this content?",
+        "text": "“{label}” disappears everywhere and every pending report on it is closed."
+      },
+      "UNPUBLISH": {
+        "title": "Unpublish this score?",
+        "text": "“{label}” goes back to private and every pending report on it is closed."
+      }
+    }
   },
   "audit": {
     "description": "Moderation work derived from the source data: reports, removed scores, hidden comments, teams removed for violations, plan sanctions. Nothing is stored separately, so it always matches the real data; read only.",
@@ -935,12 +953,17 @@
       "REPORT_RESOLVED": "Report handled",
       "SCORE_DELETED_BY_ADMIN": "Score deleted by admin",
       "COMMENT_HIDDEN": "Comment hidden",
+      "FORUM_THREAD_HIDDEN": "Forum thread hidden",
+      "FORUM_POST_HIDDEN": "Forum reply hidden",
+      "FORUM_THREAD_LOCKED": "Forum thread locked",
       "TEAM_DELETED_BY_ADMIN": "Team deleted by admin",
       "PLAN_SANCTION": "Plan sanction"
     },
     "targets": {
       "SCORE": "Score",
       "COMMENT": "Comment",
+      "FORUM_THREAD": "Forum thread",
+      "FORUM_POST": "Forum reply",
       "TEAM": "Team",
       "MEMBER": "Member"
     },
@@ -964,5 +987,79 @@
     "emptyTitle": "Nothing yet",
     "emptyHint": "Try removing some filters.",
     "unit": "entries"
+  },
+  "forum": {
+    "description": "Manage categories, pin or lock threads, hide and restore threads and replies. Reported posts are handled under Reports.",
+    "tabs": {
+      "threads": "Threads",
+      "categories": "Categories"
+    },
+    "status": {
+      "ALL": "All",
+      "REPORTED": "Reported",
+      "VISIBLE": "Visible",
+      "HIDDEN": "Hidden",
+      "PINNED": "Pinned",
+      "LOCKED": "Locked"
+    },
+    "allCategories": "All categories",
+    "search": "Search by title or author email",
+    "columns": {
+      "thread": "Thread",
+      "author": "Author",
+      "replies": "Replies",
+      "created": "Posted"
+    },
+    "badges": {
+      "pinned": "Pinned",
+      "locked": "Locked",
+      "hidden": "Hidden",
+      "answered": "Answered",
+      "reports": "{count} reports",
+      "bestAnswer": "Best answer"
+    },
+    "actions": {
+      "open": "View",
+      "hide": "Hide",
+      "restore": "Restore",
+      "pin": "Pin to top",
+      "unpin": "Unpin",
+      "lock": "Lock replies",
+      "unlock": "Unlock"
+    },
+    "hiddenReplies": "{count} hidden",
+    "replies": "{count} replies",
+    "noReplies": "No replies yet.",
+    "hiddenBy": "Hidden by {name}",
+    "emptyTitle": "No threads",
+    "emptyHint": "Try another filter or keyword.",
+    "unit": "threads",
+    "loading": "Loading...",
+    "hidden": "Thread hidden",
+    "restored": "Thread restored",
+    "loadFailed": "Could not load the forum data",
+    "actionFailed": "Could not complete the action",
+    "categories": {
+      "hint": "Categories show to users in this order. Only a category with no threads can be deleted.",
+      "add": "Add category",
+      "addTitle": "Add a category",
+      "editTitle": "Edit category",
+      "order": "Order",
+      "up": "Move up",
+      "down": "Move down",
+      "name": "Category name",
+      "description": "Description (optional)",
+      "noDescription": "No description",
+      "threads": "Threads",
+      "hiddenCount": "{count} hidden",
+      "notEmpty": "It still has threads, so it cannot be deleted",
+      "deleteTitle": "Delete the category “{name}”?",
+      "deleteText": "The category disappears from the forum and cannot be restored.",
+      "deleted": "Category deleted",
+      "created": "Category added",
+      "saved": "Category saved",
+      "emptyTitle": "No categories yet",
+      "emptyHint": "Add the first category so users can start threads."
+    }
   }
 }

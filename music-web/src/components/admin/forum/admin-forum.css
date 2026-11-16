@@ -1,0 +1,128 @@
+/* Quản lý diễn đàn của admin (mục 5.5). Màu lấy từ token --ui-*. */
+.af-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.9rem;
+}
+
+.af-bar p {
+  margin: 0;
+}
+
+.af-search {
+  min-width: 220px;
+}
+
+.af-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ui-text);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.af-link:hover {
+  color: var(--ui-primary);
+  text-decoration: underline;
+}
+
+.af-link:focus-visible {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.af-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.3rem;
+}
+
+.af-row--hidden td {
+  background: var(--ui-surface-muted);
+}
+
+.af-row--hidden .af-link {
+  color: var(--ui-text-2);
+}
+
+.af-order {
+  display: inline-flex;
+  gap: 0.15rem;
+}
+
+.af-slug {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: var(--ui-text-xs);
+}
+
+/* ---- hộp chi tiết chủ đề ---- */
+.sc-modal.af-modal {
+  width: min(760px, calc(100vw - 2rem));
+  max-height: calc(100vh - 3rem);
+  overflow-y: auto;
+}
+
+.af-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.af-detail__meta,
+.af-actions,
+.af-post__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.af-detail p {
+  margin: 0;
+}
+
+.af-body,
+.af-post {
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--ui-card-border);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-surface);
+}
+
+.af-body.is-hidden,
+.af-post.is-hidden {
+  border-style: dashed;
+  background: var(--ui-surface-muted);
+  opacity: 0.8;
+}
+
+.af-section {
+  margin: 0.25rem 0 0;
+  font-size: 1rem;
+}
+
+.af-posts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.af-post__head {
+  margin-bottom: 0.5rem;
+}
+
+.af-post__action {
+  margin-left: auto;
+}

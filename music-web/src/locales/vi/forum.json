@@ -83,5 +83,8 @@
   "replyingTo": "Đang trả lời {name}",
   "cancelReplyTo": "Hủy trả lời bài này",
   "inReplyTo": "Trả lời {name}",
-  "deletedPost": "(bài đã bị xóa)"
+  "deletedPost": "(bài đã bị xóa)",
+  "pinned": "Ghim",
+  "locked": "Đã khóa",
+  "lockedNotice": "Chủ đề này đã bị quản trị viên khóa nên không trả lời thêm được."
 }

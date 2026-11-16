@@ -35,6 +35,9 @@ public class AdminActivityServiceImpl implements AdminActivityService {
             "REPORT_RESOLVED",
             "SCORE_DELETED_BY_ADMIN",
             "COMMENT_HIDDEN",
+            "FORUM_THREAD_HIDDEN",
+            "FORUM_POST_HIDDEN",
+            "FORUM_THREAD_LOCKED",
             "TEAM_DELETED_BY_ADMIN",
             "PLAN_SANCTION");
 
@@ -44,13 +47,14 @@ public class AdminActivityServiceImpl implements AdminActivityService {
      */
     static final String SOURCES = """
             SELECT CONCAT('REPORT_CREATED:', r.id) AS id, 'REPORT_CREATED' AS type, r.created_at AS occurred_at,
-                   r.reporter_id AS actor_id, r.target_type AS target_type, COALESCE(r.score_id, r.comment_id) AS target_id,
-                   COALESCE((SELECT s.title FROM scores s WHERE s.id = r.score_id), (SELECT LEFT(c.content, 100) FROM score_comments c WHERE c.id = r.comment_id)) AS target_label, r.reason AS detail
+                   r.reporter_id AS actor_id, r.target_type AS target_type,
+                   COALESCE(r.score_id, r.comment_id, r.forum_thread_id, r.forum_post_id) AS target_id,
+                   COALESCE((SELECT s.title FROM scores s WHERE s.id = r.score_id), (SELECT LEFT(c.content, 100) FROM score_comments c WHERE c.id = r.comment_id), (SELECT ft.title FROM forum_threads ft WHERE ft.id = r.forum_thread_id), (SELECT LEFT(fp.body, 100) FROM forum_posts fp WHERE fp.id = r.forum_post_id)) AS target_label, r.reason AS detail
               FROM content_reports r
             UNION ALL
             SELECT CONCAT('REPORT_RESOLVED:', r.id), 'REPORT_RESOLVED', r.resolved_at, r.resolved_by, r.target_type,
-                   COALESCE(r.score_id, r.comment_id),
-                   COALESCE((SELECT s.title FROM scores s WHERE s.id = r.score_id), (SELECT LEFT(c.content, 100) FROM score_comments c WHERE c.id = r.comment_id)),
+                   COALESCE(r.score_id, r.comment_id, r.forum_thread_id, r.forum_post_id),
+                   COALESCE((SELECT s.title FROM scores s WHERE s.id = r.score_id), (SELECT LEFT(c.content, 100) FROM score_comments c WHERE c.id = r.comment_id), (SELECT ft.title FROM forum_threads ft WHERE ft.id = r.forum_thread_id), (SELECT LEFT(fp.body, 100) FROM forum_posts fp WHERE fp.id = r.forum_post_id)),
                    CONCAT(r.action, COALESCE(CONCAT(': ', r.resolution_note), ''))
               FROM content_reports r
              WHERE r.resolved_at IS NOT NULL
@@ -64,6 +68,21 @@ public class AdminActivityServiceImpl implements AdminActivityService {
                    LEFT(c.content, 100), NULL
               FROM score_comments c
              WHERE c.hidden_at IS NOT NULL
+            UNION ALL
+            SELECT CONCAT('FORUM_THREAD_HIDDEN:', ft.id), 'FORUM_THREAD_HIDDEN', ft.hidden_at, ft.hidden_by, 'FORUM_THREAD', ft.id,
+                   ft.title, NULL
+              FROM forum_threads ft
+             WHERE ft.hidden_at IS NOT NULL
+            UNION ALL
+            SELECT CONCAT('FORUM_POST_HIDDEN:', fp.id), 'FORUM_POST_HIDDEN', fp.hidden_at, fp.hidden_by, 'FORUM_POST', fp.id,
+                   LEFT(fp.body, 100), NULL
+              FROM forum_posts fp
+             WHERE fp.hidden_at IS NOT NULL
+            UNION ALL
+            SELECT CONCAT('FORUM_THREAD_LOCKED:', ft2.id), 'FORUM_THREAD_LOCKED', ft2.locked_at, ft2.locked_by, 'FORUM_THREAD', ft2.id,
+                   ft2.title, NULL
+              FROM forum_threads ft2
+             WHERE ft2.locked_at IS NOT NULL AND ft2.locked_by IS NOT NULL
             UNION ALL
             SELECT CONCAT('TEAM_DELETED_BY_ADMIN:', t.id), 'TEAM_DELETED_BY_ADMIN', t.deleted_at, t.deleted_by, 'TEAM', t.id,
                    t.name, t.deleted_reason

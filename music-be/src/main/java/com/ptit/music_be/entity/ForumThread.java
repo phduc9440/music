@@ -64,6 +64,22 @@ public class ForumThread {
     @JoinColumn(name = "hidden_by")
     Member hiddenBy;
 
+    /** Ghim: nổi lên đầu danh sách (null = không ghim). */
+    @Column(name = "pinned_at")
+    LocalDateTime pinnedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "pinned_by")
+    Member pinnedBy;
+
+    /** Khóa: không ai trả lời thêm được (null = mở). */
+    @Column(name = "locked_at")
+    LocalDateTime lockedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "locked_by")
+    Member lockedBy;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     LocalDateTime createdAt;

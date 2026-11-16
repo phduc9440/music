@@ -192,6 +192,16 @@ export default function Forum() {
                     <span className="fm-row__title">{th.title}</span>
                     <span className="fm-row__excerpt">{th.excerpt}</span>
                     <span className="fm-row__meta">
+                      {th.pinned && (
+                        <span className="fm-tag fm-tag--pin">
+                          <Icon name="star" size={12} /> {t('forum.pinned')}
+                        </span>
+                      )}
+                      {th.locked && (
+                        <span className="fm-tag">
+                          <Icon name="lock" size={12} /> {t('forum.locked')}
+                        </span>
+                      )}
                       <span className="fm-tag">{th.categoryName}</span>
                       {th.answered && (
                         <span className="fm-tag fm-tag--ok">
