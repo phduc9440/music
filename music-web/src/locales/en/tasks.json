@@ -1,0 +1,41 @@
+{
+  "title": "My tasks",
+  "subtitle": "Scores assigned to you to arrange or review in your teams' shows.",
+  "myTeams": "My teams",
+  "search": "Search by score, team or show",
+  "dueLabel": "Quick filter by due date",
+  "due": {
+    "all": "All",
+    "late": "Overdue",
+    "soon": "Due soon",
+    "week": "This week",
+    "none": "No due date"
+  },
+  "filters": {
+    "team": "Team",
+    "allTeams": "All teams",
+    "status": "Status",
+    "allStatuses": "All statuses",
+    "role": "Role",
+    "allRoles": "Arranger and reviewer",
+    "arranger": "You arrange",
+    "reviewer": "You review"
+  },
+  "sort": {
+    "label": "Sort by",
+    "due": "Nearest due date",
+    "dueDesc": "Furthest due date",
+    "title": "Title A-Z"
+  },
+  "count": "{count} tasks",
+  "countFiltered": "Showing {shown} of {total} tasks",
+  "clear": "Clear filters",
+  "emptyTitle": "Nothing is assigned to you",
+  "emptyHint": "When a team manager assigns you to arrange or review a score in a show, it appears here.",
+  "noMatchTitle": "No matching tasks",
+  "noMatchHint": "Try removing a filter or searching for something else.",
+  "loadFailed": "Could not load your tasks",
+  "reload": "Try reloading the page.",
+  "openShow": "Open show",
+  "openScore": "Open score"
+}

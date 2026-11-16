@@ -432,7 +432,7 @@ export default function WorkspaceHome() {
             <Panel
               className="wh-tile wh-tile--tasks"
               title={t('home.workspace.tasks')}
-              action={{ to: '/teams', label: t('home.workspace.tasksAll', { count: tasks.length }) }}
+              action={{ to: '/my-tasks', label: t('home.workspace.tasksAll', { count: tasks.length }) }}
             >
               <ul className="wh-list">
                 {tasks.slice(0, MAX_TASKS).map((task) => (
