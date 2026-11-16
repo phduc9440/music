@@ -57,6 +57,8 @@
   --ui-warning-border: #fde68a;
   --ui-warning-strong: #f59e0b;
   --ui-shadow-ink: #1f1612; /* gốc của bóng đổ và lớp phủ, trộn với độ trong suốt */
+  --ui-on-cover: #ffffff; /* chữ/biểu tượng trên ảnh bìa nhiều màu (playlist) */
+  --ui-cover-ring: rgb(255 255 255 / 0.18);
   --ui-overlay: rgba(31, 22, 18, 0.5); /* nền mờ phía sau hộp thoại */
   --ui-overlay-soft: rgba(31, 22, 18, 0.38); /* nền mờ phía sau ngăn kéo trên điện thoại */
 

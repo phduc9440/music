@@ -153,13 +153,33 @@ export default function NotificationBell() {
       {open && (
         <div className="sc-bell__panel" role="menu">
           <div className="sc-bell__head">
-            <strong>{t('common.notifications.title')}</strong>
-            <button type="button" className="sc-bell__link" disabled={unread === 0} onClick={readAll}>
-              {t('common.notifications.markAllRead')}
-            </button>
+            <strong className="sc-bell__title">
+              {t('common.notifications.title')}
+              {unread > 0 && <span className="sc-bell__count">{unread > 99 ? '99+' : unread}</span>}
+            </strong>
+            <span className="sc-bell__actions">
+              <button type="button" className="sc-bell__link" disabled={unread === 0} onClick={readAll}>
+                {t('common.notifications.markAllRead')}
+              </button>
+              <button
+                type="button"
+                className="sc-bell__link"
+                onClick={() => {
+                  setOpen(false);
+                  navigate('/settings/notifications');
+                }}
+              >
+                {t('common.notifications.settings')}
+              </button>
+            </span>
           </div>
           {loading && <Skeleton lines={3} className="sc-bell__loading" />}
-          {!loading && items.length === 0 && <p className="sc-bell__empty">{t('common.notifications.empty')}</p>}
+          {!loading && items.length === 0 && (
+            <p className="sc-bell__empty">
+              <Icon name="bell" size={28} />
+              {t('common.notifications.empty')}
+            </p>
+          )}
           <ul className="sc-bell__list">
             {items.map((n) => (
               <li key={n.id}>
@@ -168,14 +188,17 @@ export default function NotificationBell() {
                   className={`sc-bell__item${n.read ? '' : ' sc-bell__item--unread'}`}
                   onClick={() => openItem(n)}
                 >
-                  {n.type === 'ANNOUNCEMENT' && (
-                    <span className="sc-bell__tag">
-                      <Icon name="megaphone" size={12} />
-                      {t('common.notifications.adminTag')}
-                    </span>
-                  )}
-                  <span className="sc-bell__text">{notificationText(n)}</span>
-                  <small>{formatRelativeTime(n.createdAt)}</small>
+                  <span className="sc-bell__dot" aria-hidden="true" />
+                  <span className="sc-bell__body">
+                    {n.type === 'ANNOUNCEMENT' && (
+                      <span className="sc-bell__tag">
+                        <Icon name="megaphone" size={12} />
+                        {t('common.notifications.adminTag')}
+                      </span>
+                    )}
+                    <span className="sc-bell__text">{notificationText(n)}</span>
+                    <small>{formatRelativeTime(n.createdAt)}</small>
+                  </span>
                 </button>
               </li>
             ))}

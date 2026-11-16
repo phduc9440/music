@@ -272,10 +272,10 @@
     "cellTitle": "Ô {label}: {status}",
     "errorLine": "{type}{detail} (khuông {staff}, phách {beat})",
     "diff": {
+      "2103": "Dịch vụ nhận diện tạm thời không khả dụng, vui lòng thử lại sau",
       "2901": "Không có phiên bản do nhận diện sinh ra để so sánh (bản nhạc không từ OMR hoặc đã quá 20 phiên bản)",
       "2902": "Không thể so sánh một phiên bản với chính nó",
-      "2903": "Không so sánh được hai phiên bản này (MusicXML không đọc được)",
-      "2103": "Dịch vụ nhận diện tạm thời không khả dụng, vui lòng thử lại sau"
+      "2903": "Không so sánh được hai phiên bản này (MusicXML không đọc được)"
     },
     "panel": {
       "comparing": "Đang so sánh...",
@@ -339,16 +339,16 @@
   },
   "tuplet": {
     "name": {
-      "3": "chùm ba",
       "2": "chùm hai",
+      "3": "chùm ba",
       "4": "chùm bốn",
       "5": "chùm năm",
       "6": "chùm sáu",
       "7": "chùm bảy"
     },
     "label": {
-      "3": "Chùm ba (3:2)",
       "2": "Chùm hai (2:3)",
+      "3": "Chùm ba (3:2)",
       "4": "Chùm bốn (4:3)",
       "5": "Chùm năm (5:4)",
       "6": "Chùm sáu (6:4)",
@@ -1071,6 +1071,8 @@
       "help": {
         "desc": "Mở bảng này"
       }
-    }
+    },
+    "saveButton": "Lưu",
+    "saveTitle": "Lưu ({shortcut})"
   }
 }

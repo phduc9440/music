@@ -13,6 +13,9 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 import com.ptit.music_be.dto.enums.auth.AppLocale;
+import java.util.Map;
+
+import com.ptit.music_be.dto.enums.notification.NotificationCategory;
 import com.ptit.music_be.dto.enums.team.TeamRole;
 import com.ptit.music_be.dto.request.auth.SendEmailRequest;
 import com.ptit.music_be.repository.auth.MemberRepository;
@@ -151,5 +154,31 @@ public class EmailServiceImpl implements EmailService {
                                 + EmailMessages.text(locale, Key.INVITE_BUTTON) + "</a></p>"
                                 + EmailMessages.text(locale, Key.INVITE_FOOTER)),
                 "Team invitation");
+    }
+
+    @Override
+    @Async
+    public void sendNotificationDigestEmail(
+            String to, AppLocale locale, Map<NotificationCategory, Long> counts, String link) {
+        AppLocale lang = locale == null ? AppLocale.VI : locale;
+        long total = counts.values().stream().mapToLong(Long::longValue).sum();
+        StringBuilder list = new StringBuilder("<ul style=\"padding-left:20px\">");
+        counts.forEach((category, n) ->
+                list.append("<li>").append(escape(EmailMessages.category(lang, category))).append(": <strong>")
+                        .append(n).append("</strong></li>"));
+        list.append("</ul>");
+        send(
+                to,
+                EmailMessages.text(lang, Key.DIGEST_SUBJECT, total),
+                layout(
+                        lang,
+                        EmailMessages.text(lang, Key.DIGEST_HEADING),
+                        EmailMessages.text(lang, Key.DIGEST_INTRO, total)
+                                + list
+                                + "<p><a href=\"" + escape(link) + "\" style=\"display:inline-block;background:#8a5a2b;"
+                                + "color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none\">"
+                                + EmailMessages.text(lang, Key.DIGEST_BUTTON) + "</a></p>"
+                                + EmailMessages.text(lang, Key.DIGEST_FOOTER)),
+                "Notification digest");
     }
 }

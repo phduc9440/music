@@ -2,9 +2,16 @@ package com.ptit.music_be.controller.notification;
 
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
+import jakarta.validation.Valid;
+
+import com.ptit.music_be.dto.request.notification.NotificationPreferenceRequest;
 import com.ptit.music_be.dto.response.common.ApiResponse;
 import com.ptit.music_be.dto.response.common.PageResponse;
+import com.ptit.music_be.dto.response.notification.NotificationPreferenceResponse;
 import com.ptit.music_be.dto.response.notification.NotificationResponse;
+import com.ptit.music_be.service.notification.NotificationPreferenceService;
 import com.ptit.music_be.service.notification.NotificationService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -22,6 +29,7 @@ import lombok.experimental.FieldDefaults;
 public class NotificationController {
 
     NotificationService notificationService;
+    NotificationPreferenceService preferenceService;
 
     @GetMapping
     @Operation(summary = "My notifications, newest first", security = @SecurityRequirement(name = "bearerAuth"))
@@ -55,5 +63,27 @@ public class NotificationController {
     public ApiResponse<Void> markAllRead() {
         notificationService.markAllRead();
         return ApiResponse.<Void>builder().build();
+    }
+
+    @GetMapping("/preferences")
+    @Operation(
+            summary = "My notification settings per category (in-app / daily email digest)",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<List<NotificationPreferenceResponse>> preferences() {
+        return ApiResponse.<List<NotificationPreferenceResponse>>builder()
+                .result(preferenceService.getMine())
+                .build();
+    }
+
+    @PutMapping("/preferences")
+    @Operation(
+            summary = "Update notification settings; both off = no notification at all for that category",
+            description = "Errors: 2502 SYSTEM category cannot be changed",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<List<NotificationPreferenceResponse>> updatePreferences(
+            @Valid @RequestBody NotificationPreferenceRequest request) {
+        return ApiResponse.<List<NotificationPreferenceResponse>>builder()
+                .result(preferenceService.updateMine(request))
+                .build();
     }
 }

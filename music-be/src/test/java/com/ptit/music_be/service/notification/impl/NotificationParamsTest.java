@@ -34,7 +34,15 @@ class NotificationParamsTest {
     private final NotificationRepository repo = mock(NotificationRepository.class);
     private final NotificationPusher pusher = mock(NotificationPusher.class);
     private final NotificationServiceImpl service =
-            new NotificationServiceImpl(repo, mock(MemberRepository.class), new ObjectMapper(), pusher);
+            new NotificationServiceImpl(repo, mock(MemberRepository.class), new ObjectMapper(), pusher, defaultPrefs());
+
+    private static com.ptit.music_be.service.notification.NotificationPreferenceService defaultPrefs() {
+        var prefs = mock(com.ptit.music_be.service.notification.NotificationPreferenceService.class);
+        org.mockito.Mockito.when(prefs.deliveryFor(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+                .thenReturn(com.ptit.music_be.service.notification.NotificationPreferenceService.Delivery.DEFAULT);
+        return prefs;
+    }
+
     private final Member owner = Member.builder().id("o").email("o@x.com").build();
 
     @Test

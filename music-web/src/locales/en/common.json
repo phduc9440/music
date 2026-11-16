@@ -86,6 +86,7 @@
     "title": "Notifications",
     "labelUnread": "Notifications, {count} unread",
     "markAllRead": "Mark all as read",
+    "settings": "Settings",
     "empty": "No notifications yet.",
     "adminTag": "Admin",
     "fromAdmin": "Message from the administrators"

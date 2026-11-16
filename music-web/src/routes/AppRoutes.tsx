@@ -1,6 +1,7 @@
 import { Route, createBrowserRouter, createRoutesFromElements } from 'react-router-dom';
 import Login from '../pages/Login';
 import UserProfile from '../pages/Profile';
+import NotificationSettings from '../pages/notifications/NotificationSettings';
 import ScoreLibrary from '../pages/scores/library/ScoreLibrary';
 import ScoreDetail from '../pages/scores/library/ScoreDetail';
 import SuggestionReview from '../pages/scores/suggestions/SuggestionReview';
@@ -85,6 +86,7 @@ const router = createBrowserRouter(
       <Route element={<UserArea />}>
         <Route index element={<WorkspaceHome />} />
         <Route path="/profile" element={<UserProfile />} />
+        <Route path="/settings/notifications" element={<NotificationSettings />} />
         <Route path="/scores" element={<ScoreLibrary />} />
         <Route path="/scores/upload" element={<ScoreUpload />} />
         <Route path="/scores/import" element={<ScoreImport />} />
