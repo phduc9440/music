@@ -23,7 +23,7 @@ export default function NotificationSettings() {
     notificationApi
       .preferences()
       .then((res) => !cancelled && setPrefs(res.data.result))
-      .catch((e) => !cancelled && toast.error(translateError(e)));
+      .catch((e) => !cancelled && toast.error(translateError(e, t('notificationSettings.loadFailed'))));
     return () => {
       cancelled = true;
     };
@@ -41,7 +41,7 @@ export default function NotificationSettings() {
       setPrefs(res.data.result);
     } catch (e) {
       setPrefs(before);
-      toast.error(translateError(e));
+      toast.error(translateError(e, t('notificationSettings.saveFailed')));
     } finally {
       setSaving(false);
     }

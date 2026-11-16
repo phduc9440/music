@@ -1,6 +1,8 @@
 {
   "title": "Cài đặt thông báo",
   "subtitle": "Chọn nhóm nào hiện trong chuông và nhóm nào gửi email tóm tắt mỗi sáng.",
+  "loadFailed": "Không tải được cài đặt thông báo",
+  "saveFailed": "Không lưu được cài đặt thông báo",
   "channel": {
     "inApp": "Trong ứng dụng",
     "email": "Email tóm tắt"
