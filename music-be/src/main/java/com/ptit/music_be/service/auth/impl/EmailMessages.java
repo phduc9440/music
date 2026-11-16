@@ -3,6 +3,7 @@ package com.ptit.music_be.service.auth.impl;
 import java.util.Map;
 
 import com.ptit.music_be.dto.enums.auth.AppLocale;
+import com.ptit.music_be.dto.enums.notification.NotificationCategory;
 import com.ptit.music_be.dto.enums.team.TeamRole;
 
 /**
@@ -35,7 +36,12 @@ final class EmailMessages {
         INVITE_HEADING,
         INVITE_BODY,
         INVITE_BUTTON,
-        INVITE_FOOTER
+        INVITE_FOOTER,
+        DIGEST_SUBJECT,
+        DIGEST_HEADING,
+        DIGEST_INTRO,
+        DIGEST_BUTTON,
+        DIGEST_FOOTER
     }
 
     private static final Map<Key, String> VI = Map.ofEntries(
@@ -79,7 +85,15 @@ final class EmailMessages {
             Map.entry(
                     Key.INVITE_FOOTER,
                     "<p style=\"color:#475569\">Lời mời có hạn 7 ngày và chỉ dùng được một lần. Nếu chưa có tài"
-                            + " khoản, hãy đăng ký bằng chính email này rồi mở lại link.</p>"));
+                            + " khoản, hãy đăng ký bằng chính email này rồi mở lại link.</p>"),
+            Map.entry(Key.DIGEST_SUBJECT, "Bạn có %s thông báo chưa đọc trên Music App"),
+            Map.entry(Key.DIGEST_HEADING, "Tóm tắt thông báo hôm nay"),
+            Map.entry(Key.DIGEST_INTRO, "<p>Trong 24 giờ qua bạn có <strong>%s</strong> thông báo chưa đọc:</p>"),
+            Map.entry(Key.DIGEST_BUTTON, "Mở thông báo"),
+            Map.entry(
+                    Key.DIGEST_FOOTER,
+                    "<p style=\"color:#475569\">Bạn nhận email này vì đã bật email tóm tắt hằng ngày. Có thể tắt trong"
+                            + " Cài đặt thông báo.</p>"));
 
     private static final Map<Key, String> EN = Map.ofEntries(
             Map.entry(Key.SIGNOFF, "Best regards,<br><strong>The Music App team</strong>"),
@@ -122,7 +136,15 @@ final class EmailMessages {
             Map.entry(
                     Key.INVITE_FOOTER,
                     "<p style=\"color:#475569\">The invitation expires in 7 days and can be used once. If you don't"
-                            + " have an account yet, sign up with this same email and open the link again.</p>"));
+                            + " have an account yet, sign up with this same email and open the link again.</p>"),
+            Map.entry(Key.DIGEST_SUBJECT, "You have %s unread notifications on Music App"),
+            Map.entry(Key.DIGEST_HEADING, "Today's notification summary"),
+            Map.entry(Key.DIGEST_INTRO, "<p>In the last 24 hours you got <strong>%s</strong> unread notifications:</p>"),
+            Map.entry(Key.DIGEST_BUTTON, "Open notifications"),
+            Map.entry(
+                    Key.DIGEST_FOOTER,
+                    "<p style=\"color:#475569\">You get this email because the daily email digest is on. You can turn"
+                            + " it off in Notification settings.</p>"));
 
     private static final Map<TeamRole, String> ROLE_VI = Map.of(
             TeamRole.OWNER, "Chủ nhóm",
@@ -140,6 +162,26 @@ final class EmailMessages {
     static String text(AppLocale locale, Key key, Object... args) {
         String template = (locale == AppLocale.EN ? EN : VI).get(key);
         return args.length == 0 ? template : String.format(template, args);
+    }
+
+    private static final Map<NotificationCategory, String> CATEGORY_VI = Map.of(
+            NotificationCategory.SCORES, "Bản nhạc",
+            NotificationCategory.COMMENTS, "Góp ý và đề xuất",
+            NotificationCategory.TEAMS, "Nhóm và buổi diễn",
+            NotificationCategory.FORUM, "Diễn đàn",
+            NotificationCategory.BILLING, "Gói dịch vụ",
+            NotificationCategory.SYSTEM, "Thông báo chung");
+
+    private static final Map<NotificationCategory, String> CATEGORY_EN = Map.of(
+            NotificationCategory.SCORES, "Scores",
+            NotificationCategory.COMMENTS, "Comments and suggestions",
+            NotificationCategory.TEAMS, "Teams and shows",
+            NotificationCategory.FORUM, "Forum",
+            NotificationCategory.BILLING, "Plan",
+            NotificationCategory.SYSTEM, "Announcements");
+
+    static String category(AppLocale locale, NotificationCategory category) {
+        return (locale == AppLocale.EN ? CATEGORY_EN : CATEGORY_VI).get(category);
     }
 
     static String role(AppLocale locale, TeamRole role) {

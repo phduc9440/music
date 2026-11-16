@@ -85,6 +85,7 @@
     "title": "Thông báo",
     "labelUnread": "Thông báo, {count} chưa đọc",
     "markAllRead": "Đánh dấu đã đọc",
+    "settings": "Cài đặt",
     "empty": "Chưa có thông báo nào.",
     "adminTag": "Quản trị viên",
     "fromAdmin": "Thông báo từ quản trị viên"

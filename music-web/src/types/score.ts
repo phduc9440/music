@@ -313,6 +313,16 @@ export type NotificationType =
   | 'FORUM_POST_REPLY'
   | 'FORUM_ANSWER_ACCEPTED';
 
+/** Nhóm thông báo người dùng bật/tắt, BE: NotificationCategory (không có SYSTEM: luôn bật). */
+export type NotificationCategory = 'SCORES' | 'COMMENTS' | 'TEAMS' | 'FORUM' | 'BILLING';
+
+/** Cài đặt nhận thông báo của một nhóm, BE: NotificationPreferenceResponse. Cả hai tắt = không nhận gì. */
+export interface NotificationPreference {
+  category: NotificationCategory;
+  inApp: boolean;
+  email: boolean;
+}
+
 export interface AppNotification {
   id: string;
   type: NotificationType;

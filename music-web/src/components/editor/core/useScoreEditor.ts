@@ -955,8 +955,6 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
       toast.success(t('editor.toast.draftRestored'));
     } catch {
       toast.error(t('editor.toast.draftBroken'));
-      clearDraft(scoreId, version);
-      toast.error('Bản nháp bị hỏng nên không khôi phục được');
       clearDraft(scoreId, version, draftPrefix);
     }
     setDraft(null);

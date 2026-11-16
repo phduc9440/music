@@ -272,10 +272,10 @@
     "cellTitle": "Measure {label}: {status}",
     "errorLine": "{type}{detail} (staff {staff}, beat {beat})",
     "diff": {
+      "2103": "The recognition service is temporarily unavailable, please try again later",
       "2901": "There is no recognition-generated version to compare with (the score is not from OMR or it is past 20 versions)",
       "2902": "A version cannot be compared with itself",
-      "2903": "These two versions cannot be compared (the MusicXML cannot be read)",
-      "2103": "The recognition service is temporarily unavailable, please try again later"
+      "2903": "These two versions cannot be compared (the MusicXML cannot be read)"
     },
     "panel": {
       "comparing": "Comparing...",
@@ -339,16 +339,16 @@
   },
   "tuplet": {
     "name": {
-      "3": "triplet",
       "2": "duplet",
+      "3": "triplet",
       "4": "quadruplet",
       "5": "quintuplet",
       "6": "sextuplet",
       "7": "septuplet"
     },
     "label": {
-      "3": "Triplet (3:2)",
       "2": "Duplet (2:3)",
+      "3": "Triplet (3:2)",
       "4": "Quadruplet (4:3)",
       "5": "Quintuplet (5:4)",
       "6": "Sextuplet (6:4)",
@@ -1071,6 +1071,8 @@
       "help": {
         "desc": "Open this panel"
       }
-    }
+    },
+    "saveButton": "Save",
+    "saveTitle": "Save ({shortcut})"
   }
 }

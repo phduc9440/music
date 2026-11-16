@@ -775,9 +775,9 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
                 className="sc-btn sc-btn--primary"
                 disabled={(live.active ? !live.state.unsaved && live.state.pending === 0 : !editor.dirty) || editor.saving}
                 onClick={() => void editor.save()}
-                title={suggesting ? t('suggestions.mode.sendTitle', { shortcut: `${MOD}+S` }) : `Lưu (${MOD}+S)`}
+                title={suggesting ? t('suggestions.mode.sendTitle', { shortcut: `${MOD}+S` }) : t('editor.view.saveTitle', { shortcut: `${MOD}+S` })}
               >
-                <IconSave /> {suggesting ? t('suggestions.mode.send') : 'Lưu'}
+                <IconSave /> {suggesting ? t('suggestions.mode.send') : t('editor.view.saveButton')}
               </button>
             </div>
           )}

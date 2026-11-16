@@ -1,0 +1,147 @@
+/* Trang cài đặt thông báo (/settings/notifications). Màu lấy từ styles/tokens.css. */
+.ns-page {
+  max-width: 760px;
+}
+
+.ns-card {
+  padding: 0.5rem 1.25rem 1rem;
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  box-shadow: var(--ui-shadow-sm);
+}
+
+.ns-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 110px 110px;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.9rem 0;
+  border-bottom: 1px solid var(--ui-border);
+}
+
+.ns-row:last-of-type {
+  border-bottom: 0;
+}
+
+.ns-row p {
+  margin: 0.15rem 0 0;
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-sm);
+}
+
+.ns-row--head {
+  padding: 0.75rem 0 0.5rem;
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-sm);
+  font-weight: 600;
+}
+
+.ns-col {
+  justify-self: center;
+  text-align: center;
+}
+
+.ns-off {
+  display: inline-block;
+  margin-top: 0.25rem;
+  color: var(--ui-warning);
+}
+
+.ns-foot {
+  margin: 0.75rem 0 0;
+  color: var(--ui-text-3);
+  font-size: var(--ui-text-sm);
+}
+
+/* Công tắc: bật là đồng sáng có quầng, tắt là xám tối và mờ. Input thật nằm dưới nên vẫn tab và bấm phím cách được */
+.ns-switch {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 28px;
+  cursor: pointer;
+}
+
+.ns-switch input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.ns-switch__track {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--ui-text) 34%, var(--ui-surface));
+  border: 1px solid color-mix(in srgb, var(--ui-text) 45%, var(--ui-surface));
+  border-radius: 999px;
+  opacity: 0.75;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    opacity 0.18s ease;
+  pointer-events: none;
+}
+
+.ns-switch__track::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  background: var(--ui-surface);
+  border-radius: 50%;
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--ui-shadow-ink) 35%, transparent);
+  transition:
+    transform 0.18s ease,
+    background 0.18s ease;
+}
+
+.ns-switch input:checked + .ns-switch__track {
+  background: linear-gradient(135deg, var(--ui-brass-hover), var(--ui-brass));
+  border-color: color-mix(in srgb, var(--ui-brass) 70%, var(--ui-shadow-ink));
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--ui-brass) 30%, transparent),
+    0 0 12px color-mix(in srgb, var(--ui-brass) 55%, transparent);
+  opacity: 1;
+}
+
+.ns-switch input:checked + .ns-switch__track::after {
+  background: var(--ui-shadow-ink);
+  transform: translateX(20px);
+}
+
+.ns-switch input:focus-visible + .ns-switch__track {
+  outline: 2px solid var(--ui-text);
+  outline-offset: 3px;
+}
+
+.ns-switch input:disabled {
+  cursor: progress;
+}
+
+/* Nhóm tắt hết: tên nhóm mờ đi để thấy ngay là không nhận gì */
+.ns-row--off > div:first-child strong,
+.ns-row--off > div:first-child p {
+  opacity: 0.6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ns-switch__track,
+  .ns-switch__track::after {
+    transition: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .ns-row {
+    grid-template-columns: minmax(0, 1fr) 64px 64px;
+    gap: 0.5rem;
+  }
+}

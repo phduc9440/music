@@ -19,6 +19,8 @@ import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.notification.NotificationRepository;
+import com.ptit.music_be.service.notification.NotificationPreferenceService;
+import com.ptit.music_be.service.notification.NotificationPreferenceService.Delivery;
 import com.ptit.music_be.service.notification.NotificationPusher;
 import com.ptit.music_be.service.notification.NotificationService;
 import com.ptit.music_be.utils.SecurityUtils;
@@ -38,6 +40,7 @@ public class NotificationServiceImpl implements NotificationService {
     MemberRepository memberRepository;
     ObjectMapper objectMapper;
     NotificationPusher pusher;
+    NotificationPreferenceService preferenceService;
 
     @Override
     @Transactional
@@ -51,6 +54,10 @@ public class NotificationServiceImpl implements NotificationService {
         if (recipient == null || (actor != null && recipient.getId().equals(actor.getId()))) {
             return;
         }
+        Delivery delivery = preferenceService.deliveryFor(recipient.getId(), type);
+        if (delivery.none()) {
+            return; // người nhận đã tắt cả chuông lẫn email cho nhóm này
+        }
         Notification entity = Notification.builder()
                 .recipient(recipient)
                 .type(type)
@@ -59,7 +66,9 @@ public class NotificationServiceImpl implements NotificationService {
                 .params(toJson(params))
                 .build();
         notificationRepository.save(entity); // persist gán id và createdAt ngay trên chính đối tượng này
-        pusher.push(recipient.getEmail(), toResponse(entity));
+        if (delivery.inApp()) {
+            pusher.push(recipient.getEmail(), toResponse(entity)); // chỉ email thì lưu cho bản tóm tắt, không đẩy chuông
+        }
     }
 
     @Override
@@ -77,6 +86,7 @@ public class NotificationServiceImpl implements NotificationService {
         String text = truncate(message);
         java.util.List<Notification> batch = recipients.stream()
                 .filter(r -> r != null && (actor == null || !r.getId().equals(actor.getId())))
+                .filter(r -> !preferenceService.deliveryFor(r.getId(), type).none())
                 .map(r -> Notification.builder()
                         .recipient(r)
                         .type(type)
@@ -84,7 +94,9 @@ public class NotificationServiceImpl implements NotificationService {
                         .build())
                 .toList();
         notificationRepository.saveAll(batch);
-        batch.forEach(n -> pusher.push(n.getRecipient().getEmail(), toResponse(n)));
+        batch.stream()
+                .filter(n -> preferenceService.deliveryFor(n.getRecipient().getId(), type).inApp())
+                .forEach(n -> pusher.push(n.getRecipient().getEmail(), toResponse(n)));
         return batch.size();
     }
 
@@ -92,8 +104,12 @@ public class NotificationServiceImpl implements NotificationService {
     @Transactional(readOnly = true)
     public PageResponse<NotificationResponse> getMine(int page, int size) {
         int safeSize = size <= 0 ? 20 : Math.min(size, MAX_PAGE_SIZE);
-        Page<Notification> result = notificationRepository.findByRecipientEmailOrderByCreatedAtDesc(
-                SecurityUtils.getCurrentEmail(), PageRequest.of(Math.max(page, 0), safeSize));
+        String email = SecurityUtils.getCurrentEmail();
+        PageRequest paging = PageRequest.of(Math.max(page, 0), safeSize);
+        var hidden = preferenceService.hiddenInAppTypes(email);
+        Page<Notification> result = hidden.isEmpty()
+                ? notificationRepository.findByRecipientEmailOrderByCreatedAtDesc(email, paging)
+                : notificationRepository.findByRecipientEmailAndTypeNotInOrderByCreatedAtDesc(email, hidden, paging);
         return PageResponse.<NotificationResponse>builder()
                 .content(result.getContent().stream().map(this::toResponse).toList())
                 .pageNumber(result.getNumber())
@@ -106,7 +122,11 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional(readOnly = true)
     public long countUnread() {
-        return notificationRepository.countByRecipientEmailAndReadFalse(SecurityUtils.getCurrentEmail());
+        String email = SecurityUtils.getCurrentEmail();
+        var hidden = preferenceService.hiddenInAppTypes(email);
+        return hidden.isEmpty()
+                ? notificationRepository.countByRecipientEmailAndReadFalse(email)
+                : notificationRepository.countByRecipientEmailAndReadFalseAndTypeNotIn(email, hidden);
     }
 
     @Override

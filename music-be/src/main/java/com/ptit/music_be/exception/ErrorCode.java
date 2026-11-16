@@ -119,6 +119,7 @@ public enum ErrorCode {
     PLAYLIST_SCORE_NOT_IN_PLAYLIST(2605, "Bản nhạc không có trong playlist", HttpStatus.NOT_FOUND),
     PLAYLIST_ORDER_INVALID(2606, "Danh sách thứ tự không khớp với các bài trong playlist", HttpStatus.BAD_REQUEST),
     NOTIFICATION_NOT_EXISTED(2501, "Thông báo không tồn tại", HttpStatus.NOT_FOUND),
+    NOTIFICATION_CATEGORY_LOCKED(2502, "Nhóm thông báo này luôn bật, không chỉnh được", HttpStatus.BAD_REQUEST),
 
     // Export 27xx
     EXPORT_OPTION_INVALID(2701, "Tùy chọn xuất file không hợp lệ", HttpStatus.BAD_REQUEST),

@@ -426,6 +426,17 @@ CREATE TABLE IF NOT EXISTS notifications (
     CONSTRAINT fk_notifications_recipient FOREIGN KEY (recipient_id) REFERENCES members (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS notification_preferences (
+    id        VARCHAR(36) NOT NULL,
+    member_id VARCHAR(36) NOT NULL,
+    category  VARCHAR(16) NOT NULL COMMENT 'Nhóm thông báo: SCORES, COMMENTS, TEAMS, FORUM, BILLING (SYSTEM luôn bật, không lưu)',
+    in_app    TINYINT(1)  NOT NULL COMMENT 'Hiện trong chuông thông báo của ứng dụng',
+    email     TINYINT(1)  NOT NULL COMMENT 'Đưa vào email tóm tắt hằng ngày. Cả hai cột tắt thì không tạo thông báo. Chưa có hàng = mặc định (chuông bật, email tắt)',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_notification_pref (member_id, category),
+    CONSTRAINT fk_notification_pref_member FOREIGN KEY (member_id) REFERENCES members (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS practice_sessions (
     id                  VARCHAR(36)  NOT NULL COMMENT 'Mã phiên tập (UUID)',
     member_id           VARCHAR(36)  NOT NULL COMMENT 'Người tập (members.id)',
