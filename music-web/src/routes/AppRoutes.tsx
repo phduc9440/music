@@ -53,6 +53,8 @@ import RootLayout from './RootLayout';
 import UserArea from './UserArea';
 import WorkspaceHome from '../pages/home/WorkspaceHome';
 import NotFound from '../pages/NotFound';
+import GuestLayout from '../components/layout/GuestLayout';
+import PublicScore from '../pages/scores/library/PublicScore';
 import Teams from '../pages/teams/Teams';
 import TeamDetail from '../pages/teams/TeamDetail';
 import TeamInvite from '../pages/teams/TeamInvite';
@@ -115,6 +117,11 @@ const router = createBrowserRouter(
         <Route path="/teams/invite/:token" element={<TeamInvite />} />
         <Route path="/teams/:id" element={<TeamDetail />} />
         <Route path="/teams/:teamId/shows/:showId" element={<ShowBoard />} />
+      </Route>
+
+      {/* Trang bản nhạc công khai cho khách (mục 5.2); người đã đăng nhập được chuyển sang /scores/:id */}
+      <Route element={<GuestLayout />}>
+        <Route path="/s/:scoreId" element={<PublicScore />} />
       </Route>
 
       {/* Trình chỉnh sửa và trình phát dùng toàn màn hình, có thanh công cụ riêng */}

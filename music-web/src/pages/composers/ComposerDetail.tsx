@@ -11,6 +11,7 @@ import type { Composer, PageResult, ScoreSummary } from '../../types';
 import { t } from '../../i18n/core';
 import { PERIOD_LABELS, PERIOD_SPANS, lifespan } from '../../utils/composer';
 import { getScorePath } from '../../utils/score';
+import { isGuest } from '../../utils/session';
 import '../../components/scores/scores.css';
 import './composers.css';
 
@@ -97,10 +98,13 @@ export default function ComposerDetail() {
           .explore({ composerId: c.id, size: SHOWN, sort: 'VIEWS' })
           .then((r) => patch({ publicScores: r.data.result }))
           .catch(() => undefined);
-        scoreApi
-          .official({ composerId: c.id, size: SHOWN })
-          .then((r) => patch({ official: r.data.result }))
-          .catch(() => undefined);
+        // Kho bản nhạc mẫu cần đăng nhập: khách chỉ thấy bản công khai
+        if (!isGuest()) {
+          scoreApi
+            .official({ composerId: c.id, size: SHOWN })
+            .then((r) => patch({ official: r.data.result }))
+            .catch(() => undefined);
+        }
       })
       .catch(() => patch({ composer: null }));
     return () => {
@@ -108,7 +112,9 @@ export default function ComposerDetail() {
     };
   }, [slug]);
 
-  const open = (s: ScoreSummary) => navigate(getScorePath(s.id, s.processingStatus), { state: { from: pathname } });
+  const guest = isGuest();
+  const open = (s: ScoreSummary) =>
+    guest ? navigate(`/s/${s.id}`) : navigate(getScorePath(s.id, s.processingStatus), { state: { from: pathname } });
 
   if (notFound) {
     return (
@@ -199,10 +205,12 @@ export default function ComposerDetail() {
                   explore
                   onOpen={open}
                   actions={
-                    <button type="button" className="sc-btn sc-btn--sm" onClick={() => setSaving(s)}>
-                      <Icon name="plus" size={14} />
-                      {t('scores.playlistPicker.title')}
-                    </button>
+                    guest ? undefined : (
+                      <button type="button" className="sc-btn sc-btn--sm" onClick={() => setSaving(s)}>
+                        <Icon name="plus" size={14} />
+                        {t('scores.playlistPicker.title')}
+                      </button>
+                    )
                   }
                 />
               ))}

@@ -51,7 +51,8 @@
   "vote": {
     "add": "Vote, currently {count} votes",
     "remove": "Remove vote, currently {count} votes",
-    "own": "{count} votes (you cannot vote on your own post)"
+    "own": "{count} votes (you cannot vote on your own post)",
+    "readonly": "{count} votes (sign in to vote)"
   },
   "editor": {
     "mode": "Editor mode",
@@ -86,5 +87,10 @@
   "deletedPost": "(post deleted)",
   "pinned": "Pinned",
   "locked": "Locked",
-  "lockedNotice": "An administrator locked this thread, so it takes no new replies."
+  "lockedNotice": "An administrator locked this thread, so it takes no new replies.",
+  "guest": {
+    "signInToPost": "Sign in to start a thread",
+    "signIn": "Sign in",
+    "replyPrompt": "Sign in to reply, vote and follow this thread."
+  }
 }

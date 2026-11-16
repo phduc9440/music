@@ -75,7 +75,8 @@
     },
     "bannedButton": "Bị cấm đến {date}",
     "switch": "Đổi sang gói này",
-    "switchHint": "Gói {plan} đang dùng sẽ dừng ngay khi mua gói này."
+    "switchHint": "Gói {plan} đang dùng sẽ dừng ngay khi mua gói này.",
+    "signInToBuy": "Đăng nhập để mua"
   },
   "result": {
     "title": "Kết quả thanh toán",

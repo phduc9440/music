@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
+import { useNavigate } from '../../routes/useTransitionNavigate';
 import { translateError } from '../../i18n/core';
 import { billingApi } from '../../services';
 import type { MySubscription, PlanAudience, PlanInfo } from '../../types';
+import { isGuest } from '../../utils/session';
 import { formatDate, formatNumber, t } from '../../i18n/core';
 import Skeleton from '../../components/ui/Skeleton';
 import LimitList from './LimitList';
@@ -19,12 +21,17 @@ export default function Pricing() {
   const [mine, setMine] = useState<MySubscription | null>(null);
   const [period, setPeriod] = useState<Period>('MONTH');
   const [buying, setBuying] = useState<string | null>(null);
+  // Khách chưa đăng nhập xem được bảng giá; nút mua dẫn tới đăng nhập rồi quay lại đây
+  const guest = isGuest();
+  const navigate = useNavigate();
 
   useEffect(() => {
     billingApi
       .plans()
       .then((res) => setPlans(res.data.result))
       .catch(() => toast.error(t('billing.loadFailed')));
+    // Khách không có gói: bỏ qua API cần đăng nhập (gọi sẽ bị 401 và đẩy ra trang đăng nhập)
+    if (isGuest()) return;
     billingApi
       .mine()
       .then((res) => setMine(res.data.result))
@@ -54,6 +61,10 @@ export default function Pricing() {
 
   // Tạo đơn rồi chuyển sang trang thanh toán của cổng; gói chỉ được bật khi cổng báo lại cho máy chủ (IPN)
   const buy = async (plan: PlanInfo) => {
+    if (guest) {
+      navigate('/auth/login', { state: { from: '/pricing' } });
+      return;
+    }
     setBuying(plan.code);
     try {
       const res = await billingApi.createOrder({ planCode: plan.code, period });
@@ -144,15 +155,17 @@ export default function Pricing() {
                               }
                               onClick={() => buy(plan)}
                             >
-                              {blocked
-                                ? blocked
-                                : buying === plan.code
-                                  ? t('billing.pricing.redirecting')
-                                  : current
-                                    ? t('billing.pricing.renew')
-                                    : replaces
-                                      ? t('billing.pricing.switch')
-                                      : t('billing.pricing.buy')}
+                              {guest
+                                ? t('billing.pricing.signInToBuy')
+                                : blocked
+                                  ? blocked
+                                  : buying === plan.code
+                                    ? t('billing.pricing.redirecting')
+                                    : current
+                                      ? t('billing.pricing.renew')
+                                      : replaces
+                                        ? t('billing.pricing.switch')
+                                        : t('billing.pricing.buy')}
                             </button>
                           )}
                           {replaces && !blocked ? (

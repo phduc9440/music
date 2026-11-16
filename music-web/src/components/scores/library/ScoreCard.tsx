@@ -2,7 +2,9 @@ import type { ReactNode } from 'react';
 import { useViewTransitionState } from 'react-router-dom';
 import AuthImage from '../common/AuthImage';
 import StatusBadge from '../common/StatusBadge';
+import { API_BASE_URL } from '../../../services';
 import { t } from '../../../i18n/core';
+import { isGuest } from '../../../utils/session';
 import { ACCESS_LEVEL_LABELS, DIFFICULTY_LABELS, SOURCE_LABELS, formatRelative } from '../../../utils/score';
 import type { ScoreSummary } from '../../../types';
 import VisibilityBadge from '../common/VisibilityBadge';
@@ -15,6 +17,11 @@ interface Props {
   /** Nút thêm ở cuối thẻ (ví dụ "Lưu vào playlist"); bấm vào không mở bản nhạc. */
   actions?: ReactNode;
 }
+
+/** Ảnh thẻ: khách chưa đăng nhập không tải được /api/files/** nên dùng ảnh trang 1 công khai của bản PUBLIC. */
+const cardImage = (score: ScoreSummary): string | null | undefined =>
+  score.coverUrl ??
+  (isGuest() && score.thumbnailUrl ? `${API_BASE_URL}/public/scores/${score.id}/thumbnail` : score.thumbnailUrl);
 
 /** Một thẻ bản nhạc trong lưới thư viện. */
 export default function ScoreCard({ score, onOpen, explore = false, actions }: Props) {
@@ -29,7 +36,7 @@ export default function ScoreCard({ score, onOpen, explore = false, actions }: P
       onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onOpen(score)}
     >
       <div className="sc-card__cover" style={opening ? { viewTransitionName: 'ui-shared-cover' } : undefined}>
-        <AuthImage src={score.coverUrl ?? score.thumbnailUrl} alt={score.title} className="sc-card__img" />
+        <AuthImage src={cardImage(score)} alt={score.title} className="sc-card__img" />
         {!explore && (
           <>
             <VisibilityBadge value={score.visibility} className="sc-card__visibility" />

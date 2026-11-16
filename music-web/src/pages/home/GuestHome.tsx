@@ -444,7 +444,7 @@ export default function GuestHome() {
           {data && data.featured.length > 0 && (
             <FeaturedStrip>
               {data.featured.map((s, i) => (
-                <FeaturedCard key={s.id} score={s} rank={i + 1} onOpen={() => loginThen(`/scores/${s.id}`)} />
+                <FeaturedCard key={s.id} score={s} rank={i + 1} onOpen={() => navigate(`/s/${s.id}`)} />
               ))}
             </FeaturedStrip>
           )}

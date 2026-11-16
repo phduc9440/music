@@ -545,3 +545,44 @@
     background: var(--ui-overlay-soft);
   }
 }
+
+/* ---- khung cho khách chưa đăng nhập (GuestLayout): điều hướng phẳng, không có tìm kiếm và nút tạo ---- */
+.app-nav--guest {
+  justify-content: flex-start;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.app-nav--guest::-webkit-scrollbar {
+  display: none;
+}
+
+.app-header__right {
+  gap: 0.5rem;
+}
+
+@media (max-width: 720px) {
+  /* Điện thoại: thương hiệu và nút ở hàng trên, các mục điều hướng xuống hàng dưới và cuộn ngang */
+  .app-header__inner--guest {
+    height: auto;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'left right'
+      'nav nav';
+    gap: 0.25rem 0.75rem;
+    padding: 0.5rem 1rem 0;
+  }
+
+  .app-header__inner--guest .app-header__left {
+    grid-area: left;
+  }
+
+  .app-header__inner--guest .app-header__right {
+    grid-area: right;
+  }
+
+  .app-header__inner--guest .app-nav--guest {
+    grid-area: nav;
+    height: 44px;
+  }
+}

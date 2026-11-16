@@ -75,6 +75,12 @@ public interface ScoreService {
     PageResponse<ScoreSummaryResponse> getPublicScores(int page, int size, PublicScoreFilter filter, String sort);
 
     /**
+     * Thẻ của một bản nhạc đang công khai cho khách chưa đăng nhập (trang /s/:id): tên, tác giả, độ khó, thể loại, số ô,
+     * lượt xem, điểm sao, tên người chia sẻ (không lộ email). Bản riêng tư, đang chờ duyệt hoặc đã xóa báo không tồn tại.
+     */
+    ScoreSummaryResponse getPublicScore(String scoreId);
+
+    /**
      * ADMIN: gỡ khỏi kho bản nhạc mẫu. Bản sao do người dùng đồng ý đưa vào (có bản gốc) thì được chuyển vào thùng rác,
      * bản gốc của chủ không bị ảnh hưởng; bản gắn cờ từ trước chỉ bị bỏ cờ.
      */

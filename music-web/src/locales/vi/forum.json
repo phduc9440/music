@@ -51,7 +51,8 @@
   "vote": {
     "add": "Bình chọn, hiện có {count} phiếu",
     "remove": "Bỏ bình chọn, hiện có {count} phiếu",
-    "own": "{count} phiếu (không bình chọn được bài của chính mình)"
+    "own": "{count} phiếu (không bình chọn được bài của chính mình)",
+    "readonly": "{count} phiếu (đăng nhập để bình chọn)"
   },
   "editor": {
     "mode": "Chế độ soạn",
@@ -86,5 +87,10 @@
   "deletedPost": "(bài đã bị xóa)",
   "pinned": "Ghim",
   "locked": "Đã khóa",
-  "lockedNotice": "Chủ đề này đã bị quản trị viên khóa nên không trả lời thêm được."
+  "lockedNotice": "Chủ đề này đã bị quản trị viên khóa nên không trả lời thêm được.",
+  "guest": {
+    "signInToPost": "Đăng nhập để đặt chủ đề",
+    "signIn": "Đăng nhập",
+    "replyPrompt": "Đăng nhập để trả lời, bình chọn và theo dõi chủ đề này."
+  }
 }

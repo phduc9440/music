@@ -1,0 +1,12 @@
+{
+  "notFoundTitle": "Score not found",
+  "notFoundText": "The score may have been deleted, made private or is awaiting approval.",
+  "backToExplore": "Back to Explore",
+  "ctaTitle": "Open this score",
+  "ctaText": "Sign in to open it in the editor, listen back and practise right in your browser.",
+  "perkPlay": "Listen and practise in time, change tempo, loop hard bars",
+  "perkEdit": "View and edit every note in the editor",
+  "perkDownload": "Download in several formats, save to a playlist",
+  "signIn": "Sign in to open",
+  "free": "Free account, you can sign up with Google."
+}

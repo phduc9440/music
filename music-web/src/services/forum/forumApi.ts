@@ -1,4 +1,5 @@
 import apiClient from '../client';
+import { isGuest } from '../../utils/session';
 import type {
   AdminForumCategory,
   AdminForumStatus,
@@ -17,7 +18,9 @@ import type {
 
 /** Diễn đàn (BE: ForumController). Cần đăng nhập. */
 export const forumApi = {
-  categories: () => apiClient.get<ApiResponse<ForumCategory[]>>('/forum/categories'),
+  // Khách chưa đăng nhập đọc diễn đàn qua API công khai (chỉ đọc, không có dấu cá nhân)
+  categories: () =>
+    apiClient.get<ApiResponse<ForumCategory[]>>(isGuest() ? '/public/forum/categories' : '/forum/categories'),
   threads: (params: {
     categoryId?: string;
     keyword?: string;
@@ -26,8 +29,12 @@ export const forumApi = {
     mine?: boolean;
     page?: number;
     size?: number;
-  }) => apiClient.get<ApiResponse<PageResult<ForumThread>>>('/forum/threads', { params }),
-  thread: (id: string) => apiClient.get<ApiResponse<ForumThreadDetail>>(`/forum/threads/${id}`),
+  }) =>
+    apiClient.get<ApiResponse<PageResult<ForumThread>>>(isGuest() ? '/public/forum/threads' : '/forum/threads', {
+      params,
+    }),
+  thread: (id: string) =>
+    apiClient.get<ApiResponse<ForumThreadDetail>>(`${isGuest() ? '/public/forum' : '/forum'}/threads/${id}`),
   createThread: (data: ForumThreadPayload) => apiClient.post<ApiResponse<ForumThread>>('/forum/threads', data),
   updateThread: (id: string, data: ForumThreadPayload) =>
     apiClient.put<ApiResponse<ForumThread>>(`/forum/threads/${id}`, data),
