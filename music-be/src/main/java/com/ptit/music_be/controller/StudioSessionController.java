@@ -12,8 +12,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ptit.music_be.dto.request.StudioEventBatchRequest;
 import com.ptit.music_be.dto.request.StudioSessionCreateRequest;
+import com.ptit.music_be.dto.response.StudioEventBatchResponse;
 import com.ptit.music_be.dto.response.StudioSessionResponse;
+import com.ptit.music_be.service.StudioEventService;
 import com.ptit.music_be.service.StudioSessionService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -31,6 +34,7 @@ import lombok.experimental.FieldDefaults;
 public class StudioSessionController {
 
     StudioSessionService studioSessionService;
+    StudioEventService studioEventService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -53,5 +57,13 @@ public class StudioSessionController {
     @Operation(summary = "Hủy phiên luyện tập", security = @SecurityRequirement(name = "bearerAuth"))
     public void abortSession(@PathVariable String sessionId) {
         studioSessionService.abortSession(sessionId);
+    }
+
+    @PostMapping("/{sessionId}/events")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    @Operation(summary = "Gửi lô sự kiện nốt của phiên", security = @SecurityRequirement(name = "bearerAuth"))
+    public StudioEventBatchResponse ingestEvents(
+            @PathVariable String sessionId, @Valid @RequestBody StudioEventBatchRequest request) {
+        return studioEventService.ingestEvents(sessionId, request);
     }
 }
