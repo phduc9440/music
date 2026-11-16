@@ -106,16 +106,29 @@ export default function ScoreHero({ score, onVisibilityChanged, onRequestMore, o
         <div className="sd-head__lead">
           <div className="sd-head__cover">
             <ScoreCover score={score} onChanged={onVisibilityChanged} />
-            {/* Chỉ một biểu tượng nhỏ ở góc ảnh bìa: bấm để chép đường dẫn bản nhạc gửi cho người khác */}
-            <button
-              type="button"
-              className={`sd-copylink${linkCopied ? ' is-done' : ''}`}
-              onClick={copyLink}
-              title={linkCopied ? t('scores.hero.copyLinkCopied') : t('scores.hero.copyLinkHint')}
-              aria-label={t('scores.hero.copyLink')}
-            >
-              <Icon name={linkCopied ? 'check' : 'copy'} size={14} />
-            </button>
+            {/* Hai biểu tượng nhỏ ở góc ảnh bìa: chép đường dẫn bản nhạc để gửi cho người khác, và báo cáo vi phạm */}
+            <div className="sd-cover-tools">
+              <button
+                type="button"
+                className={`sd-iconbtn${linkCopied ? ' is-done' : ''}`}
+                onClick={copyLink}
+                title={linkCopied ? t('scores.hero.copyLinkCopied') : t('scores.hero.copyLinkHint')}
+                aria-label={t('scores.hero.copyLink')}
+              >
+                <Icon name={linkCopied ? 'check' : 'copy'} size={14} />
+              </button>
+              {canReport && (
+                <button
+                  type="button"
+                  className="sd-iconbtn sd-iconbtn--report"
+                  onClick={onReport}
+                  title={t('scores.report.menu')}
+                  aria-label={t('scores.report.menu')}
+                >
+                  <Icon name="alert" size={14} />
+                </button>
+              )}
+            </div>
           </div>
           <div className="sd-head__text">
             <div className="sd-badges">
@@ -179,12 +192,6 @@ export default function ScoreHero({ score, onVisibilityChanged, onRequestMore, o
             <button type="button" className="sc-btn" onClick={onRequestMore}>
               <Icon name="key" size={16} />
               {t('scores.detail.requestMoreTitle')}
-            </button>
-          )}
-          {canReport && (
-            <button type="button" className="sc-btn" onClick={onReport}>
-              <Icon name="alert" size={16} />
-              {t('scores.report.menu')}
             </button>
           )}
         </div>

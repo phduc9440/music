@@ -37,5 +37,13 @@
   "loadFailed": "Could not load your tasks",
   "reload": "Try reloading the page.",
   "openShow": "Open show",
-  "openScore": "Open score"
+  "openScore": "Open score",
+  "searchInTeam": "Search by score or show",
+  "emptyTeamTitle": "You have no tasks in this team",
+  "emptyTeamHint": "When a manager assigns you to arrange or review a score in one of the team's shows, it appears here.",
+  "teamHint": "Scores assigned to you to arrange or review in this team's shows.",
+  "allTeamsLink": "Tasks in all teams",
+  "inShowTitle": "My tasks in this show",
+  "mineOnly": "My scores only ({count})",
+  "viewAll": "View and filter all"
 }

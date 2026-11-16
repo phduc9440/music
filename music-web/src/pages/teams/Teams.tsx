@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import { Link } from '../../routes/transition-nav';
 import { useNavigate } from '../../routes/useTransitionNavigate';
 import Modal from '../../components/scores/common/Modal';
+import { Icon } from '../../components/ui';
 import Skeleton from '../../components/ui/Skeleton';
 import { billingApi, teamApi } from '../../services';
 import type { RestorableItem, Team, TeamInvitation, TeamTask } from '../../types';
@@ -147,7 +148,13 @@ export default function Teams() {
           <div className="tm-section__head">
             <h2 id="tm-task-title">{t('teams.tasks.title')}</h2>
             {tasks && tasks.length > 0 && (
-              <span className="tm-muted">{t('teams.tasks.count', { count: tasks.length })}</span>
+              <span className="tm-section__tools">
+                <span className="tm-muted">{t('teams.tasks.count', { count: tasks.length })}</span>
+                <Link to="/my-tasks" className="sc-btn sc-btn--sm">
+                  {t('tasks.viewAll')}
+                  <Icon name="chevronRight" size={14} />
+                </Link>
+              </span>
             )}
           </div>
           {!tasks && <Skeleton lines={2} />}

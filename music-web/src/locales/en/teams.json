@@ -39,6 +39,7 @@
     "DONE": "Performed"
   },
   "tabs": {
+    "tasks": "My tasks",
     "scores": "Scores",
     "shows": "Shows",
     "members": "Members",

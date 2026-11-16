@@ -37,5 +37,13 @@
   "loadFailed": "Không tải được danh sách việc",
   "reload": "Thử tải lại trang.",
   "openShow": "Mở buổi diễn",
-  "openScore": "Mở bản nhạc"
+  "openScore": "Mở bản nhạc",
+  "searchInTeam": "Tìm theo tên bài hoặc buổi diễn",
+  "emptyTeamTitle": "Bạn chưa có việc nào trong nhóm này",
+  "emptyTeamHint": "Khi quản lý giao bài cho bạn phối hoặc duyệt trong một buổi diễn của nhóm, bài sẽ hiện ở đây.",
+  "teamHint": "Các bài được giao cho bạn phối hoặc duyệt trong những buổi diễn của nhóm này.",
+  "allTeamsLink": "Việc ở mọi nhóm",
+  "inShowTitle": "Việc của tôi trong buổi diễn",
+  "mineOnly": "Chỉ bài của tôi ({count})",
+  "viewAll": "Xem và lọc tất cả"
 }

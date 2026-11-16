@@ -1474,3 +1474,100 @@ a.tm-card:hover {
     padding: 0.75rem;
   }
 }
+
+/* ---- Việc của tôi trong trang buổi diễn và số trên tab của nhóm ---- */
+.tm-mytasks {
+  margin-bottom: 1rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--ui-card-border);
+  border-left: 4px solid var(--ui-primary);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-surface);
+  box-shadow: var(--ui-card-shadow);
+}
+
+.tm-mytasks__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.7rem;
+}
+
+.tm-mytasks__head h2 {
+  margin: 0;
+  font-family: var(--ui-font-display);
+  font-size: 1.05rem;
+}
+
+.tm-mytasks__count {
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-sm);
+}
+
+.tm-mytasks .mt-card {
+  padding: 0.7rem 0.9rem;
+}
+
+.tm-mine {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 36px;
+  padding: 0 0.85rem;
+  border: 1px solid var(--ui-card-border);
+  border-radius: 999px;
+  background: var(--ui-surface);
+  color: var(--ui-text-2);
+  font: inherit;
+  font-size: var(--ui-text-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tm-mine:hover {
+  background: var(--ui-surface-hover);
+  color: var(--ui-text);
+}
+
+.tm-mine:focus-visible {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 2px;
+}
+
+.tm-mine.is-on {
+  border-color: var(--ui-primary);
+  background: var(--ui-primary);
+  color: var(--ui-on-accent);
+}
+
+.tm-tab__count {
+  margin-left: 0.4rem;
+  min-width: 1.3rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: var(--ui-danger);
+  color: var(--ui-on-accent);
+  font-size: var(--ui-text-xs);
+  line-height: 1.3rem;
+  text-align: center;
+}
+
+/* nút "Xem và lọc tất cả" cạnh tiêu đề mục + danh sách việc có khung rõ */
+.tm-section__tools {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.tm-section > .tm-list {
+  border-color: var(--ui-card-border);
+  box-shadow: var(--ui-card-shadow);
+}
+
+/* khoảng cách tối thiểu 8px giữa các nhãn lọc bấm được */
+.tm-feed__filters {
+  gap: 0.5rem;
+}

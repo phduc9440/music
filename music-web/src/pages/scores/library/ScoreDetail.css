@@ -642,11 +642,15 @@ a.sc-btn.is-disabled {
   position: relative;
   flex: none;
 }
-.sd-copylink {
+.sd-cover-tools {
   position: absolute;
   top: -8px;
   right: -8px;
   z-index: 1;
+  display: flex;
+  gap: 8px;
+}
+.sd-iconbtn {
   display: grid;
   place-items: center;
   width: 28px;
@@ -659,15 +663,21 @@ a.sc-btn.is-disabled {
   box-shadow: var(--ui-shadow);
   cursor: pointer;
 }
-.sd-copylink:hover {
+.sd-iconbtn:hover {
   background: var(--ui-surface-hover);
   color: var(--ui-text);
 }
-.sd-copylink:focus-visible {
+.sd-iconbtn:focus-visible {
   outline: 2px solid var(--ui-primary);
   outline-offset: 2px;
 }
-.sd-copylink.is-done {
+.sd-iconbtn.is-done {
   border-color: var(--ui-success);
   color: var(--ui-success);
+}
+/* Báo cáo là hành động cảnh báo nên rê chuột / focus thì chuyển sang màu đỏ */
+.sd-iconbtn--report:hover {
+  border-color: var(--ui-danger-border);
+  background: var(--ui-danger-soft);
+  color: var(--ui-danger);
 }

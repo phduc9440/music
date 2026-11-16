@@ -166,11 +166,24 @@
   align-items: center;
   gap: 0.15rem;
   min-height: 32px;
+  padding: 0 0.7rem;
+  border: 1px solid var(--ui-card-border);
+  border-radius: 999px;
+  background: var(--ui-surface);
   color: var(--ui-primary);
   font-size: var(--ui-text-sm);
   font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
+}
+
+.wh-panel__action:hover {
+  background: var(--ui-surface-hover);
+}
+
+.wh-panel__action:focus-visible {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 2px;
 }
 .wh-empty {
   margin: 0;

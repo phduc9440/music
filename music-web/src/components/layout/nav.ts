@@ -118,13 +118,6 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: 'list',
       },
       {
-        to: '/my-tasks',
-        get label() {
-          return t('common.nav.items.myTasks');
-        },
-        icon: 'check',
-      },
-      {
         to: '/teams',
         get label() {
           return t('common.nav.items.teams');

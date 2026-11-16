@@ -19,10 +19,12 @@ import type {
   ShowStatus,
   TeamMember,
   TeamScore,
+  TeamTask,
 } from '../../types';
 import { formatDate, formatNumber, t } from '../../i18n/core';
 import { getErrorMessage } from '../../utils/score';
 import { DueDate, MemberAvatar, StatusBadge } from './shared';
+import TasksPanel from './TasksPanel';
 import { daysUntil, memberName } from './teamUtils';
 import '../../components/scores/scores.css';
 import './teams.css';
@@ -56,6 +58,9 @@ export default function ShowBoard() {
   const [editingItem, setEditingItem] = useState<ShowItem | 'new' | null>(null);
   const [editingShow, setEditingShow] = useState(false);
   const [now, setNow] = useState(0);
+  // Việc được giao cho mình trong buổi diễn này, và bộ lọc "chỉ bài của tôi" trên bảng tiến độ
+  const [myTasks, setMyTasks] = useState<TeamTask[]>([]);
+  const [mineOnly, setMineOnly] = useState(false);
 
   const load = useCallback(() => {
     showApi
@@ -68,6 +73,17 @@ export default function ShowBoard() {
   }, [showId]);
 
   useEffect(load, [load]);
+  // Nạp lại việc của tôi mỗi khi bảng đổi (chuyển trạng thái, giao lại bài) để khung luôn khớp
+  useEffect(() => {
+    let cancelled = false;
+    teamApi
+      .myTasks()
+      .then((res) => !cancelled && setMyTasks(res.data.result.filter((task) => task.showId === showId)))
+      .catch(() => !cancelled && setMyTasks([]));
+    return () => {
+      cancelled = true;
+    };
+  }, [showId, data]);
   useEffect(() => {
     userApi
       .getMe()
@@ -162,6 +178,11 @@ export default function ShowBoard() {
   };
 
   const dragged = data?.items.find((i) => i.id === dragId) ?? null;
+  /** Bài mình phối hoặc duyệt (kể cả bài đã duyệt xong, khác với danh sách việc chỉ gồm bài chưa duyệt). */
+  const mineIds = useMemo(
+    () => new Set((data?.items ?? []).filter((i) => i.arrangerId === meId || i.reviewerId === meId).map((i) => i.id)),
+    [data?.items, meId],
+  );
   const show = data?.show;
   /** Người được giao (để lấy ảnh đại diện trên thẻ bài). */
   const people = useMemo(() => new Map((data?.assignees ?? []).map((m) => [m.memberId, m])), [data?.assignees]);
@@ -223,6 +244,16 @@ export default function ShowBoard() {
 
         {data && data.items.length > 0 && <ShowSummary items={data.items} now={now} />}
 
+        {myTasks.length > 0 && (
+          <section className="tm-mytasks" aria-labelledby="tm-mytasks-title">
+            <div className="tm-mytasks__head">
+              <h2 id="tm-mytasks-title">{t('tasks.inShowTitle')}</h2>
+              <span className="tm-mytasks__count">{t('tasks.count', { count: myTasks.length })}</span>
+            </div>
+            <TasksPanel tasks={myTasks} now={now} scope="show" from={pathname} />
+          </section>
+        )}
+
         {/* Thanh chọn cách xem và bảng / danh sách nằm chung một khung nền đặc, không nổi trên ảnh nền trang */}
         <section className="tm-workspace">
           <div className="tm-toolbar">
@@ -241,6 +272,17 @@ export default function ShowBoard() {
                 </button>
               ))}
             </div>
+            {data && view === 'board' && mineIds.size > 0 && (
+              <button
+                type="button"
+                className={`tm-mine${mineOnly ? ' is-on' : ''}`}
+                aria-pressed={mineOnly}
+                onClick={() => setMineOnly((v) => !v)}
+              >
+                <Icon name="check" size={14} />
+                {t('tasks.mineOnly', { count: mineIds.size })}
+              </button>
+            )}
             {data && data.items.length > 0 && (
               <span className="tm-toolbar__hint">
                 {view === 'board' ? t('teams.board.dragHint') : t('teams.board.orderHint')}
@@ -259,7 +301,7 @@ export default function ShowBoard() {
           {data && data.items.length > 0 && view === 'board' && (
             <div className="tm-board">
               {SHOW_ITEM_STATUSES.map((status) => {
-                const items = data.items.filter((i) => i.status === status);
+                const items = data.items.filter((i) => i.status === status && (!mineOnly || mineIds.has(i.id)));
                 const target = !!dragged && dragged.status !== status && dragged.allowedStatuses.includes(status);
                 return (
                   <section
