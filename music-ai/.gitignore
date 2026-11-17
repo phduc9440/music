@@ -10,3 +10,7 @@ eval-data/
 omr-dump/
 # Kết quả benchmark (scripts/omr_benchmark.py): sinh lại được, không commit
 benchmark/results/
+
+# Thư mục chỉ dùng cục bộ, không đưa lên GitHub
+benchmark/
+docs/
