@@ -38,8 +38,10 @@ from app.config import Settings, get_settings
 from app.convert.errors import ConversionError
 from app.convert.kern import kern_file_to_musicxml_file
 from app.convert.midi import musicxml_file_to_midi_file
-from app.omr import kern_check, measure_map, merge, routing
+from app.omr import kern_check, measure_map, merge, ottava, routing
 from app.omr.layout import PageLayout, analyze_layout
+from app.omr.lyrics import get_text_engine
+from app.omr.lyrics.step import LyricsPage, recognize_lyrics
 from app.omr.pdf import iter_pdf_pages
 from app.omr.preprocess import PreprocessOptions, UnreadablePage, load_image_gray, process_page
 from app.omr.transcoda import Recognizer, RecognizerNotReady, get_recognizer
@@ -136,6 +138,8 @@ class JobContext:
     """Vai trò khuông từ trên xuống của cả bản (từ bố cục), đã ghi vào kern ghép bằng ``*Ivox``/``*Ipiano``."""
     system_counts: dict[int, list[Optional[int]]] = field(default_factory=dict)
     """Số ô từng hệ của các trang được nhận diện lại theo hệ (để lập bản đồ ô nhịp)."""
+    ocr_pages: dict[int, tuple[str, float]] = field(default_factory=dict)
+    """Ảnh độ phân giải cao cho OCR lời ca: số trang -> ``(ocr/page-NNN.png, tỉ lệ sang ảnh trang)``."""
 
     @property
     def task_id(self) -> str:
@@ -295,7 +299,10 @@ def _preprocess_pages(ctx: JobContext, pages: list[Optional[tuple[int, np.ndarra
     )
     score_id = ctx.job.scoreId
     _clear_dir(score_id, "layout", (".json",))
+    _clear_dir(score_id, "ocr", (".png",))
     ctx.layouts = {}
+    ctx.ocr_pages = {}
+    keep_ocr = ctx.settings.lyrics != "off"
 
     total = len(pages)
     kept = 0
@@ -323,6 +330,8 @@ def _preprocess_pages(ctx: JobContext, pages: list[Optional[tuple[int, np.ndarra
             relative, size = _save_page_png(score_id, kept, result.image)
             kept_pages.append((kept, relative))
             _analyze_page_layout(ctx, kept, result.image)
+            if keep_ocr and result.ocr_image is not None:
+                _save_ocr_page(ctx, kept, result.ocr_image, result.scale)
             callback.file(
                 file_type="PNG",
                 storage_path=relative,
@@ -374,9 +383,12 @@ def _recognize_pages(ctx: JobContext, kept_pages: list[tuple[int, str]]) -> Opti
         relative = _save_text(f"scores/{score_id}/kern/page-{page_number:03d}.krn", merge.normalize_text(result.text))
         ctx.page_kern_paths.append(relative)
 
+        text, shifted = ottava.fix_text(result.text, settings.ottava, _page_roles(ctx.layouts.get(page_number)))
         page, warnings = merge.clean_page(
-            page_number, result.text, max_repeat=settings.max_repeat_lines, truncated=result.truncated
+            page_number, text, max_repeat=settings.max_repeat_lines, truncated=result.truncated
         )
+        if shifted:
+            warnings.append(_ottava_message(page_number, shifted))
         if result.stopped_early:
             warnings = [w for w in warnings if "giới hạn độ dài" not in w] + [
                 f"Trang {page_number}: model đọc lặp, đã dừng khi vượt {limit} ô nhịp (ảnh có {expected} ô)"
@@ -498,7 +510,10 @@ def _route_pages(
                 budget.end_page()
             last_seconds[0] = time.monotonic() - begin
             _save_text(f"{name}{suffix}.krn", merge.normalize_text(result.text))
-            return result.text, result.truncated
+            # Ảnh cả hệ: vai trò từng khuông theo bố cục; ảnh một nhóm khuông (tag): suy theo số spine
+            roles = layout.systems[index].roles if tag is None and index < len(layout.systems) else None
+            text, _shifted = ottava.fix_text(result.text, settings.ottava, roles)
+            return text, result.truncated
 
         def can_retry() -> bool:
             # Thử lại bằng beam search chậm hơn ~3 lần một lần greedy
@@ -595,6 +610,20 @@ def _finish_routing(
                 + f"; chưa sửa được ({reason})"
             )
     ctx.routing[-1] = report.to_dict()
+
+
+def _page_roles(layout: Optional[PageLayout]) -> Optional[list[str]]:
+    """Vai trò khuông (từ trên xuống) của trang nếu bố cục tin cậy và mọi hệ cùng cấu trúc."""
+    if layout is None or not layout.confident:
+        return None
+    return layout.roles
+
+
+def _ottava_message(page_number: int, shifted: int) -> str:
+    return (
+        f"Trang {page_number}: model thêm dấu 8va không có trên ảnh ở khuông giọng hát/khuông đơn, "
+        f"đã đưa {shifted} nốt về đúng quãng tám in trên ảnh (OMR_OTTAVA)"
+    )
 
 
 def _mismatch_message(page_number: int, found: int, expected: int) -> str:
@@ -767,6 +796,8 @@ def _export(ctx: JobContext, extra: dict, score_metadata: dict) -> Optional[tupl
         )
         budget.check()
         callback.progress(95, STEP_EXPORT)
+        lyrics_summary = _recognize_lyrics(ctx, xml_relative, extra.get("measureMap") or [])
+        budget.check()
         midi = musicxml_file_to_midi_file(
             storage.resolve(xml_relative), storage.resolve(midi_relative), normalized.tempo_bpm
         )
@@ -836,6 +867,8 @@ def _export(ctx: JobContext, extra: dict, score_metadata: dict) -> Optional[tupl
         "musicXmlVersion": version,
         "pageMeasures": page_measures,
     }
+    if lyrics_summary is not None:
+        result_extra["lyrics"] = lyrics_summary
     # MusicXML là nguồn đúng nhất cho metadata (đặc tả mục 2.4): ghi đè các giá trị rút tạm từ kern
     metadata = {
         **score_metadata,
@@ -848,6 +881,52 @@ def _export(ctx: JobContext, extra: dict, score_metadata: dict) -> Optional[tupl
     if normalized.time_signature:
         metadata["timeSignature"] = normalized.time_signature
     return result_extra, metadata
+
+
+def _recognize_lyrics(ctx: JobContext, xml_relative: str, measures: list[dict]) -> Optional[dict]:
+    """Nhánh lời ca: OCR, gắn vào nốt, ghi ``<lyric>`` vào MusicXML và ``lyrics/lyrics.json``.
+
+    Không bao giờ làm job thất bại; trả tóm tắt cho ``result_data.lyrics`` (None khi tắt hoặc bản piano không lời)."""
+    settings = ctx.settings
+    if settings.lyrics == "off":
+        return None
+    if not any(r == "SINGLE" for layout in ctx.layouts.values() for r in (layout.roles or [])):
+        return None  # chỉ có khuông piano: không có lời để gắn
+    engine, reason = get_text_engine()
+    if engine is None:
+        # Thiếu Tesseract là vấn đề cài đặt máy chủ: ghi vào result_data.lyrics và log, không thành cảnh báo bản nhạc
+        log.warning("Job %s: bỏ qua lời ca: %s", ctx.task_id, reason)
+        return {"status": "skipped", "reason": reason}
+    score_id = ctx.job.scoreId
+    pages = []
+    for number, layout in sorted(ctx.layouts.items()):
+        ocr = ctx.ocr_pages.get(number)
+        pages.append(
+            LyricsPage(
+                number=number,
+                page_png=storage.resolve(f"scores/{score_id}/pages/page-{number:03d}.png"),
+                layout=layout,
+                ocr_png=storage.resolve(ocr[0]) if ocr else None,
+                scale=ocr[1] if ocr else 1.0,
+            )
+        )
+    started = time.monotonic()
+    try:
+        report = recognize_lyrics(
+            storage.resolve(xml_relative), pages, measures, engine, min_confidence=settings.lyrics_min_confidence
+        )
+    except (JobCancelled, JobTimeout, TaskGone):
+        raise
+    except Exception as exc:  # noqa: BLE001 - lời ca là phần bổ sung, lỗi không được làm hỏng bản nhạc
+        log.exception("Job %s: nhận diện lời ca lỗi", ctx.task_id)
+        ctx.warnings.append(f"Chưa nhận diện được lời ca do lỗi: {type(exc).__name__}")
+        return {"status": "error", "reason": type(exc).__name__}
+    ctx.warnings.extend(report.warnings)
+    summary = report.summary()
+    summary["millis"] = int((time.monotonic() - started) * 1000)
+    if report.status == "done":
+        summary["path"] = _save_text(f"scores/{score_id}/lyrics/lyrics.json", report.to_json())
+    return summary
 
 
 def _finish(
@@ -938,6 +1017,16 @@ def _save_png(relative: str, image: np.ndarray) -> tuple[str, int]:
     temp.write_bytes(encoded.tobytes())
     os.replace(temp, target)
     return relative, target.stat().st_size
+
+
+def _save_ocr_page(ctx: JobContext, number: int, image: np.ndarray, scale: float) -> None:
+    """Ảnh độ phân giải cao cho OCR lời ca (``ocr/page-NNN.png``). Lỗi ghi thì bỏ qua (chỉ mất phần lời ca)."""
+    try:
+        relative, _ = _save_png(f"scores/{ctx.job.scoreId}/ocr/page-{number:03d}.png", image)
+    except (OSError, RuntimeError) as exc:
+        log.warning("Không ghi được ảnh OCR trang %s: %s", number, exc)
+        return
+    ctx.ocr_pages[number] = (relative, scale)
 
 
 def _save_page_png(score_id: str, number: int, image: np.ndarray) -> tuple[str, int]:

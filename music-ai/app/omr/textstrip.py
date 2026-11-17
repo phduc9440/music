@@ -40,9 +40,24 @@ _LEDGER_MAX_H = 1.7
 
 def strip_text(gray: np.ndarray, layout: PageLayout | None = None) -> tuple[np.ndarray, int]:
     """Trả ``(ảnh đã xóa chữ, số thành phần bị xóa)``. Không đổi ảnh gốc."""
+    mask, count = text_mask(gray, layout)
+    if count == 0:
+        return gray, 0
+    out = gray.copy()
+    out[mask] = 255
+    return out, count
+
+
+def text_mask(gray: np.ndarray, layout: PageLayout | None = None) -> tuple[np.ndarray, int]:
+    """Mặt nạ (bool, cùng kích thước ảnh) các pixel chữ ngoài khuông và số thành phần chữ.
+
+    Dùng chung cho hai việc: xóa chữ trước khi đưa vào Transcoda (:func:`strip_text`) và giữ lại đúng phần chữ để OCR lời
+    ca (``app/omr/lyrics``), nên hai nhánh luôn thống nhất về "đâu là chữ, đâu là ký hiệu nhạc".
+    """
+    empty = np.zeros(gray.shape, dtype=bool)
     layout = layout or analyze_layout(gray)
     if not layout.systems or layout.interline <= 0:
-        return gray, 0
+        return empty, 0
     il = layout.interline
 
     background = float(np.percentile(gray, 90))
@@ -83,16 +98,14 @@ def strip_text(gray: np.ndarray, layout: PageLayout | None = None) -> tuple[np.n
         erase[i] = True
 
     if not erase.any():
-        return gray, 0
+        return empty, 0
     mask = erase[labels]
     # Nới 1 px để xóa cả viền xám khử răng cưa quanh chữ
     mask = cv2.dilate(mask.astype(np.uint8), np.ones((3, 3), np.uint8)) > 0
     # Không đụng pixel nằm trong dải khuông (dòng kẻ, nốt)
     for top, bottom in bands:
         mask[max(0, int(top)) : int(bottom) + 1, :] = False
-    out = gray.copy()
-    out[mask] = 255
-    return out, int(erase.sum())
+    return mask, int(erase.sum())
 
 
 def _distance_to_bands(y0: float, y1: float, bands: list[tuple[float, float]]) -> float:

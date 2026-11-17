@@ -119,6 +119,30 @@ class Settings:
     """Xóa lời ca, tên hợp âm và các chữ khác ngoài khuông khỏi ảnh trước khi đưa vào Transcoda (``app/omr/textstrip.py``).
     Model chỉ được train trên nhạc piano không chữ nên lời ca làm nó lạc chỗ/đoán sai. Tắt bằng ``OMR_STRIP_TEXT=0``."""
 
+    music_engine: str = "transcoda"
+    """Engine nhận diện ký hiệu nhạc (``app/omr/engines.py``). Đặt bằng ``OMR_ENGINE``."""
+
+    engine_command: str = ""
+    """Lệnh cho ``OMR_ENGINE=command`` (``app/omr/command_engine.py``), có ``{image}``, ``{output}``, ``{beams}``.
+    Đặt bằng ``OMR_ENGINE_COMMAND``."""
+
+    ottava: str = "auto"
+    """Xử lý ``*8va``/``*8ba`` model sinh ra (``app/omr/ottava.py``): ``auto`` bỏ trên khuông giọng hát/khuông đơn và
+    đưa nốt về đúng quãng tám in trên ảnh; ``drop`` bỏ trên mọi khuông; ``keep`` giữ nguyên. Đặt bằng ``OMR_OTTAVA``."""
+
+    lyrics: str = "auto"
+    """Nhận diện lời ca (``app/omr/lyrics``): ``auto`` chạy khi bản nhạc có khuông giọng hát/khuông đơn và có OCR;
+    ``off`` tắt. Đặt bằng ``OMR_LYRICS``."""
+
+    lyrics_ocr: str = "tesseract"
+    """Engine OCR lời ca. Đặt bằng ``LYRICS_OCR_ENGINE``."""
+
+    lyrics_lang: str = "vie+eng"
+    """Ngôn ngữ OCR (mã Tesseract, nối bằng ``+``). Đặt bằng ``LYRICS_LANG``."""
+
+    lyrics_min_confidence: float = 0.5
+    """Âm tiết gắn với độ tin cậy dưới mức này được liệt kê để kiểm tra. Đặt bằng ``LYRICS_MIN_CONFIDENCE``."""
+
     routing_reserve_s: int = 30
     """Giây giữ lại cho bước ghép và xuất: nhận diện lại chỉ chạy khi job còn nhiều thời gian hơn mức này, nên không bao
     giờ làm job quá hạn. Đặt bằng ``ROUTING_RESERVE_S``."""
@@ -185,7 +209,21 @@ def get_settings() -> Settings:
         routing_retry_beams=max(0, _int_env("ROUTING_RETRY_BEAMS", 3)),
         strip_text=_bool_env("OMR_STRIP_TEXT", True),
         routing_reserve_s=max(0, _int_env("ROUTING_RESERVE_S", 30)),
+        music_engine=(os.environ.get("OMR_ENGINE", "").strip() or "transcoda").lower(),
+        engine_command=os.environ.get("OMR_ENGINE_COMMAND", "").strip(),
+        ottava=_choice_env("OMR_OTTAVA", "auto", ("auto", "drop", "keep")),
+        lyrics=_choice_env("OMR_LYRICS", "auto", ("auto", "off")),
+        lyrics_ocr=(os.environ.get("LYRICS_OCR_ENGINE", "").strip() or "tesseract").lower(),
+        lyrics_lang=os.environ.get("LYRICS_LANG", "").strip() or "vie+eng",
+        lyrics_min_confidence=_float_env("LYRICS_MIN_CONFIDENCE", 0.5),
     )
+
+
+def _choice_env(name: str, default: str, choices: tuple[str, ...]) -> str:
+    raw = (os.environ.get(name, "").strip() or default).lower()
+    if raw not in choices:
+        raise ValueError(f"{name} phải là một trong {', '.join(choices)}, nhận được {raw!r}")
+    return raw
 
 
 def _routing_env() -> str:

@@ -21,6 +21,11 @@ tokenizers>=0.22,<=0.23.0
 datasets<4
 music21>=9.1               # kiểm tra kern đã ghép đọc được (KERN_PARSE_ERROR); nhánh export MusicXML/MIDI cũng dùng
 
+# Nhận diện lời ca (app/omr/lyrics): cần thêm chương trình Tesseract + gói tiếng Việt
+#   macOS:  brew install tesseract tesseract-lang      Ubuntu/Debian: apt install tesseract-ocr tesseract-ocr-vie
+# Thiếu Tesseract thì bước lời ca tự bỏ qua (result_data.lyrics.status = "skipped"), phần nhạc vẫn chạy bình thường.
+pytesseract>=0.3.10
+
 # Chỉ để chạy test
 pytest>=8.0
 
