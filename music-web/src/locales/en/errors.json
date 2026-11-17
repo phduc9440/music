@@ -5,7 +5,7 @@
   "1003": "This account already exists",
   "1004": "This account doesn't exist",
   "1005": "Incorrect email or password",
-  "1006": "Username must be at least {min} characters",
+  "1006": "Please enter your email",
   "1007": "Password must be at least {min} characters",
   "1008": "Employee not found",
   "1009": "Invalid request",

@@ -16,7 +16,7 @@ public enum ErrorCode {
     USER_EXISTED(1003, "User already existed", HttpStatus.BAD_REQUEST),
     USER_NOT_EXISTED(1004, "User not existed", HttpStatus.NOT_FOUND),
     INVALID_CREDENTIALS(1005, "Email hoặc mật khẩu không đúng", HttpStatus.UNAUTHORIZED),
-    USERNAME_INVALID(1006, "Username must be at least {min} characters", HttpStatus.BAD_REQUEST),
+    USERNAME_INVALID(1006, "Vui lòng nhập email", HttpStatus.BAD_REQUEST),
     PASSWORD_INVALID(1007, "Mật khẩu phải có ít nhất {min} ký tự", HttpStatus.BAD_REQUEST),
     EMPLOYEE_NOT_FOUND(1008, "Employee not found", HttpStatus.NOT_FOUND),
     INVALID_REQUEST(1009, "Invalid request", HttpStatus.BAD_REQUEST),
