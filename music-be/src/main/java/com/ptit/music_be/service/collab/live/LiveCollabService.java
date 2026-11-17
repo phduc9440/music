@@ -15,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
@@ -198,7 +199,7 @@ public class LiveCollabService {
         }
         live.touchEditor(email, who.memberName());
         broadcastPresence(scoreId);
-        replyToUser(email, "/queue/live-join", joinResult(scoreId, sessionId, live, request.lastSeq()));
+        replyToSession(email, sessionId, "/queue/live-join", joinResult(scoreId, sessionId, live, request.lastSeq()));
     }
 
     /** Nhịp tim và vùng chọn. Chỉ phát lại danh sách người khi vùng chọn đổi. */
@@ -249,7 +250,7 @@ public class LiveCollabService {
         Instant now = clock.instant();
         if (request.release()) {
             boolean changed = locks.release(scoreId, sessionId, keys, request.whole());
-            replyToUser(email, "/queue/live-locks", new LockResult(scoreId, sessionId, true, true, null, null));
+            replyToSession(email, sessionId, "/queue/live-locks", new LockResult(scoreId, sessionId, true, true, null, null));
             if (changed) {
                 broadcastLocks(scoreId);
             }
@@ -261,8 +262,9 @@ public class LiveCollabService {
             LiveParticipant holder = registry.find(scoreId, grant.heldBy());
             heldByName = holder == null ? null : holder.name();
         }
-        replyToUser(
+        replyToSession(
                 email,
+                sessionId,
                 "/queue/live-locks",
                 new LockResult(scoreId, sessionId, grant.granted(), false, grant.heldBy(), heldByName));
         if (grant.granted()) {
@@ -285,7 +287,7 @@ public class LiveCollabService {
         }
         Live live = lives.get(scoreId);
         if (live == null) {
-            sendRejected(email, scoreId, request.opId(), "STALE", 0, List.of(), null);
+            sendRejected(email, sessionId, scoreId, request.opId(), "STALE", 0, List.of(), null);
             return;
         }
 
@@ -296,7 +298,8 @@ public class LiveCollabService {
                         .map(m -> new Key(m.partIndex(), m.measureIndex()))
                         .toList();
         if (!locks.holds(scoreId, sessionId, keys, structural, now)) {
-            sendRejected(email, scoreId, request.opId(), "LOCK_REQUIRED", live.document.seq(), currentOf(live, request), null);
+            sendRejected(
+                    email, sessionId, scoreId, request.opId(), "LOCK_REQUIRED", live.document.seq(), currentOf(live, request), null);
             return;
         }
 
@@ -311,6 +314,7 @@ public class LiveCollabService {
             if (!outcome.applied()) {
                 sendRejected(
                         email,
+                        sessionId,
                         scoreId,
                         request.opId(),
                         outcome.reason().name(),
@@ -598,13 +602,15 @@ public class LiveCollabService {
 
     private void sendRejected(
             String email,
+            String sessionId,
             String scoreId,
             String opId,
             String reason,
             long seq,
             List<LiveMessages.MeasureXml> measures,
             String structuralXml) {
-        replyToUser(email, "/queue/live-rejected", new OpRejected(scoreId, opId, reason, seq, measures, structuralXml));
+        replyToSession(
+                email, sessionId, "/queue/live-rejected", new OpRejected(scoreId, opId, reason, seq, measures, structuralXml));
     }
 
     private void broadcastPresence(String scoreId) {
@@ -617,8 +623,13 @@ public class LiveCollabService {
         messaging.convertAndSend(topic(scoreId, "locks"), locks.snapshot(scoreId, clock.instant()));
     }
 
-    private void replyToUser(String email, String queue, Object payload) {
-        messaging.convertAndSendToUser(email, queue, payload);
+    /**
+     * Trả lời đúng tab đã gửi. Gửi theo email sẽ tới mọi tab của cùng tài khoản: tab kia có thể nhận nhầm kết quả vào
+     * phiên hoặc kết quả khóa của tab này (hay gặp khi một người mở hai cửa sổ để thử).
+     */
+    private void replyToSession(String email, String sessionId, String queue, Object payload) {
+        messaging.convertAndSendToUser(
+                email, queue, payload, Map.<String, Object>of(SimpMessageHeaderAccessor.SESSION_ID_HEADER, sessionId));
     }
 
     private static String topic(String scoreId, String channel) {

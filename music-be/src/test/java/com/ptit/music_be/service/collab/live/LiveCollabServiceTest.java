@@ -3,6 +3,7 @@ package com.ptit.music_be.service.collab.live;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -145,7 +146,7 @@ class LiveCollabServiceTest {
     private JoinResult join(String session, String email, long lastSeq) {
         service.join(SCORE, session, email, new JoinRequest(true, lastSeq, null));
         ArgumentCaptor<Object> payload = ArgumentCaptor.forClass(Object.class);
-        verify(messaging, org.mockito.Mockito.atLeastOnce()).convertAndSendToUser(eq(email), eq("/queue/live-join"), payload.capture());
+        verify(messaging, org.mockito.Mockito.atLeastOnce()).convertAndSendToUser(eq(email), eq("/queue/live-join"), payload.capture(), anyMap());
         return (JoinResult) payload.getValue();
     }
 
@@ -216,7 +217,7 @@ class LiveCollabServiceTest {
 
         lock("B", GUEST, new MeasureRef(0, 1));
         ArgumentCaptor<Object> payload = ArgumentCaptor.forClass(Object.class);
-        verify(messaging, org.mockito.Mockito.atLeastOnce()).convertAndSendToUser(eq(GUEST), eq("/queue/live-locks"), payload.capture());
+        verify(messaging, org.mockito.Mockito.atLeastOnce()).convertAndSendToUser(eq(GUEST), eq("/queue/live-locks"), payload.capture(), anyMap());
         LockResult result = (LockResult) payload.getValue();
         assertThat(result.granted()).isFalse();
         assertThat(result.heldBy()).isEqualTo("A");
@@ -367,7 +368,7 @@ class LiveCollabServiceTest {
 
     private OpRejected lastRejected(String email) {
         ArgumentCaptor<Object> payload = ArgumentCaptor.forClass(Object.class);
-        verify(messaging, org.mockito.Mockito.atLeastOnce()).convertAndSendToUser(eq(email), eq("/queue/live-rejected"), payload.capture());
+        verify(messaging, org.mockito.Mockito.atLeastOnce()).convertAndSendToUser(eq(email), eq("/queue/live-rejected"), payload.capture(), anyMap());
         return (OpRejected) payload.getValue();
     }
 

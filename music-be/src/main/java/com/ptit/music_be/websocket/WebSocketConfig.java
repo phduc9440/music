@@ -54,6 +54,15 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
      */
     private final ObjectProvider<StompAccessRule> accessRules;
 
+    /**
+     * Origin được phép bắt tay WebSocket. Mặc định gồm localhost và mạng nội bộ (192.168.x.x, 10.x.x.x, 172.x.x.x) để
+     * cả nhóm mở web bằng địa chỉ IP của máy chủ demo mà vẫn nối được; đặt {@code app.websocket.allowed-origin-patterns}
+     * (cách nhau bằng dấu phẩy) để thu hẹp hoặc thêm tên miền khi triển khai thật.
+     */
+    @org.springframework.beans.factory.annotation.Value(
+            "${app.websocket.allowed-origin-patterns:http://localhost:*,http://127.0.0.1:*,http://192.168.*.*:*,http://10.*.*.*:*,http://172.*.*.*:*}")
+    private String[] allowedOriginPatterns;
+
     @org.springframework.context.annotation.Bean
     TaskScheduler webSocketHeartbeatScheduler() {
         ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
@@ -67,8 +76,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registry.addEndpoint("/ws")
                 .setHandshakeHandler(handshake)
                 .addInterceptors(handshake)
-                // Cùng danh sách origin với CorsConfig
-                .setAllowedOrigins("http://localhost:5173", "http://localhost:3000");
+                .setAllowedOriginPatterns(allowedOriginPatterns);
     }
 
     @Override
