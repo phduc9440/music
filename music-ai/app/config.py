@@ -115,6 +115,21 @@ class Settings:
     """Hệ vẫn sai số spine thì thử lại bằng beam search với số beam này (bài báo dùng 3). 0 hoặc 1: không thử lại.
     Đặt bằng ``ROUTING_RETRY_BEAMS``."""
 
+    strip_text: bool = True
+    """Xóa lời ca, tên hợp âm và các chữ khác ngoài khuông khỏi ảnh trước khi đưa vào Transcoda (``app/omr/textstrip.py``).
+    Model chỉ được train trên nhạc piano không chữ nên lời ca làm nó lạc chỗ/đoán sai. Tắt bằng ``OMR_STRIP_TEXT=0``."""
+
+    music_engine: str = "transcoda"
+    """Engine nhận diện ký hiệu nhạc (``app/omr/engines.py``). Đặt bằng ``OMR_ENGINE``."""
+
+    engine_command: str = ""
+    """Lệnh cho ``OMR_ENGINE=command`` (``app/omr/command_engine.py``), có ``{image}``, ``{output}``, ``{beams}``.
+    Đặt bằng ``OMR_ENGINE_COMMAND``."""
+
+    ottava: str = "auto"
+    """Xử lý ``*8va``/``*8ba`` model sinh ra (``app/omr/ottava.py``): ``auto`` bỏ trên khuông giọng hát/khuông đơn và
+    đưa nốt về đúng quãng tám in trên ảnh; ``drop`` bỏ trên mọi khuông; ``keep`` giữ nguyên. Đặt bằng ``OMR_OTTAVA``."""
+
     routing_reserve_s: int = 30
     """Giây giữ lại cho bước ghép và xuất: nhận diện lại chỉ chạy khi job còn nhiều thời gian hơn mức này, nên không bao
     giờ làm job quá hạn. Đặt bằng ``ROUTING_RESERVE_S``."""
@@ -179,8 +194,19 @@ def get_settings() -> Settings:
         routing_measures=os.environ.get("OMR_ROUTING_MEASURES", "").strip().lower() in ("1", "true", "yes", "on"),
         routing_bars=_bool_env("OMR_ROUTING_BARS", True),
         routing_retry_beams=max(0, _int_env("ROUTING_RETRY_BEAMS", 3)),
+        strip_text=_bool_env("OMR_STRIP_TEXT", True),
         routing_reserve_s=max(0, _int_env("ROUTING_RESERVE_S", 30)),
+        music_engine=(os.environ.get("OMR_ENGINE", "").strip() or "transcoda").lower(),
+        engine_command=os.environ.get("OMR_ENGINE_COMMAND", "").strip(),
+        ottava=_choice_env("OMR_OTTAVA", "auto", ("auto", "drop", "keep")),
     )
+
+
+def _choice_env(name: str, default: str, choices: tuple[str, ...]) -> str:
+    raw = (os.environ.get(name, "").strip() or default).lower()
+    if raw not in choices:
+        raise ValueError(f"{name} phải là một trong {', '.join(choices)}, nhận được {raw!r}")
+    return raw
 
 
 def _routing_env() -> str:

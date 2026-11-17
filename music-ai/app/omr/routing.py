@@ -341,6 +341,67 @@ def virtual_page(gray: np.ndarray, band: tuple[int, int]) -> np.ndarray:
     return canvas
 
 
+_CONTEXT_GAP_INTERLINES = 4.0
+"""Khoảng trắng giữa hệ đầu và hệ cần đọc trên trang ngữ cảnh (gần khoảng cách hệ của bản render lúc train)."""
+
+
+def context_page(gray: np.ndarray, layout: PageLayout, index: int) -> Optional[np.ndarray]:
+    """Trang ảo gồm hệ đầu trang (có khóa nhạc, điệu, SỐ CHỈ NHỊP) đặt trên hệ ``index``.
+
+    Hệ ở giữa bài không có số chỉ nhịp nên cắt riêng ra thì model thường đọc thành toàn dấu lặng (``1r``), vì ở dữ liệu
+    train mọi trang đều bắt đầu bằng số chỉ nhịp. Kèm hệ đầu cho nó đủ ngữ cảnh; kết quả của hệ đầu bị bỏ sau khi đọc
+    (:func:`read_with_context`). None nếu hai hệ không vừa một trang.
+    """
+    if index <= 0 or index >= len(layout.systems):
+        return None
+    bands = system_bands(layout)
+    first = gray[bands[0][0] : bands[0][1], :TARGET_W]
+    target = gray[bands[index][0] : bands[index][1], :TARGET_W]
+    gap = int(round(_CONTEXT_GAP_INTERLINES * layout.interline))
+    if _TOP_MARGIN_PX + first.shape[0] + gap + target.shape[0] > TARGET_H:
+        return None
+    canvas = np.full((TARGET_H, TARGET_W), 255, dtype=np.uint8)
+    y = _TOP_MARGIN_PX
+    canvas[y : y + first.shape[0], : first.shape[1]] = first
+    y += first.shape[0] + gap
+    canvas[y : y + target.shape[0], : target.shape[1]] = target
+    return canvas
+
+
+def _is_empty(page: Optional[merge.PageKern]) -> bool:
+    """Không có nốt nào có cao độ (chỉ dấu lặng): dấu hiệu model không đọc được hệ."""
+    return page is None or not any(merge.has_pitched_note(line) for line in page.body)
+
+
+def read_with_context(
+    number: int,
+    index: int,
+    gray: np.ndarray,
+    layout: PageLayout,
+    recognize: "Recognize",
+    beams: Optional[int],
+    max_repeat: int,
+) -> Optional[merge.PageKern]:
+    """Đọc hệ ``index`` kèm hệ đầu phía trên rồi bỏ phần của hệ đầu (số ô đếm trên ảnh). None nếu không làm được
+    (bố cục không tin cậy, hệ đầu không kết thúc bằng vạch nhịp, hoặc kết quả có ít ô hơn hệ đầu)."""
+    first = layout.systems[0]
+    if not (layout.confident and first.bars_closed and first.measures):
+        return None
+    image = context_page(gray, layout, index)
+    if image is None:
+        return None
+    page = _read(number, index, image, recognize, beams, max_repeat)
+    if page is None:
+        return None
+    chunks = merge.split_measures(page.body)
+    if len(chunks) <= first.measures:
+        return None
+    # Dòng diễn giải (khóa, dấu hóa, số chỉ nhịp) nằm ở ô đầu: giữ lại như các lần đọc hệ riêng
+    interpretations = [line for line in chunks[0] if line.startswith("*")]
+    body = interpretations + [line for chunk in chunks[first.measures :] for line in chunk]
+    return merge.PageKern(number=page.number, header=page.header, body=body)
+
+
 # ====================================================================== ghép kern các hệ
 
 
@@ -537,6 +598,17 @@ def _recognize_one(
         )
         result.page, notes = trim_loops(result.page, measures, where)
         result.warnings.extend(notes)
+        if index > 0 and (_is_empty(result.page) or not _is_good(result.page, target, judge)) and can_retry():
+            with_context = read_with_context(number, index, gray, layout, recognize, None, max_repeat)
+            result.attempts += 1
+            if with_context is not None and not _is_empty(with_context):
+                with_context, notes = trim_loops(with_context, measures, where)
+                if _is_empty(result.page) or _rank(with_context, target, judge) > _rank(result.page, target, judge):
+                    result.page = with_context
+                    result.warnings.append(
+                        f"{where}: hệ không có số chỉ nhịp nên đã đọc kèm hệ đầu trang để model có đủ ngữ cảnh"
+                    )
+                    result.warnings.extend(notes)
         if can_retry():
             fixed, reads = reread_by_measures(
                 number, index, gray, layout, band, result.page, recognize, can_retry, max_repeat, judge

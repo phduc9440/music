@@ -416,7 +416,8 @@
   },
   "delete": {
     "done": "Score moved to the trash",
-    "text": "This moves it to the trash. The score is permanently deleted after 30 days, and until then the owner can restore it. Type <code>{title}</code> to confirm.",
+    "text": "Are you sure you want to move <strong>{title}</strong> to the trash? It is permanently deleted after 30 days, and until then the owner can restore it.",
+    "dontAsk": "Don't ask again",
     "reason": "Reason (sent to the owner)",
     "moving": "Moving...",
     "move": "Move to trash"

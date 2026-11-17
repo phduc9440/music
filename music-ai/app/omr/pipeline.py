@@ -38,7 +38,7 @@ from app.config import Settings, get_settings
 from app.convert.errors import ConversionError
 from app.convert.kern import kern_file_to_musicxml_file
 from app.convert.midi import musicxml_file_to_midi_file
-from app.omr import kern_check, measure_map, merge, routing
+from app.omr import kern_check, measure_map, merge, ottava, routing
 from app.omr.layout import PageLayout, analyze_layout
 from app.omr.pdf import iter_pdf_pages
 from app.omr.preprocess import PreprocessOptions, UnreadablePage, load_image_gray, process_page
@@ -374,9 +374,12 @@ def _recognize_pages(ctx: JobContext, kept_pages: list[tuple[int, str]]) -> Opti
         relative = _save_text(f"scores/{score_id}/kern/page-{page_number:03d}.krn", merge.normalize_text(result.text))
         ctx.page_kern_paths.append(relative)
 
+        text, shifted = ottava.fix_text(result.text, settings.ottava, _page_roles(ctx.layouts.get(page_number)))
         page, warnings = merge.clean_page(
-            page_number, result.text, max_repeat=settings.max_repeat_lines, truncated=result.truncated
+            page_number, text, max_repeat=settings.max_repeat_lines, truncated=result.truncated
         )
+        if shifted:
+            warnings.append(_ottava_message(page_number, shifted))
         if result.stopped_early:
             warnings = [w for w in warnings if "giới hạn độ dài" not in w] + [
                 f"Trang {page_number}: model đọc lặp, đã dừng khi vượt {limit} ô nhịp (ảnh có {expected} ô)"
@@ -498,7 +501,10 @@ def _route_pages(
                 budget.end_page()
             last_seconds[0] = time.monotonic() - begin
             _save_text(f"{name}{suffix}.krn", merge.normalize_text(result.text))
-            return result.text, result.truncated
+            # Ảnh cả hệ: vai trò từng khuông theo bố cục; ảnh một nhóm khuông (tag): suy theo số spine
+            roles = layout.systems[index].roles if tag is None and index < len(layout.systems) else None
+            text, _shifted = ottava.fix_text(result.text, settings.ottava, roles)
+            return text, result.truncated
 
         def can_retry() -> bool:
             # Thử lại bằng beam search chậm hơn ~3 lần một lần greedy
@@ -595,6 +601,20 @@ def _finish_routing(
                 + f"; chưa sửa được ({reason})"
             )
     ctx.routing[-1] = report.to_dict()
+
+
+def _page_roles(layout: Optional[PageLayout]) -> Optional[list[str]]:
+    """Vai trò khuông (từ trên xuống) của trang nếu bố cục tin cậy và mọi hệ cùng cấu trúc."""
+    if layout is None or not layout.confident:
+        return None
+    return layout.roles
+
+
+def _ottava_message(page_number: int, shifted: int) -> str:
+    return (
+        f"Trang {page_number}: model thêm dấu 8va không có trên ảnh ở khuông giọng hát/khuông đơn, "
+        f"đã đưa {shifted} nốt về đúng quãng tám in trên ảnh (OMR_OTTAVA)"
+    )
 
 
 def _mismatch_message(page_number: int, found: int, expected: int) -> str:

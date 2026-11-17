@@ -416,7 +416,9 @@ def process_page(
         result.meta["edgeBandsStripped"] = True
     gray = stripped
     clean_source = is_clean_digital(gray)
-    work = denoise(gray, options.source_type)
+    # Ảnh số sạch (PDF xuất từ phần mềm, ảnh chụp màn hình) không có nhiễu để khử: median/bilateral chỉ làm mờ dòng kẻ
+    # mảnh. Đo trên "Thánh Vịnh 22" (PNG sạch) với sourceType=SCAN: median làm bố cục chỉ còn 1 hệ thay vì 5.
+    work = gray if clean_source else denoise(gray, options.source_type)
 
     check()
     angle = estimate_skew(work)
