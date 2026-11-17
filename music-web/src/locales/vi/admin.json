@@ -213,6 +213,7 @@
     "lockTitle": "Khóa tài khoản {email}?",
     "lockMessage": "Người này sẽ bị đăng xuất ngay và không đăng nhập lại được cho đến khi được mở khóa.",
     "lockAccount": "Khóa tài khoản",
+    "lockReason": "Lý do (không bắt buộc, hiện ở Nhật ký)",
     "locked": "Đã khóa tài khoản",
     "unlocked": "Đã mở khóa tài khoản",
     "grantTitle": "Cấp quyền ADMIN cho {email}?",
@@ -910,7 +911,7 @@
     }
   },
   "audit": {
-    "description": "Việc quản trị đã làm, suy ra từ các bảng gốc: báo cáo, bản nhạc bị gỡ, góp ý bị ẩn, nhóm bị xóa vì vi phạm, chế tài gói. Không lưu riêng nên luôn khớp dữ liệu thật; chỉ đọc.",
+    "description": "Việc quản trị đã làm, suy ra từ các bảng gốc: báo cáo, bản nhạc bị gỡ, góp ý bị ẩn, nhóm bị xóa vì vi phạm, chế tài gói, khóa / mở khóa tài khoản và cấp vai trò (lần gần nhất), cấp quyền chia sẻ (lần gần nhất). Không lưu riêng nên luôn khớp dữ liệu thật; chỉ đọc.",
     "loadFailed": "Không tải được nhật ký",
     "types": {
       "REPORT_CREATED": "Có báo cáo mới",
@@ -921,7 +922,11 @@
       "FORUM_POST_HIDDEN": "Ẩn bài diễn đàn",
       "FORUM_THREAD_LOCKED": "Khóa chủ đề diễn đàn",
       "TEAM_DELETED_BY_ADMIN": "Admin xóa nhóm",
-      "PLAN_SANCTION": "Chế tài gói dịch vụ"
+      "PLAN_SANCTION": "Chế tài gói dịch vụ",
+      "MEMBER_LOCKED": "Khóa tài khoản",
+      "MEMBER_UNLOCKED": "Mở khóa tài khoản",
+      "ROLE_GRANTED": "Cấp vai trò",
+      "SHARE_GRANTED": "Cấp quyền chia sẻ"
     },
     "targets": {
       "SCORE": "Bản nhạc",

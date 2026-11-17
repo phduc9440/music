@@ -261,7 +261,10 @@ public class ContentReportServiceImpl implements ContentReportService {
                 }
                 adminMemberService.updateMember(
                         info.getOwnerId(),
-                        AdminUpdateMemberRequest.builder().status(MemberStatus.INACTIVE).build());
+                        AdminUpdateMemberRequest.builder()
+                                .status(MemberStatus.INACTIVE)
+                                .statusReason(lockReason(report, note))
+                                .build());
             }
         }
 
@@ -348,6 +351,12 @@ public class ContentReportServiceImpl implements ContentReportService {
     }
 
     // ------------------------------------------------------------------ helpers
+
+    /** Lý do khóa ghi vào members.status_reason: lý do báo cáo kèm ghi chú xử lý, cắt về 255 ký tự. */
+    private static String lockReason(ContentReport report, String note) {
+        String text = "REPORT " + report.getReason().name() + (note == null ? "" : ": " + note);
+        return text.length() <= 255 ? text : text.substring(0, 255);
+    }
 
     private record ValidRequest(ReportReason reason, String details) {}
 

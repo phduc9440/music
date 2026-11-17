@@ -990,6 +990,8 @@ public class ScoreServiceImpl implements ScoreService {
             case "created" -> Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"));
             case "oldest" -> Sort.by(Sort.Order.asc("createdAt"), Sort.Order.asc("id"));
             case "title" -> Sort.by(Sort.Order.asc("title").ignoreCase(), Sort.Order.asc("id"));
+                // Nhiều lượt xem trước; bằng nhau thì bản cập nhật gần nhất trước
+            case "views" -> Sort.by(Sort.Order.desc("viewCount"), Sort.Order.desc("updatedAt"), Sort.Order.desc("id"));
                 // Mặc định (và mọi giá trị lạ): cập nhật gần nhất trước
             default -> Sort.by(Sort.Order.desc("updatedAt"), Sort.Order.desc("id"));
         };

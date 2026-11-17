@@ -39,11 +39,17 @@ public class AdminActivityServiceImpl implements AdminActivityService {
             "FORUM_POST_HIDDEN",
             "FORUM_THREAD_LOCKED",
             "TEAM_DELETED_BY_ADMIN",
-            "PLAN_SANCTION");
+            "PLAN_SANCTION",
+            "MEMBER_LOCKED",
+            "MEMBER_UNLOCKED",
+            "ROLE_GRANTED",
+            "SHARE_GRANTED");
 
     /**
      * Mỗi nhánh trả về cùng các cột: id, type, occurred_at, actor_id, target_type, target_id, target_label, detail.
-     * Bản nhạc ở thùng rác và góp ý đã ẩn bị {@code @SQLRestriction} giấu khỏi JPQL nên đọc bằng SQL thuần.
+     * Bản nhạc ở thùng rác và góp ý đã ẩn bị {@code @SQLRestriction} giấu khỏi JPQL nên đọc bằng SQL thuần. Khóa /
+     * mở khóa và chia sẻ chỉ giữ lần đổi gần nhất (cột trên dòng gốc); vai trò hay chia sẻ bị thu hồi thì dòng mất nên
+     * không hiện. Chia sẻ chỉ chủ bản nhạc hoặc quản lý nhóm cấp được (admin không có quyền này).
      */
     static final String SOURCES = """
             SELECT CONCAT('REPORT_CREATED:', r.id) AS id, 'REPORT_CREATED' AS type, r.created_at AS occurred_at,
@@ -93,6 +99,26 @@ public class AdminActivityServiceImpl implements AdminActivityService {
                    (SELECT m2.email FROM members m2 WHERE m2.id = ps.member_id),
                    CONCAT(ps.type, COALESCE(CONCAT(': ', ps.reason), ''))
               FROM plan_sanctions ps
+            UNION ALL
+            SELECT CONCAT(IF(m.status = 2, 'MEMBER_LOCKED:', 'MEMBER_UNLOCKED:'), m.id),
+                   IF(m.status = 2, 'MEMBER_LOCKED', 'MEMBER_UNLOCKED'), m.status_changed_at, m.status_changed_by,
+                   'MEMBER', m.id, m.email, m.status_reason
+              FROM members m
+             WHERE m.status_changed_at IS NOT NULL AND m.status_changed_by IS NOT NULL
+            UNION ALL
+            SELECT CONCAT('ROLE_GRANTED:', mr.id), 'ROLE_GRANTED', mr.granted_at, mr.granted_by, 'MEMBER', mr.member_id,
+                   (SELECT m3.email FROM members m3 WHERE m3.id = mr.member_id),
+                   (SELECT COALESCE(ro.label, ro.name) FROM roles ro WHERE ro.id = mr.role_id)
+              FROM member_roles mr
+             WHERE mr.granted_at IS NOT NULL AND mr.granted_by IS NOT NULL
+            UNION ALL
+            SELECT CONCAT('SHARE_GRANTED:', ms.id), 'SHARE_GRANTED', ms.granted_at, ms.granted_by, 'SCORE',
+                   ms.score_id, s2.title,
+                   CONCAT((SELECT m4.email FROM members m4 WHERE m4.id = ms.member_id), ': ',
+                          CASE ms.permission WHEN 1 THEN 'VIEW' WHEN 2 THEN 'REVIEW' WHEN 3 THEN 'EDIT' ELSE '?' END)
+              FROM member_scores ms
+              JOIN scores s2 ON s2.id = ms.score_id
+             WHERE ms.granted_at IS NOT NULL AND ms.granted_by IS NOT NULL AND ms.permission IS NOT NULL
             """;
 
     EntityManager entityManager;

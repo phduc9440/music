@@ -180,6 +180,8 @@ export interface PracticeSession {
 /** PATCH /api/admin/members/{id}: trường nào bỏ trống thì giữ nguyên. roles là tên không có prefix ROLE_. */
 export interface AdminUpdateMemberRequest {
   status?: MemberStatus;
+  /** Lý do khóa / mở khóa (tùy chọn, ≤ 255 ký tự), hiện ở trang Nhật ký. */
+  statusReason?: string;
   roles?: string[];
 }
 

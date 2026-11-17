@@ -59,4 +59,13 @@ public class MemberScore {
 
     @Column(name = "requested_at")
     LocalDateTime requestedAt;
+
+    /** Lần cấp / đổi quyền gần nhất; null khi chưa cấp hoặc vào bằng liên kết. */
+    @Column(name = "granted_at")
+    LocalDateTime grantedAt;
+
+    /** Người cấp / đổi quyền lần gần nhất (chủ bản nhạc hoặc SUPER_ADMIN). */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "granted_by")
+    Member grantedBy;
 }

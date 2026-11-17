@@ -1,5 +1,6 @@
 package com.ptit.music_be.service.admin.impl;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +51,7 @@ public class AdminMemberServiceImpl implements AdminMemberService {
     static final int DEFAULT_PAGE_SIZE = 20;
     static final int MAX_PAGE_SIZE = 50;
     static final int MAX_PURCHASES = 50;
+    static final int MAX_STATUS_REASON = 255;
 
     MemberRepository memberRepository;
     RoleRepository roleRepository;
@@ -225,6 +227,18 @@ public class AdminMemberServiceImpl implements AdminMemberService {
             if (isSelf && request.getStatus() != MemberStatus.ACTIVE) {
                 throw new AppException(ErrorCode.CANNOT_MODIFY_SELF);
             }
+            String reason = request.getStatusReason() == null || request.getStatusReason().isBlank()
+                    ? null
+                    : request.getStatusReason().trim();
+            if (reason != null && reason.length() > MAX_STATUS_REASON) {
+                throw new AppException(ErrorCode.STATUS_REASON_INVALID);
+            }
+            if (member.getStatus() != request.getStatus()) {
+                // Chỉ ghi khi trạng thái thật sự đổi; Nhật ký quản trị suy ra sự kiện khóa / mở khóa từ ba cột này
+                member.setStatusChangedAt(LocalDateTime.now());
+                member.setStatusChangedBy(currentAdmin());
+                member.setStatusReason(reason);
+            }
             member.setStatus(request.getStatus());
             memberStatusGuard.evict(member.getEmail()); // khóa có hiệu lực ngay, mở khóa cũng vậy
         }
@@ -257,7 +271,12 @@ public class AdminMemberServiceImpl implements AdminMemberService {
                 Role role =
                         roleRepository.findByName(name).orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_EXISTED));
                 member.getMemberRoles()
-                        .add(MemberRole.builder().member(member).role(role).build());
+                        .add(MemberRole.builder()
+                                .member(member)
+                                .role(role)
+                                .grantedAt(LocalDateTime.now())
+                                .grantedBy(currentAdmin())
+                                .build());
             }
             memberStatusGuard.evict(member.getEmail()); // vai trò mới có hiệu lực ngay, không cần đăng nhập lại
         }
@@ -268,6 +287,10 @@ public class AdminMemberServiceImpl implements AdminMemberService {
     private static boolean hasRole(Member member, String roleName) {
         return member.getMemberRoles().stream()
                 .anyMatch(mr -> roleName.equals(mr.getRole().getName()));
+    }
+
+    private Member currentAdmin() {
+        return memberRepository.findByEmail(SecurityUtils.getCurrentEmail()).orElse(null);
     }
 
     private Member find(String memberId) {

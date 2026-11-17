@@ -48,7 +48,7 @@ public class ScoreController {
             summary = "List my scores (search, filter, paginate)",
             description =
                     "status: NONE|PENDING|PROCESSING|COMPLETED|FAILED; source: OMR|IMPORT|MANUAL; difficulty: EASY|MEDIUM|HARD|EXPERT; tagId: id from GET /api/tags; "
-                            + "sort: newest (updated, default) | created | oldest | title; size: 1..50",
+                            + "sort: newest (updated, default) | created | oldest | title | views; size: 1..50",
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<PageResponse<ScoreSummaryResponse>> getMyScores(
             @RequestParam(defaultValue = "0") int page,

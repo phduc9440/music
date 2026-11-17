@@ -41,21 +41,28 @@ CREATE TABLE IF NOT EXISTS members (
     referral_code  VARCHAR(12)  NULL COMMENT 'Mã giới thiệu của thành viên, sinh khi mở trang Mời bạn lần đầu',
     referred_by    VARCHAR(36)  NULL COMMENT 'Người đã mời thành viên này (nhập mã lúc đăng ký)',
     referral_rewarded_at DATETIME(6) NULL COMMENT 'Lúc đã thưởng cho lời mời (bản số hóa đầu tiên); NULL = chưa',
+    status_changed_at DATETIME(6)  NULL COMMENT 'Lần khóa / mở khóa gần nhất do quản trị viên thực hiện',
+    status_changed_by VARCHAR(36)  NULL COMMENT 'Quản trị viên khóa / mở khóa lần gần nhất',
+    status_reason     VARCHAR(255) NULL COMMENT 'Lý do khóa / mở khóa lần gần nhất',
     PRIMARY KEY (id),
     UNIQUE KEY uk_members_email (email),
     UNIQUE KEY uk_members_referral_code (referral_code),
     KEY idx_members_referred_by (referred_by),
-    CONSTRAINT fk_members_referred_by FOREIGN KEY (referred_by) REFERENCES members (id)
+    CONSTRAINT fk_members_referred_by FOREIGN KEY (referred_by) REFERENCES members (id),
+    CONSTRAINT fk_members_status_changed_by FOREIGN KEY (status_changed_by) REFERENCES members (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS member_roles (
     id        VARCHAR(36) NOT NULL,
     member_id VARCHAR(36) NOT NULL,
     role_id   VARCHAR(36) NOT NULL,
+    granted_at DATETIME(6) NULL COMMENT 'Lúc quản trị viên cấp vai trò; NULL = gán tự động (đăng ký, khởi tạo)',
+    granted_by VARCHAR(36) NULL COMMENT 'Quản trị viên cấp vai trò',
     PRIMARY KEY (id),
     UNIQUE KEY uk_member_roles (member_id, role_id),
-    CONSTRAINT fk_member_roles_member FOREIGN KEY (member_id) REFERENCES members (id),
-    CONSTRAINT fk_member_roles_role   FOREIGN KEY (role_id)   REFERENCES roles (id)
+    CONSTRAINT fk_member_roles_member     FOREIGN KEY (member_id)  REFERENCES members (id),
+    CONSTRAINT fk_member_roles_role       FOREIGN KEY (role_id)    REFERENCES roles (id),
+    CONSTRAINT fk_member_roles_granted_by FOREIGN KEY (granted_by) REFERENCES members (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS otps (
@@ -184,10 +191,13 @@ CREATE TABLE IF NOT EXISTS member_scores (
     requested_permission INT NULL COMMENT 'Cấp đang xin (1 xem, 2 nhận xét, 3 chỉnh sửa); NULL = không có yêu cầu chờ duyệt',
     request_message      VARCHAR(500) NULL,
     requested_at         DATETIME(6)  NULL,
+    granted_at           DATETIME(6)  NULL COMMENT 'Lần cấp / đổi quyền gần nhất; NULL = chưa cấp hoặc vào bằng liên kết',
+    granted_by           VARCHAR(36)  NULL COMMENT 'Người cấp / đổi quyền lần gần nhất (chủ bản nhạc hoặc quản trị viên)',
     PRIMARY KEY (id),
     UNIQUE KEY uk_member_scores (member_id, score_id),
-    CONSTRAINT fk_member_scores_member FOREIGN KEY (member_id) REFERENCES members (id),
-    CONSTRAINT fk_member_scores_score  FOREIGN KEY (score_id)  REFERENCES scores (id)
+    CONSTRAINT fk_member_scores_member     FOREIGN KEY (member_id)  REFERENCES members (id),
+    CONSTRAINT fk_member_scores_score      FOREIGN KEY (score_id)   REFERENCES scores (id),
+    CONSTRAINT fk_member_scores_granted_by FOREIGN KEY (granted_by) REFERENCES members (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS score_reviews (
