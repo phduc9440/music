@@ -63,6 +63,7 @@ Bên Spring Boot đặt `AI_INTERNAL_KEY` trùng với `INTERNAL_KEY` ở đây 
 | `MAX_REPEAT_LINES` | `24` | Một dòng kern lặp liên tiếp quá số này bị coi là model sinh lặp và cắt bớt |
 | `OMR_ROUTING` | `fallback` | `off`: như cũ. `fallback`: trang có số spine khác số khuông trên ảnh thì nhận diện lại từng hệ. `always`: nhận diện cả hai cách cho mọi trang rồi chọn (để đo, chậm gấp đôi). Xem "Bố cục và nhận diện lại theo hệ" |
 | `OMR_ROUTING_BARS` | `1` | `1`: đếm vạch nhịp trên ảnh; trang có số ô lệch nhiều (model đọc lặp, đọc lại hệ trước) cũng được nhận diện lại theo hệ, model bị dừng sớm khi sinh vượt số ô, lần đọc đúng số ô được ưu tiên. `0`: tắt (để so sánh). Xem "Đếm ô nhịp trên ảnh" |
+| `OMR_STRIP_TEXT` | `1` | `1`: xóa lời ca, tên hợp âm và chữ ngoài khuông khỏi ảnh trước khi đưa vào Transcoda (model chỉ được train trên nhạc piano không chữ). `0`: tắt (để so sánh). Hệ giữa bài đọc ra toàn dấu lặng thì được đọc lại kèm hệ đầu trang (có số chỉ nhịp). |
 | `OMR_ROUTING_MEASURES` | `0` | `1`: trang đúng số spine nhưng có ô nhịp lệch trường độ cũng được nhận diện lại theo hệ (chậm hơn, đọc lại mọi hệ của trang) |
 | `ROUTING_RETRY_BEAMS` | `3` | Hệ vẫn sai số khuông thì thử lại bằng beam search với số beam này; `0`/`1`: không thử lại |
 | `ROUTING_RESERVE_S` | `30` | Giây giữ lại cho bước ghép/xuất: nhận diện lại chỉ chạy khi job còn nhiều thời gian hơn mức này |

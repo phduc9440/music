@@ -115,6 +115,10 @@ class Settings:
     """Hệ vẫn sai số spine thì thử lại bằng beam search với số beam này (bài báo dùng 3). 0 hoặc 1: không thử lại.
     Đặt bằng ``ROUTING_RETRY_BEAMS``."""
 
+    strip_text: bool = True
+    """Xóa lời ca, tên hợp âm và các chữ khác ngoài khuông khỏi ảnh trước khi đưa vào Transcoda (``app/omr/textstrip.py``).
+    Model chỉ được train trên nhạc piano không chữ nên lời ca làm nó lạc chỗ/đoán sai. Tắt bằng ``OMR_STRIP_TEXT=0``."""
+
     routing_reserve_s: int = 30
     """Giây giữ lại cho bước ghép và xuất: nhận diện lại chỉ chạy khi job còn nhiều thời gian hơn mức này, nên không bao
     giờ làm job quá hạn. Đặt bằng ``ROUTING_RESERVE_S``."""
@@ -179,6 +183,7 @@ def get_settings() -> Settings:
         routing_measures=os.environ.get("OMR_ROUTING_MEASURES", "").strip().lower() in ("1", "true", "yes", "on"),
         routing_bars=_bool_env("OMR_ROUTING_BARS", True),
         routing_retry_beams=max(0, _int_env("ROUTING_RETRY_BEAMS", 3)),
+        strip_text=_bool_env("OMR_STRIP_TEXT", True),
         routing_reserve_s=max(0, _int_env("ROUTING_RESERVE_S", 30)),
     )
 
