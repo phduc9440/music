@@ -93,6 +93,7 @@ export default function ScoreFilters(p: Props) {
         <option value="created">{t('scores.filters.sort.created')}</option>
         <option value="oldest">{t('scores.filters.sort.oldest')}</option>
         <option value="title">{t('scores.filters.sort.title')}</option>
+        <option value="views">{t('scores.filters.sort.views')}</option>
       </select>
     </div>
   );

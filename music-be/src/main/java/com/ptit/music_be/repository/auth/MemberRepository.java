@@ -69,8 +69,7 @@ public interface MemberRepository extends JpaRepository<Member, String> {
     java.util.List<Member> findAllByStatus(@Param("status") MemberStatus status);
 
     /** Thành viên đang hoạt động không có vai trò ADMIN/SUPER_ADMIN. */
-    @Query(
-            """
+    @Query("""
 			select m from Member m where m.status = :status
 			and not exists (select 1 from MemberRole mr where mr.member = m and mr.role.name in ('ADMIN', 'SUPER_ADMIN'))
 			""")
@@ -80,8 +79,7 @@ public interface MemberRepository extends JpaRepository<Member, String> {
     @Query("select distinct mr.member from MemberRole mr where mr.role.name in ('ADMIN', 'SUPER_ADMIN')")
     java.util.List<Member> findAllAdmins();
 
-    @Query(
-            """
+    @Query("""
 			SELECT m FROM Member m
 			WHERE :keyword IS NULL
 			OR LOWER(m.email) LIKE LOWER(CONCAT('%', :keyword, '%'))
@@ -93,8 +91,7 @@ public interface MemberRepository extends JpaRepository<Member, String> {
      * Như {@link #search}, thêm lọc theo gói đang dùng và theo lệnh cấm. {@code planCode}: gói mua/được cấp còn hạn có mã
      * này; riêng PRO còn gồm ADMIN thường (Pro theo vai trò). {@code bannedOnly}: chỉ người đang bị cấm dùng gói trả phí.
      */
-    @Query(
-            """
+    @Query("""
 			SELECT m FROM Member m
 			WHERE (:keyword IS NULL
 				OR LOWER(m.email) LIKE LOWER(CONCAT('%', :keyword, '%'))

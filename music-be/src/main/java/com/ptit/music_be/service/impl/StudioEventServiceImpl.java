@@ -38,8 +38,7 @@ public class StudioEventServiceImpl implements StudioEventService {
 
     static final int MAX_EVENTS_PER_BATCH = 200;
 
-    static final String INSERT_EVENT_SQL =
-            """
+    static final String INSERT_EVENT_SQL = """
 			INSERT INTO practice_note_event
 				(session_id, seq, note_id, measure, hand, expected_midi, played_midi, expected_ms, played_ms, delta_ms, result)
 			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)

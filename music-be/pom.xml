@@ -233,7 +233,10 @@
 							<spacesPerTab>4</spacesPerTab>
 						</indent>
 
-						<palantirJavaFormat/>
+						<!-- Ghim bản mới: bản mặc định 2.39.0 lỗi NoSuchMethodError trên JDK 25 -->
+						<palantirJavaFormat>
+							<version>2.81.0</version>
+						</palantirJavaFormat>
 
 						<importOrder>
 							<order>java,jakarta,org,com,</order>

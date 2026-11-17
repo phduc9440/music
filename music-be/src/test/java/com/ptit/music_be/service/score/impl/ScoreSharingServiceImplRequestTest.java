@@ -57,7 +57,8 @@ class ScoreSharingServiceImplRequestTest {
     @InjectMocks
     ScoreSharingServiceImpl service;
 
-    private final Member owner = Member.builder().id("owner").email("owner@x.com").build();
+    private final Member owner =
+            Member.builder().id("owner").email("owner@x.com").build();
     private final Member me = Member.builder().id("me").email("me@x.com").build();
 
     @BeforeEach
@@ -66,7 +67,8 @@ class ScoreSharingServiceImplRequestTest {
         when(scoreRepository.findById("s1")).thenReturn(Optional.of(score));
         when(memberRepository.findByEmail("me@x.com")).thenReturn(Optional.of(me));
         when(memberScoreRepository.findByScoreIdAndMemberId("s1", "me")).thenReturn(Optional.empty());
-        SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken("me@x.com", "x", "ROLE_USER"));
+        SecurityContextHolder.getContext()
+                .setAuthentication(new TestingAuthenticationToken("me@x.com", "x", "ROLE_USER"));
     }
 
     @AfterEach
@@ -86,7 +88,13 @@ class ScoreSharingServiceImplRequestTest {
         assertThat(saved.getValue().getRequestMessage()).isEqualTo("cho mình góp ý với");
         assertThat(result.getRequestedPermission()).isEqualTo(SharePermission.REVIEW);
         verify(notificationService)
-                .notify(any(), any(), org.mockito.ArgumentMatchers.eq(NotificationType.ACCESS_REQUESTED), any(), any(), any());
+                .notify(
+                        any(),
+                        any(),
+                        org.mockito.ArgumentMatchers.eq(NotificationType.ACCESS_REQUESTED),
+                        any(),
+                        any(),
+                        any());
     }
 
     @Test

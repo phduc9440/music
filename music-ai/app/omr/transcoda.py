@@ -255,14 +255,10 @@ class BarlineLimit:
         return sum(1 for line in lines if line.startswith("=")) > self.max_measures + 1
 
 
-_recognizer: Optional[TranscodaRecognizer] = None
-_recognizer_lock = threading.Lock()
+def get_recognizer():
+    """Engine nhận diện ký hiệu nhạc dùng chung của cả dịch vụ (theo ``OMR_ENGINE``, mặc định Transcoda).
 
+    Giữ tên cũ để không đổi chỗ gọi; việc chọn engine nằm ở :mod:`app.omr.engines`."""
+    from app.omr.engines import get_music_engine  # noqa: PLC0415
 
-def get_recognizer() -> TranscodaRecognizer:
-    """Bản dùng chung của cả dịch vụ (tạo khi gọi lần đầu)."""
-    global _recognizer
-    with _recognizer_lock:
-        if _recognizer is None:
-            _recognizer = TranscodaRecognizer()
-        return _recognizer
+    return get_music_engine()

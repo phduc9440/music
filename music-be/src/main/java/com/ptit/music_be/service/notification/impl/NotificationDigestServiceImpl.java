@@ -71,8 +71,8 @@ public class NotificationDigestServiceImpl implements NotificationDigestService 
                     .map(NotificationCategory::types)
                     .flatMap(Collection::stream)
                     .toList();
-            List<Notification> unread = notificationRepository
-                    .findByRecipientIdAndReadFalseAndCreatedAtAfterAndTypeInOrderByCreatedAtDesc(
+            List<Notification> unread =
+                    notificationRepository.findByRecipientIdAndReadFalseAndCreatedAtAfterAndTypeInOrderByCreatedAtDesc(
                             member.getId(), since, types);
             if (unread.isEmpty()) {
                 continue; // không có gì mới thì không gửi

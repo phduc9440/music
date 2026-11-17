@@ -12,14 +12,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ptit.music_be.dto.response.score.ScoreContent;
 import com.ptit.music_be.dto.response.StudioTimelineResponse;
+import com.ptit.music_be.dto.response.score.ScoreContent;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.repository.score.ScoreRepository;
-import com.ptit.music_be.service.score.ScoreContentService;
 import com.ptit.music_be.service.StudioTimelineService;
+import com.ptit.music_be.service.score.ScoreContentService;
 import com.ptit.music_be.utils.MusicXmlTimelineParser;
 
 import lombok.AccessLevel;
@@ -66,18 +66,14 @@ public class StudioTimelineServiceImpl implements StudioTimelineService {
         StudioTimelineResponse timeline =
                 MusicXmlTimelineParser.parse(scoreId, contentHash, score.getTitle(), fallbackTempo, content.bytes());
         String json = writeTimeline(timeline);
-        jdbcTemplate.update(
-                """
+        jdbcTemplate.update("""
 				INSERT INTO score_timeline (score_id, content_hash, timeline)
 				VALUES (?, ?, ?)
 				ON DUPLICATE KEY UPDATE
 					content_hash = VALUES(content_hash),
 					timeline = VALUES(timeline),
 					created_at = CURRENT_TIMESTAMP(6)
-				""",
-                scoreId,
-                contentHash,
-                json);
+				""", scoreId, contentHash, json);
         return timeline;
     }
 

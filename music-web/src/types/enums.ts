@@ -20,7 +20,7 @@ export type ScoreSource = 'OMR' | 'IMPORT' | 'MANUAL';
 /** PENDING: chủ đã xin công khai, chờ ADMIN duyệt. */
 export type Visibility = 'PRIVATE' | 'PENDING' | 'PUBLIC';
 export type Difficulty = 'EASY' | 'MEDIUM' | 'HARD' | 'EXPERT';
-export type ScoreSort = 'newest' | 'created' | 'oldest' | 'title';
+export type ScoreSort = 'newest' | 'created' | 'oldest' | 'title' | 'views';
 export type TaskStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
 /** Loại bản gốc khi upload OMR (BE: OmrSourceType), dùng cho thống kê SER 1.7. */
 export type OmrSourceType = 'PHOTO' | 'SCAN' | 'PDF_NATIVE';

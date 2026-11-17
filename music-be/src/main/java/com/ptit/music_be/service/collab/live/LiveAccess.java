@@ -64,21 +64,28 @@ public class LiveAccess {
      *     xem được
      */
     public Access resolve(String email, String scoreId) {
-        return security.runAs(email, () -> readOnly.execute(status -> {
-            Score score = scoreRepository
-                    .findById(scoreId)
-                    .orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
-            AccessDecision decision = permissionService.resolve(score);
-            if (!decision.can(ScoreAccess.VIEW)) {
-                throw new AppException(ErrorCode.UNAUTHORIZED);
-            }
-            Member member = memberRepository
-                    .findByEmail(email)
-                    .orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
-            String ownerId = score.getMember() == null ? null : score.getMember().getId();
-            return new Access(
-                    scoreId, ownerId, member.getId(), member.getFullName(), permissionService.canEdit(score, decision));
-        }));
+        return security.runAs(
+                email,
+                () -> readOnly.execute(status -> {
+                    Score score = scoreRepository
+                            .findById(scoreId)
+                            .orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+                    AccessDecision decision = permissionService.resolve(score);
+                    if (!decision.can(ScoreAccess.VIEW)) {
+                        throw new AppException(ErrorCode.UNAUTHORIZED);
+                    }
+                    Member member = memberRepository
+                            .findByEmail(email)
+                            .orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
+                    String ownerId =
+                            score.getMember() == null ? null : score.getMember().getId();
+                    return new Access(
+                            scoreId,
+                            ownerId,
+                            member.getId(),
+                            member.getFullName(),
+                            permissionService.canEdit(score, decision));
+                }));
     }
 
     /**

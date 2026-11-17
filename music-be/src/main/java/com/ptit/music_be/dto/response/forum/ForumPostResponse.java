@@ -21,6 +21,7 @@ public class ForumPostResponse {
     boolean accepted;
     /** Bài được trả lời trực tiếp; null khi trả lời chủ đề hoặc bài kia đã bị xóa / ẩn. */
     ReplyRef replyTo;
+
     LocalDateTime createdAt;
     LocalDateTime editedAt;
 

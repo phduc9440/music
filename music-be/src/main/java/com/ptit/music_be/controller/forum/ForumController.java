@@ -163,8 +163,7 @@ public class ForumController {
     @Operation(
             summary = "Follow or unfollow a thread for reply notifications",
             security = @SecurityRequirement(name = "bearerAuth"))
-    public ApiResponse<Void> subscribe(
-            @PathVariable String threadId, @RequestBody ForumSubscriptionRequest request) {
+    public ApiResponse<Void> subscribe(@PathVariable String threadId, @RequestBody ForumSubscriptionRequest request) {
         forumService.setSubscribed(threadId, request.isSubscribed());
         return ApiResponse.<Void>builder().build();
     }

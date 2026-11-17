@@ -67,7 +67,8 @@ public class NotificationServiceImpl implements NotificationService {
                 .build();
         notificationRepository.save(entity); // persist gán id và createdAt ngay trên chính đối tượng này
         if (delivery.inApp()) {
-            pusher.push(recipient.getEmail(), toResponse(entity)); // chỉ email thì lưu cho bản tóm tắt, không đẩy chuông
+            pusher.push(
+                    recipient.getEmail(), toResponse(entity)); // chỉ email thì lưu cho bản tóm tắt, không đẩy chuông
         }
     }
 
@@ -95,7 +96,9 @@ public class NotificationServiceImpl implements NotificationService {
                 .toList();
         notificationRepository.saveAll(batch);
         batch.stream()
-                .filter(n -> preferenceService.deliveryFor(n.getRecipient().getId(), type).inApp())
+                .filter(n -> preferenceService
+                        .deliveryFor(n.getRecipient().getId(), type)
+                        .inApp())
                 .forEach(n -> pusher.push(n.getRecipient().getEmail(), toResponse(n)));
         return batch.size();
     }

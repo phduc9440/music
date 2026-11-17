@@ -96,6 +96,17 @@ public class Member {
     @Column(name = "referral_rewarded_at")
     LocalDateTime referralRewardedAt;
 
+    /** Lần quản trị viên khóa / mở khóa gần nhất (Nhật ký quản trị suy ra từ ba cột này cùng {@link #status}). */
+    @Column(name = "status_changed_at")
+    LocalDateTime statusChangedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "status_changed_by")
+    Member statusChangedBy;
+
+    @Column(name = "status_reason")
+    String statusReason;
+
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     List<MemberRole> memberRoles = new ArrayList<>();

@@ -40,7 +40,7 @@ export default function AdminMembers() {
       .then((res) => setRoles(res.data.result.filter((r) => r.name !== 'SUPER_ADMIN')))
       .catch(() => setRoles(null));
   }, [viewerIsSuper]);
-  const { confirm } = useDialog();
+  const { confirm, prompt } = useDialog();
   const [result, setResult] = useState<PageResult<Member> | null>(null);
   const [page, setPage] = useState(0);
   const [keywordInput, setKeywordInput] = useState('');
@@ -71,19 +71,23 @@ export default function AdminMembers() {
 
   const toggleStatus = async (m: Member) => {
     const lock = m.status !== MemberStatus.INACTIVE;
-    if (
-      lock &&
-      !(await confirm({
+    let statusReason: string | undefined;
+    if (lock) {
+      // Lý do không bắt buộc; có thì hiện ở trang Nhật ký
+      const input = await prompt({
         title: t('admin.members.lockTitle', { email: m.email }),
         message: t('admin.members.lockMessage'),
+        label: t('admin.members.lockReason'),
+        maxLength: 255,
         confirmLabel: t('admin.members.lockAccount'),
         tone: 'danger',
-      }))
-    )
-      return;
+      });
+      if (input === null) return;
+      statusReason = input.trim() || undefined;
+    }
     update(
       m,
-      { status: lock ? MemberStatus.INACTIVE : MemberStatus.ACTIVE },
+      { status: lock ? MemberStatus.INACTIVE : MemberStatus.ACTIVE, statusReason },
       lock ? t('admin.members.locked') : t('admin.members.unlocked'),
     );
   };

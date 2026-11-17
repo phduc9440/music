@@ -56,7 +56,8 @@ class ReportActivityFlowTest {
     private Score touched;
     private String originalVisibility;
     private Boolean originalOfficial;
-    private final java.time.LocalDateTime startedAt = java.time.LocalDateTime.now().minusSeconds(2);
+    private final java.time.LocalDateTime startedAt =
+            java.time.LocalDateTime.now().minusSeconds(2);
 
     @AfterEach
     void clean() {
@@ -97,7 +98,11 @@ class ReportActivityFlowTest {
 
         loginAs(reporter.getEmail(), "ROLE_USER");
         reportService.reportScore(
-                score.getId(), ReportRequest.builder().reason(ReportReason.COPYRIGHT).details("chép bài").build());
+                score.getId(),
+                ReportRequest.builder()
+                        .reason(ReportReason.COPYRIGHT)
+                        .details("chép bài")
+                        .build());
 
         loginAs("admin@music.com", "ROLE_SUPER_ADMIN");
         PageResponse<ReportResponse> queue = reportService.list(0, 50, ReportStatus.PENDING, null);
@@ -110,21 +115,32 @@ class ReportActivityFlowTest {
 
         // Mới báo cáo: nhật ký đã có dòng REPORT_CREATED của người báo cáo, chưa có dòng xử lý
         PageResponse<AdminActivityResponse> created = activityService.search(
-                0, 50, reporter.getEmail(), "REPORT_CREATED", "SCORE", LocalDate.now().atStartOfDay(), null);
-        assertTrue(created.getContent().stream().anyMatch(a -> score.getId().equals(a.getTargetId())
-                && "COPYRIGHT".equals(a.getDetail())
-                && reporter.getEmail().equals(a.getActorEmail())));
+                0,
+                50,
+                reporter.getEmail(),
+                "REPORT_CREATED",
+                "SCORE",
+                LocalDate.now().atStartOfDay(),
+                null);
+        assertTrue(created.getContent().stream()
+                .anyMatch(a -> score.getId().equals(a.getTargetId())
+                        && "COPYRIGHT".equals(a.getDetail())
+                        && reporter.getEmail().equals(a.getActorEmail())));
 
         ReportResponse done = reportService.resolve(
                 mine.getId(),
-                ResolveReportRequest.builder().action(ReportAction.UNPUBLISH).note("vi phạm").build());
+                ResolveReportRequest.builder()
+                        .action(ReportAction.UNPUBLISH)
+                        .note("vi phạm")
+                        .build());
         assertEquals("RESOLVED", done.getStatus());
-        assertEquals("PRIVATE", scoreRepository.findById(score.getId()).orElseThrow().getVisibility());
+        assertEquals(
+                "PRIVATE", scoreRepository.findById(score.getId()).orElseThrow().getVisibility());
 
         PageResponse<AdminActivityResponse> resolved =
                 activityService.search(0, 50, "admin@music.com", "REPORT_RESOLVED", null, null, null);
-        assertTrue(resolved.getContent().stream().anyMatch(a -> score.getId().equals(a.getTargetId())
-                && "UNPUBLISH: vi phạm".equals(a.getDetail())));
+        assertTrue(resolved.getContent().stream()
+                .anyMatch(a -> score.getId().equals(a.getTargetId()) && "UNPUBLISH: vi phạm".equals(a.getDetail())));
 
         // Lọc theo ngày và danh sách loại chạy được trên mọi nhánh
         List<String> types = activityService.types();
@@ -132,6 +148,7 @@ class ReportActivityFlowTest {
         for (String type : types) {
             activityService.search(0, 10, null, type, null, null, null);
         }
-        activityService.search(0, 10, null, null, "COMMENT", null, LocalDate.now().plusDays(1).atStartOfDay());
+        activityService.search(
+                0, 10, null, null, "COMMENT", null, LocalDate.now().plusDays(1).atStartOfDay());
     }
 }

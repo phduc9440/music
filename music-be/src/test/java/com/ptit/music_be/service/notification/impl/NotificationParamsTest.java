@@ -38,7 +38,8 @@ class NotificationParamsTest {
 
     private static com.ptit.music_be.service.notification.NotificationPreferenceService defaultPrefs() {
         var prefs = mock(com.ptit.music_be.service.notification.NotificationPreferenceService.class);
-        org.mockito.Mockito.when(prefs.deliveryFor(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+        org.mockito.Mockito.when(
+                        prefs.deliveryFor(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
                 .thenReturn(com.ptit.music_be.service.notification.NotificationPreferenceService.Delivery.DEFAULT);
         return prefs;
     }

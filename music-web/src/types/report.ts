@@ -54,7 +54,11 @@ export type ActivityType =
   | 'FORUM_POST_HIDDEN'
   | 'FORUM_THREAD_LOCKED'
   | 'TEAM_DELETED_BY_ADMIN'
-  | 'PLAN_SANCTION';
+  | 'PLAN_SANCTION'
+  | 'MEMBER_LOCKED'
+  | 'MEMBER_UNLOCKED'
+  | 'ROLE_GRANTED'
+  | 'SHARE_GRANTED';
 
 export interface ActivityEntry {
   id: string;

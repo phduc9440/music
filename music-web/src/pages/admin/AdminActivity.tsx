@@ -13,8 +13,15 @@ const TYPES: ActivityType[] = [
   'REPORT_RESOLVED',
   'SCORE_DELETED_BY_ADMIN',
   'COMMENT_HIDDEN',
+  'FORUM_THREAD_HIDDEN',
+  'FORUM_POST_HIDDEN',
+  'FORUM_THREAD_LOCKED',
   'TEAM_DELETED_BY_ADMIN',
   'PLAN_SANCTION',
+  'MEMBER_LOCKED',
+  'MEMBER_UNLOCKED',
+  'ROLE_GRANTED',
+  'SHARE_GRANTED',
 ];
 const TARGETS = ['SCORE', 'COMMENT', 'FORUM_THREAD', 'FORUM_POST', 'TEAM', 'MEMBER'];
 
@@ -37,6 +44,10 @@ const TONE: Record<ActivityType, 'neutral' | 'warning' | 'danger' | 'success'> =
   FORUM_THREAD_LOCKED: 'warning',
   TEAM_DELETED_BY_ADMIN: 'danger',
   PLAN_SANCTION: 'warning',
+  MEMBER_LOCKED: 'danger',
+  MEMBER_UNLOCKED: 'success',
+  ROLE_GRANTED: 'neutral',
+  SHARE_GRANTED: 'neutral',
 };
 
 /** Đường dẫn tới đối tượng nếu trang quản trị có trang chi tiết cho nó. */
@@ -50,7 +61,7 @@ const targetLink = (e: ActivityEntry): string | null => {
 
 /**
  * Admin (R5): trang "Nhật ký". Không có bảng nhật ký: BE suy ra từng dòng từ bảng gốc (báo cáo, bản nhạc bị xóa, góp ý bị
- * ẩn, nhóm bị xóa, chế tài gói) nên luôn khớp dữ liệu thật.
+ * ẩn, nhóm bị xóa, chế tài gói, lần khóa / mở khóa và cấp vai trò, lần cấp quyền chia sẻ) nên luôn khớp dữ liệu thật.
  */
 export default function AdminActivity() {
   const [draft, setDraft] = useState<Filters>(EMPTY);

@@ -68,12 +68,7 @@ public final class LiveMessages {
 
     /** Thao tác bị từ chối, gửi riêng người gửi, kèm nội dung hiện tại của các ô để họ tải lại. */
     public record OpRejected(
-            String scoreId,
-            String opId,
-            String reason,
-            long seq,
-            List<MeasureXml> measures,
-            String structuralXml) {}
+            String scoreId, String opId, String reason, long seq, List<MeasureXml> measures, String structuralXml) {}
 
     /**
      * Trả lời {@code join}. {@code xml} khác null khi client phải nạp lại cả bài (chưa có seq hoặc mất đồng bộ), khi đó

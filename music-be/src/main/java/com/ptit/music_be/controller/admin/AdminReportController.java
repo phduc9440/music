@@ -32,7 +32,8 @@ public class AdminReportController {
 
     @GetMapping
     @Operation(
-            summary = "Report queue (filters status PENDING|RESOLVED|DISMISSED, targetType SCORE|COMMENT|FORUM_POST); pending first-in first-out",
+            summary =
+                    "Report queue (filters status PENDING|RESOLVED|DISMISSED, targetType SCORE|COMMENT|FORUM_POST); pending first-in first-out",
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<PageResponse<ReportResponse>> list(
             @RequestParam(defaultValue = "0") int page,

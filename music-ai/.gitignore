@@ -8,3 +8,9 @@ models/
 eval-data/
 # Dữ liệu dump của scripts/omr_check.py --dump, chỉ để xem cục bộ
 omr-dump/
+# Kết quả benchmark (scripts/omr_benchmark.py): sinh lại được, không commit
+benchmark/results/
+
+# Thư mục chỉ dùng cục bộ, không đưa lên GitHub
+benchmark/
+docs/
