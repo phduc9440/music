@@ -515,3 +515,25 @@ def test_whole_page_tail_is_not_used_when_the_page_is_a_runaway_loop():
     loop = "*clefG2\n*M2/4\n" + "4a\n4b\n=\n" * 8  # một ô lặp 8 lần
     routing.graft_whole_tail(results, layout, judges, _page_of(loop))
     assert [r.method for r in results] == ["system", "system"]
+
+
+def test_system_read_as_all_rests_is_reread_together_with_the_first_system():
+    image, layout = vocal_page(systems=3, staves=1, bars=3)
+    assert layout.confident and layout.systems[0].measures == 3
+    rests = "**kern\n*clefG2\n*k[b-]\n" + "1r\n=\n" * 3
+    context_calls = []
+
+    def recognize(img, index, beams, tag=None):
+        if index == 0:
+            return "**kern\n*clefG2\n*k[b-]\n*M2/4\n" + "4cc\n4dd\n=\n" * 3, False
+        # lần đầu (hệ cắt riêng) toàn dấu lặng; lần đọc kèm hệ đầu có 3 ô hệ đầu + 3 ô của hệ này
+        if not context_calls:
+            context_calls.append(index)
+            return rests, False
+        return "**kern\n*clefG2\n*k[b-]\n*M2/4\n" + "4cc\n4dd\n=\n" * 3 + "4ee\n4ff\n=\n" * 3, False
+
+    page, results, warnings = routing.recognize_by_systems(1, image, layout, recognize, 0, lambda: True)
+    second = results[1].page
+    assert second is not None and not routing._is_empty(second)
+    assert [line for line in second.body if line.startswith("4")][:2] == ["4ee", "4ff"]
+    assert any("kèm hệ đầu" in w for w in warnings)

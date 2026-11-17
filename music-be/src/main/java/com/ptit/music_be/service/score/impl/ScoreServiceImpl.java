@@ -26,6 +26,7 @@ import com.ptit.music_be.dto.enums.notification.NotificationType;
 import com.ptit.music_be.dto.enums.score.DifficultyLevel;
 import com.ptit.music_be.dto.enums.score.FileType;
 import com.ptit.music_be.dto.enums.score.ScoreAccess;
+import com.ptit.music_be.dto.enums.score.ScoreLicense;
 import com.ptit.music_be.dto.enums.score.ScoreSource;
 import com.ptit.music_be.dto.enums.score.Visibility;
 import com.ptit.music_be.dto.request.score.ScoreUpdateRequest;
@@ -62,6 +63,8 @@ import com.ptit.music_be.service.notification.NotificationService;
 import com.ptit.music_be.service.permission.AccessDecision;
 import com.ptit.music_be.service.permission.ScorePermissionService;
 import com.ptit.music_be.service.score.PublicScoreFilter;
+import com.ptit.music_be.service.score.CopyOptions;
+import com.ptit.music_be.service.score.ScoreCopyService;
 import com.ptit.music_be.service.score.ScoreFileService;
 import com.ptit.music_be.service.score.ScoreService;
 import com.ptit.music_be.utils.SecurityUtils;
@@ -80,6 +83,8 @@ public class ScoreServiceImpl implements ScoreService {
     static final int MAX_KEYWORD_LENGTH = 100;
     static final int MAX_TAGS_PER_SCORE = 10;
     static final int MAX_DELETE_REASON_LENGTH = 500;
+    /** Số bản phối tối đa mỗi người tạo trong 24 giờ (mục R4). */
+    static final int MAX_FORKS_PER_DAY = 20;
 
     MemberRepository memberRepository;
     ScoreRepository scoreRepository;
@@ -92,6 +97,7 @@ public class ScoreServiceImpl implements ScoreService {
     OfficialRequestRepository officialRequestRepository;
     ScoreTagRepository scoreTagRepository;
     ScoreFileService scoreFileService;
+    ScoreCopyService scoreCopyService;
     NotificationService notificationService;
     ScorePermissionService scorePermissionService;
     ApplicationEventPublisher eventPublisher;
@@ -225,6 +231,10 @@ public class ScoreServiceImpl implements ScoreService {
             // Chỉ chủ sở hữu quyết định người khác có được tải hay không
             scoreFileService.checkCanManageSharing(score);
             score.setAllowDownload(request.getAllowDownload());
+        }
+        if (request.getLicense() != null || request.getAllowArrange() != null) {
+            scoreFileService.checkCanManageSharing(score);
+            applyLicense(score, request.getLicense(), request.getAllowArrange());
         }
 
         return toDetail(scoreRepository.save(score));
@@ -461,6 +471,18 @@ public class ScoreServiceImpl implements ScoreService {
                     default -> throw new AppException(ErrorCode.INVALID_REQUEST);
                 };
         return toExplorePage(result);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ScoreSummaryResponse getPublicScore(String scoreId) {
+        Score score = scoreRepository
+                .findById(scoreId)
+                .filter(s -> Visibility.PUBLIC.name().equals(s.getVisibility()))
+                .orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+        return toExplorePage(new org.springframework.data.domain.PageImpl<>(List.of(score)))
+                .getContent()
+                .get(0);
     }
 
     /** Thẻ ở trang Khám phá: thêm tên người chia sẻ, lượt xem và điểm sao; không lộ email chủ sở hữu. */
@@ -729,6 +751,8 @@ public class ScoreServiceImpl implements ScoreService {
                 .visibility(score.getVisibility())
                 .isOfficial(score.getIsOfficial())
                 .arrangerName(score.getArrangerName())
+                .license(licenseOf(score))
+                .allowArrange(score.isAllowArrange())
                 .measureCount(score.getMeasureCount())
                 .tags(tags)
                 .thumbnailUrl(thumbnail == null ? null : "/api/files/" + thumbnail.getId() + "/download?inline=true")
@@ -753,6 +777,82 @@ public class ScoreServiceImpl implements ScoreService {
                         && me.equals(original.getMember().getEmail()))
                 .map(Score::getId)
                 .orElse(null);
+    }
+
+    // ------------------------------------------------------------------ giấy phép và bản phối (mục R4)
+
+    private static ScoreLicense licenseOf(Score score) {
+        return score.getLicense() == null ? ScoreLicense.ALL_RIGHTS_RESERVED : score.getLicense();
+    }
+
+    /**
+     * Đổi giấy phép / cờ cho phép phối. Bản phối của CC BY-SA hoặc CC BY-NC giữ nguyên giấy phép gốc; bật cho phép phối
+     * cần giấy phép khác "bảo lưu mọi quyền"; đổi về bảo lưu mọi quyền thì tự tắt cho phép phối.
+     */
+    private void applyLicense(Score score, ScoreLicense license, Boolean allowArrange) {
+        Score source = score.getForkedFrom();
+        if (license != null && source != null && licenseOf(source).locksDerivatives() && license != licenseOf(source)) {
+            throw new AppException(ErrorCode.SCORE_LICENSE_LOCKED);
+        }
+        ScoreLicense next = license != null ? license : licenseOf(score);
+        if (Boolean.TRUE.equals(allowArrange) && !next.allowsDerivatives()) {
+            throw new AppException(ErrorCode.SCORE_LICENSE_REQUIRED);
+        }
+        score.setLicense(next);
+        if (allowArrange != null) {
+            score.setAllowArrange(allowArrange);
+        }
+        if (!next.allowsDerivatives()) {
+            score.setAllowArrange(false);
+        }
+    }
+
+    /** Bản công khai, chủ cho phép phối và giấy phép cho phép; người đã đăng nhập (cả chủ) tạo được. */
+    private static boolean forkable(Score score) {
+        return Visibility.PUBLIC.name().equals(score.getVisibility())
+                && score.isAllowArrange()
+                && licenseOf(score).allowsDerivatives();
+    }
+
+    /** Ghi công bản gốc: chỉ khi bản gốc còn công khai, tên người chia sẻ tính khi trả (không lộ email). */
+    private ScoreDetailResponse.ForkSource forkSource(Score score) {
+        Score source = score.getForkedFrom();
+        if (source == null || !Visibility.PUBLIC.name().equals(source.getVisibility())) {
+            return null;
+        }
+        Member owner = source.getMember();
+        String ownerName = owner == null
+                ? null
+                : (owner.getFullName() == null || owner.getFullName().isBlank() ? null : owner.getFullName());
+        return ScoreDetailResponse.ForkSource.builder()
+                .id(source.getId())
+                .title(source.getTitle())
+                .ownerName(ownerName)
+                .license(licenseOf(source))
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public ScoreDetailResponse forkScore(String scoreId) {
+        Member me = memberRepository
+                .findByEmail(SecurityUtils.getCurrentEmail())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        Score source = scoreRepository
+                .findById(scoreId)
+                .filter(s -> Visibility.PUBLIC.name().equals(s.getVisibility()))
+                .orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+        if (!forkable(source)) {
+            throw new AppException(ErrorCode.SCORE_FORK_NOT_ALLOWED);
+        }
+        // Đếm trong bảng thật (kể cả bản đã vào thùng rác) để xóa bản phối không mở thêm hạn mức
+        if (scoreRepository.countForksSince(me.getId(), LocalDateTime.now().minusHours(24)) >= MAX_FORKS_PER_DAY) {
+            throw new AppException(ErrorCode.SCORE_FORK_RATE_LIMITED);
+        }
+        Score copy = scoreCopyService.copy(source.getId(), me, new CopyOptions(null, ScoreSource.MANUAL, true, true));
+        copy.setForkedFrom(source);
+        copy.setLicense(licenseOf(source)); // bản phối thừa hưởng giấy phép; SA và NC không đổi được
+        return toDetail(scoreRepository.save(copy));
     }
 
     private ScoreDetailResponse toDetail(Score score) {
@@ -826,6 +926,10 @@ public class ScoreServiceImpl implements ScoreService {
                                 : decision.level().name())
                 .canDownload(canEdit || (decision.can(ScoreAccess.VIEW) && score.isAllowDownload()))
                 .allowDownload(isOwner && score.isAllowDownload())
+                .license(licenseOf(score))
+                .allowArrange(isOwner && score.isAllowArrange())
+                .canFork(forkable(score))
+                .forkedFrom(forkSource(score))
                 .coverUrl(score.getCoverUrl())
                 // Team đã xóa mềm coi như không còn: bản nhạc hiện như bản cá nhân
                 .teamId(activeTeam == null ? null : activeTeam.getId())

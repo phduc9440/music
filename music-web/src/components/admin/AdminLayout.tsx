@@ -9,7 +9,7 @@ import ThemeToggle from '../../theme/ThemeToggle';
 import { adoptServerLocale, t } from '../../i18n/core';
 import LanguageToggle from '../../i18n/LanguageToggle';
 import { adoptServerTheme } from '../../theme/theme';
-import { authApi, scoreApi, userApi } from '../../services';
+import { adminReportApi, authApi, scoreApi, userApi } from '../../services';
 import { AuthProvider } from '../../types';
 import type { Member } from '../../types';
 import { hasAdminPermission, roleLabel } from '../../utils/auth';
@@ -39,6 +39,7 @@ export default function AdminLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
+  const [reportCount, setReportCount] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -65,6 +66,21 @@ export default function AdminLayout() {
     };
   }, [pathname, admin]);
 
+  // Số báo cáo vi phạm đang chờ xử lý: cũng tải lại mỗi khi chuyển trang
+  useEffect(() => {
+    if (!hasAdminPermission(admin, 'REPORTS_MODERATE')) return;
+    let cancelled = false;
+    adminReportApi
+      .pendingCount()
+      .then((res) => !cancelled && setReportCount(res.data.result))
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname, admin]);
+
+  const badgeCount = (kind: 'scores' | 'reports') => (kind === 'reports' ? reportCount : pendingCount);
+
   // Đóng menu tài khoản khi bấm ra ngoài
   useEffect(() => {
     if (!menuOpen) return;
@@ -86,7 +102,7 @@ export default function AdminLayout() {
 
   return (
     <div className={`adm-shell${collapsed ? ' adm-shell--collapsed' : ''}`}>
-      <header className="adm-header ui-stage">
+      <header className="adm-header">
         <div className="adm-header__left">
           <button
             type="button"
@@ -166,7 +182,7 @@ export default function AdminLayout() {
       </header>
 
       <div className="adm-body">
-        <aside className={`adm-sidebar ui-stage${mobileOpen ? ' adm-sidebar--open' : ''}`}>
+        <aside className={`adm-sidebar${mobileOpen ? ' adm-sidebar--open' : ''}`}>
           <nav className="adm-menu" aria-label={t('admin.layout.menuLabel')}>
             {visibleMenu(admin).map((group) => (
               <div key={group.section} className="adm-menu">
@@ -184,12 +200,15 @@ export default function AdminLayout() {
                       <Icon name={item.icon} />
                     </span>
                     <span className="adm-menu__label">{item.label}</span>
-                    {item.pendingBadge && pendingCount > 0 && (
+                    {item.pendingBadge && badgeCount(item.pendingBadge) > 0 && (
                       <span
                         className="adm-menu__count"
-                        aria-label={t('admin.layout.pendingBadge', { count: pendingCount })}
+                        aria-label={t(
+                          item.pendingBadge === 'reports' ? 'admin.layout.reportsBadge' : 'admin.layout.pendingBadge',
+                          { count: badgeCount(item.pendingBadge) },
+                        )}
                       >
-                        {pendingCount > 99 ? '99+' : pendingCount}
+                        {badgeCount(item.pendingBadge) > 99 ? '99+' : badgeCount(item.pendingBadge)}
                       </span>
                     )}
                   </NavLink>

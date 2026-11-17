@@ -34,6 +34,16 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
             + " and (s.isOfficial is null or s.isOfficial = false) order by s.updatedAt desc, s.id")
     List<Score> findPersonalOf(@Param("memberId") String memberId);
 
+    /**
+     * Số bản phối (mục R4) một người đã tạo từ {@code since}, kể cả bản đã vào thùng rác. SQL thuần vì
+     * {@code @SQLRestriction} giấu bản đã xóa mềm.
+     */
+    @Query(
+            value = "select count(*) from scores where member_id = :memberId"
+                    + " and forked_from_score_id is not null and created_at >= :since",
+            nativeQuery = true)
+    long countForksSince(@Param("memberId") String memberId, @Param("since") java.time.LocalDateTime since);
+
     /** Số bản nhạc mỗi team. Hàng: [teamId, count]. */
     @Query("select s.teamId, count(s) from Score s where s.teamId in :teamIds group by s.teamId")
     List<Object[]> countByTeams(@Param("teamIds") java.util.Collection<String> teamIds);

@@ -1,11 +1,11 @@
 import { Route, createBrowserRouter, createRoutesFromElements } from 'react-router-dom';
 import Login from '../pages/Login';
 import UserProfile from '../pages/Profile';
+import NotificationSettings from '../pages/notifications/NotificationSettings';
 import ScoreLibrary from '../pages/scores/library/ScoreLibrary';
 import ScoreDetail from '../pages/scores/library/ScoreDetail';
 import SuggestionReview from '../pages/scores/suggestions/SuggestionReview';
 import ScoreTrash from '../pages/scores/library/ScoreTrash';
-import ScoreCreate from '../pages/scores/create/ScoreCreate';
 import ScoreUpload from '../pages/scores/upload/ScoreUpload';
 import ScoreProcessing from '../pages/scores/upload/ScoreProcessing';
 import ScoreReview from '../pages/scores/upload/ScoreReview';
@@ -24,6 +24,9 @@ import AdminMemberDetail from '../pages/admin/AdminMemberDetail';
 import AdminMembers from '../pages/admin/AdminMembers';
 import AdminOfficialScores from '../pages/admin/AdminOfficialScores';
 import AdminPendingScores from '../pages/admin/AdminPendingScores';
+import AdminReports from '../pages/admin/AdminReports';
+import AdminForum from '../pages/admin/AdminForum';
+import AdminActivity from '../pages/admin/AdminActivity';
 import AdminScores from '../pages/admin/AdminScores';
 import AdminSystem from '../pages/admin/AdminSystem';
 import AdminTags from '../pages/admin/AdminTags';
@@ -51,10 +54,16 @@ import RootLayout from './RootLayout';
 import UserArea from './UserArea';
 import WorkspaceHome from '../pages/home/WorkspaceHome';
 import NotFound from '../pages/NotFound';
+import GuestLayout from '../components/layout/GuestLayout';
+import PublicScore from '../pages/scores/library/PublicScore';
 import Teams from '../pages/teams/Teams';
 import TeamDetail from '../pages/teams/TeamDetail';
 import TeamInvite from '../pages/teams/TeamInvite';
+import MyTasks from '../pages/teams/MyTasks';
 import ShowBoard from '../pages/teams/ShowBoard';
+import Forum from '../pages/forum/Forum';
+import ForumCompose from '../pages/forum/ForumCompose';
+import ForumThread from '../pages/forum/ForumThread';
 
 /**
  * Router dạng dữ liệu (createBrowserRouter) thay cho <BrowserRouter>: cần cho hiệu ứng chuyển trang bằng View
@@ -77,8 +86,8 @@ const router = createBrowserRouter(
       <Route element={<UserArea />}>
         <Route index element={<WorkspaceHome />} />
         <Route path="/profile" element={<UserProfile />} />
+        <Route path="/settings/notifications" element={<NotificationSettings />} />
         <Route path="/scores" element={<ScoreLibrary />} />
-        <Route path="/scores/new" element={<ScoreCreate />} />
         <Route path="/scores/upload" element={<ScoreUpload />} />
         <Route path="/scores/import" element={<ScoreImport />} />
         <Route path="/explore" element={<ExploreScores />} />
@@ -99,11 +108,22 @@ const router = createBrowserRouter(
         <Route path="/playlists/:id" element={<PlaylistDetail />} />
         <Route path="/practice-history" element={<PracticeHistory />} />
         <Route path="/practice-stats" element={<PracticeStats />} />
+        {/* Diễn đàn (mục 5.5) */}
+        <Route path="/forum" element={<Forum />} />
+        <Route path="/forum/new" element={<ForumCompose />} />
+        <Route path="/forum/threads/:id" element={<ForumThread />} />
+        <Route path="/forum/threads/:id/edit" element={<ForumCompose />} />
         {/* Team và Show (mục 4.1) */}
+        <Route path="/my-tasks" element={<MyTasks />} />
         <Route path="/teams" element={<Teams />} />
         <Route path="/teams/invite/:token" element={<TeamInvite />} />
         <Route path="/teams/:id" element={<TeamDetail />} />
         <Route path="/teams/:teamId/shows/:showId" element={<ShowBoard />} />
+      </Route>
+
+      {/* Trang bản nhạc công khai cho khách (mục 5.2); người đã đăng nhập được chuyển sang /scores/:id */}
+      <Route element={<GuestLayout />}>
+        <Route path="/s/:scoreId" element={<PublicScore />} />
       </Route>
 
       {/* Trình chỉnh sửa và trình phát dùng toàn màn hình, có thanh công cụ riêng */}
@@ -162,6 +182,9 @@ const router = createBrowserRouter(
         <Route path="scores/:id/processing" element={<ScoreProcessing />} />
         <Route path="scores/:id/review" element={<ScoreReview />} />
         <Route path="pending-scores" element={<AdminPendingScores />} />
+        <Route path="reports" element={<AdminReports />} />
+        <Route path="forum" element={<AdminForum />} />
+        <Route path="activity" element={<AdminActivity />} />
         <Route path="official-scores" element={<AdminOfficialScores />} />
         <Route path="announcements" element={<AdminAnnouncements />} />
         <Route path="tags" element={<AdminTags />} />

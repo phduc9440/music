@@ -68,5 +68,12 @@ public enum NotificationType {
     /** Gửi chủ bản nhạc và người có quyền sửa: có đề xuất sửa mới. */
     SUGGESTION_NEW,
     /** Gửi người đề xuất: đề xuất đã được nhận (một phần hoặc tất cả) hoặc bị từ chối. */
-    SUGGESTION_DECIDED
+    SUGGESTION_DECIDED,
+    // ---- Diễn đàn (mục 5.5); params: name, title (chủ đề), threadId, postId
+    /** Có trả lời mới trong chủ đề bạn đặt hoặc đang theo dõi. */
+    FORUM_REPLY,
+    /** Có người trả lời trực tiếp vào bài của bạn trong một chủ đề. */
+    FORUM_POST_REPLY,
+    /** Câu trả lời của bạn được người đặt chủ đề chọn là hay nhất. */
+    FORUM_ANSWER_ACCEPTED
 }

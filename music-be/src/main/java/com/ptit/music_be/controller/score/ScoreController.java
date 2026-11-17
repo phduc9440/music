@@ -234,4 +234,16 @@ public class ScoreController {
         scoreService.deleteScore(scoreId, reason);
         return ApiResponse.<Void>builder().message("Score moved to trash").build();
     }
+
+    @PostMapping("/{scoreId}/fork")
+    @Operation(
+            summary = "Create my own arrangement from a PUBLIC score the owner allows to arrange (R4)",
+            description = "Private copy, remembers the source and inherits its license. Errors: 2001 not public, 2027"
+                    + " not allowed, 2028 over 20 per 24 hours, MUSICXML_NOT_READY",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<ScoreDetailResponse> fork(@PathVariable String scoreId) {
+        return ApiResponse.<ScoreDetailResponse>builder()
+                .result(scoreService.forkScore(scoreId))
+                .build();
+    }
 }

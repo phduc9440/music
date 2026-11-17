@@ -216,7 +216,36 @@
     "backTo": "Về {name}",
     "tasks": "Lịch sử tác vụ",
     "reviews": "Nhận xét",
-    "requestEditTitle": "Xin quyền chỉnh sửa"
+    "requestEditTitle": "Xin quyền chỉnh sửa",
+    "requestMoreTitle": "Xin thêm quyền",
+    "settings": "Cài đặt",
+    "info": "Thông tin"
+  },
+  "license": {
+    "ALL_RIGHTS_RESERVED": "Bảo lưu mọi quyền",
+    "CC0": "Phạm vi công cộng (CC0)",
+    "CC_BY": "Ghi công (CC BY)",
+    "CC_BY_SA": "Ghi công, chia sẻ giống nhau (CC BY-SA)",
+    "CC_BY_NC": "Ghi công, phi thương mại (CC BY-NC)"
+  },
+  "licenseHint": {
+    "ALL_RIGHTS_RESERVED": "Người khác không được tạo bản phối từ bản nhạc của bạn.",
+    "CC0": "Ai cũng được phối lại, không cần ghi công.",
+    "CC_BY": "Được phối lại nếu ghi công bạn.",
+    "CC_BY_SA": "Được phối lại nếu ghi công bạn và giữ cùng giấy phép này.",
+    "CC_BY_NC": "Được phối lại nếu ghi công bạn, giữ cùng giấy phép và không dùng thương mại."
+  },
+  "fork": {
+    "button": "Tạo bản phối",
+    "working": "Đang tạo...",
+    "hint": "Tạo một bản sao riêng tư của riêng bạn để phối lại, có ghi công bản gốc",
+    "done": "Đã tạo bản phối, bạn mở được trong thư viện của mình",
+    "failed": "Không tạo được bản phối",
+    "attribution": "Bản phối từ “{title}” của {owner}, giấy phép {license}",
+    "unknownOwner": "một thành viên",
+    "openSource": "Mở bản gốc",
+    "loginHint": "Đăng nhập để tạo bản phối từ bản nhạc này",
+    "license": "Giấy phép: {license}"
   },
   "hero": {
     "owner": "Chủ sở hữu: {name}",
@@ -253,7 +282,12 @@
     "manage": "Quản lý",
     "share": "Chia sẻ",
     "editInfo": "Sửa thông tin",
-    "delete": "Xóa bản nhạc"
+    "delete": "Xóa bản nhạc",
+    "copyLink": "Sao chép liên kết",
+    "copyLinkCopied": "Đã sao chép",
+    "copyLinkHint": "Sao chép đường dẫn của bản nhạc này để gửi cho người khác (họ cần đăng nhập và có quyền xem)",
+    "copyLinkDone": "Đã sao chép liên kết bản nhạc",
+    "copyLinkFailed": "Không sao chép được liên kết"
   },
   "edit": {
     "tagsFailed": "Không tải được danh sách thể loại",
@@ -272,6 +306,9 @@
     "visPublic": "Công khai (cần quản trị viên duyệt)",
     "visHint": "Sau khi được duyệt, mọi người đăng nhập đều xem và nhận xét được. Trong lúc chờ bản nhạc vẫn riêng tư.",
     "allowDownload": "Cho phép người xem tải MusicXML, MIDI, âm thanh, PDF",
+    "license": "Giấy phép",
+    "allowArrange": "Cho phép người khác tạo bản phối từ bản công khai này",
+    "licenseLocked": "Bản phối giữ nguyên giấy phép của bản gốc nên không đổi được.",
     "saving": "Đang lưu...",
     "saveChanges": "Lưu thay đổi"
   },
@@ -298,7 +335,10 @@
     "revoked": "Đã thu hồi quyền",
     "invitePlaceholder": "Mời theo email",
     "inviteLevel": "Quyền khi mời",
-    "invite": "Mời"
+    "invite": "Mời",
+    "requestsHint": "Đồng ý để cấp quyền cho người này (chọn cấp khác nếu muốn), hoặc từ chối. Họ sẽ nhận thông báo.",
+    "addPeople": "Mời thêm người",
+    "revoke": "Thu hồi"
   },
   "reviews": {
     "loadFailed": "Không tải được nhận xét",
@@ -365,7 +405,8 @@
   },
   "delete": {
     "done": "Đã chuyển bản nhạc vào thùng rác",
-    "text": "Chuyển vào thùng rác. Bản nhạc sẽ bị xóa hẳn sau 30 ngày, trong thời gian đó chủ sở hữu có thể khôi phục. Gõ <code>{title}</code> để xác nhận.",
+    "text": "Bạn có chắc chắn chuyển <strong>{title}</strong> vào thùng rác? Bản nhạc sẽ bị xóa hẳn sau 30 ngày, trong thời gian đó chủ sở hữu có thể khôi phục.",
+    "dontAsk": "Không hỏi lại lần sau",
     "reason": "Lý do (gửi tới chủ sở hữu)",
     "moving": "Đang chuyển...",
     "move": "Chuyển vào thùng rác"
@@ -485,5 +526,47 @@
     "text": "Bài trong buổi diễn {show} · {status}",
     "due": "hạn {date}",
     "open": "Mở bảng buổi diễn"
+  },
+  "report": {
+    "menu": "Báo cáo vi phạm",
+    "commentLink": "Báo cáo",
+    "title": "Báo cáo bản nhạc",
+    "commentTitle": "Báo cáo góp ý",
+    "intro": "Báo cáo sẽ được gửi tới quản trị viên xem xét. Người sở hữu không biết ai đã báo cáo.",
+    "reason": "Lý do",
+    "reasons": {
+      "COPYRIGHT": "Vi phạm bản quyền",
+      "SPAM": "Spam hoặc quảng cáo",
+      "INAPPROPRIATE": "Nội dung không phù hợp",
+      "OTHER": "Lý do khác"
+    },
+    "details": "Chi tiết",
+    "detailsOptional": "(không bắt buộc)",
+    "detailsPlaceholder": "Mô tả ngắn điều bạn thấy chưa ổn",
+    "send": "Gửi báo cáo",
+    "sending": "Đang gửi...",
+    "sent": "Đã gửi báo cáo. Cảm ơn bạn.",
+    "failed": "Không gửi được báo cáo"
+  },
+  "settings": {
+    "noRequests": "Không có yêu cầu xin quyền nào đang chờ.",
+    "nav": {
+      "general": "Chung",
+      "people": "Người có quyền",
+      "requests": "Yêu cầu xin quyền",
+      "danger": "Vùng nguy hiểm",
+      "report": "Báo cáo vi phạm"
+    },
+    "editTitle": "Thông tin bản nhạc",
+    "editHint": "Đổi tên, tác giả, độ khó, thể loại và ghi chú luyện tập.",
+    "shareTitle": "Chia sẻ",
+    "shareHint": "Mời người khác theo email, đặt quyền xem, nhận xét hoặc chỉnh sửa.",
+    "dangerTitle": "Xóa bản nhạc",
+    "dangerHint": "Chuyển bản nhạc vào thùng rác, khôi phục được trong 30 ngày.",
+    "publishTitle": "Chế độ hiển thị",
+    "publishHint": "Công khai để mọi người tìm thấy (cần quản trị viên duyệt), hoặc giữ riêng tư.",
+    "reportTitle": "Báo cáo vi phạm",
+    "reportHint": "Gửi báo cáo tới quản trị viên nếu bản nhạc vi phạm bản quyền, là spam hoặc có nội dung không phù hợp. Chủ bản nhạc không biết ai đã báo cáo.",
+    "reportButton": "Báo cáo bản nhạc"
   }
 }

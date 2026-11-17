@@ -46,5 +46,8 @@
   "COMMENT_MENTION": "{name} đã nhắc tới bạn trong góp ý ở ô {measures} của “{title}”",
   "COMMENT_REPLY": "{name} đã trả lời góp ý ở ô {measures} của “{title}”",
   "SUGGESTION_NEW": "{name} đã đề xuất sửa trong bản nhạc “{title}”",
-  "SUGGESTION_DECIDED": "{name} đã xử lý đề xuất sửa của bạn trong bản nhạc “{title}”"
+  "SUGGESTION_DECIDED": "{name} đã xử lý đề xuất sửa của bạn trong bản nhạc “{title}”",
+  "FORUM_REPLY": "{name} đã trả lời trong chủ đề “{title}”: “{excerpt}”",
+  "FORUM_POST_REPLY": "{name} đã trả lời bình luận của bạn trong “{title}”: “{excerpt}”",
+  "FORUM_ANSWER_ACCEPTED": "{name} đã chọn câu trả lời của bạn là hay nhất trong “{title}”"
 }

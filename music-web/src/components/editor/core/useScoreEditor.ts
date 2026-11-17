@@ -228,7 +228,18 @@ export interface ScoreEditor {
 
 export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
   const { confirm: confirmDialog } = useDialog();
-  const { scoreId, title, doc, initialVersion, canEdit, canForce, blocked, mode = 'direct', onSuggest, live = null } = options;
+  const {
+    scoreId,
+    title,
+    doc,
+    initialVersion,
+    canEdit,
+    canForce,
+    blocked,
+    mode = 'direct',
+    onSuggest,
+    live = null,
+  } = options;
   const liveActive = live?.active ?? false;
   const bind = live?.bind;
   const liveRef = useRef(live);
@@ -944,8 +955,6 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
       toast.success(t('editor.toast.draftRestored'));
     } catch {
       toast.error(t('editor.toast.draftBroken'));
-      clearDraft(scoreId, version);
-      toast.error('Bản nháp bị hỏng nên không khôi phục được');
       clearDraft(scoreId, version, draftPrefix);
     }
     setDraft(null);

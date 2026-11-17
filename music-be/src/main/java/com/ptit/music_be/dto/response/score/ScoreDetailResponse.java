@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import com.ptit.music_be.dto.enums.score.DifficultyLevel;
+import com.ptit.music_be.dto.enums.score.ScoreLicense;
 import com.ptit.music_be.dto.response.ai.AiTaskResponse;
 import com.ptit.music_be.dto.response.library.TagResponse;
 
@@ -68,6 +69,14 @@ public class ScoreDetailResponse {
     boolean canDownload;
     /** Chủ sở hữu đã cho người xem tải chưa (chỉ chủ sở hữu thấy giá trị thật). */
     boolean allowDownload;
+    /** Giấy phép (R4); luôn có giá trị, chưa chọn là ALL_RIGHTS_RESERVED. */
+    ScoreLicense license;
+    /** Chủ cho phép tạo bản phối (chỉ chủ sở hữu thấy giá trị thật). */
+    boolean allowArrange;
+    /** Người đang xem tạo được bản phối từ bản này không (bản công khai, chủ cho phép, đã đăng nhập). */
+    boolean canFork;
+    /** Bản phối của bản nào (R4); null khi không phải bản phối hoặc bản gốc không còn công khai. */
+    ForkSource forkedFrom;
     /** Ảnh bìa người dùng tải lên; null nếu chưa có. */
     String coverUrl;
     /** Team chứa bản nhạc (mục 4.1); null là bản cá nhân. */
@@ -81,4 +90,17 @@ public class ScoreDetailResponse {
     List<ScoreFileResponse> files;
     /** Task mới nhất của mỗi loại (OMR_CONVERSION, AUDIO_SYNTHESIS, ...). */
     List<AiTaskResponse> latestTasks;
+
+    /** Ghi công bản gốc của một bản phối. Tên người chia sẻ tính khi trả, không lộ email. */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @FieldDefaults(level = AccessLevel.PRIVATE)
+    public static class ForkSource {
+        String id;
+        String title;
+        String ownerName;
+        ScoreLicense license;
+    }
 }

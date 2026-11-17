@@ -1,3 +1,6 @@
+import { useState } from 'react';
+import { scoreApi } from '../../../services';
+import { toast } from 'react-toastify';
 import { Link } from '../../../routes/transition-nav';
 import { useNavigate } from '../../../routes/useTransitionNavigate';
 import AuthImage from '../common/AuthImage';
@@ -8,6 +11,7 @@ import {
   DIFFICULTY_LABELS,
   SOURCE_LABELS,
   formatDateTime,
+  getErrorMessage,
   useScoreBase,
 } from '../../../utils/score';
 import type { ScoreDetail } from '../../../types';
@@ -18,15 +22,12 @@ import { isTaskFinished } from '../../export/exportUtils';
 import { Icon } from '../../ui';
 import OfficialRequestBanner from './OfficialRequestBanner';
 import ScoreCover from './ScoreCover';
-import PublishToggle from './PublishToggle';
 import { t } from '../../../i18n/core';
 
 interface Props {
   score: ScoreDetail;
-  onEdit: () => void;
-  onDelete: () => void;
-  onShare: () => void;
-  onRequestEdit: () => void;
+  /** Mở hộp xin thêm quyền (người không phải chủ, chưa có quyền sửa). */
+  onRequestMore?: () => void;
   /** Gọi khi chủ sở hữu đổi chế độ hiển thị (công khai, hủy yêu cầu, về riêng tư) với bản nhạc đã cập nhật. */
   onVisibilityChanged: (score: ScoreDetail) => void;
 }
@@ -38,11 +39,51 @@ const hasMusicXml = (score: ScoreDetail) => score.files.some((f) => f.fileType =
  * Đầu trang chi tiết: nhãn trạng thái, tiêu đề, dòng phụ, ba thao tác chính (mở, phát, tải xuống) và các thông báo
  * (đang số hóa, xử lý lỗi, bị từ chối công khai).
  */
-export default function ScoreHero({ score, onVisibilityChanged }: Pick<Props, 'score' | 'onVisibilityChanged'>) {
+export default function ScoreHero({ score, onVisibilityChanged, onRequestMore }: Props) {
   // Đổi hoặc gỡ ảnh bìa trả về bản nhạc đã cập nhật, dùng chung đường cập nhật với đổi chế độ hiển thị
   const base = useScoreBase();
   const navigate = useNavigate();
   const ready = hasMusicXml(score);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [forking, setForking] = useState(false);
+  // Tạo bản phối riêng tư từ bản công khai chủ cho phép (R4), xong thì mở bản mới
+  const fork = async () => {
+    setForking(true);
+    try {
+      const res = await scoreApi.fork(score.id);
+      toast.success(t('scores.fork.done'));
+      navigate(`/scores/${res.data.result.id}`);
+    } catch (err) {
+      toast.error(getErrorMessage(err, t('scores.fork.failed')));
+    } finally {
+      setForking(false);
+    }
+  };
+  // Đường dẫn trang chi tiết của bản nhạc (người nhận cần đăng nhập và có quyền xem bản này)
+  const copyLink = async () => {
+    const url = `${window.location.origin}/scores/${score.id}`;
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      // Trình duyệt chặn Clipboard API (http, không có quyền): chép bằng ô nhập tạm
+      const input = document.createElement('textarea');
+      input.value = url;
+      input.setAttribute('readonly', '');
+      input.style.position = 'fixed';
+      input.style.opacity = '0';
+      document.body.appendChild(input);
+      input.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(input);
+      if (!ok) {
+        toast.error(t('scores.hero.copyLinkFailed'));
+        return;
+      }
+    }
+    toast.success(t('scores.hero.copyLinkDone'));
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
+  };
   // Bản nhạc nhập từ MIDI chưa có MusicXML: cho chuyển đổi để mở được trình chỉnh sửa và trình phát
   const canConvertMidi = score.canEdit && !ready && score.files.some((f) => f.fileType === 'ORIGINAL_MIDI');
   const activeConversion = score.latestTasks.find(
@@ -62,10 +103,9 @@ export default function ScoreHero({ score, onVisibilityChanged }: Pick<Props, 's
     : score.rejectReason;
   const processing = score.processingStatus === 'PENDING' || score.processingStatus === 'PROCESSING';
 
-  // Chỉ chủ sở hữu đổi được chế độ hiển thị; admin kiểm duyệt có nút riêng ở trang quản trị. Bản trong kho mẫu do
-  // hệ thống quản lý nên không có nút này.
-  const canChangeVisibility =
-    score.canManageSharing && score.accessLevel === 'OWNER' && !base.startsWith('/admin') && !score.isOfficial;
+  // Bản trong kho mẫu do hệ thống quản lý, chỉ admin sửa: không có chuyện xin quyền chỉnh sửa
+  const canRequestMore =
+    !score.canEdit && score.accessLevel !== 'OWNER' && !base.startsWith('/admin') && !score.isOfficial;
 
   const meta = [
     score.composer || t('scores.card.unknownComposer'),
@@ -77,12 +117,25 @@ export default function ScoreHero({ score, onVisibilityChanged }: Pick<Props, 's
     <header className="sd-head">
       <div className="sd-head__row">
         <div className="sd-head__lead">
-          <ScoreCover score={score} onChanged={onVisibilityChanged} />
+          <div className="sd-head__cover">
+            <ScoreCover score={score} onChanged={onVisibilityChanged} />
+            {/* Biểu tượng nhỏ ở góc ảnh bìa: chép đường dẫn bản nhạc để gửi cho người khác (báo cáo vi phạm nằm ở tab Cài đặt) */}
+            <div className="sd-cover-tools">
+              <button
+                type="button"
+                className={`sd-iconbtn${linkCopied ? ' is-done' : ''}`}
+                onClick={copyLink}
+                title={linkCopied ? t('scores.hero.copyLinkCopied') : t('scores.hero.copyLinkHint')}
+                aria-label={t('scores.hero.copyLink')}
+              >
+                <Icon name={linkCopied ? 'check' : 'copy'} size={14} />
+              </button>
+            </div>
+          </div>
           <div className="sd-head__text">
             <div className="sd-badges">
               <StatusBadge status={score.processingStatus} />
               <VisibilityBadge value={score.visibility} />
-              {canChangeVisibility && <PublishToggle score={score} onChanged={onVisibilityChanged} />}
               {score.isOfficial && (
                 <span className="sc-chip sc-chip--accent">{t('common.nav.items.officialLibrary')}</span>
               )}
@@ -117,6 +170,12 @@ export default function ScoreHero({ score, onVisibilityChanged }: Pick<Props, 's
             staffCount={score.staffCount}
             canDownload={score.canDownload}
           />
+          {score.canFork && (
+            <button type="button" className="sc-btn" disabled={forking} onClick={fork} title={t('scores.fork.hint')}>
+              <Icon name="copy" size={16} />
+              {forking ? t('scores.fork.working') : t('scores.fork.button')}
+            </button>
+          )}
           <Link
             className={`sc-btn${ready ? '' : ' is-disabled'}`}
             to={`${base}/${score.id}/play`}
@@ -137,10 +196,29 @@ export default function ScoreHero({ score, onVisibilityChanged }: Pick<Props, 's
             <Icon name={score.canEdit ? 'edit' : 'eye'} size={16} />
             {score.canEdit ? t('scores.hero.openEditor') : t('scores.hero.viewScore')}
           </Link>
+          {canRequestMore && onRequestMore && (
+            <button type="button" className="sc-btn" onClick={onRequestMore}>
+              <Icon name="key" size={16} />
+              {t('scores.detail.requestMoreTitle')}
+            </button>
+          )}
         </div>
       </div>
 
       {score.accessLevel === 'OWNER' && !base.startsWith('/admin') && <OfficialRequestBanner scoreId={score.id} />}
+      {score.forkedFrom && (
+        <div className="sd-alert sd-alert--info" role="status">
+          <Icon name="copy" size={16} />
+          <span>
+            {t('scores.fork.attribution', {
+              title: score.forkedFrom.title,
+              owner: score.forkedFrom.ownerName ?? t('scores.fork.unknownOwner'),
+              license: t(`scores.license.${score.forkedFrom.license}`),
+            })}
+          </span>
+          <Link to={`/scores/${score.forkedFrom.id}`}>{t('scores.fork.openSource')} →</Link>
+        </div>
+      )}
       {score.myOriginalScoreId && (
         <div className="sd-alert sd-alert--info" role="status">
           <Icon name="library" size={16} />
@@ -229,8 +307,7 @@ export function ScorePreview({ score }: { score: ScoreDetail }) {
 }
 
 /** Cột phải: số liệu nổi bật, thông số, ghi chú luyện tập và các thao tác quản lý. */
-export function ScoreSidebar({ score, onEdit, onDelete, onShare, onRequestEdit }: Omit<Props, 'onVisibilityChanged'>) {
-  const base = useScoreBase();
+export function ScoreSidebar({ score }: { score: ScoreDetail }) {
   const highlights: [string, string][] = [
     [t('scores.hero.measures'), score.measureCount?.toString() ?? '—'],
     [t('scores.hero.pages'), score.pageCount?.toString() ?? '—'],
@@ -258,11 +335,6 @@ export function ScoreSidebar({ score, onEdit, onDelete, onShare, onRequestEdit }
       ),
     ],
   ];
-  // Bản trong kho mẫu do hệ thống quản lý, chỉ admin sửa: không có chuyện xin quyền chỉnh sửa
-  const canRequestEdit =
-    !score.canEdit && score.accessLevel !== 'OWNER' && !base.startsWith('/admin') && !score.isOfficial;
-  const hasManage = score.canManageSharing || score.canEdit || canRequestEdit || score.canDelete;
-
   return (
     <aside className="sd-side">
       <section className="sd-card reveal-item">
@@ -289,38 +361,6 @@ export function ScoreSidebar({ score, onEdit, onDelete, onShare, onRequestEdit }
         <section className="sd-card reveal-item">
           <h2 className="sd-card__title">{t('scores.hero.studyNotes')}</h2>
           <p className="sd-notes">{score.studyNotes}</p>
-        </section>
-      )}
-
-      {hasManage && (
-        <section className="sd-card reveal-item">
-          <h2 className="sd-card__title">{t('scores.hero.manage')}</h2>
-          <div className="sd-manage">
-            {score.canManageSharing && (
-              <button type="button" className="sd-manage__item" onClick={onShare}>
-                <Icon name="share" size={16} />
-                {t('scores.hero.share')}
-              </button>
-            )}
-            {canRequestEdit && (
-              <button type="button" className="sd-manage__item" onClick={onRequestEdit}>
-                <Icon name="key" size={16} />
-                {t('scores.detail.requestEditTitle')}
-              </button>
-            )}
-            {score.canEdit && (
-              <button type="button" className="sd-manage__item" onClick={onEdit}>
-                <Icon name="edit" size={16} />
-                {t('scores.hero.editInfo')}
-              </button>
-            )}
-            {score.canDelete && (
-              <button type="button" className="sd-manage__item sd-manage__item--danger" onClick={onDelete}>
-                <Icon name="trash" size={16} />
-                {t('scores.hero.delete')}
-              </button>
-            )}
-          </div>
         </section>
       )}
     </aside>

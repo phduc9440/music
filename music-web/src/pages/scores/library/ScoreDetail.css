@@ -513,7 +513,6 @@
   border-radius: var(--ui-radius-lg);
 }
 
-
 /* Nút dạng liên kết (ví dụ "Mở trình chỉnh sửa") */
 a.sc-btn {
   text-decoration: none;
@@ -592,4 +591,87 @@ a.sc-btn.is-disabled {
     width: 80px;
     height: 80px;
   }
+}
+
+/* ---- Bố cục kiểu trang repo GitHub: tên và nút hành động ở trên (nút bên phải), hàng tab chạy hết chiều ngang ---- */
+.sd-head__row {
+  align-items: flex-start;
+}
+.sd-head__lead {
+  align-items: flex-start;
+}
+.sd-head .sd-actions {
+  justify-content: flex-end;
+}
+.sd-tabs {
+  margin-bottom: 1.25rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.sd-tabs::-webkit-scrollbar {
+  display: none;
+}
+.sd-tabs .sc-tab {
+  white-space: nowrap;
+}
+/* Tab Cài đặt nằm tận cùng bên phải như mục Settings của GitHub */
+.sc-tab--end {
+  margin-left: auto;
+}
+/* Tab Thông tin: ảnh xem trước bên trái, thông số bên phải */
+.sd-info {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 1.25rem;
+  align-items: start;
+}
+.sd-info .sd-side {
+  position: static;
+}
+@media (max-width: 1000px) {
+  .sd-info {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sd-head .sd-actions {
+    justify-content: flex-start;
+  }
+}
+
+/* Nút sao chép liên kết: biểu tượng nhỏ ở góc trên phải ảnh bìa */
+.sd-head__cover {
+  position: relative;
+  flex: none;
+}
+.sd-cover-tools {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  z-index: 1;
+  display: flex;
+  gap: 8px;
+}
+.sd-iconbtn {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--ui-card-border);
+  border-radius: 50%;
+  background: var(--ui-surface);
+  color: var(--ui-text-2);
+  box-shadow: var(--ui-shadow);
+  cursor: pointer;
+}
+.sd-iconbtn:hover {
+  background: var(--ui-surface-hover);
+  color: var(--ui-text);
+}
+.sd-iconbtn:focus-visible {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 2px;
+}
+.sd-iconbtn.is-done {
+  border-color: var(--ui-success);
+  color: var(--ui-success);
 }

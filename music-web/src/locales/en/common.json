@@ -21,7 +21,8 @@
       "trash": "Trash",
       "myPlan": "My plan",
       "pricing": "Pricing",
-      "teams": "Teams & Shows"
+      "teams": "Teams & Shows",
+      "forum": "Forum"
     },
     "back": "Back"
   },
@@ -85,6 +86,7 @@
     "title": "Notifications",
     "labelUnread": "Notifications, {count} unread",
     "markAllRead": "Mark all as read",
+    "settings": "Settings",
     "empty": "No notifications yet.",
     "adminTag": "Admin",
     "fromAdmin": "Message from the administrators"
@@ -99,7 +101,6 @@
     "signIn": "Sign in / Sign up",
     "account": "Account",
     "home": "Home",
-    "tipApp": "Tip: press Ctrl + K (Cmd + K on Mac) to quickly find scores and commands.",
     "tipSite": "Photograph sheet music, edit, listen and practice, together with your team, in your own language.",
     "copyright": "© {year} Music App · PTIT graduation project",
     "privacy": "Your scores are private by default."
@@ -126,5 +127,6 @@
     "description": "This address doesn't exist or has moved. Check the URL, or head back home.",
     "home": "Back to home",
     "adminHome": "Back to dashboard"
-  }
+  },
+  "edit": "Edit"
 }

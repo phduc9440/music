@@ -149,8 +149,7 @@ export class LiveSession {
     const mine = this.selfSessionId;
     const locks = this.locks;
     if (!locks) return null;
-    const holderOf = (sessionId: string) =>
-      this.participants.find((p) => p.sessionId === sessionId)?.name ?? '';
+    const holderOf = (sessionId: string) => this.participants.find((p) => p.sessionId === sessionId)?.name ?? '';
     if (locks.wholeHolder && locks.wholeHolder !== mine) return holderOf(locks.wholeHolder);
     for (const s of command.snapshots) {
       const entry = locks.locks.find(
@@ -393,7 +392,12 @@ export class LiveSession {
       if (!this.waitingLock) {
         this.waitingLock = true;
         if (next.measures === null) this.client.lock([], true, false);
-        else this.client.lock(next.measures.map((m) => m.ref), false, false);
+        else
+          this.client.lock(
+            next.measures.map((m) => m.ref),
+            false,
+            false,
+          );
       }
       return;
     }

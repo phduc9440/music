@@ -10,29 +10,31 @@ import { useDialog } from '../../components/ui/dialog-context';
 import { showApi, teamApi, userApi } from '../../services';
 import { canAssignTeamRole, canInviteToTeam, hasTeamPermission, TEAM_ROLES } from '../../types';
 import type {
+  TeamTask,
   RestorableItem,
   Show,
   Team,
-  TeamActivity,
   TeamInvitation,
   TeamMember,
   TeamRole,
   TeamScore,
 } from '../../types';
-import { formatDate, formatDateTime, formatNumber, formatRelativeTime, t } from '../../i18n/core';
+import { formatDate, formatDateTime, formatNumber, t } from '../../i18n/core';
 import { getErrorCode, getErrorMessage } from '../../utils/score';
 import { MemberAvatar, RestorableList, RoleBadge, StatusBadge } from './shared';
 import RolePermissions from './RolePermissions';
-import { activityText, memberName } from './teamUtils';
+import { memberName } from './teamUtils';
+import TeamActivityTab from './TeamActivity';
+import TasksPanel from './TasksPanel';
 import { TeamFormModal } from './Teams';
 import { ShowFormModal } from './ShowBoard';
 import '../../components/scores/scores.css';
 import './teams.css';
 
-type Tab = 'scores' | 'shows' | 'members' | 'activity';
-const TABS: Tab[] = ['scores', 'shows', 'members', 'activity'];
+type Tab = 'tasks' | 'scores' | 'shows' | 'members' | 'activity';
+const TABS: Tab[] = ['tasks', 'scores', 'shows', 'members', 'activity'];
 
-/** Trang /teams/:id: thông tin team và bốn tab Bản nhạc, Show, Thành viên, Hoạt động (mục 4.1). */
+/** Trang /teams/:id: thông tin team và các tab Việc của tôi, Bản nhạc, Show, Thành viên, Hoạt động (mục 4.1). */
 export default function TeamDetail() {
   const { id = '' } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -41,6 +43,9 @@ export default function TeamDetail() {
   const tab: Tab = TABS.includes(params.get('tab') as Tab) ? (params.get('tab') as Tab) : 'scores';
   const [team, setTeam] = useState<Team | null>(null);
   const [meId, setMeId] = useState<string | null>(null);
+  // Việc được giao cho mình trong nhóm này (hiện số trên tab và trong tab Việc của tôi)
+  const [tasks, setTasks] = useState<TeamTask[] | null>(null);
+  const [now, setNow] = useState(0);
   const [editing, setEditing] = useState(false);
   const [missing, setMissing] = useState(false);
 
@@ -55,6 +60,20 @@ export default function TeamDetail() {
   }, [id]);
 
   useEffect(loadTeam, [loadTeam]);
+  useEffect(() => {
+    let cancelled = false;
+    teamApi
+      .myTasks()
+      .then((res) => {
+        if (cancelled) return;
+        setNow(Date.now());
+        setTasks(res.data.result.filter((task) => task.teamId === id));
+      })
+      .catch(() => !cancelled && setTasks([]));
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
   useEffect(() => {
     userApi
       .getMe()
@@ -166,16 +185,18 @@ export default function TeamDetail() {
               onClick={() => setParams(key === 'scores' ? {} : { tab: key }, { replace: true })}
             >
               {t(`teams.tabs.${key}`)}
+              {key === 'tasks' && tasks && tasks.length > 0 && <span className="tm-tab__count">{tasks.length}</span>}
             </button>
           ))}
         </div>
 
         <div role="tabpanel" id={`tm-panel-${tab}`} aria-labelledby={`tm-tab-${tab}`}>
           {!team && <Skeleton lines={4} />}
+          {team && tab === 'tasks' && <TeamTasksTab tasks={tasks} now={now} />}
           {team && tab === 'scores' && <ScoresTab team={team} />}
           {team && tab === 'shows' && <ShowsTab team={team} />}
           {team && tab === 'members' && <MembersTab team={team} meId={meId} onChanged={loadTeam} />}
-          {team && tab === 'activity' && <ActivityTab team={team} />}
+          {team && tab === 'activity' && <TeamActivityTab team={team} />}
         </div>
       </main>
 
@@ -705,61 +726,21 @@ function MembersTab({ team, meId, onChanged }: { team: Team; meId: string | null
   );
 }
 
-// ------------------------------------------------------------------------------------------------ Hoạt động
+// ------------------------------------------------------------------------------------------------ Việc của tôi
 
-const PAGE_SIZE = 20;
-
-function ActivityTab({ team }: { team: Team }) {
-  const [items, setItems] = useState<TeamActivity[] | null>(null);
-  const [page, setPage] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    teamApi
-      .activities(team.id, { page, size: PAGE_SIZE })
-      .then((res) => {
-        if (cancelled) return;
-        setItems((prev) => (page === 0 ? res.data.result.content : [...(prev ?? []), ...res.data.result.content]));
-        setTotalPages(res.data.result.totalPages);
-      })
-      .catch(() => !cancelled && toast.error(t('teams.activity.loadFailed')))
-      .finally(() => !cancelled && setLoading(false));
-    return () => {
-      cancelled = true;
-    };
-  }, [team.id, page]);
-
-  if (!items) return <Skeleton lines={4} />;
-  if (items.length === 0) return <p className="tm-muted">{t('teams.activity.empty')}</p>;
+/** Tab Việc của tôi trong nhóm: các bài được giao cho mình phối hoặc duyệt ở mọi buổi diễn của nhóm này. */
+function TeamTasksTab({ tasks, now }: { tasks: TeamTask[] | null; now: number }) {
+  const { pathname, search } = useLocation();
+  if (!tasks) return <Skeleton lines={3} />;
   return (
     <>
-      <ul className="tm-activity">
-        {items.map((a) => (
-          <li key={a.id}>
-            <time dateTime={a.createdAt} title={formatDateTime(a.createdAt)}>
-              {formatRelativeTime(a.createdAt)}
-            </time>
-            <span>{activityText(a)}</span>
-          </li>
-        ))}
-      </ul>
-      {page + 1 < totalPages && (
-        <div className="sc-modal__actions" style={{ justifyContent: 'center' }}>
-          <button
-            type="button"
-            className="sc-btn"
-            disabled={loading}
-            onClick={() => {
-              setLoading(true);
-              setPage((p) => p + 1);
-            }}
-          >
-            {t('teams.activity.more')}
-          </button>
-        </div>
-      )}
+      <div className="tm-section__head">
+        <p className="tm-muted">{t('tasks.teamHint')}</p>
+        <Link to="/my-tasks" className="sc-btn sc-btn--sm">
+          {t('tasks.allTeamsLink')}
+        </Link>
+      </div>
+      <TasksPanel tasks={tasks} now={now} scope="team" from={pathname + search} />
     </>
   );
 }

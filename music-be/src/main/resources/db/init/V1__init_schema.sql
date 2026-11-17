@@ -114,6 +114,9 @@ CREATE TABLE IF NOT EXISTS scores (
     updated_at        DATETIME(6)  NULL,
     view_count        BIGINT       NULL DEFAULT 0,
     allow_download    TINYINT(1)   NOT NULL DEFAULT 0 COMMENT 'Chủ cho phép người xem tải MusicXML, MIDI, âm thanh, PDF',
+    license           VARCHAR(24)  NULL COMMENT 'Giấy phép (R4): ALL_RIGHTS_RESERVED, CC0, CC_BY, CC_BY_SA, CC_BY_NC; NULL = bảo lưu mọi quyền',
+    allow_arrange     TINYINT(1)   NOT NULL DEFAULT 0 COMMENT 'Chủ cho phép người khác tạo bản phối từ bản công khai này (R4)',
+    forked_from_score_id VARCHAR(36) NULL COMMENT 'Bản phối: bản nhạc gốc nó được tạo từ (R4); bản gốc bị xóa hẳn thì về NULL',
     deleted_at        DATETIME(6)  NULL COMMENT 'Xóa mềm: khác NULL là đang ở thùng rác (30 ngày rồi xóa hẳn)',
     deleted_by        VARCHAR(36)  NULL,
     delete_reason     VARCHAR(500) NULL,
@@ -124,8 +127,10 @@ CREATE TABLE IF NOT EXISTS scores (
     KEY idx_scores_team (team_id),
     KEY idx_scores_original (original_score_id),
     KEY idx_scores_composer (composer_id),
+    KEY idx_scores_forked_from (forked_from_score_id),
     CONSTRAINT fk_scores_member   FOREIGN KEY (member_id)   REFERENCES members (id),
-    CONSTRAINT fk_scores_composer FOREIGN KEY (composer_id) REFERENCES composers (id) ON DELETE SET NULL
+    CONSTRAINT fk_scores_composer FOREIGN KEY (composer_id) REFERENCES composers (id) ON DELETE SET NULL,
+    CONSTRAINT fk_scores_forked_from FOREIGN KEY (forked_from_score_id) REFERENCES scores (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS score_files (
@@ -219,6 +224,8 @@ CREATE TABLE IF NOT EXISTS score_comments (
     resolved_by      VARCHAR(36)   NULL,
     resolved_at      DATETIME(6)   NULL,
     edited_at        DATETIME(6)   NULL COMMENT 'Lần sửa nội dung gần nhất (nhãn "đã sửa")',
+    hidden_at        DATETIME(6)   NULL COMMENT 'Admin ẩn góp ý vi phạm (R5): khác NULL thì biến khỏi mọi truy vấn',
+    hidden_by        VARCHAR(36)   NULL COMMENT 'Admin đã ẩn góp ý',
     created_at       DATETIME(6)   NULL,
     PRIMARY KEY (id),
     KEY idx_score_comments_score (score_id, parent_id, status),
@@ -226,7 +233,137 @@ CREATE TABLE IF NOT EXISTS score_comments (
     CONSTRAINT fk_score_comments_score    FOREIGN KEY (score_id)    REFERENCES scores (id) ON DELETE CASCADE,
     CONSTRAINT fk_score_comments_parent   FOREIGN KEY (parent_id)   REFERENCES score_comments (id) ON DELETE CASCADE,
     CONSTRAINT fk_score_comments_author   FOREIGN KEY (author_id)   REFERENCES members (id),
-    CONSTRAINT fk_score_comments_resolver FOREIGN KEY (resolved_by) REFERENCES members (id)
+    CONSTRAINT fk_score_comments_resolver FOREIGN KEY (resolved_by) REFERENCES members (id),
+    CONSTRAINT fk_score_comments_hider    FOREIGN KEY (hidden_by)   REFERENCES members (id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Diễn đàn (mục 5.5). Số trả lời, số bình chọn, lần hoạt động cuối, bài hay nhất... không lưu cột nào mà tính từ các bảng
+-- này khi trả về (riêng accepted_post_id là lựa chọn của người hỏi nên được lưu). Nội dung lưu dạng Markdown thô; web
+-- thoát HTML khi hiển thị. Admin ẩn bài vi phạm bằng hidden_at (R5), bài ẩn biến khỏi mọi truy vấn.
+CREATE TABLE IF NOT EXISTS forum_categories (
+    id          VARCHAR(36)  NOT NULL,
+    slug        VARCHAR(60)  NOT NULL,
+    name        VARCHAR(100) NOT NULL,
+    description VARCHAR(300) NULL,
+    sort_order  INT          NOT NULL DEFAULT 0,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_forum_categories_slug (slug)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS forum_threads (
+    id               VARCHAR(36)   NOT NULL,
+    category_id      VARCHAR(36)   NOT NULL,
+    author_id        VARCHAR(36)   NOT NULL,
+    score_id         VARCHAR(36)   NULL COMMENT 'Bản nhạc công khai được gắn vào chủ đề',
+    title            VARCHAR(150)  NOT NULL,
+    body             VARCHAR(10000) NOT NULL,
+    accepted_post_id VARCHAR(36)   NULL COMMENT 'Câu trả lời hay nhất do người đặt chủ đề chọn',
+    edited_at        DATETIME(6)   NULL,
+    hidden_at        DATETIME(6)   NULL,
+    hidden_by        VARCHAR(36)   NULL,
+    pinned_at        DATETIME(6)   NULL COMMENT 'Admin ghim chủ đề: nổi lên đầu danh sách',
+    pinned_by        VARCHAR(36)   NULL,
+    locked_at        DATETIME(6)   NULL COMMENT 'Admin khóa chủ đề: không ai trả lời thêm được',
+    locked_by        VARCHAR(36)   NULL,
+    created_at       DATETIME(6)   NULL,
+    PRIMARY KEY (id),
+    KEY idx_forum_threads_category (category_id, created_at),
+    KEY idx_forum_threads_author (author_id, created_at),
+    KEY idx_forum_threads_score (score_id),
+    CONSTRAINT fk_forum_threads_category FOREIGN KEY (category_id) REFERENCES forum_categories (id),
+    CONSTRAINT fk_forum_threads_author   FOREIGN KEY (author_id)   REFERENCES members (id),
+    CONSTRAINT fk_forum_threads_score    FOREIGN KEY (score_id)    REFERENCES scores (id) ON DELETE SET NULL,
+    CONSTRAINT fk_forum_threads_hider    FOREIGN KEY (hidden_by)   REFERENCES members (id) ON DELETE SET NULL,
+    CONSTRAINT fk_forum_threads_pinner   FOREIGN KEY (pinned_by)   REFERENCES members (id) ON DELETE SET NULL,
+    CONSTRAINT fk_forum_threads_locker   FOREIGN KEY (locked_by)   REFERENCES members (id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS forum_posts (
+    id         VARCHAR(36)    NOT NULL,
+    thread_id  VARCHAR(36)    NOT NULL,
+    author_id  VARCHAR(36)    NOT NULL,
+    reply_to_id VARCHAR(36)   NULL COMMENT 'Trả lời trực tiếp vào bài này (cùng chủ đề); NULL = trả lời chủ đề',
+    body       VARCHAR(10000) NOT NULL,
+    edited_at  DATETIME(6)    NULL,
+    hidden_at  DATETIME(6)    NULL,
+    hidden_by  VARCHAR(36)    NULL,
+    created_at DATETIME(6)    NULL,
+    PRIMARY KEY (id),
+    KEY idx_forum_posts_thread (thread_id, created_at),
+    KEY idx_forum_posts_reply_to (reply_to_id),
+    KEY idx_forum_posts_author (author_id),
+    CONSTRAINT fk_forum_posts_thread FOREIGN KEY (thread_id) REFERENCES forum_threads (id) ON DELETE CASCADE,
+    CONSTRAINT fk_forum_posts_author FOREIGN KEY (author_id) REFERENCES members (id),
+    CONSTRAINT fk_forum_posts_hider  FOREIGN KEY (hidden_by) REFERENCES members (id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+ALTER TABLE forum_posts
+    ADD CONSTRAINT fk_forum_posts_reply_to FOREIGN KEY (reply_to_id) REFERENCES forum_posts (id) ON DELETE SET NULL;
+
+ALTER TABLE forum_threads
+    ADD CONSTRAINT fk_forum_threads_accepted FOREIGN KEY (accepted_post_id) REFERENCES forum_posts (id) ON DELETE SET NULL;
+
+-- Bình chọn: một người một phiếu cho mỗi chủ đề hoặc bài trả lời (đúng một trong hai cột có giá trị).
+CREATE TABLE IF NOT EXISTS forum_votes (
+    id         VARCHAR(36) NOT NULL,
+    member_id  VARCHAR(36) NOT NULL,
+    thread_id  VARCHAR(36) NULL,
+    post_id    VARCHAR(36) NULL,
+    created_at DATETIME(6) NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_forum_votes_thread (member_id, thread_id),
+    UNIQUE KEY uk_forum_votes_post (member_id, post_id),
+    KEY idx_forum_votes_thread (thread_id),
+    KEY idx_forum_votes_post (post_id),
+    CONSTRAINT fk_forum_votes_member FOREIGN KEY (member_id) REFERENCES members (id),
+    CONSTRAINT fk_forum_votes_thread FOREIGN KEY (thread_id) REFERENCES forum_threads (id) ON DELETE CASCADE,
+    CONSTRAINT fk_forum_votes_post   FOREIGN KEY (post_id)   REFERENCES forum_posts (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Theo dõi chủ đề: người theo dõi nhận thông báo khi có trả lời mới. Người đặt chủ đề và người trả lời tự theo dõi.
+CREATE TABLE IF NOT EXISTS forum_subscriptions (
+    id         VARCHAR(36) NOT NULL,
+    thread_id  VARCHAR(36) NOT NULL,
+    member_id  VARCHAR(36) NOT NULL,
+    created_at DATETIME(6) NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_forum_subscriptions (thread_id, member_id),
+    KEY idx_forum_subscriptions_member (member_id),
+    CONSTRAINT fk_forum_subscriptions_thread FOREIGN KEY (thread_id) REFERENCES forum_threads (id) ON DELETE CASCADE,
+    CONSTRAINT fk_forum_subscriptions_member FOREIGN KEY (member_id) REFERENCES members (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Báo cáo vi phạm (R5). Đối tượng bị báo cáo: bản nhạc (score_id) hoặc góp ý (comment_id). Tên bản nhạc, trích góp ý và chủ
+-- nội dung không lưu lại ở đây mà tra từ scores / score_comments khi trả về.
+CREATE TABLE IF NOT EXISTS content_reports (
+    id            VARCHAR(36)   NOT NULL,
+    target_type   VARCHAR(20)   NOT NULL COMMENT 'SCORE / COMMENT / FORUM_THREAD / FORUM_POST',
+    score_id      VARCHAR(36)   NULL,
+    comment_id    VARCHAR(36)   NULL,
+    forum_thread_id VARCHAR(36) NULL,
+    forum_post_id VARCHAR(36)   NULL,
+    reporter_id   VARCHAR(36)   NOT NULL,
+    reason        VARCHAR(20)   NOT NULL COMMENT 'COPYRIGHT / SPAM / INAPPROPRIATE / OTHER',
+    details       VARCHAR(1000) NULL,
+    status        VARCHAR(12)   NOT NULL COMMENT 'PENDING / RESOLVED / DISMISSED',
+    action        VARCHAR(16)   NULL COMMENT 'Cách xử lý: DISMISS / UNPUBLISH / HIDE / SOFT_DELETE / LOCK_ACCOUNT',
+    resolution_note VARCHAR(500) NULL,
+    resolved_by   VARCHAR(36)   NULL,
+    resolved_at   DATETIME(6)   NULL,
+    created_at    DATETIME(6)   NULL,
+    PRIMARY KEY (id),
+    KEY idx_content_reports_status (status, created_at),
+    KEY idx_content_reports_score (score_id, status),
+    KEY idx_content_reports_comment (comment_id, status),
+    KEY idx_content_reports_reporter (reporter_id, created_at),
+    KEY idx_content_reports_forum_thread (forum_thread_id, status),
+    KEY idx_content_reports_forum_post (forum_post_id, status),
+    CONSTRAINT fk_content_reports_score    FOREIGN KEY (score_id)    REFERENCES scores (id) ON DELETE SET NULL,
+    CONSTRAINT fk_content_reports_comment  FOREIGN KEY (comment_id)  REFERENCES score_comments (id) ON DELETE SET NULL,
+    CONSTRAINT fk_content_reports_forum_thread FOREIGN KEY (forum_thread_id) REFERENCES forum_threads (id) ON DELETE SET NULL,
+    CONSTRAINT fk_content_reports_forum_post   FOREIGN KEY (forum_post_id)   REFERENCES forum_posts (id) ON DELETE SET NULL,
+    CONSTRAINT fk_content_reports_reporter FOREIGN KEY (reporter_id) REFERENCES members (id),
+    CONSTRAINT fk_content_reports_resolver FOREIGN KEY (resolved_by) REFERENCES members (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- @nhắc tên trong góp ý (mục 4.2): người được nhắc nhận thông báo COMMENT_MENTION; dùng cho bộ lọc "Nhắc tới tôi".
@@ -292,6 +429,17 @@ CREATE TABLE IF NOT EXISTS notifications (
     PRIMARY KEY (id),
     KEY idx_notifications_recipient (recipient_id, is_read, created_at),
     CONSTRAINT fk_notifications_recipient FOREIGN KEY (recipient_id) REFERENCES members (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS notification_preferences (
+    id        VARCHAR(36) NOT NULL,
+    member_id VARCHAR(36) NOT NULL,
+    category  VARCHAR(16) NOT NULL COMMENT 'Nhóm thông báo: SCORES, COMMENTS, TEAMS, FORUM, BILLING (SYSTEM luôn bật, không lưu)',
+    in_app    TINYINT(1)  NOT NULL COMMENT 'Hiện trong chuông thông báo của ứng dụng',
+    email     TINYINT(1)  NOT NULL COMMENT 'Đưa vào email tóm tắt hằng ngày. Cả hai cột tắt thì không tạo thông báo. Chưa có hàng = mặc định (chuông bật, email tắt)',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_notification_pref (member_id, category),
+    CONSTRAINT fk_notification_pref_member FOREIGN KEY (member_id) REFERENCES members (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS practice_sessions (

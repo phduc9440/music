@@ -1,4 +1,5 @@
 import apiClient from '../client';
+import { isGuest } from '../../utils/session';
 import { saveBlob, unwrapBlobError } from '../file/fileApi';
 import type {
   ApiResponse,
@@ -39,12 +40,18 @@ export const scoreApi = {
     /** Khóa nhạc, ví dụ "G", "Am". */
     key?: string;
     sort?: 'NEWEST' | 'VIEWS' | 'RATING';
-  }) => apiClient.get<ApiResponse<PageResult<ScoreSummary>>>('/scores/public', { params }),
+  }) =>
+    // Khách chưa đăng nhập xem Khám phá qua API công khai (cùng bộ lọc, cùng kết quả)
+    apiClient.get<ApiResponse<PageResult<ScoreSummary>>>(isGuest() ? '/public/scores' : '/scores/public', { params }),
+  /** Thẻ của một bản công khai cho trang /s/:id của khách (không cần đăng nhập). */
+  publicCard: (id: string) => apiClient.get<ApiResponse<ScoreSummary>>(`/public/scores/${id}`),
   // ADMIN: bản nhạc công khai chưa nằm trong kho, để chọn đưa vào
   officialCandidates: (params?: { page?: number; size?: number; keyword?: string }) =>
     apiClient.get<ApiResponse<PageResult<ScoreSummary>>>('/scores/official/candidates', { params }),
   unmarkOfficial: (id: string) => apiClient.delete<ApiResponse<ScoreDetail>>(`/scores/${id}/official`),
   detail: (id: string) => apiClient.get<ApiResponse<ScoreDetail>>(`/scores/${id}`),
+  /** Tạo bản phối riêng tư từ bản công khai chủ cho phép (R4). */
+  fork: (id: string) => apiClient.post<ApiResponse<ScoreDetail>>(`/scores/${id}/fork`),
   update: (id: string, data: ScoreUpdateRequest) => apiClient.patch<ApiResponse<ScoreDetail>>(`/scores/${id}`, data),
   /** Tải ảnh bìa (JPG/PNG, tối đa 3MB); lưu trên Cloudinary như ảnh đại diện. */
   uploadCover: (id: string, file: File) => {

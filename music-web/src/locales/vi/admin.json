@@ -22,7 +22,10 @@
       "revenue": "Doanh thu",
       "plans": "Gói dịch vụ",
       "memberPlans": "Gói thành viên",
-      "roles": "Vai trò"
+      "roles": "Vai trò",
+      "reports": "Báo cáo vi phạm",
+      "audit": "Nhật ký",
+      "forum": "Diễn đàn"
     },
     "other": "Khác",
     "userSite": "Giao diện người dùng"
@@ -31,7 +34,8 @@
     "profileFailed": "Không tải được hồ sơ quản trị viên",
     "toggleSidebar": "Đóng/mở thanh bên",
     "menuLabel": "Menu quản trị",
-    "pendingBadge": "{count} bản đang chờ"
+    "pendingBadge": "{count} bản đang chờ",
+    "reportsBadge": "{count} báo cáo đang chờ"
   },
   "common": {
     "owner": "Chủ sở hữu"
@@ -824,7 +828,202 @@
       "SUBSCRIPTIONS_MANAGE": "Cấp, hủy, cấm, bỏ cấm gói của thành viên",
       "PLANS_MANAGE": "Tạo, sửa, xóa gói dịch vụ",
       "AI_TASKS_MANAGE": "Xem, hủy, chạy lại tác vụ AI của mọi người",
-      "SYSTEM_MONITOR": "Giám sát hệ thống, nhật ký lỗi"
+      "SYSTEM_MONITOR": "Giám sát hệ thống, nhật ký lỗi",
+      "REPORTS_MODERATE": "Xử lý báo cáo vi phạm: bỏ qua, ẩn góp ý, gỡ / xóa bản nhạc, khóa tài khoản",
+      "FORUM_MANAGE": "Quản lý diễn đàn: chuyên mục, ghim / khóa chủ đề, ẩn và khôi phục bài",
+      "AUDIT_VIEW": "Xem nhật ký quản trị"
+    }
+  },
+  "reports": {
+    "description": "Báo cáo của người dùng về bản nhạc, góp ý và bài diễn đàn. Xử lý một báo cáo thì mọi báo cáo đang chờ trên cùng nội dung đóng theo.",
+    "loadFailed": "Không tải được danh sách báo cáo",
+    "tabs": {
+      "PENDING": "Đang chờ",
+      "RESOLVED": "Đã xử lý",
+      "DISMISSED": "Đã bỏ qua",
+      "ALL": "Tất cả"
+    },
+    "allTypes": "Mọi loại nội dung",
+    "targets": {
+      "SCORE": "Bản nhạc",
+      "COMMENT": "Góp ý",
+      "FORUM_THREAD": "Chủ đề diễn đàn",
+      "FORUM_POST": "Trả lời diễn đàn"
+    },
+    "reasons": {
+      "COPYRIGHT": "Vi phạm bản quyền",
+      "SPAM": "Spam hoặc quảng cáo",
+      "INAPPROPRIATE": "Nội dung không phù hợp",
+      "OTHER": "Lý do khác"
+    },
+    "columns": {
+      "target": "Nội dung bị báo cáo",
+      "reason": "Lý do",
+      "reporter": "Người báo cáo",
+      "owner": "Chủ nội dung",
+      "time": "Thời gian"
+    },
+    "reporterCount": "{count} người báo cáo",
+    "unavailable": "Không còn nữa",
+    "openScore": "Mở bản nhạc",
+    "handledBy": "Xử lý bởi {name}",
+    "actions": {
+      "DISMISS": "Bỏ qua",
+      "UNPUBLISH": "Gỡ công khai",
+      "HIDE": "Ẩn góp ý hoặc bài diễn đàn",
+      "SOFT_DELETE": "Xóa mềm (vào thùng rác)",
+      "LOCK_ACCOUNT": "Khóa tài khoản chủ nội dung"
+    },
+    "actionHints": {
+      "DISMISS": "Báo cáo không đúng, không làm gì với nội dung.",
+      "UNPUBLISH": "Đưa bản nhạc về riêng tư và gỡ khỏi kho mẫu; chủ sở hữu được báo kèm lý do.",
+      "HIDE": "Nội dung biến khỏi mọi nơi hiển thị.",
+      "SOFT_DELETE": "Chuyển bản nhạc vào thùng rác của chủ sở hữu.",
+      "LOCK_ACCOUNT": "Người này không đăng nhập được nữa cho tới khi mở khóa."
+    },
+    "resolveTitle": "Xử lý báo cáo",
+    "choose": "Cách xử lý",
+    "note": "Ghi chú (gửi kèm cho chủ sở hữu nếu gỡ hoặc xóa)",
+    "confirm": "Xác nhận xử lý",
+    "resolved": "Đã xử lý báo cáo",
+    "resolveFailed": "Không xử lý được báo cáo",
+    "reportOf": "Báo cáo về \"{label}\"",
+    "emptyTitle": "Không có báo cáo nào",
+    "emptyHint": "Báo cáo mới của người dùng sẽ hiện ở đây.",
+    "unit": "báo cáo",
+    "openThread": "Mở chủ đề trong diễn đàn",
+    "openContent": "Mở nội dung",
+    "moreActions": "Xử lý…",
+    "quick": {
+      "DISMISS": {
+        "title": "Bỏ qua báo cáo này?",
+        "text": "“{label}” sẽ được giữ nguyên và mọi báo cáo chờ trên nội dung này được đóng."
+      },
+      "HIDE": {
+        "title": "Ẩn nội dung này?",
+        "text": "“{label}” sẽ biến khỏi mọi nơi hiển thị và mọi báo cáo chờ trên nó được đóng."
+      },
+      "UNPUBLISH": {
+        "title": "Gỡ bản nhạc khỏi công khai?",
+        "text": "“{label}” về chế độ riêng tư và mọi báo cáo chờ trên nó được đóng."
+      }
+    }
+  },
+  "audit": {
+    "description": "Việc quản trị đã làm, suy ra từ các bảng gốc: báo cáo, bản nhạc bị gỡ, góp ý bị ẩn, nhóm bị xóa vì vi phạm, chế tài gói. Không lưu riêng nên luôn khớp dữ liệu thật; chỉ đọc.",
+    "loadFailed": "Không tải được nhật ký",
+    "types": {
+      "REPORT_CREATED": "Có báo cáo mới",
+      "REPORT_RESOLVED": "Xử lý báo cáo",
+      "SCORE_DELETED_BY_ADMIN": "Admin xóa bản nhạc",
+      "COMMENT_HIDDEN": "Ẩn góp ý",
+      "FORUM_THREAD_HIDDEN": "Ẩn chủ đề diễn đàn",
+      "FORUM_POST_HIDDEN": "Ẩn bài diễn đàn",
+      "FORUM_THREAD_LOCKED": "Khóa chủ đề diễn đàn",
+      "TEAM_DELETED_BY_ADMIN": "Admin xóa nhóm",
+      "PLAN_SANCTION": "Chế tài gói dịch vụ"
+    },
+    "targets": {
+      "SCORE": "Bản nhạc",
+      "COMMENT": "Góp ý",
+      "FORUM_THREAD": "Chủ đề diễn đàn",
+      "FORUM_POST": "Trả lời diễn đàn",
+      "TEAM": "Nhóm",
+      "MEMBER": "Thành viên"
+    },
+    "filters": {
+      "actor": "Email người thực hiện",
+      "type": "Loại",
+      "allTypes": "Mọi loại",
+      "targetType": "Đối tượng",
+      "allTargets": "Mọi đối tượng",
+      "from": "Từ ngày",
+      "to": "Đến ngày",
+      "clear": "Xóa lọc"
+    },
+    "columns": {
+      "time": "Thời gian",
+      "actor": "Người thực hiện",
+      "type": "Việc đã làm",
+      "target": "Đối tượng",
+      "detail": "Chi tiết"
+    },
+    "emptyTitle": "Chưa có dòng nào",
+    "emptyHint": "Thử bỏ bớt bộ lọc.",
+    "unit": "dòng"
+  },
+  "forum": {
+    "description": "Quản lý chuyên mục, ghim hoặc khóa chủ đề, ẩn và khôi phục chủ đề, bài trả lời. Bài bị báo cáo xử lý ở mục Báo cáo vi phạm.",
+    "tabs": {
+      "threads": "Chủ đề",
+      "categories": "Chuyên mục"
+    },
+    "status": {
+      "ALL": "Tất cả",
+      "REPORTED": "Có báo cáo",
+      "VISIBLE": "Đang hiện",
+      "HIDDEN": "Đã ẩn",
+      "PINNED": "Đã ghim",
+      "LOCKED": "Đã khóa"
+    },
+    "allCategories": "Mọi chuyên mục",
+    "search": "Tìm theo tiêu đề hoặc email tác giả",
+    "columns": {
+      "thread": "Chủ đề",
+      "author": "Tác giả",
+      "replies": "Trả lời",
+      "created": "Đăng lúc"
+    },
+    "badges": {
+      "pinned": "Ghim",
+      "locked": "Khóa",
+      "hidden": "Đã ẩn",
+      "answered": "Có đáp án",
+      "reports": "{count} báo cáo",
+      "bestAnswer": "Hay nhất"
+    },
+    "actions": {
+      "open": "Xem",
+      "hide": "Ẩn",
+      "restore": "Khôi phục",
+      "pin": "Ghim lên đầu",
+      "unpin": "Bỏ ghim",
+      "lock": "Khóa trả lời",
+      "unlock": "Mở khóa"
+    },
+    "hiddenReplies": "{count} đã ẩn",
+    "replies": "{count} trả lời",
+    "noReplies": "Chưa có trả lời nào.",
+    "hiddenBy": "Đã ẩn bởi {name}",
+    "emptyTitle": "Không có chủ đề nào",
+    "emptyHint": "Thử đổi bộ lọc hoặc từ khóa.",
+    "unit": "chủ đề",
+    "loading": "Đang tải...",
+    "hidden": "Đã ẩn chủ đề",
+    "restored": "Đã khôi phục chủ đề",
+    "loadFailed": "Không tải được dữ liệu diễn đàn",
+    "actionFailed": "Không thực hiện được thao tác",
+    "categories": {
+      "hint": "Chuyên mục hiện cho người dùng theo thứ tự này. Chỉ xóa được chuyên mục không còn chủ đề.",
+      "add": "Thêm chuyên mục",
+      "addTitle": "Thêm chuyên mục",
+      "editTitle": "Sửa chuyên mục",
+      "order": "Thứ tự",
+      "up": "Đưa lên",
+      "down": "Đưa xuống",
+      "name": "Tên chuyên mục",
+      "description": "Mô tả (không bắt buộc)",
+      "noDescription": "Chưa có mô tả",
+      "threads": "Chủ đề",
+      "hiddenCount": "{count} ẩn",
+      "notEmpty": "Còn chủ đề nên chưa xóa được",
+      "deleteTitle": "Xóa chuyên mục “{name}”?",
+      "deleteText": "Chuyên mục sẽ biến khỏi diễn đàn, không khôi phục được.",
+      "deleted": "Đã xóa chuyên mục",
+      "created": "Đã thêm chuyên mục",
+      "saved": "Đã lưu chuyên mục",
+      "emptyTitle": "Chưa có chuyên mục nào",
+      "emptyHint": "Thêm chuyên mục đầu tiên để người dùng bắt đầu đặt chủ đề."
     }
   }
 }

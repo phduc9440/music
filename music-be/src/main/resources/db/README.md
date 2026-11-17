@@ -29,6 +29,6 @@ Nếu bạn chạy backend (`./mvnw spring-boot:run` trong thư mục `music-be`
 
 ## Quy ước
 
-- `init/V1__init_schema.sql` là file schema **duy nhất**. Cần đổi schema thì sửa thẳng file này, rồi xóa DB local và chạy lại (không thêm file ALTER riêng).
+- `init/V1__init_schema.sql` là schema khởi tạo cho DB mới. Thay đổi schema sau đó cần migration riêng trong `init/`; đặt version theo `V{yyyyMMddHHmm}__<module>_<mô_tả>.sql` để hạn chế trùng version giữa các nhánh. Không sửa V1 nếu DB đã áp dụng migration này.
 - `seed/V2..V8` là dữ liệu mẫu theo thứ tự phụ thuộc: vai trò → thành viên → thể loại → nhạc sĩ → bản nhạc → đánh giá/chia sẻ/playlist/kho mẫu → luyện tập/tác vụ AI/thông báo. Tất cả tài khoản có mật khẩu `12345678`.
 - Sau khi xóa hoặc đổi tên file migration, chạy `./mvnw clean` (hoặc xóa `target/classes/db`): Maven không tự dọn file cũ, Flyway sẽ báo "Found more than one migration with version N".

@@ -9,7 +9,17 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.HtmlUtils;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
+import com.ptit.music_be.dto.enums.auth.AppLocale;
+import java.util.Map;
+
+import com.ptit.music_be.dto.enums.notification.NotificationCategory;
+import com.ptit.music_be.dto.enums.team.TeamRole;
 import com.ptit.music_be.dto.request.auth.SendEmailRequest;
+import com.ptit.music_be.repository.auth.MemberRepository;
+import com.ptit.music_be.service.auth.impl.EmailMessages.Key;
 import com.ptit.music_be.service.auth.EmailService;
 
 import lombok.AccessLevel;
@@ -24,18 +34,33 @@ import lombok.extern.slf4j.Slf4j;
 public class EmailServiceImpl implements EmailService {
 
     JavaMailSender javaMailSender;
+    MemberRepository memberRepository;
 
     /** Khung HTML chung cho mọi email: tiêu đề, nội dung, chữ ký. Escape các giá trị người dùng nhập trước khi ghép. */
-    private static String layout(String heading, String body) {
+    private static String layout(AppLocale locale, String heading, String body) {
         return "<div style=\"font-family:Arial,Helvetica,sans-serif;color:#0f172a;line-height:1.6;max-width:560px\">"
                 + "<h2 style=\"margin:0 0 12px\">" + heading + "</h2>"
                 + body
-                + "<p style=\"margin-top:24px;color:#475569\">Trân trọng,<br><strong>Đội ngũ Music App</strong></p>"
+                + "<p style=\"margin-top:24px;color:#475569\">" + EmailMessages.text(locale, Key.SIGNOFF) + "</p>"
                 + "</div>";
     }
 
     private static String escape(String value) {
         return HtmlUtils.htmlEscape(value == null ? "" : value);
+    }
+
+    /**
+     * Ngôn ngữ của người nhận: lấy từ {@code members.locale} theo email; chưa chọn hoặc chưa có tài khoản (ví dụ lời mời
+     * gửi tới người chưa đăng ký) thì tiếng Việt.
+     */
+    private AppLocale localeOf(String email) {
+        if (email == null) {
+            return AppLocale.VI;
+        }
+        return memberRepository
+                .findByEmail(email.trim().toLowerCase())
+                .map(m -> m.getLocale() == null ? AppLocale.VI : m.getLocale())
+                .orElse(AppLocale.VI);
     }
 
     private void send(String to, String subject, String html, String kind) {
@@ -55,75 +80,105 @@ public class EmailServiceImpl implements EmailService {
     @Override
     @Async
     public void sendWelcomeEmail(SendEmailRequest request) {
+        // Chạy bất đồng bộ, có thể trước khi tài khoản mới commit: ưu tiên ngôn ngữ do nơi gọi truyền sẵn
+        AppLocale locale = request.getLocale() != null ? request.getLocale() : localeOf(request.getTo());
         String name = escape(request.getFullName());
         send(
                 request.getTo(),
-                "Chào mừng bạn đến với Music App",
+                EmailMessages.text(locale, Key.WELCOME_SUBJECT),
                 layout(
-                        "Xin chào " + name + ",",
-                        "<p>Cảm ơn bạn đã đăng ký tài khoản Music App.</p>"
-                                + "<p>Chúc bạn có những giờ luyện tập thật vui!</p>"),
+                        locale,
+                        EmailMessages.text(locale, Key.WELCOME_HEADING, name),
+                        EmailMessages.text(locale, Key.WELCOME_BODY)),
                 "Welcome");
     }
 
     @Override
     @Async
     public void sendForgotPasswordEmail(String to, String otp) {
+        AppLocale locale = localeOf(to);
         send(
                 to,
-                "Mã đặt lại mật khẩu Music App",
+                EmailMessages.text(locale, Key.FORGOT_SUBJECT),
                 layout(
-                        "Đặt lại mật khẩu",
-                        "<p>Bạn vừa yêu cầu đặt lại mật khẩu cho tài khoản Music App.</p>"
-                                + "<p>Mã xác nhận (OTP) của bạn:</p>"
+                        locale,
+                        EmailMessages.text(locale, Key.FORGOT_HEADING),
+                        EmailMessages.text(locale, Key.FORGOT_INTRO)
+                                + EmailMessages.text(locale, Key.FORGOT_CODE_LABEL)
                                 + "<p style=\"font-size:28px;font-weight:700;letter-spacing:6px;background:#f1f5f9;"
                                 + "display:inline-block;padding:10px 18px;border-radius:8px;margin:4px 0\">"
                                 + escape(otp) + "</p>"
-                                + "<p>Mã có hiệu lực trong <strong>5 phút</strong> và chỉ dùng được một lần. "
-                                + "Không chia sẻ mã này với bất kỳ ai, kể cả người tự xưng là nhân viên Music App.</p>"
-                                + "<p style=\"color:#475569\">Nếu bạn không yêu cầu, hãy bỏ qua email này. Mật khẩu "
-                                + "của bạn vẫn giữ nguyên.</p>"),
+                                + EmailMessages.text(locale, Key.FORGOT_VALIDITY)
+                                + EmailMessages.text(locale, Key.FORGOT_IGNORE)),
                 "Forgot password");
     }
 
     @Override
     @Async
     public void sendPasswordChangedEmail(String to, String fullName, boolean viaReset) {
+        AppLocale locale = localeOf(to);
         String name = escape(fullName == null || fullName.isBlank() ? to : fullName);
-        String time =
-                java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy"));
+        String time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy"));
+        String how = EmailMessages.text(locale, viaReset ? Key.CHANGED_VIA_RESET : Key.CHANGED_VIA_SETTINGS);
         send(
                 to,
-                "Mật khẩu Music App của bạn vừa được thay đổi",
+                EmailMessages.text(locale, Key.CHANGED_SUBJECT),
                 layout(
-                        "Mật khẩu đã được thay đổi",
-                        "<p>Xin chào " + name + ",</p>"
-                                + "<p>Mật khẩu tài khoản Music App của bạn vừa được "
-                                + (viaReset ? "đặt lại bằng mã OTP" : "đổi trong phần cài đặt tài khoản")
-                                + " lúc <strong>" + time
-                                + "</strong>. Các thiết bị đang đăng nhập khác đã bị đăng xuất.</p>"
-                                + "<p style=\"color:#b91c1c\"><strong>Nếu không phải bạn thực hiện</strong>, hãy dùng "
-                                + "chức năng “Quên mật khẩu” để đặt lại ngay và liên hệ quản trị viên.</p>"),
+                        locale,
+                        EmailMessages.text(locale, Key.CHANGED_HEADING),
+                        EmailMessages.text(locale, Key.CHANGED_HELLO, name)
+                                + EmailMessages.text(locale, Key.CHANGED_BODY, how, time)
+                                + EmailMessages.text(locale, Key.CHANGED_WARNING)),
                 "Password changed");
     }
 
     @Override
     @Async
-    public void sendTeamInvitationEmail(String to, String teamName, String inviterName, String roleLabel, String link) {
+    public void sendTeamInvitationEmail(String to, String teamName, String inviterName, TeamRole role, String link) {
+        AppLocale locale = localeOf(to);
         String safeLink = escape(link);
         send(
                 to,
-                "Lời mời tham gia nhóm " + teamName + " trên Music App",
+                EmailMessages.text(locale, Key.INVITE_SUBJECT, teamName),
                 layout(
-                        "Bạn được mời vào nhóm " + escape(teamName),
-                        "<p><strong>" + escape(inviterName) + "</strong> mời bạn tham gia nhóm <strong>"
-                                + escape(teamName) + "</strong> với vai trò <strong>" + escape(roleLabel)
-                                + "</strong>.</p>"
+                        locale,
+                        EmailMessages.text(locale, Key.INVITE_HEADING, escape(teamName)),
+                        EmailMessages.text(
+                                        locale,
+                                        Key.INVITE_BODY,
+                                        escape(inviterName),
+                                        escape(teamName),
+                                        escape(EmailMessages.role(locale, role)))
                                 + "<p><a href=\"" + safeLink + "\" style=\"display:inline-block;background:#8a5a2b;"
                                 + "color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none\">"
-                                + "Xem lời mời</a></p>"
-                                + "<p style=\"color:#475569\">Lời mời có hạn 7 ngày và chỉ dùng được một lần. Nếu chưa có"
-                                + " tài khoản, hãy đăng ký bằng chính email này rồi mở lại link.</p>"),
+                                + EmailMessages.text(locale, Key.INVITE_BUTTON) + "</a></p>"
+                                + EmailMessages.text(locale, Key.INVITE_FOOTER)),
                 "Team invitation");
+    }
+
+    @Override
+    @Async
+    public void sendNotificationDigestEmail(
+            String to, AppLocale locale, Map<NotificationCategory, Long> counts, String link) {
+        AppLocale lang = locale == null ? AppLocale.VI : locale;
+        long total = counts.values().stream().mapToLong(Long::longValue).sum();
+        StringBuilder list = new StringBuilder("<ul style=\"padding-left:20px\">");
+        counts.forEach((category, n) ->
+                list.append("<li>").append(escape(EmailMessages.category(lang, category))).append(": <strong>")
+                        .append(n).append("</strong></li>"));
+        list.append("</ul>");
+        send(
+                to,
+                EmailMessages.text(lang, Key.DIGEST_SUBJECT, total),
+                layout(
+                        lang,
+                        EmailMessages.text(lang, Key.DIGEST_HEADING),
+                        EmailMessages.text(lang, Key.DIGEST_INTRO, total)
+                                + list
+                                + "<p><a href=\"" + escape(link) + "\" style=\"display:inline-block;background:#8a5a2b;"
+                                + "color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none\">"
+                                + EmailMessages.text(lang, Key.DIGEST_BUTTON) + "</a></p>"
+                                + EmailMessages.text(lang, Key.DIGEST_FOOTER)),
+                "Notification digest");
     }
 }

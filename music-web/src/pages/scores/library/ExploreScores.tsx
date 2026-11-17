@@ -11,6 +11,7 @@ import { composerApi, scoreApi, tagApi } from '../../../services';
 import type { Composer, Difficulty, PageResult, ScoreSummary, Tag } from '../../../types';
 import { labelMap, t } from '../../../i18n/core';
 import { DIFFICULTY_LABELS, getScorePath } from '../../../utils/score';
+import { isGuest } from '../../../utils/session';
 import '../../../components/scores/scores.css';
 import './explore.css';
 
@@ -88,6 +89,8 @@ export default function ExploreScores() {
   const [filtersOpen, setFiltersOpen] = useState(false); // cột lọc dạng ngăn kéo trên màn hình nhỏ
   const [composerQuery, setComposerQuery] = useState('');
   const [saving, setSaving] = useState<ScoreSummary | null>(null);
+  // Khách chưa đăng nhập xem được Khám phá nhưng không lưu vào playlist
+  const guest = isGuest();
 
   useEffect(() => {
     // Thiếu danh sách nào thì chỉ mất bộ lọc đó
@@ -346,13 +349,18 @@ export default function ExploreScores() {
                     score={s}
                     explore
                     onOpen={(item) =>
-                      navigate(getScorePath(item.id, item.processingStatus), { state: { from: pathname + search } })
+                      // Khách vào trang công khai /s/:id; người đã đăng nhập vào trang đầy đủ
+                      guest
+                        ? navigate(`/s/${item.id}`)
+                        : navigate(getScorePath(item.id, item.processingStatus), { state: { from: pathname + search } })
                     }
                     actions={
-                      <button type="button" className="sc-btn sc-btn--sm" onClick={() => setSaving(s)}>
-                        <Icon name="plus" size={14} />
-                        {t('scores.playlistPicker.title')}
-                      </button>
+                      guest ? undefined : (
+                        <button type="button" className="sc-btn sc-btn--sm" onClick={() => setSaving(s)}>
+                          <Icon name="plus" size={14} />
+                          {t('scores.playlistPicker.title')}
+                        </button>
+                      )
                     }
                   />
                 ))}

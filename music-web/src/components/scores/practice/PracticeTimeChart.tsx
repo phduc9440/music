@@ -118,7 +118,7 @@ export default function PracticeTimeChart() {
               ]}
               labelFormatter={(_label, items) => items?.[0]?.payload?.range ?? ''}
             />
-            <Bar dataKey="minutes" fill="#2563eb" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="minutes" fill="var(--ui-hue-rose)" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>

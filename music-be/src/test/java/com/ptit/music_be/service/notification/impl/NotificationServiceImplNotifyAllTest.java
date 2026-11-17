@@ -22,7 +22,15 @@ class NotificationServiceImplNotifyAllTest {
             repo,
             mock(MemberRepository.class),
             new com.fasterxml.jackson.databind.ObjectMapper(),
-            mock(com.ptit.music_be.service.notification.NotificationPusher.class));
+            mock(com.ptit.music_be.service.notification.NotificationPusher.class),
+            defaultPrefs());
+
+    private static com.ptit.music_be.service.notification.NotificationPreferenceService defaultPrefs() {
+        var prefs = mock(com.ptit.music_be.service.notification.NotificationPreferenceService.class);
+        org.mockito.Mockito.when(prefs.deliveryFor(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+                .thenReturn(com.ptit.music_be.service.notification.NotificationPreferenceService.Delivery.DEFAULT);
+        return prefs;
+    }
 
     @Test
     @SuppressWarnings("unchecked")

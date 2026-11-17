@@ -6,7 +6,7 @@
 }
 
 .ps-card {
-  background: #fff;
+  background: var(--ui-surface);
   border: 1px solid var(--surface-border);
   border-radius: 12px;
   padding: 16px;
@@ -24,7 +24,7 @@
 }
 
 .ps-heatmap-wrap {
-  background: #fff;
+  background: var(--ui-surface);
   border: 1px solid var(--surface-border);
   border-radius: 12px;
   padding: 16px;
@@ -59,7 +59,7 @@
   width: 14px;
   height: 14px;
   border-radius: 3px;
-  background: #ebedf0;
+  background: var(--ui-surface-muted);
 }
 
 .ps-cell--empty {
@@ -67,16 +67,16 @@
 }
 
 .ps-cell--l1 {
-  background: #bfdbfe;
+  background: color-mix(in srgb, var(--ui-brass) 45%, var(--ui-surface-muted));
 }
 .ps-cell--l2 {
-  background: #60a5fa;
+  background: var(--ui-hue-amber);
 }
 .ps-cell--l3 {
-  background: #2563eb;
+  background: var(--ui-hue-rose);
 }
 .ps-cell--l4 {
-  background: #1e3a8a;
+  background: var(--ui-velvet);
 }
 
 .ps-legend {
@@ -90,7 +90,7 @@
 
 .ps-chart {
   margin-top: 20px;
-  background: #fff;
+  background: var(--ui-surface);
   border: 1px solid var(--surface-border);
   border-radius: 12px;
   padding: 16px;

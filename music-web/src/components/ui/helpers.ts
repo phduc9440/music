@@ -1,6 +1,11 @@
 /** Hàm và hằng số dùng chung cho các trang admin (để riêng khỏi file component). */
 
-import { formatDate as formatDateI18n, formatDateTime as formatDateTimeI18n, t, translateError } from '../../i18n/core';
+import {
+  formatDate as formatDateI18n,
+  formatDateTimeShort as formatDateTimeI18n,
+  t,
+  translateError,
+} from '../../i18n/core';
 
 export type Tone = 'neutral' | 'primary' | 'success' | 'warning' | 'danger' | 'violet';
 

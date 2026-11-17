@@ -21,7 +21,8 @@
       "trash": "Thùng rác",
       "myPlan": "Gói của tôi",
       "pricing": "Bảng giá",
-      "teams": "Nhóm và buổi diễn"
+      "teams": "Nhóm và buổi diễn",
+      "forum": "Diễn đàn"
     },
     "back": "Quay lại"
   },
@@ -84,6 +85,7 @@
     "title": "Thông báo",
     "labelUnread": "Thông báo, {count} chưa đọc",
     "markAllRead": "Đánh dấu đã đọc",
+    "settings": "Cài đặt",
     "empty": "Chưa có thông báo nào.",
     "adminTag": "Quản trị viên",
     "fromAdmin": "Thông báo từ quản trị viên"
@@ -98,7 +100,6 @@
     "signIn": "Đăng nhập / Đăng ký",
     "account": "Tài khoản",
     "home": "Trang chủ",
-    "tipApp": "Mẹo: nhấn Ctrl + K (Cmd + K trên Mac) để tìm nhanh bản nhạc và lệnh.",
     "tipSite": "Chụp bản nhạc giấy, sửa, nghe và luyện tập, cùng nhóm, bằng tiếng Việt.",
     "copyright": "© {year} Music App · Đồ án tốt nghiệp PTIT",
     "privacy": "Bản nhạc của bạn mặc định là riêng tư."
@@ -122,5 +123,6 @@
     "description": "Đường dẫn này không tồn tại hoặc đã bị đổi. Kiểm tra lại địa chỉ, hoặc quay về trang chủ.",
     "home": "Về trang chủ",
     "adminHome": "Về bảng điều khiển"
-  }
+  },
+  "edit": "Sửa"
 }

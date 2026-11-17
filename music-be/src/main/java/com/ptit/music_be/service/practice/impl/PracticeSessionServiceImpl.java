@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ptit.music_be.dto.request.practice.PracticeSessionRequest;
 import com.ptit.music_be.dto.response.common.PageResponse;
 import com.ptit.music_be.dto.response.practice.PracticeSessionResponse;
+import com.ptit.music_be.dto.enums.PracticeSessionStatus;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.PracticeSession;
 import com.ptit.music_be.entity.Score;
@@ -81,6 +82,9 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
                 .member(me)
                 .score(score)
                 .mode(request.getMode())
+                .status(Boolean.TRUE.equals(request.getIsCompleted())
+                        ? PracticeSessionStatus.COMPLETED
+                        : PracticeSessionStatus.ABANDONED)
                 .tempoPercent(request.getTempoPercent())
                 .loopStartMeasure(request.getLoopStartMeasure())
                 .loopEndMeasure(request.getLoopEndMeasure())

@@ -76,7 +76,8 @@
     },
     "bannedButton": "Banned until {date}",
     "switch": "Switch to this plan",
-    "switchHint": "Your current {plan} plan stops as soon as you buy this one."
+    "switchHint": "Your current {plan} plan stops as soon as you buy this one.",
+    "signInToBuy": "Sign in to buy"
   },
   "result": {
     "title": "Payment result",

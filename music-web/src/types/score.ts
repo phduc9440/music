@@ -81,7 +81,24 @@ export interface Tag {
   slug: string;
 }
 
+/** Giấy phép của bản nhạc, BE: ScoreLicense. */
+export type ScoreLicense = 'ALL_RIGHTS_RESERVED' | 'CC0' | 'CC_BY' | 'CC_BY_SA' | 'CC_BY_NC';
+
+export const SCORE_LICENSES: ScoreLicense[] = ['ALL_RIGHTS_RESERVED', 'CC0', 'CC_BY', 'CC_BY_SA', 'CC_BY_NC'];
+
+/** Ghi công bản gốc của một bản phối, BE: ScoreDetailResponse.ForkSource. */
+export interface ForkSource {
+  id: string;
+  title: string;
+  ownerName?: string | null;
+  license: ScoreLicense;
+}
+
 export interface ScoreSummary {
+  /** Giấy phép (R4); chưa chọn là ALL_RIGHTS_RESERVED. */
+  license?: ScoreLicense;
+  /** Cho phép tạo bản phối từ bản này (R4). */
+  allowArrange?: boolean;
   id: string;
   title: string;
   composer?: string | null;
@@ -161,6 +178,14 @@ export interface ScoreDetail extends ScoreSummary {
   canDownload: boolean;
   /** Chủ sở hữu đã cho người xem tải chưa; chỉ chủ sở hữu nhận giá trị thật. */
   allowDownload: boolean;
+  /** Giấy phép (R4); luôn có giá trị, chưa chọn là ALL_RIGHTS_RESERVED. */
+  license: ScoreLicense;
+  /** Chủ cho phép tạo bản phối; chỉ chủ sở hữu nhận giá trị thật. */
+  allowArrange: boolean;
+  /** Người xem tạo được bản phối từ bản này không. */
+  canFork: boolean;
+  /** Bản phối của bản nào; null khi không phải bản phối hoặc bản gốc không còn công khai. */
+  forkedFrom?: ForkSource | null;
   files: ScoreFileInfo[];
   latestTasks: AiTaskInfo[];
 }
@@ -195,6 +220,10 @@ export interface ScoreUpdateRequest {
   visibility?: Visibility;
   /** Cho phép người xem tải MusicXML, MIDI, âm thanh, PDF (chỉ chủ sở hữu được đổi). */
   allowDownload?: boolean;
+  /** Giấy phép (R4, chỉ chủ sở hữu được đổi). */
+  license?: ScoreLicense;
+  /** Cho phép người khác tạo bản phối từ bản công khai này (cần giấy phép khác bảo lưu mọi quyền). */
+  allowArrange?: boolean;
 }
 
 /** Một bản nhạc trong thùng rác, BE: TrashedScoreResponse. */
@@ -308,7 +337,20 @@ export type NotificationType =
   | 'COMMENT_MENTION'
   | 'COMMENT_REPLY'
   | 'SUGGESTION_NEW'
-  | 'SUGGESTION_DECIDED';
+  | 'SUGGESTION_DECIDED'
+  | 'FORUM_REPLY'
+  | 'FORUM_POST_REPLY'
+  | 'FORUM_ANSWER_ACCEPTED';
+
+/** Nhóm thông báo người dùng bật/tắt, BE: NotificationCategory (không có SYSTEM: luôn bật). */
+export type NotificationCategory = 'SCORES' | 'COMMENTS' | 'TEAMS' | 'FORUM' | 'BILLING';
+
+/** Cài đặt nhận thông báo của một nhóm, BE: NotificationPreferenceResponse. Cả hai tắt = không nhận gì. */
+export interface NotificationPreference {
+  category: NotificationCategory;
+  inApp: boolean;
+  email: boolean;
+}
 
 export interface AppNotification {
   id: string;

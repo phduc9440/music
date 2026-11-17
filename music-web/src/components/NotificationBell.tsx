@@ -96,6 +96,9 @@ export default function NotificationBell() {
       n.type === 'TEAM_DELETED_BY_ADMIN'
     )
       navigate('/teams');
+    // Diễn đàn: mở đúng chủ đề
+    else if (n.type.startsWith('FORUM_') && n.params?.threadId)
+      navigate(`/forum/threads/${n.params.threadId}${n.params.postId ? `?post=${n.params.postId}` : ''}`);
     // Góp ý: mở tab Góp ý của bản nhạc và cuộn tới đúng góp ý
     else if (n.type.startsWith('COMMENT_') && n.scoreId)
       navigate(`/scores/${n.scoreId}?tab=comments${n.params?.commentId ? `&comment=${n.params.commentId}` : ''}`);
@@ -103,6 +106,8 @@ export default function NotificationBell() {
     else if (n.type.startsWith('SUGGESTION_') && n.scoreId && n.params?.suggestionId)
       navigate(`/scores/${n.scoreId}/suggestions/${n.params.suggestionId}`);
     else if (n.type.startsWith('TEAM_') && n.params?.teamId) navigate(`/teams/${n.params.teamId}`);
+    // Có người xin quyền: mở tab Cài đặt để đồng ý hoặc từ chối
+    else if (n.type === 'ACCESS_REQUESTED' && n.scoreId) navigate(`/scores/${n.scoreId}?tab=settings`);
     else if (n.scoreId) navigate(`/scores/${n.scoreId}`);
   };
 
@@ -148,13 +153,33 @@ export default function NotificationBell() {
       {open && (
         <div className="sc-bell__panel" role="menu">
           <div className="sc-bell__head">
-            <strong>{t('common.notifications.title')}</strong>
-            <button type="button" className="sc-bell__link" disabled={unread === 0} onClick={readAll}>
-              {t('common.notifications.markAllRead')}
-            </button>
+            <strong className="sc-bell__title">
+              {t('common.notifications.title')}
+              {unread > 0 && <span className="sc-bell__count">{unread > 99 ? '99+' : unread}</span>}
+            </strong>
+            <span className="sc-bell__actions">
+              <button type="button" className="sc-bell__link" disabled={unread === 0} onClick={readAll}>
+                {t('common.notifications.markAllRead')}
+              </button>
+              <button
+                type="button"
+                className="sc-bell__link"
+                onClick={() => {
+                  setOpen(false);
+                  navigate('/settings/notifications');
+                }}
+              >
+                {t('common.notifications.settings')}
+              </button>
+            </span>
           </div>
           {loading && <Skeleton lines={3} className="sc-bell__loading" />}
-          {!loading && items.length === 0 && <p className="sc-bell__empty">{t('common.notifications.empty')}</p>}
+          {!loading && items.length === 0 && (
+            <p className="sc-bell__empty">
+              <Icon name="bell" size={28} />
+              {t('common.notifications.empty')}
+            </p>
+          )}
           <ul className="sc-bell__list">
             {items.map((n) => (
               <li key={n.id}>
@@ -163,14 +188,17 @@ export default function NotificationBell() {
                   className={`sc-bell__item${n.read ? '' : ' sc-bell__item--unread'}`}
                   onClick={() => openItem(n)}
                 >
-                  {n.type === 'ANNOUNCEMENT' && (
-                    <span className="sc-bell__tag">
-                      <Icon name="megaphone" size={12} />
-                      {t('common.notifications.adminTag')}
-                    </span>
-                  )}
-                  <span className="sc-bell__text">{notificationText(n)}</span>
-                  <small>{formatRelativeTime(n.createdAt)}</small>
+                  <span className="sc-bell__dot" aria-hidden="true" />
+                  <span className="sc-bell__body">
+                    {n.type === 'ANNOUNCEMENT' && (
+                      <span className="sc-bell__tag">
+                        <Icon name="megaphone" size={12} />
+                        {t('common.notifications.adminTag')}
+                      </span>
+                    )}
+                    <span className="sc-bell__text">{notificationText(n)}</span>
+                    <small>{formatRelativeTime(n.createdAt)}</small>
+                  </span>
                 </button>
               </li>
             ))}

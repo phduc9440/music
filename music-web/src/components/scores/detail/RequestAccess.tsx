@@ -11,13 +11,13 @@ interface Props {
   scoreId: string;
   /** Có quyền rồi (ví dụ vừa được duyệt) thì báo cho trang cha tải lại bản nhạc. */
   onGranted: () => void;
-  /** Các cấp được phép xin; mặc định xem hoặc chỉnh sửa. */
+  /** Các cấp được phép xin; mặc định xem, nhận xét hoặc chỉnh sửa. */
   levels?: SharePermission[];
   /** Đang xem được bản nhạc rồi (ví dụ xin thêm quyền sửa): không tự coi là "đã được cấp quyền" khi mở. */
   hasViewAccess?: boolean;
 }
 
-const DEFAULT_LEVELS: SharePermission[] = [1, 3];
+const DEFAULT_LEVELS: SharePermission[] = [1, 2, 3];
 
 /** Màn hình thay cho "Không tìm thấy" khi người dùng chưa có quyền xem bản nhạc: gửi yêu cầu xin quyền. */
 export default function RequestAccess({ scoreId, onGranted, levels = DEFAULT_LEVELS, hasViewAccess = false }: Props) {
@@ -62,7 +62,7 @@ export default function RequestAccess({ scoreId, onGranted, levels = DEFAULT_LEV
 
   return (
     <div className="sc-empty">
-      <h3>{hasViewAccess ? t('scores.detail.requestEditTitle') : t('scores.request.noAccess')}</h3>
+      <h3>{hasViewAccess ? t('scores.detail.requestMoreTitle') : t('scores.request.noAccess')}</h3>
       {pending && (
         <p>
           <Rich text={t('scores.request.pending', { level: SHARE_PERMISSION_LABELS[pending] })} />

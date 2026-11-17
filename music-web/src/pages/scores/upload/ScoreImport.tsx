@@ -1,10 +1,11 @@
+import CreateGuide from '../../../components/scores/create/CreateGuide';
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate } from '../../../routes/useTransitionNavigate';
 import { toast } from 'react-toastify';
 import ComposerDatalist from '../../../components/composers/ComposerDatalist';
-import { importApi, playlistApi, tagApi } from '../../../services';
-import type { Playlist, Tag } from '../../../types';
+import { importApi, playlistApi, showApi, tagApi, teamApi } from '../../../services';
+import type { Playlist, Show, Tag, Team } from '../../../types';
 import {
   fileNameWithoutExtension,
   formatSize,
@@ -47,6 +48,7 @@ interface ImportItem {
   error: string;
   scoreId: string | null;
   inPlaylist: boolean;
+  inShow: boolean;
 }
 
 let itemSeq = 0;
@@ -59,6 +61,7 @@ const makeItem = (file: File): ImportItem => ({
   error: '',
   scoreId: null,
   inPlaylist: false,
+  inShow: false,
 });
 
 const sameFile = (a: File, b: File) => a.name === b.name && a.size === b.size && a.lastModified === b.lastModified;
@@ -88,6 +91,11 @@ export default function ScoreImport() {
   const [tagIds, setTagIds] = useState<string[]>([]);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [playlistId, setPlaylistId] = useState('');
+  // Thêm vào Show: chỉ nhóm mà tôi vừa thêm được bản nhạc vừa quản lý được show
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [teamId, setTeamId] = useState('');
+  const [shows, setShows] = useState<Show[]>([]);
+  const [showId, setShowId] = useState('');
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -114,7 +122,30 @@ export default function ScoreImport() {
       .list()
       .then((res) => setPlaylists(res.data.result))
       .catch(() => setPlaylists([]));
+    teamApi
+      .list()
+      .then((res) =>
+        setTeams(
+          res.data.result.filter(
+            (team) => team.myPermissions.includes('ADD_SCORES') && team.myPermissions.includes('MANAGE_SHOWS'),
+          ),
+        ),
+      )
+      .catch(() => setTeams([]));
   }, []);
+
+  // Đổi nhóm thì nạp lại các show đang chuẩn bị của nhóm đó
+  useEffect(() => {
+    if (!teamId) return;
+    let cancelled = false;
+    teamApi
+      .shows(teamId)
+      .then((res) => !cancelled && setShows(res.data.result.filter((s) => s.status === 'PREPARING')))
+      .catch(() => !cancelled && setShows([]));
+    return () => {
+      cancelled = true;
+    };
+  }, [teamId]);
 
   useEffect(() => clearPendingUpload(), []);
 
@@ -176,6 +207,27 @@ export default function ScoreImport() {
       if (playlistFailed > 0) toast.error(t('upload.import.playlistAddFailed', { count: playlistFailed }));
     }
 
+    // Thêm vào show theo thứ tự đã chọn: bản nhạc vào nhóm trước rồi mới thành bài trong show
+    if (showId) {
+      const target = shows.find((s) => s.id === showId);
+      let added = 0;
+      let showFailed = 0;
+      for (const id of order) {
+        const scoreId = imported.get(id);
+        if (!scoreId) continue;
+        try {
+          await teamApi.addScore(teamId, scoreId);
+          await showApi.addItem(showId, { scoreId });
+          patchItem(id, { inShow: true });
+          added++;
+        } catch {
+          showFailed++;
+        }
+      }
+      if (added > 0) toast.success(t('upload.import.showAdded', { count: added, name: target?.name ?? '' }));
+      if (showFailed > 0) toast.error(t('upload.import.showAddFailed', { count: showFailed }));
+    }
+
     setBusy(false);
     if (items.length === 1) {
       // Một file: giữ hành vi cũ, nhập xong mở thẳng bản nhạc
@@ -199,9 +251,13 @@ export default function ScoreImport() {
     if (it.status === 'failed') return `${t('upload.import.statusFailed')}: ${it.error}`;
     if (it.status === 'uploading') return t('upload.import.statusUploading', { progress: it.progress });
     if (it.status === 'done') {
-      return it.inPlaylist
-        ? `${t('upload.import.statusDone')} · ${t('upload.import.inPlaylist')}`
-        : t('upload.import.statusDone');
+      return [
+        t('upload.import.statusDone'),
+        it.inPlaylist && t('upload.import.inPlaylist'),
+        it.inShow && t('upload.import.inShow'),
+      ]
+        .filter(Boolean)
+        .join(' · ');
     }
     return t('upload.import.statusWaiting');
   };
@@ -363,6 +419,55 @@ export default function ScoreImport() {
               </>
             )}
 
+            {teams.length > 0 && (
+              <>
+                <label className="sc-label sc-upload__field" htmlFor="im-team">
+                  {t('upload.import.team')}{' '}
+                  <span className="sc-upload__optional">({t('scores.request.optional')})</span>
+                </label>
+                <select
+                  id="im-team"
+                  className="sc-input"
+                  value={teamId}
+                  disabled={busy}
+                  onChange={(e) => {
+                    setTeamId(e.target.value);
+                    setShowId('');
+                    setShows([]);
+                  }}
+                >
+                  <option value="">{t('upload.import.teamNone')}</option>
+                  {teams.map((team) => (
+                    <option key={team.id} value={team.id}>
+                      {team.name}
+                    </option>
+                  ))}
+                </select>
+                {teamId && (
+                  <>
+                    <label className="sc-label sc-upload__field" htmlFor="im-show">
+                      {t('upload.import.show')}
+                    </label>
+                    <select
+                      id="im-show"
+                      className="sc-input"
+                      value={showId}
+                      disabled={busy}
+                      onChange={(e) => setShowId(e.target.value)}
+                    >
+                      <option value="">{t('upload.import.showNone')}</option>
+                      {shows.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name}
+                        </option>
+                      ))}
+                    </select>
+                    <small className="sc-upload__optional">{t('upload.import.showHint')}</small>
+                  </>
+                )}
+              </>
+            )}
+
             {allTags.length > 0 && (
               <>
                 <span className="sc-label sc-upload__field">
@@ -403,6 +508,11 @@ export default function ScoreImport() {
                     {t('upload.import.toPlaylist')}
                   </Link>
                 )}
+                {showId && (
+                  <Link className="sc-btn" to={`/teams/${teamId}/shows/${showId}`}>
+                    {t('upload.import.toShow')}
+                  </Link>
+                )}
               </div>
             ) : (
               <button type="submit" className="sc-btn sc-btn--primary sc-upload__submit" disabled={!canSubmit}>
@@ -411,6 +521,8 @@ export default function ScoreImport() {
             )}
           </aside>
         </form>
+
+        <CreateGuide variant="import" maxFiles={MAX_FILES} />
       </main>
     </div>
   );
