@@ -171,6 +171,7 @@ export default function ScoreLibrary() {
               <ScoreCard
                 key={s.id}
                 score={s}
+                showViews={sort === 'views'}
                 onOpen={(item) => navigate(getScorePath(item.id, item.processingStatus))}
               />
             ))}

@@ -34,6 +34,13 @@
   background: var(--ui-primary-soft);
 }
 
+/* link trong ghi chú cần gạch chân: màu link gần màu chữ thường nên chỉ dựa vào màu thì khó nhận ra */
+.tm-note a {
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .tm-note--warning {
   border-left-color: var(--ui-warning);
   background: var(--ui-warning-soft);

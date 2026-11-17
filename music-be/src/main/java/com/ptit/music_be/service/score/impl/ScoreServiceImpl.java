@@ -504,7 +504,6 @@ public class ScoreServiceImpl implements ScoreService {
             Score score = byId.get(card.getId());
             Member owner = score.getMember();
             card.setOwnerName(owner == null || !StringUtils.hasText(owner.getFullName()) ? null : owner.getFullName());
-            card.setViewCount(score.getViewCount() == null ? 0L : score.getViewCount());
             ScoreReviewRepository.ScoreRatingStats stats = ratings.get(card.getId());
             card.setRatingCount(stats == null ? 0L : stats.getRatingCount());
             card.setRatingAverage(
@@ -761,6 +760,7 @@ public class ScoreServiceImpl implements ScoreService {
                 .license(licenseOf(score))
                 .allowArrange(score.isAllowArrange())
                 .measureCount(score.getMeasureCount())
+                .viewCount(score.getViewCount() == null ? 0L : score.getViewCount())
                 .tags(tags)
                 .thumbnailUrl(thumbnail == null ? null : "/api/files/" + thumbnail.getId() + "/download?inline=true")
                 .coverUrl(score.getCoverUrl())
