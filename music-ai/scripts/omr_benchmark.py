@@ -270,6 +270,13 @@ def cmd_run(cases: list[dict], variants: list[str]) -> dict:
     return {"mode": "run", "rows": rows}
 
 
+def _peak_rss_mb() -> float:
+    """RAM đỉnh của cả tiến trình (MB). ``ru_maxrss`` tính bằng byte trên macOS, KB trên Linux. Chỉ tăng, nên các biến thể
+    chạy nối tiếp trong một tiến trình không so sánh RAM với nhau được."""
+    peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    return round(peak / (1024 * 1024 if sys.platform == "darwin" else 1024), 0)
+
+
 def _score_run(case: dict, variant: str, folder: Path, callback: RecordingCallback, seconds: float) -> dict:
     ends = [body for kind, body in callback.calls if kind in ("complete", "fail")]
     end = ends[-1] if ends else {}
@@ -278,9 +285,14 @@ def _score_run(case: dict, variant: str, folder: Path, callback: RecordingCallba
         "case": case["id"], "variant": variant, "status": "FAILED" if "errorCode" in end else "COMPLETED",
         "error": end.get("errorCode"), "seconds": round(seconds, 1),
         "secondsPerPage": round(seconds / max(1, result.get("pageCount", 1)), 1),
-        "maxRssMb": round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024, 0),
+        "maxRssMb": _peak_rss_mb(),
         "warnings": len(result.get("warnings", [])),
+        "warningTexts": [str(w)[:160] for w in result.get("warnings", [])],
     }
+    lyrics = result.get("lyrics") or {}
+    row["lyricsStatus"] = lyrics.get("status", "off")
+    if lyrics.get("reason"):
+        row["lyricsReason"] = lyrics["reason"]
     gt = case.get("groundTruth", {})
     if gt.get("music"):
         ref = load_score(BENCH / gt["music"])

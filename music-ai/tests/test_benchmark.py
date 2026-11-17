@@ -64,3 +64,9 @@ def test_run_mode_with_fake_engine(tmp_path, storage_root, monkeypatch):
     assert row["status"] in ("COMPLETED", "FAILED")
     assert row["noteF1"] == 1.0
     config.get_settings.cache_clear()
+
+
+def test_peak_rss_is_in_megabytes_not_raw_units():
+    import scripts.omr_benchmark as bench
+
+    assert 10 < bench._peak_rss_mb() < 200_000
