@@ -1,0 +1,51 @@
+{
+ "description": "Bộ kiểm thử cố định để so model cũ/mới cùng điều kiện. 'input' là đường dẫn tương đối so với STORAGE_ROOT (file người dùng đã tải lên, không chép vào repo). KHÔNG dùng các case này để huấn luyện.",
+ "cases": [
+  {
+   "id": "B1-dang-photo",
+   "test": "B",
+   "category": "vocal-single-staff",
+   "lyrics": "vi",
+   "sourceType": "PHOTO",
+   "notes": "Ảnh chụp màn hình điện thoại, 1 khuông, 3/4, Fa trưởng, 3 lời + điệp khúc, hợp âm 2 nốt từ ô 17, tên hợp âm phía trên.",
+   "input": "scores/4ef2e6be-2d18-4a84-b089-98f3ddab42cc/original/01-7a1528b8-3a8a-4c81-80cd-c7990c5edd6e.jpg",
+   "groundTruth": {
+    "music": "gt/dang/score.krn",
+    "lyrics": "gt/dang/lyrics.json"
+   },
+   "storedRuns": [
+    "4ef2e6be-2d18-4a84-b089-98f3ddab42cc",
+    "014fd847-01dd-4261-9bec-3f520366b66d",
+    "8a202a07-1ba0-4b16-9783-aed26abcb08b",
+    "9ebe2183-0aca-4e53-9f0d-2b4ba66d22c6",
+    "a2544bdc-986e-4bf5-8940-6c7f9097e64b"
+   ]
+  },
+  {
+   "id": "B2-thanh-vinh-22",
+   "test": "B",
+   "category": "vocal-single-staff",
+   "lyrics": "vi",
+   "sourceType": "PHOTO",
+   "notes": "Ảnh số sạch, 2/4, 5 lời + đáp ca + bài Alleluia thứ hai cùng trang, gạch nối 'Đa - vit', móc kép, dấu chấm dôi. Chưa có ground truth phần nhạc.",
+   "input": "scores/5a916ec7-ae31-4ffb-9b97-79199a19327c/original/01-6e247d6c-0946-4084-836c-9f582c45cab7.jpg",
+   "groundTruth": {
+    "lyricsLines": "gt/thanh-vinh-22/lyrics_lines.json"
+   },
+   "storedRuns": [
+    "5a916ec7-ae31-4ffb-9b97-79199a19327c"
+   ]
+  },
+  {
+   "id": "A1-piano-two-staff",
+   "test": "A",
+   "category": "piano-grand-staff",
+   "lyrics": null,
+   "sourceType": "PDF_NATIVE",
+   "notes": "CHƯA CÓ: storage hiện không có bản piano 2 khuông nào. Cần bổ sung (xem benchmark/README.md).",
+   "input": null,
+   "groundTruth": {},
+   "storedRuns": []
+  }
+ ]
+}
