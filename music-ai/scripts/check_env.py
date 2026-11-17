@@ -16,7 +16,7 @@ from typing import Optional
 PACKAGES = [
     ("fastapi", True), ("uvicorn", True), ("pydantic", True), ("numpy", True), ("opencv-python-headless", True),
     ("pillow", True), ("pymupdf", True), ("music21", True), ("torch", False), ("transformers", False),
-    ("torchtune", False), ("torchao", False), ("pytesseract", False), ("pytest", False),
+    ("torchtune", False), ("torchao", False), ("pytest", False),
 ]
 RECOMMENDED = ((3, 11), (3, 12))
 
@@ -26,25 +26,6 @@ def package_version(name: str) -> Optional[str]:
         return md.version(name)
     except md.PackageNotFoundError:
         return None
-
-
-def tesseract_info() -> dict:
-    """Phiên bản Tesseract và các gói ngôn ngữ; ``{"ok": False, "reason": ...}`` nếu dùng không được."""
-    if shutil.which("tesseract") is None:
-        return {"ok": False, "reason": "chưa có chương trình tesseract (brew install tesseract tesseract-lang)"}
-    try:
-        import pytesseract  # noqa: PLC0415
-    except ImportError:
-        return {"ok": False, "reason": "python này chưa có pytesseract (python -m pip install pytesseract)"}
-    try:
-        version = str(pytesseract.get_tesseract_version())
-        langs = sorted(pytesseract.get_languages(config=""))
-    except Exception as exc:  # noqa: BLE001
-        return {"ok": False, "reason": f"không gọi được Tesseract: {type(exc).__name__}: {exc}"}
-    missing = [code for code in ("vie", "eng") if code not in langs]
-    if missing:
-        return {"ok": False, "version": version, "reason": f"thiếu gói ngôn ngữ {'+'.join(missing)}"}
-    return {"ok": True, "version": version, "langs": langs}
 
 
 def pip_mismatch() -> Optional[str]:
@@ -73,14 +54,11 @@ def collect() -> dict:
     for name, required in PACKAGES:
         if required and packages[name] is None:
             problems.append(f"thiếu gói bắt buộc {name} (python -m pip install -r requirements.txt)")
-    tess = tesseract_info()
-    if not tess["ok"]:
-        problems.append(f"cảnh báo: OCR lời ca tắt: {tess['reason']}")
     mismatch = pip_mismatch()
     if mismatch:
         problems.append(f"cảnh báo: {mismatch}")
     fatal = any(p for p in problems if not p.startswith("cảnh báo"))
-    return {"python": sys.version.split()[0], "executable": sys.executable, "packages": packages, "tesseract": tess,
+    return {"python": sys.version.split()[0], "executable": sys.executable, "packages": packages,
             "problems": problems, "ok": not fatal}
 
 
@@ -89,8 +67,6 @@ def main() -> int:
     print(f"Python      {info['python']}  ({info['executable']})")
     for name, ver in info["packages"].items():
         print(f"  {name:<24}{ver or '-'}")
-    tess = info["tesseract"]
-    print(f"Tesseract   {tess.get('version', '-')}  " + ("(vie+eng sẵn sàng)" if tess["ok"] else f"({tess['reason']})"))
     for problem in info["problems"]:
         print(f"! {problem}")
     print("OK" if info["ok"] else "CÓ LỖI")

@@ -15,6 +15,3 @@ def test_old_python_is_fatal(monkeypatch):
     assert not info["ok"]
     assert any("quá cũ" in p for p in info["problems"])
 
-
-def test_tesseract_info_has_ok_flag():
-    assert "ok" in check_env.tesseract_info()

@@ -5,10 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from app.eval.lyrics import compare_lyrics
 from app.eval.metrics import align_measures, compare
-from app.eval.score import Lyric, attacks, kern_duration, kern_midi, load_score, read_kern, read_musicxml
-from app.eval.text import cer, strip_diacritics, wer
+from app.eval.score import attacks, kern_duration, kern_midi, load_score, read_kern, read_musicxml
 from tests.xml_samples import note, part, score
 
 GT_DANG = Path(__file__).resolve().parents[1] / "benchmark" / "gt" / "dang" / "score.krn"
@@ -94,26 +92,6 @@ def test_read_musicxml_matches_kern():
     s = read_musicxml(xml)
     k = read_kern(kern(["2f", "4g"], ["2.a"], header="**kern\n*clefG2\n*M3/4"))
     assert compare(k, s).note_f1 == 1.0
-
-
-def test_text_metrics_vietnamese():
-    assert cer("Nguyện dâng", "Nguyện dâng").rate == 0
-    # NFD và NFC phải coi là một
-    import unicodedata
-
-    assert cer("Chúa", unicodedata.normalize("NFD", "Chúa")).rate == 0
-    assert cer("đôi", "doi").errors == 2
-    assert strip_diacritics("Nguyện đôi") == "Nguyen doi"
-    assert wer("bàn tay con hiến.", "bàn tay con hiến", punctuation=False).rate == 0
-
-
-def test_lyrics_alignment_uses_measure_pairs():
-    ref = [Lyric(1, 1, 1, "Nguyện"), Lyric(1, 2, 1, "dâng"), Lyric(2, 1, 1, "Chúa")]
-    hyp = [Lyric(1, 1, 1, "Nguyện"), Lyric(1, 2, 1, "dâng"), Lyric(3, 1, 1, "Chúa")]
-    # ô 2 của hyp là ô thừa, ô 3 của hyp ứng với ô 2 của ref
-    res = compare_lyrics(ref, hyp, measure_pairs=[(1, 1), (None, 2), (2, 3)])
-    assert res.placed_ok == 3
-    assert compare_lyrics(ref, hyp).placed_ok == 2
 
 
 @pytest.mark.parametrize("bad", ["x.mid", "x.pdf"])

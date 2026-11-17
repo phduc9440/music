@@ -23,7 +23,6 @@ from app.convert.normalize import normalize_musicxml_file
 from app.convert.prepare import prepare_musicxml
 from app.jobs import JobManager, QueueFullError
 from app.omr.engines import music_engine_name
-from app.omr.lyrics import lyrics_ocr_status
 from app.omr.transcoda import get_recognizer
 from app.schemas import (
     DiffRequest,
@@ -90,7 +89,6 @@ def health() -> dict:
         "device": recognizer.device if recognizer.model_loaded else _detect_device(),
         "queueSize": manager.queue_size,
         "engine": music_engine_name(),
-        "lyricsOcr": lyrics_ocr_status(),
     }
     if recognizer.error:
         body["modelError"] = recognizer.error

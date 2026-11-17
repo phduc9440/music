@@ -51,8 +51,7 @@ def strip_text(gray: np.ndarray, layout: PageLayout | None = None) -> tuple[np.n
 def text_mask(gray: np.ndarray, layout: PageLayout | None = None) -> tuple[np.ndarray, int]:
     """Mặt nạ (bool, cùng kích thước ảnh) các pixel chữ ngoài khuông và số thành phần chữ.
 
-    Dùng chung cho hai việc: xóa chữ trước khi đưa vào Transcoda (:func:`strip_text`) và giữ lại đúng phần chữ để OCR lời
-    ca (``app/omr/lyrics``), nên hai nhánh luôn thống nhất về "đâu là chữ, đâu là ký hiệu nhạc".
+    :func:`strip_text` xóa đúng các pixel này khỏi ảnh trước khi đưa vào Transcoda.
     """
     empty = np.zeros(gray.shape, dtype=bool)
     layout = layout or analyze_layout(gray)

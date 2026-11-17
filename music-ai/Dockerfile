@@ -1,10 +1,6 @@
 FROM python:3.11-slim
-# tesseract-ocr + gói tiếng Việt/tiếng Anh: OCR lời ca (app/omr/lyrics)
 RUN apt-get update && apt-get install -y --no-install-recommends libglib2.0-0 \
-        tesseract-ocr tesseract-ocr-vie tesseract-ocr-eng \
-    && rm -rf /var/lib/apt/lists/* \
-    && tesseract --version | head -1 \
-    && tesseract --list-langs | grep -qx vie && tesseract --list-langs | grep -qx eng
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 # Mạng chậm hoặc chập chờn: chờ lâu hơn và thử lại nhiều lần khi tải gói lớn như PyTorch.
 ENV PIP_DEFAULT_TIMEOUT=300 PIP_RETRIES=10

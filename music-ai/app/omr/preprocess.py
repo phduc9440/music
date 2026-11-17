@@ -67,13 +67,6 @@ class PageResult:
     skipped: bool = False
     """True nếu trang bị bỏ vì không có khuông nhạc."""
 
-    ocr_image: Optional[np.ndarray] = None
-    """Ảnh xám độ phân giải làm việc (đã khử nhiễu, xoay thẳng, cắt lề, CHƯA nhị phân hóa và chưa thu về 1050x1485).
-    Nhánh lời ca OCR trên ảnh này: chữ trên ảnh 1050x1485 thường chỉ cao ~10 px, quá nhỏ cho OCR có dấu."""
-
-    scale: float = 1.0
-    """Tỉ lệ từ ``ocr_image`` sang ``image``: ``x_trang = x_ocr * scale`` (cả hai căn trên-trái, không có dời)."""
-
 
 @dataclass
 class PreprocessOptions:
@@ -364,12 +357,6 @@ def binarize(gray: np.ndarray) -> np.ndarray:
     return cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, block, 12)
 
 
-def canvas_scale(gray: np.ndarray, width: int = TARGET_W, height: int = TARGET_H) -> float:
-    """Tỉ lệ :func:`fit_to_canvas` dùng cho ảnh này (ảnh trang = ảnh gốc x tỉ lệ, căn trên-trái)."""
-    src_h, src_w = gray.shape[:2]
-    return min(width / src_w, height / src_h)
-
-
 def fit_to_canvas(gray: np.ndarray, width: int = TARGET_W, height: int = TARGET_H) -> np.ndarray:
     """Đưa ảnh về đúng ``width`` x ``height``: thu phóng giữ tỉ lệ cho vừa khung, pad trắng, căn trên-trái.
 
@@ -420,7 +407,6 @@ def process_page(
         if gray.shape[1] > gray.shape[0]:
             result.warnings.append(f"Trang {page_number} nằm ngang, đã thu nhỏ cho vừa khổ dọc")
         result.image = fit_to_canvas(gray)
-        result.ocr_image, result.scale = gray, canvas_scale(gray)
         return result
 
     check()
@@ -458,7 +444,6 @@ def process_page(
     check()
     work = crop_margins(work)
 
-    ocr_source = work
     check()
     if options.binarize and not clean_source:
         work = binarize(work)
@@ -471,5 +456,4 @@ def process_page(
 
     check()
     result.image = fit_to_canvas(work)
-    result.ocr_image, result.scale = ocr_source, canvas_scale(work)
     return result

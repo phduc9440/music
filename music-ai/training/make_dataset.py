@@ -1,7 +1,7 @@
 """Tạo dữ liệu fine-tune Transcoda cho đúng miền bản nhạc của Smart Music AI (chạy trên Kaggle, không chạy trên Mac).
 
 Vì sao cần: Transcoda v1 chỉ train trên ảnh Verovio render của nhạc piano/thính phòng; bản nhạc của dự án chủ yếu là
-**thánh ca/bài hát tiếng Việt một khuông có lời và hợp âm**, ảnh chụp điện thoại (xem ``docs/omr-architecture-v2.md``).
+**thánh ca/bài hát tiếng Việt một khuông có lời và hợp âm**, ảnh chụp điện thoại.
 Dữ liệu ở đây giữ đúng cách Transcoda được train (ảnh trang 1050x1485 -> ``**kern`` chỉ có nhạc), chỉ đổi miền:
 
 1. **Tổng hợp** (nguồn MusicXML có giấy phép mở, ví dụ OpenScore Lieder - CC0, PDMX bản public domain):

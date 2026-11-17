@@ -12,12 +12,10 @@ Web (React) ──REST+JWT──> Spring Boot ──POST /omr/jobs──> music-
 Pipeline hiện có: **tiền xử lý ảnh** (nhánh `feature/omr-preprocess`) rồi **nhận diện bằng Transcoda và ghép kern**
 (nhánh `feature/omr-recognition`). Xuất MusicXML/MIDI là nhánh `feature/omr-export-musicxml-midi`.
 
-**Kiến trúc v2** (audit, lựa chọn, số đo: [`docs/omr-architecture-v2.md`](docs/omr-architecture-v2.md)): hai nhánh tách
-riêng trên cùng bố cục trang. **Nhánh A** nhận diện ký hiệu nhạc (Transcoda, thay được qua `OMR_ENGINE`), có sửa dấu
-8va model tự thêm (`OMR_OTTAVA`). **Nhánh B** nhận diện lời ca (Tesseract `vie+eng` trên vùng chữ đã tách khỏi nhạc,
-`app/omr/lyrics`) rồi gắn từng âm tiết vào đúng nốt của khuông giọng hát và ghi `<lyric>` vào MusicXML
-(`result_data.lyrics`). Đo chất lượng bằng bộ kiểm thử cố định: `scripts/omr_benchmark.py`, `benchmark/README.md`.
-Dữ liệu fine-tune cho Kaggle: `training/README.md`.
+**Kiến trúc v2** : mục tiêu là
+nhận dạng đúng **nốt** của bản có lời ca. Transcoda thay được qua `OMR_ENGINE`; dấu 8va model tự thêm được sửa theo từng lần
+đọc (`OMR_OTTAVA`); chữ trên trang được xóa trước khi đọc (`OMR_STRIP_TEXT`). Đo chất lượng bằng bộ kiểm thử cố định:
+`scripts/omr_benchmark.py`. Dữ liệu fine-tune cho Kaggle: `training/README.md`.
 
 ## Cài đặt
 
@@ -26,18 +24,8 @@ Dữ liệu fine-tune cho Kaggle: `training/README.md`.
 | Thành phần | Phiên bản | Ghi chú |
 |---|---|---|
 | Python | **3.11 hoặc 3.12** (tối thiểu 3.10) | Docker dùng 3.11; máy Mac đã chạy 357 test với 3.12.16. 3.13 trở lên chưa kiểm thử: `torch`, `torchtune`, `music21` có thể chưa có bản phù hợp |
-| Tesseract | 5.x, có gói ngôn ngữ **vie** và **eng** | Chỉ cần cho lời ca. Đã thử với 5.3.4. Thiếu thì lời ca tự bỏ qua, phần nhạc vẫn chạy |
 | Gói Python | theo `requirements.txt` | `torch` chạy được trên CPU, `DEVICE=mps` (Mac Apple Silicon) hoặc `cuda` |
-| Docker | image `python:3.11-slim` | Đã cài sẵn Tesseract vie + eng, build lỗi nếu thiếu |
-
-Cài Tesseract (ngoài pip):
-
-```bash
-brew install tesseract tesseract-lang
-sudo apt install tesseract-ocr tesseract-ocr-vie tesseract-ocr-eng
-```
-
-Dòng đầu cho macOS, dòng sau cho Ubuntu/Debian.
+| Docker | image `python:3.11-slim` | Không cần chương trình ngoài nào |
 
 ### Cài gói Python
 
@@ -49,7 +37,7 @@ python -m pip install -r requirements.txt
 python scripts/check_env.py
 ```
 
-`check_env.py` in phiên bản Python, từng gói, Tesseract và các cảnh báo (kể cả khi `pip` và `python` thuộc hai bản Python
+`check_env.py` in phiên bản Python, từng gói và các cảnh báo (kể cả khi `pip` và `python` thuộc hai bản Python
 khác nhau). Thấy `OK` là đủ để chạy; dán kết quả của nó khi cần nhờ hỗ trợ.
 
 Luôn cài bằng **`python -m pip`**, không gõ `pip` trần: nếu `.venv` được tạo từ bản Python khác rồi nâng cấp, lệnh `pip`
@@ -103,9 +91,6 @@ Bên Spring Boot đặt `AI_INTERNAL_KEY` trùng với `INTERNAL_KEY` ở đây 
 | `ROUTING_RESERVE_S` | `30` | Giây giữ lại cho bước ghép/xuất: nhận diện lại chỉ chạy khi job còn nhiều thời gian hơn mức này |
 | `OMR_ENGINE` | `transcoda` | Engine nhận diện ký hiệu nhạc (`app/omr/engines.py`). `command`: chạy lệnh ngoài `OMR_ENGINE_COMMAND` (có `{image}`, `{output}`, `{beams}`) để thử model khác |
 | `OMR_OTTAVA` | `auto` | `auto`: bỏ `*8va`/`*8ba` model tự thêm trên khuông giọng hát/khuông đơn, đưa nốt về đúng quãng tám in trên ảnh (trong phạm vi từng lần đọc). `drop`: mọi khuông. `keep`: như cũ |
-| `OMR_LYRICS` | `auto` | `auto`: nhận diện lời ca khi bản có khuông giọng hát/khuông đơn và máy có Tesseract. `off`: tắt (không lưu ảnh OCR) |
-| `LYRICS_OCR_ENGINE` / `LYRICS_LANG` | `tesseract` / `vie+eng` | Engine và ngôn ngữ OCR lời ca. Cần `brew install tesseract tesseract-lang` (Mac) hoặc `apt install tesseract-ocr tesseract-ocr-vie` |
-| `LYRICS_MIN_CONFIDENCE` | `0.5` | Âm tiết gắn với độ tin cậy thấp hơn được liệt kê trong `result_data.lyrics.review` và cảnh báo theo trang |
 
 ## API (Spring Boot gọi, đặc tả mục 6.2)
 
@@ -142,7 +127,7 @@ nằm trong `scores/<scoreId>/`; hoặc đúng 1 PDF, hoặc nhiều ảnh (khô
 | `PREPROCESS` | 10-30% | Tiền xử lý từng trang → `pages/page-NNN.png` → callback `files` (PNG); bố cục → `layout/page-NNN.json` |
 | `INFERENCE` | 30-85% | Transcoda nhận diện từng trang → `kern/page-NNN.krn`; tiến độ `30 + 55 × trang_xong / tổng_trang`. Sau đó (vẫn ở 85%) trang sai số khuông hoặc lệch số ô được nhận diện lại theo hệ → `routing/` |
 | `MERGE` | 85-90% | Làm sạch, ghép kern, kiểm tra → `kern/merged.krn` → callback `files` (KERN) |
-| `EXPORT` | 90-98% | kern → `musicxml/v{n}.musicxml` → lời ca (`ocr/page-NNN.png` → `<lyric>`, `lyrics/lyrics.json`) → `midi/v{n}.mid` → callback `files` (MUSICXML, MIDI) → `complete` |
+| `EXPORT` | 90-98% | kern → `musicxml/v{n}.musicxml` → `midi/v{n}.mid` → callback `files` (MUSICXML, MIDI) → `complete` |
 
 `stopAfter` (Java gửi, biến `OMR_STOP_AFTER`): `PREPROCESS` dừng sau tiền xử lý (không cần model); `MERGE` dừng sau ghép
 kern; `EXPORT` (mặc định) chạy đủ. `musicXmlVersion` do Java tính (`scores.current_version + 1`): nhận diện lại sinh
@@ -314,7 +299,7 @@ quá 10 phút). Có GPU NVIDIA thì `DEVICE=auto` tự dùng; trên Mac Apple Si
 ## Test
 
 ```bash
-python -m pytest -q   # 340+ test, khoảng 2-3 phút; test PDF thật, music21 thật, Tesseract thật tự bỏ qua nếu chưa cài
+python -m pytest -q   # 340+ test, khoảng 2-3 phút; test PDF thật và music21 thật tự bỏ qua nếu chưa cài
 ```
 
 `tests/test_convert_kern.py` chạy music21 thật (kern → MusicXML → MIDI) và chỉ chạy khi đã `pip install music21`; các test

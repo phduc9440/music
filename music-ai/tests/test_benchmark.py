@@ -9,7 +9,7 @@ import cv2
 from app import config
 from app.omr import engines
 from tests.fake_recognizer import FakeRecognizer
-from tests.test_lyrics import melody_page_with_lyrics
+from tests.synth import make_score_page
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location("omr_benchmark", ROOT / "scripts" / "omr_benchmark.py")
@@ -24,7 +24,7 @@ def write_case(tmp_path, storage_root):
     gt_dir = tmp_path / "bench" / "gt"
     gt_dir.mkdir(parents=True)
     (gt_dir / "x.krn").write_text(GT)
-    page, _ = melody_page_with_lyrics()
+    page = make_score_page(systems=2)
     rel = "scores/src/original/01-x.png"
     (storage_root / rel).parent.mkdir(parents=True)
     cv2.imwrite(str(storage_root / rel), page)
@@ -57,7 +57,7 @@ def test_run_mode_with_fake_engine(tmp_path, storage_root, monkeypatch):
             pass
 
     monkeypatch.setattr(engines, "create_engine", lambda *a, **k: Engine(["*clefG2\n*k[b-]\n*M3/4\n2f\n4g\n=\n2f\n4g\n=\n2f\n4g\n="]))
-    report = bench.cmd_run(cases, ["moi:OMR_LYRICS=off"])
+    report = bench.cmd_run(cases, ["moi:OMR_OTTAVA=keep"])
     row = report["rows"][0]
     assert row["variant"] == "moi"
     # Không có music21 thì bước xuất báo lỗi nhưng kern vẫn được chấm

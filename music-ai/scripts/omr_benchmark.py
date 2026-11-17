@@ -1,16 +1,12 @@
 """Benchmark OMR trên bộ kiểm thử cố định ``benchmark/cases.json`` (so model/cấu hình cũ và mới cùng điều kiện).
 
-Chạy từ thư mục music-ai. Ba chế độ:
+Chạy từ thư mục music-ai. Hai chế độ:
 
     # 1. Không cần model: chấm các kết quả Transcoda ĐÃ LƯU trong storage (kern lượt chính và kern cuối cùng)
     python scripts/omr_benchmark.py stored
 
-    # 2. Không cần model: chạy riêng nhánh lời ca trên ảnh đầu vào, phần nhạc lấy từ ground truth
-    #    (đo đúng chất lượng OCR + gắn lời, không lẫn lỗi phần nhạc)
-    python scripts/omr_benchmark.py lyrics
-
-    # 3. Cần torch + Transcoda: chạy cả pipeline (không gọi Java) cho từng biến thể cấu hình rồi chấm
-    python scripts/omr_benchmark.py run --variant old:OMR_OTTAVA=keep,OMR_LYRICS=off --variant new:
+    # 2. Cần torch + Transcoda: chạy cả pipeline (không gọi Java) cho từng biến thể cấu hình rồi chấm
+    python scripts/omr_benchmark.py run --variant cu:OMR_OTTAVA=keep --variant moi: --variant khongxoa:OMR_STRIP_TEXT=0
 
 Kết quả in ra bảng và ghi ``benchmark/results/<chế-độ>-<thời-gian>.json`` (+ ``.md``). Metric: xem ``app/eval``.
 """
@@ -32,11 +28,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from app.eval.export import to_musicxml  # noqa: E402
-from app.eval.lyrics import compare_lyrics  # noqa: E402
 from app.eval.metrics import compare  # noqa: E402
-from app.eval.score import Lyric, load_score, read_musicxml  # noqa: E402
-from app.eval.text import TextScore, cer, wer  # noqa: E402
+from app.eval.score import load_score, read_musicxml  # noqa: E402
 
 BENCH = ROOT / "benchmark"
 MUSIC_KEYS = ("noteF1", "notePrecision", "noteRecall", "pitchAccuracy", "durationAccuracy", "chordAccuracy",
@@ -51,18 +44,6 @@ def storage_root() -> Path:
     from app.config import get_settings  # noqa: PLC0415
 
     return get_settings().storage_root
-
-
-def gt_lyrics(case: dict) -> list[Lyric] | None:
-    """Lời ca ground truth: ``lyrics.json`` nếu có, không thì lời ca nằm sẵn trong ground truth MusicXML."""
-    rel = case.get("groundTruth", {}).get("lyrics")
-    if not rel:
-        music = case.get("groundTruth", {}).get("music")
-        if music and music.endswith((".musicxml", ".xml")):
-            return load_score(BENCH / music).lyrics or None
-        return None
-    data = json.loads((BENCH / rel).read_text(encoding="utf-8"))
-    return [Lyric(x["measure"], x["note"], x["number"], x["text"]) for x in data["lyrics"]]
 
 
 # ====================================================================== 1. kết quả đã lưu
@@ -113,81 +94,6 @@ def _resimulate_systems(folder: Path) -> Path | None:
     out = Path(tempfile.mkdtemp(prefix="omr-sim-")) / "merged.krn"
     out.write_text(merge.merge_pages(pages, lenient=True).text, encoding="utf-8")
     return out
-
-
-# ====================================================================== 2. riêng lời ca
-
-
-def cmd_lyrics(cases: list[dict]) -> dict:
-    import cv2  # noqa: PLC0415
-
-    from app.omr import measure_map as mm  # noqa: PLC0415
-    from app.omr.layout import analyze_layout  # noqa: PLC0415
-    from app.omr.lyrics import get_text_engine  # noqa: PLC0415
-    from app.omr.lyrics.regions import KIND_LYRICS, read_page_text  # noqa: PLC0415
-    from app.omr.lyrics.step import LyricsPage, recognize_lyrics  # noqa: PLC0415
-    from app.omr.preprocess import PreprocessOptions, load_image_gray, process_page  # noqa: PLC0415
-
-    engine, reason = get_text_engine()
-    if engine is None:
-        raise SystemExit(f"Không chạy được OCR: {reason}")
-    root = storage_root()
-    rows = []
-    for case in cases:
-        gt = case.get("groundTruth", {})
-        if not case.get("input") or not (gt_lyrics(case) or gt.get("lyricsLines")):
-            continue
-        source = root / case["input"]
-        if not source.is_file():
-            print(f"[bỏ qua] {case['id']}: không thấy {source}")
-            continue
-        started = time.monotonic()
-        result = process_page(load_image_gray(source), PreprocessOptions(source_type=case.get("sourceType", "PHOTO")), 1)
-        layout = analyze_layout(result.image)
-        row: dict = {"case": case["id"], "systems": len(layout.systems)}
-        if gt.get("lyricsLines"):
-            lines = json.loads((BENCH / gt["lyricsLines"]).read_text(encoding="utf-8"))["lines"]
-            text = read_page_text(result.image, result.ocr_image, result.scale, layout, engine)
-            hyp = {(ln.system + 1, ln.number): ln.text for ln in text.lines if ln.kind == KIND_LYRICS}
-            c, w = TextScore(0, 0), TextScore(0, 0)
-            norm = lambda t: " ".join(t.replace(" - ", "-").split())  # noqa: E731
-            for item in lines:
-                got = hyp.get((item["system"], item["number"]), "")
-                c += cer(norm(item["text"]), norm(got))
-                w += wer(norm(item["text"]), norm(got), punctuation=False)
-            row.update({"cer": round(c.rate, 4), "wer": round(w.rate, 4), "lines": len(lines),
-                        "linesFound": sum(1 for i in lines if (i["system"], i["number"]) in hyp)})
-        if gt.get("music") and gt_lyrics(case):
-            ref_music = load_score(BENCH / gt["music"])
-            with tempfile.TemporaryDirectory() as tmp:
-                tmp_dir = Path(tmp)
-                cv2.imwrite(str(tmp_dir / "page.png"), result.image)
-                cv2.imwrite(str(tmp_dir / "ocr.png"), result.ocr_image)
-                xml = tmp_dir / "gt.musicxml"
-                xml.write_bytes(to_musicxml(ref_music))
-                if not layout.bars_confident or layout.measure_count != ref_music.measures:
-                    print(f"[cảnh báo] {case['id']}: số ô trên ảnh {layout.measure_count} khác ground truth "
-                          f"{ref_music.measures}, khung ô có thể lệch")
-                entries, number = [], 0
-                for si, system in enumerate(layout.systems):
-                    for pos in range(system.measures or 0):
-                        number += 1
-                        entries.append({"measure": number, "page": 1, "system": si + 1,
-                                        "box": mm._measure_box(layout, system, pos), "flags": []})
-                report = recognize_lyrics(xml, [LyricsPage(1, tmp_dir / "page.png", layout, tmp_dir / "ocr.png",
-                                                           result.scale)], entries, engine)
-                hyp_lyrics = read_musicxml(xml.read_bytes()).lyrics
-            score = compare_lyrics(gt_lyrics(case) or [], hyp_lyrics).to_dict()
-            row.update({k: score[k] for k in ("alignmentAccuracy", "cer", "cerNoDiacritics", "wer",
-                                              "refSyllables", "hypSyllables")})
-            row["lowConfidence"] = report.summary()["lowConfidence"]
-        row["seconds"] = round(time.monotonic() - started, 2)
-        rows.append(row)
-        print(json.dumps(row, ensure_ascii=False))
-    return {"mode": "lyrics", "engine": getattr(engine, "lang", None), "rows": rows}
-
-
-# ====================================================================== 3. chạy cả pipeline
 
 
 class RecordingCallback:
@@ -287,12 +193,9 @@ def _score_run(case: dict, variant: str, folder: Path, callback: RecordingCallba
         "secondsPerPage": round(seconds / max(1, result.get("pageCount", 1)), 1),
         "maxRssMb": _peak_rss_mb(),
         "warnings": len(result.get("warnings", [])),
-        "warningTexts": [str(w)[:160] for w in result.get("warnings", [])],
+        "warningTexts": [str(w) for w in result.get("warnings", [])],
+        "routing": (result.get("routing") or {}).get("pages"),
     }
-    lyrics = result.get("lyrics") or {}
-    row["lyricsStatus"] = lyrics.get("status", "off")
-    if lyrics.get("reason"):
-        row["lyricsReason"] = lyrics["reason"]
     gt = case.get("groundTruth", {})
     if gt.get("music"):
         ref = load_score(BENCH / gt["music"])
@@ -303,10 +206,6 @@ def _score_run(case: dict, variant: str, folder: Path, callback: RecordingCallba
             res = compare(ref, hyp)
             row.update({k: v for k, v in res.to_dict().items() if k in MUSIC_KEYS})
             row["output"] = "musicxml"
-            if gt_lyrics(case):
-                lyr = compare_lyrics(gt_lyrics(case) or [], hyp.lyrics, res.measure_pairs).to_dict()
-                row.update({"lyricsAlignment": lyr["alignmentAccuracy"], "lyricsCer": lyr["cer"],
-                            "lyricsWer": lyr["wer"]})
         elif kern.is_file():
             row.update({k: v for k, v in compare(ref, load_score(kern)).to_dict().items() if k in MUSIC_KEYS})
             row["output"] = "kern"
@@ -348,7 +247,7 @@ def _write(report: dict) -> Path:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("mode", choices=["stored", "lyrics", "run"])
+    parser.add_argument("mode", choices=["stored", "run"])
     parser.add_argument("--cases", type=Path, default=BENCH / "cases.json")
     parser.add_argument("--only", action="append", help="chỉ chạy case có id này (lặp lại được)")
     parser.add_argument("--variant", action="append", default=[], help="tên:BIẾN=GIÁ_TRỊ,... (chế độ run)")
@@ -359,8 +258,6 @@ def main() -> None:
         cases = [c for c in cases if c["id"] in args.only]
     if args.mode == "stored":
         report = cmd_stored(cases)
-    elif args.mode == "lyrics":
-        report = cmd_lyrics(cases)
     else:
         report = cmd_run(cases, args.variant)
     if not args.no_save:

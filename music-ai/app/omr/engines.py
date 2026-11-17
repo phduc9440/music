@@ -11,7 +11,7 @@ model (``start_loading``, ``state``, ``model_loaded``, ``device``, ``error``). �
 
 Engine phải trả **kern** vì các bước sau (làm sạch, nhận diện lại theo hệ, ghép, kiểm tra ô nhịp, xuất MusicXML) đều làm
 việc trên kern. Engine trả MusicXML (Audiveris, homr) cần một bộ chuyển MusicXML -> kern trước (chưa làm: xem
-``docs/omr-architecture-v2.md`` mục "Phương án đã cân nhắc").
+phần "Phương án đã cân nhắc" trong tài liệu thiết kế).
 """
 
 from __future__ import annotations
