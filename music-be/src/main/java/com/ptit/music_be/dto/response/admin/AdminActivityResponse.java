@@ -19,6 +19,7 @@ public class AdminActivityResponse {
      * PLAN_SANCTION, MEMBER_LOCKED, MEMBER_UNLOCKED, ROLE_GRANTED, SHARE_GRANTED.
      */
     String type;
+
     LocalDateTime occurredAt;
     String actorId;
     String actorEmail;

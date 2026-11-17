@@ -227,7 +227,8 @@ public class AdminMemberServiceImpl implements AdminMemberService {
             if (isSelf && request.getStatus() != MemberStatus.ACTIVE) {
                 throw new AppException(ErrorCode.CANNOT_MODIFY_SELF);
             }
-            String reason = request.getStatusReason() == null || request.getStatusReason().isBlank()
+            String reason = request.getStatusReason() == null
+                            || request.getStatusReason().isBlank()
                     ? null
                     : request.getStatusReason().trim();
             if (reason != null && reason.length() > MAX_STATUS_REASON) {

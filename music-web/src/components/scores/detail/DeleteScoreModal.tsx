@@ -17,12 +17,14 @@ interface Props {
 
 const MAX_REASON = 500; // khớp BE
 
-const SKIP_KEY = 'scores.skipDeleteConfirm';
+// Khóa localStorage viết gạch nối như các khóa khác; khóa cũ có dấu chấm bị lint:i18n nhầm là khóa dịch nên chỉ còn đọc
+const SKIP_KEY = 'score-skip-delete-confirm';
+const LEGACY_SKIP_KEY = ['scores', 'skipDeleteConfirm'].join('.');
 
 /** Người dùng đã tick "Không hỏi lại" ở lần trước. Trình duyệt chặn localStorage thì coi như chưa tick. */
 function readSkip(): boolean {
   try {
-    return localStorage.getItem(SKIP_KEY) === '1';
+    return localStorage.getItem(SKIP_KEY) === '1' || localStorage.getItem(LEGACY_SKIP_KEY) === '1';
   } catch {
     return false;
   }

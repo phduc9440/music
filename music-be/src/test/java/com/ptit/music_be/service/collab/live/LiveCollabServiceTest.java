@@ -134,10 +134,18 @@ class LiveCollabServiceTest {
                 messaging,
                 new ObjectMapper(),
                 clock);
-        lenient().when(access.resolve(eq(OWNER), eq(SCORE))).thenReturn(new Access(SCORE, "m-owner", "m-owner", "Owner", true));
-        lenient().when(access.resolve(eq(GUEST), eq(SCORE))).thenReturn(new Access(SCORE, "m-owner", "m-guest", "Guest", true));
-        lenient().when(security.runAs(any(String.class), any(Supplier.class))).thenAnswer(inv -> ((Supplier<?>) inv.getArgument(1)).get());
-        lenient().when(scoreContentService.getMusicXml(SCORE)).thenReturn(new ScoreContent(XML.getBytes(StandardCharsets.UTF_8), 3));
+        lenient()
+                .when(access.resolve(eq(OWNER), eq(SCORE)))
+                .thenReturn(new Access(SCORE, "m-owner", "m-owner", "Owner", true));
+        lenient()
+                .when(access.resolve(eq(GUEST), eq(SCORE)))
+                .thenReturn(new Access(SCORE, "m-owner", "m-guest", "Guest", true));
+        lenient()
+                .when(security.runAs(any(String.class), any(Supplier.class)))
+                .thenAnswer(inv -> ((Supplier<?>) inv.getArgument(1)).get());
+        lenient()
+                .when(scoreContentService.getMusicXml(SCORE))
+                .thenReturn(new ScoreContent(XML.getBytes(StandardCharsets.UTF_8), 3));
         lenient().when(opRepository.maxSeq(SCORE)).thenReturn(0L);
         lenient().when(opRepository.save(any(ScoreLiveOp.class))).thenAnswer(inv -> inv.getArgument(0));
     }
@@ -145,7 +153,8 @@ class LiveCollabServiceTest {
     private JoinResult join(String session, String email, long lastSeq) {
         service.join(SCORE, session, email, new JoinRequest(true, lastSeq, null));
         ArgumentCaptor<Object> payload = ArgumentCaptor.forClass(Object.class);
-        verify(messaging, org.mockito.Mockito.atLeastOnce()).convertAndSendToUser(eq(email), eq("/queue/live-join"), payload.capture());
+        verify(messaging, org.mockito.Mockito.atLeastOnce())
+                .convertAndSendToUser(eq(email), eq("/queue/live-join"), payload.capture());
         return (JoinResult) payload.getValue();
     }
 
@@ -193,7 +202,9 @@ class LiveCollabServiceTest {
         assertThat(broadcast.seq()).isEqualTo(1);
         assertThat(broadcast.sessionId()).isEqualTo("A");
         assertThat(broadcast.measures().get(0).xml()).contains("<step>E</step>");
-        verify(opRepository).save(argThat((ScoreLiveOp op) -> op.getSeq() == 1 && op.getOpId().equals("op-1")));
+        verify(opRepository)
+                .save(argThat(
+                        (ScoreLiveOp op) -> op.getSeq() == 1 && op.getOpId().equals("op-1")));
     }
 
     @Test
@@ -216,7 +227,8 @@ class LiveCollabServiceTest {
 
         lock("B", GUEST, new MeasureRef(0, 1));
         ArgumentCaptor<Object> payload = ArgumentCaptor.forClass(Object.class);
-        verify(messaging, org.mockito.Mockito.atLeastOnce()).convertAndSendToUser(eq(GUEST), eq("/queue/live-locks"), payload.capture());
+        verify(messaging, org.mockito.Mockito.atLeastOnce())
+                .convertAndSendToUser(eq(GUEST), eq("/queue/live-locks"), payload.capture());
         LockResult result = (LockResult) payload.getValue();
         assertThat(result.granted()).isFalse();
         assertThat(result.heldBy()).isEqualTo("A");
@@ -243,14 +255,18 @@ class LiveCollabServiceTest {
     @Test
     void structuralNeedsTheWholeLock() {
         join("A", OWNER, -1);
-        OpsRequest structural = new OpsRequest("s-1", 0, null, new StructuralChange(XML.replace("<beats>4", "<beats>3")));
+        OpsRequest structural =
+                new OpsRequest("s-1", 0, null, new StructuralChange(XML.replace("<beats>4", "<beats>3")));
 
         service.ops(SCORE, "A", OWNER, structural);
         assertThat(lastRejected(OWNER).reason()).isEqualTo("LOCK_REQUIRED");
 
         service.lock(SCORE, "A", OWNER, new LockRequest(List.of(), true, false));
         service.ops(SCORE, "A", OWNER, structural);
-        verify(messaging).convertAndSend(eq("/topic/scores/" + SCORE + "/ops"), argThat((Object o) -> o instanceof OpBroadcast b && b.structuralXml() != null));
+        verify(messaging)
+                .convertAndSend(
+                        eq("/topic/scores/" + SCORE + "/ops"),
+                        argThat((Object o) -> o instanceof OpBroadcast b && b.structuralXml() != null));
     }
 
     @Test
@@ -259,27 +275,36 @@ class LiveCollabServiceTest {
         lock("A", OWNER, new MeasureRef(0, 1));
 
         assertThatThrownBy(() -> service.ops(SCORE, "A", OWNER, new OpsRequest("", 0, List.of(), null)))
-                .isInstanceOfSatisfying(AppException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.LIVE_OP_INVALID));
+                .isInstanceOfSatisfying(
+                        AppException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.LIVE_OP_INVALID));
         assertThatThrownBy(() -> service.ops(SCORE, "ghost", OWNER, edit("x", 0, MEASURE_2, MEASURE_2)))
-                .isInstanceOfSatisfying(AppException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.UNAUTHORIZED));
+                .isInstanceOfSatisfying(
+                        AppException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.UNAUTHORIZED));
         for (int i = 0; i < LiveCollabService.MAX_OPS_PER_SECOND; i++) {
-            service.ops(SCORE, "A", OWNER, edit("dup-" + i, 0, MEASURE_2, "<measure number=\"2\">" + note("A") + "</measure>"));
+            service.ops(
+                    SCORE,
+                    "A",
+                    OWNER,
+                    edit("dup-" + i, 0, MEASURE_2, "<measure number=\"2\">" + note("A") + "</measure>"));
         }
         assertThatThrownBy(() -> service.ops(SCORE, "A", OWNER, edit("over", 0, MEASURE_2, MEASURE_2)))
-                .isInstanceOfSatisfying(AppException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.LIVE_RATE_LIMITED));
+                .isInstanceOfSatisfying(
+                        AppException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.LIVE_RATE_LIMITED));
     }
 
     @Test
     void viewerWithoutEditRightsCannotJoinAndFullSessionRefusesTheEleventh() {
         when(access.resolve("viewer@mail.com", SCORE)).thenReturn(new Access(SCORE, "m-owner", "m-v", "V", false));
         assertThatThrownBy(() -> service.join(SCORE, "V", "viewer@mail.com", new JoinRequest(true, -1, null)))
-                .isInstanceOfSatisfying(AppException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.UNAUTHORIZED));
+                .isInstanceOfSatisfying(
+                        AppException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.UNAUTHORIZED));
 
         for (int i = 0; i < LiveSessionRegistry.MAX_EDITORS; i++) {
             join("S" + i, OWNER, -1);
         }
         assertThatThrownBy(() -> service.join(SCORE, "late", GUEST, new JoinRequest(true, -1, null)))
-                .isInstanceOfSatisfying(AppException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.LIVE_SESSION_FULL));
+                .isInstanceOfSatisfying(
+                        AppException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.LIVE_SESSION_FULL));
         assertThat(registry.find(SCORE, "late")).isNull();
     }
 
@@ -302,9 +327,14 @@ class LiveCollabServiceTest {
         @SuppressWarnings("unchecked")
         ArgumentCaptor<Map<String, Object>> meta = ArgumentCaptor.forClass(Map.class);
         verify(scoreEditService).saveLiveSnapshot(eq(SCORE), any(byte[].class), eq("\"v3\""), meta.capture());
-        assertThat(meta.getValue()).containsEntry("source", "LIVE").containsEntry("seqFrom", 1L).containsEntry("seqTo", 1L);
+        assertThat(meta.getValue())
+                .containsEntry("source", "LIVE")
+                .containsEntry("seqFrom", 1L)
+                .containsEntry("seqTo", 1L);
         assertThat(meta.getValue().get("editors")).isEqualTo(List.of("Owner"));
-        verify(messaging).convertAndSend(eq("/topic/scores/" + SCORE + "/version"), eq(new VersionBroadcast(SCORE, 4, 1, false)));
+        verify(messaging)
+                .convertAndSend(
+                        eq("/topic/scores/" + SCORE + "/version"), eq(new VersionBroadcast(SCORE, 4, 1, false)));
 
         // Người cuối rời: không còn gì chưa lưu nên chỉ đóng phiên
         service.leave(SCORE, "A");
@@ -349,7 +379,8 @@ class LiveCollabServiceTest {
 
         assertThat(result.xml()).isNotNull();
         assertThat(result.seq()).isEqualTo(40);
-        verify(opRepository, never()).findByScoreIdAndSeqGreaterThanOrderBySeqAsc(any(), anyLong(), any(Pageable.class));
+        verify(opRepository, never())
+                .findByScoreIdAndSeqGreaterThanOrderBySeqAsc(any(), anyLong(), any(Pageable.class));
     }
 
     @Test
@@ -367,14 +398,16 @@ class LiveCollabServiceTest {
 
     private OpRejected lastRejected(String email) {
         ArgumentCaptor<Object> payload = ArgumentCaptor.forClass(Object.class);
-        verify(messaging, org.mockito.Mockito.atLeastOnce()).convertAndSendToUser(eq(email), eq("/queue/live-rejected"), payload.capture());
+        verify(messaging, org.mockito.Mockito.atLeastOnce())
+                .convertAndSendToUser(eq(email), eq("/queue/live-rejected"), payload.capture());
         return (OpRejected) payload.getValue();
     }
 
     private static org.springframework.web.socket.messaging.SessionDisconnectEvent disconnectOf(String sessionId) {
         return new org.springframework.web.socket.messaging.SessionDisconnectEvent(
                 "src",
-                org.springframework.messaging.support.MessageBuilder.createMessage(new byte[0], new org.springframework.messaging.MessageHeaders(Map.of())),
+                org.springframework.messaging.support.MessageBuilder.createMessage(
+                        new byte[0], new org.springframework.messaging.MessageHeaders(Map.of())),
                 sessionId,
                 org.springframework.web.socket.CloseStatus.NORMAL);
     }

@@ -30,20 +30,17 @@ final class BlankScoreBuilder {
      * Bè của dấu lặng ở khuông thứ nhất và thứ hai (cùng quy ước MuseScore: khuông
      * 2 dùng bè 5).
      */
-    private static final int[] STAFF_VOICES = { 1, 5 };
+    private static final int[] STAFF_VOICES = {1, 5};
 
-    private record Clef(String sign, int line, int octaveChange) {
-    }
+    private record Clef(String sign, int line, int octaveChange) {}
 
-    private record PartSpec(String name, List<Clef> clefs) {
-    }
+    private record PartSpec(String name, List<Clef> clefs) {}
 
     private static final Clef TREBLE = new Clef("G", 2, 0);
     private static final Clef TREBLE_OCTAVE_DOWN = new Clef("G", 2, -1);
     private static final Clef BASS = new Clef("F", 4, 0);
 
-    private BlankScoreBuilder() {
-    }
+    private BlankScoreBuilder() {}
 
     /** Trường độ của một ô, tính theo {@link #DIVISIONS}. */
     static int measureDuration(int beats, int beatType) {
@@ -57,7 +54,8 @@ final class BlankScoreBuilder {
         document.appendChild(root);
 
         add(add(root, "work"), "work-title", request.getTitle().strip());
-        String composer = request.getComposer() == null ? "" : request.getComposer().strip();
+        String composer =
+                request.getComposer() == null ? "" : request.getComposer().strip();
         if (!composer.isEmpty()) {
             Element creator = add(add(root, "identification"), "creator", composer);
             creator.setAttribute("type", "composer");

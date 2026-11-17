@@ -83,7 +83,9 @@ class MeasureLockManagerTest {
         var snapshot = locks.snapshot("s", T0);
 
         assertThat(snapshot.wholeHolder()).isNull();
-        assertThat(snapshot.locks()).extracting("measureIndex", "sessionId").containsExactly(
-                org.assertj.core.groups.Tuple.tuple(2, "A"), org.assertj.core.groups.Tuple.tuple(3, "B"));
+        assertThat(snapshot.locks())
+                .extracting("measureIndex", "sessionId")
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple(2, "A"), org.assertj.core.groups.Tuple.tuple(3, "B"));
     }
 }

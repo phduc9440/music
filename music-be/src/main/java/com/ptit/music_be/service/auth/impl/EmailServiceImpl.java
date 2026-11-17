@@ -1,5 +1,9 @@
 package com.ptit.music_be.service.auth.impl;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Map;
+
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 
@@ -9,18 +13,13 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.HtmlUtils;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-
 import com.ptit.music_be.dto.enums.auth.AppLocale;
-import java.util.Map;
-
 import com.ptit.music_be.dto.enums.notification.NotificationCategory;
 import com.ptit.music_be.dto.enums.team.TeamRole;
 import com.ptit.music_be.dto.request.auth.SendEmailRequest;
 import com.ptit.music_be.repository.auth.MemberRepository;
-import com.ptit.music_be.service.auth.impl.EmailMessages.Key;
 import com.ptit.music_be.service.auth.EmailService;
+import com.ptit.music_be.service.auth.impl.EmailMessages.Key;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -163,9 +162,11 @@ public class EmailServiceImpl implements EmailService {
         AppLocale lang = locale == null ? AppLocale.VI : locale;
         long total = counts.values().stream().mapToLong(Long::longValue).sum();
         StringBuilder list = new StringBuilder("<ul style=\"padding-left:20px\">");
-        counts.forEach((category, n) ->
-                list.append("<li>").append(escape(EmailMessages.category(lang, category))).append(": <strong>")
-                        .append(n).append("</strong></li>"));
+        counts.forEach((category, n) -> list.append("<li>")
+                .append(escape(EmailMessages.category(lang, category)))
+                .append(": <strong>")
+                .append(n)
+                .append("</strong></li>"));
         list.append("</ul>");
         send(
                 to,

@@ -23,6 +23,7 @@ import org.mockito.quality.Strictness;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import com.ptit.music_be.dto.enums.score.ScoreAccess;
 import com.ptit.music_be.dto.enums.score.ScoreLicense;
 import com.ptit.music_be.dto.request.score.ScoreUpdateRequest;
 import com.ptit.music_be.dto.response.score.ScoreDetailResponse;
@@ -34,7 +35,6 @@ import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.repository.score.ScoreReviewRepository;
 import com.ptit.music_be.service.permission.AccessDecision;
-import com.ptit.music_be.dto.enums.score.ScoreAccess;
 import com.ptit.music_be.service.permission.ScorePermissionService;
 import com.ptit.music_be.service.score.CopyOptions;
 import com.ptit.music_be.service.score.ScoreCopyService;
@@ -81,7 +81,8 @@ class ScoreServiceImplForkTest {
     @InjectMocks
     ScoreServiceImpl service;
 
-    private final Member owner = Member.builder().id("owner").email("owner@x.com").fullName("Chủ").build();
+    private final Member owner =
+            Member.builder().id("owner").email("owner@x.com").fullName("Chủ").build();
     private final Member me = Member.builder().id("me").email("me@x.com").build();
     private Score source;
 
@@ -95,12 +96,14 @@ class ScoreServiceImplForkTest {
                 .license(ScoreLicense.CC_BY)
                 .allowArrange(true)
                 .build();
-        SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken("me@x.com", "x", "ROLE_USER"));
+        SecurityContextHolder.getContext()
+                .setAuthentication(new TestingAuthenticationToken("me@x.com", "x", "ROLE_USER"));
         when(memberRepository.findByEmail("me@x.com")).thenReturn(Optional.of(me));
         when(scoreRepository.findById("src")).thenReturn(Optional.of(source));
         when(scoreRepository.save(any(Score.class))).thenAnswer(inv -> inv.getArgument(0));
         when(scoreReviewRepository.getRatingStats(any())).thenReturn(mock(ScoreReviewRepository.RatingStats.class));
-        when(permissionService.resolve(any(Score.class))).thenReturn(new AccessDecision(ScoreAccess.OWNER, false, false));
+        when(permissionService.resolve(any(Score.class)))
+                .thenReturn(new AccessDecision(ScoreAccess.OWNER, false, false));
     }
 
     @AfterEach
@@ -109,7 +112,12 @@ class ScoreServiceImplForkTest {
     }
 
     private Score copyOf(Score from) {
-        return Score.builder().id("copy").title(from.getTitle()).member(me).visibility("PRIVATE").build();
+        return Score.builder()
+                .id("copy")
+                .title(from.getTitle())
+                .member(me)
+                .visibility("PRIVATE")
+                .build();
     }
 
     @Test
@@ -168,7 +176,8 @@ class ScoreServiceImplForkTest {
 
     @Test
     void turningOnArrangingNeedsALicenseThatAllowsIt() {
-        Score mine = Score.builder().id("mine").member(owner).visibility("PUBLIC").build();
+        Score mine =
+                Score.builder().id("mine").member(owner).visibility("PUBLIC").build();
         when(scoreRepository.findById("mine")).thenReturn(Optional.of(mine));
         ScoreUpdateRequest request = new ScoreUpdateRequest();
         request.setAllowArrange(true);
@@ -196,7 +205,12 @@ class ScoreServiceImplForkTest {
     @Test
     void forkOfShareAlikeKeepsTheLicense() {
         source.setLicense(ScoreLicense.CC_BY_SA);
-        Score fork = Score.builder().id("fork").member(owner).forkedFrom(source).license(ScoreLicense.CC_BY_SA).build();
+        Score fork = Score.builder()
+                .id("fork")
+                .member(owner)
+                .forkedFrom(source)
+                .license(ScoreLicense.CC_BY_SA)
+                .build();
         when(scoreRepository.findById("fork")).thenReturn(Optional.of(fork));
         ScoreUpdateRequest request = new ScoreUpdateRequest();
         request.setLicense(ScoreLicense.CC0);

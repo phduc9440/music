@@ -14,9 +14,8 @@ import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import com.ptit.music_be.dto.enums.score.DifficultyLevel;
-import com.ptit.music_be.service.composer.ScoreComposerListener;
-
 import com.ptit.music_be.dto.enums.score.ScoreLicense;
+import com.ptit.music_be.service.composer.ScoreComposerListener;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;

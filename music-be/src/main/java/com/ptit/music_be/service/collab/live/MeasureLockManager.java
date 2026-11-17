@@ -54,7 +54,8 @@ public class MeasureLockManager {
 
     private final Map<String, ScoreLocks> scores = new HashMap<>();
 
-    public synchronized Grant acquire(String scoreId, String sessionId, Collection<Key> keys, boolean whole, Instant now) {
+    public synchronized Grant acquire(
+            String scoreId, String sessionId, Collection<Key> keys, boolean whole, Instant now) {
         ScoreLocks locks = scores.computeIfAbsent(scoreId, k -> new ScoreLocks());
         purge(locks, now);
         Instant expiry = now.plus(TTL);
@@ -127,14 +128,17 @@ public class MeasureLockManager {
             return;
         }
         Instant expiry = now.plus(TTL);
-        locks.measures.values().stream().filter(h -> h.sessionId.equals(sessionId)).forEach(h -> h.expiresAt = expiry);
+        locks.measures.values().stream()
+                .filter(h -> h.sessionId.equals(sessionId))
+                .forEach(h -> h.expiresAt = expiry);
         if (locks.whole != null && locks.whole.sessionId.equals(sessionId)) {
             locks.whole.expiresAt = expiry;
         }
     }
 
     /** Session đang giữ khóa đủ cho thao tác này không: cả bài thì phủ mọi ô, ngược lại phải giữ từng ô. */
-    public synchronized boolean holds(String scoreId, String sessionId, Collection<Key> keys, boolean whole, Instant now) {
+    public synchronized boolean holds(
+            String scoreId, String sessionId, Collection<Key> keys, boolean whole, Instant now) {
         ScoreLocks locks = scores.get(scoreId);
         if (locks == null) {
             return false;
@@ -175,7 +179,8 @@ public class MeasureLockManager {
         }
         purge(locks, now);
         List<LockEntry> entries = new ArrayList<>();
-        locks.measures.forEach((key, held) -> entries.add(new LockEntry(key.partIndex(), key.measureIndex(), held.sessionId)));
+        locks.measures.forEach(
+                (key, held) -> entries.add(new LockEntry(key.partIndex(), key.measureIndex(), held.sessionId)));
         entries.sort(java.util.Comparator.comparingInt(LockEntry::partIndex).thenComparingInt(LockEntry::measureIndex));
         return new LocksBroadcast(scoreId, locks.whole == null ? null : locks.whole.sessionId, entries);
     }

@@ -1,7 +1,6 @@
 package com.ptit.music_be.service.auth.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -47,7 +46,8 @@ class EmailServiceImplTest {
 
     private void member(String email, AppLocale locale) {
         when(memberRepository.findByEmail(email))
-                .thenReturn(Optional.of(Member.builder().id("m").email(email).locale(locale).build()));
+                .thenReturn(Optional.of(
+                        Member.builder().id("m").email(email).locale(locale).build()));
     }
 
     private MimeMessage sent() throws Exception {
@@ -121,8 +121,12 @@ class EmailServiceImplTest {
     @Test
     void everyKeyHasTextInBothLanguages() {
         for (EmailMessages.Key key : EmailMessages.Key.values()) {
-            assertThat(EmailMessages.text(AppLocale.VI, key, "a", "b", "c")).as("vi %s", key).isNotBlank();
-            assertThat(EmailMessages.text(AppLocale.EN, key, "a", "b", "c")).as("en %s", key).isNotBlank();
+            assertThat(EmailMessages.text(AppLocale.VI, key, "a", "b", "c"))
+                    .as("vi %s", key)
+                    .isNotBlank();
+            assertThat(EmailMessages.text(AppLocale.EN, key, "a", "b", "c"))
+                    .as("en %s", key)
+                    .isNotBlank();
         }
         for (TeamRole role : TeamRole.values()) {
             assertThat(EmailMessages.role(AppLocale.VI, role)).isNotBlank();

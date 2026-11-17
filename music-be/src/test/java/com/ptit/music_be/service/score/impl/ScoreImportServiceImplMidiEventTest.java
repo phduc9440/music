@@ -31,9 +31,9 @@ import com.ptit.music_be.entity.ScoreFile;
 import com.ptit.music_be.event.ScoreImportedEvent;
 import com.ptit.music_be.mapper.ScoreFileMapper;
 import com.ptit.music_be.repository.auth.MemberRepository;
+import com.ptit.music_be.repository.library.TagRepository;
 import com.ptit.music_be.repository.score.ScoreFileRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
-import com.ptit.music_be.repository.library.TagRepository;
 import com.ptit.music_be.service.storage.FileStorageService;
 
 /** Nhập file MIDI phát sự kiện để tự chuyển sang MusicXML (mục I2); file MusicXML thì không. */
@@ -70,7 +70,8 @@ class ScoreImportServiceImplMidiEventTest {
     @BeforeEach
     void setUp() {
         TransactionSynchronizationManager.initSynchronization();
-        SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken("me@x.com", "x", "ROLE_USER"));
+        SecurityContextHolder.getContext()
+                .setAuthentication(new TestingAuthenticationToken("me@x.com", "x", "ROLE_USER"));
         when(memberRepository.findByEmail("me@x.com")).thenReturn(Optional.of(me));
         when(scoreRepository.save(any(Score.class))).thenAnswer(inv -> {
             Score s = inv.getArgument(0);
@@ -108,8 +109,7 @@ class ScoreImportServiceImplMidiEventTest {
                 + "</score-partwise>";
 
         service.importScore(
-                new MockMultipartFile(
-                        "file", "bai.musicxml", "application/xml", xml.getBytes(StandardCharsets.UTF_8)),
+                new MockMultipartFile("file", "bai.musicxml", "application/xml", xml.getBytes(StandardCharsets.UTF_8)),
                 null,
                 null,
                 null);

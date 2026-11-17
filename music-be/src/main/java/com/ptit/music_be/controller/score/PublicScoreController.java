@@ -8,8 +8,8 @@ import org.springframework.web.bind.annotation.*;
 
 import com.ptit.music_be.dto.response.common.ApiResponse;
 import com.ptit.music_be.dto.response.common.PageResponse;
-import com.ptit.music_be.dto.response.score.ScoreSummaryResponse;
 import com.ptit.music_be.dto.response.library.TagResponse;
+import com.ptit.music_be.dto.response.score.ScoreSummaryResponse;
 import com.ptit.music_be.service.library.TagService;
 import com.ptit.music_be.service.score.PublicScoreFilter;
 import com.ptit.music_be.service.score.ScoreService;
@@ -63,7 +63,8 @@ public class PublicScoreController {
 
     @GetMapping("/{scoreId}")
     @Operation(
-            summary = "Card of one PUBLIC score for the guest page /s/:id (2001 when it is private, pending or deleted)")
+            summary =
+                    "Card of one PUBLIC score for the guest page /s/:id (2001 when it is private, pending or deleted)")
     public ResponseEntity<ApiResponse<ScoreSummaryResponse>> get(@PathVariable String scoreId) {
         return ResponseEntity.ok()
                 .cacheControl(CacheControl.maxAge(Duration.ofSeconds(60)).cachePublic())

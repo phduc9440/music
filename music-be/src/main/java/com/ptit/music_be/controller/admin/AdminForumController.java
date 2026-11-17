@@ -42,7 +42,8 @@ public class AdminForumController {
 
     @PostMapping("/categories")
     @Operation(
-            summary = "Create a category (name 2-100 chars, description up to 300; the slug is generated). Errors: 4113",
+            summary =
+                    "Create a category (name 2-100 chars, description up to 300; the slug is generated). Errors: 4113",
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<AdminForumCategoryResponse> createCategory(@RequestBody ForumCategoryRequest request) {
         return ApiResponse.<AdminForumCategoryResponse>builder()

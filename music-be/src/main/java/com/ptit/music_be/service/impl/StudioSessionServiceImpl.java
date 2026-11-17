@@ -8,9 +8,9 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.ptit.music_be.dto.enums.practice.PracticeMode;
 import com.ptit.music_be.dto.enums.PracticeSessionStatus;
 import com.ptit.music_be.dto.enums.StudioMode;
+import com.ptit.music_be.dto.enums.practice.PracticeMode;
 import com.ptit.music_be.dto.request.StudioSessionCreateRequest;
 import com.ptit.music_be.dto.response.StudioSessionResponse;
 import com.ptit.music_be.dto.response.StudioTimelineResponse;
@@ -22,9 +22,9 @@ import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.practice.PracticeSessionRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
-import com.ptit.music_be.service.score.ScoreFileService;
 import com.ptit.music_be.service.StudioSessionService;
 import com.ptit.music_be.service.StudioTimelineService;
+import com.ptit.music_be.service.score.ScoreFileService;
 import com.ptit.music_be.utils.SecurityUtils;
 
 import lombok.AccessLevel;

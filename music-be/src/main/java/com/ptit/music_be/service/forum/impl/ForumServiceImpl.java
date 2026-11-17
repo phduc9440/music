@@ -237,7 +237,8 @@ public class ForumServiceImpl implements ForumService {
         thread.setTitle(cleanTitle(request == null ? null : request.getTitle()));
         thread.setBody(cleanBody(request.getBody()));
         // Giữ nguyên bản đang gắn dù sau đó đã về riêng tư; chỉ kiểm tra khi đổi sang bản khác
-        String currentScoreId = thread.getScore() == null ? null : thread.getScore().getId();
+        String currentScoreId =
+                thread.getScore() == null ? null : thread.getScore().getId();
         String wanted = request.getScoreId() == null || request.getScoreId().isBlank() ? null : request.getScoreId();
         if (wanted == null) {
             thread.setScore(null);
@@ -303,7 +304,9 @@ public class ForumServiceImpl implements ForumService {
         post.setEditedAt(LocalDateTime.now());
         postRepository.save(post);
         ForumThread thread = post.getThread();
-        String accepted = thread.getAcceptedPost() == null ? null : thread.getAcceptedPost().getId();
+        String accepted = thread.getAcceptedPost() == null
+                ? null
+                : thread.getAcceptedPost().getId();
         return toPostResponses(List.of(post), me, accepted, postRepository.findOfThread(thread.getId()))
                 .get(0);
     }
@@ -390,7 +393,13 @@ public class ForumServiceImpl implements ForumService {
                     null,
                     displayName(me) + " đã chọn câu trả lời của bạn là hay nhất trong “" + thread.getTitle() + "”",
                     NotificationService.params(
-                            "name", displayName(me), "title", thread.getTitle(), "threadId", thread.getId(), "postId",
+                            "name",
+                            displayName(me),
+                            "title",
+                            thread.getTitle(),
+                            "threadId",
+                            thread.getId(),
+                            "postId",
                             post.getId()));
             // Cùng (reason, postId) chỉ được cộng một lần nên chọn đi chọn lại không cộng thêm
             eventPublisher.publishEvent(
@@ -408,7 +417,9 @@ public class ForumServiceImpl implements ForumService {
         if (subscribed) {
             subscribe(thread, me);
         } else {
-            subscriptionRepository.findByThreadIdAndMemberId(threadId, me.getId()).ifPresent(subscriptionRepository::delete);
+            subscriptionRepository
+                    .findByThreadIdAndMemberId(threadId, me.getId())
+                    .ifPresent(subscriptionRepository::delete);
         }
     }
 
@@ -432,7 +443,9 @@ public class ForumServiceImpl implements ForumService {
         Set<String> notified = new HashSet<>();
         notified.add(actor.getId());
 
-        if (replyTo != null && replyTo.getAuthor() != null && notified.add(replyTo.getAuthor().getId())) {
+        if (replyTo != null
+                && replyTo.getAuthor() != null
+                && notified.add(replyTo.getAuthor().getId())) {
             notificationService.notify(
                     replyTo.getAuthor(),
                     actor,
@@ -444,7 +457,8 @@ public class ForumServiceImpl implements ForumService {
 
         Map<String, Member> others = new LinkedHashMap<>();
         // Người đặt chủ đề đã bỏ theo dõi thì không báo nữa
-        if (subscriptionRepository.existsByThreadIdAndMemberId(thread.getId(), thread.getAuthor().getId())) {
+        if (subscriptionRepository.existsByThreadIdAndMemberId(
+                thread.getId(), thread.getAuthor().getId())) {
             others.put(thread.getAuthor().getId(), thread.getAuthor());
         }
         for (ForumSubscription s : subscriptionRepository.findOfThread(thread.getId())) {
@@ -466,8 +480,16 @@ public class ForumServiceImpl implements ForumService {
 
     private static Map<String, String> replyParams(String name, ForumThread thread, ForumPost post, String excerpt) {
         return NotificationService.params(
-                "name", name, "title", thread.getTitle(), "threadId", thread.getId(), "postId", post.getId(),
-                "excerpt", excerpt);
+                "name",
+                name,
+                "title",
+                thread.getTitle(),
+                "threadId",
+                thread.getId(),
+                "postId",
+                post.getId(),
+                "excerpt",
+                excerpt);
     }
 
     private void guardNewAccount(Member me) {
@@ -476,7 +498,8 @@ public class ForumServiceImpl implements ForumService {
         if (created == null || created.isBefore(LocalDateTime.now().minusDays(NEW_ACCOUNT_DAYS))) {
             return;
         }
-        if (threadRepository.countByAuthorIdAndCreatedAtAfter(me.getId(), LocalDateTime.now().minusHours(24))
+        if (threadRepository.countByAuthorIdAndCreatedAtAfter(
+                        me.getId(), LocalDateTime.now().minusHours(24))
                 >= NEW_ACCOUNT_THREADS_PER_DAY) {
             throw new AppException(ErrorCode.FORUM_NEW_ACCOUNT_LIMIT);
         }
@@ -497,7 +520,8 @@ public class ForumServiceImpl implements ForumService {
     }
 
     private ForumPost findPost(String id) {
-        ForumPost post = postRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.FORUM_POST_NOT_EXISTED));
+        ForumPost post =
+                postRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.FORUM_POST_NOT_EXISTED));
         // Chủ đề đã ẩn thì bài trong đó cũng coi như không còn
         findThread(post.getThread().getId());
         return post;
@@ -517,7 +541,8 @@ public class ForumServiceImpl implements ForumService {
     }
 
     static String cleanTitle(String title) {
-        String t = title == null ? "" : stripControl(title).replaceAll("\\s+", " ").trim();
+        String t =
+                title == null ? "" : stripControl(title).replaceAll("\\s+", " ").trim();
         if (t.length() < MIN_TITLE || t.length() > MAX_TITLE) {
             throw new AppException(ErrorCode.FORUM_CONTENT_INVALID);
         }
@@ -564,7 +589,8 @@ public class ForumServiceImpl implements ForumService {
 
         List<ForumThreadResponse> out = new ArrayList<>();
         for (ForumThread t : threads) {
-            String acceptedId = t.getAcceptedPost() == null ? null : t.getAcceptedPost().getId();
+            String acceptedId =
+                    t.getAcceptedPost() == null ? null : t.getAcceptedPost().getId();
             Score score = t.getScore() == null ? null : scores.get(t.getScore().getId());
             LocalDateTime last = lastPost.get(t.getId());
             out.add(ForumThreadResponse.builder()
@@ -647,7 +673,9 @@ public class ForumServiceImpl implements ForumService {
                         .postId(target.getId())
                         .authorName(
                                 target.getAuthor().getFullName() == null
-                                                || target.getAuthor().getFullName().isBlank()
+                                                || target.getAuthor()
+                                                        .getFullName()
+                                                        .isBlank()
                                         ? null
                                         : target.getAuthor().getFullName())
                         .excerpt(excerpt(target.getBody(), REPLY_REF_EXCERPT))

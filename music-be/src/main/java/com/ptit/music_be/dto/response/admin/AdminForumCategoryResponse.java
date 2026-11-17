@@ -16,5 +16,6 @@ public class AdminForumCategoryResponse {
     int sortOrder;
     /** Đếm từ bảng chủ đề khi trả về (kể cả chủ đề đã ẩn), không lưu. */
     long threadCount;
+
     long hiddenThreadCount;
 }

@@ -17,5 +17,6 @@ public class AdminUpdateMemberRequest {
     MemberStatus status;
     /** Lý do khóa / mở khóa (tùy chọn, tối đa 255 ký tự), hiện ở Nhật ký quản trị. */
     String statusReason;
+
     Set<String> roles;
 }

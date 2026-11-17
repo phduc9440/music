@@ -152,7 +152,9 @@ class AdminAuditColumnsFlowTest {
 
         adminMemberService.updateMember(
                 target.getId(),
-                AdminUpdateMemberRequest.builder().roles(Set.of("USER", "ADMIN")).build());
+                AdminUpdateMemberRequest.builder()
+                        .roles(Set.of("USER", "ADMIN"))
+                        .build());
 
         AdminActivityResponse granted = events("ROLE_GRANTED").stream()
                 .filter(e -> target.getId().equals(e.getTargetId()))
@@ -163,7 +165,8 @@ class AdminAuditColumnsFlowTest {
 
         // Thu hồi thì dòng member_roles bị xóa, sự kiện cấp cũng biến mất (đã chấp nhận khi chọn cách thêm cột)
         adminMemberService.updateMember(
-                target.getId(), AdminUpdateMemberRequest.builder().roles(Set.of("USER")).build());
+                target.getId(),
+                AdminUpdateMemberRequest.builder().roles(Set.of("USER")).build());
         assertFalse(hasEvent("ROLE_GRANTED", target.getId()));
     }
 
@@ -193,7 +196,8 @@ class AdminAuditColumnsFlowTest {
         // Admin không cấp chia sẻ được trên bản người dùng: sự kiện là việc của chủ, chỉ giữ lần đổi gần nhất
         loginAs(SUPER, "ROLE_SUPER_ADMIN");
         List<AdminActivityResponse> rows = events("SHARE_GRANTED").stream()
-                .filter(e -> sharedScore.getId().equals(e.getTargetId()) && e.getDetail().startsWith(GRANTEE))
+                .filter(e -> sharedScore.getId().equals(e.getTargetId())
+                        && e.getDetail().startsWith(GRANTEE))
                 .toList();
         assertEquals(1, rows.size());
         assertEquals(ownerEmail, rows.get(0).getActorEmail());
@@ -204,6 +208,7 @@ class AdminAuditColumnsFlowTest {
         sharingService.removeMember(sharedScore.getId(), grantee.getId());
         loginAs(SUPER, "ROLE_SUPER_ADMIN");
         assertFalse(events("SHARE_GRANTED").stream()
-                .anyMatch(e -> sharedScore.getId().equals(e.getTargetId()) && e.getDetail().startsWith(GRANTEE)));
+                .anyMatch(e -> sharedScore.getId().equals(e.getTargetId())
+                        && e.getDetail().startsWith(GRANTEE)));
     }
 }

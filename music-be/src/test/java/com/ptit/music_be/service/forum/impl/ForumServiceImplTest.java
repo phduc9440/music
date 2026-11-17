@@ -28,9 +28,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import com.ptit.music_be.dto.enums.notification.NotificationType;
 import com.ptit.music_be.dto.request.forum.ForumPostRequest;
 import com.ptit.music_be.dto.request.forum.ForumThreadRequest;
-import com.ptit.music_be.entity.ForumSubscription;
 import com.ptit.music_be.entity.ForumCategory;
 import com.ptit.music_be.entity.ForumPost;
+import com.ptit.music_be.entity.ForumSubscription;
 import com.ptit.music_be.entity.ForumThread;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
@@ -90,8 +90,13 @@ class ForumServiceImplTest {
     @BeforeEach
     void setUp() {
         me = Member.builder().id("me").email("me@x.com").fullName("Tôi").build();
-        category = ForumCategory.builder().id("cat").name("Hỏi đáp").slug("hoi-dap").build();
-        SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken("me@x.com", "x", "ROLE_USER"));
+        category = ForumCategory.builder()
+                .id("cat")
+                .name("Hỏi đáp")
+                .slug("hoi-dap")
+                .build();
+        SecurityContextHolder.getContext()
+                .setAuthentication(new TestingAuthenticationToken("me@x.com", "x", "ROLE_USER"));
         when(memberRepository.findByEmail("me@x.com")).thenReturn(Optional.of(me));
         when(categoryRepository.findById("cat")).thenReturn(Optional.of(category));
         when(threadRepository.save(any(ForumThread.class))).thenAnswer(i -> {
@@ -138,14 +143,16 @@ class ForumServiceImplTest {
         Score priv = Score.builder().id("s1").visibility("PRIVATE").build();
         when(scoreRepository.findById("s1")).thenReturn(Optional.of(priv));
         assertError(() -> service.createThread(request("Tiêu đề", "nội dung", "s1")), ErrorCode.FORUM_SCORE_NOT_PUBLIC);
-        assertError(() -> service.createThread(request("Tiêu đề", "nội dung", "none")), ErrorCode.FORUM_SCORE_NOT_PUBLIC);
+        assertError(
+                () -> service.createThread(request("Tiêu đề", "nội dung", "none")), ErrorCode.FORUM_SCORE_NOT_PUBLIC);
     }
 
     @Test
     void newAccountIsLimitedToThreeThreadsPerDay() {
         me.setCreatedAt(LocalDateTime.now().minusDays(1));
         when(threadRepository.countByAuthorIdAndCreatedAtAfter(eq("me"), any())).thenReturn(3L);
-        assertError(() -> service.createThread(request("Tiêu đề", "nội dung", null)), ErrorCode.FORUM_NEW_ACCOUNT_LIMIT);
+        assertError(
+                () -> service.createThread(request("Tiêu đề", "nội dung", null)), ErrorCode.FORUM_NEW_ACCOUNT_LIMIT);
     }
 
     @Test
@@ -200,7 +207,12 @@ class ForumServiceImplTest {
     void acceptingAnswerNotifiesAndRewardsItsAuthor() {
         Member helper = Member.builder().id("helper").email("h@x.com").build();
         ForumThread thread = threadBy(me);
-        ForumPost post = ForumPost.builder().id("p1").thread(thread).author(helper).body("đáp án").build();
+        ForumPost post = ForumPost.builder()
+                .id("p1")
+                .thread(thread)
+                .author(helper)
+                .body("đáp án")
+                .build();
         when(threadRepository.findDetail("t1")).thenReturn(Optional.of(thread));
         when(postRepository.findById("p1")).thenReturn(Optional.of(post));
 
@@ -219,12 +231,20 @@ class ForumServiceImplTest {
 
     @Test
     void replyNotifiesEachPersonOnceWithTheRightTypeAndExcerpt() {
-        Member owner = Member.builder().id("owner").email("o@x.com").fullName("Chủ").build();
-        Member asker = Member.builder().id("asker").email("a@x.com").fullName("Hỏi").build();
-        Member follower = Member.builder().id("fol").email("f@x.com").fullName("Theo dõi").build();
+        Member owner =
+                Member.builder().id("owner").email("o@x.com").fullName("Chủ").build();
+        Member asker =
+                Member.builder().id("asker").email("a@x.com").fullName("Hỏi").build();
+        Member follower =
+                Member.builder().id("fol").email("f@x.com").fullName("Theo dõi").build();
         ForumThread thread = threadBy(owner);
         // asker viết bài, me trả lời trực tiếp vào bài đó
-        ForumPost target = ForumPost.builder().id("p9").thread(thread).author(asker).body("câu hỏi gốc").build();
+        ForumPost target = ForumPost.builder()
+                .id("p9")
+                .thread(thread)
+                .author(asker)
+                .body("câu hỏi gốc")
+                .build();
         when(threadRepository.findDetail("t1")).thenReturn(Optional.of(thread));
         when(postRepository.findById("p9")).thenReturn(Optional.of(target));
         when(postRepository.save(any(ForumPost.class))).thenAnswer(i -> {
@@ -232,40 +252,51 @@ class ForumServiceImplTest {
             p.setId("p10");
             return p;
         });
-        when(subscriptionRepository.existsByThreadIdAndMemberId(eq("t1"), any())).thenReturn(true);
+        when(subscriptionRepository.existsByThreadIdAndMemberId(eq("t1"), any()))
+                .thenReturn(true);
         // asker vừa là người bị trả lời vừa đang theo dõi: vẫn chỉ nhận một thông báo
         when(subscriptionRepository.findOfThread("t1"))
                 .thenReturn(List.of(
                         ForumSubscription.builder().thread(thread).member(asker).build(),
-                        ForumSubscription.builder().thread(thread).member(follower).build()));
+                        ForumSubscription.builder()
+                                .thread(thread)
+                                .member(follower)
+                                .build()));
 
         String longBody = "Cảm ơn bạn rất nhiều về câu hỏi này, " + "mình bổ sung thêm ý kiến ".repeat(10);
-        service.reply("t1", ForumPostRequest.builder().body(longBody).replyToPostId("p9").build());
+        service.reply(
+                "t1",
+                ForumPostRequest.builder().body(longBody).replyToPostId("p9").build());
 
         // người bị trả lời trực tiếp: FORUM_POST_REPLY, kèm đoạn đầu nội dung (cắt gọn) và id bài để mở đúng chỗ
-        org.mockito.ArgumentCaptor<java.util.Map<String, String>> params = org.mockito.ArgumentCaptor.forClass(java.util.Map.class);
+        org.mockito.ArgumentCaptor<java.util.Map<String, String>> params =
+                org.mockito.ArgumentCaptor.forClass(java.util.Map.class);
         verify(notificationService)
                 .notify(eq(asker), eq(me), eq(NotificationType.FORUM_POST_REPLY), any(), any(), params.capture());
         assertThat(params.getValue()).containsEntry("threadId", "t1").containsEntry("postId", "p10");
         assertThat(params.getValue().get("excerpt")).hasSizeLessThanOrEqualTo(ForumServiceImpl.NOTIFY_EXCERPT + 1);
         // người đặt chủ đề và người theo dõi: FORUM_REPLY, mỗi người một lần
-        verify(notificationService)
-                .notify(eq(owner), eq(me), eq(NotificationType.FORUM_REPLY), any(), any(), any());
-        verify(notificationService)
-                .notify(eq(follower), eq(me), eq(NotificationType.FORUM_REPLY), any(), any(), any());
+        verify(notificationService).notify(eq(owner), eq(me), eq(NotificationType.FORUM_REPLY), any(), any(), any());
+        verify(notificationService).notify(eq(follower), eq(me), eq(NotificationType.FORUM_REPLY), any(), any(), any());
         verify(notificationService, org.mockito.Mockito.times(3)).notify(any(), any(), any(), any(), any(), any());
     }
 
     @Test
     void cannotReplyToPostOfAnotherThread() {
         ForumThread thread = threadBy(me);
-        ForumThread other = ForumThread.builder().id("t2").category(category).author(me).build();
-        ForumPost foreign = ForumPost.builder().id("px").thread(other).author(me).body("x").build();
+        ForumThread other =
+                ForumThread.builder().id("t2").category(category).author(me).build();
+        ForumPost foreign =
+                ForumPost.builder().id("px").thread(other).author(me).body("x").build();
         when(threadRepository.findDetail("t1")).thenReturn(Optional.of(thread));
         when(postRepository.findById("px")).thenReturn(Optional.of(foreign));
         assertError(
                 () -> service.reply(
-                        "t1", ForumPostRequest.builder().body("trả lời").replyToPostId("px").build()),
+                        "t1",
+                        ForumPostRequest.builder()
+                                .body("trả lời")
+                                .replyToPostId("px")
+                                .build()),
                 ErrorCode.FORUM_POST_NOT_EXISTED);
     }
 

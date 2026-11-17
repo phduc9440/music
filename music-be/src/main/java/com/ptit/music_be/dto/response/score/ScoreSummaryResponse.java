@@ -4,9 +4,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import com.ptit.music_be.dto.enums.score.DifficultyLevel;
+import com.ptit.music_be.dto.enums.score.ScoreLicense;
 import com.ptit.music_be.dto.response.library.TagResponse;
 
-import com.ptit.music_be.dto.enums.score.ScoreLicense;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

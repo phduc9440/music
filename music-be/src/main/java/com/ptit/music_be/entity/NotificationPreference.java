@@ -14,7 +14,10 @@ import lombok.experimental.FieldDefaults;
 @Entity
 @Table(
         name = "notification_preferences",
-        uniqueConstraints = @UniqueConstraint(name = "uk_notification_pref", columnNames = {"member_id", "category"}))
+        uniqueConstraints =
+                @UniqueConstraint(
+                        name = "uk_notification_pref",
+                        columnNames = {"member_id", "category"}))
 @Getter
 @Setter
 @Builder

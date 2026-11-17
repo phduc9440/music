@@ -32,6 +32,7 @@ public class ForumThreadResponse {
     boolean pinned;
     /** Admin đã khóa: không trả lời thêm được. */
     boolean locked;
+
     boolean subscribed;
     String acceptedPostId;
     LocalDateTime createdAt;

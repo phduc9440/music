@@ -143,20 +143,20 @@ public class AdminForumServiceImpl implements AdminForumService {
 
     private static final String THREAD_SELECT =
             """
-            SELECT t.id, t.title, LEFT(t.body, 160), t.category_id, c.name, t.author_id, m.email, m.full_name,
-                   t.created_at, t.hidden_at, hb.id, hb.email, hb.full_name, t.pinned_at, t.locked_at,
-                   t.accepted_post_id, t.body,
-                   (SELECT COUNT(*) FROM forum_posts p WHERE p.thread_id = t.id AND p.hidden_at IS NULL),
-                   (SELECT COUNT(*) FROM forum_posts p WHERE p.thread_id = t.id AND p.hidden_at IS NOT NULL),
-                   (SELECT COUNT(*) FROM content_reports r WHERE r.status = 'PENDING' AND (
-                        (r.target_type = 'FORUM_THREAD' AND r.forum_thread_id = t.id)
-                     OR (r.target_type = 'FORUM_POST' AND r.forum_post_id IN
-                            (SELECT p2.id FROM forum_posts p2 WHERE p2.thread_id = t.id))))
-              FROM forum_threads t
-              JOIN forum_categories c ON c.id = t.category_id
-              JOIN members m ON m.id = t.author_id
-              LEFT JOIN members hb ON hb.id = t.hidden_by
-            """;
+			SELECT t.id, t.title, LEFT(t.body, 160), t.category_id, c.name, t.author_id, m.email, m.full_name,
+				t.created_at, t.hidden_at, hb.id, hb.email, hb.full_name, t.pinned_at, t.locked_at,
+				t.accepted_post_id, t.body,
+				(SELECT COUNT(*) FROM forum_posts p WHERE p.thread_id = t.id AND p.hidden_at IS NULL),
+				(SELECT COUNT(*) FROM forum_posts p WHERE p.thread_id = t.id AND p.hidden_at IS NOT NULL),
+				(SELECT COUNT(*) FROM content_reports r WHERE r.status = 'PENDING' AND (
+						(r.target_type = 'FORUM_THREAD' AND r.forum_thread_id = t.id)
+					OR (r.target_type = 'FORUM_POST' AND r.forum_post_id IN
+							(SELECT p2.id FROM forum_posts p2 WHERE p2.thread_id = t.id))))
+			FROM forum_threads t
+			JOIN forum_categories c ON c.id = t.category_id
+			JOIN members m ON m.id = t.author_id
+			LEFT JOIN members hb ON hb.id = t.hidden_by
+			""";
 
     @Override
     @Transactional(readOnly = true)
@@ -218,7 +218,9 @@ public class AdminForumServiceImpl implements AdminForumService {
     @Transactional(readOnly = true)
     public AdminForumThreadDetailResponse thread(String threadId) {
         requirePermission();
-        Query query = entityManager.createNativeQuery(THREAD_SELECT + " WHERE t.id = :id").setParameter("id", threadId);
+        Query query = entityManager
+                .createNativeQuery(THREAD_SELECT + " WHERE t.id = :id")
+                .setParameter("id", threadId);
         List<?> rows = query.getResultList();
         if (rows.isEmpty()) {
             throw new AppException(ErrorCode.FORUM_THREAD_NOT_EXISTED);
@@ -228,18 +230,18 @@ public class AdminForumServiceImpl implements AdminForumService {
         Query posts = entityManager
                 .createNativeQuery(
                         """
-                        SELECT p.id, p.body, p.author_id, m.email, m.full_name, p.created_at, p.hidden_at,
-                               hb.id, hb.email, hb.full_name,
-                               (SELECT COUNT(*) FROM content_reports r WHERE r.status = 'PENDING'
-                                   AND r.target_type = 'FORUM_POST' AND r.forum_post_id = p.id),
-                               CASE WHEN t.accepted_post_id = p.id THEN 1 ELSE 0 END
-                          FROM forum_posts p
-                          JOIN forum_threads t ON t.id = p.thread_id
-                          JOIN members m ON m.id = p.author_id
-                          LEFT JOIN members hb ON hb.id = p.hidden_by
-                         WHERE p.thread_id = :id
-                         ORDER BY p.created_at, p.id
-                        """)
+						SELECT p.id, p.body, p.author_id, m.email, m.full_name, p.created_at, p.hidden_at,
+							hb.id, hb.email, hb.full_name,
+							(SELECT COUNT(*) FROM content_reports r WHERE r.status = 'PENDING'
+								AND r.target_type = 'FORUM_POST' AND r.forum_post_id = p.id),
+							CASE WHEN t.accepted_post_id = p.id THEN 1 ELSE 0 END
+						FROM forum_posts p
+						JOIN forum_threads t ON t.id = p.thread_id
+						JOIN members m ON m.id = p.author_id
+						LEFT JOIN members hb ON hb.id = p.hidden_by
+						WHERE p.thread_id = :id
+						ORDER BY p.created_at, p.id
+						""")
                 .setParameter("id", threadId);
         List<AdminForumPostResponse> list = new ArrayList<>();
         for (Object row : posts.getResultList()) {
@@ -265,8 +267,10 @@ public class AdminForumServiceImpl implements AdminForumService {
         requireThread(threadId);
         LocalDateTime now = LocalDateTime.now();
         if (hidden) {
-            update("UPDATE forum_threads SET hidden_at = :now, hidden_by = :by WHERE id = :id AND hidden_at IS NULL",
-                    threadId, now);
+            update(
+                    "UPDATE forum_threads SET hidden_at = :now, hidden_by = :by WHERE id = :id AND hidden_at IS NULL",
+                    threadId,
+                    now);
             // Ẩn rồi thì báo cáo đang chờ trên chủ đề này coi như đã xử lý
             closeReports("r.target_type = 'FORUM_THREAD' AND r.forum_thread_id = :id", threadId, now);
         } else {
@@ -283,9 +287,11 @@ public class AdminForumServiceImpl implements AdminForumService {
         requirePermission();
         requireThread(threadId);
         if (pinned) {
-            update("UPDATE forum_threads SET pinned_at = COALESCE(pinned_at, :now), pinned_by = COALESCE(pinned_by, :by)"
+            update(
+                    "UPDATE forum_threads SET pinned_at = COALESCE(pinned_at, :now), pinned_by = COALESCE(pinned_by, :by)"
                             + " WHERE id = :id",
-                    threadId, LocalDateTime.now());
+                    threadId,
+                    LocalDateTime.now());
         } else {
             entityManager
                     .createNativeQuery("UPDATE forum_threads SET pinned_at = NULL, pinned_by = NULL WHERE id = :id")
@@ -300,9 +306,11 @@ public class AdminForumServiceImpl implements AdminForumService {
         requirePermission();
         requireThread(threadId);
         if (locked) {
-            update("UPDATE forum_threads SET locked_at = COALESCE(locked_at, :now), locked_by = COALESCE(locked_by, :by)"
+            update(
+                    "UPDATE forum_threads SET locked_at = COALESCE(locked_at, :now), locked_by = COALESCE(locked_by, :by)"
                             + " WHERE id = :id",
-                    threadId, LocalDateTime.now());
+                    threadId,
+                    LocalDateTime.now());
         } else {
             entityManager
                     .createNativeQuery("UPDATE forum_threads SET locked_at = NULL, locked_by = NULL WHERE id = :id")
@@ -316,17 +324,19 @@ public class AdminForumServiceImpl implements AdminForumService {
     public void setPostHidden(String postId, boolean hidden) {
         requirePermission();
         if (((Number) entityManager
-                        .createNativeQuery("SELECT COUNT(*) FROM forum_posts WHERE id = :id")
-                        .setParameter("id", postId)
-                        .getSingleResult())
+                                .createNativeQuery("SELECT COUNT(*) FROM forum_posts WHERE id = :id")
+                                .setParameter("id", postId)
+                                .getSingleResult())
                         .longValue()
                 == 0) {
             throw new AppException(ErrorCode.FORUM_POST_NOT_EXISTED);
         }
         LocalDateTime now = LocalDateTime.now();
         if (hidden) {
-            update("UPDATE forum_posts SET hidden_at = :now, hidden_by = :by WHERE id = :id AND hidden_at IS NULL",
-                    postId, now);
+            update(
+                    "UPDATE forum_posts SET hidden_at = :now, hidden_by = :by WHERE id = :id AND hidden_at IS NULL",
+                    postId,
+                    now);
             // Bài bị ẩn không còn là đáp án hay nhất
             entityManager
                     .createNativeQuery("UPDATE forum_threads SET accepted_post_id = NULL WHERE accepted_post_id = :id")
@@ -456,7 +466,8 @@ public class AdminForumServiceImpl implements AdminForumService {
     }
 
     static String cleanDescription(String description) {
-        String d = description == null ? "" : description.replaceAll("\\s+", " ").trim();
+        String d =
+                description == null ? "" : description.replaceAll("\\s+", " ").trim();
         if (d.length() > MAX_DESCRIPTION) {
             throw new AppException(ErrorCode.FORUM_CATEGORY_INVALID);
         }
@@ -477,7 +488,9 @@ public class AdminForumServiceImpl implements AdminForumService {
         String base = slugOf(name);
         String slug = base;
         int n = 2;
-        List<String> taken = categoryRepository.findAll().stream().map(ForumCategory::getSlug).toList();
+        List<String> taken = categoryRepository.findAll().stream()
+                .map(ForumCategory::getSlug)
+                .toList();
         while (taken.contains(slug)) {
             slug = base + "-" + n++;
         }

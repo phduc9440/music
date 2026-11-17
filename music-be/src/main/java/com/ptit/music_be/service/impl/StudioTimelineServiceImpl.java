@@ -12,14 +12,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ptit.music_be.dto.response.score.ScoreContent;
 import com.ptit.music_be.dto.response.StudioTimelineResponse;
+import com.ptit.music_be.dto.response.score.ScoreContent;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.repository.score.ScoreRepository;
-import com.ptit.music_be.service.score.ScoreContentService;
 import com.ptit.music_be.service.StudioTimelineService;
+import com.ptit.music_be.service.score.ScoreContentService;
 import com.ptit.music_be.utils.MusicXmlTimelineParser;
 
 import lombok.AccessLevel;
