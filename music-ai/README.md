@@ -21,15 +21,42 @@ Dữ liệu fine-tune cho Kaggle: `training/README.md`.
 
 ## Cài đặt
 
-Cần Python 3.10 trở lên. **Khuyến nghị Python 3.11 hoặc 3.12**: `torch` và `music21` hỗ trợ các bản này chắc chắn nhất; nếu
-`pip install` báo không tìm được bản `torch` cho Python của bạn thì tạo lại venv bằng 3.12.
+### Môi trường
+
+| Thành phần | Phiên bản | Ghi chú |
+|---|---|---|
+| Python | **3.11 hoặc 3.12** (tối thiểu 3.10) | Docker dùng 3.11; máy Mac đã chạy 357 test với 3.12.16. 3.13 trở lên chưa kiểm thử: `torch`, `torchtune`, `music21` có thể chưa có bản phù hợp |
+| Tesseract | 5.x, có gói ngôn ngữ **vie** và **eng** | Chỉ cần cho lời ca. Đã thử với 5.3.4. Thiếu thì lời ca tự bỏ qua, phần nhạc vẫn chạy |
+| Gói Python | theo `requirements.txt` | `torch` chạy được trên CPU, `DEVICE=mps` (Mac Apple Silicon) hoặc `cuda` |
+| Docker | image `python:3.11-slim` | Đã cài sẵn Tesseract vie + eng, build lỗi nếu thiếu |
+
+Cài Tesseract (ngoài pip):
+
+```bash
+brew install tesseract tesseract-lang
+sudo apt install tesseract-ocr tesseract-ocr-vie tesseract-ocr-eng
+```
+
+Dòng đầu cho macOS, dòng sau cho Ubuntu/Debian.
+
+### Cài gói Python
 
 ```bash
 cd music-ai
-python3 -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python scripts/check_env.py
 ```
+
+`check_env.py` in phiên bản Python, từng gói, Tesseract và các cảnh báo (kể cả khi `pip` và `python` thuộc hai bản Python
+khác nhau). Thấy `OK` là đủ để chạy; dán kết quả của nó khi cần nhờ hỗ trợ.
+
+Luôn cài bằng **`python -m pip`**, không gõ `pip` trần: nếu `.venv` được tạo từ bản Python khác rồi nâng cấp, lệnh `pip`
+có thể cài gói vào bản Python khác với `python` đang chạy, nên cài xong vẫn báo thiếu gói. Khi đó tạo lại venv:
+`rm -rf .venv && python3.12 -m venv .venv`.
+
+Khi dán lệnh vào zsh (macOS), không kèm chú thích `# ...` trên cùng dòng: zsh mặc định đưa chúng cho lệnh làm tham số.
 
 ## Chạy
 
@@ -287,7 +314,7 @@ quá 10 phút). Có GPU NVIDIA thì `DEVICE=auto` tự dùng; trên Mac Apple Si
 ## Test
 
 ```bash
-pytest -q          # 340+ test, khoảng 2-3 phút; test PDF thật, music21 thật, Tesseract thật tự bỏ qua nếu chưa cài
+python -m pytest -q   # 340+ test, khoảng 2-3 phút; test PDF thật, music21 thật, Tesseract thật tự bỏ qua nếu chưa cài
 ```
 
 `tests/test_convert_kern.py` chạy music21 thật (kern → MusicXML → MIDI) và chỉ chạy khi đã `pip install music21`; các test
