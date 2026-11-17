@@ -80,6 +80,8 @@ type Phase = 'loading' | 'ready' | 'notFound' | 'notReady' | 'parseError' | 'err
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 const MOD = isMac ? '⌘' : 'Ctrl';
 const ALT = isMac ? '⌥' : 'Alt';
+/** Vùng chọn của người khác chọn quá nhiều ô thì chỉ vẽ chừng này ô đầu, tránh phủ kín bản nhạc. */
+const MAX_CURSOR_MEASURES = 16;
 
 /** Danh sách phím tắt trong hộp thoại "Phím tắt" (mở bằng phím ?): dựng lúc hiển thị để đổi ngôn ngữ có hiệu lực ngay. */
 const editShortcuts = (): [string, string][] => [
@@ -306,8 +308,8 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
   const [suggestXml, setSuggestXml] = useState<string | null>(null);
   const canEdit = score.canEdit || suggesting;
 
-  // Đồng chỉnh sửa (chỉ người sửa được, không kèm chế độ đề xuất): bật tay, và chỉ khi không còn thay đổi chưa lưu
-  const [liveOn, setLiveOn] = useState(false);
+  // Đồng chỉnh sửa: người sửa được ở chế độ sửa trực tiếp tự vào phiên chung (như Google Docs), không cần bật tay.
+  // Không nối được / hết chỗ / gói không hỗ trợ thì `live.failed` và editor sửa riêng như trước.
   const selectionRef = useRef<ReadonlySet<string>>(new Set());
   const getLiveSelection = useCallback((): LiveSelection | null => {
     const infos = [...selectionRef.current].map((id) => doc.getInfo(id)).filter((i) => i !== undefined);
@@ -318,7 +320,7 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
   const live = useLiveCollab({
     scoreId: score.id,
     doc,
-    enabled: liveOn && score.canEdit && !suggesting,
+    enabled: score.canEdit && !suggesting,
     getSelection: getLiveSelection,
   });
 
@@ -347,12 +349,35 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
   });
   const lockBoxes = useMemo<LockBox[]>(() => {
     const { locks, participants, selfSessionId } = live.state;
-    if (!locks) return [];
     const boxes: LockBox[] = [];
-    for (const entry of locks.locks) {
+    const taken = new Set<number>();
+    // Ô người khác đang giữ để sửa: viền liền + tên
+    for (const entry of locks?.locks ?? []) {
       if (entry.sessionId === selfSessionId) continue;
       const holder = participants.find((p) => p.sessionId === entry.sessionId);
-      boxes.push({ measureIndex: entry.measureIndex, label: holder?.name ?? '', colorIndex: holder?.colorIndex ?? 0 });
+      boxes.push({
+        measureIndex: entry.measureIndex,
+        label: holder?.name ?? '',
+        colorIndex: holder?.colorIndex ?? 0,
+        kind: 'lock',
+      });
+      taken.add(entry.measureIndex);
+    }
+    // Vị trí người khác đang chọn (chưa giữ khóa): viền nét đứt, tên ở ô đầu của vùng chọn
+    for (const p of participants) {
+      if (p.sessionId === selfSessionId || !p.selection) continue;
+      const last = Math.min(p.selection.to, p.selection.from + MAX_CURSOR_MEASURES - 1);
+      for (let i = p.selection.from; i <= last; i++) {
+        if (taken.has(i)) continue;
+        taken.add(i);
+        boxes.push({
+          measureIndex: i,
+          label: p.name,
+          colorIndex: p.colorIndex,
+          kind: 'cursor',
+          showLabel: i === p.selection.from,
+        });
+      }
     }
     return boxes;
   }, [live.state]);
@@ -719,22 +744,35 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
         </div>
 
         <div className="sv-toolbar__right">
-          {score.canEdit && !suggesting && (
-            <button
-              className={`sc-btn${liveOn ? ' is-active' : ''}`}
-              aria-pressed={liveOn}
-              disabled={editor.dirty || editor.saving}
-              onClick={() => setLiveOn((on) => !on)}
-              title={editor.dirty ? t('live.toggle.saveFirst') : liveOn ? t('live.toggle.off') : t('live.toggle.on')}
+          {score.canReview && score.canEdit && (
+            // Một bộ chuyển chế độ như Google Docs: sửa trực tiếp (cùng sửa với mọi người) hoặc chỉ đề xuất
+            <div
+              className="sv-segment sv-mode"
+              role="group"
+              aria-label={t('suggestions.mode.group')}
+              title={editor.dirty ? t('suggestions.mode.saveFirst') : undefined}
             >
-              {liveOn ? t('live.toggle.stop') : t('live.toggle.start')}
-            </button>
+              <button
+                aria-pressed={!suggesting}
+                disabled={editor.dirty || editor.saving}
+                onClick={() => setSuggesting(false)}
+              >
+                {t('suggestions.mode.direct')}
+              </button>
+              <button
+                aria-pressed={suggesting}
+                disabled={editor.dirty || editor.saving}
+                onClick={() => setSuggesting(true)}
+              >
+                {t('suggestions.mode.suggest')}
+              </button>
+            </div>
           )}
-          {score.canReview && (
+          {score.canReview && !score.canEdit && (
             <button
               className={`sc-btn${suggesting ? ' is-active' : ''}`}
               aria-pressed={suggesting}
-              disabled={editor.dirty || editor.saving || liveOn}
+              disabled={editor.dirty || editor.saving}
               onClick={() => setSuggesting((on) => !on)}
               title={
                 editor.dirty
@@ -744,11 +782,7 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
                     : t('suggestions.mode.switchToSuggest')
               }
             >
-              {suggesting
-                ? score.canEdit
-                  ? t('suggestions.mode.direct')
-                  : t('suggestions.mode.exit')
-                : t('suggestions.mode.suggest')}
+              {suggesting ? t('suggestions.mode.exit') : t('suggestions.mode.suggest')}
             </button>
           )}
           {canEdit && (

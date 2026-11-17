@@ -27,6 +27,18 @@ import { LiveClient } from './LiveClient';
 const RELEASE_IDLE_MS = 5_000;
 /** Gom các lần đổi vùng chọn liên tiếp thành một yêu cầu khóa. */
 const LOCK_DEBOUNCE_MS = 150;
+/** Chu kỳ kiểm tra "treo": chờ vào phiên, chờ khóa hoặc chờ xác nhận quá lâu thì tự thử lại. */
+const WATCHDOG_MS = 2_000;
+const JOIN_TIMEOUT_MS = 6_000;
+const LOCK_TIMEOUT_MS = 4_000;
+const OP_TIMEOUT_MS = 8_000;
+/** Vùng chọn đổi thì báo cho mọi người sau chừng này (ms), không đợi nhịp tim. */
+const PRESENCE_THROTTLE_MS = 200;
+/** Mã lỗi của server (khớp `ErrorCode` ở BE). */
+const ERR_NOT_IN_SESSION = 1002;
+const ERR_SESSION_FULL = 3121;
+const ERR_COLLAB_UNAVAILABLE = 3123;
+const ERR_RATE_LIMITED = 3126;
 
 /** Các phần tử trong <attributes> mà thay đổi chúng là thay đổi cấu trúc (khớp `LiveDocument.contextSignature` ở BE). */
 const CONTEXT_TAGS = new Set(['divisions', 'key', 'time', 'clef', 'staves', 'transpose']);
@@ -52,6 +64,8 @@ export interface SessionCallbacks {
   /** Báo người dùng bằng khóa dịch; `error` là lỗi từ server. */
   onNotice: (key: string, params?: Record<string, string | number>) => void;
   onServerError: (error: LiveError) => void;
+  /** Không vào được phiên (hết chỗ, gói không hỗ trợ, không có quyền): editor quay về sửa riêng. */
+  onUnavailable: (code: number) => void;
   getSelection: () => LiveSelection | null;
 }
 
@@ -104,6 +118,15 @@ export class LiveSession {
   private lockTimer: number | null = null;
   private opCounter = 0;
   private stopped = false;
+  private joinSince = 0;
+  private lockSince = 0;
+  private sentSince = 0;
+  private watchdog: number | null = null;
+  private presenceTimer: number | null = null;
+  private lastPresenceKey = '';
+  private lastRejoin = 0;
+  /** Thao tác của người khác đến trước khi kết quả vào phiên về tới: áp dụng sau, đúng thứ tự. */
+  private early: LiveOp[] = [];
   private readonly scoreId: string;
   private readonly doc: ScoreDocument;
   private readonly canEdit: boolean;
@@ -126,7 +149,7 @@ export class LiveSession {
         onOp: (op) => this.onOp(op),
         onRejected: (r) => this.onRejected(r),
         onVersion: (v) => this.onVersion(v),
-        onError: (e) => this.cb.onServerError(e),
+        onError: (e) => this.onServerError(e),
       },
       cb.getSelection,
     );
@@ -134,12 +157,75 @@ export class LiveSession {
 
   start(): void {
     this.client.start();
+    this.watchdog = window.setInterval(() => this.tick(), WATCHDOG_MS);
+    document.addEventListener('visibilitychange', this.onVisible);
   }
 
   async stop(): Promise<void> {
     this.stopped = true;
     if (this.lockTimer !== null) window.clearTimeout(this.lockTimer);
+    if (this.presenceTimer !== null) window.clearTimeout(this.presenceTimer);
+    if (this.watchdog !== null) window.clearInterval(this.watchdog);
+    document.removeEventListener('visibilitychange', this.onVisible);
     await this.client.stop();
+  }
+
+  /** Quay lại tab sau thời gian ẩn (trình duyệt làm chậm hẹn giờ): báo ngay là còn ở đây, server quên thì vào lại. */
+  private readonly onVisible = (): void => {
+    if (document.visibilityState === 'visible' && this.link === 'online') this.client.presence();
+  };
+
+  /** Chống treo: mỗi vài giây xem có bước nào chờ quá lâu để thử lại, và đẩy tiếp hàng đợi. */
+  private tick(): void {
+    if (this.stopped || this.link === 'offline') return;
+    const now = Date.now();
+    if (this.awaitingJoin) {
+      if (now - this.joinSince > JOIN_TIMEOUT_MS) this.join();
+      return;
+    }
+    if (this.waitingLock && now - this.lockSince > LOCK_TIMEOUT_MS) this.waitingLock = false;
+    if (this.inFlight && now - this.sentSince > OP_TIMEOUT_MS) {
+      // Không thấy xác nhận: vào lại với seq hiện có; nếu server đã nhận thì thao tác nằm trong phần phát lại
+      this.join();
+      return;
+    }
+    this.pump();
+  }
+
+  private onServerError(error: LiveError): void {
+    if (error.code === ERR_NOT_IN_SESSION) {
+      if (this.awaitingJoin) this.fail(error.code);
+      else if (Date.now() - this.lastRejoin > 3_000) {
+        this.lastRejoin = Date.now(); // server quên tab này (hết hạn nhịp tim, khởi động lại): vào lại, giữ hàng đợi
+        this.join();
+      }
+      return;
+    }
+    if (error.code === ERR_SESSION_FULL || error.code === ERR_COLLAB_UNAVAILABLE) {
+      this.fail(error.code);
+      return;
+    }
+    this.cb.onServerError(error);
+    if (error.code === ERR_RATE_LIMITED) {
+      if (this.inFlight) this.queue.unshift(this.inFlight); // gửi lại ở lần kiểm tra sau
+      this.inFlight = null;
+      this.publishState();
+      return;
+    }
+    if (this.awaitingJoin) {
+      this.fail(error.code);
+    } else if (this.waitingLock || this.inFlight) {
+      this.cb.onNotice('live.notice.resync');
+      this.dropQueue();
+      this.seq = -1;
+      this.join();
+    }
+  }
+
+  private fail(code: number): void {
+    this.awaitingJoin = false;
+    this.dropQueue();
+    this.cb.onUnavailable(code);
   }
 
   // ------------------------------------------------------------------ giao diện cho editor
@@ -184,6 +270,19 @@ export class LiveSession {
     const now = Date.now();
     refs.forEach((r) => this.lastWanted.set(measureKey(r.partIndex, r.measureIndex), now));
     this.scheduleLockSync();
+    this.schedulePresence();
+  }
+
+  /** Báo vị trí của mình cho mọi người ngay khi vùng chọn đổi (như con trỏ trong Google Docs). */
+  private schedulePresence(): void {
+    if (this.presenceTimer !== null || this.link !== 'online') return;
+    this.presenceTimer = window.setTimeout(() => {
+      this.presenceTimer = null;
+      const key = JSON.stringify(this.cb.getSelection());
+      if (key === this.lastPresenceKey || this.link !== 'online') return;
+      this.lastPresenceKey = key;
+      this.client.presence();
+    }, PRESENCE_THROTTLE_MS);
   }
 
   save(): void {
@@ -196,6 +295,8 @@ export class LiveSession {
     if (this.stopped) return;
     this.setLink('connecting');
     this.awaitingJoin = true;
+    this.joinSince = Date.now();
+    this.lastPresenceKey = JSON.stringify(this.cb.getSelection());
     this.client.join(this.canEdit, this.seq);
   }
 
@@ -203,13 +304,21 @@ export class LiveSession {
     if (result.scoreId !== this.scoreId || !this.awaitingJoin) return;
     this.awaitingJoin = false;
     this.selfSessionId = result.sessionId;
-    if (this.inFlight) this.queue.unshift(this.inFlight); // gửi lại gói đang bay lúc mất mạng, server loại trùng theo opId
-    this.inFlight = null;
     this.waitingLock = false;
     if (result.xml !== null) {
+      // Nhận cả bài từ server: thao tác đang chờ dựng trên bản cũ nên bỏ, tài liệu về đúng bản server
+      const hadPending = this.inFlight !== null || this.queue.length > 0;
+      this.dropQueue();
       this.loadFull(result.xml, result.hashes ?? []);
       this.cb.onDocChanged('all');
+      if (hadPending) this.cb.onNotice('live.notice.resync');
     } else {
+      // Gói đang bay lúc mất mạng: nếu server đã nhận thì nó nằm trong phần phát lại, không gửi lại (server loại trùng
+      // theo opId nhưng không xác nhận lần hai)
+      const applied = new Set(result.ops.map((op) => op.opId));
+      if (this.inFlight && !applied.has(this.inFlight.opId)) this.queue.unshift(this.inFlight);
+      this.inFlight = null;
+      this.queue = this.queue.filter((q) => !applied.has(q.opId));
       const touched = new Set<string>();
       let structural = false;
       for (const op of result.ops) structural = this.applyRemote(op, touched) || structural;
@@ -219,6 +328,9 @@ export class LiveSession {
     this.cb.onVersion(result.baseVersion);
     this.setLink('online');
     this.scheduleLockSync();
+    const early = this.early.sort((a, b) => a.seq - b.seq);
+    this.early = [];
+    early.forEach((op) => this.onOp(op));
     this.pump();
   }
 
@@ -254,23 +366,27 @@ export class LiveSession {
     if (locks.scoreId !== this.scoreId) return;
     this.locks = locks;
     this.publishState();
-    if (this.waitingLock) this.pump();
+    this.pump(); // khóa vừa về có thể là khóa thao tác đang chờ (tin kết quả khóa có thể đến trước tin danh sách khóa)
   }
 
   private onLockResult(result: LiveLockResult): void {
     if (result.scoreId !== this.scoreId || result.sessionId !== this.selfSessionId || result.released) return;
     if (!this.waitingLock) return;
-    this.waitingLock = false;
     if (result.granted) {
-      this.pump();
+      this.pump(); // vẫn chờ danh sách khóa nếu nó chưa về; pump sẽ tự gửi khi thấy mình đã giữ
       return;
     }
+    this.waitingLock = false;
     this.cb.onNotice('live.notice.locked', { name: result.heldByName ?? '' });
     this.revertPending();
   }
 
   private onOp(op: LiveOp): void {
     if (op.scoreId !== this.scoreId) return;
+    if (this.awaitingJoin) {
+      this.early.push(op);
+      return;
+    }
     if (this.inFlight && op.opId === this.inFlight.opId) {
       this.acknowledge(op);
       return;
@@ -391,6 +507,7 @@ export class LiveSession {
     if (!this.holdsLocksFor(next)) {
       if (!this.waitingLock) {
         this.waitingLock = true;
+        this.lockSince = Date.now();
         if (next.measures === null) this.client.lock([], true, false);
         else
           this.client.lock(
@@ -403,6 +520,8 @@ export class LiveSession {
     }
     this.queue.shift();
     this.inFlight = next;
+    this.waitingLock = false;
+    this.sentSince = Date.now();
     this.client.ops({
       opId: next.opId,
       baseSeq: this.seq,

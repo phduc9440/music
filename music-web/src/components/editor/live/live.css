@@ -1,4 +1,17 @@
 /* Đồng chỉnh sửa thời gian thực: viền khóa ô nhịp, thanh người cùng sửa, trạng thái đồng bộ */
+/* Vị trí người khác đang chọn (chưa sửa): nét đứt, nhạt hơn ô đang giữ */
+.ed-lock-box[data-kind='cursor'] {
+  border-width: 1.5px;
+  border-style: dashed;
+  background: transparent;
+  transition: left 0.12s, top 0.12s;
+}
+.ed-lock-box[data-label='']::after {
+  display: none;
+}
+.ed-lock-box::after {
+  transition: opacity 0.2s;
+}
 .ed-lock-box {
   --live-color: var(--ui-measure-locked);
   position: absolute;

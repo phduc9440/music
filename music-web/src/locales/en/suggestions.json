@@ -9,7 +9,8 @@
     "banner": "Suggesting – changes are not in the main score yet",
     "send": "Send suggestion",
     "sendTitle": "Send suggestion ({shortcut})",
-    "sent": "Suggestion sent"
+    "sent": "Suggestion sent",
+    "group": "Editing mode"
   },
   "dialog": {
     "title": "Send a suggestion",

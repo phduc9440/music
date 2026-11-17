@@ -1,11 +1,4 @@
 {
-  "toggle": {
-    "start": "Edit together",
-    "stop": "Stop editing together",
-    "on": "Turn on real-time co-editing",
-    "off": "Turn off co-editing",
-    "saveFirst": "Save your current changes before turning on co-editing"
-  },
   "status": {
     "synced": "Synced",
     "syncing": "Sending {count} changes",
@@ -20,6 +13,12 @@
     "lockLost": "You no longer hold this measure, your change was discarded",
     "invalid": "The change was invalid, the shared score was reloaded",
     "resync": "The shared score changed, syncing again",
-    "saving": "Saving as a new version"
-  }
+    "saving": "Saving as a new version",
+    "full": "The shared session is full (10 editors); you are editing on your own. Others will not see your changes until you save",
+    "unavailable": "The owner's plan does not include real-time co-editing; you are editing on your own",
+    "connectFailed": "Could not reach the co-editing server; you are editing on your own. Reload to try again",
+    "failed": "Could not join the shared session; you are editing on your own. Reload to try again"
+  },
+  "at": "bar {from}",
+  "atRange": "bars {from}–{to}"
 }

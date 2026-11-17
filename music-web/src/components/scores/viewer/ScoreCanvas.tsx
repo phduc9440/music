@@ -247,13 +247,18 @@ export interface LockBox {
   label: string;
   /** Màu của người đó (0..7, khớp `--ui-live-N`). */
   colorIndex: number;
+  /** `lock`: ô đang được sửa (viền liền); `cursor`: chỉ đang chọn ở đó (viền nét đứt). Mặc định `lock`. */
+  kind?: 'lock' | 'cursor';
+  /** Hiện tên ở góc; false để vùng chọn nhiều ô chỉ ghi tên ở ô đầu. Mặc định true. */
+  showLabel?: boolean;
 }
 
 /** Vẽ viền màu quanh các ô nhịp mà người khác đang sửa, kèm nhãn tên ở góc trên. Không bắt sự kiện chuột. */
 const drawLockBoxes = (host: HTMLElement, locks: readonly LockBox[]): void => {
   host.querySelectorAll(`.${LOCK_BOX_CLASS}`).forEach((el) => el.remove());
   if (locks.length === 0) return;
-  const byMeasure = new Map(locks.map((l) => [l.measureIndex, l]));
+  const byMeasure = new Map<number, LockBox>();
+  for (const l of locks) if (!byMeasure.has(l.measureIndex)) byMeasure.set(l.measureIndex, l);
   const origin = host.getBoundingClientRect();
   for (const [measureIndex, box] of collectMeasureBoxes(host, (i) => byMeasure.has(i))) {
     const lock = byMeasure.get(measureIndex);
@@ -261,7 +266,8 @@ const drawLockBoxes = (host: HTMLElement, locks: readonly LockBox[]): void => {
     const div = document.createElement('div');
     div.className = LOCK_BOX_CLASS;
     div.dataset.color = String(lock.colorIndex);
-    div.dataset.label = lock.label;
+    div.dataset.label = lock.showLabel === false ? '' : lock.label;
+    div.dataset.kind = lock.kind ?? 'lock';
     div.style.left = `${box.l - origin.left - ISSUE_PAD_X}px`;
     div.style.top = `${box.t - origin.top - ISSUE_PAD_Y}px`;
     div.style.width = `${box.r - box.l + ISSUE_PAD_X * 2}px`;
@@ -758,7 +764,7 @@ export default function ScoreCanvas({
   }, [commentKey]);
 
   // Vẽ lại viền khóa khi người khác đổi vùng đang sửa (so theo nội dung, không theo tham chiếu mảng)
-  const lockKey = lockBoxes.map((l) => `${l.measureIndex}:${l.colorIndex}:${l.label}`).join('|');
+  const lockKey = lockBoxes.map((l) => `${l.measureIndex}:${l.colorIndex}:${l.label}:${l.kind ?? ''}:${l.showLabel ?? ''}`).join('|');
   useEffect(() => {
     const host = hostRef.current;
     if (host) drawLockBoxes(host, latest.current.lockBoxes);

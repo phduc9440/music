@@ -9,7 +9,8 @@
     "banner": "Đang đề xuất – thay đổi chưa vào bản chính",
     "send": "Gửi đề xuất",
     "sendTitle": "Gửi đề xuất ({shortcut})",
-    "sent": "Đã gửi đề xuất"
+    "sent": "Đã gửi đề xuất",
+    "group": "Chế độ chỉnh sửa"
   },
   "dialog": {
     "title": "Gửi đề xuất sửa",

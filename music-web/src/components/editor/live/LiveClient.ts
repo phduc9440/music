@@ -62,6 +62,7 @@ export class LiveClient {
     this.client = new Client({
       brokerURL: socketUrl(),
       reconnectDelay: 3_000,
+      connectionTimeout: 8_000, // bắt tay treo (proxy, origin lạ) thì hủy và thử lại thay vì chờ mãi
       heartbeatIncoming: 10_000,
       heartbeatOutgoing: 10_000,
       onConnect: () => {
@@ -73,6 +74,7 @@ export class LiveClient {
         handlers.onDisconnect();
       },
       onStompError: () => handlers.onDisconnect(),
+      onWebSocketError: () => handlers.onDisconnect(),
     });
   }
 

@@ -1,11 +1,4 @@
 {
-  "toggle": {
-    "start": "Cùng sửa",
-    "stop": "Dừng cùng sửa",
-    "on": "Bật chế độ cùng sửa theo thời gian thực",
-    "off": "Tắt chế độ cùng sửa",
-    "saveFirst": "Lưu thay đổi hiện tại trước khi bật chế độ cùng sửa"
-  },
   "status": {
     "synced": "Đã đồng bộ",
     "syncing": "Đang gửi {count} thay đổi",
@@ -20,6 +13,12 @@
     "lockLost": "Bạn không còn giữ khóa ô nhịp này, thay đổi bị hủy",
     "invalid": "Thay đổi không hợp lệ, đã tải lại bản nhạc chung",
     "resync": "Bản nhạc chung đã thay đổi, đang đồng bộ lại",
-    "saving": "Đang lưu thành phiên bản mới"
-  }
+    "saving": "Đang lưu thành phiên bản mới",
+    "full": "Phiên cùng sửa đã đủ 10 người, bạn đang sửa riêng. Thay đổi sẽ không hiện cho người khác cho tới khi bạn lưu",
+    "unavailable": "Gói của chủ bản nhạc chưa hỗ trợ cùng sửa, bạn đang sửa riêng",
+    "connectFailed": "Không nối được máy chủ cùng sửa, bạn đang sửa riêng. Tải lại trang để thử lại",
+    "failed": "Không vào được phiên cùng sửa, bạn đang sửa riêng. Tải lại trang để thử lại"
+  },
+  "at": "ô {from}",
+  "atRange": "ô {from}–{to}"
 }

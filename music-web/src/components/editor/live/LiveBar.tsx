@@ -1,9 +1,19 @@
 import { t } from '../../../i18n/core';
 import { Avatar } from '../../ui';
+import type { LiveParticipant } from '../../../types';
 import type { LiveState } from './LiveSession';
 import './live.css';
 
 const MAX_SHOWN = 5;
+
+/** Tên (kèm "bạn" nếu là mình) và ô nhịp đang chọn, ví dụ "Lan – ô 5–7". */
+function where(p: LiveParticipant, selfId: string | null): string {
+  const name = p.sessionId === selfId ? t('live.you', { name: p.name }) : p.name;
+  if (!p.selection) return name;
+  const from = p.selection.from + 1;
+  const to = p.selection.to + 1;
+  return `${name} – ${t(from === to ? 'live.at' : 'live.atRange', { from, to })}`;
+}
 
 interface Props {
   state: LiveState;
@@ -29,7 +39,7 @@ export default function LiveBar({ state }: Props) {
             key={p.sessionId}
             className="live-avatar"
             data-color={p.colorIndex}
-            title={p.sessionId === state.selfSessionId ? t('live.you', { name: p.name }) : p.name}
+            title={where(p, state.selfSessionId)}
           >
             <Avatar name={p.name} size={24} />
           </span>
