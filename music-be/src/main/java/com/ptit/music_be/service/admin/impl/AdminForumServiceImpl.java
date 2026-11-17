@@ -141,8 +141,7 @@ public class AdminForumServiceImpl implements AdminForumService {
 
     // ------------------------------------------------------------------ chủ đề
 
-    private static final String THREAD_SELECT =
-            """
+    private static final String THREAD_SELECT = """
 			SELECT t.id, t.title, LEFT(t.body, 160), t.category_id, c.name, t.author_id, m.email, m.full_name,
 				t.created_at, t.hidden_at, hb.id, hb.email, hb.full_name, t.pinned_at, t.locked_at,
 				t.accepted_post_id, t.body,
@@ -227,9 +226,7 @@ public class AdminForumServiceImpl implements AdminForumService {
         }
         AdminForumThreadResponse head = toThread((Object[]) rows.get(0), true);
 
-        Query posts = entityManager
-                .createNativeQuery(
-                        """
+        Query posts = entityManager.createNativeQuery("""
 						SELECT p.id, p.body, p.author_id, m.email, m.full_name, p.created_at, p.hidden_at,
 							hb.id, hb.email, hb.full_name,
 							(SELECT COUNT(*) FROM content_reports r WHERE r.status = 'PENDING'
@@ -241,8 +238,7 @@ public class AdminForumServiceImpl implements AdminForumService {
 						LEFT JOIN members hb ON hb.id = p.hidden_by
 						WHERE p.thread_id = :id
 						ORDER BY p.created_at, p.id
-						""")
-                .setParameter("id", threadId);
+						""").setParameter("id", threadId);
         List<AdminForumPostResponse> list = new ArrayList<>();
         for (Object row : posts.getResultList()) {
             Object[] c = (Object[]) row;

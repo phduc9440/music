@@ -80,11 +80,12 @@ final class BlankScoreBuilder {
             case PIANO -> List.of(new PartSpec("Piano", piano));
             case VOICE_PIANO -> List.of(new PartSpec("Voice", List.of(TREBLE)), new PartSpec("Piano", piano));
             case GUITAR -> List.of(new PartSpec("Guitar", List.of(TREBLE_OCTAVE_DOWN)));
-            case SATB -> List.of(
-                    new PartSpec("Soprano", List.of(TREBLE)),
-                    new PartSpec("Alto", List.of(TREBLE)),
-                    new PartSpec("Tenor", List.of(TREBLE_OCTAVE_DOWN)),
-                    new PartSpec("Bass", List.of(BASS)));
+            case SATB ->
+                List.of(
+                        new PartSpec("Soprano", List.of(TREBLE)),
+                        new PartSpec("Alto", List.of(TREBLE)),
+                        new PartSpec("Tenor", List.of(TREBLE_OCTAVE_DOWN)),
+                        new PartSpec("Bass", List.of(BASS)));
         };
     }
 

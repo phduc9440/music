@@ -19,8 +19,7 @@ class MusicXmlTimelineParserTest {
 
     @Test
     void buildsChordStepsAndQuarterNoteBeats() {
-        StudioTimelineResponse timeline = parse(
-                """
+        StudioTimelineResponse timeline = parse("""
 				<score-partwise version="3.1">
 				<part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>
 				<part id="P1">
@@ -52,8 +51,7 @@ class MusicXmlTimelineParserTest {
 
     @Test
     void backupPositionsSecondStaffAtTheStartOfTheMeasure() {
-        StudioTimelineResponse timeline = parse(
-                """
+        StudioTimelineResponse timeline = parse("""
 				<score-partwise version="3.1">
 				<part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>
 				<part id="P1">
@@ -78,8 +76,7 @@ class MusicXmlTimelineParserTest {
 
     @Test
     void tiedContinuationIsNotScorableAndGraceNotesAreNotScorable() {
-        StudioTimelineResponse timeline = parse(
-                """
+        StudioTimelineResponse timeline = parse("""
 				<score-partwise version="3.1">
 				<part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>
 				<part id="P1">
@@ -108,8 +105,7 @@ class MusicXmlTimelineParserTest {
 
     @Test
     void reportsRepeatWarningsAndLaterTempoChanges() {
-        StudioTimelineResponse timeline = parse(
-                """
+        StudioTimelineResponse timeline = parse("""
 				<score-partwise version="3.1">
 				<part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>
 				<part id="P1">

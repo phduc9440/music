@@ -51,8 +51,7 @@ public class AdminActivityServiceImpl implements AdminActivityService {
      * mở khóa và chia sẻ chỉ giữ lần đổi gần nhất (cột trên dòng gốc); vai trò hay chia sẻ bị thu hồi thì dòng mất nên
      * không hiện. Chia sẻ chỉ chủ bản nhạc hoặc quản lý nhóm cấp được (admin không có quyền này).
      */
-    static final String SOURCES =
-            """
+    static final String SOURCES = """
 			SELECT CONCAT('REPORT_CREATED:', r.id) AS id, 'REPORT_CREATED' AS type, r.created_at AS occurred_at,
 				r.reporter_id AS actor_id, r.target_type AS target_type,
 				COALESCE(r.score_id, r.comment_id, r.forum_thread_id, r.forum_post_id) AS target_id,

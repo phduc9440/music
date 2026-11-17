@@ -66,18 +66,14 @@ public class StudioTimelineServiceImpl implements StudioTimelineService {
         StudioTimelineResponse timeline =
                 MusicXmlTimelineParser.parse(scoreId, contentHash, score.getTitle(), fallbackTempo, content.bytes());
         String json = writeTimeline(timeline);
-        jdbcTemplate.update(
-                """
+        jdbcTemplate.update("""
 				INSERT INTO score_timeline (score_id, content_hash, timeline)
 				VALUES (?, ?, ?)
 				ON DUPLICATE KEY UPDATE
 					content_hash = VALUES(content_hash),
 					timeline = VALUES(timeline),
 					created_at = CURRENT_TIMESTAMP(6)
-				""",
-                scoreId,
-                contentHash,
-                json);
+				""", scoreId, contentHash, json);
         return timeline;
     }
 

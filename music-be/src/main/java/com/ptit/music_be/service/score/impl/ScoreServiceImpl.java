@@ -439,35 +439,42 @@ public class ScoreServiceImpl implements ScoreService {
         String key = sort == null ? "" : sort.trim().toUpperCase(Locale.ROOT);
         Page<Score> result =
                 switch (key) {
-                    case "", "NEWEST" -> scoreRepository.searchPublic(
-                            safeKeyword,
-                            safeDifficulty,
-                            safeTagId,
-                            safeComposerId,
-                            staffMin,
-                            staffMax,
-                            safeKey,
-                            PageRequest.of(
-                                    safePage, safeSize, Sort.by(Sort.Order.desc("createdAt"), Sort.Order.asc("id"))));
-                    case "VIEWS" -> scoreRepository.searchPublic(
-                            safeKeyword,
-                            safeDifficulty,
-                            safeTagId,
-                            safeComposerId,
-                            staffMin,
-                            staffMax,
-                            safeKey,
-                            PageRequest.of(
-                                    safePage, safeSize, Sort.by(Sort.Order.desc("viewCount"), Sort.Order.asc("id"))));
-                    case "RATING" -> scoreRepository.searchPublicTopRated(
-                            safeKeyword,
-                            safeDifficulty,
-                            safeTagId,
-                            safeComposerId,
-                            staffMin,
-                            staffMax,
-                            safeKey,
-                            PageRequest.of(safePage, safeSize));
+                    case "", "NEWEST" ->
+                        scoreRepository.searchPublic(
+                                safeKeyword,
+                                safeDifficulty,
+                                safeTagId,
+                                safeComposerId,
+                                staffMin,
+                                staffMax,
+                                safeKey,
+                                PageRequest.of(
+                                        safePage,
+                                        safeSize,
+                                        Sort.by(Sort.Order.desc("createdAt"), Sort.Order.asc("id"))));
+                    case "VIEWS" ->
+                        scoreRepository.searchPublic(
+                                safeKeyword,
+                                safeDifficulty,
+                                safeTagId,
+                                safeComposerId,
+                                staffMin,
+                                staffMax,
+                                safeKey,
+                                PageRequest.of(
+                                        safePage,
+                                        safeSize,
+                                        Sort.by(Sort.Order.desc("viewCount"), Sort.Order.asc("id"))));
+                    case "RATING" ->
+                        scoreRepository.searchPublicTopRated(
+                                safeKeyword,
+                                safeDifficulty,
+                                safeTagId,
+                                safeComposerId,
+                                staffMin,
+                                staffMax,
+                                safeKey,
+                                PageRequest.of(safePage, safeSize));
                     default -> throw new AppException(ErrorCode.INVALID_REQUEST);
                 };
         return toExplorePage(result);
@@ -990,9 +997,9 @@ public class ScoreServiceImpl implements ScoreService {
             case "created" -> Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"));
             case "oldest" -> Sort.by(Sort.Order.asc("createdAt"), Sort.Order.asc("id"));
             case "title" -> Sort.by(Sort.Order.asc("title").ignoreCase(), Sort.Order.asc("id"));
-                // Nhiều lượt xem trước; bằng nhau thì bản cập nhật gần nhất trước
+            // Nhiều lượt xem trước; bằng nhau thì bản cập nhật gần nhất trước
             case "views" -> Sort.by(Sort.Order.desc("viewCount"), Sort.Order.desc("updatedAt"), Sort.Order.desc("id"));
-                // Mặc định (và mọi giá trị lạ): cập nhật gần nhất trước
+            // Mặc định (và mọi giá trị lạ): cập nhật gần nhất trước
             default -> Sort.by(Sort.Order.desc("updatedAt"), Sort.Order.desc("id"));
         };
     }

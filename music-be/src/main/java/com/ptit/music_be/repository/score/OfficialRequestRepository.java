@@ -23,8 +23,7 @@ public interface OfficialRequestRepository extends JpaRepository<OfficialRequest
      * Bản nhạc đã có bản sao còn sống trong kho mẫu (lời xin ACCEPTED mà bản sao chưa bị xóa hoặc vào thùng rác).
      * Bản sao đã vào thùng rác thì không tính, nên bản gốc xin lại được dù lời xin cũ vẫn ghi ACCEPTED.
      */
-    @Query(
-            """
+    @Query("""
 			select count(r) > 0 from OfficialRequest r
 			where r.score.id = :scoreId
 			and r.status = com.ptit.music_be.dto.enums.score.OfficialRequestStatus.ACCEPTED
@@ -33,8 +32,7 @@ public interface OfficialRequestRepository extends JpaRepository<OfficialRequest
     boolean hasLiveAcceptedCopy(@Param("scoreId") String scoreId);
 
     /** Lời xin đang chờ của một chủ sở hữu, mới nhất trước, kèm bản nhạc và người xin (tránh N+1). */
-    @Query(
-            """
+    @Query("""
 			select r from OfficialRequest r join fetch r.score join fetch r.requestedBy
 			where r.owner.id = :ownerId and r.status = com.ptit.music_be.dto.enums.score.OfficialRequestStatus.PENDING
 			order by r.createdAt desc, r.id
@@ -43,8 +41,7 @@ public interface OfficialRequestRepository extends JpaRepository<OfficialRequest
 
     /** Bản sao rời kho mẫu thì lời xin đã nhận được rút lại để bản gốc có thể được xin lại sau này. */
     @Modifying
-    @Query(
-            """
+    @Query("""
 			update OfficialRequest r set r.status = com.ptit.music_be.dto.enums.score.OfficialRequestStatus.CANCELED,
 				r.resolvedAt = CURRENT_TIMESTAMP
 			where r.copyScoreId = :copyScoreId
@@ -54,8 +51,7 @@ public interface OfficialRequestRepository extends JpaRepository<OfficialRequest
 
     /** ADMIN: mọi lời xin, lọc theo trạng thái ("" là không lọc), mới nhất trước. */
     @Query(
-            value =
-                    """
+            value = """
 			select r from OfficialRequest r join fetch r.score join fetch r.owner join fetch r.requestedBy
 			where (:status = '' or cast(r.status as string) = :status)
 			order by r.createdAt desc, r.id

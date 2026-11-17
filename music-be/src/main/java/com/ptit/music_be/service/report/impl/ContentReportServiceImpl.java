@@ -258,11 +258,12 @@ public class ContentReportServiceImpl implements ContentReportService {
 
         switch (action) {
             case DISMISS -> {}
-            case UNPUBLISH -> unpublish(
-                    scoreRepository
-                            .findById(report.getScore().getId())
-                            .orElseThrow(() -> new AppException(ErrorCode.REPORT_TARGET_GONE)),
-                    note);
+            case UNPUBLISH ->
+                unpublish(
+                        scoreRepository
+                                .findById(report.getScore().getId())
+                                .orElseThrow(() -> new AppException(ErrorCode.REPORT_TARGET_GONE)),
+                        note);
             case SOFT_DELETE -> scoreService.deleteScore(report.getScore().getId(), note);
             case HIDE -> hide(report, me);
             case LOCK_ACCOUNT -> {
@@ -354,10 +355,10 @@ public class ContentReportServiceImpl implements ContentReportService {
         return switch (r.getTargetType()) {
             case SCORE -> reportRepository.findPendingOfScore(r.getScore().getId());
             case COMMENT -> reportRepository.findPendingOfComment(r.getComment().getId());
-            case FORUM_THREAD -> reportRepository.findPendingOfForumThread(
-                    r.getForumThread().getId());
-            case FORUM_POST -> reportRepository.findPendingOfForumPost(
-                    r.getForumPost().getId());
+            case FORUM_THREAD ->
+                reportRepository.findPendingOfForumThread(r.getForumThread().getId());
+            case FORUM_POST ->
+                reportRepository.findPendingOfForumPost(r.getForumPost().getId());
         };
     }
 
@@ -409,12 +410,17 @@ public class ContentReportServiceImpl implements ContentReportService {
             pending = switch (r.getTargetType()) {
                 case SCORE -> scoreId == null ? 0 : reportRepository.countPendingOfScore(scoreId);
                 case COMMENT -> commentId == null ? 0 : reportRepository.countPendingOfComment(commentId);
-                case FORUM_THREAD -> threadId == null
-                        ? 0
-                        : reportRepository.findPendingOfForumThread(threadId).size();
-                case FORUM_POST -> postId == null
-                        ? 0
-                        : reportRepository.findPendingOfForumPost(postId).size();};
+                case FORUM_THREAD ->
+                    threadId == null
+                            ? 0
+                            : reportRepository
+                                    .findPendingOfForumThread(threadId)
+                                    .size();
+                case FORUM_POST ->
+                    postId == null
+                            ? 0
+                            : reportRepository.findPendingOfForumPost(postId).size();
+            };
         }
         return ReportResponse.builder()
                 .id(r.getId())
@@ -449,22 +455,28 @@ public class ContentReportServiceImpl implements ContentReportService {
     /** Tên, chủ và tình trạng của đối tượng bị báo cáo, tra từ bảng gốc; null nếu đã xóa hẳn hoặc loại chưa hỗ trợ. */
     private ContentReportRepository.TargetInfo targetInfo(ContentReport r) {
         return switch (r.getTargetType()) {
-            case SCORE -> r.getScore() == null
-                    ? null
-                    : reportRepository.findScoreInfo(r.getScore().getId()).orElse(null);
-            case COMMENT -> r.getComment() == null
-                    ? null
-                    : reportRepository.findCommentInfo(r.getComment().getId()).orElse(null);
-            case FORUM_THREAD -> r.getForumThread() == null
-                    ? null
-                    : reportRepository
-                            .findForumThreadInfo(r.getForumThread().getId())
-                            .orElse(null);
-            case FORUM_POST -> r.getForumPost() == null
-                    ? null
-                    : reportRepository
-                            .findForumPostInfo(r.getForumPost().getId())
-                            .orElse(null);
+            case SCORE ->
+                r.getScore() == null
+                        ? null
+                        : reportRepository.findScoreInfo(r.getScore().getId()).orElse(null);
+            case COMMENT ->
+                r.getComment() == null
+                        ? null
+                        : reportRepository
+                                .findCommentInfo(r.getComment().getId())
+                                .orElse(null);
+            case FORUM_THREAD ->
+                r.getForumThread() == null
+                        ? null
+                        : reportRepository
+                                .findForumThreadInfo(r.getForumThread().getId())
+                                .orElse(null);
+            case FORUM_POST ->
+                r.getForumPost() == null
+                        ? null
+                        : reportRepository
+                                .findForumPostInfo(r.getForumPost().getId())
+                                .orElse(null);
         };
     }
 

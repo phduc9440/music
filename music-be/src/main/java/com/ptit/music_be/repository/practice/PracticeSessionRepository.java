@@ -38,8 +38,7 @@ public interface PracticeSessionRepository extends JpaRepository<PracticeSession
     Optional<PracticeSession> findByIdAndMemberForUpdate(@Param("id") String id, @Param("member") Member member);
 
     @Modifying
-    @Query(
-            """
+    @Query("""
 			update PracticeSession session
 			set session.status = :abandoned, session.endedAt = :endedAt, session.isCompleted = false
 			where session.status = :inProgress and session.startedAt < :cutoff
