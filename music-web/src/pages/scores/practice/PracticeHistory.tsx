@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import Modal from '../../../components/scores/common/Modal';
 import Pagination from '../../../components/scores/common/Pagination';
@@ -95,6 +96,9 @@ export default function PracticeHistory() {
               {result ? t('practice.history.count', { count: result.totalElements }) : t('practice.history.subtitle')}
             </p>
           </div>
+          <Link className="sc-btn" to="/studio/history">
+            {t('studioReport.history.open')}
+          </Link>
         </header>
 
         {result && result.content.length > 0 && (

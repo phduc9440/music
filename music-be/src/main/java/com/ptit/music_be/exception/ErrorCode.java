@@ -149,6 +149,7 @@ public enum ErrorCode {
     STUDIO_SESSION_NOT_EXISTED(3012, "Phiên luyện tập không tồn tại", HttpStatus.NOT_FOUND),
     STUDIO_EVENT_BATCH_TOO_LARGE(3013, "Một lô sự kiện luyện tập tối đa 200 phần tử", HttpStatus.PAYLOAD_TOO_LARGE),
     STUDIO_EVENT_INVALID(3014, "Dữ liệu sự kiện luyện tập không hợp lệ", HttpStatus.BAD_REQUEST),
+    STUDIO_REPORT_NOT_READY(3015, "Báo cáo phiên luyện tập chưa sẵn sàng", HttpStatus.CONFLICT),
 
     // Score versions 28xx
     SCORE_VERSION_NOT_EXISTED(2801, "Phiên bản bản nhạc không tồn tại hoặc đã bị xóa", HttpStatus.NOT_FOUND),

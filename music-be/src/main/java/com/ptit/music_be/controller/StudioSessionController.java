@@ -13,11 +13,14 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ptit.music_be.dto.request.StudioEventBatchRequest;
+import com.ptit.music_be.dto.request.StudioSessionFinishRequest;
 import com.ptit.music_be.dto.request.StudioSessionCreateRequest;
 import com.ptit.music_be.dto.response.StudioEventBatchResponse;
 import com.ptit.music_be.dto.response.StudioSessionResponse;
 import com.ptit.music_be.service.StudioEventService;
+import com.ptit.music_be.service.StudioReportService;
 import com.ptit.music_be.service.StudioSessionService;
+import com.ptit.music_be.dto.response.StudioSessionReportResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -35,6 +38,7 @@ public class StudioSessionController {
 
     StudioSessionService studioSessionService;
     StudioEventService studioEventService;
+    StudioReportService studioReportService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -57,6 +61,13 @@ public class StudioSessionController {
     @Operation(summary = "Hủy phiên luyện tập", security = @SecurityRequirement(name = "bearerAuth"))
     public void abortSession(@PathVariable String sessionId) {
         studioSessionService.abortSession(sessionId);
+    }
+
+    @PostMapping("/{sessionId}/finish")
+    @Operation(summary = "Kết thúc phiên và tổng hợp báo cáo", security = @SecurityRequirement(name = "bearerAuth"))
+    public StudioSessionReportResponse finishSession(
+            @PathVariable String sessionId, @Valid @RequestBody StudioSessionFinishRequest request) {
+        return studioReportService.finishSession(sessionId, request);
     }
 
     @PostMapping("/{sessionId}/events")

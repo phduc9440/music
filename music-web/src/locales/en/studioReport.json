@@ -1,0 +1,48 @@
+{
+  "mode": {
+    "WAIT": "Wait mode",
+    "FREE_RUN": "Free run"
+  },
+  "score": "Score: {score} · Grade {grade}",
+  "durationMinutes": "{minutes} min {seconds} sec",
+  "durationSeconds": "{seconds} sec",
+  "history": {
+    "title": "Studio history",
+    "subtitle": "Your interactive practice sessions.",
+    "count": "{count} sessions",
+    "emptyTitle": "No Studio sessions yet",
+    "emptyHint": "Complete a Studio practice session to see its report here.",
+    "loadFailed": "Could not load Studio history",
+    "viewReport": "View report",
+    "open": "Studio history"
+  },
+  "report": {
+    "title": "Practice report",
+    "summary": "Session summary",
+    "loading": "Loading report…",
+    "loadFailed": "Could not load the practice report",
+    "back": "Back to Studio history",
+    "accuracy": "Accuracy",
+    "timing": "Timing accuracy",
+    "mode": "Mode",
+    "date": "Date",
+    "counts": "Note results",
+    "comparison": "Comparison",
+    "previous": "Previous session",
+    "best": "Best score",
+    "newBest": "New personal best!",
+    "completed": "Completed the full piece",
+    "measures": "Breakdown by measure",
+    "weakest": "Measures to practice",
+    "measure": "Measure",
+    "noMeasureData": "No measure-level data"
+  },
+  "counts": {
+    "total": "Expected notes",
+    "perfect": "Perfect",
+    "early": "Early",
+    "late": "Late",
+    "wrongPitch": "Wrong pitch",
+    "missed": "Missed"
+  }
+}

@@ -1,6 +1,7 @@
 package com.ptit.music_be.repository.practice;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,6 +20,7 @@ import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.PracticeSession;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.dto.enums.PracticeSessionStatus;
+import com.ptit.music_be.dto.enums.practice.PracticeMode;
 
 @Repository
 public interface PracticeSessionRepository extends JpaRepository<PracticeSession, String> {
@@ -30,6 +32,40 @@ public interface PracticeSessionRepository extends JpaRepository<PracticeSession
     Page<PracticeSession> findByMember(Member member, Pageable pageable);
 
     Page<PracticeSession> findByMemberAndScore(Member member, Score score, Pageable pageable);
+
+    Page<PracticeSession> findByMemberAndModeInAndStatus(
+            Member member, Collection<PracticeMode> modes, PracticeSessionStatus status, Pageable pageable);
+
+    Page<PracticeSession> findByMemberAndScoreAndModeInAndStatus(
+            Member member, Score score, Collection<PracticeMode> modes, PracticeSessionStatus status, Pageable pageable);
+
+    Optional<PracticeSession> findByIdAndMember(String id, Member member);
+
+    Optional<PracticeSession> findFirstByMemberAndScoreAndModeInAndStatusAndStartedAtLessThanOrderByStartedAtDesc(
+            Member member,
+            Score score,
+            Collection<PracticeMode> modes,
+            PracticeSessionStatus status,
+            LocalDateTime before);
+
+    @Query("select max(session.scorePoints) from PracticeSession session"
+            + " where session.member = :member and session.score = :score and session.mode in :modes"
+            + " and session.status = :status and session.startedAt < :before")
+    Double findBestStudioScoreBefore(
+            @Param("member") Member member,
+            @Param("score") Score score,
+            @Param("modes") Collection<PracticeMode> modes,
+            @Param("status") PracticeSessionStatus status,
+            @Param("before") LocalDateTime before);
+
+    @Query("select max(session.scorePoints) from PracticeSession session"
+            + " where session.member = :member and session.score = :score and session.mode in :modes"
+            + " and session.status = :status")
+    Double findBestStudioScore(
+            @Param("member") Member member,
+            @Param("score") Score score,
+            @Param("modes") Collection<PracticeMode> modes,
+            @Param("status") PracticeSessionStatus status);
 
     Optional<PracticeSession> findByMemberAndStatus(Member member, PracticeSessionStatus status);
 

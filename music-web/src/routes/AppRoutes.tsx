@@ -38,6 +38,8 @@ import OfficialRequests from '../pages/scores/library/OfficialRequests';
 import OfficialScores from '../pages/scores/library/OfficialScores';
 import PracticeHistory from '../pages/scores/practice/PracticeHistory';
 import PracticeStats from '../pages/scores/practice/PracticeStats';
+import StudioHistory from '../pages/scores/practice/StudioHistory';
+import StudioSessionReport from '../pages/scores/practice/StudioSessionReport';
 import MyPlan from '../pages/billing/MyPlan';
 import Pricing from '../pages/billing/Pricing';
 import BillingResult from '../pages/billing/BillingResult';
@@ -108,6 +110,8 @@ const router = createBrowserRouter(
         <Route path="/playlists/:id" element={<PlaylistDetail />} />
         <Route path="/practice-history" element={<PracticeHistory />} />
         <Route path="/practice-stats" element={<PracticeStats />} />
+        <Route path="/studio/history" element={<StudioHistory />} />
+        <Route path="/studio/sessions/:sessionId/report" element={<StudioSessionReport />} />
         {/* Diễn đàn (mục 5.5) */}
         <Route path="/forum" element={<Forum />} />
         <Route path="/forum/new" element={<ForumCompose />} />
