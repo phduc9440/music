@@ -405,7 +405,8 @@
   },
   "delete": {
     "done": "Đã chuyển bản nhạc vào thùng rác",
-    "text": "Chuyển vào thùng rác. Bản nhạc sẽ bị xóa hẳn sau 30 ngày, trong thời gian đó chủ sở hữu có thể khôi phục. Gõ <code>{title}</code> để xác nhận.",
+    "text": "Bạn có chắc chắn chuyển <strong>{title}</strong> vào thùng rác? Bản nhạc sẽ bị xóa hẳn sau 30 ngày, trong thời gian đó chủ sở hữu có thể khôi phục.",
+    "dontAsk": "Không hỏi lại lần sau",
     "reason": "Lý do (gửi tới chủ sở hữu)",
     "moving": "Đang chuyển...",
     "move": "Chuyển vào thùng rác"
