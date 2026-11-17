@@ -1,0 +1,48 @@
+{
+  "mode": {
+    "WAIT": "Chờ nốt",
+    "FREE_RUN": "Chạy tự do"
+  },
+  "score": "Điểm: {score} · Hạng {grade}",
+  "durationMinutes": "{minutes} phút {seconds} giây",
+  "durationSeconds": "{seconds} giây",
+  "history": {
+    "title": "Lịch sử Studio",
+    "subtitle": "Các phiên luyện tập tương tác của bạn.",
+    "count": "{count} phiên",
+    "emptyTitle": "Chưa có phiên Studio",
+    "emptyHint": "Hoàn thành một phiên luyện tập Studio để xem báo cáo ở đây.",
+    "loadFailed": "Không tải được lịch sử Studio",
+    "viewReport": "Xem báo cáo",
+    "open": "Lịch sử Studio"
+  },
+  "report": {
+    "title": "Báo cáo luyện tập",
+    "summary": "Tóm tắt phiên tập",
+    "loading": "Đang tải báo cáo…",
+    "loadFailed": "Không tải được báo cáo luyện tập",
+    "back": "Về lịch sử Studio",
+    "accuracy": "Độ chính xác",
+    "timing": "Độ chính xác nhịp",
+    "mode": "Chế độ",
+    "date": "Thời gian",
+    "counts": "Kết quả nốt",
+    "comparison": "So sánh",
+    "previous": "Phiên trước",
+    "best": "Điểm cao nhất",
+    "newBest": "Đạt kỷ lục mới!",
+    "completed": "Hoàn thành hết bài",
+    "measures": "Chi tiết theo ô nhịp",
+    "weakest": "Ô nhịp cần luyện thêm",
+    "measure": "Ô nhịp",
+    "noMeasureData": "Chưa có dữ liệu theo ô nhịp"
+  },
+  "counts": {
+    "total": "Tổng nốt chuẩn",
+    "perfect": "Hoàn hảo",
+    "early": "Sớm",
+    "late": "Trễ",
+    "wrongPitch": "Sai nốt",
+    "missed": "Bỏ lỡ"
+  }
+}

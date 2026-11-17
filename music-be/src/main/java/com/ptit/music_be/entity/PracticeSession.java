@@ -70,6 +70,9 @@ public class PracticeSession {
     @Column(name = "duration_seconds")
     Integer durationSeconds;
 
+    @Column(name = "covered_until_ms")
+    Integer coveredUntilMs;
+
     @Column(name = "total_notes")
     Integer totalNotes;
 
