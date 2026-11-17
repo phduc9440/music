@@ -77,7 +77,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 .setHeartbeatValue(new long[] {HEARTBEAT_MILLIS, HEARTBEAT_MILLIS})
                 .setTaskScheduler(webSocketHeartbeatScheduler());
         registry.setUserDestinationPrefix("/user");
-        // Tin client gửi lên /app/** chỉ qua được khi có StompAccessRule cho đích đó (xem configureClientInboundChannel)
+        // Tin client gửi lên /app/** chỉ qua được khi có StompAccessRule cho đích đó (xem
+        // configureClientInboundChannel)
         registry.setApplicationDestinationPrefixes("/app");
     }
 
@@ -122,7 +123,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         if (email == null) {
             throw new MessagingException("Unauthenticated");
         }
-        StompAccessRule rule = accessRules.orderedStream()
+        StompAccessRule rule = accessRules
+                .orderedStream()
                 .filter(r -> r.handles(destination))
                 .findFirst()
                 .orElseThrow(() -> new MessagingException(

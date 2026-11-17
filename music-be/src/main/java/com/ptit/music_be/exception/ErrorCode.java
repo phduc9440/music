@@ -16,7 +16,7 @@ public enum ErrorCode {
     USER_EXISTED(1003, "User already existed", HttpStatus.BAD_REQUEST),
     USER_NOT_EXISTED(1004, "User not existed", HttpStatus.NOT_FOUND),
     INVALID_CREDENTIALS(1005, "Email hoặc mật khẩu không đúng", HttpStatus.UNAUTHORIZED),
-    USERNAME_INVALID(1006, "Username must be at least {min} characters", HttpStatus.BAD_REQUEST),
+    USERNAME_INVALID(1006, "Vui lòng nhập email", HttpStatus.BAD_REQUEST),
     PASSWORD_INVALID(1007, "Mật khẩu phải có ít nhất {min} ký tự", HttpStatus.BAD_REQUEST),
     EMPLOYEE_NOT_FOUND(1008, "Employee not found", HttpStatus.NOT_FOUND),
     INVALID_REQUEST(1009, "Invalid request", HttpStatus.BAD_REQUEST),
@@ -32,6 +32,7 @@ public enum ErrorCode {
     ROLE_IN_USE(1021, "Vai trò đang được gán cho thành viên, hãy gỡ khỏi họ trước khi xóa", HttpStatus.CONFLICT),
     ROLE_LABEL_INVALID(1022, "Tên vai trò từ 2 đến 100 ký tự, mô tả tối đa 255 ký tự", HttpStatus.BAD_REQUEST),
     ROLE_LABEL_DUPLICATED(1023, "Đã có vai trò trùng tên này", HttpStatus.CONFLICT),
+    STATUS_REASON_INVALID(1024, "Lý do khóa / mở khóa tối đa 255 ký tự", HttpStatus.BAD_REQUEST),
     ACCOUNT_LOCKED(1016, "Tài khoản đã bị khóa", HttpStatus.FORBIDDEN),
     OTP_INVALID(
             1017,
@@ -69,7 +70,7 @@ public enum ErrorCode {
     MUSICXML_FILE_INVALID(2015, "File MusicXML không hợp lệ hoặc bị hỏng", HttpStatus.BAD_REQUEST),
     MIDI_INVALID(2016, "File MIDI không hợp lệ hoặc bị hỏng", HttpStatus.BAD_REQUEST),
     IMPORT_TYPE_NOT_SUPPORTED(
-            2021, "Chỉ hỗ trợ một file .musicxml, .xml, .mxl, .mid hoặc .midi", HttpStatus.BAD_REQUEST),
+            2030, "Chỉ hỗ trợ một file .musicxml, .xml, .mxl, .mid hoặc .midi", HttpStatus.BAD_REQUEST),
     SCORE_TITLE_INVALID(2017, "Tiêu đề là bắt buộc và tối đa 255 ký tự", HttpStatus.BAD_REQUEST),
     SCORE_COMPOSER_INVALID(2018, "Tên tác giả tối đa 255 ký tự", HttpStatus.BAD_REQUEST),
     SCORE_NOTES_INVALID(2019, "Ghi chú tối đa 5000 ký tự", HttpStatus.BAD_REQUEST),
@@ -81,10 +82,15 @@ public enum ErrorCode {
     SCORE_LICENSE_REQUIRED(
             2026, "Chọn giấy phép khác \"Bảo lưu mọi quyền\" thì mới cho phép tạo bản phối", HttpStatus.BAD_REQUEST),
     SCORE_FORK_NOT_ALLOWED(
-            2027, "Bản nhạc này không cho phép tạo bản phối (chưa công khai hoặc chủ chưa cho phép)", HttpStatus.FORBIDDEN),
-    SCORE_FORK_RATE_LIMITED(2028, "Bạn đã tạo quá 20 bản phối trong 24 giờ, hãy thử lại sau", HttpStatus.TOO_MANY_REQUESTS),
+            2027,
+            "Bản nhạc này không cho phép tạo bản phối (chưa công khai hoặc chủ chưa cho phép)",
+            HttpStatus.FORBIDDEN),
+    SCORE_FORK_RATE_LIMITED(
+            2028, "Bạn đã tạo quá 20 bản phối trong 24 giờ, hãy thử lại sau", HttpStatus.TOO_MANY_REQUESTS),
     SCORE_LICENSE_LOCKED(
-            2029, "Bản phối giữ nguyên giấy phép của bản gốc (CC BY-SA hoặc CC BY-NC), không đổi được", HttpStatus.CONFLICT),
+            2029,
+            "Bản phối giữ nguyên giấy phép của bản gốc (CC BY-SA hoặc CC BY-NC), không đổi được",
+            HttpStatus.CONFLICT),
     SCORE_NOT_PUBLIC(2024, "Bản nhạc này chưa được công khai nên không thể gỡ", HttpStatus.CONFLICT),
     SCORE_BUSY(2201, "Bản nhạc đang được xử lý, vui lòng thử lại sau", HttpStatus.CONFLICT),
     TASK_LIMIT_EXCEEDED(
@@ -297,12 +303,14 @@ public enum ErrorCode {
     LIVE_COLLAB_NOT_AVAILABLE(
             3123, "Gói của chủ bản nhạc chưa có tính năng đồng chỉnh sửa thời gian thực", HttpStatus.FORBIDDEN),
     LIVE_OP_INVALID(3124, "Gói thay đổi cộng tác không hợp lệ hoặc quá lớn", HttpStatus.BAD_REQUEST),
-    LIVE_LOCK_REQUIRED(
-            3125, "Bạn chưa giữ khóa các ô nhịp này nên chưa gửi thay đổi được", HttpStatus.CONFLICT),
+    LIVE_LOCK_REQUIRED(3125, "Bạn chưa giữ khóa các ô nhịp này nên chưa gửi thay đổi được", HttpStatus.CONFLICT),
     LIVE_RATE_LIMITED(3126, "Bạn gửi thay đổi quá nhanh, hãy chậm lại một chút", HttpStatus.TOO_MANY_REQUESTS),
     // ---- 40xx: Báo cáo vi phạm và nhật ký quản trị (R5)
     REPORT_NOT_EXISTED(4001, "Không tìm thấy báo cáo", HttpStatus.NOT_FOUND),
-    REPORT_REASON_INVALID(4002, "Hãy chọn lý do báo cáo; chi tiết tối đa 1000 ký tự và bắt buộc khi chọn lý do Khác", HttpStatus.BAD_REQUEST),
+    REPORT_REASON_INVALID(
+            4002,
+            "Hãy chọn lý do báo cáo; chi tiết tối đa 1000 ký tự và bắt buộc khi chọn lý do Khác",
+            HttpStatus.BAD_REQUEST),
     REPORT_OWN_CONTENT(4003, "Bạn không báo cáo được nội dung của chính mình", HttpStatus.BAD_REQUEST),
     REPORT_DUPLICATED(4004, "Bạn đã báo cáo nội dung này và báo cáo đang chờ xử lý", HttpStatus.CONFLICT),
     REPORT_RATE_LIMITED(4005, "Bạn báo cáo quá nhiều trong 24 giờ qua, hãy thử lại sau", HttpStatus.TOO_MANY_REQUESTS),
@@ -315,21 +323,21 @@ public enum ErrorCode {
     FORUM_CATEGORY_NOT_EXISTED(4101, "Không tìm thấy chuyên mục", HttpStatus.NOT_FOUND),
     FORUM_THREAD_NOT_EXISTED(4102, "Không tìm thấy chủ đề", HttpStatus.NOT_FOUND),
     FORUM_POST_NOT_EXISTED(4103, "Không tìm thấy bài trả lời", HttpStatus.NOT_FOUND),
-    FORUM_CONTENT_INVALID(
-            4104, "Tiêu đề từ 3 đến 150 ký tự, nội dung từ 1 đến 10000 ký tự", HttpStatus.BAD_REQUEST),
+    FORUM_CONTENT_INVALID(4104, "Tiêu đề từ 3 đến 150 ký tự, nội dung từ 1 đến 10000 ký tự", HttpStatus.BAD_REQUEST),
     FORUM_SCORE_NOT_PUBLIC(4105, "Chỉ gắn được bản nhạc đang công khai vào chủ đề", HttpStatus.BAD_REQUEST),
     FORUM_NOT_AUTHOR(4106, "Bạn không phải người viết nội dung này", HttpStatus.FORBIDDEN),
     FORUM_NEW_ACCOUNT_LIMIT(
             4107, "Tài khoản dưới 3 ngày tuổi chỉ đặt được tối đa 3 chủ đề mỗi ngày", HttpStatus.TOO_MANY_REQUESTS),
     FORUM_THREAD_HAS_REPLIES(
-            4108, "Chủ đề đã có người khác trả lời nên không xóa được, hãy báo quản trị viên nếu cần gỡ", HttpStatus.CONFLICT),
+            4108,
+            "Chủ đề đã có người khác trả lời nên không xóa được, hãy báo quản trị viên nếu cần gỡ",
+            HttpStatus.CONFLICT),
     FORUM_ACCEPT_OWN_POST(4109, "Bạn không chọn được câu trả lời của chính mình", HttpStatus.BAD_REQUEST),
     FORUM_VOTE_OWN_CONTENT(4110, "Bạn không bình chọn được nội dung của chính mình", HttpStatus.BAD_REQUEST),
     FORUM_THREAD_LOCKED(4111, "Chủ đề đã bị khóa, không trả lời thêm được", HttpStatus.FORBIDDEN),
     FORUM_CATEGORY_NOT_EMPTY(
             4112, "Chuyên mục còn chủ đề nên không xóa được, hãy chuyển hoặc ẩn các chủ đề trước", HttpStatus.CONFLICT),
-    FORUM_CATEGORY_INVALID(
-            4113, "Tên chuyên mục từ 2 đến 100 ký tự, mô tả tối đa 300 ký tự", HttpStatus.BAD_REQUEST),
+    FORUM_CATEGORY_INVALID(4113, "Tên chuyên mục từ 2 đến 100 ký tự, mô tả tối đa 300 ký tự", HttpStatus.BAD_REQUEST),
     FORUM_CATEGORY_SLUG_TAKEN(4114, "Đã có chuyên mục trùng đường dẫn, hãy đổi tên khác", HttpStatus.CONFLICT),
     ;
 

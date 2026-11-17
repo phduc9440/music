@@ -556,8 +556,7 @@ public class TeamServiceImpl implements TeamService {
 
         String inviter = TeamAccess.displayName(me);
         if (email != null) {
-            emailService.sendTeamInvitationEmail(
-                    email, team.getName(), inviter, role, inviteLink(token));
+            emailService.sendTeamInvitationEmail(email, team.getName(), inviter, role, inviteLink(token));
             // Người đã có tài khoản thấy lời mời ở chuông và ở trang Team (không cần mở email)
             notificationService.notify(
                     invitee,

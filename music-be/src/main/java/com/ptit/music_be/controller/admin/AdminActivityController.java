@@ -57,6 +57,8 @@ public class AdminActivityController {
     @GetMapping("/types")
     @Operation(summary = "Activity types, for the filter", security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<List<String>> types() {
-        return ApiResponse.<List<String>>builder().result(activityService.types()).build();
+        return ApiResponse.<List<String>>builder()
+                .result(activityService.types())
+                .build();
     }
 }

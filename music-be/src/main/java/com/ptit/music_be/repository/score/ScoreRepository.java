@@ -69,8 +69,7 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
      * Danh sách bản nhạc của một thành viên, có tìm theo tên/tác giả và lọc trạng thái/nguồn/độ khó/thể loại.
      * Tham số rỗng ("") nghĩa là không lọc; service luôn truyền chuỗi, không truyền null.
      */
-    @Query(
-            """
+    @Query("""
 			select s from Score s
 			where s.member.id = :memberId
 			and (lower(s.title) like lower(concat('%', :keyword, '%')) escape '\\'
@@ -93,8 +92,7 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
      * Kho bản nhạc mẫu (is_official = true): tìm theo tên/tác giả, lọc độ khó và nhạc sĩ ("" là không lọc), sắp từ dễ đến khó rồi
      * theo tên để người mới học bắt đầu từ bài dễ.
      */
-    @Query(
-            """
+    @Query("""
 			select s from Score s
 			where s.isOfficial = true
 			and (lower(s.title) like lower(concat('%', :keyword, '%')) escape '\\'
@@ -117,8 +115,7 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
      * trong kho mẫu (có bản gốc) không liệt kê ở đây vì đã nằm ở "Kho bản nhạc mẫu"; nếu không, bản gốc của người dùng và
      * bản sao của nó sẽ hiện thành hai bản trùng nhau.
      */
-    String PUBLIC_EXPLORE_FILTER =
-            """
+    String PUBLIC_EXPLORE_FILTER = """
 			from Score s
 			where s.visibility = 'PUBLIC' and s.originalScoreId is null
 			and (lower(s.title) like lower(concat('%', :keyword, '%')) escape '\\'
@@ -159,8 +156,7 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
             Pageable pageable);
 
     /** ADMIN: các bản nhạc công khai chưa nằm trong kho bản nhạc mẫu, để chọn đưa vào (cập nhật gần nhất trước). */
-    @Query(
-            """
+    @Query("""
 			select s from Score s
 			where s.visibility = 'PUBLIC' and (s.isOfficial is null or s.isOfficial = false)
 			and s.originalScoreId is null
@@ -175,8 +171,7 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
     Page<Score> searchOfficialCandidates(@Param("keyword") String keyword, Pageable pageable);
 
     /** ADMIN: mọi bản nhạc trong hệ thống, tìm theo tên/tác giả/email chủ sở hữu, lọc visibility, kho mẫu ("true"/"false"), nguồn, độ khó ("" là không lọc). */
-    @Query(
-            """
+    @Query("""
 			select s from Score s
 			where (lower(s.title) like lower(concat('%', :keyword, '%')) escape '\\'
 				or lower(coalesce(s.composer, '')) like lower(concat('%', :keyword, '%')) escape '\\'

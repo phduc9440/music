@@ -64,6 +64,7 @@ public class ScoreSharingServiceImpl implements ScoreSharingService {
                         () -> MemberScore.builder().score(score).member(member).build());
         share.setPermission(permission);
         share.setSource(ShareSource.DIRECT);
+        markGranted(share);
         clearRequestIfSatisfied(share);
         memberScoreRepository.save(share);
         notificationService.notify(
@@ -86,6 +87,7 @@ public class ScoreSharingServiceImpl implements ScoreSharingService {
                 .orElseThrow(() -> new AppException(ErrorCode.SHARE_MEMBER_NOT_EXISTED));
         share.setPermission(permission);
         share.setSource(ShareSource.DIRECT); // chủ đã chủ động chỉnh cấp thì coi như cấp trực tiếp
+        markGranted(share);
         clearRequestIfSatisfied(share);
         memberScoreRepository.save(share);
         return toResponse(score);
@@ -189,6 +191,7 @@ public class ScoreSharingServiceImpl implements ScoreSharingService {
         MemberScore share = findPendingRequest(scoreId, memberId);
         share.setPermission(granted != null ? granted : share.getRequestedPermission());
         share.setSource(ShareSource.DIRECT);
+        markGranted(share);
         clearRequest(share);
         memberScoreRepository.save(share);
         notificationService.notify(
@@ -274,6 +277,12 @@ public class ScoreSharingServiceImpl implements ScoreSharingService {
                 .members(members)
                 .pendingRequests(memberScoreRepository.countByScoreIdAndRequestedPermissionIsNotNull(score.getId()))
                 .build();
+    }
+
+    /** Ghi ai cấp / đổi quyền và lúc nào; Nhật ký quản trị đọc hai cột này (không có bảng nhật ký riêng). */
+    private void markGranted(MemberScore share) {
+        share.setGrantedAt(LocalDateTime.now());
+        share.setGrantedBy(currentMember());
     }
 
     private Member currentMember() {

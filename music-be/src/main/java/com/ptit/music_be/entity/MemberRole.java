@@ -1,5 +1,7 @@
 package com.ptit.music_be.entity;
 
+import java.time.LocalDateTime;
+
 import jakarta.persistence.*;
 
 import lombok.*;
@@ -28,4 +30,12 @@ public class MemberRole {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "role_id", nullable = false)
     Role role;
+
+    /** Lúc quản trị viên cấp vai trò; null khi gán tự động (đăng ký, khởi tạo). */
+    @Column(name = "granted_at")
+    LocalDateTime grantedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "granted_by")
+    Member grantedBy;
 }

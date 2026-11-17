@@ -224,6 +224,7 @@
     "lockTitle": "Lock the account {email}?",
     "lockMessage": "This person will be signed out right away and can't sign in again until unlocked.",
     "lockAccount": "Lock account",
+    "lockReason": "Reason (optional, shown in the activity log)",
     "locked": "Account locked",
     "unlocked": "Account unlocked",
     "grantTitle": "Give ADMIN access to {email}?",
@@ -946,7 +947,7 @@
     }
   },
   "audit": {
-    "description": "Moderation work derived from the source data: reports, removed scores, hidden comments, teams removed for violations, plan sanctions. Nothing is stored separately, so it always matches the real data; read only.",
+    "description": "Moderation work derived from the source data: reports, removed scores, hidden comments, teams removed for violations, plan sanctions, account locks / unlocks and role grants (latest only), sharing grants (latest only). Nothing is stored separately, so it always matches the real data; read only.",
     "loadFailed": "Could not load the activity log",
     "types": {
       "REPORT_CREATED": "Report filed",
@@ -957,7 +958,11 @@
       "FORUM_POST_HIDDEN": "Forum reply hidden",
       "FORUM_THREAD_LOCKED": "Forum thread locked",
       "TEAM_DELETED_BY_ADMIN": "Team deleted by admin",
-      "PLAN_SANCTION": "Plan sanction"
+      "PLAN_SANCTION": "Plan sanction",
+      "MEMBER_LOCKED": "Account locked",
+      "MEMBER_UNLOCKED": "Account unlocked",
+      "ROLE_GRANTED": "Role granted",
+      "SHARE_GRANTED": "Sharing granted"
     },
     "targets": {
       "SCORE": "Score",

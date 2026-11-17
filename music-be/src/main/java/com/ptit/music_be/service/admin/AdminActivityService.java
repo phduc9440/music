@@ -17,11 +17,5 @@ public interface AdminActivityService {
 
     /** Mới nhất trước; lọc theo email người làm (chứa), loại, loại đối tượng và khoảng thời gian [from, to). */
     PageResponse<AdminActivityResponse> search(
-            int page,
-            int size,
-            String actor,
-            String type,
-            String targetType,
-            LocalDateTime from,
-            LocalDateTime to);
+            int page, int size, String actor, String type, String targetType, LocalDateTime from, LocalDateTime to);
 }

@@ -1,10 +1,10 @@
 package com.ptit.music_be.controller.notification;
 
-import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 
 import jakarta.validation.Valid;
+
+import org.springframework.web.bind.annotation.*;
 
 import com.ptit.music_be.dto.request.notification.NotificationPreferenceRequest;
 import com.ptit.music_be.dto.response.common.ApiResponse;

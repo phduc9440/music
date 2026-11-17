@@ -14,8 +14,12 @@ import lombok.experimental.FieldDefaults;
 public class AdminActivityResponse {
     /** Mã ổn định để làm key danh sách, dạng "loại:mã dòng gốc". */
     String id;
-    /** REPORT_CREATED, REPORT_RESOLVED, SCORE_DELETED_BY_ADMIN, COMMENT_HIDDEN, TEAM_DELETED_BY_ADMIN, PLAN_SANCTION. */
+    /**
+     * REPORT_CREATED, REPORT_RESOLVED, SCORE_DELETED_BY_ADMIN, COMMENT_HIDDEN, FORUM_*, TEAM_DELETED_BY_ADMIN,
+     * PLAN_SANCTION, MEMBER_LOCKED, MEMBER_UNLOCKED, ROLE_GRANTED, SHARE_GRANTED.
+     */
     String type;
+
     LocalDateTime occurredAt;
     String actorId;
     String actorEmail;

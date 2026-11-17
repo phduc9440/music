@@ -114,9 +114,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(errorCode.getHttpStatusCode()).body(apiResponse);
     }
 
+    /** Điền {min} từ ràng buộc (ví dụ @Size); ràng buộc không có min (như @NotBlank) thì giữ nguyên, không in "null". */
     private String mapAttribute(String message, Map<String, Object> attributes) {
-        String minValue = String.valueOf(attributes.get(MIN_ATTRIBUTE));
-
-        return message.replace("{" + MIN_ATTRIBUTE + "}", minValue);
+        Object minValue = attributes.get(MIN_ATTRIBUTE);
+        if (minValue == null) {
+            return message;
+        }
+        return message.replace("{" + MIN_ATTRIBUTE + "}", String.valueOf(minValue));
     }
 }

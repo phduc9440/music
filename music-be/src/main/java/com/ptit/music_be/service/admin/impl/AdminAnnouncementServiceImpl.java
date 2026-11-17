@@ -46,9 +46,10 @@ public class AdminAnnouncementServiceImpl implements AdminAnnouncementService {
                 switch (request.getAudience()) {
                     case ALL -> memberRepository.findAllByStatus(MemberStatus.ACTIVE);
                     case USERS -> memberRepository.findNonAdminsByStatus(MemberStatus.ACTIVE);
-                    case ADMINS -> memberRepository.findAllAdmins().stream()
-                            .filter(m -> m.getStatus() == MemberStatus.ACTIVE)
-                            .toList();
+                    case ADMINS ->
+                        memberRepository.findAllAdmins().stream()
+                                .filter(m -> m.getStatus() == MemberStatus.ACTIVE)
+                                .toList();
                     case SELECTED -> {
                         List<String> ids = request.getMemberIds() == null
                                 ? List.of()

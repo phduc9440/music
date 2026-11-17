@@ -171,7 +171,8 @@ class LiveDocumentTest {
 
     @Test
     void tracksSavedState() {
-        LiveDocument doc = LiveDocument.open(score(measure(1, "C"), measure(2, "D")).getBytes(StandardCharsets.UTF_8), 3, 7);
+        LiveDocument doc =
+                LiveDocument.open(score(measure(1, "C"), measure(2, "D")).getBytes(StandardCharsets.UTF_8), 3, 7);
         assertThat(doc.seq()).isEqualTo(7);
         assertThat(doc.hasUnsaved()).isFalse();
 

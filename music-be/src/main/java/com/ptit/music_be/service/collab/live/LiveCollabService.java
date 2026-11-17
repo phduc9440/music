@@ -207,14 +207,7 @@ public class LiveCollabService {
         Instant now = clock.instant();
         boolean changed = !java.util.Objects.equals(participant.selection, request.selection());
         registry.upsert(
-                scoreId,
-                sessionId,
-                email,
-                participant.memberId(),
-                participant.name(),
-                true,
-                request.selection(),
-                now);
+                scoreId, sessionId, email, participant.memberId(), participant.name(), true, request.selection(), now);
         locks.renew(scoreId, sessionId, now);
         if (changed) {
             broadcastPresence(scoreId);
@@ -296,14 +289,23 @@ public class LiveCollabService {
                         .map(m -> new Key(m.partIndex(), m.measureIndex()))
                         .toList();
         if (!locks.holds(scoreId, sessionId, keys, structural, now)) {
-            sendRejected(email, scoreId, request.opId(), "LOCK_REQUIRED", live.document.seq(), currentOf(live, request), null);
+            sendRejected(
+                    email,
+                    scoreId,
+                    request.opId(),
+                    "LOCK_REQUIRED",
+                    live.document.seq(),
+                    currentOf(live, request),
+                    null);
             return;
         }
 
         synchronized (live.document.lock()) {
             Outcome outcome = structural
                     ? live.document.applyStructural(
-                            request.opId(), request.baseSeq(), request.structural().afterXml())
+                            request.opId(),
+                            request.baseSeq(),
+                            request.structural().afterXml())
                     : live.document.applyMeasures(request.opId(), editsOf(request.measures()));
             if (outcome.duplicate()) {
                 return;
@@ -403,8 +405,7 @@ public class LiveCollabService {
                         scoreId, lastSeq, PageRequest.of(0, MAX_REPLAY + 1))) {
                     missing.add(readOp(op));
                 }
-                if (missing.size() != seq - lastSeq
-                        || missing.stream().anyMatch(op -> op.structuralXml() != null)) {
+                if (missing.size() != seq - lastSeq || missing.stream().anyMatch(op -> op.structuralXml() != null)) {
                     // Nhật ký thiếu (ghi lỗi) hoặc có thao tác cấu trúc (không kèm mã băm): gửi cả bài
                     return fullJoinResult(scoreId, sessionId, doc, seq);
                 }
@@ -414,8 +415,7 @@ public class LiveCollabService {
     }
 
     private static JoinResult fullJoinResult(String scoreId, String sessionId, LiveDocument doc, long seq) {
-        return new JoinResult(
-                scoreId, sessionId, true, seq, doc.baseVersion(), doc.fullXml(), doc.hashes(), List.of());
+        return new JoinResult(scoreId, sessionId, true, seq, doc.baseVersion(), doc.fullXml(), doc.hashes(), List.of());
     }
 
     private LiveParticipant requireEditor(String scoreId, String sessionId) {
@@ -473,8 +473,8 @@ public class LiveCollabService {
         String ifMatch = "\"v" + doc.baseVersion() + "\"";
         for (String email : live.emailsNewestFirst()) {
             try {
-                ScoreSaveResponse saved = security.runAs(
-                        email, () -> scoreEditService.saveLiveSnapshot(scoreId, bytes, ifMatch, meta));
+                ScoreSaveResponse saved =
+                        security.runAs(email, () -> scoreEditService.saveLiveSnapshot(scoreId, bytes, ifMatch, meta));
                 doc.markSaved(seqTo, saved.getVersion());
                 messaging.convertAndSend(
                         topic(scoreId, "version"), new VersionBroadcast(scoreId, saved.getVersion(), seqTo, false));
@@ -498,7 +498,8 @@ public class LiveCollabService {
 
     private void validate(OpsRequest request) {
         boolean hasMeasures = request.measures() != null && !request.measures().isEmpty();
-        boolean hasStructural = request.structural() != null && request.structural().afterXml() != null;
+        boolean hasStructural =
+                request.structural() != null && request.structural().afterXml() != null;
         if (request.opId() == null
                 || request.opId().isBlank()
                 || request.opId().length() > 36
@@ -608,8 +609,9 @@ public class LiveCollabService {
     }
 
     private void broadcastPresence(String scoreId) {
-        List<LiveMessages.Participant> people =
-                registry.participants(scoreId).stream().map(LiveParticipant::toMessage).toList();
+        List<LiveMessages.Participant> people = registry.participants(scoreId).stream()
+                .map(LiveParticipant::toMessage)
+                .toList();
         messaging.convertAndSend(topic(scoreId, "presence"), new PresenceBroadcast(scoreId, people));
     }
 

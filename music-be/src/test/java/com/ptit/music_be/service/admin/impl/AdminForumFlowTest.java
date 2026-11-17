@@ -10,23 +10,22 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import org.springframework.jdbc.core.JdbcTemplate;
-
 import com.ptit.music_be.dto.enums.report.ReportReason;
 import com.ptit.music_be.dto.request.admin.ForumCategoryRequest;
+import com.ptit.music_be.dto.request.forum.ForumPostRequest;
 import com.ptit.music_be.dto.request.forum.ForumThreadRequest;
 import com.ptit.music_be.dto.request.report.ReportRequest;
-import com.ptit.music_be.service.report.ContentReportService;
-import com.ptit.music_be.dto.request.forum.ForumPostRequest;
 import com.ptit.music_be.dto.response.admin.AdminForumCategoryResponse;
 import com.ptit.music_be.dto.response.admin.AdminForumThreadResponse;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.service.admin.AdminForumService;
 import com.ptit.music_be.service.forum.ForumService;
+import com.ptit.music_be.service.report.ContentReportService;
 
 /**
  * Luồng quản lý diễn đàn trên DB mẫu (chủ đề seed-ft-*, V13): chuyên mục, ẩn / khôi phục, ghim, khóa. Cần MySQL đã chạy
@@ -87,8 +86,10 @@ class AdminForumFlowTest {
     @Test
     void categoriesCanBeCreatedRenamedAndOnlyEmptyOnesDeleted() {
         loginAs("admin@music.com", "ROLE_SUPER_ADMIN");
-        AdminForumCategoryResponse created = adminForum.createCategory(
-                ForumCategoryRequest.builder().name("Thử nghiệm đặc biệt").description("mô tả").build());
+        AdminForumCategoryResponse created = adminForum.createCategory(ForumCategoryRequest.builder()
+                .name("Thử nghiệm đặc biệt")
+                .description("mô tả")
+                .build());
         createdCategory = created.getId();
         assertEquals("thu-nghiem-dac-biet", created.getSlug());
         assertEquals(0, created.getThreadCount());
@@ -104,7 +105,9 @@ class AdminForumFlowTest {
         assertEquals("thu-nghiem-dac-biet", renamed.getSlug(), "đổi tên không đổi đường dẫn");
 
         AppException invalid = assertThrows(
-                AppException.class, () -> adminForum.createCategory(ForumCategoryRequest.builder().name("a").build()));
+                AppException.class,
+                () -> adminForum.createCategory(
+                        ForumCategoryRequest.builder().name("a").build()));
         assertEquals(ErrorCode.FORUM_CATEGORY_INVALID, invalid.getErrorCode());
 
         // chuyên mục còn chủ đề thì không xóa được
@@ -122,12 +125,11 @@ class AdminForumFlowTest {
         // Chủ đề và báo cáo do test tự tạo (không đụng báo cáo của dữ liệu mẫu), xóa sạch ở cuối
         loginAs("user@music.com", "ROLE_USER");
         String categoryId = forum.categories().get(0).getId();
-        ownThread = forum.createThread(
-                        ForumThreadRequest.builder()
-                                .categoryId(categoryId)
-                                .title("Chủ đề thử quản lý")
-                                .body("nội dung thử")
-                                .build())
+        ownThread = forum.createThread(ForumThreadRequest.builder()
+                        .categoryId(categoryId)
+                        .title("Chủ đề thử quản lý")
+                        .body("nội dung thử")
+                        .build())
                 .getId();
         loginAs("lan.nguyen@music.com", "ROLE_USER");
         reports.reportForumThread(
@@ -171,7 +173,8 @@ class AdminForumFlowTest {
         assertTrue(first.isPinned() && first.isLocked());
         AppException locked = assertThrows(
                 AppException.class,
-                () -> forum.reply(THREAD, ForumPostRequest.builder().body("thử trả lời").build()));
+                () -> forum.reply(
+                        THREAD, ForumPostRequest.builder().body("thử trả lời").build()));
         assertEquals(ErrorCode.FORUM_THREAD_LOCKED, locked.getErrorCode());
     }
 
@@ -184,11 +187,16 @@ class AdminForumFlowTest {
         adminForum.setPostHidden(POST, true);
 
         var after = adminForum.thread("seed-ft-1");
-        assertTrue(after.getPosts().stream().filter(p -> p.getId().equals(POST)).findFirst().orElseThrow().isHidden());
+        assertTrue(after.getPosts().stream()
+                .filter(p -> p.getId().equals(POST))
+                .findFirst()
+                .orElseThrow()
+                .isHidden());
         assertEquals(1, after.getThread().getHiddenReplyCount());
 
         loginAs("user@music.com", "ROLE_USER");
-        assertTrue(forum.thread("seed-ft-1").getPosts().stream().noneMatch(p -> p.getId().equals(POST)));
+        assertTrue(forum.thread("seed-ft-1").getPosts().stream()
+                .noneMatch(p -> p.getId().equals(POST)));
     }
 
     @Test

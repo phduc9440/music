@@ -72,14 +72,21 @@ class ContentReportServiceImplTest {
     @InjectMocks
     ContentReportServiceImpl service;
 
-    private final Member owner = Member.builder().id("owner").email("owner@x.com").build();
-    private final Member reporter = Member.builder().id("rep").email("rep@x.com").build();
+    private final Member owner =
+            Member.builder().id("owner").email("owner@x.com").build();
+    private final Member reporter =
+            Member.builder().id("rep").email("rep@x.com").build();
     private final Member admin = Member.builder().id("adm").email("admin@x.com").build();
     private Score score;
 
     @BeforeEach
     void setUp() {
-        score = Score.builder().id("s1").title("Bài 1").member(owner).visibility("PUBLIC").build();
+        score = Score.builder()
+                .id("s1")
+                .title("Bài 1")
+                .member(owner)
+                .visibility("PUBLIC")
+                .build();
         when(scoreRepository.findById("s1")).thenReturn(Optional.of(score));
         when(memberRepository.findByEmail("rep@x.com")).thenReturn(Optional.of(reporter));
         when(memberRepository.findByEmail("owner@x.com")).thenReturn(Optional.of(owner));
@@ -145,14 +152,16 @@ class ContentReportServiceImplTest {
     @Test
     void cannotReportOwnScore() {
         loginAs("owner@x.com", "ROLE_USER");
-        assertThat(failure(() -> service.reportScore("s1", request(ReportReason.SPAM, null))).getErrorCode())
+        assertThat(failure(() -> service.reportScore("s1", request(ReportReason.SPAM, null)))
+                        .getErrorCode())
                 .isEqualTo(ErrorCode.REPORT_OWN_CONTENT);
         verify(reportRepository, never()).save(any());
     }
 
     @Test
     void reasonOtherNeedsDetails() {
-        assertThat(failure(() -> service.reportScore("s1", request(ReportReason.OTHER, "  "))).getErrorCode())
+        assertThat(failure(() -> service.reportScore("s1", request(ReportReason.OTHER, "  ")))
+                        .getErrorCode())
                 .isEqualTo(ErrorCode.REPORT_REASON_INVALID);
         assertThat(failure(() -> service.reportScore("s1", request(null, null))).getErrorCode())
                 .isEqualTo(ErrorCode.REPORT_REASON_INVALID);
@@ -165,14 +174,17 @@ class ContentReportServiceImplTest {
     void duplicatePendingReportIsRejected() {
         when(reportRepository.existsByReporterIdAndScoreIdAndStatus("rep", "s1", ReportStatus.PENDING))
                 .thenReturn(true);
-        assertThat(failure(() -> service.reportScore("s1", request(ReportReason.SPAM, null))).getErrorCode())
+        assertThat(failure(() -> service.reportScore("s1", request(ReportReason.SPAM, null)))
+                        .getErrorCode())
                 .isEqualTo(ErrorCode.REPORT_DUPLICATED);
     }
 
     @Test
     void tooManyReportsInADayIsRateLimited() {
-        when(reportRepository.countByReporterIdAndCreatedAtAfter(eq("rep"), any())).thenReturn(20L);
-        assertThat(failure(() -> service.reportScore("s1", request(ReportReason.SPAM, null))).getErrorCode())
+        when(reportRepository.countByReporterIdAndCreatedAtAfter(eq("rep"), any()))
+                .thenReturn(20L);
+        assertThat(failure(() -> service.reportScore("s1", request(ReportReason.SPAM, null)))
+                        .getErrorCode())
                 .isEqualTo(ErrorCode.REPORT_RATE_LIMITED);
     }
 
@@ -257,8 +269,12 @@ class ContentReportServiceImplTest {
     @Test
     void hideCommentSetsHiddenAt() {
         loginAs("admin@x.com", "ROLE_SUPER_ADMIN");
-        ScoreComment comment =
-                ScoreComment.builder().id("c1").score(score).author(owner).content("xấu").build();
+        ScoreComment comment = ScoreComment.builder()
+                .id("c1")
+                .score(score)
+                .author(owner)
+                .content("xấu")
+                .build();
         ContentReport report = pending("r1", ReportTargetType.COMMENT, score, comment);
         when(reportRepository.findById("r1")).thenReturn(Optional.of(report));
         when(reportRepository.findPendingOfComment("c1")).thenReturn(List.of(report));
@@ -289,7 +305,8 @@ class ContentReportServiceImplTest {
         ContentReport report = pending("r1", ReportTargetType.SCORE, score, null);
         when(reportRepository.findById("r1")).thenReturn(Optional.of(report));
 
-        assertThat(failure(() -> service.resolve("r1", resolveWith(ReportAction.HIDE, null))).getErrorCode())
+        assertThat(failure(() -> service.resolve("r1", resolveWith(ReportAction.HIDE, null)))
+                        .getErrorCode())
                 .isEqualTo(ErrorCode.REPORT_ACTION_INVALID);
         assertThat(failure(() -> service.resolve("r1", resolveWith(null, null))).getErrorCode())
                 .isEqualTo(ErrorCode.REPORT_ACTION_INVALID);
@@ -304,7 +321,8 @@ class ContentReportServiceImplTest {
         when(reportRepository.findScoreInfo("s1")).thenReturn(Optional.of(gone));
         when(reportRepository.findPendingOfScore("s1")).thenReturn(List.of(report));
 
-        assertThat(failure(() -> service.resolve("r1", resolveWith(ReportAction.UNPUBLISH, null))).getErrorCode())
+        assertThat(failure(() -> service.resolve("r1", resolveWith(ReportAction.UNPUBLISH, null)))
+                        .getErrorCode())
                 .isEqualTo(ErrorCode.REPORT_TARGET_GONE);
 
         service.resolve("r1", resolveWith(ReportAction.DISMISS, null));
@@ -318,7 +336,8 @@ class ContentReportServiceImplTest {
         report.setStatus(ReportStatus.RESOLVED);
         when(reportRepository.findById("r1")).thenReturn(Optional.of(report));
 
-        assertThat(failure(() -> service.resolve("r1", resolveWith(ReportAction.DISMISS, null))).getErrorCode())
+        assertThat(failure(() -> service.resolve("r1", resolveWith(ReportAction.DISMISS, null)))
+                        .getErrorCode())
                 .isEqualTo(ErrorCode.REPORT_ALREADY_HANDLED);
     }
 

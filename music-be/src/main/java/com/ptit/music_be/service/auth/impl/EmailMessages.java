@@ -100,8 +100,7 @@ final class EmailMessages {
             Map.entry(Key.WELCOME_SUBJECT, "Welcome to Music App"),
             Map.entry(Key.WELCOME_HEADING, "Hello %s,"),
             Map.entry(
-                    Key.WELCOME_BODY,
-                    "<p>Thanks for creating your Music App account.</p><p>Enjoy your practice!</p>"),
+                    Key.WELCOME_BODY, "<p>Thanks for creating your Music App account.</p><p>Enjoy your practice!</p>"),
             Map.entry(Key.FORGOT_SUBJECT, "Your Music App password reset code"),
             Map.entry(Key.FORGOT_HEADING, "Reset your password"),
             Map.entry(Key.FORGOT_INTRO, "<p>You asked to reset the password of your Music App account.</p>"),
@@ -139,7 +138,8 @@ final class EmailMessages {
                             + " have an account yet, sign up with this same email and open the link again.</p>"),
             Map.entry(Key.DIGEST_SUBJECT, "You have %s unread notifications on Music App"),
             Map.entry(Key.DIGEST_HEADING, "Today's notification summary"),
-            Map.entry(Key.DIGEST_INTRO, "<p>In the last 24 hours you got <strong>%s</strong> unread notifications:</p>"),
+            Map.entry(
+                    Key.DIGEST_INTRO, "<p>In the last 24 hours you got <strong>%s</strong> unread notifications:</p>"),
             Map.entry(Key.DIGEST_BUTTON, "Open notifications"),
             Map.entry(
                     Key.DIGEST_FOOTER,

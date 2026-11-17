@@ -21,8 +21,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ptit.music_be.dto.response.score.ScoreContent;
 import com.ptit.music_be.dto.response.StudioTimelineResponse;
+import com.ptit.music_be.dto.response.score.ScoreContent;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.service.score.ScoreContentService;

@@ -30,8 +30,7 @@ public class LiveScoreStompRule implements StompAccessRule {
 
     private static final Pattern TOPIC = Pattern.compile("^/topic/scores/([^/]+)/(presence|locks|ops|version)$");
     private static final Pattern APP = Pattern.compile("^/app/scores/([^/]+)/(join|presence|leave|lock|ops|save)$");
-    private static final Pattern USER_QUEUE =
-            Pattern.compile("^/user/queue/live-(join|locks|rejected|errors)$");
+    private static final Pattern USER_QUEUE = Pattern.compile("^/user/queue/live-(join|locks|rejected|errors)$");
 
     private final LiveAccess access;
 

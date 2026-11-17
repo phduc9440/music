@@ -14,6 +14,8 @@ interface Props {
   onOpen: (score: ScoreSummary) => void;
   /** Thẻ ở trang Khám phá: ẩn nhãn quyền riêng tư và trạng thái xử lý (ai cũng thấy là công khai, đã xong). */
   explore?: boolean;
+  /** Hiện số lượt xem (thư viện đang sắp theo "Nhiều lượt xem", để người dùng hiểu thứ tự). Trang Khám phá luôn hiện. */
+  showViews?: boolean;
   /** Nút thêm ở cuối thẻ (ví dụ "Lưu vào playlist"); bấm vào không mở bản nhạc. */
   actions?: ReactNode;
 }
@@ -24,7 +26,7 @@ const cardImage = (score: ScoreSummary): string | null | undefined =>
   (isGuest() && score.thumbnailUrl ? `${API_BASE_URL}/public/scores/${score.id}/thumbnail` : score.thumbnailUrl);
 
 /** Một thẻ bản nhạc trong lưới thư viện. */
-export default function ScoreCard({ score, onOpen, explore = false, actions }: Props) {
+export default function ScoreCard({ score, onOpen, explore = false, showViews = false, actions }: Props) {
   // Đang chuyển sang trang bản nhạc này: ảnh bìa mang tên dùng chung để "bay" sang vị trí mới (View Transitions)
   const opening = useViewTransitionState(`/scores/${score.id}`);
   return (
@@ -72,14 +74,16 @@ export default function ScoreCard({ score, onOpen, explore = false, actions }: P
             </span>
           ))}
         </div>
-        {explore && (
+        {(explore || showViews) && (
           <div className="sc-card__stats">
             <span title={t('scores.card.viewsTitle')}>{t('scores.card.views', { count: score.viewCount ?? 0 })}</span>
-            <span title={t('scores.card.ratingTitle')}>
-              {score.ratingAverage != null
-                ? `★ ${score.ratingAverage.toFixed(1)} (${score.ratingCount ?? 0})`
-                : t('scores.card.noRating')}
-            </span>
+            {explore && (
+              <span title={t('scores.card.ratingTitle')}>
+                {score.ratingAverage != null
+                  ? `★ ${score.ratingAverage.toFixed(1)} (${score.ratingCount ?? 0})`
+                  : t('scores.card.noRating')}
+              </span>
+            )}
           </div>
         )}
         <div className="sc-card__foot">
