@@ -272,14 +272,28 @@ export interface OmrMeasure {
   system?: number | null;
   /** Khung ô trên ảnh trang đã tiền xử lý [x0, y0, x1, y1] (ảnh 1050x1485); null nếu chưa biết. */
   box?: [number, number, number, number] | null;
-  /** DURATION: tổng trường độ sai số chỉ nhịp; COUNT_MISMATCH: số ô của hệ/trang lệch số ô đếm trên ảnh. */
-  flags: ('DURATION' | 'COUNT_MISMATCH')[];
+  /**
+   * DURATION: tổng trường độ sai số chỉ nhịp; COUNT_MISMATCH: số ô của hệ/trang lệch số ô đếm trên ảnh; RANGE: nốt giọng
+   * hát ngoài tầm thường gặp; LEAP: bước nhảy/nốt vọt bất thường; ACCIDENTAL: dấu hóa lạ; UNSTABLE: đọc lại ra kết quả
+   * khác; AI_DOUBT: AI xác minh cho là sai.
+   */
+  flags: OmrMeasureFlag[];
+  /** Độ tin cậy 0..1 (null với kết quả cũ). */
+  confidence?: number | null;
+  /** Lý do cần kiểm tra (tiếng Việt, do music-ai sinh). */
+  reasons?: string[];
 }
+
+export type OmrMeasureFlag = 'DURATION' | 'COUNT_MISMATCH' | 'RANGE' | 'LEAP' | 'ACCIDENTAL' | 'UNSTABLE' | 'AI_DOUBT';
 
 /** So số ô đếm trên ảnh với số ô đọc được (BE: OmrResultResponse.MeasureCheck). */
 export interface OmrMeasureCheck {
   imageMeasures?: number | null;
   kernMeasures?: number | null;
+  /** Số ô có cờ cần kiểm tra; null với kết quả cũ. */
+  flaggedMeasures?: number | null;
+  /** Số ô có độ tin cậy dưới 0,8; null với kết quả cũ. */
+  lowConfidenceMeasures?: number | null;
 }
 
 /** Kết quả nhận diện mới nhất của bản nhạc (BE: OmrResultResponse). */

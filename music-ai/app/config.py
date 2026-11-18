@@ -134,6 +134,33 @@ class Settings:
     """Giây giữ lại cho bước ghép và xuất: nhận diện lại chỉ chạy khi job còn nhiều thời gian hơn mức này, nên không bao
     giờ làm job quá hạn. Đặt bằng ``ROUTING_RESERVE_S``."""
 
+    # ---- Chấm tin cậy từng ô, đọc lại để bỏ phiếu, AI xác minh (app/omr/review.py, stability.py, llm_check.py) ----
+
+    tta_reads: int = 2
+    """Số lần đọc lại (ảnh dịch lên/xuống) mỗi hệ có ô nghi ngờ; 0 = tắt. Cần >= 2 thì mới tự thay ô (hai lần đọc lại
+    phải giống nhau). Đặt bằng ``OMR_TTA``."""
+
+    tta_shift_px: int = 3
+    """Độ dịch ảnh (pixel trên ảnh trang 1050x1485) giữa các lần đọc lại. Đặt bằng ``OMR_TTA_SHIFT_PX``."""
+
+    tta_max_systems: int = 4
+    """Tối đa số hệ được đọc lại mỗi job (hệ nhiều ô nghi ngờ nhất trước). Đặt bằng ``OMR_TTA_MAX_SYSTEMS``."""
+
+    llm_mode: str = "off"
+    """``off`` (mặc định) hoặc ``anthropic``: gửi ảnh cắt từng ô tin cậy thấp cho AI xác minh. Đặt bằng ``OMR_LLM``."""
+
+    llm_model: str = "claude-haiku-5-5"
+    """Model AI xác minh (nên dùng model rẻ). Đặt bằng ``OMR_LLM_MODEL``."""
+
+    llm_api_key: str = ""
+    """Khóa API (``ANTHROPIC_API_KEY``). Thiếu khóa thì lớp AI tự tắt kèm cảnh báo."""
+
+    llm_max_measures: int = 10
+    """Trần số ô gửi AI mỗi job. Đặt bằng ``OMR_LLM_MAX_MEASURES``."""
+
+    llm_timeout_s: int = 30
+    """Hạn mỗi lần gọi AI (giây). Đặt bằng ``OMR_LLM_TIMEOUT_S``."""
+
 
 def _bool_env(name: str, default: bool) -> bool:
     raw = os.environ.get(name)
@@ -199,6 +226,14 @@ def get_settings() -> Settings:
         music_engine=(os.environ.get("OMR_ENGINE", "").strip() or "transcoda").lower(),
         engine_command=os.environ.get("OMR_ENGINE_COMMAND", "").strip(),
         ottava=_choice_env("OMR_OTTAVA", "auto", ("auto", "drop", "keep")),
+        tta_reads=max(0, _int_env("OMR_TTA", 2)),
+        tta_shift_px=max(1, _int_env("OMR_TTA_SHIFT_PX", 3)),
+        tta_max_systems=max(0, _int_env("OMR_TTA_MAX_SYSTEMS", 4)),
+        llm_mode=_choice_env("OMR_LLM", "off", ("off", "anthropic")),
+        llm_model=os.environ.get("OMR_LLM_MODEL", "").strip() or "claude-haiku-5-5",
+        llm_api_key=os.environ.get("ANTHROPIC_API_KEY", "").strip(),
+        llm_max_measures=max(0, _int_env("OMR_LLM_MAX_MEASURES", 10)),
+        llm_timeout_s=max(5, _int_env("OMR_LLM_TIMEOUT_S", 30)),
     )
 
 

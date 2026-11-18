@@ -71,8 +71,18 @@ public class OmrResultResponse {
         /** Khung ô trên ảnh trang đã tiền xử lý [x0, y0, x1, y1], null nếu chưa biết. */
         List<Integer> box;
 
-        /** DURATION (tổng trường độ sai số chỉ nhịp), COUNT_MISMATCH (số ô của hệ/trang lệch số ô trên ảnh). */
+        /**
+         * DURATION (tổng trường độ sai số chỉ nhịp), COUNT_MISMATCH (số ô của hệ/trang lệch số ô trên ảnh), RANGE (nốt
+         * giọng hát ngoài tầm thường gặp), LEAP (bước nhảy/nốt vọt bất thường), ACCIDENTAL (dấu hóa lạ chỉ xuất hiện một
+         * lần), UNSTABLE (các lần đọc lại cho kết quả khác nhau), AI_DOUBT (AI xác minh cho là sai).
+         */
         List<String> flags;
+
+        /** Độ tin cậy 0..1 do music-ai chấm (null với kết quả cũ). */
+        Double confidence;
+
+        /** Lý do cần kiểm tra (tiếng Việt), rỗng nếu ô ổn. */
+        List<String> reasons;
     }
 
     @Data
@@ -86,6 +96,12 @@ public class OmrResultResponse {
 
         /** Số ô trong bản kern đã ghép. */
         Integer kernMeasures;
+
+        /** Số ô có ít nhất một cờ cần kiểm tra (result_data.measureCheck.review.flagged), null với kết quả cũ. */
+        Integer flaggedMeasures;
+
+        /** Số ô có độ tin cậy dưới 0,8 (result_data.measureCheck.review.lowConfidence), null với kết quả cũ. */
+        Integer lowConfidenceMeasures;
     }
 
     /** Một trang đã tiền xử lý. */

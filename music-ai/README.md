@@ -91,6 +91,29 @@ Bên Spring Boot đặt `AI_INTERNAL_KEY` trùng với `INTERNAL_KEY` ở đây 
 | `ROUTING_RESERVE_S` | `30` | Giây giữ lại cho bước ghép/xuất: nhận diện lại chỉ chạy khi job còn nhiều thời gian hơn mức này |
 | `OMR_ENGINE` | `transcoda` | Engine nhận diện ký hiệu nhạc (`app/omr/engines.py`). `command`: chạy lệnh ngoài `OMR_ENGINE_COMMAND` (có `{image}`, `{output}`, `{beams}`) để thử model khác |
 | `OMR_OTTAVA` | `auto` | `auto`: bỏ `*8va`/`*8ba` model tự thêm trên khuông giọng hát/khuông đơn, đưa nốt về đúng quãng tám in trên ảnh (trong phạm vi từng lần đọc). `drop`: mọi khuông. `keep`: như cũ |
+| `OMR_TTA` | `2` | Số lần đọc lại (ảnh dịch lên/xuống vài pixel) mỗi hệ có ô nghi ngờ; `0`: tắt. Từ 2 trở lên mới tự thay ô. Xem "Độ tin cậy từng ô" |
+| `OMR_TTA_SHIFT_PX` | `3` | Độ dịch ảnh giữa các lần đọc lại (pixel trên ảnh 1050x1485) |
+| `OMR_TTA_MAX_SYSTEMS` | `4` | Tối đa số hệ được đọc lại mỗi job |
+| `OMR_LLM` | `off` | `anthropic`: gửi ảnh cắt các ô tin cậy thấp nhất cho AI xác minh (cần `ANTHROPIC_API_KEY`). Mặc định tắt, không tốn quota |
+| `OMR_LLM_MODEL` | `claude-haiku-5-5` | Model AI xác minh (nên dùng model rẻ) |
+| `OMR_LLM_MAX_MEASURES` | `10` | Trần số ô gửi AI mỗi job; kết quả được cache trong `{storage}/cache/llm/` |
+
+## Độ tin cậy từng ô (không cần train thêm)
+
+Chạy ở bước MERGE, sau khi đã có bản đồ ô nhịp (`measureMap`). Ba lớp, lớp sau chỉ xử lý những ô lớp trước còn nghi ngờ:
+
+1. **Luật nhạc lý** (`app/omr/review.py`, luôn bật, không tốn gì): ngoài `DURATION`/`COUNT_MISMATCH` có sẵn, đánh dấu
+   `RANGE` (nốt giọng hát/khuông đơn ngoài tầm thường gặp theo khóa nhạc), `LEAP` (nhảy quá một quãng tám, hoặc nốt "vọt"
+   ≥ 10 nửa cung so với cả hai nốt bên cạnh rồi quay lại — dấu hiệu lệch quãng tám/lệch dòng kẻ do lời ca, dấu thanh) và
+   `ACCIDENTAL` (dấu hóa ngoài hóa biểu chỉ xuất hiện một lần). Mỗi ô có `confidence` (0..1) và `reasons` (tiếng Việt).
+2. **Đọc lại và bỏ phiếu** (`app/omr/stability.py`, `OMR_TTA`): hệ có ô dưới 0,8 được đọc lại với ảnh dịch ±3 px. Ô mọi
+   lần đọc đều giống: cộng điểm. Khác nhau: cờ `UNSTABLE`. Tự **thay** ô chỉ khi ≥ 2 lần đọc lại giống hệt nhau, khác bản
+   đầu, và đúng trường độ/tầm âm trong khi bản đầu sai. Chỉ dùng thời gian còn dư của job (như nhận diện lại theo hệ).
+3. **AI xác minh** (`app/omr/llm_check.py`, `OMR_LLM`, mặc định tắt): gửi ảnh cắt **một ô** (phóng 2 lần, kèm một phần ô hai
+   bên) và các cách đọc ở bước 2; AI chỉ chọn cách đúng hoặc nói ô sai ở đâu (cờ `AI_DOUBT`). Có trần số ô, cache theo
+   hash, prompt caching; số lần gọi và token ghi ở `measureCheck.review.ai` để tính chi phí thật.
+
+`result_data.measureCheck.review` tóm tắt: số ô có cờ, số ô tin cậy thấp, số hệ đọc lại, số ô đã thay, thống kê AI.
 
 ## API (Spring Boot gọi, đặc tả mục 6.2)
 
