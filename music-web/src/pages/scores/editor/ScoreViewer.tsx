@@ -49,7 +49,7 @@ import { usePlayer } from '../../../components/player/hooks/usePlayer';
 import { useScoreEditor } from '../../../components/editor/core/useScoreEditor';
 import LiveBar from '../../../components/editor/live/LiveBar';
 import { useLiveCollab } from '../../../components/editor/live/useLiveCollab';
-import { MAX_PRESENCE_MEASURES, colorOf } from '../../../components/editor/live/presence';
+import { MAX_PRESENCE_MEASURES, colorOf, displayName } from '../../../components/editor/live/presence';
 import type { LockBox } from '../../../components/scores/viewer/ScoreCanvas';
 import type { LiveSelection } from '../../../types';
 import { countView } from '../../../services/practice/playbackApi';
@@ -363,7 +363,7 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
           perMeasure.set(measureIndex, stack + 1);
           boxes.push({
             measureIndex,
-            label: p.name,
+            label: displayName(p),
             colorIndex: colorOf(p),
             editing: wholeHeld || held.has(measureIndex),
             flag: i === 0,

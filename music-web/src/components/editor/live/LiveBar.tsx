@@ -1,7 +1,7 @@
 import { t } from '../../../i18n/core';
 import type { LiveParticipant } from '../../../types';
 import type { LiveState } from './LiveSession';
-import { colorOf, initialsOf } from './presence';
+import { colorOf, displayName, initialsOf } from './presence';
 import './live.css';
 
 const MAX_SHOWN = 5;
@@ -53,7 +53,7 @@ export default function LiveBar({ state, onJump }: Props) {
               ? t('live.presence.atMeasure', { n: where.from + 1 })
               : t('live.presence.atMeasures', { from: where.from + 1, to: where.to + 1 })
             : t('live.presence.idle');
-          const name = isSelf ? t('live.you', { name: p.name }) : p.name;
+          const name = isSelf ? t('live.you', { name: displayName(p) }) : displayName(p);
           const title = `${name} · ${editingIds.has(p.sessionId) ? t('live.presence.editing') : place}`;
           const canJump = !isSelf && !!where && !!onJump;
           return (
@@ -67,12 +67,12 @@ export default function LiveBar({ state, onJump }: Props) {
               disabled={!canJump}
               onClick={() => where && onJump?.(where.from)}
             >
-              {p.avatarUrl ? <img src={p.avatarUrl} alt="" /> : <span>{initialsOf(p.name)}</span>}
+              {p.avatarUrl ? <img src={p.avatarUrl} alt="" /> : <span>{initialsOf(displayName(p))}</span>}
             </button>
           );
         })}
         {hidden.length > 0 && (
-          <span className="live-avatar live-avatar--more" title={hidden.map((p) => p.name).join(', ')}>
+          <span className="live-avatar live-avatar--more" title={hidden.map((p) => displayName(p)).join(', ')}>
             +{hidden.length}
           </span>
         )}

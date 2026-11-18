@@ -22,6 +22,8 @@ import type {
   LiveVersion,
 } from '../../../types';
 import { LiveClient } from './LiveClient';
+import { displayName } from './presence';
+import { t } from '../../../i18n/core';
 
 /** Sau chừng này (ms) không đụng tới, ô đang giữ khóa mà không còn được chọn sẽ được nhả. */
 const RELEASE_IDLE_MS = 5_000;
@@ -154,7 +156,10 @@ export class LiveSession {
     const mine = this.selfSessionId;
     const locks = this.locks;
     if (!locks) return null;
-    const holderOf = (sessionId: string) => this.participants.find((p) => p.sessionId === sessionId)?.name ?? '';
+    const holderOf = (sessionId: string) => {
+      const holder = this.participants.find((p) => p.sessionId === sessionId);
+      return holder ? displayName(holder) : t('live.presence.anonymous');
+    };
     if (locks.wholeHolder && locks.wholeHolder !== mine) return holderOf(locks.wholeHolder);
     for (const s of command.snapshots) {
       const entry = locks.locks.find(

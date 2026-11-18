@@ -27,6 +27,7 @@
     "atMeasure": "đang ở ô {n}",
     "atMeasures": "đang ở ô {from}–{to}",
     "idle": "chưa chọn ô nào",
-    "jump": "bấm để tới chỗ này"
+    "jump": "bấm để tới chỗ này",
+    "anonymous": "Người cùng sửa"
   }
 }

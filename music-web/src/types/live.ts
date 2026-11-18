@@ -9,7 +9,8 @@ export interface LiveSelection {
 export interface LiveParticipant {
   sessionId: string;
   memberId: string;
-  name: string;
+  /** Họ tên; null khi tài khoản chưa đặt tên. */
+  name: string | null;
   colorIndex: number;
   editing: boolean;
   selection: LiveSelection | null;
