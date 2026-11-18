@@ -235,8 +235,11 @@ def vocal_job(root, score, systems=4):
     return job_for(score, 1)
 
 
-def test_page_missing_voice_is_recognized_again_by_systems(storage_root, java):
+def test_page_missing_voice_is_recognized_again_by_systems(storage_root, java, monkeypatch):
     from tests.kern_samples import SYSTEM_3
+
+    monkeypatch.setenv("OMR_ROLES_FIRST", "0")  # quy trình cũ: đọc cả hệ 3 khuông trước
+    config.get_settings.cache_clear()
 
     job = vocal_job(storage_root, "v1")
     recognizer = FakeRecognizer([PAGE_1, SYSTEM_3])  # cả trang: mất khuông giọng; từng hệ: đủ 3 khuông
@@ -262,8 +265,11 @@ def test_page_missing_voice_is_recognized_again_by_systems(storage_root, java):
     assert done["scoreMetadata"]["staffCount"] == 3 and done["scoreMetadata"]["measureCount"] == 4
 
 
-def test_wrong_system_is_retried_with_beams(storage_root, java):
+def test_wrong_system_is_retried_with_beams(storage_root, java, monkeypatch):
     from tests.kern_samples import SYSTEM_3
+
+    monkeypatch.setenv("OMR_ROLES_FIRST", "0")
+    config.get_settings.cache_clear()
 
     job = vocal_job(storage_root, "v2", systems=2)
     recognizer = FakeRecognizer([PAGE_1, PAGE_1, SYSTEM_3])
@@ -272,6 +278,43 @@ def test_wrong_system_is_retried_with_beams(storage_root, java):
     assert recognizer.beams == [None, None, None, 3, 3, None]
     page = java.bodies("complete")[0]["resultData"]["routing"]["pages"][0]
     assert page["chosen"] == "systems" and page["retries"] == 3
+
+
+class _ByImageName:
+    """Model giả trả kern theo tên ảnh: đọc riêng piano / riêng khuông giọng / còn lại (cả trang, cả hệ) mất khuông giọng."""
+
+    def __init__(self):
+        from tests.kern_samples import PAGE_1, PIANO_ONLY, VOICE_ONLY
+
+        self.texts = {"r2-piano": PIANO_ONLY, "r1-single": VOICE_ONLY, None: PAGE_1}
+        self.calls: list[str] = []
+
+    def wait_ready(self, check, timeout_s):
+        return None
+
+    def recognize(self, png_path, check, num_beams=None, max_measures=None):
+        from app.omr.transcoda import RecognitionResult
+
+        check()
+        name = str(png_path)
+        self.calls.append(name.rsplit("/", 1)[-1])
+        key = next((k for k in ("r2-piano", "r1-single") if k in name), None)
+        text = self.texts[key]
+        return RecognitionResult(text=text, tokens=len(text.split()), truncated=False, millis=1)
+
+
+def test_voice_and_piano_systems_are_read_by_roles_first(storage_root, java):
+    job = vocal_job(storage_root, "v5", systems=2)
+    recognizer = _ByImageName()
+    run(job, recognizer)
+    # cả trang (mất khuông giọng), rồi mỗi hệ chỉ 2 lượt đọc riêng: không đọc cả hệ 3 khuông, không beam search
+    assert recognizer.calls == [
+        "page-001.png",
+        "page-001-s01-r2-piano.png", "page-001-s01-r1-single.png",
+        "page-001-s02-r2-piano.png", "page-001-s02-r1-single.png",
+    ]
+    page = java.bodies("complete")[0]["resultData"]["routing"]["pages"][0]
+    assert page["chosen"] == "systems" and page["roleSplit"] == 2
 
 
 def test_routing_off_only_warns_about_missing_staff(storage_root, java, monkeypatch):

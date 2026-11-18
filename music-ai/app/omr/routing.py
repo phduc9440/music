@@ -513,14 +513,15 @@ def recognize_by_systems(
     meter: Optional[str] = None,
     use_bars: bool = True,
     whole: Optional[merge.PageKern] = None,
+    roles_first: bool = False,
 ) -> tuple[Optional[merge.PageKern], list[SystemResult], list[str]]:
     """Nhận diện lại trang ``number`` theo từng hệ. Trả ``(kern_trang, kết_quả_từng_hệ, cảnh_báo)``.
 
     ``kern_trang`` là None nếu không hệ nào đọc được. ``can_retry()`` False thì không thử lại bằng beam search (hết thời
     gian). ``meter``: token ``*M4/4`` đã biết của bài (hệ ở giữa bài không tự có dòng này). ``use_bars``: dùng số ô
     từng hệ đếm trên ảnh để chấm và thử lại. ``whole``: kết quả đọc cả trang trước đó (nếu có), dùng để lấy lại các hệ
-    cuối mà nó đọc đúng hơn (:func:`graft_whole_tail`). Hủy job hoặc hết hạn từ ``recognize`` được để nguyên cho bên gọi
-    xử lý.
+    cuối mà nó đọc đúng hơn (:func:`graft_whole_tail`). ``roles_first``: hệ giọng hát + piano đọc riêng từng nhóm khuông
+    trước (xem ``Settings.routing_roles_first``). Hủy job hoặc hết hạn từ ``recognize`` được để nguyên cho bên gọi xử lý.
     """
     warnings: list[str] = []
     results: list[SystemResult] = []
@@ -528,7 +529,9 @@ def recognize_by_systems(
     for index, (system, band) in enumerate(zip(layout.systems, system_bands(layout))):
         judge = _judge(number, index, layout, meter, use_bars)
         judges.append(judge)
-        result = _recognize_one(number, index, gray, layout, band, recognize, retry_beams, can_retry, max_repeat, judge)
+        result = _recognize_one(
+            number, index, gray, layout, band, recognize, retry_beams, can_retry, max_repeat, judge, roles_first
+        )
         results.append(result)
         meter = page_meter(result.page) or meter  # hệ sau được chấm theo số chỉ nhịp đã thấy
     graft_whole_tail(results, layout, judges, whole)
@@ -659,8 +662,12 @@ def _recognize_one(
     can_retry: Callable[[], bool],
     max_repeat: int,
     judge: Judge,
+    roles_first: bool = False,
 ) -> SystemResult:
-    """Nhận diện một hệ theo thứ tự rẻ trước: đọc cả hệ (greedy) -> đọc riêng giọng/piano (2 lần greedy ngắn) -> beam."""
+    """Nhận diện một hệ theo thứ tự rẻ trước: đọc cả hệ (greedy) -> đọc riêng giọng/piano (2 lần greedy ngắn) -> beam.
+
+    ``roles_first`` và hệ có cả giọng lẫn piano: đọc riêng giọng/piano trước; ghép đúng số spine, không mất nốt và đúng số ô
+    trên ảnh (nếu biết) thì dừng luôn, không đọc cả hệ 3 khuông (thường sai số spine) và không beam search."""
     system = layout.systems[index]
     target = len(system.staves)
     image = virtual_page(gray, band)
@@ -696,6 +703,19 @@ def _recognize_one(
             result.page = fixed
         return result
 
+    early: Optional[SystemResult] = None
+    if roles_first and judge.voice:
+        early = _recognize_by_roles(
+            number, index, gray, layout, recognize, retry_beams, can_retry, max_repeat, measures=measures,
+            meter=judge.meter,
+        )
+        early_lossy = any(combine.REPLACED_MARK in w for w in early.warnings)
+        if _roles_enough(early.page, early_lossy, target, judge):
+            early.method = "roles"
+            early.page, notes = trim_loops(early.page, measures, where)
+            early.warnings.extend(notes)
+            return early
+
     best = _recognize_system(
         number, index, image, target, recognize, 0, can_retry, max_repeat, measures=measures, voice=judge.voice,
         meter=judge.meter,
@@ -705,7 +725,14 @@ def _recognize_one(
     lossy = False
     """Kết quả đang giữ có ô nhịp bị thay bằng dấu lặng (mất nốt) nên chưa được coi là tốt."""
 
-    if not _is_good(best.page, target, judge) and can_retry():
+    if early is not None:  # đã đọc riêng nhưng chưa đạt: vẫn là một ứng viên, khỏi đọc riêng lần nữa
+        attempts += early.attempts
+        warnings.extend(early.warnings)
+        early_lossy = any(combine.REPLACED_MARK in w for w in early.warnings)
+        if early.page is not None and _accept_roles(best.page, early.page, early_lossy, target, judge):
+            best = SystemResult(early.page, attempts, "roles", warnings)
+            lossy = early_lossy
+    elif not _is_good(best.page, target, judge) and can_retry():
         roles = _recognize_by_roles(
             number, index, gray, layout, recognize, retry_beams, can_retry, max_repeat, measures=measures,
             meter=judge.meter,
@@ -726,6 +753,16 @@ def _recognize_one(
     best.attempts = attempts
     best.warnings = warnings
     return best
+
+
+def _roles_enough(page: Optional[merge.PageKern], lossy: bool, target: int, judge: Judge) -> bool:
+    """Kết quả đọc riêng giọng/piano đủ tốt để không cần đọc cả hệ: đúng số spine, không ô nào bị thay bằng dấu lặng,
+    khuông giọng không có hợp âm và đúng số ô trên ảnh (nếu biết). Ô lệch trường độ vẫn được nhận (sẽ bị gắn cờ): đọc cả
+    hệ 3 khuông hiếm khi tốt hơn."""
+    if page is None or page.spines != target or lossy:
+        return False
+    score = _score(page, target, judge)
+    return score.measure_gap == 0 and score.voice_ok >= 1.0
 
 
 _MAX_MEASURE_READS = 12

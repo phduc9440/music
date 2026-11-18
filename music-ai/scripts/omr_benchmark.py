@@ -125,6 +125,59 @@ class RecordingCallback:
         return True
 
 
+def read_kind(png_path, num_beams=None) -> str:
+    """Loại lượt đọc model theo tên ảnh pipeline đặt: ``page`` (cả trang), ``system`` (một hệ), ``roles`` (riêng giọng hoặc
+    riêng piano), ``beam`` (đọc lại bằng beam search), ``tta`` (đọc lại có dịch ảnh), ``other``."""
+    import re  # noqa: PLC0415
+
+    path = Path(png_path)
+    if num_beams and num_beams > 1:
+        return "beam"
+    if path.parent.name == "pages":
+        return "page"
+    if "-tta" in path.name:
+        return "tta"
+    if re.search(r"-r\d+-", path.name):
+        return "roles"
+    if path.parent.name == "routing":
+        return "system"
+    return "other"
+
+
+class TimedRecognizer:
+    """Bọc engine thật để đo từng lượt gọi model theo loại (:func:`read_kind`): số lượt, số giây, số token."""
+
+    def __init__(self, inner) -> None:
+        self.inner = inner
+        self.calls: list[tuple[str, float, int]] = []
+
+    def __getattr__(self, name):
+        return getattr(self.inner, name)
+
+    def wait_ready(self, check, timeout_s):
+        return self.inner.wait_ready(check, timeout_s)
+
+    def recognize(self, png_path, check, *args, **kwargs):
+        beams = kwargs.get("num_beams", args[0] if args else None)
+        started = time.monotonic()
+        result = self.inner.recognize(png_path, check, *args, **kwargs)
+        self.calls.append((read_kind(png_path, beams), time.monotonic() - started, int(result.tokens or 0)))
+        return result
+
+    def summary(self) -> dict:
+        by_kind: dict[str, dict] = {}
+        for kind, seconds, tokens in self.calls:
+            item = by_kind.setdefault(kind, {"calls": 0, "seconds": 0.0, "tokens": 0})
+            item["calls"] += 1
+            item["seconds"] = round(item["seconds"] + seconds, 2)
+            item["tokens"] += tokens
+        return {
+            "modelCalls": len(self.calls),
+            "modelSeconds": round(sum(c[1] for c in self.calls), 2),
+            "modelByKind": by_kind,
+        }
+
+
 def cmd_run(cases: list[dict], variants: list[str]) -> dict:
     from app import config  # noqa: PLC0415
     from app.omr import engines  # noqa: PLC0415
@@ -163,11 +216,13 @@ def cmd_run(cases: list[dict], variants: list[str]) -> dict:
                              "musicXmlVersion": 1},
                 )
                 callback = RecordingCallback()
+                timed = TimedRecognizer(recognizer)
                 started = time.monotonic()
-                run_omr_job(job, threading.Event(), callback, recognizer=recognizer)  # type: ignore[arg-type]
+                run_omr_job(job, threading.Event(), callback, recognizer=timed)  # type: ignore[arg-type]
                 seconds = time.monotonic() - started
                 rows.append(_score_run(case, name, Path(tmp) / "scores" / score_id, callback, seconds))
-                print(json.dumps(rows[-1], ensure_ascii=False)[:400])
+                rows[-1].update(timed.summary())
+                print(json.dumps(rows[-1], ensure_ascii=False)[:600])
         for key, value in saved.items():
             if value is None:
                 os.environ.pop(key, None)
@@ -179,6 +234,7 @@ def cmd_run(cases: list[dict], variants: list[str]) -> dict:
         os.environ["STORAGE_ROOT"] = original_storage
     config.get_settings.cache_clear()
     _print_music(rows)
+    _print_timing(rows)
     return {"mode": "run", "rows": rows}
 
 
@@ -200,6 +256,9 @@ class ReplayRecognizer:
         self.folder = folder
         self.hits: list[str] = []
         self.misses: list[str] = []
+        self.decoded = 0
+        """Tổng số token (tách theo khoảng trắng) của các kern đã phát lại: thước đo thay cho thời gian giải mã của model
+        (giải mã tự hồi quy chiếm gần hết thời gian một lần đọc và tỉ lệ gần tuyến tính với số token sinh ra)."""
         self.drift: list[tuple[str, float]] = []
 
     def wait_ready(self, check, timeout_s: float) -> None:  # noqa: ARG002 - cùng giao diện Recognizer
@@ -235,6 +294,7 @@ class ReplayRecognizer:
             return RecognitionResult(text="", tokens=0, truncated=False, millis=0)
         self.hits.append(label)
         text = krn.read_text(encoding="utf-8")
+        self.decoded += len(text.split())
         stopped = False
         if max_measures and BarlineLimit(max_measures).exceeded(text):
             lines = text.split("\n")
@@ -395,10 +455,13 @@ def _replay_details(folder: Path, callback: RecordingCallback, recognizer: Repla
         "imageMeasures": layout_bars,
         "lowConfidence": sum(1 for m in measures if (m.get("confidence") if m.get("confidence") is not None else 1.0) < 0.8),
         "flags": flags,
+        "modelCalls": len(recognizer.hits) + len(recognizer.misses),
+        "decodedTokens": recognizer.decoded,
         "replayHits": len(recognizer.hits),
         "replayMisses": len(recognizer.misses),
         "replayDrift": len(recognizer.drift),
         "replayMissed": recognizer.misses,
+        "replayReads": recognizer.hits,
     }
 
 
@@ -450,6 +513,19 @@ def _score_run(case: dict, variant: str, folder: Path, callback: RecordingCallba
 
 
 # ====================================================================== in kết quả
+
+
+def _print_timing(rows: list[dict]) -> None:
+    rows = [r for r in rows if "modelCalls" in r]
+    if not rows:
+        return
+    print("\ncase | variant | tổng giây | giây model | lượt gọi | theo loại (lượt/giây)")
+    for r in rows:
+        kinds = ", ".join(
+            f"{k} {v['calls']}/{v['seconds']:.0f}s" for k, v in sorted((r.get("modelByKind") or {}).items())
+        )
+        print(f"{r['case']} | {r.get('variant', '')} | {r['seconds']} | {r.get('modelSeconds', '-')} | "
+              f"{r['modelCalls']} | {kinds}")
 
 
 def _print_music(rows: list[dict]) -> None:
