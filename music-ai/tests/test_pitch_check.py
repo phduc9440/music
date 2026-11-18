@@ -113,3 +113,46 @@ def test_context_fix_pulls_unseen_note_from_extreme_octave():
     image = [pc._diatonic_of(l, o) for l, o in notes if (l, o) != ("f", 7)]
     fixes, _miss, reason = pc.plan_fixes(image, kern)
     assert reason is None and [(f.line, f.octave) for f in fixes] == [(3, 5)]
+
+
+def _bar_page(measures: list[list[int]], width=1400, height=520):
+    """Một khuông có vạch nhịp sau mỗi ô; trả (ảnh, bố cục)."""
+    steps = [s for m in measures for s in m]
+    page = _page([], width, height)
+    top = BOTTOM - 4 * IL
+    x = 260
+    bars = []
+    for m in measures:
+        for step in m:
+            y = BOTTOM - int(step * IL / 2)
+            cv2.ellipse(page, (x, y), (11, 8), -20, 0, 360, 0, -1)
+            cv2.line(page, (x + 10, y), (x + 10, y - 62), 0, 2)
+            x += 48
+        cv2.line(page, (x + 5, top), (x + 5, BOTTOM), 0, 2)
+        bars.append(x + 5)
+        x += 60
+    layout = analyze_layout(page)
+    layout.systems[0].barlines = bars  # vạch nhịp đã biết: test này kiểm tra phần so ô, không kiểm tra bộ dò vạch
+    return page, layout, steps
+
+
+def test_fix_measures_rewrites_letters_of_misread_measure():
+    measures = [[0, 1, 2, 3], [4, 3, 2, 1], [1, 2, 3, 4], [3, 3, 2, 2], [0, 2, 4, 2]]
+    gray, layout, _ = _bar_page(measures)
+    rows = []
+    for k, m in enumerate(measures):
+        for step in m:
+            d = pc._diatonic_from_step(step)
+            rows.append("4" + pc._rewrite_octave("cdefgab"[d % 7], d // 7))
+        rows.append("=")
+    wrong = list(rows)
+    wrong[5] = "4c"  # ô 2 nốt 1 (G4) đọc thành C4
+    wrong[6] = "4b"
+    heads = pc.find_heads(gray, layout)
+    fixed, changed, reason = pc.fix_measures(["*clefG2", *wrong], heads, layout)
+    assert reason is None and changed == 2 and fixed[1:] == rows
+
+
+def test_rewrite_pitch_drops_stale_accidental():
+    assert pc._rewrite_pitch("8f#L", "g", 4) == "8gL"
+    assert pc._rewrite_pitch("4b-", "b", 5) == "4bb-"

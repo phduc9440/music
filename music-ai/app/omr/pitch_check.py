@@ -42,6 +42,11 @@ MIN_NOTES = 4
 
 MAX_OCTAVE_SHIFT = 3
 
+MIN_MEASURE_AGREEMENT = 0.6
+"""Sửa cả tên nốt theo ảnh (bản một khuông) chỉ khi ít nhất tỉ lệ ô này đã khớp hoàn toàn tên nốt giữa ảnh và kern."""
+
+MIN_MEASURES = 4
+
 
 @dataclass
 class Head:
@@ -148,9 +153,63 @@ def _has_stem(pieces: np.ndarray, cx: float, cy: float, width: float, il: float)
     return False
 
 
+def _fill_holes(mask: np.ndarray, max_area: float, max_w: float, max_h: float) -> np.ndarray:
+    """Lấp các vùng trắng nhỏ bị mực bao kín (lòng đầu nốt rỗng)."""
+    h, w = mask.shape
+    n, labels, stats, _ = cv2.connectedComponentsWithStats((1 - mask).astype(np.uint8), connectivity=4)
+    out = mask.copy()
+    for i in range(1, n):
+        x, y, bw, bh, area = stats[i]
+        if area <= max_area and bw <= max_w and bh <= max_h and x > 0 and y > 0 and x + bw < w and y + bh < h:
+            out[labels == i] = 1
+    return out
+
+
+def _fill_split_heads(ink: np.ndarray, layout: PageLayout) -> np.ndarray:
+    """Nốt trắng nằm TRÊN dòng kẻ: dòng kẻ chia lòng nốt thành hai nửa kín, một nửa sát trên và một nửa sát dưới cùng một
+    dòng, thẳng hàng nhau. Chỉ lấp các cặp như vậy (khe kín giữa đuôi móc, thân nốt và dòng kẻ thì không có cặp đối
+    xứng nên không bị lấp nhầm)."""
+    il = layout.interline
+    h, w = ink.shape
+    n, labels, stats, _ = cv2.connectedComponentsWithStats((1 - ink).astype(np.uint8), connectivity=4)
+    small = [
+        i
+        for i in range(1, n)
+        if stats[i][4] <= 0.45 * il * il
+        and 0.3 * il <= stats[i][2] <= 1.3 * il
+        and stats[i][3] <= 0.7 * il
+        and stats[i][0] > 0
+        and stats[i][1] > 0
+        and stats[i][0] + stats[i][2] < w
+        and stats[i][1] + stats[i][3] < h
+    ]
+    lines = [st.top + k * (st.bottom - st.top) / 4.0 for sy in layout.systems for st in sy.staves for k in range(5)]
+    above: dict[int, list[int]] = {}
+    below: dict[int, list[int]] = {}
+    tol = max(2.0, 0.25 * il)
+    for i in small:
+        x, y, bw, bh, _a = stats[i]
+        for k, ly in enumerate(lines):
+            if abs((y + bh) - ly) <= tol:
+                above.setdefault(k, []).append(i)
+            elif abs(y - ly) <= tol:
+                below.setdefault(k, []).append(i)
+    out = ink.copy()
+    for k, ups in above.items():
+        for i in ups:
+            cx = stats[i][0] + stats[i][2] / 2.0
+            for j in below.get(k, []):
+                if abs(stats[j][0] + stats[j][2] / 2.0 - cx) <= 0.3 * il:
+                    out[labels == i] = 1
+                    out[labels == j] = 1
+    return out
+
+
 def find_heads(gray: np.ndarray, layout: PageLayout) -> list[Head]:
     il = layout.interline
-    ink = _ink(gray, layout)
+    # Lấp lòng nốt trắng TRƯỚC khi xóa dòng kẻ: dòng kẻ cắt ngang lòng nốt thành hai nửa kín, xóa dòng rồi thì vòng
+    # đầu nốt bị hở và không lấp được nữa.
+    ink = _fill_split_heads(_ink(gray, layout), layout)
     pieces, ledger = _pieces(ink, layout)
     h, w = pieces.shape
     beam = cv2.morphologyEx(
@@ -159,12 +218,7 @@ def find_heads(gray: np.ndarray, layout: PageLayout) -> list[Head]:
     beam = cv2.dilate(beam, np.ones((3, 3), np.uint8))
     no_beam = pieces.copy()
     no_beam[beam > 0] = 0
-    n, labels, stats, _ = cv2.connectedComponentsWithStats((1 - no_beam).astype(np.uint8), connectivity=4)
-    filled = no_beam.copy()
-    for i in range(1, n):  # lấp lỗ đầu nốt rỗng (nốt trắng, nốt tròn)
-        x, y, bw, bh, area = stats[i]
-        if area <= 0.8 * il * il and bw <= 1.3 * il and bh <= 1.1 * il and x > 0 and y > 0 and x + bw < w and y + bh < h:
-            filled[labels == i] = 1
+    filled = _fill_holes(no_beam, 0.8 * il * il, 1.3 * il, 1.1 * il)  # nốt trắng nằm giữa hai dòng kẻ
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (max(3, int(round(0.75 * il))), max(3, int(round(0.6 * il)))))
     opened = cv2.morphologyEx(filled, cv2.MORPH_OPEN, kernel)
     n, _, stats, _ = cv2.connectedComponentsWithStats(opened, connectivity=8)
@@ -400,6 +454,97 @@ def _apply(lines: list[str], fixes: list[Fix]) -> list[str]:
 # ---------------------------------------------------------------------------------------------- một trang
 
 
+def _rewrite_pitch(sub: str, letter: str, octave: int) -> str:
+    """Đổi tên nốt + quãng tám; đổi tên nốt thì bỏ dấu hóa ghi kèm (dấu hóa của nốt cũ không còn đúng)."""
+    match = _RE_RUN.search(sub)
+    if match is None:
+        return sub
+    old = match.group(0)[0].lower()
+    run = letter * (octave - 3) if octave >= 4 else letter.upper() * (4 - octave)
+    rest = sub[match.end() :]
+    if old != letter:
+        rest = rest.lstrip("#-n")
+    return sub[: match.start()] + run + rest
+
+
+def _image_measures(heads: list[Head], layout: PageLayout) -> Optional[list[list[int]]]:
+    """Bậc diatonic các đầu nốt theo từng ô trên ảnh (thứ tự hệ -> vạch nhịp). None nếu hệ nào không dò được vạch."""
+    out: list[list[int]] = []
+    for si, system in enumerate(layout.systems):
+        if not system.barlines:
+            return None
+        own = sorted((hd for hd in heads if hd.system == si), key=lambda hd: hd.x)
+        start = -1.0
+        for bar in system.barlines:
+            out.append([_diatonic_from_step(hd.step) for hd in own if start <= hd.x < bar])
+            start = float(bar)
+    return out
+
+
+def _kern_measures(lines: list[str]) -> list[list[tuple[int, str]]]:
+    """Nốt (dòng, token) của từng ô, chỉ ô có dòng dữ liệu. Ô có hợp âm thì đánh dấu bằng ``(-1, "")``."""
+    out: list[list[tuple[int, str]]] = []
+    current: list[tuple[int, str]] = []
+    has_data = False
+    for index, line in enumerate(lines):
+        if merge.is_barline(line):
+            if has_data:
+                out.append(current)
+            current, has_data = [], False
+            continue
+        if not merge.is_data_line(line):
+            continue
+        has_data = True
+        if line == ".":
+            continue
+        if " " in line:
+            current.append((-1, ""))
+        elif _kern_pitch(line):
+            current.append((index, line))
+    if has_data:
+        out.append(current)
+    return out
+
+
+def fix_measures(lines: list[str], heads: list[Head], layout: PageLayout) -> tuple[list[str], int, Optional[str]]:
+    """Bản MỘT khuông khóa Sol: ô có số đầu nốt trên ảnh bằng số nốt kern thì lấy cao độ (tên nốt + quãng tám) theo ảnh.
+
+    Bắt được lỗi model "đọc lặp" một hệ (chép nốt của hệ sau vào), đọc nhầm tên nốt, mà luật nhạc lý không thấy. Chỉ chạy
+    khi số ô ảnh = số ô kern và phần lớn ô đã khớp sẵn (ảnh đáng tin trên trang này). Trả ``(dòng, số nốt sửa, lý do)``.
+    """
+    if any(_RE_CLEF.match(ln) and not ln.startswith("*clefG2") for ln in lines):
+        return lines, 0, "có khóa khác Sol"
+    image = _image_measures(heads, layout)
+    if image is None:
+        return lines, 0, "thiếu vạch nhịp"
+    kern = _kern_measures(lines)
+    if len(image) != len(kern):
+        return lines, 0, f"số ô ảnh ({len(image)}) khác số ô kern ({len(kern)})"
+    comparable = [
+        (img, notes) for img, notes in zip(image, kern) if notes and len(img) == len(notes) and all(i >= 0 for i, _ in notes)
+    ]
+    if len(comparable) < MIN_MEASURES:
+        return lines, 0, "quá ít ô so được"
+
+    def letters_match(img: list[int], notes: list[tuple[int, str]]) -> bool:
+        return all(_LETTERS[d % 7] == _kern_pitch(tok)[0] for d, (_i, tok) in zip(img, notes))  # type: ignore[index]
+
+    agree = sum(1 for img, notes in comparable if letters_match(img, notes))
+    if agree / float(len(comparable)) < MIN_MEASURE_AGREEMENT:
+        return lines, 0, "tên nốt ảnh và kern khớp thấp"
+    out = list(lines)
+    changed = 0
+    for img, notes in comparable:
+        if letters_match(img, notes):
+            continue
+        for d, (index, token) in zip(img, notes):
+            letter, octave = _LETTERS[d % 7], d // 7
+            if _kern_pitch(token) != (letter, octave):
+                out[index] = _rewrite_pitch(token, letter, octave)
+                changed += 1
+    return out, changed, None
+
+
 def check_page(
     lines: list[str], spines: int, gray: np.ndarray, layout: PageLayout
 ) -> tuple[list[str], int, int, Optional[str]]:
@@ -411,6 +556,9 @@ def check_page(
         return lines, 0, 0, f"số khuông mỗi hệ {sorted(staves_per_system)} khác số spine {spines}"
     heads = find_heads(gray, layout)
     il = layout.interline
+    rewritten = 0
+    if spines == 1:
+        lines, rewritten, _why = fix_measures(lines, heads, layout)
     events = _kern_events(lines, spines)
     fixes: list[Fix] = []
     mismatched = 0
@@ -427,8 +575,8 @@ def check_page(
             reasons.append(f"spine {column + 1}: {reason}")
         fixes.extend(plan)
     if not fixes:
-        return lines, 0, mismatched, "; ".join(reasons) or None
-    return _apply(lines, fixes), len(fixes), mismatched, "; ".join(reasons) or None
+        return lines, rewritten, mismatched, "; ".join(reasons) or None
+    return _apply(lines, fixes), len(fixes) + rewritten, mismatched, "; ".join(reasons) or None
 
 
 def apply(

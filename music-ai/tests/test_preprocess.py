@@ -173,3 +173,13 @@ def test_process_page_strips_band_and_keeps_clean_source_unbinarized():
 def test_is_clean_digital_rejects_shaded_photo():
     assert pp.is_clean_digital(make_score_page())
     assert not pp.is_clean_digital(make_score_page(shade=True, noise=6))
+
+
+def test_is_clean_digital_accepts_jpeg_of_digital_page():
+    import cv2
+
+    page = make_score_page()
+    ok, buf = cv2.imencode(".jpg", page, [cv2.IMWRITE_JPEG_QUALITY, 70])
+    jpeg = cv2.imdecode(buf, cv2.IMREAD_GRAYSCALE)
+    assert pp.is_clean_digital(jpeg)
+    assert not pp.is_clean_digital(make_score_page(noise=6))
