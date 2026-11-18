@@ -11,6 +11,15 @@
   stroke: var(--sc-accent, var(--ui-note-selected));
   stroke-opacity: 0.45;
 }
+/* Đầu nốt trong hợp âm chọn được riêng: rê chuột vào đầu nốt nào thì đầu nốt đó sáng lên */
+[data-head-id]:hover:not(.ed-note--selected) path {
+  fill: var(--sc-accent, var(--ui-note-selected));
+  fill-opacity: 0.7;
+  stroke-opacity: 1;
+}
+[data-head-id].ed-note--selected path {
+  filter: drop-shadow(0 0 2px color-mix(in srgb, var(--ui-note-selected) 60%, transparent));
+}
 
 /* Ô nhịp sai độ dài: viền đỏ vẽ quanh các nốt của ô */
 .sv-canvas__host {

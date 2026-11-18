@@ -9,10 +9,13 @@ export interface LiveSelection {
 export interface LiveParticipant {
   sessionId: string;
   memberId: string;
-  name: string;
+  /** Họ tên; null khi tài khoản chưa đặt tên. */
+  name: string | null;
   colorIndex: number;
   editing: boolean;
   selection: LiveSelection | null;
+  /** Ảnh đại diện (máy chủ chưa gửi thì giao diện dùng chữ cái đầu trên nền màu của người đó). */
+  avatarUrl?: string | null;
 }
 
 export interface LivePresence {

@@ -1331,3 +1331,176 @@ h3.sv-tools__title {
     min-height: 36px;
   }
 }
+
+/* =====================================================================================================================
+ * Giao diện v2 của trình chỉnh sửa: tách lớp rõ hơn (thanh trên trắng có vạch nhấn, bàn làm việc chấm lưới đậm hơn để
+ * trang giấy nổi lên, bảng công cụ dạng thẻ), giữ nguyên bảng màu "Phòng hòa nhạc" và chạy được ở cả hai theme.
+ * ================================================================================================================== */
+.sv-root {
+  --sv-desk: color-mix(in srgb, var(--ui-border-strong) 30%, var(--ui-bg));
+  --sv-desk-dot: color-mix(in srgb, var(--ui-border-strong) 75%, transparent);
+  --sv-paper-shadow:
+    0 0 0 1px color-mix(in srgb, var(--ui-shadow-ink) 7%, transparent),
+    0 2px 4px color-mix(in srgb, var(--ui-shadow-ink) 8%, transparent),
+    0 18px 40px -12px color-mix(in srgb, var(--ui-shadow-ink) 28%, transparent);
+}
+
+/* Thanh trên: nền trắng, vạch nhấn đồng-nhung mảnh ở mép trên, bóng mềm phía dưới */
+.sv-toolbar {
+  position: relative;
+  z-index: 6;
+  background: var(--ui-surface);
+  box-shadow:
+    0 1px 0 var(--ui-border),
+    0 8px 20px -14px color-mix(in srgb, var(--ui-shadow-ink) 40%, transparent);
+}
+.sv-toolbar::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: linear-gradient(90deg, var(--ui-brass), var(--ui-velvet) 55%, var(--ui-primary));
+  content: '';
+}
+.sv-title h1 {
+  font-family: var(--ui-font-display);
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+}
+.sv-title p {
+  color: var(--ui-text-2);
+}
+.sv-root .sc-btn {
+  border-color: var(--ui-border-strong);
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    box-shadow 0.15s,
+    transform 0.1s;
+}
+.sv-root .sc-btn:not(:disabled):hover {
+  border-color: var(--ui-primary);
+  box-shadow: 0 0 0 3px var(--ui-primary-ring);
+}
+.sv-root .sc-btn:not(:disabled):active {
+  transform: translateY(1px);
+}
+.sv-root .sc-btn--primary {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--ui-primary) 82%, var(--ui-surface)), var(--ui-primary));
+  font-weight: 700;
+  box-shadow: 0 6px 16px -8px color-mix(in srgb, var(--ui-primary) 80%, transparent);
+}
+.sv-root .sc-btn.is-active {
+  border-color: var(--ui-primary);
+  background: var(--ui-primary-soft);
+  color: var(--ui-primary-hover);
+}
+.sv-segment,
+.sv-zoom {
+  border: 1px solid var(--ui-border);
+  background: var(--ui-surface-muted);
+}
+.sv-segment button[aria-pressed='true'] {
+  background: var(--ui-surface);
+  color: var(--ui-primary-hover);
+  box-shadow:
+    0 0 0 1px var(--ui-border-strong),
+    var(--ui-shadow-sm);
+}
+
+/* Bàn làm việc: nền đậm hơn giấy, chấm lưới mờ (giống bàn vẽ của MuseScore / Figma) để trang nhạc nổi rõ */
+.sv-stage {
+  background:
+    radial-gradient(circle at 1px 1px, var(--sv-desk-dot) 1px, transparent 1.4px) 0 0 / 22px 22px,
+    linear-gradient(180deg, var(--sv-desk), color-mix(in srgb, var(--sv-desk) 85%, var(--ui-border-strong)));
+}
+.sv-canvas--page .sv-canvas__host {
+  padding: 2rem 1.5rem 6rem;
+}
+.sv-canvas--page .sv-canvas__host svg {
+  margin-bottom: 2rem;
+  border-radius: 3px;
+  background: var(--ui-paper);
+  box-shadow: var(--sv-paper-shadow);
+}
+.sv-canvas--scroll .sv-canvas__host {
+  border-radius: 6px;
+  background: var(--ui-paper);
+  box-shadow: var(--sv-paper-shadow);
+}
+.sv-pos {
+  border-color: var(--ui-border-strong);
+  background: color-mix(in srgb, var(--ui-surface) 88%, transparent);
+  box-shadow: 0 10px 24px -10px color-mix(in srgb, var(--ui-shadow-ink) 40%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+/* Bảng công cụ: nền trắng, mỗi mục là một khối có vạch nhấn, ô công cụ trắng viền rõ, nút đang bật tô đặc */
+.sv-tools {
+  background: var(--ui-surface);
+  border-right-color: var(--ui-border-strong);
+  box-shadow: 6px 0 18px -16px color-mix(in srgb, var(--ui-shadow-ink) 50%, transparent);
+}
+.sv-tools__title,
+.sv-tools__toggle {
+  position: relative;
+  padding-left: 0.6rem;
+  color: var(--ui-text-2);
+}
+.sv-tools__title::before,
+.sv-tools__toggle::before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 3px;
+  height: 0.9em;
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--ui-brass), var(--ui-velvet));
+  content: '';
+  transform: translateY(-50%);
+}
+.sv-tool {
+  border: 1px solid var(--ui-border);
+  background: var(--ui-surface);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--ui-shadow-ink) 4%, transparent);
+}
+.sv-tool:not(:disabled):hover:not(.is-active) {
+  border-color: var(--ui-primary);
+  background: var(--ui-primary-soft);
+  color: var(--ui-primary-hover);
+  transform: translateY(-1px);
+}
+.sv-tool.is-active {
+  border-color: var(--ui-primary);
+  background: var(--ui-primary);
+  color: var(--ui-on-accent);
+  box-shadow: 0 6px 14px -8px color-mix(in srgb, var(--ui-primary) 90%, transparent);
+}
+.sv-tool.is-active .sv-tool__label {
+  color: var(--ui-on-accent);
+}
+.sv-tool:not(:disabled):hover:not(.is-active) .sv-tool__label {
+  color: var(--ui-primary-hover);
+}
+
+/* Thanh trạng thái: chữ rõ hơn, mô tả nốt đang chọn dạng thẻ */
+.sv-status {
+  border-top-color: var(--ui-border-strong);
+  background: var(--ui-surface);
+  color: var(--ui-text-2);
+}
+.sv-status__sel {
+  padding: 0.1rem 0.6rem;
+  border: 1px solid var(--ui-primary-border);
+  border-radius: 999px;
+  background: var(--ui-primary-soft);
+  color: var(--ui-primary-hover);
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sv-tool,
+  .sv-root .sc-btn {
+    transition: none;
+  }
+}

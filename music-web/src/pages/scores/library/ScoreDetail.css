@@ -675,3 +675,257 @@ a.sc-btn.is-disabled {
   border-color: var(--ui-success);
   color: var(--ui-success);
 }
+
+/* =====================================================================================================================
+ * Trang chi tiết (giao diện v2): đầu trang tối kiểu sân khấu giống thư viện, ảnh bìa dạng tờ nhạc bên trái; bên phải là
+ * nhãn → tên → dòng phụ → thông số chính → thao tác chính (đọc từ trên xuống theo đúng thứ tự cần). Thông báo nằm ngay
+ * dưới, rồi tới hàng tab dính trên đầu khi cuộn.
+ * ================================================================================================================== */
+.sd-hero {
+  position: relative;
+  display: flex;
+  gap: 1.75rem;
+  margin-bottom: 0.9rem;
+  padding: 1.6rem 1.75rem;
+  overflow: hidden;
+  border: 1px solid var(--ui-border);
+  border-radius: 20px;
+  background:
+    radial-gradient(110% 140% at 100% 0%, color-mix(in srgb, var(--ui-velvet) 36%, transparent), transparent 55%),
+    radial-gradient(80% 120% at 0% 100%, color-mix(in srgb, var(--ui-brass) 14%, transparent), transparent 60%),
+    linear-gradient(135deg, var(--ui-stage-bg), var(--ui-stage-bg-2));
+  box-shadow: var(--ui-card-shadow);
+  color: var(--ui-text);
+}
+/* Năm dòng kẻ mờ chạy ngang phía sau */
+.sd-hero::before {
+  position: absolute;
+  inset: auto -5% 22px 40%;
+  height: 44px;
+  background: repeating-linear-gradient(180deg, var(--ui-stage-line) 0 1px, transparent 1px 10px);
+  content: '';
+  mask-image: linear-gradient(90deg, transparent, var(--ui-stage-text) 30%, var(--ui-stage-text) 75%, transparent);
+  pointer-events: none;
+}
+.sd-hero > * {
+  position: relative;
+}
+.sd-hero__cover {
+  flex: none;
+}
+/* Ảnh bìa dạng tờ nhạc dọc (tỉ lệ khổ A4), viền sáng nhẹ trên nền tối */
+.sd-hero .sd-cover {
+  width: 150px;
+  height: 200px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--ui-paper);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--ui-stage-text) 18%, transparent),
+    0 18px 36px -12px color-mix(in srgb, var(--ui-shadow-ink) 80%, transparent);
+  transform: rotate(-2deg);
+  transition: transform 0.25s ease;
+}
+.sd-hero .sd-cover:hover {
+  transform: rotate(0) scale(1.02);
+}
+.sd-cover__img--page {
+  object-fit: cover;
+  object-position: top center;
+}
+.sd-hero .sd-cover__empty {
+  background:
+    repeating-linear-gradient(
+        180deg,
+        transparent 0 18px,
+        color-mix(in srgb, var(--ui-staff-ink) 14%, transparent) 18px 19px
+      )
+      0 30px / 100% 95px no-repeat,
+    var(--ui-paper);
+  color: color-mix(in srgb, var(--ui-staff-ink) 45%, transparent);
+}
+.sd-hero__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+.sd-hero .sd-badges {
+  margin-bottom: 0.5rem;
+}
+.sd-hero .sd-title {
+  color: var(--ui-text);
+  font-family: var(--ui-font-display);
+  font-size: 2.1rem;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+.sd-hero .sd-meta {
+  margin-top: 0.4rem;
+  color: var(--ui-text-2);
+}
+.sd-hero .sd-meta span + span::before {
+  color: var(--ui-text-3);
+}
+
+/* Thông số chính: hàng viên thuốc nhỏ (giá trị đậm, nhãn mờ) */
+.sd-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.sd-pill {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  padding: 0.3rem 0.75rem;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ui-surface-muted) 70%, transparent);
+  font-size: 0.8rem;
+}
+.sd-pill strong {
+  color: var(--ui-text);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.sd-pill span {
+  color: var(--ui-text-2);
+}
+
+/* Thao tác chính: nút đầu (mở trình chỉnh sửa) nổi bật, các nút khác mờ trên nền tối */
+.sd-hero .sd-actions {
+  justify-content: flex-start;
+  margin-top: 1.25rem;
+}
+.sd-hero .sc-btn {
+  height: 40px;
+  border-color: var(--ui-border-strong);
+  background: color-mix(in srgb, var(--ui-surface-muted) 80%, transparent);
+  color: var(--ui-text);
+}
+.sd-hero .sc-btn:hover:not(:disabled) {
+  border-color: var(--ui-primary);
+  background: var(--ui-surface-hover);
+  color: var(--ui-text);
+}
+.sd-hero .sc-btn--primary {
+  padding: 0 1.15rem;
+  border-color: var(--ui-primary);
+  background: linear-gradient(180deg, var(--ui-brass-hover), var(--ui-brass));
+  color: var(--ui-on-accent);
+  font-weight: 700;
+  box-shadow: 0 8px 20px -8px color-mix(in srgb, var(--ui-brass) 75%, transparent);
+}
+.sd-hero .sc-btn--primary:hover:not(:disabled) {
+  background: var(--ui-brass-hover);
+  color: var(--ui-on-accent);
+}
+.sd-actions__icon {
+  width: 40px;
+  padding: 0 !important;
+}
+.sd-actions__icon.is-done {
+  border-color: var(--ui-success) !important;
+  color: var(--ui-success) !important;
+}
+
+/* Thông báo ngay dưới đầu trang, sát nhau */
+.sd-alerts {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+.sd-alerts:empty {
+  display: none;
+}
+.sd-alerts .sd-alert {
+  margin-top: 0;
+  border-radius: 12px;
+}
+
+/* Hàng tab: dính trên đầu khi cuộn, nền mờ */
+.sd-page .sd-tabs {
+  position: sticky;
+  top: var(--ui-header-h);
+  z-index: 4;
+  margin-bottom: 1.25rem;
+  padding-top: 0.25rem;
+  background: color-mix(in srgb, var(--ui-bg) 88%, transparent);
+  backdrop-filter: blur(8px);
+}
+.adm-main .sd-page .sd-tabs {
+  top: var(--adm-header-h, 60px);
+}
+
+/* Tab Thông tin: xem trước rộng bên trái, chi tiết bên phải */
+.sd-page .sd-card {
+  border-color: var(--ui-card-border);
+  border-radius: 16px;
+  box-shadow: var(--ui-card-shadow);
+}
+.sd-preview__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.sd-preview__head .sd-card__title {
+  margin: 0;
+}
+.sd-page .sd-preview {
+  background: var(--ui-surface);
+}
+.sd-preview--live .sd-preview__paper {
+  display: block;
+  min-height: 220px;
+  padding: 1rem 0.5rem;
+  overflow: hidden;
+  border: 1px solid var(--ui-border);
+  border-radius: 10px;
+  background: var(--ui-paper);
+  color: inherit;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.sd-preview--live .sd-preview__paper:hover {
+  border-color: var(--ui-primary);
+  box-shadow: 0 0 0 3px var(--ui-primary-ring);
+}
+.sd-preview--live .sd-preview__paper svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+.sd-preview__skeleton {
+  height: 200px;
+}
+.sd-page .sd-dl dd {
+  font-weight: 600;
+}
+
+@media (max-width: 720px) {
+  .sd-hero {
+    flex-direction: column;
+    gap: 1.1rem;
+    padding: 1.2rem 1.1rem;
+  }
+  .sd-hero .sd-cover {
+    width: 96px;
+    height: 128px;
+    transform: none;
+  }
+  .sd-hero .sd-title {
+    font-size: 1.55rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sd-hero .sd-cover {
+    transition: none;
+  }
+}

@@ -16,11 +16,9 @@ import ScoreCanvas from '../../../components/scores/viewer/ScoreCanvas';
 import type { CommentRange } from '../../../components/scores/viewer/ScoreCanvas';
 import CommentsSection from '../../../components/scores/comments/CommentsSection';
 import { anchorFromNotes } from '../../../components/scores/comments/viewerAnchor';
-import {
-  CommentContextMenu,
-  InlineCommentComposer,
-  SelectionCommentButton,
-} from '../../../components/scores/comments/ViewerCommentTools';
+import { InlineCommentComposer, SelectionCommentButton } from '../../../components/scores/comments/ViewerCommentTools';
+import ContextMenu from '../../../components/ui/ContextMenu';
+import { buildEditorMenu, editorMenuTitle } from '../../../components/scores/viewer/editorMenu';
 import type { ContextMenuState, ScreenRect } from '../../../components/scores/comments/ViewerCommentTools';
 import { SELECTED_CLASS, noteIdsFromEvent } from '../../../components/editor/core/osmdBridge';
 import type { CommentAnchor } from '../../../components/scores/comments/commentUtils';
@@ -51,6 +49,7 @@ import { usePlayer } from '../../../components/player/hooks/usePlayer';
 import { useScoreEditor } from '../../../components/editor/core/useScoreEditor';
 import LiveBar from '../../../components/editor/live/LiveBar';
 import { useLiveCollab } from '../../../components/editor/live/useLiveCollab';
+import { MAX_PRESENCE_MEASURES, colorOf, displayName } from '../../../components/editor/live/presence';
 import type { LockBox } from '../../../components/scores/viewer/ScoreCanvas';
 import type { LiveSelection } from '../../../types';
 import { countView } from '../../../services/practice/playbackApi';
@@ -81,8 +80,11 @@ const ALT = isMac ? '⌥' : 'Alt';
 /** Danh sách phím tắt trong hộp thoại "Phím tắt" (mở bằng phím ?): dựng lúc hiển thị để đổi ngôn ngữ có hiệu lực ngay. */
 const editShortcuts = (): [string, string][] => [
   [t('editor.view.help.select.keys'), t('editor.view.help.select.desc')],
+  [t('editor.view.help.head.keys'), t('editor.view.help.head.desc')],
+  [t('editor.view.help.context.keys'), t('editor.view.help.context.desc')],
   [t('editor.view.help.drag.keys'), t('editor.view.help.drag.desc')],
   ['Tab / Shift + Tab', t('editor.view.help.tab.desc')],
+  [`${MOD} + A`, t('editor.view.help.selectAll.desc')],
   ['[  /  ]', t('editor.view.help.chord.desc')],
   ['↑ / ↓', t('editor.view.help.step.desc')],
   [`${ALT} + ↑ / ↓`, t('editor.view.help.semitone.desc')],
@@ -294,7 +296,8 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
   const [selRect, setSelRect] = useState<ScreenRect | null>(null);
   /** Ô nhập góp ý nổi cạnh vùng chọn (mở từ nút nổi hoặc menu chuột phải). */
   const [composer, setComposer] = useState<{ anchor: CommentAnchor; rect: ScreenRect } | null>(null);
-  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
+  /** Menu chuột phải trên bản nhạc: chỗ bấm, ô nhịp và id nốt dưới con trỏ (rỗng = bấm ra ngoài nốt). */
+  const [contextMenu, setContextMenu] = useState<(ContextMenuState & { hitIds: string[] }) | null>(null);
 
   const { zoom, mode, invert } = prefs;
   const canEdit = score.canEdit;
@@ -335,17 +338,42 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
   useEffect(() => {
     selectionRef.current = editor.selection;
   });
+  // Người cùng sửa khác: viền ô họ đang chọn (đứt) / đang sửa (liền) và cờ tên ở ô đầu vùng của họ, như Google Docs
   const lockBoxes = useMemo<LockBox[]>(() => {
+    if (!live.active) return [];
     const { locks, participants, selfSessionId } = live.state;
-    if (!locks) return [];
     const boxes: LockBox[] = [];
-    for (const entry of locks.locks) {
-      if (entry.sessionId === selfSessionId) continue;
-      const holder = participants.find((p) => p.sessionId === entry.sessionId);
-      boxes.push({ measureIndex: entry.measureIndex, label: holder?.name ?? '', colorIndex: holder?.colorIndex ?? 0 });
+    const perMeasure = new Map<number, number>();
+    for (const p of participants) {
+      if (p.sessionId === selfSessionId) continue;
+      const held = new Set(
+        (locks?.locks ?? []).filter((l) => l.sessionId === p.sessionId).map((l) => l.measureIndex),
+      );
+      const wholeHeld = locks?.wholeHolder === p.sessionId;
+      const measures = new Set<number>(held);
+      if (p.selection) {
+        const last = Math.min(p.selection.to, p.selection.from + MAX_PRESENCE_MEASURES - 1);
+        for (let m = p.selection.from; m <= last; m++) measures.add(m);
+      }
+      [...measures]
+        .sort((a, b) => a - b)
+        .slice(0, MAX_PRESENCE_MEASURES)
+        .forEach((measureIndex, i) => {
+          const stack = perMeasure.get(measureIndex) ?? 0;
+          perMeasure.set(measureIndex, stack + 1);
+          boxes.push({
+            measureIndex,
+            label: displayName(p),
+            colorIndex: colorOf(p),
+            editing: wholeHeld || held.has(measureIndex),
+            flag: i === 0,
+            avatarUrl: p.avatarUrl,
+            stack,
+          });
+        });
     }
     return boxes;
-  }, [live.state]);
+  }, [live.active, live.state]);
   const { canPlay, playFrom, stop: stopPlayer, status: playerStatus } = player;
   const { a: loopA, b: loopB, enabled: loopOn } = player.loop;
   const loopRange = useMemo(
@@ -478,17 +506,19 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
     setComposer({ anchor: commentAnchor, rect: rect ?? selRect ?? { left: 200, top: 160, right: 200, bottom: 160 } });
   };
 
-  // Chuột phải vào nốt: chọn nốt đó (nếu chưa nằm trong vùng đang chọn) rồi hiện menu Góp ý
+  // Chuột phải vào nốt: chọn nốt đó (nếu chưa nằm trong vùng đang chọn) rồi hiện menu sửa / góp ý. Người sửa được có
+  // menu cả khi bấm ra ngoài nốt (thêm ô, hoàn tác...); người chỉ xem thì ngoài nốt vẫn là menu của trình duyệt.
   const onStageContextMenu = (e: React.MouseEvent<HTMLDivElement>) => {
     const ids = noteIdsFromEvent(e.nativeEvent);
-    if (ids.length === 0) return; // ngoài nốt: để menu mặc định của trình duyệt
+    if (ids.length === 0 && !canEdit) return;
+    if ((e.target as Element).closest('input, textarea, .ed-pop, .cm-popover')) return;
     e.preventDefault();
-    if (canEdit || canComment) {
+    if (ids.length > 0 && (canEdit || canComment)) {
       if (!ids.some((id) => editor.selection.has(id))) editor.select(ids, false);
     }
-    const info = doc.getInfo(ids[0]);
+    const info = ids.length > 0 ? doc.getInfo(ids[0]) : undefined;
     setComposer(null);
-    setContextMenu({ x: e.clientX, y: e.clientY, measureIndex: info ? info.measureIndex : null });
+    setContextMenu({ x: e.clientX, y: e.clientY, measureIndex: info ? info.measureIndex : null, hitIds: ids });
   };
   const threadsAtMenu =
     contextMenu?.measureIndex == null
@@ -499,6 +529,7 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
             contextMenu.measureIndex! + 1 >= c.startMeasure &&
             contextMenu.measureIndex! + 1 <= (c.endMeasure ?? c.startMeasure),
         );
+  const closeContextMenu = useCallback(() => setContextMenu(null), []);
 
   // Người chỉ nhận xét không có phím tắt của Editor: Esc bỏ chọn (khi không có ô nhập / menu đang mở)
   useEffect(() => {
@@ -665,7 +696,12 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
           ) : (
             <span className="sv-badge">{t('editor.view.header.readOnly')}</span>
           )}
-          {live.active && <LiveBar state={live.state} />}
+          {live.active && (
+            <LiveBar
+              state={live.state}
+              onJump={(measureIndex) => setFocusMeasure({ index: measureIndex, key: Date.now() })}
+            />
+          )}
         </div>
 
         <div className="sv-toolbar__center">
@@ -981,20 +1017,38 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
         />
       )}
       {contextMenu && (
-        <CommentContextMenu
-          menu={contextMenu}
-          canComment={canComment && !!commentAnchor}
-          blockedReason={commentBlocked}
-          threadsHere={threadsAtMenu}
-          onComment={() =>
-            openComposer({ left: contextMenu.x, top: contextMenu.y, right: contextMenu.x, bottom: contextMenu.y })
-          }
-          onShowThreads={() => {
-            setCommentsOpen(true);
-            if (threadsAtMenu[0]) setFocusCommentId(threadsAtMenu[0].id);
-            setContextMenu(null);
-          }}
-          onClose={() => setContextMenu(null)}
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          label={t('editor.ctx.label')}
+          title={editorMenuTitle(doc, editor.selection, contextMenu.measureIndex)}
+          items={buildEditorMenu({
+            doc,
+            editor,
+            hitIds: contextMenu.hitIds,
+            measureIndex: contextMenu.measureIndex,
+            canEdit,
+            playing: player.status === 'playing',
+            onPlay: onPlayButton,
+            comment: canComment
+              ? {
+                  disabledReason: !commentAnchor ? t('scores.comments.contextNoAccess') : commentBlocked,
+                  threads: threadsAtMenu.length,
+                  onComment: () =>
+                    openComposer({
+                      left: contextMenu.x,
+                      top: contextMenu.y,
+                      right: contextMenu.x,
+                      bottom: contextMenu.y,
+                    }),
+                  onShowThreads: () => {
+                    setCommentsOpen(true);
+                    if (threadsAtMenu[0]) setFocusCommentId(threadsAtMenu[0].id);
+                  },
+                }
+              : null,
+          })}
+          onClose={closeContextMenu}
         />
       )}
       {composer && (

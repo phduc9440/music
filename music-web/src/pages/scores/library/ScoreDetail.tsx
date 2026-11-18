@@ -228,7 +228,7 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
   }
 
   return (
-    <div className="sc-page">
+    <div className="sc-page sd-page">
       {navbar}
       <main className="sc-container">
         <ScoreHero
@@ -241,6 +241,24 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
           <div className="sc-tabs sd-tabs" role="tablist">
             <button role="tab" aria-selected={activeTab === 'info'} className="sc-tab" onClick={() => setTab('info')}>
               {t('scores.detail.info')}
+            </button>
+            <button
+              role="tab"
+              aria-selected={activeTab === 'comments'}
+              className="sc-tab"
+              onClick={() => setTab('comments')}
+            >
+              {t('scores.comments.tab')}
+              {openComments ? <span className="sc-tab__count">{openComments}</span> : null}
+            </button>
+            <button
+              role="tab"
+              aria-selected={activeTab === 'reviews'}
+              className="sc-tab"
+              onClick={() => setTab('reviews')}
+            >
+              {t('scores.detail.reviews')}
+              {score.ratingCount ? <span className="sc-tab__count">{score.ratingCount}</span> : null}
             </button>
             {canSeeSources && (
               <>
@@ -262,25 +280,8 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
                 </button>
               </>
             )}
-            <button
-              role="tab"
-              aria-selected={activeTab === 'reviews'}
-              className="sc-tab"
-              onClick={() => setTab('reviews')}
-            >
-              {t('scores.detail.reviews')}
-              {score.ratingCount ? <span className="sc-tab__count">{score.ratingCount}</span> : null}
-            </button>
-            <button
-              role="tab"
-              aria-selected={activeTab === 'comments'}
-              className="sc-tab"
-              onClick={() => setTab('comments')}
-            >
-              {t('scores.comments.tab')}
-              {openComments ? <span className="sc-tab__count">{openComments}</span> : null}
-            </button>
-            {score.canReview && (
+            {/* Sửa trực tiếp như Google Docs nên không còn tạo đề xuất mới: chỉ hiện tab khi còn đề xuất cũ đang mở */}
+            {score.canReview && ((openSuggestions ?? 0) > 0 || activeTab === 'suggestions') && (
               <button
                 role="tab"
                 aria-selected={activeTab === 'suggestions'}

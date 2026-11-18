@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { DragEvent, MouseEvent, PointerEvent as ReactPointerEvent } from 'react';
 import type { OpenSheetMusicDisplay } from 'opensheetmusicdisplay';
 import {
+  HEAD_ID_ATTR,
   NOTE_ID_ATTR,
   NOTE_IDS_ATTR,
   SELECTED_CLASS,
@@ -25,6 +26,7 @@ import { applyMutedTracks, applyPlaying, keepMeasureVisible, measureOfEvent } fr
 import NoteInsertPopover from '../toolbar/NoteInsertPopover';
 import TextEditPopover from '../toolbar/TextEditPopover';
 import type { TextKind } from '../toolbar/TextEditPopover';
+import { initialsOf } from '../../editor/live/presence';
 import '../../editor/editor.css';
 import '../../editor/live/live.css';
 
@@ -240,32 +242,70 @@ const drawLoopBoxes = (host: HTMLElement, range: LoopRange | null): void => {
   }
 };
 
-/** Viền một ô nhịp đang bị người khác khóa. */
+/** Một ô nhịp mà người cùng sửa khác đang chọn hoặc đang sửa (đồng chỉnh sửa, như con trỏ người khác ở Google Docs). */
 export interface LockBox {
   measureIndex: number;
-  /** Tên người đang giữ khóa. */
+  /** Tên người đó. */
   label: string;
   /** Màu của người đó (0..7, khớp `--ui-live-N`). */
   colorIndex: number;
+  /** true: đang giữ khóa ô (đang sửa); false/không có: chỉ đang chọn, xem ở ô này. */
+  editing?: boolean;
+  /** Hiện cờ tên + ảnh đại diện ở ô này (ô đầu tiên trong vùng của người đó). */
+  flag?: boolean;
+  /** Ảnh đại diện (nếu máy chủ gửi); không có thì dùng chữ cái đầu trên nền màu của người đó. */
+  avatarUrl?: string | null;
+  /** Thứ tự người trong cùng một ô (0, 1...), để viền lùi vào trong không đè nhau. */
+  stack?: number;
 }
 
-/** Vẽ viền màu quanh các ô nhịp mà người khác đang sửa, kèm nhãn tên ở góc trên. Không bắt sự kiện chuột. */
+/**
+ * Vẽ viền màu quanh các ô nhịp mà người khác đang chọn (viền đứt) hoặc đang sửa (viền liền, nền nhạt), kèm cờ tên có
+ * ảnh đại diện ở ô đầu vùng của họ. Không bắt sự kiện chuột.
+ */
 const drawLockBoxes = (host: HTMLElement, locks: readonly LockBox[]): void => {
   host.querySelectorAll(`.${LOCK_BOX_CLASS}`).forEach((el) => el.remove());
   if (locks.length === 0) return;
-  const byMeasure = new Map(locks.map((l) => [l.measureIndex, l]));
+  const wanted = new Set(locks.map((l) => l.measureIndex));
   const origin = host.getBoundingClientRect();
-  for (const [measureIndex, box] of collectMeasureBoxes(host, (i) => byMeasure.has(i))) {
-    const lock = byMeasure.get(measureIndex);
-    if (!lock) continue;
+  const boxes = collectMeasureBoxes(host, (i) => wanted.has(i));
+  for (const lock of locks) {
+    const box = boxes.get(lock.measureIndex);
+    if (!box) continue;
+    const inset = (lock.stack ?? 0) * 4;
     const div = document.createElement('div');
-    div.className = LOCK_BOX_CLASS;
-    div.dataset.color = String(lock.colorIndex);
-    div.dataset.label = lock.label;
-    div.style.left = `${box.l - origin.left - ISSUE_PAD_X}px`;
-    div.style.top = `${box.t - origin.top - ISSUE_PAD_Y}px`;
-    div.style.width = `${box.r - box.l + ISSUE_PAD_X * 2}px`;
-    div.style.height = `${box.b - box.t + ISSUE_PAD_Y * 2}px`;
+    div.className = `${LOCK_BOX_CLASS}${lock.editing ? ' is-editing' : ''}`;
+    div.dataset.color = String(lock.colorIndex % 8);
+    div.style.left = `${box.l - origin.left - ISSUE_PAD_X + inset}px`;
+    div.style.top = `${box.t - origin.top - ISSUE_PAD_Y + inset}px`;
+    div.style.width = `${box.r - box.l + ISSUE_PAD_X * 2 - inset * 2}px`;
+    div.style.height = `${box.b - box.t + ISSUE_PAD_Y * 2 - inset * 2}px`;
+    if (lock.flag) {
+      const flag = document.createElement('span');
+      flag.className = 'ed-presence-flag';
+      flag.style.top = `${-22 - (lock.stack ?? 0) * 22}px`;
+      const avatar = document.createElement('span');
+      avatar.className = 'ed-presence-flag__avatar';
+      if (lock.avatarUrl) {
+        const img = document.createElement('img');
+        img.src = lock.avatarUrl;
+        img.alt = '';
+        avatar.appendChild(img);
+      } else {
+        avatar.textContent = initialsOf(lock.label);
+      }
+      const name = document.createElement('span');
+      name.className = 'ed-presence-flag__name';
+      name.textContent = lock.label;
+      flag.append(avatar, name);
+      if (lock.editing) {
+        const state = document.createElement('span');
+        state.className = 'ed-presence-flag__state';
+        state.textContent = t('live.presence.editing');
+        flag.appendChild(state);
+      }
+      div.appendChild(flag);
+    }
     host.appendChild(div);
   }
 };
@@ -758,7 +798,9 @@ export default function ScoreCanvas({
   }, [commentKey]);
 
   // Vẽ lại viền khóa khi người khác đổi vùng đang sửa (so theo nội dung, không theo tham chiếu mảng)
-  const lockKey = lockBoxes.map((l) => `${l.measureIndex}:${l.colorIndex}:${l.label}`).join('|');
+  const lockKey = lockBoxes
+    .map((l) => `${l.measureIndex}:${l.colorIndex}:${l.label}:${l.editing ? 1 : 0}:${l.flag ? 1 : 0}:${l.stack ?? 0}`)
+    .join('|');
   useEffect(() => {
     const host = hostRef.current;
     if (host) drawLockBoxes(host, latest.current.lockBoxes);
@@ -935,7 +977,9 @@ export default function ScoreCanvas({
     }
     const ids = noteIdsFromEvent(e.nativeEvent);
     if (ids.length > 0) {
-      const el = (e.target as Element).closest(`[${NOTE_ID_ATTR}]`) as SVGGElement | null;
+      // Kéo một đầu nốt trong hợp âm thì chỉ đầu nốt đó di chuyển theo
+      const target = e.target as Element;
+      const el = (target.closest(`[${HEAD_ID_ATTR}]`) ?? target.closest(`[${NOTE_ID_ATTR}]`)) as SVGGElement | null;
       if (!onDragPitch || !el) return;
       gestureRef.current = { kind: 'note', ids, el, y0: e.clientY, moved: false, steps: 0 };
     } else {
@@ -1040,13 +1084,22 @@ export default function ScoreCanvas({
     const top = Math.min(g.y0, e.clientY);
     const bottom = Math.max(g.y0, e.clientY);
     const ids: string[] = [];
-    hostRef.current?.querySelectorAll(`[${NOTE_ID_ATTR}]`).forEach((el) => {
+    const inside = (el: Element) => {
       const r = el.getBoundingClientRect();
-      if (r.right < left || r.left > right || r.bottom < top || r.top > bottom) return;
+      return !(r.right < left || r.left > right || r.bottom < top || r.top > bottom);
+    };
+    hostRef.current?.querySelectorAll(`[${NOTE_ID_ATTR}]`).forEach((el) => {
+      if (!inside(el)) return;
+      // Hợp âm đã gắn id từng đầu nốt: chỉ lấy những đầu nốt nằm trong khung
+      const heads = Array.from(el.querySelectorAll(`[${HEAD_ID_ATTR}]`));
+      if (heads.length > 0) {
+        heads.forEach((h) => inside(h) && ids.push(h.getAttribute(HEAD_ID_ATTR) ?? ''));
+        return;
+      }
       const raw = el.getAttribute(NOTE_IDS_ATTR) ?? el.getAttribute(NOTE_ID_ATTR) ?? '';
       ids.push(...raw.split(' ').filter(Boolean));
     });
-    onSelectNotes?.(ids, e.shiftKey);
+    onSelectNotes?.(ids.filter(Boolean), e.shiftKey);
   };
 
   const activeText = textEdit && textEdit.revision === revision ? textEdit : null;

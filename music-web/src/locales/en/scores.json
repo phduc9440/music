@@ -295,7 +295,10 @@
     "copyLinkCopied": "Copied",
     "copyLinkHint": "Copy this score's link to send to someone (they must sign in and have access)",
     "copyLinkDone": "Score link copied",
-    "copyLinkFailed": "Could not copy the link"
+    "copyLinkFailed": "Could not copy the link",
+    "preview": "Preview",
+    "details": "Details",
+    "createdAt": "Created"
   },
   "edit": {
     "tagsFailed": "Couldn't load the genres",
@@ -580,5 +583,31 @@
     "reportTitle": "Report this score",
     "reportHint": "Send a report to the administrators if the score infringes copyright, is spam or has inappropriate content. The owner will not know who reported it.",
     "reportButton": "Report score"
+  },
+  "libMenu": {
+    "label": "Score actions",
+    "open": "Actions for “{title}”",
+    "openTitle": "Actions (or right-click the card)",
+    "tip": "Tip: right-click a score to open, rename, add to a playlist or delete it quickly.",
+    "openDetail": "Open score page",
+    "newTab": "Open in new tab",
+    "rename": "Rename…",
+    "addToPlaylist": "Add to playlist…",
+    "copyLink": "Copy link",
+    "linkCopied": "Link copied",
+    "linkFailed": "Could not copy the link",
+    "renameTitle": "Rename score",
+    "renameLabel": "New name",
+    "renameConfirm": "Rename",
+    "renamed": "Score renamed",
+    "renameFailed": "Could not rename the score",
+    "trash": "Move to trash",
+    "trashHint": "Can be restored for 30 days",
+    "purge": "Delete permanently",
+    "purgeHint": "Cannot be undone",
+    "purgeTitle": "Delete this score permanently?",
+    "purgeMessage": "“{title}” and all of its versions, files and comments will be deleted for good. This cannot be undone.",
+    "purgeConfirm": "Delete permanently",
+    "purged": "“{title}” was deleted permanently"
   }
 }

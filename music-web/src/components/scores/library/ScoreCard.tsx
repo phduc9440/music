@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { MouseEvent, ReactNode } from 'react';
 import { useViewTransitionState } from 'react-router-dom';
 import AuthImage from '../common/AuthImage';
 import StatusBadge from '../common/StatusBadge';
@@ -8,6 +8,7 @@ import { isGuest } from '../../../utils/session';
 import { ACCESS_LEVEL_LABELS, DIFFICULTY_LABELS, SOURCE_LABELS, formatRelative } from '../../../utils/score';
 import type { ScoreSummary } from '../../../types';
 import VisibilityBadge from '../common/VisibilityBadge';
+import Icon from '../../ui/Icon';
 
 interface Props {
   score: ScoreSummary;
@@ -18,6 +19,11 @@ interface Props {
   showViews?: boolean;
   /** Nút thêm ở cuối thẻ (ví dụ "Lưu vào playlist"); bấm vào không mở bản nhạc. */
   actions?: ReactNode;
+  /**
+   * Mở menu thao tác nhanh của thẻ tại điểm màn hình (chuột phải, nút ⋯, phím Menu / Shift+F10). Không có thì thẻ giữ
+   * menu chuột phải mặc định của trình duyệt.
+   */
+  onMenu?: (score: ScoreSummary, point: { x: number; y: number }) => void;
 }
 
 /** Ảnh thẻ: khách chưa đăng nhập không tải được /api/files/** nên dùng ảnh trang 1 công khai của bản PUBLIC. */
@@ -26,19 +32,53 @@ const cardImage = (score: ScoreSummary): string | null | undefined =>
   (isGuest() && score.thumbnailUrl ? `${API_BASE_URL}/public/scores/${score.id}/thumbnail` : score.thumbnailUrl);
 
 /** Một thẻ bản nhạc trong lưới thư viện. */
-export default function ScoreCard({ score, onOpen, explore = false, showViews = false, actions }: Props) {
+export default function ScoreCard({ score, onOpen, explore = false, showViews = false, actions, onMenu }: Props) {
   // Đang chuyển sang trang bản nhạc này: ảnh bìa mang tên dùng chung để "bay" sang vị trí mới (View Transitions)
   const opening = useViewTransitionState(`/scores/${score.id}`);
+  const openMenuAt = (e: MouseEvent<HTMLElement>) => {
+    if (!onMenu) return;
+    e.preventDefault();
+    e.stopPropagation();
+    onMenu(score, { x: e.clientX, y: e.clientY });
+  };
   return (
     <article
+      // Không đổi className theo trạng thái: hiệu ứng hiện dần gắn class `reveal--in` trực tiếp vào thẻ, React ghi đè
+      // className sẽ làm mất class đó và thẻ biến mất. Trạng thái "đang mở menu" đặt ở ô bọc ngoài (trang thư viện).
       className="sc-card reveal-item"
       role="button"
       tabIndex={0}
+      aria-haspopup={onMenu ? 'menu' : undefined}
       onClick={() => onOpen(score)}
-      onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onOpen(score)}
+      onContextMenu={onMenu ? openMenuAt : undefined}
+      onKeyDown={(e) => {
+        if (e.target !== e.currentTarget) return;
+        if (e.key === 'Enter' || e.key === ' ') onOpen(score);
+        else if (onMenu && (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10'))) {
+          e.preventDefault();
+          const box = e.currentTarget.getBoundingClientRect();
+          onMenu(score, { x: box.left + 24, y: box.top + 24 });
+        }
+      }}
     >
       <div className="sc-card__cover" style={opening ? { viewTransitionName: 'ui-shared-cover' } : undefined}>
         <AuthImage src={cardImage(score)} alt={score.title} className="sc-card__img" />
+        {onMenu && (
+          <button
+            type="button"
+            className="sc-card__menu"
+            aria-label={t('scores.libMenu.open', { title: score.title })}
+            title={t('scores.libMenu.openTitle')}
+            onClick={(e) => {
+              e.stopPropagation();
+              const box = e.currentTarget.getBoundingClientRect();
+              onMenu(score, { x: box.right - 4, y: box.bottom + 4 });
+            }}
+            onKeyDown={(e) => e.stopPropagation()}
+          >
+            <Icon name="more" size={18} />
+          </button>
+        )}
         {!explore && (
           <>
             <VisibilityBadge value={score.visibility} className="sc-card__visibility" />
