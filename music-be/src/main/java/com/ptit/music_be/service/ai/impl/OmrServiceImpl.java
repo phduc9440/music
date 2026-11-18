@@ -380,12 +380,16 @@ public class OmrServiceImpl implements OmrService {
             }
             List<String> flags = new ArrayList<>();
             m.path("flags").forEach(f -> flags.add(f.asText()));
+            List<String> reasons = new ArrayList<>();
+            m.path("reasons").forEach(r -> reasons.add(r.asText()));
             entries.add(OmrResultResponse.MeasureEntry.builder()
                     .measure(m.get("measure").asInt())
                     .page(m.get("page").asInt())
                     .system(m.hasNonNull("system") ? m.get("system").asInt() : null)
                     .box(box)
                     .flags(flags)
+                    .confidence(m.path("confidence").isNumber() ? m.get("confidence").asDouble() : null)
+                    .reasons(reasons)
                     .build());
         });
         return entries;
@@ -405,6 +409,14 @@ public class OmrServiceImpl implements OmrService {
                 .kernMeasures(
                         check.hasNonNull("kernMeasures")
                                 ? check.get("kernMeasures").asInt()
+                                : null)
+                .flaggedMeasures(
+                        check.path("review").path("flagged").isNumber()
+                                ? check.get("review").get("flagged").asInt()
+                                : null)
+                .lowConfidenceMeasures(
+                        check.path("review").path("lowConfidence").isNumber()
+                                ? check.get("review").get("lowConfidence").asInt()
                                 : null)
                 .build();
     }
