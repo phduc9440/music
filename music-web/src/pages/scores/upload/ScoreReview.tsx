@@ -7,7 +7,14 @@ import MusicXmlViewer from '../../../components/scores/viewer/MusicXmlViewer';
 import Modal from '../../../components/scores/common/Modal';
 import { downloadScoreExport, fetchKern, fetchMusicXml, omrApi, scoreApi } from '../../../services';
 import type { OmrMeasure, OmrResult, ScoreDetail as ScoreDetailData, ScoreFileInfo } from '../../../types';
-import { boxToPercent, flaggedMeasures, isValidScoreId, MEASURE_FLAG_LABELS, parseWarning } from '../../../utils/omr';
+import {
+  boxToPercent,
+  confidencePercent,
+  flaggedMeasures,
+  isValidScoreId,
+  MEASURE_FLAG_LABELS,
+  parseWarning,
+} from '../../../utils/omr';
 import { reportPlanLimit } from '../../../utils/planLimit';
 import {
   getErrorMessage,
@@ -400,9 +407,17 @@ export default function ScoreReview() {
                     {t('upload.review.deselect')}
                   </button>
                 </div>
-                {selectedMeasure.flags.map((f) => (
-                  <p key={f} className="sr-selected__flag">
-                    {MEASURE_FLAG_LABELS[f]}
+                {selectedMeasure.flags.length > 0 && confidencePercent(selectedMeasure) !== null && (
+                  <p className="sr-selected__confidence">
+                    {t('upload.review.confidence', { value: confidencePercent(selectedMeasure) ?? 0 })}
+                  </p>
+                )}
+                {(selectedMeasure.reasons?.length
+                  ? selectedMeasure.reasons
+                  : selectedMeasure.flags.map((f) => MEASURE_FLAG_LABELS[f] ?? f)
+                ).map((text, index) => (
+                  <p key={index} className="sr-selected__flag">
+                    {text}
                   </p>
                 ))}
                 <MusicXmlViewer
@@ -454,7 +469,9 @@ export default function ScoreReview() {
                           <span className="sr-warning__page">
                             {t('upload.review.selected', { measure: m.measure, page: m.page })}
                           </span>
-                          {m.flags.map((f) => MEASURE_FLAG_LABELS[f]).join('; ')}
+                          {m.flags.map((f) => MEASURE_FLAG_LABELS[f] ?? f).join('; ')}
+                          {confidencePercent(m) !== null &&
+                            ` · ${t('upload.review.confidence', { value: confidencePercent(m) ?? 0 })}`}
                         </button>
                       </li>
                     ))}

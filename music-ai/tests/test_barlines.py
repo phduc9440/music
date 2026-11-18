@@ -85,3 +85,49 @@ def test_closing_barline_beyond_a_shortened_staff_is_kept():
     after = analyze_layout(broken)
     assert after.measure_counts == [3, 3]
     assert after.systems[1].bars_closed
+
+
+def _grand_staff_geometry():
+    """Tọa độ của :func:`tests.synth.make_vocal_page` (mặc định, ``staves=2, bars=3``): đáy dòng kẻ trên của từng khuông,
+    khoảng dòng kẻ, vạch nhịp giữa hệ, mép phải."""
+    width, height, spacing = 1700, 2400, 16
+    left, right = int(width * 0.08), int(width * 0.94)
+    top = int(height * 0.06)
+    system_height = int((height * 0.88) / 4)
+    staff_gap = int(system_height / 2.6)
+    step = (right - left - 140) // 12
+    spots = [left + 90 + int((k + 0.5) * step) for k in range(12)]
+    xs = [spots[round((i + 1) * 12 / 3) - 1] for i in range(2)]
+    bases = [(top + s * system_height, top + s * system_height + staff_gap) for s in range(4)]
+    return bases, spacing, xs, right
+
+
+def test_grand_staff_barlines_with_notes_touching_both_sides():
+    # piano dày nốt: đầu nốt in sát cả hai bên vạch ở cả hai khuông, mực ở các góc làm mọi ứng viên thành "yếu"/bị loại;
+    # vạch nối liền qua khe giữa hai khuông vẫn phải được đếm
+    import cv2  # noqa: PLC0415
+
+    gray = make_vocal_page(staves=2, bars=3)
+    bases, spacing, xs, _right = _grand_staff_geometry()
+    for pair in bases:
+        for base in pair:
+            for x in xs:
+                cv2.ellipse(gray, (x + 15, base + 4 * spacing), (10, 7), -20, 0, 360, 0, -1)
+                cv2.ellipse(gray, (x - 15, base), (10, 7), -20, 0, 360, 0, -1)
+                cv2.ellipse(gray, (x + 15, base), (10, 7), -20, 0, 360, 0, -1)
+    layout = analyze_layout(page_image(gray))
+    assert layout.measure_counts == [3, 3, 3, 3]
+
+
+def test_start_line_of_facing_page_is_not_a_barline():
+    # ảnh scan hai trang sách: nét dọc đầu hệ của trang bên cạnh nối liền grand staff nhưng bên trái là khoảng trắng
+    import cv2  # noqa: PLC0415
+
+    gray = make_vocal_page(staves=2, bars=3)
+    bases, spacing, xs, right = _grand_staff_geometry()
+    edge = (xs[1] + right) // 2
+    for upper, lower in bases:
+        gray[upper - 6 : lower + 4 * spacing + 6, edge - 160 : edge - 2] = 255
+        cv2.line(gray, (edge, upper), (edge, lower + 4 * spacing), 0, 3)
+    layout = analyze_layout(page_image(gray))
+    assert layout.measure_counts == [3, 3, 3, 3]

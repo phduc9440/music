@@ -5,7 +5,7 @@ import numpy as np
 from app.omr import merge, routing
 from app.omr.layout import analyze_layout
 from app.omr.preprocess import TARGET_H, TARGET_W, PreprocessOptions, process_page
-from tests.kern_samples import PAGE_1, PIANO_ONLY, SYSTEM_3, VOICE_ONLY
+from tests.kern_samples import PAGE_1, PIANO_ONLY, SYSTEM_3, VOICE_ONLY, kern
 from tests.synth import make_vocal_page
 
 
@@ -537,3 +537,79 @@ def test_system_read_as_all_rests_is_reread_together_with_the_first_system():
     assert second is not None and not routing._is_empty(second)
     assert [line for line in second.body if line.startswith("4")][:2] == ["4ee", "4ff"]
     assert any("kèm hệ đầu" in w for w in warnings)
+
+
+# ------------------------------------------------------------------ khuông giọng: bản sao, im lặng, lẫn hợp âm piano
+
+VOICE_TWICE = "\n".join(
+    "\t".join([line, line]) if line and not line.startswith("**") else ("**kern\t**kern" if line else line)
+    for line in VOICE_ONLY.split("\n")
+)
+"""Khuông giọng đọc riêng mà Transcoda trả hai spine giống hệt nhau (hay gặp: model chỉ được train trên piano)."""
+
+
+def test_voice_read_returned_twice_is_collapsed_and_combined():
+    image, layout = vocal_page(systems=1)
+
+    def recognize(img, index, beams, tag=None):
+        if tag == "r2-piano":
+            return PIANO_ONLY, False
+        if tag == "r1-single":
+            return VOICE_TWICE, False
+        return PAGE_1, False  # cả hệ: mất một khuông
+
+    page, results, warnings = routing.recognize_by_systems(1, image, layout, recognize, 0, lambda: True)
+    assert results[0].method == "roles" and page.spines == 3
+    assert not any("khuông trống" in w for w in warnings)  # không còn độn khuông trống đẩy giai điệu sang cột piano
+    rows = [line.split("\t") for line in page.body if merge.is_data_line(line)]
+    assert [r[2] for r in rows if r[2] != "."] == ["2b", "4cc"]  # giai điệu nằm ở cột khuông giọng (phải nhất)
+
+
+def test_silent_voice_staff_read_alone_is_combined_as_rests():
+    image, layout = vocal_page(systems=1)
+    rests = kern("**kern", "*clefG2", "*M3/4", "=1", "2.r", "=2", "*-")
+
+    def recognize(img, index, beams, tag=None):
+        if tag == "r2-piano":
+            return PIANO_ONLY, False
+        if tag == "r1-single":
+            return rests, False
+        return PAGE_1, False
+
+    page, results, _ = routing.recognize_by_systems(1, image, layout, recognize, 0, lambda: True)
+    assert results[0].method == "roles"
+    assert [line.split("\t")[2] for line in page.body if merge.is_data_line(line)][0] == "2.r"
+
+
+CHORDS_IN_VOICE = SYSTEM_3.replace("4G\t4g\t4b", "4G\t4g\t4b 4dd").replace("4A\t4a\t4cc", "4A\t4a\t4cc 4ee")
+"""Đúng 3 spine, đúng trường độ, nhưng khuông giọng có hợp âm (model chép tay phải piano sang)."""
+
+
+def test_voice_spine_with_piano_chords_is_detected_and_reread_by_roles():
+    image, layout = vocal_page(systems=2)
+    assert routing.page_voice_columns(layout) == (2,)
+    bad = merge.clean_page(1, CHORDS_IN_VOICE)[0]
+    assert routing.voice_chord_measures(bad.body, 3, (2,)) == (1, 1)
+    assert routing.score_page(bad, 3, voice=(2,)).voice_ok == 0.0
+    assert routing.choose(bad, merge.clean_page(1, SYSTEM_3)[0], 3, 1.0, voice=(2,))[0] == routing.SOURCE_SYSTEMS
+    two_bad = merge.merge_pages([bad, bad])
+    page = merge.PageKern(number=1, header=two_bad.header, body=two_bad.lines)
+    assert routing.needs_fallback("fallback", layout, page)  # 2 ô giọng có hợp âm: nhận diện lại theo hệ
+    calls = []
+
+    def recognize(img, index, beams, tag=None):
+        calls.append((index, tag))
+        if tag == "r2-piano":
+            return PIANO_ONLY, False
+        if tag == "r1-single":
+            return VOICE_ONLY, False
+        return CHORDS_IN_VOICE, False
+
+    page, results, _ = routing.recognize_by_systems(2, image, layout, recognize, 0, lambda: True)
+    assert [r.method for r in results] == ["roles", "roles"]
+    assert routing.voice_chord_measures(page.body, 3, (2,))[1] == 0
+
+
+def test_melody_only_scores_are_not_checked_for_voice_chords():
+    _, layout = melody_page()
+    assert routing.page_voice_columns(layout) == ()  # bản một khuông có thể có hợp âm hai nốt hợp lệ

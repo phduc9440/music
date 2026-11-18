@@ -148,7 +148,16 @@ export const PAGE_IMAGE_HEIGHT = 1485;
 export const MEASURE_FLAG_LABELS: Record<OmrMeasure['flags'][number], string> = labelMap('upload.measureFlags', [
   'DURATION',
   'COUNT_MISMATCH',
+  'RANGE',
+  'LEAP',
+  'ACCIDENTAL',
+  'UNSTABLE',
+  'AI_DOUBT',
 ]);
+
+/** Độ tin cậy của ô dạng phần trăm (làm tròn), null nếu kết quả cũ chưa có. */
+export const confidencePercent = (m: Pick<OmrMeasure, 'confidence'>): number | null =>
+  typeof m.confidence === 'number' ? Math.round(m.confidence * 100) : null;
 
 /** Các ô cần kiểm tra (có ít nhất một cờ), theo số ô tăng dần. */
 export const flaggedMeasures = (map: OmrMeasure[] | undefined): OmrMeasure[] =>

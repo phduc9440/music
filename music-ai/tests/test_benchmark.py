@@ -63,7 +63,17 @@ def test_run_mode_with_fake_engine(tmp_path, storage_root, monkeypatch):
     # Không có music21 thì bước xuất báo lỗi nhưng kern vẫn được chấm
     assert row["status"] in ("COMPLETED", "FAILED")
     assert row["noteF1"] == 1.0
+    assert row["modelCalls"] >= 1 and row["modelByKind"]["page"]["calls"] == 1  # đo thời gian theo loại lượt đọc
     config.get_settings.cache_clear()
+
+
+def test_read_kind_from_the_image_names_the_pipeline_uses():
+    assert bench.read_kind("x/pages/page-001.png") == "page"
+    assert bench.read_kind("x/routing/page-001-s02.png") == "system"
+    assert bench.read_kind("x/routing/page-001-s02-r1-single.png") == "roles"
+    assert bench.read_kind("x/routing/page-001-s02-tta+3.png") == "tta"
+    assert bench.read_kind("x/routing/page-001-s02.png", 3) == "beam"
+    assert bench.read_kind("x/routing/page-001-s02.png", 1) == "system"
 
 
 def test_peak_rss_is_in_megabytes_not_raw_units():

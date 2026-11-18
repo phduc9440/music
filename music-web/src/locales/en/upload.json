@@ -68,7 +68,12 @@
   },
   "measureFlags": {
     "DURATION": "Total duration doesn't match the time signature",
-    "COUNT_MISMATCH": "This system has a different number of measures than the image; measures may be missing or extra"
+    "COUNT_MISMATCH": "This system has a different number of measures than the image; measures may be missing or extra",
+    "RANGE": "A vocal note is outside the usual range; it may be an octave off",
+    "LEAP": "Unusual melodic leap; a note may be an octave or a line off",
+    "ACCIDENTAL": "Unusual accidental that appears only once; it may be a smudge or text",
+    "UNSTABLE": "Reading this measure again gave different results",
+    "AI_DOUBT": "The AI check thinks this measure was read incorrectly"
   },
   "dropzone": {
     "title": "Drop your score here",
@@ -252,7 +257,7 @@
     "deselect": "Deselect",
     "noXml": "This score has no MusicXML yet, run recognition again.",
     "xmlLoadFailed": "Couldn't load the MusicXML",
-    "noFlags": "No suspicious measures: the total durations match the time signature and the measure count matches the image.",
+    "noFlags": "No suspicious measures.",
     "noMap": "This result has no measure map yet, run recognition again to use this feature.",
     "noWarnings": "No warnings. All measures match the time signature.",
     "noKern": "This score has no kern file yet.",
@@ -272,7 +277,8 @@
     "redoText": "The system will run again from the original file and replace the current result with a new one.",
     "redoPreprocess": "Clean up and straighten the image before recognizing",
     "later": "Not now",
-    "measure": "Measure {measure}"
+    "measure": "Measure {measure}",
+    "confidence": "Confidence {value}%"
   },
   "failed": "Upload failed, please try again",
   "saveFailed": "Couldn't save, please try again",

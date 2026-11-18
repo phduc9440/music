@@ -38,7 +38,7 @@ from app.config import Settings, get_settings
 from app.convert.errors import ConversionError
 from app.convert.kern import kern_file_to_musicxml_file
 from app.convert.midi import musicxml_file_to_midi_file
-from app.omr import kern_check, measure_map, merge, ottava, routing
+from app.omr import kern_check, llm_check, measure_map, merge, ottava, pitch_check, review, rhythm_fix, routing, stability
 from app.omr.layout import PageLayout, analyze_layout
 from app.omr.pdf import iter_pdf_pages
 from app.omr.preprocess import PreprocessOptions, UnreadablePage, load_image_gray, process_page
@@ -360,6 +360,7 @@ def _recognize_pages(ctx: JobContext, kept_pages: list[tuple[int, str]]) -> Opti
     ctx.routing = []
     primary: dict[int, Optional[merge.PageKern]] = {}
     page_warnings: dict[int, list[str]] = {}
+    meter: Optional[str] = None  # số chỉ nhịp đã thấy ở trang trước (trang sau thường không in lại)
     for done, (page_number, png_relative) in enumerate(kept_pages, start=1):
         budget.start_page(page_number, settings.inference_page_timeout_s)
         budget.check()
@@ -376,8 +377,9 @@ def _recognize_pages(ctx: JobContext, kept_pages: list[tuple[int, str]]) -> Opti
 
         text, shifted = ottava.fix_text(result.text, settings.ottava, _page_roles(ctx.layouts.get(page_number)))
         page, warnings = merge.clean_page(
-            page_number, text, max_repeat=settings.max_repeat_lines, truncated=result.truncated
+            page_number, text, max_repeat=settings.max_repeat_lines, truncated=result.truncated, meter=meter
         )
+        meter = routing.page_meter(page) or meter
         if shifted:
             warnings.append(_ottava_message(page_number, shifted))
         if result.stopped_early:
@@ -522,6 +524,7 @@ def _route_pages(
                 meter=next((m for m in map(routing.page_meter, primary.values()) if m), None),
                 use_bars=settings.routing_bars,
                 whole=before,
+                roles_first=settings.routing_roles_first,
             )
         except _RoutingAbort as exc:
             report.skipped = str(exc)
@@ -541,6 +544,7 @@ def _route_pages(
             expected,
             report.systems_ok / report.systems if report.systems else 0.0,
             expected_bars,
+            routing.page_voice_columns(layout),
         )
         report.chosen, report.primary_score, report.systems_score = source, primary_score, systems_score
         if source == routing.SOURCE_SYSTEMS and chosen is not None:
@@ -679,6 +683,218 @@ def _adjust_system_counts(
             start = end
 
 
+def _review_measures(
+    ctx: JobContext, merged: merge.MergeResult, pages: list[merge.PageKern]
+) -> tuple[list[dict], Optional[dict], merge.MergeResult]:
+    """Bản đồ ô nhịp + chấm tin cậy từng ô (:mod:`app.omr.review`), đọc lại hệ có ô nghi ngờ để bỏ phiếu
+    (:mod:`app.omr.stability`) và AI xác minh nếu bật (:mod:`app.omr.llm_check`).
+
+    Trả ``(measureMap, measureCheck, kern_đã_ghép)``; kern có thể đã thay vài ô khi các lần đọc lại/AI đủ chắc. Mọi lỗi ở
+    đây chỉ làm mất phần chấm điểm, không làm hỏng job (trừ hủy/hết hạn).
+    """
+    try:
+        estimated = _estimate_system_counts(ctx, merged, pages)
+        measures, check = measure_map.build(merged, pages, ctx.layouts, {**estimated, **ctx.system_counts})
+        check["pagesRerouted"] = sum(1 for r in ctx.routing if r.get("chosen") == routing.SOURCE_SYSTEMS)
+        if estimated:
+            check["pagesAlignedByNotes"] = sorted(estimated)
+    except Exception:  # noqa: BLE001 - bản đồ ô chỉ để hiển thị, không được làm hỏng job
+        log.exception("Job %s: không lập được bản đồ ô nhịp", ctx.task_id)
+        return [], None, merged
+
+    settings = ctx.settings
+    roles = ctx.staff_roles
+    try:
+        review.annotate(measures, merged, roles)
+        images = _review_images(ctx, measures)
+        merged, reread = _reread_systems(ctx, merged, measures, images)
+        review.annotate(measures, merged, roles)
+        ai_report: Optional[llm_check.LlmReport] = None
+        if settings.llm_mode != "off":
+            if not settings.llm_api_key:
+                ctx.warnings.append("OMR_LLM đang bật nhưng thiếu ANTHROPIC_API_KEY, bỏ qua bước AI xác minh ô nhịp")
+            else:
+                merged, ai_report = _ask_ai(ctx, merged, measures, images)
+                review.annotate(measures, merged, roles)
+        ctx.warnings.extend(reread.notes)
+        review_data = {**review.summary(measures), "reread": reread.to_dict()}
+        if ai_report is not None:
+            ctx.warnings.extend(ai_report.notes)
+            review_data["ai"] = ai_report.to_dict()
+        check["review"] = review_data
+    except (JobCancelled, JobTimeout, TaskGone):
+        raise
+    except Exception:  # noqa: BLE001 - chấm điểm chỉ là thông tin thêm
+        log.exception("Job %s: lỗi khi chấm tin cậy ô nhịp", ctx.task_id)
+    return review.public_entries(measures), check, merged
+
+
+def _estimate_system_counts(
+    ctx: JobContext, merged: merge.MergeResult, pages: list[merge.PageKern]
+) -> dict[int, list[Optional[int]]]:
+    """Trang đọc cả trang mà số ô kern khác số ô trên ảnh: căn từng ô theo số đầu nốt để biết ô nào thuộc hệ nào
+    (:func:`measure_map.estimate_system_counts`), nhờ vậy chỉ hệ có chỗ thừa/thiếu ô bị đánh dấu và đọc lại. Lỗi thì bỏ qua."""
+    out: dict[int, list[Optional[int]]] = {}
+    ranges = {r["page"]: r for r in merge.page_measure_ranges(merged)}
+    for page in pages:
+        number = page.number
+        layout = ctx.layouts.get(number)
+        span = ranges.get(number)
+        if number in ctx.system_counts or layout is None or span is None or not layout.bars_confident:
+            continue
+        if layout.measure_count == span["lastMeasure"] - span["firstMeasure"] + 1:
+            continue
+        try:
+            path = storage.resolve(f"scores/{ctx.job.scoreId}/pages/page-{number:03d}.png")
+            gray = cv2.imread(str(path), cv2.IMREAD_GRAYSCALE) if path.is_file() else None
+            if gray is None:
+                continue
+            heads = [(h.system, h.x) for h in pitch_check.find_heads(gray, layout)]
+            image = measure_map.image_measure_heads(layout, heads)
+            kern = measure_map.kern_note_counts(merged, number)
+            counts = measure_map.estimate_system_counts(kern, image, len(layout.systems)) if image else None
+        except Exception:  # noqa: BLE001 - chỉ để khoanh vùng ô cần kiểm tra
+            log.exception("Job %s: không căn được ô nhịp trang %s theo đầu nốt", ctx.task_id, number)
+            continue
+        if counts is not None:
+            out[number] = list(counts)
+    return out
+
+
+def _check_pitch(ctx: JobContext, merged: merge.MergeResult) -> merge.MergeResult:
+    """Sửa quãng tám theo đầu nốt trên ảnh (:mod:`app.omr.pitch_check`). Lỗi ở đây không làm hỏng job."""
+    if not ctx.settings.pitch_check or not ctx.layouts:
+        return merged
+    try:
+        images: dict[int, np.ndarray] = {}
+        for page_number in sorted(set(merged.line_pages)):
+            path = storage.resolve(f"scores/{ctx.job.scoreId}/pages/page-{page_number:03d}.png")
+            gray = cv2.imread(str(path), cv2.IMREAD_GRAYSCALE) if path.is_file() else None
+            if gray is not None:
+                images[page_number] = gray
+        merged, report = pitch_check.apply(merged, ctx.layouts, images)
+        ctx.warnings.extend(report.notes)
+        log.info("Job %s: pitch_check %s", ctx.task_id, report.to_dict())
+    except (JobCancelled, JobTimeout, TaskGone):
+        raise
+    except Exception:  # noqa: BLE001 - chỉ là bước sửa thêm
+        log.exception("Job %s: lỗi khi kiểm tra cao độ theo ảnh", ctx.task_id)
+    return merged
+
+
+def _fix_rhythm(ctx: JobContext, merged: merge.MergeResult) -> merge.MergeResult:
+    """Sửa nhịp ba đọc nhầm và nốt thừa trong hợp âm (:mod:`app.omr.rhythm_fix`). Lỗi ở đây không làm hỏng job."""
+    if not ctx.settings.rhythm_fix:
+        return merged
+    try:
+        merged, report = rhythm_fix.apply(merged)
+        ctx.warnings.extend(report.notes)
+    except Exception:  # noqa: BLE001 - chỉ là bước sửa thêm
+        log.exception("Job %s: lỗi khi sửa trường độ", ctx.task_id)
+    return merged
+
+
+def _review_images(ctx: JobContext, measures: list[dict]) -> dict[int, np.ndarray]:
+    """Ảnh trang (đã tiền xử lý) của các trang có ô nghi ngờ."""
+    wanted = {m["page"] for m in measures if m.get("confidence", 1.0) < review.REVIEW_THRESHOLD}
+    images: dict[int, np.ndarray] = {}
+    for page_number in sorted(wanted):
+        path = storage.resolve(f"scores/{ctx.job.scoreId}/pages/page-{page_number:03d}.png")
+        gray = cv2.imread(str(path), cv2.IMREAD_GRAYSCALE) if path.is_file() else None
+        if gray is not None:
+            images[page_number] = gray
+    return images
+
+
+def _reread_systems(
+    ctx: JobContext, merged: merge.MergeResult, measures: list[dict], images: dict[int, np.ndarray]
+) -> tuple[merge.MergeResult, stability.StabilityReport]:
+    """Đọc lại (ảnh dịch ``±OMR_TTA_SHIFT_PX``) các hệ có ô nghi ngờ trong thời gian còn lại của job."""
+    budget, settings = ctx.budget, ctx.settings
+    if settings.tta_reads <= 0 or not images:
+        report = stability.StabilityReport()
+        report.skipped = "tắt" if settings.tta_reads <= 0 else "không có ô nghi ngờ đặt được vào hệ"
+        return merged, report
+    recognizer = ctx.recognizer or get_recognizer()
+    score_id = ctx.job.scoreId
+    page_seconds = (sum(ctx.inference_ms) / len(ctx.inference_ms) / 1000.0) if ctx.inference_ms else 30.0
+    last_seconds = [page_seconds / 3]
+    shifts = [settings.tta_shift_px * (1 + i // 2) * (1 if i % 2 == 0 else -1) for i in range(settings.tta_reads)]
+
+    piece_meter = next(
+        (token for line in merged.lines if line.startswith("*") for token in line.split(merge.TAB) if token.startswith("*M")),
+        None,
+    )
+
+    def has_time() -> bool:
+        return budget.remaining_s() - settings.routing_reserve_s > max(10.0, 1.5 * last_seconds[0])
+
+    def read_system(image: np.ndarray, page_number: int, index: int, tag: str) -> Optional[merge.PageKern]:
+        limit = min(float(settings.inference_page_timeout_s), budget.remaining_s() - settings.routing_reserve_s)
+        if limit < 5.0:
+            raise _RoutingAbort("không đủ thời gian")
+        name = f"scores/{score_id}/routing/page-{page_number:03d}-s{index + 1:02d}-{tag}"
+        png_relative, _ = _save_png(f"{name}.png", image)
+        begin = time.monotonic()
+        budget.start_page(page_number, limit)
+        try:
+            result = recognizer.recognize(storage.resolve(png_relative), budget.check)
+        except JobTimeout as exc:
+            if exc.scope == "page":
+                raise _RoutingAbort(f"đọc lại hệ {index + 1} quá {int(limit)} giây") from exc
+            raise
+        finally:
+            budget.end_page()
+        last_seconds[0] = time.monotonic() - begin
+        _save_text(f"{name}.krn", merge.normalize_text(result.text))
+        layout = ctx.layouts.get(page_number)
+        roles = layout.systems[index].roles if layout is not None and index < len(layout.systems) else None
+        text, _shifted = ottava.fix_text(result.text, settings.ottava, roles)
+        page, _warnings = merge.clean_page(
+            page_number, text, max_repeat=settings.max_repeat_lines, truncated=result.truncated, meter=piece_meter
+        )
+        return page
+
+    ctx.callback.progress(86, STEP_MERGE)
+    return stability.verify(
+        merged,
+        measures,
+        ctx.layouts,
+        images,
+        read_system,
+        shifts,
+        settings.tta_max_systems,
+        has_time,
+        roles_top_down=ctx.staff_roles,
+        abort=(_RoutingAbort,),
+    )
+
+
+def _ask_ai(
+    ctx: JobContext, merged: merge.MergeResult, measures: list[dict], images: dict[int, np.ndarray]
+) -> tuple[merge.MergeResult, llm_check.LlmReport]:
+    """Gửi ảnh cắt các ô tin cậy thấp nhất cho AI xác minh (``OMR_LLM``), có trần số ô và cache."""
+    budget, settings = ctx.budget, ctx.settings
+    client = llm_check.anthropic_client(settings.llm_model, settings.llm_api_key, settings.llm_timeout_s)
+
+    def has_time() -> bool:
+        budget.check()
+        return budget.remaining_s() - settings.routing_reserve_s > settings.llm_timeout_s + 5
+
+    ctx.callback.progress(87, STEP_MERGE)
+    return llm_check.verify(
+        merged,
+        measures,
+        images,
+        client,
+        settings.llm_model,
+        settings.llm_max_measures,
+        storage.resolve("cache/llm"),
+        has_time,
+        roles_top_down=ctx.staff_roles,
+    )
+
+
 def _merge_pages(ctx: JobContext, pages: list[merge.PageKern]) -> Optional[tuple[dict, dict]]:
     """Bước MERGE (85-90%): ghép kern, kiểm tra, lưu ``kern/merged.krn`` và báo file KERN.
 
@@ -700,6 +916,9 @@ def _merge_pages(ctx: JobContext, pages: list[merge.PageKern]) -> Optional[tuple
     if ctx.staff_roles is not None:
         merged = merge.annotate_roles(merged, ctx.staff_roles)
     ctx.warnings.extend(merged.warnings)
+    merged = _check_pitch(ctx, merged)
+    merged = _fix_rhythm(ctx, merged)
+    measures, check, merged = _review_measures(ctx, merged, pages)
     ctx.warnings.extend(merge.check_measures(merged))
     if ctx.staff_roles is None and merged.spines not in (2, 3):  # 2 = piano, 3 = giọng + piano
         ctx.warnings.append(
@@ -733,12 +952,6 @@ def _merge_pages(ctx: JobContext, pages: list[merge.PageKern]) -> Optional[tuple
     meta = merge.extract_metadata(merged)
     ctx.page_measures = merge.page_measure_ranges(merged)
     ctx.kern_measure_count = meta.measure_count
-    try:
-        measures, check = measure_map.build(merged, pages, ctx.layouts, ctx.system_counts)
-        check["pagesRerouted"] = sum(1 for r in ctx.routing if r.get("chosen") == routing.SOURCE_SYSTEMS)
-    except Exception:  # noqa: BLE001 - bản đồ ô chỉ để hiển thị, không được làm hỏng job
-        log.exception("Job %s: không lập được bản đồ ô nhịp", ctx.task_id)
-        measures, check = [], None
     callback.progress(90, STEP_MERGE)
 
     extra = {

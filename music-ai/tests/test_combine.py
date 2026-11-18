@@ -42,12 +42,28 @@ def test_different_measure_counts_are_rejected():
         combine.combine_streams([page(PIANO_ONLY), page(two_measures)], 1)
 
 
-def test_wrong_duration_stream_is_replaced_by_a_measure_rest_with_warning():
+def test_wrong_duration_stream_keeps_its_notes_with_warning():
+    # lệch trường độ (thường chỉ do một nhóm liên ba/chấm dôi đọc sai): giữ nốt, không thay cả khuông bằng dấu lặng
     short_voice = kern("**kern", "*M3/4", "=1", "4b", "=2")
     result, warnings = combine.combine_streams([page(PIANO_ONLY), page(short_voice)], 1)
-    assert f"2G{T}4g{T}2.r" in result.body and f"4B{T}4b{T}." in result.body
+    assert f"2G{T}4g{T}4b" in result.body
+    assert warnings and "giữ nguyên nốt" in warnings[0]
+
+
+def test_garbage_stream_twice_too_long_is_replaced_by_a_measure_rest():
+    long_voice = kern("**kern", "*M3/4", "=1", "2.b", "2.cc", "=2")
+    result, warnings = combine.combine_streams([page(PIANO_ONLY), page(long_voice)], 1)
+    assert f"2G{T}4g{T}2.r" in result.body
     assert warnings and "dấu lặng trọn ô" in warnings[0]
-    assert merge.measure_stats(merge.merge_pages([result])) == (1, 0)
+
+
+def test_rest_only_stream_is_spread_over_the_measures_of_the_first_stream():
+    # khuông giọng im trong đoạn dạo đầu: model gộp hai ô nghỉ thành một
+    piano = kern("**kern|**kern", "*M3/4|*M3/4", "=1|=1", "2G|2.g", "4B|.", "=2|=2", "2.G|2.b", "=3|=3")
+    voice = kern("**kern", "*M3/4", "=1", "2.r", "=2")
+    result, _ = combine.combine_streams([page(piano), merge.clean_page(1, voice, allow_rests_only=True)[0]], 1)
+    assert merge.count_measures(result.body) == 2
+    assert f"2G{T}2.g{T}2.r" in result.body and f"2.G{T}2.b{T}2.r" in result.body
 
 
 def test_unalignable_measures_are_rejected():

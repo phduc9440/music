@@ -68,7 +68,12 @@
   },
   "measureFlags": {
     "DURATION": "Tổng trường độ không khớp số chỉ nhịp",
-    "COUNT_MISMATCH": "Số ô của hệ này khác số ô trên ảnh, có thể thừa hoặc thiếu ô"
+    "COUNT_MISMATCH": "Số ô của hệ này khác số ô trên ảnh, có thể thừa hoặc thiếu ô",
+    "RANGE": "Nốt giọng hát nằm ngoài tầm thường gặp, có thể đọc lệch quãng tám",
+    "LEAP": "Bước nhảy giai điệu bất thường, có thể lệch quãng tám hoặc lệch dòng kẻ",
+    "ACCIDENTAL": "Dấu hóa lạ chỉ xuất hiện một lần, có thể là vết bẩn hoặc chữ",
+    "UNSTABLE": "Đọc lại ô này nhiều lần cho kết quả khác nhau",
+    "AI_DOUBT": "AI đối chiếu ảnh cho rằng ô này đọc chưa đúng"
   },
   "dropzone": {
     "title": "Kéo thả bản nhạc vào đây",
@@ -248,7 +253,7 @@
     "deselect": "Bỏ chọn",
     "noXml": "Chưa có MusicXML cho bản nhạc này, hãy nhận diện lại.",
     "xmlLoadFailed": "Không tải được MusicXML",
-    "noFlags": "Không có ô nào nghi ngờ: tổng trường độ khớp số chỉ nhịp và số ô khớp ảnh.",
+    "noFlags": "Không có ô nào nghi ngờ.",
     "noMap": "Kết quả này chưa có bản đồ ô nhịp, hãy nhận diện lại để dùng chức năng này.",
     "noWarnings": "Không có cảnh báo nào. Các ô nhịp đều khớp số chỉ nhịp.",
     "noKern": "Chưa có file kern cho bản nhạc này.",
@@ -268,7 +273,8 @@
     "redoText": "Hệ thống sẽ chạy lại từ file gốc và thay kết quả hiện tại bằng kết quả mới.",
     "redoPreprocess": "Làm sạch và căn thẳng ảnh trước khi nhận diện",
     "later": "Để sau",
-    "measure": "Ô {measure}"
+    "measure": "Ô {measure}",
+    "confidence": "Độ tin cậy {value}%"
   },
   "failed": "Tải lên thất bại, vui lòng thử lại",
   "saveFailed": "Lưu thất bại, vui lòng thử lại",

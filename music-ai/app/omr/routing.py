@@ -34,7 +34,7 @@ from typing import Callable, Optional
 import numpy as np
 
 from app.omr import combine, merge
-from app.omr.layout import ROLE_PIANO, PageLayout
+from app.omr.layout import ROLE_PIANO, ROLE_SINGLE, PageLayout
 from app.omr.preprocess import TARGET_H, TARGET_W
 
 log = logging.getLogger(__name__)
@@ -59,6 +59,11 @@ _MAX_PAD_INTERLINES = 6.0
 tới hệ bên cạnh."""
 
 
+VOICE_CHORD_MEASURES = 2
+"""Trang giọng hát + piano có từ bấy nhiêu ô mà khuông giọng chứa hợp âm thì được nhận diện lại theo hệ (một ô lẻ có thể là
+nốt chia bè/ossia hợp lệ)."""
+
+
 @dataclass
 class Score:
     """Điểm cấu trúc của một ứng viên kern trang; so sánh như tuple, lớn hơn là tốt hơn."""
@@ -76,11 +81,15 @@ class Score:
     measure_gap: int = 0
     """``|số ô - số ô trên ảnh|``; 0 khi không biết số ô trên ảnh."""
 
+    voice_ok: float = 1.0
+    """Tỉ lệ ô mà khuông giọng (bản giọng hát + piano) là một giai điệu, không chứa hợp âm. Model hay chép hợp âm tay phải
+    piano sang spine giọng hoặc gộp giọng với tay phải; khi đó số spine và số ô vẫn có thể đúng nên cần tiêu chí riêng."""
+
     def key(self) -> tuple:
-        """Đúng số spine trước, rồi gần số ô trên ảnh (lệch <= :data:`MEASURE_TOLERANCE` coi như đúng), rồi tỉ lệ ô
-        nhịp đúng trường độ."""
+        """Đúng số spine trước, rồi khuông giọng là giai điệu, rồi gần số ô trên ảnh (lệch <= :data:`MEASURE_TOLERANCE`
+        coi như đúng), rồi tỉ lệ ô nhịp đúng trường độ."""
         gap = max(0, self.measure_gap - MEASURE_TOLERANCE)
-        return (round(self.spines_ok, 3), -gap, round(self.measure_ratio, 3))
+        return (round(self.spines_ok, 3), round(self.voice_ok, 3), -gap, round(self.measure_ratio, 3))
 
 
 @dataclass
@@ -236,6 +245,9 @@ def needs_fallback(
         return True
     if check_bars and measures_off(page_measures(page), expected_measures(layout)):
         return True
+    voice = page_voice_columns(layout)
+    if voice and voice_chord_measures(page.body, page.spines, voice)[1] >= VOICE_CHORD_MEASURES:
+        return True  # model chép hợp âm piano sang khuông giọng: đọc lại theo hệ (và đọc riêng giọng/piano)
     return check_measures and score_page(page, expected).measure_ratio < 1.0
 
 
@@ -246,8 +258,11 @@ def score_page(
     lenient_first: bool = True,
     lenient_last: bool = True,
     measures_expected: Optional[int] = None,
+    voice: tuple[int, ...] = (),
 ) -> Score:
     """Chấm một ứng viên: đúng số spine trước, rồi gần số ô trên ảnh, rồi tỉ lệ ô nhịp đúng trường độ.
+
+    ``voice``: chỉ số cột kern của khuông giọng (:func:`voice_columns`); chỉ chấm khi ứng viên đúng số spine.
 
     ``spines_ok`` None thì tính từ số spine của ``page``; kết quả theo hệ truyền tỉ lệ hệ đúng của riêng nó.
     ``lenient_first``/``lenient_last``: nới ô nhịp đầu/cuối (lấy đà, cuối bài); hệ ở giữa trang kiểm chặt cả hai đầu.
@@ -260,14 +275,64 @@ def score_page(
         spines_ok = 1.0 if page.spines == expected else 0.0
     count = merge.count_measures(page.body)
     gap = abs(count - measures_expected) if measures_expected is not None else 0
+    voice_ok = 1.0
+    if voice and page.spines == expected:
+        checked_voice, chorded = voice_chord_measures(page.body, page.spines, voice)
+        voice_ok = 1.0 - chorded / checked_voice if checked_voice else 1.0
     try:
         single = merge.merge_pages([page])
         checked, bad = merge.measure_stats(single, lenient_first, lenient_last)
         measures = merge.extract_metadata(single).measure_count
     except Exception:  # noqa: BLE001 - kern hỏng tới mức không ghép được thì coi như điểm thấp nhất
-        return Score(spines_ok=spines_ok, measure_ratio=0.0, measures=count, measure_gap=gap)
+        return Score(spines_ok=spines_ok, measure_ratio=0.0, measures=count, measure_gap=gap, voice_ok=voice_ok)
     ratio = (checked - bad) / checked if checked else 1.0
-    return Score(spines_ok=spines_ok, measure_ratio=ratio, measures=measures, measure_gap=gap)
+    return Score(spines_ok=spines_ok, measure_ratio=ratio, measures=measures, measure_gap=gap, voice_ok=voice_ok)
+
+
+def voice_columns(staves) -> tuple[int, ...]:
+    """Chỉ số cột kern (cột 0 là khuông dưới cùng) của khuông giọng trong một hệ có cả giọng và piano; rỗng nếu hệ không
+    có piano (bản một khuông có thể có hợp âm hai nốt hợp lệ nên không kiểm)."""
+    roles = [staff.role for staff in staves]
+    if ROLE_PIANO not in roles:
+        return ()
+    count = len(staves)
+    return tuple(count - 1 - index for index, role in enumerate(roles) if role == ROLE_SINGLE)
+
+
+def page_voice_columns(layout: Optional[PageLayout]) -> tuple[int, ...]:
+    """:func:`voice_columns` của trang khi mọi hệ cùng cấu trúc (bố cục tin cậy); rỗng nếu không."""
+    if layout is None or not layout.confident or not layout.systems:
+        return ()
+    first = [staff.role for staff in layout.systems[0].staves]
+    if any([staff.role for staff in system.staves] != first for system in layout.systems):
+        return ()
+    return voice_columns(layout.systems[0].staves)
+
+
+def voice_chord_measures(body: list[str], spines: int, columns: tuple[int, ...]) -> tuple[int, int]:
+    """``(số ô có nốt ở khuông giọng, số ô trong đó khuông giọng có hợp âm)``. Bỏ qua dòng đang tách/gộp spine."""
+    checked = chorded = 0
+    has_notes = has_chord = False
+    for line in body + ["="]:
+        if merge.is_barline(line):
+            checked += has_notes
+            chorded += has_chord
+            has_notes = has_chord = False
+            continue
+        if not merge.is_data_line(line):
+            continue
+        fields = line.split(merge.TAB)
+        if len(fields) != spines:
+            continue
+        for column in columns:
+            if column >= spines:
+                continue
+            pitched = [t for t in fields[column].split(" ") if t and t != "." and "r" not in t and "q" not in t]
+            if pitched:
+                has_notes = True
+            if len(pitched) >= 2:
+                has_chord = True
+    return checked, chorded
 
 
 # ====================================================================== trang ảo
@@ -448,14 +513,15 @@ def recognize_by_systems(
     meter: Optional[str] = None,
     use_bars: bool = True,
     whole: Optional[merge.PageKern] = None,
+    roles_first: bool = False,
 ) -> tuple[Optional[merge.PageKern], list[SystemResult], list[str]]:
     """Nhận diện lại trang ``number`` theo từng hệ. Trả ``(kern_trang, kết_quả_từng_hệ, cảnh_báo)``.
 
     ``kern_trang`` là None nếu không hệ nào đọc được. ``can_retry()`` False thì không thử lại bằng beam search (hết thời
     gian). ``meter``: token ``*M4/4`` đã biết của bài (hệ ở giữa bài không tự có dòng này). ``use_bars``: dùng số ô
     từng hệ đếm trên ảnh để chấm và thử lại. ``whole``: kết quả đọc cả trang trước đó (nếu có), dùng để lấy lại các hệ
-    cuối mà nó đọc đúng hơn (:func:`graft_whole_tail`). Hủy job hoặc hết hạn từ ``recognize`` được để nguyên cho bên gọi
-    xử lý.
+    cuối mà nó đọc đúng hơn (:func:`graft_whole_tail`). ``roles_first``: hệ giọng hát + piano đọc riêng từng nhóm khuông
+    trước (xem ``Settings.routing_roles_first``). Hủy job hoặc hết hạn từ ``recognize`` được để nguyên cho bên gọi xử lý.
     """
     warnings: list[str] = []
     results: list[SystemResult] = []
@@ -463,7 +529,9 @@ def recognize_by_systems(
     for index, (system, band) in enumerate(zip(layout.systems, system_bands(layout))):
         judge = _judge(number, index, layout, meter, use_bars)
         judges.append(judge)
-        result = _recognize_one(number, index, gray, layout, band, recognize, retry_beams, can_retry, max_repeat, judge)
+        result = _recognize_one(
+            number, index, gray, layout, band, recognize, retry_beams, can_retry, max_repeat, judge, roles_first
+        )
         results.append(result)
         meter = page_meter(result.page) or meter  # hệ sau được chấm theo số chỉ nhịp đã thấy
     graft_whole_tail(results, layout, judges, whole)
@@ -505,6 +573,9 @@ class Judge:
     measures: Optional[int] = None
     """Số ô của hệ đếm trên ảnh; None nếu không biết (bố cục không tin cậy, hệ không kết thúc bằng vạch nhịp)."""
 
+    voice: tuple[int, ...] = ()
+    """Cột kern của khuông giọng (:func:`voice_columns`), để chấm khuông giọng có phải giai điệu không."""
+
 
 def page_meter(page: Optional[merge.PageKern]) -> Optional[str]:
     """Token ``*M n/d`` đầu tiên của kern, hoặc None."""
@@ -524,7 +595,7 @@ def _judge(number: int, index: int, layout: PageLayout, meter: Optional[str], us
     system = layout.systems[index]
     trusted = use_bars and layout.confident and system.bars_closed and system.measures
     measures = system.measures if trusted else None
-    return Judge(number == 1 and index == 0, index == len(layout.systems) - 1, meter, measures)
+    return Judge(number == 1 and index == 0, index == len(layout.systems) - 1, meter, measures, voice_columns(system.staves))
 
 
 def _with_meter(page: Optional[merge.PageKern], meter: Optional[str]) -> Optional[merge.PageKern]:
@@ -542,6 +613,7 @@ def _score(page: Optional[merge.PageKern], target: int, judge: Judge) -> Score:
         lenient_first=judge.lenient_first,
         lenient_last=judge.lenient_last,
         measures_expected=judge.measures,
+        voice=judge.voice if page is not None and page.spines == target else (),
     )
 
 
@@ -550,7 +622,7 @@ def _is_good(page: Optional[merge.PageKern], target: int, judge: Judge) -> bool:
     if page is None or page.spines != target:
         return False
     score = _score(page, target, judge)
-    return score.measure_gap == 0 and score.measure_ratio >= 1.0
+    return score.measure_gap == 0 and score.measure_ratio >= 1.0 and score.voice_ok >= 1.0
 
 
 def _rank(page: Optional[merge.PageKern], target: int, judge: Judge, lossy: bool = False) -> tuple:
@@ -567,10 +639,15 @@ def _read(
     beams: Optional[int],
     max_repeat: int,
     tag: Optional[str] = None,
+    meter: Optional[str] = None,
 ) -> Optional[merge.PageKern]:
-    """Một lần đọc model rồi làm sạch kern; None nếu không đọc được nốt nào."""
+    """Một lần đọc model rồi làm sạch kern; None nếu không đọc được nốt nào. ``meter``: số chỉ nhịp đã biết của bài. Ảnh riêng một nhóm khuông (``tag`` của
+    :func:`_recognize_by_roles`, ``r<k>-<vai trò>``) được phép toàn dấu lặng (khuông giọng im trong đoạn dạo đầu)."""
     text, truncated = recognize(image, index, beams) if tag is None else recognize(image, index, beams, tag)
-    page, _ = merge.clean_page(number, text, max_repeat=max_repeat, truncated=truncated)
+    rests_ok = bool(tag) and re.match(r"^r\d+-", tag or "") is not None
+    page, _ = merge.clean_page(
+        number, text, max_repeat=max_repeat, truncated=truncated, allow_rests_only=rests_ok, meter=meter
+    )
     return page
 
 
@@ -585,8 +662,12 @@ def _recognize_one(
     can_retry: Callable[[], bool],
     max_repeat: int,
     judge: Judge,
+    roles_first: bool = False,
 ) -> SystemResult:
-    """Nhận diện một hệ theo thứ tự rẻ trước: đọc cả hệ (greedy) -> đọc riêng giọng/piano (2 lần greedy ngắn) -> beam."""
+    """Nhận diện một hệ theo thứ tự rẻ trước: đọc cả hệ (greedy) -> đọc riêng giọng/piano (2 lần greedy ngắn) -> beam.
+
+    ``roles_first`` và hệ có cả giọng lẫn piano: đọc riêng giọng/piano trước; ghép đúng số spine, không mất nốt và đúng số ô
+    trên ảnh (nếu biết) thì dừng luôn, không đọc cả hệ 3 khuông (thường sai số spine) và không beam search."""
     system = layout.systems[index]
     target = len(system.staves)
     image = virtual_page(gray, band)
@@ -594,7 +675,8 @@ def _recognize_one(
     where = f"Trang {number}, hệ {index + 1}"
     if len(role_groups(system)) <= 1:
         result = _recognize_system(
-            number, index, image, target, recognize, retry_beams, can_retry, max_repeat, measures=measures
+            number, index, image, target, recognize, retry_beams, can_retry, max_repeat, measures=measures,
+            voice=judge.voice, meter=judge.meter,
         )
         result.page, notes = trim_loops(result.page, measures, where)
         result.warnings.extend(notes)
@@ -621,15 +703,39 @@ def _recognize_one(
             result.page = fixed
         return result
 
-    best = _recognize_system(number, index, image, target, recognize, 0, can_retry, max_repeat, measures=measures)
+    early: Optional[SystemResult] = None
+    if roles_first and judge.voice:
+        early = _recognize_by_roles(
+            number, index, gray, layout, recognize, retry_beams, can_retry, max_repeat, measures=measures,
+            meter=judge.meter,
+        )
+        early_lossy = any(combine.REPLACED_MARK in w for w in early.warnings)
+        if _roles_enough(early.page, early_lossy, target, judge):
+            early.method = "roles"
+            early.page, notes = trim_loops(early.page, measures, where)
+            early.warnings.extend(notes)
+            return early
+
+    best = _recognize_system(
+        number, index, image, target, recognize, 0, can_retry, max_repeat, measures=measures, voice=judge.voice,
+        meter=judge.meter,
+    )
     attempts = best.attempts
     warnings: list[str] = []
     lossy = False
     """Kết quả đang giữ có ô nhịp bị thay bằng dấu lặng (mất nốt) nên chưa được coi là tốt."""
 
-    if not _is_good(best.page, target, judge) and can_retry():
+    if early is not None:  # đã đọc riêng nhưng chưa đạt: vẫn là một ứng viên, khỏi đọc riêng lần nữa
+        attempts += early.attempts
+        warnings.extend(early.warnings)
+        early_lossy = any(combine.REPLACED_MARK in w for w in early.warnings)
+        if early.page is not None and _accept_roles(best.page, early.page, early_lossy, target, judge):
+            best = SystemResult(early.page, attempts, "roles", warnings)
+            lossy = early_lossy
+    elif not _is_good(best.page, target, judge) and can_retry():
         roles = _recognize_by_roles(
-            number, index, gray, layout, recognize, retry_beams, can_retry, max_repeat, measures=measures
+            number, index, gray, layout, recognize, retry_beams, can_retry, max_repeat, measures=measures,
+            meter=judge.meter,
         )
         attempts += roles.attempts
         warnings.extend(roles.warnings)
@@ -638,7 +744,7 @@ def _recognize_one(
             best = SystemResult(roles.page, attempts, "roles", warnings)
             lossy = roles_lossy
     if (lossy or not _is_good(best.page, target, judge)) and retry_beams > 1 and can_retry():
-        beam = _read(number, index, image, recognize, retry_beams, max_repeat)
+        beam = _read(number, index, image, recognize, retry_beams, max_repeat, meter=judge.meter)
         attempts += 1
         if beam is not None and _rank(beam, target, judge) > _rank(best.page, target, judge, lossy):
             best = SystemResult(beam, attempts, "system", warnings)
@@ -647,6 +753,16 @@ def _recognize_one(
     best.attempts = attempts
     best.warnings = warnings
     return best
+
+
+def _roles_enough(page: Optional[merge.PageKern], lossy: bool, target: int, judge: Judge) -> bool:
+    """Kết quả đọc riêng giọng/piano đủ tốt để không cần đọc cả hệ: đúng số spine, không ô nào bị thay bằng dấu lặng,
+    khuông giọng không có hợp âm và đúng số ô trên ảnh (nếu biết). Ô lệch trường độ vẫn được nhận (sẽ bị gắn cờ): đọc cả
+    hệ 3 khuông hiếm khi tốt hơn."""
+    if page is None or page.spines != target or lossy:
+        return False
+    score = _score(page, target, judge)
+    return score.measure_gap == 0 and score.voice_ok >= 1.0
 
 
 _MAX_MEASURE_READS = 12
@@ -838,9 +954,11 @@ def _recognize_system(
     max_repeat: int,
     tag: Optional[str] = None,
     measures: Optional[int] = None,
+    voice: tuple[int, ...] = (),
+    meter: Optional[str] = None,
 ) -> SystemResult:
     """Nhận diện một hệ; sai số spine hoặc khác số ô trên ảnh (``measures``, None = không biết) thì thử lại bằng beam
-    search (nếu bật và còn thời gian). Giữ lần thử điểm cao nhất."""
+    search (nếu bật và còn thời gian). Giữ lần thử điểm cao nhất. ``voice``: cột khuông giọng (:func:`voice_columns`)."""
     attempts: list[tuple[Optional[int], Optional[merge.PageKern]]] = []
     beam_plan: list[Optional[int]] = [None]
     if retry_beams > 1:
@@ -848,11 +966,18 @@ def _recognize_system(
     for beams in beam_plan:
         if attempts and not can_retry():
             break
-        page = _read(number, index, image, recognize, beams, max_repeat, tag)
+        page = _read(number, index, image, recognize, beams, max_repeat, tag, meter)
+        if page is not None and page.spines > target:
+            page = merge.collapse_duplicate_spines(page, target) or page
         attempts.append((beams, page))
-        if page is not None and page.spines == target and (measures is None or page_measures(page) == measures):
+        if (
+            page is not None
+            and page.spines == target
+            and (measures is None or page_measures(page) == measures)
+            and (not voice or voice_chord_measures(page.body, page.spines, voice)[1] == 0)
+        ):
             break
-    best = max(attempts, key=lambda item: score_page(item[1], target, measures_expected=measures).key())
+    best = max(attempts, key=lambda item: score_page(item[1], target, measures_expected=measures, voice=voice).key())
     return SystemResult(page=best[1], attempts=len(attempts))
 
 
@@ -866,6 +991,7 @@ def _recognize_by_roles(
     can_retry: Callable[[], bool],
     max_repeat: int,
     measures: Optional[int] = None,
+    meter: Optional[str] = None,
 ) -> SystemResult:
     """Đọc riêng từng nhóm khuông của hệ ``index`` rồi ghép. ``page`` None kèm cảnh báo lý do nếu không được.
     ``measures``: số ô của hệ trên ảnh (mỗi nhóm khuông cũng phải có chừng ấy ô)."""
@@ -890,6 +1016,7 @@ def _recognize_by_roles(
             max_repeat,
             tag,
             measures=measures,
+            meter=meter,
         )
         attempts += sub.attempts
         if sub.page is None or sub.page.spines != width:
@@ -912,6 +1039,7 @@ def choose(
     expected: int,
     systems_ok: float,
     measures: Optional[int] = None,
+    voice: tuple[int, ...] = (),
 ) -> tuple[str, Optional[merge.PageKern], tuple, tuple]:
     """Chọn giữa kết quả cả trang và kết quả theo hệ (``systems_ok`` = tỉ lệ hệ đọc đúng số khuông, ``measures`` = số ô
     của trang trên ảnh hoặc None).
@@ -919,8 +1047,8 @@ def choose(
     Kết quả theo hệ không có hệ nào đúng thì chỉ dùng khi lượt chính không đọc được gì. Hòa điểm thì giữ kết quả cả
     trang (đường cũ, đã được kiểm chứng nhiều hơn).
     """
-    primary_score = score_page(primary, expected, measures_expected=measures).key()
-    systems_score = score_page(systems, expected, spines_ok=systems_ok, measures_expected=measures).key()
+    primary_score = score_page(primary, expected, measures_expected=measures, voice=voice).key()
+    systems_score = score_page(systems, expected, spines_ok=systems_ok, measures_expected=measures, voice=voice).key()
     usable = systems is not None and (systems_ok > 0 or primary is None)
     if usable and systems_score > primary_score:
         return SOURCE_SYSTEMS, systems, primary_score, systems_score

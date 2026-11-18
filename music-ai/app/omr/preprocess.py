@@ -191,7 +191,11 @@ def is_clean_digital(gray: np.ndarray) -> bool:
     light = gray[gray >= 200]
     if light.size < 0.5 * gray.size:
         return False
-    return float(np.mean(light >= 245)) >= 0.97
+    if float(np.mean(light >= 245)) >= 0.97:
+        return True
+    # Ảnh số lưu JPEG (chụp màn hình, ảnh gửi qua Messenger/Zalo): nền vẫn trắng thuần, chỉ có viền nhiễu nén quanh nét
+    # mực. Nhị phân hóa ảnh nhỏ loại này rồi phóng to làm dòng kẻ thành nét đứt, bố cục không còn nhận ra hệ/vạch nhịp.
+    return float(np.percentile(light, 25)) >= 253 and float(np.mean(light >= 235)) >= 0.93
 
 
 def _analysis_copy(gray: np.ndarray) -> np.ndarray:
