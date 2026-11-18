@@ -948,7 +948,7 @@
       "issueTitle": "Click to scroll to the wrong measure",
       "issueAria": "Warning: {message}. Click to scroll to the measure",
       "issueMore": " (+{count} more)",
-      "hintEdit": "Press ? for shortcuts · ",
+      "hintEdit": "Right-click for the quick menu · Press ? for shortcuts · ",
       "hintZoom": "Ctrl + scroll or pinch to zoom"
     },
     "draft": {
@@ -1070,9 +1070,69 @@
       },
       "help": {
         "desc": "Open this panel"
+      },
+      "head": {
+        "keys": "Click a note head",
+        "desc": "Select just that note of a chord (click the stem to select the whole chord)"
+      },
+      "context": {
+        "keys": "Right-click",
+        "desc": "Quick menu: delete one note, change pitch, remove single marks, add/delete measures, comment"
+      },
+      "selectAll": {
+        "desc": "Select the whole score"
       }
     },
     "saveButton": "Save",
     "saveTitle": "Save ({shortcut})"
+  },
+  "ctx": {
+    "label": "Score editing menu",
+    "scoreTitle": "Score",
+    "measureTitle": "Measure {n}",
+    "deleteOne": "Delete only this note",
+    "deleteOneHint": "The other notes of the chord stay",
+    "deleteChord": "Delete whole chord",
+    "selectChord": "Select whole chord",
+    "delete": "Delete",
+    "deleteRest": "Delete rest",
+    "deleteRestHint": "Only rests of an extra voice can go (removes that voice in the measure)",
+    "pitch": "Pitch",
+    "stepUp": "Up one step",
+    "stepDown": "Down one step",
+    "semitoneUp": "Up a semitone",
+    "semitoneDown": "Down a semitone",
+    "octaveUp": "Up an octave",
+    "octaveDown": "Down an octave",
+    "accidental": "Accidental",
+    "tie": "Tie",
+    "slur": "Slur",
+    "voices": "Chords and voices",
+    "chordAboveHint": "Add a note a third higher on the same stem",
+    "chordBelowHint": "Add a note a third lower on the same stem",
+    "attachedHeader": "Marks on this note",
+    "attachedMenu": "Remove marks ({count})",
+    "removeAttachment": "Remove {name}",
+    "measures": "Measures",
+    "measureN": "Measure {n}",
+    "selectMeasure": "Select whole measure",
+    "appendMeasure": "Add a measure at the end",
+    "inputOn": "Turn on note input",
+    "inputOff": "Turn off note input",
+    "clearSelection": "Clear selection",
+    "selectAll": "Select all"
+  },
+  "attach": {
+    "dynamic": "dynamic {name}",
+    "pedal": "pedal",
+    "words": "text “{text}”",
+    "tempo": "tempo mark",
+    "section": "section label {text}",
+    "tie": "tie",
+    "slur": "slur",
+    "glissando": "glissando",
+    "slide": "slide",
+    "lyric": "lyric {verse}: {text}",
+    "chord": "chord {name}"
   }
 }

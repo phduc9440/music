@@ -948,7 +948,7 @@
       "issueTitle": "Bấm để cuộn tới ô nhịp sai",
       "issueAria": "Cảnh báo: {message}. Bấm để cuộn tới ô nhịp",
       "issueMore": " (+{count} ô khác)",
-      "hintEdit": "Phím ? xem phím tắt · ",
+      "hintEdit": "Chuột phải để mở menu nhanh · Phím ? xem phím tắt · ",
       "hintZoom": "Ctrl + cuộn hoặc chụm hai ngón để thu phóng"
     },
     "draft": {
@@ -1070,9 +1070,69 @@
       },
       "help": {
         "desc": "Mở bảng này"
+      },
+      "head": {
+        "keys": "Bấm vào đầu nốt",
+        "desc": "Chọn riêng một nốt trong hợp âm (bấm vào thân nốt để chọn cả hợp âm)"
+      },
+      "context": {
+        "keys": "Chuột phải",
+        "desc": "Menu nhanh: xóa riêng nốt, đổi cao độ, xóa từng ký hiệu, thêm/xóa ô nhịp, góp ý"
+      },
+      "selectAll": {
+        "desc": "Chọn cả bản nhạc"
       }
     },
     "saveButton": "Lưu",
     "saveTitle": "Lưu ({shortcut})"
+  },
+  "ctx": {
+    "label": "Menu sửa bản nhạc",
+    "scoreTitle": "Bản nhạc",
+    "measureTitle": "Ô nhịp {n}",
+    "deleteOne": "Xóa riêng nốt này",
+    "deleteOneHint": "Các nốt khác trong hợp âm được giữ lại",
+    "deleteChord": "Xóa cả hợp âm",
+    "selectChord": "Chọn cả hợp âm",
+    "delete": "Xóa",
+    "deleteRest": "Xóa dấu lặng",
+    "deleteRestHint": "Chỉ xóa được dấu lặng của bè phụ (gỡ cả bè trong ô)",
+    "pitch": "Cao độ",
+    "stepUp": "Lên một bậc",
+    "stepDown": "Xuống một bậc",
+    "semitoneUp": "Lên nửa cung",
+    "semitoneDown": "Xuống nửa cung",
+    "octaveUp": "Lên một quãng tám",
+    "octaveDown": "Xuống một quãng tám",
+    "accidental": "Dấu hóa",
+    "tie": "Dấu nối",
+    "slur": "Dấu luyến",
+    "voices": "Hợp âm và bè",
+    "chordAboveHint": "Thêm nốt cao hơn một quãng ba, chung thân",
+    "chordBelowHint": "Thêm nốt thấp hơn một quãng ba, chung thân",
+    "attachedHeader": "Ký hiệu trên nốt",
+    "attachedMenu": "Xóa ký hiệu ({count})",
+    "removeAttachment": "Xóa {name}",
+    "measures": "Ô nhịp",
+    "measureN": "Ô nhịp {n}",
+    "selectMeasure": "Chọn cả ô nhịp",
+    "appendMeasure": "Thêm ô vào cuối bài",
+    "inputOn": "Bật chế độ nhập nốt",
+    "inputOff": "Tắt chế độ nhập nốt",
+    "clearSelection": "Bỏ chọn",
+    "selectAll": "Chọn tất cả"
+  },
+  "attach": {
+    "dynamic": "sắc thái {name}",
+    "pedal": "pedal",
+    "words": "chữ “{text}”",
+    "tempo": "chỉ số nhịp",
+    "section": "nhãn đoạn {text}",
+    "tie": "dấu nối",
+    "slur": "dấu luyến",
+    "glissando": "glissando",
+    "slide": "đường trượt",
+    "lyric": "lời {verse}: {text}",
+    "chord": "hợp âm {name}"
   }
 }

@@ -21,5 +21,12 @@
     "invalid": "Thay đổi không hợp lệ, đã tải lại bản nhạc chung",
     "resync": "Bản nhạc chung đã thay đổi, đang đồng bộ lại",
     "saving": "Đang lưu thành phiên bản mới"
+  },
+  "presence": {
+    "editing": "đang sửa",
+    "atMeasure": "đang ở ô {n}",
+    "atMeasures": "đang ở ô {from}–{to}",
+    "idle": "chưa chọn ô nào",
+    "jump": "bấm để tới chỗ này"
   }
 }

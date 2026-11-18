@@ -569,5 +569,31 @@
     "reportTitle": "Báo cáo vi phạm",
     "reportHint": "Gửi báo cáo tới quản trị viên nếu bản nhạc vi phạm bản quyền, là spam hoặc có nội dung không phù hợp. Chủ bản nhạc không biết ai đã báo cáo.",
     "reportButton": "Báo cáo bản nhạc"
+  },
+  "libMenu": {
+    "label": "Thao tác với bản nhạc",
+    "open": "Thao tác với “{title}”",
+    "openTitle": "Thao tác (hoặc bấm chuột phải vào thẻ)",
+    "tip": "Mẹo: bấm chuột phải vào một bản nhạc để mở nhanh, đổi tên, thêm vào playlist hoặc xóa.",
+    "openDetail": "Mở trang bản nhạc",
+    "newTab": "Mở trong tab mới",
+    "rename": "Đổi tên…",
+    "addToPlaylist": "Thêm vào playlist…",
+    "copyLink": "Sao chép liên kết",
+    "linkCopied": "Đã sao chép liên kết",
+    "linkFailed": "Không sao chép được liên kết",
+    "renameTitle": "Đổi tên bản nhạc",
+    "renameLabel": "Tên mới",
+    "renameConfirm": "Đổi tên",
+    "renamed": "Đã đổi tên bản nhạc",
+    "renameFailed": "Không đổi được tên bản nhạc",
+    "trash": "Chuyển vào thùng rác",
+    "trashHint": "Khôi phục được trong 30 ngày",
+    "purge": "Xóa vĩnh viễn",
+    "purgeHint": "Không khôi phục được",
+    "purgeTitle": "Xóa vĩnh viễn bản nhạc?",
+    "purgeMessage": "“{title}” cùng mọi phiên bản, file và góp ý sẽ bị xóa hẳn, không thể khôi phục.",
+    "purgeConfirm": "Xóa vĩnh viễn",
+    "purged": "Đã xóa vĩnh viễn “{title}”"
   }
 }

@@ -1,10 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from '../../../routes/useTransitionNavigate';
 import { toast } from 'react-toastify';
 import { LibraryEmpty, LibrarySkeleton } from '../../../components/scores/library/LibraryStates';
 import Pagination from '../../../components/scores/common/Pagination';
 import ScoreCard from '../../../components/scores/library/ScoreCard';
 import ScoreFilters from '../../../components/scores/library/ScoreFilters';
+import PlaylistPicker from '../../../components/scores/library/PlaylistPicker';
+import DeleteScoreModal from '../../../components/scores/detail/DeleteScoreModal';
+import ContextMenu from '../../../components/ui/ContextMenu';
+import type { MenuItem } from '../../../components/ui/ContextMenu';
+import Icon from '../../../components/ui/Icon';
+import { useDialog } from '../../../components/ui/dialog-context';
 import { officialRequestApi, scoreApi, tagApi } from '../../../services';
 import type {
   Difficulty,
@@ -15,16 +21,28 @@ import type {
   ScoreSummary,
   Tag,
 } from '../../../types';
-import { getScorePath, MAX_KEYWORD, POLL_INTERVAL_MS } from '../../../utils/score';
+import { getErrorMessage, getScorePath, MAX_KEYWORD, POLL_INTERVAL_MS } from '../../../utils/score';
 import '../../../components/scores/scores.css';
 import './ScoreLibrary.css';
 import { t } from '../../../i18n/core';
 
 const PAGE_SIZE = 12;
+/** Độ dài tối đa của tên bản nhạc (khớp BE). */
+const MAX_TITLE = 255;
+
+/** Bản nhạc đã có nội dung để mở trình chỉnh sửa / phát (không còn đang nhận dạng hay lỗi). */
+const isReady = (s: ScoreSummary): boolean => s.processingStatus === 'COMPLETED';
 
 /** Trang /scores: thư viện "Bản nhạc của tôi" (doc mục 2.0). */
 export default function ScoreLibrary() {
   const navigate = useNavigate();
+  const dialog = useDialog();
+
+  // Menu chuột phải / nút ⋯ trên thẻ, và các hộp thoại mở từ menu
+  const [menu, setMenu] = useState<{ score: ScoreSummary; x: number; y: number } | null>(null);
+  const [saving, setSaving] = useState<ScoreSummary | null>(null);
+  const [trashing, setTrashing] = useState<ScoreSummary | null>(null);
+  const closeMenu = useCallback(() => setMenu(null), []);
 
   // Bộ lọc
   const [page, setPage] = useState(0);
@@ -111,6 +129,143 @@ export default function ScoreLibrary() {
       setPage(0);
     };
 
+  const reload = () => setTick((n) => n + 1);
+
+  const copyLink = async (score: ScoreSummary) => {
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/scores/${score.id}`);
+      toast.success(t('scores.libMenu.linkCopied'));
+    } catch {
+      toast.error(t('scores.libMenu.linkFailed'));
+    }
+  };
+
+  const rename = async (score: ScoreSummary) => {
+    const title = await dialog.prompt({
+      title: t('scores.libMenu.renameTitle'),
+      label: t('scores.libMenu.renameLabel'),
+      defaultValue: score.title,
+      maxLength: MAX_TITLE,
+      required: true,
+      confirmLabel: t('scores.libMenu.renameConfirm'),
+    });
+    const next = title?.trim();
+    if (!next || next === score.title) return;
+    try {
+      await scoreApi.update(score.id, { title: next });
+      toast.success(t('scores.libMenu.renamed'));
+      reload();
+    } catch (err) {
+      toast.error(getErrorMessage(err, t('scores.libMenu.renameFailed')));
+    }
+  };
+
+  /** Xóa vĩnh viễn ngay từ thư viện: chuyển vào thùng rác rồi xóa hẳn khỏi thùng rác (không khôi phục được). */
+  const purge = async (score: ScoreSummary) => {
+    const ok = await dialog.confirm({
+      title: t('scores.libMenu.purgeTitle'),
+      message: t('scores.libMenu.purgeMessage', { title: score.title }),
+      confirmLabel: t('scores.libMenu.purgeConfirm'),
+      tone: 'danger',
+    });
+    if (!ok) return;
+    try {
+      await scoreApi.remove(score.id);
+      await scoreApi.purge(score.id);
+      toast.success(t('scores.libMenu.purged', { title: score.title }));
+      reload();
+    } catch (err) {
+      toast.error(getErrorMessage(err, t('scores.trash.purgeFailed')));
+      reload();
+    }
+  };
+
+  const menuItems = (score: ScoreSummary): MenuItem[] => {
+    const ready = isReady(score);
+    const running = score.processingStatus === 'PENDING' || score.processingStatus === 'PROCESSING';
+    return [
+      {
+        id: 'open',
+        label: t('scores.libMenu.openDetail'),
+        icon: <Icon name="music" size={16} />,
+        shortcut: 'Enter',
+        onSelect: () => navigate(getScorePath(score.id, score.processingStatus)),
+      },
+      {
+        id: 'edit',
+        label: t('scores.hero.openEditor'),
+        icon: <Icon name="edit" size={16} />,
+        disabled: !ready,
+        disabledReason: t('scores.hero.noXmlOpen'),
+        onSelect: () => navigate(`/scores/${score.id}/edit`),
+      },
+      {
+        id: 'play',
+        label: t('scores.hero.play'),
+        icon: <Icon name="play" size={16} />,
+        disabled: !ready,
+        disabledReason: t('scores.hero.noXmlPlay'),
+        onSelect: () => navigate(`/scores/${score.id}/play`),
+      },
+      {
+        id: 'newTab',
+        label: t('scores.libMenu.newTab'),
+        icon: <Icon name="external" size={16} />,
+        onSelect: () => window.open(getScorePath(score.id, score.processingStatus), '_blank', 'noopener'),
+      },
+      { type: 'separator', id: 's1' },
+      {
+        id: 'rename',
+        label: t('scores.libMenu.rename'),
+        icon: <Icon name="type" size={16} />,
+        disabled: running,
+        onSelect: () => void rename(score),
+      },
+      {
+        id: 'playlist',
+        label: t('scores.libMenu.addToPlaylist'),
+        icon: <Icon name="listPlus" size={16} />,
+        onSelect: () => setSaving(score),
+      },
+      {
+        id: 'link',
+        label: t('scores.libMenu.copyLink'),
+        icon: <Icon name="link" size={16} />,
+        onSelect: () => void copyLink(score),
+      },
+      { type: 'separator', id: 's2' },
+      {
+        id: 'trash',
+        label: t('scores.libMenu.trash'),
+        hint: t('scores.libMenu.trashHint'),
+        icon: <Icon name="trash" size={16} />,
+        shortcut: 'Del',
+        danger: true,
+        onSelect: () => setTrashing(score),
+      },
+      {
+        id: 'purge',
+        label: t('scores.libMenu.purge'),
+        hint: t('scores.libMenu.purgeHint'),
+        icon: <Icon name="trashX" size={16} />,
+        shortcut: 'Shift+Del',
+        danger: true,
+        onSelect: () => void purge(score),
+      },
+    ];
+  };
+
+  // Phím Delete / Shift+Delete trên thẻ đang được chọn bằng bàn phím: chuyển vào thùng rác / xóa vĩnh viễn
+  const onGridKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== 'Delete') return;
+    const id = (e.target as HTMLElement).closest<HTMLElement>('[data-score-id]')?.dataset.scoreId;
+    const score = data?.content.find((s) => s.id === id);
+    if (!score) return;
+    e.preventDefault();
+    if (e.shiftKey) void purge(score);
+    else setTrashing(score);
+  };
+
   const resetFilters = () => {
     setKeywordInput('');
     setKeyword('');
@@ -123,9 +278,9 @@ export default function ScoreLibrary() {
   };
 
   return (
-    <div className="sc-page">
+    <div className="sc-page sc-lib">
       <main className="sc-container">
-        <header className="sc-lib-head">
+        <header className="sc-lib-head sc-lib-hero ui-stage">
           <div>
             <h1>{t('scores.library.title')}</h1>
             <p>{data ? t('scores.library.count', { count: data.totalElements }) : t('scores.library.subtitle')}</p>
@@ -166,22 +321,50 @@ export default function ScoreLibrary() {
         {data && data.content.length === 0 && <LibraryEmpty filtered={hasFilter} onReset={resetFilters} />}
 
         {data && data.content.length > 0 && (
-          <div className={`sc-grid ${isRefetching ? 'is-refetching' : ''}`}>
+          <div className={`sc-grid ${isRefetching ? 'is-refetching' : ''}`} onKeyDown={onGridKeyDown}>
             {data.content.map((s) => (
-              <ScoreCard
-                key={s.id}
-                score={s}
-                showViews={sort === 'views'}
-                onOpen={(item) => navigate(getScorePath(item.id, item.processingStatus))}
-              />
+              <div key={s.id} className="sc-grid__cell" data-score-id={s.id}>
+                <ScoreCard
+                  score={s}
+                  showViews={sort === 'views'}
+                  onOpen={(item) => navigate(getScorePath(item.id, item.processingStatus))}
+                  onMenu={(item, point) => setMenu({ score: item, ...point })}
+                  menuOpen={menu?.score.id === s.id}
+                />
+              </div>
             ))}
           </div>
         )}
+
+        {data && data.content.length > 0 && <p className="sc-lib-tip">{t('scores.libMenu.tip')}</p>}
 
         {data && (
           <Pagination page={page} totalPages={data.totalPages} totalElements={data.totalElements} onChange={setPage} />
         )}
       </main>
+
+      {menu && (
+        <ContextMenu
+          x={menu.x}
+          y={menu.y}
+          label={t('scores.libMenu.label')}
+          title={menu.score.title}
+          items={menuItems(menu.score)}
+          onClose={closeMenu}
+        />
+      )}
+      {saving && <PlaylistPicker score={saving} onClose={() => setSaving(null)} />}
+      {trashing && (
+        <DeleteScoreModal
+          scoreId={trashing.id}
+          title={trashing.title}
+          onClose={() => setTrashing(null)}
+          onDeleted={() => {
+            setTrashing(null);
+            reload();
+          }}
+        />
+      )}
     </div>
   );
 }

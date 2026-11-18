@@ -192,6 +192,79 @@ const PATHS = {
     </>
   ),
   upload: <path d="M12 16V4M7 9l5-5 5 5M4 20h16" />,
+  // Menu chuột phải (thư viện, trình chỉnh sửa)
+  external: (
+    <>
+      <path d="M14 4h6v6" />
+      <path d="M20 4l-9 9" />
+      <path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
+    </>
+  ),
+  pencil: (
+    <>
+      <path d="M4 20h4L19 9l-4-4L4 16v4z" />
+      <path d="M13.5 6.5l4 4" />
+    </>
+  ),
+  trashX: (
+    <>
+      <path d="M4 7h16" />
+      <path d="M9 7V4.5h6V7" />
+      <path d="M6 7l1 13h10l1-13" />
+      <path d="M9.5 11.5l5 5M14.5 11.5l-5 5" />
+    </>
+  ),
+  listPlus: (
+    <>
+      <path d="M4 6h12M4 12h12M4 18h7" />
+      <path d="M18 15v6M15 18h6" />
+    </>
+  ),
+  link: (
+    <>
+      <path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1" />
+      <path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" />
+    </>
+  ),
+  type: (
+    <>
+      <path d="M5 6V4h14v2" />
+      <path d="M12 4v16" />
+      <path d="M9 20h6" />
+    </>
+  ),
+  arrowUp: <path d="M12 19V5M6 11l6-6 6 6" />,
+  arrowDown: <path d="M12 5v14M6 13l6 6 6-6" />,
+  eraser: (
+    <>
+      <path d="M16.5 3.5l4 4L10 18H6l-2.5-2.5z" />
+      <path d="M9 9l6 6" />
+      <path d="M10 20h10" />
+    </>
+  ),
+  comment: (
+    <>
+      <path d="M4 5h16v11H9l-5 4z" />
+    </>
+  ),
+  select: (
+    <>
+      <path d="M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4" />
+    </>
+  ),
+  minus: <path d="M5 12h14" />,
+  rest: (
+    <>
+      <path d="M10 4l4 4.5-3 3.5 3.5 4" />
+      <path d="M14.5 16c-2-1-4.5-.6-4.5 1.6 0 1.4 1.2 2.4 2.6 2.4" />
+    </>
+  ),
+  layers: (
+    <>
+      <path d="M12 3l9 5-9 5-9-5z" />
+      <path d="M3 13l9 5 9-5" />
+    </>
+  ),
   flame: <path d="M12 3c.8 3.5 5 5.2 5 10a5 5 0 0 1-10 0c0-2 .9-3.4 2-4.3.1 1.9 1 3 2.2 3.3C10.6 9.4 10.9 6 12 3z" />,
 } as const;
 

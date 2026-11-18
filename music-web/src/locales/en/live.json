@@ -21,5 +21,12 @@
     "invalid": "The change was invalid, the shared score was reloaded",
     "resync": "The shared score changed, syncing again",
     "saving": "Saving as a new version"
+  },
+  "presence": {
+    "editing": "editing",
+    "atMeasure": "at measure {n}",
+    "atMeasures": "at measures {from}–{to}",
+    "idle": "no measure selected",
+    "jump": "click to go there"
   }
 }
