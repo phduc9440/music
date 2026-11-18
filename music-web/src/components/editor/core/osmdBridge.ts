@@ -15,6 +15,11 @@ export const NOTE_ID_ATTR = 'data-note-id';
 export const NOTE_IDS_ATTR = 'data-note-ids';
 /** Class CSS tô nốt đang chọn. */
 export const SELECTED_CLASS = 'ed-note--selected';
+/**
+ * Id của từng đầu nốt trong hợp âm (gắn trên nhóm `.vf-notehead` bên trong nhóm SVG của hợp âm). Bấm trúng đầu nốt thì
+ * chỉ chọn nốt đó; bấm vào thân/đuôi nốt thì chọn cả hợp âm (giống MuseScore).
+ */
+export const HEAD_ID_ATTR = 'data-head-id';
 
 /** Kết quả ghép, dùng để kiểm tra spike. */
 export interface BindReport {
@@ -48,9 +53,10 @@ interface OsmdNote {
  */
 export function bindNoteIds(osmd: OpenSheetMusicDisplay, doc: ScoreDocument, host: HTMLElement): BindReport {
   // Xóa gắn kết cũ (sau render SVG thường đã mới, nhưng chắc chắn không sót)
-  host.querySelectorAll(`[${NOTE_ID_ATTR}]`).forEach((el) => {
+  host.querySelectorAll(`[${NOTE_ID_ATTR}], [${HEAD_ID_ATTR}]`).forEach((el) => {
     el.removeAttribute(NOTE_ID_ATTR);
     el.removeAttribute(NOTE_IDS_ATTR);
+    el.removeAttribute(HEAD_ID_ATTR);
     el.classList.remove(SELECTED_CLASS);
   });
 
@@ -138,26 +144,77 @@ export function bindNoteIds(osmd: OpenSheetMusicDisplay, doc: ScoreDocument, hos
     ids.sort();
     svg.setAttribute(NOTE_ID_ATTR, ids[0]);
     svg.setAttribute(NOTE_IDS_ATTR, ids.join(' '));
+    if (ids.length > 1) bindHeads(svg, ids, doc);
   }
   return report;
 }
 
-/** Các id nốt của nhóm SVG gần nhất với đích của sự kiện; mảng rỗng nếu bấm ra ngoài nốt. */
+/** Các nhóm đầu nốt của chính nốt `svg` (bỏ đầu nốt của nốt hoa mỹ lồng bên trong). */
+const ownHeads = (svg: SVGGElement): SVGGElement[] => {
+  // Cách OSMD dùng (getNoteheadSVGs): các nhóm .vf-notehead là con trực tiếp của nhóm .vf-note
+  const vfNote = Array.from(svg.children).find((c) => c.classList.contains('vf-note'));
+  if (vfNote) {
+    const direct = Array.from(vfNote.children).filter((c): c is SVGGElement => c.classList.contains('vf-notehead'));
+    if (direct.length > 0) return direct;
+  }
+  return Array.from(svg.querySelectorAll<SVGGElement>('.vf-notehead')).filter((head) => {
+    let p: Element | null = head.parentElement;
+    while (p && p !== svg) {
+      if (p.classList.contains('vf-stavenote') || p.classList.contains('vf-gracenotegroup')) return false;
+      p = p.parentElement;
+    }
+    return p === svg;
+  });
+};
+
+/**
+ * Gắn id cho từng đầu nốt của hợp âm: đầu nốt càng thấp trên khuông thì cao độ càng thấp, nên ghép theo thứ tự toạ độ y
+ * (từ dưới lên) với thứ tự cao độ (từ thấp lên). Số đầu nốt khác số nốt thì bỏ qua (cả hợp âm vẫn chọn được như cũ).
+ */
+function bindHeads(svg: SVGGElement, ids: readonly string[], doc: ScoreDocument): void {
+  try {
+    const heads = ownHeads(svg);
+    if (heads.length !== ids.length) return;
+    const centerY = (el: SVGGElement) => {
+      const box = el.getBBox();
+      return box.y + box.height / 2;
+    };
+    const byY = heads.map((el) => ({ el, y: centerY(el) })).sort((a, b) => b.y - a.y);
+    const byPitch = [...ids].sort(
+      (a, b) => (doc.getInfo(a)?.midi ?? 0) - (doc.getInfo(b)?.midi ?? 0) || a.localeCompare(b),
+    );
+    byY.forEach(({ el }, i) => el.setAttribute(HEAD_ID_ATTR, byPitch[i]));
+  } catch {
+    // SVG chưa đo được: chỉ mất khả năng chọn riêng từng nốt trong hợp âm
+  }
+}
+
+/**
+ * Các id nốt của nhóm SVG gần nhất với đích của sự kiện; mảng rỗng nếu bấm ra ngoài nốt. Bấm trúng một đầu nốt của hợp
+ * âm thì chỉ trả về id của nốt đó.
+ */
 export function noteIdsFromEvent(event: Event): string[] {
   const target = event.target;
   if (!(target instanceof Element)) return [];
+  const head = target.closest(`[${HEAD_ID_ATTR}]`)?.getAttribute(HEAD_ID_ATTR);
+  if (head) return [head];
   const group = target.closest(`[${NOTE_ID_ATTR}]`);
   const raw = group?.getAttribute(NOTE_IDS_ATTR) ?? group?.getAttribute(NOTE_ID_ATTR) ?? '';
   return raw ? raw.split(' ') : [];
 }
 
-/** Tô các nhóm SVG có chứa ít nhất một id đang chọn bằng class CSS, không vẽ lại bản nhạc. */
+/**
+ * Tô vùng chọn bằng class CSS, không vẽ lại bản nhạc. Hợp âm đã gắn id từng đầu nốt: chọn đủ cả hợp âm thì tô cả nhóm,
+ * chọn một phần thì chỉ tô các đầu nốt được chọn. Nhóm khác: tô khi có ít nhất một id đang chọn.
+ */
 export function applySelection(host: HTMLElement, selected: ReadonlySet<string>): void {
   host.querySelectorAll(`[${NOTE_ID_ATTR}]`).forEach((el) => {
     const ids = (el.getAttribute(NOTE_IDS_ATTR) ?? el.getAttribute(NOTE_ID_ATTR) ?? '').split(' ');
-    el.classList.toggle(
-      SELECTED_CLASS,
-      ids.some((id) => selected.has(id)),
-    );
+    const heads = Array.from(el.querySelectorAll(`[${HEAD_ID_ATTR}]`));
+    const all = ids.every((id) => selected.has(id));
+    el.classList.toggle(SELECTED_CLASS, heads.length > 0 ? all : ids.some((id) => selected.has(id)));
+    for (const head of heads) {
+      head.classList.toggle(SELECTED_CLASS, !all && selected.has(head.getAttribute(HEAD_ID_ATTR) ?? ''));
+    }
   });
 }

@@ -56,6 +56,7 @@ import type { NotationChange } from '../structure/staves';
 import { setTempo } from '../structure/tempo';
 import { makeTuplet, removeTuplet, tupletName } from '../notes/tuplets';
 import type { TupletOp } from '../notes/tuplets';
+import { removeAttachment as runRemoveAttachment } from '../notation/attachments';
 import type { TempoInfo } from '../structure/tempo';
 import { toggleSlur, toggleTie } from '../notes/ties';
 import type { MeasureIssue } from '../structure/measureCheck';
@@ -201,6 +202,14 @@ export interface ScoreEditor {
   insertNoteAt: (target: InsertTarget, choice: DurationChoice, accidental: AccidentalChoice) => boolean;
   /** Áp ký hiệu (thăng, giáng, bình, dấu lặng, xóa) lên vùng chọn. */
   applySymbol: (op: SymbolOp) => void;
+  /** Áp ký hiệu lên đúng các nốt `ids` (menu chuột phải), không phụ thuộc vùng chọn hiện tại. */
+  applySymbolTo: (ids: readonly string[], op: SymbolOp) => void;
+  /** Gỡ riêng một ký hiệu (dấu thể hiện, dấu luyến, lời, hợp âm, sắc thái...) khỏi nốt `id`. */
+  removeAttachment: (id: string, key: string) => void;
+  /** Chọn mọi nốt của một ô nhịp (mọi khuông). */
+  selectMeasure: (measureIndex: number) => void;
+  /** Chọn cả bản nhạc (Ctrl/Cmd + A). */
+  selectAll: () => void;
   /** Kéo nốt: đổi `steps` bậc (dương = lên) cho vùng chọn, hoặc cho `ids` nếu chúng chưa được chọn. */
   dragPitch: (ids: readonly string[], steps: number) => void;
   /** Chọn riêng nốt thấp hơn (−1) / cao hơn (+1) trong hợp âm đang chọn. */
@@ -225,6 +234,26 @@ export interface ScoreEditor {
   /** Hỏi trước khi rời trình chỉnh sửa khi còn thay đổi chưa lưu (hộp thoại của web); true nếu được rời. */
   confirmLeave: () => Promise<boolean>;
 }
+
+/**
+ * Vùng chọn chỉ gồm dấu lặng của bè phụ, và trong ô đó bè phụ ấy chỉ còn dấu lặng: Xóa nên gỡ cả bè phụ (dấu lặng của
+ * bè chính thì không xóa được vì ô sẽ thiếu phách).
+ */
+const deletesRestVoice = (doc: ScoreDocument, ids: readonly string[]): boolean => {
+  const infos = ids.map((id) => doc.getInfo(id)).filter((n) => n !== undefined);
+  if (infos.length === 0 || infos.some((n) => !n.isRest)) return false;
+  return infos.every((n) =>
+    doc.notes
+      .filter(
+        (x) =>
+          x.partIndex === n.partIndex &&
+          x.measureIndex === n.measureIndex &&
+          x.staff === n.staff &&
+          x.voice === n.voice,
+      )
+      .every((x) => x.isRest),
+  );
+};
 
 export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
   const { confirm: confirmDialog } = useDialog();
@@ -750,16 +779,43 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     [canEdit, doc, commit],
   );
 
-  const applySymbol = useCallback(
-    (op: SymbolOp) => {
-      if (!canEdit || selection.size === 0) return;
-      const ids = [...selection];
+  const applySymbolTo = useCallback(
+    (ids: readonly string[], op: SymbolOp) => {
+      if (!canEdit || ids.length === 0) return;
       if (op === 'tie') commit(toggleTie(doc, ids), false);
       else if (op === 'slur') commit(toggleSlur(doc, ids), false);
-      else if (op === 'rest' || op === 'delete') commit(removeNotes(doc, ids, op), false);
+      else if (op === 'delete' && deletesRestVoice(doc, ids)) {
+        // Xóa dấu lặng của bè phụ khi cả bè trong ô chỉ còn dấu lặng: gỡ hẳn bè đó (như MuseScore), bè chính giữ nguyên
+        const result = removeVoice(doc, ids);
+        commit(result.ok ? result : removeNotes(doc, ids, op), false);
+      } else if (op === 'rest' || op === 'delete') commit(removeNotes(doc, ids, op), false);
       else commit(setAlteration(doc, ids, op), true);
     },
-    [canEdit, selection, doc, commit],
+    [canEdit, doc, commit],
+  );
+
+  const applySymbol = useCallback(
+    (op: SymbolOp) => {
+      if (selection.size > 0) applySymbolTo([...selection], op);
+    },
+    [selection, applySymbolTo],
+  );
+
+  const removeAttachment = useCallback(
+    (id: string, key: string) => {
+      if (!canEdit) return;
+      commit(runRemoveAttachment(doc, id, key), false);
+    },
+    [canEdit, doc, commit],
+  );
+
+  const selectAll = useCallback(() => setSelection(new Set(doc.notes.map((n) => n.id))), [doc]);
+
+  const selectMeasure = useCallback(
+    (measureIndex: number) => {
+      setSelection(new Set(doc.notes.filter((n) => n.measureIndex === measureIndex).map((n) => n.id)));
+    },
+    [doc],
   );
 
   const applyPitch = useCallback((op: PitchOp) => runPitch([...selection], op, 1), [runPitch, selection]);
@@ -1037,6 +1093,10 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
       } else if (mod && key === 'y') {
         e.preventDefault();
         redo();
+      } else if (mod && key === 'a' && !e.shiftKey && !e.altKey) {
+        // Chọn cả bản nhạc (như MuseScore), để chuyển giọng / đổi ký hiệu / xóa hàng loạt
+        e.preventDefault();
+        selectAll();
       } else if (mod && !e.shiftKey && !e.altKey && e.key === '3') {
         e.preventDefault();
         editTuplet({ kind: 'make', actual: 3, normal: 2 });
@@ -1098,6 +1158,7 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     clearSelection,
     selectRelative,
     selectInChord,
+    selectAll,
     applySymbol,
     chooseDuration,
     toggleDot,
@@ -1125,6 +1186,10 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     clearSelection,
     applyPitch,
     applySymbol,
+    applySymbolTo,
+    removeAttachment,
+    selectMeasure,
+    selectAll,
     inputMode,
     setInputMode,
     chordMode,
