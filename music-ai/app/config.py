@@ -130,6 +130,10 @@ class Settings:
     """Xử lý ``*8va``/``*8ba`` model sinh ra (``app/omr/ottava.py``): ``auto`` bỏ trên khuông giọng hát/khuông đơn và
     đưa nốt về đúng quãng tám in trên ảnh; ``drop`` bỏ trên mọi khuông; ``keep`` giữ nguyên. Đặt bằng ``OMR_OTTAVA``."""
 
+    pitch_check: bool = True
+    """Sửa quãng tám theo vị trí đầu nốt trên ảnh (``app/omr/pitch_check.py``): Transcoda hay lệch 1-3 quãng tám nhưng tên
+    nốt thì đúng. Tắt bằng ``OMR_PITCH_CHECK=0``."""
+
     routing_reserve_s: int = 30
     """Giây giữ lại cho bước ghép và xuất: nhận diện lại chỉ chạy khi job còn nhiều thời gian hơn mức này, nên không bao
     giờ làm job quá hạn. Đặt bằng ``ROUTING_RESERVE_S``."""
@@ -225,6 +229,7 @@ def get_settings() -> Settings:
         routing_reserve_s=max(0, _int_env("ROUTING_RESERVE_S", 30)),
         music_engine=(os.environ.get("OMR_ENGINE", "").strip() or "transcoda").lower(),
         engine_command=os.environ.get("OMR_ENGINE_COMMAND", "").strip(),
+        pitch_check=_bool_env("OMR_PITCH_CHECK", True),
         ottava=_choice_env("OMR_OTTAVA", "auto", ("auto", "drop", "keep")),
         tta_reads=max(0, _int_env("OMR_TTA", 2)),
         tta_shift_px=max(1, _int_env("OMR_TTA_SHIFT_PX", 3)),
