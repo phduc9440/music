@@ -13,6 +13,8 @@ export interface LiveParticipant {
   colorIndex: number;
   editing: boolean;
   selection: LiveSelection | null;
+  /** Ảnh đại diện (máy chủ chưa gửi thì giao diện dùng chữ cái đầu trên nền màu của người đó). */
+  avatarUrl?: string | null;
 }
 
 export interface LivePresence {

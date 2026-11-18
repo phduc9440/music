@@ -31,6 +31,9 @@ const LOCK_DEBOUNCE_MS = 150;
 /** Các phần tử trong <attributes> mà thay đổi chúng là thay đổi cấu trúc (khớp `LiveDocument.contextSignature` ở BE). */
 const CONTEXT_TAGS = new Set(['divisions', 'key', 'time', 'clef', 'staves', 'transpose']);
 
+/** Chờ sau lần đổi vùng chọn cuối cùng rồi mới báo cho người khác (ms). */
+const PRESENCE_DEBOUNCE_MS = 250;
+
 export const measureKey = (partIndex: number, measureIndex: number): string => `${partIndex}:${measureIndex}`;
 
 export interface LiveState {
@@ -102,6 +105,7 @@ export class LiveSession {
   private desired: LiveMeasureRef[] = [];
   private lastWanted = new Map<string, number>();
   private lockTimer: number | null = null;
+  private presenceTimer: number | null = null;
   private opCounter = 0;
   private stopped = false;
   private readonly scoreId: string;
@@ -139,6 +143,7 @@ export class LiveSession {
   async stop(): Promise<void> {
     this.stopped = true;
     if (this.lockTimer !== null) window.clearTimeout(this.lockTimer);
+    if (this.presenceTimer !== null) window.clearTimeout(this.presenceTimer);
     await this.client.stop();
   }
 
@@ -180,6 +185,7 @@ export class LiveSession {
 
   /** Vùng chọn hiện tại: các ô cần giữ khóa. */
   setFocus(refs: LiveMeasureRef[]): void {
+    this.announceSelection();
     this.desired = refs;
     const now = Date.now();
     refs.forEach((r) => this.lastWanted.set(measureKey(r.partIndex, r.measureIndex), now));
@@ -188,6 +194,18 @@ export class LiveSession {
 
   save(): void {
     this.client.save();
+  }
+
+  /**
+   * Báo ngay vùng chọn mới cho người cùng sửa (như con trỏ của người khác trong Google Docs) thay vì đợi nhịp tim 15 giây.
+   * Gộp các lần đổi liên tiếp (giữ phím mũi tên, kéo chọn) thành một tin; máy chủ chỉ phát lại khi vùng chọn thực sự đổi.
+   */
+  private announceSelection(): void {
+    if (this.presenceTimer !== null) window.clearTimeout(this.presenceTimer);
+    this.presenceTimer = window.setTimeout(() => {
+      this.presenceTimer = null;
+      if (!this.stopped) this.client.presence();
+    }, PRESENCE_DEBOUNCE_MS);
   }
 
   // ------------------------------------------------------------------ kết nối
