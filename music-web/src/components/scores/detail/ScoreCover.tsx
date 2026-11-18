@@ -4,6 +4,7 @@ import { scoreApi } from '../../../services';
 import { COVER_MAX_BYTES, COVER_TYPES, getErrorMessage } from '../../../utils/score';
 import type { ScoreDetail } from '../../../types';
 import { Icon } from '../../ui';
+import AuthImage from '../common/AuthImage';
 import { t } from '../../../i18n/core';
 
 /**
@@ -20,7 +21,6 @@ export default function ScoreCover({
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const editable = score.canEdit;
-  if (!score.coverUrl && !editable) return null;
 
   const pick = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -59,6 +59,9 @@ export default function ScoreCover({
     <div className="sd-cover">
       {score.coverUrl ? (
         <img src={score.coverUrl} alt={t('scores.cover.alt', { title: score.title })} className="sd-cover__img" />
+      ) : score.thumbnailUrl ? (
+        // Chưa có ảnh bìa: dùng ảnh trang 1 như thẻ ở thư viện
+        <AuthImage src={score.thumbnailUrl} alt="" className="sd-cover__img sd-cover__img--page" />
       ) : (
         <span className="sd-cover__empty" aria-hidden="true">
           <Icon name="music" size={28} />

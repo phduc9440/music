@@ -295,7 +295,10 @@
     "copyLinkCopied": "Copied",
     "copyLinkHint": "Copy this score's link to send to someone (they must sign in and have access)",
     "copyLinkDone": "Score link copied",
-    "copyLinkFailed": "Could not copy the link"
+    "copyLinkFailed": "Could not copy the link",
+    "preview": "Preview",
+    "details": "Details",
+    "createdAt": "Created"
   },
   "edit": {
     "tagsFailed": "Couldn't load the genres",

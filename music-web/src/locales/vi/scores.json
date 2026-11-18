@@ -288,7 +288,10 @@
     "copyLinkCopied": "Đã sao chép",
     "copyLinkHint": "Sao chép đường dẫn của bản nhạc này để gửi cho người khác (họ cần đăng nhập và có quyền xem)",
     "copyLinkDone": "Đã sao chép liên kết bản nhạc",
-    "copyLinkFailed": "Không sao chép được liên kết"
+    "copyLinkFailed": "Không sao chép được liên kết",
+    "preview": "Xem trước",
+    "details": "Chi tiết",
+    "createdAt": "Ngày tạo"
   },
   "edit": {
     "tagsFailed": "Không tải được danh sách thể loại",
