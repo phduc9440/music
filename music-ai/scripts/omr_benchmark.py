@@ -125,6 +125,59 @@ class RecordingCallback:
         return True
 
 
+def read_kind(png_path, num_beams=None) -> str:
+    """Loại lượt đọc model theo tên ảnh pipeline đặt: ``page`` (cả trang), ``system`` (một hệ), ``roles`` (riêng giọng hoặc
+    riêng piano), ``beam`` (đọc lại bằng beam search), ``tta`` (đọc lại có dịch ảnh), ``other``."""
+    import re  # noqa: PLC0415
+
+    path = Path(png_path)
+    if num_beams and num_beams > 1:
+        return "beam"
+    if path.parent.name == "pages":
+        return "page"
+    if "-tta" in path.name:
+        return "tta"
+    if re.search(r"-r\d+-", path.name):
+        return "roles"
+    if path.parent.name == "routing":
+        return "system"
+    return "other"
+
+
+class TimedRecognizer:
+    """Bọc engine thật để đo từng lượt gọi model theo loại (:func:`read_kind`): số lượt, số giây, số token."""
+
+    def __init__(self, inner) -> None:
+        self.inner = inner
+        self.calls: list[tuple[str, float, int]] = []
+
+    def __getattr__(self, name):
+        return getattr(self.inner, name)
+
+    def wait_ready(self, check, timeout_s):
+        return self.inner.wait_ready(check, timeout_s)
+
+    def recognize(self, png_path, check, *args, **kwargs):
+        beams = kwargs.get("num_beams", args[0] if args else None)
+        started = time.monotonic()
+        result = self.inner.recognize(png_path, check, *args, **kwargs)
+        self.calls.append((read_kind(png_path, beams), time.monotonic() - started, int(result.tokens or 0)))
+        return result
+
+    def summary(self) -> dict:
+        by_kind: dict[str, dict] = {}
+        for kind, seconds, tokens in self.calls:
+            item = by_kind.setdefault(kind, {"calls": 0, "seconds": 0.0, "tokens": 0})
+            item["calls"] += 1
+            item["seconds"] = round(item["seconds"] + seconds, 2)
+            item["tokens"] += tokens
+        return {
+            "modelCalls": len(self.calls),
+            "modelSeconds": round(sum(c[1] for c in self.calls), 2),
+            "modelByKind": by_kind,
+        }
+
+
 def cmd_run(cases: list[dict], variants: list[str]) -> dict:
     from app import config  # noqa: PLC0415
     from app.omr import engines  # noqa: PLC0415
@@ -163,11 +216,13 @@ def cmd_run(cases: list[dict], variants: list[str]) -> dict:
                              "musicXmlVersion": 1},
                 )
                 callback = RecordingCallback()
+                timed = TimedRecognizer(recognizer)
                 started = time.monotonic()
-                run_omr_job(job, threading.Event(), callback, recognizer=recognizer)  # type: ignore[arg-type]
+                run_omr_job(job, threading.Event(), callback, recognizer=timed)  # type: ignore[arg-type]
                 seconds = time.monotonic() - started
                 rows.append(_score_run(case, name, Path(tmp) / "scores" / score_id, callback, seconds))
-                print(json.dumps(rows[-1], ensure_ascii=False)[:400])
+                rows[-1].update(timed.summary())
+                print(json.dumps(rows[-1], ensure_ascii=False)[:600])
         for key, value in saved.items():
             if value is None:
                 os.environ.pop(key, None)
@@ -179,6 +234,7 @@ def cmd_run(cases: list[dict], variants: list[str]) -> dict:
         os.environ["STORAGE_ROOT"] = original_storage
     config.get_settings.cache_clear()
     _print_music(rows)
+    _print_timing(rows)
     return {"mode": "run", "rows": rows}
 
 
@@ -200,6 +256,9 @@ class ReplayRecognizer:
         self.folder = folder
         self.hits: list[str] = []
         self.misses: list[str] = []
+        self.decoded = 0
+        """Tổng số token (tách theo khoảng trắng) của các kern đã phát lại: thước đo thay cho thời gian giải mã của model
+        (giải mã tự hồi quy chiếm gần hết thời gian một lần đọc và tỉ lệ gần tuyến tính với số token sinh ra)."""
         self.drift: list[tuple[str, float]] = []
 
     def wait_ready(self, check, timeout_s: float) -> None:  # noqa: ARG002 - cùng giao diện Recognizer
@@ -235,6 +294,7 @@ class ReplayRecognizer:
             return RecognitionResult(text="", tokens=0, truncated=False, millis=0)
         self.hits.append(label)
         text = krn.read_text(encoding="utf-8")
+        self.decoded += len(text.split())
         stopped = False
         if max_measures and BarlineLimit(max_measures).exceeded(text):
             lines = text.split("\n")
@@ -271,10 +331,12 @@ def _same_system(png_path: Path, old_folder: Path) -> bool:
     )
 
 
-def cmd_replay(specs: list[str], variants: list[str], dump: Path | None = None) -> dict:
+def cmd_replay(specs: list[str], variants: list[str], dump: Path | None = None, stored_pages: bool = False) -> dict:
     """Chạy cả pipeline trên bản gốc của các lần chạy đã lưu, với :class:`ReplayRecognizer` thay model.
 
-    ``specs``: ``id_lần_chạy[=đường_dẫn_ground_truth]`` (ground truth tương đối so với ``benchmark/``)."""
+    ``specs``: ``id_lần_chạy[=đường_dẫn_ground_truth]`` (ground truth tương đối so với ``benchmark/``). ``stored_pages``:
+    dùng ảnh trang đã tiền xử lý của lần chạy cũ (``pages/page-NNN.png``) với ``preprocess=false`` thay cho bản gốc, để bố
+    cục và ảnh cắt hệ trùng với lúc model thật đọc (tự bật với PDF khi máy không có PyMuPDF)."""
     from app import config  # noqa: PLC0415
     from app.omr.pipeline import run_omr_job  # noqa: PLC0415
     from app.schemas import JobRequest  # noqa: PLC0415
@@ -300,7 +362,12 @@ def cmd_replay(specs: list[str], variants: list[str], dump: Path | None = None) 
                 score_id = f"replay-{run_id[:8]}"
                 inputs = []
                 pdf_native = originals[0].suffix.lower() == ".pdf"
-                if pdf_native and not _has_pymupdf():
+                pages_dir = folder / "pages"
+                use_stored = (stored_pages or (pdf_native and not _has_pymupdf())) and any(pages_dir.glob("page-*.png"))
+                if use_stored:
+                    # Ảnh trang ĐÃ tiền xử lý của lần chạy cũ (đúng ảnh model thật đã đọc), không tiền xử lý lại
+                    originals = sorted(pages_dir.glob("page-*.png"))
+                elif pdf_native and not _has_pymupdf():
                     originals = _render_pdf_pdftoppm(originals[0], Path(tmp) / "rendered")
                 for page, src in enumerate(originals, start=1):
                     dest = Path(tmp) / "scores" / score_id / "original" / src.name
@@ -313,7 +380,7 @@ def cmd_replay(specs: list[str], variants: list[str], dump: Path | None = None) 
                 job = JobRequest(
                     taskId=str(uuid.uuid4()), scoreId=score_id, inputs=inputs,
                     options={"sourceType": "PDF_NATIVE" if pdf_native else "PHOTO", "stopAfter": "EXPORT",
-                             "musicXmlVersion": 1},
+                             "musicXmlVersion": 1, "preprocess": not use_stored},
                 )
                 recognizer = ReplayRecognizer(folder)
                 callback = RecordingCallback()
@@ -388,10 +455,13 @@ def _replay_details(folder: Path, callback: RecordingCallback, recognizer: Repla
         "imageMeasures": layout_bars,
         "lowConfidence": sum(1 for m in measures if (m.get("confidence") if m.get("confidence") is not None else 1.0) < 0.8),
         "flags": flags,
+        "modelCalls": len(recognizer.hits) + len(recognizer.misses),
+        "decodedTokens": recognizer.decoded,
         "replayHits": len(recognizer.hits),
         "replayMisses": len(recognizer.misses),
         "replayDrift": len(recognizer.drift),
         "replayMissed": recognizer.misses,
+        "replayReads": recognizer.hits,
     }
 
 
@@ -400,6 +470,16 @@ def _peak_rss_mb() -> float:
     chạy nối tiếp trong một tiến trình không so sánh RAM với nhau được."""
     peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
     return round(peak / (1024 * 1024 if sys.platform == "darwin" else 1024), 0)
+
+
+def _top_staves(score, staves: int):
+    """Ground truth chỉ chép ``staves`` khuông trên cùng (ví dụ chỉ bè giọng của bản giọng hát + piano): chỉ chấm các khuông
+    đó của kết quả (khuông đánh số từ trên xuống, bắt đầu 1)."""
+    if score.staves <= staves:
+        return score
+    from dataclasses import replace  # noqa: PLC0415
+
+    return replace(score, staves=staves, events=[e for e in score.events if e.staff <= staves])
 
 
 def _score_run(case: dict, variant: str, folder: Path, callback: RecordingCallback, seconds: float) -> dict:
@@ -421,17 +501,31 @@ def _score_run(case: dict, variant: str, folder: Path, callback: RecordingCallba
         kern = folder / "kern" / "merged.krn"
         xml = folder / "musicxml" / "v1.musicxml"
         if xml.is_file():
-            hyp = read_musicxml(xml.read_bytes())
+            hyp = _top_staves(read_musicxml(xml.read_bytes()), ref.staves)
             res = compare(ref, hyp)
             row.update({k: v for k, v in res.to_dict().items() if k in MUSIC_KEYS})
             row["output"] = "musicxml"
         elif kern.is_file():
-            row.update({k: v for k, v in compare(ref, load_score(kern)).to_dict().items() if k in MUSIC_KEYS})
+            hyp = _top_staves(load_score(kern), ref.staves)
+            row.update({k: v for k, v in compare(ref, hyp).to_dict().items() if k in MUSIC_KEYS})
             row["output"] = "kern"
     return row
 
 
 # ====================================================================== in kết quả
+
+
+def _print_timing(rows: list[dict]) -> None:
+    rows = [r for r in rows if "modelCalls" in r]
+    if not rows:
+        return
+    print("\ncase | variant | tổng giây | giây model | lượt gọi | theo loại (lượt/giây)")
+    for r in rows:
+        kinds = ", ".join(
+            f"{k} {v['calls']}/{v['seconds']:.0f}s" for k, v in sorted((r.get("modelByKind") or {}).items())
+        )
+        print(f"{r['case']} | {r.get('variant', '')} | {r['seconds']} | {r.get('modelSeconds', '-')} | "
+              f"{r['modelCalls']} | {kinds}")
 
 
 def _print_music(rows: list[dict]) -> None:
@@ -473,6 +567,8 @@ def main() -> None:
     parser.add_argument("--no-save", action="store_true")
     parser.add_argument("--score", action="append", default=[],
                         help="(chế độ replay) id_lần_chạy[=ground_truth.krn tương đối so với benchmark/], lặp lại được")
+    parser.add_argument("--stored-pages", action="store_true", help="(chế độ replay) dùng ảnh trang đã tiền xử lý của "
+                        "lần chạy cũ thay cho bản gốc (tự bật với PDF khi không có PyMuPDF)")
     parser.add_argument("--dump", type=Path, help="(chế độ replay) chép kết quả từng lần chạy (kern, MusicXML, bố cục, "
                         "callback) vào thư mục này để xem lại")
     args = parser.parse_args()
@@ -482,7 +578,7 @@ def main() -> None:
     if args.mode == "stored":
         report = cmd_stored(cases)
     elif args.mode == "replay":
-        report = cmd_replay(args.score, args.variant, args.dump)
+        report = cmd_replay(args.score, args.variant, args.dump, args.stored_pages)
     else:
         report = cmd_run(cases, args.variant)
     if not args.no_save:

@@ -9,8 +9,13 @@ kết quả khác và ghi cảnh báo):
 
 * các luồng phải có **cùng số ô nhịp** (hai ảnh độc lập cùng đếm ra số ô là một phép kiểm chéo tốt);
 * ô nhịp có dòng diễn giải giữa chừng (đổi khóa/nhịp) hoặc đang tách/gộp spine (``*^``/``*v``) thì không ghép được;
-* ô nhịp mà trường độ một luồng khác luồng đầu (luồng đầu là piano, phần model đọc tốt nhất) thì luồng đó được thay bằng
-  một dấu lặng trọn ô kèm cảnh báo, thay vì để dòng ``.`` treo.
+* ô nhịp mà trường độ một luồng khác luồng đầu (luồng đầu là piano): GIỮ NGUYÊN nốt của mọi luồng (ô đó sẽ bị gắn cờ
+  trường độ để người dùng kiểm tra) vì lệch thường chỉ do một nhóm liên ba/chấm dôi đọc sai, còn thay cả khuông bằng
+  dấu lặng thì mất hết nốt (và trước đây, khi dấu lặng không viết được, cả lượt ghép bị bỏ, kết quả cuối còn tệ hơn:
+  khuông trống độn lên trên cùng, giai điệu bị đẩy sang cột piano). Chỉ thay bằng dấu lặng trọn ô khi luồng đó rỗng hoặc
+  dài gấp đôi trở lên (gần như chắc là đọc rác);
+* luồng toàn dấu lặng (khuông giọng im trong đoạn dạo đầu) mà số ô khác luồng đầu thì được dựng lại thành dấu lặng trọn
+  ô theo từng ô của luồng đầu: model hay gộp nhiều ô nghỉ liền nhau thành một.
 """
 
 from __future__ import annotations
@@ -119,6 +124,26 @@ def _rest_stream(width: int, duration: Fraction) -> Optional[tuple[list[tuple[Fr
     return [(Fraction(0), [token] * width)], duration
 
 
+def _rests_like(
+    item: tuple[list[str], list[list[str]], Optional[str]], reference: list[list[str]], width: int, ref_width: int
+) -> tuple[list[str], list[list[str]], Optional[str]]:
+    """Luồng toàn dấu lặng dựng lại theo số ô và trường độ từng ô của luồng ``reference``; luồng có nốt thì giữ nguyên."""
+    prologue, segments, final = item
+    for rows in segments:
+        for row in rows:
+            for token in row.split(TAB):
+                if token != "." and "r" not in token and merge.token_duration(token):
+                    return item
+    rebuilt: list[list[str]] = []
+    for rows in reference:
+        _, total = row_onsets(rows, ref_width)
+        token = merge.rest_token(total)
+        if token is None:
+            return item
+        rebuilt.append([TAB.join([token] * width)])
+    return prologue, rebuilt, final
+
+
 def combine_streams(streams: list[PageKern], number: int) -> tuple[PageKern, list[str]]:
     """Ghép ``streams`` (thứ tự cột từ trái sang phải, tức khuông dưới lên trên) thành kern một hệ.
 
@@ -129,10 +154,17 @@ def combine_streams(streams: list[PageKern], number: int) -> tuple[PageKern, lis
     widths = [stream.spines for stream in streams]
     parsed = [split_measures(stream) for stream in streams]
     counts = [len(segments) for _, segments, _ in parsed]
+    if counts[0] and len(set(counts)) != 1:
+        parsed = [
+            _rests_like(item, parsed[0][1], width, widths[0]) if index and counts[index] != counts[0] else item
+            for index, (item, width) in enumerate(zip(parsed, widths))
+        ]
+        counts = [len(segments) for _, segments, _ in parsed]
     if len(set(counts)) != 1 or counts[0] == 0:
         raise CombineError(f"các ảnh cắt riêng cho số ô nhịp khác nhau {counts}")
 
     warnings: list[str] = []
+    kept = 0
     body = _combine_prologue([p for p, _, _ in parsed], widths)
     mismatched = 0
     for index in range(counts[0]):
@@ -141,12 +173,17 @@ def combine_streams(streams: list[PageKern], number: int) -> tuple[PageKern, lis
         if target <= 0:
             raise CombineError(f"ô nhịp {index + 1}: luồng đầu không có trường độ")
         for position in range(1, len(timed)):
-            if timed[position][1] != target:
-                replacement = _rest_stream(widths[position], target)
-                if replacement is None:
-                    raise CombineError(f"ô nhịp {index + 1}: trường độ lệch giữa các ảnh cắt riêng và không bù được")
-                timed[position] = replacement
-                mismatched += 1
+            total = timed[position][1]
+            if total == target:
+                continue
+            if 0 < total < 2 * target:
+                kept += 1  # giữ nốt, ô sẽ bị gắn cờ trường độ
+                continue
+            replacement = _rest_stream(widths[position], target)
+            if replacement is None:
+                raise CombineError(f"ô nhịp {index + 1}: trường độ lệch giữa các ảnh cắt riêng và không bù được")
+            timed[position] = replacement
+            mismatched += 1
 
         onsets = sorted({onset for rows, _ in timed for onset, _ in rows})
         for onset in onsets:
@@ -160,6 +197,10 @@ def combine_streams(streams: list[PageKern], number: int) -> tuple[PageKern, lis
         final = parsed[0][2] if last and parsed[0][2] and parsed[0][2].startswith("==") else "="
         body.append(TAB.join([final] * sum(widths)))
 
+    if kept:
+        warnings.append(
+            f"{kept} ô nhịp có trường độ lệch giữa khuông giọng và piano khi đọc riêng, đã giữ nguyên nốt (cần kiểm tra)"
+        )
     if mismatched:
         warnings.append(
             f"{mismatched} ô nhịp có trường độ lệch giữa khuông giọng và piano khi đọc riêng, "

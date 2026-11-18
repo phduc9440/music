@@ -115,6 +115,12 @@ class Settings:
     """Hệ vẫn sai số spine thì thử lại bằng beam search với số beam này (bài báo dùng 3). 0 hoặc 1: không thử lại.
     Đặt bằng ``ROUTING_RETRY_BEAMS``."""
 
+    routing_roles_first: bool = True
+    """Hệ giọng hát + piano được đọc riêng (piano 2 khuông, khuông giọng) NGAY từ đầu khi nhận diện lại theo hệ, thay vì đọc
+    cả hệ 3 khuông trước: Transcoda chỉ được train trên piano nên đọc cả hệ 3 khuông chỉ đúng số spine 12/30 lần (đọc lại
+    beam 3: 14/23) trong storage, còn đọc riêng đúng 27/27. Kết quả ghép không đạt (sai số spine, mất nốt, lệch số ô trên
+    ảnh) thì vẫn đọc cả hệ như cũ. Tắt bằng ``OMR_ROLES_FIRST=0``."""
+
     strip_text: bool = True
     """Xóa lời ca, tên hợp âm và các chữ khác ngoài khuông khỏi ảnh trước khi đưa vào Transcoda (``app/omr/textstrip.py``).
     Model chỉ được train trên nhạc piano không chữ nên lời ca làm nó lạc chỗ/đoán sai. Tắt bằng ``OMR_STRIP_TEXT=0``."""
@@ -229,6 +235,7 @@ def get_settings() -> Settings:
         routing_measures=os.environ.get("OMR_ROUTING_MEASURES", "").strip().lower() in ("1", "true", "yes", "on"),
         routing_bars=_bool_env("OMR_ROUTING_BARS", True),
         routing_retry_beams=max(0, _int_env("ROUTING_RETRY_BEAMS", 3)),
+        routing_roles_first=_bool_env("OMR_ROLES_FIRST", True),
         strip_text=_bool_env("OMR_STRIP_TEXT", True),
         routing_reserve_s=max(0, _int_env("ROUTING_RESERVE_S", 30)),
         music_engine=(os.environ.get("OMR_ENGINE", "").strip() or "transcoda").lower(),
