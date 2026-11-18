@@ -104,3 +104,12 @@ def test_apply_leaves_result_untouched_without_images():
     result = merge.MergeResult(text="**kern\n4c\n*-\n", spines=1, lines=["4c"], line_pages=[1], header="**kern")
     out, report = pc.apply(result, {}, {})
     assert out is result and report.fixed == 0 and report.skipped
+
+
+def test_context_fix_pulls_unseen_note_from_extreme_octave():
+    # kern: C5 D5 E5 F7(ảnh không thấy) G5 A5 B5; ảnh chỉ có 6 nốt
+    notes = [("c", 5), ("d", 5), ("e", 5), ("f", 7), ("g", 5), ("a", 5), ("b", 5)]
+    kern = [pc._Event(l, o, i, 0, 0) for i, (l, o) in enumerate(notes)]
+    image = [pc._diatonic_of(l, o) for l, o in notes if (l, o) != ("f", 7)]
+    fixes, _miss, reason = pc.plan_fixes(image, kern)
+    assert reason is None and [(f.line, f.octave) for f in fixes] == [(3, 5)]

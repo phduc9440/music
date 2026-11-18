@@ -354,7 +354,32 @@ def plan_fixes(image: list[int], kern: list[_Event]) -> tuple[list[Fix], int, Op
         delta = octave - event.octave
         if delta != 0 and abs(delta) <= MAX_OCTAVE_SHIFT:
             fixes.append(Fix(event.line, event.column, event.sub, octave))
+    fixes.extend(_context_fixes(kern, {j for _i, j in same}, fixes))
     return fixes, len(pairs) - len(same), None
+
+
+def _context_fixes(kern: list[_Event], anchored: set[int], fixes: list[Fix]) -> list[Fix]:
+    """Nốt kern không ghép được với ảnh (thường là nốt trắng/tròn ảnh chưa thấy) mà nằm ở quãng tám bất thường
+    (>= 6 hoặc <= 2) thì kéo về quãng tám gần các nốt đã ghép đứng trước/sau nó nhất."""
+    octave_of = {j: kern[j].octave for j in range(len(kern))}
+    by_key = {(f.line, f.column, f.sub): f.octave for f in fixes}
+    for j, event in enumerate(kern):
+        if (event.line, event.column, event.sub) in by_key:
+            octave_of[j] = by_key[(event.line, event.column, event.sub)]
+    out: list[Fix] = []
+    for j, event in enumerate(kern):
+        if j in anchored or 3 <= event.octave <= 5:
+            continue
+        before = next((k for k in range(j - 1, -1, -1) if k in anchored), None)
+        after = next((k for k in range(j + 1, len(kern)) if k in anchored), None)
+        context = [_diatonic_of(kern[k].letter, octave_of[k]) for k in (before, after) if k is not None]
+        if not context:
+            continue
+        center = sum(context) / len(context)
+        best = min(range(3, 6), key=lambda o: abs(_diatonic_of(event.letter, o) - center))
+        if best != event.octave and abs(best - event.octave) <= MAX_OCTAVE_SHIFT:
+            out.append(Fix(event.line, event.column, event.sub, best))
+    return out
 
 
 def _apply(lines: list[str], fixes: list[Fix]) -> list[str]:
@@ -433,15 +458,4 @@ def apply(
             report.notes.append(f"Trang {page}: sửa quãng tám {count} nốt theo vị trí đầu nốt trên ảnh")
     if report.fixed == 0:
         return result, report
-    text = "\n".join([result.header, *lines, "*-" if result.spines == 1 else TAB.join(["*-"] * result.spines)]) + "\n"
-    return (
-        merge.MergeResult(
-            text=text,
-            spines=result.spines,
-            warnings=list(result.warnings),
-            line_pages=list(result.line_pages),
-            lines=lines,
-            header=result.header,
-        ),
-        report,
-    )
+    return merge.with_lines(result, lines), report

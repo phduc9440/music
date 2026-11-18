@@ -91,7 +91,8 @@ Bên Spring Boot đặt `AI_INTERNAL_KEY` trùng với `INTERNAL_KEY` ở đây 
 | `ROUTING_RESERVE_S` | `30` | Giây giữ lại cho bước ghép/xuất: nhận diện lại chỉ chạy khi job còn nhiều thời gian hơn mức này |
 | `OMR_ENGINE` | `transcoda` | Engine nhận diện ký hiệu nhạc (`app/omr/engines.py`). `command`: chạy lệnh ngoài `OMR_ENGINE_COMMAND` (có `{image}`, `{output}`, `{beams}`) để thử model khác |
 | `OMR_OTTAVA` | `auto` | `auto`: bỏ `*8va`/`*8ba` model tự thêm trên khuông giọng hát/khuông đơn, đưa nốt về đúng quãng tám in trên ảnh (trong phạm vi từng lần đọc). `drop`: mọi khuông. `keep`: như cũ |
-| `OMR_PITCH_CHECK` | `1` | Căn đầu nốt tìm được trên ảnh (OpenCV) với nốt kern theo tên nốt, rồi sửa quãng tám cho nốt đúng tên nhưng lệch quãng tám. Không đổi tên nốt, tự bỏ qua khi ảnh/kern khớp kém, khuông không phải khóa Sol hoặc số khuông khác số spine (`app/omr/pitch_check.py`) |
+| `OMR_PITCH_CHECK` | `1` | Căn đầu nốt tìm được trên ảnh (OpenCV) với nốt kern theo tên nốt, rồi sửa quãng tám cho nốt đúng tên nhưng lệch quãng tám. Không đổi tên nốt, tự bỏ qua khi ảnh/kern khớp kém, khuông không phải khóa Sol hoặc số khuông khác số spine (`app/omr/pitch_check.py`). Nốt ảnh không thấy (thường là nốt trắng) mà ở quãng tám bất thường (>= 6 hoặc <= 2) thì kéo về gần các nốt bên cạnh |
+| `OMR_RHYTHM_FIX` | `1` | Ô sai tổng trường độ mà đổi nhịp ba về thường (`12`->`8`, `6`->`4`...) thì đúng nhịp: đổi. Bỏ nốt con của hợp âm dài hơn cả ô (`2c 1a` trong 2/4). Ô đúng sẵn không đụng tới (`app/omr/rhythm_fix.py`) |
 | `OMR_TTA` | `2` | Số lần đọc lại (ảnh dịch lên/xuống vài pixel) mỗi hệ có ô nghi ngờ; `0`: tắt. Từ 2 trở lên mới tự thay ô. Xem "Độ tin cậy từng ô" |
 | `OMR_TTA_SHIFT_PX` | `3` | Độ dịch ảnh giữa các lần đọc lại (pixel trên ảnh 1050x1485) |
 | `OMR_TTA_MAX_SYSTEMS` | `4` | Tối đa số hệ được đọc lại mỗi job |

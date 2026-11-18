@@ -38,7 +38,7 @@ from app.config import Settings, get_settings
 from app.convert.errors import ConversionError
 from app.convert.kern import kern_file_to_musicxml_file
 from app.convert.midi import musicxml_file_to_midi_file
-from app.omr import kern_check, llm_check, measure_map, merge, ottava, pitch_check, review, routing, stability
+from app.omr import kern_check, llm_check, measure_map, merge, ottava, pitch_check, review, rhythm_fix, routing, stability
 from app.omr.layout import PageLayout, analyze_layout
 from app.omr.pdf import iter_pdf_pages
 from app.omr.preprocess import PreprocessOptions, UnreadablePage, load_image_gray, process_page
@@ -743,6 +743,18 @@ def _check_pitch(ctx: JobContext, merged: merge.MergeResult) -> merge.MergeResul
     return merged
 
 
+def _fix_rhythm(ctx: JobContext, merged: merge.MergeResult) -> merge.MergeResult:
+    """Sửa nhịp ba đọc nhầm và nốt thừa trong hợp âm (:mod:`app.omr.rhythm_fix`). Lỗi ở đây không làm hỏng job."""
+    if not ctx.settings.rhythm_fix:
+        return merged
+    try:
+        merged, report = rhythm_fix.apply(merged)
+        ctx.warnings.extend(report.notes)
+    except Exception:  # noqa: BLE001 - chỉ là bước sửa thêm
+        log.exception("Job %s: lỗi khi sửa trường độ", ctx.task_id)
+    return merged
+
+
 def _review_images(ctx: JobContext, measures: list[dict]) -> dict[int, np.ndarray]:
     """Ảnh trang (đã tiền xử lý) của các trang có ô nghi ngờ."""
     wanted = {m["page"] for m in measures if m.get("confidence", 1.0) < review.REVIEW_THRESHOLD}
@@ -861,6 +873,7 @@ def _merge_pages(ctx: JobContext, pages: list[merge.PageKern]) -> Optional[tuple
         merged = merge.annotate_roles(merged, ctx.staff_roles)
     ctx.warnings.extend(merged.warnings)
     merged = _check_pitch(ctx, merged)
+    merged = _fix_rhythm(ctx, merged)
     measures, check, merged = _review_measures(ctx, merged, pages)
     ctx.warnings.extend(merge.check_measures(merged))
     if ctx.staff_roles is None and merged.spines not in (2, 3):  # 2 = piano, 3 = giọng + piano

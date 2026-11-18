@@ -134,6 +134,10 @@ class Settings:
     """Sửa quãng tám theo vị trí đầu nốt trên ảnh (``app/omr/pitch_check.py``): Transcoda hay lệch 1-3 quãng tám nhưng tên
     nốt thì đúng. Tắt bằng ``OMR_PITCH_CHECK=0``."""
 
+    rhythm_fix: bool = True
+    """Đổi trường độ nhịp ba đọc nhầm (``12`` -> ``8``) khi ô thành đúng số chỉ nhịp, bỏ nốt hợp âm dài hơn cả ô
+    (``app/omr/rhythm_fix.py``). Tắt bằng ``OMR_RHYTHM_FIX=0``."""
+
     routing_reserve_s: int = 30
     """Giây giữ lại cho bước ghép và xuất: nhận diện lại chỉ chạy khi job còn nhiều thời gian hơn mức này, nên không bao
     giờ làm job quá hạn. Đặt bằng ``ROUTING_RESERVE_S``."""
@@ -230,6 +234,7 @@ def get_settings() -> Settings:
         music_engine=(os.environ.get("OMR_ENGINE", "").strip() or "transcoda").lower(),
         engine_command=os.environ.get("OMR_ENGINE_COMMAND", "").strip(),
         pitch_check=_bool_env("OMR_PITCH_CHECK", True),
+        rhythm_fix=_bool_env("OMR_RHYTHM_FIX", True),
         ottava=_choice_env("OMR_OTTAVA", "auto", ("auto", "drop", "keep")),
         tta_reads=max(0, _int_env("OMR_TTA", 2)),
         tta_shift_px=max(1, _int_env("OMR_TTA_SHIFT_PX", 3)),

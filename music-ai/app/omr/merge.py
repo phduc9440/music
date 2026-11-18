@@ -903,6 +903,20 @@ def annotate_roles(result: MergeResult, roles_top_down: list[str], piano_role: s
 # ====================================================================== trường độ & kiểm tra ô nhịp
 
 
+def with_lines(result: MergeResult, lines: list[str]) -> MergeResult:
+    """Bản sao của ``result`` với phần thân mới (cùng số dòng, cùng số spine)."""
+    end = "*-" if result.spines == 1 else TAB.join(["*-"] * result.spines)
+    text = "\n".join([result.header, *lines, end]) + "\n"
+    return MergeResult(
+        text=text,
+        spines=result.spines,
+        warnings=list(result.warnings),
+        line_pages=list(result.line_pages),
+        lines=list(lines),
+        header=result.header,
+    )
+
+
 def token_duration(token: str) -> Optional[Fraction]:
     """Trường độ (tính theo nốt tròn) của một token dữ liệu kern, hoặc None nếu không có/không tính (``.``, nốt trang
     trí). Hợp âm (các nốt cách nhau bằng dấu cách) lấy nốt đầu."""
