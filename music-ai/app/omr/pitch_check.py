@@ -5,12 +5,15 @@ các luật lý thuyết của ``review.py`` không bắt được lệch 1 quã
 đọc khá đúng, còn cao độ thật thì đọc được thẳng từ vị trí đầu nốt so với 5 dòng kẻ. Module này:
 
 1. tìm đầu nốt trên ảnh (bỏ dòng kẻ, bỏ gạch ngang beam, lấp lỗ đầu nốt rỗng, mở hình thái bằng elip cỡ đầu nốt);
-2. đổi vị trí khuông -> (tên nốt, quãng tám) cho khóa Sol;
-3. căn chuỗi đầu nốt trên ảnh với chuỗi nốt kern bằng quy hoạch động (ghép theo *tên nốt*);
+2. đổi vị trí khuông -> (tên nốt, quãng tám) theo khóa của spine (khóa Sol hoặc khóa Fa); mỗi đầu nốt chỉ thuộc khuông gần
+   nó nhất (nốt có dòng kẻ phụ ở khe giữa hai khuông không bị tính cho cả hai);
+3. căn chuỗi đầu nốt trên ảnh với chuỗi nốt kern bằng quy hoạch động (ghép theo *tên nốt*, ưu tiên cặp trùng cả quãng
+   tám để một vết beam/chữ cùng tên nốt không kéo một nốt đúng sang quãng tám khác);
 4. với cặp ghép đúng tên nốt nhưng khác quãng tám thì sửa quãng tám theo ảnh; cặp khác tên nốt chỉ được đếm (không sửa).
 
-Có hàng rào: bỏ qua khuông không phải khóa Sol, số khuông không khớp số spine, hoặc tỉ lệ khớp tên nốt thấp (ảnh/kern
-không cùng một bản nhạc, đọc ảnh hỏng). Mọi thứ chạy trên ảnh trang đã tiền xử lý, cùng hệ tọa độ với ``layout``.
+Có hàng rào: bỏ qua spine có khóa khác Sol/Fa hoặc đổi khóa giữa trang, số khuông không khớp số spine, hoặc tỉ lệ khớp
+tên nốt thấp (ảnh/kern không cùng một bản nhạc, đọc ảnh hỏng). Sửa cả tên nốt theo ô (:func:`fix_measures`) vẫn chỉ dành
+cho bản một khuông khóa Sol. Mọi thứ chạy trên ảnh trang đã tiền xử lý, cùng hệ tọa độ với ``layout``.
 """
 
 from __future__ import annotations
@@ -205,6 +208,14 @@ def _fill_split_heads(ink: np.ndarray, layout: PageLayout) -> np.ndarray:
     return out
 
 
+def _nearest_staff(staves: list[Staff], y: float) -> int:
+    """Chỉ số khuông gần ``y`` nhất (khoảng cách tới dải dòng kẻ, 0 nếu nằm trong khuông)."""
+    def distance(staff: Staff) -> float:
+        return max(0.0, staff.top - y, y - staff.bottom)
+
+    return min(range(len(staves)), key=lambda k: distance(staves[k]))
+
+
 def find_heads(gray: np.ndarray, layout: PageLayout) -> list[Head]:
     il = layout.interline
     # Lấp lòng nốt trắng TRƯỚC khi xóa dòng kẻ: dòng kẻ cắt ngang lòng nốt thành hai nửa kín, xóa dòng rồi thì vòng
@@ -233,6 +244,8 @@ def find_heads(gray: np.ndarray, layout: PageLayout) -> list[Head]:
                 cy, cx = y + bh / 2.0, x + bw / 2.0
                 if not (lo <= cy <= hi) or cx < start:
                     continue
+                if _nearest_staff(system.staves, cy) != ti:
+                    continue  # nốt có dòng kẻ phụ ở khe giữa hai khuông chỉ thuộc khuông gần nó hơn
                 if area < 0.3 * il * il or bw > 2.4 * il or bh > 4.5 * il or bw < 0.7 * il or bh < 0.55 * il:
                     continue
                 if area / float(bw * bh) < 0.6:
@@ -258,9 +271,16 @@ def find_heads(gray: np.ndarray, layout: PageLayout) -> list[Head]:
 # ---------------------------------------------------------------------------------------------- khóa Sol
 
 
-def _diatonic_from_step(step: int) -> int:
-    """Số bậc diatonic tuyệt đối (C0 = 0). Khóa Sol: dòng dưới cùng là Mi4."""
-    return 7 * 4 + 2 + step
+_CLEF_BOTTOM = {"G2": 7 * 4 + 2, "F4": 7 * 2 + 4}
+"""Bậc diatonic tuyệt đối (C0 = 0) của dòng kẻ dưới cùng theo khóa: khóa Sol là Mi4, khóa Fa là Sol2."""
+
+_CLEF_OCTAVES = {"G2": (3, 5), "F4": (2, 4)}
+"""Quãng tám coi là bình thường của nốt trên khuông theo khóa (dùng khi kéo nốt không ghép được về gần nốt bên cạnh)."""
+
+
+def _diatonic_from_step(step: int, clef: str = "G2") -> int:
+    """Số bậc diatonic tuyệt đối (C0 = 0) của vị trí ``step`` trên khuông có khóa ``clef`` (``G2`` hoặc ``F4``)."""
+    return _CLEF_BOTTOM[clef] + step
 
 
 def _diatonic_of(letter: str, octave: int) -> int:
@@ -299,9 +319,10 @@ class _Event:
     """Chỉ số nốt con trong token (hợp âm tách bằng dấu cách)."""
 
 
-def _kern_events(lines: list[str], spines: int) -> dict[int, list[_Event]]:
-    """Nốt của từng spine theo thứ tự thời gian; chỉ lấy đoạn khóa Sol (spine đổi sang khóa khác thì bỏ nốt đó)."""
-    clefs: dict[int, str] = {}
+def _kern_events(lines: list[str], spines: int, clefs: Optional[dict[int, str]] = None) -> dict[int, list[_Event]]:
+    """Nốt của từng spine theo thứ tự thời gian. Chỉ nhận spine có MỘT khóa trong cả trang và là khóa Sol hoặc khóa Fa
+    (spine đổi khóa giữa trang, khóa khác, bị bỏ). ``clefs`` (nếu truyền) nhận khóa của từng spine được nhận."""
+    clefs = {} if clefs is None else clefs
     out: dict[int, list[_Event]] = {c: [] for c in range(spines)}
     unsupported: set[int] = set()
     for index, line in enumerate(lines):
@@ -314,12 +335,13 @@ def _kern_events(lines: list[str], spines: int) -> dict[int, list[_Event]]:
             for column, cell in enumerate(cells):
                 match = _RE_CLEF.match(cell)
                 if match:
-                    clefs[column] = match.group(1) + match.group(2)
-                    if clefs[column] != "G2":
+                    clef = match.group(1) + match.group(2)
+                    if clef not in _CLEF_BOTTOM or (column in clefs and clefs[column] != clef):
                         unsupported.add(column)
+                    clefs[column] = clef
             continue
         for column, cell in enumerate(cells):
-            if column in unsupported or clefs.get(column, "G2") != "G2" or cell == ".":
+            if column in unsupported or clefs.get(column, "G2") not in _CLEF_BOTTOM or cell == ".":
                 continue
             subs = [(k, s) for k, s in enumerate(cell.split(" ")) if _kern_pitch(s)]
             subs.sort(key=lambda ks: _diatonic_of(*_kern_pitch(ks[1])))  # type: ignore[misc]
@@ -329,20 +351,23 @@ def _kern_events(lines: list[str], spines: int) -> dict[int, list[_Event]]:
                 out[column].append(_Event(pitch[0], pitch[1], index, column, k))
     for column in unsupported:
         out[column] = []
+        clefs.pop(column, None)
+    for column in range(spines):
+        clefs.setdefault(column, "G2")
     return out
 
 
 # ---------------------------------------------------------------------------------------------- căn chuỗi
 
 
-def _head_sequence(heads: list[Head], il: float) -> list[int]:
+def _head_sequence(heads: list[Head], il: float, clef: str = "G2") -> list[int]:
     """Số bậc diatonic của đầu nốt theo thứ tự hệ -> x; cùng x thì xếp từ thấp lên cao (như thứ tự trong hợp âm)."""
     ordered = sorted(heads, key=lambda hd: (hd.system, hd.x))
     out: list[int] = []
     group: list[Head] = []
 
     def flush() -> None:
-        out.extend(sorted(_diatonic_from_step(hd.step) for hd in group))
+        out.extend(sorted(_diatonic_from_step(hd.step, clef) for hd in group))
         group.clear()
 
     for head in ordered:
@@ -353,8 +378,23 @@ def _head_sequence(heads: list[Head], il: float) -> list[int]:
     return out
 
 
+_OCTAVE_COST = 0.1
+"""Chi phí ghép hai nốt cùng tên khác quãng tám. Nhỏ hơn hẳn chi phí khác tên nhưng lớn hơn 0: khi có hai đầu nốt cùng tên
+gần nhau (một đầu nốt thật, một vết beam/chữ bị nhận nhầm), phép căn chọn đầu nốt đúng cả quãng tám thay vì sửa nhầm quãng
+tám của một nốt đúng."""
+
+
+def _pair_cost(image_degree: int, event: _Event, mismatch: float) -> float:
+    if image_degree == _diatonic_of(event.letter, event.octave):
+        return 0.0
+    if image_degree % 7 == _LETTERS.index(event.letter):
+        return _OCTAVE_COST
+    return mismatch
+
+
 def align(image: list[int], kern: list[_Event]) -> list[tuple[int, int]]:
-    """Quy hoạch động (kiểu Needleman-Wunsch) ghép đầu nốt ảnh với nốt kern theo tên nốt. Trả các cặp ``(i, j)``."""
+    """Quy hoạch động (kiểu Needleman-Wunsch) ghép đầu nốt ảnh với nốt kern theo tên nốt (ưu tiên trùng cả quãng tám).
+    Trả các cặp ``(i, j)``."""
     n, m = len(image), len(kern)
     gap = 1.0
     sub_mismatch = 1.6
@@ -363,14 +403,12 @@ def align(image: list[int], kern: list[_Event]) -> list[tuple[int, int]]:
     cost[0, :] = np.arange(m + 1) * gap
     for i in range(1, n + 1):
         for j in range(1, m + 1):
-            same = (image[i - 1] % 7) == _LETTERS.index(kern[j - 1].letter)
-            diag = cost[i - 1, j - 1] + (0.0 if same else sub_mismatch)
+            diag = cost[i - 1, j - 1] + _pair_cost(image[i - 1], kern[j - 1], sub_mismatch)
             cost[i, j] = min(diag, cost[i - 1, j] + gap, cost[i, j - 1] + gap)
     pairs: list[tuple[int, int]] = []
     i, j = n, m
     while i > 0 and j > 0:
-        same = (image[i - 1] % 7) == _LETTERS.index(kern[j - 1].letter)
-        if abs(cost[i, j] - (cost[i - 1, j - 1] + (0.0 if same else sub_mismatch))) < 1e-9:
+        if abs(cost[i, j] - (cost[i - 1, j - 1] + _pair_cost(image[i - 1], kern[j - 1], sub_mismatch))) < 1e-9:
             pairs.append((i - 1, j - 1))
             i, j = i - 1, j - 1
         elif abs(cost[i, j] - (cost[i - 1, j] + gap)) < 1e-9:
@@ -389,7 +427,7 @@ class Fix:
     octave: int
 
 
-def plan_fixes(image: list[int], kern: list[_Event]) -> tuple[list[Fix], int, Optional[str]]:
+def plan_fixes(image: list[int], kern: list[_Event], clef: str = "G2") -> tuple[list[Fix], int, Optional[str]]:
     """``(sửa, số cặp khác tên nốt, lý do bỏ qua)``. Lý do bỏ qua khác None nghĩa là không sửa gì."""
     if len(kern) < MIN_NOTES or len(image) < MIN_NOTES:
         return [], 0, "quá ít nốt"
@@ -408,13 +446,14 @@ def plan_fixes(image: list[int], kern: list[_Event]) -> tuple[list[Fix], int, Op
         delta = octave - event.octave
         if delta != 0 and abs(delta) <= MAX_OCTAVE_SHIFT:
             fixes.append(Fix(event.line, event.column, event.sub, octave))
-    fixes.extend(_context_fixes(kern, {j for _i, j in same}, fixes))
+    fixes.extend(_context_fixes(kern, {j for _i, j in same}, fixes, clef))
     return fixes, len(pairs) - len(same), None
 
 
-def _context_fixes(kern: list[_Event], anchored: set[int], fixes: list[Fix]) -> list[Fix]:
-    """Nốt kern không ghép được với ảnh (thường là nốt trắng/tròn ảnh chưa thấy) mà nằm ở quãng tám bất thường
-    (>= 6 hoặc <= 2) thì kéo về quãng tám gần các nốt đã ghép đứng trước/sau nó nhất."""
+def _context_fixes(kern: list[_Event], anchored: set[int], fixes: list[Fix], clef: str = "G2") -> list[Fix]:
+    """Nốt kern không ghép được với ảnh (thường là nốt trắng/tròn ảnh chưa thấy) mà nằm ở quãng tám bất thường so với
+    khóa (khóa Sol: ngoài 3-5, khóa Fa: ngoài 2-4) thì kéo về quãng tám gần các nốt đã ghép đứng trước/sau nó nhất."""
+    low, high = _CLEF_OCTAVES.get(clef, (3, 5))
     octave_of = {j: kern[j].octave for j in range(len(kern))}
     by_key = {(f.line, f.column, f.sub): f.octave for f in fixes}
     for j, event in enumerate(kern):
@@ -422,7 +461,7 @@ def _context_fixes(kern: list[_Event], anchored: set[int], fixes: list[Fix]) -> 
             octave_of[j] = by_key[(event.line, event.column, event.sub)]
     out: list[Fix] = []
     for j, event in enumerate(kern):
-        if j in anchored or 3 <= event.octave <= 5:
+        if j in anchored or low <= event.octave <= high:
             continue
         before = next((k for k in range(j - 1, -1, -1) if k in anchored), None)
         after = next((k for k in range(j + 1, len(kern)) if k in anchored), None)
@@ -430,7 +469,7 @@ def _context_fixes(kern: list[_Event], anchored: set[int], fixes: list[Fix]) -> 
         if not context:
             continue
         center = sum(context) / len(context)
-        best = min(range(3, 6), key=lambda o: abs(_diatonic_of(event.letter, o) - center))
+        best = min(range(low, high + 1), key=lambda o: abs(_diatonic_of(event.letter, o) - center))
         if best != event.octave and abs(best - event.octave) <= MAX_OCTAVE_SHIFT:
             out.append(Fix(event.line, event.column, event.sub, best))
     return out
@@ -559,17 +598,19 @@ def check_page(
     rewritten = 0
     if spines == 1:
         lines, rewritten, _why = fix_measures(lines, heads, layout)
-    events = _kern_events(lines, spines)
+    clefs: dict[int, str] = {}
+    events = _kern_events(lines, spines, clefs)
     fixes: list[Fix] = []
     mismatched = 0
     reasons: list[str] = []
     for column in range(spines):
         if not events[column]:
-            reasons.append(f"spine {column + 1}: khóa khác Sol hoặc không có nốt")
+            reasons.append(f"spine {column + 1}: khóa không hỗ trợ (chỉ Sol/Fa, không đổi khóa giữa trang) hoặc không có nốt")
             continue
         staff_index = spines - 1 - column  # spine 1 của kern là khuông DƯỚI cùng
         sub = [hd for hd in heads if hd.staff == staff_index]
-        plan, miss, reason = plan_fixes(_head_sequence(sub, il), events[column])
+        clef = clefs[column]
+        plan, miss, reason = plan_fixes(_head_sequence(sub, il, clef), events[column], clef)
         mismatched += miss
         if reason:
             reasons.append(f"spine {column + 1}: {reason}")

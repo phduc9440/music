@@ -689,8 +689,11 @@ def _review_measures(
     đây chỉ làm mất phần chấm điểm, không làm hỏng job (trừ hủy/hết hạn).
     """
     try:
-        measures, check = measure_map.build(merged, pages, ctx.layouts, ctx.system_counts)
+        estimated = _estimate_system_counts(ctx, merged, pages)
+        measures, check = measure_map.build(merged, pages, ctx.layouts, {**estimated, **ctx.system_counts})
         check["pagesRerouted"] = sum(1 for r in ctx.routing if r.get("chosen") == routing.SOURCE_SYSTEMS)
+        if estimated:
+            check["pagesAlignedByNotes"] = sorted(estimated)
     except Exception:  # noqa: BLE001 - bản đồ ô chỉ để hiển thị, không được làm hỏng job
         log.exception("Job %s: không lập được bản đồ ô nhịp", ctx.task_id)
         return [], None, merged
@@ -720,6 +723,38 @@ def _review_measures(
     except Exception:  # noqa: BLE001 - chấm điểm chỉ là thông tin thêm
         log.exception("Job %s: lỗi khi chấm tin cậy ô nhịp", ctx.task_id)
     return review.public_entries(measures), check, merged
+
+
+def _estimate_system_counts(
+    ctx: JobContext, merged: merge.MergeResult, pages: list[merge.PageKern]
+) -> dict[int, list[Optional[int]]]:
+    """Trang đọc cả trang mà số ô kern khác số ô trên ảnh: căn từng ô theo số đầu nốt để biết ô nào thuộc hệ nào
+    (:func:`measure_map.estimate_system_counts`), nhờ vậy chỉ hệ có chỗ thừa/thiếu ô bị đánh dấu và đọc lại. Lỗi thì bỏ qua."""
+    out: dict[int, list[Optional[int]]] = {}
+    ranges = {r["page"]: r for r in merge.page_measure_ranges(merged)}
+    for page in pages:
+        number = page.number
+        layout = ctx.layouts.get(number)
+        span = ranges.get(number)
+        if number in ctx.system_counts or layout is None or span is None or not layout.bars_confident:
+            continue
+        if layout.measure_count == span["lastMeasure"] - span["firstMeasure"] + 1:
+            continue
+        try:
+            path = storage.resolve(f"scores/{ctx.job.scoreId}/pages/page-{number:03d}.png")
+            gray = cv2.imread(str(path), cv2.IMREAD_GRAYSCALE) if path.is_file() else None
+            if gray is None:
+                continue
+            heads = [(h.system, h.x) for h in pitch_check.find_heads(gray, layout)]
+            image = measure_map.image_measure_heads(layout, heads)
+            kern = measure_map.kern_note_counts(merged, number)
+            counts = measure_map.estimate_system_counts(kern, image, len(layout.systems)) if image else None
+        except Exception:  # noqa: BLE001 - chỉ để khoanh vùng ô cần kiểm tra
+            log.exception("Job %s: không căn được ô nhịp trang %s theo đầu nốt", ctx.task_id, number)
+            continue
+        if counts is not None:
+            out[number] = list(counts)
+    return out
 
 
 def _check_pitch(ctx: JobContext, merged: merge.MergeResult) -> merge.MergeResult:

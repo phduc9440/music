@@ -6,12 +6,14 @@ một khối ô nhịp tới hết giới hạn token. Số khuông vẫn đúng
 
 Cách dò, cho từng khuông của hệ (tọa độ lấy từ :mod:`app.omr.layout`):
 
-1. Cột có mực phủ >= 90% chiều cao khuông, mảnh (< 0,9 khoảng dòng kẻ), không nằm sát mép trái khuông (vạch đầu hệ).
+1. Cột có mực phủ >= 90% chiều cao khuông, mảnh (< 0,9 khoảng dòng kẻ), không nằm sát mép trái khuông (vạch đầu hệ), và
+   bên trái có dòng kẻ (nét dọc đầu hệ của trang bên cạnh trong ảnh scan hai trang không phải vạch nhịp).
 2. Bỏ thân nốt: mực kéo dài ra ngoài khuông quá 0,6 khoảng dòng kẻ mà không nối liền sang khuông kề trong hệ (thân nốt
    có dòng kẻ phụ, khóa Sol), hoặc một trong bốn góc cạnh hai đầu vạch có mực (đầu nốt đặc/rỗng nằm ở một đầu thân nốt).
    Dòng kẻ được bỏ trước khi đo, kể cả dòng kẻ hơi nghiêng của ảnh quét. Vạch nhịp có các góc trắng.
 3. Gộp ứng viên các khuông theo x (vạch kép, vạch kết, vạch nhắc lại thành một); giữ cụm xuất hiện ở ít nhất nửa số khuông
-   của hệ hoặc nối liền sang khuông kề (vạch xuyên grand staff).
+   của hệ hoặc nối liền sang khuông kề (vạch xuyên grand staff). Piano dày nốt: nốt in sát hai bên vạch làm mọi ứng viên
+   thành "yếu", nên cụm chỉ có ứng viên yếu vẫn được giữ khi nối liền qua khe giữa hai khuông ở cả hai khuông.
 4. Số ô của hệ = số vạch; hệ không kết thúc bằng vạch nhịp ở mép phải thì thêm 1 và coi là không chắc chắn.
 
 Không ném lỗi: bố cục rỗng thì không làm gì.
@@ -76,6 +78,12 @@ sát vạch) vạch thật cũng bị nốt kề đè vào các góc. Ứng viê
 khuông."""
 
 
+_LINKED_HEAD_INK = 0.35
+"""Trần mực góc cho ứng viên nối liền qua khe sang khuông kề (vạch xuyên grand staff). Nét dọc phủ kín cả khuông lẫn khe
+giữa hai khuông thì gần như chắc chắn là vạch nhịp (thân nốt chỉ dài ~3,5 khoảng dòng kẻ), nên nốt in sát ngay sau vạch
+(mực góc 0,15-0,25 ở piano dày nốt) không được làm mất vạch. Ứng viên này vẫn là ứng viên yếu."""
+
+
 @dataclass
 class SystemBars:
     """Vạch nhịp của một hệ."""
@@ -129,19 +137,33 @@ def detect_system(
     clusters: list[dict] = []
     for x, staff_index, linked, weak in candidates:
         if not (clusters and x - clusters[-1]["last"] <= _MERGE * interline):
-            clusters.append({"first": x, "last": x, "staves": set(), "strong": 0, "linked": False})
+            clusters.append({"first": x, "last": x, "staves": set(), "strong": 0, "linked": False, "linked_staves": set()})
         cluster = clusters[-1]
         cluster["last"] = x
         cluster["staves"].add(staff_index)
         cluster["strong"] += 0 if weak else 1
         cluster["linked"] = cluster["linked"] or linked
+        if linked:
+            cluster["linked_staves"].add(staff_index)
 
     need = (len(staves) + 1) // 2
-    kept = [c for c in clusters if c["strong"] and (len(c["staves"]) >= need or c["linked"])]
+    kept = [c for c in clusters if _keep_cluster(c, need)]
     barlines = [int(round((c["first"] + c["last"]) / 2)) for c in kept]
     closed = bool(kept) and system.right - kept[-1]["last"] <= _MERGE * interline
     measures = len(kept) + (0 if closed else 1)
     return SystemBars(barlines=barlines, measures=measures, closed=closed)
+
+
+def _keep_cluster(cluster: dict, need: int) -> bool:
+    """Cụm ứng viên có phải vạch nhịp không.
+
+    Bình thường cần ít nhất một ứng viên chắc và (có mặt ở ``need`` khuông hoặc nối liền sang khuông kề). Ở piano dày nốt,
+    nốt sát hai bên vạch làm cả hai ứng viên của grand staff thành yếu, nên cụm toàn ứng viên yếu vẫn được giữ khi nó
+    nối liền qua khe giữa hai khuông ở ít nhất hai khuông: thân nốt gần như không bao giờ phủ kín cả hai khuông và cả khe
+    giữa chúng (ứng viên có mực góc quá ``_WEAK_HEAD_INK`` đã bị loại từ trước)."""
+    if cluster["strong"]:
+        return len(cluster["staves"]) >= need or cluster["linked"]
+    return len(cluster["linked_staves"]) >= 2
 
 
 def _staff_candidates(
@@ -167,6 +189,8 @@ def _staff_candidates(
             continue
         if x0 < staff.left + _LEFT_SKIP * interline or x1 > right_edge + _LEFT_SKIP * interline:
             continue
+        if not _lines_on_left(ink, top, bottom, x0, interline):
+            continue
         column = ink[:, max(0, x0 - 1) : min(width, x1 + 2)].max(axis=1)
         up = _extent(column, top - 1, -1)
         down = _extent(column, bottom + 1, 1)
@@ -181,13 +205,25 @@ def _staff_candidates(
         if down > down_limit and not linked_down:
             continue
         head = _head_ink(residue, top, bottom, x0, x1, interline)
-        if head > _WEAK_HEAD_INK:
+        if head > (_LINKED_HEAD_INK if linked else _WEAK_HEAD_INK):
             continue
         weak = head > _HEAD_INK
         if weak and not linked:  # số chỉ nhịp (hai số 4 chồng nhau) cũng phủ kín khuông: ứng viên yếu phải nối liền sang khuông kề
             continue
         results.append(((x0 + x1) / 2, linked, weak))
     return results
+
+
+def _lines_on_left(ink: np.ndarray, top: int, bottom: int, x0: int, interline: float) -> bool:
+    """Dòng kẻ có chạy tới sát bên trái nét dọc không. Vạch nhịp luôn có dòng kẻ hai bên; nét dọc đầu hệ của trang bên
+    cạnh (ảnh scan hai trang sách, khe giữa hai trang ~15 khoảng dòng kẻ) thì bên trái là khoảng trắng. Mỗi cột có dòng
+    kẻ có ít nhất 3 điểm mực trong khuông; cần ít nhất 30% số cột trong dải ``[x0 - 6 khoảng dòng kẻ, x0)`` như vậy (chừa
+    chỗ cho dòng kẻ đứt sớm trước vạch kết của ảnh quét)."""
+    start = max(0, int(round(x0 - 6 * interline)))
+    if x0 - start < 3:
+        return True
+    counts = ink[top : bottom + 1, start:x0].sum(axis=0)
+    return float((counts >= 3).mean()) >= 0.3
 
 
 def _runs(columns: np.ndarray) -> list[tuple[int, int]]:

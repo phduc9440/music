@@ -172,6 +172,13 @@ def clean_page(
         )
         body = body[:invalid]
 
+    body, repaired = repair_partial_barlines(body)
+    if repaired:
+        warnings.append(
+            f"Trang {number}: model ghi {repaired} vạch nhịp chỉ ở một số khuông (các khuông khác đang giữa ô), "
+            "đã sửa theo trường độ để mọi khuông có cùng số ô"
+        )
+
     if truncated and body:
         body = body[:-1]
         warnings.append(f"Trang {number}: kết quả chạm giới hạn độ dài của model, phần cuối trang có thể bị thiếu")
@@ -189,6 +196,134 @@ def clean_page(
             "(ảnh có thể bị nhiễu, dính viền hoặc quá mờ)"
         ]
     return PageKern(number=number, header=header, body=body), warnings
+
+
+# ====================================================================== vạch nhịp chỉ có ở một số spine
+
+
+_SPINE_CHANGES = ("*^", "*v", "*+", "*x", "*-")
+
+
+def _is_partial_barline(line: str) -> bool:
+    fields = line.split(TAB)
+    if len(fields) < 2:
+        return False
+    bars = [f.startswith("=") for f in fields]
+    return any(bars) and not all(bars)
+
+
+def repair_partial_barlines(body: list[str]) -> tuple[list[str], int]:
+    """Sửa dòng có vạch nhịp ở một số spine còn spine khác là ``.`` hay một nốt (kern không hợp lệ).
+
+    Transcoda thỉnh thoảng ghi vạch nhịp cho một khuông (hay gặp ở khuông giọng hát của bản giọng hát + piano, hoặc tay
+    phải piano) trong khi khuông khác chưa tới vạch hoặc bỏ sót vạch. music21 khi đó dựng mỗi part một số ô khác nhau, các
+    ô sau lệch nhau và ô thiếu được để trống ở cuối; số ô kern cũng lệch số ô đếm trên ảnh nên trang bị nhận diện lại
+    không cần thiết.
+
+    Với mỗi dòng như vậy thử ba cách: vạch đủ mọi spine đặt *trước* các nốt trên dòng, đặt *sau* các nốt, hoặc bỏ vạch
+    lẻ; chọn cách làm ít ô (tính riêng từng spine, giữa hai vạch đủ gần nhất) sai tổng trường độ nhất, hòa thì ưu tiên giữ
+    vạch (model hiếm khi thấy vạch nhịp ở chỗ không có). Bỏ qua khi chưa biết số chỉ nhịp hoặc đoạn liên quan có tách/gộp
+    spine. Trả ``(thân_kern, số_dòng_đã_sửa)``.
+    """
+    lines = list(body)
+    fixed = 0
+    index = 0
+    while index < len(lines):
+        if not _is_partial_barline(lines[index]):
+            index += 1
+            continue
+        replacement = _resolve_partial_barline(lines, index)
+        if replacement is None:
+            index += 1
+            continue
+        lines[index : index + 1] = replacement
+        fixed += 1
+        index += max(1, len(replacement))
+    return lines, fixed
+
+
+def _spine_measure_totals(lines: list[str], width: int) -> list[list[Fraction]]:
+    """Tổng trường độ từng ô của từng spine, mỗi spine tự ngắt ô theo vạch nhịp của chính nó (``[spine][ô]``)."""
+    totals: list[list[Fraction]] = [[Fraction(0)] for _ in range(width)]
+    for line in lines:
+        if line.startswith("!") or line.startswith("*"):
+            continue
+        tokens = line.split(TAB)
+        if len(tokens) != width:
+            continue
+        for column, token in enumerate(tokens):
+            if token.startswith("="):
+                totals[column].append(Fraction(0))
+            else:
+                duration = token_duration(token)
+                if duration is not None:
+                    totals[column][-1] += duration
+    return totals
+
+
+def _page_meter(lines: list[str], index: int, width: int) -> Optional[Fraction]:
+    """Số chỉ nhịp có hiệu lực ở dòng ``index``; trang không có ``*M`` (trang sau của bản nhiều trang) thì lấy tổng
+    trường độ ô phổ biến nhất của trang nếu nó chiếm ít nhất một nửa số ô."""
+    for line in reversed(lines[:index]):
+        if line.startswith("*"):
+            meter = next((m for m in map(_meter_fraction, line.split(TAB)) if m is not None), None)
+            if meter is not None:
+                return meter
+    counts: dict[Fraction, int] = {}
+    for spine in _spine_measure_totals(lines, width):
+        for total in spine[1:-1]:  # bỏ ô đầu/cuối trang (có thể dở dang)
+            if total > 0:
+                counts[total] = counts.get(total, 0) + 1
+    if not counts:
+        return None
+    best = max(counts, key=lambda k: counts[k])
+    return best if counts[best] * 2 >= sum(counts.values()) else None
+
+
+def _resolve_partial_barline(lines: list[str], index: int) -> Optional[list[str]]:
+    fields = lines[index].split(TAB)
+    width = len(fields)
+    meter = _page_meter(lines, index, width)
+    if meter is None or meter <= 0:
+        return None
+    start = next((k for k in range(index - 1, -1, -1) if is_barline(lines[k]) and not _is_partial_barline(lines[k])), -1)
+    end = next((k for k in range(index + 1, len(lines)) if is_barline(lines[k]) and not _is_partial_barline(lines[k])), len(lines))
+    for k in range(start + 1, end):
+        if lines[k].startswith("!"):
+            continue
+        if len(lines[k].split(TAB)) != width:
+            return None
+        if lines[k].startswith("*") and any(t in _SPINE_CHANGES for t in lines[k].split(TAB)):
+            return None
+
+    bar_token = next(f for f in fields if f.startswith("="))
+    bar_row = TAB.join([bar_token] * width)
+    has_notes = any(not f.startswith("=") and f != "." for f in fields)
+    notes_row = TAB.join("." if f.startswith("=") else f for f in fields)
+    options: list[list[str]] = [[bar_row, notes_row] if has_notes else [bar_row]]
+    if has_notes:
+        options.append([notes_row, bar_row])
+    options.append([notes_row] if has_notes else [])
+
+    first_of_page, last_of_page = start < 0, end >= len(lines)
+
+    def penalty(option: list[str]) -> int:
+        segment = lines[start + 1 : index] + option + lines[index + 1 : end]
+        bad = 0
+        for spine in _spine_measure_totals(segment, width):
+            for position, total in enumerate(spine):
+                if total == 0 or total == meter:
+                    continue
+                # ô đầu trang (lấy đà) / cuối trang (bị cắt) được phép ngắn hơn
+                if total < meter and ((position == 0 and first_of_page) or (position == len(spine) - 1 and last_of_page)):
+                    continue
+                bad += 1
+        # mọi spine phải có cùng số ô trong đoạn: lệch số ô nặng hơn một ô sai trường độ
+        counts = {len(spine) for spine in _spine_measure_totals(segment, width)}
+        return bad + 2 * (len(counts) - 1)
+
+    scores = [penalty(option) for option in options]
+    return options[scores.index(min(scores))]
 
 
 # ====================================================================== phân loại dòng diễn giải

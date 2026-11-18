@@ -484,3 +484,117 @@ def test_split_reports_which_measures_were_split():
     fixed, ordinals = merge.split_merged_measures_at(_result_from(body))
     assert ordinals == [2]
     assert merge.count_measures(fixed.lines) == 4
+
+
+# ---------------------------------------------------------------------- vạch nhịp chỉ có ở một số spine
+
+
+def _body(text: str) -> list[str]:
+    return [line for line in text.strip("\n").split("\n")]
+
+
+def test_partial_barline_becomes_full_when_other_spine_measure_is_complete():
+    # tay trái đủ 2/4 thì tới vạch; model chỉ ghi vạch cho tay phải (tay phải lại thiếu một móc kép)
+    body = _body(kern(
+        "*clefF4|*clefG2",
+        "*M2/4|*M2/4",
+        "8C|8c",
+        "8G|16e",
+        ".|8g",
+        "8c|.",
+        "8G|16g",
+        ".|=",
+        "8C|2c",
+        "8G|.",
+        "8c|.",
+        "8G|.",
+        "=|=",
+    ))
+    fixed, count = merge.repair_partial_barlines(body)
+    assert count == 1
+    assert "=\t=" in fixed and ".\t=" not in fixed
+    assert merge.count_measures(fixed) == 2
+
+
+def test_partial_barline_with_a_note_is_moved_where_durations_fit():
+    # giọng hát (cột phải) ghi vạch ở dòng còn một nốt móc đơn của piano: đặt vạch trước nốt đó thì cả ba spine đủ 4/4
+    body = _body(kern(
+        "*clefF4|*clefG2|*clefG2",
+        "*M4/4|*M4/4|*M4/4",
+        "2D|8f#|4d",
+        ".|8A|.",
+        ".|8d|4d",
+        ".|8f#|.",
+        "2D|8d|2d",
+        ".|8A|.",
+        ".|8r|.",
+        ".|8f#|.",
+        ".|8d|=",
+        "2F#|8A|1a",
+        ".|8c#|.",
+        ".|8f#|.",
+        ".|8r|.",
+        "2F#|8c#|.",
+        ".|8f#|.",
+        ".|8a|.",
+        "=|=|=",
+    ))
+    fixed, count = merge.repair_partial_barlines(body)
+    assert count == 1
+    position = fixed.index("=\t=\t=")
+    assert fixed[position + 1] == ".\t8d\t."
+    assert not any(merge._is_partial_barline(line) for line in fixed)
+
+
+def test_partial_barline_uses_most_common_measure_length_without_meter():
+    # trang sau của bản nhiều trang không in lại *M: số chỉ nhịp suy từ các ô khác của trang
+    body = _body(kern(
+        "*clefF4|*clefG2",
+        "=|=",
+        "2C|2c",
+        "=|=",
+        "2D|2d",
+        "=|=",
+        "4C|4c",
+        "4D|4d",
+        ".|=",
+        "2E|2e",
+        "=|=",
+        "2F|2f",
+        "=|=",
+    ))
+    fixed, count = merge.repair_partial_barlines(body)
+    assert count == 1 and not any(merge._is_partial_barline(line) for line in fixed)
+
+
+def test_partial_barline_inside_spine_split_is_left_alone():
+    body = _body(kern(
+        "*clefF4|*clefG2",
+        "*M2/4|*M2/4",
+        "*^|*",
+        "4C|4E|4c",
+        ".|.|=",
+        "4D|4F|4d",
+        "*v|*v|*",
+        "=|=",
+    ))
+    fixed, count = merge.repair_partial_barlines(body)
+    assert count == 0 and fixed == body
+
+
+def test_clean_page_repairs_partial_barlines_and_warns():
+    text = kern(
+        "**kern|**kern",
+        "*clefF4|*clefG2",
+        "*M2/4|*M2/4",
+        "4C|4c",
+        "4G|4g",
+        ".|=",
+        "2C|2e",
+        "=|=",
+        "*-|*-",
+    )
+    page, warnings = merge.clean_page(1, text)
+    assert page is not None
+    assert merge.count_measures(page.body) == 2
+    assert any("vạch nhịp chỉ ở một số khuông" in w for w in warnings)

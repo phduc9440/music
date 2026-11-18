@@ -48,9 +48,38 @@ def test_rewrite_octave():
 def test_kern_pitch_and_events_skip_other_clefs():
     assert pc._kern_pitch("8.cccL") == ("c", 6)
     assert pc._kern_pitch("4r") is None
-    lines = ["*clefG2\t*clefF4", "4c\t4C", "4d\t4D"]
+    lines = ["*clefG2\t*clefC3", "4c\t4C", "4d\t4D"]
     events = pc._kern_events(lines, 2)
     assert [e.letter for e in events[0]] == ["c", "d"] and events[1] == []
+
+
+def test_kern_events_accept_bass_clef_but_not_a_clef_change():
+    clefs: dict[int, str] = {}
+    lines = ["*clefF4\t*clefG2", "4C\t4c", "4D\t4d"]
+    events = pc._kern_events(lines, 2, clefs)
+    assert [(e.letter, e.octave) for e in events[0]] == [("c", 3), ("d", 3)]
+    assert clefs == {0: "F4", 1: "G2"}
+    changed = pc._kern_events(["*clefF4\t*clefG2", "4C\t4c", "*clefG2\t*", "4c\t4d"], 2)
+    assert changed[0] == [] and len(changed[1]) == 2
+
+
+def test_bass_clef_positions_and_octave_fix():
+    # khóa Fa: dòng dưới cùng là Sol2, dòng trên cùng là La3
+    assert pc._diatonic_from_step(0, "F4") == pc._diatonic_of("g", 2)
+    assert pc._diatonic_from_step(8, "F4") == pc._diatonic_of("a", 3)
+    # kern tay trái: G3 D3 G3 D3 C3 (G đầu sai quãng tám) ; ảnh: G2 D3 G3 D3 C3
+    kern = [pc._Event(l, o, i, 0, 0) for i, (l, o) in enumerate([("g", 3), ("d", 3), ("g", 3), ("d", 3), ("c", 3)])]
+    image = [pc._diatonic_from_step(s, "F4") for s in (0, 4, 7, 4, 3)]
+    fixes, mismatched, reason = pc.plan_fixes(image, kern, "F4")
+    assert reason is None and mismatched == 0
+    assert [(f.line, f.octave) for f in fixes] == [(0, 2)]
+
+
+def test_context_fix_keeps_normal_bass_octaves():
+    # nốt khóa Fa ở quãng tám 2 là bình thường: không bị kéo lên như khóa Sol
+    kern = [pc._Event(l, o, i, 0, 0) for i, (l, o) in enumerate([("c", 3), ("g", 2), ("c", 3)])]
+    assert pc._context_fixes(kern, {0, 2}, [], "F4") == []
+    assert pc._context_fixes(kern, {0, 2}, [], "G2") != []
 
 
 def test_align_and_plan_fixes_corrects_only_octave():
@@ -156,3 +185,12 @@ def test_fix_measures_rewrites_letters_of_misread_measure():
 def test_rewrite_pitch_drops_stale_accidental():
     assert pc._rewrite_pitch("8f#L", "g", 4) == "8gL"
     assert pc._rewrite_pitch("4b-", "b", 5) == "4bb-"
+
+
+def test_align_prefers_exact_pitch_over_spurious_head_with_same_letter():
+    # kern E5 D5 C5 D5 A4 đúng; ảnh có thêm một "đầu nốt" C4 giả (vết beam) ngay sau C5 thật: không được sửa C5 -> C4
+    kern = [pc._Event(l, o, i, 0, 0) for i, (l, o) in enumerate([("e", 5), ("d", 5), ("c", 5), ("d", 5), ("a", 4)])]
+    image = [pc._diatonic_of(l, o) for l, o in [("e", 5), ("d", 5), ("c", 5), ("c", 4), ("d", 5), ("a", 4)]]
+    fixes, mismatched, reason = pc.plan_fixes(image, kern)
+    assert reason is None and mismatched == 0
+    assert fixes == []
