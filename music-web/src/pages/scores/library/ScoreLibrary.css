@@ -394,7 +394,7 @@
 }
 .sc-lib .sc-card:hover,
 .sc-lib .sc-card:focus-visible,
-.sc-lib .sc-card.is-menu-open {
+.sc-lib .is-menu-open > .sc-card {
   transform: translateY(-5px);
   border-color: var(--ui-primary);
   box-shadow:
@@ -417,7 +417,7 @@
   pointer-events: none;
 }
 .sc-lib .sc-card:hover .sc-card__cover::after,
-.sc-lib .sc-card.is-menu-open .sc-card__cover::after,
+.sc-lib .is-menu-open > .sc-card .sc-card__cover::after,
 .sc-lib .sc-card:focus-within .sc-card__cover::after {
   opacity: 1;
 }
@@ -468,13 +468,13 @@
 }
 .sc-card:hover .sc-card__menu,
 .sc-card:focus-within .sc-card__menu,
-.sc-card.is-menu-open .sc-card__menu {
+.is-menu-open > .sc-card .sc-card__menu {
   opacity: 1;
   transform: none;
 }
 .sc-card__menu:hover,
 .sc-card__menu:focus-visible,
-.sc-card.is-menu-open .sc-card__menu {
+.is-menu-open > .sc-card .sc-card__menu {
   border-color: var(--ui-primary);
   background: var(--ui-primary);
   color: var(--ui-on-accent);

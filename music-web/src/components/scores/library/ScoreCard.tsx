@@ -24,8 +24,6 @@ interface Props {
    * menu chuột phải mặc định của trình duyệt.
    */
   onMenu?: (score: ScoreSummary, point: { x: number; y: number }) => void;
-  /** Thẻ đang mở menu: giữ viền nổi bật trong lúc menu còn mở. */
-  menuOpen?: boolean;
 }
 
 /** Ảnh thẻ: khách chưa đăng nhập không tải được /api/files/** nên dùng ảnh trang 1 công khai của bản PUBLIC. */
@@ -34,15 +32,7 @@ const cardImage = (score: ScoreSummary): string | null | undefined =>
   (isGuest() && score.thumbnailUrl ? `${API_BASE_URL}/public/scores/${score.id}/thumbnail` : score.thumbnailUrl);
 
 /** Một thẻ bản nhạc trong lưới thư viện. */
-export default function ScoreCard({
-  score,
-  onOpen,
-  explore = false,
-  showViews = false,
-  actions,
-  onMenu,
-  menuOpen = false,
-}: Props) {
+export default function ScoreCard({ score, onOpen, explore = false, showViews = false, actions, onMenu }: Props) {
   // Đang chuyển sang trang bản nhạc này: ảnh bìa mang tên dùng chung để "bay" sang vị trí mới (View Transitions)
   const opening = useViewTransitionState(`/scores/${score.id}`);
   const openMenuAt = (e: MouseEvent<HTMLElement>) => {
@@ -53,7 +43,9 @@ export default function ScoreCard({
   };
   return (
     <article
-      className={`sc-card reveal-item${menuOpen ? ' is-menu-open' : ''}`}
+      // Không đổi className theo trạng thái: hiệu ứng hiện dần gắn class `reveal--in` trực tiếp vào thẻ, React ghi đè
+      // className sẽ làm mất class đó và thẻ biến mất. Trạng thái "đang mở menu" đặt ở ô bọc ngoài (trang thư viện).
+      className="sc-card reveal-item"
       role="button"
       tabIndex={0}
       aria-haspopup={onMenu ? 'menu' : undefined}

@@ -323,13 +323,16 @@ export default function ScoreLibrary() {
         {data && data.content.length > 0 && (
           <div className={`sc-grid ${isRefetching ? 'is-refetching' : ''}`} onKeyDown={onGridKeyDown}>
             {data.content.map((s) => (
-              <div key={s.id} className="sc-grid__cell" data-score-id={s.id}>
+              <div
+                key={s.id}
+                className={`sc-grid__cell${menu?.score.id === s.id ? ' is-menu-open' : ''}`}
+                data-score-id={s.id}
+              >
                 <ScoreCard
                   score={s}
                   showViews={sort === 'views'}
                   onOpen={(item) => navigate(getScorePath(item.id, item.processingStatus))}
                   onMenu={(item, point) => setMenu({ score: item, ...point })}
-                  menuOpen={menu?.score.id === s.id}
                 />
               </div>
             ))}
