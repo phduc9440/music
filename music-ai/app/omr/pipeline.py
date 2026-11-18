@@ -360,6 +360,7 @@ def _recognize_pages(ctx: JobContext, kept_pages: list[tuple[int, str]]) -> Opti
     ctx.routing = []
     primary: dict[int, Optional[merge.PageKern]] = {}
     page_warnings: dict[int, list[str]] = {}
+    meter: Optional[str] = None  # số chỉ nhịp đã thấy ở trang trước (trang sau thường không in lại)
     for done, (page_number, png_relative) in enumerate(kept_pages, start=1):
         budget.start_page(page_number, settings.inference_page_timeout_s)
         budget.check()
@@ -376,8 +377,9 @@ def _recognize_pages(ctx: JobContext, kept_pages: list[tuple[int, str]]) -> Opti
 
         text, shifted = ottava.fix_text(result.text, settings.ottava, _page_roles(ctx.layouts.get(page_number)))
         page, warnings = merge.clean_page(
-            page_number, text, max_repeat=settings.max_repeat_lines, truncated=result.truncated
+            page_number, text, max_repeat=settings.max_repeat_lines, truncated=result.truncated, meter=meter
         )
+        meter = routing.page_meter(page) or meter
         if shifted:
             warnings.append(_ottava_message(page_number, shifted))
         if result.stopped_early:
@@ -541,6 +543,7 @@ def _route_pages(
             expected,
             report.systems_ok / report.systems if report.systems else 0.0,
             expected_bars,
+            routing.page_voice_columns(layout),
         )
         report.chosen, report.primary_score, report.systems_score = source, primary_score, systems_score
         if source == routing.SOURCE_SYSTEMS and chosen is not None:
@@ -817,6 +820,11 @@ def _reread_systems(
     last_seconds = [page_seconds / 3]
     shifts = [settings.tta_shift_px * (1 + i // 2) * (1 if i % 2 == 0 else -1) for i in range(settings.tta_reads)]
 
+    piece_meter = next(
+        (token for line in merged.lines if line.startswith("*") for token in line.split(merge.TAB) if token.startswith("*M")),
+        None,
+    )
+
     def has_time() -> bool:
         return budget.remaining_s() - settings.routing_reserve_s > max(10.0, 1.5 * last_seconds[0])
 
@@ -842,7 +850,7 @@ def _reread_systems(
         roles = layout.systems[index].roles if layout is not None and index < len(layout.systems) else None
         text, _shifted = ottava.fix_text(result.text, settings.ottava, roles)
         page, _warnings = merge.clean_page(
-            page_number, text, max_repeat=settings.max_repeat_lines, truncated=result.truncated
+            page_number, text, max_repeat=settings.max_repeat_lines, truncated=result.truncated, meter=piece_meter
         )
         return page
 

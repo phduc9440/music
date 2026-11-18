@@ -598,3 +598,86 @@ def test_clean_page_repairs_partial_barlines_and_warns():
     assert page is not None
     assert merge.count_measures(page.body) == 2
     assert any("vạch nhịp chỉ ở một số khuông" in w for w in warnings)
+
+
+def test_partial_barline_is_kept_when_dropping_it_would_merge_two_measures():
+    # piano đọc sai trường độ ở cả hai ô (5/8 rồi 3/8); khuông giọng đúng 2/4 | 2/4. Bỏ vạch lẻ thì số ô "sai" ít hơn
+    # nhưng giọng thành ô 4/4: phải giữ vạch (chấm theo độ lệch trường độ, không theo số ô sai)
+    body = _body(kern(
+        "*clefF4|*clefG2",
+        "*M2/4|*M2/4",
+        "=|=",
+        "8C|2r",
+        "8C|.",
+        "8C|.",
+        "8C|.",
+        "8C|.",
+        ".|=",
+        "8C|4g",
+        "8C|4a",
+        "8C|.",
+        "=|=",
+    ))
+    fixed, count = merge.repair_partial_barlines(body)
+    assert count == 1 and merge.count_measures(fixed) == 2
+
+
+# ---------------------------------------------------------------------- spine trùng lặp (đọc riêng một khuông)
+
+
+def test_duplicate_spines_of_a_single_staff_read_collapse_to_one():
+    text = kern(
+        "**kern|**kern", "*clefG2|*clefG2", "*M3/4|*M3/4", "=1|=1",
+        "2b(L|2b", "16qqa|.", "4cc)|4cc", "=2|=2", "4b|4b", "2a|2a", "=3|=3",
+        "*^|*",  # dòng tách spine thừa ở cuối (model dừng giữa chừng)
+    )
+    page = merge.clean_page(1, text)[0]
+    collapsed = merge.collapse_duplicate_spines(page, 1)
+    assert collapsed is not None and collapsed.spines == 1
+    assert [line for line in collapsed.body if merge.is_data_line(line)] == ["2b(L", "16qqa", "4cc)", "4b", "2a"]
+    assert merge.collapse_duplicate_spines(merge.clean_page(1, PAGE_1)[0], 1) is None  # hai khuông piano khác nhau
+
+
+def test_rest_only_read_is_kept_only_when_allowed():
+    rests = kern("**kern", "*clefG2", "*M4/4", "=1", "1r", "=2", "1r", "=3", "*-")
+    assert merge.clean_page(1, rests)[0] is None  # đọc cả trang ra toàn dấu lặng: model hỏng
+    assert merge.clean_page(1, rests, allow_rests_only=True)[0] is not None  # đọc riêng khuông giọng đang im
+
+
+# ---------------------------------------------------------------------- liên ba mất số 3
+
+
+def test_sixteenth_triplets_read_as_plain_sixteenths_are_restored():
+    # 4.g 16b 16a 8.a 16f# | [e g# b] [dd b g#] liên ba móc kép bị đọc thành 6 móc kép thường: ô dài 9/8
+    body = _body(kern(
+        "*clefG2", "*M4/4", "=1", "4.g", "16b", "16a", "8.a", "16f#", "16e", "16g#", "16b", "16dd", "16b", "16g#", "=2",
+    ))
+    fixed, count = merge.repair_triplets(body)
+    assert count == 2
+    assert fixed[-7:-1] == ["24e", "24g#", "24b", "24dd", "24b", "24g#"]
+    assert fixed[3:8] == ["4.g", "16b", "16a", "8.a", "16f#"]  # nhóm phải bắt đầu đúng phách con: f# không bị gộp
+
+
+def test_triplet_repair_uses_the_known_meter_when_the_read_has_none():
+    body = _body(kern("*clefG2", "=1", "4b", "8.a#", "16f#", "8.an", "16g", "16f#", "16a", "16b", "16cc", "16a", "16f#", "=2"))
+    assert merge.repair_triplets(body)[1] == 0  # không biết số chỉ nhịp, không đoán từ 1 ô
+    fixed, count = merge.repair_triplets(body, Fraction(1))
+    assert count == 2 and fixed[-7:-1] == ["24f#", "24a", "24b", "24cc", "24a", "24f#"]
+
+
+def test_whole_measure_of_plain_notes_or_shared_excess_is_not_turned_into_triplets():
+    # tay trái 12 móc đơn trong ô 4/4 (model đọc thừa ô): đổi hết thành liên ba thì "vừa" nhưng sai
+    all_eighths = _body(kern("*clefF4", "*M4/4", "=1", *(["8G", "8r"] * 6), "=2"))
+    assert merge.repair_triplets(all_eighths)[1] == 0
+    # spine khác cũng dài dư đúng chừng ấy: lỗi cấu trúc (ô bị gộp), không phải liên ba
+    shared = _body(kern(
+        "*clefF4|*clefG2", "*M2/4|*M2/4", "=1|=1",
+        "8C|4g", "8C|.", "8C|16a", "8C|16a", "8C|16a", "=2|=2",
+    ))
+    assert merge.repair_triplets(shared)[1] == 0
+
+
+def test_clean_page_reports_triplet_repair():
+    text = kern("**kern", "*clefG2", "*M2/4", "=1", "8g", "16a", "16b", "16cc", "4dd", "=2", "*-")
+    page, warnings = merge.clean_page(1, text)
+    assert "24a" in page.body and any("liên ba" in w for w in warnings)

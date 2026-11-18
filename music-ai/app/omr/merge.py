@@ -131,12 +131,18 @@ def is_barline(line: str) -> bool:
 
 
 def clean_page(
-    number: int, raw: str, max_repeat: int = 24, truncated: bool = False
+    number: int,
+    raw: str,
+    max_repeat: int = 24,
+    truncated: bool = False,
+    allow_rests_only: bool = False,
+    meter: Optional[str] = None,
 ) -> tuple[Optional[PageKern], list[str]]:
     """Làm sạch kern thô của một trang. Trả ``(trang, cảnh_báo)``; ``trang`` là None nếu phải bỏ trang.
 
     Thiếu dòng ``**kern`` thì tự dựng từ dòng diễn giải đầu tiên. Bỏ trang (kèm cảnh báo) khi không có cả hai hoặc không có dòng dữ liệu nào (đặc tả: trang rỗng).
-    ``truncated=True`` (model chạm giới hạn token) thì bỏ dòng cuối vì có thể bị cắt giữa chừng.
+    ``truncated=True`` (model chạm giới hạn token) thì bỏ dòng cuối vì có thể bị cắt giữa chừng. ``meter``: token ``*M..``
+    đã biết của bài, dùng khi kết quả không có dòng số chỉ nhịp (ảnh một hệ, trang sau) để sửa vạch nhịp lẻ và liên ba.
     """
     warnings: list[str] = []
     lines = [ln.rstrip() for ln in normalize_text(raw).split("\n")]
@@ -172,11 +178,18 @@ def clean_page(
         )
         body = body[:invalid]
 
-    body, repaired = repair_partial_barlines(body)
+    known_meter = meter_value(meter)
+    body, repaired = repair_partial_barlines(body, known_meter)
     if repaired:
         warnings.append(
             f"Trang {number}: model ghi {repaired} vạch nhịp chỉ ở một số khuông (các khuông khác đang giữa ô), "
             "đã sửa theo trường độ để mọi khuông có cùng số ô"
+        )
+    body, triplets = repair_triplets(body, known_meter)
+    if triplets:
+        warnings.append(
+            f"Trang {number}: model đọc mất số 3 của {triplets} nhóm liên ba (ô dài quá số chỉ nhịp), "
+            "đã đổi lại thành liên ba theo trường độ"
         )
 
     if truncated and body:
@@ -189,8 +202,9 @@ def clean_page(
 
     if not any(is_data_line(ln) for ln in body):
         return None, warnings + [f"Trang {number}: không nhận diện được nốt nào nên đã bỏ qua trang này"]
-    # Model không đọc được ảnh thường sinh một dãy dấu lặng dài: coi như chưa nhận diện được nốt nào
-    if not any(has_pitched_note(ln) for ln in body):
+    # Model không đọc được ảnh thường sinh một dãy dấu lặng dài: coi như chưa nhận diện được nốt nào. Riêng khi đọc riêng
+    # một nhóm khuông (``allow_rests_only``), toàn dấu lặng là kết quả hợp lệ (khuông giọng trong đoạn dạo đầu).
+    if not allow_rests_only and not any(has_pitched_note(ln) for ln in body):
         return None, warnings + [
             f"Trang {number}: kết quả chỉ có dấu lặng, không có nốt nào nên đã bỏ qua trang này "
             "(ảnh có thể bị nhiễu, dính viền hoặc quá mờ)"
@@ -212,7 +226,7 @@ def _is_partial_barline(line: str) -> bool:
     return any(bars) and not all(bars)
 
 
-def repair_partial_barlines(body: list[str]) -> tuple[list[str], int]:
+def repair_partial_barlines(body: list[str], meter: Optional[Fraction] = None) -> tuple[list[str], int]:
     """Sửa dòng có vạch nhịp ở một số spine còn spine khác là ``.`` hay một nốt (kern không hợp lệ).
 
     Transcoda thỉnh thoảng ghi vạch nhịp cho một khuông (hay gặp ở khuông giọng hát của bản giọng hát + piano, hoặc tay
@@ -232,7 +246,7 @@ def repair_partial_barlines(body: list[str]) -> tuple[list[str], int]:
         if not _is_partial_barline(lines[index]):
             index += 1
             continue
-        replacement = _resolve_partial_barline(lines, index)
+        replacement = _resolve_partial_barline(lines, index, meter)
         if replacement is None:
             index += 1
             continue
@@ -261,29 +275,37 @@ def _spine_measure_totals(lines: list[str], width: int) -> list[list[Fraction]]:
     return totals
 
 
-def _page_meter(lines: list[str], index: int, width: int) -> Optional[Fraction]:
-    """Số chỉ nhịp có hiệu lực ở dòng ``index``; trang không có ``*M`` (trang sau của bản nhiều trang) thì lấy tổng
-    trường độ ô phổ biến nhất của trang nếu nó chiếm ít nhất một nửa số ô."""
+def _page_meter(lines: list[str], index: int, width: int, default: Optional[Fraction] = None) -> Optional[Fraction]:
+    """Số chỉ nhịp có hiệu lực ở dòng ``index``. Kern không có ``*M`` (trang sau của bản nhiều trang, ảnh một hệ) thì dùng
+    ``default`` (số chỉ nhịp đã biết của bài), không có nữa mới lấy tổng trường độ ô phổ biến nhất nếu đếm được ít nhất
+    3 ô và nó chiếm ít nhất một nửa."""
     for line in reversed(lines[:index]):
         if line.startswith("*"):
             meter = next((m for m in map(_meter_fraction, line.split(TAB)) if m is not None), None)
             if meter is not None:
                 return meter
+    if default is not None:
+        return default
     counts: dict[Fraction, int] = {}
     for spine in _spine_measure_totals(lines, width):
         for total in spine[1:-1]:  # bỏ ô đầu/cuối trang (có thể dở dang)
             if total > 0:
                 counts[total] = counts.get(total, 0) + 1
-    if not counts:
+    if sum(counts.values()) < 3:
         return None
     best = max(counts, key=lambda k: counts[k])
     return best if counts[best] * 2 >= sum(counts.values()) else None
 
 
-def _resolve_partial_barline(lines: list[str], index: int) -> Optional[list[str]]:
+def meter_value(token: Optional[str]) -> Optional[Fraction]:
+    """Giá trị (nốt tròn) của token ``*M3/4``; None nếu không phải."""
+    return _meter_fraction(token) if token else None
+
+
+def _resolve_partial_barline(lines: list[str], index: int, default: Optional[Fraction] = None) -> Optional[list[str]]:
     fields = lines[index].split(TAB)
     width = len(fields)
-    meter = _page_meter(lines, index, width)
+    meter = _page_meter(lines, index, width, default)
     if meter is None or meter <= 0:
         return None
     start = next((k for k in range(index - 1, -1, -1) if is_barline(lines[k]) and not _is_partial_barline(lines[k])), -1)
@@ -307,23 +329,217 @@ def _resolve_partial_barline(lines: list[str], index: int) -> Optional[list[str]
 
     first_of_page, last_of_page = start < 0, end >= len(lines)
 
-    def penalty(option: list[str]) -> int:
+    def penalty(option: list[str]) -> Fraction:
+        # Tổng độ lệch trường độ (theo số chỉ nhịp) của mọi ô mọi spine, không phải số ô sai: gộp hai ô vốn đã lệch ở
+        # piano thành một không được "lợi" (khuông giọng đúng sẽ thành ô dài gấp đôi, lệch nguyên một nhịp).
         segment = lines[start + 1 : index] + option + lines[index + 1 : end]
-        bad = 0
-        for spine in _spine_measure_totals(segment, width):
+        bad = Fraction(0)
+        totals = _spine_measure_totals(segment, width)
+        for spine in totals:
             for position, total in enumerate(spine):
                 if total == 0 or total == meter:
                     continue
                 # ô đầu trang (lấy đà) / cuối trang (bị cắt) được phép ngắn hơn
                 if total < meter and ((position == 0 and first_of_page) or (position == len(spine) - 1 and last_of_page)):
                     continue
-                bad += 1
+                bad += abs(total - meter) / meter
         # mọi spine phải có cùng số ô trong đoạn: lệch số ô nặng hơn một ô sai trường độ
-        counts = {len(spine) for spine in _spine_measure_totals(segment, width)}
+        counts = {len(spine) for spine in totals}
         return bad + 2 * (len(counts) - 1)
 
     scores = [penalty(option) for option in options]
     return options[scores.index(min(scores))]
+
+
+# ====================================================================== liên ba bị đọc thành nốt thường
+
+
+_TRIPLET_KINDS = (("16", "24", Fraction(1, 8)), ("8", "12", Fraction(1, 4)))
+"""``(trường độ đọc nhầm, trường độ liên ba, độ dài một nhóm liên ba = ô lưới phách con)``."""
+
+_MAX_TRIPLETS = 6
+_MAX_SOLUTIONS = 2
+
+
+def repair_triplets(body: list[str], default_meter: Optional[Fraction] = None) -> tuple[list[str], int]:
+    """Đổi các nhóm liên ba mà model đọc mất số 3 (ba nốt móc kép ``16`` thay vì ``24``, ba nốt móc đơn ``8`` thay vì ``12``).
+
+    Mỗi nhóm ba nốt như vậy làm ô dài thêm đúng 1/16 (móc kép) hoặc 1/8 (móc đơn). Với từng ô, từng spine dài hơn số chỉ
+    nhịp đúng ``n`` lần lượng đó, tìm ``n`` nhóm ba nốt liền nhau (cùng trường độ, không chấm dôi, có thể là dấu lặng hay hợp
+    âm) sao cho mỗi nhóm, sau khi đổi, bắt đầu đúng ô lưới của phách con (1/8 với móc kép, 1/4 với móc đơn) và ô vừa khít
+    số chỉ nhịp. Chỉ sửa khi có ĐÚNG MỘT cách chọn như vậy. Ô đang tách/gộp spine thì bỏ qua. Trả ``(thân_kern, số_nhóm)``.
+    """
+    lines = list(body)
+    fixed = 0
+    start = 0
+    for end in [i for i, line in enumerate(lines) if is_barline(line)] + [len(lines)]:
+        rows = [i for i in range(start, end) if is_data_line(lines[i])]
+        widths = {len(lines[i].split(TAB)) for i in rows}
+        changes = any(
+            lines[i].startswith("*") and any(t in _SPINE_CHANGES for t in lines[i].split(TAB)) for i in range(start, end)
+        )
+        if rows and len(widths) == 1 and not changes:
+            width = widths.pop()
+            meter = _page_meter(lines, start, width, default_meter)
+            if meter is not None and meter > 0:
+                totals = [_spine_total(lines, rows, column) for column in range(width)]
+                contents = [_spine_content(lines, rows, column) for column in range(width)]
+                for column in range(width):
+                    excess = totals[column] - meter
+                    # spine KHÁC (không phải bản sao của nó) cũng dài dư đúng chừng ấy: lỗi cấu trúc (ô gộp/đọc thừa)
+                    if excess > 0 and any(
+                        totals[c] - meter == excess and contents[c] != contents[column] for c in range(width) if c != column
+                    ):
+                        continue
+                    fixed += _repair_triplets_in_spine(lines, rows, column, meter)
+        start = end + 1
+    return lines, fixed
+
+
+def _repair_triplets_in_spine(lines: list[str], rows: list[int], column: int, meter: Fraction) -> int:
+    tokens: list[tuple[int, str, Fraction]] = []
+    for index in rows:
+        token = lines[index].split(TAB)[column]
+        if token == ".":
+            continue
+        duration = token_duration(token)
+        if duration is None:
+            continue  # nốt hoa mỹ, token lạ
+        tokens.append((index, token, duration))
+    total = sum((d for _, _, d in tokens), Fraction(0))
+    excess = total - meter
+    if excess <= 0:
+        return 0
+    for wrong, right, cell in _TRIPLET_KINDS:
+        saving = Fraction(1, int(wrong)) * 3 - cell
+        groups = excess / saving
+        if groups.denominator != 1 or not 1 <= groups <= _MAX_TRIPLETS:
+            continue
+        eligible = [_plain_duration(token) == wrong for _, token, _ in tokens]
+        solutions: list[list[int]] = []
+
+        def search(position: int, onset: Fraction, chosen: list[int]) -> None:
+            if len(solutions) >= _MAX_SOLUTIONS:
+                return
+            if len(chosen) == groups:
+                solutions.append(list(chosen))
+                return
+            if position > len(tokens) - 3:
+                return
+            if all(eligible[position : position + 3]) and onset % cell == 0:
+                chosen.append(position)
+                search(position + 3, onset + cell, chosen)
+                chosen.pop()
+            search(position + 1, onset + tokens[position][2], chosen)
+
+        search(0, Fraction(0), [])
+        if len(solutions) != 1 or 3 * len(solutions[0]) * 4 > 3 * len(tokens):
+            continue  # nhiều cách chọn, hoặc phải đổi quá 3/4 số nốt của ô: không đủ chắc là liên ba
+        for first in solutions[0]:
+            for index, token, _ in tokens[first : first + 3]:
+                cells = lines[index].split(TAB)
+                cells[column] = " ".join(_retime(sub, wrong, right) for sub in token.split(" "))
+                lines[index] = TAB.join(cells)
+        return len(solutions[0])
+    return 0
+
+
+def _spine_total(lines: list[str], rows: list[int], column: int) -> Fraction:
+    total = Fraction(0)
+    for index in rows:
+        token = lines[index].split(TAB)[column]
+        if token != ".":
+            total += token_duration(token) or Fraction(0)
+    return total
+
+
+def _spine_content(lines: list[str], rows: list[int], column: int) -> tuple[str, ...]:
+    return tuple(_RE_NOT_MUSIC.sub("", lines[i].split(TAB)[column]) for i in rows if lines[i].split(TAB)[column] != ".")
+
+
+def _plain_duration(token: str) -> Optional[str]:
+    """Số trường độ (``16``, ``8``...) của token nếu mọi nốt trong nó cùng một trường độ không chấm dôi; None nếu không."""
+    values = set()
+    for sub in token.split(" "):
+        if not sub:
+            continue
+        if "q" in sub or "Q" in sub:
+            return None
+        match = _RE_DURATION.search(sub)
+        if match is None or match.group(2) or match.group(3):
+            return None
+        values.add(match.group(1))
+    return values.pop() if len(values) == 1 else None
+
+
+def _retime(sub: str, wrong: str, right: str) -> str:
+    match = _RE_DURATION.search(sub)
+    if match is None or match.group(1) != wrong:
+        return sub
+    return sub[: match.start(1)] + right + sub[match.end(1) :]
+
+
+# ====================================================================== spine trùng lặp
+
+
+_RE_NOT_MUSIC = re.compile(r"[LJKk\[\]_(){}/\\;'<>]")
+"""Ký hiệu không ảnh hưởng nốt (beam, dấu nối, luyến, hướng thân) bỏ khi so hai spine."""
+
+DUPLICATE_SIMILARITY = 0.75
+"""Hai spine giống nhau ở ít nhất tỉ lệ này số dòng dữ liệu (có nốt ở ít nhất một bên) thì coi là bản sao."""
+
+
+def collapse_duplicate_spines(page: PageKern, target: int) -> Optional[PageKern]:
+    """Gộp các spine model sinh lặp lại về đúng ``target`` spine; None nếu không làm được.
+
+    Đọc riêng MỘT khuông (khuông giọng cắt khỏi bản giọng hát + piano) Transcoda hay sinh hai spine gần như giống hệt
+    nhau, vì nó chỉ được train trên piano hai khuông. Pipeline cần đúng một spine nên trước đây bỏ cả kết quả (vốn đọc
+    tốt) rồi độn khuông trống, đẩy giai điệu sang cột piano. Ở đây các spine liền nhau giống nhau ít nhất
+    :data:`DUPLICATE_SIMILARITY` số dòng (bỏ beam/dấu nối/luyến khi so) được gộp, giữ spine có nhiều nốt hơn. Chỉ trả kết
+    quả khi số nhóm còn lại đúng bằng ``target`` và không có tách/gộp spine giữa chừng."""
+    width = page.spines
+    if width <= target:
+        return None
+    body = list(page.body)
+    # dòng tách/gộp spine thừa ở cuối kết quả (sau nốt cuối cùng, model dừng giữa chừng) thì bỏ
+    last = max((i for i, line in enumerate(body) if is_data_line(line) or is_barline(line)), default=-1)
+    body = body[: last + 1] + [ln for ln in body[last + 1 :] if not any(t in _SPINE_CHANGES for t in ln.split(TAB))]
+    for line in body:
+        if line.startswith("*") and any(t in _SPINE_CHANGES for t in line.split(TAB)):
+            return None
+    rows = [line.split(TAB) for line in body if is_data_line(line)]
+    if not rows or any(len(r) != width for r in rows):
+        return None
+
+    def similar(a: int, b: int) -> float:
+        compared = same = 0
+        for row in rows:
+            x, y = row[a], row[b]
+            if x == "." and y == ".":
+                continue
+            compared += 1
+            same += _RE_NOT_MUSIC.sub("", x) == _RE_NOT_MUSIC.sub("", y)
+        return same / compared if compared else 0.0
+
+    groups: list[list[int]] = []
+    for column in range(width):
+        if groups and similar(groups[-1][0], column) >= DUPLICATE_SIMILARITY:
+            groups[-1].append(column)
+        else:
+            groups.append([column])
+    if len(groups) != target:
+        return None
+
+    def notes(column: int) -> int:
+        return sum(1 for row in rows if row[column] != "." and _PITCH_LETTER.search(row[column]))
+
+    keep = [max(group, key=notes) for group in groups]
+
+    def pick(line: str) -> str:
+        fields = line.split(TAB)
+        return TAB.join(fields[c] for c in keep) if len(fields) == width else line
+
+    return PageKern(number=page.number, header=pick(page.header), body=[pick(line) for line in body])
 
 
 # ====================================================================== phân loại dòng diễn giải

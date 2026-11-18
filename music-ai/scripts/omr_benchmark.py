@@ -271,10 +271,12 @@ def _same_system(png_path: Path, old_folder: Path) -> bool:
     )
 
 
-def cmd_replay(specs: list[str], variants: list[str], dump: Path | None = None) -> dict:
+def cmd_replay(specs: list[str], variants: list[str], dump: Path | None = None, stored_pages: bool = False) -> dict:
     """Chạy cả pipeline trên bản gốc của các lần chạy đã lưu, với :class:`ReplayRecognizer` thay model.
 
-    ``specs``: ``id_lần_chạy[=đường_dẫn_ground_truth]`` (ground truth tương đối so với ``benchmark/``)."""
+    ``specs``: ``id_lần_chạy[=đường_dẫn_ground_truth]`` (ground truth tương đối so với ``benchmark/``). ``stored_pages``:
+    dùng ảnh trang đã tiền xử lý của lần chạy cũ (``pages/page-NNN.png``) với ``preprocess=false`` thay cho bản gốc, để bố
+    cục và ảnh cắt hệ trùng với lúc model thật đọc (tự bật với PDF khi máy không có PyMuPDF)."""
     from app import config  # noqa: PLC0415
     from app.omr.pipeline import run_omr_job  # noqa: PLC0415
     from app.schemas import JobRequest  # noqa: PLC0415
@@ -300,7 +302,12 @@ def cmd_replay(specs: list[str], variants: list[str], dump: Path | None = None) 
                 score_id = f"replay-{run_id[:8]}"
                 inputs = []
                 pdf_native = originals[0].suffix.lower() == ".pdf"
-                if pdf_native and not _has_pymupdf():
+                pages_dir = folder / "pages"
+                use_stored = (stored_pages or (pdf_native and not _has_pymupdf())) and any(pages_dir.glob("page-*.png"))
+                if use_stored:
+                    # Ảnh trang ĐÃ tiền xử lý của lần chạy cũ (đúng ảnh model thật đã đọc), không tiền xử lý lại
+                    originals = sorted(pages_dir.glob("page-*.png"))
+                elif pdf_native and not _has_pymupdf():
                     originals = _render_pdf_pdftoppm(originals[0], Path(tmp) / "rendered")
                 for page, src in enumerate(originals, start=1):
                     dest = Path(tmp) / "scores" / score_id / "original" / src.name
@@ -313,7 +320,7 @@ def cmd_replay(specs: list[str], variants: list[str], dump: Path | None = None) 
                 job = JobRequest(
                     taskId=str(uuid.uuid4()), scoreId=score_id, inputs=inputs,
                     options={"sourceType": "PDF_NATIVE" if pdf_native else "PHOTO", "stopAfter": "EXPORT",
-                             "musicXmlVersion": 1},
+                             "musicXmlVersion": 1, "preprocess": not use_stored},
                 )
                 recognizer = ReplayRecognizer(folder)
                 callback = RecordingCallback()
@@ -402,6 +409,16 @@ def _peak_rss_mb() -> float:
     return round(peak / (1024 * 1024 if sys.platform == "darwin" else 1024), 0)
 
 
+def _top_staves(score, staves: int):
+    """Ground truth chỉ chép ``staves`` khuông trên cùng (ví dụ chỉ bè giọng của bản giọng hát + piano): chỉ chấm các khuông
+    đó của kết quả (khuông đánh số từ trên xuống, bắt đầu 1)."""
+    if score.staves <= staves:
+        return score
+    from dataclasses import replace  # noqa: PLC0415
+
+    return replace(score, staves=staves, events=[e for e in score.events if e.staff <= staves])
+
+
 def _score_run(case: dict, variant: str, folder: Path, callback: RecordingCallback, seconds: float) -> dict:
     ends = [body for kind, body in callback.calls if kind in ("complete", "fail")]
     end = ends[-1] if ends else {}
@@ -421,12 +438,13 @@ def _score_run(case: dict, variant: str, folder: Path, callback: RecordingCallba
         kern = folder / "kern" / "merged.krn"
         xml = folder / "musicxml" / "v1.musicxml"
         if xml.is_file():
-            hyp = read_musicxml(xml.read_bytes())
+            hyp = _top_staves(read_musicxml(xml.read_bytes()), ref.staves)
             res = compare(ref, hyp)
             row.update({k: v for k, v in res.to_dict().items() if k in MUSIC_KEYS})
             row["output"] = "musicxml"
         elif kern.is_file():
-            row.update({k: v for k, v in compare(ref, load_score(kern)).to_dict().items() if k in MUSIC_KEYS})
+            hyp = _top_staves(load_score(kern), ref.staves)
+            row.update({k: v for k, v in compare(ref, hyp).to_dict().items() if k in MUSIC_KEYS})
             row["output"] = "kern"
     return row
 
@@ -473,6 +491,8 @@ def main() -> None:
     parser.add_argument("--no-save", action="store_true")
     parser.add_argument("--score", action="append", default=[],
                         help="(chế độ replay) id_lần_chạy[=ground_truth.krn tương đối so với benchmark/], lặp lại được")
+    parser.add_argument("--stored-pages", action="store_true", help="(chế độ replay) dùng ảnh trang đã tiền xử lý của "
+                        "lần chạy cũ thay cho bản gốc (tự bật với PDF khi không có PyMuPDF)")
     parser.add_argument("--dump", type=Path, help="(chế độ replay) chép kết quả từng lần chạy (kern, MusicXML, bố cục, "
                         "callback) vào thư mục này để xem lại")
     args = parser.parse_args()
@@ -482,7 +502,7 @@ def main() -> None:
     if args.mode == "stored":
         report = cmd_stored(cases)
     elif args.mode == "replay":
-        report = cmd_replay(args.score, args.variant, args.dump)
+        report = cmd_replay(args.score, args.variant, args.dump, args.stored_pages)
     else:
         report = cmd_run(cases, args.variant)
     if not args.no_save:
