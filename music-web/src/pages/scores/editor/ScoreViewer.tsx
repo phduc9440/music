@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useNavigate } from '../../../routes/useTransitionNavigate';
-import { toast } from 'react-toastify';
 import DownloadMenu from '../../../components/scores/viewer/DownloadMenu';
 import ShowAssignmentBanner from '../../../components/scores/viewer/ShowAssignmentBanner';
 import VersionHistoryPanel from '../../../components/editor/version/VersionHistoryPanel';
@@ -13,8 +12,6 @@ import { readNotation } from '../../../components/editor/structure/staves';
 import type { NotationChange } from '../../../components/editor/structure/staves';
 import LyricBar from '../../../components/scores/toolbar/LyricBar';
 import Modal from '../../../components/scores/common/Modal';
-import SuggestSubmitDialog from '../../../components/scores/suggestions/SuggestSubmitDialog';
-import { suggestionPath } from '../../../components/scores/suggestions/suggestionUtils';
 import ScoreCanvas from '../../../components/scores/viewer/ScoreCanvas';
 import type { CommentRange } from '../../../components/scores/viewer/ScoreCanvas';
 import CommentsSection from '../../../components/scores/comments/CommentsSection';
@@ -303,14 +300,9 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
   const [contextMenu, setContextMenu] = useState<(ContextMenuState & { hitIds: string[] }) | null>(null);
 
   const { zoom, mode, invert } = prefs;
-  // Đề xuất sửa (mục 4.3): người có quyền nhận xét trở lên bật chế độ Đề xuất để dùng công cụ sửa; thay đổi không vào bản
-  // chính mà gửi đi dưới dạng đề xuất. Người sửa được cũng có thể bật để đề xuất thay vì ghi thẳng.
-  const [suggesting, setSuggesting] = useState(false);
-  const [suggestXml, setSuggestXml] = useState<string | null>(null);
-  const canEdit = score.canEdit || suggesting;
+  const canEdit = score.canEdit;
 
-  // Đồng chỉnh sửa (chỉ người sửa được, không kèm chế độ đề xuất): bật tay, và chỉ khi không còn thay đổi chưa lưu
-  const [liveOn, setLiveOn] = useState(false);
+  // Cùng sửa theo thời gian thực: người có quyền sửa vào bản nhạc là tự tham gia, không cần bật tay
   const selectionRef = useRef<ReadonlySet<string>>(new Set());
   const getLiveSelection = useCallback((): LiveSelection | null => {
     const infos = [...selectionRef.current].map((id) => doc.getInfo(id)).filter((i) => i !== undefined);
@@ -321,7 +313,7 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
   const live = useLiveCollab({
     scoreId: score.id,
     doc,
-    enabled: liveOn && score.canEdit && !suggesting,
+    enabled: score.canEdit,
     getSelection: getLiveSelection,
   });
 
@@ -334,8 +326,6 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
     canEdit,
     canForce: score.canDelete,
     blocked: helpOpen,
-    mode: suggesting ? 'suggest' : 'direct',
-    onSuggest: setSuggestXml,
   });
 
   const player = usePlayer(doc, {
@@ -675,13 +665,6 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
         : '',
   ].filter(Boolean);
 
-  const onSuggestionSent = (suggestionId: string) => {
-    editor.finishSuggestion();
-    setSuggestXml(null);
-    toast.success(t('suggestions.mode.sent'));
-    navigate(suggestionPath(base, score.id, suggestionId));
-  };
-
   const saveLabel = editor.saving
     ? t('editor.view.save.saving')
     : editor.dirty
@@ -713,7 +696,6 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
           ) : (
             <span className="sv-badge">{t('editor.view.header.readOnly')}</span>
           )}
-          {suggesting && <span className="sv-badge sv-badge--suggest">{t('suggestions.mode.suggest')}</span>}
           {live.active && (
             <LiveBar
               state={live.state}
@@ -755,38 +737,6 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
         </div>
 
         <div className="sv-toolbar__right">
-          {score.canEdit && !suggesting && (
-            <button
-              className={`sc-btn${liveOn ? ' is-active' : ''}`}
-              aria-pressed={liveOn}
-              disabled={editor.dirty || editor.saving}
-              onClick={() => setLiveOn((on) => !on)}
-              title={editor.dirty ? t('live.toggle.saveFirst') : liveOn ? t('live.toggle.off') : t('live.toggle.on')}
-            >
-              {liveOn ? t('live.toggle.stop') : t('live.toggle.start')}
-            </button>
-          )}
-          {score.canReview && (
-            <button
-              className={`sc-btn${suggesting ? ' is-active' : ''}`}
-              aria-pressed={suggesting}
-              disabled={editor.dirty || editor.saving || liveOn}
-              onClick={() => setSuggesting((on) => !on)}
-              title={
-                editor.dirty
-                  ? t('suggestions.mode.saveFirst')
-                  : suggesting
-                    ? t('suggestions.mode.switchToDirect')
-                    : t('suggestions.mode.switchToSuggest')
-              }
-            >
-              {suggesting
-                ? score.canEdit
-                  ? t('suggestions.mode.direct')
-                  : t('suggestions.mode.exit')
-                : t('suggestions.mode.suggest')}
-            </button>
-          )}
           {canEdit && (
             <div className="sv-group sv-desktop-only">
               <button
@@ -811,9 +761,9 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
                 className="sc-btn sc-btn--primary"
                 disabled={(live.active ? !live.state.unsaved && live.state.pending === 0 : !editor.dirty) || editor.saving}
                 onClick={() => void editor.save()}
-                title={suggesting ? t('suggestions.mode.sendTitle', { shortcut: `${MOD}+S` }) : t('editor.view.saveTitle', { shortcut: `${MOD}+S` })}
+                title={t('editor.view.saveTitle', { shortcut: `${MOD}+S` })}
               >
-                <IconSave /> {suggesting ? t('suggestions.mode.send') : t('editor.view.saveButton')}
+                <IconSave /> {t('editor.view.saveButton')}
               </button>
             </div>
           )}
@@ -885,12 +835,6 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
           />
         </div>
       </header>
-
-      {suggesting && (
-        <div className="sv-banner sv-banner--suggest" role="status">
-          <span>{t('suggestions.mode.banner')}</span>
-        </div>
-      )}
 
       {(warning || notTwoStaves) && !hideWarning && (
         <div className="sv-banner" role="status">
@@ -1189,21 +1133,11 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
       {historyOpen && (
         <VersionHistoryPanel
           scoreId={score.id}
-          canEdit={score.canEdit && !suggesting}
+          canEdit={score.canEdit}
           dirty={editor.dirty}
           busy={editor.saving}
           onRestore={editor.restoreVersion}
           onClose={() => setHistoryOpen(false)}
-        />
-      )}
-
-      {suggestXml !== null && (
-        <SuggestSubmitDialog
-          scoreId={score.id}
-          baseVersion={editor.version}
-          xml={suggestXml}
-          onClose={() => setSuggestXml(null)}
-          onSent={onSuggestionSent}
         />
       )}
 
