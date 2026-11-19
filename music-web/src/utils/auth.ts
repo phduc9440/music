@@ -19,8 +19,7 @@ export const hasAdminPermission = (member: Pick<Member, 'permissions'> | null | 
   !!member?.permissions?.includes(p);
 
 /** Vào được khu quản trị: có ít nhất một quyền quản trị (kể cả vai trò tự tạo, không riêng ADMIN). */
-export const hasAdminAccess = (member: Pick<Member, 'permissions'> | null | undefined) =>
-  !!member?.permissions?.length;
+export const hasAdminAccess = (member: Pick<Member, 'permissions'> | null | undefined) => !!member?.permissions?.length;
 
 export const isAdminMember = (member: Pick<Member, 'roles'>) => !!member.roles?.includes('ADMIN');
 

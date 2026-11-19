@@ -2,7 +2,12 @@ import { formatNumber, t } from '../../i18n/core';
 import type { PlanLimits } from '../../types';
 import { Icon } from '../../components/ui';
 
-type NumericKey = 'omrPagesPerMonth' | 'omrConcurrent' | 'keptVersions' | 'exportsPerMonth' | 'chordGenerationsPerMonth';
+type NumericKey =
+  | 'omrPagesPerMonth'
+  | 'omrConcurrent'
+  | 'keptVersions'
+  | 'exportsPerMonth'
+  | 'chordGenerationsPerMonth';
 type FlagKey = 'collab' | 'team' | 'omrPriority';
 
 const NUMERIC: NumericKey[] = [

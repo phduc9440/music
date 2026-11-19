@@ -67,7 +67,12 @@ export default function PracticeSkillRadar() {
             <PolarAngleAxis dataKey="skill" tick={{ fontSize: 13 }} />
             <PolarRadiusAxis angle={90} domain={[0, 100]} tickCount={5} tick={{ fontSize: 11 }} />
             <Tooltip formatter={(value) => [`${value}/100`, t('practice.history.points')]} />
-            <Radar dataKey="value" stroke="var(--ui-chart-practice)" fill="var(--ui-chart-practice)" fillOpacity={0.35} />
+            <Radar
+              dataKey="value"
+              stroke="var(--ui-chart-practice)"
+              fill="var(--ui-chart-practice)"
+              fillOpacity={0.35}
+            />
           </RadarChart>
         </ResponsiveContainer>
       </div>

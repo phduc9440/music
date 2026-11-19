@@ -111,11 +111,7 @@ export default function DeleteScoreModal({ scoreId, title, moderating = false, o
         <button className="sc-btn" onClick={onClose} disabled={deleting}>
           {t('common.cancel')}
         </button>
-        <button
-          className="sc-btn sc-btn--danger-solid"
-          onClick={handleDelete}
-          disabled={deleting}
-        >
+        <button className="sc-btn sc-btn--danger-solid" onClick={handleDelete} disabled={deleting}>
           {deleting ? t('scores.delete.moving') : t('scores.delete.move')}
         </button>
       </div>

@@ -174,7 +174,10 @@ export default function RolePermissions({ team, onSaved }: { team: Team; onSaved
                                 className="tm-perms__check"
                                 checked={on}
                                 disabled={saving}
-                                aria-label={t('teams.permissions.toggle', { role: t(`teams.roles.${r}`), permission: label })}
+                                aria-label={t('teams.permissions.toggle', {
+                                  role: t(`teams.roles.${r}`),
+                                  permission: label,
+                                })}
                                 onChange={() => toggle(r, p)}
                               />
                             ) : on ? (

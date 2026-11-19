@@ -54,8 +54,7 @@ export default function PublicScore() {
     );
   }
 
-  const image =
-    score?.coverUrl ?? (score?.thumbnailUrl ? `${API_BASE_URL}/public/scores/${scoreId}/thumbnail` : null);
+  const image = score?.coverUrl ?? (score?.thumbnailUrl ? `${API_BASE_URL}/public/scores/${scoreId}/thumbnail` : null);
 
   return (
     <div className="sc-page">

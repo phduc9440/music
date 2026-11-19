@@ -68,7 +68,8 @@ export default function AdminRoles() {
   useEffect(load, [load]);
 
   const dirtyIds = useMemo(
-    () => (roles ?? []).filter((r) => r.editable && draft[r.id] && !sameSet(draft[r.id], r.permissions)).map((r) => r.id),
+    () =>
+      (roles ?? []).filter((r) => r.editable && draft[r.id] && !sameSet(draft[r.id], r.permissions)).map((r) => r.id),
     [roles, draft],
   );
 
@@ -149,8 +150,20 @@ export default function AdminRoles() {
                         <span className="adm-roles__count">{t('admin.roles.members', { count: r.memberCount })}</span>
                         {!r.builtIn && (
                           <span className="adm-roles__tools">
-                            <Button size="sm" variant="ghost" icon="edit" title={t('admin.roles.editTitle')} onClick={() => setEditing(r)} />
-                            <Button size="sm" variant="ghost" icon="trash" title={t('common.delete')} onClick={() => remove(r)} />
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              icon="edit"
+                              title={t('admin.roles.editTitle')}
+                              onClick={() => setEditing(r)}
+                            />
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              icon="trash"
+                              title={t('common.delete')}
+                              onClick={() => remove(r)}
+                            />
                           </span>
                         )}
                       </div>
@@ -207,7 +220,9 @@ export default function AdminRoles() {
         )}
         {roles && (
           <div className="adm-roles__bar">
-            <span className="adm-roles__note">{dirtyIds.length > 0 ? t('admin.roles.unsaved') : t('admin.roles.note')}</span>
+            <span className="adm-roles__note">
+              {dirtyIds.length > 0 ? t('admin.roles.unsaved') : t('admin.roles.note')}
+            </span>
             <Button disabled={saving || dirtyIds.length === 0} onClick={load}>
               {t('common.cancel')}
             </Button>

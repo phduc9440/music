@@ -346,9 +346,7 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
     const perMeasure = new Map<number, number>();
     for (const p of participants) {
       if (p.sessionId === selfSessionId) continue;
-      const held = new Set(
-        (locks?.locks ?? []).filter((l) => l.sessionId === p.sessionId).map((l) => l.measureIndex),
-      );
+      const held = new Set((locks?.locks ?? []).filter((l) => l.sessionId === p.sessionId).map((l) => l.measureIndex));
       const wholeHeld = locks?.wholeHolder === p.sessionId;
       const measures = new Set<number>(held);
       if (p.selection) {
@@ -759,7 +757,9 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
               </button>
               <button
                 className="sc-btn sc-btn--primary"
-                disabled={(live.active ? !live.state.unsaved && live.state.pending === 0 : !editor.dirty) || editor.saving}
+                disabled={
+                  (live.active ? !live.state.unsaved && live.state.pending === 0 : !editor.dirty) || editor.saving
+                }
                 onClick={() => void editor.save()}
                 title={t('editor.view.saveTitle', { shortcut: `${MOD}+S` })}
               >

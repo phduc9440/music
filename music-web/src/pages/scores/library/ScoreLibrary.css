@@ -144,7 +144,12 @@
   pointer-events: none;
 }
 .sc-skeleton {
-  background: linear-gradient(90deg, var(--ui-surface-hover) 25%, var(--ui-surface-muted) 37%, var(--ui-surface-hover) 63%);
+  background: linear-gradient(
+    90deg,
+    var(--ui-surface-hover) 25%,
+    var(--ui-surface-muted) 37%,
+    var(--ui-surface-hover) 63%
+  );
   background-size: 200% 100%;
   animation: sc-shimmer 1.3s linear infinite;
   border-radius: 8px;
@@ -308,11 +313,7 @@
   position: absolute;
   inset: auto -10% 18px 35%;
   height: 44px;
-  background: repeating-linear-gradient(
-    180deg,
-    var(--ui-stage-line) 0 1px,
-    transparent 1px 10px
-  );
+  background: repeating-linear-gradient(180deg, var(--ui-stage-line) 0 1px, transparent 1px 10px);
   content: '';
   mask-image: linear-gradient(90deg, transparent, var(--ui-stage-text) 30%, var(--ui-stage-text) 70%, transparent);
   pointer-events: none;

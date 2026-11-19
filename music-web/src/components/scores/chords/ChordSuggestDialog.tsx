@@ -64,8 +64,7 @@ export default function ChordSuggestDialog({ scoreId, onClose }: Props) {
         return;
       }
       if (getErrorCode(err) === PENDING_CODE) {
-        const result = (err as { response?: { data?: { result?: { suggestionId?: string } } } }).response?.data
-          ?.result;
+        const result = (err as { response?: { data?: { result?: { suggestionId?: string } } } }).response?.data?.result;
         setPendingId(result?.suggestionId ?? null);
       }
       setError(getErrorMessage(err, t('chords.failed')));

@@ -349,7 +349,11 @@ export default function PlaylistDetail() {
             <button className="sc-btn" onClick={() => setDeletingPlaylist(false)} disabled={busy}>
               {t('common.cancel')}
             </button>
-            <button className="sc-btn sc-btn--danger-solid" onClick={() => void confirmDeletePlaylist()} disabled={busy}>
+            <button
+              className="sc-btn sc-btn--danger-solid"
+              onClick={() => void confirmDeletePlaylist()}
+              disabled={busy}
+            >
               {busy ? t('scores.trash.deleting') : t('common.delete')}
             </button>
           </div>

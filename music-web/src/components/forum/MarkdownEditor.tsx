@@ -23,7 +23,13 @@ export default function MarkdownEditor({ label, value, onChange, rows = 8, place
           {label}
         </label>
         <div className="fm-tabs" role="tablist" aria-label={t('forum.editor.mode')}>
-          <button type="button" role="tab" aria-selected={!preview} className="fm-tab" onClick={() => setPreview(false)}>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={!preview}
+            className="fm-tab"
+            onClick={() => setPreview(false)}
+          >
             {t('forum.editor.write')}
           </button>
           <button type="button" role="tab" aria-selected={preview} className="fm-tab" onClick={() => setPreview(true)}>
