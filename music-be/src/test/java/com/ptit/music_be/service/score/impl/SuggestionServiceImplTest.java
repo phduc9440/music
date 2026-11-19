@@ -3,8 +3,10 @@ package com.ptit.music_be.service.score.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -196,6 +198,7 @@ class SuggestionServiceImplTest {
         });
         when(memberScoreRepository.findByScoreIdFetchMember(SCORE_ID)).thenReturn(List.of());
         when(scoreEditService.getVersionContent(SCORE_ID, 3)).thenReturn(content(base, 3));
+        when(scoreEditService.getVersionContentForSystem(SCORE_ID, 3)).thenReturn(content(base, 3));
         when(scoreContentService.getMusicXml(SCORE_ID)).thenReturn(content(base, 3));
         when(scoreEditService.saveWithMeta(eq(SCORE_ID), any(), anyString(), any()))
                 .thenAnswer(inv -> {
@@ -324,6 +327,92 @@ class SuggestionServiceImplTest {
         verify(fileStorageService).store(any(), eq("scores/score-1/suggestions/sug-1.musicxml"));
         verify(notificationService)
                 .notify(eq(owner), eq(author), eq(NotificationType.SUGGESTION_NEW), eq(SCORE_ID), anyString(), any());
+    }
+
+    // ---------------------------------------------------------------- hệ thống gửi (R3, gợi ý hợp âm)
+
+    /** Bản gốc thêm một hợp âm C ở ô 1, giữ nguyên DOCTYPE như file music-ai ghi lại từ bản đã lưu. */
+    private static String withChordInFirstMeasure() {
+        int at = base.indexOf("<note>");
+        return base.substring(0, at)
+                + "<harmony><root><root-step>C</root-step></root><kind text=\"\">major</kind></harmony>"
+                + base.substring(at);
+    }
+
+    private ScoreSuggestion createSystem(String xml) {
+        return service.createFromSystem(
+                SCORE_ID,
+                xml.getBytes(StandardCharsets.UTF_8),
+                3,
+                SuggestionSource.CHORD_GENERATION,
+                "Gợi ý hợp âm (Pop)",
+                "Giọng C major");
+    }
+
+    @Test
+    void systemSuggestionHasNoAuthorAndChordSource() {
+        SecurityContextHolder.clearContext(); // worker chạy nền, không có người đăng nhập
+
+        ScoreSuggestion saved = createSystem(withChordInFirstMeasure());
+
+        assertThat(saved.getAuthor()).isNull();
+        assertThat(saved.getSource()).isEqualTo(SuggestionSource.CHORD_GENERATION);
+        assertThat(saved.getStatus()).isEqualTo(SuggestionStatus.OPEN);
+        assertThat(saved.getTitle()).isEqualTo("Gợi ý hợp âm (Pop)");
+        assertThat(saved.getBaseVersion()).isEqualTo(3);
+        ArgumentCaptor<List<ScoreSuggestionChange>> changes = ArgumentCaptor.forClass(List.class);
+        verify(changeRepository).saveAll(changes.capture());
+        assertThat(changes.getValue())
+                .extracting(ScoreSuggestionChange::getMeasureIndex)
+                .containsExactly(0);
+        verify(fileStorageService).store(any(), eq("scores/score-1/suggestions/sug-1.musicxml"));
+    }
+
+    @Test
+    void systemSuggestionNotifiesOwnerAsSystem() {
+        SecurityContextHolder.clearContext();
+
+        createSystem(withChordInFirstMeasure());
+
+        ArgumentCaptor<Map<String, String>> params = ArgumentCaptor.forClass(Map.class);
+        verify(notificationService)
+                .notify(
+                        eq(owner),
+                        isNull(),
+                        eq(NotificationType.SUGGESTION_NEW),
+                        eq(SCORE_ID),
+                        anyString(),
+                        params.capture());
+        assertThat(params.getValue()).containsEntry("system", "1").containsEntry("suggestionId", SUGGESTION_ID);
+    }
+
+    @Test
+    void systemSuggestionWithoutChangesIsEmpty() {
+        assertThat(errorOf(() -> createSystem(base))).isEqualTo(ErrorCode.SUGGESTION_EMPTY);
+        verify(suggestionRepository, never()).save(any());
+    }
+
+    @Test
+    void systemSuggestionReadsBaseWithoutPermissionCheck() {
+        SecurityContextHolder.clearContext();
+        when(scoreEditService.getVersionContentForSystem(SCORE_ID, 3)).thenReturn(content(base, 3));
+        when(scoreEditService.getVersionContent(SCORE_ID, 3)).thenThrow(new AppException(ErrorCode.UNAUTHENTICATED));
+
+        ScoreSuggestion saved = createSystem(withChordInFirstMeasure());
+
+        assertThat(saved.getAuthor()).isNull();
+        verify(scoreEditService, never()).getVersionContent(any(), anyInt());
+    }
+
+    @Test
+    void systemSuggestionSkipsPerAuthorLimits() {
+        SecurityContextHolder.clearContext();
+
+        createSystem(withChordInFirstMeasure());
+
+        verify(suggestionRepository, never()).countOpenOf(any(), any());
+        verify(suggestionRepository, never()).countCreatedSince(any(), any());
+        verify(permissionService, never()).resolve(any());
     }
 
     /** SUG-2 */

@@ -306,6 +306,13 @@ public enum ErrorCode {
     LIVE_OP_INVALID(3124, "Gói thay đổi cộng tác không hợp lệ hoặc quá lớn", HttpStatus.BAD_REQUEST),
     LIVE_LOCK_REQUIRED(3125, "Bạn chưa giữ khóa các ô nhịp này nên chưa gửi thay đổi được", HttpStatus.CONFLICT),
     LIVE_RATE_LIMITED(3126, "Bạn gửi thay đổi quá nhanh, hãy chậm lại một chút", HttpStatus.TOO_MANY_REQUESTS),
+    // ---- 3130-3134: Gợi ý hợp âm tự động (R3)
+    CHORD_STYLE_INVALID(3130, "Phong cách hợp âm phải là POP, BALLAD hoặc JAZZ", HttpStatus.BAD_REQUEST),
+    CHORD_TASK_RUNNING(3131, "Bản nhạc đang được gợi ý hợp âm, vui lòng chờ xong", HttpStatus.CONFLICT),
+    CHORD_SUGGESTION_PENDING(
+            3132, "Bản nhạc đã có một gợi ý hợp âm đang chờ duyệt; hãy nhận hoặc từ chối trước", HttpStatus.CONFLICT),
+    CHORD_NO_MELODY(3133, "Bản nhạc không có giai điệu để gợi ý hợp âm", HttpStatus.BAD_REQUEST),
+    CHORD_ALREADY_HARMONIZED(3134, "Mọi ô nhịp của bản nhạc đã có hợp âm", HttpStatus.BAD_REQUEST),
     // ---- 40xx: Báo cáo vi phạm và nhật ký quản trị (R5)
     REPORT_NOT_EXISTED(4001, "Không tìm thấy báo cáo", HttpStatus.NOT_FOUND),
     REPORT_REASON_INVALID(

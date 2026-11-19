@@ -153,7 +153,7 @@ class ScoreDiffServiceImplTest {
     void versionsOutsideTheOwnersPlanAreTreatedAsGone() {
         score.setMember(Member.builder().id("owner-1").build());
         when(entitlementService.limitsOf("owner-1"))
-                .thenReturn(new PlanLimits(null, null, null, 2, null, null, null, null, null));
+                .thenReturn(new PlanLimits(null, null, null, 2, null, null, null, null, null, null));
         givenFiles(xml(1, null), xml(2, "{\"savedBy\":\"a@b.c\"}"), xml(3, "{\"savedBy\":\"a@b.c\"}"));
 
         // v1 là bản OMR gốc nhưng gói chỉ giữ 2 version mới nhất (v3, v2)

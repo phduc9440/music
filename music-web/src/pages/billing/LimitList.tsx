@@ -2,10 +2,16 @@ import { formatNumber, t } from '../../i18n/core';
 import type { PlanLimits } from '../../types';
 import { Icon } from '../../components/ui';
 
-type NumericKey = 'omrPagesPerMonth' | 'omrConcurrent' | 'keptVersions' | 'exportsPerMonth';
+type NumericKey = 'omrPagesPerMonth' | 'omrConcurrent' | 'keptVersions' | 'exportsPerMonth' | 'chordGenerationsPerMonth';
 type FlagKey = 'collab' | 'team' | 'omrPriority';
 
-const NUMERIC: NumericKey[] = ['omrPagesPerMonth', 'omrConcurrent', 'keptVersions', 'exportsPerMonth'];
+const NUMERIC: NumericKey[] = [
+  'omrPagesPerMonth',
+  'omrConcurrent',
+  'keptVersions',
+  'exportsPerMonth',
+  'chordGenerationsPerMonth',
+];
 const FLAGS: FlagKey[] = ['collab', 'team', 'omrPriority'];
 
 /** Dung lượng theo MB; từ 1024 MB trở lên đổi sang GB. */

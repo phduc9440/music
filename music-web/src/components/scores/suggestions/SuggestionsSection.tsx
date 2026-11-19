@@ -6,6 +6,8 @@ import type { SuggestionFilter, SuggestionSummary } from '../../../types';
 import { formatRelative, getErrorMessage, useScoreBase } from '../../../utils/score';
 import { t } from '../../../i18n/core';
 import Skeleton from '../../ui/Skeleton';
+import { Icon } from '../../ui';
+import ChordSuggestDialog from '../chords/ChordSuggestDialog';
 import { statusTone, suggestionPath } from './suggestionUtils';
 import './suggestions.css';
 
@@ -22,6 +24,7 @@ export default function SuggestionsSection({ scoreId, onOpenCount }: Props) {
   const base = useScoreBase();
   const [filter, setFilter] = useState<SuggestionFilter>('OPEN');
   const [items, setItems] = useState<SuggestionSummary[] | null>(null);
+  const [suggestingChords, setSuggestingChords] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -62,7 +65,17 @@ export default function SuggestionsSection({ scoreId, onOpenCount }: Props) {
             {t(`suggestions.filter.${f}`)}
           </button>
         ))}
+        <button
+          type="button"
+          className="sc-btn sc-btn--sm sg-filters__action"
+          onClick={() => setSuggestingChords(true)}
+          title={t('chords.buttonHint')}
+        >
+          <Icon name="music" size={14} />
+          {t('chords.button')}
+        </button>
       </div>
+      {suggestingChords && <ChordSuggestDialog scoreId={scoreId} onClose={() => setSuggestingChords(false)} />}
 
       {items === null ? (
         <Skeleton height={64} />

@@ -13,6 +13,8 @@ export function notificationText(n: AppNotification): string {
   if (!hasKey(key)) return n.message;
   const text = t(key, {
     ...p,
+    // Đề xuất do hệ thống gửi (gợi ý hợp âm): tên người gửi dịch theo ngôn ngữ người đọc
+    name: p.system ? t('suggestions.section.system') : (p.name ?? ''),
     level: p.level ? t(`notifications.levels.${p.level}`) : '',
     // Vai trò trong team (Team và Show) gửi dạng mã OWNER / MANAGER / ARRANGER / VIEWER
     role: p.role && hasKey(`teams.roles.${p.role}`) ? t(`teams.roles.${p.role}`) : (p.role ?? ''),

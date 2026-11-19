@@ -14,3 +14,4 @@ benchmark/results/
 # Thư mục chỉ dùng cục bộ, không đưa lên GitHub
 benchmark/
 docs/
+training/chords/data/

@@ -429,7 +429,7 @@ class ScoreEditServiceImplTest {
         score.setMember(Member.builder().id("owner-1").build());
         lenient()
                 .when(entitlementService.limitsOf("owner-1"))
-                .thenReturn(new PlanLimits(null, null, null, keptVersions, null, null, null, null, null));
+                .thenReturn(new PlanLimits(null, null, null, keptVersions, null, null, null, null, null, null));
     }
 
     @Test
@@ -509,6 +509,23 @@ class ScoreEditServiceImplTest {
 
         assertThat(content.version()).isEqualTo(2);
         assertThat(content.bytes()).isEqualTo(VALID_XML);
+    }
+
+    @Test
+    void systemVersionReadSkipsThePermissionCheck() throws Exception {
+        // Worker gợi ý hợp âm chạy ở luồng nền, không có người đăng nhập: kiểm quyền sẽ ném UNAUTHENTICATED
+        lenient()
+                .doThrow(new AppException(ErrorCode.UNAUTHENTICATED))
+                .when(scoreFileService)
+                .checkCanView(any());
+        givenXmlVersions(5);
+        writeVersionFile(2, VALID_XML);
+
+        ScoreContent content = service.getVersionContentForSystem(SCORE_ID, 2);
+
+        assertThat(content.version()).isEqualTo(2);
+        assertThat(content.bytes()).isEqualTo(VALID_XML);
+        verify(scoreFileService, never()).checkCanView(any());
     }
 
     @Test

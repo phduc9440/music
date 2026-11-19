@@ -22,6 +22,7 @@ import MidiConvertButton from '../../export/MidiConvertButton';
 import { isTaskFinished } from '../../export/exportUtils';
 import { Icon } from '../../ui';
 import OfficialRequestBanner from './OfficialRequestBanner';
+import ChordSuggestDialog from '../chords/ChordSuggestDialog';
 import ScoreCover from './ScoreCover';
 import { t } from '../../../i18n/core';
 
@@ -47,6 +48,7 @@ export default function ScoreHero({ score, onVisibilityChanged, onRequestMore }:
   const ready = hasMusicXml(score);
   const [linkCopied, setLinkCopied] = useState(false);
   const [forking, setForking] = useState(false);
+  const [suggestingChords, setSuggestingChords] = useState(false);
   // Tạo bản phối riêng tư từ bản công khai chủ cho phép (R4), xong thì mở bản mới
   const fork = async () => {
     setForking(true);
@@ -180,6 +182,17 @@ export default function ScoreHero({ score, onVisibilityChanged, onRequestMore }:
               <Icon name="play" size={16} />
               {t('scores.hero.play')}
             </Link>
+            {score.canReview && ready && (
+              <button
+                type="button"
+                className="sc-btn"
+                onClick={() => setSuggestingChords(true)}
+                title={t('chords.buttonHint')}
+              >
+                <Icon name="music" size={16} />
+                {t('chords.button')}
+              </button>
+            )}
             {canConvertMidi && (
               <MidiConvertButton
                 scoreId={score.id}
@@ -219,6 +232,8 @@ export default function ScoreHero({ score, onVisibilityChanged, onRequestMore }:
           </div>
         </div>
       </header>
+
+      {suggestingChords && <ChordSuggestDialog scoreId={score.id} onClose={() => setSuggestingChords(false)} />}
 
       <div className="sd-alerts">
         {score.accessLevel === 'OWNER' && !base.startsWith('/admin') && <OfficialRequestBanner scoreId={score.id} />}

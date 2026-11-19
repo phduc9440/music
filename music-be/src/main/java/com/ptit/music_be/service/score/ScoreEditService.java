@@ -60,6 +60,13 @@ public interface ScoreEditService {
     ScoreContent getVersionContent(String scoreId, int version);
 
     /**
+     * Như {@link #getVersionContent} nhưng không kiểm quyền: chỉ dùng cho việc chạy nền của hệ thống (worker gợi ý hợp âm)
+     * không có người đăng nhập, sau khi quyền đã được kiểm lúc tạo tác vụ. Lỗi: SCORE_NOT_EXISTED (2001),
+     * SCORE_VERSION_NOT_EXISTED (2801), FILE_NOT_EXISTED (2002).
+     */
+    ScoreContent getVersionContentForSystem(String scoreId, int version);
+
+    /**
      * Khôi phục một version cũ: lưu nội dung của nó thành version mới ngay sau version hiện hành (không ghi đè lịch
      * sử), qua đúng luồng của {@link #saveMusicXml}. Cần quyền sửa. Ngoài các lỗi của saveMusicXml còn có
      * SCORE_VERSION_NOT_EXISTED (2801) và SCORE_VERSION_CONFLICT (2014) khi If-Match khác version hiện hành.

@@ -192,7 +192,59 @@ public class SuggestionServiceImpl implements SuggestionService {
             throw new AppException(ErrorCode.SUGGESTION_RATE_LIMITED);
         }
 
-        ScoreContent base = scoreEditService.getVersionContent(score.getId(), baseVersion);
+        Persisted saved =
+                persist(score, me, SuggestionSource.EDITOR, baseVersion, cleanTitle, cleanDescription, bytes, proposed);
+        return detail(saved.suggestion(), score, decision, me, saved.changes());
+    }
+
+    @Override
+    @Transactional
+    public ScoreSuggestion createFromSystem(
+            String scoreId,
+            byte[] musicXml,
+            int baseVersion,
+            SuggestionSource source,
+            String title,
+            String description) {
+        Score score = findScore(scoreId);
+        // File do music-ai ghi lại từ bản đã lưu nên có thể còn DOCTYPE công khai như bản gốc
+        Document proposed = MusicXmlInspector.parseStored(musicXml);
+        Integer currentVersion = score.getCurrentVersion();
+        if (baseVersion < 1 || currentVersion == null || baseVersion > currentVersion) {
+            throw new AppException(ErrorCode.SCORE_VERSION_NOT_EXISTED);
+        }
+        String cleanTitle = title == null || title.isBlank() ? "Gợi ý" : title.strip();
+        if (cleanTitle.length() > MAX_TITLE) {
+            cleanTitle = cleanTitle.substring(0, MAX_TITLE);
+        }
+        String cleanDescription = description == null || description.isBlank()
+                ? null
+                : description.strip().substring(0, Math.min(description.strip().length(), MAX_DESCRIPTION));
+        return persist(score, null, source, baseVersion, cleanTitle, cleanDescription, musicXml, proposed)
+                .suggestion();
+    }
+
+    /** Đề xuất vừa lưu cùng các ô thay đổi của nó. */
+    private record Persisted(ScoreSuggestion suggestion, List<ScoreSuggestionChange> changes) {}
+
+    /**
+     * Phần chung của gửi đề xuất: so với version gốc, lưu đề xuất + file + từng ô thay đổi, báo chủ và người sửa.
+     * {@code author} null là hệ thống gửi. Ném SUGGESTION_EMPTY nếu không có ô nào đổi.
+     */
+    private Persisted persist(
+            Score score,
+            Member author,
+            SuggestionSource source,
+            int baseVersion,
+            String title,
+            String description,
+            byte[] bytes,
+            Document proposed) {
+        // Hệ thống gửi (worker chạy nền, không có người đăng nhập) thì đọc không kiểm quyền; quyền đã kiểm lúc tạo tác
+        // vụ
+        ScoreContent base = author == null
+                ? scoreEditService.getVersionContentForSystem(score.getId(), baseVersion)
+                : scoreEditService.getVersionContent(score.getId(), baseVersion);
         SuggestionDiffer.Result result = SuggestionDiffer.diff(MusicXmlInspector.parseStored(base.bytes()), proposed);
         if (!result.structural() && result.changes().isEmpty()) {
             throw new AppException(ErrorCode.SUGGESTION_EMPTY);
@@ -200,12 +252,12 @@ public class SuggestionServiceImpl implements SuggestionService {
 
         ScoreSuggestion suggestion = suggestionRepository.save(ScoreSuggestion.builder()
                 .score(score)
-                .author(me)
-                .source(SuggestionSource.EDITOR)
+                .author(author)
+                .source(source)
                 .baseVersion(baseVersion)
                 .baseShape(shapeToJson(result.baseShape()))
-                .title(cleanTitle)
-                .description(cleanDescription)
+                .title(title)
+                .description(description)
                 .status(SuggestionStatus.OPEN)
                 .structural(result.structural())
                 .build());
@@ -226,8 +278,8 @@ public class SuggestionServiceImpl implements SuggestionService {
                         .status(SuggestionChangeStatus.PENDING)
                         .build())
                 .toList());
-        notifyNew(score, suggestion, me, changes.size());
-        return detail(suggestion, score, decision, me, changes);
+        notifyNew(score, suggestion, author, changes.size());
+        return new Persisted(suggestion, changes);
     }
 
     // ------------------------------------------------------------------------------------------------ đọc
@@ -567,7 +619,8 @@ public class SuggestionServiceImpl implements SuggestionService {
                 recipients.putIfAbsent(share.getMember().getId(), share.getMember());
             }
         }
-        String name = ScoreCommentServiceImpl.displayName(actor);
+        // actor null: hệ thống gửi (gợi ý hợp âm); web hiện "Hệ thống" theo ngôn ngữ người đọc nhờ param "system"
+        String name = actor == null ? "Hệ thống" : ScoreCommentServiceImpl.displayName(actor);
         for (Member recipient : recipients.values()) {
             notificationService.notify(
                     recipient,
@@ -583,7 +636,9 @@ public class SuggestionServiceImpl implements SuggestionService {
                             "suggestionId",
                             suggestion.getId(),
                             "count",
-                            String.valueOf(count)));
+                            String.valueOf(count),
+                            "system",
+                            actor == null ? "1" : null));
         }
     }
 

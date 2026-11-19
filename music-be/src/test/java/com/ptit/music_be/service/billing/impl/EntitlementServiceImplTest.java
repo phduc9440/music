@@ -30,6 +30,7 @@ import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.repository.ai.AiTaskRepository;
 import com.ptit.music_be.repository.billing.PlanRepository;
 import com.ptit.music_be.repository.score.ScoreFileRepository;
+import com.ptit.music_be.service.billing.PlanLimits;
 import com.ptit.music_be.service.billing.PlanLimitsParser;
 import com.ptit.music_be.service.billing.SubscriptionService;
 
@@ -44,8 +45,14 @@ class EntitlementServiceImplTest {
 
     private static final long MB = 1024L * 1024L;
 
-    private final Plan free = plan("FREE", 1, "{\"omrPagesPerMonth\":20,\"storageMb\":200,\"exportsPerMonth\":10}");
-    private final Plan pro = plan("PRO", 2, "{\"omrPagesPerMonth\":null,\"storageMb\":null,\"exportsPerMonth\":null}");
+    private final Plan free = plan(
+            "FREE",
+            1,
+            "{\"omrPagesPerMonth\":20,\"storageMb\":200,\"exportsPerMonth\":10,\"chordGenerationsPerMonth\":5}");
+    private final Plan pro = plan(
+            "PRO",
+            2,
+            "{\"omrPagesPerMonth\":null,\"storageMb\":null,\"exportsPerMonth\":null,\"chordGenerationsPerMonth\":null}");
 
     private static Plan plan(String code, int order, String limits) {
         return Plan.builder().code(code).sortOrder(order).limits(limits).build();
@@ -137,6 +144,50 @@ class EntitlementServiceImplTest {
         when(tasks.countExportsCharged(eq("m"), any(), any())).thenReturn(5000L);
 
         assertDoesNotThrow(() -> service.checkAvailable("m", UsageMetric.EXPORTS, 1));
+    }
+
+    // ---------------------------------------------------------------- gợi ý hợp âm (R3)
+
+    @Test
+    void usedThisMonthCountsChordGenerations() {
+        when(tasks.countChordGenerationsCharged(eq("m"), any(), any())).thenReturn(3L);
+
+        assertEquals(3, service.usedThisMonth("m", UsageMetric.CHORD_GENERATIONS));
+    }
+
+    @Test
+    void fifthChordGenerationIsAllowedButTheSixthIsRejected() {
+        use(free);
+        when(tasks.countChordGenerationsCharged(eq("m"), any(), any())).thenReturn(4L);
+        assertDoesNotThrow(() -> service.checkAvailable("m", UsageMetric.CHORD_GENERATIONS, 1));
+
+        when(tasks.countChordGenerationsCharged(eq("m"), any(), any())).thenReturn(5L);
+        AppException e =
+                assertThrows(AppException.class, () -> service.checkAvailable("m", UsageMetric.CHORD_GENERATIONS, 1));
+
+        assertEquals(ErrorCode.PLAN_LIMIT_REACHED, e.getErrorCode());
+        PlanLimitPayload payload = (PlanLimitPayload) e.getPayload();
+        assertEquals("CHORD_GENERATIONS", payload.metric());
+        assertEquals(5, payload.limit());
+        assertEquals("PRO", payload.upgradeTo());
+    }
+
+    @Test
+    void unlimitedPlanNeverRejectsChordGenerations() {
+        use(pro);
+        when(tasks.countChordGenerationsCharged(eq("m"), any(), any())).thenReturn(5000L);
+
+        assertDoesNotThrow(() -> service.checkAvailable("m", UsageMetric.CHORD_GENERATIONS, 1));
+    }
+
+    @Test
+    void mergeTakesHigherChordLimitAndNullWins() {
+        PlanLimits five = new PlanLimits(1, 1, 1, 1, 1, false, false, false, null, 5);
+        PlanLimits thirty = new PlanLimits(1, 1, 1, 1, 1, false, false, false, null, 30);
+        PlanLimits unlimited = new PlanLimits(1, 1, 1, 1, 1, false, false, false, null, null);
+
+        assertEquals(30, PlanLimits.merge(List.of(five, thirty)).chordGenerationsPerMonth());
+        assertNull(PlanLimits.merge(List.of(five, unlimited)).chordGenerationsPerMonth());
     }
 
     // ---------------------------------------------------------------- dung lượng (PL-5)

@@ -400,6 +400,14 @@ public class ScoreEditServiceImpl implements ScoreEditService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public ScoreContent getVersionContentForSystem(String scoreId, int version) {
+        Score score =
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+        return new ScoreContent(readVersion(score, version), version);
+    }
+
+    @Override
     @Transactional
     public ScoreSaveResponse restoreVersion(String scoreId, int version, String ifMatch) {
         // Khóa dòng trước khi đọc để version được khôi phục không bị dọn mất giữa chừng bởi một lần lưu khác

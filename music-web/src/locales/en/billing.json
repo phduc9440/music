@@ -9,6 +9,7 @@
     "storageMb": "Storage",
     "keptVersions": "Versions kept",
     "exportsPerMonth": "Exports per month",
+    "chordGenerationsPerMonth": "Chord suggestions per month",
     "collab": "Real-time co-editing",
     "team": "Create teams",
     "omrPriority": "OMR queue priority",
@@ -142,6 +143,7 @@
     "reason": {
       "OMR_PAGES": "You have used {used}/{limit} OMR pages this month.",
       "EXPORTS": "You have used {used}/{limit} exports this month.",
+      "CHORD_GENERATIONS": "You have used {used}/{limit} chord suggestions this month.",
       "STORAGE_MB": "You are using {used} MB of {limit} MB storage.",
       "DEFAULT": "You have reached the limit of your current plan."
     }

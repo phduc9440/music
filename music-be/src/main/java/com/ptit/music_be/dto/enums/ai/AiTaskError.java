@@ -25,5 +25,9 @@ public enum AiTaskError {
     /** Model nhận diện (Transcoda) bị tắt hoặc nạp lỗi. */
     MODEL_NOT_LOADED,
     /** Người dùng bấm hủy. */
-    CANCELLED_BY_USER
+    CANCELLED_BY_USER,
+    /** Gợi ý hợp âm: bản nhạc không có nốt giai điệu. */
+    CHORD_NO_MELODY,
+    /** Gợi ý hợp âm: mọi ô đã có hợp âm hoặc không có gì mới để đề xuất. */
+    CHORD_ALREADY_HARMONIZED
 }
