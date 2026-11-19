@@ -126,6 +126,7 @@ Chạy ở bước MERGE, sau khi đã có bản đồ ô nhịp (`measureMap`).
 | DELETE | `/omr/jobs/{taskId}` | Hủy job đang chờ/chạy (dừng giữa các trang). Trả `{"cancelled": true/false}` |
 | POST | `/convert/kern-to-musicxml` | Đồng bộ: kern → MusicXML đã chuẩn hóa. Body `{kernPath, outPath, tempoBpm?}`; trả số ô nhịp, giọng, nhịp, tempo |
 | POST | `/convert/musicxml-to-midi` | Đồng bộ: MusicXML → MIDI (Java gọi khi MIDI cũ hơn MusicXML). Body `{musicXmlPath, outPath, tempoBpm}`; trả `{notes, tracks, seconds}` |
+| POST | `/chords/generate` | Đồng bộ: gợi ý hợp âm (R3, HMM + Viterbi). Body `{inPath, outPath, style: POP/BALLAD/JAZZ}`; ghi bản có `<harmony>` ra `outPath`, trả `{key, steps, filled, skipped, keptExisting}`. Lỗi 422 `detail = {code, message}` với `code` là `NO_MELODY`, `ALREADY_HARMONIZED` hoặc `PARSE_ERROR` |
 
 Mọi endpoint trừ `/health` cần header `X-Internal-Key`, sai trả 401. Hai endpoint `/convert/**` chạy ngoài hàng đợi OMR; đường
 dẫn phải nằm trong `scores/<scoreId>/` (cùng một bản nhạc cho vào và ra), `outPath` có đuôi `.musicxml` / `.mid`; sai: 422.
@@ -143,6 +144,17 @@ Body `POST /omr/jobs`:
 
 Quy tắc kiểm tra (sai thì 422): `taskId` là UUID; `path` là đường dẫn **tương đối**, không có `..`, file phải tồn tại và
 nằm trong `scores/<scoreId>/`; hoặc đúng 1 PDF, hoặc nhiều ảnh (không trộn).
+
+## Gợi ý hợp âm (R3, Module AI 3)
+
+`app/chords/`: tách giai điệu (nốt cao nhất của khuông 1, bước nửa ô với nhịp 4 phách) → đoán giọng (Krumhansl–Schmuckler của
+music21) → HMM với Viterbi trên hợp âm theo bậc → chèn `<harmony>` thẳng vào XML gốc (không xuất lại bằng music21, giữ nguyên
+mọi phần khác). Xác suất phát học theo từng hợp âm theo bậc (bảng định dạng v2). Ô đã có hợp âm được giữ và dùng làm ràng
+buộc; mỗi nốt mang tối đa một hợp âm. Cùng file, cùng phong cách luôn ra cùng kết quả.
+
+Bảng xác suất `app/chords/model/{pop,ballad,jazz}.json` học từ POP909 (MIT) và iRealPro/iRb (CC BY 4.0). Cách tải dữ liệu,
+huấn luyện lại và giấy phép: `training/chords/README.md`. Kết quả đánh giá: `training/chords/RESULTS.md`
+(`python scripts/chord_eval.py --pop909 <thư mục POP909>`).
 
 ## Các bước và tiến độ
 

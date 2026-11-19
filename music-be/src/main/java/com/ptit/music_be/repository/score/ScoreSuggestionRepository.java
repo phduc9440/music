@@ -14,6 +14,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import com.ptit.music_be.dto.enums.score.SuggestionSource;
 import com.ptit.music_be.dto.enums.score.SuggestionStatus;
 import com.ptit.music_be.entity.ScoreSuggestion;
 
@@ -36,6 +37,10 @@ public interface ScoreSuggestionRepository extends JpaRepository<ScoreSuggestion
             @Param("statuses") Collection<SuggestionStatus> statuses,
             @Param("authorId") String authorId,
             Pageable pageable);
+
+    /** Đề xuất đầu tiên của bản nhạc theo nguồn và trạng thái (ví dụ gợi ý hợp âm còn đang mở). */
+    Optional<ScoreSuggestion> findFirstByScoreIdAndSourceAndStatus(
+            String scoreId, SuggestionSource source, SuggestionStatus status);
 
     /** Số đề xuất đang mở của một người trên một bản nhạc. */
     @Query("select count(s) from ScoreSuggestion s where s.score.id = :scoreId and s.author.id = :authorId"

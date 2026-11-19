@@ -35,6 +35,10 @@
   cursor: pointer;
 }
 
+.sg-filters__action {
+  margin-left: auto;
+}
+
 .sg-filter:hover {
   border-color: var(--ui-border-strong);
   color: var(--ui-text);

@@ -20,7 +20,9 @@ public record PlanLimits(
         Boolean team,
         Boolean omrPriority,
         /** Số thành viên tối đa của mỗi team do người dùng gói này tạo (chỉ có nghĩa khi team = true). */
-        Integer teamMembers) {
+        Integer teamMembers,
+        /** Số lần gợi ý hợp âm (R3) mỗi tháng. */
+        Integer chordGenerationsPerMonth) {
 
     /**
      * Hạn mức khi một người có cùng lúc nhiều gói (một gói cá nhân và một gói team): mỗi chỉ số lấy mức cao hơn, null
@@ -46,7 +48,8 @@ public record PlanLimits(
                 any(all, PlanLimits::collab),
                 !teamPlans.isEmpty(),
                 any(all, PlanLimits::omrPriority),
-                teamPlans.isEmpty() ? null : highest(teamPlans, PlanLimits::teamMembers));
+                teamPlans.isEmpty() ? null : highest(teamPlans, PlanLimits::teamMembers),
+                highest(all, PlanLimits::chordGenerationsPerMonth));
     }
 
     private static Integer highest(List<PlanLimits> all, Function<PlanLimits, Integer> field) {

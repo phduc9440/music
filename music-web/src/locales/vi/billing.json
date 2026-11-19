@@ -9,6 +9,7 @@
     "storageMb": "Dung lượng",
     "keptVersions": "Phiên bản giữ lại",
     "exportsPerMonth": "Lượt xuất mỗi tháng",
+    "chordGenerationsPerMonth": "Lượt gợi ý hợp âm mỗi tháng",
     "collab": "Cùng chỉnh sửa thời gian thực",
     "team": "Tạo nhóm",
     "omrPriority": "Ưu tiên hàng đợi OMR",
@@ -139,6 +140,7 @@
     "reason": {
       "OMR_PAGES": "Bạn đã dùng {used}/{limit} trang OMR trong tháng này.",
       "EXPORTS": "Bạn đã dùng {used}/{limit} lượt xuất trong tháng này.",
+      "CHORD_GENERATIONS": "Bạn đã dùng {used}/{limit} lượt gợi ý hợp âm trong tháng này.",
       "STORAGE_MB": "Dung lượng lưu trữ đã dùng {used} MB trên tối đa {limit} MB.",
       "DEFAULT": "Bạn đã dùng hết hạn mức của gói hiện tại."
     }

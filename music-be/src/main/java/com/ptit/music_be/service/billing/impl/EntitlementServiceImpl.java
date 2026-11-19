@@ -102,6 +102,7 @@ public class EntitlementServiceImpl implements EntitlementService {
         return switch (metric) {
             case OMR_PAGES -> (int) aiTaskRepository.sumOmrPagesCharged(memberId, from, to);
             case EXPORTS -> (int) aiTaskRepository.countExportsCharged(memberId, from, to);
+            case CHORD_GENERATIONS -> (int) aiTaskRepository.countChordGenerationsCharged(memberId, from, to);
         };
     }
 
@@ -109,6 +110,7 @@ public class EntitlementServiceImpl implements EntitlementService {
         return switch (metric) {
             case OMR_PAGES -> limits.omrPagesPerMonth();
             case EXPORTS -> limits.exportsPerMonth();
+            case CHORD_GENERATIONS -> limits.chordGenerationsPerMonth();
         };
     }
 

@@ -24,6 +24,7 @@ const NUMBER_LIMITS = [
   'storageMb',
   'keptVersions',
   'exportsPerMonth',
+  'chordGenerationsPerMonth',
   'teamMembers',
 ] as const;
 /** Quyền lợi bật/tắt. */
@@ -75,6 +76,7 @@ const emptyDraft = (): Draft => ({
     storageMb: '1024',
     keptVersions: '10',
     exportsPerMonth: null,
+    chordGenerationsPerMonth: null,
     teamMembers: null,
   },
   flags: { collab: false, team: false, omrPriority: false },

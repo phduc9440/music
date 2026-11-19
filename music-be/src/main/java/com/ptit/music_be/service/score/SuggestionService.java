@@ -3,10 +3,12 @@ package com.ptit.music_be.service.score;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.ptit.music_be.dto.enums.score.SuggestionFilter;
+import com.ptit.music_be.dto.enums.score.SuggestionSource;
 import com.ptit.music_be.dto.request.score.SuggestionDecisionRequest;
 import com.ptit.music_be.dto.response.common.PageResponse;
 import com.ptit.music_be.dto.response.score.SuggestionDetailResponse;
 import com.ptit.music_be.dto.response.score.SuggestionSummaryResponse;
+import com.ptit.music_be.entity.ScoreSuggestion;
 
 /**
  * Đề xuất sửa (mục 4.3): người có quyền nhận xét sửa thử một bản nhạc mà không đụng bản chính; người có quyền sửa xem từng
@@ -23,6 +25,21 @@ public interface SuggestionService {
      */
     SuggestionDetailResponse create(
             String scoreId, MultipartFile file, Integer baseVersion, String title, String description);
+
+    /**
+     * Đề xuất do hệ thống gửi (author null), ví dụ gợi ý hợp âm (R3). Không kiểm quyền người gọi và không áp giới hạn theo
+     * người gửi (giới hạn nằm ở hạn mức gói). Lỗi: SCORE_NOT_EXISTED (2001), MUSICXML_INVALID (2013),
+     * SCORE_VERSION_NOT_EXISTED (2801), SUGGESTION_EMPTY (3111).
+     *
+     * @param musicXml bản nhạc đầy đủ đã sửa từ version {@code baseVersion}
+     */
+    ScoreSuggestion createFromSystem(
+            String scoreId,
+            byte[] musicXml,
+            int baseVersion,
+            SuggestionSource source,
+            String title,
+            String description);
 
     /**
      * Danh sách đề xuất của bản nhạc, mới nhất trước. Người có quyền sửa thấy tất cả, người chỉ có REVIEW chỉ thấy của

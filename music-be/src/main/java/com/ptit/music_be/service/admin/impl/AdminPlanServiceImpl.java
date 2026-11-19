@@ -204,7 +204,12 @@ public class AdminPlanServiceImpl implements AdminPlanService {
 
     /** Mỗi hạn mức số: null (không giới hạn) hoặc 0..MAX_LIMIT; số task cùng lúc ít nhất 1 để vẫn số hóa được. */
     private static boolean validLimits(PlanLimits l) {
-        boolean inRange = Stream.of(l.omrPagesPerMonth(), l.storageMb(), l.keptVersions(), l.exportsPerMonth())
+        boolean inRange = Stream.of(
+                        l.omrPagesPerMonth(),
+                        l.storageMb(),
+                        l.keptVersions(),
+                        l.exportsPerMonth(),
+                        l.chordGenerationsPerMonth())
                 .allMatch(v -> v == null || (v >= 0 && v <= MAX_LIMIT));
         Integer concurrent = l.omrConcurrent();
         Integer teamMembers = l.teamMembers();
@@ -225,7 +230,8 @@ public class AdminPlanServiceImpl implements AdminPlanService {
                 Boolean.TRUE.equals(l.collab()),
                 Boolean.TRUE.equals(l.team()),
                 Boolean.TRUE.equals(l.omrPriority()),
-                Boolean.TRUE.equals(l.team()) ? l.teamMembers() : null);
+                Boolean.TRUE.equals(l.team()) ? l.teamMembers() : null,
+                l.chordGenerationsPerMonth());
         try {
             return objectMapper.writeValueAsString(normalized);
         } catch (JsonProcessingException e) {

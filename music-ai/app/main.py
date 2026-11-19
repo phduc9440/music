@@ -15,6 +15,8 @@ from fastapi import Depends, FastAPI, Header, HTTPException
 
 from app import storage
 from app.analysis.diff import diff_files
+from app.chords import ChordError
+from app.chords.generate import generate_file
 from app.config import get_settings
 from app.convert.errors import ConversionError
 from app.convert.kern import kern_file_to_musicxml_file
@@ -25,6 +27,7 @@ from app.jobs import JobManager, QueueFullError
 from app.omr.engines import music_engine_name
 from app.omr.transcoda import get_recognizer
 from app.schemas import (
+    ChordGenerateRequest,
     DiffRequest,
     JobRequest,
     KernToMusicXmlRequest,
@@ -208,3 +211,26 @@ def analysis_diff(body: DiffRequest) -> dict:
         return diff_files(storage.resolve(body.basePath), storage.resolve(body.targetPath))
     except ConversionError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.post("/chords/generate", dependencies=[Depends(require_internal_key)])
+def chords_generate(body: ChordGenerateRequest) -> dict:
+    """Gợi ý hợp âm (R3, HMM + Viterbi) cho MusicXML ``inPath``, ghi bản có ``<harmony>`` ra ``outPath``, đồng bộ.
+
+    Lỗi dự đoán được trả 422 với ``detail = {code, message}``; ``code`` là ``NO_MELODY``, ``ALREADY_HARMONIZED`` hoặc
+    ``PARSE_ERROR`` để Java ghi đúng mã lỗi của task.
+    """
+    try:
+        result = generate_file(storage.resolve(body.inPath), storage.resolve(body.outPath), body.style)
+    except ChordError as exc:
+        raise HTTPException(status_code=422, detail={"code": exc.code, "message": str(exc)}) from exc
+    except ConversionError as exc:
+        raise HTTPException(status_code=422, detail={"code": "PARSE_ERROR", "message": str(exc)}) from exc
+    return {
+        "outPath": body.outPath,
+        "key": result.key,
+        "steps": result.steps,
+        "filled": result.filled,
+        "skipped": result.skipped,
+        "keptExisting": result.kept_existing,
+    }

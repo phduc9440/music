@@ -231,3 +231,29 @@ class DiffRequest(BaseModel):
         if _score_dir(self.basePath) != _score_dir(self.targetPath):
             raise ValueError("basePath và targetPath phải thuộc cùng một bản nhạc")
         return self
+
+
+class ChordGenerateRequest(BaseModel):
+    """Body của ``POST /chords/generate``: gợi ý hợp âm cho một MusicXML trong storage (R3)."""
+
+    inPath: str
+    outPath: str
+    style: Literal["POP", "BALLAD", "JAZZ"]
+
+    @field_validator("inPath")
+    @classmethod
+    def _in_must_exist(cls, value: str) -> str:
+        resolve_existing_file(value)
+        _score_dir(value)
+        return value.strip().replace("\\", "/")
+
+    @field_validator("outPath")
+    @classmethod
+    def _out_must_be_musicxml(cls, value: str) -> str:
+        return _safe_output_path(value, ".musicxml")
+
+    @model_validator(mode="after")
+    def _same_score(self) -> "ChordGenerateRequest":
+        if _score_dir(self.inPath) != _score_dir(self.outPath):
+            raise ValueError("inPath và outPath phải thuộc cùng một bản nhạc")
+        return self

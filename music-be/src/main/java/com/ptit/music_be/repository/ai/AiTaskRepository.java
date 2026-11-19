@@ -50,6 +50,17 @@ public interface AiTaskRepository extends JpaRepository<AiTask, String> {
             @Param("from") java.time.LocalDateTime from,
             @Param("to") java.time.LocalDateTime to);
 
+    /** Số lần gợi ý hợp âm (R3) của thành viên trong khoảng thời gian, trừ task lỗi hoặc bị hủy. */
+    @Query(
+            value = "SELECT COUNT(*) FROM ai_tasks t WHERE t.member_id = :memberId"
+                    + " AND t.task_type = 'CHORD_GENERATION'"
+                    + " AND t.status NOT IN ('FAILED', 'CANCELLED') AND t.created_at >= :from AND t.created_at < :to",
+            nativeQuery = true)
+    long countChordGenerationsCharged(
+            @Param("memberId") String memberId,
+            @Param("from") java.time.LocalDateTime from,
+            @Param("to") java.time.LocalDateTime to);
+
     List<AiTask> findByScoreIdOrderByCreatedAtDesc(String scoreId);
 
     List<AiTask> findByStatusOrderByCreatedAtAsc(AiTaskStatus status);

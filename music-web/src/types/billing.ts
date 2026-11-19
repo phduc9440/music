@@ -7,6 +7,8 @@ export interface PlanLimits {
   storageMb?: number | null;
   keptVersions?: number | null;
   exportsPerMonth?: number | null;
+  /** Số lần gợi ý hợp âm mỗi tháng (R3); null = không giới hạn. */
+  chordGenerationsPerMonth?: number | null;
   collab?: boolean | null;
   team?: boolean | null;
   omrPriority?: boolean | null;

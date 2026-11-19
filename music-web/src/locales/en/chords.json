@@ -1,0 +1,40 @@
+{
+  "button": "Suggest chords",
+  "buttonHint": "Reads the melody and proposes a chord for each measure; you review before accepting",
+  "sourceLabel": "Automatic chord suggestion",
+  "failed": "Could not suggest chords, please try again",
+  "cancelled": "The chord suggestion task was cancelled",
+  "dialog": {
+    "title": "Suggest chords",
+    "hint": "The melody is analysed, the key is detected and chords are proposed for measures that have none. The result is a suggested edit: review each measure and accept or reject it; the score does not change until you accept.",
+    "styleLabel": "Style",
+    "running": "Analysing the melody…",
+    "closeHint": "You can hide this dialog; the suggestion is still created and will appear in the Suggestions tab.",
+    "openPending": "Open pending suggestion",
+    "cancel": "Cancel",
+    "hide": "Hide",
+    "submit": "Create suggestion",
+    "creating": "Creating…"
+  },
+  "styles": {
+    "POP": {
+      "name": "Pop",
+      "description": "Familiar triads, the I–V–vi–IV loop"
+    },
+    "BALLAD": {
+      "name": "Ballad",
+      "description": "Adds colour chords such as maj7, m7, sus4 and walking bass"
+    },
+    "JAZZ": {
+      "name": "Jazz",
+      "description": "Seventh chords, ii–V–I and secondary dominants"
+    }
+  },
+  "taskErrors": {
+    "CHORD_NO_MELODY": "The score has no melody to harmonise",
+    "CHORD_ALREADY_HARMONIZED": "Every measure already has a chord; nothing new to suggest",
+    "AI_SERVICE_UNAVAILABLE": "The AI service is unavailable, please try again later",
+    "TASK_TIMEOUT": "Chord suggestion took too long and was stopped, please try again",
+    "JOB_REJECTED": "The score could not be read for chord suggestion"
+  }
+}
