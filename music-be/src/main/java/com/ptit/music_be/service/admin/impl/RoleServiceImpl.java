@@ -49,6 +49,8 @@ public class RoleServiceImpl implements RoleService {
 
     @Override
     @Transactional(readOnly = true)
+    // Người được giao quyền tạo tài khoản cần xem danh sách vai trò để gán; tạo / sửa / xóa vai trò vẫn chỉ SUPER_ADMIN
+    @PreAuthorize("@perm.superAdmin() or @perm.has('MEMBERS_CREATE')")
     public List<RoleResponse> list() {
         Map<String, Long> counts = new HashMap<>();
         for (Object[] r : roleRepository.countMembersByRole()) {

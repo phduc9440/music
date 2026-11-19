@@ -2,7 +2,9 @@ package com.ptit.music_be.service.admin.impl;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -13,13 +15,18 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.ptit.music_be.configuration.MemberStatusGuard;
+import com.ptit.music_be.configuration.RolePermissionRegistry;
 import com.ptit.music_be.dto.enums.auth.AdminPermission;
+import com.ptit.music_be.dto.enums.auth.AuthProvider;
 import com.ptit.music_be.dto.enums.auth.MemberStatus;
 import com.ptit.music_be.dto.enums.billing.PaymentStatus;
+import com.ptit.music_be.dto.request.admin.AdminCreateMemberRequest;
 import com.ptit.music_be.dto.request.admin.AdminUpdateMemberRequest;
 import com.ptit.music_be.dto.response.admin.AdminMemberDetailResponse;
 import com.ptit.music_be.dto.response.auth.MemberResponse;
@@ -52,6 +59,12 @@ public class AdminMemberServiceImpl implements AdminMemberService {
     static final int MAX_PAGE_SIZE = 50;
     static final int MAX_PURCHASES = 50;
     static final int MAX_STATUS_REASON = 255;
+    static final String USER = "USER";
+    static final int MIN_PASSWORD = 8;
+    static final int MAX_EMAIL = 255;
+    static final int MAX_TEXT = 255;
+    static final int MAX_PHONE = 30;
+    static final java.util.regex.Pattern EMAIL = java.util.regex.Pattern.compile("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
 
     MemberRepository memberRepository;
     RoleRepository roleRepository;
@@ -59,6 +72,7 @@ public class AdminMemberServiceImpl implements AdminMemberService {
     EntityManager entityManager;
     MemberStatusGuard memberStatusGuard;
     SubscriptionService subscriptionService;
+    PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional(readOnly = true)
@@ -283,6 +297,88 @@ public class AdminMemberServiceImpl implements AdminMemberService {
         }
 
         return memberMapper.toMemberResponse(memberRepository.save(member));
+    }
+
+    @Override
+    @Transactional
+    @PreAuthorize("@perm.has('MEMBERS_CREATE')")
+    public MemberResponse createMember(AdminCreateMemberRequest request) {
+        String email = request == null || request.getEmail() == null
+                ? ""
+                : request.getEmail().trim().toLowerCase(Locale.ROOT);
+        if (email.length() > MAX_EMAIL || !EMAIL.matcher(email).matches()) {
+            throw new AppException(ErrorCode.MEMBER_EMAIL_INVALID);
+        }
+        String password = request.getPassword() == null ? "" : request.getPassword();
+        if (password.length() < MIN_PASSWORD) {
+            throw new AppException(ErrorCode.PASSWORD_INVALID);
+        }
+        Set<String> names = new LinkedHashSet<>();
+        names.add(USER);
+        if (request.getRoles() != null) {
+            request.getRoles().stream()
+                    .map(r -> r == null ? "" : r.trim().toUpperCase(Locale.ROOT).replaceFirst("^ROLE_", ""))
+                    .filter(r -> !r.isEmpty())
+                    .forEach(names::add);
+        }
+        List<Role> roles = names.stream()
+                .map(name ->
+                        roleRepository.findByName(name).orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_EXISTED)))
+                .toList();
+        requireCanAssign(names);
+        if (memberRepository.existsByEmail(email)) {
+            throw new AppException(ErrorCode.USER_EXISTED);
+        }
+
+        Member member = Member.builder()
+                .email(email)
+                .passwordHash(passwordEncoder.encode(password))
+                .fullName(blankToNull(request.getFullName(), MAX_TEXT))
+                .phone(blankToNull(request.getPhone(), MAX_PHONE))
+                .status(MemberStatus.ACTIVE)
+                .emailVerified(true)
+                .authProvider(AuthProvider.LOCAL)
+                .build();
+        Member creator = currentAdmin();
+        LocalDateTime now = LocalDateTime.now();
+        for (Role role : roles) {
+            member.getMemberRoles()
+                    .add(MemberRole.builder()
+                            .member(member)
+                            .role(role)
+                            .grantedAt(now)
+                            .grantedBy(creator)
+                            .build());
+        }
+        return memberMapper.toMemberResponse(memberRepository.save(member));
+    }
+
+    /**
+     * Không ai gán được SUPER_ADMIN (tài khoản gốc do hệ thống tạo). Người không phải SUPER_ADMIN chỉ gán vai trò có quyền
+     * nằm trọn trong quyền của chính mình, để quyền tạo tài khoản không thành đường tự nâng quyền.
+     */
+    private static void requireCanAssign(Set<String> roleNames) {
+        if (roleNames.contains(SUPER_ADMIN)) {
+            throw new AppException(ErrorCode.ROLE_ASSIGN_FORBIDDEN);
+        }
+        if (SecurityUtils.isSuperAdmin()) {
+            return;
+        }
+        Set<AdminPermission> mine =
+                SecurityUtils.permissions(SecurityContextHolder.getContext().getAuthentication());
+        for (String name : roleNames) {
+            if (!mine.containsAll(RolePermissionRegistry.permissionsOf(List.of(name)))) {
+                throw new AppException(ErrorCode.ROLE_ASSIGN_FORBIDDEN);
+            }
+        }
+    }
+
+    private static String blankToNull(String value, int max) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        String clean = value.strip();
+        return clean.length() > max ? clean.substring(0, max) : clean;
     }
 
     private static boolean hasRole(Member member, String roleName) {

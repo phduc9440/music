@@ -2,6 +2,7 @@ package com.ptit.music_be.controller.admin;
 
 import org.springframework.web.bind.annotation.*;
 
+import com.ptit.music_be.dto.request.admin.AdminCreateMemberRequest;
 import com.ptit.music_be.dto.request.admin.AdminUpdateMemberRequest;
 import com.ptit.music_be.dto.response.admin.AdminMemberDetailResponse;
 import com.ptit.music_be.dto.response.auth.MemberResponse;
@@ -69,6 +70,18 @@ public class AdminMemberController {
     public ApiResponse<AdminMemberDetailResponse> getMemberDetail(@PathVariable String memberId) {
         return ApiResponse.<AdminMemberDetailResponse>builder()
                 .result(adminMemberService.getMemberDetail(memberId))
+                .build();
+    }
+
+    @PostMapping
+    @Operation(
+            summary = "Tạo tài khoản (quyền MEMBERS_CREATE): đặt mật khẩu ban đầu và gán vai trò",
+            description = "Lỗi: 1026 email sai, 1003 email đã có, 1007 mật khẩu dưới 8 ký tự, 1015 vai trò không có,"
+                    + " 1025 gán SUPER_ADMIN hoặc vai trò vượt quyền của người tạo",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<MemberResponse> createMember(@RequestBody AdminCreateMemberRequest request) {
+        return ApiResponse.<MemberResponse>builder()
+                .result(adminMemberService.createMember(request))
                 .build();
     }
 

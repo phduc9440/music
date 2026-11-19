@@ -1777,3 +1777,34 @@
     transition: none;
   }
 }
+
+/* Hộp thoại tạo tài khoản: ô mật khẩu kèm nút Hiện / Ẩn, nhóm chọn vai trò */
+.adm-password {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+.adm-password .sc-input {
+  flex: 1;
+  min-width: 0;
+}
+.adm-password .sc-btn {
+  min-height: 44px;
+}
+.adm-role-pick {
+  margin: 0.25rem 0 0;
+  padding: 0;
+  border: 0;
+}
+.adm-role-pick .sc-check {
+  min-height: 44px;
+  align-items: center;
+  margin-top: 0.25rem;
+}
+.adm-role-pick .sc-check input {
+  margin-top: 0;
+}
+.adm-role-pick .sc-check.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}

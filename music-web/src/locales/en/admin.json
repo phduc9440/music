@@ -296,7 +296,24 @@
     },
     "roleChangeTitle": "Change the role of {email}?",
     "roleChangeMessage": "New role: {role}. The new permissions apply immediately.",
-    "roleChangeConfirm": "Change role"
+    "roleChangeConfirm": "Change role",
+    "create": {
+      "button": "Create account",
+      "title": "Create account",
+      "email": "Email",
+      "password": "Initial password",
+      "passwordHint": "At least {min} characters. Share it with the user yourself; they can change it later.",
+      "show": "Show",
+      "hide": "Hide",
+      "fullName": "Full name",
+      "phone": "Phone",
+      "roles": "Roles",
+      "userAlways": "User (always)",
+      "beyondYou": "beyond your permissions",
+      "submit": "Create",
+      "created": "Created account {email}",
+      "failed": "Could not create the account"
+    }
   },
   "composers": {
     "errName": "Enter the composer's name",
@@ -853,6 +870,7 @@
       "DASHBOARD_VIEW": "View the dashboard (numbers, charts)",
       "MEMBERS_VIEW": "View the member list and details",
       "MEMBERS_LOCK": "Lock and unlock accounts",
+      "MEMBERS_CREATE": "Create new accounts and assign roles (within your own permissions)",
       "TEAMS_MANAGE": "View, delete (violations) and restore teams",
       "ANNOUNCEMENTS_SEND": "Send announcements to members",
       "SCORES_MODERATE": "Moderate scores: change visibility, remove, delete, bulk actions, delete reviews",

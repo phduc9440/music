@@ -6,6 +6,7 @@ export type AdminPermission =
   | 'DASHBOARD_VIEW'
   | 'MEMBERS_VIEW'
   | 'MEMBERS_LOCK'
+  | 'MEMBERS_CREATE'
   | 'TEAMS_MANAGE'
   | 'ANNOUNCEMENTS_SEND'
   | 'SCORES_MODERATE'
@@ -26,7 +27,7 @@ export type AdminPermission =
 /** Quyền theo nhóm menu quản trị (nhãn nhóm: admin.menu.sections.<nhóm>, nhãn quyền: admin.roles.permissions.<quyền>). */
 export const ADMIN_PERMISSION_GROUPS: { section: string; permissions: AdminPermission[] }[] = [
   { section: 'overview', permissions: ['DASHBOARD_VIEW'] },
-  { section: 'users', permissions: ['MEMBERS_VIEW', 'MEMBERS_LOCK', 'TEAMS_MANAGE', 'ANNOUNCEMENTS_SEND'] },
+  { section: 'users', permissions: ['MEMBERS_VIEW', 'MEMBERS_LOCK', 'MEMBERS_CREATE', 'TEAMS_MANAGE', 'ANNOUNCEMENTS_SEND'] },
   {
     section: 'content',
     permissions: [
@@ -49,6 +50,7 @@ export const ADMIN_PERMISSION_GROUPS: { section: string; permissions: AdminPermi
 /** Bật quyền ở khóa thì phải bật cả quyền ở giá trị (giống AdminPermission.requires ở BE). */
 export const ADMIN_PERMISSION_REQUIRES: Partial<Record<AdminPermission, AdminPermission[]>> = {
   MEMBERS_LOCK: ['MEMBERS_VIEW'],
+  MEMBERS_CREATE: ['MEMBERS_VIEW'],
   SUBSCRIPTIONS_MANAGE: ['MEMBERS_VIEW'],
   PAYMENTS_REFUND: ['REVENUE_VIEW'],
   REPORTS_MODERATE: ['SCORES_MODERATE'],
@@ -178,6 +180,16 @@ export interface PracticeSession {
 }
 
 /** PATCH /api/admin/members/{id}: trường nào bỏ trống thì giữ nguyên. roles là tên không có prefix ROLE_. */
+/** Admin tạo tài khoản (BE: AdminCreateMemberRequest). roles bỏ trống = chỉ USER. */
+export interface AdminCreateMemberRequest {
+  email: string;
+  /** Mật khẩu ban đầu, ít nhất 8 ký tự. */
+  password: string;
+  fullName?: string;
+  phone?: string;
+  roles?: string[];
+}
+
 export interface AdminUpdateMemberRequest {
   status?: MemberStatus;
   /** Lý do khóa / mở khóa (tùy chọn, ≤ 255 ký tự), hiện ở trang Nhật ký. */

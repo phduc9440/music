@@ -21,7 +21,8 @@ import { adminApi } from '../../services';
 import { MemberStatus } from '../../types';
 import type { Member, PageResult, RoleItem } from '../../types';
 import { roleName } from '../../utils/roles';
-import { isAdminMember, isSuperAdminMember, roleLabel } from '../../utils/auth';
+import { hasAdminPermission, isAdminMember, isSuperAdminMember, roleLabel } from '../../utils/auth';
+import CreateMemberModal from '../../components/admin/CreateMemberModal';
 import { useDialog } from '../../components/ui/dialog-context';
 import { t } from '../../i18n/core';
 
@@ -32,14 +33,17 @@ const PAGE_SIZE = 20;
 export default function AdminMembers() {
   const { admin } = useOutletContext<AdminOutletContext>();
   const viewerIsSuper = !!admin && isSuperAdminMember(admin);
+  // Tạo tài khoản: mặc định chỉ SUPER_ADMIN, vai trò khác có khi được tích quyền ở trang Phân quyền
+  const canCreate = viewerIsSuper || hasAdminPermission(admin, 'MEMBERS_CREATE');
+  const [creating, setCreating] = useState(false);
   const [roles, setRoles] = useState<RoleItem[] | null>(null);
   useEffect(() => {
-    if (!viewerIsSuper) return;
+    if (!viewerIsSuper && !canCreate) return;
     adminApi
       .getRoles()
       .then((res) => setRoles(res.data.result.filter((r) => r.name !== 'SUPER_ADMIN')))
       .catch(() => setRoles(null));
-  }, [viewerIsSuper]);
+  }, [viewerIsSuper, canCreate]);
   const { confirm, prompt } = useDialog();
   const [result, setResult] = useState<PageResult<Member> | null>(null);
   const [page, setPage] = useState(0);
@@ -115,17 +119,41 @@ export default function AdminMembers() {
         title={t('admin.menu.items.members')}
         description={t('admin.members.description')}
         actions={
-          <SearchForm
-            value={keywordInput}
-            onChange={setKeywordInput}
-            onSubmit={() => {
-              setPage(0);
-              setKeyword(keywordInput.trim());
-            }}
-            placeholder={t('admin.announcements.searchPlaceholder')}
-          />
+          <>
+            <SearchForm
+              value={keywordInput}
+              onChange={setKeywordInput}
+              onSubmit={() => {
+                setPage(0);
+                setKeyword(keywordInput.trim());
+              }}
+              placeholder={t('admin.announcements.searchPlaceholder')}
+            />
+            {canCreate && (
+              <Button variant="primary" icon="plus" onClick={() => setCreating(true)}>
+                {t('admin.members.create.button')}
+              </Button>
+            )}
+          </>
         }
       />
+
+      {creating && admin && (
+        <CreateMemberModal
+          creator={admin}
+          creatorIsSuper={viewerIsSuper}
+          roles={roles}
+          onClose={() => setCreating(false)}
+          onCreated={(member) => {
+            setCreating(false);
+            // Danh sách sắp theo email: lọc đúng email vừa tạo để thấy ngay tài khoản đó
+            setKeywordInput(member.email);
+            setKeyword(member.email);
+            setPage(0);
+            reload();
+          }}
+        />
+      )}
 
       <Card flush>
         <Table minWidth={1040}>

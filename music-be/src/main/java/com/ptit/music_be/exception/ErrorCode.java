@@ -32,6 +32,8 @@ public enum ErrorCode {
     ROLE_IN_USE(1021, "Vai trò đang được gán cho thành viên, hãy gỡ khỏi họ trước khi xóa", HttpStatus.CONFLICT),
     ROLE_LABEL_INVALID(1022, "Tên vai trò từ 2 đến 100 ký tự, mô tả tối đa 255 ký tự", HttpStatus.BAD_REQUEST),
     ROLE_LABEL_DUPLICATED(1023, "Đã có vai trò trùng tên này", HttpStatus.CONFLICT),
+    ROLE_ASSIGN_FORBIDDEN(1025, "Bạn không được gán vai trò này", HttpStatus.FORBIDDEN),
+    MEMBER_EMAIL_INVALID(1026, "Email không hợp lệ", HttpStatus.BAD_REQUEST),
     STATUS_REASON_INVALID(1024, "Lý do khóa / mở khóa tối đa 255 ký tự", HttpStatus.BAD_REQUEST),
     ACCOUNT_LOCKED(1016, "Tài khoản đã bị khóa", HttpStatus.FORBIDDEN),
     OTP_INVALID(

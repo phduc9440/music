@@ -282,7 +282,24 @@
     },
     "roleChangeTitle": "Đổi vai trò của {email}?",
     "roleChangeMessage": "Vai trò mới: {role}. Quyền mới có hiệu lực ngay.",
-    "roleChangeConfirm": "Đổi vai trò"
+    "roleChangeConfirm": "Đổi vai trò",
+    "create": {
+      "button": "Tạo tài khoản",
+      "title": "Tạo tài khoản",
+      "email": "Email",
+      "password": "Mật khẩu ban đầu",
+      "passwordHint": "Ít nhất {min} ký tự. Bạn tự gửi mật khẩu này cho người dùng; họ có thể đổi sau.",
+      "show": "Hiện",
+      "hide": "Ẩn",
+      "fullName": "Họ tên",
+      "phone": "Số điện thoại",
+      "roles": "Vai trò",
+      "userAlways": "Người dùng (luôn có)",
+      "beyondYou": "vượt quyền của bạn",
+      "submit": "Tạo",
+      "created": "Đã tạo tài khoản {email}",
+      "failed": "Không tạo được tài khoản"
+    }
   },
   "composers": {
     "errName": "Nhập tên nhạc sĩ",
@@ -817,6 +834,7 @@
       "DASHBOARD_VIEW": "Xem bảng điều khiển (số liệu, biểu đồ)",
       "MEMBERS_VIEW": "Xem danh sách và chi tiết thành viên",
       "MEMBERS_LOCK": "Khóa, mở khóa tài khoản",
+      "MEMBERS_CREATE": "Tạo tài khoản mới và gán vai trò (trong phạm vi quyền của mình)",
       "TEAMS_MANAGE": "Xem, xóa (vi phạm), khôi phục nhóm",
       "ANNOUNCEMENTS_SEND": "Gửi thông báo tới thành viên",
       "SCORES_MODERATE": "Kiểm duyệt bản nhạc: đổi công khai, gỡ, xóa, thao tác hàng loạt, xóa nhận xét",
