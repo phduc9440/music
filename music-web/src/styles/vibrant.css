@@ -14,7 +14,8 @@
 /* ---- đầu trang: thẻ be đậm hơn nền, viền rõ, giống khung chào ở trang chủ ---- */
 .app-shell .sc-lib-head,
 .app-shell .ex-head,
-.app-shell .cp-head {
+.app-shell .cp-head,
+.app-shell .fm-head {
   position: relative;
   overflow: hidden;
   margin-bottom: 1.5rem;
@@ -28,7 +29,8 @@
 }
 .app-shell .sc-lib-head h1,
 .app-shell .ex-head h1,
-.app-shell .cp-head h1 {
+.app-shell .cp-head h1,
+.app-shell .fm-head h1 {
   font-family: var(--ui-font-display);
   font-size: clamp(1.7rem, 3vw, 2.2rem);
   font-weight: 800;
@@ -37,7 +39,8 @@
 }
 .app-shell .sc-lib-head p,
 .app-shell .ex-head p,
-.app-shell .cp-head p {
+.app-shell .cp-head p,
+.app-shell .fm-head p {
   color: var(--ui-text-2);
 }
 

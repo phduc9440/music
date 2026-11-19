@@ -6,6 +6,7 @@
 --   seed-team-3  Lớp piano cô Mai           chủ mai.ngo     chủ tự xóa 6 ngày trước: còn khôi phục được (chủ hoặc admin)
 --   seed-team-4  Nhóm bản phối nhạc phim    chủ khoa.bui     admin xóa 3 ngày trước (vi phạm): chỉ admin khôi phục được
 --   seed-team-5  Nhóm thử nghiệm cũ         chủ user@music.comchủ xóa 45 ngày trước: quá hạn 30 ngày, không khôi phục được nữa
+--   seed-team-6  Nhóm biên soạn kho mẫu     chủ admin@music.com đang hoạt động, show đang chuẩn bị (cuối file)
 -- Không dùng lan.nguyen và minh.tran (các test TeamShowFlowTest, AdminTeamServiceImplTest cần hai tài khoản này chưa có gói team và chưa có việc nào).
 -- Gói team cấp cho chủ team (ADMIN_GRANT) để cột "quyền tạo nhóm" ở trang admin có cả hai trạng thái: khoa.bui và user@music.com không có.
 
@@ -90,3 +91,58 @@ VALUES
     ('seed-act-8', 'seed-team-3', 'ACTIVITY', (SELECT id FROM members WHERE email = 'mai.ngo@music.com'), 'TEAM_CREATED', '{"team":"Lớp piano cô Mai"}', NOW(6) - INTERVAL 28 DAY),
     ('seed-act-9', 'seed-team-4', 'ACTIVITY', (SELECT id FROM members WHERE email = 'khoa.bui@music.com'), 'TEAM_CREATED', '{"team":"Nhóm bản phối nhạc phim"}', NOW(6) - INTERVAL 15 DAY),
     ('seed-act-10', 'seed-team-5', 'ACTIVITY', (SELECT id FROM members WHERE email = 'user@music.com'), 'TEAM_CREATED', '{"team":"Nhóm thử nghiệm cũ"}', NOW(6) - INTERVAL 60 DAY);
+
+-- ---------------------------------------------------------------------------------------------------- team của SUPER_ADMIN
+-- seed-team-6 "Nhóm biên soạn kho mẫu" do admin@music.com làm chủ (SUPER_ADMIN không cần gói team). Không có team đã xóa và
+-- không có thông báo TEAM_MEMBER_JOINED cho admin@music.com: TeamShowFlowTest dùng tài khoản này và đếm hai thứ đó.
+-- admin@music.com vừa duyệt bài (Invention đang chờ duyệt, arpeggio chưa làm) vừa phối một bài ("Bèo dạt mây trôi").
+INSERT IGNORE INTO teams (id, name, description, avatar_url, created_by, created_at, updated_at, deleted_at, deleted_by, deleted_by_admin, deleted_reason)
+VALUES
+    ('seed-team-6', 'Nhóm biên soạn kho mẫu', 'Soạn, phối lại và rà soát các bản trước khi đưa vào kho bản nhạc mẫu.', NULL, (SELECT id FROM members WHERE email = 'admin@music.com'), NOW(6) - INTERVAL 30 DAY, NOW(6) - INTERVAL 1 DAY, NULL, NULL, 0, NULL);
+
+INSERT IGNORE INTO team_members (id, team_id, kind, member_id, role, joined_at, created_at)
+VALUES
+    ('seed-tm-6-1', 'seed-team-6', 'MEMBER', (SELECT id FROM members WHERE email = 'admin@music.com'), 'OWNER', NOW(6) - INTERVAL 30 DAY, NOW(6) - INTERVAL 30 DAY),
+    ('seed-tm-6-2', 'seed-team-6', 'MEMBER', (SELECT id FROM members WHERE email = 'admin2@music.com'), 'MANAGER', NOW(6) - INTERVAL 29 DAY, NOW(6) - INTERVAL 29 DAY),
+    ('seed-tm-6-3', 'seed-team-6', 'MEMBER', (SELECT id FROM members WHERE email = 'duy.pham@music.com'), 'ARRANGER', NOW(6) - INTERVAL 27 DAY, NOW(6) - INTERVAL 27 DAY),
+    ('seed-tm-6-4', 'seed-team-6', 'MEMBER', (SELECT id FROM members WHERE email = 'an.vo@music.com'), 'ARRANGER', NOW(6) - INTERVAL 26 DAY, NOW(6) - INTERVAL 26 DAY),
+    ('seed-tm-6-5', 'seed-team-6', 'MEMBER', (SELECT id FROM members WHERE email = 'bao.hoang@music.com'), 'VIEWER', NOW(6) - INTERVAL 20 DAY, NOW(6) - INTERVAL 20 DAY);
+
+-- Lời mời theo email đang chờ: huong.le vào nhóm với vai trò người phối
+INSERT IGNORE INTO team_members (id, team_id, kind, email, role, status, token_hash, invited_by, expires_at, created_at)
+VALUES
+    ('seed-inv-3', 'seed-team-6', 'INVITATION', 'huong.le@music.com', 'ARRANGER', 'PENDING', SHA2('seed-invitation-3', 256),
+     (SELECT id FROM members WHERE email = 'admin@music.com'), NOW(6) + INTERVAL 4 DAY, NOW(6) - INTERVAL 3 DAY);
+
+UPDATE scores SET team_id = 'seed-team-6' WHERE member_id = (SELECT id FROM members WHERE email = 'admin@music.com') AND title = 'Invention No. 1 (BWV 772)' AND team_id IS NULL;
+UPDATE scores SET team_id = 'seed-team-6' WHERE member_id = (SELECT id FROM members WHERE email = 'admin@music.com') AND title = 'Bài tập arpeggio hai tay' AND team_id IS NULL;
+UPDATE scores SET team_id = 'seed-team-6' WHERE member_id = (SELECT id FROM members WHERE email = 'admin@music.com') AND title = 'Bèo dạt mây trôi' AND team_id IS NULL;
+
+INSERT IGNORE INTO shows (id, team_id, name, show_date, venue, notes, status, created_by, created_at, updated_at, deleted_at, deleted_by)
+VALUES
+    ('seed-show-7', 'seed-team-6', 'Ra mắt bộ bài nhập môn', CURDATE() + INTERVAL 14 DAY, 'Trực tuyến', 'Ba bài cho người mới, xong thì đưa vào kho mẫu.', 'PREPARING', (SELECT id FROM members WHERE email = 'admin@music.com'), NOW(6) - INTERVAL 12 DAY, NOW(6) - INTERVAL 1 DAY, NULL, NULL);
+
+INSERT IGNORE INTO show_items (id, show_id, score_id, position, arranger_id, reviewer_id, due_date, status, notes, review_note, created_at, updated_at)
+VALUES
+    ('seed-item-19', 'seed-show-7', (SELECT id FROM scores WHERE member_id = (SELECT id FROM members WHERE email = 'admin@music.com') AND title = 'Invention No. 1 (BWV 772)' AND deleted_at IS NULL LIMIT 1), 1,
+        (SELECT id FROM members WHERE email = 'duy.pham@music.com'), (SELECT id FROM members WHERE email = 'admin@music.com'), CURDATE() + INTERVAL 3 DAY, 'IN_REVIEW', 'Ghi ngón cho cả hai tay.', NULL, NOW(6) - INTERVAL 12 DAY, NOW(6) - INTERVAL 1 DAY),
+    ('seed-item-20', 'seed-show-7', (SELECT id FROM scores WHERE member_id = (SELECT id FROM members WHERE email = 'admin@music.com') AND title = 'Bài tập arpeggio hai tay' AND deleted_at IS NULL LIMIT 1), 2,
+        (SELECT id FROM members WHERE email = 'an.vo@music.com'), (SELECT id FROM members WHERE email = 'admin@music.com'), CURDATE() + INTERVAL 7 DAY, 'TODO', NULL, NULL, NOW(6) - INTERVAL 12 DAY, NOW(6) - INTERVAL 1 DAY),
+    ('seed-item-21', 'seed-show-7', (SELECT id FROM scores WHERE member_id = (SELECT id FROM members WHERE email = 'admin@music.com') AND title = 'Bèo dạt mây trôi' AND deleted_at IS NULL LIMIT 1), 3,
+        (SELECT id FROM members WHERE email = 'admin@music.com'), (SELECT id FROM members WHERE email = 'admin2@music.com'), CURDATE() + INTERVAL 5 DAY, 'ARRANGING', 'Phối lại cho piano, giữ giai điệu dân ca.', NULL, NOW(6) - INTERVAL 10 DAY, NOW(6) - INTERVAL 2 DAY);
+
+INSERT IGNORE INTO team_members (id, team_id, kind, member_id, type, params, created_at)
+VALUES
+    ('seed-act-19', 'seed-team-6', 'ACTIVITY', (SELECT id FROM members WHERE email = 'admin@music.com'), 'TEAM_CREATED', '{"team":"Nhóm biên soạn kho mẫu"}', NOW(6) - INTERVAL 30 DAY),
+    ('seed-act-20', 'seed-team-6', 'ACTIVITY', (SELECT id FROM members WHERE email = 'admin2@music.com'), 'MEMBER_JOINED', '{"name":"Demo Admin","role":"MANAGER"}', NOW(6) - INTERVAL 29 DAY),
+    ('seed-act-21', 'seed-team-6', 'ACTIVITY', (SELECT id FROM members WHERE email = 'admin@music.com'), 'SHOW_CREATED', '{"show":"Ra mắt bộ bài nhập môn","showId":"seed-show-7"}', NOW(6) - INTERVAL 12 DAY),
+    ('seed-act-22', 'seed-team-6', 'ACTIVITY', (SELECT id FROM members WHERE email = 'admin@music.com'), 'ITEM_ASSIGNED', '{"score":"Invention No. 1 (BWV 772)","arranger":"Phạm Khánh Duy","reviewer":"Super Admin","show":"Ra mắt bộ bài nhập môn","showId":"seed-show-7"}', NOW(6) - INTERVAL 12 DAY),
+    ('seed-act-23', 'seed-team-6', 'ACTIVITY', (SELECT id FROM members WHERE email = 'admin2@music.com'), 'ITEM_ASSIGNED', '{"score":"Bèo dạt mây trôi","arranger":"Super Admin","reviewer":"Demo Admin","show":"Ra mắt bộ bài nhập môn","showId":"seed-show-7"}', NOW(6) - INTERVAL 10 DAY);
+
+-- Thông báo của admin@music.com: có bài gửi duyệt, được giao phối
+INSERT IGNORE INTO notifications (id, recipient_id, type, message, params, is_read, created_at)
+VALUES
+    ('seed-notif-sa-1', (SELECT id FROM members WHERE email = 'admin@music.com'), 'SHOW_ITEM_SUBMITTED', 'Phạm Khánh Duy đã gửi duyệt bài “Invention No. 1 (BWV 772)” (buổi diễn Ra mắt bộ bài nhập môn)',
+        '{"name":"Phạm Khánh Duy","title":"Invention No. 1 (BWV 772)","show":"Ra mắt bộ bài nhập môn","teamId":"seed-team-6","showId":"seed-show-7"}', 0, NOW(6) - INTERVAL 1 DAY),
+    ('seed-notif-sa-2', (SELECT id FROM members WHERE email = 'admin@music.com'), 'SHOW_ITEM_ASSIGNED', 'Bạn được giao phối bài “Bèo dạt mây trôi” trong buổi diễn Ra mắt bộ bài nhập môn',
+        '{"variant":"arranger","title":"Bèo dạt mây trôi","show":"Ra mắt bộ bài nhập môn","teamId":"seed-team-6","showId":"seed-show-7"}', 1, NOW(6) - INTERVAL 10 DAY);

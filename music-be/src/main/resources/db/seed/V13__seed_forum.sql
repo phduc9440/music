@@ -1,6 +1,9 @@
 -- V13: dữ liệu mẫu diễn đàn (mục 5.5): chuyên mục, chủ đề, trả lời, bình chọn, theo dõi và báo cáo, để thử luồng hỏi đáp giữa người dùng.
--- Id cố định (seed-ft-*, seed-fp-*) và INSERT IGNORE nên chạy lại không bị trùng. Báo cáo để trạng thái chờ: admin được tạo khi backend khởi động (sau seed).
---   Chủ đề có đáp án hay nhất: 1, 4, 8. Chưa có đáp án: 2, 3, 5, 6, 7, 9. Chủ đề 10 là spam bị báo cáo để thử hàng chờ admin.
+-- Id cố định (seed-ft-*, seed-fp-*) và INSERT IGNORE nên chạy lại không bị trùng. Báo cáo để trạng thái chờ cho admin xử lý.
+--   Chủ đề có đáp án hay nhất: 1, 4, 7, 8, 14. Chưa có đáp án: 2, 3, 5, 6, 9, 11, 12. Chủ đề 10 là spam bị báo cáo để thử hàng chờ admin.
+--   admin@music.com (Super Admin) đặt chủ đề 11 và có câu trả lời hay nhất ở chủ đề 7; quản trị diễn đàn: ghim + khóa chủ đề
+--   12 (nội quy), khóa chủ đề 8, ẩn chủ đề spam 13 và bài spam seed-fp-4-3, xử lý 4 báo cáo (cuối file). Phía người dùng:
+--   chủ đề 14 của admin@ gắn bản nhạc, đã sửa, admin@ tự chọn câu trả lời hay nhất; admin@ chỉ theo dõi + bình chọn chủ đề 5.
 --   user@music.com (Demo User) đặt chủ đề 2 (còn mở, thử nút 'Chọn là hay nhất') và trả lời chủ đề 3, 9.
 
 INSERT IGNORE INTO forum_categories (id, slug, name, description, sort_order) VALUES
@@ -332,3 +335,164 @@ INSERT IGNORE INTO notifications (id, recipient_id, type, message, params, is_re
     SELECT UUID(), (SELECT id FROM members WHERE email = 'user@music.com'), 'FORUM_REPLY', 'Nguyễn Thị Lan đã trả lời trong “Khác nhau giữa nhập MusicXML và số hóa từ ảnh là gì?”: “Nếu đã có file MusicXML (xuất từ MuseScore, Finale...) thì nhập file là chuẩn nhất: không mất nốt nào.”', '{"name": "Nguyễn Thị Lan", "title": "Khác nhau giữa nhập MusicXML và số hóa từ ảnh là gì?", "threadId": "seed-ft-2", "postId": "seed-fp-2-1", "excerpt": "Nếu đã có file MusicXML (xuất từ MuseScore, Finale...) thì nhập file là chuẩn nhất: không mất nốt nào."}', 0, NOW(6) - INTERVAL 120 HOUR
 UNION ALL
     SELECT UUID(), (SELECT id FROM members WHERE email = 'user@music.com'), 'FORUM_POST_REPLY', 'Trần Quang Minh đã trả lời bình luận của bạn trong “Mẹo tập đoạn arpeggio tay trái trong Moonlight Sonata”: “Rất vui vì bản ghi chú giúp được bạn, chúc bạn tập tốt nhé!”', '{"name": "Trần Quang Minh", "title": "Mẹo tập đoạn arpeggio tay trái trong Moonlight Sonata", "threadId": "seed-ft-3", "postId": "seed-fp-3-5", "excerpt": "Rất vui vì bản ghi chú giúp được bạn, chúc bạn tập tốt nhé!"}', 0, NOW(6) - INTERVAL 44 HOUR;
+
+-- ---------------------------------------------------------------------------------------------------- diễn đàn của SUPER_ADMIN
+-- admin@music.com đặt chủ đề 11 (xin ý kiến cho kho mẫu, đang mở) và trả lời chủ đề 7 bằng câu được chọn là hay nhất.
+-- Chủ đề ghim duy nhất là 12 (nội quy, không có trả lời, hoạt động cũ nhất): AdminForumFlowTest ghim seed-ft-9 rồi kiểm tra
+-- nó đứng đầu danh sách, mà giữa các chủ đề ghim thì chủ đề có hoạt động mới hơn đứng trước. Không ẩn bài nào trong chủ đề
+-- 1 (test đếm bài ẩn ở đó).
+INSERT IGNORE INTO forum_threads (id, category_id, author_id, score_id, title, body, created_at)
+    SELECT 'seed-ft-11', (SELECT id FROM forum_categories WHERE slug = 'gop-y-ung-dung'), (SELECT id FROM members WHERE email = 'admin@music.com'), NULL, 'Bạn muốn kho bản nhạc mẫu có thêm bài gì?', 'Kho bản nhạc mẫu hiện có vài bài **cho người mới** (Twinkle, Happy Birthday, bản giản lược của Ode to Joy và Für Elise).
+
+Ban quản trị đang soạn đợt tiếp theo. Mọi người góp ý giúp:
+- Bài muốn có (ghi rõ tác giả nếu được)
+- Mức độ: dễ, trung bình hay khó
+- Cần bản piano solo, hợp xướng hay lead sheet
+
+Bản nào đủ điều kiện sẽ được xin phép chủ bản rồi đưa vào kho.', NOW(6) - INTERVAL 3 DAY - INTERVAL 2 HOUR;
+
+INSERT IGNORE INTO forum_posts (id, thread_id, author_id, body, created_at)
+    SELECT 'seed-fp-11-1', 'seed-ft-11', (SELECT id FROM members WHERE email = 'huong.le@music.com'), 'Mình mong có thêm **nhạc Việt** bản piano dễ, ví dụ *Diễm xưa* hay *Mùa xuân đầu tiên*, để dạy học viên nhỏ.', NOW(6) - INTERVAL 2 DAY - INTERVAL 20 HOUR
+UNION ALL
+    SELECT 'seed-fp-11-2', 'seed-ft-11', (SELECT id FROM members WHERE email = 'bao.hoang@music.com'), 'Cho mình xin vài bản **hợp xướng 4 bè** mức trung bình, nhóm mình tập Giáng sinh mà khó tìm bản sạch.', NOW(6) - INTERVAL 2 DAY - INTERVAL 6 HOUR
+UNION ALL
+    SELECT 'seed-fp-11-3', 'seed-ft-11', (SELECT id FROM members WHERE email = 'admin@music.com'), 'Cảm ơn bạn! *Mùa xuân đầu tiên* đã có bản công khai, ban quản trị sẽ xin phép tác giả bản đó trong tuần này.', NOW(6) - INTERVAL 1 DAY - INTERVAL 9 HOUR
+UNION ALL
+    SELECT 'seed-fp-7-4', 'seed-ft-7', (SELECT id FROM members WHERE email = 'admin@music.com'), 'Tính năng này đã có: trong Luyện tập chọn chế độ **Lặp đoạn**, nhập ô bắt đầu và ô kết thúc. Tốc độ chỉnh ở thanh tempo (50% đến 100%) ngay trên trình phát.', NOW(6) - INTERVAL 9 DAY - INTERVAL 4 HOUR;
+
+INSERT IGNORE INTO forum_posts (id, thread_id, author_id, body, created_at)
+    SELECT 'seed-fp-11-4', 'seed-ft-11', (SELECT id FROM members WHERE email = 'user@music.com'), 'Tuyệt quá! Khi nào có bản *Mùa xuân đầu tiên* trong kho thì mình tập ngay.', NOW(6) - INTERVAL 20 HOUR;
+
+UPDATE forum_posts SET reply_to_id = 'seed-fp-11-1' WHERE id = 'seed-fp-11-3';
+UPDATE forum_posts SET reply_to_id = 'seed-fp-11-3' WHERE id = 'seed-fp-11-4';
+UPDATE forum_threads SET accepted_post_id = 'seed-fp-7-4' WHERE id = 'seed-ft-7';
+
+INSERT IGNORE INTO forum_votes (id, member_id, thread_id, created_at)
+    SELECT UUID(), (SELECT id FROM members WHERE email = 'huong.le@music.com'), 'seed-ft-11', NOW(6) - INTERVAL 1 DAY
+UNION ALL
+    SELECT UUID(), (SELECT id FROM members WHERE email = 'bao.hoang@music.com'), 'seed-ft-11', NOW(6) - INTERVAL 1 DAY
+UNION ALL
+    SELECT UUID(), (SELECT id FROM members WHERE email = 'user@music.com'), 'seed-ft-11', NOW(6) - INTERVAL 1 DAY
+UNION ALL
+    SELECT UUID(), (SELECT id FROM members WHERE email = 'admin@music.com'), 'seed-ft-8', NOW(6) - INTERVAL 1 DAY;
+
+INSERT IGNORE INTO forum_votes (id, member_id, post_id, created_at)
+    SELECT UUID(), (SELECT id FROM members WHERE email = 'an.vo@music.com'), 'seed-fp-7-4', NOW(6) - INTERVAL 1 DAY
+UNION ALL
+    SELECT UUID(), (SELECT id FROM members WHERE email = 'huong.le@music.com'), 'seed-fp-7-4', NOW(6) - INTERVAL 1 DAY
+UNION ALL
+    SELECT UUID(), (SELECT id FROM members WHERE email = 'admin@music.com'), 'seed-fp-11-2', NOW(6) - INTERVAL 1 DAY;
+
+INSERT IGNORE INTO forum_subscriptions (id, thread_id, member_id, created_at)
+    SELECT UUID(), 'seed-ft-11', (SELECT id FROM members WHERE email = 'admin@music.com'), NOW(6) - INTERVAL 3 DAY - INTERVAL 2 HOUR
+UNION ALL
+    SELECT UUID(), 'seed-ft-11', (SELECT id FROM members WHERE email = 'huong.le@music.com'), NOW(6) - INTERVAL 2 DAY - INTERVAL 20 HOUR
+UNION ALL
+    SELECT UUID(), 'seed-ft-11', (SELECT id FROM members WHERE email = 'bao.hoang@music.com'), NOW(6) - INTERVAL 2 DAY - INTERVAL 6 HOUR
+UNION ALL
+    SELECT UUID(), 'seed-ft-11', (SELECT id FROM members WHERE email = 'user@music.com'), NOW(6) - INTERVAL 20 HOUR
+UNION ALL
+    SELECT UUID(), 'seed-ft-7', (SELECT id FROM members WHERE email = 'admin@music.com'), NOW(6) - INTERVAL 9 DAY - INTERVAL 4 HOUR;
+
+-- Thông báo cho admin@music.com: có người trả lời chủ đề 11, câu trả lời ở chủ đề 7 được chọn là hay nhất
+INSERT IGNORE INTO notifications (id, recipient_id, type, message, params, is_read, created_at)
+    SELECT UUID(), (SELECT id FROM members WHERE email = 'admin@music.com'), 'FORUM_REPLY', 'Hoàng Gia Bảo đã trả lời trong “Bạn muốn kho bản nhạc mẫu có thêm bài gì?”: “Cho mình xin vài bản hợp xướng 4 bè mức trung bình, nhóm mình tập Giáng sinh mà khó tìm bản sạch.”', '{"name": "Hoàng Gia Bảo", "title": "Bạn muốn kho bản nhạc mẫu có thêm bài gì?", "threadId": "seed-ft-11", "postId": "seed-fp-11-2", "excerpt": "Cho mình xin vài bản hợp xướng 4 bè mức trung bình, nhóm mình tập Giáng sinh mà khó tìm bản sạch."}', 0, NOW(6) - INTERVAL 2 DAY - INTERVAL 6 HOUR
+UNION ALL
+    SELECT UUID(), (SELECT id FROM members WHERE email = 'admin@music.com'), 'FORUM_ANSWER_ACCEPTED', 'Võ Hoài An đã chọn câu trả lời của bạn là hay nhất trong “Mong có chế độ lặp một đoạn khi luyện tập”', '{"name": "Võ Hoài An", "title": "Mong có chế độ lặp một đoạn khi luyện tập", "threadId": "seed-ft-7", "postId": "seed-fp-7-4"}', 1, NOW(6) - INTERVAL 8 DAY
+UNION ALL
+    SELECT UUID(), (SELECT id FROM members WHERE email = 'admin@music.com'), 'FORUM_POST_REPLY', 'Demo User đã trả lời bình luận của bạn trong “Bạn muốn kho bản nhạc mẫu có thêm bài gì?”: “Tuyệt quá! Khi nào có bản Mùa xuân đầu tiên trong kho thì mình tập ngay.”', '{"name": "Demo User", "title": "Bạn muốn kho bản nhạc mẫu có thêm bài gì?", "threadId": "seed-ft-11", "postId": "seed-fp-11-4", "excerpt": "Tuyệt quá! Khi nào có bản Mùa xuân đầu tiên trong kho thì mình tập ngay."}', 0, NOW(6) - INTERVAL 20 HOUR;
+
+-- Chủ đề 14: admin@ dùng diễn đàn như thành viên. Gắn bản nhạc công khai của mình, sửa lại nội dung, tự chọn câu trả
+-- lời hay nhất (của lan.nguyen), trả lời trực tiếp một bài và sửa câu trả lời đó.
+INSERT IGNORE INTO forum_threads (id, category_id, author_id, score_id, title, body, created_at, edited_at)
+    SELECT 'seed-ft-14', (SELECT id FROM forum_categories WHERE slug = 'chia-se-ban-nhac'), (SELECT id FROM members WHERE email = 'admin@music.com'), (SELECT id FROM scores WHERE title = 'Invention No. 1 (BWV 772)' LIMIT 1), 'Xin góp ý ngón tay cho Invention No. 1 (Bach)', 'Mình vừa số hóa *Invention No. 1* và để công khai (đính kèm bên dưới).
+
+Đoạn **ô 3-6** hai bè đuổi nhau, tay trái mình hay vấp khi chuyển thế. Mọi người bấm ngón thế nào cho đoạn này?
+
+*Sửa: đã thêm số ô nhịp cho dễ theo dõi.*', NOW(6) - INTERVAL 16 DAY, NOW(6) - INTERVAL 15 DAY - INTERVAL 22 HOUR;
+
+INSERT IGNORE INTO forum_posts (id, thread_id, author_id, body, created_at, edited_at)
+    SELECT 'seed-fp-14-1', 'seed-ft-14', (SELECT id FROM members WHERE email = 'duy.pham@music.com'), 'Tay trái ô 3 mình bấm **5-4-3-2-1** rồi luồn ngón 3 qua, không phải nhấc tay.', NOW(6) - INTERVAL 15 DAY - INTERVAL 10 HOUR, NULL
+UNION ALL
+    SELECT 'seed-fp-14-2', 'seed-ft-14', (SELECT id FROM members WHERE email = 'lan.nguyen@music.com'), 'Tập riêng bè trái ở 60% tốc độ, dùng chế độ **Lặp đoạn** ô 3-6. Ngón: 1-2-3-4 ở nhịp 1, chuyển ngón 1 sang nốt Sol ở nhịp 3. Sau 3 ngày ghép hai tay sẽ đỡ vấp hẳn.', NOW(6) - INTERVAL 15 DAY - INTERVAL 4 HOUR, NULL
+UNION ALL
+    SELECT 'seed-fp-14-3', 'seed-ft-14', (SELECT id FROM members WHERE email = 'admin@music.com'), 'Cảm ơn cô Lan, tập theo cách này hai hôm là trôi rồi. Mình đã ghi ngón vào ghi chú học tập của bản nhạc.', NOW(6) - INTERVAL 14 DAY - INTERVAL 20 HOUR, NOW(6) - INTERVAL 14 DAY - INTERVAL 19 HOUR;
+
+UPDATE forum_posts SET reply_to_id = 'seed-fp-14-2' WHERE id = 'seed-fp-14-3';
+UPDATE forum_threads SET accepted_post_id = 'seed-fp-14-2' WHERE id = 'seed-ft-14';
+
+INSERT IGNORE INTO forum_votes (id, member_id, thread_id, created_at)
+    SELECT UUID(), (SELECT id FROM members WHERE email = 'duy.pham@music.com'), 'seed-ft-14', NOW(6) - INTERVAL 15 DAY - INTERVAL 10 HOUR
+UNION ALL
+    SELECT UUID(), (SELECT id FROM members WHERE email = 'minh.tran@music.com'), 'seed-ft-14', NOW(6) - INTERVAL 15 DAY
+UNION ALL
+    SELECT UUID(), (SELECT id FROM members WHERE email = 'admin@music.com'), 'seed-ft-5', NOW(6) - INTERVAL 14 DAY;
+
+INSERT IGNORE INTO forum_votes (id, member_id, post_id, created_at)
+    SELECT UUID(), (SELECT id FROM members WHERE email = 'admin@music.com'), 'seed-fp-14-1', NOW(6) - INTERVAL 15 DAY - INTERVAL 9 HOUR
+UNION ALL
+    SELECT UUID(), (SELECT id FROM members WHERE email = 'admin@music.com'), 'seed-fp-14-2', NOW(6) - INTERVAL 14 DAY - INTERVAL 20 HOUR
+UNION ALL
+    SELECT UUID(), (SELECT id FROM members WHERE email = 'huong.le@music.com'), 'seed-fp-14-2', NOW(6) - INTERVAL 14 DAY;
+
+-- Theo dõi: người đặt chủ đề, người trả lời; admin@ theo dõi chủ đề 5 mà không trả lời
+INSERT IGNORE INTO forum_subscriptions (id, thread_id, member_id, created_at)
+    SELECT UUID(), 'seed-ft-14', (SELECT id FROM members WHERE email = 'admin@music.com'), NOW(6) - INTERVAL 16 DAY
+UNION ALL
+    SELECT UUID(), 'seed-ft-14', (SELECT id FROM members WHERE email = 'duy.pham@music.com'), NOW(6) - INTERVAL 15 DAY - INTERVAL 10 HOUR
+UNION ALL
+    SELECT UUID(), 'seed-ft-14', (SELECT id FROM members WHERE email = 'lan.nguyen@music.com'), NOW(6) - INTERVAL 15 DAY - INTERVAL 4 HOUR
+UNION ALL
+    SELECT UUID(), 'seed-ft-5', (SELECT id FROM members WHERE email = 'admin@music.com'), NOW(6) - INTERVAL 14 DAY;
+
+-- Thông báo của chủ đề 14 (đã đọc): admin@ nhận trả lời; lan.nguyen được chọn hay nhất và được admin@ trả lời trực tiếp
+INSERT IGNORE INTO notifications (id, recipient_id, type, message, params, is_read, created_at)
+    SELECT UUID(), (SELECT id FROM members WHERE email = 'admin@music.com'), 'FORUM_REPLY', 'Phạm Khánh Duy đã trả lời trong “Xin góp ý ngón tay cho Invention No. 1 (Bach)”: “Tay trái ô 3 mình bấm 5-4-3-2-1 rồi luồn ngón 3 qua, không phải nhấc tay.”', '{"name": "Phạm Khánh Duy", "title": "Xin góp ý ngón tay cho Invention No. 1 (Bach)", "threadId": "seed-ft-14", "postId": "seed-fp-14-1", "excerpt": "Tay trái ô 3 mình bấm 5-4-3-2-1 rồi luồn ngón 3 qua, không phải nhấc tay."}', 1, NOW(6) - INTERVAL 15 DAY - INTERVAL 10 HOUR
+UNION ALL
+    SELECT UUID(), (SELECT id FROM members WHERE email = 'admin@music.com'), 'FORUM_REPLY', 'Nguyễn Thị Lan đã trả lời trong “Xin góp ý ngón tay cho Invention No. 1 (Bach)”: “Tập riêng bè trái ở 60% tốc độ, dùng chế độ Lặp đoạn ô 3-6.”', '{"name": "Nguyễn Thị Lan", "title": "Xin góp ý ngón tay cho Invention No. 1 (Bach)", "threadId": "seed-ft-14", "postId": "seed-fp-14-2", "excerpt": "Tập riêng bè trái ở 60% tốc độ, dùng chế độ Lặp đoạn ô 3-6."}', 1, NOW(6) - INTERVAL 15 DAY - INTERVAL 4 HOUR
+UNION ALL
+    SELECT UUID(), (SELECT id FROM members WHERE email = 'lan.nguyen@music.com'), 'FORUM_ANSWER_ACCEPTED', 'Super Admin đã chọn câu trả lời của bạn là hay nhất trong “Xin góp ý ngón tay cho Invention No. 1 (Bach)”', '{"name": "Super Admin", "title": "Xin góp ý ngón tay cho Invention No. 1 (Bach)", "threadId": "seed-ft-14", "postId": "seed-fp-14-2"}', 1, NOW(6) - INTERVAL 14 DAY - INTERVAL 20 HOUR
+UNION ALL
+    SELECT UUID(), (SELECT id FROM members WHERE email = 'lan.nguyen@music.com'), 'FORUM_POST_REPLY', 'Super Admin đã trả lời bình luận của bạn trong “Xin góp ý ngón tay cho Invention No. 1 (Bach)”: “Cảm ơn cô Lan, tập theo cách này hai hôm là trôi rồi.”', '{"name": "Super Admin", "title": "Xin góp ý ngón tay cho Invention No. 1 (Bach)", "threadId": "seed-ft-14", "postId": "seed-fp-14-3", "excerpt": "Cảm ơn cô Lan, tập theo cách này hai hôm là trôi rồi."}', 1, NOW(6) - INTERVAL 14 DAY - INTERVAL 20 HOUR;
+
+-- ---------------------------------------------------------------------------------------------------- quản trị diễn đàn
+-- Chủ đề 12: nội quy do admin@music.com đăng, ghim và khóa (chỉ đọc)
+INSERT IGNORE INTO forum_threads (id, category_id, author_id, score_id, title, body, created_at, pinned_at, pinned_by, locked_at, locked_by)
+    SELECT 'seed-ft-12', (SELECT id FROM forum_categories WHERE slug = 'hoi-dap'), (SELECT id FROM members WHERE email = 'admin@music.com'), NULL, 'Nội quy diễn đàn (đọc trước khi đăng bài)', 'Chào mừng bạn đến với diễn đàn! Vài quy tắc để mọi người trao đổi thoải mái:
+
+1. **Đúng chuyên mục**: hỏi cách dùng ở *Hỏi đáp*, báo lỗi ở *Góp ý ứng dụng*.
+2. **Tôn trọng bản quyền**: chỉ gắn bản nhạc công khai, không chia sẻ bản in còn bản quyền.
+3. **Không quảng cáo, spam**: bài vi phạm sẽ bị ẩn, tái phạm có thể bị khóa tài khoản.
+4. Câu hỏi đã được giải đáp thì **chọn câu trả lời hay nhất** để người sau dễ tìm.
+
+Thấy bài vi phạm, bấm **Báo cáo** để ban quản trị xử lý.', NOW(6) - INTERVAL 70 DAY,
+    NOW(6) - INTERVAL 70 DAY, (SELECT id FROM members WHERE email = 'admin@music.com'),
+    NOW(6) - INTERVAL 70 DAY, (SELECT id FROM members WHERE email = 'admin@music.com');
+
+INSERT IGNORE INTO forum_subscriptions (id, thread_id, member_id, created_at)
+    SELECT UUID(), 'seed-ft-12', (SELECT id FROM members WHERE email = 'admin@music.com'), NOW(6) - INTERVAL 70 DAY;
+
+INSERT IGNORE INTO forum_votes (id, member_id, thread_id, created_at)
+    SELECT UUID(), (SELECT id FROM members WHERE email = 'lan.nguyen@music.com'), 'seed-ft-12', NOW(6) - INTERVAL 50 DAY
+UNION ALL
+    SELECT UUID(), (SELECT id FROM members WHERE email = 'minh.tran@music.com'), 'seed-ft-12', NOW(6) - INTERVAL 45 DAY;
+
+-- Chủ đề 8 đã có đáp án: super admin khóa để không trả lời thêm
+UPDATE forum_threads SET locked_at = NOW(6) - INTERVAL 5 DAY, locked_by = (SELECT id FROM members WHERE email = 'admin@music.com')
+WHERE id = 'seed-ft-8';
+
+-- Chủ đề 13 và bài seed-fp-4-3 là spam đã bị super admin ẩn sau báo cáo (khoa.bui, nay đã bị khóa tài khoản)
+INSERT IGNORE INTO forum_threads (id, category_id, author_id, score_id, title, body, created_at, hidden_at, hidden_by)
+    SELECT 'seed-ft-13', (SELECT id FROM forum_categories WHERE slug = 'tro-chuyen'), (SELECT id FROM members WHERE email = 'khoa.bui@music.com'), NULL, 'Bán khóa học piano cấp tốc giá rẻ', 'Khóa học piano 7 ngày chơi được mọi bài, giảm 90% hôm nay. Inbox để nhận link thanh toán!!!', NOW(6) - INTERVAL 6 DAY,
+    NOW(6) - INTERVAL 5 DAY - INTERVAL 3 HOUR, (SELECT id FROM members WHERE email = 'admin@music.com');
+
+INSERT IGNORE INTO forum_posts (id, thread_id, author_id, body, created_at, hidden_at, hidden_by)
+    SELECT 'seed-fp-4-3', 'seed-ft-4', (SELECT id FROM members WHERE email = 'khoa.bui@music.com'), 'Tập chi cho mệt, mua khóa học cấp tốc của mình là chơi được ngay, inbox nhé!', NOW(6) - INTERVAL 7 DAY,
+    NOW(6) - INTERVAL 6 DAY - INTERVAL 20 HOUR, (SELECT id FROM members WHERE email = 'admin@music.com');
+
+-- Báo cáo super admin đã xử lý: ẩn chủ đề 13 (2 báo cáo đóng cùng lúc), ẩn bài seed-fp-4-3, bỏ qua báo cáo sai ở seed-fp-5-2
+INSERT IGNORE INTO content_reports (id, target_type, forum_thread_id, forum_post_id, reporter_id, reason, details, status, action, resolution_note, resolved_by, resolved_at, created_at) VALUES
+    ('seed-report-ft-3', 'FORUM_THREAD', 'seed-ft-13', NULL, (SELECT id FROM members WHERE email = 'trang.dang@music.com'), 'SPAM', 'Quảng cáo bán khóa học.', 'RESOLVED', 'HIDE', 'Quảng cáo, vi phạm nội quy mục 3.', (SELECT id FROM members WHERE email = 'admin@music.com'), NOW(6) - INTERVAL 5 DAY - INTERVAL 3 HOUR, NOW(6) - INTERVAL 5 DAY - INTERVAL 20 HOUR),
+    ('seed-report-ft-4', 'FORUM_THREAD', 'seed-ft-13', NULL, (SELECT id FROM members WHERE email = 'duy.pham@music.com'), 'SPAM', NULL, 'RESOLVED', 'HIDE', 'Quảng cáo, vi phạm nội quy mục 3.', (SELECT id FROM members WHERE email = 'admin@music.com'), NOW(6) - INTERVAL 5 DAY - INTERVAL 3 HOUR, NOW(6) - INTERVAL 5 DAY - INTERVAL 9 HOUR),
+    ('seed-report-fp-2', 'FORUM_POST', 'seed-ft-4', 'seed-fp-4-3', (SELECT id FROM members WHERE email = 'lan.nguyen@music.com'), 'SPAM', 'Bài quảng cáo, không liên quan câu hỏi.', 'RESOLVED', 'HIDE', NULL, (SELECT id FROM members WHERE email = 'admin@music.com'), NOW(6) - INTERVAL 6 DAY - INTERVAL 20 HOUR, NOW(6) - INTERVAL 6 DAY - INTERVAL 23 HOUR),
+    ('seed-report-fp-3', 'FORUM_POST', 'seed-ft-5', 'seed-fp-5-2', (SELECT id FROM members WHERE email = 'nam.do@music.com'), 'OTHER', 'Bài này chỉ xin thêm bản nhạc, không góp ý gì.', 'DISMISSED', 'DISMISS', 'Bài hợp lệ: xin thêm bản nhạc là đúng chuyên mục Chia sẻ bản nhạc.', (SELECT id FROM members WHERE email = 'admin@music.com'), NOW(6) - INTERVAL 12 DAY, NOW(6) - INTERVAL 13 DAY);

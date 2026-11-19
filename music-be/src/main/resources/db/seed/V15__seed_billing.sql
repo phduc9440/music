@@ -42,7 +42,7 @@ VALUES
     ('seed-pay-14', 'SEEDPAY0000000014', (SELECT id FROM members WHERE email = 'user@music.com'), (SELECT id FROM plans WHERE code = 'PRO'), 'MONTH', 'NEW', 99000, 'VNPAY', 'EXPIRED', NULL, NULL, NOW(6) - INTERVAL 3 DAY, NOW(6) - INTERVAL 3 DAY + INTERVAL 15 MINUTE, NULL);
 
 -- ---------------------------------------------------------------------------------------------------- xử phạt gói
--- created_by để NULL được: SUPER_ADMIN (admin@music.com) do ứng dụng tạo lúc khởi động, có thể chưa có khi seed chạy
+-- created_by: SUPER_ADMIN admin@music.com (seed ở V3)
 INSERT IGNORE INTO plan_sanctions (id, member_id, type, plan_id, subscription_id, starts_at, ends_at, reason, created_by, lifted_at, created_at)
 VALUES
     ('seed-sanction-revoke-bao', (SELECT id FROM members WHERE email = 'bao.hoang@music.com'), 'REVOKE', (SELECT id FROM plans WHERE code = 'PRO'), 'seed-sub-pay-bao', NOW(6) - INTERVAL 28 DAY, NULL, 'Hoàn tiền theo yêu cầu của khách', (SELECT id FROM members WHERE email = 'admin@music.com'), NULL, NOW(6) - INTERVAL 28 DAY),
@@ -52,4 +52,5 @@ VALUES
 INSERT IGNORE INTO content_reports (id, target_type, score_id, reporter_id, reason, details, status, action, resolution_note, resolved_by, resolved_at, created_at)
 VALUES
     ('seed-report-score-1', 'SCORE', (SELECT id FROM scores WHERE title = 'Turkish March' AND deleted_at IS NULL LIMIT 1), (SELECT id FROM members WHERE email = 'lan.nguyen@music.com'), 'COPYRIGHT', 'Bản này giống hệt bản in của một nhà xuất bản, có ghi bản quyền ở chân trang.', 'PENDING', NULL, NULL, NULL, NULL, NOW(6) - INTERVAL 9 HOUR),
-    ('seed-report-score-2', 'SCORE', (SELECT id FROM scores WHERE title = 'Canon in D' AND deleted_at IS NULL LIMIT 1), (SELECT id FROM members WHERE email = 'bao.hoang@music.com'), 'INAPPROPRIATE', 'Tiêu đề không đúng nội dung.', 'DISMISSED', 'DISMISS', 'Đã kiểm tra: tiêu đề và nội dung khớp nhau.', (SELECT id FROM members WHERE email = 'admin2@music.com'), NOW(6) - INTERVAL 3 DAY, NOW(6) - INTERVAL 4 DAY);
+    ('seed-report-score-2', 'SCORE', (SELECT id FROM scores WHERE title = 'Canon in D' AND deleted_at IS NULL LIMIT 1), (SELECT id FROM members WHERE email = 'bao.hoang@music.com'), 'INAPPROPRIATE', 'Tiêu đề không đúng nội dung.', 'DISMISSED', 'DISMISS', 'Đã kiểm tra: tiêu đề và nội dung khớp nhau.', (SELECT id FROM members WHERE email = 'admin2@music.com'), NOW(6) - INTERVAL 3 DAY, NOW(6) - INTERVAL 4 DAY),
+    ('seed-report-score-3', 'SCORE', (SELECT id FROM scores WHERE title = 'Bản chép lại có bản quyền' LIMIT 1), (SELECT id FROM members WHERE email = 'huong.le@music.com'), 'COPYRIGHT', 'Bản chép nguyên văn từ sách nhạc còn bản quyền.', 'RESOLVED', 'SOFT_DELETE', 'Vi phạm bản quyền (kiểm duyệt)', (SELECT id FROM members WHERE email = 'admin@music.com'), NOW(6) - INTERVAL 5 DAY - INTERVAL 2 HOUR, NOW(6) - INTERVAL 6 DAY);

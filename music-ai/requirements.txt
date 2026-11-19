@@ -1,6 +1,7 @@
 # Dịch vụ web
 fastapi>=0.110
 uvicorn[standard]>=0.29
+python-dotenv>=1.0       # uvicorn --env-file cần gói này
 pydantic>=2.6
 
 # Tiền xử lý ảnh (nhánh feature/omr-preprocess)

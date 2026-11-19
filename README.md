@@ -37,7 +37,10 @@ qua callback có header `X-Internal-Key`.
   MusicXML để người dùng rà lại; tiến độ cập nhật trực tiếp qua WebSocket.
 - **Xem, phát và luyện tập**: hiển thị bản nhạc bằng OpenSheetMusicDisplay, phát lại bằng mẫu âm piano, chế độ luyện
   tập (Studio) có chấm điểm, lịch sử và thống kê luyện tập.
-- **Gợi ý hợp âm** cho bản chỉ có giai điệu (nhiều phong cách, mô hình HMM + nhạc lý).
+- **Gợi ý hợp âm** cho bản chỉ có giai điệu: nút "Gợi ý hợp âm" ở trang chi tiết bản nhạc (cần quyền `REVIEW` trở
+  lên), chọn phong cách Pop / Ballad / Jazz. `music-ai` sinh hợp âm bằng HMM + nhạc lý. Kết quả không ghi thẳng vào
+  bản nhạc mà thành một đề xuất sửa do hệ thống gửi, chủ bản nhạc duyệt ở tab Đề xuất. Sau khi chấp nhận, Player có
+  thể đệm theo các hợp âm này.
 - **Cộng tác**: chia sẻ theo quyền (`VIEW`, `REVIEW`, `EDIT`), góp ý gắn với ô nhịp, đề xuất sửa và so sánh khác biệt,
   fork bản nhạc công khai.
 - **Nhóm và Show**: tạo Team, mời thành viên qua email, quản lý Show bằng bảng Kanban, giao việc và nhắc hạn, chế độ
@@ -73,7 +76,7 @@ Mọi tài khoản mẫu có mật khẩu `12345678`.
 
 | Email | Vai trò |
 |---|---|
-| `admin@music.com` | `SUPER_ADMIN` (backend tự tạo khi khởi động) |
+| `admin@music.com` | `SUPER_ADMIN` |
 | `admin2@music.com` | `ADMIN` |
 | `user@music.com` | `USER` |
 

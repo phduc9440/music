@@ -2,6 +2,8 @@
 -- kho bản nhạc mẫu (gồm bản sao từ bản của người dùng), thùng rác. Nhiều tác giả khớp bảng nhạc sĩ (V5).
 -- Seed chưa kèm file (MusicXML, ảnh trang...): danh sách, Khám phá, thống kê chạy bình thường; muốn mở Editor/Player
 -- thì tải một bản lên qua web. current_version = 0 nghĩa là chưa có MusicXML.
+-- Kho bản nhạc mẫu thuộc tài khoản gốc admin@music.com (giống ứng dụng: bản sao vào kho luôn do tài khoản này sở hữu);
+-- tài khoản này còn có 3 bản riêng trong Thư viện, trong đó "Invention No. 1" công khai nhưng chưa vào kho.
 -- Cuối file gán ảnh bìa (scores.cover_url) cho 8 bản công khai để có cả bản có bìa và bản không có bìa.
 INSERT INTO scores
     (id, member_id, title, composer, difficulty, study_notes, processing_status, visibility, is_official, reject_reason,
@@ -47,10 +49,13 @@ FROM (
     UNION ALL SELECT 'duy.pham@music.com', 'Ảnh chụp mờ - thử lần 1', NULL, 'EASY', NULL, 'FAILED', 'PRIVATE', 0, NULL, NULL, NULL, NULL, NULL, NULL, 2, 1, 'OMR', 0, 0, NOW(6) - INTERVAL 6 DAY - INTERVAL 7 HOUR - INTERVAL 15 MINUTE, NOW(6) - INTERVAL 4 DAY - INTERVAL 7 HOUR - INTERVAL 5 MINUTE, NULL, NULL
     UNION ALL SELECT 'an.vo@music.com', 'Bản scan sách tập đàn', NULL, 'EASY', NULL, 'PENDING', 'PRIVATE', 0, NULL, NULL, NULL, NULL, NULL, NULL, 2, 8, 'OMR', 0, 0, NOW(6) - INTERVAL 0 DAY - INTERVAL 10 HOUR - INTERVAL 15 MINUTE, NOW(6) - INTERVAL 0 DAY - INTERVAL 10 HOUR - INTERVAL 5 MINUTE, NULL, NULL
     UNION ALL SELECT 'huong.le@music.com', 'Bài hát đám cưới (giọng + piano)', NULL, 'MEDIUM', NULL, 'COMPLETED', 'PRIVATE', 0, NULL, NULL, 78, 56, 'Eb', '4/4', 2, NULL, 'IMPORT', 0, 0, NOW(6) - INTERVAL 10 DAY - INTERVAL 13 HOUR - INTERVAL 15 MINUTE, NOW(6) - INTERVAL 6 DAY - INTERVAL 13 HOUR - INTERVAL 5 MINUTE, NULL, NULL
-    UNION ALL SELECT 'admin2@music.com', 'Twinkle Twinkle Little Star', 'W.A. Mozart', 'EASY', NULL, 'COMPLETED', 'PUBLIC', 1, NULL, NULL, 100, 24, 'C', '4/4', 2, NULL, 'IMPORT', 2650, 1, NOW(6) - INTERVAL 60 DAY - INTERVAL 16 HOUR - INTERVAL 15 MINUTE, NOW(6) - INTERVAL 60 DAY - INTERVAL 16 HOUR - INTERVAL 5 MINUTE, NULL, NULL
-    UNION ALL SELECT 'admin2@music.com', 'Happy Birthday to You', NULL, 'EASY', NULL, 'COMPLETED', 'PUBLIC', 1, NULL, NULL, 110, 16, 'G', '3/4', 2, NULL, 'IMPORT', 2210, 0, NOW(6) - INTERVAL 58 DAY - INTERVAL 19 HOUR - INTERVAL 15 MINUTE, NOW(6) - INTERVAL 57 DAY - INTERVAL 19 HOUR - INTERVAL 5 MINUTE, NULL, NULL
-    UNION ALL SELECT 'admin2@music.com', 'Ode to Joy (bản giản lược)', 'Ludwig van Beethoven', 'EASY', NULL, 'COMPLETED', 'PUBLIC', 1, NULL, 'Demo User', 100, 24, 'D', '4/4', 2, NULL, 'IMPORT', 910, 0, NOW(6) - INTERVAL 20 DAY - INTERVAL 22 HOUR - INTERVAL 15 MINUTE, NOW(6) - INTERVAL 18 DAY - INTERVAL 22 HOUR - INTERVAL 5 MINUTE, NULL, NULL
-    UNION ALL SELECT 'admin2@music.com', 'Für Elise (giản lược)', 'Beethoven', 'MEDIUM', NULL, 'COMPLETED', 'PUBLIC', 1, NULL, 'Nguyễn Thị Lan', 110, 60, 'Am', '3/8', 2, NULL, 'IMPORT', 640, 0, NOW(6) - INTERVAL 14 DAY - INTERVAL 1 HOUR - INTERVAL 15 MINUTE, NOW(6) - INTERVAL 11 DAY - INTERVAL 1 HOUR - INTERVAL 5 MINUTE, NULL, NULL
+    UNION ALL SELECT 'admin@music.com', 'Invention No. 1 (BWV 772)', 'J.S. Bach', 'MEDIUM', 'Hai bè đối đáp: tập riêng từng tay rồi mới ghép.', 'COMPLETED', 'PUBLIC', 0, NULL, NULL, 72, 22, 'C', '4/4', 2, 1, 'OMR', 430, 0, NOW(6) - INTERVAL 45 DAY - INTERVAL 10 HOUR - INTERVAL 15 MINUTE, NOW(6) - INTERVAL 44 DAY - INTERVAL 10 HOUR - INTERVAL 5 MINUTE, NULL, NULL
+    UNION ALL SELECT 'admin@music.com', 'Bài tập arpeggio hai tay', NULL, 'EASY', 'Khởi động 5 phút: tay phải đi lên, tay trái đi xuống, giữ đều tempo.', 'COMPLETED', 'PRIVATE', 0, NULL, NULL, 90, 16, 'C', '4/4', 2, NULL, 'IMPORT', 0, 0, NOW(6) - INTERVAL 33 DAY - INTERVAL 13 HOUR - INTERVAL 15 MINUTE, NOW(6) - INTERVAL 32 DAY - INTERVAL 13 HOUR - INTERVAL 5 MINUTE, NULL, NULL
+    UNION ALL SELECT 'admin@music.com', 'Bèo dạt mây trôi', 'Dân ca quan họ', 'EASY', NULL, 'COMPLETED', 'PRIVATE', 0, NULL, NULL, 76, 32, 'G', '2/4', 2, 1, 'OMR', 0, 0, NOW(6) - INTERVAL 6 DAY - INTERVAL 16 HOUR - INTERVAL 15 MINUTE, NOW(6) - INTERVAL 5 DAY - INTERVAL 16 HOUR - INTERVAL 5 MINUTE, NULL, NULL
+    UNION ALL SELECT 'admin@music.com', 'Twinkle Twinkle Little Star', 'W.A. Mozart', 'EASY', NULL, 'COMPLETED', 'PUBLIC', 1, NULL, NULL, 100, 24, 'C', '4/4', 2, NULL, 'IMPORT', 2650, 1, NOW(6) - INTERVAL 60 DAY - INTERVAL 16 HOUR - INTERVAL 15 MINUTE, NOW(6) - INTERVAL 60 DAY - INTERVAL 16 HOUR - INTERVAL 5 MINUTE, NULL, NULL
+    UNION ALL SELECT 'admin@music.com', 'Happy Birthday to You', NULL, 'EASY', NULL, 'COMPLETED', 'PUBLIC', 1, NULL, NULL, 110, 16, 'G', '3/4', 2, NULL, 'IMPORT', 2210, 0, NOW(6) - INTERVAL 58 DAY - INTERVAL 19 HOUR - INTERVAL 15 MINUTE, NOW(6) - INTERVAL 57 DAY - INTERVAL 19 HOUR - INTERVAL 5 MINUTE, NULL, NULL
+    UNION ALL SELECT 'admin@music.com', 'Ode to Joy (bản giản lược)', 'Ludwig van Beethoven', 'EASY', NULL, 'COMPLETED', 'PUBLIC', 1, NULL, 'Demo User', 100, 24, 'D', '4/4', 2, NULL, 'IMPORT', 910, 0, NOW(6) - INTERVAL 20 DAY - INTERVAL 22 HOUR - INTERVAL 15 MINUTE, NOW(6) - INTERVAL 18 DAY - INTERVAL 22 HOUR - INTERVAL 5 MINUTE, NULL, NULL
+    UNION ALL SELECT 'admin@music.com', 'Für Elise (giản lược)', 'Beethoven', 'MEDIUM', NULL, 'COMPLETED', 'PUBLIC', 1, NULL, 'Nguyễn Thị Lan', 110, 60, 'Am', '3/8', 2, NULL, 'IMPORT', 640, 0, NOW(6) - INTERVAL 14 DAY - INTERVAL 1 HOUR - INTERVAL 15 MINUTE, NOW(6) - INTERVAL 11 DAY - INTERVAL 1 HOUR - INTERVAL 5 MINUTE, NULL, NULL
     UNION ALL SELECT 'user@music.com', 'Bản nháp thử OMR', NULL, 'EASY', NULL, 'COMPLETED', 'PRIVATE', 0, NULL, NULL, 90, 8, 'C', '4/4', 2, 1, 'OMR', 0, 0, NOW(6) - INTERVAL 12 DAY - INTERVAL 4 HOUR - INTERVAL 15 MINUTE, NOW(6) - INTERVAL 8 DAY - INTERVAL 4 HOUR - INTERVAL 5 MINUTE, NOW(6) - INTERVAL 3 DAY - INTERVAL 2 HOUR - INTERVAL 0 MINUTE, NULL
     UNION ALL SELECT 'minh.tran@music.com', 'Bản chép lại có bản quyền', NULL, 'MEDIUM', NULL, 'COMPLETED', 'PRIVATE', 0, NULL, NULL, 100, 40, 'C', '4/4', 2, NULL, 'IMPORT', 0, 0, NOW(6) - INTERVAL 9 DAY - INTERVAL 7 HOUR - INTERVAL 15 MINUTE, NOW(6) - INTERVAL 9 DAY - INTERVAL 7 HOUR - INTERVAL 5 MINUTE, NOW(6) - INTERVAL 5 DAY - INTERVAL 2 HOUR - INTERVAL 0 MINUTE, 'Vi phạm bản quyền (kiểm duyệt)'
 ) t
@@ -58,7 +63,7 @@ JOIN members m ON m.email = t.owner_email;
 
 -- Người xóa bản trong thùng rác (chủ bản hoặc admin kiểm duyệt)
 UPDATE scores s JOIN members m ON m.email = 'user@music.com' SET s.deleted_by = m.id WHERE s.title = 'Bản nháp thử OMR';
-UPDATE scores s JOIN members m ON m.email = 'admin2@music.com' SET s.deleted_by = m.id WHERE s.title = 'Bản chép lại có bản quyền';
+UPDATE scores s JOIN members m ON m.email = 'admin@music.com' SET s.deleted_by = m.id WHERE s.title = 'Bản chép lại có bản quyền';
 
 -- Bản sao trong kho mẫu trỏ về bản gốc của người dùng
 UPDATE scores c JOIN scores o ON o.title = 'Ode to Joy' SET c.original_score_id = o.id WHERE c.title = 'Ode to Joy (bản giản lược)';
@@ -126,6 +131,9 @@ FROM (
     UNION ALL SELECT 'Happy Birthday to You', 'pop'
     UNION ALL SELECT 'Ode to Joy (bản giản lược)', 'co-dien'
     UNION ALL SELECT 'Für Elise (giản lược)', 'co-dien'
+    UNION ALL SELECT 'Invention No. 1 (BWV 772)', 'co-dien'
+    UNION ALL SELECT 'Bèo dạt mây trôi', 'dan-gian'
+    UNION ALL SELECT 'Bèo dạt mây trôi', 'nhac-viet'
 ) t
 JOIN scores s ON s.title = t.title
 JOIN tags g ON g.slug = t.slug;

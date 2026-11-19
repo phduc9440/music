@@ -21,7 +21,8 @@ mysql -uroot -p music_db < init/V1__init_schema.sql
 for f in $(ls -v seed/*.sql); do mysql -uroot -p music_db --default-character-set=utf8mb4 < $f; done
 ```
 
-Tài khoản `admin@music.com` (mật khẩu `12345678`) không nằm trong seed. Backend tự tạo nó khi khởi động.
+Tài khoản gốc `admin@music.com` (`SUPER_ADMIN`, mật khẩu `12345678`) nằm trong seed V3. DB không chạy seed thì backend
+tự tạo nó khi khởi động.
 
 ## Chạy tự động
 

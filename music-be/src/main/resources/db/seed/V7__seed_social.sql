@@ -95,6 +95,8 @@ FROM (
     UNION ALL SELECT 'huong.le@music.com', 'Setlist đám cưới', 'Thứ tự biểu diễn buổi tiệc cuối tuần.'
     UNION ALL SELECT 'an.vo@music.com', 'Piano giản dị', 'Nhạc chậm, dễ tập.'
     UNION ALL SELECT 'trang.dang@music.com', 'Cho bé tập đàn', 'Bài ngắn, tempo vừa.'
+    UNION ALL SELECT 'admin@music.com', 'Kho mẫu cho người mới', 'Bài dễ trong kho bản nhạc mẫu, gợi ý cho tài khoản mới.'
+    UNION ALL SELECT 'admin@music.com', 'Luyện tập buổi tối', NULL
 ) t
 JOIN members m ON m.email = t.email;
 
@@ -136,23 +138,32 @@ FROM (
     UNION ALL SELECT 'trang.dang@music.com', 'Cho bé tập đàn', 'Twinkle Twinkle Little Star', 1
     UNION ALL SELECT 'trang.dang@music.com', 'Cho bé tập đàn', 'Happy Birthday to You', 2
     UNION ALL SELECT 'trang.dang@music.com', 'Cho bé tập đàn', 'Ode to Joy', 3
+    UNION ALL SELECT 'admin@music.com', 'Kho mẫu cho người mới', 'Twinkle Twinkle Little Star', 1
+    UNION ALL SELECT 'admin@music.com', 'Kho mẫu cho người mới', 'Happy Birthday to You', 2
+    UNION ALL SELECT 'admin@music.com', 'Kho mẫu cho người mới', 'Ode to Joy (bản giản lược)', 3
+    UNION ALL SELECT 'admin@music.com', 'Kho mẫu cho người mới', 'Für Elise (giản lược)', 4
+    UNION ALL SELECT 'admin@music.com', 'Luyện tập buổi tối', 'Bài tập arpeggio hai tay', 1
+    UNION ALL SELECT 'admin@music.com', 'Luyện tập buổi tối', 'Invention No. 1 (BWV 772)', 2
+    UNION ALL SELECT 'admin@music.com', 'Luyện tập buổi tối', 'Gymnopédie No. 1', 3
+    UNION ALL SELECT 'admin@music.com', 'Luyện tập buổi tối', 'Clair de Lune', 4
 ) t
 JOIN members m ON m.email = t.email
 JOIN playlists p ON p.member_id = m.id AND p.name = t.playlist
 JOIN scores s ON s.title = t.title;
 
--- Lời xin đưa bản nhạc vào kho bản nhạc mẫu: admin xin phép chủ, chủ đồng ý thì có bản sao (V6)
+-- Lời xin đưa bản nhạc vào kho bản nhạc mẫu: admin xin phép chủ, chủ đồng ý thì có bản sao (V6). Người xin chia cho
+-- admin@music.com (SUPER_ADMIN) và admin2 để mỗi tài khoản có cả lời xin đã đồng ý và đang chờ.
 INSERT INTO official_requests (id, score_id, requested_by, owner_id, status, copy_score_id, created_at, resolved_at)
 SELECT UUID(), s.id, a.id, m.id, t.status, c.id, t.created_at, t.resolved_at
 FROM (
-    SELECT 'Ode to Joy' AS title, 'user@music.com' AS owner_email, 'ACCEPTED' AS status, 'Ode to Joy (bản giản lược)' AS copy_title, NOW(6) - INTERVAL 22 DAY - INTERVAL 4 HOUR - INTERVAL 0 MINUTE AS created_at, NOW(6) - INTERVAL 20 DAY - INTERVAL 4 HOUR - INTERVAL 0 MINUTE AS resolved_at
-    UNION ALL SELECT 'Für Elise', 'lan.nguyen@music.com', 'ACCEPTED', 'Für Elise (giản lược)', NOW(6) - INTERVAL 16 DAY - INTERVAL 4 HOUR - INTERVAL 0 MINUTE, NOW(6) - INTERVAL 14 DAY - INTERVAL 4 HOUR - INTERVAL 0 MINUTE
-    UNION ALL SELECT 'Turkish March', 'minh.tran@music.com', 'PENDING', NULL, NOW(6) - INTERVAL 2 DAY - INTERVAL 4 HOUR - INTERVAL 0 MINUTE, NULL
-    UNION ALL SELECT 'Canon in D', 'huong.le@music.com', 'PENDING', NULL, NOW(6) - INTERVAL 1 DAY - INTERVAL 4 HOUR - INTERVAL 0 MINUTE, NULL
-    UNION ALL SELECT 'Nocturne Op. 9 No. 2', 'lan.nguyen@music.com', 'DECLINED', NULL, NOW(6) - INTERVAL 10 DAY - INTERVAL 4 HOUR - INTERVAL 0 MINUTE, NOW(6) - INTERVAL 9 DAY - INTERVAL 4 HOUR - INTERVAL 0 MINUTE
-    UNION ALL SELECT 'Tiến quân ca', 'bao.hoang@music.com', 'CANCELED', NULL, NOW(6) - INTERVAL 12 DAY - INTERVAL 4 HOUR - INTERVAL 0 MINUTE, NOW(6) - INTERVAL 11 DAY - INTERVAL 4 HOUR - INTERVAL 0 MINUTE
+    SELECT 'Ode to Joy' AS title, 'user@music.com' AS owner_email, 'admin@music.com' AS requester_email, 'ACCEPTED' AS status, 'Ode to Joy (bản giản lược)' AS copy_title, NOW(6) - INTERVAL 22 DAY - INTERVAL 4 HOUR - INTERVAL 0 MINUTE AS created_at, NOW(6) - INTERVAL 20 DAY - INTERVAL 4 HOUR - INTERVAL 0 MINUTE AS resolved_at
+    UNION ALL SELECT 'Für Elise', 'lan.nguyen@music.com', 'admin2@music.com', 'ACCEPTED', 'Für Elise (giản lược)', NOW(6) - INTERVAL 16 DAY - INTERVAL 4 HOUR - INTERVAL 0 MINUTE, NOW(6) - INTERVAL 14 DAY - INTERVAL 4 HOUR - INTERVAL 0 MINUTE
+    UNION ALL SELECT 'Turkish March', 'minh.tran@music.com', 'admin@music.com', 'PENDING', NULL, NOW(6) - INTERVAL 2 DAY - INTERVAL 4 HOUR - INTERVAL 0 MINUTE, NULL
+    UNION ALL SELECT 'Canon in D', 'huong.le@music.com', 'admin2@music.com', 'PENDING', NULL, NOW(6) - INTERVAL 1 DAY - INTERVAL 4 HOUR - INTERVAL 0 MINUTE, NULL
+    UNION ALL SELECT 'Nocturne Op. 9 No. 2', 'lan.nguyen@music.com', 'admin2@music.com', 'DECLINED', NULL, NOW(6) - INTERVAL 10 DAY - INTERVAL 4 HOUR - INTERVAL 0 MINUTE, NOW(6) - INTERVAL 9 DAY - INTERVAL 4 HOUR - INTERVAL 0 MINUTE
+    UNION ALL SELECT 'Tiến quân ca', 'bao.hoang@music.com', 'admin@music.com', 'CANCELED', NULL, NOW(6) - INTERVAL 12 DAY - INTERVAL 4 HOUR - INTERVAL 0 MINUTE, NOW(6) - INTERVAL 11 DAY - INTERVAL 4 HOUR - INTERVAL 0 MINUTE
 ) t
 JOIN scores s ON s.title = t.title
 JOIN members m ON m.email = t.owner_email
-JOIN members a ON a.email = 'admin2@music.com'
+JOIN members a ON a.email = t.requester_email
 LEFT JOIN scores c ON c.title = t.copy_title;
