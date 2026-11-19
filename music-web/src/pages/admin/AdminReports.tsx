@@ -5,14 +5,13 @@ import Modal from '../../components/scores/common/Modal';
 import { Badge, Button, Icon, PageHeader, Pager, Tabs } from '../../components/ui';
 import type { IconName } from '../../components/ui';
 import { useDialog } from '../../components/ui/dialog-context';
-import { errorMessage, formatDateTime } from '../../components/ui/helpers';
+import { errorMessage, formatDateTime, DEFAULT_PAGE_SIZE } from '../../components/ui/helpers';
 import { adminReportApi } from '../../services';
 import { REPORT_ACTIONS_BY_TARGET } from '../../types';
 import type { ContentReport, PageResult, ReportAction, ReportStatus, ReportTargetType } from '../../types';
 import { formatRelativeTime, t } from '../../i18n/core';
 import './admin-reports.css';
 
-const PAGE_SIZE = 10;
 type Tab = ReportStatus | 'ALL';
 type TypeFilter = ReportTargetType | '';
 
@@ -46,6 +45,11 @@ export default function AdminReports() {
   const [tab, setTab] = useState<Tab>('PENDING');
   const [targetType, setTargetType] = useState<TypeFilter>('');
   const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const changePageSize = (n: number) => {
+    setPageSize(n);
+    setPage(0);
+  };
   const [reload, setReload] = useState(0);
   const [result, setResult] = useState<PageResult<ContentReport> | null>(null);
   const [counts, setCounts] = useState<Record<string, number> | null>(null);
@@ -55,7 +59,7 @@ export default function AdminReports() {
   useEffect(() => {
     let cancelled = false;
     adminReportApi
-      .list({ page, size: PAGE_SIZE, status: tab === 'ALL' ? undefined : tab, targetType: targetType || undefined })
+      .list({ page, size: pageSize, status: tab === 'ALL' ? undefined : tab, targetType: targetType || undefined })
       .then((res) => {
         if (cancelled) return;
         const data = res.data.result;
@@ -67,7 +71,7 @@ export default function AdminReports() {
     return () => {
       cancelled = true;
     };
-  }, [tab, targetType, page, reload]);
+  }, [tab, targetType, page, pageSize, reload]);
 
   // Số báo cáo đang chờ theo từng loại, hiện trên các nút lọc
   useEffect(() => {
@@ -264,6 +268,8 @@ export default function AdminReports() {
 
       {result && (
         <Pager
+          pageSize={pageSize}
+          onPageSizeChange={changePageSize}
           page={result.pageNumber}
           totalPages={result.totalPages}
           totalElements={result.totalElements}

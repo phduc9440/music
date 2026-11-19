@@ -608,7 +608,8 @@
     "refunded": "Đã đánh dấu hoàn tiền",
     "refundFailed": "Không hoàn tiền được",
     "kind": "Loại đơn",
-    "allKinds": "Tất cả loại đơn"
+    "allKinds": "Tất cả loại đơn",
+    "orderUnit": "đơn"
   },
   "plans": {
     "subtitle": "Tên, giá và hạn mức của từng gói. Đơn đã tạo trước khi đổi giá giữ số tiền cũ; hạn mức mới áp dụng ngay cho người đang dùng gói.",

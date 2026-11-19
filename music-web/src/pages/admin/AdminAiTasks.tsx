@@ -17,7 +17,7 @@ import {
   Toolbar,
 } from '../../components/ui';
 import { useDialog } from '../../components/ui/dialog-context';
-import { errorMessage, formatDateTime } from '../../components/ui/helpers';
+import { errorMessage, formatDateTime, DEFAULT_PAGE_SIZE } from '../../components/ui/helpers';
 import type { Tone } from '../../components/ui/helpers';
 import { adminApi, taskApi } from '../../services';
 import type { AdminAiTask, AiTaskInfo, AiTaskSummary, PageResult } from '../../types';
@@ -26,7 +26,6 @@ import { TASK_TYPE_LABELS } from '../../utils/score';
 import './AdminSystem.css';
 import { labelMap, t } from '../../i18n/core';
 
-const PAGE_SIZE = 20;
 const REFRESH_MS = 10000;
 
 const STATUS_TONE: Record<string, Tone> = {
@@ -81,6 +80,11 @@ export default function AdminAiTasks() {
   const [summary, setSummary] = useState<AiTaskSummary | null>(null);
   const [result, setResult] = useState<PageResult<AdminAiTask> | null>(null);
   const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const changePageSize = (n: number) => {
+    setPageSize(n);
+    setPage(0);
+  };
   const [keywordInput, setKeywordInput] = useState('');
   const [keyword, setKeyword] = useState('');
   const [status, setStatus] = useState('');
@@ -98,7 +102,7 @@ export default function AdminAiTasks() {
     adminApi
       .getAiTasks({
         page,
-        size: PAGE_SIZE,
+        size: pageSize,
         status: status || undefined,
         type: type || undefined,
         keyword: keyword || undefined,
@@ -114,7 +118,7 @@ export default function AdminAiTasks() {
     return () => {
       cancelled = true;
     };
-  }, [page, status, type, keyword, from, to, reload]);
+  }, [page, pageSize, status, type, keyword, from, to, reload]);
 
   const active = (summary?.pending ?? 0) + (summary?.processing ?? 0);
 
@@ -460,6 +464,8 @@ export default function AdminAiTasks() {
         </Table>
         {result && (
           <Pager
+            pageSize={pageSize}
+            onPageSizeChange={changePageSize}
             page={result.pageNumber}
             totalPages={result.totalPages}
             totalElements={result.totalElements}

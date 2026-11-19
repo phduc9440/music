@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { Badge, Button, Card, CellTitle, Pager, Table, TableState } from '../ui';
-import { errorMessage, formatDate } from '../ui/helpers';
+import { errorMessage, formatDate, DEFAULT_PAGE_SIZE } from '../ui/helpers';
 import type { AdminOutletContext } from './AdminLayout';
 import SanctionDialog from './SanctionDialog';
 import type { SanctionMode } from './SanctionDialog';
@@ -12,7 +12,6 @@ import type { Member, PageResult, PlanInfo } from '../../types';
 import { isAdminMember, isSuperAdminMember, roleLabel } from '../../utils/auth';
 import { t } from '../../i18n/core';
 
-const PAGE_SIZE = 20;
 const MAX_SELECTED = 200;
 /** Nguồn gói có thể thu hồi (mua hoặc được cấp, có ngày hết hạn). */
 const REVOCABLE_SOURCES = ['PAYMENT', 'ADMIN_GRANT', 'POINTS_TRIAL'];
@@ -36,6 +35,11 @@ export default function PlanSanctionPanel() {
   const [bannedOnly, setBannedOnly] = useState(false);
   const [plans, setPlans] = useState<PlanInfo[]>([]);
   const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const changePageSize = (n: number) => {
+    setPageSize(n);
+    setPage(0);
+  };
   const [result, setResult] = useState<PageResult<Member> | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [picked, setPicked] = useState<Record<string, Picked>>({});
@@ -53,14 +57,14 @@ export default function PlanSanctionPanel() {
     adminApi
       .getMembersWithPlan({
         page,
-        size: PAGE_SIZE,
+        size: pageSize,
         keyword: keyword || undefined,
         planCode: planCode || undefined,
         bannedOnly: bannedOnly || undefined,
       })
       .then((res) => setResult(res.data.result))
       .catch((error) => toast.error(errorMessage(error, t('admin.members.loadFailed'))));
-  }, [page, keyword, planCode, bannedOnly, reloadKey]);
+  }, [page, pageSize, keyword, planCode, bannedOnly, reloadKey]);
 
   const reload = () => setReloadKey((k) => k + 1);
   const rows = (result?.content ?? []).filter((m) => !isSuperAdminMember(m) || !canEdit);
@@ -262,6 +266,8 @@ export default function PlanSanctionPanel() {
         </Table>
         {result && result.totalPages > 1 && (
           <Pager
+            pageSize={pageSize}
+            onPageSizeChange={changePageSize}
             page={result.pageNumber}
             totalPages={result.totalPages}
             totalElements={result.totalElements}

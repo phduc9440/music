@@ -16,14 +16,12 @@ import {
   TableState,
   Tabs,
 } from '../../components/ui';
-import { errorMessage, formatDate } from '../../components/ui/helpers';
+import { errorMessage, formatDate, DEFAULT_PAGE_SIZE } from '../../components/ui/helpers';
 import { useDialog } from '../../components/ui/dialog-context';
 import { adminTeamApi } from '../../services';
 import { deleteTeamAsAdmin, restoreTeamAsAdmin } from './adminTeamActions';
 import type { AdminTeam, AdminTeamSummary, PageResult } from '../../types';
 import { formatNumber, formatRelativeTime, t } from '../../i18n/core';
-
-const PAGE_SIZE = 20;
 
 /** Admin: danh sách team (tìm theo tên team, tên / email người tạo), số liệu tổng quan, xóa mềm team vi phạm và khôi phục trong 30 ngày. */
 export default function AdminTeams() {
@@ -34,6 +32,11 @@ export default function AdminTeams() {
   const [keywordInput, setKeywordInput] = useState('');
   const [keyword, setKeyword] = useState('');
   const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const changePageSize = (n: number) => {
+    setPageSize(n);
+    setPage(0);
+  };
   const [reload, setReload] = useState(0);
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -46,10 +49,10 @@ export default function AdminTeams() {
 
   const load = useCallback(() => {
     adminTeamApi
-      .search({ keyword: keyword || undefined, deleted: view === 'deleted', page, size: PAGE_SIZE })
+      .search({ keyword: keyword || undefined, deleted: view === 'deleted', page, size: pageSize })
       .then((res) => setResult(res.data.result))
       .catch((error) => toast.error(errorMessage(error, t('admin.teams.loadFailed'))));
-  }, [keyword, page, view]);
+  }, [keyword, page, pageSize, view]);
 
   useEffect(load, [load, reload]);
 
@@ -247,6 +250,8 @@ export default function AdminTeams() {
         </Table>
         {result && (
           <Pager
+            pageSize={pageSize}
+            onPageSizeChange={changePageSize}
             page={result.pageNumber}
             totalPages={result.totalPages}
             totalElements={result.totalElements}

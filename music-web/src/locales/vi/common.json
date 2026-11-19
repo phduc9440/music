@@ -79,7 +79,8 @@
     "scores": "{count} bản nhạc",
     "pageOf": "trang {page}/{total}",
     "previousPage": "Trang trước",
-    "nextPage": "Trang sau"
+    "nextPage": "Trang sau",
+    "pageSize": "Số dòng mỗi trang"
   },
   "notifications": {
     "title": "Thông báo",

@@ -35,7 +35,7 @@ public class AdminPracticeController {
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<PageResponse<AdminPracticeSessionResponse>> list(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String mode,
             @RequestParam(required = false) String status,

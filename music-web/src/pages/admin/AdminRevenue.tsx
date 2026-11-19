@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
-import { Badge, Button, Card, PageHeader, StatCard, StatGrid, Table, TableState } from '../../components/ui';
-import { errorMessage, formatDateTime } from '../../components/ui/helpers';
+import { Badge, Button, Card, PageHeader, Pager, StatCard, StatGrid, Table, TableState } from '../../components/ui';
+import { errorMessage, formatDateTime, DEFAULT_PAGE_SIZE } from '../../components/ui/helpers';
 import type { Tone } from '../../components/ui/helpers';
 import { useDialog } from '../../components/ui/dialog-context';
 import { billingApi } from '../../services';
@@ -18,7 +18,6 @@ const TONE: Record<PaymentStatus, Tone> = {
   EXPIRED: 'neutral',
   REFUNDED: 'violet',
 };
-const PAGE_SIZE = 15;
 
 /** Admin (mục 7.4): doanh thu theo ngày và theo gói, danh sách đơn thanh toán, hoàn tiền thủ công. */
 export default function AdminRevenue() {
@@ -28,7 +27,9 @@ export default function AdminRevenue() {
   const [status, setStatus] = useState<PaymentStatus | ''>('');
   const [kind, setKind] = useState<PaymentKind | ''>('');
   const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [totalPages, setTotalPages] = useState(0);
+  const [totalOrders, setTotalOrders] = useState(0);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const loadRevenue = useCallback(() => {
@@ -40,13 +41,14 @@ export default function AdminRevenue() {
 
   const loadOrders = useCallback(() => {
     billingApi
-      .orders({ status: status || undefined, kind: kind || undefined, page, size: PAGE_SIZE })
+      .orders({ status: status || undefined, kind: kind || undefined, page, size: pageSize })
       .then((res) => {
         setOrders(res.data.result.content);
         setTotalPages(res.data.result.totalPages);
+        setTotalOrders(res.data.result.totalElements);
       })
       .catch(() => toast.error(t('admin.revenue.loadFailed')));
-  }, [status, kind, page]);
+  }, [status, kind, page, pageSize]);
 
   useEffect(loadRevenue, [loadRevenue]);
   useEffect(loadOrders, [loadOrders]);
@@ -238,19 +240,18 @@ export default function AdminRevenue() {
             ))}
           </tbody>
         </Table>
-        {totalPages > 1 && (
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', padding: '0.75rem' }}>
-            <Button size="sm" variant="ghost" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
-              {t('common.pagination.prev')}
-            </Button>
-            <span>
-              {page + 1} / {totalPages}
-            </span>
-            <Button size="sm" variant="ghost" disabled={page + 1 >= totalPages} onClick={() => setPage((p) => p + 1)}>
-              {t('common.pagination.next')}
-            </Button>
-          </div>
-        )}
+        <Pager
+          page={page}
+          totalPages={totalPages}
+          totalElements={totalOrders}
+          unit={t('admin.revenue.orderUnit')}
+          onChange={setPage}
+          pageSize={pageSize}
+          onPageSizeChange={(n) => {
+            setPageSize(n);
+            setPage(0);
+          }}
+        />
       </Card>
     </>
   );

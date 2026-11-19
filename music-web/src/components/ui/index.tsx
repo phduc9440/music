@@ -3,7 +3,7 @@ import { Link } from '../../routes/transition-nav';
 import Icon from './Icon';
 import type { IconName } from './Icon';
 
-import { VISIBILITY } from './helpers';
+import { PAGE_SIZE_OPTIONS, VISIBILITY } from './helpers';
 import type { Tone } from './helpers';
 import { formatNumber, t } from '../../i18n/core';
 import Skeleton from './Skeleton';
@@ -373,19 +373,23 @@ export function EmptyState({
   );
 }
 
-/** Phân trang của admin: ghi đúng đơn vị (thành viên, bản nhạc...). */
+/** Phân trang của admin: ghi đúng đơn vị (thành viên, bản nhạc...). Có pageSize + onPageSizeChange thì cho chọn số dòng. */
 export function Pager({
   page,
   totalPages,
   totalElements,
   unit,
   onChange,
+  pageSize,
+  onPageSizeChange,
 }: {
   page: number;
   totalPages: number;
   totalElements: number;
   unit: string;
   onChange: (page: number) => void;
+  pageSize?: number;
+  onPageSizeChange?: (size: number) => void;
 }) {
   if (totalElements === 0) return null;
   return (
@@ -394,6 +398,18 @@ export function Pager({
         {formatNumber(totalElements)} {unit}
         {totalPages > 1 && ` · ${t('common.pagination.pageOf', { page: page + 1, total: totalPages })}`}
       </span>
+      {pageSize != null && onPageSizeChange && (
+        <label className="adm-pager__size">
+          {t('common.pagination.pageSize')}
+          <select className="adm-input" value={pageSize} onChange={(e) => onPageSizeChange(Number(e.target.value))}>
+            {(PAGE_SIZE_OPTIONS.includes(pageSize) ? PAGE_SIZE_OPTIONS : [...PAGE_SIZE_OPTIONS, pageSize]).map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       {totalPages > 1 && (
         <div className="adm-pager__buttons">
           <Button

@@ -16,7 +16,7 @@ import {
   Table,
   TableState,
 } from '../../components/ui';
-import { errorMessage, formatDate, formatDateTime } from '../../components/ui/helpers';
+import { errorMessage, formatDate, formatDateTime, DEFAULT_PAGE_SIZE } from '../../components/ui/helpers';
 import { adminApi } from '../../services';
 import { MemberStatus } from '../../types';
 import type { Member, PageResult, RoleItem } from '../../types';
@@ -27,7 +27,6 @@ import { useDialog } from '../../components/ui/dialog-context';
 import { t } from '../../i18n/core';
 
 const PLAN_TONE = { FREE: 'neutral', ACTIVE: 'success', UNLIMITED: 'violet' } as const;
-const PAGE_SIZE = 20;
 
 /** Admin: danh sách thành viên, khóa/mở khóa; SUPER ADMIN còn cấp/thu hồi quyền ADMIN. */
 export default function AdminMembers() {
@@ -47,6 +46,11 @@ export default function AdminMembers() {
   const { confirm, prompt } = useDialog();
   const [result, setResult] = useState<PageResult<Member> | null>(null);
   const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const changePageSize = (n: number) => {
+    setPageSize(n);
+    setPage(0);
+  };
   const [keywordInput, setKeywordInput] = useState('');
   const [keyword, setKeyword] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -55,10 +59,10 @@ export default function AdminMembers() {
 
   useEffect(() => {
     adminApi
-      .getMembers({ page, size: PAGE_SIZE, keyword: keyword || undefined })
+      .getMembers({ page, size: pageSize, keyword: keyword || undefined })
       .then((res) => setResult(res.data.result))
       .catch((error) => toast.error(errorMessage(error, t('admin.members.loadFailed'))));
-  }, [page, keyword, reloadKey]);
+  }, [page, pageSize, keyword, reloadKey]);
 
   const update = async (member: Member, data: Parameters<typeof adminApi.updateMember>[1], okMsg: string) => {
     setBusyId(member.id);
@@ -271,6 +275,8 @@ export default function AdminMembers() {
         </Table>
         {result && (
           <Pager
+            pageSize={pageSize}
+            onPageSizeChange={changePageSize}
             page={result.pageNumber}
             totalPages={result.totalPages}
             totalElements={result.totalElements}

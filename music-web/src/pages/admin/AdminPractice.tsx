@@ -18,7 +18,7 @@ import {
   Toolbar,
 } from '../../components/ui';
 import { useDialog } from '../../components/ui/dialog-context';
-import { errorMessage, formatDateTime } from '../../components/ui/helpers';
+import { errorMessage, formatDateTime, DEFAULT_PAGE_SIZE } from '../../components/ui/helpers';
 import type { Tone } from '../../components/ui/helpers';
 import { adminApi } from '../../services';
 import type { AdminPracticeOverview, AdminPracticeSession, PageResult, PracticeAnomaly } from '../../types';
@@ -27,7 +27,6 @@ import type { AdminOutletContext } from '../../components/admin/AdminLayout';
 import { hasAdminPermission } from '../../utils/auth';
 import './AdminDashboard.css';
 
-const PAGE_SIZE = 20;
 const MODES = ['FREE', 'LOOP', 'TEST', 'WAIT', 'FREE_RUN'];
 const STATUSES = ['IN_PROGRESS', 'COMPLETED', 'ABANDONED'];
 const STATUS_TONE: Record<string, Tone> = { IN_PROGRESS: 'primary', COMPLETED: 'success', ABANDONED: 'neutral' };
@@ -57,6 +56,11 @@ export default function AdminPractice() {
   const [overview, setOverview] = useState<AdminPracticeOverview | null>(null);
   const [result, setResult] = useState<PageResult<AdminPracticeSession> | null>(null);
   const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const changePageSize = (n: number) => {
+    setPageSize(n);
+    setPage(0);
+  };
   const [keywordInput, setKeywordInput] = useState('');
   const [keyword, setKeyword] = useState('');
   const [mode, setMode] = useState('');
@@ -72,7 +76,7 @@ export default function AdminPractice() {
     adminApi
       .getPracticeSessions({
         page,
-        size: PAGE_SIZE,
+        size: pageSize,
         keyword: keyword || undefined,
         mode: mode || undefined,
         status: status || undefined,
@@ -85,7 +89,7 @@ export default function AdminPractice() {
     return () => {
       cancelled = true;
     };
-  }, [page, keyword, mode, status, anomalousOnly, from, to, reload]);
+  }, [page, pageSize, keyword, mode, status, anomalousOnly, from, to, reload]);
 
   // Thống kê chỉ phụ thuộc khoảng ngày (không có ngày thì BE lấy 30 ngày gần nhất)
   useEffect(() => {
@@ -402,8 +406,10 @@ export default function AdminPractice() {
             )}
           </tbody>
         </Table>
-        {result && result.totalPages > 1 && (
+        {result && (
           <Pager
+            pageSize={pageSize}
+            onPageSizeChange={changePageSize}
             page={result.pageNumber}
             totalPages={result.totalPages}
             totalElements={result.totalElements}

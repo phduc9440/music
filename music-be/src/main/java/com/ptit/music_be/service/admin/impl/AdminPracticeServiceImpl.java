@@ -37,7 +37,7 @@ import lombok.experimental.FieldDefaults;
 @PreAuthorize("@perm.has('PRACTICE_VIEW')")
 public class AdminPracticeServiceImpl implements AdminPracticeService {
 
-    static final int DEFAULT_PAGE_SIZE = 20;
+    static final int DEFAULT_PAGE_SIZE = 10;
     static final int MAX_PAGE_SIZE = 100;
     static final int DEFAULT_DAYS = 30;
     static final int MAX_DAYS = 400;

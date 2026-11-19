@@ -640,7 +640,8 @@
     "refunded": "Marked as refunded",
     "refundFailed": "Could not refund",
     "kind": "Order type",
-    "allKinds": "All order types"
+    "allKinds": "All order types",
+    "orderUnit": "orders"
   },
   "plans": {
     "subtitle": "Name, price and limits of each plan. Orders created before a price change keep their old amount; new limits apply immediately to current subscribers.",

@@ -2,12 +2,11 @@ import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { Link } from '../../routes/transition-nav';
 import { Badge, Button, Card, CellTitle, PageHeader, Pager, Table, TableState, Toolbar } from '../../components/ui';
-import { formatDateTime } from '../../components/ui/helpers';
+import { formatDateTime, DEFAULT_PAGE_SIZE } from '../../components/ui/helpers';
 import { adminReportApi } from '../../services';
 import type { ActivityEntry, ActivityType, PageResult } from '../../types';
 import { t } from '../../i18n/core';
 
-const PAGE_SIZE = 30;
 const TYPES: ActivityType[] = [
   'REPORT_CREATED',
   'REPORT_RESOLVED',
@@ -67,6 +66,11 @@ export default function AdminActivity() {
   const [draft, setDraft] = useState<Filters>(EMPTY);
   const [filters, setFilters] = useState<Filters>(EMPTY);
   const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const changePageSize = (n: number) => {
+    setPageSize(n);
+    setPage(0);
+  };
   const [result, setResult] = useState<PageResult<ActivityEntry> | null>(null);
 
   useEffect(() => {
@@ -74,7 +78,7 @@ export default function AdminActivity() {
     adminReportApi
       .activity({
         page,
-        size: PAGE_SIZE,
+        size: pageSize,
         actor: filters.actor.trim() || undefined,
         type: filters.type || undefined,
         targetType: filters.targetType || undefined,
@@ -86,7 +90,7 @@ export default function AdminActivity() {
     return () => {
       cancelled = true;
     };
-  }, [filters, page]);
+  }, [filters, page, pageSize]);
 
   const apply = (next: Filters) => {
     setResult(null);
@@ -219,6 +223,8 @@ export default function AdminActivity() {
         </Table>
         {result && (
           <Pager
+            pageSize={pageSize}
+            onPageSizeChange={changePageSize}
             page={result.pageNumber}
             totalPages={result.totalPages}
             totalElements={result.totalElements}
