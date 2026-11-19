@@ -253,7 +253,9 @@
     "unknownOwner": "a member",
     "openSource": "Open the original",
     "loginHint": "Sign in to create an arrangement from this score",
-    "license": "License: {license}"
+    "license": "License: {license}",
+    "count_one": "{count} arrangement has been made from this score",
+    "count_other": "{count} arrangements have been made from this score"
   },
   "hero": {
     "owner": "Owner: {name}",

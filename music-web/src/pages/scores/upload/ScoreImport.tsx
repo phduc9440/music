@@ -16,6 +16,7 @@ import {
   UPLOAD_MAX_FILE_BYTES,
 } from '../../../utils/score';
 import { clearPendingUpload, isImportBatch, peekPendingUpload } from '../../../utils/pendingUpload';
+import { reportPlanLimit } from '../../../utils/planLimit';
 import { Link } from '../../../routes/transition-nav';
 import '../../../components/scores/scores.css';
 import './ScoreUpload.css';
@@ -183,6 +184,7 @@ export default function ScoreImport() {
         imported.set(it.id, res.data.result.scoreId);
         patchItem(it.id, { status: 'done', progress: 100, scoreId: res.data.result.scoreId });
       } catch (err) {
+        reportPlanLimit(err); // vượt dung lượng gói thì mở hộp "Nâng cấp"; dòng vẫn ghi lỗi để thử lại sau
         patchItem(it.id, { status: 'failed', error: getUploadErrorMessage(err) });
       }
     });

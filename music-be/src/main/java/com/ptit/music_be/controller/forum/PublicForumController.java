@@ -51,9 +51,13 @@ public class PublicForumController {
 
     @GetMapping("/threads/{threadId}")
     @Operation(summary = "A thread with its replies for guests; the accepted answer comes first")
-    public ApiResponse<ForumThreadDetailResponse> thread(@PathVariable String threadId) {
+    public ApiResponse<ForumThreadDetailResponse> thread(
+            @PathVariable String threadId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String focusPostId) {
         return ApiResponse.<ForumThreadDetailResponse>builder()
-                .result(forumService.publicThread(threadId))
+                .result(forumService.publicThread(threadId, page, size, focusPostId))
                 .build();
     }
 }

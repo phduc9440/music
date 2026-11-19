@@ -26,6 +26,7 @@ public enum NotificationCategory {
                     PUBLISH_APPROVED,
                     PUBLISH_REJECTED,
                     NEW_REVIEW,
+                    SCORE_FORKED,
                     SCORE_TRASHED_BY_ADMIN,
                     OFFICIAL_REQUESTED,
                     OFFICIAL_ACCEPTED,

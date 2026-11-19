@@ -1,7 +1,11 @@
 package com.ptit.music_be.service.score.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -29,11 +33,14 @@ import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreFile;
 import com.ptit.music_be.event.ScoreImportedEvent;
+import com.ptit.music_be.exception.AppException;
+import com.ptit.music_be.exception.code.BillingErrorCode;
 import com.ptit.music_be.mapper.ScoreFileMapper;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.library.TagRepository;
 import com.ptit.music_be.repository.score.ScoreFileRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
+import com.ptit.music_be.service.billing.EntitlementService;
 import com.ptit.music_be.service.storage.FileStorageService;
 
 /** Nhập file MIDI phát sự kiện để tự chuyển sang MusicXML (mục I2); file MusicXML thì không. */
@@ -61,6 +68,9 @@ class ScoreImportServiceImplMidiEventTest {
 
     @Mock
     ApplicationEventPublisher eventPublisher;
+
+    @Mock
+    EntitlementService entitlementService;
 
     @InjectMocks
     ScoreImportServiceImpl service;
@@ -115,5 +125,21 @@ class ScoreImportServiceImplMidiEventTest {
                 null);
 
         verify(eventPublisher, never()).publishEvent(any(Object.class));
+    }
+
+    @Test
+    void importFailsBeforeAnythingIsSavedWhenTheStorageQuotaIsFull() {
+        doThrow(new AppException(BillingErrorCode.PLAN_LIMIT_REACHED))
+                .when(entitlementService)
+                .checkStorage(eq("me"), anyLong());
+
+        AppException e = assertThrows(
+                AppException.class,
+                () -> service.importScore(
+                        new MockMultipartFile("file", "bai.mid", "audio/midi", midi()), null, null, null));
+
+        assertThat(e.getErrorCode()).isEqualTo(BillingErrorCode.PLAN_LIMIT_REACHED);
+        verify(scoreRepository, never()).save(any(Score.class));
+        verify(entitlementService).checkStorage("me", midi().length);
     }
 }

@@ -13,6 +13,7 @@ import type { IconName } from '../../components/ui';
 import { homeApi, teamApi } from '../../services';
 import type { HomePendingItem, HomeSummary, ScoreSummary, TeamTask } from '../../types';
 import { DueDate, StatusBadge } from '../teams/shared';
+import HomeForumBlock from '../../components/home/HomeForumBlock';
 import { useReveal } from '../../hooks/useReveal';
 import { t } from '../../i18n/core';
 import { ACCESS_LEVEL_LABELS, DIFFICULTY_LABELS, formatRelative, getScorePath } from '../../utils/score';
@@ -513,6 +514,14 @@ export default function WorkspaceHome() {
             ))}
           </ol>
         </Showcase>
+
+        <HomeForumBlock
+          wrap={(content) => (
+            <Showcase title={t('home.forum.title')} lead={t('home.forum.lead')}>
+              {content}
+            </Showcase>
+          )}
+        />
 
         <section className="wh-cta reveal-item">
           <div>

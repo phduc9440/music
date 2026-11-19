@@ -169,6 +169,19 @@ export default function UserLayout() {
                     <Icon name="user" size={16} />
                     {t('common.header.profile')}
                   </button>
+                  <button type="button" role="menuitem" className="app-usermenu__item" onClick={() => go('/billing')}>
+                    <Icon name="star" size={16} />
+                    {t('common.header.myPlan')}
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="app-usermenu__item"
+                    onClick={() => go('/settings/notifications')}
+                  >
+                    <Icon name="sliders" size={16} />
+                    {t('common.header.settings')}
+                  </button>
                   {isAdmin && (
                     <button type="button" role="menuitem" className="app-usermenu__item" onClick={() => go('/admin')}>
                       <Icon name="shield" size={16} />

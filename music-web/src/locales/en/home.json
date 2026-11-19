@@ -150,5 +150,10 @@
     "ctaButton": "Digitize now",
     "tasks": "My tasks",
     "tasksAll": "View all ({count})"
+  },
+  "forum": {
+    "viewAll": "Open the forum",
+    "title": "Ask the community",
+    "lead": "Latest threads from fellow musicians"
   }
 }

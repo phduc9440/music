@@ -140,7 +140,10 @@ public class ForumServiceImpl implements ForumService {
         }
         String kw = keyword == null ? "" : keyword.trim().toLowerCase();
         if (!kw.isEmpty()) {
-            where.append(" and lower(t.title) like :kw escape '!'");
+            // Khớp tiêu đề, nội dung chủ đề hoặc nội dung một bài trả lời còn hiển thị
+            where.append(" and (lower(t.title) like :kw escape '!' or lower(t.body) like :kw escape '!'"
+                    + " or exists (select 1 from ForumPost kp where kp.thread = t"
+                    + " and lower(kp.body) like :kw escape '!'))");
             params.put("kw", "%" + kw.replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%");
         }
         if (unanswered) {
@@ -185,22 +188,65 @@ public class ForumServiceImpl implements ForumService {
     @Override
     @Transactional(readOnly = true)
     public ForumThreadDetailResponse thread(String threadId) {
-        return loadThread(currentMember(), threadId);
+        return loadThread(currentMember(), threadId, 0, Integer.MAX_VALUE, null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ForumThreadDetailResponse thread(String threadId, int page, int size, String focusPostId) {
+        return loadThread(currentMember(), threadId, page, Math.min(size, MAX_PAGE_SIZE), focusPostId);
     }
 
     @Override
     @Transactional(readOnly = true)
     public ForumThreadDetailResponse publicThread(String threadId) {
-        return loadThread(null, threadId);
+        return loadThread(null, threadId, 0, Integer.MAX_VALUE, null);
     }
 
-    private ForumThreadDetailResponse loadThread(Member me, String threadId) {
+    @Override
+    @Transactional(readOnly = true)
+    public ForumThreadDetailResponse publicThread(String threadId, int page, int size, String focusPostId) {
+        return loadThread(null, threadId, page, Math.min(size, MAX_PAGE_SIZE), focusPostId);
+    }
+
+    private ForumThreadDetailResponse loadThread(Member me, String threadId, int page, int size, String focusPostId) {
         ForumThread thread = findThread(threadId);
         ForumThreadResponse head = toThreadResponses(List.of(thread), me, true).get(0);
         List<ForumPost> posts = postRepository.findOfThread(threadId);
+        String acceptedId = head.getAcceptedPostId();
+
+        // Bài hay nhất đứng đầu trang 0; các bài còn lại theo thời gian rồi cắt trang
+        ForumPost accepted = posts.stream()
+                .filter(p -> p.getId().equals(acceptedId))
+                .findFirst()
+                .orElse(null);
+        List<ForumPost> others = posts.stream().filter(p -> p != accepted).toList();
+        int safeSize = Math.max(size, 1);
+        int totalPages = Math.max(1, (int) Math.ceil(others.size() / (double) safeSize));
+        int safePage = Math.min(Math.max(page, 0), totalPages - 1);
+        if (focusPostId != null) {
+            for (int i = 0; i < others.size(); i++) {
+                if (others.get(i).getId().equals(focusPostId)) {
+                    safePage = i / safeSize;
+                    break;
+                }
+            }
+        }
+        int from = (int) Math.min((long) safePage * safeSize, others.size());
+        int to = (int) Math.min((long) from + safeSize, others.size());
+        List<ForumPost> shown = new ArrayList<>();
+        if (accepted != null && safePage == 0) {
+            shown.add(accepted);
+        }
+        shown.addAll(others.subList(from, to));
+        // Người trả lời một bài nằm ở trang khác vẫn thấy trích dẫn: tra theo toàn bộ bài của chủ đề
         return ForumThreadDetailResponse.builder()
                 .thread(head)
-                .posts(toPostResponses(posts, me, head.getAcceptedPostId(), posts))
+                .posts(toPostResponses(shown, me, acceptedId, posts))
+                .postPage(safePage)
+                .postSize(size >= Integer.MAX_VALUE ? posts.size() : safeSize)
+                .totalPosts(posts.size())
+                .totalPostPages(totalPages)
                 .build();
     }
 

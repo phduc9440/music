@@ -18,6 +18,9 @@ import { isGuest } from '../../utils/session';
 import '../../components/scores/scores.css';
 import './forum.css';
 
+/** Số bài trả lời mỗi trang (BE chặn tối đa 50). */
+const POSTS_PER_PAGE = 20;
+
 type Reporting = { kind: 'thread' } | { kind: 'post'; id: string } | null;
 
 /** Trang /forum/threads/:id: chủ đề, các câu trả lời (bài hay nhất đứng đầu), bình chọn, báo cáo và ô trả lời. */
@@ -41,20 +44,34 @@ export default function ForumThread() {
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const replyBox = useRef<HTMLElement>(null);
 
-  const load = useCallback(async () => {
-    try {
-      const res = await forumApi.thread(id);
-      setDetail(res.data.result);
-      setNotFound(false);
-    } catch (err) {
-      if (getErrorCode(err) === 4102) setNotFound(true);
-      else toast.error(getErrorMessage(err, t('forum.loadFailed')));
-    }
-  }, [id]);
+  // Trang bài trả lời đang xem; giữ trong ref để các thao tác (bình chọn, sửa, xóa) nạp lại đúng trang này
+  const postPage = useRef(0);
+
+  /** Nạp một trang bài trả lời (mặc định trang đang xem); focus = bài cần hiện, BE chọn đúng trang chứa nó. */
+  const load = useCallback(
+    async (opts?: { page?: number; focus?: string | null }) => {
+      try {
+        const res = await forumApi.thread(id, {
+          page: opts?.page ?? postPage.current,
+          size: POSTS_PER_PAGE,
+          focusPostId: opts?.focus ?? undefined,
+        });
+        postPage.current = res.data.result.postPage;
+        setDetail(res.data.result);
+        setNotFound(false);
+      } catch (err) {
+        if (getErrorCode(err) === 4102) setNotFound(true);
+        else toast.error(getErrorMessage(err, t('forum.loadFailed')));
+      }
+    },
+    [id],
+  );
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void load();
+    postPage.current = 0;
+    void load({ page: 0, focus: focusPostId });
+    // Chỉ nạp lại khi đổi chủ đề; ?post= đổi thì effect cuộn bên dưới lo
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [load]);
 
   /**
@@ -68,7 +85,7 @@ export default function ForumThread() {
     if (!el) {
       if (reloadedFor.current !== focusPostId) {
         reloadedFor.current = focusPostId;
-        void load();
+        void load({ focus: focusPostId });
       }
       return;
     }
@@ -156,7 +173,7 @@ export default function ForumThread() {
       await forumApi.reply(thread.id, reply, replyTarget?.id);
       setReply('');
       setReplyTarget(null);
-      await load();
+      await load({ page: Number.MAX_SAFE_INTEGER }); // về trang cuối để thấy bài vừa đăng
     } catch (err) {
       toast.error(getErrorMessage(err, t('forum.replyFailed')));
     } finally {
@@ -261,7 +278,7 @@ export default function ForumThread() {
           </div>
         </article>
 
-        <h2 className="fm-section">{t('forum.replies', { count: posts.length })}</h2>
+        <h2 className="fm-section">{t('forum.replies', { count: detail.totalPosts })}</h2>
 
         {posts.length === 0 && <p className="fm-muted">{t('forum.noReplies')}</p>}
 
@@ -398,6 +415,30 @@ export default function ForumThread() {
             </li>
           ))}
         </ol>
+
+        {detail.totalPostPages > 1 && (
+          <nav className="sc-pager" aria-label={t('common.pagination.label')}>
+            <button
+              type="button"
+              className="sc-btn sc-btn--sm"
+              disabled={detail.postPage === 0}
+              onClick={() => void load({ page: detail.postPage - 1 })}
+            >
+              {t('common.pagination.prev')}
+            </button>
+            <span className="sc-pager__info">
+              {t('common.pagination.page')} <strong>{detail.postPage + 1}</strong> / {detail.totalPostPages}
+            </span>
+            <button
+              type="button"
+              className="sc-btn sc-btn--sm"
+              disabled={detail.postPage + 1 >= detail.totalPostPages}
+              onClick={() => void load({ page: detail.postPage + 1 })}
+            >
+              {t('common.pagination.next')}
+            </button>
+          </nav>
+        )}
 
         {guest ? (
           <p className="fm-locked" role="status">

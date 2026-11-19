@@ -14,6 +14,8 @@ public enum NotificationType {
     PUBLISH_REJECTED,
     /** Có người nhận xét bản nhạc của bạn. */
     NEW_REVIEW,
+    /** Có người tạo bản phối từ bản nhạc công khai của bạn (params: name, title). */
+    SCORE_FORKED,
     /** Thông báo chung do ADMIN gửi cho một nhóm người dùng. */
     ANNOUNCEMENT,
     /** ADMIN đã chuyển bản nhạc của bạn vào thùng rác (kèm lý do nếu có). */

@@ -33,8 +33,11 @@ export const forumApi = {
     apiClient.get<ApiResponse<PageResult<ForumThread>>>(isGuest() ? '/public/forum/threads' : '/forum/threads', {
       params,
     }),
-  thread: (id: string) =>
-    apiClient.get<ApiResponse<ForumThreadDetail>>(`${isGuest() ? '/public/forum' : '/forum'}/threads/${id}`),
+  /** Một trang bài trả lời; focusPostId hợp lệ thì BE trả đúng trang chứa bài đó. */
+  thread: (id: string, params?: { page?: number; size?: number; focusPostId?: string }) =>
+    apiClient.get<ApiResponse<ForumThreadDetail>>(`${isGuest() ? '/public/forum' : '/forum'}/threads/${id}`, {
+      params,
+    }),
   createThread: (data: ForumThreadPayload) => apiClient.post<ApiResponse<ForumThread>>('/forum/threads', data),
   updateThread: (id: string, data: ForumThreadPayload) =>
     apiClient.put<ApiResponse<ForumThread>>(`/forum/threads/${id}`, data),
@@ -42,7 +45,8 @@ export const forumApi = {
   /** replyToPostId: trả lời trực tiếp vào một bài (người đó nhận thông báo riêng); bỏ trống = trả lời chủ đề. */
   reply: (threadId: string, body: string, replyToPostId?: string) =>
     apiClient.post<ApiResponse<ForumPost>>(`/forum/threads/${threadId}/posts`, { body, replyToPostId }),
-  updatePost: (postId: string, body: string) => apiClient.put<ApiResponse<ForumPost>>(`/forum/posts/${postId}`, { body }),
+  updatePost: (postId: string, body: string) =>
+    apiClient.put<ApiResponse<ForumPost>>(`/forum/posts/${postId}`, { body }),
   deletePost: (postId: string) => apiClient.delete<ApiResponse<void>>(`/forum/posts/${postId}`),
   voteThread: (id: string) => apiClient.post<ApiResponse<ForumVote>>(`/forum/threads/${id}/vote`),
   votePost: (id: string) => apiClient.post<ApiResponse<ForumVote>>(`/forum/posts/${id}/vote`),

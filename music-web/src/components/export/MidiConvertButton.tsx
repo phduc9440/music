@@ -5,6 +5,7 @@ import type { AiTaskInfo } from '../../types';
 import { exportErrorMessage, isTaskFinished, translateTaskError } from './exportUtils';
 import { useExportTask } from './useExportTask';
 import { t } from '../../i18n/core';
+import { reportPlanLimit } from '../../utils/planLimit';
 
 interface Props {
   scoreId: string;
@@ -46,7 +47,7 @@ export default function MidiConvertButton({ scoreId, resume, autoStart = false, 
       if (response.task) track(response.task);
       else onDone(); // bản nhạc đã có MusicXML (vừa được tạo ở nơi khác): chỉ cần tải lại
     } catch (err) {
-      toast.error(exportErrorMessage(err));
+      if (!reportPlanLimit(err)) toast.error(exportErrorMessage(err));
     } finally {
       setBusy(false);
     }

@@ -75,6 +75,8 @@ public class ScoreDetailResponse {
     boolean allowArrange;
     /** Người đang xem tạo được bản phối từ bản này không (bản công khai, chủ cho phép, đã đăng nhập). */
     boolean canFork;
+    /** Số bản phối tạo từ bản nhạc này (không tính bản trong thùng rác). */
+    long forkCount;
     /** Bản phối của bản nào (R4); null khi không phải bản phối hoặc bản gốc không còn công khai. */
     ForkSource forkedFrom;
     /** Ảnh bìa người dùng tải lên; null nếu chưa có. */

@@ -3,9 +3,12 @@ package com.ptit.music_be.service.score.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDateTime;
@@ -78,6 +81,9 @@ class ScoreServiceImplForkTest {
     @Mock
     com.ptit.music_be.mapper.AiTaskMapper aiTaskMapper;
 
+    @Mock
+    com.ptit.music_be.service.notification.NotificationService notificationService;
+
     @InjectMocks
     ScoreServiceImpl service;
 
@@ -133,6 +139,40 @@ class ScoreServiceImplForkTest {
         assertThat(copy.getVisibility()).isEqualTo("PRIVATE");
         assertThat(detail.getForkedFrom().getTitle()).isEqualTo("Bài gốc");
         assertThat(detail.getForkedFrom().getOwnerName()).isEqualTo("Chủ");
+    }
+
+    @Test
+    void forkTellsTheOwnerOfTheSourceScore() {
+        when(scoreCopyService.copy(any(), any(), any(CopyOptions.class))).thenReturn(copyOf(source));
+
+        service.forkScore("src");
+
+        verify(notificationService)
+                .notify(
+                        eq(owner),
+                        eq(me),
+                        eq(com.ptit.music_be.dto.enums.notification.NotificationType.SCORE_FORKED),
+                        eq("src"),
+                        anyString(),
+                        eq(java.util.Map.of("name", "me@x.com", "title", "Bài gốc")));
+    }
+
+    @Test
+    void forkingAnOfficialScoreDoesNotNotifyTheSystemAccount() {
+        source.setIsOfficial(true);
+        when(scoreCopyService.copy(any(), any(), any(CopyOptions.class))).thenReturn(copyOf(source));
+
+        service.forkScore("src");
+
+        verifyNoInteractions(notificationService);
+    }
+
+    @Test
+    void detailShowsHowManyForksExist() {
+        when(scoreCopyService.copy(any(), any(), any(CopyOptions.class))).thenReturn(copyOf(source));
+        when(scoreRepository.countByForkedFromId("copy")).thenReturn(3L);
+
+        assertThat(service.forkScore("src").getForkCount()).isEqualTo(3L);
     }
 
     @Test

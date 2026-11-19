@@ -6,6 +6,7 @@
   },
   "withReason": "{text}: {reason}",
   "NEW_REVIEW": "{name} đã nhận xét bản nhạc “{title}”",
+  "SCORE_FORKED": "{name} đã tạo bản phối từ bản nhạc “{title}”",
   "ACCESS_REQUESTED": "{name} xin quyền {level} bản nhạc “{title}”",
   "ACCESS_APPROVED": "Yêu cầu của bạn đã được đồng ý: quyền {level} bản nhạc “{title}”",
   "ACCESS_REJECTED": "Yêu cầu xin quyền bản nhạc “{title}” của bạn đã bị từ chối",
