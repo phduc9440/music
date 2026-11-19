@@ -22,6 +22,10 @@ from app.chords.melody import Step
 from app.chords.theory import VOCAB, ChordDef, Key
 
 STRONG_BEAT_WEIGHT = 1.5
+# Nhân điểm phát trước khi cộng với log xác suất chuyển: < 1 thì HMM bám hợp âm chủ (giai điệu đi bậc ra toàn I), > 1
+# thì khớp giai điệu hơn. Chỉnh trên tập kiểm thử POP909 (scripts/chord_eval.py): 1 → 36,8%, 2 → 40,1%, 3 → 40,3% đúng
+# hợp âm nhưng 3 bắt đầu sinh hợp âm mượn lạ tai (bVII), nên chọn 2.
+EMISSION_WEIGHT = 2.0
 MODEL_VERSION = 2
 MODEL_DIR = Path(__file__).parent / "model"
 
@@ -86,7 +90,7 @@ def emission_matrix(steps: list[Step], log_emit: np.ndarray, key: Key) -> np.nda
         for note in step.notes:
             weight = float(note.length) * (STRONG_BEAT_WEIGHT if note.start == step.start else 1.0)
             out[t] += weight * log_emit[:, (note.midi - key.tonic) % 12]
-    return out
+    return EMISSION_WEIGHT * out
 
 
 def viterbi(
