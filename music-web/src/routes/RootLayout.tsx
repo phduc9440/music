@@ -4,6 +4,7 @@ import DialogProvider from '../components/ui/DialogProvider';
 import PlanLimitHost from '../components/billing/PlanLimitHost';
 import { useRevealAll } from '../hooks/useReveal';
 import { useTheme } from '../theme/useTheme';
+import { useDocumentMeta } from './useDocumentMeta';
 
 /**
  * Gốc của mọi route: hộp thoại dùng chung và thông báo nổi (theo theme đang dùng). ScrollRestoration đưa trang mới về đầu
@@ -12,6 +13,7 @@ import { useTheme } from '../theme/useTheme';
 export default function RootLayout() {
   const { resolved } = useTheme();
   useRevealAll();
+  useDocumentMeta();
   return (
     <DialogProvider>
       <Outlet />
