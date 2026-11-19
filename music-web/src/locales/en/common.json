@@ -80,7 +80,8 @@
     "scores_other": "{count} scores",
     "pageOf": "page {page} of {total}",
     "previousPage": "Previous page",
-    "nextPage": "Next page"
+    "nextPage": "Next page",
+    "pageSize": "Rows per page"
   },
   "notifications": {
     "title": "Notifications",

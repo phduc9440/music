@@ -39,6 +39,7 @@ export const MENU: { section: string; items: MenuItem[] }[] = [
     item('/admin/members', 'members', 'users', { permissions: ['MEMBERS_VIEW'] }),
     item('/admin/roles', 'roles', 'shield', { superOnly: true }),
     item('/admin/teams', 'teams', 'share', { permissions: ['TEAMS_MANAGE'] }),
+    item('/admin/practice', 'practice', 'activity', { permissions: ['PRACTICE_VIEW'] }),
     item('/admin/announcements', 'announcements', 'megaphone', { permissions: ['ANNOUNCEMENTS_SEND'] }),
   ]),
   section('content', [

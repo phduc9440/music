@@ -14,14 +14,12 @@ import {
   TableState,
   Tabs,
 } from '../../components/ui';
-import { errorMessage, formatDateTime } from '../../components/ui/helpers';
+import { errorMessage, formatDateTime, DEFAULT_PAGE_SIZE } from '../../components/ui/helpers';
 import { officialRequestApi, scoreApi } from '../../services';
 import type { OfficialRequest, OfficialRequestStatus, PageResult, ScoreSummary } from '../../types';
 import { DIFFICULTY_LABELS } from '../../utils/score';
 import { useDialog } from '../../components/ui/dialog-context';
 import { t } from '../../i18n/core';
-
-const PAGE_SIZE = 20;
 
 type Tab = 'library' | 'candidates' | 'requests';
 
@@ -63,6 +61,11 @@ export default function AdminOfficialScores() {
   const { confirm } = useDialog();
   const [tab, setTab] = useState<Tab>('library');
   const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const changePageSize = (n: number) => {
+    setPageSize(n);
+    setPage(0);
+  };
   const [keywordInput, setKeywordInput] = useState('');
   const [keyword, setKeyword] = useState('');
   const [result, setResult] = useState<PageResult<ScoreSummary> | null>(null);
@@ -82,15 +85,15 @@ export default function AdminOfficialScores() {
   useEffect(() => {
     if (tab === 'requests') {
       officialRequestApi
-        .list({ page, size: PAGE_SIZE })
+        .list({ page, size: pageSize })
         .then((res) => setRequests(res.data.result))
         .catch(() => toast.error(t('admin.official.loadRequestsFailed')));
       return;
     }
     const request =
       tab === 'library'
-        ? scoreApi.official({ page, size: PAGE_SIZE, keyword: keyword || undefined })
-        : scoreApi.officialCandidates({ page, size: PAGE_SIZE, keyword: keyword || undefined });
+        ? scoreApi.official({ page, size: pageSize, keyword: keyword || undefined })
+        : scoreApi.officialCandidates({ page, size: pageSize, keyword: keyword || undefined });
     request
       .then((res) => {
         const data = res.data.result;
@@ -99,7 +102,7 @@ export default function AdminOfficialScores() {
         else setResult(data);
       })
       .catch(() => toast.error(t('admin.official.loadScoresFailed')));
-  }, [tab, page, keyword, reload]);
+  }, [tab, page, pageSize, keyword, reload]);
 
   const toggle = useCallback(
     async (score: ScoreSummary) => {
@@ -239,6 +242,8 @@ export default function AdminOfficialScores() {
           </Table>
           {requests && (
             <Pager
+              pageSize={pageSize}
+              onPageSizeChange={changePageSize}
               page={requests.pageNumber}
               totalPages={requests.totalPages}
               totalElements={requests.totalElements}
@@ -317,6 +322,8 @@ export default function AdminOfficialScores() {
           </Table>
           {result && (
             <Pager
+              pageSize={pageSize}
+              onPageSizeChange={changePageSize}
               page={result.pageNumber}
               totalPages={result.totalPages}
               totalElements={result.totalElements}

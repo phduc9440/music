@@ -23,6 +23,7 @@ import AdminLayout from '../components/admin/AdminLayout';
 import AdminMemberDetail from '../pages/admin/AdminMemberDetail';
 import AdminMembers from '../pages/admin/AdminMembers';
 import AdminOfficialScores from '../pages/admin/AdminOfficialScores';
+import AdminPractice from '../pages/admin/AdminPractice';
 import AdminPendingScores from '../pages/admin/AdminPendingScores';
 import AdminReports from '../pages/admin/AdminReports';
 import AdminForum from '../pages/admin/AdminForum';
@@ -178,6 +179,7 @@ const router = createBrowserRouter(
         <Route path="members" element={<AdminMembers />} />
         <Route path="roles" element={<AdminRoles />} />
         <Route path="members/:id" element={<AdminMemberDetail />} />
+        <Route path="practice" element={<AdminPractice />} />
         <Route path="teams" element={<AdminTeams />} />
         <Route path="teams/:id" element={<AdminTeamDetail />} />
         <Route path="scores" element={<AdminScores />} />

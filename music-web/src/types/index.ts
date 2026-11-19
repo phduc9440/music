@@ -15,3 +15,4 @@ export * from './report';
 export * from './forum';
 export * from './forumAdmin';
 export * from './studio';
+export * from './adminPractice';

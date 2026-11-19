@@ -2,25 +2,28 @@ import { useEffect, useState } from 'react';
 import { Link } from '../../routes/transition-nav';
 import { toast } from 'react-toastify';
 import { Button, ButtonLink, Card, CellTitle, PageHeader, Pager, Table, TableState } from '../../components/ui';
-import { errorMessage, formatDateTime } from '../../components/ui/helpers';
+import { errorMessage, formatDateTime, DEFAULT_PAGE_SIZE } from '../../components/ui/helpers';
 import { scoreApi } from '../../services';
 import type { PageResult, ScoreSummary } from '../../types';
 import { useDialog } from '../../components/ui/dialog-context';
 import { t } from '../../i18n/core';
-
-const PAGE_SIZE = 20;
 
 /** Admin (mục 4.4): duyệt hoặc từ chối các bản nhạc chủ sở hữu xin công khai, cũ nhất trước. */
 export default function AdminPendingScores() {
   const { confirm, prompt } = useDialog();
   const [result, setResult] = useState<PageResult<ScoreSummary> | null>(null);
   const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const changePageSize = (n: number) => {
+    setPageSize(n);
+    setPage(0);
+  };
   const [reload, setReload] = useState(0);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   useEffect(() => {
     scoreApi
-      .pendingPublic({ page, size: PAGE_SIZE })
+      .pendingPublic({ page, size: pageSize })
       .then((res) => {
         const data = res.data.result;
         // Duyệt hết bản cuối của một trang thì lùi về trang trước
@@ -28,7 +31,7 @@ export default function AdminPendingScores() {
         else setResult(data);
       })
       .catch(() => toast.error(t('admin.pending.loadFailed')));
-  }, [page, reload]);
+  }, [page, pageSize, reload]);
 
   const review = async (score: ScoreSummary, approve: boolean) => {
     let reason: string | undefined;
@@ -129,6 +132,8 @@ export default function AdminPendingScores() {
         </Table>
         {result && (
           <Pager
+            pageSize={pageSize}
+            onPageSizeChange={changePageSize}
             page={result.pageNumber}
             totalPages={result.totalPages}
             totalElements={result.totalElements}

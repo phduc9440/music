@@ -25,7 +25,8 @@
       "roles": "Roles",
       "reports": "Reports",
       "audit": "Audit log",
-      "forum": "Forum"
+      "forum": "Forum",
+      "practice": "Practice"
     },
     "other": "Other",
     "userSite": "User site"
@@ -639,7 +640,8 @@
     "refunded": "Marked as refunded",
     "refundFailed": "Could not refund",
     "kind": "Order type",
-    "allKinds": "All order types"
+    "allKinds": "All order types",
+    "orderUnit": "orders"
   },
   "plans": {
     "subtitle": "Name, price and limits of each plan. Orders created before a price change keep their old amount; new limits apply immediately to current subscribers.",
@@ -886,7 +888,9 @@
       "SYSTEM_MONITOR": "Monitor the system and error logs",
       "REPORTS_MODERATE": "Handle reports: dismiss, hide comments, unpublish / delete scores, lock accounts",
       "FORUM_MANAGE": "Manage the forum: categories, pin / lock threads, hide and restore posts",
-      "AUDIT_VIEW": "View the audit log"
+      "AUDIT_VIEW": "View the audit log",
+      "PRACTICE_VIEW": "View everyone's practice sessions and practice statistics",
+      "PRACTICE_MANAGE": "Delete abnormal sessions, close stuck running sessions"
     }
   },
   "reports": {
@@ -1084,5 +1088,71 @@
       "emptyTitle": "No categories yet",
       "emptyHint": "Add the first category so users can start threads."
     }
+  },
+  "practice": {
+    "description": "Practice sessions of all members, system-wide statistics and handling of abnormal sessions.",
+    "loadFailed": "Could not load practice sessions",
+    "overviewFailed": "Could not load practice statistics",
+    "sessions": "Practice sessions",
+    "sessionsHint": "{from} – {to}",
+    "minutes": "Total time (minutes)",
+    "activeMembers": "{count} members practiced",
+    "accuracy": "Average accuracy",
+    "accuracyHint": "Completed sessions",
+    "completion": "Completion rate",
+    "completionHint": "Completed out of all finished sessions",
+    "anomalous": "Abnormal sessions",
+    "anomalousHint": "Need a look",
+    "chartTitle": "Practice time by day",
+    "chartTip": "{count} min",
+    "chartSessions": "{count} sessions",
+    "searchPlaceholder": "Search by email, member name or score",
+    "anyMode": "Any mode",
+    "anyStatus": "Any status",
+    "onlyAnomalous": "Abnormal only",
+    "fromDate": "From date",
+    "toDate": "To date",
+    "member": "Member",
+    "score": "Score",
+    "mode": "Mode",
+    "status": "Status",
+    "startedAt": "Started",
+    "duration": "Duration",
+    "result": "Result",
+    "notes": "{count} notes",
+    "points": "{value} pts",
+    "noResult": "No result yet",
+    "emptyTitle": "No practice sessions yet",
+    "noMatch": "No session matches the filters",
+    "unit": "sessions",
+    "mode_FREE": "Free",
+    "mode_LOOP": "Loop",
+    "mode_TEST": "Scored",
+    "mode_WAIT": "Wait for notes",
+    "mode_FREE_RUN": "Play along",
+    "status_IN_PROGRESS": "Running",
+    "status_COMPLETED": "Completed",
+    "status_ABANDONED": "Abandoned",
+    "anomaly_SHORT": "Too short",
+    "anomaly_LONG": "Too long",
+    "anomaly_ZERO_ACCURACY": "0% accuracy",
+    "anomaly_STUCK": "Stuck",
+    "anomalyHint_SHORT": "Completed but under 10 seconds",
+    "anomalyHint_LONG": "Lasted more than 6 hours",
+    "anomalyHint_ZERO_ACCURACY": "Has notes but accuracy is 0",
+    "anomalyHint_STUCK": "Running for over 6 hours",
+    "close": "Close session",
+    "closeTitle": "Close this running session?",
+    "closeMessage": "{member}'s session will become \"Abandoned\" and cannot continue.",
+    "closeConfirm": "Close session",
+    "closed": "Session closed",
+    "closeFailed": "Could not close the session",
+    "delete": "Delete",
+    "deleteTitle": "Delete this session?",
+    "deleteMessage": "{member}'s session on \"{score}\" will be deleted for good with its note data. It cannot be restored and will not appear in the audit log.",
+    "deleteConfirm": "Delete for good",
+    "deleted": "Session deleted",
+    "deleteFailed": "Could not delete the session",
+    "actions": "Actions"
   }
 }

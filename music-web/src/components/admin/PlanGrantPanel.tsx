@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { Badge, Button, Card, CellTitle, Pager, Table, TableState } from '../ui';
-import { errorMessage, formatDate } from '../ui/helpers';
+import { errorMessage, formatDate, DEFAULT_PAGE_SIZE } from '../ui/helpers';
 import { useDialog } from '../ui/dialog-context';
 import type { AdminOutletContext } from './AdminLayout';
 import { adminApi, billingApi } from '../../services';
@@ -10,7 +10,6 @@ import type { Member, MemberPlanSummary, PageResult, PlanInfo } from '../../type
 import { isAdminMember, isSuperAdminMember, roleLabel } from '../../utils/auth';
 import { t } from '../../i18n/core';
 
-const PAGE_SIZE = 10;
 const MAX_MONTHS = 120;
 const MAX_SELECTED = 200;
 const QUICK_MONTHS = [1, 3, 6, 12];
@@ -72,6 +71,11 @@ export default function PlanGrantPanel() {
   const [keywordInput, setKeywordInput] = useState('');
   const [keyword, setKeyword] = useState('');
   const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const changePageSize = (n: number) => {
+    setPageSize(n);
+    setPage(0);
+  };
   const [result, setResult] = useState<PageResult<Member> | null>(null);
   const [picked, setPicked] = useState<Record<string, Member>>({});
   const [busy, setBusy] = useState(false);
@@ -93,10 +97,10 @@ export default function PlanGrantPanel() {
 
   useEffect(() => {
     adminApi
-      .getMembers({ page, size: PAGE_SIZE, keyword: keyword || undefined })
+      .getMembers({ page, size: pageSize, keyword: keyword || undefined })
       .then((res) => setResult(res.data.result))
       .catch((error) => toast.error(errorMessage(error, t('admin.members.loadFailed'))));
-  }, [page, keyword, reloadKey]);
+  }, [page, pageSize, keyword, reloadKey]);
 
   const monthCount = Number(months);
   const monthsValid = Number.isInteger(monthCount) && monthCount >= 1 && monthCount <= MAX_MONTHS;
@@ -336,6 +340,8 @@ export default function PlanGrantPanel() {
         </Table>
         {result && result.totalPages > 1 && (
           <Pager
+            pageSize={pageSize}
+            onPageSizeChange={changePageSize}
             page={result.pageNumber}
             totalPages={result.totalPages}
             totalElements={result.totalElements}

@@ -25,7 +25,8 @@
       "roles": "Vai trò",
       "reports": "Báo cáo vi phạm",
       "audit": "Nhật ký",
-      "forum": "Diễn đàn"
+      "forum": "Diễn đàn",
+      "practice": "Luyện tập"
     },
     "other": "Khác",
     "userSite": "Giao diện người dùng"
@@ -607,7 +608,8 @@
     "refunded": "Đã đánh dấu hoàn tiền",
     "refundFailed": "Không hoàn tiền được",
     "kind": "Loại đơn",
-    "allKinds": "Tất cả loại đơn"
+    "allKinds": "Tất cả loại đơn",
+    "orderUnit": "đơn"
   },
   "plans": {
     "subtitle": "Tên, giá và hạn mức của từng gói. Đơn đã tạo trước khi đổi giá giữ số tiền cũ; hạn mức mới áp dụng ngay cho người đang dùng gói.",
@@ -850,7 +852,9 @@
       "SYSTEM_MONITOR": "Giám sát hệ thống, nhật ký lỗi",
       "REPORTS_MODERATE": "Xử lý báo cáo vi phạm: bỏ qua, ẩn góp ý, gỡ / xóa bản nhạc, khóa tài khoản",
       "FORUM_MANAGE": "Quản lý diễn đàn: chuyên mục, ghim / khóa chủ đề, ẩn và khôi phục bài",
-      "AUDIT_VIEW": "Xem nhật ký quản trị"
+      "AUDIT_VIEW": "Xem nhật ký quản trị",
+      "PRACTICE_VIEW": "Xem buổi luyện của mọi thành viên và thống kê luyện tập",
+      "PRACTICE_MANAGE": "Xóa buổi luyện bất thường, đóng buổi luyện đang chạy bị treo"
     }
   },
   "reports": {
@@ -1048,5 +1052,71 @@
       "emptyTitle": "Chưa có chuyên mục nào",
       "emptyHint": "Thêm chuyên mục đầu tiên để người dùng bắt đầu đặt chủ đề."
     }
+  },
+  "practice": {
+    "description": "Buổi luyện của mọi thành viên, thống kê toàn hệ thống và xử lý buổi bất thường.",
+    "loadFailed": "Không tải được danh sách buổi luyện",
+    "overviewFailed": "Không tải được thống kê luyện tập",
+    "sessions": "Số buổi luyện",
+    "sessionsHint": "{from} – {to}",
+    "minutes": "Tổng thời gian (phút)",
+    "activeMembers": "{count} thành viên đã luyện",
+    "accuracy": "Độ chính xác trung bình",
+    "accuracyHint": "Các buổi đã hoàn thành",
+    "completion": "Tỷ lệ hoàn thành",
+    "completionHint": "Hoàn thành trên tổng số buổi đã kết thúc",
+    "anomalous": "Buổi bất thường",
+    "anomalousHint": "Cần kiểm tra",
+    "chartTitle": "Thời gian luyện theo ngày",
+    "chartTip": "{count} phút",
+    "chartSessions": "{count} buổi",
+    "searchPlaceholder": "Tìm theo email, tên thành viên hoặc bản nhạc",
+    "anyMode": "Mọi chế độ",
+    "anyStatus": "Mọi trạng thái",
+    "onlyAnomalous": "Chỉ buổi bất thường",
+    "fromDate": "Từ ngày",
+    "toDate": "Đến ngày",
+    "member": "Thành viên",
+    "score": "Bản nhạc",
+    "mode": "Chế độ",
+    "status": "Trạng thái",
+    "startedAt": "Bắt đầu",
+    "duration": "Thời lượng",
+    "result": "Kết quả",
+    "notes": "{count} nốt",
+    "points": "{value} điểm",
+    "noResult": "Chưa có kết quả",
+    "emptyTitle": "Chưa có buổi luyện nào",
+    "noMatch": "Không có buổi nào khớp bộ lọc",
+    "unit": "buổi luyện",
+    "mode_FREE": "Tự do",
+    "mode_LOOP": "Lặp đoạn",
+    "mode_TEST": "Chấm điểm",
+    "mode_WAIT": "Chờ nốt",
+    "mode_FREE_RUN": "Chạy theo nhạc",
+    "status_IN_PROGRESS": "Đang chạy",
+    "status_COMPLETED": "Hoàn thành",
+    "status_ABANDONED": "Bỏ dở",
+    "anomaly_SHORT": "Quá ngắn",
+    "anomaly_LONG": "Quá dài",
+    "anomaly_ZERO_ACCURACY": "Chính xác 0%",
+    "anomaly_STUCK": "Bị treo",
+    "anomalyHint_SHORT": "Hoàn thành nhưng dưới 10 giây",
+    "anomalyHint_LONG": "Kéo dài hơn 6 giờ",
+    "anomalyHint_ZERO_ACCURACY": "Có nốt nhưng độ chính xác bằng 0",
+    "anomalyHint_STUCK": "Đang chạy quá 6 giờ",
+    "close": "Đóng phiên",
+    "closeTitle": "Đóng buổi luyện đang chạy?",
+    "closeMessage": "Buổi luyện của {member} sẽ chuyển sang \"Bỏ dở\" và không chạy tiếp được.",
+    "closeConfirm": "Đóng phiên",
+    "closed": "Đã đóng buổi luyện",
+    "closeFailed": "Không đóng được buổi luyện",
+    "delete": "Xóa",
+    "deleteTitle": "Xóa buổi luyện này?",
+    "deleteMessage": "Buổi luyện của {member} trên \"{score}\" sẽ bị xóa hẳn cùng dữ liệu nốt, không khôi phục được và không có trong nhật ký quản trị.",
+    "deleteConfirm": "Xóa hẳn",
+    "deleted": "Đã xóa buổi luyện",
+    "deleteFailed": "Không xóa được buổi luyện",
+    "actions": "Thao tác"
   }
 }

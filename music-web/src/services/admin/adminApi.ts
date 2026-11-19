@@ -1,6 +1,8 @@
 import apiClient from '../client';
 import type {
   AdminAiTask,
+  AdminPracticeOverview,
+  AdminPracticeSession,
   AdminPermission,
   AdminDashboard,
   AiTaskSummary,
@@ -79,6 +81,22 @@ export const adminApi = {
   getAiTaskSummary: () => apiClient.get<ApiResponse<AiTaskSummary>>('/admin/ai-tasks/summary'),
   getAiTask: (id: string) => apiClient.get<ApiResponse<AdminAiTask>>(`/admin/ai-tasks/${id}`),
   retryAiTask: (id: string) => apiClient.post<ApiResponse<AdminAiTask>>(`/admin/ai-tasks/${id}/retry`),
+  // Quản lý luyện tập
+  getPracticeSessions: (params: {
+    page?: number;
+    size?: number;
+    keyword?: string;
+    mode?: string;
+    status?: string;
+    anomalousOnly?: boolean;
+    from?: string;
+    to?: string;
+  }) => apiClient.get<ApiResponse<PageResult<AdminPracticeSession>>>('/admin/practice/sessions', { params }),
+  getPracticeOverview: (params: { from?: string; to?: string }) =>
+    apiClient.get<ApiResponse<AdminPracticeOverview>>('/admin/practice/overview', { params }),
+  deletePracticeSession: (id: string) => apiClient.delete<ApiResponse<void>>(`/admin/practice/sessions/${id}`),
+  closePracticeSession: (id: string) =>
+    apiClient.post<ApiResponse<AdminPracticeSession>>(`/admin/practice/sessions/${id}/close`),
   // 4.6: quản lý thể loại (tag) master data
   getTags: () => apiClient.get<ApiResponse<AdminTag[]>>('/admin/tags'),
   createTag: (name: string) => apiClient.post<ApiResponse<AdminTag>>('/admin/tags', { name }),

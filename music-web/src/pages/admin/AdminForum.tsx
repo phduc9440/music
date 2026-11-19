@@ -15,13 +15,12 @@ import {
   Tabs,
   Toolbar,
 } from '../../components/ui';
-import { errorMessage, formatDateTime } from '../../components/ui/helpers';
+import { errorMessage, formatDateTime, DEFAULT_PAGE_SIZE } from '../../components/ui/helpers';
 import { adminForumApi } from '../../services';
 import type { AdminForumCategory, AdminForumStatus, AdminForumThread, PageResult } from '../../types';
 import { t } from '../../i18n/core';
 import '../../components/admin/forum/admin-forum.css';
 
-const PAGE_SIZE = 20;
 type Section = 'threads' | 'categories';
 const STATUSES: AdminForumStatus[] = ['ALL', 'REPORTED', 'VISIBLE', 'HIDDEN', 'PINNED', 'LOCKED'];
 
@@ -61,6 +60,11 @@ function ThreadsPanel({ openId, onOpen }: { openId: string | null; onOpen: (id: 
   const [keywordInput, setKeywordInput] = useState('');
   const [keyword, setKeyword] = useState('');
   const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const changePageSize = (n: number) => {
+    setPageSize(n);
+    setPage(0);
+  };
   const [reload, setReload] = useState(0);
   const [categories, setCategories] = useState<AdminForumCategory[]>([]);
   const [result, setResult] = useState<PageResult<AdminForumThread> | null>(null);
@@ -87,7 +91,7 @@ function ThreadsPanel({ openId, onOpen }: { openId: string | null; onOpen: (id: 
   useEffect(() => {
     let cancelled = false;
     adminForumApi
-      .threads({ keyword: keyword || undefined, categoryId: categoryId || undefined, status, page, size: PAGE_SIZE })
+      .threads({ keyword: keyword || undefined, categoryId: categoryId || undefined, status, page, size: pageSize })
       .then((res) => {
         if (cancelled) return;
         const data = res.data.result;
@@ -98,7 +102,7 @@ function ThreadsPanel({ openId, onOpen }: { openId: string | null; onOpen: (id: 
     return () => {
       cancelled = true;
     };
-  }, [keyword, categoryId, status, page, reload]);
+  }, [keyword, categoryId, status, page, pageSize, reload]);
 
   const refresh = useCallback(() => setReload((n) => n + 1), []);
   const closeModal = useCallback(() => onOpen(null), [onOpen]);
@@ -225,6 +229,8 @@ function ThreadsPanel({ openId, onOpen }: { openId: string | null; onOpen: (id: 
         </Table>
         {result && (
           <Pager
+            pageSize={pageSize}
+            onPageSizeChange={changePageSize}
             page={result.pageNumber}
             totalPages={result.totalPages}
             totalElements={result.totalElements}

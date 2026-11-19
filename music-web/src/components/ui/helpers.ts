@@ -35,3 +35,7 @@ export const VISIBILITY: Record<string, { label: string; tone: Tone }> = {
     tone: 'neutral',
   },
 };
+
+/** Số dòng mỗi trang mặc định của các danh sách admin, và các mức chọn được (BE giới hạn tối đa 50 ở vài danh sách). */
+export const DEFAULT_PAGE_SIZE = 10;
+export const PAGE_SIZE_OPTIONS = [10, 20, 50];

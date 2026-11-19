@@ -15,13 +15,11 @@ import {
   Toolbar,
   VisibilityBadge,
 } from '../../components/ui';
-import { VISIBILITY, errorMessage, formatDateTime } from '../../components/ui/helpers';
+import { VISIBILITY, errorMessage, formatDateTime, DEFAULT_PAGE_SIZE } from '../../components/ui/helpers';
 import { adminApi, officialRequestApi, scoreApi } from '../../services';
 import type { PageResult, ScoreSummary } from '../../types';
 import { useDialog } from '../../components/ui/dialog-context';
 import { labelMap, t } from '../../i18n/core';
-
-const PAGE_SIZE = 20;
 
 const SOURCE_LABEL: Record<string, string> = labelMap('admin.scores.source', ['OMR', 'IMPORT', 'MANUAL']);
 const DIFFICULTY_LABEL: Record<string, string> = labelMap('admin.scores.difficulty', [
@@ -39,6 +37,11 @@ export default function AdminScores() {
   const { confirm, prompt } = useDialog();
   const [result, setResult] = useState<PageResult<ScoreSummary> | null>(null);
   const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const changePageSize = (n: number) => {
+    setPageSize(n);
+    setPage(0);
+  };
   const [keywordInput, setKeywordInput] = useState('');
   const [keyword, setKeyword] = useState('');
   const [visibility, setVisibility] = useState('');
@@ -55,7 +58,7 @@ export default function AdminScores() {
     adminApi
       .getScores({
         page,
-        size: PAGE_SIZE,
+        size: pageSize,
         keyword: keyword || undefined,
         visibility: visibility || undefined,
         official: official || undefined,
@@ -75,7 +78,7 @@ export default function AdminScores() {
         }
       })
       .catch(() => toast.error(t('admin.official.loadScoresFailed')));
-  }, [page, keyword, visibility, official, source, difficulty, sort, reload]);
+  }, [page, pageSize, keyword, visibility, official, source, difficulty, sort, reload]);
 
   // Đổi bộ lọc, trang hoặc dữ liệu thì bỏ chọn để không thao tác nhầm lên bản đã không còn hiển thị
   const changeFilter = (apply: () => void) => {
@@ -424,6 +427,8 @@ export default function AdminScores() {
         </Table>
         {result && (
           <Pager
+            pageSize={pageSize}
+            onPageSizeChange={changePageSize}
             page={result.pageNumber}
             totalPages={result.totalPages}
             totalElements={result.totalElements}
