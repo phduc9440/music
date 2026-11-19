@@ -185,6 +185,8 @@ export interface ScoreDetail extends ScoreSummary {
   /** Người xem tạo được bản phối từ bản này không. */
   canFork: boolean;
   /** Bản phối của bản nào; null khi không phải bản phối hoặc bản gốc không còn công khai. */
+  /** Số bản phối tạo từ bản nhạc này. */
+  forkCount?: number;
   forkedFrom?: ForkSource | null;
   files: ScoreFileInfo[];
   latestTasks: AiTaskInfo[];
@@ -326,6 +328,7 @@ export type NotificationType =
   | 'PUBLISH_APPROVED'
   | 'PUBLISH_REJECTED'
   | 'NEW_REVIEW'
+  | 'SCORE_FORKED'
   | 'ANNOUNCEMENT'
   | 'SCORE_TRASHED_BY_ADMIN'
   | 'OFFICIAL_REQUESTED'

@@ -246,7 +246,8 @@
     "unknownOwner": "một thành viên",
     "openSource": "Mở bản gốc",
     "loginHint": "Đăng nhập để tạo bản phối từ bản nhạc này",
-    "license": "Giấy phép: {license}"
+    "license": "Giấy phép: {license}",
+    "count": "Đã có {count} bản phối từ bản nhạc này"
   },
   "hero": {
     "owner": "Chủ sở hữu: {name}",

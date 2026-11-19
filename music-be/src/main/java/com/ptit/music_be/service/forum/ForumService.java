@@ -27,7 +27,14 @@ public interface ForumService {
     PageResponse<ForumThreadResponse> threads(
             String categoryId, String keyword, Sort sort, boolean unanswered, boolean mine, int page, int size);
 
+    /** Toàn bộ bài trả lời (không phân trang). */
     ForumThreadDetailResponse thread(String threadId);
+
+    /**
+     * Một trang bài trả lời theo thời gian (bài hay nhất đứng đầu trang 0). {@code focusPostId} hợp lệ thì trả đúng trang
+     * chứa bài đó, bỏ qua {@code page}.
+     */
+    ForumThreadDetailResponse thread(String threadId, int page, int size, String focusPostId);
 
     /** Như {@link #threads} cho khách chưa đăng nhập: chỉ đọc, không có bộ lọc "của tôi" và không có dấu cá nhân. */
     PageResponse<ForumThreadResponse> publicThreads(
@@ -35,6 +42,9 @@ public interface ForumService {
 
     /** Như {@link #thread} cho khách chưa đăng nhập. */
     ForumThreadDetailResponse publicThread(String threadId);
+
+    /** Như {@link #thread(String, int, int, String)} cho khách chưa đăng nhập. */
+    ForumThreadDetailResponse publicThread(String threadId, int page, int size, String focusPostId);
 
     ForumThreadResponse createThread(ForumThreadRequest request);
 

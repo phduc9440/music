@@ -14,6 +14,7 @@ import type { IconName } from '../../components/ui';
 import { API_BASE_URL, homeApi } from '../../services';
 import ThemeToggle from '../../theme/ThemeToggle';
 import type { Composer, PublicHome, ScoreSummary } from '../../types';
+import HomeForumBlock from '../../components/home/HomeForumBlock';
 import { useReveal } from '../../hooks/useReveal';
 import { lifespan } from '../../utils/composer';
 import { DIFFICULTY_LABELS } from '../../utils/score';
@@ -531,6 +532,14 @@ export default function GuestHome() {
             </dl>
           </Section>
         )}
+
+        <HomeForumBlock
+          wrap={(content) => (
+            <Section title={t('home.forum.title')} lead={t('home.forum.lead')}>
+              {content}
+            </Section>
+          )}
+        />
 
         <Section id="faq" title={t('home.guest.faqTitle')}>
           <div className="gh-faq">

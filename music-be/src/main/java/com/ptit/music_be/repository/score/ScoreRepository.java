@@ -19,6 +19,9 @@ import com.ptit.music_be.entity.Score;
 @Repository
 public interface ScoreRepository extends JpaRepository<Score, String> {
 
+    /** Số bản phối (R4) của một bản nhạc, không tính bản đã vào thùng rác. */
+    long countByForkedFromId(String sourceId);
+
     List<Score> findByMember(Member member);
 
     /** Bản nhạc của một team (mục 4.1), mới cập nhật trước; bản trong thùng rác đã bị lọc bởi @SQLRestriction. */

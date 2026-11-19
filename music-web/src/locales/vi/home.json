@@ -142,5 +142,10 @@
     "ctaButton": "Số hóa ngay",
     "tasks": "Việc của tôi",
     "tasksAll": "Xem tất cả ({count})"
+  },
+  "forum": {
+    "viewAll": "Xem diễn đàn",
+    "title": "Hỏi đáp cùng cộng đồng",
+    "lead": "Chủ đề mới nhất từ những người cùng chơi nhạc"
   }
 }

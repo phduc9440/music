@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -369,5 +370,50 @@ class ForumServiceImplTest {
         assertThat(ForumServiceImpl.cleanTitle("  Xin   chào \n bạn  ")).isEqualTo("Xin chào bạn");
         assertThat(ForumServiceImpl.cleanBody("a\r\nb\u0000c")).isEqualTo("a\nbc");
         assertThat(List.of(ForumServiceImpl.cleanBody("<script>x</script>"))).containsExactly("<script>x</script>");
+    }
+
+    private List<ForumPost> postsOf(ForumThread thread, int count) {
+        Member author = Member.builder().id("au").email("au@x.com").build();
+        List<ForumPost> posts = new ArrayList<>();
+        for (int i = 1; i <= count; i++) {
+            posts.add(ForumPost.builder()
+                    .id("p" + i)
+                    .thread(thread)
+                    .author(author)
+                    .body("bài " + i)
+                    .build());
+        }
+        return posts;
+    }
+
+    @Test
+    void threadRepliesArePagedInOrder() {
+        Member author = Member.builder().id("au").email("au@x.com").build();
+        ForumThread thread = threadBy(author);
+        when(threadRepository.findDetail(thread.getId())).thenReturn(Optional.of(thread));
+        when(postRepository.findOfThread(thread.getId())).thenReturn(postsOf(thread, 5));
+
+        var page0 = service.thread(thread.getId(), 0, 2, null);
+        var page2 = service.thread(thread.getId(), 2, 2, null);
+        var clamped = service.thread(thread.getId(), 99, 2, null);
+
+        assertThat(page0.getPosts()).extracting("id").containsExactly("p1", "p2");
+        assertThat(page0.getTotalPosts()).isEqualTo(5);
+        assertThat(page0.getTotalPostPages()).isEqualTo(3);
+        assertThat(page2.getPosts()).extracting("id").containsExactly("p5");
+        assertThat(clamped.getPostPage()).isEqualTo(2);
+    }
+
+    @Test
+    void focusedReplyOpensThePageThatContainsIt() {
+        Member author = Member.builder().id("au").email("au@x.com").build();
+        ForumThread thread = threadBy(author);
+        when(threadRepository.findDetail(thread.getId())).thenReturn(Optional.of(thread));
+        when(postRepository.findOfThread(thread.getId())).thenReturn(postsOf(thread, 5));
+
+        var result = service.thread(thread.getId(), 0, 2, "p4");
+
+        assertThat(result.getPostPage()).isEqualTo(1);
+        assertThat(result.getPosts()).extracting("id").containsExactly("p3", "p4");
     }
 }

@@ -259,6 +259,12 @@ export default function ScoreHero({ score, onVisibilityChanged, onRequestMore }:
             <Link to={`/scores/${score.forkedFrom.id}`}>{t('scores.fork.openSource')} →</Link>
           </div>
         )}
+        {(score.forkCount ?? 0) > 0 && (
+          <div className="sd-alert sd-alert--info" role="status">
+            <Icon name="copy" size={16} />
+            <span>{t('scores.fork.count', { count: score.forkCount ?? 0 })}</span>
+          </div>
+        )}
         {score.myOriginalScoreId && (
           <div className="sd-alert sd-alert--info" role="status">
             <Icon name="library" size={16} />

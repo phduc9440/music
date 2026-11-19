@@ -14,4 +14,12 @@ import lombok.experimental.FieldDefaults;
 public class ForumThreadDetailResponse {
     ForumThreadResponse thread;
     List<ForumPostResponse> posts;
+    /** Trang bài trả lời đang trả về (từ 0). Bài hay nhất luôn nằm đầu trang 0, không tính vào kích thước trang. */
+    int postPage;
+
+    int postSize;
+    /** Tổng số bài trả lời còn hiển thị. */
+    long totalPosts;
+
+    int totalPostPages;
 }

@@ -861,7 +861,20 @@ public class ScoreServiceImpl implements ScoreService {
         Score copy = scoreCopyService.copy(source.getId(), me, new CopyOptions(null, ScoreSource.MANUAL, true, true));
         copy.setForkedFrom(source);
         copy.setLicense(licenseOf(source)); // bản phối thừa hưởng giấy phép; SA và NC không đổi được
-        return toDetail(scoreRepository.save(copy));
+        Score saved = scoreRepository.save(copy);
+        // Báo chủ bản gốc (notify bỏ qua khi tự phối bản của mình); bản trong kho mẫu thuộc tài khoản hệ thống nên
+        // không báo
+        if (!Boolean.TRUE.equals(source.getIsOfficial())) {
+            String who = me.getFullName() != null && !me.getFullName().isBlank() ? me.getFullName() : me.getEmail();
+            notificationService.notify(
+                    source.getMember(),
+                    me,
+                    NotificationType.SCORE_FORKED,
+                    source.getId(),
+                    who + " đã tạo bản phối từ bản nhạc \"" + source.getTitle() + "\"",
+                    NotificationService.params("name", who, "title", source.getTitle()));
+        }
+        return toDetail(saved);
     }
 
     private ScoreDetailResponse toDetail(Score score) {
@@ -938,6 +951,7 @@ public class ScoreServiceImpl implements ScoreService {
                 .license(licenseOf(score))
                 .allowArrange(isOwner && score.isAllowArrange())
                 .canFork(forkable(score))
+                .forkCount(scoreRepository.countByForkedFromId(score.getId()))
                 .forkedFrom(forkSource(score))
                 .coverUrl(score.getCoverUrl())
                 // Team đã xóa mềm coi như không còn: bản nhạc hiện như bản cá nhân

@@ -49,6 +49,7 @@ import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.library.TagRepository;
 import com.ptit.music_be.repository.score.ScoreFileRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
+import com.ptit.music_be.service.billing.EntitlementService;
 import com.ptit.music_be.service.score.ScoreImportService;
 import com.ptit.music_be.service.storage.FileStorageService;
 import com.ptit.music_be.utils.SecurityUtils;
@@ -77,6 +78,7 @@ public class ScoreImportServiceImpl implements ScoreImportService {
     FileStorageService fileStorageService;
     ScoreFileMapper scoreFileMapper;
     ApplicationEventPublisher eventPublisher;
+    EntitlementService entitlementService;
 
     enum ImportKind {
         MUSICXML("musicxml", "application/vnd.recordare.musicxml+xml"),
@@ -154,6 +156,9 @@ public class ScoreImportServiceImpl implements ScoreImportService {
         Member member = memberRepository
                 .findByEmail(SecurityUtils.getCurrentEmail())
                 .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
+
+        // Kho lưu trữ theo gói: file nhập cũng tính vào dung lượng, giống upload ảnh/PDF của OMR
+        entitlementService.checkStorage(member.getId(), data.length);
 
         String resolvedTitle = resolveTitle(cleanTitle, info, file.getOriginalFilename());
         String resolvedComposer = cleanComposer != null ? cleanComposer : cap(info == null ? null : info.composer());

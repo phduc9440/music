@@ -6,6 +6,7 @@
   },
   "withReason": "{text}: {reason}",
   "NEW_REVIEW": "{name} reviewed your score “{title}”",
+  "SCORE_FORKED": "{name} made an arrangement of your score “{title}”",
   "ACCESS_REQUESTED": "{name} requested {level} access to “{title}”",
   "ACCESS_APPROVED": "Your request was approved: {level} access to “{title}”",
   "ACCESS_REJECTED": "Your access request for “{title}” was declined",

@@ -66,9 +66,13 @@ public class ForumController {
     @Operation(
             summary = "Thread with its replies; the accepted answer comes first",
             security = @SecurityRequirement(name = "bearerAuth"))
-    public ApiResponse<ForumThreadDetailResponse> thread(@PathVariable String threadId) {
+    public ApiResponse<ForumThreadDetailResponse> thread(
+            @PathVariable String threadId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String focusPostId) {
         return ApiResponse.<ForumThreadDetailResponse>builder()
-                .result(forumService.thread(threadId))
+                .result(forumService.thread(threadId, page, size, focusPostId))
                 .build();
     }
 

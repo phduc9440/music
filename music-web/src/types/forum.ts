@@ -58,7 +58,13 @@ export interface ForumPost {
 
 export interface ForumThreadDetail {
   thread: ForumThread;
+  /** Một trang bài trả lời; bài hay nhất luôn đứng đầu trang 0. */
   posts: ForumPost[];
+  postPage: number;
+  postSize: number;
+  /** Tổng số bài trả lời còn hiển thị (mọi trang). */
+  totalPosts: number;
+  totalPostPages: number;
 }
 
 export interface ForumVote {
