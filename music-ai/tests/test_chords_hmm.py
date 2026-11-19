@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from app.chords.hmm import STRONG_BEAT_WEIGHT, emission_matrix, load_model, viterbi
+from app.chords.hmm import EMISSION_WEIGHT, STRONG_BEAT_WEIGHT, emission_matrix, load_model, viterbi
 from app.chords.melody import MelodyNote, Step
 from app.chords.theory import Key
 
@@ -82,8 +82,8 @@ def test_emission_weights_strong_beat():
 
     row = emission_matrix([step], log_emit, Key(0, "major", 0))[0]
 
-    assert row[0] == pytest.approx(STRONG_BEAT_WEIGHT * high + low)
-    assert row[1] == pytest.approx(high + STRONG_BEAT_WEIGHT * low)
+    assert row[0] == pytest.approx(EMISSION_WEIGHT * (STRONG_BEAT_WEIGHT * high + low))
+    assert row[1] == pytest.approx(EMISSION_WEIGHT * (high + STRONG_BEAT_WEIGHT * low))
     assert row[0] > row[1]
 
 
@@ -96,7 +96,7 @@ def test_emission_indexed_by_scale_degree():
 
     row = emission_matrix([step], log_emit, Key(7, "major", 1))[0]
 
-    assert row[0] == pytest.approx(2 * -1.0 * STRONG_BEAT_WEIGHT)
+    assert row[0] == pytest.approx(EMISSION_WEIGHT * 2 * -1.0 * STRONG_BEAT_WEIGHT)
     assert row[1] == 0
 
 
@@ -151,3 +151,8 @@ def test_load_model_rejects_old_format(tmp_path):
     bad.write_text(json.dumps(data))
     with pytest.raises(ValueError):
         load_model("POP", bad)
+
+
+def test_emission_weight_favours_melody_fit_over_staying():
+    """Hệ số phát > 1 (chỉnh trên tập kiểm thử POP909: 36,8% → 40,1% đúng hợp âm) để HMM không bám hợp âm chủ."""
+    assert EMISSION_WEIGHT == 2.0

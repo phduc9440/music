@@ -28,7 +28,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from app.chords.hmm import StyleModel, load_model, viterbi  # noqa: E402
+from app.chords.hmm import EMISSION_WEIGHT, StyleModel, load_model, viterbi  # noqa: E402
 from training.chords.corpus import Song, label_to_state, parse_label, read_pop909  # noqa: E402
 from training.chords.train import load_test_split  # noqa: E402
 
@@ -59,11 +59,12 @@ def _in_chord(pc: int, chord, tonic: int) -> bool:
 
 
 def _emission(song: Song, log_emit: np.ndarray) -> np.ndarray:
+    """Như ``hmm.emission_matrix`` (cùng hệ số ``EMISSION_WEIGHT``) cho bài đã tách sẵn theo bước."""
     out = np.zeros((len(song.chords), log_emit.shape[0]))
     for t, notes in enumerate(song.melody or []):
         for pc, weight in notes:
             out[t] += weight * log_emit[:, (pc - song.key.tonic) % 12]
-    return out
+    return EMISSION_WEIGHT * out
 
 
 def _predict(song: Song, model: StyleModel, method: Method) -> list[int]:
