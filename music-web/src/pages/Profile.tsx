@@ -11,8 +11,14 @@ import '../components/scores/scores.css';
 import './scores/library/ScoreLibrary.css';
 import './Profile.css';
 import { t } from '../i18n/core';
+import { announceMemberUpdated } from '../utils/memberEvents';
 
-export default function UserProfile() {
+interface ProfileProps {
+  /** Mở trong khu quản trị (/admin/profile): ẩn phần chỉ dành cho người dùng như giới thiệu bạn bè. */
+  admin?: boolean;
+}
+
+export default function UserProfile({ admin = false }: ProfileProps) {
   const [user, setUser] = useState<Member | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
@@ -21,6 +27,11 @@ export default function UserProfile() {
   const [isUploading, setIsUploading] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+
+  // Báo header (khu người dùng hoặc khu quản trị) cập nhật tên / ảnh đại diện ngay sau khi sửa
+  useEffect(() => {
+    if (user) announceMemberUpdated(user);
+  }, [user]);
 
   const applyMember = useCallback((m: Member) => {
     setUser(m);
@@ -160,7 +171,7 @@ export default function UserProfile() {
               <p className="pf-hint">{t('profile.avatarHint')}</p>
             </section>
 
-            <ReferralCard />
+            {!admin && <ReferralCard />}
           </div>
 
           <div className="pf-stack">

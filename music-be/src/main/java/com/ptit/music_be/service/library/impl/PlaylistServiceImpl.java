@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -131,6 +132,29 @@ public class PlaylistServiceImpl implements PlaylistService {
         playlist.getPlaylistItems().removeIf(i -> i.getId().equals(target.getId()));
         playlistItemRepository.delete(target);
         items.remove(target);
+        renumber(items);
+        playlistItemRepository.saveAll(items);
+        return toItemResponses(playlist);
+    }
+
+    @Override
+    @Transactional
+    public List<PlaylistItemResponse> removeScores(String id, PlaylistOrderRequest request) {
+        Playlist playlist = findOwned(id);
+        Set<String> chosen =
+                request == null || request.getScoreIds() == null ? Set.of() : new HashSet<>(request.getScoreIds());
+        List<PlaylistItem> items = playlistItemRepository.findByPlaylistOrderByPositionAsc(playlist);
+        Set<String> present = items.stream().map(i -> i.getScore().getId()).collect(Collectors.toSet());
+        // Kiểm cả lô trước khi xóa: có id lạ thì không bỏ bài nào
+        if (chosen.isEmpty() || !present.containsAll(chosen)) {
+            throw new AppException(ErrorCode.PLAYLIST_SCORE_NOT_IN_PLAYLIST);
+        }
+        List<PlaylistItem> removed = items.stream()
+                .filter(i -> chosen.contains(i.getScore().getId()))
+                .toList();
+        removed.forEach(playlistItemRepository::delete);
+        playlist.getPlaylistItems().removeAll(removed);
+        items.removeAll(removed);
         renumber(items);
         playlistItemRepository.saveAll(items);
         return toItemResponses(playlist);

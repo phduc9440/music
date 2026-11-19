@@ -32,6 +32,12 @@ public interface PlaylistService {
     /** Bỏ bài khỏi playlist (bài nhạc không bị xóa). */
     List<PlaylistItemResponse> removeScore(String id, String scoreId);
 
+    /**
+     * Bỏ nhiều bài một lần (bỏ hết hoặc không bỏ gì), đánh lại thứ tự. Lỗi: PLAYLIST_NOT_EXISTED (2601),
+     * PLAYLIST_SCORE_NOT_IN_PLAYLIST (2605) khi danh sách rỗng hoặc có bài không nằm trong playlist.
+     */
+    List<PlaylistItemResponse> removeScores(String id, PlaylistOrderRequest request);
+
     /** Đổi thứ tự: danh sách scoreId phải đúng bằng tập bài hiện có. */
     List<PlaylistItemResponse> reorder(String id, PlaylistOrderRequest request);
 }

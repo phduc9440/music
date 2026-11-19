@@ -1535,7 +1535,8 @@
   --adm-radius-lg: 10px;
   --adm-radius: 7px;
   --adm-radius-sm: 5px;
-  --adm-sidebar-w: 232px;
+  /* Không đặt lại --adm-sidebar-w ở đây: cùng độ ưu tiên với .adm-shell--collapsed nhưng đứng sau nên vừa làm menu hẹp
+     đi (232px thay vì 248px) vừa làm nút thu gọn mất tác dụng. Độ rộng lấy từ khai báo đầu file. */
   --adm-rule: var(--adm-border);
 }
 

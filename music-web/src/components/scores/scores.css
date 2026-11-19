@@ -1146,6 +1146,11 @@ select.sc-input {
   gap: 0.15rem;
   position: sticky;
   top: calc(var(--ui-header-h) + 1rem);
+  /* Khung giống các thẻ nội dung bên phải; vạch của mục đang chọn (::before, lệch -0.5rem) nằm sát mép trong khung */
+  padding: 0.5rem;
+  background: var(--sc-card);
+  border: 1px solid var(--sc-line);
+  border-radius: var(--sc-radius);
 }
 .sc-settings__link {
   position: relative;

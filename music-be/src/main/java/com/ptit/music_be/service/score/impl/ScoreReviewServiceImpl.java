@@ -92,7 +92,7 @@ public class ScoreReviewServiceImpl implements ScoreReviewService {
                 .findById(reviewId)
                 .filter(r -> r.getScore().getId().equals(scoreId))
                 .orElseThrow(() -> new AppException(ErrorCode.REVIEW_NOT_EXISTED));
-        if (!canDelete(score, review)) {
+        if (!canDelete(review)) {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
         reviewRepository.delete(review);
@@ -110,11 +110,12 @@ public class ScoreReviewServiceImpl implements ScoreReviewService {
         return review.getMember().getEmail().equals(SecurityUtils.getCurrentEmail());
     }
 
-    /** Tác giả nhận xét, chủ sở hữu bản nhạc hoặc ADMIN được xóa. */
-    private boolean canDelete(Score score, ScoreReview review) {
-        return isMine(review)
-                || SecurityUtils.hasPermission(AdminPermission.SCORES_MODERATE)
-                || scoreFileService.canManageSharing(score);
+    /**
+     * Chỉ người viết xóa được nhận xét của mình; chủ bản nhạc hay người được chia sẻ không xóa được nhận xét của người khác
+     * (tránh xóa nhận xét chê / chấm sao thấp). Người kiểm duyệt (SCORES_MODERATE) vẫn xóa được để gỡ nội dung vi phạm.
+     */
+    private boolean canDelete(ScoreReview review) {
+        return isMine(review) || SecurityUtils.hasPermission(AdminPermission.SCORES_MODERATE);
     }
 
     private ReviewListResponse toResponse(Score score) {
@@ -127,7 +128,7 @@ public class ScoreReviewServiceImpl implements ScoreReviewService {
                         .rating(r.getRating())
                         .comment(r.getComment())
                         .mine(isMine(r))
-                        .canDelete(canDelete(score, r))
+                        .canDelete(canDelete(r))
                         .createdAt(r.getCreatedAt())
                         .updatedAt(r.getUpdatedAt())
                         .build())
