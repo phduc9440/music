@@ -10,6 +10,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import jakarta.persistence.EntityManager;
@@ -34,7 +35,6 @@ import com.ptit.music_be.entity.ForumCategory;
 import com.ptit.music_be.entity.ForumPost;
 import com.ptit.music_be.entity.ForumSubscription;
 import com.ptit.music_be.entity.ForumThread;
-import com.ptit.music_be.entity.ForumVote;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.event.RewardEarnedEvent;
@@ -337,7 +337,8 @@ public class ForumServiceImpl implements ForumService {
             voteRepository.delete(existing.get());
             voted = false;
         } else {
-            voteRepository.save(ForumVote.builder().member(me).thread(thread).build());
+            // INSERT IGNORE: lần bấm kia vừa ghi phiếu thì bỏ qua, không lỗi trùng khóa
+            voteRepository.insertThreadVoteIgnore(UUID.randomUUID().toString(), me.getId(), threadId);
             voted = true;
         }
         voteRepository.flush();
@@ -361,7 +362,7 @@ public class ForumServiceImpl implements ForumService {
             voteRepository.delete(existing.get());
             voted = false;
         } else {
-            voteRepository.save(ForumVote.builder().member(me).post(post).build());
+            voteRepository.insertPostVoteIgnore(UUID.randomUUID().toString(), me.getId(), postId);
             voted = true;
         }
         voteRepository.flush();

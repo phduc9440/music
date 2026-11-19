@@ -3,6 +3,7 @@ package com.ptit.music_be.service.forum.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -195,6 +196,46 @@ class ForumServiceImplTest {
         when(postRepository.countByOthers("t1", "me")).thenReturn(0L);
         service.deleteThread("t1");
         verify(threadRepository).deleteDirectly("t1");
+    }
+
+    @Test
+    void doubleClickThreadVoteIsIgnoredInsteadOfFailing() {
+        Member author = Member.builder().id("author").email("au@x.com").build();
+        when(threadRepository.findDetail("t1")).thenReturn(Optional.of(threadBy(author)));
+        when(voteRepository.findByMemberIdAndThreadId("me", "t1")).thenReturn(Optional.empty());
+        // Lần bấm kia vừa ghi phiếu: INSERT IGNORE không chèn thêm dòng nào, không ném lỗi trùng khóa
+        when(voteRepository.insertThreadVoteIgnore(anyString(), eq("me"), eq("t1")))
+                .thenReturn(0);
+        when(voteRepository.countByThreadId("t1")).thenReturn(1L);
+
+        var response = service.toggleThreadVote("t1");
+
+        assertThat(response.isVoted()).isTrue();
+        assertThat(response.getVoteCount()).isEqualTo(1L);
+        verify(voteRepository, never()).save(any());
+    }
+
+    @Test
+    void doubleClickPostVoteIsIgnoredInsteadOfFailing() {
+        Member author = Member.builder().id("author").email("au@x.com").build();
+        ForumThread thread = threadBy(author);
+        ForumPost post = ForumPost.builder()
+                .id("p1")
+                .thread(thread)
+                .author(author)
+                .body("x")
+                .build();
+        when(threadRepository.findDetail(thread.getId())).thenReturn(Optional.of(thread));
+        when(postRepository.findById("p1")).thenReturn(Optional.of(post));
+        when(voteRepository.findByMemberIdAndPostId("me", "p1")).thenReturn(Optional.empty());
+        when(voteRepository.insertPostVoteIgnore(anyString(), eq("me"), eq("p1")))
+                .thenReturn(0);
+        when(voteRepository.countByPostId("p1")).thenReturn(1L);
+
+        var response = service.togglePostVote("p1");
+
+        assertThat(response.isVoted()).isTrue();
+        verify(voteRepository, never()).save(any());
     }
 
     @Test

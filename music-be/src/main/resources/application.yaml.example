@@ -64,9 +64,12 @@ vnpay:
   return-url: ${VNPAY_RETURN_URL:http://localhost:5173/billing/result}
   query-url: ${VNPAY_QUERY_URL:https://sandbox.vnpayment.vn/merchant_webapi/api/transaction}
 
-# Địa chỉ trang web (dựng link mời vào team trong email, mục 4.1)
+# Địa chỉ trang web (dựng link mời vào team trong email, mục 4.1); cũng luôn được phép gọi API (CORS) và mở WebSocket
 app:
   web-url: ${APP_WEB_URL:http://localhost:5173}
+  # Thêm origin khác được gọi API / mở WebSocket (cách nhau bởi dấu phẩy), ví dụ bản admin ở tên miền riêng
+  cors:
+    allowed-origins: ${APP_CORS_ORIGINS:http://localhost:5173,http://localhost:3000}
 
 springdoc:
   swagger-ui:

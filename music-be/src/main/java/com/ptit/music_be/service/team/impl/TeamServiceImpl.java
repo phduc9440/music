@@ -306,6 +306,7 @@ public class TeamServiceImpl implements TeamService {
     @Transactional
     public TeamMemberResponse changeRole(String teamId, String memberId, TeamRole role) {
         Member me = access.currentMember();
+        lockTeam(teamId);
         TeamMember mine = access.membership(teamId, me);
         RolePermissions perms = access.permissions(mine);
         if (!perms.canInvite()) {
@@ -366,6 +367,7 @@ public class TeamServiceImpl implements TeamService {
     @Transactional
     public void removeMember(String teamId, String memberId) {
         Member me = access.currentMember();
+        lockTeam(teamId);
         TeamMember mine = access.membership(teamId, me);
         TeamMember target = teamMemberRepository
                 .findByTeamIdAndMemberId(teamId, memberId == null ? "" : memberId)
@@ -404,6 +406,16 @@ public class TeamServiceImpl implements TeamService {
                     "Bạn đã bị xóa khỏi nhóm " + team.getName(),
                     NotificationService.params("team", team.getName()));
         }
+    }
+
+    /**
+     * Khóa dòng team trước khi đọc vai trò và đếm số chủ nhóm: hai chủ nhóm hạ quyền / xóa nhau cùng lúc phải xếp hàng,
+     * nếu không cả hai cùng thấy "còn 2 chủ" và nhóm mất hết chủ.
+     */
+    private void lockTeam(String teamId) {
+        teamRepository
+                .findByIdForUpdate(teamId == null ? "" : teamId)
+                .orElseThrow(() -> new AppException(ErrorCode.TEAM_NOT_EXISTED));
     }
 
     // ------------------------------------------------------------------------------------------------ bảng quyền

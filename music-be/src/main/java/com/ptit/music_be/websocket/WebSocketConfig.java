@@ -22,6 +22,8 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 import org.springframework.web.socket.config.annotation.WebSocketTransportRegistration;
 import org.springframework.web.socket.handler.WebSocketHandlerDecorator;
 
+import com.ptit.music_be.configuration.AllowedOrigins;
+
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -54,6 +56,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
      */
     private final ObjectProvider<StompAccessRule> accessRules;
 
+    private final AllowedOrigins allowedOrigins;
+
     @org.springframework.context.annotation.Bean
     TaskScheduler webSocketHeartbeatScheduler() {
         ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
@@ -67,8 +71,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registry.addEndpoint("/ws")
                 .setHandshakeHandler(handshake)
                 .addInterceptors(handshake)
-                // Cùng danh sách origin với CorsConfig
-                .setAllowedOrigins("http://localhost:5173", "http://localhost:3000");
+                // Cùng danh sách origin với CorsConfig (AllowedOrigins, cấu hình được)
+                .setAllowedOrigins(allowedOrigins.array());
     }
 
     @Override

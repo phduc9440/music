@@ -10,28 +10,22 @@ import org.springframework.web.filter.CorsFilter;
 public class CorsConfig {
 
     @Bean
-    public CorsFilter corsFilter() {
+    public CorsFilter corsFilter(AllowedOrigins allowedOrigins) {
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", corsConfiguration(allowedOrigins));
+        return new CorsFilter(source);
+    }
+
+    /** Cấu hình CORS: origin theo {@link AllowedOrigins} (không viết cứng), mọi header và method, cho gửi cookie. */
+    static CorsConfiguration corsConfiguration(AllowedOrigins allowedOrigins) {
         CorsConfiguration corsConfiguration = new CorsConfiguration();
-
-        // Allow frontend domains
-        corsConfiguration.addAllowedOrigin("http://localhost:5173");
-        corsConfiguration.addAllowedOrigin("http://localhost:3000");
-
-        // Allow all headers
+        allowedOrigins.list().forEach(corsConfiguration::addAllowedOrigin);
         corsConfiguration.addAllowedHeader("*");
-
-        // Allow all HTTP methods
         corsConfiguration.addAllowedMethod("*");
-
         // Cho JS đọc header ETag (Editor lấy version MusicXML từ ETag của GET /scores/{id}/musicxml)
         corsConfiguration.addExposedHeader("ETag");
-
-        // Allow credentials (cookies, authorization headers)
+        // Cho gửi cookie (access token HttpOnly)
         corsConfiguration.setAllowCredentials(true);
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", corsConfiguration);
-
-        return new CorsFilter(source);
+        return corsConfiguration;
     }
 }
