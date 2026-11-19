@@ -388,7 +388,10 @@ public class OmrServiceImpl implements OmrService {
                     .system(m.hasNonNull("system") ? m.get("system").asInt() : null)
                     .box(box)
                     .flags(flags)
-                    .confidence(m.path("confidence").isNumber() ? m.get("confidence").asDouble() : null)
+                    .confidence(
+                            m.path("confidence").isNumber()
+                                    ? m.get("confidence").asDouble()
+                                    : null)
                     .reasons(reasons)
                     .build());
         });

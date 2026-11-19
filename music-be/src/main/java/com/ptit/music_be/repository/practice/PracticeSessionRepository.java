@@ -17,11 +17,10 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.ptit.music_be.dto.enums.PracticeSessionStatus;
+import com.ptit.music_be.dto.enums.practice.PracticeMode;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.PracticeSession;
 import com.ptit.music_be.entity.Score;
-import com.ptit.music_be.dto.enums.PracticeSessionStatus;
-import com.ptit.music_be.dto.enums.practice.PracticeMode;
 
 @Repository
 public interface PracticeSessionRepository extends JpaRepository<PracticeSession, String> {
@@ -38,7 +37,11 @@ public interface PracticeSessionRepository extends JpaRepository<PracticeSession
             Member member, Collection<PracticeMode> modes, PracticeSessionStatus status, Pageable pageable);
 
     Page<PracticeSession> findByMemberAndScoreAndModeInAndStatus(
-            Member member, Score score, Collection<PracticeMode> modes, PracticeSessionStatus status, Pageable pageable);
+            Member member,
+            Score score,
+            Collection<PracticeMode> modes,
+            PracticeSessionStatus status,
+            Pageable pageable);
 
     Optional<PracticeSession> findByIdAndMember(String id, Member member);
 

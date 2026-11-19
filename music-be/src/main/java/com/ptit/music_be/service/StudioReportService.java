@@ -4,9 +4,9 @@ import java.util.Optional;
 
 import com.ptit.music_be.dto.enums.StudioMode;
 import com.ptit.music_be.dto.request.StudioSessionFinishRequest;
-import com.ptit.music_be.dto.response.common.PageResponse;
 import com.ptit.music_be.dto.response.StudioSessionReportResponse;
 import com.ptit.music_be.dto.response.StudioSessionSummaryResponse;
+import com.ptit.music_be.dto.response.common.PageResponse;
 
 public interface StudioReportService {
 

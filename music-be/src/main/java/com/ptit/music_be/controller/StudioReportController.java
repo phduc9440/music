@@ -10,9 +10,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ptit.music_be.dto.enums.StudioMode;
-import com.ptit.music_be.dto.response.common.PageResponse;
 import com.ptit.music_be.dto.response.StudioSessionReportResponse;
 import com.ptit.music_be.dto.response.StudioSessionSummaryResponse;
+import com.ptit.music_be.dto.response.common.PageResponse;
 import com.ptit.music_be.service.StudioReportService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -51,6 +51,7 @@ public class StudioReportController {
     @Operation(summary = "Lấy phiên có điểm cao nhất", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<StudioSessionReportResponse> getBestSession(@PathVariable String scoreId) {
         Optional<StudioSessionReportResponse> response = studioReportService.getBestSession(scoreId);
-        return response.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.noContent().build());
+        return response.map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.noContent().build());
     }
 }

@@ -112,7 +112,9 @@ public class StudioReportServiceImpl implements StudioReportService {
         Member member = currentMember(false);
         int safeSize = size <= 0 ? DEFAULT_PAGE_SIZE : Math.min(size, MAX_PAGE_SIZE);
         PageRequest pageable = PageRequest.of(
-                Math.max(page, 0), safeSize, Sort.by(Sort.Direction.DESC, "startedAt").and(Sort.by("id")));
+                Math.max(page, 0),
+                safeSize,
+                Sort.by(Sort.Direction.DESC, "startedAt").and(Sort.by("id")));
         List<PracticeMode> modes = mode == null ? STUDIO_MODES : List.of(toPracticeMode(mode));
 
         Page<PracticeSession> sessions;
@@ -226,16 +228,16 @@ public class StudioReportServiceImpl implements StudioReportService {
 							OR (played_ms IS NULL AND expected_ms <= ?))
 					GROUP BY result
 					""",
-                    (RowCallbackHandler) resultSet -> counts.put(
-                            StudioNoteEventResult.valueOf(resultSet.getString(1)), resultSet.getInt(2)),
+                    (RowCallbackHandler) resultSet ->
+                            counts.put(StudioNoteEventResult.valueOf(resultSet.getString(1)), resultSet.getInt(2)),
                     sessionId,
                     coveredUntilMs,
                     coveredUntilMs);
         } else {
             jdbcTemplate.query(
                     "SELECT result, COUNT(*) FROM practice_note_event WHERE session_id = ? GROUP BY result",
-                    (RowCallbackHandler) resultSet -> counts.put(
-                            StudioNoteEventResult.valueOf(resultSet.getString(1)), resultSet.getInt(2)),
+                    (RowCallbackHandler) resultSet ->
+                            counts.put(StudioNoteEventResult.valueOf(resultSet.getString(1)), resultSet.getInt(2)),
                     sessionId);
         }
         return new EventCounts(
@@ -246,8 +248,7 @@ public class StudioReportServiceImpl implements StudioReportService {
                 counts.getOrDefault(StudioNoteEventResult.MISSED, 0));
     }
 
-    private List<StudioMeasureBreakdown> measureBreakdown(
-            String sessionId, PracticeMode mode, Integer coveredUntilMs) {
+    private List<StudioMeasureBreakdown> measureBreakdown(String sessionId, PracticeMode mode, Integer coveredUntilMs) {
         Map<Integer, int[]> countsByMeasure = new TreeMap<>();
         String query = """
 				SELECT measure, result, COUNT(*)
@@ -276,8 +277,8 @@ public class StudioReportServiceImpl implements StudioReportService {
                 },
                 arguments.toArray());
         List<StudioMeasureBreakdown> result = new ArrayList<>();
-        countsByMeasure.forEach((measure, counts) -> result.add(new StudioMeasureBreakdown(
-                measure, counts[0], counts[1], counts[2], counts[3], counts[4])));
+        countsByMeasure.forEach((measure, counts) ->
+                result.add(new StudioMeasureBreakdown(measure, counts[0], counts[1], counts[2], counts[3], counts[4])));
         return result;
     }
 
@@ -323,10 +324,7 @@ public class StudioReportServiceImpl implements StudioReportService {
         }
         double normalized = mode == PracticeMode.WAIT
                 ? (counts.perfect() + counts.early() + counts.late()) * 0.8 / total
-                : (counts.perfect()
-                                + 0.7 * (counts.early() + counts.late())
-                                - 0.3 * counts.wrongPitch())
-                        / total;
+                : (counts.perfect() + 0.7 * (counts.early() + counts.late()) - 0.3 * counts.wrongPitch()) / total;
         return (int) Math.round(Math.max(0, Math.min(1, normalized)) * 10000);
     }
 

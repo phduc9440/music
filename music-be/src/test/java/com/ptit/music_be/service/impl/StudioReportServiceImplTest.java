@@ -51,7 +51,8 @@ class StudioReportServiceImplTest {
     @Mock
     ScoreFileService scoreFileService;
 
-    final Member member = Member.builder().id("member-1").email("user@example.com").build();
+    final Member member =
+            Member.builder().id("member-1").email("user@example.com").build();
     final Score score = Score.builder().id("score-1").title("Test score").build();
     PracticeSession session;
     StudioReportServiceImpl service;
@@ -76,14 +77,16 @@ class StudioReportServiceImplTest {
         when(memberRepository.findByEmailForUpdate("user@example.com")).thenReturn(Optional.of(member));
         when(practiceSessionRepository.findByIdAndMemberForUpdate("session-1", member))
                 .thenReturn(Optional.of(session));
-        when(practiceSessionRepository.save(any(PracticeSession.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(practiceSessionRepository.save(any(PracticeSession.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
         when(practiceSessionRepository
                         .findFirstByMemberAndScoreAndModeInAndStatusAndStartedAtLessThanOrderByStartedAtDesc(
                                 any(), any(), any(), any(), any()))
                 .thenReturn(Optional.empty());
         when(practiceSessionRepository.findBestStudioScoreBefore(any(), any(), any(), any(), any()))
                 .thenReturn(null);
-        when(practiceSessionRepository.findBestStudioScore(any(), any(), any(), any())).thenReturn(8500.0);
+        when(practiceSessionRepository.findBestStudioScore(any(), any(), any(), any()))
+                .thenReturn(8500.0);
     }
 
     @AfterEach

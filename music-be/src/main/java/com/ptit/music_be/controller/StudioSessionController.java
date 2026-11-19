@@ -13,14 +13,14 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ptit.music_be.dto.request.StudioEventBatchRequest;
-import com.ptit.music_be.dto.request.StudioSessionFinishRequest;
 import com.ptit.music_be.dto.request.StudioSessionCreateRequest;
+import com.ptit.music_be.dto.request.StudioSessionFinishRequest;
 import com.ptit.music_be.dto.response.StudioEventBatchResponse;
+import com.ptit.music_be.dto.response.StudioSessionReportResponse;
 import com.ptit.music_be.dto.response.StudioSessionResponse;
 import com.ptit.music_be.service.StudioEventService;
 import com.ptit.music_be.service.StudioReportService;
 import com.ptit.music_be.service.StudioSessionService;
-import com.ptit.music_be.dto.response.StudioSessionReportResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
