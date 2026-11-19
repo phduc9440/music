@@ -64,6 +64,7 @@ export const PAGE_META_ROUTES: PageMetaRoute[] = [
   { pattern: '/admin/members', key: 'adminMembers', glyph: 'admin' },
   { pattern: '/admin/members/:id', key: 'adminMember', glyph: 'admin' },
   { pattern: '/admin/roles', key: 'adminRoles', glyph: 'admin' },
+  { pattern: '/admin/practice', key: 'adminPractice', glyph: 'admin' },
   { pattern: '/admin/teams', key: 'adminTeams', glyph: 'admin' },
   { pattern: '/admin/teams/:id', key: 'adminTeam', glyph: 'admin' },
   { pattern: '/admin/scores', key: 'adminScores', glyph: 'admin' },

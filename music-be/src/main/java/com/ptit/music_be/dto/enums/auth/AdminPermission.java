@@ -46,6 +46,10 @@ public enum AdminPermission {
     SUBSCRIPTIONS_MANAGE("billing"),
     /** Tạo, sửa, xóa gói dịch vụ (giá, hạn mức). */
     PLANS_MANAGE("billing"),
+    /** Trang "Luyện tập": xem buổi luyện của mọi thành viên và thống kê toàn hệ thống. */
+    PRACTICE_VIEW("users"),
+    /** Xóa buổi luyện bất thường, đóng thủ công buổi đang chạy bị treo. */
+    PRACTICE_MANAGE("users"),
     /** Tác vụ AI: xem, hủy, chạy lại task của mọi người. */
     AI_TASKS_MANAGE("system"),
     /** Giám sát hệ thống, nhật ký lỗi. */
@@ -72,6 +76,7 @@ public enum AdminPermission {
     public List<AdminPermission> requires() {
         return switch (this) {
             case MEMBERS_LOCK, MEMBERS_CREATE, SUBSCRIPTIONS_MANAGE -> List.of(MEMBERS_VIEW);
+            case PRACTICE_MANAGE -> List.of(PRACTICE_VIEW);
             case PAYMENTS_REFUND -> List.of(REVENUE_VIEW);
             case REPORTS_MODERATE -> List.of(SCORES_MODERATE);
             default -> List.of();

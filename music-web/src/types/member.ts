@@ -18,6 +18,8 @@ export type AdminPermission =
   | 'PAYMENTS_REFUND'
   | 'SUBSCRIPTIONS_MANAGE'
   | 'PLANS_MANAGE'
+  | 'PRACTICE_VIEW'
+  | 'PRACTICE_MANAGE'
   | 'AI_TASKS_MANAGE'
   | 'SYSTEM_MONITOR'
   | 'REPORTS_MODERATE'
@@ -27,7 +29,18 @@ export type AdminPermission =
 /** Quyền theo nhóm menu quản trị (nhãn nhóm: admin.menu.sections.<nhóm>, nhãn quyền: admin.roles.permissions.<quyền>). */
 export const ADMIN_PERMISSION_GROUPS: { section: string; permissions: AdminPermission[] }[] = [
   { section: 'overview', permissions: ['DASHBOARD_VIEW'] },
-  { section: 'users', permissions: ['MEMBERS_VIEW', 'MEMBERS_LOCK', 'MEMBERS_CREATE', 'TEAMS_MANAGE', 'ANNOUNCEMENTS_SEND'] },
+  {
+    section: 'users',
+    permissions: [
+      'MEMBERS_VIEW',
+      'MEMBERS_LOCK',
+      'MEMBERS_CREATE',
+      'TEAMS_MANAGE',
+      'ANNOUNCEMENTS_SEND',
+      'PRACTICE_VIEW',
+      'PRACTICE_MANAGE',
+    ],
+  },
   {
     section: 'content',
     permissions: [
@@ -54,6 +67,7 @@ export const ADMIN_PERMISSION_REQUIRES: Partial<Record<AdminPermission, AdminPer
   SUBSCRIPTIONS_MANAGE: ['MEMBERS_VIEW'],
   PAYMENTS_REFUND: ['REVENUE_VIEW'],
   REPORTS_MODERATE: ['SCORES_MODERATE'],
+  PRACTICE_MANAGE: ['PRACTICE_VIEW'],
 };
 
 /** Vai trò tài khoản kèm quyền quản trị. BE: RoleResponse */

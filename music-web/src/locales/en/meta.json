@@ -68,6 +68,7 @@
     "adminMemberPlans": "Member plans",
     "adminComposers": "Composers",
     "adminAiTasks": "AI tasks",
-    "adminSystem": "System"
+    "adminSystem": "System",
+    "adminPractice": "Practice"
   }
 }
