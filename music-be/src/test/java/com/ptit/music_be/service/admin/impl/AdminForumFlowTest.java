@@ -22,7 +22,8 @@ import com.ptit.music_be.dto.request.report.ReportRequest;
 import com.ptit.music_be.dto.response.admin.AdminForumCategoryResponse;
 import com.ptit.music_be.dto.response.admin.AdminForumThreadResponse;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.CommunityErrorCode;
 import com.ptit.music_be.service.admin.AdminForumService;
 import com.ptit.music_be.service.forum.ForumService;
 import com.ptit.music_be.service.report.ContentReportService;
@@ -108,7 +109,7 @@ class AdminForumFlowTest {
                 AppException.class,
                 () -> adminForum.createCategory(
                         ForumCategoryRequest.builder().name("a").build()));
-        assertEquals(ErrorCode.FORUM_CATEGORY_INVALID, invalid.getErrorCode());
+        assertEquals(CommunityErrorCode.FORUM_CATEGORY_INVALID, invalid.getErrorCode());
 
         // chuyên mục còn chủ đề thì không xóa được
         AdminForumCategoryResponse busy = adminForum.categories().stream()
@@ -117,7 +118,7 @@ class AdminForumFlowTest {
                 .orElse(null);
         Assumptions.assumeTrue(busy != null, "cần chuyên mục có chủ đề từ seed V13");
         AppException notEmpty = assertThrows(AppException.class, () -> adminForum.deleteCategory(busy.getId()));
-        assertEquals(ErrorCode.FORUM_CATEGORY_NOT_EMPTY, notEmpty.getErrorCode());
+        assertEquals(CommunityErrorCode.FORUM_CATEGORY_NOT_EMPTY, notEmpty.getErrorCode());
     }
 
     @Test
@@ -149,7 +150,7 @@ class AdminForumFlowTest {
         // người dùng không còn thấy chủ đề
         loginAs("user@music.com", "ROLE_USER");
         AppException gone = assertThrows(AppException.class, () -> forum.thread(ownThread));
-        assertEquals(ErrorCode.FORUM_THREAD_NOT_EXISTED, gone.getErrorCode());
+        assertEquals(CommunityErrorCode.FORUM_THREAD_NOT_EXISTED, gone.getErrorCode());
 
         loginAs("admin@music.com", "ROLE_SUPER_ADMIN");
         adminForum.setThreadHidden(ownThread, false);
@@ -175,7 +176,7 @@ class AdminForumFlowTest {
                 AppException.class,
                 () -> forum.reply(
                         THREAD, ForumPostRequest.builder().body("thử trả lời").build()));
-        assertEquals(ErrorCode.FORUM_THREAD_LOCKED, locked.getErrorCode());
+        assertEquals(CommunityErrorCode.FORUM_THREAD_LOCKED, locked.getErrorCode());
     }
 
     @Test
@@ -203,6 +204,6 @@ class AdminForumFlowTest {
     void ordinaryUsersCannotManageTheForum() {
         loginAs("user@music.com", "ROLE_USER");
         AppException e = assertThrows(AppException.class, () -> adminForum.categories());
-        assertEquals(ErrorCode.UNAUTHORIZED, e.getErrorCode());
+        assertEquals(AccountErrorCode.UNAUTHORIZED, e.getErrorCode());
     }
 }

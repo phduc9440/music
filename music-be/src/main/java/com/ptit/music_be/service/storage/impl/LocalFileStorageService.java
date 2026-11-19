@@ -18,7 +18,7 @@ import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.service.storage.FileStorageService;
 
 import lombok.extern.slf4j.Slf4j;
@@ -51,7 +51,7 @@ public class LocalFileStorageService implements FileStorageService {
             Files.copy(inputStream, target, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
             log.error("Failed to store file {}", target, e);
-            throw new AppException(ErrorCode.FILE_STORAGE_ERROR);
+            throw new AppException(ScoreErrorCode.FILE_STORAGE_ERROR);
         }
         return rootLocation.relativize(target).toString().replace('\\', '/');
     }
@@ -60,12 +60,12 @@ public class LocalFileStorageService implements FileStorageService {
     public Resource loadAsResource(String relativePath) {
         Path file = resolve(relativePath);
         if (!Files.isReadable(file)) {
-            throw new AppException(ErrorCode.FILE_NOT_EXISTED);
+            throw new AppException(ScoreErrorCode.FILE_NOT_EXISTED);
         }
         try {
             return new UrlResource(file.toUri());
         } catch (MalformedURLException e) {
-            throw new AppException(ErrorCode.FILE_NOT_EXISTED);
+            throw new AppException(ScoreErrorCode.FILE_NOT_EXISTED);
         }
     }
 
@@ -74,7 +74,7 @@ public class LocalFileStorageService implements FileStorageService {
         Path resolved = rootLocation.resolve(relativePath).normalize();
         // Block path traversal such as "../../etc/passwd"
         if (!resolved.startsWith(rootLocation)) {
-            throw new AppException(ErrorCode.FILE_STORAGE_ERROR);
+            throw new AppException(ScoreErrorCode.FILE_STORAGE_ERROR);
         }
         return resolved;
     }

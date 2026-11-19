@@ -35,7 +35,7 @@ import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreComment;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.CommunityErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.report.ContentReportRepository;
 import com.ptit.music_be.repository.score.ScoreCommentRepository;
@@ -154,7 +154,7 @@ class ContentReportServiceImplTest {
         loginAs("owner@x.com", "ROLE_USER");
         assertThat(failure(() -> service.reportScore("s1", request(ReportReason.SPAM, null)))
                         .getErrorCode())
-                .isEqualTo(ErrorCode.REPORT_OWN_CONTENT);
+                .isEqualTo(CommunityErrorCode.REPORT_OWN_CONTENT);
         verify(reportRepository, never()).save(any());
     }
 
@@ -162,12 +162,12 @@ class ContentReportServiceImplTest {
     void reasonOtherNeedsDetails() {
         assertThat(failure(() -> service.reportScore("s1", request(ReportReason.OTHER, "  ")))
                         .getErrorCode())
-                .isEqualTo(ErrorCode.REPORT_REASON_INVALID);
+                .isEqualTo(CommunityErrorCode.REPORT_REASON_INVALID);
         assertThat(failure(() -> service.reportScore("s1", request(null, null))).getErrorCode())
-                .isEqualTo(ErrorCode.REPORT_REASON_INVALID);
+                .isEqualTo(CommunityErrorCode.REPORT_REASON_INVALID);
         assertThat(failure(() -> service.reportScore("s1", request(ReportReason.SPAM, "x".repeat(1001))))
                         .getErrorCode())
-                .isEqualTo(ErrorCode.REPORT_REASON_INVALID);
+                .isEqualTo(CommunityErrorCode.REPORT_REASON_INVALID);
     }
 
     @Test
@@ -176,7 +176,7 @@ class ContentReportServiceImplTest {
                 .thenReturn(true);
         assertThat(failure(() -> service.reportScore("s1", request(ReportReason.SPAM, null)))
                         .getErrorCode())
-                .isEqualTo(ErrorCode.REPORT_DUPLICATED);
+                .isEqualTo(CommunityErrorCode.REPORT_DUPLICATED);
     }
 
     @Test
@@ -185,7 +185,7 @@ class ContentReportServiceImplTest {
                 .thenReturn(20L);
         assertThat(failure(() -> service.reportScore("s1", request(ReportReason.SPAM, null)))
                         .getErrorCode())
-                .isEqualTo(ErrorCode.REPORT_RATE_LIMITED);
+                .isEqualTo(CommunityErrorCode.REPORT_RATE_LIMITED);
     }
 
     @Test
@@ -307,9 +307,9 @@ class ContentReportServiceImplTest {
 
         assertThat(failure(() -> service.resolve("r1", resolveWith(ReportAction.HIDE, null)))
                         .getErrorCode())
-                .isEqualTo(ErrorCode.REPORT_ACTION_INVALID);
+                .isEqualTo(CommunityErrorCode.REPORT_ACTION_INVALID);
         assertThat(failure(() -> service.resolve("r1", resolveWith(null, null))).getErrorCode())
-                .isEqualTo(ErrorCode.REPORT_ACTION_INVALID);
+                .isEqualTo(CommunityErrorCode.REPORT_ACTION_INVALID);
     }
 
     @Test
@@ -323,7 +323,7 @@ class ContentReportServiceImplTest {
 
         assertThat(failure(() -> service.resolve("r1", resolveWith(ReportAction.UNPUBLISH, null)))
                         .getErrorCode())
-                .isEqualTo(ErrorCode.REPORT_TARGET_GONE);
+                .isEqualTo(CommunityErrorCode.REPORT_TARGET_GONE);
 
         service.resolve("r1", resolveWith(ReportAction.DISMISS, null));
         assertThat(report.getStatus()).isEqualTo(ReportStatus.DISMISSED);
@@ -338,7 +338,7 @@ class ContentReportServiceImplTest {
 
         assertThat(failure(() -> service.resolve("r1", resolveWith(ReportAction.DISMISS, null)))
                         .getErrorCode())
-                .isEqualTo(ErrorCode.REPORT_ALREADY_HANDLED);
+                .isEqualTo(CommunityErrorCode.REPORT_ALREADY_HANDLED);
     }
 
     @Test

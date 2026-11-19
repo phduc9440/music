@@ -27,7 +27,8 @@ import com.ptit.music_be.entity.Show;
 import com.ptit.music_be.entity.Team;
 import com.ptit.music_be.entity.TeamMember;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.TeamErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.repository.team.ShowItemRepository;
@@ -165,7 +166,7 @@ public class AdminTeamServiceImpl implements AdminTeamService {
                 .setParameter("id", teamId == null ? "" : teamId)
                 .getResultList();
         if (rows.isEmpty()) {
-            throw new AppException(ErrorCode.TEAM_NOT_EXISTED);
+            throw new AppException(TeamErrorCode.TEAM_NOT_EXISTED);
         }
         AdminTeamResponse team = toRow(rows.get(0), new HashMap<>());
 
@@ -228,10 +229,10 @@ public class AdminTeamServiceImpl implements AdminTeamService {
     public void delete(String teamId, String reason) {
         Team team = teamRepository
                 .findById(teamId == null ? "" : teamId)
-                .orElseThrow(() -> new AppException(ErrorCode.TEAM_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(TeamErrorCode.TEAM_NOT_EXISTED));
         Member admin = memberRepository
                 .findByEmail(SecurityUtils.getCurrentEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
         String cleanReason = reason == null || reason.isBlank()
                 ? null
                 : reason.trim().substring(0, Math.min(reason.trim().length(), MAX_REASON));
@@ -241,7 +242,7 @@ public class AdminTeamServiceImpl implements AdminTeamService {
         String name = team.getName();
         String deletedId = team.getId();
         if (team.isDeleted()) {
-            throw new AppException(ErrorCode.TEAM_NOT_EXISTED);
+            throw new AppException(TeamErrorCode.TEAM_NOT_EXISTED);
         }
         // Xóa mềm: dữ liệu giữ nguyên, khôi phục được trong 30 ngày
         team.markDeleted(admin, true, cleanReason);
@@ -264,10 +265,10 @@ public class AdminTeamServiceImpl implements AdminTeamService {
         Team team = teamRepository
                 .findById(teamId == null ? "" : teamId)
                 .filter(Team::isDeleted)
-                .orElseThrow(() -> new AppException(ErrorCode.TEAM_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(TeamErrorCode.TEAM_NOT_EXISTED));
         Member admin = memberRepository
                 .findByEmail(SecurityUtils.getCurrentEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
         teamService.restoreTeam(team, admin, true);
         log.info("Admin {} đã khôi phục team {} ({})", admin.getEmail(), team.getId(), team.getName());
     }

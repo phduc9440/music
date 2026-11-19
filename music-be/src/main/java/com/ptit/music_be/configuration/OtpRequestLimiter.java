@@ -9,7 +9,7 @@ import java.util.function.LongSupplier;
 import org.springframework.stereotype.Component;
 
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
 
 /**
  * Giới hạn yêu cầu mã OTP quên mật khẩu theo từng email (bổ sung cho giới hạn theo IP của AuthRateLimitFilter): phải
@@ -57,7 +57,7 @@ public class OtpRequestLimiter {
             }
             if (waitMs > 0) {
                 throw new AppException(
-                        ErrorCode.OTP_REQUEST_TOO_SOON, Map.of("retryAfterSeconds", (waitMs + 999) / 1000));
+                        AccountErrorCode.OTP_REQUEST_TOO_SOON, Map.of("retryAfterSeconds", (waitMs + 999) / 1000));
             }
             times.addLast(now);
         }

@@ -27,7 +27,7 @@ import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.MemberScore;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.CollabErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.MemberScoreRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
@@ -102,8 +102,8 @@ class ScoreSharingServiceImplRequestTest {
         when(scoreFileService.getAccessLevel(any())).thenReturn("REVIEW");
 
         assertThatThrownBy(() -> service.requestAccess("s1", SharePermission.REVIEW, null))
-                .isInstanceOfSatisfying(
-                        AppException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.ALREADY_HAS_ACCESS));
+                .isInstanceOfSatisfying(AppException.class, e -> assertThat(e.getErrorCode())
+                        .isEqualTo(CollabErrorCode.ALREADY_HAS_ACCESS));
     }
 
     @Test
@@ -111,7 +111,7 @@ class ScoreSharingServiceImplRequestTest {
         when(scoreFileService.getAccessLevel(any())).thenReturn("EDIT");
 
         assertThatThrownBy(() -> service.requestAccess("s1", SharePermission.REVIEW, null))
-                .isInstanceOfSatisfying(
-                        AppException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.ALREADY_HAS_ACCESS));
+                .isInstanceOfSatisfying(AppException.class, e -> assertThat(e.getErrorCode())
+                        .isEqualTo(CollabErrorCode.ALREADY_HAS_ACCESS));
     }
 }

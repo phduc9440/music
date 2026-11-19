@@ -11,7 +11,7 @@ import com.ptit.music_be.dto.response.billing.BulkGrantResult;
 import com.ptit.music_be.dto.response.billing.MySubscriptionResponse;
 import com.ptit.music_be.dto.response.common.ApiResponse;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
 import com.ptit.music_be.service.billing.SubscriptionService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -39,7 +39,7 @@ public class AdminSubscriptionController {
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<MySubscriptionResponse> grant(@RequestBody GrantPlanRequest request) {
         if (request.getMemberId() == null || request.getPlanCode() == null || request.getMonths() == null) {
-            throw new AppException(ErrorCode.INVALID_REQUEST);
+            throw new AppException(AccountErrorCode.INVALID_REQUEST);
         }
         return ApiResponse.<MySubscriptionResponse>builder()
                 .result(subscriptionService.grant(request.getMemberId(), request.getPlanCode(), request.getMonths()))
@@ -56,7 +56,7 @@ public class AdminSubscriptionController {
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<List<BulkGrantResult>> grantMany(@RequestBody BulkGrantPlanRequest request) {
         if (request.getPlanCode() == null || request.getMonths() == null) {
-            throw new AppException(ErrorCode.INVALID_REQUEST);
+            throw new AppException(AccountErrorCode.INVALID_REQUEST);
         }
         return ApiResponse.<List<BulkGrantResult>>builder()
                 .result(subscriptionService.grantMany(
@@ -94,7 +94,7 @@ public class AdminSubscriptionController {
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<List<BulkGrantResult>> ban(@RequestBody PlanSanctionRequest request) {
         if (request.getMonths() == null) {
-            throw new AppException(ErrorCode.INVALID_REQUEST);
+            throw new AppException(AccountErrorCode.INVALID_REQUEST);
         }
         return ApiResponse.<List<BulkGrantResult>>builder()
                 .result(subscriptionService.banPlans(

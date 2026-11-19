@@ -28,7 +28,8 @@ import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.event.ScoreTrashedByAdminEvent;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.repository.ai.AiTaskRepository;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
@@ -141,7 +142,7 @@ class ScoreServiceImplDeleteTest {
 
         assertThatThrownBy(() -> service.deleteScore("s1"))
                 .isInstanceOfSatisfying(
-                        AppException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.UNAUTHORIZED));
+                        AppException.class, e -> assertThat(e.getErrorCode()).isEqualTo(AccountErrorCode.UNAUTHORIZED));
         assertThat(score.getDeletedAt()).isNull();
     }
 
@@ -152,7 +153,7 @@ class ScoreServiceImplDeleteTest {
 
         assertThatThrownBy(() -> service.deleteScore("s1"))
                 .isInstanceOfSatisfying(
-                        AppException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.SCORE_BUSY));
+                        AppException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ScoreErrorCode.SCORE_BUSY));
         assertThat(score.getDeletedAt()).isNull();
     }
 
@@ -163,6 +164,6 @@ class ScoreServiceImplDeleteTest {
 
         assertThatThrownBy(() -> service.deleteScore("s1"))
                 .isInstanceOfSatisfying(AppException.class, e -> assertThat(e.getErrorCode())
-                        .isEqualTo(ErrorCode.SCORE_OFFICIAL_LOCKED));
+                        .isEqualTo(ScoreErrorCode.SCORE_OFFICIAL_LOCKED));
     }
 }

@@ -20,14 +20,14 @@ import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 
 /**
  * Đọc MusicXML do Editor gửi lên một cách an toàn rồi tóm tắt metadata (đặc tả mục 3.6).
  *
  * <p>Bộ phân tích tắt hoàn toàn DOCTYPE, thực thể ngoài, DTD ngoài và XInclude nên payload XXE
  * ({@code <!DOCTYPE ... SYSTEM "file:///etc/passwd">}) bị từ chối ngay khi phân tích. Mọi lỗi nội dung đều ném
- * {@link ErrorCode#MUSICXML_INVALID} (2013). Lớp không giữ trạng thái nên dùng chung được giữa các luồng.
+ * {@link ScoreErrorCode#MUSICXML_INVALID} (2013). Lớp không giữ trạng thái nên dùng chung được giữa các luồng.
  */
 public final class MusicXmlInspector {
 
@@ -60,15 +60,15 @@ public final class MusicXmlInspector {
         Document document = parseSecure(xml);
         Element root = document.getDocumentElement();
         if (root == null || !ROOT_ELEMENT.equals(root.getTagName())) {
-            throw new AppException(ErrorCode.MUSICXML_INVALID);
+            throw new AppException(ScoreErrorCode.MUSICXML_INVALID);
         }
         List<Element> parts = childElements(root, "part");
         if (parts.isEmpty()) {
-            throw new AppException(ErrorCode.MUSICXML_INVALID);
+            throw new AppException(ScoreErrorCode.MUSICXML_INVALID);
         }
         List<Element> measures = childElements(parts.get(0), "measure");
         if (measures.isEmpty()) {
-            throw new AppException(ErrorCode.MUSICXML_INVALID);
+            throw new AppException(ScoreErrorCode.MUSICXML_INVALID);
         }
 
         String key = null;
@@ -173,7 +173,7 @@ public final class MusicXmlInspector {
             });
             return builder.parse(new ByteArrayInputStream(xml));
         } catch (SAXException | IOException | ParserConfigurationException | IllegalArgumentException e) {
-            throw new AppException(ErrorCode.MUSICXML_INVALID);
+            throw new AppException(ScoreErrorCode.MUSICXML_INVALID);
         }
     }
 

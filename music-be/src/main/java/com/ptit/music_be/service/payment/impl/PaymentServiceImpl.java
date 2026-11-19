@@ -26,7 +26,8 @@ import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.PaymentOrder;
 import com.ptit.music_be.entity.Plan;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.BillingErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.billing.PaymentOrderRepository;
 import com.ptit.music_be.repository.billing.PlanRepository;
@@ -78,21 +79,21 @@ public class PaymentServiceImpl implements PaymentService {
         PaymentProviderType type = request.getProvider() == null ? PaymentProviderType.VNPAY : request.getProvider();
         PaymentProvider provider = providers.get(type);
         if (provider == null || !provider.isConfigured()) {
-            throw new AppException(ErrorCode.PAYMENT_PROVIDER_UNAVAILABLE);
+            throw new AppException(BillingErrorCode.PAYMENT_PROVIDER_UNAVAILABLE);
         }
         if (request.getPeriod() == null) {
-            throw new AppException(ErrorCode.PAYMENT_PERIOD_INVALID);
+            throw new AppException(BillingErrorCode.PAYMENT_PERIOD_INVALID);
         }
         Plan plan = planRepository
                 .findByCode(request.getPlanCode() == null ? "" : request.getPlanCode())
-                .orElseThrow(() -> new AppException(ErrorCode.PLAN_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(BillingErrorCode.PLAN_NOT_EXISTED));
         long amount = request.getPeriod() == BillingPeriod.MONTH ? plan.getPriceMonth() : plan.getPriceYear();
         if (amount <= 0) {
-            throw new AppException(ErrorCode.PAYMENT_PLAN_NOT_PURCHASABLE);
+            throw new AppException(BillingErrorCode.PAYMENT_PLAN_NOT_PURCHASABLE);
         }
         Member member = memberRepository
                 .findByEmail(SecurityUtils.getCurrentEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
         requirePurchaseNeeded(plan, member.getId());
 
         PaymentOrder order = reuseOrSupersedePending(member, plan, request.getPeriod(), type);
@@ -130,10 +131,10 @@ public class PaymentServiceImpl implements PaymentService {
     private void requirePurchaseNeeded(Plan plan, String memberId) {
         if (SecurityUtils.isSuperAdmin()
                 || (SecurityUtils.isAdmin() && SubscriptionServiceImpl.PRO.equals(plan.getCode()))) {
-            throw new AppException(ErrorCode.PAYMENT_NOT_NEEDED);
+            throw new AppException(BillingErrorCode.PAYMENT_NOT_NEEDED);
         }
         if (subscriptionService.planBannedUntil(memberId, plan.getCode()) != null) {
-            throw new AppException(ErrorCode.PLAN_BANNED);
+            throw new AppException(BillingErrorCode.PLAN_BANNED);
         }
     }
 
@@ -186,10 +187,10 @@ public class PaymentServiceImpl implements PaymentService {
         }
         PaymentProvider provider = providers.get(order.getProvider());
         if (provider == null || !provider.isConfigured()) {
-            throw new AppException(ErrorCode.PAYMENT_PROVIDER_UNAVAILABLE);
+            throw new AppException(BillingErrorCode.PAYMENT_PROVIDER_UNAVAILABLE);
         }
         if (order.getStatus() != PaymentStatus.PENDING || !order.getExpiresAt().isAfter(LocalDateTime.now())) {
-            throw new AppException(ErrorCode.PAYMENT_ORDER_NOT_PAYABLE);
+            throw new AppException(BillingErrorCode.PAYMENT_ORDER_NOT_PAYABLE);
         }
         requirePurchaseNeeded(order.getPlan(), order.getMember().getId());
         order.setExpiresAt(LocalDateTime.now().plusMinutes(ORDER_TTL_MINUTES));
@@ -352,7 +353,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     private AppException notFound() {
-        return new AppException(ErrorCode.PAYMENT_ORDER_NOT_EXISTED);
+        return new AppException(BillingErrorCode.PAYMENT_ORDER_NOT_EXISTED);
     }
 
     private String toJson(Map<String, String> params) {

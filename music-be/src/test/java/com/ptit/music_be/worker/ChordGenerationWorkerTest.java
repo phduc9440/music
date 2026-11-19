@@ -46,7 +46,8 @@ import com.ptit.music_be.entity.AiTask;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreSuggestion;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.CollabErrorCode;
 import com.ptit.music_be.repository.ai.AiTaskRepository;
 import com.ptit.music_be.service.score.ScoreEditService;
 import com.ptit.music_be.service.score.SuggestionService;
@@ -111,7 +112,7 @@ class ChordGenerationWorkerTest {
         when(scoreEditService.getVersionContentForSystem(SCORE_ID, 7)).thenReturn(new ScoreContent(BASE, 7));
         // Luồng nền không có người đăng nhập: đọc có kiểm quyền sẽ lỗi
         when(scoreEditService.getVersionContent(any(), anyInt()))
-                .thenThrow(new AppException(ErrorCode.UNAUTHENTICATED));
+                .thenThrow(new AppException(AccountErrorCode.UNAUTHENTICATED));
     }
 
     /** music-ai giả: kiểm tra file vào đúng là version gốc rồi ghi file ra có hợp âm. */
@@ -221,7 +222,7 @@ class ChordGenerationWorkerTest {
     void emptySuggestionMeansAlreadyHarmonized() {
         aiWritesChords();
         when(suggestionService.createFromSystem(any(), any(), anyInt(), any(), any(), any()))
-                .thenThrow(new AppException(ErrorCode.SUGGESTION_EMPTY));
+                .thenThrow(new AppException(CollabErrorCode.SUGGESTION_EMPTY));
 
         worker.process(TASK_ID);
 

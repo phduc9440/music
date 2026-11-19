@@ -21,7 +21,7 @@ import com.ptit.music_be.dto.response.StudioTimelineResponse.Step;
 import com.ptit.music_be.dto.response.StudioTimelineResponse.TempoChange;
 import com.ptit.music_be.dto.response.StudioTimelineResponse.TimeSignature;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 
 /** Builds the score timeline used by the interactive practice studio. */
 public final class MusicXmlTimelineParser {
@@ -36,12 +36,12 @@ public final class MusicXmlTimelineParser {
         Document document = MusicXmlInspector.parseStored(xml);
         Element root = document.getDocumentElement();
         if (root == null || !"score-partwise".equals(root.getTagName())) {
-            throw new AppException(ErrorCode.MUSICXML_INVALID);
+            throw new AppException(ScoreErrorCode.MUSICXML_INVALID);
         }
 
         List<Element> parts = childElements(root, "part");
         if (parts.isEmpty()) {
-            throw new AppException(ErrorCode.MUSICXML_INVALID);
+            throw new AppException(ScoreErrorCode.MUSICXML_INVALID);
         }
 
         int measureCount = parts.stream()
@@ -49,7 +49,7 @@ public final class MusicXmlTimelineParser {
                 .max()
                 .orElse(0);
         if (measureCount == 0) {
-            throw new AppException(ErrorCode.MUSICXML_INVALID);
+            throw new AppException(ScoreErrorCode.MUSICXML_INVALID);
         }
 
         Map<Integer, TimeSignature> signatures = new TreeMap<>();
@@ -156,7 +156,7 @@ public final class MusicXmlTimelineParser {
                         case "backup" -> {
                             cursor = roundBeat(cursor - duration(child, divisions));
                             if (cursor < -0.000001) {
-                                throw new AppException(ErrorCode.MUSICXML_INVALID);
+                                throw new AppException(ScoreErrorCode.MUSICXML_INVALID);
                             }
                         }
                         case "forward" -> {
@@ -187,7 +187,7 @@ public final class MusicXmlTimelineParser {
                     activeSignature == null ? 0 : activeSignature.beats() * 4.0 / activeSignature.beatType();
             double length = roundBeat(Math.max(signatureLength, measureLengths[measureNumber]));
             if (length <= 0) {
-                throw new AppException(ErrorCode.MUSICXML_INVALID);
+                throw new AppException(ScoreErrorCode.MUSICXML_INVALID);
             }
             measureStarts[measureNumber] = roundBeat(measureStarts[measureNumber - 1] + length);
             measures.add(new Measure(measureNumber, measureStarts[measureNumber - 1], length));
@@ -300,7 +300,7 @@ public final class MusicXmlTimelineParser {
             }
             return roundBeat(value / divisions);
         } catch (NumberFormatException exception) {
-            throw new AppException(ErrorCode.MUSICXML_INVALID);
+            throw new AppException(ScoreErrorCode.MUSICXML_INVALID);
         }
     }
 
@@ -313,7 +313,7 @@ public final class MusicXmlTimelineParser {
         String octaveText = childText(pitch, "octave");
         Integer semitones = STEP_SEMITONES.get(step);
         if (semitones == null || octaveText == null) {
-            throw new AppException(ErrorCode.MUSICXML_INVALID);
+            throw new AppException(ScoreErrorCode.MUSICXML_INVALID);
         }
         try {
             int octave = Integer.parseInt(octaveText);
@@ -321,7 +321,7 @@ public final class MusicXmlTimelineParser {
             double alter = alterText == null ? 0 : Double.parseDouble(alterText);
             return (octave + 1) * 12 + semitones + (int) Math.round(alter);
         } catch (NumberFormatException exception) {
-            throw new AppException(ErrorCode.MUSICXML_INVALID);
+            throw new AppException(ScoreErrorCode.MUSICXML_INVALID);
         }
     }
 
@@ -359,7 +359,7 @@ public final class MusicXmlTimelineParser {
             }
             return new TimeSignature(measure, beats, beatType);
         } catch (NumberFormatException exception) {
-            throw new AppException(ErrorCode.MUSICXML_INVALID);
+            throw new AppException(ScoreErrorCode.MUSICXML_INVALID);
         }
     }
 
@@ -374,7 +374,7 @@ public final class MusicXmlTimelineParser {
                         return (int) Math.round(bpm);
                     }
                 } catch (NumberFormatException exception) {
-                    throw new AppException(ErrorCode.MUSICXML_INVALID);
+                    throw new AppException(ScoreErrorCode.MUSICXML_INVALID);
                 }
             }
         }
@@ -400,7 +400,7 @@ public final class MusicXmlTimelineParser {
         } catch (NumberFormatException ignored) {
             // Report invalid numeric MusicXML through the same public error code.
         }
-        throw new AppException(ErrorCode.MUSICXML_INVALID);
+        throw new AppException(ScoreErrorCode.MUSICXML_INVALID);
     }
 
     private static int positiveIntegerOrDefault(String value, int fallback) {

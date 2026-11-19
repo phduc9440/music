@@ -9,7 +9,9 @@ import com.ptit.music_be.dto.enums.score.ScoreAccess;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.CollabErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.service.billing.EntitlementService;
@@ -69,14 +71,14 @@ public class LiveAccess {
                 () -> readOnly.execute(status -> {
                     Score score = scoreRepository
                             .findById(scoreId)
-                            .orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+                            .orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
                     AccessDecision decision = permissionService.resolve(score);
                     if (!decision.can(ScoreAccess.VIEW)) {
-                        throw new AppException(ErrorCode.UNAUTHORIZED);
+                        throw new AppException(AccountErrorCode.UNAUTHORIZED);
                     }
                     Member member = memberRepository
                             .findByEmail(email)
-                            .orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
+                            .orElseThrow(() -> new AppException(AccountErrorCode.UNAUTHENTICATED));
                     String ownerId =
                             score.getMember() == null ? null : score.getMember().getId();
                     return new Access(
@@ -99,7 +101,7 @@ public class LiveAccess {
             return;
         }
         if (!Boolean.TRUE.equals(entitlementService.limitsOf(access.ownerId()).collab())) {
-            throw new AppException(ErrorCode.LIVE_COLLAB_NOT_AVAILABLE);
+            throw new AppException(CollabErrorCode.LIVE_COLLAB_NOT_AVAILABLE);
         }
     }
 }

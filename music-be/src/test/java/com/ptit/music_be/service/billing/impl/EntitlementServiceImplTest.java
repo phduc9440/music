@@ -26,7 +26,7 @@ import com.ptit.music_be.dto.enums.billing.UsageMetric;
 import com.ptit.music_be.dto.response.billing.PlanLimitPayload;
 import com.ptit.music_be.entity.Plan;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.BillingErrorCode;
 import com.ptit.music_be.repository.ai.AiTaskRepository;
 import com.ptit.music_be.repository.billing.PlanRepository;
 import com.ptit.music_be.repository.score.ScoreFileRepository;
@@ -84,7 +84,7 @@ class EntitlementServiceImplTest {
 
         AppException e = assertThrows(AppException.class, () -> service.checkAvailable("m", UsageMetric.OMR_PAGES, 3));
 
-        assertEquals(ErrorCode.PLAN_LIMIT_REACHED, e.getErrorCode());
+        assertEquals(BillingErrorCode.PLAN_LIMIT_REACHED, e.getErrorCode());
         PlanLimitPayload payload = (PlanLimitPayload) e.getPayload();
         assertEquals(20, payload.limit());
         assertEquals(18, payload.used());
@@ -130,7 +130,7 @@ class EntitlementServiceImplTest {
         when(tasks.countExportsCharged(eq("m"), any(), any())).thenReturn(10L);
         AppException e = assertThrows(AppException.class, () -> service.checkAvailable("m", UsageMetric.EXPORTS, 1));
 
-        assertEquals(ErrorCode.PLAN_LIMIT_REACHED, e.getErrorCode());
+        assertEquals(BillingErrorCode.PLAN_LIMIT_REACHED, e.getErrorCode());
         PlanLimitPayload payload = (PlanLimitPayload) e.getPayload();
         assertEquals("EXPORTS", payload.metric());
         assertEquals(10, payload.limit());
@@ -165,7 +165,7 @@ class EntitlementServiceImplTest {
         AppException e =
                 assertThrows(AppException.class, () -> service.checkAvailable("m", UsageMetric.CHORD_GENERATIONS, 1));
 
-        assertEquals(ErrorCode.PLAN_LIMIT_REACHED, e.getErrorCode());
+        assertEquals(BillingErrorCode.PLAN_LIMIT_REACHED, e.getErrorCode());
         PlanLimitPayload payload = (PlanLimitPayload) e.getPayload();
         assertEquals("CHORD_GENERATIONS", payload.metric());
         assertEquals(5, payload.limit());
@@ -211,7 +211,7 @@ class EntitlementServiceImplTest {
 
         AppException e = assertThrows(AppException.class, () -> service.checkStorage("m", 50 * MB + 1));
 
-        assertEquals(ErrorCode.PLAN_LIMIT_REACHED, e.getErrorCode());
+        assertEquals(BillingErrorCode.PLAN_LIMIT_REACHED, e.getErrorCode());
         PlanLimitPayload payload = (PlanLimitPayload) e.getPayload();
         assertEquals("STORAGE_MB", payload.metric());
         assertEquals(200, payload.limit());

@@ -21,7 +21,8 @@ import com.ptit.music_be.dto.response.score.ScoreContent;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreFile;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AiErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.repository.score.ScoreFileRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.service.score.ScoreContentService;
@@ -65,11 +66,11 @@ public class ScoreContentServiceImpl implements ScoreContentService {
     @Transactional(readOnly = true)
     public String getKern(String scoreId) {
         Score score =
-                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
         scoreFileService.checkCanView(score);
 
-        ScoreFile kern =
-                currentFile(scoreId, FileType.KERN).orElseThrow(() -> new AppException(ErrorCode.FILE_NOT_EXISTED));
+        ScoreFile kern = currentFile(scoreId, FileType.KERN)
+                .orElseThrow(() -> new AppException(ScoreErrorCode.FILE_NOT_EXISTED));
         return new String(readBytes(kern.getStoragePath()), StandardCharsets.UTF_8);
     }
 
@@ -77,11 +78,11 @@ public class ScoreContentServiceImpl implements ScoreContentService {
     @Transactional(readOnly = true)
     public ScoreContent getMusicXml(String scoreId) {
         Score score =
-                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
         scoreFileService.checkCanView(score);
 
         ScoreFile xml = currentFile(scoreId, FileType.MUSICXML)
-                .orElseThrow(() -> new AppException(ErrorCode.MUSICXML_NOT_READY));
+                .orElseThrow(() -> new AppException(ScoreErrorCode.MUSICXML_NOT_READY));
         return new ScoreContent(readBytes(xml.getStoragePath()), versionOf(xml));
     }
 
@@ -117,14 +118,15 @@ public class ScoreContentServiceImpl implements ScoreContentService {
     /** Kiểm tra quyền xem và đọc trạng thái MIDI trong một transaction chỉ-đọc (không giữ transaction khi gọi HTTP). */
     private MidiState loadMidiState(String scoreId) {
         return inTransaction(true, () -> {
-            Score score =
-                    scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+            Score score = scoreRepository
+                    .findById(scoreId)
+                    .orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
             scoreFileService.checkCanView(score);
             // /midi chỉ dùng để tải file về (Player phát qua API khác), nên người xem cần được chủ cho phép tải
             scoreFileService.checkCanDownload(score);
 
             ScoreFile xml = currentFile(scoreId, FileType.MUSICXML)
-                    .orElseThrow(() -> new AppException(ErrorCode.MUSICXML_NOT_READY));
+                    .orElseThrow(() -> new AppException(ScoreErrorCode.MUSICXML_NOT_READY));
             int xmlVersion = versionOf(xml);
             int tempo =
                     score.getTempoBpm() != null && score.getTempoBpm() > 0 ? score.getTempoBpm() : DEFAULT_TEMPO_BPM;
@@ -151,12 +153,12 @@ public class ScoreContentServiceImpl implements ScoreContentService {
             aiServiceClient.convertMusicXmlToMidi(state.xmlPath(), outPath, state.tempoBpm());
         } catch (RestClientException e) {
             log.warn("Không sinh lại được MIDI cho bản nhạc {}: {}", state.scoreId(), e.getMessage());
-            throw new AppException(ErrorCode.AI_SERVICE_UNAVAILABLE);
+            throw new AppException(AiErrorCode.AI_SERVICE_UNAVAILABLE);
         }
         Path onDisk = fileStorageService.resolve(outPath);
         if (!Files.isRegularFile(onDisk)) {
             log.error("music-ai báo sinh xong MIDI nhưng không thấy file {}", onDisk);
-            throw new AppException(ErrorCode.FILE_NOT_EXISTED);
+            throw new AppException(ScoreErrorCode.FILE_NOT_EXISTED);
         }
         inTransaction(false, () -> {
             registerMidi(state.scoreId(), outPath, state.xmlVersion(), onDisk);
@@ -209,13 +211,13 @@ public class ScoreContentServiceImpl implements ScoreContentService {
     private byte[] readBytes(String storagePath) {
         Path onDisk = fileStorageService.resolve(storagePath);
         if (!Files.isRegularFile(onDisk)) {
-            throw new AppException(ErrorCode.FILE_NOT_EXISTED);
+            throw new AppException(ScoreErrorCode.FILE_NOT_EXISTED);
         }
         try {
             return Files.readAllBytes(onDisk);
         } catch (IOException e) {
             log.error("Không đọc được file {}", onDisk, e);
-            throw new AppException(ErrorCode.FILE_NOT_EXISTED);
+            throw new AppException(ScoreErrorCode.FILE_NOT_EXISTED);
         }
     }
 

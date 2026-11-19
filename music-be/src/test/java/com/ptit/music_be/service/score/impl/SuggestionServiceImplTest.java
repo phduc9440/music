@@ -59,6 +59,9 @@ import com.ptit.music_be.event.RewardEarnedEvent;
 import com.ptit.music_be.event.RewardReason;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.CollabErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.repository.ai.AiTaskRepository;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.MemberScoreRepository;
@@ -388,7 +391,7 @@ class SuggestionServiceImplTest {
 
     @Test
     void systemSuggestionWithoutChangesIsEmpty() {
-        assertThat(errorOf(() -> createSystem(base))).isEqualTo(ErrorCode.SUGGESTION_EMPTY);
+        assertThat(errorOf(() -> createSystem(base))).isEqualTo(CollabErrorCode.SUGGESTION_EMPTY);
         verify(suggestionRepository, never()).save(any());
     }
 
@@ -396,7 +399,8 @@ class SuggestionServiceImplTest {
     void systemSuggestionReadsBaseWithoutPermissionCheck() {
         SecurityContextHolder.clearContext();
         when(scoreEditService.getVersionContentForSystem(SCORE_ID, 3)).thenReturn(content(base, 3));
-        when(scoreEditService.getVersionContent(SCORE_ID, 3)).thenThrow(new AppException(ErrorCode.UNAUTHENTICATED));
+        when(scoreEditService.getVersionContent(SCORE_ID, 3))
+                .thenThrow(new AppException(AccountErrorCode.UNAUTHENTICATED));
 
         ScoreSuggestion saved = createSystem(withChordInFirstMeasure());
 
@@ -418,7 +422,7 @@ class SuggestionServiceImplTest {
     /** SUG-2 */
     @Test
     void sendingTheBaseVersionUnchangedIsEmpty() {
-        assertThat(errorOf(() -> send(upload(base)))).isEqualTo(ErrorCode.SUGGESTION_EMPTY);
+        assertThat(errorOf(() -> send(upload(base)))).isEqualTo(CollabErrorCode.SUGGESTION_EMPTY);
         verify(suggestionRepository, never()).save(any());
     }
 
@@ -427,7 +431,7 @@ class SuggestionServiceImplTest {
     void viewerCannotSend() {
         givenAccess(ScoreAccess.VIEW);
 
-        assertThat(errorOf(() -> send(edited(upload(base), EDIT_MEASURE_2)))).isEqualTo(ErrorCode.UNAUTHORIZED);
+        assertThat(errorOf(() -> send(edited(upload(base), EDIT_MEASURE_2)))).isEqualTo(AccountErrorCode.UNAUTHORIZED);
     }
 
     /** SUG-4 */
@@ -445,7 +449,7 @@ class SuggestionServiceImplTest {
         when(suggestionRepository.countOpenOf(SCORE_ID, "m-author")).thenReturn(10L);
 
         assertThat(errorOf(() -> send(edited(upload(base), EDIT_MEASURE_2))))
-                .isEqualTo(ErrorCode.SUGGESTION_TOO_MANY_OPEN);
+                .isEqualTo(CollabErrorCode.SUGGESTION_TOO_MANY_OPEN);
     }
 
     @Test
@@ -454,7 +458,7 @@ class SuggestionServiceImplTest {
                 .thenReturn(30L);
 
         assertThat(errorOf(() -> send(edited(upload(base), EDIT_MEASURE_2))))
-                .isEqualTo(ErrorCode.SUGGESTION_RATE_LIMITED);
+                .isEqualTo(CollabErrorCode.SUGGESTION_RATE_LIMITED);
     }
 
     /** SUG-11 */
@@ -464,11 +468,11 @@ class SuggestionServiceImplTest {
                 "file", "s.musicxml", "application/xml", upload(base).getBytes(StandardCharsets.UTF_8));
 
         assertThat(errorOf(() -> service.create(SCORE_ID, file, 3, "   ", null)))
-                .isEqualTo(ErrorCode.SUGGESTION_FIELDS_INVALID);
+                .isEqualTo(CollabErrorCode.SUGGESTION_FIELDS_INVALID);
         assertThat(errorOf(() -> service.create(SCORE_ID, file, 3, "x".repeat(201), null)))
-                .isEqualTo(ErrorCode.SUGGESTION_FIELDS_INVALID);
+                .isEqualTo(CollabErrorCode.SUGGESTION_FIELDS_INVALID);
         assertThat(errorOf(() -> service.create(SCORE_ID, file, 3, "Tiêu đề", "d".repeat(2001))))
-                .isEqualTo(ErrorCode.SUGGESTION_FIELDS_INVALID);
+                .isEqualTo(CollabErrorCode.SUGGESTION_FIELDS_INVALID);
     }
 
     @Test
@@ -477,12 +481,12 @@ class SuggestionServiceImplTest {
                 "file", "s.musicxml", "application/xml", upload(base).getBytes(StandardCharsets.UTF_8));
 
         assertThat(errorOf(() -> service.create(SCORE_ID, file, 4, "Tiêu đề", null)))
-                .isEqualTo(ErrorCode.SCORE_VERSION_NOT_EXISTED);
+                .isEqualTo(ScoreErrorCode.SCORE_VERSION_NOT_EXISTED);
     }
 
     @Test
     void uploadWithDoctypeIsInvalid() {
-        assertThat(errorOf(() -> send(base))).isEqualTo(ErrorCode.MUSICXML_INVALID);
+        assertThat(errorOf(() -> send(base))).isEqualTo(ScoreErrorCode.MUSICXML_INVALID);
     }
 
     // ---------------------------------------------------------------- nhận (SUG-5..9, 12, 13)
@@ -588,7 +592,7 @@ class SuggestionServiceImplTest {
         assertThat(detail.isStale()).isTrue();
         assertThat(detail.getStaleReason()).isEqualTo(SuggestionServiceImpl.STALE_STRUCTURE);
         assertThat(errorOf(() -> service.accept(SUGGESTION_ID, "\"v3\"", null)))
-                .isEqualTo(ErrorCode.SUGGESTION_OUTDATED);
+                .isEqualTo(CollabErrorCode.SUGGESTION_OUTDATED);
         verify(scoreEditService, never()).saveWithMeta(any(), any(), any(), any());
 
         service.reject(SUGGESTION_ID, null);
@@ -600,7 +604,8 @@ class SuggestionServiceImplTest {
     void reviewerCannotAcceptOwnSuggestion() {
         ScoreSuggestion suggestion = openSuggestion(author, edited(upload(base), EDIT_MEASURE_2));
 
-        assertThat(errorOf(() -> service.accept(SUGGESTION_ID, "\"v3\"", null))).isEqualTo(ErrorCode.UNAUTHORIZED);
+        assertThat(errorOf(() -> service.accept(SUGGESTION_ID, "\"v3\"", null)))
+                .isEqualTo(AccountErrorCode.UNAUTHORIZED);
         assertThat(suggestion.getStatus()).isEqualTo(SuggestionStatus.OPEN);
     }
 
@@ -614,7 +619,7 @@ class SuggestionServiceImplTest {
         AppException error =
                 catchThrowableOfType(AppException.class, () -> service.accept(SUGGESTION_ID, "\"v2\"", null));
 
-        assertThat(error.getErrorCode()).isEqualTo(ErrorCode.SCORE_VERSION_CONFLICT);
+        assertThat(error.getErrorCode()).isEqualTo(ScoreErrorCode.SCORE_VERSION_CONFLICT);
         assertThat(error.getPayload()).isEqualTo(new ScoreVersionConflict(3));
         assertThat(suggestion.getStatus()).isEqualTo(SuggestionStatus.OPEN);
         verify(scoreEditService, never()).saveWithMeta(any(), any(), any(), any());
@@ -634,7 +639,7 @@ class SuggestionServiceImplTest {
         assertThat(detail.isStale()).isTrue();
         assertThat(detail.getStaleReason()).isEqualTo(SuggestionServiceImpl.STALE_CONTEXT);
         assertThat(errorOf(() -> service.accept(SUGGESTION_ID, "\"v3\"", null)))
-                .isEqualTo(ErrorCode.SUGGESTION_OUTDATED);
+                .isEqualTo(CollabErrorCode.SUGGESTION_OUTDATED);
     }
 
     /** SUG-13 */
@@ -676,7 +681,7 @@ class SuggestionServiceImplTest {
                         SuggestionDecisionRequest.builder()
                                 .changeIds(List.of("c0"))
                                 .build())))
-                .isEqualTo(ErrorCode.SUGGESTION_CHANGES_INVALID);
+                .isEqualTo(CollabErrorCode.SUGGESTION_CHANGES_INVALID);
 
         service.accept(SUGGESTION_ID, "\"v3\"", null);
 
@@ -694,14 +699,14 @@ class SuggestionServiceImplTest {
                         SUGGESTION_ID,
                         "\"v3\"",
                         SuggestionDecisionRequest.builder().changeIds(List.of()).build())))
-                .isEqualTo(ErrorCode.SUGGESTION_CHANGES_INVALID);
+                .isEqualTo(CollabErrorCode.SUGGESTION_CHANGES_INVALID);
         assertThat(errorOf(() -> service.accept(
                         SUGGESTION_ID,
                         "\"v3\"",
                         SuggestionDecisionRequest.builder()
                                 .changeIds(List.of("other"))
                                 .build())))
-                .isEqualTo(ErrorCode.SUGGESTION_CHANGES_INVALID);
+                .isEqualTo(CollabErrorCode.SUGGESTION_CHANGES_INVALID);
     }
 
     @Test
@@ -712,7 +717,7 @@ class SuggestionServiceImplTest {
         as(EDITOR);
 
         assertThat(errorOf(() -> service.accept(SUGGESTION_ID, "\"v3\"", null)))
-                .isEqualTo(ErrorCode.SUGGESTION_NOT_OPEN);
+                .isEqualTo(CollabErrorCode.SUGGESTION_NOT_OPEN);
     }
 
     // ---------------------------------------------------------------- từ chối, rút lại, xem
@@ -750,7 +755,7 @@ class SuggestionServiceImplTest {
                     service.withdraw(SUGGESTION_ID);
                     return null;
                 }))
-                .isEqualTo(ErrorCode.UNAUTHORIZED);
+                .isEqualTo(AccountErrorCode.UNAUTHORIZED);
 
         as(AUTHOR);
         service.withdraw(SUGGESTION_ID);
@@ -764,8 +769,8 @@ class SuggestionServiceImplTest {
         openSuggestion(editor, edited(upload(base), EDIT_MEASURE_2));
         as(AUTHOR);
 
-        assertThat(errorOf(() -> service.get(SUGGESTION_ID))).isEqualTo(ErrorCode.SUGGESTION_NOT_EXISTED);
-        assertThat(errorOf(() -> service.content(SUGGESTION_ID))).isEqualTo(ErrorCode.SUGGESTION_NOT_EXISTED);
+        assertThat(errorOf(() -> service.get(SUGGESTION_ID))).isEqualTo(CollabErrorCode.SUGGESTION_NOT_EXISTED);
+        assertThat(errorOf(() -> service.content(SUGGESTION_ID))).isEqualTo(CollabErrorCode.SUGGESTION_NOT_EXISTED);
     }
 
     @Test
@@ -773,7 +778,7 @@ class SuggestionServiceImplTest {
         ScoreSuggestion suggestion = openSuggestion(author, edited(upload(base), EDIT_MEASURE_2));
         suggestion.setStoragePath(null);
 
-        assertThat(errorOf(() -> service.content(SUGGESTION_ID))).isEqualTo(ErrorCode.FILE_NOT_EXISTED);
+        assertThat(errorOf(() -> service.content(SUGGESTION_ID))).isEqualTo(ScoreErrorCode.FILE_NOT_EXISTED);
     }
 
     // ---------------------------------------------------------------- dọn file

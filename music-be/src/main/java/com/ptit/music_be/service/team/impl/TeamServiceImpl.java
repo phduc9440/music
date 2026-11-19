@@ -50,7 +50,8 @@ import com.ptit.music_be.entity.ShowItem;
 import com.ptit.music_be.entity.Team;
 import com.ptit.music_be.entity.TeamMember;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
+import com.ptit.music_be.exception.code.TeamErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.repository.team.ShowItemRepository;
@@ -161,7 +162,7 @@ public class TeamServiceImpl implements TeamService {
     public TeamResponse create(TeamRequest request) {
         Member me = access.currentMember();
         if (!Boolean.TRUE.equals(entitlementService.limitsOf(me.getId()).team())) {
-            throw new AppException(ErrorCode.TEAM_PLAN_REQUIRED);
+            throw new AppException(TeamErrorCode.TEAM_PLAN_REQUIRED);
         }
         Team team = Team.builder().createdBy(me).build();
         apply(team, request);
@@ -236,13 +237,13 @@ public class TeamServiceImpl implements TeamService {
         TeamMember tm = teamMemberRepository
                 .findAnyStateByTeamIdAndMemberId(teamId == null ? "" : teamId, me.getId())
                 .filter(m -> m.getTeam().isDeleted())
-                .orElseThrow(() -> new AppException(ErrorCode.TEAM_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(TeamErrorCode.TEAM_NOT_EXISTED));
         if (tm.getRole() != TeamRole.OWNER) {
-            throw new AppException(ErrorCode.TEAM_OWNER_ONLY);
+            throw new AppException(TeamErrorCode.TEAM_OWNER_ONLY);
         }
         Team team = tm.getTeam();
         if (team.isDeletedByAdmin()) {
-            throw new AppException(ErrorCode.TEAM_RESTORE_BY_ADMIN_ONLY);
+            throw new AppException(TeamErrorCode.TEAM_RESTORE_BY_ADMIN_ONLY);
         }
         restoreTeam(team, me, false);
         return toResponse(team, tm.getRole());
@@ -254,7 +255,7 @@ public class TeamServiceImpl implements TeamService {
      */
     public void restoreTeam(Team team, Member actor, boolean byAdmin) {
         if (!Team.restorable(team.getDeletedAt(), LocalDateTime.now())) {
-            throw new AppException(ErrorCode.TEAM_RESTORE_EXPIRED);
+            throw new AppException(TeamErrorCode.TEAM_RESTORE_EXPIRED);
         }
         team.restore();
         teamRepository.save(team);
@@ -310,29 +311,29 @@ public class TeamServiceImpl implements TeamService {
         TeamMember mine = access.membership(teamId, me);
         RolePermissions perms = access.permissions(mine);
         if (!perms.canInvite()) {
-            throw new AppException(ErrorCode.TEAM_FORBIDDEN);
+            throw new AppException(TeamErrorCode.TEAM_FORBIDDEN);
         }
         if (role == null) {
-            throw new AppException(ErrorCode.TEAM_ROLE_INVALID);
+            throw new AppException(TeamErrorCode.TEAM_ROLE_INVALID);
         }
         TeamMember target = teamMemberRepository
                 .findByTeamIdAndMemberId(teamId, memberId == null ? "" : memberId)
-                .orElseThrow(() -> new AppException(ErrorCode.TEAM_MEMBER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(TeamErrorCode.TEAM_MEMBER_NOT_EXISTED));
         // Không tự đổi vai trò mình (chuyển quyền chủ: chủ cấp OWNER cho người khác, người đó hạ vai trò người cũ)
         if (target.getId().equals(mine.getId())) {
-            throw new AppException(ErrorCode.TEAM_ROLE_INVALID);
+            throw new AppException(TeamErrorCode.TEAM_ROLE_INVALID);
         }
         // Phải được đụng tới cả vai trò cũ lẫn vai trò mới (mặc định quản lý chỉ đổi qua lại người phối / người xem;
         // cấp hay thu hồi chủ nhóm luôn là việc của chủ nhóm)
         if (!perms.canAssign(target.getRole()) || !perms.canAssign(role)) {
-            throw new AppException(ErrorCode.TEAM_ROLE_SCOPE);
+            throw new AppException(TeamErrorCode.TEAM_ROLE_SCOPE);
         }
         if (target.getRole() == role) {
             return toMemberResponse(target);
         }
         if (target.getRole() == TeamRole.OWNER
                 && teamMemberRepository.countByTeamIdAndRole(teamId, TeamRole.OWNER) <= 1) {
-            throw new AppException(ErrorCode.TEAM_LAST_OWNER);
+            throw new AppException(TeamErrorCode.TEAM_LAST_OWNER);
         }
         TeamRole old = target.getRole();
         target.setRole(role);
@@ -371,21 +372,21 @@ public class TeamServiceImpl implements TeamService {
         TeamMember mine = access.membership(teamId, me);
         TeamMember target = teamMemberRepository
                 .findByTeamIdAndMemberId(teamId, memberId == null ? "" : memberId)
-                .orElseThrow(() -> new AppException(ErrorCode.TEAM_MEMBER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(TeamErrorCode.TEAM_MEMBER_NOT_EXISTED));
         boolean self = target.getId().equals(mine.getId());
         if (!self) {
             RolePermissions perms = access.permissions(mine);
             if (!perms.canInvite()) {
-                throw new AppException(ErrorCode.TEAM_FORBIDDEN);
+                throw new AppException(TeamErrorCode.TEAM_FORBIDDEN);
             }
             // Mặc định quản lý chỉ xóa người phối, người xem; chủ nhóm chỉ chủ nhóm xóa được
             if (!perms.canAssign(target.getRole())) {
-                throw new AppException(ErrorCode.TEAM_ROLE_SCOPE);
+                throw new AppException(TeamErrorCode.TEAM_ROLE_SCOPE);
             }
         }
         if (target.getRole() == TeamRole.OWNER
                 && teamMemberRepository.countByTeamIdAndRole(teamId, TeamRole.OWNER) <= 1) {
-            throw new AppException(ErrorCode.TEAM_LAST_OWNER);
+            throw new AppException(TeamErrorCode.TEAM_LAST_OWNER);
         }
         String targetId = target.getMember().getId();
         showItemRepository.clearArranger(teamId, targetId);
@@ -415,7 +416,7 @@ public class TeamServiceImpl implements TeamService {
     private void lockTeam(String teamId) {
         teamRepository
                 .findByIdForUpdate(teamId == null ? "" : teamId)
-                .orElseThrow(() -> new AppException(ErrorCode.TEAM_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(TeamErrorCode.TEAM_NOT_EXISTED));
     }
 
     // ------------------------------------------------------------------------------------------------ bảng quyền
@@ -436,7 +437,7 @@ public class TeamServiceImpl implements TeamService {
                 request == null || request.getRoles() == null ? Map.of() : request.getRoles();
         // Chủ nhóm luôn đủ quyền, không chỉnh được
         if (roles.keySet().stream().anyMatch(r -> r == null || r == TeamRole.OWNER)) {
-            throw new AppException(ErrorCode.TEAM_ROLE_INVALID);
+            throw new AppException(TeamErrorCode.TEAM_ROLE_INVALID);
         }
         Map<TeamRole, Set<TeamPermission>> before = permissionStore.matrix(teamId);
         for (TeamRole role : TeamPermissionStore.CONFIGURABLE) {
@@ -491,7 +492,7 @@ public class TeamServiceImpl implements TeamService {
     private RolePermissions requireInviter(String teamId, Member me) {
         RolePermissions perms = access.permissions(access.membership(teamId, me));
         if (!perms.canInvite()) {
-            throw new AppException(ErrorCode.TEAM_FORBIDDEN);
+            throw new AppException(TeamErrorCode.TEAM_FORBIDDEN);
         }
         return perms;
     }
@@ -514,26 +515,26 @@ public class TeamServiceImpl implements TeamService {
         RolePermissions perms = requireInviter(teamId, me);
         Team team = teamRepository
                 .findByIdForUpdate(teamId)
-                .orElseThrow(() -> new AppException(ErrorCode.TEAM_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(TeamErrorCode.TEAM_NOT_EXISTED));
         TeamRole role = request == null ? null : request.getRole();
         // Không mời thẳng làm OWNER: vào team rồi chủ team mới cấp
         if (role == null || role == TeamRole.OWNER) {
-            throw new AppException(ErrorCode.TEAM_ROLE_INVALID);
+            throw new AppException(TeamErrorCode.TEAM_ROLE_INVALID);
         }
         // Mời người phối / người xem cần MANAGE_MEMBERS, mời làm quản lý cần MANAGE_MANAGERS
         if (!perms.canAssign(role)) {
-            throw new AppException(ErrorCode.TEAM_ROLE_SCOPE);
+            throw new AppException(TeamErrorCode.TEAM_ROLE_SCOPE);
         }
         LocalDateTime now = LocalDateTime.now();
         PlanLimits limits = entitlementService.limitsOf(team.getCreatedBy().getId());
         if (!Boolean.TRUE.equals(limits.team())) {
-            throw new AppException(ErrorCode.TEAM_PLAN_REQUIRED);
+            throw new AppException(TeamErrorCode.TEAM_PLAN_REQUIRED);
         }
         Integer limit = limits.teamMembers();
         if (limit != null
                 && teamMemberRepository.countByTeamId(teamId) + teamMemberRepository.countUsableInvitations(teamId, now)
                         >= limit) {
-            throw new AppException(ErrorCode.TEAM_MEMBER_LIMIT);
+            throw new AppException(TeamErrorCode.TEAM_MEMBER_LIMIT);
         }
 
         String email = blankToNull(request.getEmail());
@@ -541,16 +542,16 @@ public class TeamServiceImpl implements TeamService {
         if (email != null) {
             email = email.toLowerCase(Locale.ROOT);
             if (email.length() > 255 || !EMAIL.matcher(email).matches()) {
-                throw new AppException(ErrorCode.TEAM_EMAIL_INVALID);
+                throw new AppException(TeamErrorCode.TEAM_EMAIL_INVALID);
             }
             invitee = memberRepository.findByEmail(email).orElse(null);
             if (invitee != null && teamMemberRepository.existsByTeamIdAndMemberId(teamId, invitee.getId())) {
-                throw new AppException(ErrorCode.TEAM_ALREADY_MEMBER);
+                throw new AppException(TeamErrorCode.TEAM_ALREADY_MEMBER);
             }
             if (!teamMemberRepository
                     .findUsableInvitationsByEmail(teamId, email, now)
                     .isEmpty()) {
-                throw new AppException(ErrorCode.TEAM_INVITATION_DUPLICATED);
+                throw new AppException(TeamErrorCode.TEAM_INVITATION_DUPLICATED);
             }
         }
 
@@ -589,10 +590,10 @@ public class TeamServiceImpl implements TeamService {
         TeamMember invitation = teamMemberRepository
                 .findInvitationById(invitationId == null ? "" : invitationId)
                 .filter(i -> i.getTeam().getId().equals(teamId))
-                .orElseThrow(() -> new AppException(ErrorCode.TEAM_INVITATION_INVALID));
+                .orElseThrow(() -> new AppException(TeamErrorCode.TEAM_INVITATION_INVALID));
         // Thu hồi theo cùng luật với mời
         if (!perms.canAssign(invitation.getRole())) {
-            throw new AppException(ErrorCode.TEAM_ROLE_SCOPE);
+            throw new AppException(TeamErrorCode.TEAM_ROLE_SCOPE);
         }
         if (invitation.getStatus() == TeamInvitationStatus.PENDING) {
             invitation.setStatus(TeamInvitationStatus.REVOKED);
@@ -606,7 +607,7 @@ public class TeamServiceImpl implements TeamService {
         Member me = access.currentMember();
         TeamMember i = teamMemberRepository
                 .findInvitationByTokenHash(sha256(token == null ? "" : token))
-                .orElseThrow(() -> new AppException(ErrorCode.TEAM_INVITATION_INVALID));
+                .orElseThrow(() -> new AppException(TeamErrorCode.TEAM_INVITATION_INVALID));
         LocalDateTime now = LocalDateTime.now();
         String state =
                 switch (i.getStatus()) {
@@ -634,7 +635,7 @@ public class TeamServiceImpl implements TeamService {
     public TeamResponse accept(String token) {
         TeamMember invitation = teamMemberRepository
                 .findInvitationByTokenHashForUpdate(sha256(token == null ? "" : token))
-                .orElseThrow(() -> new AppException(ErrorCode.TEAM_INVITATION_INVALID));
+                .orElseThrow(() -> new AppException(TeamErrorCode.TEAM_INVITATION_INVALID));
         return join(invitation, access.currentMember());
     }
 
@@ -656,7 +657,7 @@ public class TeamServiceImpl implements TeamService {
         TeamMember invitation = myInvitation(invitationId, me);
         TeamMember locked = teamMemberRepository
                 .findInvitationByTokenHashForUpdate(invitation.getTokenHash())
-                .orElseThrow(() -> new AppException(ErrorCode.TEAM_INVITATION_INVALID));
+                .orElseThrow(() -> new AppException(TeamErrorCode.TEAM_INVITATION_INVALID));
         return join(locked, me);
     }
 
@@ -673,32 +674,32 @@ public class TeamServiceImpl implements TeamService {
                 .findInvitationById(invitationId == null ? "" : invitationId)
                 .filter(i -> i.getEmail() != null && i.getEmail().equalsIgnoreCase(me.getEmail()))
                 .filter(i -> i.isUsableInvitation(LocalDateTime.now()))
-                .orElseThrow(() -> new AppException(ErrorCode.TEAM_INVITATION_INVALID));
+                .orElseThrow(() -> new AppException(TeamErrorCode.TEAM_INVITATION_INVALID));
     }
 
     /** Dùng lời mời (đã khóa dòng): kiểm tra còn hạn, đúng email, còn chỗ theo gói, rồi thêm thành viên. */
     private TeamResponse join(TeamMember invitation, Member me) {
         LocalDateTime now = LocalDateTime.now();
         if (!invitation.isUsableInvitation(now)) {
-            throw new AppException(ErrorCode.TEAM_INVITATION_INVALID);
+            throw new AppException(TeamErrorCode.TEAM_INVITATION_INVALID);
         }
         if (invitation.getEmail() != null && !invitation.getEmail().equalsIgnoreCase(me.getEmail())) {
-            throw new AppException(ErrorCode.TEAM_INVITATION_EMAIL_MISMATCH);
+            throw new AppException(TeamErrorCode.TEAM_INVITATION_EMAIL_MISMATCH);
         }
         // Khóa team để hai người chấp nhận cùng lúc không vượt hạn mức thành viên; team đã xóa thì lời mời hết giá trị
         Team team = teamRepository
                 .findByIdForUpdate(invitation.getTeam().getId())
                 .filter(t -> !t.isDeleted())
-                .orElseThrow(() -> new AppException(ErrorCode.TEAM_INVITATION_INVALID));
+                .orElseThrow(() -> new AppException(TeamErrorCode.TEAM_INVITATION_INVALID));
         if (teamMemberRepository.existsByTeamIdAndMemberId(team.getId(), me.getId())) {
-            throw new AppException(ErrorCode.TEAM_ALREADY_MEMBER);
+            throw new AppException(TeamErrorCode.TEAM_ALREADY_MEMBER);
         }
         PlanLimits limits = entitlementService.limitsOf(team.getCreatedBy().getId());
         if (!Boolean.TRUE.equals(limits.team())) {
-            throw new AppException(ErrorCode.TEAM_PLAN_REQUIRED);
+            throw new AppException(TeamErrorCode.TEAM_PLAN_REQUIRED);
         }
         if (limits.teamMembers() != null && teamMemberRepository.countByTeamId(team.getId()) >= limits.teamMembers()) {
-            throw new AppException(ErrorCode.TEAM_MEMBER_LIMIT);
+            throw new AppException(TeamErrorCode.TEAM_MEMBER_LIMIT);
         }
         teamMemberRepository.save(TeamMember.builder()
                 .kind(TeamMemberKind.MEMBER)
@@ -761,12 +762,12 @@ public class TeamServiceImpl implements TeamService {
         access.require(teamId, me, TeamPermission.ADD_SCORES);
         Score score = scoreRepository
                 .findById(scoreId == null ? "" : scoreId)
-                .orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
         if (!isOwner(score, me)) {
-            throw new AppException(ErrorCode.TEAM_SCORE_NOT_OWNER);
+            throw new AppException(TeamErrorCode.TEAM_SCORE_NOT_OWNER);
         }
         if (Boolean.TRUE.equals(score.getIsOfficial())) {
-            throw new AppException(ErrorCode.TEAM_SCORE_OFFICIAL);
+            throw new AppException(TeamErrorCode.TEAM_SCORE_OFFICIAL);
         }
         if (teamId.equals(score.getTeamId())) {
             return toScoreResponse(score, true);
@@ -777,7 +778,7 @@ public class TeamServiceImpl implements TeamService {
                         .findById(score.getTeamId())
                         .filter(t -> !t.isDeleted())
                         .isPresent()) {
-            throw new AppException(ErrorCode.TEAM_SCORE_IN_OTHER_TEAM);
+            throw new AppException(TeamErrorCode.TEAM_SCORE_IN_OTHER_TEAM);
         }
         score.setTeamId(teamId);
         scoreRepository.save(score);
@@ -793,9 +794,9 @@ public class TeamServiceImpl implements TeamService {
         Score score = scoreRepository
                 .findById(scoreId == null ? "" : scoreId)
                 .filter(s -> teamId.equals(s.getTeamId()))
-                .orElseThrow(() -> new AppException(ErrorCode.TEAM_SCORE_NOT_IN_TEAM));
+                .orElseThrow(() -> new AppException(TeamErrorCode.TEAM_SCORE_NOT_IN_TEAM));
         if (!isOwner(score, me) && !access.permissions(mine).has(TeamPermission.REMOVE_SCORES)) {
-            throw new AppException(ErrorCode.TEAM_FORBIDDEN);
+            throw new AppException(TeamErrorCode.TEAM_FORBIDDEN);
         }
         showItemRepository.deleteByTeamAndScore(teamId, score.getId());
         score.setTeamId(null);
@@ -873,7 +874,7 @@ public class TeamServiceImpl implements TeamService {
         if (name == null
                 || name.length() > MAX_NAME
                 || (description != null && description.length() > MAX_DESCRIPTION)) {
-            throw new AppException(ErrorCode.TEAM_NAME_INVALID);
+            throw new AppException(TeamErrorCode.TEAM_NAME_INVALID);
         }
         team.setName(name);
         team.setDescription(description);

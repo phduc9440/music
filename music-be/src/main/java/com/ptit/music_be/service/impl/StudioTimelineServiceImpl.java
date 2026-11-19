@@ -16,7 +16,7 @@ import com.ptit.music_be.dto.response.StudioTimelineResponse;
 import com.ptit.music_be.dto.response.score.ScoreContent;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.service.StudioTimelineService;
 import com.ptit.music_be.service.score.ScoreContentService;
@@ -41,7 +41,7 @@ public class StudioTimelineServiceImpl implements StudioTimelineService {
     public StudioTimelineResponse getTimeline(String scoreId) {
         ScoreContent content = scoreContentService.getMusicXml(scoreId);
         Score score =
-                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
         String contentHash = sha256(content.bytes());
 
         List<String> cached = jdbcTemplate.query(

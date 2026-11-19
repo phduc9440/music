@@ -28,7 +28,7 @@ import com.ptit.music_be.dto.response.admin.AdminTeamSummaryResponse;
 import com.ptit.music_be.dto.response.team.TeamResponse;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.TeamErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.service.admin.AdminTeamService;
@@ -161,7 +161,7 @@ class AdminTeamServiceImplTest {
         // động
         as(MEMBER, "ROLE_USER");
         assertEquals(
-                ErrorCode.TEAM_NOT_EXISTED,
+                TeamErrorCode.TEAM_NOT_EXISTED,
                 assertThrows(AppException.class, () -> teamService.get(team.getId()))
                         .getErrorCode());
         assertTrue(teamService.myTeams().stream().noneMatch(t -> t.getId().equals(team.getId())));
@@ -183,7 +183,7 @@ class AdminTeamServiceImplTest {
 
         // Chủ team không tự khôi phục được team do quản trị viên xóa
         assertEquals(
-                ErrorCode.TEAM_RESTORE_BY_ADMIN_ONLY,
+                TeamErrorCode.TEAM_RESTORE_BY_ADMIN_ONLY,
                 assertThrows(AppException.class, () -> teamService.restore(team.getId()))
                         .getErrorCode());
 
@@ -207,7 +207,7 @@ class AdminTeamServiceImplTest {
                 .executeUpdate();
         em.clear();
         assertEquals(
-                ErrorCode.TEAM_RESTORE_EXPIRED,
+                TeamErrorCode.TEAM_RESTORE_EXPIRED,
                 assertThrows(AppException.class, () -> adminTeamService.restore(team.getId()))
                         .getErrorCode());
         // Quá hạn thì không xóa cứng: dòng vẫn còn, chỉ không khôi phục được

@@ -12,7 +12,7 @@ import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.event.RewardEarnedEvent;
 import com.ptit.music_be.event.RewardReason;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.service.referral.ReferralService;
 import com.ptit.music_be.utils.SecurityUtils;
@@ -41,7 +41,7 @@ public class ReferralServiceImpl implements ReferralService {
     public ReferralResponse mine() {
         Member me = memberRepository
                 .findByEmailForUpdate(SecurityUtils.getCurrentEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
         if (me.getReferralCode() == null) {
             me.setReferralCode(newCode());
             memberRepository.save(me);

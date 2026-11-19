@@ -21,7 +21,8 @@ import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreFile;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.ScoreFileRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
@@ -67,7 +68,7 @@ public class ScoreCreateServiceImpl implements ScoreCreateService {
         // Khóa dòng thành viên để hai yêu cầu cùng lúc không cùng lọt qua hạn mức dung lượng
         Member member = memberRepository
                 .findByEmailForUpdate(SecurityUtils.getCurrentEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
 
         byte[] xml = BlankScoreBuilder.build(clean);
         MusicXmlSummary summary = MusicXmlInspector.inspect(xml); // tự kiểm: lỗi ở đây là lỗi của builder
@@ -109,16 +110,16 @@ public class ScoreCreateServiceImpl implements ScoreCreateService {
     /** Bản sao đã bỏ khoảng trắng hai đầu; sai tiêu đề/tác giả/tùy chọn thì ném lỗi tương ứng. */
     private static BlankScoreRequest validated(BlankScoreRequest request) {
         if (request == null) {
-            throw new AppException(ErrorCode.BLANK_SCORE_OPTION_INVALID);
+            throw new AppException(ScoreErrorCode.BLANK_SCORE_OPTION_INVALID);
         }
         String title = request.getTitle() == null ? "" : request.getTitle().strip();
         if (title.isEmpty() || title.length() > MAX_TITLE) {
-            throw new AppException(ErrorCode.SCORE_TITLE_INVALID);
+            throw new AppException(ScoreErrorCode.SCORE_TITLE_INVALID);
         }
         String composer =
                 request.getComposer() == null ? "" : request.getComposer().strip();
         if (composer.length() > MAX_COMPOSER) {
-            throw new AppException(ErrorCode.SCORE_COMPOSER_INVALID);
+            throw new AppException(ScoreErrorCode.SCORE_COMPOSER_INVALID);
         }
         if (request.getPreset() == null
                 || request.getMode() == null
@@ -127,7 +128,7 @@ public class ScoreCreateServiceImpl implements ScoreCreateService {
                 || !BEAT_TYPES.contains(request.getBeatType())
                 || !within(request.getTempoBpm(), MIN_TEMPO, MAX_TEMPO)
                 || !within(request.getMeasures(), MIN_MEASURES, MAX_MEASURES)) {
-            throw new AppException(ErrorCode.BLANK_SCORE_OPTION_INVALID);
+            throw new AppException(ScoreErrorCode.BLANK_SCORE_OPTION_INVALID);
         }
         return BlankScoreRequest.builder()
                 .title(title)
@@ -150,7 +151,7 @@ public class ScoreCreateServiceImpl implements ScoreCreateService {
         try (ByteArrayInputStream in = new ByteArrayInputStream(xml)) {
             fileStorageService.store(in, storagePath);
         } catch (IOException e) {
-            throw new AppException(ErrorCode.FILE_STORAGE_ERROR);
+            throw new AppException(ScoreErrorCode.FILE_STORAGE_ERROR);
         }
     }
 

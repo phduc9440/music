@@ -31,6 +31,7 @@ import com.ptit.music_be.entity.PlaylistItem;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.LibraryErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.library.PlaylistItemRepository;
 import com.ptit.music_be.repository.library.PlaylistRepository;
@@ -112,7 +113,7 @@ class PlaylistServiceImplTest {
     @Test
     void removeManyRejectsUnknownIdWithoutRemovingAnything() {
         assertThat(errorOf(() -> service.removeScores("pl-1", ids("s0", "nope"))))
-                .isEqualTo(ErrorCode.PLAYLIST_SCORE_NOT_IN_PLAYLIST);
+                .isEqualTo(LibraryErrorCode.PLAYLIST_SCORE_NOT_IN_PLAYLIST);
         verify(playlistItemRepository, never()).delete(any());
         assertThat(stored).hasSize(3);
     }
@@ -120,16 +121,17 @@ class PlaylistServiceImplTest {
     @Test
     void removeManyRejectsEmptyList() {
         assertThat(errorOf(() -> service.removeScores("pl-1", ids())))
-                .isEqualTo(ErrorCode.PLAYLIST_SCORE_NOT_IN_PLAYLIST);
+                .isEqualTo(LibraryErrorCode.PLAYLIST_SCORE_NOT_IN_PLAYLIST);
         assertThat(errorOf(() -> service.removeScores("pl-1", null)))
-                .isEqualTo(ErrorCode.PLAYLIST_SCORE_NOT_IN_PLAYLIST);
+                .isEqualTo(LibraryErrorCode.PLAYLIST_SCORE_NOT_IN_PLAYLIST);
     }
 
     @Test
     void removeManyOnSomeoneElsesPlaylistIsNotFound() {
         playlist.setMember(Member.builder().id("other").build());
 
-        assertThat(errorOf(() -> service.removeScores("pl-1", ids("s0")))).isEqualTo(ErrorCode.PLAYLIST_NOT_EXISTED);
+        assertThat(errorOf(() -> service.removeScores("pl-1", ids("s0"))))
+                .isEqualTo(LibraryErrorCode.PLAYLIST_NOT_EXISTED);
         verify(playlistItemRepository, never()).delete(any());
     }
 }

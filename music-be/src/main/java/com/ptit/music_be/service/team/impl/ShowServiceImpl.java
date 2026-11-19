@@ -34,7 +34,7 @@ import com.ptit.music_be.entity.ShowItem;
 import com.ptit.music_be.entity.Team;
 import com.ptit.music_be.entity.TeamMember;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.TeamErrorCode;
 import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.repository.team.ShowItemRepository;
 import com.ptit.music_be.repository.team.ShowRepository;
@@ -168,11 +168,11 @@ public class ShowServiceImpl implements ShowService {
         Show show = showRepository
                 .findById(showId == null ? "" : showId)
                 .filter(s -> s.getDeletedAt() != null)
-                .orElseThrow(() -> new AppException(ErrorCode.SHOW_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(TeamErrorCode.SHOW_NOT_EXISTED));
         // membership đã lọc team đã xóa: team bị xóa thì phải khôi phục team trước
         access.require(show.getTeam().getId(), me, TeamPermission.MANAGE_SHOWS);
         if (!Team.restorable(show.getDeletedAt(), LocalDateTime.now())) {
-            throw new AppException(ErrorCode.SHOW_RESTORE_EXPIRED);
+            throw new AppException(TeamErrorCode.SHOW_RESTORE_EXPIRED);
         }
         show.setDeletedAt(null);
         show.setDeletedBy(null);
@@ -201,9 +201,9 @@ public class ShowServiceImpl implements ShowService {
         Score score = scoreRepository
                 .findById(scoreId == null ? "" : scoreId)
                 .filter(s -> teamId.equals(s.getTeamId()))
-                .orElseThrow(() -> new AppException(ErrorCode.TEAM_SCORE_NOT_IN_TEAM));
+                .orElseThrow(() -> new AppException(TeamErrorCode.TEAM_SCORE_NOT_IN_TEAM));
         if (itemRepository.existsByShowIdAndScoreId(showId, score.getId())) {
-            throw new AppException(ErrorCode.SHOW_ITEM_DUPLICATED);
+            throw new AppException(TeamErrorCode.SHOW_ITEM_DUPLICATED);
         }
         List<ShowItem> items = itemRepository.findByShowOrdered(showId);
         ShowItem item = ShowItem.builder()
@@ -243,7 +243,7 @@ public class ShowServiceImpl implements ShowService {
         if (item.getStatus() == ShowItemStatus.APPROVED
                 && !sameMember(oldReviewer, item.getReviewer())
                 && !(sameMember(oldReviewer, me) || access.permissions(tm).has(TeamPermission.APPROVE_ANY))) {
-            throw new AppException(ErrorCode.SHOW_ITEM_APPROVED_LOCKED);
+            throw new AppException(TeamErrorCode.SHOW_ITEM_APPROVED_LOCKED);
         }
         itemRepository.save(item);
         String title = scoreTitle(item.getScoreId());
@@ -305,7 +305,7 @@ public class ShowServiceImpl implements ShowService {
         List<String> ids = request == null || request.getItemIds() == null ? List.of() : request.getItemIds();
         Map<String, ShowItem> byId = items.stream().collect(Collectors.toMap(ShowItem::getId, Function.identity()));
         if (ids.size() != items.size() || !byId.keySet().equals(new HashSet<>(ids))) {
-            throw new AppException(ErrorCode.SHOW_ORDER_INVALID);
+            throw new AppException(TeamErrorCode.SHOW_ORDER_INVALID);
         }
         for (int i = 0; i < ids.size(); i++) {
             byId.get(ids.get(i)).setPosition(i + 1);
@@ -330,20 +330,20 @@ public class ShowServiceImpl implements ShowService {
             // Bài đã duyệt mà không phải người duyệt: báo rõ lý do thay vì "không chuyển được"
             throw new AppException(
                     item.getStatus() == ShowItemStatus.APPROVED
-                            ? ErrorCode.SHOW_ITEM_APPROVED_LOCKED
-                            : ErrorCode.SHOW_ITEM_TRANSITION_INVALID);
+                            ? TeamErrorCode.SHOW_ITEM_APPROVED_LOCKED
+                            : TeamErrorCode.SHOW_ITEM_TRANSITION_INVALID);
         }
         String note = request.getNote() == null || request.getNote().isBlank()
                 ? null
                 : request.getNote().trim();
         if (note != null && note.length() > MAX_ITEM_NOTE) {
-            throw new AppException(ErrorCode.SHOW_ITEM_NOTE_REQUIRED);
+            throw new AppException(TeamErrorCode.SHOW_ITEM_NOTE_REQUIRED);
         }
         if (ShowItemTransitions.isReturnByReviewer(item, perms, me.getId(), to) && note == null) {
-            throw new AppException(ErrorCode.SHOW_ITEM_NOTE_REQUIRED);
+            throw new AppException(TeamErrorCode.SHOW_ITEM_NOTE_REQUIRED);
         }
         if (to == ShowItemStatus.IN_REVIEW && item.getReviewer() == null) {
-            throw new AppException(ErrorCode.SHOW_ITEM_NO_REVIEWER);
+            throw new AppException(TeamErrorCode.SHOW_ITEM_NO_REVIEWER);
         }
 
         ShowItemStatus from = item.getStatus();
@@ -463,14 +463,14 @@ public class ShowServiceImpl implements ShowService {
     private Show findShow(String showId) {
         return showRepository
                 .findActiveById(showId == null ? "" : showId)
-                .orElseThrow(() -> new AppException(ErrorCode.SHOW_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(TeamErrorCode.SHOW_NOT_EXISTED));
     }
 
     private ShowItem findItem(Show show, String itemId) {
         return itemRepository
                 .findById(itemId == null ? "" : itemId)
                 .filter(i -> i.getShow().getId().equals(show.getId()))
-                .orElseThrow(() -> new AppException(ErrorCode.SHOW_ITEM_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(TeamErrorCode.SHOW_ITEM_NOT_EXISTED));
     }
 
     private void apply(Show show, ShowRequest request) {
@@ -481,7 +481,7 @@ public class ShowServiceImpl implements ShowService {
                 || name.length() > MAX_NAME
                 || (venue != null && venue.length() > MAX_VENUE)
                 || (notes != null && notes.length() > MAX_NOTES)) {
-            throw new AppException(ErrorCode.SHOW_INVALID);
+            throw new AppException(TeamErrorCode.SHOW_INVALID);
         }
         show.setName(name);
         show.setVenue(venue);
@@ -499,7 +499,7 @@ public class ShowServiceImpl implements ShowService {
         }
         String notes = blankToNull(request.getNotes());
         if (notes != null && notes.length() > MAX_ITEM_NOTE) {
-            throw new AppException(ErrorCode.SHOW_INVALID);
+            throw new AppException(TeamErrorCode.SHOW_INVALID);
         }
         item.setArranger(assignee(request.getArrangerId(), teamId));
         item.setReviewer(assignee(request.getReviewerId(), teamId));
@@ -513,9 +513,9 @@ public class ShowServiceImpl implements ShowService {
         }
         TeamMember tm = teamMemberRepository
                 .findByTeamIdAndMemberId(teamId, memberId)
-                .orElseThrow(() -> new AppException(ErrorCode.SHOW_ITEM_ASSIGNEE_INVALID));
+                .orElseThrow(() -> new AppException(TeamErrorCode.SHOW_ITEM_ASSIGNEE_INVALID));
         if (tm.getRole() == TeamRole.VIEWER) {
-            throw new AppException(ErrorCode.SHOW_ITEM_ASSIGNEE_INVALID);
+            throw new AppException(TeamErrorCode.SHOW_ITEM_ASSIGNEE_INVALID);
         }
         return tm.getMember();
     }

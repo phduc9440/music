@@ -23,7 +23,7 @@ import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.MemberRole;
 import com.ptit.music_be.entity.Role;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
 import com.ptit.music_be.repository.auth.MemberRoleRepository;
 import com.ptit.music_be.repository.auth.RoleRepository;
 import com.ptit.music_be.service.admin.RoleService;
@@ -68,7 +68,7 @@ public class RoleServiceImpl implements RoleService {
     public RoleResponse create(RoleRequest request) {
         String label = cleanLabel(request);
         if (roleRepository.existsByLabelIgnoreCase(label)) {
-            throw new AppException(ErrorCode.ROLE_LABEL_DUPLICATED);
+            throw new AppException(AccountErrorCode.ROLE_LABEL_DUPLICATED);
         }
         String code = uniqueCode(label);
         Role role = Role.builder()
@@ -87,12 +87,12 @@ public class RoleServiceImpl implements RoleService {
     public RoleResponse update(String id, RoleRequest request) {
         Role role = find(id);
         if (Role.USER.equals(role.getName()) || Role.SUPER_ADMIN.equals(role.getName())) {
-            throw new AppException(ErrorCode.ROLE_BUILT_IN);
+            throw new AppException(AccountErrorCode.ROLE_BUILT_IN);
         }
         if (!role.isBuiltIn()) {
             String label = cleanLabel(request);
             if (!label.equalsIgnoreCase(role.getLabel()) && roleRepository.existsByLabelIgnoreCase(label)) {
-                throw new AppException(ErrorCode.ROLE_LABEL_DUPLICATED);
+                throw new AppException(AccountErrorCode.ROLE_LABEL_DUPLICATED);
             }
             role.setLabel(label);
             role.setDescription(cleanDescription(request));
@@ -111,14 +111,14 @@ public class RoleServiceImpl implements RoleService {
     public void delete(String id) {
         Role role = find(id);
         if (role.isBuiltIn()) {
-            throw new AppException(ErrorCode.ROLE_BUILT_IN);
+            throw new AppException(AccountErrorCode.ROLE_BUILT_IN);
         }
         // Gỡ vai trò khỏi người đang giữ: họ mất quyền của vai trò này, luôn còn USER (kể cả dữ liệu cũ thiếu USER)
         List<String> holders = memberRoleRepository.findEmailsByRoleId(role.getId());
         if (!holders.isEmpty()) {
             Role user = roleRepository
                     .findByName(Role.USER)
-                    .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_EXISTED));
+                    .orElseThrow(() -> new AppException(AccountErrorCode.ROLE_NOT_EXISTED));
             List<MemberRole> links = memberRoleRepository.findByRoleId(role.getId());
             for (MemberRole mr : links) {
                 Member m = mr.getMember();
@@ -142,7 +142,7 @@ public class RoleServiceImpl implements RoleService {
     private Role find(String id) {
         return roleRepository
                 .findById(id == null ? "" : id)
-                .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AccountErrorCode.ROLE_NOT_EXISTED));
     }
 
     private long countMembers(String roleId) {
@@ -172,7 +172,7 @@ public class RoleServiceImpl implements RoleService {
                 ? ""
                 : request.getLabel().trim();
         if (label.length() < 2 || label.length() > MAX_LABEL) {
-            throw new AppException(ErrorCode.ROLE_LABEL_INVALID);
+            throw new AppException(AccountErrorCode.ROLE_LABEL_INVALID);
         }
         return label;
     }
@@ -181,7 +181,7 @@ public class RoleServiceImpl implements RoleService {
         String d =
                 request.getDescription() == null ? "" : request.getDescription().trim();
         if (d.length() > MAX_DESCRIPTION) {
-            throw new AppException(ErrorCode.ROLE_LABEL_INVALID);
+            throw new AppException(AccountErrorCode.ROLE_LABEL_INVALID);
         }
         return d.isEmpty() ? null : d;
     }

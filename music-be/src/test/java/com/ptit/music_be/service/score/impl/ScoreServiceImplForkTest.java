@@ -30,7 +30,7 @@ import com.ptit.music_be.dto.response.score.ScoreDetailResponse;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.repository.score.ScoreReviewRepository;
@@ -142,7 +142,7 @@ class ScoreServiceImplForkTest {
         assertThatThrownBy(() -> service.forkScore("src"))
                 .isInstanceOf(AppException.class)
                 .extracting(e -> ((AppException) e).getErrorCode())
-                .isEqualTo(ErrorCode.SCORE_NOT_EXISTED);
+                .isEqualTo(ScoreErrorCode.SCORE_NOT_EXISTED);
     }
 
     @Test
@@ -151,7 +151,7 @@ class ScoreServiceImplForkTest {
 
         assertThatThrownBy(() -> service.forkScore("src"))
                 .extracting(e -> ((AppException) e).getErrorCode())
-                .isEqualTo(ErrorCode.SCORE_FORK_NOT_ALLOWED);
+                .isEqualTo(ScoreErrorCode.SCORE_FORK_NOT_ALLOWED);
         verify(scoreCopyService, never()).copy(any(), any(), any());
     }
 
@@ -161,7 +161,7 @@ class ScoreServiceImplForkTest {
 
         assertThatThrownBy(() -> service.forkScore("src"))
                 .extracting(e -> ((AppException) e).getErrorCode())
-                .isEqualTo(ErrorCode.SCORE_FORK_NOT_ALLOWED);
+                .isEqualTo(ScoreErrorCode.SCORE_FORK_NOT_ALLOWED);
     }
 
     @Test
@@ -170,7 +170,7 @@ class ScoreServiceImplForkTest {
 
         assertThatThrownBy(() -> service.forkScore("src"))
                 .extracting(e -> ((AppException) e).getErrorCode())
-                .isEqualTo(ErrorCode.SCORE_FORK_RATE_LIMITED);
+                .isEqualTo(ScoreErrorCode.SCORE_FORK_RATE_LIMITED);
         verify(scoreCopyService, never()).copy(any(), any(), any());
     }
 
@@ -184,7 +184,7 @@ class ScoreServiceImplForkTest {
 
         assertThatThrownBy(() -> service.updateScore("mine", request))
                 .extracting(e -> ((AppException) e).getErrorCode())
-                .isEqualTo(ErrorCode.SCORE_LICENSE_REQUIRED);
+                .isEqualTo(ScoreErrorCode.SCORE_LICENSE_REQUIRED);
 
         request.setLicense(ScoreLicense.CC_BY);
         service.updateScore("mine", request);
@@ -217,6 +217,6 @@ class ScoreServiceImplForkTest {
 
         assertThatThrownBy(() -> service.updateScore("fork", request))
                 .extracting(e -> ((AppException) e).getErrorCode())
-                .isEqualTo(ErrorCode.SCORE_LICENSE_LOCKED);
+                .isEqualTo(ScoreErrorCode.SCORE_LICENSE_LOCKED);
     }
 }

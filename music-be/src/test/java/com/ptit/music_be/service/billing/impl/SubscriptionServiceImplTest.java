@@ -29,7 +29,8 @@ import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Plan;
 import com.ptit.music_be.entity.Subscription;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.BillingErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.billing.PlanRepository;
 import com.ptit.music_be.repository.billing.PlanSanctionRepository;
@@ -136,9 +137,9 @@ class SubscriptionServiceImplTest {
     @Test
     void grantRejectsBadMonths() {
         AppException e = assertThrows(AppException.class, () -> service.grant("m", "PRO", 0));
-        assertEquals(ErrorCode.SUBSCRIPTION_MONTHS_INVALID, e.getErrorCode());
+        assertEquals(BillingErrorCode.SUBSCRIPTION_MONTHS_INVALID, e.getErrorCode());
         e = assertThrows(AppException.class, () -> service.grant("m", "PRO", 121));
-        assertEquals(ErrorCode.SUBSCRIPTION_MONTHS_INVALID, e.getErrorCode());
+        assertEquals(BillingErrorCode.SUBSCRIPTION_MONTHS_INVALID, e.getErrorCode());
     }
 
     @Test
@@ -256,7 +257,7 @@ class SubscriptionServiceImplTest {
 
         when(memberRepo.roleNamesOf("m")).thenReturn(List.of("ADMIN", "SUPER_ADMIN"));
         AppException e = assertThrows(AppException.class, () -> service.grant("m", "PRO", 1));
-        assertEquals(ErrorCode.PAYMENT_NOT_NEEDED, e.getErrorCode());
+        assertEquals(BillingErrorCode.PAYMENT_NOT_NEEDED, e.getErrorCode());
         verify(subs, never()).save(any());
     }
 
@@ -348,11 +349,11 @@ class SubscriptionServiceImplTest {
         when(plans.findByCode("FREE")).thenReturn(Optional.of(free));
 
         AppException e = assertThrows(AppException.class, () -> service.grantMany(List.of("a"), "FREE", 1));
-        assertEquals(ErrorCode.PLAN_NOT_GRANTABLE, e.getErrorCode());
+        assertEquals(BillingErrorCode.PLAN_NOT_GRANTABLE, e.getErrorCode());
         e = assertThrows(AppException.class, () -> service.grantMany(List.of(), "PRO", 1));
-        assertEquals(ErrorCode.INVALID_REQUEST, e.getErrorCode());
+        assertEquals(AccountErrorCode.INVALID_REQUEST, e.getErrorCode());
         e = assertThrows(AppException.class, () -> service.grantMany(List.of("a"), "PRO", 0));
-        assertEquals(ErrorCode.SUBSCRIPTION_MONTHS_INVALID, e.getErrorCode());
+        assertEquals(BillingErrorCode.SUBSCRIPTION_MONTHS_INVALID, e.getErrorCode());
     }
 
     @Test
@@ -484,9 +485,9 @@ class SubscriptionServiceImplTest {
         assertNotNull(old.getLiftedAt());
 
         AppException e = assertThrows(AppException.class, () -> service.banPlans(List.of("user"), 0, null, null));
-        assertEquals(ErrorCode.PLAN_SANCTION_INVALID, e.getErrorCode());
+        assertEquals(BillingErrorCode.PLAN_SANCTION_INVALID, e.getErrorCode());
         e = assertThrows(AppException.class, () -> service.banPlans(List.of("user"), 1, null, "FREE"));
-        assertEquals(ErrorCode.PLAN_SANCTION_INVALID, e.getErrorCode());
+        assertEquals(BillingErrorCode.PLAN_SANCTION_INVALID, e.getErrorCode());
 
         var active = banOf("user", premium, LocalDateTime.now().plusDays(1));
         when(sanctions.findActiveBans(eq("user"), any())).thenReturn(List.of(active));
@@ -507,7 +508,7 @@ class SubscriptionServiceImplTest {
         when(subs.findCurrent(eq("user"), any())).thenReturn(List.of());
 
         AppException e = assertThrows(AppException.class, () -> service.grant("user", "PREMIUM", 1));
-        assertEquals(ErrorCode.PLAN_BANNED, e.getErrorCode());
+        assertEquals(BillingErrorCode.PLAN_BANNED, e.getErrorCode());
         assertEquals(
                 "SKIPPED",
                 service.grantMany(List.of("user"), "PREMIUM", 1).getFirst().getStatus());

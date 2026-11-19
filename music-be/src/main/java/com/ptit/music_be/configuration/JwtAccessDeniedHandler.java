@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.ptit.music_be.dto.response.common.ApiResponse;
 import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
 
 /** Trả 403 dạng JSON khi user đã đăng nhập nhưng không đủ quyền (ví dụ USER gọi /api/admin/**). */
 public class JwtAccessDeniedHandler implements AccessDeniedHandler {
@@ -24,7 +25,7 @@ public class JwtAccessDeniedHandler implements AccessDeniedHandler {
             HttpServletResponse response,
             @NonNull AccessDeniedException accessDeniedException)
             throws IOException {
-        ErrorCode errorCode = ErrorCode.UNAUTHORIZED;
+        ErrorCode errorCode = AccountErrorCode.UNAUTHORIZED;
 
         response.setStatus(errorCode.getHttpStatusCode().value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);

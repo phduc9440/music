@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 
 import com.ptit.music_be.event.ScoreImportedEvent;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.service.export.ExportService;
 
 class MidiAutoConvertListenerTest {
@@ -35,7 +35,7 @@ class MidiAutoConvertListenerTest {
 
     @Test
     void swallowsConversionFailures() {
-        doThrow(new AppException(ErrorCode.EXPORT_NOT_AVAILABLE))
+        doThrow(new AppException(ScoreErrorCode.EXPORT_NOT_AVAILABLE))
                 .when(exportService)
                 .startMidiConversionForImport("s1", "m1");
 

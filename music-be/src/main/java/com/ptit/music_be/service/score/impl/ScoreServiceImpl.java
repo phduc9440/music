@@ -46,7 +46,9 @@ import com.ptit.music_be.event.RewardEarnedEvent;
 import com.ptit.music_be.event.RewardReason;
 import com.ptit.music_be.event.ScoreTrashedByAdminEvent;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.LibraryErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.mapper.AiTaskMapper;
 import com.ptit.music_be.mapper.ScoreFileMapper;
 import com.ptit.music_be.repository.ai.AiTaskRepository;
@@ -119,7 +121,7 @@ public class ScoreServiceImpl implements ScoreService {
             String sort) {
         Member member = memberRepository
                 .findByEmail(SecurityUtils.getCurrentEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
 
         // Chuẩn hóa tham số: page >= 0, 1 <= size <= 50, keyword đã trim và cắt tối đa 100 ký tự
         int safePage = Math.max(page, 0);
@@ -158,7 +160,7 @@ public class ScoreServiceImpl implements ScoreService {
     public PageResponse<ScoreSummaryResponse> getSharedWithMe(int page, int size) {
         Member member = memberRepository
                 .findByEmail(SecurityUtils.getCurrentEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
         int safeSize = size <= 0 ? DEFAULT_PAGE_SIZE : Math.min(size, MAX_PAGE_SIZE);
         Page<Score> result =
                 scoreRepository.findSharedWithMember(member.getId(), PageRequest.of(Math.max(page, 0), safeSize));
@@ -211,7 +213,7 @@ public class ScoreServiceImpl implements ScoreService {
         if (request.getTitle() != null) {
             String title = request.getTitle().trim();
             if (title.isEmpty()) {
-                throw new AppException(ErrorCode.SCORE_TITLE_INVALID);
+                throw new AppException(ScoreErrorCode.SCORE_TITLE_INVALID);
             }
             score.setTitle(title);
         }
@@ -314,7 +316,7 @@ public class ScoreServiceImpl implements ScoreService {
         int safeSize = size <= 0 ? DEFAULT_PAGE_SIZE : Math.min(size, MAX_PAGE_SIZE);
         String safeOfficial = official == null ? "" : official.trim().toLowerCase();
         if (!safeOfficial.isEmpty() && !"true".equals(safeOfficial) && !"false".equals(safeOfficial)) {
-            throw new AppException(ErrorCode.INVALID_REQUEST);
+            throw new AppException(AccountErrorCode.INVALID_REQUEST);
         }
         Page<Score> result = scoreRepository.searchAllForAdmin(
                 normalizeKeyword(keyword),
@@ -335,7 +337,7 @@ public class ScoreServiceImpl implements ScoreService {
                     case "CREATED" -> Sort.Order.desc("createdAt");
                     case "TITLE" -> Sort.Order.asc("title");
                     case "VIEWS" -> Sort.Order.desc("viewCount");
-                    default -> throw new AppException(ErrorCode.INVALID_REQUEST);
+                    default -> throw new AppException(AccountErrorCode.INVALID_REQUEST);
                 };
         return Sort.by(primary, Sort.Order.asc("id"));
     }
@@ -345,7 +347,7 @@ public class ScoreServiceImpl implements ScoreService {
     public ScoreDetailResponse setVisibilityByAdmin(String scoreId, Visibility visibility, String reason) {
         SecurityUtils.requirePermission(AdminPermission.SCORES_MODERATE);
         if (visibility == null || visibility == Visibility.PENDING) {
-            throw new AppException(ErrorCode.INVALID_REQUEST);
+            throw new AppException(AccountErrorCode.INVALID_REQUEST);
         }
         Score score = findScore(scoreId);
         String current = score.getVisibility() == null ? Visibility.PRIVATE.name() : score.getVisibility();
@@ -355,10 +357,10 @@ public class ScoreServiceImpl implements ScoreService {
         // Admin chỉ kiểm duyệt: duyệt bản đang chờ (PENDING → PUBLIC) hoặc gỡ bản đã công khai (PUBLIC → PRIVATE).
         // Không tự công khai bản riêng tư của người khác khi chủ chưa xin.
         if (visibility == Visibility.PUBLIC && !Visibility.PENDING.name().equals(current)) {
-            throw new AppException(ErrorCode.SCORE_NOT_PENDING_PUBLIC);
+            throw new AppException(ScoreErrorCode.SCORE_NOT_PENDING_PUBLIC);
         }
         if (visibility == Visibility.PRIVATE && !Visibility.PUBLIC.name().equals(current)) {
-            throw new AppException(ErrorCode.SCORE_NOT_PUBLIC);
+            throw new AppException(ScoreErrorCode.SCORE_NOT_PUBLIC);
         }
         if (visibility == Visibility.PUBLIC) {
             score.setVisibility(Visibility.PUBLIC.name());
@@ -433,7 +435,7 @@ public class ScoreServiceImpl implements ScoreService {
                     staffMin = 3;
                     staffMax = Integer.MAX_VALUE;
                 }
-                default -> throw new AppException(ErrorCode.INVALID_REQUEST);
+                default -> throw new AppException(AccountErrorCode.INVALID_REQUEST);
             }
         }
         String key = sort == null ? "" : sort.trim().toUpperCase(Locale.ROOT);
@@ -475,7 +477,7 @@ public class ScoreServiceImpl implements ScoreService {
                                 staffMax,
                                 safeKey,
                                 PageRequest.of(safePage, safeSize));
-                    default -> throw new AppException(ErrorCode.INVALID_REQUEST);
+                    default -> throw new AppException(AccountErrorCode.INVALID_REQUEST);
                 };
         return toExplorePage(result);
     }
@@ -486,7 +488,7 @@ public class ScoreServiceImpl implements ScoreService {
         Score score = scoreRepository
                 .findById(scoreId)
                 .filter(s -> Visibility.PUBLIC.name().equals(s.getVisibility()))
-                .orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
         return toExplorePage(new org.springframework.data.domain.PageImpl<>(List.of(score)))
                 .getContent()
                 .get(0);
@@ -532,7 +534,7 @@ public class ScoreServiceImpl implements ScoreService {
             // Bản sao trong kho mẫu thuộc tài khoản hệ thống: vào thùng rác, bản gốc của người dùng không đụng tới
             Member actor = memberRepository
                     .findByEmail(SecurityUtils.getCurrentEmail())
-                    .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                    .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
             score.setVisibility(Visibility.PRIVATE.name());
             score.setDeletedAt(LocalDateTime.now());
             score.setDeletedBy(actor.getId());
@@ -626,12 +628,12 @@ public class ScoreServiceImpl implements ScoreService {
 
         Set<String> wanted = new LinkedHashSet<>(tagIds == null ? List.of() : tagIds);
         if (wanted.size() > MAX_TAGS_PER_SCORE) {
-            throw new AppException(ErrorCode.TOO_MANY_TAGS);
+            throw new AppException(LibraryErrorCode.TOO_MANY_TAGS);
         }
         Map<String, Tag> found =
                 tagRepository.findAllById(wanted).stream().collect(Collectors.toMap(Tag::getId, t -> t));
         if (found.size() != wanted.size()) {
-            throw new AppException(ErrorCode.TAG_NOT_EXISTED);
+            throw new AppException(LibraryErrorCode.TAG_NOT_EXISTED);
         }
 
         // Chỉ xóa tag không còn được chọn và thêm tag mới, tag giữ nguyên thì không đụng tới (orphanRemoval lo việc
@@ -691,22 +693,22 @@ public class ScoreServiceImpl implements ScoreService {
         Score score = findScore(scoreId);
         AccessDecision decision = scorePermissionService.resolve(score);
         if (!scorePermissionService.canDelete(score, decision)) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+            throw new AppException(AccountErrorCode.UNAUTHORIZED);
         }
         // Bản trong kho bản nhạc mẫu chỉ ADMIN được xóa (chủ sở hữu muốn xóa thì nhờ admin gỡ khỏi kho trước)
         if (Boolean.TRUE.equals(score.getIsOfficial())
                 && !SecurityUtils.hasPermission(AdminPermission.OFFICIAL_LIBRARY)) {
-            throw new AppException(ErrorCode.SCORE_OFFICIAL_LOCKED);
+            throw new AppException(ScoreErrorCode.SCORE_OFFICIAL_LOCKED);
         }
         // Đang có tác vụ chạy thì không cho xóa (worker/AI service còn đang ghi file vào thư mục của score)
         if (aiTaskRepository.existsByScoreIdAndStatusIn(
                 scoreId, List.of(AiTaskStatus.PENDING, AiTaskStatus.PROCESSING))) {
-            throw new AppException(ErrorCode.SCORE_BUSY);
+            throw new AppException(ScoreErrorCode.SCORE_BUSY);
         }
 
         Member actor = memberRepository
                 .findByEmail(SecurityUtils.getCurrentEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
         boolean byOwner = decision.level() == ScoreAccess.OWNER;
         String cleanReason = truncate(blankToNull(reason), MAX_DELETE_REASON_LENGTH);
 
@@ -737,13 +739,13 @@ public class ScoreServiceImpl implements ScoreService {
     private Score findPending(String scoreId) {
         Score score = findScore(scoreId);
         if (!Visibility.PENDING.name().equals(score.getVisibility())) {
-            throw new AppException(ErrorCode.SCORE_NOT_PENDING_PUBLIC);
+            throw new AppException(ScoreErrorCode.SCORE_NOT_PENDING_PUBLIC);
         }
         return score;
     }
 
     private Score findScore(String scoreId) {
-        return scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+        return scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
     }
 
     private ScoreSummaryResponse toSummary(Score score, ScoreFile thumbnail, List<TagResponse> tags) {
@@ -799,11 +801,11 @@ public class ScoreServiceImpl implements ScoreService {
     private void applyLicense(Score score, ScoreLicense license, Boolean allowArrange) {
         Score source = score.getForkedFrom();
         if (license != null && source != null && licenseOf(source).locksDerivatives() && license != licenseOf(source)) {
-            throw new AppException(ErrorCode.SCORE_LICENSE_LOCKED);
+            throw new AppException(ScoreErrorCode.SCORE_LICENSE_LOCKED);
         }
         ScoreLicense next = license != null ? license : licenseOf(score);
         if (Boolean.TRUE.equals(allowArrange) && !next.allowsDerivatives()) {
-            throw new AppException(ErrorCode.SCORE_LICENSE_REQUIRED);
+            throw new AppException(ScoreErrorCode.SCORE_LICENSE_REQUIRED);
         }
         score.setLicense(next);
         if (allowArrange != null) {
@@ -844,17 +846,17 @@ public class ScoreServiceImpl implements ScoreService {
     public ScoreDetailResponse forkScore(String scoreId) {
         Member me = memberRepository
                 .findByEmail(SecurityUtils.getCurrentEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
         Score source = scoreRepository
                 .findById(scoreId)
                 .filter(s -> Visibility.PUBLIC.name().equals(s.getVisibility()))
-                .orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
         if (!forkable(source)) {
-            throw new AppException(ErrorCode.SCORE_FORK_NOT_ALLOWED);
+            throw new AppException(ScoreErrorCode.SCORE_FORK_NOT_ALLOWED);
         }
         // Đếm trong bảng thật (kể cả bản đã vào thùng rác) để xóa bản phối không mở thêm hạn mức
         if (scoreRepository.countForksSince(me.getId(), LocalDateTime.now().minusHours(24)) >= MAX_FORKS_PER_DAY) {
-            throw new AppException(ErrorCode.SCORE_FORK_RATE_LIMITED);
+            throw new AppException(ScoreErrorCode.SCORE_FORK_RATE_LIMITED);
         }
         Score copy = scoreCopyService.copy(source.getId(), me, new CopyOptions(null, ScoreSource.MANUAL, true, true));
         copy.setForkedFrom(source);
@@ -987,7 +989,7 @@ public class ScoreServiceImpl implements ScoreService {
         try {
             return Enum.valueOf(type, value.trim().toUpperCase(Locale.ROOT)).name();
         } catch (IllegalArgumentException e) {
-            throw new AppException(ErrorCode.INVALID_FILTER);
+            throw new AppException(ScoreErrorCode.INVALID_FILTER);
         }
     }
 

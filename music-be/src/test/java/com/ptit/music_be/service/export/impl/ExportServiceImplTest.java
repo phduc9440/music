@@ -47,6 +47,8 @@ import com.ptit.music_be.entity.ScoreFile;
 import com.ptit.music_be.event.ExportTaskCreatedEvent;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.BillingErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.mapper.AiTaskMapper;
 import com.ptit.music_be.repository.ai.AiTaskRepository;
 import com.ptit.music_be.repository.auth.MemberRepository;
@@ -286,12 +288,12 @@ class ExportServiceImplTest {
 
     @Test
     void exportOverMonthlyQuotaIsRejectedWithoutCreatingATask() {
-        doThrow(new AppException(ErrorCode.PLAN_LIMIT_REACHED))
+        doThrow(new AppException(BillingErrorCode.PLAN_LIMIT_REACHED))
                 .when(entitlementService)
                 .checkAvailable("member-1", UsageMetric.EXPORTS, 1);
 
         assertThatThrownBy(() -> service.requestExport(SCORE_ID, request("MP3", null)))
-                .satisfies(e -> assertError(e, ErrorCode.PLAN_LIMIT_REACHED));
+                .satisfies(e -> assertError(e, BillingErrorCode.PLAN_LIMIT_REACHED));
         verify(aiTaskRepository, never()).save(any());
     }
 
@@ -318,7 +320,7 @@ class ExportServiceImplTest {
         when(aiTaskRepository.countByMemberIdAndTaskTypeInAndStatusIn(eq("member-1"), anyCollection(), anyCollection()))
                 .thenReturn(2L);
         assertThatThrownBy(() -> service.requestExport(SCORE_ID, request("MP3", null)))
-                .satisfies(e -> assertError(e, ErrorCode.EXPORT_LIMIT_EXCEEDED));
+                .satisfies(e -> assertError(e, ScoreErrorCode.EXPORT_LIMIT_EXCEEDED));
     }
 
     @Test
@@ -326,14 +328,14 @@ class ExportServiceImplTest {
         when(aiTaskRepository.countByMemberIdAndTaskTypeInAndCreatedAtAfter(eq("member-1"), anyCollection(), any()))
                 .thenReturn(10L);
         assertThatThrownBy(() -> service.requestExport(SCORE_ID, request("MP3", null)))
-                .satisfies(e -> assertError(e, ErrorCode.EXPORT_LIMIT_EXCEEDED));
+                .satisfies(e -> assertError(e, ScoreErrorCode.EXPORT_LIMIT_EXCEEDED));
     }
 
     @Test
     void rejectsScoreLongerThanTwentyMinutes() throws Exception {
         score.setMeasureCount(400); // 400 ô x 4 phách ở 100 bpm = 960 giây
         assertThatThrownBy(() -> service.requestExport(SCORE_ID, request("MP3", "{\"tempoPercent\":50}")))
-                .satisfies(e -> assertError(e, ErrorCode.AUDIO_TOO_LONG)); // 1920 giây
+                .satisfies(e -> assertError(e, ScoreErrorCode.AUDIO_TOO_LONG)); // 1920 giây
         // Tăng tempo thì đủ ngắn để xuất
         assertThat(service.requestExport(SCORE_ID, request("MP3", "{\"tempoPercent\":100}"))
                         .getTask())
@@ -345,23 +347,23 @@ class ExportServiceImplTest {
         when(scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(SCORE_ID, FileType.MUSICXML))
                 .thenReturn(List.of());
         assertThatThrownBy(() -> service.requestExport(SCORE_ID, request("MP3", null)))
-                .satisfies(e -> assertError(e, ErrorCode.MUSICXML_NOT_READY));
+                .satisfies(e -> assertError(e, ScoreErrorCode.MUSICXML_NOT_READY));
     }
 
     @Test
     void rejectsWhenMuseScoreNotConfigured() {
         when(museScoreCliService.isAvailable()).thenReturn(false);
         assertThatThrownBy(() -> service.requestExport(SCORE_ID, request("MP3", null)))
-                .satisfies(e -> assertError(e, ErrorCode.EXPORT_NOT_AVAILABLE));
+                .satisfies(e -> assertError(e, ScoreErrorCode.EXPORT_NOT_AVAILABLE));
     }
 
     @Test
     void rejectsInvalidOptionsAndUnknownScore() {
         assertThatThrownBy(() -> service.requestExport(SCORE_ID, request("MP3", "{\"bitrate\":1}")))
-                .satisfies(e -> assertError(e, ErrorCode.EXPORT_OPTION_INVALID));
+                .satisfies(e -> assertError(e, ScoreErrorCode.EXPORT_OPTION_INVALID));
         when(scoreRepository.findById("none")).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.requestExport("none", request("MP3", null)))
-                .satisfies(e -> assertError(e, ErrorCode.SCORE_NOT_EXISTED));
+                .satisfies(e -> assertError(e, ScoreErrorCode.SCORE_NOT_EXISTED));
     }
 
     @Test
@@ -465,7 +467,7 @@ class ExportServiceImplTest {
                 .thenReturn(List.of(svgPage(1, "t1", "p1"), svgPage(2, "t1", "p2")));
 
         assertThatThrownBy(() -> service.requestExport(SCORE_ID, request("SVG", "{\"page\":5}")))
-                .satisfies(e -> assertError(e, ErrorCode.EXPORT_OPTION_INVALID));
+                .satisfies(e -> assertError(e, ScoreErrorCode.EXPORT_OPTION_INVALID));
     }
 
     @Test
@@ -504,7 +506,7 @@ class ExportServiceImplTest {
     @Test
     void zipOfUnknownTaskIs2002() {
         assertThatThrownBy(() -> service.zipSvgPages(SCORE_ID, "none"))
-                .satisfies(e -> assertError(e, ErrorCode.FILE_NOT_EXISTED));
+                .satisfies(e -> assertError(e, ScoreErrorCode.FILE_NOT_EXISTED));
     }
 
     // ---------------------------------------------------------------- MIDI -> MusicXML
@@ -575,13 +577,13 @@ class ExportServiceImplTest {
         when(scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(SCORE_ID, FileType.MUSICXML))
                 .thenReturn(List.of());
         assertThatThrownBy(() -> service.requestExport(SCORE_ID, request("MUSICXML", null)))
-                .satisfies(e -> assertError(e, ErrorCode.EXPORT_SOURCE_NOT_SUPPORTED));
+                .satisfies(e -> assertError(e, ScoreErrorCode.EXPORT_SOURCE_NOT_SUPPORTED));
 
         // Đã có MusicXML thì không chuyển đổi nữa
         when(scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(SCORE_ID, FileType.MUSICXML))
                 .thenReturn(List.of(musicXml));
         assertThatThrownBy(() -> service.requestMidiConversion(SCORE_ID))
-                .satisfies(e -> assertError(e, ErrorCode.EXPORT_SOURCE_NOT_SUPPORTED));
+                .satisfies(e -> assertError(e, ScoreErrorCode.EXPORT_SOURCE_NOT_SUPPORTED));
     }
 
     @Test
@@ -589,7 +591,7 @@ class ExportServiceImplTest {
         givenOnlyOriginalMidi();
         when(museScoreCliService.isAvailable()).thenReturn(false);
         assertThatThrownBy(() -> service.requestMidiConversion(SCORE_ID))
-                .satisfies(e -> assertError(e, ErrorCode.EXPORT_NOT_AVAILABLE));
+                .satisfies(e -> assertError(e, ScoreErrorCode.EXPORT_NOT_AVAILABLE));
     }
 
     @Test
@@ -612,12 +614,12 @@ class ExportServiceImplTest {
         when(scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(SCORE_ID, FileType.MUSICXML))
                 .thenReturn(List.of());
         assertThatThrownBy(() -> service.startMidiConversionForImport(SCORE_ID, "member-1"))
-                .satisfies(e -> assertError(e, ErrorCode.EXPORT_SOURCE_NOT_SUPPORTED));
+                .satisfies(e -> assertError(e, ScoreErrorCode.EXPORT_SOURCE_NOT_SUPPORTED));
 
         when(scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(SCORE_ID, FileType.MUSICXML))
                 .thenReturn(List.of(musicXml));
         assertThatThrownBy(() -> service.startMidiConversionForImport(SCORE_ID, "member-1"))
-                .satisfies(e -> assertError(e, ErrorCode.EXPORT_SOURCE_NOT_SUPPORTED));
+                .satisfies(e -> assertError(e, ScoreErrorCode.EXPORT_SOURCE_NOT_SUPPORTED));
         verify(aiTaskRepository, never()).save(any());
     }
 
@@ -626,7 +628,7 @@ class ExportServiceImplTest {
         givenOnlyOriginalMidi();
         when(museScoreCliService.isAvailable()).thenReturn(false);
         assertThatThrownBy(() -> service.startMidiConversionForImport(SCORE_ID, "member-1"))
-                .satisfies(e -> assertError(e, ErrorCode.EXPORT_NOT_AVAILABLE));
+                .satisfies(e -> assertError(e, ScoreErrorCode.EXPORT_NOT_AVAILABLE));
     }
 
     // ---------------------------------------------------------------- PDF
@@ -677,6 +679,6 @@ class ExportServiceImplTest {
     @Test
     void pdfWithInvalidOptionsIs2701() {
         assertThatThrownBy(() -> service.requestExport(SCORE_ID, request("PDF", "{\"marginMm\":99}")))
-                .satisfies(e -> assertError(e, ErrorCode.EXPORT_OPTION_INVALID));
+                .satisfies(e -> assertError(e, ScoreErrorCode.EXPORT_OPTION_INVALID));
     }
 }

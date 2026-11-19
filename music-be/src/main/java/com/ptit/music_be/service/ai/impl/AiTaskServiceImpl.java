@@ -18,7 +18,9 @@ import com.ptit.music_be.dto.response.ai.AiTaskResponse;
 import com.ptit.music_be.entity.AiTask;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.AiErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.mapper.AiTaskMapper;
 import com.ptit.music_be.repository.ai.AiTaskRepository;
 import com.ptit.music_be.repository.score.ScoreFileRepository;
@@ -50,10 +52,10 @@ public class AiTaskServiceImpl implements AiTaskService {
     @Transactional(readOnly = true)
     public AiTaskResponse getTask(String taskId) {
         AiTask task =
-                aiTaskRepository.findById(taskId).orElseThrow(() -> new AppException(ErrorCode.AI_TASK_NOT_EXISTED));
+                aiTaskRepository.findById(taskId).orElseThrow(() -> new AppException(AiErrorCode.AI_TASK_NOT_EXISTED));
         if (!SecurityUtils.hasPermission(AdminPermission.AI_TASKS_MANAGE)
                 && !SecurityUtils.getCurrentEmail().equals(task.getMember().getEmail())) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+            throw new AppException(AccountErrorCode.UNAUTHORIZED);
         }
         return aiTaskMapper.toResponse(task);
     }
@@ -62,7 +64,7 @@ public class AiTaskServiceImpl implements AiTaskService {
     @Transactional(readOnly = true)
     public List<AiTaskResponse> getTasksOfScore(String scoreId) {
         Score score =
-                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
         // Lịch sử tác vụ AI chỉ dành cho người có quyền sửa bản nhạc (người xem bản công khai không thấy)
         scoreFileService.checkCanEdit(score);
         return aiTaskRepository.findByScoreIdOrderByCreatedAtDesc(scoreId).stream()
@@ -76,13 +78,13 @@ public class AiTaskServiceImpl implements AiTaskService {
         // Khóa dòng để callback đến cùng lúc không ghi đè trạng thái CANCELLED
         AiTask task = aiTaskRepository
                 .findByIdForUpdate(taskId)
-                .orElseThrow(() -> new AppException(ErrorCode.AI_TASK_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AiErrorCode.AI_TASK_NOT_EXISTED));
         if (!SecurityUtils.hasPermission(AdminPermission.AI_TASKS_MANAGE)
                 && !SecurityUtils.getCurrentEmail().equals(task.getMember().getEmail())) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+            throw new AppException(AccountErrorCode.UNAUTHORIZED);
         }
         if (task.getStatus() != AiTaskStatus.PENDING && task.getStatus() != AiTaskStatus.PROCESSING) {
-            throw new AppException(ErrorCode.AI_TASK_NOT_CANCELLABLE);
+            throw new AppException(AiErrorCode.AI_TASK_NOT_CANCELLABLE);
         }
 
         task.setStatus(AiTaskStatus.CANCELLED);

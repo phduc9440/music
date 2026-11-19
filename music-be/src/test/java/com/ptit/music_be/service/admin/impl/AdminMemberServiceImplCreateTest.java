@@ -34,6 +34,7 @@ import com.ptit.music_be.entity.MemberRole;
 import com.ptit.music_be.entity.Role;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
 import com.ptit.music_be.mapper.MemberMapper;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.auth.RoleRepository;
@@ -145,23 +146,23 @@ class AdminMemberServiceImplCreateTest {
         when(memberRepository.existsByEmail("taken@x.com")).thenReturn(true);
 
         assertThat(errorOf(() -> service.createMember(request("taken@x.com", "matkhau123", null))))
-                .isEqualTo(ErrorCode.USER_EXISTED);
+                .isEqualTo(AccountErrorCode.USER_EXISTED);
         verify(memberRepository, never()).save(any());
     }
 
     @Test
     void invalidEmailAndShortPasswordAreRejected() {
         assertThat(errorOf(() -> service.createMember(request("not-an-email", "matkhau123", null))))
-                .isEqualTo(ErrorCode.MEMBER_EMAIL_INVALID);
+                .isEqualTo(AccountErrorCode.MEMBER_EMAIL_INVALID);
         assertThat(errorOf(() -> service.createMember(request("ok@x.com", "short", null))))
-                .isEqualTo(ErrorCode.PASSWORD_INVALID);
+                .isEqualTo(AccountErrorCode.PASSWORD_INVALID);
         verify(memberRepository, never()).save(any());
     }
 
     @Test
     void nobodyCanCreateASuperAdmin() {
         assertThat(errorOf(() -> service.createMember(request("root@x.com", "matkhau123", List.of("SUPER_ADMIN")))))
-                .isEqualTo(ErrorCode.ROLE_ASSIGN_FORBIDDEN);
+                .isEqualTo(AccountErrorCode.ROLE_ASSIGN_FORBIDDEN);
         verify(memberRepository, never()).save(any());
     }
 
@@ -171,7 +172,7 @@ class AdminMemberServiceImplCreateTest {
         as("ROLE_HR");
 
         assertThat(errorOf(() -> service.createMember(request("x@x.com", "matkhau123", List.of("ADMIN")))))
-                .isEqualTo(ErrorCode.ROLE_ASSIGN_FORBIDDEN);
+                .isEqualTo(AccountErrorCode.ROLE_ASSIGN_FORBIDDEN);
         verify(memberRepository, never()).save(any());
     }
 
@@ -187,6 +188,6 @@ class AdminMemberServiceImplCreateTest {
     @Test
     void unknownRoleIsRejected() {
         assertThat(errorOf(() -> service.createMember(request("x@x.com", "matkhau123", List.of("GHOST")))))
-                .isEqualTo(ErrorCode.ROLE_NOT_EXISTED);
+                .isEqualTo(AccountErrorCode.ROLE_NOT_EXISTED);
     }
 }

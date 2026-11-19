@@ -21,7 +21,9 @@ import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.PracticeSession;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.LibraryErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.practice.PracticeSessionRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
@@ -53,15 +55,15 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
     @Transactional
     public PracticeSessionResponse create(PracticeSessionRequest request) {
         if (request == null || request.getMode() == null || !StringUtils.hasText(request.getScoreId())) {
-            throw new AppException(ErrorCode.PRACTICE_SESSION_INVALID);
+            throw new AppException(LibraryErrorCode.PRACTICE_SESSION_INVALID);
         }
         Member me = currentMember();
         Score score = scoreRepository
                 .findById(request.getScoreId())
-                .orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
         // Bản nhạc không xem được thì trả "không tồn tại" để không lộ id
         if (!scoreFileService.canView(score)) {
-            throw new AppException(ErrorCode.SCORE_NOT_EXISTED);
+            throw new AppException(ScoreErrorCode.SCORE_NOT_EXISTED);
         }
         validate(request);
 
@@ -118,8 +120,9 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
                 Sort.by(Sort.Direction.DESC, "startedAt").and(Sort.by("id")));
         Page<PracticeSession> result;
         if (StringUtils.hasText(scoreId)) {
-            Score score =
-                    scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+            Score score = scoreRepository
+                    .findById(scoreId)
+                    .orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
             result = practiceSessionRepository.findByMemberAndScore(me, score, pageable);
         } else {
             result = practiceSessionRepository.findByMember(me, pageable);
@@ -163,11 +166,11 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
         };
         for (Integer c : counts) {
             if (c != null && c < 0) {
-                throw new AppException(ErrorCode.PRACTICE_SESSION_INVALID);
+                throw new AppException(LibraryErrorCode.PRACTICE_SESSION_INVALID);
             }
         }
         if (r.getDurationSeconds() != null && r.getDurationSeconds() > MAX_DURATION_SECONDS) {
-            throw new AppException(ErrorCode.PRACTICE_SESSION_INVALID);
+            throw new AppException(LibraryErrorCode.PRACTICE_SESSION_INVALID);
         }
         // Tổng các loại nốt không được vượt tổng số nốt
         long sum = (long) orZero(r.getPerfectCount())
@@ -176,24 +179,24 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
                 + orZero(r.getWrongPitchCount())
                 + orZero(r.getMissedCount());
         if (r.getTotalNotes() != null && sum > r.getTotalNotes()) {
-            throw new AppException(ErrorCode.PRACTICE_SESSION_INVALID);
+            throw new AppException(LibraryErrorCode.PRACTICE_SESSION_INVALID);
         }
         if (r.getTempoPercent() != null && (r.getTempoPercent() <= 0 || r.getTempoPercent() > 400)) {
-            throw new AppException(ErrorCode.PRACTICE_SESSION_INVALID);
+            throw new AppException(LibraryErrorCode.PRACTICE_SESSION_INVALID);
         }
         if (isBadPercent(r.getAccuracyPct()) || isBadPercent(r.getTimingAccuracyPct())) {
-            throw new AppException(ErrorCode.PRACTICE_SESSION_INVALID);
+            throw new AppException(LibraryErrorCode.PRACTICE_SESSION_INVALID);
         }
         if (r.getLoopStartMeasure() != null
                 && r.getLoopEndMeasure() != null
                 && r.getLoopStartMeasure() > r.getLoopEndMeasure()) {
-            throw new AppException(ErrorCode.PRACTICE_SESSION_INVALID);
+            throw new AppException(LibraryErrorCode.PRACTICE_SESSION_INVALID);
         }
         if (r.getStartedAt() != null && r.getEndedAt() != null && r.getEndedAt().isBefore(r.getStartedAt())) {
-            throw new AppException(ErrorCode.PRACTICE_SESSION_INVALID);
+            throw new AppException(LibraryErrorCode.PRACTICE_SESSION_INVALID);
         }
         if (r.getScorePoints() != null && r.getScorePoints() < 0) {
-            throw new AppException(ErrorCode.PRACTICE_SESSION_INVALID);
+            throw new AppException(LibraryErrorCode.PRACTICE_SESSION_INVALID);
         }
     }
 
@@ -206,12 +209,12 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
             return null;
         }
         if (!errorLog.isArray() || errorLog.size() > MAX_ERROR_LOG_ENTRIES) {
-            throw new AppException(ErrorCode.PRACTICE_SESSION_INVALID);
+            throw new AppException(LibraryErrorCode.PRACTICE_SESSION_INVALID);
         }
         try {
             return objectMapper.writeValueAsString(errorLog);
         } catch (JsonProcessingException e) {
-            throw new AppException(ErrorCode.PRACTICE_SESSION_INVALID);
+            throw new AppException(LibraryErrorCode.PRACTICE_SESSION_INVALID);
         }
     }
 
@@ -240,13 +243,13 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
         return practiceSessionRepository
                 .findById(id)
                 .filter(s -> s.getMember().getId().equals(me.getId()))
-                .orElseThrow(() -> new AppException(ErrorCode.PRACTICE_SESSION_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(LibraryErrorCode.PRACTICE_SESSION_NOT_EXISTED));
     }
 
     private Member currentMember() {
         return memberRepository
                 .findByEmail(SecurityUtils.getCurrentEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
     }
 
     private PracticeSessionResponse toResponse(PracticeSession s, boolean withErrorLog) {

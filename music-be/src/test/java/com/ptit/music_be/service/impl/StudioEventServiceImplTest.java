@@ -31,7 +31,7 @@ import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.PracticeSession;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.LibraryErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.practice.PracticeSessionRepository;
 import com.ptit.music_be.service.StudioTimelineService;
@@ -125,7 +125,7 @@ class StudioEventServiceImplTest {
 
         assertThatThrownBy(() -> service.ingestEvents("session-1", request(event(0, "unknown"))))
                 .isInstanceOfSatisfying(AppException.class, exception -> assertThat(exception.getErrorCode())
-                        .isEqualTo(ErrorCode.STUDIO_EVENT_INVALID));
+                        .isEqualTo(LibraryErrorCode.STUDIO_EVENT_INVALID));
     }
 
     @Test
@@ -135,7 +135,7 @@ class StudioEventServiceImplTest {
 
         assertThatThrownBy(() -> service.ingestEvents("session-1", new StudioEventBatchRequest(events)))
                 .isInstanceOfSatisfying(AppException.class, exception -> assertThat(exception.getErrorCode())
-                        .isEqualTo(ErrorCode.STUDIO_EVENT_BATCH_TOO_LARGE));
+                        .isEqualTo(LibraryErrorCode.STUDIO_EVENT_BATCH_TOO_LARGE));
     }
 
     @Test
@@ -143,7 +143,7 @@ class StudioEventServiceImplTest {
         stubActiveSession();
         assertThatThrownBy(() -> service.ingestEvents("session-1", request(event(2, null), event(1, null))))
                 .isInstanceOfSatisfying(AppException.class, exception -> assertThat(exception.getErrorCode())
-                        .isEqualTo(ErrorCode.STUDIO_EVENT_INVALID));
+                        .isEqualTo(LibraryErrorCode.STUDIO_EVENT_INVALID));
     }
 
     private static StudioEventBatchRequest request(StudioNoteEventRequest... events) {

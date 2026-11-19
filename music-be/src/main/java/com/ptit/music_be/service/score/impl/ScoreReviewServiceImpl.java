@@ -16,7 +16,9 @@ import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreReview;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.CollabErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.repository.score.ScoreReviewRepository;
@@ -56,12 +58,12 @@ public class ScoreReviewServiceImpl implements ScoreReviewService {
 
         String cleanComment = StringUtils.hasText(comment) ? comment.trim() : null;
         if (rating == null && cleanComment == null) {
-            throw new AppException(ErrorCode.REVIEW_EMPTY);
+            throw new AppException(CollabErrorCode.REVIEW_EMPTY);
         }
 
         Member me = memberRepository
                 .findByEmail(SecurityUtils.getCurrentEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
         ScoreReview review = reviewRepository
                 .findByScoreIdAndMemberId(scoreId, me.getId())
                 .orElseGet(() -> ScoreReview.builder().score(score).member(me).build());
@@ -91,9 +93,9 @@ public class ScoreReviewServiceImpl implements ScoreReviewService {
         ScoreReview review = reviewRepository
                 .findById(reviewId)
                 .filter(r -> r.getScore().getId().equals(scoreId))
-                .orElseThrow(() -> new AppException(ErrorCode.REVIEW_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(CollabErrorCode.REVIEW_NOT_EXISTED));
         if (!canDelete(review)) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+            throw new AppException(AccountErrorCode.UNAUTHORIZED);
         }
         reviewRepository.delete(review);
         reviewRepository.flush();
@@ -103,7 +105,7 @@ public class ScoreReviewServiceImpl implements ScoreReviewService {
     // ------------------------------------------------------------------ helpers
 
     private Score findScore(String scoreId) {
-        return scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+        return scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
     }
 
     private boolean isMine(ScoreReview review) {

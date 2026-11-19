@@ -17,6 +17,8 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import com.ptit.music_be.dto.response.common.ApiResponse;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
@@ -31,10 +33,10 @@ public class GlobalExceptionHandler {
         log.error("Unhandled exception", exception);
         ApiResponse apiResponse = new ApiResponse();
 
-        apiResponse.setCode(ErrorCode.UNCATEGORIZED_EXCEPTION.getCode());
-        apiResponse.setMessage(ErrorCode.UNCATEGORIZED_EXCEPTION.getMessage());
+        apiResponse.setCode(AccountErrorCode.UNCATEGORIZED_EXCEPTION.getCode());
+        apiResponse.setMessage(AccountErrorCode.UNCATEGORIZED_EXCEPTION.getMessage());
 
-        return ResponseEntity.status(ErrorCode.UNCATEGORIZED_EXCEPTION.getHttpStatusCode())
+        return ResponseEntity.status(AccountErrorCode.UNCATEGORIZED_EXCEPTION.getHttpStatusCode())
                 .body(apiResponse);
     }
 
@@ -53,7 +55,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(value = MaxUploadSizeExceededException.class)
     ResponseEntity<ApiResponse> handlingMaxUploadSize(MaxUploadSizeExceededException exception) {
-        ErrorCode errorCode = ErrorCode.FILE_TOO_LARGE;
+        ErrorCode errorCode = ScoreErrorCode.FILE_TOO_LARGE;
 
         return ResponseEntity.status(errorCode.getHttpStatusCode())
                 .body(ApiResponse.builder()
@@ -65,7 +67,7 @@ public class GlobalExceptionHandler {
     /** Body JSON hỏng hoặc giá trị enum không hợp lệ (ví dụ visibility = "ABC"), hoặc tham số query sai kiểu. */
     @ExceptionHandler(value = {HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class})
     ResponseEntity<ApiResponse> handlingBadRequest(Exception exception) {
-        ErrorCode errorCode = ErrorCode.INVALID_REQUEST;
+        ErrorCode errorCode = AccountErrorCode.INVALID_REQUEST;
 
         return ResponseEntity.status(errorCode.getHttpStatusCode())
                 .body(ApiResponse.builder()
@@ -76,7 +78,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(value = AccessDeniedException.class)
     ResponseEntity<ApiResponse> handlingAccessDeniedException(AccessDeniedException exception) {
-        ErrorCode errorCode = ErrorCode.UNAUTHORIZED;
+        ErrorCode errorCode = AccountErrorCode.UNAUTHORIZED;
 
         return ResponseEntity.status(errorCode.getHttpStatusCode())
                 .body(ApiResponse.builder()
@@ -88,7 +90,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(value = MethodArgumentNotValidException.class)
     ResponseEntity<ApiResponse> handlingValidation(MethodArgumentNotValidException exception) {
         String enumKey = exception.getFieldError().getDefaultMessage();
-        ErrorCode errorCode = ErrorCode.INVALID_REQUEST;
+        ErrorCode errorCode = AccountErrorCode.INVALID_REQUEST;
         Map<String, Object> attributes = null;
 
         try {

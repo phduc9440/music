@@ -12,6 +12,7 @@ import org.springframework.stereotype.Controller;
 
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.CollabErrorCode;
 import com.ptit.music_be.service.collab.live.LiveCollabService;
 import com.ptit.music_be.service.collab.live.LiveMessages.JoinRequest;
 import com.ptit.music_be.service.collab.live.LiveMessages.LiveError;
@@ -92,6 +93,6 @@ public class LiveScoreController {
     @SendToUser(destinations = "/queue/live-errors", broadcast = false)
     public LiveError onUnexpected(Exception e) {
         log.warn("Lỗi xử lý tin cộng tác", e);
-        return new LiveError(ErrorCode.LIVE_OP_INVALID.getCode(), ErrorCode.LIVE_OP_INVALID.getMessage());
+        return new LiveError(CollabErrorCode.LIVE_OP_INVALID.getCode(), CollabErrorCode.LIVE_OP_INVALID.getMessage());
     }
 }

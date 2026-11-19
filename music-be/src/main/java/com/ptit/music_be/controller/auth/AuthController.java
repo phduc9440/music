@@ -22,7 +22,7 @@ import com.ptit.music_be.dto.response.auth.MemberResponse;
 import com.ptit.music_be.dto.response.auth.VerifyResetOtpResponse;
 import com.ptit.music_be.dto.response.common.ApiResponse;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
 import com.ptit.music_be.service.auth.AuthService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -77,7 +77,7 @@ public class AuthController {
                         && !body.getRefreshToken().isBlank()
                 ? body.getRefreshToken()
                 : AuthCookies.read(httpRequest, AuthCookies.REFRESH);
-        if (token == null) throw new AppException(ErrorCode.UNAUTHENTICATED);
+        if (token == null) throw new AppException(AccountErrorCode.UNAUTHENTICATED);
 
         AuthResponse auth = authService.refreshToken(
                 RefreshRequest.builder().refreshToken(token).build());

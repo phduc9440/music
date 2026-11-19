@@ -34,7 +34,8 @@ import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreFile;
 import com.ptit.music_be.event.ExportTaskCreatedEvent;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.mapper.AiTaskMapper;
 import com.ptit.music_be.repository.ai.AiTaskRepository;
 import com.ptit.music_be.repository.auth.MemberRepository;
@@ -98,7 +99,7 @@ public class ExportServiceImpl implements ExportService {
     @Transactional
     public ExportResponse requestExport(String scoreId, ExportRequest request) {
         Score score =
-                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
         scoreFileService.checkCanView(score);
         // Xuất file cũng là tải về: người xem phải được chủ cho phép (allowDownload), người sửa luôn được
         scoreFileService.checkCanDownload(score);
@@ -113,7 +114,7 @@ public class ExportServiceImpl implements ExportService {
                 scoreFileService.checkCanEdit(score);
                 return convertMidi(score, spec);
             }
-            throw new AppException(ErrorCode.MUSICXML_NOT_READY);
+            throw new AppException(ScoreErrorCode.MUSICXML_NOT_READY);
         }
         ScoreFile source = current.get();
 
@@ -132,25 +133,25 @@ public class ExportServiceImpl implements ExportService {
         }
 
         if (!museScoreCliService.isAvailable()) {
-            throw new AppException(ErrorCode.EXPORT_NOT_AVAILABLE);
+            throw new AppException(ScoreErrorCode.EXPORT_NOT_AVAILABLE);
         }
         if (spec.taskType() == AiTaskType.AUDIO_SYNTHESIS
                 && estimateSeconds(score, spec.intOption("tempoPercent", 100))
                         > museScoreProperties.getMaxAudioSeconds()) {
-            throw new AppException(ErrorCode.AUDIO_TOO_LONG);
+            throw new AppException(ScoreErrorCode.AUDIO_TOO_LONG);
         }
 
         // Khóa dòng người dùng để hai yêu cầu cùng lúc không cùng vượt giới hạn hoặc tạo task trùng
         Member member = memberRepository
                 .findByEmailForUpdate(SecurityUtils.getCurrentEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
 
         int sourceVersion = versionOf(source);
         if (spec.fileType() == FileType.SVG) {
             List<ScoreFile> pages = findCachedSvgPages(scoreId, sourceVersion);
             if (!pages.isEmpty()) {
                 if (spec.page() != null && spec.page() > pages.size()) {
-                    throw new AppException(ErrorCode.EXPORT_OPTION_INVALID);
+                    throw new AppException(ScoreErrorCode.EXPORT_OPTION_INVALID);
                 }
                 List<ExportFileResponse> files =
                         pages.stream().map(f -> toFileResponse(f, score)).toList();
@@ -195,10 +196,10 @@ public class ExportServiceImpl implements ExportService {
     @Transactional
     public ExportResponse requestMidiConversion(String scoreId) {
         Score score =
-                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
         scoreFileService.checkCanEdit(score);
         if (currentMusicXml(scoreId).isPresent()) {
-            throw new AppException(ErrorCode.EXPORT_SOURCE_NOT_SUPPORTED);
+            throw new AppException(ScoreErrorCode.EXPORT_SOURCE_NOT_SUPPORTED);
         }
         return convertMidi(score, validator.validate("MUSICXML", null, score));
     }
@@ -207,13 +208,14 @@ public class ExportServiceImpl implements ExportService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public ExportResponse startMidiConversionForImport(String scoreId, String memberId) {
         Score score =
-                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
         if (currentMusicXml(scoreId).isPresent()) {
-            throw new AppException(ErrorCode.EXPORT_SOURCE_NOT_SUPPORTED);
+            throw new AppException(ScoreErrorCode.EXPORT_SOURCE_NOT_SUPPORTED);
         }
         ScoreFile midi = midiSource(score);
-        Member member =
-                memberRepository.findById(memberId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        Member member = memberRepository
+                .findById(memberId)
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
         // Tự chuyển sau khi import không tính vào hạn mức xuất file của người dùng
         return enqueueConversion(score, member, midi, validator.validate("MUSICXML", null, score), false);
     }
@@ -223,7 +225,7 @@ public class ExportServiceImpl implements ExportService {
         ScoreFile midi = midiSource(score);
         Member member = memberRepository
                 .findByEmailForUpdate(SecurityUtils.getCurrentEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
         return enqueueConversion(score, member, midi, spec, true);
     }
 
@@ -235,9 +237,9 @@ public class ExportServiceImpl implements ExportService {
                         .stream()
                         .max(Comparator.comparing(
                                 ScoreFile::getCreatedAt, Comparator.nullsFirst(Comparator.naturalOrder())))
-                        .orElseThrow(() -> new AppException(ErrorCode.EXPORT_SOURCE_NOT_SUPPORTED));
+                        .orElseThrow(() -> new AppException(ScoreErrorCode.EXPORT_SOURCE_NOT_SUPPORTED));
         if (!museScoreCliService.isAvailable()) {
-            throw new AppException(ErrorCode.EXPORT_NOT_AVAILABLE);
+            throw new AppException(ScoreErrorCode.EXPORT_NOT_AVAILABLE);
         }
         return midi;
     }
@@ -272,7 +274,7 @@ public class ExportServiceImpl implements ExportService {
                                 EXPORT_TASK_TYPES,
                                 LocalDateTime.now().minusHours(1))
                         >= MAX_TASKS_PER_HOUR) {
-            throw new AppException(ErrorCode.EXPORT_LIMIT_EXCEEDED);
+            throw new AppException(ScoreErrorCode.EXPORT_LIMIT_EXCEEDED);
         }
     }
 
@@ -298,14 +300,14 @@ public class ExportServiceImpl implements ExportService {
     @Transactional(readOnly = true)
     public SvgZip zipSvgPages(String scoreId, String taskId) {
         Score score =
-                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
         scoreFileService.checkCanDownload(score);
         List<ScoreFile> pages = scoreFileRepository.findByScoreIdAndFileTypeIn(scoreId, Set.of(FileType.SVG)).stream()
                 .filter(f -> taskId.equals(f.getSourceTaskId()))
                 .sorted(Comparator.comparing(ScoreFile::getPageNumber, Comparator.nullsLast(Comparator.naturalOrder())))
                 .toList();
         if (pages.isEmpty()) {
-            throw new AppException(ErrorCode.FILE_NOT_EXISTED);
+            throw new AppException(ScoreErrorCode.FILE_NOT_EXISTED);
         }
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         try (ZipOutputStream zip = new ZipOutputStream(buffer)) {
@@ -320,7 +322,7 @@ public class ExportServiceImpl implements ExportService {
             }
         } catch (IOException e) {
             log.warn("Không gom được ZIP SVG của task {}: {}", taskId, e.getMessage());
-            throw new AppException(ErrorCode.FILE_NOT_EXISTED);
+            throw new AppException(ScoreErrorCode.FILE_NOT_EXISTED);
         }
         return new SvgZip(ExportNames.safeTitle(score.getTitle()) + "-svg.zip", buffer.toByteArray());
     }
@@ -329,7 +331,7 @@ public class ExportServiceImpl implements ExportService {
     @Transactional(readOnly = true)
     public List<ExportFileResponse> listExports(String scoreId) {
         Score score =
-                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
         scoreFileService.checkCanView(score);
         if (!scoreFileService.canDownload(score)) {
             return List.of(); // người xem chưa được tải thì không thấy danh sách file đã xuất
@@ -423,7 +425,7 @@ public class ExportServiceImpl implements ExportService {
         return scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(scoreId, FileType.MIDI).stream()
                 .filter(f -> f.getIsCurrent() == null || f.getIsCurrent())
                 .max(Comparator.comparingInt(ExportServiceImpl::versionOf))
-                .orElseThrow(() -> new AppException(ErrorCode.FILE_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(ScoreErrorCode.FILE_NOT_EXISTED));
     }
 
     private boolean existsOnDisk(ScoreFile file) {

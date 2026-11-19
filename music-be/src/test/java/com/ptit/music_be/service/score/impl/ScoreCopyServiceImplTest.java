@@ -30,7 +30,7 @@ import com.ptit.music_be.entity.ScoreFile;
 import com.ptit.music_be.entity.ScoreTag;
 import com.ptit.music_be.entity.Tag;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.repository.score.ScoreFileRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.service.score.CopyOptions;
@@ -154,15 +154,15 @@ class ScoreCopyServiceImplTest {
                 .thenReturn(List.of());
 
         assertThatThrownBy(() -> service.copy("src", newOwner, null))
-                .isInstanceOfSatisfying(
-                        AppException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.MUSICXML_NOT_READY));
+                .isInstanceOfSatisfying(AppException.class, e -> assertThat(e.getErrorCode())
+                        .isEqualTo(ScoreErrorCode.MUSICXML_NOT_READY));
         verify(scoreRepository, never()).save(any(Score.class));
     }
 
     @Test
     void missingSourceScoreFails() {
         assertThatThrownBy(() -> service.copy("nope", newOwner, null))
-                .isInstanceOfSatisfying(
-                        AppException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.SCORE_NOT_EXISTED));
+                .isInstanceOfSatisfying(AppException.class, e -> assertThat(e.getErrorCode())
+                        .isEqualTo(ScoreErrorCode.SCORE_NOT_EXISTED));
     }
 }

@@ -43,6 +43,7 @@ import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.TeamErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.service.auth.EmailService;
@@ -143,7 +144,7 @@ class TeamShowFlowTest {
         assertEquals("VALID", teamService.preview(link.getToken()).getState());
         teamService.accept(link.getToken());
         // Mã mời chỉ dùng một lần
-        assertEquals(ErrorCode.TEAM_INVITATION_INVALID, codeOf(() -> teamService.accept(link.getToken())));
+        assertEquals(TeamErrorCode.TEAM_INVITATION_INVALID, codeOf(() -> teamService.accept(link.getToken())));
 
         asOwner();
         assertEquals(3, teamService.members(team.getId()).size());
@@ -214,19 +215,19 @@ class TeamShowFlowTest {
         assertEquals(1, notifications(REVIEWER, NotificationType.SHOW_ITEM_SUBMITTED));
         // Người phối không tự duyệt và không kéo được bài của người khác
         assertEquals(
-                ErrorCode.SHOW_ITEM_TRANSITION_INVALID,
+                TeamErrorCode.SHOW_ITEM_TRANSITION_INVALID,
                 codeOf(() -> showService.changeStatus(
                         showId, itemId, new ShowItemStatusRequest(ShowItemStatus.APPROVED, null))));
         String otherItem = itemOf(detail, scoreIds.get(1)).getId();
         assertEquals(
-                ErrorCode.SHOW_ITEM_TRANSITION_INVALID,
+                TeamErrorCode.SHOW_ITEM_TRANSITION_INVALID,
                 codeOf(() -> showService.changeStatus(
                         showId, otherItem, new ShowItemStatusRequest(ShowItemStatus.ARRANGING, null))));
 
         // 6. Người duyệt trả lại phải kèm góp ý; trả lại thì người phối được báo, gửi lại rồi duyệt
         as(REVIEWER);
         assertEquals(
-                ErrorCode.SHOW_ITEM_NOTE_REQUIRED,
+                TeamErrorCode.SHOW_ITEM_NOTE_REQUIRED,
                 codeOf(() -> showService.changeStatus(
                         showId, itemId, new ShowItemStatusRequest(ShowItemStatus.ARRANGING, " "))));
         ShowDetailResponse returned = showService.changeStatus(
@@ -248,14 +249,14 @@ class TeamShowFlowTest {
         // 8. Team luôn còn ít nhất một chủ; xóa người phối thì người đó mất quyền sửa
         asOwner();
         String ownerId = owner.getId();
-        assertEquals(ErrorCode.TEAM_LAST_OWNER, codeOf(() -> teamService.removeMember(team.getId(), ownerId)));
+        assertEquals(TeamErrorCode.TEAM_LAST_OWNER, codeOf(() -> teamService.removeMember(team.getId(), ownerId)));
         teamService.removeMember(team.getId(), arrangerId);
         em.flush();
         em.clear();
         as(ARRANGER);
         assertFalse(permissionService.canEdit(
                 scoreRepository.findById(scoreIds.get(0)).orElseThrow()));
-        assertEquals(ErrorCode.TEAM_NOT_EXISTED, codeOf(() -> teamService.get(team.getId())));
+        assertEquals(TeamErrorCode.TEAM_NOT_EXISTED, codeOf(() -> teamService.get(team.getId())));
     }
 
     @Test
@@ -263,7 +264,8 @@ class TeamShowFlowTest {
         // Tài khoản mẫu thường dùng gói Free (không có quyền lợi team)
         as(ARRANGER);
         assertEquals(
-                ErrorCode.TEAM_PLAN_REQUIRED, codeOf(() -> teamService.create(new TeamRequest("Không được", null))));
+                TeamErrorCode.TEAM_PLAN_REQUIRED,
+                codeOf(() -> teamService.create(new TeamRequest("Không được", null))));
 
         asOwner();
         TeamResponse team = teamService.create(new TeamRequest("Team B", null));
@@ -277,20 +279,21 @@ class TeamShowFlowTest {
                 .visibility("PRIVATE")
                 .build());
         assertEquals(
-                ErrorCode.TEAM_SCORE_NOT_OWNER, codeOf(() -> teamService.addScore(team.getId(), ownersScore.getId())));
+                TeamErrorCode.TEAM_SCORE_NOT_OWNER,
+                codeOf(() -> teamService.addScore(team.getId(), ownersScore.getId())));
         // MANAGER không đụng tới OWNER
         String ownerId = member(OWNER).getId();
         assertEquals(
-                ErrorCode.TEAM_ROLE_SCOPE,
+                TeamErrorCode.TEAM_ROLE_SCOPE,
                 codeOf(() -> teamService.changeRole(team.getId(), ownerId, TeamRole.VIEWER)));
 
         // Chỉ chủ team xóa được team; xóa xong thì không còn ai vào được
-        assertEquals(ErrorCode.TEAM_OWNER_ONLY, codeOf(() -> teamService.delete(team.getId())));
+        assertEquals(TeamErrorCode.TEAM_OWNER_ONLY, codeOf(() -> teamService.delete(team.getId())));
         asOwner();
         teamService.delete(team.getId());
         em.flush();
         em.clear();
-        assertEquals(ErrorCode.TEAM_NOT_EXISTED, codeOf(() -> teamService.get(team.getId())));
+        assertEquals(TeamErrorCode.TEAM_NOT_EXISTED, codeOf(() -> teamService.get(team.getId())));
         // Xóa mềm: chủ team thấy trong danh sách đã xóa và khôi phục được
         assertEquals(1, teamService.deletedTeams().size());
         assertEquals(team.getId(), teamService.restore(team.getId()).getId());
@@ -338,16 +341,18 @@ class TeamShowFlowTest {
 
         // Việc của chủ nhóm (mặc định): sửa thông tin nhóm, tạo thêm quản lý, đụng tới chủ nhóm, chỉnh bảng quyền
         assertEquals(
-                ErrorCode.TEAM_FORBIDDEN, codeOf(() -> teamService.update(teamId, new TeamRequest("Đổi tên", null))));
+                TeamErrorCode.TEAM_FORBIDDEN,
+                codeOf(() -> teamService.update(teamId, new TeamRequest("Đổi tên", null))));
         assertEquals(
-                ErrorCode.TEAM_OWNER_ONLY,
+                TeamErrorCode.TEAM_OWNER_ONLY,
                 codeOf(() -> teamService.updatePermissions(teamId, new TeamPermissionsRequest(Map.of()))));
         assertEquals(
-                ErrorCode.TEAM_ROLE_SCOPE,
+                TeamErrorCode.TEAM_ROLE_SCOPE,
                 codeOf(() -> teamService.invite(teamId, new TeamInviteRequest(null, TeamRole.MANAGER))));
         assertEquals(
-                ErrorCode.TEAM_ROLE_SCOPE, codeOf(() -> teamService.changeRole(teamId, arrangerId, TeamRole.MANAGER)));
-        assertEquals(ErrorCode.TEAM_ROLE_SCOPE, codeOf(() -> teamService.removeMember(teamId, ownerId)));
+                TeamErrorCode.TEAM_ROLE_SCOPE,
+                codeOf(() -> teamService.changeRole(teamId, arrangerId, TeamRole.MANAGER)));
+        assertEquals(TeamErrorCode.TEAM_ROLE_SCOPE, codeOf(() -> teamService.removeMember(teamId, ownerId)));
 
         // Bản nhạc của người khác trong team: quản lý sửa được nhưng không xóa, không chia sẻ / công khai
         Score score = scoreRepository.findById(ownersScore.getId()).orElseThrow();
@@ -361,7 +366,8 @@ class TeamShowFlowTest {
                 teamService.invite(teamId, new TeamInviteRequest(null, TeamRole.MANAGER));
         as(REVIEWER);
         assertEquals(
-                ErrorCode.TEAM_ROLE_SCOPE, codeOf(() -> teamService.revokeInvitation(teamId, secondManager.getId())));
+                TeamErrorCode.TEAM_ROLE_SCOPE,
+                codeOf(() -> teamService.revokeInvitation(teamId, secondManager.getId())));
 
         // Chủ nhóm làm được hết: đổi tên, hạ quản lý xuống người phối, thu hồi lời mời quản lý
         asOwner();
@@ -377,7 +383,7 @@ class TeamShowFlowTest {
         // Hết là quản lý thì không tạo buổi diễn được nữa
         as(REVIEWER);
         assertEquals(
-                ErrorCode.TEAM_FORBIDDEN,
+                TeamErrorCode.TEAM_FORBIDDEN,
                 codeOf(() -> showService.create(teamId, new ShowRequest("Không được", null, null, null, null))));
     }
 
@@ -415,11 +421,11 @@ class TeamShowFlowTest {
                 .getAllowedStatuses()
                 .isEmpty());
         assertEquals(
-                ErrorCode.SHOW_ITEM_APPROVED_LOCKED,
+                TeamErrorCode.SHOW_ITEM_APPROVED_LOCKED,
                 codeOf(() -> showService.changeStatus(
                         showId, itemId, new ShowItemStatusRequest(ShowItemStatus.IN_REVIEW, null))));
         assertEquals(
-                ErrorCode.SHOW_ITEM_APPROVED_LOCKED,
+                TeamErrorCode.SHOW_ITEM_APPROVED_LOCKED,
                 codeOf(() -> showService.updateItem(
                         showId, itemId, new ShowItemRequest(null, null, managerId, null, null))));
 
@@ -434,7 +440,7 @@ class TeamShowFlowTest {
         //    bỏ tích quản lý buổi diễn và quản lý thành viên. Quyền phải có kèm tự bật.
         asOwner();
         assertEquals(
-                ErrorCode.TEAM_ROLE_INVALID,
+                TeamErrorCode.TEAM_ROLE_INVALID,
                 codeOf(() -> teamService.updatePermissions(
                         teamId, new TeamPermissionsRequest(Map.of(TeamRole.OWNER, List.of())))));
         TeamPermissionsResponse saved = teamService.updatePermissions(
@@ -466,10 +472,10 @@ class TeamShowFlowTest {
                 "Team D mới",
                 teamService.update(teamId, new TeamRequest("Team D mới", null)).getName());
         assertEquals(
-                ErrorCode.TEAM_FORBIDDEN,
+                TeamErrorCode.TEAM_FORBIDDEN,
                 codeOf(() -> showService.create(teamId, new ShowRequest("Không được", null, null, null, null))));
         assertEquals(
-                ErrorCode.TEAM_FORBIDDEN,
+                TeamErrorCode.TEAM_FORBIDDEN,
                 codeOf(() -> teamService.invite(teamId, new TeamInviteRequest(null, TeamRole.VIEWER))));
         Score score = scoreRepository.findById(ownersScore.getId()).orElseThrow();
         assertEquals(ScoreAccess.OWNER, permissionService.resolve(score).level());

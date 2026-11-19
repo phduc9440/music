@@ -25,7 +25,9 @@ import com.ptit.music_be.dto.response.score.ScoreContent;
 import com.ptit.music_be.dto.response.score.ScoreSaveResponse;
 import com.ptit.music_be.entity.ScoreLiveOp;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.CollabErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.repository.score.ScoreLiveOpRepository;
 import com.ptit.music_be.service.collab.live.LiveAccess.Access;
 import com.ptit.music_be.service.collab.live.LiveMessages.JoinRequest;
@@ -178,7 +180,7 @@ public class LiveCollabService {
     public void join(String scoreId, String sessionId, String email, JoinRequest request) {
         Access who = access.resolve(email, scoreId);
         if (!who.canEdit()) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+            throw new AppException(AccountErrorCode.UNAUTHORIZED);
         }
         access.requireCollab(who);
         Instant now = clock.instant();
@@ -187,7 +189,7 @@ public class LiveCollabService {
         if (joined.fullDenied()) {
             // Không giữ chỗ người xem trong phiên sửa: rời hẳn để không chiếm màu và danh sách
             registry.remove(scoreId, sessionId);
-            throw new AppException(ErrorCode.LIVE_SESSION_FULL);
+            throw new AppException(CollabErrorCode.LIVE_SESSION_FULL);
         }
         Live live;
         try {
@@ -236,7 +238,7 @@ public class LiveCollabService {
         requireEditor(scoreId, sessionId);
         Live live = lives.get(scoreId);
         if (live == null) {
-            throw new AppException(ErrorCode.LIVE_OP_INVALID);
+            throw new AppException(CollabErrorCode.LIVE_OP_INVALID);
         }
         List<Key> keys = keysOf(live, request.measures());
         Instant now = clock.instant();
@@ -274,7 +276,7 @@ public class LiveCollabService {
         validate(request);
         Instant now = clock.instant();
         if (!participant.allowOp(now, MAX_OPS_PER_SECOND)) {
-            throw new AppException(ErrorCode.LIVE_RATE_LIMITED);
+            throw new AppException(CollabErrorCode.LIVE_RATE_LIMITED);
         }
         Live live = lives.get(scoreId);
         if (live == null) {
@@ -421,7 +423,7 @@ public class LiveCollabService {
     private LiveParticipant requireEditor(String scoreId, String sessionId) {
         LiveParticipant participant = registry.find(scoreId, sessionId);
         if (participant == null || !participant.editing()) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+            throw new AppException(AccountErrorCode.UNAUTHORIZED);
         }
         return participant;
     }
@@ -480,7 +482,7 @@ public class LiveCollabService {
                         topic(scoreId, "version"), new VersionBroadcast(scoreId, saved.getVersion(), seqTo, false));
                 return true;
             } catch (AppException e) {
-                if (e.getErrorCode() == ErrorCode.SCORE_VERSION_CONFLICT) {
+                if (e.getErrorCode() == ScoreErrorCode.SCORE_VERSION_CONFLICT) {
                     // Có version mới ngoài phiên: không còn lưu chồng lên được. Đóng phiên để mọi người tải lại.
                     log.error("Phiên cộng tác {} lệch version, đóng phiên", scoreId);
                     lives.remove(scoreId);
@@ -504,23 +506,23 @@ public class LiveCollabService {
                 || request.opId().isBlank()
                 || request.opId().length() > 36
                 || hasMeasures == hasStructural) {
-            throw new AppException(ErrorCode.LIVE_OP_INVALID);
+            throw new AppException(CollabErrorCode.LIVE_OP_INVALID);
         }
         if (hasStructural) {
             if (request.structural().afterXml().length() > MAX_STRUCTURAL_BYTES) {
-                throw new AppException(ErrorCode.LIVE_OP_INVALID);
+                throw new AppException(CollabErrorCode.LIVE_OP_INVALID);
             }
             return;
         }
         int total = 0;
         for (MeasureChange change : request.measures()) {
             if (change == null || change.afterXml() == null || change.beforeHash() == null) {
-                throw new AppException(ErrorCode.LIVE_OP_INVALID);
+                throw new AppException(CollabErrorCode.LIVE_OP_INVALID);
             }
             total += change.afterXml().length();
         }
         if (total > MAX_MEASURE_OP_BYTES || request.measures().size() > MAX_LOCK_KEYS) {
-            throw new AppException(ErrorCode.LIVE_OP_INVALID);
+            throw new AppException(CollabErrorCode.LIVE_OP_INVALID);
         }
     }
 
@@ -531,14 +533,14 @@ public class LiveCollabService {
             return keys;
         }
         if (refs.size() > MAX_LOCK_KEYS) {
-            throw new AppException(ErrorCode.LIVE_OP_INVALID);
+            throw new AppException(CollabErrorCode.LIVE_OP_INVALID);
         }
         for (MeasureRef ref : refs) {
             if (ref.partIndex() < 0
                     || ref.partIndex() >= shape.size()
                     || ref.measureIndex() < 0
                     || ref.measureIndex() >= shape.get(ref.partIndex())) {
-                throw new AppException(ErrorCode.LIVE_OP_INVALID);
+                throw new AppException(CollabErrorCode.LIVE_OP_INVALID);
             }
             keys.add(new Key(ref.partIndex(), ref.measureIndex()));
         }

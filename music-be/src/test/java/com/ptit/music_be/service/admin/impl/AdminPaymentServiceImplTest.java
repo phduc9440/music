@@ -23,7 +23,7 @@ import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.PaymentOrder;
 import com.ptit.music_be.entity.Plan;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.BillingErrorCode;
 import com.ptit.music_be.repository.billing.PaymentOrderRepository;
 import com.ptit.music_be.service.billing.SubscriptionService;
 
@@ -67,7 +67,7 @@ class AdminPaymentServiceImplTest {
 
         AppException e = assertThrows(AppException.class, () -> service.refund("o"));
 
-        assertEquals(ErrorCode.PAYMENT_ORDER_NOT_REFUNDABLE, e.getErrorCode());
+        assertEquals(BillingErrorCode.PAYMENT_ORDER_NOT_REFUNDABLE, e.getErrorCode());
         verify(subscriptions, never()).revoke(any(), any(), any());
     }
 
@@ -98,11 +98,11 @@ class AdminPaymentServiceImplTest {
         LocalDate today = LocalDate.now();
 
         assertEquals(
-                ErrorCode.PAYMENT_RANGE_INVALID,
+                BillingErrorCode.PAYMENT_RANGE_INVALID,
                 assertThrows(AppException.class, () -> service.revenue(today.minusDays(400), today))
                         .getErrorCode());
         assertEquals(
-                ErrorCode.PAYMENT_RANGE_INVALID,
+                BillingErrorCode.PAYMENT_RANGE_INVALID,
                 assertThrows(AppException.class, () -> service.revenue(today, today.minusDays(1)))
                         .getErrorCode());
     }

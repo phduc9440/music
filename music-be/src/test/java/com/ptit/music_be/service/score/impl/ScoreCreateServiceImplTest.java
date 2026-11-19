@@ -36,6 +36,8 @@ import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreFile;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.BillingErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.ScoreFileRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
@@ -159,19 +161,19 @@ class ScoreCreateServiceImplTest {
     /** CR-3 */
     @Test
     void invalidOptionsAreRejectedWithoutSavingAnything() {
-        assertThat(errorOf(with(r -> r.setBeatType(3)))).isEqualTo(ErrorCode.BLANK_SCORE_OPTION_INVALID);
-        assertThat(errorOf(with(r -> r.setMeasures(0)))).isEqualTo(ErrorCode.BLANK_SCORE_OPTION_INVALID);
-        assertThat(errorOf(with(r -> r.setMeasures(201)))).isEqualTo(ErrorCode.BLANK_SCORE_OPTION_INVALID);
-        assertThat(errorOf(with(r -> r.setKeyFifths(8)))).isEqualTo(ErrorCode.BLANK_SCORE_OPTION_INVALID);
-        assertThat(errorOf(with(r -> r.setKeyFifths(-8)))).isEqualTo(ErrorCode.BLANK_SCORE_OPTION_INVALID);
-        assertThat(errorOf(with(r -> r.setBeats(13)))).isEqualTo(ErrorCode.BLANK_SCORE_OPTION_INVALID);
-        assertThat(errorOf(with(r -> r.setBeats(0)))).isEqualTo(ErrorCode.BLANK_SCORE_OPTION_INVALID);
-        assertThat(errorOf(with(r -> r.setTempoBpm(19)))).isEqualTo(ErrorCode.BLANK_SCORE_OPTION_INVALID);
-        assertThat(errorOf(with(r -> r.setTempoBpm(301)))).isEqualTo(ErrorCode.BLANK_SCORE_OPTION_INVALID);
-        assertThat(errorOf(with(r -> r.setPreset(null)))).isEqualTo(ErrorCode.BLANK_SCORE_OPTION_INVALID);
-        assertThat(errorOf(with(r -> r.setMode(null)))).isEqualTo(ErrorCode.BLANK_SCORE_OPTION_INVALID);
-        assertThat(errorOf(with(r -> r.setBeats(null)))).isEqualTo(ErrorCode.BLANK_SCORE_OPTION_INVALID);
-        assertThat(errorOf(null)).isEqualTo(ErrorCode.BLANK_SCORE_OPTION_INVALID);
+        assertThat(errorOf(with(r -> r.setBeatType(3)))).isEqualTo(ScoreErrorCode.BLANK_SCORE_OPTION_INVALID);
+        assertThat(errorOf(with(r -> r.setMeasures(0)))).isEqualTo(ScoreErrorCode.BLANK_SCORE_OPTION_INVALID);
+        assertThat(errorOf(with(r -> r.setMeasures(201)))).isEqualTo(ScoreErrorCode.BLANK_SCORE_OPTION_INVALID);
+        assertThat(errorOf(with(r -> r.setKeyFifths(8)))).isEqualTo(ScoreErrorCode.BLANK_SCORE_OPTION_INVALID);
+        assertThat(errorOf(with(r -> r.setKeyFifths(-8)))).isEqualTo(ScoreErrorCode.BLANK_SCORE_OPTION_INVALID);
+        assertThat(errorOf(with(r -> r.setBeats(13)))).isEqualTo(ScoreErrorCode.BLANK_SCORE_OPTION_INVALID);
+        assertThat(errorOf(with(r -> r.setBeats(0)))).isEqualTo(ScoreErrorCode.BLANK_SCORE_OPTION_INVALID);
+        assertThat(errorOf(with(r -> r.setTempoBpm(19)))).isEqualTo(ScoreErrorCode.BLANK_SCORE_OPTION_INVALID);
+        assertThat(errorOf(with(r -> r.setTempoBpm(301)))).isEqualTo(ScoreErrorCode.BLANK_SCORE_OPTION_INVALID);
+        assertThat(errorOf(with(r -> r.setPreset(null)))).isEqualTo(ScoreErrorCode.BLANK_SCORE_OPTION_INVALID);
+        assertThat(errorOf(with(r -> r.setMode(null)))).isEqualTo(ScoreErrorCode.BLANK_SCORE_OPTION_INVALID);
+        assertThat(errorOf(with(r -> r.setBeats(null)))).isEqualTo(ScoreErrorCode.BLANK_SCORE_OPTION_INVALID);
+        assertThat(errorOf(null)).isEqualTo(ScoreErrorCode.BLANK_SCORE_OPTION_INVALID);
 
         verify(scoreRepository, never()).save(any());
         verify(fileStorageService, never()).store(any(), any());
@@ -180,11 +182,11 @@ class ScoreCreateServiceImplTest {
     /** PL-5: kho đã đầy thì không tạo gì. */
     @Test
     void storageLimitStopsTheCreationBeforeAnythingIsSaved() {
-        doThrow(new AppException(ErrorCode.PLAN_LIMIT_REACHED))
+        doThrow(new AppException(BillingErrorCode.PLAN_LIMIT_REACHED))
                 .when(entitlementService)
                 .checkStorage(eq("m-1"), anyLong());
 
-        assertThat(errorOf(valid())).isEqualTo(ErrorCode.PLAN_LIMIT_REACHED);
+        assertThat(errorOf(valid())).isEqualTo(BillingErrorCode.PLAN_LIMIT_REACHED);
 
         verify(scoreRepository, never()).save(any());
         verify(fileStorageService, never()).store(any(), any());
@@ -216,10 +218,10 @@ class ScoreCreateServiceImplTest {
     /** CR-4 */
     @Test
     void blankOrTooLongTitleAndComposerAreRejected() {
-        assertThat(errorOf(with(r -> r.setTitle("   ")))).isEqualTo(ErrorCode.SCORE_TITLE_INVALID);
-        assertThat(errorOf(with(r -> r.setTitle(null)))).isEqualTo(ErrorCode.SCORE_TITLE_INVALID);
-        assertThat(errorOf(with(r -> r.setTitle("x".repeat(256))))).isEqualTo(ErrorCode.SCORE_TITLE_INVALID);
-        assertThat(errorOf(with(r -> r.setComposer("x".repeat(256))))).isEqualTo(ErrorCode.SCORE_COMPOSER_INVALID);
+        assertThat(errorOf(with(r -> r.setTitle("   ")))).isEqualTo(ScoreErrorCode.SCORE_TITLE_INVALID);
+        assertThat(errorOf(with(r -> r.setTitle(null)))).isEqualTo(ScoreErrorCode.SCORE_TITLE_INVALID);
+        assertThat(errorOf(with(r -> r.setTitle("x".repeat(256))))).isEqualTo(ScoreErrorCode.SCORE_TITLE_INVALID);
+        assertThat(errorOf(with(r -> r.setComposer("x".repeat(256))))).isEqualTo(ScoreErrorCode.SCORE_COMPOSER_INVALID);
 
         verify(scoreRepository, never()).save(any());
     }

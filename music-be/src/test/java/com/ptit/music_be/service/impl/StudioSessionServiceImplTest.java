@@ -30,7 +30,7 @@ import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.PracticeSession;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.LibraryErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.practice.PracticeSessionRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
@@ -124,7 +124,7 @@ class StudioSessionServiceImplTest {
 
         assertThatThrownBy(() -> service.createSession(request(null, null)))
                 .isInstanceOfSatisfying(AppException.class, exception -> {
-                    assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.STUDIO_SESSION_ALREADY_ACTIVE);
+                    assertThat(exception.getErrorCode()).isEqualTo(LibraryErrorCode.STUDIO_SESSION_ALREADY_ACTIVE);
                     assertThat(exception.getPayload()).isEqualTo(java.util.Map.of("activeSessionId", "active-session"));
                 });
     }

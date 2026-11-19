@@ -23,7 +23,9 @@ import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.event.ChordTaskCreatedEvent;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.AiErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.mapper.AiTaskMapper;
 import com.ptit.music_be.repository.ai.AiTaskRepository;
 import com.ptit.music_be.repository.auth.MemberRepository;
@@ -76,33 +78,33 @@ public class ChordSuggestionServiceImpl implements ChordSuggestionService {
     public AiTaskResponse request(String scoreId, ChordSuggestionRequest request) {
         Score score = scoreRepository
                 .findById(scoreId == null ? "" : scoreId)
-                .orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
         if (!permissionService.resolve(score).can(ScoreAccess.REVIEW)) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+            throw new AppException(AccountErrorCode.UNAUTHORIZED);
         }
         ChordStyle style = ChordStyle.parse(request == null ? null : request.getStyle())
-                .orElseThrow(() -> new AppException(ErrorCode.CHORD_STYLE_INVALID));
+                .orElseThrow(() -> new AppException(AiErrorCode.CHORD_STYLE_INVALID));
         Integer baseVersion = score.getCurrentVersion();
         if (baseVersion == null || baseVersion < 1) {
-            throw new AppException(ErrorCode.MUSICXML_NOT_READY);
+            throw new AppException(ScoreErrorCode.MUSICXML_NOT_READY);
         }
         if (aiTaskRepository.existsByScoreIdAndTaskTypeAndStatusIn(score.getId(), AiTaskType.OMR_CONVERSION, ACTIVE)) {
-            throw new AppException(ErrorCode.SCORE_BUSY);
+            throw new AppException(ScoreErrorCode.SCORE_BUSY);
         }
 
         // Khóa dòng người bấm để hai yêu cầu cùng lúc không cùng vượt hạn mức
         Member member = memberRepository
                 .findByEmailForUpdate(SecurityUtils.getCurrentEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
         if (aiTaskRepository.existsByScoreIdAndTaskTypeAndStatusIn(
                 score.getId(), AiTaskType.CHORD_GENERATION, ACTIVE)) {
-            throw new AppException(ErrorCode.CHORD_TASK_RUNNING);
+            throw new AppException(AiErrorCode.CHORD_TASK_RUNNING);
         }
         suggestionRepository
                 .findFirstByScoreIdAndSourceAndStatus(
                         score.getId(), SuggestionSource.CHORD_GENERATION, SuggestionStatus.OPEN)
                 .ifPresent(open -> {
-                    throw new AppException(ErrorCode.CHORD_SUGGESTION_PENDING, Map.of("suggestionId", open.getId()));
+                    throw new AppException(AiErrorCode.CHORD_SUGGESTION_PENDING, Map.of("suggestionId", open.getId()));
                 });
         entitlementService.checkAvailable(member.getId(), UsageMetric.CHORD_GENERATIONS, 1);
 

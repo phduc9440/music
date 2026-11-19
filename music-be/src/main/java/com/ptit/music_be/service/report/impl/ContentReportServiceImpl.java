@@ -31,7 +31,10 @@ import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreComment;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.CollabErrorCode;
+import com.ptit.music_be.exception.code.CommunityErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.forum.ForumPostRepository;
 import com.ptit.music_be.repository.forum.ForumThreadRepository;
@@ -77,12 +80,12 @@ public class ContentReportServiceImpl implements ContentReportService {
     @Transactional
     public void reportScore(String scoreId, ReportRequest request) {
         Score score =
-                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
         scoreFileService.checkCanView(score);
         Member me = currentMember();
         Member owner = score.getMember();
         if (owner != null && owner.getId().equals(me.getId())) {
-            throw new AppException(ErrorCode.REPORT_OWN_CONTENT);
+            throw new AppException(CommunityErrorCode.REPORT_OWN_CONTENT);
         }
         ValidRequest valid = validate(request);
         guard(me, reportRepository.existsByReporterIdAndScoreIdAndStatus(me.getId(), scoreId, ReportStatus.PENDING));
@@ -101,15 +104,15 @@ public class ContentReportServiceImpl implements ContentReportService {
     public void reportComment(String commentId, ReportRequest request) {
         ScoreComment comment = commentRepository
                 .findById(commentId)
-                .orElseThrow(() -> new AppException(ErrorCode.COMMENT_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(CollabErrorCode.COMMENT_NOT_EXISTED));
         Score score = scoreRepository
                 .findById(comment.getScore().getId())
-                .orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
         scoreFileService.checkCanView(score);
         Member me = currentMember();
         Member author = comment.getAuthor();
         if (author != null && author.getId().equals(me.getId())) {
-            throw new AppException(ErrorCode.REPORT_OWN_CONTENT);
+            throw new AppException(CommunityErrorCode.REPORT_OWN_CONTENT);
         }
         ValidRequest valid = validate(request);
         guard(
@@ -131,10 +134,10 @@ public class ContentReportServiceImpl implements ContentReportService {
     public void reportForumThread(String threadId, ReportRequest request) {
         ForumThread thread = forumThreadRepository
                 .findById(threadId)
-                .orElseThrow(() -> new AppException(ErrorCode.FORUM_THREAD_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(CommunityErrorCode.FORUM_THREAD_NOT_EXISTED));
         Member me = currentMember();
         if (thread.getAuthor() != null && thread.getAuthor().getId().equals(me.getId())) {
-            throw new AppException(ErrorCode.REPORT_OWN_CONTENT);
+            throw new AppException(CommunityErrorCode.REPORT_OWN_CONTENT);
         }
         ValidRequest valid = validate(request);
         guard(
@@ -156,14 +159,14 @@ public class ContentReportServiceImpl implements ContentReportService {
     public void reportForumPost(String postId, ReportRequest request) {
         ForumPost post = forumPostRepository
                 .findById(postId)
-                .orElseThrow(() -> new AppException(ErrorCode.FORUM_POST_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(CommunityErrorCode.FORUM_POST_NOT_EXISTED));
         // Chủ đề chứa bài đã bị ẩn thì bài cũng coi như không còn
         ForumThread thread = forumThreadRepository
                 .findById(post.getThread().getId())
-                .orElseThrow(() -> new AppException(ErrorCode.FORUM_POST_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(CommunityErrorCode.FORUM_POST_NOT_EXISTED));
         Member me = currentMember();
         if (post.getAuthor() != null && post.getAuthor().getId().equals(me.getId())) {
-            throw new AppException(ErrorCode.REPORT_OWN_CONTENT);
+            throw new AppException(CommunityErrorCode.REPORT_OWN_CONTENT);
         }
         ValidRequest valid = validate(request);
         guard(me, reportRepository.existsByReporterIdAndForumPostIdAndStatus(me.getId(), postId, ReportStatus.PENDING));
@@ -234,26 +237,27 @@ public class ContentReportServiceImpl implements ContentReportService {
     @Transactional
     public ReportResponse resolve(String reportId, ResolveReportRequest request) {
         SecurityUtils.requirePermission(AdminPermission.REPORTS_MODERATE);
-        ContentReport report =
-                reportRepository.findById(reportId).orElseThrow(() -> new AppException(ErrorCode.REPORT_NOT_EXISTED));
+        ContentReport report = reportRepository
+                .findById(reportId)
+                .orElseThrow(() -> new AppException(CommunityErrorCode.REPORT_NOT_EXISTED));
         if (report.getStatus() != ReportStatus.PENDING) {
-            throw new AppException(ErrorCode.REPORT_ALREADY_HANDLED);
+            throw new AppException(CommunityErrorCode.REPORT_ALREADY_HANDLED);
         }
         ReportAction action = request == null ? null : request.getAction();
         if (action == null || !action.allowedFor(report.getTargetType())) {
-            throw new AppException(ErrorCode.REPORT_ACTION_INVALID);
+            throw new AppException(CommunityErrorCode.REPORT_ACTION_INVALID);
         }
         String note = request.getNote() == null || request.getNote().isBlank()
                 ? null
                 : request.getNote().trim();
         if (note != null && note.length() > MAX_NOTE) {
-            throw new AppException(ErrorCode.REPORT_NOTE_INVALID);
+            throw new AppException(CommunityErrorCode.REPORT_NOTE_INVALID);
         }
         Member me = currentMember();
         ContentReportRepository.TargetInfo info = targetInfo(report);
         boolean targetGone = info == null || info.getAvailable() == null || info.getAvailable() == 0;
         if (targetGone && action != ReportAction.DISMISS && action != ReportAction.LOCK_ACCOUNT) {
-            throw new AppException(ErrorCode.REPORT_TARGET_GONE);
+            throw new AppException(CommunityErrorCode.REPORT_TARGET_GONE);
         }
 
         switch (action) {
@@ -262,13 +266,13 @@ public class ContentReportServiceImpl implements ContentReportService {
                 unpublish(
                         scoreRepository
                                 .findById(report.getScore().getId())
-                                .orElseThrow(() -> new AppException(ErrorCode.REPORT_TARGET_GONE)),
+                                .orElseThrow(() -> new AppException(CommunityErrorCode.REPORT_TARGET_GONE)),
                         note);
             case SOFT_DELETE -> scoreService.deleteScore(report.getScore().getId(), note);
             case HIDE -> hide(report, me);
             case LOCK_ACCOUNT -> {
                 if (info == null || info.getOwnerId() == null) {
-                    throw new AppException(ErrorCode.REPORT_TARGET_GONE);
+                    throw new AppException(CommunityErrorCode.REPORT_TARGET_GONE);
                 }
                 adminMemberService.updateMember(
                         info.getOwnerId(),
@@ -316,7 +320,7 @@ public class ContentReportServiceImpl implements ContentReportService {
             case COMMENT -> {
                 ScoreComment comment = commentRepository
                         .findById(report.getComment().getId())
-                        .orElseThrow(() -> new AppException(ErrorCode.REPORT_TARGET_GONE));
+                        .orElseThrow(() -> new AppException(CommunityErrorCode.REPORT_TARGET_GONE));
                 comment.setHiddenAt(now);
                 comment.setHiddenBy(admin);
                 commentRepository.save(comment);
@@ -324,7 +328,7 @@ public class ContentReportServiceImpl implements ContentReportService {
             case FORUM_THREAD -> {
                 ForumThread thread = forumThreadRepository
                         .findById(report.getForumThread().getId())
-                        .orElseThrow(() -> new AppException(ErrorCode.REPORT_TARGET_GONE));
+                        .orElseThrow(() -> new AppException(CommunityErrorCode.REPORT_TARGET_GONE));
                 thread.setHiddenAt(now);
                 thread.setHiddenBy(admin);
                 forumThreadRepository.save(thread);
@@ -332,7 +336,7 @@ public class ContentReportServiceImpl implements ContentReportService {
             case FORUM_POST -> {
                 ForumPost post = forumPostRepository
                         .findById(report.getForumPost().getId())
-                        .orElseThrow(() -> new AppException(ErrorCode.REPORT_TARGET_GONE));
+                        .orElseThrow(() -> new AppException(CommunityErrorCode.REPORT_TARGET_GONE));
                 post.setHiddenAt(now);
                 post.setHiddenBy(admin);
                 forumPostRepository.save(post);
@@ -346,7 +350,7 @@ public class ContentReportServiceImpl implements ContentReportService {
                     forumThreadRepository.save(parent);
                 }
             }
-            default -> throw new AppException(ErrorCode.REPORT_ACTION_INVALID);
+            default -> throw new AppException(CommunityErrorCode.REPORT_ACTION_INVALID);
         }
     }
 
@@ -374,28 +378,28 @@ public class ContentReportServiceImpl implements ContentReportService {
 
     private static ValidRequest validate(ReportRequest request) {
         if (request == null || request.getReason() == null) {
-            throw new AppException(ErrorCode.REPORT_REASON_INVALID);
+            throw new AppException(CommunityErrorCode.REPORT_REASON_INVALID);
         }
         String details = request.getDetails() == null || request.getDetails().isBlank()
                 ? null
                 : request.getDetails().trim();
         if (details != null && details.length() > MAX_DETAILS) {
-            throw new AppException(ErrorCode.REPORT_REASON_INVALID);
+            throw new AppException(CommunityErrorCode.REPORT_REASON_INVALID);
         }
         if (request.getReason() == ReportReason.OTHER && details == null) {
-            throw new AppException(ErrorCode.REPORT_REASON_INVALID);
+            throw new AppException(CommunityErrorCode.REPORT_REASON_INVALID);
         }
         return new ValidRequest(request.getReason(), details);
     }
 
     private void guard(Member me, boolean alreadyPending) {
         if (alreadyPending) {
-            throw new AppException(ErrorCode.REPORT_DUPLICATED);
+            throw new AppException(CommunityErrorCode.REPORT_DUPLICATED);
         }
         if (reportRepository.countByReporterIdAndCreatedAtAfter(
                         me.getId(), LocalDateTime.now().minusHours(24))
                 >= MAX_REPORTS_PER_DAY) {
-            throw new AppException(ErrorCode.REPORT_RATE_LIMITED);
+            throw new AppException(CommunityErrorCode.REPORT_RATE_LIMITED);
         }
     }
 
@@ -493,6 +497,6 @@ public class ContentReportServiceImpl implements ContentReportService {
     private Member currentMember() {
         return memberRepository
                 .findByEmail(SecurityUtils.getCurrentEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
     }
 }

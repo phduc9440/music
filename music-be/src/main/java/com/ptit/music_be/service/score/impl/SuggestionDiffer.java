@@ -22,7 +22,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.utils.MeasureHasher;
 import com.ptit.music_be.utils.MusicXmlInspector;
 
@@ -182,7 +182,7 @@ final class SuggestionDiffer {
             transformer.transform(new DOMSource(node), new StreamResult(writer));
             return writer.toString();
         } catch (TransformerException e) {
-            throw new AppException(ErrorCode.MUSICXML_INVALID);
+            throw new AppException(ScoreErrorCode.MUSICXML_INVALID);
         }
     }
 
@@ -191,7 +191,7 @@ final class SuggestionDiffer {
     private static List<Element> partsOf(Document document) {
         Element root = document.getDocumentElement();
         if (root == null || !"score-partwise".equals(root.getTagName())) {
-            throw new AppException(ErrorCode.MUSICXML_INVALID);
+            throw new AppException(ScoreErrorCode.MUSICXML_INVALID);
         }
         return MusicXmlInspector.childElements(root, "part");
     }

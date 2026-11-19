@@ -11,7 +11,7 @@ import com.ptit.music_be.dto.enums.score.Visibility;
 import com.ptit.music_be.dto.request.admin.AdminScoreBulkRequest;
 import com.ptit.music_be.dto.response.admin.AdminScoreBulkResponse;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
 import com.ptit.music_be.service.admin.AdminScoreBulkService;
 import com.ptit.music_be.service.score.ScoreService;
 
@@ -36,7 +36,7 @@ public class AdminScoreBulkServiceImpl implements AdminScoreBulkService {
     @Override
     public AdminScoreBulkResponse apply(AdminScoreBulkRequest request) {
         if (request.getIds() == null || request.getIds().isEmpty() || request.getAction() == null) {
-            throw new AppException(ErrorCode.INVALID_REQUEST);
+            throw new AppException(AccountErrorCode.INVALID_REQUEST);
         }
         int success = 0;
         List<AdminScoreBulkResponse.Failure> failures = new ArrayList<>();
@@ -52,7 +52,8 @@ public class AdminScoreBulkServiceImpl implements AdminScoreBulkService {
                         new AdminScoreBulkResponse.Failure(id, e.getErrorCode().getMessage()));
             } catch (RuntimeException e) {
                 log.error("Bulk score action {} failed for {}", request.getAction(), id, e);
-                failures.add(new AdminScoreBulkResponse.Failure(id, ErrorCode.UNCATEGORIZED_EXCEPTION.getMessage()));
+                failures.add(
+                        new AdminScoreBulkResponse.Failure(id, AccountErrorCode.UNCATEGORIZED_EXCEPTION.getMessage()));
             }
         }
         return AdminScoreBulkResponse.builder()

@@ -11,7 +11,7 @@ import com.ptit.music_be.dto.enums.ai.AiTaskType;
 import com.ptit.music_be.dto.enums.score.FileType;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 
 class ExportOptionsValidatorTest {
 
@@ -31,7 +31,7 @@ class ExportOptionsValidatorTest {
     void assertInvalid(String format, String options, Score score) {
         assertThatThrownBy(() -> validator.validate(format, options == null ? null : json(options), score))
                 .isInstanceOfSatisfying(AppException.class, e -> assertThat(e.getErrorCode())
-                        .isEqualTo(ErrorCode.EXPORT_OPTION_INVALID));
+                        .isEqualTo(ScoreErrorCode.EXPORT_OPTION_INVALID));
     }
 
     private JsonNode json2(String text) {

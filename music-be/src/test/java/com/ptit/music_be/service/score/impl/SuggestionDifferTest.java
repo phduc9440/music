@@ -14,7 +14,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.utils.MeasureHasher;
 import com.ptit.music_be.utils.MusicXmlInspector;
 
@@ -177,7 +177,7 @@ class SuggestionDifferTest {
         Document timewise = parse("<score-timewise version=\"4.0\"></score-timewise>");
 
         assertThatThrownBy(() -> SuggestionDiffer.shapeOf(timewise))
-                .isInstanceOfSatisfying(
-                        AppException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.MUSICXML_INVALID));
+                .isInstanceOfSatisfying(AppException.class, e -> assertThat(e.getErrorCode())
+                        .isEqualTo(ScoreErrorCode.MUSICXML_INVALID));
     }
 }

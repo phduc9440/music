@@ -16,7 +16,8 @@ import com.ptit.music_be.dto.response.score.TrashedScoreResponse;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.ScoreTrashRepository;
 import com.ptit.music_be.service.score.ScoreCoverService;
@@ -125,13 +126,13 @@ public class ScoreTrashServiceImpl implements ScoreTrashService {
         Member me = currentMember();
         return scoreTrashRepository
                 .findTrashedByIdAndMember(scoreId, me.getId())
-                .orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_IN_TRASH));
+                .orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_IN_TRASH));
     }
 
     private Member currentMember() {
         return memberRepository
                 .findByEmail(SecurityUtils.getCurrentEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
     }
 
     private TrashedScoreResponse toResponse(Score score) {

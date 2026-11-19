@@ -18,7 +18,8 @@ import com.ptit.music_be.dto.request.auth.UpdateThemeRequest;
 import com.ptit.music_be.dto.response.auth.MemberResponse;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.mapper.MemberMapper;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.service.auth.MemberService;
@@ -43,7 +44,7 @@ public class MemberServiceImpl implements MemberService {
     private Member currentMember() {
         return memberRepository
                 .findByEmail(SecurityUtils.getCurrentEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
     }
 
     @Override
@@ -81,19 +82,19 @@ public class MemberServiceImpl implements MemberService {
     @Transactional
     public MemberResponse uploadAvatar(MultipartFile file) {
         if (file == null || file.isEmpty() || file.getSize() > MAX_AVATAR_BYTES) {
-            throw new AppException(ErrorCode.AVATAR_INVALID);
+            throw new AppException(AccountErrorCode.AVATAR_INVALID);
         }
         String contentType = file.getContentType();
         if (contentType == null || !ALLOWED_TYPES.contains(contentType)) {
-            throw new AppException(ErrorCode.AVATAR_INVALID);
+            throw new AppException(AccountErrorCode.AVATAR_INVALID);
         }
         // Make sure the bytes really are a decodable image, not just a spoofed content type.
         try (InputStream in = file.getInputStream()) {
             if (ImageIO.read(in) == null) {
-                throw new AppException(ErrorCode.AVATAR_INVALID);
+                throw new AppException(AccountErrorCode.AVATAR_INVALID);
             }
         } catch (IOException e) {
-            throw new AppException(ErrorCode.AVATAR_INVALID);
+            throw new AppException(AccountErrorCode.AVATAR_INVALID);
         }
 
         Member member = currentMember();
@@ -115,7 +116,7 @@ public class MemberServiceImpl implements MemberService {
                                     "image"));
             url = (String) result.get("secure_url");
         } catch (Exception e) {
-            throw new AppException(ErrorCode.FILE_STORAGE_ERROR);
+            throw new AppException(ScoreErrorCode.FILE_STORAGE_ERROR);
         }
         // Cache-bust so browsers show the new image after an overwrite.
         member.setAvatarUrl(url + "?v=" + System.currentTimeMillis());
@@ -130,7 +131,7 @@ public class MemberServiceImpl implements MemberService {
             try {
                 cloudinary.uploader().destroy(publicId(member), ObjectUtils.asMap("invalidate", true));
             } catch (Exception e) {
-                throw new AppException(ErrorCode.FILE_STORAGE_ERROR);
+                throw new AppException(ScoreErrorCode.FILE_STORAGE_ERROR);
             }
             member.setAvatarUrl(null);
         }

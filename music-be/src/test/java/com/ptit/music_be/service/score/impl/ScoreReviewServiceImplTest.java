@@ -27,7 +27,7 @@ import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreReview;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.repository.score.ScoreReviewRepository;
@@ -110,7 +110,7 @@ class ScoreReviewServiceImplTest {
 
         AppException e = catchThrowableOfType(AppException.class, () -> service.deleteReview(SCORE_ID, "rv-1"));
 
-        assertThat(e.getErrorCode()).isEqualTo(ErrorCode.UNAUTHORIZED);
+        assertThat(e.getErrorCode()).isEqualTo(AccountErrorCode.UNAUTHORIZED);
         verify(reviewRepository, never()).delete(any());
     }
 

@@ -23,7 +23,8 @@ import com.ptit.music_be.entity.Plan;
 import com.ptit.music_be.entity.PlanSanction;
 import com.ptit.music_be.entity.Subscription;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.BillingErrorCode;
 import com.ptit.music_be.repository.ai.AiTaskRepository;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.billing.PlanRepository;
@@ -77,7 +78,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     public MySubscriptionResponse mine() {
         Member member = memberRepository
                 .findByEmail(SecurityUtils.getCurrentEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
         return subscriptionOf(member);
     }
 
@@ -85,8 +86,9 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     @Transactional(readOnly = true)
     @PreAuthorize("@perm.has('MEMBERS_VIEW')")
     public MySubscriptionResponse ofMember(String memberId) {
-        Member member =
-                memberRepository.findById(memberId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        Member member = memberRepository
+                .findById(memberId)
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
         return subscriptionOf(member);
     }
 
@@ -376,7 +378,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         for (String memberId : new java.util.LinkedHashSet<>(memberIds)) {
             Member member = memberRepository.findById(memberId).orElse(null);
             if (member == null) {
-                results.add(new BulkGrantResult(memberId, "FAILED", ErrorCode.USER_NOT_EXISTED.name(), null));
+                results.add(new BulkGrantResult(memberId, "FAILED", AccountErrorCode.USER_NOT_EXISTED.name(), null));
                 continue;
             }
             List<Subscription> active = ROLE_SUPER_ADMIN.equals(roleGrant(memberId))
@@ -384,7 +386,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                     : subscriptionRepository.findCurrent(memberId, now);
             if (active.isEmpty()) {
                 // Không có gói mua/được cấp để thu hồi (Free, Pro theo vai trò, hoặc SUPER_ADMIN)
-                results.add(new BulkGrantResult(memberId, "SKIPPED", ErrorCode.PLAN_NOT_EXISTED.name(), null));
+                results.add(new BulkGrantResult(memberId, "SKIPPED", BillingErrorCode.PLAN_NOT_EXISTED.name(), null));
                 continue;
             }
             for (Subscription sub : active) {
@@ -421,7 +423,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             java.util.List<String> memberIds, int months, String reason, String planCode) {
         requireBulkSize(memberIds);
         if (months < 1 || months > MAX_GRANT_MONTHS) {
-            throw new AppException(ErrorCode.PLAN_SANCTION_INVALID);
+            throw new AppException(BillingErrorCode.PLAN_SANCTION_INVALID);
         }
         String note = validReason(reason);
         // Gói được chọn để cấm (null = gói đang dùng của từng người); không cấm được Free
@@ -429,9 +431,9 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         if (planCode != null && !planCode.isBlank()) {
             chosen = planRepository
                     .findByCode(planCode.trim().toUpperCase())
-                    .orElseThrow(() -> new AppException(ErrorCode.PLAN_NOT_EXISTED));
+                    .orElseThrow(() -> new AppException(BillingErrorCode.PLAN_NOT_EXISTED));
             if (FREE.equals(chosen.getCode())) {
-                throw new AppException(ErrorCode.PLAN_SANCTION_INVALID);
+                throw new AppException(BillingErrorCode.PLAN_SANCTION_INVALID);
             }
         }
         Member by = currentMember();
@@ -442,11 +444,11 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         for (String memberId : new java.util.LinkedHashSet<>(memberIds)) {
             Member member = memberRepository.findById(memberId).orElse(null);
             if (member == null) {
-                results.add(new BulkGrantResult(memberId, "FAILED", ErrorCode.USER_NOT_EXISTED.name(), null));
+                results.add(new BulkGrantResult(memberId, "FAILED", AccountErrorCode.USER_NOT_EXISTED.name(), null));
                 continue;
             }
             if (ROLE_SUPER_ADMIN.equals(roleGrant(memberId))) {
-                results.add(new BulkGrantResult(memberId, "SKIPPED", ErrorCode.UNAUTHORIZED.name(), null));
+                results.add(new BulkGrantResult(memberId, "SKIPPED", AccountErrorCode.UNAUTHORIZED.name(), null));
                 continue;
             }
             // Chỉ cấm gói người này đã đăng ký: gói được chọn (phải nằm trong các gói họ đang có), hoặc gói đang dùng
@@ -462,7 +464,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             }
             if (plan == null) {
                 // Không đăng ký gói đó (hoặc đang ở Free): không có gì để cấm
-                results.add(new BulkGrantResult(memberId, "SKIPPED", ErrorCode.PLAN_NOT_EXISTED.name(), null));
+                results.add(new BulkGrantResult(memberId, "SKIPPED", BillingErrorCode.PLAN_NOT_EXISTED.name(), null));
                 continue;
             }
             // Cấm lại cùng gói thì thay lệnh đang hiệu lực của gói đó
@@ -504,7 +506,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         for (String memberId : new java.util.LinkedHashSet<>(memberIds)) {
             Member member = memberRepository.findById(memberId).orElse(null);
             if (member == null) {
-                results.add(new BulkGrantResult(memberId, "FAILED", ErrorCode.USER_NOT_EXISTED.name(), null));
+                results.add(new BulkGrantResult(memberId, "FAILED", AccountErrorCode.USER_NOT_EXISTED.name(), null));
                 continue;
             }
             if (!liftActiveBans(memberId, now)) {
@@ -535,7 +537,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
     private static void requireBulkSize(java.util.List<String> memberIds) {
         if (memberIds == null || memberIds.isEmpty() || memberIds.size() > MAX_BULK_GRANT) {
-            throw new AppException(ErrorCode.INVALID_REQUEST);
+            throw new AppException(AccountErrorCode.INVALID_REQUEST);
         }
     }
 
@@ -543,7 +545,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     private static String validReason(String reason) {
         String note = reason == null || reason.isBlank() ? null : reason.trim();
         if (note != null && note.length() > 255) {
-            throw new AppException(ErrorCode.PLAN_SANCTION_INVALID);
+            throw new AppException(BillingErrorCode.PLAN_SANCTION_INVALID);
         }
         return note;
     }
@@ -647,18 +649,21 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     @PreAuthorize("@perm.has('SUBSCRIPTIONS_MANAGE')")
     public MySubscriptionResponse grant(String memberId, String planCode, int months) {
         if (months < 1 || months > MAX_GRANT_MONTHS) {
-            throw new AppException(ErrorCode.SUBSCRIPTION_MONTHS_INVALID);
+            throw new AppException(BillingErrorCode.SUBSCRIPTION_MONTHS_INVALID);
         }
-        Member member =
-                memberRepository.findById(memberId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
-        Plan plan = planRepository.findByCode(planCode).orElseThrow(() -> new AppException(ErrorCode.PLAN_NOT_EXISTED));
+        Member member = memberRepository
+                .findById(memberId)
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
+        Plan plan = planRepository
+                .findByCode(planCode)
+                .orElseThrow(() -> new AppException(BillingErrorCode.PLAN_NOT_EXISTED));
         // Giống khi tự mua: gói chỉ thay gói cùng nhóm (cá nhân / team), gói của nhóm kia giữ nguyên
         // SUPER_ADMIN đã không giới hạn, cấp gói cũng không đổi gì
         if (ROLE_SUPER_ADMIN.equals(roleGrant(memberId))) {
-            throw new AppException(ErrorCode.PAYMENT_NOT_NEEDED);
+            throw new AppException(BillingErrorCode.PAYMENT_NOT_NEEDED);
         }
         if (planBannedUntil(memberId, plan.getCode()) != null) {
-            throw new AppException(ErrorCode.PLAN_BANNED);
+            throw new AppException(BillingErrorCode.PLAN_BANNED);
         }
         if (FREE.equals(plan.getCode())) {
             // Cấp Free = bỏ gói cá nhân đang có (gói team giữ nguyên; muốn bỏ hết thì dùng Hủy gói)
@@ -689,16 +694,18 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     @PreAuthorize("@perm.has('SUBSCRIPTIONS_MANAGE')")
     public java.util.List<BulkGrantResult> grantMany(java.util.List<String> memberIds, String planCode, int months) {
         if (memberIds == null || memberIds.isEmpty() || memberIds.size() > MAX_BULK_GRANT) {
-            throw new AppException(ErrorCode.INVALID_REQUEST);
+            throw new AppException(AccountErrorCode.INVALID_REQUEST);
         }
         if (months < 1 || months > MAX_GRANT_MONTHS) {
-            throw new AppException(ErrorCode.SUBSCRIPTION_MONTHS_INVALID);
+            throw new AppException(BillingErrorCode.SUBSCRIPTION_MONTHS_INVALID);
         }
-        Plan plan = planRepository.findByCode(planCode).orElseThrow(() -> new AppException(ErrorCode.PLAN_NOT_EXISTED));
+        Plan plan = planRepository
+                .findByCode(planCode)
+                .orElseThrow(() -> new AppException(BillingErrorCode.PLAN_NOT_EXISTED));
         // Cấp Free hàng loạt không có nghĩa (muốn bỏ gói thì dùng Hủy gói từng người); gói cá nhân và gói team đều cấp
         // được
         if (FREE.equals(plan.getCode())) {
-            throw new AppException(ErrorCode.PLAN_NOT_GRANTABLE);
+            throw new AppException(BillingErrorCode.PLAN_NOT_GRANTABLE);
         }
         Period duration = Period.ofMonths(months);
         java.util.List<BulkGrantResult> results = new java.util.ArrayList<>();
@@ -712,21 +719,21 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     private BulkGrantResult grantOne(String memberId, Plan plan, Period duration) {
         Member member = memberRepository.findById(memberId).orElse(null);
         if (member == null) {
-            return new BulkGrantResult(memberId, "FAILED", ErrorCode.USER_NOT_EXISTED.name(), null);
+            return new BulkGrantResult(memberId, "FAILED", AccountErrorCode.USER_NOT_EXISTED.name(), null);
         }
         String grant = roleGrant(memberId);
         if (ROLE_SUPER_ADMIN.equals(grant)) {
-            return new BulkGrantResult(memberId, "SKIPPED", ErrorCode.PAYMENT_NOT_NEEDED.name(), null);
+            return new BulkGrantResult(memberId, "SKIPPED", BillingErrorCode.PAYMENT_NOT_NEEDED.name(), null);
         }
         if (planBannedUntil(memberId, plan.getCode()) != null) {
-            return new BulkGrantResult(memberId, "SKIPPED", ErrorCode.PLAN_BANNED.name(), null);
+            return new BulkGrantResult(memberId, "SKIPPED", BillingErrorCode.PLAN_BANNED.name(), null);
         }
         LocalDateTime now = LocalDateTime.now();
         List<Subscription> current = subscriptionRepository.findCurrent(memberId, now);
         boolean hasPersonal = current.stream().anyMatch(s -> Plan.PERSONAL.equals(audienceOf(s.getPlan())));
         if (ROLE_ADMIN.equals(grant) && PRO.equals(plan.getCode()) && !hasPersonal) {
             // ADMIN đang có Pro không thời hạn: cấp Pro không thêm gì
-            return new BulkGrantResult(memberId, "SKIPPED", ErrorCode.PAYMENT_NOT_NEEDED.name(), null);
+            return new BulkGrantResult(memberId, "SKIPPED", BillingErrorCode.PAYMENT_NOT_NEEDED.name(), null);
         }
         boolean renew = current.stream().anyMatch(s -> s.getPlan().getId().equals(plan.getId()));
         activate(member, plan, duration, SubscriptionSource.ADMIN_GRANT);
@@ -784,7 +791,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     }
 
     private Plan freePlan() {
-        return planRepository.findByCode(FREE).orElseThrow(() -> new AppException(ErrorCode.PLAN_NOT_EXISTED));
+        return planRepository.findByCode(FREE).orElseThrow(() -> new AppException(BillingErrorCode.PLAN_NOT_EXISTED));
     }
 
     private MySubscriptionResponse toMine(Subscription s, Plan plan, int omrPagesUsed) {

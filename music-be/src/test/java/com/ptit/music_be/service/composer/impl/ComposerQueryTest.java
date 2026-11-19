@@ -23,6 +23,7 @@ import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.service.composer.ComposerService;
@@ -197,10 +198,10 @@ class ComposerQueryTest {
     void invalidInputIsRejected() {
         composer(tag + " Haydn", null);
 
-        assertCode(ErrorCode.COMPOSER_DUPLICATED, () -> composer(tag + " HAYDN", null));
-        assertCode(ErrorCode.COMPOSER_NAME_INVALID, () -> composer("   ", null));
+        assertCode(ScoreErrorCode.COMPOSER_DUPLICATED, () -> composer(tag + " HAYDN", null));
+        assertCode(ScoreErrorCode.COMPOSER_NAME_INVALID, () -> composer("   ", null));
         assertCode(
-                ErrorCode.COMPOSER_YEARS_INVALID,
+                ScoreErrorCode.COMPOSER_YEARS_INVALID,
                 () -> composerService.create(ComposerRequest.builder()
                         .name(tag + " X")
                         .birthYear(1900)
@@ -208,14 +209,14 @@ class ComposerQueryTest {
                         .build()));
         // Có ảnh thì phải là https và có nguồn, giấy phép
         assertCode(
-                ErrorCode.COMPOSER_IMAGE_INVALID,
+                ScoreErrorCode.COMPOSER_IMAGE_INVALID,
                 () -> composerService.create(ComposerRequest.builder()
                         .name(tag + " Y")
                         .imageUrl("https://upload.wikimedia.org/a.jpg")
                         .imageSource("https://commons.wikimedia.org/wiki/File:a.jpg")
                         .build()));
         assertCode(
-                ErrorCode.COMPOSER_IMAGE_INVALID,
+                ScoreErrorCode.COMPOSER_IMAGE_INVALID,
                 () -> composerService.create(ComposerRequest.builder()
                         .name(tag + " Z")
                         .imageUrl("http://example.com/a.jpg")

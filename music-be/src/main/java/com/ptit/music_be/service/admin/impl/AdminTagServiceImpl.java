@@ -14,7 +14,7 @@ import com.ptit.music_be.dto.request.admin.TagRequest;
 import com.ptit.music_be.dto.response.admin.AdminTagResponse;
 import com.ptit.music_be.entity.Tag;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.LibraryErrorCode;
 import com.ptit.music_be.repository.library.TagRepository;
 import com.ptit.music_be.repository.score.ScoreTagRepository;
 import com.ptit.music_be.service.admin.AdminTagService;
@@ -51,12 +51,12 @@ public class AdminTagServiceImpl implements AdminTagService {
         String name = cleanName(request);
         String slug = slugify(name);
         if (slug.isEmpty()) {
-            throw new AppException(ErrorCode.TAG_NAME_INVALID);
+            throw new AppException(LibraryErrorCode.TAG_NAME_INVALID);
         }
         // name/slug đều UNIQUE và so sánh không phân biệt hoa thường, không phân biệt dấu (Pop = pop, Cổ điển = Co
         // dien)
         if (tagRepository.existsByName(name) || tagRepository.existsBySlug(slug)) {
-            throw new AppException(ErrorCode.TAG_DUPLICATED);
+            throw new AppException(LibraryErrorCode.TAG_DUPLICATED);
         }
         Tag saved = tagRepository.save(Tag.builder().name(name).slug(slug).build());
         return toResponse(saved, 0);
@@ -69,10 +69,10 @@ public class AdminTagServiceImpl implements AdminTagService {
         String name = cleanName(request);
         String slug = slugify(name);
         if (slug.isEmpty()) {
-            throw new AppException(ErrorCode.TAG_NAME_INVALID);
+            throw new AppException(LibraryErrorCode.TAG_NAME_INVALID);
         }
         if (tagRepository.existsByNameIgnoreCaseAndIdNot(name, id) || tagRepository.existsBySlugAndIdNot(slug, id)) {
-            throw new AppException(ErrorCode.TAG_DUPLICATED);
+            throw new AppException(LibraryErrorCode.TAG_DUPLICATED);
         }
         tag.setName(name);
         tag.setSlug(slug);
@@ -88,7 +88,7 @@ public class AdminTagServiceImpl implements AdminTagService {
     }
 
     private Tag findTag(String id) {
-        return tagRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.TAG_NOT_EXISTED));
+        return tagRepository.findById(id).orElseThrow(() -> new AppException(LibraryErrorCode.TAG_NOT_EXISTED));
     }
 
     private static String cleanName(TagRequest request) {
@@ -98,7 +98,7 @@ public class AdminTagServiceImpl implements AdminTagService {
         // Gộp nhiều khoảng trắng liên tiếp thành một
         name = name.replaceAll("\\s+", " ");
         if (name.isEmpty() || name.length() > MAX_NAME) {
-            throw new AppException(ErrorCode.TAG_NAME_INVALID);
+            throw new AppException(LibraryErrorCode.TAG_NAME_INVALID);
         }
         return name;
     }

@@ -18,7 +18,8 @@ import com.ptit.music_be.dto.response.score.ScoreDiffResponse;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreFile;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AiErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.repository.score.ScoreFileRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.service.score.ScoreDiffService;
@@ -44,7 +45,7 @@ public class ScoreDiffServiceImpl implements ScoreDiffService {
     @Transactional
     public ScoreDiffResponse diff(String scoreId, int version, Integer base) {
         Score score =
-                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
         scoreFileService.checkCanView(score);
 
         List<ScoreFile> allFiles =
@@ -52,13 +53,13 @@ public class ScoreDiffServiceImpl implements ScoreDiffService {
         // Version ngoài số gói của chủ bản nhạc cho xem coi như không còn (2801)
         List<ScoreFile> files = versionRetention.visible(score, allFiles);
         ScoreFile target =
-                find(files, version).orElseThrow(() -> new AppException(ErrorCode.SCORE_VERSION_NOT_EXISTED));
+                find(files, version).orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_VERSION_NOT_EXISTED));
         int baseVersion = base != null ? base : omrVersion(score, allFiles);
         if (baseVersion == version) {
-            throw new AppException(ErrorCode.SCORE_DIFF_SAME_VERSION);
+            throw new AppException(ScoreErrorCode.SCORE_DIFF_SAME_VERSION);
         }
         ScoreFile baseFile =
-                find(files, baseVersion).orElseThrow(() -> new AppException(ErrorCode.SCORE_VERSION_NOT_EXISTED));
+                find(files, baseVersion).orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_VERSION_NOT_EXISTED));
 
         ObjectNode meta = metaOf(target);
         JsonNode cached = meta.path("diffs").path(String.valueOf(baseVersion));
@@ -71,13 +72,13 @@ public class ScoreDiffServiceImpl implements ScoreDiffService {
             result = aiServiceClient.diffMusicXml(baseFile.getStoragePath(), target.getStoragePath());
         } catch (HttpClientErrorException.UnprocessableEntity e) {
             log.warn("music-ai không so sánh được {} v{} với v{}: {}", scoreId, version, baseVersion, e.getMessage());
-            throw new AppException(ErrorCode.SCORE_DIFF_FAILED);
+            throw new AppException(ScoreErrorCode.SCORE_DIFF_FAILED);
         } catch (RestClientException e) {
             log.warn("Không gọi được music-ai để so sánh {}: {}", scoreId, e.getMessage());
-            throw new AppException(ErrorCode.AI_SERVICE_UNAVAILABLE);
+            throw new AppException(AiErrorCode.AI_SERVICE_UNAVAILABLE);
         }
         if (result == null || !result.has("measures") || !result.has("summary")) {
-            throw new AppException(ErrorCode.SCORE_DIFF_FAILED);
+            throw new AppException(ScoreErrorCode.SCORE_DIFF_FAILED);
         }
 
         ObjectNode diffs = meta.withObject("/diffs");
@@ -111,7 +112,7 @@ public class ScoreDiffServiceImpl implements ScoreDiffService {
      */
     private static int omrVersion(Score score, List<ScoreFile> files) {
         if (!"OMR".equals(score.getSourceType())) {
-            throw new AppException(ErrorCode.SCORE_DIFF_NO_BASE);
+            throw new AppException(ScoreErrorCode.SCORE_DIFF_NO_BASE);
         }
         return files.stream()
                 .filter(f -> {
@@ -120,7 +121,7 @@ public class ScoreDiffServiceImpl implements ScoreDiffService {
                 })
                 .mapToInt(ScoreDiffServiceImpl::versionOf)
                 .min()
-                .orElseThrow(() -> new AppException(ErrorCode.SCORE_DIFF_NO_BASE));
+                .orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_DIFF_NO_BASE));
     }
 
     private static ObjectNode metaOf(ScoreFile file) {

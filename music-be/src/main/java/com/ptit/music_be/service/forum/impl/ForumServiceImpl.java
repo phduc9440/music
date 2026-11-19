@@ -40,7 +40,8 @@ import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.event.RewardEarnedEvent;
 import com.ptit.music_be.event.RewardReason;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.CommunityErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.forum.ForumCategoryRepository;
 import com.ptit.music_be.repository.forum.ForumPostRepository;
@@ -213,7 +214,7 @@ public class ForumServiceImpl implements ForumService {
         String body = cleanBody(request == null ? null : request.getBody());
         ForumCategory category = categoryRepository
                 .findById(request.getCategoryId() == null ? "" : request.getCategoryId())
-                .orElseThrow(() -> new AppException(ErrorCode.FORUM_CATEGORY_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(CommunityErrorCode.FORUM_CATEGORY_NOT_EXISTED));
         Score score = resolvePublicScore(request.getScoreId());
         guardNewAccount(me);
 
@@ -257,7 +258,7 @@ public class ForumServiceImpl implements ForumService {
         ForumThread thread = findThread(threadId);
         requireAuthor(thread.getAuthor(), me);
         if (postRepository.countByOthers(threadId, me.getId()) > 0) {
-            throw new AppException(ErrorCode.FORUM_THREAD_HAS_REPLIES);
+            throw new AppException(CommunityErrorCode.FORUM_THREAD_HAS_REPLIES);
         }
         // Bài trả lời, phiếu và lượt theo dõi xóa theo bằng ON DELETE CASCADE ở DB
         threadRepository.deleteDirectly(threadId);
@@ -271,7 +272,7 @@ public class ForumServiceImpl implements ForumService {
         Member me = currentMember();
         ForumThread thread = findThread(threadId);
         if (thread.getLockedAt() != null) {
-            throw new AppException(ErrorCode.FORUM_THREAD_LOCKED);
+            throw new AppException(CommunityErrorCode.FORUM_THREAD_LOCKED);
         }
         String body = cleanBody(request == null ? null : request.getBody());
         ForumPost replyTo = null;
@@ -280,7 +281,7 @@ public class ForumServiceImpl implements ForumService {
             replyTo = postRepository
                     .findById(request.getReplyToPostId())
                     .filter(p -> p.getThread().getId().equals(thread.getId()))
-                    .orElseThrow(() -> new AppException(ErrorCode.FORUM_POST_NOT_EXISTED));
+                    .orElseThrow(() -> new AppException(CommunityErrorCode.FORUM_POST_NOT_EXISTED));
         }
         ForumPost post = postRepository.save(ForumPost.builder()
                 .thread(thread)
@@ -329,7 +330,7 @@ public class ForumServiceImpl implements ForumService {
         Member me = currentMember();
         ForumThread thread = findThread(threadId);
         if (thread.getAuthor().getId().equals(me.getId())) {
-            throw new AppException(ErrorCode.FORUM_VOTE_OWN_CONTENT);
+            throw new AppException(CommunityErrorCode.FORUM_VOTE_OWN_CONTENT);
         }
         var existing = voteRepository.findByMemberIdAndThreadId(me.getId(), threadId);
         boolean voted;
@@ -354,7 +355,7 @@ public class ForumServiceImpl implements ForumService {
         Member me = currentMember();
         ForumPost post = findPost(postId);
         if (post.getAuthor().getId().equals(me.getId())) {
-            throw new AppException(ErrorCode.FORUM_VOTE_OWN_CONTENT);
+            throw new AppException(CommunityErrorCode.FORUM_VOTE_OWN_CONTENT);
         }
         var existing = voteRepository.findByMemberIdAndPostId(me.getId(), postId);
         boolean voted;
@@ -380,7 +381,7 @@ public class ForumServiceImpl implements ForumService {
         ForumThread thread = findThread(post.getThread().getId());
         requireAuthor(thread.getAuthor(), me);
         if (post.getAuthor().getId().equals(me.getId())) {
-            throw new AppException(ErrorCode.FORUM_ACCEPT_OWN_POST);
+            throw new AppException(CommunityErrorCode.FORUM_ACCEPT_OWN_POST);
         }
         ForumPost current = thread.getAcceptedPost();
         if (current != null && current.getId().equals(postId)) {
@@ -502,7 +503,7 @@ public class ForumServiceImpl implements ForumService {
         if (threadRepository.countByAuthorIdAndCreatedAtAfter(
                         me.getId(), LocalDateTime.now().minusHours(24))
                 >= NEW_ACCOUNT_THREADS_PER_DAY) {
-            throw new AppException(ErrorCode.FORUM_NEW_ACCOUNT_LIMIT);
+            throw new AppException(CommunityErrorCode.FORUM_NEW_ACCOUNT_LIMIT);
         }
     }
 
@@ -513,16 +514,19 @@ public class ForumServiceImpl implements ForumService {
         return scoreRepository
                 .findById(scoreId)
                 .filter(s -> Visibility.PUBLIC.name().equals(s.getVisibility()))
-                .orElseThrow(() -> new AppException(ErrorCode.FORUM_SCORE_NOT_PUBLIC));
+                .orElseThrow(() -> new AppException(CommunityErrorCode.FORUM_SCORE_NOT_PUBLIC));
     }
 
     private ForumThread findThread(String id) {
-        return threadRepository.findDetail(id).orElseThrow(() -> new AppException(ErrorCode.FORUM_THREAD_NOT_EXISTED));
+        return threadRepository
+                .findDetail(id)
+                .orElseThrow(() -> new AppException(CommunityErrorCode.FORUM_THREAD_NOT_EXISTED));
     }
 
     private ForumPost findPost(String id) {
-        ForumPost post =
-                postRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.FORUM_POST_NOT_EXISTED));
+        ForumPost post = postRepository
+                .findById(id)
+                .orElseThrow(() -> new AppException(CommunityErrorCode.FORUM_POST_NOT_EXISTED));
         // Chủ đề đã ẩn thì bài trong đó cũng coi như không còn
         findThread(post.getThread().getId());
         return post;
@@ -530,7 +534,7 @@ public class ForumServiceImpl implements ForumService {
 
     private static void requireAuthor(Member author, Member me) {
         if (author == null || !author.getId().equals(me.getId())) {
-            throw new AppException(ErrorCode.FORUM_NOT_AUTHOR);
+            throw new AppException(CommunityErrorCode.FORUM_NOT_AUTHOR);
         }
     }
 
@@ -545,7 +549,7 @@ public class ForumServiceImpl implements ForumService {
         String t =
                 title == null ? "" : stripControl(title).replaceAll("\\s+", " ").trim();
         if (t.length() < MIN_TITLE || t.length() > MAX_TITLE) {
-            throw new AppException(ErrorCode.FORUM_CONTENT_INVALID);
+            throw new AppException(CommunityErrorCode.FORUM_CONTENT_INVALID);
         }
         return t;
     }
@@ -553,7 +557,7 @@ public class ForumServiceImpl implements ForumService {
     static String cleanBody(String body) {
         String b = body == null ? "" : stripControl(body).trim();
         if (b.isEmpty() || b.length() > MAX_BODY) {
-            throw new AppException(ErrorCode.FORUM_CONTENT_INVALID);
+            throw new AppException(CommunityErrorCode.FORUM_CONTENT_INVALID);
         }
         return b;
     }
@@ -716,6 +720,6 @@ public class ForumServiceImpl implements ForumService {
     private Member currentMember() {
         return memberRepository
                 .findByEmail(SecurityUtils.getCurrentEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
     }
 }

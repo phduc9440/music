@@ -14,7 +14,7 @@ import org.springframework.messaging.MessagingException;
 import org.springframework.messaging.simp.stomp.StompCommand;
 
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
 import com.ptit.music_be.service.collab.live.LiveAccess;
 import com.ptit.music_be.service.collab.live.LiveAccess.Access;
 
@@ -56,7 +56,7 @@ class LiveScoreStompRuleTest {
 
     @Test
     void peopleWhoCannotViewAreRefusedOnTopics() {
-        when(access.resolve("x@mail", "s1")).thenThrow(new AppException(ErrorCode.UNAUTHORIZED));
+        when(access.resolve("x@mail", "s1")).thenThrow(new AppException(AccountErrorCode.UNAUTHORIZED));
 
         assertThatThrownBy(() -> rule.authorize(StompCommand.SUBSCRIBE, "/topic/scores/s1/ops", "x@mail"))
                 .isInstanceOf(MessagingException.class);

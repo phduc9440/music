@@ -36,7 +36,7 @@ import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.MemberRole;
 import com.ptit.music_be.entity.Role;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
 import com.ptit.music_be.mapper.MemberMapper;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.auth.RoleRepository;
@@ -233,20 +233,20 @@ public class AdminMemberServiceImpl implements AdminMemberService {
         boolean targetIsSuper = hasRole(member, SUPER_ADMIN);
         // Chỉ SUPER_ADMIN được đụng đến tài khoản SUPER_ADMIN khác (khóa, đổi vai trò)
         if (targetIsSuper && !isSelf && !SecurityUtils.isSuperAdmin()) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+            throw new AppException(AccountErrorCode.UNAUTHORIZED);
         }
 
         if (request.getStatus() != null) {
             SecurityUtils.requirePermission(AdminPermission.MEMBERS_LOCK);
             if (isSelf && request.getStatus() != MemberStatus.ACTIVE) {
-                throw new AppException(ErrorCode.CANNOT_MODIFY_SELF);
+                throw new AppException(AccountErrorCode.CANNOT_MODIFY_SELF);
             }
             String reason = request.getStatusReason() == null
                             || request.getStatusReason().isBlank()
                     ? null
                     : request.getStatusReason().trim();
             if (reason != null && reason.length() > MAX_STATUS_REASON) {
-                throw new AppException(ErrorCode.STATUS_REASON_INVALID);
+                throw new AppException(AccountErrorCode.STATUS_REASON_INVALID);
             }
             if (member.getStatus() != request.getStatus()) {
                 // Chỉ ghi khi trạng thái thật sự đổi; Nhật ký quản trị suy ra sự kiện khóa / mở khóa từ ba cột này
@@ -263,18 +263,18 @@ public class AdminMemberServiceImpl implements AdminMemberService {
                     .map(r -> r == null ? "" : r.trim().toUpperCase().replaceFirst("^ROLE_", ""))
                     .collect(Collectors.toSet());
             if (names.isEmpty()) {
-                throw new AppException(ErrorCode.ROLE_NOT_EXISTED);
+                throw new AppException(AccountErrorCode.ROLE_NOT_EXISTED);
             }
             // Chỉ SUPER_ADMIN được cấp/thu hồi ADMIN; ADMIN thường không được đổi vai trò của ai
             if (!SecurityUtils.isSuperAdmin()) {
-                throw new AppException(ErrorCode.UNAUTHORIZED);
+                throw new AppException(AccountErrorCode.UNAUTHORIZED);
             }
             // SUPER_ADMIN là tài khoản gốc do ApplicationInitConfig tạo, không cấp/thu hồi qua API
             if (names.contains(SUPER_ADMIN) != targetIsSuper) {
-                throw new AppException(ErrorCode.UNAUTHORIZED);
+                throw new AppException(AccountErrorCode.UNAUTHORIZED);
             }
             if (isSelf) {
-                throw new AppException(ErrorCode.CANNOT_MODIFY_SELF);
+                throw new AppException(AccountErrorCode.CANNOT_MODIFY_SELF);
             }
             // orphanRemoval=true: bỏ role khỏi list thì dòng member_roles bị xóa
             member.getMemberRoles().removeIf(mr -> !names.contains(mr.getRole().getName()));
@@ -283,8 +283,9 @@ public class AdminMemberServiceImpl implements AdminMemberService {
                     .collect(Collectors.toSet());
             for (String name : names) {
                 if (existing.contains(name)) continue;
-                Role role =
-                        roleRepository.findByName(name).orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_EXISTED));
+                Role role = roleRepository
+                        .findByName(name)
+                        .orElseThrow(() -> new AppException(AccountErrorCode.ROLE_NOT_EXISTED));
                 member.getMemberRoles()
                         .add(MemberRole.builder()
                                 .member(member)
@@ -307,11 +308,11 @@ public class AdminMemberServiceImpl implements AdminMemberService {
                 ? ""
                 : request.getEmail().trim().toLowerCase(Locale.ROOT);
         if (email.length() > MAX_EMAIL || !EMAIL.matcher(email).matches()) {
-            throw new AppException(ErrorCode.MEMBER_EMAIL_INVALID);
+            throw new AppException(AccountErrorCode.MEMBER_EMAIL_INVALID);
         }
         String password = request.getPassword() == null ? "" : request.getPassword();
         if (password.length() < MIN_PASSWORD) {
-            throw new AppException(ErrorCode.PASSWORD_INVALID);
+            throw new AppException(AccountErrorCode.PASSWORD_INVALID);
         }
         Set<String> names = new LinkedHashSet<>();
         names.add(USER);
@@ -322,12 +323,13 @@ public class AdminMemberServiceImpl implements AdminMemberService {
                     .forEach(names::add);
         }
         List<Role> roles = names.stream()
-                .map(name ->
-                        roleRepository.findByName(name).orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_EXISTED)))
+                .map(name -> roleRepository
+                        .findByName(name)
+                        .orElseThrow(() -> new AppException(AccountErrorCode.ROLE_NOT_EXISTED)))
                 .toList();
         requireCanAssign(names);
         if (memberRepository.existsByEmail(email)) {
-            throw new AppException(ErrorCode.USER_EXISTED);
+            throw new AppException(AccountErrorCode.USER_EXISTED);
         }
 
         Member member = Member.builder()
@@ -359,7 +361,7 @@ public class AdminMemberServiceImpl implements AdminMemberService {
      */
     private static void requireCanAssign(Set<String> roleNames) {
         if (roleNames.contains(SUPER_ADMIN)) {
-            throw new AppException(ErrorCode.ROLE_ASSIGN_FORBIDDEN);
+            throw new AppException(AccountErrorCode.ROLE_ASSIGN_FORBIDDEN);
         }
         if (SecurityUtils.isSuperAdmin()) {
             return;
@@ -368,7 +370,7 @@ public class AdminMemberServiceImpl implements AdminMemberService {
                 SecurityUtils.permissions(SecurityContextHolder.getContext().getAuthentication());
         for (String name : roleNames) {
             if (!mine.containsAll(RolePermissionRegistry.permissionsOf(List.of(name)))) {
-                throw new AppException(ErrorCode.ROLE_ASSIGN_FORBIDDEN);
+                throw new AppException(AccountErrorCode.ROLE_ASSIGN_FORBIDDEN);
             }
         }
     }
@@ -391,6 +393,8 @@ public class AdminMemberServiceImpl implements AdminMemberService {
     }
 
     private Member find(String memberId) {
-        return memberRepository.findById(memberId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        return memberRepository
+                .findById(memberId)
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
     }
 }

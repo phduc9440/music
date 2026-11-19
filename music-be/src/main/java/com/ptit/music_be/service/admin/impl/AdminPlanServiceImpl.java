@@ -16,7 +16,8 @@ import com.ptit.music_be.dto.request.admin.UpdatePlanRequest;
 import com.ptit.music_be.dto.response.billing.PlanResponse;
 import com.ptit.music_be.entity.Plan;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.BillingErrorCode;
 import com.ptit.music_be.repository.billing.PaymentOrderRepository;
 import com.ptit.music_be.repository.billing.PlanRepository;
 import com.ptit.music_be.repository.billing.SubscriptionRepository;
@@ -65,9 +66,10 @@ public class AdminPlanServiceImpl implements AdminPlanService {
     @Transactional
     public PlanResponse update(String code, UpdatePlanRequest request) {
         requirePlansPermission();
-        Plan plan = planRepository.findByCode(code).orElseThrow(() -> new AppException(ErrorCode.PLAN_NOT_EXISTED));
+        Plan plan =
+                planRepository.findByCode(code).orElseThrow(() -> new AppException(BillingErrorCode.PLAN_NOT_EXISTED));
         if (request == null) {
-            throw new AppException(ErrorCode.PLAN_PRICE_INVALID);
+            throw new AppException(BillingErrorCode.PLAN_PRICE_INVALID);
         }
         Fields f = validate(
                 plan.getCode(),
@@ -104,20 +106,20 @@ public class AdminPlanServiceImpl implements AdminPlanService {
     public PlanResponse create(CreatePlanRequest request) {
         requirePlansPermission();
         if (request == null) {
-            throw new AppException(ErrorCode.PLAN_CODE_INVALID);
+            throw new AppException(BillingErrorCode.PLAN_CODE_INVALID);
         }
         String code = request.getCode() == null ? "" : request.getCode().trim().toUpperCase();
         if (!CODE.matcher(code).matches() || SubscriptionServiceImpl.UNLIMITED.equals(code)) {
-            throw new AppException(ErrorCode.PLAN_CODE_INVALID);
+            throw new AppException(BillingErrorCode.PLAN_CODE_INVALID);
         }
         if (planRepository.findByCode(code).isPresent()) {
-            throw new AppException(ErrorCode.PLAN_CODE_EXISTED);
+            throw new AppException(BillingErrorCode.PLAN_CODE_EXISTED);
         }
         String audience = request.getAudience() == null
                 ? ""
                 : request.getAudience().trim().toUpperCase();
         if (!Plan.PERSONAL.equals(audience) && !Plan.TEAM.equals(audience)) {
-            throw new AppException(ErrorCode.PLAN_AUDIENCE_INVALID);
+            throw new AppException(BillingErrorCode.PLAN_AUDIENCE_INVALID);
         }
         Fields f = validate(
                 code,
@@ -150,14 +152,15 @@ public class AdminPlanServiceImpl implements AdminPlanService {
     @Transactional
     public void delete(String code) {
         requirePlansPermission();
-        Plan plan = planRepository.findByCode(code).orElseThrow(() -> new AppException(ErrorCode.PLAN_NOT_EXISTED));
+        Plan plan =
+                planRepository.findByCode(code).orElseThrow(() -> new AppException(BillingErrorCode.PLAN_NOT_EXISTED));
         if (SYSTEM_CODES.contains(plan.getCode())) {
-            throw new AppException(ErrorCode.PLAN_SYSTEM_LOCKED);
+            throw new AppException(BillingErrorCode.PLAN_SYSTEM_LOCKED);
         }
         // Còn người đăng ký (kể cả đã hết hạn) hoặc đơn thanh toán thì giữ lại để không mất lịch sử doanh thu
         if (subscriptionRepository.existsByPlanId(plan.getId())
                 || paymentOrderRepository.existsByPlanId(plan.getId())) {
-            throw new AppException(ErrorCode.PLAN_IN_USE);
+            throw new AppException(BillingErrorCode.PLAN_IN_USE);
         }
         planRepository.delete(plan);
         log.info("{} xóa gói {}", SecurityUtils.getCurrentEmail(), plan.getCode());
@@ -165,7 +168,7 @@ public class AdminPlanServiceImpl implements AdminPlanService {
 
     private static void requirePlansPermission() {
         if (!SecurityUtils.hasPermission(AdminPermission.PLANS_MANAGE)) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+            throw new AppException(AccountErrorCode.UNAUTHORIZED);
         }
     }
 
@@ -182,17 +185,17 @@ public class AdminPlanServiceImpl implements AdminPlanService {
     private Fields validate(String code, String rawName, Long month, Long year, PlanLimits limits, Integer sortOrder) {
         String name = rawName == null ? "" : rawName.trim();
         if (name.isEmpty() || name.length() > MAX_NAME_LENGTH) {
-            throw new AppException(ErrorCode.PLAN_NAME_INVALID);
+            throw new AppException(BillingErrorCode.PLAN_NAME_INVALID);
         }
         boolean free = SubscriptionServiceImpl.FREE.equals(code);
         if (month == null || year == null || !validPrice(month, free) || !validPrice(year, free)) {
-            throw new AppException(ErrorCode.PLAN_PRICE_INVALID);
+            throw new AppException(BillingErrorCode.PLAN_PRICE_INVALID);
         }
         if (limits == null || !validLimits(limits)) {
-            throw new AppException(ErrorCode.PLAN_LIMITS_INVALID);
+            throw new AppException(BillingErrorCode.PLAN_LIMITS_INVALID);
         }
         if (sortOrder != null && (sortOrder < 0 || sortOrder > MAX_SORT_ORDER)) {
-            throw new AppException(ErrorCode.PLAN_LIMITS_INVALID);
+            throw new AppException(BillingErrorCode.PLAN_LIMITS_INVALID);
         }
         return new Fields(name, month, year, toJson(limits), sortOrder);
     }
