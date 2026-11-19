@@ -25,7 +25,8 @@ import com.ptit.music_be.dto.response.common.PageResponse;
 import com.ptit.music_be.entity.ForumCategory;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.CommunityErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.forum.ForumCategoryRepository;
 import com.ptit.music_be.service.admin.AdminForumService;
@@ -98,7 +99,7 @@ public class AdminForumServiceImpl implements AdminForumService {
         requirePermission();
         ForumCategory category = categoryRepository
                 .findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.FORUM_CATEGORY_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(CommunityErrorCode.FORUM_CATEGORY_NOT_EXISTED));
         category.setName(cleanName(request == null ? null : request.getName()));
         category.setDescription(cleanDescription(request.getDescription()));
         // Giữ nguyên slug để đường dẫn cũ không đổi khi chỉ sửa tên
@@ -113,9 +114,9 @@ public class AdminForumServiceImpl implements AdminForumService {
         requirePermission();
         ForumCategory category = categoryRepository
                 .findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.FORUM_CATEGORY_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(CommunityErrorCode.FORUM_CATEGORY_NOT_EXISTED));
         if (countsOf(id)[0] > 0) {
-            throw new AppException(ErrorCode.FORUM_CATEGORY_NOT_EMPTY);
+            throw new AppException(CommunityErrorCode.FORUM_CATEGORY_NOT_EMPTY);
         }
         categoryRepository.delete(category);
     }
@@ -222,7 +223,7 @@ public class AdminForumServiceImpl implements AdminForumService {
                 .setParameter("id", threadId);
         List<?> rows = query.getResultList();
         if (rows.isEmpty()) {
-            throw new AppException(ErrorCode.FORUM_THREAD_NOT_EXISTED);
+            throw new AppException(CommunityErrorCode.FORUM_THREAD_NOT_EXISTED);
         }
         AdminForumThreadResponse head = toThread((Object[]) rows.get(0), true);
 
@@ -325,7 +326,7 @@ public class AdminForumServiceImpl implements AdminForumService {
                                 .getSingleResult())
                         .longValue()
                 == 0) {
-            throw new AppException(ErrorCode.FORUM_POST_NOT_EXISTED);
+            throw new AppException(CommunityErrorCode.FORUM_POST_NOT_EXISTED);
         }
         LocalDateTime now = LocalDateTime.now();
         if (hidden) {
@@ -360,7 +361,7 @@ public class AdminForumServiceImpl implements AdminForumService {
                         .getSingleResult())
                 .longValue();
         if (n == 0) {
-            throw new AppException(ErrorCode.FORUM_THREAD_NOT_EXISTED);
+            throw new AppException(CommunityErrorCode.FORUM_THREAD_NOT_EXISTED);
         }
     }
 
@@ -368,7 +369,7 @@ public class AdminForumServiceImpl implements AdminForumService {
     private void update(String sql, String id, LocalDateTime now) {
         Member me = memberRepository
                 .findByEmail(SecurityUtils.getCurrentEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
         entityManager
                 .createNativeQuery(sql)
                 .setParameter("id", id)
@@ -380,7 +381,7 @@ public class AdminForumServiceImpl implements AdminForumService {
     private void closeReports(String condition, String id, LocalDateTime now) {
         Member me = memberRepository
                 .findByEmail(SecurityUtils.getCurrentEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
         entityManager
                 .createNativeQuery("UPDATE content_reports r SET r.status = 'RESOLVED', r.action = 'HIDE',"
                         + " r.resolved_by = :by, r.resolved_at = :now WHERE r.status = 'PENDING' AND " + condition)
@@ -456,7 +457,7 @@ public class AdminForumServiceImpl implements AdminForumService {
     static String cleanName(String name) {
         String n = name == null ? "" : name.replaceAll("\\s+", " ").trim();
         if (n.length() < MIN_NAME || n.length() > MAX_NAME) {
-            throw new AppException(ErrorCode.FORUM_CATEGORY_INVALID);
+            throw new AppException(CommunityErrorCode.FORUM_CATEGORY_INVALID);
         }
         return n;
     }
@@ -465,7 +466,7 @@ public class AdminForumServiceImpl implements AdminForumService {
         String d =
                 description == null ? "" : description.replaceAll("\\s+", " ").trim();
         if (d.length() > MAX_DESCRIPTION) {
-            throw new AppException(ErrorCode.FORUM_CATEGORY_INVALID);
+            throw new AppException(CommunityErrorCode.FORUM_CATEGORY_INVALID);
         }
         return d.isEmpty() ? null : d;
     }

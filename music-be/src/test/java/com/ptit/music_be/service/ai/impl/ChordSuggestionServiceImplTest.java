@@ -43,7 +43,10 @@ import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreSuggestion;
 import com.ptit.music_be.event.ChordTaskCreatedEvent;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.AiErrorCode;
+import com.ptit.music_be.exception.code.BillingErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.mapper.AiTaskMapper;
 import com.ptit.music_be.repository.ai.AiTaskRepository;
 import com.ptit.music_be.repository.auth.MemberRepository;
@@ -143,37 +146,37 @@ class ChordSuggestionServiceImplTest {
 
     @Test
     void unknownScoreIsRejected() {
-        assertThat(errorOf("nope", "POP").getErrorCode()).isEqualTo(ErrorCode.SCORE_NOT_EXISTED);
+        assertThat(errorOf("nope", "POP").getErrorCode()).isEqualTo(ScoreErrorCode.SCORE_NOT_EXISTED);
     }
 
     @Test
     void viewerCannotRequest() {
         access(ScoreAccess.VIEW);
-        assertThat(errorOf(SCORE_ID, "POP").getErrorCode()).isEqualTo(ErrorCode.UNAUTHORIZED);
+        assertThat(errorOf(SCORE_ID, "POP").getErrorCode()).isEqualTo(AccountErrorCode.UNAUTHORIZED);
     }
 
     @Test
     void unknownOrMissingStyleIsInvalid() {
-        assertThat(errorOf(SCORE_ID, "ROCK").getErrorCode()).isEqualTo(ErrorCode.CHORD_STYLE_INVALID);
-        assertThat(errorOf(SCORE_ID, null).getErrorCode()).isEqualTo(ErrorCode.CHORD_STYLE_INVALID);
+        assertThat(errorOf(SCORE_ID, "ROCK").getErrorCode()).isEqualTo(AiErrorCode.CHORD_STYLE_INVALID);
+        assertThat(errorOf(SCORE_ID, null).getErrorCode()).isEqualTo(AiErrorCode.CHORD_STYLE_INVALID);
     }
 
     @Test
     void scoreWithoutMusicXmlIsNotReady() {
         score.setCurrentVersion(null);
-        assertThat(errorOf(SCORE_ID, "POP").getErrorCode()).isEqualTo(ErrorCode.MUSICXML_NOT_READY);
+        assertThat(errorOf(SCORE_ID, "POP").getErrorCode()).isEqualTo(ScoreErrorCode.MUSICXML_NOT_READY);
     }
 
     @Test
     void runningOmrMakesScoreBusy() {
         taskRunning(AiTaskType.OMR_CONVERSION);
-        assertThat(errorOf(SCORE_ID, "POP").getErrorCode()).isEqualTo(ErrorCode.SCORE_BUSY);
+        assertThat(errorOf(SCORE_ID, "POP").getErrorCode()).isEqualTo(ScoreErrorCode.SCORE_BUSY);
     }
 
     @Test
     void secondRequestWhileTaskRunsIsRejected() {
         taskRunning(AiTaskType.CHORD_GENERATION);
-        assertThat(errorOf(SCORE_ID, "POP").getErrorCode()).isEqualTo(ErrorCode.CHORD_TASK_RUNNING);
+        assertThat(errorOf(SCORE_ID, "POP").getErrorCode()).isEqualTo(AiErrorCode.CHORD_TASK_RUNNING);
     }
 
     @Test
@@ -185,17 +188,17 @@ class ChordSuggestionServiceImplTest {
 
         AppException e = errorOf(SCORE_ID, "POP");
 
-        assertThat(e.getErrorCode()).isEqualTo(ErrorCode.CHORD_SUGGESTION_PENDING);
+        assertThat(e.getErrorCode()).isEqualTo(AiErrorCode.CHORD_SUGGESTION_PENDING);
         assertThat(e.getPayload()).isEqualTo(Map.of("suggestionId", "sug-9"));
     }
 
     @Test
     void quotaIsCheckedForTheRequester() {
-        doThrow(new AppException(ErrorCode.PLAN_LIMIT_REACHED))
+        doThrow(new AppException(BillingErrorCode.PLAN_LIMIT_REACHED))
                 .when(entitlementService)
                 .checkAvailable(eq("m-1"), eq(UsageMetric.CHORD_GENERATIONS), anyInt());
 
-        assertThat(errorOf(SCORE_ID, "POP").getErrorCode()).isEqualTo(ErrorCode.PLAN_LIMIT_REACHED);
+        assertThat(errorOf(SCORE_ID, "POP").getErrorCode()).isEqualTo(BillingErrorCode.PLAN_LIMIT_REACHED);
         verify(aiTaskRepository, never()).save(any());
     }
 

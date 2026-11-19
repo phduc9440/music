@@ -17,7 +17,8 @@ import com.ptit.music_be.dto.response.practice.PracticeStreakResponse;
 import com.ptit.music_be.dto.response.practice.PracticeTimeBucketResponse;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.LibraryErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.practice.PracticeSessionRepository;
 import com.ptit.music_be.service.practice.PracticeStatsService;
@@ -50,7 +51,7 @@ public class PracticeStatsServiceImpl implements PracticeStatsService {
         LocalDate end = to != null ? to : LocalDate.now();
         LocalDate start = from != null ? from : end.minusDays(DEFAULT_DAYS - 1L);
         if (start.isAfter(end) || start.plusDays(MAX_RANGE_DAYS).isBefore(end)) {
-            throw new AppException(ErrorCode.PRACTICE_STATS_RANGE_INVALID);
+            throw new AppException(LibraryErrorCode.PRACTICE_STATS_RANGE_INVALID);
         }
         return query(currentMember(), start, end);
     }
@@ -74,7 +75,7 @@ public class PracticeStatsServiceImpl implements PracticeStatsService {
                 defaultCount = 12;
                 maxCount = 24;
             }
-            default -> throw new AppException(ErrorCode.PRACTICE_STATS_PERIOD_INVALID);
+            default -> throw new AppException(LibraryErrorCode.PRACTICE_STATS_PERIOD_INVALID);
         }
         int n = count == null ? defaultCount : Math.min(Math.max(count, 1), maxCount);
 
@@ -128,7 +129,7 @@ public class PracticeStatsServiceImpl implements PracticeStatsService {
     public PracticeSkillsResponse getSkills(Integer days) {
         int n = days == null ? DEFAULT_SKILL_DAYS : days;
         if (n < MIN_SKILL_DAYS || n > MAX_SKILL_DAYS) {
-            throw new AppException(ErrorCode.PRACTICE_STATS_DAYS_INVALID);
+            throw new AppException(LibraryErrorCode.PRACTICE_STATS_DAYS_INVALID);
         }
         Member me = currentMember();
         LocalDate today = LocalDate.now();
@@ -234,6 +235,6 @@ public class PracticeStatsServiceImpl implements PracticeStatsService {
     private Member currentMember() {
         return memberRepository
                 .findByEmail(SecurityUtils.getCurrentEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
     }
 }

@@ -16,7 +16,9 @@ import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreReview;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.CollabErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.repository.score.ScoreReviewRepository;
@@ -56,12 +58,12 @@ public class ScoreReviewServiceImpl implements ScoreReviewService {
 
         String cleanComment = StringUtils.hasText(comment) ? comment.trim() : null;
         if (rating == null && cleanComment == null) {
-            throw new AppException(ErrorCode.REVIEW_EMPTY);
+            throw new AppException(CollabErrorCode.REVIEW_EMPTY);
         }
 
         Member me = memberRepository
                 .findByEmail(SecurityUtils.getCurrentEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
         ScoreReview review = reviewRepository
                 .findByScoreIdAndMemberId(scoreId, me.getId())
                 .orElseGet(() -> ScoreReview.builder().score(score).member(me).build());
@@ -91,9 +93,9 @@ public class ScoreReviewServiceImpl implements ScoreReviewService {
         ScoreReview review = reviewRepository
                 .findById(reviewId)
                 .filter(r -> r.getScore().getId().equals(scoreId))
-                .orElseThrow(() -> new AppException(ErrorCode.REVIEW_NOT_EXISTED));
-        if (!canDelete(score, review)) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+                .orElseThrow(() -> new AppException(CollabErrorCode.REVIEW_NOT_EXISTED));
+        if (!canDelete(review)) {
+            throw new AppException(AccountErrorCode.UNAUTHORIZED);
         }
         reviewRepository.delete(review);
         reviewRepository.flush();
@@ -103,18 +105,19 @@ public class ScoreReviewServiceImpl implements ScoreReviewService {
     // ------------------------------------------------------------------ helpers
 
     private Score findScore(String scoreId) {
-        return scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+        return scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
     }
 
     private boolean isMine(ScoreReview review) {
         return review.getMember().getEmail().equals(SecurityUtils.getCurrentEmail());
     }
 
-    /** Tác giả nhận xét, chủ sở hữu bản nhạc hoặc ADMIN được xóa. */
-    private boolean canDelete(Score score, ScoreReview review) {
-        return isMine(review)
-                || SecurityUtils.hasPermission(AdminPermission.SCORES_MODERATE)
-                || scoreFileService.canManageSharing(score);
+    /**
+     * Chỉ người viết xóa được nhận xét của mình; chủ bản nhạc hay người được chia sẻ không xóa được nhận xét của người khác
+     * (tránh xóa nhận xét chê / chấm sao thấp). Người kiểm duyệt (SCORES_MODERATE) vẫn xóa được để gỡ nội dung vi phạm.
+     */
+    private boolean canDelete(ScoreReview review) {
+        return isMine(review) || SecurityUtils.hasPermission(AdminPermission.SCORES_MODERATE);
     }
 
     private ReviewListResponse toResponse(Score score) {
@@ -127,7 +130,7 @@ public class ScoreReviewServiceImpl implements ScoreReviewService {
                         .rating(r.getRating())
                         .comment(r.getComment())
                         .mine(isMine(r))
-                        .canDelete(canDelete(score, r))
+                        .canDelete(canDelete(r))
                         .createdAt(r.getCreatedAt())
                         .updatedAt(r.getUpdatedAt())
                         .build())

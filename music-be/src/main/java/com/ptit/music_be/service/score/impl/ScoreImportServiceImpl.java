@@ -41,6 +41,9 @@ import com.ptit.music_be.entity.Tag;
 import com.ptit.music_be.event.ScoreImportedEvent;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.LibraryErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.mapper.ScoreFileMapper;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.library.TagRepository;
@@ -116,15 +119,15 @@ public class ScoreImportServiceImpl implements ScoreImportService {
     @Override
     @Transactional
     public ScoreImportResponse importScore(MultipartFile file, String title, String composer, List<String> tagIds) {
-        String cleanComposer = trimToLength(composer, MAX_COMPOSER_LENGTH, ErrorCode.SCORE_COMPOSER_INVALID);
-        String cleanTitle = trimToLength(title, MAX_TITLE_LENGTH, ErrorCode.SCORE_TITLE_INVALID);
+        String cleanComposer = trimToLength(composer, MAX_COMPOSER_LENGTH, ScoreErrorCode.SCORE_COMPOSER_INVALID);
+        String cleanTitle = trimToLength(title, MAX_TITLE_LENGTH, ScoreErrorCode.SCORE_TITLE_INVALID);
 
         if (file == null || file.isEmpty()) {
-            throw new AppException(ErrorCode.FILE_EMPTY);
+            throw new AppException(ScoreErrorCode.FILE_EMPTY);
         }
         ImportKind kind = kindFromExtension(file.getOriginalFilename());
         if (kind == null) {
-            throw new AppException(ErrorCode.IMPORT_TYPE_NOT_SUPPORTED);
+            throw new AppException(ScoreErrorCode.IMPORT_TYPE_NOT_SUPPORTED);
         }
 
         // Kiểm tra thể loại trước khi ghi gì vào DB hay đĩa: id sai thì từ chối cả lần import
@@ -135,7 +138,7 @@ public class ScoreImportServiceImpl implements ScoreImportService {
             data = file.getBytes();
         } catch (IOException e) {
             log.error("Cannot read uploaded file {}", file.getOriginalFilename(), e);
-            throw new AppException(ErrorCode.FILE_STORAGE_ERROR);
+            throw new AppException(ScoreErrorCode.FILE_STORAGE_ERROR);
         }
 
         // Nội dung thật phải khớp với đuôi file, rồi mới parse
@@ -150,7 +153,7 @@ public class ScoreImportServiceImpl implements ScoreImportService {
 
         Member member = memberRepository
                 .findByEmail(SecurityUtils.getCurrentEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
 
         String resolvedTitle = resolveTitle(cleanTitle, info, file.getOriginalFilename());
         String resolvedComposer = cleanComposer != null ? cleanComposer : cap(info == null ? null : info.composer());
@@ -236,7 +239,7 @@ public class ScoreImportServiceImpl implements ScoreImportService {
         try (InputStream in = new ByteArrayInputStream(content)) {
             storedPath = fileStorageService.store(in, path);
         } catch (IOException e) {
-            throw new AppException(ErrorCode.FILE_STORAGE_ERROR);
+            throw new AppException(ScoreErrorCode.FILE_STORAGE_ERROR);
         }
         return scoreFileRepository.save(ScoreFile.builder()
                 .score(score)
@@ -261,11 +264,11 @@ public class ScoreImportServiceImpl implements ScoreImportService {
                 .distinct()
                 .toList();
         if (wanted.size() > MAX_TAGS_PER_SCORE) {
-            throw new AppException(ErrorCode.TOO_MANY_TAGS);
+            throw new AppException(LibraryErrorCode.TOO_MANY_TAGS);
         }
         List<Tag> found = tagRepository.findAllById(wanted);
         if (found.size() != wanted.size()) {
-            throw new AppException(ErrorCode.TAG_NOT_EXISTED);
+            throw new AppException(LibraryErrorCode.TAG_NOT_EXISTED);
         }
         return found.stream()
                 .sorted(java.util.Comparator.comparing(Tag::getName, String.CASE_INSENSITIVE_ORDER))
@@ -300,18 +303,18 @@ public class ScoreImportServiceImpl implements ScoreImportService {
                 && ((d[8] & 0xFF) << 8 | (d[9] & 0xFF)) <= 2
                 && ((d[10] & 0xFF) << 8 | (d[11] & 0xFF)) >= 1;
         if (!ok) {
-            throw new AppException(ErrorCode.MIDI_INVALID);
+            throw new AppException(ScoreErrorCode.MIDI_INVALID);
         }
     }
 
     /** .mxl là file ZIP: đọc META-INF/container.xml để biết file MusicXML chính nằm ở đâu rồi giải nén riêng file đó. */
     private byte[] extractMxl(byte[] zip) {
         if (zip.length < 4 || zip[0] != 'P' || zip[1] != 'K') {
-            throw new AppException(ErrorCode.MUSICXML_FILE_INVALID);
+            throw new AppException(ScoreErrorCode.MUSICXML_FILE_INVALID);
         }
         byte[] container = readZipEntry(zip, "META-INF/container.xml");
         if (container == null) {
-            throw new AppException(ErrorCode.MUSICXML_FILE_INVALID);
+            throw new AppException(ScoreErrorCode.MUSICXML_FILE_INVALID);
         }
         Document doc = parseXml(container);
         NodeList rootfiles = doc.getElementsByTagName("rootfile");
@@ -324,7 +327,7 @@ public class ScoreImportServiceImpl implements ScoreImportService {
         }
         byte[] main = mainPath == null ? null : readZipEntry(zip, mainPath);
         if (main == null) {
-            throw new AppException(ErrorCode.MUSICXML_FILE_INVALID);
+            throw new AppException(ScoreErrorCode.MUSICXML_FILE_INVALID);
         }
         return main;
     }
@@ -337,14 +340,14 @@ public class ScoreImportServiceImpl implements ScoreImportService {
                 if (!entry.isDirectory() && entry.getName().equals(name)) {
                     byte[] content = in.readNBytes(MAX_XML_BYTES + 1);
                     if (content.length > MAX_XML_BYTES) {
-                        throw new AppException(ErrorCode.MUSICXML_FILE_INVALID);
+                        throw new AppException(ScoreErrorCode.MUSICXML_FILE_INVALID);
                     }
                     return content;
                 }
             }
             return null;
         } catch (IOException e) {
-            throw new AppException(ErrorCode.MUSICXML_FILE_INVALID);
+            throw new AppException(ScoreErrorCode.MUSICXML_FILE_INVALID);
         }
     }
 
@@ -365,7 +368,7 @@ public class ScoreImportServiceImpl implements ScoreImportService {
             return builder.parse(new ByteArrayInputStream(xml));
         } catch (ParserConfigurationException | SAXException | IOException | IllegalArgumentException e) {
             log.warn("Cannot parse MusicXML: {}", e.getMessage());
-            throw new AppException(ErrorCode.MUSICXML_FILE_INVALID);
+            throw new AppException(ScoreErrorCode.MUSICXML_FILE_INVALID);
         }
     }
 
@@ -373,7 +376,7 @@ public class ScoreImportServiceImpl implements ScoreImportService {
         Element root = parseXml(xml).getDocumentElement();
         String rootName = root.getTagName();
         if (!rootName.equals("score-partwise") && !rootName.equals("score-timewise")) {
-            throw new AppException(ErrorCode.MUSICXML_FILE_INVALID);
+            throw new AppException(ScoreErrorCode.MUSICXML_FILE_INVALID);
         }
 
         String title = firstText(root, "work-title");

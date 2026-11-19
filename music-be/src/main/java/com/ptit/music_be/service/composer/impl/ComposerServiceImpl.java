@@ -19,7 +19,8 @@ import com.ptit.music_be.dto.response.composer.ComposerResponse;
 import com.ptit.music_be.entity.Composer;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.repository.composer.ComposerRepository;
 import com.ptit.music_be.service.composer.ComposerMatcher;
 import com.ptit.music_be.service.composer.ComposerService;
@@ -67,7 +68,7 @@ public class ComposerServiceImpl implements ComposerService {
     public ComposerResponse getBySlug(String slug) {
         Composer c = composerRepository
                 .findBySlug(slug == null ? "" : slug.trim().toLowerCase(Locale.ROOT))
-                .orElseThrow(() -> new AppException(ErrorCode.COMPOSER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(ScoreErrorCode.COMPOSER_NOT_EXISTED));
         List<String> titles = composerRepository.publicTitlesOf(c.getId(), PageRequest.of(0, TOP_TITLES));
         ComposerResponse response = toResponse(c, 0);
         response.setTopTitles(titles);
@@ -88,7 +89,7 @@ public class ComposerServiceImpl implements ComposerService {
         Composer c = new Composer();
         apply(c, request);
         if (composerRepository.existsBySlug(c.getSlug())) {
-            throw new AppException(ErrorCode.COMPOSER_DUPLICATED);
+            throw new AppException(ScoreErrorCode.COMPOSER_DUPLICATED);
         }
         Composer saved = composerRepository.saveAndFlush(c);
         relink(saved.getId());
@@ -101,7 +102,7 @@ public class ComposerServiceImpl implements ComposerService {
         Composer c = find(id);
         apply(c, request);
         if (composerRepository.existsBySlugAndIdNot(c.getSlug(), id)) {
-            throw new AppException(ErrorCode.COMPOSER_DUPLICATED);
+            throw new AppException(ScoreErrorCode.COMPOSER_DUPLICATED);
         }
         Composer saved = composerRepository.saveAndFlush(c);
         relink(saved.getId());
@@ -163,17 +164,17 @@ public class ComposerServiceImpl implements ComposerService {
     }
 
     private Composer find(String id) {
-        return composerRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.COMPOSER_NOT_EXISTED));
+        return composerRepository.findById(id).orElseThrow(() -> new AppException(ScoreErrorCode.COMPOSER_NOT_EXISTED));
     }
 
     private static void apply(Composer c, ComposerRequest r) {
         String name = trim(r.getName());
         if (name == null || name.length() > MAX_NAME) {
-            throw new AppException(ErrorCode.COMPOSER_NAME_INVALID);
+            throw new AppException(ScoreErrorCode.COMPOSER_NAME_INVALID);
         }
         String slug = ComposerMatcher.slugify(name);
         if (slug.isEmpty()) {
-            throw new AppException(ErrorCode.COMPOSER_NAME_INVALID);
+            throw new AppException(ScoreErrorCode.COMPOSER_NAME_INVALID);
         }
         if (slug.length() > 120) {
             slug = slug.substring(0, 120).replaceAll("-+$", "");
@@ -185,7 +186,7 @@ public class ComposerServiceImpl implements ComposerService {
         if ((birth != null && (birth < 1 || birth > thisYear))
                 || (death != null && (death < 1 || death > thisYear))
                 || (birth != null && death != null && death < birth)) {
-            throw new AppException(ErrorCode.COMPOSER_YEARS_INVALID);
+            throw new AppException(ScoreErrorCode.COMPOSER_YEARS_INVALID);
         }
 
         String imageUrl = trim(r.getImageUrl());
@@ -196,7 +197,7 @@ public class ComposerServiceImpl implements ComposerService {
                         || imageSource == null
                         || !(imageSource.startsWith("https://") || imageSource.startsWith("http://"))
                         || imageLicense == null)) {
-            throw new AppException(ErrorCode.COMPOSER_IMAGE_INVALID);
+            throw new AppException(ScoreErrorCode.COMPOSER_IMAGE_INVALID);
         }
 
         c.setName(name);
@@ -229,7 +230,7 @@ public class ComposerServiceImpl implements ComposerService {
 
     private static String limit(String value, int max) {
         if (value != null && value.length() > max) {
-            throw new AppException(ErrorCode.COMPOSER_FIELD_TOO_LONG);
+            throw new AppException(ScoreErrorCode.COMPOSER_FIELD_TOO_LONG);
         }
         return value;
     }
@@ -246,7 +247,7 @@ public class ComposerServiceImpl implements ComposerService {
             return ComposerPeriod.valueOf(period.trim().toUpperCase(Locale.ROOT))
                     .name();
         } catch (IllegalArgumentException e) {
-            throw new AppException(ErrorCode.INVALID_REQUEST);
+            throw new AppException(AccountErrorCode.INVALID_REQUEST);
         }
     }
 

@@ -10,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.ptit.music_be.dto.response.score.ViewCountResponse;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.repository.score.ScoreCounterRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.service.score.PlaybackService;
@@ -45,7 +45,7 @@ public class PlaybackServiceImpl implements PlaybackService {
     @Transactional
     public ViewCountResponse recordView(String scoreId) {
         Score score =
-                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
         scoreFileService.checkCanView(score);
 
         String email = SecurityUtils.getCurrentEmail();

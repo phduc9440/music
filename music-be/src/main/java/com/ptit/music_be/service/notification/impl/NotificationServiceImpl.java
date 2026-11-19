@@ -16,7 +16,7 @@ import com.ptit.music_be.dto.response.notification.NotificationResponse;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Notification;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.LibraryErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.notification.NotificationRepository;
 import com.ptit.music_be.service.notification.NotificationPreferenceService;
@@ -138,7 +138,7 @@ public class NotificationServiceImpl implements NotificationService {
         Notification n = notificationRepository
                 .findById(notificationId)
                 .filter(x -> x.getRecipient().getEmail().equals(SecurityUtils.getCurrentEmail()))
-                .orElseThrow(() -> new AppException(ErrorCode.NOTIFICATION_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(LibraryErrorCode.NOTIFICATION_NOT_EXISTED));
         n.setRead(true);
         notificationRepository.save(n);
     }

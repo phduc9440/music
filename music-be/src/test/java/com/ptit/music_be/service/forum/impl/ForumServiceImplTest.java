@@ -39,6 +39,7 @@ import com.ptit.music_be.event.RewardEarnedEvent;
 import com.ptit.music_be.event.RewardReason;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.CommunityErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.forum.ForumCategoryRepository;
 import com.ptit.music_be.repository.forum.ForumPostRepository;
@@ -131,11 +132,13 @@ class ForumServiceImplTest {
 
     @Test
     void createThreadRejectsShortTitleAndEmptyBody() {
-        assertError(() -> service.createThread(request("ab", "nội dung", null)), ErrorCode.FORUM_CONTENT_INVALID);
-        assertError(() -> service.createThread(request("Tiêu đề", "   ", null)), ErrorCode.FORUM_CONTENT_INVALID);
+        assertError(
+                () -> service.createThread(request("ab", "nội dung", null)), CommunityErrorCode.FORUM_CONTENT_INVALID);
+        assertError(
+                () -> service.createThread(request("Tiêu đề", "   ", null)), CommunityErrorCode.FORUM_CONTENT_INVALID);
         assertError(
                 () -> service.createThread(request("Tiêu đề", "x".repeat(10_001), null)),
-                ErrorCode.FORUM_CONTENT_INVALID);
+                CommunityErrorCode.FORUM_CONTENT_INVALID);
         verify(threadRepository, never()).save(any());
     }
 
@@ -143,9 +146,12 @@ class ForumServiceImplTest {
     void createThreadRejectsScoreThatIsNotPublic() {
         Score priv = Score.builder().id("s1").visibility("PRIVATE").build();
         when(scoreRepository.findById("s1")).thenReturn(Optional.of(priv));
-        assertError(() -> service.createThread(request("Tiêu đề", "nội dung", "s1")), ErrorCode.FORUM_SCORE_NOT_PUBLIC);
         assertError(
-                () -> service.createThread(request("Tiêu đề", "nội dung", "none")), ErrorCode.FORUM_SCORE_NOT_PUBLIC);
+                () -> service.createThread(request("Tiêu đề", "nội dung", "s1")),
+                CommunityErrorCode.FORUM_SCORE_NOT_PUBLIC);
+        assertError(
+                () -> service.createThread(request("Tiêu đề", "nội dung", "none")),
+                CommunityErrorCode.FORUM_SCORE_NOT_PUBLIC);
     }
 
     @Test
@@ -153,7 +159,8 @@ class ForumServiceImplTest {
         me.setCreatedAt(LocalDateTime.now().minusDays(1));
         when(threadRepository.countByAuthorIdAndCreatedAtAfter(eq("me"), any())).thenReturn(3L);
         assertError(
-                () -> service.createThread(request("Tiêu đề", "nội dung", null)), ErrorCode.FORUM_NEW_ACCOUNT_LIMIT);
+                () -> service.createThread(request("Tiêu đề", "nội dung", null)),
+                CommunityErrorCode.FORUM_NEW_ACCOUNT_LIMIT);
     }
 
     @Test
@@ -187,11 +194,11 @@ class ForumServiceImplTest {
     void onlyAuthorCanDeleteThreadAndOnlyWithoutOtherReplies() {
         Member other = Member.builder().id("other").build();
         when(threadRepository.findDetail("t1")).thenReturn(Optional.of(threadBy(other)));
-        assertError(() -> service.deleteThread("t1"), ErrorCode.FORUM_NOT_AUTHOR);
+        assertError(() -> service.deleteThread("t1"), CommunityErrorCode.FORUM_NOT_AUTHOR);
 
         when(threadRepository.findDetail("t1")).thenReturn(Optional.of(threadBy(me)));
         when(postRepository.countByOthers("t1", "me")).thenReturn(2L);
-        assertError(() -> service.deleteThread("t1"), ErrorCode.FORUM_THREAD_HAS_REPLIES);
+        assertError(() -> service.deleteThread("t1"), CommunityErrorCode.FORUM_THREAD_HAS_REPLIES);
 
         when(postRepository.countByOthers("t1", "me")).thenReturn(0L);
         service.deleteThread("t1");
@@ -241,7 +248,7 @@ class ForumServiceImplTest {
     @Test
     void cannotVoteOnOwnThread() {
         when(threadRepository.findDetail("t1")).thenReturn(Optional.of(threadBy(me)));
-        assertError(() -> service.toggleThreadVote("t1"), ErrorCode.FORUM_VOTE_OWN_CONTENT);
+        assertError(() -> service.toggleThreadVote("t1"), CommunityErrorCode.FORUM_VOTE_OWN_CONTENT);
     }
 
     @Test
@@ -338,7 +345,7 @@ class ForumServiceImplTest {
                                 .body("trả lời")
                                 .replyToPostId("px")
                                 .build()),
-                ErrorCode.FORUM_POST_NOT_EXISTED);
+                CommunityErrorCode.FORUM_POST_NOT_EXISTED);
     }
 
     @Test
@@ -348,13 +355,13 @@ class ForumServiceImplTest {
         ForumPost post = ForumPost.builder().id("p1").thread(theirs).author(me).build();
         when(threadRepository.findDetail("t1")).thenReturn(Optional.of(theirs));
         when(postRepository.findById("p1")).thenReturn(Optional.of(post));
-        assertError(() -> service.toggleAccepted("p1"), ErrorCode.FORUM_NOT_AUTHOR);
+        assertError(() -> service.toggleAccepted("p1"), CommunityErrorCode.FORUM_NOT_AUTHOR);
 
         ForumThread mine = threadBy(me);
         ForumPost own = ForumPost.builder().id("p2").thread(mine).author(me).build();
         when(threadRepository.findDetail("t1")).thenReturn(Optional.of(mine));
         when(postRepository.findById("p2")).thenReturn(Optional.of(own));
-        assertError(() -> service.toggleAccepted("p2"), ErrorCode.FORUM_ACCEPT_OWN_POST);
+        assertError(() -> service.toggleAccepted("p2"), CommunityErrorCode.FORUM_ACCEPT_OWN_POST);
     }
 
     @Test

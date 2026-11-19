@@ -42,7 +42,9 @@ import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreFile;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.BillingErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.repository.ai.AiTaskRepository;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.ScoreFileRepository;
@@ -208,7 +210,7 @@ class ScoreEditServiceImplTest {
 
         AppException error = catchError(() -> service.saveMusicXml(SCORE_ID, VALID_XML, XML_TYPE, "\"v2\"", false));
 
-        assertThat(error.getErrorCode()).isEqualTo(ErrorCode.SCORE_VERSION_CONFLICT);
+        assertThat(error.getErrorCode()).isEqualTo(ScoreErrorCode.SCORE_VERSION_CONFLICT);
         assertThat(error.getPayload()).isEqualTo(new ScoreVersionConflict(3));
         verify(scoreFileRepository, never()).save(any());
         assertThat(storage.resolve("scores/score-1/musicxml/v4.musicxml")).doesNotExist();
@@ -220,10 +222,10 @@ class ScoreEditServiceImplTest {
 
         assertThat(catchError(() -> service.saveMusicXml(SCORE_ID, VALID_XML, XML_TYPE, null, false))
                         .getErrorCode())
-                .isEqualTo(ErrorCode.SCORE_VERSION_CONFLICT);
+                .isEqualTo(ScoreErrorCode.SCORE_VERSION_CONFLICT);
         assertThat(catchError(() -> service.saveMusicXml(SCORE_ID, VALID_XML, XML_TYPE, "3", false))
                         .getErrorCode())
-                .isEqualTo(ErrorCode.SCORE_VERSION_CONFLICT);
+                .isEqualTo(ScoreErrorCode.SCORE_VERSION_CONFLICT);
     }
 
     @Test
@@ -243,17 +245,19 @@ class ScoreEditServiceImplTest {
 
         AppException error = catchError(() -> service.saveMusicXml(SCORE_ID, VALID_XML, XML_TYPE, "\"v1\"", true));
 
-        assertThat(error.getErrorCode()).isEqualTo(ErrorCode.UNAUTHORIZED);
+        assertThat(error.getErrorCode()).isEqualTo(AccountErrorCode.UNAUTHORIZED);
         verify(scoreFileRepository, never()).save(any());
     }
 
     @Test
     void cannotEditIsUnauthorized() {
-        doThrow(new AppException(ErrorCode.UNAUTHORIZED)).when(scoreFileService).checkCanEdit(score);
+        doThrow(new AppException(AccountErrorCode.UNAUTHORIZED))
+                .when(scoreFileService)
+                .checkCanEdit(score);
 
         AppException error = catchError(() -> service.saveMusicXml(SCORE_ID, VALID_XML, XML_TYPE, "\"v3\"", false));
 
-        assertThat(error.getErrorCode()).isEqualTo(ErrorCode.UNAUTHORIZED);
+        assertThat(error.getErrorCode()).isEqualTo(AccountErrorCode.UNAUTHORIZED);
     }
 
     @Test
@@ -262,7 +266,7 @@ class ScoreEditServiceImplTest {
 
         AppException error = catchError(() -> service.saveMusicXml("nope", VALID_XML, XML_TYPE, "\"v3\"", false));
 
-        assertThat(error.getErrorCode()).isEqualTo(ErrorCode.SCORE_NOT_EXISTED);
+        assertThat(error.getErrorCode()).isEqualTo(ScoreErrorCode.SCORE_NOT_EXISTED);
     }
 
     @Test
@@ -273,28 +277,28 @@ class ScoreEditServiceImplTest {
 
         AppException error = catchError(() -> service.saveMusicXml(SCORE_ID, VALID_XML, XML_TYPE, "\"v3\"", false));
 
-        assertThat(error.getErrorCode()).isEqualTo(ErrorCode.SCORE_BUSY);
+        assertThat(error.getErrorCode()).isEqualTo(ScoreErrorCode.SCORE_BUSY);
     }
 
     @Test
     void emptyOrOversizedBodyIsTooLarge() {
         assertThat(catchError(() -> service.saveMusicXml(SCORE_ID, new byte[0], XML_TYPE, "\"v3\"", false))
                         .getErrorCode())
-                .isEqualTo(ErrorCode.FILE_TOO_LARGE);
+                .isEqualTo(ScoreErrorCode.FILE_TOO_LARGE);
         assertThat(catchError(() ->
                                 service.saveMusicXml(SCORE_ID, new byte[1024 * 1024 + 1], XML_TYPE, "\"v3\"", false))
                         .getErrorCode())
-                .isEqualTo(ErrorCode.FILE_TOO_LARGE);
+                .isEqualTo(ScoreErrorCode.FILE_TOO_LARGE);
     }
 
     @Test
     void nonXmlContentTypeIsInvalid() {
         assertThat(catchError(() -> service.saveMusicXml(SCORE_ID, VALID_XML, "application/json", "\"v3\"", false))
                         .getErrorCode())
-                .isEqualTo(ErrorCode.MUSICXML_INVALID);
+                .isEqualTo(ScoreErrorCode.MUSICXML_INVALID);
         assertThat(catchError(() -> service.saveMusicXml(SCORE_ID, VALID_XML, null, "\"v3\"", false))
                         .getErrorCode())
-                .isEqualTo(ErrorCode.MUSICXML_INVALID);
+                .isEqualTo(ScoreErrorCode.MUSICXML_INVALID);
     }
 
     @Test
@@ -314,7 +318,7 @@ class ScoreEditServiceImplTest {
         AppException error = catchError(() -> service.saveMusicXml(
                 SCORE_ID, "<score-partwise>".getBytes(StandardCharsets.UTF_8), XML_TYPE, "\"v1\"", false));
 
-        assertThat(error.getErrorCode()).isEqualTo(ErrorCode.MUSICXML_INVALID);
+        assertThat(error.getErrorCode()).isEqualTo(ScoreErrorCode.MUSICXML_INVALID);
     }
 
     @Test
@@ -324,7 +328,7 @@ class ScoreEditServiceImplTest {
 
         AppException error = catchError(() -> service.saveMusicXml(SCORE_ID, VALID_XML, XML_TYPE, "\"v0\"", false));
 
-        assertThat(error.getErrorCode()).isEqualTo(ErrorCode.MUSICXML_NOT_READY);
+        assertThat(error.getErrorCode()).isEqualTo(ScoreErrorCode.MUSICXML_NOT_READY);
     }
 
     @Test
@@ -466,10 +470,10 @@ class ScoreEditServiceImplTest {
         givenXmlVersions(8);
 
         assertThat(catchError(() -> service.getVersionContent(SCORE_ID, 3)).getErrorCode())
-                .isEqualTo(ErrorCode.SCORE_VERSION_NOT_EXISTED);
+                .isEqualTo(ScoreErrorCode.SCORE_VERSION_NOT_EXISTED);
         assertThat(catchError(() -> service.restoreVersion(SCORE_ID, 3, "\"v8\""))
                         .getErrorCode())
-                .isEqualTo(ErrorCode.SCORE_VERSION_NOT_EXISTED);
+                .isEqualTo(ScoreErrorCode.SCORE_VERSION_NOT_EXISTED);
         verify(scoreFileRepository, never()).save(any());
     }
 
@@ -489,13 +493,13 @@ class ScoreEditServiceImplTest {
     @Test
     void storageIsCheckedAgainstTheOwnersPlanBeforeWriting() {
         givenOwnerPlanKeeps(5);
-        doThrow(new AppException(ErrorCode.PLAN_LIMIT_REACHED))
+        doThrow(new AppException(BillingErrorCode.PLAN_LIMIT_REACHED))
                 .when(entitlementService)
                 .checkStorage("owner-1", VALID_XML.length);
 
         AppException error = catchError(() -> service.saveMusicXml(SCORE_ID, VALID_XML, XML_TYPE, "\"v3\"", false));
 
-        assertThat(error.getErrorCode()).isEqualTo(ErrorCode.PLAN_LIMIT_REACHED);
+        assertThat(error.getErrorCode()).isEqualTo(BillingErrorCode.PLAN_LIMIT_REACHED);
         assertThat(storage.resolve("scores/score-1/musicxml/v4.musicxml")).doesNotExist();
         verify(scoreFileRepository, never()).save(any());
     }
@@ -515,7 +519,7 @@ class ScoreEditServiceImplTest {
     void systemVersionReadSkipsThePermissionCheck() throws Exception {
         // Worker gợi ý hợp âm chạy ở luồng nền, không có người đăng nhập: kiểm quyền sẽ ném UNAUTHENTICATED
         lenient()
-                .doThrow(new AppException(ErrorCode.UNAUTHENTICATED))
+                .doThrow(new AppException(AccountErrorCode.UNAUTHENTICATED))
                 .when(scoreFileService)
                 .checkCanView(any());
         givenXmlVersions(5);
@@ -533,7 +537,7 @@ class ScoreEditServiceImplTest {
         givenXmlVersions(5);
 
         assertThat(catchError(() -> service.getVersionContent(SCORE_ID, 9)).getErrorCode())
-                .isEqualTo(ErrorCode.SCORE_VERSION_NOT_EXISTED);
+                .isEqualTo(ScoreErrorCode.SCORE_VERSION_NOT_EXISTED);
     }
 
     @Test
@@ -541,7 +545,7 @@ class ScoreEditServiceImplTest {
         givenXmlVersions(5);
 
         assertThat(catchError(() -> service.getVersionContent(SCORE_ID, 2)).getErrorCode())
-                .isEqualTo(ErrorCode.FILE_NOT_EXISTED);
+                .isEqualTo(ScoreErrorCode.FILE_NOT_EXISTED);
     }
 
     @Test
@@ -570,7 +574,7 @@ class ScoreEditServiceImplTest {
 
         AppException error = catchError(() -> service.restoreVersion(SCORE_ID, 2, "\"v4\""));
 
-        assertThat(error.getErrorCode()).isEqualTo(ErrorCode.SCORE_VERSION_CONFLICT);
+        assertThat(error.getErrorCode()).isEqualTo(ScoreErrorCode.SCORE_VERSION_CONFLICT);
         verify(scoreFileRepository, never()).save(any());
     }
 
@@ -581,7 +585,7 @@ class ScoreEditServiceImplTest {
 
         assertThat(catchError(() -> service.restoreVersion(SCORE_ID, 9, "\"v5\""))
                         .getErrorCode())
-                .isEqualTo(ErrorCode.SCORE_VERSION_NOT_EXISTED);
+                .isEqualTo(ScoreErrorCode.SCORE_VERSION_NOT_EXISTED);
         verify(scoreFileRepository, never()).save(any());
     }
 

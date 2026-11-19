@@ -49,7 +49,9 @@ import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreFile;
 import com.ptit.music_be.event.OmrTaskCreatedEvent;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.AiErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.mapper.AiTaskMapper;
 import com.ptit.music_be.mapper.ScoreFileMapper;
 import com.ptit.music_be.repository.ai.AiTaskRepository;
@@ -117,7 +119,7 @@ public class OmrServiceImpl implements OmrService {
         String cleanComposer = resolveComposer(composer);
         // Tiêu đề người dùng nhập quá dài thì báo lỗi (giống PATCH), không âm thầm cắt
         if (title != null && title.trim().length() > MAX_TITLE_LENGTH) {
-            throw new AppException(ErrorCode.SCORE_TITLE_INVALID);
+            throw new AppException(ScoreErrorCode.SCORE_TITLE_INVALID);
         }
         List<UploadKind> kinds = validate(files);
         boolean isPdf = kinds.getFirst() == UploadKind.PDF;
@@ -126,7 +128,7 @@ public class OmrServiceImpl implements OmrService {
 
         Member member = memberRepository
                 .findByEmailForUpdate(SecurityUtils.getCurrentEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
 
         checkConcurrentTasks(member);
         // Còn đủ trang OMR của tháng không (dòng thành viên đã khóa ở trên); task ghi bên dưới chính là phần đã dùng
@@ -168,7 +170,7 @@ public class OmrServiceImpl implements OmrService {
                 storedPath = fileStorageService.store(in, relativePath);
             } catch (IOException e) {
                 log.error("Cannot read uploaded file {}", file.getOriginalFilename(), e);
-                throw new AppException(ErrorCode.FILE_STORAGE_ERROR);
+                throw new AppException(ScoreErrorCode.FILE_STORAGE_ERROR);
             }
 
             savedFiles.add(scoreFileRepository.save(ScoreFile.builder()
@@ -207,16 +209,16 @@ public class OmrServiceImpl implements OmrService {
     @Transactional
     public AiTaskResponse retry(String scoreId, OmrRetryRequest request) {
         Score score =
-                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
         scoreFileService.checkCanEdit(score);
 
         if (aiTaskRepository.existsByScoreIdAndTaskTypeAndStatusIn(
                 scoreId, AiTaskType.OMR_CONVERSION, ACTIVE_STATUSES)) {
-            throw new AppException(ErrorCode.SCORE_BUSY);
+            throw new AppException(ScoreErrorCode.SCORE_BUSY);
         }
         Member member = memberRepository
                 .findByEmailForUpdate(SecurityUtils.getCurrentEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
         checkConcurrentTasks(member);
         int pages = score.getPageCount() == null ? 0 : score.getPageCount();
         entitlementService.checkAvailable(member.getId(), UsageMetric.OMR_PAGES, pages);
@@ -233,16 +235,16 @@ public class OmrServiceImpl implements OmrService {
         // Kiểm duyệt: admin chạy lại cả bản của người khác (không cần quyền sửa nội dung), không tính vào giới hạn số
         // task của chủ; task mới vẫn gán cho chủ bản nhạc để họ thấy trong lịch sử và trang tiến độ của mình
         if (!SecurityUtils.hasPermission(AdminPermission.AI_TASKS_MANAGE)) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+            throw new AppException(AccountErrorCode.UNAUTHORIZED);
         }
         Score score =
-                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
         if (aiTaskRepository.existsByScoreIdAndTaskTypeAndStatusIn(
                 scoreId, AiTaskType.OMR_CONVERSION, ACTIVE_STATUSES)) {
-            throw new AppException(ErrorCode.SCORE_BUSY);
+            throw new AppException(ScoreErrorCode.SCORE_BUSY);
         }
         if (score.getMember() == null) {
-            throw new AppException(ErrorCode.USER_NOT_EXISTED);
+            throw new AppException(AccountErrorCode.USER_NOT_EXISTED);
         }
         return startRetry(score, score.getMember(), null, 0);
     }
@@ -260,11 +262,11 @@ public class OmrServiceImpl implements OmrService {
                     scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(scoreId, FileType.ORIGINAL_IMAGE);
         }
         if (originals.isEmpty()) {
-            throw new AppException(ErrorCode.FILE_NOT_EXISTED);
+            throw new AppException(ScoreErrorCode.FILE_NOT_EXISTED);
         }
         for (ScoreFile original : originals) {
             if (!Files.isRegularFile(fileStorageService.resolve(original.getStoragePath()))) {
-                throw new AppException(ErrorCode.FILE_NOT_EXISTED);
+                throw new AppException(ScoreErrorCode.FILE_NOT_EXISTED);
             }
         }
 
@@ -307,13 +309,13 @@ public class OmrServiceImpl implements OmrService {
     @Transactional(readOnly = true)
     public OmrResultResponse getResult(String scoreId) {
         Score score =
-                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
         scoreFileService.checkCanView(score);
 
         AiTask task = aiTaskRepository.findByScoreIdOrderByCreatedAtDesc(scoreId).stream()
                 .filter(t -> t.getTaskType() == AiTaskType.OMR_CONVERSION)
                 .findFirst()
-                .orElseThrow(() -> new AppException(ErrorCode.AI_TASK_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AiErrorCode.AI_TASK_NOT_EXISTED));
 
         // result_data do music-ai ghi; thiếu hoặc hỏng thì coi như rỗng (task chưa xong hoặc đã lỗi)
         JsonNode data = parseJson(task.getResultData());
@@ -486,29 +488,29 @@ public class OmrServiceImpl implements OmrService {
 
     private List<UploadKind> validate(List<MultipartFile> files) {
         if (files == null || files.isEmpty()) {
-            throw new AppException(ErrorCode.INVALID_UPLOAD_COMBINATION);
+            throw new AppException(ScoreErrorCode.INVALID_UPLOAD_COMBINATION);
         }
 
         List<UploadKind> kinds = new ArrayList<>();
         for (MultipartFile file : files) {
             if (file == null || file.isEmpty()) {
-                throw new AppException(ErrorCode.FILE_EMPTY);
+                throw new AppException(ScoreErrorCode.FILE_EMPTY);
             }
             UploadKind byExtension = kindFromExtension(file.getOriginalFilename());
             UploadKind byContent = kindFromMagicBytes(file);
             // Both the extension and the real file content must agree on an allowed type
             if (byExtension == null || byContent == null || byExtension != byContent) {
-                throw new AppException(ErrorCode.FILE_TYPE_NOT_SUPPORTED);
+                throw new AppException(ScoreErrorCode.FILE_TYPE_NOT_SUPPORTED);
             }
             kinds.add(byContent);
         }
 
         long pdfCount = kinds.stream().filter(k -> k == UploadKind.PDF).count();
         if (pdfCount > 0 && files.size() != 1) {
-            throw new AppException(ErrorCode.INVALID_UPLOAD_COMBINATION);
+            throw new AppException(ScoreErrorCode.INVALID_UPLOAD_COMBINATION);
         }
         if (pdfCount == 0 && files.size() > maxImages) {
-            throw new AppException(ErrorCode.INVALID_UPLOAD_COMBINATION);
+            throw new AppException(ScoreErrorCode.INVALID_UPLOAD_COMBINATION);
         }
         return kinds;
     }
@@ -560,17 +562,17 @@ public class OmrServiceImpl implements OmrService {
         try (InputStream in = file.getInputStream();
                 PDDocument document = Loader.loadPDF(new RandomAccessReadBuffer(in))) {
             if (document.isEncrypted()) {
-                throw new AppException(ErrorCode.PDF_ENCRYPTED);
+                throw new AppException(ScoreErrorCode.PDF_ENCRYPTED);
             }
             pages = document.getNumberOfPages();
         } catch (InvalidPasswordException e) {
-            throw new AppException(ErrorCode.PDF_ENCRYPTED);
+            throw new AppException(ScoreErrorCode.PDF_ENCRYPTED);
         } catch (IOException e) {
             log.warn("Cannot open uploaded PDF {}: {}", file.getOriginalFilename(), e.getMessage());
-            throw new AppException(ErrorCode.PDF_ENCRYPTED);
+            throw new AppException(ScoreErrorCode.PDF_ENCRYPTED);
         }
         if (pages < 1 || pages > maxPdfPages) {
-            throw new AppException(ErrorCode.PDF_TOO_MANY_PAGES);
+            throw new AppException(ScoreErrorCode.PDF_TOO_MANY_PAGES);
         }
         return pages;
     }
@@ -583,12 +585,12 @@ public class OmrServiceImpl implements OmrService {
         for (MultipartFile file : files) {
             long[] size = readImageSize(file);
             if (size == null) {
-                throw new AppException(ErrorCode.IMAGE_RESOLUTION_INVALID);
+                throw new AppException(ScoreErrorCode.IMAGE_RESOLUTION_INVALID);
             }
             long width = size[0];
             long height = size[1];
             if (Math.min(width, height) < minImageSide || width * height > maxImagePixels) {
-                throw new AppException(ErrorCode.IMAGE_RESOLUTION_INVALID);
+                throw new AppException(ScoreErrorCode.IMAGE_RESOLUTION_INVALID);
             }
         }
         return files.size();
@@ -625,7 +627,7 @@ public class OmrServiceImpl implements OmrService {
         try {
             return OmrSourceType.valueOf(sourceType.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
-            throw new AppException(ErrorCode.INVALID_SOURCE_TYPE);
+            throw new AppException(ScoreErrorCode.INVALID_SOURCE_TYPE);
         }
     }
 
@@ -635,7 +637,7 @@ public class OmrServiceImpl implements OmrService {
         }
         String trimmed = composer.trim();
         if (trimmed.length() > MAX_COMPOSER_LENGTH) {
-            throw new AppException(ErrorCode.SCORE_COMPOSER_INVALID);
+            throw new AppException(ScoreErrorCode.SCORE_COMPOSER_INVALID);
         }
         return trimmed;
     }
@@ -655,7 +657,7 @@ public class OmrServiceImpl implements OmrService {
         try {
             return objectMapper.writeValueAsString(input);
         } catch (JsonProcessingException e) {
-            throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
+            throw new AppException(AccountErrorCode.UNCATEGORIZED_EXCEPTION);
         }
     }
 
@@ -670,7 +672,7 @@ public class OmrServiceImpl implements OmrService {
         long activeTasks = aiTaskRepository.countByMemberIdAndTaskTypeAndStatusIn(
                 member.getId(), AiTaskType.OMR_CONVERSION, ACTIVE_STATUSES);
         if (activeTasks >= limit) {
-            throw new AppException(ErrorCode.TASK_LIMIT_EXCEEDED);
+            throw new AppException(ScoreErrorCode.TASK_LIMIT_EXCEEDED);
         }
     }
 

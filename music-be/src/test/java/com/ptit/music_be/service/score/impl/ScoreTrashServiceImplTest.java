@@ -27,7 +27,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.ScoreTrashRepository;
 import com.ptit.music_be.service.score.ScoreCoverService;
@@ -102,8 +102,8 @@ class ScoreTrashServiceImplTest {
         when(trashRepository.findTrashedByIdAndMember("s9", "m1")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.restore("s9"))
-                .isInstanceOfSatisfying(
-                        AppException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.SCORE_NOT_IN_TRASH));
+                .isInstanceOfSatisfying(AppException.class, e -> assertThat(e.getErrorCode())
+                        .isEqualTo(ScoreErrorCode.SCORE_NOT_IN_TRASH));
     }
 
     @Test

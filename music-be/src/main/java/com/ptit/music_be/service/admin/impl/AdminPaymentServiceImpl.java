@@ -22,7 +22,7 @@ import com.ptit.music_be.dto.response.billing.PaymentOrderResponse;
 import com.ptit.music_be.dto.response.common.PageResponse;
 import com.ptit.music_be.entity.PaymentOrder;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.BillingErrorCode;
 import com.ptit.music_be.repository.billing.PaymentOrderRepository;
 import com.ptit.music_be.service.admin.AdminPaymentService;
 import com.ptit.music_be.service.billing.SubscriptionService;
@@ -51,7 +51,7 @@ public class AdminPaymentServiceImpl implements AdminPaymentService {
         LocalDate end = to == null ? LocalDate.now() : to;
         LocalDate start = from == null ? end.minusDays(DEFAULT_DAYS - 1L) : from;
         if (start.isAfter(end) || ChronoUnit.DAYS.between(start, end) + 1 > MAX_DAYS) {
-            throw new AppException(ErrorCode.PAYMENT_RANGE_INVALID);
+            throw new AppException(BillingErrorCode.PAYMENT_RANGE_INVALID);
         }
         List<PaymentOrder> orders = orderRepository.findPaidBetween(
                 EnumSet.of(PaymentStatus.PAID, PaymentStatus.REFUNDED),
@@ -125,9 +125,9 @@ public class AdminPaymentServiceImpl implements AdminPaymentService {
     public PaymentOrderResponse refund(String orderId) {
         PaymentOrder order = orderRepository
                 .findByIdForUpdate(orderId)
-                .orElseThrow(() -> new AppException(ErrorCode.PAYMENT_ORDER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(BillingErrorCode.PAYMENT_ORDER_NOT_EXISTED));
         if (order.getStatus() != PaymentStatus.PAID) {
-            throw new AppException(ErrorCode.PAYMENT_ORDER_NOT_REFUNDABLE);
+            throw new AppException(BillingErrorCode.PAYMENT_ORDER_NOT_REFUNDABLE);
         }
         order.setStatus(PaymentStatus.REFUNDED);
         orderRepository.save(order);

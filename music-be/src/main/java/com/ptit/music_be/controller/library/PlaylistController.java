@@ -95,6 +95,18 @@ public class PlaylistController {
                 .build();
     }
 
+    @PostMapping("/{id}/scores/remove")
+    @Operation(
+            summary = "Remove several scores from my playlist at once (all or nothing; scores are kept)",
+            description = "Body {scoreIds}. Errors: 2601 playlist not found, 2605 empty list or a score not in it",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<List<PlaylistItemResponse>> removeScores(
+            @PathVariable String id, @RequestBody PlaylistOrderRequest request) {
+        return ApiResponse.<List<PlaylistItemResponse>>builder()
+                .result(playlistService.removeScores(id, request))
+                .build();
+    }
+
     @DeleteMapping("/{id}/scores/{scoreId}")
     @Operation(
             summary = "Remove a score from my playlist (score is kept)",

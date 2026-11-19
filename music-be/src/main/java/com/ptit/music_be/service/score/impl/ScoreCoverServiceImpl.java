@@ -15,7 +15,7 @@ import com.cloudinary.utils.ObjectUtils;
 import com.ptit.music_be.dto.response.score.ScoreDetailResponse;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.service.score.ScoreCoverService;
 import com.ptit.music_be.service.score.ScoreFileService;
@@ -65,7 +65,7 @@ public class ScoreCoverServiceImpl implements ScoreCoverService {
             url = (String) result.get("secure_url");
         } catch (Exception e) {
             log.warn("Không tải được ảnh bìa bản nhạc {}: {}", scoreId, e.getMessage());
-            throw new AppException(ErrorCode.FILE_STORAGE_ERROR);
+            throw new AppException(ScoreErrorCode.FILE_STORAGE_ERROR);
         }
         // Thêm tham số phiên bản để trình duyệt tải lại ảnh sau khi ghi đè
         score.setCoverUrl(url + "?v=" + System.currentTimeMillis());
@@ -82,7 +82,7 @@ public class ScoreCoverServiceImpl implements ScoreCoverService {
             try {
                 cloudinary.uploader().destroy(publicId(score.getId()), ObjectUtils.asMap("invalidate", true));
             } catch (Exception e) {
-                throw new AppException(ErrorCode.FILE_STORAGE_ERROR);
+                throw new AppException(ScoreErrorCode.FILE_STORAGE_ERROR);
             }
             score.setCoverUrl(null);
             scoreRepository.save(score);
@@ -102,24 +102,24 @@ public class ScoreCoverServiceImpl implements ScoreCoverService {
     private Score find(String scoreId) {
         return scoreRepository
                 .findById(scoreId == null ? "" : scoreId)
-                .orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
     }
 
     /** Kiểm tra kích thước, loại và thật sự giải mã được thành ảnh (không tin Content-Type do client gửi). */
     private static void validate(MultipartFile file) {
         if (file == null || file.isEmpty() || file.getSize() > MAX_COVER_BYTES) {
-            throw new AppException(ErrorCode.SCORE_COVER_INVALID);
+            throw new AppException(ScoreErrorCode.SCORE_COVER_INVALID);
         }
         String type = file.getContentType();
         if (type == null || !ALLOWED_TYPES.contains(type)) {
-            throw new AppException(ErrorCode.SCORE_COVER_INVALID);
+            throw new AppException(ScoreErrorCode.SCORE_COVER_INVALID);
         }
         try (InputStream in = file.getInputStream()) {
             if (ImageIO.read(in) == null) {
-                throw new AppException(ErrorCode.SCORE_COVER_INVALID);
+                throw new AppException(ScoreErrorCode.SCORE_COVER_INVALID);
             }
         } catch (IOException e) {
-            throw new AppException(ErrorCode.SCORE_COVER_INVALID);
+            throw new AppException(ScoreErrorCode.SCORE_COVER_INVALID);
         }
     }
 

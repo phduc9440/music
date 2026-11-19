@@ -1,5 +1,6 @@
 package com.ptit.music_be.service.admin;
 
+import com.ptit.music_be.dto.request.admin.AdminCreateMemberRequest;
 import com.ptit.music_be.dto.request.admin.AdminUpdateMemberRequest;
 import com.ptit.music_be.dto.response.admin.AdminMemberDetailResponse;
 import com.ptit.music_be.dto.response.auth.MemberResponse;
@@ -22,4 +23,12 @@ public interface AdminMemberService {
     AdminMemberDetailResponse getMemberDetail(String memberId);
 
     MemberResponse updateMember(String memberId, AdminUpdateMemberRequest request);
+
+    /**
+     * Tạo tài khoản (cần quyền MEMBERS_CREATE): admin đặt mật khẩu ban đầu, tài khoản ACTIVE và coi như đã xác thực email.
+     * Luôn có USER; không ai gán được SUPER_ADMIN; người không phải SUPER_ADMIN chỉ gán vai trò có quyền nằm trọn trong
+     * quyền của mình. Lỗi: MEMBER_EMAIL_INVALID (1026), USER_EXISTED (1003), PASSWORD_INVALID (1007), ROLE_NOT_EXISTED
+     * (1015), ROLE_ASSIGN_FORBIDDEN (1025).
+     */
+    MemberResponse createMember(AdminCreateMemberRequest request);
 }

@@ -37,7 +37,9 @@ import com.ptit.music_be.entity.ScoreComment;
 import com.ptit.music_be.entity.ScoreCommentMention;
 import com.ptit.music_be.entity.TeamMember;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.CollabErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.MemberScoreRepository;
 import com.ptit.music_be.repository.score.ScoreCommentMentionRepository;
@@ -85,7 +87,7 @@ public class ScoreCommentServiceImpl implements ScoreCommentService {
         Score score = findScore(scoreId);
         AccessDecision decision = permissionService.resolve(score);
         if (!decision.can(ScoreAccess.VIEW)) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+            throw new AppException(AccountErrorCode.UNAUTHORIZED);
         }
         permissionService.auditModeratorAccess(score, "COMMENTS");
         Member me = currentMember();
@@ -121,7 +123,7 @@ public class ScoreCommentServiceImpl implements ScoreCommentService {
         Score score = findScore(scoreId);
         AccessDecision decision = permissionService.resolve(score);
         if (!decision.can(ScoreAccess.REVIEW)) {
-            throw new AppException(ErrorCode.COMMENT_WRITE_FORBIDDEN);
+            throw new AppException(CollabErrorCode.COMMENT_WRITE_FORBIDDEN);
         }
         Member me = currentMember();
         String kw = keyword == null ? "" : keyword.trim().toLowerCase(Locale.ROOT);
@@ -144,7 +146,7 @@ public class ScoreCommentServiceImpl implements ScoreCommentService {
         Score score = findScore(scoreId);
         AccessDecision decision = permissionService.resolve(score);
         if (!decision.can(ScoreAccess.REVIEW)) {
-            throw new AppException(ErrorCode.COMMENT_WRITE_FORBIDDEN);
+            throw new AppException(CollabErrorCode.COMMENT_WRITE_FORBIDDEN);
         }
         Member me = currentMember();
         String content = cleanContent(request.getContent());
@@ -158,7 +160,7 @@ public class ScoreCommentServiceImpl implements ScoreCommentService {
                 || start < 1
                 || end < start
                 || end > measureCount) {
-            throw new AppException(ErrorCode.COMMENT_MEASURE_INVALID);
+            throw new AppException(CollabErrorCode.COMMENT_MEASURE_INVALID);
         }
         Map<String, Member> mentions = resolveMentions(score, me, request.getMentionIds());
 
@@ -187,7 +189,7 @@ public class ScoreCommentServiceImpl implements ScoreCommentService {
         Score score = findScore(root.getScore().getId());
         AccessDecision decision = permissionService.resolve(score);
         if (!decision.can(ScoreAccess.REVIEW)) {
-            throw new AppException(ErrorCode.COMMENT_WRITE_FORBIDDEN);
+            throw new AppException(CollabErrorCode.COMMENT_WRITE_FORBIDDEN);
         }
         Member me = currentMember();
         String content = cleanContent(request.getContent());
@@ -241,14 +243,14 @@ public class ScoreCommentServiceImpl implements ScoreCommentService {
         Score score = findScore(root.getScore().getId());
         AccessDecision decision = permissionService.resolve(score);
         if (!decision.can(ScoreAccess.VIEW)) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+            throw new AppException(AccountErrorCode.UNAUTHORIZED);
         }
         Member me = currentMember();
         boolean author = comment.getAuthor().getId().equals(me.getId());
 
         if (request.getContent() != null || request.getMentionIds() != null) {
             if (!author || !decision.can(ScoreAccess.REVIEW)) {
-                throw new AppException(ErrorCode.COMMENT_FORBIDDEN);
+                throw new AppException(CollabErrorCode.COMMENT_FORBIDDEN);
             }
             if (request.getContent() != null) {
                 String content = cleanContent(request.getContent());
@@ -278,7 +280,7 @@ public class ScoreCommentServiceImpl implements ScoreCommentService {
 
         if (request.getStatus() != null) {
             if (!comment.isRoot() || !canResolve(comment, me, decision)) {
-                throw new AppException(ErrorCode.COMMENT_FORBIDDEN);
+                throw new AppException(CollabErrorCode.COMMENT_FORBIDDEN);
             }
             if (request.getStatus() == CommentStatus.RESOLVED) {
                 if (comment.getStatus() != CommentStatus.RESOLVED) {
@@ -304,7 +306,7 @@ public class ScoreCommentServiceImpl implements ScoreCommentService {
         AccessDecision decision = permissionService.resolve(score);
         Member me = currentMember();
         if (!canDelete(comment, me, decision)) {
-            throw new AppException(ErrorCode.COMMENT_FORBIDDEN);
+            throw new AppException(CollabErrorCode.COMMENT_FORBIDDEN);
         }
         commentRepository.deleteDirectly(comment.getId());
     }
@@ -366,7 +368,7 @@ public class ScoreCommentServiceImpl implements ScoreCommentService {
                 .filter(id -> !id.isEmpty() && !id.equals(me.getId()))
                 .collect(Collectors.toCollection(LinkedHashSet::new));
         if (ids.size() > MAX_MENTIONS) {
-            throw new AppException(ErrorCode.COMMENT_MENTION_INVALID);
+            throw new AppException(CollabErrorCode.COMMENT_MENTION_INVALID);
         }
         if (ids.isEmpty()) {
             return Map.of();
@@ -376,7 +378,7 @@ public class ScoreCommentServiceImpl implements ScoreCommentService {
         for (String id : ids) {
             Member m = allowed.get(id);
             if (m == null) {
-                throw new AppException(ErrorCode.COMMENT_MENTION_INVALID);
+                throw new AppException(CollabErrorCode.COMMENT_MENTION_INVALID);
             }
             result.put(id, m);
         }
@@ -506,7 +508,7 @@ public class ScoreCommentServiceImpl implements ScoreCommentService {
     private static String cleanContent(String content) {
         String c = content == null ? "" : content.strip();
         if (c.isEmpty() || c.length() > MAX_CONTENT) {
-            throw new AppException(ErrorCode.COMMENT_CONTENT_INVALID);
+            throw new AppException(CollabErrorCode.COMMENT_CONTENT_INVALID);
         }
         return c;
     }
@@ -517,7 +519,7 @@ public class ScoreCommentServiceImpl implements ScoreCommentService {
         }
         String p = partId.trim();
         if (p.length() > MAX_ID_LENGTH) {
-            throw new AppException(ErrorCode.COMMENT_ANCHOR_INVALID);
+            throw new AppException(CollabErrorCode.COMMENT_ANCHOR_INVALID);
         }
         return p;
     }
@@ -533,12 +535,12 @@ public class ScoreCommentServiceImpl implements ScoreCommentService {
                 .distinct()
                 .toList();
         if (ids.size() > MAX_NOTE_IDS || ids.stream().anyMatch(id -> id.length() > MAX_ID_LENGTH)) {
-            throw new AppException(ErrorCode.COMMENT_ANCHOR_INVALID);
+            throw new AppException(CollabErrorCode.COMMENT_ANCHOR_INVALID);
         }
         try {
             return ids.isEmpty() ? null : objectMapper.writeValueAsString(ids);
         } catch (JsonProcessingException e) {
-            throw new AppException(ErrorCode.COMMENT_ANCHOR_INVALID);
+            throw new AppException(CollabErrorCode.COMMENT_ANCHOR_INVALID);
         }
     }
 
@@ -558,13 +560,13 @@ public class ScoreCommentServiceImpl implements ScoreCommentService {
     private Score findScore(String scoreId) {
         return scoreRepository
                 .findById(scoreId == null ? "" : scoreId)
-                .orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
     }
 
     private ScoreComment findComment(String commentId) {
         return commentRepository
                 .findById(commentId == null ? "" : commentId)
-                .orElseThrow(() -> new AppException(ErrorCode.COMMENT_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(CollabErrorCode.COMMENT_NOT_EXISTED));
     }
 
     private ScoreComment rootOf(ScoreComment comment) {
@@ -574,6 +576,6 @@ public class ScoreCommentServiceImpl implements ScoreCommentService {
     private Member currentMember() {
         return memberRepository
                 .findByEmail(SecurityUtils.getCurrentEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
     }
 }

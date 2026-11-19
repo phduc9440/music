@@ -8,7 +8,7 @@ import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 
 class MusicXmlInspectorTest {
 
@@ -94,8 +94,8 @@ class MusicXmlInspectorTest {
                         + "</measure></part></score-partwise>");
 
         assertThatThrownBy(() -> MusicXmlInspector.inspect(xxe))
-                .isInstanceOfSatisfying(
-                        AppException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.MUSICXML_INVALID));
+                .isInstanceOfSatisfying(AppException.class, e -> assertThat(e.getErrorCode())
+                        .isEqualTo(ScoreErrorCode.MUSICXML_INVALID));
     }
 
     @Test
@@ -125,8 +125,8 @@ class MusicXmlInspectorTest {
     @Test
     void malformedXmlIsRejected() {
         assertThatThrownBy(() -> MusicXmlInspector.inspect(bytes("<score-partwise><part>")))
-                .isInstanceOfSatisfying(
-                        AppException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.MUSICXML_INVALID));
+                .isInstanceOfSatisfying(AppException.class, e -> assertThat(e.getErrorCode())
+                        .isEqualTo(ScoreErrorCode.MUSICXML_INVALID));
     }
 
     @Test
@@ -136,8 +136,8 @@ class MusicXmlInspectorTest {
                         + " Partwise//EN\" \"http://www.musicxml.org/dtds/partwise.dtd\"><score-partwise/>");
 
         assertThatThrownBy(() -> MusicXmlInspector.parseSecure(withDoctype))
-                .isInstanceOfSatisfying(
-                        AppException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.MUSICXML_INVALID));
+                .isInstanceOfSatisfying(AppException.class, e -> assertThat(e.getErrorCode())
+                        .isEqualTo(ScoreErrorCode.MUSICXML_INVALID));
     }
 
     /** File đã lưu (OMR, Editor) luôn kèm DOCTYPE công khai nên phải đọc được. */

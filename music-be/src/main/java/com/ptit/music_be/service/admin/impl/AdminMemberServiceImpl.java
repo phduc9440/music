@@ -2,7 +2,9 @@ package com.ptit.music_be.service.admin.impl;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -13,13 +15,18 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.ptit.music_be.configuration.MemberStatusGuard;
+import com.ptit.music_be.configuration.RolePermissionRegistry;
 import com.ptit.music_be.dto.enums.auth.AdminPermission;
+import com.ptit.music_be.dto.enums.auth.AuthProvider;
 import com.ptit.music_be.dto.enums.auth.MemberStatus;
 import com.ptit.music_be.dto.enums.billing.PaymentStatus;
+import com.ptit.music_be.dto.request.admin.AdminCreateMemberRequest;
 import com.ptit.music_be.dto.request.admin.AdminUpdateMemberRequest;
 import com.ptit.music_be.dto.response.admin.AdminMemberDetailResponse;
 import com.ptit.music_be.dto.response.auth.MemberResponse;
@@ -29,7 +36,7 @@ import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.MemberRole;
 import com.ptit.music_be.entity.Role;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
 import com.ptit.music_be.mapper.MemberMapper;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.auth.RoleRepository;
@@ -52,6 +59,12 @@ public class AdminMemberServiceImpl implements AdminMemberService {
     static final int MAX_PAGE_SIZE = 50;
     static final int MAX_PURCHASES = 50;
     static final int MAX_STATUS_REASON = 255;
+    static final String USER = "USER";
+    static final int MIN_PASSWORD = 8;
+    static final int MAX_EMAIL = 255;
+    static final int MAX_TEXT = 255;
+    static final int MAX_PHONE = 30;
+    static final java.util.regex.Pattern EMAIL = java.util.regex.Pattern.compile("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
 
     MemberRepository memberRepository;
     RoleRepository roleRepository;
@@ -59,6 +72,7 @@ public class AdminMemberServiceImpl implements AdminMemberService {
     EntityManager entityManager;
     MemberStatusGuard memberStatusGuard;
     SubscriptionService subscriptionService;
+    PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional(readOnly = true)
@@ -219,20 +233,20 @@ public class AdminMemberServiceImpl implements AdminMemberService {
         boolean targetIsSuper = hasRole(member, SUPER_ADMIN);
         // Chỉ SUPER_ADMIN được đụng đến tài khoản SUPER_ADMIN khác (khóa, đổi vai trò)
         if (targetIsSuper && !isSelf && !SecurityUtils.isSuperAdmin()) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+            throw new AppException(AccountErrorCode.UNAUTHORIZED);
         }
 
         if (request.getStatus() != null) {
             SecurityUtils.requirePermission(AdminPermission.MEMBERS_LOCK);
             if (isSelf && request.getStatus() != MemberStatus.ACTIVE) {
-                throw new AppException(ErrorCode.CANNOT_MODIFY_SELF);
+                throw new AppException(AccountErrorCode.CANNOT_MODIFY_SELF);
             }
             String reason = request.getStatusReason() == null
                             || request.getStatusReason().isBlank()
                     ? null
                     : request.getStatusReason().trim();
             if (reason != null && reason.length() > MAX_STATUS_REASON) {
-                throw new AppException(ErrorCode.STATUS_REASON_INVALID);
+                throw new AppException(AccountErrorCode.STATUS_REASON_INVALID);
             }
             if (member.getStatus() != request.getStatus()) {
                 // Chỉ ghi khi trạng thái thật sự đổi; Nhật ký quản trị suy ra sự kiện khóa / mở khóa từ ba cột này
@@ -249,18 +263,18 @@ public class AdminMemberServiceImpl implements AdminMemberService {
                     .map(r -> r == null ? "" : r.trim().toUpperCase().replaceFirst("^ROLE_", ""))
                     .collect(Collectors.toSet());
             if (names.isEmpty()) {
-                throw new AppException(ErrorCode.ROLE_NOT_EXISTED);
+                throw new AppException(AccountErrorCode.ROLE_NOT_EXISTED);
             }
             // Chỉ SUPER_ADMIN được cấp/thu hồi ADMIN; ADMIN thường không được đổi vai trò của ai
             if (!SecurityUtils.isSuperAdmin()) {
-                throw new AppException(ErrorCode.UNAUTHORIZED);
+                throw new AppException(AccountErrorCode.UNAUTHORIZED);
             }
             // SUPER_ADMIN là tài khoản gốc do ApplicationInitConfig tạo, không cấp/thu hồi qua API
             if (names.contains(SUPER_ADMIN) != targetIsSuper) {
-                throw new AppException(ErrorCode.UNAUTHORIZED);
+                throw new AppException(AccountErrorCode.UNAUTHORIZED);
             }
             if (isSelf) {
-                throw new AppException(ErrorCode.CANNOT_MODIFY_SELF);
+                throw new AppException(AccountErrorCode.CANNOT_MODIFY_SELF);
             }
             // orphanRemoval=true: bỏ role khỏi list thì dòng member_roles bị xóa
             member.getMemberRoles().removeIf(mr -> !names.contains(mr.getRole().getName()));
@@ -269,8 +283,9 @@ public class AdminMemberServiceImpl implements AdminMemberService {
                     .collect(Collectors.toSet());
             for (String name : names) {
                 if (existing.contains(name)) continue;
-                Role role =
-                        roleRepository.findByName(name).orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_EXISTED));
+                Role role = roleRepository
+                        .findByName(name)
+                        .orElseThrow(() -> new AppException(AccountErrorCode.ROLE_NOT_EXISTED));
                 member.getMemberRoles()
                         .add(MemberRole.builder()
                                 .member(member)
@@ -285,6 +300,89 @@ public class AdminMemberServiceImpl implements AdminMemberService {
         return memberMapper.toMemberResponse(memberRepository.save(member));
     }
 
+    @Override
+    @Transactional
+    @PreAuthorize("@perm.has('MEMBERS_CREATE')")
+    public MemberResponse createMember(AdminCreateMemberRequest request) {
+        String email = request == null || request.getEmail() == null
+                ? ""
+                : request.getEmail().trim().toLowerCase(Locale.ROOT);
+        if (email.length() > MAX_EMAIL || !EMAIL.matcher(email).matches()) {
+            throw new AppException(AccountErrorCode.MEMBER_EMAIL_INVALID);
+        }
+        String password = request.getPassword() == null ? "" : request.getPassword();
+        if (password.length() < MIN_PASSWORD) {
+            throw new AppException(AccountErrorCode.PASSWORD_INVALID);
+        }
+        Set<String> names = new LinkedHashSet<>();
+        names.add(USER);
+        if (request.getRoles() != null) {
+            request.getRoles().stream()
+                    .map(r -> r == null ? "" : r.trim().toUpperCase(Locale.ROOT).replaceFirst("^ROLE_", ""))
+                    .filter(r -> !r.isEmpty())
+                    .forEach(names::add);
+        }
+        List<Role> roles = names.stream()
+                .map(name -> roleRepository
+                        .findByName(name)
+                        .orElseThrow(() -> new AppException(AccountErrorCode.ROLE_NOT_EXISTED)))
+                .toList();
+        requireCanAssign(names);
+        if (memberRepository.existsByEmail(email)) {
+            throw new AppException(AccountErrorCode.USER_EXISTED);
+        }
+
+        Member member = Member.builder()
+                .email(email)
+                .passwordHash(passwordEncoder.encode(password))
+                .fullName(blankToNull(request.getFullName(), MAX_TEXT))
+                .phone(blankToNull(request.getPhone(), MAX_PHONE))
+                .status(MemberStatus.ACTIVE)
+                .emailVerified(true)
+                .authProvider(AuthProvider.LOCAL)
+                .build();
+        Member creator = currentAdmin();
+        LocalDateTime now = LocalDateTime.now();
+        for (Role role : roles) {
+            member.getMemberRoles()
+                    .add(MemberRole.builder()
+                            .member(member)
+                            .role(role)
+                            .grantedAt(now)
+                            .grantedBy(creator)
+                            .build());
+        }
+        return memberMapper.toMemberResponse(memberRepository.save(member));
+    }
+
+    /**
+     * Không ai gán được SUPER_ADMIN (tài khoản gốc do hệ thống tạo). Người không phải SUPER_ADMIN chỉ gán vai trò có quyền
+     * nằm trọn trong quyền của chính mình, để quyền tạo tài khoản không thành đường tự nâng quyền.
+     */
+    private static void requireCanAssign(Set<String> roleNames) {
+        if (roleNames.contains(SUPER_ADMIN)) {
+            throw new AppException(AccountErrorCode.ROLE_ASSIGN_FORBIDDEN);
+        }
+        if (SecurityUtils.isSuperAdmin()) {
+            return;
+        }
+        Set<AdminPermission> mine =
+                SecurityUtils.permissions(SecurityContextHolder.getContext().getAuthentication());
+        for (String name : roleNames) {
+            if (!mine.containsAll(RolePermissionRegistry.permissionsOf(List.of(name)))) {
+                throw new AppException(AccountErrorCode.ROLE_ASSIGN_FORBIDDEN);
+            }
+        }
+    }
+
+    private static String blankToNull(String value, int max) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        String clean = value.strip();
+        return clean.length() > max ? clean.substring(0, max) : clean;
+    }
+
     private static boolean hasRole(Member member, String roleName) {
         return member.getMemberRoles().stream()
                 .anyMatch(mr -> roleName.equals(mr.getRole().getName()));
@@ -295,6 +393,8 @@ public class AdminMemberServiceImpl implements AdminMemberService {
     }
 
     private Member find(String memberId) {
-        return memberRepository.findById(memberId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        return memberRepository
+                .findById(memberId)
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
     }
 }

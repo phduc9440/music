@@ -37,7 +37,9 @@ import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreFile;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.CollabErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.repository.ai.AiTaskRepository;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.ScoreFileRepository;
@@ -141,19 +143,19 @@ public class ScoreEditServiceImpl implements ScoreEditService {
         // Khóa dòng ngay từ đầu để hai lần lưu cùng lúc được xếp hàng và không cùng ra một version
         Score score = scoreRepository
                 .findByIdForUpdate(scoreId)
-                .orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
         scoreFileService.checkCanEdit(score);
         if (!fromLiveSession && liveSessions.isActive(scoreId)) {
-            throw new AppException(ErrorCode.LIVE_SESSION_ACTIVE);
+            throw new AppException(CollabErrorCode.LIVE_SESSION_ACTIVE);
         }
 
         if (body == null || body.length == 0 || body.length > maxMusicXmlBytes) {
-            throw new AppException(ErrorCode.FILE_TOO_LARGE);
+            throw new AppException(ScoreErrorCode.FILE_TOO_LARGE);
         }
         requireXmlContentType(contentType);
         if (aiTaskRepository.existsByScoreIdAndTaskTypeAndStatusIn(
                 scoreId, AiTaskType.OMR_CONVERSION, ACTIVE_STATUSES)) {
-            throw new AppException(ErrorCode.SCORE_BUSY);
+            throw new AppException(ScoreErrorCode.SCORE_BUSY);
         }
         // Dung lượng tính cho chủ bản nhạc; không khóa dòng thành viên vì đã khóa dòng bản nhạc (tránh khóa chéo)
         if (score.getMember() != null) {
@@ -169,12 +171,12 @@ public class ScoreEditServiceImpl implements ScoreEditService {
         if (force) {
             // Ghi đè bản mới hơn của người khác: chỉ chủ sở hữu (ADMIN và người được chia sẻ quyền sửa thì không)
             if (!scoreFileService.canManageSharing(score)) {
-                throw new AppException(ErrorCode.UNAUTHORIZED);
+                throw new AppException(AccountErrorCode.UNAUTHORIZED);
             }
         } else {
             Integer expected = parseIfMatch(ifMatch);
             if (expected == null || expected != currentVersion) {
-                throw new AppException(ErrorCode.SCORE_VERSION_CONFLICT, new ScoreVersionConflict(currentVersion));
+                throw new AppException(ScoreErrorCode.SCORE_VERSION_CONFLICT, new ScoreVersionConflict(currentVersion));
             }
         }
 
@@ -235,16 +237,16 @@ public class ScoreEditServiceImpl implements ScoreEditService {
     /** Content-Type phải là một trong ba kiểu XML được chấp nhận; tham số như charset được bỏ qua. */
     private void requireXmlContentType(String contentType) {
         if (contentType == null || contentType.isBlank()) {
-            throw new AppException(ErrorCode.MUSICXML_INVALID);
+            throw new AppException(ScoreErrorCode.MUSICXML_INVALID);
         }
         try {
             MediaType mediaType = MediaType.parseMediaType(contentType);
             String type = (mediaType.getType() + "/" + mediaType.getSubtype()).toLowerCase();
             if (!ACCEPTED_CONTENT_TYPES.contains(type)) {
-                throw new AppException(ErrorCode.MUSICXML_INVALID);
+                throw new AppException(ScoreErrorCode.MUSICXML_INVALID);
             }
         } catch (InvalidMediaTypeException e) {
-            throw new AppException(ErrorCode.MUSICXML_INVALID);
+            throw new AppException(ScoreErrorCode.MUSICXML_INVALID);
         }
     }
 
@@ -254,7 +256,7 @@ public class ScoreEditServiceImpl implements ScoreEditService {
                 .filter(f -> !Boolean.FALSE.equals(f.getIsCurrent()))
                 .mapToInt(this::versionOf)
                 .max()
-                .orElseThrow(() -> new AppException(ErrorCode.MUSICXML_NOT_READY));
+                .orElseThrow(() -> new AppException(ScoreErrorCode.MUSICXML_NOT_READY));
         int fromScore = score.getCurrentVersion() == null ? 0 : score.getCurrentVersion();
         return Math.max(fromFiles, fromScore);
     }
@@ -293,7 +295,7 @@ public class ScoreEditServiceImpl implements ScoreEditService {
             } catch (IOException ignored) {
                 // Chỉ là file tạm, bỏ qua
             }
-            throw new AppException(ErrorCode.FILE_STORAGE_ERROR);
+            throw new AppException(ScoreErrorCode.FILE_STORAGE_ERROR);
         }
     }
 
@@ -375,7 +377,7 @@ public class ScoreEditServiceImpl implements ScoreEditService {
     @Transactional(readOnly = true)
     public List<ScoreVersionResponse> listVersions(String scoreId) {
         Score score =
-                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
         scoreFileService.checkCanView(score);
 
         List<ScoreFile> xmlFiles =
@@ -394,7 +396,7 @@ public class ScoreEditServiceImpl implements ScoreEditService {
     @Transactional(readOnly = true)
     public ScoreContent getVersionContent(String scoreId, int version) {
         Score score =
-                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
         scoreFileService.checkCanView(score);
         return new ScoreContent(readVersion(score, version), version);
     }
@@ -403,7 +405,7 @@ public class ScoreEditServiceImpl implements ScoreEditService {
     @Transactional(readOnly = true)
     public ScoreContent getVersionContentForSystem(String scoreId, int version) {
         Score score =
-                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
         return new ScoreContent(readVersion(score, version), version);
     }
 
@@ -413,7 +415,7 @@ public class ScoreEditServiceImpl implements ScoreEditService {
         // Khóa dòng trước khi đọc để version được khôi phục không bị dọn mất giữa chừng bởi một lần lưu khác
         Score score = scoreRepository
                 .findByIdForUpdate(scoreId)
-                .orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
         scoreFileService.checkCanEdit(score);
         byte[] body = readVersion(score, version);
         return save(scoreId, body, MUSICXML_CONTENT_TYPE, ifMatch, false, version, Map.of(), false);
@@ -427,12 +429,12 @@ public class ScoreEditServiceImpl implements ScoreEditService {
         ScoreFile file = versionRetention.visible(score, xmlFiles).stream()
                 .filter(f -> versionOf(f) == version)
                 .findFirst()
-                .orElseThrow(() -> new AppException(ErrorCode.SCORE_VERSION_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_VERSION_NOT_EXISTED));
         try {
             return Files.readAllBytes(fileStorageService.resolve(file.getStoragePath()));
         } catch (IOException e) {
             log.warn("Không đọc được MusicXML version {} của {}: {}", version, scoreId, e.getMessage());
-            throw new AppException(ErrorCode.FILE_NOT_EXISTED);
+            throw new AppException(ScoreErrorCode.FILE_NOT_EXISTED);
         }
     }
 

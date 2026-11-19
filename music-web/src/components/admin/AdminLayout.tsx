@@ -16,6 +16,7 @@ import { hasAdminPermission, roleLabel } from '../../utils/auth';
 import { MENU, visibleMenu } from './adminMenu';
 import { Avatar, Icon } from '../ui';
 import './admin.css';
+import { onMemberUpdated } from '../../utils/memberEvents';
 
 export interface AdminOutletContext {
   admin: Member | null;
@@ -52,6 +53,9 @@ export default function AdminLayout() {
       })
       .catch(() => toast.error(t('admin.layout.profileFailed')));
   }, []);
+
+  // Sửa hồ sơ ở /admin/profile thì tên và ảnh trên header đổi theo ngay
+  useEffect(() => onMemberUpdated(setAdmin), []);
 
   // Số bản chờ duyệt: tải lại mỗi khi chuyển trang (duyệt xong quay lại là thấy số mới)
   useEffect(() => {
@@ -98,7 +102,8 @@ export default function AdminLayout() {
   };
 
   const displayName = admin?.fullName || admin?.email || 'Admin';
-  const title = currentTitle(pathname);
+  // Hồ sơ không nằm trong menu nên tự đặt tiêu đề
+  const title = pathname === '/admin/profile' ? t('common.header.profile') : currentTitle(pathname);
 
   return (
     <div className={`adm-shell${collapsed ? ' adm-shell--collapsed' : ''}`}>
@@ -148,6 +153,18 @@ export default function AdminLayout() {
             {menuOpen && (
               <div className="adm-usermenu__panel" role="menu">
                 {admin?.email && <div className="adm-usermenu__email">{admin.email}</div>}
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="adm-usermenu__item"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    navigate('/admin/profile');
+                  }}
+                >
+                  <Icon name="user" size={16} />
+                  {t('common.header.profile')}
+                </button>
                 <button type="button" role="menuitem" className="adm-usermenu__item" onClick={() => navigate('/')}>
                   <Icon name="home" size={16} />
                   {t('admin.menu.userSite')}

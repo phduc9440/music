@@ -43,5 +43,16 @@
   "done": "Xong",
   "new": "Tạo playlist mới",
   "dragLabel": "Kéo để đổi thứ tự",
-  "openPlaylist": "Mở playlist"
+  "openPlaylist": "Mở playlist",
+  "deletePlaylist": "Xóa playlist",
+  "selectAll": "Chọn tất cả",
+  "selectScore": "Chọn bài {title}",
+  "selectedCount": "Đã chọn {count} bài",
+  "removeSelected": "Bỏ khỏi playlist ({count})",
+  "removeTitle": "Bỏ khỏi playlist",
+  "removeOne": "Bỏ <strong>{name}</strong> khỏi playlist? Bản nhạc vẫn còn trong thư viện của bạn.",
+  "removeMany": "Bỏ <strong>{count} bài</strong> đã chọn khỏi playlist? Các bản nhạc vẫn còn trong thư viện của bạn.",
+  "removed": "Đã bỏ {count} bài khỏi playlist",
+  "removing": "Đang bỏ…",
+  "actions": "Thao tác với playlist"
 }

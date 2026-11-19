@@ -20,7 +20,8 @@ import com.ptit.music_be.dto.response.ai.AiTaskResponse;
 import com.ptit.music_be.dto.response.common.PageResponse;
 import com.ptit.music_be.entity.AiTask;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.AiErrorCode;
 import com.ptit.music_be.repository.ai.AiTaskRepository;
 import com.ptit.music_be.service.admin.AdminAiTaskService;
 import com.ptit.music_be.service.ai.OmrService;
@@ -54,7 +55,7 @@ public class AdminAiTaskServiceImpl implements AdminAiTaskService {
         AiTaskType tp = parse(type, AiTaskType.class);
         String kw = keyword == null ? "" : keyword.trim().toLowerCase();
         if (kw.length() > 100) {
-            throw new AppException(ErrorCode.INVALID_REQUEST);
+            throw new AppException(AccountErrorCode.INVALID_REQUEST);
         }
 
         // Dựng điều kiện theo bộ lọc đang dùng (tránh tham số null kiểu enum mà Hibernate không suy được kiểu)
@@ -157,7 +158,7 @@ public class AdminAiTaskServiceImpl implements AdminAiTaskService {
         if (task.getTaskType() != AiTaskType.OMR_CONVERSION
                 || !RETRYABLE.contains(task.getStatus())
                 || task.getScore() == null) {
-            throw new AppException(ErrorCode.AI_TASK_NOT_RETRYABLE);
+            throw new AppException(AiErrorCode.AI_TASK_NOT_RETRYABLE);
         }
         AiTaskResponse created = omrService.retryAsAdmin(task.getScore().getId());
         return toResponse(find(created.getId()), LocalDateTime.now(), false);
@@ -174,7 +175,7 @@ public class AdminAiTaskServiceImpl implements AdminAiTaskService {
     }
 
     private AiTask find(String taskId) {
-        return aiTaskRepository.findById(taskId).orElseThrow(() -> new AppException(ErrorCode.AI_TASK_NOT_EXISTED));
+        return aiTaskRepository.findById(taskId).orElseThrow(() -> new AppException(AiErrorCode.AI_TASK_NOT_EXISTED));
     }
 
     private AdminAiTaskResponse toResponse(AiTask t, LocalDateTime now, boolean withData) {
@@ -222,7 +223,7 @@ public class AdminAiTaskServiceImpl implements AdminAiTaskService {
         try {
             return Enum.valueOf(type, value.trim().toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new AppException(ErrorCode.INVALID_REQUEST);
+            throw new AppException(AccountErrorCode.INVALID_REQUEST);
         }
     }
 }

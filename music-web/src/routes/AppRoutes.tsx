@@ -174,6 +174,7 @@ const router = createBrowserRouter(
         }
       >
         <Route index element={<AdminHome />} />
+        <Route path="profile" element={<UserProfile admin />} />
         <Route path="members" element={<AdminMembers />} />
         <Route path="roles" element={<AdminRoles />} />
         <Route path="members/:id" element={<AdminMemberDetail />} />

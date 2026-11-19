@@ -13,7 +13,7 @@ import com.ptit.music_be.dto.enums.ai.AiTaskType;
 import com.ptit.music_be.dto.enums.score.FileType;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 
 import lombok.RequiredArgsConstructor;
 
@@ -202,6 +202,6 @@ public class ExportOptionsValidator {
     }
 
     private static AppException invalid() {
-        return new AppException(ErrorCode.EXPORT_OPTION_INVALID);
+        return new AppException(ScoreErrorCode.EXPORT_OPTION_INVALID);
     }
 }

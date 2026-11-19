@@ -49,7 +49,7 @@ import com.ptit.music_be.entity.MemberRole;
 import com.ptit.music_be.entity.Otp;
 import com.ptit.music_be.entity.Role;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
 import com.ptit.music_be.mapper.MemberMapper;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.auth.MemberRoleRepository;
@@ -132,12 +132,12 @@ public class AuthServiceImpl implements AuthService {
                 ? request.getEmail()
                 : request.getUsername());
         if (email == null || email.isBlank() || !email.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
-            throw new AppException(ErrorCode.INVALID_CREDENTIALS);
+            throw new AppException(AccountErrorCode.INVALID_CREDENTIALS);
         }
         email = email.trim().toLowerCase();
 
         if (memberRepository.existsByEmail(email)) {
-            throw new AppException(ErrorCode.USER_EXISTED);
+            throw new AppException(AccountErrorCode.USER_EXISTED);
         }
 
         Role roleUser = roleRepository
@@ -183,10 +183,10 @@ public class AuthServiceImpl implements AuthService {
     public AuthResponse login(LoginRequest request) {
         Member user = memberRepository
                 .findByEmail(request.getUsername().trim().toLowerCase())
-                .orElseThrow(() -> new AppException(ErrorCode.INVALID_CREDENTIALS));
+                .orElseThrow(() -> new AppException(AccountErrorCode.INVALID_CREDENTIALS));
 
         if (user.getPasswordHash() == null || !passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
-            throw new AppException(ErrorCode.INVALID_CREDENTIALS);
+            throw new AppException(AccountErrorCode.INVALID_CREDENTIALS);
         }
 
         assertActive(user);
@@ -201,7 +201,7 @@ public class AuthServiceImpl implements AuthService {
 
     private void assertActive(Member user) {
         if (user.getStatus() != null && user.getStatus() != MemberStatus.ACTIVE) {
-            throw new AppException(ErrorCode.ACCOUNT_LOCKED);
+            throw new AppException(AccountErrorCode.ACCOUNT_LOCKED);
         }
     }
 
@@ -224,12 +224,12 @@ public class AuthServiceImpl implements AuthService {
 
             GoogleIdToken idTokenObj = verifier.verify(request.getIdToken());
             if (idTokenObj == null) {
-                throw new AppException(ErrorCode.UNAUTHENTICATED);
+                throw new AppException(AccountErrorCode.UNAUTHENTICATED);
             }
 
             GoogleIdToken.Payload payload = idTokenObj.getPayload();
             if (!Boolean.TRUE.equals(payload.getEmailVerified())) {
-                throw new AppException(ErrorCode.UNAUTHENTICATED);
+                throw new AppException(AccountErrorCode.UNAUTHENTICATED);
             }
             String email = payload.getEmail();
             String name = (String) payload.get("name");
@@ -277,7 +277,7 @@ public class AuthServiceImpl implements AuthService {
 
         } catch (GeneralSecurityException | IOException e) {
             log.error("Google token verification failed", e);
-            throw new AppException(ErrorCode.UNAUTHENTICATED);
+            throw new AppException(AccountErrorCode.UNAUTHENTICATED);
         }
     }
 
@@ -313,12 +313,13 @@ public class AuthServiceImpl implements AuthService {
         try {
             SignedJWT signedJWT = verifyToken(request.getRefreshToken());
             if (!TYPE_REFRESH.equals(signedJWT.getJWTClaimsSet().getStringClaim(TOKEN_TYPE_CLAIM))) {
-                throw new AppException(ErrorCode.UNAUTHENTICATED);
+                throw new AppException(AccountErrorCode.UNAUTHENTICATED);
             }
             String email = signedJWT.getJWTClaimsSet().getSubject();
 
-            Member user =
-                    memberRepository.findByEmail(email).orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
+            Member user = memberRepository
+                    .findByEmail(email)
+                    .orElseThrow(() -> new AppException(AccountErrorCode.UNAUTHENTICATED));
 
             assertActive(user);
             // Refresh token cấp trước lần đổi/đặt lại mật khẩu gần nhất không dùng được nữa (đăng xuất các thiết bị cũ)
@@ -326,13 +327,13 @@ public class AuthServiceImpl implements AuthService {
             if (user.getPasswordChangedAt() != null
                     && (issuedAt == null
                             || issuedAt.toInstant().getEpochSecond() < epochSecond(user.getPasswordChangedAt()))) {
-                throw new AppException(ErrorCode.UNAUTHENTICATED);
+                throw new AppException(AccountErrorCode.UNAUTHENTICATED);
             }
 
             return issueTokens(user);
         } catch (ParseException | JOSEException | AppException e) {
             log.error("Token refresh failed", e);
-            throw new AppException(ErrorCode.UNAUTHENTICATED);
+            throw new AppException(AccountErrorCode.UNAUTHENTICATED);
         }
     }
 
@@ -344,7 +345,7 @@ public class AuthServiceImpl implements AuthService {
         Date expiryTime = signedJWT.getJWTClaimsSet().getExpirationTime();
 
         if (!(verified && expiryTime.after(new Date()))) {
-            throw new AppException(ErrorCode.UNAUTHENTICATED);
+            throw new AppException(AccountErrorCode.UNAUTHENTICATED);
         }
 
         return signedJWT;
@@ -370,20 +371,21 @@ public class AuthServiceImpl implements AuthService {
     public AuthResponse changePassword(ChangePasswordRequest request) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
 
-        Member user =
-                memberRepository.findByEmail(email).orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
+        Member user = memberRepository
+                .findByEmail(email)
+                .orElseThrow(() -> new AppException(AccountErrorCode.UNAUTHENTICATED));
 
         if (AuthProvider.GOOGLE.equals(user.getAuthProvider())) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+            throw new AppException(AccountErrorCode.UNAUTHORIZED);
         }
 
         if (user.getPasswordHash() == null
                 || !passwordEncoder.matches(request.getOldPassword(), user.getPasswordHash())) {
-            throw new AppException(ErrorCode.INVALID_CREDENTIALS);
+            throw new AppException(AccountErrorCode.INVALID_CREDENTIALS);
         }
 
         if (request.getOldPassword().equals(request.getNewPassword())) {
-            throw new AppException(ErrorCode.PASSWORD_SAME_AS_OLD);
+            throw new AppException(AccountErrorCode.PASSWORD_SAME_AS_OLD);
         }
 
         applyNewPassword(user, request.getNewPassword());
@@ -442,23 +444,23 @@ public class AuthServiceImpl implements AuthService {
         // Mọi trường hợp sai (email không tồn tại, không có mã, hết hạn, sai mã, mã đã dùng) đều báo cùng một lỗi
         Member user = memberRepository
                 .findByEmail(request.getEmail().trim().toLowerCase())
-                .orElseThrow(() -> new AppException(ErrorCode.OTP_INVALID));
+                .orElseThrow(() -> new AppException(AccountErrorCode.OTP_INVALID));
 
         Otp otp = otpRepository
                 .findByMember(user)
                 .filter(o -> o.getResetTokenHash() == null) // OTP đã đổi thành mã phiên thì không xác minh lại được
-                .orElseThrow(() -> new AppException(ErrorCode.OTP_INVALID));
+                .orElseThrow(() -> new AppException(AccountErrorCode.OTP_INVALID));
 
         int attempts = otp.getAttempts() == null ? 0 : otp.getAttempts();
         if (otp.getExpiryTime().isBefore(LocalDateTime.now()) || attempts >= MAX_OTP_ATTEMPTS) {
             otpRepository.delete(otp);
-            throw new AppException(ErrorCode.OTP_INVALID);
+            throw new AppException(AccountErrorCode.OTP_INVALID);
         }
 
         if (!passwordEncoder.matches(request.getOtp().trim(), otp.getOtpCode())) {
             otp.setAttempts(attempts + 1);
             otpRepository.save(otp);
-            throw new AppException(ErrorCode.OTP_INVALID);
+            throw new AppException(AccountErrorCode.OTP_INVALID);
         }
 
         // OTP đúng: đổi thành mã phiên ngẫu nhiên dùng một lần, chỉ lưu bản băm; OTP cũ không dùng lại được nữa
@@ -481,22 +483,22 @@ public class AuthServiceImpl implements AuthService {
         // OTP
         Member user = memberRepository
                 .findByEmail(request.getEmail().trim().toLowerCase())
-                .orElseThrow(() -> new AppException(ErrorCode.RESET_SESSION_INVALID));
+                .orElseThrow(() -> new AppException(AccountErrorCode.RESET_SESSION_INVALID));
 
         Otp session = otpRepository
                 .findByMember(user)
                 .filter(o -> o.getResetTokenHash() != null)
-                .orElseThrow(() -> new AppException(ErrorCode.RESET_SESSION_INVALID));
+                .orElseThrow(() -> new AppException(AccountErrorCode.RESET_SESSION_INVALID));
 
         if (session.getExpiryTime().isBefore(LocalDateTime.now())) {
             otpRepository.delete(session);
-            throw new AppException(ErrorCode.RESET_SESSION_INVALID);
+            throw new AppException(AccountErrorCode.RESET_SESSION_INVALID);
         }
         // So sánh thời gian hằng để không lộ thông tin qua thời gian phản hồi
         if (!MessageDigest.isEqual(
                 sha256(request.getResetToken().trim()).getBytes(StandardCharsets.US_ASCII),
                 session.getResetTokenHash().getBytes(StandardCharsets.US_ASCII))) {
-            throw new AppException(ErrorCode.RESET_SESSION_INVALID);
+            throw new AppException(AccountErrorCode.RESET_SESSION_INVALID);
         }
 
         applyNewPassword(user, request.getNewPassword());

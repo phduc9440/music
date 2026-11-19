@@ -12,7 +12,7 @@ import com.ptit.music_be.dto.request.admin.AnnouncementRequest;
 import com.ptit.music_be.dto.response.admin.AnnouncementResponse;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.service.admin.AdminAnnouncementService;
 import com.ptit.music_be.service.notification.NotificationService;
@@ -37,7 +37,7 @@ public class AdminAnnouncementServiceImpl implements AdminAnnouncementService {
         String message =
                 request.getMessage() == null ? "" : request.getMessage().trim();
         if (message.isEmpty() || request.getAudience() == null) {
-            throw new AppException(ErrorCode.INVALID_REQUEST);
+            throw new AppException(AccountErrorCode.INVALID_REQUEST);
         }
         Member me =
                 memberRepository.findByEmail(SecurityUtils.getCurrentEmail()).orElse(null);
@@ -58,7 +58,7 @@ public class AdminAnnouncementServiceImpl implements AdminAnnouncementService {
                                         .distinct()
                                         .toList();
                         if (ids.isEmpty()) {
-                            throw new AppException(ErrorCode.INVALID_REQUEST);
+                            throw new AppException(AccountErrorCode.INVALID_REQUEST);
                         }
                         // Tài khoản đã bị khóa hoặc không còn tồn tại thì bỏ qua, giống các nhóm khác
                         yield memberRepository.findAllById(ids).stream()

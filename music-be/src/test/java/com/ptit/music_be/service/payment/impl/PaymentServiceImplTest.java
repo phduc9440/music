@@ -34,7 +34,7 @@ import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.PaymentOrder;
 import com.ptit.music_be.entity.Plan;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.BillingErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.billing.PaymentOrderRepository;
 import com.ptit.music_be.repository.billing.PlanRepository;
@@ -166,7 +166,7 @@ class PaymentServiceImplTest {
         AppException e = assertThrows(
                 AppException.class,
                 () -> service.createOrder(new CreatePaymentOrderRequest("PRO", BillingPeriod.MONTH, null), "1.1.1.1"));
-        assertEquals(ErrorCode.PAYMENT_PROVIDER_UNAVAILABLE, e.getErrorCode());
+        assertEquals(BillingErrorCode.PAYMENT_PROVIDER_UNAVAILABLE, e.getErrorCode());
     }
 
     @Test
@@ -177,7 +177,7 @@ class PaymentServiceImplTest {
         AppException e = assertThrows(
                 AppException.class,
                 () -> service.createOrder(new CreatePaymentOrderRequest("FREE", BillingPeriod.YEAR, null), "1.1.1.1"));
-        assertEquals(ErrorCode.PAYMENT_PLAN_NOT_PURCHASABLE, e.getErrorCode());
+        assertEquals(BillingErrorCode.PAYMENT_PLAN_NOT_PURCHASABLE, e.getErrorCode());
     }
 
     @Test
@@ -297,7 +297,7 @@ class PaymentServiceImplTest {
 
         order.setStatus(PaymentStatus.EXPIRED);
         AppException e = assertThrows(AppException.class, () -> service.resumeOrder("MU1", "1.1.1.1"));
-        assertEquals(ErrorCode.PAYMENT_ORDER_NOT_PAYABLE, e.getErrorCode());
+        assertEquals(BillingErrorCode.PAYMENT_ORDER_NOT_PAYABLE, e.getErrorCode());
     }
 
     @Test
@@ -349,13 +349,13 @@ class PaymentServiceImplTest {
                 .setAuthentication(new org.springframework.security.authentication.TestingAuthenticationToken(
                         "boss@x.com", "x", "ROLE_ADMIN", "ROLE_SUPER_ADMIN"));
         AppException e = assertThrows(AppException.class, () -> service.createOrder(request, "1.1.1.1"));
-        assertEquals(ErrorCode.PAYMENT_NOT_NEEDED, e.getErrorCode());
+        assertEquals(BillingErrorCode.PAYMENT_NOT_NEEDED, e.getErrorCode());
 
         SecurityContextHolder.getContext()
                 .setAuthentication(new org.springframework.security.authentication.TestingAuthenticationToken(
                         "mod@x.com", "x", "ROLE_ADMIN"));
         e = assertThrows(AppException.class, () -> service.createOrder(request, "1.1.1.1"));
-        assertEquals(ErrorCode.PAYMENT_NOT_NEEDED, e.getErrorCode());
+        assertEquals(BillingErrorCode.PAYMENT_NOT_NEEDED, e.getErrorCode());
     }
 
     @Test
@@ -369,6 +369,6 @@ class PaymentServiceImplTest {
         AppException e = assertThrows(
                 AppException.class,
                 () -> service.createOrder(new CreatePaymentOrderRequest("PRO", BillingPeriod.MONTH, null), "1.1.1.1"));
-        assertEquals(ErrorCode.PLAN_BANNED, e.getErrorCode());
+        assertEquals(BillingErrorCode.PLAN_BANNED, e.getErrorCode());
     }
 }

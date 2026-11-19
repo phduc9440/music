@@ -31,6 +31,7 @@ import com.ptit.music_be.event.RewardEarnedEvent;
 import com.ptit.music_be.event.RewardReason;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.service.notification.NotificationService;
 import com.ptit.music_be.service.permission.AccessDecision;
@@ -93,13 +94,13 @@ class ScoreServiceImplAdminVisibilityTest {
 
     @Test
     void adminCannotPublishPrivateScoreOfSomeoneElse() {
-        expectRejected("PRIVATE", Visibility.PUBLIC, ErrorCode.SCORE_NOT_PENDING_PUBLIC);
+        expectRejected("PRIVATE", Visibility.PUBLIC, ScoreErrorCode.SCORE_NOT_PENDING_PUBLIC);
     }
 
     @Test
     void adminCannotTakeDownPendingScoreThroughVisibility() {
         // Từ chối bản chờ duyệt đi qua rejectPublic, không đi qua đường này
-        expectRejected("PENDING", Visibility.PRIVATE, ErrorCode.SCORE_NOT_PUBLIC);
+        expectRejected("PENDING", Visibility.PRIVATE, ScoreErrorCode.SCORE_NOT_PUBLIC);
     }
 
     @Test

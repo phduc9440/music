@@ -10,7 +10,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import com.ptit.music_be.configuration.RolePermissionRegistry;
 import com.ptit.music_be.dto.enums.auth.AdminPermission;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
 
 public final class SecurityUtils {
 
@@ -22,7 +22,7 @@ public final class SecurityUtils {
     public static String getCurrentEmail() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
-            throw new AppException(ErrorCode.UNAUTHENTICATED);
+            throw new AppException(AccountErrorCode.UNAUTHENTICATED);
         }
         return authentication.getName();
     }
@@ -64,7 +64,7 @@ public final class SecurityUtils {
     /** Ném UNAUTHORIZED nếu không có quyền. */
     public static void requirePermission(AdminPermission permission) {
         if (!hasPermission(permission)) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+            throw new AppException(AccountErrorCode.UNAUTHORIZED);
         }
     }
 

@@ -21,7 +21,7 @@ import com.ptit.music_be.entity.AiTask;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AiErrorCode;
 import com.ptit.music_be.repository.ai.AiTaskRepository;
 import com.ptit.music_be.service.ai.OmrService;
 
@@ -62,7 +62,7 @@ class AdminAiTaskRetryTest {
 
         for (String id : new String[] {"done", "running", "audio"}) {
             AppException e = assertThrows(AppException.class, () -> service.retry(id));
-            assertEquals(ErrorCode.AI_TASK_NOT_RETRYABLE, e.getErrorCode());
+            assertEquals(AiErrorCode.AI_TASK_NOT_RETRYABLE, e.getErrorCode());
         }
         verify(omr, never()).retryAsAdmin(any());
     }

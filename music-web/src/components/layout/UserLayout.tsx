@@ -21,6 +21,7 @@ import { hasAdminAccess, roleLabel } from '../../utils/auth';
 import { CREATE_SCORE_PATH, NAV_GROUPS, navContextPath } from './nav';
 import PlanChip from './PlanChip';
 import './user-layout.css';
+import { onMemberUpdated } from '../../utils/memberEvents';
 
 /**
  * Khung chung của các trang người dùng: thanh trên (logo, nhóm điều hướng, tạo bản nhạc, tìm kiếm Ctrl/Cmd+K, giao diện,
@@ -49,6 +50,9 @@ export default function UserLayout() {
       })
       .catch(() => undefined);
   }, []);
+
+  // Sửa hồ sơ ở /profile thì tên và ảnh trên header đổi theo ngay
+  useEffect(() => onMemberUpdated(setMe), []);
 
   // Đóng menu tài khoản khi bấm ra ngoài
   useEffect(() => {

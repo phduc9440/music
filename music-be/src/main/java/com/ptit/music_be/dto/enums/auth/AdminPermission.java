@@ -22,6 +22,8 @@ public enum AdminPermission {
     MEMBERS_VIEW("users"),
     /** Khóa / mở khóa tài khoản (trừ SUPER_ADMIN). */
     MEMBERS_LOCK("users"),
+    /** Tạo tài khoản mới và gán vai trò trong phạm vi quyền của chính mình (mặc định chỉ SUPER_ADMIN). */
+    MEMBERS_CREATE("users"),
     /** Xem, xóa (vi phạm), khôi phục nhóm. */
     TEAMS_MANAGE("users"),
     /** Gửi thông báo tới thành viên. */
@@ -69,7 +71,7 @@ public enum AdminPermission {
     /** Quyền phải có kèm khi bật quyền này (bật quyền này thì tự bật các quyền đó). */
     public List<AdminPermission> requires() {
         return switch (this) {
-            case MEMBERS_LOCK, SUBSCRIPTIONS_MANAGE -> List.of(MEMBERS_VIEW);
+            case MEMBERS_LOCK, MEMBERS_CREATE, SUBSCRIPTIONS_MANAGE -> List.of(MEMBERS_VIEW);
             case PAYMENTS_REFUND -> List.of(REVENUE_VIEW);
             case REPORTS_MODERATE -> List.of(SCORES_MODERATE);
             default -> List.of();
@@ -82,7 +84,8 @@ public enum AdminPermission {
      */
     public static Set<AdminPermission> adminDefaults() {
         Set<AdminPermission> all = EnumSet.allOf(AdminPermission.class);
-        all.removeAll(EnumSet.of(SUBSCRIPTIONS_MANAGE, PLANS_MANAGE));
+        // Tạo tài khoản: ban đầu chỉ SUPER_ADMIN, muốn giao cho vai trò khác thì tích ở trang Phân quyền
+        all.removeAll(EnumSet.of(SUBSCRIPTIONS_MANAGE, PLANS_MANAGE, MEMBERS_CREATE));
         return all;
     }
 

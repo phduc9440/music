@@ -18,7 +18,9 @@ import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.PracticeSession;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.LibraryErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.practice.PracticeSessionRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
@@ -48,7 +50,7 @@ public class StudioSessionServiceImpl implements StudioSessionService {
         Score score = scoreRepository
                 .findById(request.scoreId())
                 .filter(scoreFileService::canView)
-                .orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
         StudioTimelineResponse timeline = studioTimelineService.getTimeline(score.getId());
         validateLoop(request, timeline.measureCount());
         int firstMeasure = request.loopStartMeasure() == null ? 1 : request.loopStartMeasure();
@@ -60,12 +62,12 @@ public class StudioSessionServiceImpl implements StudioSessionService {
 
         Member member = memberRepository
                 .findByEmailForUpdate(SecurityUtils.getCurrentEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
         practiceSessionRepository
                 .findByMemberAndStatus(member, PracticeSessionStatus.IN_PROGRESS)
                 .ifPresent(session -> {
                     throw new AppException(
-                            ErrorCode.STUDIO_SESSION_ALREADY_ACTIVE,
+                            LibraryErrorCode.STUDIO_SESSION_ALREADY_ACTIVE,
                             java.util.Map.of("activeSessionId", session.getId()));
                 });
 
@@ -98,7 +100,7 @@ public class StudioSessionServiceImpl implements StudioSessionService {
     public Optional<StudioSessionResponse> getActiveSession() {
         Member member = memberRepository
                 .findByEmail(SecurityUtils.getCurrentEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
         return practiceSessionRepository
                 .findByMemberAndStatus(member, PracticeSessionStatus.IN_PROGRESS)
                 .map(session -> {
@@ -111,12 +113,12 @@ public class StudioSessionServiceImpl implements StudioSessionService {
     public void abortSession(String sessionId) {
         Member member = memberRepository
                 .findByEmailForUpdate(SecurityUtils.getCurrentEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
         PracticeSession session = practiceSessionRepository
                 .findByIdAndMemberForUpdate(sessionId, member)
-                .orElseThrow(() -> new AppException(ErrorCode.STUDIO_SESSION_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(LibraryErrorCode.STUDIO_SESSION_NOT_EXISTED));
         if (session.getStatus() != PracticeSessionStatus.IN_PROGRESS) {
-            throw new AppException(ErrorCode.STUDIO_SESSION_NOT_ACTIVE);
+            throw new AppException(LibraryErrorCode.STUDIO_SESSION_NOT_ACTIVE);
         }
         session.setStatus(PracticeSessionStatus.ABANDONED);
         session.setEndedAt(LocalDateTime.now(ZoneOffset.UTC));
@@ -128,7 +130,7 @@ public class StudioSessionServiceImpl implements StudioSessionService {
         Integer start = request.loopStartMeasure();
         Integer end = request.loopEndMeasure();
         if ((start == null) != (end == null) || (start != null && (start > end || end > measureCount))) {
-            throw new AppException(ErrorCode.INVALID_REQUEST);
+            throw new AppException(AccountErrorCode.INVALID_REQUEST);
         }
     }
 

@@ -17,7 +17,8 @@ import com.ptit.music_be.dto.response.notification.NotificationPreferenceRespons
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.NotificationPreference;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.LibraryErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.notification.NotificationPreferenceRepository;
 import com.ptit.music_be.service.notification.NotificationPreferenceService;
@@ -51,7 +52,7 @@ public class NotificationPreferenceServiceImpl implements NotificationPreference
 
         for (NotificationPreferenceRequest.Item item : request.getItems()) {
             if (item.getCategory() == NotificationCategory.SYSTEM) {
-                throw new AppException(ErrorCode.NOTIFICATION_CATEGORY_LOCKED);
+                throw new AppException(LibraryErrorCode.NOTIFICATION_CATEGORY_LOCKED);
             }
             NotificationPreference pref = existing.get(item.getCategory());
             if (pref == null) {
@@ -109,7 +110,7 @@ public class NotificationPreferenceServiceImpl implements NotificationPreference
     private Member currentMember() {
         return memberRepository
                 .findByEmail(SecurityUtils.getCurrentEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
     }
 
     /** Đủ mọi nhóm chỉnh được, theo thứ tự khai báo; nhóm chưa có hàng lấy mặc định. */

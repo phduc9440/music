@@ -24,7 +24,7 @@ import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Team;
 import com.ptit.music_be.entity.TeamMember;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.TeamErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.repository.team.ShowItemRepository;
@@ -128,7 +128,7 @@ class TeamServiceImplOwnerLockTest {
         assertThatThrownBy(() -> service.changeRole(TEAM_ID, "m2", TeamRole.MANAGER))
                 .isInstanceOf(AppException.class)
                 .extracting(e -> ((AppException) e).getErrorCode())
-                .isEqualTo(ErrorCode.TEAM_LAST_OWNER);
+                .isEqualTo(TeamErrorCode.TEAM_LAST_OWNER);
         verify(teamMemberRepository, never()).save(any());
     }
 }

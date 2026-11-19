@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.Test;
 
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
 
 class OtpRequestLimiterTest {
 
@@ -19,7 +19,7 @@ class OtpRequestLimiterTest {
 
     private long retryAfter(Runnable r) {
         AppException e = assertThrows(AppException.class, r::run);
-        assertEquals(ErrorCode.OTP_REQUEST_TOO_SOON, e.getErrorCode());
+        assertEquals(AccountErrorCode.OTP_REQUEST_TOO_SOON, e.getErrorCode());
         return (Long) ((Map<?, ?>) e.getPayload()).get("retryAfterSeconds");
     }
 

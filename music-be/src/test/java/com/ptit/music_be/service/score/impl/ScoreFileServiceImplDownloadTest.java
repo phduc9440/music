@@ -25,7 +25,7 @@ import com.ptit.music_be.entity.MemberScore;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreFile;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
 import com.ptit.music_be.mapper.ScoreFileMapper;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.MemberScoreRepository;
@@ -93,7 +93,7 @@ class ScoreFileServiceImplDownloadTest {
     private void assertDenied(ScoreFile file, boolean inline) {
         assertThatThrownBy(() -> service.loadForDownload(file.getId(), inline))
                 .isInstanceOfSatisfying(
-                        AppException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.UNAUTHORIZED));
+                        AppException.class, e -> assertThat(e.getErrorCode()).isEqualTo(AccountErrorCode.UNAUTHORIZED));
     }
 
     @Test

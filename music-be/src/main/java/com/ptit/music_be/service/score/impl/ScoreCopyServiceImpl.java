@@ -20,7 +20,7 @@ import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreFile;
 import com.ptit.music_be.entity.ScoreTag;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.repository.score.ScoreFileRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.service.score.CopyOptions;
@@ -47,7 +47,7 @@ public class ScoreCopyServiceImpl implements ScoreCopyService {
         CopyOptions opts = options == null ? CopyOptions.defaults() : options;
         Score source = scoreRepository
                 .findById(sourceScoreId)
-                .orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
         ScoreFile sourceXml = currentMusicXml(sourceScoreId);
 
         String title = opts.title() == null || opts.title().isBlank()
@@ -106,7 +106,7 @@ public class ScoreCopyServiceImpl implements ScoreCopyService {
         return files.stream()
                 .filter(f -> !Boolean.FALSE.equals(f.getIsCurrent()))
                 .max(Comparator.comparingInt(f -> f.getVersion() == null ? 1 : f.getVersion()))
-                .orElseThrow(() -> new AppException(ErrorCode.MUSICXML_NOT_READY));
+                .orElseThrow(() -> new AppException(ScoreErrorCode.MUSICXML_NOT_READY));
     }
 
     private long copyFile(String fromPath, String toPath) {
@@ -115,7 +115,7 @@ public class ScoreCopyServiceImpl implements ScoreCopyService {
             return Files.size(fileStorageService.resolve(toPath));
         } catch (IOException e) {
             log.error("Không chép được MusicXML từ {} sang {}", fromPath, toPath, e);
-            throw new AppException(ErrorCode.FILE_STORAGE_ERROR);
+            throw new AppException(ScoreErrorCode.FILE_STORAGE_ERROR);
         }
     }
 

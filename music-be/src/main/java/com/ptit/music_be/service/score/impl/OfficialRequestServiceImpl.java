@@ -26,7 +26,8 @@ import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.event.RewardEarnedEvent;
 import com.ptit.music_be.event.RewardReason;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.OfficialRequestRepository;
 import com.ptit.music_be.repository.score.ScoreFileRepository;
@@ -63,19 +64,19 @@ public class OfficialRequestServiceImpl implements OfficialRequestService {
         SecurityUtils.requirePermission(AdminPermission.OFFICIAL_LIBRARY);
         Member admin = currentMember();
         Score score =
-                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
         if (!Visibility.PUBLIC.name().equals(score.getVisibility())) {
-            throw new AppException(ErrorCode.SCORE_NOT_PUBLIC_FOR_OFFICIAL);
+            throw new AppException(ScoreErrorCode.SCORE_NOT_PUBLIC_FOR_OFFICIAL);
         }
         if (Boolean.TRUE.equals(score.getIsOfficial()) || requestRepository.hasLiveAcceptedCopy(scoreId)) {
-            throw new AppException(ErrorCode.SCORE_ALREADY_OFFICIAL);
+            throw new AppException(ScoreErrorCode.SCORE_ALREADY_OFFICIAL);
         }
         if (requestRepository.existsByScoreIdAndStatusIn(scoreId, Set.of(OfficialRequestStatus.PENDING))) {
-            throw new AppException(ErrorCode.OFFICIAL_REQUEST_DUPLICATED);
+            throw new AppException(ScoreErrorCode.OFFICIAL_REQUEST_DUPLICATED);
         }
         Member owner = score.getMember();
         if (owner == null) {
-            throw new AppException(ErrorCode.USER_NOT_EXISTED);
+            throw new AppException(AccountErrorCode.USER_NOT_EXISTED);
         }
 
         // Bản của tài khoản hệ thống: không có ai để xin phép, vào kho luôn
@@ -99,7 +100,7 @@ public class OfficialRequestServiceImpl implements OfficialRequestService {
         if (scoreFileRepository
                 .findByScoreIdAndFileTypeOrderByPageNumberAsc(scoreId, FileType.MUSICXML)
                 .isEmpty()) {
-            throw new AppException(ErrorCode.MUSICXML_NOT_READY);
+            throw new AppException(ScoreErrorCode.MUSICXML_NOT_READY);
         }
         OfficialRequest saved = requestRepository.save(OfficialRequest.builder()
                 .score(score)
@@ -134,11 +135,11 @@ public class OfficialRequestServiceImpl implements OfficialRequestService {
         Score score = request.getScore();
         if (!Visibility.PUBLIC.name().equals(score.getVisibility())) {
             // Chủ đã gỡ công khai trong lúc chờ: không đưa bản riêng tư vào kho
-            throw new AppException(ErrorCode.SCORE_NOT_PUBLIC_FOR_OFFICIAL);
+            throw new AppException(ScoreErrorCode.SCORE_NOT_PUBLIC_FOR_OFFICIAL);
         }
         Member systemOwner = memberRepository
                 .findByEmail(ApplicationInitConfig.ROOT_ADMIN_EMAIL)
-                .orElseThrow(() -> new AppException(ErrorCode.SCORE_SYSTEM_OWNER_MISSING));
+                .orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_SYSTEM_OWNER_MISSING));
 
         Score copy = scoreCopyService.copy(score.getId(), systemOwner, copyOptions(score));
         copy.setVisibility(Visibility.PUBLIC.name());
@@ -193,9 +194,9 @@ public class OfficialRequestServiceImpl implements OfficialRequestService {
         SecurityUtils.requirePermission(AdminPermission.OFFICIAL_LIBRARY);
         OfficialRequest request = requestRepository
                 .findById(requestId)
-                .orElseThrow(() -> new AppException(ErrorCode.OFFICIAL_REQUEST_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(ScoreErrorCode.OFFICIAL_REQUEST_NOT_EXISTED));
         if (request.getStatus() != OfficialRequestStatus.PENDING) {
-            throw new AppException(ErrorCode.OFFICIAL_REQUEST_NOT_PENDING);
+            throw new AppException(ScoreErrorCode.OFFICIAL_REQUEST_NOT_PENDING);
         }
         request.setStatus(OfficialRequestStatus.CANCELED);
         request.setResolvedAt(LocalDateTime.now());
@@ -213,7 +214,7 @@ public class OfficialRequestServiceImpl implements OfficialRequestService {
                 safeStatus = OfficialRequestStatus.valueOf(status.trim().toUpperCase())
                         .name();
             } catch (IllegalArgumentException e) {
-                throw new AppException(ErrorCode.INVALID_FILTER);
+                throw new AppException(ScoreErrorCode.INVALID_FILTER);
             }
         }
         Page<OfficialRequest> result =
@@ -234,13 +235,13 @@ public class OfficialRequestServiceImpl implements OfficialRequestService {
     private OfficialRequest findPendingOfMine(String requestId) {
         OfficialRequest request = requestRepository
                 .findById(requestId)
-                .orElseThrow(() -> new AppException(ErrorCode.OFFICIAL_REQUEST_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(ScoreErrorCode.OFFICIAL_REQUEST_NOT_EXISTED));
         // Người khác không được biết lời xin này có tồn tại hay không
         if (!request.getOwner().getId().equals(currentMember().getId())) {
-            throw new AppException(ErrorCode.OFFICIAL_REQUEST_NOT_EXISTED);
+            throw new AppException(ScoreErrorCode.OFFICIAL_REQUEST_NOT_EXISTED);
         }
         if (request.getStatus() != OfficialRequestStatus.PENDING) {
-            throw new AppException(ErrorCode.OFFICIAL_REQUEST_NOT_PENDING);
+            throw new AppException(ScoreErrorCode.OFFICIAL_REQUEST_NOT_PENDING);
         }
         return request;
     }
@@ -284,6 +285,6 @@ public class OfficialRequestServiceImpl implements OfficialRequestService {
     private Member currentMember() {
         return memberRepository
                 .findByEmail(SecurityUtils.getCurrentEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
     }
 }

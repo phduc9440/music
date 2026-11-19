@@ -28,7 +28,7 @@ import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreFile;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.repository.score.ScoreFileRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.service.billing.EntitlementService;
@@ -131,7 +131,7 @@ class ScoreDiffServiceImplTest {
     void rejectsSameVersion() {
         givenFiles(xml(1, null), xml(2, null));
         AppException error = (AppException) catchThrowable(() -> service.diff(SCORE_ID, 1, null));
-        assertThat(error.getErrorCode()).isEqualTo(ErrorCode.SCORE_DIFF_SAME_VERSION);
+        assertThat(error.getErrorCode()).isEqualTo(ScoreErrorCode.SCORE_DIFF_SAME_VERSION);
     }
 
     @Test
@@ -139,14 +139,14 @@ class ScoreDiffServiceImplTest {
         score.setSourceType("IMPORT");
         givenFiles(xml(1, null), xml(2, "{\"savedBy\":\"a@b.c\"}"));
         AppException error = (AppException) catchThrowable(() -> service.diff(SCORE_ID, 2, null));
-        assertThat(error.getErrorCode()).isEqualTo(ErrorCode.SCORE_DIFF_NO_BASE);
+        assertThat(error.getErrorCode()).isEqualTo(ScoreErrorCode.SCORE_DIFF_NO_BASE);
     }
 
     @Test
     void missingVersionIsReported() {
         givenFiles(xml(1, null));
         AppException error = (AppException) catchThrowable(() -> service.diff(SCORE_ID, 5, 1));
-        assertThat(error.getErrorCode()).isEqualTo(ErrorCode.SCORE_VERSION_NOT_EXISTED);
+        assertThat(error.getErrorCode()).isEqualTo(ScoreErrorCode.SCORE_VERSION_NOT_EXISTED);
     }
 
     @Test
@@ -160,7 +160,7 @@ class ScoreDiffServiceImplTest {
         AppException noBase = (AppException) catchThrowable(() -> service.diff(SCORE_ID, 3, null));
         AppException hiddenTarget = (AppException) catchThrowable(() -> service.diff(SCORE_ID, 1, 2));
 
-        assertThat(noBase.getErrorCode()).isEqualTo(ErrorCode.SCORE_VERSION_NOT_EXISTED);
-        assertThat(hiddenTarget.getErrorCode()).isEqualTo(ErrorCode.SCORE_VERSION_NOT_EXISTED);
+        assertThat(noBase.getErrorCode()).isEqualTo(ScoreErrorCode.SCORE_VERSION_NOT_EXISTED);
+        assertThat(hiddenTarget.getErrorCode()).isEqualTo(ScoreErrorCode.SCORE_VERSION_NOT_EXISTED);
     }
 }

@@ -44,5 +44,16 @@
   "done": "Done",
   "new": "New playlist",
   "dragLabel": "Drag to reorder",
-  "openPlaylist": "Open playlist"
+  "openPlaylist": "Open playlist",
+  "deletePlaylist": "Delete playlist",
+  "selectAll": "Select all",
+  "selectScore": "Select {title}",
+  "selectedCount": "{count} selected",
+  "removeSelected": "Remove from playlist ({count})",
+  "removeTitle": "Remove from playlist",
+  "removeOne": "Remove <strong>{name}</strong> from this playlist? The score stays in your library.",
+  "removeMany": "Remove the <strong>{count} selected scores</strong> from this playlist? The scores stay in your library.",
+  "removed": "Removed {count} from the playlist",
+  "removing": "Removing…",
+  "actions": "Playlist actions"
 }

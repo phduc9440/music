@@ -21,6 +21,7 @@ import com.ptit.music_be.dto.request.admin.RoleRequest;
 import com.ptit.music_be.dto.response.admin.RoleResponse;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
 import com.ptit.music_be.service.admin.RoleService;
 import com.ptit.music_be.utils.SecurityUtils;
 
@@ -65,9 +66,11 @@ class RoleServiceImplTest {
                 EnumSet.of(AdminPermission.SCORES_APPROVE, AdminPermission.MEMBERS_LOCK, AdminPermission.MEMBERS_VIEW),
                 EnumSet.copyOf(created.getPermissions()));
         assertEquals(
-                ErrorCode.ROLE_LABEL_DUPLICATED,
+                AccountErrorCode.ROLE_LABEL_DUPLICATED,
                 codeOf(() -> roleService.create(new RoleRequest("kiểm duyệt viên", null, List.of()))));
-        assertEquals(ErrorCode.ROLE_LABEL_INVALID, codeOf(() -> roleService.create(new RoleRequest("a", null, null))));
+        assertEquals(
+                AccountErrorCode.ROLE_LABEL_INVALID,
+                codeOf(() -> roleService.create(new RoleRequest("a", null, null))));
 
         RoleResponse edited = roleService.update(
                 created.getId(), new RoleRequest("Kiểm duyệt", null, List.of(AdminPermission.TAGS_MANAGE)));
@@ -86,12 +89,12 @@ class RoleServiceImplTest {
         RoleResponse superAdmin = byName("SUPER_ADMIN");
         assertEquals(EnumSet.allOf(AdminPermission.class), EnumSet.copyOf(superAdmin.getPermissions()));
         assertTrue(user.getPermissions().isEmpty());
-        assertEquals(ErrorCode.ROLE_BUILT_IN, codeOf(() -> roleService.delete(admin.getId())));
+        assertEquals(AccountErrorCode.ROLE_BUILT_IN, codeOf(() -> roleService.delete(admin.getId())));
         assertEquals(
-                ErrorCode.ROLE_BUILT_IN,
+                AccountErrorCode.ROLE_BUILT_IN,
                 codeOf(() -> roleService.update(user.getId(), new RoleRequest("x1", null, List.of()))));
         assertEquals(
-                ErrorCode.ROLE_BUILT_IN,
+                AccountErrorCode.ROLE_BUILT_IN,
                 codeOf(() -> roleService.update(superAdmin.getId(), new RoleRequest("x1", null, List.of()))));
         // ADMIN chỉ sửa quyền, tên giữ nguyên
         RoleResponse edited = roleService.update(

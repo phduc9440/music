@@ -34,7 +34,9 @@ import com.ptit.music_be.dto.response.score.ScoreContent;
 import com.ptit.music_be.dto.response.score.ScoreSaveResponse;
 import com.ptit.music_be.entity.ScoreLiveOp;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.CollabErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.repository.score.ScoreLiveOpRepository;
 import com.ptit.music_be.service.collab.live.LiveAccess.Access;
 import com.ptit.music_be.service.collab.live.LiveMessages.JoinRequest;
@@ -275,11 +277,11 @@ class LiveCollabServiceTest {
         lock("A", OWNER, new MeasureRef(0, 1));
 
         assertThatThrownBy(() -> service.ops(SCORE, "A", OWNER, new OpsRequest("", 0, List.of(), null)))
-                .isInstanceOfSatisfying(
-                        AppException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.LIVE_OP_INVALID));
+                .isInstanceOfSatisfying(AppException.class, e -> assertThat(e.getErrorCode())
+                        .isEqualTo(CollabErrorCode.LIVE_OP_INVALID));
         assertThatThrownBy(() -> service.ops(SCORE, "ghost", OWNER, edit("x", 0, MEASURE_2, MEASURE_2)))
                 .isInstanceOfSatisfying(
-                        AppException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.UNAUTHORIZED));
+                        AppException.class, e -> assertThat(e.getErrorCode()).isEqualTo(AccountErrorCode.UNAUTHORIZED));
         for (int i = 0; i < LiveCollabService.MAX_OPS_PER_SECOND; i++) {
             service.ops(
                     SCORE,
@@ -288,8 +290,8 @@ class LiveCollabServiceTest {
                     edit("dup-" + i, 0, MEASURE_2, "<measure number=\"2\">" + note("A") + "</measure>"));
         }
         assertThatThrownBy(() -> service.ops(SCORE, "A", OWNER, edit("over", 0, MEASURE_2, MEASURE_2)))
-                .isInstanceOfSatisfying(
-                        AppException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.LIVE_RATE_LIMITED));
+                .isInstanceOfSatisfying(AppException.class, e -> assertThat(e.getErrorCode())
+                        .isEqualTo(CollabErrorCode.LIVE_RATE_LIMITED));
     }
 
     @Test
@@ -297,14 +299,14 @@ class LiveCollabServiceTest {
         when(access.resolve("viewer@mail.com", SCORE)).thenReturn(new Access(SCORE, "m-owner", "m-v", "V", false));
         assertThatThrownBy(() -> service.join(SCORE, "V", "viewer@mail.com", new JoinRequest(true, -1, null)))
                 .isInstanceOfSatisfying(
-                        AppException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.UNAUTHORIZED));
+                        AppException.class, e -> assertThat(e.getErrorCode()).isEqualTo(AccountErrorCode.UNAUTHORIZED));
 
         for (int i = 0; i < LiveSessionRegistry.MAX_EDITORS; i++) {
             join("S" + i, OWNER, -1);
         }
         assertThatThrownBy(() -> service.join(SCORE, "late", GUEST, new JoinRequest(true, -1, null)))
-                .isInstanceOfSatisfying(
-                        AppException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.LIVE_SESSION_FULL));
+                .isInstanceOfSatisfying(AppException.class, e -> assertThat(e.getErrorCode())
+                        .isEqualTo(CollabErrorCode.LIVE_SESSION_FULL));
         assertThat(registry.find(SCORE, "late")).isNull();
     }
 
@@ -360,7 +362,7 @@ class LiveCollabServiceTest {
     @Test
     void failedSaveKeepsTheSessionSoNothingIsLost() {
         when(scoreEditService.saveLiveSnapshot(eq(SCORE), any(byte[].class), any(), any()))
-                .thenThrow(new AppException(ErrorCode.SCORE_BUSY));
+                .thenThrow(new AppException(ScoreErrorCode.SCORE_BUSY));
         join("A", OWNER, -1);
         lock("A", OWNER, new MeasureRef(0, 1));
         service.ops(SCORE, "A", OWNER, edit("op-1", 0, MEASURE_2, "<measure number=\"2\">" + note("E") + "</measure>"));

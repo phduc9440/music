@@ -34,7 +34,7 @@ import com.ptit.music_be.dto.response.auth.VerifyResetOtpResponse;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Otp;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
 import com.ptit.music_be.mapper.MemberMapper;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.auth.MemberRoleRepository;
@@ -123,9 +123,11 @@ class AuthServicePasswordResetTest {
         verify(limiter).acquire("ghost@x.com");
         verify(email, never()).sendForgotPasswordEmail(anyString(), anyString());
 
-        doThrow(new AppException(ErrorCode.OTP_REQUEST_TOO_SOON)).when(limiter).acquire("ghost@x.com");
+        doThrow(new AppException(AccountErrorCode.OTP_REQUEST_TOO_SOON))
+                .when(limiter)
+                .acquire("ghost@x.com");
         AppException e = assertThrows(AppException.class, () -> service.forgotPassword(forgot("ghost@x.com")));
-        assertEquals(ErrorCode.OTP_REQUEST_TOO_SOON, e.getErrorCode());
+        assertEquals(AccountErrorCode.OTP_REQUEST_TOO_SOON, e.getErrorCode());
     }
 
     @Test
@@ -148,7 +150,7 @@ class AuthServicePasswordResetTest {
 
         // OTP đã đổi thành mã phiên thì nhập lại OTP không được nữa
         assertEquals(
-                ErrorCode.OTP_INVALID,
+                AccountErrorCode.OTP_INVALID,
                 assertThrows(AppException.class, () -> service.verifyResetOtp(otpOf("123456")))
                         .getErrorCode());
     }
@@ -178,19 +180,19 @@ class AuthServicePasswordResetTest {
 
         // Chưa xác minh OTP: gửi thẳng OTP vào bước đặt mật khẩu bị từ chối (không còn để chung như trước)
         assertEquals(
-                ErrorCode.RESET_SESSION_INVALID,
+                AccountErrorCode.RESET_SESSION_INVALID,
                 assertThrows(AppException.class, () -> service.resetPassword(reset("123456", "new-password-1")))
                         .getErrorCode());
 
         service.verifyResetOtp(otpOf("123456"));
         assertEquals(
-                ErrorCode.RESET_SESSION_INVALID,
+                AccountErrorCode.RESET_SESSION_INVALID,
                 assertThrows(AppException.class, () -> service.resetPassword(reset("wrong-token", "new-password-1")))
                         .getErrorCode());
 
         otp.setExpiryTime(LocalDateTime.now().minusSeconds(1));
         assertEquals(
-                ErrorCode.RESET_SESSION_INVALID,
+                AccountErrorCode.RESET_SESSION_INVALID,
                 assertThrows(AppException.class, () -> service.resetPassword(reset("any", "new-password-1")))
                         .getErrorCode());
         verify(otps).delete(otp);
@@ -206,7 +208,7 @@ class AuthServicePasswordResetTest {
 
         AppException e = assertThrows(AppException.class, () -> service.verifyResetOtp(otpOf("654321")));
 
-        assertEquals(ErrorCode.OTP_INVALID, e.getErrorCode());
+        assertEquals(AccountErrorCode.OTP_INVALID, e.getErrorCode());
         assertEquals(1, otp.getAttempts());
         assertNull(otp.getResetTokenHash());
     }
@@ -220,7 +222,7 @@ class AuthServicePasswordResetTest {
 
         // Đúng mã nhưng đã sai đủ 5 lần: mã bị hủy, phải xin mã mới
         assertEquals(
-                ErrorCode.OTP_INVALID,
+                AccountErrorCode.OTP_INVALID,
                 assertThrows(AppException.class, () -> service.verifyResetOtp(otpOf("123456")))
                         .getErrorCode());
         verify(otps).delete(otp);
@@ -232,14 +234,14 @@ class AuthServicePasswordResetTest {
         when(members.findByEmail("a@x.com")).thenReturn(Optional.of(user));
         when(otps.findByMember(user)).thenReturn(Optional.of(expired));
         assertEquals(
-                ErrorCode.OTP_INVALID,
+                AccountErrorCode.OTP_INVALID,
                 assertThrows(AppException.class, () -> service.verifyResetOtp(otpOf("123456")))
                         .getErrorCode());
         verify(otps).delete(expired);
 
         when(members.findByEmail("a@x.com")).thenReturn(Optional.empty());
         assertEquals(
-                ErrorCode.OTP_INVALID,
+                AccountErrorCode.OTP_INVALID,
                 assertThrows(AppException.class, () -> service.verifyResetOtp(otpOf("123456")))
                         .getErrorCode());
     }

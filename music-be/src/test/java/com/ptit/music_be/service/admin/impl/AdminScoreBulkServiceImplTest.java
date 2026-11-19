@@ -17,7 +17,7 @@ import com.ptit.music_be.dto.enums.score.Visibility;
 import com.ptit.music_be.dto.request.admin.AdminScoreBulkRequest;
 import com.ptit.music_be.dto.response.admin.AdminScoreBulkResponse;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.service.score.ScoreService;
 
 class AdminScoreBulkServiceImplTest {
@@ -27,7 +27,7 @@ class AdminScoreBulkServiceImplTest {
 
     @Test
     void oneFailureDoesNotStopTheOthers() {
-        doThrow(new AppException(ErrorCode.SCORE_BUSY)).when(scores).deleteScore("b", null);
+        doThrow(new AppException(ScoreErrorCode.SCORE_BUSY)).when(scores).deleteScore("b", null);
 
         AdminScoreBulkResponse r =
                 service.apply(new AdminScoreBulkRequest(List.of("a", "b", "c"), ScoreBulkAction.DELETE, null));
@@ -35,7 +35,8 @@ class AdminScoreBulkServiceImplTest {
         assertEquals(2, r.getSuccess());
         assertEquals(1, r.getFailures().size());
         assertEquals("b", r.getFailures().get(0).getId());
-        assertEquals(ErrorCode.SCORE_BUSY.getMessage(), r.getFailures().get(0).getMessage());
+        assertEquals(
+                ScoreErrorCode.SCORE_BUSY.getMessage(), r.getFailures().get(0).getMessage());
         verify(scores).deleteScore("a", null);
         verify(scores).deleteScore("c", null);
     }

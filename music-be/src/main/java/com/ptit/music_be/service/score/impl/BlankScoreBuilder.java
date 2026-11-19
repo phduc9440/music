@@ -10,7 +10,7 @@ import org.w3c.dom.Element;
 
 import com.ptit.music_be.dto.request.score.BlankScoreRequest;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 
 /**
  * Dựng MusicXML {@code score-partwise} cho bản nhạc trống: part theo mẫu nhạc
@@ -186,7 +186,7 @@ final class BlankScoreBuilder {
         try {
             return DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
         } catch (ParserConfigurationException e) {
-            throw new AppException(ErrorCode.MUSICXML_INVALID);
+            throw new AppException(ScoreErrorCode.MUSICXML_INVALID);
         }
     }
 }

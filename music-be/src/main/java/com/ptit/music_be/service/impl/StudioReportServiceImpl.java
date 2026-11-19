@@ -33,7 +33,9 @@ import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.PracticeSession;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.LibraryErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.practice.PracticeSessionRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
@@ -67,12 +69,12 @@ public class StudioReportServiceImpl implements StudioReportService {
         Member member = currentMember(true);
         PracticeSession session = practiceSessionRepository
                 .findByIdAndMemberForUpdate(sessionId, member)
-                .orElseThrow(() -> new AppException(ErrorCode.STUDIO_SESSION_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(LibraryErrorCode.STUDIO_SESSION_NOT_EXISTED));
         if (!STUDIO_MODES.contains(session.getMode())) {
-            throw new AppException(ErrorCode.STUDIO_SESSION_NOT_EXISTED);
+            throw new AppException(LibraryErrorCode.STUDIO_SESSION_NOT_EXISTED);
         }
         if (session.getStatus() != PracticeSessionStatus.IN_PROGRESS) {
-            throw new AppException(ErrorCode.STUDIO_SESSION_NOT_ACTIVE);
+            throw new AppException(LibraryErrorCode.STUDIO_SESSION_NOT_ACTIVE);
         }
 
         EventCounts counts = eventCounts(sessionId, session.getMode(), request.coveredUntilMs());
@@ -101,7 +103,7 @@ public class StudioReportServiceImpl implements StudioReportService {
     public StudioSessionReportResponse getReport(String sessionId) {
         PracticeSession session = findOwnedSession(sessionId);
         if (session.getStatus() == PracticeSessionStatus.IN_PROGRESS) {
-            throw new AppException(ErrorCode.STUDIO_REPORT_NOT_READY);
+            throw new AppException(LibraryErrorCode.STUDIO_REPORT_NOT_READY);
         }
         return buildReport(session, eventCounts(sessionId, session.getMode(), session.getCoveredUntilMs()));
     }
@@ -345,21 +347,21 @@ public class StudioReportServiceImpl implements StudioReportService {
         return practiceSessionRepository
                 .findByIdAndMember(id, member)
                 .filter(session -> STUDIO_MODES.contains(session.getMode()))
-                .orElseThrow(() -> new AppException(ErrorCode.STUDIO_SESSION_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(LibraryErrorCode.STUDIO_SESSION_NOT_EXISTED));
     }
 
     private Score findViewableScore(String scoreId) {
         return scoreRepository
                 .findById(scoreId)
                 .filter(scoreFileService::canView)
-                .orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
     }
 
     private Member currentMember(boolean forUpdate) {
         return (forUpdate
                         ? memberRepository.findByEmailForUpdate(SecurityUtils.getCurrentEmail())
                         : memberRepository.findByEmail(SecurityUtils.getCurrentEmail()))
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
     }
 
     private static void validateFinishRequest(StudioSessionFinishRequest request) {
@@ -370,7 +372,7 @@ public class StudioReportServiceImpl implements StudioReportService {
                 || request.reachedEnd() == null
                 || request.coveredUntilMs() == null
                 || request.coveredUntilMs() < 0) {
-            throw new AppException(ErrorCode.INVALID_REQUEST);
+            throw new AppException(AccountErrorCode.INVALID_REQUEST);
         }
     }
 

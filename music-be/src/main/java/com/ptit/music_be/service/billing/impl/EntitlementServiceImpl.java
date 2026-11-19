@@ -13,7 +13,7 @@ import com.ptit.music_be.dto.enums.score.FileType;
 import com.ptit.music_be.dto.response.billing.PlanLimitPayload;
 import com.ptit.music_be.entity.Plan;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.BillingErrorCode;
 import com.ptit.music_be.repository.ai.AiTaskRepository;
 import com.ptit.music_be.repository.billing.PlanRepository;
 import com.ptit.music_be.repository.score.ScoreFileRepository;
@@ -67,7 +67,7 @@ public class EntitlementServiceImpl implements EntitlementService {
         int used = usedThisMonth(memberId, metric);
         if (used + amount > limit) {
             throw new AppException(
-                    ErrorCode.PLAN_LIMIT_REACHED,
+                    BillingErrorCode.PLAN_LIMIT_REACHED,
                     new PlanLimitPayload(
                             metric.name(), limit, used, upgradeTo(subscriptionService.currentPlan(memberId))));
         }
@@ -84,7 +84,7 @@ public class EntitlementServiceImpl implements EntitlementService {
                 memberId, STORED_TYPES.stream().map(Enum::name).toList()));
         if (usedMb + megabytes(incomingBytes) > limitMb) {
             throw new AppException(
-                    ErrorCode.PLAN_LIMIT_REACHED,
+                    BillingErrorCode.PLAN_LIMIT_REACHED,
                     new PlanLimitPayload(
                             "STORAGE_MB", limitMb, (int) usedMb, upgradeTo(subscriptionService.currentPlan(memberId))));
         }

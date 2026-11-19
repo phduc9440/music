@@ -8,6 +8,7 @@ import type {
   AdminMemberDetail,
   AdminTag,
   BulkResult,
+  AdminCreateMemberRequest,
   AdminUpdateMemberRequest,
   ApiResponse,
   ErrorLogEntry,
@@ -43,6 +44,7 @@ export const adminApi = {
   }) => apiClient.get<ApiResponse<PageResult<Member>>>('/admin/members/with-plan', { params }),
   getMember: (id: string) => apiClient.get<ApiResponse<Member>>(`/admin/members/${id}`),
   getMemberDetail: (id: string) => apiClient.get<ApiResponse<AdminMemberDetail>>(`/admin/members/${id}/detail`),
+  createMember: (data: AdminCreateMemberRequest) => apiClient.post<ApiResponse<Member>>('/admin/members', data),
   updateMember: (id: string, data: AdminUpdateMemberRequest) =>
     apiClient.patch<ApiResponse<Member>>(`/admin/members/${id}`, data),
   getDashboard: (days = 30) => apiClient.get<ApiResponse<AdminDashboard>>('/admin/dashboard', { params: { days } }),

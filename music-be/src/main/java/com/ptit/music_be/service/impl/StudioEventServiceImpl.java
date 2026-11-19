@@ -20,7 +20,8 @@ import com.ptit.music_be.dto.response.StudioTimelineResponse;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.PracticeSession;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.LibraryErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.practice.PracticeSessionRepository;
 import com.ptit.music_be.service.StudioEventService;
@@ -53,21 +54,21 @@ public class StudioEventServiceImpl implements StudioEventService {
     @Transactional
     public StudioEventBatchResponse ingestEvents(String sessionId, StudioEventBatchRequest request) {
         if (request == null || request.events() == null) {
-            throw new AppException(ErrorCode.STUDIO_EVENT_INVALID);
+            throw new AppException(LibraryErrorCode.STUDIO_EVENT_INVALID);
         }
         List<StudioNoteEventRequest> events = request.events();
         if (events.size() > MAX_EVENTS_PER_BATCH) {
-            throw new AppException(ErrorCode.STUDIO_EVENT_BATCH_TOO_LARGE);
+            throw new AppException(LibraryErrorCode.STUDIO_EVENT_BATCH_TOO_LARGE);
         }
 
         Member member = memberRepository
                 .findByEmailForUpdate(SecurityUtils.getCurrentEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
         PracticeSession session = practiceSessionRepository
                 .findByIdAndMemberForUpdate(sessionId, member)
-                .orElseThrow(() -> new AppException(ErrorCode.STUDIO_SESSION_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(LibraryErrorCode.STUDIO_SESSION_NOT_EXISTED));
         if (session.getStatus() != PracticeSessionStatus.IN_PROGRESS) {
-            throw new AppException(ErrorCode.STUDIO_SESSION_NOT_ACTIVE);
+            throw new AppException(LibraryErrorCode.STUDIO_SESSION_NOT_ACTIVE);
         }
 
         validateEvents(events);
@@ -111,7 +112,7 @@ public class StudioEventServiceImpl implements StudioEventService {
                     || (event.expectedMs() != null && event.expectedMs() < 0)
                     || (event.hand() != null && !Set.of("RIGHT", "LEFT").contains(event.hand()))
                     || (event.noteId() != null && !StringUtils.hasText(event.noteId()))) {
-                throw new AppException(ErrorCode.STUDIO_EVENT_INVALID);
+                throw new AppException(LibraryErrorCode.STUDIO_EVENT_INVALID);
             }
             previousSequence = event.seq();
         }
@@ -131,7 +132,7 @@ public class StudioEventServiceImpl implements StudioEventService {
                 .map(StudioNoteEventRequest::noteId)
                 .filter(java.util.Objects::nonNull)
                 .anyMatch(noteId -> !timelineNoteIds.contains(noteId))) {
-            throw new AppException(ErrorCode.STUDIO_EVENT_INVALID);
+            throw new AppException(LibraryErrorCode.STUDIO_EVENT_INVALID);
         }
     }
 

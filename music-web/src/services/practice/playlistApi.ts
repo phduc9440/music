@@ -18,6 +18,9 @@ export const playlistApi = {
     apiClient.post<ApiResponse<PlaylistItem[]>>(`/playlists/${id}/scores`, { scoreId }),
   removeScore: (id: string, scoreId: string) =>
     apiClient.delete<ApiResponse<PlaylistItem[]>>(`/playlists/${id}/scores/${scoreId}`),
+  /** Bỏ nhiều bài một lần (bỏ hết hoặc không bỏ gì). Lỗi 2605: danh sách rỗng hoặc có bài không nằm trong playlist. */
+  removeScores: (id: string, scoreIds: string[]) =>
+    apiClient.post<ApiResponse<PlaylistItem[]>>(`/playlists/${id}/scores/remove`, { scoreIds }),
   reorder: (id: string, scoreIds: string[]) =>
     apiClient.put<ApiResponse<PlaylistItem[]>>(`/playlists/${id}/scores/order`, { scoreIds }),
 };

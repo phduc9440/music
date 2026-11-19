@@ -13,7 +13,8 @@ import com.ptit.music_be.dto.response.score.ScoreFileResponse;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreFile;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.mapper.ScoreFileMapper;
 import com.ptit.music_be.repository.score.ScoreFileRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
@@ -53,10 +54,10 @@ public class ScoreFileServiceImpl implements ScoreFileService {
     @Transactional(readOnly = true)
     public List<ScoreFileResponse> getFilesOfScore(String scoreId, FileType type) {
         Score score =
-                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
         AccessDecision decision = permissionService.resolve(score);
         if (!decision.can(ScoreAccess.VIEW)) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+            throw new AppException(AccountErrorCode.UNAUTHORIZED);
         }
         // Có type thì lọc theo loại, không thì lấy tất cả (sắp xếp theo loại rồi số trang)
         List<ScoreFile> files = type == null
@@ -79,15 +80,16 @@ public class ScoreFileServiceImpl implements ScoreFileService {
     @Override
     @Transactional(readOnly = true)
     public DownloadableFile loadForDownload(String fileId, boolean inline) {
-        ScoreFile scoreFile =
-                scoreFileRepository.findById(fileId).orElseThrow(() -> new AppException(ErrorCode.FILE_NOT_EXISTED));
+        ScoreFile scoreFile = scoreFileRepository
+                .findById(fileId)
+                .orElseThrow(() -> new AppException(ScoreErrorCode.FILE_NOT_EXISTED));
         Score score = scoreFile.getScore();
         AccessDecision decision = permissionService.resolve(score);
         if (!decision.can(ScoreAccess.VIEW)) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+            throw new AppException(AccountErrorCode.UNAUTHORIZED);
         }
         if (!canDownloadFile(score, scoreFile, decision, inline)) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+            throw new AppException(AccountErrorCode.UNAUTHORIZED);
         }
 
         String fileName = scoreFile.getOriginalFileName() != null
@@ -121,14 +123,14 @@ public class ScoreFileServiceImpl implements ScoreFileService {
     @Override
     public void checkCanView(Score score) {
         if (!canView(score)) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+            throw new AppException(AccountErrorCode.UNAUTHORIZED);
         }
     }
 
     @Override
     public void checkCanEdit(Score score) {
         if (!canEdit(score)) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+            throw new AppException(AccountErrorCode.UNAUTHORIZED);
         }
     }
 
@@ -150,7 +152,7 @@ public class ScoreFileServiceImpl implements ScoreFileService {
     @Override
     public void checkCanReview(Score score) {
         if (!canReview(score)) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+            throw new AppException(AccountErrorCode.UNAUTHORIZED);
         }
     }
 
@@ -162,7 +164,7 @@ public class ScoreFileServiceImpl implements ScoreFileService {
     @Override
     public void checkCanManageSharing(Score score) {
         if (!canManageSharing(score)) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+            throw new AppException(AccountErrorCode.UNAUTHORIZED);
         }
     }
 
@@ -175,7 +177,7 @@ public class ScoreFileServiceImpl implements ScoreFileService {
     @Override
     public void checkCanDownload(Score score) {
         if (!canDownload(score)) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+            throw new AppException(AccountErrorCode.UNAUTHORIZED);
         }
     }
 

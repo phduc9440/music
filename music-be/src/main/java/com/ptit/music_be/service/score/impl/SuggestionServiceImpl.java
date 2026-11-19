@@ -58,7 +58,9 @@ import com.ptit.music_be.entity.ScoreSuggestionChange;
 import com.ptit.music_be.event.RewardEarnedEvent;
 import com.ptit.music_be.event.RewardReason;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.CollabErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.repository.ai.AiTaskRepository;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.MemberScoreRepository;
@@ -158,15 +160,15 @@ public class SuggestionServiceImpl implements SuggestionService {
         Score score = findScore(scoreId);
         AccessDecision decision = permissionService.resolve(score);
         if (!decision.can(ScoreAccess.REVIEW)) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+            throw new AppException(AccountErrorCode.UNAUTHORIZED);
         }
         if (aiTaskRepository.existsByScoreIdAndTaskTypeAndStatusIn(
                 score.getId(), AiTaskType.OMR_CONVERSION, ACTIVE_TASK_STATUSES)) {
-            throw new AppException(ErrorCode.SCORE_BUSY);
+            throw new AppException(ScoreErrorCode.SCORE_BUSY);
         }
         String cleanTitle = title == null ? "" : title.strip();
         if (cleanTitle.isEmpty() || cleanTitle.length() > MAX_TITLE) {
-            throw new AppException(ErrorCode.SUGGESTION_FIELDS_INVALID);
+            throw new AppException(CollabErrorCode.SUGGESTION_FIELDS_INVALID);
         }
         String cleanDescription = cleanOptional(description, MAX_DESCRIPTION);
 
@@ -176,20 +178,20 @@ public class SuggestionServiceImpl implements SuggestionService {
 
         Integer currentVersion = score.getCurrentVersion();
         if (baseVersion == null || baseVersion < 1 || currentVersion == null || baseVersion > currentVersion) {
-            throw new AppException(ErrorCode.SCORE_VERSION_NOT_EXISTED);
+            throw new AppException(ScoreErrorCode.SCORE_VERSION_NOT_EXISTED);
         }
 
         // Khóa dòng người gửi để hai lần gửi cùng lúc không cùng vượt giới hạn
         Member me = memberRepository
                 .findByEmailForUpdate(SecurityUtils.getCurrentEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
         if (suggestionRepository.countOpenOf(score.getId(), me.getId()) >= MAX_OPEN_PER_AUTHOR) {
-            throw new AppException(ErrorCode.SUGGESTION_TOO_MANY_OPEN);
+            throw new AppException(CollabErrorCode.SUGGESTION_TOO_MANY_OPEN);
         }
         if (suggestionRepository.countCreatedSince(
                         me.getId(), LocalDateTime.now().minusHours(24))
                 >= MAX_PER_DAY) {
-            throw new AppException(ErrorCode.SUGGESTION_RATE_LIMITED);
+            throw new AppException(CollabErrorCode.SUGGESTION_RATE_LIMITED);
         }
 
         Persisted saved =
@@ -211,7 +213,7 @@ public class SuggestionServiceImpl implements SuggestionService {
         Document proposed = MusicXmlInspector.parseStored(musicXml);
         Integer currentVersion = score.getCurrentVersion();
         if (baseVersion < 1 || currentVersion == null || baseVersion > currentVersion) {
-            throw new AppException(ErrorCode.SCORE_VERSION_NOT_EXISTED);
+            throw new AppException(ScoreErrorCode.SCORE_VERSION_NOT_EXISTED);
         }
         String cleanTitle = title == null || title.isBlank() ? "Gợi ý" : title.strip();
         if (cleanTitle.length() > MAX_TITLE) {
@@ -247,7 +249,7 @@ public class SuggestionServiceImpl implements SuggestionService {
                 : scoreEditService.getVersionContent(score.getId(), baseVersion);
         SuggestionDiffer.Result result = SuggestionDiffer.diff(MusicXmlInspector.parseStored(base.bytes()), proposed);
         if (!result.structural() && result.changes().isEmpty()) {
-            throw new AppException(ErrorCode.SUGGESTION_EMPTY);
+            throw new AppException(CollabErrorCode.SUGGESTION_EMPTY);
         }
 
         ScoreSuggestion suggestion = suggestionRepository.save(ScoreSuggestion.builder()
@@ -290,7 +292,7 @@ public class SuggestionServiceImpl implements SuggestionService {
         Score score = findScore(scoreId);
         AccessDecision decision = permissionService.resolve(score);
         if (!decision.can(ScoreAccess.REVIEW)) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+            throw new AppException(AccountErrorCode.UNAUTHORIZED);
         }
         Member me = currentMember();
         String authorFilter = permissionService.canEdit(score, decision) ? null : me.getId();
@@ -361,11 +363,11 @@ public class SuggestionServiceImpl implements SuggestionService {
         ScoreContent current = scoreContentService.getMusicXml(score.getId());
         Integer expected = ScoreEditServiceImpl.parseIfMatch(ifMatch);
         if (expected == null || expected != current.version()) {
-            throw new AppException(ErrorCode.SCORE_VERSION_CONFLICT, new ScoreVersionConflict(current.version()));
+            throw new AppException(ScoreErrorCode.SCORE_VERSION_CONFLICT, new ScoreVersionConflict(current.version()));
         }
         Document currentDoc = MusicXmlInspector.parseStored(current.bytes());
         if (analyse(suggestion, changes, current, currentDoc).staleReason() != null) {
-            throw new AppException(ErrorCode.SUGGESTION_OUTDATED);
+            throw new AppException(CollabErrorCode.SUGGESTION_OUTDATED);
         }
 
         byte[] merged = suggestion.isStructural() ? readProposalFile(suggestion) : merge(currentDoc, changes, chosen);
@@ -417,10 +419,10 @@ public class SuggestionServiceImpl implements SuggestionService {
         Member me = currentMember();
         requireVisible(suggestion, score, permissionService.resolve(score), me);
         if (!isAuthor(suggestion, me)) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+            throw new AppException(AccountErrorCode.UNAUTHORIZED);
         }
         if (suggestion.getStatus() != SuggestionStatus.OPEN) {
-            throw new AppException(ErrorCode.SUGGESTION_NOT_OPEN);
+            throw new AppException(CollabErrorCode.SUGGESTION_NOT_OPEN);
         }
         suggestion.setStatus(SuggestionStatus.WITHDRAWN);
         suggestion.setDecidedAt(LocalDateTime.now());
@@ -446,7 +448,7 @@ public class SuggestionServiceImpl implements SuggestionService {
         List<String> requested = request == null ? null : request.getChangeIds();
         if (suggestion.isStructural()) {
             if (requested != null) {
-                throw new AppException(ErrorCode.SUGGESTION_CHANGES_INVALID);
+                throw new AppException(CollabErrorCode.SUGGESTION_CHANGES_INVALID);
             }
             return Set.of();
         }
@@ -456,7 +458,7 @@ public class SuggestionServiceImpl implements SuggestionService {
         }
         Set<String> chosen = new LinkedHashSet<>(requested);
         if (chosen.isEmpty() || !known.containsAll(chosen)) {
-            throw new AppException(ErrorCode.SUGGESTION_CHANGES_INVALID);
+            throw new AppException(CollabErrorCode.SUGGESTION_CHANGES_INVALID);
         }
         return chosen;
     }
@@ -586,19 +588,19 @@ public class SuggestionServiceImpl implements SuggestionService {
     /** Người xem được đề xuất: từ REVIEW trở lên, và là tác giả hoặc có quyền sửa (người khác: coi như không tồn tại). */
     private void requireVisible(ScoreSuggestion suggestion, Score score, AccessDecision decision, Member me) {
         if (!decision.can(ScoreAccess.REVIEW)) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+            throw new AppException(AccountErrorCode.UNAUTHORIZED);
         }
         if (!isAuthor(suggestion, me) && !permissionService.canEdit(score, decision)) {
-            throw new AppException(ErrorCode.SUGGESTION_NOT_EXISTED);
+            throw new AppException(CollabErrorCode.SUGGESTION_NOT_EXISTED);
         }
     }
 
     private void requireCanDecide(ScoreSuggestion suggestion, Score score, AccessDecision decision) {
         if (!permissionService.canEdit(score, decision)) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+            throw new AppException(AccountErrorCode.UNAUTHORIZED);
         }
         if (suggestion.getStatus() != SuggestionStatus.OPEN) {
-            throw new AppException(ErrorCode.SUGGESTION_NOT_OPEN);
+            throw new AppException(CollabErrorCode.SUGGESTION_NOT_OPEN);
         }
     }
 
@@ -770,58 +772,58 @@ public class SuggestionServiceImpl implements SuggestionService {
     private Score findScore(String scoreId) {
         return scoreRepository
                 .findById(scoreId == null ? "" : scoreId)
-                .orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
     }
 
     private ScoreSuggestion findSuggestion(String id) {
         return suggestionRepository
                 .findById(id == null ? "" : id)
-                .orElseThrow(() -> new AppException(ErrorCode.SUGGESTION_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(CollabErrorCode.SUGGESTION_NOT_EXISTED));
     }
 
     private ScoreSuggestion lock(String id) {
         return suggestionRepository
                 .findByIdForUpdate(id == null ? "" : id)
-                .orElseThrow(() -> new AppException(ErrorCode.SUGGESTION_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(CollabErrorCode.SUGGESTION_NOT_EXISTED));
     }
 
     private Member currentMember() {
         return memberRepository
                 .findByEmail(SecurityUtils.getCurrentEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
     }
 
     /** Chuỗi tùy chọn: cắt khoảng trắng, rỗng là null, quá {@code max} ký tự là SUGGESTION_FIELDS_INVALID. */
     private static String cleanOptional(String text, int max) {
         String clean = text == null ? "" : text.strip();
         if (clean.length() > max) {
-            throw new AppException(ErrorCode.SUGGESTION_FIELDS_INVALID);
+            throw new AppException(CollabErrorCode.SUGGESTION_FIELDS_INVALID);
         }
         return clean.isEmpty() ? null : clean;
     }
 
     private byte[] readUpload(MultipartFile file) {
         if (file == null || file.isEmpty() || file.getSize() > maxMusicXmlBytes) {
-            throw new AppException(ErrorCode.FILE_TOO_LARGE);
+            throw new AppException(ScoreErrorCode.FILE_TOO_LARGE);
         }
         try {
             return file.getBytes();
         } catch (IOException e) {
             log.error("Không đọc được file đề xuất tải lên", e);
-            throw new AppException(ErrorCode.FILE_STORAGE_ERROR);
+            throw new AppException(ScoreErrorCode.FILE_STORAGE_ERROR);
         }
     }
 
     /** Đọc file MusicXML của đề xuất: FILE_NOT_EXISTED (2002) nếu đã dọn hoặc mất trên đĩa. */
     private byte[] readProposalFile(ScoreSuggestion suggestion) {
         if (suggestion.getStoragePath() == null) {
-            throw new AppException(ErrorCode.FILE_NOT_EXISTED);
+            throw new AppException(ScoreErrorCode.FILE_NOT_EXISTED);
         }
         try {
             return Files.readAllBytes(fileStorageService.resolve(suggestion.getStoragePath()));
         } catch (IOException e) {
             log.warn("Không đọc được file đề xuất {}: {}", suggestion.getId(), e.getMessage());
-            throw new AppException(ErrorCode.FILE_NOT_EXISTED);
+            throw new AppException(ScoreErrorCode.FILE_NOT_EXISTED);
         }
     }
 

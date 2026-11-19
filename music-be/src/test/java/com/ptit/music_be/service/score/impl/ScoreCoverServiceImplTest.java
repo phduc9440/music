@@ -32,6 +32,8 @@ import com.cloudinary.Uploader;
 import com.ptit.music_be.dto.response.score.ScoreDetailResponse;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.service.score.ScoreCoverService;
@@ -124,17 +126,17 @@ class ScoreCoverServiceImplTest {
     @Test
     void rejectsBadFilesAndNeverCallsCloudinary() throws Exception {
         assertEquals(
-                ErrorCode.SCORE_COVER_INVALID,
+                ScoreErrorCode.SCORE_COVER_INVALID,
                 codeOf(() -> coverService.upload(
                         scoreId, new MockMultipartFile("file", "a.gif", "image/gif", new byte[] {1}))));
         // Content-Type nói là PNG nhưng nội dung không phải ảnh
         assertEquals(
-                ErrorCode.SCORE_COVER_INVALID,
+                ScoreErrorCode.SCORE_COVER_INVALID,
                 codeOf(() -> coverService.upload(
                         scoreId, new MockMultipartFile("file", "a.png", "image/png", new byte[] {1, 2, 3}))));
         // Quá 3MB
         assertEquals(
-                ErrorCode.SCORE_COVER_INVALID,
+                ScoreErrorCode.SCORE_COVER_INVALID,
                 codeOf(() -> coverService.upload(
                         scoreId, new MockMultipartFile("file", "a.png", "image/png", new byte[3 * 1024 * 1024 + 1]))));
         verify(uploader, never()).upload(any(byte[].class), anyMap());
@@ -143,7 +145,7 @@ class ScoreCoverServiceImplTest {
     @Test
     void personWithoutEditPermissionCannotChangeCover() throws Exception {
         as(STRANGER);
-        assertEquals(ErrorCode.UNAUTHORIZED, codeOf(() -> {
+        assertEquals(AccountErrorCode.UNAUTHORIZED, codeOf(() -> {
             try {
                 coverService.upload(scoreId, new MockMultipartFile("file", "a.png", "image/png", png()));
             } catch (AppException e) {
@@ -152,14 +154,14 @@ class ScoreCoverServiceImplTest {
                 throw new IllegalStateException(e);
             }
         }));
-        assertEquals(ErrorCode.UNAUTHORIZED, codeOf(() -> coverService.remove(scoreId)));
+        assertEquals(AccountErrorCode.UNAUTHORIZED, codeOf(() -> coverService.remove(scoreId)));
         verify(uploader, never()).upload(any(byte[].class), anyMap());
     }
 
     @Test
     void storageFailureKeepsOldCover() throws Exception {
         when(uploader.upload(any(byte[].class), anyMap())).thenThrow(new RuntimeException("cloud down"));
-        assertEquals(ErrorCode.FILE_STORAGE_ERROR, codeOf(() -> {
+        assertEquals(ScoreErrorCode.FILE_STORAGE_ERROR, codeOf(() -> {
             try {
                 coverService.upload(scoreId, new MockMultipartFile("file", "a.png", "image/png", png()));
             } catch (AppException e) {

@@ -34,7 +34,7 @@ import com.ptit.music_be.entity.AiTask;
 import com.ptit.music_be.entity.ScoreSuggestion;
 import com.ptit.music_be.event.ChordTaskCreatedEvent;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.CollabErrorCode;
 import com.ptit.music_be.repository.ai.AiTaskRepository;
 import com.ptit.music_be.service.score.ScoreEditService;
 import com.ptit.music_be.service.score.SuggestionService;
@@ -142,7 +142,7 @@ public class ChordGenerationWorker {
         } catch (AppException e) {
             fail(
                     taskId,
-                    e.getErrorCode() == ErrorCode.SUGGESTION_EMPTY
+                    e.getErrorCode() == CollabErrorCode.SUGGESTION_EMPTY
                             ? AiTaskError.CHORD_ALREADY_HARMONIZED.name()
                             : AiTaskError.JOB_REJECTED + ": " + e.getErrorCode().name());
         } catch (RestClientResponseException e) {

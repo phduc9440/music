@@ -17,7 +17,9 @@ import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.MemberScore;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.CollabErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.MemberScoreRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
@@ -54,9 +56,9 @@ public class ScoreSharingServiceImpl implements ScoreSharingService {
         Score score = findManageableScore(scoreId);
         Member member = memberRepository
                 .findByEmail(email.trim())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
         if (isOwnerOf(score, member)) {
-            throw new AppException(ErrorCode.CANNOT_SHARE_WITH_OWNER);
+            throw new AppException(CollabErrorCode.CANNOT_SHARE_WITH_OWNER);
         }
         MemberScore share = memberScoreRepository
                 .findByScoreIdAndMemberId(scoreId, member.getId())
@@ -84,7 +86,7 @@ public class ScoreSharingServiceImpl implements ScoreSharingService {
         MemberScore share = memberScoreRepository
                 .findByScoreIdAndMemberId(scoreId, memberId)
                 .filter(ms -> ms.getPermission() != null)
-                .orElseThrow(() -> new AppException(ErrorCode.SHARE_MEMBER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(CollabErrorCode.SHARE_MEMBER_NOT_EXISTED));
         share.setPermission(permission);
         share.setSource(ShareSource.DIRECT); // chủ đã chủ động chỉnh cấp thì coi như cấp trực tiếp
         markGranted(share);
@@ -100,7 +102,7 @@ public class ScoreSharingServiceImpl implements ScoreSharingService {
         MemberScore share = memberScoreRepository
                 .findByScoreIdAndMemberId(scoreId, memberId)
                 .filter(ms -> ms.getPermission() != null)
-                .orElseThrow(() -> new AppException(ErrorCode.SHARE_MEMBER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(CollabErrorCode.SHARE_MEMBER_NOT_EXISTED));
         memberScoreRepository.delete(share);
         return toResponse(score);
     }
@@ -111,21 +113,21 @@ public class ScoreSharingServiceImpl implements ScoreSharingService {
     @Transactional
     public MyAccessResponse requestAccess(String scoreId, SharePermission permission, String message) {
         if (permission == null) {
-            throw new AppException(ErrorCode.SHARE_PERMISSION_INVALID);
+            throw new AppException(CollabErrorCode.SHARE_PERMISSION_INVALID);
         }
         Score score =
-                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
         // Đã có quyền bằng hoặc cao hơn cấp đang xin (kể cả chủ sở hữu, ADMIN; bản PUBLIC thì mặc định đã xem và nhận
         // xét được) thì không cần xin
         String current = scoreFileService.getAccessLevel(score);
         if ("OWNER".equals(current)
                 || (current != null && SharePermission.valueOf(current).includes(permission))) {
-            throw new AppException(ErrorCode.ALREADY_HAS_ACCESS);
+            throw new AppException(CollabErrorCode.ALREADY_HAS_ACCESS);
         }
 
         Member me = memberRepository
                 .findByEmail(SecurityUtils.getCurrentEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
         MemberScore share = memberScoreRepository
                 .findByScoreIdAndMemberId(scoreId, me.getId())
                 .orElseGet(() -> MemberScore.builder().score(score).member(me).build());
@@ -156,7 +158,7 @@ public class ScoreSharingServiceImpl implements ScoreSharingService {
     @Transactional(readOnly = true)
     public MyAccessResponse getMyAccess(String scoreId) {
         Score score =
-                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
         SharePermission requested = memberScoreRepository
                 .findByScoreIdAndMemberEmail(scoreId, SecurityUtils.getCurrentEmail())
                 .map(MemberScore::getRequestedPermission)
@@ -235,7 +237,7 @@ public class ScoreSharingServiceImpl implements ScoreSharingService {
         return memberScoreRepository
                 .findByScoreIdAndMemberId(scoreId, memberId)
                 .filter(ms -> ms.getRequestedPermission() != null)
-                .orElseThrow(() -> new AppException(ErrorCode.ACCESS_REQUEST_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(CollabErrorCode.ACCESS_REQUEST_NOT_EXISTED));
     }
 
     private static void clearRequest(MemberScore share) {
@@ -257,7 +259,7 @@ public class ScoreSharingServiceImpl implements ScoreSharingService {
 
     private Score findManageableScore(String scoreId) {
         Score score =
-                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
         scoreFileService.checkCanManageSharing(score);
         return score;
     }

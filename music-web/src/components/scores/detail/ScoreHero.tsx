@@ -23,6 +23,7 @@ import { isTaskFinished } from '../../export/exportUtils';
 import { Icon } from '../../ui';
 import OfficialRequestBanner from './OfficialRequestBanner';
 import ChordSuggestDialog from '../chords/ChordSuggestDialog';
+import PlaylistPicker from '../library/PlaylistPicker';
 import ScoreCover from './ScoreCover';
 import { t } from '../../../i18n/core';
 
@@ -49,6 +50,7 @@ export default function ScoreHero({ score, onVisibilityChanged, onRequestMore }:
   const [linkCopied, setLinkCopied] = useState(false);
   const [forking, setForking] = useState(false);
   const [suggestingChords, setSuggestingChords] = useState(false);
+  const [savingToPlaylist, setSavingToPlaylist] = useState(false);
   // Tạo bản phối riêng tư từ bản công khai chủ cho phép (R4), xong thì mở bản mới
   const fork = async () => {
     setForking(true);
@@ -201,6 +203,12 @@ export default function ScoreHero({ score, onVisibilityChanged, onRequestMore }:
                 onDone={() => navigate(`${base}/${score.id}/edit`)}
               />
             )}
+            {!base.startsWith('/admin') && (
+              <button type="button" className="sc-btn" onClick={() => setSavingToPlaylist(true)}>
+                <Icon name="listPlus" size={16} />
+                {t('scores.libMenu.addToPlaylist')}
+              </button>
+            )}
             <DownloadMenu
               scoreId={score.id}
               files={score.files}
@@ -234,6 +242,7 @@ export default function ScoreHero({ score, onVisibilityChanged, onRequestMore }:
       </header>
 
       {suggestingChords && <ChordSuggestDialog scoreId={score.id} onClose={() => setSuggestingChords(false)} />}
+      {savingToPlaylist && <PlaylistPicker score={score} onClose={() => setSavingToPlaylist(false)} />}
 
       <div className="sd-alerts">
         {score.accessLevel === 'OWNER' && !base.startsWith('/admin') && <OfficialRequestBanner scoreId={score.id} />}

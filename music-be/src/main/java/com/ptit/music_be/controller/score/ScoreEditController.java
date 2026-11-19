@@ -24,7 +24,8 @@ import com.ptit.music_be.dto.response.score.ScoreDiffResponse;
 import com.ptit.music_be.dto.response.score.ScoreSaveResponse;
 import com.ptit.music_be.dto.response.score.ScoreVersionResponse;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.service.score.ScoreDiffService;
 import com.ptit.music_be.service.score.ScoreEditService;
 
@@ -153,16 +154,16 @@ public class ScoreEditController {
      */
     private byte[] readBoundedBody(HttpServletRequest request) {
         if (request.getContentLengthLong() > maxMusicXmlBytes) {
-            throw new AppException(ErrorCode.FILE_TOO_LARGE);
+            throw new AppException(ScoreErrorCode.FILE_TOO_LARGE);
         }
         try {
             byte[] body = request.getInputStream().readNBytes((int) Math.min(maxMusicXmlBytes + 1, Integer.MAX_VALUE));
             if (body.length > maxMusicXmlBytes) {
-                throw new AppException(ErrorCode.FILE_TOO_LARGE);
+                throw new AppException(ScoreErrorCode.FILE_TOO_LARGE);
             }
             return body;
         } catch (IOException e) {
-            throw new AppException(ErrorCode.INVALID_REQUEST);
+            throw new AppException(AccountErrorCode.INVALID_REQUEST);
         }
     }
 }

@@ -36,7 +36,8 @@ import com.ptit.music_be.entity.ScoreFile;
 import com.ptit.music_be.event.RewardEarnedEvent;
 import com.ptit.music_be.event.RewardReason;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.AiErrorCode;
 import com.ptit.music_be.repository.ai.AiTaskRepository;
 import com.ptit.music_be.repository.score.ScoreFileRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
@@ -82,7 +83,7 @@ public class InternalAiTaskServiceImpl implements InternalAiTaskService {
         int current = task.getProgress() == null ? 0 : task.getProgress();
         // Tiến độ chỉ được tăng: callback đến trễ/không đúng thứ tự không được kéo thanh tiến độ lùi lại
         if (request.getProgress() < current) {
-            throw new AppException(ErrorCode.INVALID_REQUEST);
+            throw new AppException(AccountErrorCode.INVALID_REQUEST);
         }
 
         task.setProgress(request.getProgress());
@@ -107,14 +108,14 @@ public class InternalAiTaskServiceImpl implements InternalAiTaskService {
         }
         Score score = task.getScore();
         if (score == null) {
-            throw new AppException(ErrorCode.INVALID_REQUEST);
+            throw new AppException(AccountErrorCode.INVALID_REQUEST);
         }
         FileType fileType = request.getFileType();
         if (fileType == FileType.ORIGINAL_PDF
                 || fileType == FileType.ORIGINAL_IMAGE
                 || fileType == FileType.ORIGINAL_MUSICXML
                 || fileType == FileType.ORIGINAL_MIDI) {
-            throw new AppException(ErrorCode.INVALID_REQUEST);
+            throw new AppException(AccountErrorCode.INVALID_REQUEST);
         }
 
         String storagePath = validateStoragePath(score.getId(), request.getStoragePath());
@@ -122,7 +123,7 @@ public class InternalAiTaskServiceImpl implements InternalAiTaskService {
         if (!Files.isRegularFile(onDisk)) {
             // Không dùng 404: music-ai coi 404 là "task không còn" và bỏ job im lặng. 400 chỉ làm file này không được
             // ghi nhận, job vẫn chạy tiếp và báo lỗi đúng (ví dụ EXPORT_ERROR) ở bước complete.
-            throw new AppException(ErrorCode.INVALID_REQUEST);
+            throw new AppException(AccountErrorCode.INVALID_REQUEST);
         }
 
         // Cùng một đường dẫn (nhận diện lại ghi đè pages/page-001.png) thì cập nhật dòng cũ thay vì thêm dòng trùng
@@ -282,7 +283,7 @@ public class InternalAiTaskServiceImpl implements InternalAiTaskService {
     private AiTask lockTask(String taskId) {
         return aiTaskRepository
                 .findByIdForUpdate(taskId)
-                .orElseThrow(() -> new AppException(ErrorCode.AI_TASK_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AiErrorCode.AI_TASK_NOT_EXISTED));
     }
 
     private boolean isFinished(AiTask task) {
@@ -388,10 +389,10 @@ public class InternalAiTaskServiceImpl implements InternalAiTaskService {
     private String validateStoragePath(String scoreId, String rawPath) {
         String path = rawPath.trim().replace('\\', '/');
         if (path.startsWith("/") || path.contains("..") || path.contains("//")) {
-            throw new AppException(ErrorCode.INVALID_REQUEST);
+            throw new AppException(AccountErrorCode.INVALID_REQUEST);
         }
         if (!path.startsWith("scores/" + scoreId + "/")) {
-            throw new AppException(ErrorCode.INVALID_REQUEST);
+            throw new AppException(AccountErrorCode.INVALID_REQUEST);
         }
         return path;
     }
@@ -421,7 +422,7 @@ public class InternalAiTaskServiceImpl implements InternalAiTaskService {
         try {
             return objectMapper.writeValueAsString(value);
         } catch (JsonProcessingException e) {
-            throw new AppException(ErrorCode.INVALID_REQUEST);
+            throw new AppException(AccountErrorCode.INVALID_REQUEST);
         }
     }
 }

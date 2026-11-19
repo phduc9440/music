@@ -34,6 +34,8 @@ import com.ptit.music_be.entity.MemberScore;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.CollabErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.MemberScoreRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
@@ -189,9 +191,10 @@ class ScoreCommentServiceImplTest {
     void permissionsForWritingResolvingEditingAndDeleting() {
         as(VIEWER);
         assertEquals(
-                ErrorCode.COMMENT_WRITE_FORBIDDEN, codeOf(() -> commentService.create(scoreId, comment("x", 1, 1))));
+                CollabErrorCode.COMMENT_WRITE_FORBIDDEN,
+                codeOf(() -> commentService.create(scoreId, comment("x", 1, 1))));
         as(STRANGER);
-        assertEquals(ErrorCode.UNAUTHORIZED, codeOf(() -> commentService.list(scoreId, null, false)));
+        assertEquals(AccountErrorCode.UNAUTHORIZED, codeOf(() -> commentService.list(scoreId, null, false)));
 
         as(REVIEWER);
         ScoreCommentResponse root = commentService.create(scoreId, comment("Ô 3 thiếu dấu lặng", 3, null));
@@ -206,7 +209,7 @@ class ScoreCommentServiceImplTest {
         assertFalse(ownerView.isCanEdit());
         assertTrue(ownerView.isCanDelete());
         assertEquals(
-                ErrorCode.COMMENT_FORBIDDEN,
+                CollabErrorCode.COMMENT_FORBIDDEN,
                 codeOf(() -> commentService.update(
                         root.getId(),
                         ScoreCommentUpdateRequest.builder().content("sửa hộ").build())));
@@ -242,7 +245,7 @@ class ScoreCommentServiceImplTest {
                 root.getId(),
                 ScoreCommentReplyRequest.builder().content("bổ sung").build());
         as(VIEWER);
-        assertEquals(ErrorCode.COMMENT_FORBIDDEN, codeOf(() -> commentService.delete(root.getId())));
+        assertEquals(CollabErrorCode.COMMENT_FORBIDDEN, codeOf(() -> commentService.delete(root.getId())));
         as(OWNER);
         commentService.delete(root.getId());
         em.flush();
@@ -258,20 +261,24 @@ class ScoreCommentServiceImplTest {
     void validatesContentMeasuresAndMentions() {
         as(OWNER);
         assertEquals(
-                ErrorCode.COMMENT_CONTENT_INVALID, codeOf(() -> commentService.create(scoreId, comment("   ", 1, 2))));
+                CollabErrorCode.COMMENT_CONTENT_INVALID,
+                codeOf(() -> commentService.create(scoreId, comment("   ", 1, 2))));
         assertEquals(
-                ErrorCode.COMMENT_CONTENT_INVALID,
+                CollabErrorCode.COMMENT_CONTENT_INVALID,
                 codeOf(() -> commentService.create(scoreId, comment("a".repeat(2001), 1, 2))));
         assertEquals(
-                ErrorCode.COMMENT_MEASURE_INVALID, codeOf(() -> commentService.create(scoreId, comment("x", 0, 2))));
+                CollabErrorCode.COMMENT_MEASURE_INVALID,
+                codeOf(() -> commentService.create(scoreId, comment("x", 0, 2))));
         assertEquals(
-                ErrorCode.COMMENT_MEASURE_INVALID, codeOf(() -> commentService.create(scoreId, comment("x", 5, 4))));
+                CollabErrorCode.COMMENT_MEASURE_INVALID,
+                codeOf(() -> commentService.create(scoreId, comment("x", 5, 4))));
         assertEquals(
-                ErrorCode.COMMENT_MEASURE_INVALID, codeOf(() -> commentService.create(scoreId, comment("x", 30, 33))));
+                CollabErrorCode.COMMENT_MEASURE_INVALID,
+                codeOf(() -> commentService.create(scoreId, comment("x", 30, 33))));
         // Người không xem được bản nhạc thì không nhắc được
         String strangerId = member(STRANGER).getId();
         assertEquals(
-                ErrorCode.COMMENT_MENTION_INVALID,
+                CollabErrorCode.COMMENT_MENTION_INVALID,
                 codeOf(() -> commentService.create(scoreId, comment("x", 1, 2, strangerId))));
         // Gợi ý @nhắc tên: người được chia sẻ, không có chính mình và người ngoài
         var names = commentService.mentionable(scoreId, null).stream()
@@ -289,6 +296,7 @@ class ScoreCommentServiceImplTest {
         scoreRepository.saveAndFlush(score);
         assertFalse(commentService.list(scoreId, null, false).isCanComment());
         assertEquals(
-                ErrorCode.COMMENT_MEASURE_INVALID, codeOf(() -> commentService.create(scoreId, comment("x", 1, 1))));
+                CollabErrorCode.COMMENT_MEASURE_INVALID,
+                codeOf(() -> commentService.create(scoreId, comment("x", 1, 1))));
     }
 }

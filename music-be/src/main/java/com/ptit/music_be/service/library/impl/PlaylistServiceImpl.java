@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -20,7 +21,9 @@ import com.ptit.music_be.entity.Playlist;
 import com.ptit.music_be.entity.PlaylistItem;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.LibraryErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.library.PlaylistItemRepository;
 import com.ptit.music_be.repository.library.PlaylistRepository;
@@ -99,13 +102,13 @@ public class PlaylistServiceImpl implements PlaylistService {
         Playlist playlist = findOwned(id);
         Score score = scoreRepository
                 .findById(scoreId == null ? "" : scoreId)
-                .orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
         // Bản nhạc không xem được thì trả "không tồn tại" để không lộ id
         if (!scoreFileService.canView(score)) {
-            throw new AppException(ErrorCode.SCORE_NOT_EXISTED);
+            throw new AppException(ScoreErrorCode.SCORE_NOT_EXISTED);
         }
         if (playlistItemRepository.existsByPlaylistAndScore(playlist, score)) {
-            throw new AppException(ErrorCode.PLAYLIST_SCORE_DUPLICATED);
+            throw new AppException(LibraryErrorCode.PLAYLIST_SCORE_DUPLICATED);
         }
         int next = playlistItemRepository
                         .findByPlaylistOrderByPositionAsc(playlist)
@@ -127,10 +130,33 @@ public class PlaylistServiceImpl implements PlaylistService {
         PlaylistItem target = items.stream()
                 .filter(i -> i.getScore().getId().equals(scoreId))
                 .findFirst()
-                .orElseThrow(() -> new AppException(ErrorCode.PLAYLIST_SCORE_NOT_IN_PLAYLIST));
+                .orElseThrow(() -> new AppException(LibraryErrorCode.PLAYLIST_SCORE_NOT_IN_PLAYLIST));
         playlist.getPlaylistItems().removeIf(i -> i.getId().equals(target.getId()));
         playlistItemRepository.delete(target);
         items.remove(target);
+        renumber(items);
+        playlistItemRepository.saveAll(items);
+        return toItemResponses(playlist);
+    }
+
+    @Override
+    @Transactional
+    public List<PlaylistItemResponse> removeScores(String id, PlaylistOrderRequest request) {
+        Playlist playlist = findOwned(id);
+        Set<String> chosen =
+                request == null || request.getScoreIds() == null ? Set.of() : new HashSet<>(request.getScoreIds());
+        List<PlaylistItem> items = playlistItemRepository.findByPlaylistOrderByPositionAsc(playlist);
+        Set<String> present = items.stream().map(i -> i.getScore().getId()).collect(Collectors.toSet());
+        // Kiểm cả lô trước khi xóa: có id lạ thì không bỏ bài nào
+        if (chosen.isEmpty() || !present.containsAll(chosen)) {
+            throw new AppException(LibraryErrorCode.PLAYLIST_SCORE_NOT_IN_PLAYLIST);
+        }
+        List<PlaylistItem> removed = items.stream()
+                .filter(i -> chosen.contains(i.getScore().getId()))
+                .toList();
+        removed.forEach(playlistItemRepository::delete);
+        playlist.getPlaylistItems().removeAll(removed);
+        items.removeAll(removed);
         renumber(items);
         playlistItemRepository.saveAll(items);
         return toItemResponses(playlist);
@@ -144,7 +170,7 @@ public class PlaylistServiceImpl implements PlaylistService {
         List<String> order = request == null || request.getScoreIds() == null ? List.of() : request.getScoreIds();
         // Phải đúng bằng tập bài hiện có: cùng số lượng, không trùng, không thừa/thiếu
         if (order.size() != items.size() || new HashSet<>(order).size() != order.size()) {
-            throw new AppException(ErrorCode.PLAYLIST_ORDER_INVALID);
+            throw new AppException(LibraryErrorCode.PLAYLIST_ORDER_INVALID);
         }
         Map<String, PlaylistItem> byScore =
                 items.stream().collect(Collectors.toMap(i -> i.getScore().getId(), Function.identity()));
@@ -152,7 +178,7 @@ public class PlaylistServiceImpl implements PlaylistService {
         for (String scoreId : order) {
             PlaylistItem item = byScore.get(scoreId);
             if (item == null) {
-                throw new AppException(ErrorCode.PLAYLIST_ORDER_INVALID);
+                throw new AppException(LibraryErrorCode.PLAYLIST_ORDER_INVALID);
             }
             sorted.add(item);
         }
@@ -185,13 +211,13 @@ public class PlaylistServiceImpl implements PlaylistService {
                 ? null
                 : request.getName().trim();
         if (!StringUtils.hasText(name) || name.length() > MAX_NAME) {
-            throw new AppException(ErrorCode.PLAYLIST_NAME_INVALID);
+            throw new AppException(LibraryErrorCode.PLAYLIST_NAME_INVALID);
         }
         String description = request.getDescription() == null
                 ? null
                 : request.getDescription().trim();
         if (description != null && description.length() > MAX_DESCRIPTION) {
-            throw new AppException(ErrorCode.PLAYLIST_DESCRIPTION_INVALID);
+            throw new AppException(LibraryErrorCode.PLAYLIST_DESCRIPTION_INVALID);
         }
         playlist.setName(name);
         playlist.setDescription(StringUtils.hasText(description) ? description : null);
@@ -203,13 +229,13 @@ public class PlaylistServiceImpl implements PlaylistService {
         return playlistRepository
                 .findById(id)
                 .filter(p -> p.getMember().getId().equals(me.getId()))
-                .orElseThrow(() -> new AppException(ErrorCode.PLAYLIST_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(LibraryErrorCode.PLAYLIST_NOT_EXISTED));
     }
 
     private Member currentMember() {
         return memberRepository
                 .findByEmail(SecurityUtils.getCurrentEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
     }
 
     private PlaylistResponse toResponse(Playlist p) {

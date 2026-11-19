@@ -23,7 +23,8 @@ import com.ptit.music_be.entity.OfficialRequest;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreFile;
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.home.HomeQueryRepository;
 import com.ptit.music_be.repository.score.OfficialRequestRepository;
@@ -134,7 +135,7 @@ public class HomeServiceImpl implements HomeService {
     public HomeSummaryResponse getSummary() {
         Member me = memberRepository
                 .findByEmail(SecurityUtils.getCurrentEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
 
         List<ScoreSummaryResponse> recent = scoreService
                 .getMyScores(0, RECENT_SIZE, null, null, null, null, null, null) // cập nhật gần nhất trước
@@ -231,17 +232,17 @@ public class HomeServiceImpl implements HomeService {
     @Transactional(readOnly = true)
     public Thumbnail loadPublicThumbnail(String scoreId) {
         Score score =
-                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ErrorCode.SCORE_NOT_EXISTED));
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
         if (!Visibility.PUBLIC.name().equals(score.getVisibility())) {
             // Không cho biết bản riêng tư có tồn tại hay không
-            throw new AppException(ErrorCode.SCORE_NOT_EXISTED);
+            throw new AppException(ScoreErrorCode.SCORE_NOT_EXISTED);
         }
         ScoreFile file = scoreFileRepository
                 .findByScoreIdInAndFileTypeInAndPageNumber(
                         List.of(scoreId), List.of(FileType.PNG, FileType.ORIGINAL_IMAGE), 1)
                 .stream()
                 .min(Comparator.comparing(f -> f.getFileType() == FileType.PNG ? 0 : 1))
-                .orElseThrow(() -> new AppException(ErrorCode.FILE_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(ScoreErrorCode.FILE_NOT_EXISTED));
         String contentType = file.getContentType() != null ? file.getContentType() : "image/png";
         return new Thumbnail(fileStorageService.loadAsResource(file.getStoragePath()), contentType);
     }

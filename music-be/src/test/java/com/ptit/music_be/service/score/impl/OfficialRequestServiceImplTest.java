@@ -33,6 +33,8 @@ import com.ptit.music_be.event.RewardEarnedEvent;
 import com.ptit.music_be.event.RewardReason;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.OfficialRequestRepository;
 import com.ptit.music_be.repository.score.ScoreFileRepository;
@@ -128,30 +130,30 @@ class OfficialRequestServiceImplTest {
     void onlyAdminsCanAsk() {
         login("owner@x.com", "ROLE_USER");
 
-        assertError(() -> service.request("s1"), ErrorCode.UNAUTHORIZED);
+        assertError(() -> service.request("s1"), AccountErrorCode.UNAUTHORIZED);
     }
 
     @Test
     void privateOrAlreadyOfficialScoresCannotBeAsked() {
         login("boss@x.com", "ROLE_ADMIN");
         score.setVisibility("PRIVATE");
-        assertError(() -> service.request("s1"), ErrorCode.SCORE_NOT_PUBLIC_FOR_OFFICIAL);
+        assertError(() -> service.request("s1"), ScoreErrorCode.SCORE_NOT_PUBLIC_FOR_OFFICIAL);
 
         score.setVisibility("PUBLIC");
         score.setIsOfficial(true);
-        assertError(() -> service.request("s1"), ErrorCode.SCORE_ALREADY_OFFICIAL);
+        assertError(() -> service.request("s1"), ScoreErrorCode.SCORE_ALREADY_OFFICIAL);
     }
 
     @Test
     void acceptedBeforeMeansAlreadyInTheLibraryAndPendingMeansDuplicate() {
         login("boss@x.com", "ROLE_ADMIN");
         when(requests.hasLiveAcceptedCopy("s1")).thenReturn(true);
-        assertError(() -> service.request("s1"), ErrorCode.SCORE_ALREADY_OFFICIAL);
+        assertError(() -> service.request("s1"), ScoreErrorCode.SCORE_ALREADY_OFFICIAL);
 
         when(requests.hasLiveAcceptedCopy("s1")).thenReturn(false);
         when(requests.existsByScoreIdAndStatusIn("s1", Set.of(OfficialRequestStatus.PENDING)))
                 .thenReturn(true);
-        assertError(() -> service.request("s1"), ErrorCode.OFFICIAL_REQUEST_DUPLICATED);
+        assertError(() -> service.request("s1"), ScoreErrorCode.OFFICIAL_REQUEST_DUPLICATED);
     }
 
     @Test
@@ -160,7 +162,7 @@ class OfficialRequestServiceImplTest {
         when(files.findByScoreIdAndFileTypeOrderByPageNumberAsc("s1", FileType.MUSICXML))
                 .thenReturn(List.of());
 
-        assertError(() -> service.request("s1"), ErrorCode.MUSICXML_NOT_READY);
+        assertError(() -> service.request("s1"), ScoreErrorCode.MUSICXML_NOT_READY);
         verify(requests, never()).save(any(OfficialRequest.class));
     }
 
@@ -211,8 +213,8 @@ class OfficialRequestServiceImplTest {
                         Member.builder().id("other").email("someone@x.com").build()));
         when(requests.findById("r1")).thenReturn(Optional.of(pending()));
 
-        assertError(() -> service.accept("r1"), ErrorCode.OFFICIAL_REQUEST_NOT_EXISTED);
-        assertError(() -> service.decline("r1"), ErrorCode.OFFICIAL_REQUEST_NOT_EXISTED);
+        assertError(() -> service.accept("r1"), ScoreErrorCode.OFFICIAL_REQUEST_NOT_EXISTED);
+        assertError(() -> service.decline("r1"), ScoreErrorCode.OFFICIAL_REQUEST_NOT_EXISTED);
         verify(copier, never()).copy(any(), any(), any());
     }
 
@@ -222,7 +224,7 @@ class OfficialRequestServiceImplTest {
         when(requests.findById("r1")).thenReturn(Optional.of(pending()));
         score.setVisibility("PRIVATE");
 
-        assertError(() -> service.accept("r1"), ErrorCode.SCORE_NOT_PUBLIC_FOR_OFFICIAL);
+        assertError(() -> service.accept("r1"), ScoreErrorCode.SCORE_NOT_PUBLIC_FOR_OFFICIAL);
         verify(copier, never()).copy(any(), any(), any());
     }
 
@@ -233,8 +235,8 @@ class OfficialRequestServiceImplTest {
         done.setStatus(OfficialRequestStatus.DECLINED);
         when(requests.findById("r1")).thenReturn(Optional.of(done));
 
-        assertError(() -> service.accept("r1"), ErrorCode.OFFICIAL_REQUEST_NOT_PENDING);
-        assertError(() -> service.decline("r1"), ErrorCode.OFFICIAL_REQUEST_NOT_PENDING);
+        assertError(() -> service.accept("r1"), ScoreErrorCode.OFFICIAL_REQUEST_NOT_PENDING);
+        assertError(() -> service.decline("r1"), ScoreErrorCode.OFFICIAL_REQUEST_NOT_PENDING);
     }
 
     @Test
@@ -258,13 +260,13 @@ class OfficialRequestServiceImplTest {
         when(requests.findById("r1")).thenReturn(Optional.of(request));
 
         assertThat(service.cancel("r1").getStatus()).isEqualTo(OfficialRequestStatus.CANCELED);
-        assertError(() -> service.cancel("r1"), ErrorCode.OFFICIAL_REQUEST_NOT_PENDING);
+        assertError(() -> service.cancel("r1"), ScoreErrorCode.OFFICIAL_REQUEST_NOT_PENDING);
     }
 
     @Test
     void adminListRejectsAnUnknownStatus() {
         login("boss@x.com", "ROLE_ADMIN");
 
-        assertError(() -> service.getForAdmin(0, 20, "MAYBE"), ErrorCode.INVALID_FILTER);
+        assertError(() -> service.getForAdmin(0, 20, "MAYBE"), ScoreErrorCode.INVALID_FILTER);
     }
 }

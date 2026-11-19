@@ -25,6 +25,8 @@ import com.ptit.music_be.dto.response.billing.PlanResponse;
 import com.ptit.music_be.entity.Plan;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.BillingErrorCode;
 import com.ptit.music_be.repository.billing.PaymentOrderRepository;
 import com.ptit.music_be.repository.billing.PlanRepository;
 import com.ptit.music_be.repository.billing.SubscriptionRepository;
@@ -103,7 +105,7 @@ class AdminPlanServiceImplTest {
     void plainAdminCannotUpdate() {
         login("ROLE_ADMIN");
 
-        expect(ErrorCode.UNAUTHORIZED, "PRO", request("Pro", 1L, 1L, limits));
+        expect(AccountErrorCode.UNAUTHORIZED, "PRO", request("Pro", 1L, 1L, limits));
         verify(plans, never()).save(any());
     }
 
@@ -111,14 +113,14 @@ class AdminPlanServiceImplTest {
     void invalidInputIsRejected() {
         login("ROLE_ADMIN", "ROLE_SUPER_ADMIN");
 
-        expect(ErrorCode.PLAN_NAME_INVALID, "PRO", request("  ", 99000L, 990000L, limits));
-        expect(ErrorCode.PLAN_NAME_INVALID, "PRO", request("x".repeat(101), 99000L, 990000L, limits));
-        expect(ErrorCode.PLAN_PRICE_INVALID, "PRO", request("Pro", 0L, 990000L, limits));
-        expect(ErrorCode.PLAN_PRICE_INVALID, "PRO", request("Pro", 2_000_000_000L, 990000L, limits));
-        expect(ErrorCode.PLAN_PRICE_INVALID, "FREE", request("Free", 1000L, 0L, limits));
-        expect(ErrorCode.PLAN_LIMITS_INVALID, "PRO", request("Pro", 99000L, 990000L, null));
+        expect(BillingErrorCode.PLAN_NAME_INVALID, "PRO", request("  ", 99000L, 990000L, limits));
+        expect(BillingErrorCode.PLAN_NAME_INVALID, "PRO", request("x".repeat(101), 99000L, 990000L, limits));
+        expect(BillingErrorCode.PLAN_PRICE_INVALID, "PRO", request("Pro", 0L, 990000L, limits));
+        expect(BillingErrorCode.PLAN_PRICE_INVALID, "PRO", request("Pro", 2_000_000_000L, 990000L, limits));
+        expect(BillingErrorCode.PLAN_PRICE_INVALID, "FREE", request("Free", 1000L, 0L, limits));
+        expect(BillingErrorCode.PLAN_LIMITS_INVALID, "PRO", request("Pro", 99000L, 990000L, null));
         expect(
-                ErrorCode.PLAN_LIMITS_INVALID,
+                BillingErrorCode.PLAN_LIMITS_INVALID,
                 "PRO",
                 request(
                         "Pro",
@@ -126,7 +128,7 @@ class AdminPlanServiceImplTest {
                         990000L,
                         new PlanLimits(-1, 1, null, null, null, true, false, true, null, null)));
         expect(
-                ErrorCode.PLAN_LIMITS_INVALID,
+                BillingErrorCode.PLAN_LIMITS_INVALID,
                 "PRO",
                 request(
                         "Pro",
@@ -134,7 +136,7 @@ class AdminPlanServiceImplTest {
                         990000L,
                         new PlanLimits(10, 0, null, null, null, true, false, true, null, null)));
         expect(
-                ErrorCode.PLAN_LIMITS_INVALID,
+                BillingErrorCode.PLAN_LIMITS_INVALID,
                 "PRO",
                 request("Pro", 99000L, 990000L, new PlanLimits(10, 1, null, null, null, true, false, true, null, -1)));
         verify(plans, never()).save(any());
@@ -165,12 +167,12 @@ class AdminPlanServiceImplTest {
     void createRejectsBadCodeDuplicateAndAudience() {
         login("ROLE_ADMIN", "ROLE_SUPER_ADMIN");
 
-        expectCreate(ErrorCode.PLAN_CODE_INVALID, newPlan("a", "PERSONAL"));
-        expectCreate(ErrorCode.PLAN_CODE_INVALID, newPlan("CÓ DẤU", "PERSONAL"));
-        expectCreate(ErrorCode.PLAN_CODE_INVALID, newPlan("UNLIMITED", "PERSONAL"));
-        expectCreate(ErrorCode.PLAN_CODE_EXISTED, newPlan("PRO", "PERSONAL"));
+        expectCreate(BillingErrorCode.PLAN_CODE_INVALID, newPlan("a", "PERSONAL"));
+        expectCreate(BillingErrorCode.PLAN_CODE_INVALID, newPlan("CÓ DẤU", "PERSONAL"));
+        expectCreate(BillingErrorCode.PLAN_CODE_INVALID, newPlan("UNLIMITED", "PERSONAL"));
+        expectCreate(BillingErrorCode.PLAN_CODE_EXISTED, newPlan("PRO", "PERSONAL"));
         when(plans.findByCode("NEW_ONE")).thenReturn(Optional.empty());
-        expectCreate(ErrorCode.PLAN_AUDIENCE_INVALID, newPlan("NEW_ONE", "FAMILY"));
+        expectCreate(BillingErrorCode.PLAN_AUDIENCE_INVALID, newPlan("NEW_ONE", "FAMILY"));
         verify(plans, never()).save(any());
     }
 
@@ -178,9 +180,9 @@ class AdminPlanServiceImplTest {
     void plainAdminCannotCreateOrDelete() {
         login("ROLE_ADMIN");
 
-        expectCreate(ErrorCode.UNAUTHORIZED, newPlan("STUDENT", "PERSONAL"));
+        expectCreate(AccountErrorCode.UNAUTHORIZED, newPlan("STUDENT", "PERSONAL"));
         AppException e = assertThrows(AppException.class, () -> service.delete("STUDENT"));
-        assertEquals(ErrorCode.UNAUTHORIZED, e.getErrorCode());
+        assertEquals(AccountErrorCode.UNAUTHORIZED, e.getErrorCode());
     }
 
     @Test
@@ -193,11 +195,11 @@ class AdminPlanServiceImplTest {
         when(orderRepo.existsByPlanId("x")).thenReturn(true);
 
         AppException e = assertThrows(AppException.class, () -> service.delete("PRO"));
-        assertEquals(ErrorCode.PLAN_SYSTEM_LOCKED, e.getErrorCode());
+        assertEquals(BillingErrorCode.PLAN_SYSTEM_LOCKED, e.getErrorCode());
         e = assertThrows(AppException.class, () -> service.delete("FREE"));
-        assertEquals(ErrorCode.PLAN_SYSTEM_LOCKED, e.getErrorCode());
+        assertEquals(BillingErrorCode.PLAN_SYSTEM_LOCKED, e.getErrorCode());
         e = assertThrows(AppException.class, () -> service.delete("TEAM_PRO"));
-        assertEquals(ErrorCode.PLAN_IN_USE, e.getErrorCode());
+        assertEquals(BillingErrorCode.PLAN_IN_USE, e.getErrorCode());
 
         service.delete("STUDENT");
         verify(plans).delete(unused);
