@@ -34,11 +34,26 @@ interface Pluck {
   amp: number;
 }
 
+const PAL_GLSL = /* glsl */ `
+  // bảng màu hiệu ứng (tông sáng của sân khấu tối): bốn sắc nối vòng, mỗi dây lấy một màu theo vị trí
+  uniform vec3 uFx[4];
+  vec3 fxAt(float u) {
+    float x = fract(u) * 4.0;
+    float k = smoothstep(0.0, 1.0, fract(x));
+    if (x < 1.0) return mix(uFx[0], uFx[1], k);
+    if (x < 2.0) return mix(uFx[1], uFx[2], k);
+    if (x < 3.0) return mix(uFx[2], uFx[3], k);
+    return mix(uFx[3], uFx[0], k);
+  }
+`;
+
 const RIBBON_VERT = /* glsl */ `
+  attribute float aHue;
   attribute float aSide;
   attribute float aT;
   attribute float aEnergy;
   uniform float uWidth;
+  varying float vHue;
   varying float vSide;
   varying float vT;
   varying float vEnergy;
@@ -47,6 +62,7 @@ const RIBBON_VERT = /* glsl */ `
     vec3 p = position;
     p.x += aSide * uWidth * (1.0 + aEnergy * 2.2);
     vec4 mv = modelViewMatrix * vec4(p, 1.0);
+    vHue = aHue;
     vSide = aSide;
     vT = aT;
     vEnergy = aEnergy;
@@ -56,8 +72,10 @@ const RIBBON_VERT = /* glsl */ `
 `;
 
 const RIBBON_FRAG = /* glsl */ `
+  ${PAL_GLSL}
   uniform vec3 uRest;
   uniform vec3 uHot;
+  varying float vHue;
   varying float vSide;
   varying float vT;
   varying float vEnergy;
@@ -66,20 +84,27 @@ const RIBBON_FRAG = /* glsl */ `
     float e = clamp(vEnergy, 0.0, 1.0);
     float core = exp(-pow(vSide * 3.4, 2.0));
     float halo = 1.0 - abs(vSide);
-    float a = (core * 0.85 + halo * halo * 0.35 * (0.25 + e)) * (0.32 + e * 0.95);
+    float a = (core * 0.85 + halo * halo * 0.35 * (0.25 + e)) * (0.45 + e * 0.95);
     a *= smoothstep(1.0, 0.72, vT);          // đầu xa tan vào bóng tối
     a *= smoothstep(26.0, 9.0, vDepth);
-    vec3 col = mix(uRest, uHot, smoothstep(0.0, 0.6, e));
+    // dây nghỉ mang màu riêng (pha chút màu sân khấu cho dịu), gảy lên thì bừng sáng chính màu đó
+    vec3 tint = fxAt(vHue);
+    vec3 rest = mix(uRest, tint, 0.75);
+    vec3 hot = mix(tint, vec3(1.0), 0.3);
+    vec3 col = mix(rest, hot, smoothstep(0.0, 0.6, e));
     gl_FragColor = vec4(col, a);
   }
 `;
 
 const SPARK_VERT = /* glsl */ `
   attribute float aLife;
+  attribute float aHue;
   uniform float uPixelRatio;
   varying float vLife;
+  varying float vHue;
   void main() {
     vLife = aLife;
+    vHue = aHue;
     vec4 mv = modelViewMatrix * vec4(position, 1.0);
     gl_Position = projectionMatrix * mv;
     gl_PointSize = aLife <= 0.0 ? 0.0 : (2.0 + 9.0 * aLife) * uPixelRatio * (8.0 / -mv.z);
@@ -87,13 +112,14 @@ const SPARK_VERT = /* glsl */ `
 `;
 
 const SPARK_FRAG = /* glsl */ `
-  uniform vec3 uHot;
+  ${PAL_GLSL}
   varying float vLife;
+  varying float vHue;
   void main() {
     float d = length(gl_PointCoord - 0.5);
     float a = pow(smoothstep(0.5, 0.0, d), 2.0) * vLife;
     if (a < 0.01) discard;
-    gl_FragColor = vec4(uHot, a);
+    gl_FragColor = vec4(mix(fxAt(vHue), vec3(1.0), 0.25), a); // tia lửa cùng màu dây vừa gảy
   }
 `;
 
@@ -141,6 +167,7 @@ export default function HarpStrings3D({
     const color = (name: string) => new THREE.Color(cs.getPropertyValue(name).trim() || undefined);
     const rest = color('--ui-stage-accent');
     const hot = color('--ui-brass');
+    const uFx = { value: [1, 2, 3, 4].map((i) => color(`--ui-stage-fx-${i}`)) };
 
     const count = window.innerWidth < 880 ? 9 : 15;
     const strings: StringState[] = Array.from({ length: count }, (_, s) => {
@@ -161,6 +188,7 @@ export default function HarpStrings3D({
     const pos = new Float32Array(vCount * 3);
     const side = new Float32Array(vCount);
     const tAttr = new Float32Array(vCount);
+    const hue = new Float32Array(vCount); // màu của dây: chạy qua đủ bốn sắc từ trái sang phải
     const energy = new Float32Array(vCount);
     const index: number[] = [];
     for (let s = 0; s < count; s++) {
@@ -169,6 +197,7 @@ export default function HarpStrings3D({
         side[base] = -1;
         side[base + 1] = 1;
         tAttr[base] = tAttr[base + 1] = i / (SEG - 1);
+        hue[base] = hue[base + 1] = s / count;
         if (i < SEG - 1) index.push(base, base + 1, base + 2, base + 1, base + 3, base + 2);
       }
     }
@@ -178,6 +207,7 @@ export default function HarpStrings3D({
     geo.setAttribute('position', posAttr);
     geo.setAttribute('aSide', new THREE.BufferAttribute(side, 1));
     geo.setAttribute('aT', new THREE.BufferAttribute(tAttr, 1));
+    geo.setAttribute('aHue', new THREE.BufferAttribute(hue, 1));
     geo.setAttribute('aEnergy', energyAttr);
     geo.setIndex(index);
     const mat = new THREE.ShaderMaterial({
@@ -186,7 +216,7 @@ export default function HarpStrings3D({
       transparent: true,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
-      uniforms: { uWidth: { value: 0.05 }, uRest: { value: rest }, uHot: { value: hot } },
+      uniforms: { uWidth: { value: 0.05 }, uRest: { value: rest }, uHot: { value: hot }, uFx },
     });
     const ribbons = new THREE.Mesh(geo, mat);
     ribbons.frustumCulled = false;
@@ -196,24 +226,28 @@ export default function HarpStrings3D({
     const sPos = new Float32Array(SPARKS * 3);
     const sVel = new Float32Array(SPARKS * 3);
     const sLife = new Float32Array(SPARKS);
+    const sHue = new Float32Array(SPARKS);
     const sGeo = new THREE.BufferGeometry();
     const sPosAttr = new THREE.BufferAttribute(sPos, 3).setUsage(THREE.DynamicDrawUsage);
     const sLifeAttr = new THREE.BufferAttribute(sLife, 1).setUsage(THREE.DynamicDrawUsage);
     sGeo.setAttribute('position', sPosAttr);
     sGeo.setAttribute('aLife', sLifeAttr);
+    const sHueAttr = new THREE.BufferAttribute(sHue, 1).setUsage(THREE.DynamicDrawUsage);
+    sGeo.setAttribute('aHue', sHueAttr);
     const sMat = new THREE.ShaderMaterial({
       vertexShader: SPARK_VERT,
       fragmentShader: SPARK_FRAG,
       transparent: true,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
-      uniforms: { uHot: { value: hot }, uPixelRatio: { value: 1 } },
+      uniforms: { uFx, uPixelRatio: { value: 1 } },
     });
     const sparks = new THREE.Points(sGeo, sMat);
     sparks.frustumCulled = false;
     scene.add(sparks);
     let sparkIdx = 0;
-    const spawnSparks = (at: THREE.Vector3, n: number, power: number) => {
+    const spawnSparks = (at: THREE.Vector3, n: number, power: number, h: number) => {
+      sHueAttr.needsUpdate = true;
       for (let j = 0; j < n; j++) {
         const i = sparkIdx;
         sparkIdx = (sparkIdx + 1) % SPARKS;
@@ -222,6 +256,7 @@ export default function HarpStrings3D({
         const sp = (0.6 + Math.random() * 1.8) * power;
         sVel.set([Math.cos(ang) * sp, Math.abs(Math.sin(ang)) * sp + 0.6, (Math.random() - 0.5) * sp], i * 3);
         sLife[i] = 0.7 + Math.random() * 0.3;
+        sHue[i] = h;
       }
     };
 
@@ -280,7 +315,7 @@ export default function HarpStrings3D({
         if (f > 0) st.u[i] += amp * f;
       }
       tmp.lerpVectors(st.a, st.b, c / (SEG - 1));
-      spawnSparks(tmp, 5 + Math.round(Math.abs(amp) * 18), 0.6 + Math.abs(amp) * 2);
+      spawnSparks(tmp, 5 + Math.round(Math.abs(amp) * 18), 0.6 + Math.abs(amp) * 2, s / count);
     };
 
     // ---- con trỏ: tìm dây vừa bị vạch qua trên màn hình ----

@@ -1,3 +1,4 @@
+import { t } from '../../i18n/core';
 import type { Glyph } from './musicGlyphs';
 
 /*
@@ -10,8 +11,13 @@ import type { Glyph } from './musicGlyphs';
  * Giữ giai điệu trong khoảng Đô4 (một dòng kẻ phụ dưới) tới La5 (một dòng kẻ phụ trên).
  */
 
+/** Nhóm hiển thị trong bảng chọn bài. */
+export type SongGroup = 'classical' | 'folk' | 'festive';
+export const SONG_GROUPS: SongGroup[] = ['classical', 'folk', 'festive'];
+
 interface SongDef {
   id: string;
+  group: SongGroup;
   unitMs: number; // độ dài một đơn vị trường độ khi tự chạy
   quarter: number; // số đơn vị của một nốt đen, để chọn hình nốt
   dur: number; // trường độ mặc định của một nốt
@@ -33,6 +39,8 @@ export interface SongNote {
 
 export interface Song {
   id: string;
+  group: SongGroup;
+  seconds: number; // độ dài một lượt tự chạy
   unitMs: number;
   arpMs: number;
   notes: SongNote[];
@@ -70,7 +78,8 @@ function parse(def: SongDef): Song {
       };
     }),
   );
-  return { id: def.id, unitMs: def.unitMs, arpMs: def.arpMs ?? def.unitMs, notes };
+  const seconds = Math.round(notes.reduce((sum, n) => sum + n.dur, 0) * def.unitMs) / 1000;
+  return { id: def.id, group: def.group, seconds, unitMs: def.unitMs, arpMs: def.arpMs ?? def.unitMs, notes };
 }
 
 // Für Elise (Beethoven, 1810): 3/8, đơn vị là móc kép; tay trái rải hợp âm mỗi móc kép một nốt như bản gốc
@@ -102,9 +111,21 @@ const TWINKLE_B = ['G4:C3.G3 G4 F4:F2.C3 F4', 'E4:C3.G3 E4 D4:G2.D3*4'];
 const JINGLE_A = ['E4:C3.G3 E4 E4*4', 'E4:C3.G3 E4 E4*4', 'E4:C3.G3 G4 C4*3 D4*1', 'E4:C3.G3*8'];
 const JINGLE_B = ['F4:F2.C3 F4 F4*3 F4*1', 'F4:C3.G3 E4 E4 E4*1 E4*1'];
 
+// Minuet in G: tám ô đầu, câu sau lặp lại năm ô đầu rồi kết về Son
+const MINUET_A = [
+  'D5:G2.D3*2 G4 A4 B4 C5',
+  'D5:B2.D3*2 G4*2 G4*2',
+  'E5:C3.G3*2 C5 D5 E5 F#5',
+  'G5:B2.D3*2 G4*2 G4*2',
+  'C5:A2.E3*2 D5 C5 B4 A4',
+  'B4:G2.D3*2 C5 B4 A4 G4',
+  'F#4:D3.A3*2 G4 A4 B4 G4',
+];
+
 const DEFS: SongDef[] = [
   {
     id: 'furElise',
+    group: 'classical',
     unitMs: 150,
     quarter: 4,
     dur: 1,
@@ -126,6 +147,7 @@ const DEFS: SongDef[] = [
   },
   {
     id: 'odeToJoy',
+    group: 'classical',
     unitMs: 290,
     quarter: 2,
     dur: 2,
@@ -145,6 +167,7 @@ const DEFS: SongDef[] = [
   },
   {
     id: 'twinkle',
+    group: 'folk',
     unitMs: 280,
     quarter: 2,
     dur: 2,
@@ -153,6 +176,7 @@ const DEFS: SongDef[] = [
   },
   {
     id: 'jingleBells',
+    group: 'festive',
     unitMs: 230,
     quarter: 2,
     dur: 2,
@@ -171,6 +195,7 @@ const DEFS: SongDef[] = [
   {
     // Happy Birthday (giai điệu "Good Morning to All", chị em Hill, 1893)
     id: 'happyBirthday',
+    group: 'festive',
     unitMs: 170,
     quarter: 4,
     dur: 4,
@@ -191,6 +216,7 @@ const DEFS: SongDef[] = [
   {
     // Canon in D (Johann Pachelbel, khoảng 1680): giai điệu trên vòng hợp âm D A Bm F#m G D G A
     id: 'canonInD',
+    group: 'classical',
     unitMs: 270,
     quarter: 2,
     dur: 2,
@@ -214,6 +240,7 @@ const DEFS: SongDef[] = [
   {
     // Eine kleine Nachtmusik (Mozart, 1787), câu mở đầu hạ một quãng tám; đơn vị là móc đơn, dấu lặng gộp vào nốt trước
     id: 'nachtmusik',
+    group: 'classical',
     unitMs: 190,
     quarter: 2,
     dur: 1,
@@ -232,6 +259,7 @@ const DEFS: SongDef[] = [
   {
     // Wiegenlied / Lullaby (Johannes Brahms, 1868): 3/4, đơn vị là móc đơn
     id: 'lullaby',
+    group: 'classical',
     unitMs: 250,
     quarter: 2,
     dur: 1,
@@ -260,6 +288,7 @@ const DEFS: SongDef[] = [
   {
     // Greensleeves (dân ca Anh, thế kỷ 16): 6/8, đơn vị là móc kép
     id: 'greensleeves',
+    group: 'folk',
     unitMs: 125,
     quarter: 4,
     dur: 2,
@@ -277,6 +306,185 @@ const DEFS: SongDef[] = [
       'A4:A2.E3*6 A4*6',
     ],
   },
+  {
+    // Minuet in G (Christian Petzold, trong sổ tay Anna Magdalena Bach, khoảng 1725): 3/4, đơn vị là móc đơn
+    id: 'minuetInG',
+    group: 'classical',
+    unitMs: 230,
+    quarter: 2,
+    dur: 1,
+    arpMs: 60,
+    bars: [
+      ...MINUET_A,
+      'A4:D3.F#3*6',
+      ...MINUET_A.slice(0, 5),
+      'B4:G2.D3*2 C5 B4 A4 G4',
+      'A4:D3.A3*2 B4 A4 G4 F#4',
+      'G4:G2.D3*6',
+    ],
+  },
+  {
+    // Amazing Grace (giai điệu "New Britain", Mỹ, thế kỷ 19): 3/4, đơn vị là móc đơn
+    id: 'amazingGrace',
+    group: 'festive',
+    unitMs: 300,
+    quarter: 2,
+    dur: 2,
+    arpMs: 80,
+    pickup: true,
+    bars: [
+      'G4*2',
+      'C5:C3.G3*4 E5*1 C5*1',
+      'E5:C3.G3*4 D5*2',
+      'C5:F2.C3*4 A4*2',
+      'G4:C3.G3*4 G4*2',
+      'C5:C3.G3*4 E5*1 C5*1',
+      'E5:C3.G3*4 D5*2',
+      'G5:G2.D3*4 E5*2',
+      'G5:G2.D3*4 E5*1 G5*1',
+      'E5:C3.G3*4 D5*2',
+      'C5:F2.C3*4 A4*2',
+      'G4:C3.G3*4 G4*2',
+      'C5:C3.G3*4 E5*1 C5*1',
+      'E5:G2.D3*4 D5*2',
+      'C5:C3.G3*6',
+    ],
+  },
+  {
+    // Silent Night / Stille Nacht (Franz Xaver Gruber, 1818): 6/8, đơn vị là móc đơn
+    id: 'silentNight',
+    group: 'festive',
+    unitMs: 240,
+    quarter: 2,
+    dur: 2,
+    arpMs: 90,
+    bars: [
+      'G4:C3.G3*3 A4*1 G4*2',
+      'E4*6',
+      'G4:C3.G3*3 A4*1 G4*2',
+      'E4*6',
+      'D5:G2.D3*4 D5*2',
+      'B4*6',
+      'C5:C3.G3*4 C5*2',
+      'G4*6',
+      'A4:F2.C3*4 A4*2',
+      'C5*3 B4*1 A4*2',
+      'G4:C3.G3*3 A4*1 G4*2',
+      'E4*6',
+      'A4:F2.C3*4 A4*2',
+      'C5*3 B4*1 A4*2',
+      'G4:C3.G3*3 A4*1 G4*2',
+      'E4*6',
+      'D5:G2.D3*4 D5*2',
+      'F5*3 D5*1 B4*2',
+      'C5:C3.G3*6',
+      'E5:C3.G3*6',
+      'C5:C3.G3*3 G4*1 E4*2',
+      'G4:G2.D3*3 F4*1 D4*2',
+      'C4:C3.G3*6',
+    ],
+  },
+  {
+    // Auld Lang Syne (dân ca Scotland, lời Robert Burns, 1788): 4/4 cung Fa, đơn vị là móc đơn
+    id: 'auldLangSyne',
+    group: 'festive',
+    unitMs: 260,
+    quarter: 2,
+    dur: 2,
+    arpMs: 70,
+    pickup: true,
+    bars: [
+      'C4*2',
+      'F4:F2.C3*3 F4*1 F4*2 A4*2',
+      'G4:C3.G3*3 F4*1 G4*2 A4*2',
+      'F4:F2.C3*3 F4*1 A4*2 C5*2',
+      'D5:D3.A3*6 D5*2',
+      'C5:F2.C3*3 A4*1 A4*2 F4*2',
+      'G4:C3.G3*3 F4*1 G4*2 A4*2',
+      'F4:D3.A3*3 D4*1 D4*2 C4*2',
+      'F4:F2.C3*8',
+    ],
+  },
+  {
+    // Row, Row, Row Your Boat (đồng dao Anh–Mỹ, thế kỷ 19): 6/8, đơn vị là móc đơn
+    id: 'rowYourBoat',
+    group: 'folk',
+    unitMs: 220,
+    quarter: 2,
+    dur: 1,
+    arpMs: 60,
+    bars: [
+      'C4:C3.G3*3 C4*3',
+      'C4:C3.G3*2 D4 E4*3',
+      'E4:C3.G3*2 D4 E4*2 F4',
+      'G4:C3.G3*6',
+      'C5:C3.G3 C5 C5 G4 G4 G4',
+      'E4:C3.G3 E4 E4 C4 C4 C4',
+      'G4:G2.D3*2 F4 E4*2 D4',
+      'C4:C3.G3*6',
+    ],
+  },
+  {
+    // London Bridge Is Falling Down (đồng dao Anh): 4/4, đơn vị là móc đơn
+    id: 'londonBridge',
+    group: 'folk',
+    unitMs: 240,
+    quarter: 2,
+    dur: 2,
+    arpMs: 50,
+    bars: [
+      'G4:C3.G3*3 A4*1 G4 F4',
+      'E4:C3.G3 F4 G4*4',
+      'D4:G2.D3 E4 F4*4',
+      'E4:C3.G3 F4 G4*4',
+      'G4:C3.G3*3 A4*1 G4 F4',
+      'E4:C3.G3 F4 G4*4',
+      'D4:G2.D3*4 G4*4',
+      'E4:C3.G3 C4*6',
+    ],
+  },
+  {
+    // Mary Had a Little Lamb (Sarah Josepha Hale, 1830): 4/4, đơn vị là móc đơn
+    id: 'maryLamb',
+    group: 'folk',
+    unitMs: 260,
+    quarter: 2,
+    dur: 2,
+    arpMs: 50,
+    bars: [
+      'E4:C3.G3 D4 C4 D4',
+      'E4:C3.G3 E4 E4*4',
+      'D4:G2.D3 D4 D4*4',
+      'E4:C3.G3 G4 G4*4',
+      'E4:C3.G3 D4 C4 D4',
+      'E4:C3.G3 E4 E4 E4',
+      'D4:G2.D3 D4 E4 D4',
+      'C4:C3.G3*8',
+    ],
+  },
+  {
+    // Frère Jacques (đồng dao Pháp, thế kỷ 18), cung Son: 4/4, đơn vị là móc đơn
+    id: 'frereJacques',
+    group: 'folk',
+    unitMs: 250,
+    quarter: 2,
+    dur: 2,
+    arpMs: 50,
+    bars: [
+      'G4:G2.D3 A4 B4 G4',
+      'G4:G2.D3 A4 B4 G4',
+      'B4:G2.D3 C5 D5*4',
+      'B4:G2.D3 C5 D5*4',
+      'D5:G2.D3*1 E5*1 D5*1 C5*1 B4 G4',
+      'D5:G2.D3*1 E5*1 D5*1 C5*1 B4 G4',
+      'G4:G2.D3 D4 G4*4',
+      'G4:G2.D3 D4 G4*4',
+    ],
+  },
 ];
 
-export const SONGS: Song[] = DEFS.map(parse);
+// thứ tự trong bảng chọn: theo nhóm, giữ thứ tự khai báo trong từng nhóm
+export const SONGS: Song[] = SONG_GROUPS.flatMap((g) => DEFS.filter((d) => d.group === g).map(parse));
+
+export const songTitle = (s: Song) => t(`home.guest.melody.songs.${s.id}.title`);
+export const songBy = (s: Song) => t(`home.guest.melody.songs.${s.id}.by`);

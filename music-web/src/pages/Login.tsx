@@ -10,6 +10,7 @@ import GoogleAuthButton from '../components/GoogleAuthButton';
 import { Icon } from '../components/ui';
 import NoteField from '../components/ui/NoteField';
 import PianoBackdrop from '../components/ui/PianoBackdrop';
+import AmbientNotes from '../components/ui/AmbientNotes';
 import ThemeToggle from '../theme/ThemeToggle';
 import { t, translateError } from '../i18n/core';
 import LanguageToggle from '../i18n/LanguageToggle';
@@ -193,6 +194,8 @@ export default function Login() {
 
   return (
     <div className="auth-wrapper">
+      {/* nền nốt nhạc nhiều màu phía sau khung đăng nhập (cột sân khấu bên trái tự che phần của nó) */}
+      <AmbientNotes density={0.8} />
       <aside className="auth-stage">
         <Link to="/" className="auth-back">
           <Icon name="arrowLeft" size={16} />

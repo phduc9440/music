@@ -4,6 +4,7 @@
  */
 .auth-wrapper {
   position: relative;
+  isolation: isolate; /* nền nốt nhạc (AmbientNotes, z-index âm) nằm trên nền trang nhưng dưới thẻ đăng nhập */
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
   min-height: 100vh;
@@ -33,7 +34,10 @@
       color-mix(in srgb, var(--ui-stage-accent) 16%, transparent) 180deg,
       transparent 210deg
     ),
-    radial-gradient(34rem 22rem at 10% 6%, color-mix(in srgb, var(--ui-velvet) 30%, transparent), transparent 65%),
+    /* ánh màu cực quang theo bảng màu hiệu ứng: tím góc trên trái, hồng góc trên phải, xanh ngọc phía dưới */
+    radial-gradient(34rem 22rem at 10% 6%, color-mix(in srgb, var(--ui-stage-fx-2) 36%, transparent), transparent 65%),
+    radial-gradient(28rem 20rem at 95% 12%, color-mix(in srgb, var(--ui-stage-fx-1) 30%, transparent), transparent 65%),
+    radial-gradient(30rem 18rem at 30% 100%, color-mix(in srgb, var(--ui-stage-fx-4) 24%, transparent), transparent 70%),
     linear-gradient(to bottom, var(--ui-stage-bg-2), var(--ui-stage-bg) 75%);
 }
 .auth-stage__notes {
@@ -41,8 +45,8 @@
   inset: auto 0;
   top: 50%;
   height: 220px;
-  color: var(--ui-stage-accent);
-  opacity: 0.4;
+  color: var(--ui-stage-fx-2);
+  opacity: 0.45;
   pointer-events: none;
   transform: translateY(-50%);
 }
@@ -53,9 +57,9 @@
   width: 28rem;
   height: 28rem;
   border-radius: 50%;
-  background: var(--ui-velvet);
+  background: linear-gradient(135deg, var(--ui-stage-fx-1), var(--ui-stage-fx-3));
   filter: blur(80px);
-  opacity: 0.18;
+  opacity: 0.22;
   pointer-events: none;
 }
 .auth-stage__body {

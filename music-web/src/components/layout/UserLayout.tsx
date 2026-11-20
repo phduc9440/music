@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
+import AmbientNotes from '../ui/AmbientNotes';
 import { Link } from '../../routes/transition-nav';
 import { useNavigate } from '../../routes/useTransitionNavigate';
 import ChangePasswordModal from '../ChangePasswordModal';
@@ -93,6 +94,8 @@ export default function UserLayout() {
 
   return (
     <div className="app-shell">
+      {/* nền nốt nhạc nhiều màu cho mọi trang trong khung; trang chủ đã có khuông nhạc 3D riêng nên bỏ qua */}
+      {pathname !== '/' && <AmbientNotes density={0.8} />}
       <header className="app-header">
         <div className="app-header__inner">
           <div className="app-header__left">

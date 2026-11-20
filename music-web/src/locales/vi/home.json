@@ -103,6 +103,12 @@
       "stop": "Dừng",
       "playing": "Đang tự chạy, lặp lại",
       "choose": "Chọn bài",
+      "count": "{count} bài",
+      "groups": {
+        "classical": "Cổ điển",
+        "folk": "Dân ca & thiếu nhi",
+        "festive": "Lễ hội"
+      },
       "songs": {
         "furElise": {
           "title": "Für Elise",
@@ -139,6 +145,38 @@
         "greensleeves": {
           "title": "Greensleeves",
           "by": "Dân ca Anh"
+        },
+        "minuetInG": {
+          "title": "Minuet cung Son",
+          "by": "Petzold"
+        },
+        "amazingGrace": {
+          "title": "Amazing Grace",
+          "by": "Thánh ca Mỹ"
+        },
+        "silentNight": {
+          "title": "Đêm thánh vô cùng",
+          "by": "Gruber"
+        },
+        "auldLangSyne": {
+          "title": "Auld Lang Syne",
+          "by": "Dân ca Scotland"
+        },
+        "rowYourBoat": {
+          "title": "Row, Row, Row Your Boat",
+          "by": "Đồng dao Anh"
+        },
+        "londonBridge": {
+          "title": "London Bridge",
+          "by": "Đồng dao Anh"
+        },
+        "maryLamb": {
+          "title": "Mary Had a Little Lamb",
+          "by": "Đồng dao Mỹ"
+        },
+        "frereJacques": {
+          "title": "Frère Jacques (Kìa con bướm vàng)",
+          "by": "Đồng dao Pháp"
         }
       }
     }

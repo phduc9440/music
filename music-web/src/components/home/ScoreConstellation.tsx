@@ -62,6 +62,7 @@ interface Palette {
   muted: string;
   deep: string;
   lime: string;
+  fx: string[]; // bảng màu hiệu ứng của trang khách: mỗi nốt một màu
 }
 
 /** Màu đọc từ token CSS của trang (không có mã màu trong TSX). */
@@ -74,6 +75,7 @@ function readPalette(el: HTMLElement): Palette {
     muted: v('--gh-ink-2'),
     deep: v('--gh-deep'),
     lime: v('--gh-lime'),
+    fx: [v('--gh-fx-1'), v('--gh-fx-2'), v('--gh-fx-3'), v('--gh-fx-4')],
   };
 }
 
@@ -353,7 +355,9 @@ export default function ScoreConstellation({ paused, label }: { paused: boolean;
             : aurora
               ? 0.95
               : 0.85 * (0.7 + 0.3 * twinkle);
-        ctx.strokeStyle = lit || aurora ? palette.lime : tones[p.tone];
+        // nốt mang màu riêng theo thứ tự (hồng, tím, hổ phách, xanh ngọc), bụi nền lấp lánh nhiều màu, dòng kẻ giữ màu mực
+        const base = p.note >= 0 ? palette.fx[p.note % 4] : p.ambient ? palette.fx[p.tone] : tones[p.tone];
+        ctx.strokeStyle = lit || aurora ? palette.lime : base;
         ctx.lineWidth = lit ? 1.4 : 1;
         ctx.beginPath();
         for (let i = 0; i < 3; i++) {

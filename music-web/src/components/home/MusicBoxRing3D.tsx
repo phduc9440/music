@@ -5,7 +5,8 @@ import { t } from '../../i18n/core';
 import { playPianoNote } from '../../utils/pianoSynth';
 import { glyphSize, makeBeamedGlyph, makeGlyph } from './musicGlyphs';
 import type { Glyph } from './musicGlyphs';
-import { SONGS } from './songs';
+import SongPicker from './SongPicker';
+import { SONGS, songTitle } from './songs';
 import type { Song } from './songs';
 
 /*
@@ -48,7 +49,21 @@ const RING_VERT = /* glsl */ `
   }
 `;
 
+const PAL_GLSL = /* glsl */ `
+  // bảng màu hiệu ứng: bốn sắc nối vòng, u chạy 0..1 đi qua đủ bốn màu rồi về màu đầu
+  uniform vec3 uFx[4];
+  vec3 fxAt(float u) {
+    float x = fract(u) * 4.0;
+    float k = smoothstep(0.0, 1.0, fract(x));
+    if (x < 1.0) return mix(uFx[0], uFx[1], k);
+    if (x < 2.0) return mix(uFx[1], uFx[2], k);
+    if (x < 3.0) return mix(uFx[2], uFx[3], k);
+    return mix(uFx[3], uFx[0], k);
+  }
+`;
+
 const RING_FRAG = /* glsl */ `
+  ${PAL_GLSL}
   uniform vec3 uInk;
   uniform vec3 uLit;
   uniform vec3 uCenter;
@@ -80,8 +95,9 @@ const RING_FRAG = /* glsl */ `
     float ripple = age > 0.0 ? exp(-r * r * 40.0) * exp(-age * 1.1) : 0.0;
     float glow = clamp(spot * 0.6 + ripple, 0.0, 1.0);
 
-    vec3 col = mix(uInk, uLit, glow);
-    gl_FragColor = vec4(col, line * side * uOpacity * (0.45 + glow * 0.55));
+    // dòng kẻ chuyển màu dần quanh vòng (bám theo vòng khi quay), đèn đọc và vệt sáng phủ màu nhấn lên
+    vec3 col = mix(fxAt(vUv.x), uLit, glow);
+    gl_FragColor = vec4(col, line * side * uOpacity * (0.55 + glow * 0.45));
     #include <colorspace_fragment>
   }
 `;
@@ -150,8 +166,7 @@ const MOTE_VERT = /* glsl */ `
 `;
 
 const MOTE_FRAG = /* glsl */ `
-  uniform vec3 uColA;
-  uniform vec3 uColB;
+  ${PAL_GLSL}
   uniform float uOpacity;
   uniform float uSoft; // 0: hạt bụi nhỏ có lõi sáng; 1: đốm bokeh to, mềm hoàn toàn
   varying float vSeed;
@@ -161,13 +176,13 @@ const MOTE_FRAG = /* glsl */ `
     if (d > 1.0) discard;
     float core = smoothstep(1.0, 0.0, d);
     float a = mix(core * core * (0.6 + 0.4 * smoothstep(0.35, 0.0, d)), exp(-d * d * 3.0) * 0.9, uSoft);
-    gl_FragColor = vec4(mix(uColA, uColB, vSeed), a * vTwinkle * uOpacity);
+    gl_FragColor = vec4(fxAt(vSeed), a * vTwinkle * uOpacity);
     #include <colorspace_fragment>
   }
 `;
 
-function readColors() {
-  const cs = getComputedStyle(document.documentElement);
+function readColors(el: Element) {
+  const cs = getComputedStyle(el);
   const c = (name: string) => new THREE.Color(cs.getPropertyValue(name).trim() || undefined);
   const dark = document.documentElement.dataset.theme === 'dark';
   return {
@@ -175,6 +190,7 @@ function readColors() {
     lit: dark ? c('--ui-cta') : c('--ui-hue-rose'),
     brass: c('--ui-cta'),
     bg: c('--ui-bg'),
+    fx: [c('--gh-fx-1'), c('--gh-fx-2'), c('--gh-fx-3'), c('--gh-fx-4')],
     dark,
   };
 }
@@ -200,8 +216,6 @@ function soundNote(song: Song, i: number, auto: boolean) {
   return note.bass.map((m, k) => window.setTimeout(() => playPianoNote(m, 0.38), k * gap));
 }
 
-const songTitle = (s: Song) => t(`home.guest.melody.songs.${s.id}.title`);
-const songBy = (s: Song) => t(`home.guest.melody.songs.${s.id}.by`);
 
 export default function MusicBoxRing3D() {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -305,7 +319,22 @@ export default function MusicBoxRing3D() {
     const ring = new THREE.Group();
     scene.add(ring);
 
-    const colors = { ink: new THREE.Color(), lit: new THREE.Color(), brass: new THREE.Color(), fadeTo: new THREE.Color() };
+    const colors = {
+      ink: new THREE.Color(),
+      lit: new THREE.Color(),
+      brass: new THREE.Color(),
+      fadeTo: new THREE.Color(),
+      fx: [new THREE.Color(), new THREE.Color(), new THREE.Color(), new THREE.Color()],
+    };
+    const uFx = { value: colors.fx };
+    // bản sao của fxAt() trong shader: màu của nốt trên vòng khớp màu dòng kẻ chỗ nó nằm
+    const fxAt = (u: number, out: THREE.Color) => {
+      const x = (((u % 1) + 1) % 1) * 4;
+      const i = Math.min(3, Math.floor(x));
+      const f = x - i;
+      const k = f * f * (3 - 2 * f);
+      return out.copy(colors.fx[i]).lerp(colors.fx[(i + 1) % 4], k);
+    };
     const uTime = { value: 0 };
     const uOpacity = { value: 1 };
     const uInk = { value: colors.ink };
@@ -336,6 +365,7 @@ export default function MusicBoxRing3D() {
         uHit: { value: -99 },
         uCenter: { value: new THREE.Vector3() },
         uFocus: { value: 0 },
+        uFx,
       },
     });
     const ringMesh = new THREE.Mesh(ringGeo, ringMat);
@@ -461,7 +491,7 @@ export default function MusicBoxRing3D() {
         sway: rnd(0, Math.PI * 2),
         rot: rnd(-0.45, 0.45),
         scale: rnd(0.8, 1.9),
-        tone: i % 3,
+        tone: i % 4,
         glyph: i % floatTex.length,
         // độ lệch do luồng sóng khi bấm, lò xo kéo về
         ox: 0,
@@ -516,8 +546,7 @@ export default function MusicBoxRing3D() {
           uSpeed: { value: speed },
           uSoft: { value: soft },
           uOpacity: { value: 1 },
-          uColA: { value: colors.lit },
-          uColB: { value: colors.brass },
+          uFx,
         },
       });
       const pts = new THREE.Points(geo, mat);
@@ -529,7 +558,7 @@ export default function MusicBoxRing3D() {
     };
     const dustMat = makeMotes(narrow ? 160 : 380, [0.6, 1.6], 0.18, 0, -3);
     const bokehMat = makeMotes(narrow ? 8 : 16, [9, 20], 0.08, 1, -4);
-    const toneColors = [colors.ink, colors.lit, colors.brass];
+    const toneColors = colors.fx;
 
     // ---- hiệu ứng bấm: vòng sóng loang ra và chùm nốt nhỏ bắn ra từ chỗ bấm ----
     const rippleGeo = new THREE.RingGeometry(0.965, 1, 96); // vòng mảnh
@@ -559,8 +588,10 @@ export default function MusicBoxRing3D() {
     const clickPoint = new THREE.Vector3();
     const ray = new THREE.Raycaster();
     const ndc = new THREE.Vector2();
+    let clickCount = 0;
     const splash = (clientX: number, clientY: number) => {
       if (!running) return; // giảm chuyển động: chỉ có tiếng
+      clickCount++;
       ndc.set((clientX / window.innerWidth) * 2 - 1, -(clientY / window.innerHeight) * 2 + 1);
       ray.setFromCamera(ndc, camera);
       clickPoint.copy(ray.ray.origin).addScaledVector(ray.ray.direction, 10);
@@ -574,6 +605,7 @@ export default function MusicBoxRing3D() {
         rippleIdx = (rippleIdx + 1) % RIPPLES;
         r.born = now + delay;
         r.size = size;
+        r.mat.color.copy(colors.fx[(clickCount + (delay ? 1 : 0)) % 4]);
         r.mesh.position.copy(clickPoint);
         r.mesh.lookAt(camera.position);
       }
@@ -589,7 +621,7 @@ export default function MusicBoxRing3D() {
         b.spin = rnd(-5, 5);
         b.scale = rnd(0.35, 0.65);
         b.glyph = Math.floor(Math.random() * floatTex.length);
-        b.tone = k % 3;
+        b.tone = k % 4;
         b.born = now;
       }
       emitSparks(clickPoint, 18, 1.6);
@@ -635,18 +667,18 @@ export default function MusicBoxRing3D() {
       }
     };
     const applyColors = () => {
-      const c = readColors();
+      const c = readColors(host);
       dark = c.dark;
       colors.ink.copy(c.ink);
       colors.lit.copy(c.lit);
       colors.brass.copy(c.brass);
+      c.fx.forEach((f, i) => colors.fx[i].copy(f));
       colors.fadeTo.copy(c.dark ? new THREE.Color(0, 0, 0) : c.bg);
       barMat?.color.copy(c.ink);
-      for (const r of ripples) r.mat.color.copy(c.lit);
       baseOpacity = c.dark ? 0.75 : 0.6;
-      floatOpacity = c.dark ? 0.4 : 0.6;
-      dustMat.uniforms.uOpacity.value = c.dark ? 0.9 : 0.75;
-      bokehMat.uniforms.uOpacity.value = c.dark ? 0.16 : 0.12;
+      floatOpacity = c.dark ? 0.5 : 0.7;
+      dustMat.uniforms.uOpacity.value = c.dark ? 0.95 : 0.85;
+      bokehMat.uniforms.uOpacity.value = c.dark ? 0.24 : 0.2;
       applyBlending();
     };
 
@@ -723,7 +755,7 @@ export default function MusicBoxRing3D() {
         const crowd = 1 - 0.65 * Math.abs(Math.sin(wa)) ** 6;
         const front = (0.35 + 0.65 * Math.min(1, Math.max(0, (Math.cos(wa) + 0.15) / 0.4))) * crowd;
         const done = hitAt[i] > -99;
-        col.copy(colors.ink).lerp(colors.lit, Math.min(1, hit + (i === cur ? 0.8 : 0)));
+        fxAt(i / notes.length, col).lerp(colors.lit, Math.min(1, hit + (i === cur ? 0.8 : 0)));
         col.lerp(colors.fadeTo, 1 - front * (done || i === cur ? 1 : 0.55));
         mesh.setColorAt(k, col);
       }
@@ -773,7 +805,7 @@ export default function MusicBoxRing3D() {
         // xa thì nhạt, gần hai đầu khoảng quay vòng thì mờ hẳn
         const depth = Math.min(1, Math.max(0.3, (n.z + 18) / 21));
         const ends = Math.min(1, yr / 2, (FIELD_RANGE - yr) / 2);
-        col.copy(toneColors[n.tone]).lerp(colors.fadeTo, 1 - 0.5 * depth * Math.max(0, ends));
+        col.copy(toneColors[n.tone]).lerp(colors.fadeTo, 1 - 0.8 * depth * Math.max(0, ends));
         mesh.setColorAt(k, col);
       }
       floatSet.meshes.forEach((mesh, g) => {
@@ -974,18 +1006,7 @@ export default function MusicBoxRing3D() {
           </span>
         </button>
         <span className="gh-melody__text">
-          <select
-            className="gh-melody__song"
-            value={songIdx}
-            aria-label={t('home.guest.melody.choose')}
-            onChange={(e) => selectRef.current(Number(e.target.value))}
-          >
-            {SONGS.map((s, i) => (
-              <option key={s.id} value={i}>
-                {songTitle(s)} · {songBy(s)}
-              </option>
-            ))}
-          </select>
+          <SongPicker value={songIdx} playing={auto} onSelect={(i) => selectRef.current(i)} />
           {/* bộ đếm đứng trước: lời gợi ý dài có bị cắt bớt thì vẫn thấy đang ở nốt nào */}
           <small>
             {t('home.guest.melody.progress', { n: played, total })} ·{' '}

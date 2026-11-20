@@ -31,6 +31,12 @@
   --gh-deep: var(--ui-velvet);
   --gh-display: var(--ui-font-display);
   --gh-body: var(--ui-font);
+  /* bảng màu hiệu ứng chung của app (tokens.css): vòng khuông, nốt bay, bụi sáng, bảng hạt mực, bảng chọn bài */
+  --gh-fx-1: var(--ui-fx-1);
+  --gh-fx-2: var(--ui-fx-2);
+  --gh-fx-3: var(--ui-fx-3);
+  --gh-fx-4: var(--ui-fx-4);
+  --gh-fx-on: var(--ui-fx-on);
 
   --space-1: 4px;
   --space-2: 8px;
@@ -855,6 +861,16 @@
   inset: 0;
   z-index: -1;
   pointer-events: none;
+  /* ánh màu cực quang rất nhẹ sau vòng khuông: tím trên trái, hồng trên phải, xanh ngọc và hổ phách phía dưới */
+  --gh-wash: 13%;
+  background:
+    radial-gradient(48% 42% at 12% 18%, color-mix(in srgb, var(--gh-fx-2) var(--gh-wash), transparent), transparent 72%),
+    radial-gradient(44% 40% at 88% 22%, color-mix(in srgb, var(--gh-fx-1) var(--gh-wash), transparent), transparent 72%),
+    radial-gradient(50% 44% at 22% 92%, color-mix(in srgb, var(--gh-fx-4) var(--gh-wash), transparent), transparent 72%),
+    radial-gradient(46% 40% at 82% 88%, color-mix(in srgb, var(--gh-fx-3) var(--gh-wash), transparent), transparent 72%);
+}
+:root[data-theme='dark'] .gh-ring {
+  --gh-wash: 16%;
 }
 .gh-ring canvas {
   display: block;
@@ -926,10 +942,11 @@
   background: var(--gh-card-2);
 }
 .gh-melody__auto[aria-pressed='true'] {
-  border-color: var(--gh-accent);
-  background: var(--gh-accent);
-  color: var(--ui-bg);
+  border-color: transparent;
+  background: linear-gradient(120deg, var(--gh-fx-1), var(--gh-fx-2));
+  color: var(--gh-fx-on);
 }
+/* nút nốt nhạc tròn: dải màu hồng → tím của bảng màu hiệu ứng */
 .gh-melody__icon {
   display: grid;
   flex: none;
@@ -937,8 +954,8 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: var(--gh-accent);
-  color: var(--ui-bg);
+  background: linear-gradient(135deg, var(--gh-fx-1), var(--gh-fx-2));
+  color: var(--gh-fx-on);
   transition: transform 0.12s ease;
 }
 .gh-melody__text {
@@ -948,12 +965,17 @@
   min-width: 0;
   line-height: 1.3;
 }
-/* ô chọn bài: chữ đậm như tiêu đề, không khung, mũi tên gốc của trình duyệt */
-.gh-melody__song {
+/* nút tên bài: chữ đậm như tiêu đề, không khung; mũi tên quay xuống khi bảng đang mở */
+.gh-song-picker {
   min-width: 0;
-  max-width: 100%;
+}
+.gh-melody__song {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  width: 100%;
   min-height: 24px;
-  padding: 0;
+  padding: 0 var(--space-1) 0 0;
   border: 0;
   border-radius: 6px;
   background: transparent;
@@ -961,15 +983,202 @@
   font: inherit;
   font-size: var(--text-small);
   font-weight: 600;
+  text-align: left;
   cursor: pointer;
+}
+.gh-melody__song-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gh-melody__song svg {
+  flex: none;
+  color: var(--gh-ink-2);
+  transition: transform 0.18s ease;
+}
+.gh-melody__song:hover .gh-melody__song-title {
+  color: var(--gh-fx-1);
+}
+.gh-melody__song[aria-expanded='true'] svg {
+  transform: rotate(180deg);
 }
 .gh-melody__song:focus-visible {
   outline: 2px solid var(--gh-accent);
   outline-offset: 2px;
 }
-.gh-melody__song option {
+
+/* bảng chọn bài: trượt lên phía trên cụm nút, chia nhóm, cuộn trong bảng */
+.gh-songs {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + var(--space-3));
+  display: flex;
+  flex-direction: column;
+  width: min(360px, calc(100vw - 2 * var(--space-6)));
+  max-height: min(64svh, 540px);
+  overflow: hidden;
+  border: 1px solid var(--gh-line-strong);
+  border-radius: 20px;
   background: var(--gh-card);
-  color: var(--gh-ink);
+  box-shadow: var(--ui-shadow-pop);
+  transform-origin: bottom left;
+  animation: gh-songs-in 0.18s ease-out;
+}
+@keyframes gh-songs-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+/* vạch màu mảnh trên đầu bảng: bốn sắc của bảng màu hiệu ứng */
+.gh-songs::before {
+  content: '';
+  height: 3px;
+  flex: none;
+  background: linear-gradient(90deg, var(--gh-fx-1), var(--gh-fx-2), var(--gh-fx-4), var(--gh-fx-3));
+}
+.gh-songs__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5) var(--space-3);
+  border-bottom: 1px solid var(--gh-line);
+  font-family: var(--gh-display);
+  font-size: var(--text-body);
+  font-weight: 480;
+}
+.gh-songs__head small {
+  color: var(--gh-ink-2);
+  font-family: var(--gh-body);
+  font-size: 0.8125rem;
+}
+.gh-songs__list {
+  flex: 1;
+  min-height: 0;
+  padding: var(--space-1) var(--space-2) var(--space-2);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  outline: none;
+}
+/* tiêu đề nhóm dính trên đầu khi cuộn, có chấm màu riêng cho từng nhóm */
+.gh-songs__group {
+  position: sticky;
+  top: calc(-1 * var(--space-1));
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-3) var(--space-2);
+  background: var(--gh-card);
+  color: var(--gh-ink-2);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.gh-songs__group::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--gh-group, var(--gh-fx-2));
+}
+[aria-labelledby$='-g-classical'] > .gh-songs__group {
+  --gh-group: var(--gh-fx-2);
+}
+[aria-labelledby$='-g-folk'] > .gh-songs__group {
+  --gh-group: var(--gh-fx-4);
+}
+[aria-labelledby$='-g-festive'] > .gh-songs__group {
+  --gh-group: var(--gh-fx-3);
+}
+.gh-songs__item {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 48px;
+  padding: var(--space-1) var(--space-3);
+  border-radius: 12px;
+  cursor: pointer;
+}
+.gh-songs__item.is-active {
+  background: var(--gh-card-2);
+}
+.gh-songs__list:focus-visible .gh-songs__item.is-active {
+  outline: 2px solid var(--gh-accent);
+  outline-offset: -2px;
+}
+.gh-songs__badge {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--gh-card-2);
+  color: var(--gh-ink-2);
+}
+.gh-songs__item.is-current .gh-songs__badge {
+  background: linear-gradient(135deg, var(--gh-fx-1), var(--gh-fx-2));
+  color: var(--gh-fx-on);
+}
+.gh-songs__meta {
+  display: grid;
+  min-width: 0;
+  line-height: 1.3;
+}
+.gh-songs__meta strong,
+.gh-songs__meta small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gh-songs__meta strong {
+  font-size: var(--text-small);
+  font-weight: 600;
+}
+.gh-songs__item.is-current .gh-songs__meta strong {
+  color: var(--gh-accent);
+}
+.gh-songs__meta small,
+.gh-songs__time {
+  color: var(--gh-ink-2);
+  font-size: 0.8125rem;
+}
+.gh-songs__time {
+  font-variant-numeric: tabular-nums;
+}
+/* cột sóng nhạc nhún nhảy ở bài đang tự chạy */
+.gh-eq {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 14px;
+}
+.gh-eq i {
+  width: 3px;
+  height: 100%;
+  border-radius: 2px;
+  background: currentColor;
+  transform-origin: bottom;
+  animation: gh-eq 0.9s ease-in-out infinite;
+}
+.gh-eq i:nth-child(2) {
+  animation-delay: -0.3s;
+}
+.gh-eq i:nth-child(3) {
+  animation-delay: -0.6s;
+}
+@keyframes gh-eq {
+  0%,
+  100% {
+    transform: scaleY(0.3);
+  }
+  50% {
+    transform: scaleY(1);
+  }
 }
 .gh-melody__text small {
   overflow: hidden;
@@ -991,13 +1200,24 @@
   .gh-melody__text {
     width: 128px;
   }
+  .gh-songs {
+    width: calc(100vw - 2 * var(--space-4));
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .gh-melody,
   .gh-melody__next,
   .gh-melody__auto,
-  .gh-melody__icon {
+  .gh-melody__icon,
+  .gh-melody__song svg {
     transition: none;
+  }
+  .gh-songs {
+    animation: none;
+  }
+  .gh-eq i {
+    animation: none;
+    transform: scaleY(0.7);
   }
 }
 

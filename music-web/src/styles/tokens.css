@@ -89,6 +89,19 @@
   --ui-brass-hover: #f0c063;
   --ui-brass-soft: #33261a;
   --ui-velvet: #8a1c3b; /* đỏ nhung rượu vang: quầng sáng nền, dải màu trang trí */
+  /* bảng màu hiệu ứng (nốt nhạc bay, bụi sáng, ánh cực quang, vòng sóng khi bấm, dây đàn): hồng mâm xôi, tím violet,
+     hổ phách, xanh ngọc. Phối từ màu thương hiệu với tím và xanh của các web nghe nhạc. Chỉ dùng cho trang trí, không
+     dùng cho chữ. Theme sáng: tông đậm để nổi trên nền giấy ngà */
+  --ui-fx-1: #c2185b;
+  --ui-fx-2: #7c3aed;
+  --ui-fx-3: #d97706;
+  --ui-fx-4: #0d9488;
+  --ui-fx-on: #ffffff; /* chữ / biểu tượng đặt trên dải màu hiệu ứng */
+  /* vùng sân khấu luôn tối (cột trái trang đăng nhập): bốn sắc tông sáng, không đổi theo theme */
+  --ui-stage-fx-1: #fb7185;
+  --ui-stage-fx-2: #a78bfa;
+  --ui-stage-fx-3: #fbbf24;
+  --ui-stage-fx-4: #2dd4bf;
   --ui-velvet-hover: #701530;
   --ui-stage-danger: #f59a8a;
 
@@ -177,6 +190,13 @@
 
 :root[data-theme='dark'] {
   color-scheme: dark;
+
+  /* bảng màu hiệu ứng: cùng bốn sắc, sáng lên để phát quang trên nền tối */
+  --ui-fx-1: #fb7185;
+  --ui-fx-2: #a78bfa;
+  --ui-fx-3: #fbbf24;
+  --ui-fx-4: #2dd4bf;
+  --ui-fx-on: #1c1417;
 
   /* nền gỗ hồng than kiểu Mercury (không đen kịt), thẻ sáng hơn một bậc, chữ trắng ngà */
   --ui-bg: #1c1417;

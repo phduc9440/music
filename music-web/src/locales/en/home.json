@@ -105,6 +105,12 @@
       "stop": "Stop",
       "playing": "Autoplaying on loop",
       "choose": "Choose a piece",
+      "count": "{count} pieces",
+      "groups": {
+        "classical": "Classical",
+        "folk": "Folk & children",
+        "festive": "Celebrations"
+      },
       "songs": {
         "furElise": {
           "title": "Für Elise",
@@ -141,6 +147,38 @@
         "greensleeves": {
           "title": "Greensleeves",
           "by": "English folk song"
+        },
+        "minuetInG": {
+          "title": "Minuet in G",
+          "by": "Petzold"
+        },
+        "amazingGrace": {
+          "title": "Amazing Grace",
+          "by": "American hymn"
+        },
+        "silentNight": {
+          "title": "Silent Night",
+          "by": "Gruber"
+        },
+        "auldLangSyne": {
+          "title": "Auld Lang Syne",
+          "by": "Scottish folk song"
+        },
+        "rowYourBoat": {
+          "title": "Row, Row, Row Your Boat",
+          "by": "Nursery rhyme"
+        },
+        "londonBridge": {
+          "title": "London Bridge",
+          "by": "Nursery rhyme"
+        },
+        "maryLamb": {
+          "title": "Mary Had a Little Lamb",
+          "by": "Nursery rhyme"
+        },
+        "frereJacques": {
+          "title": "Frère Jacques",
+          "by": "French nursery rhyme"
         }
       }
     }
