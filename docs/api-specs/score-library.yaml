@@ -1,0 +1,2345 @@
+# ============================================================
+# Score Library — OpenAPI 3.0 Specification
+# ============================================================
+openapi: 3.0.3
+info:
+  title: Score Library API
+  description: |
+    Thư viện bản nhạc: bản nhạc của tôi, Khám phá, kho nhạc mẫu, được chia sẻ; tạo / nhập / sửa thông tin, ảnh bìa,
+    thể loại, thùng rác; nội dung MusicXML / MIDI / kern, lịch sử phiên bản; xuất file; lượt xem; phối lại.
+
+    Mọi phản hồi JSON bọc trong ApiResponse {code, message, result}; code = 200 khi thành công,
+    lỗi trả mã nghiệp vụ (ví dụ 1001 chưa đăng nhập, 1002 không có quyền) kèm HTTP status tương ứng.
+    Sinh từ controller của music-be (springdoc /v3/api-docs) rồi chia theo nhóm chức năng.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: music-be (Spring Boot) khi chạy local
+tags:
+  - name: Scores
+    description: "Thư viện của thành viên hiện tại: danh sách, chi tiết, sửa thông tin, xóa; Khám phá, kho nhạc mẫu, chia sẻ, phối lại"
+  - name: Score create
+    description: Tạo bản nhạc không cần tải file
+  - name: Score import
+    description: Nhập trực tiếp MusicXML / MIDI (không qua OMR)
+  - name: Score files
+    description: Liệt kê và tải các file gắn với bản nhạc
+  - name: Score content
+    description: Nội dung kết quả của bản nhạc (kern, MusicXML, MIDI)
+  - name: Score edit
+    description: Lưu chỉnh sửa MusicXML từ trình chỉnh sửa
+  - name: Score trash
+    description: Bản nhạc đã xóa nằm trong thùng rác 30 ngày trước khi bị xóa hẳn
+  - name: Tags
+    description: Danh sách thể loại để gắn nhãn bản nhạc
+  - name: Official library requests
+    description: Admin xin chủ bản đưa bản nhạc công khai vào kho nhạc mẫu; chủ bản quyết định
+  - name: Export
+    description: Xuất bản nhạc ra MP3, WAV (và các định dạng khác) bằng MuseScore
+  - name: Playback
+    description: "Phát nhạc: lượt xem và phiên nghe"
+
+paths:
+  # ─── Scores ──────────────────────────────────
+  /api/scores/me:
+    get:
+      tags: [Scores]
+      summary: Danh sách bản nhạc của tôi (tìm kiếm, lọc, phân trang)
+      description: "status: NONE|PENDING|PROCESSING|COMPLETED|FAILED; source: OMR|IMPORT|MANUAL; difficulty: EASY|MEDIUM|HARD|EXPERT; tagId: id lấy từ GET /api/tags; sort: newest (theo ngày cập nhật, mặc định) | created | oldest | title | views; size: 1..50. Thẻ có viewCount, ratingAverage và ratingCount."
+      operationId: getMyScores
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 10
+        - name: keyword
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: source
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: difficulty
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: tagId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+            default: newest
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePageResponseScoreSummaryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/scores/official:
+    get:
+      tags: [Scores]
+      summary: "Kho nhạc mẫu cho người mới học (dễ nhất trước); difficulty: EASY|MEDIUM|HARD|EXPERT"
+      operationId: getOfficialScores
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 20
+        - name: keyword
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: difficulty
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: composerId
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePageResponseScoreSummaryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/scores/official/candidates:
+    get:
+      tags: [Scores]
+      summary: "ADMIN: bản nhạc công khai chưa có trong kho nhạc mẫu"
+      operationId: getOfficialCandidates
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 20
+        - name: keyword
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePageResponseScoreSummaryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/scores/pending-public:
+    get:
+      tags: [Scores]
+      summary: "ADMIN: bản nhạc chủ bản xin công khai, đang chờ duyệt"
+      operationId: getPendingPublic
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 12
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePageResponseScoreSummaryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/scores/public:
+    get:
+      tags: [Scores]
+      summary: "Khám phá: bản nhạc PUBLIC; keyword (tên / tác giả), difficulty, tagId, composerId, staffs (1 | 2 | 3 = từ ba khuông trở lên), key (ví dụ G, Am); sort: NEWEST (mặc định) | VIEWS | RATING"
+      description: Thẻ có ownerName (không bao giờ lộ email chủ), viewCount, ratingAverage và ratingCount.
+      operationId: getPublicScores
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 12
+        - name: keyword
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: difficulty
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: tagId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: composerId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: staffs
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+        - name: key
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePageResponseScoreSummaryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/scores/shared-with-me:
+    get:
+      tags: [Scores]
+      summary: Bản nhạc người khác chia sẻ với tôi (qua lời mời hoặc yêu cầu đã duyệt), kèm mức quyền của tôi
+      operationId: getSharedWithMe
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 12
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePageResponseScoreSummaryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/scores/{scoreId}:
+    get:
+      tags: [Scores]
+      summary: Chi tiết bản nhạc (thông tin + file hiện hành + tác vụ mới nhất của mỗi loại)
+      operationId: getScore
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseScoreDetailResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Scores]
+      summary: Sửa thông tin bản nhạc (title, composer, difficulty, studyNotes, visibility; chủ bản không phải admin chọn PUBLIC thì thành PENDING tới khi ADMIN duyệt); trường null được giữ nguyên
+      operationId: updateScore
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScoreUpdateRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseScoreDetailResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Scores]
+      summary: Chuyển bản nhạc vào thùng rác 30 ngày (chủ bản, hoặc ADMIN kiểm duyệt bản PUBLIC/PENDING)
+      description: Bị chặn khi đang có tác vụ chạy. ADMIN có thể gửi kèm lý do để báo cho chủ bản. Xem thêm GET /api/scores/trash, POST /{id}/restore và DELETE /{id}/purge.
+      operationId: deleteScore
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: reason
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/scores/{scoreId}/cover:
+    post:
+      tags: [Scores]
+      summary: Tải lên ảnh bìa bản nhạc (JPG/PNG, tối đa 3MB; cần quyền sửa); thay ảnh cũ
+      description: "Lưu trên Cloudinary như ảnh đại diện. Lỗi: 2025 ảnh không hợp lệ, 2007 lỗi lưu trữ"
+      operationId: uploadCover
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+                - file
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseScoreDetailResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Scores]
+      summary: Gỡ ảnh bìa bản nhạc (quay về dùng ảnh trang đầu)
+      operationId: removeCover
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseScoreDetailResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/scores/{scoreId}/fork:
+    post:
+      tags: [Scores]
+      summary: Tạo bản phối của riêng tôi từ một bản PUBLIC mà chủ cho phép phối lại (R4)
+      description: "Bản sao riêng tư, ghi nhớ bản gốc và kế thừa giấy phép. Lỗi: 2001 không công khai, 2027 không được phép phối, 2028 quá 20 lần trong 24 giờ, MUSICXML_NOT_READY"
+      operationId: fork
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseScoreDetailResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/scores/{scoreId}/official:
+    delete:
+      tags: [Scores]
+      summary: "ADMIN: gỡ bản nhạc khỏi kho nhạc mẫu (bản sao chuyển vào thùng rác, bản gốc của chủ giữ nguyên)"
+      operationId: unmarkOfficial
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseScoreDetailResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/scores/{scoreId}/publish/approve:
+    post:
+      tags: [Scores]
+      summary: "ADMIN: duyệt công khai bản nhạc (mọi người đã đăng nhập xem và đánh giá được)"
+      operationId: approvePublic
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseScoreDetailResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/scores/{scoreId}/publish/reject:
+    post:
+      tags: [Scores]
+      summary: "ADMIN: từ chối công khai bản nhạc; bản quay về PRIVATE kèm lý do tùy chọn"
+      operationId: rejectPublic
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RejectPublishRequest'
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseScoreDetailResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/scores/{scoreId}/tags:
+    put:
+      tags: [Scores]
+      summary: Thay toàn bộ thể loại của bản nhạc (tối đa 10, danh sách rỗng là gỡ hết)
+      description: "Lỗi: 2301 không có thể loại, 2302 quá nhiều thể loại"
+      operationId: updateTags
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScoreTagsRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseScoreDetailResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── Score create ────────────────────────────
+  /api/scores/blank:
+    post:
+      tags: [Score create]
+      summary: Tạo bản nhạc trống từ mẫu nhạc cụ
+      description: "Lỗi: 2017/2018 tên hoặc tác giả không hợp lệ, 3302 tùy chọn không hợp lệ"
+      operationId: createBlank
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlankScoreRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseBlankScoreResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ─── Score import ────────────────────────────
+  /api/scores/import:
+    post:
+      tags: [Score import]
+      summary: Nhập một file MusicXML (.musicxml/.xml/.mxl) hoặc MIDI (.mid/.midi)
+      description: "Lỗi: 2003 file rỗng, 2012 MusicXML không hợp lệ, 2013 MIDI không hợp lệ, 2014 loại file không hỗ trợ, 2017/2018 tên hoặc tác giả quá dài, 2301 không có thể loại, 2302 quá nhiều thể loại (tagIds tùy chọn, lặp lại trường cho mỗi thể loại)"
+      operationId: importScore
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: title
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: composer
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: tagIds
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+                - file
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseScoreImportResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ─── Score files ─────────────────────────────
+  /api/files/{fileId}/download:
+    get:
+      tags: [Score files]
+      summary: Tải file (inline=true để hiển thị trong trình duyệt)
+      operationId: download
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: inline
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/scores/{scoreId}/files:
+    get:
+      tags: [Score files]
+      summary: Danh sách file của bản nhạc (tùy chọn ?type=PNG|MUSICXML|... để lọc theo loại file)
+      operationId: getFilesOfScore
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - ORIGINAL_PDF
+              - ORIGINAL_IMAGE
+              - KERN
+              - MUSICXML
+              - MIDI
+              - PDF
+              - SVG
+              - PNG
+              - MP3
+              - WAV
+              - ORIGINAL_MUSICXML
+              - ORIGINAL_MIDI
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListScoreFileResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── Score content ───────────────────────────
+  /api/scores/{scoreId}/kern:
+    get:
+      tags: [Score content]
+      summary: Chuỗi kern đã ghép của bản nhạc (text/plain, UTF-8)
+      description: "Cần quyền xem bản nhạc. Errors: 2001 không có bản nhạc, 1002 không có quyền, 2002 chưa có kern hoặc file đã mất"
+      operationId: getKern
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            text/plain;charset=UTF-8:
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/scores/{scoreId}/midi:
+    get:
+      tags: [Score content]
+      summary: MIDI hiện hành của bản nhạc (audio/midi)
+      description: "Cần quyền xem bản nhạc. Nếu MIDI chưa có hoặc cũ hơn MusicXML thì sinh lại trước khi trả (đồng bộ, thường dưới 2 giây). Errors: 2001 không có bản nhạc, 1002 không có quyền, 2012 chưa có MusicXML, 2103 music-ai không sinh lại được, 2002 file đã mất"
+      operationId: getMidi
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            audio/midi:
+              schema:
+                type: string
+                format: byte
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/scores/{scoreId}/musicxml:
+    get:
+      tags: [Score content]
+      summary: MusicXML hiện hành của bản nhạc (application/vnd.recordare.musicxml+xml)
+      description: "Cần quyền xem bản nhạc. Header ETag có dạng \"v{version}\"; gửi lại qua If-None-Match thì trả 304 khi chưa có bản mới. Errors: 2001 không có bản nhạc, 1002 không có quyền, 2012 chưa có MusicXML, 2002 file đã mất"
+      operationId: getMusicXml
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: If-None-Match
+          in: header
+          description: ETag đã nhận lần trước, ví dụ "v1"
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/vnd.recordare.musicxml+xml:
+              schema:
+                type: string
+                format: byte
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Score edit]
+      summary: Lưu MusicXML mới thành version kế tiếp
+      description: "Body là MusicXML (Content-Type application/vnd.recordare.musicxml+xml, application/xml hoặc text/xml, tối đa 5MB). Bắt buộc header If-Match: \"v{currentVersion}\" (bỏ qua khi force=true). Trả ETag \"v{version mới}\". MIDI không sinh ngay mà được sinh lại ở lần tải MIDI kế tiếp. Errors: 2001 không có bản nhạc, 1002 không có quyền sửa (hoặc force mà không phải chủ sở hữu/ADMIN), 2005 body rỗng hoặc quá lớn, 2013 Content-Type hoặc nội dung MusicXML không hợp lệ, 2201 đang có tác vụ nhận diện, 2012 chưa có MusicXML, 2014 xung đột version (result.currentVersion là version mới nhất)"
+      operationId: saveMusicXml
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: Content-Type
+          in: header
+          required: false
+          schema:
+            type: string
+        - name: If-Match
+          in: header
+          description: Version đang sửa, ví dụ "v5"
+          required: false
+          schema:
+            type: string
+        - name: force
+          in: query
+          description: true để ghi đè dù version đã đổi (chỉ chủ sở hữu hoặc ADMIN)
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseScoreSaveResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── Score edit ──────────────────────────────
+  /api/scores/{scoreId}/versions:
+    get:
+      tags: [Score edit]
+      summary: Lịch sử các phiên bản MusicXML còn giữ (tối đa 20), mới nhất trước
+      description: "Mỗi phần tử có version, createdAt, savedByName, measureCount, sizeBytes, isCurrent và source (EDITOR, OMR, IMPORT, RESTORE). Cần quyền xem bản nhạc. Errors: 2001 không có bản nhạc, 1002 không có quyền"
+      operationId: listVersions
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListScoreVersionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/scores/{scoreId}/versions/{version}:
+    get:
+      tags: [Score edit]
+      summary: MusicXML của một phiên bản cũ (để xem trước)
+      description: "Header ETag \"v{version}\". Cần quyền xem bản nhạc. Errors: 2001, 1002, 2801 phiên bản không còn (chỉ giữ 20 bản mới nhất), 2002 file đã mất"
+      operationId: getVersion
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: version
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/vnd.recordare.musicxml+xml:
+              schema:
+                type: string
+                format: byte
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/scores/{scoreId}/versions/{version}/diff:
+    get:
+      tags: [Score edit]
+      summary: So sánh một phiên bản MusicXML với bản gốc (mặc định là bản do nhận diện sinh ra)
+      description: "Đo công sửa sau khi số hóa: ô giữ nguyên, ô sửa, ô OMR sinh thừa (deleted), ô OMR bỏ sót (added) và lỗi nốt theo loại. Tham số base là version gốc, bỏ trống thì dùng bản OMR. Kết quả được lưu để lần sau trả ngay (cached = true). Errors: 2001, 1002, 2801, 2901 không có bản gốc, 2902 trùng version, 2903 không đọc được MusicXML, 2103 music-ai không khả dụng"
+      operationId: diffVersion
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: version
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+        - name: base
+          in: query
+          description: Version gốc để so; bỏ trống thì dùng bản do OMR sinh ra
+          required: false
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseScoreDiffResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/scores/{scoreId}/versions/{version}/restore:
+    post:
+      tags: [Score edit]
+      summary: Khôi phục một phiên bản cũ thành phiên bản mới nhất
+      description: "Lưu nội dung của phiên bản được chọn thành version kế tiếp (lịch sử không bị ghi đè, vẫn giữ tối đa 20 bản). Bắt buộc header If-Match: \"v{currentVersion}\". MIDI tự sinh lại ở lần tải kế tiếp. Errors: 2001, 1002 không có quyền sửa, 2801 phiên bản không còn, 2014 xung đột version (result.currentVersion là version mới nhất), 2201 đang có tác vụ nhận diện, 2012 chưa có MusicXML"
+      operationId: restoreVersion
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: version
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+        - name: If-Match
+          in: header
+          description: Version đang sửa, ví dụ "v5"
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseScoreSaveResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── Score trash ─────────────────────────────
+  /api/scores/trash:
+    get:
+      tags: [Score trash]
+      summary: Bản nhạc trong thùng rác của tôi (xóa gần nhất trước), kèm deletedAt và purgeAt
+      operationId: getMyTrash
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 12
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePageResponseTrashedScoreResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/scores/{scoreId}/purge:
+    delete:
+      tags: [Score trash]
+      summary: "Chủ bản: xóa vĩnh viễn bản nhạc đang trong thùng rác"
+      description: "Lỗi: 3301 bản nhạc không có trong thùng rác của tôi"
+      operationId: purge
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/scores/{scoreId}/restore:
+    post:
+      tags: [Score trash]
+      summary: "Chủ bản: khôi phục bản nhạc từ thùng rác"
+      description: "Lỗi: 3301 bản nhạc không có trong thùng rác của tôi"
+      operationId: restoreScores
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── Tags ────────────────────────────────────
+  /api/tags:
+    get:
+      tags: [Tags]
+      summary: Danh sách tất cả thể loại (sắp theo tên)
+      operationId: getAllTags
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListTagResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ─── Official library requests ───────────────
+  /api/official-requests/mine:
+    get:
+      tags: [Official library requests]
+      summary: Các lời xin đang chờ, đề nghị đưa một bản nhạc của tôi vào kho nhạc mẫu
+      operationId: mineOfficialRequests
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListOfficialRequestResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/official-requests/{requestId}:
+    delete:
+      tags: [Official library requests]
+      summary: "ADMIN: rút lại lời xin đang chờ"
+      operationId: cancelOfficialRequests
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseOfficialRequestResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/official-requests/{requestId}/accept:
+    post:
+      tags: [Official library requests]
+      summary: "Chủ bản đồng ý: một bản sao được đưa vào kho nhạc mẫu, ghi công chủ bản; bản gốc giữ nguyên"
+      operationId: acceptOfficialRequests
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseOfficialRequestResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/official-requests/{requestId}/decline:
+    post:
+      tags: [Official library requests]
+      summary: "Chủ bản từ chối: không sao chép gì, admin đã gửi lời xin được thông báo"
+      operationId: decline
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseOfficialRequestResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/scores/{scoreId}/official-request:
+    post:
+      tags: [Official library requests]
+      summary: "ADMIN: xin chủ bản đưa một bản nhạc công khai vào kho nhạc mẫu (chủ bản được thông báo)"
+      description: Bản nhạc thuộc tài khoản hệ thống được đưa vào kho ngay.
+      operationId: request
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseOfficialRequestResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── Export ──────────────────────────────────
+  /api/scores/{scoreId}/exports:
+    get:
+      tags: [Export]
+      summary: File xuất còn trên đĩa của bản nhạc, kèm tùy chọn và cờ outdated (bản nhạc đã sửa sau lúc xuất)
+      description: "Errors: 1002 không có quyền xem, 2001 không có bản nhạc"
+      operationId: listExports
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListExportFileResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Export]
+      summary: Yêu cầu xuất file. Có file cùng tùy chọn thì trả ngay (cached), không thì tạo task chạy nền
+      description: "Định dạng: MP3, WAV (nhạc), PDF (options: pageSize A4/LETTER, orientation PORTRAIT/LANDSCAPE, staffSpaceMm 1.5-2.2, marginMm 10-25, showTitle, measureNumbers SYSTEM/EVERY/NONE, showChords), SVG (mọi trang, tải ZIP qua /exports/{taskId}/zip), MIDI và MUSICXML (trả file hiện hành ngay, không cần options). Body: {\"targetFormat\":\"MP3\",\"options\":{\"bitrate\":192,\"tempoPercent\":75,\"transpose\":2,\"hands\":\"BOTH\"}}. bitrate chỉ cho MP3 (128/192/320), tempoPercent 20-200, transpose -12..12, hands RIGHT/LEFT chỉ khi bản nhạc có đúng 2 khuông. Theo dõi task bằng GET /api/ai-tasks/{id}. Errors: 1002 không có quyền xem, 2001 không có bản nhạc, 2012 chưa có MusicXML, 2701 tùy chọn sai, 2702 bản nhạc quá dài (tối đa 20 phút), 2703 quá giới hạn (2 task đang chạy / 10 task mỗi giờ), 2704 máy chủ chưa cấu hình MuseScore"
+      operationId: requestExport
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExportRequest'
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseExportResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/scores/{scoreId}/exports/{taskId}/zip:
+    get:
+      tags: [Export]
+      summary: ZIP chứa mọi trang SVG của một lần xuất (tên trang {tiêu đề}-trang-01.svg)
+      description: "Cần quyền xem bản nhạc. Errors: 1002 không có quyền xem, 2001 không có bản nhạc, 2002 tác vụ không có trang SVG nào còn trên đĩa"
+      operationId: zipSvgPages
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: byte
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── Playback ────────────────────────────────
+  /api/scores/{scoreId}/views:
+    post:
+      tags: [Playback]
+      summary: Ghi nhận một lượt xem khi mở trang phát nhạc
+      description: "Chỉ tăng khi bản nhạc PUBLIC, người xem không phải chủ sở hữu và chưa được tính trong 30 phút gần đây; ngược lại trả tổng hiện tại với counted = false. Errors: 2001 không có bản nhạc, 1002 không có quyền xem"
+      operationId: recordView
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseViewCountResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "Access token trả về khi đăng nhập (header Authorization: Bearer ...)"
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: access_token
+      description: Web app gửi access token qua cookie HttpOnly access_token
+    internalKey:
+      type: apiKey
+      in: header
+      name: X-Internal-Key
+      description: Khóa bí mật dùng chung với music-ai (biến môi trường AI_INTERNAL_KEY); chỉ nhận từ mạng nội bộ
+
+  responses:
+    BadRequest:
+      description: Dữ liệu không hợp lệ (code nghiệp vụ trong body, ví dụ 1009)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+    Unauthorized:
+      description: Chưa đăng nhập, token hết hạn (1001) hoặc sai X-Internal-Key
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+    Forbidden:
+      description: Không có quyền thực hiện (1002)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+    NotFound:
+      description: Không tìm thấy tài nguyên
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+
+  schemas:
+    AiTaskResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        scoreId:
+          type: string
+        taskType:
+          type: string
+          enum:
+            - OMR_CONVERSION
+            - CHORD_GENERATION
+            - AUDIO_SYNTHESIS
+            - FORMAT_CONVERSION
+        status:
+          type: string
+          enum:
+            - PENDING
+            - PROCESSING
+            - COMPLETED
+            - FAILED
+            - CANCELLED
+        progress:
+          type: integer
+          format: int32
+        step:
+          type: string
+        errorMessage:
+          type: string
+        resultData:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        startedAt:
+          type: string
+          format: date-time
+        finishedAt:
+          type: string
+          format: date-time
+    BlankScoreRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        composer:
+          type: string
+        preset:
+          type: string
+          enum:
+            - PIANO
+            - VOICE_PIANO
+            - GUITAR
+            - SATB
+        keyFifths:
+          type: integer
+          format: int32
+        mode:
+          type: string
+          enum:
+            - MAJOR
+            - MINOR
+        beats:
+          type: integer
+          format: int32
+        beatType:
+          type: integer
+          format: int32
+        tempoBpm:
+          type: integer
+          format: int32
+        measures:
+          type: integer
+          format: int32
+    BlankScoreResponse:
+      type: object
+      properties:
+        scoreId:
+          type: string
+        version:
+          type: integer
+          format: int32
+    ExportFileResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        scoreId:
+          type: string
+        fileType:
+          type: string
+          enum:
+            - ORIGINAL_PDF
+            - ORIGINAL_IMAGE
+            - KERN
+            - MUSICXML
+            - MIDI
+            - PDF
+            - SVG
+            - PNG
+            - MP3
+            - WAV
+            - ORIGINAL_MUSICXML
+            - ORIGINAL_MIDI
+        originalFileName:
+          type: string
+        contentType:
+          type: string
+        sizeBytes:
+          type: integer
+          format: int64
+        pageNumber:
+          type: integer
+          format: int32
+        taskId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        downloadUrl:
+          type: string
+        options:
+          $ref: '#/components/schemas/JsonNode'
+        sourceVersion:
+          type: integer
+          format: int32
+        outdated:
+          type: boolean
+    ExportRequest:
+      type: object
+      properties:
+        targetFormat:
+          type: string
+        options:
+          $ref: '#/components/schemas/JsonNode'
+    ExportResponse:
+      type: object
+      properties:
+        cached:
+          type: boolean
+        file:
+          $ref: '#/components/schemas/ExportFileResponse'
+        files:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExportFileResponse'
+        task:
+          $ref: '#/components/schemas/AiTaskResponse'
+    ForkSource:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        ownerName:
+          type: string
+        license:
+          type: string
+          enum:
+            - ALL_RIGHTS_RESERVED
+            - CC0
+            - CC_BY
+            - CC_BY_SA
+            - CC_BY_NC
+    JsonNode: {}
+    OfficialRequestResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        scoreId:
+          type: string
+        scoreTitle:
+          type: string
+        composer:
+          type: string
+        status:
+          type: string
+          enum:
+            - PENDING
+            - ACCEPTED
+            - DECLINED
+            - CANCELED
+        requestedBy:
+          type: string
+        ownerEmail:
+          type: string
+        copyScoreId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        resolvedAt:
+          type: string
+          format: date-time
+    PageResponseScoreSummaryResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScoreSummaryResponse'
+        pageNumber:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+    PageResponseTrashedScoreResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrashedScoreResponse'
+        pageNumber:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+    RejectPublishRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          maxLength: 255
+          minLength: 0
+    ScoreDetailResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        composer:
+          type: string
+        difficulty:
+          type: string
+          enum:
+            - EASY
+            - MEDIUM
+            - HARD
+            - EXPERT
+        studyNotes:
+          type: string
+        processingStatus:
+          type: string
+        rejectReason:
+          type: string
+        sourceType:
+          type: string
+        visibility:
+          type: string
+        isOfficial:
+          type: boolean
+        arrangerName:
+          type: string
+        myOriginalScoreId:
+          type: string
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/TagResponse'
+        keySignature:
+          type: string
+        timeSignature:
+          type: string
+        tempoBpm:
+          type: integer
+          format: int32
+        measureCount:
+          type: integer
+          format: int32
+        staffCount:
+          type: integer
+          format: int32
+        pageCount:
+          type: integer
+          format: int32
+        currentVersion:
+          type: integer
+          format: int32
+        viewCount:
+          type: integer
+          format: int64
+        averageRating:
+          type: number
+          format: double
+        ratingCount:
+          type: integer
+          format: int64
+        ownerEmail:
+          type: string
+        canEdit:
+          type: boolean
+        canDelete:
+          type: boolean
+        canReview:
+          type: boolean
+        canManageSharing:
+          type: boolean
+        accessLevel:
+          type: string
+        canDownload:
+          type: boolean
+        allowDownload:
+          type: boolean
+        license:
+          type: string
+          enum:
+            - ALL_RIGHTS_RESERVED
+            - CC0
+            - CC_BY
+            - CC_BY_SA
+            - CC_BY_NC
+        allowArrange:
+          type: boolean
+        canFork:
+          type: boolean
+        forkCount:
+          type: integer
+          format: int64
+        forkedFrom:
+          $ref: '#/components/schemas/ForkSource'
+        coverUrl:
+          type: string
+        teamId:
+          type: string
+        teamName:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        files:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScoreFileResponse'
+        latestTasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/AiTaskResponse'
+    ScoreDiffResponse:
+      type: object
+      properties:
+        baseVersion:
+          type: integer
+          format: int32
+        targetVersion:
+          type: integer
+          format: int32
+        measures:
+          $ref: '#/components/schemas/JsonNode'
+        summary:
+          $ref: '#/components/schemas/JsonNode'
+        cached:
+          type: boolean
+    ScoreFileResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        scoreId:
+          type: string
+        fileType:
+          type: string
+          enum:
+            - ORIGINAL_PDF
+            - ORIGINAL_IMAGE
+            - KERN
+            - MUSICXML
+            - MIDI
+            - PDF
+            - SVG
+            - PNG
+            - MP3
+            - WAV
+            - ORIGINAL_MUSICXML
+            - ORIGINAL_MIDI
+        originalFileName:
+          type: string
+        contentType:
+          type: string
+        sizeBytes:
+          type: integer
+          format: int64
+        pageNumber:
+          type: integer
+          format: int32
+        version:
+          type: integer
+          format: int32
+        isCurrent:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        downloadUrl:
+          type: string
+    ScoreImportResponse:
+      type: object
+      properties:
+        scoreId:
+          type: string
+        title:
+          type: string
+        composer:
+          type: string
+        processingStatus:
+          type: string
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/TagResponse'
+        files:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScoreFileResponse'
+    ScoreSaveResponse:
+      type: object
+      properties:
+        version:
+          type: integer
+          format: int32
+        measureCount:
+          type: integer
+          format: int32
+        keySignature:
+          type: string
+        timeSignature:
+          type: string
+        tempoBpm:
+          type: integer
+          format: int32
+        updatedAt:
+          type: string
+          format: date-time
+    ScoreSummaryResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        composer:
+          type: string
+        difficulty:
+          type: string
+          enum:
+            - EASY
+            - MEDIUM
+            - HARD
+            - EXPERT
+        processingStatus:
+          type: string
+        sourceType:
+          type: string
+        visibility:
+          type: string
+        license:
+          type: string
+          enum:
+            - ALL_RIGHTS_RESERVED
+            - CC0
+            - CC_BY
+            - CC_BY_SA
+            - CC_BY_NC
+        allowArrange:
+          type: boolean
+        isOfficial:
+          type: boolean
+        measureCount:
+          type: integer
+          format: int32
+        accessLevel:
+          type: string
+        ownerEmail:
+          type: string
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/TagResponse'
+        arrangerName:
+          type: string
+        ownerName:
+          type: string
+        viewCount:
+          type: integer
+          format: int64
+        ratingAverage:
+          type: number
+          format: double
+        ratingCount:
+          type: integer
+          format: int64
+        thumbnailUrl:
+          type: string
+        coverUrl:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ScoreTagsRequest:
+      type: object
+      properties:
+        tagIds:
+          type: array
+          items:
+            type: string
+      required:
+        - tagIds
+    ScoreUpdateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 255
+          minLength: 0
+        composer:
+          type: string
+          maxLength: 255
+          minLength: 0
+        difficulty:
+          type: string
+          enum:
+            - EASY
+            - MEDIUM
+            - HARD
+            - EXPERT
+        studyNotes:
+          type: string
+          maxLength: 5000
+          minLength: 0
+        visibility:
+          type: string
+          enum:
+            - PRIVATE
+            - PENDING
+            - PUBLIC
+        allowDownload:
+          type: boolean
+        license:
+          type: string
+          enum:
+            - ALL_RIGHTS_RESERVED
+            - CC0
+            - CC_BY
+            - CC_BY_SA
+            - CC_BY_NC
+        allowArrange:
+          type: boolean
+    ScoreVersionResponse:
+      type: object
+      properties:
+        version:
+          type: integer
+          format: int32
+        createdAt:
+          type: string
+          format: date-time
+        savedByName:
+          type: string
+        measureCount:
+          type: integer
+          format: int32
+        sizeBytes:
+          type: integer
+          format: int64
+        isCurrent:
+          type: boolean
+        source:
+          type: string
+        restoredFrom:
+          type: integer
+          format: int32
+        suggestionId:
+          type: string
+        suggestionAuthorName:
+          type: string
+    TagResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+    TrashedScoreResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        composer:
+          type: string
+        measureCount:
+          type: integer
+          format: int32
+        deletedAt:
+          type: string
+          format: date-time
+        purgeAt:
+          type: string
+          format: date-time
+        deletedByAdmin:
+          type: boolean
+        deleteReason:
+          type: string
+    ViewCountResponse:
+      type: object
+      properties:
+        viewCount:
+          type: integer
+          format: int64
+        counted:
+          type: boolean
+
+    # ── Wrapped Responses ──
+    ApiResponseBlankScoreResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/BlankScoreResponse'
+    ApiResponseExportResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/ExportResponse'
+    ApiResponseListExportFileResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExportFileResponse'
+    ApiResponseListOfficialRequestResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: '#/components/schemas/OfficialRequestResponse'
+    ApiResponseListScoreFileResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScoreFileResponse'
+    ApiResponseListScoreVersionResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScoreVersionResponse'
+    ApiResponseListTagResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: '#/components/schemas/TagResponse'
+    ApiResponseOfficialRequestResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/OfficialRequestResponse'
+    ApiResponsePageResponseScoreSummaryResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/PageResponseScoreSummaryResponse'
+    ApiResponsePageResponseTrashedScoreResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/PageResponseTrashedScoreResponse'
+    ApiResponseScoreDetailResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/ScoreDetailResponse'
+    ApiResponseScoreDiffResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/ScoreDiffResponse'
+    ApiResponseScoreImportResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/ScoreImportResponse'
+    ApiResponseScoreSaveResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/ScoreSaveResponse'
+    ApiResponseViewCountResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/ViewCountResponse'
+    ApiResponseVoid:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result: {}
+    ApiResponseError:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 1002
+        message:
+          type: string
+          example: You do not have permission

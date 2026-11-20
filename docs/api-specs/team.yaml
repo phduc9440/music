@@ -1,0 +1,1886 @@
+# ============================================================
+# Team & Show — OpenAPI 3.0 Specification
+# ============================================================
+openapi: 3.0.3
+info:
+  title: Team & Show API
+  description: |
+    Team và Show: tạo team, thành viên và vai trò, bảng quyền, lời mời (email / liên kết), bản nhạc của team,
+    show, hạng mục, phân công, Kanban, thứ tự biểu diễn.
+
+    Mọi phản hồi JSON bọc trong ApiResponse {code, message, result}; code = 200 khi thành công,
+    lỗi trả mã nghiệp vụ (ví dụ 1001 chưa đăng nhập, 1002 không có quyền) kèm HTTP status tương ứng.
+    Sinh từ controller của music-be (springdoc /v3/api-docs) rồi chia theo nhóm chức năng.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: music-be (Spring Boot) khi chạy local
+tags:
+  - name: Teams
+    description: "Team và Show (mục 4.1): team, thành viên, lời mời, bản nhạc, hoạt động"
+  - name: Team invitations
+    description: Người được mời xem và chấp nhận lời mời vào team
+  - name: Shows
+    description: "Show của team (mục 4.1): bài, phân công, Kanban, thứ tự diễn"
+
+paths:
+  # ─── Teams ───────────────────────────────────
+  /api/teams:
+    get:
+      tags: [Teams]
+      summary: Các team của tôi kèm vai trò
+      operationId: list
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListTeamResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Teams]
+      summary: Tạo team (cần gói có tính năng team)
+      operationId: create
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseTeamResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/teams/deleted:
+    get:
+      tags: [Teams]
+      summary: Team tôi sở hữu và đã tự xóa, còn khôi phục được (30 ngày)
+      operationId: deleted
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListRestorableItemResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/teams/my-tasks:
+    get:
+      tags: [Teams]
+      summary: Hạng mục show được giao cho tôi (người phối hoặc người duyệt), chưa được duyệt
+      operationId: myTasks
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListTeamTaskResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/teams/{id}:
+    get:
+      tags: [Teams]
+      summary: Chi tiết team (chỉ thành viên)
+      operationId: get
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseTeamResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Teams]
+      summary: Đổi tên / mô tả team (cần EDIT_TEAM, mặc định chỉ OWNER; 3802)
+      operationId: update
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseTeamResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Teams]
+      summary: Xóa mềm team (OWNER); khôi phục được trong 30 ngày, 3801 không tìm thấy, 3830 không phải chủ
+      operationId: delete
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/teams/{id}/activities:
+    get:
+      tags: [Teams]
+      summary: Nhật ký hoạt động của team, mới nhất trước
+      operationId: activities
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 20
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePageResponseTeamActivityResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/teams/{id}/invitations:
+    get:
+      tags: [Teams]
+      summary: Lời mời đang chờ (MANAGE_MEMBERS hoặc MANAGE_MANAGERS)
+      operationId: invitations
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListTeamInvitationResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Teams]
+      summary: Mời qua email hoặc tạo liên kết dùng một lần (token chỉ trả về một lần); mời MANAGER cần MANAGE_MANAGERS (3831)
+      operationId: invite
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamInviteRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseTeamInvitationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/teams/{id}/invitations/{invitationId}:
+    delete:
+      tags: [Teams]
+      summary: Thu hồi lời mời (cùng quy tắc như khi mời, 3831)
+      operationId: revokeTeamsInvitations
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: invitationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/teams/{id}/members:
+    get:
+      tags: [Teams]
+      summary: Thành viên team
+      operationId: members
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListTeamMemberResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/teams/{id}/members/{memberId}:
+    patch:
+      tags: [Teams]
+      summary: Đổi vai trò thành viên theo bảng quyền của team (MANAGE_MEMBERS / MANAGE_MANAGERS; vai trò OWNER chỉ OWNER trao; 3831)
+      operationId: changeRole
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: memberId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamRoleRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseTeamMemberResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Teams]
+      summary: Gỡ thành viên (cùng quy tắc như đổi vai trò, 3831) hoặc rời team (truyền id của chính mình)
+      operationId: removeMemberTeams
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: memberId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/teams/{id}/permissions:
+    get:
+      tags: [Teams]
+      summary: Quyền của từng vai trò trong team (mọi thành viên xem được); editable = tôi là chủ
+      operationId: permissions
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseTeamPermissionsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Teams]
+      summary: Bật / tắt quyền của MANAGER, ARRANGER, VIEWER (chỉ OWNER, 3830)
+      operationId: updatePermissions
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamPermissionsRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseTeamPermissionsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/teams/{id}/restore:
+    post:
+      tags: [Teams]
+      summary: Khôi phục team tôi đã xóa (OWNER, trong vòng 30 ngày); 3818 quá hạn, 3819 bị admin xóa
+      operationId: restore
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseTeamResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/teams/{id}/scores:
+    get:
+      tags: [Teams]
+      summary: Bản nhạc của team
+      operationId: scores
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListTeamScoreResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Teams]
+      summary: Chuyển bản nhạc cá nhân vào team (chỉ chủ bản nhạc)
+      operationId: addScore
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamScoreRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseTeamScoreResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/teams/{id}/scores/candidates:
+    get:
+      tags: [Teams]
+      summary: Bản nhạc cá nhân của tôi có thể chuyển vào team
+      operationId: candidates
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListTeamScoreResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/teams/{id}/scores/{scoreId}:
+    delete:
+      tags: [Teams]
+      summary: Chuyển bản nhạc ra khỏi team (chủ bản nhạc hoặc REMOVE_SCORES)
+      operationId: removeScore
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/teams/{id}/shows:
+    get:
+      tags: [Teams]
+      summary: Show của team (đang chuẩn bị trước)
+      operationId: shows
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListShowResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Teams]
+      summary: Tạo show (cần MANAGE_SHOWS)
+      operationId: createShow
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShowRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseShowResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/teams/{id}/shows/deleted:
+    get:
+      tags: [Teams]
+      summary: Show đã xóa của team, còn khôi phục được (MANAGE_SHOWS; 30 ngày)
+      operationId: deletedShows
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListRestorableItemResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── Team invitations ────────────────────────
+  /api/team-invitations/mine:
+    get:
+      tags: [Team invitations]
+      summary: Lời mời qua email đang chờ, gửi tới email của tôi
+      operationId: mine
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListTeamInvitationResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/team-invitations/mine/{id}/accept:
+    post:
+      tags: [Team invitations]
+      summary: Chấp nhận lời mời qua email gửi cho tôi
+      operationId: acceptMine
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseTeamResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/team-invitations/mine/{id}/decline:
+    post:
+      tags: [Team invitations]
+      summary: Từ chối lời mời qua email gửi cho tôi
+      operationId: declineMine
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/team-invitations/token/{token}:
+    get:
+      tags: [Team invitations]
+      summary: Xem trước lời mời từ token trong liên kết
+      operationId: preview
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseTeamInvitationPreviewResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/team-invitations/token/{token}/accept:
+    post:
+      tags: [Team invitations]
+      summary: Chấp nhận lời mời từ token trong liên kết (dùng một lần)
+      operationId: accept
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseTeamResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── Shows ───────────────────────────────────
+  /api/shows/{id}:
+    get:
+      tags: [Shows]
+      summary: Show kèm hạng mục, vai trò của tôi và thành viên có thể giao việc
+      operationId: getShows
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseShowDetailResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Shows]
+      summary: Cập nhật show (cần MANAGE_SHOWS)
+      operationId: updateShows
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShowRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseShowResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Shows]
+      summary: Xóa mềm show (cần MANAGE_SHOWS); khôi phục được trong 30 ngày
+      operationId: deleteShows
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/shows/{id}/items:
+    post:
+      tags: [Shows]
+      summary: Thêm bản nhạc của team vào show (cần MANAGE_SHOWS)
+      operationId: addItem
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShowItemRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseShowDetailResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/shows/{id}/items/order:
+    put:
+      tags: [Shows]
+      summary: Sắp xếp lại hạng mục (thứ tự biểu diễn)
+      operationId: reorder
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShowItemOrderRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseShowDetailResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/shows/{id}/items/{itemId}:
+    put:
+      tags: [Shows]
+      summary: Giao người phối, người duyệt, hạn chót, ghi chú (cần MANAGE_SHOWS)
+      operationId: updateItem
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShowItemRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseShowDetailResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Shows]
+      summary: Gỡ một hạng mục khỏi show (cần MANAGE_SHOWS)
+      operationId: removeItem
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseShowDetailResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/shows/{id}/items/{itemId}/status:
+    patch:
+      tags: [Shows]
+      summary: "Đổi trạng thái hạng mục: kéo trên Kanban, nộp, duyệt, trả lại kèm ghi chú"
+      operationId: changeStatus
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShowItemStatusRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseShowDetailResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/shows/{id}/restore:
+    post:
+      tags: [Shows]
+      summary: Khôi phục show đã xóa (cần MANAGE_SHOWS; trong vòng 30 ngày); 3829 nếu đã quá hạn
+      operationId: restoreShows
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseShowResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "Access token trả về khi đăng nhập (header Authorization: Bearer ...)"
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: access_token
+      description: Web app gửi access token qua cookie HttpOnly access_token
+    internalKey:
+      type: apiKey
+      in: header
+      name: X-Internal-Key
+      description: Khóa bí mật dùng chung với music-ai (biến môi trường AI_INTERNAL_KEY); chỉ nhận từ mạng nội bộ
+
+  responses:
+    BadRequest:
+      description: Dữ liệu không hợp lệ (code nghiệp vụ trong body, ví dụ 1009)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+    Unauthorized:
+      description: Chưa đăng nhập, token hết hạn (1001) hoặc sai X-Internal-Key
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+    Forbidden:
+      description: Không có quyền thực hiện (1002)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+    NotFound:
+      description: Không tìm thấy tài nguyên
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+
+  schemas:
+    PageResponseTeamActivityResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamActivityResponse'
+        pageNumber:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+    RestorableItemResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        deletedAt:
+          type: string
+          format: date-time
+        deletedByName:
+          type: string
+        restorableUntil:
+          type: string
+          format: date-time
+    ShowDetailResponse:
+      type: object
+      properties:
+        show:
+          $ref: '#/components/schemas/ShowResponse'
+        teamName:
+          type: string
+        myRole:
+          type: string
+          enum:
+            - OWNER
+            - MANAGER
+            - ARRANGER
+            - VIEWER
+        myPermissions:
+          type: array
+          items:
+            type: string
+            enum:
+              - EDIT_TEAM
+              - MANAGE_MANAGERS
+              - MANAGE_MEMBERS
+              - MANAGE_SHOWS
+              - APPROVE_ANY
+              - EDIT_SCORES
+              - MANAGE_SCORES
+              - REMOVE_SCORES
+              - ADD_SCORES
+              - COMMENT
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShowItemResponse'
+        assignees:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamMemberResponse'
+    ShowItemOrderRequest:
+      type: object
+      properties:
+        itemIds:
+          type: array
+          items:
+            type: string
+    ShowItemRequest:
+      type: object
+      properties:
+        scoreId:
+          type: string
+        arrangerId:
+          type: string
+        reviewerId:
+          type: string
+        dueDate:
+          type: string
+          format: date
+        notes:
+          type: string
+    ShowItemResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        scoreId:
+          type: string
+        scoreTitle:
+          type: string
+        scoreComposer:
+          type: string
+        position:
+          type: integer
+          format: int32
+        arrangerId:
+          type: string
+        arrangerName:
+          type: string
+        reviewerId:
+          type: string
+        reviewerName:
+          type: string
+        dueDate:
+          type: string
+          format: date
+        status:
+          type: string
+          enum:
+            - TODO
+            - ARRANGING
+            - IN_REVIEW
+            - APPROVED
+        notes:
+          type: string
+        reviewNote:
+          type: string
+        allowedStatuses:
+          type: array
+          items:
+            type: string
+            enum:
+              - TODO
+              - ARRANGING
+              - IN_REVIEW
+              - APPROVED
+    ShowItemStatusRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - TODO
+            - ARRANGING
+            - IN_REVIEW
+            - APPROVED
+        note:
+          type: string
+    ShowRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        showDate:
+          type: string
+          format: date
+        venue:
+          type: string
+        notes:
+          type: string
+        status:
+          type: string
+          enum:
+            - PREPARING
+            - DONE
+    ShowResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        teamId:
+          type: string
+        name:
+          type: string
+        showDate:
+          type: string
+          format: date
+        venue:
+          type: string
+        notes:
+          type: string
+        status:
+          type: string
+          enum:
+            - PREPARING
+            - DONE
+        itemCount:
+          type: integer
+          format: int64
+        approvedCount:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+    TeamActivityResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum:
+            - TEAM_CREATED
+            - TEAM_UPDATED
+            - TEAM_RESTORED
+            - MEMBER_JOINED
+            - MEMBER_LEFT
+            - MEMBER_REMOVED
+            - ROLE_CHANGED
+            - INVITATION_SENT
+            - SCORE_ADDED
+            - SCORE_REMOVED
+            - SHOW_CREATED
+            - SHOW_UPDATED
+            - SHOW_DELETED
+            - SHOW_RESTORED
+            - ITEM_ADDED
+            - ITEM_REMOVED
+            - ITEM_ASSIGNED
+            - ITEM_STATUS_CHANGED
+            - PERMISSIONS_CHANGED
+        actorName:
+          type: string
+        params:
+          type: object
+          additionalProperties:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+    TeamInvitationPreviewResponse:
+      type: object
+      properties:
+        teamId:
+          type: string
+        teamName:
+          type: string
+        teamDescription:
+          type: string
+        role:
+          type: string
+          enum:
+            - OWNER
+            - MANAGER
+            - ARRANGER
+            - VIEWER
+        invitedByName:
+          type: string
+        email:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+        state:
+          type: string
+        alreadyMember:
+          type: boolean
+        emailMismatch:
+          type: boolean
+    TeamInvitationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        teamId:
+          type: string
+        teamName:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum:
+            - OWNER
+            - MANAGER
+            - ARRANGER
+            - VIEWER
+        invitedByName:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+        token:
+          type: string
+    TeamInviteRequest:
+      type: object
+      properties:
+        email:
+          type: string
+        role:
+          type: string
+          enum:
+            - OWNER
+            - MANAGER
+            - ARRANGER
+            - VIEWER
+    TeamMemberResponse:
+      type: object
+      properties:
+        memberId:
+          type: string
+        fullName:
+          type: string
+        email:
+          type: string
+        avatarUrl:
+          type: string
+        role:
+          type: string
+          enum:
+            - OWNER
+            - MANAGER
+            - ARRANGER
+            - VIEWER
+        joinedAt:
+          type: string
+          format: date-time
+    TeamPermissionsRequest:
+      type: object
+      properties:
+        roles:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+              enum:
+                - EDIT_TEAM
+                - MANAGE_MANAGERS
+                - MANAGE_MEMBERS
+                - MANAGE_SHOWS
+                - APPROVE_ANY
+                - EDIT_SCORES
+                - MANAGE_SCORES
+                - REMOVE_SCORES
+                - ADD_SCORES
+                - COMMENT
+    TeamPermissionsResponse:
+      type: object
+      properties:
+        roles:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+              enum:
+                - EDIT_TEAM
+                - MANAGE_MANAGERS
+                - MANAGE_MEMBERS
+                - MANAGE_SHOWS
+                - APPROVE_ANY
+                - EDIT_SCORES
+                - MANAGE_SCORES
+                - REMOVE_SCORES
+                - ADD_SCORES
+                - COMMENT
+        defaults:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+              enum:
+                - EDIT_TEAM
+                - MANAGE_MANAGERS
+                - MANAGE_MEMBERS
+                - MANAGE_SHOWS
+                - APPROVE_ANY
+                - EDIT_SCORES
+                - MANAGE_SCORES
+                - REMOVE_SCORES
+                - ADD_SCORES
+                - COMMENT
+        editable:
+          type: boolean
+    TeamRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+    TeamResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        avatarUrl:
+          type: string
+        myRole:
+          type: string
+          enum:
+            - OWNER
+            - MANAGER
+            - ARRANGER
+            - VIEWER
+        myPermissions:
+          type: array
+          items:
+            type: string
+            enum:
+              - EDIT_TEAM
+              - MANAGE_MANAGERS
+              - MANAGE_MEMBERS
+              - MANAGE_SHOWS
+              - APPROVE_ANY
+              - EDIT_SCORES
+              - MANAGE_SCORES
+              - REMOVE_SCORES
+              - ADD_SCORES
+              - COMMENT
+        memberCount:
+          type: integer
+          format: int64
+        scoreCount:
+          type: integer
+          format: int64
+        preparingShows:
+          type: integer
+          format: int64
+        createdByName:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        memberLimit:
+          type: integer
+          format: int32
+        planActive:
+          type: boolean
+    TeamRoleRequest:
+      type: object
+      properties:
+        role:
+          type: string
+          enum:
+            - OWNER
+            - MANAGER
+            - ARRANGER
+            - VIEWER
+    TeamScoreRequest:
+      type: object
+      properties:
+        scoreId:
+          type: string
+    TeamScoreResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        composer:
+          type: string
+        ownerId:
+          type: string
+        ownerName:
+          type: string
+        measureCount:
+          type: integer
+          format: int32
+        difficulty:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+        canRemove:
+          type: boolean
+    TeamTaskResponse:
+      type: object
+      properties:
+        itemId:
+          type: string
+        showId:
+          type: string
+        showName:
+          type: string
+        showDate:
+          type: string
+          format: date
+        teamId:
+          type: string
+        teamName:
+          type: string
+        scoreId:
+          type: string
+        scoreTitle:
+          type: string
+        status:
+          type: string
+          enum:
+            - TODO
+            - ARRANGING
+            - IN_REVIEW
+            - APPROVED
+        dueDate:
+          type: string
+          format: date
+        asArranger:
+          type: boolean
+        asReviewer:
+          type: boolean
+
+    # ── Wrapped Responses ──
+    ApiResponseListRestorableItemResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: '#/components/schemas/RestorableItemResponse'
+    ApiResponseListShowResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShowResponse'
+    ApiResponseListTeamInvitationResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamInvitationResponse'
+    ApiResponseListTeamMemberResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamMemberResponse'
+    ApiResponseListTeamResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamResponse'
+    ApiResponseListTeamScoreResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamScoreResponse'
+    ApiResponseListTeamTaskResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamTaskResponse'
+    ApiResponsePageResponseTeamActivityResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/PageResponseTeamActivityResponse'
+    ApiResponseShowDetailResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/ShowDetailResponse'
+    ApiResponseShowResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/ShowResponse'
+    ApiResponseTeamInvitationPreviewResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/TeamInvitationPreviewResponse'
+    ApiResponseTeamInvitationResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/TeamInvitationResponse'
+    ApiResponseTeamMemberResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/TeamMemberResponse'
+    ApiResponseTeamPermissionsResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/TeamPermissionsResponse'
+    ApiResponseTeamResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/TeamResponse'
+    ApiResponseTeamScoreResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/TeamScoreResponse'
+    ApiResponseVoid:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result: {}
+    ApiResponseError:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 1002
+        message:
+          type: string
+          example: You do not have permission

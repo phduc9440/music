@@ -1,0 +1,544 @@
+# ============================================================
+# Public — OpenAPI 3.0 Specification
+# ============================================================
+openapi: 3.0.3
+info:
+  title: Public API
+  description: |
+    API cho khách chưa đăng nhập: trang chủ, Khám phá bản nhạc công khai, ảnh thẻ, thể loại, nhạc sĩ.
+
+    Mọi phản hồi JSON bọc trong ApiResponse {code, message, result}; code = 200 khi thành công,
+    lỗi trả mã nghiệp vụ (ví dụ 1001 chưa đăng nhập, 1002 không có quyền) kèm HTTP status tương ứng.
+    Sinh từ controller của music-be (springdoc /v3/api-docs) rồi chia theo nhóm chức năng.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: music-be (Spring Boot) khi chạy local
+tags:
+  - name: Public home
+    description: Trang chủ cho khách, không cần đăng nhập
+  - name: Public scores
+    description: Khám phá bản nhạc công khai, không cần đăng nhập
+  - name: Public composers
+    description: Nhạc sĩ (mục 5.4), không cần đăng nhập
+
+paths:
+  # ─── Public home ─────────────────────────────
+  /api/public/home:
+    get:
+      tags: [Public home]
+      summary: "Trang chủ cho khách: bản nhạc công khai nổi bật, nhạc sĩ hàng đầu, số liệu thật (cache 5 phút)"
+      operationId: getHome
+      security: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePublicHomeResponse'
+  /api/public/scores/{scoreId}/thumbnail:
+    get:
+      tags: [Public home]
+      summary: Ảnh trang 1 của bản nhạc PUBLIC, cho thẻ hiển thị với khách
+      operationId: getThumbnail
+      security: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── Public scores ───────────────────────────
+  /api/public/scores:
+    get:
+      tags: [Public scores]
+      summary: "Khám phá cho khách: cùng bộ lọc và cách sắp xếp như GET /api/scores/public; chỉ bản PUBLIC"
+      description: Thẻ có ownerName (không bao giờ lộ email chủ), viewCount, ratingAverage và ratingCount.
+      operationId: listPublicScores
+      security: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 12
+        - name: keyword
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: difficulty
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: tagId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: composerId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: staffs
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+        - name: key
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePageResponseScoreSummaryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/public/scores/tags:
+    get:
+      tags: [Public scores]
+      summary: Tất cả thể loại, cho ô lọc thể loại ở trang Khám phá của khách
+      operationId: tags
+      security: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListTagResponse'
+  /api/public/scores/{scoreId}:
+    get:
+      tags: [Public scores]
+      summary: Thẻ của một bản nhạc PUBLIC cho trang khách /s/:id (2001 nếu bản riêng tư, đang chờ duyệt hoặc đã xóa)
+      operationId: getPublicScoresById
+      security: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseScoreSummaryResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── Public composers ────────────────────────
+  /api/public/composers:
+    get:
+      tags: [Public composers]
+      summary: "Danh sách nhạc sĩ, nhiều bản công khai nhất trước; keyword (tên / tên khác), period: BAROQUE | CLASSICAL | ROMANTIC | MODERN | VIETNAM"
+      operationId: listPublicComposers
+      security: []
+      parameters:
+        - name: keyword
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: period
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 100
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListComposerResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/public/composers/{slug}:
+    get:
+      tags: [Public composers]
+      summary: "Một nhạc sĩ theo slug (bản nhạc: dùng /api/scores/public?composerId= và /official?composerId=)"
+      operationId: getPublicComposers
+      security: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseComposerResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/public/explore/facets:
+    get:
+      tags: [Public composers]
+      summary: Các giá trị lọc có trong bản nhạc công khai (khóa nhạc)
+      operationId: facets
+      security: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseExploreFacetsResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "Access token trả về khi đăng nhập (header Authorization: Bearer ...)"
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: access_token
+      description: Web app gửi access token qua cookie HttpOnly access_token
+    internalKey:
+      type: apiKey
+      in: header
+      name: X-Internal-Key
+      description: Khóa bí mật dùng chung với music-ai (biến môi trường AI_INTERNAL_KEY); chỉ nhận từ mạng nội bộ
+
+  responses:
+    BadRequest:
+      description: Dữ liệu không hợp lệ (code nghiệp vụ trong body, ví dụ 1009)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+    Unauthorized:
+      description: Chưa đăng nhập, token hết hạn (1001) hoặc sai X-Internal-Key
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+    Forbidden:
+      description: Không có quyền thực hiện (1002)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+    NotFound:
+      description: Không tìm thấy tài nguyên
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+
+  schemas:
+    ComposerResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        aliases:
+          type: string
+        birthYear:
+          type: integer
+          format: int32
+        deathYear:
+          type: integer
+          format: int32
+        country:
+          type: string
+        period:
+          type: string
+        bio:
+          type: string
+        imageUrl:
+          type: string
+        imageSource:
+          type: string
+        imageLicense:
+          type: string
+        scoreCount:
+          type: integer
+          format: int64
+        topTitles:
+          type: array
+          items:
+            type: string
+    ExploreFacetsResponse:
+      type: object
+      properties:
+        keys:
+          type: array
+          items:
+            type: string
+    PageResponseScoreSummaryResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScoreSummaryResponse'
+        pageNumber:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+    PublicHomeResponse:
+      type: object
+      properties:
+        featured:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScoreSummaryResponse'
+        composers:
+          type: array
+          items:
+            $ref: '#/components/schemas/ComposerResponse'
+        stats:
+          $ref: '#/components/schemas/Stats'
+        generatedAt:
+          type: string
+          format: date-time
+    ScoreSummaryResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        composer:
+          type: string
+        difficulty:
+          type: string
+          enum:
+            - EASY
+            - MEDIUM
+            - HARD
+            - EXPERT
+        processingStatus:
+          type: string
+        sourceType:
+          type: string
+        visibility:
+          type: string
+        license:
+          type: string
+          enum:
+            - ALL_RIGHTS_RESERVED
+            - CC0
+            - CC_BY
+            - CC_BY_SA
+            - CC_BY_NC
+        allowArrange:
+          type: boolean
+        isOfficial:
+          type: boolean
+        measureCount:
+          type: integer
+          format: int32
+        accessLevel:
+          type: string
+        ownerEmail:
+          type: string
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/TagResponse'
+        arrangerName:
+          type: string
+        ownerName:
+          type: string
+        viewCount:
+          type: integer
+          format: int64
+        ratingAverage:
+          type: number
+          format: double
+        ratingCount:
+          type: integer
+          format: int64
+        thumbnailUrl:
+          type: string
+        coverUrl:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Stats:
+      type: object
+      properties:
+        scores:
+          type: integer
+          format: int64
+        publicScores:
+          type: integer
+          format: int64
+        digitizedPages:
+          type: integer
+          format: int64
+        practiceHours:
+          type: integer
+          format: int64
+        members:
+          type: integer
+          format: int64
+    TagResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+
+    # ── Wrapped Responses ──
+    ApiResponseComposerResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/ComposerResponse'
+    ApiResponseExploreFacetsResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/ExploreFacetsResponse'
+    ApiResponseListComposerResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: '#/components/schemas/ComposerResponse'
+    ApiResponseListTagResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: '#/components/schemas/TagResponse'
+    ApiResponsePageResponseScoreSummaryResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/PageResponseScoreSummaryResponse'
+    ApiResponsePublicHomeResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/PublicHomeResponse'
+    ApiResponseScoreSummaryResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/ScoreSummaryResponse'
+    ApiResponseError:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 1002
+        message:
+          type: string
+          example: You do not have permission
