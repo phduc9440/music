@@ -44,6 +44,7 @@ export const PAGE_META_ROUTES: PageMetaRoute[] = [
   { pattern: '/practice-history', key: 'practiceHistory', glyph: 'stats' },
   { pattern: '/practice-stats', key: 'practiceStats', glyph: 'stats' },
   { pattern: '/studio/history', key: 'studioHistory', glyph: 'stats' },
+  { pattern: '/studio/scores/:scoreId/play', key: 'studioPlayer', glyph: 'play' },
   { pattern: '/studio/sessions/:sessionId/report', key: 'studioReport', glyph: 'stats' },
   { pattern: '/pricing', key: 'pricing', glyph: 'card' },
   { pattern: '/billing', key: 'billing', glyph: 'card' },

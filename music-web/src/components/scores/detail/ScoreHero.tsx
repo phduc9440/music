@@ -184,6 +184,11 @@ export default function ScoreHero({ score, onVisibilityChanged, onRequestMore }:
               <Icon name="play" size={16} />
               {t('scores.hero.play')}
             </Link>
+            {ready && !base.startsWith('/admin') && (
+              <Link className="sc-btn" to={`/studio/scores/${score.id}/play`}>
+                {t('scores.hero.studioPractice')}
+              </Link>
+            )}
             {score.canReview && ready && (
               <button
                 type="button"

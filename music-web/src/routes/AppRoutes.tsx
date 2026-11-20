@@ -41,6 +41,7 @@ import PracticeHistory from '../pages/scores/practice/PracticeHistory';
 import PracticeStats from '../pages/scores/practice/PracticeStats';
 import StudioHistory from '../pages/scores/practice/StudioHistory';
 import StudioSessionReport from '../pages/scores/practice/StudioSessionReport';
+import StudioPlayer from '../pages/scores/practice/StudioPlayer';
 import MyPlan from '../pages/billing/MyPlan';
 import Pricing from '../pages/billing/Pricing';
 import BillingResult from '../pages/billing/BillingResult';
@@ -145,6 +146,14 @@ const router = createBrowserRouter(
         element={
           <ProtectedRoute allowedRole="USER">
             <ScorePlayer />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/studio/scores/:scoreId/play"
+        element={
+          <ProtectedRoute allowedRole="USER">
+            <StudioPlayer />
           </ProtectedRoute>
         }
       />
