@@ -14,6 +14,7 @@ import '../../../components/scores/scores.css';
 import './playlists.css';
 import { coverHue } from './playlistUtils';
 import { t } from '../../../i18n/core';
+import { BackLink } from '../../../components/ui';
 
 /**
  * Trang /playlists/:id (mục 3.10): xem, thêm, bỏ bài (từng bài hoặc nhiều bài, luôn hỏi xác nhận), kéo thả đổi thứ tự,
@@ -145,9 +146,7 @@ export default function PlaylistDetail() {
   return (
     <div className="sc-page">
       <div className="sc-backbar">
-        <button type="button" className="sc-backlink" onClick={() => navigate('/playlists')}>
-          ‹ {t('playlists.backToList')}
-        </button>
+        <BackLink label={t('playlists.backToList')} to="/playlists" />
       </div>
 
       <main className="sc-container">

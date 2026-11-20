@@ -29,6 +29,24 @@
   color: var(--ui-text-2);
 }
 
+/* ---- khung chứa chuyên mục + thanh công cụ (thẻ nổi giống thanh lọc ở Thư viện) ---- */
+.fm-controls {
+  margin-bottom: 1.25rem;
+  padding: 0.25rem 0.75rem 0.75rem;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-surface);
+  box-shadow: var(--ui-card-shadow);
+}
+
+.fm-controls .fm-cats {
+  margin-bottom: 0.75rem;
+}
+
+.fm-controls .fm-toolbar {
+  margin-bottom: 0;
+}
+
 /* ---- chuyên mục ---- */
 .fm-cats {
   display: flex;

@@ -13,6 +13,7 @@ import { formatDateTime, getErrorCode, getErrorMessage, useScoreBase } from '../
 import '../../../components/scores/scores.css';
 import '../../../components/scores/suggestions/suggestions.css';
 import './SuggestionReview.css';
+import { BackLink } from '../../../components/ui';
 
 type Load = { phase: 'loading' } | { phase: 'ready'; detail: SuggestionDetail } | { phase: 'error'; message: string };
 
@@ -182,9 +183,7 @@ export default function SuggestionReview() {
 
   const back = (
     <div className="sc-backbar">
-      <button type="button" className="sc-backlink" onClick={() => navigate(`${detailPath}?tab=suggestions`)}>
-        {t('suggestions.review.back')}
-      </button>
+      <BackLink label={t('suggestions.review.back')} onClick={() => navigate(`${detailPath}?tab=suggestions`)} />
     </div>
   );
 

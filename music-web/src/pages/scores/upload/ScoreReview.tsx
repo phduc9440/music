@@ -30,6 +30,7 @@ import './ScoreProcessing.css';
 import './ScoreReview.css';
 import { t } from '../../../i18n/core';
 import Skeleton from '../../../components/ui/Skeleton';
+import { BackLink } from '../../../components/ui';
 
 type LoadState = 'loading' | 'ready' | 'notFound' | 'error';
 type Tab = 'score' | 'check' | 'warnings' | 'kern';
@@ -201,9 +202,7 @@ export default function ScoreReview() {
 
   const navbar = (
     <div className="sc-backbar">
-      <button type="button" className="sc-backlink" onClick={() => navigate(base)}>
-        {t('upload.processing.backToLibrary')}
-      </button>
+      <BackLink label={t('upload.processing.backToLibrary')} onClick={() => navigate(base)} />
     </div>
   );
 

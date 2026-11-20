@@ -1,16 +1,13 @@
 import { useEffect, useState } from 'react';
-import { useLocation, useParams, useViewTransitionState } from 'react-router-dom';
+import { useParams, useViewTransitionState } from 'react-router-dom';
 import { Link } from '../../routes/transition-nav';
-import { useNavigate } from '../../routes/useTransitionNavigate';
 import ComposerPortrait from '../../components/composers/ComposerPortrait';
-import PlaylistPicker from '../../components/scores/library/PlaylistPicker';
-import ScoreCard from '../../components/scores/library/ScoreCard';
+import ScoreGrid from '../../components/scores/library/ScoreGrid';
 import { BackLink, Icon } from '../../components/ui';
 import { composerApi, scoreApi } from '../../services';
 import type { Composer, PageResult, ScoreSummary } from '../../types';
 import { t } from '../../i18n/core';
 import { PERIOD_LABELS, PERIOD_SPANS, lifespan } from '../../utils/composer';
-import { getScorePath } from '../../utils/score';
 import { isGuest } from '../../utils/session';
 import '../../components/scores/scores.css';
 import './composers.css';
@@ -66,8 +63,6 @@ function Timeline({ composer }: { composer: Composer }) {
 export default function ComposerDetail() {
   const { slug = '' } = useParams();
   const arriving = useViewTransitionState(`/composers/${slug}`);
-  const navigate = useNavigate();
-  const { pathname } = useLocation();
   // Kết quả gắn với slug đã tải; slug đổi thì kết quả cũ không còn khớp và tự coi là đang tải (không cần reset trong effect)
   const [loaded, setLoaded] = useState<{
     slug: string;
@@ -75,7 +70,6 @@ export default function ComposerDetail() {
     publicScores?: PageResult<ScoreSummary>;
     official?: PageResult<ScoreSummary>;
   } | null>(null);
-  const [saving, setSaving] = useState<ScoreSummary | null>(null);
 
   const current = loaded?.slug === slug ? loaded : null;
   const composer = current?.composer ?? null;
@@ -111,10 +105,6 @@ export default function ComposerDetail() {
       cancelled = true;
     };
   }, [slug]);
-
-  const guest = isGuest();
-  const open = (s: ScoreSummary) =>
-    guest ? navigate(`/s/${s.id}`) : navigate(getScorePath(s.id, s.processingStatus), { state: { from: pathname } });
 
   if (notFound) {
     return (
@@ -196,26 +186,7 @@ export default function ComposerDetail() {
           {publicScores && publicScores.content.length === 0 && (
             <p className="cd-empty">{t('composers.noPublicOf', { name: composer.name })}</p>
           )}
-          {publicScores && publicScores.content.length > 0 && (
-            <div className="sc-grid">
-              {publicScores.content.map((s) => (
-                <ScoreCard
-                  key={s.id}
-                  score={s}
-                  explore
-                  onOpen={open}
-                  actions={
-                    guest ? undefined : (
-                      <button type="button" className="sc-btn sc-btn--sm" onClick={() => setSaving(s)}>
-                        <Icon name="plus" size={14} />
-                        {t('scores.playlistPicker.title')}
-                      </button>
-                    )
-                  }
-                />
-              ))}
-            </div>
-          )}
+          {publicScores && publicScores.content.length > 0 && <ScoreGrid scores={publicScores.content} />}
         </section>
 
         {official && official.content.length > 0 && (
@@ -229,16 +200,10 @@ export default function ComposerDetail() {
                 </Link>
               )}
             </header>
-            <div className="sc-grid">
-              {official.content.map((s) => (
-                <ScoreCard key={s.id} score={s} explore onOpen={open} />
-              ))}
-            </div>
+            <ScoreGrid scores={official.content} />
           </section>
         )}
       </main>
-
-      {saving && <PlaylistPicker score={saving} onClose={() => setSaving(null)} />}
     </div>
   );
 }

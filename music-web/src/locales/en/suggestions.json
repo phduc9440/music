@@ -55,7 +55,7 @@
     "open": "View"
   },
   "review": {
-    "back": "‹ Back to score",
+    "back": "Back to score",
     "loadFailed": "Could not load the suggestion",
     "notFound": "Suggestion not found or you do not have access",
     "author": "Suggested by",

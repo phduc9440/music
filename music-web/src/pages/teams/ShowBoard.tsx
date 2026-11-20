@@ -28,6 +28,7 @@ import TasksPanel from './TasksPanel';
 import { daysUntil, memberName } from './teamUtils';
 import '../../components/scores/scores.css';
 import './teams.css';
+import { BackLink } from '../../components/ui';
 
 type View = 'board' | 'list';
 
@@ -190,9 +191,7 @@ export default function ShowBoard() {
   return (
     <div className="sc-page">
       <div className="sc-backbar">
-        <Link className="sc-backlink" to={`/teams/${teamId}?tab=shows`}>
-          ‹ {data?.teamName ?? t('teams.title')}
-        </Link>
+        <BackLink label={data?.teamName ?? t('teams.title')} to={`/teams/${teamId}?tab=shows`} />
       </div>
       <main className="sc-container">
         <header className="tm-show">

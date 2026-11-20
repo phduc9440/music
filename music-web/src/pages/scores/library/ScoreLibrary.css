@@ -28,6 +28,10 @@
   border-radius: var(--sc-radius);
   box-shadow: var(--sc-shadow);
 }
+/* Thanh lọc gọn (Nhạc mẫu): ô tìm kiếm rộng + một ô chọn */
+.sc-filters--compact {
+  grid-template-columns: minmax(220px, 3fr) minmax(160px, 1fr);
+}
 .sc-search {
   position: relative;
   display: block;
@@ -42,128 +46,6 @@
 }
 .sc-search .sc-input {
   padding-left: 2.4rem;
-}
-
-.sc-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-  gap: 1.25rem;
-  transition: opacity 0.15s;
-}
-.sc-grid.is-refetching {
-  opacity: 0.55;
-}
-
-.sc-card {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  background: var(--sc-card);
-  border: 1px solid var(--sc-line);
-  border-radius: var(--sc-radius);
-  box-shadow: var(--sc-shadow);
-  cursor: pointer;
-  transition:
-    transform 0.18s,
-    box-shadow 0.18s,
-    border-color 0.18s;
-}
-.sc-card:hover,
-.sc-card:focus-visible {
-  transform: translateY(-4px);
-  border-color: var(--ui-primary-border);
-  box-shadow: var(--sc-shadow-hover);
-  outline: none;
-}
-.sc-card__cover {
-  position: relative;
-  height: 170px;
-  overflow: hidden;
-  border-bottom: 1px solid var(--sc-line);
-}
-.sc-card__img {
-  height: 100%;
-  transition: transform 0.3s;
-}
-.sc-card:hover .sc-card__img {
-  transform: scale(1.04);
-}
-.sc-card__cover .sc-thumb--empty {
-  height: 100%;
-}
-.sc-card__visibility {
-  position: absolute;
-  top: 0.6rem;
-  left: 0.6rem;
-  filter: drop-shadow(0 1px 3px color-mix(in srgb, var(--ui-shadow-ink) 20%, transparent));
-}
-.sc-card__status {
-  position: absolute;
-  top: 0.6rem;
-  right: 0.6rem;
-  filter: drop-shadow(0 1px 3px color-mix(in srgb, var(--ui-shadow-ink) 20%, transparent));
-}
-.sc-card__body {
-  display: flex;
-  flex: 1; /* giãn hết chiều cao thẻ để chân thẻ và nút hành động dồn xuống đáy, thẳng hàng giữa các thẻ */
-  flex-direction: column;
-  gap: 0.35rem;
-  padding: 0.9rem 1rem 1rem;
-}
-.sc-card__title {
-  font-size: 1rem;
-  font-weight: 700;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.sc-card__composer {
-  font-size: 0.85rem;
-  color: var(--sc-muted);
-}
-.sc-card__chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  margin: 0.25rem 0;
-  min-height: 1.6rem;
-}
-.sc-card__foot {
-  display: flex;
-  justify-content: space-between;
-  margin-top: auto; /* dồn xuống đáy thẻ */
-  padding-top: 0.5rem;
-  border-top: 1px dashed var(--sc-line);
-  font-size: 0.75rem;
-  color: var(--sc-muted);
-}
-
-/* Khung xương khi tải lần đầu */
-.sc-card--skeleton {
-  cursor: default;
-  pointer-events: none;
-}
-.sc-skeleton {
-  background: linear-gradient(
-    90deg,
-    var(--ui-surface-hover) 25%,
-    var(--ui-surface-muted) 37%,
-    var(--ui-surface-hover) 63%
-  );
-  background-size: 200% 100%;
-  animation: sc-shimmer 1.3s linear infinite;
-  border-radius: 8px;
-}
-.sc-skeleton--cover {
-  height: 170px;
-  border-radius: 0;
-}
-.sc-skeleton--line {
-  height: 14px;
-  margin: 0.3rem 0;
-}
-.sc-skeleton--short {
-  width: 55%;
 }
 
 /* Trạng thái rỗng */
@@ -213,14 +95,13 @@
   .sc-search {
     grid-column: 1 / -1;
   }
+  .sc-filters--compact {
+    grid-template-columns: 1fr;
+  }
 }
 @media (max-width: 520px) {
   .sc-filters {
     grid-template-columns: 1fr;
-  }
-  .sc-grid {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 0.75rem;
   }
   .sc-pager {
     flex-wrap: wrap;
@@ -232,10 +113,6 @@
   .sc-lib-head {
     flex-direction: column;
     align-items: stretch;
-  }
-
-  .sc-grid {
-    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -290,8 +167,8 @@
 }
 
 /* =====================================================================================================================
- * Thư viện "Bản nhạc của tôi" (giao diện v2): đầu trang kiểu sân khấu, thanh lọc nổi, thẻ rõ khối hơn, nút ⋯ và menu
- * chuột phải. Chỉ áp trong .sc-lib để các trang khác dùng chung .sc-card (Khám phá, Kho mẫu...) không đổi theo.
+ * Thư viện "Bản nhạc của tôi" (giao diện v2): đầu trang kiểu sân khấu, thanh lọc nổi. Thẻ bản nhạc dùng chung
+ * nằm ở components/scores/library/score-card.css.
  * ================================================================================================================== */
 .sc-lib-hero {
   position: relative;
@@ -376,134 +253,6 @@
   backdrop-filter: blur(10px);
 }
 
-/* Thẻ bản nhạc */
-.sc-lib .sc-grid {
-  gap: 1.35rem;
-}
-.sc-grid__cell {
-  display: flex;
-  min-width: 0;
-}
-.sc-grid__cell > .sc-card {
-  flex: 1;
-  min-width: 0;
-}
-.sc-lib .sc-card {
-  border-color: var(--ui-card-border);
-  border-radius: 16px;
-  box-shadow: var(--ui-card-shadow);
-}
-.sc-lib .sc-card:hover,
-.sc-lib .sc-card:focus-visible,
-.sc-lib .is-menu-open > .sc-card {
-  transform: translateY(-5px);
-  border-color: var(--ui-primary);
-  box-shadow:
-    0 0 0 3px var(--ui-primary-ring),
-    0 18px 36px -14px color-mix(in srgb, var(--ui-shadow-ink) 45%, transparent);
-}
-.sc-lib .sc-card__cover {
-  height: 178px;
-  background: linear-gradient(160deg, var(--ui-surface-muted), var(--ui-surface-hover));
-}
-/* Lớp tối dần ở đáy ảnh bìa để nhãn và nút ⋯ luôn đọc được trên ảnh sáng */
-.sc-lib .sc-card__cover::after {
-  position: absolute;
-  inset: auto 0 0;
-  height: 56px;
-  background: linear-gradient(0deg, color-mix(in srgb, var(--ui-shadow-ink) 28%, transparent), transparent);
-  content: '';
-  opacity: 0;
-  transition: opacity 0.2s;
-  pointer-events: none;
-}
-.sc-lib .sc-card:hover .sc-card__cover::after,
-.sc-lib .is-menu-open > .sc-card .sc-card__cover::after,
-.sc-lib .sc-card:focus-within .sc-card__cover::after {
-  opacity: 1;
-}
-.sc-lib .sc-card__body {
-  gap: 0.3rem;
-  padding: 0.95rem 1.05rem 1rem;
-}
-.sc-lib .sc-card__title {
-  font-family: var(--ui-font-display);
-  font-size: 1.06rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-}
-.sc-lib .sc-card:hover .sc-card__title {
-  color: var(--ui-primary);
-}
-.sc-lib .sc-card__foot {
-  border-top-style: solid;
-  color: var(--ui-text-2);
-  font-variant-numeric: tabular-nums;
-}
-
-/* Nút ⋯ ở góc dưới ảnh bìa: hiện khi rê chuột / đang chọn bằng bàn phím, luôn hiện trên màn hình cảm ứng */
-.sc-card__menu {
-  position: absolute;
-  right: 0.6rem;
-  bottom: 0.6rem;
-  z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  padding: 0;
-  border: 1px solid var(--ui-border);
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--ui-surface) 92%, transparent);
-  box-shadow: var(--ui-shadow);
-  color: var(--ui-text);
-  cursor: pointer;
-  opacity: 0;
-  transform: translateY(4px) scale(0.92);
-  transition:
-    opacity 0.15s,
-    transform 0.15s,
-    background 0.15s;
-  backdrop-filter: blur(6px);
-}
-.sc-card:hover .sc-card__menu,
-.sc-card:focus-within .sc-card__menu,
-.is-menu-open > .sc-card .sc-card__menu {
-  opacity: 1;
-  transform: none;
-}
-.sc-card__menu:hover,
-.sc-card__menu:focus-visible,
-.is-menu-open > .sc-card .sc-card__menu {
-  border-color: var(--ui-primary);
-  background: var(--ui-primary);
-  color: var(--ui-on-accent);
-  outline: none;
-}
-@media (hover: none) {
-  .sc-card__menu {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-.sc-lib-tip {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  margin: 1.25rem 0 0;
-  color: var(--ui-text-3);
-  font-size: 0.8rem;
-  text-align: center;
-}
-@media (hover: none) {
-  .sc-lib-tip {
-    display: none;
-  }
-}
-
 @media (max-width: 600px) {
   .sc-lib-hero {
     padding: 1.2rem 1.1rem;
@@ -513,11 +262,5 @@
   }
   .sc-lib .sc-filters {
     position: static;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .sc-lib .sc-card,
-  .sc-card__menu {
-    transition: none;
   }
 }
