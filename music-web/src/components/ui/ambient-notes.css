@@ -17,6 +17,10 @@
 :root[data-theme='dark'] .ambient-notes {
   --ambient-wash: 20%;
 }
+/* chỉ có hiệu ứng bấm: bỏ ánh màu nền (trang đã có nền riêng) */
+.ambient-notes--bare {
+  background: none;
+}
 .ambient-notes__bg {
   position: absolute;
   inset: 0;

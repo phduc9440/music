@@ -11,6 +11,8 @@ import './ambient-notes.css';
  *    nhận sự kiện), trừ khi bấm vào ô nhập liệu hay hộp thoại
  * Màu lấy từ bảng màu hiệu ứng --ui-fx-1..4 (tokens.css), đổi theo theme. Giảm chuyển động: vẽ một khung tĩnh, không
  * có hiệu ứng bấm. Dừng khi tab ẩn.
+ * `ambient={false}`: chỉ có hiệu ứng bấm, không có nốt bay / bụi / ánh màu nền (cho trang đã có nền riêng như trang chủ
+ * làm việc); khi đó vòng vẽ chỉ chạy lúc đang có hiệu ứng rồi tự dừng.
  */
 
 type Kind = 0 | 1 | 2 | 3; // móc đơn, nốt đen, nốt trắng, cặp nối dây
@@ -109,7 +111,7 @@ function drawNote(ctx: CanvasRenderingContext2D, kind: Kind, s: number) {
   }
 }
 
-export default function AmbientNotes({ density = 1 }: { density?: number }) {
+export default function AmbientNotes({ density = 1, ambient = true }: { density?: number; ambient?: boolean }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const bgRef = useRef<HTMLCanvasElement>(null);
   const fxRef = useRef<HTMLCanvasElement>(null);
@@ -140,6 +142,7 @@ export default function AmbientNotes({ density = 1 }: { density?: number }) {
     const ripples: Ripple[] = [];
 
     const build = () => {
+      if (!ambient) return; // chỉ có hiệu ứng bấm: không có nốt nền
       const area = (w * h) / (1440 * 900);
       const n = Math.round(Math.min(64, Math.max(20, 42 * area)) * density);
       floaters = Array.from({ length: n }, (_, i) => {
@@ -247,6 +250,7 @@ export default function AmbientNotes({ density = 1 }: { density?: number }) {
     };
 
     const drawBg = (dt: number) => {
+      if (!ambient) return;
       bctx.clearRect(0, 0, w, h);
       // bụi sáng
       for (const m of motes) {
@@ -353,9 +357,12 @@ export default function AmbientNotes({ density = 1 }: { density?: number }) {
       scroll += (window.scrollY - scroll) * (1 - Math.pow(0.02, dt));
       drawBg(dt);
       drawFx(dt);
+      // không có nền chuyển động: hết hiệu ứng bấm thì nghỉ, lần bấm sau gọi start() lại
+      if (!ambient && !bursts.length && !ripples.length) stop();
     };
     const start = () => {
       if (running || document.hidden) return;
+      if (!ambient && !bursts.length && !ripples.length) return;
       if (reduce.matches) {
         drawBg(0);
         return;
@@ -401,12 +408,12 @@ export default function AmbientNotes({ density = 1 }: { density?: number }) {
       document.removeEventListener('visibilitychange', sync);
       reduce.removeEventListener('change', sync);
     };
-  }, [density]);
+  }, [density, ambient]);
 
   // lớp hiệu ứng bấm là anh em chứ không nằm trong khối nền: khối nền có z-index âm nên con của nó luôn dưới nội dung
   return (
     <>
-      <div ref={hostRef} className="ambient-notes" aria-hidden="true">
+      <div ref={hostRef} className={`ambient-notes${ambient ? '' : ' ambient-notes--bare'}`} aria-hidden="true">
         <canvas ref={bgRef} className="ambient-notes__bg" />
       </div>
       <canvas ref={fxRef} className="ambient-notes__fx" aria-hidden="true" />

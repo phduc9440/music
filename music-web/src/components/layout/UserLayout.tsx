@@ -94,8 +94,9 @@ export default function UserLayout() {
 
   return (
     <div className="app-shell">
-      {/* nền nốt nhạc nhiều màu cho mọi trang trong khung; trang chủ đã có khuông nhạc 3D riêng nên bỏ qua */}
-      {pathname !== '/' && <AmbientNotes density={0.8} />}
+      {/* nền nốt nhạc nhiều màu và hiệu ứng bấm cho mọi trang trong khung; trang chủ đã có khuông nhạc 3D làm nền nên
+          chỉ lấy hiệu ứng bấm cho đồng bộ */}
+      <AmbientNotes density={0.8} ambient={pathname !== '/'} />
       <header className="app-header">
         <div className="app-header__inner">
           <div className="app-header__left">
