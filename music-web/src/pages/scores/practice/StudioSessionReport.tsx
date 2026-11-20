@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { BackLink } from '../../../components/ui';
 import { studioApi } from '../../../services/practice/studioApi';
 import type { StudioSessionReport as StudioSessionReportData } from '../../../types';
 import { formatDateTime, t } from '../../../i18n/core';
@@ -39,11 +40,7 @@ export default function StudioSessionReport() {
   return (
     <div className="sc-page">
       <main className="sc-container">
-        <div className="studio-report__back">
-          <Link to="/studio/history" className="sc-btn sc-btn--sm">
-            {t('studioReport.report.back')}
-          </Link>
-        </div>
+        <BackLink label={t('studioReport.report.back')} to="/studio/history" />
         {!report && <p>{t(loadFailed ? 'studioReport.report.loadFailed' : 'studioReport.report.loading')}</p>}
         {report && (
           <>

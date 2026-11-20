@@ -1,18 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { useLocation, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useNavigate } from '../../../routes/useTransitionNavigate';
 import { toast } from 'react-toastify';
 import Pagination from '../../../components/scores/common/Pagination';
-import PlaylistPicker from '../../../components/scores/library/PlaylistPicker';
-import ScoreCard from '../../../components/scores/library/ScoreCard';
+import ScoreGrid from '../../../components/scores/library/ScoreGrid';
 import { Icon } from '../../../components/ui';
 import { composerApi, scoreApi, tagApi } from '../../../services';
 import type { Composer, Difficulty, PageResult, ScoreSummary, Tag } from '../../../types';
 import { labelMap, t } from '../../../i18n/core';
-import { DIFFICULTY_LABELS, getScorePath } from '../../../utils/score';
-import { isGuest } from '../../../utils/session';
+import { DIFFICULTY_LABELS } from '../../../utils/score';
 import '../../../components/scores/scores.css';
+import './ScoreLibrary.css';
 import './explore.css';
 
 const PAGE_SIZE = 12;
@@ -67,7 +66,6 @@ function FilterGroup<T extends string | number>({
  */
 export default function ExploreScores() {
   const navigate = useNavigate();
-  const { pathname, search } = useLocation(); // để trang chi tiết biết người dùng đi từ đâu tới
   const [params, setParams] = useSearchParams();
 
   const keyword = params.get('q') ?? '';
@@ -88,9 +86,6 @@ export default function ExploreScores() {
   const [data, setData] = useState<PageResult<ScoreSummary> | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false); // cột lọc dạng ngăn kéo trên màn hình nhỏ
   const [composerQuery, setComposerQuery] = useState('');
-  const [saving, setSaving] = useState<ScoreSummary | null>(null);
-  // Khách chưa đăng nhập xem được Khám phá nhưng không lưu vào playlist
-  const guest = isGuest();
 
   useEffect(() => {
     // Thiếu danh sách nào thì chỉ mất bộ lọc đó
@@ -236,7 +231,7 @@ export default function ExploreScores() {
   return (
     <div className="sc-page">
       <main className="sc-container">
-        <header className="ex-head">
+        <header className="ex-head sc-lib-head sc-lib-hero ui-stage">
           <div>
             <h1>{t('scores.explore.title')}</h1>
             <p>
@@ -341,31 +336,7 @@ export default function ExploreScores() {
               </div>
             )}
 
-            {data && data.content.length > 0 && (
-              <div className="sc-grid">
-                {data.content.map((s) => (
-                  <ScoreCard
-                    key={s.id}
-                    score={s}
-                    explore
-                    onOpen={(item) =>
-                      // Khách vào trang công khai /s/:id; người đã đăng nhập vào trang đầy đủ
-                      guest
-                        ? navigate(`/s/${item.id}`)
-                        : navigate(getScorePath(item.id, item.processingStatus), { state: { from: pathname + search } })
-                    }
-                    actions={
-                      guest ? undefined : (
-                        <button type="button" className="sc-btn sc-btn--sm" onClick={() => setSaving(s)}>
-                          <Icon name="plus" size={14} />
-                          {t('scores.playlistPicker.title')}
-                        </button>
-                      )
-                    }
-                  />
-                ))}
-              </div>
-            )}
+            {data && data.content.length > 0 && <ScoreGrid scores={data.content} showTip />}
 
             {data && (
               <Pagination
@@ -378,8 +349,6 @@ export default function ExploreScores() {
           </section>
         </div>
       </main>
-
-      {saving && <PlaylistPicker score={saving} onClose={() => setSaving(null)} />}
     </div>
   );
 }

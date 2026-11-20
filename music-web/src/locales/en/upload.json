@@ -176,7 +176,7 @@
     "cantCancel": "The task has already finished, so it can't be cancelled",
     "cancelFailed": "Couldn't cancel the task",
     "resent": "Sent again for digitizing",
-    "backToLibrary": "‹ Library",
+    "backToLibrary": "Library",
     "loadFailed": "Couldn't load the progress",
     "toLibrary": "Back to library",
     "noTask": "This score has no digitizing task",

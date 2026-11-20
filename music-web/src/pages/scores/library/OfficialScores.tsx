@@ -1,60 +1,79 @@
 import { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
-import { useNavigate } from '../../../routes/useTransitionNavigate';
 import { toast } from 'react-toastify';
 import Pagination from '../../../components/scores/common/Pagination';
-import ScoreCard from '../../../components/scores/library/ScoreCard';
+import { LibrarySkeleton } from '../../../components/scores/library/LibraryStates';
+import ScoreGrid from '../../../components/scores/library/ScoreGrid';
+import Icon from '../../../components/ui/Icon';
 import { scoreApi } from '../../../services';
 import type { Difficulty, PageResult, ScoreSummary } from '../../../types';
-import { DIFFICULTY_LABELS, getScorePath } from '../../../utils/score';
+import { DIFFICULTY_LABELS, MAX_KEYWORD } from '../../../utils/score';
 import '../../../components/scores/scores.css';
+import './ScoreLibrary.css';
 import { t } from '../../../i18n/core';
 
 const PAGE_SIZE = 12;
 
 /** Trang /scores/official: kho bản nhạc mẫu (bản nhạc chính thức) cho người mới học, từ dễ đến khó (mục 4.5). */
 export default function OfficialScores() {
-  const navigate = useNavigate();
-  const { pathname } = useLocation(); // để trang chi tiết biết người dùng đi từ đâu tới
   const [page, setPage] = useState(0);
   const [keywordInput, setKeywordInput] = useState('');
   const [keyword, setKeyword] = useState('');
   const [difficulty, setDifficulty] = useState<Difficulty | ''>('');
-  const [data, setData] = useState<PageResult<ScoreSummary> | null>(null);
+  // key = bộ lọc của lần tải xong gần nhất, để làm mờ lưới cũ khi đang tải theo bộ lọc mới
+  const [loaded, setLoaded] = useState<{ key: string; data: PageResult<ScoreSummary> | null }>({ key: '', data: null });
+  const requestKey = [page, keyword, difficulty].join('|');
+
+  // Debounce ô tìm kiếm 400ms như "Bản nhạc của tôi"
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setKeyword(keywordInput.trim().slice(0, MAX_KEYWORD));
+      setPage(0);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [keywordInput]);
 
   useEffect(() => {
+    let cancelled = false;
     scoreApi
       .official({ page, size: PAGE_SIZE, keyword: keyword || undefined, difficulty })
-      .then((res) => setData(res.data.result))
-      .catch(() => toast.error(t('scores.official.loadFailed')));
-  }, [page, keyword, difficulty]);
+      .then((res) => !cancelled && setLoaded({ key: requestKey, data: res.data.result }))
+      .catch(() => {
+        if (cancelled) return;
+        toast.error(t('scores.official.loadFailed'));
+        setLoaded((prev) => ({ ...prev, key: requestKey }));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [page, keyword, difficulty, requestKey]);
+
+  const data = loaded.data;
 
   return (
-    <div className="sc-page">
+    <div className="sc-page sc-lib">
       <main className="sc-container">
-        <header className="sc-lib-head">
+        <header className="sc-lib-head sc-lib-hero ui-stage">
           <div>
             <h1>{t('common.nav.items.officialLibrary')}</h1>
             <p>{data ? t('scores.official.count', { count: data.totalElements }) : t('scores.official.subtitle')}</p>
           </div>
         </header>
 
-        <form
-          className="d-flex gap-2 mb-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            setPage(0);
-            setKeyword(keywordInput.trim());
-          }}
-        >
-          <input
-            className="sc-input"
-            placeholder={t('scores.explore.searchPlaceholder')}
-            value={keywordInput}
-            onChange={(e) => setKeywordInput(e.target.value)}
-          />
+        <div className="sc-filters sc-filters--compact">
+          <label className="sc-search">
+            <Icon name="search" size={18} />
+            <input
+              className="sc-input"
+              placeholder={t('scores.explore.searchPlaceholder')}
+              aria-label={t('scores.explore.searchLabel')}
+              value={keywordInput}
+              maxLength={MAX_KEYWORD}
+              onChange={(e) => setKeywordInput(e.target.value)}
+            />
+          </label>
           <select
             className="sc-input"
+            aria-label={t('scores.filters.byDifficulty')}
             value={difficulty}
             onChange={(e) => {
               setPage(0);
@@ -68,10 +87,9 @@ export default function OfficialScores() {
               </option>
             ))}
           </select>
-          <button type="submit" className="sc-btn sc-btn--primary">
-            {t('common.search')}
-          </button>
-        </form>
+        </div>
+
+        {!data && loaded.key === '' && <LibrarySkeleton />}
 
         {data && data.content.length === 0 && (
           <div className="sc-empty">
@@ -81,24 +99,11 @@ export default function OfficialScores() {
         )}
 
         {data && data.content.length > 0 && (
-          <div className="sc-grid">
-            {data.content.map((s) => (
-              <ScoreCard
-                key={s.id}
-                score={s}
-                onOpen={(item) => navigate(getScorePath(item.id, item.processingStatus), { state: { from: pathname } })}
-              />
-            ))}
-          </div>
+          <ScoreGrid scores={data.content} refetching={loaded.key !== requestKey} showTip />
         )}
 
         {data && (
-          <Pagination
-            page={data.pageNumber}
-            totalPages={data.totalPages}
-            totalElements={data.totalElements}
-            onChange={setPage}
-          />
+          <Pagination page={page} totalPages={data.totalPages} totalElements={data.totalElements} onChange={setPage} />
         )}
       </main>
     </div>

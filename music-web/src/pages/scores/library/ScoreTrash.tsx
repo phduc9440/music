@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from '../../../routes/useTransitionNavigate';
 import { toast } from 'react-toastify';
 import Modal from '../../../components/scores/common/Modal';
 import Pagination from '../../../components/scores/common/Pagination';
+import { BackLink } from '../../../components/ui';
 import { scoreApi } from '../../../services';
 import type { PageResult, TrashedScore } from '../../../types';
 import { getErrorMessage } from '../../../utils/score';
@@ -20,7 +20,6 @@ const daysLeft = (purgeAt: string): number =>
 
 /** Trang /scores/trash: bản nhạc đã xóa, giữ 30 ngày để khôi phục hoặc xóa hẳn. */
 export default function ScoreTrash() {
-  const navigate = useNavigate();
   const [page, setPage] = useState(0);
   const [data, setData] = useState<PageResult<TrashedScore> | null>(null);
   const [loading, setLoading] = useState(true);
@@ -88,14 +87,12 @@ export default function ScoreTrash() {
   return (
     <div className="sc-page">
       <main className="sc-container">
+        <BackLink label={t('scores.trash.backToLibrary')} to="/scores" />
         <header className="sc-lib-head">
           <div>
             <h1>{t('common.nav.items.trash')}</h1>
             <p>{t('scores.trash.subtitle')}</p>
           </div>
-          <button className="sc-btn" onClick={() => navigate('/scores')}>
-            {t('scores.trash.backToLibrary')}
-          </button>
         </header>
 
         {loading && <div className="sc-skeleton sc-skeleton--hero" aria-busy="true" />}

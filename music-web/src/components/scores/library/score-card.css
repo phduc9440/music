@@ -1,0 +1,289 @@
+/* =====================================================================================================================
+ * Lưới và thẻ bản nhạc dùng chung (ScoreGrid / ScoreCard): Bản nhạc của tôi, Khám phá, Nhạc mẫu, Được chia sẻ, trang
+ * nhạc sĩ. Một kiểu duy nhất để mọi danh sách trông và dùng giống nhau. Màu lấy từ styles/tokens.css.
+ * ================================================================================================================== */
+.sc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 1.35rem;
+  transition: opacity 0.15s;
+}
+.sc-grid.is-refetching {
+  opacity: 0.55;
+}
+.sc-grid__cell {
+  display: flex;
+  min-width: 0;
+}
+.sc-grid__cell > .sc-card {
+  flex: 1;
+  min-width: 0;
+}
+
+.sc-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--sc-card);
+  border: 1px solid var(--ui-card-border, var(--sc-line));
+  border-radius: 16px;
+  box-shadow: var(--ui-card-shadow, var(--sc-shadow));
+  cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease;
+}
+/* Tiền tố .sc-grid để thắng khung thẻ chung trong styles/vibrant.css (.app-shell :is(.sc-card, ...)) */
+.sc-grid .sc-card:hover,
+.sc-grid .sc-card:focus-visible,
+.sc-grid .is-menu-open > .sc-card {
+  transform: translateY(-5px);
+  border-color: var(--ui-primary);
+  box-shadow:
+    0 0 0 3px var(--ui-primary-ring),
+    0 18px 36px -14px color-mix(in srgb, var(--ui-shadow-ink) 45%, transparent);
+  outline: none;
+}
+
+/* ---- ảnh bìa ---- */
+.sc-card__cover {
+  position: relative;
+  height: 178px;
+  overflow: hidden;
+  border-bottom: 1px solid var(--sc-line);
+  background: linear-gradient(160deg, var(--ui-surface-muted), var(--ui-surface-hover));
+}
+.sc-card__img {
+  height: 100%;
+  transition: transform 0.3s;
+}
+.sc-card:hover .sc-card__img {
+  transform: scale(1.04);
+}
+.sc-card__cover .sc-thumb--empty {
+  height: 100%;
+}
+/* Lớp tối dần ở đáy ảnh bìa để nhãn và nút ⋯ luôn đọc được trên ảnh sáng */
+.sc-card__cover::after {
+  position: absolute;
+  inset: auto 0 0;
+  height: 56px;
+  background: linear-gradient(0deg, color-mix(in srgb, var(--ui-shadow-ink) 28%, transparent), transparent);
+  content: '';
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+.sc-card:hover .sc-card__cover::after,
+.is-menu-open > .sc-card .sc-card__cover::after,
+.sc-card:focus-within .sc-card__cover::after {
+  opacity: 1;
+}
+.sc-card__visibility {
+  position: absolute;
+  top: 0.6rem;
+  left: 0.6rem;
+  filter: drop-shadow(0 1px 3px color-mix(in srgb, var(--ui-shadow-ink) 20%, transparent));
+}
+.sc-card__status {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  filter: drop-shadow(0 1px 3px color-mix(in srgb, var(--ui-shadow-ink) 20%, transparent));
+}
+
+/* Nút ⋯ ở góc dưới ảnh bìa: hiện khi rê chuột / đang chọn bằng bàn phím, luôn hiện trên màn hình cảm ứng */
+.sc-card__menu {
+  position: absolute;
+  right: 0.6rem;
+  bottom: 0.6rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--ui-border);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--ui-surface) 92%, transparent);
+  box-shadow: var(--ui-shadow);
+  color: var(--ui-text);
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(4px) scale(0.92);
+  transition:
+    opacity 0.15s,
+    transform 0.15s,
+    background 0.15s;
+  backdrop-filter: blur(6px);
+}
+.sc-card:hover .sc-card__menu,
+.sc-card:focus-within .sc-card__menu,
+.is-menu-open > .sc-card .sc-card__menu {
+  opacity: 1;
+  transform: none;
+}
+.sc-card__menu:hover,
+.sc-card__menu:focus-visible,
+.is-menu-open > .sc-card .sc-card__menu {
+  border-color: var(--ui-primary);
+  background: var(--ui-primary);
+  color: var(--ui-on-accent);
+  outline: none;
+}
+@media (hover: none) {
+  .sc-card__menu {
+    width: 40px;
+    height: 40px;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---- nội dung ---- */
+.sc-card__body {
+  display: flex;
+  flex: 1; /* giãn hết chiều cao thẻ để hàng số liệu dồn xuống đáy, thẳng hàng giữa các thẻ */
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.95rem 1.05rem 0.9rem;
+}
+.sc-card__title {
+  overflow: hidden;
+  font-family: var(--ui-font-display);
+  font-size: 1.06rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 0.15s;
+}
+.sc-card:hover .sc-card__title {
+  color: var(--ui-primary);
+}
+.sc-card__composer,
+.sc-card__by {
+  overflow: hidden;
+  color: var(--sc-muted);
+  font-size: 0.85rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sc-card__by {
+  color: var(--ui-text-3);
+  font-size: 0.8rem;
+}
+.sc-card__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  min-height: 1.6rem;
+  margin: 0.25rem 0;
+}
+
+/* Hàng số liệu cuối thẻ: lượt xem, điểm sao, số ô nhịp bên trái; lần cập nhật bên phải */
+.sc-card__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.8rem;
+  margin-top: auto; /* dồn xuống đáy thẻ */
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--sc-line);
+  color: var(--ui-text-2);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+.sc-card__stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  white-space: nowrap;
+}
+.sc-card__stat svg {
+  flex: none;
+  color: var(--ui-text-3);
+}
+.sc-card__stat--rated svg {
+  color: var(--ui-brass, var(--ui-primary));
+}
+.sc-card__time {
+  margin-left: auto;
+  color: var(--ui-text-3);
+  white-space: nowrap;
+}
+/* Chữ chỉ dành cho trình đọc màn hình (nghĩa của biểu tượng số liệu) */
+.sc-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---- khung xương khi tải lần đầu ---- */
+.sc-card--skeleton {
+  cursor: default;
+  pointer-events: none;
+}
+.sc-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--ui-surface-hover) 25%,
+    var(--ui-surface-muted) 37%,
+    var(--ui-surface-hover) 63%
+  );
+  background-size: 200% 100%;
+  animation: sc-shimmer 1.3s linear infinite;
+  border-radius: 8px;
+}
+.sc-skeleton--cover {
+  height: 178px;
+  border-radius: 0;
+}
+.sc-skeleton--line {
+  height: 14px;
+  margin: 0.3rem 0;
+}
+.sc-skeleton--short {
+  width: 55%;
+}
+
+/* Gợi ý chuột phải dưới lưới (ẩn trên màn hình cảm ứng) */
+.sc-grid-tip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin: 1.25rem 0 0;
+  color: var(--ui-text-3);
+  font-size: 0.8rem;
+  text-align: center;
+}
+@media (hover: none) {
+  .sc-grid-tip {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .sc-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.9rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sc-card,
+  .sc-card__img,
+  .sc-card__menu {
+    transition: none;
+  }
+  .sc-grid .sc-card:hover,
+  .sc-grid .sc-card:focus-visible,
+  .sc-grid .is-menu-open > .sc-card {
+    transform: none;
+  }
+}

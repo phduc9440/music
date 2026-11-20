@@ -45,7 +45,6 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
     ? { to: '/admin/scores', label: t('common.nav.back') }
     : getBackTarget(location.state, { to: '/scores', label: t('common.nav.items.library') });
   const backPath = back.to;
-  const backLabel = admin ? back.label : `‹ ${back.label}`;
   // Admin vào từ nhiều trang (quản lý, chờ duyệt, kho mẫu) nên quay về trang trước đó
   const goBack = () => (admin && window.history.length > 1 ? navigate(-1) : navigate(backPath));
   const { id } = useParams<{ id: string }>();
@@ -171,16 +170,10 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
     return () => clearInterval(t);
   }, [running]);
 
-  // Trang admin dùng cùng nút quay lại với các trang chi tiết admin khác (ví dụ chi tiết thành viên)
+  // Nút quay lại dùng chung (BackLink) như mọi trang chi tiết khác, cả trang người dùng lẫn trang quản trị
   const navbar = (
     <div className="sc-backbar">
-      {admin ? (
-        <BackLink label={backLabel} onClick={goBack} />
-      ) : (
-        <button type="button" className="sc-backlink" onClick={goBack}>
-          {backLabel}
-        </button>
-      )}
+      <BackLink label={back.label} onClick={goBack} />
     </div>
   );
 

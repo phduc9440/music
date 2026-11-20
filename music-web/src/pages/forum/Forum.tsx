@@ -101,72 +101,74 @@ export default function Forum() {
           )}
         </header>
 
-        <nav className="fm-cats" aria-label={t('forum.categories')}>
-          <button
-            type="button"
-            className={`fm-cat${categoryId === '' ? ' fm-cat--on' : ''}`}
-            aria-pressed={categoryId === ''}
-            onClick={() => update({ category: null })}
-          >
-            {t('forum.allCategories')} <span>{formatNumber(total)}</span>
-          </button>
-          {categories.map((c) => (
+        <section className="fm-controls">
+          <nav className="fm-cats" aria-label={t('forum.categories')}>
             <button
-              key={c.id}
               type="button"
-              className={`fm-cat${categoryId === c.id ? ' fm-cat--on' : ''}`}
-              aria-pressed={categoryId === c.id}
-              title={c.description ?? undefined}
-              onClick={() => update({ category: c.id })}
+              className={`fm-cat${categoryId === '' ? ' fm-cat--on' : ''}`}
+              aria-pressed={categoryId === ''}
+              onClick={() => update({ category: null })}
             >
-              {c.name} <span>{formatNumber(c.threadCount)}</span>
+              {t('forum.allCategories')} <span>{formatNumber(total)}</span>
             </button>
-          ))}
-        </nav>
+            {categories.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                className={`fm-cat${categoryId === c.id ? ' fm-cat--on' : ''}`}
+                aria-pressed={categoryId === c.id}
+                title={c.description ?? undefined}
+                onClick={() => update({ category: c.id })}
+              >
+                {c.name} <span>{formatNumber(c.threadCount)}</span>
+              </button>
+            ))}
+          </nav>
 
-        <div className="fm-toolbar">
-          <label className="fm-search">
-            <Icon name="search" size={16} />
-            <input
-              type="search"
-              placeholder={t('forum.search')}
-              aria-label={t('forum.search')}
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-            />
-          </label>
-          <div className="fm-filters">
-            <button
-              type="button"
-              className={`fm-chip${unanswered ? ' fm-chip--on' : ''}`}
-              aria-pressed={unanswered}
-              onClick={() => update({ unanswered: unanswered ? null : '1' })}
-            >
-              {t('forum.unanswered')}
-            </button>
-            {!guest && (
+          <div className="fm-toolbar">
+            <label className="fm-search">
+              <Icon name="search" size={16} />
+              <input
+                type="search"
+                placeholder={t('forum.search')}
+                aria-label={t('forum.search')}
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+              />
+            </label>
+            <div className="fm-filters">
               <button
                 type="button"
-                className={`fm-chip${mine ? ' fm-chip--on' : ''}`}
-                aria-pressed={mine}
-                onClick={() => update({ mine: mine ? null : '1' })}
+                className={`fm-chip${unanswered ? ' fm-chip--on' : ''}`}
+                aria-pressed={unanswered}
+                onClick={() => update({ unanswered: unanswered ? null : '1' })}
               >
-                {t('forum.mine')}
+                {t('forum.unanswered')}
               </button>
-            )}
-            <label className="fm-sort">
-              <span className="fm-muted">{t('forum.sort.label')}</span>
-              <select
-                className="sc-input"
-                value={sort}
-                onChange={(e) => update({ sort: e.target.value === 'TOP' ? 'TOP' : null })}
-              >
-                <option value="LATEST">{t('forum.sort.latest')}</option>
-                <option value="TOP">{t('forum.sort.top')}</option>
-              </select>
-            </label>
+              {!guest && (
+                <button
+                  type="button"
+                  className={`fm-chip${mine ? ' fm-chip--on' : ''}`}
+                  aria-pressed={mine}
+                  onClick={() => update({ mine: mine ? null : '1' })}
+                >
+                  {t('forum.mine')}
+                </button>
+              )}
+              <label className="fm-sort">
+                <span className="fm-muted">{t('forum.sort.label')}</span>
+                <select
+                  className="sc-input"
+                  value={sort}
+                  onChange={(e) => update({ sort: e.target.value === 'TOP' ? 'TOP' : null })}
+                >
+                  <option value="LATEST">{t('forum.sort.latest')}</option>
+                  <option value="TOP">{t('forum.sort.top')}</option>
+                </select>
+              </label>
+            </div>
           </div>
-        </div>
+        </section>
 
         {failed && (
           <div className="sc-empty">

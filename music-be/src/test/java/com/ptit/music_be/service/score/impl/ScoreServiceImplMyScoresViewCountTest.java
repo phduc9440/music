@@ -29,9 +29,12 @@ import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.ScoreFileRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
+import com.ptit.music_be.repository.score.ScoreReviewRepository;
 import com.ptit.music_be.repository.score.ScoreTagRepository;
 
-/** Thư viện sắp theo "Nhiều lượt xem" thì thẻ phải có số lượt xem để người dùng hiểu thứ tự. */
+/**
+ * Thẻ trong "Bản nhạc của tôi" có đủ số liệu như trang Khám phá: lượt xem (để hiểu thứ tự "Nhiều lượt xem") và điểm sao.
+ */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class ScoreServiceImplMyScoresViewCountTest {
@@ -47,6 +50,9 @@ class ScoreServiceImplMyScoresViewCountTest {
 
     @Mock
     ScoreTagRepository scoreTagRepository;
+
+    @Mock
+    ScoreReviewRepository scoreReviewRepository;
 
     @InjectMocks
     ScoreServiceImpl service;
@@ -94,5 +100,40 @@ class ScoreServiceImplMyScoresViewCountTest {
                 .getContent();
 
         assertThat(content).extracting(ScoreSummaryResponse::getViewCount).containsExactly(12L, 0L);
+    }
+
+    @Test
+    void myScoresCarryRating_roundedAverageAndZeroWhenUnrated() {
+        Score rated = Score.builder().id("s1").title("Được chấm").member(owner).build();
+        Score unrated = Score.builder().id("s2").title("Chưa chấm").member(owner).build();
+        when(scoreRepository.searchOfMember(
+                        eq("owner"),
+                        anyString(),
+                        anyString(),
+                        anyString(),
+                        anyString(),
+                        anyString(),
+                        any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(rated, unrated)));
+        ScoreReviewRepository.ScoreRatingStats stats = new ScoreReviewRepository.ScoreRatingStats() {
+            public String getScoreId() {
+                return "s1";
+            }
+
+            public Double getAverage() {
+                return 4.26;
+            }
+
+            public Long getRatingCount() {
+                return 3L;
+            }
+        };
+        when(scoreReviewRepository.getRatingStatsFor(any())).thenReturn(List.of(stats));
+
+        List<ScoreSummaryResponse> content = service.getMyScores(0, 12, null, null, null, null, null, null)
+                .getContent();
+
+        assertThat(content).extracting(ScoreSummaryResponse::getRatingAverage).containsExactly(4.3, null);
+        assertThat(content).extracting(ScoreSummaryResponse::getRatingCount).containsExactly(3L, 0L);
     }
 }

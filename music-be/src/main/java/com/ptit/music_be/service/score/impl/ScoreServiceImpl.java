@@ -143,6 +143,7 @@ public class ScoreServiceImpl implements ScoreService {
                 .map(score -> toSummary(
                         score, thumbnails.get(score.getId()), tagsByScore.getOrDefault(score.getId(), List.of())))
                 .toList();
+        applyRatings(content);
 
         return PageResponse.<ScoreSummaryResponse>builder()
                 .content(content)
@@ -183,6 +184,7 @@ public class ScoreServiceImpl implements ScoreService {
                     return summary;
                 })
                 .toList();
+        applyRatings(content);
         return PageResponse.<ScoreSummaryResponse>builder()
                 .content(content)
                 .pageNumber(result.getNumber())
@@ -409,7 +411,9 @@ public class ScoreServiceImpl implements ScoreService {
                 parseEnumName(difficulty, DifficultyLevel.class),
                 composerId == null ? "" : composerId.trim(),
                 PageRequest.of(Math.max(page, 0), safeSize));
-        return toSummaryPage(result, false);
+        PageResponse<ScoreSummaryResponse> cards = toSummaryPage(result, false);
+        applyRatings(cards.getContent());
+        return cards;
     }
 
     @Override
@@ -498,20 +502,32 @@ public class ScoreServiceImpl implements ScoreService {
     private PageResponse<ScoreSummaryResponse> toExplorePage(Page<Score> result) {
         PageResponse<ScoreSummaryResponse> page = toSummaryPage(result, false);
         Map<String, Score> byId = result.getContent().stream().collect(Collectors.toMap(Score::getId, s -> s));
-        Map<String, ScoreReviewRepository.ScoreRatingStats> ratings = new HashMap<>();
-        if (!byId.isEmpty()) {
-            scoreReviewRepository.getRatingStatsFor(byId.keySet()).forEach(r -> ratings.put(r.getScoreId(), r));
-        }
         for (ScoreSummaryResponse card : page.getContent()) {
-            Score score = byId.get(card.getId());
-            Member owner = score.getMember();
+            Member owner = byId.get(card.getId()).getMember();
             card.setOwnerName(owner == null || !StringUtils.hasText(owner.getFullName()) ? null : owner.getFullName());
+        }
+        applyRatings(page.getContent());
+        return page;
+    }
+
+    /**
+     * Gắn điểm sao trung bình (làm tròn 1 chữ số) và số lượt chấm vào các thẻ, một truy vấn cho cả trang. Bản chưa ai
+     * chấm: trung bình null, số lượt 0. Mọi danh sách bản nhạc dùng chung để thẻ hiện đủ số liệu như nhau.
+     */
+    private void applyRatings(List<ScoreSummaryResponse> cards) {
+        if (cards.isEmpty()) {
+            return;
+        }
+        Map<String, ScoreReviewRepository.ScoreRatingStats> ratings = new HashMap<>();
+        scoreReviewRepository
+                .getRatingStatsFor(cards.stream().map(ScoreSummaryResponse::getId).toList())
+                .forEach(r -> ratings.put(r.getScoreId(), r));
+        for (ScoreSummaryResponse card : cards) {
             ScoreReviewRepository.ScoreRatingStats stats = ratings.get(card.getId());
-            card.setRatingCount(stats == null ? 0L : stats.getRatingCount());
+            card.setRatingCount(stats == null || stats.getRatingCount() == null ? 0L : stats.getRatingCount());
             card.setRatingAverage(
                     stats == null || stats.getAverage() == null ? null : Math.round(stats.getAverage() * 10.0) / 10.0);
         }
-        return page;
     }
 
     @Override

@@ -24,6 +24,7 @@ import '../../../components/scores/scores.css';
 import '../library/ScoreLibrary.css';
 import './ScoreProcessing.css';
 import { t } from '../../../i18n/core';
+import { BackLink } from '../../../components/ui';
 
 type LoadState = 'loading' | 'ready' | 'notFound' | 'error';
 
@@ -173,9 +174,7 @@ export default function ScoreProcessing() {
 
   const navbar = (
     <div className="sc-backbar">
-      <button type="button" className="sc-backlink" onClick={() => navigate(base)}>
-        {t('upload.processing.backToLibrary')}
-      </button>
+      <BackLink label={t('upload.processing.backToLibrary')} onClick={() => navigate(base)} />
     </div>
   );
 

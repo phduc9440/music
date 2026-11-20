@@ -30,6 +30,7 @@ import { TeamFormModal } from './Teams';
 import { ShowFormModal } from './ShowBoard';
 import '../../components/scores/scores.css';
 import './teams.css';
+import { BackLink } from '../../components/ui';
 
 type Tab = 'tasks' | 'scores' | 'shows' | 'members' | 'activity';
 const TABS: Tab[] = ['tasks', 'scores', 'shows', 'members', 'activity'];
@@ -139,9 +140,7 @@ export default function TeamDetail() {
   return (
     <div className="sc-page">
       <div className="sc-backbar">
-        <Link className="sc-backlink" to="/teams">
-          ‹ {t('teams.title')}
-        </Link>
+        <BackLink label={t('teams.title')} to="/teams" />
       </div>
       <main className="sc-container">
         <header className="sc-lib-head">

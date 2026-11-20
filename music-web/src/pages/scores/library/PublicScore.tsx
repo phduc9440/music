@@ -10,6 +10,7 @@ import { DIFFICULTY_LABELS } from '../../../utils/score';
 import { isGuest } from '../../../utils/session';
 import '../../../components/scores/scores.css';
 import './public-score.css';
+import { BackLink } from '../../../components/ui';
 
 /**
  * Trang /s/:scoreId cho khách chưa đăng nhập (mục 5.2): thông tin một bản nhạc đang công khai và lời mời đăng nhập để mở,
@@ -59,9 +60,7 @@ export default function PublicScore() {
   return (
     <div className="sc-page">
       <div className="sc-backbar">
-        <Link className="sc-backlink" to="/explore">
-          ‹ {t('common.nav.items.publicScores')}
-        </Link>
+        <BackLink label={t('common.nav.items.publicScores')} to="/explore" />
       </div>
       <main className="sc-container">
         {!score ? (
