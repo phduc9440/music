@@ -9,9 +9,9 @@
     "composerOnSystem_one": "{count} score on the platform",
     "composerOnSystem_other": "{count} scores on the platform",
     "signIn": "Sign in",
-    "eyebrow": "Capture · Edit · Listen · Practice",
-    "heroTitle": "Turn paper sheet music into digital scores, then practice right in your browser",
-    "heroLead": "Digitize from photos or PDFs, fix every note, listen back and track your progress, all in your own language.",
+    "signUp": "Sign up",
+    "heroTitle": "Capture, edit, listen, practice.",
+    "heroLead": "From a paper score to practice, right in your browser.",
     "ctaDigitize": "Digitize your first score",
     "ctaExplore": "Explore the library",
     "dropNow": "Drop the file to get started",
@@ -94,12 +94,56 @@
         "text": "PDF, MIDI, audio, SVG, MusicXML in a few clicks."
       }
     },
-    "demoTitle": "See the score viewer in action",
-    "demoLead": "The playhead sweeps the staff, each note lights up on cue, and you get scored as you play along.",
     "demoPlay": "Play",
     "demoPause": "Pause",
     "demoCaption": "Illustration: a playhead sweeps across the staff and notes light up one by one as they play.",
-    "demoScore": "96% accurate"
+    "melody": {
+      "hint": "Click anywhere to play on",
+      "progress": "Note {n}/{total}",
+      "play": "Play the next note of {song} ({n}/{total})",
+      "auto": "Autoplay",
+      "stop": "Stop",
+      "playing": "Autoplaying on loop",
+      "choose": "Choose a piece",
+      "songs": {
+        "furElise": {
+          "title": "Für Elise",
+          "by": "Beethoven"
+        },
+        "odeToJoy": {
+          "title": "Ode to Joy",
+          "by": "Beethoven"
+        },
+        "twinkle": {
+          "title": "Twinkle Twinkle Little Star",
+          "by": "French folk tune"
+        },
+        "jingleBells": {
+          "title": "Jingle Bells",
+          "by": "J. L. Pierpont"
+        },
+        "happyBirthday": {
+          "title": "Happy Birthday",
+          "by": "Mildred & Patty Hill"
+        },
+        "canonInD": {
+          "title": "Canon in D",
+          "by": "Pachelbel"
+        },
+        "nachtmusik": {
+          "title": "Eine kleine Nachtmusik",
+          "by": "Mozart"
+        },
+        "lullaby": {
+          "title": "Lullaby",
+          "by": "Brahms"
+        },
+        "greensleeves": {
+          "title": "Greensleeves",
+          "by": "English folk song"
+        }
+      }
+    }
   },
   "workspace": {
     "greeting": {

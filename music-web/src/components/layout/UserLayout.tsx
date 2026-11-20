@@ -7,7 +7,6 @@ import CommandPalette from './CommandPalette';
 import MobileTabBar from './MobileTabBar';
 import NavDropdown from './NavDropdown';
 import NotificationBell from '../NotificationBell';
-import PianoBackground from '../ui/PianoBackground';
 import ThemeToggle from '../../theme/ThemeToggle';
 import { adoptServerTheme } from '../../theme/theme';
 import { adoptServerLocale } from '../../i18n/core';
@@ -94,8 +93,7 @@ export default function UserLayout() {
 
   return (
     <div className="app-shell">
-      <PianoBackground soft />
-      <header className="app-header ui-stage">
+      <header className="app-header">
         <div className="app-header__inner">
           <div className="app-header__left">
             <button

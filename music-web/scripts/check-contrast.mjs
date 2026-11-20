@@ -52,6 +52,10 @@ const PAIRS = [
   ['--ui-text-2', '--ui-surface', 4.5, 'chữ phụ trên thẻ'],
   ['--ui-text-2', '--ui-bg', 4.5, 'chữ phụ trên nền trang'],
   ['--ui-text-3', '--ui-surface', 4.5, 'chữ mờ trên thẻ'],
+  ['--ui-text', '--ui-flat', 4.5, 'chữ chính trên thẻ phẳng'],
+  ['--ui-text-2', '--ui-flat', 4.5, 'chữ phụ trên thẻ phẳng'],
+  ['--ui-on-cta', '--ui-cta', 4.5, 'chữ trên nút đồng thau'],
+  ['--ui-cta-ink', '--ui-flat', 3, 'biểu tượng đồng đậm trên thẻ phẳng'],
   ['--ui-primary', '--ui-surface', 4.5, 'liên kết / chữ nhấn trên thẻ'],
   ['--ui-primary', '--ui-primary-soft', 4.5, 'chữ nhấn trên nền nhấn nhạt'],
   ['--ui-on-accent', '--ui-primary', 4.5, 'chữ trên nút chính'],
@@ -83,7 +87,9 @@ for (const [name, theme] of [
     const r = ratio(theme[fg], theme[bg]);
     const ok = r >= min;
     if (!ok) failed++;
-    console.log(`  ${ok ? 'OK  ' : 'LỖI'} ${r.toFixed(2).padStart(5)}:1 (cần ${min})  ${note}  [${fg} ${theme[fg]} / ${bg} ${theme[bg]}]`);
+    console.log(
+      `  ${ok ? 'OK  ' : 'LỖI'} ${r.toFixed(2).padStart(5)}:1 (cần ${min})  ${note}  [${fg} ${theme[fg]} / ${bg} ${theme[bg]}]`,
+    );
   }
 }
 if (failed > 0) {

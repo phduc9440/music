@@ -175,7 +175,7 @@ export default function ScoreLibrary() {
   return (
     <div className="sc-page sc-lib">
       <main className="sc-container">
-        <header className="sc-lib-head sc-lib-hero ui-stage">
+        <header className="sc-lib-head sc-lib-hero">
           <div>
             <h1>{t('scores.library.title')}</h1>
             <p>{data ? t('scores.library.count', { count: data.totalElements }) : t('scores.library.subtitle')}</p>

@@ -130,7 +130,7 @@ export default function ScoreHero({ score, onVisibilityChanged, onRequestMore }:
 
   return (
     <>
-      <header className="sd-head sd-hero ui-stage">
+      <header className="sd-head sd-hero">
         <div className="sd-hero__cover">
           <ScoreCover score={score} onChanged={onVisibilityChanged} />
         </div>

@@ -7,9 +7,9 @@
     "composerLabel": "{name}: {count} bản nhạc công khai",
     "composerOnSystem": "{count} bản trên hệ thống",
     "signIn": "Đăng nhập",
-    "eyebrow": "Chụp · Sửa · Nghe · Tập",
-    "heroTitle": "Biến bản nhạc giấy thành bản nhạc số, rồi luyện tập ngay trên trình duyệt",
-    "heroLead": "Số hóa từ ảnh chụp hoặc PDF, chỉnh từng nốt, nghe lại và theo dõi tiến bộ, tất cả bằng tiếng Việt.",
+    "signUp": "Đăng ký",
+    "heroTitle": "Chụp, sửa, nghe, tập.",
+    "heroLead": "Từ tờ nhạc giấy tới buổi tập, ngay trên trình duyệt.",
     "ctaDigitize": "Số hóa bản nhạc đầu tiên",
     "ctaExplore": "Khám phá kho nhạc",
     "dropNow": "Thả file để bắt đầu",
@@ -92,12 +92,56 @@
         "text": "PDF, MIDI, âm thanh, SVG, MusicXML chỉ với vài cú nhấp."
       }
     },
-    "demoTitle": "Xem thử trình xem bản nhạc",
-    "demoLead": "Đầu phát chạy qua khuông, từng nốt sáng lên đúng lúc, và bạn nhận điểm khi tập cùng.",
     "demoPlay": "Phát",
     "demoPause": "Tạm dừng",
     "demoCaption": "Minh họa: đầu phát quét qua khuông nhạc và các nốt sáng lên lần lượt khi được phát.",
-    "demoScore": "Chính xác 96%"
+    "melody": {
+      "hint": "Bấm vào nền để chơi tiếp",
+      "progress": "Nốt {n}/{total}",
+      "play": "Chơi nốt tiếp theo của {song} ({n}/{total})",
+      "auto": "Tự chạy",
+      "stop": "Dừng",
+      "playing": "Đang tự chạy, lặp lại",
+      "choose": "Chọn bài",
+      "songs": {
+        "furElise": {
+          "title": "Für Elise",
+          "by": "Beethoven"
+        },
+        "odeToJoy": {
+          "title": "Khúc hoan ca (Ode to Joy)",
+          "by": "Beethoven"
+        },
+        "twinkle": {
+          "title": "Twinkle Twinkle Little Star",
+          "by": "Dân ca Pháp"
+        },
+        "jingleBells": {
+          "title": "Jingle Bells",
+          "by": "J. L. Pierpont"
+        },
+        "happyBirthday": {
+          "title": "Chúc mừng sinh nhật",
+          "by": "Chị em Hill"
+        },
+        "canonInD": {
+          "title": "Canon cung Rê",
+          "by": "Pachelbel"
+        },
+        "nachtmusik": {
+          "title": "Eine kleine Nachtmusik",
+          "by": "Mozart"
+        },
+        "lullaby": {
+          "title": "Khúc hát ru",
+          "by": "Brahms"
+        },
+        "greensleeves": {
+          "title": "Greensleeves",
+          "by": "Dân ca Anh"
+        }
+      }
+    }
   },
   "workspace": {
     "greeting": {

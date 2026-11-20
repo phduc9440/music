@@ -52,7 +52,7 @@ export default function OfficialScores() {
   return (
     <div className="sc-page sc-lib">
       <main className="sc-container">
-        <header className="sc-lib-head sc-lib-hero ui-stage">
+        <header className="sc-lib-head sc-lib-hero">
           <div>
             <h1>{t('common.nav.items.officialLibrary')}</h1>
             <p>{data ? t('scores.official.count', { count: data.totalElements }) : t('scores.official.subtitle')}</p>

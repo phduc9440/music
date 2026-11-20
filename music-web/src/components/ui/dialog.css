@@ -127,13 +127,13 @@
 }
 
 .ui-dialog__btn--primary {
-  background: var(--ui-primary);
-  border-color: var(--ui-primary);
-  color: var(--ui-on-accent);
+  background: var(--ui-cta);
+  border-color: var(--ui-cta-border);
+  color: var(--ui-on-cta);
 }
 
 .ui-dialog__btn--primary:hover:not(:disabled) {
-  background: var(--ui-primary-hover);
+  background: var(--ui-cta-hover);
 }
 
 .ui-dialog__btn--danger {

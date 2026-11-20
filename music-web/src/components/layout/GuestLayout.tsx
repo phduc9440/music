@@ -1,7 +1,6 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import { Link, NavLink } from '../../routes/transition-nav';
 import { Icon } from '../ui';
-import PianoBackground from '../ui/PianoBackground';
 import LanguageToggle from '../../i18n/LanguageToggle';
 import ThemeToggle from '../../theme/ThemeToggle';
 import { t } from '../../i18n/core';
@@ -25,8 +24,7 @@ export default function GuestLayout() {
 
   return (
     <div className="app-shell">
-      <PianoBackground soft />
-      <header className="app-header ui-stage">
+      <header className="app-header">
         <div className="app-header__inner app-header__inner--guest">
           <div className="app-header__left">
             <Link to="/" className="app-brand">
@@ -53,8 +51,11 @@ export default function GuestLayout() {
           <div className="app-header__right">
             <LanguageToggle />
             <ThemeToggle />
-            <Link to="/auth/login" state={{ from: pathname + search }} className="app-create">
+            <Link to="/auth/login" state={{ from: pathname + search }} className="app-signin">
               {t('home.guest.signIn')}
+            </Link>
+            <Link to="/auth/login" state={{ from: pathname + search, mode: 'register' }} className="app-create">
+              {t('home.guest.signUp')}
             </Link>
           </div>
         </div>

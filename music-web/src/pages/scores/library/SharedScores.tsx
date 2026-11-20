@@ -25,7 +25,7 @@ export default function SharedScores() {
   return (
     <div className="sc-page">
       <main className="sc-container">
-        <header className="sc-lib-head sc-lib-hero ui-stage">
+        <header className="sc-lib-head sc-lib-hero">
           <div>
             <h1>{t('common.nav.items.shared')}</h1>
             <p>{data ? t('common.pagination.scores', { count: data.totalElements }) : t('scores.shared.subtitle')}</p>
