@@ -653,20 +653,20 @@
   letter-spacing: 0;
 }
 
-/* ---- dải lụa 3D (SilkRibbons3D): phủ kín khung nhìn và ở yên khi cuộn (lụa tự trôi theo cuộn trang), nằm dưới mọi
+/* ---- khuông nhạc 3D (ScoreStaff3D): phủ kín khung nhìn và ở yên khi cuộn (bản nhạc tự trôi theo cuộn trang), nằm dưới mọi
    nội dung. z-index âm trong ngữ cảnh xếp lớp riêng của .wh-page: vẽ trên nền trang nhưng dưới thẻ và chữ; không nhận
    sự kiện chuột ---- */
 .wh-page {
   position: relative;
   isolation: isolate;
 }
-.wh-silk {
+.wh-staff {
   position: fixed;
   inset: 0;
   z-index: -1;
   pointer-events: none;
 }
-.wh-silk canvas {
+.wh-staff canvas {
   display: block;
   width: 100%;
   height: 100%;

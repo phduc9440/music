@@ -17,8 +17,8 @@ import '../../components/scores/scores.css';
 import '../teams/teams.css';
 import './workspace-home.css';
 
-// Dải lụa 3D đầu trang (three.js) tải riêng sau khi trang hiện
-const SilkRibbons3D = lazy(() => import('../../components/home/SilkRibbons3D'));
+// Khuông nhạc 3D làm nền (three.js) tải riêng sau khi trang hiện
+const ScoreStaff3D = lazy(() => import('../../components/home/ScoreStaff3D'));
 
 /** Số việc hiện trên trang chủ; xem hết ở trang Team. */
 const MAX_TASKS = 4;
@@ -210,7 +210,7 @@ export default function WorkspaceHome() {
   return (
     <div className="sc-page wh-page">
       <Suspense fallback={null}>
-        <SilkRibbons3D />
+        <ScoreStaff3D />
       </Suspense>
       <main className="sc-container wh">
         <header className="wh-hero">
