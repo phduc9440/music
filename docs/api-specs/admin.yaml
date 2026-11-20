@@ -1,0 +1,5000 @@
+# ============================================================
+# Admin — OpenAPI 3.0 Specification
+# ============================================================
+openapi: 3.0.3
+info:
+  title: Admin API
+  description: |
+    Trang quản trị (/api/admin/**): tổng quan, thành viên, vai trò, bản nhạc, kho mẫu, nhạc sĩ, thể loại, team,
+    diễn đàn, báo cáo vi phạm, luyện tập, tác vụ AI, gói / đăng ký / thanh toán, thông báo chung, hệ thống.
+
+    Mọi phản hồi JSON bọc trong ApiResponse {code, message, result}; code = 200 khi thành công,
+    lỗi trả mã nghiệp vụ (ví dụ 1001 chưa đăng nhập, 1002 không có quyền) kèm HTTP status tương ứng.
+    Sinh từ controller của music-be (springdoc /v3/api-docs) rồi chia theo nhóm chức năng.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: music-be (Spring Boot) khi chạy local
+tags:
+  - name: Admin - Dashboard
+    description: "Chỉ ROLE_ADMIN: thống kê tổng quan hệ thống"
+  - name: Admin - Members
+    description: "Chỉ ROLE_ADMIN: quản lý thành viên"
+  - name: Admin - Roles
+    description: "Chỉ SUPER_ADMIN: thêm, sửa, xóa vai trò tài khoản và tích quyền quản trị"
+  - name: Admin - Scores
+    description: "Chỉ ROLE_ADMIN: quản lý toàn bộ bản nhạc trong hệ thống"
+  - name: Admin - Official requests
+    description: "Chỉ ROLE_ADMIN: các lời xin đưa bản nhạc vào kho bản nhạc mẫu"
+  - name: Admin - Composers
+    description: "Chỉ ROLE_ADMIN: quản lý nhạc sĩ (mục 5.4)"
+  - name: Admin - Tags
+    description: "Chỉ ROLE_ADMIN: quản lý thể loại (tag) của bản nhạc"
+  - name: Admin - Teams
+    description: "Chỉ ROLE_ADMIN: xem và xử lý Team và Show (mục 4.1)"
+  - name: Admin - Forum
+    description: Quản lý diễn đàn (quyền FORUM_MANAGE)
+  - name: Admin - Reports
+    description: Hàng chờ báo cáo vi phạm (quyền REPORTS_MODERATE)
+  - name: Admin - Practice
+    description: Quản lý luyện tập (quyền PRACTICE_VIEW / PRACTICE_MANAGE)
+  - name: Admin - AI Tasks
+    description: "Chỉ ROLE_ADMIN: giám sát hàng đợi tác vụ AI"
+  - name: Admin Plans
+    description: "Gói dịch vụ: ADMIN xem, SUPER_ADMIN thêm/sửa/xóa"
+  - name: Admin - Subscriptions
+    description: ADMIN xem gói của thành viên; chỉ SUPER_ADMIN cấp hoặc hủy gói
+  - name: Admin - Payments
+    description: "Chỉ ROLE_ADMIN: doanh thu, đơn thanh toán, hoàn tiền thủ công"
+  - name: Admin - Announcements
+    description: "Chỉ ROLE_ADMIN: gửi thông báo chung tới người dùng"
+  - name: Admin - Activity
+    description: Nhật ký quản trị suy ra từ các bảng gốc (quyền AUDIT_VIEW)
+  - name: Admin - System
+    description: "Chỉ ROLE_ADMIN: nhật ký lỗi và thông số tải máy chủ"
+
+paths:
+  # ─── Admin - Dashboard ───────────────────────
+  /api/admin/dashboard:
+    get:
+      tags: [Admin - Dashboard]
+      summary: Số liệu tổng, bản nhạc mới / lượt luyện tập theo ngày và các phân tích (days 7-90, mặc định 30)
+      operationId: getAdminDashboard
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: days
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 30
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseAdminDashboardResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ─── Admin - Members ─────────────────────────
+  /api/admin/members:
+    get:
+      tags: [Admin - Members]
+      summary: Danh sách thành viên (phân trang, tìm theo email/tên)
+      operationId: getMembers
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 20
+        - name: keyword
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePageResponseMemberResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Admin - Members]
+      summary: "Tạo tài khoản (quyền MEMBERS_CREATE): đặt mật khẩu ban đầu và gán vai trò"
+      description: "Lỗi: 1026 email sai, 1003 email đã có, 1007 mật khẩu dưới 8 ký tự, 1015 vai trò không có, 1025 gán SUPER_ADMIN hoặc vai trò vượt quyền của người tạo"
+      operationId: createMember
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminCreateMemberRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseMemberResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/admin/members/with-plan:
+    get:
+      tags: [Admin - Members]
+      summary: Danh sách thành viên kèm gói, lọc theo gói đang dùng (planCode) và người đang bị cấm (bannedOnly)
+      operationId: getMembersWithPlan
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 20
+        - name: keyword
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: planCode
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: bannedOnly
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePageResponseMemberResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/admin/members/{memberId}:
+    get:
+      tags: [Admin - Members]
+      summary: Chi tiết thành viên
+      operationId: getMember
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: memberId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseMemberResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Admin - Members]
+      summary: Khóa/mở khóa (status) và đổi vai trò (roles)
+      operationId: updateMemberAdmin
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: memberId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminUpdateMemberRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseMemberResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/admin/members/{memberId}/detail:
+    get:
+      tags: [Admin - Members]
+      summary: Chi tiết thành viên kèm số liệu hoạt động và bản nhạc gần đây
+      operationId: getMemberDetail
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: memberId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseAdminMemberDetailResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── Admin - Roles ───────────────────────────
+  /api/admin/roles:
+    get:
+      tags: [Admin - Roles]
+      summary: Tất cả vai trò kèm quyền và số thành viên
+      operationId: listAdminRoles
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListRoleResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Admin - Roles]
+      summary: Tạo vai trò (mã sinh từ tên hiển thị)
+      operationId: createAdminRoles
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseRoleResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/admin/roles/{id}:
+    put:
+      tags: [Admin - Roles]
+      summary: "Sửa vai trò: tên hiển thị, mô tả, quyền (ADMIN: chỉ sửa quyền; USER, SUPER_ADMIN: bị khóa)"
+      operationId: updateAdminRoles
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseRoleResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Admin - Roles]
+      summary: Xóa vai trò tự tạo chưa ai giữ (1021 nếu đang được dùng)
+      operationId: deleteAdminRoles
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── Admin - Scores ──────────────────────────
+  /api/admin/scores:
+    get:
+      tags: [Admin - Scores]
+      summary: Tất cả bản nhạc của mọi người dùng (tìm theo tên / tác giả / email chủ; lọc visibility PRIVATE|PENDING|PUBLIC, official true|false, source OMR|IMPORT|MANUAL, difficulty; sắp xếp UPDATED|CREATED|TITLE|VIEWS)
+      description: Xóa dùng DELETE /api/scores/{id} (đã cho phép ADMIN)
+      operationId: listAdminScores
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 20
+        - name: keyword
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: visibility
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: official
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: source
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: difficulty
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePageResponseScoreSummaryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/admin/scores/bulk:
+    post:
+      tags: [Admin - Scores]
+      summary: Áp dụng PUBLIC (chỉ duyệt bản đang chờ) / PRIVATE (gỡ bản công khai, kèm lý do) / DELETE cho tối đa 100 bản nhạc; mỗi bản xử lý riêng, bản lỗi được liệt kê
+      operationId: bulk
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminScoreBulkRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseAdminScoreBulkResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/admin/scores/{scoreId}/visibility:
+    put:
+      tags: [Admin - Scores]
+      summary: "Kiểm duyệt: duyệt bản PENDING thành PUBLIC, hoặc gỡ bản PUBLIC về PRIVATE (lý do tùy chọn, rời kho nhạc mẫu, chủ bản được thông báo). Các chuyển trạng thái khác bị từ chối"
+      operationId: setVisibility
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminScoreVisibilityRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseScoreDetailResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── Admin - Official requests ───────────────
+  /api/admin/official-requests:
+    get:
+      tags: [Admin - Official requests]
+      summary: "Lời xin đưa bản nhạc vào kho nhạc mẫu (mới nhất trước); status: PENDING|ACCEPTED|DECLINED|CANCELED"
+      operationId: listAdminOfficialRequests
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 20
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePageResponseOfficialRequestResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ─── Admin - Composers ───────────────────────
+  /api/admin/composers:
+    get:
+      tags: [Admin - Composers]
+      summary: Tất cả nhạc sĩ kèm số bản nhạc đã liên kết
+      operationId: listAdminComposers
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListComposerResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Admin - Composers]
+      summary: Tạo nhạc sĩ (slug sinh từ tên); các bản nhạc có tên tác giả khớp được liên kết tự động
+      operationId: createAdminComposers
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComposerRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseComposerResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/admin/composers/relink:
+    post:
+      tags: [Admin - Composers]
+      summary: Liên kết lại mọi bản nhạc với nhạc sĩ theo tên tác giả; trả về số bản đã thay đổi
+      operationId: relink
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseInteger'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/admin/composers/{id}:
+    put:
+      tags: [Admin - Composers]
+      summary: Cập nhật nhạc sĩ và liên kết lại bản nhạc
+      operationId: updateAdminComposers
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComposerRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseComposerResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Admin - Composers]
+      summary: Xóa nhạc sĩ (bản nhạc giữ nguyên tên tác giả, chỉ bỏ liên kết)
+      operationId: deleteAdminComposers
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── Admin - Tags ────────────────────────────
+  /api/admin/tags:
+    get:
+      tags: [Admin - Tags]
+      summary: Danh sách thể loại kèm số bản nhạc dùng mỗi thể loại
+      operationId: listAdminTags
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListAdminTagResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Admin - Tags]
+      summary: Tạo thể loại (slug sinh từ tên)
+      operationId: createAdminTags
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TagRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseAdminTagResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/admin/tags/{id}:
+    put:
+      tags: [Admin - Tags]
+      summary: Đổi tên thể loại
+      operationId: updateAdminTags
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TagRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseAdminTagResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Admin - Tags]
+      summary: Xóa thể loại và gỡ khỏi mọi bản nhạc đang dùng (bản nhạc được giữ lại)
+      operationId: deleteAdminTags
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── Admin - Teams ───────────────────────────
+  /api/admin/teams:
+    get:
+      tags: [Admin - Teams]
+      summary: Tìm team theo tên hoặc người tạo; deleted=true để liệt kê team đã xóa mềm
+      operationId: search
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: keyword
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: deleted
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 20
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePageResponseAdminTeamResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/admin/teams/summary:
+    get:
+      tags: [Admin - Teams]
+      summary: Số team, team hoạt động (7 ngày), thành viên trong team, show đang chuẩn bị, hạng mục đang mở / quá hạn
+      operationId: summary
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseAdminTeamSummaryResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/admin/teams/{id}:
+    get:
+      tags: [Admin - Teams]
+      summary: "Chi tiết team: thành viên, show, tên bản nhạc, hoạt động gần đây"
+      operationId: detail
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseAdminTeamDetailResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Admin - Teams]
+      summary: Xóa mềm team (vi phạm); khôi phục được trong 30 ngày; thành viên được thông báo kèm lý do
+      operationId: deleteAdminTeams
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: reason
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/admin/teams/{id}/restore:
+    post:
+      tags: [Admin - Teams]
+      summary: Khôi phục team đã xóa mềm trong vòng 30 ngày; 3818 nếu đã quá hạn
+      operationId: restoreAdminTeams
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── Admin - Forum ───────────────────────────
+  /api/admin/forum/categories:
+    get:
+      tags: [Admin - Forum]
+      summary: Chuyên mục kèm số chủ đề (tính cả chủ đề đã ẩn)
+      operationId: categories
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListAdminForumCategoryResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Admin - Forum]
+      summary: "Tạo chuyên mục (tên 2-100 ký tự, mô tả tối đa 300; slug sinh tự động). Lỗi: 4113"
+      operationId: createCategory
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForumCategoryRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseAdminForumCategoryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/admin/forum/categories/order:
+    put:
+      tags: [Admin - Forum]
+      summary: "Sắp xếp lại chuyên mục: body là danh sách id chuyên mục theo thứ tự mới"
+      operationId: reorderAdminForumCategories
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/admin/forum/categories/{id}:
+    put:
+      tags: [Admin - Forum]
+      summary: Đổi tên chuyên mục
+      operationId: updateCategory
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForumCategoryRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseAdminForumCategoryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Admin - Forum]
+      summary: Xóa chuyên mục rỗng (4112 nếu còn chủ đề, kể cả chủ đề đã ẩn)
+      operationId: deleteCategory
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/admin/forum/posts/{postId}/hidden:
+    put:
+      tags: [Admin - Forum]
+      summary: Ẩn hoặc hiện lại một trả lời; khi ẩn sẽ bỏ đánh dấu câu trả lời hay nhất và đóng các báo cáo đang chờ
+      operationId: hidePost
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: value
+          in: query
+          required: true
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/admin/forum/threads:
+    get:
+      tags: [Admin - Forum]
+      summary: Tất cả chủ đề, kể cả chủ đề đã ẩn (lọc keyword trong tiêu đề hoặc email tác giả, categoryId, status ALL|VISIBLE|HIDDEN|PINNED|LOCKED|REPORTED)
+      operationId: threadsAdminForum
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: keyword
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: categoryId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            default: ALL
+            enum:
+              - ALL
+              - VISIBLE
+              - HIDDEN
+              - PINNED
+              - LOCKED
+              - REPORTED
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 20
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePageResponseAdminForumThreadResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/admin/forum/threads/{threadId}:
+    get:
+      tags: [Admin - Forum]
+      summary: Một chủ đề kèm mọi trả lời, kể cả trả lời đã ẩn
+      operationId: threadAdminForum
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: threadId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseAdminForumThreadDetailResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/admin/forum/threads/{threadId}/hidden:
+    put:
+      tags: [Admin - Forum]
+      summary: Ẩn hoặc hiện lại một chủ đề; khi ẩn sẽ đóng các báo cáo đang chờ
+      operationId: hideThread
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: threadId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: value
+          in: query
+          required: true
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/admin/forum/threads/{threadId}/locked:
+    put:
+      tags: [Admin - Forum]
+      summary: Khóa hoặc mở khóa chủ đề (chủ đề bị khóa không nhận trả lời mới, 4111)
+      operationId: lockThread
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: threadId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: value
+          in: query
+          required: true
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/admin/forum/threads/{threadId}/pinned:
+    put:
+      tags: [Admin - Forum]
+      summary: Ghim hoặc bỏ ghim chủ đề
+      operationId: pinThread
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: threadId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: value
+          in: query
+          required: true
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── Admin - Reports ─────────────────────────
+  /api/admin/reports:
+    get:
+      tags: [Admin - Reports]
+      summary: Hàng đợi báo cáo vi phạm (lọc status PENDING|RESOLVED|DISMISSED, targetType SCORE|COMMENT|FORUM_POST); báo cáo đang chờ xếp theo thứ tự đến trước
+      operationId: listAdminReports
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 20
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - PENDING
+              - RESOLVED
+              - DISMISSED
+        - name: targetType
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - SCORE
+              - COMMENT
+              - FORUM_THREAD
+              - FORUM_POST
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePageResponseReportResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/admin/reports/pending-count:
+    get:
+      tags: [Admin - Reports]
+      summary: Số báo cáo đang chờ xử lý
+      operationId: pendingCount
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseLong'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/admin/reports/{reportId}/resolve:
+    post:
+      tags: [Admin - Reports]
+      summary: "Xử lý báo cáo với hành động DISMISS|UNPUBLISH|HIDE|SOFT_DELETE|LOCK_ACCOUNT (UNPUBLISH và SOFT_DELETE cho bản nhạc, HIDE cho bình luận); mọi báo cáo đang chờ của cùng đối tượng được đóng cùng lúc. Lỗi: 4007 đã xử lý, 4008 hành động sai, 4009 đối tượng không còn, 4010 ghi chú quá dài"
+      operationId: resolve
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: reportId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolveReportRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseReportResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── Admin - Practice ────────────────────────
+  /api/admin/practice/overview:
+    get:
+      tags: [Admin - Practice]
+      summary: Thống kê luyện tập toàn hệ thống trong khoảng ngày (mặc định 30 ngày gần nhất, tối đa 400)
+      operationId: overview
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseOverview'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/admin/practice/sessions:
+    get:
+      tags: [Admin - Practice]
+      summary: Phiên luyện tập của mọi người, mới nhất trước (keyword = email/tên thành viên hoặc tên bản nhạc, mode FREE|LOOP|TEST|WAIT|FREE_RUN, status IN_PROGRESS|COMPLETED|ABANDONED, anomalousOnly, from/to dạng yyyy-MM-dd)
+      operationId: listAdminPracticeSessions
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 10
+        - name: keyword
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: mode
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: anomalousOnly
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePageResponseAdminPracticeSessionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/admin/practice/sessions/{id}:
+    delete:
+      tags: [Admin - Practice]
+      summary: Delete a practice session for good (quyền PRACTICE_MANAGE)
+      operationId: deleteAdminPracticeSessions
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/admin/practice/sessions/{id}/close:
+    post:
+      tags: [Admin - Practice]
+      summary: Close a stuck IN_PROGRESS session as ABANDONED (quyền PRACTICE_MANAGE)
+      operationId: close
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseAdminPracticeSessionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── Admin - AI Tasks ────────────────────────
+  /api/admin/ai-tasks:
+    get:
+      tags: [Admin - AI Tasks]
+      summary: Danh sách tác vụ AI, mới nhất trước (lọc status PENDING|PROCESSING|COMPLETED|FAILED|CANCELLED, type, keyword = tên bản nhạc / email chủ, from/to dạng yyyy-MM-dd)
+      description: Hủy dùng POST /api/ai-tasks/{id}/cancel (đã cho phép ADMIN)
+      operationId: listAdminAiTasks
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 20
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: keyword
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePageResponseAdminAiTaskResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/admin/ai-tasks/summary:
+    get:
+      tags: [Admin - AI Tasks]
+      summary: "Tổng quan hàng đợi: đang chờ, đang chạy, lỗi/hoàn tất trong 24 giờ, thời gian chạy trung bình theo loại (7 ngày)"
+      operationId: summaryAdminAiTasks
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/admin/ai-tasks/{taskId}:
+    get:
+      tags: [Admin - AI Tasks]
+      summary: Chi tiết tác vụ kèm dữ liệu đầu vào / kết quả
+      operationId: detailAdminTasks
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseAdminAiTaskResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/admin/ai-tasks/{taskId}/retry:
+    post:
+      tags: [Admin - AI Tasks]
+      summary: Chạy lại tác vụ OMR bị FAILED/CANCELLED (tạo tác vụ mới cho cùng bản nhạc, gán cho chủ bản nhạc)
+      operationId: retryAdminAiTasks
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseAdminAiTaskResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── Admin Plans ─────────────────────────────
+  /api/admin/plans:
+    get:
+      tags: [Admin Plans]
+      summary: Danh sách gói kèm giá
+      operationId: listAdminPlans
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListPlanResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Admin Plans]
+      summary: Tạo gói mới (chỉ SUPER_ADMIN)
+      description: "Errors: 1002 không phải SUPER_ADMIN, 3719 giá, 3720 tên, 3721 hạn mức, 3722 mã gói không hợp lệ, 3723 mã đã tồn tại, 3724 nhóm gói không hợp lệ"
+      operationId: createAdminPlans
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePlanRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePlanResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/admin/plans/{code}:
+    put:
+      tags: [Admin Plans]
+      summary: Sửa tên, giá và hạn mức của gói (chỉ SUPER_ADMIN)
+      description: "Errors: 1002 không phải SUPER_ADMIN, 3701 gói không tồn tại, 3719 giá không hợp lệ, 3720 tên không hợp lệ, 3721 hạn mức hoặc thứ tự không hợp lệ"
+      operationId: updateAdminPlans
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePlanRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePlanResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Admin Plans]
+      summary: Xóa gói (chỉ SUPER_ADMIN)
+      description: "Errors: 1002 không phải SUPER_ADMIN, 3701 gói không tồn tại, 3725 gói Free/Pro không xóa được, 3726 gói đã có người đăng ký hoặc có đơn"
+      operationId: deleteAdminPlans
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── Admin - Subscriptions ───────────────────
+  /api/admin/subscriptions:
+    post:
+      tags: [Admin - Subscriptions]
+      summary: Cấp gói cho thành viên N tháng (nguồn ADMIN_GRANT); cùng gói đang dùng thì cộng nối tiếp
+      description: "Chỉ SUPER_ADMIN, chỉ gói cá nhân. Errors: 1002 không phải SUPER_ADMIN, 3701 gói không tồn tại, 3703 số tháng sai, 3718 thành viên là SUPER_ADMIN, 3727 gói team, 1004 thành viên không tồn tại"
+      operationId: grant
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GrantPlanRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseMySubscriptionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/admin/subscriptions/bulk:
+    post:
+      tags: [Admin - Subscriptions]
+      summary: Cấp một gói cá nhân cho nhiều thành viên (tối đa 200), chỉ SUPER_ADMIN
+      description: "Cùng gói đang dùng thì gia hạn nối tiếp. Trả kết quả từng người: GRANTED / RENEWED / SKIPPED / FAILED. Errors: 1002 không phải SUPER_ADMIN, 1009 danh sách trống hoặc quá 200, 3701 gói không tồn tại, 3703 số tháng sai, 3727 gói team hoặc Free"
+      operationId: grantMany
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkGrantPlanRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListBulkGrantResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/admin/subscriptions/sanctions/ban:
+    post:
+      tags: [Admin - Subscriptions]
+      summary: Cấm dùng một gói N tháng (1..120) cho một hoặc nhiều thành viên, chỉ SUPER_ADMIN
+      description: "planCode = gói bị cấm (bỏ trống = gói đang dùng của từng người). Không dùng, mua hay được cấp lại gói đó; vẫn dùng Free hoặc mua gói khác. Kết quả từng người: BANNED / SKIPPED / FAILED. Errors: 1002, 1009, 3728 thời hạn hoặc lý do không hợp lệ"
+      operationId: ban
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlanSanctionRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListBulkGrantResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/admin/subscriptions/sanctions/lift:
+    post:
+      tags: [Admin - Subscriptions]
+      summary: Gỡ cấm sớm cho một hoặc nhiều thành viên, chỉ SUPER_ADMIN
+      description: "Kết quả từng người: LIFTED / SKIPPED (không bị cấm) / FAILED. Errors: 1002, 1009"
+      operationId: lift
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlanSanctionRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListBulkGrantResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/admin/subscriptions/sanctions/revoke:
+    post:
+      tags: [Admin - Subscriptions]
+      summary: Thu hồi gói đang dùng của một hoặc nhiều thành viên do vi phạm (tối đa 200), chỉ SUPER_ADMIN
+      description: "Gói bị hủy ngay, muốn dùng lại phải mua lại. Kết quả từng người: REVOKED / SKIPPED / FAILED. Errors: 1002, 1009 danh sách trống hoặc quá 200, 3728 lý do quá dài"
+      operationId: revoke
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlanSanctionRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListBulkGrantResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/admin/subscriptions/{memberId}:
+    get:
+      tags: [Admin - Subscriptions]
+      summary: Gói hiện tại của thành viên
+      operationId: ofMember
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: memberId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseMySubscriptionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Admin - Subscriptions]
+      summary: Hủy gói hiện tại của thành viên (về Free), chỉ SUPER_ADMIN
+      operationId: cancel
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: memberId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── Admin - Payments ────────────────────────
+  /api/admin/payments/orders:
+    get:
+      tags: [Admin - Payments]
+      summary: Danh sách đơn, mới nhất trước, lọc theo trạng thái và loại đơn (NEW/RENEW)
+      operationId: orders
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - PENDING
+              - PAID
+              - FAILED
+              - EXPIRED
+              - REFUNDED
+        - name: kind
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - NEW
+              - RENEW
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 20
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePageResponsePaymentOrderResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/admin/payments/orders/{id}/refund:
+    post:
+      tags: [Admin - Payments]
+      summary: "Hoàn tiền thủ công: đơn thành REFUNDED, trừ thời gian gói"
+      description: "Errors: 3713 không tồn tại, 3714 đơn chưa ở trạng thái PAID"
+      operationId: refund
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePaymentOrderResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/admin/payments/revenue:
+    get:
+      tags: [Admin - Payments]
+      summary: Doanh thu theo ngày và theo gói (đơn PAID), mặc định 30 ngày gần nhất
+      description: "Errors: 3716 khoảng ngày sai hoặc quá 366 ngày"
+      operationId: revenue
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseRevenueResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ─── Admin - Announcements ───────────────────
+  /api/admin/announcements:
+    post:
+      tags: [Admin - Announcements]
+      summary: Gửi thông báo tới ALL / USERS (không phải admin) / ADMINS / SELECTED (memberIds, tối đa 200), chỉ tài khoản đang hoạt động, nội dung tối đa 500 ký tự
+      operationId: send
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnnouncementRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseAnnouncementResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ─── Admin - Activity ────────────────────────
+  /api/admin/activity:
+    get:
+      tags: [Admin - Activity]
+      summary: "Nhật ký hoạt động quản trị, mới nhất trước, suy ra từ báo cáo vi phạm, bản nhạc bị xóa, bình luận bị ẩn, team bị admin xóa và các lệnh cấm gói (lọc: email người thực hiện, type, targetType SCORE|COMMENT|TEAM|MEMBER, from/to dạng yyyy-MM-dd, tính cả hai đầu)"
+      operationId: searchAdminActivity
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 30
+        - name: actor
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: targetType
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePageResponseAdminActivityResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/admin/activity/types:
+    get:
+      tags: [Admin - Activity]
+      summary: Các loại hoạt động, dùng cho ô lọc
+      operationId: types
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListString'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ─── Admin - System ──────────────────────────
+  /api/admin/system/error-logs:
+    get:
+      tags: [Admin - System]
+      summary: Log ERROR gần đây giữ trong bộ nhớ (mới nhất trước, limit 1-200, mặc định 50)
+      operationId: errorLogs
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListErrorLogResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    delete:
+      tags: [Admin - System]
+      summary: Xóa log lỗi đang giữ trong bộ nhớ
+      operationId: clearErrorLogs
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/admin/system/metrics:
+    get:
+      tags: [Admin - System]
+      summary: "Tải máy chủ: heap, CPU, bộ nhớ, luồng, ổ đĩa, thời gian chạy"
+      operationId: metrics
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseSystemMetricsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "Access token trả về khi đăng nhập (header Authorization: Bearer ...)"
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: access_token
+      description: Web app gửi access token qua cookie HttpOnly access_token
+    internalKey:
+      type: apiKey
+      in: header
+      name: X-Internal-Key
+      description: Khóa bí mật dùng chung với music-ai (biến môi trường AI_INTERNAL_KEY); chỉ nhận từ mạng nội bộ
+
+  responses:
+    BadRequest:
+      description: Dữ liệu không hợp lệ (code nghiệp vụ trong body, ví dụ 1009)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+    Unauthorized:
+      description: Chưa đăng nhập, token hết hạn (1001) hoặc sai X-Internal-Key
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+    Forbidden:
+      description: Không có quyền thực hiện (1002)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+    NotFound:
+      description: Không tìm thấy tài nguyên
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+
+  schemas:
+    AdminActivityResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        occurredAt:
+          type: string
+          format: date-time
+        actorId:
+          type: string
+        actorEmail:
+          type: string
+        targetType:
+          type: string
+        targetId:
+          type: string
+        targetLabel:
+          type: string
+        detail:
+          type: string
+    AdminAiTaskResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        taskType:
+          type: string
+          enum:
+            - OMR_CONVERSION
+            - CHORD_GENERATION
+            - AUDIO_SYNTHESIS
+            - FORMAT_CONVERSION
+        status:
+          type: string
+          enum:
+            - PENDING
+            - PROCESSING
+            - COMPLETED
+            - FAILED
+            - CANCELLED
+        step:
+          type: string
+        progress:
+          type: integer
+          format: int32
+        errorMessage:
+          type: string
+        retryCount:
+          type: integer
+          format: int32
+        scoreId:
+          type: string
+        scoreTitle:
+          type: string
+        memberEmail:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        startedAt:
+          type: string
+          format: date-time
+        finishedAt:
+          type: string
+          format: date-time
+        waitSeconds:
+          type: integer
+          format: int64
+        runSeconds:
+          type: integer
+          format: int64
+        canCancel:
+          type: boolean
+        canRetry:
+          type: boolean
+        inputData:
+          type: string
+        resultData:
+          type: string
+    AdminCreateMemberRequest:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+        fullName:
+          type: string
+        phone:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+    AdminDashboardResponse:
+      type: object
+      properties:
+        days:
+          type: integer
+          format: int32
+        totals:
+          $ref: '#/components/schemas/Totals'
+        scoresByDay:
+          type: array
+          items:
+            $ref: '#/components/schemas/DayCount'
+        membersByDay:
+          type: array
+          items:
+            $ref: '#/components/schemas/DayCount'
+        membersWithoutDate:
+          type: integer
+          format: int64
+        practiceByDay:
+          type: array
+          items:
+            $ref: '#/components/schemas/DayPractice'
+        scoresByVisibility:
+          type: array
+          items:
+            $ref: '#/components/schemas/KeyCount'
+        scoresBySource:
+          type: array
+          items:
+            $ref: '#/components/schemas/KeyCount'
+        scoresByDifficulty:
+          type: array
+          items:
+            $ref: '#/components/schemas/KeyCount'
+        aiTasksByStatus:
+          type: array
+          items:
+            $ref: '#/components/schemas/KeyCount'
+        topTags:
+          type: array
+          items:
+            $ref: '#/components/schemas/KeyCount'
+        topViewed:
+          type: array
+          items:
+            $ref: '#/components/schemas/TopScore'
+        billing:
+          $ref: '#/components/schemas/Billing'
+        revenueByDay:
+          type: array
+          items:
+            $ref: '#/components/schemas/DayRevenue'
+        subscriptionsByPlan:
+          type: array
+          items:
+            $ref: '#/components/schemas/KeyCount'
+        subscriptionsBySource:
+          type: array
+          items:
+            $ref: '#/components/schemas/KeyCount'
+    AdminForumCategoryResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        slug:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        sortOrder:
+          type: integer
+          format: int32
+        threadCount:
+          type: integer
+          format: int64
+        hiddenThreadCount:
+          type: integer
+          format: int64
+    AdminForumPostResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        body:
+          type: string
+        author:
+          $ref: '#/components/schemas/Person'
+        createdAt:
+          type: string
+          format: date-time
+        hidden:
+          type: boolean
+        hiddenBy:
+          $ref: '#/components/schemas/Person'
+        accepted:
+          type: boolean
+        pendingReports:
+          type: integer
+          format: int64
+    AdminForumThreadDetailResponse:
+      type: object
+      properties:
+        thread:
+          $ref: '#/components/schemas/AdminForumThreadResponse'
+        posts:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminForumPostResponse'
+    AdminForumThreadResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        excerpt:
+          type: string
+        body:
+          type: string
+        categoryId:
+          type: string
+        categoryName:
+          type: string
+        author:
+          $ref: '#/components/schemas/Person'
+        createdAt:
+          type: string
+          format: date-time
+        replyCount:
+          type: integer
+          format: int64
+        hiddenReplyCount:
+          type: integer
+          format: int64
+        pendingReports:
+          type: integer
+          format: int64
+        hidden:
+          type: boolean
+        hiddenBy:
+          $ref: '#/components/schemas/Person'
+        hiddenAt:
+          type: string
+          format: date-time
+        pinned:
+          type: boolean
+        locked:
+          type: boolean
+        answered:
+          type: boolean
+    AdminMemberDetailResponse:
+      type: object
+      properties:
+        member:
+          $ref: '#/components/schemas/MemberResponse'
+        scoreCount:
+          type: integer
+          format: int64
+        publicScores:
+          type: integer
+          format: int64
+        pendingScores:
+          type: integer
+          format: int64
+        playlistCount:
+          type: integer
+          format: int64
+        reviewCount:
+          type: integer
+          format: int64
+        practiceSessions:
+          type: integer
+          format: int64
+        practiceMinutes:
+          type: number
+          format: double
+        recentScores:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecentScore'
+        purchaseTotal:
+          type: integer
+          format: int64
+        purchaseCount:
+          type: integer
+          format: int64
+        refundedTotal:
+          type: integer
+          format: int64
+        refundedCount:
+          type: integer
+          format: int64
+        purchases:
+          type: array
+          items:
+            $ref: '#/components/schemas/Purchase'
+        teams:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamRow'
+    AdminPracticeSessionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        memberId:
+          type: string
+        memberEmail:
+          type: string
+        memberName:
+          type: string
+        scoreId:
+          type: string
+        scoreTitle:
+          type: string
+        mode:
+          type: string
+        status:
+          type: string
+        startedAt:
+          type: string
+          format: date-time
+        endedAt:
+          type: string
+          format: date-time
+        durationSeconds:
+          type: integer
+          format: int32
+        tempoPercent:
+          type: number
+          format: double
+        totalNotes:
+          type: integer
+          format: int32
+        accuracyPct:
+          type: number
+          format: double
+        scorePoints:
+          type: number
+          format: double
+        anomalies:
+          type: array
+          items:
+            type: string
+        canClose:
+          type: boolean
+    AdminScoreBulkRequest:
+      type: object
+      properties:
+        ids:
+          type: array
+          items:
+            type: string
+          maxItems: 100
+          minItems: 0
+        action:
+          type: string
+          enum:
+            - PUBLIC
+            - PRIVATE
+            - DELETE
+        reason:
+          type: string
+          maxLength: 255
+          minLength: 0
+      required:
+        - action
+        - ids
+    AdminScoreBulkResponse:
+      type: object
+      properties:
+        success:
+          type: integer
+          format: int32
+        failures:
+          type: array
+          items:
+            $ref: '#/components/schemas/Failure'
+    AdminScoreVisibilityRequest:
+      type: object
+      properties:
+        visibility:
+          type: string
+          enum:
+            - PRIVATE
+            - PENDING
+            - PUBLIC
+        reason:
+          type: string
+          maxLength: 255
+          minLength: 0
+      required:
+        - visibility
+    AdminTagResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        scoreCount:
+          type: integer
+          format: int64
+    AdminTeamDetailResponse:
+      type: object
+      properties:
+        team:
+          $ref: '#/components/schemas/AdminTeamResponse'
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamMemberResponse'
+        shows:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShowResponse'
+        scores:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamScoreRow'
+        recentActivities:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamActivityResponse'
+    AdminTeamResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        creatorId:
+          type: string
+        creatorName:
+          type: string
+        creatorEmail:
+          type: string
+        memberCount:
+          type: integer
+          format: int64
+        scoreCount:
+          type: integer
+          format: int64
+        showCount:
+          type: integer
+          format: int64
+        preparingShows:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+        lastActivityAt:
+          type: string
+          format: date-time
+        planActive:
+          type: boolean
+        memberLimit:
+          type: integer
+          format: int32
+        deletedAt:
+          type: string
+          format: date-time
+        restorableUntil:
+          type: string
+          format: date-time
+        restorable:
+          type: boolean
+        deletedByAdmin:
+          type: boolean
+        deletedReason:
+          type: string
+    AdminTeamSummaryResponse:
+      type: object
+      properties:
+        teams:
+          type: integer
+          format: int64
+        activeTeams7d:
+          type: integer
+          format: int64
+        teamMembers:
+          type: integer
+          format: int64
+        preparingShows:
+          type: integer
+          format: int64
+        openItems:
+          type: integer
+          format: int64
+        overdueItems:
+          type: integer
+          format: int64
+    AdminUpdateMemberRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - "1"
+            - "2"
+        statusReason:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+          uniqueItems: true
+    AiTaskResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        scoreId:
+          type: string
+        taskType:
+          type: string
+          enum:
+            - OMR_CONVERSION
+            - CHORD_GENERATION
+            - AUDIO_SYNTHESIS
+            - FORMAT_CONVERSION
+        status:
+          type: string
+          enum:
+            - PENDING
+            - PROCESSING
+            - COMPLETED
+            - FAILED
+            - CANCELLED
+        progress:
+          type: integer
+          format: int32
+        step:
+          type: string
+        errorMessage:
+          type: string
+        resultData:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        startedAt:
+          type: string
+          format: date-time
+        finishedAt:
+          type: string
+          format: date-time
+    AnnouncementRequest:
+      type: object
+      properties:
+        message:
+          type: string
+          maxLength: 500
+          minLength: 0
+        audience:
+          type: string
+          enum:
+            - ALL
+            - USERS
+            - ADMINS
+            - SELECTED
+        memberIds:
+          type: array
+          items:
+            type: string
+          maxItems: 200
+          minItems: 0
+      required:
+        - audience
+        - message
+    AnnouncementResponse:
+      type: object
+      properties:
+        recipients:
+          type: integer
+          format: int32
+    Billing:
+      type: object
+      properties:
+        revenue:
+          type: integer
+          format: int64
+        paidOrders:
+          type: integer
+          format: int64
+        refundedAmount:
+          type: integer
+          format: int64
+        refundedOrders:
+          type: integer
+          format: int64
+        activeSubscriptions:
+          type: integer
+          format: int64
+        subscribedMembers:
+          type: integer
+          format: int64
+        pendingOrders:
+          type: integer
+          format: int64
+        activeBans:
+          type: integer
+          format: int64
+    BulkGrantPlanRequest:
+      type: object
+      properties:
+        planCode:
+          type: string
+        months:
+          type: integer
+          format: int32
+        memberIds:
+          type: array
+          items:
+            type: string
+    BulkGrantResult:
+      type: object
+      properties:
+        memberId:
+          type: string
+        status:
+          type: string
+        reason:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+    ByPlan:
+      type: object
+      properties:
+        planCode:
+          type: string
+        planName:
+          type: string
+        amount:
+          type: integer
+          format: int64
+        count:
+          type: integer
+          format: int64
+    ComposerRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        aliases:
+          type: string
+        birthYear:
+          type: integer
+          format: int32
+        deathYear:
+          type: integer
+          format: int32
+        country:
+          type: string
+        period:
+          type: string
+          enum:
+            - BAROQUE
+            - CLASSICAL
+            - ROMANTIC
+            - MODERN
+            - VIETNAM
+        bio:
+          type: string
+        imageUrl:
+          type: string
+        imageSource:
+          type: string
+        imageLicense:
+          type: string
+    ComposerResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        aliases:
+          type: string
+        birthYear:
+          type: integer
+          format: int32
+        deathYear:
+          type: integer
+          format: int32
+        country:
+          type: string
+        period:
+          type: string
+        bio:
+          type: string
+        imageUrl:
+          type: string
+        imageSource:
+          type: string
+        imageLicense:
+          type: string
+        scoreCount:
+          type: integer
+          format: int64
+        topTitles:
+          type: array
+          items:
+            type: string
+    CreatePlanRequest:
+      type: object
+      properties:
+        code:
+          type: string
+        audience:
+          type: string
+        name:
+          type: string
+        priceMonth:
+          type: integer
+          format: int64
+        priceYear:
+          type: integer
+          format: int64
+        limits:
+          $ref: '#/components/schemas/PlanLimits'
+        sortOrder:
+          type: integer
+          format: int32
+    Day:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        sessions:
+          type: integer
+          format: int64
+        minutes:
+          type: number
+          format: double
+    DayCount:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        count:
+          type: integer
+          format: int64
+    DayPractice:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        sessions:
+          type: integer
+          format: int64
+        minutes:
+          type: number
+          format: double
+    DayRevenue:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        amount:
+          type: integer
+          format: int64
+        orders:
+          type: integer
+          format: int64
+    ErrorLogResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        timestamp:
+          type: string
+          format: date-time
+        level:
+          type: string
+        logger:
+          type: string
+        thread:
+          type: string
+        message:
+          type: string
+        exceptionClass:
+          type: string
+        stackTrace:
+          type: string
+    Failure:
+      type: object
+      properties:
+        id:
+          type: string
+        message:
+          type: string
+    ForkSource:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        ownerName:
+          type: string
+        license:
+          type: string
+          enum:
+            - ALL_RIGHTS_RESERVED
+            - CC0
+            - CC_BY
+            - CC_BY_SA
+            - CC_BY_NC
+    ForumCategoryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+    GrantPlanRequest:
+      type: object
+      properties:
+        memberId:
+          type: string
+        planCode:
+          type: string
+        months:
+          type: integer
+          format: int32
+    HeldPlan:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        source:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+    HeldSubscription:
+      type: object
+      properties:
+        plan:
+          $ref: '#/components/schemas/PlanResponse'
+        source:
+          type: string
+        startsAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+        banned:
+          type: boolean
+    KeyCount:
+      type: object
+      properties:
+        key:
+          type: string
+        count:
+          type: integer
+          format: int64
+    MemberPlanSummary:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+        source:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+        bans:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlanBanInfo'
+    MemberResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        fullName:
+          type: string
+        phone:
+          type: string
+        address:
+          type: string
+        avatarUrl:
+          type: string
+        uiTheme:
+          type: string
+          enum:
+            - LIGHT
+            - DARK
+            - SYSTEM
+        locale:
+          type: string
+          enum:
+            - VI
+            - EN
+        status:
+          type: string
+          enum:
+            - "1"
+            - "2"
+        emailVerified:
+          type: boolean
+        authProvider:
+          type: string
+          enum:
+            - "1"
+            - "2"
+        roles:
+          type: array
+          items:
+            type: string
+          uniqueItems: true
+        permissions:
+          type: array
+          items:
+            type: string
+            enum:
+              - DASHBOARD_VIEW
+              - MEMBERS_VIEW
+              - MEMBERS_LOCK
+              - MEMBERS_CREATE
+              - TEAMS_MANAGE
+              - ANNOUNCEMENTS_SEND
+              - SCORES_MODERATE
+              - SCORES_APPROVE
+              - OFFICIAL_LIBRARY
+              - TAGS_MANAGE
+              - COMPOSERS_MANAGE
+              - REVENUE_VIEW
+              - PAYMENTS_REFUND
+              - SUBSCRIPTIONS_MANAGE
+              - PLANS_MANAGE
+              - PRACTICE_VIEW
+              - PRACTICE_MANAGE
+              - AI_TASKS_MANAGE
+              - SYSTEM_MONITOR
+              - REPORTS_MODERATE
+              - FORUM_MANAGE
+              - AUDIT_VIEW
+          uniqueItems: true
+        createdAt:
+          type: string
+          format: date-time
+        lastLoginAt:
+          type: string
+          format: date-time
+        plan:
+          $ref: '#/components/schemas/MemberPlanSummary'
+    MySubscriptionResponse:
+      type: object
+      properties:
+        plan:
+          $ref: '#/components/schemas/PlanResponse'
+        limits:
+          $ref: '#/components/schemas/PlanLimits'
+        subscriptions:
+          type: array
+          items:
+            $ref: '#/components/schemas/HeldSubscription'
+        status:
+          type: string
+        source:
+          type: string
+        roleGrant:
+          type: string
+        heldPlans:
+          type: array
+          items:
+            $ref: '#/components/schemas/HeldPlan'
+        bans:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlanBanInfo'
+        startsAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+        omrPagesUsed:
+          type: integer
+          format: int32
+    OfficialRequestResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        scoreId:
+          type: string
+        scoreTitle:
+          type: string
+        composer:
+          type: string
+        status:
+          type: string
+          enum:
+            - PENDING
+            - ACCEPTED
+            - DECLINED
+            - CANCELED
+        requestedBy:
+          type: string
+        ownerEmail:
+          type: string
+        copyScoreId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        resolvedAt:
+          type: string
+          format: date-time
+    Overview:
+      type: object
+      properties:
+        from:
+          type: string
+          format: date
+        to:
+          type: string
+          format: date
+        sessions:
+          type: integer
+          format: int64
+        minutes:
+          type: number
+          format: double
+        averageAccuracy:
+          type: number
+          format: double
+        completionRate:
+          type: number
+          format: double
+        activeMembers:
+          type: integer
+          format: int64
+        anomalous:
+          type: integer
+          format: int64
+        byDay:
+          type: array
+          items:
+            $ref: '#/components/schemas/Day'
+    PageResponseAdminActivityResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminActivityResponse'
+        pageNumber:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+    PageResponseAdminAiTaskResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminAiTaskResponse'
+        pageNumber:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+    PageResponseAdminForumThreadResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminForumThreadResponse'
+        pageNumber:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+    PageResponseAdminPracticeSessionResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminPracticeSessionResponse'
+        pageNumber:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+    PageResponseAdminTeamResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminTeamResponse'
+        pageNumber:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+    PageResponseMemberResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/MemberResponse'
+        pageNumber:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+    PageResponseOfficialRequestResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/OfficialRequestResponse'
+        pageNumber:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+    PageResponsePaymentOrderResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentOrderResponse'
+        pageNumber:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+    PageResponseReportResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReportResponse'
+        pageNumber:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+    PageResponseScoreSummaryResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScoreSummaryResponse'
+        pageNumber:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+    Party:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        fullName:
+          type: string
+    PaymentOrderResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        orderCode:
+          type: string
+        planCode:
+          type: string
+        planName:
+          type: string
+        period:
+          type: string
+        kind:
+          type: string
+        amount:
+          type: integer
+          format: int64
+        provider:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+        paidAt:
+          type: string
+          format: date-time
+        memberEmail:
+          type: string
+        payUrl:
+          type: string
+    Person:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        fullName:
+          type: string
+    PlanBanInfo:
+      type: object
+      properties:
+        planCode:
+          type: string
+        planName:
+          type: string
+        until:
+          type: string
+          format: date-time
+    PlanLimits:
+      type: object
+      properties:
+        omrPagesPerMonth:
+          type: integer
+          format: int32
+        omrConcurrent:
+          type: integer
+          format: int32
+        storageMb:
+          type: integer
+          format: int32
+        keptVersions:
+          type: integer
+          format: int32
+        exportsPerMonth:
+          type: integer
+          format: int32
+        collab:
+          type: boolean
+        team:
+          type: boolean
+        omrPriority:
+          type: boolean
+        teamMembers:
+          type: integer
+          format: int32
+        chordGenerationsPerMonth:
+          type: integer
+          format: int32
+    PlanResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        audience:
+          type: string
+        priceMonth:
+          type: integer
+          format: int64
+        priceYear:
+          type: integer
+          format: int64
+        limits:
+          $ref: '#/components/schemas/PlanLimits'
+        sortOrder:
+          type: integer
+          format: int32
+    PlanSanctionRequest:
+      type: object
+      properties:
+        memberIds:
+          type: array
+          items:
+            type: string
+        months:
+          type: integer
+          format: int32
+        reason:
+          type: string
+        planCode:
+          type: string
+    Purchase:
+      type: object
+      properties:
+        orderCode:
+          type: string
+        planName:
+          type: string
+        period:
+          type: string
+        kind:
+          type: string
+        status:
+          type: string
+        amount:
+          type: integer
+          format: int64
+        paidAt:
+          type: string
+          format: date-time
+    RecentScore:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        composer:
+          type: string
+        visibility:
+          type: string
+        isOfficial:
+          type: boolean
+        updatedAt:
+          type: string
+          format: date-time
+    ReportResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        targetType:
+          type: string
+        scoreId:
+          type: string
+        commentId:
+          type: string
+        forumThreadId:
+          type: string
+        forumPostId:
+          type: string
+        targetLabel:
+          type: string
+        targetAvailable:
+          type: boolean
+        owner:
+          $ref: '#/components/schemas/Party'
+        reporter:
+          $ref: '#/components/schemas/Party'
+        reason:
+          type: string
+        details:
+          type: string
+        status:
+          type: string
+        action:
+          type: string
+        resolutionNote:
+          type: string
+        resolvedBy:
+          $ref: '#/components/schemas/Party'
+        resolvedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        pendingOnTarget:
+          type: integer
+          format: int64
+    ResolveReportRequest:
+      type: object
+      properties:
+        action:
+          type: string
+          enum:
+            - DISMISS
+            - UNPUBLISH
+            - HIDE
+            - SOFT_DELETE
+            - LOCK_ACCOUNT
+        note:
+          type: string
+    RevenueResponse:
+      type: object
+      properties:
+        from:
+          type: string
+          format: date
+        to:
+          type: string
+          format: date
+        totalAmount:
+          type: integer
+          format: int64
+        orderCount:
+          type: integer
+          format: int64
+        refundedAmount:
+          type: integer
+          format: int64
+        refundedCount:
+          type: integer
+          format: int64
+        byDay:
+          type: array
+          items:
+            $ref: '#/components/schemas/Day'
+        byPlan:
+          type: array
+          items:
+            $ref: '#/components/schemas/ByPlan'
+    RoleRequest:
+      type: object
+      properties:
+        label:
+          type: string
+        description:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+            enum:
+              - DASHBOARD_VIEW
+              - MEMBERS_VIEW
+              - MEMBERS_LOCK
+              - MEMBERS_CREATE
+              - TEAMS_MANAGE
+              - ANNOUNCEMENTS_SEND
+              - SCORES_MODERATE
+              - SCORES_APPROVE
+              - OFFICIAL_LIBRARY
+              - TAGS_MANAGE
+              - COMPOSERS_MANAGE
+              - REVENUE_VIEW
+              - PAYMENTS_REFUND
+              - SUBSCRIPTIONS_MANAGE
+              - PLANS_MANAGE
+              - PRACTICE_VIEW
+              - PRACTICE_MANAGE
+              - AI_TASKS_MANAGE
+              - SYSTEM_MONITOR
+              - REPORTS_MODERATE
+              - FORUM_MANAGE
+              - AUDIT_VIEW
+    RoleResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        label:
+          type: string
+        description:
+          type: string
+        builtIn:
+          type: boolean
+        editable:
+          type: boolean
+        memberCount:
+          type: integer
+          format: int64
+        permissions:
+          type: array
+          items:
+            type: string
+            enum:
+              - DASHBOARD_VIEW
+              - MEMBERS_VIEW
+              - MEMBERS_LOCK
+              - MEMBERS_CREATE
+              - TEAMS_MANAGE
+              - ANNOUNCEMENTS_SEND
+              - SCORES_MODERATE
+              - SCORES_APPROVE
+              - OFFICIAL_LIBRARY
+              - TAGS_MANAGE
+              - COMPOSERS_MANAGE
+              - REVENUE_VIEW
+              - PAYMENTS_REFUND
+              - SUBSCRIPTIONS_MANAGE
+              - PLANS_MANAGE
+              - PRACTICE_VIEW
+              - PRACTICE_MANAGE
+              - AI_TASKS_MANAGE
+              - SYSTEM_MONITOR
+              - REPORTS_MODERATE
+              - FORUM_MANAGE
+              - AUDIT_VIEW
+    ScoreDetailResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        composer:
+          type: string
+        difficulty:
+          type: string
+          enum:
+            - EASY
+            - MEDIUM
+            - HARD
+            - EXPERT
+        studyNotes:
+          type: string
+        processingStatus:
+          type: string
+        rejectReason:
+          type: string
+        sourceType:
+          type: string
+        visibility:
+          type: string
+        isOfficial:
+          type: boolean
+        arrangerName:
+          type: string
+        myOriginalScoreId:
+          type: string
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/TagResponse'
+        keySignature:
+          type: string
+        timeSignature:
+          type: string
+        tempoBpm:
+          type: integer
+          format: int32
+        measureCount:
+          type: integer
+          format: int32
+        staffCount:
+          type: integer
+          format: int32
+        pageCount:
+          type: integer
+          format: int32
+        currentVersion:
+          type: integer
+          format: int32
+        viewCount:
+          type: integer
+          format: int64
+        averageRating:
+          type: number
+          format: double
+        ratingCount:
+          type: integer
+          format: int64
+        ownerEmail:
+          type: string
+        canEdit:
+          type: boolean
+        canDelete:
+          type: boolean
+        canReview:
+          type: boolean
+        canManageSharing:
+          type: boolean
+        accessLevel:
+          type: string
+        canDownload:
+          type: boolean
+        allowDownload:
+          type: boolean
+        license:
+          type: string
+          enum:
+            - ALL_RIGHTS_RESERVED
+            - CC0
+            - CC_BY
+            - CC_BY_SA
+            - CC_BY_NC
+        allowArrange:
+          type: boolean
+        canFork:
+          type: boolean
+        forkCount:
+          type: integer
+          format: int64
+        forkedFrom:
+          $ref: '#/components/schemas/ForkSource'
+        coverUrl:
+          type: string
+        teamId:
+          type: string
+        teamName:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        files:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScoreFileResponse'
+        latestTasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/AiTaskResponse'
+    ScoreFileResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        scoreId:
+          type: string
+        fileType:
+          type: string
+          enum:
+            - ORIGINAL_PDF
+            - ORIGINAL_IMAGE
+            - KERN
+            - MUSICXML
+            - MIDI
+            - PDF
+            - SVG
+            - PNG
+            - MP3
+            - WAV
+            - ORIGINAL_MUSICXML
+            - ORIGINAL_MIDI
+        originalFileName:
+          type: string
+        contentType:
+          type: string
+        sizeBytes:
+          type: integer
+          format: int64
+        pageNumber:
+          type: integer
+          format: int32
+        version:
+          type: integer
+          format: int32
+        isCurrent:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        downloadUrl:
+          type: string
+    ScoreSummaryResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        composer:
+          type: string
+        difficulty:
+          type: string
+          enum:
+            - EASY
+            - MEDIUM
+            - HARD
+            - EXPERT
+        processingStatus:
+          type: string
+        sourceType:
+          type: string
+        visibility:
+          type: string
+        license:
+          type: string
+          enum:
+            - ALL_RIGHTS_RESERVED
+            - CC0
+            - CC_BY
+            - CC_BY_SA
+            - CC_BY_NC
+        allowArrange:
+          type: boolean
+        isOfficial:
+          type: boolean
+        measureCount:
+          type: integer
+          format: int32
+        accessLevel:
+          type: string
+        ownerEmail:
+          type: string
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/TagResponse'
+        arrangerName:
+          type: string
+        ownerName:
+          type: string
+        viewCount:
+          type: integer
+          format: int64
+        ratingAverage:
+          type: number
+          format: double
+        ratingCount:
+          type: integer
+          format: int64
+        thumbnailUrl:
+          type: string
+        coverUrl:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ShowResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        teamId:
+          type: string
+        name:
+          type: string
+        showDate:
+          type: string
+          format: date
+        venue:
+          type: string
+        notes:
+          type: string
+        status:
+          type: string
+          enum:
+            - PREPARING
+            - DONE
+        itemCount:
+          type: integer
+          format: int64
+        approvedCount:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+    Summary:
+      type: object
+      properties:
+        pending:
+          type: integer
+          format: int64
+        processing:
+          type: integer
+          format: int64
+        failedLast24h:
+          type: integer
+          format: int64
+        completedLast24h:
+          type: integer
+          format: int64
+        averageRunSeconds:
+          type: array
+          items:
+            $ref: '#/components/schemas/TypeAverage'
+    SystemMetricsResponse:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        startTime:
+          type: string
+          format: date-time
+        uptimeSeconds:
+          type: integer
+          format: int64
+        heapUsedBytes:
+          type: integer
+          format: int64
+        heapMaxBytes:
+          type: integer
+          format: int64
+        processCpuPercent:
+          type: number
+          format: double
+        systemCpuPercent:
+          type: number
+          format: double
+        loadAverage:
+          type: number
+          format: double
+        availableProcessors:
+          type: integer
+          format: int32
+        physicalMemoryTotalBytes:
+          type: integer
+          format: int64
+        physicalMemoryFreeBytes:
+          type: integer
+          format: int64
+        threadCount:
+          type: integer
+          format: int32
+        peakThreadCount:
+          type: integer
+          format: int32
+        diskTotalBytes:
+          type: integer
+          format: int64
+        diskUsableBytes:
+          type: integer
+          format: int64
+        javaVersion:
+          type: string
+        errorCountSinceStart:
+          type: integer
+          format: int64
+    TagRequest:
+      type: object
+      properties:
+        name:
+          type: string
+    TagResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+    TeamActivityResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum:
+            - TEAM_CREATED
+            - TEAM_UPDATED
+            - TEAM_RESTORED
+            - MEMBER_JOINED
+            - MEMBER_LEFT
+            - MEMBER_REMOVED
+            - ROLE_CHANGED
+            - INVITATION_SENT
+            - SCORE_ADDED
+            - SCORE_REMOVED
+            - SHOW_CREATED
+            - SHOW_UPDATED
+            - SHOW_DELETED
+            - SHOW_RESTORED
+            - ITEM_ADDED
+            - ITEM_REMOVED
+            - ITEM_ASSIGNED
+            - ITEM_STATUS_CHANGED
+            - PERMISSIONS_CHANGED
+        actorName:
+          type: string
+        params:
+          type: object
+          additionalProperties:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+    TeamMemberResponse:
+      type: object
+      properties:
+        memberId:
+          type: string
+        fullName:
+          type: string
+        email:
+          type: string
+        avatarUrl:
+          type: string
+        role:
+          type: string
+          enum:
+            - OWNER
+            - MANAGER
+            - ARRANGER
+            - VIEWER
+        joinedAt:
+          type: string
+          format: date-time
+    TeamRow:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+        joinedAt:
+          type: string
+          format: date-time
+        memberCount:
+          type: integer
+          format: int64
+        deletedAt:
+          type: string
+          format: date-time
+    TeamScoreRow:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        ownerName:
+          type: string
+        visibility:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+    TopScore:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        ownerEmail:
+          type: string
+        viewCount:
+          type: integer
+          format: int64
+    Totals:
+      type: object
+      properties:
+        members:
+          type: integer
+          format: int64
+        activeMembers:
+          type: integer
+          format: int64
+        lockedMembers:
+          type: integer
+          format: int64
+        admins:
+          type: integer
+          format: int64
+        scores:
+          type: integer
+          format: int64
+        publicScores:
+          type: integer
+          format: int64
+        pendingScores:
+          type: integer
+          format: int64
+        officialScores:
+          type: integer
+          format: int64
+        reviews:
+          type: integer
+          format: int64
+        averageRating:
+          type: number
+          format: double
+        practiceSessions:
+          type: integer
+          format: int64
+        aiTasksRunning:
+          type: integer
+          format: int64
+        aiTasksFailed:
+          type: integer
+          format: int64
+    TypeAverage:
+      type: object
+      properties:
+        taskType:
+          type: string
+          enum:
+            - OMR_CONVERSION
+            - CHORD_GENERATION
+            - AUDIO_SYNTHESIS
+            - FORMAT_CONVERSION
+        seconds:
+          type: number
+          format: double
+        count:
+          type: integer
+          format: int64
+    UpdatePlanRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        priceMonth:
+          type: integer
+          format: int64
+        priceYear:
+          type: integer
+          format: int64
+        limits:
+          $ref: '#/components/schemas/PlanLimits'
+        sortOrder:
+          type: integer
+          format: int32
+
+    # ── Wrapped Responses ──
+    ApiResponseAdminAiTaskResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/AdminAiTaskResponse'
+    ApiResponseAdminDashboardResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/AdminDashboardResponse'
+    ApiResponseAdminForumCategoryResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/AdminForumCategoryResponse'
+    ApiResponseAdminForumThreadDetailResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/AdminForumThreadDetailResponse'
+    ApiResponseAdminMemberDetailResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/AdminMemberDetailResponse'
+    ApiResponseAdminPracticeSessionResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/AdminPracticeSessionResponse'
+    ApiResponseAdminScoreBulkResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/AdminScoreBulkResponse'
+    ApiResponseAdminTagResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/AdminTagResponse'
+    ApiResponseAdminTeamDetailResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/AdminTeamDetailResponse'
+    ApiResponseAdminTeamSummaryResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/AdminTeamSummaryResponse'
+    ApiResponseAnnouncementResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/AnnouncementResponse'
+    ApiResponseComposerResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/ComposerResponse'
+    ApiResponseInteger:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          type: integer
+          format: int32
+    ApiResponseListAdminForumCategoryResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminForumCategoryResponse'
+    ApiResponseListAdminTagResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminTagResponse'
+    ApiResponseListBulkGrantResult:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: '#/components/schemas/BulkGrantResult'
+    ApiResponseListComposerResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: '#/components/schemas/ComposerResponse'
+    ApiResponseListErrorLogResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorLogResponse'
+    ApiResponseListPlanResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlanResponse'
+    ApiResponseListRoleResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleResponse'
+    ApiResponseListString:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            type: string
+    ApiResponseLong:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          type: integer
+          format: int64
+    ApiResponseMemberResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/MemberResponse'
+    ApiResponseMySubscriptionResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/MySubscriptionResponse'
+    ApiResponseOverview:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/Overview'
+    ApiResponsePageResponseAdminActivityResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/PageResponseAdminActivityResponse'
+    ApiResponsePageResponseAdminAiTaskResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/PageResponseAdminAiTaskResponse'
+    ApiResponsePageResponseAdminForumThreadResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/PageResponseAdminForumThreadResponse'
+    ApiResponsePageResponseAdminPracticeSessionResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/PageResponseAdminPracticeSessionResponse'
+    ApiResponsePageResponseAdminTeamResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/PageResponseAdminTeamResponse'
+    ApiResponsePageResponseMemberResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/PageResponseMemberResponse'
+    ApiResponsePageResponseOfficialRequestResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/PageResponseOfficialRequestResponse'
+    ApiResponsePageResponsePaymentOrderResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/PageResponsePaymentOrderResponse'
+    ApiResponsePageResponseReportResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/PageResponseReportResponse'
+    ApiResponsePageResponseScoreSummaryResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/PageResponseScoreSummaryResponse'
+    ApiResponsePaymentOrderResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/PaymentOrderResponse'
+    ApiResponsePlanResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/PlanResponse'
+    ApiResponseReportResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/ReportResponse'
+    ApiResponseRevenueResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/RevenueResponse'
+    ApiResponseRoleResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/RoleResponse'
+    ApiResponseScoreDetailResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/ScoreDetailResponse'
+    ApiResponseSummary:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/Summary'
+    ApiResponseSystemMetricsResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/SystemMetricsResponse'
+    ApiResponseVoid:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result: {}
+    ApiResponseError:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 1002
+        message:
+          type: string
+          example: You do not have permission
