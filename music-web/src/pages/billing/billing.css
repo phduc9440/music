@@ -244,3 +244,105 @@
   color: var(--sc-muted);
   font-size: 0.9rem;
 }
+
+/* =====================================================================================================================
+ * Trang "Gói của tôi" (/billing): nới khoảng cách giữa các khối và bên trong thẻ cho dễ đọc. Chỉ áp trong .bl-mine để
+ * bảng giá (/pricing) dùng chung .bl-card không đổi theo.
+ * ================================================================================================================== */
+.bl-mine > .bl-note + .bl-note {
+  margin-top: 0.75rem;
+}
+.bl-mine > .bl-group {
+  margin-top: 0.5rem;
+}
+/* Các khối lớn (gói đang dùng, hạn mức, lịch sử thanh toán) cách nhau rõ ràng */
+.bl-mine > section + section,
+.bl-mine > .ui-skeleton-stack + section {
+  margin-top: 2rem;
+}
+.bl-mine .bl-group__desc {
+  margin-bottom: 1rem;
+}
+.bl-mine .bl-grid {
+  gap: 1.25rem;
+}
+.bl-mine .bl-card {
+  gap: 1rem;
+  padding: 1.5rem;
+}
+.bl-mine .bl-card > p {
+  margin: 0;
+  line-height: 1.55;
+}
+.bl-mine .bl-card .bl-note {
+  margin: 0;
+}
+.bl-mine .bl-group > .bl-actions {
+  margin-top: 1.25rem;
+}
+
+/* Hạn mức: hàng thoáng hơn, đồng hồ dùng OMR tách khỏi danh sách */
+.bl-mine .bl-meter {
+  margin: 0.25rem 0 0.5rem;
+}
+.bl-mine .bl-meter__label {
+  margin-bottom: 0.5rem;
+}
+.bl-mine .bl-limits {
+  gap: 0;
+}
+.bl-mine .bl-limits li {
+  padding: 0.65rem 0;
+}
+.bl-mine .bl-limits li:last-child {
+  border-bottom: 0;
+}
+
+/* Gia hạn */
+.bl-mine .bl-renew {
+  margin-top: 0.5rem;
+  padding-top: 1.25rem;
+}
+.bl-mine .bl-renew h4 {
+  margin-bottom: 1rem;
+}
+.bl-mine .bl-renew .bl-note {
+  margin-bottom: 1rem;
+}
+.bl-mine .bl-renew .bl-period {
+  margin-bottom: 0.75rem;
+}
+
+/* Lịch sử thanh toán */
+.bl-mine .bl-spent {
+  margin-bottom: 0.5rem;
+  padding: 1rem 1.25rem;
+}
+.bl-mine .bl-orders {
+  gap: 1rem;
+}
+.bl-mine .bl-order {
+  gap: 0.85rem;
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+}
+.bl-mine .bl-order__info {
+  gap: 0.75rem 1.5rem;
+}
+.bl-mine .bl-order__info dt {
+  margin-bottom: 0.15rem;
+}
+.bl-mine .bl-order__pending {
+  gap: 0.75rem;
+  padding-top: 0.85rem;
+}
+
+@media (max-width: 600px) {
+  .bl-mine .bl-card {
+    padding: 1.15rem;
+  }
+  .bl-mine > section + section,
+  .bl-mine > .ui-skeleton-stack + section {
+    margin-top: 1.5rem;
+  }
+}

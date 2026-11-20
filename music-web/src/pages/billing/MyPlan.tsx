@@ -169,7 +169,7 @@ export default function MyPlan() {
 
   return (
     <div className="sc-page">
-      <main className="sc-container">
+      <main className="sc-container bl-mine">
         <header className="sc-lib-head">
           <div>
             <h1>{t('billing.myPlan.title')}</h1>
