@@ -1,0 +1,65 @@
+{
+  "eyebrow": "Studio luyện tập tương tác",
+  "measures": "ô nhịp",
+  "unknownComposer": "Chưa rõ tác giả",
+  "backToScore": "Về bản nhạc",
+  "setup": {
+    "title": "Thiết lập buổi luyện",
+    "description": "Chọn tốc độ và cách nhập nốt. Bạn có thể dùng các phím A–K hoặc bấm phím đàn bên dưới.",
+    "mode": "Chế độ",
+    "waitUnavailable": "Chưa hỗ trợ trong bản MVP",
+    "input": "Cách nhập nốt",
+    "computerKeyboard": "Bàn phím máy tính",
+    "touchKeyboard": "Bấm phím đàn trên màn hình",
+    "hands": "Tay luyện tập",
+    "bothHands": "Cả hai tay",
+    "rightHand": "Tay phải",
+    "leftHand": "Tay trái",
+    "tempo": "Tốc độ",
+    "repeatSection": "Lặp một đoạn",
+    "fromMeasure": "Từ ô nhịp",
+    "toMeasure": "Đến ô nhịp",
+    "start": "Bắt đầu luyện",
+    "starting": "Đang tạo phiên…"
+  },
+  "session": {
+    "live": "Đang luyện",
+    "freeRun": "Chạy tự do",
+    "abort": "Hủy phiên",
+    "finish": "Kết thúc và xem báo cáo",
+    "saving": "Đang lưu…",
+    "progress": "Tiến độ buổi luyện",
+    "lastResult": "Kết quả gần nhất",
+    "playPrompt": "Chơi một nốt để bắt đầu",
+    "keyboardHint": "Phím máy tính theo thứ tự: A W S E D F T G Y H U J K.",
+    "finished": "Bài đã kết thúc"
+  },
+  "results": {
+    "PERFECT": "Hoàn hảo",
+    "EARLY": "Chơi sớm",
+    "LATE": "Chơi trễ",
+    "WRONG_PITCH": "Sai nốt",
+    "MISSED": "Bỏ lỡ"
+  },
+  "score": {
+    "title": "Bản nhạc",
+    "subtitle": "Chơi theo bản nhạc; kết quả nốt sẽ hiện ngay khi bạn nhập.",
+    "measureRange": "Ô nhịp {start}–{end}"
+  },
+  "keyboard": {
+    "label": "Đàn piano ảo",
+    "title": "Phím đàn",
+    "hint": "Bấm phím để chơi nốt và nhận phản hồi tức thì.",
+    "octave": "Quãng tám"
+  },
+  "errors": {
+    "load": "Không tải được dữ liệu luyện tập cho bản nhạc này.",
+    "invalidScore": "Không tìm thấy bản nhạc hoặc bạn không có quyền luyện tập.",
+    "noNotes": "Đoạn đã chọn không có nốt phù hợp để chấm.",
+    "start": "Không thể bắt đầu buổi luyện.",
+    "finish": "Không thể lưu kết quả buổi luyện. Bạn có thể thử kết thúc lại.",
+    "saveEvents": "Chưa gửi được dữ liệu nốt; hệ thống sẽ thử lại.",
+    "abort": "Không thể hủy phiên luyện.",
+    "input": "Không thể chấm nốt này."
+  }
+}

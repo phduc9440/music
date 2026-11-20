@@ -1,0 +1,65 @@
+{
+  "eyebrow": "Interactive practice studio",
+  "measures": "measures",
+  "unknownComposer": "Unknown composer",
+  "backToScore": "Back to score",
+  "setup": {
+    "title": "Set up your practice",
+    "description": "Choose a tempo and input method. Use A–K on your computer keyboard or tap the piano keys below.",
+    "mode": "Mode",
+    "waitUnavailable": "Not available in this MVP",
+    "input": "Note input",
+    "computerKeyboard": "Computer keyboard",
+    "touchKeyboard": "Tap the on-screen piano",
+    "hands": "Practice hands",
+    "bothHands": "Both hands",
+    "rightHand": "Right hand",
+    "leftHand": "Left hand",
+    "tempo": "Tempo",
+    "repeatSection": "Repeat a section",
+    "fromMeasure": "From measure",
+    "toMeasure": "To measure",
+    "start": "Start practice",
+    "starting": "Starting session…"
+  },
+  "session": {
+    "live": "Practice in progress",
+    "freeRun": "Free run",
+    "abort": "Abort session",
+    "finish": "Finish and view report",
+    "saving": "Saving…",
+    "progress": "Practice progress",
+    "lastResult": "Latest result",
+    "playPrompt": "Play a note to begin",
+    "keyboardHint": "Computer keys in order: A W S E D F T G Y H U J K.",
+    "finished": "Practice complete"
+  },
+  "results": {
+    "PERFECT": "Perfect",
+    "EARLY": "Early",
+    "LATE": "Late",
+    "WRONG_PITCH": "Wrong pitch",
+    "MISSED": "Missed"
+  },
+  "score": {
+    "title": "Score",
+    "subtitle": "Play along with the score; note feedback appears as you play.",
+    "measureRange": "Measures {start}–{end}"
+  },
+  "keyboard": {
+    "label": "Virtual piano",
+    "title": "Piano keys",
+    "hint": "Tap a key to play a note and get instant feedback.",
+    "octave": "Octave"
+  },
+  "errors": {
+    "load": "Could not load practice data for this score.",
+    "invalidScore": "Score not found or you do not have permission to practice it.",
+    "noNotes": "The selected section has no scorable notes.",
+    "start": "Could not start the practice session.",
+    "finish": "Could not save the practice result. You can try finishing again.",
+    "saveEvents": "Could not send note events; the app will retry.",
+    "abort": "Could not abort the practice session.",
+    "input": "Could not score this note."
+  }
+}
