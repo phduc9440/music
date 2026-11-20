@@ -99,7 +99,13 @@
     "demoPlay": "Play",
     "demoPause": "Pause",
     "demoCaption": "Illustration: a playhead sweeps across the staff and notes light up one by one as they play.",
-    "demoScore": "96% accurate"
+    "demoScore": "96% accurate",
+    "melody": {
+      "title": "Für Elise · Beethoven",
+      "hint": "Click any empty space to play the next note",
+      "progress": "Note {n}/{total}",
+      "play": "Play the next note of Für Elise ({n}/{total})"
+    }
   },
   "workspace": {
     "greeting": {

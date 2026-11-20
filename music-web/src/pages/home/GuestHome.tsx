@@ -20,8 +20,8 @@ import LanguageToggle from '../../i18n/LanguageToggle';
 import { isImportBatch, setPendingUpload } from '../../utils/pendingUpload';
 import './guest-home.css';
 
-// Nền 3D (three.js) tải riêng, sau khi trang đã hiện: không làm nặng gói chính
-const DreamField3D = lazy(() => import('../../components/home/DreamField3D'));
+// Vòng khuông Für Elise 3D (three.js) tải riêng, sau khi trang đã hiện: không làm nặng gói chính
+const FurEliseRing3D = lazy(() => import('../../components/home/FurEliseRing3D'));
 
 const TILT_CARDS = '.gh-score, .gh-composer, .gh-steps li, .gh-features > div';
 
@@ -303,7 +303,7 @@ export default function GuestHome() {
   return (
     <div ref={pageRef} className="gh">
       <Suspense fallback={null}>
-        <DreamField3D />
+        <FurEliseRing3D />
       </Suspense>
       <header className="gh-bar">
         <div className="gh-bar__inner">

@@ -97,7 +97,13 @@
     "demoPlay": "Phát",
     "demoPause": "Tạm dừng",
     "demoCaption": "Minh họa: đầu phát quét qua khuông nhạc và các nốt sáng lên lần lượt khi được phát.",
-    "demoScore": "Chính xác 96%"
+    "demoScore": "Chính xác 96%",
+    "melody": {
+      "title": "Für Elise · Beethoven",
+      "hint": "Bấm vào khoảng trống để chơi nốt tiếp",
+      "progress": "Nốt {n}/{total}",
+      "play": "Chơi nốt tiếp theo của Für Elise ({n}/{total})"
+    }
   },
   "workspace": {
     "greeting": {
