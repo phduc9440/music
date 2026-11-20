@@ -94,17 +94,39 @@
         "text": "PDF, MIDI, audio, SVG, MusicXML in a few clicks."
       }
     },
-    "demoTitle": "See the score viewer in action",
-    "demoLead": "The playhead sweeps the staff, each note lights up on cue, and you get scored as you play along.",
     "demoPlay": "Play",
     "demoPause": "Pause",
     "demoCaption": "Illustration: a playhead sweeps across the staff and notes light up one by one as they play.",
-    "demoScore": "96% accurate",
     "melody": {
-      "title": "Für Elise · Beethoven",
       "hint": "Click any empty space to play the next note",
       "progress": "Note {n}/{total}",
-      "play": "Play the next note of Für Elise ({n}/{total})"
+      "play": "Play the next note of {song} ({n}/{total})",
+      "auto": "Autoplay",
+      "stop": "Stop",
+      "playing": "Autoplaying, loops at the end",
+      "choose": "Choose a piece",
+      "songs": {
+        "furElise": {
+          "title": "Für Elise",
+          "by": "Beethoven"
+        },
+        "odeToJoy": {
+          "title": "Ode to Joy",
+          "by": "Beethoven"
+        },
+        "twinkle": {
+          "title": "Twinkle Twinkle Little Star",
+          "by": "French folk tune"
+        },
+        "jingleBells": {
+          "title": "Jingle Bells",
+          "by": "J. L. Pierpont"
+        },
+        "happyBirthday": {
+          "title": "Happy Birthday",
+          "by": "Mildred & Patty Hill"
+        }
+      }
     }
   },
   "workspace": {

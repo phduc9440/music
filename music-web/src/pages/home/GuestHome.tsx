@@ -20,8 +20,8 @@ import LanguageToggle from '../../i18n/LanguageToggle';
 import { isImportBatch, setPendingUpload } from '../../utils/pendingUpload';
 import './guest-home.css';
 
-// Vòng khuông Für Elise 3D (three.js) tải riêng, sau khi trang đã hiện: không làm nặng gói chính
-const FurEliseRing3D = lazy(() => import('../../components/home/FurEliseRing3D'));
+// Vòng khuông hộp nhạc 3D (three.js) tải riêng, sau khi trang đã hiện: không làm nặng gói chính
+const MusicBoxRing3D = lazy(() => import('../../components/home/MusicBoxRing3D'));
 
 const TILT_CARDS = '.gh-score, .gh-composer, .gh-steps li, .gh-features > div';
 
@@ -51,59 +51,6 @@ function Section({
       </header>
       <div className="gh-section__body">{children}</div>
     </section>
-  );
-}
-
-const DEMO_NOTES = [96, 84, 72, 84, 60, 72, 84, 96, 72, 60, 72, 84];
-const DEMO_SECONDS = 8;
-
-/**
- * Mô phỏng trình xem bản nhạc: đầu phát quét qua khuông, nốt sáng lên khi đầu phát đi tới. Có nút Phát/Tạm dừng, tạm
- * dừng khi ra khỏi màn hình, không tự chạy khi bật "Giảm chuyển động".
- */
-function ScoreDemo() {
-  const ref = useRef<HTMLElement>(null);
-  const [playing, setPlaying] = useState(() => !window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-  const [inView, setInView] = useState(true);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || typeof IntersectionObserver === 'undefined') return;
-    const io = new IntersectionObserver(([e]) => setInView(e.isIntersecting), { threshold: 0.2 });
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-
-  const running = playing && inView;
-  return (
-    <figure ref={ref} className={`gh-demo${running ? '' : ' is-paused'}`}>
-      <p className="gh-demo__title">Für Elise</p>
-      <svg className="gh-demo__score" viewBox="0 0 600 170" role="img" aria-label={t('home.guest.demoCaption')}>
-        {[0, 1, 2, 3, 4].map((i) => (
-          <line key={i} x1="20" x2="580" y1={40 + i * 20} y2={40 + i * 20} />
-        ))}
-        {DEMO_NOTES.map((y, i) => {
-          const x = 40 + ((i + 0.5) / DEMO_NOTES.length) * 520;
-          const at = ((i + 0.5) / DEMO_NOTES.length) * DEMO_SECONDS - 0.15;
-          return (
-            <g key={i} className="gh-demo__note" style={{ animationDelay: `${at.toFixed(2)}s` }}>
-              <ellipse cx={x} cy={y + 24} rx="10" ry="7.5" transform={`rotate(-20 ${x} ${y + 24})`} />
-              <rect x={x + 8} y={y - 12} width="2.4" height="36" />
-            </g>
-          );
-        })}
-        <rect className="gh-demo__head" x="40" y="24" width="3" height="112" rx="1.5" />
-      </svg>
-      <div className="gh-demo__foot">
-        <button type="button" className="gh-ghost" aria-pressed={playing} onClick={() => setPlaying((p) => !p)}>
-          <Icon name={playing ? 'x' : 'play'} size={16} />
-          {playing ? t('home.guest.demoPause') : t('home.guest.demoPlay')}
-        </button>
-        <span className="gh-demo__fact">♩ = 96</span>
-        <span className="gh-demo__fact">{t('home.guest.demoScore')}</span>
-      </div>
-      <figcaption>{t('home.guest.demoCaption')}</figcaption>
-    </figure>
   );
 }
 
@@ -257,7 +204,7 @@ export default function GuestHome() {
   const [data, setData] = useState<PublicHome | null>(null);
   const [failed, setFailed] = useState(false);
   const [dragging, setDragging] = useState(false);
-  // Hình chòm sao ở hero chạy liên tục: có nút dừng nhìn thấy được
+  // Hình chòm sao nốt nhạc chạy liên tục: có nút dừng nhìn thấy được
   const [still, setStill] = useState(false);
 
   useEffect(() => {
@@ -303,7 +250,7 @@ export default function GuestHome() {
   return (
     <div ref={pageRef} className="gh">
       <Suspense fallback={null}>
-        <FurEliseRing3D />
+        <MusicBoxRing3D />
       </Suspense>
       <header className="gh-bar">
         <div className="gh-bar__inner">
@@ -357,11 +304,17 @@ export default function GuestHome() {
             {dragging ? t('home.guest.dropNow') : t('home.guest.dropHint')}
           </p>
         </div>
-        <figure className="gh-hero__visual">
+      </section>
+
+      <main className="gh-main">
+        {failed && <p className="gh-note">{t('home.guest.loadFailed')}</p>}
+
+        {/* hình chòm sao nốt nhạc: nằm dưới phần đầu trang để vòng khuông Für Elise quanh tiêu đề không bị che */}
+        <figure className="gh-visual">
           <ScoreConstellation paused={still} label={t('home.guest.demoCaption')} />
           <button
             type="button"
-            className="gh-ghost gh-hero__pause"
+            className="gh-ghost gh-visual__pause"
             aria-pressed={!still}
             onClick={() => setStill((s) => !s)}
           >
@@ -369,14 +322,6 @@ export default function GuestHome() {
             {still ? t('home.guest.demoPlay') : t('home.guest.demoPause')}
           </button>
         </figure>
-      </section>
-
-      <main className="gh-main">
-        {failed && <p className="gh-note">{t('home.guest.loadFailed')}</p>}
-
-        <Section title={t('home.guest.demoTitle')} lead={t('home.guest.demoLead')} variant="demo">
-          <ScoreDemo />
-        </Section>
 
         <Section id="featured" title={t('home.guest.featuredTitle')} lead={t('home.guest.featuredLead')} variant="wide">
           {!data && !failed && (

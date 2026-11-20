@@ -77,3 +77,33 @@ export function makeGlyph(kind: Glyph, { ledger = false, sharp = false } = {}) {
   tex.anisotropy = 4;
   return tex;
 }
+
+/** Cặp móc đơn nối dây (hai nốt, đuôi lên, gạch nối dày) cho các nốt bay trang trí; cùng cỡ ảnh với makeGlyph. */
+export function makeBeamedGlyph() {
+  const canvas = document.createElement('canvas');
+  canvas.width = GLYPH_W;
+  canvas.height = GLYPH_H;
+  const g = canvas.getContext('2d')!;
+  g.fillStyle = '#fff';
+  const heads: [number, number][] = [
+    [34, 176],
+    [88, 152],
+  ];
+  for (const [x, y] of heads) {
+    g.beginPath();
+    g.ellipse(x, y, 17, 12, -0.38, 0, Math.PI * 2);
+    g.fill();
+    g.fillRect(x + 13, y - 112, 4, 110); // đuôi
+  }
+  // gạch nối: hình bình hành dày nối hai đỉnh đuôi
+  g.beginPath();
+  g.moveTo(47, 64);
+  g.lineTo(105, 40);
+  g.lineTo(105, 56);
+  g.lineTo(47, 80);
+  g.closePath();
+  g.fill();
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.anisotropy = 4;
+  return tex;
+}

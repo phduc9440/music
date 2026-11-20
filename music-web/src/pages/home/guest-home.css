@@ -210,7 +210,11 @@
 /* ---- hero: tiêu đề, câu dẫn, nút căn giữa; chòm sao nằm trong một tấm thẻ rộng phía dưới ---- */
 .gh-hero {
   display: grid;
+  align-content: start;
   justify-items: center;
+  /* vòng khuông Für Elise vẽ theo chiều cao khung nhìn (mép trước ở khoảng 55%): phần đầu trang cao ít nhất chừng đó
+     để hình bên dưới không che vòng */
+  min-height: 58svh;
   gap: var(--space-9);
   max-width: calc(var(--gh-max) + 2 * var(--gh-gutter));
   margin-inline: auto;
@@ -257,22 +261,48 @@
   color: var(--gh-ink-2);
   font-size: var(--text-small);
 }
-.gh-hero__visual {
+/* hình chòm sao nốt nhạc ngay dưới phần đầu trang, cùng bề ngang với các khối nội dung. Không có khung: hạt mực nằm
+   thẳng trên nền trang, bốn mép mờ dần vào nền để không lộ đường biên chữ nhật */
+.gh-visual {
   position: relative;
-  width: 100%;
+  width: calc(100% - 2 * var(--gh-gutter));
   min-width: 0;
+  max-width: var(--gh-max);
   height: clamp(260px, 40svh, 440px);
-  margin: 0;
-  overflow: hidden;
-  border-radius: var(--gh-radius);
-  background: var(--gh-card);
+  margin: 0 auto;
 }
 .gh-constellation {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  touch-action: pan-y; /* vuốt dọc trên điện thoại vẫn cuộn trang */
+  -webkit-mask-image:
+    linear-gradient(to right, transparent, #000 7%, #000 93%, transparent),
+    linear-gradient(to bottom, transparent, #000 14%, #000 86%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to right, transparent, #000 7%, #000 93%, transparent),
+    linear-gradient(to bottom, transparent, #000 14%, #000 86%, transparent);
+  mask-composite: intersect;
+}
+.gh-constellation canvas {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
 }
-.gh-hero__pause {
+/* lớp quầng sáng: bản chép nhỏ của hạt mực, nhoè và đậm màu, phủ lên để cả bảng phát sáng mờ ảo */
+.gh-constellation__bloom {
+  pointer-events: none;
+  filter: blur(10px) saturate(1.6);
+  opacity: 0.55;
+}
+:root[data-theme='dark'] .gh-constellation__bloom {
+  mix-blend-mode: screen;
+  opacity: 0.95;
+}
+.gh-visual__pause {
   position: absolute;
   right: var(--space-4);
   bottom: var(--space-4);
@@ -321,7 +351,6 @@
   min-width: 0;
 }
 /* thân bên trái, tiêu đề bên phải */
-.gh-section--demo .gh-section__head,
 .gh-section--flip .gh-section__head {
   order: 2;
 }
@@ -343,78 +372,6 @@
 .gh-section--steps .gh-section__head p,
 .gh-section--stats .gh-section__head p {
   margin: 0;
-}
-
-/* ---- bản demo trình xem: nằm trong một thẻ phẳng ---- */
-.gh-demo {
-  margin: 0;
-  padding: var(--space-7);
-  border-radius: var(--gh-radius);
-  background: var(--gh-card);
-}
-.gh-demo__title {
-  margin: 0 0 var(--space-3);
-  font-family: var(--gh-display);
-  font-size: var(--text-sub);
-  font-weight: 480;
-  letter-spacing: 0.01em;
-}
-.gh-demo__score {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-.gh-demo__score line {
-  stroke: var(--gh-line-strong);
-  stroke-width: 1.5;
-}
-.gh-demo__note {
-  fill: var(--gh-ink-2);
-  animation: gh-note 8s linear infinite;
-}
-@keyframes gh-note {
-  0%,
-  7% {
-    fill: var(--gh-lime);
-  }
-  12%,
-  100% {
-    fill: var(--gh-ink-2);
-  }
-}
-.gh-demo__head {
-  fill: var(--gh-lime);
-  animation: gh-head 8s linear infinite;
-}
-@keyframes gh-head {
-  to {
-    transform: translateX(520px);
-  }
-}
-.gh-demo.is-paused :is(.gh-demo__note, .gh-demo__head),
-.gh-demo:hover :is(.gh-demo__note, .gh-demo__head),
-.gh-demo:focus-within :is(.gh-demo__note, .gh-demo__head) {
-  animation-play-state: paused;
-}
-.gh-demo__foot {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-3) var(--space-6);
-  margin-top: var(--space-6);
-}
-.gh-demo__foot .gh-ghost {
-  min-height: 40px;
-}
-.gh-demo__fact {
-  color: var(--gh-ink-2);
-  font-size: var(--text-small);
-  font-variant-numeric: tabular-nums;
-}
-.gh-demo figcaption {
-  margin-top: var(--space-4);
-  color: var(--gh-ink-2);
-  font-size: var(--text-small);
 }
 
 /* ---- bản nhạc nổi bật: dải thẻ phẳng cuộn ngang ---- */
@@ -827,7 +784,6 @@
   .gh-section {
     padding-block: var(--space-9);
   }
-  .gh-section--demo .gh-section__head,
   .gh-section--flip .gh-section__head {
     order: 0;
   }
@@ -848,19 +804,12 @@
   .gh-hero {
     padding-top: var(--space-8);
   }
-  .gh-demo {
-    padding: var(--space-5);
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   /* hình chòm sao đứng yên: không cần nút dừng */
-  .gh-hero__pause {
+  .gh-visual__pause {
     display: none;
-  }
-  .gh-demo__note,
-  .gh-demo__head {
-    animation: none;
   }
   .gh-cta:active {
     transform: none;
@@ -891,7 +840,6 @@
 .gh-score__title,
 .gh-features dt,
 .gh-composer__name,
-.gh-demo__title,
 .gh-faq summary {
   letter-spacing: 0;
 }
@@ -914,40 +862,71 @@
   height: 100%;
 }
 
-/* nút gợi ý góc dưới trái: bấm để chơi nốt tiếp (cũng là lối dùng bằng bàn phím); ẩn khi đã cuộn qua phần đầu trang */
+/* cụm nút góc dưới trái: chơi nốt tiếp (cũng là lối dùng bằng bàn phím) và tự chạy cả bài; luôn hiện để dừng được
+   nhạc ở bất cứ đâu trên trang */
 .gh-melody {
   position: fixed;
   left: var(--space-6);
   bottom: var(--space-6);
   z-index: 20;
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: var(--space-3);
-  min-height: 48px;
+  gap: var(--space-2);
   max-width: calc(100vw - 2 * var(--space-6));
-  padding: var(--space-2) var(--space-5) var(--space-2) var(--space-2);
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-1);
   border: 1px solid var(--gh-line-strong);
   border-radius: 40px;
   background: var(--gh-card);
   color: var(--gh-ink);
   font-family: var(--gh-body);
-  text-align: left;
-  cursor: pointer;
   transition:
     transform 0.25s ease,
-    opacity 0.25s ease,
-    background-color 0.18s ease;
+    opacity 0.25s ease;
 }
-.gh-melody:hover {
+.gh-melody__next,
+.gh-melody__auto {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  border: 0;
+  border-radius: 40px;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: background-color 0.18s ease;
+}
+.gh-melody__next {
+  flex: none;
+  justify-content: center;
+  width: 44px;
+  padding: 0;
+  background: transparent;
+}
+.gh-melody__next:hover:not(:disabled) {
   background: var(--gh-card-2);
 }
-.gh-melody:active .gh-melody__icon {
+.gh-melody__next:disabled {
+  cursor: default;
+}
+.gh-melody__next:active:not(:disabled) .gh-melody__icon {
   transform: scale(0.9);
 }
-.gh-melody.is-hidden {
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(calc(100% + var(--space-8)));
+.gh-melody__auto {
+  flex: none;
+  gap: var(--space-2);
+  padding-inline: var(--space-4);
+  border: 1px solid var(--gh-ink);
+  background: transparent;
+  font-size: var(--text-small);
+  white-space: nowrap;
+}
+.gh-melody__auto:hover {
+  background: var(--gh-card-2);
+}
+.gh-melody__auto[aria-pressed='true'] {
+  border-color: var(--gh-accent);
+  background: var(--gh-accent);
+  color: var(--ui-bg);
 }
 .gh-melody__icon {
   display: grid;
@@ -965,9 +944,28 @@
   min-width: 0;
   line-height: 1.3;
 }
-.gh-melody__text strong {
+/* ô chọn bài: chữ đậm như tiêu đề, không khung, mũi tên gốc của trình duyệt */
+.gh-melody__song {
+  min-width: 0;
+  max-width: 260px;
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
   font-size: var(--text-small);
   font-weight: 600;
+  cursor: pointer;
+}
+.gh-melody__song:focus-visible {
+  outline: 2px solid var(--gh-accent);
+  outline-offset: 2px;
+}
+.gh-melody__song option {
+  background: var(--gh-card);
+  color: var(--gh-ink);
 }
 .gh-melody__text small {
   overflow: hidden;
@@ -976,8 +974,23 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* màn hẹp: chỉ còn nút nốt nhạc tròn và nút tự chạy, chừa chỗ cho nút Đăng nhập dính ở góc phải */
+@media (max-width: 560px) {
+  .gh-melody {
+    left: var(--space-4);
+    bottom: var(--space-4);
+  }
+  .gh-melody__text small {
+    display: none;
+  }
+  .gh-melody__song {
+    max-width: 120px;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .gh-melody,
+  .gh-melody__next,
+  .gh-melody__auto,
   .gh-melody__icon {
     transition: none;
   }

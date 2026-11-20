@@ -92,17 +92,39 @@
         "text": "PDF, MIDI, âm thanh, SVG, MusicXML chỉ với vài cú nhấp."
       }
     },
-    "demoTitle": "Xem thử trình xem bản nhạc",
-    "demoLead": "Đầu phát chạy qua khuông, từng nốt sáng lên đúng lúc, và bạn nhận điểm khi tập cùng.",
     "demoPlay": "Phát",
     "demoPause": "Tạm dừng",
     "demoCaption": "Minh họa: đầu phát quét qua khuông nhạc và các nốt sáng lên lần lượt khi được phát.",
-    "demoScore": "Chính xác 96%",
     "melody": {
-      "title": "Für Elise · Beethoven",
       "hint": "Bấm vào khoảng trống để chơi nốt tiếp",
       "progress": "Nốt {n}/{total}",
-      "play": "Chơi nốt tiếp theo của Für Elise ({n}/{total})"
+      "play": "Chơi nốt tiếp theo của {song} ({n}/{total})",
+      "auto": "Tự chạy",
+      "stop": "Dừng",
+      "playing": "Đang tự chạy, hết bài sẽ lặp lại",
+      "choose": "Chọn bài",
+      "songs": {
+        "furElise": {
+          "title": "Für Elise",
+          "by": "Beethoven"
+        },
+        "odeToJoy": {
+          "title": "Khúc hoan ca (Ode to Joy)",
+          "by": "Beethoven"
+        },
+        "twinkle": {
+          "title": "Twinkle Twinkle Little Star",
+          "by": "Dân ca Pháp"
+        },
+        "jingleBells": {
+          "title": "Jingle Bells",
+          "by": "J. L. Pierpont"
+        },
+        "happyBirthday": {
+          "title": "Chúc mừng sinh nhật",
+          "by": "Chị em Hill"
+        }
+      }
     }
   },
   "workspace": {
