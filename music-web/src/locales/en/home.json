@@ -98,12 +98,12 @@
     "demoPause": "Pause",
     "demoCaption": "Illustration: a playhead sweeps across the staff and notes light up one by one as they play.",
     "melody": {
-      "hint": "Click any empty space to play the next note",
+      "hint": "Click anywhere to play on",
       "progress": "Note {n}/{total}",
       "play": "Play the next note of {song} ({n}/{total})",
       "auto": "Autoplay",
       "stop": "Stop",
-      "playing": "Autoplaying, loops at the end",
+      "playing": "Autoplaying on loop",
       "choose": "Choose a piece",
       "songs": {
         "furElise": {
@@ -125,6 +125,22 @@
         "happyBirthday": {
           "title": "Happy Birthday",
           "by": "Mildred & Patty Hill"
+        },
+        "canonInD": {
+          "title": "Canon in D",
+          "by": "Pachelbel"
+        },
+        "nachtmusik": {
+          "title": "Eine kleine Nachtmusik",
+          "by": "Mozart"
+        },
+        "lullaby": {
+          "title": "Lullaby",
+          "by": "Brahms"
+        },
+        "greensleeves": {
+          "title": "Greensleeves",
+          "by": "English folk song"
         }
       }
     }

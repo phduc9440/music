@@ -182,7 +182,7 @@ function readColors() {
 // bấm vào đây thì không chơi nốt: phần tử tương tác, chữ, thẻ nội dung
 const NO_PLAY = [
   'a,button,input,textarea,select,label,summary,[role="button"],[role="link"],[tabindex],[contenteditable="true"]',
-  'h1,h2,h3,p,li,dt,dd,figure',
+  'h1,h2,h3,p,li,dt,dd', // bảng nốt nhạc dưới đầu trang (figure) vẫn tính là nền: bấm vào đó cũng chơi nốt
   '.gh-bar,.gh-score,.gh-composer,.gh-strip-wrap,.gh-faq,.gh-features,.gh-stats,.gh-melody',
 ].join(',');
 
@@ -986,9 +986,10 @@ export default function MusicBoxRing3D() {
               </option>
             ))}
           </select>
+          {/* bộ đếm đứng trước: lời gợi ý dài có bị cắt bớt thì vẫn thấy đang ở nốt nào */}
           <small>
-            {auto ? t('home.guest.melody.playing') : t('home.guest.melody.hint')} ·{' '}
-            {t('home.guest.melody.progress', { n: played, total })}
+            {t('home.guest.melody.progress', { n: played, total })} ·{' '}
+            {auto ? t('home.guest.melody.playing') : t('home.guest.melody.hint')}
           </small>
         </span>
         <button

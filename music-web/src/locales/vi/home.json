@@ -96,12 +96,12 @@
     "demoPause": "Tạm dừng",
     "demoCaption": "Minh họa: đầu phát quét qua khuông nhạc và các nốt sáng lên lần lượt khi được phát.",
     "melody": {
-      "hint": "Bấm vào khoảng trống để chơi nốt tiếp",
+      "hint": "Bấm vào nền để chơi tiếp",
       "progress": "Nốt {n}/{total}",
       "play": "Chơi nốt tiếp theo của {song} ({n}/{total})",
       "auto": "Tự chạy",
       "stop": "Dừng",
-      "playing": "Đang tự chạy, hết bài sẽ lặp lại",
+      "playing": "Đang tự chạy, lặp lại",
       "choose": "Chọn bài",
       "songs": {
         "furElise": {
@@ -123,6 +123,22 @@
         "happyBirthday": {
           "title": "Chúc mừng sinh nhật",
           "by": "Chị em Hill"
+        },
+        "canonInD": {
+          "title": "Canon cung Rê",
+          "by": "Pachelbel"
+        },
+        "nachtmusik": {
+          "title": "Eine kleine Nachtmusik",
+          "by": "Mozart"
+        },
+        "lullaby": {
+          "title": "Khúc hát ru",
+          "by": "Brahms"
+        },
+        "greensleeves": {
+          "title": "Greensleeves",
+          "by": "Dân ca Anh"
         }
       }
     }
