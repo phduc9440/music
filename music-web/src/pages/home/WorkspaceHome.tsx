@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
-import type { PointerEvent } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Link } from '../../routes/transition-nav';
@@ -7,19 +6,19 @@ import AuthImage from '../../components/scores/common/AuthImage';
 import { CREATE_SCORE_PATH } from '../../components/layout/nav';
 import { Icon } from '../../components/ui';
 import CountUp from '../../components/ui/CountUp';
-import NoteField from '../../components/ui/NoteField';
-import PianoBackground from '../../components/ui/PianoBackground';
 import type { IconName } from '../../components/ui';
 import { homeApi, teamApi } from '../../services';
 import type { HomePendingItem, HomeSummary, ScoreSummary, TeamTask } from '../../types';
 import { DueDate, StatusBadge } from '../teams/shared';
 import HomeForumBlock from '../../components/home/HomeForumBlock';
-import { useReveal } from '../../hooks/useReveal';
 import { t } from '../../i18n/core';
 import { ACCESS_LEVEL_LABELS, DIFFICULTY_LABELS, formatRelative, getScorePath } from '../../utils/score';
 import '../../components/scores/scores.css';
 import '../teams/teams.css';
 import './workspace-home.css';
+
+// Dải lụa 3D đầu trang (three.js) tải riêng sau khi trang hiện
+const SilkRibbons3D = lazy(() => import('../../components/home/SilkRibbons3D'));
 
 /** Số việc hiện trên trang chủ; xem hết ở trang Team. */
 const MAX_TASKS = 4;
@@ -31,26 +30,25 @@ const QUICK_LINKS: { to: string; labelKey: string; icon: IconName }[] = [
   { to: '/playlists', labelKey: 'common.nav.items.playlists', icon: 'list' },
 ];
 
-const SHOWCASE: { icon: IconName; key: string; hue: string; to: string }[] = [
-  { icon: 'upload', key: 'ocr', hue: 'rose', to: CREATE_SCORE_PATH },
-  { icon: 'edit', key: 'editor', hue: 'indigo', to: '/scores' },
-  { icon: 'play', key: 'player', hue: 'teal', to: '/scores' },
-  { icon: 'flame', key: 'practice', hue: 'amber', to: '/practice-history' },
-  { icon: 'users', key: 'teams', hue: 'violet', to: '/teams' },
-  { icon: 'share', key: 'export', hue: 'sky', to: '/scores' },
+const SHOWCASE: { key: string; to: string }[] = [
+  { key: 'ocr', to: CREATE_SCORE_PATH },
+  { key: 'editor', to: '/scores' },
+  { key: 'player', to: '/scores' },
+  { key: 'practice', to: '/practice-history' },
+  { key: 'teams', to: '/teams' },
+  { key: 'export', to: '/scores' },
 ];
 
-const JOURNEY: { icon: IconName; key: 'capture' | 'edit' | 'practice'; to: string }[] = [
-  { icon: 'upload', key: 'capture', to: CREATE_SCORE_PATH },
-  { icon: 'edit', key: 'edit', to: '/scores' },
-  { icon: 'play', key: 'practice', to: '/practice-history' },
+const JOURNEY: { key: 'capture' | 'edit' | 'practice'; to: string }[] = [
+  { key: 'capture', to: CREATE_SCORE_PATH },
+  { key: 'edit', to: '/scores' },
+  { key: 'practice', to: '/practice-history' },
 ];
 
-/** Khối có tiêu đề, hiện dần khi cuộn tới (như landing page). */
+/** Khối có tiêu đề: tiêu đề và lời dẫn một hàng, nội dung là các thẻ phẳng bên dưới (như trang chủ khách). */
 function Showcase({ title, lead, children }: { title: string; lead?: string; children: ReactNode }) {
-  const ref = useReveal<HTMLElement>();
   return (
-    <section ref={ref} className="wh-sec reveal">
+    <section className="wh-sec">
       <header className="wh-sec__head">
         <h2>{title}</h2>
         {lead && <p>{lead}</p>}
@@ -59,40 +57,6 @@ function Showcase({ title, lead, children }: { title: string; lead?: string; chi
     </section>
   );
 }
-
-const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-/** Hiệu ứng nam châm: nút nhích nhẹ về phía con trỏ (tối đa 6px), trả về chỗ cũ khi rời. Chỉ cho chuột. */
-const magnet = {
-  onPointerMove: (e: PointerEvent<HTMLElement>) => {
-    if (e.pointerType !== 'mouse' || reducedMotion()) return;
-    const el = e.currentTarget;
-    const r = el.getBoundingClientRect();
-    const dx = (e.clientX - (r.left + r.width / 2)) * 0.18;
-    const dy = (e.clientY - (r.top + r.height / 2)) * 0.18;
-    el.style.translate = `${Math.max(-6, Math.min(6, dx))}px ${Math.max(-6, Math.min(6, dy))}px`;
-  },
-  onPointerLeave: (e: PointerEvent<HTMLElement>) => {
-    e.currentTarget.style.translate = '';
-  },
-};
-
-/** Bìa nghiêng 3D theo con trỏ (tối đa 8 độ), trả về phẳng khi rời. */
-const tilt = {
-  onPointerMove: (e: PointerEvent<HTMLElement>) => {
-    if (e.pointerType !== 'mouse' || reducedMotion()) return;
-    const el = e.currentTarget;
-    const r = el.getBoundingClientRect();
-    const x = (e.clientX - r.left) / r.width - 0.5;
-    const y = (e.clientY - r.top) / r.height - 0.5;
-    el.style.setProperty('--tilt-x', `${(-y * 16).toFixed(1)}deg`);
-    el.style.setProperty('--tilt-y', `${(x * 16).toFixed(1)}deg`);
-  },
-  onPointerLeave: (e: PointerEvent<HTMLElement>) => {
-    e.currentTarget.style.removeProperty('--tilt-x');
-    e.currentTarget.style.removeProperty('--tilt-y');
-  },
-};
 
 const greeting = () => {
   const h = new Date().getHours();
@@ -128,7 +92,7 @@ function Panel({
   className?: string;
 }) {
   return (
-    <section className={`wh-panel reveal-item ${className}`}>
+    <section className={`wh-panel ${className}`}>
       <header className="wh-panel__head">
         <h2>{title}</h2>
         {action && (
@@ -152,9 +116,9 @@ function RecentRow({ score, from }: { score: ScoreSummary; from: string }) {
         </span>
         <span className="wh-recent__body">
           <strong title={score.title}>{score.title}</strong>
-          <span>
-            {score.composer || t('scores.card.unknownComposer')} ·{' '}
-            {t('home.workspace.updated', { when: formatRelative(score.updatedAt) })}
+          <span className="wh-meta">
+            <span>{score.composer || t('scores.card.unknownComposer')}</span>
+            <span>{t('home.workspace.updated', { when: formatRelative(score.updatedAt) })}</span>
           </span>
         </span>
         <Icon name="chevronRight" size={16} />
@@ -174,7 +138,6 @@ export default function WorkspaceHome() {
   // Việc được giao trong các buổi diễn (4.1): tải riêng để lỗi ở đây không làm hỏng cả trang chủ
   const [tasks, setTasks] = useState<TeamTask[]>([]);
   const [now, setNow] = useState(0);
-  const rootRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -206,25 +169,6 @@ export default function WorkspaceHome() {
       .catch(() => !cancelled && setFailed(true));
     return () => {
       cancelled = true;
-    };
-  }, []);
-
-  // Parallax cho vệt sáng trong khung chào (chỉ transform, không động vào chữ), tắt khi giảm chuyển động
-  useEffect(() => {
-    const root = rootRef.current;
-    if (!root || reducedMotion()) return;
-    let raf = 0;
-    const onScroll = () => {
-      if (raf) return;
-      raf = requestAnimationFrame(() => {
-        raf = 0;
-        root.style.setProperty('--wh-par', `${Math.min(window.scrollY, 700)}px`);
-      });
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      cancelAnimationFrame(raf);
     };
   }, []);
 
@@ -265,18 +209,15 @@ export default function WorkspaceHome() {
 
   return (
     <div className="sc-page wh-page">
-      <PianoBackground />
-      <main className="sc-container wh" ref={rootRef}>
+      <Suspense fallback={null}>
+        <SilkRibbons3D />
+      </Suspense>
+      <main className="sc-container wh">
         <header className="wh-hero">
-          <span className="wh-hero__notes" aria-hidden="true">
-            <NoteField />
-          </span>
-          <span className="wh-hero__glow wh-hero__glow--a" aria-hidden="true" />
-          <span className="wh-hero__glow wh-hero__glow--b" aria-hidden="true" />
-          <span className="wh-hero__glow wh-hero__glow--b" aria-hidden="true" />
           <div className="wh-hero__text">
-            <p className="wh-hero__eyebrow">{greeting()},</p>
-            <h1>{data.displayName}</h1>
+            <h1>
+              {greeting()}, {data.displayName}
+            </h1>
             <p className="wh-hero__sub">
               {streak.practicedToday
                 ? t('home.workspace.practicedToday', { count: todayMinutes })
@@ -290,13 +231,12 @@ export default function WorkspaceHome() {
                   to={getScorePath(featured.id, featured.processingStatus)}
                   state={{ from: pathname }}
                   className="wh-btn"
-                  {...magnet}
                 >
                   <Icon name="play" size={18} />
                   {t('home.workspace.continue')}
                 </Link>
               ) : (
-                <Link to={CREATE_SCORE_PATH} className="wh-btn" {...magnet}>
+                <Link to={CREATE_SCORE_PATH} className="wh-btn">
                   <Icon name="upload" size={18} />
                   {t('home.workspace.digitize')}
                 </Link>
@@ -329,7 +269,6 @@ export default function WorkspaceHome() {
                   to={getScorePath(featured.id, featured.processingStatus)}
                   state={{ from: pathname }}
                   className="wh-feature"
-                  {...tilt}
                 >
                   <span className="wh-feature__cover">
                     <AuthImage
@@ -355,7 +294,7 @@ export default function WorkspaceHome() {
             )}
           </Panel>
 
-          <section className="wh-tile wh-tile--suggest reveal-item">
+          <section className="wh-tile wh-tile--suggest">
             <span className="wh-tile__kicker">{t('home.workspace.suggestion')}</span>
             {suggestion ? (
               <>
@@ -365,9 +304,9 @@ export default function WorkspaceHome() {
                     : t('home.workspace.suggestOfficial')}
                 </span>
                 <strong className="wh-suggest__title">{suggestion.score.title}</strong>
-                <span className="wh-suggest__meta">
-                  {suggestion.score.composer || t('scores.card.unknownComposer')}
-                  {suggestion.score.difficulty && ` · ${DIFFICULTY_LABELS[suggestion.score.difficulty]}`}
+                <span className="wh-meta wh-suggest__meta">
+                  <span>{suggestion.score.composer || t('scores.card.unknownComposer')}</span>
+                  {suggestion.score.difficulty && <span>{DIFFICULTY_LABELS[suggestion.score.difficulty]}</span>}
                 </span>
                 <Link to={`/scores/${suggestion.score.id}/play`} className="wh-btn wh-btn--light">
                   <Icon name="play" size={16} />
@@ -383,12 +322,12 @@ export default function WorkspaceHome() {
             )}
           </section>
 
-          <Link to={CREATE_SCORE_PATH} className="wh-tile wh-tile--create wh-tile--rose reveal-item">
+          <Link to={CREATE_SCORE_PATH} className="wh-tile wh-tile--create">
             <Icon name="upload" size={26} />
             <strong>{t('home.workspace.fromImage')}</strong>
             <span>{t('home.workspace.fromImageHint')}</span>
           </Link>
-          <Link to="/scores/import" className="wh-tile wh-tile--create wh-tile--indigo reveal-item">
+          <Link to="/scores/import" className="wh-tile wh-tile--create">
             <Icon name="music" size={26} />
             <strong>{t('home.workspace.fromFile')}</strong>
             <span>{t('home.workspace.fromFileHint')}</span>
@@ -402,11 +341,11 @@ export default function WorkspaceHome() {
                 {data.pending.map((item) => (
                   <li key={`${item.type}-${item.scoreId}-${item.createdAt}`}>
                     <Link to={pendingTarget(item)} state={{ from: pathname }} className="wh-pending">
-                      <span className={`wh-pending__dot wh-pending__dot--${item.type.toLowerCase()}`} />
                       <span className="wh-pending__body">
                         <strong>{pendingText(item)}</strong>
-                        <span>
-                          {item.scoreTitle} · {formatRelative(item.createdAt)}
+                        <span className="wh-meta">
+                          <span>{item.scoreTitle}</span>
+                          <span>{formatRelative(item.createdAt)}</span>
                         </span>
                       </span>
                     </Link>
@@ -441,14 +380,17 @@ export default function WorkspaceHome() {
                     <Link to={`/teams/${task.teamId}/shows/${task.showId}`} className="wh-task">
                       <span className="wh-task__body">
                         <strong title={task.scoreTitle}>{task.scoreTitle}</strong>
-                        <span>
-                          {task.teamName} · {task.showName} ·{' '}
-                          {[
-                            task.asArranger && t('teams.tasks.asArranger'),
-                            task.asReviewer && t('teams.tasks.asReviewer'),
-                          ]
-                            .filter(Boolean)
-                            .join(', ')}
+                        <span className="wh-meta">
+                          <span>{task.teamName}</span>
+                          <span>{task.showName}</span>
+                          <span>
+                            {[
+                              task.asArranger && t('teams.tasks.asArranger'),
+                              task.asReviewer && t('teams.tasks.asReviewer'),
+                            ]
+                              .filter(Boolean)
+                              .join(', ')}
+                          </span>
                         </span>
                       </span>
                       <span className="wh-task__side">
@@ -463,8 +405,8 @@ export default function WorkspaceHome() {
           )}
 
           <nav className="wh-quick" aria-label={t('home.workspace.quickLinks')}>
-            {QUICK_LINKS.map((l, i) => (
-              <Link key={l.to} to={l.to} className={`wh-quick__item wh-quick__item--${i} reveal-item`}>
+            {QUICK_LINKS.map((l) => (
+              <Link key={l.to} to={l.to} className="wh-quick__item">
                 <span className="wh-quick__icon">
                   <Icon name={l.icon} size={20} />
                 </span>
@@ -474,22 +416,10 @@ export default function WorkspaceHome() {
           </nav>
         </div>
 
-        <div className="notef-band" aria-hidden="true">
-          <NoteField />
-        </div>
-
         <Showcase title={t('home.guest.featuresTitle')} lead={t('home.guest.featuresLead')}>
           <div className="wh-showcase">
-            {SHOWCASE.map((f, i) => (
-              <Link
-                key={f.key}
-                to={f.to}
-                className={`wh-feat wh-feat--${f.hue}`}
-                style={{ transitionDelay: `${i * 70}ms` }}
-              >
-                <span className="wh-feat__icon">
-                  <Icon name={f.icon} size={22} />
-                </span>
+            {SHOWCASE.map((f) => (
+              <Link key={f.key} to={f.to} className="wh-feat">
                 <strong>{t(`home.guest.features.${f.key}.title`)}</strong>
                 <span>{t(`home.guest.features.${f.key}.text`)}</span>
                 <Icon name="chevronRight" size={18} />
@@ -500,13 +430,9 @@ export default function WorkspaceHome() {
 
         <Showcase title={t('home.guest.howTitle')} lead={t('home.guest.howLead')}>
           <ol className="wh-journey">
-            {JOURNEY.map((j, i) => (
-              <li key={j.key} style={{ transitionDelay: `${i * 140}ms` }}>
+            {JOURNEY.map((j) => (
+              <li key={j.key}>
                 <Link to={j.to} className="wh-journey__item">
-                  <span className="wh-journey__no">{i + 1}</span>
-                  <span className="wh-journey__icon">
-                    <Icon name={j.icon} size={22} />
-                  </span>
                   <strong>{t(`home.guest.steps.${j.key}.title`)}</strong>
                   <span>{t(`home.guest.steps.${j.key}.text`)}</span>
                 </Link>
@@ -523,7 +449,7 @@ export default function WorkspaceHome() {
           )}
         />
 
-        <section className="wh-cta reveal-item">
+        <section className="wh-cta">
           <div>
             <h2>{t('home.workspace.ctaTitle')}</h2>
             <p>{t('home.workspace.ctaText')}</p>

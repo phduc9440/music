@@ -123,11 +123,11 @@
 }
 
 .nf__btn--primary {
-  border-color: var(--ui-primary);
-  background: var(--ui-primary);
-  color: var(--ui-on-accent);
+  border-color: var(--ui-cta-border);
+  background: var(--ui-cta);
+  color: var(--ui-on-cta);
 }
 
 .nf__btn--primary:hover {
-  background: var(--ui-primary-hover);
+  background: var(--ui-cta-hover);
 }

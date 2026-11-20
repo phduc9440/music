@@ -48,3 +48,44 @@
     animation: none;
   }
 }
+
+/* ---- chế độ chơi được (playable): phím nhận chuột / chạm, lún xuống và sáng màu đồng khi bấm ---- */
+.piano--play {
+  z-index: 1;
+  pointer-events: auto;
+  cursor: pointer;
+  touch-action: none; /* vuốt ngang lướt phím thay vì cuộn trang */
+  -webkit-user-select: none;
+  user-select: none;
+  mask-image: linear-gradient(to top, var(--ui-stage-bg) 55%, transparent);
+}
+.piano--play .piano__white,
+.piano--play .piano__black {
+  transition:
+    fill 0.35s ease,
+    opacity 0.35s ease,
+    transform 0.25s ease;
+}
+.piano--play .piano__white:hover {
+  opacity: calc(var(--pk-white-op) + 0.1);
+}
+.piano--play .piano__black:hover {
+  fill: var(--pk-line);
+}
+.piano--play [data-down] {
+  fill: var(--pk-hot);
+  opacity: 0.9;
+  transform: translateY(5px);
+  transition-duration: 0.04s;
+}
+.piano--play .piano__black[data-down] {
+  opacity: 1;
+}
+.piano--touched .piano__white--press {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .piano--play [data-down] {
+    transform: none;
+  }
+}

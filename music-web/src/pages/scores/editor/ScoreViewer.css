@@ -1386,9 +1386,9 @@ h3.sv-tools__title {
   transform: translateY(1px);
 }
 .sv-root .sc-btn--primary {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--ui-primary) 82%, var(--ui-surface)), var(--ui-primary));
+  background: var(--ui-cta);
   font-weight: 700;
-  box-shadow: 0 6px 16px -8px color-mix(in srgb, var(--ui-primary) 80%, transparent);
+  box-shadow: 0 6px 16px -8px color-mix(in srgb, var(--ui-cta-border) 80%, transparent);
 }
 .sv-root .sc-btn.is-active {
   border-color: var(--ui-primary);

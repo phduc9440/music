@@ -112,7 +112,7 @@
 
 .cp-card:hover {
   transform: translateY(-3px);
-  border-color: var(--ui-brass);
+  border-color: var(--ui-primary);
   box-shadow: var(--ui-shadow-pop);
   color: inherit;
 }

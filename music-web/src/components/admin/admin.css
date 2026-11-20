@@ -287,8 +287,7 @@
   color: var(--adm-text-3);
   font-size: 0.6875rem;
   font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  text-transform: none;
   white-space: nowrap;
 }
 
@@ -661,14 +660,16 @@
 }
 
 .adm-shell .adm-btn--primary {
-  background: var(--adm-primary);
-  color: var(--ui-on-accent);
-  box-shadow: var(--adm-shadow-sm);
+  background: var(--ui-cta);
+  color: var(--ui-on-cta);
+  box-shadow:
+    inset 0 0 0 1px var(--ui-cta-border),
+    var(--adm-shadow-sm);
 }
 
 .adm-shell .adm-btn--primary:hover:not(:disabled) {
-  background: var(--adm-primary-hover);
-  color: var(--ui-on-accent);
+  background: var(--ui-cta-hover);
+  color: var(--ui-on-cta);
 }
 
 .adm-shell .adm-btn--secondary {
@@ -969,9 +970,8 @@
   color: var(--adm-text-2);
   font-size: var(--adm-text-xs);
   font-weight: 600;
-  letter-spacing: 0.04em;
   text-align: left;
-  text-transform: uppercase;
+  text-transform: none;
   white-space: nowrap;
 }
 
@@ -1461,9 +1461,8 @@
   background: var(--ui-surface-muted);
   color: var(--ui-text-2);
   font-size: 0.75rem;
-  letter-spacing: 0.04em;
   text-align: left;
-  text-transform: uppercase;
+  text-transform: none;
 }
 
 .adm-roles__head {
@@ -1551,8 +1550,7 @@
 .adm-brand__tag {
   background: var(--adm-danger-soft);
   color: var(--adm-danger);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  text-transform: none;
   font-size: 0.6875rem;
 }
 .adm-sidebar {
@@ -1822,4 +1820,75 @@
 }
 .adm-pager__size + .adm-pager__buttons {
   margin-left: 0.75rem;
+}
+
+/* =====================================================================================================================
+ * Kiểu Mercury cho trang quản trị (cùng hệ với trang người dùng): mọi thẻ là bề mặt phẳng một bậc sáng / tối so với
+ * nền, bo 12px, không viền, không bóng, không vạch màu; nút và ô nhập bo viên thuốc; header mờ trong suốt, sidebar phẳng.
+ * Đặt cuối file để phủ lên các quy tắc cũ cùng độ ưu tiên.
+ * ================================================================================================================== */
+.adm-shell .adm-header {
+  background: color-mix(in srgb, var(--ui-bg) 84%, transparent);
+  border-bottom-color: transparent;
+  backdrop-filter: blur(12px);
+}
+.adm-shell .adm-sidebar {
+  background: var(--ui-bg);
+  border-right-color: transparent;
+}
+.adm-shell .adm-menu__item {
+  border-radius: 40px;
+  color: var(--adm-text);
+  font-weight: 400;
+}
+.adm-shell .adm-menu__item--active,
+.adm-shell .adm-menu__item--active:hover {
+  background: var(--ui-primary-soft);
+  color: var(--ui-primary);
+  font-weight: 500;
+}
+.adm-shell .adm-card,
+.adm-shell .adm-stat {
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: var(--ui-flat);
+  box-shadow: none;
+}
+.adm-shell .adm-btn {
+  border-radius: 40px;
+  font-weight: 500;
+}
+.adm-shell .adm-btn--primary {
+  border-radius: 32px;
+}
+.adm-shell .adm-btn--secondary {
+  border-color: transparent;
+  background: var(--ui-flat-2);
+  box-shadow: none;
+}
+.adm-shell .adm-btn--secondary:hover:not(:disabled) {
+  border-color: var(--ui-text);
+  background: var(--ui-flat-2);
+}
+.adm-shell .adm-input {
+  height: 40px;
+  padding: 0 1rem;
+  border-radius: 32px;
+  background: transparent;
+}
+.adm-shell textarea.adm-input {
+  height: auto;
+  padding: 0.6rem 1rem;
+  border-radius: 12px;
+}
+.adm-shell select.adm-input option {
+  background: var(--ui-surface);
+  color: var(--ui-text);
+}
+.adm-shell .adm-table th {
+  background: var(--ui-flat-2);
+  font-weight: 500;
+}
+.adm-shell .adm-menu__item--active::before {
+  display: none;
 }

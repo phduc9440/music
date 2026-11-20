@@ -46,12 +46,12 @@
   cursor: not-allowed;
 }
 .pf-btn--primary {
-  border-color: var(--ui-primary);
-  background: var(--ui-primary);
-  color: var(--ui-on-accent);
+  border-color: var(--ui-cta-border);
+  background: var(--ui-cta);
+  color: var(--ui-on-cta);
 }
 .pf-btn--primary:hover:not(:disabled) {
-  background: var(--ui-primary-hover);
+  background: var(--ui-cta-hover);
 }
 .pf-bar {
   display: flex;

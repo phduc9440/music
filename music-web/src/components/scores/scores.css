@@ -8,10 +8,11 @@
   --sc-ink: var(--ui-text);
   --sc-muted: var(--ui-text-2);
   --sc-line: var(--ui-border);
-  --sc-card: var(--ui-surface);
-  --sc-radius: var(--ui-radius-lg);
-  --sc-shadow: var(--ui-shadow-sm);
-  --sc-shadow-hover: var(--ui-shadow);
+  /* kiểu Mercury: bề mặt thẻ là một bậc sáng / tối so với nền, bo 12px, không bóng */
+  --sc-card: var(--ui-flat);
+  --sc-radius: 12px;
+  --sc-shadow: none;
+  --sc-shadow-hover: none;
   min-height: 100vh;
   background: var(--ui-bg);
   color: var(--ui-text);
@@ -75,15 +76,15 @@
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  height: 36px;
-  padding: 0 0.9rem;
-  border-radius: var(--ui-radius);
-  border: 1px solid var(--ui-border-strong);
-  background: var(--ui-surface);
+  height: 40px;
+  padding: 0 1.1rem;
+  /* nút phụ kiểu Mercury: viên thuốc nền một bậc ("Obsidian button"), không viền, không bóng */
+  border-radius: 40px;
+  border: 1px solid transparent;
+  background: var(--ui-flat-2);
   color: var(--ui-text);
-  box-shadow: var(--ui-shadow-sm);
   font: inherit;
-  font-weight: 600;
+  font-weight: 500;
   font-size: var(--ui-text-md);
   line-height: 1;
   white-space: nowrap;
@@ -95,7 +96,8 @@
     color 0.15s;
 }
 .sc-btn:hover:not(:disabled) {
-  background: var(--ui-surface-hover);
+  border-color: var(--ui-text);
+  background: var(--ui-flat-2);
   color: var(--ui-text);
 }
 .sc-btn:disabled,
@@ -103,15 +105,18 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+/* Nút hành động chính: đồng thau, chữ mực tối — chỗ duy nhất người xem cần nhìn vào trên mỗi màn hình */
 .sc-btn--primary {
-  background: var(--ui-primary);
-  border-color: var(--ui-primary);
-  color: var(--ui-on-accent);
+  border-radius: 32px;
+  background: var(--ui-cta);
+  border-color: var(--ui-cta-border);
+  color: var(--ui-on-cta);
+  font-weight: 500;
 }
 .sc-btn--primary:hover:not(:disabled) {
-  background: var(--ui-primary-hover);
-  border-color: var(--ui-primary-hover);
-  color: var(--ui-on-accent);
+  background: var(--ui-cta-hover);
+  border-color: var(--ui-cta-border);
+  color: var(--ui-on-cta);
 }
 .sc-btn--danger {
   color: var(--ui-danger);
@@ -134,8 +139,8 @@
   color: var(--ui-on-accent);
 }
 .sc-btn--sm {
-  height: 30px;
-  padding: 0 0.65rem;
+  height: 32px;
+  padding: 0 0.85rem;
   font-size: var(--ui-text-sm);
 }
 .sc-btn:focus-visible,
@@ -175,11 +180,12 @@
 /* ---- Ô nhập ---- */
 .sc-input {
   width: 100%;
-  min-height: 36px;
-  padding: 0.45rem 0.75rem;
+  min-height: 40px;
+  padding: 0.5rem 1.1rem;
+  /* ô nhập kiểu Mercury: viên thuốc 32px, viền mảnh, nền trong suốt trên thẻ phẳng */
   border: 1px solid var(--ui-border-strong);
-  border-radius: var(--ui-radius);
-  background: var(--ui-surface);
+  border-radius: 32px;
+  background: transparent;
   color: var(--ui-text);
   font: inherit;
   font-size: var(--ui-text-md);
@@ -196,7 +202,12 @@
   outline: none;
 }
 textarea.sc-input {
+  border-radius: 12px;
   resize: vertical;
+}
+select.sc-input option {
+  background: var(--ui-surface);
+  color: var(--ui-text);
 }
 select.sc-input {
   padding-right: 2rem;
@@ -290,15 +301,16 @@ select.sc-input {
   background: var(--ui-surface-hover);
   color: var(--ui-text-2);
 }
+/* nhãn kiểu Mercury: đơn sắc, viên thuốc 40px; nhãn nhấn dùng màu tương tác chứ không dùng nhiều sắc */
 .sc-chip {
   display: inline-flex;
   align-items: center;
-  padding: 0.2rem 0.6rem;
-  border-radius: 999px;
-  background: var(--ui-surface-hover);
+  padding: 0.2rem 0.65rem;
+  border-radius: 40px;
+  background: var(--ui-flat-2);
   color: var(--ui-text-2);
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 500;
 }
 .sc-chip--accent {
   background: var(--sc-accent-soft);
@@ -449,8 +461,8 @@ select.sc-input {
 
 /* ---- Thể loại (tags) ---- */
 .sc-chip--tag {
-  background: var(--ui-primary-soft);
-  color: var(--ui-violet);
+  background: var(--ui-flat-2);
+  color: var(--ui-text-2);
 }
 .sc-tagpick {
   display: flex;
@@ -805,8 +817,8 @@ select.sc-input {
   background: color-mix(in srgb, var(--ui-primary-soft) 70%, var(--ui-surface-hover));
 }
 .sc-bell__item--unread .sc-bell__dot {
-  background: var(--ui-brass);
-  border-color: var(--ui-brass);
+  background: var(--ui-cta-ink);
+  border-color: var(--ui-cta-ink);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-brass) 28%, transparent);
 }
 .sc-bell__item--unread .sc-bell__text {

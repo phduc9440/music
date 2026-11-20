@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import type { InputHTMLAttributes } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Link } from '../routes/transition-nav';
@@ -14,6 +14,9 @@ import ThemeToggle from '../theme/ThemeToggle';
 import { t, translateError } from '../i18n/core';
 import LanguageToggle from '../i18n/LanguageToggle';
 import './login.css';
+
+// Dây đàn 3D (three.js) tải riêng sau khi trang hiện
+const HarpStrings3D = lazy(() => import('../components/ui/HarpStrings3D'));
 
 /** Quên mật khẩu đi ba bước tách riêng: forgot (nhập email) → verify (nhập OTP) → reset (đặt mật khẩu mới). */
 type ViewMode = 'login' | 'register' | 'forgot' | 'verify' | 'reset';
@@ -58,11 +61,15 @@ function PasswordInput(props: Omit<InputHTMLAttributes<HTMLInputElement>, 'type'
 }
 
 export default function Login() {
+  const location = useLocation();
   // Link mời dạng /auth/login?ref=MÃ: mở sẵn form đăng ký và điền mã giới thiệu
   const [inviteCode] = useState(
     () => new URLSearchParams(window.location.search).get('ref')?.trim().toUpperCase() ?? '',
   );
-  const [viewMode, setViewMode] = useState<ViewMode>(inviteCode ? 'register' : 'login');
+  // Nút "Đăng ký" ở trang chủ chuyển tới đây với state { mode: 'register' }: mở thẳng form đăng ký
+  const [viewMode, setViewMode] = useState<ViewMode>(() =>
+    inviteCode || (location.state as { mode?: string } | null)?.mode === 'register' ? 'register' : 'login',
+  );
   const [referralCode, setReferralCode] = useState(inviteCode);
 
   // Form State
@@ -84,7 +91,8 @@ export default function Login() {
     return () => clearTimeout(t);
   }, [resendIn]);
   const navigate = useNavigate();
-  const location = useLocation();
+  // Phím đàn ở đáy sân khấu gõ vào dây đàn 3D phía trên (HarpStrings3D gắn hàm vào đây khi đã sẵn sàng)
+  const strikeRef = useRef<((ratio: number, velocity: number) => void) | null>(null);
   const from = (location.state as { from?: string } | null)?.from; // trang đang định vào trước khi bị chuyển sang đăng nhập
 
   /** Chuyển màn hình; rời luồng quên mật khẩu thì xóa OTP, mã phiên và mật khẩu đã gõ. */
@@ -191,9 +199,16 @@ export default function Login() {
           {t('auth.home')}
         </Link>
         <span className="auth-stage__glow" aria-hidden="true" />
-        <span className="auth-stage__notes" aria-hidden="true">
-          <NoteField />
-        </span>
+        <Suspense fallback={null}>
+          <HarpStrings3D
+            strikeRef={strikeRef}
+            fallback={
+              <span className="auth-stage__notes" aria-hidden="true">
+                <NoteField />
+              </span>
+            }
+          />
+        </Suspense>
         <div className="auth-stage__body">
           <span className="auth-stage__brand">
             <span className="auth-stage__logo" aria-hidden="true">
@@ -214,7 +229,7 @@ export default function Login() {
             ))}
           </ul>
         </div>
-        <PianoBackdrop />
+        <PianoBackdrop playable onKey={(ratio, velocity) => strikeRef.current?.(ratio, velocity)} />
       </aside>
       <div className="auth-theme">
         <LanguageToggle />

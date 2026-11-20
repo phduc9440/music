@@ -59,7 +59,7 @@ interface SiteFooterProps {
 export default function SiteFooter({ columns, tip }: SiteFooterProps) {
   const cols = columns ?? siteColumns();
   return (
-    <footer className="site-footer ui-stage">
+    <footer className="site-footer">
       <div className="site-footer__inner" style={{ '--sf-cols': cols.length } as React.CSSProperties}>
         <div className="site-footer__brand">
           <Link to="/" className="site-footer__logo">

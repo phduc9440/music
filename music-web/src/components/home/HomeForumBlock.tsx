@@ -49,7 +49,7 @@ export default function HomeForumBlock({ wrap }: { wrap: (content: ReactNode) =>
                   </span>
                 )}
                 <span className="hf__count">
-                  <Icon name="chat" size={14} />
+                  <Icon name="comment" size={14} />
                   {th.replyCount}
                 </span>
               </span>

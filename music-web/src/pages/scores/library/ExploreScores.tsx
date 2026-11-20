@@ -231,7 +231,7 @@ export default function ExploreScores() {
   return (
     <div className="sc-page">
       <main className="sc-container">
-        <header className="ex-head sc-lib-head sc-lib-hero ui-stage">
+        <header className="ex-head sc-lib-head sc-lib-hero">
           <div>
             <h1>{t('scores.explore.title')}</h1>
             <p>

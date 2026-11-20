@@ -15,8 +15,9 @@
   position: sticky;
   top: 0;
   z-index: 200;
-  background: var(--ui-surface);
-  border-bottom: 1px solid var(--ui-border);
+  /* kiểu Mercury: thanh trên đi theo theme, nền mờ trong suốt (frosted) thay cho dải màu đặc, không viền */
+  background: color-mix(in srgb, var(--ui-bg) 84%, transparent);
+  backdrop-filter: blur(12px);
 }
 
 /* Kiểu Facebook: thanh trên chiếm hết chiều ngang, ba cột bằng nhau hai bên, điều hướng nằm giữa */
@@ -44,8 +45,10 @@
   gap: 0.6rem;
   flex-shrink: 0;
   color: var(--ui-text);
+  font-family: var(--ui-font-display);
   font-size: 1rem;
-  font-weight: 700;
+  font-weight: 480;
+  letter-spacing: 0.01em;
 }
 
 .app-brand:hover {
@@ -55,12 +58,12 @@
 .app-brand__logo {
   width: 30px;
   height: 30px;
-  border-radius: var(--ui-radius);
+  border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--ui-primary);
-  color: var(--ui-on-accent);
+  background: var(--ui-text);
+  color: var(--ui-bg);
 }
 
 .app-nav {
@@ -77,34 +80,27 @@
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  height: 100%;
-  padding: 0 0.7rem;
-  color: var(--ui-text-2);
-  font-size: var(--ui-text-md);
-  font-weight: 500;
+  height: 40px;
+  padding: 0 1rem;
+  border-radius: 40px;
+  color: var(--ui-text);
+  font-size: 0.9375rem;
+  font-weight: 400;
   white-space: nowrap;
+  transition: background-color 0.15s ease;
 }
 
 .app-nav__item:hover {
+  background: var(--ui-flat-2);
   color: var(--ui-text);
 }
 
+/* mục đang mở: viên thuốc nền nhấn nhạt, chữ màu tương tác */
 .app-nav__item--active,
 .app-nav__item--active:hover {
+  background: var(--ui-primary-soft);
   color: var(--ui-primary);
-  font-weight: 600;
-}
-
-/* gạch chân mục đang mở, nằm sát mép dưới thanh trên */
-.app-nav__item--active::after {
-  content: '';
-  position: absolute;
-  left: 0.7rem;
-  right: 0.7rem;
-  bottom: -1px;
-  height: 2px;
-  border-radius: 2px;
-  background: var(--ui-primary);
+  font-weight: 500;
 }
 
 /* nhóm điều hướng (menu thả xuống) */
@@ -119,8 +115,8 @@
   border: 0;
   background: transparent;
   font: inherit;
-  font-size: var(--ui-text-md);
-  font-weight: 500;
+  font-size: 0.9375rem;
+  font-weight: 400;
   cursor: pointer;
 }
 
@@ -178,47 +174,69 @@
 }
 
 /* nút tạo bản nhạc và ô tìm kiếm trên thanh trên */
+/* nút hành động chính của thanh trên (như "Open account" của Mercury): viên thuốc đồng thau, chữ mực tối */
 .app-create {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  height: 34px;
-  padding: 0 0.8rem;
-  border-radius: var(--ui-radius);
-  background: var(--ui-primary);
-  color: var(--ui-on-accent);
-  font-size: var(--ui-text-md);
-  font-weight: 600;
+  height: 40px;
+  padding: 0 1.1rem;
+  border: 1px solid var(--ui-cta-border);
+  border-radius: 32px;
+  background: var(--ui-cta);
+  color: var(--ui-on-cta);
+  font-size: 0.9375rem;
+  font-weight: 500;
   white-space: nowrap;
 }
 
 .app-create:hover {
-  background: var(--ui-primary-hover);
-  color: var(--ui-on-accent);
+  background: var(--ui-cta-hover);
+  color: var(--ui-on-cta);
+}
+
+/* Đăng nhập (trang khách): viên thuốc viền mảnh cùng cỡ, đứng cạnh nút Đăng ký đồng thau */
+.app-signin {
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 1.1rem;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: 32px;
+  color: var(--ui-text);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: background-color 0.18s ease;
+}
+.app-signin:hover {
+  background: var(--ui-surface-hover);
+  color: var(--ui-text);
 }
 
 /* gói đang dùng, đứng cạnh nút tạo bản nhạc; gói Free nổi bật hơn để mời nâng cấp */
+/* nút phụ kiểu Mercury: viên thuốc viền mảnh màu chữ */
 .app-plan {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  height: 34px;
-  padding: 0 0.8rem;
-  border: 1px solid var(--ui-primary);
-  border-radius: var(--ui-radius);
-  color: var(--ui-primary);
-  font-size: var(--ui-text-md);
-  font-weight: 600;
+  height: 40px;
+  padding: 0 1.1rem;
+  border: 1px solid var(--ui-text);
+  border-radius: 40px;
+  color: var(--ui-text);
+  font-size: 0.9375rem;
+  font-weight: 400;
   white-space: nowrap;
 }
 
 .app-plan:hover {
-  background: color-mix(in srgb, var(--ui-primary) 12%, transparent);
-  color: var(--ui-primary);
+  background: var(--ui-flat-2);
+  color: var(--ui-text);
 }
 
 .app-plan--free {
-  background: color-mix(in srgb, var(--ui-primary) 12%, transparent);
+  background: var(--ui-flat);
 }
 
 .app-search {
@@ -226,11 +244,11 @@
   align-items: center;
   gap: 0.5rem;
   min-width: 220px;
-  height: 34px;
-  padding: 0 0.6rem;
-  border: 1px solid var(--ui-border);
-  border-radius: var(--ui-radius);
-  background: var(--ui-surface-muted);
+  height: 40px;
+  padding: 0 0.9rem;
+  border: 1px solid transparent;
+  border-radius: 40px;
+  background: var(--ui-flat);
   color: var(--ui-text-2);
   font: inherit;
   font-size: var(--ui-text-md);
@@ -238,7 +256,7 @@
 }
 
 .app-search:hover {
-  border-color: var(--ui-border-strong);
+  background: var(--ui-flat-2);
   color: var(--ui-text);
 }
 
@@ -265,13 +283,13 @@
 }
 
 .app-iconbtn {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border: 0;
-  border-radius: var(--ui-radius);
+  border-radius: 50%;
   background: transparent;
   color: var(--ui-text-2);
   cursor: pointer;
@@ -466,8 +484,7 @@
     color: var(--ui-text-3);
     font-size: var(--ui-text-xs);
     font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+    text-transform: none;
   }
 
   .app-navgroup__panel {
