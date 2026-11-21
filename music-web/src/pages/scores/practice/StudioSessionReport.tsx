@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { BackLink } from '../../../components/ui';
+import { BackLink, Icon } from '../../../components/ui';
+import { Link } from '../../../routes/transition-nav';
 import { studioApi } from '../../../services/practice/studioApi';
 import type { StudioSessionReport as StudioSessionReportData } from '../../../types';
 import { formatDateTime, t } from '../../../i18n/core';
@@ -49,9 +50,22 @@ export default function StudioSessionReport() {
                 <h1>{t('studioReport.report.title')}</h1>
                 <p>{report.title}</p>
               </div>
-              <strong className="studio-report__grade">
-                {report.grade} · {report.scorePoints}
-              </strong>
+              {/* điểm của phiên và hai lối đi tiếp: luyện lại ngay bài này, hoặc về trang bản nhạc */}
+              <div className="studio-report__head-side">
+                <strong className="studio-report__grade">
+                  {report.grade} · {report.scorePoints}
+                </strong>
+                <div className="studio-report__actions">
+                  <Link className="sc-btn" to={`/scores/${report.scoreId}`}>
+                    <Icon name="music" size={16} />
+                    {t('studioReport.report.openScore')}
+                  </Link>
+                  <Link className="sc-btn sc-btn--primary" to={`/studio/scores/${report.scoreId}/play`}>
+                    <Icon name="refresh" size={16} />
+                    {t('studioReport.report.practiceAgain')}
+                  </Link>
+                </div>
+              </div>
             </header>
 
             <section className="studio-report__cards" aria-label={t('studioReport.report.summary')}>

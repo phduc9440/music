@@ -26,6 +26,7 @@ import {
   StudioWaterfall,
 } from '../../../components/player/studio/StudioPracticeVisuals';
 import type { StudioVisualFeedback } from '../../../components/player/studio/StudioPracticeVisuals';
+import { Icon } from '../../../components/ui';
 import Modal from '../../../components/scores/common/Modal';
 import MusicXmlViewer from '../../../components/scores/viewer/MusicXmlViewer';
 import '../../../components/scores/scores.css';
@@ -556,105 +557,169 @@ export default function StudioPlayer() {
       note: noteName(COMPUTER_KEYBOARD_BASE_MIDI + semitone),
     }));
 
+  // Bản nhạc xem trước: lúc thiết lập nằm chung cột trái với thẻ thiết lập (cột tự cuộn), lúc đang luyện ở dưới vùng luyện
+  const scorePanel = (
+    <section className="studio-player__score">
+      <div className="studio-player__section-head">
+        <div>
+          <h2>{t('studioPlayer.score.title')}</h2>
+          <p>{t('studioPlayer.score.subtitle')}</p>
+        </div>
+        {repeatSection && !session && (
+          <span className="sc-chip sc-chip--accent">
+            {t('studioPlayer.score.measureRange', { start: startMeasure, end: endMeasure })}
+          </span>
+        )}
+      </div>
+      <MusicXmlViewer
+        xml={xml}
+        firstMeasure={repeatSection ? startMeasure : undefined}
+        lastMeasure={repeatSection ? endMeasure : undefined}
+      />
+    </section>
+  );
+
   return (
     <div className={`sc-page studio-player${session ? ' studio-player--fullscreen' : ''}`}>
       <main className="sc-container">
         <header className="studio-player__header">
-          <div>
-            <Link className="studio-player__back" to={`/scores/${score.id}`}>
-              ← {t('studioPlayer.backToScore')}
-            </Link>
-            <p className="studio-player__eyebrow">{t('studioPlayer.eyebrow')}</p>
+          <Link className="studio-player__back" to={`/scores/${score.id}`}>
+            <Icon name="arrowLeft" size={16} />
+            <span>{t('studioPlayer.backToScore')}</span>
+          </Link>
+          {/* tên bài to, thông tin phụ là các thẻ có biểu tượng (không ghép chuỗi bằng dấu chấm giữa) */}
+          <div className="studio-player__heading">
             <h1>{score.title}</h1>
-            <p className="studio-player__meta">
-              {score.composer || t('studioPlayer.unknownComposer')} · {timeline.measureCount}{' '}
-              {t('studioPlayer.measures')}
-            </p>
+            <ul className="studio-player__facts">
+              <li>
+                <Icon name="user" size={14} />
+                {score.composer || t('studioPlayer.unknownComposer')}
+              </li>
+              <li>
+                <Icon name="layers" size={14} />
+                {timeline.measureCount} {t('studioPlayer.measures')}
+              </li>
+            </ul>
           </div>
           <Link className="sc-btn" to="/studio/history">
+            <Icon name="clock" size={16} />
             {t('studioReport.history.open')}
           </Link>
         </header>
 
-        <section className="studio-player__display-options" aria-label={t('studioPlayer.display.title')}>
-          <strong>{t('studioPlayer.display.title')}</strong>
-          <label>
-            <input
-              type="checkbox"
-              checked={showWaterfall}
-              onChange={(event) => setShowWaterfall(event.target.checked)}
-            />
-            <span>{t('studioPlayer.display.waterfall')}</span>
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              checked={showKeyboard}
-              disabled={Boolean(session && inputSource === 'TOUCH')}
-              onChange={(event) => setShowKeyboard(event.target.checked)}
-            />
-            <span>{t('studioPlayer.display.keyboard')}</span>
-          </label>
-        </section>
+        {/* lúc thiết lập, hai tùy chọn hiển thị nằm trong thẻ Thiết lập (hàng tùy chọn); khối riêng này chỉ hiện khi đang luyện */}
+        {session && (
+          <section className="studio-player__display-options" aria-label={t('studioPlayer.display.title')}>
+            <strong>{t('studioPlayer.display.title')}</strong>
+            <label>
+              <input
+                type="checkbox"
+                checked={showWaterfall}
+                onChange={(event) => setShowWaterfall(event.target.checked)}
+              />
+              <span>{t('studioPlayer.display.waterfall')}</span>
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                checked={showKeyboard}
+                disabled={Boolean(session && inputSource === 'TOUCH')}
+                onChange={(event) => setShowKeyboard(event.target.checked)}
+              />
+              <span>{t('studioPlayer.display.keyboard')}</span>
+            </label>
+          </section>
+        )}
 
         {!session ? (
-          <section className="studio-player__setup">
-            <div className="studio-player__setup-copy">
-              <h2>{t('studioPlayer.setup.title')}</h2>
-              <p>{t('studioPlayer.setup.description')}</p>
-            </div>
-            <div className="studio-player__controls">
-              <label>
-                <span>{t('studioPlayer.setup.mode')}</span>
-                <select value={mode} onChange={(event) => setMode(event.target.value as 'FREE_RUN' | 'WAIT')}>
-                  <option value="FREE_RUN">{t('studioReport.mode.FREE_RUN')}</option>
-                  <option value="WAIT">{t('studioReport.mode.WAIT')}</option>
-                </select>
-              </label>
-              <label>
-                <span>{t('studioPlayer.setup.input')}</span>
-                <select
-                  value={inputSource}
-                  onChange={(event) => setInputSource(event.target.value as StudioInputSource)}
-                >
-                  <option value="KEYBOARD">{t('studioPlayer.setup.computerKeyboard')}</option>
-                  <option value="TOUCH">{t('studioPlayer.setup.touchKeyboard')}</option>
-                </select>
-              </label>
-              <label>
-                <span>{t('studioPlayer.setup.hands')}</span>
-                <select value={handMode} onChange={(event) => setHandMode(event.target.value as StudioHandMode)}>
-                  <option value="BOTH">{t('studioPlayer.setup.bothHands')}</option>
-                  <option value="RIGHT_ONLY">{t('studioPlayer.setup.rightHand')}</option>
-                  <option value="LEFT_ONLY">{t('studioPlayer.setup.leftHand')}</option>
-                </select>
-              </label>
-              <label className="studio-player__tempo">
-                <span>
-                  {t('studioPlayer.setup.tempo')}: <strong>{tempoPercent}%</strong>
-                </span>
-                <input
-                  type="range"
-                  min="20"
-                  max="200"
-                  step="5"
-                  value={tempoPercent}
-                  onChange={(event) => setTempoPercent(Number(event.target.value))}
-                />
-              </label>
-              <label className="studio-player__repeat">
-                <input
-                  type="checkbox"
-                  checked={repeatSection}
-                  onChange={(event) => setRepeatSection(event.target.checked)}
-                />
-                <span>{t('studioPlayer.setup.repeatSection')}</span>
-              </label>
+          <div className="studio-player__side">
+            <section className="studio-player__setup">
+              <div className="studio-player__setup-copy">
+                <h2>{t('studioPlayer.setup.title')}</h2>
+                <p>{t('studioPlayer.setup.description')}</p>
+              </div>
+              <div className="studio-player__controls">
+                <label>
+                  <span>{t('studioPlayer.setup.mode')}</span>
+                  <select
+                    className="sc-input"
+                    value={mode}
+                    onChange={(event) => setMode(event.target.value as 'FREE_RUN' | 'WAIT')}
+                  >
+                    <option value="FREE_RUN">{t('studioReport.mode.FREE_RUN')}</option>
+                    <option value="WAIT">{t('studioReport.mode.WAIT')}</option>
+                  </select>
+                </label>
+                <label>
+                  <span>{t('studioPlayer.setup.input')}</span>
+                  <select
+                    className="sc-input"
+                    value={inputSource}
+                    onChange={(event) => setInputSource(event.target.value as StudioInputSource)}
+                  >
+                    <option value="KEYBOARD">{t('studioPlayer.setup.computerKeyboard')}</option>
+                    <option value="TOUCH">{t('studioPlayer.setup.touchKeyboard')}</option>
+                  </select>
+                </label>
+                <label>
+                  <span>{t('studioPlayer.setup.hands')}</span>
+                  <select
+                    className="sc-input"
+                    value={handMode}
+                    onChange={(event) => setHandMode(event.target.value as StudioHandMode)}
+                  >
+                    <option value="BOTH">{t('studioPlayer.setup.bothHands')}</option>
+                    <option value="RIGHT_ONLY">{t('studioPlayer.setup.rightHand')}</option>
+                    <option value="LEFT_ONLY">{t('studioPlayer.setup.leftHand')}</option>
+                  </select>
+                </label>
+                <label className="studio-player__tempo">
+                  <span>
+                    {t('studioPlayer.setup.tempo')}: <strong>{tempoPercent}%</strong>
+                  </span>
+                  <input
+                    type="range"
+                    min="20"
+                    max="200"
+                    step="5"
+                    value={tempoPercent}
+                    onChange={(event) => setTempoPercent(Number(event.target.value))}
+                  />
+                </label>
+              </div>
+              {/* hàng tùy chọn bật / tắt: lặp đoạn và hai lớp hiển thị, dạng nút viên thuốc */}
+              <div className="studio-player__options">
+                <label className="studio-player__chip">
+                  <input
+                    type="checkbox"
+                    checked={repeatSection}
+                    onChange={(event) => setRepeatSection(event.target.checked)}
+                  />
+                  <span>{t('studioPlayer.setup.repeatSection')}</span>
+                </label>
+                <label className="studio-player__chip">
+                  <input
+                    type="checkbox"
+                    checked={showWaterfall}
+                    onChange={(event) => setShowWaterfall(event.target.checked)}
+                  />
+                  <span>{t('studioPlayer.display.waterfall')}</span>
+                </label>
+                <label className="studio-player__chip">
+                  <input
+                    type="checkbox"
+                    checked={showKeyboard}
+                    onChange={(event) => setShowKeyboard(event.target.checked)}
+                  />
+                  <span>{t('studioPlayer.display.keyboard')}</span>
+                </label>
+              </div>
               {repeatSection && (
                 <div className="studio-player__range">
                   <label>
                     <span>{t('studioPlayer.setup.fromMeasure')}</span>
                     <input
+                      className="sc-input"
                       type="number"
                       min="1"
                       max={timeline.measureCount}
@@ -669,6 +734,7 @@ export default function StudioPlayer() {
                   <label>
                     <span>{t('studioPlayer.setup.toMeasure')}</span>
                     <input
+                      className="sc-input"
                       type="number"
                       min={startMeasure}
                       max={timeline.measureCount}
@@ -682,57 +748,70 @@ export default function StudioPlayer() {
                   </label>
                 </div>
               )}
-            </div>
-            {activeSession && (
-              <div className="studio-player__active-session-warning" role="alert">
-                <p>
-                  {t(
-                    activeSession.scoreId === scoreId
-                      ? 'studioPlayer.recovery.sameScore'
-                      : 'studioPlayer.recovery.otherScore',
-                  )}
-                </p>
-                <button
-                  type="button"
-                  className="sc-btn"
-                  disabled={busy}
-                  onClick={() => setShowActiveSessionDialog(true)}
-                >
-                  {t('studioPlayer.recovery.resolve')}
-                </button>
-              </div>
-            )}
-            {mode === 'WAIT' && <p className="studio-player__note">{t('studioPlayer.setup.waitHint')}</p>}
-            {inputSource === 'TOUCH' && !showKeyboard && (
-              <p className="studio-player__note">{t('studioPlayer.display.enableKeyboardForTouch')}</p>
-            )}
-            <button
-              type="button"
-              className="sc-btn sc-btn--primary"
-              disabled={busy || Boolean(activeSession) || (inputSource === 'TOUCH' && !showKeyboard)}
-              onClick={startSession}
-            >
-              {activeSession
-                ? t('studioPlayer.recovery.resolveFirst')
-                : busy
-                  ? t('studioPlayer.setup.starting')
-                  : t('studioPlayer.setup.start')}
-            </button>
-          </section>
+              {activeSession && (
+                <div className="studio-player__active-session-warning" role="alert">
+                  <p>
+                    {t(
+                      activeSession.scoreId === scoreId
+                        ? 'studioPlayer.recovery.sameScore'
+                        : 'studioPlayer.recovery.otherScore',
+                    )}
+                  </p>
+                  <button
+                    type="button"
+                    className="sc-btn"
+                    disabled={busy}
+                    onClick={() => setShowActiveSessionDialog(true)}
+                  >
+                    {t('studioPlayer.recovery.resolve')}
+                  </button>
+                </div>
+              )}
+              {mode === 'WAIT' && <p className="studio-player__note">{t('studioPlayer.setup.waitHint')}</p>}
+              {inputSource === 'TOUCH' && !showKeyboard && (
+                <p className="studio-player__note">{t('studioPlayer.display.enableKeyboardForTouch')}</p>
+              )}
+              <button
+                type="button"
+                className="sc-btn sc-btn--primary studio-player__start"
+                disabled={busy || Boolean(activeSession) || (inputSource === 'TOUCH' && !showKeyboard)}
+                onClick={startSession}
+              >
+                <Icon name="play" size={18} />
+                {activeSession
+                  ? t('studioPlayer.recovery.resolveFirst')
+                  : busy
+                    ? t('studioPlayer.setup.starting')
+                    : t('studioPlayer.setup.start')}
+              </button>
+            </section>
+            {scorePanel}
+          </div>
         ) : (
           <section className="studio-player__session">
             <div className="studio-player__session-head">
-              <div>
-                <span className="studio-player__live">{t('studioPlayer.session.live')}</span>
+              {/* trạng thái + tên bài + chế độ trên một hàng: viên thuốc "đang luyện" có biểu tượng nhịp, thẻ chế độ có biểu tượng */}
+              <div className="studio-player__session-title">
+                <span className="studio-player__live">
+                  <Icon name="activity" size={14} />
+                  {t('studioPlayer.session.live')}
+                </span>
                 <h2>{score.title}</h2>
-                <span className="studio-player__session-mode">{t(`studioReport.mode.${session.mode}`)}</span>
+                <span className="studio-player__session-mode">
+                  <Icon name={session.mode === 'WAIT' ? 'clock' : 'play'} size={13} />
+                  {t(`studioReport.mode.${session.mode}`)}
+                </span>
               </div>
               <div className="studio-player__timer" aria-live="off">
-                {String(Math.floor(elapsedSeconds / 60)).padStart(2, '0')}:
-                {String(elapsedSeconds % 60).padStart(2, '0')}
+                <Icon name="clock" size={16} />
+                <span>
+                  {String(Math.floor(elapsedSeconds / 60)).padStart(2, '0')}:
+                  {String(elapsedSeconds % 60).padStart(2, '0')}
+                </span>
               </div>
               <div className="studio-player__session-actions">
                 <button type="button" className="sc-btn sc-btn--danger" disabled={busy} onClick={abortSession}>
+                  <Icon name="x" size={16} />
                   {t('studioPlayer.session.abort')}
                 </button>
                 <button
@@ -741,6 +820,7 @@ export default function StudioPlayer() {
                   disabled={busy}
                   onClick={() => void finishSession(false)}
                 >
+                  <Icon name="check" size={16} />
                   {busy ? t('studioPlayer.session.saving') : t('studioPlayer.session.finish')}
                 </button>
               </div>
@@ -753,7 +833,8 @@ export default function StudioPlayer() {
               aria-valuemin={0}
               aria-valuemax={100}
             >
-              <span style={{ width: `${progress}%` }} />
+              {/* thanh tiến độ co giãn bằng transform (không animate width) */}
+              <span style={{ transform: `scaleX(${progress / 100})` }} />
             </div>
           </section>
         )}
@@ -772,7 +853,7 @@ export default function StudioPlayer() {
               <div className="studio-player__practice-controls">
                 <span className="studio-player__piano-range">{t('studioPlayer.keyboard.range')}</span>
                 {!session && (
-                  <button type="button" className="studio-player__help-link" onClick={() => setShowKeyboardGuide(true)}>
+                  <button type="button" className="sc-btn sc-btn--sm" onClick={() => setShowKeyboardGuide(true)}>
                     {t('studioPlayer.keyboardGuide.open')}
                   </button>
                 )}
@@ -815,6 +896,10 @@ export default function StudioPlayer() {
                   elapsedMs={elapsedMs}
                   feedback={visualFeedback}
                   onPlayNote={onPlayNote}
+                  guideNotes={activeSchedule.visualNotes}
+                  guideElapsedMs={practiceElapsedMs}
+                  guideDurationMs={activeSchedule.durationMs}
+                  guideLoop={session ? session.loopStartMeasure !== null : repeatSection}
                 />
               )}
             </div>
@@ -834,45 +919,28 @@ export default function StudioPlayer() {
                   </strong>
                 </div>
                 <div className="studio-player__counts">
-                  <span className="is-perfect">
-                    {t('studioReport.counts.perfect')}: {counts.PERFECT}
-                  </span>
-                  <span className="is-early">
-                    {t('studioReport.counts.early')}: {counts.EARLY}
-                  </span>
-                  <span className="is-late">
-                    {t('studioReport.counts.late')}: {counts.LATE}
-                  </span>
-                  <span className="is-wrong-pitch">
-                    {t('studioReport.counts.wrongPitch')}: {counts.WRONG_PITCH}
-                  </span>
-                  <span className="is-missed">
-                    {t('studioReport.counts.missed')}: {counts.MISSED}
-                  </span>
+                  {(
+                    [
+                      ['PERFECT', 'perfect', 'perfect'],
+                      ['EARLY', 'early', 'early'],
+                      ['LATE', 'late', 'late'],
+                      ['WRONG_PITCH', 'wrong-pitch', 'wrongPitch'],
+                      ['MISSED', 'missed', 'missed'],
+                    ] as const
+                  ).map(([result, kind, label]) => (
+                    <span className={`studio-player__count is-${kind}`} key={result}>
+                      {/* key theo số đếm: mỗi lần tăng, thẻ nảy nhẹ một lần */}
+                      <strong key={counts[result]}>{counts[result]}</strong>
+                      <span>{t(`studioReport.counts.${label}`)}</span>
+                    </span>
+                  ))}
                 </div>
               </div>
             )}
           </section>
         )}
 
-        <section className="studio-player__score">
-          <div className="studio-player__section-head">
-            <div>
-              <h2>{t('studioPlayer.score.title')}</h2>
-              <p>{t('studioPlayer.score.subtitle')}</p>
-            </div>
-            {repeatSection && !session && (
-              <span className="sc-chip sc-chip--accent">
-                {t('studioPlayer.score.measureRange', { start: startMeasure, end: endMeasure })}
-              </span>
-            )}
-          </div>
-          <MusicXmlViewer
-            xml={xml}
-            firstMeasure={repeatSection ? startMeasure : undefined}
-            lastMeasure={repeatSection ? endMeasure : undefined}
-          />
-        </section>
+        {session && scorePanel}
       </main>
       {showKeyboardGuide && (
         <Modal title={t('studioPlayer.keyboardGuide.title')} onClose={() => setShowKeyboardGuide(false)}>

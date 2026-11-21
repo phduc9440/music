@@ -245,11 +245,22 @@ function PlayerWorkspace({
         </div>
         <div className="sv-toolbar__center">
           <div className="sv-segment" role="group" aria-label={t('player.scorePlayer.viewMode')}>
-            <button aria-pressed={mode === 'page'} onClick={() => setMode('page')}>
-              <IconPages /> {t('player.scorePlayer.pages')}
+            {/* trên điện thoại chỉ còn biểu tượng (chữ ẩn bằng CSS), nhãn trợ năng giữ nguyên */}
+            <button
+              aria-pressed={mode === 'page'}
+              aria-label={t('player.scorePlayer.pages')}
+              title={t('player.scorePlayer.pages')}
+              onClick={() => setMode('page')}
+            >
+              <IconPages /> <span className="sv-segment__label">{t('player.scorePlayer.pages')}</span>
             </button>
-            <button aria-pressed={mode === 'scroll'} onClick={() => setMode('scroll')}>
-              <IconScroll /> {t('player.scorePlayer.scroll')}
+            <button
+              aria-pressed={mode === 'scroll'}
+              aria-label={t('player.scorePlayer.scroll')}
+              title={t('player.scorePlayer.scroll')}
+              onClick={() => setMode('scroll')}
+            >
+              <IconScroll /> <span className="sv-segment__label">{t('player.scorePlayer.scroll')}</span>
             </button>
           </div>
           <ZoomControl zoom={zoom} onChange={(z) => update({ zoom: clampZoom(z) })} />

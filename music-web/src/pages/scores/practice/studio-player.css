@@ -1,3 +1,29 @@
+/* ---- token riêng của Studio, trỏ về bảng màu thương hiệu Scorewise (tokens.css) nên tự đổi theo theme sáng / tối ---- */
+.studio-player {
+  /* tay phải: xanh ngọc thương hiệu; tay trái: vàng nhấn thương hiệu */
+  --studio-right-hand: var(--ui-hue-teal);
+  --studio-left-hand: var(--ui-highlight);
+  /* phím đàn */
+  --studio-key-bed: var(--ui-surface-muted);
+  --studio-key-edge: color-mix(in srgb, var(--ui-border-strong) 80%, var(--ui-shadow-ink));
+  --studio-key-cast: color-mix(in srgb, var(--ui-shadow-ink) 28%, transparent);
+  --studio-ivory: var(--ui-paper);
+  --studio-ivory-top: color-mix(in srgb, var(--ui-paper) 88%, var(--ui-highlight-soft));
+  --studio-ivory-lip: color-mix(in srgb, var(--ui-border-strong) 70%, transparent);
+  --studio-ivory-shine: color-mix(in srgb, var(--ui-paper) 70%, transparent);
+  --studio-ebony: var(--ui-shadow-ink);
+  --studio-ebony-shine: color-mix(in srgb, var(--ui-shadow-ink) 70%, var(--ui-text-3));
+  --studio-ebony-edge: var(--ui-shadow-ink);
+  --studio-ebony-lip: color-mix(in srgb, var(--ui-shadow-ink) 60%, var(--ui-text-3));
+}
+
+/* nút bắt đầu: nút chính của trang, cao hơn và trải hết bề ngang thẻ thiết lập */
+.studio-player__start {
+  width: 100%;
+  height: 48px;
+  font-size: var(--ui-text-md);
+}
+
 .studio-player .sc-container {
   max-width: 1180px;
 }
@@ -11,8 +37,57 @@
   gap: 1rem;
 }
 
+/* thanh đầu trang: một hàng gọn. Nút quay lại | tên bài + thẻ thông tin | lịch sử Studio */
 .studio-player__header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem 1.25rem;
   margin-bottom: 1.25rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--ui-border);
+  border-radius: 16px;
+  background: var(--ui-surface);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--ui-shadow-ink) 6%, transparent);
+}
+
+.studio-player__heading {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.studio-player__header h1 {
+  min-width: 0;
+  font-size: clamp(1.375rem, 2vw, 1.75rem);
+  font-weight: 700;
+  line-height: 1.15;
+  overflow-wrap: break-word;
+}
+
+/* thông tin phụ: thẻ viên thuốc có biểu tượng thay cho chuỗi ghép bằng dấu chấm giữa */
+.studio-player__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.studio-player__facts li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ui-cta) 8%, var(--ui-surface));
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-sm);
+}
+
+.studio-player__facts svg {
+  color: var(--ui-cta);
 }
 
 .studio-player__header h1,
@@ -24,26 +99,45 @@
 }
 
 .studio-player__back {
-  display: inline-block;
-  margin-bottom: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: 40px;
+  white-space: nowrap;
+  padding: 0 0.95rem 0 0.8rem;
+  border: 1px solid var(--ui-border);
+  border-radius: 999px;
+  background: var(--ui-surface);
   color: var(--ui-text-2);
+  font-size: var(--ui-text-sm);
+  font-weight: 600;
   text-decoration: none;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.studio-player__back svg {
+  transition: transform 0.18s ease;
 }
 
 .studio-player__back:hover {
-  color: var(--ui-primary);
+  border-color: var(--ui-cta);
+  background: color-mix(in srgb, var(--ui-cta) 8%, var(--ui-surface));
+  color: var(--ui-cta);
 }
 
-.studio-player__eyebrow {
-  margin: 0 0 0.35rem;
-  color: var(--ui-primary);
-  font-size: var(--ui-text-xs);
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+.studio-player__back:hover svg {
+  transform: translateX(-3px);
 }
 
-.studio-player__meta,
+.studio-player__back:focus-visible {
+  outline: 2px solid var(--ui-cta);
+  outline-offset: 2px;
+  transition: none;
+}
+
 .studio-player__setup-copy p,
 .studio-player__section-head p {
   margin: 0.4rem 0 0;
@@ -63,23 +157,6 @@
 .studio-player__aligned-pitch {
   display: grid;
   min-width: 0;
-}
-
-.studio-player__help-link {
-  padding: 0.4rem 0.65rem;
-  border: 1px solid var(--ui-border);
-  border-radius: 8px;
-  background: var(--ui-surface);
-  color: var(--ui-primary);
-  font: inherit;
-  font-size: var(--ui-text-sm);
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.studio-player__help-link:hover {
-  border-color: var(--ui-primary);
-  background: var(--ui-primary-soft);
 }
 
 .studio-player__active-session-warning {
@@ -146,9 +223,11 @@
 
 .studio-player__controls {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  /* bốn trường một hàng: chế độ, cách nhập nốt, tay luyện tập, tốc độ */
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: end;
   gap: 1rem;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
 }
 
 .studio-player__controls label,
@@ -161,43 +240,73 @@
   font-size: var(--ui-text-sm);
 }
 
-.studio-player__controls select,
-.studio-player__range input {
-  width: 100%;
-  min-height: 40px;
-  padding: 0.45rem 0.65rem;
-  border: 1px solid var(--ui-border);
-  border-radius: 9px;
-  background: var(--ui-surface-muted);
-  color: var(--ui-text);
-  font: inherit;
-  font-size: var(--ui-text-xs);
+.studio-player__controls .sc-input,
+.studio-player__range .sc-input {
+  min-height: 44px;
+  font-size: var(--ui-text-sm);
 }
 
 .studio-player__tempo input {
+  width: 100%;
+  min-height: 44px;
   accent-color: var(--ui-primary);
 }
 
-.studio-player__repeat {
-  align-self: end;
+/* hàng tùy chọn bật / tắt (lặp đoạn, nốt rơi, piano ảo): nút viên thuốc, đang bật thì nền màu chính nhạt */
+.studio-player__options {
   display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  min-height: 40px;
-  color: var(--ui-text);
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
 }
 
-.studio-player__repeat input {
+.studio-player__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 40px;
+  padding: 0.4rem 0.9rem 0.4rem 0.75rem;
+  border: 1px solid var(--ui-border);
+  border-radius: 999px;
+  background: var(--ui-surface);
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-sm);
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.studio-player__chip:hover {
+  border-color: var(--ui-border-strong);
+}
+
+.studio-player__chip:has(input:checked) {
+  border-color: var(--ui-primary);
+  background: color-mix(in srgb, var(--ui-primary) 12%, transparent);
+  color: var(--ui-text);
+  font-weight: 600;
+}
+
+.studio-player__chip:has(input:focus-visible) {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 2px;
+}
+
+.studio-player__chip input {
   width: 1rem;
   height: 1rem;
+  margin: 0;
   accent-color: var(--ui-primary);
 }
 
+/* khoảng ô nhịp khi bật "Lặp một đoạn": ngay dưới hàng tùy chọn */
 .studio-player__range {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 12rem));
   gap: 0.75rem;
-  grid-column: 1 / -1;
+  margin: -0.5rem 0 1.25rem;
 }
 
 .studio-player__note,
@@ -206,41 +315,9 @@
   font-size: var(--ui-text-sm);
 }
 
-.studio-player__live {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  color: var(--ui-primary);
-  font-size: var(--ui-text-xs);
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-.studio-player__live::before {
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 50%;
-  background: var(--ui-primary);
-  content: '';
-}
-
-.studio-player__timer {
-  color: var(--ui-text);
-  font-size: clamp(1.5rem, 4vw, 2.1rem);
-  font-variant-numeric: tabular-nums;
-  font-weight: 700;
-}
-
 .studio-player__session-actions {
   display: flex;
   gap: 0.5rem;
-}
-
-.studio-player__session-mode {
-  display: block;
-  margin-top: 0.15rem;
-  color: var(--ui-text-2);
-  font-size: var(--ui-text-sm);
 }
 
 .studio-player__progress {
@@ -255,8 +332,9 @@
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: var(--ui-primary);
-  transition: width 0.15s linear;
+  background: var(--ui-cta);
+  transform-origin: 0 50%;
+  transition: transform 0.15s linear;
 }
 
 .studio-player__counts {
@@ -277,11 +355,21 @@
 }
 
 @media (max-width: 760px) {
-  .studio-player__header,
   .studio-player__session-head,
   .studio-player__live-report {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  /* điện thoại: quay lại và lịch sử chung hàng trên, tên bài xuống hàng dưới */
+  .studio-player__header {
+    grid-template-columns: auto auto;
+    justify-content: space-between;
+  }
+
+  .studio-player__heading {
+    grid-column: 1 / -1;
+    grid-row: 2;
   }
 
   .studio-player__controls {
@@ -329,7 +417,7 @@
   }
 
   .studio-player__range {
-    grid-column: auto;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -424,12 +512,12 @@
   width: 0.7rem;
   height: 0.7rem;
   border-radius: 3px;
-  background: var(--ui-instrument-1);
+  background: var(--studio-right-hand);
   content: '';
 }
 
 .studio-player__hand-legend .is-left-hand::before {
-  background: var(--ui-instrument-4);
+  background: var(--studio-left-hand);
 }
 
 .studio-player__waterfall {
@@ -495,9 +583,9 @@
   z-index: 2;
   display: block;
   min-height: 5px;
-  border: 1px solid var(--ui-instrument-1);
+  border: 1px solid var(--studio-right-hand);
   border-radius: 5px;
-  background: var(--ui-instrument-1);
+  background: var(--studio-right-hand);
   opacity: 0.88;
   transition:
     background-color 100ms linear,
@@ -505,8 +593,8 @@
 }
 
 .studio-player__falling-note.is-left-hand {
-  border-color: var(--ui-instrument-4);
-  background: var(--ui-instrument-4);
+  border-color: var(--studio-left-hand);
+  background: var(--studio-left-hand);
 }
 
 .studio-player__falling-note.is-unscored {
@@ -604,25 +692,6 @@
   color: var(--ui-text);
 }
 
-.studio-player__latest-result .is-perfect,
-.studio-player__live-report .is-perfect {
-  color: var(--ui-success);
-}
-
-.studio-player__latest-result .is-early,
-.studio-player__latest-result .is-late,
-.studio-player__live-report .is-early,
-.studio-player__live-report .is-late {
-  color: var(--ui-warning);
-}
-
-.studio-player__latest-result .is-wrong-pitch,
-.studio-player__latest-result .is-missed,
-.studio-player__live-report .is-wrong-pitch,
-.studio-player__live-report .is-missed {
-  color: var(--ui-danger);
-}
-
 .studio-player__live-report .studio-player__counts {
   display: flex;
   flex-wrap: wrap;
@@ -630,19 +699,27 @@
   gap: 0.3rem;
 }
 
-.studio-player__live-report .studio-player__counts span {
-  padding: 0.15rem 0.4rem;
-  border-radius: 99px;
-  background: var(--ui-surface);
-  white-space: nowrap;
-}
-
+/* ---- piano ảo: phím ngà và phím mực như đàn thật, dải nỉ màu thương hiệu ở mép trên. Bấm thì phím lún 2px và phủ
+   ánh xanh thương hiệu; kết quả chấm điểm là một dải đèn ở đáy phím (màu trạng thái) cùng ánh sáng mờ dần. Chỉ động
+   transform / opacity; giảm chuyển động thì đứng yên ---- */
 .studio-player__piano {
+  position: relative;
   overflow: hidden;
   border: 1px solid var(--ui-border-strong);
   border-top: 0;
-  border-radius: 0 0 10px 10px;
-  background: var(--ui-surface-muted);
+  border-radius: 0 0 12px 12px;
+  background: var(--studio-key-bed);
+}
+
+/* dải nỉ: vạch màu thương hiệu chạy ngang mép trên bàn phím */
+.studio-player__piano::before {
+  position: absolute;
+  z-index: 3;
+  inset: 0 0 auto;
+  height: 4px;
+  background: linear-gradient(90deg, var(--ui-cta), var(--ui-hue-teal), var(--ui-cta));
+  content: '';
+  pointer-events: none;
 }
 
 .studio-player__piano-keys {
@@ -659,11 +736,27 @@
   align-items: flex-end;
   justify-content: center;
   padding: 0 0 0.55rem;
-  border: 1px solid var(--ui-border-strong);
+  border: 1px solid var(--studio-key-edge);
   font: inherit;
   touch-action: none;
   user-select: none;
   cursor: pointer;
+  transform-origin: 50% 0;
+  transition:
+    transform 0.08s ease-out,
+    box-shadow 0.12s ease-out;
+}
+
+/* lớp ánh sáng phủ lên phím khi bấm / khi có kết quả chấm điểm */
+.studio-player__piano-key::after {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--studio-key-glow, transparent);
+  content: '';
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease-out;
 }
 
 .studio-player__piano-key.is-white {
@@ -671,58 +764,151 @@
   top: 0;
   bottom: 0;
   flex-direction: column;
-  gap: 0.15rem;
-  padding-bottom: 0.5rem;
-  border-radius: 0 0 7px 7px;
-  background: var(--ui-surface);
-  color: var(--ui-text-2);
+  gap: 0.1rem;
+  padding-bottom: 0.55rem;
+  border-top: 0;
+  border-radius: 0 0 8px 8px;
+  /* ngà: sáng dần xuống đáy, gờ bóng ở mép dưới như phím thật */
+  background: linear-gradient(180deg, var(--studio-ivory-top), var(--studio-ivory) 70%);
+  box-shadow:
+    inset 0 -5px 0 var(--studio-ivory-lip),
+    inset 0 1px 0 var(--studio-ivory-shine);
+  color: var(--ui-text-3);
+  font-size: var(--ui-text-xs);
 }
 
 .studio-player__piano-key.is-black {
   z-index: 2;
   top: 0;
-  height: 63%;
+  height: 62%;
   align-items: flex-end;
-  border-color: var(--ui-text);
-  border-radius: 0 0 5px 5px;
-  background: var(--ui-text);
+  border-color: var(--studio-ebony-edge);
+  border-top: 0;
+  border-radius: 0 0 6px 6px;
+  /* mực: ánh sáng vát ở mép trên, đậm dần xuống đáy */
+  background: linear-gradient(180deg, var(--studio-ebony-shine), var(--studio-ebony) 28%, var(--studio-ebony));
+  box-shadow:
+    inset 0 -4px 0 var(--studio-ebony-lip),
+    0 3px 4px var(--studio-key-cast);
   color: var(--ui-bg);
 }
 
+/* nhãn nốt: nhạt; riêng C có số quãng tám và được nhấn để dễ định vị */
+.studio-player__piano-key span {
+  line-height: 1;
+}
+
 .studio-player__piano-key strong {
+  color: var(--ui-cta);
   font-size: var(--ui-text-xs);
-  font-weight: 500;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .studio-player__piano-key:disabled {
   cursor: default;
 }
 
-.studio-player__piano-key.is-pressed,
+.studio-player__piano:not(.is-reference-only) .studio-player__piano-key:enabled:hover {
+  --studio-key-glow: color-mix(in srgb, var(--ui-cta) 10%, transparent);
+}
+
+.studio-player__piano:not(.is-reference-only) .studio-player__piano-key:enabled:hover::after {
+  opacity: 1;
+}
+
+.studio-player__piano-key:focus-visible {
+  z-index: 4;
+  outline: 2px solid var(--ui-cta);
+  outline-offset: -3px;
+  transition: none;
+}
+
+/* đang bấm: phím lún xuống, gờ dưới mỏng lại, phủ ánh xanh thương hiệu */
+.studio-player__piano-key.is-pressed {
+  --studio-key-glow: color-mix(in srgb, var(--ui-cta) 28%, transparent);
+  transform: translateY(2px);
+}
+
+.studio-player__piano-key.is-white.is-pressed {
+  box-shadow:
+    inset 0 -2px 0 var(--studio-ivory-lip),
+    inset 0 3px 6px var(--studio-key-cast);
+}
+
+.studio-player__piano-key.is-black.is-pressed {
+  box-shadow: inset 0 -1px 0 var(--studio-ebony-lip);
+}
+
+/* nốt rơi chạm vạch chơi: phím sáng lên đúng màu tay (dải màu ở mép trên phím như nốt vừa rơi vào) suốt lúc nốt kêu.
+   Đặt trước phần chấm điểm để màu kết quả (đúng / sai) thắng khi cả hai cùng lúc */
+.studio-player__piano-key.is-guide-right {
+  --studio-guide: var(--studio-right-hand);
+}
+
+.studio-player__piano-key.is-guide-left {
+  --studio-guide: var(--studio-left-hand);
+}
+
+.studio-player__piano-key.is-guide {
+  --studio-key-glow: color-mix(in srgb, var(--studio-guide) 38%, transparent);
+}
+
+.studio-player__piano-key.is-guide::after {
+  box-shadow: inset 0 6px 0 var(--studio-guide);
+  opacity: 1;
+}
+
+/* kết quả chấm điểm: màu trạng thái (đúng / sớm-muộn / sai) cho ánh sáng và dải đèn ở đáy phím */
 .studio-player__piano-key.is-perfect {
-  background: var(--ui-success-soft);
-  box-shadow: inset 0 0 0 2px var(--ui-success);
+  --studio-key-glow: color-mix(in srgb, var(--ui-success) 30%, transparent);
+  --studio-key-light: var(--ui-success);
 }
 
 .studio-player__piano-key.is-early,
 .studio-player__piano-key.is-late {
-  background: var(--ui-warning-soft);
-  box-shadow: inset 0 0 0 2px var(--ui-warning);
+  --studio-key-glow: color-mix(in srgb, var(--ui-warning) 30%, transparent);
+  --studio-key-light: var(--ui-warning);
 }
 
 .studio-player__piano-key.is-wrong-pitch,
 .studio-player__piano-key.is-missed {
-  background: var(--ui-danger-soft);
-  box-shadow: inset 0 0 0 2px var(--ui-danger);
+  --studio-key-glow: color-mix(in srgb, var(--ui-danger) 30%, transparent);
+  --studio-key-light: var(--ui-danger);
 }
 
-.studio-player__piano-key.is-black.is-pressed,
-.studio-player__piano-key.is-black.is-perfect,
-.studio-player__piano-key.is-black.is-early,
-.studio-player__piano-key.is-black.is-late,
-.studio-player__piano-key.is-black.is-wrong-pitch,
-.studio-player__piano-key.is-black.is-missed {
-  color: var(--ui-text);
+.studio-player__piano-key.is-pressed::after,
+.studio-player__piano-key:is(.is-perfect, .is-early, .is-late, .is-wrong-pitch, .is-missed)::after {
+  opacity: 1;
+}
+
+.studio-player__piano-key:is(.is-perfect, .is-early, .is-late, .is-wrong-pitch, .is-missed)::after {
+  box-shadow: inset 0 -6px 0 var(--studio-key-light);
+  animation: studio-key-fade 0.9s ease-out forwards;
+}
+
+@keyframes studio-key-fade {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .studio-player__piano-key,
+  .studio-player__piano-key::after {
+    transition: none;
+  }
+
+  .studio-player__piano-key.is-pressed {
+    transform: none;
+  }
+
+  .studio-player__piano-key:is(.is-perfect, .is-early, .is-late, .is-wrong-pitch, .is-missed)::after {
+    animation: none;
+  }
 }
 
 .studio-player--fullscreen {
@@ -778,10 +964,6 @@
   font-size: clamp(1rem, 2vw, 1.35rem);
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.studio-player--fullscreen .studio-player__timer {
-  font-size: clamp(1.1rem, 2.5vw, 1.6rem);
 }
 
 .studio-player--fullscreen .studio-player__session-actions {
@@ -980,5 +1162,945 @@
 
   .studio-player--fullscreen .studio-player__piano-keys {
     height: clamp(68px, 15vh, 110px);
+  }
+}
+
+/* ---- màn thiết lập trải toàn màn hình (máy tính): tiêu đề trên cùng, cột trái (thẻ thiết lập + bản nhạc xem trước, tự
+   cuộn) và bên phải là vùng nốt rơi + piano chiếm hết bề ngang và chiều cao còn lại (thấy trọn bàn phím, không phải
+   cuộn trang). Nốt rơi đặt vị trí theo % chiều cao nên khung giãn ra không làm lệch nốt. Khi bắt đầu luyện, lớp
+   --fullscreen có bố cục riêng ở trên ---- */
+@media (min-width: 1100px) {
+  .studio-player:not(.studio-player--fullscreen) .sc-container {
+    display: grid;
+    grid-template-columns: minmax(320px, 400px) minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas:
+      'head head'
+      'side board';
+    gap: 1rem 1.25rem;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: none;
+    /* đúng một màn hình; màn quá thấp thì cuộn trang */
+    height: max(100dvh, 720px);
+    padding: 1rem clamp(1rem, 2vw, 2rem);
+  }
+
+  .studio-player:not(.studio-player--fullscreen) .studio-player__header {
+    grid-area: head;
+  }
+
+  .studio-player__side {
+    grid-area: side;
+    display: grid;
+    align-content: start;
+    gap: 1rem;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+
+  .studio-player__side > .studio-player__setup,
+  .studio-player__side > .studio-player__score {
+    margin-top: 0;
+  }
+
+  /* trong cột trái hẹp: các trường xếp dọc */
+  .studio-player__side .studio-player__controls {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .studio-player:not(.studio-player--fullscreen) .studio-player__practice-board {
+    grid-area: board;
+    grid-template-rows: auto minmax(0, 1fr);
+    margin-top: 0;
+    min-height: 0;
+  }
+
+  .studio-player:not(.studio-player--fullscreen) .studio-player__aligned-pitch {
+    grid-template-rows: minmax(0, 1fr) auto;
+    min-height: 0;
+  }
+
+  .studio-player:not(.studio-player--fullscreen) .studio-player__waterfall {
+    display: grid;
+    min-height: 0;
+  }
+
+  .studio-player:not(.studio-player--fullscreen) .studio-player__waterfall-grid {
+    height: 100%;
+    min-height: 260px;
+  }
+}
+
+/* iPad / điện thoại: một cột, giữ thứ tự cũ (thiết lập → vùng luyện → bản nhạc xem trước) dù hai khối kia nằm chung
+   cột trái trong mã */
+@media (max-width: 1099px) {
+  .studio-player:not(.studio-player--fullscreen) .sc-container {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .studio-player__side {
+    display: contents;
+  }
+
+  .studio-player:not(.studio-player--fullscreen) .studio-player__practice-board {
+    order: 1;
+  }
+
+  .studio-player__side > .studio-player__score {
+    order: 2;
+  }
+}
+
+/* trạng thái nhấn: phím piano lún ngay cả khi chuột chưa kịp báo (bổ sung cho lớp is-pressed do JS đặt), nút viên thuốc
+   tùy chọn thu nhẹ */
+.studio-player__piano:not(.is-reference-only) .studio-player__piano-key:enabled:active {
+  --studio-key-glow: color-mix(in srgb, var(--ui-cta) 28%, transparent);
+  transform: translateY(2px);
+}
+
+.studio-player__piano:not(.is-reference-only) .studio-player__piano-key:enabled:active::after {
+  opacity: 1;
+}
+
+.studio-player__chip:active {
+  transform: scale(0.97);
+}
+
+.studio-player__chip {
+  transition-property: background-color, border-color, color, transform;
+}
+
+.studio-player__header h1,
+.studio-player__setup h2,
+.studio-player__section-head h2 {
+  text-wrap: balance;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .studio-player__piano:not(.is-reference-only) .studio-player__piano-key:enabled:active,
+  .studio-player__chip:active {
+    transform: none;
+  }
+
+  .studio-player__progress span {
+    transition: none;
+  }
+}
+
+/* nốt đang đáp xuống vạch chơi: sáng hơn và có quầng màu tay */
+.studio-player__falling-note.is-landing {
+  opacity: 1;
+  box-shadow: 0 0 14px color-mix(in srgb, var(--studio-right-hand) 70%, transparent);
+}
+
+.studio-player__falling-note.is-left-hand.is-landing {
+  box-shadow: 0 0 14px color-mix(in srgb, var(--studio-left-hand) 70%, transparent);
+}
+
+/* ---- nút trong Studio: cùng hệ viên thuốc của web nhưng có chiều sâu và phản hồi rõ hơn ----
+   chính: nền chuyển sắc xanh thương hiệu, bóng mềm, rê chuột nổi lên 1px, nhấn thì lún; phụ: viền và chữ xanh, rê chuột
+   phủ xanh nhạt; huỷ: viền đỏ, rê chuột phủ đỏ nhạt. Chỉ động transform / box-shadow */
+.studio-player .sc-btn {
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.studio-player .sc-btn--primary {
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--ui-cta), color-mix(in srgb, var(--ui-cta) 55%, var(--ui-hue-teal)));
+  box-shadow: 0 8px 18px -10px color-mix(in srgb, var(--ui-cta) 80%, transparent);
+  font-weight: 600;
+}
+
+.studio-player .sc-btn--primary:hover:not(:disabled) {
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--ui-cta-hover), var(--ui-cta));
+  box-shadow: 0 12px 24px -12px color-mix(in srgb, var(--ui-cta) 90%, transparent);
+  transform: translateY(-1px);
+}
+
+.studio-player .sc-btn:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+  box-shadow: none;
+}
+
+.studio-player .sc-btn:not(.sc-btn--primary, .sc-btn--danger, .sc-btn--danger-solid) {
+  border-color: color-mix(in srgb, var(--ui-cta) 35%, var(--ui-border));
+  background: var(--ui-surface);
+  color: var(--ui-cta);
+  font-weight: 600;
+}
+
+.studio-player .sc-btn:not(.sc-btn--primary, .sc-btn--danger, .sc-btn--danger-solid):hover:not(:disabled) {
+  border-color: var(--ui-cta);
+  background: color-mix(in srgb, var(--ui-cta) 10%, var(--ui-surface));
+  color: var(--ui-cta);
+}
+
+.studio-player .sc-btn--danger {
+  border-color: color-mix(in srgb, var(--ui-danger) 45%, var(--ui-border));
+  background: var(--ui-surface);
+  font-weight: 600;
+}
+
+.studio-player .sc-btn--danger:hover:not(:disabled) {
+  border-color: var(--ui-danger);
+  background: color-mix(in srgb, var(--ui-danger) 10%, var(--ui-surface));
+}
+
+.studio-player .sc-btn:disabled {
+  box-shadow: none;
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* nút bắt đầu: biểu tượng ▶ nằm trong vòng tròn sáng */
+.studio-player__start svg {
+  box-sizing: content-box;
+  padding: 4px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--ui-on-cta) 18%, transparent);
+}
+
+/* ô tích trong nút viên thuốc: chấm tròn thay ô vuông mặc định, bật thì tô xanh thương hiệu có vòng trắng bên trong */
+.studio-player__chip input {
+  appearance: none;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--ui-border-strong);
+  border-radius: 50%;
+  background: var(--ui-surface);
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.studio-player__chip input:checked {
+  border-color: var(--ui-cta);
+  background: var(--ui-cta);
+  box-shadow: inset 0 0 0 3px var(--ui-surface);
+}
+
+.studio-player__chip:has(input:checked) {
+  border-color: var(--ui-cta);
+  background: color-mix(in srgb, var(--ui-cta) 10%, var(--ui-surface));
+  color: var(--ui-cta);
+}
+
+.studio-player .sc-btn:focus-visible,
+.studio-player__chip:has(input:focus-visible) {
+  outline: 2px solid var(--ui-cta);
+  outline-offset: 2px;
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .studio-player .sc-btn,
+  .studio-player__chip input {
+    transition: none;
+  }
+
+  .studio-player .sc-btn--primary:hover:not(:disabled),
+  .studio-player .sc-btn:active:not(:disabled) {
+    transform: none;
+  }
+}
+
+/* ---- hiệu ứng khi vào trang thiết lập: thanh đầu trượt xuống, cột thiết lập trượt vào từ trái (các trường hiện lần
+   lượt), vùng luyện hiện dần, một vệt sáng lướt qua bàn phím, nút bắt đầu toả vòng sáng hai nhịp. Chỉ transform /
+   opacity; nội dung luôn hiện nếu không chạy hiệu ứng ---- */
+@media (prefers-reduced-motion: no-preference) {
+  .studio-player:not(.studio-player--fullscreen) .studio-player__header {
+    animation: studio-drop 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+
+  .studio-player:not(.studio-player--fullscreen) .studio-player__setup {
+    animation: studio-slide-in 0.5s 0.08s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+
+  .studio-player:not(.studio-player--fullscreen) .studio-player__score {
+    animation: studio-slide-in 0.5s 0.2s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+
+  .studio-player:not(.studio-player--fullscreen) .studio-player__controls > *,
+  .studio-player:not(.studio-player--fullscreen) .studio-player__options,
+  .studio-player:not(.studio-player--fullscreen) .studio-player__start {
+    animation: studio-rise 0.4s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+
+  .studio-player__controls > :nth-child(1) {
+    animation-delay: 0.18s;
+  }
+
+  .studio-player__controls > :nth-child(2) {
+    animation-delay: 0.24s;
+  }
+
+  .studio-player__controls > :nth-child(3) {
+    animation-delay: 0.3s;
+  }
+
+  .studio-player__controls > :nth-child(4) {
+    animation-delay: 0.36s;
+  }
+
+  .studio-player:not(.studio-player--fullscreen) .studio-player__options {
+    animation-delay: 0.42s;
+  }
+
+  .studio-player:not(.studio-player--fullscreen) .studio-player__start {
+    animation-delay: 0.48s;
+  }
+
+  .studio-player:not(.studio-player--fullscreen) .studio-player__practice-board {
+    animation: studio-fade-scale 0.6s 0.12s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+
+  /* vệt sáng lướt qua bàn phím một lần */
+  .studio-player__piano-keys::after {
+    position: absolute;
+    z-index: 5;
+    inset: 0;
+    width: 30%;
+    background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--ui-paper) 55%, transparent), transparent);
+    content: '';
+    pointer-events: none;
+    transform: translateX(-120%);
+    animation: studio-sweep 1.4s 0.7s ease-in-out both;
+  }
+
+  /* nút bắt đầu: vòng sáng toả ra hai nhịp để mời bấm */
+  .studio-player:not(.studio-player--fullscreen) .studio-player__start {
+    position: relative;
+  }
+
+  .studio-player:not(.studio-player--fullscreen) .studio-player__start:enabled::after {
+    position: absolute;
+    inset: 0;
+    border: 2px solid var(--ui-cta);
+    border-radius: inherit;
+    content: '';
+    opacity: 0;
+    pointer-events: none;
+    animation: studio-ring 1.6s 1.1s ease-out 2;
+  }
+}
+
+@keyframes studio-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes studio-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes studio-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes studio-fade-scale {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes studio-sweep {
+  from {
+    transform: translateX(-120%);
+  }
+  to {
+    transform: translateX(440%);
+  }
+}
+
+@keyframes studio-ring {
+  from {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.08, 1.4);
+  }
+}
+
+/* ---- hiệu ứng chấm điểm tại phím vừa chơi, "bay bổng": cột sáng bắn lên dọc làn nốt rồi tan, hai vòng sóng nối tiếp,
+   chữ kết quả nảy lên rồi bay cao và lắc lư nhẹ. Hoàn hảo: chữ nền chuyển sắc thương hiệu có vệt sáng lướt, 12 tia sáng
+   xa gần, hai nốt nhạc bay tản ra. Chuỗi hoàn hảo dài: cả vạch chơi lóe sáng. Màu theo trạng thái; chỉ transform /
+   opacity; giảm chuyển động thì chỉ còn chữ đứng yên ---- */
+.studio-player__judge,
+.studio-player__judge-beam {
+  --judge: var(--ui-success);
+}
+
+.studio-player__judge:is(.is-early, .is-late),
+.studio-player__judge-beam:is(.is-early, .is-late) {
+  --judge: var(--ui-warning);
+}
+
+.studio-player__judge:is(.is-wrong-pitch, .is-missed),
+.studio-player__judge-beam:is(.is-wrong-pitch, .is-missed) {
+  --judge: var(--ui-danger);
+}
+
+.studio-player__judge {
+  position: absolute;
+  z-index: 6;
+  bottom: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+/* cột sáng: dải màu từ phím bắn lên dọc làn nốt, gốc rực rồi nhạt dần lên trên */
+.studio-player__judge-beam {
+  position: absolute;
+  z-index: 1;
+  bottom: 0;
+  height: 70%;
+  border-radius: 999px 999px 0 0;
+  background: linear-gradient(
+    0deg,
+    color-mix(in srgb, var(--judge) 75%, transparent),
+    color-mix(in srgb, var(--judge) 25%, transparent) 45%,
+    transparent
+  );
+  pointer-events: none;
+  transform-origin: 50% 100%;
+}
+
+.studio-player__judge-beam.is-perfect {
+  background: linear-gradient(
+    0deg,
+    color-mix(in srgb, var(--ui-highlight) 85%, transparent),
+    color-mix(in srgb, var(--ui-hue-teal) 45%, transparent) 40%,
+    transparent
+  );
+}
+
+.studio-player__judge-label {
+  position: absolute;
+  bottom: 22px;
+  left: 0;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  padding: 0.3rem 0.85rem;
+  border: 2px solid var(--judge);
+  border-radius: 999px;
+  background: var(--ui-surface);
+  box-shadow:
+    0 10px 24px -10px color-mix(in srgb, var(--judge) 90%, transparent),
+    0 0 0 4px color-mix(in srgb, var(--judge) 14%, transparent);
+  color: var(--ui-text);
+  font-size: var(--ui-text-md);
+  font-weight: 800;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.studio-player__judge-label strong {
+  color: var(--judge);
+  font-size: 1.15em;
+  font-weight: 900;
+}
+
+/* hoàn hảo: nền chuyển sắc thương hiệu, chữ sáng, vệt sáng lướt qua */
+.studio-player__judge.is-perfect .studio-player__judge-label {
+  border-color: transparent;
+  background: linear-gradient(120deg, var(--ui-cta), var(--ui-hue-teal) 60%, var(--ui-highlight));
+  color: var(--ui-on-cta);
+  font-size: calc(var(--ui-text-md) * 1.12);
+}
+
+.studio-player__judge.is-perfect .studio-player__judge-label strong {
+  color: var(--ui-on-cta);
+}
+
+.studio-player__judge.is-perfect .studio-player__judge-label::after {
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: linear-gradient(100deg, transparent, color-mix(in srgb, var(--ui-on-cta) 55%, transparent), transparent);
+  content: '';
+  transform: translateX(-150%);
+}
+
+.studio-player__judge-ring {
+  position: absolute;
+  bottom: -24px;
+  left: -24px;
+  width: 48px;
+  height: 48px;
+  border: 3px solid var(--judge);
+  border-radius: 50%;
+}
+
+.studio-player__judge-spark {
+  position: absolute;
+  z-index: 2;
+  bottom: -6px;
+  left: -6px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--judge);
+  box-shadow: 0 0 8px var(--judge);
+  transform: rotate(var(--spark-angle)) translateY(0);
+}
+
+.studio-player__judge-spark:nth-child(odd) {
+  background: var(--ui-highlight);
+  box-shadow: 0 0 8px var(--ui-highlight);
+}
+
+.studio-player__judge-note {
+  position: absolute;
+  z-index: 3;
+  bottom: 30px;
+  color: var(--ui-hue-teal);
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.studio-player__judge-note.is-left {
+  left: -78px;
+}
+
+.studio-player__judge-note.is-right {
+  left: 62px;
+  color: var(--ui-highlight);
+}
+
+/* chuỗi hoàn hảo dài: cả vạch chơi lóe một dải chuyển sắc */
+.studio-player__combo-glow {
+  position: absolute;
+  z-index: 5;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 28px;
+  background: linear-gradient(
+    0deg,
+    color-mix(in srgb, var(--ui-highlight) 70%, transparent),
+    color-mix(in srgb, var(--ui-hue-teal) 30%, transparent) 50%,
+    transparent
+  );
+  pointer-events: none;
+  transform-origin: 50% 100%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .studio-player__judge-beam {
+    animation: studio-judge-beam 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+
+  .studio-player__judge-label {
+    animation: studio-judge-float 1.1s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  }
+
+  .studio-player__judge.is-perfect .studio-player__judge-label::after {
+    animation: studio-judge-shine 0.7s 0.15s ease-out both;
+  }
+
+  .studio-player__judge-ring {
+    animation: studio-judge-ring 0.7s ease-out both;
+  }
+
+  .studio-player__judge-ring.is-late-ring {
+    animation-delay: 0.14s;
+  }
+
+  .studio-player__judge-spark {
+    animation: studio-judge-spark 0.75s cubic-bezier(0.1, 0.7, 0.3, 1) both;
+  }
+
+  .studio-player__judge-note.is-left {
+    animation: studio-judge-note-left 1.05s ease-out both;
+  }
+
+  .studio-player__judge-note.is-right {
+    animation: studio-judge-note-right 1.05s 0.08s ease-out both;
+  }
+
+  .studio-player__combo-glow {
+    animation: studio-combo-glow 0.8s ease-out both;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .studio-player__judge-beam,
+  .studio-player__judge-ring,
+  .studio-player__judge-spark,
+  .studio-player__judge-note,
+  .studio-player__combo-glow {
+    display: none;
+  }
+}
+
+@keyframes studio-judge-beam {
+  0% {
+    opacity: 0;
+    transform: scaleY(0.1);
+  }
+  20% {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scaleY(1.15);
+  }
+}
+
+@keyframes studio-judge-float {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 14px) scale(0.5);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(-50%, -6px) scale(1.18);
+  }
+  32% {
+    transform: translate(-50%, -2px) scale(1);
+  }
+  55% {
+    transform: translate(calc(-50% - 4px), -26px) rotate(-3deg);
+  }
+  78% {
+    opacity: 1;
+    transform: translate(calc(-50% + 4px), -46px) rotate(2deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -64px) rotate(0deg) scale(0.92);
+  }
+}
+
+@keyframes studio-judge-shine {
+  from {
+    transform: translateX(-150%);
+  }
+  to {
+    transform: translateX(260%);
+  }
+}
+
+@keyframes studio-judge-ring {
+  from {
+    opacity: 0.95;
+    transform: scale(0.2);
+  }
+  to {
+    opacity: 0;
+    transform: scale(2.4);
+  }
+}
+
+@keyframes studio-judge-spark {
+  0% {
+    opacity: 1;
+    transform: rotate(var(--spark-angle)) translateY(0) scale(1.3);
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(var(--spark-angle)) translateY(calc(var(--spark-distance) * -1)) scale(0.3);
+  }
+}
+
+@keyframes studio-judge-note-left {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) rotate(0deg) scale(0.6);
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-22px, -78px) rotate(-18deg) scale(1.1);
+  }
+}
+
+@keyframes studio-judge-note-right {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) rotate(0deg) scale(0.6);
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(24px, -86px) rotate(16deg) scale(1.1);
+  }
+}
+
+@keyframes studio-combo-glow {
+  0% {
+    opacity: 0;
+    transform: scaleY(0.3);
+  }
+  25% {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scaleY(1.6);
+  }
+}
+
+/* ---- đang luyện (toàn màn hình): thanh trên một hàng. Trái: viên thuốc "đang luyện" có biểu tượng nhịp đập nhẹ, tên bài,
+   thẻ chế độ có biểu tượng. Giữa: đồng hồ trong khung viên thuốc, chữ số đều. Phải: huỷ / kết thúc. Dưới: thanh tiến độ
+   chuyển sắc thương hiệu, đầu thanh phát sáng ---- */
+.studio-player .studio-player__session-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+}
+
+.studio-player__session-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  min-width: 0;
+}
+
+.studio-player .studio-player__session-title h2 {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  font-size: clamp(1.125rem, 1.8vw, 1.5rem);
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.studio-player__live {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.7rem 0.25rem 0.55rem;
+  border-radius: 999px;
+  background: var(--ui-cta);
+  color: var(--ui-on-cta);
+  font-size: var(--ui-text-sm);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.studio-player__session-mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.65rem;
+  border: 1px solid color-mix(in srgb, var(--ui-cta) 30%, var(--ui-border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ui-cta) 8%, var(--ui-surface));
+  color: var(--ui-cta);
+  font-size: var(--ui-text-sm);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.studio-player__timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.9rem;
+  border: 1px solid var(--ui-border);
+  border-radius: 999px;
+  background: var(--ui-surface-muted);
+  color: var(--ui-text);
+  font-size: clamp(1.125rem, 2vw, 1.5rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.studio-player__timer svg {
+  color: var(--ui-cta);
+}
+
+.studio-player .studio-player__session-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+}
+
+/* thanh tiến độ: chuyển sắc thương hiệu, đầu thanh có chấm sáng */
+.studio-player .studio-player__progress {
+  position: relative;
+  height: 6px;
+  overflow: visible;
+  background: color-mix(in srgb, var(--ui-cta) 12%, var(--ui-surface-muted));
+}
+
+.studio-player .studio-player__progress span {
+  position: relative;
+  background: linear-gradient(90deg, var(--ui-cta), var(--ui-hue-teal) 70%, var(--ui-highlight));
+}
+
+/* ---- kết quả trong lúc luyện: kết quả gần nhất là viên thuốc đổi màu theo kết quả; năm số đếm là năm thẻ nhỏ (số to, nhãn
+   nhỏ, vạch màu trạng thái), thẻ nảy nhẹ mỗi lần số tăng ---- */
+.studio-player .studio-player__live-report {
+  gap: 0.75rem 1.25rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 14px;
+  background: var(--ui-surface);
+}
+
+.studio-player__latest-result {
+  align-items: center;
+}
+
+.studio-player__latest-result strong {
+  --result: var(--ui-text-3);
+  padding: 0.25rem 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--result) 45%, var(--ui-border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--result) 12%, var(--ui-surface));
+  color: var(--ui-text);
+  font-weight: 700;
+}
+
+.studio-player__latest-result strong.is-perfect {
+  --result: var(--ui-success);
+}
+
+.studio-player__latest-result strong:is(.is-early, .is-late) {
+  --result: var(--ui-warning);
+}
+
+.studio-player__latest-result strong:is(.is-wrong-pitch, .is-missed) {
+  --result: var(--ui-danger);
+}
+
+.studio-player .studio-player__live-report .studio-player__counts {
+  gap: 0.4rem;
+}
+
+.studio-player__count {
+  --result: var(--ui-success);
+  display: inline-grid;
+  grid-template-columns: auto auto;
+  align-items: baseline;
+  gap: 0.35rem;
+  padding: 0.3rem 0.7rem 0.3rem 0.6rem;
+  border-left: 3px solid var(--result);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--result) 8%, var(--ui-surface-muted));
+  white-space: nowrap;
+}
+
+.studio-player__count:is(.is-early, .is-late) {
+  --result: var(--ui-warning);
+}
+
+.studio-player__count:is(.is-wrong-pitch, .is-missed) {
+  --result: var(--ui-danger);
+}
+
+.studio-player__count strong {
+  display: inline-block;
+  color: var(--ui-text);
+  font-size: var(--ui-text-md);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.studio-player__count span {
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-xs);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .studio-player__live svg {
+    animation: studio-live-beat 1.2s ease-in-out infinite;
+  }
+
+  .studio-player__count strong {
+    animation: studio-count-bump 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.3);
+  }
+}
+
+@keyframes studio-live-beat {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  15% {
+    transform: scale(1.25);
+  }
+  30% {
+    transform: scale(1);
+  }
+}
+
+@keyframes studio-count-bump {
+  from {
+    transform: scale(1.35);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@media (max-width: 760px) {
+  /* hẹp: tên bài một hàng, đồng hồ và nút xuống hàng dưới */
+  .studio-player .studio-player__session-head {
+    grid-template-columns: auto 1fr;
+  }
+
+  .studio-player__session-title {
+    grid-column: 1 / -1;
+  }
+
+  .studio-player .studio-player__session-actions {
+    justify-content: flex-end;
   }
 }

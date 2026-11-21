@@ -17,6 +17,8 @@
     "open": "Lịch sử Studio"
   },
   "report": {
+    "practiceAgain": "Luyện tập lại",
+    "openScore": "Xem bản nhạc",
     "title": "Báo cáo luyện tập",
     "summary": "Tóm tắt phiên tập",
     "loading": "Đang tải báo cáo…",

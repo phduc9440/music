@@ -443,10 +443,15 @@
   border-radius: 4px;
   box-shadow: var(--sc-shadow);
 }
+/* cuộn ngang: tờ giấy rộng vừa đúng bản nhạc và nằm giữa màn (trước đây luôn trải gần hết bề ngang nên bản ngắn bị dồn
+   sang trái, nửa phải trống). Bản dài hơn màn thì giấy tràn sang phải và cuộn ngang, đệm trái của khung giữ khoảng cách */
+.sv-canvas--scroll {
+  padding-inline: 1.5rem;
+}
 .sv-canvas--scroll .sv-canvas__host {
-  display: inline-block;
-  min-width: calc(100% - 3rem);
-  margin: 1.5rem 1.5rem 5rem;
+  display: block;
+  width: fit-content;
+  margin: 1.5rem auto 5rem;
   padding: 1.5rem 1.25rem;
   background: var(--ui-surface);
   border-radius: 8px;
@@ -512,6 +517,7 @@
   flex: none;
   width: 280px;
   padding: 1.25rem;
+  overflow-x: hidden; /* chỉ cuộn dọc: lệch 1px cũng không hiện thanh cuộn ngang dưới đáy bảng */
   overflow-y: auto;
   background: var(--sv-bar);
   border-right: 1px solid var(--sc-line);
@@ -650,8 +656,37 @@
 
 /* ---- Mobile: dưới 768px, công cụ mở dạng bottom sheet ---- */
 @media (max-width: 767px) {
+  /* thanh trên xếp hàng: (1) quay lại + tên bài, (2) các nút thao tác, (3) chế độ xem + thu phóng. Hai cột như iPad thì
+     cụm nút bên phải chiếm hết chỗ, tên bài bị ép về 0 và các nút đè lên nhau */
   .sv-toolbar {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.5rem;
     padding: 0.6rem 0.75rem;
+  }
+  .sv-toolbar__left {
+    grid-row: 1;
+  }
+  .sv-toolbar__right {
+    grid-row: 2;
+    justify-content: flex-start;
+    gap: 0.35rem;
+  }
+  .sv-toolbar__center {
+    grid-row: 3;
+  }
+  .sv-toolbar .sv-title {
+    flex: 1;
+    min-width: 0;
+  }
+  .sv-toolbar .sv-title > * {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  /* nút gọn lại để cả nhóm (Sửa, góp ý, Phát, nhạc cụ, tải xuống, thêm) vừa một hàng ở điện thoại 390px */
+  .sv-toolbar__right .sc-btn {
+    min-height: 40px;
+    padding-inline: 0.55rem;
   }
   .sv-badge {
     display: none;
@@ -665,6 +700,10 @@
   .sv-segment button {
     flex: 1;
     justify-content: center;
+  }
+  /* nút chế độ xem chỉ còn biểu tượng để chế độ xem + thu phóng + đảo màu vừa một hàng */
+  .sv-segment__label {
+    display: none;
   }
   .sv-desktop-only {
     display: none !important;

@@ -17,6 +17,8 @@
     "open": "Studio history"
   },
   "report": {
+    "practiceAgain": "Practice again",
+    "openScore": "Open score",
     "title": "Practice report",
     "summary": "Session summary",
     "loading": "Loading report…",

@@ -29,9 +29,17 @@ export const clampZoom = (value: number): number => {
   return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(value / 5) * 5));
 };
 
+/**
+ * Mức thu phóng mặc định theo bề ngang màn hình khi người dùng chưa tự chọn: trang A4 rộng khoảng 794px nên điện thoại
+ * mở ở 50% (vừa bề ngang), iPad dọc 90%, máy tính 100%.
+ */
+export const defaultZoomFor = (viewportWidth: number): number =>
+  viewportWidth < 600 ? ZOOM_MIN : viewportWidth < 900 ? 90 : ZOOM_DEFAULT;
+
 /** Đọc lựa chọn thu phóng và chế độ xem đã lưu; lỗi hoặc dữ liệu lạ thì trả mặc định. */
 export const loadViewerPrefs = (): ViewerPrefs => {
-  const fallback: ViewerPrefs = { zoom: ZOOM_DEFAULT, mode: 'page', invert: false };
+  const viewport = typeof window === 'undefined' ? 1280 : window.innerWidth;
+  const fallback: ViewerPrefs = { zoom: defaultZoomFor(viewport), mode: 'page', invert: false };
   try {
     const raw = localStorage.getItem(PREFS_KEY);
     if (!raw) return fallback;

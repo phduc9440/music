@@ -4,6 +4,30 @@
   font-size: 1.4rem;
 }
 
+/* bên phải đầu báo cáo: điểm, dưới là hai nút (xem bản nhạc, luyện tập lại) */
+.studio-report__head-side {
+  display: grid;
+  justify-items: end;
+  gap: 0.6rem;
+}
+
+.studio-report__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+@media (max-width: 600px) {
+  .studio-report__head-side {
+    justify-items: start;
+  }
+
+  .studio-report__actions {
+    justify-content: flex-start;
+  }
+}
+
 .studio-report__cards,
 .studio-report__counts {
   display: grid;
