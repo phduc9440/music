@@ -112,6 +112,19 @@ const PATHS = {
   chevronDown: <path d="M6 9l6 6 6-6" />,
   sliders: <path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1M15 4v4M7 10v4M17 16v4" />,
   chevronUp: <path d="M6 15l6-6 6 6" />,
+  volume: (
+    <>
+      <path d="M11 5L6 9H2v6h4l5 4V5z" />
+      <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+      <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+    </>
+  ),
+  volumeOff: (
+    <>
+      <path d="M11 5L6 9H2v6h4l5 4V5z" />
+      <path d="M23 9l-6 6M17 9l6 6" />
+    </>
+  ),
   thumbsUp: (
     <>
       <path d="M7 10v12" />

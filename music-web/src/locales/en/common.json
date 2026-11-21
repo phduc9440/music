@@ -49,7 +49,10 @@
     "changePassword": "Change password",
     "logout": "Sign out",
     "upgrade": "Upgrade",
-    "planTitle": "{plan} plan: see limits and renew"
+    "planTitle": "{plan} plan: see limits and renew",
+    "clickSound": "Note sounds on click",
+    "soundTurnOff": "Turn off click sounds",
+    "soundTurnOn": "Turn on click sounds"
   },
   "theme": {
     "label": "Theme: {name}",

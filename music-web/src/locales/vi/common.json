@@ -49,7 +49,10 @@
     "changePassword": "Đổi mật khẩu",
     "logout": "Đăng xuất",
     "upgrade": "Nâng cấp",
-    "planTitle": "Gói {plan}: xem hạn mức và gia hạn"
+    "planTitle": "Gói {plan}: xem hạn mức và gia hạn",
+    "clickSound": "Âm thanh nốt nhạc khi bấm",
+    "soundTurnOff": "Tắt âm thanh khi bấm",
+    "soundTurnOn": "Bật âm thanh khi bấm"
   },
   "theme": {
     "label": "Giao diện: {name}",

@@ -1,0 +1,35 @@
+/* Nút loa (bật / tắt tiếng nốt nhạc khi bấm): cùng cỡ với nút đổi giao diện; đang tắt thì biểu tượng mờ đi. */
+.sound-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius);
+  background: transparent;
+  color: var(--ui-primary);
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.sound-toggle:hover {
+  background: var(--ui-surface-hover);
+}
+
+.sound-toggle:focus-visible {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 2px;
+}
+
+.sound-toggle.is-off {
+  color: var(--ui-text-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sound-toggle {
+    transition: none;
+  }
+}

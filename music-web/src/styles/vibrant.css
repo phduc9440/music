@@ -119,8 +119,21 @@
   margin-bottom: 0;
 }
 
+/* Thẻ bấm được: rê chuột tới thẻ nào thì nền thẻ đó chuyển xanh ngọc nhạt (cùng hiệu ứng thẻ bản nhạc nổi bật ở trang
+   khách); thẻ bản nhạc và dòng diễn đàn tự định kiểu trong score-card.css / forum.css */
+.app-shell :is(.pl-card, .pl-row, .cp-card, .tm-card, .tm-item, .ph-item, .mt-card) {
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease;
+}
+.app-shell :is(.pl-card, .pl-row, .cp-card, .tm-card, .tm-item, .ph-item, .mt-card):hover {
+  border-color: var(--ui-primary-border);
+  background: var(--ui-panel-hover);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .app-shell .sc-card {
+  .app-shell .sc-card,
+  .app-shell :is(.pl-card, .pl-row, .cp-card, .tm-card, .tm-item, .ph-item, .mt-card) {
     transition: none;
   }
 }
