@@ -38,7 +38,7 @@
     "account": "Tài khoản",
     "accountOf": "Tài khoản: {name}",
     "openMenu": "Mở menu điều hướng",
-    "search": "Tìm kiếm",
+    "search": "Tìm bản nhạc…",
     "searchHint": "Tìm kiếm (Ctrl+K)",
     "mainNav": "Điều hướng chính",
     "create": "Tạo bản nhạc",
@@ -71,7 +71,13 @@
     "label": "Tìm kiếm và lệnh nhanh",
     "placeholder": "Tìm bản nhạc hoặc gõ một lệnh…",
     "noResults": "Không có kết quả cho “{query}”",
-    "searching": "Đang tìm…"
+    "noResultsHint": "Thử tên bài, tên nhạc sĩ khác hoặc gõ ngắn hơn.",
+    "searching": "Đang tìm…",
+    "keys": {
+      "move": "di chuyển",
+      "open": "mở",
+      "close": "đóng"
+    }
   },
   "pagination": {
     "label": "Phân trang",

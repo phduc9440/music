@@ -243,41 +243,79 @@
   background: var(--ui-flat);
 }
 
+/* Ô tìm kiếm (mở bảng lệnh Ctrl K): trường nhập chìm kiểu Swiss, nền kem nhạt không bóng để không tranh với nút chính;
+   rê chuột sáng lên và viền xanh ngọc nhạt; focus bằng bàn phím có vòng sáng xanh ngọc. Phím tắt hiện dạng nút phím. */
 .app-search {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  min-width: 220px;
+  gap: 0.55rem;
+  width: 260px;
+  min-width: 0;
   height: 40px;
-  padding: 0 0.9rem;
-  /* bề mặt sáng nổi (cùng thang bóng với thẻ trang chi tiết) để tách khỏi thanh trên mờ */
-  border: 1px solid var(--ui-panel-border);
-  border-radius: 40px;
-  background: var(--ui-panel);
-  color: var(--ui-text-2);
-  box-shadow: var(--ui-elev-1);
+  padding: 0 0.4rem 0 0.85rem;
+  border: 1px solid var(--ui-border);
+  border-radius: 999px;
+  background: var(--ui-surface-muted);
+  color: var(--ui-text-3);
   font: inherit;
   font-size: var(--ui-text-md);
+  text-align: left;
   cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    color 0.2s ease;
 }
 
 .app-search:hover {
   border-color: var(--ui-primary-border);
-  color: var(--ui-text);
-  box-shadow: var(--ui-elev-2);
+  background: var(--ui-panel);
+  color: var(--ui-text-2);
 }
+
+.app-shell .app-search:focus-visible {
+  outline: none;
+  border-color: var(--ui-primary);
+  background: var(--ui-panel);
+  box-shadow: 0 0 0 3px var(--ui-primary-ring);
+}
+
 .app-search svg {
+  flex: none;
   color: var(--ui-primary);
 }
 
+.app-search__text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* nút phím: nền khung, viền dưới dày hơn như phím thật */
 .app-search__kbd {
-  margin-left: auto;
-  padding: 0 0.35rem;
-  border: 1px solid var(--ui-border-strong);
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 0.45rem;
+  border: 1px solid var(--ui-border);
+  border-bottom-width: 2px;
   border-radius: var(--ui-radius-sm);
+  background: var(--ui-panel);
   color: var(--ui-text-3);
   font-family: inherit;
   font-size: var(--ui-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-search {
+    transition: none;
+  }
 }
 
 /* thanh tab dưới cùng: chỉ dành cho điện thoại */
@@ -408,7 +446,7 @@
 /* màn hình vừa: ô tìm kiếm gọn lại để điều hướng ở giữa không bị chen */
 @media (max-width: 1320px) {
   .app-search {
-    min-width: 0;
+    width: 200px;
   }
 
   .app-search__kbd {
@@ -426,7 +464,7 @@
   .app-create,
   .app-plan,
   .app-search {
-    width: 36px;
+    width: 40px;
     padding: 0;
     justify-content: center;
   }

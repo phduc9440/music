@@ -38,7 +38,7 @@
     "account": "Account",
     "accountOf": "Account: {name}",
     "openMenu": "Open navigation menu",
-    "search": "Search",
+    "search": "Search scores…",
     "searchHint": "Search (Ctrl+K)",
     "mainNav": "Main navigation",
     "create": "Create score",
@@ -71,7 +71,13 @@
     "label": "Search and quick commands",
     "placeholder": "Search scores or type a command…",
     "noResults": "No results for “{query}”",
-    "searching": "Searching…"
+    "noResultsHint": "Try another title or composer, or type fewer letters.",
+    "searching": "Searching…",
+    "keys": {
+      "move": "move",
+      "open": "open",
+      "close": "close"
+    }
   },
   "pagination": {
     "label": "Pagination",
