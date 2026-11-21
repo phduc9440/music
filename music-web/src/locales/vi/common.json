@@ -50,9 +50,9 @@
     "logout": "Đăng xuất",
     "upgrade": "Nâng cấp",
     "planTitle": "Gói {plan}: xem hạn mức và gia hạn",
-    "clickSound": "Âm thanh nốt nhạc khi bấm",
-    "soundTurnOff": "Tắt âm thanh khi bấm",
-    "soundTurnOn": "Bật âm thanh khi bấm"
+    "clickSound": "Âm thanh khi bấm",
+    "soundStateOn": "Bật",
+    "soundStateOff": "Tắt"
   },
   "theme": {
     "label": "Giao diện: {name}",

@@ -98,6 +98,7 @@
   --ui-fx-3: #6b9f3c;
   --ui-fx-4: #007971;
   --ui-fx-on: #ffffff; /* chữ / biểu tượng đặt trên dải màu hiệu ứng */
+  --ui-glow: #1c8f5e; /* quầng sáng theo con trỏ trên nốt nhạc nền (xanh lá của bảng màu), chỉ để trang trí */
   /* vùng sân khấu luôn tối (cột trái trang đăng nhập): bốn sắc tông sáng, không đổi theo theme */
   --ui-stage-fx-1: #d8c637;
   --ui-stage-fx-2: #4fe0cf;
@@ -228,6 +229,7 @@
   --ui-fx-3: #8fc65a;
   --ui-fx-4: #2fb5a8;
   --ui-fx-on: #0f1d1c;
+  --ui-glow: #8fc65a;
 
   /* nền xanh ngọc đêm (không đen kịt), thẻ sáng hơn một bậc, chữ kem */
   --ui-bg: #111c1c;

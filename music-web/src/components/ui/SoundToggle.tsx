@@ -4,26 +4,29 @@ import { playClickNote, setClickSoundOn, useClickSoundOn } from './clickMusic';
 import './sound-toggle.css';
 
 /**
- * Nút loa trên thanh trên: bật / tắt tiếng nốt nhạc khi bấm. Nhãn cho trình đọc màn hình cố định, trạng thái báo qua
- * aria-pressed; chú thích khi rê chuột nói việc sẽ xảy ra. Bật lại thì chơi ngay một nốt để người dùng nghe thấy.
+ * Mục bật / tắt tiếng nốt nhạc khi bấm, đặt trong menu tài khoản (ngay trên Đăng xuất). Là menuitemcheckbox: trạng thái
+ * báo qua aria-checked và nhãn "Bật / Tắt" bên phải. Bật lại thì chơi ngay một nốt để người dùng nghe thấy. Menu vẫn mở
+ * sau khi bấm để thấy trạng thái đổi.
  */
-export default function SoundToggle() {
+export default function SoundToggle({ className }: { className: string }) {
   const on = useClickSoundOn();
-  const hint = t(on ? 'common.header.soundTurnOff' : 'common.header.soundTurnOn');
   return (
     <button
       type="button"
-      className={`sound-toggle${on ? '' : ' is-off'}`}
-      aria-pressed={on}
-      aria-label={t('common.header.clickSound')}
-      title={hint}
+      role="menuitemcheckbox"
+      aria-checked={on}
+      className={`${className} sound-item`}
       data-no-click-sound
       onClick={() => {
         setClickSoundOn(!on);
         if (!on) playClickNote();
       }}
     >
-      <Icon name={on ? 'volume' : 'volumeOff'} size={18} />
+      <Icon name={on ? 'volume' : 'volumeOff'} size={16} />
+      {t('common.header.clickSound')}
+      <span className={`sound-item__state${on ? ' is-on' : ''}`}>
+        {on ? t('common.header.soundStateOn') : t('common.header.soundStateOff')}
+      </span>
     </button>
   );
 }

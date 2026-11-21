@@ -137,7 +137,6 @@ export default function AdminLayout() {
 
         <div className="adm-header__right">
           <LanguageToggle />
-          <SoundToggle />
           <ThemeToggle />
           <NotificationBell />
           <div className="adm-usermenu" ref={menuRef}>
@@ -188,6 +187,7 @@ export default function AdminLayout() {
                     {t('common.header.changePassword')}
                   </button>
                 )}
+                <SoundToggle className="adm-usermenu__item" />
                 <button
                   type="button"
                   role="menuitem"

@@ -1,35 +1,16 @@
-/* Nút loa (bật / tắt tiếng nốt nhạc khi bấm): cùng cỡ với nút đổi giao diện; đang tắt thì biểu tượng mờ đi. */
-.sound-toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border: 1px solid transparent;
-  border-radius: var(--ui-radius);
-  background: transparent;
-  color: var(--ui-primary);
-  cursor: pointer;
-  transition:
-    background-color 0.15s ease,
-    color 0.15s ease;
-}
-
-.sound-toggle:hover {
-  background: var(--ui-surface-hover);
-}
-
-.sound-toggle:focus-visible {
-  outline: 2px solid var(--ui-primary);
-  outline-offset: 2px;
-}
-
-.sound-toggle.is-off {
+/* Mục "Âm thanh nốt nhạc khi bấm" trong menu tài khoản: nhãn trạng thái dạng viên thuốc ở bên phải; đang bật tô xanh
+   ngọc nhạt, đang tắt thì xám. */
+.sound-item__state {
+  margin-left: auto;
+  padding: 0.05rem 0.55rem;
+  border-radius: 999px;
+  background: var(--ui-surface-muted);
   color: var(--ui-text-3);
+  font-size: var(--ui-text-xs);
+  font-weight: 600;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .sound-toggle {
-    transition: none;
-  }
+.sound-item__state.is-on {
+  background: var(--ui-primary-soft);
+  color: var(--ui-primary);
 }
