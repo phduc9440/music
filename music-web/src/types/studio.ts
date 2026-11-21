@@ -54,17 +54,23 @@ export interface StudioTimeline {
   title: string;
   measureCount: number;
   tempoBpm: number;
+  timeSignatures: { measure: number; beats: number; beatType: number }[];
   tempoChanges: { measure: number; bpm: number }[];
   measures: { index: number; startBeat: number; beats: number }[];
   notes: {
     id: string;
     measure: number;
+    staff: number;
     hand: StudioHand | null;
     midi: number;
     startBeat: number;
     durationBeat: number;
     scorable: boolean;
+    chordGroupId: string | null;
+    osmd: { measureIndex: number; voice: number; entryIndex: number } | null;
   }[];
+  steps: { stepIndex: number; startBeat: number; noteIds: string[] }[];
+  warnings: string[];
 }
 
 export interface StudioSessionFinishRequest {

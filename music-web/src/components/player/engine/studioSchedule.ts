@@ -10,7 +10,18 @@ export interface StudioScheduleOptions {
 
 export interface StudioSchedule {
   notes: ExpectedPracticeNote[];
+  visualNotes: StudioVisualNote[];
   durationMs: number;
+}
+
+export interface StudioVisualNote {
+  noteId: string;
+  measure: number;
+  hand: 'LEFT' | 'RIGHT' | null;
+  midi: number;
+  expectedMs: number;
+  durationMs: number;
+  scorable: boolean;
 }
 
 export function buildStudioSchedule(timeline: StudioTimeline, options: StudioScheduleOptions): StudioSchedule {
@@ -74,10 +85,9 @@ export function buildStudioSchedule(timeline: StudioTimeline, options: StudioSch
     throw new RangeError('Studio loop duration must be positive');
   }
 
-  const notes = timeline.notes
+  const selectedNotes = timeline.notes
     .filter(
       (note) =>
-        note.scorable &&
         note.measure >= startMeasure &&
         note.measure <= endMeasure &&
         (handMode === 'BOTH' || note.hand === (handMode === 'RIGHT_ONLY' ? 'RIGHT' : 'LEFT')),
@@ -88,8 +98,21 @@ export function buildStudioSchedule(timeline: StudioTimeline, options: StudioSch
       hand: note.hand,
       midi: note.midi,
       expectedMs: Math.round(beatToMs(note.startBeat) - startMs),
+      durationMs: Math.max(0, Math.round(beatToMs(note.startBeat + note.durationBeat) - beatToMs(note.startBeat))),
+      scorable: note.scorable,
     }))
     .sort((left, right) => left.expectedMs - right.expectedMs || left.noteId.localeCompare(right.noteId));
 
-  return { notes, durationMs };
+  const visualNotes = selectedNotes;
+  const notes = visualNotes
+    .filter((note) => note.scorable)
+    .map(({ noteId, measure, hand, midi, expectedMs }) => ({
+      noteId,
+      measure,
+      hand,
+      midi,
+      expectedMs,
+    }));
+
+  return { notes, visualNotes, durationMs };
 }

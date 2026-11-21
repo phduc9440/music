@@ -14,6 +14,7 @@ import type {
 export const studioApi = {
   timeline: (scoreId: string) => apiClient.get<StudioTimeline>(`/studio/scores/${scoreId}/timeline`),
   create: (request: StudioSessionCreateRequest) => apiClient.post<StudioSessionResponse>('/studio/sessions', request),
+  active: () => apiClient.get<StudioSessionResponse>('/studio/sessions/active'),
   events: (sessionId: string, events: StudioNoteEvent[]) =>
     apiClient.post<StudioEventBatchResponse>(`/studio/sessions/${sessionId}/events`, { events }),
   abort: (sessionId: string) => apiClient.post<void>(`/studio/sessions/${sessionId}/abort`),
