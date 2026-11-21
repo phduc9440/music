@@ -1,8 +1,8 @@
 -- V16: ảnh chân dung nghệ sĩ, lấy từ Wikimedia Commons (ảnh đại diện trong bài Wikipedia của từng người). Giấy phép đã
 -- kiểm tra qua API của Commons: tranh / ảnh chụp cũ thuộc phạm vi công cộng, ảnh CC ghi kèm tác giả để ghi công đúng
 -- điều kiện giấy phép (trang chi tiết nhạc sĩ hiện "Ảnh: Nguồn · giấy phép" dưới chân dung).
--- Chỉ điền cho nhạc sĩ CHƯA có ảnh, để không ghi đè ảnh quản trị viên đã chọn. Chưa có ảnh tự do: Johann Pachelbel,
--- Hoàng Việt, Trịnh Công Sơn (vẫn hiện chân dung chữ cái; quản trị viên thêm được ở trang Quản lý nhạc sĩ).
+-- Chỉ điền cho nhạc sĩ CHƯA có ảnh, để không ghi đè ảnh quản trị viên đã chọn. Johann Pachelbel không có chân dung xác
+-- thực nào còn lại nên để trống (vẫn hiện chân dung chữ cái; quản trị viên thêm được ở trang Quản lý nhạc sĩ).
 
 UPDATE composers SET
     image_url = 'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bd/Vivaldi.jpg/500px-Vivaldi.jpg',
@@ -116,3 +116,19 @@ UPDATE composers SET
     image_license = 'CC BY 3.0, tác giả Duyphuong',
     updated_at = NOW(6)
 WHERE slug = 'pham-tuyen' AND image_url IS NULL;
+
+-- Ảnh KHÔNG tự do (Wikipedia dùng theo "sử dụng hợp lý" / fair use): Hoàng Việt và Trịnh Công Sơn không có ảnh tự do nào.
+-- Lấy ảnh đại diện trong bài Wikipedia, ghi rõ trang mô tả nguồn. Nên thay bằng ảnh có giấy phép khi có.
+UPDATE composers SET
+    image_url = 'https://upload.wikimedia.org/wikipedia/vi/c/c8/Hoang_Viet.jpg',
+    image_source = 'https://vi.wikipedia.org/wiki/T%E1%BA%ADp_tin:Hoang_Viet.jpg',
+    image_license = 'Sử dụng hợp lý (Wikipedia), chưa có giấy phép tự do',
+    updated_at = NOW(6)
+WHERE slug = 'hoang-viet' AND image_url IS NULL;
+
+UPDATE composers SET
+    image_url = 'https://upload.wikimedia.org/wikipedia/en/c/c9/Tr%E1%BB%8Bnh_C%C3%B4ng_S%C6%A1n.jpeg',
+    image_source = 'https://en.wikipedia.org/wiki/File:Tr%E1%BB%8Bnh_C%C3%B4ng_S%C6%A1n.jpeg',
+    image_license = 'Fair use (Wikipedia), chưa có giấy phép tự do',
+    updated_at = NOW(6)
+WHERE slug = 'trinh-cong-son' AND image_url IS NULL;
