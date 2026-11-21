@@ -63,8 +63,6 @@ public interface AiTaskRepository extends JpaRepository<AiTask, String> {
 
     List<AiTask> findByScoreIdOrderByCreatedAtDesc(String scoreId);
 
-    List<AiTask> findByStatusOrderByCreatedAtAsc(AiTaskStatus status);
-
     /** Dùng để chặn xóa/sửa bản nhạc khi còn tác vụ đang chạy. */
     boolean existsByScoreIdAndStatusIn(String scoreId, Collection<AiTaskStatus> statuses);
 

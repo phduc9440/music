@@ -66,7 +66,6 @@ public enum CollabErrorCode implements ErrorCode {
     LIVE_COLLAB_NOT_AVAILABLE(
             3123, "Gói của chủ bản nhạc chưa có tính năng đồng chỉnh sửa thời gian thực", HttpStatus.FORBIDDEN),
     LIVE_OP_INVALID(3124, "Gói thay đổi cộng tác không hợp lệ hoặc quá lớn", HttpStatus.BAD_REQUEST),
-    LIVE_LOCK_REQUIRED(3125, "Bạn chưa giữ khóa các ô nhịp này nên chưa gửi thay đổi được", HttpStatus.CONFLICT),
     LIVE_RATE_LIMITED(3126, "Bạn gửi thay đổi quá nhanh, hãy chậm lại một chút", HttpStatus.TOO_MANY_REQUESTS),
     ;
 

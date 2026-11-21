@@ -148,10 +148,6 @@ public class LiveSessionRegistry {
         activeScores.remove(scoreId);
     }
 
-    public Set<String> activeScoreIds() {
-        return new HashSet<>(activeScores);
-    }
-
     private static int editorCount(Map<String, LiveParticipant> inScore) {
         return (int) inScore.values().stream().filter(LiveParticipant::editing).count();
     }
