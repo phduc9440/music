@@ -5,9 +5,9 @@
   "backToScore": "Về bản nhạc",
   "setup": {
     "title": "Thiết lập buổi luyện",
-    "description": "Chọn tốc độ và cách nhập nốt. Dùng piano cảm ứng hoặc bàn phím máy tính; có thể bật/tắt piano và nốt rơi.",
+    "description": "Chọn tốc độ và cách nhập nốt. Khi bắt đầu, khu vực luyện tập mở toàn màn hình với đầy đủ 88 phím đàn.",
     "mode": "Chế độ",
-    "waitUnavailable": "Chưa hỗ trợ trong bản MVP",
+    "waitHint": "Nốt sẽ dừng ở vạch chơi. Bấm đủ các nốt trong hợp âm để chuyển sang bước tiếp theo.",
     "input": "Cách nhập nốt",
     "computerKeyboard": "Bàn phím máy tính",
     "touchKeyboard": "Bấm phím đàn trên màn hình",
@@ -31,6 +31,7 @@
     "progress": "Tiến độ buổi luyện",
     "lastResult": "Kết quả gần nhất",
     "playPrompt": "Chơi một nốt để bắt đầu",
+    "waitPrompt": "Chơi các nốt đang chờ ở vạch để tiếp tục",
     "finished": "Bài đã kết thúc"
   },
   "results": {
@@ -48,16 +49,16 @@
   "keyboard": {
     "label": "Đàn piano ảo",
     "title": "Phím đàn",
-    "range": "Dải phím",
-    "rangeHint": "Có nốt ngoài dải 5 quãng tám đang hiển thị. Hãy đổi dải C để xem và chơi chúng."
+    "range": "88 phím · A0–C8",
+    "rangeHint": "Một số nốt trong bản nhạc nằm ngoài dải 88 phím của piano (A0–C8)."
   },
   "keyboardGuide": {
     "open": "Cách chơi",
     "title": "Hướng dẫn luyện với bàn phím",
     "stepInput": "Trong phần thiết lập, chọn “Bàn phím máy tính” để chơi bằng các phím chữ, hoặc chọn “Bấm phím đàn trên màn hình” để chạm trực tiếp lên đàn.",
-    "stepRange": "Dải C bên cạnh đàn là 5 quãng tám để nhìn nốt. Khi dùng bàn phím máy tính, các phím chữ phát nốt trong quãng tám C bắt đầu của dải này.",
+    "stepRange": "Đàn ảo luôn hiển thị đủ 88 phím từ A0 đến C8. Bàn phím máy tính phát các nốt từ C4 đến C5 theo sơ đồ.",
     "stepPlay": "Quan sát màu nốt để biết tay: tay phải màu xanh, tay trái màu cam. Bấm phím tương ứng khi nốt chạm vạch chơi; với đàn màn hình, chạm phím tương ứng.",
-    "stepFeedback": "Xem kết quả ngay dưới đàn: xanh là đúng nhịp, vàng là sớm/trễ, đỏ là sai nốt hoặc bỏ lỡ. Đổi dải C nếu nốt nằm ngoài phần phím đang xem.",
+    "stepFeedback": "Xem kết quả ngay dưới đàn: xanh là đúng nhịp, vàng là sớm/trễ, đỏ là sai nốt hoặc bỏ lỡ.",
     "keyMap": "Bàn phím máy tính phát một quãng tám theo sơ đồ này:"
   },
   "recovery": {
@@ -82,9 +83,11 @@
   "waterfall": {
     "title": "Nốt rơi",
     "hint": "Nốt chạy xuống vạch chạm đúng theo tempo và dải ô nhịp đã chọn.",
+    "waitHint": "Nốt hiện tại dừng ở vạch chơi; hoàn thành cả hợp âm để tiếp tục.",
     "label": "Bản đồ nốt rơi theo cao độ và thời gian",
     "legend": "Màu tay chơi",
     "hitLine": "Vạch chơi",
+    "waiting": "Chờ đủ nốt",
     "seconds": "{seconds}s"
   },
   "errors": {

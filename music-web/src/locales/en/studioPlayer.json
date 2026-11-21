@@ -5,9 +5,9 @@
   "backToScore": "Back to score",
   "setup": {
     "title": "Set up your practice",
-    "description": "Choose a tempo and input method. Use the touch piano or computer keyboard, and toggle the piano or falling notes.",
+    "description": "Choose a tempo and input method. Starting practice opens a full-screen workspace with all 88 piano keys.",
     "mode": "Mode",
-    "waitUnavailable": "Not available in this MVP",
+    "waitHint": "Notes pause at the play line. Play every note in the chord to move to the next step.",
     "input": "Note input",
     "computerKeyboard": "Computer keyboard",
     "touchKeyboard": "Tap the on-screen piano",
@@ -31,6 +31,7 @@
     "progress": "Practice progress",
     "lastResult": "Latest result",
     "playPrompt": "Play a note to begin",
+    "waitPrompt": "Play the notes waiting at the line to continue",
     "finished": "Practice complete"
   },
   "results": {
@@ -48,16 +49,16 @@
   "keyboard": {
     "label": "Virtual piano",
     "title": "Piano keys",
-    "range": "Key range",
-    "rangeHint": "Some notes are outside the five-octave view. Change its starting C to see and play them."
+    "range": "88 keys · A0–C8",
+    "rangeHint": "Some score notes are outside the 88-key piano range (A0–C8)."
   },
   "keyboardGuide": {
     "open": "How to play",
     "title": "Playing with your keyboard",
     "stepInput": "In setup, choose “Computer keyboard” to use letter keys, or “Tap the on-screen piano” to play by touching the piano.",
-    "stepRange": "The C range selector shows five octaves. With a computer keyboard, the letter keys play the first octave of the selected range.",
+    "stepRange": "The virtual piano always shows all 88 keys from A0 to C8. Computer keys play C4 through C5 using the map.",
     "stepPlay": "Note colors indicate hands: right hand is blue and left hand is orange. Press the matching key when a note reaches the play line, or tap its on-screen piano key.",
-    "stepFeedback": "Check the result below the piano: green means in time, yellow means early/late, and red means wrong note or missed. Change the C range if notes are outside the visible piano.",
+    "stepFeedback": "Check the result below the piano: green means in time, yellow means early/late, and red means wrong note or missed.",
     "keyMap": "Computer keys play one octave using this map:"
   },
   "recovery": {
@@ -82,9 +83,11 @@
   "waterfall": {
     "title": "Falling notes",
     "hint": "Notes fall toward the hit line using the selected tempo and measure range.",
+    "waitHint": "The current notes pause at the play line; complete the chord to continue.",
     "label": "Falling note map by pitch and time",
     "legend": "Hand colors",
     "hitLine": "Play line",
+    "waiting": "Play to continue",
     "seconds": "{seconds}s"
   },
   "errors": {

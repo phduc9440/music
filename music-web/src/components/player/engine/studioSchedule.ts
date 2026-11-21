@@ -10,8 +10,16 @@ export interface StudioScheduleOptions {
 
 export interface StudioSchedule {
   notes: ExpectedPracticeNote[];
+  waitSteps: StudioWaitStep[];
+  accompanimentSteps: StudioWaitStep[];
   visualNotes: StudioVisualNote[];
   durationMs: number;
+}
+
+export interface StudioWaitStep {
+  stepIndex: number;
+  expectedMs: number;
+  notes: ExpectedPracticeNote[];
 }
 
 export interface StudioVisualNote {
@@ -22,6 +30,47 @@ export interface StudioVisualNote {
   expectedMs: number;
   durationMs: number;
   scorable: boolean;
+}
+
+function buildWaitSteps(
+  notes: readonly ExpectedPracticeNote[],
+  timelineSteps: StudioTimeline['steps'],
+): StudioWaitStep[] {
+  const expectedNotesById = new Map(notes.map((note) => [note.noteId, note]));
+  const assignedNoteIds = new Set<string>();
+  const waitSteps = timelineSteps
+    .map((step) => {
+      const stepNotes = step.noteIds.flatMap((noteId) => {
+        const note = expectedNotesById.get(noteId);
+        if (!note || assignedNoteIds.has(noteId)) return [];
+        assignedNoteIds.add(noteId);
+        return [note];
+      });
+      if (stepNotes.length === 0) return null;
+      return {
+        stepIndex: step.stepIndex,
+        expectedMs: Math.min(...stepNotes.map((note) => note.expectedMs)),
+        notes: stepNotes,
+      };
+    })
+    .filter((step): step is StudioWaitStep => step !== null)
+    .sort((left, right) => left.expectedMs - right.expectedMs || left.stepIndex - right.stepIndex);
+
+  const unassignedNotes = notes.filter((note) => !assignedNoteIds.has(note.noteId));
+  const fallbackSteps = new Map<number, ExpectedPracticeNote[]>();
+  for (const note of unassignedNotes) {
+    const stepNotes = fallbackSteps.get(note.expectedMs) ?? [];
+    stepNotes.push(note);
+    fallbackSteps.set(note.expectedMs, stepNotes);
+  }
+  waitSteps.push(
+    ...[...fallbackSteps.entries()].map(([expectedMs, stepNotes], index) => ({
+      stepIndex: timelineSteps.length + index,
+      expectedMs,
+      notes: stepNotes,
+    })),
+  );
+  return waitSteps.sort((left, right) => left.expectedMs - right.expectedMs || left.stepIndex - right.stepIndex);
 }
 
 export function buildStudioSchedule(timeline: StudioTimeline, options: StudioScheduleOptions): StudioSchedule {
@@ -85,13 +134,9 @@ export function buildStudioSchedule(timeline: StudioTimeline, options: StudioSch
     throw new RangeError('Studio loop duration must be positive');
   }
 
-  const selectedNotes = timeline.notes
-    .filter(
-      (note) =>
-        note.measure >= startMeasure &&
-        note.measure <= endMeasure &&
-        (handMode === 'BOTH' || note.hand === (handMode === 'RIGHT_ONLY' ? 'RIGHT' : 'LEFT')),
-    )
+  const notesInRange = timeline.notes.filter((note) => note.measure >= startMeasure && note.measure <= endMeasure);
+  const selectedNotes = notesInRange
+    .filter((note) => handMode === 'BOTH' || note.hand === (handMode === 'RIGHT_ONLY' ? 'RIGHT' : 'LEFT'))
     .map((note) => ({
       noteId: note.id,
       measure: note.measure,
@@ -114,5 +159,24 @@ export function buildStudioSchedule(timeline: StudioTimeline, options: StudioSch
       expectedMs,
     }));
 
-  return { notes, visualNotes, durationMs };
+  const accompanimentNotes =
+    handMode === 'BOTH'
+      ? []
+      : notesInRange
+          .filter((note) => note.scorable && note.hand === (handMode === 'RIGHT_ONLY' ? 'LEFT' : 'RIGHT'))
+          .map(({ id: noteId, measure, hand, midi, startBeat }) => ({
+            noteId,
+            measure,
+            hand,
+            midi,
+            expectedMs: Math.round(beatToMs(startBeat) - startMs),
+          }));
+
+  return {
+    notes,
+    waitSteps: buildWaitSteps(notes, timeline.steps),
+    accompanimentSteps: buildWaitSteps(accompanimentNotes, timeline.steps),
+    visualNotes,
+    durationMs,
+  };
 }

@@ -16,9 +16,15 @@ import { useNavigate } from '../../../routes/useTransitionNavigate';
 import { playTones } from '../../../components/editor/audio/previewTone';
 import { FreeRunScorer } from '../../../components/player/engine/FreeRunScorer';
 import type { PracticeNoteEvent } from '../../../components/player/engine/FreeRunScorer';
+import { WaitModeScorer } from '../../../components/player/engine/WaitModeScorer';
 import { buildStudioSchedule } from '../../../components/player/engine/studioSchedule';
 import type { StudioSchedule } from '../../../components/player/engine/studioSchedule';
-import { StudioVirtualPiano, StudioWaterfall } from '../../../components/player/studio/StudioPracticeVisuals';
+import {
+  STUDIO_PIANO_MAX_MIDI,
+  STUDIO_PIANO_MIN_MIDI,
+  StudioVirtualPiano,
+  StudioWaterfall,
+} from '../../../components/player/studio/StudioPracticeVisuals';
 import type { StudioVisualFeedback } from '../../../components/player/studio/StudioPracticeVisuals';
 import Modal from '../../../components/scores/common/Modal';
 import MusicXmlViewer from '../../../components/scores/viewer/MusicXmlViewer';
@@ -29,6 +35,7 @@ const BATCH_SIZE = 200;
 const FLUSH_INTERVAL_MS = 1500;
 const LOOP_LOOKAHEAD_MS = 1200;
 const TOLERANCE_WINDOW_MS = 100;
+const COMPUTER_KEYBOARD_BASE_MIDI = 60;
 const KEYBOARD_MAP: Record<string, number> = {
   a: 0,
   w: 1,
@@ -82,11 +89,11 @@ export default function StudioPlayer() {
   const [activeSession, setActiveSession] = useState<StudioSessionResponse | null>(null);
   const [sessionSchedule, setSessionSchedule] = useState<StudioSchedule | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
+  const [waitVisualElapsedMs, setWaitVisualElapsedMs] = useState(0);
   const [scoreDuration, setScoreDuration] = useState(0);
   const [lastResult, setLastResult] = useState<StudioEventResult | null>(null);
   const [counts, setCounts] = useState(emptyCounts);
   const [busy, setBusy] = useState(false);
-  const [octave, setOctave] = useState(4);
   const [showWaterfall, setShowWaterfall] = useState(true);
   const [showKeyboard, setShowKeyboard] = useState(true);
   const [visualFeedback, setVisualFeedback] = useState<StudioVisualFeedback[]>([]);
@@ -96,6 +103,7 @@ export default function StudioPlayer() {
 
   const sessionRef = useRef<StudioSessionResponse | null>(null);
   const scorerRef = useRef<FreeRunScorer | null>(null);
+  const waitScorerRef = useRef<WaitModeScorer | null>(null);
   const scheduleRef = useRef<StudioSchedule | null>(null);
   const pendingEventsRef = useRef<StudioNoteEvent[]>([]);
   const flushPromiseRef = useRef<Promise<void> | null>(null);
@@ -121,24 +129,6 @@ export default function StudioPlayer() {
         setLoadState({ phase: 'ready', score, xml: xmlResponse, timeline });
         setActiveSession(activeSession);
         setEndMeasure(timeline.measureCount);
-        const playableMidis = timeline.notes.filter((note) => note.scorable).map((note) => note.midi);
-        if (playableMidis.length > 0) {
-          const averageMidi = playableMidis.reduce((sum, midi) => sum + midi, 0) / playableMidis.length;
-          let bestOctave = 0;
-          let bestCoverage = -1;
-          let bestCenterDistance = Number.POSITIVE_INFINITY;
-          for (let octave = 0; octave < 8; octave += 1) {
-            const baseMidi = (octave + 1) * 12;
-            const coverage = playableMidis.filter((midi) => midi >= baseMidi && midi < baseMidi + 61).length;
-            const centerDistance = Math.abs(averageMidi - (baseMidi + 30));
-            if (coverage > bestCoverage || (coverage === bestCoverage && centerDistance < bestCenterDistance)) {
-              bestOctave = octave;
-              bestCoverage = coverage;
-              bestCenterDistance = centerDistance;
-            }
-          }
-          setOctave(bestOctave);
-        }
       })
       .catch(() => {
         if (cancelled) return;
@@ -149,6 +139,20 @@ export default function StudioPlayer() {
       cancelled = true;
     };
   }, [scoreId]);
+
+  useEffect(() => {
+    if (!session) return;
+    const body = document.body;
+    const root = document.documentElement;
+    const previousBodyOverflow = body.style.overflow;
+    const previousRootOverflow = root.style.overflow;
+    body.style.overflow = 'hidden';
+    root.style.overflow = 'hidden';
+    return () => {
+      body.style.overflow = previousBodyOverflow;
+      root.style.overflow = previousRootOverflow;
+    };
+  }, [session]);
 
   const queueEvents = useCallback((events: readonly PracticeNoteEvent[]) => {
     if (events.length === 0) return;
@@ -203,7 +207,7 @@ export default function StudioPlayer() {
   const finishSession = useCallback(
     async (reachedEnd: boolean, requestedCoverage?: number) => {
       const currentSession = sessionRef.current;
-      const scorer = scorerRef.current;
+      const scorer = currentSession?.mode === 'WAIT' ? waitScorerRef.current : scorerRef.current;
       const schedule = scheduleRef.current;
       if (!currentSession || !scorer || !schedule || finishingRef.current) return;
       finishingRef.current = true;
@@ -211,7 +215,10 @@ export default function StudioPlayer() {
       setBusy(true);
 
       const elapsed = Math.max(0, Math.round(performance.now() - startedAtRef.current));
-      const coveredUntilMs = Math.max(lastScoredAtRef.current, Math.round(requestedCoverage ?? elapsed));
+      const coveredUntilMs =
+        currentSession.mode === 'WAIT'
+          ? 0
+          : Math.max(lastScoredAtRef.current, Math.round(requestedCoverage ?? elapsed));
       let finishRequestStarted = false;
 
       try {
@@ -229,6 +236,7 @@ export default function StudioPlayer() {
         });
         sessionRef.current = null;
         scorerRef.current = null;
+        waitScorerRef.current = null;
         scheduleRef.current = null;
         setSessionSchedule(null);
         setSession(null);
@@ -239,6 +247,7 @@ export default function StudioPlayer() {
             await studioApi.report(currentSession.sessionId);
             sessionRef.current = null;
             scorerRef.current = null;
+            waitScorerRef.current = null;
             scheduleRef.current = null;
             setSessionSchedule(null);
             setSession(null);
@@ -279,9 +288,21 @@ export default function StudioPlayer() {
       elapsedMsRef.current = elapsed;
       setElapsedMs(elapsed);
 
-      const scorer = scorerRef.current;
       const schedule = scheduleRef.current;
-      if (!scorer || !schedule || inputLockedRef.current) return;
+      if (!schedule || inputLockedRef.current) return;
+
+      if (session.mode === 'WAIT') {
+        const waitScorer = waitScorerRef.current;
+        if (!waitScorer) return;
+        setWaitVisualElapsedMs(waitScorer.getCurrentExpectedMs());
+        if (waitScorer.isComplete && !repeatSection) {
+          void finishRef.current(true, elapsed);
+        }
+        return;
+      }
+
+      const scorer = scorerRef.current;
+      if (!scorer) return;
 
       if (repeatSection) {
         let cyclesAdded = 0;
@@ -306,15 +327,39 @@ export default function StudioPlayer() {
 
   const onPlayNote = useCallback(
     (midi: number) => {
-      const scorer = scorerRef.current;
+      const currentSession = sessionRef.current;
+      const scorer = currentSession?.mode === 'WAIT' ? waitScorerRef.current : scorerRef.current;
       if (inputLockedRef.current) return;
       const playedMs = sessionRef.current ? Math.max(0, Math.round(performance.now() - startedAtRef.current)) : 0;
       try {
-        playTones([{ at: 0, duration: 0.22, midis: [midi] }]);
-        if (!sessionRef.current || !scorer) return;
-        queueEvents(scorer.play({ midi, playedMs }));
+        if (!currentSession || !scorer) {
+          playTones([{ at: 0, duration: 0.22, midis: [midi] }]);
+          return;
+        }
+
+        const waitScorer = currentSession.mode === 'WAIT' ? waitScorerRef.current : null;
+        const currentStep = waitScorer?.getCurrentStep() ?? null;
+        const stepTransitionCount = waitScorer?.getStepTransitionCount() ?? 0;
         elapsedMsRef.current = playedMs;
-        lastScoredAtRef.current = playedMs;
+        const events = scorer.play({ midi, playedMs });
+        const playedMidis = [midi];
+        if (waitScorer && currentStep && waitScorer.getStepTransitionCount() > stepTransitionCount) {
+          const accompaniment = scheduleRef.current?.accompanimentSteps.find(
+            (step) => step.stepIndex === currentStep.stepIndex,
+          );
+          if (accompaniment) playedMidis.push(...accompaniment.notes.map((note) => note.midi));
+        }
+        playTones([{ at: 0, duration: 0.22, midis: [...new Set(playedMidis)] }]);
+        queueEvents(events);
+        if (currentSession.mode === 'WAIT') {
+          if (!waitScorer) return;
+          setWaitVisualElapsedMs(waitScorer.getCurrentExpectedMs());
+          if (waitScorer.isComplete && currentSession.loopStartMeasure === null) {
+            void finishRef.current(true, playedMs);
+          }
+        } else {
+          lastScoredAtRef.current = playedMs;
+        }
       } catch (error) {
         toast.error(translateError(error, t('studioPlayer.errors.input')));
       }
@@ -331,11 +376,11 @@ export default function StudioPlayer() {
       const semitone = KEYBOARD_MAP[event.key.toLowerCase()];
       if (semitone === undefined) return;
       event.preventDefault();
-      onPlayNote((octave + 1) * 12 + semitone);
+      onPlayNote(COMPUTER_KEYBOARD_BASE_MIDI + semitone);
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [session, inputSource, octave, onPlayNote]);
+  }, [session, inputSource, onPlayNote]);
 
   const startSession = async () => {
     if (loadState.phase !== 'ready' || !scoreId || busy || session || activeSession) return;
@@ -354,19 +399,23 @@ export default function StudioPlayer() {
         return;
       }
 
+      const freeRunScorer = mode === 'FREE_RUN' ? new FreeRunScorer() : null;
+      freeRunScorer?.scheduleExpectedNotes(schedule.notes);
+      const waitScorer =
+        mode === 'WAIT' ? new WaitModeScorer(schedule.waitSteps, schedule.durationMs, repeatSection) : null;
+
       const created = await studioApi.create({
         scoreId,
-        mode: 'FREE_RUN',
+        mode,
         inputSource,
         handMode,
         tempoPercent,
         loopStartMeasure: repeatSection ? selectedStart : null,
         loopEndMeasure: repeatSection ? selectedEnd : null,
       });
-      const scorer = new FreeRunScorer();
-      scorer.scheduleExpectedNotes(schedule.notes);
       scheduleRef.current = schedule;
-      scorerRef.current = scorer;
+      scorerRef.current = freeRunScorer;
+      waitScorerRef.current = waitScorer;
       pendingEventsRef.current = [];
       finalizedEventsRef.current = null;
       scheduledCyclesRef.current = 1;
@@ -380,6 +429,7 @@ export default function StudioPlayer() {
       sessionRef.current = created.data;
       setSession(created.data);
       setElapsedMs(0);
+      setWaitVisualElapsedMs(0);
       setCounts({ ...emptyCounts });
       setLastResult(null);
       setVisualFeedback([]);
@@ -429,11 +479,13 @@ export default function StudioPlayer() {
       await studioApi.abort(currentSession.sessionId);
       sessionRef.current = null;
       scorerRef.current = null;
+      waitScorerRef.current = null;
       scheduleRef.current = null;
       setSessionSchedule(null);
       pendingEventsRef.current = [];
       setSession(null);
       setElapsedMs(0);
+      setWaitVisualElapsedMs(0);
       setScoreDuration(0);
     } catch (error) {
       toast.error(translateError(error, t('studioPlayer.errors.abort')));
@@ -491,21 +543,21 @@ export default function StudioPlayer() {
   const { score, xml, timeline } = loadState;
   const elapsedSeconds = Math.floor(elapsedMs / 1000);
   const activeSchedule = sessionSchedule ?? previewSchedule;
+  const practiceElapsedMs = session?.mode === 'WAIT' ? waitVisualElapsedMs : elapsedMs;
   const progress =
-    session && scoreDuration > 0 && !repeatSection ? Math.min(100, (elapsedMs / scoreDuration) * 100) : 0;
-  const baseMidi = (octave + 1) * 12;
+    session && scoreDuration > 0 && !repeatSection ? Math.min(100, (practiceElapsedMs / scoreDuration) * 100) : 0;
   const hasNotesOutsideKeyboard = activeSchedule?.visualNotes.some(
-    (note) => note.midi < baseMidi || note.midi >= baseMidi + 61,
+    (note) => note.midi < STUDIO_PIANO_MIN_MIDI || note.midi > STUDIO_PIANO_MAX_MIDI,
   );
   const keyboardNotes = Object.entries(KEYBOARD_MAP)
     .sort((left, right) => left[1] - right[1])
     .map(([key, semitone]) => ({
       key: key.toUpperCase(),
-      note: noteName(baseMidi + semitone),
+      note: noteName(COMPUTER_KEYBOARD_BASE_MIDI + semitone),
     }));
 
   return (
-    <div className="sc-page studio-player">
+    <div className={`sc-page studio-player${session ? ' studio-player--fullscreen' : ''}`}>
       <main className="sc-container">
         <header className="studio-player__header">
           <div>
@@ -556,9 +608,7 @@ export default function StudioPlayer() {
                 <span>{t('studioPlayer.setup.mode')}</span>
                 <select value={mode} onChange={(event) => setMode(event.target.value as 'FREE_RUN' | 'WAIT')}>
                   <option value="FREE_RUN">{t('studioReport.mode.FREE_RUN')}</option>
-                  <option value="WAIT" disabled>
-                    {t('studioReport.mode.WAIT')} — {t('studioPlayer.setup.waitUnavailable')}
-                  </option>
+                  <option value="WAIT">{t('studioReport.mode.WAIT')}</option>
                 </select>
               </label>
               <label>
@@ -652,7 +702,7 @@ export default function StudioPlayer() {
                 </button>
               </div>
             )}
-            {mode === 'WAIT' && <p className="studio-player__note">{t('studioPlayer.setup.waitUnavailable')}</p>}
+            {mode === 'WAIT' && <p className="studio-player__note">{t('studioPlayer.setup.waitHint')}</p>}
             {inputSource === 'TOUCH' && !showKeyboard && (
               <p className="studio-player__note">{t('studioPlayer.display.enableKeyboardForTouch')}</p>
             )}
@@ -674,7 +724,8 @@ export default function StudioPlayer() {
             <div className="studio-player__session-head">
               <div>
                 <span className="studio-player__live">{t('studioPlayer.session.live')}</span>
-                <h2>{t('studioPlayer.session.freeRun')}</h2>
+                <h2>{score.title}</h2>
+                <span className="studio-player__session-mode">{t(`studioReport.mode.${session.mode}`)}</span>
               </div>
               <div className="studio-player__timer" aria-live="off">
                 {String(Math.floor(elapsedSeconds / 60)).padStart(2, '0')}:
@@ -708,23 +759,18 @@ export default function StudioPlayer() {
         )}
 
         {activeSchedule && (session || showWaterfall || showKeyboard) && (
-          <section className="studio-player__practice-board">
+          <section className={`studio-player__practice-board${session ? ' is-fullscreen' : ''}`}>
             <div className="studio-player__practice-heading">
               <div>
                 <h2>{t(showWaterfall ? 'studioPlayer.waterfall.title' : 'studioPlayer.keyboard.title')}</h2>
-                {showWaterfall && <p>{t('studioPlayer.waterfall.hint')}</p>}
+                {showWaterfall && (
+                  <p>
+                    {t(session?.mode === 'WAIT' ? 'studioPlayer.waterfall.waitHint' : 'studioPlayer.waterfall.hint')}
+                  </p>
+                )}
               </div>
               <div className="studio-player__practice-controls">
-                <label>
-                  <span>{t('studioPlayer.keyboard.range')}</span>
-                  <select value={octave} onChange={(event) => setOctave(Number(event.target.value))}>
-                    {Array.from({ length: 8 }, (_, value) => (
-                      <option key={value} value={value}>
-                        C{value}–C{value + 5}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <span className="studio-player__piano-range">{t('studioPlayer.keyboard.range')}</span>
                 {!session && (
                   <button type="button" className="studio-player__help-link" onClick={() => setShowKeyboardGuide(true)}>
                     {t('studioPlayer.keyboardGuide.open')}
@@ -753,16 +799,16 @@ export default function StudioPlayer() {
               {showWaterfall && (
                 <StudioWaterfall
                   notes={activeSchedule.visualNotes}
-                  elapsedMs={elapsedMs}
+                  elapsedMs={practiceElapsedMs}
+                  feedbackElapsedMs={elapsedMs}
                   durationMs={activeSchedule.durationMs}
                   loop={session ? session.loopStartMeasure !== null : repeatSection}
-                  baseMidi={baseMidi}
                   feedback={visualFeedback}
+                  waitForInput={session?.mode === 'WAIT'}
                 />
               )}
               {showKeyboard && (
                 <StudioVirtualPiano
-                  baseMidi={baseMidi}
                   inputSource={inputSource}
                   active={!busy}
                   busy={busy}
@@ -778,7 +824,13 @@ export default function StudioPlayer() {
                 <div className="studio-player__latest-result">
                   <span>{t('studioPlayer.session.lastResult')}</span>
                   <strong className={lastResult ? `is-${lastResult.toLowerCase().replace('_', '-')}` : ''}>
-                    {lastResult ? t(`studioPlayer.results.${lastResult}`) : t('studioPlayer.session.playPrompt')}
+                    {lastResult
+                      ? t(`studioPlayer.results.${lastResult}`)
+                      : t(
+                          session.mode === 'WAIT'
+                            ? 'studioPlayer.session.waitPrompt'
+                            : 'studioPlayer.session.playPrompt',
+                        )}
                   </strong>
                 </div>
                 <div className="studio-player__counts">
