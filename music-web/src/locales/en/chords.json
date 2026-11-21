@@ -1,6 +1,7 @@
 {
   "button": "Suggest chords",
   "buttonHint": "Reads the melody and proposes a chord for each measure; you review before accepting",
+  "saveFirst": "Save your changes before suggesting chords: the AI reads the saved score.",
   "sourceLabel": "Automatic chord suggestion",
   "failed": "Could not suggest chords, please try again",
   "cancelled": "The chord suggestion task was cancelled",

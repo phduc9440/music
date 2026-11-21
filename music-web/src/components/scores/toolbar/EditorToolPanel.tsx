@@ -11,6 +11,7 @@ import type { PitchOp } from '../../editor/notes/pitch';
 import { DURATION_DRAG_TYPE } from '../../editor/core/staffHit';
 import { hasKey, t } from '../../../i18n/core';
 import { useMediaQuery } from '../../player/hooks/useMediaQuery';
+import { Icon } from '../../ui';
 import {
   ToolDelete,
   ToolDot,
@@ -61,6 +62,10 @@ interface Props {
   /** Chế độ nhập hợp âm. */
   chordMode: boolean;
   onChordModeChange: (enabled: boolean) => void;
+  /** Mở hộp "Gợi ý hợp âm" (AI, R3); bỏ trống thì không hiện nút (người không có quyền đề xuất). */
+  onSuggestChords?: () => void;
+  /** Lý do tạm khóa nút gợi ý hợp âm (đang có thay đổi chưa lưu); null = bấm được. */
+  suggestChordsBlocked?: string | null;
   /** Ký hiệu sắc thái, lặp lại và chỉ dẫn nhảy. */
   onMark: (op: MarkOp) => void;
   /** Thêm khuông Fa cho đàn, thêm khuông Sol/Fa/Tenor riêng, xóa khuông. */
@@ -344,6 +349,8 @@ export default function EditorToolPanel({
   onLyricModeChange,
   chordMode,
   onChordModeChange,
+  onSuggestChords,
+  suggestChordsBlocked,
   onMark,
   onStaves,
   onOpenNotation,
@@ -495,6 +502,25 @@ export default function EditorToolPanel({
                 />
               ),
             },
+            // Gợi ý hợp âm bằng AI: ngay cạnh công cụ nhập hợp âm tay; khóa khi còn thay đổi chưa lưu vì AI đọc bản đã lưu
+            ...(onSuggestChords
+              ? [
+                  {
+                    key: 'chordSuggest',
+                    text: 'Gợi ý hợp âm AI suggest chords', // i18n-ignore
+                    node: (
+                      <IconTool
+                        className="sv-tool"
+                        disabled={!!suggestChordsBlocked}
+                        onClick={onSuggestChords}
+                        title={suggestChordsBlocked ?? t('chords.buttonHint')}
+                        icon={<Icon name="music" size={18} />}
+                        label={t('chords.button')}
+                      />
+                    ),
+                  },
+                ]
+              : []),
           ],
         },
       ],

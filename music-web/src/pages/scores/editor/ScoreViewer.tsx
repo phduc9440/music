@@ -8,6 +8,7 @@ import InstrumentMenu from '../../../components/scores/viewer/InstrumentMenu';
 import EditorToolPanel from '../../../components/scores/toolbar/EditorToolPanel';
 import ChordBar from '../../../components/scores/toolbar/ChordBar';
 import NotationModal from '../../../components/scores/toolbar/NotationModal';
+import ChordSuggestDialog from '../../../components/scores/chords/ChordSuggestDialog';
 import { readNotation } from '../../../components/editor/structure/staves';
 import type { NotationChange } from '../../../components/editor/structure/staves';
 import LyricBar from '../../../components/scores/toolbar/LyricBar';
@@ -276,6 +277,7 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
   const [fullscreen, setFullscreen] = useState(false);
   const [hideWarning, setHideWarning] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [suggestingChords, setSuggestingChords] = useState(false);
   const [parseFailed, setParseFailed] = useState(false);
   const [focusMeasure, setFocusMeasure] = useState<{ index: number; key: number } | null>(null);
   const [issueCursor, setIssueCursor] = useState(0);
@@ -874,6 +876,8 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
             onLyricModeChange={editor.setLyricMode}
             chordMode={editor.chordMode}
             onChordModeChange={editor.setChordMode}
+            onSuggestChords={score.canReview ? () => setSuggestingChords(true) : undefined}
+            suggestChordsBlocked={editor.dirty ? t('chords.saveFirst') : null}
             onMark={editor.applyMark}
             onStaves={editor.editStaves}
             onOpenNotation={() => setNotationOpen(true)}
@@ -1096,6 +1100,7 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
         </div>
       </footer>
 
+      {suggestingChords && <ChordSuggestDialog scoreId={score.id} onClose={() => setSuggestingChords(false)} />}
       {helpOpen && (
         <Modal title={t('editor.view.menu.shortcuts')} onClose={() => setHelpOpen(false)}>
           <dl className="sv-help-list">
