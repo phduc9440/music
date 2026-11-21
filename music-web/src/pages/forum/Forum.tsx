@@ -197,10 +197,6 @@ export default function Forum() {
             {result.content.map((th) => (
               <li key={th.id}>
                 <Link to={`/forum/threads/${th.id}`} className="fm-row">
-                  <span className="fm-row__votes" aria-label={t('forum.votes', { count: th.voteCount })}>
-                    <strong>{formatNumber(th.voteCount)}</strong>
-                    <span>{t('forum.votesShort')}</span>
-                  </span>
                   <span className="fm-row__main">
                     <span className="fm-row__title">{th.title}</span>
                     <span className="fm-row__excerpt">{th.excerpt}</span>
@@ -230,9 +226,29 @@ export default function Forum() {
                       <span className="fm-muted">{formatRelativeTime(th.lastActivityAt)}</span>
                     </span>
                   </span>
-                  <span className="fm-row__replies">
-                    <strong>{formatNumber(th.replyCount)}</strong>
-                    <span>{t('forum.repliesShort')}</span>
+                  {/* cụm số liệu bên phải: thích, không thích, trả lời (đọc thành một câu cho trình đọc màn hình) */}
+                  <span
+                    className="fm-row__stats"
+                    aria-label={`${t('forum.reactions', { likes: th.likeCount, dislikes: th.dislikeCount })}, ${t('forum.replies', { count: th.replyCount })}`}
+                  >
+                    <span
+                      className={`fm-stat fm-stat--like${th.myReaction === 'LIKE' ? ' is-on' : ''}`}
+                      aria-hidden="true"
+                    >
+                      <Icon name="thumbsUp" size={15} />
+                      {formatNumber(th.likeCount)}
+                    </span>
+                    <span
+                      className={`fm-stat fm-stat--dislike${th.myReaction === 'DISLIKE' ? ' is-on' : ''}`}
+                      aria-hidden="true"
+                    >
+                      <Icon name="thumbsDown" size={15} />
+                      {formatNumber(th.dislikeCount)}
+                    </span>
+                    <span className="fm-stat fm-stat--replies" aria-hidden="true">
+                      <Icon name="comment" size={15} />
+                      {formatNumber(th.replyCount)}
+                    </span>
                   </span>
                 </Link>
               </li>

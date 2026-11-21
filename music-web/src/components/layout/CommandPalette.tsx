@@ -200,7 +200,7 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="cmdk__search">
-          <Icon name="search" size={18} />
+          <Icon name="search" size={22} />
           <input
             ref={inputRef}
             className="cmdk__input"
@@ -234,17 +234,45 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
                   onMouseMove={() => setActive(index)}
                   onClick={entry.run}
                 >
-                  <Icon name={entry.icon} size={16} />
-                  <span className="cmdk__label">{entry.label}</span>
-                  {entry.hint && <span className="cmdk__hint">{entry.hint}</span>}
+                  <span className="cmdk__icon" aria-hidden="true">
+                    <Icon name={entry.icon} size={18} />
+                  </span>
+                  <span className="cmdk__text">
+                    <span className="cmdk__label">{entry.label}</span>
+                    {entry.hint && <span className="cmdk__hint">{entry.hint}</span>}
+                  </span>
+                  {index === selected && (
+                    <kbd className="cmdk__enter" aria-hidden="true">
+                      ↵
+                    </kbd>
+                  )}
                 </button>
               </div>
             );
           })}
           {entries.length === 0 && !loading && (
-            <div className="cmdk__empty">{t('common.cmdk.noResults', { query: trimmed })}</div>
+            <div className="cmdk__empty">
+              <span className="cmdk__empty-icon" aria-hidden="true">
+                <Icon name="search" size={22} />
+              </span>
+              <strong>{t('common.cmdk.noResults', { query: trimmed })}</strong>
+              <span>{t('common.cmdk.noResultsHint')}</span>
+            </div>
           )}
           {loading && <div className="cmdk__empty">{t('common.cmdk.searching')}</div>}
+        </div>
+        {/* gợi ý phím: dùng trọn bằng bàn phím */}
+        <div className="cmdk__foot" aria-hidden="true">
+          <span>
+            <kbd>↑</kbd>
+            <kbd>↓</kbd> {t('common.cmdk.keys.move')}
+          </span>
+          <span>
+            <kbd>↵</kbd> {t('common.cmdk.keys.open')}
+          </span>
+          <span>
+            <kbd>Esc</kbd> {t('common.cmdk.keys.close')}
+          </span>
         </div>
       </div>
     </div>

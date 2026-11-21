@@ -7,15 +7,16 @@ import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import com.ptit.music_be.dto.request.forum.ForumPostRequest;
+import com.ptit.music_be.dto.request.forum.ForumReactionRequest;
 import com.ptit.music_be.dto.request.forum.ForumSubscriptionRequest;
 import com.ptit.music_be.dto.request.forum.ForumThreadRequest;
 import com.ptit.music_be.dto.response.common.ApiResponse;
 import com.ptit.music_be.dto.response.common.PageResponse;
 import com.ptit.music_be.dto.response.forum.ForumCategoryResponse;
 import com.ptit.music_be.dto.response.forum.ForumPostResponse;
+import com.ptit.music_be.dto.response.forum.ForumReactionResponse;
 import com.ptit.music_be.dto.response.forum.ForumThreadDetailResponse;
 import com.ptit.music_be.dto.response.forum.ForumThreadResponse;
-import com.ptit.music_be.dto.response.forum.ForumVoteResponse;
 import com.ptit.music_be.service.forum.ForumService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -132,23 +133,27 @@ public class ForumController {
         return ApiResponse.<Void>builder().build();
     }
 
-    @PostMapping("/threads/{threadId}/vote")
+    @PostMapping("/threads/{threadId}/reaction")
     @Operation(
-            summary = "Toggle your vote on a thread (4110 for your own thread)",
+            summary = "Like or dislike a thread: same choice again removes it, the other choice switches"
+                    + " (4110 for your own thread)",
             security = @SecurityRequirement(name = "bearerAuth"))
-    public ApiResponse<ForumVoteResponse> voteThread(@PathVariable String threadId) {
-        return ApiResponse.<ForumVoteResponse>builder()
-                .result(forumService.toggleThreadVote(threadId))
+    public ApiResponse<ForumReactionResponse> reactToThread(
+            @PathVariable String threadId, @Valid @RequestBody ForumReactionRequest request) {
+        return ApiResponse.<ForumReactionResponse>builder()
+                .result(forumService.reactToThread(threadId, request.getReaction()))
                 .build();
     }
 
-    @PostMapping("/posts/{postId}/vote")
+    @PostMapping("/posts/{postId}/reaction")
     @Operation(
-            summary = "Toggle your vote on a reply (4110 for your own reply)",
+            summary = "Like or dislike a reply: same choice again removes it, the other choice switches"
+                    + " (4110 for your own reply)",
             security = @SecurityRequirement(name = "bearerAuth"))
-    public ApiResponse<ForumVoteResponse> votePost(@PathVariable String postId) {
-        return ApiResponse.<ForumVoteResponse>builder()
-                .result(forumService.togglePostVote(postId))
+    public ApiResponse<ForumReactionResponse> reactToPost(
+            @PathVariable String postId, @Valid @RequestBody ForumReactionRequest request) {
+        return ApiResponse.<ForumReactionResponse>builder()
+                .result(forumService.reactToPost(postId, request.getReaction()))
                 .build();
     }
 

@@ -396,12 +396,29 @@
   border-radius: 3px 3px 0 0;
   background: var(--sc-accent);
 }
+/* Ô đếm cạnh tên tab: viên tròn cao 18px, số căn giữa (1 chữ số thành hình tròn, nhiều chữ số giãn thành viên thuốc) */
 .sc-tab__count {
-  margin-left: 0.3rem;
-  padding: 0.05rem 0.45rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  margin-left: 0.4rem;
+  padding: 0 5px;
   border-radius: 999px;
-  background: var(--ui-surface-hover);
-  font-size: 0.75rem;
+  background: var(--ui-primary-soft);
+  color: var(--ui-primary);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  vertical-align: 1px;
+}
+/* Có yêu cầu đang chờ duyệt: màu nút chính (--ui-cta, "cần nhìn vào") thay cho đỏ báo lỗi, có quầng nhẹ */
+.sc-tab__count.sc-tab__count--alert {
+  background: var(--ui-cta);
+  color: var(--ui-on-cta);
+  box-shadow: 0 0 0 3px var(--ui-cta-ring);
 }
 
 /* Bảng */
@@ -915,29 +932,70 @@ a.sc-btn.is-disabled {
   }
 }
 
-/* ---- Thẻ nổi: mọi khung trên trang chi tiết dùng nền --ui-panel (khác hẳn nền trang), viền đậm hơn và bóng nhẹ,
-   thay cho thẻ phẳng một bậc sáng tối vốn gần như trùng màu nền ---- */
-.sd-page {
-  --sc-card: var(--ui-panel);
-  --sc-line: var(--ui-panel-border);
-  --sc-shadow: var(--ui-panel-shadow);
-  --ui-surface: var(--ui-panel);
-  --ui-flat: var(--ui-panel);
-  --ui-flat-2: var(--ui-panel-2);
-  --ui-card-border: var(--ui-panel-border);
-  --ui-card-shadow: var(--ui-panel-shadow);
-}
-.sd-page .sd-hero {
-  border: 1px solid var(--ui-panel-border);
-  box-shadow: var(--ui-panel-shadow);
-}
+/* ---- Thứ bậc bề mặt (skill ui-ux-pro-max: Dimensional Layering + Vibrant Block). Thẻ nội dung: bề mặt sáng nổi lên
+   khỏi nền kem bằng viền cát và bóng --ui-elev-2. Đầu trang: khối xanh ngọc chuyển sắc, bóng --ui-elev-3, là điểm nhấn
+   duy nhất của trang ---- */
 .sd-page .sd-card,
+.sd-page .sc-panel,
 .sd-page .sc-access,
 .sd-page .sc-people,
+.sd-page .sc-settings__nav,
+.sd-page .sc-settings__card,
 .sd-page .sc-settings__actions,
 .sd-page .sc-reviews__summary,
 .sd-page .sc-reviews__form,
 .sd-page .sc-review,
-.sd-page .cm-thread {
-  box-shadow: var(--ui-panel-shadow);
+.sd-page .cm-thread,
+.sd-page .cm-empty {
+  --ui-surface: var(--ui-panel);
+  --ui-surface-muted: var(--ui-panel-2);
+  --ui-surface-hover: var(--ui-panel-hover);
+  --ui-flat: var(--ui-panel);
+  --ui-flat-2: var(--ui-panel-2);
+  --sc-card: var(--ui-panel);
+  background: var(--ui-panel);
+  border: 1px solid var(--ui-panel-border);
+  box-shadow: var(--ui-elev-2);
+}
+.sd-page .sd-hero {
+  --ui-text: var(--ui-hero-text);
+  --ui-text-2: var(--ui-hero-text-2);
+  --ui-text-3: var(--ui-hero-text-2);
+  --ui-flat-2: var(--ui-hero-chip);
+  --ui-border: var(--ui-hero-line);
+  --ui-primary: var(--ui-hero-text);
+  background: linear-gradient(135deg, var(--ui-hero-from), var(--ui-hero-to));
+  color: var(--ui-hero-text);
+  box-shadow: var(--ui-elev-3);
+}
+/* Không đổi --ui-success cho cả khối: nhãn trạng thái (Hoàn tất, Công khai) có nền xanh nhạt riêng, đổi chữ sang xanh
+   sáng là mất chữ. Chỉ dấu "đã sao chép" nằm thẳng trên nền khối mới cần màu sáng */
+/* Nút chính trên khối màu: nền cát, chữ xanh ngọc đậm (nút chính toàn app là xanh ngọc nên phải đổi) */
+.sd-page .sd-hero .sc-btn--primary,
+.sd-page .sd-hero .sc-btn--primary:hover:not(:disabled) {
+  border-color: var(--ui-hero-cta);
+  background: var(--ui-hero-cta);
+  color: var(--ui-hero-on-cta);
+}
+.sd-page .sd-hero .sc-btn--primary:hover:not(:disabled) {
+  background: var(--ui-hero-cta-hover);
+}
+/* Nhãn "Riêng tư" lấy nền --ui-surface-hover (không đổi trong khối) và chữ --ui-text-2 (đã đổi sang ngà sáng) nên mất
+   chữ: cho nó viên trắng mờ như các viên khác trong khối */
+.sd-page .sd-hero .sc-vis--private {
+  background: var(--ui-hero-chip);
+  color: var(--ui-hero-text);
+}
+/* Nút trên ảnh bìa (đổi / gỡ ảnh, sao chép liên kết) nằm trên tờ nhạc sáng: giữ màu bề mặt và chữ gốc của trang
+   (--sc-* được tính ở .sc-page nên không bị khối đầu trang đổi) */
+.sd-page .sd-hero .sd-cover__btn,
+.sd-page .sd-hero .sd-iconbtn {
+  border-color: var(--sc-line);
+  background: var(--sc-card);
+  color: var(--sc-ink);
+}
+.sd-page .sd-hero .sd-actions__icon.is-done,
+.sd-page .sd-hero .sd-iconbtn.is-done {
+  border-color: var(--ui-hero-success) !important;
+  color: var(--ui-hero-success) !important;
 }

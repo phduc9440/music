@@ -66,7 +66,7 @@ export default function SiteFooter({ columns, tip }: SiteFooterProps) {
             <span className="site-footer__mark">
               <Icon name="music" size={16} />
             </span>
-            Music App
+            Bản Nhạc Số
           </Link>
           <p>{tip ?? t('common.footer.tipSite')}</p>
         </div>

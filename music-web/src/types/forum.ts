@@ -26,8 +26,10 @@ export interface ForumThread {
   author: ForumAuthor;
   score: { id: string; title: string } | null;
   replyCount: number;
-  voteCount: number;
-  votedByMe: boolean;
+  likeCount: number;
+  dislikeCount: number;
+  /** Lựa chọn của người đang xem; null khi chưa chọn hoặc là khách. */
+  myReaction: ForumReaction | null;
   mine: boolean;
   answered: boolean;
   /** Admin đã ghim: nổi lên đầu danh sách. */
@@ -46,8 +48,10 @@ export interface ForumPost {
   threadId: string;
   body: string;
   author: ForumAuthor;
-  voteCount: number;
-  votedByMe: boolean;
+  likeCount: number;
+  dislikeCount: number;
+  /** Lựa chọn của người đang xem; null khi chưa chọn hoặc là khách. */
+  myReaction: ForumReaction | null;
   mine: boolean;
   accepted: boolean;
   /** Bài được trả lời trực tiếp; null khi trả lời chủ đề hoặc bài kia đã bị xóa / ẩn. */
@@ -67,9 +71,13 @@ export interface ForumThreadDetail {
   totalPostPages: number;
 }
 
-export interface ForumVote {
-  voted: boolean;
-  voteCount: number;
+export type ForumReaction = 'LIKE' | 'DISLIKE';
+
+/** Kết quả sau khi thích / không thích: lựa chọn hiện tại (null = đã gỡ) và số đếm mới. */
+export interface ForumReactionResult {
+  myReaction: ForumReaction | null;
+  likeCount: number;
+  dislikeCount: number;
 }
 
 export type ForumSort = 'LATEST' | 'TOP';

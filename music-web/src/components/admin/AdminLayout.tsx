@@ -6,6 +6,8 @@ import { toast } from 'react-toastify';
 import ChangePasswordModal from '../ChangePasswordModal';
 import NotificationBell from '../NotificationBell';
 import ThemeToggle from '../../theme/ThemeToggle';
+import SoundToggle from '../ui/SoundToggle';
+import { useClickMusic } from '../ui/clickMusic';
 import { adoptServerLocale, t } from '../../i18n/core';
 import LanguageToggle from '../../i18n/LanguageToggle';
 import { adoptServerTheme } from '../../theme/theme';
@@ -34,6 +36,8 @@ const currentTitle = (pathname: string) =>
 export default function AdminLayout() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  // Mỗi cú bấm chơi một nốt của giai điệu (tắt / bật bằng nút loa trên thanh trên)
+  useClickMusic();
   const [admin, setAdmin] = useState<Member | null>(null);
   const [collapsed, setCollapsed] = useState(false); // thu gọn sidebar trên màn hình lớn
   const [mobileOpen, setMobileOpen] = useState(false); // mở sidebar dạng ngăn kéo trên màn hình nhỏ
@@ -121,7 +125,7 @@ export default function AdminLayout() {
             <span className="adm-brand__logo">
               <Icon name="music" size={16} />
             </span>
-            <span className="adm-brand__text">Music App</span>
+            <span className="adm-brand__text">Bản Nhạc Số</span>
             <span className="adm-brand__tag">Admin</span>
           </span>
           {title && (
@@ -183,6 +187,7 @@ export default function AdminLayout() {
                     {t('common.header.changePassword')}
                   </button>
                 )}
+                <SoundToggle className="adm-usermenu__item" />
                 <button
                   type="button"
                   role="menuitem"

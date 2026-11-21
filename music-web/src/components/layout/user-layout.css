@@ -15,8 +15,11 @@
   position: sticky;
   top: 0;
   z-index: 200;
-  /* kiểu Mercury: thanh trên đi theo theme, nền mờ trong suốt (frosted) thay cho dải màu đặc, không viền */
-  background: color-mix(in srgb, var(--ui-bg) 84%, transparent);
+  /* thanh trên là bề mặt nổi mờ (frosted) cùng hệ với khung nội dung: nền --ui-panel trong suốt nhẹ, viền dưới ấm,
+     bóng cấp 1 để tách khỏi trang khi cuộn */
+  background: color-mix(in srgb, var(--ui-panel) 88%, transparent);
+  border-bottom: 1px solid var(--ui-panel-border);
+  box-shadow: var(--ui-elev-1);
   backdrop-filter: blur(12px);
 }
 
@@ -62,8 +65,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--ui-text);
-  color: var(--ui-bg);
+  /* logo: vàng ô liu (màu gốc của bảng màu), biểu tượng mực tối */
+  background: var(--ui-highlight);
+  color: var(--ui-on-highlight);
 }
 
 .app-nav {
@@ -174,7 +178,7 @@
 }
 
 /* nút tạo bản nhạc và ô tìm kiếm trên thanh trên */
-/* nút hành động chính của thanh trên (như "Open account" của Mercury): viên thuốc đồng thau, chữ mực tối */
+/* nút hành động chính của thanh trên (như "Open account" của Mercury): viên thuốc xanh ngọc đậm (--ui-cta), chữ trắng */
 .app-create {
   display: inline-flex;
   align-items: center;
@@ -195,7 +199,7 @@
   color: var(--ui-on-cta);
 }
 
-/* Đăng nhập (trang khách): viên thuốc viền mảnh cùng cỡ, đứng cạnh nút Đăng ký đồng thau */
+/* Đăng nhập (trang khách): viên thuốc viền mảnh cùng cỡ, đứng cạnh nút Đăng ký (--ui-cta) */
 .app-signin {
   display: inline-flex;
   align-items: center;
@@ -239,35 +243,79 @@
   background: var(--ui-flat);
 }
 
+/* Ô tìm kiếm (mở bảng lệnh Ctrl K): trường nhập chìm kiểu Swiss, nền kem nhạt không bóng để không tranh với nút chính;
+   rê chuột sáng lên và viền xanh ngọc nhạt; focus bằng bàn phím có vòng sáng xanh ngọc. Phím tắt hiện dạng nút phím. */
 .app-search {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  min-width: 220px;
+  gap: 0.55rem;
+  width: 260px;
+  min-width: 0;
   height: 40px;
-  padding: 0 0.9rem;
-  border: 1px solid transparent;
-  border-radius: 40px;
-  background: var(--ui-flat);
-  color: var(--ui-text-2);
+  padding: 0 0.4rem 0 0.85rem;
+  border: 1px solid var(--ui-border);
+  border-radius: 999px;
+  background: var(--ui-surface-muted);
+  color: var(--ui-text-3);
   font: inherit;
   font-size: var(--ui-text-md);
+  text-align: left;
   cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    color 0.2s ease;
 }
 
 .app-search:hover {
-  background: var(--ui-flat-2);
-  color: var(--ui-text);
+  border-color: var(--ui-primary-border);
+  background: var(--ui-panel);
+  color: var(--ui-text-2);
 }
 
+.app-shell .app-search:focus-visible {
+  outline: none;
+  border-color: var(--ui-primary);
+  background: var(--ui-panel);
+  box-shadow: 0 0 0 3px var(--ui-primary-ring);
+}
+
+.app-search svg {
+  flex: none;
+  color: var(--ui-primary);
+}
+
+.app-search__text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* nút phím: nền khung, viền dưới dày hơn như phím thật */
 .app-search__kbd {
-  margin-left: auto;
-  padding: 0 0.35rem;
-  border: 1px solid var(--ui-border-strong);
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 0.45rem;
+  border: 1px solid var(--ui-border);
+  border-bottom-width: 2px;
   border-radius: var(--ui-radius-sm);
+  background: var(--ui-panel);
   color: var(--ui-text-3);
   font-family: inherit;
   font-size: var(--ui-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-search {
+    transition: none;
+  }
 }
 
 /* thanh tab dưới cùng: chỉ dành cho điện thoại */
@@ -398,7 +446,7 @@
 /* màn hình vừa: ô tìm kiếm gọn lại để điều hướng ở giữa không bị chen */
 @media (max-width: 1320px) {
   .app-search {
-    min-width: 0;
+    width: 200px;
   }
 
   .app-search__kbd {
@@ -416,7 +464,7 @@
   .app-create,
   .app-plan,
   .app-search {
-    width: 36px;
+    width: 40px;
     padding: 0;
     justify-content: center;
   }

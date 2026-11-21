@@ -1823,18 +1823,23 @@
 }
 
 /* =====================================================================================================================
- * Kiểu Mercury cho trang quản trị (cùng hệ với trang người dùng): mọi thẻ là bề mặt phẳng một bậc sáng / tối so với
- * nền, bo 12px, không viền, không bóng, không vạch màu; nút và ô nhập bo viên thuốc; header mờ trong suốt, sidebar phẳng.
- * Đặt cuối file để phủ lên các quy tắc cũ cùng độ ưu tiên.
+ * Hệ bề mặt cho trang quản trị (cùng hệ với trang người dùng, skill ui-ux-pro-max "Dimensional Layering"): mọi thẻ là
+ * bề mặt sáng nổi khỏi nền ngà (viền ấm, bóng cấp 2), bo 12px; nút và ô nhập bo viên thuốc; header mờ và sidebar là bề
+ * mặt nổi có viền. Đặt cuối file để phủ lên các quy tắc cũ cùng độ ưu tiên.
  * ================================================================================================================== */
 .adm-shell .adm-header {
-  background: color-mix(in srgb, var(--ui-bg) 84%, transparent);
-  border-bottom-color: transparent;
+  background: color-mix(in srgb, var(--ui-panel) 88%, transparent);
+  border-bottom: 1px solid var(--ui-panel-border);
+  box-shadow: var(--ui-elev-1);
   backdrop-filter: blur(12px);
 }
 .adm-shell .adm-sidebar {
-  background: var(--ui-bg);
-  border-right-color: transparent;
+  background: var(--ui-panel);
+  border-right: 1px solid var(--ui-panel-border);
+}
+.adm-shell .adm-brand__logo {
+  background: var(--ui-highlight);
+  color: var(--ui-on-highlight);
 }
 .adm-shell .adm-menu__item {
   border-radius: 40px;
@@ -1848,11 +1853,14 @@
   font-weight: 500;
 }
 .adm-shell .adm-card,
-.adm-shell .adm-stat {
-  border: 1px solid transparent;
+.adm-shell .adm-stat,
+.adm-shell .ar-card,
+.adm-shell .af-body,
+.adm-shell .af-post {
+  border: 1px solid var(--ui-panel-border);
   border-radius: 12px;
-  background: var(--ui-flat);
-  box-shadow: none;
+  background: var(--ui-panel);
+  box-shadow: var(--ui-elev-2);
 }
 .adm-shell .adm-btn {
   border-radius: 40px;

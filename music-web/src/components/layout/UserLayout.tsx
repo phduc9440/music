@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import AmbientNotes from '../ui/AmbientNotes';
+import SoundToggle from '../ui/SoundToggle';
+import { useClickMusic } from '../ui/clickMusic';
+import { useCardSpotlight } from '../ui/cardSpotlight';
 import { Link } from '../../routes/transition-nav';
 import { useNavigate } from '../../routes/useTransitionNavigate';
 import ChangePasswordModal from '../ChangePasswordModal';
@@ -37,6 +40,10 @@ export default function UserLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false); // menu điều hướng trên màn hình nhỏ
   const [passwordOpen, setPasswordOpen] = useState(false);
+  // Mỗi cú bấm trong app chơi một nốt của giai điệu (tắt / bật bằng nút loa trên thanh trên)
+  useClickMusic();
+  // Vùng sáng xanh đi theo con trỏ bên trong thẻ / dòng bấm được
+  useCardSpotlight();
   const [searchOpen, setSearchOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -114,7 +121,7 @@ export default function UserLayout() {
               <span className="app-brand__logo">
                 <Icon name="music" size={16} />
               </span>
-              Music App
+              Bản Nhạc Số
             </Link>
 
             <button
@@ -204,6 +211,7 @@ export default function UserLayout() {
                       {t('common.header.changePassword')}
                     </button>
                   )}
+                  <SoundToggle className="app-usermenu__item" />
                   <button
                     type="button"
                     role="menuitem"

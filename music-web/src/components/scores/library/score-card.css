@@ -24,21 +24,32 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  /* thẻ phẳng kiểu Mercury: một bậc sáng / tối so với nền, không viền, không bóng */
-  background: var(--ui-flat);
-  border: 1px solid transparent;
+  /* thẻ nổi: bề mặt sáng, viền ấm, bóng cấp 2; rê chuột nổi lên cấp 3 và viền chuyển màu nhấn */
+  background: var(--ui-panel);
+  border: 1px solid var(--ui-panel-border);
   border-radius: 12px;
-  box-shadow: none;
+  box-shadow: var(--ui-elev-2);
   cursor: pointer;
   transition:
+    transform 0.18s ease,
     background-color 0.18s ease,
-    border-color 0.18s ease;
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
 }
 /* Tiền tố .sc-grid để thắng khung thẻ chung trong styles/vibrant.css (.app-shell :is(.sc-card, ...)) */
 .sc-grid .sc-card:hover,
 .sc-grid .is-menu-open > .sc-card {
-  background: var(--ui-flat-2);
-  box-shadow: none;
+  border-color: var(--ui-primary-border);
+  /* nền chuyển xanh ngọc nhạt như thẻ bản nhạc nổi bật ở trang khách */
+  background: var(--ui-panel-hover);
+  box-shadow: var(--ui-elev-3);
+  transform: translateY(-2px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .sc-grid .sc-card:hover,
+  .sc-grid .is-menu-open > .sc-card {
+    transform: none;
+  }
 }
 .sc-grid .sc-card:focus-visible {
   outline: 2px solid var(--ui-primary);

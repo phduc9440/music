@@ -38,7 +38,7 @@
     "account": "Account",
     "accountOf": "Account: {name}",
     "openMenu": "Open navigation menu",
-    "search": "Search",
+    "search": "Search scores…",
     "searchHint": "Search (Ctrl+K)",
     "mainNav": "Main navigation",
     "create": "Create score",
@@ -49,7 +49,10 @@
     "changePassword": "Change password",
     "logout": "Sign out",
     "upgrade": "Upgrade",
-    "planTitle": "{plan} plan: see limits and renew"
+    "planTitle": "{plan} plan: see limits and renew",
+    "clickSound": "Click sounds",
+    "soundStateOn": "On",
+    "soundStateOff": "Off"
   },
   "theme": {
     "label": "Theme: {name}",
@@ -71,7 +74,13 @@
     "label": "Search and quick commands",
     "placeholder": "Search scores or type a command…",
     "noResults": "No results for “{query}”",
-    "searching": "Searching…"
+    "noResultsHint": "Try another title or composer, or type fewer letters.",
+    "searching": "Searching…",
+    "keys": {
+      "move": "move",
+      "open": "open",
+      "close": "close"
+    }
   },
   "pagination": {
     "label": "Pagination",
@@ -105,7 +114,7 @@
     "account": "Account",
     "home": "Home",
     "tipSite": "Photograph sheet music, edit, listen and practice, together with your team, in your own language.",
-    "copyright": "© {year} Music App · PTIT graduation project",
+    "copyright": "© {year} Bản Nhạc Số · PTIT graduation project",
     "privacy": "Your scores are private by default."
   },
   "time": {

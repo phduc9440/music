@@ -20,6 +20,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ptit.music_be.dto.enums.forum.ForumReaction;
 import com.ptit.music_be.dto.enums.notification.NotificationType;
 import com.ptit.music_be.dto.enums.score.Visibility;
 import com.ptit.music_be.dto.request.forum.ForumPostRequest;
@@ -28,13 +29,14 @@ import com.ptit.music_be.dto.response.common.PageResponse;
 import com.ptit.music_be.dto.response.forum.ForumAuthorResponse;
 import com.ptit.music_be.dto.response.forum.ForumCategoryResponse;
 import com.ptit.music_be.dto.response.forum.ForumPostResponse;
+import com.ptit.music_be.dto.response.forum.ForumReactionResponse;
 import com.ptit.music_be.dto.response.forum.ForumThreadDetailResponse;
 import com.ptit.music_be.dto.response.forum.ForumThreadResponse;
-import com.ptit.music_be.dto.response.forum.ForumVoteResponse;
 import com.ptit.music_be.entity.ForumCategory;
 import com.ptit.music_be.entity.ForumPost;
 import com.ptit.music_be.entity.ForumSubscription;
 import com.ptit.music_be.entity.ForumThread;
+import com.ptit.music_be.entity.ForumVote;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.event.RewardEarnedEvent;
@@ -162,7 +164,9 @@ public class ForumServiceImpl implements ForumService {
         String pinnedFirst = " order by case when t.pinnedAt is null then 1 else 0 end, ";
         String order = sort == Sort.TOP
                 ? pinnedFirst
-                        + "(select count(v) from ForumVote v where v.thread = t) desc, t.createdAt desc, t.id desc"
+                        // "Nổi bật": số thích trừ số không thích
+                        + "(select coalesce(sum(case when v.reaction = :likeReaction then 1 else -1 end), 0)"
+                        + " from ForumVote v where v.thread = t) desc, t.createdAt desc, t.id desc"
                 : pinnedFirst
                         + "coalesce((select max(p.createdAt) from ForumPost p where p.thread = t), t.createdAt) desc,"
                         + " t.id desc";
@@ -170,6 +174,9 @@ public class ForumServiceImpl implements ForumService {
                 "select t from ForumThread t join fetch t.author join fetch t.category" + where + order,
                 ForumThread.class);
         params.forEach(query::setParameter);
+        if (sort == Sort.TOP) {
+            query.setParameter("likeReaction", ForumReaction.LIKE);
+        }
         query.setFirstResult(safePage * safeSize).setMaxResults(safeSize);
         List<ForumThread> found = query.getResultList();
 
@@ -372,51 +379,60 @@ public class ForumServiceImpl implements ForumService {
 
     @Override
     @Transactional
-    public ForumVoteResponse toggleThreadVote(String threadId) {
+    public ForumReactionResponse reactToThread(String threadId, ForumReaction reaction) {
         Member me = currentMember();
         ForumThread thread = findThread(threadId);
         if (thread.getAuthor().getId().equals(me.getId())) {
             throw new AppException(CommunityErrorCode.FORUM_VOTE_OWN_CONTENT);
         }
-        var existing = voteRepository.findByMemberIdAndThreadId(me.getId(), threadId);
-        boolean voted;
-        if (existing.isPresent()) {
-            voteRepository.delete(existing.get());
-            voted = false;
-        } else {
-            // INSERT IGNORE: lần bấm kia vừa ghi phiếu thì bỏ qua, không lỗi trùng khóa
-            voteRepository.insertThreadVoteIgnore(UUID.randomUUID().toString(), me.getId(), threadId);
-            voted = true;
-        }
-        voteRepository.flush();
-        return ForumVoteResponse.builder()
-                .voted(voted)
-                .voteCount(voteRepository.countByThreadId(threadId))
+        ForumReaction mine = applyReaction(
+                voteRepository.findByMemberIdAndThreadId(me.getId(), threadId).orElse(null),
+                reaction,
+                // INSERT IGNORE: lần bấm kia vừa ghi phiếu thì bỏ qua, không lỗi trùng khóa
+                () -> voteRepository.insertThreadReactionIgnore(
+                        UUID.randomUUID().toString(), me.getId(), threadId, reaction.name()));
+        return ForumReactionResponse.builder()
+                .myReaction(mine)
+                .likeCount(voteRepository.countByThreadIdAndReaction(threadId, ForumReaction.LIKE))
+                .dislikeCount(voteRepository.countByThreadIdAndReaction(threadId, ForumReaction.DISLIKE))
                 .build();
     }
 
     @Override
     @Transactional
-    public ForumVoteResponse togglePostVote(String postId) {
+    public ForumReactionResponse reactToPost(String postId, ForumReaction reaction) {
         Member me = currentMember();
         ForumPost post = findPost(postId);
         if (post.getAuthor().getId().equals(me.getId())) {
             throw new AppException(CommunityErrorCode.FORUM_VOTE_OWN_CONTENT);
         }
-        var existing = voteRepository.findByMemberIdAndPostId(me.getId(), postId);
-        boolean voted;
-        if (existing.isPresent()) {
-            voteRepository.delete(existing.get());
-            voted = false;
+        ForumReaction mine = applyReaction(
+                voteRepository.findByMemberIdAndPostId(me.getId(), postId).orElse(null),
+                reaction,
+                () -> voteRepository.insertPostReactionIgnore(
+                        UUID.randomUUID().toString(), me.getId(), postId, reaction.name()));
+        return ForumReactionResponse.builder()
+                .myReaction(mine)
+                .likeCount(voteRepository.countByPostIdAndReaction(postId, ForumReaction.LIKE))
+                .dislikeCount(voteRepository.countByPostIdAndReaction(postId, ForumReaction.DISLIKE))
+                .build();
+    }
+
+    /** Chưa có phiếu thì ghi mới; trùng lựa chọn đang có thì gỡ; khác thì đổi. Trả lựa chọn sau cùng (null = đã gỡ). */
+    private ForumReaction applyReaction(ForumVote existing, ForumReaction reaction, Runnable insert) {
+        ForumReaction result;
+        if (existing == null) {
+            insert.run();
+            result = reaction;
+        } else if (existing.getReaction() == reaction) {
+            voteRepository.delete(existing);
+            result = null;
         } else {
-            voteRepository.insertPostVoteIgnore(UUID.randomUUID().toString(), me.getId(), postId);
-            voted = true;
+            existing.setReaction(reaction);
+            result = reaction;
         }
         voteRepository.flush();
-        return ForumVoteResponse.builder()
-                .voted(voted)
-                .voteCount(voteRepository.countByPostId(postId))
-                .build();
+        return result;
     }
 
     @Override
@@ -617,12 +633,14 @@ public class ForumServiceImpl implements ForumService {
         }
         List<String> ids = threads.stream().map(ForumThread::getId).toList();
         Map<String, Long> replies = toCountMap(postRepository.countByThreadIds(ids));
-        Map<String, Long> votes = toCountMap(voteRepository.countByThreadIds(ids));
+        Map<String, Map<ForumReaction, Long>> reactions =
+                toReactionCounts(voteRepository.countReactionsByThreadIds(ids));
         Map<String, LocalDateTime> lastPost = new HashMap<>();
         for (Object[] row : postRepository.lastPostAtByThreadIds(ids)) {
             lastPost.put((String) row[0], (LocalDateTime) row[1]);
         }
-        Set<String> voted = meId == null ? Set.of() : new HashSet<>(voteRepository.threadIdsVotedBy(meId, ids));
+        Map<String, ForumReaction> myReactions =
+                meId == null ? Map.of() : toMyReactions(voteRepository.threadReactionsBy(meId, ids));
         Set<String> subscribed =
                 meId == null ? Set.of() : new HashSet<>(subscriptionRepository.threadIdsSubscribedBy(meId, ids));
 
@@ -662,8 +680,9 @@ public class ForumServiceImpl implements ForumService {
                                             .build()
                                     : null)
                     .replyCount(replies.getOrDefault(t.getId(), 0L))
-                    .voteCount(votes.getOrDefault(t.getId(), 0L))
-                    .votedByMe(voted.contains(t.getId()))
+                    .likeCount(reactionCount(reactions, t.getId(), ForumReaction.LIKE))
+                    .dislikeCount(reactionCount(reactions, t.getId(), ForumReaction.DISLIKE))
+                    .myReaction(myReactions.get(t.getId()))
                     .mine(t.getAuthor().getId().equals(meId))
                     .answered(acceptedId != null)
                     .pinned(t.getPinnedAt() != null)
@@ -691,8 +710,9 @@ public class ForumServiceImpl implements ForumService {
             visible.put(v.getId(), v);
         }
         List<String> ids = posts.stream().map(ForumPost::getId).toList();
-        Map<String, Long> votes = toCountMap(voteRepository.countByPostIds(ids));
-        Set<String> voted = meId == null ? Set.of() : new HashSet<>(voteRepository.postIdsVotedBy(meId, ids));
+        Map<String, Map<ForumReaction, Long>> reactions = toReactionCounts(voteRepository.countReactionsByPostIds(ids));
+        Map<String, ForumReaction> myReactions =
+                meId == null ? Map.of() : toMyReactions(voteRepository.postReactionsBy(meId, ids));
         List<ForumPostResponse> out = new ArrayList<>();
         for (ForumPost p : posts) {
             out.add(ForumPostResponse.builder()
@@ -700,8 +720,9 @@ public class ForumServiceImpl implements ForumService {
                     .threadId(p.getThread().getId())
                     .body(p.getBody())
                     .author(author(p.getAuthor()))
-                    .voteCount(votes.getOrDefault(p.getId(), 0L))
-                    .votedByMe(voted.contains(p.getId()))
+                    .likeCount(reactionCount(reactions, p.getId(), ForumReaction.LIKE))
+                    .dislikeCount(reactionCount(reactions, p.getId(), ForumReaction.DISLIKE))
+                    .myReaction(myReactions.get(p.getId()))
                     .mine(p.getAuthor().getId().equals(meId))
                     .accepted(p.getId().equals(acceptedId))
                     .replyTo(replyRef(p, visible))
@@ -731,6 +752,28 @@ public class ForumServiceImpl implements ForumService {
                                         : target.getAuthor().getFullName())
                         .excerpt(excerpt(target.getBody(), REPLY_REF_EXCERPT))
                         .build();
+    }
+
+    /** [id, reaction, count] → id → (reaction → count). */
+    private static Map<String, Map<ForumReaction, Long>> toReactionCounts(Collection<Object[]> rows) {
+        Map<String, Map<ForumReaction, Long>> out = new HashMap<>();
+        for (Object[] row : rows) {
+            out.computeIfAbsent((String) row[0], k -> new HashMap<>()).put((ForumReaction) row[1], (Long) row[2]);
+        }
+        return out;
+    }
+
+    private static long reactionCount(Map<String, Map<ForumReaction, Long>> counts, String id, ForumReaction r) {
+        return counts.getOrDefault(id, Map.of()).getOrDefault(r, 0L);
+    }
+
+    /** [id, reaction] → id → reaction. */
+    private static Map<String, ForumReaction> toMyReactions(Collection<Object[]> rows) {
+        Map<String, ForumReaction> out = new HashMap<>();
+        for (Object[] row : rows) {
+            out.put((String) row[0], (ForumReaction) row[1]);
+        }
+        return out;
     }
 
     private static Map<String, Long> toCountMap(Collection<Object[]> rows) {

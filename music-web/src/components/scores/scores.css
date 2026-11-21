@@ -8,11 +8,11 @@
   --sc-ink: var(--ui-text);
   --sc-muted: var(--ui-text-2);
   --sc-line: var(--ui-border);
-  /* kiểu Mercury: bề mặt thẻ là một bậc sáng / tối so với nền, bo 12px, không bóng */
-  --sc-card: var(--ui-flat);
+  /* bề mặt thẻ nổi (tokens.css: --ui-panel), bo 12px, bóng cấp 2; rê chuột lên cấp 3 */
+  --sc-card: var(--ui-panel);
   --sc-radius: 12px;
-  --sc-shadow: none;
-  --sc-shadow-hover: none;
+  --sc-shadow: var(--ui-elev-2);
+  --sc-shadow-hover: var(--ui-elev-3);
   min-height: 100vh;
   background: var(--ui-bg);
   color: var(--ui-text);
@@ -1111,11 +1111,6 @@ select.sc-input {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-}
-/* hai class để thắng .sc-tab__count trong ScoreDetail.css (nạp sau nên ghi đè mất màu đỏ) */
-.sc-tab__count.sc-tab__count--alert {
-  background: var(--ui-danger);
-  color: var(--ui-on-accent);
 }
 
 /* Tab Cài đặt kiểu trang Settings của GitHub: thanh bên trái chọn chức năng, nội dung bên phải */

@@ -1,20 +1,57 @@
 /*
- * Lớp màu sắc cho giao diện người dùng (.app-shell): nhấn màu, bìa bản nhạc nhiều màu, ô gói dịch vụ theo bậc.
- * Bảng màu Gỗ hồng & Đồng thau, bề mặt kiểu Mercury (thẻ phẳng một bậc sáng tối, bo 12px, không viền không bóng); đồng
- * thau chỉ cho nút chính. Chỉ dùng token ở tokens.css nên theme sáng / tối đều đúng. Không đụng khu admin.
+ * Lớp màu sắc cho giao diện người dùng (.app-shell). Hệ bề mặt "Dimensional Layering" + "Vibrant Block" (skill
+ * ui-ux-pro-max): nền ngà, mọi khung nội dung là bề mặt sáng nổi (viền ấm + bóng --ui-elev-2), khối đầu trang là khối
+ * xanh ngọc → xám đá chuyển sắc làm điểm nhấn; nút chính xanh ngọc đậm. Chỉ dùng token ở tokens.css nên theme sáng / tối
+ * đều đúng. Khu admin định kiểu riêng trong components/admin/admin.css.
  */
 
-/* ---- đầu trang (thư viện, Khám phá, Nhạc sĩ, Diễn đàn): thẻ phẳng kiểu Mercury theo theme, không viền, không bóng,
-   không quầng sáng; tiêu đề độ đậm trung gian 480, giãn chữ nhẹ ---- */
+/* ---- khối đầu trang (Thư viện, Khám phá, Nhạc sĩ, Diễn đàn, Playlist, Hồ sơ, Luyện tập...): khối xanh ngọc chuyển
+   sắc, bóng cấp 3. Token chữ / viền / bề mặt được khai báo lại trong khối để mọi thứ bên trong (tiêu đề, dòng phụ, nút
+   thường, ô tìm kiếm, nhãn) tự sang chữ trắng trên viên trắng mờ; nút chính đảo thành nền trắng ---- */
 .app-shell .sc-lib-head,
 .app-shell .ex-head,
 .app-shell .cp-head,
-.app-shell .fm-head {
+.app-shell .fm-head,
+.app-shell .pl-hero {
+  --ui-text: var(--ui-hero-text);
+  --ui-text-2: var(--ui-hero-text-2);
+  --ui-text-3: var(--ui-hero-text-2);
+  --ui-surface: var(--ui-hero-chip);
+  --ui-surface-muted: var(--ui-hero-chip);
+  --ui-surface-hover: var(--ui-hero-chip);
+  --ui-flat-2: var(--ui-hero-chip);
+  --ui-border: var(--ui-hero-line);
+  --ui-border-strong: var(--ui-hero-line);
+  --ui-primary: var(--ui-hero-text);
+  --ui-primary-soft: var(--ui-hero-chip);
+  --ui-primary-ring: var(--ui-hero-line);
+  --ui-on-accent: var(--ui-hero-to);
+  --sc-ink: var(--ui-hero-text);
+  --sc-muted: var(--ui-hero-text-2);
+  --sc-line: var(--ui-hero-line);
+  --sc-accent: var(--ui-hero-text);
+  --sc-accent-soft: var(--ui-hero-chip);
   position: relative;
   margin-bottom: 1.5rem;
   padding: 32px;
+  border: 0;
   border-radius: 12px;
-  background: var(--ui-flat);
+  background: linear-gradient(135deg, var(--ui-hero-from), var(--ui-hero-to));
+  color: var(--ui-hero-text);
+  box-shadow: var(--ui-elev-3);
+}
+.app-shell :is(.sc-lib-head, .ex-head, .cp-head, .fm-head, .pl-hero) input::placeholder {
+  color: var(--ui-hero-text-2);
+}
+/* nút chính trên khối màu: nền cát (#f0deb4), chữ xanh ngọc đậm */
+.app-shell :is(.sc-lib-head, .ex-head, .cp-head, .fm-head, .pl-hero) .sc-btn--primary,
+.app-shell :is(.sc-lib-head, .ex-head, .cp-head, .fm-head, .pl-hero) .sc-btn--primary:hover:not(:disabled) {
+  border-color: var(--ui-hero-cta);
+  background: var(--ui-hero-cta);
+  color: var(--ui-hero-on-cta);
+}
+.app-shell :is(.sc-lib-head, .ex-head, .cp-head, .fm-head, .pl-hero) .sc-btn--primary:hover:not(:disabled) {
+  background: var(--ui-hero-cta-hover);
 }
 .app-shell .sc-lib-head h1,
 .app-shell .ex-head h1,
@@ -50,10 +87,11 @@
   min-height: 36px;
   margin-bottom: 1rem;
   padding: 0 0.9rem 0 0.7rem;
-  border: 1px solid transparent;
+  border: 1px solid var(--ui-panel-border);
   border-radius: 40px;
-  background: var(--ui-flat);
+  background: var(--ui-panel);
   color: var(--ui-text);
+  box-shadow: var(--ui-elev-1);
   font: inherit;
   font-size: var(--ui-text-sm);
   font-weight: 500;
@@ -62,11 +100,14 @@
   transition:
     background 0.15s,
     color 0.15s,
-    border-color 0.15s;
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 .app-shell .adm-page-header__back:hover {
-  background: var(--ui-flat-2);
+  border-color: var(--ui-primary-border);
+  background: var(--ui-panel);
   color: var(--ui-text);
+  box-shadow: var(--ui-elev-2);
 }
 .app-shell .adm-page-header__back:focus-visible {
   outline: 2px solid var(--ui-primary);
@@ -78,21 +119,346 @@
   margin-bottom: 0;
 }
 
-/* Thẻ gói, thẻ team, thẻ thống kê: thẻ phẳng như mọi thẻ khác (Mercury: không vạch màu, không nổi khi rê chuột) */
+/* Thẻ bấm được: rê chuột tới thẻ nào thì nền thẻ đó chuyển xanh ngọc nhạt (cùng hiệu ứng thẻ bản nhạc nổi bật ở trang
+   khách); thẻ bản nhạc và dòng diễn đàn tự định kiểu trong score-card.css / forum.css */
+.app-shell :is(.pl-card, .pl-row, .cp-card, .tm-card, .tm-item, .ph-item, .mt-card) {
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease;
+}
+.app-shell :is(.pl-card, .pl-row, .cp-card, .tm-card, .tm-item, .ph-item, .mt-card):hover {
+  border-color: var(--ui-primary-border);
+  background: var(--ui-panel-hover);
+}
+
+/* Vùng sáng xanh đi theo con trỏ bên trong thẻ / khung nội dung (như bản nhạc hạt sáng ở trang khách): toạ độ con trỏ do
+   useCardSpotlight (components/ui/cardSpotlight.ts) ghi vào --spot-x / --spot-y; lớp phủ ::after vẽ quầng sáng, chỉ hiện
+   khi rê chuột, không chặn thao tác bấm. Thẻ lồng trong thẻ: chỉ thẻ trong cùng sáng. Danh sách phải khớp SPOT_SELECTOR. */
+.app-shell
+  :is(
+    .sc-card,
+    .fm-row,
+    .fm-post,
+    .pl-card,
+    .pl-row,
+    .pl-hero,
+    .pl-panel,
+    .cp-card,
+    .tm-card,
+    .tm-item,
+    .tm-summary,
+    .tm-invitation,
+    .tm-workspace,
+    .tm-mytasks,
+    .tm-feed__item,
+    .ph-item,
+    .mt-card,
+    .mt-stat,
+    .sg-item,
+    .sd-card,
+    .pf-card,
+    .bl-card,
+    .ns-card,
+    .ps-card,
+    .ps-chart,
+    .sc-settings__card,
+    .sc-access,
+    .sc-people,
+    .sc-trash__item,
+    .sc-cr-steps li,
+    .sc-cr-tips article,
+    .sp-card,
+    .sc-upfile,
+    .studio-report__cards article,
+    .wh-panel,
+    .wh-tile,
+    .wh-feature,
+    .wh-recent,
+    .wh-pending,
+    .wh-task,
+    .wh-streak,
+    .wh-feat,
+    .wh-quick__item,
+    .wh-journey__item,
+    .wh-cta
+  ) {
+  position: relative;
+}
+.app-shell
+  :is(
+    .sc-card,
+    .fm-row,
+    .fm-post,
+    .pl-card,
+    .pl-row,
+    .pl-hero,
+    .pl-panel,
+    .cp-card,
+    .tm-card,
+    .tm-item,
+    .tm-summary,
+    .tm-invitation,
+    .tm-workspace,
+    .tm-mytasks,
+    .tm-feed__item,
+    .ph-item,
+    .mt-card,
+    .mt-stat,
+    .sg-item,
+    .sd-card,
+    .pf-card,
+    .bl-card,
+    .ns-card,
+    .ps-card,
+    .ps-chart,
+    .sc-settings__card,
+    .sc-access,
+    .sc-people,
+    .sc-trash__item,
+    .sc-cr-steps li,
+    .sc-cr-tips article,
+    .sp-card,
+    .sc-upfile,
+    .studio-report__cards article,
+    .wh-panel,
+    .wh-tile,
+    .wh-feature,
+    .wh-recent,
+    .wh-pending,
+    .wh-task,
+    .wh-streak,
+    .wh-feat,
+    .wh-quick__item,
+    .wh-journey__item,
+    .wh-cta
+  )::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  background: radial-gradient(
+    240px circle at var(--spot-x, 50%) var(--spot-y, 50%),
+    color-mix(in srgb, var(--ui-glow) 24%, transparent),
+    transparent 70%
+  );
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.app-shell
+  :is(
+    .sc-card,
+    .fm-row,
+    .fm-post,
+    .pl-card,
+    .pl-row,
+    .pl-hero,
+    .pl-panel,
+    .cp-card,
+    .tm-card,
+    .tm-item,
+    .tm-summary,
+    .tm-invitation,
+    .tm-workspace,
+    .tm-mytasks,
+    .tm-feed__item,
+    .ph-item,
+    .mt-card,
+    .mt-stat,
+    .sg-item,
+    .sd-card,
+    .pf-card,
+    .bl-card,
+    .ns-card,
+    .ps-card,
+    .ps-chart,
+    .sc-settings__card,
+    .sc-access,
+    .sc-people,
+    .sc-trash__item,
+    .sc-cr-steps li,
+    .sc-cr-tips article,
+    .sp-card,
+    .sc-upfile,
+    .studio-report__cards article,
+    .wh-panel,
+    .wh-tile,
+    .wh-feature,
+    .wh-recent,
+    .wh-pending,
+    .wh-task,
+    .wh-streak,
+    .wh-feat,
+    .wh-quick__item,
+    .wh-journey__item,
+    .wh-cta
+  ):hover::after {
+  opacity: 1;
+}
+.app-shell
+  :is(
+    .sc-card,
+    .fm-row,
+    .fm-post,
+    .pl-card,
+    .pl-row,
+    .pl-hero,
+    .pl-panel,
+    .cp-card,
+    .tm-card,
+    .tm-item,
+    .tm-summary,
+    .tm-invitation,
+    .tm-workspace,
+    .tm-mytasks,
+    .tm-feed__item,
+    .ph-item,
+    .mt-card,
+    .mt-stat,
+    .sg-item,
+    .sd-card,
+    .pf-card,
+    .bl-card,
+    .ns-card,
+    .ps-card,
+    .ps-chart,
+    .sc-settings__card,
+    .sc-access,
+    .sc-people,
+    .sc-trash__item,
+    .sc-cr-steps li,
+    .sc-cr-tips article,
+    .sp-card,
+    .sc-upfile,
+    .studio-report__cards article,
+    .wh-panel,
+    .wh-tile,
+    .wh-feature,
+    .wh-recent,
+    .wh-pending,
+    .wh-task,
+    .wh-streak,
+    .wh-feat,
+    .wh-quick__item,
+    .wh-journey__item,
+    .wh-cta
+  ):has(
+    :is(
+      .sc-card,
+      .fm-row,
+      .fm-post,
+      .pl-card,
+      .pl-row,
+      .pl-hero,
+      .pl-panel,
+      .cp-card,
+      .tm-card,
+      .tm-item,
+      .tm-summary,
+      .tm-invitation,
+      .tm-workspace,
+      .tm-mytasks,
+      .tm-feed__item,
+      .ph-item,
+      .mt-card,
+      .mt-stat,
+      .sg-item,
+      .sd-card,
+      .pf-card,
+      .bl-card,
+      .ns-card,
+      .ps-card,
+      .ps-chart,
+      .sc-settings__card,
+      .sc-access,
+      .sc-people,
+      .sc-trash__item,
+      .sc-cr-steps li,
+      .sc-cr-tips article,
+      .sp-card,
+      .sc-upfile,
+      .studio-report__cards article,
+      .wh-panel,
+      .wh-tile,
+      .wh-feature,
+      .wh-recent,
+      .wh-pending,
+      .wh-task,
+      .wh-streak,
+      .wh-feat,
+      .wh-quick__item,
+      .wh-journey__item,
+      .wh-cta
+    ):hover
+  )::after {
+  opacity: 0;
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .app-shell .sc-card {
+  .app-shell .sc-card,
+  .app-shell :is(.pl-card, .pl-row, .cp-card, .tm-card, .tm-item, .ph-item, .mt-card),
+  .app-shell
+    :is(
+      .sc-card,
+      .fm-row,
+      .fm-post,
+      .pl-card,
+      .pl-row,
+      .pl-hero,
+      .pl-panel,
+      .cp-card,
+      .tm-card,
+      .tm-item,
+      .tm-summary,
+      .tm-invitation,
+      .tm-workspace,
+      .tm-mytasks,
+      .tm-feed__item,
+      .ph-item,
+      .mt-card,
+      .mt-stat,
+      .sg-item,
+      .sd-card,
+      .pf-card,
+      .bl-card,
+      .ns-card,
+      .ps-card,
+      .ps-chart,
+      .sc-settings__card,
+      .sc-access,
+      .sc-people,
+      .sc-trash__item,
+      .sc-cr-steps li,
+      .sc-cr-tips article,
+      .sp-card,
+      .sc-upfile,
+      .studio-report__cards article,
+      .wh-panel,
+      .wh-tile,
+      .wh-feature,
+      .wh-recent,
+      .wh-pending,
+      .wh-task,
+      .wh-streak,
+      .wh-feat,
+      .wh-quick__item,
+      .wh-journey__item,
+      .wh-cta
+    )::after {
     transition: none;
   }
 }
 
 /* Trang giới thiệu cho khách tự định kiểu trong pages/home/guest-home.css (luôn là sân khấu gỗ hồng) */
 
-/* ---- bảng, trạng thái trống và hộp thoại dùng chung: thẻ phẳng, đầu bảng chữ thường ---- */
+/* ---- bảng, trạng thái trống và hộp thoại dùng chung: thẻ nổi, đầu bảng chữ thường ---- */
 .app-shell .table-responsive {
   overflow: hidden;
+  border: 1px solid var(--ui-panel-border);
   border-radius: 12px;
-  background: var(--ui-flat);
+  background: var(--ui-panel);
+  box-shadow: var(--ui-elev-2);
 }
 .app-shell .table thead th {
   background: var(--ui-flat-2);
@@ -109,9 +475,10 @@
 }
 .app-shell .sc-empty {
   padding: 2.5rem 1.5rem;
-  border: 0;
+  border: 1px dashed var(--ui-panel-border);
   border-radius: 12px;
-  background: var(--ui-flat);
+  background: var(--ui-panel);
+  box-shadow: var(--ui-elev-1);
   text-align: center;
 }
 .app-shell .sc-empty h3 {
@@ -142,8 +509,8 @@
   outline-offset: 2px;
 }
 
-/* ---- khung thẻ (kiểu Mercury): mọi thẻ là một bề mặt phẳng sáng hơn / tối hơn nền một bậc, không viền, không bóng ----
- * Gồm thẻ bản nhạc, playlist, team, hồ sơ, cài đặt bản nhạc, thùng rác, bộ lọc Khám phá, hướng dẫn tạo bản nhạc... */
+/* ---- khung thẻ: mọi khung nội dung là bề mặt sáng nổi khỏi nền ngà (viền ấm, bóng cấp 2) ----
+ * Gồm thẻ bản nhạc, playlist, team, hồ sơ, cài đặt bản nhạc, thùng rác, bộ lọc, diễn đàn, luyện tập, thống kê, gói... */
 .app-shell
   :is(
     .sc-card,
@@ -158,7 +525,11 @@
     .tm-invitation,
     .sc-settings__card,
     .sc-settings__nav,
-    .pl-hero,
+    .sc-settings__actions,
+    .sc-access,
+    .sc-people,
+    .sc-panel,
+    .sc-filters,
     .pl-panel,
     .sc-trash__item,
     .ex-filters,
@@ -171,9 +542,35 @@
     .fm-row,
     .fm-post,
     .fm-reply,
-    .bl-card
+    .fm-controls,
+    .bl-card,
+    .ns-card,
+    .ps-card,
+    .ps-chart,
+    .ps-heatmap-wrap,
+    .ph-item,
+    .mt-card,
+    .mt-stat,
+    .mt-toolbar,
+    .tm-list,
+    .tm-mine,
+    .tm-mytasks,
+    .tm-workspace,
+    .tm-feed__item,
+    .sp-card,
+    .sc-upload__side,
+    .sc-upfile,
+    .sr-page,
+    .sg-item,
+    .cm-thread,
+    .cm-compose,
+    .cd-timeline,
+    .studio-player__setup,
+    .studio-player__session,
+    .studio-player__score,
+    .studio-report__cards article
   ) {
-  border-color: transparent;
-  background: var(--ui-flat);
-  box-shadow: none;
+  border: 1px solid var(--ui-panel-border);
+  background: var(--ui-panel);
+  box-shadow: var(--ui-elev-2);
 }

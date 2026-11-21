@@ -10,15 +10,14 @@
   "sort": {
     "label": "Sort by",
     "latest": "Latest activity",
-    "top": "Most votes"
+    "top": "Most liked"
   },
   "loadFailed": "Could not load the forum",
   "reload": "Try reloading the page.",
   "emptyTitle": "No threads yet",
   "emptyFiltered": "Try removing a filter or searching for something else.",
   "emptyFirst": "Be the first to start a thread.",
-  "votes": "{count} votes",
-  "votesShort": "votes",
+  "reactions": "{likes} likes, {dislikes} dislikes",
   "repliesShort": "replies",
   "answered": "Answered",
   "anonymous": "Member",
@@ -40,7 +39,7 @@
   "replyFailed": "Could not post the reply",
   "actionFailed": "Could not complete the action",
   "deleteThreadTitle": "Delete this thread?",
-  "deleteThreadText": "The thread and its votes will be deleted and cannot be restored.",
+  "deleteThreadText": "The thread and its likes and dislikes will be deleted and cannot be restored.",
   "threadDeleted": "Thread deleted",
   "deletePostTitle": "Delete this reply?",
   "deletePostText": "The reply will be deleted and cannot be restored.",
@@ -48,11 +47,16 @@
   "reportPost": "Report reply",
   "notFoundTitle": "Thread not found",
   "notFoundText": "The thread may have been deleted or hidden.",
-  "vote": {
-    "add": "Vote, currently {count} votes",
-    "remove": "Remove vote, currently {count} votes",
-    "own": "{count} votes (you cannot vote on your own post)",
-    "readonly": "{count} votes (sign in to vote)"
+  "reaction": {
+    "group": "Like or dislike",
+    "likeAdd": "Like, currently {count} likes",
+    "likeRemove": "Remove like, currently {count} likes",
+    "dislikeAdd": "Dislike, currently {count} dislikes",
+    "dislikeRemove": "Remove dislike, currently {count} dislikes",
+    "likeOwn": "{count} likes (you cannot react to your own post)",
+    "dislikeOwn": "{count} dislikes (you cannot react to your own post)",
+    "likeReadonly": "{count} likes (sign in to react)",
+    "dislikeReadonly": "{count} dislikes (sign in to react)"
   },
   "editor": {
     "mode": "Editor mode",
@@ -91,6 +95,6 @@
   "guest": {
     "signInToPost": "Sign in to start a thread",
     "signIn": "Sign in",
-    "replyPrompt": "Sign in to reply, vote and follow this thread."
+    "replyPrompt": "Sign in to reply, like or dislike and follow this thread."
   }
 }

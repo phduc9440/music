@@ -6,6 +6,8 @@ import jakarta.persistence.*;
 
 import org.hibernate.annotations.CreationTimestamp;
 
+import com.ptit.music_be.dto.enums.forum.ForumReaction;
+
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -35,6 +37,12 @@ public class ForumVote {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id")
     ForumPost post;
+
+    /** Thích hay không thích; mỗi thành viên một phiếu cho mỗi chủ đề / bài trả lời. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "reaction", nullable = false, length = 10)
+    @Builder.Default
+    ForumReaction reaction = ForumReaction.LIKE;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
