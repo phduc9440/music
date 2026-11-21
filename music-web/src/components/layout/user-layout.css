@@ -15,8 +15,11 @@
   position: sticky;
   top: 0;
   z-index: 200;
-  /* kiểu Mercury: thanh trên đi theo theme, nền mờ trong suốt (frosted) thay cho dải màu đặc, không viền */
-  background: color-mix(in srgb, var(--ui-bg) 84%, transparent);
+  /* thanh trên là bề mặt nổi mờ (frosted) cùng hệ với khung nội dung: nền --ui-panel trong suốt nhẹ, viền dưới ấm,
+     bóng cấp 1 để tách khỏi trang khi cuộn */
+  background: color-mix(in srgb, var(--ui-panel) 88%, transparent);
+  border-bottom: 1px solid var(--ui-panel-border);
+  box-shadow: var(--ui-elev-1);
   backdrop-filter: blur(12px);
 }
 
@@ -62,8 +65,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--ui-text);
-  color: var(--ui-bg);
+  /* logo cùng khối chàm với đầu trang và chân trang */
+  background: linear-gradient(135deg, var(--ui-hero-from), var(--ui-hero-to));
+  color: var(--ui-hero-text);
 }
 
 .app-nav {
@@ -174,7 +178,7 @@
 }
 
 /* nút tạo bản nhạc và ô tìm kiếm trên thanh trên */
-/* nút hành động chính của thanh trên (như "Open account" của Mercury): viên thuốc đồng thau, chữ mực tối */
+/* nút hành động chính của thanh trên (như "Open account" của Mercury): viên thuốc chàm (--ui-cta), chữ trắng */
 .app-create {
   display: inline-flex;
   align-items: center;
@@ -195,7 +199,7 @@
   color: var(--ui-on-cta);
 }
 
-/* Đăng nhập (trang khách): viên thuốc viền mảnh cùng cỡ, đứng cạnh nút Đăng ký đồng thau */
+/* Đăng nhập (trang khách): viên thuốc viền mảnh cùng cỡ, đứng cạnh nút Đăng ký (--ui-cta) */
 .app-signin {
   display: inline-flex;
   align-items: center;
@@ -246,18 +250,24 @@
   min-width: 220px;
   height: 40px;
   padding: 0 0.9rem;
-  border: 1px solid transparent;
+  /* bề mặt sáng nổi (cùng thang bóng với thẻ trang chi tiết) để tách khỏi thanh trên mờ */
+  border: 1px solid var(--ui-panel-border);
   border-radius: 40px;
-  background: var(--ui-flat);
+  background: var(--ui-panel);
   color: var(--ui-text-2);
+  box-shadow: var(--ui-elev-1);
   font: inherit;
   font-size: var(--ui-text-md);
   cursor: pointer;
 }
 
 .app-search:hover {
-  background: var(--ui-flat-2);
+  border-color: var(--ui-primary-border);
   color: var(--ui-text);
+  box-shadow: var(--ui-elev-2);
+}
+.app-search svg {
+  color: var(--ui-primary);
 }
 
 .app-search__kbd {

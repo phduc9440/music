@@ -197,9 +197,18 @@ export default function Forum() {
             {result.content.map((th) => (
               <li key={th.id}>
                 <Link to={`/forum/threads/${th.id}`} className="fm-row">
-                  <span className="fm-row__votes" aria-label={t('forum.votes', { count: th.voteCount })}>
-                    <strong>{formatNumber(th.voteCount)}</strong>
-                    <span>{t('forum.votesShort')}</span>
+                  <span
+                    className="fm-row__votes"
+                    aria-label={t('forum.reactions', { likes: th.likeCount, dislikes: th.dislikeCount })}
+                  >
+                    <span className="fm-row__react fm-row__react--like">
+                      <Icon name="thumbsUp" size={14} />
+                      <strong>{formatNumber(th.likeCount)}</strong>
+                    </span>
+                    <span className="fm-row__react fm-row__react--dislike">
+                      <Icon name="thumbsDown" size={14} />
+                      {formatNumber(th.dislikeCount)}
+                    </span>
                   </span>
                   <span className="fm-row__main">
                     <span className="fm-row__title">{th.title}</span>

@@ -18,8 +18,24 @@ function readBlock(selector) {
   return vars;
 }
 
-const light = readBlock(':root {');
-const dark = { ...light, ...readBlock(":root[data-theme='dark']") };
+/** Token trỏ sang token khác (`var(--ui-panel)`) được thay bằng giá trị cuối cùng trong cùng theme. */
+function resolve(vars) {
+  const out = {};
+  for (const [k, v0] of Object.entries(vars)) {
+    let v = v0;
+    for (let i = 0; i < 10; i++) {
+      const m = v.match(/^var\((--ui-[\w-]+)\)$/);
+      if (!m) break;
+      v = vars[m[1]];
+    }
+    out[k] = v;
+  }
+  return out;
+}
+
+const lightRaw = readBlock(':root {');
+const light = resolve(lightRaw);
+const dark = resolve({ ...lightRaw, ...readBlock(":root[data-theme='dark']") });
 
 function parse(value) {
   const hex = value.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
@@ -54,10 +70,23 @@ const PAIRS = [
   ['--ui-text-3', '--ui-surface', 4.5, 'chữ mờ trên thẻ'],
   ['--ui-text', '--ui-flat', 4.5, 'chữ chính trên thẻ phẳng'],
   ['--ui-text-2', '--ui-flat', 4.5, 'chữ phụ trên thẻ phẳng'],
-  ['--ui-on-cta', '--ui-cta', 4.5, 'chữ trên nút đồng thau'],
+  ['--ui-on-cta', '--ui-cta', 4.5, 'chữ trên nút hành động chính (--ui-cta)'],
   ['--ui-cta-ink', '--ui-flat', 3, 'biểu tượng đồng đậm trên thẻ phẳng'],
   ['--ui-primary', '--ui-surface', 4.5, 'liên kết / chữ nhấn trên thẻ'],
   ['--ui-primary', '--ui-primary-soft', 4.5, 'chữ nhấn trên nền nhấn nhạt'],
+  // trang chi tiết bản nhạc: thẻ nổi sáng (--ui-panel*) và khối đầu trang chàm (--ui-hero-*)
+  ['--ui-text', '--ui-panel', 4.5, 'chữ chính trên thẻ nổi'],
+  ['--ui-text-2', '--ui-panel', 4.5, 'chữ phụ trên thẻ nổi'],
+  ['--ui-text-3', '--ui-panel-2', 4.5, 'chữ mờ trên ô trong thẻ nổi'],
+  ['--ui-text-2', '--ui-panel-hover', 4.5, 'chữ phụ trên thẻ nổi khi rê chuột'],
+  ['--ui-primary', '--ui-panel', 4.5, 'liên kết trên thẻ nổi'],
+  ['--ui-primary', '--ui-panel-2', 4.5, 'liên kết trên ô trong thẻ nổi'],
+  ['--ui-panel-border', '--ui-panel', 1.3, 'viền thẻ nổi (chỉ cần nhìn thấy)'],
+  ['--ui-hero-text', '--ui-hero-from', 4.5, 'chữ trên khối đầu trang (đầu dải màu)'],
+  ['--ui-hero-text', '--ui-hero-to', 4.5, 'chữ trên khối đầu trang (cuối dải màu)'],
+  ['--ui-hero-text-2', '--ui-hero-from', 4.5, 'chữ phụ trên khối đầu trang'],
+  ['--ui-hero-success', '--ui-hero-from', 4.5, 'dấu đã sao chép trên khối đầu trang'],
+  ['--ui-hero-from', '--ui-hero-cta', 4.5, 'chữ trên nút chính (nền ngà) trong khối đầu trang'],
   ['--ui-on-accent', '--ui-primary', 4.5, 'chữ trên nút chính'],
   ['--ui-on-accent', '--ui-danger', 4.5, 'chữ trên nút nguy hiểm'],
   ['--ui-success', '--ui-success-soft', 4.5, 'chữ thành công'],

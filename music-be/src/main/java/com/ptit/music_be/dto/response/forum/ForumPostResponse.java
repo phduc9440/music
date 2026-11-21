@@ -2,6 +2,8 @@ package com.ptit.music_be.dto.response.forum;
 
 import java.time.LocalDateTime;
 
+import com.ptit.music_be.dto.enums.forum.ForumReaction;
+
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -15,8 +17,13 @@ public class ForumPostResponse {
     String threadId;
     String body;
     ForumAuthorResponse author;
-    long voteCount;
-    boolean votedByMe;
+    /** Số lượt thích / không thích, tính từ forum_votes lúc đọc. */
+    long likeCount;
+
+    long dislikeCount;
+    /** Lựa chọn của người đang xem; null khi chưa chọn hoặc là khách. */
+    ForumReaction myReaction;
+
     boolean mine;
     boolean accepted;
     /** Bài được trả lời trực tiếp; null khi trả lời chủ đề hoặc bài kia đã bị xóa / ẩn. */

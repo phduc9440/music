@@ -1,9 +1,14 @@
-/* Chân trang dùng chung: đi theo theme sáng / tối, nền thẻ phẳng một bậc so với trang (kiểu Mercury), không viền. */
+/* Chân trang dùng chung: dải chàm chuyển sắc khép trang lại, cùng màu với khối đầu trang. Token chữ / viền được
+   khai báo lại trong dải để logo, cột liên kết, dòng kẻ khuông tự sang chữ ngà. */
 .site-footer {
   --sf-max: 1120px;
+  --ui-text: var(--ui-hero-text);
+  --ui-text-2: var(--ui-hero-text-2);
+  --ui-border-strong: var(--ui-hero-line);
+  --ui-primary: var(--ui-hero-text);
   margin-top: 4rem;
-  background: var(--ui-flat);
-  color: var(--ui-text);
+  background: linear-gradient(160deg, var(--ui-hero-from), var(--ui-hero-to));
+  color: var(--ui-hero-text);
 }
 
 .site-footer__inner {
@@ -35,8 +40,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--ui-text);
-  color: var(--ui-bg);
+  background: var(--ui-hero-text);
+  color: var(--ui-hero-from);
 }
 
 .site-footer__brand p {

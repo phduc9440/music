@@ -27,6 +27,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import com.ptit.music_be.dto.enums.forum.ForumReaction;
 import com.ptit.music_be.dto.enums.notification.NotificationType;
 import com.ptit.music_be.dto.request.forum.ForumPostRequest;
 import com.ptit.music_be.dto.request.forum.ForumThreadRequest;
@@ -34,6 +35,7 @@ import com.ptit.music_be.entity.ForumCategory;
 import com.ptit.music_be.entity.ForumPost;
 import com.ptit.music_be.entity.ForumSubscription;
 import com.ptit.music_be.entity.ForumThread;
+import com.ptit.music_be.entity.ForumVote;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.event.RewardEarnedEvent;
@@ -207,24 +209,54 @@ class ForumServiceImplTest {
     }
 
     @Test
-    void doubleClickThreadVoteIsIgnoredInsteadOfFailing() {
+    void likingAThreadRecordsALikeAndReturnsFreshCounts() {
         Member author = Member.builder().id("author").email("au@x.com").build();
         when(threadRepository.findDetail("t1")).thenReturn(Optional.of(threadBy(author)));
         when(voteRepository.findByMemberIdAndThreadId("me", "t1")).thenReturn(Optional.empty());
-        // Lần bấm kia vừa ghi phiếu: INSERT IGNORE không chèn thêm dòng nào, không ném lỗi trùng khóa
-        when(voteRepository.insertThreadVoteIgnore(anyString(), eq("me"), eq("t1")))
-                .thenReturn(0);
-        when(voteRepository.countByThreadId("t1")).thenReturn(1L);
+        when(voteRepository.countByThreadIdAndReaction("t1", ForumReaction.LIKE))
+                .thenReturn(3L);
+        when(voteRepository.countByThreadIdAndReaction("t1", ForumReaction.DISLIKE))
+                .thenReturn(1L);
 
-        var response = service.toggleThreadVote("t1");
+        var response = service.reactToThread("t1", ForumReaction.LIKE);
 
-        assertThat(response.isVoted()).isTrue();
-        assertThat(response.getVoteCount()).isEqualTo(1L);
-        verify(voteRepository, never()).save(any());
+        verify(voteRepository).insertThreadReactionIgnore(anyString(), eq("me"), eq("t1"), eq("LIKE"));
+        assertThat(response.getMyReaction()).isEqualTo(ForumReaction.LIKE);
+        assertThat(response.getLikeCount()).isEqualTo(3L);
+        assertThat(response.getDislikeCount()).isEqualTo(1L);
     }
 
     @Test
-    void doubleClickPostVoteIsIgnoredInsteadOfFailing() {
+    void sameReactionAgainRemovesIt() {
+        Member author = Member.builder().id("author").email("au@x.com").build();
+        ForumVote mine =
+                ForumVote.builder().id("v1").reaction(ForumReaction.DISLIKE).build();
+        when(threadRepository.findDetail("t1")).thenReturn(Optional.of(threadBy(author)));
+        when(voteRepository.findByMemberIdAndThreadId("me", "t1")).thenReturn(Optional.of(mine));
+
+        var response = service.reactToThread("t1", ForumReaction.DISLIKE);
+
+        verify(voteRepository).delete(mine);
+        assertThat(response.getMyReaction()).isNull();
+    }
+
+    @Test
+    void otherReactionSwitchesTheExistingOne() {
+        Member author = Member.builder().id("author").email("au@x.com").build();
+        ForumVote mine =
+                ForumVote.builder().id("v1").reaction(ForumReaction.LIKE).build();
+        when(threadRepository.findDetail("t1")).thenReturn(Optional.of(threadBy(author)));
+        when(voteRepository.findByMemberIdAndThreadId("me", "t1")).thenReturn(Optional.of(mine));
+
+        var response = service.reactToThread("t1", ForumReaction.DISLIKE);
+
+        assertThat(mine.getReaction()).isEqualTo(ForumReaction.DISLIKE);
+        verify(voteRepository, never()).delete(any());
+        assertThat(response.getMyReaction()).isEqualTo(ForumReaction.DISLIKE);
+    }
+
+    @Test
+    void doubleClickPostReactionIsIgnoredInsteadOfFailing() {
         Member author = Member.builder().id("author").email("au@x.com").build();
         ForumThread thread = threadBy(author);
         ForumPost post = ForumPost.builder()
@@ -236,20 +268,22 @@ class ForumServiceImplTest {
         when(threadRepository.findDetail(thread.getId())).thenReturn(Optional.of(thread));
         when(postRepository.findById("p1")).thenReturn(Optional.of(post));
         when(voteRepository.findByMemberIdAndPostId("me", "p1")).thenReturn(Optional.empty());
-        when(voteRepository.insertPostVoteIgnore(anyString(), eq("me"), eq("p1")))
+        // Lần bấm kia vừa ghi: INSERT IGNORE không chèn thêm dòng nào, không ném lỗi trùng khóa
+        when(voteRepository.insertPostReactionIgnore(anyString(), eq("me"), eq("p1"), eq("LIKE")))
                 .thenReturn(0);
-        when(voteRepository.countByPostId("p1")).thenReturn(1L);
+        when(voteRepository.countByPostIdAndReaction("p1", ForumReaction.LIKE)).thenReturn(1L);
 
-        var response = service.togglePostVote("p1");
+        var response = service.reactToPost("p1", ForumReaction.LIKE);
 
-        assertThat(response.isVoted()).isTrue();
+        assertThat(response.getMyReaction()).isEqualTo(ForumReaction.LIKE);
+        assertThat(response.getLikeCount()).isEqualTo(1L);
         verify(voteRepository, never()).save(any());
     }
 
     @Test
-    void cannotVoteOnOwnThread() {
+    void cannotReactToOwnThread() {
         when(threadRepository.findDetail("t1")).thenReturn(Optional.of(threadBy(me)));
-        assertError(() -> service.toggleThreadVote("t1"), CommunityErrorCode.FORUM_VOTE_OWN_CONTENT);
+        assertError(() -> service.reactToThread("t1", ForumReaction.LIKE), CommunityErrorCode.FORUM_VOTE_OWN_CONTENT);
     }
 
     @Test

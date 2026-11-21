@@ -11,28 +11,29 @@
  * Quy ước: mọi mã màu nằm ở file này. Ở CSS và TSX khác chỉ dùng var(--ui-...) (npm run lint:colors kiểm tra), và mỗi
  * cặp chữ/nền phải đạt độ tương phản chữ thường >= 4,5:1 ở cả hai theme (npm run check:contrast kiểm tra).
  *
- * Bảng màu "Gỗ hồng & Đồng thau": gỗ hồng đậm làm nền tối, mực nâu tím làm chữ, đỏ rượu vang cho tương tác (liên kết,
- * viền, trạng thái chọn), đồng thau CHỈ cho chỗ người xem cần nhìn vào (nút hành động chính, điểm nhấn) — dùng ít.
+ * Bảng màu "Chàm" (skill ui-ux-pro-max, nhóm app học tập): nền chàm rất nhạt, chữ mực chàm, chàm cho tương tác (liên kết,
+ * viền, trạng thái chọn), nút hành động chính, khối đầu trang và chân trang. Mọi tông trung tính (nền, viền, màu rê chuột)
+ * đều ngả về sắc chàm để không lẫn tông be / cam; theme tối là chàm đêm.
  */
 :root {
   color-scheme: light;
 
-  /* nền và chữ: nền giấy ngà, chữ mực nâu tím */
-  --ui-bg: #f7f1e6;
-  --ui-surface: #fffdf8;
-  --ui-surface-muted: #f1e9dc;
-  --ui-surface-hover: #ebe0cf;
-  --ui-border: #e5d8c5;
-  --ui-border-strong: #c9b49a;
-  --ui-text: #2a1a1f;
-  --ui-text-2: #5a4148;
-  --ui-text-3: #654c53;
+  /* nền và chữ: nền chàm rất nhạt, chữ mực chàm */
+  --ui-bg: #f1f3fd;
+  --ui-surface: #ffffff;
+  --ui-surface-muted: #eceffb;
+  --ui-surface-hover: #e5e9fb;
+  --ui-border: #dde2f7;
+  --ui-border-strong: #a9b4ec;
+  --ui-text: #1c1d33;
+  --ui-text-2: #44476a;
+  --ui-text-3: #53567a;
 
-  /* màu tương tác (liên kết, viền nhấn, mục đang chọn): đỏ rượu vang */
-  --ui-primary: #8a1c3b;
-  --ui-primary-hover: #701530;
-  --ui-primary-soft: #f6e4e8;
-  --ui-primary-ring: rgba(138, 28, 59, 0.25);
+  /* màu tương tác (liên kết, viền nhấn, mục đang chọn): chàm */
+  --ui-primary: #4338ca;
+  --ui-primary-hover: #3730a3;
+  --ui-primary-soft: #e0e7ff;
+  --ui-primary-ring: rgba(67, 56, 202, 0.25);
   --ui-success: #15803d;
   --ui-success-soft: #ecfdf3;
   --ui-warning: #b45309;
@@ -43,14 +44,14 @@
   --ui-violet: #6d28d9;
   --ui-violet-soft: #f5f3ff;
 
-  /* đồng thau: nút hành động chính và điểm nhấn. Chữ trên nền đồng luôn là mực tối. --ui-cta-ink là tông đồng đậm
-     dùng được cho biểu tượng / chữ nhỏ trên nền sáng (đồng sáng trên nền giấy không đọc được) */
-  --ui-cta: #e3a83b;
-  --ui-cta-hover: #d6992a;
-  --ui-cta-border: #c48a22;
-  --ui-on-cta: #2a1a1f;
-  --ui-cta-ink: #7a5410;
-  --ui-cta-ring: rgba(196, 138, 34, 0.45);
+  /* nút hành động chính: chàm tươi, chữ trắng. Trên khối đầu trang chàm thì nút chính đảo thành nền trắng chữ chàm
+     (--ui-hero-cta*). --ui-cta-ink là tông chàm đậm cho biểu tượng / chữ nhỏ trang trí */
+  --ui-cta: #4f46e5;
+  --ui-cta-hover: #4338ca;
+  --ui-cta-border: #4338ca;
+  --ui-on-cta: #ffffff;
+  --ui-cta-ink: #3730a3;
+  --ui-cta-ring: rgba(79, 70, 229, 0.35);
 
   /* bảng màu trang trí (giao diện người dùng): bìa bản nhạc, ô gói, nhấn đầu trang. Không dùng cho chữ nhỏ. */
   --ui-hue-rose: #be123c;
@@ -62,85 +63,99 @@
 
   /* vai trò bổ sung */
   --ui-on-accent: #ffffff; /* chữ trên nền màu tương tác (--ui-primary) / nền tối */
-  --ui-primary-border: #e6c3cd;
+  --ui-primary-border: #c7d2fe;
   --ui-danger-border: #fecaca;
   --ui-success-border: #bbf7d0;
   --ui-warning-border: #fde68a;
   --ui-warning-strong: #f59e0b;
-  --ui-shadow-ink: #2a1a1f; /* gốc của bóng đổ và lớp phủ, trộn với độ trong suốt */
+  --ui-shadow-ink: #1c1d33; /* gốc của bóng đổ và lớp phủ, trộn với độ trong suốt */
   --ui-on-cover: #ffffff; /* chữ/biểu tượng trên ảnh bìa nhiều màu (playlist) */
   --ui-cover-ring: rgb(255 255 255 / 0.18);
-  --ui-overlay: rgba(30, 20, 24, 0.5); /* nền mờ phía sau hộp thoại */
-  --ui-overlay-soft: rgba(30, 20, 24, 0.38); /* nền mờ phía sau ngăn kéo trên điện thoại */
+  --ui-overlay: rgba(20, 21, 40, 0.5); /* nền mờ phía sau hộp thoại */
+  --ui-overlay-soft: rgba(20, 21, 40, 0.38); /* nền mờ phía sau ngăn kéo trên điện thoại */
 
-  /* "sân khấu": thanh trên, đầu trang, chân trang — luôn gỗ hồng đậm ở cả hai theme. Trên sân khấu, hồng phấn là màu
-     tương tác, đồng thau (--ui-brass, tên cũ giữ lại để các trang không phải đổi) là điểm nhấn / nút chính */
-  --ui-stage-bg: #1e1418;
-  --ui-stage-bg-2: #2a1d22;
-  --ui-stage-text: #f7efe6;
-  --ui-stage-text-2: #d1bcae;
-  --ui-stage-line: rgb(227 168 59 / 0.16); /* năm dòng kẻ khuông */
-  --ui-stage-border: #3a2a30;
-  --ui-stage-border-strong: #554048;
-  --ui-stage-accent: #f0b8c6;
-  --ui-stage-accent-hover: #f7d3dc;
-  --ui-stage-accent-soft: #3a2229;
-  --ui-brass: #e3a83b;
-  --ui-brass-hover: #f0c063;
-  --ui-brass-soft: #33261a;
-  --ui-velvet: #8a1c3b; /* đỏ nhung rượu vang: quầng sáng nền, dải màu trang trí */
+  /* "sân khấu" (cột trái trang đăng nhập, trang khách): luôn chàm đêm ở cả hai theme. Trên sân khấu, chàm sáng là màu
+     tương tác; --ui-brass (tên cũ giữ lại để các trang không phải đổi) là điểm nhấn / nút chính, nay là chàm sáng */
+  --ui-stage-bg: #14152b;
+  --ui-stage-bg-2: #1d1f3a;
+  --ui-stage-text: #f3f4ff;
+  --ui-stage-text-2: #c3c7e6;
+  --ui-stage-line: rgb(165 180 252 / 0.16); /* năm dòng kẻ khuông */
+  --ui-stage-border: #2c2f52;
+  --ui-stage-border-strong: #44487a;
+  --ui-stage-accent: #a5b4fc;
+  --ui-stage-accent-hover: #c7d2fe;
+  --ui-stage-accent-soft: #23264a;
+  --ui-brass: #818cf8;
+  --ui-brass-hover: #a5b4fc;
+  --ui-brass-soft: #23264a;
+  --ui-velvet: #4338ca; /* chàm đậm: quầng sáng nền, dải màu trang trí, nút trên sân khấu */
   /* bảng màu hiệu ứng (nốt nhạc bay, bụi sáng, ánh cực quang, vòng sóng khi bấm, dây đàn): hồng mâm xôi, tím violet,
      hổ phách, xanh ngọc. Phối từ màu thương hiệu với tím và xanh của các web nghe nhạc. Chỉ dùng cho trang trí, không
-     dùng cho chữ. Theme sáng: tông đậm để nổi trên nền giấy ngà */
+     dùng cho chữ. Theme sáng: tông đậm để nổi trên nền chàm nhạt */
   --ui-fx-1: #c2185b;
   --ui-fx-2: #7c3aed;
-  --ui-fx-3: #d97706;
+  --ui-fx-3: #0284c7;
   --ui-fx-4: #0d9488;
   --ui-fx-on: #ffffff; /* chữ / biểu tượng đặt trên dải màu hiệu ứng */
   /* vùng sân khấu luôn tối (cột trái trang đăng nhập): bốn sắc tông sáng, không đổi theo theme */
   --ui-stage-fx-1: #fb7185;
   --ui-stage-fx-2: #a78bfa;
-  --ui-stage-fx-3: #fbbf24;
+  --ui-stage-fx-3: #7dd3fc;
   --ui-stage-fx-4: #2dd4bf;
-  --ui-velvet-hover: #701530;
+  --ui-velvet-hover: #3730a3;
   --ui-stage-danger: #f59a8a;
 
   /* khung nhật ký lỗi (luôn tối ở cả hai theme, như một cửa sổ terminal) */
-  --ui-console-bg: #1e1418;
-  --ui-console-text: #f2e8df;
+  --ui-console-bg: #14152b;
+  --ui-console-text: #eef0ff;
 
   /* biểu đồ */
-  --ui-chart-scores: #8a1c3b;
+  --ui-chart-scores: #4f46e5;
   --ui-chart-practice: #2f7d5b;
   --ui-chart-members: #6b2d5c;
   --ui-chart-revenue: #c48a22;
-  --ui-chart-axis: #654c53;
-  --ui-chart-grid: #ece2d3;
-  --ui-chart-cursor: rgba(101, 76, 83, 0.12);
-  --ui-chart-neutral: #c2b0a6;
+  --ui-chart-axis: #53567a;
+  --ui-chart-grid: #e3e7f6;
+  --ui-chart-cursor: rgba(83, 86, 122, 0.12);
+  --ui-chart-neutral: #b4b9d6;
   --ui-chart-ok: #0ca30c;
   --ui-chart-busy: #fab219;
   --ui-chart-fail: #d03b3b;
 
-  /* kích thước. Kiểu Mercury không dùng bóng đổ: các token bóng là bóng rỗng (vẫn ghép được trong danh sách box-shadow),
-     chỉ còn --ui-shadow-pop cho menu thả xuống và hộp thoại nổi */
+  /* kích thước. Thang bóng --ui-elev-* (bên dưới) là nguồn duy nhất: --ui-shadow-sm / --ui-shadow / --ui-card-shadow
+     trỏ về nó để mọi khung nội dung (user và admin) cùng nổi lên một kiểu; --ui-shadow-pop cho menu và hộp thoại nổi */
   --ui-radius-lg: 12px;
   --ui-radius: 8px;
   --ui-radius-sm: 6px;
-  --ui-shadow-sm: 0 0 0 0 transparent;
-  --ui-shadow: 0 0 0 0 transparent;
-  --ui-shadow-pop: 0 10px 30px rgba(42, 26, 31, 0.16);
-  /* khung thẻ: viền và bóng đủ rõ để thẻ tách khỏi nền trang (viền thường chỉ chênh nền ~1,3 lần) */
-  --ui-card-border: #c9b49a;
-  /* thẻ phẳng kiểu Mercury: tách khỏi nền chỉ bằng một bậc sáng tối, không viền, không bóng */
-  --ui-flat: #f0e7d8;
-  --ui-flat-2: #e6d9c5;
-  --ui-card-shadow: 0 0 0 0 transparent;
-  /* thẻ nổi (trang chi tiết bản nhạc): nền khác hẳn nền trang, có viền và bóng nhẹ để khung bật lên */
+  --ui-shadow-sm: var(--ui-elev-1);
+  --ui-shadow: var(--ui-elev-2);
+  --ui-shadow-pop: 0 10px 30px rgba(28, 29, 51, 0.16);
+  /* khung thẻ dùng chung: bề mặt nổi --ui-panel, viền chàm nhạt, bóng cấp 2. --ui-flat giữ tên cũ (kiểu Mercury) để CSS cũ
+     không phải đổi, nay là bề mặt nổi; --ui-flat-2 là bậc rê chuột / ô bên trong */
+  --ui-card-border: var(--ui-panel-border);
+  --ui-flat: var(--ui-panel);
+  --ui-flat-2: var(--ui-panel-hover);
+  --ui-card-shadow: var(--ui-elev-2);
+  /* Hệ bề mặt toàn app theo "Dimensional Layering" + "Vibrant Block" (skill ui-ux-pro-max): nền chàm nhạt, mọi khung
+     nội dung là bề mặt trắng nổi lên bằng thang bóng (elevation) thống nhất; khối đầu trang và chân trang là khối chàm
+     chuyển sắc làm điểm nhấn, cùng màu với nút chính và màu tương tác */
   --ui-panel: #ffffff;
-  --ui-panel-2: #f6eee2;
-  --ui-panel-border: #d4bfa2;
-  --ui-panel-shadow: 0 1px 2px rgba(42, 26, 31, 0.06), 0 8px 24px rgba(42, 26, 31, 0.08);
+  --ui-panel-2: #eef1fd;
+  --ui-panel-hover: #e7ebfc;
+  --ui-panel-border: #cfd7f6;
+  --ui-elev-1: 0 1px 2px rgba(28, 29, 51, 0.06), 0 1px 3px rgba(28, 29, 51, 0.08);
+  --ui-elev-2: 0 1px 2px rgba(28, 29, 51, 0.05), 0 8px 20px -6px rgba(28, 29, 51, 0.14);
+  --ui-elev-3: 0 2px 4px rgba(28, 29, 51, 0.06), 0 20px 40px -14px rgba(55, 48, 163, 0.35);
+  --ui-hero-from: #4f46e5;
+  --ui-hero-to: #3730a3;
+  --ui-hero-text: #ffffff;
+  --ui-hero-text-2: #e6e8fd;
+  --ui-hero-chip: rgb(255 255 255 / 0.14);
+  --ui-hero-line: rgb(255 255 255 / 0.32);
+  --ui-hero-success: #d1fae5;
+  --ui-hero-cta: #ffffff;
+  --ui-hero-cta-hover: #eef0ff;
   --ui-header-h: 60px;
   --ui-content-max: 1200px; /* bề ngang tối đa của phần nội dung chính (thanh trên thì tràn hết màn hình) */
 
@@ -199,26 +214,26 @@
   /* bảng màu hiệu ứng: cùng bốn sắc, sáng lên để phát quang trên nền tối */
   --ui-fx-1: #fb7185;
   --ui-fx-2: #a78bfa;
-  --ui-fx-3: #fbbf24;
+  --ui-fx-3: #7dd3fc;
   --ui-fx-4: #2dd4bf;
-  --ui-fx-on: #1c1417;
+  --ui-fx-on: #12132a;
 
-  /* nền gỗ hồng than kiểu Mercury (không đen kịt), thẻ sáng hơn một bậc, chữ trắng ngà */
-  --ui-bg: #1c1417;
-  --ui-surface: #261b1f;
-  --ui-surface-muted: #211719;
-  --ui-surface-hover: #33252a;
-  --ui-border: #3a2a30;
-  --ui-border-strong: #554048;
-  --ui-text: #f5ece4;
-  --ui-text-2: #d3c2b8;
-  --ui-text-3: #bba79d;
+  /* nền chàm đêm (không đen kịt), thẻ sáng hơn một bậc, chữ trắng ánh chàm */
+  --ui-bg: #12132a;
+  --ui-surface: #1b1d38;
+  --ui-surface-muted: #171930;
+  --ui-surface-hover: #24274a;
+  --ui-border: #2c2f52;
+  --ui-border-strong: #44487a;
+  --ui-text: #eef0ff;
+  --ui-text-2: #c3c7e6;
+  --ui-text-3: #a9aed4;
 
-  /* ở theme tối màu tương tác là hồng phấn sáng, nên chữ trên nền nhấn chuyển sang gỗ hồng đậm để vẫn đủ tương phản */
-  --ui-primary: #f0b8c6;
-  --ui-primary-hover: #f7d3dc;
-  --ui-primary-soft: #3a2229;
-  --ui-primary-ring: rgba(240, 184, 198, 0.3);
+  /* ở theme tối màu tương tác là chàm sáng, nên chữ trên nền nhấn chuyển sang chàm đêm để vẫn đủ tương phản */
+  --ui-primary: #a5b4fc;
+  --ui-primary-hover: #c7d2fe;
+  --ui-primary-soft: #23264a;
+  --ui-primary-ring: rgba(165, 180, 252, 0.3);
   --ui-success: #4ade80;
   --ui-success-soft: #0f2a1c;
   --ui-warning: #fbbf24;
@@ -229,10 +244,13 @@
   --ui-violet: #a78bfa;
   --ui-violet-soft: #231a3d;
 
-  --ui-cta-hover: #f0c063;
-  --ui-cta-border: #e3a83b;
-  --ui-cta-ink: #e3a83b;
-  --ui-cta-ring: rgba(227, 168, 59, 0.35);
+  /* theme tối: nút chính chàm sáng, chữ chàm đêm */
+  --ui-cta: #818cf8;
+  --ui-cta-hover: #a5b4fc;
+  --ui-cta-border: #818cf8;
+  --ui-on-cta: #12132a;
+  --ui-cta-ink: #a5b4fc;
+  --ui-cta-ring: rgba(129, 140, 248, 0.35);
 
   --ui-hue-rose: #fb7185;
   --ui-hue-amber: #fbbf24;
@@ -241,8 +259,8 @@
   --ui-hue-violet: #a78bfa;
   --ui-hue-sky: #7fb0e0;
 
-  --ui-on-accent: #1e1418;
-  --ui-primary-border: #6b3a48;
+  --ui-on-accent: #12132a;
+  --ui-primary-border: #3f4685;
   --ui-danger-border: #7f1d1d;
   --ui-success-border: #166534;
   --ui-warning-border: #92400e;
@@ -251,33 +269,33 @@
   --ui-overlay: rgba(0, 0, 0, 0.6);
   --ui-overlay-soft: rgba(0, 0, 0, 0.5);
 
-  --ui-chart-scores: #f0b8c6;
+  --ui-chart-scores: #a5b4fc;
   --ui-chart-practice: #6fcf97;
   --ui-chart-members: #c4a1e0;
   --ui-chart-revenue: #e3a83b;
-  --ui-chart-axis: #a8938a;
-  --ui-chart-grid: #3a2a30;
-  --ui-chart-cursor: rgba(168, 147, 138, 0.16);
-  --ui-chart-neutral: #5a4850;
+  --ui-chart-axis: #a9aed4;
+  --ui-chart-grid: #2c2f52;
+  --ui-chart-cursor: rgba(169, 174, 212, 0.16);
+  --ui-chart-neutral: #4a4f7a;
   --ui-chart-ok: #4ade80;
   --ui-chart-busy: #fbbf24;
   --ui-chart-fail: #f87171;
 
   /* sân khấu ở theme tối tối hơn nền trang một chút để vẫn tách khỏi nội dung */
-  --ui-stage-bg: #150e11;
-  --ui-stage-bg-2: #261b1f;
+  --ui-stage-bg: #0d0e1f;
+  --ui-stage-bg-2: #1b1d38;
 
-  --ui-shadow-sm: 0 0 0 0 transparent;
-  --ui-shadow: 0 0 0 0 transparent;
   --ui-shadow-pop: 0 10px 30px rgba(0, 0, 0, 0.6);
-  --ui-card-border: #463439;
-  --ui-flat: #261b1f;
-  --ui-flat-2: #33252a;
-  --ui-card-shadow: 0 0 0 0 transparent;
-  --ui-panel: #30232a;
-  --ui-panel-2: #3d2d34;
-  --ui-panel-border: #57414a;
-  --ui-panel-shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 10px 28px rgba(0, 0, 0, 0.4);
+  /* thẻ sáng hơn nền trang một bậc, bóng đen sâu hơn; khối đầu trang chàm trầm hơn */
+  --ui-panel: #1d2040;
+  --ui-panel-2: #252950;
+  --ui-panel-hover: #2b2f5a;
+  --ui-panel-border: #363b6a;
+  --ui-elev-1: 0 1px 3px rgba(0, 0, 0, 0.5);
+  --ui-elev-2: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 24px -8px rgba(0, 0, 0, 0.65);
+  --ui-elev-3: 0 2px 4px rgba(0, 0, 0, 0.45), 0 22px 44px -14px rgba(0, 0, 0, 0.8);
+  --ui-hero-from: #4338ca;
+  --ui-hero-to: #272278;
 
   /* trang nhạc */
   --ui-note-selected: #fb923c;
@@ -299,8 +317,8 @@
 
 /*
  * Vùng "sân khấu" tối giữa trang sáng: thanh trên của trang người dùng, header và sidebar quản trị. Gắn class ui-stage
- * là mọi component bên trong (menu, ô tìm, chuông, nút giao diện) tự đổi sang chữ trắng ngà trên nền gỗ hồng, tương tác
- * bằng hồng phấn; nút chính vẫn là đồng thau (--ui-cta).
+ * là mọi component bên trong (menu, ô tìm, chuông, nút giao diện) tự đổi sang chữ sáng trên nền chàm đêm, tương tác
+ * bằng chàm sáng; nút chính dùng --ui-cta.
  */
 .ui-stage {
   color-scheme: dark;

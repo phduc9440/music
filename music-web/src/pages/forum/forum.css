@@ -225,6 +225,26 @@
   font-size: 1.1rem;
 }
 
+/* danh sách: số thích (đậm) trên, số không thích (mờ) dưới, mỗi dòng có biểu tượng */
+.fm-row__votes {
+  gap: 0.2rem;
+}
+
+.fm-row__react {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.fm-row__react--like strong {
+  font-size: 1rem;
+}
+
+.fm-row__react--like svg {
+  color: var(--ui-primary);
+}
+
 .fm-row__main {
   display: flex;
   flex-direction: column;
@@ -380,39 +400,68 @@
 }
 
 /* ---- nút bình chọn ---- */
-.fm-vote {
+/* Cột thích / không thích bên trái bài viết: hai nút chồng dọc, mỗi nút cao tối thiểu 44px. Thích đang chọn tô màu
+   tương tác; không thích đang chọn tô màu cảnh báo nhạt (chữ đỏ) để phân biệt rõ hai trạng thái. */
+.fm-react {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.fm-react__btn {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0;
-  width: 38px;
+  gap: 0.1rem;
+  width: 42px;
   min-height: 44px; /* vùng chạm tối thiểu */
-  padding: 0.15rem 0;
-  border: 1px solid var(--ui-border-strong);
+  padding: 0.2rem 0;
+  border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius);
   background: var(--ui-surface);
   color: var(--ui-text-2);
   font: inherit;
-  font-size: var(--ui-text-sm);
+  font-size: var(--ui-text-xs);
   font-weight: 700;
   line-height: 1.2;
+  font-variant-numeric: tabular-nums;
   cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
 }
 
-.fm-vote:hover:not(:disabled) {
+.fm-react__btn:hover:not(:disabled) {
+  border-color: var(--ui-primary-border);
   background: var(--ui-surface-hover);
+  color: var(--ui-text);
 }
 
-.fm-vote:disabled {
+.fm-react__btn:disabled {
   cursor: default;
   opacity: 0.75;
 }
 
-.fm-vote--on {
+.fm-react__btn--like.is-on,
+.fm-react__btn--like.is-on:hover:not(:disabled) {
   border-color: var(--ui-primary);
   background: var(--ui-primary);
   color: var(--ui-on-accent);
+}
+
+.fm-react__btn--dislike.is-on,
+.fm-react__btn--dislike.is-on:hover:not(:disabled) {
+  border-color: var(--ui-danger-border);
+  background: var(--ui-danger-soft);
+  color: var(--ui-danger);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fm-react__btn {
+    transition: none;
+  }
 }
 
 /* ---- Markdown ---- */

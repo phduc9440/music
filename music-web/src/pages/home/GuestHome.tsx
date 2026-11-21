@@ -258,7 +258,7 @@ export default function GuestHome() {
             <span className="gh-brand__mark" aria-hidden="true">
               <Icon name="music" size={16} />
             </span>
-            Music App
+            Bản Nhạc Số
           </span>
           <div className="gh-bar__actions">
             <LanguageToggle />

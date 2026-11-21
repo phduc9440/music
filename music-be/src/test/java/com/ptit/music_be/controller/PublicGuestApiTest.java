@@ -73,7 +73,7 @@ class PublicGuestApiTest {
                 .getResponse()
                 .getContentAsString();
         // khách không có dấu cá nhân và không thấy email tác giả
-        assertFalse(threads.contains("\"votedByMe\":true"));
+        assertFalse(threads.contains("\"myReaction\":\""));
         assertFalse(threads.contains("\"mine\":true"));
         assertFalse(threads.contains("@music.com"));
 

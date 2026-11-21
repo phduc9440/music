@@ -114,7 +114,7 @@ export default function UserLayout() {
               <span className="app-brand__logo">
                 <Icon name="music" size={16} />
               </span>
-              Music App
+              Bản Nhạc Số
             </Link>
 
             <button

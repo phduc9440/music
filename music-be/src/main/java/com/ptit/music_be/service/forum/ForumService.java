@@ -2,14 +2,15 @@ package com.ptit.music_be.service.forum;
 
 import java.util.List;
 
+import com.ptit.music_be.dto.enums.forum.ForumReaction;
 import com.ptit.music_be.dto.request.forum.ForumPostRequest;
 import com.ptit.music_be.dto.request.forum.ForumThreadRequest;
 import com.ptit.music_be.dto.response.common.PageResponse;
 import com.ptit.music_be.dto.response.forum.ForumCategoryResponse;
 import com.ptit.music_be.dto.response.forum.ForumPostResponse;
+import com.ptit.music_be.dto.response.forum.ForumReactionResponse;
 import com.ptit.music_be.dto.response.forum.ForumThreadDetailResponse;
 import com.ptit.music_be.dto.response.forum.ForumThreadResponse;
-import com.ptit.music_be.dto.response.forum.ForumVoteResponse;
 
 /** Diễn đàn (mục 5.5): chuyên mục, chủ đề, trả lời, bình chọn, câu trả lời hay nhất, theo dõi. */
 public interface ForumService {
@@ -58,9 +59,11 @@ public interface ForumService {
 
     void deletePost(String postId);
 
-    ForumVoteResponse toggleThreadVote(String threadId);
+    /** Thích / không thích chủ đề: chưa có thì ghi, trùng lựa chọn đang có thì gỡ, khác thì đổi. */
+    ForumReactionResponse reactToThread(String threadId, ForumReaction reaction);
 
-    ForumVoteResponse togglePostVote(String postId);
+    /** Như {@link #reactToThread} cho bài trả lời. */
+    ForumReactionResponse reactToPost(String postId, ForumReaction reaction);
 
     /** Người đặt chủ đề chọn (hoặc bỏ chọn) câu trả lời hay nhất; trả về chủ đề sau khi đổi. */
     ForumThreadResponse toggleAccepted(String postId);

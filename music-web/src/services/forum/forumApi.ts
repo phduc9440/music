@@ -12,7 +12,8 @@ import type {
   ForumThread,
   ForumThreadDetail,
   ForumThreadPayload,
-  ForumVote,
+  ForumReaction,
+  ForumReactionResult,
   PageResult,
 } from '../../types';
 
@@ -48,8 +49,10 @@ export const forumApi = {
   updatePost: (postId: string, body: string) =>
     apiClient.put<ApiResponse<ForumPost>>(`/forum/posts/${postId}`, { body }),
   deletePost: (postId: string) => apiClient.delete<ApiResponse<void>>(`/forum/posts/${postId}`),
-  voteThread: (id: string) => apiClient.post<ApiResponse<ForumVote>>(`/forum/threads/${id}/vote`),
-  votePost: (id: string) => apiClient.post<ApiResponse<ForumVote>>(`/forum/posts/${id}/vote`),
+  reactThread: (id: string, reaction: ForumReaction) =>
+    apiClient.post<ApiResponse<ForumReactionResult>>(`/forum/threads/${id}/reaction`, { reaction }),
+  reactPost: (id: string, reaction: ForumReaction) =>
+    apiClient.post<ApiResponse<ForumReactionResult>>(`/forum/posts/${id}/reaction`, { reaction }),
   /** Chọn hoặc bỏ chọn câu trả lời hay nhất; trả về chủ đề sau khi đổi. */
   accept: (postId: string) => apiClient.post<ApiResponse<ForumThread>>(`/forum/posts/${postId}/accept`),
   subscribe: (threadId: string, subscribed: boolean) =>

@@ -10,15 +10,14 @@
   "sort": {
     "label": "Xếp theo",
     "latest": "Hoạt động mới nhất",
-    "top": "Nhiều bình chọn"
+    "top": "Được thích nhiều"
   },
   "loadFailed": "Không tải được diễn đàn",
   "reload": "Thử tải lại trang.",
   "emptyTitle": "Chưa có chủ đề nào",
   "emptyFiltered": "Thử bỏ bớt bộ lọc hoặc tìm bằng từ khác.",
   "emptyFirst": "Hãy là người đầu tiên đặt chủ đề.",
-  "votes": "{count} bình chọn",
-  "votesShort": "phiếu",
+  "reactions": "{likes} lượt thích, {dislikes} lượt không thích",
   "repliesShort": "trả lời",
   "answered": "Đã có đáp án",
   "anonymous": "Thành viên",
@@ -40,7 +39,7 @@
   "replyFailed": "Không đăng được câu trả lời",
   "actionFailed": "Không thực hiện được thao tác",
   "deleteThreadTitle": "Xóa chủ đề này?",
-  "deleteThreadText": "Chủ đề và các lượt bình chọn sẽ bị xóa, không khôi phục được.",
+  "deleteThreadText": "Chủ đề và các lượt thích / không thích sẽ bị xóa, không khôi phục được.",
   "threadDeleted": "Đã xóa chủ đề",
   "deletePostTitle": "Xóa câu trả lời này?",
   "deletePostText": "Câu trả lời sẽ bị xóa, không khôi phục được.",
@@ -48,11 +47,16 @@
   "reportPost": "Báo cáo câu trả lời",
   "notFoundTitle": "Không tìm thấy chủ đề",
   "notFoundText": "Chủ đề có thể đã bị xóa hoặc ẩn.",
-  "vote": {
-    "add": "Bình chọn, hiện có {count} phiếu",
-    "remove": "Bỏ bình chọn, hiện có {count} phiếu",
-    "own": "{count} phiếu (không bình chọn được bài của chính mình)",
-    "readonly": "{count} phiếu (đăng nhập để bình chọn)"
+  "reaction": {
+    "group": "Thích hoặc không thích",
+    "likeAdd": "Thích, hiện có {count} lượt thích",
+    "likeRemove": "Bỏ thích, hiện có {count} lượt thích",
+    "dislikeAdd": "Không thích, hiện có {count} lượt không thích",
+    "dislikeRemove": "Bỏ không thích, hiện có {count} lượt không thích",
+    "likeOwn": "{count} lượt thích (không chấm được bài của chính mình)",
+    "dislikeOwn": "{count} lượt không thích (không chấm được bài của chính mình)",
+    "likeReadonly": "{count} lượt thích (đăng nhập để chấm)",
+    "dislikeReadonly": "{count} lượt không thích (đăng nhập để chấm)"
   },
   "editor": {
     "mode": "Chế độ soạn",
@@ -91,6 +95,6 @@
   "guest": {
     "signInToPost": "Đăng nhập để đặt chủ đề",
     "signIn": "Đăng nhập",
-    "replyPrompt": "Đăng nhập để trả lời, bình chọn và theo dõi chủ đề này."
+    "replyPrompt": "Đăng nhập để trả lời, thích / không thích và theo dõi chủ đề này."
   }
 }

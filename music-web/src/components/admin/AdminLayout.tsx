@@ -121,7 +121,7 @@ export default function AdminLayout() {
             <span className="adm-brand__logo">
               <Icon name="music" size={16} />
             </span>
-            <span className="adm-brand__text">Music App</span>
+            <span className="adm-brand__text">Bản Nhạc Số</span>
             <span className="adm-brand__tag">Admin</span>
           </span>
           {title && (
