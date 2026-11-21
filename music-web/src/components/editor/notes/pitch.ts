@@ -26,9 +26,6 @@ const FLAT_ORDER: Step[] = ['B', 'E', 'A', 'D', 'G', 'C', 'F'];
 /** Cách đổi cao độ. */
 export type PitchOp = 'stepUp' | 'stepDown' | 'semitoneUp' | 'semitoneDown' | 'octaveUp' | 'octaveDown';
 
-/** Lý do không đổi được. */
-export type PitchFailure = 'range' | 'rest';
-
 export const isStep = (value: string): value is Step => (STEPS as readonly string[]).includes(value);
 
 /** Cao độ MIDI của một cao độ MusicXML (C4 = 60). */

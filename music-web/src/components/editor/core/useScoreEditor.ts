@@ -5,13 +5,13 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
-import { fetchMusicXmlWithVersion, saveMusicXml } from '../../../services';
+import { fetchMusicXmlWithVersion, saveBlob, saveMusicXml } from '../../../services';
 import { versionApi } from '../../../services/score/versionApi';
-import { getConflictVersion, getSaveErrorMessage } from '../../../utils/score';
+import { getConflictVersion, getSaveErrorMessage, toSafeFileName } from '../../../utils/score';
 import { reportPlanLimit } from '../../../utils/planLimit';
 import { changePitch, editFailureMessage, removeNotes, setAlteration } from './commands';
 import { transposeDocument } from '../notes/transpose';
-import type { EditResult, SymbolOp } from './commands';
+import type { EditCommand, EditResult, SymbolOp } from './commands';
 import {
   durationLabel,
   DURATION_QUARTERS,
@@ -38,7 +38,6 @@ import { describeSelection } from './describe';
 import { History } from './history';
 import { measureKey } from '../live/LiveSession';
 import type { LiveCollab } from '../live/useLiveCollab';
-import type { EditCommand } from './commands';
 import { getVersionErrorMessage } from '../version/versionUtils';
 import { checkMeasures, confirmMeasure } from '../structure/measureCheck';
 import { setHeaderText } from '../structure/header';
@@ -988,14 +987,7 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
 
   const downloadMine = useCallback(() => {
     const blob = new Blob([doc.serialize()], { type: 'application/vnd.recordare.musicxml+xml' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${title.replace(/[\\/:*?"<>|]/g, '_') || 'ban-nhac'}.musicxml`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    saveBlob(blob, `${toSafeFileName(title)}.musicxml`);
   }, [doc, title]);
 
   const dismissConflict = useCallback(() => setConflict(null), []);

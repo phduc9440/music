@@ -6,6 +6,7 @@
 import { childOf, commitEdit, touch } from '../core/commands';
 import type { EditResult, Touched } from '../core/commands';
 import type { NoteInfo, ScoreDocument } from '../core/ScoreDocument';
+import { headOf } from '../notes/durationCore';
 import { toggleTie } from '../notes/ties';
 import { chordText } from './harmony';
 import { articulationLabel } from './marks';
@@ -55,18 +56,6 @@ const removeUp = (el: Element, stopAt: Element): void => {
     parent = next;
   }
 };
-
-/** Đầu hợp âm của mục chứa `info`. */
-const headOf = (doc: ScoreDocument, info: NoteInfo): NoteInfo =>
-  doc.notes.find(
-    (n) =>
-      n.chordIndex === 0 &&
-      n.partIndex === info.partIndex &&
-      n.measureIndex === info.measureIndex &&
-      n.staff === info.staff &&
-      n.voice === info.voice &&
-      n.entryIndex === info.entryIndex,
-  ) ?? info;
 
 /** Ô nhịp (chỉ số) chứa phần tử `el` của part `partIndex`. */
 const measureOf = (doc: ScoreDocument, partIndex: number, el: Element) => {

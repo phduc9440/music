@@ -39,6 +39,7 @@ import {
   ToolWhole,
 } from './ToolIcons';
 import { IconRedo, IconSave, IconUndo } from '../viewer/ViewerIcons';
+import { isMac } from '../../../utils/platform';
 
 interface Props {
   /** Chỉ dùng cho Mobile: bảng công cụ đang mở dạng bottom sheet. */
@@ -98,7 +99,6 @@ interface PitchTool {
   shortcut: string;
 }
 
-const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 const MOD = isMac ? '⌘' : 'Ctrl';
 const ALT = isMac ? '⌥' : 'Alt';
 

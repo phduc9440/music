@@ -4,10 +4,9 @@
  */
 import { commitEdit } from '../core/commands';
 import type { EditResult, Touched } from '../core/commands';
-import { durationLabel, splitRests } from '../notes/durationCore';
-import { formatNumber } from '../../../i18n/core';
+import { durationLabel, numberOf, splitRests } from '../notes/durationCore';
 import type { ScoreDocument } from '../core/ScoreDocument';
-import { t } from '../../../i18n/core';
+import { formatNumber, t } from '../../../i18n/core';
 
 /** Một ô nhịp có độ dài sai. */
 export interface MeasureIssue {
@@ -20,14 +19,6 @@ export interface MeasureIssue {
   /** Câu tiếng Việt, ví dụ "Ô 12 thiếu 1 phách", "Ô 3 thiếu 2 móc đơn". */
   message: string;
 }
-
-const numberOf = (parent: Element, tag: string): number => {
-  const text = Array.from(parent.children)
-    .find((c) => c.tagName === tag)
-    ?.textContent?.trim();
-  const value = Number(text);
-  return text && Number.isFinite(value) ? value : 0;
-};
 
 /** Định dạng số phách theo ngôn ngữ hiện tại (tối đa 2 chữ số thập phân). */
 const formatBeats = (value: number): string => formatNumber(Math.round(Math.abs(value) * 100) / 100);
@@ -80,10 +71,10 @@ export function checkMeasures(doc: ScoreDocument): MeasureIssue[] {
           const skip = Array.from(child.children).some((c) => c.tagName === 'chord' || c.tagName === 'grace');
           if (skip) continue;
           const voice = numberOf(child, 'voice') || 1;
-          totals.set(voice, (totals.get(voice) ?? 0) + numberOf(child, 'duration'));
+          totals.set(voice, (totals.get(voice) ?? 0) + (numberOf(child, 'duration') ?? 0));
         } else if (child.tagName === 'forward') {
           const voice = numberOf(child, 'voice') || 1;
-          totals.set(voice, (totals.get(voice) ?? 0) + numberOf(child, 'duration'));
+          totals.set(voice, (totals.get(voice) ?? 0) + (numberOf(child, 'duration') ?? 0));
         }
       }
       if (totals.size === 0) return;

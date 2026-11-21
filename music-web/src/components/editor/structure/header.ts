@@ -3,6 +3,7 @@
  * (và <credit> nếu có). Kiểu chữ (cỡ, đậm, nghiêng) là cài đặt riêng của ứng dụng, lưu trong
  * <identification><miscellaneous> nên vẫn là MusicXML hợp lệ.
  */
+import { childOf, textOf } from '../core/commands';
 import type { EditResult } from '../core/commands';
 import type { ScoreDocument } from '../core/ScoreDocument';
 import { t } from '../../../i18n/core';
@@ -29,11 +30,6 @@ export const SIZE_MAX = 96;
 
 const NO_STYLE: TextStyle = { size: null, bold: false, italic: false };
 
-const child = (parent: Element, tag: string, pred?: (el: Element) => boolean): Element | undefined =>
-  Array.from(parent.children).find((c) => c.tagName === tag && (!pred || pred(c)));
-
-const textOf = (el?: Element): string => el?.textContent?.trim() ?? '';
-
 const encodeStyle = (s: TextStyle): string =>
   [s.size ? `size=${s.size}` : '', s.bold ? 'bold' : '', s.italic ? 'italic' : ''].filter(Boolean).join(';');
 
@@ -48,22 +44,23 @@ const decodeStyle = (raw: string): TextStyle => {
 };
 
 const miscField = (root: Element, name: string): Element | undefined => {
-  const misc = child(root, 'identification') && child(child(root, 'identification') as Element, 'miscellaneous');
-  return misc ? child(misc, 'miscellaneous-field', (f) => f.getAttribute('name') === name) : undefined;
+  const identification = childOf(root, 'identification');
+  const misc = identification && childOf(identification, 'miscellaneous');
+  return misc ? childOf(misc, 'miscellaneous-field', (f) => f.getAttribute('name') === name) : undefined;
 };
 
 /** Đọc tiêu đề, tác giả và kiểu chữ hiện có. */
 export function readHeader(doc: ScoreDocument): HeaderState {
   const root = doc.root;
-  const work = child(root, 'work');
-  const identification = child(root, 'identification');
-  const creator = identification && child(identification, 'creator', (c) => c.getAttribute('type') === 'composer');
+  const work = childOf(root, 'work');
+  const identification = childOf(root, 'identification');
+  const creator = identification && childOf(identification, 'creator', (c) => c.getAttribute('type') === 'composer');
   const style = (field: HeaderField) => {
     const raw = textOf(miscField(root, `style-${field}`));
     return raw ? decodeStyle(raw) : { ...NO_STYLE };
   };
   return {
-    title: textOf(child(root, 'movement-title')) || textOf(work && child(work, 'work-title')),
+    title: textOf(childOf(root, 'movement-title')) || textOf(work && childOf(work, 'work-title')),
     composer: textOf(creator),
     styles: { title: style('title'), composer: style('composer') },
   };
@@ -79,8 +76,8 @@ const insertHead = (root: Element, el: Element, before: string[]): void => {
 
 const setCreditWords = (root: Element, type: string, text: string): void => {
   for (const credit of Array.from(root.children).filter((c) => c.tagName === 'credit')) {
-    if (child(credit, 'credit-type', (t) => textOf(t) === type)) {
-      const words = child(credit, 'credit-words');
+    if (childOf(credit, 'credit-type', (t) => textOf(t) === type)) {
+      const words = childOf(credit, 'credit-words');
       if (words) words.textContent = text;
     }
   }
@@ -88,26 +85,26 @@ const setCreditWords = (root: Element, type: string, text: string): void => {
 
 const writeTitle = (root: Element, text: string): void => {
   const owner = root.ownerDocument;
-  let movement = child(root, 'movement-title');
+  let movement = childOf(root, 'movement-title');
   if (!movement) {
     movement = owner.createElement('movement-title');
     insertHead(root, movement, ['identification', 'defaults', 'credit']);
   }
   movement.textContent = text;
-  const work = child(root, 'work');
-  const workTitle = work && child(work, 'work-title');
+  const work = childOf(root, 'work');
+  const workTitle = work && childOf(work, 'work-title');
   if (workTitle) workTitle.textContent = text;
   setCreditWords(root, 'title', text);
 };
 
 const writeComposer = (root: Element, text: string): void => {
   const owner = root.ownerDocument;
-  let identification = child(root, 'identification');
+  let identification = childOf(root, 'identification');
   if (!identification) {
     identification = owner.createElement('identification');
     insertHead(root, identification, ['defaults', 'credit']);
   }
-  let creator = child(identification, 'creator', (c) => c.getAttribute('type') === 'composer');
+  let creator = childOf(identification, 'creator', (c) => c.getAttribute('type') === 'composer');
   if (!creator) {
     creator = owner.createElement('creator');
     creator.setAttribute('type', 'composer');
@@ -120,8 +117,8 @@ const writeComposer = (root: Element, text: string): void => {
 /** Đặt (hoặc xóa khi value = null) một trường <miscellaneous-field> của ứng dụng. */
 const writeMisc = (root: Element, name: string, value: string | null): void => {
   const owner = root.ownerDocument;
-  let identification = child(root, 'identification');
-  let misc = identification && child(identification, 'miscellaneous');
+  let identification = childOf(root, 'identification');
+  let misc = identification && childOf(identification, 'miscellaneous');
   const field = miscField(root, name);
   if (value === null) {
     field?.remove();

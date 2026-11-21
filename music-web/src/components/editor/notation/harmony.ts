@@ -2,7 +2,7 @@
  * Hợp âm (chord symbol) ghi trên nốt: <harmony> đứng ngay trước thẻ <note> đầu của mục. Gõ bằng ký hiệu thường dùng
  * như "C", "Am7", "G/B", "F#m", "Bbmaj7", "C6/9", "N.C."; hậu tố lạ vẫn giữ nguyên chữ (kind = other).
  */
-import { commitEdit, touch } from '../core/commands';
+import { childOf, commitEdit, textOf, touch } from '../core/commands';
 import type { EditResult, Touched } from '../core/commands';
 import type { NoteInfo, ScoreDocument } from '../core/ScoreDocument';
 import { t } from '../../../i18n/core';
@@ -154,23 +154,19 @@ export function parseChord(input: string): ChordSpec | null {
   };
 }
 
-const child = (parent: Element, tag: string): Element | undefined =>
-  Array.from(parent.children).find((c) => c.tagName === tag);
-const textOf = (el?: Element): string => el?.textContent?.trim() ?? '';
-
 const noteText = (el: Element | undefined, stepTag: string, alterTag: string): string => {
   if (!el) return '';
-  const alter = Number(textOf(child(el, alterTag)) || 0) || 0;
-  return `${textOf(child(el, stepTag))}${ALTER_SYMBOL[alter] ?? ''}`;
+  const alter = Number(textOf(childOf(el, alterTag)) || 0) || 0;
+  return `${textOf(childOf(el, stepTag))}${ALTER_SYMBOL[alter] ?? ''}`;
 };
 
 /** Ký hiệu hợp âm đang ghi trong một thẻ <harmony>, theo dạng người dùng gõ. */
 export const chordText = (harmony: Element): string => {
-  const kind = child(harmony, 'kind');
+  const kind = childOf(harmony, 'kind');
   if (textOf(kind) === 'none') return kind?.getAttribute('text') || 'N.C.';
-  const root = noteText(child(harmony, 'root'), 'root-step', 'root-alter');
+  const root = noteText(childOf(harmony, 'root'), 'root-step', 'root-alter');
   const text = kind?.hasAttribute('text') ? (kind.getAttribute('text') ?? '') : defaultSuffix(textOf(kind));
-  const bass = noteText(child(harmony, 'bass'), 'bass-step', 'bass-alter');
+  const bass = noteText(childOf(harmony, 'bass'), 'bass-step', 'bass-alter');
   return `${root}${text}${bass ? `/${bass}` : ''}`;
 };
 

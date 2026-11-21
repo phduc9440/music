@@ -5,7 +5,7 @@ import { toast } from 'react-toastify';
 import AuthImage from '../../../components/scores/common/AuthImage';
 import MusicXmlViewer from '../../../components/scores/viewer/MusicXmlViewer';
 import Modal from '../../../components/scores/common/Modal';
-import { downloadScoreExport, fetchKern, fetchMusicXml, omrApi, scoreApi } from '../../../services';
+import { downloadScoreExport, fetchKern, fetchMusicXml, omrApi, saveBlob, scoreApi } from '../../../services';
 import type { OmrMeasure, OmrResult, ScoreDetail as ScoreDetailData, ScoreFileInfo } from '../../../types';
 import {
   boxToPercent,
@@ -156,13 +156,7 @@ export default function ScoreReview() {
 
   const handleDownloadKern = () => {
     if (kern == null || !score) return;
-    const url = URL.createObjectURL(new Blob([kern], { type: 'text/plain;charset=utf-8' }));
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${toSafeFileName(score.title)}.krn`;
-    link.click();
-    // Thu hồi chậm một nhịp để trình duyệt kịp bắt đầu tải
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    saveBlob(new Blob([kern], { type: 'text/plain;charset=utf-8' }), `${toSafeFileName(score.title)}.krn`);
   };
 
   const handleExport = async (kind: 'musicxml' | 'midi') => {

@@ -78,8 +78,12 @@ export const resolveLabel = (label: EditLabel): string =>
 /** Thông báo cho từng lý do thất bại, theo ngôn ngữ hiện tại. */
 export const editFailureMessage = (reason: EditFailure): string => t(`editor.failure.${reason}`);
 
-export const childOf = (parent: Element, tag: string): Element | undefined =>
-  Array.from(parent.children).find((c) => c.tagName === tag);
+/** Thẻ con trực tiếp đầu tiên tên `tag` (thỏa `pred` nếu có). */
+export const childOf = (parent: Element, tag: string, pred?: (el: Element) => boolean): Element | undefined =>
+  Array.from(parent.children).find((c) => c.tagName === tag && (!pred || pred(c)));
+
+/** Nội dung chữ đã bỏ khoảng trắng hai đầu; chuỗi rỗng nếu không có phần tử. */
+export const textOf = (el?: Element): string => el?.textContent?.trim() ?? '';
 
 /** Đọc cao độ của thẻ <note>; null nếu là dấu lặng hoặc dữ liệu thiếu. */
 export const readPitch = (note: Element): Pitch | null => {

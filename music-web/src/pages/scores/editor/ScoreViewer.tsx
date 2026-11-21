@@ -13,7 +13,7 @@ import type { NotationChange } from '../../../components/editor/structure/staves
 import LyricBar from '../../../components/scores/toolbar/LyricBar';
 import Modal from '../../../components/scores/common/Modal';
 import ScoreCanvas from '../../../components/scores/viewer/ScoreCanvas';
-import type { CommentRange } from '../../../components/scores/viewer/ScoreCanvas';
+import type { CommentRange, LockBox } from '../../../components/scores/viewer/ScoreCanvas';
 import CommentsSection from '../../../components/scores/comments/CommentsSection';
 import { anchorFromNotes } from '../../../components/scores/comments/viewerAnchor';
 import { InlineCommentComposer, SelectionCommentButton } from '../../../components/scores/comments/ViewerCommentTools';
@@ -50,11 +50,9 @@ import { useScoreEditor } from '../../../components/editor/core/useScoreEditor';
 import LiveBar from '../../../components/editor/live/LiveBar';
 import { useLiveCollab } from '../../../components/editor/live/useLiveCollab';
 import { MAX_PRESENCE_MEASURES, colorOf, displayName } from '../../../components/editor/live/presence';
-import type { LockBox } from '../../../components/scores/viewer/ScoreCanvas';
-import type { LiveSelection } from '../../../types';
 import { countView } from '../../../services/practice/playbackApi';
 import { commentApi, fetchMusicXmlWithVersion, scoreApi } from '../../../services';
-import type { ScoreComment, ScoreDetail as ScoreDetailData } from '../../../types';
+import type { LiveSelection, ScoreComment, ScoreDetail as ScoreDetailData } from '../../../types';
 import { formatDateTime, t } from '../../../i18n/core';
 import { isValidScoreId } from '../../../utils/omr';
 import { getHttpStatus, useScoreBase } from '../../../utils/score';
@@ -68,12 +66,12 @@ import {
   saveViewerPrefs,
 } from '../../../utils/viewer';
 import type { MusicXmlInfo, ViewMode } from '../../../utils/viewer';
+import { isMac } from '../../../utils/platform';
 import '../../../components/scores/scores.css';
 import './ScoreViewer.css';
 
 type Phase = 'loading' | 'ready' | 'notFound' | 'notReady' | 'parseError' | 'error';
 
-const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 const MOD = isMac ? '⌘' : 'Ctrl';
 const ALT = isMac ? '⌥' : 'Alt';
 

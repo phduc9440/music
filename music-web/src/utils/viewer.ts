@@ -11,10 +11,6 @@ export const ZOOM_DEFAULT = 100;
 export const MAX_XML_BYTES = 5 * 1024 * 1024;
 export const MAX_MEASURES = 500;
 
-/** Điểm gãy responsive (px): dưới 768 là Mobile, 768–1279 là iPad, từ 1280 là Desktop. */
-export const MOBILE_MAX = 767;
-export const TABLET_MAX = 1279;
-
 /** Chế độ xem: "page" vẽ theo từng trang giấy A4, "scroll" vẽ một hàng khuông dài cuộn ngang. */
 export type ViewMode = 'page' | 'scroll';
 

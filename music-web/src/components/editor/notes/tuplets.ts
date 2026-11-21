@@ -157,28 +157,6 @@ export const groupRange = (entries: Entry[], index: number, divisions: number): 
   return { ...ratio, from, to, span };
 };
 
-/** Chùm chứa nốt `id`: các mục (nốt đầu mỗi mục, theo thứ tự), tỉ lệ và độ dài thật; null nếu không thuộc chùm. */
-export function tupletGroupOf(
-  doc: ScoreDocument,
-  id: string,
-): { members: NoteInfo[]; actual: number; normal: number; span: number } | null {
-  const info = doc.getInfo(id);
-  if (!info || info.isGrace) return null;
-  const head = headOf(doc, info).element;
-  const measure = head.parentElement;
-  if (!measure) return null;
-  const entries = voiceEntries(measure, info.staff, info.voice);
-  const index = entries?.findIndex((e) => e.members.includes(head)) ?? -1;
-  if (!entries || index < 0) return null;
-  const range = groupRange(entries, index, divisionsAt(measure.parentElement, measure));
-  if (!range) return null;
-  const members = entries
-    .slice(range.from, range.to + 1)
-    .map((e) => doc.notes.find((n) => n.element === e.members[0]))
-    .filter((n): n is NoteInfo => n !== undefined);
-  return { members, actual: range.actual, normal: range.normal, span: range.span };
-}
-
 const addMark = (note: Element, type: 'start' | 'stop'): void => {
   const mark = note.ownerDocument.createElement('tuplet');
   mark.setAttribute('type', type);

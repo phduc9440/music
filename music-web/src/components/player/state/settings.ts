@@ -27,14 +27,6 @@ export function loadPlayerSettings(): PlayerSettings {
   }
 }
 
-export function savePlayerSettings(settings: PlayerSettings): void {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(settings));
-  } catch {
-    // không lưu được thì lần sau dùng mặc định
-  }
-}
-
 export const MIN_TEMPO_PERCENT = 20;
 export const MAX_TEMPO_PERCENT = 200;
 export const DEFAULT_TEMPO_PERCENT = 100;

@@ -11,8 +11,8 @@ import { describeSelection } from '../../editor/core/describe';
 import { listAttachments } from '../../editor/notation/attachments';
 import type { Attachment } from '../../editor/notation/attachments';
 import { t } from '../../../i18n/core';
+import { isMac } from '../../../utils/platform';
 
-const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 const MOD = isMac ? '⌘' : 'Ctrl';
 const ALT = isMac ? '⌥' : 'Alt';
 

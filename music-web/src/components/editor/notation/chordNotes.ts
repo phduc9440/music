@@ -5,6 +5,8 @@
  * ở thế gốc. Hợp âm "không có hợp âm" (N.C.) trả về null: đệm im.
  */
 
+import { childOf, textOf } from '../core/commands';
+
 /** Cách các nốt của một hợp âm cách gốc (nửa cung). */
 const KIND_INTERVALS: Record<string, readonly number[]> = {
   major: [0, 4, 7],
@@ -100,17 +102,12 @@ export interface ChordNotes {
   tones: number[];
 }
 
-const child = (parent: Element, tag: string): Element | undefined =>
-  Array.from(parent.children).find((c) => c.tagName === tag);
-
-const textOf = (el: Element | undefined): string => el?.textContent?.trim() ?? '';
-
 /** Cao độ (0–11) của một cặp <xxx-step> / <xxx-alter>; null nếu bậc không hợp lệ. */
 const pitchClass = (holder: Element | undefined, stepTag: string, alterTag: string): number | null => {
   if (!holder) return null;
-  const step = textOf(child(holder, stepTag));
+  const step = textOf(childOf(holder, stepTag));
   if (!(step in STEP_SEMITONE)) return null;
-  const alter = Math.round(Number(textOf(child(holder, alterTag)) || 0)) || 0;
+  const alter = Math.round(Number(textOf(childOf(holder, alterTag)) || 0)) || 0;
   return (((STEP_SEMITONE[step] + alter) % 12) + 12) % 12;
 };
 
@@ -124,9 +121,9 @@ const naturalDegree = (value: number): number => {
 function applyDegrees(harmony: Element, intervals: number[]): number[] {
   let result = [...intervals];
   for (const degree of Array.from(harmony.children).filter((c) => c.tagName === 'degree')) {
-    const value = Number(textOf(child(degree, 'degree-value')));
-    const alter = Math.round(Number(textOf(child(degree, 'degree-alter')) || 0)) || 0;
-    const type = textOf(child(degree, 'degree-type'));
+    const value = Number(textOf(childOf(degree, 'degree-value')));
+    const alter = Math.round(Number(textOf(childOf(degree, 'degree-alter')) || 0)) || 0;
+    const type = textOf(childOf(degree, 'degree-type'));
     if (!Number.isFinite(value) || value < 1) continue;
     const natural = naturalDegree(value);
     const target = natural + alter;
@@ -148,15 +145,15 @@ function applyDegrees(harmony: Element, intervals: number[]): number[] {
  * Các nốt đệm của một thẻ <harmony>, hoặc null nếu không có gì để đánh ("không có hợp âm", hay thiếu gốc).
  */
 export function chordNotes(harmony: Element): ChordNotes | null {
-  const kind = textOf(child(harmony, 'kind'));
+  const kind = textOf(childOf(harmony, 'kind'));
   if (kind === 'none') return null;
-  const root = pitchClass(child(harmony, 'root'), 'root-step', 'root-alter');
+  const root = pitchClass(childOf(harmony, 'root'), 'root-step', 'root-alter');
   if (root === null) return null;
-  const intervals = applyDegrees(harmony, [...intervalsOf(child(harmony, 'kind'))]);
+  const intervals = applyDegrees(harmony, [...intervalsOf(childOf(harmony, 'kind'))]);
 
   const rootMidi = CHORD_BASE + ((((root - CHORD_BASE) % 12) + 12) % 12);
   const tones = [...new Set(intervals.map((i) => rootMidi + i))].sort((a, b) => a - b);
-  const bassClass = pitchClass(child(harmony, 'bass'), 'bass-step', 'bass-alter') ?? root;
+  const bassClass = pitchClass(childOf(harmony, 'bass'), 'bass-step', 'bass-alter') ?? root;
   const bass = BASS_BASE + ((((bassClass - BASS_BASE) % 12) + 12) % 12);
   return { bass, tones };
 }

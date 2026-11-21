@@ -2,13 +2,10 @@
  * Dấu lặp, nhà 1/nhà 2 (volta) và chỉ dẫn nhảy (Segno, Coda, D.C., D.S., Fine, To Coda). Lặp và nhà ghi vào
  * <barline> của ô nhịp ở mọi part; chỉ dẫn nhảy là <direction> ở part đầu tiên.
  */
-import { commitEdit } from '../core/commands';
+import { childOf, commitEdit } from '../core/commands';
 import type { EditResult, Touched } from '../core/commands';
 import type { ScoreDocument } from '../core/ScoreDocument';
 import { t } from '../../../i18n/core';
-
-const child = (parent: Element, tag: string, pred?: (el: Element) => boolean): Element | undefined =>
-  Array.from(parent.children).find((c) => c.tagName === tag && (!pred || pred(c)));
 
 const make = (owner: Document, tag: string, attrs: Record<string, string> = {}, text?: string): Element => {
   const el = owner.createElement(tag);
@@ -21,7 +18,7 @@ const make = (owner: Document, tag: string, attrs: Record<string, string> = {}, 
 const BARLINE_ORDER = ['bar-style', 'footnote', 'level', 'wavy-line', 'segno', 'coda', 'fermata', 'ending', 'repeat'];
 
 const barlineAt = (measure: Element, location: 'left' | 'right'): Element | undefined =>
-  child(measure, 'barline', (b) => (b.getAttribute('location') ?? 'right') === location);
+  childOf(measure, 'barline', (b) => (b.getAttribute('location') ?? 'right') === location);
 
 /** Thẻ <barline> ở `location` của ô nhịp, tạo mới nếu chưa có (trái: đầu ô; phải: cuối ô). */
 const ensureBarline = (measure: Element, location: 'left' | 'right'): Element => {
@@ -47,7 +44,7 @@ const tidyBarline = (barline: Element): void => {
 };
 
 const setBarStyle = (barline: Element, style: string): void => {
-  let el = child(barline, 'bar-style');
+  let el = childOf(barline, 'bar-style');
   if (!el) {
     el = make(barline.ownerDocument, 'bar-style');
     addToBarline(barline, el);
@@ -75,7 +72,7 @@ export function toggleRepeat(doc: ScoreDocument, measureIndex: number, side: 'st
   const direction = side === 'start' ? 'forward' : 'backward';
   const present = measures.every((m) => {
     const b = barlineAt(m, location);
-    return b && child(b, 'repeat', (r) => r.getAttribute('direction') === direction);
+    return b && childOf(b, 'repeat', (r) => r.getAttribute('direction') === direction);
   });
   const command = commitEdit(
     doc,
@@ -87,12 +84,12 @@ export function toggleRepeat(doc: ScoreDocument, measureIndex: number, side: 'st
         if (present) {
           const b = barlineAt(m, location);
           if (!b) continue;
-          child(b, 'repeat')?.remove();
-          child(b, 'bar-style')?.remove();
+          childOf(b, 'repeat')?.remove();
+          childOf(b, 'bar-style')?.remove();
           tidyBarline(b);
         } else {
           const b = ensureBarline(m, location);
-          child(b, 'repeat')?.remove();
+          childOf(b, 'repeat')?.remove();
           setBarStyle(b, side === 'start' ? 'heavy-light' : 'light-heavy');
           addToBarline(b, make(m.ownerDocument, 'repeat', { direction }));
         }
@@ -121,7 +118,7 @@ export function toggleEnding(
   const isEnd = (e: Element) => e.getAttribute('number') === number && e.getAttribute('type') !== 'start';
   const present = first.measures.every((m) => {
     const b = barlineAt(m, 'left');
-    return b && child(b, 'ending', isStart);
+    return b && childOf(b, 'ending', isStart);
   });
   const command = commitEdit(doc, t('editor.cmd.ending', { number }), touched, [], () => {
     if (present) {
@@ -149,7 +146,7 @@ export function toggleEnding(
     for (const m of last.measures) {
       const b = ensureBarline(m, 'right');
       addToBarline(b, make(m.ownerDocument, 'ending', { number, type: closeWithRepeat ? 'stop' : 'discontinue' }));
-      if (closeWithRepeat && !child(b, 'repeat')) {
+      if (closeWithRepeat && !childOf(b, 'repeat')) {
         setBarStyle(b, 'light-heavy');
         addToBarline(b, make(m.ownerDocument, 'repeat', { direction: 'backward' }));
       }
@@ -241,12 +238,12 @@ export function toggleDoubleBar(doc: ScoreDocument, measureIndex: number): EditR
   if (measures.length === 0) return { ok: false, reason: 'noMeasure' };
   const hasRepeat = measures.some((m) => {
     const b = barlineAt(m, 'right');
-    return !!b && child(b, 'repeat') !== undefined;
+    return !!b && childOf(b, 'repeat') !== undefined;
   });
   if (hasRepeat) return { ok: false, reason: 'barRepeat' };
   const present = measures.every((m) => {
     const b = barlineAt(m, 'right');
-    return !!b && child(b, 'bar-style')?.textContent === 'light-light';
+    return !!b && childOf(b, 'bar-style')?.textContent === 'light-light';
   });
   const command = commitEdit(
     doc,
@@ -258,7 +255,7 @@ export function toggleDoubleBar(doc: ScoreDocument, measureIndex: number): EditR
         if (present) {
           const b = barlineAt(m, 'right');
           if (!b) continue;
-          child(b, 'bar-style')?.remove();
+          childOf(b, 'bar-style')?.remove();
           tidyBarline(b);
         } else {
           setBarStyle(ensureBarline(m, 'right'), 'light-light');
@@ -278,11 +275,11 @@ export function toggleBreak(doc: ScoreDocument, measureIndex: number, kind: 'sys
   const { touched, measures } = allParts(doc, measureIndex);
   if (measures.length === 0) return { ok: false, reason: 'noMeasure' };
   const attr = kind === 'page' ? 'new-page' : 'new-system';
-  const present = measures.every((m) => child(m, 'print')?.getAttribute(attr) === 'yes');
+  const present = measures.every((m) => childOf(m, 'print')?.getAttribute(attr) === 'yes');
   const label = t(`editor.cmd.break.${kind}.${present ? 'remove' : 'set'}`, { n: measureIndex + 1 });
   const command = commitEdit(doc, label, touched, [], () => {
     for (const m of measures) {
-      let print = child(m, 'print');
+      let print = childOf(m, 'print');
       if (present) {
         print?.removeAttribute(attr);
         if (print && print.attributes.length === 0 && print.children.length === 0) print.remove();
@@ -304,7 +301,7 @@ export function setRepeatTimes(doc: ScoreDocument, measureIndex: number, times: 
   if (measures.length === 0) return { ok: false, reason: 'noMeasure' };
   const repeats = measures.map((m) => {
     const b = barlineAt(m, 'right');
-    return b && child(b, 'repeat', (r) => r.getAttribute('direction') === 'backward');
+    return b && childOf(b, 'repeat', (r) => r.getAttribute('direction') === 'backward');
   });
   if (repeats.some((r) => !r)) return { ok: false, reason: 'noRepeat' };
   const ends = repeats.filter((r): r is Element => r !== undefined);

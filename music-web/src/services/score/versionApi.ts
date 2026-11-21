@@ -1,6 +1,5 @@
 import apiClient from '../client';
-import type { ApiResponse } from '../../types';
-import type { ScoreSaveResult } from '../../types';
+import type { ApiResponse, ScoreSaveResult } from '../../types';
 import type { ScoreDiff, ScoreVersion } from '../../types/version';
 
 export const versionApi = {

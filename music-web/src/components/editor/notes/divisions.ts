@@ -26,19 +26,3 @@ export function scaleDivisions(doc: ScoreDocument, partIndex: number, factor: nu
     }
   }
 }
-
-/**
- * Bảo đảm mọi độ dài `divisions / denominator` ở ô `measureIndex` của part là số nguyên: nếu chưa thì nhân cả part
- * lên hệ số nhỏ nhất đủ dùng.
- * @returns hệ số đã nhân (1 = không phải đổi gì)
- */
-export function ensureDivisible(
-  doc: ScoreDocument,
-  partIndex: number,
-  measureIndex: number,
-  denominator: number,
-): number {
-  const factor = divisionsFactor(doc.divisionsAtPart(partIndex, measureIndex), denominator);
-  scaleDivisions(doc, partIndex, factor);
-  return factor;
-}
