@@ -27,6 +27,17 @@ const timeline = {
   warnings: [],
 };
 
+const timelineWithSteps = {
+  ...timeline,
+  steps: [
+    { stepIndex: 0, startBeat: 0, noteIds: ['n1'] },
+    { stepIndex: 1, startBeat: 2, noteIds: ['n2'] },
+    { stepIndex: 2, startBeat: 3, noteIds: ['long'] },
+    { stepIndex: 3, startBeat: 4, noteIds: ['n3'] },
+    { stepIndex: 4, startBeat: 5, noteIds: ['tie'] },
+  ],
+};
+
 test('builds a tempo-aware schedule for the selected hand and measure range', () => {
   const schedule = buildStudioSchedule(timeline, {
     startMeasure: 1,
@@ -62,6 +73,22 @@ test('builds a tempo-aware schedule for the selected hand and measure range', ()
     schedule.notes.some(({ noteId }) => noteId === 'tie'),
     false,
   );
+  assert.deepEqual(
+    schedule.waitSteps.map(({ stepIndex, expectedMs, notes }) => [
+      stepIndex,
+      expectedMs,
+      notes.map(({ noteId }) => noteId),
+    ]),
+    [
+      [0, 0, ['n1']],
+      [1, 1500, ['long']],
+      [2, 2000, ['n3']],
+    ],
+  );
+  assert.deepEqual(
+    schedule.accompanimentSteps.map(({ expectedMs, notes }) => [expectedMs, notes.map(({ noteId }) => noteId)]),
+    [[1000, ['n2']]],
+  );
 });
 
 test('applies tempo percent to beat timing and retains both hands when requested', () => {
@@ -81,6 +108,26 @@ test('applies tempo percent to beat timing and retains both hands when requested
     ],
   );
   assert.equal(schedule.durationMs, 4000);
+});
+
+test('builds wait steps from timeline groups after filtering hands and non-scorable notes', () => {
+  const schedule = buildStudioSchedule(timelineWithSteps, {
+    startMeasure: 1,
+    endMeasure: 2,
+    tempoPercent: 100,
+    handMode: 'BOTH',
+  });
+
+  assert.deepEqual(
+    schedule.waitSteps.map(({ expectedMs, notes }) => [expectedMs, notes.map(({ noteId }) => noteId)]),
+    [
+      [0, ['n1']],
+      [1000, ['n2']],
+      [1500, ['long']],
+      [2000, ['n3']],
+    ],
+  );
+  assert.deepEqual(schedule.accompanimentSteps, []);
 });
 
 test('rejects invalid measure ranges and tempo percentages', () => {
