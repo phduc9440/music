@@ -20,6 +20,8 @@
   --gh-ink-2: var(--ui-text-2);
   --gh-line: var(--ui-border);
   --gh-line-strong: var(--ui-border-strong);
+  /* vạch mảnh phân cách các mục không đóng thẻ (tính năng, đoạn nối ba bước): đậm hơn viền thường để nổi trên nền */
+  --gh-hairline: color-mix(in srgb, var(--ui-text) 30%, transparent);
   --gh-accent: var(--ui-primary);
   --gh-accent-hover: var(--ui-primary-hover);
   --gh-cta: var(--ui-cta);
@@ -369,10 +371,11 @@
 .gh-section--wide .gh-section__head,
 .gh-section--steps .gh-section__head,
 .gh-section--stats .gh-section__head {
+  /* tiêu đề và dòng mô tả căn giữa, mô tả nằm ngay dưới tiêu đề */
   display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-  align-items: end;
-  gap: var(--space-9);
+  justify-items: center;
+  gap: var(--space-3);
+  text-align: center;
 }
 .gh-section--wide .gh-section__head p,
 .gh-section--steps .gh-section__head p,
@@ -509,53 +512,107 @@
   background: repeating-linear-gradient(to bottom, var(--gh-line-strong) 0 1px, transparent 1px 9px);
 }
 
-/* ---- ba bước: ba thẻ, động từ đặt cỡ lớn ---- */
+/* ---- ba bước: không đóng thẻ. Ba số thứ tự nằm trên một dòng kẻ như nốt trên dòng nhạc, động từ cỡ lớn bên dưới ---- */
 .gh-steps {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-4);
+  gap: var(--space-8);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 .gh-steps li {
-  padding: var(--space-7);
-  border-radius: var(--gh-radius);
-  background: var(--gh-card);
+  position: relative;
+  min-width: 0;
+  text-align: center; /* số, động từ và mô tả nằm giữa cột */
+}
+/* đoạn kẻ nối số này sang số kế bên (số nằm giữa cột), chừa khe nhỏ hai đầu; bước cuối không có đoạn nối. 28px = nửa
+   vòng tròn 20px + khe 8px; phần % tính theo bề rộng cột */
+.gh-steps li:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 20px;
+  left: calc(50% + 28px);
+  right: calc(28px - 50% - var(--space-8));
+  height: 1px;
+  background: var(--gh-hairline);
+}
+.gh-steps__num {
+  position: relative;
+  display: grid;
+  margin-inline: auto;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--ui-cta);
+  color: var(--ui-on-cta);
+  font-family: var(--gh-display);
+  font-size: 1.125rem;
+  font-weight: 600;
 }
 .gh-steps strong {
   display: block;
+  margin-top: var(--space-6);
   font-family: var(--gh-display);
   font-size: var(--text-section);
   line-height: 1.1;
   letter-spacing: 0.01em;
 }
 .gh-steps p {
-  margin: var(--space-4) 0 0;
+  max-width: 34ch;
+  margin: var(--space-3) auto 0;
   color: var(--gh-ink-2);
   line-height: 1.5;
 }
 
-/* ---- tính năng: lưới ba cột thẻ phẳng ---- */
+/* ---- tính năng: không đóng thẻ. Mỗi mục là biểu tượng + chữ, phân cách bằng một vạch mảnh phía trên ---- */
 .gh-features {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-4);
+  gap: var(--space-8) var(--space-7);
   margin: 0;
+  padding: 0;
+  list-style: none;
 }
-.gh-features div {
-  padding: var(--space-7);
-  border-radius: var(--gh-radius);
-  background: var(--gh-card);
+.gh-features li {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-4);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--gh-hairline);
+  transition: border-color 0.18s ease;
 }
-.gh-features dt {
+.gh-features__icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--gh-radius-inner);
+  background: color-mix(in srgb, var(--ui-cta) 12%, transparent);
+  color: var(--ui-cta);
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease;
+}
+.gh-features li:hover {
+  border-top-color: var(--ui-cta);
+}
+.gh-features li:hover .gh-features__icon {
+  background: var(--ui-cta);
+  color: var(--ui-on-cta);
+}
+.gh-features h3 {
+  margin: 0;
   font-family: var(--gh-display);
   font-size: var(--text-sub);
+  font-weight: inherit;
   line-height: 1.3;
-  letter-spacing: 0.01em;
 }
-.gh-features dd {
-  margin: var(--space-3) 0 0;
+.gh-features p {
+  margin: var(--space-2) 0 0;
   color: var(--gh-ink-2);
   line-height: 1.5;
 }
@@ -571,8 +628,11 @@
   background: var(--gh-card);
 }
 .gh-stats div {
+  /* số và nhãn căn giữa trong cột, khớp với tiêu đề mục đã căn giữa */
   display: flex;
   flex-direction: column;
+  align-items: center;
+  text-align: center;
 }
 .gh-stats dd {
   order: 0;
@@ -780,10 +840,7 @@
 
 /* ---- màn hình nhỏ ---- */
 @media (max-width: 960px) {
-  .gh-section,
-  .gh-section--wide .gh-section__head,
-  .gh-section--steps .gh-section__head,
-  .gh-section--stats .gh-section__head {
+  .gh-section {
     grid-template-columns: minmax(0, 1fr);
     gap: var(--space-7);
   }
@@ -793,9 +850,42 @@
   .gh-section--flip .gh-section__head {
     order: 0;
   }
-  .gh-steps,
   .gh-features {
     grid-template-columns: minmax(0, 1fr);
+  }
+  /* ba bước xếp dọc: số thứ tự bên trái, dòng kẻ chạy dọc nối các số */
+  .gh-steps {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-7);
+  }
+  .gh-steps li:not(:last-child)::after {
+    top: calc(40px + var(--space-2));
+    right: auto;
+    bottom: calc(var(--space-2) - var(--space-7));
+    left: 20px;
+    width: 1px;
+    height: auto;
+  }
+  .gh-steps li {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr);
+    column-gap: var(--space-5);
+    text-align: start;
+  }
+  .gh-steps__num {
+    grid-row: span 2;
+    margin-inline: 0;
+  }
+  .gh-steps p {
+    margin-inline: 0;
+  }
+  .gh-steps strong {
+    margin-top: 0;
+    font-size: var(--text-sub);
+    line-height: 40px;
+  }
+  .gh-steps p {
+    margin-top: var(--space-1);
   }
   .gh-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -844,7 +934,7 @@
 }
 .gh-score__rank,
 .gh-score__title,
-.gh-features dt,
+.gh-features h3,
 .gh-composer__name,
 .gh-faq summary {
   letter-spacing: 0;
@@ -864,9 +954,21 @@
   /* ánh màu cực quang rất nhẹ sau vòng khuông: tím trên trái, hồng trên phải, xanh ngọc và hổ phách phía dưới */
   --gh-wash: 13%;
   background:
-    radial-gradient(48% 42% at 12% 18%, color-mix(in srgb, var(--gh-fx-2) var(--gh-wash), transparent), transparent 72%),
-    radial-gradient(44% 40% at 88% 22%, color-mix(in srgb, var(--gh-fx-1) var(--gh-wash), transparent), transparent 72%),
-    radial-gradient(50% 44% at 22% 92%, color-mix(in srgb, var(--gh-fx-4) var(--gh-wash), transparent), transparent 72%),
+    radial-gradient(
+      48% 42% at 12% 18%,
+      color-mix(in srgb, var(--gh-fx-2) var(--gh-wash), transparent),
+      transparent 72%
+    ),
+    radial-gradient(
+      44% 40% at 88% 22%,
+      color-mix(in srgb, var(--gh-fx-1) var(--gh-wash), transparent),
+      transparent 72%
+    ),
+    radial-gradient(
+      50% 44% at 22% 92%,
+      color-mix(in srgb, var(--gh-fx-4) var(--gh-wash), transparent),
+      transparent 72%
+    ),
     radial-gradient(46% 40% at 82% 88%, color-mix(in srgb, var(--gh-fx-3) var(--gh-wash), transparent), transparent 72%);
 }
 :root[data-theme='dark'] .gh-ring {
@@ -964,6 +1066,42 @@
   width: 236px; /* bề rộng cố định: đổi bài, đổi lời gợi ý hay bộ đếm tăng đều không làm cụm nút co giãn */
   min-width: 0;
   line-height: 1.3;
+}
+/* thu gọn: mặc định chỉ còn nút nốt nhạc tròn để khỏi che nội dung trang; rê chuột vào, Tab bàn phím tới hoặc đang mở
+   bảng chọn bài thì mở rộng ra đủ tên bài, bộ đếm và nút tự chạy */
+.gh-melody,
+.gh-melody__text,
+.gh-melody__auto {
+  transition:
+    transform 0.25s ease,
+    opacity 0.25s ease,
+    width 0.28s cubic-bezier(0.2, 0.7, 0.2, 1),
+    max-width 0.28s cubic-bezier(0.2, 0.7, 0.2, 1),
+    min-width 0.28s cubic-bezier(0.2, 0.7, 0.2, 1),
+    padding 0.28s cubic-bezier(0.2, 0.7, 0.2, 1),
+    gap 0.28s ease,
+    background-color 0.18s ease;
+}
+.gh-melody__text {
+  overflow: hidden;
+}
+.gh-melody__auto {
+  max-width: 200px;
+}
+.gh-melody:not(:hover, :focus-within, :has(.gh-songs)) {
+  gap: 0;
+  padding: var(--space-2); /* đều bốn phía: thu lại thành một hình tròn */
+}
+.gh-melody:not(:hover, :focus-within, :has(.gh-songs)) .gh-melody__text {
+  width: 0;
+  opacity: 0;
+}
+.gh-melody:not(:hover, :focus-within, :has(.gh-songs)) .gh-melody__auto {
+  min-width: 0;
+  max-width: 0;
+  padding-inline: 0;
+  border-width: 0;
+  opacity: 0;
 }
 /* nút tên bài: chữ đậm như tiêu đề, không khung; mũi tên quay xuống khi bảng đang mở */
 .gh-song-picker {
@@ -1223,9 +1361,7 @@
 
 /* ---- thẻ nghiêng 3D theo con trỏ (useTilt3D đặt --tilt-x/y, --glare-x/y), có vệt sáng đồng thau lướt trên mặt thẻ ---- */
 .gh-score,
-.gh-composer,
-.gh-steps li,
-.gh-features > div {
+.gh-composer {
   position: relative;
   transform: perspective(900px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
   transform-style: preserve-3d;
@@ -1234,17 +1370,13 @@
     transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 .gh-score.is-tilting,
-.gh-composer.is-tilting,
-.gh-steps li.is-tilting,
-.gh-features > div.is-tilting {
+.gh-composer.is-tilting {
   transition:
     background-color 0.18s ease,
     transform 0.12s ease-out;
 }
 .gh-score::after,
-.gh-composer::after,
-.gh-steps li::after,
-.gh-features > div::after {
+.gh-composer::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -1264,9 +1396,84 @@
 
 @media (prefers-reduced-motion: reduce) {
   .gh-score,
-  .gh-composer,
-  .gh-steps li,
-  .gh-features > div {
+  .gh-composer {
     transform: none;
+  }
+}
+
+/* ---- mỗi màn một section: khung chung, cuộn hít, chuyển cảnh và dải chấm ở components/home/screens.css; dưới đây
+   là phần riêng của trang khách ---- */
+.gh-section,
+.gh-final {
+  padding-block: var(--space-8);
+}
+.gh-final {
+  display: grid;
+}
+
+/* nhạc sĩ: một dải cuộn ngang như bản nhạc nổi bật, để cả mục vừa một màn */
+.gh-composers {
+  grid-template-columns: none;
+  grid-auto-columns: minmax(176px, 208px);
+  grid-auto-flow: column;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  padding-bottom: var(--space-3);
+  scrollbar-width: thin;
+}
+.gh-composers > * {
+  scroll-snap-align: start;
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    /* màn đầu: chữ và hình chòm sao lùi ra sau khi cuộn xuống */
+    .gh-hero__text,
+    .gh-visual {
+      animation: scr-out linear forwards;
+      animation-timeline: view();
+      animation-range: exit 0% exit 100%;
+    }
+    /* ba bước: dòng kẻ được vẽ từ trái sang, ba số bật lên lần lượt như nốt được gõ */
+    /* các đoạn nối được vẽ lần lượt 1→2 rồi 2→3, ngay sau khi số bên trái bật lên */
+    .gh-steps li::after {
+      transform-origin: 0 50%;
+      animation: scr-draw-x linear both;
+      animation-timeline: --scr;
+      animation-range: entry calc(60% + var(--i, 0) * 12%) entry calc(80% + var(--i, 0) * 12%);
+    }
+    .gh-steps__num {
+      animation: scr-pop linear both;
+      animation-timeline: --scr;
+      animation-range: entry calc(45% + var(--i, 0) * 12%) entry calc(70% + var(--i, 0) * 12%);
+    }
+    /* thống kê: số phóng từ nhỏ lên */
+    .gh-stats > div {
+      animation-name: scr-zoom;
+    }
+    /* bản nhạc nổi bật: thẻ trượt vào từ bên phải */
+    .gh-strip > * {
+      animation-name: scr-slide-in;
+    }
+    /* nhạc sĩ: thẻ xòe ra như một tay bài */
+    .gh-composers > * {
+      animation-name: scr-fan;
+    }
+    .gh-composers > :nth-child(even) {
+      --fan: 9deg;
+    }
+    /* câu hỏi thường gặp: trượt vào từ bên trái */
+    .gh-faq details {
+      animation-name: scr-slide-left;
+    }
+  }
+}
+
+/* màn hẹp: ba bước xếp dọc nên đoạn nối được vẽ từ trên xuống */
+@media (max-width: 960px) {
+  .gh-steps li::after {
+    transform-origin: 50% 0;
+    animation-name: scr-draw-y;
   }
 }

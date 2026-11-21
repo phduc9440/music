@@ -6,6 +6,7 @@ import type { BillingPeriod, HeldSubscription, MySubscription, PaymentOrder } fr
 import { formatDate, formatDateTime, formatNumber, formatVnd, t, translateError } from '../../i18n/core';
 import Skeleton from '../../components/ui/Skeleton';
 import LimitList from './LimitList';
+import { yearlySaving } from './yearlySaving';
 import PaymentCountdown from './PaymentCountdown';
 import '../../components/scores/scores.css';
 import './billing.css';
@@ -38,6 +39,7 @@ function SubscriptionCard({ held, loadedAt }: { held: HeldSubscription; loadedAt
   const [renewing, setRenewing] = useState(false);
   const daysLeft = Math.max(0, Math.ceil((new Date(held.expiresAt).getTime() - loadedAt) / DAY_MS));
   const price = period === 'MONTH' ? plan.priceMonth : plan.priceYear;
+  const saving = yearlySaving(plan);
   const canRenew = !held.banned && plan.priceMonth + plan.priceYear > 0;
 
   const renew = async () => {
@@ -83,9 +85,16 @@ function SubscriptionCard({ held, loadedAt }: { held: HeldSubscription; loadedAt
                 onClick={() => setPeriod(p)}
               >
                 {t(`billing.period.${p}`)}
+                {p === 'YEAR' && saving && <span className="bl-period__save">−{saving.percent}%</span>}
               </button>
             ))}
           </div>
+          {period === 'YEAR' && saving && (
+            <p className="bl-renew__saving">
+              {t('billing.pricing.yearSaving', { amount: formatNumber(saving.saved), percent: saving.percent })}
+              {saving.freeMonths > 0 && ` · ${t('billing.pricing.freeMonths', { count: saving.freeMonths })}`}
+            </p>
+          )}
           {price > 0 && (
             <p className="bl-renew__summary">
               {t('billing.myPlan.renewSummary', {

@@ -124,3 +124,48 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* ---- bản gọn (trang đã đăng nhập): một hàng logo + liên kết hay dùng, ngăn với dòng bản quyền bằng một vạch mảnh ---- */
+.site-footer--compact {
+  margin-top: 0;
+}
+
+.site-footer__compact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem 2rem;
+  max-width: var(--sf-max);
+  margin: 0 auto;
+  padding: 1.5rem 16px 1rem;
+}
+
+.site-footer__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.site-footer__links a {
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-md);
+  text-decoration: none;
+}
+
+.site-footer__links a:hover {
+  color: var(--ui-text);
+  text-decoration: underline;
+}
+
+.site-footer--compact .site-footer__bottom {
+  padding-bottom: 1.25rem;
+}
+
+.site-footer--compact .site-footer__legal {
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--ui-border-strong);
+}

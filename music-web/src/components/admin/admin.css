@@ -41,7 +41,7 @@
   --adm-shadow: var(--ui-shadow);
   --adm-shadow-pop: var(--ui-shadow-pop);
   --adm-header-h: var(--ui-header-h);
-  --adm-sidebar-w: 248px;
+  --adm-sidebar-w: 256px;
 
   /* chữ */
   --adm-font: var(--ui-font);
@@ -273,6 +273,10 @@
   border-right: 1px solid var(--adm-border);
   overflow-x: hidden;
   overflow-y: auto;
+  /* luôn chừa sẵn chỗ cho thanh cuộn (mảnh) để khi menu dài phải cuộn, thanh cuộn không đè lên số đếm ở mép phải */
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: var(--adm-border-strong) transparent;
   transition: width 0.2s ease;
 }
 
@@ -282,17 +286,108 @@
   gap: 0.15rem;
 }
 
-.adm-menu__section {
-  margin: 0.9rem 0.65rem 0.35rem;
-  color: var(--adm-text-3);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  text-transform: none;
-  white-space: nowrap;
+/* nhóm menu: tiêu đề nổi rõ (đậm, viết hoa, giãn chữ) và là nút sổ xuống / thu gọn; các nhóm ngăn bằng một đường kẻ */
+.adm-menu__group {
+  display: flex;
+  flex-direction: column;
 }
 
-.adm-menu__section:first-child {
-  margin-top: 0.25rem;
+.adm-menu__group + .adm-menu__group {
+  margin-top: 0.4rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--adm-border);
+}
+
+.adm-menu__section {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  margin: 0;
+  padding: 0.5rem 0.65rem;
+  border: 0;
+  border-radius: var(--adm-radius);
+  background: transparent;
+  color: var(--adm-text);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.adm-menu__section:hover:not(:disabled) {
+  background: var(--adm-surface-hover);
+}
+
+.adm-menu__section:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--adm-primary-ring);
+}
+
+/* nhóm chứa trang đang mở thì không thu gọn được: nút giữ nguyên màu, không đổi con trỏ */
+.adm-menu__section:disabled {
+  cursor: default;
+}
+
+.adm-menu__section-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.adm-menu__section > svg {
+  flex-shrink: 0;
+  color: var(--adm-text-3);
+  transition: rotate 0.2s ease;
+}
+
+.adm-menu__section:disabled > svg {
+  opacity: 0.4;
+}
+
+.adm-menu__group:not(.is-open) .adm-menu__section > svg {
+  rotate: -90deg;
+}
+
+.adm-menu__section .adm-menu__count {
+  margin-left: 0;
+  letter-spacing: 0;
+}
+
+/* danh sách mục trong nhóm: sổ xuống / thu lại mượt bằng grid-template-rows 0fr ↔ 1fr */
+.adm-menu__items {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.22s ease;
+}
+
+.adm-menu__group:not(.is-open) .adm-menu__items {
+  grid-template-rows: 0fr;
+}
+
+.adm-menu__items-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.adm-menu__group.is-open .adm-menu__items-inner {
+  padding-top: 0.15rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .adm-menu__items,
+  .adm-menu__section > svg {
+    transition: none;
+  }
 }
 
 .adm-shell .adm-menu__item {
@@ -325,12 +420,20 @@
   font-weight: 600;
 }
 
+/* nhãn co lại được: tên dài cắt bằng "…" (đọc đủ ở tooltip) thay vì đẩy số đếm ra khỏi mép */
+.adm-menu__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .adm-menu__icon {
   display: inline-flex;
   flex-shrink: 0;
 }
 
 .adm-menu__count {
+  flex-shrink: 0;
   margin-left: auto;
   min-width: 20px;
   padding: 0 0.4rem;
@@ -1213,9 +1316,12 @@
     background: var(--ui-overlay-soft);
   }
 
-  .adm-shell--collapsed .adm-menu__label,
-  .adm-shell--collapsed .adm-menu__section {
+  .adm-shell--collapsed .adm-menu__label {
     display: inline;
+  }
+
+  .adm-shell--collapsed .adm-menu__section {
+    display: flex;
   }
 
   .adm-header__crumb,
@@ -1555,16 +1661,11 @@
 }
 .adm-sidebar {
   background: var(--adm-surface);
-  padding: 1rem 0.75rem;
+  /* mép phải đã có rãnh thanh cuộn (scrollbar-gutter) nên đệm phải mỏng hơn đệm trái */
+  padding: 1rem 0.375rem 1rem 0.75rem;
 }
 .adm-menu {
   gap: 0.1rem;
-}
-.adm-menu__section {
-  margin: 1.1rem 0.7rem 0.4rem;
-  color: var(--adm-text-3);
-  font-size: 0.6875rem;
-  letter-spacing: 0.09em;
 }
 .adm-shell .adm-menu__item {
   padding: 0.5rem 0.7rem;

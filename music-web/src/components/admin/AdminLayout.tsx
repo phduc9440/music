@@ -33,6 +33,10 @@ const currentTitle = (pathname: string) =>
     .find((it) => (it.end ? pathname === it.to : pathname === it.to || pathname.startsWith(`${it.to}/`)))?.label ?? '';
 
 /** Khung trang quản trị: header trên cùng, sidebar bên trái (chia nhóm), vùng nội dung ở giữa. */
+/** Mục menu có đang được mở (khớp đường dẫn hiện tại) hay không, cùng luật với NavLink. */
+const matchesPath = (pathname: string, to: string, end?: boolean) =>
+  end ? pathname === to : pathname === to || pathname.startsWith(`${to}/`);
+
 export default function AdminLayout() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -46,6 +50,11 @@ export default function AdminLayout() {
   const [pendingCount, setPendingCount] = useState(0);
   const [reportCount, setReportCount] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
+  // Nhóm menu admin tự mở thêm (theo key nhóm). Mới vào khu quản trị thì mọi nhóm đều đóng, chỉ nhóm chứa trang đang
+  // mở là mở sẵn; nhóm tự mở giữ nguyên khi chuyển trang trong khu quản trị (layout không bị dựng lại)
+  const [openedGroups, setOpenedGroups] = useState<string[]>([]);
+  const toggleGroup = (key: string) =>
+    setOpenedGroups((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
 
   useEffect(() => {
     userApi
@@ -206,37 +215,72 @@ export default function AdminLayout() {
       <div className="adm-body">
         <aside className={`adm-sidebar${mobileOpen ? ' adm-sidebar--open' : ''}`}>
           <nav className="adm-menu" aria-label={t('admin.layout.menuLabel')}>
-            {visibleMenu(admin).map((group) => (
-              <div key={group.section} className="adm-menu">
-                <div className="adm-menu__section">{group.section}</div>
-                {group.items.map((item) => (
-                  <NavLink
-                    key={item.to}
-                    to={item.to}
-                    end={item.end}
-                    title={collapsed ? item.label : undefined}
-                    className={({ isActive }) => `adm-menu__item${isActive ? ' adm-menu__item--active' : ''}`}
-                    onClick={() => setMobileOpen(false)}
+            {visibleMenu(admin).map((group) => {
+              // nhóm chứa trang đang mở luôn mở, nhóm khác đóng trừ khi admin tự mở; sidebar thu gọn (chỉ biểu tượng)
+              // thì mọi nhóm đều mở
+              const hasActive = group.items.some((it) => matchesPath(pathname, it.to, it.end));
+              const open = collapsed || hasActive || openedGroups.includes(group.key);
+              const hiddenBadges = open
+                ? 0
+                : group.items.reduce((n, it) => n + (it.pendingBadge ? badgeCount(it.pendingBadge) : 0), 0);
+              const listId = `adm-group-${group.key}`;
+              return (
+                <div key={group.key} className={`adm-menu__group${open ? ' is-open' : ''}`}>
+                  <button
+                    type="button"
+                    className="adm-menu__section"
+                    aria-expanded={open}
+                    aria-controls={listId}
+                    disabled={hasActive}
+                    title={hasActive ? t('admin.layout.groupActive') : undefined}
+                    onClick={() => toggleGroup(group.key)}
                   >
-                    <span className="adm-menu__icon">
-                      <Icon name={item.icon} />
-                    </span>
-                    <span className="adm-menu__label">{item.label}</span>
-                    {item.pendingBadge && badgeCount(item.pendingBadge) > 0 && (
+                    <span className="adm-menu__section-label">{group.section}</span>
+                    {hiddenBadges > 0 && (
                       <span
                         className="adm-menu__count"
-                        aria-label={t(
-                          item.pendingBadge === 'reports' ? 'admin.layout.reportsBadge' : 'admin.layout.pendingBadge',
-                          { count: badgeCount(item.pendingBadge) },
-                        )}
+                        aria-label={t('admin.layout.groupBadge', { count: hiddenBadges })}
                       >
-                        {badgeCount(item.pendingBadge) > 99 ? '99+' : badgeCount(item.pendingBadge)}
+                        {hiddenBadges > 99 ? '99+' : hiddenBadges}
                       </span>
                     )}
-                  </NavLink>
-                ))}
-              </div>
-            ))}
+                    <Icon name="chevronDown" size={14} />
+                  </button>
+                  <div id={listId} className="adm-menu__items" inert={!open}>
+                    <div className="adm-menu__items-inner">
+                      {group.items.map((item) => (
+                        <NavLink
+                          key={item.to}
+                          to={item.to}
+                          end={item.end}
+                          title={item.label}
+                          className={({ isActive }) => `adm-menu__item${isActive ? ' adm-menu__item--active' : ''}`}
+                          onClick={() => setMobileOpen(false)}
+                        >
+                          <span className="adm-menu__icon">
+                            <Icon name={item.icon} />
+                          </span>
+                          <span className="adm-menu__label">{item.label}</span>
+                          {item.pendingBadge && badgeCount(item.pendingBadge) > 0 && (
+                            <span
+                              className="adm-menu__count"
+                              aria-label={t(
+                                item.pendingBadge === 'reports'
+                                  ? 'admin.layout.reportsBadge'
+                                  : 'admin.layout.pendingBadge',
+                                { count: badgeCount(item.pendingBadge) },
+                              )}
+                            >
+                              {badgeCount(item.pendingBadge) > 99 ? '99+' : badgeCount(item.pendingBadge)}
+                            </span>
+                          )}
+                        </NavLink>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </nav>
           <button type="button" className="adm-menu__item" onClick={() => navigate('/')}>
             <span className="adm-menu__icon">

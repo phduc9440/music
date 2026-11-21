@@ -59,6 +59,12 @@
     "mergedNote": "Bạn có nhiều gói: mỗi hạn mức lấy theo gói cao hơn."
   },
   "pricing": {
+    "saveUpTo": "Tiết kiệm đến {percent}% khi trả theo năm",
+    "fullYearPrice": "Trả lẻ 12 tháng: {amount} ₫",
+    "yearSaving": "Tiết kiệm {amount} ₫ ({percent}%)",
+    "perMonthEquiv": "Chỉ ≈ {amount} ₫ / tháng",
+    "freeMonths": "≈ {count} tháng miễn phí",
+    "yearHint": "Trả theo năm: tiết kiệm {percent}% ({amount} ₫)",
     "title": "Gói dịch vụ",
     "subtitle": "Chọn gói phù hợp với nhu cầu số hóa và chỉnh sửa bản nhạc của bạn",
     "period": "Chu kỳ thanh toán",

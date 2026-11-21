@@ -6,11 +6,14 @@ import { CREATE_SCORE_PATH } from '../../components/layout/nav';
 import SiteFooter from '../../components/layout/SiteFooter';
 import ComposerPortrait from '../../components/composers/ComposerPortrait';
 import { Icon } from '../../components/ui';
+import type { IconName } from '../../components/ui';
 import CountUp from '../../components/ui/CountUp';
 import { API_BASE_URL, homeApi } from '../../services';
 import ThemeToggle from '../../theme/ThemeToggle';
 import type { Composer, PublicHome, ScoreSummary } from '../../types';
 import HomeForumBlock from '../../components/home/HomeForumBlock';
+import SectionDots from '../../components/home/SectionDots';
+import { useScreenSnap } from '../../components/home/useScreenSnap';
 import ScoreConstellation from '../../components/home/ScoreConstellation';
 import { useTilt3D } from '../../components/home/useTilt3D';
 import { lifespan } from '../../utils/composer';
@@ -23,10 +26,18 @@ import './guest-home.css';
 // Vòng khuông hộp nhạc 3D (three.js) tải riêng, sau khi trang đã hiện: không làm nặng gói chính
 const MusicBoxRing3D = lazy(() => import('../../components/home/MusicBoxRing3D'));
 
-const TILT_CARDS = '.gh-score, .gh-composer, .gh-steps li, .gh-features > div';
+const TILT_CARDS = '.gh-score, .gh-composer';
 
 const STEPS = ['capture', 'edit', 'practice'] as const;
-const FEATURES = ['ocr', 'editor', 'player', 'practice', 'teams', 'export'] as const;
+/** Tính năng và biểu tượng đi kèm. */
+const FEATURES: [string, IconName][] = [
+  ['ocr', 'upload'],
+  ['editor', 'pencil'],
+  ['player', 'play'],
+  ['practice', 'activity'],
+  ['teams', 'users'],
+  ['export', 'share'],
+];
 const FAQ_KEYS = ['prepare', 'privacy', 'price', 'mobile'] as const;
 
 /** Một khối của trang: tiêu đề và lời dẫn bên trái, phần nội dung theo bố cục của từng khối. */
@@ -44,9 +55,9 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <section id={id} className={`gh-section${variant ? ` gh-section--${variant}` : ''}`}>
+    <section id={id} data-screen={title} className={`gh-section scr${variant ? ` gh-section--${variant}` : ''}`}>
       <header className="gh-section__head">
-        <h2>{title}</h2>
+        <h2 className="scr-title">{title}</h2>
         {lead && <p>{lead}</p>}
       </header>
       <div className="gh-section__body">{children}</div>
@@ -140,7 +151,7 @@ function FeaturedStrip({ children }: { children: ReactNode }) {
 
   return (
     <div className="gh-strip-wrap">
-      <div ref={ref} className="gh-strip">
+      <div ref={ref} className="gh-strip scr-stagger">
         {children}
       </div>
       {!(edges.start && edges.end) && (
@@ -247,6 +258,9 @@ export default function GuestHome() {
   const pageRef = useRef<HTMLDivElement>(null);
   useTilt3D(pageRef, TILT_CARDS);
 
+  // mỗi màn một section, hít vào ngay dưới thanh đầu trang (cao 80px)
+  useScreenSnap('80px');
+
   return (
     <div ref={pageRef} className="gh">
       <Suspense fallback={null}>
@@ -277,7 +291,10 @@ export default function GuestHome() {
         </div>
       </header>
 
+      <SectionDots root={pageRef} label={t('home.guest.screensNav')} />
+
       <section
+        data-screen={t('home.guest.screenTop')}
         className={`gh-hero${dragging ? ' gh-hero--drag' : ''}`}
         onDragOver={(e) => {
           e.preventDefault();
@@ -342,9 +359,12 @@ export default function GuestHome() {
         </Section>
 
         <Section title={t('home.guest.howTitle')} lead={t('home.guest.howLead')} variant="steps">
-          <ol className="gh-steps">
-            {STEPS.map((key) => (
+          <ol className="gh-steps scr-stagger">
+            {STEPS.map((key, i) => (
               <li key={key}>
+                <span className="gh-steps__num" aria-hidden="true">
+                  {i + 1}
+                </span>
                 <strong>{t(`home.guest.steps.${key}.title`)}</strong>
                 <p>{t(`home.guest.steps.${key}.text`)}</p>
               </li>
@@ -353,19 +373,24 @@ export default function GuestHome() {
         </Section>
 
         <Section title={t('home.guest.featuresTitle')} lead={t('home.guest.featuresLead')} variant="wide">
-          <dl className="gh-features">
-            {FEATURES.map((key) => (
-              <div key={key}>
-                <dt>{t(`home.guest.features.${key}.title`)}</dt>
-                <dd>{t(`home.guest.features.${key}.text`)}</dd>
-              </div>
+          <ul className="gh-features scr-stagger">
+            {FEATURES.map(([key, icon]) => (
+              <li key={key}>
+                <span className="gh-features__icon" aria-hidden="true">
+                  <Icon name={icon} size={22} />
+                </span>
+                <div>
+                  <h3>{t(`home.guest.features.${key}.title`)}</h3>
+                  <p>{t(`home.guest.features.${key}.text`)}</p>
+                </div>
+              </li>
             ))}
-          </dl>
+          </ul>
         </Section>
 
         {stats && (
           <Section title={t('home.guest.statsTitle')} lead={t('home.guest.statsLead')} variant="stats">
-            <dl className="gh-stats">
+            <dl className="gh-stats scr-stagger">
               <div>
                 <dd>
                   <CountUp value={stats.scores} />
@@ -396,7 +421,7 @@ export default function GuestHome() {
 
         {data && data.composers.length > 0 && (
           <Section title={t('home.guest.composersTitle')} lead={t('home.guest.composersLead')} variant="wide">
-            <div className="gh-composers">
+            <div className="gh-composers scr-stagger">
               {data.composers.map((c) => (
                 <ComposerCard key={c.id} composer={c} />
               ))}
@@ -413,7 +438,7 @@ export default function GuestHome() {
         />
 
         <Section id="faq" title={t('home.guest.faqTitle')}>
-          <div className="gh-faq">
+          <div className="gh-faq scr-stagger">
             {FAQ_KEYS.map((key) => (
               <details key={key}>
                 <summary>
@@ -426,9 +451,9 @@ export default function GuestHome() {
           </div>
         </Section>
 
-        <section className="gh-final">
+        <section className="gh-final scr" data-screen={t('home.guest.screenStart')}>
           <div className="gh-final__card">
-            <h2>{t('home.guest.finalTitle')}</h2>
+            <h2 className="scr-title">{t('home.guest.finalTitle')}</h2>
             <button type="button" className="gh-cta" onClick={() => loginThen(CREATE_SCORE_PATH)}>
               {t('home.guest.finalCta')}
             </button>

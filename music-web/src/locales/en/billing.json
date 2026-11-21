@@ -60,6 +60,13 @@
     "mergedNote": "You have several plans: each limit uses the higher plan."
   },
   "pricing": {
+    "saveUpTo": "Save up to {percent}% with yearly billing",
+    "fullYearPrice": "12 monthly payments: {amount} ₫",
+    "yearSaving": "Save {amount} ₫ ({percent}%)",
+    "perMonthEquiv": "Just ≈ {amount} ₫ / month",
+    "freeMonths_one": "≈ {count} month free",
+    "freeMonths_other": "≈ {count} months free",
+    "yearHint": "Pay yearly: save {percent}% ({amount} ₫)",
     "title": "Plans",
     "subtitle": "Pick the plan that fits how you digitize and edit scores",
     "period": "Billing period",

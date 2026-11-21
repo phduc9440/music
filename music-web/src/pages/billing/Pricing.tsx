@@ -8,6 +8,7 @@ import { isGuest } from '../../utils/session';
 import { formatDate, formatNumber, t } from '../../i18n/core';
 import Skeleton from '../../components/ui/Skeleton';
 import LimitList from './LimitList';
+import { maxYearlyPercent, yearlySaving } from './yearlySaving';
 import '../../components/scores/scores.css';
 import './billing.css';
 
@@ -46,6 +47,8 @@ export default function Pricing() {
     if (mine?.roleGrant === 'ADMIN' && plan.code === 'PRO') return t('billing.pricing.includedForAdmin');
     return null;
   };
+
+  const bestYearly = plans ? maxYearlyPercent(plans) : null;
 
   // Gói đang có theo từng nhóm: mỗi người giữ tối đa một gói cá nhân và một gói team, mỗi gói gia hạn riêng
   const held = mine?.subscriptions ?? [];
@@ -96,6 +99,12 @@ export default function Pricing() {
               onClick={() => setPeriod(p)}
             >
               {t(`billing.period.${p}`)}
+              {/* nhãn mức giảm cao nhất khi trả theo năm, thấy được cả lúc đang xem giá tháng */}
+              {p === 'YEAR' && bestYearly && (
+                <span className="bl-period__save" aria-label={t('billing.pricing.saveUpTo', { percent: bestYearly })}>
+                  −{bestYearly}%
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -126,6 +135,7 @@ export default function Pricing() {
                 <div className="bl-grid">
                   {group.map((plan) => {
                     const price = period === 'MONTH' ? plan.priceMonth : plan.priceYear;
+                    const saving = yearlySaving(plan);
                     const current = isCurrent(plan);
                     const blocked = blockedReason(plan);
                     // Mua gói khác trong nhóm đang có gói thì gói cũ của nhóm đó dừng ngay (gói nhóm kia giữ nguyên)
@@ -137,9 +147,41 @@ export default function Pricing() {
                           {current && <span className="bl-badge">{t('billing.pricing.current')}</span>}
                         </div>
                         <div className="bl-price">
+                          {/* theo năm: giá trả lẻ 12 tháng gạch ngang đứng trước giá năm */}
+                          {period === 'YEAR' && saving && (
+                            <s
+                              className="bl-price__old"
+                              aria-label={t('billing.pricing.fullYearPrice', { amount: formatNumber(saving.fullYear) })}
+                            >
+                              {formatNumber(saving.fullYear)} ₫
+                            </s>
+                          )}
                           {price === 0 ? t('billing.pricing.free') : `${formatNumber(price)} ₫`}
                           {price > 0 && <small>/ {t(`billing.periodUnit.${period}`)}</small>}
                         </div>
+                        {saving &&
+                          (period === 'YEAR' ? (
+                            <div className="bl-saving">
+                              <span className="bl-saving__chip">
+                                {t('billing.pricing.yearSaving', {
+                                  amount: formatNumber(saving.saved),
+                                  percent: saving.percent,
+                                })}
+                              </span>
+                              <span className="bl-saving__note">
+                                {t('billing.pricing.perMonthEquiv', { amount: formatNumber(saving.perMonth) })}
+                                {saving.freeMonths > 0 &&
+                                  ` · ${t('billing.pricing.freeMonths', { count: saving.freeMonths })}`}
+                              </span>
+                            </div>
+                          ) : (
+                            <button type="button" className="bl-saving__hint" onClick={() => setPeriod('YEAR')}>
+                              {t('billing.pricing.yearHint', {
+                                percent: saving.percent,
+                                amount: formatNumber(saving.saved),
+                              })}
+                            </button>
+                          ))}
                         <LimitList limits={plan.limits} />
                         {/* Nút và ghi chú luôn nằm sát đáy thẻ để các thẻ trong cùng hàng thẳng nhau */}
                         <div className="bl-card__foot">

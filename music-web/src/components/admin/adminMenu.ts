@@ -27,13 +27,14 @@ const item = (to: string, key: string, icon: IconName, extra: Partial<MenuItem> 
 });
 
 const section = (key: string, items: MenuItem[]) => ({
+  key,
   items,
   get section() {
     return t(`admin.menu.sections.${key}`);
   },
 });
 
-export const MENU: { section: string; items: MenuItem[] }[] = [
+export const MENU: { key: string; section: string; items: MenuItem[] }[] = [
   section('overview', [item('/admin', 'dashboard', 'dashboard', { end: true, permissions: ['DASHBOARD_VIEW'] })]),
   section('users', [
     item('/admin/members', 'members', 'users', { permissions: ['MEMBERS_VIEW'] }),
@@ -66,6 +67,7 @@ export const MENU: { section: string; items: MenuItem[] }[] = [
 /** Mục menu người này được thấy (theo quyền của vai trò); admin chưa tải xong thì chưa hiện mục nào. */
 export const visibleMenu = (admin: Member | null) =>
   MENU.map((g) => ({
+    key: g.key,
     section: g.section,
     items: g.items.filter((it) =>
       it.superOnly

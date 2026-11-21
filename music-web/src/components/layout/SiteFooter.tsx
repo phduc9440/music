@@ -53,21 +53,64 @@ interface SiteFooterProps {
   columns?: FooterColumn[];
   /** Dòng chữ dưới logo. */
   tip?: string;
+  /** Bản gọn cho trang đã đăng nhập: một hàng logo + liên kết hay dùng, rồi dòng bản quyền. */
+  variant?: 'full' | 'compact';
 }
 
+/** Liên kết hay dùng của bản gọn (trang đã đăng nhập). */
+const compactLinks = (): FooterLink[] => [
+  { label: t('common.nav.items.library'), to: '/scores' },
+  { label: t('common.nav.items.publicScores'), to: '/explore' },
+  { label: t('common.nav.items.officialLibrary'), to: '/scores/official' },
+  { label: t('common.nav.items.forum'), to: '/forum' },
+  { label: t('common.footer.practiceStats'), to: '/practice-stats' },
+];
+
+const Logo = () => (
+  <Link to="/" className="site-footer__logo">
+    <span className="site-footer__mark">
+      <Icon name="music" size={16} />
+    </span>
+    Bản Nhạc Số
+  </Link>
+);
+
+const Legal = () => (
+  <div className="site-footer__legal">
+    <span>{t('common.footer.copyright', { year: new Date().getFullYear() })}</span>
+    <span>{t('common.footer.privacy')}</span>
+  </div>
+);
+
 /** Chân trang nền "sân khấu" tối của trang giới thiệu cho khách: logo, các cột liên kết, bản quyền. */
-export default function SiteFooter({ columns, tip }: SiteFooterProps) {
+export default function SiteFooter({ columns, tip, variant = 'full' }: SiteFooterProps) {
+  if (variant === 'compact') {
+    return (
+      <footer className="site-footer site-footer--compact">
+        <div className="site-footer__compact">
+          <Logo />
+          <nav aria-label={t('common.footer.quickLinks')}>
+            <ul className="site-footer__links">
+              {compactLinks().map((l) => (
+                <li key={l.to}>
+                  <Link to={l.to}>{l.label}</Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </div>
+        <div className="site-footer__bottom">
+          <Legal />
+        </div>
+      </footer>
+    );
+  }
   const cols = columns ?? siteColumns();
   return (
     <footer className="site-footer">
       <div className="site-footer__inner" style={{ '--sf-cols': cols.length } as React.CSSProperties}>
         <div className="site-footer__brand">
-          <Link to="/" className="site-footer__logo">
-            <span className="site-footer__mark">
-              <Icon name="music" size={16} />
-            </span>
-            Bản Nhạc Số
-          </Link>
+          <Logo />
           <p>{tip ?? t('common.footer.tipSite')}</p>
         </div>
 
@@ -87,10 +130,7 @@ export default function SiteFooter({ columns, tip }: SiteFooterProps) {
 
       <div className="site-footer__bottom">
         <span className="site-footer__staff" aria-hidden="true" />
-        <div className="site-footer__legal">
-          <span>{t('common.footer.copyright', { year: new Date().getFullYear() })}</span>
-          <span>{t('common.footer.privacy')}</span>
-        </div>
+        <Legal />
       </div>
     </footer>
   );

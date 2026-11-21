@@ -16,10 +16,10 @@
     "dropHint": "Hoặc thả ảnh, PDF, MusicXML, MIDI vào đây",
     "loadFailed": "Chưa tải được dữ liệu trang chủ. Bạn vẫn có thể đăng nhập để bắt đầu.",
     "featuredTitle": "Bản nhạc nổi bật",
-    "featuredLead": "Những bản được quan tâm nhiều, ưu tiên bản mới có nhiều lượt xem. Đăng nhập để mở, nghe và luyện tập.",
+    "featuredLead": "Được xem nhiều nhất. Đăng nhập để nghe và tập.",
     "featuredEmpty": "Chưa có bản nhạc công khai nào. Hãy là người đầu tiên chia sẻ!",
     "composersTitle": "Những nhạc sĩ được yêu thích",
-    "composersLead": "Nhạc sĩ có nhiều bản nhạc công khai nhất trên hệ thống.",
+    "composersLead": "Nhạc sĩ có nhiều bản nhạc công khai nhất.",
     "howTitle": "Cách hoạt động",
     "howLead": "Ba bước từ tờ nhạc giấy tới buổi tập.",
     "step": "Bước {n}",
@@ -37,8 +37,8 @@
         "text": "Tập chậm, lặp đoạn khó, theo dõi chuỗi ngày và thời gian luyện tập của bạn."
       }
     },
-    "statsTitle": "Con số thật",
-    "statsLead": "Đếm trực tiếp từ hệ thống, cập nhật mỗi 5 phút.",
+    "statsTitle": "Cộng đồng đến hôm nay",
+    "statsLead": "Số liệu cập nhật mỗi 5 phút.",
     "statScores": "Bản nhạc",
     "statPages": "Trang đã số hóa",
     "statHours": "Giờ luyện tập",
@@ -64,8 +64,11 @@
     },
     "finalTitle": "Sẵn sàng số hóa bản nhạc đầu tiên?",
     "finalCta": "Bắt đầu miễn phí",
+    "screensNav": "Các phần của trang",
+    "screenTop": "Đầu trang",
+    "screenStart": "Bắt đầu",
     "featuresTitle": "Mọi thứ cho buổi tập của bạn",
-    "featuresLead": "Từ tờ nhạc giấy đến sân khấu, gói gọn trong một ứng dụng.",
+    "featuresLead": "Từ tờ nhạc giấy đến ngày lên sân khấu.",
     "features": {
       "ocr": {
         "title": "Số hóa từ ảnh và PDF",
@@ -222,6 +225,10 @@
     "ctaTitle": "Có bản nhạc mới trên giá?",
     "ctaText": "Chụp một trang hoặc tải PDF, vài phút sau bạn đã có bản nhạc số để chỉnh sửa và luyện tập.",
     "ctaButton": "Số hóa ngay",
+    "screenDesk": "Bàn làm việc",
+    "screenNew": "Bản nhạc mới",
+    "screenTodo": "Việc cần làm",
+    "screenTodoLead": "Những gì đang chờ bạn và lối tắt hay dùng.",
     "tasks": "Việc của tôi",
     "tasksAll": "Xem tất cả ({count})"
   },
