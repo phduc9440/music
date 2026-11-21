@@ -458,7 +458,7 @@ def _result_from(body: list[str], spines: int = 1) -> merge.MergeResult:
 
 def test_missing_barline_is_restored_from_durations():
     body = ["*clefG2", "*M2/4", "8aL", "8bJ", "8ccL", "8aJ", "=", "2g", "4ff", "4dd", "=", "8bL", "8ddJ", "4ee", "=="]
-    fixed = merge.split_merged_measures(_result_from(body))
+    fixed = merge.split_merged_measures_at(_result_from(body))[0]
     assert sum(1 for ln in fixed.lines if ln.startswith("=") and ln != "==") == 3
     assert fixed.lines[fixed.lines.index("2g") + 1] .startswith("=")
     assert any("bỏ sót vạch nhịp" in w for w in fixed.warnings)
@@ -467,16 +467,16 @@ def test_missing_barline_is_restored_from_durations():
 
 def test_measure_with_wrong_total_is_left_alone():
     body = ["*M2/4", "8a", "8b", "8cc", "=", "2g", "4ff", "=", "4b", "4d", "=="]
-    fixed = merge.split_merged_measures(_result_from(body))
+    fixed = merge.split_merged_measures_at(_result_from(body))[0]
     assert fixed.lines == body
 
 
 def test_two_spines_are_split_only_where_all_staves_are_aligned():
     body = ["*M2/4\t*M2/4", "2g\t4a", ".\t4b", "2a\t2c", "=="]
-    fixed = merge.split_merged_measures(_result_from(body, 2))
+    fixed = merge.split_merged_measures_at(_result_from(body, 2))[0]
     assert [ln.split("\t")[0] for ln in fixed.lines][3].startswith("=")
     held = ["*M2/4\t*M2/4", "1g\t4a", ".\t4b", ".\t2c", "=="]
-    assert merge.split_merged_measures(_result_from(held, 2)).lines == held
+    assert merge.split_merged_measures_at(_result_from(held, 2))[0].lines == held
 
 
 def test_split_reports_which_measures_were_split():

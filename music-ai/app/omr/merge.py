@@ -1097,11 +1097,6 @@ def _finalize_barlines(lines: list[str]) -> None:
         number += 1
 
 
-def split_merged_measures(result: MergeResult) -> MergeResult:
-    """Chèn lại vạch nhịp model bỏ sót (xem :func:`split_merged_measures_at`); chỉ trả kết quả."""
-    return split_merged_measures_at(result)[0]
-
-
 def split_merged_measures_at(result: MergeResult) -> tuple[MergeResult, list[int]]:
     """Chèn lại vạch nhịp model bỏ sót, dựa vào trường độ.
 

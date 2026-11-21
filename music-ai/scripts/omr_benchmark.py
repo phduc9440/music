@@ -29,8 +29,6 @@ import time
 import uuid
 from pathlib import Path
 
-import numpy as np
-
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
@@ -274,8 +272,6 @@ class ReplayRecognizer:
         return None, None
 
     def recognize(self, png_path, check, num_beams=None, max_measures=None):
-        import cv2  # noqa: PLC0415
-
         from app.omr.transcoda import BarlineLimit, RecognitionResult  # noqa: PLC0415
 
         check()
