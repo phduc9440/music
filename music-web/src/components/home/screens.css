@@ -5,8 +5,9 @@
    - `.scr`: màn chiếm trọn khung nhìn dưới thanh đầu trang, nội dung nằm giữa, có chuyển cảnh khi cuộn vào / ra.
    - `.scr-title`: tiêu đề màn, mở từ giữa ra như kéo rèm.
    - `.scr-stagger`: các con hiện lần lượt (thứ tự so le qua --i), trang có thể đổi animation-name cho từng loại.
-   Máy tính: cuộn hít đúng từng màn. Trình duyệt chưa hỗ trợ scroll-driven animation hoặc bật "Giảm chuyển động" thì
-   nội dung hiện sẵn, không hít, không hiệu ứng.
+   Máy tính (≥961px): cuộn hít đúng từng màn, có chuyển cảnh. Điện thoại / iPad dọc: section thường cao hơn màn hình và
+   không hít, nên tắt chuyển cảnh để nội dung đang đọc không bị mờ / cắt. Trình duyệt chưa hỗ trợ scroll-driven animation
+   hoặc bật "Giảm chuyển động" thì nội dung hiện sẵn, không hít, không hiệu ứng.
    ===================================================================================================================== */
 .scr {
   min-height: calc(100svh - var(--scr-top, 0px));
@@ -47,7 +48,7 @@
 }
 
 @supports (animation-timeline: view()) {
-  @media (prefers-reduced-motion: no-preference) {
+  @media (min-width: 961px) and (prefers-reduced-motion: no-preference) {
     /* mỗi màn là một dòng thời gian theo vị trí cuộn; con cháu dùng chung để nhịp nhàng với nhau */
     .scr {
       view-timeline: --scr block;

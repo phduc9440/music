@@ -641,6 +641,18 @@
   .wh {
     gap: 56px;
   }
+  /* iPad: thẻ chuỗi ngày hẹp lại để lời chào còn đủ chỗ bên cạnh */
+  .wh-hero {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 240px);
+    gap: 24px;
+  }
+}
+@media (max-width: 640px) {
+  /* điện thoại: hero một cột, lời chào ở trên, thẻ chuỗi ngày bên dưới (hai cột thì cột chữ bị ép về 0, chữ dựng đứng
+     từng ký tự) */
+  .wh-hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
   .wh-hero,
   .wh-tile--continue,
   .wh-tile--suggest,
@@ -787,7 +799,7 @@
 }
 
 @supports (animation-timeline: view()) {
-  @media (prefers-reduced-motion: no-preference) {
+  @media (min-width: 961px) and (prefers-reduced-motion: no-preference) {
     /* ba bước: dòng kẻ được vẽ từ trái sang, ba số bật lên lần lượt như nốt được gõ */
     /* các đoạn nối được vẽ lần lượt 1→2 rồi 2→3, ngay sau khi số bên trái bật lên */
     .wh-journey > li::after {

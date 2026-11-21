@@ -1457,7 +1457,7 @@
 }
 
 @supports (animation-timeline: view()) {
-  @media (prefers-reduced-motion: no-preference) {
+  @media (min-width: 961px) and (prefers-reduced-motion: no-preference) {
     /* màn đầu: chữ và hình chòm sao lùi ra sau khi cuộn xuống */
     .gh-hero__text,
     .gh-visual {
