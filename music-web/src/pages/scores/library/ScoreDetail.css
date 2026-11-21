@@ -914,3 +914,30 @@ a.sc-btn.is-disabled {
     transition: none;
   }
 }
+
+/* ---- Thẻ nổi: mọi khung trên trang chi tiết dùng nền --ui-panel (khác hẳn nền trang), viền đậm hơn và bóng nhẹ,
+   thay cho thẻ phẳng một bậc sáng tối vốn gần như trùng màu nền ---- */
+.sd-page {
+  --sc-card: var(--ui-panel);
+  --sc-line: var(--ui-panel-border);
+  --sc-shadow: var(--ui-panel-shadow);
+  --ui-surface: var(--ui-panel);
+  --ui-flat: var(--ui-panel);
+  --ui-flat-2: var(--ui-panel-2);
+  --ui-card-border: var(--ui-panel-border);
+  --ui-card-shadow: var(--ui-panel-shadow);
+}
+.sd-page .sd-hero {
+  border: 1px solid var(--ui-panel-border);
+  box-shadow: var(--ui-panel-shadow);
+}
+.sd-page .sd-card,
+.sd-page .sc-access,
+.sd-page .sc-people,
+.sd-page .sc-settings__actions,
+.sd-page .sc-reviews__summary,
+.sd-page .sc-reviews__form,
+.sd-page .sc-review,
+.sd-page .cm-thread {
+  box-shadow: var(--ui-panel-shadow);
+}
