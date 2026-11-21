@@ -272,7 +272,7 @@ export default function GuestHome() {
             <span className="gh-brand__mark" aria-hidden="true">
               <Icon name="music" size={16} />
             </span>
-            Bản Nhạc Số
+            Scorewise
           </span>
           <div className="gh-bar__actions">
             <LanguageToggle />
@@ -306,7 +306,16 @@ export default function GuestHome() {
         onDrop={onDrop}
       >
         <div className="gh-hero__text">
-          <h1>{t('home.guest.heroTitle')}</h1>
+          {/* mỗi vế của tiêu đề (ngăn bằng dấu phẩy) một dòng, để không bị ngắt giữa chừng kiểu "mỗi / ngày" */}
+          <h1>
+            {t('home.guest.heroTitle')
+              .split(/(?<=,)\s+/)
+              .map((line) => (
+                <span key={line} className="gh-hero__line">
+                  {line}
+                </span>
+              ))}
+          </h1>
           <p className="gh-hero__lead">{t('home.guest.heroLead')}</p>
           <div className="gh-hero__actions">
             <button type="button" className="gh-cta" onClick={() => loginThen(CREATE_SCORE_PATH)}>

@@ -75,7 +75,7 @@
   text-decoration-thickness: 1px;
 }
 
-/* khoản tiết kiệm dưới giá: nhãn số tiền + % rồi dòng quy ra mỗi tháng / số tháng miễn phí */
+/* khoản tiết kiệm dưới giá: nhãn số tiền + % */
 .bl-saving {
   display: flex;
   flex-wrap: wrap;
@@ -90,10 +90,6 @@
   color: var(--ui-success);
   font-size: 0.8rem;
   font-weight: 700;
-}
-.bl-saving__note {
-  color: var(--sc-muted);
-  font-size: 0.85rem;
 }
 /* đang xem giá tháng: gợi ý trả theo năm, bấm để chuyển */
 .bl-saving__hint {

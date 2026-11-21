@@ -71,7 +71,7 @@ const Logo = () => (
     <span className="site-footer__mark">
       <Icon name="music" size={16} />
     </span>
-    Bản Nhạc Số
+    Scorewise
   </Link>
 );
 

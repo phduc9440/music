@@ -92,7 +92,6 @@ function SubscriptionCard({ held, loadedAt }: { held: HeldSubscription; loadedAt
           {period === 'YEAR' && saving && (
             <p className="bl-renew__saving">
               {t('billing.pricing.yearSaving', { amount: formatNumber(saving.saved), percent: saving.percent })}
-              {saving.freeMonths > 0 && ` · ${t('billing.pricing.freeMonths', { count: saving.freeMonths })}`}
             </p>
           )}
           {price > 0 && (

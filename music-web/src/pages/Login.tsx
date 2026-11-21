@@ -217,7 +217,7 @@ export default function Login() {
             <span className="auth-stage__logo" aria-hidden="true">
               <Icon name="music" size={18} />
             </span>
-            Bản Nhạc Số
+            Scorewise
           </span>
           <h2>{t('home.guest.heroTitle')}</h2>
           <p>{t('home.guest.heroLead')}</p>
@@ -243,7 +243,7 @@ export default function Login() {
           <div className="auth-logo" aria-hidden="true">
             <Icon name="music" size={22} />
           </div>
-          <h1>Bản Nhạc Số</h1>
+          <h1>Scorewise</h1>
           {RESET_STEPS[viewMode] && (
             <div className="auth-step">{t('auth.step', { current: RESET_STEPS[viewMode], total: 3 })}</div>
           )}

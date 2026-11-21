@@ -240,7 +240,7 @@
 }
 .gh-hero h1 {
   min-width: 0;
-  max-width: 14ch;
+  max-width: 24ch;
   margin: 0;
   font-family: var(--gh-display);
   font-size: var(--text-display);
@@ -919,6 +919,9 @@
 }
 
 /* ---- thang chữ kiểu Mercury: 65px độ đậm 530 không giãn; 42px giãn 0.01em; 21px (phụ đề) không giãn ---- */
+.gh-hero__line {
+  display: block;
+}
 .gh-hero h1,
 .gh-stats dd {
   font-weight: var(--ui-weight-display);

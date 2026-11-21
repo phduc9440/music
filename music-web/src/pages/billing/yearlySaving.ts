@@ -7,10 +7,6 @@ export interface YearlySaving {
   saved: number;
   /** Phần trăm tiết kiệm, làm tròn. */
   percent: number;
-  /** Số tháng được miễn phí tương đương (phần nguyên). */
-  freeMonths: number;
-  /** Giá năm quy ra mỗi tháng, làm tròn. */
-  perMonth: number;
 }
 
 /**
@@ -26,8 +22,6 @@ export function yearlySaving(plan: Pick<PlanInfo, 'priceMonth' | 'priceYear'>): 
     fullYear,
     saved,
     percent: Math.round((saved / fullYear) * 100),
-    freeMonths: Math.floor(saved / plan.priceMonth),
-    perMonth: Math.round(plan.priceYear / 12),
   };
 }
 

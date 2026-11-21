@@ -168,11 +168,6 @@ export default function Pricing() {
                                   percent: saving.percent,
                                 })}
                               </span>
-                              <span className="bl-saving__note">
-                                {t('billing.pricing.perMonthEquiv', { amount: formatNumber(saving.perMonth) })}
-                                {saving.freeMonths > 0 &&
-                                  ` · ${t('billing.pricing.freeMonths', { count: saving.freeMonths })}`}
-                              </span>
                             </div>
                           ) : (
                             <button type="button" className="bl-saving__hint" onClick={() => setPeriod('YEAR')}>
