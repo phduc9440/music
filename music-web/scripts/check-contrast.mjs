@@ -74,7 +74,7 @@ const PAIRS = [
   ['--ui-cta-ink', '--ui-flat', 3, 'biểu tượng đồng đậm trên thẻ phẳng'],
   ['--ui-primary', '--ui-surface', 4.5, 'liên kết / chữ nhấn trên thẻ'],
   ['--ui-primary', '--ui-primary-soft', 4.5, 'chữ nhấn trên nền nhấn nhạt'],
-  // trang chi tiết bản nhạc: thẻ nổi sáng (--ui-panel*) và khối đầu trang chàm (--ui-hero-*)
+  // trang chi tiết bản nhạc: thẻ nổi sáng (--ui-panel*) và khối đầu trang xanh ngọc (--ui-hero-*)
   ['--ui-text', '--ui-panel', 4.5, 'chữ chính trên thẻ nổi'],
   ['--ui-text-2', '--ui-panel', 4.5, 'chữ phụ trên thẻ nổi'],
   ['--ui-text-3', '--ui-panel-2', 4.5, 'chữ mờ trên ô trong thẻ nổi'],
@@ -86,7 +86,13 @@ const PAIRS = [
   ['--ui-hero-text', '--ui-hero-to', 4.5, 'chữ trên khối đầu trang (cuối dải màu)'],
   ['--ui-hero-text-2', '--ui-hero-from', 4.5, 'chữ phụ trên khối đầu trang'],
   ['--ui-hero-success', '--ui-hero-from', 4.5, 'dấu đã sao chép trên khối đầu trang'],
-  ['--ui-hero-from', '--ui-hero-cta', 4.5, 'chữ trên nút chính (nền ngà) trong khối đầu trang'],
+  ['--ui-hero-on-cta', '--ui-hero-cta', 4.5, 'chữ trên nút chính (nền cát) trong khối đầu trang'],
+  // điểm nhấn vàng ô liu và trạng thái "không thích" (xám đá)
+  ['--ui-highlight-ink', '--ui-highlight-soft', 4.5, 'chữ trên nhãn vàng nhạt (ghim, danh mục)'],
+  ['--ui-on-highlight', '--ui-highlight', 4.5, 'biểu tượng / chữ trên nền vàng ô liu (logo)'],
+  ['--ui-highlight', '--ui-bg', 1.9, 'gạch chân vàng trên nền trang (chỉ cần nhìn thấy)'],
+  ['--ui-slate', '--ui-slate-soft', 4.5, 'chữ trên nút "không thích" đang bật'],
+  ['--ui-primary', '--ui-surface-hover', 4.5, 'liên kết trên nền rê chuột'],
   ['--ui-on-accent', '--ui-primary', 4.5, 'chữ trên nút chính'],
   ['--ui-on-accent', '--ui-danger', 4.5, 'chữ trên nút nguy hiểm'],
   ['--ui-success', '--ui-success-soft', 4.5, 'chữ thành công'],

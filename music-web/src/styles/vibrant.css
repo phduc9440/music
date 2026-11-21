@@ -1,11 +1,11 @@
 /*
  * Lớp màu sắc cho giao diện người dùng (.app-shell). Hệ bề mặt "Dimensional Layering" + "Vibrant Block" (skill
  * ui-ux-pro-max): nền ngà, mọi khung nội dung là bề mặt sáng nổi (viền ấm + bóng --ui-elev-2), khối đầu trang là khối
- * chàm chuyển sắc làm điểm nhấn; nút chính cùng màu xanh. Chỉ dùng token ở tokens.css nên theme sáng / tối
+ * xanh ngọc → xám đá chuyển sắc làm điểm nhấn; nút chính xanh ngọc đậm. Chỉ dùng token ở tokens.css nên theme sáng / tối
  * đều đúng. Khu admin định kiểu riêng trong components/admin/admin.css.
  */
 
-/* ---- khối đầu trang (Thư viện, Khám phá, Nhạc sĩ, Diễn đàn, Playlist, Hồ sơ, Luyện tập...): khối chàm chuyển
+/* ---- khối đầu trang (Thư viện, Khám phá, Nhạc sĩ, Diễn đàn, Playlist, Hồ sơ, Luyện tập...): khối xanh ngọc chuyển
    sắc, bóng cấp 3. Token chữ / viền / bề mặt được khai báo lại trong khối để mọi thứ bên trong (tiêu đề, dòng phụ, nút
    thường, ô tìm kiếm, nhãn) tự sang chữ trắng trên viên trắng mờ; nút chính đảo thành nền trắng ---- */
 .app-shell .sc-lib-head,
@@ -43,12 +43,12 @@
 .app-shell :is(.sc-lib-head, .ex-head, .cp-head, .fm-head, .pl-hero) input::placeholder {
   color: var(--ui-hero-text-2);
 }
-/* nút chính trên khối chàm: đảo thành nền trắng, chữ chàm */
+/* nút chính trên khối màu: nền cát (#f0deb4), chữ xanh ngọc đậm */
 .app-shell :is(.sc-lib-head, .ex-head, .cp-head, .fm-head, .pl-hero) .sc-btn--primary,
 .app-shell :is(.sc-lib-head, .ex-head, .cp-head, .fm-head, .pl-hero) .sc-btn--primary:hover:not(:disabled) {
   border-color: var(--ui-hero-cta);
   background: var(--ui-hero-cta);
-  color: var(--ui-hero-from);
+  color: var(--ui-hero-on-cta);
 }
 .app-shell :is(.sc-lib-head, .ex-head, .cp-head, .fm-head, .pl-hero) .sc-btn--primary:hover:not(:disabled) {
   background: var(--ui-hero-cta-hover);

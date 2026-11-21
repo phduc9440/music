@@ -1838,8 +1838,8 @@
   border-right: 1px solid var(--ui-panel-border);
 }
 .adm-shell .adm-brand__logo {
-  background: linear-gradient(135deg, var(--ui-hero-from), var(--ui-hero-to));
-  color: var(--ui-hero-text);
+  background: var(--ui-highlight);
+  color: var(--ui-on-highlight);
 }
 .adm-shell .adm-menu__item {
   border-radius: 40px;

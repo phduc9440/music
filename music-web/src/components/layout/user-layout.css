@@ -65,9 +65,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  /* logo cùng khối chàm với đầu trang và chân trang */
-  background: linear-gradient(135deg, var(--ui-hero-from), var(--ui-hero-to));
-  color: var(--ui-hero-text);
+  /* logo: vàng ô liu (màu gốc của bảng màu), biểu tượng mực tối */
+  background: var(--ui-highlight);
+  color: var(--ui-on-highlight);
 }
 
 .app-nav {
@@ -178,7 +178,7 @@
 }
 
 /* nút tạo bản nhạc và ô tìm kiếm trên thanh trên */
-/* nút hành động chính của thanh trên (như "Open account" của Mercury): viên thuốc chàm (--ui-cta), chữ trắng */
+/* nút hành động chính của thanh trên (như "Open account" của Mercury): viên thuốc xanh ngọc đậm (--ui-cta), chữ trắng */
 .app-create {
   display: inline-flex;
   align-items: center;

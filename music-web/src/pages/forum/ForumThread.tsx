@@ -194,15 +194,6 @@ export default function ForumThread() {
         <BackLink label={t('forum.title')} to="/forum" />
 
         <article className="fm-post fm-post--head">
-          <ReactionButtons
-            likeCount={thread.likeCount}
-            dislikeCount={thread.dislikeCount}
-            myReaction={thread.myReaction}
-            own={thread.mine}
-            readOnly={guest}
-            busy={busy}
-            onReact={(r) => act(() => forumApi.reactThread(thread.id, r), t('forum.actionFailed'))}
-          />
           <div className="fm-post__main">
             <div className="fm-tags">
               <Link to={`/forum?category=${thread.categoryId}`} className="fm-tag">
@@ -277,6 +268,15 @@ export default function ForumThread() {
               </div>
             )}
           </div>
+          <ReactionButtons
+            likeCount={thread.likeCount}
+            dislikeCount={thread.dislikeCount}
+            myReaction={thread.myReaction}
+            own={thread.mine}
+            readOnly={guest}
+            busy={busy}
+            onReact={(r) => act(() => forumApi.reactThread(thread.id, r), t('forum.actionFailed'))}
+          />
         </article>
 
         <h2 className="fm-section">{t('forum.replies', { count: detail.totalPosts })}</h2>
@@ -289,15 +289,6 @@ export default function ForumThread() {
               <article
                 className={`fm-post${p.accepted ? ' fm-post--accepted' : ''}${focusedId === p.id ? ' is-focused' : ''}`}
               >
-                <ReactionButtons
-                  likeCount={p.likeCount}
-                  dislikeCount={p.dislikeCount}
-                  myReaction={p.myReaction}
-                  own={p.mine}
-                  readOnly={guest}
-                  busy={busy}
-                  onReact={(r) => act(() => forumApi.reactPost(p.id, r), t('forum.actionFailed'))}
-                />
                 <div className="fm-post__main">
                   {p.accepted && (
                     <span className="fm-tag fm-tag--ok">
@@ -413,6 +404,15 @@ export default function ForumThread() {
                     </div>
                   )}
                 </div>
+                <ReactionButtons
+                  likeCount={p.likeCount}
+                  dislikeCount={p.dislikeCount}
+                  myReaction={p.myReaction}
+                  own={p.mine}
+                  readOnly={guest}
+                  busy={busy}
+                  onReact={(r) => act(() => forumApi.reactPost(p.id, r), t('forum.actionFailed'))}
+                />
               </article>
             </li>
           ))}

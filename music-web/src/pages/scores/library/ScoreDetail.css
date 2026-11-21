@@ -933,7 +933,7 @@ a.sc-btn.is-disabled {
 }
 
 /* ---- Thứ bậc bề mặt (skill ui-ux-pro-max: Dimensional Layering + Vibrant Block). Thẻ nội dung: bề mặt sáng nổi lên
-   khỏi nền ngà bằng viền ấm và bóng --ui-elev-2. Đầu trang: khối chàm chuyển sắc, bóng --ui-elev-3, là điểm nhấn
+   khỏi nền kem bằng viền cát và bóng --ui-elev-2. Đầu trang: khối xanh ngọc chuyển sắc, bóng --ui-elev-3, là điểm nhấn
    duy nhất của trang ---- */
 .sd-page .sd-card,
 .sd-page .sc-panel,
@@ -970,12 +970,12 @@ a.sc-btn.is-disabled {
 }
 /* Không đổi --ui-success cho cả khối: nhãn trạng thái (Hoàn tất, Công khai) có nền xanh nhạt riêng, đổi chữ sang xanh
    sáng là mất chữ. Chỉ dấu "đã sao chép" nằm thẳng trên nền khối mới cần màu sáng */
-/* Nút chính trên khối chàm: nền trắng, chữ chàm (nút chính toàn app cũng là chàm nên phải đảo) */
+/* Nút chính trên khối màu: nền cát, chữ xanh ngọc đậm (nút chính toàn app là xanh ngọc nên phải đổi) */
 .sd-page .sd-hero .sc-btn--primary,
 .sd-page .sd-hero .sc-btn--primary:hover:not(:disabled) {
   border-color: var(--ui-hero-cta);
   background: var(--ui-hero-cta);
-  color: var(--ui-hero-from);
+  color: var(--ui-hero-on-cta);
 }
 .sd-page .sd-hero .sc-btn--primary:hover:not(:disabled) {
   background: var(--ui-hero-cta-hover);

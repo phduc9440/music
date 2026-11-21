@@ -80,15 +80,20 @@
   color: var(--ui-text);
 }
 
+/* chuyên mục đang chọn: gạch chân vàng ô liu (điểm nhấn của bảng màu), chữ đậm */
 .fm-cat--on {
-  border-bottom-color: var(--ui-primary);
+  border-bottom: 3px solid var(--ui-highlight);
   color: var(--ui-text);
+}
+
+.fm-cat--on span {
+  color: var(--ui-highlight-ink);
 }
 
 .fm-cat:focus-visible,
 .fm-chip:focus-visible,
 .fm-tab:focus-visible,
-.fm-vote:focus-visible,
+.fm-react__btn:focus-visible,
 .fm-row:focus-visible,
 .fm-picker__item:focus-visible {
   outline: 2px solid var(--ui-primary);
@@ -180,26 +185,34 @@
   list-style: none;
 }
 
+/* Dòng chủ đề kiểu Swiss: nội dung bên trái, cụm số liệu (thích, không thích, trả lời) bên phải. Rê chuột: thẻ nhấc nhẹ,
+   viền xanh ngọc nhạt, tiêu đề đổi sang màu tương tác. */
 .fm-row {
   display: grid;
-  grid-template-columns: 56px minmax(0, 1fr) 56px;
-  gap: 0.9rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1.25rem;
   align-items: center;
-  padding: 0.85rem 1rem;
-  border: 1px solid var(--ui-border);
+  padding: 1rem 1.15rem;
+  border: 1px solid var(--ui-panel-border);
   border-radius: var(--ui-radius-lg);
-  background: var(--ui-surface);
+  background: var(--ui-panel);
   color: inherit;
   text-decoration: none;
-  box-shadow: var(--ui-shadow-sm);
+  box-shadow: var(--ui-elev-1);
   transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .fm-row:hover {
-  border-color: var(--ui-border-strong);
-  box-shadow: var(--ui-shadow);
+  border-color: var(--ui-primary-border);
+  box-shadow: var(--ui-elev-2);
+  transform: translateY(-1px);
+}
+
+.fm-row:hover .fm-row__title {
+  color: var(--ui-primary);
 }
 
 .fm-row--skeleton {
@@ -209,40 +222,44 @@
   box-shadow: none;
 }
 
-.fm-row__votes,
-.fm-row__replies {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  color: var(--ui-text-2);
-  font-size: var(--ui-text-xs);
-  line-height: 1.2;
+/* cụm số liệu bên phải: ba ô cùng bề ngang, số căn cột */
+.fm-row__stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(52px, auto));
+  gap: 0.35rem;
 }
 
-.fm-row__votes strong,
-.fm-row__replies strong {
-  color: var(--ui-text);
-  font-size: 1.1rem;
-}
-
-/* danh sách: số thích (đậm) trên, số không thích (mờ) dưới, mỗi dòng có biểu tượng */
-.fm-row__votes {
-  gap: 0.2rem;
-}
-
-.fm-row__react {
+.fm-stat {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 34px;
+  padding: 0 0.6rem;
+  border-radius: 999px;
+  background: var(--ui-surface-muted);
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-sm);
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
-.fm-row__react--like strong {
-  font-size: 1rem;
+.fm-stat--like svg {
+  color: var(--ui-primary);
 }
 
-.fm-row__react--like svg {
+.fm-stat--like.is-on {
+  background: var(--ui-primary-soft);
   color: var(--ui-primary);
+}
+
+.fm-stat--dislike.is-on {
+  background: var(--ui-slate-soft);
+  color: var(--ui-slate);
+}
+
+.fm-stat--replies svg {
+  color: var(--ui-highlight-ink);
 }
 
 .fm-row__main {
@@ -254,8 +271,11 @@
 
 .fm-row__title {
   color: var(--ui-text);
-  font-weight: 700;
+  font-family: var(--ui-font-display);
+  font-size: 1.02rem;
+  font-weight: 600;
   line-height: 1.35;
+  transition: color 0.2s ease;
 }
 
 .fm-row__excerpt {
@@ -281,9 +301,9 @@
   align-items: center;
   gap: 0.25rem;
   padding: 0.1rem 0.55rem;
-  border: 1px solid var(--ui-primary-border);
+  border: 1px solid var(--ui-border);
   border-radius: 999px;
-  background: var(--ui-primary-soft);
+  background: var(--ui-surface-muted);
   color: var(--ui-text-2);
   font-size: var(--ui-text-xs);
   font-weight: 600;
@@ -340,11 +360,12 @@
   font-size: 1.15rem;
 }
 
+/* Bài viết: nội dung bên trái, cột thích / không thích bên phải */
 .fm-post {
   display: grid;
-  grid-template-columns: 38px minmax(0, 1fr);
-  gap: 0.9rem;
-  padding: 1rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  padding: 1.15rem 1.25rem;
   border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-lg);
   background: var(--ui-surface);
@@ -400,11 +421,12 @@
 }
 
 /* ---- nút bình chọn ---- */
-/* Cột thích / không thích bên trái bài viết: hai nút chồng dọc, mỗi nút cao tối thiểu 44px. Thích đang chọn tô màu
-   tương tác; không thích đang chọn tô màu cảnh báo nhạt (chữ đỏ) để phân biệt rõ hai trạng thái. */
+/* Cột thích / không thích bên phải bài viết: hai nút chồng dọc, mỗi nút cao tối thiểu 44px. Thích đang chọn tô xanh
+   ngọc đặc; không thích đang chọn tô xám đá nhạt để phân biệt rõ hai trạng thái mà không mang nghĩa lỗi. */
 .fm-react {
   display: flex;
   flex-direction: column;
+  align-self: start;
   gap: 0.35rem;
 }
 
@@ -453,9 +475,9 @@
 
 .fm-react__btn--dislike.is-on,
 .fm-react__btn--dislike.is-on:hover:not(:disabled) {
-  border-color: var(--ui-danger-border);
-  background: var(--ui-danger-soft);
-  color: var(--ui-danger);
+  border-color: var(--ui-slate-border);
+  background: var(--ui-slate-soft);
+  color: var(--ui-slate);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -656,35 +678,38 @@
 @media (max-width: 640px) {
   .fm-row {
     grid-template-columns: minmax(0, 1fr);
+    gap: 0.75rem;
   }
 
-  .fm-row__votes,
-  .fm-row__replies {
-    flex-direction: row;
-    gap: 0.35rem;
-    justify-self: start;
-  }
-
-  .fm-row__replies {
-    order: 3;
+  .fm-row__stats {
+    justify-self: end;
   }
 
   .fm-post {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .fm-vote {
+  /* điện thoại: thích / không thích thành một hàng ngang ở góc phải dưới bài */
+  .fm-react {
+    flex-direction: row;
+    justify-self: end;
+  }
+
+  .fm-react__btn {
     flex-direction: row;
     width: auto;
-    min-height: 44px;
     padding: 0 0.9rem;
-    justify-self: start;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .fm-row {
+  .fm-row,
+  .fm-row__title {
     transition: none;
+  }
+
+  .fm-row:hover {
+    transform: none;
   }
 }
 
@@ -754,10 +779,11 @@
   }
 }
 
+/* ghim: vàng ô liu nhạt (điểm nhấn), không dùng màu cảnh báo */
 .fm-tag--pin {
-  border-color: var(--ui-warning-border);
-  background: var(--ui-warning-soft);
-  color: var(--ui-warning);
+  border-color: var(--ui-highlight-border);
+  background: var(--ui-highlight-soft);
+  color: var(--ui-highlight-ink);
 }
 
 .fm-locked {

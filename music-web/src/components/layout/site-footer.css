@@ -1,4 +1,4 @@
-/* Chân trang dùng chung: dải chàm chuyển sắc khép trang lại, cùng màu với khối đầu trang. Token chữ / viền được
+/* Chân trang dùng chung: dải xanh ngọc → xám đá chuyển sắc khép trang lại, cùng màu với khối đầu trang. Token chữ / viền được
    khai báo lại trong dải để logo, cột liên kết, dòng kẻ khuông tự sang chữ ngà. */
 .site-footer {
   --sf-max: 1120px;
@@ -40,8 +40,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--ui-hero-text);
-  color: var(--ui-hero-from);
+  background: var(--ui-highlight);
+  color: var(--ui-on-highlight);
 }
 
 .site-footer__brand p {
