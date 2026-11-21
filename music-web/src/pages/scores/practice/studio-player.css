@@ -15,6 +15,19 @@
   --studio-ebony-shine: color-mix(in srgb, var(--ui-shadow-ink) 70%, var(--ui-text-3));
   --studio-ebony-edge: var(--ui-shadow-ink);
   --studio-ebony-lip: color-mix(in srgb, var(--ui-shadow-ink) 60%, var(--ui-text-3));
+  /* ánh sáng khi bấm phím: đồng thau ấm (màu phím trang đăng nhập), đáy ánh xanh ngọc thương hiệu */
+  --studio-press-white: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-brass) 30%, var(--ui-paper)) 0%,
+    color-mix(in srgb, var(--ui-brass) 62%, var(--ui-paper)) 60%,
+    color-mix(in srgb, var(--ui-hue-teal) 45%, var(--ui-brass)) 100%
+  );
+  --studio-press-black: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-brass) 30%, var(--ui-shadow-ink)) 0%,
+    color-mix(in srgb, var(--ui-brass) 80%, var(--ui-shadow-ink)) 80%,
+    color-mix(in srgb, var(--ui-hue-teal) 60%, var(--ui-brass)) 100%
+  );
 }
 
 /* nút bắt đầu: nút chính của trang, cao hơn và trải hết bề ngang thẻ thiết lập */
@@ -824,10 +837,46 @@
   transition: none;
 }
 
-/* đang bấm: phím lún xuống, gờ dưới mỏng lại, phủ ánh xanh thương hiệu */
+/* ánh sáng khi bấm: lớp riêng (::before) có sẵn màu chuyển sắc đồng thau ấm → ánh xanh ngọc ở đáy, chỉ bật / tắt độ mờ.
+   Bật nhanh (0,04s), phai chậm (0,45s) như bàn phím trang đăng nhập: kéo qua nhiều phím để lại một vệt sáng phai dần */
+.studio-player__piano-key::before {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--studio-press-white);
+  box-shadow:
+    inset 0 -10px 14px -6px color-mix(in srgb, var(--ui-brass) 85%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--ui-paper) 60%, transparent);
+  content: '';
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.45s ease-out;
+}
+
+.studio-player__piano-key.is-black::before {
+  background: var(--studio-press-black);
+  box-shadow: inset 0 -8px 12px -6px color-mix(in srgb, var(--ui-brass) 90%, transparent);
+}
+
+/* nhãn nốt nằm trên lớp sáng để vẫn đọc được */
+.studio-player__piano-key > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* đang bấm: phím lún xuống, gờ dưới mỏng lại, lớp sáng bật ngay */
 .studio-player__piano-key.is-pressed {
-  --studio-key-glow: color-mix(in srgb, var(--ui-cta) 28%, transparent);
   transform: translateY(2px);
+}
+
+.studio-player__piano-key.is-pressed::before,
+.studio-player__piano:not(.is-reference-only) .studio-player__piano-key:enabled:active::before {
+  opacity: 1;
+  transition-duration: 0.04s;
+}
+
+.studio-player__piano-key.is-white.is-pressed > span {
+  color: var(--ui-text);
 }
 
 .studio-player__piano-key.is-white.is-pressed {
@@ -877,7 +926,6 @@
   --studio-key-light: var(--ui-danger);
 }
 
-.studio-player__piano-key.is-pressed::after,
 .studio-player__piano-key:is(.is-perfect, .is-early, .is-late, .is-wrong-pitch, .is-missed)::after {
   opacity: 1;
 }
@@ -898,6 +946,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .studio-player__piano-key,
+  .studio-player__piano-key::before,
   .studio-player__piano-key::after {
     transition: none;
   }
@@ -1257,12 +1306,7 @@
 /* trạng thái nhấn: phím piano lún ngay cả khi chuột chưa kịp báo (bổ sung cho lớp is-pressed do JS đặt), nút viên thuốc
    tùy chọn thu nhẹ */
 .studio-player__piano:not(.is-reference-only) .studio-player__piano-key:enabled:active {
-  --studio-key-glow: color-mix(in srgb, var(--ui-cta) 28%, transparent);
   transform: translateY(2px);
-}
-
-.studio-player__piano:not(.is-reference-only) .studio-player__piano-key:enabled:active::after {
-  opacity: 1;
 }
 
 .studio-player__chip:active {

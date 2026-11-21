@@ -47,7 +47,7 @@ interface PianoProps {
   busy: boolean;
   elapsedMs: number;
   feedback: StudioVisualFeedback[];
-  onPlayNote: (midi: number) => void;
+  onPlayNote: (midi: number, velocity?: number) => void;
   /** Nốt của bản nhạc, để phím sáng lên (màu tay) khi nốt rơi chạm vạch chơi, giống nốt "rơi vào" phím. */
   guideNotes?: StudioVisualNote[];
   /** Thời điểm của vùng nốt rơi (có thể khác elapsedMs khi chế độ chờ đang dừng ở một nốt). */
@@ -318,31 +318,36 @@ export function StudioVirtualPiano({
     setPressedPointers(next);
   };
 
-  /** Phím đàn nằm dưới con trỏ (theo toạ độ, nên vẫn đúng khi con trỏ đang bị giữ bởi hàng phím). */
-  const midiAt = (event: PointerEvent<HTMLDivElement>): number | null => {
+  /**
+   * Phím đàn nằm dưới con trỏ (theo toạ độ, nên vẫn đúng khi con trỏ đang bị giữ bởi hàng phím) và lực đánh: bấm gần
+   * mép dưới phím mạnh hơn gần mép trên, như đàn thật (cùng cách tính với bàn phím ở trang đăng nhập).
+   */
+  const keyAt = (event: PointerEvent<HTMLDivElement>): { midi: number; velocity: number } | null => {
     const el = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLButtonElement>('[data-midi]');
     if (!el || el.disabled || !event.currentTarget.contains(el)) return null;
-    return Number(el.dataset.midi);
+    const rect = el.getBoundingClientRect();
+    const depth = Math.min(1, Math.max(0, (event.clientY - rect.top) / rect.height));
+    return { midi: Number(el.dataset.midi), velocity: 0.45 + 0.5 * depth };
   };
 
   // Giữ chuột / ngón tay rồi kéo qua các phím (glissando): hàng phím giữ con trỏ, mỗi lần con trỏ sang một phím mới thì
   // phím đó kêu và sáng lên. Nhiều ngón cùng lúc mỗi ngón một phím.
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (!canPlay) return;
-    const midi = midiAt(event);
-    if (midi === null) return;
+    const hit = keyAt(event);
+    if (!hit) return;
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
-    setPressed({ ...pressedRef.current, [event.pointerId]: midi });
-    onPlayNote(midi);
+    setPressed({ ...pressedRef.current, [event.pointerId]: hit.midi });
+    onPlayNote(hit.midi, hit.velocity);
   };
 
   const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
     if (!(event.pointerId in pressedRef.current)) return;
-    const midi = midiAt(event);
-    if (midi === null || midi === pressedRef.current[event.pointerId]) return;
-    setPressed({ ...pressedRef.current, [event.pointerId]: midi });
-    onPlayNote(midi);
+    const hit = keyAt(event);
+    if (!hit || hit.midi === pressedRef.current[event.pointerId]) return;
+    setPressed({ ...pressedRef.current, [event.pointerId]: hit.midi });
+    onPlayNote(hit.midi, hit.velocity);
   };
 
   const releasePointer = (event: PointerEvent<HTMLDivElement>) => {

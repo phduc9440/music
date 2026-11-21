@@ -13,7 +13,7 @@ import type {
 import { fetchMusicXml, scoreApi, studioApi } from '../../../services';
 import { t, translateError } from '../../../i18n/core';
 import { useNavigate } from '../../../routes/useTransitionNavigate';
-import { playTones } from '../../../components/editor/audio/previewTone';
+import { playPianoNote } from '../../../utils/pianoSynth';
 import { FreeRunScorer } from '../../../components/player/engine/FreeRunScorer';
 import type { PracticeNoteEvent } from '../../../components/player/engine/FreeRunScorer';
 import { WaitModeScorer } from '../../../components/player/engine/WaitModeScorer';
@@ -327,14 +327,16 @@ export default function StudioPlayer() {
   }, [session, repeatSection, queueEvents]);
 
   const onPlayNote = useCallback(
-    (midi: number) => {
+    // velocity: lực đánh 0–1 (phím ảo tính theo chỗ bấm trên phím, như bàn phím ở trang đăng nhập)
+    (midi: number, velocity = 0.8) => {
       const currentSession = sessionRef.current;
       const scorer = currentSession?.mode === 'WAIT' ? waitScorerRef.current : scorerRef.current;
       if (inputLockedRef.current) return;
       const playedMs = sessionRef.current ? Math.max(0, Math.round(performance.now() - startedAtRef.current)) : 0;
       try {
         if (!currentSession || !scorer) {
-          playTones([{ at: 0, duration: 0.22, midis: [midi] }]);
+          // tiếng piano ngân và tắt dần tự nhiên (cùng bộ tiếng với trang đăng nhập): kéo qua nhiều phím nghe liền mạch
+          playPianoNote(midi, velocity);
           return;
         }
 
@@ -343,14 +345,16 @@ export default function StudioPlayer() {
         const stepTransitionCount = waitScorer?.getStepTransitionCount() ?? 0;
         elapsedMsRef.current = playedMs;
         const events = scorer.play({ midi, playedMs });
-        const playedMidis = [midi];
+        playPianoNote(midi, velocity);
+        // chế độ chờ: qua bước thì đánh luôn phần đệm của bước đó, nhẹ hơn để không lấn nốt người chơi
         if (waitScorer && currentStep && waitScorer.getStepTransitionCount() > stepTransitionCount) {
           const accompaniment = scheduleRef.current?.accompanimentSteps.find(
             (step) => step.stepIndex === currentStep.stepIndex,
           );
-          if (accompaniment) playedMidis.push(...accompaniment.notes.map((note) => note.midi));
+          const extra = new Set((accompaniment?.notes ?? []).map((note) => note.midi));
+          extra.delete(midi);
+          extra.forEach((note) => playPianoNote(note, 0.55));
         }
-        playTones([{ at: 0, duration: 0.22, midis: [...new Set(playedMidis)] }]);
         queueEvents(events);
         if (currentSession.mode === 'WAIT') {
           if (!waitScorer) return;
