@@ -22,6 +22,7 @@ import { formatNumber, t } from '../../i18n/core';
 import LanguageToggle from '../../i18n/LanguageToggle';
 import { isImportBatch, setPendingUpload } from '../../utils/pendingUpload';
 import './guest-home.css';
+import BrandMark from '../../components/ui/BrandMark';
 
 // Vòng khuông hộp nhạc 3D (three.js) tải riêng, sau khi trang đã hiện: không làm nặng gói chính
 const MusicBoxRing3D = lazy(() => import('../../components/home/MusicBoxRing3D'));
@@ -269,9 +270,7 @@ export default function GuestHome() {
       <header className="gh-bar">
         <div className="gh-bar__inner">
           <span className="gh-brand">
-            <span className="gh-brand__mark" aria-hidden="true">
-              <Icon name="music" size={16} />
-            </span>
+            <BrandMark size={32} className="gh-brand__mark" />
             Scorewise
           </span>
           <div className="gh-bar__actions">

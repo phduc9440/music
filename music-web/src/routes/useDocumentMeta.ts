@@ -31,6 +31,7 @@ export function useDocumentMeta(): void {
       document.head.appendChild(link);
     }
     link.type = 'image/svg+xml';
-    link.href = faviconHref(pathname === '/' ? 'note' : glyph);
+    // Trang chủ dùng biểu tượng thương hiệu Scorewise (public/favicon.svg); các trang khác dùng ô màu theo khu vực
+    link.href = pathname === '/' ? '/favicon.svg' : faviconHref(glyph);
   }, [pathname]);
 }

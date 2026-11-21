@@ -19,6 +19,7 @@ import { MENU, visibleMenu } from './adminMenu';
 import { Avatar, Icon } from '../ui';
 import './admin.css';
 import { onMemberUpdated } from '../../utils/memberEvents';
+import BrandMark from '../ui/BrandMark';
 
 export interface AdminOutletContext {
   admin: Member | null;
@@ -131,9 +132,7 @@ export default function AdminLayout() {
             <Icon name="menu" />
           </button>
           <span className="adm-brand">
-            <span className="adm-brand__logo">
-              <Icon name="music" size={16} />
-            </span>
+            <BrandMark size={30} className="adm-brand__logo" />
             <span className="adm-brand__text">Scorewise</span>
             <span className="adm-brand__tag">Admin</span>
           </span>

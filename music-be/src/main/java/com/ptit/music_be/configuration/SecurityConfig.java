@@ -114,7 +114,7 @@ public class SecurityConfig {
         return new OpenAPI()
                 .info(new Info()
                         .title("Music API")
-                        .description("REST API for Music Application")
+                        .description("REST API for Scorewise")
                         .version("1.0.0"))
                 .components(new Components()
                         .addSecuritySchemes(

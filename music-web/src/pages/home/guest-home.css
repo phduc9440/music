@@ -188,14 +188,9 @@
   letter-spacing: 0.01em;
   white-space: nowrap;
 }
+/* biểu tượng Scorewise (BrandMark, SVG tự vẽ nền và màu): chỉ giữ không co lại */
 .gh-brand__mark {
-  display: inline-grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: var(--gh-ink);
-  color: var(--gh-bg);
+  flex: none;
 }
 .gh-bar__actions {
   display: flex;
@@ -207,11 +202,39 @@
   padding-inline: var(--space-5);
 }
 @media (max-width: 480px) {
-  /* điện thoại: thanh trên chật, hai nút thu gọn để không tràn ngang */
-  .gh-bar__actions .gh-ghost,
+  /* điện thoại: thanh trên chật. Bỏ nút Đăng ký (trang đăng nhập có lối đăng ký, nút Đăng nhập dính góc hiện khi cuộn),
+     thu gọn khoảng cách để logo + ngôn ngữ + giao diện + Đăng nhập vừa một hàng */
+  .gh-bar__inner {
+    gap: var(--space-2);
+    padding-inline: var(--space-3);
+  }
   .gh-bar__signup {
+    display: none;
+  }
+  .gh-bar__actions {
+    gap: var(--space-1);
+  }
+  .gh-bar__actions .gh-ghost {
     min-height: 44px;
-    padding-inline: var(--space-4);
+    padding-inline: var(--space-3);
+  }
+  /* nút ngôn ngữ chỉ còn biểu tượng quả địa cầu (tên ngôn ngữ vẫn có ở nhãn trợ năng và tooltip) */
+  .gh-bar .language-toggle__trigger {
+    width: 36px;
+    font-size: 0;
+  }
+  .gh-bar .language-toggle__trigger svg {
+    flex: none;
+    width: 16px;
+    height: 16px;
+  }
+  .gh-brand {
+    gap: var(--space-2);
+    font-size: 1rem;
+  }
+  .gh-brand__mark {
+    width: 28px;
+    height: 28px;
   }
 }
 
@@ -899,6 +922,10 @@
 @media (max-width: 560px) {
   .gh-hero {
     padding-top: var(--space-8);
+  }
+  /* tiêu đề nhỏ theo bề ngang màn để mỗi vế (ngăn bằng dấu phẩy) vừa một dòng, không gãy kiểu "mỗi bài một / bước tiến" */
+  .gh-hero h1 {
+    font-size: clamp(1.625rem, 7.4vw, 2.5rem);
   }
 }
 

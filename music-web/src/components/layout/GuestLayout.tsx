@@ -1,10 +1,10 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import { Link, NavLink } from '../../routes/transition-nav';
-import { Icon } from '../ui';
 import LanguageToggle from '../../i18n/LanguageToggle';
 import ThemeToggle from '../../theme/ThemeToggle';
 import { t } from '../../i18n/core';
 import SiteFooter from './SiteFooter';
+import BrandMark from '../ui/BrandMark';
 
 /** Các trang khách xem được không cần đăng nhập (cùng dữ liệu công khai với người đã đăng nhập, chỉ đọc). */
 const GUEST_NAV: { to: string; labelKey: string }[] = [
@@ -28,9 +28,7 @@ export default function GuestLayout() {
         <div className="app-header__inner app-header__inner--guest">
           <div className="app-header__left">
             <Link to="/" className="app-brand">
-              <span className="app-brand__logo">
-                <Icon name="music" size={16} />
-              </span>
+              <BrandMark size={30} className="app-brand__logo" />
               Scorewise
             </Link>
           </div>

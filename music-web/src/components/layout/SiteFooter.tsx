@@ -1,9 +1,9 @@
 import type React from 'react';
 import { Link } from '../../routes/transition-nav';
 import { t } from '../../i18n/core';
-import { Icon } from '../ui';
 import { CREATE_SCORE_PATH } from './nav';
 import './site-footer.css';
+import BrandMark from '../ui/BrandMark';
 
 export interface FooterLink {
   label: string;
@@ -68,9 +68,7 @@ const compactLinks = (): FooterLink[] => [
 
 const Logo = () => (
   <Link to="/" className="site-footer__logo">
-    <span className="site-footer__mark">
-      <Icon name="music" size={16} />
-    </span>
+    <BrandMark size={30} className="site-footer__mark" />
     Scorewise
   </Link>
 );

@@ -143,13 +143,14 @@ export default function ExploreScores() {
         if (name !== 'page') next.delete('page');
         return next;
       },
-      { replace: name === 'page' ? false : true },
+      // đổi bộ lọc giữ nguyên vị trí cuộn; sang trang kết quả khác thì về đầu danh sách
+      { replace: name === 'page' ? false : true, preventScrollReset: name !== 'page' },
     );
   };
 
   const clearFilters = () => {
     setKeywordInput('');
-    setParams(sort === 'NEWEST' ? {} : { sort });
+    setParams(sort === 'NEWEST' ? {} : { sort }, { preventScrollReset: true });
   };
 
   const tagName = tags.find((t) => t.id === tagId)?.name;

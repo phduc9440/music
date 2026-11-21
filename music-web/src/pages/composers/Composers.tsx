@@ -83,7 +83,7 @@ export default function Composers() {
           <button
             type="button"
             className={`cp-tab${period === null ? ' cp-tab--on' : ''}`}
-            onClick={() => setParams({})}
+            onClick={() => setParams({}, { preventScrollReset: true })}
           >
             {t('composers.all')}
           </button>
@@ -93,7 +93,7 @@ export default function Composers() {
               type="button"
               className={`cp-tab${period === p ? ' cp-tab--on' : ''}`}
               aria-pressed={period === p}
-              onClick={() => setParams({ period: p })}
+              onClick={() => setParams({ period: p }, { preventScrollReset: true })}
             >
               {PERIOD_LABELS[p]}
             </button>

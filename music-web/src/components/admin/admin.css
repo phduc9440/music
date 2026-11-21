@@ -132,15 +132,9 @@
   white-space: nowrap;
 }
 
+/* biểu tượng Scorewise (BrandMark, SVG tự vẽ nền và màu): chỉ giữ không co lại */
 .adm-brand__logo {
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--adm-primary);
-  color: var(--ui-on-accent);
+  flex: none;
 }
 
 .adm-brand__tag {
@@ -1650,9 +1644,6 @@
   background: var(--adm-surface);
   border-bottom: 1px solid var(--adm-border);
 }
-.adm-brand__logo {
-  border-radius: 8px;
-}
 .adm-brand__tag {
   background: var(--adm-danger-soft);
   color: var(--adm-danger);
@@ -1937,10 +1928,6 @@
 .adm-shell .adm-sidebar {
   background: var(--ui-panel);
   border-right: 1px solid var(--ui-panel-border);
-}
-.adm-shell .adm-brand__logo {
-  background: var(--ui-highlight);
-  color: var(--ui-on-highlight);
 }
 .adm-shell .adm-menu__item {
   border-radius: 40px;

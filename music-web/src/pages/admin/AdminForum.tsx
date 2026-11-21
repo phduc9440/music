@@ -30,12 +30,13 @@ export default function AdminForum() {
   const section: Section = params.get('tab') === 'categories' ? 'categories' : 'threads';
   const openId = params.get('thread');
 
-  const setSection = (next: Section) => setParams(next === 'threads' ? {} : { tab: next });
+  const setSection = (next: Section) =>
+    setParams(next === 'threads' ? {} : { tab: next }, { preventScrollReset: true });
   const openThread = (id: string | null) => {
     const next = new URLSearchParams(params);
     if (id) next.set('thread', id);
     else next.delete('thread');
-    setParams(next, { replace: true });
+    setParams(next, { replace: true, preventScrollReset: true });
   };
 
   return (

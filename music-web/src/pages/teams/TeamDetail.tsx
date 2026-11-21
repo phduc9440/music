@@ -181,7 +181,9 @@ export default function TeamDetail() {
               aria-selected={tab === key}
               aria-controls={`tm-panel-${key}`}
               className="tm-tab"
-              onClick={() => setParams(key === 'scores' ? {} : { tab: key }, { replace: true })}
+              onClick={() =>
+                setParams(key === 'scores' ? {} : { tab: key }, { replace: true, preventScrollReset: true })
+              }
             >
               {t(`teams.tabs.${key}`)}
               {key === 'tasks' && tasks && tasks.length > 0 && <span className="tm-tab__count">{tasks.length}</span>}

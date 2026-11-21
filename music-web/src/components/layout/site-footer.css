@@ -33,15 +33,9 @@
   text-decoration: none;
 }
 
+/* biểu tượng Scorewise (BrandMark, SVG tự vẽ nền và màu): chỉ giữ không co lại */
 .site-footer__mark {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--ui-highlight);
-  color: var(--ui-on-highlight);
+  flex: none;
 }
 
 .site-footer__brand p {

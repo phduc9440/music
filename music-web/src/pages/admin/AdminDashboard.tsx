@@ -336,7 +336,8 @@ export default function AdminDashboard() {
         next.set('chart', key);
         return next;
       },
-      { replace: true },
+      // đổi biểu đồ là đổi nội dung trong trang, không phải sang trang khác: giữ nguyên vị trí cuộn
+      { replace: true, preventScrollReset: true },
     );
 
   useEffect(() => {

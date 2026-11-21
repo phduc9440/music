@@ -3,7 +3,7 @@ import type { FaviconGlyph } from './pageMetaRoutes';
 const GLYPHS: Record<FaviconGlyph, string> = {
   note: '<path d="M9 17V6l9-2v11"/><circle cx="7" cy="17" r="2"/><circle cx="16" cy="15" r="2"/>',
   edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/>',
-  play: '<path d="M8 5l11 7-11 7z" fill="white"/>',
+  play: '<path d="M8 5l11 7-11 7z" fill="#e2cf3c"/>',
   explore: '<circle cx="11" cy="11" r="6"/><path d="M16 16l4 4"/>',
   stats: '<path d="M5 20V10M12 20V4M19 20v-7"/>',
   card: '<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/>',
@@ -14,25 +14,19 @@ const GLYPHS: Record<FaviconGlyph, string> = {
   alert: '<path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17v.5"/>',
 };
 
-/** Token màu (tokens.css) của từng loại trang; mặc định là --ui-violet. SVG nhúng không dùng được var() nên đọc giá trị lúc dựng. */
-const TOKENS: Partial<Record<FaviconGlyph, string>> = {
-  admin: '--ui-hue-teal',
-  chat: '--ui-hue-indigo',
-  team: '--ui-success',
-  card: '--ui-hue-amber',
-  alert: '--ui-chart-neutral',
-};
+/** Màu thương hiệu Scorewise, giống public/favicon.svg: nền xanh ngọc → xám đá, nét vàng nhấn. Giữ cố định ở cả hai theme
+ *  để biểu tượng tab nhận ra ngay là của Scorewise. */
+const BG_FROM = '#007971';
+const BG_TO = '#2f4858';
+const INK = '#e2cf3c';
 
-const colorOf = (glyph: FaviconGlyph): string =>
-  getComputedStyle(document.documentElement)
-    .getPropertyValue(TOKENS[glyph] ?? '--ui-violet')
-    .trim() || 'rebeccapurple';
-
-/** Biểu tượng tab dạng SVG nhúng thẳng (data URI): ô bo góc có màu theo khu vực và hình theo loại trang. */
+/** Biểu tượng tab dạng SVG nhúng thẳng (data URI): ô bo góc màu Scorewise, hình theo loại trang. */
 export function faviconHref(glyph: FaviconGlyph): string {
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">` +
-    `<rect width="24" height="24" rx="6" fill="${colorOf(glyph)}"/>` +
-    `<g fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${GLYPHS[glyph]}</g></svg>`;
+    `<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">` +
+    `<stop offset="0" stop-color="${BG_FROM}"/><stop offset="1" stop-color="${BG_TO}"/></linearGradient></defs>` +
+    `<rect width="24" height="24" rx="6" fill="url(#bg)"/>` +
+    `<g fill="none" stroke="${INK}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${GLYPHS[glyph]}</g></svg>`;
   return `data:image/svg+xml,${encodeURIComponent(svg)}`;
 }
