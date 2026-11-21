@@ -5,7 +5,7 @@
   "backToScore": "Về bản nhạc",
   "setup": {
     "title": "Thiết lập buổi luyện",
-    "description": "Chọn tốc độ và cách nhập nốt. Bạn có thể dùng các phím A–K hoặc bấm phím đàn bên dưới.",
+    "description": "Chọn tốc độ và cách nhập nốt. Dùng piano cảm ứng hoặc bàn phím máy tính; có thể bật/tắt piano và nốt rơi.",
     "mode": "Chế độ",
     "waitUnavailable": "Chưa hỗ trợ trong bản MVP",
     "input": "Cách nhập nốt",
@@ -31,7 +31,6 @@
     "progress": "Tiến độ buổi luyện",
     "lastResult": "Kết quả gần nhất",
     "playPrompt": "Chơi một nốt để bắt đầu",
-    "keyboardHint": "Phím máy tính theo thứ tự: A W S E D F T G Y H U J K.",
     "finished": "Bài đã kết thúc"
   },
   "results": {
@@ -49,14 +48,51 @@
   "keyboard": {
     "label": "Đàn piano ảo",
     "title": "Phím đàn",
-    "hint": "Bấm phím để chơi nốt và nhận phản hồi tức thì.",
-    "octave": "Quãng tám"
+    "range": "Dải phím",
+    "rangeHint": "Có nốt ngoài dải 5 quãng tám đang hiển thị. Hãy đổi dải C để xem và chơi chúng."
+  },
+  "keyboardGuide": {
+    "open": "Cách chơi",
+    "title": "Hướng dẫn luyện với bàn phím",
+    "stepInput": "Trong phần thiết lập, chọn “Bàn phím máy tính” để chơi bằng các phím chữ, hoặc chọn “Bấm phím đàn trên màn hình” để chạm trực tiếp lên đàn.",
+    "stepRange": "Dải C bên cạnh đàn là 5 quãng tám để nhìn nốt. Khi dùng bàn phím máy tính, các phím chữ phát nốt trong quãng tám C bắt đầu của dải này.",
+    "stepPlay": "Quan sát màu nốt để biết tay: tay phải màu xanh, tay trái màu cam. Bấm phím tương ứng khi nốt chạm vạch chơi; với đàn màn hình, chạm phím tương ứng.",
+    "stepFeedback": "Xem kết quả ngay dưới đàn: xanh là đúng nhịp, vàng là sớm/trễ, đỏ là sai nốt hoặc bỏ lỡ. Đổi dải C nếu nốt nằm ngoài phần phím đang xem.",
+    "keyMap": "Bàn phím máy tính phát một quãng tám theo sơ đồ này:"
+  },
+  "recovery": {
+    "title": "Đang có phiên luyện tập khác",
+    "sameScore": "Tài khoản này còn một phiên đang chạy cho bản nhạc hiện tại. Phiên bị bỏ lại sau khi tải lại trang nên không thể tiếp tục chấm từ vị trí cũ.",
+    "otherScore": "Tài khoản này còn một phiên đang chạy ở bản nhạc khác. Mỗi tài khoản chỉ có thể có một phiên luyện tập tại một thời điểm.",
+    "resolve": "Xử lý phiên cũ",
+    "resolveFirst": "Xử lý phiên cũ trước",
+    "sameScoreConfirm": "Hủy phiên cũ sẽ đánh dấu phiên đó là bị bỏ dở; dữ liệu đã ghi nhận vẫn nằm trong lịch sử nhưng không thể tiếp tục phiên.",
+    "otherScoreConfirm": "Phiên cũ có thể đang được dùng ở một tab khác. Chỉ xác nhận hủy nếu bạn chắc chắn không còn muốn tiếp tục phiên đó.",
+    "warning": "Sau khi hủy, bạn có thể bắt đầu phiên mới trên trang này.",
+    "abort": "Hủy phiên cũ",
+    "aborting": "Đang hủy…",
+    "aborted": "Đã hủy phiên cũ. Bạn có thể bắt đầu luyện tập mới."
+  },
+  "display": {
+    "title": "Hiển thị luyện tập",
+    "waterfall": "Nốt rơi",
+    "keyboard": "Piano ảo",
+    "enableKeyboardForTouch": "Hãy bật piano ảo để tiếp tục với nguồn nhập cảm ứng."
+  },
+  "waterfall": {
+    "title": "Nốt rơi",
+    "hint": "Nốt chạy xuống vạch chạm đúng theo tempo và dải ô nhịp đã chọn.",
+    "label": "Bản đồ nốt rơi theo cao độ và thời gian",
+    "legend": "Màu tay chơi",
+    "hitLine": "Vạch chơi",
+    "seconds": "{seconds}s"
   },
   "errors": {
     "load": "Không tải được dữ liệu luyện tập cho bản nhạc này.",
     "invalidScore": "Không tìm thấy bản nhạc hoặc bạn không có quyền luyện tập.",
     "noNotes": "Đoạn đã chọn không có nốt phù hợp để chấm.",
     "start": "Không thể bắt đầu buổi luyện.",
+    "checkActive": "Không kiểm tra được phiên luyện tập đang chạy.",
     "finish": "Không thể lưu kết quả buổi luyện. Bạn có thể thử kết thúc lại.",
     "saveEvents": "Chưa gửi được dữ liệu nốt; hệ thống sẽ thử lại.",
     "abort": "Không thể hủy phiên luyện.",

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import type { ScoreDetail } from '../../../types';
@@ -18,6 +18,9 @@ import { FreeRunScorer } from '../../../components/player/engine/FreeRunScorer';
 import type { PracticeNoteEvent } from '../../../components/player/engine/FreeRunScorer';
 import { buildStudioSchedule } from '../../../components/player/engine/studioSchedule';
 import type { StudioSchedule } from '../../../components/player/engine/studioSchedule';
+import { StudioVirtualPiano, StudioWaterfall } from '../../../components/player/studio/StudioPracticeVisuals';
+import type { StudioVisualFeedback } from '../../../components/player/studio/StudioPracticeVisuals';
+import Modal from '../../../components/scores/common/Modal';
 import MusicXmlViewer from '../../../components/scores/viewer/MusicXmlViewer';
 import '../../../components/scores/scores.css';
 import './studio-player.css';
@@ -26,7 +29,6 @@ const BATCH_SIZE = 200;
 const FLUSH_INTERVAL_MS = 1500;
 const LOOP_LOOKAHEAD_MS = 1200;
 const TOLERANCE_WINDOW_MS = 100;
-const MIDI_NOTES = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'];
 const KEYBOARD_MAP: Record<string, number> = {
   a: 0,
   w: 1,
@@ -42,6 +44,9 @@ const KEYBOARD_MAP: Record<string, number> = {
   j: 11,
   k: 12,
 };
+const NOTE_NAMES = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'];
+
+const noteName = (midi: number): string => `${NOTE_NAMES[midi % 12]}${Math.floor(midi / 12) - 1}`;
 
 type LoadState =
   | { phase: 'loading' }
@@ -56,8 +61,6 @@ const emptyCounts: Record<StudioEventResult, number> = {
   MISSED: 0,
 };
 
-const noteName = (midi: number): string => `${MIDI_NOTES[midi % 12]}${Math.floor(midi / 12) - 1}`;
-
 const toRequestEvent = (event: PracticeNoteEvent): StudioNoteEvent => ({
   ...event,
   measure: event.measure,
@@ -69,21 +72,27 @@ export default function StudioPlayer() {
   const navigate = useNavigate();
   const [loadState, setLoadState] = useState<LoadState>({ phase: 'loading' });
   const [mode, setMode] = useState<'FREE_RUN' | 'WAIT'>('FREE_RUN');
-  const [inputSource, setInputSource] = useState<StudioInputSource>('KEYBOARD');
+  const [inputSource, setInputSource] = useState<StudioInputSource>('TOUCH');
   const [handMode, setHandMode] = useState<StudioHandMode>('BOTH');
   const [tempoPercent, setTempoPercent] = useState(100);
   const [startMeasure, setStartMeasure] = useState(1);
   const [endMeasure, setEndMeasure] = useState(1);
   const [repeatSection, setRepeatSection] = useState(false);
   const [session, setSession] = useState<StudioSessionResponse | null>(null);
+  const [activeSession, setActiveSession] = useState<StudioSessionResponse | null>(null);
+  const [sessionSchedule, setSessionSchedule] = useState<StudioSchedule | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
   const [scoreDuration, setScoreDuration] = useState(0);
   const [lastResult, setLastResult] = useState<StudioEventResult | null>(null);
   const [counts, setCounts] = useState(emptyCounts);
-  const [recentEvents, setRecentEvents] = useState<StudioEventResult[]>([]);
   const [busy, setBusy] = useState(false);
   const [octave, setOctave] = useState(4);
+  const [showWaterfall, setShowWaterfall] = useState(true);
+  const [showKeyboard, setShowKeyboard] = useState(true);
+  const [visualFeedback, setVisualFeedback] = useState<StudioVisualFeedback[]>([]);
   const [loadError, setLoadError] = useState(false);
+  const [showKeyboardGuide, setShowKeyboardGuide] = useState(false);
+  const [showActiveSessionDialog, setShowActiveSessionDialog] = useState(false);
 
   const sessionRef = useRef<StudioSessionResponse | null>(null);
   const scorerRef = useRef<FreeRunScorer | null>(null);
@@ -92,6 +101,7 @@ export default function StudioPlayer() {
   const flushPromiseRef = useRef<Promise<void> | null>(null);
   const startedAtRef = useRef(0);
   const lastScoredAtRef = useRef(0);
+  const elapsedMsRef = useRef(0);
   const scheduledCyclesRef = useRef(0);
   const finalizedEventsRef = useRef<StudioNoteEvent[] | null>(null);
   const inputLockedRef = useRef(false);
@@ -102,13 +112,33 @@ export default function StudioPlayer() {
       return;
     }
     let cancelled = false;
-    Promise.all([scoreApi.detail(scoreId), fetchMusicXml(scoreId), studioApi.timeline(scoreId)])
-      .then(([scoreResponse, xmlResponse, timelineResponse]) => {
+    Promise.all([scoreApi.detail(scoreId), fetchMusicXml(scoreId), studioApi.timeline(scoreId), studioApi.active()])
+      .then(([scoreResponse, xmlResponse, timelineResponse, activeSessionResponse]) => {
         if (cancelled) return;
         const score = scoreResponse.data.result;
         const timeline = timelineResponse.data;
+        const activeSession = activeSessionResponse.status === 204 ? null : activeSessionResponse.data;
         setLoadState({ phase: 'ready', score, xml: xmlResponse, timeline });
+        setActiveSession(activeSession);
         setEndMeasure(timeline.measureCount);
+        const playableMidis = timeline.notes.filter((note) => note.scorable).map((note) => note.midi);
+        if (playableMidis.length > 0) {
+          const averageMidi = playableMidis.reduce((sum, midi) => sum + midi, 0) / playableMidis.length;
+          let bestOctave = 0;
+          let bestCoverage = -1;
+          let bestCenterDistance = Number.POSITIVE_INFINITY;
+          for (let octave = 0; octave < 8; octave += 1) {
+            const baseMidi = (octave + 1) * 12;
+            const coverage = playableMidis.filter((midi) => midi >= baseMidi && midi < baseMidi + 61).length;
+            const centerDistance = Math.abs(averageMidi - (baseMidi + 30));
+            if (coverage > bestCoverage || (coverage === bestCoverage && centerDistance < bestCenterDistance)) {
+              bestOctave = octave;
+              bestCoverage = coverage;
+              bestCenterDistance = centerDistance;
+            }
+          }
+          setOctave(bestOctave);
+        }
       })
       .catch(() => {
         if (cancelled) return;
@@ -129,8 +159,24 @@ export default function StudioPlayer() {
       for (const event of mapped) next[event.result] += 1;
       return next;
     });
-    setRecentEvents((current) => [...mapped.map((event) => event.result).reverse(), ...current].slice(0, 8));
     setLastResult(mapped[mapped.length - 1].result);
+    setVisualFeedback((current) => {
+      const recent = current.filter((event) => event.atMs >= Math.max(0, elapsedMsRef.current - 1200));
+      const additions = mapped.flatMap((event) => {
+        const midi = event.playedMidi ?? event.expectedMidi;
+        if (midi === null) return [];
+        return [
+          {
+            midi,
+            result: event.result,
+            atMs: event.playedMs ?? elapsedMsRef.current,
+            noteId: event.noteId,
+            expectedMs: event.expectedMs,
+          },
+        ];
+      });
+      return [...recent, ...additions].slice(-80);
+    });
   }, []);
 
   const flushEvents = useCallback(async () => {
@@ -170,19 +216,9 @@ export default function StudioPlayer() {
 
       try {
         if (finalizedEventsRef.current === null) {
-          finalizedEventsRef.current = scorer.finish(coveredUntilMs).map(toRequestEvent);
-          pendingEventsRef.current.push(...finalizedEventsRef.current);
-          setCounts((current) => {
-            const next = { ...current };
-            for (const event of finalizedEventsRef.current ?? []) next[event.result] += 1;
-            return next;
-          });
-          setRecentEvents((current) =>
-            [...(finalizedEventsRef.current ?? []).map((event) => event.result).reverse(), ...current].slice(0, 8),
-          );
-          if (finalizedEventsRef.current.length > 0) {
-            setLastResult(finalizedEventsRef.current[finalizedEventsRef.current.length - 1].result);
-          }
+          const finalEvents = scorer.finish(coveredUntilMs);
+          finalizedEventsRef.current = finalEvents.map(toRequestEvent);
+          queueEvents(finalEvents);
         }
         await flushEvents();
         finishRequestStarted = true;
@@ -194,6 +230,7 @@ export default function StudioPlayer() {
         sessionRef.current = null;
         scorerRef.current = null;
         scheduleRef.current = null;
+        setSessionSchedule(null);
         setSession(null);
         navigate(`/studio/sessions/${currentSession.sessionId}/report`);
       } catch (error) {
@@ -203,6 +240,7 @@ export default function StudioPlayer() {
             sessionRef.current = null;
             scorerRef.current = null;
             scheduleRef.current = null;
+            setSessionSchedule(null);
             setSession(null);
             navigate(`/studio/sessions/${currentSession.sessionId}/report`);
             return;
@@ -216,7 +254,7 @@ export default function StudioPlayer() {
         setBusy(false);
       }
     },
-    [flushEvents, navigate],
+    [flushEvents, navigate, queueEvents],
   );
 
   const finishRef = useRef(finishSession);
@@ -238,6 +276,7 @@ export default function StudioPlayer() {
     if (!session) return;
     const timer = window.setInterval(() => {
       const elapsed = Math.max(0, Math.round(performance.now() - startedAtRef.current));
+      elapsedMsRef.current = elapsed;
       setElapsedMs(elapsed);
 
       const scorer = scorerRef.current;
@@ -268,11 +307,13 @@ export default function StudioPlayer() {
   const onPlayNote = useCallback(
     (midi: number) => {
       const scorer = scorerRef.current;
-      if (!sessionRef.current || !scorer || inputLockedRef.current) return;
-      const playedMs = Math.max(0, Math.round(performance.now() - startedAtRef.current));
+      if (inputLockedRef.current) return;
+      const playedMs = sessionRef.current ? Math.max(0, Math.round(performance.now() - startedAtRef.current)) : 0;
       try {
         playTones([{ at: 0, duration: 0.22, midis: [midi] }]);
+        if (!sessionRef.current || !scorer) return;
         queueEvents(scorer.play({ midi, playedMs }));
+        elapsedMsRef.current = playedMs;
         lastScoredAtRef.current = playedMs;
       } catch (error) {
         toast.error(translateError(error, t('studioPlayer.errors.input')));
@@ -297,7 +338,7 @@ export default function StudioPlayer() {
   }, [session, inputSource, octave, onPlayNote]);
 
   const startSession = async () => {
-    if (loadState.phase !== 'ready' || !scoreId || busy || session) return;
+    if (loadState.phase !== 'ready' || !scoreId || busy || session || activeSession) return;
     setBusy(true);
     try {
       const selectedStart = repeatSection ? startMeasure : 1;
@@ -333,15 +374,46 @@ export default function StudioPlayer() {
       finishingRef.current = false;
       startedAtRef.current = performance.now();
       lastScoredAtRef.current = 0;
+      elapsedMsRef.current = 0;
       setScoreDuration(schedule.durationMs);
+      setSessionSchedule(schedule);
       sessionRef.current = created.data;
       setSession(created.data);
       setElapsedMs(0);
       setCounts({ ...emptyCounts });
-      setRecentEvents([]);
       setLastResult(null);
+      setVisualFeedback([]);
     } catch (error) {
       toast.error(translateError(error, t('studioPlayer.errors.start')));
+      try {
+        const activeResponse = await studioApi.active();
+        setActiveSession(activeResponse.status === 204 ? null : activeResponse.data);
+      } catch (activeError) {
+        toast.error(translateError(activeError, t('studioPlayer.errors.checkActive')));
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const clearActiveSession = async () => {
+    if (!activeSession || busy) return;
+    setBusy(true);
+    try {
+      await studioApi.abort(activeSession.sessionId);
+      setActiveSession(null);
+      setShowActiveSessionDialog(false);
+      toast.success(t('studioPlayer.recovery.aborted'));
+    } catch (error) {
+      toast.error(translateError(error, t('studioPlayer.errors.abort')));
+      try {
+        const activeResponse = await studioApi.active();
+        const currentActiveSession = activeResponse.status === 204 ? null : activeResponse.data;
+        setActiveSession(currentActiveSession);
+        if (!currentActiveSession) setShowActiveSessionDialog(false);
+      } catch (activeError) {
+        toast.error(translateError(activeError, t('studioPlayer.errors.checkActive')));
+      }
     } finally {
       setBusy(false);
     }
@@ -358,6 +430,7 @@ export default function StudioPlayer() {
       sessionRef.current = null;
       scorerRef.current = null;
       scheduleRef.current = null;
+      setSessionSchedule(null);
       pendingEventsRef.current = [];
       setSession(null);
       setElapsedMs(0);
@@ -379,6 +452,16 @@ export default function StudioPlayer() {
     window.addEventListener('beforeunload', warnBeforeUnload);
     return () => window.removeEventListener('beforeunload', warnBeforeUnload);
   }, [session]);
+
+  const previewSchedule = useMemo(() => {
+    if (loadState.phase !== 'ready') return null;
+    return buildStudioSchedule(loadState.timeline, {
+      startMeasure: repeatSection ? startMeasure : 1,
+      endMeasure: repeatSection ? endMeasure : loadState.timeline.measureCount,
+      tempoPercent,
+      handMode,
+    });
+  }, [loadState, repeatSection, startMeasure, endMeasure, tempoPercent, handMode]);
 
   if (loadState.phase === 'loading') {
     return (
@@ -407,9 +490,19 @@ export default function StudioPlayer() {
 
   const { score, xml, timeline } = loadState;
   const elapsedSeconds = Math.floor(elapsedMs / 1000);
+  const activeSchedule = sessionSchedule ?? previewSchedule;
   const progress =
     session && scoreDuration > 0 && !repeatSection ? Math.min(100, (elapsedMs / scoreDuration) * 100) : 0;
   const baseMidi = (octave + 1) * 12;
+  const hasNotesOutsideKeyboard = activeSchedule?.visualNotes.some(
+    (note) => note.midi < baseMidi || note.midi >= baseMidi + 61,
+  );
+  const keyboardNotes = Object.entries(KEYBOARD_MAP)
+    .sort((left, right) => left[1] - right[1])
+    .map(([key, semitone]) => ({
+      key: key.toUpperCase(),
+      note: noteName(baseMidi + semitone),
+    }));
 
   return (
     <div className="sc-page studio-player">
@@ -430,6 +523,27 @@ export default function StudioPlayer() {
             {t('studioReport.history.open')}
           </Link>
         </header>
+
+        <section className="studio-player__display-options" aria-label={t('studioPlayer.display.title')}>
+          <strong>{t('studioPlayer.display.title')}</strong>
+          <label>
+            <input
+              type="checkbox"
+              checked={showWaterfall}
+              onChange={(event) => setShowWaterfall(event.target.checked)}
+            />
+            <span>{t('studioPlayer.display.waterfall')}</span>
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={showKeyboard}
+              disabled={Boolean(session && inputSource === 'TOUCH')}
+              onChange={(event) => setShowKeyboard(event.target.checked)}
+            />
+            <span>{t('studioPlayer.display.keyboard')}</span>
+          </label>
+        </section>
 
         {!session ? (
           <section className="studio-player__setup">
@@ -519,9 +633,40 @@ export default function StudioPlayer() {
                 </div>
               )}
             </div>
+            {activeSession && (
+              <div className="studio-player__active-session-warning" role="alert">
+                <p>
+                  {t(
+                    activeSession.scoreId === scoreId
+                      ? 'studioPlayer.recovery.sameScore'
+                      : 'studioPlayer.recovery.otherScore',
+                  )}
+                </p>
+                <button
+                  type="button"
+                  className="sc-btn"
+                  disabled={busy}
+                  onClick={() => setShowActiveSessionDialog(true)}
+                >
+                  {t('studioPlayer.recovery.resolve')}
+                </button>
+              </div>
+            )}
             {mode === 'WAIT' && <p className="studio-player__note">{t('studioPlayer.setup.waitUnavailable')}</p>}
-            <button type="button" className="sc-btn sc-btn--primary" disabled={busy} onClick={startSession}>
-              {busy ? t('studioPlayer.setup.starting') : t('studioPlayer.setup.start')}
+            {inputSource === 'TOUCH' && !showKeyboard && (
+              <p className="studio-player__note">{t('studioPlayer.display.enableKeyboardForTouch')}</p>
+            )}
+            <button
+              type="button"
+              className="sc-btn sc-btn--primary"
+              disabled={busy || Boolean(activeSession) || (inputSource === 'TOUCH' && !showKeyboard)}
+              onClick={startSession}
+            >
+              {activeSession
+                ? t('studioPlayer.recovery.resolveFirst')
+                : busy
+                  ? t('studioPlayer.setup.starting')
+                  : t('studioPlayer.setup.start')}
             </button>
           </section>
         ) : (
@@ -559,43 +704,101 @@ export default function StudioPlayer() {
             >
               <span style={{ width: `${progress}%` }} />
             </div>
-            <div className="studio-player__feedback">
+          </section>
+        )}
+
+        {activeSchedule && (session || showWaterfall || showKeyboard) && (
+          <section className="studio-player__practice-board">
+            <div className="studio-player__practice-heading">
               <div>
-                <span>{t('studioPlayer.session.lastResult')}</span>
-                <strong className={lastResult ? `is-${lastResult.toLowerCase().replace('_', '-')}` : ''}>
-                  {lastResult ? t(`studioPlayer.results.${lastResult}`) : t('studioPlayer.session.playPrompt')}
-                </strong>
+                <h2>{t(showWaterfall ? 'studioPlayer.waterfall.title' : 'studioPlayer.keyboard.title')}</h2>
+                {showWaterfall && <p>{t('studioPlayer.waterfall.hint')}</p>}
               </div>
-              <div className="studio-player__counts">
-                <span>
-                  {t('studioReport.counts.perfect')}: {counts.PERFECT}
-                </span>
-                <span>
-                  {t('studioReport.counts.early')}: {counts.EARLY}
-                </span>
-                <span>
-                  {t('studioReport.counts.late')}: {counts.LATE}
-                </span>
-                <span>
-                  {t('studioReport.counts.wrongPitch')}: {counts.WRONG_PITCH}
-                </span>
-                <span>
-                  {t('studioReport.counts.missed')}: {counts.MISSED}
-                </span>
+              <div className="studio-player__practice-controls">
+                <label>
+                  <span>{t('studioPlayer.keyboard.range')}</span>
+                  <select value={octave} onChange={(event) => setOctave(Number(event.target.value))}>
+                    {Array.from({ length: 8 }, (_, value) => (
+                      <option key={value} value={value}>
+                        C{value}–C{value + 5}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {!session && (
+                  <button type="button" className="studio-player__help-link" onClick={() => setShowKeyboardGuide(true)}>
+                    {t('studioPlayer.keyboardGuide.open')}
+                  </button>
+                )}
+                {showWaterfall && (
+                  <div className="studio-player__hand-legend" aria-label={t('studioPlayer.waterfall.legend')}>
+                    <span className="is-right-hand">{t('studioPlayer.setup.rightHand')}</span>
+                    <span className="is-left-hand">{t('studioPlayer.setup.leftHand')}</span>
+                  </div>
+                )}
               </div>
             </div>
-            <div className="studio-player__recent" aria-live="polite">
-              {recentEvents.map((result, index) => (
-                <span
-                  className={`studio-player__result is-${result.toLowerCase().replace('_', '-')}`}
-                  key={`${result}-${index}`}
-                >
-                  {t(`studioPlayer.results.${result}`)}
-                </span>
-              ))}
+
+            {hasNotesOutsideKeyboard && <p className="studio-player__note">{t('studioPlayer.keyboard.rangeHint')}</p>}
+
+            <div
+              className={[
+                'studio-player__aligned-pitch',
+                !showKeyboard ? 'is-waterfall-only' : '',
+                !showWaterfall ? 'is-keyboard-only' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+            >
+              {showWaterfall && (
+                <StudioWaterfall
+                  notes={activeSchedule.visualNotes}
+                  elapsedMs={elapsedMs}
+                  durationMs={activeSchedule.durationMs}
+                  loop={session ? session.loopStartMeasure !== null : repeatSection}
+                  baseMidi={baseMidi}
+                  feedback={visualFeedback}
+                />
+              )}
+              {showKeyboard && (
+                <StudioVirtualPiano
+                  baseMidi={baseMidi}
+                  inputSource={inputSource}
+                  active={!busy}
+                  busy={busy}
+                  elapsedMs={elapsedMs}
+                  feedback={visualFeedback}
+                  onPlayNote={onPlayNote}
+                />
+              )}
             </div>
-            {inputSource === 'KEYBOARD' && (
-              <p className="studio-player__hint">{t('studioPlayer.session.keyboardHint')}</p>
+
+            {session && (
+              <div className="studio-player__live-report" role="status" aria-live="polite">
+                <div className="studio-player__latest-result">
+                  <span>{t('studioPlayer.session.lastResult')}</span>
+                  <strong className={lastResult ? `is-${lastResult.toLowerCase().replace('_', '-')}` : ''}>
+                    {lastResult ? t(`studioPlayer.results.${lastResult}`) : t('studioPlayer.session.playPrompt')}
+                  </strong>
+                </div>
+                <div className="studio-player__counts">
+                  <span className="is-perfect">
+                    {t('studioReport.counts.perfect')}: {counts.PERFECT}
+                  </span>
+                  <span className="is-early">
+                    {t('studioReport.counts.early')}: {counts.EARLY}
+                  </span>
+                  <span className="is-late">
+                    {t('studioReport.counts.late')}: {counts.LATE}
+                  </span>
+                  <span className="is-wrong-pitch">
+                    {t('studioReport.counts.wrongPitch')}: {counts.WRONG_PITCH}
+                  </span>
+                  <span className="is-missed">
+                    {t('studioReport.counts.missed')}: {counts.MISSED}
+                  </span>
+                </div>
+              </div>
             )}
           </section>
         )}
@@ -618,46 +821,70 @@ export default function StudioPlayer() {
             lastMeasure={repeatSection ? endMeasure : undefined}
           />
         </section>
-
-        <section className="studio-player__keyboard" aria-label={t('studioPlayer.keyboard.label')}>
-          <div className="studio-player__keyboard-head">
-            <div>
-              <h2>{t('studioPlayer.keyboard.title')}</h2>
-              <p>{t('studioPlayer.keyboard.hint')}</p>
-            </div>
-            <label>
-              <span>{t('studioPlayer.keyboard.octave')}</span>
-              <select value={octave} onChange={(event) => setOctave(Number(event.target.value))}>
-                {[2, 3, 4, 5, 6].map((value) => (
-                  <option key={value} value={value}>
-                    C{value}–B{value}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-          <div className="studio-player__keys">
-            {MIDI_NOTES.map((name, semitone) => {
-              const isBlack = name.includes('♯');
-              return (
-                <button
-                  type="button"
-                  key={name}
-                  className={`studio-player__key${isBlack ? ' is-black' : ''}`}
-                  disabled={!session || busy}
-                  aria-label={noteName(baseMidi + semitone)}
-                  onClick={() => onPlayNote(baseMidi + semitone)}
-                >
-                  <span>{name}</span>
-                  {!isBlack && inputSource === 'KEYBOARD' && (
-                    <kbd>{Object.keys(KEYBOARD_MAP).find((key) => KEYBOARD_MAP[key] === semitone) ?? ''}</kbd>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </section>
       </main>
+      {showKeyboardGuide && (
+        <Modal title={t('studioPlayer.keyboardGuide.title')} onClose={() => setShowKeyboardGuide(false)}>
+          <div className="studio-player__guide-content">
+            <ol>
+              <li>{t('studioPlayer.keyboardGuide.stepInput')}</li>
+              <li>{t('studioPlayer.keyboardGuide.stepRange')}</li>
+              <li>{t('studioPlayer.keyboardGuide.stepPlay')}</li>
+              <li>{t('studioPlayer.keyboardGuide.stepFeedback')}</li>
+            </ol>
+            <p>{t('studioPlayer.keyboardGuide.keyMap')}</p>
+            <div className="studio-player__computer-key-map">
+              {keyboardNotes.map(({ key, note }) => (
+                <span className="studio-player__computer-key" key={key}>
+                  <kbd>{key}</kbd>
+                  <span>{note}</span>
+                </span>
+              ))}
+            </div>
+            <div className="sc-modal__actions">
+              <button type="button" className="sc-btn sc-btn--primary" onClick={() => setShowKeyboardGuide(false)}>
+                {t('common.close')}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+      {showActiveSessionDialog && activeSession && (
+        <Modal
+          title={t('studioPlayer.recovery.title')}
+          onClose={() => {
+            if (!busy) setShowActiveSessionDialog(false);
+          }}
+        >
+          <div className="studio-player__guide-content">
+            <p>
+              {t(
+                activeSession.scoreId === scoreId
+                  ? 'studioPlayer.recovery.sameScoreConfirm'
+                  : 'studioPlayer.recovery.otherScoreConfirm',
+              )}
+            </p>
+            <p>{t('studioPlayer.recovery.warning')}</p>
+            <div className="sc-modal__actions">
+              <button
+                type="button"
+                className="sc-btn"
+                disabled={busy}
+                onClick={() => setShowActiveSessionDialog(false)}
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                type="button"
+                className="sc-btn sc-btn--danger-solid"
+                disabled={busy}
+                onClick={() => void clearActiveSession()}
+              >
+                {busy ? t('studioPlayer.recovery.aborting') : t('studioPlayer.recovery.abort')}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

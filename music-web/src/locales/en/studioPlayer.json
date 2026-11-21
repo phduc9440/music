@@ -5,7 +5,7 @@
   "backToScore": "Back to score",
   "setup": {
     "title": "Set up your practice",
-    "description": "Choose a tempo and input method. Use A–K on your computer keyboard or tap the piano keys below.",
+    "description": "Choose a tempo and input method. Use the touch piano or computer keyboard, and toggle the piano or falling notes.",
     "mode": "Mode",
     "waitUnavailable": "Not available in this MVP",
     "input": "Note input",
@@ -31,7 +31,6 @@
     "progress": "Practice progress",
     "lastResult": "Latest result",
     "playPrompt": "Play a note to begin",
-    "keyboardHint": "Computer keys in order: A W S E D F T G Y H U J K.",
     "finished": "Practice complete"
   },
   "results": {
@@ -49,14 +48,51 @@
   "keyboard": {
     "label": "Virtual piano",
     "title": "Piano keys",
-    "hint": "Tap a key to play a note and get instant feedback.",
-    "octave": "Octave"
+    "range": "Key range",
+    "rangeHint": "Some notes are outside the five-octave view. Change its starting C to see and play them."
+  },
+  "keyboardGuide": {
+    "open": "How to play",
+    "title": "Playing with your keyboard",
+    "stepInput": "In setup, choose “Computer keyboard” to use letter keys, or “Tap the on-screen piano” to play by touching the piano.",
+    "stepRange": "The C range selector shows five octaves. With a computer keyboard, the letter keys play the first octave of the selected range.",
+    "stepPlay": "Note colors indicate hands: right hand is blue and left hand is orange. Press the matching key when a note reaches the play line, or tap its on-screen piano key.",
+    "stepFeedback": "Check the result below the piano: green means in time, yellow means early/late, and red means wrong note or missed. Change the C range if notes are outside the visible piano.",
+    "keyMap": "Computer keys play one octave using this map:"
+  },
+  "recovery": {
+    "title": "Another practice session is active",
+    "sameScore": "This account still has an active session for this score. It was left behind after the page was reloaded, so its scoring position cannot be restored.",
+    "otherScore": "This account still has an active session for another score. Only one practice session per account can run at a time.",
+    "resolve": "Resolve old session",
+    "resolveFirst": "Resolve old session first",
+    "sameScoreConfirm": "Aborting the old session will mark it abandoned. Saved events remain in history, but the session cannot be resumed.",
+    "otherScoreConfirm": "The old session may still be in use in another tab. Only confirm if you are sure you no longer want to continue it.",
+    "warning": "After aborting it, you can start a new practice session on this page.",
+    "abort": "Abort old session",
+    "aborting": "Aborting…",
+    "aborted": "The old session was aborted. You can start a new practice session."
+  },
+  "display": {
+    "title": "Practice display",
+    "waterfall": "Falling notes",
+    "keyboard": "Virtual piano",
+    "enableKeyboardForTouch": "Turn on the virtual piano to continue with touch input."
+  },
+  "waterfall": {
+    "title": "Falling notes",
+    "hint": "Notes fall toward the hit line using the selected tempo and measure range.",
+    "label": "Falling note map by pitch and time",
+    "legend": "Hand colors",
+    "hitLine": "Play line",
+    "seconds": "{seconds}s"
   },
   "errors": {
     "load": "Could not load practice data for this score.",
     "invalidScore": "Score not found or you do not have permission to practice it.",
     "noNotes": "The selected section has no scorable notes.",
     "start": "Could not start the practice session.",
+    "checkActive": "Could not check for an active practice session.",
     "finish": "Could not save the practice result. You can try finishing again.",
     "saveEvents": "Could not send note events; the app will retry.",
     "abort": "Could not abort the practice session.",
