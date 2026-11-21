@@ -100,8 +100,15 @@
   }
 }
 @media (max-width: 520px) {
+  /* điện thoại: ô chọn vẫn chia hai cột (nhãn ngắn, đủ chỗ) để bộ lọc không chiếm hết màn hình; ô tìm kiếm trải hết hàng */
   .sc-filters {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+  /* chữ nhỏ hơn một chút để nhãn ô chọn không bị mũi tên đè */
+  .sc-filters select {
+    padding-left: 0.7rem;
+    font-size: 0.875rem;
   }
   .sc-pager {
     flex-wrap: wrap;

@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Link } from '../../routes/transition-nav';
 import { toast } from 'react-toastify';
 import {
@@ -14,7 +16,8 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { Button, Card, CellTitle, PageHeader, StatCard, StatGrid, Table, TableState, Tabs } from '../../components/ui';
+import { Button, Card, CellTitle, Icon, PageHeader, Table, TableState, Tabs } from '../../components/ui';
+import type { IconName } from '../../components/ui';
 import { adminApi } from '../../services';
 import type { AdminDashboard as DashboardData, DashboardKeyCount } from '../../types';
 import './AdminDashboard.css';
@@ -66,6 +69,27 @@ const SERIES_REVENUE = 'var(--ui-chart-revenue)';
 const AXIS = { fontSize: 12, fill: 'var(--ui-chart-axis)' };
 
 const nf = { format: (n: number) => formatNumber(n) };
+
+/** Nhóm chỉ số trong bảng chọn biểu đồ (thứ tự hiển thị). */
+type ChartGroup = 'billing' | 'activity' | 'breakdown';
+const CHART_GROUPS: { key: ChartGroup; labelKey: string }[] = [
+  { key: 'billing', labelKey: 'admin.dashboard.sectionBilling' },
+  { key: 'activity', labelKey: 'admin.dashboard.sectionActivity' },
+  { key: 'breakdown', labelKey: 'admin.dashboard.sectionBreakdown' },
+];
+/** Một chỉ số trong bảng chọn: ô bấm (biểu tượng, tên, con số tóm tắt) và thẻ biểu đồ hiện ra khi được chọn. */
+interface ChartDef {
+  key: string;
+  group: ChartGroup;
+  icon: IconName;
+  label: string;
+  summary: string;
+  card: ReactNode;
+}
+const sum = (rows: { count: number }[]) => rows.reduce((s, r) => s + r.count, 0);
+/** Nhãn của nhóm đông nhất (vd. độ khó có nhiều bản nhất), để làm con số tóm tắt trên ô chọn. */
+const topLabel = (rows: { label: string; count: number }[]) =>
+  rows.length ? rows.reduce((a, b) => (b.count > a.count ? b : a)).label : '—';
 
 const shortDate = (iso: string) => {
   const [, m, d] = iso.split('-');
@@ -205,12 +229,116 @@ function HBar({
   );
 }
 
+/**
+ * Đường xu hướng nhỏ trong thẻ số liệu: cả kỳ vẽ màu trầm, vùng dưới phủ nhạt màu của chỉ số, điểm cuối (hôm nay) là
+ * chấm màu nhấn. Chấm vẽ bằng HTML để không bị méo khi SVG co giãn theo bề ngang thẻ.
+ */
+function Sparkline({
+  values,
+  color,
+  height = 36,
+  label,
+}: {
+  values: number[];
+  color: string;
+  height?: number;
+  label: string;
+}) {
+  if (values.length < 2) return null;
+  const max = Math.max(1, ...values);
+  const pts = values.map((v, i) => [(i / (values.length - 1)) * 100, height - 3 - (v / max) * (height - 6)]);
+  const line = pts.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(2)},${y.toFixed(2)}`).join('');
+  const [, lastY] = pts[pts.length - 1];
+  return (
+    <div className="dash-spark" style={{ height }} role="img" aria-label={label} title={label}>
+      <svg viewBox={`0 0 100 ${height}`} preserveAspectRatio="none" aria-hidden="true">
+        <path d={`${line}L100,${height}L0,${height}Z`} fill={color} fillOpacity={0.12} />
+        <path
+          d={line}
+          fill="none"
+          stroke="var(--ui-chart-neutral)"
+          strokeWidth={2}
+          strokeLinejoin="round"
+          strokeLinecap="round"
+          vectorEffect="non-scaling-stroke"
+        />
+      </svg>
+      <span className="dash-spark__dot" style={{ top: `${(lastY / height) * 100}%`, background: color }} />
+    </div>
+  );
+}
+
+/** Nhãn đọc to cho sparkline: khoảng thời gian, tổng và ngày cao nhất. */
+const sparkLabel = (rows: { date: string; value: number }[], days: number, fmt: (n: number) => string) => {
+  if (rows.length === 0) return '';
+  const top = rows.reduce((a, b) => (b.value > a.value ? b : a));
+  return t('admin.dashboard.sparkLabel', {
+    days,
+    total: fmt(rows.reduce((s, r) => s + r.value, 0)),
+    max: fmt(top.value),
+    date: longDate(top.date),
+  });
+};
+
+/** Thẻ số liệu: nhãn + biểu tượng, con số lớn, một dòng phụ, và đường xu hướng nếu có số liệu theo ngày. */
+function Kpi({
+  label,
+  icon,
+  value,
+  hint,
+  to,
+  spark,
+}: {
+  label: string;
+  icon: IconName;
+  value: string;
+  hint?: string;
+  to: string;
+  spark?: ReactNode;
+}) {
+  return (
+    <Link to={to} className="dash-kpi">
+      <span className="dash-kpi__top">
+        <span className="dash-kpi__label">{label}</span>
+        <Icon name={icon} size={16} />
+      </span>
+      <span className="dash-kpi__value">{value}</span>
+      {hint && <span className="dash-kpi__hint">{hint}</span>}
+      {spark}
+    </Link>
+  );
+}
+
+/** Một việc cần admin xử lý: số lượng > 0 thì mang màu trạng thái (kèm biểu tượng + chữ), bằng 0 thì hiện dấu ổn. */
+interface AttentionItem {
+  key: string;
+  label: string;
+  hint: string;
+  count: number;
+  tone: 'warning' | 'danger';
+  icon: IconName;
+  to: string;
+}
+
 /** Admin: dashboard tổng quan (số liệu chính + biểu đồ theo ngày và theo nhóm). */
 export default function AdminDashboard() {
   const [days, setDays] = useState(30);
   const [data, setData] = useState<DashboardData | null>(null);
   const [reload, setReload] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  // biểu đồ đang xem nằm trên URL (?chart=...) để gửi đường dẫn là mở đúng biểu đồ đó
+  const [params, setParams] = useSearchParams();
+  const chartKey = params.get('chart');
+  const selectChart = (key: string) =>
+    setParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set('chart', key);
+        return next;
+      },
+      // đổi biểu đồ là đổi nội dung trong trang, không phải sang trang khác: giữ nguyên vị trí cuộn
+      { replace: true, preventScrollReset: true },
+    );
 
   useEffect(() => {
     let cancelled = false;
@@ -267,156 +395,54 @@ export default function AdminDashboard() {
 
   const maxViews = Math.max(1, ...(data?.topViewed ?? []).map((s) => s.viewCount));
 
-  return (
-    <div className="dash">
-      <PageHeader
-        title={t('admin.menu.items.dashboard')}
-        description={t('admin.dashboard.description', { days })}
-        actions={
-          <>
-            <select
-              className="adm-input"
-              aria-label={t('admin.dashboard.range')}
-              value={days}
-              onChange={(e) => setDays(Number(e.target.value))}
-            >
-              {RANGES.map((r) => (
-                <option key={r} value={r}>
-                  {t('admin.dashboard.lastDays', { count: r })}
-                </option>
-              ))}
-            </select>
-            <Button icon="refresh" loading={refreshing} onClick={refresh}>
-              {t('admin.system.refresh')}
-            </Button>
-          </>
-        }
-      />
+  const attention: AttentionItem[] = [
+    {
+      key: 'pending',
+      label: t('admin.menu.items.pending'),
+      hint: tot && tot.pendingScores > 0 ? t('admin.dashboard.pendingReview') : t('admin.dashboard.allClear'),
+      count: tot?.pendingScores ?? 0,
+      tone: 'warning',
+      icon: 'clock',
+      to: '/admin/pending-scores',
+    },
+    {
+      key: 'ai',
+      label: t('admin.dashboard.aiFailed'),
+      hint: t('admin.dashboard.aiRunning', { n: nf.format(tot?.aiTasksRunning ?? 0) }),
+      count: tot?.aiTasksFailed ?? 0,
+      tone: 'danger',
+      icon: 'alert',
+      to: '/admin/ai-tasks',
+    },
+    {
+      key: 'orders',
+      label: t('admin.dashboard.pendingOrders'),
+      hint: bill && bill.pendingOrders > 0 ? t('admin.dashboard.pendingOrdersHint') : t('admin.dashboard.allClear'),
+      count: bill?.pendingOrders ?? 0,
+      tone: 'warning',
+      icon: 'inbox',
+      to: '/admin/revenue',
+    },
+    {
+      key: 'bans',
+      label: t('admin.dashboard.activeBans'),
+      hint: bill && bill.activeBans > 0 ? t('admin.dashboard.activeBansHint') : t('admin.dashboard.noBans'),
+      count: bill?.activeBans ?? 0,
+      tone: 'danger',
+      icon: 'lock',
+      to: '/admin/member-plans?tab=sanction',
+    },
+  ];
 
-      <StatGrid>
-        <StatCard
-          label={t('admin.menu.items.members')}
-          icon="users"
-          tone="primary"
-          value={tot ? nf.format(tot.members) : '—'}
-          hint={
-            tot
-              ? t('admin.dashboard.membersHint', {
-                  active: tot.activeMembers,
-                  locked: tot.lockedMembers,
-                  admins: tot.admins,
-                })
-              : undefined
-          }
-          to="/admin/members"
-        />
-        <StatCard
-          label={t('upload.review.tabs.score')}
-          icon="music"
-          tone="primary"
-          value={tot ? nf.format(tot.scores) : '—'}
-          hint={
-            tot
-              ? t('admin.dashboard.scoresHint', { public: tot.publicScores, official: tot.officialScores })
-              : undefined
-          }
-          to="/admin/scores"
-        />
-        <StatCard
-          label={t('admin.menu.items.pending')}
-          icon="clock"
-          tone="warning"
-          value={tot ? nf.format(tot.pendingScores) : '—'}
-          hint={tot && tot.pendingScores > 0 ? t('admin.dashboard.needsAction') : t('admin.pending.emptyTitle')}
-          to="/admin/pending-scores"
-          alert={!!tot && tot.pendingScores > 0}
-        />
-        <StatCard
-          label={t('admin.dashboard.reviews')}
-          icon="star"
-          tone="violet"
-          value={tot ? nf.format(tot.reviews) : '—'}
-          hint={
-            tot
-              ? tot.averageRating == null
-                ? t('admin.dashboard.noRating')
-                : t('admin.dashboard.avgRating', { value: tot.averageRating })
-              : undefined
-          }
-        />
-        <StatCard
-          label={t('admin.dashboard.sessions')}
-          icon="activity"
-          tone="success"
-          value={tot ? nf.format(tot.practiceSessions) : '—'}
-          hint={t('admin.dashboard.allTime')}
-        />
-        <StatCard
-          label={t('admin.dashboard.aiTasks')}
-          icon="cpu"
-          tone={tot && tot.aiTasksFailed > 0 ? 'danger' : 'neutral'}
-          value={tot ? nf.format(tot.aiTasksRunning) : '—'}
-          hint={tot ? t('admin.dashboard.aiHint', { failed: tot.aiTasksFailed }) : undefined}
-          alert={!!tot && tot.aiTasksFailed > 0}
-          to="/admin/ai-tasks"
-        />
-      </StatGrid>
-
-      <Section title={t('admin.dashboard.sectionBilling')} />
-      <StatGrid>
-        <StatCard
-          label={t('admin.dashboard.revenue')}
-          icon="chart"
-          tone="success"
-          value={bill ? formatVnd(bill.revenue) : '—'}
-          hint={
-            bill
-              ? [
-                  t('admin.dashboard.revenueHint', { count: bill.paidOrders, n: nf.format(bill.paidOrders), days }),
-                  bill.refundedOrders > 0
-                    ? t('admin.dashboard.refundedHint', { amount: formatVnd(bill.refundedAmount) })
-                    : null,
-                ]
-                  .filter(Boolean)
-                  .join(' · ')
-              : undefined
-          }
-          to="/admin/revenue"
-        />
-        <StatCard
-          label={t('admin.dashboard.activeSubs')}
-          icon="star"
-          tone="primary"
-          value={bill ? nf.format(bill.activeSubscriptions) : '—'}
-          hint={
-            bill
-              ? t('admin.dashboard.activeSubsHint', {
-                  count: bill.subscribedMembers,
-                  n: nf.format(bill.subscribedMembers),
-                })
-              : undefined
-          }
-          to="/admin/member-plans"
-        />
-        <StatCard
-          label={t('admin.dashboard.pendingOrders')}
-          icon="clock"
-          tone="warning"
-          value={bill ? nf.format(bill.pendingOrders) : '—'}
-          hint={t('admin.dashboard.pendingOrdersHint')}
-          to="/admin/revenue"
-        />
-        <StatCard
-          label={t('admin.dashboard.activeBans')}
-          icon="lock"
-          tone={bill && bill.activeBans > 0 ? 'danger' : 'neutral'}
-          value={bill ? nf.format(bill.activeBans) : '—'}
-          hint={bill && bill.activeBans > 0 ? t('admin.dashboard.activeBansHint') : t('admin.dashboard.noBans')}
-          to="/admin/member-plans?tab=sanction"
-        />
-      </StatGrid>
-
-      <div className="adm-grid-2">
+  // Mọi biểu đồ / bảng phân tích: chỉ vẽ cái đang được chọn trong bảng chọn bên dưới, không bày hết ra một lúc
+  const charts: ChartDef[] = [
+    {
+      key: 'revenue',
+      group: 'billing',
+      icon: 'chart',
+      label: t('admin.dashboard.revenueByDay'),
+      summary: bill ? formatVnd(bill.revenue) : '—',
+      card: (
         <ChartCard
           title={t('admin.dashboard.revenueByDay')}
           sub={
@@ -433,7 +459,6 @@ export default function AdminDashboard() {
             head: [t('admin.dashboard.date'), t('admin.dashboard.amountOrders')],
             rows: revenueDay.map((d) => [longDate(d.date), `${formatVnd(d.amount)} (${nf.format(d.orders)})`]),
           }}
-          className="adm-span-all"
         >
           <div className="dash-chart">
             <ResponsiveContainer>
@@ -486,9 +511,15 @@ export default function AdminDashboard() {
             </ResponsiveContainer>
           </div>
         </ChartCard>
-      </div>
-
-      <div className="adm-grid-2">
+      ),
+    },
+    {
+      key: 'subsPlan',
+      group: 'billing',
+      icon: 'layers',
+      label: t('admin.dashboard.subsByPlan'),
+      summary: `${nf.format(sum(subsByPlan))} ${t('admin.dashboard.subsUnit')}`,
+      card: (
         <ChartCard
           title={t('admin.dashboard.subsByPlan')}
           sub={t('admin.dashboard.subsByPlanSub')}
@@ -496,6 +527,15 @@ export default function AdminDashboard() {
         >
           <HBar rows={subsByPlan} color={SERIES_REVENUE} unit={t('admin.dashboard.subsUnit')} />
         </ChartCard>
+      ),
+    },
+    {
+      key: 'subsSource',
+      group: 'billing',
+      icon: 'key',
+      label: t('admin.dashboard.subsBySource'),
+      summary: topLabel(subsBySource),
+      card: (
         <ChartCard
           title={t('admin.dashboard.subsBySource')}
           sub={t('admin.dashboard.subsBySourceSub')}
@@ -506,10 +546,15 @@ export default function AdminDashboard() {
         >
           <HBar rows={subsBySource} color={SERIES_REVENUE} unit={t('admin.dashboard.subsUnit')} />
         </ChartCard>
-      </div>
-
-      <Section title={t('admin.dashboard.sectionActivity')} />
-      <div className="adm-grid-2">
+      ),
+    },
+    {
+      key: 'scores',
+      group: 'activity',
+      icon: 'music',
+      label: t('admin.dashboard.newScores'),
+      summary: t('admin.dashboard.newScoresSub', { count: newScores, n: nf.format(newScores), days }),
+      card: (
         <ChartCard
           title={t('admin.dashboard.newScores')}
           sub={t('admin.dashboard.newScoresSub', { count: newScores, n: nf.format(newScores), days })}
@@ -561,7 +606,15 @@ export default function AdminDashboard() {
             </ResponsiveContainer>
           </div>
         </ChartCard>
-
+      ),
+    },
+    {
+      key: 'practice',
+      group: 'activity',
+      icon: 'activity',
+      label: t('admin.dashboard.practiceByDay'),
+      summary: t('admin.dashboard.practiceSub', { minutes: nf.format(Math.round(practiceMinutes)), days }),
+      card: (
         <ChartCard
           title={t('admin.dashboard.practiceByDay')}
           sub={t('admin.dashboard.practiceSub', { minutes: nf.format(Math.round(practiceMinutes)), days })}
@@ -605,9 +658,15 @@ export default function AdminDashboard() {
             </ResponsiveContainer>
           </div>
         </ChartCard>
-      </div>
-
-      <div className="adm-grid-2">
+      ),
+    },
+    {
+      key: 'members',
+      group: 'activity',
+      icon: 'users',
+      label: t('admin.dashboard.newMembers'),
+      summary: t('admin.dashboard.newMembersSub', { count: newMembers, n: nf.format(newMembers), days }),
+      card: (
         <ChartCard
           title={t('admin.dashboard.newMembers')}
           sub={`${t('admin.dashboard.newMembersSub', { count: newMembers, n: nf.format(newMembers), days })}${
@@ -654,6 +713,15 @@ export default function AdminDashboard() {
             </ResponsiveContainer>
           </div>
         </ChartCard>
+      ),
+    },
+    {
+      key: 'visibility',
+      group: 'breakdown',
+      icon: 'globe',
+      label: t('admin.members.privacy'),
+      summary: `${nf.format(sum(visibility))} ${t('admin.official.unitScores')}`,
+      card: (
         <ChartCard
           title={t('admin.members.privacy')}
           sub={t('admin.dashboard.visibilitySub')}
@@ -664,10 +732,15 @@ export default function AdminDashboard() {
         >
           <HBar rows={visibility} color={SERIES_SCORES} unit={t('admin.official.unitScores')} />
         </ChartCard>
-      </div>
-
-      <Section title={t('admin.dashboard.sectionBreakdown')} />
-      <div className="adm-grid-2">
+      ),
+    },
+    {
+      key: 'source',
+      group: 'breakdown',
+      icon: 'upload',
+      label: t('admin.dashboard.sourceTitle'),
+      summary: topLabel(source),
+      card: (
         <ChartCard
           title={t('admin.dashboard.sourceTitle')}
           sub={t('admin.dashboard.sourceSub')}
@@ -675,6 +748,15 @@ export default function AdminDashboard() {
         >
           <HBar rows={source} color={SERIES_SCORES} unit={t('admin.official.unitScores')} />
         </ChartCard>
+      ),
+    },
+    {
+      key: 'difficulty',
+      group: 'breakdown',
+      icon: 'sliders',
+      label: t('scores.hero.difficulty'),
+      summary: topLabel(difficulty),
+      card: (
         <ChartCard
           title={t('scores.hero.difficulty')}
           sub={t('admin.dashboard.difficultySub')}
@@ -682,9 +764,15 @@ export default function AdminDashboard() {
         >
           <HBar rows={difficulty} color={SERIES_SCORES} unit={t('admin.official.unitScores')} />
         </ChartCard>
-      </div>
-
-      <div className="adm-grid-2">
+      ),
+    },
+    {
+      key: 'ai',
+      group: 'breakdown',
+      icon: 'cpu',
+      label: t('admin.dashboard.aiByStatus'),
+      summary: `${nf.format(sum(ai))} ${t('admin.dashboard.taskUnit')}`,
+      card: (
         <ChartCard
           title={t('admin.dashboard.aiByStatus')}
           sub={t('admin.dashboard.aiSub')}
@@ -692,6 +780,15 @@ export default function AdminDashboard() {
         >
           <HBar rows={ai} color="var(--ui-chart-neutral)" unit={t('admin.dashboard.taskUnit')} />
         </ChartCard>
+      ),
+    },
+    {
+      key: 'tags',
+      group: 'breakdown',
+      icon: 'tag',
+      label: t('admin.dashboard.topTags'),
+      summary: topLabel(tags),
+      card: (
         <ChartCard
           title={t('admin.dashboard.topTags')}
           sub={t('admin.dashboard.topTagsSub')}
@@ -699,15 +796,16 @@ export default function AdminDashboard() {
         >
           <HBar rows={tags} color={SERIES_SCORES} unit={t('admin.official.unitScores')} />
         </ChartCard>
-      </div>
-
-      <div className="adm-grid-2">
-        <Card
-          title={t('admin.dashboard.mostViewed')}
-          description={t('admin.dashboard.mostViewedSub')}
-          flush
-          className="adm-span-all"
-        >
+      ),
+    },
+    {
+      key: 'viewed',
+      group: 'breakdown',
+      icon: 'eye',
+      label: t('admin.dashboard.mostViewed'),
+      summary: data?.topViewed[0]?.title ?? '—',
+      card: (
+        <Card title={t('admin.dashboard.mostViewed')} description={t('admin.dashboard.mostViewedSub')} flush>
           <Table>
             <thead>
               <tr>
@@ -740,6 +838,220 @@ export default function AdminDashboard() {
             </tbody>
           </Table>
         </Card>
+      ),
+    },
+  ];
+  const current = charts.find((c) => c.key === chartKey) ?? charts[0];
+
+  return (
+    <div className="dash">
+      <PageHeader
+        title={t('admin.menu.items.dashboard')}
+        description={t('admin.dashboard.description', { days })}
+        actions={
+          <>
+            <select
+              className="adm-input"
+              aria-label={t('admin.dashboard.range')}
+              value={days}
+              onChange={(e) => setDays(Number(e.target.value))}
+            >
+              {RANGES.map((r) => (
+                <option key={r} value={r}>
+                  {t('admin.dashboard.lastDays', { count: r })}
+                </option>
+              ))}
+            </select>
+            <Button icon="refresh" loading={refreshing} onClick={refresh}>
+              {t('admin.system.refresh')}
+            </Button>
+          </>
+        }
+      />
+
+      <div className="dash-top">
+        {/* con số chính của trang: doanh thu trong kỳ, kèm xu hướng theo ngày */}
+        <section className="dash-hero" aria-labelledby="dash-hero-label">
+          <div className="dash-hero__head">
+            <span id="dash-hero-label" className="dash-hero__label">
+              {t('admin.dashboard.revenueInPeriod', { days })}
+            </span>
+            <Link to="/admin/revenue" className="dash-link">
+              {t('admin.dashboard.seeRevenue')}
+              <Icon name="chevronRight" size={14} />
+            </Link>
+          </div>
+          <div className="dash-hero__value">{bill ? formatVnd(bill.revenue) : '—'}</div>
+          <div className="dash-hero__hint">
+            {bill
+              ? [
+                  t('admin.dashboard.revenueHint', { count: bill.paidOrders, n: nf.format(bill.paidOrders), days }),
+                  bill.refundedOrders > 0
+                    ? t('admin.dashboard.refundedHint', { amount: formatVnd(bill.refundedAmount) })
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')
+              : '\u00a0'}
+          </div>
+          <Sparkline
+            values={revenueDay.map((d) => d.amount)}
+            color={SERIES_REVENUE}
+            height={84}
+            label={sparkLabel(
+              revenueDay.map((d) => ({ date: d.date, value: d.amount })),
+              days,
+              formatVnd,
+            )}
+          />
+        </section>
+
+        {/* những việc đang chờ admin: có việc thì nổi màu trạng thái, không có thì hiện dấu ổn */}
+        <section className="dash-attn" aria-labelledby="dash-attn-title">
+          <h2 id="dash-attn-title" className="dash-card-title">
+            {t('admin.dashboard.attention')}
+          </h2>
+          <ul className="dash-attn__list">
+            {attention.map((a) => (
+              <li key={a.key}>
+                <Link to={a.to} className={`dash-attn__item ${a.count > 0 ? `is-${a.tone}` : 'is-ok'}`}>
+                  <span className="dash-attn__icon" aria-hidden="true">
+                    <Icon name={a.count > 0 ? a.icon : 'check'} size={16} />
+                  </span>
+                  <span className="dash-attn__text">
+                    <span className="dash-attn__label">{a.label}</span>
+                    <span className="dash-attn__hint">{a.hint}</span>
+                  </span>
+                  <span className="dash-attn__count">{tot || bill ? nf.format(a.count) : '—'}</span>
+                  <Icon name="chevronRight" size={16} />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      </div>
+
+      <div className="dash-kpis">
+        <Kpi
+          label={t('admin.menu.items.members')}
+          icon="users"
+          value={tot ? nf.format(tot.members) : '—'}
+          hint={t('admin.dashboard.newInPeriod', { n: nf.format(newMembers), days })}
+          to="/admin/members"
+          spark={
+            <Sparkline
+              values={membersDay.map((d) => d.count)}
+              color={SERIES_MEMBERS}
+              label={sparkLabel(
+                membersDay.map((d) => ({ date: d.date, value: d.count })),
+                days,
+                nf.format,
+              )}
+            />
+          }
+        />
+        <Kpi
+          label={t('upload.review.tabs.score')}
+          icon="music"
+          value={tot ? nf.format(tot.scores) : '—'}
+          hint={t('admin.dashboard.newInPeriod', { n: nf.format(newScores), days })}
+          to="/admin/scores"
+          spark={
+            <Sparkline
+              values={scoresDay.map((d) => d.count)}
+              color={SERIES_SCORES}
+              label={sparkLabel(
+                scoresDay.map((d) => ({ date: d.date, value: d.count })),
+                days,
+                nf.format,
+              )}
+            />
+          }
+        />
+        <Kpi
+          label={t('admin.dashboard.practiceMinutes')}
+          icon="activity"
+          value={data ? nf.format(Math.round(practiceMinutes)) : '—'}
+          hint={tot ? t('admin.dashboard.sessionsAllTime', { n: nf.format(tot.practiceSessions) }) : undefined}
+          to="/admin/practice"
+          spark={
+            <Sparkline
+              values={practiceDay.map((d) => d.minutes)}
+              color={SERIES_PRACTICE}
+              label={sparkLabel(
+                practiceDay.map((d) => ({ date: d.date, value: d.minutes })),
+                days,
+                nf.format,
+              )}
+            />
+          }
+        />
+        <Kpi
+          label={t('admin.dashboard.activeSubs')}
+          icon="star"
+          value={bill ? nf.format(bill.activeSubscriptions) : '—'}
+          hint={
+            bill
+              ? t('admin.dashboard.activeSubsHint', {
+                  count: bill.subscribedMembers,
+                  n: nf.format(bill.subscribedMembers),
+                })
+              : undefined
+          }
+          to="/admin/member-plans"
+        />
+        <Kpi
+          label={t('admin.dashboard.reviews')}
+          icon="comment"
+          value={tot ? nf.format(tot.reviews) : '—'}
+          hint={
+            tot
+              ? tot.averageRating == null
+                ? t('admin.dashboard.noRating')
+                : t('admin.dashboard.avgRating', { value: tot.averageRating })
+              : undefined
+          }
+          to="/admin/scores"
+        />
+      </div>
+
+      <Section title={t('admin.dashboard.analysis')} />
+      <p className="dash-analysis-hint">{t('admin.dashboard.analysisHint')}</p>
+      <div className="dash-analysis">
+        <div className="dash-picker">
+          {CHART_GROUPS.map((g) => (
+            <div key={g.key} className="dash-picker__group" role="group" aria-labelledby={`dash-group-${g.key}`}>
+              <h3 id={`dash-group-${g.key}`} className="dash-picker__title">
+                {t(g.labelKey)}
+              </h3>
+              <div className="dash-picker__list">
+                {charts
+                  .filter((c) => c.group === g.key)
+                  .map((c) => (
+                    <button
+                      key={c.key}
+                      type="button"
+                      className="dash-pick"
+                      aria-pressed={c.key === current.key}
+                      aria-controls="dash-focus"
+                      onClick={() => selectChart(c.key)}
+                    >
+                      <span className="dash-pick__icon" aria-hidden="true">
+                        <Icon name={c.icon} size={18} />
+                      </span>
+                      <span className="dash-pick__label">{c.label}</span>
+                      <span className="dash-pick__value">{c.summary}</span>
+                    </button>
+                  ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* chỉ một biểu đồ: cái đang chọn; key đổi theo lựa chọn để nút Biểu đồ / Bảng về mặc định */}
+        <div id="dash-focus" className="dash-focus" key={current.key} aria-live="polite">
+          {current.card}
+        </div>
       </div>
     </div>
   );

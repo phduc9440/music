@@ -64,7 +64,8 @@
 }
 .auth-stage__body {
   position: relative;
-  max-width: 30rem;
+  /* đủ rộng để mỗi vế của câu tiêu đề nằm trọn một dòng */
+  max-width: 34rem;
 }
 .auth-stage__brand {
   display: inline-flex;
@@ -75,15 +76,13 @@
   font-size: 1.2rem;
   font-weight: 700;
 }
+/* biểu tượng Scorewise (BrandMark, SVG tự vẽ nền và màu): chỉ giữ không co lại */
 .auth-stage__logo {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  background: var(--ui-brass);
-  color: var(--ui-stage-bg);
+  flex: none;
+}
+/* mỗi vế của câu tiêu đề một dòng */
+.auth-stage__line {
+  display: block;
 }
 .auth-stage h2 {
   margin: 0;

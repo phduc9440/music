@@ -114,8 +114,9 @@
     "account": "Account",
     "home": "Home",
     "tipSite": "Photograph sheet music, edit, listen and practice, together with your team, in your own language.",
-    "copyright": "© {year} Bản Nhạc Số · PTIT graduation project",
-    "privacy": "Your scores are private by default."
+    "copyright": "© {year} Scorewise · PTIT graduation project",
+    "privacy": "Your scores are private by default.",
+    "quickLinks": "Quick links"
   },
   "time": {
     "justNow": "just now",

@@ -28,7 +28,7 @@ export default function AdminMemberPlans() {
       )}
       <Tabs<Tab>
         value={tab}
-        onChange={(next) => setParams(next === 'grant' ? {} : { tab: next })}
+        onChange={(next) => setParams(next === 'grant' ? {} : { tab: next }, { preventScrollReset: true })}
         items={[
           { value: 'grant', label: t('admin.memberPlans.tabGrant') },
           { value: 'sanction', label: t('admin.memberPlans.tabSanction') },

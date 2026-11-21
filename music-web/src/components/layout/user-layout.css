@@ -58,16 +58,9 @@
   color: var(--ui-text);
 }
 
+/* biểu tượng Scorewise (BrandMark, SVG tự vẽ nền và màu): chỉ giữ không co lại */
 .app-brand__logo {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  /* logo: vàng ô liu (màu gốc của bảng màu), biểu tượng mực tối */
-  background: var(--ui-highlight);
-  color: var(--ui-on-highlight);
+  flex: none;
 }
 
 .app-nav {
@@ -584,6 +577,24 @@
     font-weight: 600;
   }
 
+  /* tab đang mở "sáng lên": biểu tượng nằm trong viên thuốc nền màu chính nhạt (trừ nút Tạo ở giữa, vốn đã là nút tròn) */
+  .app-tabbar__item:not(.app-tabbar__item--primary) .app-tabbar__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 28px;
+    border-radius: 999px;
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease;
+  }
+
+  .app-tabbar__item--active:not(.app-tabbar__item--primary) .app-tabbar__icon {
+    background: color-mix(in srgb, var(--ui-primary) 18%, transparent);
+    color: var(--ui-primary);
+  }
+
   .app-tabbar__item--primary .app-tabbar__icon {
     display: inline-flex;
     align-items: center;
@@ -602,11 +613,13 @@
     padding-bottom: calc(4rem + env(safe-area-inset-bottom));
   }
 
+  /* lớp phủ làm tối nội dung phía sau menu thả xuống. Phải nằm DƯỚI thanh đầu trang (z-index 200): menu là con của
+     thanh đầu trang nên z-index của menu chỉ có tác dụng bên trong thanh, lớp phủ cao hơn 200 sẽ đè lên làm menu tối đi */
   .app-backdrop {
     display: block;
     position: fixed;
     inset: var(--ui-header-h) 0 0 0;
-    z-index: 240;
+    z-index: 190;
     background: var(--ui-overlay-soft);
   }
 }
@@ -649,5 +662,59 @@
   .app-header__inner--guest .app-nav--guest {
     grid-area: nav;
     height: 44px;
+  }
+}
+
+/* ---- điện thoại: thanh trên của khu đã đăng nhập (menu, logo, tìm kiếm | ngôn ngữ, giao diện, thông báo, tài khoản)
+   phải vừa một hàng. Nút không bị bóp méo, ngôn ngữ chỉ còn biểu tượng, bỏ mũi tên cạnh avatar, thu khoảng cách ---- */
+@media (max-width: 560px) {
+  .app-header__inner {
+    padding-inline: 0.75rem;
+  }
+
+  .app-header__left {
+    gap: 0.35rem;
+  }
+
+  .app-header__right {
+    gap: 0.25rem;
+  }
+
+  .app-header__left > *,
+  .app-header__right > * {
+    flex-shrink: 0;
+  }
+
+  .app-header .app-iconbtn,
+  .app-header .theme-toggle__trigger,
+  .app-header .app-search {
+    width: 36px;
+    height: 36px;
+  }
+
+  .app-header .language-toggle__trigger {
+    font-size: 0;
+  }
+
+  .app-header .language-toggle__trigger svg {
+    flex: none;
+    width: 16px;
+    height: 16px;
+  }
+
+  .app-usermenu__trigger {
+    padding: 0.15rem;
+  }
+
+  .app-usermenu__trigger > svg {
+    display: none;
+  }
+}
+
+/* màn rất hẹp: chỉ giữ biểu tượng Scorewise, ẩn chữ thương hiệu */
+@media (max-width: 400px) {
+  .app-brand {
+    font-size: 0;
+    gap: 0;
   }
 }

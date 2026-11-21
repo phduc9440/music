@@ -152,7 +152,7 @@ export default function TasksPanel({ tasks, now, scope, syncUrl = false, from }:
       if (empty) next.delete(k);
       else next.set(k, String(v));
     }
-    setParams(next, { replace: true });
+    setParams(next, { replace: true, preventScrollReset: true });
   };
 
   // Gõ tìm kiếm: chờ ngừng gõ rồi mới áp bộ lọc
@@ -206,7 +206,7 @@ export default function TasksPanel({ tasks, now, scope, syncUrl = false, from }:
   const filtering = Boolean(f.q || f.team || f.status || f.role || f.due);
   const clear = () => {
     setSearch('');
-    if (syncUrl) setParams({}, { replace: true });
+    if (syncUrl) setParams({}, { replace: true, preventScrollReset: true });
     else setLocal(EMPTY);
   };
 

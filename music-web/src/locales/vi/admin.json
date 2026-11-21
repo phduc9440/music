@@ -32,6 +32,8 @@
     "userSite": "Giao diện người dùng"
   },
   "layout": {
+      "groupActive": "Nhóm đang chứa trang bạn mở",
+      "groupBadge": "{count} việc đang chờ trong nhóm này",
     "profileFailed": "Không tải được hồ sơ quản trị viên",
     "toggleSidebar": "Đóng/mở thanh bên",
     "menuLabel": "Menu quản trị",
@@ -505,7 +507,20 @@
     "planColumn": "Gói",
     "sourceColumn": "Nguồn",
     "subsCount": "Số gói",
-    "subsUnit": "gói"
+    "subsUnit": "gói",
+    "analysis": "Phân tích chi tiết",
+    "analysisHint": "Chọn một chỉ số để xem biểu đồ của nó.",
+    "revenueInPeriod": "Doanh thu {days} ngày gần nhất",
+    "seeRevenue": "Xem doanh thu",
+    "attention": "Cần xử lý",
+    "allClear": "Không có gì đang chờ",
+    "pendingReview": "Đang chờ duyệt",
+    "aiFailed": "Tác vụ AI lỗi",
+    "aiRunning": "{n} tác vụ đang chạy",
+    "newInPeriod": "+{n} trong {days} ngày",
+    "practiceMinutes": "Phút luyện tập",
+    "sessionsAllTime": "{n} phiên từ trước đến nay",
+    "sparkLabel": "{days} ngày gần nhất: tổng {total}, cao nhất {max} ngày {date}"
   },
   "ai": {
     "status": {

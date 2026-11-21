@@ -37,7 +37,7 @@ export default function Forum() {
       else next.set(k, v);
     }
     if (!('page' in changes)) next.delete('page'); // đổi bộ lọc thì về trang đầu
-    setParams(next, { replace: true });
+    setParams(next, { replace: true, preventScrollReset: true });
   };
 
   useEffect(() => {

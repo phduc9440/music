@@ -45,38 +45,38 @@ final class EmailMessages {
     }
 
     private static final Map<Key, String> VI = Map.ofEntries(
-            Map.entry(Key.SIGNOFF, "Trân trọng,<br><strong>Đội ngũ Music App</strong>"),
-            Map.entry(Key.WELCOME_SUBJECT, "Chào mừng bạn đến với Music App"),
+            Map.entry(Key.SIGNOFF, "Trân trọng,<br><strong>Đội ngũ Scorewise</strong>"),
+            Map.entry(Key.WELCOME_SUBJECT, "Chào mừng bạn đến với Scorewise"),
             Map.entry(Key.WELCOME_HEADING, "Xin chào %s,"),
             Map.entry(
                     Key.WELCOME_BODY,
-                    "<p>Cảm ơn bạn đã đăng ký tài khoản Music App.</p><p>Chúc bạn có những giờ luyện tập thật vui!</p>"),
-            Map.entry(Key.FORGOT_SUBJECT, "Mã đặt lại mật khẩu Music App"),
+                    "<p>Cảm ơn bạn đã đăng ký tài khoản Scorewise.</p><p>Chúc bạn có những giờ luyện tập thật vui!</p>"),
+            Map.entry(Key.FORGOT_SUBJECT, "Mã đặt lại mật khẩu Scorewise"),
             Map.entry(Key.FORGOT_HEADING, "Đặt lại mật khẩu"),
-            Map.entry(Key.FORGOT_INTRO, "<p>Bạn vừa yêu cầu đặt lại mật khẩu cho tài khoản Music App.</p>"),
+            Map.entry(Key.FORGOT_INTRO, "<p>Bạn vừa yêu cầu đặt lại mật khẩu cho tài khoản Scorewise.</p>"),
             Map.entry(Key.FORGOT_CODE_LABEL, "<p>Mã xác nhận (OTP) của bạn:</p>"),
             Map.entry(
                     Key.FORGOT_VALIDITY,
                     "<p>Mã có hiệu lực trong <strong>5 phút</strong> và chỉ dùng được một lần. Không chia sẻ mã này"
-                            + " với bất kỳ ai, kể cả người tự xưng là nhân viên Music App.</p>"),
+                            + " với bất kỳ ai, kể cả người tự xưng là nhân viên Scorewise.</p>"),
             Map.entry(
                     Key.FORGOT_IGNORE,
                     "<p style=\"color:#475569\">Nếu bạn không yêu cầu, hãy bỏ qua email này. Mật khẩu của bạn vẫn"
                             + " giữ nguyên.</p>"),
-            Map.entry(Key.CHANGED_SUBJECT, "Mật khẩu Music App của bạn vừa được thay đổi"),
+            Map.entry(Key.CHANGED_SUBJECT, "Mật khẩu Scorewise của bạn vừa được thay đổi"),
             Map.entry(Key.CHANGED_HEADING, "Mật khẩu đã được thay đổi"),
             Map.entry(Key.CHANGED_HELLO, "<p>Xin chào %s,</p>"),
             Map.entry(Key.CHANGED_VIA_RESET, "đặt lại bằng mã OTP"),
             Map.entry(Key.CHANGED_VIA_SETTINGS, "đổi trong phần cài đặt tài khoản"),
             Map.entry(
                     Key.CHANGED_BODY,
-                    "<p>Mật khẩu tài khoản Music App của bạn vừa được %s lúc <strong>%s</strong>. Các thiết bị đang"
+                    "<p>Mật khẩu tài khoản Scorewise của bạn vừa được %s lúc <strong>%s</strong>. Các thiết bị đang"
                             + " đăng nhập khác đã bị đăng xuất.</p>"),
             Map.entry(
                     Key.CHANGED_WARNING,
                     "<p style=\"color:#b91c1c\"><strong>Nếu không phải bạn thực hiện</strong>, hãy dùng chức năng"
                             + " “Quên mật khẩu” để đặt lại ngay và liên hệ quản trị viên.</p>"),
-            Map.entry(Key.INVITE_SUBJECT, "Lời mời tham gia nhóm %s trên Music App"),
+            Map.entry(Key.INVITE_SUBJECT, "Lời mời tham gia nhóm %s trên Scorewise"),
             Map.entry(Key.INVITE_HEADING, "Bạn được mời vào nhóm %s"),
             Map.entry(
                     Key.INVITE_BODY,
@@ -86,7 +86,7 @@ final class EmailMessages {
                     Key.INVITE_FOOTER,
                     "<p style=\"color:#475569\">Lời mời có hạn 7 ngày và chỉ dùng được một lần. Nếu chưa có tài"
                             + " khoản, hãy đăng ký bằng chính email này rồi mở lại link.</p>"),
-            Map.entry(Key.DIGEST_SUBJECT, "Bạn có %s thông báo chưa đọc trên Music App"),
+            Map.entry(Key.DIGEST_SUBJECT, "Bạn có %s thông báo chưa đọc trên Scorewise"),
             Map.entry(Key.DIGEST_HEADING, "Tóm tắt thông báo hôm nay"),
             Map.entry(Key.DIGEST_INTRO, "<p>Trong 24 giờ qua bạn có <strong>%s</strong> thông báo chưa đọc:</p>"),
             Map.entry(Key.DIGEST_BUTTON, "Mở thông báo"),
@@ -96,37 +96,37 @@ final class EmailMessages {
                             + " Cài đặt thông báo.</p>"));
 
     private static final Map<Key, String> EN = Map.ofEntries(
-            Map.entry(Key.SIGNOFF, "Best regards,<br><strong>The Music App team</strong>"),
-            Map.entry(Key.WELCOME_SUBJECT, "Welcome to Music App"),
+            Map.entry(Key.SIGNOFF, "Best regards,<br><strong>The Scorewise team</strong>"),
+            Map.entry(Key.WELCOME_SUBJECT, "Welcome to Scorewise"),
             Map.entry(Key.WELCOME_HEADING, "Hello %s,"),
             Map.entry(
-                    Key.WELCOME_BODY, "<p>Thanks for creating your Music App account.</p><p>Enjoy your practice!</p>"),
-            Map.entry(Key.FORGOT_SUBJECT, "Your Music App password reset code"),
+                    Key.WELCOME_BODY, "<p>Thanks for creating your Scorewise account.</p><p>Enjoy your practice!</p>"),
+            Map.entry(Key.FORGOT_SUBJECT, "Your Scorewise password reset code"),
             Map.entry(Key.FORGOT_HEADING, "Reset your password"),
-            Map.entry(Key.FORGOT_INTRO, "<p>You asked to reset the password of your Music App account.</p>"),
+            Map.entry(Key.FORGOT_INTRO, "<p>You asked to reset the password of your Scorewise account.</p>"),
             Map.entry(Key.FORGOT_CODE_LABEL, "<p>Your verification code (OTP):</p>"),
             Map.entry(
                     Key.FORGOT_VALIDITY,
                     "<p>The code is valid for <strong>5 minutes</strong> and can be used once. Never share it with"
-                            + " anyone, even someone claiming to be Music App staff.</p>"),
+                            + " anyone, even someone claiming to be Scorewise staff.</p>"),
             Map.entry(
                     Key.FORGOT_IGNORE,
                     "<p style=\"color:#475569\">If you did not ask for this, ignore this email. Your password stays"
                             + " the same.</p>"),
-            Map.entry(Key.CHANGED_SUBJECT, "Your Music App password was changed"),
+            Map.entry(Key.CHANGED_SUBJECT, "Your Scorewise password was changed"),
             Map.entry(Key.CHANGED_HEADING, "Your password was changed"),
             Map.entry(Key.CHANGED_HELLO, "<p>Hello %s,</p>"),
             Map.entry(Key.CHANGED_VIA_RESET, "reset with an OTP code"),
             Map.entry(Key.CHANGED_VIA_SETTINGS, "changed in your account settings"),
             Map.entry(
                     Key.CHANGED_BODY,
-                    "<p>The password of your Music App account was just %s at <strong>%s</strong>. Other signed-in"
+                    "<p>The password of your Scorewise account was just %s at <strong>%s</strong>. Other signed-in"
                             + " devices have been signed out.</p>"),
             Map.entry(
                     Key.CHANGED_WARNING,
                     "<p style=\"color:#b91c1c\"><strong>If this wasn't you</strong>, use “Forgot password” to reset it"
                             + " right away and contact an administrator.</p>"),
-            Map.entry(Key.INVITE_SUBJECT, "Invitation to join the team %s on Music App"),
+            Map.entry(Key.INVITE_SUBJECT, "Invitation to join the team %s on Scorewise"),
             Map.entry(Key.INVITE_HEADING, "You're invited to the team %s"),
             Map.entry(
                     Key.INVITE_BODY,
@@ -136,7 +136,7 @@ final class EmailMessages {
                     Key.INVITE_FOOTER,
                     "<p style=\"color:#475569\">The invitation expires in 7 days and can be used once. If you don't"
                             + " have an account yet, sign up with this same email and open the link again.</p>"),
-            Map.entry(Key.DIGEST_SUBJECT, "You have %s unread notifications on Music App"),
+            Map.entry(Key.DIGEST_SUBJECT, "You have %s unread notifications on Scorewise"),
             Map.entry(Key.DIGEST_HEADING, "Today's notification summary"),
             Map.entry(
                     Key.DIGEST_INTRO, "<p>In the last 24 hours you got <strong>%s</strong> unread notifications:</p>"),

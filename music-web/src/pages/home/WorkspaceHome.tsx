@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useState } from 'react';
+import { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Link } from '../../routes/transition-nav';
@@ -11,6 +11,9 @@ import { homeApi, teamApi } from '../../services';
 import type { HomePendingItem, HomeSummary, ScoreSummary, TeamTask } from '../../types';
 import { DueDate, StatusBadge } from '../teams/shared';
 import HomeForumBlock from '../../components/home/HomeForumBlock';
+import SiteFooter from '../../components/layout/SiteFooter';
+import SectionDots from '../../components/home/SectionDots';
+import { useScreenSnap } from '../../components/home/useScreenSnap';
 import { t } from '../../i18n/core';
 import { ACCESS_LEVEL_LABELS, DIFFICULTY_LABELS, formatRelative, getScorePath } from '../../utils/score';
 import '../../components/scores/scores.css';
@@ -30,13 +33,13 @@ const QUICK_LINKS: { to: string; labelKey: string; icon: IconName }[] = [
   { to: '/playlists', labelKey: 'common.nav.items.playlists', icon: 'list' },
 ];
 
-const SHOWCASE: { key: string; to: string }[] = [
-  { key: 'ocr', to: CREATE_SCORE_PATH },
-  { key: 'editor', to: '/scores' },
-  { key: 'player', to: '/scores' },
-  { key: 'practice', to: '/practice-history' },
-  { key: 'teams', to: '/teams' },
-  { key: 'export', to: '/scores' },
+const SHOWCASE: { key: string; to: string; icon: IconName }[] = [
+  { key: 'ocr', to: CREATE_SCORE_PATH, icon: 'upload' },
+  { key: 'editor', to: '/scores', icon: 'pencil' },
+  { key: 'player', to: '/scores', icon: 'play' },
+  { key: 'practice', to: '/practice-history', icon: 'activity' },
+  { key: 'teams', to: '/teams', icon: 'users' },
+  { key: 'export', to: '/scores', icon: 'share' },
 ];
 
 const JOURNEY: { key: 'capture' | 'edit' | 'practice'; to: string }[] = [
@@ -48,9 +51,9 @@ const JOURNEY: { key: 'capture' | 'edit' | 'practice'; to: string }[] = [
 /** Khối có tiêu đề: tiêu đề và lời dẫn một hàng, nội dung là các thẻ phẳng bên dưới (như trang chủ khách). */
 function Showcase({ title, lead, children }: { title: string; lead?: string; children: ReactNode }) {
   return (
-    <section className="wh-sec">
+    <section className="wh-sec scr" data-screen={title}>
       <header className="wh-sec__head">
-        <h2>{title}</h2>
+        <h2 className="scr-title">{title}</h2>
         {lead && <p>{lead}</p>}
       </header>
       {children}
@@ -133,6 +136,9 @@ function RecentRow({ score, from }: { score: ScoreSummary; from: string }) {
  */
 export default function WorkspaceHome() {
   const { pathname } = useLocation();
+  const pageRef = useRef<HTMLDivElement>(null);
+  // mỗi màn một section, hít vào ngay dưới thanh đầu trang của ứng dụng
+  useScreenSnap('var(--ui-header-h)');
   const [data, setData] = useState<HomeSummary | null>(null);
   const [failed, setFailed] = useState(false);
   // Việc được giao trong các buổi diễn (4.1): tải riêng để lỗi ở đây không làm hỏng cả trang chủ
@@ -208,233 +214,249 @@ export default function WorkspaceHome() {
   const [featured, ...others] = data.recentScores;
 
   return (
-    <div className="sc-page wh-page">
+    <div ref={pageRef} className="sc-page wh-page">
       <Suspense fallback={null}>
         <ScoreStaff3D />
       </Suspense>
+      <SectionDots root={pageRef} label={t('home.guest.screensNav')} />
       <main className="sc-container wh">
-        <header className="wh-hero">
-          <div className="wh-hero__text">
-            <h1>
-              {greeting()}, {data.displayName}
-            </h1>
-            <p className="wh-hero__sub">
-              {streak.practicedToday
-                ? t('home.workspace.practicedToday', { count: todayMinutes })
-                : streak.currentStreak > 0
-                  ? t('home.workspace.keepStreak')
-                  : t('home.workspace.startStreak')}
-            </p>
-            <div className="wh-hero__cta">
-              {featured ? (
-                <Link
-                  to={getScorePath(featured.id, featured.processingStatus)}
-                  state={{ from: pathname }}
-                  className="wh-btn"
-                >
-                  <Icon name="play" size={18} />
-                  {t('home.workspace.continue')}
-                </Link>
-              ) : (
-                <Link to={CREATE_SCORE_PATH} className="wh-btn">
-                  <Icon name="upload" size={18} />
-                  {t('home.workspace.digitize')}
-                </Link>
-              )}
+        {/* màn đầu: lời chào và bàn làm việc (bento) */}
+        <section className="wh-desk scr" data-screen={t('home.workspace.screenDesk')}>
+          <header className="wh-hero">
+            <div className="wh-hero__text">
+              <h1>
+                {greeting()}, {data.displayName}
+              </h1>
+              <p className="wh-hero__sub">
+                {streak.practicedToday
+                  ? t('home.workspace.practicedToday', { count: todayMinutes })
+                  : streak.currentStreak > 0
+                    ? t('home.workspace.keepStreak')
+                    : t('home.workspace.startStreak')}
+              </p>
+              <div className="wh-hero__cta">
+                {featured ? (
+                  <Link
+                    to={getScorePath(featured.id, featured.processingStatus)}
+                    state={{ from: pathname }}
+                    className="wh-btn"
+                  >
+                    <Icon name="play" size={18} />
+                    {t('home.workspace.continue')}
+                  </Link>
+                ) : (
+                  <Link to={CREATE_SCORE_PATH} className="wh-btn">
+                    <Icon name="upload" size={18} />
+                    {t('home.workspace.digitize')}
+                  </Link>
+                )}
+              </div>
             </div>
-          </div>
-          <Link to="/practice-stats" className="wh-streak" title={t('common.footer.practiceStats')}>
-            <Icon name="flame" size={30} />
-            <span className="wh-streak__num">
-              <CountUp value={streak.currentStreak} duration={900} />
-            </span>
-            <span className="wh-streak__label">
-              {t('home.workspace.streakLabel', { count: streak.currentStreak })}
-              <small>{t('home.workspace.longest', { count: streak.longestStreak })}</small>
-            </span>
-          </Link>
-        </header>
+            <Link to="/practice-stats" className="wh-streak" title={t('common.footer.practiceStats')}>
+              <Icon name="flame" size={30} />
+              <span className="wh-streak__num">
+                <CountUp value={streak.currentStreak} duration={900} />
+              </span>
+              <span className="wh-streak__label">
+                {t('home.workspace.streakLabel', { count: streak.currentStreak })}
+                <small>{t('home.workspace.longest', { count: streak.longestStreak })}</small>
+              </span>
+            </Link>
+          </header>
 
-        <div className="wh-bento">
-          <Panel
-            className="wh-tile wh-tile--continue"
-            title={t('home.workspace.continue')}
-            action={{ to: '/scores', label: t('common.nav.items.library') }}
-          >
-            {!featured ? (
-              <p className="wh-empty">{t('home.workspace.noScores')}</p>
-            ) : (
-              <>
-                <Link
-                  to={getScorePath(featured.id, featured.processingStatus)}
-                  state={{ from: pathname }}
-                  className="wh-feature"
-                >
-                  <span className="wh-feature__cover">
-                    <AuthImage
-                      src={featured.coverUrl ?? featured.thumbnailUrl}
-                      alt={featured.title}
-                      className="wh-recent__img"
-                    />
-                  </span>
-                  <span className="wh-feature__body">
-                    <strong title={featured.title}>{featured.title}</strong>
-                    <span>{featured.composer || t('scores.card.unknownComposer')}</span>
-                    <small>{t('home.workspace.updated', { when: formatRelative(featured.updatedAt) })}</small>
-                  </span>
-                </Link>
-                {others.length > 0 && (
-                  <ul className="wh-list">
-                    {others.map((s) => (
-                      <RecentRow key={s.id} score={s} from={pathname} />
-                    ))}
-                  </ul>
-                )}
-              </>
-            )}
-          </Panel>
-
-          <section className="wh-tile wh-tile--suggest">
-            <span className="wh-tile__kicker">{t('home.workspace.suggestion')}</span>
-            {suggestion ? (
-              <>
-                <span className="wh-suggest__reason">
-                  {suggestion.reason === 'CONTINUE'
-                    ? t('home.workspace.suggestContinue')
-                    : t('home.workspace.suggestOfficial')}
-                </span>
-                <strong className="wh-suggest__title">{suggestion.score.title}</strong>
-                <span className="wh-meta wh-suggest__meta">
-                  <span>{suggestion.score.composer || t('scores.card.unknownComposer')}</span>
-                  {suggestion.score.difficulty && <span>{DIFFICULTY_LABELS[suggestion.score.difficulty]}</span>}
-                </span>
-                <Link to={`/scores/${suggestion.score.id}/play`} className="wh-btn wh-btn--light">
-                  <Icon name="play" size={16} />
-                  {t('home.workspace.practiceNow')}
-                </Link>
-              </>
-            ) : (
-              <p className="wh-suggest__empty">
-                {suggestEmpty[0]}
-                <Link to="/scores/official">{t('common.nav.items.officialLibrary')}</Link>
-                {suggestEmpty[1]}
-              </p>
-            )}
-          </section>
-
-          <Link to={CREATE_SCORE_PATH} className="wh-tile wh-tile--create">
-            <Icon name="upload" size={26} />
-            <strong>{t('home.workspace.fromImage')}</strong>
-            <span>{t('home.workspace.fromImageHint')}</span>
-          </Link>
-          <Link to="/scores/import" className="wh-tile wh-tile--create">
-            <Icon name="music" size={26} />
-            <strong>{t('home.workspace.fromFile')}</strong>
-            <span>{t('home.workspace.fromFileHint')}</span>
-          </Link>
-
-          <Panel className="wh-tile wh-tile--pending" title={t('home.workspace.pending')}>
-            {data.pending.length === 0 ? (
-              <p className="wh-empty">{t('home.workspace.noPending')}</p>
-            ) : (
-              <ul className="wh-list">
-                {data.pending.map((item) => (
-                  <li key={`${item.type}-${item.scoreId}-${item.createdAt}`}>
-                    <Link to={pendingTarget(item)} state={{ from: pathname }} className="wh-pending">
-                      <span className="wh-pending__body">
-                        <strong>{pendingText(item)}</strong>
-                        <span className="wh-meta">
-                          <span>{item.scoreTitle}</span>
-                          <span>{formatRelative(item.createdAt)}</span>
-                        </span>
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {(data.accessRequestCount > 0 || data.officialRequestCount > 0 || data.pendingPublicCount > 0) && (
-              <p className="wh-counts">
-                {data.accessRequestCount > 0 && (
-                  <span>{t('home.workspace.accessRequests', { count: data.accessRequestCount })}</span>
-                )}
-                {data.officialRequestCount > 0 && (
-                  <span>{t('home.workspace.officialRequests', { count: data.officialRequestCount })}</span>
-                )}
-                {data.pendingPublicCount > 0 && (
-                  <span>{t('home.workspace.awaitingReview', { count: data.pendingPublicCount })}</span>
-                )}
-              </p>
-            )}
-          </Panel>
-
-          {tasks.length > 0 && (
+          <div className="wh-bento">
             <Panel
-              className="wh-tile wh-tile--tasks"
-              title={t('home.workspace.tasks')}
-              action={{ to: '/my-tasks', label: t('home.workspace.tasksAll', { count: tasks.length }) }}
+              className="wh-tile wh-tile--continue"
+              title={t('home.workspace.continue')}
+              action={{ to: '/scores', label: t('common.nav.items.library') }}
             >
-              <ul className="wh-list">
-                {tasks.slice(0, MAX_TASKS).map((task) => (
-                  <li key={task.itemId}>
-                    <Link to={`/teams/${task.teamId}/shows/${task.showId}`} className="wh-task">
-                      <span className="wh-task__body">
-                        <strong title={task.scoreTitle}>{task.scoreTitle}</strong>
-                        <span className="wh-meta">
-                          <span>{task.teamName}</span>
-                          <span>{task.showName}</span>
-                          <span>
-                            {[
-                              task.asArranger && t('teams.tasks.asArranger'),
-                              task.asReviewer && t('teams.tasks.asReviewer'),
-                            ]
-                              .filter(Boolean)
-                              .join(', ')}
+              {!featured ? (
+                <p className="wh-empty">{t('home.workspace.noScores')}</p>
+              ) : (
+                <>
+                  <Link
+                    to={getScorePath(featured.id, featured.processingStatus)}
+                    state={{ from: pathname }}
+                    className="wh-feature"
+                  >
+                    <span className="wh-feature__cover">
+                      <AuthImage
+                        src={featured.coverUrl ?? featured.thumbnailUrl}
+                        alt={featured.title}
+                        className="wh-recent__img"
+                      />
+                    </span>
+                    <span className="wh-feature__body">
+                      <strong title={featured.title}>{featured.title}</strong>
+                      <span>{featured.composer || t('scores.card.unknownComposer')}</span>
+                      <small>{t('home.workspace.updated', { when: formatRelative(featured.updatedAt) })}</small>
+                    </span>
+                  </Link>
+                  {others.length > 0 && (
+                    <ul className="wh-list">
+                      {others.map((s) => (
+                        <RecentRow key={s.id} score={s} from={pathname} />
+                      ))}
+                    </ul>
+                  )}
+                </>
+              )}
+            </Panel>
+
+            <section className="wh-tile wh-tile--suggest">
+              <span className="wh-tile__kicker">{t('home.workspace.suggestion')}</span>
+              {suggestion ? (
+                <>
+                  <span className="wh-suggest__reason">
+                    {suggestion.reason === 'CONTINUE'
+                      ? t('home.workspace.suggestContinue')
+                      : t('home.workspace.suggestOfficial')}
+                  </span>
+                  <strong className="wh-suggest__title">{suggestion.score.title}</strong>
+                  <span className="wh-meta wh-suggest__meta">
+                    <span>{suggestion.score.composer || t('scores.card.unknownComposer')}</span>
+                    {suggestion.score.difficulty && <span>{DIFFICULTY_LABELS[suggestion.score.difficulty]}</span>}
+                  </span>
+                  <Link to={`/scores/${suggestion.score.id}/play`} className="wh-btn wh-btn--light">
+                    <Icon name="play" size={16} />
+                    {t('home.workspace.practiceNow')}
+                  </Link>
+                </>
+              ) : (
+                <p className="wh-suggest__empty">
+                  {suggestEmpty[0]}
+                  <Link to="/scores/official">{t('common.nav.items.officialLibrary')}</Link>
+                  {suggestEmpty[1]}
+                </p>
+              )}
+            </section>
+
+            <Link to={CREATE_SCORE_PATH} className="wh-tile wh-tile--create">
+              <Icon name="upload" size={26} />
+              <strong>{t('home.workspace.fromImage')}</strong>
+              <span>{t('home.workspace.fromImageHint')}</span>
+            </Link>
+            <Link to="/scores/import" className="wh-tile wh-tile--create">
+              <Icon name="music" size={26} />
+              <strong>{t('home.workspace.fromFile')}</strong>
+              <span>{t('home.workspace.fromFileHint')}</span>
+            </Link>
+          </div>
+        </section>
+
+        {/* màn hai: những việc đang chờ (yêu cầu cần duyệt, việc được giao) và lối tắt */}
+        <Showcase title={t('home.workspace.screenTodo')} lead={t('home.workspace.screenTodoLead')}>
+          <div className="wh-bento wh-bento--todo">
+            <Panel className="wh-tile wh-tile--pending" title={t('home.workspace.pending')}>
+              {data.pending.length === 0 ? (
+                <p className="wh-empty">{t('home.workspace.noPending')}</p>
+              ) : (
+                <ul className="wh-list">
+                  {data.pending.map((item) => (
+                    <li key={`${item.type}-${item.scoreId}-${item.createdAt}`}>
+                      <Link to={pendingTarget(item)} state={{ from: pathname }} className="wh-pending">
+                        <span className="wh-pending__body">
+                          <strong>{pendingText(item)}</strong>
+                          <span className="wh-meta">
+                            <span>{item.scoreTitle}</span>
+                            <span>{formatRelative(item.createdAt)}</span>
                           </span>
                         </span>
-                      </span>
-                      <span className="wh-task__side">
-                        <DueDate date={task.dueDate} now={now} />
-                        <StatusBadge status={task.status} />
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {(data.accessRequestCount > 0 || data.officialRequestCount > 0 || data.pendingPublicCount > 0) && (
+                <p className="wh-counts">
+                  {data.accessRequestCount > 0 && (
+                    <span>{t('home.workspace.accessRequests', { count: data.accessRequestCount })}</span>
+                  )}
+                  {data.officialRequestCount > 0 && (
+                    <span>{t('home.workspace.officialRequests', { count: data.officialRequestCount })}</span>
+                  )}
+                  {data.pendingPublicCount > 0 && (
+                    <span>{t('home.workspace.awaitingReview', { count: data.pendingPublicCount })}</span>
+                  )}
+                </p>
+              )}
             </Panel>
-          )}
 
-          <nav className="wh-quick" aria-label={t('home.workspace.quickLinks')}>
-            {QUICK_LINKS.map((l) => (
-              <Link key={l.to} to={l.to} className="wh-quick__item">
-                <span className="wh-quick__icon">
-                  <Icon name={l.icon} size={20} />
-                </span>
-                {t(l.labelKey)}
-              </Link>
-            ))}
-          </nav>
-        </div>
+            {tasks.length > 0 && (
+              <Panel
+                className="wh-tile wh-tile--tasks"
+                title={t('home.workspace.tasks')}
+                action={{ to: '/my-tasks', label: t('home.workspace.tasksAll', { count: tasks.length }) }}
+              >
+                <ul className="wh-list">
+                  {tasks.slice(0, MAX_TASKS).map((task) => (
+                    <li key={task.itemId}>
+                      <Link to={`/teams/${task.teamId}/shows/${task.showId}`} className="wh-task">
+                        <span className="wh-task__body">
+                          <strong title={task.scoreTitle}>{task.scoreTitle}</strong>
+                          <span className="wh-meta">
+                            <span>{task.teamName}</span>
+                            <span>{task.showName}</span>
+                            <span>
+                              {[
+                                task.asArranger && t('teams.tasks.asArranger'),
+                                task.asReviewer && t('teams.tasks.asReviewer'),
+                              ]
+                                .filter(Boolean)
+                                .join(', ')}
+                            </span>
+                          </span>
+                        </span>
+                        <span className="wh-task__side">
+                          <DueDate date={task.dueDate} now={now} />
+                          <StatusBadge status={task.status} />
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </Panel>
+            )}
+
+            <nav className="wh-quick" aria-label={t('home.workspace.quickLinks')}>
+              {QUICK_LINKS.map((l) => (
+                <Link key={l.to} to={l.to} className="wh-quick__item">
+                  <span className="wh-quick__icon">
+                    <Icon name={l.icon} size={20} />
+                  </span>
+                  {t(l.labelKey)}
+                </Link>
+              ))}
+            </nav>
+          </div>
+        </Showcase>
 
         <Showcase title={t('home.guest.featuresTitle')} lead={t('home.guest.featuresLead')}>
-          <div className="wh-showcase">
+          <div className="wh-showcase scr-stagger">
             {SHOWCASE.map((f) => (
               <Link key={f.key} to={f.to} className="wh-feat">
-                <strong>{t(`home.guest.features.${f.key}.title`)}</strong>
-                <span>{t(`home.guest.features.${f.key}.text`)}</span>
-                <Icon name="chevronRight" size={18} />
+                <span className="wh-feat__icon" aria-hidden="true">
+                  <Icon name={f.icon} size={22} />
+                </span>
+                <span className="wh-feat__body">
+                  <strong>{t(`home.guest.features.${f.key}.title`)}</strong>
+                  <span>{t(`home.guest.features.${f.key}.text`)}</span>
+                </span>
               </Link>
             ))}
           </div>
         </Showcase>
 
         <Showcase title={t('home.guest.howTitle')} lead={t('home.guest.howLead')}>
-          <ol className="wh-journey">
-            {JOURNEY.map((j) => (
+          <ol className="wh-journey scr-stagger">
+            {JOURNEY.map((j, i) => (
               <li key={j.key}>
                 <Link to={j.to} className="wh-journey__item">
+                  <span className="wh-journey__num" aria-hidden="true">
+                    {i + 1}
+                  </span>
                   <strong>{t(`home.guest.steps.${j.key}.title`)}</strong>
-                  <span>{t(`home.guest.steps.${j.key}.text`)}</span>
+                  <span className="wh-journey__text">{t(`home.guest.steps.${j.key}.text`)}</span>
                 </Link>
               </li>
             ))}
@@ -449,17 +471,20 @@ export default function WorkspaceHome() {
           )}
         />
 
-        <section className="wh-cta">
-          <div>
-            <h2>{t('home.workspace.ctaTitle')}</h2>
-            <p>{t('home.workspace.ctaText')}</p>
+        <section className="wh-cta-screen scr" data-screen={t('home.workspace.screenNew')}>
+          <div className="wh-cta">
+            <div>
+              <h2 className="scr-title">{t('home.workspace.ctaTitle')}</h2>
+              <p>{t('home.workspace.ctaText')}</p>
+            </div>
+            <Link to={CREATE_SCORE_PATH} className="wh-btn">
+              <Icon name="upload" size={18} />
+              {t('home.workspace.ctaButton')}
+            </Link>
           </div>
-          <Link to={CREATE_SCORE_PATH} className="wh-btn">
-            <Icon name="upload" size={18} />
-            {t('home.workspace.ctaButton')}
-          </Link>
         </section>
       </main>
+      <SiteFooter variant="compact" />
     </div>
   );
 }

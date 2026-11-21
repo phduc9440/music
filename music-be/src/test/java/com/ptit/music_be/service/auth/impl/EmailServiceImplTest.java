@@ -78,21 +78,21 @@ class EmailServiceImplTest {
         member("en@x.com", AppLocale.EN);
         service.sendForgotPasswordEmail("en@x.com", "123456");
         MimeMessage message = sent();
-        assertThat(message.getSubject()).isEqualTo("Your Music App password reset code");
+        assertThat(message.getSubject()).isEqualTo("Your Scorewise password reset code");
     }
 
     @Test
     void forgotPasswordFallsBackToVietnamese() throws Exception {
         member("vi@x.com", null);
         service.sendForgotPasswordEmail("vi@x.com", "123456");
-        assertThat(sent().getSubject()).isEqualTo("Mã đặt lại mật khẩu Music App");
+        assertThat(sent().getSubject()).isEqualTo("Mã đặt lại mật khẩu Scorewise");
     }
 
     @Test
     void unknownRecipientGetsVietnamese() throws Exception {
         when(memberRepository.findByEmail("new@x.com")).thenReturn(Optional.empty());
         service.sendTeamInvitationEmail("new@x.com", "Ban nhạc", "An", TeamRole.ARRANGER, "https://x/y");
-        assertThat(sent().getSubject()).isEqualTo("Lời mời tham gia nhóm Ban nhạc trên Music App");
+        assertThat(sent().getSubject()).isEqualTo("Lời mời tham gia nhóm Ban nhạc trên Scorewise");
     }
 
     @Test
@@ -100,7 +100,7 @@ class EmailServiceImplTest {
         member("en@x.com", AppLocale.EN);
         service.sendTeamInvitationEmail("en@x.com", "Band", "An", TeamRole.ARRANGER, "https://x/y");
         MimeMessage message = sent();
-        assertThat(message.getSubject()).isEqualTo("Invitation to join the team Band on Music App");
+        assertThat(message.getSubject()).isEqualTo("Invitation to join the team Band on Scorewise");
         assertThat(html(message)).contains("Arranger").doesNotContain("Người phối");
     }
 
@@ -113,7 +113,7 @@ class EmailServiceImplTest {
                 .locale(AppLocale.EN)
                 .build());
         MimeMessage message = sent();
-        assertThat(message.getSubject()).isEqualTo("Welcome to Music App");
+        assertThat(message.getSubject()).isEqualTo("Welcome to Scorewise");
         // tên người dùng nhập vào bị escape HTML
         assertThat(html(message)).doesNotContain("Nam <b>");
     }

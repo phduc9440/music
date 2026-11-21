@@ -15,6 +15,7 @@ import ThemeToggle from '../theme/ThemeToggle';
 import { t, translateError } from '../i18n/core';
 import LanguageToggle from '../i18n/LanguageToggle';
 import './login.css';
+import BrandMark from '../components/ui/BrandMark';
 
 // Dây đàn 3D (three.js) tải riêng sau khi trang hiện
 const HarpStrings3D = lazy(() => import('../components/ui/HarpStrings3D'));
@@ -214,12 +215,19 @@ export default function Login() {
         </Suspense>
         <div className="auth-stage__body">
           <span className="auth-stage__brand">
-            <span className="auth-stage__logo" aria-hidden="true">
-              <Icon name="music" size={18} />
-            </span>
-            Bản Nhạc Số
+            <BrandMark size={34} className="auth-stage__logo" />
+            Scorewise
           </span>
-          <h2>{t('home.guest.heroTitle')}</h2>
+          {/* mỗi vế của câu (ngăn bằng dấu phẩy) một dòng, không gãy giữa chừng */}
+          <h2>
+            {t('home.guest.heroTitle')
+              .split(/(?<=,)\s+/)
+              .map((line) => (
+                <span key={line} className="auth-stage__line">
+                  {line}
+                </span>
+              ))}
+          </h2>
           <p>{t('home.guest.heroLead')}</p>
           <ul className="auth-stage__points">
             {STAGE_POINTS.map((p) => (
@@ -240,10 +248,8 @@ export default function Login() {
       </div>
       <main className="auth-main">
         <div className="auth-card">
-          <div className="auth-logo" aria-hidden="true">
-            <Icon name="music" size={22} />
-          </div>
-          <h1>Bản Nhạc Số</h1>
+          <BrandMark size={44} className="auth-logo" />
+          <h1>Scorewise</h1>
           {RESET_STEPS[viewMode] && (
             <div className="auth-step">{t('auth.step', { current: RESET_STEPS[viewMode], total: 3 })}</div>
           )}

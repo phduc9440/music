@@ -50,6 +50,75 @@
   gap: 0.25rem;
   margin-bottom: 1rem;
 }
+/* nhãn mức giảm trên nút "Theo năm" */
+.bl-period__save {
+  margin-left: 0.4rem;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  background: var(--ui-success-soft);
+  color: var(--ui-success);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+.sc-btn--primary .bl-period__save {
+  background: color-mix(in srgb, var(--ui-on-cta) 22%, transparent);
+  color: inherit;
+}
+
+/* giá trả lẻ 12 tháng gạch ngang, đứng trước giá năm */
+.bl-price__old {
+  display: block;
+  color: var(--sc-muted);
+  font-size: 0.95rem;
+  font-weight: 400;
+  text-decoration-thickness: 1px;
+}
+
+/* khoản tiết kiệm dưới giá: nhãn số tiền + % */
+.bl-saving {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.6rem;
+  margin-top: -0.25rem;
+}
+.bl-saving__chip {
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  background: var(--ui-success-soft);
+  color: var(--ui-success);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+/* đang xem giá tháng: gợi ý trả theo năm, bấm để chuyển */
+.bl-saving__hint {
+  align-self: flex-start;
+  margin-top: -0.25rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ui-success);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.bl-saving__hint:hover {
+  text-decoration: underline;
+}
+.bl-saving__hint:focus-visible {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+.bl-renew__saving {
+  margin: 0 0 0.35rem;
+  color: var(--ui-success);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
 .bl-limits {
   display: flex;
   flex-direction: column;

@@ -175,16 +175,10 @@ a:hover {
   box-shadow: var(--ui-shadow);
 }
 
+/* biểu tượng Scorewise trên thẻ đăng nhập (BrandMark, SVG tự vẽ nền và màu): căn giữa phía trên tiêu đề */
 .auth-logo {
-  width: 44px;
-  height: 44px;
+  display: block;
   margin: 0 auto 1rem;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--ui-primary);
-  color: var(--ui-on-accent);
 }
 
 .auth-card h1 {

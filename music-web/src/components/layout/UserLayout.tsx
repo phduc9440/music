@@ -25,6 +25,7 @@ import { CREATE_SCORE_PATH, NAV_GROUPS, navContextPath } from './nav';
 import PlanChip from './PlanChip';
 import './user-layout.css';
 import { onMemberUpdated } from '../../utils/memberEvents';
+import BrandMark from '../ui/BrandMark';
 
 /**
  * Khung chung của các trang người dùng: thanh trên (logo, nhóm điều hướng, tạo bản nhạc, tìm kiếm Ctrl/Cmd+K, giao diện,
@@ -118,10 +119,8 @@ export default function UserLayout() {
             </button>
 
             <Link to="/" className="app-brand">
-              <span className="app-brand__logo">
-                <Icon name="music" size={16} />
-              </span>
-              Bản Nhạc Số
+              <BrandMark size={30} className="app-brand__logo" />
+              Scorewise
             </Link>
 
             <button
