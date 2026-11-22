@@ -1,5 +1,7 @@
 package com.ptit.music_be.service.score;
 
+import java.util.OptionalLong;
+
 import com.ptit.music_be.dto.response.score.ScoreContent;
 
 /** Đọc nội dung các file kết quả của bản nhạc: kern, MusicXML và MIDI (đặc tả mục 2.4 và 7.1). */
@@ -20,6 +22,13 @@ public interface ScoreContentService {
      * FILE_NOT_EXISTED (2002) nếu file đã mất trên đĩa.
      */
     ScoreContent getMusicXml(String scoreId);
+
+    /**
+     * Seq cuối của phiên cùng sửa đã nằm trong MusicXML hiện hành ({@code meta.seqTo} khi {@code meta.source = LIVE}).
+     * Rỗng nếu version hiện hành không do phiên cùng sửa lưu (lưu tay, khôi phục, OMR) hoặc chưa có MusicXML. Không kiểm
+     * quyền: chỉ dịch vụ cùng sửa gọi, sau khi đã đọc MusicXML bằng quyền của người vào phiên.
+     */
+    OptionalLong liveSeqOfCurrent(String scoreId);
 
     /**
      * Trả MIDI hiện hành. Nếu chưa có MIDI hoặc MIDI cũ hơn MusicXML (Editor vừa lưu bản mới) thì gọi music-ai sinh lại

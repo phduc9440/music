@@ -88,7 +88,9 @@ class Budget:
         self._cancel = cancel
         self._clock = clock
         self._page_timeout = page_timeout_s
-        self._task_deadline = clock() + task_timeout_s
+        self._started = clock()
+        self.task_budget_s = task_timeout_s
+        self._task_deadline = self._started + task_timeout_s
         self._page_deadline: Optional[float] = None
         self.current_page: Optional[int] = None
 
@@ -96,6 +98,11 @@ class Budget:
         """Bắt đầu tính hạn cho một trang; ``timeout_s`` thay cho hạn mặc định (suy luận có hạn riêng)."""
         self.current_page = page_number
         self._page_deadline = self._clock() + (timeout_s if timeout_s is not None else self._page_timeout)
+
+    def set_task_budget(self, task_timeout_s: float) -> None:
+        """Đặt lại ngân sách cả job (tính từ lúc bắt đầu job), dùng khi đã biết số trang."""
+        self.task_budget_s = task_timeout_s
+        self._task_deadline = self._started + task_timeout_s
 
     def end_page(self) -> None:
         self._page_deadline = None
@@ -113,6 +120,61 @@ class Budget:
             raise JobTimeout("task")
         if self._page_deadline is not None and now > self._page_deadline:
             raise JobTimeout("page", self.current_page)
+
+
+class ProgressHeartbeat:
+    """Bọc callback: ghi nhớ tiến độ mới nhất và gửi lại nếu quá ``interval_s`` giây chưa có tiến độ mới.
+
+    Một trang khó có thể nhận diện vài phút; watchdog của Java đánh TASK_TIMEOUT khi task đứng yên 10 phút, nên job vẫn
+    chạy phải báo "còn sống" đều đặn. Các lời gọi khác (file, complete, fail) chuyển thẳng cho callback gốc.
+    """
+
+    def __init__(self, callback: JavaCallback, interval_s: float, clock: Callable[[], float] = time.monotonic) -> None:
+        self._callback = callback
+        self._interval = interval_s
+        self._clock = clock
+        self._lock = threading.Lock()
+        self._last: Optional[tuple[int, str]] = None
+        self._last_at = clock()
+        self._stop = threading.Event()
+        self._thread: Optional[threading.Thread] = None
+
+    def __getattr__(self, name: str):
+        return getattr(self._callback, name)
+
+    def progress(self, progress: int, step: str) -> bool:
+        with self._lock:
+            self._last = (progress, step)
+            self._last_at = self._clock()
+        return self._callback.progress(progress, step)
+
+    def start(self) -> None:
+        if self._interval <= 0:
+            return
+        self._thread = threading.Thread(target=self._run, name="omr-heartbeat", daemon=True)
+        self._thread.start()
+
+    def stop(self) -> None:
+        self._stop.set()
+        if self._thread:
+            self._thread.join(timeout=2)
+
+    def beat(self) -> bool:
+        """Gửi lại tiến độ cũ nếu đã quá hạn; trả True nếu đã gửi."""
+        with self._lock:
+            last, due = self._last, self._clock() - self._last_at >= self._interval
+            if last is None or not due:
+                return False
+            self._last_at = self._clock()
+        try:
+            self._callback.progress(*last)
+        except Exception:  # noqa: BLE001 - nhịp tim lỗi không được làm hỏng job
+            log.debug("Không gửi được nhịp tim tiến độ", exc_info=True)
+        return True
+
+    def _run(self) -> None:
+        while not self._stop.wait(min(30.0, self._interval)):
+            self.beat()
 
 
 @dataclass
@@ -157,8 +219,11 @@ def run_omr_job(
     ``recognizer`` mặc định là Transcoda dùng chung của dịch vụ; test truyền bản giả.
     """
     settings = settings or get_settings()
-    budget = Budget(cancel, settings.task_timeout_s, settings.page_timeout_s)
-    ctx = JobContext(job=job, callback=callback, budget=budget, settings=settings, warnings=[], recognizer=recognizer)
+    # Chưa biết số trang: tạm tính như bài một trang, đặt lại sau bước tách trang
+    budget = Budget(cancel, settings.task_budget_s(1), settings.page_timeout_s)
+    heartbeat = ProgressHeartbeat(callback, settings.progress_heartbeat_s)
+    ctx = JobContext(job=job, callback=heartbeat, budget=budget, settings=settings, warnings=[], recognizer=recognizer)
+    heartbeat.start()
     try:
         _run(ctx)
     except JobCancelled:
@@ -169,7 +234,7 @@ def run_omr_job(
         if exc.scope == "page":
             _safe_fail(ctx, "TASK_TIMEOUT", f"trang {exc.page_number} quá {settings.page_timeout_s} giây")
         else:
-            _safe_fail(ctx, "TASK_TIMEOUT", f"quá {settings.task_timeout_s} giây")
+            _safe_fail(ctx, "TASK_TIMEOUT", f"quá {round(budget.task_budget_s)} giây")
     except RecognizerNotReady as exc:
         log.error("Job %s: model chưa dùng được: %s", ctx.task_id, exc)
         _safe_fail(ctx, "MODEL_NOT_LOADED", str(exc)[:300])
@@ -182,6 +247,8 @@ def run_omr_job(
     except Exception as exc:  # noqa: BLE001 - lỗi không lường trước vẫn phải báo về Java
         log.exception("Job %s gặp lỗi không mong đợi", ctx.task_id)
         _safe_fail(ctx, "INTERNAL_ERROR", type(exc).__name__)
+    finally:
+        heartbeat.stop()
 
 
 def _safe_fail(ctx: JobContext, code: str, message: Optional[str]) -> None:
@@ -208,6 +275,8 @@ def _run(ctx: JobContext) -> None:
     ctx.budget.check()
     ctx.callback.progress(5, STEP_SPLIT_PDF)
     pages = _split_pages(ctx)
+    # Bài nhiều trang được nhiều thời gian hơn (OMR-T03); bài treo vẫn bị dừng ở trần TASK_TIMEOUT_S
+    ctx.budget.set_task_budget(ctx.settings.task_budget_s(len(pages)))
 
     ctx.callback.progress(10, STEP_PREPROCESS)
     kept_pages = _preprocess_pages(ctx, pages)

@@ -1,0 +1,9 @@
+# Profile "test" (TEST-T01): bật cho mọi lần chạy test qua surefire (pom.xml). Test Spring Boot chạy Flyway và ghi dữ
+# liệu, nên dùng DB riêng music_test, không bao giờ chạm music_db đang dùng để phát triển. Tài khoản DB lấy từ cấu hình
+# chính / biến môi trường như khi chạy thường. Đổi DB test bằng TEST_DB_URL (CI đặt SPRING_DATASOURCE_URL thì dùng giá trị đó).
+spring:
+  datasource:
+    url: ${TEST_DB_URL:jdbc:mysql://localhost:3306/music_test?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
+  flyway:
+    # Chỉ DB test mới được xóa sạch để chạy lại migration từ đầu (mvn flyway:clean hoặc test tự gọi)
+    clean-disabled: false

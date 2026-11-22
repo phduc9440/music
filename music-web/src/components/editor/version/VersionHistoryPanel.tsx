@@ -19,6 +19,11 @@ interface Props {
   dirty: boolean;
   /** Đang lưu hoặc đang khôi phục. */
   busy: boolean;
+  /**
+   * Lý do không được khôi phục lúc này (ví dụ đang có phiên cùng sửa: khôi phục sẽ ghi đè thay đổi của người khác).
+   * Khác null thì nút Khôi phục bị khóa và hiện lý do khi rê chuột.
+   */
+  restoreBlockedReason?: string | null;
   /** Khôi phục phiên bản; trả về true nếu thành công (panel tự đóng). */
   onRestore: (version: number) => Promise<boolean>;
   onClose: () => void;
@@ -28,7 +33,15 @@ interface Props {
  * Lịch sử phiên bản MusicXML của bản nhạc (đặc tả 3.6): danh sách tối đa 20 bản, bấm "Xem" để xem trước (chỉ đọc),
  * "Khôi phục" để lưu một bản cũ thành phiên bản mới nhất mà không xóa lịch sử.
  */
-export default function VersionHistoryPanel({ scoreId, canEdit, dirty, busy, onRestore, onClose }: Props) {
+export default function VersionHistoryPanel({
+  scoreId,
+  canEdit,
+  dirty,
+  busy,
+  restoreBlockedReason = null,
+  onRestore,
+  onClose,
+}: Props) {
   const { confirm } = useDialog();
   const [versions, setVersions] = useState<ScoreVersion[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -48,6 +61,7 @@ export default function VersionHistoryPanel({ scoreId, canEdit, dirty, busy, onR
   }, [scoreId]);
 
   const restore = async (version: number) => {
+    if (restoreBlockedReason) return;
     const warning = dirty ? t('editor.version.panel.warning') : '';
     const ok = await confirm({
       title: t('editor.version.panel.restoreTitle', { version }),
@@ -97,7 +111,8 @@ export default function VersionHistoryPanel({ scoreId, canEdit, dirty, busy, onR
           {canEdit && target && !target.isCurrent && (
             <button
               className="sc-btn sc-btn--primary"
-              disabled={busy || restoring !== null}
+              disabled={busy || restoring !== null || !!restoreBlockedReason}
+              title={restoreBlockedReason ?? undefined}
               onClick={() => void restore(preview)}
             >
               {restoring === preview ? t('editor.version.panel.restoring') : t('editor.version.panel.restoreThis')}
@@ -162,7 +177,8 @@ export default function VersionHistoryPanel({ scoreId, canEdit, dirty, busy, onR
                     {canEdit && !v.isCurrent && (
                       <button
                         className="sc-btn sc-btn--sm"
-                        disabled={busy || restoring !== null}
+                        disabled={busy || restoring !== null || !!restoreBlockedReason}
+                        title={restoreBlockedReason ?? undefined}
                         onClick={() => void restore(v.version)}
                       >
                         {restoring === v.version
