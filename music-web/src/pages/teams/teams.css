@@ -1578,3 +1578,9 @@ a.tm-card:hover {
 .tm-feed__filters {
   gap: 0.5rem;
 }
+
+/* tóm tắt tiến độ buổi diễn: nền vàng chanh nhạt để tách khỏi các thẻ việc */
+.tm-summary {
+  border-color: color-mix(in srgb, var(--ui-fx-3) 45%, var(--ui-border));
+  background: var(--ui-tint-lime);
+}
