@@ -1491,21 +1491,7 @@ h3.sv-tools__title {
 }
 .sv-tools__title,
 .sv-tools__toggle {
-  position: relative;
-  padding-left: 0.6rem;
   color: var(--ui-text-2);
-}
-.sv-tools__title::before,
-.sv-tools__toggle::before {
-  position: absolute;
-  top: 50%;
-  left: 0;
-  width: 3px;
-  height: 0.9em;
-  border-radius: 2px;
-  background: linear-gradient(180deg, var(--ui-brass), var(--ui-velvet));
-  content: '';
-  transform: translateY(-50%);
 }
 .sv-tool {
   border: 1px solid var(--ui-border);
