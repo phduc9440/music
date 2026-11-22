@@ -295,6 +295,7 @@
         "extra": "OMR sinh thừa",
         "missed": "OMR bỏ sót"
       },
+      "liveBlocked": "Đang có người cùng sửa. Lưu phiên rồi chờ mọi người rời đi trước khi khôi phục phiên bản cũ.",
       "warning": "Bạn có thay đổi chưa lưu, chúng sẽ bị bỏ. ",
       "restoreTitle": "Khôi phục phiên bản {version}?",
       "restoreMessage": "{warning}Nội dung của nó sẽ được lưu thành phiên bản mới nhất, các phiên bản hiện có vẫn nằm trong lịch sử.",
@@ -920,6 +921,7 @@
       "unknownComposer": "Chưa rõ tác giả",
       "readOnly": "Chỉ xem",
       "modeGroup": "Chế độ xem",
+      "page": "Xem theo trang",
       "scroll": "Cuộn ngang",
       "colorGroup": "Màu bản nhạc",
       "invert": "Đảo màu bản nhạc",
