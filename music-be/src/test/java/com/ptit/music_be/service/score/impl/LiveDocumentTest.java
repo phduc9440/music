@@ -193,13 +193,16 @@ class LiveDocumentTest {
         LiveDocument doc = open(score(measure(1, "C"), measure(2, "D")));
         String e = measure(2, "E");
 
-        assertThat(doc.replayMeasures(2, "op-2", List.of(new MeasureXml(0, 1, e, hashOf(e))))).isFalse();
-        assertThat(doc.replayMeasures(1, "op-1", List.of(new MeasureXml(0, 1, e, hashOf(e))))).isTrue();
+        assertThat(doc.replayMeasures(2, "op-2", List.of(new MeasureXml(0, 1, e, hashOf(e)))))
+                .isFalse();
+        assertThat(doc.replayMeasures(1, "op-1", List.of(new MeasureXml(0, 1, e, hashOf(e)))))
+                .isTrue();
 
         assertThat(doc.seq()).isEqualTo(1);
         assertThat(doc.fullXml()).contains("<step>E</step>");
         // Client gửi lại thao tác đã phát lại sau khi máy chủ khởi động lại: bỏ qua
-        assertThat(doc.applyMeasures("op-1", List.of(edit(1, e, measure(2, "F")))).duplicate())
+        assertThat(doc.applyMeasures("op-1", List.of(edit(1, e, measure(2, "F"))))
+                        .duplicate())
                 .isTrue();
     }
 
@@ -207,8 +210,10 @@ class LiveDocumentTest {
     void replayRejectsBrokenXmlAndOutOfRangeMeasures() {
         LiveDocument doc = open(score(measure(1, "C"), measure(2, "D")));
 
-        assertThat(doc.replayMeasures(1, "op-1", List.of(new MeasureXml(0, 5, measure(2, "E"), "x")))).isFalse();
-        assertThat(doc.replayMeasures(1, "op-1", List.of(new MeasureXml(0, 1, "<measure>", "x")))).isFalse();
+        assertThat(doc.replayMeasures(1, "op-1", List.of(new MeasureXml(0, 5, measure(2, "E"), "x"))))
+                .isFalse();
+        assertThat(doc.replayMeasures(1, "op-1", List.of(new MeasureXml(0, 1, "<measure>", "x"))))
+                .isFalse();
         assertThat(doc.replayStructural(1, "op-1", "<score-partwise/>")).isFalse();
         assertThat(doc.seq()).isZero();
     }

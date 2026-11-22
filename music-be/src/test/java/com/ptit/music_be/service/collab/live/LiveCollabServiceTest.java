@@ -491,8 +491,7 @@ class LiveCollabServiceTest {
 
         ArgumentCaptor<byte[]> kept = ArgumentCaptor.forClass(byte[].class);
         verify(suggestionService)
-                .createFromSystem(
-                        eq(SCORE), kept.capture(), eq(3), eq(SuggestionSource.LIVE_RECOVERY), any(), any());
+                .createFromSystem(eq(SCORE), kept.capture(), eq(3), eq(SuggestionSource.LIVE_RECOVERY), any(), any());
         assertThat(new String(kept.getValue(), StandardCharsets.UTF_8)).contains("<step>E</step>");
         verify(messaging)
                 .convertAndSendToUser(

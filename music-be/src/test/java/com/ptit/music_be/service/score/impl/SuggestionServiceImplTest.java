@@ -771,8 +771,7 @@ class SuggestionServiceImplTest {
         SuggestionAppliedRequest request =
                 SuggestionAppliedRequest.builder().version(4).build();
 
-        assertThat(errorOf(() -> service.markApplied(SUGGESTION_ID, request)))
-                .isEqualTo(AccountErrorCode.UNAUTHORIZED);
+        assertThat(errorOf(() -> service.markApplied(SUGGESTION_ID, request))).isEqualTo(AccountErrorCode.UNAUTHORIZED);
 
         givenAccess(ScoreAccess.EDIT);
         as(EDITOR);

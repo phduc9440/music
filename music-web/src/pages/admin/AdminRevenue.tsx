@@ -17,6 +17,7 @@ const TONE: Record<PaymentStatus, Tone> = {
   FAILED: 'danger',
   EXPIRED: 'neutral',
   REFUNDED: 'violet',
+  GRANTED: 'primary', // chỉ có ở lịch sử cấp gói của người dùng, không có trong danh sách đơn
 };
 
 /** Admin (mục 7.4): doanh thu theo ngày và theo gói, danh sách đơn thanh toán, hoàn tiền thủ công. */

@@ -551,6 +551,27 @@ CREATE TABLE IF NOT EXISTS plan_sanctions (
     CONSTRAINT fk_plan_sanctions_created_by   FOREIGN KEY (created_by)      REFERENCES members (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Lịch sử cấp gói thủ công (SUPER_ADMIN cấp, nguồn ADMIN_GRANT). Cấp nối tiếp cùng gói chỉ cộng thêm hạn vào một dòng
+-- subscriptions nên không còn dấu từng lần cấp: mỗi lần cấp ghi một dòng ở đây (kind NEW cấp mới / đổi gói, RENEW gia hạn
+-- nối tiếp), expires_at là hạn của gói ngay sau lần cấp đó. Không có số tiền (không đi qua cổng thanh toán).
+CREATE TABLE IF NOT EXISTS plan_grants (
+    id          VARCHAR(36) NOT NULL,
+    member_id   VARCHAR(36) NOT NULL COMMENT 'Người nhận gói',
+    plan_id     VARCHAR(36) NOT NULL,
+    granted_by  VARCHAR(36) NULL COMMENT 'SUPER_ADMIN đã cấp',
+    months      INT         NOT NULL,
+    kind        VARCHAR(8)  NOT NULL DEFAULT 'NEW' COMMENT 'NEW cấp mới / đổi gói, RENEW gia hạn',
+    starts_at   DATETIME(6) NOT NULL,
+    expires_at  DATETIME(6) NOT NULL,
+    created_at  DATETIME(6) NULL,
+    PRIMARY KEY (id),
+    KEY idx_plan_grants_member (member_id, created_at),
+    KEY idx_plan_grants_created (created_at),
+    CONSTRAINT fk_plan_grants_member     FOREIGN KEY (member_id)  REFERENCES members (id),
+    CONSTRAINT fk_plan_grants_plan       FOREIGN KEY (plan_id)    REFERENCES plans (id),
+    CONSTRAINT fk_plan_grants_granted_by FOREIGN KEY (granted_by) REFERENCES members (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- Đơn thanh toán gói (mục 7.4). Số tiền là VND nguyên. provider_txn_id là mã giao dịch phía cổng (duy nhất) để chống xử
 -- lý trùng IPN; raw_payload giữ dữ liệu thô cổng gửi về để đối soát.
 CREATE TABLE IF NOT EXISTS payment_orders (

@@ -17,7 +17,8 @@ class ScoreContentLiveSeqTest {
 
     @Test
     void ignoresOtherSourcesMissingSeqAndBrokenJson() {
-        assertThat(ScoreContentServiceImpl.liveSeqOf("{\"source\":\"EDITOR\",\"seqTo\":17}")).isEmpty();
+        assertThat(ScoreContentServiceImpl.liveSeqOf("{\"source\":\"EDITOR\",\"seqTo\":17}"))
+                .isEmpty();
         assertThat(ScoreContentServiceImpl.liveSeqOf("{\"source\":\"LIVE\"}")).isEmpty();
         assertThat(ScoreContentServiceImpl.liveSeqOf("{not json")).isEmpty();
         assertThat(ScoreContentServiceImpl.liveSeqOf(null)).isEmpty();

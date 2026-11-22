@@ -105,7 +105,8 @@ class ScoreServiceImplMyScoresViewCountTest {
     @Test
     void myScoresCarryRating_roundedAverageAndZeroWhenUnrated() {
         Score rated = Score.builder().id("s1").title("Được chấm").member(owner).build();
-        Score unrated = Score.builder().id("s2").title("Chưa chấm").member(owner).build();
+        Score unrated =
+                Score.builder().id("s2").title("Chưa chấm").member(owner).build();
         when(scoreRepository.searchOfMember(
                         eq("owner"),
                         anyString(),
@@ -130,8 +131,8 @@ class ScoreServiceImplMyScoresViewCountTest {
         };
         when(scoreReviewRepository.getRatingStatsFor(any())).thenReturn(List.of(stats));
 
-        List<ScoreSummaryResponse> content = service.getMyScores(0, 12, null, null, null, null, null, null)
-                .getContent();
+        List<ScoreSummaryResponse> content =
+                service.getMyScores(0, 12, null, null, null, null, null, null).getContent();
 
         assertThat(content).extracting(ScoreSummaryResponse::getRatingAverage).containsExactly(4.3, null);
         assertThat(content).extracting(ScoreSummaryResponse::getRatingCount).containsExactly(3L, 0L);

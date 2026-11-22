@@ -139,7 +139,8 @@ public class OmrServiceImpl implements OmrService {
                 .findByEmailForUpdate(SecurityUtils.getCurrentEmail())
                 .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
 
-        // Bấm gửi hai lần: dòng thành viên đã khóa nên hai request xếp hàng; request sau nhận lại task của request trước
+        // Bấm gửi hai lần: dòng thành viên đã khóa nên hai request xếp hàng; request sau nhận lại task của request
+        // trước
         OmrUploadResponse duplicate = findDuplicate(member, fingerprint);
         if (duplicate != null) {
             return duplicate;
@@ -717,7 +718,8 @@ public class OmrServiceImpl implements OmrService {
                 member.getId(), AiTaskType.OMR_CONVERSION, ACTIVE_STATUSES, since);
         for (AiTask task : recent) {
             Score score = task.getScore();
-            String previous = parseJson(task.getInputData()).path(SOURCE_SHA256_KEY).asText();
+            String previous =
+                    parseJson(task.getInputData()).path(SOURCE_SHA256_KEY).asText();
             if (score == null || !fingerprint.equals(previous)) {
                 continue;
             }

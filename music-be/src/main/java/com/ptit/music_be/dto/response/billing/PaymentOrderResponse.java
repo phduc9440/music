@@ -25,6 +25,8 @@ public class PaymentOrderResponse {
     LocalDateTime createdAt;
     LocalDateTime expiresAt;
     LocalDateTime paidAt;
+    /** Chỉ có ở dòng cấp gói thủ công (provider ADMIN_GRANT): số tháng được cấp. */
+    Integer months;
     /** Chỉ có ở admin. */
     String memberEmail;
     /** Chỉ có khi vừa tạo đơn: địa chỉ trang thanh toán của cổng. */

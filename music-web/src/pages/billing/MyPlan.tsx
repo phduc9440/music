@@ -273,14 +273,17 @@ export default function MyPlan() {
                 <li key={o.id} className={`bl-order bl-order--${o.status.toLowerCase()}`}>
                   <div className="bl-order__head">
                     <strong>
-                      {t(`billing.kind.${o.kind}`)} · {o.planName} · {t(`billing.period.${o.period}`)}
+                      {t(`billing.kind.${o.kind}`)} · {o.planName} ·{' '}
+                      {o.provider === 'ADMIN_GRANT' && o.months
+                        ? t('billing.history.grantMonths', { count: o.months })
+                        : t(`billing.period.${o.period}`)}
                     </strong>
                     <span className="bl-badge">{t(`billing.result.status.${o.status}`)}</span>
                   </div>
                   <dl className="bl-order__info">
                     <div>
                       <dt>{t('billing.result.amount')}</dt>
-                      <dd>{formatVnd(o.amount)}</dd>
+                      <dd>{o.provider === 'ADMIN_GRANT' ? t('billing.history.grantFree') : formatVnd(o.amount)}</dd>
                     </div>
                     <div>
                       <dt>{t('billing.history.provider')}</dt>
@@ -290,7 +293,13 @@ export default function MyPlan() {
                       <dt>{t('billing.history.createdAt')}</dt>
                       <dd>{formatDateTime(o.createdAt)}</dd>
                     </div>
-                    {o.paidAt && (
+                    {o.provider === 'ADMIN_GRANT' && (
+                      <div>
+                        <dt>{t('billing.history.validUntil')}</dt>
+                        <dd>{formatDateTime(o.expiresAt)}</dd>
+                      </div>
+                    )}
+                    {o.paidAt && o.provider !== 'ADMIN_GRANT' && (
                       <div>
                         <dt>{t('billing.result.paidAt')}</dt>
                         <dd>{formatDateTime(o.paidAt)}</dd>

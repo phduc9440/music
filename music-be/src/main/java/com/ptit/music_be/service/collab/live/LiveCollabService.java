@@ -402,7 +402,8 @@ public class LiveCollabService {
         // Đọc ngoài computeIfAbsent: không giữ khóa bảng băm trong lúc truy cập DB và đĩa
         ScoreContent content = security.runAs(email, () -> scoreContentService.getMusicXml(scoreId));
         long lastLogged = opRepository.maxSeq(scoreId);
-        // Version hiện hành do phiên trước lưu tới seqTo mà nhật ký còn thao tác sau đó: máy chủ đã dừng trước lần lưu kế
+        // Version hiện hành do phiên trước lưu tới seqTo mà nhật ký còn thao tác sau đó: máy chủ đã dừng trước lần lưu
+        // kế
         OptionalLong savedTo = scoreContentService.liveSeqOfCurrent(scoreId);
         boolean unsavedOps = savedTo.isPresent() && savedTo.getAsLong() < lastLogged;
         LiveDocument document =
@@ -490,7 +491,8 @@ public class LiveCollabService {
             return;
         }
         LiveError notice = new LiveError(
-                CollabErrorCode.LIVE_SAVED_AS_SUGGESTION.getCode(), CollabErrorCode.LIVE_SAVED_AS_SUGGESTION.getMessage());
+                CollabErrorCode.LIVE_SAVED_AS_SUGGESTION.getCode(),
+                CollabErrorCode.LIVE_SAVED_AS_SUGGESTION.getMessage());
         for (String email : live.emailsNewestFirst()) {
             replyToUser(email, "/queue/live-errors", notice);
         }

@@ -89,6 +89,13 @@ public interface SubscriptionService {
     java.util.List<com.ptit.music_be.dto.response.billing.BulkGrantResult> grantMany(
             java.util.List<String> memberIds, String planCode, int months);
 
+    /** Lịch sử được cấp gói thủ công của người đang đăng nhập, mới nhất trước. */
+    java.util.List<com.ptit.music_be.dto.response.billing.PlanGrantResponse> myGrants();
+
+    /** Lịch sử cấp gói thủ công ở khu quản trị (của một thành viên nếu có {@code memberId}, không thì của mọi người). */
+    com.ptit.music_be.dto.response.common.PageResponse<com.ptit.music_be.dto.response.billing.PlanGrantResponse>
+            grantHistory(String memberId, int page, int size);
+
     /** SUPER_ADMIN hủy gói hiện tại của thành viên (về Free ngay). */
     void cancel(String memberId);
 

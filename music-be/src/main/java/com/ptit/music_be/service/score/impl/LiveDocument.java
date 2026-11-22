@@ -285,7 +285,11 @@ public final class LiveDocument {
             for (MeasureXml m : changed) {
                 int p = m.partIndex();
                 int i = m.measureIndex();
-                if (p < 0 || p >= measures.size() || i < 0 || i >= measures.get(p).size() || m.xml() == null) {
+                if (p < 0
+                        || p >= measures.size()
+                        || i < 0
+                        || i >= measures.get(p).size()
+                        || m.xml() == null) {
                     return false;
                 }
                 Element replacement = parseMeasure(m.xml());

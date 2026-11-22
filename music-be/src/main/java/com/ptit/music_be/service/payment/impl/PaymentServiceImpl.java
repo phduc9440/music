@@ -218,12 +218,21 @@ public class PaymentServiceImpl implements PaymentService {
     public List<PaymentOrderResponse> listMyOrders() {
         LocalDateTime now = LocalDateTime.now();
         // Đơn bỏ dở (hết hạn chưa trả) không đưa vào lịch sử để khỏi thành nhiều dòng trùng
-        return orderRepository.findByMemberEmailOrderByCreatedAtDesc(SecurityUtils.getCurrentEmail()).stream()
-                .filter(o -> o.getStatus() != PaymentStatus.EXPIRED
-                        && !(o.getStatus() == PaymentStatus.PENDING
-                                && !o.getExpiresAt().isAfter(now)))
-                .map(o -> toResponse(o, false))
-                .toList();
+        List<PaymentOrderResponse> history = new java.util.ArrayList<>(
+                orderRepository.findByMemberEmailOrderByCreatedAtDesc(SecurityUtils.getCurrentEmail()).stream()
+                        .filter(o -> o.getStatus() != PaymentStatus.EXPIRED
+                                && !(o.getStatus() == PaymentStatus.PENDING
+                                        && !o.getExpiresAt().isAfter(now)))
+                        .map(o -> toResponse(o, false))
+                        .toList());
+        // Gói do SUPER_ADMIN cấp không đi qua cổng thanh toán: đưa vào cùng lịch sử, không có số tiền
+        subscriptionService.myGrants().stream()
+                .map(PaymentServiceImpl::grantAsOrder)
+                .forEach(history::add);
+        history.sort(java.util.Comparator.comparing(
+                PaymentOrderResponse::getCreatedAt,
+                java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder())));
+        return history;
     }
 
     @Override
@@ -332,6 +341,25 @@ public class PaymentServiceImpl implements PaymentService {
             closed++;
         }
         return closed;
+    }
+
+    /** Dòng lịch sử cho một lần được cấp gói: provider ADMIN_GRANT, trạng thái GRANTED, số tiền 0. */
+    static PaymentOrderResponse grantAsOrder(com.ptit.music_be.dto.response.billing.PlanGrantResponse g) {
+        return PaymentOrderResponse.builder()
+                .id(g.getId())
+                .orderCode("GRANT-" + g.getId().substring(0, 8).toUpperCase())
+                .planCode(g.getPlanCode())
+                .planName(g.getPlanName())
+                .period("MONTH")
+                .months(g.getMonths())
+                .kind(g.getKind())
+                .amount(0)
+                .provider("ADMIN_GRANT")
+                .status("GRANTED")
+                .createdAt(g.getCreatedAt())
+                .expiresAt(g.getExpiresAt())
+                .paidAt(g.getCreatedAt())
+                .build();
     }
 
     public static PaymentOrderResponse toResponse(PaymentOrder o, boolean withEmail) {

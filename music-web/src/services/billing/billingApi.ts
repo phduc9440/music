@@ -7,6 +7,7 @@ import type {
   PaymentKind,
   PaymentOrder,
   PaymentStatus,
+  PlanGrant,
   PlanAudience,
   PlanInfo,
   PlanLimits,
@@ -69,5 +70,7 @@ export const billingApi = {
     apiClient.get<ApiResponse<Revenue>>('/admin/payments/revenue', { params }),
   orders: (params?: { status?: PaymentStatus; kind?: PaymentKind; page?: number; size?: number }) =>
     apiClient.get<ApiResponse<PageResult<PaymentOrder>>>('/admin/payments/orders', { params }),
+  grantHistory: (params?: { memberId?: string; page?: number; size?: number }) =>
+    apiClient.get<ApiResponse<PageResult<PlanGrant>>>('/admin/subscriptions/grants', { params }),
   refund: (id: string) => apiClient.post<ApiResponse<PaymentOrder>>(`/admin/payments/orders/${id}/refund`),
 };
