@@ -20,7 +20,8 @@
     "fromMeasure": "From measure",
     "toMeasure": "To measure",
     "start": "Start practice",
-    "starting": "Starting session…"
+    "starting": "Starting session…",
+    "freeRunHint": "Notes keep moving at the chosen tempo; play as each note reaches the line to score Perfect."
   },
   "session": {
     "live": "Practice in progress",
