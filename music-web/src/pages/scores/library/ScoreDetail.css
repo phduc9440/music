@@ -999,3 +999,13 @@ a.sc-btn.is-disabled {
   border-color: var(--ui-hero-success) !important;
   color: var(--ui-hero-success) !important;
 }
+
+/* cột bên: Chi tiết nền xanh nhạt, Ghi chú luyện tập nền vàng chanh nhạt (khung chính giữ cam nhạt của --ui-panel) */
+.sd-side > .sd-card {
+  border-color: color-mix(in srgb, var(--ui-velvet) 18%, var(--ui-border));
+  background: var(--ui-tint-teal);
+}
+.sd-side > .sd-card:nth-child(2) {
+  border-color: color-mix(in srgb, var(--ui-fx-3) 45%, var(--ui-border));
+  background: var(--ui-tint-lime);
+}

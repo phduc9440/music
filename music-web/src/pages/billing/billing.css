@@ -415,3 +415,13 @@
     margin-top: 1.5rem;
   }
 }
+
+/* bảng giá: các thẻ gói xen kẽ ba tông của bảng màu (cam nhạt mặc định, xanh nhạt, vàng chanh nhạt) cho sinh động */
+.bl-grid > .bl-card:nth-child(3n + 2) {
+  border-color: color-mix(in srgb, var(--ui-velvet) 20%, var(--sc-line));
+  background: var(--ui-tint-teal);
+}
+.bl-grid > .bl-card:nth-child(3n) {
+  border-color: color-mix(in srgb, var(--ui-fx-3) 45%, var(--sc-line));
+  background: var(--ui-tint-lime);
+}

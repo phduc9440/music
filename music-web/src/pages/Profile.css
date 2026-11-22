@@ -203,3 +203,9 @@
   width: 100%;
   justify-content: center;
 }
+
+/* cột bên hồ sơ: nền xanh nhạt */
+.pf-side > .pf-card {
+  border-color: color-mix(in srgb, var(--ui-velvet) 18%, var(--ui-border));
+  background: var(--ui-tint-teal);
+}

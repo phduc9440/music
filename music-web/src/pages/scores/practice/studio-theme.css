@@ -4,8 +4,10 @@
    Tham khảo: nốt rơi phát sáng kiểu Synthesia (skill ui-ux-pro-max cho bố cục thẻ / nút phân đoạn). ---- */
 
 .studio-player {
-  /* tay phải: ngọc thương hiệu pha ngọc sáng cho nốt tươi hơn trên nền sáng; tay trái giữ vàng nhấn (studio-player.css) */
-  --studio-right-hand: color-mix(in srgb, var(--ui-hue-teal) 60%, var(--ui-fx-2));
+  /* tay phải: xanh thương hiệu (chi tiết phụ); tay trái: cam chủ đạo */
+  --studio-right-hand: var(--ui-hue-teal);
+  /* tay trái: cam thương hiệu (vàng chanh --ui-highlight quá nhạt trên nền sáng) */
+  --studio-left-hand: var(--ui-fx-1);
   --studio-hair: color-mix(in srgb, var(--ui-text) 10%, transparent);
   --studio-glass: color-mix(in srgb, var(--ui-surface) 78%, transparent);
   --studio-glass-shadow:
