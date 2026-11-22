@@ -75,6 +75,8 @@
     "blocked": "Có ô nhịp đang được người khác sửa nên chưa nạp được hợp âm AI, thử lại sau",
     "loadFailed": "Không tải được gợi ý hợp âm",
     "openInEditor": "Mở trong trình chỉnh sửa",
-    "openInEditorHint": "Nạp các hợp âm này vào trình chỉnh sửa dưới dạng bản nháp để sửa lại trước khi lưu"
+    "openInEditorHint": "Nạp các hợp âm này vào trình chỉnh sửa dưới dạng bản nháp để sửa lại trước khi lưu",
+    "remove": "Xóa",
+    "removeHint": "Xóa hợp âm {chord} khỏi nốt này (Ctrl+Z để hoàn tác)"
   }
 }

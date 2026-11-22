@@ -15,6 +15,8 @@ interface Props {
   canSave: boolean;
   onPick: (row: AiChordRow) => void;
   onEdit: (row: AiChordRow) => void;
+  /** Xóa hợp âm đang ghi ở nốt của hợp âm này (một bước sửa, hoàn tác được). */
+  onRemove: (row: AiChordRow) => void;
   onSave: () => void;
   onDiscard: () => void;
   onClose: () => void;
@@ -44,6 +46,7 @@ export default function AiChordPanel({
   canSave,
   onPick,
   onEdit,
+  onRemove,
   onSave,
   onDiscard,
   onClose,
@@ -164,6 +167,15 @@ export default function AiChordPanel({
             onClick={() => current && onEdit(current)}
           >
             <Icon name="pencil" size={14} /> {t('chords.draft.edit')}
+          </button>
+          <button
+            type="button"
+            className="sc-btn sc-btn--sm sc-btn--danger"
+            disabled={!current || current.status === 'removed'}
+            onClick={() => current && onRemove(current)}
+            title={current && current.now ? t('chords.draft.removeHint', { chord: current.now }) : undefined}
+          >
+            <Icon name="trash" size={14} /> {t('chords.draft.remove')}
           </button>
         </div>
         <div className="aic-actions">

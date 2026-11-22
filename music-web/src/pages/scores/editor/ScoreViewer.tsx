@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useNavigate } from '../../../routes/useTransitionNavigate';
 import DownloadMenu from '../../../components/scores/viewer/DownloadMenu';
@@ -10,6 +11,7 @@ import ChordBar from '../../../components/scores/toolbar/ChordBar';
 import NotationModal from '../../../components/scores/toolbar/NotationModal';
 import ChordSuggestDialog from '../../../components/scores/chords/ChordSuggestDialog';
 import AiChordPanel from '../../../components/scores/chords/AiChordPanel';
+import { setChord } from '../../../components/editor/notation/harmony';
 import { useAiChordDraft } from '../../../components/scores/chords/useAiChordDraft';
 import type { AiChordRow } from '../../../components/scores/chords/useAiChordDraft';
 import type { AiChordMark } from '../../../components/scores/chords/aiChordHighlight';
@@ -19,6 +21,9 @@ import { readNotation } from '../../../components/editor/structure/staves';
 import type { NotationChange } from '../../../components/editor/structure/staves';
 import LyricBar from '../../../components/scores/toolbar/LyricBar';
 import Modal from '../../../components/scores/common/Modal';
+import { useSidebarResize } from '../../../components/scores/common/useSidebarResize';
+import { SidebarRail, SidebarResizer } from '../../../components/scores/common/SidebarResizer';
+import { useMediaQuery } from '../../../components/player/hooks/useMediaQuery';
 import ScoreCanvas from '../../../components/scores/viewer/ScoreCanvas';
 import type { CommentRange, LockBox } from '../../../components/scores/viewer/ScoreCanvas';
 import CommentsSection from '../../../components/scores/comments/CommentsSection';
@@ -400,6 +405,10 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
     pickAiChord(row);
     if (!editor.chordMode) editor.setChordMode(true);
   };
+  const removeAiChord = (row: AiChordRow) => {
+    editor.select([row.id], false);
+    editor.applyEdit(setChord(doc, row.id, ''));
+  };
   const discardAiDraft = async () => {
     const ok = await confirm({
       title: t('chords.draft.discardTitle'),
@@ -410,6 +419,23 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
     if (ok) await aiDraft.discard();
   };
   const aiPanelShown = aiPanelOpen && (aiDraft.draft !== null || aiDraft.loading);
+  // Cột phải (Góp ý / Hợp âm AI dùng chung một chỗ): máy tính & iPad ngang kéo ra / kéo vào được, màn nhỏ là ngăn kéo dưới đáy
+  const side = useSidebarResize({
+    storageKey: 'scorewise.editor.sideLayout',
+    side: 'right',
+    min: 280,
+    max: 640,
+    defaultWidth: 360,
+  });
+  const sideWide = useMediaQuery('(min-width: 1024px)');
+  const sideShown = aiPanelShown || commentsOpen;
+  const sideRail = sideWide && side.collapsed;
+  const sideName = aiPanelShown ? t('chords.draft.panelTitle') : t('scores.comments.panelToggle');
+  const expandSide = side.expand;
+  // Bấm mở bảng (nút Góp ý, Hợp âm AI) khi cột đang thu gọn thì mở rộng luôn, không chỉ hiện dải mỏng
+  useEffect(() => {
+    if (sideShown) expandSide();
+  }, [sideShown, aiPanelOpen, commentsOpen, expandSide]);
   // Người cùng sửa khác: viền ô họ đang chọn (đứt) / đang sửa (liền) và cờ tên ở ô đầu vùng của họ, như Google Docs
   const lockBoxes = useMemo<LockBox[]>(() => {
     if (!live.active) return [];
@@ -953,7 +979,10 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
 
       <ShowAssignmentBanner scoreId={score.id} />
 
-      <div className={`sv-body${canEdit ? ' has-tools' : ''}`}>
+      <div
+        className={`sv-body${canEdit ? ' has-tools' : ''}${side.dragging ? ' is-side-resizing' : ''}`}
+        style={{ '--sv-side-w': `${side.width}px` } as CSSProperties}
+      >
         {canEdit && (
           <EditorToolPanel
             open={toolsOpen}
@@ -1035,7 +1064,13 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
             {progressLabel}
           </div>
         </div>
-        {aiPanelShown && aiDraft.draft && (
+        {sideShown && sideWide && <SidebarResizer name={sideName} resize={side} />}
+        {sideShown && sideRail && (
+          <aside className="sv-side-rail" aria-label={sideName}>
+            <SidebarRail name={sideName} side="right" onExpand={side.expand} />
+          </aside>
+        )}
+        {!sideRail && aiPanelShown && aiDraft.draft && (
           <AiChordPanel
             rows={aiDraft.rows}
             title={aiDraft.draft.suggestion.title}
@@ -1045,17 +1080,18 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
             canSave={live.active ? live.state.unsaved || live.state.pending > 0 : editor.dirty}
             onPick={pickAiChord}
             onEdit={editAiChord}
+            onRemove={removeAiChord}
             onSave={() => void editor.save()}
             onDiscard={() => void discardAiDraft()}
             onClose={() => setAiPanelOpen(false)}
           />
         )}
-        {aiPanelShown && !aiDraft.draft && (
+        {!sideRail && aiPanelShown && !aiDraft.draft && (
           <aside className="sv-comments aic-panel" aria-busy="true" aria-label={t('chords.draft.panelTitle')}>
             <p className="sv-ai-loading">{t('chords.draft.loading')}</p>
           </aside>
         )}
-        {commentsOpen && !aiPanelShown && (
+        {!sideRail && commentsOpen && !aiPanelShown && (
           <aside className="sv-comments" aria-label={t('scores.comments.panelToggle')}>
             <div className="sv-comments__head">
               <h2>{t('scores.comments.panelToggle')}</h2>

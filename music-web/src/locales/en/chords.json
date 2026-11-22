@@ -75,6 +75,8 @@
     "blocked": "Someone else is editing some of these measures, so the AI chords could not be loaded yet",
     "loadFailed": "Could not load the chord suggestion",
     "openInEditor": "Open in editor",
-    "openInEditorHint": "Load these chords into the editor as a draft so you can adjust them before saving"
+    "openInEditorHint": "Load these chords into the editor as a draft so you can adjust them before saving",
+    "remove": "Delete",
+    "removeHint": "Delete chord {chord} from this note (Ctrl+Z to undo)"
   }
 }

@@ -1,4 +1,4 @@
-/* Bảng "Hợp âm AI gợi ý" bên phải trình chỉnh sửa (tiền tố aic-). Khung cột dùng lại .sv-comments (rộng 360px trên
+/* Bảng "Hợp âm AI gợi ý" bên phải trình chỉnh sửa (tiền tố aic-). Khung cột dùng lại .sv-comments (rộng 360px mặc định, kéo được, trên
    máy tính, ngăn kéo dưới đáy trên màn hình nhỏ). Màu hợp âm AI khớp với chữ được tô trên bản nhạc (--ui-highlight-*). */
 
 .aic-panel {
