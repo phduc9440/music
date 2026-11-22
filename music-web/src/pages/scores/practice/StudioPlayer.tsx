@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import type { ScoreDetail } from '../../../types';
@@ -31,6 +32,7 @@ import Modal from '../../../components/scores/common/Modal';
 import MusicXmlViewer from '../../../components/scores/viewer/MusicXmlViewer';
 import '../../../components/scores/scores.css';
 import './studio-player.css';
+import './studio-theme.css';
 
 const BATCH_SIZE = 200;
 const FLUSH_INTERVAL_MS = 1500;
@@ -593,6 +595,7 @@ export default function StudioPlayer() {
           </Link>
           {/* tên bài to, thông tin phụ là các thẻ có biểu tượng (không ghép chuỗi bằng dấu chấm giữa) */}
           <div className="studio-player__heading">
+            <span className="studio-player__eyebrow">{t('studioPlayer.eyebrow')}</span>
             <h1>{score.title}</h1>
             <ul className="studio-player__facts">
               <li>
@@ -643,53 +646,113 @@ export default function StudioPlayer() {
                 <p>{t('studioPlayer.setup.description')}</p>
               </div>
               <div className="studio-player__controls">
-                <label>
-                  <span>{t('studioPlayer.setup.mode')}</span>
-                  <select
-                    className="sc-input"
-                    value={mode}
-                    onChange={(event) => setMode(event.target.value as 'FREE_RUN' | 'WAIT')}
-                  >
-                    <option value="FREE_RUN">{t('studioReport.mode.FREE_RUN')}</option>
-                    <option value="WAIT">{t('studioReport.mode.WAIT')}</option>
-                  </select>
-                </label>
-                <label>
-                  <span>{t('studioPlayer.setup.input')}</span>
-                  <select
-                    className="sc-input"
-                    value={inputSource}
-                    onChange={(event) => setInputSource(event.target.value as StudioInputSource)}
-                  >
-                    <option value="KEYBOARD">{t('studioPlayer.setup.computerKeyboard')}</option>
-                    <option value="TOUCH">{t('studioPlayer.setup.touchKeyboard')}</option>
-                  </select>
-                </label>
-                <label>
-                  <span>{t('studioPlayer.setup.hands')}</span>
-                  <select
-                    className="sc-input"
-                    value={handMode}
-                    onChange={(event) => setHandMode(event.target.value as StudioHandMode)}
-                  >
-                    <option value="BOTH">{t('studioPlayer.setup.bothHands')}</option>
-                    <option value="RIGHT_ONLY">{t('studioPlayer.setup.rightHand')}</option>
-                    <option value="LEFT_ONLY">{t('studioPlayer.setup.leftHand')}</option>
-                  </select>
-                </label>
-                <label className="studio-player__tempo">
-                  <span>
-                    {t('studioPlayer.setup.tempo')}: <strong>{tempoPercent}%</strong>
-                  </span>
+                {/* chế độ: hai thẻ lớn có biểu tượng và mô tả ngắn thay cho ô chọn */}
+                <fieldset className="studio-player__field">
+                  <legend>{t('studioPlayer.setup.mode')}</legend>
+                  <div className="studio-player__modes">
+                    {(
+                      [
+                        ['FREE_RUN', 'play', 'studioPlayer.setup.freeRunHint'],
+                        ['WAIT', 'clock', 'studioPlayer.setup.waitHint'],
+                      ] as const
+                    ).map(([value, icon, hint]) => (
+                      <label key={value} className={`studio-player__mode-card${mode === value ? ' is-active' : ''}`}>
+                        <input
+                          type="radio"
+                          name="studio-mode"
+                          value={value}
+                          checked={mode === value}
+                          onChange={() => setMode(value)}
+                        />
+                        <span className="studio-player__mode-icon" aria-hidden="true">
+                          <Icon name={icon} size={18} />
+                        </span>
+                        <strong>{t(`studioReport.mode.${value}`)}</strong>
+                        <small>{t(hint)}</small>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+                <fieldset className="studio-player__field">
+                  <legend>{t('studioPlayer.setup.input')}</legend>
+                  <div className="studio-player__segmented">
+                    {(
+                      [
+                        ['KEYBOARD', 'type', 'studioPlayer.setup.computerKeyboard'],
+                        ['TOUCH', 'select', 'studioPlayer.setup.touchKeyboard'],
+                      ] as const
+                    ).map(([value, icon, label]) => (
+                      <label key={value} className={inputSource === value ? 'is-active' : undefined}>
+                        <input
+                          type="radio"
+                          name="studio-input"
+                          value={value}
+                          checked={inputSource === value}
+                          onChange={() => setInputSource(value)}
+                        />
+                        <Icon name={icon} size={15} />
+                        <span>{t(label)}</span>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+                <fieldset className="studio-player__field">
+                  <legend>{t('studioPlayer.setup.hands')}</legend>
+                  <div className="studio-player__segmented studio-player__hands">
+                    {(
+                      [
+                        ['LEFT_ONLY', 'is-left', 'studioPlayer.setup.leftHand'],
+                        ['BOTH', 'is-both', 'studioPlayer.setup.bothHands'],
+                        ['RIGHT_ONLY', 'is-right', 'studioPlayer.setup.rightHand'],
+                      ] as const
+                    ).map(([value, dot, label]) => (
+                      <label key={value} className={handMode === value ? 'is-active' : undefined}>
+                        <input
+                          type="radio"
+                          name="studio-hands"
+                          value={value}
+                          checked={handMode === value}
+                          onChange={() => setHandMode(value)}
+                        />
+                        <i className={`studio-player__hand-dot ${dot}`} aria-hidden="true" />
+                        <span>{t(label)}</span>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+                {/* tốc độ: số to dễ đọc, thanh kéo và vài mức nhanh */}
+                <div className="studio-player__tempo">
+                  <div className="studio-player__tempo-head">
+                    <label htmlFor="studio-tempo">{t('studioPlayer.setup.tempo')}</label>
+                    <output htmlFor="studio-tempo">
+                      {tempoPercent}
+                      <small>%</small>
+                    </output>
+                  </div>
                   <input
+                    id="studio-tempo"
                     type="range"
                     min="20"
                     max="200"
                     step="5"
                     value={tempoPercent}
+                    style={{ '--fill': `${((tempoPercent - 20) / 180) * 100}%` } as CSSProperties}
                     onChange={(event) => setTempoPercent(Number(event.target.value))}
                   />
-                </label>
+                  <div className="studio-player__tempo-presets">
+                    {[50, 75, 100, 125].map((value) => (
+                      <button
+                        key={value}
+                        type="button"
+                        className={tempoPercent === value ? 'is-active' : undefined}
+                        aria-pressed={tempoPercent === value}
+                        onClick={() => setTempoPercent(value)}
+                      >
+                        {value}%
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
               {/* hàng tùy chọn bật / tắt: lặp đoạn và hai lớp hiển thị, dạng nút viên thuốc */}
               <div className="studio-player__options">
@@ -771,7 +834,6 @@ export default function StudioPlayer() {
                   </button>
                 </div>
               )}
-              {mode === 'WAIT' && <p className="studio-player__note">{t('studioPlayer.setup.waitHint')}</p>}
               {inputSource === 'TOUCH' && !showKeyboard && (
                 <p className="studio-player__note">{t('studioPlayer.display.enableKeyboardForTouch')}</p>
               )}

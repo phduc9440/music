@@ -95,6 +95,16 @@ export default function ChordBar({ doc, revision, selectedId, onEnter, onMove, o
       >
         ›
       </button>
+      {usable && current && (
+        <button
+          type="button"
+          className="sc-btn sc-btn--danger"
+          onClick={() => onEnter('', false)}
+          title={t('editor.toolbar.chord.clearHint', { chord: current })}
+        >
+          {t('editor.toolbar.chord.clear')}
+        </button>
+      )}
       <button type="button" className="sc-btn" onClick={() => setPasteOpen(true)}>
         {t('editor.toolbar.chord.paste')}
       </button>

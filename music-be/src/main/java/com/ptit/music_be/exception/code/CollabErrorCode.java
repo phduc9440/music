@@ -56,6 +56,8 @@ public enum CollabErrorCode implements ErrorCode {
     SUGGESTION_CHANGES_INVALID(3116, "Danh sách ô được chọn không hợp lệ", HttpStatus.BAD_REQUEST),
     SUGGESTION_RATE_LIMITED(
             3117, "Bạn đã gửi quá 30 đề xuất trong 24 giờ qua, hãy thử lại sau", HttpStatus.TOO_MANY_REQUESTS),
+    SUGGESTION_APPLIED_VERSION_INVALID(
+            3118, "Phiên bản đã lưu không hợp lệ để đánh dấu đề xuất là đã áp dụng", HttpStatus.BAD_REQUEST),
     // ---- 312x: Đồng chỉnh sửa thời gian thực (mục 4.4)
     LIVE_SESSION_FULL(
             3121, "Phiên cộng tác đã đủ 10 người đang sửa; bạn vào xem được nhưng chưa sửa được", HttpStatus.CONFLICT),

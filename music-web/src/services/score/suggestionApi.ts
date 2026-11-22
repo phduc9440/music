@@ -44,6 +44,9 @@ export const suggestionApi = {
       headers: { 'If-Match': `"v${currentVersion}"` },
       timeout: 60000,
     }),
+  /** Đã nạp đề xuất làm bản nháp trong trình chỉnh sửa và tự lưu thành `version`: đóng là ACCEPTED, không lưu thêm. */
+  markApplied: (id: string, version: number) =>
+    apiClient.post<ApiResponse<SuggestionDetail>>(`/suggestions/${id}/applied`, { version }),
   reject: (id: string, data?: SuggestionDecisionPayload) =>
     apiClient.post<ApiResponse<SuggestionDetail>>(`/suggestions/${id}/reject`, data ?? {}),
   withdraw: (id: string) => apiClient.delete<ApiResponse<void>>(`/suggestions/${id}`),

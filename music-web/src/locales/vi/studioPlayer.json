@@ -20,7 +20,8 @@
     "fromMeasure": "Từ ô nhịp",
     "toMeasure": "Đến ô nhịp",
     "start": "Bắt đầu luyện",
-    "starting": "Đang tạo phiên…"
+    "starting": "Đang tạo phiên…",
+    "freeRunHint": "Nốt chạy đều theo tốc độ đã chọn; chơi đúng lúc nốt chạm vạch để được chấm hoàn hảo."
   },
   "session": {
     "live": "Đang luyện",

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useNavigate } from '../../../routes/useTransitionNavigate';
 import DownloadMenu from '../../../components/scores/viewer/DownloadMenu';
@@ -9,10 +10,20 @@ import EditorToolPanel from '../../../components/scores/toolbar/EditorToolPanel'
 import ChordBar from '../../../components/scores/toolbar/ChordBar';
 import NotationModal from '../../../components/scores/toolbar/NotationModal';
 import ChordSuggestDialog from '../../../components/scores/chords/ChordSuggestDialog';
+import AiChordPanel from '../../../components/scores/chords/AiChordPanel';
+import { setChord } from '../../../components/editor/notation/harmony';
+import { useAiChordDraft } from '../../../components/scores/chords/useAiChordDraft';
+import type { AiChordRow } from '../../../components/scores/chords/useAiChordDraft';
+import type { AiChordMark } from '../../../components/scores/chords/aiChordHighlight';
+import { suggestionPath } from '../../../components/scores/suggestions/suggestionUtils';
+import { useDialog } from '../../../components/ui/dialog-context';
 import { readNotation } from '../../../components/editor/structure/staves';
 import type { NotationChange } from '../../../components/editor/structure/staves';
 import LyricBar from '../../../components/scores/toolbar/LyricBar';
 import Modal from '../../../components/scores/common/Modal';
+import { useSidebarResize } from '../../../components/scores/common/useSidebarResize';
+import { SidebarRail, SidebarResizer } from '../../../components/scores/common/SidebarResizer';
+import { useMediaQuery } from '../../../components/player/hooks/useMediaQuery';
 import ScoreCanvas from '../../../components/scores/viewer/ScoreCanvas';
 import type { CommentRange, LockBox } from '../../../components/scores/viewer/ScoreCanvas';
 import CommentsSection from '../../../components/scores/comments/CommentsSection';
@@ -23,6 +34,7 @@ import { buildEditorMenu, editorMenuTitle } from '../../../components/scores/vie
 import type { ContextMenuState, ScreenRect } from '../../../components/scores/comments/ViewerCommentTools';
 import { SELECTED_CLASS, noteIdsFromEvent } from '../../../components/editor/core/osmdBridge';
 import type { CommentAnchor } from '../../../components/scores/comments/commentUtils';
+import Icon from '../../../components/ui/Icon';
 import ToolbarMoreMenu from '../../../components/scores/toolbar/ToolbarMoreMenu';
 import ZoomControl from '../../../components/scores/viewer/ZoomControl';
 import {
@@ -72,6 +84,9 @@ import '../../../components/scores/scores.css';
 import './ScoreViewer.css';
 
 type Phase = 'loading' | 'ready' | 'notFound' | 'notReady' | 'parseError' | 'error';
+
+/** Mở từ ?aiChords=: chờ phiên đồng chỉnh sửa vào xong tối đa chừng này (ms) rồi mới nạp hợp âm AI. */
+const AI_LIVE_WAIT_MS = 8000;
 
 const MOD = isMac ? '⌘' : 'Ctrl';
 const ALT = isMac ? '⌥' : 'Alt';
@@ -285,8 +300,9 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
   const playAfterLoad = useRef(false);
 
   // ---- Góp ý gắn vào ô nhịp (mục 4.2). ?comment=ID (từ trang chi tiết): mở bảng và cuộn tới góp ý đó
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const linkedComment = searchParams.get('comment');
+  const linkedAiChords = searchParams.get('aiChords');
   const [commentsOpen, setCommentsOpen] = useState(!!linkedComment);
   const [focusCommentId, setFocusCommentId] = useState<string | null>(linkedComment);
   const [openThreads, setOpenThreads] = useState<ScoreComment[]>([]);
@@ -338,6 +354,88 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
   useEffect(() => {
     selectionRef.current = editor.selection;
   });
+
+  // Hợp âm AI gợi ý nạp làm bản nháp (chưa lưu): tô trên bản nhạc, tổng hợp ở bảng bên phải
+  const { confirm } = useDialog();
+  const [aiPanelOpen, setAiPanelOpen] = useState(false);
+  const [aiFocus, setAiFocus] = useState<{ mark: AiChordMark; key: number } | null>(null);
+  const openSuggestionReview = useCallback(
+    (suggestionId: string) => navigate(suggestionPath(base, score.id, suggestionId)),
+    [navigate, base, score.id],
+  );
+  const aiDraft = useAiChordDraft({ doc, editor, canEdit, onFallback: openSuggestionReview });
+  const startAiDraft = aiDraft.start;
+  const beginAiDraft = useCallback(
+    (suggestionId: string) => {
+      setCommentsOpen(false);
+      setAiPanelOpen(true);
+      void startAiDraft(suggestionId);
+    },
+    [startAiDraft],
+  );
+  // Mở từ đường dẫn ?aiChords=ID: đợi phiên đồng chỉnh sửa đồng bộ xong (lúc vào phiên server có thể nạp lại cả bản
+  // nhạc, làm mất hợp âm vừa thêm), rồi bỏ tham số khỏi đường dẫn để tải lại trang không nạp lần nữa
+  // Trạng thái đi off → connecting → synced; vào phiên lỗi (gói không có cộng tác...) thì không bao giờ synced, nên chỉ
+  // chờ tối đa AI_LIVE_WAIT_MS
+  const [liveWaitOver, setLiveWaitOver] = useState(false);
+  useEffect(() => {
+    if (!linkedAiChords) return;
+    const timer = window.setTimeout(() => setLiveWaitOver(true), AI_LIVE_WAIT_MS);
+    return () => window.clearTimeout(timer);
+  }, [linkedAiChords]);
+  // Người sửa được luôn vào phiên (useLiveCollab bật theo canEdit), nhưng phiên chỉ được tạo sau lần render đầu nên
+  // không dựa vào live.active được
+  const liveReady =
+    !canEdit || (live.active && (live.state.status === 'synced' || live.state.status === 'syncing')) || liveWaitOver;
+  const aiParamHandled = useRef<string | null>(null);
+  useEffect(() => {
+    if (!linkedAiChords || !liveReady || aiParamHandled.current === linkedAiChords) return;
+    aiParamHandled.current = linkedAiChords;
+    const next = new URLSearchParams(searchParams);
+    next.delete('aiChords');
+    setSearchParams(next, { replace: true });
+    beginAiDraft(linkedAiChords);
+  }, [linkedAiChords, liveReady, searchParams, setSearchParams, beginAiDraft]);
+
+  const pickAiChord = (row: AiChordRow) => {
+    editor.select([row.id], false);
+    setAiFocus({ mark: { id: row.id, text: row.now || row.ai }, key: Date.now() });
+  };
+  const editAiChord = (row: AiChordRow) => {
+    pickAiChord(row);
+    if (!editor.chordMode) editor.setChordMode(true);
+  };
+  const removeAiChord = (row: AiChordRow) => {
+    editor.select([row.id], false);
+    editor.applyEdit(setChord(doc, row.id, ''));
+  };
+  const discardAiDraft = async () => {
+    const ok = await confirm({
+      title: t('chords.draft.discardTitle'),
+      message: t('chords.draft.discardMessage'),
+      confirmLabel: t('chords.draft.discardConfirm'),
+      tone: 'danger',
+    });
+    if (ok) await aiDraft.discard();
+  };
+  const aiPanelShown = aiPanelOpen && (aiDraft.draft !== null || aiDraft.loading);
+  // Cột phải (Góp ý / Hợp âm AI dùng chung một chỗ): máy tính & iPad ngang kéo ra / kéo vào được, màn nhỏ là ngăn kéo dưới đáy
+  const side = useSidebarResize({
+    storageKey: 'scorewise.editor.sideLayout',
+    side: 'right',
+    min: 280,
+    max: 640,
+    defaultWidth: 360,
+  });
+  const sideWide = useMediaQuery('(min-width: 1024px)');
+  const sideShown = aiPanelShown || commentsOpen;
+  const sideRail = sideWide && side.collapsed;
+  const sideName = aiPanelShown ? t('chords.draft.panelTitle') : t('scores.comments.panelToggle');
+  const expandSide = side.expand;
+  // Bấm mở bảng (nút Góp ý, Hợp âm AI) khi cột đang thu gọn thì mở rộng luôn, không chỉ hiện dải mỏng
+  useEffect(() => {
+    if (sideShown) expandSide();
+  }, [sideShown, aiPanelOpen, commentsOpen, expandSide]);
   // Người cùng sửa khác: viền ô họ đang chọn (đứt) / đang sửa (liền) và cờ tên ở ô đầu vùng của họ, như Google Docs
   const lockBoxes = useMemo<LockBox[]>(() => {
     if (!live.active) return [];
@@ -547,6 +645,7 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
     const onKey = (e: KeyboardEvent) => {
       if (!(e.ctrlKey || e.metaKey) || !e.altKey || e.code !== 'KeyM') return;
       e.preventDefault();
+      setAiPanelOpen(false);
       setCommentsOpen(true);
       setComposeKey((k) => k + 1);
     };
@@ -772,10 +871,30 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
               <IconEdit /> {t('editor.view.header.edit')}
             </button>
           )}
+          {aiDraft.draft && (
+            <button
+              className={`sc-btn sv-ai-toggle${aiPanelShown ? ' is-active' : ''}`}
+              aria-pressed={aiPanelShown}
+              onClick={() => {
+                if (!aiPanelShown) closeComments();
+                setAiPanelOpen(!aiPanelShown);
+              }}
+              title={t('chords.draft.panelTitle')}
+            >
+              <Icon name="star" size={16} /> <span className="sv-desktop-only">{t('chords.draft.panelToggle')}</span>
+              <span className="sv-count">{aiDraft.marks.length}</span>
+            </button>
+          )}
           <button
             className={`sc-btn${commentsOpen ? ' is-active' : ''}`}
             aria-pressed={commentsOpen}
-            onClick={() => (commentsOpen ? closeComments() : setCommentsOpen(true))}
+            onClick={() => {
+              if (commentsOpen) closeComments();
+              else {
+                setAiPanelOpen(false);
+                setCommentsOpen(true);
+              }
+            }}
             title={`${t('scores.comments.panelToggle')} (${MOD}+${ALT}+M)`}
           >
             <IconComment /> <span className="sv-desktop-only">{t('scores.comments.panelToggle')}</span>
@@ -860,7 +979,10 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
 
       <ShowAssignmentBanner scoreId={score.id} />
 
-      <div className={`sv-body${canEdit ? ' has-tools' : ''}`}>
+      <div
+        className={`sv-body${canEdit ? ' has-tools' : ''}${side.dragging ? ' is-side-resizing' : ''}`}
+        style={{ '--sv-side-w': `${side.width}px` } as CSSProperties}
+      >
         {canEdit && (
           <EditorToolPanel
             open={toolsOpen}
@@ -927,7 +1049,10 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
             onEditHeader={canEdit ? editor.editHeader : undefined}
             onEditTempo={canEdit ? editor.editTempo : undefined}
             commentRanges={commentRanges}
+            aiChords={aiDraft.marks}
+            aiFocus={aiFocus}
             onCommentBubble={(ids) => {
+              setAiPanelOpen(false);
               setCommentsOpen(true);
               setFocusCommentId(ids[0]);
             }}
@@ -939,7 +1064,34 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
             {progressLabel}
           </div>
         </div>
-        {commentsOpen && (
+        {sideShown && sideWide && <SidebarResizer name={sideName} resize={side} />}
+        {sideShown && sideRail && (
+          <aside className="sv-side-rail" aria-label={sideName}>
+            <SidebarRail name={sideName} side="right" onExpand={side.expand} />
+          </aside>
+        )}
+        {!sideRail && aiPanelShown && aiDraft.draft && (
+          <AiChordPanel
+            rows={aiDraft.rows}
+            title={aiDraft.draft.suggestion.title}
+            description={aiDraft.draft.suggestion.description}
+            currentId={[...editor.selection][0] ?? null}
+            saving={editor.saving}
+            canSave={live.active ? live.state.unsaved || live.state.pending > 0 : editor.dirty}
+            onPick={pickAiChord}
+            onEdit={editAiChord}
+            onRemove={removeAiChord}
+            onSave={() => void editor.save()}
+            onDiscard={() => void discardAiDraft()}
+            onClose={() => setAiPanelOpen(false)}
+          />
+        )}
+        {!sideRail && aiPanelShown && !aiDraft.draft && (
+          <aside className="sv-comments aic-panel" aria-busy="true" aria-label={t('chords.draft.panelTitle')}>
+            <p className="sv-ai-loading">{t('chords.draft.loading')}</p>
+          </aside>
+        )}
+        {!sideRail && commentsOpen && !aiPanelShown && (
           <aside className="sv-comments" aria-label={t('scores.comments.panelToggle')}>
             <div className="sv-comments__head">
               <h2>{t('scores.comments.panelToggle')}</h2>
@@ -1044,6 +1196,7 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
                       bottom: contextMenu.y,
                     }),
                   onShowThreads: () => {
+                    setAiPanelOpen(false);
                     setCommentsOpen(true);
                     if (threadsAtMenu[0]) setFocusCommentId(threadsAtMenu[0].id);
                   },
@@ -1100,7 +1253,21 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
         </div>
       </footer>
 
-      {suggestingChords && <ChordSuggestDialog scoreId={score.id} onClose={() => setSuggestingChords(false)} />}
+      {suggestingChords && (
+        <ChordSuggestDialog
+          scoreId={score.id}
+          onClose={() => setSuggestingChords(false)}
+          // Người sửa được: gợi ý xong thì nạp ngay vào trình chỉnh sửa làm bản nháp thay vì sang trang duyệt
+          onCompleted={
+            canEdit
+              ? (suggestionId) => {
+                  setSuggestingChords(false);
+                  beginAiDraft(suggestionId);
+                }
+              : undefined
+          }
+        />
+      )}
       {helpOpen && (
         <Modal title={t('editor.view.menu.shortcuts')} onClose={() => setHelpOpen(false)}>
           <dl className="sv-help-list">

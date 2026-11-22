@@ -169,7 +169,9 @@
     "chord": {
       "set": "Nhập hợp âm",
       "clear": "Xóa hợp âm",
-      "paste": "Dán hợp âm"
+      "paste": "Dán hợp âm",
+      "ai": "Thêm hợp âm AI gợi ý",
+      "aiDiscard": "Bỏ hợp âm AI gợi ý"
     },
     "lyric": {
       "set": "Nhập lời",
@@ -446,7 +448,9 @@
       "paste": "Dán dãy hợp âm…",
       "pasteTitle": "Dán dãy hợp âm",
       "pasteHelp": "Dán các hợp âm cách nhau bằng dấu cách hoặc \"|\": chúng được gán lần lượt lên các nốt, bắt đầu từ nốt đang chọn. Dùng \"_\" để bỏ qua một nốt.",
-      "assign": "Gán hợp âm"
+      "assign": "Gán hợp âm",
+      "clear": "Xóa hợp âm",
+      "clearHint": "Xóa hợp âm {chord} của nốt đang chọn"
     },
     "text": {
       "sizeRange": "Cỡ chữ từ {min} đến {max}",
@@ -1134,5 +1138,11 @@
     "slide": "đường trượt",
     "lyric": "lời {verse}: {text}",
     "chord": "hợp âm {name}"
+  },
+  "sidebar": {
+    "resize": "Đổi độ rộng cột {name}",
+    "resizeHint": "Kéo để nới rộng hoặc thu hẹp, kéo hẳn vào để thu gọn · Nhấp đúp hoặc Enter: thu gọn / mở · ←/→: chỉnh độ rộng",
+    "expand": "Mở cột {name}",
+    "collapsed": "Đã thu gọn"
   }
 }

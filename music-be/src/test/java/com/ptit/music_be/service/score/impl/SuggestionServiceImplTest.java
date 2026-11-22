@@ -46,6 +46,7 @@ import com.ptit.music_be.dto.enums.score.ScoreAccess;
 import com.ptit.music_be.dto.enums.score.SuggestionChangeStatus;
 import com.ptit.music_be.dto.enums.score.SuggestionSource;
 import com.ptit.music_be.dto.enums.score.SuggestionStatus;
+import com.ptit.music_be.dto.request.score.SuggestionAppliedRequest;
 import com.ptit.music_be.dto.request.score.SuggestionDecisionRequest;
 import com.ptit.music_be.dto.response.score.ScoreContent;
 import com.ptit.music_be.dto.response.score.ScoreSaveResponse;
@@ -717,6 +718,66 @@ class SuggestionServiceImplTest {
         as(EDITOR);
 
         assertThat(errorOf(() -> service.accept(SUGGESTION_ID, "\"v3\"", null)))
+                .isEqualTo(CollabErrorCode.SUGGESTION_NOT_OPEN);
+    }
+
+    // ---------------------------------------------------------------- áp dụng trong trình chỉnh sửa
+
+    @Test
+    void markingAppliedClosesAsAcceptedWithSavedVersionWithoutSavingAgain() {
+        ScoreSuggestion suggestion = openSuggestion(author, edited(upload(base), EDIT_MEASURE_1, EDIT_MEASURE_2));
+        when(scoreContentService.getMusicXml(SCORE_ID)).thenReturn(content(base, 4));
+        givenAccess(ScoreAccess.EDIT);
+        as(EDITOR);
+
+        SuggestionDetailResponse response = service.markApplied(
+                SUGGESTION_ID, SuggestionAppliedRequest.builder().version(4).build());
+
+        assertThat(suggestion.getStatus()).isEqualTo(SuggestionStatus.ACCEPTED);
+        assertThat(suggestion.getAppliedVersion()).isEqualTo(4);
+        assertThat(suggestion.getDecidedBy()).isEqualTo(editor);
+        assertThat(response.getChanges()).extracting(c -> c.getStatus()).containsOnly(SuggestionChangeStatus.ACCEPTED);
+        verify(scoreEditService, never()).saveWithMeta(any(), any(), any(), any());
+        verify(notificationService)
+                .notify(
+                        eq(author),
+                        eq(editor),
+                        eq(NotificationType.SUGGESTION_DECIDED),
+                        eq(SCORE_ID),
+                        anyString(),
+                        any());
+    }
+
+    @Test
+    void appliedVersionMustBeNewerThanBaseAndAlreadySaved() {
+        ScoreSuggestion suggestion = openSuggestion(author, edited(upload(base), EDIT_MEASURE_2));
+        when(scoreContentService.getMusicXml(SCORE_ID)).thenReturn(content(base, 4));
+        givenAccess(ScoreAccess.EDIT);
+        as(EDITOR);
+
+        for (Integer version : new Integer[] {null, 3, 5}) {
+            assertThat(errorOf(() -> service.markApplied(
+                            SUGGESTION_ID,
+                            SuggestionAppliedRequest.builder().version(version).build())))
+                    .isEqualTo(CollabErrorCode.SUGGESTION_APPLIED_VERSION_INVALID);
+        }
+        assertThat(suggestion.getStatus()).isEqualTo(SuggestionStatus.OPEN);
+    }
+
+    @Test
+    void onlyEditorsCanMarkAnOpenSuggestionApplied() {
+        ScoreSuggestion suggestion = openSuggestion(author, edited(upload(base), EDIT_MEASURE_2));
+        when(scoreContentService.getMusicXml(SCORE_ID)).thenReturn(content(base, 4));
+        SuggestionAppliedRequest request =
+                SuggestionAppliedRequest.builder().version(4).build();
+
+        assertThat(errorOf(() -> service.markApplied(SUGGESTION_ID, request)))
+                .isEqualTo(AccountErrorCode.UNAUTHORIZED);
+
+        givenAccess(ScoreAccess.EDIT);
+        as(EDITOR);
+        suggestion.setStatus(SuggestionStatus.REJECTED);
+        assertThat(errorOf(() -> service.markApplied(SUGGESTION_ID, request)))
                 .isEqualTo(CollabErrorCode.SUGGESTION_NOT_OPEN);
     }
 

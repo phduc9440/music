@@ -23,6 +23,7 @@ import { isTaskFinished } from '../../export/exportUtils';
 import { Icon } from '../../ui';
 import OfficialRequestBanner from './OfficialRequestBanner';
 import ChordSuggestDialog from '../chords/ChordSuggestDialog';
+import { aiChordsEditPath } from '../suggestions/suggestionUtils';
 import PlaylistPicker from '../library/PlaylistPicker';
 import ScoreCover from './ScoreCover';
 import { t } from '../../../i18n/core';
@@ -246,7 +247,13 @@ export default function ScoreHero({ score, onVisibilityChanged, onRequestMore }:
         </div>
       </header>
 
-      {suggestingChords && <ChordSuggestDialog scoreId={score.id} onClose={() => setSuggestingChords(false)} />}
+      {suggestingChords && (
+        <ChordSuggestDialog
+          scoreId={score.id}
+          onClose={() => setSuggestingChords(false)}
+          onCompleted={score.canEdit ? (id) => navigate(aiChordsEditPath(base, score.id, id)) : undefined}
+        />
+      )}
       {savingToPlaylist && <PlaylistPicker score={score} onClose={() => setSavingToPlaylist(false)} />}
 
       <div className="sd-alerts">

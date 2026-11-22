@@ -146,7 +146,7 @@ public class ChordGenerationWorker {
                             ? AiTaskError.CHORD_ALREADY_HARMONIZED.name()
                             : AiTaskError.JOB_REJECTED + ": " + e.getErrorCode().name());
         } catch (RestClientResponseException e) {
-            fail(taskId, restError(e));
+            fail(taskId, restError(taskId, e));
         } catch (RestClientException e) {
             log.warn("Không gọi được music-ai cho task gợi ý hợp âm {}: {}", taskId, e.getMessage());
             fail(taskId, AiTaskError.AI_SERVICE_UNAVAILABLE.name());
@@ -160,7 +160,12 @@ public class ChordGenerationWorker {
     }
 
     /** 4xx có {@code detail.code} của music-ai thì đổi sang mã của task; 5xx coi như music-ai không dùng được. */
-    private String restError(RestClientResponseException e) {
+    private String restError(String taskId, RestClientResponseException e) {
+        log.warn(
+                "music-ai trả {} cho task gợi ý hợp âm {}: {}",
+                e.getStatusCode().value(),
+                taskId,
+                e.getResponseBodyAsString());
         if (!e.getStatusCode().is4xxClientError()) {
             return AiTaskError.AI_SERVICE_UNAVAILABLE.name();
         }

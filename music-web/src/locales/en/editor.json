@@ -169,7 +169,9 @@
     "chord": {
       "set": "Enter chord",
       "clear": "Delete chord",
-      "paste": "Paste chords"
+      "paste": "Paste chords",
+      "ai": "Add AI chord suggestions",
+      "aiDiscard": "Remove AI chord suggestions"
     },
     "lyric": {
       "set": "Enter lyrics",
@@ -446,7 +448,9 @@
       "paste": "Paste chords…",
       "pasteTitle": "Paste a chord sequence",
       "pasteHelp": "Paste chords separated by spaces or \"|\": they are assigned to the notes in turn, starting from the selected note. Use \"_\" to skip a note.",
-      "assign": "Assign chords"
+      "assign": "Assign chords",
+      "clear": "Delete chord",
+      "clearHint": "Delete chord {chord} from the selected note"
     },
     "text": {
       "sizeRange": "Font size from {min} to {max}",
@@ -1134,5 +1138,11 @@
     "slide": "slide",
     "lyric": "lyric {verse}: {text}",
     "chord": "chord {name}"
+  },
+  "sidebar": {
+    "resize": "Resize the {name} column",
+    "resizeHint": "Drag to widen or narrow it, drag all the way in to collapse · Double-click or Enter: collapse / expand · ←/→: adjust width",
+    "expand": "Expand the {name} column",
+    "collapsed": "Collapsed"
   }
 }

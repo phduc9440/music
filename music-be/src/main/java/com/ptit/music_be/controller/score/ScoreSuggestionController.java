@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.ptit.music_be.dto.enums.score.SuggestionFilter;
+import com.ptit.music_be.dto.request.score.SuggestionAppliedRequest;
 import com.ptit.music_be.dto.request.score.SuggestionDecisionRequest;
 import com.ptit.music_be.dto.response.common.ApiResponse;
 import com.ptit.music_be.dto.response.common.PageResponse;
@@ -93,6 +94,18 @@ public class ScoreSuggestionController {
             @RequestHeader(value = "If-Match", required = false) String ifMatch,
             @RequestBody(required = false) SuggestionDecisionRequest request) {
         return ok(suggestionService.accept(id, ifMatch, request));
+    }
+
+    @PostMapping("/suggestions/{id}/applied")
+    @Operation(
+            summary = "Mark a suggestion applied from the editor (needs EDIT)",
+            description = "The editor loaded the suggestion as a draft and saved it as {version} itself; closes as"
+                    + " ACCEPTED without saving again. Errors: 3114 not open, 3118 version not newer than base or"
+                    + " not saved yet",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<SuggestionDetailResponse> markApplied(
+            @PathVariable String id, @RequestBody(required = false) SuggestionAppliedRequest request) {
+        return ok(suggestionService.markApplied(id, request));
     }
 
     @PostMapping("/suggestions/{id}/reject")
