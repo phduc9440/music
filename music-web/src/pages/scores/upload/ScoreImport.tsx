@@ -278,9 +278,14 @@ export default function ScoreImport() {
             <h1>{t('upload.import.title')}</h1>
             <p>{t('upload.import.subtitle')}</p>
           </div>
-          <button type="button" className="sc-btn" disabled={busy} onClick={() => navigate('/scores/upload')}>
-            {t('upload.import.toOmr')}
-          </button>
+          <div className="sc-upload__head-actions">
+            <button type="button" className="sc-btn" disabled={busy} onClick={() => navigate('/scores/upload')}>
+              {t('upload.import.toOmr')}
+            </button>
+            <button type="button" className="sc-btn" disabled={busy} onClick={() => navigate('/scores/blank')}>
+              {t('upload.startBlank')}
+            </button>
+          </div>
         </header>
 
         <form className="sc-upload" onSubmit={handleSubmit}>

@@ -515,7 +515,7 @@
 /* ---- Bảng công cụ (đang khóa) ---- */
 .sv-tools {
   flex: none;
-  width: 280px;
+  width: var(--sv-tools-w, 280px); /* máy tính: kéo tay kéo để đổi (useToolsLayout); iPad/Mobile đặt lại width */
   padding: 1.25rem;
   overflow-x: hidden; /* chỉ cuộn dọc: lệch 1px cũng không hiện thanh cuộn ngang dưới đáy bảng */
   overflow-y: auto;
@@ -1340,7 +1340,7 @@ h3.sv-tools__title {
 
 @media (min-width: 1280px) {
   .sv-tools {
-    width: 272px;
+    width: var(--sv-tools-w, 272px);
     padding: 1rem 1rem 1.5rem;
     scrollbar-width: thin;
   }
@@ -1549,6 +1549,117 @@ h3.sv-tools__title {
 @media (prefers-reduced-motion: reduce) {
   .sv-tool,
   .sv-root .sc-btn {
+    transition: none;
+  }
+}
+
+/* ---- Cột bên kéo ra / kéo vào (useSidebarResize + SidebarResizer) ----
+   Cột công cụ bên trái: từ 1280px. Cột Góp ý / Hợp âm AI bên phải: từ 1024px (nhỏ hơn là ngăn kéo dưới đáy). */
+.sv-resizer {
+  position: relative;
+  z-index: 3;
+  flex: none;
+  width: 10px;
+  margin: 0 -5px;
+  cursor: col-resize;
+  touch-action: none;
+}
+/* vạch sáng lên khi rê chuột, đang kéo hoặc đang được chọn bằng bàn phím */
+.sv-resizer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 4px;
+  width: 2px;
+  border-radius: 2px;
+  background: transparent;
+  transition: background-color 0.15s ease;
+}
+.sv-resizer:hover::after,
+.sv-resizer.is-dragging::after,
+.sv-resizer:focus-visible::after {
+  background: var(--sc-accent);
+}
+.sv-resizer:focus-visible {
+  outline: none;
+}
+@media (max-width: 1023px) {
+  .sv-resizer {
+    display: none;
+  }
+}
+/* Dải mỏng thay cho cột khi thu gọn: bấm để mở lại */
+.sv-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.6rem 0;
+  border: 1px solid var(--sc-line);
+  border-radius: 12px;
+  background: var(--ui-surface-muted);
+  color: var(--sc-ink);
+  font: inherit;
+  cursor: pointer;
+}
+.sv-rail:hover {
+  border-color: var(--sc-accent);
+  color: var(--sc-accent);
+}
+.sv-rail:focus-visible {
+  outline: 2px solid var(--sc-accent);
+  outline-offset: 2px;
+}
+.sv-rail__label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  writing-mode: vertical-rl;
+  white-space: nowrap;
+}
+.sv-side-rail {
+  flex: none;
+  width: 52px;
+  padding: 0.75rem 0.4rem;
+  border-left: 1px solid var(--ui-border);
+  background: var(--ui-bg);
+}
+@media (min-width: 1024px) {
+  .sv-comments {
+    width: var(--sv-side-w, 360px);
+    transition: width 0.18s ease;
+  }
+  .sv-body.is-side-resizing .sv-comments {
+    transition: none;
+  }
+}
+@media (min-width: 1280px) {
+  .sv-tools {
+    transition: width 0.18s ease;
+  }
+  .sv-tools.is-resizing {
+    transition: none;
+  }
+  /* Cột rộng thì các nút công cụ dàn thành nhiều cột hơn */
+  .sv-tools__row {
+    grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  }
+  /* Thu gọn: chỉ còn dải mỏng có nút mở lại */
+  .sv-tools.is-rail {
+    width: 52px;
+    padding: 0.75rem 0.4rem;
+    overflow: hidden;
+  }
+  .sv-tools.is-rail > :not(.sv-rail) {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sv-tools,
+  .sv-comments,
+  .sv-resizer::after {
     transition: none;
   }
 }

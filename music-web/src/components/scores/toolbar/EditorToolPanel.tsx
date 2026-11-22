@@ -1,5 +1,7 @@
 import { Fragment, useState } from 'react';
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from 'react';
+import { useSidebarResize } from '../common/useSidebarResize';
+import { SidebarRail, SidebarResizer } from '../common/SidebarResizer';
 import type { SymbolOp } from '../../editor/core/commands';
 import { DYNAMICS, EXTRA_DYNAMICS } from '../../editor/notation/marks';
 import type { MarkOp } from '../../editor/notation/marks';
@@ -334,6 +336,14 @@ export default function EditorToolPanel({
   const [query, setQuery] = useState('');
   const [sectionText, setSectionText] = useState('');
   const wide = useMediaQuery('(min-width: 1280px)');
+  const tools = useSidebarResize({
+    storageKey: 'scorewise.editor.toolsLayout',
+    side: 'left',
+    min: 220,
+    max: 480,
+    defaultWidth: 272,
+  });
+  const rail = wide && tools.collapsed;
   const words = normalize(query.trim()).split(/\s+/).filter(Boolean);
   const searching = wide && words.length > 0;
   const matches = (text: string): boolean => {
@@ -893,7 +903,12 @@ export default function EditorToolPanel({
   return (
     <>
       {open && <div className="sv-sheet-backdrop" onClick={onClose} aria-hidden="true" />}
-      <aside className={`sv-tools${open ? ' is-open' : ''}`} aria-label={t('editor.tool.panel')}>
+      <aside
+        className={`sv-tools${open ? ' is-open' : ''}${rail ? ' is-rail' : ''}${tools.dragging ? ' is-resizing' : ''}`}
+        style={{ '--sv-tools-w': `${tools.width}px` } as CSSProperties}
+        aria-label={t('editor.tool.panel')}
+      >
+        {rail && <SidebarRail name={t('editor.tool.panel')} side="left" onExpand={tools.expand} />}
         <div className="sv-tools__head">
           <strong>{t('editor.tool.panel')}</strong>
           <button className="sc-btn sv-tools__close" onClick={onClose}>
@@ -960,6 +975,7 @@ export default function EditorToolPanel({
           );
         })}
       </aside>
+      {wide && <SidebarResizer name={t('editor.tool.panel')} resize={tools} />}
     </>
   );
 }

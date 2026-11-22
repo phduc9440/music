@@ -3,7 +3,12 @@ import { useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useNavigate } from '../../../routes/useTransitionNavigate';
 import MusicXmlViewer from '../../../components/scores/viewer/MusicXmlViewer';
-import { statusTone, staleMessage, SUGGESTION_NOTE_MAX } from '../../../components/scores/suggestions/suggestionUtils';
+import {
+  aiChordsEditPath,
+  statusTone,
+  staleMessage,
+  SUGGESTION_NOTE_MAX,
+} from '../../../components/scores/suggestions/suggestionUtils';
 import { useDialog } from '../../../components/ui/dialog-context';
 import Skeleton from '../../../components/ui/Skeleton';
 import { t } from '../../../i18n/core';
@@ -76,6 +81,14 @@ export default function SuggestionReview() {
   const detail = load.phase === 'ready' ? load.detail : null;
   const isOpen = detail?.status === 'OPEN';
   const locked = busy || !detail?.canDecide || !isOpen || detail.stale;
+  // Gợi ý hợp âm còn mở: người sửa được có thể nạp vào trình chỉnh sửa làm bản nháp để sửa lại trước khi lưu
+  const canDraftInEditor =
+    !!detail &&
+    isOpen &&
+    detail.canDecide &&
+    !detail.stale &&
+    !detail.structural &&
+    detail.source === 'CHORD_GENERATION';
 
   const toggleSelected = (changeId: string) =>
     setSelected((prev) => {
@@ -214,10 +227,10 @@ export default function SuggestionReview() {
   return (
     <div className="sc-page">
       {back}
-      <main className="sc-container sr-page">
-        <header className="sr-head">
-          <div className="sr-head__text">
-            <div className="sr-head__badges">
+      <main className="sc-container sgr-page">
+        <header className="sgr-head">
+          <div className="sgr-head__text">
+            <div className="sgr-head__badges">
               <span className={`sg-badge ${statusTone(detail.status)}`}>
                 {t(`suggestions.status.${detail.status}`)}
               </span>
@@ -225,16 +238,16 @@ export default function SuggestionReview() {
               {detail.source === 'CHORD_GENERATION' && <span className="sg-badge">{t('chords.sourceLabel')}</span>}
               {detail.source === 'LIVE_RECOVERY' && <span className="sg-badge">{t('live.recoveredBadge')}</span>}
             </div>
-            <h1 className="sr-title">{detail.title}</h1>
-            <p className="sr-meta">
+            <h1 className="sgr-title">{detail.title}</h1>
+            <p className="sgr-meta">
               {t('suggestions.review.author')}: {detail.author?.name ?? t('suggestions.section.system')} ·{' '}
               {formatDateTime(detail.createdAt)} ·{' '}
               {t('suggestions.review.baseVersion', { version: detail.baseVersion })} ·{' '}
               {t('suggestions.review.currentVersion', { version: detail.currentVersion })}
             </p>
-            {detail.description && <p className="sr-desc">{detail.description}</p>}
+            {detail.description && <p className="sgr-desc">{detail.description}</p>}
             {detail.decidedBy && (
-              <p className="sr-meta">
+              <p className="sgr-meta">
                 {t('suggestions.review.decidedBy', { name: detail.decidedBy.name })}
                 {detail.appliedVersion
                   ? ` · ${t('suggestions.review.appliedVersion', { version: detail.appliedVersion })}`
@@ -243,7 +256,7 @@ export default function SuggestionReview() {
               </p>
             )}
           </div>
-          <div className="sr-actions">
+          <div className="sgr-actions">
             {detail.canDecide && isOpen && (
               <>
                 <button
@@ -263,6 +276,17 @@ export default function SuggestionReview() {
                 </button>
               </>
             )}
+            {canDraftInEditor && (
+              <button
+                type="button"
+                className="sc-btn"
+                disabled={busy}
+                title={t('chords.draft.openInEditorHint')}
+                onClick={() => scoreId && navigate(aiChordsEditPath(base, scoreId, detail.id))}
+              >
+                {t('chords.draft.openInEditor')}
+              </button>
+            )}
             {detail.canWithdraw && (
               <button type="button" className="sc-btn" disabled={busy} onClick={() => void withdraw()}>
                 {t('suggestions.review.withdraw')}
@@ -278,27 +302,27 @@ export default function SuggestionReview() {
         )}
 
         <section aria-label={t('suggestions.review.changes')}>
-          <h2 className="sr-subtitle">
+          <h2 className="sgr-subtitle">
             {t('suggestions.review.changes')}
             {!detail.structural && isOpen && detail.canDecide && (
-              <span className="sr-selected">{t('suggestions.review.selected', { count: selectedCount })}</span>
+              <span className="sgr-selected">{t('suggestions.review.selected', { count: selectedCount })}</span>
             )}
           </h2>
           {detail.structural ? (
-            <p className="sr-meta">{t('suggestions.review.structuralNote')}</p>
+            <p className="sgr-meta">{t('suggestions.review.structuralNote')}</p>
           ) : detail.changes.length === 0 ? (
-            <p className="sr-meta">{t('suggestions.review.noChanges')}</p>
+            <p className="sgr-meta">{t('suggestions.review.noChanges')}</p>
           ) : (
-            <ul className="sr-changes">
+            <ul className="sgr-changes">
               {detail.changes.map((change) => {
                 const decidable = isOpen && detail.canDecide && change.status === 'PENDING';
                 const taken = selected.has(change.id);
                 return (
-                  <li key={change.id} className={`sr-change${decidable && !taken ? ' is-skipped' : ''}`}>
-                    <div className="sr-change__row">
-                      <div className="sr-change__label">
+                  <li key={change.id} className={`sgr-change${decidable && !taken ? ' is-skipped' : ''}`}>
+                    <div className="sgr-change__row">
+                      <div className="sgr-change__label">
                         <strong>{t('suggestions.review.measure', { number: change.measureNumber })}</strong>
-                        <span className="sr-meta">{change.partName}</span>
+                        <span className="sgr-meta">{change.partName}</span>
                         {change.conflict && (
                           <span className="sg-badge is-stale" title={t('suggestions.review.conflict')}>
                             {t('suggestions.review.conflict')}
@@ -308,7 +332,7 @@ export default function SuggestionReview() {
                           <span className="sg-badge">{t(`suggestions.changeStatus.${change.status}`)}</span>
                         )}
                       </div>
-                      <div className="sr-change__actions">
+                      <div className="sgr-change__actions">
                         <button type="button" className="sc-btn sc-btn--sm" onClick={() => void togglePreview(change)}>
                           {preview.open.has(change.id)
                             ? t('suggestions.review.hidePreview')
@@ -362,7 +386,7 @@ function ChangePreview({
   if (current === null || proposed === null) return <Skeleton height={120} />;
   const ordinal = change.measureIndex + 1;
   return (
-    <div className="sr-preview">
+    <div className="sgr-preview">
       <figure>
         <figcaption>{t('suggestions.review.before')}</figcaption>
         <MusicXmlViewer xml={current} firstMeasure={ordinal} lastMeasure={ordinal} />

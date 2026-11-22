@@ -140,6 +140,11 @@ export interface ScoreEditor {
   selectInChord: (delta: 1 | -1) => void;
   undo: () => void;
   redo: () => void;
+  /**
+   * Chạy một lệnh đã dựng sẵn bên ngoài (ví dụ nạp hợp âm AI gợi ý): kiểm tra khóa ô, vào lịch sử hoàn tác, gửi cho
+   * phiên đồng chỉnh sửa. Trả về false nếu không chạy được (không có quyền, lệnh lỗi, ô đang bị người khác giữ).
+   */
+  applyEdit: (result: EditResult) => boolean;
   save: (force?: boolean) => Promise<void>;
   /** Chế độ `suggest`: đề xuất đã gửi xong, coi như đã lưu và xóa nháp. */
   finishSuggestion: () => void;

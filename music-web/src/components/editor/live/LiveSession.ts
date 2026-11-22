@@ -36,6 +36,16 @@ const CONTEXT_TAGS = new Set(['divisions', 'key', 'time', 'clef', 'staves', 'tra
 /** Chờ sau lần đổi vùng chọn cuối cùng rồi mới báo cho người khác (ms). */
 const PRESENCE_DEBOUNCE_MS = 250;
 
+/**
+ * Mã thao tác duy nhất, tối đa 36 ký tự (server và cột `score_live_ops.op_id` chỉ nhận chừng đó, duy nhất toàn bảng).
+ * `randomUUID` chỉ có trong ngữ cảnh bảo mật (https, localhost); mở qua http thường thì ghép 16 byte ngẫu nhiên.
+ */
+export const newOpId = (): string => {
+  if (typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+};
+
 export const measureKey = (partIndex: number, measureIndex: number): string => `${partIndex}:${measureIndex}`;
 
 export interface LiveState {
@@ -108,7 +118,6 @@ export class LiveSession {
   private lastWanted = new Map<string, number>();
   private lockTimer: number | null = null;
   private presenceTimer: number | null = null;
-  private opCounter = 0;
   private stopped = false;
   private readonly scoreId: string;
   private readonly doc: ScoreDocument;
@@ -173,8 +182,7 @@ export class LiveSession {
   /** Ghi nhận lệnh vừa áp dụng cục bộ (`undo`: lệnh vừa được hoàn tác nên nội dung gửi là bản `before`). */
   enqueue(command: EditCommand, direction: 'do' | 'undo' | 'redo'): void {
     if (!this.canEdit) return;
-    this.opCounter += 1;
-    const opId = `${this.selfSessionId ?? 'x'}-${Date.now().toString(36)}-${this.opCounter}`;
+    const opId = newOpId();
     if (isStructural(command)) {
       this.queue.push({ opId, measures: null, structuralXml: this.doc.serialize() });
     } else {

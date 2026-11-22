@@ -155,6 +155,16 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     flash(t('editor.flash.undone', { label }));
   }, [canEdit, doc, sync, flash, heldByOther, setSelection]);
 
+  const applyEdit = useCallback(
+    (result: EditResult): boolean => {
+      if (!canEdit) return false;
+      commit(result, false);
+      // commit bỏ lệnh (và trả các ô về như cũ) khi ô đang bị người khác giữ: khi đó lệnh không nằm ở đỉnh lịch sử
+      return result.ok && historyRef.current.nextUndo === result.command;
+    },
+    [canEdit, commit],
+  );
+
   const redo = useCallback(() => {
     if (!canEdit || !historyRef.current.canRedo || heldByOther(historyRef.current.nextRedo)) return;
     const label = historyRef.current.redoLabel;
@@ -236,5 +246,6 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     inputDuration,
     undo,
     redo,
+    applyEdit,
   };
 }

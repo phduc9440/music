@@ -8,6 +8,7 @@ import { getErrorMessage, MAX_COMPOSER, MAX_TITLE } from '../../../utils/score';
 import { reportPlanLimit } from '../../../utils/planLimit';
 import { accidentalsLabel, KEY_FIFTHS, keyName } from './keySignatures';
 import { t } from '../../../i18n/core';
+import './blank-score.css';
 
 /** Giới hạn khớp BE (ScoreCreateServiceImpl, lỗi 3302). */
 const MIN_BEATS = 1;

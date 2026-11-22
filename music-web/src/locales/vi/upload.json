@@ -107,6 +107,7 @@
   "title": "Tải bản nhạc lên",
   "subtitle": "Hệ thống sẽ số hóa bản nhạc thành MusicXML và MIDI",
   "haveXml": "Đã có file MusicXML / MIDI?",
+  "startBlank": "Bắt đầu từ bản trống",
   "images": "{count} ảnh",
   "onePdf": "1 file PDF",
   "pages": "{count} trang",
@@ -338,6 +339,7 @@
     },
     "blank": {
       "title": "Bản nhạc trống",
+      "subtitle": "Chọn nhạc cụ, khóa, nhịp và số ô rồi viết nhạc ngay trong trình chỉnh sửa.",
       "preset": "Mẫu nhạc cụ",
       "titlePlaceholder": "Ví dụ: Bản nháp số 1",
       "key": "Khóa",

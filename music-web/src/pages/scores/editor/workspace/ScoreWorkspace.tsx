@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
 import { useNavigate } from '../../../../routes/useTransitionNavigate';
-import DownloadMenu from '../../../../components/scores/viewer/DownloadMenu';
 import ShowAssignmentBanner from '../../../../components/scores/viewer/ShowAssignmentBanner';
 import EditorToolPanel from '../../../../components/scores/toolbar/EditorToolPanel';
 import ChordSuggestDialog from '../../../../components/scores/chords/ChordSuggestDialog';
 import ScoreCanvas from '../../../../components/scores/viewer/ScoreCanvas';
-import CommentsSection from '../../../../components/scores/comments/CommentsSection';
+import { useSidebarResize } from '../../../../components/scores/common/useSidebarResize';
 import {
   InlineCommentComposer,
   SelectionCommentButton,
@@ -24,7 +24,10 @@ import type { MusicXmlInfo } from '../../../../utils/viewer';
 import EditorDialogs from './EditorDialogs';
 import EditorHeader from './EditorHeader';
 import EditorInputBars from './EditorInputBars';
+import EditorParseFailed from './EditorParseFailed';
+import EditorSideColumn from './EditorSideColumn';
 import EditorStatusBar from './EditorStatusBar';
+import { useAiChordPanel } from './useAiChordPanel';
 import { useEditorContextMenu } from './useEditorContextMenu';
 import { useEditorPlayer } from './useEditorPlayer';
 import { useLockBoxes } from './useLockBoxes';
@@ -57,6 +60,7 @@ export default function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: Pr
   const [hideWarning, setHideWarning] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [suggestingChords, setSuggestingChords] = useState(false);
+  const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [parseFailed, setParseFailed] = useState(false);
   const [focusMeasure, setFocusMeasure] = useState<{ index: number; key: number } | null>(null);
   const canEdit = score.canEdit;
@@ -116,8 +120,27 @@ export default function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: Pr
     mode,
     focusMeasure: focusOn,
     stageRef,
+    onPanelOpen: () => setAiPanelOpen(false),
   });
   const { commentAnchor, commentBlocked, canComment, composer, selRect } = comments;
+  const ai = useAiChordPanel({
+    scoreId: score.id,
+    doc,
+    editor,
+    canEdit,
+    live,
+    panelOpen: aiPanelOpen,
+    setPanelOpen: setAiPanelOpen,
+    closeComments: comments.closeComments,
+  });
+  // Cột phải (Góp ý / Hợp âm AI dùng chung một chỗ) kéo rộng / thu gọn được, nhớ trong trình duyệt
+  const side = useSidebarResize({
+    storageKey: 'scorewise.editor.sideLayout',
+    side: 'right',
+    min: 280,
+    max: 640,
+    defaultWidth: 360,
+  });
   const menu = useEditorContextMenu(doc, canEdit, editor, comments);
   const { contextMenu } = menu;
   const openComposer = (rect: Parameters<typeof comments.openComposer>[0]) => {
@@ -130,28 +153,7 @@ export default function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: Pr
     void editor.confirmLeave().then((ok) => ok && navigate(`${base}/${score.id}`));
   };
 
-  if (parseFailed) {
-    return (
-      <div className="sc-page sv-root sv-root--center">
-        <div className="sv-state" role="alert">
-          <h2>{t('editor.view.state.parseError.title')}</h2>
-          <p>{t('editor.view.state.parseError.text')}</p>
-          <div className="sv-state__actions">
-            <button className="sc-btn sc-btn--primary" onClick={goBack}>
-              {t('editor.view.state.parseError.action')}
-            </button>
-            <DownloadMenu
-              scoreId={score.id}
-              files={score.files}
-              title={score.title}
-              staffCount={score.staffCount}
-              canDownload={score.canDownload}
-            />
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (parseFailed) return <EditorParseFailed score={score} onBack={goBack} />;
 
   const progressLabel =
     mode === 'scroll'
@@ -171,7 +173,19 @@ export default function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: Pr
         onZoomChange={view.setZoom}
         commentsOpen={comments.commentsOpen}
         openThreadCount={comments.openThreads.length}
-        onToggleComments={() => (comments.commentsOpen ? comments.closeComments() : comments.setCommentsOpen(true))}
+        onToggleComments={() => (comments.commentsOpen ? comments.closeComments() : comments.openComments())}
+        aiToggle={
+          ai.aiDraft.draft
+            ? {
+                shown: ai.shown,
+                count: ai.aiDraft.marks.length,
+                onClick: () => {
+                  if (!ai.shown) comments.closeComments();
+                  setAiPanelOpen(!ai.shown);
+                },
+              }
+            : null
+        }
         fullscreen={view.fullscreen}
         onToggleFullscreen={() => void view.toggleFullscreen()}
         onBack={goBack}
@@ -206,7 +220,10 @@ export default function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: Pr
 
       <ShowAssignmentBanner scoreId={score.id} />
 
-      <div className={`sv-body${canEdit ? ' has-tools' : ''}`}>
+      <div
+        className={`sv-body${canEdit ? ' has-tools' : ''}${side.dragging ? ' is-side-resizing' : ''}`}
+        style={{ '--sv-side-w': `${side.width}px` } as CSSProperties}
+      >
         {canEdit && (
           <EditorToolPanel
             open={toolsOpen}
@@ -272,6 +289,8 @@ export default function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: Pr
             onEditHeader={canEdit ? editor.editHeader : undefined}
             onEditTempo={canEdit ? editor.editTempo : undefined}
             commentRanges={comments.commentRanges}
+            aiChords={ai.aiDraft.marks}
+            aiFocus={ai.aiFocus}
             onCommentBubble={(ids) => comments.showThread(ids[0])}
           />
           {selRect && commentAnchor && canComment && !commentBlocked && !composer && !contextMenu && (
@@ -281,32 +300,15 @@ export default function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: Pr
             {progressLabel}
           </div>
         </div>
-        {comments.commentsOpen && (
-          <aside className="sv-comments" aria-label={t('scores.comments.panelToggle')}>
-            <div className="sv-comments__head">
-              <h2>{t('scores.comments.panelToggle')}</h2>
-              <button
-                type="button"
-                className="sv-comments__close"
-                onClick={comments.closeComments}
-                aria-label={t('scores.comments.panelClose')}
-                title={t('scores.comments.panelClose')}
-              >
-                ×
-              </button>
-            </div>
-            <CommentsSection
-              scoreId={score.id}
-              compact
-              focusId={comments.focusCommentId}
-              anchor={commentAnchor}
-              composeKey={comments.composeKey}
-              composeBlockedReason={commentBlocked}
-              onSelectThread={comments.selectThread}
-              onChanged={comments.refreshComments}
-            />
-          </aside>
-        )}
+        <EditorSideColumn
+          scoreId={score.id}
+          editor={editor}
+          live={live}
+          side={side}
+          ai={ai}
+          onCloseAi={() => setAiPanelOpen(false)}
+          comments={comments}
+        />
       </div>
 
       {canEdit && (
@@ -380,7 +382,21 @@ export default function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: Pr
       )}
       <EditorStatusBar score={score} info={info} editor={editor} onFocusMeasure={focusOn} />
 
-      {suggestingChords && <ChordSuggestDialog scoreId={score.id} onClose={() => setSuggestingChords(false)} />}
+      {suggestingChords && (
+        <ChordSuggestDialog
+          scoreId={score.id}
+          onClose={() => setSuggestingChords(false)}
+          // Người sửa được: gợi ý xong thì nạp ngay vào trình chỉnh sửa làm bản nháp thay vì sang trang duyệt
+          onCompleted={
+            canEdit
+              ? (suggestionId) => {
+                  setSuggestingChords(false);
+                  ai.beginAiDraft(suggestionId);
+                }
+              : undefined
+          }
+        />
+      )}
       <EditorDialogs
         score={score}
         editor={editor}

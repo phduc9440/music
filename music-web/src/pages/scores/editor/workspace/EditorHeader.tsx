@@ -1,3 +1,4 @@
+import Icon from '../../../../components/ui/Icon';
 import DownloadMenu from '../../../../components/scores/viewer/DownloadMenu';
 import InstrumentMenu from '../../../../components/scores/viewer/InstrumentMenu';
 import ToolbarMoreMenu from '../../../../components/scores/toolbar/ToolbarMoreMenu';
@@ -37,6 +38,8 @@ interface Props {
   zoom: number;
   onZoomChange: (zoom: number) => void;
   commentsOpen: boolean;
+  /** Nút bảng Hợp âm AI, chỉ có khi đang có bản nháp hợp âm AI. */
+  aiToggle: { shown: boolean; count: number; onClick: () => void } | null;
   openThreadCount: number;
   onToggleComments: () => void;
   fullscreen: boolean;
@@ -144,6 +147,17 @@ export default function EditorHeader(p: Props) {
         {canEdit && (
           <button className="sc-btn sv-mobile-only" onClick={p.onOpenTools}>
             <IconEdit /> {t('editor.view.header.edit')}
+          </button>
+        )}
+        {p.aiToggle && (
+          <button
+            className={`sc-btn sv-ai-toggle${p.aiToggle.shown ? ' is-active' : ''}`}
+            aria-pressed={p.aiToggle.shown}
+            onClick={p.aiToggle.onClick}
+            title={t('chords.draft.panelTitle')}
+          >
+            <Icon name="star" size={16} /> <span className="sv-desktop-only">{t('chords.draft.panelToggle')}</span>
+            <span className="sv-count">{p.aiToggle.count}</span>
           </button>
         )}
         <button

@@ -27,6 +27,8 @@ interface Options {
   focusMeasure: (index: number) => void;
   /** Khung chứa bản nhạc, để đo vùng chọn trên màn hình. */
   stageRef: RefObject<HTMLDivElement | null>;
+  /** Gọi mỗi khi bảng Góp ý được mở (để đóng bảng khác dùng chung cột phải, ví dụ Hợp âm AI). */
+  onPanelOpen?: () => void;
 }
 
 /**
@@ -34,7 +36,20 @@ interface Options {
  * nổi. ?comment=ID (từ trang chi tiết): mở bảng và cuộn tới góp ý đó.
  */
 export function useScoreComments(o: Options) {
-  const { scoreId, doc, canEdit, selection, selectionRef, revision, dirty, zoom, mode, focusMeasure, stageRef } = o;
+  const {
+    scoreId,
+    doc,
+    canEdit,
+    selection,
+    selectionRef,
+    revision,
+    dirty,
+    zoom,
+    mode,
+    focusMeasure,
+    stageRef,
+    onPanelOpen,
+  } = o;
   const [searchParams] = useSearchParams();
   const linkedComment = searchParams.get('comment');
   const [commentsOpen, setCommentsOpen] = useState(!!linkedComment);
@@ -48,8 +63,10 @@ export function useScoreComments(o: Options) {
   const [composer, setComposer] = useState<{ anchor: CommentAnchor; rect: ScreenRect } | null>(null);
 
   const focusMeasureRef = useRef(focusMeasure);
+  const onPanelOpenRef = useRef(onPanelOpen);
   useEffect(() => {
     focusMeasureRef.current = focusMeasure;
+    onPanelOpenRef.current = onPanelOpen;
   });
 
   // Góp ý đang mở để tô nền trên bản nhạc; tải lại mỗi khi bảng Góp ý đổi (thêm, xử lý, xóa).
@@ -152,6 +169,7 @@ export function useScoreComments(o: Options) {
     const onKey = (e: KeyboardEvent) => {
       if (!(e.ctrlKey || e.metaKey) || !e.altKey || e.code !== 'KeyM') return;
       e.preventDefault();
+      onPanelOpenRef.current?.();
       setCommentsOpen(true);
       setComposeKey((k) => k + 1);
     };
@@ -170,15 +188,22 @@ export function useScoreComments(o: Options) {
     if (c.startMeasure != null) focusMeasureRef.current(c.startMeasure - 1);
   }, []);
 
+  /** Mở bảng Góp ý (nút trên thanh công cụ). */
+  const openComments = () => {
+    onPanelOpenRef.current?.();
+    setCommentsOpen(true);
+  };
+
   /** Mở bảng Góp ý và làm nổi một góp ý. */
   const showThread = (id: string | undefined) => {
+    onPanelOpenRef.current?.();
     setCommentsOpen(true);
     if (id) setFocusCommentId(id);
   };
 
   return {
     commentsOpen,
-    setCommentsOpen,
+    openComments,
     closeComments,
     focusCommentId,
     setFocusCommentId,

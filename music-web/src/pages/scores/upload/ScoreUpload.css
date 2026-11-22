@@ -249,3 +249,10 @@
     position: static;
   }
 }
+
+/* Nút phụ ở đầu trang tải lên / nhập file: chuyển sang cách tạo khác (nhập file, bản trống) */
+.sc-upload__head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
