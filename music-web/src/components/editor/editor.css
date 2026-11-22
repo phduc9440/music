@@ -157,6 +157,15 @@
   width: 22px;
   height: 22px;
 }
+/* 7 trường độ + nút chấm dôi: một hàng cần ~320px nhưng khung chỉ 264px nên móc ba, móc tứ, chấm dôi tràn ra ngoài.
+   Xếp lưới 4 cột x 2 hàng, nút được co dưới 36px. */
+.ed-pop__row--durations {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.ed-pop__row--durations .ed-pop__btn {
+  min-width: 0;
+}
 .ed-pop__btn--wide {
   font-size: 0.72rem;
 }

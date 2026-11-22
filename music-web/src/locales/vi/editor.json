@@ -754,7 +754,7 @@
       }
     },
     "panel": "Công cụ chỉnh sửa",
-    "note": "Bấm vào nốt để chọn (Shift để chọn thêm), rồi dùng nhóm Cao độ hoặc phím mũi tên.",
+    "note": "Bấm nốt để chọn, giữ Shift để chọn nhiều. Phím ↑ ↓ đổi cao độ.",
     "searchPlaceholder": "Tìm ký hiệu (láy, fermata, lặp...)",
     "searchAria": "Tìm ký hiệu",
     "empty": "Không có ký hiệu nào khớp “{query}”.",
@@ -777,7 +777,7 @@
     "sub": {
       "tuplet": "Chùm ({mod}+3 = chùm ba)",
       "pedal": "Pedal & quãng tám",
-      "section": "Nhãn đoạn (đặt ở đầu ô đang chọn)",
+      "section": "Nhãn đoạn (đặt ở ô đang chọn)",
       "breaks": "Ngắt đoạn"
     },
     "mode": {

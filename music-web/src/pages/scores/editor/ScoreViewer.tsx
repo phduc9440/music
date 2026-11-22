@@ -31,7 +31,6 @@ import {
   IconEdit,
   IconExpand,
   IconHistory,
-  IconInvert,
   IconKeyboard,
   IconPages,
   IconPlay,
@@ -299,7 +298,7 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
   /** Menu chuột phải trên bản nhạc: chỗ bấm, ô nhịp và id nốt dưới con trỏ (rỗng = bấm ra ngoài nốt). */
   const [contextMenu, setContextMenu] = useState<(ContextMenuState & { hitIds: string[] }) | null>(null);
 
-  const { zoom, mode, invert } = prefs;
+  const { zoom, mode } = prefs;
   const canEdit = score.canEdit;
 
   // Cùng sửa theo thời gian thực: người có quyền sửa vào bản nhạc là tự tham gia, không cần bật tay
@@ -722,16 +721,6 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
             </button>
           </div>
           <ZoomControl zoom={zoom} onChange={setZoom} />
-          <div className="sv-segment sv-segment--icons" role="group" aria-label={t('editor.view.header.colorGroup')}>
-            <button
-              aria-pressed={invert}
-              aria-label={t('editor.view.header.invert')}
-              title={t('editor.view.header.invertTitle')}
-              onClick={() => updatePrefs({ invert: !invert })}
-            >
-              <IconInvert />
-            </button>
-          </div>
         </div>
 
         <div className="sv-toolbar__right">
@@ -901,7 +890,6 @@ function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: WorkspaceProps) {
             xml={xml}
             zoom={zoom}
             mode={mode}
-            inverted={invert}
             onZoomChange={setZoom}
             onRendered={setPageCount}
             onProgress={setProgress}

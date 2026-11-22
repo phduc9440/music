@@ -125,7 +125,11 @@ export default function NoteInsertPopover({ target, left, top, initialDuration, 
         </div>
       </div>
 
-      <div className="ed-pop__row" role="group" aria-label={t('editor.toolbar.insert.durationGroup')}>
+      <div
+        className="ed-pop__row ed-pop__row--durations"
+        role="group"
+        aria-label={t('editor.toolbar.insert.durationGroup')}
+      >
         {DURATIONS.map((d) => (
           <button
             key={d.type}

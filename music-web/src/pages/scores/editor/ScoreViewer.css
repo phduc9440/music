@@ -1287,9 +1287,18 @@ h3.sv-tools__title {
   font-size: 1.05rem;
   letter-spacing: -0.01em;
 }
+/* Dòng hướng dẫn và tiêu đề phụ trong bảng công cụ: chữ nhỏ, xám nhạt để không tranh chỗ với các nút */
+.sv-tools__note,
+.sv-tools__sub {
+  color: color-mix(in srgb, var(--ui-text-3) 72%, var(--ui-surface));
+}
 .sv-tools__note {
   margin-bottom: 1rem;
-  font-size: 0.85rem;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+.sv-tools__sub {
+  font-weight: 500;
 }
 .sv-tools__title,
 .sv-tools__toggle {

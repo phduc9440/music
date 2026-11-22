@@ -754,7 +754,7 @@
       }
     },
     "panel": "Editing tools",
-    "note": "Click a note to select it (Shift to add more), then use the Pitch group or the arrow keys.",
+    "note": "Click a note to select, hold Shift for more. ↑ ↓ change the pitch.",
     "searchPlaceholder": "Search symbols (trill, fermata, repeat...)",
     "searchAria": "Search symbols",
     "empty": "No symbols match “{query}”.",
@@ -777,7 +777,7 @@
     "sub": {
       "tuplet": "Tuplets ({mod}+3 = triplet)",
       "pedal": "Pedal & octaves",
-      "section": "Section labels (placed at the start of the selected measure)",
+      "section": "Section labels (at the selected measure)",
       "breaks": "Breaks"
     },
     "mode": {
