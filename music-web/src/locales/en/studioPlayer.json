@@ -33,7 +33,8 @@
     "lastResult": "Latest result",
     "playPrompt": "Play a note to begin",
     "waitPrompt": "Play the notes waiting at the line to continue",
-    "finished": "Practice complete"
+    "finished": "Practice complete",
+    "getReady": "Get ready"
   },
   "results": {
     "PERFECT": "Perfect",

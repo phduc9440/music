@@ -502,6 +502,188 @@
   box-shadow: 0 0 10px color-mix(in srgb, var(--ui-fx-2) 45%, transparent);
 }
 
+/* ---------- nhãn chấm điểm kiểu game nhịp điệu ----------
+   Chữ phán định không khung: nghiêng, in hoa, có quầng sáng theo màu kết quả (không còn viên thuốc viền dày chồng lên
+   nhau). Hoàn hảo là chữ chuyển sắc rực rỡ và to nhất; sớm / trễ nhỏ hơn, kèm mũi tên chỉ hướng; sai / bỏ lỡ nhỏ, mờ, rơi
+   xuống rồi tan thay vì bay lên, để phần thưởng thị giác dồn vào lúc chơi đúng. */
+.studio-player .studio-player__judge-label {
+  --halo: color-mix(in srgb, var(--ui-surface) 92%, transparent);
+  bottom: 26px;
+  overflow: visible;
+  gap: 0.3rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--judge);
+  font-family: var(--ui-font-display);
+  font-size: 0.95rem;
+  font-style: italic;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-shadow:
+    0 0 2px var(--halo),
+    0 0 8px var(--halo),
+    0 0 16px color-mix(in srgb, var(--judge) 70%, transparent);
+}
+.studio-player .studio-player__judge-mark {
+  font-size: 0.85em;
+  font-style: normal;
+  line-height: 1;
+}
+.studio-player .studio-player__judge-label strong {
+  margin-left: 0.15rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--judge) 18%, var(--ui-surface));
+  color: var(--judge);
+  font-size: 0.8em;
+  font-style: normal;
+  letter-spacing: 0;
+  text-shadow: none;
+}
+
+/* hoàn hảo: chữ chuyển sắc ngọc → vàng, to, quầng sáng mạnh */
+.studio-player .studio-player__judge.is-perfect .studio-player__judge-label {
+  font-size: 1.35rem;
+  letter-spacing: 0.12em;
+  background: linear-gradient(100deg, var(--ui-primary), var(--ui-fx-2) 45%, var(--ui-fx-1));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(0 0 1px var(--halo)) drop-shadow(0 0 10px color-mix(in srgb, var(--ui-fx-2) 65%, transparent));
+}
+.studio-player .studio-player__judge.is-perfect .studio-player__judge-mark {
+  color: var(--ui-fx-1);
+  -webkit-text-fill-color: var(--ui-fx-1);
+}
+.studio-player .studio-player__judge.is-perfect .studio-player__judge-label strong {
+  background: linear-gradient(120deg, var(--ui-cta), var(--ui-hue-teal));
+  -webkit-text-fill-color: var(--ui-on-cta);
+  color: var(--ui-on-cta);
+}
+.studio-player .studio-player__judge.is-perfect .studio-player__judge-label::after {
+  display: none;
+}
+
+/* sớm / trễ: cỡ vừa */
+.studio-player .studio-player__judge:is(.is-early, .is-late) .studio-player__judge-label {
+  font-size: 1rem;
+}
+
+/* sai nốt / bỏ lỡ: nhỏ, mờ, không vòng sóng, cột sáng thấp */
+.studio-player .studio-player__judge:is(.is-wrong-pitch, .is-missed) .studio-player__judge-label {
+  bottom: 14px;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  opacity: 0.85;
+}
+.studio-player .studio-player__judge:is(.is-wrong-pitch, .is-missed) .studio-player__judge-ring {
+  display: none;
+}
+.studio-player .studio-player__judge-beam:is(.is-wrong-pitch, .is-missed) {
+  height: 16%;
+  opacity: 0.55;
+}
+
+/* nốt nhạc bay và tia sáng chỉ còn ở lúc hoàn hảo (đã có sẵn trong markup); vòng sóng mảnh hơn */
+.studio-player .studio-player__judge-ring {
+  border-width: 2px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* hoàn hảo / sớm / trễ: bật lên nhanh (scale quá đà rồi về), trôi lên nhẹ rồi tan */
+  .studio-player .studio-player__judge-label {
+    animation: studio-judge-pop 0.95s cubic-bezier(0.2, 0.9, 0.25, 1) both;
+  }
+  /* bỏ lỡ / sai nốt: không nảy, hơi rơi xuống rồi tan nhanh */
+  .studio-player .studio-player__judge:is(.is-wrong-pitch, .is-missed) .studio-player__judge-label {
+    animation: studio-judge-drop 0.8s ease-in both;
+  }
+}
+@keyframes studio-judge-pop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 10px) scale(0.6) skewX(-8deg);
+  }
+  16% {
+    opacity: 1;
+    transform: translate(-50%, -6px) scale(1.18) skewX(-8deg);
+  }
+  30% {
+    transform: translate(-50%, -8px) scale(1) skewX(-8deg);
+  }
+  72% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -34px) scale(1) skewX(-8deg);
+  }
+}
+@keyframes studio-judge-drop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -4px) scale(0.9) skewX(-8deg);
+  }
+  18% {
+    opacity: 0.85;
+    transform: translate(-50%, 0) scale(1) skewX(-8deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, 16px) scale(0.96) skewX(-8deg);
+  }
+}
+
+/* ---------- đếm ngược trước nốt đầu (chạy tự do): nốt đang rơi xuống phía sau ---------- */
+.studio-player .studio-player__aligned-pitch {
+  position: relative;
+}
+.studio-player__countdown {
+  position: absolute;
+  z-index: 6;
+  top: 32%;
+  left: 50%;
+  display: grid;
+  justify-items: center;
+  gap: 0.2rem;
+  padding: 0.9rem 1.6rem 1rem;
+  border: 1px solid var(--studio-hair);
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--ui-surface) 82%, transparent);
+  box-shadow: var(--studio-glass-shadow);
+  transform: translate(-50%, -50%);
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+}
+.studio-player__countdown span {
+  color: var(--ui-text-2);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.studio-player__countdown strong {
+  color: var(--ui-primary);
+  font-family: var(--ui-font-display);
+  font-size: 3.2rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  text-shadow: 0 0 22px color-mix(in srgb, var(--ui-fx-2) 45%, transparent);
+  /* mỗi giây số mới (key đổi) nảy vào một lần */
+  animation: studio-countdown-pop 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes studio-countdown-pop {
+  from {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+
 /* ---------- màn vừa / nhỏ ---------- */
 @media (max-width: 1099px) {
   .studio-player:not(.studio-player--fullscreen) .studio-player__controls {
@@ -516,6 +698,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .studio-player__countdown strong {
+    animation: none;
+  }
   .studio-player__mode-card,
   .studio-player__mode-icon,
   .studio-player__segmented label,

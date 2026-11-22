@@ -15,7 +15,7 @@ import { fetchMusicXml, scoreApi, studioApi } from '../../../services';
 import { t, translateError } from '../../../i18n/core';
 import { useNavigate } from '../../../routes/useTransitionNavigate';
 import { playPianoNote } from '../../../utils/pianoSynth';
-import { FreeRunScorer } from '../../../components/player/engine/FreeRunScorer';
+import { DEFAULT_TOLERANCE_WINDOW_MS, FreeRunScorer } from '../../../components/player/engine/FreeRunScorer';
 import type { PracticeNoteEvent } from '../../../components/player/engine/FreeRunScorer';
 import { WaitModeScorer } from '../../../components/player/engine/WaitModeScorer';
 import { buildStudioSchedule } from '../../../components/player/engine/studioSchedule';
@@ -23,6 +23,7 @@ import type { StudioSchedule } from '../../../components/player/engine/studioSch
 import {
   STUDIO_PIANO_MAX_MIDI,
   STUDIO_PIANO_MIN_MIDI,
+  STUDIO_WATERFALL_WINDOW_MS,
   StudioVirtualPiano,
   StudioWaterfall,
 } from '../../../components/player/studio/StudioPracticeVisuals';
@@ -37,7 +38,12 @@ import './studio-theme.css';
 const BATCH_SIZE = 200;
 const FLUSH_INTERVAL_MS = 1500;
 const LOOP_LOOKAHEAD_MS = 1200;
-const TOLERANCE_WINDOW_MS = 100;
+/**
+ * Chạy tự do: mốc 0 của bài đặt sau lúc bấm bắt đầu đúng bằng chiều cao khung nốt rơi, để nốt đầu tiên rơi từ mép trên
+ * xuống rồi mới chạm vạch chơi. Không có đoạn này, nốt đầu nằm sẵn trên vạch lúc 0 và bị chấm "bỏ lỡ" sau 150 ms, cả
+ * loạt nốt đầu bài bắn nhãn cùng lúc.
+ */
+const FREE_RUN_LEAD_IN_MS = STUDIO_WATERFALL_WINDOW_MS;
 const COMPUTER_KEYBOARD_BASE_MIDI = 60;
 const KEYBOARD_MAP: Record<string, number> = {
   a: 0,
@@ -287,7 +293,8 @@ export default function StudioPlayer() {
   useEffect(() => {
     if (!session) return;
     const timer = window.setInterval(() => {
-      const elapsed = Math.max(0, Math.round(performance.now() - startedAtRef.current));
+      // âm trong đoạn dẫn nhập của chạy tự do (nốt đang rơi xuống, chưa tới nốt đầu)
+      const elapsed = Math.round(performance.now() - startedAtRef.current);
       elapsedMsRef.current = elapsed;
       setElapsedMs(elapsed);
 
@@ -321,7 +328,7 @@ export default function StudioPlayer() {
 
       queueEvents(scorer.advanceTo(elapsed));
       lastScoredAtRef.current = elapsed;
-      if (!repeatSection && elapsed >= schedule.durationMs + TOLERANCE_WINDOW_MS) {
+      if (!repeatSection && elapsed >= schedule.durationMs + DEFAULT_TOLERANCE_WINDOW_MS) {
         void finishRef.current(true, elapsed);
       }
     }, 40);
@@ -334,9 +341,10 @@ export default function StudioPlayer() {
       const currentSession = sessionRef.current;
       const scorer = currentSession?.mode === 'WAIT' ? waitScorerRef.current : scorerRef.current;
       if (inputLockedRef.current) return;
-      const playedMs = sessionRef.current ? Math.max(0, Math.round(performance.now() - startedAtRef.current)) : 0;
+      const playedMs = sessionRef.current ? Math.round(performance.now() - startedAtRef.current) : 0;
       try {
-        if (!currentSession || !scorer) {
+        // chưa có phiên, hoặc đang đếm ngược trước nốt đầu: chỉ phát tiếng, không chấm
+        if (!currentSession || !scorer || playedMs < -DEFAULT_TOLERANCE_WINDOW_MS) {
           // tiếng piano ngân và tắt dần tự nhiên (cùng bộ tiếng với trang đăng nhập): kéo qua nhiều phím nghe liền mạch
           playPianoNote(midi, velocity);
           return;
@@ -428,14 +436,15 @@ export default function StudioPlayer() {
       scheduledCyclesRef.current = 1;
       inputLockedRef.current = false;
       finishingRef.current = false;
-      startedAtRef.current = performance.now();
-      lastScoredAtRef.current = 0;
-      elapsedMsRef.current = 0;
+      const leadInMs = mode === 'FREE_RUN' ? FREE_RUN_LEAD_IN_MS : 0;
+      startedAtRef.current = performance.now() + leadInMs;
+      lastScoredAtRef.current = -leadInMs;
+      elapsedMsRef.current = -leadInMs;
       setScoreDuration(schedule.durationMs);
       setSessionSchedule(schedule);
       sessionRef.current = created.data;
       setSession(created.data);
-      setElapsedMs(0);
+      setElapsedMs(-leadInMs);
       setWaitVisualElapsedMs(0);
       setCounts({ ...emptyCounts });
       setLastResult(null);
@@ -548,11 +557,15 @@ export default function StudioPlayer() {
   }
 
   const { score, xml, timeline } = loadState;
-  const elapsedSeconds = Math.floor(elapsedMs / 1000);
+  // đồng hồ và tiến độ đứng ở 0 trong lúc đếm ngược (thời gian luyện âm)
+  const elapsedSeconds = Math.floor(Math.max(0, elapsedMs) / 1000);
+  const countdownSeconds = session?.mode === 'FREE_RUN' && elapsedMs < 0 ? Math.ceil(-elapsedMs / 1000) : 0;
   const activeSchedule = sessionSchedule ?? previewSchedule;
   const practiceElapsedMs = session?.mode === 'WAIT' ? waitVisualElapsedMs : elapsedMs;
   const progress =
-    session && scoreDuration > 0 && !repeatSection ? Math.min(100, (practiceElapsedMs / scoreDuration) * 100) : 0;
+    session && scoreDuration > 0 && !repeatSection
+      ? Math.min(100, Math.max(0, (practiceElapsedMs / scoreDuration) * 100))
+      : 0;
   const hasNotesOutsideKeyboard = activeSchedule?.visualNotes.some(
     (note) => note.midi < STUDIO_PIANO_MIN_MIDI || note.midi > STUDIO_PIANO_MAX_MIDI,
   );
@@ -943,6 +956,12 @@ export default function StudioPlayer() {
                 .filter(Boolean)
                 .join(' ')}
             >
+              {countdownSeconds > 0 && (
+                <div className="studio-player__countdown" role="status" aria-live="assertive">
+                  <span>{t('studioPlayer.session.getReady')}</span>
+                  <strong key={countdownSeconds}>{countdownSeconds}</strong>
+                </div>
+              )}
               {showWaterfall && (
                 <StudioWaterfall
                   notes={activeSchedule.visualNotes}

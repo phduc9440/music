@@ -33,7 +33,8 @@
     "lastResult": "Kết quả gần nhất",
     "playPrompt": "Chơi một nốt để bắt đầu",
     "waitPrompt": "Chơi các nốt đang chờ ở vạch để tiếp tục",
-    "finished": "Bài đã kết thúc"
+    "finished": "Bài đã kết thúc",
+    "getReady": "Chuẩn bị"
   },
   "results": {
     "PERFECT": "Hoàn hảo",

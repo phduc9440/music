@@ -12,7 +12,9 @@ const SEMITONE_COUNT = STUDIO_PIANO_MAX_MIDI - STUDIO_PIANO_MIN_MIDI + 1;
 const WHITE_KEY_COUNT = Array.from({ length: SEMITONE_COUNT }, (_, offset) =>
   WHITE_PITCHES.has((STUDIO_PIANO_MIN_MIDI + offset) % 12),
 ).filter(Boolean).length;
-const WATERFALL_WINDOW_MS = 4000;
+/** Khung nốt rơi trải 4 giây phía trên vạch chơi (cũng là đoạn dẫn nhập của chạy tự do). */
+export const STUDIO_WATERFALL_WINDOW_MS = 4000;
+const WATERFALL_WINDOW_MS = STUDIO_WATERFALL_WINDOW_MS;
 const FEEDBACK_LIFETIME_MS = 700;
 /** Hiệu ứng chấm điểm (chữ bay, cột sáng, tia) sống lâu hơn phần tô màu phím để kịp bay bổng. */
 const JUDGE_LIFETIME_MS = 1100;
@@ -22,6 +24,13 @@ const SPARKS = Array.from({ length: 12 }, (_, i) => ({ angle: i * 30, distance: 
 const COMBO_GLOW_MIN = 5;
 /** Từ bao nhiêu nốt hoàn hảo liên tiếp thì nhãn hiện thêm ×n. */
 const COMBO_MIN = 3;
+const JUDGE_MARKS: Record<StudioEventResult, string> = {
+  PERFECT: '✦',
+  EARLY: '◂',
+  LATE: '▸',
+  WRONG_PITCH: '✕',
+  MISSED: '✕',
+};
 
 export interface StudioVisualFeedback {
   midi: number;
@@ -278,6 +287,10 @@ export function StudioWaterfall({
                   </>
                 )}
                 <span className="studio-player__judge-label">
+                  {/* ký hiệu chỉ hướng: ◂ chơi sớm, ▸ chơi trễ, ✕ sai / bỏ lỡ, ✦ hoàn hảo (như chỉ báo early / late của osu!) */}
+                  <i className="studio-player__judge-mark" aria-hidden="true">
+                    {JUDGE_MARKS[event.result]}
+                  </i>
                   {t(`studioPlayer.results.${event.result}`)}
                   {combo >= COMBO_MIN && <strong>×{combo}</strong>}
                 </span>
