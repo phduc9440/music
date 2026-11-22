@@ -69,6 +69,10 @@ public enum CollabErrorCode implements ErrorCode {
             3123, "Gói của chủ bản nhạc chưa có tính năng đồng chỉnh sửa thời gian thực", HttpStatus.FORBIDDEN),
     LIVE_OP_INVALID(3124, "Gói thay đổi cộng tác không hợp lệ hoặc quá lớn", HttpStatus.BAD_REQUEST),
     LIVE_RATE_LIMITED(3126, "Bạn gửi thay đổi quá nhanh, hãy chậm lại một chút", HttpStatus.TOO_MANY_REQUESTS),
+    LIVE_SAVED_AS_SUGGESTION(
+            3127,
+            "Bản nhạc vừa có phiên bản mới ngoài phiên cùng sửa; thay đổi chưa lưu của phiên đã được giữ lại thành một đề xuất",
+            HttpStatus.CONFLICT),
     ;
 
     int code;

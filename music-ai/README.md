@@ -82,7 +82,10 @@ Mọi biến đều có giá trị mặc định. [`.env.example`](.env.example)
 | `STORAGE_ROOT` | `../music-be/storage` | Thư mục storage dùng chung với backend |
 | `CALLBACK_RETRIES`, `CALLBACK_TIMEOUT_S` | `3`, `10` | Số lần gọi lại callback khi lỗi và thời gian chờ mỗi lần |
 | `QUEUE_MAX` | `50` | Số job tối đa trong hàng đợi; đầy thì trả 503 |
-| `TASK_TIMEOUT_S` | `600` | Thời gian tối đa cho cả job |
+| `TASK_TIMEOUT_S` | `3600` | Trần thời gian của một job, dù nhiều trang |
+| `TASK_TIMEOUT_BASE_S` | `300` | Ngân sách cố định của một job; ngân sách thật = cơ sở + số trang × `TASK_TIMEOUT_PER_PAGE_S` (không quá trần) |
+| `TASK_TIMEOUT_PER_PAGE_S` | `180` | Thời gian cộng thêm cho mỗi trang |
+| `PROGRESS_HEARTBEAT_S` | `240` | Quá khoảng này chưa có tiến độ mới thì gửi lại tiến độ cũ để watchdog 10 phút của Java không cắt nhầm |
 | `PAGE_TIMEOUT_S` | `90` | Thời gian tối đa cho tiền xử lý mỗi trang |
 | `MAX_PAGES` | `40` | Số trang PDF tối đa mỗi job |
 | `PDF_DPI`, `MAX_SIDE_PX` | `300`, `3600` | Độ phân giải khi vẽ PDF thành ảnh; cạnh dài tối đa của ảnh làm việc |

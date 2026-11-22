@@ -297,6 +297,7 @@
         "extra": "Extra from OMR",
         "missed": "Missed by OMR"
       },
+      "liveBlocked": "Others are editing this score. Save the session and wait until everyone leaves before restoring an older version.",
       "warning": "You have unsaved changes; they will be discarded. ",
       "restoreTitle": "Restore version {version}?",
       "restoreMessage": "{warning}Its content will be saved as the newest version; existing versions stay in the history.",
@@ -758,7 +759,7 @@
       }
     },
     "panel": "Editing tools",
-    "note": "Click a note to select it (Shift to add more), then use the Pitch group or the arrow keys.",
+    "note": "Click a note to select, hold Shift for more. ↑ ↓ change the pitch.",
     "searchPlaceholder": "Search symbols (trill, fermata, repeat...)",
     "searchAria": "Search symbols",
     "empty": "No symbols match “{query}”.",
@@ -781,7 +782,7 @@
     "sub": {
       "tuplet": "Tuplets ({mod}+3 = triplet)",
       "pedal": "Pedal & octaves",
-      "section": "Section labels (placed at the start of the selected measure)",
+      "section": "Section labels (at the selected measure)",
       "breaks": "Breaks"
     },
     "mode": {
@@ -924,6 +925,7 @@
       "unknownComposer": "Composer unknown",
       "readOnly": "View only",
       "modeGroup": "View mode",
+      "page": "Page view",
       "scroll": "Horizontal scroll",
       "colorGroup": "Score colors",
       "invert": "Invert score colors",

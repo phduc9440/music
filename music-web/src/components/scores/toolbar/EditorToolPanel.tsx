@@ -13,35 +13,6 @@ import type { PitchOp } from '../../editor/notes/pitch';
 import { DURATION_DRAG_TYPE } from '../../editor/core/staffHit';
 import { hasKey, t } from '../../../i18n/core';
 import { useMediaQuery } from '../../player/hooks/useMediaQuery';
-import { Icon } from '../../ui';
-import {
-  ToolDelete,
-  ToolDot,
-  ToolEighth,
-  ToolFlat,
-  ToolHalf,
-  ToolChord,
-  ToolLyric,
-  ToolNatural,
-  ToolSlur,
-  ToolTie,
-  ToolOctaveDown,
-  ToolOctaveUp,
-  ToolPencil,
-  ToolQuarter,
-  ToolRest,
-  ToolSelect,
-  ToolSemitoneDown,
-  ToolSemitoneUp,
-  ToolSharp,
-  ToolSixteenth,
-  ToolSixtyFourth,
-  ToolStepDown,
-  ToolStepUp,
-  ToolThirtySecond,
-  ToolWhole,
-} from './ToolIcons';
-import { IconRedo, IconSave, IconUndo } from '../viewer/ViewerIcons';
 import { isMac } from '../../../utils/platform';
 
 interface Props {
@@ -101,7 +72,6 @@ const durationToolLabel = (type: DurationType): string => t(`editor.tool.duratio
 
 interface PitchTool {
   op: PitchOp;
-  icon: ReactNode;
   /** Phím tắt hiện trong tooltip. */
   shortcut: string;
 }
@@ -110,29 +80,28 @@ const MOD = isMac ? '⌘' : 'Ctrl';
 const ALT = isMac ? '⌥' : 'Alt';
 
 const PITCH_TOOLS: PitchTool[] = [
-  { op: 'stepUp', icon: <ToolStepUp />, shortcut: '↑' },
-  { op: 'stepDown', icon: <ToolStepDown />, shortcut: '↓' },
-  { op: 'semitoneUp', icon: <ToolSemitoneUp />, shortcut: `${ALT}+↑` },
-  { op: 'semitoneDown', icon: <ToolSemitoneDown />, shortcut: `${ALT}+↓` },
-  { op: 'octaveUp', icon: <ToolOctaveUp />, shortcut: `${MOD}+↑` },
-  { op: 'octaveDown', icon: <ToolOctaveDown />, shortcut: `${MOD}+↓` },
+  { op: 'stepUp', shortcut: '↑' },
+  { op: 'stepDown', shortcut: '↓' },
+  { op: 'semitoneUp', shortcut: `${ALT}+↑` },
+  { op: 'semitoneDown', shortcut: `${ALT}+↓` },
+  { op: 'octaveUp', shortcut: `${MOD}+↑` },
+  { op: 'octaveDown', shortcut: `${MOD}+↓` },
 ];
 
 interface SymbolTool {
   op: SymbolOp;
-  icon: ReactNode;
   /** Phím tắt hiện trong tooltip (nếu có). */
   shortcut?: string;
 }
 
 const SYMBOL_TOOLS: SymbolTool[] = [
-  { op: 'sharp', icon: <ToolSharp /> },
-  { op: 'flat', icon: <ToolFlat /> },
-  { op: 'natural', icon: <ToolNatural /> },
-  { op: 'tie', icon: <ToolTie />, shortcut: 'T' },
-  { op: 'slur', icon: <ToolSlur />, shortcut: 'S' },
-  { op: 'rest', icon: <ToolRest /> },
-  { op: 'delete', icon: <ToolDelete />, shortcut: 'Delete' },
+  { op: 'sharp' },
+  { op: 'flat' },
+  { op: 'natural' },
+  { op: 'tie', shortcut: 'T' },
+  { op: 'slur', shortcut: 'S' },
+  { op: 'rest' },
+  { op: 'delete', shortcut: 'Delete' },
 ];
 
 const REPEAT_OPS: MarkOp[] = [
@@ -177,14 +146,14 @@ const markDef = (op: MarkOp): { label: string; title: string } | undefined => {
   return hasKey(`${key}.label`) ? { label: t(`${key}.label`), title: t(`${key}.title`) } : undefined;
 };
 
-const DURATION_TOOLS: { type: DurationType; icon: ReactNode; key: string }[] = [
-  { type: 'whole', icon: <ToolWhole />, key: '5' },
-  { type: 'half', icon: <ToolHalf />, key: '4' },
-  { type: 'quarter', icon: <ToolQuarter />, key: '3' },
-  { type: 'eighth', icon: <ToolEighth />, key: '2' },
-  { type: '16th', icon: <ToolSixteenth />, key: '1' },
-  { type: '32nd', icon: <ToolThirtySecond />, key: '6' },
-  { type: '64th', icon: <ToolSixtyFourth />, key: '7' },
+const DURATION_TOOLS: { type: DurationType; key: string }[] = [
+  { type: 'whole', key: '5' },
+  { type: 'half', key: '4' },
+  { type: 'quarter', key: '3' },
+  { type: 'eighth', key: '2' },
+  { type: '16th', key: '1' },
+  { type: '32nd', key: '6' },
+  { type: '64th', key: '7' },
 ];
 
 /** Từ khóa thêm (tên tiếng Anh, tên gọi khác; giữ cả từ tiếng Việt để gõ kiểu nào cũng ra) để ô "Tìm ký hiệu" gõ kiểu nào cũng ra. */
@@ -316,17 +285,10 @@ interface ToolSection {
   extra?: ReactNode;
 }
 
-/** Nút có biểu tượng và nhãn nhỏ bên dưới. */
-function IconTool({
-  icon,
-  label,
-  ...rest
-}: { icon: ReactNode; label: string } & ButtonHTMLAttributes<HTMLButtonElement>) {
+/** Nút công cụ chỉ có chữ (bảng bên trái không dùng biểu tượng). */
+function LabelTool({ label, className, ...rest }: { label: string } & ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <button aria-label={label} {...rest}>
-      <span className="sv-tool__icon" aria-hidden="true">
-        {icon}
-      </span>
+    <button aria-label={label} className={`${className ?? 'sv-tool'} sv-tool--text`} {...rest}>
       <span className="sv-tool__label">{label}</span>
     </button>
   );
@@ -454,18 +416,17 @@ export default function EditorToolPanel({
       mod: 'mode',
       blocks: [
         {
-          kind: 'icon',
+          kind: 'text',
           entries: [
             {
               key: 'select',
               text: 'Chọn nốt chế độ chọn select', // i18n-ignore
               node: (
-                <IconTool
+                <LabelTool
                   className={`sv-tool${selectMode ? ' is-active' : ''}`}
                   aria-pressed={selectMode}
                   onClick={() => onInputModeChange(false)}
                   title={t('editor.tool.mode.select.title')}
-                  icon={<ToolSelect />}
                   label={t('editor.tool.mode.select.label')}
                 />
               ),
@@ -474,12 +435,11 @@ export default function EditorToolPanel({
               key: 'input',
               text: 'Nhập nốt chế độ nhập pencil', // i18n-ignore
               node: (
-                <IconTool
+                <LabelTool
                   className={`sv-tool${inputMode ? ' is-active' : ''}`}
                   aria-pressed={inputMode}
                   onClick={() => onInputModeChange(true)}
                   title={t('editor.tool.mode.input.title')}
-                  icon={<ToolPencil />}
                   label={t('editor.tool.mode.input.label')}
                 />
               ),
@@ -488,12 +448,11 @@ export default function EditorToolPanel({
               key: 'lyric',
               text: 'Lời nhập lời bài hát lyrics', // i18n-ignore
               node: (
-                <IconTool
+                <LabelTool
                   className={`sv-tool${lyricMode ? ' is-active' : ''}`}
                   aria-pressed={lyricMode}
                   onClick={() => onLyricModeChange(true)}
                   title={t('editor.tool.mode.lyric.title')}
-                  icon={<ToolLyric />}
                   label={t('editor.tool.mode.lyric.label')}
                 />
               ),
@@ -502,12 +461,11 @@ export default function EditorToolPanel({
               key: 'chord',
               text: 'Hợp âm nhập hợp âm chord', // i18n-ignore
               node: (
-                <IconTool
+                <LabelTool
                   className={`sv-tool${chordMode ? ' is-active' : ''}`}
                   aria-pressed={chordMode}
                   onClick={() => onChordModeChange(true)}
                   title={t('editor.tool.mode.chord.title')}
-                  icon={<ToolChord />}
                   label={t('editor.tool.mode.chord.label')}
                 />
               ),
@@ -519,12 +477,11 @@ export default function EditorToolPanel({
                     key: 'chordSuggest',
                     text: 'Gợi ý hợp âm AI suggest chords', // i18n-ignore
                     node: (
-                      <IconTool
+                      <LabelTool
                         className="sv-tool"
                         disabled={!!suggestChordsBlocked}
                         onClick={onSuggestChords}
                         title={suggestChordsBlocked ?? t('chords.buttonHint')}
-                        icon={<Icon name="music" size={18} />}
                         label={t('chords.button')}
                       />
                     ),
@@ -541,17 +498,16 @@ export default function EditorToolPanel({
       mod: 'pitch',
       blocks: [
         {
-          kind: 'icon',
+          kind: 'text',
           entries: PITCH_TOOLS.map((tool) => ({
             key: tool.op,
             text: `${pitchLabel(tool.op)} cao độ pitch`, // i18n-ignore
             node: (
-              <IconTool
+              <LabelTool
                 className="sv-tool"
                 disabled={needSelection}
                 onClick={() => onPitch(tool.op)}
                 title={`${pitchLabel(tool.op)} (${tool.shortcut})${selectionHint}`}
-                icon={tool.icon}
                 label={pitchLabel(tool.op)}
               />
             ),
@@ -573,13 +529,13 @@ export default function EditorToolPanel({
       extra: (
         <div className="sv-tools__actions">
           <button className="sc-btn" disabled={!canUndo || busy} onClick={onUndo}>
-            <IconUndo /> {t('editor.tool.undo')}
+            {t('editor.tool.undo')}
           </button>
           <button className="sc-btn" disabled={!canRedo || busy} onClick={onRedo}>
-            <IconRedo /> {t('editor.tool.redo')}
+            {t('editor.tool.redo')}
           </button>
           <button className="sc-btn sc-btn--primary" disabled={!canSave || busy} onClick={onSave}>
-            <IconSave /> {t('common.save')}
+            {t('common.save')}
           </button>
         </div>
       ),
@@ -590,13 +546,13 @@ export default function EditorToolPanel({
       mod: 'soon',
       blocks: [
         {
-          kind: 'icon',
+          kind: 'text',
           entries: [
             ...DURATION_TOOLS.map((tool) => ({
               key: tool.type,
               text: `${durationToolLabel(tool.type)} trường độ nốt duration`, // i18n-ignore
               node: (
-                <IconTool
+                <LabelTool
                   className={`sv-tool${inputMode && inputDuration.type === tool.type ? ' is-active' : ''}`}
                   disabled={busy}
                   draggable={!busy}
@@ -610,7 +566,6 @@ export default function EditorToolPanel({
                   aria-pressed={inputMode ? inputDuration.type === tool.type : undefined}
                   onClick={() => onDuration(tool.type)}
                   title={t('editor.tool.durationTitle', { label: durationToolLabel(tool.type), key: tool.key })}
-                  icon={tool.icon}
                   label={durationToolLabel(tool.type)}
                 />
               ),
@@ -619,13 +574,12 @@ export default function EditorToolPanel({
               key: 'dot',
               text: 'Chấm dôi dot', // i18n-ignore
               node: (
-                <IconTool
+                <LabelTool
                   className={`sv-tool${inputMode && inputDuration.dots > 0 ? ' is-active' : ''}`}
                   disabled={(!hasSelection && !inputMode) || busy}
                   aria-pressed={inputMode ? inputDuration.dots > 0 : undefined}
                   onClick={onDot}
                   title={t('editor.tool.dot.title')}
-                  icon={<ToolDot />}
                   label={t('editor.tool.dot.label')}
                 />
               ),
@@ -686,17 +640,16 @@ export default function EditorToolPanel({
       mod: 'soon',
       blocks: [
         {
-          kind: 'icon',
+          kind: 'text',
           entries: SYMBOL_TOOLS.map((tool) => ({
             key: tool.op,
             text: `${symbolLabel(tool.op)} dấu hóa nối luyến lặng xóa sharp flat natural tie slur rest delete`, // i18n-ignore
             node: (
-              <IconTool
+              <LabelTool
                 className="sv-tool"
                 disabled={needSelection}
                 onClick={() => onSymbol(tool.op)}
                 title={`${symbolLabel(tool.op)}${tool.shortcut ? ` (${tool.shortcut})` : ''}${selectionHint}`}
-                icon={tool.icon}
                 label={symbolLabel(tool.op)}
               />
             ),

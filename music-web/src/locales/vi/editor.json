@@ -297,6 +297,7 @@
         "extra": "OMR sinh thừa",
         "missed": "OMR bỏ sót"
       },
+      "liveBlocked": "Đang có người cùng sửa. Lưu phiên rồi chờ mọi người rời đi trước khi khôi phục phiên bản cũ.",
       "warning": "Bạn có thay đổi chưa lưu, chúng sẽ bị bỏ. ",
       "restoreTitle": "Khôi phục phiên bản {version}?",
       "restoreMessage": "{warning}Nội dung của nó sẽ được lưu thành phiên bản mới nhất, các phiên bản hiện có vẫn nằm trong lịch sử.",
@@ -758,7 +759,7 @@
       }
     },
     "panel": "Công cụ chỉnh sửa",
-    "note": "Bấm vào nốt để chọn (Shift để chọn thêm), rồi dùng nhóm Cao độ hoặc phím mũi tên.",
+    "note": "Bấm nốt để chọn, giữ Shift để chọn nhiều. Phím ↑ ↓ đổi cao độ.",
     "searchPlaceholder": "Tìm ký hiệu (láy, fermata, lặp...)",
     "searchAria": "Tìm ký hiệu",
     "empty": "Không có ký hiệu nào khớp “{query}”.",
@@ -781,7 +782,7 @@
     "sub": {
       "tuplet": "Chùm ({mod}+3 = chùm ba)",
       "pedal": "Pedal & quãng tám",
-      "section": "Nhãn đoạn (đặt ở đầu ô đang chọn)",
+      "section": "Nhãn đoạn (đặt ở ô đang chọn)",
       "breaks": "Ngắt đoạn"
     },
     "mode": {
@@ -924,6 +925,7 @@
       "unknownComposer": "Chưa rõ tác giả",
       "readOnly": "Chỉ xem",
       "modeGroup": "Chế độ xem",
+      "page": "Xem theo trang",
       "scroll": "Cuộn ngang",
       "colorGroup": "Màu bản nhạc",
       "invert": "Đảo màu bản nhạc",

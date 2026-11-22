@@ -69,6 +69,10 @@ public interface AiTaskRepository extends JpaRepository<AiTask, String> {
     /** Đếm số tác vụ một loại của người dùng đang ở các trạng thái cho trước (giới hạn 3 task OMR chạy cùng lúc). */
     long countByMemberIdAndTaskTypeAndStatusIn(String memberId, AiTaskType taskType, Collection<AiTaskStatus> statuses);
 
+    /** Tác vụ một loại của người dùng ở các trạng thái cho trước, tạo sau {@code after} (nhận ra upload OMR gửi trùng). */
+    List<AiTask> findByMemberIdAndTaskTypeAndStatusInAndCreatedAtAfter(
+            String memberId, AiTaskType taskType, Collection<AiTaskStatus> statuses, LocalDateTime after);
+
     /** Khóa dòng (SELECT ... FOR UPDATE) để callback, hủy và job quét không ghi đè trạng thái của nhau. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select t from AiTask t where t.id = :id")

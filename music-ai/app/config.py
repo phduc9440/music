@@ -30,8 +30,17 @@ class Settings:
     java_base_url: str
     """Địa chỉ Spring Boot để gọi callback ``/internal/ai-tasks/**``."""
 
-    task_timeout_s: int = 600
-    """Tối đa cho cả một job (10 phút, đặc tả mục 2.2)."""
+    task_timeout_s: int = 3600
+    """Trần thời gian của một job dù nhiều trang (giây). Ngân sách thật tính theo số trang, xem :meth:`task_budget_s`."""
+
+    task_timeout_base_s: int = 300
+    """Phần cố định của ngân sách một job (tách trang, ghép, xuất file)."""
+
+    task_timeout_per_page_s: int = 180
+    """Phần cộng thêm cho mỗi trang (tiền xử lý + nhận diện trên CPU)."""
+
+    progress_heartbeat_s: int = 240
+    """Không có tiến độ mới trong khoảng này thì gửi lại tiến độ cũ, để watchdog của Java (10 phút) không cắt nhầm."""
 
     page_timeout_s: int = 90
     """Tối đa cho mỗi trang (90 giây, đặc tả mục 2.2)."""
@@ -175,6 +184,9 @@ class Settings:
     llm_timeout_s: int = 30
     """Hạn mỗi lần gọi AI (giây). Đặt bằng ``OMR_LLM_TIMEOUT_S``."""
 
+    def task_budget_s(self, pages: int) -> int:
+        """Ngân sách thời gian cho job ``pages`` trang: cơ sở + số trang × hệ số, không quá ``task_timeout_s``."""
+        return min(self.task_timeout_s, self.task_timeout_base_s + max(1, pages) * self.task_timeout_per_page_s)
 
 def _bool_env(name: str, default: bool) -> bool:
     raw = os.environ.get(name)
@@ -191,6 +203,7 @@ def _float_env(name: str, default: float) -> float:
         return float(raw)
     except ValueError as exc:
         raise ValueError(f"Biến môi trường {name} phải là số, nhận được {raw!r}") from exc
+
 
 
 def _int_env(name: str, default: int) -> int:
@@ -212,7 +225,10 @@ def get_settings() -> Settings:
         storage_root=storage_root.expanduser().resolve(),
         internal_key=os.environ.get("INTERNAL_KEY") or os.environ.get("AI_INTERNAL_KEY") or DEFAULT_INTERNAL_KEY,
         java_base_url=os.environ.get("JAVA_BASE_URL", "http://localhost:8080").rstrip("/"),
-        task_timeout_s=_int_env("TASK_TIMEOUT_S", 600),
+        task_timeout_s=_int_env("TASK_TIMEOUT_S", 3600),
+        task_timeout_base_s=_int_env("TASK_TIMEOUT_BASE_S", 300),
+        task_timeout_per_page_s=_int_env("TASK_TIMEOUT_PER_PAGE_S", 180),
+        progress_heartbeat_s=_int_env("PROGRESS_HEARTBEAT_S", 240),
         page_timeout_s=_int_env("PAGE_TIMEOUT_S", 90),
         pdf_dpi=_int_env("PDF_DPI", 300),
         max_side_px=_int_env("MAX_SIDE_PX", 3600),
