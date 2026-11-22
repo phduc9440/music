@@ -14,6 +14,7 @@ import ScorePlayer from '../pages/scores/player/ScorePlayer';
 import ShowPerform from '../pages/scores/perform/ShowPerform';
 import EditorSpike from '../pages/scores/editor/EditorSpike';
 import ScoreImport from '../pages/scores/upload/ScoreImport';
+import ScoreBlank from '../pages/scores/create/ScoreBlank';
 import SharedScores from '../pages/scores/library/SharedScores';
 import PlaylistDetail from '../pages/scores/playlists/PlaylistDetail';
 import Playlists from '../pages/scores/playlists/Playlists';
@@ -94,6 +95,7 @@ const router = createBrowserRouter(
         <Route path="/scores" element={<ScoreLibrary />} />
         <Route path="/scores/upload" element={<ScoreUpload />} />
         <Route path="/scores/import" element={<ScoreImport />} />
+        <Route path="/scores/blank" element={<ScoreBlank />} />
         <Route path="/explore" element={<ExploreScores />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/billing" element={<MyPlan />} />

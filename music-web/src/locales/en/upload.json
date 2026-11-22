@@ -107,6 +107,7 @@
   "title": "Upload a score",
   "subtitle": "The system will digitize the score into MusicXML and MIDI",
   "haveXml": "Already have a MusicXML / MIDI file?",
+  "startBlank": "Start from a blank score",
   "images_one": "{count} image",
   "images_other": "{count} images",
   "onePdf": "1 PDF file",
@@ -342,6 +343,7 @@
     },
     "blank": {
       "title": "Blank score",
+      "subtitle": "Pick the instruments, key, time and number of measures, then write music right in the editor.",
       "preset": "Instrument template",
       "titlePlaceholder": "e.g. Draft no. 1",
       "key": "Key",
