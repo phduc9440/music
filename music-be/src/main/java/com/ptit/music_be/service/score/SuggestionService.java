@@ -4,6 +4,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.ptit.music_be.dto.enums.score.SuggestionFilter;
 import com.ptit.music_be.dto.enums.score.SuggestionSource;
+import com.ptit.music_be.dto.request.score.SuggestionAppliedRequest;
 import com.ptit.music_be.dto.request.score.SuggestionDecisionRequest;
 import com.ptit.music_be.dto.response.common.PageResponse;
 import com.ptit.music_be.dto.response.score.SuggestionDetailResponse;
@@ -70,6 +71,12 @@ public interface SuggestionService {
      * Từ chối đề xuất (OUTDATED nếu lúc này đã lỗi thời). Cần quyền sửa. Lỗi như {@link #accept} trừ các lỗi về
      * If-Match, ô được chọn và lỗi thời.
      */
+    /**
+     * Đánh dấu đề xuất đã được áp dụng trong trình chỉnh sửa (người sửa nạp làm bản nháp rồi tự lưu): ACCEPTED, mọi ô
+     * ACCEPTED, {@code appliedVersion} là phiên bản đã lưu. Không lưu thêm phiên bản. Cần quyền sửa.
+     */
+    SuggestionDetailResponse markApplied(String suggestionId, SuggestionAppliedRequest request);
+
     SuggestionDetailResponse reject(String suggestionId, SuggestionDecisionRequest request);
 
     /** Người đề xuất rút lại đề xuất còn mở. Lỗi: SUGGESTION_NOT_OPEN (3114), UNAUTHORIZED (1002). */

@@ -169,7 +169,9 @@
     "chord": {
       "set": "Nhập hợp âm",
       "clear": "Xóa hợp âm",
-      "paste": "Dán hợp âm"
+      "paste": "Dán hợp âm",
+      "ai": "Thêm hợp âm AI gợi ý",
+      "aiDiscard": "Bỏ hợp âm AI gợi ý"
     },
     "lyric": {
       "set": "Nhập lời",

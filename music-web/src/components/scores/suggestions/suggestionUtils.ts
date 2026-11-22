@@ -25,3 +25,7 @@ export const staleMessage = (reason?: SuggestionStaleReason | null): string => {
 /** Đường dẫn trang xem xét một đề xuất. */
 export const suggestionPath = (base: string, scoreId: string, suggestionId: string): string =>
   `${base}/${scoreId}/suggestions/${suggestionId}`;
+
+/** Trình chỉnh sửa nạp sẵn gợi ý hợp âm `suggestionId` làm bản nháp (chỉ dùng cho người sửa được bản nhạc). */
+export const aiChordsEditPath = (base: string, scoreId: string, suggestionId: string): string =>
+  `${base}/${scoreId}/edit?aiChords=${encodeURIComponent(suggestionId)}`;

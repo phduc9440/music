@@ -169,7 +169,9 @@
     "chord": {
       "set": "Enter chord",
       "clear": "Delete chord",
-      "paste": "Paste chords"
+      "paste": "Paste chords",
+      "ai": "Add AI chord suggestions",
+      "aiDiscard": "Remove AI chord suggestions"
     },
     "lyric": {
       "set": "Enter lyrics",

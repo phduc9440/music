@@ -8,20 +8,24 @@ import { t } from '../../../i18n/core';
 import Skeleton from '../../ui/Skeleton';
 import { Icon } from '../../ui';
 import ChordSuggestDialog from '../chords/ChordSuggestDialog';
-import { statusTone, suggestionPath } from './suggestionUtils';
+import { aiChordsEditPath, statusTone, suggestionPath } from './suggestionUtils';
+import { useNavigate } from '../../../routes/useTransitionNavigate';
 import './suggestions.css';
 
 const FILTERS: SuggestionFilter[] = ['OPEN', 'CLOSED', 'ALL'];
 
 interface Props {
   scoreId: string;
+  /** Sửa được bản nhạc: gợi ý hợp âm xong thì mở thẳng trình chỉnh sửa với hợp âm AI làm bản nháp. */
+  canEdit?: boolean;
   /** Báo trang cha số đề xuất đang mở để hiện trên tab. */
   onOpenCount?: (count: number) => void;
 }
 
 /** Tab "Đề xuất" của trang chi tiết bản nhạc (mục 4.3): danh sách đề xuất, lọc Đang mở / Đã đóng / Tất cả. */
-export default function SuggestionsSection({ scoreId, onOpenCount }: Props) {
+export default function SuggestionsSection({ scoreId, canEdit = false, onOpenCount }: Props) {
   const base = useScoreBase();
+  const navigate = useNavigate();
   const [filter, setFilter] = useState<SuggestionFilter>('OPEN');
   const [items, setItems] = useState<SuggestionSummary[] | null>(null);
   const [suggestingChords, setSuggestingChords] = useState(false);
@@ -75,7 +79,13 @@ export default function SuggestionsSection({ scoreId, onOpenCount }: Props) {
           {t('chords.button')}
         </button>
       </div>
-      {suggestingChords && <ChordSuggestDialog scoreId={scoreId} onClose={() => setSuggestingChords(false)} />}
+      {suggestingChords && (
+        <ChordSuggestDialog
+          scoreId={scoreId}
+          onClose={() => setSuggestingChords(false)}
+          onCompleted={canEdit ? (id) => navigate(aiChordsEditPath(base, scoreId, id)) : undefined}
+        />
+      )}
 
       {items === null ? (
         <Skeleton height={64} />

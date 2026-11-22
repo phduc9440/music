@@ -28,6 +28,8 @@ import TextEditPopover from '../toolbar/TextEditPopover';
 import type { TextKind } from '../toolbar/TextEditPopover';
 import { initialsOf } from '../../editor/live/presence';
 import '../../editor/editor.css';
+import { applyAiChords, flashAiChord } from '../chords/aiChordHighlight';
+import type { AiChordMark } from '../chords/aiChordHighlight';
 import '../../editor/live/live.css';
 
 interface Props {
@@ -90,6 +92,10 @@ interface Props {
   commentRanges?: readonly CommentRange[];
   /** Bấm bong bóng góp ý: trả về id các góp ý kết thúc ở ô đó. */
   onCommentBubble?: (ids: string[]) => void;
+  /** Hợp âm AI gợi ý còn trên bản nhạc (bản nháp chưa lưu): tô chữ hợp âm và nốt mang nó. */
+  aiChords?: readonly AiChordMark[];
+  /** Cuộn tới một hợp âm AI và cho nó nhấp sáng; `key` đổi để yêu cầu lại cùng một hợp âm. */
+  aiFocus?: { mark: AiChordMark; key: number } | null;
   /** Thêm nốt tại vị trí trên khuông (bấm hoặc kéo-thả); trả về true nếu thêm được. Có prop này thì canvas nhận kéo-thả. */
   onInsertNote?: (target: InsertTarget, choice: DurationChoice, accidental: AccidentalChoice) => boolean;
 }
@@ -155,6 +161,7 @@ const TEXT_HOT_CLASS = 'ed-text-hot';
 const COMMENT_BOX_CLASS = 'ed-comment-box';
 const COMMENT_BUBBLE_CLASS = 'ed-comment-bubble';
 const EMPTY_COMMENTS: readonly CommentRange[] = [];
+const EMPTY_AI: readonly AiChordMark[] = [];
 
 /**
  * Phủ vùng bấm lên các chữ đầu bản nhạc (tiêu đề, tác giả, tempo) để mở khung sửa. Tìm chữ trong SVG theo nội dung
@@ -472,6 +479,8 @@ export default function ScoreCanvas({
   onMeasureRange,
   commentRanges = EMPTY_COMMENTS,
   onCommentBubble,
+  aiChords = EMPTY_AI,
+  aiFocus = null,
   onSelectNotes,
   onDragPitch,
   inputMode = false,
@@ -553,6 +562,7 @@ export default function ScoreCanvas({
     openText,
     commentRanges,
     onCommentBubble,
+    aiChords,
   });
   useEffect(() => {
     latest.current = {
@@ -575,6 +585,7 @@ export default function ScoreCanvas({
       openText,
       commentRanges,
       onCommentBubble,
+      aiChords,
     };
   });
 
@@ -612,6 +623,7 @@ export default function ScoreCanvas({
       drawIssueBoxes(host, latest.current.issueMeasures, (i) => latest.current.onConfirmMeasure?.(i));
       drawCommentBoxes(host, latest.current.commentRanges, (ids) => latest.current.onCommentBubble?.(ids));
       drawLockBoxes(host, latest.current.lockBoxes);
+      applyAiChords(host, latest.current.aiChords);
       if (latest.current.openText) drawTextHotspots(host, current, (k, r) => latest.current.openText?.(k, r));
     } catch {
       // chỉ mất khả năng chọn nốt, bản nhạc vẫn xem được
@@ -805,6 +817,19 @@ export default function ScoreCanvas({
     const host = hostRef.current;
     if (host) drawLockBoxes(host, latest.current.lockBoxes);
   }, [lockKey]);
+
+  // Tô lại hợp âm AI khi danh sách đổi (so theo nội dung, không theo tham chiếu mảng)
+  const aiKey = aiChords.map((m) => `${m.id}=${m.text}`).join('|');
+  useEffect(() => {
+    const host = hostRef.current;
+    if (host) applyAiChords(host, latest.current.aiChords);
+  }, [aiKey]);
+
+  // Bấm một hợp âm trong bảng Hợp âm AI: cuộn tới và nhấp sáng
+  useEffect(() => {
+    const host = hostRef.current;
+    if (host && aiFocus) flashAiChord(host, aiFocus.mark);
+  }, [aiFocus]);
 
   // Cuộn tới ô nhịp được yêu cầu (bấm cảnh báo trên thanh trạng thái)
   useEffect(() => {

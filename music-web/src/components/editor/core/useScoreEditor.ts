@@ -215,6 +215,11 @@ export interface ScoreEditor {
   selectInChord: (delta: 1 | -1) => void;
   undo: () => void;
   redo: () => void;
+  /**
+   * Chạy một lệnh đã dựng sẵn bên ngoài (ví dụ nạp hợp âm AI gợi ý): kiểm tra khóa ô, vào lịch sử hoàn tác, gửi cho
+   * phiên đồng chỉnh sửa. Trả về false nếu không chạy được (không có quyền, lệnh lỗi, ô đang bị người khác giữ).
+   */
+  applyEdit: (result: EditResult) => boolean;
   save: (force?: boolean) => Promise<void>;
   /** Chế độ `suggest`: đề xuất đã gửi xong, coi như đã lưu và xóa nháp. */
   finishSuggestion: () => void;
@@ -598,6 +603,16 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
       if (leftover > 0) toast.warn(t('editor.toast.chordsLeft', { count: leftover }));
     },
     [canEdit, selection, doc, commit],
+  );
+
+  const applyEdit = useCallback(
+    (result: EditResult): boolean => {
+      if (!canEdit) return false;
+      commit(result, false);
+      // commit bỏ lệnh (và trả các ô về như cũ) khi ô đang bị người khác giữ: khi đó lệnh không nằm ở đỉnh lịch sử
+      return result.ok && historyRef.current.nextUndo === result.command;
+    },
+    [canEdit, commit],
   );
 
   const applyMark = useCallback(
@@ -1215,6 +1230,7 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     selectInChord,
     undo,
     redo,
+    applyEdit,
     save,
     finishSuggestion,
     restoreDraft,

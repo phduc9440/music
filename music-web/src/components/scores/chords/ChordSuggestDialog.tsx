@@ -17,6 +17,11 @@ const PENDING_CODE = 3132;
 interface Props {
   scoreId: string;
   onClose: () => void;
+  /**
+   * Gợi ý xong: nơi mở hộp tự xử lý (ví dụ nạp vào trình chỉnh sửa làm bản nháp). Không truyền thì mở trang duyệt đề
+   * xuất như cũ.
+   */
+  onCompleted?: (suggestionId: string) => void;
 }
 
 /** Lỗi của tác vụ (mã đứng trước dấu ":" trong errorMessage) dịch theo chords.taskErrors, mã lạ thì báo chung. */
@@ -29,7 +34,7 @@ function taskErrorText(message?: string | null): string {
  * Hộp "Gợi ý hợp âm" (R3): chọn phong cách, tạo tác vụ, chờ xong rồi mở trang duyệt đề xuất do hệ thống gửi.
  * Đóng hộp khi đang chạy thì tác vụ vẫn chạy ở máy chủ; đề xuất sẽ có ở tab Đề xuất và trong thông báo.
  */
-export default function ChordSuggestDialog({ scoreId, onClose }: Props) {
+export default function ChordSuggestDialog({ scoreId, onClose, onCompleted }: Props) {
   const navigate = useNavigate();
   const base = useScoreBase();
   const [style, setStyle] = useState<ChordStyle>('POP');
@@ -40,7 +45,8 @@ export default function ChordSuggestDialog({ scoreId, onClose }: Props) {
   const onFinished = (task: AiTaskInfo) => {
     const suggestionId = task.resultData?.suggestionId;
     if (task.status === 'COMPLETED' && typeof suggestionId === 'string') {
-      navigate(suggestionPath(base, scoreId, suggestionId));
+      if (onCompleted) onCompleted(suggestionId);
+      else navigate(suggestionPath(base, scoreId, suggestionId));
       return;
     }
     setError(task.status === 'CANCELLED' ? t('chords.cancelled') : taskErrorText(task.errorMessage));
@@ -107,13 +113,15 @@ export default function ChordSuggestDialog({ scoreId, onClose }: Props) {
       </div>
 
       {error && (
-        <div className="sc-error" role="alert">
-          {error}
+        <div className="sc-error cs-error" role="alert">
+          <span>{error}</span>
           {pendingId && (
             <button
               type="button"
               className="sc-btn sc-btn--sm cs-open"
-              onClick={() => navigate(suggestionPath(base, scoreId, pendingId))}
+              onClick={() =>
+                onCompleted ? onCompleted(pendingId) : navigate(suggestionPath(base, scoreId, pendingId))
+              }
             >
               {t('chords.dialog.openPending')}
             </button>
