@@ -179,9 +179,14 @@ export default function ScoreUpload() {
             <h1>{t('upload.title')}</h1>
             <p>{t('upload.subtitle')}</p>
           </div>
-          <button type="button" className="sc-btn" disabled={busy} onClick={() => navigate('/scores/import')}>
-            {t('upload.haveXml')}
-          </button>
+          <div className="sc-upload__head-actions">
+            <button type="button" className="sc-btn" disabled={busy} onClick={() => navigate('/scores/import')}>
+              {t('upload.haveXml')}
+            </button>
+            <button type="button" className="sc-btn" disabled={busy} onClick={() => navigate('/scores/blank')}>
+              {t('upload.startBlank')}
+            </button>
+          </div>
         </header>
 
         <form className="sc-upload" onSubmit={handleSubmit}>
