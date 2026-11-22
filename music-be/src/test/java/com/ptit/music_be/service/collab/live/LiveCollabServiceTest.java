@@ -18,6 +18,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalLong;
 import java.util.function.Supplier;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -30,6 +31,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ptit.music_be.dto.enums.score.SuggestionSource;
 import com.ptit.music_be.dto.response.score.ScoreContent;
 import com.ptit.music_be.dto.response.score.ScoreSaveResponse;
 import com.ptit.music_be.entity.ScoreLiveOp;
@@ -41,6 +43,7 @@ import com.ptit.music_be.repository.score.ScoreLiveOpRepository;
 import com.ptit.music_be.service.collab.live.LiveAccess.Access;
 import com.ptit.music_be.service.collab.live.LiveMessages.JoinRequest;
 import com.ptit.music_be.service.collab.live.LiveMessages.JoinResult;
+import com.ptit.music_be.service.collab.live.LiveMessages.LiveError;
 import com.ptit.music_be.service.collab.live.LiveMessages.LockRequest;
 import com.ptit.music_be.service.collab.live.LiveMessages.LockResult;
 import com.ptit.music_be.service.collab.live.LiveMessages.MeasureChange;
@@ -52,6 +55,7 @@ import com.ptit.music_be.service.collab.live.LiveMessages.StructuralChange;
 import com.ptit.music_be.service.collab.live.LiveMessages.VersionBroadcast;
 import com.ptit.music_be.service.score.ScoreContentService;
 import com.ptit.music_be.service.score.ScoreEditService;
+import com.ptit.music_be.service.score.SuggestionService;
 import com.ptit.music_be.utils.MeasureHasher;
 import com.ptit.music_be.utils.MusicXmlInspector;
 
@@ -115,6 +119,9 @@ class LiveCollabServiceTest {
     ScoreLiveOpRepository opRepository;
 
     @Mock
+    SuggestionService suggestionService;
+
+    @Mock
     SimpMessagingTemplate messaging;
 
     final LiveSessionRegistry registry = new LiveSessionRegistry();
@@ -133,6 +140,7 @@ class LiveCollabServiceTest {
                 scoreContentService,
                 scoreEditService,
                 opRepository,
+                suggestionService,
                 messaging,
                 new ObjectMapper(),
                 clock);
@@ -396,6 +404,103 @@ class LiveCollabServiceTest {
         assertThat(registry.find(SCORE, "A")).isNull();
         assertThat(locks.snapshot(SCORE, clock.now).locks()).isEmpty();
         assertThat(registry.isActive(SCORE)).isTrue();
+    }
+
+    // ---------------------------------------------------------------- COL-T01: phát lại thao tác chưa lưu
+
+    private static final String MEASURE_2_E = "<measure number=\"2\">" + note("E") + "</measure>";
+    private static final String MEASURE_2_F = "<measure number=\"2\">" + note("F") + "</measure>";
+
+    private static ScoreLiveOp logged(long seq, String opId, String measureXml) throws Exception {
+        OpBroadcast op = new OpBroadcast(
+                SCORE,
+                seq,
+                opId,
+                "old-session",
+                "m-owner",
+                List.of(new LiveMessages.MeasureXml(0, 1, measureXml, hashOf(measureXml))),
+                null,
+                null);
+        return ScoreLiveOp.builder()
+                .scoreId(SCORE)
+                .seq(seq)
+                .opId(opId)
+                .memberId("m-owner")
+                .payload(new ObjectMapper().writeValueAsString(op))
+                .build();
+    }
+
+    @Test
+    void opsAfterTheLastLiveSnapshotAreReplayedAndSavedRightAway() throws Exception {
+        when(scoreContentService.liveSeqOfCurrent(SCORE)).thenReturn(OptionalLong.of(0));
+        when(opRepository.maxSeq(SCORE)).thenReturn(2L);
+        when(opRepository.findByScoreIdAndSeqGreaterThanOrderBySeqAsc(eq(SCORE), eq(0L), any(Pageable.class)))
+                .thenReturn(List.of(logged(1, "op-1", MEASURE_2_E), logged(2, "op-2", MEASURE_2_F)));
+        when(scoreEditService.saveLiveSnapshot(eq(SCORE), any(byte[].class), eq("\"v3\""), any()))
+                .thenReturn(ScoreSaveResponse.builder().version(4).build());
+
+        JoinResult result = join("A", OWNER, -1);
+
+        assertThat(result.seq()).isEqualTo(2);
+        assertThat(result.xml()).contains("<step>F</step>").doesNotContain("<step>D</step>");
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, Object>> meta = ArgumentCaptor.forClass(Map.class);
+        ArgumentCaptor<byte[]> saved = ArgumentCaptor.forClass(byte[].class);
+        verify(scoreEditService).saveLiveSnapshot(eq(SCORE), saved.capture(), eq("\"v3\""), meta.capture());
+        assertThat(new String(saved.getValue(), StandardCharsets.UTF_8)).contains("<step>F</step>");
+        assertThat(meta.getValue()).containsEntry("seqFrom", 1L).containsEntry("seqTo", 2L);
+    }
+
+    @Test
+    void replayStopsAtAMissingOpButNeverReusesItsSeq() throws Exception {
+        when(scoreContentService.liveSeqOfCurrent(SCORE)).thenReturn(OptionalLong.of(0));
+        when(opRepository.maxSeq(SCORE)).thenReturn(3L);
+        when(opRepository.findByScoreIdAndSeqGreaterThanOrderBySeqAsc(eq(SCORE), eq(0L), any(Pageable.class)))
+                .thenReturn(List.of(logged(1, "op-1", MEASURE_2_E), logged(3, "op-3", MEASURE_2_F)));
+        when(scoreEditService.saveLiveSnapshot(eq(SCORE), any(byte[].class), any(), any()))
+                .thenReturn(ScoreSaveResponse.builder().version(4).build());
+
+        JoinResult result = join("A", OWNER, -1);
+
+        assertThat(result.seq()).isEqualTo(3);
+        assertThat(result.xml()).contains("<step>E</step>").doesNotContain("<step>F</step>");
+    }
+
+    @Test
+    void nothingIsReplayedWhenTheCurrentVersionIsNotALiveSnapshot() {
+        when(opRepository.maxSeq(SCORE)).thenReturn(5L);
+
+        JoinResult result = join("A", OWNER, -1);
+
+        assertThat(result.seq()).isEqualTo(5);
+        assertThat(result.xml()).contains("<step>D</step>");
+        verify(scoreEditService, never()).saveLiveSnapshot(any(), any(), any(), any());
+    }
+
+    // ---------------------------------------------------------------- COL-T02: lệch version thì giữ thành đề xuất
+
+    @Test
+    void versionConflictKeepsTheSessionWorkAsASuggestionAndTellsEditors() {
+        when(scoreEditService.saveLiveSnapshot(eq(SCORE), any(byte[].class), any(), any()))
+                .thenThrow(new AppException(ScoreErrorCode.SCORE_VERSION_CONFLICT));
+        join("A", OWNER, -1);
+        lock("A", OWNER, new MeasureRef(0, 1));
+        service.ops(SCORE, "A", OWNER, edit("op-1", 0, MEASURE_2, MEASURE_2_E));
+
+        service.save(SCORE, "A");
+
+        ArgumentCaptor<byte[]> kept = ArgumentCaptor.forClass(byte[].class);
+        verify(suggestionService)
+                .createFromSystem(
+                        eq(SCORE), kept.capture(), eq(3), eq(SuggestionSource.LIVE_RECOVERY), any(), any());
+        assertThat(new String(kept.getValue(), StandardCharsets.UTF_8)).contains("<step>E</step>");
+        verify(messaging)
+                .convertAndSendToUser(
+                        eq(OWNER),
+                        eq("/queue/live-errors"),
+                        argThat((Object e) -> e instanceof LiveError le
+                                && le.code() == CollabErrorCode.LIVE_SAVED_AS_SUGGESTION.getCode()));
+        assertThat(service.openScoreIds()).isEmpty();
     }
 
     private OpRejected lastRejected(String email) {

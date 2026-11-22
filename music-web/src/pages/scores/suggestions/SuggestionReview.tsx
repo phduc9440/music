@@ -223,6 +223,7 @@ export default function SuggestionReview() {
               </span>
               {detail.structural && <span className="sg-badge">{t('suggestions.section.structural')}</span>}
               {detail.source === 'CHORD_GENERATION' && <span className="sg-badge">{t('chords.sourceLabel')}</span>}
+              {detail.source === 'LIVE_RECOVERY' && <span className="sg-badge">{t('live.recoveredBadge')}</span>}
             </div>
             <h1 className="sr-title">{detail.title}</h1>
             <p className="sr-meta">

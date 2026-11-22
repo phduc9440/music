@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
@@ -15,6 +16,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.client.RestClientException;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ptit.music_be.client.AiServiceClient;
 import com.ptit.music_be.dto.enums.score.FileType;
 import com.ptit.music_be.dto.response.score.ScoreContent;
@@ -45,6 +49,9 @@ public class ScoreContentServiceImpl implements ScoreContentService {
 
     /** Số ổ khóa chặn sinh lại MIDI trùng; chọn khóa theo hash scoreId nên bộ nhớ không tăng theo số bản nhạc. */
     static final int LOCK_STRIPES = 64;
+
+    /** Chỉ đọc meta JSON nhỏ của file; không cần cấu hình của ObjectMapper dùng chung. */
+    private static final ObjectMapper META_READER = new ObjectMapper();
 
     ScoreRepository scoreRepository;
     ScoreFileRepository scoreFileRepository;
@@ -84,6 +91,33 @@ public class ScoreContentServiceImpl implements ScoreContentService {
         ScoreFile xml = currentFile(scoreId, FileType.MUSICXML)
                 .orElseThrow(() -> new AppException(ScoreErrorCode.MUSICXML_NOT_READY));
         return new ScoreContent(readBytes(xml.getStoragePath()), versionOf(xml));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public OptionalLong liveSeqOfCurrent(String scoreId) {
+        return currentFile(scoreId, FileType.MUSICXML)
+                .map(ScoreFile::getMeta)
+                .map(ScoreContentServiceImpl::liveSeqOf)
+                .orElse(OptionalLong.empty());
+    }
+
+    /** {@code seqTo} trong meta của version do phiên cùng sửa lưu; rỗng nếu meta khác hoặc hỏng. */
+    static OptionalLong liveSeqOf(String meta) {
+        if (meta == null || meta.isBlank()) {
+            return OptionalLong.empty();
+        }
+        try {
+            JsonNode node = META_READER.readTree(meta);
+            JsonNode seqTo = node.path("seqTo");
+            if (!"LIVE".equals(node.path("source").asText()) || !seqTo.canConvertToLong()) {
+                return OptionalLong.empty();
+            }
+            return OptionalLong.of(seqTo.asLong());
+        } catch (JsonProcessingException e) {
+            log.warn("Meta của MusicXML hỏng, bỏ qua phát lại phiên cùng sửa: {}", e.getMessage());
+            return OptionalLong.empty();
+        }
     }
 
     @Override
