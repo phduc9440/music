@@ -891,3 +891,21 @@
     display: none;
   }
 }
+
+/* Vạch phát kiểu MuseScore: vạch dọc phủ cả hệ khuông, trượt theo nốt đang phát (vị trí đặt bằng transform mỗi khung hình) */
+.pl-playhead {
+  position: absolute;
+  top: 0;
+  left: -1.5px;
+  z-index: 3;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--ui-note-playing);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--ui-note-playing) 18%, transparent);
+  opacity: 0.85;
+  pointer-events: none;
+  will-change: transform;
+}
+.pl-playhead[hidden] {
+  display: none;
+}

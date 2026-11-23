@@ -107,6 +107,11 @@ export default function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: Pr
     editor.revision,
     selectionRef,
   );
+  // Tên bài / tác giả của bản nhạc: file chưa ghi thì vẽ các chữ này (vẫn trống thì "Blank") lên bản nhạc
+  const headerFallback = useMemo(
+    () => ({ title: score.title, composer: score.composer }),
+    [score.title, score.composer],
+  );
   const issueMeasures = useMemo(() => new Set(editor.issues.map((i) => i.measureIndex)), [editor.issues]);
 
   const comments = useScoreComments({
@@ -280,6 +285,9 @@ export default function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: Pr
             mutedStaves={player.mutedStaves}
             loopRange={loopRange}
             followMeasure={player.status === 'playing' ? player.followMeasure : null}
+            headerFallback={headerFallback}
+            playEngine={playerOpen ? player.engine : null}
+            playTimeline={playerOpen ? player.timeline : null}
             // Người nhận xét cũng bôi đen / bấm chọn nốt được (để góp ý), nhưng không sửa được
             onSelectNotes={canEdit || canComment ? editor.select : undefined}
             onDragPitch={canEdit ? editor.dragPitch : undefined}

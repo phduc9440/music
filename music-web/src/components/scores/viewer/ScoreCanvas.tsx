@@ -18,11 +18,16 @@ import type { StaffSpot } from '../../editor/core/staffHit';
 import { t } from '../../../i18n/core';
 import { ZOOM_MAX, ZOOM_MIN, clampZoom } from '../../../utils/viewer';
 import type { ViewMode } from '../../../utils/viewer';
-import { applyHeaderStyle, readHeader } from '../../editor/structure/header';
+import { applyHeaderStyle, readHeader, shownHeader } from '../../editor/structure/header';
+import type { ShownHeader } from '../../editor/structure/header';
 import type { HeaderField, HeaderState, TextStyle } from '../../editor/structure/header';
 import { readTempo } from '../../editor/structure/tempo';
 import type { TempoInfo } from '../../editor/structure/tempo';
 import { applyMutedTracks, applyPlaying, keepMeasureVisible, measureOfEvent } from '../../player/engine/highlight';
+import { buildPlayheadMap, playheadAt, PLAYHEAD_CLASS } from '../../player/engine/playhead';
+import type { PlayheadMap } from '../../player/engine/playhead';
+import type { PlayerEngine } from '../../player/engine/PlayerEngine';
+import type { Timeline } from '../../player/engine/timeline';
 import NoteInsertPopover from '../toolbar/NoteInsertPopover';
 import TextEditPopover from '../toolbar/TextEditPopover';
 import type { TextKind } from '../toolbar/TextEditPopover';
@@ -78,6 +83,14 @@ interface Props {
   mutedStaves?: ReadonlySet<string>;
   /** Ô nhịp (từ 0) cần giữ trong khung nhìn khi phát; null = không tự cuộn. */
   followMeasure?: number | null;
+  /**
+   * Tên bài / tác giả của bản nhạc (Editor): file chưa ghi thì vẽ các chữ này lên bản nhạc, vẫn trống thì vẽ "Blank" để
+   * thấy chỗ trống và bấm vào sửa. Bỏ trống prop thì chỉ vẽ những gì có trong file.
+   */
+  headerFallback?: { title?: string | null; composer?: string | null } | null;
+  /** Bộ phát và dòng thời gian của nó: có thì vẽ vạch phát chạy theo vị trí đang phát (kiểu MuseScore). */
+  playEngine?: PlayerEngine | null;
+  playTimeline?: Timeline | null;
   /** Bấm vào một nốt khi không có `onSelectNotes` (trang phát): trả về ô nhịp của nốt đó (từ 0). */
   onMeasureClick?: (measureIndex: number, additive: boolean) => void;
   /** Số nửa cung chuyển giọng khi VẼ bản nhạc (trang phát). 0 = giọng gốc. Editor không dùng để khỏi nhầm khi đang sửa nốt. */
@@ -167,13 +180,21 @@ const EMPTY_AI: readonly AiChordMark[] = [];
  * Phủ vùng bấm lên các chữ đầu bản nhạc (tiêu đề, tác giả, tempo) để mở khung sửa. Tìm chữ trong SVG theo nội dung
  * đã biết từ MusicXML nên không phụ thuộc cấu trúc bên trong OSMD.
  */
+/** Chữ tiêu đề / tác giả cần vẽ khi có `fallback` (Editor), hoặc undefined để vẽ đúng như file. */
+const shownOf = (
+  doc: ScoreDocument,
+  fallback: { title?: string | null; composer?: string | null } | null,
+): ShownHeader | undefined => (fallback ? shownHeader(readHeader(doc), fallback) : undefined);
+
 const drawTextHotspots = (
   host: HTMLElement,
   doc: ScoreDocument,
   onOpen: (kind: TextKind, rect: DOMRect) => void,
+  shown?: ShownHeader,
 ): void => {
   host.querySelectorAll(`.${TEXT_HOT_CLASS}`).forEach((el) => el.remove());
-  const header = readHeader(doc);
+  // Chữ đang vẽ (kể cả tên bản nhạc / "Blank" điền vào chỗ trống) để bấm vào chỗ trống cũng sửa được
+  const header = shown ?? readHeader(doc);
   const tempo = readTempo(doc);
   const origin = host.getBoundingClientRect();
   const texts = Array.from(host.querySelectorAll('svg text'));
@@ -472,6 +493,9 @@ export default function ScoreCanvas({
   playing = EMPTY_SET,
   mutedStaves = EMPTY_SET,
   followMeasure = null,
+  playEngine = null,
+  playTimeline = null,
+  headerFallback = null,
   onMeasureClick,
   loopRange = null,
   transpose = 0,
@@ -493,6 +517,8 @@ export default function ScoreCanvas({
   const scrollRef = useRef<HTMLDivElement>(null);
   const hostRef = useRef<HTMLDivElement>(null);
   const osmdRef = useRef<OpenSheetMusicDisplay | null>(null);
+  // Bảng vị trí của vạch phát; xóa sau mỗi lần vẽ lại để dựng lại theo hình mới
+  const playheadMapRef = useRef<PlayheadMap | null>(null);
   const gestureRef = useRef<Gesture | null>(null);
   const suppressClickRef = useRef(false);
   const hoverRef = useRef({ x: 0, y: 0, frame: 0 });
@@ -563,6 +589,7 @@ export default function ScoreCanvas({
     commentRanges,
     onCommentBubble,
     aiChords,
+    headerFallback,
   });
   useEffect(() => {
     latest.current = {
@@ -586,6 +613,7 @@ export default function ScoreCanvas({
       commentRanges,
       onCommentBubble,
       aiChords,
+      headerFallback,
     };
   });
 
@@ -613,6 +641,7 @@ export default function ScoreCanvas({
   const decorate = useCallback((osmd: OpenSheetMusicDisplay) => {
     const host = hostRef.current;
     const current = latest.current.doc;
+    playheadMapRef.current = null;
     if (!host || !current) return;
     try {
       bindNoteIds(osmd, current, host);
@@ -624,11 +653,65 @@ export default function ScoreCanvas({
       drawCommentBoxes(host, latest.current.commentRanges, (ids) => latest.current.onCommentBubble?.(ids));
       drawLockBoxes(host, latest.current.lockBoxes);
       applyAiChords(host, latest.current.aiChords);
-      if (latest.current.openText) drawTextHotspots(host, current, (k, r) => latest.current.openText?.(k, r));
+      if (latest.current.openText) {
+        drawTextHotspots(
+          host,
+          current,
+          (k, r) => latest.current.openText?.(k, r),
+          shownOf(current, latest.current.headerFallback),
+        );
+      }
     } catch {
       // chỉ mất khả năng chọn nốt, bản nhạc vẫn xem được
     }
   }, []);
+
+  // Vạch phát: mỗi khung hình khi đang phát (đứng yên khi tạm dừng), ẩn khi dừng hẳn
+  useEffect(() => {
+    const host = hostRef.current;
+    if (!host || !playEngine || !playTimeline) return;
+    const bar = document.createElement('div');
+    bar.className = PLAYHEAD_CLASS;
+    bar.setAttribute('aria-hidden', 'true');
+    bar.hidden = true;
+    playheadMapRef.current = null;
+    let frame = 0;
+    const update = () => {
+      const osmd = osmdRef.current;
+      if (playEngine.getStatus() === 'stopped' || !osmd) {
+        bar.hidden = true;
+        return;
+      }
+      if (!bar.isConnected) host.appendChild(bar); // OSMD vẽ lại có thể gỡ phần tử lạ khỏi khung
+      try {
+        playheadMapRef.current ??= buildPlayheadMap(osmd, host, playTimeline);
+        const spot = playheadAt(playheadMapRef.current, playTimeline, playEngine.position());
+        bar.hidden = !spot;
+        if (spot) {
+          bar.style.transform = `translate(${spot.x}px, ${spot.top}px)`;
+          bar.style.height = `${spot.bottom - spot.top}px`;
+        }
+      } catch {
+        bar.hidden = true; // hình học OSMD không đọc được: chỉ mất vạch phát
+      }
+    };
+    const loop = () => {
+      update();
+      if (playEngine.getStatus() === 'playing') frame = requestAnimationFrame(loop);
+    };
+    const restart = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(loop);
+    };
+    const unsubscribe = playEngine.subscribe(restart);
+    restart();
+    return () => {
+      cancelAnimationFrame(frame);
+      unsubscribe();
+      bar.remove();
+    };
+    // drawnKey: vẽ lại xong (zoom, đổi chế độ...) thì dựng lại để vạch đứng đúng chỗ cả khi đang tạm dừng
+  }, [playEngine, playTimeline, drawnKey]);
 
   // Nạp thư viện và MusicXML khi XML đổi
   useEffect(() => {
@@ -694,7 +777,10 @@ export default function ScoreCanvas({
           defaultColorMusic: readCssColor('--ui-staff-ink', 'black'),
         });
         osmd.zoom = zoom / 100;
-        if (latest.current.doc) applyHeaderStyle(osmd, readHeader(latest.current.doc));
+        if (latest.current.doc) {
+          const header = readHeader(latest.current.doc);
+          applyHeaderStyle(osmd, header, shownOf(latest.current.doc, latest.current.headerFallback));
+        }
         syncTranspose(osmd, transpose);
         osmd.render();
         decorate(osmd);
@@ -742,7 +828,7 @@ export default function ScoreCanvas({
         osmd.setOptions(breakOptions(text));
         await osmd.load(text);
         if (cancelled) return;
-        applyHeaderStyle(osmd, readHeader(doc));
+        applyHeaderStyle(osmd, readHeader(doc), shownOf(doc, latest.current.headerFallback));
         syncTranspose(osmd, latest.current.transpose);
         osmd.render();
         loadedRevision.current = revision;
