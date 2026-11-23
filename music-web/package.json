@@ -4,13 +4,15 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "predev": "node scripts/copy-basic-pitch-model.mjs",
     "dev": "vite",
+    "prebuild": "node scripts/copy-basic-pitch-model.mjs",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "lint:colors": "node scripts/check-colors.mjs",
     "lint:i18n": "node scripts/check-i18n.mjs",
     "test:editor": "node --experimental-strip-types --import ./tests/editor/support/setup.mjs --test tests/editor/*.test.mjs",
-    "test:studio": "node --experimental-strip-types --test tests/studio/FreeRunScorer.test.mjs tests/studio/WaitModeScorer.test.mjs tests/studio/StudioSchedule.test.mjs",
+    "test:studio": "node --experimental-strip-types --test tests/studio/FreeRunScorer.test.mjs tests/studio/WaitModeScorer.test.mjs tests/studio/StudioSchedule.test.mjs tests/studio/MicAudioWindowBuffer.test.mjs",
     "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\"",
     "preview": "vite preview",
     "check:contrast": "node scripts/check-contrast.mjs"
@@ -18,6 +20,8 @@
   "dependencies": {
     "@react-oauth/google": "^0.13.5",
     "@stomp/stompjs": "^7.5.0",
+    "@spotify/basic-pitch": "1.0.1",
+    "@tensorflow/tfjs": "3.21.0",
     "axios": "^1.18.0",
     "opensheetmusicdisplay": "^2.2.1",
     "pdfjs-dist": "^4.10.38",

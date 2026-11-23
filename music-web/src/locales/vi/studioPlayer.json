@@ -11,6 +11,8 @@
     "input": "Cách nhập nốt",
     "computerKeyboard": "Bàn phím máy tính",
     "touchKeyboard": "Bấm phím đàn trên màn hình",
+    "microphone": "Micro (đàn piano thật)",
+    "microphoneHint": "Micro nhận diện nhiều nốt cùng lúc. Chỉ dùng với Chạy tự do; kết quả sẽ trễ khoảng 1–2 giây. Âm thanh được phân tích trên trình duyệt, không gửi lên máy chủ. Đặt micro gần đàn và giảm tiếng ồn nền.",
     "hands": "Tay luyện tập",
     "bothHands": "Cả hai tay",
     "rightHand": "Tay phải",
@@ -31,6 +33,8 @@
     "saving": "Đang lưu…",
     "progress": "Tiến độ buổi luyện",
     "lastResult": "Kết quả gần nhất",
+    "microphonePrompt": "Chơi đàn piano thật; nốt sẽ được nhận diện sau một nhịp xử lý",
+    "microphoneStatus": "Đang nghe và phân tích đa nốt · hàng đợi xử lý {latency}",
     "playPrompt": "Chơi một nốt để bắt đầu",
     "waitPrompt": "Chơi các nốt đang chờ ở vạch để tiếp tục",
     "finished": "Bài đã kết thúc",
@@ -101,6 +105,15 @@
     "finish": "Không thể lưu kết quả buổi luyện. Bạn có thể thử kết thúc lại.",
     "saveEvents": "Chưa gửi được dữ liệu nốt; hệ thống sẽ thử lại.",
     "abort": "Không thể hủy phiên luyện.",
-    "input": "Không thể chấm nốt này."
+    "input": "Không thể chấm nốt này.",
+    "mic": {
+      "unsupported": "Trình duyệt này không hỗ trợ thu âm cần thiết. Hãy dùng phiên bản Chrome, Edge hoặc Firefox mới.",
+      "insecure-context": "Trình duyệt chỉ cho phép dùng micro qua HTTPS hoặc localhost.",
+      "permission": "Không được cấp quyền micro. Hãy cho phép trang web sử dụng micro rồi thử lại.",
+      "no-device": "Không tìm thấy micro. Hãy kết nối micro và thử lại.",
+      "audio-start": "Không thể khởi động luồng âm thanh từ micro.",
+      "model-load": "Không tải được mô hình nhận diện nốt. Hãy kiểm tra kết nối mạng rồi thử lại.",
+      "inference": "Nhận diện âm thanh bị lỗi hoặc không theo kịp. Hãy hủy phiên và thử lại với máy tính mạnh hơn, giảm tiếng ồn nền."
+    }
   }
 }

@@ -18,6 +18,7 @@ import { playPianoNote } from '../../../utils/pianoSynth';
 import { DEFAULT_TOLERANCE_WINDOW_MS, FreeRunScorer } from '../../../components/player/engine/FreeRunScorer';
 import type { PracticeNoteEvent } from '../../../components/player/engine/FreeRunScorer';
 import { WaitModeScorer } from '../../../components/player/engine/WaitModeScorer';
+import { StudioMicError, StudioMicInput } from '../../../components/player/engine/StudioMicInput';
 import { buildStudioSchedule } from '../../../components/player/engine/studioSchedule';
 import type { StudioSchedule } from '../../../components/player/engine/studioSchedule';
 import {
@@ -109,8 +110,11 @@ export default function StudioPlayer() {
   const [loadError, setLoadError] = useState(false);
   const [showKeyboardGuide, setShowKeyboardGuide] = useState(false);
   const [showActiveSessionDialog, setShowActiveSessionDialog] = useState(false);
+  const [micLatencyMs, setMicLatencyMs] = useState<number | null>(null);
 
   const sessionRef = useRef<StudioSessionResponse | null>(null);
+  const micInputRef = useRef<StudioMicInput | null>(null);
+  const micDurationRef = useRef<number | null>(null);
   const scorerRef = useRef<FreeRunScorer | null>(null);
   const waitScorerRef = useRef<WaitModeScorer | null>(null);
   const scheduleRef = useRef<StudioSchedule | null>(null);
@@ -163,7 +167,7 @@ export default function StudioPlayer() {
     };
   }, [session]);
 
-  const queueEvents = useCallback((events: readonly PracticeNoteEvent[]) => {
+  const queueEvents = useCallback((events: readonly PracticeNoteEvent[], feedbackAtMs?: number) => {
     if (events.length === 0) return;
     const mapped = events.map(toRequestEvent);
     pendingEventsRef.current.push(...mapped);
@@ -182,7 +186,7 @@ export default function StudioPlayer() {
           {
             midi,
             result: event.result,
-            atMs: event.playedMs ?? elapsedMsRef.current,
+            atMs: feedbackAtMs ?? event.playedMs ?? elapsedMsRef.current,
             noteId: event.noteId,
             expectedMs: event.expectedMs,
           },
@@ -191,6 +195,43 @@ export default function StudioPlayer() {
       return [...recent, ...additions].slice(-80);
     });
   }, []);
+
+  const handleMicUpdate = useCallback(
+    (notes: { midi: number; playedMs: number }[], coveredUntilMs: number) => {
+      const currentSession = sessionRef.current;
+      const scorer = scorerRef.current;
+      const schedule = scheduleRef.current;
+      if (!currentSession || currentSession.inputSource !== 'MIC' || !scorer || !schedule) return;
+
+      if (currentSession.loopStartMeasure !== null) {
+        let cyclesAdded = 0;
+        while (
+          scheduledCyclesRef.current * schedule.durationMs <= coveredUntilMs + LOOP_LOOKAHEAD_MS &&
+          cyclesAdded < 100
+        ) {
+          const cycleOffset = scheduledCyclesRef.current * schedule.durationMs;
+          scorer.scheduleExpectedNotes(
+            schedule.notes.map((note) => ({ ...note, expectedMs: note.expectedMs + cycleOffset })),
+          );
+          scheduledCyclesRef.current += 1;
+          cyclesAdded += 1;
+        }
+      }
+
+      const feedbackAtMs = elapsedMsRef.current;
+      for (const note of notes) {
+        queueEvents(scorer.play({ midi: note.midi, playedMs: note.playedMs }), feedbackAtMs);
+      }
+      const safeCoverageMs = Math.max(0, coveredUntilMs - DEFAULT_TOLERANCE_WINDOW_MS);
+      const latestNoteMs = notes.reduce((latest, note) => Math.max(latest, note.playedMs), 0);
+      const scorerCoverageMs = Math.max(lastScoredAtRef.current, safeCoverageMs, latestNoteMs);
+      if (scorerCoverageMs >= lastScoredAtRef.current) {
+        queueEvents(scorer.advanceTo(scorerCoverageMs), feedbackAtMs);
+        lastScoredAtRef.current = scorerCoverageMs;
+      }
+    },
+    [queueEvents],
+  );
 
   const flushEvents = useCallback(async () => {
     if (flushPromiseRef.current) return flushPromiseRef.current;
@@ -224,13 +265,24 @@ export default function StudioPlayer() {
       setBusy(true);
 
       const elapsed = Math.max(0, Math.round(performance.now() - startedAtRef.current));
-      const coveredUntilMs =
+      let practiceDurationMs = elapsed;
+      let coveredUntilMs =
         currentSession.mode === 'WAIT'
           ? 0
           : Math.max(lastScoredAtRef.current, Math.round(requestedCoverage ?? elapsed));
       let finishRequestStarted = false;
 
       try {
+        if (currentSession.inputSource === 'MIC') {
+          if (micDurationRef.current === null) {
+            const micInput = micInputRef.current;
+            if (!micInput) throw new Error('Microphone input is not available');
+            micDurationRef.current = await micInput.stop();
+          }
+          practiceDurationMs = micDurationRef.current;
+          coveredUntilMs = Math.max(lastScoredAtRef.current, Math.round(practiceDurationMs));
+          micInputRef.current = null;
+        }
         if (finalizedEventsRef.current === null) {
           const finalEvents = scorer.finish(coveredUntilMs);
           finalizedEventsRef.current = finalEvents.map(toRequestEvent);
@@ -239,10 +291,16 @@ export default function StudioPlayer() {
         await flushEvents();
         finishRequestStarted = true;
         await studioApi.finish(currentSession.sessionId, {
-          durationSeconds: Math.min(86400, Math.ceil(elapsed / 1000)),
-          reachedEnd,
+          durationSeconds: Math.min(86400, Math.ceil(practiceDurationMs / 1000)),
+          reachedEnd:
+            currentSession.inputSource === 'MIC'
+              ? reachedEnd || practiceDurationMs >= schedule.durationMs - DEFAULT_TOLERANCE_WINDOW_MS
+              : reachedEnd,
           coveredUntilMs,
         });
+        await micInputRef.current?.dispose();
+        micInputRef.current = null;
+        micDurationRef.current = null;
         sessionRef.current = null;
         scorerRef.current = null;
         waitScorerRef.current = null;
@@ -266,7 +324,11 @@ export default function StudioPlayer() {
             // The finish may still be active; keep the original error visible and allow another attempt.
           }
         }
-        toast.error(translateError(error, t('studioPlayer.errors.finish')));
+        toast.error(
+          error instanceof StudioMicError
+            ? t(`studioPlayer.errors.mic.${error.code}`)
+            : translateError(error, t('studioPlayer.errors.finish')),
+        );
         finishingRef.current = false;
       } finally {
         setBusy(false);
@@ -313,6 +375,21 @@ export default function StudioPlayer() {
 
       const scorer = scorerRef.current;
       if (!scorer) return;
+
+      if (session.inputSource === 'MIC') {
+        if (repeatSection) {
+          let cyclesAdded = 0;
+          while (scheduledCyclesRef.current * schedule.durationMs <= elapsed + LOOP_LOOKAHEAD_MS && cyclesAdded < 100) {
+            const cycleOffset = scheduledCyclesRef.current * schedule.durationMs;
+            scorer.scheduleExpectedNotes(
+              schedule.notes.map((note) => ({ ...note, expectedMs: note.expectedMs + cycleOffset })),
+            );
+            scheduledCyclesRef.current += 1;
+            cyclesAdded += 1;
+          }
+        }
+        return;
+      }
 
       if (repeatSection) {
         let cyclesAdded = 0;
@@ -400,6 +477,8 @@ export default function StudioPlayer() {
   const startSession = async () => {
     if (loadState.phase !== 'ready' || !scoreId || busy || session || activeSession) return;
     setBusy(true);
+    let micInput: StudioMicInput | null = null;
+    let createdSession: StudioSessionResponse | null = null;
     try {
       const selectedStart = repeatSection ? startMeasure : 1;
       const selectedEnd = repeatSection ? endMeasure : loadState.timeline.measureCount;
@@ -419,6 +498,11 @@ export default function StudioPlayer() {
       const waitScorer =
         mode === 'WAIT' ? new WaitModeScorer(schedule.waitSteps, schedule.durationMs, repeatSection) : null;
 
+      if (inputSource === 'MIC') {
+        micInput = await StudioMicInput.create(handleMicUpdate, setMicLatencyMs, (error) => {
+          toast.error(t(`studioPlayer.errors.mic.${error.code}`));
+        });
+      }
       const created = await studioApi.create({
         scoreId,
         mode,
@@ -428,6 +512,7 @@ export default function StudioPlayer() {
         loopStartMeasure: repeatSection ? selectedStart : null,
         loopEndMeasure: repeatSection ? selectedEnd : null,
       });
+      createdSession = created.data;
       scheduleRef.current = schedule;
       scorerRef.current = freeRunScorer;
       waitScorerRef.current = waitScorer;
@@ -436,13 +521,19 @@ export default function StudioPlayer() {
       scheduledCyclesRef.current = 1;
       inputLockedRef.current = false;
       finishingRef.current = false;
-      const leadInMs = mode === 'FREE_RUN' ? FREE_RUN_LEAD_IN_MS : 0;
+      const leadInMs = inputSource === 'MIC' ? 0 : mode === 'FREE_RUN' ? FREE_RUN_LEAD_IN_MS : 0;
       startedAtRef.current = performance.now() + leadInMs;
+      micDurationRef.current = null;
       lastScoredAtRef.current = -leadInMs;
       elapsedMsRef.current = -leadInMs;
       setScoreDuration(schedule.durationMs);
       setSessionSchedule(schedule);
       sessionRef.current = created.data;
+      if (micInput) {
+        micInputRef.current = micInput;
+        startedAtRef.current = await micInput.start();
+      }
+      setMicLatencyMs(null);
       setSession(created.data);
       setElapsedMs(-leadInMs);
       setWaitVisualElapsedMs(0);
@@ -450,7 +541,37 @@ export default function StudioPlayer() {
       setLastResult(null);
       setVisualFeedback([]);
     } catch (error) {
-      toast.error(translateError(error, t('studioPlayer.errors.start')));
+      if (micInput) {
+        try {
+          await micInput.dispose();
+        } catch (disposeError) {
+          toast.error(
+            disposeError instanceof StudioMicError
+              ? t(`studioPlayer.errors.mic.${disposeError.code}`)
+              : translateError(disposeError, t('studioPlayer.errors.mic.audio-start')),
+          );
+        }
+      }
+      micInputRef.current = null;
+      if (createdSession) {
+        try {
+          await studioApi.abort(createdSession.sessionId);
+        } catch (abortError) {
+          toast.error(translateError(abortError, t('studioPlayer.errors.abort')));
+        }
+        sessionRef.current = null;
+        scorerRef.current = null;
+        waitScorerRef.current = null;
+        scheduleRef.current = null;
+        setSessionSchedule(null);
+        micDurationRef.current = null;
+      }
+      if (error instanceof StudioMicError) {
+        const key = `studioPlayer.errors.mic.${error.code}`;
+        toast.error(t(key));
+      } else {
+        toast.error(translateError(error, t('studioPlayer.errors.start')));
+      }
       try {
         const activeResponse = await studioApi.active();
         setActiveSession(activeResponse.status === 204 ? null : activeResponse.data);
@@ -491,6 +612,9 @@ export default function StudioPlayer() {
     inputLockedRef.current = true;
     setBusy(true);
     try {
+      await micInputRef.current?.dispose();
+      micInputRef.current = null;
+      micDurationRef.current = null;
       await flushEvents();
       await studioApi.abort(currentSession.sessionId);
       sessionRef.current = null;
@@ -520,6 +644,13 @@ export default function StudioPlayer() {
     window.addEventListener('beforeunload', warnBeforeUnload);
     return () => window.removeEventListener('beforeunload', warnBeforeUnload);
   }, [session]);
+
+  useEffect(
+    () => () => {
+      void micInputRef.current?.dispose();
+    },
+    [],
+  );
 
   const previewSchedule = useMemo(() => {
     if (loadState.phase !== 'ready') return null;
@@ -668,22 +799,29 @@ export default function StudioPlayer() {
                         ['FREE_RUN', 'play', 'studioPlayer.setup.freeRunHint'],
                         ['WAIT', 'clock', 'studioPlayer.setup.waitHint'],
                       ] as const
-                    ).map(([value, icon, hint]) => (
-                      <label key={value} className={`studio-player__mode-card${mode === value ? ' is-active' : ''}`}>
-                        <input
-                          type="radio"
-                          name="studio-mode"
-                          value={value}
-                          checked={mode === value}
-                          onChange={() => setMode(value)}
-                        />
-                        <span className="studio-player__mode-icon" aria-hidden="true">
-                          <Icon name={icon} size={18} />
-                        </span>
-                        <strong>{t(`studioReport.mode.${value}`)}</strong>
-                        <small>{t(hint)}</small>
-                      </label>
-                    ))}
+                    ).map(([value, icon, hint]) => {
+                      const disabled = value === 'WAIT' && inputSource === 'MIC';
+                      return (
+                        <label
+                          key={value}
+                          className={`studio-player__mode-card${mode === value ? ' is-active' : ''}${disabled ? ' is-disabled' : ''}`}
+                        >
+                          <input
+                            type="radio"
+                            name="studio-mode"
+                            value={value}
+                            checked={mode === value}
+                            disabled={disabled}
+                            onChange={() => setMode(value)}
+                          />
+                          <span className="studio-player__mode-icon" aria-hidden="true">
+                            <Icon name={icon} size={18} />
+                          </span>
+                          <strong>{t(`studioReport.mode.${value}`)}</strong>
+                          <small>{t(hint)}</small>
+                        </label>
+                      );
+                    })}
                   </div>
                 </fieldset>
                 <fieldset className="studio-player__field">
@@ -693,6 +831,7 @@ export default function StudioPlayer() {
                       [
                         ['KEYBOARD', 'type', 'studioPlayer.setup.computerKeyboard'],
                         ['TOUCH', 'select', 'studioPlayer.setup.touchKeyboard'],
+                        ['MIC', 'activity', 'studioPlayer.setup.microphone'],
                       ] as const
                     ).map(([value, icon, label]) => (
                       <label key={value} className={inputSource === value ? 'is-active' : undefined}>
@@ -701,7 +840,10 @@ export default function StudioPlayer() {
                           name="studio-input"
                           value={value}
                           checked={inputSource === value}
-                          onChange={() => setInputSource(value)}
+                          onChange={() => {
+                            setInputSource(value);
+                            if (value === 'MIC') setMode('FREE_RUN');
+                          }}
                         />
                         <Icon name={icon} size={15} />
                         <span>{t(label)}</span>
@@ -733,7 +875,6 @@ export default function StudioPlayer() {
                     ))}
                   </div>
                 </fieldset>
-                {/* tốc độ: số to dễ đọc, thanh kéo và vài mức nhanh */}
                 <div className="studio-player__tempo">
                   <div className="studio-player__tempo-head">
                     <label htmlFor="studio-tempo">{t('studioPlayer.setup.tempo')}</label>
@@ -847,6 +988,7 @@ export default function StudioPlayer() {
                   </button>
                 </div>
               )}
+              {inputSource === 'MIC' && <p className="studio-player__note">{t('studioPlayer.setup.microphoneHint')}</p>}
               {inputSource === 'TOUCH' && !showKeyboard && (
                 <p className="studio-player__note">{t('studioPlayer.display.enableKeyboardForTouch')}</p>
               )}
@@ -997,12 +1139,21 @@ export default function StudioPlayer() {
                     {lastResult
                       ? t(`studioPlayer.results.${lastResult}`)
                       : t(
-                          session.mode === 'WAIT'
-                            ? 'studioPlayer.session.waitPrompt'
-                            : 'studioPlayer.session.playPrompt',
+                          session.inputSource === 'MIC'
+                            ? 'studioPlayer.session.microphonePrompt'
+                            : session.mode === 'WAIT'
+                              ? 'studioPlayer.session.waitPrompt'
+                              : 'studioPlayer.session.playPrompt',
                         )}
                   </strong>
                 </div>
+                {session.inputSource === 'MIC' && (
+                  <p className="studio-player__mic-status" role="status">
+                    {t('studioPlayer.session.microphoneStatus', {
+                      latency: micLatencyMs === null ? '—' : `${(micLatencyMs / 1000).toFixed(1)}s`,
+                    })}
+                  </p>
+                )}
                 <div className="studio-player__counts">
                   {(
                     [

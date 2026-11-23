@@ -1,6 +1,9 @@
 # File người dùng tải lên khi chạy backend từ thư mục gốc
 /storage/
 
+# Dependencies
+node_modules/
+
 # File mẫu để test import
 test-import/
 doc/

@@ -141,6 +141,13 @@
   border-color: color-mix(in srgb, var(--ui-primary) 45%, var(--ui-border));
   transform: translateY(-1px);
 }
+.studio-player__mode-card.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.studio-player__mode-card.is-disabled:hover {
+  transform: none;
+}
 .studio-player__mode-icon {
   grid-area: icon;
   display: grid;
