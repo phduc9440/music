@@ -131,7 +131,10 @@ def markdown_table(style: str, rows: dict[str, dict[str, float]]) -> str:
 def main(argv=None) -> None:
     parser = argparse.ArgumentParser(description="Đánh giá HMM gợi ý hợp âm trên tập kiểm thử POP909")
     parser.add_argument("--pop909", type=Path, required=True)
-    parser.add_argument("--styles", nargs="+", default=["POP", "BALLAD"])
+    parser.add_argument("--styles", nargs="+", default=["POP", "BALLAD", "FOLK", "BOLERO"])
+    parser.add_argument(
+        "--classical", action="store_true", help="đánh giá thêm Cổ điển trên các chorale Bach của tập kiểm thử riêng"
+    )
     args = parser.parse_args(argv)
 
     test_names = load_test_split()
@@ -141,6 +144,15 @@ def main(argv=None) -> None:
         model = load_model(style)
         print(markdown_table(style, {m: evaluate(songs, model, m) for m in METHODS}))
         print()
+    if args.classical:
+        from training.chords.corpus import read_bach_chorales
+        from training.chords.train import CLASSICAL_TEST_FILE
+
+        chorale_test = load_test_split(CLASSICAL_TEST_FILE)
+        chorales = [s for s in read_bach_chorales() if s.name in chorale_test]
+        print(f"Chorale kiểm thử: {len(chorales)} bài\n")
+        model = load_model("CLASSICAL")
+        print(markdown_table("CLASSICAL", {m: evaluate(chorales, model, m) for m in METHODS}))
 
 
 if __name__ == "__main__":

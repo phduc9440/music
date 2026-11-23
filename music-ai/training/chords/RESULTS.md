@@ -101,6 +101,36 @@ Lý do có thể: dữ liệu train của MelodyT5 là dân ca, hợp xướng (
 kép, nhiều dấu lặng của POP909. Ở giọng gốc, model hay chọn hợp âm lệch nửa cung (Bb cho bài Si thứ, Gm cho bài Sol thăng
 thứ) và gần như không chèn hợp âm cho bài giọng trưởng.
 
+## Bốn phong cách thêm 23/11 (Cổ điển, Dân ca, Bolero, Blues)
+
+`python scripts/chord_eval.py --pop909 ... --classical`. Pop và Ballad ở trên không đổi.
+
+### CLASSICAL (38 chorale Bach của `test_split_classical.txt`, 959 bước)
+
+| Cách | Đúng gốc | Đúng hợp âm | Đúng chức năng | Nốt thuộc hợp âm |
+|---|---|---|---|---|
+| tonic | 31.6% | 31.6% | 46.1% | 55.2% |
+| emission | 44.7% | 39.7% | 64.4% | 78.4% |
+| **hmm** | **52.5%** | **47.5%** | **70.0%** | 77.8% |
+
+Nốt thuộc hợp âm của nhãn gốc: 76,3%. Nhãn là hợp âm nhận tự động từ bốn bè (`match_chord`), không phải phân tích tay.
+
+### FOLK và BOLERO (trên tập kiểm thử POP909)
+
+Không có tập kiểm thử đúng thể loại. Đo trên POP909 chỉ để chắc mô hình không hỏng: FOLK hmm 44,0% đúng hợp âm (từ vựng hẹp
+nên dễ trùng hơn), BOLERO 36,6% (bảng chuyển dựng tay, thiên về giọng thứ và hợp âm 7, khác thói quen của nhạc pop).
+Blues không có giai điệu để đo (iRb chỉ có hợp âm).
+
+### Ví dụ (bản seed của hệ thống)
+
+| Bài | Phong cách | Hợp âm (mỗi ô, cách nhau bởi \|) |
+|---|---|---|
+| Twinkle Twinkle | FOLK | C \| F G \| F C \| G C \| C Dm \| Dm G \| G F \| C G |
+| Twinkle Twinkle | CLASSICAL | C G/B \| D7 G \| Dm Am \| G7 C \| G Dm \| Am G7 \| C/E Dm \| Am G7 |
+| Twinkle Twinkle | BOLERO | C E7 \| Am E7 \| Dm C \| G7 C \| C7 F \| C G7 \| C F \| C G7 |
+| Twinkle Twinkle | BLUES | C7 Em7 \| A7 Em7 \| Bb7 C7 \| G7 C7 \| Em7 Bb7 \| C7 G7 |
+| Minuet in G | CLASSICAL | G \| G \| C \| G \| D7 \| G \| G/D \| D7 |
+
 ## Hướng cải thiện (chưa làm)
 
 - HMM bậc hai (nhớ hai hợp âm trước), đề cương gọi là "Markov bậc cao".

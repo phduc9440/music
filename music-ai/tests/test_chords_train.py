@@ -18,7 +18,16 @@ from training.chords.corpus import (
     read_midi_notes,
     read_pop909,
 )
-from training.chords.train import BALLAD_COLOR_BOOST, count_model, exclude_test
+from training.chords.corpus import match_chord
+from training.chords.train import (
+    BALLAD_COLOR_BOOST,
+    BOLERO_TRANSITIONS,
+    FOLK_STAY_BOOST,
+    count_model,
+    exclude_test,
+    is_twelve_bar_blues,
+    manual_model,
+)
 
 C = Key(0, "major", 0)
 
@@ -236,7 +245,54 @@ def test_read_irb_builds_steps(tmp_path):
 
 
 def test_shipped_models_load():
-    for style in ("POP", "BALLAD", "JAZZ"):
+    for style in VOCAB:
         model = load_model(style)
         assert model.style == style
         assert math.isfinite(float(model.major.log_trans.max()))
+
+
+def pcs(**weights) -> list[float]:
+    names = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"]
+    return [float(weights.get(n, 0)) for n in names]
+
+
+def test_match_chord_reads_triads_sevenths_and_inversions():
+    assert match_chord(pcs(C=2, E=1, G=1), 0) == (0, "maj", None)
+    assert match_chord(pcs(A=2, C=1, E=1), 0) == (9, "min", 0)  # Am/C: bass là nốt của hợp âm nên giữ thế đảo
+    assert match_chord(pcs(G=1, B=1, D=1, F=1), 7) == (7, "7", None)
+    # vii° (B D F) coi là V7 thiếu gốc
+    assert match_chord(pcs(B=1, D=1, F=1), 11) == (7, "7", None)
+    # Không có nốt 7 thì là hợp âm ba; bass ngoài hợp âm bị bỏ
+    assert match_chord(pcs(G=2, B=1, D=1, A=0.2), 9) == (7, "maj", None)
+    assert match_chord(pcs(C=1), 0) is None
+
+
+def test_twelve_bar_blues_detected_by_structure():
+    bars = ["C:7", "C:7", "C:7", "C:7", "F:7", "F:7", "C:7", "C:7", "G:7", "F:7", "C:7", "G:7"]
+    blues = song([c for bar in bars for c in (bar, bar)])
+    assert is_twelve_bar_blues(blues)
+    assert not is_twelve_bar_blues(song([c for bar in bars[:8] for c in (bar, bar)]))
+    assert not is_twelve_bar_blues(song([c for bar in ["C:maj"] * 4 + ["G:7"] * 8 for c in (bar, bar)]))
+
+
+def test_folk_model_stays_on_chords_longer_than_pop():
+    songs = [song(["C:maj", "F:maj", "G:7", "C:maj"] * 6)]
+    pop = count_model(songs, "POP")
+    folk = count_model(songs, "FOLK")
+    stay = lambda model, label: math.exp(model["major"]["trans"][model["major"]["states"].index(label)][model["major"]["states"].index(label)])
+    assert stay(folk, "I") > stay(pop, "I")
+    assert FOLK_STAY_BOOST > 1
+
+
+def test_bolero_model_uses_hand_written_transitions():
+    melody = [[(0, 1.0), (4, 1.0)]]
+    model = manual_model("BOLERO", BOLERO_TRANSITIONS, [song(["C:maj"], melody=melody)])
+    minor = model["minor"]
+    t = probs(minor["trans"])
+    states = minor["states"]
+    assert minor["states"] == [c.label for c in VOCAB["BOLERO"]["minor"]]
+    assert np.allclose(t.sum(axis=1), 1)
+    # I7 dẫn về iv là bước hay gặp nhất sau khi rời I7
+    row = t[states.index("I7")]
+    assert states[int(np.argsort(-row)[0])] == "iv"
+    assert len(minor["emission"]) == len(states)

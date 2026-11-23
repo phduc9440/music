@@ -92,7 +92,7 @@ export default function ChordSuggestDialog({ scoreId, onClose, onCompleted, allH
   };
 
   return (
-    <Modal title={t('chords.dialog.title')} onClose={onClose}>
+    <Modal title={t('chords.dialog.title')} onClose={onClose} className="cs-modal">
       <p className="cs-hint">{t('chords.dialog.hint')}</p>
 
       <fieldset className="cs-styles" disabled={busy}>

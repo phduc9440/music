@@ -238,7 +238,7 @@ class ChordGenerateRequest(BaseModel):
 
     inPath: str
     outPath: str
-    style: Literal["POP", "BALLAD", "JAZZ"]
+    style: Literal["POP", "BALLAD", "JAZZ", "CLASSICAL", "FOLK", "BOLERO", "BLUES"]
     replaceExisting: bool = False
     """True: bỏ hết hợp âm đang có rồi gợi ý lại toàn bộ (mặc định giữ ô đã có hợp âm)."""
 

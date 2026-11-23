@@ -34,6 +34,22 @@
     "JAZZ": {
       "name": "Jazz",
       "description": "Seventh chords, ii–V–I and secondary dominants"
+    },
+    "CLASSICAL": {
+      "name": "Classical",
+      "description": "Bach-style harmony: triads, inversions, dominant sevenths and standard cadences"
+    },
+    "FOLK": {
+      "name": "Folk / Children",
+      "description": "Mostly the three primary chords I, IV, V with few changes, for simple songs"
+    },
+    "BOLERO": {
+      "name": "Bolero / Ballad (VN)",
+      "description": "Minor-key i–iv–V7 with secondary sevenths leading to iv and vi, Vietnamese bolero style"
+    },
+    "BLUES": {
+      "name": "Blues",
+      "description": "Seventh chords on the 12-bar blues: I7, IV7, V7"
     }
   },
   "taskErrors": {

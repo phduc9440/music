@@ -7,7 +7,11 @@ import java.util.Optional;
 public enum ChordStyle {
     POP("Pop"),
     BALLAD("Ballad"),
-    JAZZ("Jazz");
+    JAZZ("Jazz"),
+    CLASSICAL("Cổ điển"),
+    FOLK("Dân ca"),
+    BOLERO("Bolero"),
+    BLUES("Blues");
 
     private final String label;
 

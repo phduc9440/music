@@ -9,6 +9,10 @@ Chạy (từ thư mục music-ai)::
 - Ballad: bảng chuyển của Pop (đếm trên từ vựng Ballad), cột của hợp âm màu được nhân ``BALLAD_COLOR_BOOST`` rồi chuẩn hóa.
 - Jazz: chuyển đếm từ iRb (chỉ có hợp âm), phát học từ POP909 (nhãn rút về từ vựng Jazz) cộng thêm ``JAZZ_EXTENSION``
   cho nốt 9, 11, 13.
+- Cổ điển: chuyển và phát đếm từ các chorale bốn bè của Bach trong music21 (phạm vi công cộng; 10% bài để kiểm thử).
+- Dân ca: chuyển của Pop đếm trên từ vựng hẹp (I, ii, IV, V, V7, vi), xác suất ở lại cùng hợp âm nhân ``FOLK_STAY_BOOST``.
+- Bolero: không có bộ dữ liệu mở, bảng chuyển dựng tay theo nhạc lý (``BOLERO_TRANSITIONS``); phát học từ POP909.
+- Blues: chuyển đếm từ các bài blues 12 ô trong iRb (nhận theo cấu trúc: ô 1 là I, ô 5 là IV, ô 7 về I), phát từ POP909.
 - Phát (định dạng v2): mỗi hợp âm theo bậc một bảng P(bậc của nốt | hợp âm), làm mượt về bảng theo loại hợp âm.
 
 Bài trong ``test_split.txt`` bị loại khỏi huấn luyện để ``scripts/chord_eval.py`` đánh giá công bằng.
@@ -25,7 +29,7 @@ from typing import Iterable, Optional
 import numpy as np
 
 from app.chords.theory import QUALITIES, VOCAB
-from training.chords.corpus import Song, label_to_state, parse_label, read_irb, read_pop909
+from training.chords.corpus import Song, label_to_state, parse_label, read_bach_chorales, read_irb, read_pop909
 
 DEFAULT_K = 0.5
 END_TONIC_BONUS = 2.0  # số đếm cộng thêm cho trạng thái chủ âm ở cuối bài (câu kết)
@@ -48,6 +52,43 @@ BALLAD_COLOR_BOOST: dict[str, float] = {
     "i7": 1.6,
     "iv7": 1.6,
     "bVImaj7": 1.8,
+}
+
+
+FOLK_STAY_BOOST = 1.6  # dân ca đổi hợp âm thưa: nhân xác suất ở lại cùng hợp âm rồi chuẩn hóa
+FOLK_TONIC_START = 6.0  # bài dân ca gần như luôn mở đầu bằng hợp âm chủ (POP909 hay mở bằng vi)
+CLASSICAL_TEST_FILE = Path(__file__).parent / "test_split_classical.txt"
+
+# Bolero / trữ tình Việt: trọng số chuyển dựng tay theo nhạc lý (hàng: từ, cột: tới; tự chuẩn hóa), không có dữ liệu mở.
+# Giọng thứ là chính: i–iv–V7–i, I7 dẫn về iv, bVII → bIII (sang giọng trưởng song song) và bVI → V7. Giọng trưởng: III7
+# dẫn về vi, I7 dẫn về IV, ii → V7. Hợp âm bolero giữ khá lâu nên xác suất ở lại cao (bước = nửa ô).
+BOLERO_TRANSITIONS: dict[str, dict] = {
+    "minor": {
+        "start": {"i": 0.7, "iv": 0.05, "V7": 0.1, "bVI": 0.05, "bVII": 0.03, "bIII": 0.04, "I7": 0.03},
+        "end": {"i": 0.85, "iv": 0.03, "V7": 0.04, "bVI": 0.02, "bVII": 0.02, "bIII": 0.02, "I7": 0.02},
+        "trans": {
+            "i": {"i": 0.45, "iv": 0.15, "V7": 0.15, "bVI": 0.05, "bVII": 0.07, "bIII": 0.05, "I7": 0.08},
+            "iv": {"i": 0.25, "iv": 0.4, "V7": 0.2, "bVI": 0.03, "bVII": 0.07, "bIII": 0.03, "I7": 0.02},
+            "V7": {"i": 0.5, "iv": 0.03, "V7": 0.4, "bVI": 0.05, "bVII": 0.01, "bIII": 0.005, "I7": 0.005},
+            "bVI": {"i": 0.1, "iv": 0.1, "V7": 0.3, "bVI": 0.4, "bVII": 0.05, "bIII": 0.03, "I7": 0.02},
+            "bVII": {"i": 0.1, "iv": 0.03, "V7": 0.02, "bVI": 0.03, "bVII": 0.4, "bIII": 0.4, "I7": 0.02},
+            "bIII": {"i": 0.05, "iv": 0.15, "V7": 0.1, "bVI": 0.2, "bVII": 0.05, "bIII": 0.4, "I7": 0.05},
+            "I7": {"i": 0.03, "iv": 0.55, "V7": 0.02, "bVI": 0.02, "bVII": 0.02, "bIII": 0.01, "I7": 0.35},
+        },
+    },
+    "major": {
+        "start": {"I": 0.7, "ii": 0.03, "IV": 0.07, "V7": 0.1, "vi": 0.06, "III7": 0.02, "I7": 0.02},
+        "end": {"I": 0.85, "ii": 0.02, "IV": 0.03, "V7": 0.04, "vi": 0.03, "III7": 0.01, "I7": 0.02},
+        "trans": {
+            "I": {"I": 0.45, "ii": 0.07, "IV": 0.12, "V7": 0.14, "vi": 0.1, "III7": 0.04, "I7": 0.08},
+            "ii": {"I": 0.05, "ii": 0.4, "IV": 0.05, "V7": 0.45, "vi": 0.03, "III7": 0.01, "I7": 0.01},
+            "IV": {"I": 0.25, "ii": 0.05, "IV": 0.4, "V7": 0.2, "vi": 0.05, "III7": 0.03, "I7": 0.02},
+            "V7": {"I": 0.52, "ii": 0.02, "IV": 0.02, "V7": 0.38, "vi": 0.05, "III7": 0.005, "I7": 0.005},
+            "vi": {"I": 0.05, "ii": 0.15, "IV": 0.1, "V7": 0.1, "vi": 0.4, "III7": 0.15, "I7": 0.05},
+            "III7": {"I": 0.02, "ii": 0.02, "IV": 0.03, "V7": 0.03, "vi": 0.5, "III7": 0.38, "I7": 0.02},
+            "I7": {"I": 0.03, "ii": 0.02, "IV": 0.55, "V7": 0.02, "vi": 0.02, "III7": 0.01, "I7": 0.35},
+        },
+    },
 }
 
 
@@ -86,6 +127,11 @@ def count_transitions(songs: Iterable[Song], style: str, k: float = DEFAULT_K, b
             end[tonic] += END_TONIC_BONUS if any(s is not None for s in path) else 0
         probs = (trans + k) / (trans + k).sum(axis=1, keepdims=True)
         start_p = (start + k) / (start + k).sum()
+        if boost and style == "FOLK":
+            probs = probs + np.diag(np.diag(probs) * (FOLK_STAY_BOOST - 1))
+            probs /= probs.sum(axis=1, keepdims=True)
+            start_p[tonic] *= FOLK_TONIC_START
+            start_p /= start_p.sum()
         if boost and style == "BALLAD":
             factor = np.array([BALLAD_COLOR_BOOST.get(c.label, 1.0) for c in states])
             probs = probs * factor
@@ -176,6 +222,45 @@ def count_model(
     return {"style": style, "version": 2, **transitions}
 
 
+def manual_transitions(style: str, table: dict[str, dict]) -> dict:
+    """Bảng start / end / trans (log) từ trọng số dựng tay; thiếu ô nào thì coi là 0 rồi làm mượt rất nhẹ."""
+    out = {}
+    for mode in ("major", "minor"):
+        labels = [c.label for c in VOCAB[style][mode]]
+        spec = table[mode]
+        start = np.array([spec["start"].get(label, 0.0) for label in labels])
+        end = np.array([spec["end"].get(label, 0.0) for label in labels])
+        trans = np.array([[spec["trans"][a].get(b, 0.0) for b in labels] for a in labels])
+        out[mode] = {
+            "states": labels,
+            "start": _round(_log_normalize(start, 1e-3)),
+            "end": _round(_log_normalize(end, 1e-3)),
+            "trans": _round(_log_normalize(trans, 1e-3)),
+        }
+    return out
+
+
+def manual_model(style: str, table: dict[str, dict], emission_songs: Iterable[Song], k: float = DEFAULT_K) -> dict:
+    """Mô hình v2 với bảng chuyển dựng tay (Bolero) và bảng phát học từ dữ liệu có giai điệu."""
+    emission = count_emission(emission_songs, style, k)
+    transitions = manual_transitions(style, table)
+    for mode in ("major", "minor"):
+        transitions[mode]["emission"] = emission[mode]
+    return {"style": style, "version": 2, **transitions}
+
+
+def is_twelve_bar_blues(song: Song) -> bool:
+    """Bài blues 12 ô (iRb không ghi thể loại): số bước là bội của 24 (12 ô × 2 bước), ô 1 là I, ô 5 là IV, ô 7 về I."""
+    if not song.chords or len(song.chords) % 24:
+        return False
+
+    def root_at(bar: int) -> Optional[int]:
+        parsed = parse_label(song.chords[bar * 2])
+        return None if parsed is None else (parsed[0] - song.key.tonic) % 12
+
+    return root_at(0) == 0 and root_at(4) == 5 and root_at(6) == 0
+
+
 def exclude_test(songs: Iterable[Song], test_names: set[str]) -> list[Song]:
     return [s for s in songs if s.name not in test_names]
 
@@ -201,19 +286,29 @@ def main(argv: Optional[list[str]] = None) -> None:
     parser.add_argument("--irb", type=Path, required=True)
     parser.add_argument("--out", type=Path, default=Path(__file__).resolve().parents[2] / "app" / "chords" / "model")
     parser.add_argument("--k", type=float, default=DEFAULT_K)
+    parser.add_argument("--chorale-limit", type=int, default=None, help="chỉ đọc chừng này chorale (thử nhanh)")
     args = parser.parse_args(argv)
 
     pop_all = list(read_pop909(args.pop909))
     test = make_test_split([s.name for s in pop_all])
     pop = exclude_test(pop_all, test)
     irb = list(read_irb(args.irb))
-    print(f"POP909: {len(pop_all)} bài ({len(pop)} huấn luyện, {len(test)} kiểm thử); iRb: {len(irb)} bài")
+    blues = [s for s in irb if is_twelve_bar_blues(s)]
+    chorales_all = list(read_bach_chorales(args.chorale_limit))
+    chorale_test = make_test_split([s.name for s in chorales_all], CLASSICAL_TEST_FILE)
+    chorales = exclude_test(chorales_all, chorale_test)
+    print(f"POP909: {len(pop_all)} bài ({len(pop)} huấn luyện, {len(test)} kiểm thử); iRb: {len(irb)} bài "
+          f"({len(blues)} blues 12 ô); chorale Bach: {len(chorales_all)} bài ({len(chorales)} huấn luyện)")
 
     args.out.mkdir(parents=True, exist_ok=True)
     models = {
         "pop": count_model(pop, "POP", args.k),
         "ballad": count_model(pop, "BALLAD", args.k),
         "jazz": count_model(irb, "JAZZ", args.k, emission_songs=pop),
+        "classical": count_model(chorales, "CLASSICAL", args.k),
+        "folk": count_model(pop, "FOLK", args.k),
+        "bolero": manual_model("BOLERO", BOLERO_TRANSITIONS, pop, args.k),
+        "blues": count_model(blues, "BLUES", args.k, emission_songs=pop),
     }
     for name, model in models.items():
         target = args.out / f"{name}.json"

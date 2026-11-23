@@ -377,3 +377,127 @@ def _read_irb_file(path: Path) -> Optional[Song]:
         offsets = [0.0, 2.0] if abs(beats - 4.0) < 1e-9 else [0.0]
         chords += [to_harte(active(start + o)) for o in offsets]
     return Song(name=f"irb/{path.stem}", key=key, chords=chords, melody=None)
+
+
+# ------------------------------------------------------------------------------------------------ chorale của Bach
+
+# Mẫu hợp âm (khoảng cách so với gốc) để nhận hợp âm từ 4 bè. "dim" (vii°) được đổi thành V7 thiếu gốc.
+_TEMPLATES = (
+    ("maj", (0, 4, 7)),
+    ("min", (0, 3, 7)),
+    ("dim", (0, 3, 6)),
+    ("7", (0, 4, 7, 10)),
+    ("hdim7", (0, 3, 6, 10)),
+    ("dim7", (0, 3, 6, 9)),
+)
+_NON_CHORD_PENALTY = 0.6
+_HALF_MEASURE_TIMES = {(4, 4), (2, 2), (6, 8), (12, 8)}  # giống app/chords/melody.py
+
+
+def match_chord(weights: list[float], bass: Optional[int]) -> Optional[Parsed]:
+    """Hợp âm hợp nhất với trọng số 12 cao độ của một bước (mọi bè): điểm = trọng số nốt thuộc hợp âm − phạt nốt ngoài.
+
+    Mẫu ít nốt hơn được ưu tiên khi bằng điểm (không có nốt 7 thì là hợp âm ba). vii° và hợp âm giảm 7 coi là V7 thiếu
+    gốc (gốc thấp hơn 4 bán cung). Bước gần như im lặng hoặc chỉ có một cao độ trả None.
+    """
+    total = sum(weights)
+    if total <= 0 or sum(1 for w in weights if w > 0) < 2:
+        return None
+    best: Optional[tuple[float, int, str]] = None
+    for root in range(12):
+        for quality, intervals in _TEMPLATES:
+            tones = {(root + i) % 12 for i in intervals}
+            if weights[root] <= 0:  # gốc phải có mặt
+                continue
+            if quality in ("7", "hdim7", "dim7") and weights[(root + intervals[3]) % 12] <= 0:
+                continue  # hợp âm 7 phải có nốt 7
+            inside = sum(weights[pc] for pc in tones)
+            score = inside - _NON_CHORD_PENALTY * (total - inside) - 0.01 * len(intervals)
+            if best is None or score > best[0]:
+                best = (score, root, quality)
+    if best is None:
+        return None
+    _, root, quality = best
+    tones = {(root + i) % 12 for i in dict(_TEMPLATES)[quality]}
+    if bass not in tones or bass == root:
+        bass = None  # chỉ giữ thế đảo thật (bass là nốt khác gốc của hợp âm)
+    if quality in ("dim", "dim7"):
+        root, quality = (root - 4) % 12, "7"
+        bass = None
+    return root, quality, bass
+
+
+def read_bach_chorales(limit: Optional[int] = None) -> Iterator[Song]:
+    """Các chorale bốn bè của Bach có sẵn trong music21 (phạm vi công cộng): soprano là giai điệu, hợp âm nhận từ cả bốn
+    bè theo từng bước (nửa ô với nhịp 4 phách), bass là bè thấp nhất ở đầu bước."""
+    from music21 import corpus as m21corpus
+
+    count = 0
+    for path in m21corpus.getComposer("bach"):
+        if limit is not None and count >= limit:
+            return
+        name = Path(str(path)).stem
+        if not name.startswith("bwv"):
+            continue
+        try:
+            song = _read_chorale(m21corpus.parse(path), f"bach/{name}")
+        except Exception:  # file lạ trong corpus (không phải bốn bè, nhịp hỏng): bỏ qua
+            continue
+        if song is not None and any(song.chords):
+            count += 1
+            yield song
+
+
+def _read_chorale(score, name: str) -> Optional[Song]:
+    parts = list(score.parts)
+    if len(parts) != 4:
+        return None
+    analysed = score.analyze("key")
+    mode = "minor" if analysed.mode == "minor" else "major"
+    tonic = analysed.tonic.pitchClass
+    key = Key(tonic, mode, fifths_of(tonic, mode))
+
+    voices = []  # mỗi bè: [(bắt đầu, kết thúc, cao độ 0–11, midi)]
+    for part in parts:
+        notes = []
+        for n in part.flatten().notes:
+            if n.isChord:
+                continue
+            start = float(n.getOffsetInHierarchy(part))
+            notes.append((start, start + float(n.quarterLength), n.pitch.pitchClass, n.pitch.midi))
+        voices.append(notes)
+
+    chords: list[Optional[str]] = []
+    melody: list[list[tuple[int, float]]] = []
+    for start, length in _chorale_steps(parts[0]):
+        end = start + length
+        weights = [0.0] * 12
+        for notes in voices:
+            for s, e, pc, _ in notes:
+                overlap = min(e, end) - max(s, start)
+                if overlap > 0:
+                    weights[pc] += overlap
+        sounding = [(midi, pc) for notes in voices for s, e, pc, midi in notes if s <= start + 1e-9 < e]
+        bass = min(sounding)[1] if sounding else None
+        chords.append(to_harte(match_chord(weights, bass)))
+        melody.append([(pc, min(e, end) - max(s, start)) for s, e, pc, _ in voices[0] if min(e, end) - max(s, start) > 0])
+    return Song(name=name, key=key, chords=chords, melody=melody)
+
+
+def _chorale_steps(part) -> list[tuple[float, float]]:
+    """(phách bắt đầu, độ dài) của từng bước theo ô nhịp của bè soprano."""
+    steps = []
+    beats, beat_type = 4, 4
+    for measure in part.getElementsByClass("Measure"):
+        if measure.timeSignature is not None:
+            beats, beat_type = measure.timeSignature.numerator, measure.timeSignature.denominator
+        start = float(measure.getOffsetInHierarchy(part))
+        length = float(measure.duration.quarterLength)
+        if length <= 0:
+            continue
+        nominal = beats * 4 / beat_type
+        if (beats, beat_type) in _HALF_MEASURE_TIMES and abs(length - nominal) < 1e-9:
+            steps += [(start, length / 2), (start + length / 2, length / 2)]
+        else:
+            steps.append((start, length))
+    return steps

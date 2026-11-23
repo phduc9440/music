@@ -2,9 +2,9 @@ import apiClient from '../client';
 import type { AiTaskInfo, ApiResponse } from '../../types';
 
 /** Phong cách gợi ý hợp âm (R3), khớp ChordStyle ở BE. */
-export type ChordStyle = 'POP' | 'BALLAD' | 'JAZZ';
+export type ChordStyle = 'POP' | 'BALLAD' | 'JAZZ' | 'CLASSICAL' | 'FOLK' | 'BOLERO' | 'BLUES';
 
-export const CHORD_STYLES: ChordStyle[] = ['POP', 'BALLAD', 'JAZZ'];
+export const CHORD_STYLES: ChordStyle[] = ['POP', 'BALLAD', 'FOLK', 'BOLERO', 'CLASSICAL', 'JAZZ', 'BLUES'];
 
 /** Gợi ý hợp âm tự động (R3, BE: ChordSuggestionController). */
 export const chordApi = {

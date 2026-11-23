@@ -9,6 +9,7 @@ Sinh ba bảng xác suất `app/chords/model/{pop,ballad,jazz}.json` cho `POST /
 |---|---|---|---|
 | POP909 | <https://github.com/music-x-lab/POP909-Dataset> (Wang và cộng sự, ISMIR 2020) | MIT | Chuyển của Pop/Ballad, toàn bộ xác suất phát |
 | iRealPro Corpus of Jazz Standards (iRb) | <https://zenodo.org/records/3546040> (Shanahan, Broze, Rodgers) | CC BY 4.0 (phải ghi nguồn) | Chuyển của Jazz |
+| Chorale bốn bè của J.S. Bach | Có sẵn trong `music21` (`music21.corpus`, không cần tải) | Phạm vi công cộng (bản nhạc); corpus music21 BSD | Toàn bộ Cổ điển |
 | ~~Nottingham Music Database~~ | <https://abc.sourceforge.net/NMD/> | Bản gốc không ghi giấy phép, bản làm sạch (jukedeck) là GPL-3.0 | **Không dùng** |
 
 Nhãn hợp âm POP909 do thuật toán gán (không sửa tay), nên bảng học được có lẫn lỗi nhận diện.
@@ -42,6 +43,17 @@ python -m training.chords.train \
   về bảng theo loại hợp âm (xoay theo gốc) với trọng số `EMISSION_BACKOFF` = 4 phách.
 - Jazz: bảng phát học từ POP909 với nhãn rút về từ vựng Jazz, cộng 0,02 cho nốt 9, 11, 13 rồi chuẩn hóa lại.
 - `test_split.txt`: 10% bài POP909 (seed 42), không dùng khi huấn luyện, chỉ dùng cho `scripts/chord_eval.py`.
+- **Cổ điển**: đọc 368 chorale bốn bè (`read_bach_chorales`). Giai điệu là bè soprano. Hợp âm của mỗi bước được nhận bằng
+  cách so trọng số 12 cao độ của cả bốn bè với mẫu hợp âm (`match_chord`: điểm = nốt thuộc hợp âm − 0,6 × nốt ngoài, gốc
+  phải có mặt, hợp âm 7 phải có nốt 7). Bass là bè thấp nhất ở đầu bước, chỉ giữ khi là thế đảo thật. vii° và hợp âm giảm 7
+  coi là V7 thiếu gốc. Giọng lấy từ `score.analyze("key")` cho cả bài (bỏ qua chuyển giọng giữa bài).
+  `test_split_classical.txt`: 10% chorale để kiểm thử. Đọc corpus mất khoảng 1 phút.
+- **Dân ca**: bảng chuyển của POP909 đếm trên từ vựng hẹp (I, ii, IV, V, V7, vi). Xác suất ở lại cùng hợp âm nhân
+  `FOLK_STAY_BOOST` = 1,6, xác suất mở đầu bằng hợp âm chủ nhân `FOLK_TONIC_START` = 6.
+- **Bolero**: không có bộ dữ liệu mở nào có nhãn hợp âm bolero / trữ tình Việt, nên bảng chuyển dựng tay theo nhạc lý
+  (`BOLERO_TRANSITIONS`). Bảng phát vẫn học từ POP909.
+- **Blues**: iRb không ghi thể loại, nên bài blues được nhận theo cấu trúc 12 ô (`is_twelve_bar_blues`: số ô là bội của 12,
+  ô 1 là I, ô 5 là IV, ô 7 về I). Có 44 bài. Bảng chuyển đếm từ các bài này, bảng phát học từ POP909.
 
 ## So sánh với MelodyT5 (tùy chọn)
 

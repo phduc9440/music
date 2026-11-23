@@ -34,6 +34,22 @@
     "JAZZ": {
       "name": "Jazz",
       "description": "Hợp âm bảy, vòng ii–V–I và át phụ"
+    },
+    "CLASSICAL": {
+      "name": "Cổ điển",
+      "description": "Hòa âm kiểu Bach: hợp âm ba, thế đảo, át 7 và kết câu chuẩn"
+    },
+    "FOLK": {
+      "name": "Dân ca / Thiếu nhi",
+      "description": "Chủ yếu ba hợp âm chính I, IV, V; đổi hợp âm thưa, hợp bài đơn giản"
+    },
+    "BOLERO": {
+      "name": "Bolero / Trữ tình",
+      "description": "Vòng i–iv–V7 giọng thứ, hợp âm 7 dẫn về iv và vi kiểu nhạc trữ tình Việt"
+    },
+    "BLUES": {
+      "name": "Blues",
+      "description": "Hợp âm 7 theo vòng blues 12 ô: I7, IV7, V7"
     }
   },
   "taskErrors": {

@@ -116,7 +116,7 @@ public class AiServiceClient {
      * Gợi ý hợp âm (R3, {@code POST /chords/generate}), đồng bộ: music-ai đọc {@code inPath}, ghi bản có {@code <harmony>}
      * ra {@code outPath}. Lỗi dự đoán được: 422 với {@code detail.code} (NO_MELODY, ALREADY_HARMONIZED, PARSE_ERROR).
      *
-     * @param style POP, BALLAD hoặc JAZZ
+     * @param style POP, BALLAD, JAZZ, CLASSICAL, FOLK, BOLERO hoặc BLUES
      * @param replaceExisting true: bỏ hết hợp âm đang có rồi gợi ý lại toàn bộ
      */
     public ChordGenerationResult generateChords(String inPath, String outPath, String style, boolean replaceExisting) {

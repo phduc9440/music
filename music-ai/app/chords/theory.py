@@ -117,6 +117,98 @@ VOCAB: dict[str, dict[str, list[ChordDef]]] = {
             _c("i", 0, "min"),
         ],
     },
+    # Hòa âm kiểu Bach (chorale): hợp âm ba và đảo (I6, ii6, V6, I64 kết), át 7, át phụ của V. Hợp âm giảm vii° không có
+    # trong 7 loại, lúc huấn luyện được coi là V7 thiếu gốc
+    "CLASSICAL": {
+        "major": [
+            _c("I", 0, "maj"),
+            _c("ii", 2, "min"),
+            _c("iii", 4, "min"),
+            _c("IV", 5, "maj"),
+            _c("V", 7, "maj"),
+            _c("vi", 9, "min"),
+            _c("V7", 7, "7"),
+            _c("I/3", 0, "maj", 4),
+            _c("I/5", 0, "maj", 7),
+            _c("ii/4", 2, "min", 5),
+            _c("V/7", 7, "maj", 11),
+            _c("V7/V", 2, "7"),
+        ],
+        "minor": [
+            _c("i", 0, "min"),
+            _c("iiø7", 2, "hdim7"),
+            _c("bIII", 3, "maj"),
+            _c("iv", 5, "min"),
+            _c("V", 7, "maj"),
+            _c("V7", 7, "7"),
+            _c("bVI", 8, "maj"),
+            _c("bVII", 10, "maj"),
+            _c("i/b3", 0, "min", 3),
+            _c("i/5", 0, "min", 7),
+            _c("V/7", 7, "maj", 11),
+        ],
+    },
+    # Dân ca / thiếu nhi: ba hợp âm chính (I, IV, V/V7), ít khi thêm vi, ii
+    "FOLK": {
+        "major": [
+            _c("I", 0, "maj"),
+            _c("ii", 2, "min"),
+            _c("IV", 5, "maj"),
+            _c("V", 7, "maj"),
+            _c("V7", 7, "7"),
+            _c("vi", 9, "min"),
+        ],
+        "minor": [
+            _c("i", 0, "min"),
+            _c("iv", 5, "min"),
+            _c("V", 7, "maj"),
+            _c("V7", 7, "7"),
+            _c("bIII", 3, "maj"),
+            _c("bVII", 10, "maj"),
+        ],
+    },
+    # Bolero / trữ tình Việt: giọng thứ i–iv–V7–i, I7 dẫn về iv (V7/iv), bVI, bVII, bIII; giọng trưởng có III7 dẫn về vi
+    # và I7 dẫn về IV
+    "BOLERO": {
+        "major": [
+            _c("I", 0, "maj"),
+            _c("ii", 2, "min"),
+            _c("IV", 5, "maj"),
+            _c("V7", 7, "7"),
+            _c("vi", 9, "min"),
+            _c("III7", 4, "7"),
+            _c("I7", 0, "7"),
+        ],
+        "minor": [
+            _c("i", 0, "min"),
+            _c("iv", 5, "min"),
+            _c("V7", 7, "7"),
+            _c("bVI", 8, "maj"),
+            _c("bVII", 10, "maj"),
+            _c("bIII", 3, "maj"),
+            _c("I7", 0, "7"),
+        ],
+    },
+    # Blues: toàn hợp âm 7 theo vòng 12 ô (I7, IV7, V7), thêm ii7 và VI7 ở vòng quay lại
+    "BLUES": {
+        "major": [
+            _c("I7", 0, "7"),
+            _c("IV7", 5, "7"),
+            _c("V7", 7, "7"),
+            _c("ii7", 2, "min7"),
+            _c("VI7", 9, "7"),
+            _c("iii7", 4, "min7"),
+            _c("bVII7", 10, "7"),
+        ],
+        "minor": [
+            _c("i7", 0, "min7"),
+            _c("iv7", 5, "min7"),
+            _c("V7", 7, "7"),
+            _c("bVI7", 8, "7"),
+            _c("iiø7", 2, "hdim7"),
+            _c("i", 0, "min"),
+        ],
+    },
 }
 
 
