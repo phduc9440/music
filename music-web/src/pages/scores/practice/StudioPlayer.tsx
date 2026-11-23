@@ -743,7 +743,7 @@ export default function StudioPlayer() {
 
   // Bản nhạc xem trước: lúc thiết lập nằm chung cột trái với thẻ thiết lập (cột tự cuộn), lúc đang luyện ở dưới vùng luyện
   const scorePanel = (
-    <section className="studio-player__score">
+    <section className={`studio-player__score${!session && !showScoreSheet ? ' is-collapsed' : ''}`}>
       <div className="studio-player__section-head">
         <div>
           <h2>{t('studioPlayer.score.title')}</h2>
