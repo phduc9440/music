@@ -1,4 +1,5 @@
 import { useCallback, useEffect } from 'react';
+import { toast } from 'react-toastify';
 import type { Dispatch, SetStateAction, MutableRefObject } from 'react';
 import type { EditCommand } from './commands';
 import { History } from './history';
@@ -46,7 +47,10 @@ export function useLiveSync(o: LiveSyncOptions) {
         sync();
         setSelection((prev) => new Set([...prev].filter((id) => doc.getInfo(id) !== undefined)));
       },
-      onVersion: setVersion,
+      onVersion: (version, mine) => {
+        setVersion(version);
+        if (mine) toast.success(t('editor.toast.saved'));
+      },
       onNotice: flash,
     });
     return () => bind(null);

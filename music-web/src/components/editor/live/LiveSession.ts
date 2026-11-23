@@ -46,6 +46,9 @@ export const newOpId = (): string => {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
 };
 
+/** Chờ tối đa chừng này (ms) để server báo phiên bản mới sau khi bấm Lưu. */
+const SAVE_WAIT_MS = 8000;
+
 export const measureKey = (partIndex: number, measureIndex: number): string => `${partIndex}:${measureIndex}`;
 
 export interface LiveState {
@@ -63,7 +66,8 @@ export interface SessionCallbacks {
   onState: (state: LiveState) => void;
   /** Tài liệu vừa bị người khác (hoặc server) đổi: `'all'` nếu đổi cấu trúc, ngược lại là khóa các ô đã đổi. */
   onDocChanged: (touched: ReadonlySet<string> | 'all') => void;
-  onVersion: (version: number) => void;
+  /** `mine`: phiên bản này là kết quả lần bấm Lưu của chính người dùng (không phải tự lưu hay người khác lưu). */
+  onVersion: (version: number, mine: boolean) => void;
   /** Báo người dùng bằng khóa dịch; `error` là lỗi từ server. */
   onNotice: (key: string, params?: Record<string, string | number>) => void;
   onServerError: (error: LiveError) => void;
@@ -108,6 +112,8 @@ export class LiveSession {
   private awaitingJoin = false;
   private seq = -1;
   private unsaved = false;
+  /** Đang chờ phiên bản mới sau khi người dùng bấm Lưu (server chỉ phát phiên bản, không nói ai lưu). */
+  private saveTimer: number | null = null;
   /** Mã băm và XML do server xác nhận, theo part rồi theo ô. */
   private hashes: string[][] = [];
   private confirmed = new Map<string, string>();
@@ -155,6 +161,7 @@ export class LiveSession {
     this.stopped = true;
     if (this.lockTimer !== null) window.clearTimeout(this.lockTimer);
     if (this.presenceTimer !== null) window.clearTimeout(this.presenceTimer);
+    if (this.saveTimer !== null) window.clearTimeout(this.saveTimer);
     await this.client.stop();
   }
 
@@ -206,6 +213,12 @@ export class LiveSession {
   }
 
   save(): void {
+    if (this.saveTimer !== null) window.clearTimeout(this.saveTimer);
+    // Không có gì để lưu thì server không phát phiên bản nào: hết hạn chờ thì báo, và không nhận nhầm lần tự lưu sau đó
+    this.saveTimer = window.setTimeout(() => {
+      this.saveTimer = null;
+      if (!this.stopped && !this.unsaved) this.cb.onNotice('editor.flash.nothingToSave');
+    }, SAVE_WAIT_MS);
     this.client.save();
   }
 
@@ -247,7 +260,7 @@ export class LiveSession {
       if (touched.size > 0 || structural) this.cb.onDocChanged(structural ? 'all' : touched);
     }
     this.seq = result.seq;
-    this.cb.onVersion(result.baseVersion);
+    this.cb.onVersion(result.baseVersion, false);
     this.setLink('online');
     this.scheduleLockSync();
     this.pump();
@@ -349,7 +362,12 @@ export class LiveSession {
   private onVersion(version: LiveVersion): void {
     if (version.scoreId !== this.scoreId) return;
     this.unsaved = false;
-    this.cb.onVersion(version.version);
+    const mine = this.saveTimer !== null;
+    if (mine) {
+      window.clearTimeout(this.saveTimer!);
+      this.saveTimer = null;
+    }
+    this.cb.onVersion(version.version, mine);
     this.publishState();
   }
 

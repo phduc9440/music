@@ -230,6 +230,20 @@
   --ui-instrument-8: #475569;
 }
 
+/* đã đăng nhập (UserLayout / AdminLayout gắn class ui-signed-in lên <html>, theme/useSignedInSurface), theme sáng: thẻ / khung nội dung nền trắng, rê chuột và ô
+   bên trong là xám ấm rất nhạt thay vì cam nhạt; nền trang kem đào và các tông phụ xanh / vàng chanh giữ nguyên */
+:root.ui-signed-in:not([data-theme='dark']) {
+  --ui-surface: #ffffff;
+  --ui-surface-muted: #f6f1ed;
+  --ui-surface-hover: #f4eee9;
+  --ui-border: #ebdfd6;
+  --ui-border-strong: #d4bfb0;
+  --ui-panel: #ffffff;
+  --ui-panel-2: #f9f5f2;
+  --ui-panel-hover: #f4eee9;
+  --ui-panel-border: #e8dbd1;
+}
+
 :root[data-theme='dark'] {
   color-scheme: dark;
 

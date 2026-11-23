@@ -7,3 +7,9 @@ spring:
   flyway:
     # Chỉ DB test mới được xóa sạch để chạy lại migration từ đầu (mvn flyway:clean hoặc test tự gọi)
     clean-disabled: false
+
+# Không ghi MusicXML mẫu cho bản seed lúc khởi động (SeedMusicXmlInitializer): test tự kiểm soát dữ liệu file
+app:
+  seed:
+    musicxml:
+      enabled: false

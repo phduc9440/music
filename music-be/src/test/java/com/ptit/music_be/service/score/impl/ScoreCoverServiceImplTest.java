@@ -160,6 +160,7 @@ class ScoreCoverServiceImplTest {
 
     @Test
     void storageFailureKeepsOldCover() throws Exception {
+        String before = scoreRepository.findById(scoreId).orElseThrow().getCoverUrl();
         when(uploader.upload(any(byte[].class), anyMap())).thenThrow(new RuntimeException("cloud down"));
         assertEquals(ScoreErrorCode.FILE_STORAGE_ERROR, codeOf(() -> {
             try {
@@ -170,6 +171,6 @@ class ScoreCoverServiceImplTest {
                 throw new IllegalStateException(e);
             }
         }));
-        assertNull(scoreRepository.findById(scoreId).orElseThrow().getCoverUrl());
+        assertEquals(before, scoreRepository.findById(scoreId).orElseThrow().getCoverUrl());
     }
 }

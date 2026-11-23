@@ -236,7 +236,7 @@
     "chordsLeft": "Còn {count} hợp âm không có nốt để gán",
     "lyricsPlaced": "Đã gán {count} âm tiết",
     "lyricsLeft": "Còn {count} âm tiết không có nốt để gán",
-    "saved": "Đã lưu (phiên bản {version})",
+    "saved": "Đã lưu",
     "restoredNoReload": "Đã khôi phục thành phiên bản {version} nhưng chưa tải lại được, hãy tải lại trang",
     "restored": "Đã khôi phục phiên bản {from} thành phiên bản {version}",
     "draftRestored": "Đã khôi phục bản nháp, hãy bấm Lưu để giữ lại",
