@@ -8,7 +8,7 @@ import { t } from '../../../i18n/core';
 import Skeleton from '../../ui/Skeleton';
 import { Icon } from '../../ui';
 import ChordSuggestDialog from '../chords/ChordSuggestDialog';
-import { aiChordsEditPath, statusTone, suggestionPath } from './suggestionUtils';
+import { aiChordsEditPath, clearChordsEditPath, statusTone, suggestionPath } from './suggestionUtils';
 import { useNavigate } from '../../../routes/useTransitionNavigate';
 import './suggestions.css';
 
@@ -84,6 +84,7 @@ export default function SuggestionsSection({ scoreId, canEdit = false, onOpenCou
           scoreId={scoreId}
           onClose={() => setSuggestingChords(false)}
           onCompleted={canEdit ? (id) => navigate(aiChordsEditPath(base, scoreId, id)) : undefined}
+          onClearAll={canEdit ? () => navigate(clearChordsEditPath(base, scoreId)) : undefined}
         />
       )}
 

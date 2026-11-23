@@ -73,7 +73,7 @@ export function useSaveFlow(o: SaveFlowOptions) {
           canUndo: historyRef.current.canUndo,
           canRedo: historyRef.current.canRedo,
         });
-        toast.success(t('editor.toast.saved', { version: result.version }));
+        toast.success(t('editor.toast.saved'));
       } catch (err) {
         const latest = getConflictVersion(err);
         if (latest !== undefined) setConflict({ latestVersion: latest });

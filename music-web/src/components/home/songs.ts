@@ -99,12 +99,7 @@ const ODE_END1 = 'E5:C3.G3*3 D5*1 D5:G2.D3*4';
 const ODE_END2 = 'D5:G2.D3*3 C5*1 C5:C3.G3*4';
 
 // Twinkle Twinkle Little Star (giai điệu dân ca Pháp "Ah! vous dirai-je, maman", thế kỷ 18)
-const TWINKLE_A = [
-  'C4:C3.G3 C4 G4 G4',
-  'A4:F2.C3 A4 G4:C3.G3*4',
-  'F4:F2.C3 F4 E4:C3.G3 E4',
-  'D4:G2.D3 D4 C4:C3.G3*4',
-];
+const TWINKLE_A = ['C4:C3.G3 C4 G4 G4', 'A4:F2.C3 A4 G4:C3.G3*4', 'F4:F2.C3 F4 E4:C3.G3 E4', 'D4:G2.D3 D4 C4:C3.G3*4'];
 const TWINKLE_B = ['G4:C3.G3 G4 F4:F2.C3 F4', 'E4:C3.G3 E4 D4:G2.D3*4'];
 
 // Jingle Bells (James Lord Pierpont, 1857), điệp khúc

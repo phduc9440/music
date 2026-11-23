@@ -8,7 +8,7 @@ import { LiveSession, type LiveState } from './LiveSession';
 /** Cầu nối từ phiên đồng bộ sang editor; editor gắn vào khi mount. */
 export interface LiveBindings {
   onDocChanged: (touched: ReadonlySet<string> | 'all') => void;
-  onVersion: (version: number) => void;
+  onVersion: (version: number, mine: boolean) => void;
   onNotice: (text: string) => void;
 }
 
@@ -56,7 +56,7 @@ export function useLiveCollab({ scoreId, doc, enabled, getSelection }: Options):
     const created = new LiveSession(scoreId, doc, true, {
       onState: setState,
       onDocChanged: (touched) => bindings.current?.onDocChanged(touched),
-      onVersion: (version) => bindings.current?.onVersion(version),
+      onVersion: (version, mine) => bindings.current?.onVersion(version, mine),
       onNotice: (key, params) => bindings.current?.onNotice(t(key, params)),
       onServerError: (error) => toast.error(errorCodeMessage(error.code, error.message) ?? error.message),
       getSelection: () => selectionRef.current(),

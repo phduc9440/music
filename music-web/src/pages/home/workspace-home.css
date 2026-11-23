@@ -836,14 +836,15 @@
   }
 }
 
-/* ---- phối màu theo vai (bảng Cam – Xanh – Vàng chanh trong tokens.css): mỗi khung một tông thay vì cùng nền trắng.
-   Cam (chủ đạo): Tiếp tục, Chờ bạn xử lý, ô Tạo mới. Xanh (chi tiết lớn): khối Chuỗi ngày và khối kêu gọi cuối trang.
+/* ---- phối màu theo vai (bảng Cam – Xanh – Vàng chanh trong tokens.css).
+   Trắng: Tiếp tục, Chờ bạn xử lý, ô Tạo mới (biểu tượng vẫn cam). Xanh (chi tiết lớn): khối Chuỗi ngày và khối kêu gọi cuối trang.
    Vàng chanh (bổ trợ): Gợi ý luyện tập, nửa sau dải màu của ô Tạo mới. Xanh nhạt: Việc của tôi. Mỗi khung định nghĩa lại
    --wh-card / --wh-card-2 nên dòng con, ô số đếm và trạng thái rê chuột bên trong đổi theo cùng tông. Pha bằng
    color-mix với --ui-surface nên tự theo theme sáng / tối ---- */
 .wh {
-  --wh-orange: color-mix(in srgb, var(--ui-cta) 11%, var(--ui-surface));
-  --wh-orange-2: color-mix(in srgb, var(--ui-cta) 20%, var(--ui-surface));
+  /* trắng khi đã đăng nhập (tokens.css, :root.ui-signed-in); theme tối là nền thẻ tối */
+  --wh-white: var(--ui-surface);
+  --wh-white-2: var(--ui-surface-hover);
   --wh-lime: var(--ui-tint-lime);
   --wh-lime-2: var(--ui-tint-lime-2);
   --wh-teal: var(--ui-tint-teal);
@@ -851,9 +852,10 @@
   --wh-deep: linear-gradient(135deg, var(--ui-hero-from), var(--ui-hero-to));
 }
 .wh-tile--continue,
-.wh-tile--pending {
-  --wh-card: var(--wh-orange);
-  --wh-card-2: var(--wh-orange-2);
+.wh-tile--pending,
+.wh-tile.wh-tile--create {
+  --wh-card: var(--wh-white);
+  --wh-card-2: var(--wh-white-2);
 }
 .wh-tile--suggest {
   --wh-card: var(--wh-lime);
@@ -863,14 +865,7 @@
   --wh-card: var(--wh-teal);
   --wh-card-2: var(--wh-teal-2);
 }
-/* ô Tạo mới: dải cam nhạt → vàng chanh nhạt, biểu tượng cam */
-.wh-tile.wh-tile--create {
-  --wh-card-2: var(--wh-orange-2);
-  background: linear-gradient(120deg, var(--wh-orange), var(--wh-lime));
-}
-.wh-tile.wh-tile--create:hover {
-  background: linear-gradient(120deg, var(--wh-orange-2), var(--wh-lime-2));
-}
+/* ô Tạo mới: nền trắng, biểu tượng cam */
 .wh-tile--create > svg {
   color: var(--ui-cta);
 }

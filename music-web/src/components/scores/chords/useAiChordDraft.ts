@@ -2,11 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import { ScoreDocument } from '../../editor/core/ScoreDocument';
 import type { ScoreEditor } from '../../editor/core/useScoreEditor';
-import { replaceHarmonies } from '../../editor/notation/harmony';
+import { readChord, replaceHarmonies } from '../../editor/notation/harmony';
 import { t } from '../../../i18n/core';
 import { suggestionApi } from '../../../services';
 import type { SuggestionDetail } from '../../../types';
-import { chordStatus, diffChords } from './aiChords';
+import { chordStatus, clearedChords, diffChords } from './aiChords';
 import type { AiChordItem, AiChordStatus } from './aiChords';
 import type { AiChordMark } from './aiChordHighlight';
 
@@ -22,6 +22,8 @@ export interface AiChordDraft {
   /** Phiên bản lúc nạp gợi ý: lưu xong (phiên bản lớn hơn) thì đề xuất được đánh dấu đã áp dụng. */
   startVersion: number;
   items: AiChordItem[];
+  /** Hợp âm cũ bị gỡ vì gợi ý lại đặt hợp âm mới ở nốt khác: "Bỏ gợi ý" trả lại nếu nốt vẫn trống. */
+  cleared: { id: string; beforeHarmonies: Element[] }[];
 }
 
 interface Options {
@@ -102,7 +104,9 @@ export function useAiChordDraft({ doc, editor, canEdit, onFallback }: Options): 
           onFallback(suggestionId);
           return;
         }
-        const items = diffChords(doc, ScoreDocument.parse(xml));
+        const proposed = ScoreDocument.parse(xml);
+        const items = diffChords(doc, proposed);
+        const cleared = clearedChords(doc, proposed);
         if (items.length === 0) {
           toast.info(t('chords.draft.nothingNew'));
           onFallback(suggestionId);
@@ -110,14 +114,17 @@ export function useAiChordDraft({ doc, editor, canEdit, onFallback }: Options): 
         }
         const result = replaceHarmonies(
           doc,
-          items.map((i) => ({ id: i.id, harmonies: i.aiHarmonies })),
+          [
+            ...items.map((i) => ({ id: i.id, harmonies: i.aiHarmonies })),
+            ...cleared.map((c) => ({ id: c.id, harmonies: [] })),
+          ],
           { key: 'editor.cmd.chord.ai' },
         );
         if (!applyEdit(result)) {
           toast.warn(t('chords.draft.blocked'));
           return;
         }
-        setDraft({ suggestion, startVersion: version, items });
+        setDraft({ suggestion, startVersion: version, items, cleared });
         toast.success(t('chords.draft.loaded', { count: items.length }));
       } catch {
         toast.error(t('chords.draft.loadFailed'));
@@ -131,10 +138,14 @@ export function useAiChordDraft({ doc, editor, canEdit, onFallback }: Options): 
   const discard = useCallback(async () => {
     if (!draft) return;
     const untouched = rows.filter((r) => r.status === 'ai');
-    if (untouched.length > 0) {
+    const restore = draft.cleared.filter((c) => doc.getInfo(c.id) && !readChord(doc, c.id));
+    if (untouched.length > 0 || restore.length > 0) {
       const result = replaceHarmonies(
         doc,
-        untouched.map((r) => ({ id: r.id, harmonies: r.beforeHarmonies })),
+        [
+          ...untouched.map((r) => ({ id: r.id, harmonies: r.beforeHarmonies })),
+          ...restore.map((c) => ({ id: c.id, harmonies: c.beforeHarmonies })),
+        ],
         { key: 'editor.cmd.chord.aiDiscard' },
       );
       if (!applyEdit(result)) {

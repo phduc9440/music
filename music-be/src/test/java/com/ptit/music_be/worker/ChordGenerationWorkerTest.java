@@ -117,7 +117,7 @@ class ChordGenerationWorkerTest {
 
     /** music-ai giả: kiểm tra file vào đúng là version gốc rồi ghi file ra có hợp âm. */
     private void aiWritesChords() {
-        when(aiServiceClient.generateChords(IN, OUT, "POP")).thenAnswer(inv -> {
+        when(aiServiceClient.generateChords(IN, OUT, "POP", false)).thenAnswer(inv -> {
             assertThat(Files.readAllBytes(root.resolve(IN))).isEqualTo(BASE);
             Files.createDirectories(root.resolve(OUT).getParent());
             Files.write(root.resolve(OUT), WITH_CHORDS);
@@ -169,7 +169,7 @@ class ChordGenerationWorkerTest {
     @Test
     void doesNotCreateSuggestionWhenTaskTimedOutMeanwhile() {
         // Job quét báo TASK_TIMEOUT trong lúc music-ai còn chạy
-        when(aiServiceClient.generateChords(IN, OUT, "POP")).thenAnswer(inv -> {
+        when(aiServiceClient.generateChords(IN, OUT, "POP", false)).thenAnswer(inv -> {
             Files.createDirectories(root.resolve(OUT).getParent());
             Files.write(root.resolve(OUT), WITH_CHORDS);
             task.setStatus(AiTaskStatus.FAILED);
@@ -187,7 +187,7 @@ class ChordGenerationWorkerTest {
 
     @Test
     void failsTaskAndCleansTempWhenAiRejects() {
-        when(aiServiceClient.generateChords(IN, OUT, "POP"))
+        when(aiServiceClient.generateChords(IN, OUT, "POP", false))
                 .thenThrow(HttpClientErrorException.create(
                         HttpStatus.UNPROCESSABLE_ENTITY,
                         "Unprocessable",
@@ -205,7 +205,7 @@ class ChordGenerationWorkerTest {
 
     @Test
     void alreadyHarmonizedFromAiIsMapped() {
-        when(aiServiceClient.generateChords(IN, OUT, "POP"))
+        when(aiServiceClient.generateChords(IN, OUT, "POP", false))
                 .thenThrow(HttpClientErrorException.create(
                         HttpStatus.UNPROCESSABLE_ENTITY,
                         "Unprocessable",
@@ -232,8 +232,26 @@ class ChordGenerationWorkerTest {
     }
 
     @Test
+    void replaceModeForwardsFlagAndReportsNoChange() {
+        task.setInputData("{\"style\":\"POP\",\"baseVersion\":7,\"replaceExisting\":true}");
+        when(aiServiceClient.generateChords(IN, OUT, "POP", true)).thenAnswer(inv -> {
+            Files.createDirectories(root.resolve(OUT).getParent());
+            Files.write(root.resolve(OUT), WITH_CHORDS);
+            return new ChordGenerationResult(OUT, "C major", 8, 4, 0, 0);
+        });
+        when(suggestionService.createFromSystem(any(), any(), anyInt(), any(), any(), any()))
+                .thenThrow(new AppException(CollabErrorCode.SUGGESTION_EMPTY));
+
+        worker.process(TASK_ID);
+
+        assertThat(task.getStatus()).isEqualTo(AiTaskStatus.FAILED);
+        assertThat(task.getErrorMessage()).isEqualTo("CHORD_NO_CHANGE");
+        assertTempFilesGone();
+    }
+
+    @Test
     void failsWithUnavailableOnConnectionError() {
-        when(aiServiceClient.generateChords(IN, OUT, "POP")).thenThrow(new ResourceAccessException("refused"));
+        when(aiServiceClient.generateChords(IN, OUT, "POP", false)).thenThrow(new ResourceAccessException("refused"));
 
         worker.process(TASK_ID);
 
@@ -242,7 +260,7 @@ class ChordGenerationWorkerTest {
 
     @Test
     void failsWithUnavailableOnServerError() {
-        when(aiServiceClient.generateChords(IN, OUT, "POP"))
+        when(aiServiceClient.generateChords(IN, OUT, "POP", false))
                 .thenThrow(HttpServerErrorException.create(
                         HttpStatus.INTERNAL_SERVER_ERROR, "boom", HttpHeaders.EMPTY, new byte[0], null));
 

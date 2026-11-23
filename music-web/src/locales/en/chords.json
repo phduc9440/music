@@ -15,7 +15,12 @@
     "cancel": "Cancel",
     "hide": "Hide",
     "submit": "Create suggestion",
-    "creating": "Creating…"
+    "creating": "Creating…",
+    "harmonizedTitle": "Every measure already has a chord",
+    "harmonizedHint": "Do you want to change the existing chords? The AI will drop all current chords and suggest new ones for the whole piece; you still review them before saving.",
+    "replace": "Suggest again, replace chords",
+    "clearAll": "Delete all chords",
+    "clearAllHint": "Remove every chord from the score in the editor (unsaved, Ctrl+Z to undo)"
   },
   "styles": {
     "POP": {
@@ -36,7 +41,8 @@
     "CHORD_ALREADY_HARMONIZED": "Every measure already has a chord; nothing new to suggest",
     "AI_SERVICE_UNAVAILABLE": "The AI service is unavailable, please try again later",
     "TASK_TIMEOUT": "Chord suggestion took too long and was stopped, please try again",
-    "JOB_REJECTED": "The score could not be read for chord suggestion"
+    "JOB_REJECTED": "The score could not be read for chord suggestion",
+    "CHORD_NO_CHANGE": "The AI suggested exactly the current chords; nothing changed"
   },
   "draft": {
     "panelTitle": "AI chord suggestions",
@@ -78,5 +84,13 @@
     "openInEditorHint": "Load these chords into the editor as a draft so you can adjust them before saving",
     "remove": "Delete",
     "removeHint": "Delete chord {chord} from this note (Ctrl+Z to undo)"
+  },
+  "clear": {
+    "title": "Delete all chords?",
+    "message": "All chords ({count}) will be removed from the score. The change is not saved yet; you can undo it with Ctrl+Z.",
+    "confirm": "Delete all",
+    "done": "Deleted {count} chords. Press Save to keep the change.",
+    "none": "The score has no chords yet",
+    "blocked": "Some measures are being edited by someone else, so the chords could not be deleted yet; try again later"
   }
 }

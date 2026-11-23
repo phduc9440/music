@@ -216,7 +216,6 @@ function soundNote(song: Song, i: number, auto: boolean) {
   return note.bass.map((m, k) => window.setTimeout(() => playPianoNote(m, 0.38), k * gap));
 }
 
-
 export default function MusicBoxRing3D() {
   const hostRef = useRef<HTMLDivElement>(null);
   const playRef = useRef<() => void>(() => {});
@@ -419,7 +418,12 @@ export default function MusicBoxRing3D() {
       });
 
       const bars = notes.map((n, i) => (n.barStart ? i : -1)).filter((i) => i >= 0);
-      barMat = new THREE.MeshBasicMaterial({ color: colors.ink, transparent: true, depthWrite: false, side: THREE.DoubleSide });
+      barMat = new THREE.MeshBasicMaterial({
+        color: colors.ink,
+        transparent: true,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      });
       const barMesh = new THREE.InstancedMesh(barGeo, barMat, Math.max(1, bars.length));
       barMesh.count = bars.length;
       bars.forEach((i, k) => {
@@ -841,7 +845,10 @@ export default function MusicBoxRing3D() {
         q.setFromEuler(eul.set(0, 0, b.rot));
         s3.setScalar(b.scale * grow * (1 - k * 0.4));
         mesh.setMatrixAt(i, m4.compose(b.pos, q, s3));
-        col.copy(toneColors[b.tone]).lerp(colors.lit, 0.4).lerp(colors.fadeTo, k * k);
+        col
+          .copy(toneColors[b.tone])
+          .lerp(colors.lit, 0.4)
+          .lerp(colors.fadeTo, k * k);
         mesh.setColorAt(i, col);
       }
       burstSet.meshes.forEach((mesh, g) => {
@@ -1013,12 +1020,7 @@ export default function MusicBoxRing3D() {
             {auto ? t('home.guest.melody.playing') : t('home.guest.melody.hint')}
           </small>
         </span>
-        <button
-          type="button"
-          className="gh-melody__auto"
-          aria-pressed={auto}
-          onClick={() => autoRef.current()}
-        >
+        <button type="button" className="gh-melody__auto" aria-pressed={auto} onClick={() => autoRef.current()}>
           <Icon name={auto ? 'pause' : 'play'} size={16} />
           {auto ? t('home.guest.melody.stop') : t('home.guest.melody.auto')}
         </button>

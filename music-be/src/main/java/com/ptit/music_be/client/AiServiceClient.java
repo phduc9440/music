@@ -117,13 +117,14 @@ public class AiServiceClient {
      * ra {@code outPath}. Lỗi dự đoán được: 422 với {@code detail.code} (NO_MELODY, ALREADY_HARMONIZED, PARSE_ERROR).
      *
      * @param style POP, BALLAD hoặc JAZZ
+     * @param replaceExisting true: bỏ hết hợp âm đang có rồi gợi ý lại toàn bộ
      */
-    public ChordGenerationResult generateChords(String inPath, String outPath, String style) {
+    public ChordGenerationResult generateChords(String inPath, String outPath, String style, boolean replaceExisting) {
         return convertClient
                 .post()
                 .uri("/chords/generate")
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(Map.of("inPath", inPath, "outPath", outPath, "style", style))
+                .body(Map.of("inPath", inPath, "outPath", outPath, "style", style, "replaceExisting", replaceExisting))
                 .retrieve()
                 .body(ChordGenerationResult.class);
     }

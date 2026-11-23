@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useNavigate } from '../../../../routes/useTransitionNavigate';
-import { setChord } from '../../../../components/editor/notation/harmony';
+import { toast } from 'react-toastify';
+import { replaceHarmonies, setChord } from '../../../../components/editor/notation/harmony';
+import { chordNoteIds } from '../../../../components/scores/chords/aiChords';
 import { useAiChordDraft } from '../../../../components/scores/chords/useAiChordDraft';
 import type { AiChordRow } from '../../../../components/scores/chords/useAiChordDraft';
 import type { AiChordMark } from '../../../../components/scores/chords/aiChordHighlight';
@@ -48,6 +50,8 @@ export function useAiChordPanel({
   const { confirm } = useDialog();
   const [searchParams, setSearchParams] = useSearchParams();
   const linkedAiChords = searchParams.get('aiChords');
+  // ?clearChords=1: mở từ hộp Gợi ý hợp âm ở trang chi tiết, xóa hết hợp âm ngay khi vào trình chỉnh sửa
+  const linkedClear = searchParams.get('clearChords') === '1';
   const [aiFocus, setAiFocus] = useState<{ mark: AiChordMark; key: number } | null>(null);
   const openSuggestionReview = useCallback(
     (suggestionId: string) => navigate(suggestionPath(base, scoreId, suggestionId)),
@@ -72,11 +76,12 @@ export function useAiChordPanel({
   // Trạng thái đi off → connecting → synced; vào phiên lỗi (gói không có cộng tác...) thì không bao giờ synced, nên chỉ
   // chờ tối đa AI_LIVE_WAIT_MS
   const [liveWaitOver, setLiveWaitOver] = useState(false);
+  const linkedAny = !!linkedAiChords || linkedClear;
   useEffect(() => {
-    if (!linkedAiChords) return;
+    if (!linkedAny) return;
     const timer = window.setTimeout(() => setLiveWaitOver(true), AI_LIVE_WAIT_MS);
     return () => window.clearTimeout(timer);
-  }, [linkedAiChords]);
+  }, [linkedAny]);
   // Người sửa được luôn vào phiên (useLiveCollab bật theo canEdit), nhưng phiên chỉ được tạo sau lần render đầu nên
   // không dựa vào live.active được
   const liveReady =
@@ -90,6 +95,45 @@ export function useAiChordPanel({
     setSearchParams(next, { replace: true });
     beginAiDraft(linkedAiChords);
   }, [linkedAiChords, liveReady, searchParams, setSearchParams, beginAiDraft]);
+
+  /** Xóa mọi hợp âm của bản nhạc trong một bước sửa (chưa lưu, Ctrl+Z để hoàn tác), có hỏi lại trước. */
+  const clearAllChords = useCallback(async () => {
+    const ids = chordNoteIds(doc);
+    if (ids.length === 0) {
+      toast.info(t('chords.clear.none'));
+      return;
+    }
+    const ok = await confirm({
+      title: t('chords.clear.title'),
+      message: t('chords.clear.message', { count: ids.length }),
+      confirmLabel: t('chords.clear.confirm'),
+      tone: 'danger',
+    });
+    if (!ok) return;
+    const result = replaceHarmonies(
+      doc,
+      ids.map((id) => ({ id, harmonies: [] })),
+      { key: 'editor.cmd.chord.clearAll' },
+    );
+    if (!editor.applyEdit(result)) {
+      toast.warn(t('chords.clear.blocked'));
+      return;
+    }
+    toast.success(t('chords.clear.done', { count: ids.length }));
+  }, [doc, editor, confirm]);
+  const clearAllRef = useRef(clearAllChords);
+  useEffect(() => {
+    clearAllRef.current = clearAllChords;
+  });
+  const clearParamHandled = useRef(false);
+  useEffect(() => {
+    if (!linkedClear || !liveReady || clearParamHandled.current) return;
+    clearParamHandled.current = true;
+    const next = new URLSearchParams(searchParams);
+    next.delete('clearChords');
+    setSearchParams(next, { replace: true });
+    if (canEdit) void clearAllRef.current();
+  }, [linkedClear, liveReady, searchParams, setSearchParams, canEdit]);
 
   const pickAiChord = (row: AiChordRow) => {
     editor.select([row.id], false);
@@ -114,7 +158,17 @@ export function useAiChordPanel({
   };
   const shown = panelOpen && (aiDraft.draft !== null || aiDraft.loading);
 
-  return { aiDraft, aiFocus, shown, beginAiDraft, pickAiChord, editAiChord, removeAiChord, discardAiDraft };
+  return {
+    aiDraft,
+    aiFocus,
+    shown,
+    beginAiDraft,
+    pickAiChord,
+    editAiChord,
+    removeAiChord,
+    discardAiDraft,
+    clearAllChords,
+  };
 }
 
 export type AiChordPanelState = ReturnType<typeof useAiChordPanel>;

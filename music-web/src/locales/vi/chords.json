@@ -15,7 +15,12 @@
     "cancel": "Hủy",
     "hide": "Ẩn",
     "submit": "Tạo gợi ý",
-    "creating": "Đang tạo…"
+    "creating": "Đang tạo…",
+    "harmonizedTitle": "Mọi ô nhịp đã có hợp âm",
+    "harmonizedHint": "Bạn có muốn thay đổi các hợp âm đã có không? AI sẽ bỏ hết hợp âm cũ và gợi ý lại cho cả bài; bạn vẫn xem lại trước khi lưu.",
+    "replace": "Gợi ý lại, thay hợp âm cũ",
+    "clearAll": "Xóa hết hợp âm",
+    "clearAllHint": "Gỡ mọi hợp âm khỏi bản nhạc trong trình chỉnh sửa (chưa lưu, Ctrl+Z để hoàn tác)"
   },
   "styles": {
     "POP": {
@@ -36,7 +41,8 @@
     "CHORD_ALREADY_HARMONIZED": "Mọi ô nhịp đã có hợp âm, không có gì mới để gợi ý",
     "AI_SERVICE_UNAVAILABLE": "Dịch vụ AI đang tạm ngưng, vui lòng thử lại sau",
     "TASK_TIMEOUT": "Gợi ý hợp âm chạy quá lâu nên đã dừng, vui lòng thử lại",
-    "JOB_REJECTED": "Không đọc được bản nhạc để gợi ý hợp âm"
+    "JOB_REJECTED": "Không đọc được bản nhạc để gợi ý hợp âm",
+    "CHORD_NO_CHANGE": "AI gợi ý đúng các hợp âm đang có, không có gì thay đổi"
   },
   "draft": {
     "panelTitle": "Hợp âm AI gợi ý",
@@ -78,5 +84,13 @@
     "openInEditorHint": "Nạp các hợp âm này vào trình chỉnh sửa dưới dạng bản nháp để sửa lại trước khi lưu",
     "remove": "Xóa",
     "removeHint": "Xóa hợp âm {chord} khỏi nốt này (Ctrl+Z để hoàn tác)"
+  },
+  "clear": {
+    "title": "Xóa hết hợp âm?",
+    "message": "Mọi hợp âm ({count}) sẽ bị gỡ khỏi bản nhạc. Thay đổi chưa được lưu, bạn có thể hoàn tác bằng Ctrl+Z.",
+    "confirm": "Xóa hết",
+    "done": "Đã xóa {count} hợp âm. Bấm Lưu để ghi lại.",
+    "none": "Bản nhạc chưa có hợp âm nào",
+    "blocked": "Có ô nhịp đang được người khác sửa nên chưa xóa được hợp âm, thử lại sau"
   }
 }

@@ -106,7 +106,14 @@ function drawNote(ctx: CanvasRenderingContext2D, kind: Kind, s: number) {
     // móc đuôi
     ctx.beginPath();
     ctx.moveTo(rx * 0.9, -stemH);
-    ctx.bezierCurveTo(rx * 0.9 + s * 0.15, -stemH + s * 0.9, rx * 0.9 + s * 1.1, -stemH + s * 1.1, rx * 0.9 + s * 0.75, -stemH + s * 2.1);
+    ctx.bezierCurveTo(
+      rx * 0.9 + s * 0.15,
+      -stemH + s * 0.9,
+      rx * 0.9 + s * 1.1,
+      -stemH + s * 1.1,
+      rx * 0.9 + s * 0.75,
+      -stemH + s * 2.1,
+    );
     ctx.stroke();
   }
 }
@@ -246,7 +253,7 @@ export default function AmbientNotes({ density = 1, ambient = true }: { density?
     const floaterY = (f: Floater) => {
       const r = range();
       const y = f.y * r - t * f.speed * r - scroll * (0.15 + f.depth * 0.35);
-      return ((y % r) + r) % r - 60;
+      return (((y % r) + r) % r) - 60;
     };
 
     const drawBg = (dt: number) => {

@@ -13,6 +13,8 @@ import './chordSuggest.css';
 
 /** Mã lỗi BE: đã có một gợi ý hợp âm đang chờ duyệt (kèm result.suggestionId). */
 const PENDING_CODE = 3132;
+/** Mã lỗi của tác vụ khi mọi ô nhịp đã có hợp âm. */
+const HARMONIZED_ERROR = 'CHORD_ALREADY_HARMONIZED';
 
 interface Props {
   scoreId: string;
@@ -22,6 +24,10 @@ interface Props {
    * xuất như cũ.
    */
   onCompleted?: (suggestionId: string) => void;
+  /** Biết trước mọi ô đã có hợp âm (trình chỉnh sửa tự kiểm): hỏi thay hợp âm cũ ngay, không phải chạy thử. */
+  allHarmonized?: boolean;
+  /** Xóa hết hợp âm (người sửa được). Không truyền thì không hiện nút. */
+  onClearAll?: () => void;
 }
 
 /** Lỗi của tác vụ (mã đứng trước dấu ":" trong errorMessage) dịch theo chords.taskErrors, mã lạ thì báo chung. */
@@ -34,19 +40,25 @@ function taskErrorText(message?: string | null): string {
  * Hộp "Gợi ý hợp âm" (R3): chọn phong cách, tạo tác vụ, chờ xong rồi mở trang duyệt đề xuất do hệ thống gửi.
  * Đóng hộp khi đang chạy thì tác vụ vẫn chạy ở máy chủ; đề xuất sẽ có ở tab Đề xuất và trong thông báo.
  */
-export default function ChordSuggestDialog({ scoreId, onClose, onCompleted }: Props) {
+export default function ChordSuggestDialog({ scoreId, onClose, onCompleted, allHarmonized, onClearAll }: Props) {
   const navigate = useNavigate();
   const base = useScoreBase();
   const [style, setStyle] = useState<ChordStyle>('POP');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
+  // Mọi ô đã có hợp âm: hỏi có muốn gợi ý lại (thay hợp âm cũ) hoặc xóa hết không
+  const [harmonized, setHarmonized] = useState(!!allHarmonized);
 
   const onFinished = (task: AiTaskInfo) => {
     const suggestionId = task.resultData?.suggestionId;
     if (task.status === 'COMPLETED' && typeof suggestionId === 'string') {
       if (onCompleted) onCompleted(suggestionId);
       else navigate(suggestionPath(base, scoreId, suggestionId));
+      return;
+    }
+    if (task.status === 'FAILED' && (task.errorMessage ?? '').split(':')[0].trim() === HARMONIZED_ERROR) {
+      setHarmonized(true);
       return;
     }
     setError(task.status === 'CANCELLED' ? t('chords.cancelled') : taskErrorText(task.errorMessage));
@@ -62,7 +74,7 @@ export default function ChordSuggestDialog({ scoreId, onClose, onCompleted }: Pr
     setPendingId(null);
     reset();
     try {
-      const res = await chordApi.request(scoreId, style);
+      const res = await chordApi.request(scoreId, style, harmonized);
       track(res.data.result);
     } catch (err) {
       if (reportPlanLimit(err)) {
@@ -102,6 +114,24 @@ export default function ChordSuggestDialog({ scoreId, onClose, onCompleted }: Pr
         ))}
       </fieldset>
 
+      {harmonized && (
+        <div className="cs-harmonized" role="status">
+          <strong>{t('chords.dialog.harmonizedTitle')}</strong>
+          <p className="cs-hint">{t('chords.dialog.harmonizedHint')}</p>
+          {onClearAll && (
+            <button
+              type="button"
+              className="sc-btn sc-btn--danger cs-clear"
+              onClick={onClearAll}
+              disabled={busy}
+              title={t('chords.dialog.clearAllHint')}
+            >
+              {t('chords.dialog.clearAll')}
+            </button>
+          )}
+        </div>
+      )}
+
       <div className="cs-status" aria-live="polite">
         {running && (
           <p className="cs-running">
@@ -134,7 +164,7 @@ export default function ChordSuggestDialog({ scoreId, onClose, onCompleted }: Pr
           {running ? t('chords.dialog.hide') : t('chords.dialog.cancel')}
         </button>
         <button type="button" className="sc-btn sc-btn--primary" onClick={() => void submit()} disabled={busy}>
-          {busy ? t('chords.dialog.creating') : t('chords.dialog.submit')}
+          {busy ? t('chords.dialog.creating') : harmonized ? t('chords.dialog.replace') : t('chords.dialog.submit')}
         </button>
       </div>
     </Modal>
