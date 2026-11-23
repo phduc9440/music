@@ -20,6 +20,7 @@ import { reportPlanLimit } from '../../../utils/planLimit';
 import { Link } from '../../../routes/transition-nav';
 import '../../../components/scores/scores.css';
 import './ScoreUpload.css';
+import CreateAlternatives from '../../../components/scores/upload/CreateAlternatives';
 import { t } from '../../../i18n/core';
 
 const IMPORT_EXTENSIONS = ['musicxml', 'xml', 'mxl', 'mid', 'midi'];
@@ -278,14 +279,6 @@ export default function ScoreImport() {
             <h1>{t('upload.import.title')}</h1>
             <p>{t('upload.import.subtitle')}</p>
           </div>
-          <div className="sc-upload__head-actions">
-            <button type="button" className="sc-btn" disabled={busy} onClick={() => navigate('/scores/upload')}>
-              {t('upload.import.toOmr')}
-            </button>
-            <button type="button" className="sc-btn" disabled={busy} onClick={() => navigate('/scores/blank')}>
-              {t('upload.startBlank')}
-            </button>
-          </div>
         </header>
 
         <form className="sc-upload" onSubmit={handleSubmit}>
@@ -369,6 +362,7 @@ export default function ScoreImport() {
                 </ul>
               </>
             )}
+            <CreateAlternatives options={['omr', 'blank']} disabled={busy} />
           </section>
 
           <aside className="sc-upload__side">

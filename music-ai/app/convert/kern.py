@@ -17,7 +17,13 @@ from app.convert.musicxml import NormalizeResult, normalize_musicxml
 log = logging.getLogger(__name__)
 
 
-def kern_file_to_musicxml_file(kern_path: Path, out_path: Path, tempo_bpm: Optional[int]) -> NormalizeResult:
+def kern_file_to_musicxml_file(
+    kern_path: Path,
+    out_path: Path,
+    tempo_bpm: Optional[int],
+    title: Optional[str] = None,
+    composer: Optional[str] = None,
+) -> NormalizeResult:
     """Đọc ``kern_path`` bằng music21, chuẩn hóa rồi ghi ``out_path``. Trả kết quả chuẩn hóa (metadata + cảnh báo).
 
     Thứ tự part music21 trả về không được dùng: staff trên/dưới được xác định lại từ khóa nhạc và cao độ (xem
@@ -42,7 +48,7 @@ def kern_file_to_musicxml_file(kern_path: Path, out_path: Path, tempo_bpm: Optio
         except Exception as exc:  # noqa: BLE001
             raise ConversionError(f"music21 không ghi được MusicXML: {type(exc).__name__}: {exc}") from exc
 
-    result = normalize_musicxml(raw, tempo_bpm)
+    result = normalize_musicxml(raw, tempo_bpm, title=title, composer=composer)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     temp = out_path.with_name(out_path.name + ".tmp")
     temp.write_bytes(result.xml)

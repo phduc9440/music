@@ -45,6 +45,12 @@ class JobOptions(BaseModel):
     """Bước cuối cùng được chạy: PREPROCESS (chỉ tiền xử lý), MERGE (thêm nhận diện + ghép kern) hoặc EXPORT (thêm xuất
     MusicXML và MIDI, mặc định)."""
 
+    title: Optional[str] = Field(default=None, max_length=255)
+    """Tên bài của bản nhạc (mặc định theo tên file tải lên): ghi vào MusicXML xuất ra để bản nhạc hiện đúng tên."""
+
+    composer: Optional[str] = Field(default=None, max_length=255)
+    """Tác giả (nếu người dùng nhập): ghi vào MusicXML xuất ra. Bỏ trống thì không ghi."""
+
     musicXmlVersion: int = Field(default=1, ge=1, le=100000)
     """Version của bản MusicXML lần chạy này tạo ra (``musicxml/v{n}.musicxml``, ``midi/v{n}.mid``). Java gửi
     ``scores.current_version + 1`` nên nhận diện lại sinh bản mới mà không ghi đè bản cũ (đặc tả mục 2.3)."""

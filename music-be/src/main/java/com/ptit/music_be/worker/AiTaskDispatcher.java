@@ -29,6 +29,7 @@ import com.ptit.music_be.dto.enums.ai.AiTaskStatus;
 import com.ptit.music_be.dto.enums.ai.AiTaskType;
 import com.ptit.music_be.dto.enums.score.FileType;
 import com.ptit.music_be.entity.AiTask;
+import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreFile;
 import com.ptit.music_be.event.OmrTaskCreatedEvent;
 import com.ptit.music_be.repository.ai.AiTaskRepository;
@@ -200,16 +201,21 @@ public class AiTaskDispatcher {
                             .limitsOf(task.getMember().getId())
                             .omrPriority());
             return Optional.of(new OmrJobRequest(
-                    taskId, scoreId, inputs, buildOptions(task.getInputData(), currentVersion + 1), priority));
+                    taskId,
+                    scoreId,
+                    inputs,
+                    buildOptions(task.getInputData(), currentVersion + 1, task.getScore()),
+                    priority));
         });
     }
 
     /**
      * options gửi music-ai: lấy preprocess/sourceType/binarize từ ai_tasks.input_data, thêm stopAfter từ cấu hình
      * omr.stop-after để music-ai biết dừng ở bước nào, và musicXmlVersion để music-ai đặt tên musicxml/v{n}.musicxml,
-     * midi/v{n}.mid cho lần xuất này.
+     * midi/v{n}.mid cho lần xuất này. Kèm tên bài và tác giả của bản nhạc để music-ai ghi vào MusicXML (bản nhạc mở ra
+     * hiện đúng tên, ví dụ tên file "Mẹ ơi có biết.png" → "Mẹ ơi có biết").
      */
-    private Map<String, Object> buildOptions(String inputData, int musicXmlVersion) {
+    private Map<String, Object> buildOptions(String inputData, int musicXmlVersion, Score score) {
         Map<String, Object> options = new LinkedHashMap<>();
         options.put("preprocess", true);
         options.put("binarize", true);
@@ -231,6 +237,14 @@ public class AiTaskDispatcher {
         }
         options.put("stopAfter", aiServiceProperties.getStopAfter());
         options.put("musicXmlVersion", musicXmlVersion);
+        putIfPresent(options, "title", score.getTitle());
+        putIfPresent(options, "composer", score.getComposer());
         return options;
+    }
+
+    private static void putIfPresent(Map<String, Object> options, String key, String value) {
+        if (value != null && !value.isBlank()) {
+            options.put(key, value.strip());
+        }
     }
 }

@@ -1065,7 +1065,11 @@ def _export(ctx: JobContext, extra: dict, score_metadata: dict) -> Optional[tupl
     midi_relative = f"scores/{score_id}/midi/v{version}.mid"
     try:
         normalized = kern_file_to_musicxml_file(
-            storage.resolve(extra["kernPath"]), storage.resolve(xml_relative), score_metadata.get("tempoBpm")
+            storage.resolve(extra["kernPath"]),
+            storage.resolve(xml_relative),
+            score_metadata.get("tempoBpm"),
+            title=ctx.job.options.title,
+            composer=ctx.job.options.composer,
         )
         budget.check()
         callback.progress(95, STEP_EXPORT)

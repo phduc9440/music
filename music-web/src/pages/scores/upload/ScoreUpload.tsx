@@ -25,6 +25,7 @@ import { reportPlanLimit } from '../../../utils/planLimit';
 import { inspectFile, rotateImageFile } from '../../../utils/uploadInspect';
 import '../../../components/scores/scores.css';
 import './ScoreUpload.css';
+import CreateAlternatives from '../../../components/scores/upload/CreateAlternatives';
 import { t } from '../../../i18n/core';
 
 const SOURCE_TYPES = Object.keys(OMR_SOURCE_LABELS) as OmrSourceType[];
@@ -184,14 +185,6 @@ export default function ScoreUpload() {
             <h1>{t('upload.title')}</h1>
             <p>{t('upload.subtitle')}</p>
           </div>
-          <div className="sc-upload__head-actions">
-            <button type="button" className="sc-btn" disabled={busy} onClick={() => navigate('/scores/import')}>
-              {t('upload.haveXml')}
-            </button>
-            <button type="button" className="sc-btn" disabled={busy} onClick={() => navigate('/scores/blank')}>
-              {t('upload.startBlank')}
-            </button>
-          </div>
         </header>
 
         <form className="sc-upload" onSubmit={handleSubmit}>
@@ -234,6 +227,7 @@ export default function ScoreUpload() {
                 </ul>
               </>
             )}
+            <CreateAlternatives options={['import', 'blank']} disabled={busy} />
           </section>
 
           <aside className="sc-upload__side">
