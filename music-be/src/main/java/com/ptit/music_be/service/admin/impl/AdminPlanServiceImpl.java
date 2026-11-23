@@ -217,12 +217,19 @@ public class AdminPlanServiceImpl implements AdminPlanService {
                         l.exportsPerMonth(),
                         l.chordGenerationsPerMonth())
                 .allMatch(v -> v == null || (v >= 0 && v <= MAX_LIMIT));
+        Integer chordOptions = l.chordOptions();
+        Integer pagesPerJob = l.omrMaxPagesPerJob();
+        Integer chordMeasures = l.chordMaxMeasures();
         Integer concurrent = l.omrConcurrent();
         Integer teamMembers = l.teamMembers();
         // Team ít nhất 2 người (chủ team và một người nữa) thì mới có nghĩa
         return inRange
                 && (concurrent == null || (concurrent >= 1 && concurrent <= MAX_LIMIT))
-                && (teamMembers == null || (teamMembers >= 2 && teamMembers <= MAX_LIMIT));
+                && (teamMembers == null || (teamMembers >= 2 && teamMembers <= MAX_LIMIT))
+                && (chordOptions == null || (chordOptions >= 1 && chordOptions <= PlanLimits.MAX_CHORD_OPTIONS))
+                // Ít nhất 1 trang / 1 ô nhịp mỗi lần thì mới dùng được
+                && (pagesPerJob == null || (pagesPerJob >= 1 && pagesPerJob <= MAX_LIMIT))
+                && (chordMeasures == null || (chordMeasures >= 1 && chordMeasures <= MAX_LIMIT));
     }
 
     /** Ghi đủ mọi khóa (kể cả null = không giới hạn) và cờ false thay cho null. */
@@ -237,7 +244,11 @@ public class AdminPlanServiceImpl implements AdminPlanService {
                 Boolean.TRUE.equals(l.team()),
                 Boolean.TRUE.equals(l.omrPriority()),
                 Boolean.TRUE.equals(l.team()) ? l.teamMembers() : null,
-                l.chordGenerationsPerMonth());
+                l.chordGenerationsPerMonth(),
+                l.chordOptions(),
+                Boolean.TRUE.equals(l.chordAdvanced()),
+                l.chordMaxMeasures(),
+                l.omrMaxPagesPerJob());
         try {
             return objectMapper.writeValueAsString(normalized);
         } catch (JsonProcessingException e) {

@@ -40,6 +40,7 @@ import com.ptit.music_be.dto.enums.ai.AiTaskType;
 import com.ptit.music_be.dto.enums.ai.OmrSourceType;
 import com.ptit.music_be.dto.enums.ai.ProcessingStatus;
 import com.ptit.music_be.dto.enums.auth.AdminPermission;
+import com.ptit.music_be.dto.enums.billing.RequestCap;
 import com.ptit.music_be.dto.enums.billing.UsageMetric;
 import com.ptit.music_be.dto.enums.score.FileType;
 import com.ptit.music_be.dto.enums.score.ScoreSource;
@@ -146,6 +147,8 @@ public class OmrServiceImpl implements OmrService {
             return duplicate;
         }
         checkConcurrentTasks(member);
+        // Một lần số hóa không được quá số trang gói cho phép (PDF dài chiếm hàng đợi rất lâu)
+        entitlementService.checkRequestCap(member.getId(), RequestCap.OMR_PAGES_PER_JOB, pageCount);
         // Còn đủ trang OMR của tháng không (dòng thành viên đã khóa ở trên); task ghi bên dưới chính là phần đã dùng
         entitlementService.checkAvailable(member.getId(), UsageMetric.OMR_PAGES, pageCount);
         entitlementService.checkStorage(
@@ -236,6 +239,7 @@ public class OmrServiceImpl implements OmrService {
                 .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
         checkConcurrentTasks(member);
         int pages = score.getPageCount() == null ? 0 : score.getPageCount();
+        entitlementService.checkRequestCap(member.getId(), RequestCap.OMR_PAGES_PER_JOB, pages);
         entitlementService.checkAvailable(member.getId(), UsageMetric.OMR_PAGES, pages);
         // Nhận diện lại sinh thêm file cho chủ bản nhạc; không cho chạy khi kho của họ đã vượt hạn mức
         if (score.getMember() != null) {

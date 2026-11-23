@@ -22,6 +22,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ptit.music_be.dto.enums.billing.PlanFeature;
+import com.ptit.music_be.dto.enums.billing.RequestCap;
 import com.ptit.music_be.dto.enums.billing.UsageMetric;
 import com.ptit.music_be.dto.response.billing.PlanLimitPayload;
 import com.ptit.music_be.entity.Plan;
@@ -40,8 +42,9 @@ class EntitlementServiceImplTest {
     private final AiTaskRepository tasks = mock(AiTaskRepository.class);
     private final PlanRepository plans = mock(PlanRepository.class);
     private final ScoreFileRepository scoreFiles = mock(ScoreFileRepository.class);
-    private final EntitlementServiceImpl service = new EntitlementServiceImpl(subscriptions, tasks, plans, scoreFiles);
     private final PlanLimitsParser parser = new PlanLimitsParser(new ObjectMapper());
+    private final EntitlementServiceImpl service =
+            new EntitlementServiceImpl(subscriptions, tasks, plans, scoreFiles, parser);
 
     private static final long MB = 1024L * 1024L;
 
@@ -182,9 +185,9 @@ class EntitlementServiceImplTest {
 
     @Test
     void mergeTakesHigherChordLimitAndNullWins() {
-        PlanLimits five = new PlanLimits(1, 1, 1, 1, 1, false, false, false, null, 5);
-        PlanLimits thirty = new PlanLimits(1, 1, 1, 1, 1, false, false, false, null, 30);
-        PlanLimits unlimited = new PlanLimits(1, 1, 1, 1, 1, false, false, false, null, null);
+        PlanLimits five = new PlanLimits(1, 1, 1, 1, 1, false, false, false, null, 5, null, null, null, null);
+        PlanLimits thirty = new PlanLimits(1, 1, 1, 1, 1, false, false, false, null, 30, null, null, null, null);
+        PlanLimits unlimited = new PlanLimits(1, 1, 1, 1, 1, false, false, false, null, null, null, null, null, null);
 
         assertEquals(30, PlanLimits.merge(List.of(five, thirty)).chordGenerationsPerMonth());
         assertNull(PlanLimits.merge(List.of(five, unlimited)).chordGenerationsPerMonth());
@@ -247,5 +250,71 @@ class EntitlementServiceImplTest {
 
         assertDoesNotThrow(() -> service.checkStorage("m", Long.MAX_VALUE));
         verifyNoInteractions(scoreFiles);
+    }
+
+    // ------------------------------------------------------------------ hạn mức mỗi lần dùng và quyền lợi bật/tắt
+
+    private final Plan basic = plan("FREE", 1, "{\"chordMaxMeasures\":32,\"omrMaxPagesPerJob\":5}");
+    private final Plan student = plan("STUDENT", 2, "{\"chordMaxMeasures\":64,\"omrMaxPagesPerJob\":15}");
+    private final Plan advanced = plan("PRO", 3, "{\"chordMaxMeasures\":null,\"chordAdvanced\":true}");
+
+    private void useTiered(Plan current) {
+        when(plans.findAllByOrderBySortOrderAsc()).thenReturn(List.of(basic, student, advanced));
+        use(current);
+    }
+
+    @Test
+    void requestCapAllowsUpToTheLimit() {
+        useTiered(basic);
+
+        assertDoesNotThrow(() -> service.checkRequestCap("m", RequestCap.CHORD_MEASURES, 32));
+        assertDoesNotThrow(() -> service.checkRequestCap("m", RequestCap.OMR_PAGES_PER_JOB, 5));
+    }
+
+    @Test
+    void requestCapSuggestsTheCheapestPlanBigEnough() {
+        useTiered(basic);
+
+        AppException e = assertThrows(
+                AppException.class, () -> service.checkRequestCap("m", RequestCap.CHORD_MEASURES, 50));
+        PlanLimitPayload payload = (PlanLimitPayload) e.getPayload();
+        assertEquals(BillingErrorCode.PLAN_LIMIT_REACHED, e.getErrorCode());
+        assertEquals("CHORD_MEASURES", payload.metric());
+        assertEquals(32, payload.limit());
+        assertEquals(50, payload.used());
+        assertEquals("STUDENT", payload.upgradeTo());
+
+        // 100 ô vượt cả Student: gợi ý thẳng gói không giới hạn
+        AppException longer = assertThrows(
+                AppException.class, () -> service.checkRequestCap("m", RequestCap.CHORD_MEASURES, 100));
+        assertEquals("PRO", ((PlanLimitPayload) longer.getPayload()).upgradeTo());
+    }
+
+    @Test
+    void missingRequestCapMeansUnlimited() {
+        useTiered(advanced);
+
+        assertDoesNotThrow(() -> service.checkRequestCap("m", RequestCap.CHORD_MEASURES, 10_000));
+        assertDoesNotThrow(() -> service.checkRequestCap("m", RequestCap.OMR_PAGES_PER_JOB, 10_000));
+    }
+
+    @Test
+    void missingFeatureIsRejectedAndSkipsPlansWithoutIt() {
+        useTiered(basic);
+
+        AppException e =
+                assertThrows(AppException.class, () -> service.checkFeature("m", PlanFeature.CHORD_ADVANCED));
+        PlanLimitPayload payload = (PlanLimitPayload) e.getPayload();
+        assertEquals("CHORD_ADVANCED", payload.metric());
+        assertEquals(0, payload.limit());
+        // Student liền trên nhưng không có quyền lợi này: gợi ý Pro
+        assertEquals("PRO", payload.upgradeTo());
+    }
+
+    @Test
+    void featureIncludedInPlanPasses() {
+        useTiered(advanced);
+
+        assertDoesNotThrow(() -> service.checkFeature("m", PlanFeature.CHORD_ADVANCED));
     }
 }

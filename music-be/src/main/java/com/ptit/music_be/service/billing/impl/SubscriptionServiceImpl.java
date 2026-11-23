@@ -102,6 +102,16 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     }
 
     private MySubscriptionResponse subscriptionOf(Member member) {
+        MySubscriptionResponse response = buildSubscriptionOf(member);
+        // Số đã dùng của các hạn mức theo tháng: tính từ ai_tasks mỗi lần hỏi, không lưu bộ đếm riêng
+        LocalDateTime from = java.time.YearMonth.now().atDay(1).atStartOfDay();
+        response.setExportsUsed((int) aiTaskRepository.countExportsCharged(member.getId(), from, from.plusMonths(1)));
+        response.setChordGenerationsUsed(
+                (int) aiTaskRepository.countChordGenerationsCharged(member.getId(), from, from.plusMonths(1)));
+        return response;
+    }
+
+    private MySubscriptionResponse buildSubscriptionOf(Member member) {
         // Trang OMR đã dùng tháng này: tính từ ai_tasks, không lưu bộ đếm riêng
         LocalDateTime monthStart = java.time.YearMonth.now().atDay(1).atStartOfDay();
         int used = (int) aiTaskRepository.sumOmrPagesCharged(member.getId(), monthStart, monthStart.plusMonths(1));
@@ -597,7 +607,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 .audience(UNLIMITED)
                 .priceMonth(0)
                 .priceYear(0)
-                .limits("{\"collab\":true,\"team\":true,\"omrPriority\":true}")
+                .limits("{\"collab\":true,\"team\":true,\"omrPriority\":true,\"chordAdvanced\":true}")
                 .sortOrder(Integer.MAX_VALUE)
                 .build();
     }

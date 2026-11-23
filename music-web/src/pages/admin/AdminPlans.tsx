@@ -23,12 +23,15 @@ const NUMBER_LIMITS = [
   'omrConcurrent',
   'storageMb',
   'keptVersions',
+  'omrMaxPagesPerJob',
   'exportsPerMonth',
   'chordGenerationsPerMonth',
+  'chordOptions',
+  'chordMaxMeasures',
   'teamMembers',
 ] as const;
 /** Quyền lợi bật/tắt. */
-const FLAG_LIMITS = ['collab', 'team', 'omrPriority'] as const;
+const FLAG_LIMITS = ['collab', 'team', 'omrPriority', 'chordAdvanced'] as const;
 
 type NumberKey = (typeof NUMBER_LIMITS)[number];
 type FlagKey = (typeof FLAG_LIMITS)[number];
@@ -76,10 +79,13 @@ const emptyDraft = (): Draft => ({
     storageMb: '1024',
     keptVersions: '10',
     exportsPerMonth: null,
+    omrMaxPagesPerJob: '15',
     chordGenerationsPerMonth: null,
+    chordOptions: '3',
+    chordMaxMeasures: null,
     teamMembers: null,
   },
-  flags: { collab: false, team: false, omrPriority: false },
+  flags: { collab: false, team: false, omrPriority: false, chordAdvanced: false },
 });
 
 const payloadOf = (d: Draft) => ({

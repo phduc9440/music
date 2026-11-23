@@ -44,4 +44,8 @@ public class MySubscriptionResponse {
     LocalDateTime expiresAt;
     /** Trang OMR đã dùng trong tháng hiện tại. */
     int omrPagesUsed;
+    /** Số lần xuất file đã dùng trong tháng hiện tại. */
+    int exportsUsed;
+    /** Số lần gợi ý hợp âm đã dùng trong tháng hiện tại. */
+    int chordGenerationsUsed;
 }

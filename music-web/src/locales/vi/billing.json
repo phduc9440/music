@@ -13,7 +13,11 @@
     "collab": "Cùng chỉnh sửa thời gian thực",
     "team": "Tạo nhóm",
     "omrPriority": "Ưu tiên hàng đợi OMR",
-    "teamMembers": "Thành viên mỗi nhóm"
+    "teamMembers": "Thành viên mỗi nhóm",
+    "omrMaxPagesPerJob": "Trang tối đa mỗi lần OMR",
+    "chordOptions": "Phương án mỗi lần gợi ý hợp âm",
+    "chordMaxMeasures": "Ô nhịp tối đa khi gợi ý hợp âm",
+    "chordAdvanced": "Tùy chọn hợp âm nâng cao"
   },
   "status": {
     "ACTIVE": "Đang dùng",
@@ -151,7 +155,10 @@
       "EXPORTS": "Bạn đã dùng {used}/{limit} lượt xuất trong tháng này.",
       "CHORD_GENERATIONS": "Bạn đã dùng {used}/{limit} lượt gợi ý hợp âm trong tháng này.",
       "STORAGE_MB": "Dung lượng lưu trữ đã dùng {used} MB trên tối đa {limit} MB.",
-      "DEFAULT": "Bạn đã dùng hết hạn mức của gói hiện tại."
+      "DEFAULT": "Bạn đã dùng hết hạn mức của gói hiện tại.",
+      "OMR_PAGES_PER_JOB": "Tệp này có {used} trang, gói hiện tại cho tối đa {limit} trang mỗi lần số hóa.",
+      "CHORD_MEASURES": "Bản nhạc có {used} ô nhịp, gói hiện tại gợi ý hợp âm cho tối đa {limit} ô nhịp.",
+      "CHORD_ADVANCED": "Màu Có màu và Hợp âm 7 / Jazz, độ sáng tạo Táo bạo và mật độ Dày chỉ có ở gói cao hơn."
     }
   }
 }

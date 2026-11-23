@@ -57,6 +57,8 @@ class JobRequest(BaseModel):
     scoreId: str = Field(min_length=1, max_length=64, pattern=r"^[A-Za-z0-9_-]+$")
     inputs: list[JobInput] = Field(min_length=1)
     options: JobOptions = Field(default_factory=JobOptions)
+    priority: bool = False
+    """Gói của chủ task có quyền lợi ưu tiên: job được xếp trước mọi job thường đang chờ."""
 
     @model_validator(mode="after")
     def _check_inputs(self) -> "JobRequest":

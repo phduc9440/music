@@ -40,6 +40,7 @@ import com.ptit.music_be.event.ChordTaskCreatedEvent;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.code.CollabErrorCode;
 import com.ptit.music_be.repository.ai.AiTaskRepository;
+import com.ptit.music_be.service.billing.PlanLimits;
 import com.ptit.music_be.service.score.ScoreEditService;
 import com.ptit.music_be.service.score.SuggestionService;
 import com.ptit.music_be.service.storage.FileStorageService;
@@ -126,7 +127,8 @@ public class ChordGenerationWorker {
             int baseVersion,
             boolean replaceExisting,
             ChordCreativity creativity,
-            ChordDensity density) {}
+            ChordDensity density,
+            int options) {}
 
     void process(String taskId) {
         Job job;
@@ -154,7 +156,8 @@ public class ChordGenerationWorker {
                     job.style().name(),
                     job.replaceExisting(),
                     job.creativity().name(),
-                    job.density().name());
+                    job.density().name(),
+                    job.options());
             byte[] proposed = Files.readAllBytes(fileStorageService.resolve(outPath));
             List<byte[]> others = new ArrayList<>();
             for (ChordGenerationResult.Option option : result.optionsOrDefault()) {
@@ -262,7 +265,9 @@ public class ChordGenerationWorker {
                     baseVersion,
                     input.path("replaceExisting").asBoolean(false),
                     ChordCreativity.parse(input.path("creativity").asText(null)).orElse(ChordCreativity.BALANCED),
-                    ChordDensity.parse(input.path("density").asText(null)).orElse(ChordDensity.NORMAL));
+                    ChordDensity.parse(input.path("density").asText(null)).orElse(ChordDensity.NORMAL),
+                    // Tác vụ cũ chưa ghi options thì giữ như trước (tối đa)
+                    input.path("options").asInt(PlanLimits.MAX_CHORD_OPTIONS));
         });
     }
 

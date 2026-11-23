@@ -1,11 +1,12 @@
-import { useState } from 'react';
-import { CHORD_CREATIVITIES, CHORD_DENSITIES, CHORD_STYLES, chordApi } from '../../../services';
+import { useEffect, useState } from 'react';
+import { CHORD_CREATIVITIES, CHORD_DENSITIES, CHORD_STYLES, billingApi, chordApi } from '../../../services';
 import type { ChordCreativity, ChordDensity, ChordStyle } from '../../../services';
-import type { AiTaskInfo } from '../../../types';
+import type { AiTaskInfo, MySubscription, PlanInfo } from '../../../types';
+import { Icon } from '../../ui';
 import { hasKey, t } from '../../../i18n/core';
 import { useNavigate } from '../../../routes/useTransitionNavigate';
 import { getErrorCode, getErrorMessage, useScoreBase } from '../../../utils/score';
-import { reportPlanLimit } from '../../../utils/planLimit';
+import { reportPlanLimit, showPlanLimit } from '../../../utils/planLimit';
 import { useExportTask } from '../../export/useExportTask';
 import { suggestionPath } from '../suggestions/suggestionUtils';
 import Modal from '../common/Modal';
@@ -30,6 +31,22 @@ interface Props {
   onClearAll?: () => void;
 }
 
+/** Tùy chọn chỉ gói có quyền lợi chordAdvanced mới dùng được (khớp ChordStyle.isAdvanced, BOLD, DENSE ở BE). */
+const ADVANCED: ReadonlySet<string> = new Set<string>(['COLORFUL', 'JAZZY', 'BOLD', 'DENSE']);
+
+/** Gói thấp nhất cùng nhóm, xếp sau gói hiện tại và có tùy chọn nâng cao; null nếu không có. */
+async function planWithAdvanced(current: PlanInfo): Promise<string | null> {
+  try {
+    const res = await billingApi.plans();
+    const next = res.data.result
+      .filter((p) => p.audience === current.audience && p.sortOrder > current.sortOrder && p.limits.chordAdvanced)
+      .sort((a, b) => a.sortOrder - b.sortOrder)[0];
+    return next?.code ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /** Lỗi của tác vụ (mã đứng trước dấu ":" trong errorMessage) dịch theo chords.taskErrors, mã lạ thì báo chung. */
 function taskErrorText(message?: string | null): string {
   const code = (message ?? '').split(':')[0].trim();
@@ -51,6 +68,39 @@ export default function ChordSuggestDialog({ scoreId, onClose, onCompleted, allH
   const [pendingId, setPendingId] = useState<string | null>(null);
   // Mọi ô đã có hợp âm: hỏi có muốn gợi ý lại (thay hợp âm cũ) hoặc xóa hết không
   const [harmonized, setHarmonized] = useState(!!allHarmonized);
+  // Gói của người bấm: khóa tùy chọn nâng cao và hiện số lượt còn lại. Chưa tải được thì không khóa gì (BE vẫn kiểm).
+  const [sub, setSub] = useState<MySubscription | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    billingApi
+      .mine()
+      .then((res) => alive && setSub(res.data.result))
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const unlimited = sub?.status === 'UNLIMITED';
+  const limits = sub?.limits;
+  const locked = (value: string) => !!sub && !unlimited && !limits?.chordAdvanced && ADVANCED.has(value);
+  const anyLocked = !!sub && !unlimited && !limits?.chordAdvanced;
+  const quota = unlimited ? null : (limits?.chordGenerationsPerMonth ?? null);
+  const left = quota == null ? null : Math.max(0, quota - (sub?.chordGenerationsUsed ?? 0));
+  const options = unlimited ? 3 : Math.min(3, Math.max(1, limits?.chordOptions ?? 3));
+
+  /** Bấm tùy chọn bị khóa: không chọn, mở hộp mời nâng cấp (nằm trên hộp này, đóng xong vẫn ở lại). */
+  const openUpgrade = async () => {
+    const upgradeTo = sub ? await planWithAdvanced(sub.plan) : null;
+    showPlanLimit({ metric: 'CHORD_ADVANCED', limit: 0, used: 0, upgradeTo });
+  };
+
+  /** Chọn một giá trị; giá trị bị khóa theo gói thì mời nâng cấp thay vì chọn. */
+  const pick = <T extends string>(value: T, set: (v: T) => void) => {
+    if (locked(value)) void openUpgrade();
+    else set(value);
+  };
 
   const onFinished = (task: AiTaskInfo) => {
     const suggestionId = task.resultData?.suggestionId;
@@ -100,18 +150,27 @@ export default function ChordSuggestDialog({ scoreId, onClose, onCompleted, allH
       <fieldset className="cs-styles" disabled={busy}>
         <legend className="sc-label">{t('chords.dialog.styleLabel')}</legend>
         {CHORD_STYLES.map((value) => (
-          <label key={value} className={`cs-style${style === value ? ' is-selected' : ''}`}>
+          <label
+            key={value}
+            className={`cs-style${style === value ? ' is-selected' : ''}${locked(value) ? ' is-locked' : ''}`}
+          >
             <input
               type="radio"
               name="chord-style"
               value={value}
               checked={style === value}
-              onChange={() => setStyle(value)}
+              onChange={() => pick(value, setStyle)}
             />
             <span className="cs-style__text">
               <strong>{t(`chords.styles.${value}.name`)}</strong>
               <span>{t(`chords.styles.${value}.description`)}</span>
             </span>
+            {locked(value) && (
+              <span className="cs-lock">
+                <Icon name="lock" size={14} />
+                {t('chords.dialog.lockedBadge')}
+              </span>
+            )}
           </label>
         ))}
       </fieldset>
@@ -121,15 +180,20 @@ export default function ChordSuggestDialog({ scoreId, onClose, onCompleted, allH
           <legend className="sc-label">{t('chords.dialog.creativityLabel')}</legend>
           <div className="cs-segment">
             {CHORD_CREATIVITIES.map((value) => (
-              <label key={value} className={`cs-segment__item${creativity === value ? ' is-selected' : ''}`}>
+              <label
+                key={value}
+                className={`cs-segment__item${creativity === value ? ' is-selected' : ''}${locked(value) ? ' is-locked' : ''}`}
+              >
                 <input
                   type="radio"
                   name="chord-creativity"
                   value={value}
                   checked={creativity === value}
-                  onChange={() => setCreativity(value)}
+                  onChange={() => pick(value, setCreativity)}
                 />
+                {locked(value) && <Icon name="lock" size={13} />}
                 {t(`chords.creativity.${value}`)}
+                {locked(value) && <span className="cs-sr">{t('chords.dialog.lockedSr')}</span>}
               </label>
             ))}
           </div>
@@ -138,20 +202,32 @@ export default function ChordSuggestDialog({ scoreId, onClose, onCompleted, allH
           <legend className="sc-label">{t('chords.dialog.densityLabel')}</legend>
           <div className="cs-segment">
             {CHORD_DENSITIES.map((value) => (
-              <label key={value} className={`cs-segment__item${density === value ? ' is-selected' : ''}`}>
+              <label
+                key={value}
+                className={`cs-segment__item${density === value ? ' is-selected' : ''}${locked(value) ? ' is-locked' : ''}`}
+              >
                 <input
                   type="radio"
                   name="chord-density"
                   value={value}
                   checked={density === value}
-                  onChange={() => setDensity(value)}
+                  onChange={() => pick(value, setDensity)}
                 />
+                {locked(value) && <Icon name="lock" size={13} />}
                 {t(`chords.density.${value}`)}
+                {locked(value) && <span className="cs-sr">{t('chords.dialog.lockedSr')}</span>}
               </label>
             ))}
           </div>
         </fieldset>
       </div>
+
+      {anyLocked && (
+        <p className="cs-hint cs-locked-hint">
+          <Icon name="lock" size={14} />
+          {t('chords.dialog.lockedHint')}
+        </p>
+      )}
 
       {harmonized && (
         <div className="cs-harmonized" role="status">
@@ -196,6 +272,14 @@ export default function ChordSuggestDialog({ scoreId, onClose, onCompleted, allH
             </button>
           )}
         </div>
+      )}
+
+      {sub && (
+        <p className={`cs-quota${left === 0 ? ' is-empty' : ''}`}>
+          {left == null
+            ? t('chords.dialog.quotaUnlimited', { options })
+            : t('chords.dialog.quota', { left, limit: quota ?? 0, options })}
+        </p>
       )}
 
       <div className="sc-modal__actions">

@@ -9,6 +9,14 @@ export interface PlanLimits {
   exportsPerMonth?: number | null;
   /** Số lần gợi ý hợp âm mỗi tháng (R3); null = không giới hạn. */
   chordGenerationsPerMonth?: number | null;
+  /** Số phương án mỗi lần gợi ý hợp âm (1..3); null = tối đa. */
+  chordOptions?: number | null;
+  /** Số ô nhịp tối đa của bản nhạc được gợi ý hợp âm; null = không giới hạn. */
+  chordMaxMeasures?: number | null;
+  /** Số trang tối đa của một lần số hóa OMR; null = không giới hạn. */
+  omrMaxPagesPerJob?: number | null;
+  /** Được dùng màu COLORFUL/JAZZY, độ sáng tạo BOLD, mật độ DENSE khi gợi ý hợp âm. */
+  chordAdvanced?: boolean | null;
   collab?: boolean | null;
   team?: boolean | null;
   omrPriority?: boolean | null;
@@ -59,6 +67,10 @@ export interface MySubscription {
   startsAt?: string | null;
   expiresAt?: string | null;
   omrPagesUsed: number;
+  /** Số lần xuất file đã dùng trong tháng. */
+  exportsUsed?: number;
+  /** Số lần gợi ý hợp âm đã dùng trong tháng. */
+  chordGenerationsUsed?: number;
 }
 
 /** GRANTED: dòng lịch sử do quản trị viên cấp gói (không qua cổng thanh toán, không có số tiền). */

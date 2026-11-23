@@ -22,7 +22,23 @@ public record PlanLimits(
         /** Số thành viên tối đa của mỗi team do người dùng gói này tạo (chỉ có nghĩa khi team = true). */
         Integer teamMembers,
         /** Số lần gợi ý hợp âm (R3) mỗi tháng. */
-        Integer chordGenerationsPerMonth) {
+        Integer chordGenerationsPerMonth,
+        /** Số phương án mỗi lần gợi ý hợp âm (1..3); null = tối đa. */
+        Integer chordOptions,
+        /** Được dùng tùy chọn hợp âm nâng cao: màu COLORFUL/JAZZY, độ sáng tạo BOLD, mật độ DENSE. */
+        Boolean chordAdvanced,
+        /** Số ô nhịp tối đa của bản nhạc được gợi ý hợp âm. */
+        Integer chordMaxMeasures,
+        /** Số trang tối đa của một lần số hóa OMR. */
+        Integer omrMaxPagesPerJob) {
+
+    /** Số phương án tối đa music-ai sinh được trong một lần gợi ý hợp âm. */
+    public static final int MAX_CHORD_OPTIONS = 3;
+
+    /** Số phương án gợi ý hợp âm của gói, kẹp trong 1..{@link #MAX_CHORD_OPTIONS}. */
+    public int chordOptionsOrMax() {
+        return chordOptions == null ? MAX_CHORD_OPTIONS : Math.max(1, Math.min(MAX_CHORD_OPTIONS, chordOptions));
+    }
 
     /**
      * Hạn mức khi một người có cùng lúc nhiều gói (một gói cá nhân và một gói team): mỗi chỉ số lấy mức cao hơn, null
@@ -49,7 +65,11 @@ public record PlanLimits(
                 !teamPlans.isEmpty(),
                 any(all, PlanLimits::omrPriority),
                 teamPlans.isEmpty() ? null : highest(teamPlans, PlanLimits::teamMembers),
-                highest(all, PlanLimits::chordGenerationsPerMonth));
+                highest(all, PlanLimits::chordGenerationsPerMonth),
+                highest(all, PlanLimits::chordOptions),
+                any(all, PlanLimits::chordAdvanced),
+                highest(all, PlanLimits::chordMaxMeasures),
+                highest(all, PlanLimits::omrMaxPagesPerJob));
     }
 
     private static Integer highest(List<PlanLimits> all, Function<PlanLimits, Integer> field) {

@@ -1,5 +1,8 @@
 """Hàng đợi job OMR: một luồng worker xử lý tuần tự (đặc tả mục 6.1: 1 job OMR một lúc).
 
+Job ``priority`` (gói có quyền lợi ưu tiên) được lấy ra trước mọi job thường đang chờ; cùng mức thì job đến trước chạy
+trước. Job đang chạy không bị ngắt.
+
 Lý do tuần tự: nhánh sau chỉ có 1 model/1 GPU, chạy song song sẽ tranh bộ nhớ. Tiền xử lý ảnh nặng CPU nên cũng
 không có lợi khi chạy nhiều job cùng lúc.
 """
@@ -8,6 +11,7 @@ from __future__ import annotations
 
 import logging
 import queue
+import itertools
 import threading
 from dataclasses import dataclass, field
 from typing import Callable, Optional
@@ -47,7 +51,11 @@ class JobManager:
     ) -> None:
         self._runner = runner
         self._callback_factory = callback_factory
-        self._queue: "queue.Queue[str]" = queue.Queue(maxsize=max_queue or get_settings().queue_max)
+        # Phần tử (mức ưu tiên, số thứ tự, taskId): 0 trước 1, số thứ tự giữ đúng thứ tự đến trong cùng mức
+        self._queue: "queue.PriorityQueue[tuple[int, int, str]]" = queue.PriorityQueue(
+            maxsize=max_queue or get_settings().queue_max
+        )
+        self._order = itertools.count()
         self._jobs: dict[str, _JobState] = {}
         self._lock = threading.Lock()
         self._stopping = threading.Event()
@@ -86,7 +94,7 @@ class JobManager:
             state = _JobState(job=job)
             self._jobs[task_id] = state
             try:
-                self._queue.put_nowait(task_id)
+                self._queue.put_nowait((0 if job.priority else 1, next(self._order), task_id))
             except queue.Full:
                 del self._jobs[task_id]
                 raise QueueFullError() from None
@@ -115,7 +123,7 @@ class JobManager:
     def _worker(self) -> None:
         while not self._stopping.is_set():
             try:
-                task_id = self._queue.get(timeout=0.5)
+                _, _, task_id = self._queue.get(timeout=0.5)
             except queue.Empty:
                 continue
             with self._lock:

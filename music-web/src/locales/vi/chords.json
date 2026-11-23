@@ -22,7 +22,12 @@
     "clearAll": "Xóa hết hợp âm",
     "clearAllHint": "Gỡ mọi hợp âm khỏi bản nhạc trong trình chỉnh sửa (chưa lưu, Ctrl+Z để hoàn tác)",
     "creativityLabel": "Độ sáng tạo",
-    "densityLabel": "Mật độ hợp âm"
+    "densityLabel": "Mật độ hợp âm",
+    "lockedBadge": "Nâng cấp",
+    "lockedSr": "(cần nâng cấp gói)",
+    "lockedHint": "Tùy chọn có biểu tượng khóa cần gói cao hơn. Bấm vào để xem gói phù hợp.",
+    "quota": "Còn {left}/{limit} lượt gợi ý hợp âm tháng này · {options} phương án mỗi lần",
+    "quotaUnlimited": "Không giới hạn lượt gợi ý hợp âm · {options} phương án mỗi lần"
   },
   "styles": {
     "NATURAL": {

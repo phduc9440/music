@@ -1,5 +1,7 @@
 package com.ptit.music_be.service.billing;
 
+import com.ptit.music_be.dto.enums.billing.PlanFeature;
+import com.ptit.music_be.dto.enums.billing.RequestCap;
 import com.ptit.music_be.dto.enums.billing.UsageMetric;
 
 /**
@@ -26,6 +28,15 @@ public interface EntitlementService {
      * (ảnh/PDF gốc, MusicXML, MIDI, PNG, KERN) của mọi bản nhạc người đó sở hữu, kể cả bản trong thùng rác.
      */
     void checkStorage(String memberId, long incomingBytes);
+
+    /**
+     * Ném PLAN_LIMIT_REACHED nếu một lần dùng có kích thước {@code amount} (số trang, số ô nhịp...) vượt hạn mức
+     * {@code cap} của gói. {@code upgradeTo} là gói thấp nhất đủ cho lần dùng này.
+     */
+    void checkRequestCap(String memberId, RequestCap cap, int amount);
+
+    /** Ném PLAN_LIMIT_REACHED nếu gói không có quyền lợi {@code feature}; {@code upgradeTo} là gói thấp nhất có nó. */
+    void checkFeature(String memberId, PlanFeature feature);
 
     /** Đã dùng trong tháng hiện tại (tính từ dữ liệu gốc). */
     int usedThisMonth(String memberId, UsageMetric metric);

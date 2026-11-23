@@ -698,8 +698,10 @@ class SubscriptionServiceImplTest {
     @Test
     void mergedLimitsTreatUnlimitedAsHighestAndTakeTeamSizeOnlyFromTeamPlans() {
         var personal =
-                new com.ptit.music_be.service.billing.PlanLimits(null, 3, 100, 5, 10, true, false, false, null, null);
-        var team = new com.ptit.music_be.service.billing.PlanLimits(1000, 5, 50, 20, null, false, true, true, 15, null);
+                new com.ptit.music_be.service.billing.PlanLimits(
+                        null, 3, 100, 5, 10, true, false, false, null, null, 1, false, 32, 5);
+        var team = new com.ptit.music_be.service.billing.PlanLimits(
+                1000, 5, 50, 20, null, false, true, true, 15, null, 3, true, null, 50);
 
         var merged = com.ptit.music_be.service.billing.PlanLimits.merge(List.of(personal, team));
 
@@ -711,6 +713,11 @@ class SubscriptionServiceImplTest {
         assertEquals(Boolean.TRUE, merged.omrPriority());
         // Gói cá nhân thiếu teamMembers không có nghĩa team không giới hạn người
         assertEquals(15, merged.teamMembers());
+        // Hạn mức AI mới cũng lấy mức cao hơn, null thắng, cờ bật nếu một gói bật
+        assertEquals(3, merged.chordOptions());
+        assertEquals(Boolean.TRUE, merged.chordAdvanced());
+        assertNull(merged.chordMaxMeasures());
+        assertEquals(50, merged.omrMaxPagesPerJob());
     }
 
     private void loginSuper() {
