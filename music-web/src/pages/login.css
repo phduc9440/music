@@ -37,7 +37,11 @@
     /* ánh màu cực quang theo bảng màu hiệu ứng: tím góc trên trái, hồng góc trên phải, xanh ngọc phía dưới */
     radial-gradient(34rem 22rem at 10% 6%, color-mix(in srgb, var(--ui-stage-fx-2) 36%, transparent), transparent 65%),
     radial-gradient(28rem 20rem at 95% 12%, color-mix(in srgb, var(--ui-stage-fx-1) 30%, transparent), transparent 65%),
-    radial-gradient(30rem 18rem at 30% 100%, color-mix(in srgb, var(--ui-stage-fx-4) 24%, transparent), transparent 70%),
+    radial-gradient(
+      30rem 18rem at 30% 100%,
+      color-mix(in srgb, var(--ui-stage-fx-4) 24%, transparent),
+      transparent 70%
+    ),
     linear-gradient(to bottom, var(--ui-stage-bg-2), var(--ui-stage-bg) 75%);
 }
 .auth-stage__notes {

@@ -534,15 +534,7 @@ export default function ScoreStaff3D() {
     const col = new THREE.Color();
     const counts = [0, 0, 0, 0];
 
-    const placeNote = (
-      s: Sys,
-      staff: number,
-      x: number,
-      step: number,
-      glyph: Glyph,
-      pop: number,
-      user: boolean,
-    ) => {
+    const placeNote = (s: Sys, staff: number, x: number, step: number, glyph: Glyph, pop: number, user: boolean) => {
       const mesh = s.noteMeshes[glyph];
       const i = counts[glyph];
       if (i >= mesh.instanceMatrix.count) return;
