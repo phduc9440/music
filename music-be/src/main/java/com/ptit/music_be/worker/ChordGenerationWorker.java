@@ -4,6 +4,8 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
@@ -28,6 +30,8 @@ import com.ptit.music_be.client.AiServiceClient;
 import com.ptit.music_be.client.ChordGenerationResult;
 import com.ptit.music_be.dto.enums.ai.AiTaskError;
 import com.ptit.music_be.dto.enums.ai.AiTaskStatus;
+import com.ptit.music_be.dto.enums.ai.ChordCreativity;
+import com.ptit.music_be.dto.enums.ai.ChordDensity;
 import com.ptit.music_be.dto.enums.ai.ChordStyle;
 import com.ptit.music_be.dto.enums.score.SuggestionSource;
 import com.ptit.music_be.entity.AiTask;
@@ -48,9 +52,11 @@ import lombok.extern.slf4j.Slf4j;
  * <ol>
  *   <li>PENDING → PROCESSING (bỏ qua nếu task đã bị hủy hoặc đã chạy).
  *   <li>Ghi MusicXML của {@code baseVersion} ra {@code scores/{id}/chords/{taskId}-in.musicxml}.
- *   <li>Gọi music-ai {@code POST /chords/generate} (đồng bộ), đọc file {@code -out}.
- *   <li>Tạo đề xuất do hệ thống gửi ({@link SuggestionService#createFromSystem}); task COMPLETED với
- *       {@code result_data = {suggestionId, key, filled, skipped}}.
+ *   <li>Gọi music-ai {@code POST /chords/generate} (đồng bộ, model AutoHarmonizer lấy mẫu), đọc phương án A ở
+ *       {@code -out} và các phương án B, C ở {@code -out-2}, {@code -out-3}.
+ *   <li>Tạo đề xuất do hệ thống gửi từ phương án A ({@link SuggestionService#createFromSystem}), lưu B, C cạnh đó
+ *       ({@link SuggestionService#storeOptions}); task COMPLETED với
+ *       {@code result_data = {suggestionId, key, filled, skipped, options}}.
  * </ol>
  *
  * Lỗi: task FAILED với mã ở đầu {@code error_message}; hai file tạm luôn bị xóa.
@@ -61,6 +67,8 @@ public class ChordGenerationWorker {
 
     static final int QUEUE_CAPACITY = 20;
     static final int MAX_ERROR_LENGTH = 500;
+    /** music-ai trả tối đa chừng này phương án hợp âm. */
+    static final int MAX_OPTIONS = 3;
 
     private final AiTaskRepository aiTaskRepository;
     private final ScoreEditService scoreEditService;
@@ -111,7 +119,14 @@ public class ChordGenerationWorker {
     }
 
     /** Dữ liệu của một lần chạy, đọc trong transaction đầu tiên. */
-    record Job(String taskId, String scoreId, ChordStyle style, int baseVersion, boolean replaceExisting) {}
+    record Job(
+            String taskId,
+            String scoreId,
+            ChordStyle style,
+            int baseVersion,
+            boolean replaceExisting,
+            ChordCreativity creativity,
+            ChordDensity density) {}
 
     void process(String taskId) {
         Job job;
@@ -133,13 +148,24 @@ public class ChordGenerationWorker {
                     .getVersionContentForSystem(job.scoreId(), job.baseVersion())
                     .bytes();
             fileStorageService.store(new ByteArrayInputStream(base), inPath);
-            ChordGenerationResult result =
-                    aiServiceClient.generateChords(inPath, outPath, job.style().name(), job.replaceExisting());
+            ChordGenerationResult result = aiServiceClient.generateChords(
+                    inPath,
+                    outPath,
+                    job.style().name(),
+                    job.replaceExisting(),
+                    job.creativity().name(),
+                    job.density().name());
             byte[] proposed = Files.readAllBytes(fileStorageService.resolve(outPath));
+            List<byte[]> others = new ArrayList<>();
+            for (ChordGenerationResult.Option option : result.optionsOrDefault()) {
+                if (!outPath.equals(option.outPath()) && isOwnOptionFile(outPath, option.outPath())) {
+                    others.add(Files.readAllBytes(fileStorageService.resolve(option.outPath())));
+                }
+            }
             String title = "Gợi ý hợp âm (" + job.style().label() + ")";
             String description = "Giọng " + result.key() + ", " + result.filled()
                     + (job.replaceExisting() ? " hợp âm thay cho hợp âm cũ" : " hợp âm được thêm");
-            completeWithSuggestion(job, proposed, title, description, result);
+            completeWithSuggestion(job, proposed, others, title, description, result);
         } catch (AppException e) {
             fail(
                     taskId,
@@ -160,7 +186,25 @@ public class ChordGenerationWorker {
         } finally {
             deleteQuietly(inPath);
             deleteQuietly(outPath);
+            for (int n = 2; n <= MAX_OPTIONS; n++) {
+                deleteQuietly(optionOutPath(outPath, n));
+            }
         }
+    }
+
+    /** File phương án thứ {@code n} music-ai ghi cạnh {@code outPath}: {@code ...-out-n.musicxml}. */
+    static String optionOutPath(String outPath, int n) {
+        return outPath.substring(0, outPath.length() - ".musicxml".length()) + "-" + n + ".musicxml";
+    }
+
+    /** Chỉ đọc file phương án đúng tên đã hẹn (không tin đường dẫn lạ trong phản hồi). */
+    private static boolean isOwnOptionFile(String outPath, String candidate) {
+        for (int n = 2; n <= MAX_OPTIONS; n++) {
+            if (optionOutPath(outPath, n).equals(candidate)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** 4xx có {@code detail.code} của music-ai thì đổi sang mã của task; 5xx coi như music-ai không dùng được. */
@@ -183,6 +227,8 @@ public class ChordGenerationWorker {
         return switch (code) {
             case "NO_MELODY" -> AiTaskError.CHORD_NO_MELODY.name();
             case "ALREADY_HARMONIZED" -> AiTaskError.CHORD_ALREADY_HARMONIZED.name();
+            case "TOO_LONG" -> AiTaskError.CHORD_TOO_LONG.name();
+            case "NO_CHORDS" -> AiTaskError.CHORD_NO_CHORDS.name();
             default ->
                 AiTaskError.JOB_REJECTED + ": "
                         + (code.isEmpty() ? e.getStatusCode().value() : code);
@@ -214,7 +260,9 @@ public class ChordGenerationWorker {
                     task.getScore().getId(),
                     style.get(),
                     baseVersion,
-                    input.path("replaceExisting").asBoolean(false));
+                    input.path("replaceExisting").asBoolean(false),
+                    ChordCreativity.parse(input.path("creativity").asText(null)).orElse(ChordCreativity.BALANCED),
+                    ChordDensity.parse(input.path("density").asText(null)).orElse(ChordDensity.NORMAL));
         });
     }
 
@@ -223,7 +271,12 @@ public class ChordGenerationWorker {
      * (hoặc người dùng hủy) thì không tạo đề xuất nữa, tránh có đề xuất mở trong khi task báo lỗi và chặn lần bấm lại.
      */
     private void completeWithSuggestion(
-            Job job, byte[] proposed, String title, String description, ChordGenerationResult result) {
+            Job job,
+            byte[] proposed,
+            List<byte[]> others,
+            String title,
+            String description,
+            ChordGenerationResult result) {
         tx.executeWithoutResult(
                 status -> aiTaskRepository.findByIdForUpdate(job.taskId()).ifPresent(task -> {
                     if (task.getStatus() != AiTaskStatus.PROCESSING) {
@@ -238,11 +291,13 @@ public class ChordGenerationWorker {
                             SuggestionSource.CHORD_GENERATION,
                             title,
                             description);
+                    suggestionService.storeOptions(suggestion, others);
                     ObjectNode data = objectMapper.createObjectNode();
                     data.put("suggestionId", suggestion.getId());
                     data.put("key", result.key());
                     data.put("filled", result.filled());
                     data.put("skipped", result.skipped());
+                    data.put("options", 1 + others.size());
                     task.setStatus(AiTaskStatus.COMPLETED);
                     task.setProgress(100);
                     task.setResultData(data.toString());

@@ -31,5 +31,9 @@ public enum AiTaskError {
     /** Gợi ý hợp âm: mọi ô đã có hợp âm hoặc không có gì mới để đề xuất. */
     CHORD_ALREADY_HARMONIZED,
     /** Gợi ý lại (thay hợp âm cũ): AI đề xuất đúng các hợp âm đang có. */
-    CHORD_NO_CHANGE
+    CHORD_NO_CHANGE,
+    /** Gợi ý hợp âm: bản nhạc quá dài để chạy model một lần. */
+    CHORD_TOO_LONG,
+    /** Gợi ý hợp âm: model không đặt được hợp âm nào. */
+    CHORD_NO_CHORDS
 }

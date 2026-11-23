@@ -1,4 +1,4 @@
-"""Tách giai điệu thành các bước cho HMM gợi ý hợp âm (``app/chords/melody.py``)."""
+"""Đọc giai điệu và các ô đã có hợp âm cho gợi ý hợp âm (``app/chords/melody.py``)."""
 
 from fractions import Fraction
 
@@ -56,9 +56,8 @@ def test_existing_harmony_marks_measure_locked():
 
     first_measure = [s for s in src.steps if s.measure_index == 0]
     second_measure = [s for s in src.steps if s.measure_index == 1]
-    assert all(not s.locked and s.existing is None for s in first_measure)
+    assert all(not s.locked for s in first_measure)
     assert all(s.locked for s in second_measure)
-    assert all(s.existing.findtext("root/root-step") == "A" for s in second_measure)
 
 
 def test_melody_part_skips_percussion():

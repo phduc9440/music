@@ -1,9 +1,9 @@
-"""Tách giai điệu của bản nhạc thành các bước thời gian cho HMM (spec R3 mục 5.1).
+"""Đọc bè giai điệu của bản nhạc cho gợi ý hợp âm (spec R3 mục 5.1).
 
 - Bè giai điệu: part đầu tiên có nốt có cao độ (bỏ part bộ gõ), khuông 1.
 - Tại mỗi thời điểm chỉ giữ nốt cao nhất đang vang (skyline); nốt nối đã được gộp bởi ``parse_part_events``.
 - Bước: nửa ô với 4/4, 2/2, 6/8, 12/8 (khi ô đủ phách); cả ô với các nhịp khác hoặc ô thiếu phách (ô lấy đà).
-- Ô đã có ``<harmony>`` bị khóa: không ghi đè, hợp âm có sẵn được dùng làm ràng buộc cho Viterbi.
+- Ô đã có ``<harmony>`` bị khóa: không ghi đè, hợp âm có sẵn được giữ trong dãy hợp âm model nhìn thấy.
 
 Vị trí và độ dài tính bằng phách đen (``Fraction``), như ``app/convert/score_xml.py``.
 """
@@ -39,7 +39,6 @@ class Step:
     offset_in_measure: Fraction
     length: Fraction
     notes: list[MelodyNote] = field(default_factory=list)
-    existing: Optional[ET.Element] = None
     locked: bool = False
 
 
@@ -105,15 +104,10 @@ def load_melody(data: bytes, strip_harmonies: bool = False) -> MelodySource:
 
     melody = [e for e in events if e.staff == MELODY_STAFF]
     steps: list[Step] = []
-    carried: Optional[ET.Element] = None
     for index, info in enumerate(measures):
         locked = bool(info.harmonies)
         for offset, length in _split(info):
             start = info.start + offset
-            existing = None
-            if locked:
-                before = [h for pos, h in info.harmonies if pos <= offset]
-                existing = before[-1] if before else (carried if carried is not None else info.harmonies[0][1])
             steps.append(
                 Step(
                     measure_index=index,
@@ -121,12 +115,9 @@ def load_melody(data: bytes, strip_harmonies: bool = False) -> MelodySource:
                     offset_in_measure=offset,
                     length=length,
                     notes=_skyline(melody, start, start + length),
-                    existing=existing,
                     locked=locked,
                 )
             )
-        if info.harmonies:
-            carried = info.harmonies[-1][1]
 
     return MelodySource(
         root=root,

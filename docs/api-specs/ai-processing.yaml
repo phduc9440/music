@@ -21,7 +21,7 @@ tags:
   - name: AI tasks
     description: Trạng thái các tác vụ AI / chuyển đổi chạy nền
   - name: Chord suggestions
-    description: Gợi ý hợp âm tự động bằng HMM (R3)
+    description: Gợi ý hợp âm tự động bằng model AutoHarmonizer, lấy mẫu ra tới 3 phương án (R3)
   - name: Internal callbacks
     description: Chỉ music-ai gọi; cần header X-Internal-Key, không dùng JWT
 
@@ -228,7 +228,7 @@ paths:
     post:
       tags: [Chord suggestions]
       summary: Gợi ý hợp âm cho version hiện hành (tạo tác vụ CHORD_GENERATION)
-      description: "Cần quyền nhận xét. Kết quả là đề xuất sửa do hệ thống gửi; theo dõi bằng GET /api/ai-tasks/{id}, xong thì result.resultData.suggestionId. Mặc định chỉ gợi ý cho ô chưa có hợp âm; mọi ô đã có hợp âm thì task FAILED với errorMessage CHORD_ALREADY_HARMONIZED (web hỏi người dùng có muốn thay hợp âm cũ). replaceExisting = true: bỏ hết hợp âm đang có rồi gợi ý lại cả bài; nếu kết quả trùng hợp âm cũ thì task FAILED với CHORD_NO_CHANGE. Errors: 2001, 1002, 3130 phong cách sai, 2201 OMR đang chạy, 3131 đang gợi ý, 3132 đã có gợi ý chờ duyệt (result.suggestionId), 3702 hết hạn mức"
+      description: "Cần quyền nhận xét. Kết quả là đề xuất sửa do hệ thống gửi (phương án A) kèm tới 2 phương án khác (đọc bằng GET /api/suggestions/{id}/content?option=2|3, số phương án ở optionCount); theo dõi bằng GET /api/ai-tasks/{id}, xong thì result.resultData = {suggestionId, key, filled, skipped, options}. Mặc định chỉ gợi ý cho ô chưa có hợp âm; mọi ô đã có hợp âm thì task FAILED với errorMessage CHORD_ALREADY_HARMONIZED (web hỏi người dùng có muốn thay hợp âm cũ). replaceExisting = true: bỏ hết hợp âm đang có rồi gợi ý lại cả bài; nếu kết quả trùng hợp âm cũ thì task FAILED với CHORD_NO_CHANGE. Lỗi khác của task: CHORD_TOO_LONG (bài quá dài), CHORD_NO_CHORDS (model không đặt được hợp âm). Errors: 2001, 1002, 3130 màu hợp âm, độ sáng tạo hoặc mật độ sai, 2201 OMR đang chạy, 3131 đang gợi ý, 3132 đã có gợi ý chờ duyệt (result.suggestionId), 3702 hết hạn mức"
       operationId: requestScoresChordSuggestions
       security:
         - bearerAuth: []
@@ -579,11 +579,23 @@ components:
       properties:
         style:
           type: string
-          enum: [POP, BALLAD, JAZZ]
+          enum: [NATURAL, SIMPLE, COLORFUL, JAZZY]
+          default: NATURAL
+          description: "Màu hợp âm: tăng / giảm xác suất các nhóm hợp âm của model. NATURAL để model tự chọn, SIMPLE ưu tiên hợp âm ba, COLORFUL ưu tiên maj7, m7, sus, 6, JAZZY ưu tiên hợp âm 7 và mở rộng. Tên phong cách cũ (POP, FOLK, CLASSICAL, BALLAD, BOLERO, JAZZ, BLUES) vẫn nhận và quy về màu tương ứng"
         replaceExisting:
           type: boolean
           default: false
           description: "true: bỏ hết hợp âm đang có và gợi ý lại toàn bộ (dùng khi mọi ô đã có hợp âm)"
+        creativity:
+          type: string
+          enum: [SAFE, BALANCED, BOLD]
+          default: BALANCED
+          description: "Độ sáng tạo khi lấy mẫu (nhiệt độ 0,6 / 1,0 / 1,4). Mỗi lần gọi ra cách đệm khác"
+        density:
+          type: string
+          enum: [SPARSE, NORMAL, DENSE]
+          default: NORMAL
+          description: "Mật độ đổi hợp âm: phách mạnh / đầu phách / thêm chỗ nốt móc đơn"
     MeasureCheck:
       type: object
       properties:

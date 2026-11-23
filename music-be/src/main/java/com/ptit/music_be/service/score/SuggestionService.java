@@ -1,5 +1,7 @@
 package com.ptit.music_be.service.score;
 
+import java.util.List;
+
 import org.springframework.web.multipart.MultipartFile;
 
 import com.ptit.music_be.dto.enums.score.SuggestionFilter;
@@ -43,6 +45,12 @@ public interface SuggestionService {
             String description);
 
     /**
+     * Lưu thêm các phương án khác của một gợi ý hợp âm (phương án 2, 3...; phương án 1 là nội dung chính của đề xuất), cạnh
+     * file đề xuất: {@code scores/{scoreId}/suggestions/{id}-option-{n}.musicxml}. Số phương án suy ra từ file có trên đĩa.
+     */
+    void storeOptions(ScoreSuggestion suggestion, List<byte[]> options);
+
+    /**
      * Danh sách đề xuất của bản nhạc, mới nhất trước. Người có quyền sửa thấy tất cả, người chỉ có REVIEW chỉ thấy của
      * mình. Lỗi: SCORE_NOT_EXISTED (2001), UNAUTHORIZED (1002) nếu dưới mức REVIEW.
      */
@@ -56,6 +64,12 @@ public interface SuggestionService {
 
     /** Nội dung MusicXML của đề xuất. Quyền như {@link #get}; FILE_NOT_EXISTED (2002) khi file đã dọn. */
     byte[] content(String suggestionId);
+
+    /**
+     * Nội dung phương án {@code option} (1 = nội dung chính, 2, 3... = phương án khác của gợi ý hợp âm). Quyền như
+     * {@link #get}; FILE_NOT_EXISTED (2002) khi không có phương án đó hoặc đã dọn.
+     */
+    byte[] content(String suggestionId, int option);
 
     /**
      * Nhận các ô được chọn (hoặc tất cả khi {@code changeIds} null), tạo version mới. Cần quyền sửa. Lỗi theo thứ tự:

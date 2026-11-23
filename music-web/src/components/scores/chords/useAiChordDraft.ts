@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import { ScoreDocument } from '../../editor/core/ScoreDocument';
 import type { ScoreEditor } from '../../editor/core/useScoreEditor';
-import { readChord, replaceHarmonies } from '../../editor/notation/harmony';
+import { harmoniesOf, readChord, replaceHarmonies } from '../../editor/notation/harmony';
 import { t } from '../../../i18n/core';
 import { suggestionApi } from '../../../services';
 import type { SuggestionDetail } from '../../../types';
@@ -24,6 +24,9 @@ export interface AiChordDraft {
   items: AiChordItem[];
   /** Hợp âm cũ bị gỡ vì gợi ý lại đặt hợp âm mới ở nốt khác: "Bỏ gợi ý" trả lại nếu nốt vẫn trống. */
   cleared: { id: string; beforeHarmonies: Element[] }[];
+  /** Phương án đang nạp (1 = A) và tổng số phương án AI đưa ra. */
+  option: number;
+  optionCount: number;
 }
 
 interface Options {
@@ -44,6 +47,10 @@ export interface AiChordDraftState {
   start: (suggestionId: string) => Promise<void>;
   /** Gỡ các hợp âm AI còn nguyên (một bước sửa), đóng đề xuất (từ chối) và thoát chế độ bản nháp. */
   discard: () => Promise<void>;
+  /** Đổi sang phương án `option` (1 = A): thay toàn bộ hợp âm AI bằng của phương án đó trong một bước sửa. */
+  switchOption: (option: number) => Promise<void>;
+  /** Đang tải / đổi phương án. */
+  switching: boolean;
 }
 
 const NO_ROWS: AiChordRow[] = [];
@@ -52,7 +59,11 @@ const NO_ROWS: AiChordRow[] = [];
 export function useAiChordDraft({ doc, editor, canEdit, onFallback }: Options): AiChordDraftState {
   const [loaded, setDraft] = useState<AiChordDraft | null>(null);
   const [loading, setLoading] = useState(false);
+  const [switching, setSwitching] = useState(false);
   const applyingRef = useRef(false);
+  // Bản nhạc ngay trước khi nạp gợi ý (để so từng phương án với cùng một gốc) và các phương án đã tải
+  const pristineRef = useRef<ScoreDocument | null>(null);
+  const optionDocsRef = useRef(new Map<number, ScoreDocument>());
   const { applyEdit, version, dirty, canUndo, canRedo } = editor;
 
   const loadedRows = useMemo<AiChordRow[]>(() => {
@@ -105,6 +116,8 @@ export function useAiChordDraft({ doc, editor, canEdit, onFallback }: Options): 
           return;
         }
         const proposed = ScoreDocument.parse(xml);
+        pristineRef.current = ScoreDocument.parse(doc.serialize());
+        optionDocsRef.current = new Map([[1, proposed]]);
         const items = diffChords(doc, proposed);
         const cleared = clearedChords(doc, proposed);
         if (items.length === 0) {
@@ -124,7 +137,14 @@ export function useAiChordDraft({ doc, editor, canEdit, onFallback }: Options): 
           toast.warn(t('chords.draft.blocked'));
           return;
         }
-        setDraft({ suggestion, startVersion: version, items, cleared });
+        setDraft({
+          suggestion,
+          startVersion: version,
+          items,
+          cleared,
+          option: 1,
+          optionCount: Math.max(1, suggestion.optionCount ?? 1),
+        });
         toast.success(t('chords.draft.loaded', { count: items.length }));
       } catch {
         toast.error(t('chords.draft.loadFailed'));
@@ -162,6 +182,45 @@ export function useAiChordDraft({ doc, editor, canEdit, onFallback }: Options): 
     toast.success(t('chords.draft.discarded'));
   }, [draft, rows, doc, applyEdit]);
 
+  const switchOption = useCallback(
+    async (option: number) => {
+      const pristine = pristineRef.current;
+      if (!draft || !pristine || option === draft.option || option < 1 || option > draft.optionCount) return;
+      setSwitching(true);
+      try {
+        let proposed = optionDocsRef.current.get(option);
+        if (!proposed) {
+          proposed = ScoreDocument.parse(await suggestionApi.content(draft.suggestion.id, option));
+          optionDocsRef.current.set(option, proposed);
+        }
+        const items = diffChords(pristine, proposed);
+        const cleared = clearedChords(pristine, proposed);
+        // Mọi nốt phương án cũ hoặc mới chạm tới: nhận hợp âm của phương án mới, không thì trả về như trước khi nạp
+        const next = new Map<string, Element[]>();
+        for (const id of [...draft.items.map((i) => i.id), ...draft.cleared.map((c) => c.id)]) {
+          next.set(id, harmoniesOf(pristine, id));
+        }
+        for (const c of cleared) next.set(c.id, []);
+        for (const item of items) next.set(item.id, item.aiHarmonies);
+        const result = replaceHarmonies(
+          doc,
+          [...next].map(([id, harmonies]) => ({ id, harmonies })),
+          { key: 'editor.cmd.chord.aiOption', params: { option: String.fromCharCode(64 + option) } },
+        );
+        if (!applyEdit(result)) {
+          toast.warn(t('chords.draft.blocked'));
+          return;
+        }
+        setDraft({ ...draft, items, cleared, option });
+      } catch {
+        toast.error(t('chords.draft.loadFailed'));
+      } finally {
+        setSwitching(false);
+      }
+    },
+    [draft, doc, applyEdit],
+  );
+
   // Lưu xong (phiên bản tăng, không còn thay đổi chờ gửi): đánh dấu đề xuất đã áp dụng vào phiên bản đó.
   // Nếu không còn hợp âm AI nào (đã xóa hết, hoặc khôi phục phiên bản cũ) thì chỉ thoát chế độ bản nháp.
   useEffect(() => {
@@ -179,5 +238,5 @@ export function useAiChordDraft({ doc, editor, canEdit, onFallback }: Options): 
       });
   }, [draft, dirty, version, rows]);
 
-  return { draft, loading, rows, marks, start, discard };
+  return { draft, loading, rows, marks, start, discard, switchOption, switching };
 }

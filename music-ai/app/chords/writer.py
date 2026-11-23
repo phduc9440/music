@@ -1,12 +1,12 @@
-"""Chèn ``<harmony>`` vào MusicXML gốc (spec R3 mục 5.7).
+"""Chèn ``<harmony>`` vào MusicXML gốc.
 
 Chỉ thêm phần tử ``<harmony>`` vào bè giai điệu, không đổi gì khác (khóa, nhịp, part-list, thứ tự phần tử), để
 ``SuggestionDiffer`` phía Java thấy đúng các ô được thêm hợp âm. Phần mở đầu file (khai báo XML, DOCTYPE) được giữ nguyên.
 
-Vị trí: ngay trước nốt có cao độ của khuông giai điệu bắt đầu đúng đầu bước. Không có nốt như vậy (nốt dài, nốt nối) thì
-gắn vào nốt gần nhất kèm ``<offset>`` (đơn vị divisions): ưu tiên nốt đang vang (bắt đầu trước, offset dương), không thì nốt
-kế tiếp (offset âm). Mỗi nốt mang tối đa một ``<harmony>`` vì editor chỉ giữ một hợp âm cho mỗi nốt; không còn nốt trống
-nào để gắn thì bỏ hợp âm đó (ô giữ một hợp âm).
+Vị trí: ngay trước nốt có cao độ của khuông giai điệu bắt đầu đúng chỗ đổi hợp âm. Không có nốt như vậy (nốt dài, nốt nối)
+thì gắn vào nốt gần nhất kèm ``<offset>`` (đơn vị divisions): ưu tiên nốt đang vang (bắt đầu trước, offset dương), không thì
+nốt kế tiếp (offset âm). Mỗi nốt mang tối đa một ``<harmony>`` vì editor chỉ giữ một hợp âm cho mỗi nốt; không còn nốt trống
+nào để gắn thì bỏ hợp âm đó.
 """
 
 from __future__ import annotations
@@ -14,24 +14,13 @@ from __future__ import annotations
 import xml.etree.ElementTree as ET
 from fractions import Fraction
 
-from app.chords.melody import MelodySource, Step
-from app.chords.theory import KIND_OF_QUALITY, SUFFIX, ChordDef, Key, spell_root
 from app.convert.score_xml import child_int, current_divisions
 
 # Giữ đúng tiền tố xlink (MusicXML dùng xlink:href); thiếu dòng này ElementTree ghi thành ns0:href
 ET.register_namespace("xlink", "http://www.w3.org/1999/xlink")
 
 
-def write_harmonies(src: MelodySource, placements: list[tuple[Step, ChordDef]], key: Key) -> bytes:
-    measures = src.part.findall("measure")
-    divisions = _divisions_per_measure(measures)
-    for step, chord in placements:
-        measure = measures[step.measure_index]
-        _insert(measure, divisions[step.measure_index], step.offset_in_measure, _harmony(chord, key, src), src.staff)
-    return _serialize(src)
-
-
-def _divisions_per_measure(measures: list[ET.Element]) -> list[int]:
+def divisions_per_measure(measures: list[ET.Element]) -> list[int]:
     """Giá trị ``divisions`` đang hiệu lực ở đầu mỗi ô (ô đổi divisions giữa chừng hiếm gặp, lấy giá trị cuối ô trước)."""
     out, current = [], 1
     for measure in measures:
@@ -46,7 +35,7 @@ def _staff_of(note: ET.Element) -> int:
     return child_int(note, "staff") or 1
 
 
-def _insert(measure: ET.Element, divisions: int, target: Fraction, harmony: ET.Element, staff: int) -> bool:
+def insert_harmony(measure: ET.Element, divisions: int, target: Fraction, harmony: ET.Element, staff: int) -> bool:
     """Chèn ``harmony`` cho vị trí ``target`` (phách đen trong ô). Trả False nếu không có nốt trống để gắn."""
     pos = Fraction(0)
     anchors: list[tuple[int, Fraction]] = []  # (chỉ số phần tử, vị trí) của các nốt có cao độ thuộc khuông giai điệu
@@ -113,27 +102,5 @@ def _set_offset(harmony: ET.Element, offset: int) -> None:
         harmony.append(el)
 
 
-def _harmony(chord: ChordDef, key: Key, src: MelodySource) -> ET.Element:
-    flat = chord.label.startswith("b")
-    harmony = ET.Element("harmony")
-    root = ET.SubElement(harmony, "root")
-    step, alter = spell_root(key.tonic + chord.root, key, prefer_flat=flat)
-    ET.SubElement(root, "root-step").text = step
-    if alter:
-        ET.SubElement(root, "root-alter").text = str(alter)
-    kind = ET.SubElement(harmony, "kind", {"text": SUFFIX[chord.quality]})
-    kind.text = KIND_OF_QUALITY[chord.quality]
-    if chord.bass is not None:
-        bass = ET.SubElement(harmony, "bass")
-        bass_step, bass_alter = spell_root(key.tonic + chord.bass, key, prefer_flat=flat)
-        ET.SubElement(bass, "bass-step").text = bass_step
-        if bass_alter:
-            ET.SubElement(bass, "bass-alter").text = str(bass_alter)
-    if src.staves > 1:
-        ET.SubElement(harmony, "staff").text = str(src.staff)
-    return harmony
-
-
-def _serialize(src: MelodySource) -> bytes:
-    body = ET.tostring(src.root, encoding="unicode")
-    return (src.prolog + body).encode("utf-8")
+def serialize(prolog: str, root: ET.Element) -> bytes:
+    return (prolog + ET.tostring(root, encoding="unicode")).encode("utf-8")

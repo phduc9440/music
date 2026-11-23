@@ -8,6 +8,7 @@ from __future__ import annotations
 import hmac
 import logging
 from contextlib import asynccontextmanager
+from pathlib import PurePosixPath
 from typing import Optional
 from uuid import UUID
 
@@ -16,7 +17,7 @@ from fastapi import Depends, FastAPI, Header, HTTPException
 from app import storage
 from app.analysis.diff import diff_files
 from app.chords import ChordError
-from app.chords.generate import generate_file
+from app.chords.generate import generate_file, option_path
 from app.config import get_settings
 from app.convert.errors import ConversionError
 from app.convert.kern import kern_file_to_musicxml_file
@@ -215,16 +216,21 @@ def analysis_diff(body: DiffRequest) -> dict:
 
 @app.post("/chords/generate", dependencies=[Depends(require_internal_key)])
 def chords_generate(body: ChordGenerateRequest) -> dict:
-    """Gợi ý hợp âm (R3, HMM + Viterbi) cho MusicXML ``inPath``, ghi bản có ``<harmony>`` ra ``outPath``, đồng bộ.
+    """Gợi ý hợp âm (R3, model AutoHarmonizer + lấy mẫu) cho MusicXML ``inPath``, đồng bộ.
 
-    Lỗi dự đoán được trả 422 với ``detail = {code, message}``; ``code`` là ``NO_MELODY``, ``ALREADY_HARMONIZED`` hoặc
-    ``PARSE_ERROR`` để Java ghi đúng mã lỗi của task.
+    Ghi tối đa ``options`` phương án: phương án 1 (hợp tai nhất) ra ``outPath``, phương án k ra ``<outPath>-k.musicxml``.
+    Mỗi lần gọi ra kết quả khác (trừ khi truyền ``seed``). Lỗi dự đoán được trả 422 với ``detail = {code, message}``;
+    ``code`` là ``NO_MELODY``, ``ALREADY_HARMONIZED``, ``NO_CHORDS``, ``TOO_LONG`` hoặc ``PARSE_ERROR``.
     """
     try:
         result = generate_file(
             storage.resolve(body.inPath),
             storage.resolve(body.outPath),
             body.style,
+            creativity=body.creativity,
+            density=body.density,
+            options=body.options,
+            seed=body.seed,
             replace_existing=body.replaceExisting,
         )
     except ChordError as exc:
@@ -238,4 +244,9 @@ def chords_generate(body: ChordGenerateRequest) -> dict:
         "filled": result.filled,
         "skipped": result.skipped,
         "keptExisting": result.kept_existing,
+        "seed": result.seed,
+        "options": [
+            {"outPath": str(option_path(PurePosixPath(body.outPath), i)), "filled": o.filled, "score": o.score}
+            for i, o in enumerate(result.options)
+        ],
     }

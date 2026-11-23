@@ -7,8 +7,8 @@
   "cancelled": "The chord suggestion task was cancelled",
   "dialog": {
     "title": "Suggest chords",
-    "hint": "The melody is analysed, the key is detected and chords are proposed for measures that have none. If you can edit the score, the AI chords appear right in the editor (highlighted in yellow) so you can adjust them and save; otherwise the result is a suggested edit for the owner to review.",
-    "styleLabel": "Style",
+    "hint": "The AI (AutoHarmonizer model) reads the melody and places chords in measures without chords. Every run the AI \"thinks\" again, so you get a different accompaniment, with up to 3 options A, B, C to choose from. If you can edit the score, the AI chords appear in the editor (highlighted) for you to adjust and save; otherwise the result is an edit suggestion for the owner to review.",
+    "styleLabel": "Chord colour",
     "running": "Analysing the melody…",
     "closeHint": "You can hide this dialog; the suggestion is still created and will appear in the Suggestions tab.",
     "openPending": "Open pending suggestion",
@@ -20,20 +20,26 @@
     "harmonizedHint": "Do you want to change the existing chords? The AI will drop all current chords and suggest new ones for the whole piece; you still review them before saving.",
     "replace": "Suggest again, replace chords",
     "clearAll": "Delete all chords",
-    "clearAllHint": "Remove every chord from the score in the editor (unsaved, Ctrl+Z to undo)"
+    "clearAllHint": "Remove every chord from the score in the editor (unsaved, Ctrl+Z to undo)",
+    "creativityLabel": "Creativity",
+    "densityLabel": "Chord density"
   },
   "styles": {
-    "POP": {
-      "name": "Pop",
-      "description": "Familiar triads, the I–V–vi–IV loop"
+    "NATURAL": {
+      "name": "Natural",
+      "description": "Let the AI pick the chords that fit the melody best"
     },
-    "BALLAD": {
-      "name": "Ballad",
-      "description": "Adds colour chords such as maj7, m7, sus4 and walking bass"
+    "SIMPLE": {
+      "name": "Simple",
+      "description": "Prefers major and minor triads; good for beginners"
     },
-    "JAZZ": {
-      "name": "Jazz",
-      "description": "Seventh chords, ii–V–I and secondary dominants"
+    "COLORFUL": {
+      "name": "Colourful",
+      "description": "Adds colour chords such as maj7, m7, sus, 6"
+    },
+    "JAZZY": {
+      "name": "Sevenths / Jazz",
+      "description": "Prefers 7, maj7, m7 and extended 9, 11, 13 chords"
     }
   },
   "taskErrors": {
@@ -42,7 +48,9 @@
     "AI_SERVICE_UNAVAILABLE": "The AI service is unavailable, please try again later",
     "TASK_TIMEOUT": "Chord suggestion took too long and was stopped, please try again",
     "JOB_REJECTED": "The score could not be read for chord suggestion",
-    "CHORD_NO_CHANGE": "The AI suggested exactly the current chords; nothing changed"
+    "CHORD_NO_CHANGE": "The AI suggested exactly the current chords; nothing changed",
+    "CHORD_TOO_LONG": "The score is too long to harmonize at once (about 256 measures of 4/4 at most)",
+    "CHORD_NO_CHORDS": "The AI could not place any chord on this melody; try another style or density"
   },
   "draft": {
     "panelTitle": "AI chord suggestions",
@@ -83,7 +91,12 @@
     "openInEditor": "Open in editor",
     "openInEditorHint": "Load these chords into the editor as a draft so you can adjust them before saving",
     "remove": "Delete",
-    "removeHint": "Delete chord {chord} from this note (Ctrl+Z to undo)"
+    "removeHint": "Delete chord {chord} from this note (Ctrl+Z to undo)",
+    "options": "AI options",
+    "optionsHint": "Each option is a different accompaniment. Switching replaces the AI chords on the score (Ctrl+Z to go back).",
+    "optionBest": "Option A: the AI's best fit",
+    "optionOther": "Option {option}",
+    "switching": "Switching option…"
   },
   "clear": {
     "title": "Delete all chords?",
@@ -92,5 +105,15 @@
     "done": "Deleted {count} chords. Press Save to keep the change.",
     "none": "The score has no chords yet",
     "blocked": "Some measures are being edited by someone else, so the chords could not be deleted yet; try again later"
+  },
+  "creativity": {
+    "SAFE": "Safe",
+    "BALANCED": "Balanced",
+    "BOLD": "Bold"
+  },
+  "density": {
+    "SPARSE": "Sparse",
+    "NORMAL": "Normal",
+    "DENSE": "Dense"
   }
 }

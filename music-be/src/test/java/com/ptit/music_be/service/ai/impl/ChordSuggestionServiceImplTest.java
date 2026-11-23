@@ -31,6 +31,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ptit.music_be.dto.enums.ai.AiTaskStatus;
 import com.ptit.music_be.dto.enums.ai.AiTaskType;
+import com.ptit.music_be.dto.enums.ai.ChordStyle;
 import com.ptit.music_be.dto.enums.billing.UsageMetric;
 import com.ptit.music_be.dto.enums.score.ScoreAccess;
 import com.ptit.music_be.dto.enums.score.SuggestionSource;
@@ -146,37 +147,46 @@ class ChordSuggestionServiceImplTest {
 
     @Test
     void unknownScoreIsRejected() {
-        assertThat(errorOf("nope", "POP").getErrorCode()).isEqualTo(ScoreErrorCode.SCORE_NOT_EXISTED);
+        assertThat(errorOf("nope", "NATURAL").getErrorCode()).isEqualTo(ScoreErrorCode.SCORE_NOT_EXISTED);
     }
 
     @Test
     void viewerCannotRequest() {
         access(ScoreAccess.VIEW);
-        assertThat(errorOf(SCORE_ID, "POP").getErrorCode()).isEqualTo(AccountErrorCode.UNAUTHORIZED);
+        assertThat(errorOf(SCORE_ID, "NATURAL").getErrorCode()).isEqualTo(AccountErrorCode.UNAUTHORIZED);
     }
 
     @Test
-    void unknownOrMissingStyleIsInvalid() {
+    void unknownStyleIsInvalid() {
         assertThat(errorOf(SCORE_ID, "ROCK").getErrorCode()).isEqualTo(AiErrorCode.CHORD_STYLE_INVALID);
-        assertThat(errorOf(SCORE_ID, null).getErrorCode()).isEqualTo(AiErrorCode.CHORD_STYLE_INVALID);
+    }
+
+    @Test
+    void missingStyleDefaultsToNaturalAndLegacyNamesMapToColours() {
+        assertThat(ChordStyle.parse(null)).contains(ChordStyle.NATURAL);
+        assertThat(ChordStyle.parse("pop")).contains(ChordStyle.NATURAL);
+        assertThat(ChordStyle.parse("FOLK")).contains(ChordStyle.SIMPLE);
+        assertThat(ChordStyle.parse("ballad")).contains(ChordStyle.COLORFUL);
+        assertThat(ChordStyle.parse("BLUES")).contains(ChordStyle.JAZZY);
+        assertThat(ChordStyle.parse("rock")).isEmpty();
     }
 
     @Test
     void scoreWithoutMusicXmlIsNotReady() {
         score.setCurrentVersion(null);
-        assertThat(errorOf(SCORE_ID, "POP").getErrorCode()).isEqualTo(ScoreErrorCode.MUSICXML_NOT_READY);
+        assertThat(errorOf(SCORE_ID, "NATURAL").getErrorCode()).isEqualTo(ScoreErrorCode.MUSICXML_NOT_READY);
     }
 
     @Test
     void runningOmrMakesScoreBusy() {
         taskRunning(AiTaskType.OMR_CONVERSION);
-        assertThat(errorOf(SCORE_ID, "POP").getErrorCode()).isEqualTo(ScoreErrorCode.SCORE_BUSY);
+        assertThat(errorOf(SCORE_ID, "NATURAL").getErrorCode()).isEqualTo(ScoreErrorCode.SCORE_BUSY);
     }
 
     @Test
     void secondRequestWhileTaskRunsIsRejected() {
         taskRunning(AiTaskType.CHORD_GENERATION);
-        assertThat(errorOf(SCORE_ID, "POP").getErrorCode()).isEqualTo(AiErrorCode.CHORD_TASK_RUNNING);
+        assertThat(errorOf(SCORE_ID, "NATURAL").getErrorCode()).isEqualTo(AiErrorCode.CHORD_TASK_RUNNING);
     }
 
     @Test
@@ -186,7 +196,7 @@ class ChordSuggestionServiceImplTest {
                         SCORE_ID, SuggestionSource.CHORD_GENERATION, SuggestionStatus.OPEN))
                 .thenReturn(Optional.of(open));
 
-        AppException e = errorOf(SCORE_ID, "POP");
+        AppException e = errorOf(SCORE_ID, "NATURAL");
 
         assertThat(e.getErrorCode()).isEqualTo(AiErrorCode.CHORD_SUGGESTION_PENDING);
         assertThat(e.getPayload()).isEqualTo(Map.of("suggestionId", "sug-9"));
@@ -198,13 +208,13 @@ class ChordSuggestionServiceImplTest {
                 .when(entitlementService)
                 .checkAvailable(eq("m-1"), eq(UsageMetric.CHORD_GENERATIONS), anyInt());
 
-        assertThat(errorOf(SCORE_ID, "POP").getErrorCode()).isEqualTo(BillingErrorCode.PLAN_LIMIT_REACHED);
+        assertThat(errorOf(SCORE_ID, "NATURAL").getErrorCode()).isEqualTo(BillingErrorCode.PLAN_LIMIT_REACHED);
         verify(aiTaskRepository, never()).save(any());
     }
 
     @Test
     void reviewerCreatesPendingTaskAndEvent() throws Exception {
-        AiTaskResponse response = service.request(SCORE_ID, style("jazz"));
+        AiTaskResponse response = service.request(SCORE_ID, style("jazzy"));
 
         assertThat(response.getId()).isEqualTo("task-1");
         ArgumentCaptor<AiTask> saved = ArgumentCaptor.forClass(AiTask.class);
@@ -215,9 +225,30 @@ class ChordSuggestionServiceImplTest {
         assertThat(task.getMember()).isSameAs(me);
         assertThat(task.getScore()).isSameAs(score);
         JsonNode input = objectMapper.readTree(task.getInputData());
-        assertThat(input.path("style").asText()).isEqualTo("JAZZ");
+        assertThat(input.path("style").asText()).isEqualTo("JAZZY");
+        assertThat(input.path("creativity").asText()).isEqualTo("BALANCED");
+        assertThat(input.path("density").asText()).isEqualTo("NORMAL");
         assertThat(input.path("baseVersion").asInt()).isEqualTo(7);
         verify(entitlementService).checkAvailable("m-1", UsageMetric.CHORD_GENERATIONS, 1);
         verify(eventPublisher).publishEvent(new ChordTaskCreatedEvent("task-1", SCORE_ID));
+    }
+
+    @Test
+    void creativityAndDensityAreStoredAndValidated() throws Exception {
+        ChordSuggestionRequest request = style("NATURAL");
+        request.setCreativity("bold");
+        request.setDensity("sparse");
+        service.request(SCORE_ID, request);
+        ArgumentCaptor<AiTask> saved = ArgumentCaptor.forClass(AiTask.class);
+        verify(aiTaskRepository).save(saved.capture());
+        JsonNode input = objectMapper.readTree(saved.getValue().getInputData());
+        assertThat(input.path("creativity").asText()).isEqualTo("BOLD");
+        assertThat(input.path("density").asText()).isEqualTo("SPARSE");
+
+        ChordSuggestionRequest bad = style("NATURAL");
+        bad.setCreativity("wild");
+        assertThat(catchThrowableOfType(AppException.class, () -> service.request(SCORE_ID, bad))
+                        .getErrorCode())
+                .isEqualTo(AiErrorCode.CHORD_STYLE_INVALID);
     }
 }

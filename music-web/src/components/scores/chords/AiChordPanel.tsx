@@ -20,7 +20,14 @@ interface Props {
   onSave: () => void;
   onDiscard: () => void;
   onClose: () => void;
+  /** Phương án đang xem (1 = A), tổng số phương án AI đưa ra, đổi phương án. */
+  option: number;
+  optionCount: number;
+  switching: boolean;
+  onOption: (option: number) => void;
 }
+
+const optionLetter = (option: number) => String.fromCharCode(64 + option);
 
 /** Nhóm các hợp âm theo ô nhịp, giữ thứ tự trong bản nhạc. */
 const byMeasure = (rows: readonly AiChordRow[]) => {
@@ -50,6 +57,10 @@ export default function AiChordPanel({
   onSave,
   onDiscard,
   onClose,
+  option,
+  optionCount,
+  switching,
+  onOption,
 }: Props) {
   const groups = useMemo(() => byMeasure(rows), [rows]);
   const edited = rows.filter((r) => r.status === 'edited').length;
@@ -82,6 +93,33 @@ export default function AiChordPanel({
           ×
         </button>
       </div>
+
+      {optionCount > 1 && (
+        <div className="aic-options">
+          <span className="aic-options__label" id="aic-options-label">
+            {t('chords.draft.options')}
+          </span>
+          <div className="aic-options__tabs" role="radiogroup" aria-labelledby="aic-options-label">
+            {Array.from({ length: optionCount }, (_, k) => k + 1).map((n) => (
+              <button
+                key={n}
+                type="button"
+                role="radio"
+                aria-checked={n === option}
+                className={`aic-option${n === option ? ' is-active' : ''}`}
+                disabled={switching || saving}
+                onClick={() => onOption(n)}
+                title={
+                  n === 1 ? t('chords.draft.optionBest') : t('chords.draft.optionOther', { option: optionLetter(n) })
+                }
+              >
+                {optionLetter(n)}
+              </button>
+            ))}
+          </div>
+          <p className="aic-options__hint">{switching ? t('chords.draft.switching') : t('chords.draft.optionsHint')}</p>
+        </div>
+      )}
 
       <div className="aic-summary">
         <p className="aic-summary__key">{title}</p>

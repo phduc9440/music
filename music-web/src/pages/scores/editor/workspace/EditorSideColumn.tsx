@@ -59,6 +59,10 @@ export default function EditorSideColumn({ scoreId, editor, live, side, ai, onCl
           onSave={() => void editor.save()}
           onDiscard={() => void ai.discardAiDraft()}
           onClose={onCloseAi}
+          option={draft.option}
+          optionCount={draft.optionCount}
+          switching={ai.aiDraft.switching}
+          onOption={(n) => void ai.aiDraft.switchOption(n)}
         />
       )}
       {!sideRail && ai.shown && !draft && (
