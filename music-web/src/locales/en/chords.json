@@ -8,7 +8,7 @@
   "dialog": {
     "title": "Suggest chords",
     "hint": "The AI (AutoHarmonizer model) reads the melody and places chords in measures without chords. Every run the AI \"thinks\" again, so you get a different accompaniment, with up to 3 options A, B, C to choose from. If you can edit the score, the AI chords appear in the editor (highlighted) for you to adjust and save; otherwise the result is an edit suggestion for the owner to review.",
-    "styleLabel": "Style",
+    "styleLabel": "Chord colour",
     "running": "Analysing the melody…",
     "closeHint": "You can hide this dialog; the suggestion is still created and will appear in the Suggestions tab.",
     "openPending": "Open pending suggestion",
@@ -25,33 +25,21 @@
     "densityLabel": "Chord density"
   },
   "styles": {
-    "POP": {
-      "name": "Pop",
+    "NATURAL": {
+      "name": "Natural",
       "description": "Let the AI pick the chords that fit the melody best"
     },
-    "BALLAD": {
-      "name": "Ballad",
-      "description": "Prefers colour chords: maj7, m7, sus, 6"
+    "SIMPLE": {
+      "name": "Simple",
+      "description": "Prefers major and minor triads; good for beginners"
     },
-    "JAZZ": {
-      "name": "Jazz",
+    "COLORFUL": {
+      "name": "Colourful",
+      "description": "Adds colour chords such as maj7, m7, sus, 6"
+    },
+    "JAZZY": {
+      "name": "Sevenths / Jazz",
       "description": "Prefers 7, maj7, m7 and extended 9, 11, 13 chords"
-    },
-    "CLASSICAL": {
-      "name": "Classical",
-      "description": "Triads, dominant sevenths and diminished chords as in classical harmony"
-    },
-    "FOLK": {
-      "name": "Folk / Children",
-      "description": "Prefers simple triads, few sevenths or extended chords"
-    },
-    "BOLERO": {
-      "name": "Bolero / Ballad (VN)",
-      "description": "Prefers minor and seventh chords, Vietnamese bolero style"
-    },
-    "BLUES": {
-      "name": "Blues",
-      "description": "Prefers dominant seventh chords as in the blues"
     }
   },
   "taskErrors": {

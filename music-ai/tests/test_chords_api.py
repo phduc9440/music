@@ -33,7 +33,7 @@ def write(storage_root, relative, data: bytes):
 
 
 def body(**extra):
-    return {"inPath": IN, "outPath": OUT, "style": "POP", **extra}
+    return {"inPath": IN, "outPath": OUT, "style": "NATURAL", **extra}
 
 
 def test_generate_returns_summary_and_options(client, storage_root):
@@ -59,7 +59,7 @@ def test_generate_returns_summary_and_options(client, storage_root):
 
 def test_generate_accepts_style_creativity_density(client, storage_root):
     write(storage_root, IN, single(TUNE))
-    payload = body(style="JAZZ", creativity="BOLD", density="DENSE", options=1)
+    payload = body(style="JAZZY", creativity="BOLD", density="DENSE", options=1)
     response = client.post("/chords/generate", json=payload, headers=KEY)
     assert response.status_code == 200
     assert len(response.json()["options"]) == 1

@@ -10,12 +10,12 @@
 }
 
 /* Legend của fieldset bỏ qua margin-top của .sc-label nên khoảng cách với chú thích đặt ở fieldset */
-/* hộp rộng hơn hộp thường để 7 phong cách xếp được hai cột */
+/* hộp rộng hơn hộp thường để các lựa chọn màu hợp âm xếp được hai cột */
 .sc-modal.cs-modal {
   max-width: 640px;
 }
 
-/* 7 phong cách: hai cột khi hộp đủ rộng, hẹp thì một cột */
+/* màu hợp âm: hai cột khi hộp đủ rộng, hẹp thì một cột */
 .cs-styles {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));

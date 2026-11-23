@@ -8,8 +8,8 @@ Khác mã gốc (luôn chọn hợp âm xác suất cao nhất nên cùng giai �
   nhất).
 - **Mật độ**: như ``gamma_sampling`` của tác giả (x → x^tan(πγ/2)) trên hợp âm vừa chọn, cộng với giới hạn chỗ được đổi
   hợp âm (thưa: phách mạnh; vừa: đầu phách; dày: thêm chỗ nốt giai điệu bắt đầu).
-- **Phong cách**: cũng bằng gamma, tăng / giảm tổng xác suất của nhóm hợp âm (hợp âm ba, 7, maj7, m7, mở rộng...), nên vẫn là
-  hợp âm model thấy hợp với giai điệu, chỉ đổi màu.
+- **Màu hợp âm**: cũng bằng gamma, tăng / giảm tổng xác suất của nhóm hợp âm (hợp âm ba, 7, maj7, m7, mở rộng...), nên vẫn là
+  hợp âm model thấy hợp với giai điệu, chỉ đổi màu. Model gốc không có khái niệm thể loại nên không có lựa chọn theo thể loại.
 
 Giữ như mã gốc: cấm "không hợp âm" ở phách mạnh có nốt; đầu vào là giai điệu (nốt cao nhất khuông 1), độ mạnh phách của nốt
 (``beatStrength`` × 4 của music21) và giọng (số dấu thăng + 8), cửa sổ 32 bước hai bên.
@@ -42,17 +42,18 @@ CREATIVITY = {"SAFE": (0.6, 0.85), "BALANCED": (1.0, 0.92), "BOLD": (1.4, 0.97)}
 # nốt móc đơn)
 DENSITY = {"SPARSE": (0.3, 2, False), "NORMAL": (0.5, 1, False), "DENSE": (0.6, 1, True)}
 
-# Phong cách → {nhóm hợp âm: gamma}; gamma < 0,5 tăng tổng xác suất của nhóm, > 0,5 giảm
+# Màu hợp âm → {nhóm hợp âm: gamma}; gamma < 0,5 tăng tổng xác suất của nhóm, > 0,5 giảm. Model không biết thể loại, đây chỉ
+# là bộ lọc trên loại hợp âm nên tên mô tả đúng việc nó làm (không gọi theo thể loại nhạc)
 STYLE_GAMMAS: dict[str, dict[str, float]] = {
-    "POP": {},
-    "FOLK": {"major": 0.3, "minor": 0.35, "ext": 0.85, "maj7": 0.8, "min7": 0.8, "sixth": 0.8, "sus": 0.75,
-             "dim": 0.8, "aug": 0.85, "hdim": 0.85},
-    "BALLAD": {"maj7": 0.25, "min7": 0.3, "sus": 0.35, "sixth": 0.4, "ext": 0.45, "dim": 0.7, "aug": 0.75},
-    "JAZZ": {"dom7": 0.25, "maj7": 0.2, "min7": 0.2, "ext": 0.25, "hdim": 0.3, "major": 0.75, "minor": 0.75},
-    "BLUES": {"dom7": 0.15, "ext": 0.3, "maj7": 0.8, "sus": 0.7},
-    "CLASSICAL": {"major": 0.3, "minor": 0.35, "dom7": 0.35, "dim": 0.45, "ext": 0.85, "sixth": 0.8, "sus": 0.8,
-                  "maj7": 0.8, "aug": 0.8},
-    "BOLERO": {"minor": 0.3, "dom7": 0.3, "ext": 0.75, "maj7": 0.75, "sixth": 0.7, "aug": 0.85},
+    # Tự nhiên: để model tự chọn
+    "NATURAL": {},
+    # Đơn giản: hợp âm ba trưởng / thứ, hợp người mới tập
+    "SIMPLE": {"major": 0.3, "minor": 0.35, "ext": 0.85, "maj7": 0.8, "min7": 0.8, "sixth": 0.8, "sus": 0.75,
+               "dim": 0.8, "aug": 0.85, "hdim": 0.85},
+    # Có màu: maj7, m7, sus, 6
+    "COLORFUL": {"maj7": 0.25, "min7": 0.3, "sus": 0.35, "sixth": 0.4, "ext": 0.45, "dim": 0.7, "aug": 0.75},
+    # Hợp âm 7 / jazz: hợp âm 7, maj7, m7, m7b5 và mở rộng 9, 11, 13
+    "JAZZY": {"dom7": 0.25, "maj7": 0.2, "min7": 0.2, "ext": 0.25, "hdim": 0.3, "major": 0.75, "minor": 0.75},
 }
 STYLES = tuple(STYLE_GAMMAS)
 REST_TOKEN = 0
@@ -275,7 +276,7 @@ def _nucleus(probs: np.ndarray, temperature: float, top_p: float) -> np.ndarray:
 def sample_options(
     grid: Grid,
     rng: np.random.Generator,
-    style: str = "POP",
+    style: str = "NATURAL",
     creativity: str = "BALANCED",
     density: str = "NORMAL",
     count: int = MAX_OPTIONS,

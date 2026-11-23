@@ -238,8 +238,8 @@ class ChordGenerateRequest(BaseModel):
 
     inPath: str
     outPath: str
-    style: Literal["POP", "BALLAD", "JAZZ", "CLASSICAL", "FOLK", "BOLERO", "BLUES"] = "POP"
-    """Màu hợp âm: tăng / giảm xác suất các nhóm hợp âm của model (POP = để model tự chọn)."""
+    style: Literal["NATURAL", "SIMPLE", "COLORFUL", "JAZZY"] = "NATURAL"
+    """Màu hợp âm: tăng / giảm xác suất các nhóm hợp âm của model (NATURAL = để model tự chọn)."""
     creativity: Literal["SAFE", "BALANCED", "BOLD"] = "BALANCED"
     """Độ sáng tạo khi lấy mẫu: an toàn (hợp âm hay gặp) → táo bạo (lạ tai hơn)."""
     density: Literal["SPARSE", "NORMAL", "DENSE"] = "NORMAL"

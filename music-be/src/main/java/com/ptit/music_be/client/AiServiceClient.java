@@ -118,7 +118,7 @@ public class AiServiceClient {
      * kết quả khác. Lỗi dự đoán được: 422 với {@code detail.code} (NO_MELODY, ALREADY_HARMONIZED, NO_CHORDS, TOO_LONG,
      * PARSE_ERROR).
      *
-     * @param style POP, BALLAD, JAZZ, CLASSICAL, FOLK, BOLERO hoặc BLUES
+     * @param style màu hợp âm: NATURAL, SIMPLE, COLORFUL hoặc JAZZY
      * @param replaceExisting true: bỏ hết hợp âm đang có rồi gợi ý lại toàn bộ
      * @param creativity SAFE, BALANCED hoặc BOLD
      * @param density SPARSE, NORMAL hoặc DENSE

@@ -43,7 +43,7 @@ function taskErrorText(message?: string | null): string {
 export default function ChordSuggestDialog({ scoreId, onClose, onCompleted, allHarmonized, onClearAll }: Props) {
   const navigate = useNavigate();
   const base = useScoreBase();
-  const [style, setStyle] = useState<ChordStyle>('POP');
+  const [style, setStyle] = useState<ChordStyle>('NATURAL');
   const [creativity, setCreativity] = useState<ChordCreativity>('BALANCED');
   const [density, setDensity] = useState<ChordDensity>('NORMAL');
   const [sending, setSending] = useState(false);

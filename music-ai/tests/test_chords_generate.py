@@ -189,12 +189,12 @@ def _share(names: list[str], suffixes: tuple[str, ...]) -> float:
     return sum(any(name.endswith(s) for s in suffixes) for name in names) / max(len(names), 1)
 
 
-def test_style_changes_chord_colour(tmp_path):
+def test_colour_changes_chord_types(tmp_path):
     data = single(TWINKLE * 2)
     jazz, folk = [], []
     for seed in range(4):
-        jazz += [c for r in run(tmp_path, data, seed=seed, style="JAZZ")[1] for c in chord_names(r)]
-        folk += [c for r in run(tmp_path, data, seed=seed, style="FOLK")[1] for c in chord_names(r)]
+        jazz += [c for r in run(tmp_path, data, seed=seed, style="JAZZY")[1] for c in chord_names(r)]
+        folk += [c for r in run(tmp_path, data, seed=seed, style="SIMPLE")[1] for c in chord_names(r)]
     sevenths = ("7", "maj7", "m7", "9", "m9", "maj9", "13", "11", "m7b5")
     assert _share(jazz, sevenths) > _share(folk, sevenths)
 

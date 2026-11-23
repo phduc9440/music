@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
 /**
- * Body của {@code POST /api/scores/{scoreId}/chord-suggestions}: phong cách POP, BALLAD, JAZZ, CLASSICAL, FOLK, BOLERO hoặc BLUES; {@code replaceExisting}
+ * Body của {@code POST /api/scores/{scoreId}/chord-suggestions}: màu hợp âm NATURAL (mặc định), SIMPLE, COLORFUL hoặc JAZZY; {@code replaceExisting}
  * = true thì bỏ hết hợp âm đang có và gợi ý lại toàn bộ (mặc định chỉ gợi ý cho ô chưa có hợp âm).
  */
 @Data

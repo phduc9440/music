@@ -1,10 +1,10 @@
 import apiClient from '../client';
 import type { AiTaskInfo, ApiResponse } from '../../types';
 
-/** Phong cách gợi ý hợp âm (R3), khớp ChordStyle ở BE. */
-export type ChordStyle = 'POP' | 'BALLAD' | 'JAZZ' | 'CLASSICAL' | 'FOLK' | 'BOLERO' | 'BLUES';
+/** Màu hợp âm: music-ai tăng / giảm nhóm hợp âm của model (model không có khái niệm thể loại). */
+export type ChordStyle = 'NATURAL' | 'SIMPLE' | 'COLORFUL' | 'JAZZY';
 
-export const CHORD_STYLES: ChordStyle[] = ['POP', 'BALLAD', 'FOLK', 'BOLERO', 'CLASSICAL', 'JAZZ', 'BLUES'];
+export const CHORD_STYLES: ChordStyle[] = ['NATURAL', 'SIMPLE', 'COLORFUL', 'JAZZY'];
 
 /** Độ sáng tạo khi AI lấy mẫu hợp âm: an toàn → táo bạo. */
 export type ChordCreativity = 'SAFE' | 'BALANCED' | 'BOLD';

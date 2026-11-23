@@ -322,7 +322,7 @@ x^tan(πγ/2)):
 |---|---|---|
 | `creativity` | `SAFE` / `BALANCED` / `BOLD` | Nhiệt độ lấy mẫu 0,6 / 1,0 / 1,4 và top-p 0,85 / 0,92 / 0,97 |
 | `density` | `SPARSE` / `NORMAL` / `DENSE` | Đổi hợp âm ở phách mạnh / đầu phách / thêm chỗ nốt móc đơn; gamma của hợp âm vừa chọn 0,3 / 0,5 / 0,6 |
-| `style` | `POP`, `BALLAD`, `FOLK`, `BOLERO`, `CLASSICAL`, `JAZZ`, `BLUES` | Tăng / giảm nhóm hợp âm (ba, 7, maj7, m7, mở rộng, sus, 6, giảm...): Pop để model tự chọn, Jazz ưu tiên hợp âm 7 và mở rộng, Dân ca ưu tiên hợp âm ba... (`STYLE_GAMMAS` trong `harmonize.py`) |
+| `style` (màu hợp âm) | `NATURAL` / `SIMPLE` / `COLORFUL` / `JAZZY` | Tăng / giảm nhóm hợp âm (`STYLE_GAMMAS` trong `harmonize.py`): tự nhiên (model tự chọn) / ưu tiên hợp âm ba / ưu tiên maj7, m7, sus, 6 / ưu tiên hợp âm 7 và mở rộng. Model không có khái niệm thể loại nên không có lựa chọn theo thể loại nhạc |
 
 Mặc định, ô đã có hợp âm sẵn được giữ lại (model vẫn thấy chúng trong 32 hợp âm trước); mọi ô đều đã có thì báo
 `ALREADY_HARMONIZED`. Gửi `replaceExisting: true` thì gỡ hết `<harmony>` cũ rồi gợi ý lại cả bài. Bài quá 4096 nốt móc kép
