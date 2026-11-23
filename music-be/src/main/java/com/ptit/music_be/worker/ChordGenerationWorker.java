@@ -111,7 +111,7 @@ public class ChordGenerationWorker {
     }
 
     /** Dữ liệu của một lần chạy, đọc trong transaction đầu tiên. */
-    record Job(String taskId, String scoreId, ChordStyle style, int baseVersion) {}
+    record Job(String taskId, String scoreId, ChordStyle style, int baseVersion, boolean replaceExisting) {}
 
     void process(String taskId) {
         Job job;
@@ -134,19 +134,23 @@ public class ChordGenerationWorker {
                     .bytes();
             fileStorageService.store(new ByteArrayInputStream(base), inPath);
             ChordGenerationResult result =
-                    aiServiceClient.generateChords(inPath, outPath, job.style().name());
+                    aiServiceClient.generateChords(inPath, outPath, job.style().name(), job.replaceExisting());
             byte[] proposed = Files.readAllBytes(fileStorageService.resolve(outPath));
             String title = "Gợi ý hợp âm (" + job.style().label() + ")";
-            String description = "Giọng " + result.key() + ", " + result.filled() + " hợp âm được thêm";
+            String description = "Giọng " + result.key() + ", " + result.filled()
+                    + (job.replaceExisting() ? " hợp âm thay cho hợp âm cũ" : " hợp âm được thêm");
             completeWithSuggestion(job, proposed, title, description, result);
         } catch (AppException e) {
             fail(
                     taskId,
                     e.getErrorCode() == CollabErrorCode.SUGGESTION_EMPTY
-                            ? AiTaskError.CHORD_ALREADY_HARMONIZED.name()
+                            ? (job.replaceExisting()
+                                            ? AiTaskError.CHORD_NO_CHANGE
+                                            : AiTaskError.CHORD_ALREADY_HARMONIZED)
+                                    .name()
                             : AiTaskError.JOB_REJECTED + ": " + e.getErrorCode().name());
         } catch (RestClientResponseException e) {
-            fail(taskId, restError(e));
+            fail(taskId, restError(taskId, e));
         } catch (RestClientException e) {
             log.warn("Không gọi được music-ai cho task gợi ý hợp âm {}: {}", taskId, e.getMessage());
             fail(taskId, AiTaskError.AI_SERVICE_UNAVAILABLE.name());
@@ -160,7 +164,12 @@ public class ChordGenerationWorker {
     }
 
     /** 4xx có {@code detail.code} của music-ai thì đổi sang mã của task; 5xx coi như music-ai không dùng được. */
-    private String restError(RestClientResponseException e) {
+    private String restError(String taskId, RestClientResponseException e) {
+        log.warn(
+                "music-ai trả {} cho task gợi ý hợp âm {}: {}",
+                e.getStatusCode().value(),
+                taskId,
+                e.getResponseBodyAsString());
         if (!e.getStatusCode().is4xxClientError()) {
             return AiTaskError.AI_SERVICE_UNAVAILABLE.name();
         }
@@ -200,7 +209,12 @@ public class ChordGenerationWorker {
             task.setProgress(10);
             task.setStartedAt(LocalDateTime.now());
             aiTaskRepository.save(task);
-            return new Job(taskId, task.getScore().getId(), style.get(), baseVersion);
+            return new Job(
+                    taskId,
+                    task.getScore().getId(),
+                    style.get(),
+                    baseVersion,
+                    input.path("replaceExisting").asBoolean(false));
         });
     }
 

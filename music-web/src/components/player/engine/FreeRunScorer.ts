@@ -1,5 +1,12 @@
-export const DEFAULT_TOLERANCE_WINDOW_MS = 100;
-export const DEFAULT_PERFECT_WINDOW_MS = 40;
+/**
+ * Cửa sổ chấm mặc định: lệch ≤ 60 ms là hoàn hảo, ≤ 150 ms là sớm / trễ, quá nữa mà chưa chơi thì bỏ lỡ. Rộng hơn mức
+ * 40 / 100 cũ vì nốt rơi chỉ vẽ lại mỗi 40 ms và đàn chạm có độ trễ: bấm đúng phím hơi sớm trước đây bị ghi "sai nốt"
+ * rồi nốt đó lại bị "bỏ lỡ" (hai nhãn cho một lần bấm).
+ */
+export const DEFAULT_TOLERANCE_WINDOW_MS = 150;
+export const DEFAULT_PERFECT_WINDOW_MS = 60;
+/** Nốt dài được chơi muộn đến nửa độ dài của nó (nửa thanh nốt trôi qua vạch), nhưng không quá mức này. */
+export const MAX_LATE_WINDOW_MS = 500;
 
 export type StudioHand = 'LEFT' | 'RIGHT';
 export type StudioNoteEventResult = 'PERFECT' | 'EARLY' | 'LATE' | 'WRONG_PITCH' | 'MISSED';
@@ -10,6 +17,8 @@ export interface ExpectedPracticeNote {
   hand: StudioHand | null;
   midi: number;
   expectedMs: number;
+  /** Độ dài nốt (ms), tùy chọn: dùng để nới thời gian được chơi muộn lên nửa độ dài. */
+  durationMs?: number;
 }
 
 export interface PlayedPracticeNote {
@@ -38,6 +47,8 @@ export interface FreeRunScorerOptions {
 
 interface ScheduledNote extends ExpectedPracticeNote {
   order: number;
+  /** Chơi muộn tối đa bao lâu sau expectedMs thì còn tính (không phải bỏ lỡ). */
+  lateWindowMs: number;
 }
 
 const isStudioHand = (hand: unknown): hand is StudioHand => hand === 'LEFT' || hand === 'RIGHT';
@@ -69,6 +80,7 @@ export class FreeRunScorer {
   private pending: ScheduledNote[] = [];
   private pendingStart = 0;
   private consumed = new Set<number>();
+  private maxLateWindowMs: number;
   private nextOrder = 0;
   private nextSeq = 0;
   private currentTimeMs: number | null = null;
@@ -88,12 +100,14 @@ export class FreeRunScorer {
     }
     this.toleranceWindowMs = toleranceWindowMs;
     this.perfectWindowMs = perfectWindowMs;
+    this.maxLateWindowMs = toleranceWindowMs;
   }
 
   scheduleExpectedNotes(notes: readonly ExpectedPracticeNote[]): void {
     this.assertOpen();
     const incoming = notes.map((note, index) => this.normalizeExpectedNote(note, this.nextOrder + index));
     if (incoming.length === 0) return;
+    for (const note of incoming) this.maxLateWindowMs = Math.max(this.maxLateWindowMs, note.lateWindowMs);
 
     incoming.sort(compareScheduledNotes);
     const active = this.pending.slice(this.pendingStart).filter((note) => !this.consumed.has(note.order));
@@ -167,7 +181,7 @@ export class FreeRunScorer {
       const expected = this.pending[this.pendingStart];
       if (this.consumed.delete(expected.order)) {
         this.pendingStart += 1;
-      } else if (expected.expectedMs + this.toleranceWindowMs < now) {
+      } else if (expected.expectedMs + expected.lateWindowMs < now) {
         this.pendingStart += 1;
         events.push(this.missedEvent(expected));
       } else {
@@ -216,7 +230,12 @@ export class FreeRunScorer {
       hand: note.hand ?? null,
       midi: normalizeMidi(note.midi),
       expectedMs: normalizeTime(note.expectedMs, false),
+      durationMs: note.durationMs,
       order,
+      lateWindowMs: Math.max(
+        this.toleranceWindowMs,
+        Math.min(MAX_LATE_WINDOW_MS, Math.round((note.durationMs ?? 0) / 2)),
+      ),
     };
   }
 
@@ -226,7 +245,7 @@ export class FreeRunScorer {
     playedMs: number,
     requireMatchingPitch: boolean,
   ): number {
-    const earliest = playedMs - this.toleranceWindowMs;
+    const earliest = playedMs - this.maxLateWindowMs;
     const latest = playedMs + this.toleranceWindowMs;
     let low = this.pendingStart;
     let high = this.pending.length;
@@ -242,6 +261,7 @@ export class FreeRunScorer {
       const expected = this.pending[index];
       if (
         this.consumed.has(expected.order) ||
+        playedMs > expected.expectedMs + expected.lateWindowMs ||
         (requireMatchingPitch &&
           (expected.midi !== midi || (hand !== null && expected.hand !== null && expected.hand !== hand)))
       ) {

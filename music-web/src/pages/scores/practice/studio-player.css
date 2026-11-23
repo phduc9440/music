@@ -100,7 +100,7 @@
 }
 
 .studio-player__facts svg {
-  color: var(--ui-cta);
+  color: var(--ui-primary);
 }
 
 .studio-player__header h1,
@@ -136,9 +136,9 @@
 }
 
 .studio-player__back:hover {
-  border-color: var(--ui-cta);
-  background: color-mix(in srgb, var(--ui-cta) 8%, var(--ui-surface));
-  color: var(--ui-cta);
+  border-color: var(--ui-primary);
+  background: color-mix(in srgb, var(--ui-primary) 8%, var(--ui-surface));
+  color: var(--ui-primary);
 }
 
 .studio-player__back:hover svg {
@@ -812,7 +812,7 @@
 }
 
 .studio-player__piano-key strong {
-  color: var(--ui-cta);
+  color: var(--ui-primary);
   font-size: var(--ui-text-xs);
   font-weight: 700;
   line-height: 1;
@@ -1376,16 +1376,16 @@
 }
 
 .studio-player .sc-btn:not(.sc-btn--primary, .sc-btn--danger, .sc-btn--danger-solid) {
-  border-color: color-mix(in srgb, var(--ui-cta) 35%, var(--ui-border));
+  border-color: color-mix(in srgb, var(--ui-primary) 35%, var(--ui-border));
   background: var(--ui-surface);
-  color: var(--ui-cta);
+  color: var(--ui-primary);
   font-weight: 600;
 }
 
 .studio-player .sc-btn:not(.sc-btn--primary, .sc-btn--danger, .sc-btn--danger-solid):hover:not(:disabled) {
-  border-color: var(--ui-cta);
-  background: color-mix(in srgb, var(--ui-cta) 10%, var(--ui-surface));
-  color: var(--ui-cta);
+  border-color: var(--ui-primary);
+  background: color-mix(in srgb, var(--ui-primary) 10%, var(--ui-surface));
+  color: var(--ui-primary);
 }
 
 .studio-player .sc-btn--danger {
@@ -1435,9 +1435,9 @@
 }
 
 .studio-player__chip:has(input:checked) {
-  border-color: var(--ui-cta);
-  background: color-mix(in srgb, var(--ui-cta) 10%, var(--ui-surface));
-  color: var(--ui-cta);
+  border-color: var(--ui-primary);
+  background: color-mix(in srgb, var(--ui-primary) 10%, var(--ui-surface));
+  color: var(--ui-primary);
 }
 
 .studio-player .sc-btn:focus-visible,
@@ -1982,10 +1982,10 @@
   align-items: center;
   gap: 0.35rem;
   padding: 0.2rem 0.65rem;
-  border: 1px solid color-mix(in srgb, var(--ui-cta) 30%, var(--ui-border));
+  border: 1px solid color-mix(in srgb, var(--ui-primary) 30%, var(--ui-border));
   border-radius: 999px;
-  background: color-mix(in srgb, var(--ui-cta) 8%, var(--ui-surface));
-  color: var(--ui-cta);
+  background: color-mix(in srgb, var(--ui-primary) 8%, var(--ui-surface));
+  color: var(--ui-primary);
   font-size: var(--ui-text-sm);
   font-weight: 600;
   white-space: nowrap;
@@ -2007,7 +2007,7 @@
 }
 
 .studio-player__timer svg {
-  color: var(--ui-cta);
+  color: var(--ui-primary);
 }
 
 .studio-player .studio-player__session-actions {

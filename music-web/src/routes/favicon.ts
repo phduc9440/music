@@ -3,7 +3,7 @@ import type { FaviconGlyph } from './pageMetaRoutes';
 const GLYPHS: Record<FaviconGlyph, string> = {
   note: '<path d="M9 17V6l9-2v11"/><circle cx="7" cy="17" r="2"/><circle cx="16" cy="15" r="2"/>',
   edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/>',
-  play: '<path d="M8 5l11 7-11 7z" fill="#e2cf3c"/>',
+  play: '<path d="M8 5l11 7-11 7z" fill="#FD550A"/>',
   explore: '<circle cx="11" cy="11" r="6"/><path d="M16 16l4 4"/>',
   stats: '<path d="M5 20V10M12 20V4M19 20v-7"/>',
   card: '<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/>',
@@ -16,9 +16,9 @@ const GLYPHS: Record<FaviconGlyph, string> = {
 
 /** Màu thương hiệu Scorewise, giống public/favicon.svg: nền xanh ngọc → xám đá, nét vàng nhấn. Giữ cố định ở cả hai theme
  *  để biểu tượng tab nhận ra ngay là của Scorewise. */
-const BG_FROM = '#007971';
-const BG_TO = '#2f4858';
-const INK = '#e2cf3c';
+const BG_FROM = '#01796a';
+const BG_TO = '#04201c';
+const INK = '#FD550A';
 
 /** Biểu tượng tab dạng SVG nhúng thẳng (data URI): ô bo góc màu Scorewise, hình theo loại trang. */
 export function faviconHref(glyph: FaviconGlyph): string {

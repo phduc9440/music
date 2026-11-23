@@ -3,8 +3,12 @@ package com.ptit.music_be.service.ai.impl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -81,6 +85,10 @@ public class OmrServiceImpl implements OmrService {
     static final int MAX_COMPOSER_LENGTH = 255;
     /** Tác vụ OMR "đang chạy" = còn chờ hoặc đang xử lý; dùng để giới hạn số task mỗi người. */
     static final List<AiTaskStatus> ACTIVE_STATUSES = List.of(AiTaskStatus.PENDING, AiTaskStatus.PROCESSING);
+    /** Gửi lại cùng file trong khoảng này khi task trước còn chạy thì coi là bấm trùng (OMR-T01). */
+    static final long DUPLICATE_WINDOW_SECONDS = 60;
+    /** Khóa trong input_data: SHA-256 của các file gốc theo thứ tự, để nhận ra lần gửi trùng. */
+    static final String SOURCE_SHA256_KEY = "sourceSha256";
 
     MemberRepository memberRepository;
     ScoreRepository scoreRepository;
@@ -125,11 +133,18 @@ public class OmrServiceImpl implements OmrService {
         boolean isPdf = kinds.getFirst() == UploadKind.PDF;
         OmrSourceType resolvedSourceType = resolveSourceType(sourceType, isPdf);
         int pageCount = isPdf ? inspectPdf(files.getFirst()) : inspectImages(files);
+        String fingerprint = fingerprint(files);
 
         Member member = memberRepository
                 .findByEmailForUpdate(SecurityUtils.getCurrentEmail())
                 .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
 
+        // Bấm gửi hai lần: dòng thành viên đã khóa nên hai request xếp hàng; request sau nhận lại task của request
+        // trước
+        OmrUploadResponse duplicate = findDuplicate(member, fingerprint);
+        if (duplicate != null) {
+            return duplicate;
+        }
         checkConcurrentTasks(member);
         // Còn đủ trang OMR của tháng không (dòng thành viên đã khóa ở trên); task ghi bên dưới chính là phần đã dùng
         entitlementService.checkAvailable(member.getId(), UsageMetric.OMR_PAGES, pageCount);
@@ -190,7 +205,7 @@ public class OmrServiceImpl implements OmrService {
                 .taskType(AiTaskType.OMR_CONVERSION)
                 .status(AiTaskStatus.PENDING)
                 .progress(0)
-                .inputData(buildInputData(resolvedSourceType, true, pageCount))
+                .inputData(buildInputData(resolvedSourceType, true, pageCount, fingerprint))
                 .build());
 
         // Bộ điều phối (nhánh feature/omr-preprocess) chỉ gửi task sang music-ai sau khi transaction commit
@@ -648,11 +663,18 @@ public class OmrServiceImpl implements OmrService {
      * được tính lại từ các task này; task lỗi/hủy tự không được tính.
      */
     private String buildInputData(OmrSourceType sourceType, boolean preprocess, int pagesCharged) {
+        return buildInputData(sourceType, preprocess, pagesCharged, null);
+    }
+
+    private String buildInputData(OmrSourceType sourceType, boolean preprocess, int pagesCharged, String fingerprint) {
         Map<String, Object> input = new LinkedHashMap<>();
         input.put("sourceType", sourceType.name());
         input.put("preprocess", preprocess);
         if (pagesCharged > 0) {
             input.put(EntitlementService.OMR_PAGES_CHARGED_KEY, pagesCharged);
+        }
+        if (fingerprint != null) {
+            input.put(SOURCE_SHA256_KEY, fingerprint);
         }
         try {
             return objectMapper.writeValueAsString(input);
@@ -662,6 +684,60 @@ public class OmrServiceImpl implements OmrService {
     }
 
     // ---------------------------------------------------------------- helpers
+
+    /** SHA-256 của nội dung các file theo thứ tự gửi (mỗi file kết thúc bằng một byte 0 để phân ranh). */
+    static String fingerprint(List<MultipartFile> files) {
+        MessageDigest digest;
+        try {
+            digest = MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("JVM thiếu SHA-256", e);
+        }
+        byte[] buffer = new byte[64 * 1024];
+        for (MultipartFile file : files) {
+            try (InputStream in = file.getInputStream()) {
+                int read;
+                while ((read = in.read(buffer)) != -1) {
+                    digest.update(buffer, 0, read);
+                }
+            } catch (IOException e) {
+                throw new AppException(ScoreErrorCode.FILE_STORAGE_ERROR);
+            }
+            digest.update((byte) 0);
+        }
+        return HexFormat.of().formatHex(digest.digest());
+    }
+
+    /**
+     * Task OMR còn đang chờ/chạy của chính người này, tạo trong {@link #DUPLICATE_WINDOW_SECONDS} giây qua từ đúng các
+     * file này; null nếu không có. Trả nguyên bản nhạc và task cũ, không tạo mới và không trừ thêm hạn mức.
+     */
+    private OmrUploadResponse findDuplicate(Member member, String fingerprint) {
+        LocalDateTime since = LocalDateTime.now().minusSeconds(DUPLICATE_WINDOW_SECONDS);
+        List<AiTask> recent = aiTaskRepository.findByMemberIdAndTaskTypeAndStatusInAndCreatedAtAfter(
+                member.getId(), AiTaskType.OMR_CONVERSION, ACTIVE_STATUSES, since);
+        for (AiTask task : recent) {
+            Score score = task.getScore();
+            String previous =
+                    parseJson(task.getInputData()).path(SOURCE_SHA256_KEY).asText();
+            if (score == null || !fingerprint.equals(previous)) {
+                continue;
+            }
+            List<ScoreFile> originals = new ArrayList<>();
+            for (FileType type : List.of(FileType.ORIGINAL_PDF, FileType.ORIGINAL_IMAGE)) {
+                originals.addAll(scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(score.getId(), type));
+            }
+            log.info("Upload OMR trùng của {}: trả lại task {}", member.getId(), task.getId());
+            return OmrUploadResponse.builder()
+                    .scoreId(score.getId())
+                    .title(score.getTitle())
+                    .processingStatus(score.getProcessingStatus())
+                    .task(aiTaskMapper.toResponse(task))
+                    .files(scoreFileMapper.toResponses(originals))
+                    .build();
+        }
+        return null;
+    }
 
     /** Số task OMR chạy cùng lúc tối đa theo gói của người dùng (null = không giới hạn). */
     private void checkConcurrentTasks(Member member) {

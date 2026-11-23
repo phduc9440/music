@@ -9,8 +9,10 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
@@ -21,6 +23,7 @@ import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ptit.music_be.dto.enums.score.SuggestionSource;
 import com.ptit.music_be.dto.response.score.ScoreContent;
 import com.ptit.music_be.dto.response.score.ScoreSaveResponse;
 import com.ptit.music_be.entity.ScoreLiveOp;
@@ -32,6 +35,7 @@ import com.ptit.music_be.repository.score.ScoreLiveOpRepository;
 import com.ptit.music_be.service.collab.live.LiveAccess.Access;
 import com.ptit.music_be.service.collab.live.LiveMessages.JoinRequest;
 import com.ptit.music_be.service.collab.live.LiveMessages.JoinResult;
+import com.ptit.music_be.service.collab.live.LiveMessages.LiveError;
 import com.ptit.music_be.service.collab.live.LiveMessages.LockRequest;
 import com.ptit.music_be.service.collab.live.LiveMessages.LockResult;
 import com.ptit.music_be.service.collab.live.LiveMessages.MeasureChange;
@@ -46,6 +50,7 @@ import com.ptit.music_be.service.collab.live.MeasureLockManager.Grant;
 import com.ptit.music_be.service.collab.live.MeasureLockManager.Key;
 import com.ptit.music_be.service.score.ScoreContentService;
 import com.ptit.music_be.service.score.ScoreEditService;
+import com.ptit.music_be.service.score.SuggestionService;
 import com.ptit.music_be.service.score.impl.LiveDocument;
 import com.ptit.music_be.service.score.impl.LiveDocument.MeasureEdit;
 import com.ptit.music_be.service.score.impl.LiveDocument.Outcome;
@@ -80,6 +85,8 @@ public class LiveCollabService {
         final LiveDocument document;
         volatile Instant lastOpAt;
         final Map<String, String> editors = Collections.synchronizedMap(new LinkedHashMap<>());
+        /** Vừa phát lại thao tác chưa lưu từ nhật ký: lưu thành version ngay khi có người vào (đã biết lưu bằng quyền ai). */
+        final AtomicBoolean needsSnapshot = new AtomicBoolean(false);
 
         Live(LiveDocument document, Instant now) {
             this.document = document;
@@ -114,6 +121,7 @@ public class LiveCollabService {
     private final ScoreContentService scoreContentService;
     private final ScoreEditService scoreEditService;
     private final ScoreLiveOpRepository opRepository;
+    private final SuggestionService suggestionService;
     private final SimpMessagingTemplate messaging;
     private final ObjectMapper json;
     private final Clock clock;
@@ -129,6 +137,7 @@ public class LiveCollabService {
             ScoreContentService scoreContentService,
             ScoreEditService scoreEditService,
             ScoreLiveOpRepository opRepository,
+            SuggestionService suggestionService,
             SimpMessagingTemplate messaging,
             ObjectMapper json) {
         this(
@@ -139,6 +148,7 @@ public class LiveCollabService {
                 scoreContentService,
                 scoreEditService,
                 opRepository,
+                suggestionService,
                 messaging,
                 json,
                 Clock.systemUTC());
@@ -153,6 +163,7 @@ public class LiveCollabService {
             ScoreContentService scoreContentService,
             ScoreEditService scoreEditService,
             ScoreLiveOpRepository opRepository,
+            SuggestionService suggestionService,
             SimpMessagingTemplate messaging,
             ObjectMapper json,
             Clock clock) {
@@ -163,6 +174,7 @@ public class LiveCollabService {
         this.scoreContentService = scoreContentService;
         this.scoreEditService = scoreEditService;
         this.opRepository = opRepository;
+        this.suggestionService = suggestionService;
         this.messaging = messaging;
         this.json = json;
         this.clock = clock;
@@ -199,6 +211,9 @@ public class LiveCollabService {
             throw e;
         }
         live.touchEditor(email, who.memberName());
+        if (live.needsSnapshot.compareAndSet(true, false)) {
+            flush(scoreId, false);
+        }
         broadcastPresence(scoreId);
         replyToUser(email, "/queue/live-join", joinResult(scoreId, sessionId, live, request.lastSeq()));
     }
@@ -386,11 +401,101 @@ public class LiveCollabService {
         }
         // Đọc ngoài computeIfAbsent: không giữ khóa bảng băm trong lúc truy cập DB và đĩa
         ScoreContent content = security.runAs(email, () -> scoreContentService.getMusicXml(scoreId));
-        long startSeq = opRepository.maxSeq(scoreId);
-        Live created = new Live(LiveDocument.open(content.bytes(), content.version(), startSeq), clock.instant());
+        long lastLogged = opRepository.maxSeq(scoreId);
+        // Version hiện hành do phiên trước lưu tới seqTo mà nhật ký còn thao tác sau đó: máy chủ đã dừng trước lần lưu
+        // kế
+        OptionalLong savedTo = scoreContentService.liveSeqOfCurrent(scoreId);
+        boolean unsavedOps = savedTo.isPresent() && savedTo.getAsLong() < lastLogged;
+        LiveDocument document =
+                LiveDocument.open(content.bytes(), content.version(), unsavedOps ? savedTo.getAsLong() : lastLogged);
+        Live created = new Live(document, clock.instant());
+        if (unsavedOps) {
+            replay(scoreId, document, lastLogged);
+            created.needsSnapshot.set(document.hasUnsaved());
+        }
         Live winner = lives.putIfAbsent(scoreId, created);
         registry.markActive(scoreId);
         return winner != null ? winner : created;
+    }
+
+    /**
+     * Phát lại các thao tác đã được chấp nhận nhưng chưa nằm trong version đã lưu (máy chủ dừng giữa hai lần lưu), theo
+     * đúng thứ tự seq. Gặp thao tác thiếu hoặc không áp được thì dừng ở thao tác trước đó và ghi log; seq vẫn được đẩy tới
+     * {@code lastLogged} để không dùng lại seq cũ.
+     */
+    private void replay(String scoreId, LiveDocument document, long lastLogged) {
+        long from = document.seq();
+        String stopReason = null;
+        while (stopReason == null && document.seq() < lastLogged) {
+            List<ScoreLiveOp> batch = opRepository.findByScoreIdAndSeqGreaterThanOrderBySeqAsc(
+                    scoreId, document.seq(), PageRequest.of(0, MAX_REPLAY));
+            if (batch.isEmpty()) {
+                stopReason = "nhật ký hết trước seq " + lastLogged;
+                break;
+            }
+            for (ScoreLiveOp row : batch) {
+                OpBroadcast op;
+                try {
+                    op = readOp(row);
+                } catch (IllegalStateException e) {
+                    stopReason = e.getMessage();
+                    break;
+                }
+                boolean applied = op.structuralXml() != null
+                        ? document.replayStructural(row.getSeq(), op.opId(), op.structuralXml())
+                        : document.replayMeasures(row.getSeq(), op.opId(), toDocument(op.measures()));
+                if (!applied) {
+                    stopReason = "không áp được thao tác " + row.getSeq();
+                    break;
+                }
+            }
+        }
+        long reached = document.seq();
+        document.finishReplay(lastLogged);
+        if (stopReason == null) {
+            log.info("Phiên cộng tác {}: phát lại thao tác {}–{} chưa lưu", scoreId, from + 1, reached);
+        } else {
+            log.error(
+                    "Phiên cộng tác {}: phát lại dừng ở {} (cần tới {}): {}", scoreId, reached, lastLogged, stopReason);
+        }
+    }
+
+    private static List<LiveDocument.MeasureXml> toDocument(List<LiveMessages.MeasureXml> measures) {
+        if (measures == null) {
+            return List.of();
+        }
+        return measures.stream()
+                .map(m -> new LiveDocument.MeasureXml(m.partIndex(), m.measureIndex(), m.xml(), m.hash()))
+                .toList();
+    }
+
+    /**
+     * Phiên không lưu được vì bản nhạc đã có version mới ngoài phiên: giữ nội dung của phiên thành một đề xuất hệ thống
+     * (dựa trên version phiên đã mở) để chủ bản nhạc xem và chấp nhận, rồi báo từng người đã sửa.
+     */
+    private void preserveAsSuggestion(String scoreId, Live live, byte[] bytes, long seqFrom, long seqTo) {
+        List<String> names = live.names();
+        String description = "Phiên cùng sửa của " + String.join(", ", names)
+                + " không lưu được vì bản nhạc đã có phiên bản mới ngoài phiên (thao tác " + seqFrom + "–" + seqTo
+                + "). Chấp nhận đề xuất để lấy lại các thay đổi này.";
+        try {
+            suggestionService.createFromSystem(
+                    scoreId,
+                    bytes,
+                    live.document.baseVersion(),
+                    SuggestionSource.LIVE_RECOVERY,
+                    "Thay đổi chưa lưu của phiên cùng sửa",
+                    description);
+        } catch (RuntimeException e) {
+            log.error("Không giữ được thay đổi của phiên cộng tác {} thành đề xuất: {}", scoreId, e.getMessage());
+            return;
+        }
+        LiveError notice = new LiveError(
+                CollabErrorCode.LIVE_SAVED_AS_SUGGESTION.getCode(),
+                CollabErrorCode.LIVE_SAVED_AS_SUGGESTION.getMessage());
+        for (String email : live.emailsNewestFirst()) {
+            replyToUser(email, "/queue/live-errors", notice);
+        }
     }
 
     private JoinResult joinResult(String scoreId, String sessionId, Live live, long lastSeq) {
@@ -484,7 +589,8 @@ public class LiveCollabService {
             } catch (AppException e) {
                 if (e.getErrorCode() == ScoreErrorCode.SCORE_VERSION_CONFLICT) {
                     // Có version mới ngoài phiên: không còn lưu chồng lên được. Đóng phiên để mọi người tải lại.
-                    log.error("Phiên cộng tác {} lệch version, đóng phiên", scoreId);
+                    log.error("Phiên cộng tác {} lệch version, giữ thay đổi thành đề xuất và đóng phiên", scoreId);
+                    preserveAsSuggestion(scoreId, live, bytes, doc.firstUnsavedSeq(), seqTo);
                     lives.remove(scoreId);
                     registry.markIdle(scoreId);
                     locks.clear(scoreId);

@@ -41,6 +41,7 @@ import com.ptit.music_be.dto.enums.score.SuggestionChangeStatus;
 import com.ptit.music_be.dto.enums.score.SuggestionFilter;
 import com.ptit.music_be.dto.enums.score.SuggestionSource;
 import com.ptit.music_be.dto.enums.score.SuggestionStatus;
+import com.ptit.music_be.dto.request.score.SuggestionAppliedRequest;
 import com.ptit.music_be.dto.request.score.SuggestionDecisionRequest;
 import com.ptit.music_be.dto.response.common.PageResponse;
 import com.ptit.music_be.dto.response.score.CommentMemberResponse;
@@ -385,6 +386,29 @@ public class SuggestionServiceImpl implements SuggestionService {
         close(suggestion, accepted == changes.size() ? SuggestionStatus.ACCEPTED : SuggestionStatus.PARTIAL, me, note);
         suggestion.setAppliedVersion(saved.getVersion());
         notifyDecided(score, suggestion, me, accepted, changes.size());
+        rewardAuthor(score, suggestion, me);
+        return detail(suggestion, score, decision, me, changes);
+    }
+
+    @Override
+    @Transactional
+    public SuggestionDetailResponse markApplied(String suggestionId, SuggestionAppliedRequest request) {
+        ScoreSuggestion suggestion = lock(suggestionId);
+        Score score = findScore(suggestion.getScore().getId());
+        AccessDecision decision = permissionService.resolve(score);
+        requireCanDecide(suggestion, score, decision);
+        Integer version = request == null ? null : request.getVersion();
+        int current = scoreContentService.getMusicXml(score.getId()).version();
+        if (version == null || version <= suggestion.getBaseVersion() || version > current) {
+            throw new AppException(CollabErrorCode.SUGGESTION_APPLIED_VERSION_INVALID);
+        }
+        List<ScoreSuggestionChange> changes = changeRepository.findBySuggestion(suggestion.getId());
+        changes.forEach(change -> change.setStatus(SuggestionChangeStatus.ACCEPTED));
+        changeRepository.saveAll(changes);
+        Member me = currentMember();
+        close(suggestion, SuggestionStatus.ACCEPTED, me, null);
+        suggestion.setAppliedVersion(version);
+        notifyDecided(score, suggestion, me, changes.size(), changes.size());
         rewardAuthor(score, suggestion, me);
         return detail(suggestion, score, decision, me, changes);
     }

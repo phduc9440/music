@@ -19,6 +19,7 @@ import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.code.AccountErrorCode;
 import com.ptit.music_be.exception.code.BillingErrorCode;
 import com.ptit.music_be.repository.billing.PaymentOrderRepository;
+import com.ptit.music_be.repository.billing.PlanGrantRepository;
 import com.ptit.music_be.repository.billing.PlanRepository;
 import com.ptit.music_be.repository.billing.SubscriptionRepository;
 import com.ptit.music_be.service.admin.AdminPlanService;
@@ -53,6 +54,7 @@ public class AdminPlanServiceImpl implements AdminPlanService {
     PlanRepository planRepository;
     SubscriptionRepository subscriptionRepository;
     PaymentOrderRepository paymentOrderRepository;
+    PlanGrantRepository planGrantRepository;
     SubscriptionService subscriptionService;
     ObjectMapper objectMapper;
 
@@ -157,9 +159,10 @@ public class AdminPlanServiceImpl implements AdminPlanService {
         if (SYSTEM_CODES.contains(plan.getCode())) {
             throw new AppException(BillingErrorCode.PLAN_SYSTEM_LOCKED);
         }
-        // Còn người đăng ký (kể cả đã hết hạn) hoặc đơn thanh toán thì giữ lại để không mất lịch sử doanh thu
+        // Còn người đăng ký (kể cả đã hết hạn), đơn thanh toán hoặc lịch sử cấp gói thì giữ lại để không mất lịch sử
         if (subscriptionRepository.existsByPlanId(plan.getId())
-                || paymentOrderRepository.existsByPlanId(plan.getId())) {
+                || paymentOrderRepository.existsByPlanId(plan.getId())
+                || planGrantRepository.existsByPlanId(plan.getId())) {
             throw new AppException(BillingErrorCode.PLAN_IN_USE);
         }
         planRepository.delete(plan);

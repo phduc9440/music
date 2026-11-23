@@ -32,8 +32,8 @@
     "userSite": "User site"
   },
   "layout": {
-      "groupActive": "This group holds the page you are on",
-      "groupBadge": "{count} items waiting in this group",
+    "groupActive": "This group holds the page you are on",
+    "groupBadge": "{count} items waiting in this group",
     "profileFailed": "Couldn't load the administrator profile",
     "toggleSidebar": "Show or hide the sidebar",
     "menuLabel": "Admin menu",
@@ -723,7 +723,8 @@
     "subtitle": "Choose a task: grant plans to members, or handle violations (revoke plans, ban paid plans).",
     "readOnly": "Only super admins can grant plans or handle violations. You are viewing in read-only mode.",
     "tabGrant": "Grant plans",
-    "tabSanction": "Violations"
+    "tabSanction": "Violations",
+    "tabHistory": "Grant history"
   },
   "sanctions": {
     "subtitle": "Revoke the current plan (cancelled immediately, must buy again) or ban one plan for a while (cannot use, buy or be granted that plan; Free and other plans stay available). The member gets a notification with the reason.",
@@ -1169,5 +1170,20 @@
     "deleted": "Session deleted",
     "deleteFailed": "Could not delete the session",
     "actions": "Actions"
+  },
+  "grantHistory": {
+    "tab": "Grant history",
+    "sub": "Every manual plan grant by a SUPER_ADMIN, including extensions and bulk grants. Recipients also see these in their own subscription history.",
+    "empty": "No plan has been granted yet",
+    "failed": "Could not load the grant history",
+    "member": "Recipient",
+    "plan": "Plan",
+    "months": "{count} months",
+    "kind": "Type",
+    "by": "Granted by",
+    "until": "New expiry",
+    "at": "Granted at",
+    "deletedAdmin": "(account deleted)",
+    "unit": "grants"
   }
 }

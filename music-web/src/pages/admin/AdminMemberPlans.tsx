@@ -3,10 +3,11 @@ import { PageHeader, Tabs } from '../../components/ui';
 import type { AdminOutletContext } from '../../components/admin/AdminLayout';
 import PlanGrantPanel from '../../components/admin/PlanGrantPanel';
 import PlanSanctionPanel from '../../components/admin/PlanSanctionPanel';
+import PlanGrantHistoryPanel from '../../components/admin/PlanGrantHistoryPanel';
 import { isSuperAdminMember } from '../../utils/auth';
 import { t } from '../../i18n/core';
 
-type Tab = 'grant' | 'sanction';
+type Tab = 'grant' | 'sanction' | 'history';
 
 /**
  * Admin (sidebar "Gói thành viên"): một trang, chọn chức năng ở tab. "Cấp gói": chọn gói + số tháng rồi tích nhiều thành
@@ -16,7 +17,8 @@ export default function AdminMemberPlans() {
   const { admin } = useOutletContext<AdminOutletContext>();
   const canEdit = !!admin && isSuperAdminMember(admin);
   const [params, setParams] = useSearchParams();
-  const tab: Tab = params.get('tab') === 'sanction' ? 'sanction' : 'grant';
+  const raw = params.get('tab');
+  const tab: Tab = raw === 'sanction' || raw === 'history' ? raw : 'grant';
 
   return (
     <>
@@ -32,10 +34,13 @@ export default function AdminMemberPlans() {
         items={[
           { value: 'grant', label: t('admin.memberPlans.tabGrant') },
           { value: 'sanction', label: t('admin.memberPlans.tabSanction') },
+          { value: 'history', label: t('admin.memberPlans.tabHistory') },
         ]}
       />
       <div className="adm-member-plans__panel" role="tabpanel">
-        {tab === 'grant' ? <PlanGrantPanel /> : <PlanSanctionPanel />}
+        {tab === 'grant' && <PlanGrantPanel />}
+        {tab === 'sanction' && <PlanSanctionPanel />}
+        {tab === 'history' && <PlanGrantHistoryPanel />}
       </div>
     </>
   );

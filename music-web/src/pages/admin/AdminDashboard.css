@@ -622,3 +622,21 @@
     transition: none;
   }
 }
+
+/* ô số liệu xen kẽ ba tông của bảng màu: cam nhạt (mặc định), xanh nhạt, vàng chanh nhạt */
+.dash-kpis > .dash-kpi:nth-child(3n + 2) {
+  background: var(--ui-tint-teal);
+}
+.dash-kpis > .dash-kpi:nth-child(3n) {
+  background: var(--ui-tint-lime);
+}
+.dash-kpis > .dash-kpi:nth-child(3n + 2):hover {
+  background: var(--ui-tint-teal-2);
+}
+.dash-kpis > .dash-kpi:nth-child(3n):hover {
+  background: var(--ui-tint-lime-2);
+}
+/* khung Cần xử lý: nền xanh nhạt, tách khỏi khối doanh thu cam nhạt bên cạnh */
+.dash-attn {
+  background: var(--ui-tint-teal);
+}

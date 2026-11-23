@@ -88,7 +88,7 @@ public final class LiveDocument {
     private List<List<Element>> measures;
     private List<List<String>> hashes;
     private long seq;
-    private final long startSeq;
+    private long startSeq;
     private long savedSeq;
     private int baseVersion;
     private final Set<String> seenOps = new LinkedHashSet<>();
@@ -124,7 +124,9 @@ public final class LiveDocument {
 
     /** Seq lúc mở phiên: client có seq nhỏ hơn mức này không phát lại được mà phải tải lại cả bài. */
     public long startSeq() {
-        return startSeq;
+        synchronized (monitor) {
+            return startSeq;
+        }
     }
 
     public int baseVersion() {
@@ -260,6 +262,95 @@ public final class LiveDocument {
             seq += 1;
             remember(opId);
             return Outcome.accepted(seq, List.of(), SuggestionDiffer.serialize(dom, false));
+        }
+    }
+
+    // ---------------------------------------------------------------- phát lại khi mở phiên
+
+    /**
+     * Phát lại một thao tác thay ô đã được máy chủ chấp nhận ở lần chạy trước (đọc từ nhật ký) nhưng chưa nằm trong version
+     * đã lưu. Không so {@code beforeHash}: thao tác đã qua kiểm tra lúc nhận, chỉ cần đúng thứ tự seq.
+     *
+     * @param opSeq seq của thao tác, phải bằng {@code seq() + 1}
+     * @param opId mã thao tác của client, ghi nhớ để client gửi lại sau khi máy chủ khởi động lại thì bị bỏ qua
+     * @param changed nội dung các ô sau thao tác (như đã phát cho mọi người)
+     * @return false nếu sai thứ tự, chỉ số ô sai hoặc XML hỏng; khi đó tài liệu không đổi
+     */
+    public boolean replayMeasures(long opSeq, String opId, List<MeasureXml> changed) {
+        synchronized (monitor) {
+            if (opSeq != seq + 1 || changed == null || changed.isEmpty()) {
+                return false;
+            }
+            List<Element> replacements = new ArrayList<>();
+            for (MeasureXml m : changed) {
+                int p = m.partIndex();
+                int i = m.measureIndex();
+                if (p < 0
+                        || p >= measures.size()
+                        || i < 0
+                        || i >= measures.get(p).size()
+                        || m.xml() == null) {
+                    return false;
+                }
+                Element replacement = parseMeasure(m.xml());
+                if (replacement == null) {
+                    return false;
+                }
+                replacements.add(replacement);
+            }
+            for (int k = 0; k < changed.size(); k++) {
+                MeasureXml m = changed.get(k);
+                Element old = measures.get(m.partIndex()).get(m.measureIndex());
+                Element now = (Element) dom.importNode(replacements.get(k), true);
+                old.getParentNode().replaceChild(now, old);
+                measures.get(m.partIndex()).set(m.measureIndex(), now);
+                hashes.get(m.partIndex()).set(m.measureIndex(), MeasureHasher.hash(now));
+            }
+            seq = opSeq;
+            if (opId != null) {
+                remember(opId);
+            }
+            return true;
+        }
+    }
+
+    /**
+     * Phát lại một thao tác cấu trúc (thay cả bài) từ nhật ký.
+     *
+     * @return false nếu sai thứ tự hoặc XML hỏng; khi đó tài liệu không đổi
+     */
+    public boolean replayStructural(long opSeq, String opId, String xml) {
+        synchronized (monitor) {
+            if (opSeq != seq + 1 || xml == null) {
+                return false;
+            }
+            try {
+                Document parsed = MusicXmlInspector.parseSecure(xml.getBytes(StandardCharsets.UTF_8));
+                List<List<Element>> parts = SuggestionDiffer.measuresOf(parsed);
+                if (parts.isEmpty() || parts.stream().anyMatch(List::isEmpty)) {
+                    return false;
+                }
+                load(parsed);
+            } catch (AppException e) {
+                return false;
+            }
+            seq = opSeq;
+            if (opId != null) {
+                remember(opId);
+            }
+            return true;
+        }
+    }
+
+    /**
+     * Kết thúc phát lại: đặt seq về {@code lastLoggedSeq} (seq lớn nhất trong nhật ký, để không bao giờ dùng lại seq cũ
+     * kể cả khi có thao tác không phát lại được) và dời mốc {@link #startSeq()} tới đó để client cũ tải lại cả bài. Mốc
+     * đã lưu giữ nguyên nên tài liệu được coi là có thay đổi chưa lưu.
+     */
+    public void finishReplay(long lastLoggedSeq) {
+        synchronized (monitor) {
+            seq = Math.max(seq, lastLoggedSeq);
+            startSeq = seq;
         }
     }
 

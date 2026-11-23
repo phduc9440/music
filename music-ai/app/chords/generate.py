@@ -28,8 +28,15 @@ def key_name(key: Key) -> str:
     return f"{step}{'#' if alter > 0 else 'b' if alter < 0 else ''} {key.mode}"
 
 
-def generate_file(in_path: Path, out_path: Path, style: str, model: Optional[StyleModel] = None) -> GenerateResult:
-    src = load_melody(in_path.read_bytes())
+def generate_file(
+    in_path: Path,
+    out_path: Path,
+    style: str,
+    model: Optional[StyleModel] = None,
+    replace_existing: bool = False,
+) -> GenerateResult:
+    """``replace_existing``: gỡ mọi ``<harmony>`` có sẵn rồi gợi ý lại cho toàn bộ bản nhạc."""
+    src = load_melody(in_path.read_bytes(), strip_harmonies=replace_existing)
     steps = src.steps
     notes = [note for step in steps for note in step.notes]
     if not notes:

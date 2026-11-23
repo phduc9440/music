@@ -96,7 +96,8 @@
       "PAID": "Payment successful",
       "FAILED": "Payment failed",
       "EXPIRED": "Order expired",
-      "REFUNDED": "Refunded"
+      "REFUNDED": "Refunded",
+      "GRANTED": "Granted by admin"
     },
     "message": {
       "PENDING": "We are waiting for the payment gateway to confirm. This page updates by itself, no need to reload.",
@@ -121,10 +122,14 @@
     "spentOrders_one": "{count} paid order",
     "spentOrders_other": "{count} paid orders",
     "spentRefunded_one": "{amount} refunded ({count} order, not counted)",
-    "spentRefunded_other": "{amount} refunded ({count} orders, not counted)"
+    "spentRefunded_other": "{amount} refunded ({count} orders, not counted)",
+    "grantFree": "Granted, no charge",
+    "grantMonths": "{count} months",
+    "validUntil": "Valid until"
   },
   "provider": {
-    "VNPAY": "VNPay"
+    "VNPAY": "VNPay",
+    "ADMIN_GRANT": "Granted by admin"
   },
   "kind": {
     "NEW": "New purchase",

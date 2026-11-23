@@ -22,7 +22,8 @@
     "fromMeasure": "Từ ô nhịp",
     "toMeasure": "Đến ô nhịp",
     "start": "Bắt đầu luyện",
-    "starting": "Đang tạo phiên…"
+    "starting": "Đang tạo phiên…",
+    "freeRunHint": "Nốt chạy đều theo tốc độ đã chọn; chơi đúng lúc nốt chạm vạch để được chấm hoàn hảo."
   },
   "session": {
     "live": "Đang luyện",
@@ -36,7 +37,8 @@
     "microphoneStatus": "Đang nghe và phân tích đa nốt · hàng đợi xử lý {latency}",
     "playPrompt": "Chơi một nốt để bắt đầu",
     "waitPrompt": "Chơi các nốt đang chờ ở vạch để tiếp tục",
-    "finished": "Bài đã kết thúc"
+    "finished": "Bài đã kết thúc",
+    "getReady": "Chuẩn bị"
   },
   "results": {
     "PERFECT": "Hoàn hảo",

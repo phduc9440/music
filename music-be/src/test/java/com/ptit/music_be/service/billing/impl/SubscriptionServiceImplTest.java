@@ -50,6 +50,8 @@ class SubscriptionServiceImplTest {
     private final PlanRepository plans = mock(PlanRepository.class);
     private final NotificationService notifications = mock(NotificationService.class);
     private final PlanSanctionRepository sanctions = mock(PlanSanctionRepository.class);
+    private final com.ptit.music_be.repository.billing.PlanGrantRepository grants =
+            mock(com.ptit.music_be.repository.billing.PlanGrantRepository.class);
     private final SubscriptionServiceImpl service = new SubscriptionServiceImpl(
             plans,
             subs,
@@ -57,7 +59,8 @@ class SubscriptionServiceImplTest {
             memberRepo,
             new PlanLimitsParser(new ObjectMapper()),
             notifications,
-            sanctions);
+            sanctions,
+            grants);
 
     private final Member member = Member.builder().id("m").build();
     private final Plan pro = Plan.builder().id("pro").code("PRO").limits("{}").build();
@@ -144,6 +147,7 @@ class SubscriptionServiceImplTest {
 
     @Test
     void grantingSamePlanExtendsByCalendarMonthsFromCurrentExpiry() {
+        loginSuper();
         LocalDateTime end = LocalDateTime.of(2027, 1, 31, 10, 0);
         Subscription sub = current(pro, end);
         when(memberRepo.findById("m")).thenReturn(Optional.of(member));
@@ -154,6 +158,27 @@ class SubscriptionServiceImplTest {
 
         // 31/01 + 1 tháng = 28/02 (theo lịch), nối tiếp từ ngày hết hạn cũ
         assertEquals(LocalDateTime.of(2027, 2, 28, 10, 0), sub.getExpiresAt());
+    }
+
+    @Test
+    void grantRecordsHistoryWithKindAndNewExpiry() {
+        loginSuper();
+        LocalDateTime end = LocalDateTime.now().plusDays(10).withNano(0);
+        Subscription sub = current(pro, end);
+        when(memberRepo.findById("m")).thenReturn(Optional.of(member));
+        when(plans.findByCode("PRO")).thenReturn(Optional.of(pro));
+        when(subs.findCurrent(eq("m"), any())).thenReturn(List.of(sub));
+
+        service.grant("m", "PRO", 2);
+
+        org.mockito.ArgumentCaptor<com.ptit.music_be.entity.PlanGrant> saved =
+                org.mockito.ArgumentCaptor.forClass(com.ptit.music_be.entity.PlanGrant.class);
+        org.mockito.Mockito.verify(grants).save(saved.capture());
+        com.ptit.music_be.entity.PlanGrant record = saved.getValue();
+        assertEquals(com.ptit.music_be.dto.enums.billing.PaymentKind.RENEW, record.getKind());
+        assertEquals(2, record.getMonths());
+        assertEquals(end, record.getStartsAt());
+        assertEquals(end.plusMonths(2), record.getExpiresAt());
     }
 
     @Test
@@ -224,6 +249,7 @@ class SubscriptionServiceImplTest {
 
     @Test
     void grantGivesTeamPlansLikePersonalOnes() {
+        loginSuper();
         Plan teamPro = Plan.builder()
                 .id("tp")
                 .code("TEAM_PRO")
@@ -313,6 +339,7 @@ class SubscriptionServiceImplTest {
 
     @Test
     void grantManyGrantsRenewsAndSkipsPerMember() {
+        loginSuper();
         Plan premium = Plan.builder()
                 .id("premium")
                 .code("PREMIUM")
@@ -497,6 +524,7 @@ class SubscriptionServiceImplTest {
 
     @Test
     void bannedPlanCannotBeGrantedButOtherPlansCan() {
+        loginSuper();
         Plan proPlan = planOf("pro", "PRO", 3);
         Plan premium = planOf("premium", "PREMIUM", 4);
         when(plans.findByCode("PREMIUM")).thenReturn(Optional.of(premium));

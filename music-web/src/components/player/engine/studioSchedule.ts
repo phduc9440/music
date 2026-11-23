@@ -151,12 +151,13 @@ export function buildStudioSchedule(timeline: StudioTimeline, options: StudioSch
   const visualNotes = selectedNotes;
   const notes = visualNotes
     .filter((note) => note.scorable)
-    .map(({ noteId, measure, hand, midi, expectedMs }) => ({
+    .map(({ noteId, measure, hand, midi, expectedMs, durationMs }) => ({
       noteId,
       measure,
       hand,
       midi,
       expectedMs,
+      durationMs,
     }));
 
   const accompanimentNotes =

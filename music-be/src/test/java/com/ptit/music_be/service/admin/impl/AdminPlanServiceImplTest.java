@@ -28,6 +28,7 @@ import com.ptit.music_be.exception.ErrorCode;
 import com.ptit.music_be.exception.code.AccountErrorCode;
 import com.ptit.music_be.exception.code.BillingErrorCode;
 import com.ptit.music_be.repository.billing.PaymentOrderRepository;
+import com.ptit.music_be.repository.billing.PlanGrantRepository;
 import com.ptit.music_be.repository.billing.PlanRepository;
 import com.ptit.music_be.repository.billing.SubscriptionRepository;
 import com.ptit.music_be.service.billing.PlanLimits;
@@ -41,8 +42,8 @@ class AdminPlanServiceImplTest {
     private final SubscriptionService subscriptions = mock(SubscriptionService.class);
     private final SubscriptionRepository subscriptionRepo = mock(SubscriptionRepository.class);
     private final PaymentOrderRepository orderRepo = mock(PaymentOrderRepository.class);
-    private final AdminPlanServiceImpl service =
-            new AdminPlanServiceImpl(plans, subscriptionRepo, orderRepo, subscriptions, objectMapper);
+    private final AdminPlanServiceImpl service = new AdminPlanServiceImpl(
+            plans, subscriptionRepo, orderRepo, mock(PlanGrantRepository.class), subscriptions, objectMapper);
 
     private final Plan pro = Plan.builder()
             .code("PRO")

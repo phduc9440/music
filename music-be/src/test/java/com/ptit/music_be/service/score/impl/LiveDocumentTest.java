@@ -8,6 +8,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import com.ptit.music_be.service.score.impl.LiveDocument.MeasureEdit;
+import com.ptit.music_be.service.score.impl.LiveDocument.MeasureXml;
 import com.ptit.music_be.service.score.impl.LiveDocument.Outcome;
 import com.ptit.music_be.service.score.impl.LiveDocument.Reason;
 import com.ptit.music_be.utils.MeasureHasher;
@@ -183,5 +184,51 @@ class LiveDocumentTest {
         doc.markSaved(doc.seq(), 4);
         assertThat(doc.hasUnsaved()).isFalse();
         assertThat(doc.baseVersion()).isEqualTo(4);
+    }
+
+    // ---------------------------------------------------------------- phát lại (COL-T01)
+
+    @Test
+    void replayAppliesLoggedOpsInSeqOrderOnly() {
+        LiveDocument doc = open(score(measure(1, "C"), measure(2, "D")));
+        String e = measure(2, "E");
+
+        assertThat(doc.replayMeasures(2, "op-2", List.of(new MeasureXml(0, 1, e, hashOf(e)))))
+                .isFalse();
+        assertThat(doc.replayMeasures(1, "op-1", List.of(new MeasureXml(0, 1, e, hashOf(e)))))
+                .isTrue();
+
+        assertThat(doc.seq()).isEqualTo(1);
+        assertThat(doc.fullXml()).contains("<step>E</step>");
+        // Client gửi lại thao tác đã phát lại sau khi máy chủ khởi động lại: bỏ qua
+        assertThat(doc.applyMeasures("op-1", List.of(edit(1, e, measure(2, "F"))))
+                        .duplicate())
+                .isTrue();
+    }
+
+    @Test
+    void replayRejectsBrokenXmlAndOutOfRangeMeasures() {
+        LiveDocument doc = open(score(measure(1, "C"), measure(2, "D")));
+
+        assertThat(doc.replayMeasures(1, "op-1", List.of(new MeasureXml(0, 5, measure(2, "E"), "x"))))
+                .isFalse();
+        assertThat(doc.replayMeasures(1, "op-1", List.of(new MeasureXml(0, 1, "<measure>", "x"))))
+                .isFalse();
+        assertThat(doc.replayStructural(1, "op-1", "<score-partwise/>")).isFalse();
+        assertThat(doc.seq()).isZero();
+    }
+
+    @Test
+    void finishReplayMovesSeqAndStartSeqButKeepsWorkUnsaved() {
+        LiveDocument doc = open(score(measure(1, "C"), measure(2, "D")));
+        String e = measure(2, "E");
+        doc.replayMeasures(1, "op-1", List.of(new MeasureXml(0, 1, e, hashOf(e))));
+
+        doc.finishReplay(4);
+
+        assertThat(doc.seq()).isEqualTo(4);
+        assertThat(doc.startSeq()).isEqualTo(4);
+        assertThat(doc.hasUnsaved()).isTrue();
+        assertThat(doc.firstUnsavedSeq()).isEqualTo(1);
     }
 }

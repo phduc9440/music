@@ -80,8 +80,13 @@ def parse_xml(data: bytes) -> ET.Element:
     return root
 
 
-def load_melody(data: bytes) -> MelodySource:
+def load_melody(data: bytes, strip_harmonies: bool = False) -> MelodySource:
+    """``strip_harmonies``: gỡ mọi ``<harmony>`` của mọi part trước (gợi ý lại từ đầu, không ô nào bị khóa)."""
     root = parse_xml(data)
+    if strip_harmonies:
+        for measure in root.iter("measure"):
+            for harmony in measure.findall("harmony"):
+                measure.remove(harmony)
     part = next((p for p in root.findall("part") if p.find(".//note/pitch") is not None), None)
     if part is None:
         raise ChordError("NO_MELODY", "Bản nhạc không có nốt nào có cao độ")

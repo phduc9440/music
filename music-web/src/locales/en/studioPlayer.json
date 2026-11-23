@@ -22,7 +22,8 @@
     "fromMeasure": "From measure",
     "toMeasure": "To measure",
     "start": "Start practice",
-    "starting": "Starting session…"
+    "starting": "Starting session…",
+    "freeRunHint": "Notes keep moving at the chosen tempo; play as each note reaches the line to score Perfect."
   },
   "session": {
     "live": "Practice in progress",
@@ -36,7 +37,8 @@
     "microphoneStatus": "Listening and recognizing multiple notes · processing queue {latency}",
     "playPrompt": "Play a note to begin",
     "waitPrompt": "Play the notes waiting at the line to continue",
-    "finished": "Practice complete"
+    "finished": "Practice complete",
+    "getReady": "Get ready"
   },
   "results": {
     "PERFECT": "Perfect",

@@ -215,6 +215,20 @@ def test_all_measures_harmonized_raises(tmp_path, model):
     assert info.value.code == "ALREADY_HARMONIZED"
 
 
+def test_replace_existing_regenerates_every_measure(tmp_path, model):
+    # Hợp âm cũ cố tình sai (Bb, Eb): chế độ thay thế bỏ hết rồi gợi ý lại, mỗi ô còn đúng một hợp âm do AI ghi
+    data = single([harm("B", alter=-1) + C_MAJOR_TUNE[0], harm("E", alter=-1) + C_MAJOR_TUNE[1]])
+    src, out = tmp_path / "in.musicxml", tmp_path / "out.musicxml"
+    src.write_bytes(data)
+    result = generate_file(src, out, "POP", model=model, replace_existing=True)
+    root = ET.fromstring(out.read_bytes())
+    assert result.kept_existing == 0
+    assert result.skipped == 0
+    assert all(m.find("harmony") is not None for m in measures(root))
+    assert not any(h.findtext("root/root-alter") == "-1" for h in root.iter("harmony"))
+    assert ET.tostring(strip_harmony(root)) == ET.tostring(strip_harmony(ET.fromstring(data)))
+
+
 def test_minor_tune_uses_minor_model(tmp_path, model):
     tune = [
         quarters(("A", 4), ("C", 5), ("E", 5), ("C", 5)),

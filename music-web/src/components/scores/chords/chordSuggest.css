@@ -6,15 +6,22 @@
   margin: 0;
   color: var(--ui-text-2);
   font-size: var(--ui-text-sm);
+  line-height: 1.5;
 }
 
+/* Legend của fieldset bỏ qua margin-top của .sc-label nên khoảng cách với chú thích đặt ở fieldset */
 .cs-styles {
   display: grid;
   gap: 0.5rem;
-  margin: 0;
+  margin: 1rem 0 0;
   padding: 0;
   border: 0;
   min-width: 0;
+}
+
+.cs-styles > legend {
+  margin: 0 0 0.5rem;
+  padding: 0;
 }
 
 /* Mỗi phong cách là một thẻ bấm được cả vùng (vùng chạm lớn), ô radio thật vẫn nhận bàn phím */
@@ -68,6 +75,12 @@
   font-size: var(--ui-text-sm);
 }
 
+.cs-status {
+  display: grid;
+  gap: 0.25rem;
+  margin-top: 1rem;
+}
+
 .cs-status:empty {
   display: none;
 }
@@ -80,7 +93,12 @@
   font-weight: 600;
 }
 
+.cs-running + .cs-hint {
+  padding-left: 1.5rem;
+}
+
 .cs-spinner {
+  flex: none;
   width: 1rem;
   height: 1rem;
   border: 2px solid var(--ui-border-strong);
@@ -89,8 +107,40 @@
   animation: cs-spin 0.9s linear infinite;
 }
 
+/* Lỗi kèm nút "Mở đề xuất": chữ bên trái, nút bên phải; hẹp quá thì nút xuống dòng mà không thụt lề lệch */
+.cs-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 0.75rem;
+  line-height: 1.5;
+}
+
+.cs-error > span {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
 .cs-open {
-  margin-left: 0.5rem;
+  flex: none;
+}
+
+/* Mọi ô đã có hợp âm: hỏi thay hợp âm cũ (nút chính ở chân hộp) hoặc xóa hết */
+.cs-harmonized {
+  display: grid;
+  justify-items: start;
+  gap: 0.35rem;
+  margin-top: 1rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--ui-border-strong);
+  border-left: 3px solid var(--ui-primary);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-surface);
+}
+
+.cs-harmonized .cs-clear {
+  margin-top: 0.25rem;
 }
 
 @keyframes cs-spin {

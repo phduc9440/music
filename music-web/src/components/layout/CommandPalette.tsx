@@ -59,6 +59,14 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
         icon: 'plus',
         run: () => go(CREATE_SCORE_PATH),
       },
+      {
+        id: 'cmd-create-blank',
+        group: t('common.cmdk.groups.commands'),
+        label: t('upload.startBlank'),
+        hint: t('common.header.create'),
+        icon: 'plus',
+        run: () => go('/scores/blank'),
+      },
       ...NAV_GROUPS.flatMap((g) =>
         g.items.map<Entry>((item) => ({
           id: `cmd-${item.to}`,

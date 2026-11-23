@@ -11,6 +11,7 @@ import { useClickMusic } from '../ui/clickMusic';
 import { adoptServerLocale, t } from '../../i18n/core';
 import LanguageToggle from '../../i18n/LanguageToggle';
 import { adoptServerTheme } from '../../theme/theme';
+import { useSignedInSurface } from '../../theme/useSignedInSurface';
 import { adminReportApi, authApi, scoreApi, userApi } from '../../services';
 import { AuthProvider } from '../../types';
 import type { Member } from '../../types';
@@ -39,6 +40,7 @@ const matchesPath = (pathname: string, to: string, end?: boolean) =>
   end ? pathname === to : pathname === to || pathname.startsWith(`${to}/`);
 
 export default function AdminLayout() {
+  useSignedInSurface();
   const navigate = useNavigate();
   const { pathname } = useLocation();
   // Mỗi cú bấm chơi một nốt của giai điệu (tắt / bật bằng nút loa trên thanh trên)

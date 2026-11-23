@@ -32,8 +32,8 @@
     "userSite": "Giao diện người dùng"
   },
   "layout": {
-      "groupActive": "Nhóm đang chứa trang bạn mở",
-      "groupBadge": "{count} việc đang chờ trong nhóm này",
+    "groupActive": "Nhóm đang chứa trang bạn mở",
+    "groupBadge": "{count} việc đang chờ trong nhóm này",
     "profileFailed": "Không tải được hồ sơ quản trị viên",
     "toggleSidebar": "Đóng/mở thanh bên",
     "menuLabel": "Menu quản trị",
@@ -691,7 +691,8 @@
     "subtitle": "Chọn chức năng: cấp gói cho thành viên, hoặc xử lý vi phạm (thu hồi gói, cấm dùng gói trả phí).",
     "readOnly": "Chỉ quản trị viên cấp cao (SUPER_ADMIN) được cấp gói hoặc xử lý vi phạm. Bạn đang xem ở chế độ chỉ đọc.",
     "tabGrant": "Cấp gói",
-    "tabSanction": "Xử lý vi phạm"
+    "tabSanction": "Xử lý vi phạm",
+    "tabHistory": "Lịch sử cấp gói"
   },
   "sanctions": {
     "subtitle": "Thu hồi gói đang dùng (hủy ngay, muốn dùng lại phải mua lại) hoặc cấm dùng một gói có thời hạn (không dùng, mua hay được cấp lại gói đó; vẫn dùng Free hoặc mua gói khác). Người bị xử lý nhận thông báo kèm lý do.",
@@ -1133,5 +1134,20 @@
     "deleted": "Đã xóa buổi luyện",
     "deleteFailed": "Không xóa được buổi luyện",
     "actions": "Thao tác"
+  },
+  "grantHistory": {
+    "tab": "Lịch sử cấp gói",
+    "sub": "Mọi lần SUPER_ADMIN cấp gói thủ công, kể cả gia hạn nối tiếp và cấp hàng loạt. Người nhận cũng thấy các lần này trong \"Lịch sử đăng ký gói\" của họ.",
+    "empty": "Chưa có lần cấp gói nào",
+    "failed": "Không tải được lịch sử cấp gói",
+    "member": "Người nhận",
+    "plan": "Gói",
+    "months": "{count} tháng",
+    "kind": "Loại",
+    "by": "Người cấp",
+    "until": "Hạn mới",
+    "at": "Cấp lúc",
+    "deletedAdmin": "(tài khoản đã xóa)",
+    "unit": "lần cấp"
   }
 }

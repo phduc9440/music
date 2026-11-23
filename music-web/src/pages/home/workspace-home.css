@@ -559,7 +559,7 @@
   scale: 1.12;
 }
 .wh-journey__item:hover strong {
-  color: var(--ui-cta);
+  color: var(--ui-primary);
 }
 .wh-journey__item:focus-visible {
   outline: 2px solid var(--ui-primary);
@@ -833,5 +833,75 @@
   .wh-journey > li::after {
     transform-origin: 50% 0;
     animation-name: scr-draw-y;
+  }
+}
+
+/* ---- phối màu theo vai (bảng Cam – Xanh – Vàng chanh trong tokens.css).
+   Trắng: Tiếp tục, Chờ bạn xử lý, ô Tạo mới (biểu tượng vẫn cam). Xanh (chi tiết lớn): khối Chuỗi ngày và khối kêu gọi cuối trang.
+   Vàng chanh (bổ trợ): Gợi ý luyện tập, nửa sau dải màu của ô Tạo mới. Xanh nhạt: Việc của tôi. Mỗi khung định nghĩa lại
+   --wh-card / --wh-card-2 nên dòng con, ô số đếm và trạng thái rê chuột bên trong đổi theo cùng tông. Pha bằng
+   color-mix với --ui-surface nên tự theo theme sáng / tối ---- */
+.wh {
+  /* trắng khi đã đăng nhập (tokens.css, :root.ui-signed-in); theme tối là nền thẻ tối */
+  --wh-white: var(--ui-surface);
+  --wh-white-2: var(--ui-surface-hover);
+  --wh-lime: var(--ui-tint-lime);
+  --wh-lime-2: var(--ui-tint-lime-2);
+  --wh-teal: var(--ui-tint-teal);
+  --wh-teal-2: var(--ui-tint-teal-2);
+  --wh-deep: linear-gradient(135deg, var(--ui-hero-from), var(--ui-hero-to));
+}
+.wh-tile--continue,
+.wh-tile--pending,
+.wh-tile.wh-tile--create {
+  --wh-card: var(--wh-white);
+  --wh-card-2: var(--wh-white-2);
+}
+.wh-tile--suggest {
+  --wh-card: var(--wh-lime);
+  --wh-card-2: var(--wh-lime-2);
+}
+.wh-tile--tasks {
+  --wh-card: var(--wh-teal);
+  --wh-card-2: var(--wh-teal-2);
+}
+/* ô Tạo mới: nền trắng, biểu tượng cam */
+.wh-tile--create > svg {
+  color: var(--ui-cta);
+}
+
+/* khối xanh đậm: chuỗi ngày tập và khối kêu gọi cuối trang; số và biểu tượng vàng chanh */
+.wh-streak,
+.wh-cta {
+  background: var(--wh-deep);
+  color: var(--ui-hero-text);
+}
+.wh-streak:hover {
+  background: var(--wh-deep);
+  color: var(--ui-hero-text);
+  filter: brightness(1.08);
+}
+.wh-streak > svg,
+.wh-streak__num {
+  color: var(--ui-stage-accent);
+}
+.wh-streak__label,
+.wh-cta p {
+  color: var(--ui-hero-text-2);
+}
+.wh-cta :is(h2, h3, strong) {
+  color: var(--ui-hero-text);
+}
+.wh-cta .wh-btn--light {
+  border-color: var(--ui-hero-line);
+  color: var(--ui-hero-text);
+}
+.wh-cta .wh-btn--light:hover {
+  background: var(--ui-hero-chip);
+  color: var(--ui-hero-text);
+}
+@media (prefers-reduced-motion: reduce) {
+  .wh-streak:hover {
+    filter: none;
   }
 }

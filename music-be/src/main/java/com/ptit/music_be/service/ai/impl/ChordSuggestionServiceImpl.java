@@ -111,6 +111,7 @@ public class ChordSuggestionServiceImpl implements ChordSuggestionService {
         ObjectNode input = objectMapper.createObjectNode();
         input.put("style", style.name());
         input.put("baseVersion", baseVersion);
+        input.put("replaceExisting", request != null && Boolean.TRUE.equals(request.getReplaceExisting()));
         AiTask task = aiTaskRepository.save(AiTask.builder()
                 .member(member)
                 .score(score)

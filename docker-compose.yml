@@ -23,7 +23,9 @@ services:
       STORAGE_ROOT: /data/storage
       # CPU chậm hơn GPU nhiều, nới thời gian chờ (xem music-ai/README.md)
       INFERENCE_PAGE_TIMEOUT_S: "300"
-      TASK_TIMEOUT_S: "1800"
+      # Ngân sách một bài = 300 s + số trang × TASK_TIMEOUT_PER_PAGE_S, không quá TASK_TIMEOUT_S (OMR-T03)
+      TASK_TIMEOUT_PER_PAGE_S: "360"
+      TASK_TIMEOUT_S: "3600"
     volumes:
       - storage:/data/storage
       - hf-cache:/cache/huggingface

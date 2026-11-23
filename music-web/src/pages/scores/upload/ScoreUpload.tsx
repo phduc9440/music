@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Dispatch, FormEvent, SetStateAction } from 'react';
 import { useNavigate } from '../../../routes/useTransitionNavigate';
 import { toast } from 'react-toastify';
@@ -72,6 +72,8 @@ export default function ScoreUpload() {
   const [sourceTouched, setSourceTouched] = useState(false); // tương tự: đã tự chọn loại nguồn thì không tự đoán
   const [uploading, setUploading] = useState(false);
   const [preparing, setPreparing] = useState(false); // đang xoay ảnh trước khi gửi
+  // Chặn gửi hai lần (bấm đúp, Enter liên tiếp) trước khi state kịp vẽ lại: mỗi lần gửi tạo một bản nhạc và trừ hạn mức
+  const submittingRef = useRef(false);
   const [progress, setProgress] = useState(0);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
@@ -143,7 +145,8 @@ export default function ScoreUpload() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!canSubmit) return;
+    if (!canSubmit || submittingRef.current) return;
+    submittingRef.current = true;
 
     // Áp dụng góc xoay vào ảnh thật trước khi gửi
     let finalFiles: File[];
@@ -153,6 +156,7 @@ export default function ScoreUpload() {
     } catch {
       toast.error(t('upload.rotateFailed'));
       setPreparing(false);
+      submittingRef.current = false;
       return;
     }
     setPreparing(false);
@@ -168,6 +172,7 @@ export default function ScoreUpload() {
       // Giữ nguyên các file đã chọn để người dùng sửa rồi thử lại
       if (!reportPlanLimit(err)) toast.error(getUploadErrorMessage(err));
       setUploading(false);
+      submittingRef.current = false;
     }
   };
 
@@ -179,9 +184,14 @@ export default function ScoreUpload() {
             <h1>{t('upload.title')}</h1>
             <p>{t('upload.subtitle')}</p>
           </div>
-          <button type="button" className="sc-btn" disabled={busy} onClick={() => navigate('/scores/import')}>
-            {t('upload.haveXml')}
-          </button>
+          <div className="sc-upload__head-actions">
+            <button type="button" className="sc-btn" disabled={busy} onClick={() => navigate('/scores/import')}>
+              {t('upload.haveXml')}
+            </button>
+            <button type="button" className="sc-btn" disabled={busy} onClick={() => navigate('/scores/blank')}>
+              {t('upload.startBlank')}
+            </button>
+          </div>
         </header>
 
         <form className="sc-upload" onSubmit={handleSubmit}>

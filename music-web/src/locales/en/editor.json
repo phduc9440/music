@@ -169,7 +169,10 @@
     "chord": {
       "set": "Enter chord",
       "clear": "Delete chord",
-      "paste": "Paste chords"
+      "paste": "Paste chords",
+      "ai": "Add AI chord suggestions",
+      "aiDiscard": "Remove AI chord suggestions",
+      "clearAll": "Delete all chords"
     },
     "lyric": {
       "set": "Enter lyrics",
@@ -233,7 +236,7 @@
     "chordsLeft": "{count} chords have no note to attach to",
     "lyricsPlaced": "Assigned {count} syllables",
     "lyricsLeft": "{count} syllables have no note to attach to",
-    "saved": "Saved (version {version})",
+    "saved": "Saved",
     "restoredNoReload": "Restored as version {version} but the score could not be reloaded, please reload the page",
     "restored": "Restored version {from} as version {version}",
     "draftRestored": "Draft restored, press Save to keep it",
@@ -295,6 +298,7 @@
         "extra": "Extra from OMR",
         "missed": "Missed by OMR"
       },
+      "liveBlocked": "Others are editing this score. Save the session and wait until everyone leaves before restoring an older version.",
       "warning": "You have unsaved changes; they will be discarded. ",
       "restoreTitle": "Restore version {version}?",
       "restoreMessage": "{warning}Its content will be saved as the newest version; existing versions stay in the history.",
@@ -446,7 +450,9 @@
       "paste": "Paste chords…",
       "pasteTitle": "Paste a chord sequence",
       "pasteHelp": "Paste chords separated by spaces or \"|\": they are assigned to the notes in turn, starting from the selected note. Use \"_\" to skip a note.",
-      "assign": "Assign chords"
+      "assign": "Assign chords",
+      "clear": "Delete chord",
+      "clearHint": "Delete chord {chord} from the selected note"
     },
     "text": {
       "sizeRange": "Font size from {min} to {max}",
@@ -754,7 +760,7 @@
       }
     },
     "panel": "Editing tools",
-    "note": "Click a note to select it (Shift to add more), then use the Pitch group or the arrow keys.",
+    "note": "Click a note to select, hold Shift for more. ↑ ↓ change the pitch.",
     "searchPlaceholder": "Search symbols (trill, fermata, repeat...)",
     "searchAria": "Search symbols",
     "empty": "No symbols match “{query}”.",
@@ -777,7 +783,7 @@
     "sub": {
       "tuplet": "Tuplets ({mod}+3 = triplet)",
       "pedal": "Pedal & octaves",
-      "section": "Section labels (placed at the start of the selected measure)",
+      "section": "Section labels (at the selected measure)",
       "breaks": "Breaks"
     },
     "mode": {
@@ -920,6 +926,7 @@
       "unknownComposer": "Composer unknown",
       "readOnly": "View only",
       "modeGroup": "View mode",
+      "page": "Page view",
       "scroll": "Horizontal scroll",
       "colorGroup": "Score colors",
       "invert": "Invert score colors",
@@ -1134,5 +1141,11 @@
     "slide": "slide",
     "lyric": "lyric {verse}: {text}",
     "chord": "chord {name}"
+  },
+  "sidebar": {
+    "resize": "Resize the {name} column",
+    "resizeHint": "Drag to widen or narrow it, drag all the way in to collapse · Double-click or Enter: collapse / expand · ←/→: adjust width",
+    "expand": "Expand the {name} column",
+    "collapsed": "Collapsed"
   }
 }

@@ -4,10 +4,14 @@ import java.time.LocalDateTime;
 import java.time.Period;
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ptit.music_be.dto.enums.billing.PaymentKind;
 import com.ptit.music_be.dto.enums.billing.SubscriptionSource;
 import com.ptit.music_be.dto.enums.billing.SubscriptionStatus;
 import com.ptit.music_be.dto.enums.notification.NotificationType;
@@ -17,9 +21,12 @@ import com.ptit.music_be.dto.response.billing.HeldSubscription;
 import com.ptit.music_be.dto.response.billing.MemberPlanSummary;
 import com.ptit.music_be.dto.response.billing.MySubscriptionResponse;
 import com.ptit.music_be.dto.response.billing.PlanBanInfo;
+import com.ptit.music_be.dto.response.billing.PlanGrantResponse;
 import com.ptit.music_be.dto.response.billing.PlanResponse;
+import com.ptit.music_be.dto.response.common.PageResponse;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Plan;
+import com.ptit.music_be.entity.PlanGrant;
 import com.ptit.music_be.entity.PlanSanction;
 import com.ptit.music_be.entity.Subscription;
 import com.ptit.music_be.exception.AppException;
@@ -27,6 +34,7 @@ import com.ptit.music_be.exception.code.AccountErrorCode;
 import com.ptit.music_be.exception.code.BillingErrorCode;
 import com.ptit.music_be.repository.ai.AiTaskRepository;
 import com.ptit.music_be.repository.auth.MemberRepository;
+import com.ptit.music_be.repository.billing.PlanGrantRepository;
 import com.ptit.music_be.repository.billing.PlanRepository;
 import com.ptit.music_be.repository.billing.PlanSanctionRepository;
 import com.ptit.music_be.repository.billing.SubscriptionRepository;
@@ -64,6 +72,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     PlanLimitsParser limitsParser;
     NotificationService notificationService;
     PlanSanctionRepository sanctionRepository;
+    PlanGrantRepository grantRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -677,8 +686,29 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             }
             return toMine(null, plan, 0);
         }
-        activate(member, plan, Period.ofMonths(months), SubscriptionSource.ADMIN_GRANT);
+        grantAndRecord(member, plan, months);
         return toMine(currentOf(memberId, plan, LocalDateTime.now()), plan, 0);
+    }
+
+    /** Bật hoặc gia hạn gói theo lệnh cấp của SUPER_ADMIN rồi ghi một dòng lịch sử cấp gói. Trả true nếu là gia hạn. */
+    private boolean grantAndRecord(Member member, Plan plan, int months) {
+        LocalDateTime now = LocalDateTime.now();
+        Subscription before = currentOf(member.getId(), plan, now);
+        // activate cộng hạn thẳng vào đối tượng này, nên chụp hạn cũ trước
+        LocalDateTime previousExpiry = before == null ? null : before.getExpiresAt();
+        activate(member, plan, Period.ofMonths(months), SubscriptionSource.ADMIN_GRANT);
+        Subscription after = currentOf(member.getId(), plan, now);
+        boolean renew = before != null;
+        grantRepository.save(PlanGrant.builder()
+                .member(member)
+                .plan(plan)
+                .grantedBy(currentMember())
+                .months(months)
+                .kind(renew ? PaymentKind.RENEW : PaymentKind.NEW)
+                .startsAt(renew ? previousExpiry : now)
+                .expiresAt(after != null ? after.getExpiresAt() : now.plusMonths(months))
+                .build());
+        return renew;
     }
 
     /** Gói {@code plan} còn hạn của thành viên; null nếu họ không có gói đó. */
@@ -707,16 +737,15 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         if (FREE.equals(plan.getCode())) {
             throw new AppException(BillingErrorCode.PLAN_NOT_GRANTABLE);
         }
-        Period duration = Period.ofMonths(months);
         java.util.List<BulkGrantResult> results = new java.util.ArrayList<>();
         for (String memberId : new java.util.LinkedHashSet<>(memberIds)) {
-            results.add(grantOne(memberId, plan, duration));
+            results.add(grantOne(memberId, plan, months));
         }
         return results;
     }
 
     /** Cấp cho một người trong lần cấp hàng loạt; không ném lỗi để một người lỗi không làm hỏng cả lần cấp. */
-    private BulkGrantResult grantOne(String memberId, Plan plan, Period duration) {
+    private BulkGrantResult grantOne(String memberId, Plan plan, int months) {
         Member member = memberRepository.findById(memberId).orElse(null);
         if (member == null) {
             return new BulkGrantResult(memberId, "FAILED", AccountErrorCode.USER_NOT_EXISTED.name(), null);
@@ -735,11 +764,56 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             // ADMIN đang có Pro không thời hạn: cấp Pro không thêm gì
             return new BulkGrantResult(memberId, "SKIPPED", BillingErrorCode.PAYMENT_NOT_NEEDED.name(), null);
         }
-        boolean renew = current.stream().anyMatch(s -> s.getPlan().getId().equals(plan.getId()));
-        activate(member, plan, duration, SubscriptionSource.ADMIN_GRANT);
+        boolean renew = grantAndRecord(member, plan, months);
         Subscription after = currentOf(memberId, plan, now);
         return new BulkGrantResult(
                 memberId, renew ? "RENEWED" : "GRANTED", null, after == null ? null : after.getExpiresAt());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.List<PlanGrantResponse> myGrants() {
+        return grantRepository.findByMemberEmailOrderByCreatedAtDesc(SecurityUtils.getCurrentEmail()).stream()
+                .map(SubscriptionServiceImpl::toGrantResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    @PreAuthorize("@perm.any('MEMBERS_VIEW,SUBSCRIPTIONS_MANAGE')")
+    public PageResponse<PlanGrantResponse> grantHistory(String memberId, int page, int size) {
+        int safeSize = size <= 0 ? 20 : Math.min(size, 100);
+        Page<PlanGrant> result = grantRepository.search(
+                memberId == null || memberId.isBlank() ? null : memberId,
+                PageRequest.of(Math.max(page, 0), safeSize, Sort.by(Sort.Direction.DESC, "createdAt")));
+        return PageResponse.<PlanGrantResponse>builder()
+                .content(result.getContent().stream()
+                        .map(SubscriptionServiceImpl::toGrantResponse)
+                        .toList())
+                .pageNumber(result.getNumber())
+                .pageSize(result.getSize())
+                .totalElements(result.getTotalElements())
+                .totalPages(result.getTotalPages())
+                .build();
+    }
+
+    private static PlanGrantResponse toGrantResponse(PlanGrant g) {
+        Member by = g.getGrantedBy();
+        return PlanGrantResponse.builder()
+                .id(g.getId())
+                .memberId(g.getMember().getId())
+                .memberEmail(g.getMember().getEmail())
+                .memberName(g.getMember().getFullName())
+                .planCode(g.getPlan().getCode())
+                .planName(g.getPlan().getName())
+                .months(g.getMonths())
+                .kind(g.getKind().name())
+                .grantedByEmail(by == null ? null : by.getEmail())
+                .grantedByName(by == null ? null : by.getFullName())
+                .startsAt(g.getStartsAt())
+                .expiresAt(g.getExpiresAt())
+                .createdAt(g.getCreatedAt())
+                .build();
     }
 
     @Override

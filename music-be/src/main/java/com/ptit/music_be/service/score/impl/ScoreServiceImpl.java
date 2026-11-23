@@ -520,7 +520,8 @@ public class ScoreServiceImpl implements ScoreService {
         }
         Map<String, ScoreReviewRepository.ScoreRatingStats> ratings = new HashMap<>();
         scoreReviewRepository
-                .getRatingStatsFor(cards.stream().map(ScoreSummaryResponse::getId).toList())
+                .getRatingStatsFor(
+                        cards.stream().map(ScoreSummaryResponse::getId).toList())
                 .forEach(r -> ratings.put(r.getScoreId(), r));
         for (ScoreSummaryResponse card : cards) {
             ScoreReviewRepository.ScoreRatingStats stats = ratings.get(card.getId());

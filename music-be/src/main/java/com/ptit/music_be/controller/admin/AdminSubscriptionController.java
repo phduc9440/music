@@ -9,7 +9,9 @@ import com.ptit.music_be.dto.request.admin.GrantPlanRequest;
 import com.ptit.music_be.dto.request.admin.PlanSanctionRequest;
 import com.ptit.music_be.dto.response.billing.BulkGrantResult;
 import com.ptit.music_be.dto.response.billing.MySubscriptionResponse;
+import com.ptit.music_be.dto.response.billing.PlanGrantResponse;
 import com.ptit.music_be.dto.response.common.ApiResponse;
+import com.ptit.music_be.dto.response.common.PageResponse;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.code.AccountErrorCode;
 import com.ptit.music_be.service.billing.SubscriptionService;
@@ -61,6 +63,22 @@ public class AdminSubscriptionController {
         return ApiResponse.<List<BulkGrantResult>>builder()
                 .result(subscriptionService.grantMany(
                         request.getMemberIds(), request.getPlanCode(), request.getMonths()))
+                .build();
+    }
+
+    @GetMapping("/grants")
+    @Operation(
+            summary = "Lịch sử SUPER_ADMIN cấp gói thủ công, mới nhất trước; có memberId thì chỉ của người đó",
+            description =
+                    "Mỗi lần cấp (kể cả gia hạn nối tiếp và cấp hàng loạt) là một dòng: người nhận, gói, số tháng,"
+                            + " cấp mới hay gia hạn, người cấp, hạn mới. Cần quyền xem thành viên hoặc quản lý gói",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ApiResponse<PageResponse<PlanGrantResponse>> grants(
+            @RequestParam(required = false) String memberId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ApiResponse.<PageResponse<PlanGrantResponse>>builder()
+                .result(subscriptionService.grantHistory(memberId, page, size))
                 .build();
     }
 

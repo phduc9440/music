@@ -44,7 +44,7 @@ export interface SuggestionDetail extends SuggestionSummary {
   scoreId: string;
   scoreTitle?: string | null;
   description?: string | null;
-  source: 'EDITOR' | string;
+  source: 'EDITOR' | 'CHORD_GENERATION' | 'LIVE_RECOVERY' | string;
   baseVersion: number;
   currentVersion: number;
   staleReason?: SuggestionStaleReason | null;

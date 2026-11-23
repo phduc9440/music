@@ -11,8 +11,10 @@ const expected = (noteId, midi, expectedMs, measure = 1, hand = 'RIGHT') => ({
   hand,
 });
 
+const NARROW = { perfectWindowMs: 40, toleranceWindowMs: 100 };
+
 test('classifies perfect, early, and late hits at configurable boundaries', () => {
-  const scorer = new FreeRunScorer();
+  const scorer = new FreeRunScorer(NARROW);
   scorer.scheduleExpectedNotes([expected('n1', 60, 1000), expected('n2', 62, 2000), expected('n3', 64, 3000)]);
 
   const events = [
@@ -32,7 +34,7 @@ test('classifies perfect, early, and late hits at configurable boundaries', () =
 });
 
 test('accepts hits through the tolerance boundary and marks later hits missed', () => {
-  const scorer = new FreeRunScorer();
+  const scorer = new FreeRunScorer(NARROW);
   scorer.scheduleExpectedNotes([expected('n1', 60, 1000), expected('n2', 62, 2000)]);
 
   const atBoundary = scorer.play({ midi: 60, playedMs: 1100 });
@@ -76,7 +78,7 @@ test('matches chord tones independently, including simultaneous equal-pitch note
 });
 
 test('records an extra wrong pitch without consuming the expected note, then marks it missed', () => {
-  const scorer = new FreeRunScorer();
+  const scorer = new FreeRunScorer(NARROW);
   scorer.scheduleExpectedNotes([expected('n1', 60, 1000)]);
 
   const wrongPitch = scorer.play({ midi: 61, playedMs: 1010 })[0];
@@ -118,9 +120,77 @@ test('supports repeated note ids as distinct loop occurrences', () => {
 });
 
 test('rejects invalid scoring windows and non-monotonic input time', () => {
-  assert.throws(() => new FreeRunScorer({ perfectWindowMs: 101 }), RangeError);
+  assert.throws(() => new FreeRunScorer({ perfectWindowMs: 101, toleranceWindowMs: 100 }), RangeError);
 
   const scorer = new FreeRunScorer();
   scorer.advanceTo(100);
   assert.throws(() => scorer.play({ midi: 60, playedMs: 99 }), /monotonic/);
+});
+
+test('default windows: within 60 ms is perfect, up to 150 ms is early / late', () => {
+  const scorer = new FreeRunScorer();
+  scorer.scheduleExpectedNotes([expected('n1', 60, 1000), expected('n2', 62, 2000), expected('n3', 64, 3000)]);
+
+  const events = [
+    ...scorer.play({ midi: 60, playedMs: 1055 }),
+    ...scorer.play({ midi: 62, playedMs: 1860 }),
+    ...scorer.play({ midi: 64, playedMs: 3150 }),
+  ];
+
+  assert.deepEqual(
+    events.map(({ result, deltaMs }) => [result, deltaMs]),
+    [
+      ['PERFECT', 55],
+      ['EARLY', -140],
+      ['LATE', 150],
+    ],
+  );
+});
+
+test('the right key a little early counts as early, not wrong pitch followed by missed', () => {
+  const scorer = new FreeRunScorer();
+  scorer.scheduleExpectedNotes([expected('n1', 60, 1000)]);
+
+  const pressed = scorer.play({ midi: 60, playedMs: 880 });
+  const later = scorer.advanceTo(1400);
+
+  assert.deepEqual(
+    pressed.map(({ result, noteId }) => [result, noteId]),
+    [['EARLY', 'n1']],
+  );
+  assert.deepEqual(later, []);
+});
+
+test('a long note can be played up to half its length late; a short note keeps the default window', () => {
+  const scorer = new FreeRunScorer();
+  scorer.scheduleExpectedNotes([
+    { ...expected('long', 60, 1000), durationMs: 800 },
+    { ...expected('short', 62, 3000), durationMs: 100 },
+  ]);
+
+  const lateLong = scorer.play({ midi: 60, playedMs: 1390 });
+  const lateShort = scorer.play({ midi: 62, playedMs: 3200 });
+
+  assert.deepEqual(
+    lateLong.map(({ result, noteId }) => [result, noteId]),
+    [['LATE', 'long']],
+  );
+  assert.deepEqual(
+    lateShort.map(({ result, noteId }) => [result, noteId]),
+    [
+      ['MISSED', 'short'],
+      ['WRONG_PITCH', null],
+    ],
+  );
+});
+
+test('a long note is not reported missed until half of it has passed', () => {
+  const scorer = new FreeRunScorer();
+  scorer.scheduleExpectedNotes([{ ...expected('long', 60, 1000), durationMs: 800 }]);
+
+  assert.deepEqual(scorer.advanceTo(1399), []);
+  assert.deepEqual(
+    scorer.advanceTo(1401).map(({ result }) => result),
+    ['MISSED'],
+  );
 });

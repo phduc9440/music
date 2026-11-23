@@ -13,6 +13,7 @@ import NavDropdown from './NavDropdown';
 import NotificationBell from '../NotificationBell';
 import ThemeToggle from '../../theme/ThemeToggle';
 import { adoptServerTheme } from '../../theme/theme';
+import { useSignedInSurface } from '../../theme/useSignedInSurface';
 import { adoptServerLocale } from '../../i18n/core';
 import LanguageToggle from '../../i18n/LanguageToggle';
 import { useI18n } from '../../i18n/useI18n';
@@ -38,6 +39,7 @@ export default function UserLayout() {
   // Bản nhạc mở từ Khám phá, Kho bản nhạc mẫu... vẫn tô sáng mục đó thay vì nhảy về Thư viện
   const navPath = navContextPath(pathname, state);
   const [me, setMe] = useState<Member | null>(null);
+  useSignedInSurface();
   const [menuOpen, setMenuOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false); // menu điều hướng trên màn hình nhỏ
   const [passwordOpen, setPasswordOpen] = useState(false);

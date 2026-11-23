@@ -128,3 +128,14 @@
   display: grid;
   gap: 2px;
 }
+
+/* ba ô số liệu, mỗi ô một tông của bảng màu: xanh nhạt, vàng chanh nhạt, cam nhạt */
+.ps-cards > .ps-card:nth-child(3n + 1) {
+  background: var(--ui-tint-teal);
+}
+.ps-cards > .ps-card:nth-child(3n + 2) {
+  background: var(--ui-tint-lime);
+}
+.ps-cards > .ps-card:nth-child(3n) {
+  background: var(--ui-panel);
+}

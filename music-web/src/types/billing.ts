@@ -61,7 +61,8 @@ export interface MySubscription {
   omrPagesUsed: number;
 }
 
-export type PaymentStatus = 'PENDING' | 'PAID' | 'FAILED' | 'EXPIRED' | 'REFUNDED';
+/** GRANTED: dòng lịch sử do quản trị viên cấp gói (không qua cổng thanh toán, không có số tiền). */
+export type PaymentStatus = 'PENDING' | 'PAID' | 'FAILED' | 'EXPIRED' | 'REFUNDED' | 'GRANTED';
 export type BillingPeriod = 'MONTH' | 'YEAR';
 export type PaymentKind = 'NEW' | 'RENEW';
 
@@ -80,8 +81,29 @@ export interface PaymentOrder {
   createdAt: string;
   expiresAt: string;
   paidAt?: string | null;
+  /** Chỉ có ở dòng cấp gói thủ công (provider ADMIN_GRANT): số tháng được cấp. */
+  months?: number | null;
   memberEmail?: string | null;
   payUrl?: string | null;
+}
+
+// BE: PlanGrantResponse. Một lần SUPER_ADMIN cấp gói thủ công (kể cả gia hạn nối tiếp và cấp hàng loạt)
+export interface PlanGrant {
+  id: string;
+  memberId: string;
+  memberEmail: string;
+  memberName?: string | null;
+  planCode: string;
+  planName: string;
+  months: number;
+  /** NEW: cấp mới hoặc đổi gói; RENEW: gia hạn nối tiếp. */
+  kind: PaymentKind;
+  grantedByEmail?: string | null;
+  grantedByName?: string | null;
+  startsAt: string;
+  /** Hạn của gói ngay sau lần cấp. */
+  expiresAt: string;
+  createdAt: string;
 }
 
 // BE: RevenueResponse (số tiền VND)

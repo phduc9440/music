@@ -28,7 +28,7 @@ jobs:
       run:
         working-directory: music-be
     env:
-      SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/music_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/music_test?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: ci_password
       MAIL_USERNAME: ci@example.com
@@ -76,6 +76,7 @@ jobs:
           cache-dependency-path: music-web/package-lock.json
       - run: npm ci
       - run: npm run test:studio
+      - run: npm run test:editor
       - run: npx tsc -b
       - run: npx eslint src
       - run: npm run lint:colors

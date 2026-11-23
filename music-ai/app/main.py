@@ -221,7 +221,12 @@ def chords_generate(body: ChordGenerateRequest) -> dict:
     ``PARSE_ERROR`` để Java ghi đúng mã lỗi của task.
     """
     try:
-        result = generate_file(storage.resolve(body.inPath), storage.resolve(body.outPath), body.style)
+        result = generate_file(
+            storage.resolve(body.inPath),
+            storage.resolve(body.outPath),
+            body.style,
+            replace_existing=body.replaceExisting,
+        )
     except ChordError as exc:
         raise HTTPException(status_code=422, detail={"code": exc.code, "message": str(exc)}) from exc
     except ConversionError as exc:

@@ -3,7 +3,7 @@
  * như "C", "Am7", "G/B", "F#m", "Bbmaj7", "C6/9", "N.C."; hậu tố lạ vẫn giữ nguyên chữ (kind = other).
  */
 import { childOf, commitEdit, textOf, touch } from '../core/commands';
-import type { EditResult, Touched } from '../core/commands';
+import type { EditLabel, EditResult, Touched } from '../core/commands';
 import type { NoteInfo, ScoreDocument } from '../core/ScoreDocument';
 import { t } from '../../../i18n/core';
 
@@ -276,6 +276,42 @@ export function setChord(doc: ScoreDocument, id: string, text: string): EditResu
     writeChord(info.element, spec),
   );
   command.selectAfter = [id];
+  return { ok: true, command };
+}
+
+/** Bản sao các thẻ <harmony> đang gắn ở nốt `id` (theo thứ tự trong file), để chép sang tài liệu khác. */
+export const harmoniesOf = (doc: ScoreDocument, id: string): Element[] => {
+  const info = doc.getInfo(id);
+  return info
+    ? harmoniesBefore(info.element)
+        .reverse()
+        .map((h) => h.cloneNode(true) as Element)
+    : [];
+};
+
+/**
+ * Thay hợp âm của nhiều nốt trong MỘT lệnh (hoàn tác một lần là trả lại hết): mỗi nốt nhận đúng các thẻ <harmony> cho
+ * sẵn (chép nguyên, kể cả <degree>, vị trí), mảng rỗng là xóa. Dùng để nạp hoặc gỡ hợp âm AI gợi ý.
+ */
+export function replaceHarmonies(
+  doc: ScoreDocument,
+  entries: readonly { id: string; harmonies: readonly Element[] }[],
+  label: EditLabel,
+): EditResult {
+  const targets = entries
+    .map((e) => ({ info: doc.getInfo(e.id), harmonies: e.harmonies }))
+    .filter((e): e is { info: NoteInfo; harmonies: readonly Element[] } => !!e.info);
+  if (targets.length === 0) return { ok: false, reason: 'empty' };
+  const touched: Touched = new Map();
+  targets.forEach((e) => touch(touched, e.info));
+  const ids = targets.map((e) => e.info.id);
+  const command = commitEdit(doc, label, touched, ids, () => {
+    for (const { info, harmonies } of targets) {
+      const owner = info.element.ownerDocument;
+      harmoniesBefore(info.element).forEach((h) => h.remove());
+      for (const h of harmonies) info.element.before(owner.importNode(h, true));
+    }
+  });
   return { ok: true, command };
 }
 

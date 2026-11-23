@@ -157,6 +157,15 @@
   width: 22px;
   height: 22px;
 }
+/* 7 trường độ + nút chấm dôi: một hàng cần ~320px nhưng khung chỉ 264px nên móc ba, móc tứ, chấm dôi tràn ra ngoài.
+   Xếp lưới 4 cột x 2 hàng, nút được co dưới 36px. */
+.ed-pop__row--durations {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.ed-pop__row--durations .ed-pop__btn {
+  min-width: 0;
+}
 .ed-pop__btn--wide {
   font-size: 0.72rem;
 }
@@ -287,4 +296,34 @@
   margin-bottom: 0.4rem;
   color: var(--ui-danger);
   font-size: 0.8rem;
+}
+
+/* Hợp âm AI gợi ý đang nạp làm bản nháp: chữ hợp âm như được tô bút dạ quang, nốt mang hợp âm có quầng vàng nhạt */
+.ed-chord--ai text {
+  fill: var(--ui-highlight-ink) !important;
+  font-weight: 700;
+  stroke: var(--ui-highlight-soft);
+  stroke-width: 7px;
+  stroke-linejoin: round;
+  paint-order: stroke fill;
+}
+.ed-note--ai:not(.ed-note--selected) path {
+  filter: drop-shadow(0 0 2px color-mix(in srgb, var(--ui-highlight) 75%, transparent));
+}
+/* Chọn từ bảng Hợp âm AI: nhấp sáng vài nhịp để mắt bắt được chỗ vừa cuộn tới */
+.ed-ai-flash path,
+.ed-ai-flash text {
+  animation: ed-ai-flash 0.6s ease-in-out 3;
+}
+@keyframes ed-ai-flash {
+  50% {
+    filter: drop-shadow(0 0 6px var(--ui-highlight)) drop-shadow(0 0 2px var(--ui-highlight));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ed-ai-flash path,
+  .ed-ai-flash text {
+    animation: none;
+    filter: drop-shadow(0 0 4px var(--ui-highlight));
+  }
 }

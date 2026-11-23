@@ -169,7 +169,10 @@
     "chord": {
       "set": "Nhập hợp âm",
       "clear": "Xóa hợp âm",
-      "paste": "Dán hợp âm"
+      "paste": "Dán hợp âm",
+      "ai": "Thêm hợp âm AI gợi ý",
+      "aiDiscard": "Bỏ hợp âm AI gợi ý",
+      "clearAll": "Xóa hết hợp âm"
     },
     "lyric": {
       "set": "Nhập lời",
@@ -233,7 +236,7 @@
     "chordsLeft": "Còn {count} hợp âm không có nốt để gán",
     "lyricsPlaced": "Đã gán {count} âm tiết",
     "lyricsLeft": "Còn {count} âm tiết không có nốt để gán",
-    "saved": "Đã lưu (phiên bản {version})",
+    "saved": "Đã lưu",
     "restoredNoReload": "Đã khôi phục thành phiên bản {version} nhưng chưa tải lại được, hãy tải lại trang",
     "restored": "Đã khôi phục phiên bản {from} thành phiên bản {version}",
     "draftRestored": "Đã khôi phục bản nháp, hãy bấm Lưu để giữ lại",
@@ -295,6 +298,7 @@
         "extra": "OMR sinh thừa",
         "missed": "OMR bỏ sót"
       },
+      "liveBlocked": "Đang có người cùng sửa. Lưu phiên rồi chờ mọi người rời đi trước khi khôi phục phiên bản cũ.",
       "warning": "Bạn có thay đổi chưa lưu, chúng sẽ bị bỏ. ",
       "restoreTitle": "Khôi phục phiên bản {version}?",
       "restoreMessage": "{warning}Nội dung của nó sẽ được lưu thành phiên bản mới nhất, các phiên bản hiện có vẫn nằm trong lịch sử.",
@@ -446,7 +450,9 @@
       "paste": "Dán dãy hợp âm…",
       "pasteTitle": "Dán dãy hợp âm",
       "pasteHelp": "Dán các hợp âm cách nhau bằng dấu cách hoặc \"|\": chúng được gán lần lượt lên các nốt, bắt đầu từ nốt đang chọn. Dùng \"_\" để bỏ qua một nốt.",
-      "assign": "Gán hợp âm"
+      "assign": "Gán hợp âm",
+      "clear": "Xóa hợp âm",
+      "clearHint": "Xóa hợp âm {chord} của nốt đang chọn"
     },
     "text": {
       "sizeRange": "Cỡ chữ từ {min} đến {max}",
@@ -754,7 +760,7 @@
       }
     },
     "panel": "Công cụ chỉnh sửa",
-    "note": "Bấm vào nốt để chọn (Shift để chọn thêm), rồi dùng nhóm Cao độ hoặc phím mũi tên.",
+    "note": "Bấm nốt để chọn, giữ Shift để chọn nhiều. Phím ↑ ↓ đổi cao độ.",
     "searchPlaceholder": "Tìm ký hiệu (láy, fermata, lặp...)",
     "searchAria": "Tìm ký hiệu",
     "empty": "Không có ký hiệu nào khớp “{query}”.",
@@ -777,7 +783,7 @@
     "sub": {
       "tuplet": "Chùm ({mod}+3 = chùm ba)",
       "pedal": "Pedal & quãng tám",
-      "section": "Nhãn đoạn (đặt ở đầu ô đang chọn)",
+      "section": "Nhãn đoạn (đặt ở ô đang chọn)",
       "breaks": "Ngắt đoạn"
     },
     "mode": {
@@ -920,6 +926,7 @@
       "unknownComposer": "Chưa rõ tác giả",
       "readOnly": "Chỉ xem",
       "modeGroup": "Chế độ xem",
+      "page": "Xem theo trang",
       "scroll": "Cuộn ngang",
       "colorGroup": "Màu bản nhạc",
       "invert": "Đảo màu bản nhạc",
@@ -1134,5 +1141,11 @@
     "slide": "đường trượt",
     "lyric": "lời {verse}: {text}",
     "chord": "hợp âm {name}"
+  },
+  "sidebar": {
+    "resize": "Đổi độ rộng cột {name}",
+    "resizeHint": "Kéo để nới rộng hoặc thu hẹp, kéo hẳn vào để thu gọn · Nhấp đúp hoặc Enter: thu gọn / mở · ←/→: chỉnh độ rộng",
+    "expand": "Mở cột {name}",
+    "collapsed": "Đã thu gọn"
   }
 }
