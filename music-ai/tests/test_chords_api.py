@@ -22,16 +22,7 @@ TUNE = [
 
 
 @pytest.fixture()
-def client(tmp_path, monkeypatch):
-    # Dùng mô hình nhỏ của test thay cho mô hình đã huấn luyện, để kết quả không phụ thuộc dữ liệu huấn luyện
-    from pathlib import Path
-
-    from app.chords import hmm
-
-    models = tmp_path / "models"
-    models.mkdir()
-    (models / "pop.json").write_bytes((Path(__file__).parent / "fixtures" / "chords_tiny_model.json").read_bytes())
-    monkeypatch.setattr(hmm, "MODEL_DIR", models)
+def client():
     return TestClient(main.app)
 
 
@@ -45,20 +36,39 @@ def body(**extra):
     return {"inPath": IN, "outPath": OUT, "style": "POP", **extra}
 
 
-def test_generate_returns_summary(client, storage_root):
+def test_generate_returns_summary_and_options(client, storage_root):
     write(storage_root, IN, single(TUNE))
 
-    response = client.post("/chords/generate", json=body(), headers=KEY)
+    response = client.post("/chords/generate", json=body(seed=42), headers=KEY)
 
     assert response.status_code == 200
     result = response.json()
     assert result["outPath"] == OUT
     assert result["key"] == "C major"
-    assert result["steps"] == 8
-    assert result["filled"] >= 4
-    assert result["skipped"] == 0
+    assert result["steps"] == 64  # 4 ô 4/4 × 16 nốt móc kép
+    assert result["filled"] >= 1
     assert result["keptExisting"] == 0
-    assert b"<harmony>" in (storage_root / OUT).read_bytes()
+    assert result["seed"] == 42
+    options = result["options"]
+    assert 1 <= len(options) <= 3
+    assert options[0]["outPath"] == OUT
+    assert [o["outPath"] for o in options[1:]] == [f"scores/a/chords/t1-out-{k}.musicxml" for k in range(2, len(options) + 1)]
+    for option in options:
+        assert b"<harmony>" in (storage_root / option["outPath"]).read_bytes()
+
+
+def test_generate_accepts_style_creativity_density(client, storage_root):
+    write(storage_root, IN, single(TUNE))
+    payload = body(style="JAZZ", creativity="BOLD", density="DENSE", options=1)
+    response = client.post("/chords/generate", json=payload, headers=KEY)
+    assert response.status_code == 200
+    assert len(response.json()["options"]) == 1
+
+
+def test_generate_rejects_bad_creativity_and_option_count(client, storage_root):
+    write(storage_root, IN, single(TUNE))
+    assert client.post("/chords/generate", json=body(creativity="WILD"), headers=KEY).status_code == 422
+    assert client.post("/chords/generate", json=body(options=5), headers=KEY).status_code == 422
 
 
 def test_generate_requires_internal_key(client, storage_root):

@@ -172,7 +172,8 @@
       "paste": "Dán hợp âm",
       "ai": "Thêm hợp âm AI gợi ý",
       "aiDiscard": "Bỏ hợp âm AI gợi ý",
-      "clearAll": "Xóa hết hợp âm"
+      "clearAll": "Xóa hết hợp âm",
+      "aiOption": "Đổi sang phương án hợp âm AI {option}"
     },
     "lyric": {
       "set": "Nhập lời",

@@ -6,7 +6,7 @@ Dịch vụ Python (FastAPI) lo phần xử lý nhạc của hệ thống Music:
 - **Chuyển đổi**: kern → MusicXML, MusicXML → MIDI, chuẩn hóa MusicXML nhập vào, chuẩn bị MusicXML trước khi
   MuseScore xuất file.
 - **So sánh** hai phiên bản MusicXML theo từng ô nhịp.
-- **Gợi ý hợp âm** cho bản chỉ có giai điệu (HMM + Viterbi).
+- **Gợi ý hợp âm** cho bản chỉ có giai điệu (model AutoHarmonizer, lấy mẫu ra 3 phương án, mỗi lần một khác).
 
 Tổng quan cả hệ thống: [README ở thư mục gốc](../README.md).
 
@@ -144,7 +144,7 @@ Mọi biến đều có giá trị mặc định. [`.env.example`](.env.example)
 | POST | `/convert/normalize` | `{inPath, outPath, tempoBpm?}`: chuẩn hóa MusicXML nhập từ file hoặc do MuseScore sinh từ MIDI. Trả metadata như trên |
 | POST | `/convert/prepare` | `{inPath, outPath, transpose, tempoPercent, hands, title, composer, showTitle, stripHarmony}`: chuẩn bị MusicXML trước khi MuseScore xuất file |
 | POST | `/analysis/diff` | `{basePath, targetPath}`: so sánh hai MusicXML theo ô nhịp. Trả `{measures: [{base, target, status, errors}], summary}` |
-| POST | `/chords/generate` | `{inPath, outPath, style: POP / BALLAD / JAZZ}`: ghi bản có `<harmony>` ra `outPath`. Trả `{key, steps, filled, skipped, keptExisting}` |
+| POST | `/chords/generate` | `{inPath, outPath, style, creativity, density, options, seed, replaceExisting}`: ghi tới `options` (1–3) phương án, A ra `outPath`, B, C ra `<outPath>-2/-3.musicxml`. Trả `{key, steps, filled, skipped, keptExisting, seed, options: [{outPath, filled, score}]}` |
 
 Quy tắc chung:
 
@@ -152,8 +152,8 @@ Quy tắc chung:
 - Đường dẫn phải là đường dẫn **tương đối**, không chứa `..`, và nằm trong `scores/<scoreId>/`; file vào và file ra
   phải thuộc cùng một bản nhạc. Sai thì trả 422.
 - XML hỏng, không phải `score-partwise` hoặc có khai báo `ENTITY` thì trả 422 kèm lý do.
-- `/chords/generate` báo lỗi dạng `detail = {code, message}`, trong đó `code` là `NO_MELODY`, `ALREADY_HARMONIZED`
-  hoặc `PARSE_ERROR`.
+- `/chords/generate` báo lỗi dạng `detail = {code, message}`, trong đó `code` là `NO_MELODY`, `ALREADY_HARMONIZED`,
+  `NO_CHORDS`, `TOO_LONG` hoặc `PARSE_ERROR`.
 
 Body `POST /omr/jobs`:
 
@@ -300,18 +300,33 @@ Fine-tune Transcoda cho bản giọng hát có lời (sinh dữ liệu, train tr
 
 ## Gợi ý hợp âm
 
+Dùng model **AutoHarmonizer** (mã MIT, [github.com/sander-wood/autoharmonizer](https://github.com/sander-wood/autoharmonizer),
+bài báo arXiv:2112.11122): mạng LSTM đọc giai điệu và dự đoán hợp âm cho từng nốt móc kép, chọn trong 1450 hợp âm. Trọng số
+gốc của tác giả được giữ nguyên, chỉ đổi định dạng (`scripts/autoharmonizer_convert.py`). Mạng được dựng lại bằng numpy
+(`app/chords/autoharmonizer/model.py`) vì mã gốc cần TensorFlow 2.2 / Python 3.7; test `test_numpy_network_matches_original_keras_model`
+so với xác suất do model Keras gốc tính (sai khác < 1e-5).
+
 `app/chords/` chạy theo các bước:
 
-1. Tách giai điệu (nốt cao nhất của khuông 1, bước nửa ô).
-2. Đoán giọng bằng Krumhansl–Schmuckler.
-3. Chạy HMM + Viterbi trên hợp âm theo bậc.
-4. Chèn `<harmony>` thẳng vào XML gốc, giữ nguyên mọi phần khác.
+1. Tách giai điệu (nốt cao nhất của khuông 1) thành lưới nốt móc kép, kèm độ mạnh phách (`beatStrength` của music21) và
+   giọng (số dấu thăng), đúng như đầu vào lúc tác giả train.
+2. Chạy model tự hồi quy: mỗi bước nhìn 32 bước giai điệu hai bên và 32 hợp âm vừa chọn, ra xác suất 1450 hợp âm.
+3. **Lấy mẫu** thay vì luôn chọn hợp âm xác suất cao nhất như mã gốc, nên mỗi lần chạy ra cách đệm khác (truyền `seed` để
+   tái hiện). Chạy song song 3 dãy, bỏ trùng, xếp theo log xác suất trung bình của model: phương án A hợp tai nhất.
+4. Chèn `<harmony>` thẳng vào XML gốc ở mỗi chỗ đổi hợp âm, giữ nguyên mọi phần khác.
 
-Ô đã có hợp âm sẵn được giữ lại và dùng làm ràng buộc. Cùng một file và cùng phong cách thì luôn ra cùng một kết quả.
+Điều khiển (đều là cách chỉnh xác suất của model, kiểu `gamma_sampling` của tác giả: tổng xác suất x của một nhóm hợp âm →
+x^tan(πγ/2)):
 
-Bảng xác suất `app/chords/model/{pop,ballad,jazz}.json` học từ POP909 (MIT) và iRealPro / iRb (CC BY 4.0). Cách tải dữ
-liệu và huấn luyện lại: [`training/chords/README.md`](training/chords/README.md); kết quả đánh giá:
-[`training/chords/RESULTS.md`](training/chords/RESULTS.md).
+| Tham số | Giá trị | Tác dụng |
+|---|---|---|
+| `creativity` | `SAFE` / `BALANCED` / `BOLD` | Nhiệt độ lấy mẫu 0,6 / 1,0 / 1,4 và top-p 0,85 / 0,92 / 0,97 |
+| `density` | `SPARSE` / `NORMAL` / `DENSE` | Đổi hợp âm ở phách mạnh / đầu phách / thêm chỗ nốt móc đơn; gamma của hợp âm vừa chọn 0,3 / 0,5 / 0,6 |
+| `style` | `POP`, `BALLAD`, `FOLK`, `BOLERO`, `CLASSICAL`, `JAZZ`, `BLUES` | Tăng / giảm nhóm hợp âm (ba, 7, maj7, m7, mở rộng, sus, 6, giảm...): Pop để model tự chọn, Jazz ưu tiên hợp âm 7 và mở rộng, Dân ca ưu tiên hợp âm ba... (`STYLE_GAMMAS` trong `harmonize.py`) |
+
+Mặc định, ô đã có hợp âm sẵn được giữ lại (model vẫn thấy chúng trong 32 hợp âm trước); mọi ô đều đã có thì báo
+`ALREADY_HARMONIZED`. Gửi `replaceExisting: true` thì gỡ hết `<harmony>` cũ rồi gợi ý lại cả bài. Bài quá 4096 nốt móc kép
+(khoảng 256 ô 4/4) báo `TOO_LONG`. Thời gian chạy khoảng 0,2–2 giây cho bài 10–20 ô trên CPU.
 
 ## Script
 
@@ -323,8 +338,7 @@ Chạy từ thư mục `music-ai`. Mở đầu mỗi file có ghi đủ các cá
 | `scripts/omr_check.py` | So số khuông / số ô trên ảnh với kern đã lưu; chạy lại pipeline với nhiều cấu hình để so sánh; lưu ảnh và kern từng lần đọc (`--dump`) |
 | `scripts/omr_benchmark.py` | Đo chất lượng OMR trên bộ kiểm thử cố định `benchmark/cases.json` (thư mục chỉ có trên máy cục bộ, không commit) |
 | `scripts/omr_quality_report.py` | So bản OMR `v1` với bản đã sửa mới nhất của mọi bản nhạc trong storage, ghi `reports/omr-quality.csv` |
-| `scripts/chord_eval.py` | Đánh giá gợi ý hợp âm trên tập kiểm thử POP909 |
-| `scripts/chord_compare_melodyt5.py`, `scripts/melodyt5_runner.py` | So sánh với MelodyT5 trên cùng đoạn nhạc |
+| `scripts/autoharmonizer_convert.py` | Chuyển trọng số `weights.hdf5` và `chord_types.bin` của AutoHarmonizer gốc sang `weights.npz` + `chords.json` (đã chạy sẵn) |
 
 ## Test
 
@@ -371,10 +385,10 @@ app/
 │                   merge, ottava, pitch_check, rhythm_fix, review, stability, llm_check, measure_map
 ├── convert/        kern / MusicXML / MIDI, normalize, prepare
 ├── analysis/       so sánh hai MusicXML
-├── chords/         gợi ý hợp âm (HMM, nhạc lý, bảng xác suất trong model/)
+├── chords/         gợi ý hợp âm: model AutoHarmonizer (autoharmonizer/: mạng numpy, trọng số, bảng hợp âm), chèn <harmony>
 └── eval/           metric cho benchmark
 scripts/            công cụ đo và kiểm tra
-training/           sinh dữ liệu fine-tune Transcoda, huấn luyện bảng hợp âm
+training/           sinh dữ liệu fine-tune Transcoda
 tests/
 ```
 
@@ -383,4 +397,5 @@ tests/
 - Trọng số Transcoda: **CC BY 4.0** (theo model card), phải ghi nguồn khi dùng hoặc phân phối.
 - Mã nguồn `github.com/btrkeks/transcoda`: AGPL-3.0. Hãy đối chiếu file `LICENSE` của repo đó trước khi đưa mã của họ
   vào dự án.
-- Dữ liệu hợp âm: POP909 (MIT), iRealPro / iRb (CC BY 4.0).
+- Gợi ý hợp âm: mã và trọng số AutoHarmonizer (`github.com/sander-wood/autoharmonizer`) theo giấy phép **MIT**, giữ
+  thông báo bản quyền ở `app/chords/autoharmonizer/LICENSE`.

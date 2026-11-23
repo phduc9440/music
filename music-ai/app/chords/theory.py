@@ -1,50 +1,17 @@
-"""Nhạc lý cho gợi ý hợp âm (spec R3 mục 5.2–5.3): đoán giọng, từ vựng hợp âm theo phong cách, viết và đọc tên hợp âm.
+"""Nhạc lý phụ trợ cho gợi ý hợp âm: đoán giọng của giai điệu (ghi vào mô tả đề xuất) và đánh vần tên nốt.
 
-Mọi hợp âm được biểu diễn theo **bậc so với chủ âm** (``root`` là số bán cung từ chủ âm), nên dữ liệu ở giọng nào cũng
-gộp được; chỉ lúc ghi ra mới đổi sang tên thật theo giọng.
+Việc chọn hợp âm do model AutoHarmonizer làm (``app/chords/autoharmonizer``); file này không còn từ vựng hay bảng xác suất.
 """
 
 from __future__ import annotations
 
-import re
-import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from typing import Literal, Optional
 
 from app.chords.melody import MelodyNote
 
-QUALITIES = ("maj", "min", "7", "maj7", "min7", "hdim7", "sus4")
-
-# Chữ sau tên gốc, khớp cách gõ của editor (music-web/src/components/editor/notation/harmony.ts)
-SUFFIX = {"maj": "", "min": "m", "7": "7", "maj7": "maj7", "min7": "m7", "hdim7": "m7b5", "sus4": "sus4"}
-QUALITY_OF_SUFFIX = {v: k for k, v in SUFFIX.items()}
-
-# Giá trị <kind> của MusicXML
-KIND_OF_QUALITY = {
-    "maj": "major",
-    "min": "minor",
-    "7": "dominant",
-    "maj7": "major-seventh",
-    "min7": "minor-seventh",
-    "hdim7": "half-diminished",
-    "sus4": "suspended-fourth",
-}
-QUALITY_OF_KIND = {v: k for k, v in KIND_OF_QUALITY.items()}
-
-# Loại hợp âm 3 nốt gần nhất, dùng khi từ vựng không có đúng loại
-TRIAD_OF_QUALITY = {"maj": "maj", "7": "maj", "maj7": "maj", "sus4": "maj", "min": "min", "min7": "min", "hdim7": "min"}
-
-STEP_PC = {"C": 0, "D": 2, "E": 4, "F": 5, "G": 7, "A": 9, "B": 11}
 SHARP_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
 FLAT_NAMES = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"]
-
-
-@dataclass(frozen=True)
-class ChordDef:
-    label: str
-    root: int
-    quality: str
-    bass: Optional[int] = None
 
 
 @dataclass(frozen=True)
@@ -52,164 +19,6 @@ class Key:
     tonic: int
     mode: Literal["major", "minor"]
     fifths: int
-
-
-def _c(label: str, root: int, quality: str, bass: Optional[int] = None) -> ChordDef:
-    return ChordDef(label, root, quality, bass)
-
-
-_POP_MAJOR = [
-    _c("I", 0, "maj"),
-    _c("ii", 2, "min"),
-    _c("iii", 4, "min"),
-    _c("IV", 5, "maj"),
-    _c("V", 7, "maj"),
-    _c("vi", 9, "min"),
-    _c("V7", 7, "7"),
-    _c("bVII", 10, "maj"),
-]
-_POP_MINOR = [
-    _c("i", 0, "min"),
-    _c("iv", 5, "min"),
-    _c("v", 7, "min"),
-    _c("V", 7, "maj"),
-    _c("bIII", 3, "maj"),
-    _c("bVI", 8, "maj"),
-    _c("bVII", 10, "maj"),
-]
-
-VOCAB: dict[str, dict[str, list[ChordDef]]] = {
-    "POP": {"major": _POP_MAJOR, "minor": _POP_MINOR},
-    "BALLAD": {
-        "major": _POP_MAJOR
-        + [
-            _c("Imaj7", 0, "maj7"),
-            _c("IVmaj7", 5, "maj7"),
-            _c("ii7", 2, "min7"),
-            _c("vi7", 9, "min7"),
-            _c("Vsus4", 7, "sus4"),
-            _c("I/3", 0, "maj", 4),
-            _c("V/7", 7, "maj", 11),
-        ],
-        "minor": _POP_MINOR + [_c("i7", 0, "min7"), _c("iv7", 5, "min7"), _c("bVImaj7", 8, "maj7")],
-    },
-    "JAZZ": {
-        "major": [
-            _c("Imaj7", 0, "maj7"),
-            _c("ii7", 2, "min7"),
-            _c("iii7", 4, "min7"),
-            _c("IVmaj7", 5, "maj7"),
-            _c("V7", 7, "7"),
-            _c("vi7", 9, "min7"),
-            _c("viiø7", 11, "hdim7"),
-            _c("V7/ii", 9, "7"),
-            _c("V7/V", 2, "7"),
-            _c("V7/vi", 4, "7"),
-        ],
-        "minor": [
-            _c("i7", 0, "min7"),
-            _c("iiø7", 2, "hdim7"),
-            _c("bIIImaj7", 3, "maj7"),
-            _c("iv7", 5, "min7"),
-            _c("V7", 7, "7"),
-            _c("bVImaj7", 8, "maj7"),
-            _c("bVII7", 10, "7"),
-            _c("i", 0, "min"),
-        ],
-    },
-    # Hòa âm kiểu Bach (chorale): hợp âm ba và đảo (I6, ii6, V6, I64 kết), át 7, át phụ của V. Hợp âm giảm vii° không có
-    # trong 7 loại, lúc huấn luyện được coi là V7 thiếu gốc
-    "CLASSICAL": {
-        "major": [
-            _c("I", 0, "maj"),
-            _c("ii", 2, "min"),
-            _c("iii", 4, "min"),
-            _c("IV", 5, "maj"),
-            _c("V", 7, "maj"),
-            _c("vi", 9, "min"),
-            _c("V7", 7, "7"),
-            _c("I/3", 0, "maj", 4),
-            _c("I/5", 0, "maj", 7),
-            _c("ii/4", 2, "min", 5),
-            _c("V/7", 7, "maj", 11),
-            _c("V7/V", 2, "7"),
-        ],
-        "minor": [
-            _c("i", 0, "min"),
-            _c("iiø7", 2, "hdim7"),
-            _c("bIII", 3, "maj"),
-            _c("iv", 5, "min"),
-            _c("V", 7, "maj"),
-            _c("V7", 7, "7"),
-            _c("bVI", 8, "maj"),
-            _c("bVII", 10, "maj"),
-            _c("i/b3", 0, "min", 3),
-            _c("i/5", 0, "min", 7),
-            _c("V/7", 7, "maj", 11),
-        ],
-    },
-    # Dân ca / thiếu nhi: ba hợp âm chính (I, IV, V/V7), ít khi thêm vi, ii
-    "FOLK": {
-        "major": [
-            _c("I", 0, "maj"),
-            _c("ii", 2, "min"),
-            _c("IV", 5, "maj"),
-            _c("V", 7, "maj"),
-            _c("V7", 7, "7"),
-            _c("vi", 9, "min"),
-        ],
-        "minor": [
-            _c("i", 0, "min"),
-            _c("iv", 5, "min"),
-            _c("V", 7, "maj"),
-            _c("V7", 7, "7"),
-            _c("bIII", 3, "maj"),
-            _c("bVII", 10, "maj"),
-        ],
-    },
-    # Bolero / trữ tình Việt: giọng thứ i–iv–V7–i, I7 dẫn về iv (V7/iv), bVI, bVII, bIII; giọng trưởng có III7 dẫn về vi
-    # và I7 dẫn về IV
-    "BOLERO": {
-        "major": [
-            _c("I", 0, "maj"),
-            _c("ii", 2, "min"),
-            _c("IV", 5, "maj"),
-            _c("V7", 7, "7"),
-            _c("vi", 9, "min"),
-            _c("III7", 4, "7"),
-            _c("I7", 0, "7"),
-        ],
-        "minor": [
-            _c("i", 0, "min"),
-            _c("iv", 5, "min"),
-            _c("V7", 7, "7"),
-            _c("bVI", 8, "maj"),
-            _c("bVII", 10, "maj"),
-            _c("bIII", 3, "maj"),
-            _c("I7", 0, "7"),
-        ],
-    },
-    # Blues: toàn hợp âm 7 theo vòng 12 ô (I7, IV7, V7), thêm ii7 và VI7 ở vòng quay lại
-    "BLUES": {
-        "major": [
-            _c("I7", 0, "7"),
-            _c("IV7", 5, "7"),
-            _c("V7", 7, "7"),
-            _c("ii7", 2, "min7"),
-            _c("VI7", 9, "7"),
-            _c("iii7", 4, "min7"),
-            _c("bVII7", 10, "7"),
-        ],
-        "minor": [
-            _c("i7", 0, "min7"),
-            _c("iv7", 5, "min7"),
-            _c("V7", 7, "7"),
-            _c("bVI7", 8, "7"),
-            _c("iiø7", 2, "hdim7"),
-            _c("i", 0, "min"),
-        ],
-    },
-}
 
 
 def major_tonic_of(fifths: int) -> int:
@@ -262,64 +71,7 @@ def spell_root(pc: int, key: Key, *, prefer_flat: bool = False) -> tuple[str, in
     return name[0], (1 if name.endswith("#") else -1 if name.endswith("b") else 0)
 
 
-def _name(pc: int, key: Key, prefer_flat: bool) -> str:
-    step, alter = spell_root(pc, key, prefer_flat=prefer_flat)
-    return step + ("#" if alter > 0 else "b" if alter < 0 else "")
-
-
-def chord_symbol(chord: ChordDef, key: Key) -> str:
-    flat = chord.label.startswith("b")
-    text = _name(key.tonic + chord.root, key, flat) + SUFFIX[chord.quality]
-    if chord.bass is not None:
-        text += "/" + _name(key.tonic + chord.bass, key, flat)
-    return text
-
-
-_SYMBOL = re.compile(r"^([A-G])([#b]?)(.*?)(?:/([A-G][#b]?))?$")
-
-
-def parse_symbol(text: str, key: Key) -> Optional[tuple[int, str]]:
-    match = _SYMBOL.match(text.strip())
-    if not match:
-        return None
-    step, accidental, suffix, _ = match.groups()
-    quality = QUALITY_OF_SUFFIX.get(suffix)
-    if quality is None:
-        return None
-    pc = STEP_PC[step] + (1 if accidental == "#" else -1 if accidental == "b" else 0)
-    return (pc - key.tonic) % 12, quality
-
-
-def parse_harmony(el: ET.Element, key: Key) -> Optional[tuple[int, str]]:
-    step = (el.findtext("root/root-step") or "").strip().upper()
-    quality = QUALITY_OF_KIND.get((el.findtext("kind") or "").strip())
-    if step not in STEP_PC or quality is None:
-        return None
-    try:
-        alter = round(float(el.findtext("root/root-alter") or 0))
-    except ValueError:
-        alter = 0
-    return (STEP_PC[step] + alter - key.tonic) % 12, quality
-
-
-def nearest_state(root: int, quality: str, states: list[ChordDef]) -> Optional[int]:
-    """Chỉ số trạng thái khớp nhất: đúng gốc và loại (ưu tiên không có bass), rồi cùng gốc cùng loại 3 nốt, rồi cùng gốc."""
-
-    def first(predicate) -> Optional[int]:
-        matches = [i for i, c in enumerate(states) if predicate(c)]
-        if not matches:
-            return None
-        plain = [i for i in matches if states[i].bass is None]
-        return (plain or matches)[0]
-
-    triad = TRIAD_OF_QUALITY.get(quality)
-    for predicate in (
-        lambda c: c.root == root and c.quality == quality,
-        lambda c: c.root == root and c.quality == triad,
-        lambda c: c.root == root and TRIAD_OF_QUALITY.get(c.quality) == triad,
-        lambda c: c.root == root,
-    ):
-        found = first(predicate)
-        if found is not None:
-            return found
-    return None
+def key_name(key: Key) -> str:
+    """``"C major"``, ``"F# minor"`` (tên giọng ghi vào kết quả và mô tả đề xuất)."""
+    step, alter = spell_root(key.tonic, key)
+    return f"{step}{'#' if alter > 0 else 'b' if alter < 0 else ''} {key.mode}"

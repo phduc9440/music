@@ -234,11 +234,20 @@ class DiffRequest(BaseModel):
 
 
 class ChordGenerateRequest(BaseModel):
-    """Body của ``POST /chords/generate``: gợi ý hợp âm cho một MusicXML trong storage (R3)."""
+    """Body của ``POST /chords/generate``: gợi ý hợp âm cho một MusicXML trong storage (R3, model AutoHarmonizer)."""
 
     inPath: str
     outPath: str
-    style: Literal["POP", "BALLAD", "JAZZ", "CLASSICAL", "FOLK", "BOLERO", "BLUES"]
+    style: Literal["POP", "BALLAD", "JAZZ", "CLASSICAL", "FOLK", "BOLERO", "BLUES"] = "POP"
+    """Màu hợp âm: tăng / giảm xác suất các nhóm hợp âm của model (POP = để model tự chọn)."""
+    creativity: Literal["SAFE", "BALANCED", "BOLD"] = "BALANCED"
+    """Độ sáng tạo khi lấy mẫu: an toàn (hợp âm hay gặp) → táo bạo (lạ tai hơn)."""
+    density: Literal["SPARSE", "NORMAL", "DENSE"] = "NORMAL"
+    """Mật độ đổi hợp âm: thưa (phách mạnh), vừa (đầu phách), dày (thêm chỗ nốt móc đơn)."""
+    options: int = Field(default=3, ge=1, le=3)
+    """Số phương án; phương án 1 ghi ra outPath, phương án k ghi ra ``<outPath>-k.musicxml``."""
+    seed: Optional[int] = Field(default=None, ge=0, le=0xFFFFFFFF)
+    """Hạt giống để tái hiện đúng một lần chạy; bỏ trống thì mỗi lần một khác."""
     replaceExisting: bool = False
     """True: bỏ hết hợp âm đang có rồi gợi ý lại toàn bộ (mặc định giữ ô đã có hợp âm)."""
 

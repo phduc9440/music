@@ -45,4 +45,6 @@ public class SuggestionDetailResponse {
     boolean canDecide;
     /** Người xem rút lại được (là người đề xuất và đề xuất còn mở). */
     boolean canWithdraw;
+    /** Số phương án xem được (gợi ý hợp âm có tới 3: A là nội dung chính, B, C đọc bằng content?option=2|3). */
+    int optionCount;
 }

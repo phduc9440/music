@@ -113,18 +113,30 @@ public class AiServiceClient {
     }
 
     /**
-     * Gợi ý hợp âm (R3, {@code POST /chords/generate}), đồng bộ: music-ai đọc {@code inPath}, ghi bản có {@code <harmony>}
-     * ra {@code outPath}. Lỗi dự đoán được: 422 với {@code detail.code} (NO_MELODY, ALREADY_HARMONIZED, PARSE_ERROR).
+     * Gợi ý hợp âm (R3, {@code POST /chords/generate}, model AutoHarmonizer + lấy mẫu), đồng bộ: music-ai đọc
+     * {@code inPath}, ghi tới 3 phương án (A ở {@code outPath}, B, C ở {@code <outPath>-2/-3.musicxml}); mỗi lần gọi ra
+     * kết quả khác. Lỗi dự đoán được: 422 với {@code detail.code} (NO_MELODY, ALREADY_HARMONIZED, NO_CHORDS, TOO_LONG,
+     * PARSE_ERROR).
      *
      * @param style POP, BALLAD, JAZZ, CLASSICAL, FOLK, BOLERO hoặc BLUES
      * @param replaceExisting true: bỏ hết hợp âm đang có rồi gợi ý lại toàn bộ
+     * @param creativity SAFE, BALANCED hoặc BOLD
+     * @param density SPARSE, NORMAL hoặc DENSE
      */
-    public ChordGenerationResult generateChords(String inPath, String outPath, String style, boolean replaceExisting) {
+    public ChordGenerationResult generateChords(
+            String inPath, String outPath, String style, boolean replaceExisting, String creativity, String density) {
         return convertClient
                 .post()
                 .uri("/chords/generate")
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(Map.of("inPath", inPath, "outPath", outPath, "style", style, "replaceExisting", replaceExisting))
+                .body(Map.of(
+                        "inPath", inPath,
+                        "outPath", outPath,
+                        "style", style,
+                        "replaceExisting", replaceExisting,
+                        "creativity", creativity,
+                        "density", density,
+                        "options", 3))
                 .retrieve()
                 .body(ChordGenerationResult.class);
     }

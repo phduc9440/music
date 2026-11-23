@@ -38,9 +38,12 @@ qua callback có header `X-Internal-Key`.
 - **Xem, phát và luyện tập**: hiển thị bản nhạc bằng OpenSheetMusicDisplay, phát lại bằng mẫu âm piano, chế độ luyện
   tập (Studio) có chấm điểm, lịch sử và thống kê luyện tập.
 - **Gợi ý hợp âm** cho bản chỉ có giai điệu: nút "Gợi ý hợp âm" ở trang chi tiết bản nhạc (cần quyền `REVIEW` trở
-  lên), chọn phong cách Pop / Ballad / Jazz. `music-ai` sinh hợp âm bằng HMM + nhạc lý. Kết quả không ghi thẳng vào
-  bản nhạc mà thành một đề xuất sửa do hệ thống gửi, chủ bản nhạc duyệt ở tab Đề xuất. Sau khi chấp nhận, Player có
-  thể đệm theo các hợp âm này.
+  lên), chọn phong cách (Pop, Ballad, Dân ca / Thiếu nhi, Bolero / Trữ tình, Cổ điển, Jazz, Blues), độ sáng tạo và mật độ
+  hợp âm. `music-ai` dùng model AutoHarmonizer (LSTM, trọng số gốc của tác giả) và lấy mẫu nên mỗi lần ra cách đệm khác,
+  kèm 3 phương án A, B, C để chọn trong trình chỉnh sửa. Người sửa được thấy hợp âm AI ngay trong trình chỉnh sửa dưới dạng bản
+  nháp để sửa rồi lưu; người khác nhận kết quả là một đề xuất sửa do hệ thống gửi, chủ bản nhạc duyệt ở tab Đề xuất.
+  Bản đã có hợp âm ở mọi ô thì hộp gợi ý hỏi có muốn thay hợp âm cũ không, kèm nút xóa hết hợp âm. Player có thể đệm
+  theo các hợp âm này.
 - **Cộng tác**: chia sẻ theo quyền (`VIEW`, `REVIEW`, `EDIT`), góp ý gắn với ô nhịp, đề xuất sửa và so sánh khác biệt,
   fork bản nhạc công khai.
 - **Nhóm và Show**: tạo Team, mời thành viên qua email, quản lý Show bằng bảng Kanban, giao việc và nhắc hạn, chế độ

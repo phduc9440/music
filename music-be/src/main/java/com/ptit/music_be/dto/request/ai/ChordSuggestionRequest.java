@@ -17,4 +17,8 @@ import lombok.experimental.FieldDefaults;
 public class ChordSuggestionRequest {
     String style;
     Boolean replaceExisting;
+    /** SAFE, BALANCED (mặc định) hoặc BOLD. */
+    String creativity;
+    /** SPARSE, NORMAL (mặc định) hoặc DENSE. */
+    String density;
 }

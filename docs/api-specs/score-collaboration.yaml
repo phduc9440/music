@@ -828,7 +828,7 @@ paths:
     get:
       tags: [Score suggestions]
       summary: MusicXML của đề xuất sửa (tác giả hoặc người sửa)
-      description: 2002 khi file đã bị dọn sau 30 ngày kể từ lúc đề xuất đóng
+      description: "option = 1 (mặc định) là nội dung chính; 2, 3 là phương án khác của gợi ý hợp âm (xem optionCount). 2002 khi file đã bị dọn sau 30 ngày kể từ lúc đề xuất đóng hoặc không có phương án đó"
       operationId: content
       security:
         - bearerAuth: []
@@ -839,6 +839,13 @@ paths:
           required: true
           schema:
             type: string
+        - name: option
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 1
       responses:
         '200':
           description: Thành công
@@ -1502,6 +1509,10 @@ components:
           type: boolean
         canWithdraw:
           type: boolean
+        optionCount:
+          type: integer
+          format: int32
+          description: "Số phương án (gợi ý hợp âm có tới 3; 0 khi file đã dọn)"
     SuggestionSummaryResponse:
       type: object
       properties:

@@ -3,7 +3,7 @@ package com.ptit.music_be.dto.enums.ai;
 import java.util.Locale;
 import java.util.Optional;
 
-/** Phong cách gợi ý hợp âm (R3), mỗi phong cách là một bảng xác suất HMM riêng ở music-ai. */
+/** Phong cách gợi ý hợp âm (R3): music-ai tăng / giảm xác suất các nhóm hợp âm của model AutoHarmonizer theo phong cách. */
 public enum ChordStyle {
     POP("Pop"),
     BALLAD("Ballad"),

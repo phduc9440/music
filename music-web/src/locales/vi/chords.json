@@ -7,7 +7,7 @@
   "cancelled": "Tác vụ gợi ý hợp âm đã bị hủy",
   "dialog": {
     "title": "Gợi ý hợp âm",
-    "hint": "Máy đọc giai điệu, đoán giọng của bài rồi đề xuất hợp âm cho các ô chưa có hợp âm. Nếu bạn sửa được bản nhạc, hợp âm AI hiện ngay trong trình chỉnh sửa (tô vàng) để bạn chỉnh lại rồi lưu; nếu không, kết quả là một đề xuất sửa để chủ bản nhạc duyệt.",
+    "hint": "AI (model AutoHarmonizer) đọc giai điệu rồi đặt hợp âm cho các ô chưa có hợp âm. Mỗi lần tạo là một lần AI tự \"nghĩ\" lại nên ra cách đệm khác, kèm tới 3 phương án A, B, C để bạn chọn. Nếu bạn sửa được bản nhạc, hợp âm AI hiện ngay trong trình chỉnh sửa (tô vàng) để chỉnh rồi lưu; nếu không, kết quả là một đề xuất sửa để chủ bản nhạc duyệt.",
     "styleLabel": "Phong cách",
     "running": "Đang phân tích giai điệu…",
     "closeHint": "Bạn có thể ẩn hộp này; gợi ý vẫn được tạo và sẽ có trong tab Đề xuất.",
@@ -20,36 +20,38 @@
     "harmonizedHint": "Bạn có muốn thay đổi các hợp âm đã có không? AI sẽ bỏ hết hợp âm cũ và gợi ý lại cho cả bài; bạn vẫn xem lại trước khi lưu.",
     "replace": "Gợi ý lại, thay hợp âm cũ",
     "clearAll": "Xóa hết hợp âm",
-    "clearAllHint": "Gỡ mọi hợp âm khỏi bản nhạc trong trình chỉnh sửa (chưa lưu, Ctrl+Z để hoàn tác)"
+    "clearAllHint": "Gỡ mọi hợp âm khỏi bản nhạc trong trình chỉnh sửa (chưa lưu, Ctrl+Z để hoàn tác)",
+    "creativityLabel": "Độ sáng tạo",
+    "densityLabel": "Mật độ hợp âm"
   },
   "styles": {
     "POP": {
       "name": "Pop",
-      "description": "Hợp âm ba nốt quen thuộc, vòng I–V–vi–IV"
+      "description": "Để AI tự chọn hợp âm hợp giai điệu nhất"
     },
     "BALLAD": {
       "name": "Ballad",
-      "description": "Thêm hợp âm màu như maj7, m7, sus4 và bass đi bậc"
+      "description": "Ưu tiên hợp âm màu: maj7, m7, sus, 6"
     },
     "JAZZ": {
       "name": "Jazz",
-      "description": "Hợp âm bảy, vòng ii–V–I và át phụ"
+      "description": "Ưu tiên hợp âm 7, maj7, m7 và hợp âm mở rộng 9, 11, 13"
     },
     "CLASSICAL": {
       "name": "Cổ điển",
-      "description": "Hòa âm kiểu Bach: hợp âm ba, thế đảo, át 7 và kết câu chuẩn"
+      "description": "Hợp âm ba, át 7 và hợp âm giảm như hòa âm cổ điển"
     },
     "FOLK": {
       "name": "Dân ca / Thiếu nhi",
-      "description": "Chủ yếu ba hợp âm chính I, IV, V; đổi hợp âm thưa, hợp bài đơn giản"
+      "description": "Ưu tiên hợp âm ba đơn giản, ít hợp âm 7 và hợp âm mở rộng"
     },
     "BOLERO": {
       "name": "Bolero / Trữ tình",
-      "description": "Vòng i–iv–V7 giọng thứ, hợp âm 7 dẫn về iv và vi kiểu nhạc trữ tình Việt"
+      "description": "Ưu tiên hợp âm thứ và hợp âm 7 kiểu nhạc trữ tình Việt"
     },
     "BLUES": {
       "name": "Blues",
-      "description": "Hợp âm 7 theo vòng blues 12 ô: I7, IV7, V7"
+      "description": "Ưu tiên hợp âm 7 (át) như vòng blues"
     }
   },
   "taskErrors": {
@@ -58,7 +60,9 @@
     "AI_SERVICE_UNAVAILABLE": "Dịch vụ AI đang tạm ngưng, vui lòng thử lại sau",
     "TASK_TIMEOUT": "Gợi ý hợp âm chạy quá lâu nên đã dừng, vui lòng thử lại",
     "JOB_REJECTED": "Không đọc được bản nhạc để gợi ý hợp âm",
-    "CHORD_NO_CHANGE": "AI gợi ý đúng các hợp âm đang có, không có gì thay đổi"
+    "CHORD_NO_CHANGE": "AI gợi ý đúng các hợp âm đang có, không có gì thay đổi",
+    "CHORD_TOO_LONG": "Bản nhạc quá dài để gợi ý hợp âm một lần (tối đa khoảng 256 ô 4/4)",
+    "CHORD_NO_CHORDS": "AI không đặt được hợp âm nào cho giai điệu này, thử phong cách hoặc mật độ khác"
   },
   "draft": {
     "panelTitle": "Hợp âm AI gợi ý",
@@ -99,7 +103,12 @@
     "openInEditor": "Mở trong trình chỉnh sửa",
     "openInEditorHint": "Nạp các hợp âm này vào trình chỉnh sửa dưới dạng bản nháp để sửa lại trước khi lưu",
     "remove": "Xóa",
-    "removeHint": "Xóa hợp âm {chord} khỏi nốt này (Ctrl+Z để hoàn tác)"
+    "removeHint": "Xóa hợp âm {chord} khỏi nốt này (Ctrl+Z để hoàn tác)",
+    "options": "Phương án của AI",
+    "optionsHint": "Mỗi phương án là một cách đệm khác. Đổi phương án sẽ thay các hợp âm AI trên bản nhạc (Ctrl+Z để quay lại).",
+    "optionBest": "Phương án A: AI thấy hợp nhất",
+    "optionOther": "Phương án {option}",
+    "switching": "Đang đổi phương án…"
   },
   "clear": {
     "title": "Xóa hết hợp âm?",
@@ -108,5 +117,15 @@
     "done": "Đã xóa {count} hợp âm. Bấm Lưu để ghi lại.",
     "none": "Bản nhạc chưa có hợp âm nào",
     "blocked": "Có ô nhịp đang được người khác sửa nên chưa xóa được hợp âm, thử lại sau"
+  },
+  "creativity": {
+    "SAFE": "An toàn",
+    "BALANCED": "Cân bằng",
+    "BOLD": "Táo bạo"
+  },
+  "density": {
+    "SPARSE": "Thưa",
+    "NORMAL": "Vừa",
+    "DENSE": "Dày"
   }
 }

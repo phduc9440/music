@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
@@ -93,6 +95,8 @@ public class SuggestionServiceImpl implements SuggestionService {
     static final int MAX_PAGE_SIZE = 50;
     /** Số ngày giữ file của đề xuất đã đóng. */
     static final int CLOSED_FILE_RETENTION_DAYS = 30;
+    /** Gợi ý hợp âm có tối đa chừng này phương án (1 nội dung chính + các file -option-n). */
+    static final int MAX_OPTIONS = 3;
 
     static final String STALE_VERSION = "VERSION_CHANGED";
     static final String STALE_STRUCTURE = "STRUCTURE_CHANGED";
@@ -347,6 +351,73 @@ public class SuggestionServiceImpl implements SuggestionService {
         return readProposalFile(suggestion);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public byte[] content(String suggestionId, int option) {
+        if (option <= 1) {
+            return content(suggestionId);
+        }
+        ScoreSuggestion suggestion = findSuggestion(suggestionId);
+        Score score = findScore(suggestion.getScore().getId());
+        requireVisible(suggestion, score, permissionService.resolve(score), currentMember());
+        String path = optionPath(suggestion.getStoragePath(), option);
+        if (path == null) {
+            throw new AppException(ScoreErrorCode.FILE_NOT_EXISTED);
+        }
+        try {
+            return Files.readAllBytes(fileStorageService.resolve(path));
+        } catch (IOException | RuntimeException e) {
+            throw new AppException(ScoreErrorCode.FILE_NOT_EXISTED);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void storeOptions(ScoreSuggestion suggestion, List<byte[]> options) {
+        for (int i = 0; i < options.size(); i++) {
+            String path = optionPath(suggestion.getStoragePath(), i + 2);
+            if (path == null) {
+                return;
+            }
+            MusicXmlInspector.parseStored(options.get(i)); // file hỏng thì ném MUSICXML_INVALID, không lưu
+            deleteOnRollback(path);
+            fileStorageService.store(new ByteArrayInputStream(options.get(i)), path);
+        }
+    }
+
+    /** {@code scores/x/suggestions/id.musicxml} → {@code scores/x/suggestions/id-option-n.musicxml}; null nếu đã dọn. */
+    static String optionPath(String storagePath, int option) {
+        if (storagePath == null || !storagePath.endsWith(".musicxml")) {
+            return null;
+        }
+        return storagePath.substring(0, storagePath.length() - ".musicxml".length()) + "-option-" + option
+                + ".musicxml";
+    }
+
+    /** Số phương án của đề xuất: 1 (nội dung chính) cộng các file phương án có trên đĩa. */
+    private int optionCount(ScoreSuggestion suggestion) {
+        if (suggestion.getStoragePath() == null) {
+            return 0;
+        }
+        if (suggestion.getSource() != SuggestionSource.CHORD_GENERATION) {
+            return 1;
+        }
+        int count = 1;
+        try {
+            while (count < MAX_OPTIONS) {
+                java.nio.file.Path next =
+                        fileStorageService.resolve(optionPath(suggestion.getStoragePath(), count + 1));
+                if (next == null || !Files.isRegularFile(next)) {
+                    break;
+                }
+                count++;
+            }
+        } catch (RuntimeException e) {
+            log.warn("Không đọc được phương án của đề xuất {}: {}", suggestion.getId(), e.getMessage());
+        }
+        return count;
+    }
+
     // ------------------------------------------------------------------------------------------------ quyết định
 
     @Override
@@ -457,8 +528,11 @@ public class SuggestionServiceImpl implements SuggestionService {
     public int cleanupClosedFiles() {
         List<ScoreSuggestion> expired = suggestionRepository.findClosedWithFileBefore(
                 SuggestionStatus.CLOSED, LocalDateTime.now().minusDays(CLOSED_FILE_RETENTION_DAYS));
-        List<String> paths =
-                expired.stream().map(ScoreSuggestion::getStoragePath).toList();
+        List<String> paths = expired.stream()
+                .flatMap(s -> Stream.concat(
+                        Stream.of(s.getStoragePath()),
+                        IntStream.rangeClosed(2, MAX_OPTIONS).mapToObj(n -> optionPath(s.getStoragePath(), n))))
+                .toList();
         expired.forEach(s -> s.setStoragePath(null));
         deleteAfterCommit(paths);
         return expired.size();
@@ -754,6 +828,7 @@ public class SuggestionServiceImpl implements SuggestionService {
                 .appliedVersion(suggestion.getAppliedVersion())
                 .canDecide(open && permissionService.canEdit(score, decision))
                 .canWithdraw(open && isAuthor(suggestion, me))
+                .optionCount(optionCount(suggestion))
                 .build();
     }
 

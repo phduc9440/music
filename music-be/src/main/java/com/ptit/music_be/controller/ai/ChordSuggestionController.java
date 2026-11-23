@@ -22,7 +22,7 @@ import lombok.experimental.FieldDefaults;
 @RequestMapping("/api")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-@Tag(name = "Chord suggestions", description = "Gợi ý hợp âm tự động bằng HMM (R3)")
+@Tag(name = "Chord suggestions", description = "Gợi ý hợp âm tự động bằng model AutoHarmonizer, tới 3 phương án (R3)")
 public class ChordSuggestionController {
 
     ChordSuggestionService chordSuggestionService;

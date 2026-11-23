@@ -216,8 +216,29 @@ class ChordSuggestionServiceImplTest {
         assertThat(task.getScore()).isSameAs(score);
         JsonNode input = objectMapper.readTree(task.getInputData());
         assertThat(input.path("style").asText()).isEqualTo("JAZZ");
+        assertThat(input.path("creativity").asText()).isEqualTo("BALANCED");
+        assertThat(input.path("density").asText()).isEqualTo("NORMAL");
         assertThat(input.path("baseVersion").asInt()).isEqualTo(7);
         verify(entitlementService).checkAvailable("m-1", UsageMetric.CHORD_GENERATIONS, 1);
         verify(eventPublisher).publishEvent(new ChordTaskCreatedEvent("task-1", SCORE_ID));
+    }
+
+    @Test
+    void creativityAndDensityAreStoredAndValidated() throws Exception {
+        ChordSuggestionRequest request = style("POP");
+        request.setCreativity("bold");
+        request.setDensity("sparse");
+        service.request(SCORE_ID, request);
+        ArgumentCaptor<AiTask> saved = ArgumentCaptor.forClass(AiTask.class);
+        verify(aiTaskRepository).save(saved.capture());
+        JsonNode input = objectMapper.readTree(saved.getValue().getInputData());
+        assertThat(input.path("creativity").asText()).isEqualTo("BOLD");
+        assertThat(input.path("density").asText()).isEqualTo("SPARSE");
+
+        ChordSuggestionRequest bad = style("POP");
+        bad.setCreativity("wild");
+        assertThat(catchThrowableOfType(AppException.class, () -> service.request(SCORE_ID, bad))
+                        .getErrorCode())
+                .isEqualTo(AiErrorCode.CHORD_STYLE_INVALID);
     }
 }

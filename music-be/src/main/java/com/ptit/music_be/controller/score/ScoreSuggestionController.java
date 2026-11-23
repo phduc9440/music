@@ -75,12 +75,14 @@ public class ScoreSuggestionController {
     @GetMapping("/suggestions/{id}/content")
     @Operation(
             summary = "MusicXML of the suggestion (author or editor)",
-            description = "2002 when the file was cleaned up 30 days after the suggestion closed",
+            description = "option = 1 (default) is the suggestion itself; 2, 3 are the other options of a chord"
+                    + " suggestion (see optionCount). 2002 when the file was cleaned up 30 days after the suggestion"
+                    + " closed or the option does not exist",
             security = @SecurityRequirement(name = "bearerAuth"))
-    public ResponseEntity<byte[]> content(@PathVariable String id) {
+    public ResponseEntity<byte[]> content(@PathVariable String id, @RequestParam(defaultValue = "1") int option) {
         return ResponseEntity.ok()
                 .contentType(ScoreContentController.MUSICXML_MEDIA_TYPE)
-                .body(suggestionService.content(id));
+                .body(suggestionService.content(id, option));
     }
 
     @PostMapping("/suggestions/{id}/accept")

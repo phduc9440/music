@@ -55,6 +55,8 @@ export interface SuggestionDetail extends SuggestionSummary {
   appliedVersion?: number | null;
   canDecide: boolean;
   canWithdraw: boolean;
+  /** Số phương án (gợi ý hợp âm có tới 3: 1 là nội dung chính, 2, 3 đọc bằng content(id, n)). */
+  optionCount?: number;
 }
 
 export interface SuggestionCreatePayload {

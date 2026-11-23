@@ -11,6 +11,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.ptit.music_be.dto.enums.ai.AiTaskStatus;
 import com.ptit.music_be.dto.enums.ai.AiTaskType;
+import com.ptit.music_be.dto.enums.ai.ChordCreativity;
+import com.ptit.music_be.dto.enums.ai.ChordDensity;
 import com.ptit.music_be.dto.enums.ai.ChordStyle;
 import com.ptit.music_be.dto.enums.billing.UsageMetric;
 import com.ptit.music_be.dto.enums.score.ScoreAccess;
@@ -84,6 +86,10 @@ public class ChordSuggestionServiceImpl implements ChordSuggestionService {
         }
         ChordStyle style = ChordStyle.parse(request == null ? null : request.getStyle())
                 .orElseThrow(() -> new AppException(AiErrorCode.CHORD_STYLE_INVALID));
+        ChordCreativity creativity = ChordCreativity.parse(request == null ? null : request.getCreativity())
+                .orElseThrow(() -> new AppException(AiErrorCode.CHORD_STYLE_INVALID));
+        ChordDensity density = ChordDensity.parse(request == null ? null : request.getDensity())
+                .orElseThrow(() -> new AppException(AiErrorCode.CHORD_STYLE_INVALID));
         Integer baseVersion = score.getCurrentVersion();
         if (baseVersion == null || baseVersion < 1) {
             throw new AppException(ScoreErrorCode.MUSICXML_NOT_READY);
@@ -110,6 +116,8 @@ public class ChordSuggestionServiceImpl implements ChordSuggestionService {
 
         ObjectNode input = objectMapper.createObjectNode();
         input.put("style", style.name());
+        input.put("creativity", creativity.name());
+        input.put("density", density.name());
         input.put("baseVersion", baseVersion);
         input.put("replaceExisting", request != null && Boolean.TRUE.equals(request.getReplaceExisting()));
         AiTask task = aiTaskRepository.save(AiTask.builder()

@@ -30,9 +30,13 @@ export const suggestionApi = {
       params: { status: filter, page, size },
     }),
   get: (id: string) => apiClient.get<ApiResponse<SuggestionDetail>>(`/suggestions/${id}`),
-  /** MusicXML đầy đủ mà người đề xuất đã gửi (để xem trước). Lỗi 2002: file đã được dọn. */
-  content: async (id: string): Promise<string> => {
+  /**
+   * MusicXML đầy đủ mà người đề xuất đã gửi (để xem trước). `option` 2, 3: phương án khác của gợi ý hợp âm. Lỗi 2002:
+   * file đã được dọn hoặc không có phương án đó.
+   */
+  content: async (id: string, option = 1): Promise<string> => {
     const response = await apiClient.get<string>(`/suggestions/${id}/content`, {
+      params: option > 1 ? { option } : undefined,
       responseType: 'text',
       transformResponse: (data) => data, // giữ nguyên chuỗi XML, không để axios thử parse JSON
     });

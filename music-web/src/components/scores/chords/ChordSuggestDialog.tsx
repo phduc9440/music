@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { CHORD_STYLES, chordApi } from '../../../services';
-import type { ChordStyle } from '../../../services';
+import { CHORD_CREATIVITIES, CHORD_DENSITIES, CHORD_STYLES, chordApi } from '../../../services';
+import type { ChordCreativity, ChordDensity, ChordStyle } from '../../../services';
 import type { AiTaskInfo } from '../../../types';
 import { hasKey, t } from '../../../i18n/core';
 import { useNavigate } from '../../../routes/useTransitionNavigate';
@@ -44,6 +44,8 @@ export default function ChordSuggestDialog({ scoreId, onClose, onCompleted, allH
   const navigate = useNavigate();
   const base = useScoreBase();
   const [style, setStyle] = useState<ChordStyle>('POP');
+  const [creativity, setCreativity] = useState<ChordCreativity>('BALANCED');
+  const [density, setDensity] = useState<ChordDensity>('NORMAL');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -74,7 +76,7 @@ export default function ChordSuggestDialog({ scoreId, onClose, onCompleted, allH
     setPendingId(null);
     reset();
     try {
-      const res = await chordApi.request(scoreId, style, harmonized);
+      const res = await chordApi.request(scoreId, style, { replaceExisting: harmonized, creativity, density });
       track(res.data.result);
     } catch (err) {
       if (reportPlanLimit(err)) {
@@ -113,6 +115,43 @@ export default function ChordSuggestDialog({ scoreId, onClose, onCompleted, allH
           </label>
         ))}
       </fieldset>
+
+      <div className="cs-knobs">
+        <fieldset className="cs-knob" disabled={busy}>
+          <legend className="sc-label">{t('chords.dialog.creativityLabel')}</legend>
+          <div className="cs-segment">
+            {CHORD_CREATIVITIES.map((value) => (
+              <label key={value} className={`cs-segment__item${creativity === value ? ' is-selected' : ''}`}>
+                <input
+                  type="radio"
+                  name="chord-creativity"
+                  value={value}
+                  checked={creativity === value}
+                  onChange={() => setCreativity(value)}
+                />
+                {t(`chords.creativity.${value}`)}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        <fieldset className="cs-knob" disabled={busy}>
+          <legend className="sc-label">{t('chords.dialog.densityLabel')}</legend>
+          <div className="cs-segment">
+            {CHORD_DENSITIES.map((value) => (
+              <label key={value} className={`cs-segment__item${density === value ? ' is-selected' : ''}`}>
+                <input
+                  type="radio"
+                  name="chord-density"
+                  value={value}
+                  checked={density === value}
+                  onChange={() => setDensity(value)}
+                />
+                {t(`chords.density.${value}`)}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      </div>
 
       {harmonized && (
         <div className="cs-harmonized" role="status">
