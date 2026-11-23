@@ -228,7 +228,7 @@ paths:
     post:
       tags: [Chord suggestions]
       summary: Gợi ý hợp âm cho version hiện hành (tạo tác vụ CHORD_GENERATION)
-      description: "Cần quyền nhận xét. Kết quả là đề xuất sửa do hệ thống gửi; theo dõi bằng GET /api/ai-tasks/{id}, xong thì result.resultData.suggestionId. Errors: 2001, 1002, 3130 phong cách sai, 2201 OMR đang chạy, 3131 đang gợi ý, 3132 đã có gợi ý chờ duyệt (result.suggestionId), 3702 hết hạn mức"
+      description: "Cần quyền nhận xét. Kết quả là đề xuất sửa do hệ thống gửi; theo dõi bằng GET /api/ai-tasks/{id}, xong thì result.resultData.suggestionId. Mặc định chỉ gợi ý cho ô chưa có hợp âm; mọi ô đã có hợp âm thì task FAILED với errorMessage CHORD_ALREADY_HARMONIZED (web hỏi người dùng có muốn thay hợp âm cũ). replaceExisting = true: bỏ hết hợp âm đang có rồi gợi ý lại cả bài; nếu kết quả trùng hợp âm cũ thì task FAILED với CHORD_NO_CHANGE. Errors: 2001, 1002, 3130 phong cách sai, 2201 OMR đang chạy, 3131 đang gợi ý, 3132 đã có gợi ý chờ duyệt (result.suggestionId), 3702 hết hạn mức"
       operationId: requestScoresChordSuggestions
       security:
         - bearerAuth: []
@@ -579,6 +579,11 @@ components:
       properties:
         style:
           type: string
+          enum: [POP, BALLAD, JAZZ]
+        replaceExisting:
+          type: boolean
+          default: false
+          description: "true: bỏ hết hợp âm đang có và gợi ý lại toàn bộ (dùng khi mọi ô đã có hợp âm)"
     MeasureCheck:
       type: object
       properties:
