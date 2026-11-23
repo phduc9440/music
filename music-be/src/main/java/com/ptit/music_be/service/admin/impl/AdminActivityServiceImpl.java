@@ -115,7 +115,7 @@ public class AdminActivityServiceImpl implements AdminActivityService {
 			SELECT CONCAT('SHARE_GRANTED:', ms.id), 'SHARE_GRANTED', ms.granted_at, ms.granted_by, 'SCORE',
 				ms.score_id, s2.title,
 				CONCAT((SELECT m4.email FROM members m4 WHERE m4.id = ms.member_id), ': ',
-						CASE ms.permission WHEN 1 THEN 'VIEW' WHEN 2 THEN 'REVIEW' WHEN 3 THEN 'EDIT' ELSE '?' END)
+						CASE ms.permission WHEN 1 THEN 'VIEW' WHEN 2 THEN 'COMMENT' WHEN 3 THEN 'EDIT' ELSE '?' END)
 			FROM member_scores ms
 			JOIN scores s2 ON s2.id = ms.score_id
 			WHERE ms.granted_at IS NOT NULL AND ms.granted_by IS NOT NULL AND ms.permission IS NOT NULL

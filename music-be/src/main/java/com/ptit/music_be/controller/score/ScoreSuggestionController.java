@@ -38,7 +38,7 @@ public class ScoreSuggestionController {
 
     @PostMapping(value = "/scores/{scoreId}/suggestions", consumes = "multipart/form-data")
     @Operation(
-            summary = "Send a suggested edit as a MusicXML file (needs REVIEW); owner and editors are notified",
+            summary = "Send a suggested edit as a MusicXML file (needs comment permission); owner and editors are notified",
             description =
                     "Errors: 3110 bad title/description, 3111 no change, 3112 too many open (10), 3117 over 30 per"
                             + " 24h, 2013 invalid MusicXML, 2201 score busy, 2801 base version gone",

@@ -42,7 +42,7 @@ export const SHARE_PERMISSION_LABELS: Record<SharePermission, string> = labelMap
 export const ACCESS_LEVEL_LABELS: Record<AccessLevel, string> = labelMap('scores.labels.accessLevel', [
   'OWNER',
   'EDIT',
-  'REVIEW',
+  'COMMENT',
   'VIEW',
 ]);
 

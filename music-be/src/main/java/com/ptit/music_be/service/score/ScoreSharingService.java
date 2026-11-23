@@ -21,7 +21,7 @@ public interface ScoreSharingService {
     ScoreSharingResponse removeMember(String scoreId, String memberId);
 
     /**
-     * Người dùng xin quyền (xem / chỉnh sửa) một bản nhạc. Yêu cầu được ghi vào dòng member_scores của họ
+     * Người dùng xin quyền (xem / góp ý / chỉnh sửa) một bản nhạc. Yêu cầu được ghi vào dòng member_scores của họ
      * và chờ chủ sở hữu duyệt; xin lại thì cập nhật yêu cầu cũ.
      */
     MyAccessResponse requestAccess(String scoreId, SharePermission permission, String message);

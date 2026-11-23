@@ -31,13 +31,13 @@
     },
     "sharePermission": {
       "1": "Người xem",
-      "2": "Người nhận xét",
+      "2": "Người góp ý",
       "3": "Người chỉnh sửa"
     },
     "accessLevel": {
       "OWNER": "Chủ sở hữu",
       "EDIT": "Người chỉnh sửa",
-      "REVIEW": "Người nhận xét",
+      "COMMENT": "Người góp ý",
       "VIEW": "Người xem"
     },
     "difficulty": {
@@ -366,7 +366,7 @@
     "placeholder": "Bình luận (tùy chọn nếu đã chấm sao)",
     "update": "Cập nhật",
     "send": "Gửi nhận xét",
-    "needRole": "Bạn cần quyền \"Người nhận xét\" trở lên để viết nhận xét.",
+    "needRole": "Bạn cần xem được bản nhạc để viết nhận xét.",
     "none": "Chưa có nhận xét nào.",
     "you": "Bạn",
     "deleteLabel": "Xóa nhận xét"
@@ -494,7 +494,7 @@
     "emptyTitle": "Chưa có góp ý nào",
     "emptyHint": "Chọn một đoạn ô nhịp và để lại góp ý, có thể @nhắc tên người cùng làm.",
     "emptyFilter": "Không có góp ý nào ở mục này",
-    "cannotComment": "Bạn cần quyền nhận xét trở lên để góp ý.",
+    "cannotComment": "Chủ bản nhạc chưa cho phép bạn góp ý. Hãy xin thêm quyền trong tab Cài đặt.",
     "noMeasures": "Bản nhạc chưa có ô nhịp (chưa có MusicXML) nên chưa góp ý được.",
     "noMention": "Không có ai khớp",
     "mentionHint": "Chỉ nhắc được người xem được bản nhạc này",
@@ -518,7 +518,7 @@
     "commentHere": "Góp ý",
     "contextComment": "Góp ý vào đoạn đã chọn",
     "contextView": "Xem góp ý ở ô {measure} ({count})",
-    "contextNoAccess": "Cần quyền nhận xét để góp ý",
+    "contextNoAccess": "Cần được chủ bản nhạc cho phép góp ý",
     "composerTitle": "Góp ý ô {measures}",
     "sendHint": "Ctrl/Cmd + Enter để gửi",
     "helpSelectKeys": "Bôi đen nốt → nút \"Góp ý\" cạnh vùng chọn",
@@ -561,19 +561,23 @@
       "people": "Người có quyền",
       "requests": "Yêu cầu xin quyền",
       "danger": "Vùng nguy hiểm",
-      "report": "Báo cáo vi phạm"
+      "report": "Báo cáo vi phạm",
+      "access": "Xin thêm quyền"
     },
     "editTitle": "Thông tin bản nhạc",
     "editHint": "Đổi tên, tác giả, độ khó, thể loại và ghi chú luyện tập.",
     "shareTitle": "Chia sẻ",
-    "shareHint": "Mời người khác theo email, đặt quyền xem, nhận xét hoặc chỉnh sửa.",
+    "shareHint": "Mời người khác theo email, đặt quyền xem, góp ý hoặc chỉnh sửa.",
     "dangerTitle": "Xóa bản nhạc",
     "dangerHint": "Chuyển bản nhạc vào thùng rác, khôi phục được trong 30 ngày.",
     "publishTitle": "Chế độ hiển thị",
     "publishHint": "Công khai để mọi người tìm thấy (cần quản trị viên duyệt), hoặc giữ riêng tư.",
     "reportTitle": "Báo cáo vi phạm",
     "reportHint": "Gửi báo cáo tới quản trị viên nếu bản nhạc vi phạm bản quyền, là spam hoặc có nội dung không phù hợp. Chủ bản nhạc không biết ai đã báo cáo.",
-    "reportButton": "Báo cáo bản nhạc"
+    "reportButton": "Báo cáo bản nhạc",
+    "accessTitle": "Xin thêm quyền",
+    "accessHint": "Gửi yêu cầu để chủ bản nhạc cho phép bạn góp ý hoặc chỉnh sửa bản nhạc này.",
+    "accessButton": "Xin thêm quyền"
   },
   "libMenu": {
     "label": "Thao tác với bản nhạc",

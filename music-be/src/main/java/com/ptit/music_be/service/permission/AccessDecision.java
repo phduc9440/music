@@ -17,4 +17,9 @@ public record AccessDecision(ScoreAccess level, boolean moderator, boolean super
     public boolean can(ScoreAccess required) {
         return level.includes(required);
     }
+
+    /** Góp ý trên ô nhịp được: từ mức COMMENT trở lên (chủ, người sửa được, hoặc được chủ cấp quyền góp ý). */
+    public boolean canComment() {
+        return can(ScoreAccess.COMMENT);
+    }
 }

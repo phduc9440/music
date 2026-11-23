@@ -112,7 +112,7 @@ class ScoreFileServiceImplEditPermissionTest {
         loginAs("a@x.com", "ROLE_USER");
         org.junit.jupiter.api.Assertions.assertEquals("OWNER", service.getAccessLevel(scoreOf("a@x.com", false)));
         org.junit.jupiter.api.Assertions.assertEquals(
-                "REVIEW", service.getAccessLevel(scoreOf("b@x.com", false, "PUBLIC")));
+                "VIEW", service.getAccessLevel(scoreOf("b@x.com", false, "PUBLIC")));
         org.junit.jupiter.api.Assertions.assertNull(service.getAccessLevel(scoreOf("b@x.com", false)));
         loginAs("admin@x.com", "ROLE_ADMIN");
         org.junit.jupiter.api.Assertions.assertEquals(

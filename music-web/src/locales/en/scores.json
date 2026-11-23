@@ -31,13 +31,13 @@
     },
     "sharePermission": {
       "1": "Viewer",
-      "2": "Reviewer",
+      "2": "Commenter",
       "3": "Editor"
     },
     "accessLevel": {
       "OWNER": "Owner",
       "EDIT": "Editor",
-      "REVIEW": "Reviewer",
+      "COMMENT": "Commenter",
       "VIEW": "Viewer"
     },
     "difficulty": {
@@ -378,7 +378,7 @@
     "placeholder": "Comment (optional if you gave stars)",
     "update": "Update",
     "send": "Send review",
-    "needRole": "You need the \"Reviewer\" role or higher to write a review.",
+    "needRole": "You need to be able to view the score to write a review.",
     "none": "No reviews yet.",
     "you": "You",
     "deleteLabel": "Delete review"
@@ -506,7 +506,7 @@
     "emptyTitle": "No comments yet",
     "emptyHint": "Pick a range of bars and leave a comment; you can @mention collaborators.",
     "emptyFilter": "Nothing here",
-    "cannotComment": "You need review access or higher to comment.",
+    "cannotComment": "The owner has not allowed you to comment yet. Request access in the Settings tab.",
     "noMeasures": "This score has no bars yet (no MusicXML), so it can't be commented on.",
     "noMention": "No one matches",
     "mentionHint": "You can only mention people who can view this score",
@@ -530,7 +530,7 @@
     "commentHere": "Comment",
     "contextComment": "Comment on the selection",
     "contextView": "Show comments on bar {measure} ({count})",
-    "contextNoAccess": "You need review access to comment",
+    "contextNoAccess": "The owner needs to allow you to comment",
     "composerTitle": "Comment on bar {measures}",
     "sendHint": "Ctrl/Cmd + Enter to post",
     "helpSelectKeys": "Select notes → \"Comment\" button beside the selection",
@@ -573,19 +573,23 @@
       "people": "People with access",
       "requests": "Access requests",
       "danger": "Danger zone",
-      "report": "Report"
+      "report": "Report",
+      "access": "Request access"
     },
     "editTitle": "Score details",
     "editHint": "Change the title, composer, difficulty, tags and practice notes.",
     "shareTitle": "Sharing",
-    "shareHint": "Invite people by email and set view, review or edit access.",
+    "shareHint": "Invite people by email and set view, comment or edit access.",
     "dangerTitle": "Delete this score",
     "dangerHint": "Moves the score to the trash; you can restore it within 30 days.",
     "publishTitle": "Visibility",
     "publishHint": "Make it public so everyone can find it (requires admin approval), or keep it private.",
     "reportTitle": "Report this score",
     "reportHint": "Send a report to the administrators if the score infringes copyright, is spam or has inappropriate content. The owner will not know who reported it.",
-    "reportButton": "Report score"
+    "reportButton": "Report score",
+    "accessTitle": "Request more access",
+    "accessHint": "Ask the owner to let you comment on or edit this score.",
+    "accessButton": "Request access"
   },
   "libMenu": {
     "label": "Score actions",

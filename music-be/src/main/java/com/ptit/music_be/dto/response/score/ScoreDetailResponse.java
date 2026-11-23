@@ -59,11 +59,13 @@ public class ScoreDetailResponse {
     boolean canEdit;
     /** Người đang xem có quyền xóa không (chỉ chủ sở hữu hoặc ADMIN). */
     boolean canDelete;
-    /** Người đang xem có quyền nhận xét (chấm sao, bình luận) không. */
+    /** Người đang xem có quyền nhận xét bản nhạc (chấm sao, bình luận chung) không: xem được là nhận xét được. */
     boolean canReview;
+    /** Người đang xem được góp ý trên ô nhịp (và gửi đề xuất sửa) không: cần chủ cho phép, trừ chủ và người sửa được. */
+    boolean canComment;
     /** Người đang xem có quyền quản lý chia sẻ (chủ sở hữu hoặc SUPER_ADMIN) không. */
     boolean canManageSharing;
-    /** Cấp truy cập hiện tại: OWNER / EDIT / REVIEW / VIEW. */
+    /** Cấp truy cập hiện tại: OWNER / EDIT / VIEW. */
     String accessLevel;
     /** Người đang xem có được tải MusicXML, MIDI, âm thanh, PDF không. */
     boolean canDownload;

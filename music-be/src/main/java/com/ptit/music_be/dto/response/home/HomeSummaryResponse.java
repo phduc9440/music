@@ -54,7 +54,7 @@ public class HomeSummaryResponse {
         String scoreTitle;
         /** Người xin (họ tên, nếu chưa có thì email; chỉ chủ bản nhạc thấy). */
         String actorName;
-        /** Với ACCESS_REQUEST: cấp xin (VIEW / REVIEW / EDIT). */
+        /** Với ACCESS_REQUEST: cấp xin (VIEW / EDIT). */
         String permission;
 
         LocalDateTime createdAt;

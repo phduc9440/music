@@ -146,7 +146,19 @@ public class ScoreFileServiceImpl implements ScoreFileService {
 
     @Override
     public boolean canReview(Score score) {
-        return permissionService.resolve(score).can(ScoreAccess.REVIEW);
+        return permissionService.resolve(score).can(ScoreAccess.VIEW);
+    }
+
+    @Override
+    public boolean canComment(Score score) {
+        return permissionService.resolve(score).canComment();
+    }
+
+    @Override
+    public void checkCanComment(Score score) {
+        if (!canComment(score)) {
+            throw new AppException(AccountErrorCode.UNAUTHORIZED);
+        }
     }
 
     @Override

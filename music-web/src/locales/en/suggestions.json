@@ -45,7 +45,7 @@
     "tab": "Suggestions",
     "loadFailed": "Could not load suggestions",
     "empty": "No suggestions yet",
-    "emptyHint": "Anyone with review access or higher can open the editor and choose Suggest edits.",
+    "emptyHint": "Anyone allowed to comment can open the editor and choose Suggest edits.",
     "by": "by {name}",
     "system": "System",
     "changes_one": "{count} measure",

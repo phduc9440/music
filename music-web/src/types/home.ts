@@ -26,8 +26,8 @@ export interface HomePendingItem {
   scoreId: string;
   scoreTitle: string;
   actorName?: string | null;
-  /** Với ACCESS_REQUEST: cấp xin VIEW / REVIEW / EDIT. */
-  permission?: 'VIEW' | 'REVIEW' | 'EDIT' | null;
+  /** Với ACCESS_REQUEST: cấp xin VIEW / COMMENT / EDIT. */
+  permission?: 'VIEW' | 'COMMENT' | 'EDIT' | null;
   createdAt?: string | null;
 }
 

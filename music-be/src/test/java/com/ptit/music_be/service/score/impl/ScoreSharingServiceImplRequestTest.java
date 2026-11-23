@@ -77,16 +77,16 @@ class ScoreSharingServiceImplRequestTest {
     }
 
     @Test
-    void viewerCanAskForReviewAccessAndOwnerIsNotified() {
+    void viewerCanAskForCommentAccessAndOwnerIsNotified() {
         when(scoreFileService.getAccessLevel(any())).thenReturn("VIEW");
 
-        var result = service.requestAccess("s1", SharePermission.REVIEW, "cho mình góp ý với");
+        var result = service.requestAccess("s1", SharePermission.COMMENT, "cho mình góp ý với");
 
         ArgumentCaptor<MemberScore> saved = ArgumentCaptor.forClass(MemberScore.class);
         verify(memberScoreRepository).save(saved.capture());
-        assertThat(saved.getValue().getRequestedPermission()).isEqualTo(SharePermission.REVIEW);
+        assertThat(saved.getValue().getRequestedPermission()).isEqualTo(SharePermission.COMMENT);
         assertThat(saved.getValue().getRequestMessage()).isEqualTo("cho mình góp ý với");
-        assertThat(result.getRequestedPermission()).isEqualTo(SharePermission.REVIEW);
+        assertThat(result.getRequestedPermission()).isEqualTo(SharePermission.COMMENT);
         verify(notificationService)
                 .notify(
                         any(),
@@ -98,19 +98,19 @@ class ScoreSharingServiceImplRequestTest {
     }
 
     @Test
-    void askingForReviewWhenAlreadyHavingItIsRejected() {
-        when(scoreFileService.getAccessLevel(any())).thenReturn("REVIEW");
+    void askingForCommentWhenAlreadyHavingItIsRejected() {
+        when(scoreFileService.getAccessLevel(any())).thenReturn("COMMENT");
 
-        assertThatThrownBy(() -> service.requestAccess("s1", SharePermission.REVIEW, null))
+        assertThatThrownBy(() -> service.requestAccess("s1", SharePermission.COMMENT, null))
                 .isInstanceOfSatisfying(AppException.class, e -> assertThat(e.getErrorCode())
                         .isEqualTo(CollabErrorCode.ALREADY_HAS_ACCESS));
     }
 
     @Test
-    void editorAlreadyIncludesReview() {
+    void editorAlreadyIncludesComment() {
         when(scoreFileService.getAccessLevel(any())).thenReturn("EDIT");
 
-        assertThatThrownBy(() -> service.requestAccess("s1", SharePermission.REVIEW, null))
+        assertThatThrownBy(() -> service.requestAccess("s1", SharePermission.COMMENT, null))
                 .isInstanceOfSatisfying(AppException.class, e -> assertThat(e.getErrorCode())
                         .isEqualTo(CollabErrorCode.ALREADY_HAS_ACCESS));
     }

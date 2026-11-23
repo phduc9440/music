@@ -8,8 +8,11 @@ export type AuthProvider = (typeof AuthProvider)[keyof typeof AuthProvider];
 export const MemberStatus = { ACTIVE: 1, INACTIVE: 2 } as const;
 export type MemberStatus = (typeof MemberStatus)[keyof typeof MemberStatus];
 
-/** Cấp chia sẻ, từ thấp lên cao (cấp trên gồm cả cấp dưới): xem < nhận xét < chỉnh sửa. Khớp BE: SharePermission. */
-export const SharePermission = { VIEW: 1, REVIEW: 2, EDIT: 3 } as const;
+/**
+ * Cấp chia sẻ, từ thấp lên cao (cấp trên gồm cả cấp dưới): xem < góp ý < chỉnh sửa. Khớp BE: SharePermission. Xem gồm
+ * cả nhận xét / chấm sao cả bản nhạc; góp ý trên ô nhịp và đề xuất sửa cần cấp góp ý.
+ */
+export const SharePermission = { VIEW: 1, COMMENT: 2, EDIT: 3 } as const;
 export type SharePermission = (typeof SharePermission)[keyof typeof SharePermission];
 
 export const PracticeMode = { FREE: 1, LOOP: 2, TEST: 3 } as const;

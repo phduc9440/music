@@ -69,15 +69,17 @@ export default function SuggestionsSection({ scoreId, canEdit = false, onOpenCou
             {t(`suggestions.filter.${f}`)}
           </button>
         ))}
-        <button
-          type="button"
-          className="sc-btn sc-btn--sm sg-filters__action"
-          onClick={() => setSuggestingChords(true)}
-          title={t('chords.buttonHint')}
-        >
-          <Icon name="music" size={14} />
-          {t('chords.button')}
-        </button>
+        {canEdit && (
+          <button
+            type="button"
+            className="sc-btn sc-btn--sm sg-filters__action"
+            onClick={() => setSuggestingChords(true)}
+            title={t('chords.buttonHint')}
+          >
+            <Icon name="music" size={14} />
+            {t('chords.button')}
+          </button>
+        )}
       </div>
       {suggestingChords && (
         <ChordSuggestDialog

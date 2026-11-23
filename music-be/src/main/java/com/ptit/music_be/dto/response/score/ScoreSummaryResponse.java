@@ -41,7 +41,7 @@ public class ScoreSummaryResponse {
     Boolean isOfficial;
 
     Integer measureCount;
-    /** Chỉ có trong danh sách "Được chia sẻ với tôi": cấp của người xem (VIEW / REVIEW / EDIT). */
+    /** Chỉ có trong danh sách "Được chia sẻ với tôi": cấp của người xem (VIEW / EDIT). */
     String accessLevel;
     /** Chỉ có trong danh sách "Được chia sẻ với tôi": email chủ sở hữu. */
     String ownerEmail;

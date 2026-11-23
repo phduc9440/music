@@ -7,7 +7,7 @@ import com.ptit.music_be.dto.response.ai.AiTaskResponse;
 public interface ChordSuggestionService {
 
     /**
-     * Tạo tác vụ CHORD_GENERATION cho version hiện hành. Cần quyền nhận xét (REVIEW). Lỗi theo thứ tự: SCORE_NOT_EXISTED
+     * Tạo tác vụ CHORD_GENERATION cho version hiện hành. Cần quyền sửa. Lỗi theo thứ tự: SCORE_NOT_EXISTED
      * (2001), UNAUTHORIZED (1002), CHORD_STYLE_INVALID (3130), MUSICXML_NOT_READY, SCORE_BUSY (2201, OMR đang chạy),
      * CHORD_TASK_RUNNING (3131), CHORD_SUGGESTION_PENDING (3132, payload {@code {suggestionId}}), PLAN_LIMIT_REACHED
      * (3702).

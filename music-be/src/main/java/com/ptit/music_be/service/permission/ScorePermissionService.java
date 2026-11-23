@@ -9,7 +9,7 @@ import com.ptit.music_be.entity.Score;
  *
  * <ol>
  *   <li>Chủ sở hữu: OWNER.
- *   <li>Mức cao nhất trong: chia sẻ cá nhân, quyền qua team, REVIEW nếu bản đang PUBLIC.
+ *   <li>Mức cao nhất trong: chia sẻ cá nhân, quyền qua team, VIEW nếu bản đang PUBLIC (góp ý chỉ khi chủ bật cho người này).
  *   <li>Bản trong kho mẫu: ADMIN được EDIT.
  *   <li>ADMIN mà mức vẫn dưới VIEW: chỉ được VIEW (kiểm duyệt) khi bản PUBLIC hoặc PENDING; bản PRIVATE thì không.
  * </ol>

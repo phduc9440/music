@@ -113,7 +113,10 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
   const showSettings = !!score && (isOwnerView || !!score.canEdit || !!score.canDelete);
   // Báo cáo vi phạm nằm trong Cài đặt: người không phải chủ (kể cả chỉ có quyền xem) cũng thấy tab này để báo cáo
   const canReport = !!score && score.accessLevel !== 'OWNER' && !scoreBase.startsWith('/admin');
-  const showSettingsTab = showSettings || canReport;
+  // Xin thêm quyền (nhận xét / chỉnh sửa): người không phải chủ, chưa sửa được; bản kho mẫu do hệ thống quản lý nên không xin được
+  const canRequestMore =
+    !!score && !score.canEdit && score.accessLevel !== 'OWNER' && !scoreBase.startsWith('/admin') && !score.isOfficial;
+  const showSettingsTab = showSettings || canReport || canRequestMore;
 
   // Người không có quyền sửa không thấy tab File / Tác vụ: rơi về tab Nhận xét
   const activeTab: Tab =
@@ -152,7 +155,7 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
     };
   }, [id, state.phase]);
   // Số đề xuất đang mở hiện trên tab Đề xuất (chỉ người có quyền nhận xét trở lên xem được)
-  const canSuggest = score?.canReview === true;
+  const canSuggest = score?.canComment === true;
   useEffect(() => {
     if (!id || state.phase !== 'ready' || !canSuggest) return;
     let cancelled = false;
@@ -224,11 +227,7 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
     <div className="sc-page sd-page">
       {navbar}
       <main className="sc-container">
-        <ScoreHero
-          score={score}
-          onVisibilityChanged={(updated) => setState({ phase: 'ready', score: updated })}
-          onRequestMore={() => setRequestingEdit(true)}
-        />
+        <ScoreHero score={score} onVisibilityChanged={(updated) => setState({ phase: 'ready', score: updated })} />
 
         <div className="sd-repo">
           <div className="sc-tabs sd-tabs" role="tablist">
@@ -274,7 +273,7 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
               </>
             )}
             {/* Sửa trực tiếp như Google Docs nên không còn tạo đề xuất mới: chỉ hiện tab khi còn đề xuất cũ đang mở */}
-            {score.canReview && ((openSuggestions ?? 0) > 0 || activeTab === 'suggestions') && (
+            {score.canComment && ((openSuggestions ?? 0) > 0 || activeTab === 'suggestions') && (
               <button
                 role="tab"
                 aria-selected={activeTab === 'suggestions'}
@@ -321,7 +320,7 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
               }
             />
           )}
-          {activeTab === 'suggestions' && score.canReview && (
+          {activeTab === 'suggestions' && score.canComment && (
             <SuggestionsSection scoreId={score.id} canEdit={score.canEdit} onOpenCount={onOpenSuggestions} />
           )}
           {activeTab === 'settings' && showSettingsTab && (
@@ -341,6 +340,8 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
               onDelete={() => setDeleting(true)}
               canReport={canReport}
               onReport={() => setReporting(true)}
+              canRequestMore={canRequestMore}
+              onRequestMore={() => setRequestingEdit(true)}
             />
           )}
           {activeTab === 'reviews' && (

@@ -122,7 +122,7 @@ public class ScoreCommentServiceImpl implements ScoreCommentService {
     public List<CommentMemberResponse> mentionable(String scoreId, String keyword) {
         Score score = findScore(scoreId);
         AccessDecision decision = permissionService.resolve(score);
-        if (!decision.can(ScoreAccess.REVIEW)) {
+        if (!decision.canComment()) {
             throw new AppException(CollabErrorCode.COMMENT_WRITE_FORBIDDEN);
         }
         Member me = currentMember();
@@ -145,7 +145,7 @@ public class ScoreCommentServiceImpl implements ScoreCommentService {
     public ScoreCommentResponse create(String scoreId, ScoreCommentRequest request) {
         Score score = findScore(scoreId);
         AccessDecision decision = permissionService.resolve(score);
-        if (!decision.can(ScoreAccess.REVIEW)) {
+        if (!decision.canComment()) {
             throw new AppException(CollabErrorCode.COMMENT_WRITE_FORBIDDEN);
         }
         Member me = currentMember();
@@ -188,7 +188,7 @@ public class ScoreCommentServiceImpl implements ScoreCommentService {
         ScoreComment root = rootOf(target);
         Score score = findScore(root.getScore().getId());
         AccessDecision decision = permissionService.resolve(score);
-        if (!decision.can(ScoreAccess.REVIEW)) {
+        if (!decision.canComment()) {
             throw new AppException(CollabErrorCode.COMMENT_WRITE_FORBIDDEN);
         }
         Member me = currentMember();
@@ -249,7 +249,7 @@ public class ScoreCommentServiceImpl implements ScoreCommentService {
         boolean author = comment.getAuthor().getId().equals(me.getId());
 
         if (request.getContent() != null || request.getMentionIds() != null) {
-            if (!author || !decision.can(ScoreAccess.REVIEW)) {
+            if (!author || !decision.canComment()) {
                 throw new AppException(CollabErrorCode.COMMENT_FORBIDDEN);
             }
             if (request.getContent() != null) {
@@ -313,9 +313,9 @@ public class ScoreCommentServiceImpl implements ScoreCommentService {
 
     // ------------------------------------------------------------------------------------------------ quyền
 
-    /** Viết được nếu có REVIEW trở lên và bản nhạc đã có ô nhịp để neo góp ý. */
+    /** Viết được nếu được góp ý và bản nhạc đã có ô nhịp để neo góp ý. */
     private static boolean canWrite(Score score, AccessDecision decision) {
-        return decision.can(ScoreAccess.REVIEW) && score.getMeasureCount() != null && score.getMeasureCount() > 0;
+        return decision.canComment() && score.getMeasureCount() != null && score.getMeasureCount() > 0;
     }
 
     private static boolean canResolve(ScoreComment root, Member me, AccessDecision decision) {
@@ -483,7 +483,7 @@ public class ScoreCommentServiceImpl implements ScoreCommentService {
                 .mentions(mentions.getOrDefault(c.getId(), List.of()))
                 .createdAt(c.getCreatedAt())
                 .editedAt(c.getEditedAt())
-                .canEdit(author && decision.can(ScoreAccess.REVIEW))
+                .canEdit(author && decision.canComment())
                 .canDelete(canDelete(c, me, decision));
     }
 

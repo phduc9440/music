@@ -62,7 +62,8 @@ FROM (
 JOIN scores s ON s.title = t.title
 JOIN members m ON m.email = t.email;
 
--- Chia sẻ trực tiếp (permission: 1 xem, 2 nhận xét, 3 chỉnh sửa) và yêu cầu xin quyền đang chờ duyệt
+-- Chia sẻ trực tiếp (permission: 1 xem, 2 góp ý, 3 chỉnh sửa) và yêu cầu xin quyền đang chờ duyệt. Bản công khai ai cũng
+-- xem được nên chỉ xin góp ý (2) hoặc chỉnh sửa (3); xin xem (1) chỉ có với bản riêng tư.
 INSERT INTO member_scores (id, member_id, score_id, permission, source, requested_permission, request_message, requested_at)
 SELECT UUID(), m.id, s.id, t.permission, 'DIRECT', t.requested_permission, t.request_message, t.requested_at
 FROM (
@@ -74,7 +75,7 @@ FROM (
     UNION ALL SELECT 'Jazz Standard - Autumn Leaves (lead sheet)', 'duy.pham@music.com', 2, NULL, NULL, NULL
     UNION ALL SELECT 'Bài hát đám cưới (giọng + piano)', 'lan.nguyen@music.com', 1, NULL, NULL, NULL
     UNION ALL SELECT 'Giáo án piano cơ bản - Bài 1', 'bao.hoang@music.com', NULL, 1, 'Em xin được xem giáo án để tập cho con em ạ.', NOW(6) - INTERVAL 2 DAY - INTERVAL 3 HOUR - INTERVAL 0 MINUTE
-    UNION ALL SELECT 'Czerny Op. 599 No. 1', 'an.vo@music.com', NULL, 2, 'Em muốn nhận xét giúp phần chỉ ngón.', NOW(6) - INTERVAL 1 DAY - INTERVAL 3 HOUR - INTERVAL 0 MINUTE
+    UNION ALL SELECT 'Czerny Op. 599 No. 1', 'an.vo@music.com', NULL, 2, 'Em muốn góp ý giúp phần chỉ ngón.', NOW(6) - INTERVAL 1 DAY - INTERVAL 3 HOUR - INTERVAL 0 MINUTE
     UNION ALL SELECT 'Bài hát đám cưới (giọng + piano)', 'mai.ngo@music.com', NULL, 3, 'Chị cho em xin quyền sửa để chuyển sang giọng khác nhé.', NOW(6) - INTERVAL 3 DAY - INTERVAL 3 HOUR - INTERVAL 0 MINUTE
     UNION ALL SELECT 'Bài tập gam Đô trưởng', 'lan.nguyen@music.com', NULL, 2, 'Mình muốn góp ý thêm cho bài tập này.', NOW(6) - INTERVAL 1 DAY - INTERVAL 3 HOUR - INTERVAL 0 MINUTE
     UNION ALL SELECT 'Happy Birthday (bản phối đơn giản)', 'minh.tran@music.com', NULL, 1, NULL, NOW(6) - INTERVAL 0 DAY - INTERVAL 3 HOUR - INTERVAL 0 MINUTE

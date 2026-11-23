@@ -25,7 +25,7 @@
   "roleHint": {
     "OWNER": "Toàn quyền: sửa và xóa nhóm, cấp hoặc thu hồi vai trò quản lý, duyệt mọi bài, là chủ mọi bản nhạc của nhóm.",
     "MANAGER": "Mặc định: điều phối buổi diễn và phân công, mời người phối / người xem, sửa mọi bản nhạc của nhóm; chủ nhóm chỉnh được trong bảng quyền.",
-    "ARRANGER": "Mặc định: sửa được bài được giao phối, các bài khác chỉ xem và nhận xét.",
+    "ARRANGER": "Mặc định: sửa được bài được giao phối, các bài khác chỉ xem và góp ý.",
     "VIEWER": "Mặc định: chỉ xem bản nhạc và buổi diễn."
   },
   "status": {

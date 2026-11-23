@@ -957,7 +957,8 @@ public class ScoreServiceImpl implements ScoreService {
                 .ownerEmail(score.getMember() == null ? null : score.getMember().getEmail())
                 .canEdit(canEdit)
                 .canDelete(scorePermissionService.canDelete(score, decision))
-                .canReview(decision.can(ScoreAccess.REVIEW))
+                .canReview(decision.can(ScoreAccess.VIEW))
+                .canComment(decision.canComment())
                 .canManageSharing(isOwner)
                 .accessLevel(
                         decision.level() == ScoreAccess.NONE

@@ -164,7 +164,7 @@ public class SuggestionServiceImpl implements SuggestionService {
             String scoreId, MultipartFile file, Integer baseVersion, String title, String description) {
         Score score = findScore(scoreId);
         AccessDecision decision = permissionService.resolve(score);
-        if (!decision.can(ScoreAccess.REVIEW)) {
+        if (!decision.canComment()) {
             throw new AppException(AccountErrorCode.UNAUTHORIZED);
         }
         if (aiTaskRepository.existsByScoreIdAndTaskTypeAndStatusIn(
@@ -296,7 +296,7 @@ public class SuggestionServiceImpl implements SuggestionService {
     public PageResponse<SuggestionSummaryResponse> list(String scoreId, SuggestionFilter filter, int page, int size) {
         Score score = findScore(scoreId);
         AccessDecision decision = permissionService.resolve(score);
-        if (!decision.can(ScoreAccess.REVIEW)) {
+        if (!decision.canComment()) {
             throw new AppException(AccountErrorCode.UNAUTHORIZED);
         }
         Member me = currentMember();
@@ -683,9 +683,9 @@ public class SuggestionServiceImpl implements SuggestionService {
 
     // ------------------------------------------------------------------------------------------------ quyền
 
-    /** Người xem được đề xuất: từ REVIEW trở lên, và là tác giả hoặc có quyền sửa (người khác: coi như không tồn tại). */
+    /** Người xem được đề xuất: được góp ý, và là tác giả hoặc có quyền sửa (người khác: coi như không tồn tại). */
     private void requireVisible(ScoreSuggestion suggestion, Score score, AccessDecision decision, Member me) {
-        if (!decision.can(ScoreAccess.REVIEW)) {
+        if (!decision.canComment()) {
             throw new AppException(AccountErrorCode.UNAUTHORIZED);
         }
         if (!isAuthor(suggestion, me) && !permissionService.canEdit(score, decision)) {

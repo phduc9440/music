@@ -121,7 +121,7 @@ class ChordSuggestionServiceImplTest {
                 .id(((AiTask) inv.getArgument(0)).getId())
                 .build());
         limits(null);
-        access(ScoreAccess.REVIEW);
+        access(ScoreAccess.EDIT);
         SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken(EMAIL, "x", "ROLE_USER"));
     }
 
@@ -138,7 +138,9 @@ class ChordSuggestionServiceImplTest {
     }
 
     private void access(ScoreAccess level) {
-        when(permissionService.resolve(score)).thenReturn(new AccessDecision(level, false, false));
+        AccessDecision decision = new AccessDecision(level, false, false);
+        when(permissionService.resolve(score)).thenReturn(decision);
+        when(permissionService.canEdit(score, decision)).thenReturn(decision.can(ScoreAccess.EDIT));
     }
 
     private static ChordSuggestionRequest style(String value) {
@@ -164,6 +166,12 @@ class ChordSuggestionServiceImplTest {
     @Test
     void viewerCannotRequest() {
         access(ScoreAccess.VIEW);
+        assertThat(errorOf(SCORE_ID, "NATURAL").getErrorCode()).isEqualTo(AccountErrorCode.UNAUTHORIZED);
+    }
+
+    @Test
+    void commenterCannotRequest() {
+        access(ScoreAccess.COMMENT);
         assertThat(errorOf(SCORE_ID, "NATURAL").getErrorCode()).isEqualTo(AccountErrorCode.UNAUTHORIZED);
     }
 

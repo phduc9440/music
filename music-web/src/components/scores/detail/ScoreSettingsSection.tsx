@@ -8,7 +8,7 @@ import VisibilityBadge from '../common/VisibilityBadge';
 import type { ScoreDetail } from '../../../types';
 import { t } from '../../../i18n/core';
 
-type Section = 'general' | 'people' | 'requests' | 'report' | 'danger';
+type Section = 'general' | 'people' | 'requests' | 'access' | 'report' | 'danger';
 
 interface Props {
   scoreId: string;
@@ -32,6 +32,9 @@ interface Props {
   /** Người không phải chủ: có mục Báo cáo vi phạm (mở hộp thoại báo cáo bản nhạc). */
   canReport: boolean;
   onReport: () => void;
+  /** Người không phải chủ, chưa sửa được: có mục Xin thêm quyền (mở hộp gửi yêu cầu cho chủ bản nhạc). */
+  canRequestMore: boolean;
+  onRequestMore: () => void;
 }
 
 /**
@@ -54,6 +57,8 @@ export default function ScoreSettingsSection({
   onDelete,
   canReport,
   onReport,
+  canRequestMore,
+  onRequestMore,
 }: Props) {
   // Chỉ chủ đổi được chế độ hiển thị; bản trong kho mẫu do hệ thống quản lý nên không có nút này
   const canPublish = isOwner && !score.isOfficial;
@@ -69,6 +74,7 @@ export default function ScoreSettingsSection({
       badge: pendingRequests,
     });
   }
+  if (canRequestMore) items.push({ key: 'access', label: t('scores.settings.nav.access'), icon: 'key' });
   if (canReport) items.push({ key: 'report', label: t('scores.settings.nav.report'), icon: 'alert' });
   if (canDelete) items.push({ key: 'danger', label: t('scores.settings.nav.danger'), icon: 'alert' });
 
@@ -137,6 +143,17 @@ export default function ScoreSettingsSection({
           <AccessMembersPanel scoreId={scoreId} onInvite={onShare} refreshKey={refreshKey} onChanged={onChanged} />
         )}
         {active === 'requests' && isOwner && <AccessRequestsPanel scoreId={scoreId} showEmpty onChanged={onChanged} />}
+        {active === 'access' && canRequestMore && (
+          <section className="sc-settings__card">
+            <div>
+              <h2>{t('scores.settings.accessTitle')}</h2>
+              <p>{t('scores.settings.accessHint')}</p>
+            </div>
+            <button type="button" className="sc-btn" onClick={onRequestMore}>
+              <Icon name="key" size={16} /> {t('scores.settings.accessButton')}
+            </button>
+          </section>
+        )}
         {active === 'report' && canReport && (
           <section className="sc-settings__card">
             <div>

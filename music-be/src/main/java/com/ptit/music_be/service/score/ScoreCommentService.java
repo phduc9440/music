@@ -11,7 +11,7 @@ import com.ptit.music_be.dto.response.score.ScoreCommentResponse;
 import com.ptit.music_be.dto.response.score.ScoreCommentsResponse;
 
 /**
- * Góp ý gắn vào ô nhịp (mục 4.2). Xem cần VIEW; viết và trả lời cần REVIEW trở lên; sửa nội dung chỉ người viết; xóa
+ * Góp ý gắn vào ô nhịp (mục 4.2). Xem cần VIEW; viết và trả lời cần COMMENT trở lên; sửa nội dung chỉ người viết; xóa
  * người viết hoặc chủ bản nhạc; đánh dấu đã xử lý người viết, chủ hoặc người có quyền sửa (EDIT).
  */
 public interface ScoreCommentService {

@@ -21,7 +21,7 @@ import lombok.experimental.FieldDefaults;
 /**
  * Quyền qua team (mục 4.1, ma trận 2.3), theo bảng quyền của team: MANAGE_SCORES = như chủ bản nhạc (xóa, công khai, chia
  * sẻ ra ngoài; chủ nhóm luôn có); EDIT_SCORES = sửa mọi bản (mặc định quản lý); người được giao phối bài trong một show của
- * team sửa được bài đó; COMMENT = nhận xét (mặc định quản lý, người phối); còn lại chỉ xem. ScorePermissionService lấy mức
+ * team sửa được bài đó; COMMENT = góp ý trên ô nhịp (mặc định quản lý, người phối); còn lại chỉ xem. ScorePermissionService lấy mức
  * cao hơn giữa mức này và chia sẻ cá nhân, chủ bản nhạc luôn là OWNER.
  */
 @Component
@@ -51,7 +51,7 @@ public class TeamAccessResolverImpl implements TeamAccessResolver {
             if (tm.getRole() != TeamRole.VIEWER && showItemRepository.isArrangerOf(score.getId(), memberId, teamId)) {
                 return ScoreAccess.EDIT;
             }
-            return perms.has(TeamPermission.COMMENT) ? ScoreAccess.REVIEW : ScoreAccess.VIEW;
+            return perms.has(TeamPermission.COMMENT) ? ScoreAccess.COMMENT : ScoreAccess.VIEW;
         });
     }
 }

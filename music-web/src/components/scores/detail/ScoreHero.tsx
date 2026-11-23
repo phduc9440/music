@@ -30,8 +30,6 @@ import { t } from '../../../i18n/core';
 
 interface Props {
   score: ScoreDetail;
-  /** Mở hộp xin thêm quyền (người không phải chủ, chưa có quyền sửa). */
-  onRequestMore?: () => void;
   /** Gọi khi chủ sở hữu đổi chế độ hiển thị (công khai, hủy yêu cầu, về riêng tư) với bản nhạc đã cập nhật. */
   onVisibilityChanged: (score: ScoreDetail) => void;
 }
@@ -43,7 +41,7 @@ const hasMusicXml = (score: ScoreDetail) => score.files.some((f) => f.fileType =
  * Đầu trang chi tiết: nhãn trạng thái, tiêu đề, dòng phụ, ba thao tác chính (mở, phát, tải xuống) và các thông báo
  * (đang số hóa, xử lý lỗi, bị từ chối công khai).
  */
-export default function ScoreHero({ score, onVisibilityChanged, onRequestMore }: Props) {
+export default function ScoreHero({ score, onVisibilityChanged }: Props) {
   // Đổi hoặc gỡ ảnh bìa trả về bản nhạc đã cập nhật, dùng chung đường cập nhật với đổi chế độ hiển thị
   const base = useScoreBase();
   const navigate = useNavigate();
@@ -108,10 +106,6 @@ export default function ScoreHero({ score, onVisibilityChanged, onRequestMore }:
     ? `${failure.title}${failure.detail ? ` (${failure.detail})` : ''}`
     : score.rejectReason;
   const processing = score.processingStatus === 'PENDING' || score.processingStatus === 'PROCESSING';
-
-  // Bản trong kho mẫu do hệ thống quản lý, chỉ admin sửa: không có chuyện xin quyền chỉnh sửa
-  const canRequestMore =
-    !score.canEdit && score.accessLevel !== 'OWNER' && !base.startsWith('/admin') && !score.isOfficial;
 
   const meta = [
     score.composer || t('scores.card.unknownComposer'),
@@ -190,7 +184,7 @@ export default function ScoreHero({ score, onVisibilityChanged, onRequestMore }:
                 {t('scores.hero.studioPractice')}
               </Link>
             )}
-            {score.canReview && ready && (
+            {score.canEdit && ready && (
               <button
                 type="button"
                 className="sc-btn"
@@ -237,12 +231,6 @@ export default function ScoreHero({ score, onVisibilityChanged, onRequestMore }:
             >
               <Icon name={linkCopied ? 'check' : 'link'} size={16} />
             </button>
-            {canRequestMore && onRequestMore && (
-              <button type="button" className="sc-btn" onClick={onRequestMore}>
-                <Icon name="key" size={16} />
-                {t('scores.detail.requestMoreTitle')}
-              </button>
-            )}
           </div>
         </div>
       </header>

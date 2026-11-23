@@ -210,7 +210,7 @@ class SuggestionServiceImplTest {
                     return ScoreSaveResponse.builder().version(4).build();
                 });
         when(fileStorageService.resolve(any())).thenAnswer(inv -> storage.resolve((String) inv.getArgument(0)));
-        givenAccess(ScoreAccess.REVIEW);
+        givenAccess(ScoreAccess.COMMENT);
         as(AUTHOR);
     }
 

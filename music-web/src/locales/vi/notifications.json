@@ -1,7 +1,7 @@
 {
   "levels": {
     "1": "xem",
-    "2": "nhận xét",
+    "2": "góp ý",
     "3": "chỉnh sửa"
   },
   "withReason": "{text}: {reason}",

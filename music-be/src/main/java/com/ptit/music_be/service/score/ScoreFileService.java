@@ -43,11 +43,17 @@ public interface ScoreFileService {
     /** Xóa được nếu là chủ sở hữu, hoặc ADMIN kiểm duyệt bản đang PUBLIC / PENDING. */
     boolean canDelete(Score score);
 
-    /** Nhận xét (chấm sao, bình luận) được nếu mức truy cập từ REVIEW trở lên. */
+    /** Nhận xét bản nhạc (chấm sao, bình luận chung) được nếu xem được bản nhạc (mức VIEW trở lên). */
     boolean canReview(Score score);
 
     /** Throws UNAUTHORIZED unless the current member can review the score (see {@link #canReview}). */
     void checkCanReview(Score score);
+
+    /** Góp ý trên ô nhịp (và gửi đề xuất sửa) được nếu mức truy cập từ COMMENT trở lên. */
+    boolean canComment(Score score);
+
+    /** Throws UNAUTHORIZED unless the current member can comment on measures (see {@link #canComment}). */
+    void checkCanComment(Score score);
 
     /** Chỉ chủ sở hữu: quản lý chia sẻ, duyệt yêu cầu xin quyền, đổi chế độ hiển thị, cho phép tải. */
     boolean canManageSharing(Score score);
@@ -64,7 +70,7 @@ public interface ScoreFileService {
     void checkCanDownload(Score score);
 
     /**
-     * Cấp truy cập của người đang đăng nhập: "OWNER", "EDIT", "REVIEW", "VIEW", hoặc null nếu không có quyền. ADMIN kiểm
+     * Cấp truy cập của người đang đăng nhập: "OWNER", "EDIT", "VIEW", hoặc null nếu không có quyền. ADMIN kiểm
      * duyệt bản chờ duyệt nhận "VIEW".
      */
     String getAccessLevel(Score score);

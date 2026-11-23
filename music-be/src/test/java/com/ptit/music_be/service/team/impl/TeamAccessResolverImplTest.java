@@ -52,7 +52,7 @@ class TeamAccessResolverImplTest {
         "MANAGER, false, EDIT",
         "MANAGER, true, EDIT",
         "ARRANGER, true, EDIT",
-        "ARRANGER, false, REVIEW",
+        "ARRANGER, false, COMMENT",
         "VIEWER, false, VIEW",
         "VIEWER, true, VIEW",
     })
@@ -69,10 +69,10 @@ class TeamAccessResolverImplTest {
         // chủ nhóm tích "Xóa, công khai, chia sẻ bản của người khác" cho quản lý
         "MANAGER, MANAGE_SCORES EDIT_SCORES COMMENT, false, OWNER",
         // bỏ tích "Sửa bản nhạc của nhóm": quản lý chỉ sửa bài mình được giao
-        "MANAGER, COMMENT, false, REVIEW",
+        "MANAGER, COMMENT, false, COMMENT",
         "MANAGER, COMMENT, true, EDIT",
         // cho người xem góp ý
-        "VIEWER, COMMENT, false, REVIEW",
+        "VIEWER, COMMENT, false, COMMENT",
         // bỏ quyền góp ý của người phối
         "ARRANGER, '', false, VIEW",
     })

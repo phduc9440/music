@@ -119,7 +119,7 @@ class ScoreServiceImplDeleteTest {
 
     @Test
     void adminTrashingSomeoneElsesScoreUnpublishesItAndNotifiesOwner() {
-        loginAs("admin@x.com", ScoreAccess.REVIEW, true, "ROLE_ADMIN");
+        loginAs("admin@x.com", ScoreAccess.VIEW, true, "ROLE_ADMIN");
         score.setVisibility("PUBLIC");
         score.setIsOfficial(true);
 

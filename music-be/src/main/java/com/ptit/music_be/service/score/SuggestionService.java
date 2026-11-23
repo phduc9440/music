@@ -20,7 +20,7 @@ import com.ptit.music_be.entity.ScoreSuggestion;
 public interface SuggestionService {
 
     /**
-     * Gửi đề xuất. Cần quyền REVIEW. Lỗi theo thứ tự: SCORE_NOT_EXISTED (2001), UNAUTHORIZED (1002), SCORE_BUSY (2201),
+     * Gửi đề xuất. Cần quyền góp ý. Lỗi theo thứ tự: SCORE_NOT_EXISTED (2001), UNAUTHORIZED (1002), SCORE_BUSY (2201),
      * SUGGESTION_FIELDS_INVALID (3110), FILE_TOO_LARGE (2005), MUSICXML_INVALID (2013), SCORE_VERSION_NOT_EXISTED (2801),
      * SUGGESTION_TOO_MANY_OPEN (3112), SUGGESTION_RATE_LIMITED (3117), SUGGESTION_EMPTY (3111).
      *
@@ -51,14 +51,14 @@ public interface SuggestionService {
     void storeOptions(ScoreSuggestion suggestion, List<byte[]> options);
 
     /**
-     * Danh sách đề xuất của bản nhạc, mới nhất trước. Người có quyền sửa thấy tất cả, người chỉ có REVIEW chỉ thấy của
-     * mình. Lỗi: SCORE_NOT_EXISTED (2001), UNAUTHORIZED (1002) nếu dưới mức REVIEW.
+     * Danh sách đề xuất của bản nhạc, mới nhất trước. Người có quyền sửa thấy tất cả, người chỉ được góp ý chỉ thấy của
+     * mình. Lỗi: SCORE_NOT_EXISTED (2001), UNAUTHORIZED (1002) nếu chưa được góp ý.
      */
     PageResponse<SuggestionSummaryResponse> list(String scoreId, SuggestionFilter filter, int page, int size);
 
     /**
      * Chi tiết đề xuất, kèm xung đột và lỗi thời tính theo bản hiện hành. Lỗi: SUGGESTION_NOT_EXISTED (3115) cũng dùng cho
-     * người chỉ có REVIEW xem đề xuất của người khác, SCORE_NOT_EXISTED (2001), UNAUTHORIZED (1002).
+     * người chỉ được góp ý xem đề xuất của người khác, SCORE_NOT_EXISTED (2001), UNAUTHORIZED (1002).
      */
     SuggestionDetailResponse get(String suggestionId);
 

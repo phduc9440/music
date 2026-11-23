@@ -84,22 +84,23 @@ class ScorePermissionServiceImplTest {
                 // người lạ
                 Arguments.of(USER, "PRIVATE", false, null, ScoreAccess.NONE, false),
                 Arguments.of(USER, "PENDING", false, null, ScoreAccess.NONE, false),
-                Arguments.of(USER, "PUBLIC", false, null, ScoreAccess.REVIEW, false),
+                Arguments.of(USER, "PUBLIC", false, null, ScoreAccess.VIEW, false),
                 // được chia sẻ
                 Arguments.of(USER, "PRIVATE", false, SharePermission.VIEW, ScoreAccess.VIEW, false),
-                Arguments.of(USER, "PRIVATE", false, SharePermission.REVIEW, ScoreAccess.REVIEW, false),
+                Arguments.of(USER, "PRIVATE", false, SharePermission.COMMENT, ScoreAccess.COMMENT, false),
                 Arguments.of(USER, "PRIVATE", false, SharePermission.EDIT, ScoreAccess.EDIT, false),
-                // bản công khai: quyền chia sẻ cao hơn REVIEW thì giữ, thấp hơn thì lên REVIEW
-                Arguments.of(USER, "PUBLIC", false, SharePermission.VIEW, ScoreAccess.REVIEW, false),
+                // bản công khai: ai cũng xem được; quyền chia sẻ cao hơn xem thì giữ
+                Arguments.of(USER, "PUBLIC", false, SharePermission.VIEW, ScoreAccess.VIEW, false),
+                Arguments.of(USER, "PUBLIC", false, SharePermission.COMMENT, ScoreAccess.COMMENT, false),
                 Arguments.of(USER, "PUBLIC", false, SharePermission.EDIT, ScoreAccess.EDIT, false),
-                // bản kho mẫu: người dùng thường chỉ nhận xét
-                Arguments.of(USER, "PUBLIC", true, null, ScoreAccess.REVIEW, false),
+                // bản kho mẫu: người dùng thường chỉ xem
+                Arguments.of(USER, "PUBLIC", true, null, ScoreAccess.VIEW, false),
                 // ADMIN: bản riêng tư của người khác thì không thấy (P2)
                 Arguments.of(ADMIN, "PRIVATE", false, null, ScoreAccess.NONE, false),
                 // ADMIN kiểm duyệt bản chờ duyệt: chỉ xem
                 Arguments.of(ADMIN, "PENDING", false, null, ScoreAccess.VIEW, true),
                 // ADMIN với bản công khai: như người dùng thường, không sửa được
-                Arguments.of(ADMIN, "PUBLIC", false, null, ScoreAccess.REVIEW, false),
+                Arguments.of(ADMIN, "PUBLIC", false, null, ScoreAccess.VIEW, false),
                 // ADMIN sửa được bản kho mẫu
                 Arguments.of(ADMIN, "PUBLIC", true, null, ScoreAccess.EDIT, false),
                 // ADMIN được chia sẻ EDIT thì sửa như người dùng thường, không phải kiểm duyệt
@@ -107,7 +108,7 @@ class ScorePermissionServiceImplTest {
                 // SUPER_ADMIN không hơn ADMIN (P5)
                 Arguments.of(ROOT, "PRIVATE", false, null, ScoreAccess.NONE, false),
                 Arguments.of(ROOT, "PENDING", false, null, ScoreAccess.VIEW, true),
-                Arguments.of(ROOT, "PUBLIC", false, null, ScoreAccess.REVIEW, false),
+                Arguments.of(ROOT, "PUBLIC", false, null, ScoreAccess.VIEW, false),
                 Arguments.of(ROOT, "PUBLIC", true, null, ScoreAccess.EDIT, false));
     }
 
@@ -130,6 +131,47 @@ class ScorePermissionServiceImplTest {
         assertEquals(expected, decision.level());
         assertEquals(expectedModerator, decision.moderator());
         assertEquals(ROOT.equals(email), decision.superAdmin());
+    }
+
+    @Test
+    void publicScoreIsViewableButNotCommentableWithoutPermission() {
+        loginAs(USER);
+        AccessDecision decision = service.resolve(score("PUBLIC", false));
+
+        assertEquals(ScoreAccess.VIEW, decision.level());
+        assertFalse(decision.canComment());
+    }
+
+    @Test
+    void commentShareAllowsCommentingAndViewShareDoesNot() {
+        loginAs(USER);
+        share(USER, SharePermission.VIEW);
+        assertFalse(service.resolve(score("PRIVATE", false)).canComment());
+
+        share(USER, SharePermission.COMMENT);
+        assertTrue(service.resolve(score("PRIVATE", false)).canComment());
+        assertEquals(ScoreAccess.COMMENT, service.resolve(score("PUBLIC", false)).level());
+    }
+
+    @Test
+    void editorAndOwnerAlwaysComment() {
+        loginAs(USER);
+        share(USER, SharePermission.EDIT);
+        assertTrue(service.resolve(score("PRIVATE", false)).canComment());
+
+        loginAs(OWNER);
+        assertTrue(service.resolve(score("PRIVATE", false)).canComment());
+    }
+
+    @Test
+    void teamCommentPermissionAllowsCommenting() {
+        loginAs(USER);
+        when(team.resolve(any(Score.class), eq("m-" + USER))).thenReturn(Optional.of(ScoreAccess.COMMENT));
+
+        AccessDecision decision = service.resolve(score("PRIVATE", false));
+
+        assertEquals(ScoreAccess.COMMENT, decision.level());
+        assertTrue(decision.canComment());
     }
 
     @Test
@@ -156,7 +198,7 @@ class ScorePermissionServiceImplTest {
         Score ownerless =
                 Score.builder().id("s1").visibility("PUBLIC").isOfficial(true).build();
 
-        assertEquals(ScoreAccess.REVIEW, service.resolve(ownerless).level());
+        assertEquals(ScoreAccess.VIEW, service.resolve(ownerless).level());
     }
 
     @Test

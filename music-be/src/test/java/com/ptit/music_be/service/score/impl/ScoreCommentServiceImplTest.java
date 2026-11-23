@@ -81,7 +81,7 @@ class ScoreCommentServiceImplTest {
                 .currentVersion(3)
                 .build());
         scoreId = score.getId();
-        share(score, REVIEWER, SharePermission.REVIEW);
+        share(score, REVIEWER, SharePermission.COMMENT);
         share(score, VIEWER, SharePermission.VIEW);
     }
 

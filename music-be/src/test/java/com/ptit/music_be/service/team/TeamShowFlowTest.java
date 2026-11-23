@@ -205,7 +205,7 @@ class TeamShowFlowTest {
         Score second = scoreRepository.findById(scoreIds.get(1)).orElseThrow();
         assertTrue(permissionService.canEdit(first));
         assertFalse(permissionService.canEdit(second));
-        assertEquals(ScoreAccess.REVIEW, permissionService.resolve(second).level());
+        assertEquals(ScoreAccess.COMMENT, permissionService.resolve(second).level());
         assertFalse(permissionService.canDelete(second));
 
         // 5. Gửi duyệt: người duyệt nhận thông báo

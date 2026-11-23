@@ -245,7 +245,7 @@ export default function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: Pr
             onLyricModeChange={editor.setLyricMode}
             chordMode={editor.chordMode}
             onChordModeChange={editor.setChordMode}
-            onSuggestChords={score.canReview ? () => setSuggestingChords(true) : undefined}
+            onSuggestChords={canEdit ? () => setSuggestingChords(true) : undefined}
             suggestChordsBlocked={editor.dirty ? t('chords.saveFirst') : null}
             onMark={editor.applyMark}
             onStaves={editor.editStaves}

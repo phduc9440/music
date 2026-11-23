@@ -45,7 +45,7 @@
     "tab": "Đề xuất",
     "loadFailed": "Không tải được danh sách đề xuất",
     "empty": "Chưa có đề xuất",
-    "emptyHint": "Người có quyền nhận xét trở lên có thể mở trình chỉnh sửa và chọn Đề xuất sửa.",
+    "emptyHint": "Người được phép góp ý có thể mở trình chỉnh sửa và chọn Đề xuất sửa.",
     "by": "bởi {name}",
     "system": "Hệ thống",
     "changes_one": "{count} ô nhịp",

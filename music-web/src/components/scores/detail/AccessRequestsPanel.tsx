@@ -8,7 +8,7 @@ import { t } from '../../../i18n/core';
 const LEVELS: SharePermission[] = [1, 2, 3];
 
 /**
- * Chủ bản nhạc thấy ngay trên trang chi tiết ai đang xin quyền (xem, nhận xét hay chỉnh sửa) và đồng ý / từ chối tại
+ * Chủ bản nhạc thấy ngay trên trang chi tiết ai đang xin quyền (xem, góp ý hay chỉnh sửa) và đồng ý / từ chối tại
  * chỗ, không cần mở hộp thoại Chia sẻ. Có thể cấp cấp khác với cấp được xin. Không có yêu cầu nào thì không hiện gì.
  */
 export default function AccessRequestsPanel({

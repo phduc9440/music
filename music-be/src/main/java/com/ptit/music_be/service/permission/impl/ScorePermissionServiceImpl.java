@@ -44,12 +44,13 @@ public class ScorePermissionServiceImpl implements ScorePermissionService {
             return new AccessDecision(ScoreAccess.OWNER, false, superAdmin);
         }
 
-        // 2. Mức cao nhất trong chia sẻ cá nhân, team và quyền nhận xét của bản công khai
+        // 2. Mức cao nhất trong chia sẻ cá nhân, team và quyền xem của bản công khai (công khai chỉ cho xem, không
+        //    cho góp ý: góp ý phải được chủ chia sẻ hoặc team cấp)
         ScoreAccess level = shareLevel(score, email);
         level = ScoreAccess.max(level, teamLevel(score, email));
         String visibility = score.getVisibility();
         if (Visibility.PUBLIC.name().equals(visibility)) {
-            level = ScoreAccess.max(level, ScoreAccess.REVIEW);
+            level = ScoreAccess.max(level, ScoreAccess.VIEW);
         }
 
         // 3. Kho mẫu: người có quyền quản lý kho mẫu sửa được

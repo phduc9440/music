@@ -21,7 +21,7 @@ export interface PageResult<T> {
 // ---- Chia sẻ (BE: SharePermission lưu số) ----
 export type ShareSource = 'DIRECT';
 /** Cấp truy cập của người đang xem một bản nhạc. */
-export type AccessLevel = 'OWNER' | 'EDIT' | 'REVIEW' | 'VIEW';
+export type AccessLevel = 'OWNER' | 'EDIT' | 'COMMENT' | 'VIEW';
 
 export interface ShareMember {
   memberId: string;
@@ -171,6 +171,8 @@ export interface ScoreDetail extends ScoreSummary {
   canEdit: boolean;
   canDelete: boolean;
   canReview: boolean;
+  /** Được góp ý trên ô nhịp và gửi đề xuất sửa (từ cấp góp ý trở lên; bản công khai chỉ cho xem). */
+  canComment: boolean;
   averageRating?: number | null;
   ratingCount?: number;
   canManageSharing: boolean;

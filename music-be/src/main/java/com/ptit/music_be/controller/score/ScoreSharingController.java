@@ -68,10 +68,10 @@ public class ScoreSharingController {
 
     @PostMapping("/scores/{scoreId}/access-requests")
     @Operation(
-            summary = "Ask the owner for view (1), review (2) or edit (3) access",
+            summary = "Ask the owner for view (1), comment (2) or edit (3) access",
             description =
                     "Stored in the caller's member_scores row until the owner approves or rejects."
-                            + " Errors: 2404 already has that access or higher (including a PUBLIC score, which everyone can view and review)",
+                            + " Errors: 2404 already has that access or higher (including a PUBLIC score, which everyone can view but not comment on)",
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<MyAccessResponse> requestAccess(
             @PathVariable String scoreId, @Valid @RequestBody AccessRequestRequest request) {

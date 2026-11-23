@@ -19,7 +19,7 @@ interface Props {
 
 /**
  * Danh sách người đang có quyền với bản nhạc, hiện ngay trên trang chi tiết (không phải mở hộp Chia sẻ): tên, email,
- * quyền xem / nhận xét / chỉnh sửa, đổi quyền và thu hồi tại chỗ. Chỉ chủ bản nhạc (người quản lý chia sẻ) thấy.
+ * quyền xem / góp ý / chỉnh sửa, đổi quyền và thu hồi tại chỗ. Chỉ chủ bản nhạc (người quản lý chia sẻ) thấy.
  */
 export default function AccessMembersPanel({ scoreId, onInvite, refreshKey = 0, onChanged }: Props) {
   const [sharing, setSharing] = useState<ScoreSharing | null>(null);

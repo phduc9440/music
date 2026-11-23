@@ -17,7 +17,6 @@ import com.ptit.music_be.dto.enums.ai.ChordStyle;
 import com.ptit.music_be.dto.enums.billing.PlanFeature;
 import com.ptit.music_be.dto.enums.billing.RequestCap;
 import com.ptit.music_be.dto.enums.billing.UsageMetric;
-import com.ptit.music_be.dto.enums.score.ScoreAccess;
 import com.ptit.music_be.dto.enums.score.SuggestionSource;
 import com.ptit.music_be.dto.enums.score.SuggestionStatus;
 import com.ptit.music_be.dto.request.ai.ChordSuggestionRequest;
@@ -83,7 +82,8 @@ public class ChordSuggestionServiceImpl implements ChordSuggestionService {
         Score score = scoreRepository
                 .findById(scoreId == null ? "" : scoreId)
                 .orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
-        if (!permissionService.resolve(score).can(ScoreAccess.REVIEW)) {
+        // chỉ người sửa được bản nhạc mới được gợi ý hợp âm (người nhận xét thì không)
+        if (!permissionService.canEdit(score, permissionService.resolve(score))) {
             throw new AppException(AccountErrorCode.UNAUTHORIZED);
         }
         ChordStyle style = ChordStyle.parse(request == null ? null : request.getStyle())

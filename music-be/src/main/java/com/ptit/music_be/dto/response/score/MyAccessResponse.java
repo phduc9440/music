@@ -12,7 +12,7 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class MyAccessResponse {
-    /** OWNER / EDIT / REVIEW / VIEW, null nếu chưa có quyền. */
+    /** OWNER / EDIT / COMMENT / VIEW, null nếu chưa có quyền. */
     String accessLevel;
     /** Cấp đang xin và chờ duyệt, null nếu không có yêu cầu nào. */
     SharePermission requestedPermission;

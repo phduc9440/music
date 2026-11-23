@@ -11,9 +11,9 @@ interface Props {
   scoreId: string;
   /** Có quyền rồi (ví dụ vừa được duyệt) thì báo cho trang cha tải lại bản nhạc. */
   onGranted: () => void;
-  /** Các cấp được phép xin; mặc định xem, nhận xét hoặc chỉnh sửa. */
+  /** Các cấp được phép xin; mặc định xem, góp ý hoặc chỉnh sửa. Đã xem được rồi thì chỉ còn góp ý / chỉnh sửa. */
   levels?: SharePermission[];
-  /** Đang xem được bản nhạc rồi (ví dụ xin thêm quyền sửa): không tự coi là "đã được cấp quyền" khi mở. */
+  /** Đang xem được bản nhạc rồi (ví dụ xin thêm quyền góp ý, sửa): không tự coi là "đã được cấp quyền" khi mở. */
   hasViewAccess?: boolean;
 }
 

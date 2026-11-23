@@ -298,7 +298,7 @@ public class ScoreSharingServiceImpl implements ScoreSharingService {
     private static String label(SharePermission p) {
         return switch (p) {
             case VIEW -> "xem";
-            case REVIEW -> "nhận xét";
+            case COMMENT -> "góp ý";
             case EDIT -> "chỉnh sửa";
         };
     }
