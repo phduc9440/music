@@ -314,11 +314,13 @@ ALTER TABLE forum_threads
     ADD CONSTRAINT fk_forum_threads_accepted FOREIGN KEY (accepted_post_id) REFERENCES forum_posts (id) ON DELETE SET NULL;
 
 -- Bình chọn: một người một phiếu cho mỗi chủ đề hoặc bài trả lời (đúng một trong hai cột có giá trị).
+-- reaction cho biết phiếu là LIKE hay DISLIKE; dữ liệu chèn không có cột này mặc định là LIKE.
 CREATE TABLE IF NOT EXISTS forum_votes (
     id         VARCHAR(36) NOT NULL,
     member_id  VARCHAR(36) NOT NULL,
     thread_id  VARCHAR(36) NULL,
     post_id    VARCHAR(36) NULL,
+    reaction   VARCHAR(10) NOT NULL DEFAULT 'LIKE',
     created_at DATETIME(6) NULL,
     PRIMARY KEY (id),
     UNIQUE KEY uk_forum_votes_thread (member_id, thread_id),
@@ -457,12 +459,16 @@ CREATE TABLE IF NOT EXISTS practice_sessions (
     member_id           VARCHAR(36)  NOT NULL COMMENT 'Người tập (members.id)',
     score_id            VARCHAR(36)  NOT NULL COMMENT 'Bản nhạc được tập (scores.id)',
     mode                INT          NULL COMMENT 'Chế độ tập: 1 = FREE (tự do, chơi hết bài), 2 = LOOP (lặp một đoạn), 3 = TEST (chơi chấm điểm)',
-    tempo_percent       DOUBLE       NULL COMMENT 'Tốc độ so với bản gốc, 100 = nguyên tốc độ, 50 = chậm một nửa',
+    status              VARCHAR(12)  NOT NULL DEFAULT 'ABANDONED' COMMENT 'Vòng đời phiên: IN_PROGRESS / COMPLETED / ABANDONED',
+    input_source        VARCHAR(10)  NULL COMMENT 'Nguồn nhập nốt: MIDI / MIC / TOUCH / KEYBOARD',
+    hand_mode           VARCHAR(12)  NULL COMMENT 'Tay tập: BOTH / RIGHT_ONLY / LEFT_ONLY',
+    tempo_percent      DOUBLE       NULL COMMENT 'Tốc độ so với bản gốc, 100 = nguyên tốc độ, 50 = chậm một nửa',
     loop_start_measure  INT          NULL COMMENT 'Ô nhịp bắt đầu của đoạn lặp (chỉ dùng ở chế độ LOOP)',
     loop_end_measure    INT          NULL COMMENT 'Ô nhịp kết thúc của đoạn lặp (chỉ dùng ở chế độ LOOP)',
     started_at          DATETIME(6)  NULL COMMENT 'Thời điểm bắt đầu tập',
     ended_at            DATETIME(6)  NULL COMMENT 'Thời điểm kết thúc tập',
     duration_seconds    INT          NULL COMMENT 'Thời gian tập thực tế, tính bằng giây',
+    covered_until_ms    INT          NULL COMMENT 'Đã chơi tới mốc thời gian nào của bài (ms), để báo cáo phần đã tập',
     total_notes         INT          NULL COMMENT 'Tổng số nốt trong phần đã tập',
     perfect_count       INT          NULL COMMENT 'Số nốt đúng cao độ và đúng giờ',
     early_count         INT          NULL COMMENT 'Số nốt đúng cao độ nhưng chơi sớm',
@@ -474,10 +480,42 @@ CREATE TABLE IF NOT EXISTS practice_sessions (
     score_points        DOUBLE       NULL COMMENT 'Điểm số của phiên (chủ yếu ở chế độ TEST)',
     is_completed        TINYINT(1)   NULL COMMENT 'Có chơi hết phiên (1) hay bỏ giữa chừng (0)',
     error_log           JSON         NULL COMMENT 'Log lỗi chi tiết từng nốt (mảng JSON)',
+    active_member_id    VARCHAR(36)  GENERATED ALWAYS AS (CASE WHEN status = 'IN_PROGRESS' THEN member_id ELSE NULL END) STORED
+                                     COMMENT 'Chỉ có giá trị khi phiên đang chạy, để mỗi người chỉ có một phiên IN_PROGRESS',
     PRIMARY KEY (id),
     KEY idx_practice_sessions_member_started (member_id, started_at),
+    KEY idx_practice_sessions_member_score_started (member_id, score_id, started_at),
+    UNIQUE KEY ux_practice_sessions_active_member (active_member_id),
     CONSTRAINT fk_practice_sessions_member FOREIGN KEY (member_id) REFERENCES members (id),
-    CONSTRAINT fk_practice_sessions_score  FOREIGN KEY (score_id)  REFERENCES scores (id)
+    CONSTRAINT fk_practice_sessions_score  FOREIGN KEY (score_id)  REFERENCES scores (id),
+    CONSTRAINT chk_practice_sessions_status
+        CHECK (status IN ('IN_PROGRESS', 'COMPLETED', 'ABANDONED')),
+    CONSTRAINT chk_practice_sessions_input_source
+        CHECK (input_source IS NULL OR input_source IN ('MIDI', 'MIC', 'TOUCH', 'KEYBOARD')),
+    CONSTRAINT chk_practice_sessions_hand_mode
+        CHECK (hand_mode IS NULL OR hand_mode IN ('BOTH', 'RIGHT_ONLY', 'LEFT_ONLY'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Từng nốt của một phiên tập (báo cáo Studio): nốt cần chơi, nốt đã chơi, lệch bao nhiêu ms và kết quả.
+CREATE TABLE IF NOT EXISTS practice_note_event (
+    session_id      VARCHAR(36) NOT NULL,
+    seq             INT         NOT NULL,
+    note_id         VARCHAR(40) NULL,
+    measure         INT         NULL,
+    hand            VARCHAR(5)  NULL,
+    expected_midi   SMALLINT    NULL,
+    played_midi     SMALLINT    NULL,
+    expected_ms     INT         NULL,
+    played_ms       INT         NULL,
+    delta_ms        INT         NULL,
+    result          VARCHAR(12) NOT NULL,
+    PRIMARY KEY (session_id, seq),
+    KEY idx_practice_note_event_session_measure (session_id, measure),
+    CONSTRAINT fk_practice_note_event_session
+        FOREIGN KEY (session_id) REFERENCES practice_sessions (id) ON DELETE CASCADE,
+    CONSTRAINT chk_practice_note_event_seq CHECK (seq >= 0),
+    CONSTRAINT chk_practice_note_event_result
+        CHECK (result IN ('PERFECT', 'EARLY', 'LATE', 'WRONG_PITCH', 'MISSED'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS official_requests (
@@ -763,4 +801,14 @@ CREATE TABLE IF NOT EXISTS score_live_ops (
     UNIQUE KEY uk_score_live_ops_op (op_id),
     KEY idx_score_live_ops_created (created_at),
     CONSTRAINT fk_score_live_ops_score FOREIGN KEY (score_id) REFERENCES scores (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Bộ nhớ đệm timeline phát nhạc của bản nhạc; content_hash đổi (MusicXML đổi) thì tính lại.
+CREATE TABLE IF NOT EXISTS score_timeline (
+    score_id     VARCHAR(36) NOT NULL,
+    content_hash CHAR(64)    NOT NULL,
+    timeline     JSON        NOT NULL,
+    created_at   DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    PRIMARY KEY (score_id),
+    CONSTRAINT fk_score_timeline_score FOREIGN KEY (score_id) REFERENCES scores (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

@@ -110,6 +110,9 @@ FROM (
 JOIN members m ON m.email = t.email
 JOIN scores s ON s.title = t.title;
 
+-- Cột status mặc định ABANDONED; phiên đã chơi hết bài là COMPLETED
+UPDATE practice_sessions SET status = 'COMPLETED' WHERE is_completed = 1;
+
 -- Tác vụ AI để trang admin "Tác vụ AI" có đủ trạng thái: hoàn tất, lỗi, đang chạy, chờ, hủy
 INSERT INTO ai_tasks
     (id, member_id, score_id, task_type, status, progress, step, error_message, input_data, retry_count,
