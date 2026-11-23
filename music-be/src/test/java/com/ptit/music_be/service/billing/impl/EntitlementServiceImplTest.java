@@ -275,8 +275,8 @@ class EntitlementServiceImplTest {
     void requestCapSuggestsTheCheapestPlanBigEnough() {
         useTiered(basic);
 
-        AppException e = assertThrows(
-                AppException.class, () -> service.checkRequestCap("m", RequestCap.CHORD_MEASURES, 50));
+        AppException e =
+                assertThrows(AppException.class, () -> service.checkRequestCap("m", RequestCap.CHORD_MEASURES, 50));
         PlanLimitPayload payload = (PlanLimitPayload) e.getPayload();
         assertEquals(BillingErrorCode.PLAN_LIMIT_REACHED, e.getErrorCode());
         assertEquals("CHORD_MEASURES", payload.metric());
@@ -285,8 +285,8 @@ class EntitlementServiceImplTest {
         assertEquals("STUDENT", payload.upgradeTo());
 
         // 100 ô vượt cả Student: gợi ý thẳng gói không giới hạn
-        AppException longer = assertThrows(
-                AppException.class, () -> service.checkRequestCap("m", RequestCap.CHORD_MEASURES, 100));
+        AppException longer =
+                assertThrows(AppException.class, () -> service.checkRequestCap("m", RequestCap.CHORD_MEASURES, 100));
         assertEquals("PRO", ((PlanLimitPayload) longer.getPayload()).upgradeTo());
     }
 
@@ -302,8 +302,7 @@ class EntitlementServiceImplTest {
     void missingFeatureIsRejectedAndSkipsPlansWithoutIt() {
         useTiered(basic);
 
-        AppException e =
-                assertThrows(AppException.class, () -> service.checkFeature("m", PlanFeature.CHORD_ADVANCED));
+        AppException e = assertThrows(AppException.class, () -> service.checkFeature("m", PlanFeature.CHORD_ADVANCED));
         PlanLimitPayload payload = (PlanLimitPayload) e.getPayload();
         assertEquals("CHORD_ADVANCED", payload.metric());
         assertEquals(0, payload.limit());

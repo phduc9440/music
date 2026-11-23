@@ -106,10 +106,7 @@ public class EntitlementServiceImpl implements EntitlementService {
         throw new AppException(
                 BillingErrorCode.PLAN_LIMIT_REACHED,
                 new PlanLimitPayload(
-                        cap.name(),
-                        limit,
-                        amount,
-                        upgradeTo(subscriptionService.currentPlan(memberId), l -> {
+                        cap.name(), limit, amount, upgradeTo(subscriptionService.currentPlan(memberId), l -> {
                             Integer other = capOf(l, cap);
                             return other == null || amount <= other;
                         })));

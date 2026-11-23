@@ -697,9 +697,8 @@ class SubscriptionServiceImplTest {
 
     @Test
     void mergedLimitsTreatUnlimitedAsHighestAndTakeTeamSizeOnlyFromTeamPlans() {
-        var personal =
-                new com.ptit.music_be.service.billing.PlanLimits(
-                        null, 3, 100, 5, 10, true, false, false, null, null, 1, false, 32, 5);
+        var personal = new com.ptit.music_be.service.billing.PlanLimits(
+                null, 3, 100, 5, 10, true, false, false, null, null, 1, false, 32, 5);
         var team = new com.ptit.music_be.service.billing.PlanLimits(
                 1000, 5, 50, 20, null, false, true, true, 15, null, 3, true, null, 50);
 

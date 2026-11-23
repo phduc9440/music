@@ -54,7 +54,8 @@ class AdminPlanServiceImplTest {
             .build();
     private final Plan free =
             Plan.builder().code("FREE").name("Free").limits("{}").build();
-    private final PlanLimits limits = new PlanLimits(500, 4, 10240, 30, null, true, false, true, null, null, null, null, null, null);
+    private final PlanLimits limits =
+            new PlanLimits(500, 4, 10240, 30, null, true, false, true, null, null, null, null, null, null);
 
     @BeforeEach
     void setUp() {
@@ -127,7 +128,8 @@ class AdminPlanServiceImplTest {
                         "Pro",
                         99000L,
                         990000L,
-                        new PlanLimits(-1, 1, null, null, null, true, false, true, null, null, null, null, null, null)));
+                        new PlanLimits(
+                                -1, 1, null, null, null, true, false, true, null, null, null, null, null, null)));
         expect(
                 BillingErrorCode.PLAN_LIMITS_INVALID,
                 "PRO",
@@ -135,11 +137,16 @@ class AdminPlanServiceImplTest {
                         "Pro",
                         99000L,
                         990000L,
-                        new PlanLimits(10, 0, null, null, null, true, false, true, null, null, null, null, null, null)));
+                        new PlanLimits(
+                                10, 0, null, null, null, true, false, true, null, null, null, null, null, null)));
         expect(
                 BillingErrorCode.PLAN_LIMITS_INVALID,
                 "PRO",
-                request("Pro", 99000L, 990000L, new PlanLimits(10, 1, null, null, null, true, false, true, null, -1, null, null, null, null)));
+                request(
+                        "Pro",
+                        99000L,
+                        990000L,
+                        new PlanLimits(10, 1, null, null, null, true, false, true, null, -1, null, null, null, null)));
         verify(plans, never()).save(any());
     }
 

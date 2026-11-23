@@ -193,10 +193,12 @@ public class AiTaskDispatcher {
             int currentVersion = task.getScore().getCurrentVersion() == null
                     ? 0
                     : task.getScore().getCurrentVersion();
-            // Ưu tiên theo gói của chủ task tại lúc gửi (cả lần gửi lại của job quét), nên nâng cấp gói có hiệu lực ngay
+            // Ưu tiên theo gói của chủ task tại lúc gửi (cả lần gửi lại của job quét), nên nâng cấp gói có hiệu lực
+            // ngay
             boolean priority = task.getMember() != null
-                    && Boolean.TRUE.equals(
-                            entitlementService.limitsOf(task.getMember().getId()).omrPriority());
+                    && Boolean.TRUE.equals(entitlementService
+                            .limitsOf(task.getMember().getId())
+                            .omrPriority());
             return Optional.of(new OmrJobRequest(
                     taskId, scoreId, inputs, buildOptions(task.getInputData(), currentVersion + 1), priority));
         });
