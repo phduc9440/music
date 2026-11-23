@@ -39,6 +39,11 @@ public enum ChordStyle {
         return label;
     }
 
+    /** Màu nâng cao, chỉ gói có quyền lợi {@code chordAdvanced} mới dùng được. */
+    public boolean isAdvanced() {
+        return this == COLORFUL || this == JAZZY;
+    }
+
     /** Đọc không phân biệt hoa thường; null thì mặc định NATURAL; tên phong cách cũ quy về màu; giá trị lạ trả rỗng. */
     public static Optional<ChordStyle> parse(String value) {
         if (value == null || value.isBlank()) {

@@ -34,6 +34,11 @@ export const reportPlanLimit = (err: unknown): boolean => {
   return true;
 };
 
+/** Mở hộp thoại nâng cấp khi chưa gọi API (ví dụ bấm vào tùy chọn bị khóa theo gói). */
+export const showPlanLimit = (info: PlanLimitInfo) => {
+  listeners.forEach((listener) => listener(info));
+};
+
 /** Đăng ký nhận sự kiện vượt hạn mức; trả hàm huỷ đăng ký. */
 export const subscribePlanLimit = (listener: Listener): (() => void) => {
   listeners.add(listener);

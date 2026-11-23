@@ -122,9 +122,16 @@ public class AiServiceClient {
      * @param replaceExisting true: bỏ hết hợp âm đang có rồi gợi ý lại toàn bộ
      * @param creativity SAFE, BALANCED hoặc BOLD
      * @param density SPARSE, NORMAL hoặc DENSE
+     * @param options số phương án (1..3, theo gói của người bấm)
      */
     public ChordGenerationResult generateChords(
-            String inPath, String outPath, String style, boolean replaceExisting, String creativity, String density) {
+            String inPath,
+            String outPath,
+            String style,
+            boolean replaceExisting,
+            String creativity,
+            String density,
+            int options) {
         return convertClient
                 .post()
                 .uri("/chords/generate")
@@ -136,7 +143,7 @@ public class AiServiceClient {
                         "replaceExisting", replaceExisting,
                         "creativity", creativity,
                         "density", density,
-                        "options", 3))
+                        "options", options))
                 .retrieve()
                 .body(ChordGenerationResult.class);
     }

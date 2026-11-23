@@ -204,6 +204,33 @@ def test_manager_runs_sequentially_and_dedups(storage_root):
         manager.stop()
 
 
+def test_manager_runs_priority_jobs_first(storage_root):
+    """Job của gói ưu tiên chạy trước job thường đang chờ; cùng mức thì giữ thứ tự đến."""
+    order, gate = [], threading.Event()
+
+    def runner(job, cancel, callback):
+        order.append(str(job.taskId))
+        if len(order) == 1:
+            gate.wait(2)  # giữ job đầu chạy để các job sau cùng xếp hàng
+
+    manager = JobManager(runner=runner, callback_factory=lambda tid: None)
+    manager.start()
+    try:
+        running = _job(storage_root, "p0")
+        manager.submit(running)
+        assert wait_for(lambda: len(order) == 1)
+        normal1, normal2 = _job(storage_root, "p1"), _job(storage_root, "p2")
+        vip1 = _job(storage_root, "p3").model_copy(update={"priority": True})
+        vip2 = _job(storage_root, "p4").model_copy(update={"priority": True})
+        for job in (normal1, vip1, normal2, vip2):
+            manager.submit(job)
+        gate.set()
+        assert wait_for(lambda: len(order) == 5)
+        assert order == [str(j.taskId) for j in (running, vip1, vip2, normal1, normal2)]
+    finally:
+        manager.stop()
+
+
 def test_manager_cancel_queued_and_unknown(storage_root):
     started, gate = threading.Event(), threading.Event()
     ran = []

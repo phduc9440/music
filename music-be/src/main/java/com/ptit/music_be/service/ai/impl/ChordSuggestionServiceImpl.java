@@ -14,6 +14,8 @@ import com.ptit.music_be.dto.enums.ai.AiTaskType;
 import com.ptit.music_be.dto.enums.ai.ChordCreativity;
 import com.ptit.music_be.dto.enums.ai.ChordDensity;
 import com.ptit.music_be.dto.enums.ai.ChordStyle;
+import com.ptit.music_be.dto.enums.billing.PlanFeature;
+import com.ptit.music_be.dto.enums.billing.RequestCap;
 import com.ptit.music_be.dto.enums.billing.UsageMetric;
 import com.ptit.music_be.dto.enums.score.ScoreAccess;
 import com.ptit.music_be.dto.enums.score.SuggestionSource;
@@ -112,12 +114,22 @@ public class ChordSuggestionServiceImpl implements ChordSuggestionService {
                 .ifPresent(open -> {
                     throw new AppException(AiErrorCode.CHORD_SUGGESTION_PENDING, Map.of("suggestionId", open.getId()));
                 });
+        // Tùy chọn nâng cao và độ dài bài theo gói; kiểm trước số lượt để người dùng biết đúng lý do cần nâng cấp
+        if (style.isAdvanced() || creativity == ChordCreativity.BOLD || density == ChordDensity.DENSE) {
+            entitlementService.checkFeature(member.getId(), PlanFeature.CHORD_ADVANCED);
+        }
+        if (score.getMeasureCount() != null) {
+            entitlementService.checkRequestCap(member.getId(), RequestCap.CHORD_MEASURES, score.getMeasureCount());
+        }
         entitlementService.checkAvailable(member.getId(), UsageMetric.CHORD_GENERATIONS, 1);
+        // Số phương án chốt theo gói lúc bấm, worker chỉ đọc lại
+        int options = entitlementService.limitsOf(member.getId()).chordOptionsOrMax();
 
         ObjectNode input = objectMapper.createObjectNode();
         input.put("style", style.name());
         input.put("creativity", creativity.name());
         input.put("density", density.name());
+        input.put("options", options);
         input.put("baseVersion", baseVersion);
         input.put("replaceExisting", request != null && Boolean.TRUE.equals(request.getReplaceExisting()));
         AiTask task = aiTaskRepository.save(AiTask.builder()

@@ -22,7 +22,12 @@
     "clearAll": "Delete all chords",
     "clearAllHint": "Remove every chord from the score in the editor (unsaved, Ctrl+Z to undo)",
     "creativityLabel": "Creativity",
-    "densityLabel": "Chord density"
+    "densityLabel": "Chord density",
+    "lockedBadge": "Upgrade",
+    "lockedSr": "(requires a plan upgrade)",
+    "lockedHint": "Options with a lock need a higher plan. Select one to see which plan includes it.",
+    "quota": "{left}/{limit} chord suggestions left this month · {options} options each",
+    "quotaUnlimited": "Unlimited chord suggestions · {options} options each"
   },
   "styles": {
     "NATURAL": {

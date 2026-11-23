@@ -32,6 +32,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ptit.music_be.dto.enums.ai.AiTaskStatus;
 import com.ptit.music_be.dto.enums.ai.AiTaskType;
 import com.ptit.music_be.dto.enums.ai.ChordStyle;
+import com.ptit.music_be.dto.enums.billing.PlanFeature;
+import com.ptit.music_be.dto.enums.billing.RequestCap;
 import com.ptit.music_be.dto.enums.billing.UsageMetric;
 import com.ptit.music_be.dto.enums.score.ScoreAccess;
 import com.ptit.music_be.dto.enums.score.SuggestionSource;
@@ -54,6 +56,7 @@ import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.repository.score.ScoreSuggestionRepository;
 import com.ptit.music_be.service.billing.EntitlementService;
+import com.ptit.music_be.service.billing.PlanLimits;
 import com.ptit.music_be.service.permission.AccessDecision;
 import com.ptit.music_be.service.permission.ScorePermissionService;
 
@@ -117,6 +120,7 @@ class ChordSuggestionServiceImplTest {
         when(aiTaskMapper.toResponse(any())).thenAnswer(inv -> AiTaskResponse.builder()
                 .id(((AiTask) inv.getArgument(0)).getId())
                 .build());
+        limits(null);
         access(ScoreAccess.REVIEW);
         SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken(EMAIL, "x", "ROLE_USER"));
     }
@@ -124,6 +128,13 @@ class ChordSuggestionServiceImplTest {
     @AfterEach
     void tearDown() {
         SecurityContextHolder.clearContext();
+    }
+
+    /** Gói của người bấm chỉ quy định số phương án; mọi hạn mức khác để trống (không giới hạn). */
+    private void limits(Integer chordOptions) {
+        when(entitlementService.limitsOf("m-1"))
+                .thenReturn(new PlanLimits(
+                        null, null, null, null, null, null, null, null, null, null, chordOptions, null, null, null));
     }
 
     private void access(ScoreAccess level) {
@@ -250,5 +261,79 @@ class ChordSuggestionServiceImplTest {
         assertThat(catchThrowableOfType(AppException.class, () -> service.request(SCORE_ID, bad))
                         .getErrorCode())
                 .isEqualTo(AiErrorCode.CHORD_STYLE_INVALID);
+    }
+
+    private JsonNode savedInput() throws Exception {
+        ArgumentCaptor<AiTask> saved = ArgumentCaptor.forClass(AiTask.class);
+        verify(aiTaskRepository).save(saved.capture());
+        return objectMapper.readTree(saved.getValue().getInputData());
+    }
+
+    @Test
+    void basicOptionsDoNotNeedTheAdvancedFeature() {
+        ChordSuggestionRequest request = style("SIMPLE");
+        request.setCreativity("SAFE");
+        request.setDensity("SPARSE");
+        service.request(SCORE_ID, request);
+
+        verify(entitlementService, never()).checkFeature(any(), any());
+    }
+
+    @Test
+    void eachAdvancedOptionNeedsTheAdvancedFeature() {
+        ChordSuggestionRequest colour = style("COLORFUL");
+        ChordSuggestionRequest bold = style("NATURAL");
+        bold.setCreativity("BOLD");
+        ChordSuggestionRequest dense = style("NATURAL");
+        dense.setDensity("DENSE");
+        for (ChordSuggestionRequest request : java.util.List.of(colour, bold, dense)) {
+            org.mockito.Mockito.clearInvocations(entitlementService);
+            service.request(SCORE_ID, request);
+            verify(entitlementService).checkFeature("m-1", PlanFeature.CHORD_ADVANCED);
+        }
+    }
+
+    @Test
+    void advancedOptionWithoutFeatureIsRejectedBeforeAnyQuotaIsUsed() {
+        doThrow(new AppException(BillingErrorCode.PLAN_LIMIT_REACHED))
+                .when(entitlementService)
+                .checkFeature("m-1", PlanFeature.CHORD_ADVANCED);
+
+        assertThat(errorOf(SCORE_ID, "JAZZY").getErrorCode()).isEqualTo(BillingErrorCode.PLAN_LIMIT_REACHED);
+        verify(entitlementService, never()).checkAvailable(any(), any(), anyInt());
+        verify(aiTaskRepository, never()).save(any());
+    }
+
+    @Test
+    void measureCountIsCheckedAgainstThePlan() {
+        score.setMeasureCount(120);
+        doThrow(new AppException(BillingErrorCode.PLAN_LIMIT_REACHED))
+                .when(entitlementService)
+                .checkRequestCap("m-1", RequestCap.CHORD_MEASURES, 120);
+
+        assertThat(errorOf(SCORE_ID, "NATURAL").getErrorCode()).isEqualTo(BillingErrorCode.PLAN_LIMIT_REACHED);
+        verify(aiTaskRepository, never()).save(any());
+    }
+
+    @Test
+    void unknownMeasureCountSkipsTheCap() {
+        service.request(SCORE_ID, style("NATURAL"));
+
+        verify(entitlementService, never()).checkRequestCap(any(), any(), anyInt());
+    }
+
+    @Test
+    void optionCountComesFromThePlan() throws Exception {
+        limits(1);
+        service.request(SCORE_ID, style("NATURAL"));
+
+        assertThat(savedInput().path("options").asInt()).isEqualTo(1);
+    }
+
+    @Test
+    void missingOptionCountMeansTheMaximum() throws Exception {
+        service.request(SCORE_ID, style("NATURAL"));
+
+        assertThat(savedInput().path("options").asInt()).isEqualTo(PlanLimits.MAX_CHORD_OPTIONS);
     }
 }

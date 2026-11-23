@@ -233,3 +233,63 @@
     transition: none;
   }
 }
+
+/* Tùy chọn bị khóa theo gói: vẫn bấm/focus được (bấm thì mời nâng cấp), nền nhạt + chữ mờ để khác hẳn tùy chọn thường */
+.cs-style.is-locked,
+.cs-segment__item.is-locked {
+  color: var(--ui-text-2);
+  background: var(--ui-surface-muted);
+}
+
+.cs-style.is-locked .cs-style__text strong {
+  color: var(--ui-text-2);
+}
+
+.cs-segment__item.is-locked {
+  gap: 0.3rem;
+}
+
+/* Huy hiệu "Nâng cấp" ở góc thẻ màu hợp âm: icon kèm chữ nên icon chỉ để trang trí (aria-hidden trong Icon) */
+.cs-lock {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: 999px;
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.cs-locked-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+}
+
+/* Số lượt còn lại, ngay trên hàng nút; hết lượt thì đổi màu cảnh báo (kèm chữ "0/…", không chỉ dựa vào màu) */
+.cs-quota {
+  margin: 1rem 0 0;
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-sm);
+}
+
+.cs-quota.is-empty {
+  color: var(--ui-danger);
+  font-weight: 600;
+}
+
+/* Chữ chỉ cho trình đọc màn hình */
+.cs-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

@@ -34,6 +34,7 @@ import com.ptit.music_be.event.OmrTaskCreatedEvent;
 import com.ptit.music_be.repository.ai.AiTaskRepository;
 import com.ptit.music_be.repository.score.ScoreFileRepository;
 import com.ptit.music_be.service.ai.InternalAiTaskService;
+import com.ptit.music_be.service.billing.EntitlementService;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -54,6 +55,7 @@ public class AiTaskDispatcher {
     private final AiTaskRepository aiTaskRepository;
     private final ScoreFileRepository scoreFileRepository;
     private final InternalAiTaskService internalAiTaskService;
+    private final EntitlementService entitlementService;
     private final AiServiceClient aiServiceClient;
     private final AiServiceProperties aiServiceProperties;
     private final ObjectMapper objectMapper;
@@ -72,6 +74,7 @@ public class AiTaskDispatcher {
             AiTaskRepository aiTaskRepository,
             ScoreFileRepository scoreFileRepository,
             InternalAiTaskService internalAiTaskService,
+            EntitlementService entitlementService,
             AiServiceClient aiServiceClient,
             AiServiceProperties aiServiceProperties,
             ObjectMapper objectMapper,
@@ -79,6 +82,7 @@ public class AiTaskDispatcher {
         this.aiTaskRepository = aiTaskRepository;
         this.scoreFileRepository = scoreFileRepository;
         this.internalAiTaskService = internalAiTaskService;
+        this.entitlementService = entitlementService;
         this.aiServiceClient = aiServiceClient;
         this.aiServiceProperties = aiServiceProperties;
         this.objectMapper = objectMapper;
@@ -189,8 +193,12 @@ public class AiTaskDispatcher {
             int currentVersion = task.getScore().getCurrentVersion() == null
                     ? 0
                     : task.getScore().getCurrentVersion();
-            return Optional.of(
-                    new OmrJobRequest(taskId, scoreId, inputs, buildOptions(task.getInputData(), currentVersion + 1)));
+            // Ưu tiên theo gói của chủ task tại lúc gửi (cả lần gửi lại của job quét), nên nâng cấp gói có hiệu lực ngay
+            boolean priority = task.getMember() != null
+                    && Boolean.TRUE.equals(
+                            entitlementService.limitsOf(task.getMember().getId()).omrPriority());
+            return Optional.of(new OmrJobRequest(
+                    taskId, scoreId, inputs, buildOptions(task.getInputData(), currentVersion + 1), priority));
         });
     }
 

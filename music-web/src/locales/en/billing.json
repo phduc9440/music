@@ -13,7 +13,11 @@
     "collab": "Real-time co-editing",
     "team": "Create teams",
     "omrPriority": "OMR queue priority",
-    "teamMembers": "Members per team"
+    "teamMembers": "Members per team",
+    "omrMaxPagesPerJob": "Max pages per OMR upload",
+    "chordOptions": "Options per chord suggestion",
+    "chordMaxMeasures": "Max measures for chord suggestions",
+    "chordAdvanced": "Advanced chord options"
   },
   "status": {
     "ACTIVE": "Active",
@@ -154,7 +158,10 @@
       "EXPORTS": "You have used {used}/{limit} exports this month.",
       "CHORD_GENERATIONS": "You have used {used}/{limit} chord suggestions this month.",
       "STORAGE_MB": "You are using {used} MB of {limit} MB storage.",
-      "DEFAULT": "You have reached the limit of your current plan."
+      "DEFAULT": "You have reached the limit of your current plan.",
+      "OMR_PAGES_PER_JOB": "This file has {used} pages; your plan allows up to {limit} pages per upload.",
+      "CHORD_MEASURES": "This score has {used} measures; your plan suggests chords for up to {limit} measures.",
+      "CHORD_ADVANCED": "Colourful and Sevenths / Jazz colours, Bold creativity and Dense changes are available on higher plans."
     }
   }
 }

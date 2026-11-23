@@ -433,7 +433,7 @@ class ScoreEditServiceImplTest {
         score.setMember(Member.builder().id("owner-1").build());
         lenient()
                 .when(entitlementService.limitsOf("owner-1"))
-                .thenReturn(new PlanLimits(null, null, null, keptVersions, null, null, null, null, null, null));
+                .thenReturn(new PlanLimits(null, null, null, keptVersions, null, null, null, null, null, null, null, null, null, null));
     }
 
     @Test

@@ -8,7 +8,15 @@ interface UpgradeDialogProps {
   onUpgrade: () => void;
 }
 
-const KNOWN_METRICS = ['OMR_PAGES', 'EXPORTS', 'STORAGE_MB', 'CHORD_GENERATIONS'];
+const KNOWN_METRICS = [
+  'OMR_PAGES',
+  'EXPORTS',
+  'STORAGE_MB',
+  'CHORD_GENERATIONS',
+  'OMR_PAGES_PER_JOB',
+  'CHORD_MEASURES',
+  'CHORD_ADVANCED',
+];
 
 /** Hộp thoại báo đã hết hạn mức của gói và dẫn tới trang chọn gói. */
 export default function UpgradeDialog({ info, onClose, onUpgrade }: UpgradeDialogProps) {

@@ -7,17 +7,23 @@ type NumericKey =
   | 'omrConcurrent'
   | 'keptVersions'
   | 'exportsPerMonth'
-  | 'chordGenerationsPerMonth';
-type FlagKey = 'collab' | 'team' | 'omrPriority';
+  | 'omrMaxPagesPerJob'
+  | 'chordGenerationsPerMonth'
+  | 'chordOptions'
+  | 'chordMaxMeasures';
+type FlagKey = 'collab' | 'team' | 'omrPriority' | 'chordAdvanced';
 
 const NUMERIC: NumericKey[] = [
   'omrPagesPerMonth',
   'omrConcurrent',
   'keptVersions',
+  'omrMaxPagesPerJob',
   'exportsPerMonth',
   'chordGenerationsPerMonth',
+  'chordOptions',
+  'chordMaxMeasures',
 ];
-const FLAGS: FlagKey[] = ['collab', 'team', 'omrPriority'];
+const FLAGS: FlagKey[] = ['collab', 'team', 'omrPriority', 'chordAdvanced'];
 
 /** Dung lượng theo MB; từ 1024 MB trở lên đổi sang GB. */
 const formatStorage = (mb: number) => (mb >= 1024 ? `${formatNumber(mb / 1024)} GB` : `${formatNumber(mb)} MB`);

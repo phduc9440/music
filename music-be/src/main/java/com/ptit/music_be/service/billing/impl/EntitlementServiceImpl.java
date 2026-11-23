@@ -3,11 +3,15 @@ package com.ptit.music_be.service.billing.impl;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.EnumSet;
+import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ptit.music_be.dto.enums.billing.PlanFeature;
+import com.ptit.music_be.dto.enums.billing.RequestCap;
 import com.ptit.music_be.dto.enums.billing.UsageMetric;
 import com.ptit.music_be.dto.enums.score.FileType;
 import com.ptit.music_be.dto.response.billing.PlanLimitPayload;
@@ -19,6 +23,7 @@ import com.ptit.music_be.repository.billing.PlanRepository;
 import com.ptit.music_be.repository.score.ScoreFileRepository;
 import com.ptit.music_be.service.billing.EntitlementService;
 import com.ptit.music_be.service.billing.PlanLimits;
+import com.ptit.music_be.service.billing.PlanLimitsParser;
 import com.ptit.music_be.service.billing.SubscriptionService;
 
 import lombok.AccessLevel;
@@ -47,6 +52,7 @@ public class EntitlementServiceImpl implements EntitlementService {
     AiTaskRepository aiTaskRepository;
     PlanRepository planRepository;
     ScoreFileRepository scoreFileRepository;
+    PlanLimitsParser planLimitsParser;
 
     @Override
     @Transactional(readOnly = true)
@@ -90,6 +96,53 @@ public class EntitlementServiceImpl implements EntitlementService {
         }
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public void checkRequestCap(String memberId, RequestCap cap, int amount) {
+        Integer limit = capOf(subscriptionService.effectiveLimits(memberId), cap);
+        if (limit == null || amount <= limit) {
+            return;
+        }
+        throw new AppException(
+                BillingErrorCode.PLAN_LIMIT_REACHED,
+                new PlanLimitPayload(
+                        cap.name(),
+                        limit,
+                        amount,
+                        upgradeTo(subscriptionService.currentPlan(memberId), l -> {
+                            Integer other = capOf(l, cap);
+                            return other == null || amount <= other;
+                        })));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public void checkFeature(String memberId, PlanFeature feature) {
+        if (hasFeature(subscriptionService.effectiveLimits(memberId), feature)) {
+            return;
+        }
+        throw new AppException(
+                BillingErrorCode.PLAN_LIMIT_REACHED,
+                new PlanLimitPayload(
+                        feature.name(),
+                        0,
+                        0,
+                        upgradeTo(subscriptionService.currentPlan(memberId), l -> hasFeature(l, feature))));
+    }
+
+    private static Integer capOf(PlanLimits limits, RequestCap cap) {
+        return switch (cap) {
+            case OMR_PAGES_PER_JOB -> limits.omrMaxPagesPerJob();
+            case CHORD_MEASURES -> limits.chordMaxMeasures();
+        };
+    }
+
+    private static boolean hasFeature(PlanLimits limits, PlanFeature feature) {
+        return switch (feature) {
+            case CHORD_ADVANCED -> Boolean.TRUE.equals(limits.chordAdvanced());
+        };
+    }
+
     private static long megabytes(long bytes) {
         return (Math.max(bytes, 0) + BYTES_PER_MB - 1) / BYTES_PER_MB;
     }
@@ -116,9 +169,15 @@ public class EntitlementServiceImpl implements EntitlementService {
 
     /** Gói liền trên cùng nhóm (cá nhân / team) theo thứ tự sắp xếp; null nếu đã là gói cao nhất. */
     private String upgradeTo(Plan current) {
+        return upgradeTo(current, l -> true);
+    }
+
+    /** Gói thấp nhất cùng nhóm, xếp sau gói hiện tại và có hạn mức thỏa {@code enough}; null nếu không có. */
+    private String upgradeTo(Plan current, Predicate<PlanLimits> enough) {
         return planRepository.findAllByOrderBySortOrderAsc().stream()
                 .filter(p -> p.getSortOrder() > current.getSortOrder()
-                        && java.util.Objects.equals(p.getAudience(), current.getAudience()))
+                        && Objects.equals(p.getAudience(), current.getAudience()))
+                .filter(p -> enough.test(planLimitsParser.parse(p)))
                 .findFirst()
                 .map(Plan::getCode)
                 .orElse(null);
