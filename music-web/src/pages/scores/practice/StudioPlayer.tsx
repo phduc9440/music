@@ -45,7 +45,7 @@ const LOOP_LOOKAHEAD_MS = 1200;
  * loạt nốt đầu bài bắn nhãn cùng lúc.
  */
 const FREE_RUN_LEAD_IN_MS = STUDIO_WATERFALL_WINDOW_MS;
-const COMPUTER_KEYBOARD_BASE_MIDI = 60;
+const COMPUTER_KEYBOARD_DEFAULT_BASE_MIDI = 60;
 const KEYBOARD_MAP: Record<string, number> = {
   a: 0,
   w: 1,
@@ -97,6 +97,7 @@ export default function StudioPlayer() {
   const [repeatSection, setRepeatSection] = useState(false);
   const [session, setSession] = useState<StudioSessionResponse | null>(null);
   const [activeSession, setActiveSession] = useState<StudioSessionResponse | null>(null);
+  const computerKeyboardBaseRef = useRef(COMPUTER_KEYBOARD_DEFAULT_BASE_MIDI);
   const [sessionSchedule, setSessionSchedule] = useState<StudioSchedule | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
   const [waitVisualElapsedMs, setWaitVisualElapsedMs] = useState(0);
@@ -105,6 +106,8 @@ export default function StudioPlayer() {
   const [counts, setCounts] = useState(emptyCounts);
   const [busy, setBusy] = useState(false);
   const [showWaterfall, setShowWaterfall] = useState(true);
+  const [showScoreSheet, setShowScoreSheet] = useState(true);
+  const [showSessionScore, setShowSessionScore] = useState(false);
   const [showKeyboard, setShowKeyboard] = useState(true);
   const [visualFeedback, setVisualFeedback] = useState<StudioVisualFeedback[]>([]);
   const [loadError, setLoadError] = useState(false);
@@ -468,7 +471,7 @@ export default function StudioPlayer() {
       const semitone = KEYBOARD_MAP[event.key.toLowerCase()];
       if (semitone === undefined) return;
       event.preventDefault();
-      onPlayNote(COMPUTER_KEYBOARD_BASE_MIDI + semitone);
+      onPlayNote(computerKeyboardBaseRef.current + semitone);
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
@@ -662,6 +665,14 @@ export default function StudioPlayer() {
     });
   }, [loadState, repeatSection, startMeasure, endMeasure, tempoPercent, handMode]);
 
+  // phím máy tính chỉ phủ 13 bán cung: dời quãng tám theo nốt giữa của bài (tay trái ở quãng thấp, tay phải ở quãng cao)
+  const computerKeyboardBase = useMemo(() => {
+    const midis = ((sessionSchedule ?? previewSchedule)?.notes ?? []).map((note) => note.midi).sort((a, b) => a - b);
+    if (midis.length === 0) return COMPUTER_KEYBOARD_DEFAULT_BASE_MIDI;
+    return Math.floor(midis[Math.floor(midis.length / 2)] / 12) * 12;
+  }, [sessionSchedule, previewSchedule]);
+  computerKeyboardBaseRef.current = computerKeyboardBase;
+
   if (loadState.phase === 'loading') {
     return (
       <div className="sc-page">
@@ -693,6 +704,29 @@ export default function StudioPlayer() {
   const countdownSeconds = session?.mode === 'FREE_RUN' && elapsedMs < 0 ? Math.ceil(-elapsedMs / 1000) : 0;
   const activeSchedule = sessionSchedule ?? previewSchedule;
   const practiceElapsedMs = session?.mode === 'WAIT' ? waitVisualElapsedMs : elapsedMs;
+  // vị trí đang chơi trên bản nhạc: nốt cuối cùng đã tới giờ (nốt rơi chạm vạch) trong lịch đang chạy
+  const scorePlayhead = (() => {
+    if (!session || !showSessionScore || !activeSchedule || practiceElapsedMs < 0) return null;
+    const visual = activeSchedule.visualNotes;
+    let low = 0;
+    let high = visual.length - 1;
+    let found = -1;
+    while (low <= high) {
+      const mid = (low + high) >> 1;
+      if (visual[mid].expectedMs <= practiceElapsedMs) {
+        found = mid;
+        low = mid + 1;
+      } else {
+        high = mid - 1;
+      }
+    }
+    if (found < 0) return null;
+    const current = visual[found];
+    const note = timeline.notes.find((item) => item.id === current.noteId);
+    const measure = timeline.measures.find((item) => item.index === current.measure);
+    if (!note || !measure) return null;
+    return { measure: current.measure, beatOffset: Math.max(0, note.startBeat - measure.startBeat) };
+  })();
   const progress =
     session && scoreDuration > 0 && !repeatSection
       ? Math.min(100, Math.max(0, (practiceElapsedMs / scoreDuration) * 100))
@@ -704,7 +738,7 @@ export default function StudioPlayer() {
     .sort((left, right) => left[1] - right[1])
     .map(([key, semitone]) => ({
       key: key.toUpperCase(),
-      note: noteName(COMPUTER_KEYBOARD_BASE_MIDI + semitone),
+      note: noteName(computerKeyboardBase + semitone),
     }));
 
   // Bản nhạc xem trước: lúc thiết lập nằm chung cột trái với thẻ thiết lập (cột tự cuộn), lúc đang luyện ở dưới vùng luyện
@@ -715,17 +749,29 @@ export default function StudioPlayer() {
           <h2>{t('studioPlayer.score.title')}</h2>
           <p>{t('studioPlayer.score.subtitle')}</p>
         </div>
-        {repeatSection && !session && (
+        {repeatSection && !session && showScoreSheet && (
           <span className="sc-chip sc-chip--accent">
             {t('studioPlayer.score.measureRange', { start: startMeasure, end: endMeasure })}
           </span>
         )}
+        <button
+          type="button"
+          className="sc-btn sc-btn--sm"
+          aria-pressed={session ? showSessionScore : showScoreSheet}
+          onClick={() => (session ? setShowSessionScore(false) : setShowScoreSheet((value) => !value))}
+        >
+          <Icon name="eye" size={16} />
+          {session || showScoreSheet ? t('studioPlayer.score.hide') : t('studioPlayer.score.show')}
+        </button>
       </div>
-      <MusicXmlViewer
-        xml={xml}
-        firstMeasure={repeatSection ? startMeasure : undefined}
-        lastMeasure={repeatSection ? endMeasure : undefined}
-      />
+      {showScoreSheet && (
+        <MusicXmlViewer
+          xml={xml}
+          firstMeasure={repeatSection ? startMeasure : undefined}
+          lastMeasure={repeatSection ? endMeasure : undefined}
+          playhead={scorePlayhead}
+        />
+      )}
     </section>
   );
 
@@ -796,10 +842,10 @@ export default function StudioPlayer() {
                   <div className="studio-player__modes">
                     {(
                       [
-                        ['FREE_RUN', 'play', 'studioPlayer.setup.freeRunHint'],
-                        ['WAIT', 'clock', 'studioPlayer.setup.waitHint'],
+                        ['FREE_RUN', 'play'],
+                        ['WAIT', 'clock'],
                       ] as const
-                    ).map(([value, icon, hint]) => {
+                    ).map(([value, icon]) => {
                       const disabled = value === 'WAIT' && inputSource === 'MIC';
                       return (
                         <label
@@ -818,7 +864,6 @@ export default function StudioPlayer() {
                             <Icon name={icon} size={18} />
                           </span>
                           <strong>{t(`studioReport.mode.${value}`)}</strong>
-                          <small>{t(hint)}</small>
                         </label>
                       );
                     })}
@@ -988,10 +1033,15 @@ export default function StudioPlayer() {
                   </button>
                 </div>
               )}
-              {inputSource === 'MIC' && <p className="studio-player__note">{t('studioPlayer.setup.microphoneHint')}</p>}
-              {inputSource === 'TOUCH' && !showKeyboard && (
-                <p className="studio-player__note">{t('studioPlayer.display.enableKeyboardForTouch')}</p>
-              )}
+              {/* các ghi chú xếp chồng cùng một ô lưới: ô luôn cao bằng ghi chú dài nhất nên đổi cách nhập không làm khung nhảy */}
+              <div className="studio-player__note-slot">
+                <p className="studio-player__note" hidden={inputSource !== 'MIC'}>
+                  {t('studioPlayer.setup.microphoneHint')}
+                </p>
+                <p className="studio-player__note" hidden={!(inputSource === 'TOUCH' && !showKeyboard)}>
+                  {t('studioPlayer.display.enableKeyboardForTouch')}
+                </p>
+              </div>
               <button
                 type="button"
                 className="sc-btn sc-btn--primary studio-player__start"
@@ -1006,7 +1056,6 @@ export default function StudioPlayer() {
                     : t('studioPlayer.setup.start')}
               </button>
             </section>
-            {scorePanel}
           </div>
         ) : (
           <section className="studio-player__session">
@@ -1076,6 +1125,17 @@ export default function StudioPlayer() {
                 {!session && (
                   <button type="button" className="sc-btn sc-btn--sm" onClick={() => setShowKeyboardGuide(true)}>
                     {t('studioPlayer.keyboardGuide.open')}
+                  </button>
+                )}
+                {session && (
+                  <button
+                    type="button"
+                    className="sc-btn sc-btn--sm"
+                    aria-pressed={showSessionScore}
+                    onClick={() => setShowSessionScore((value) => !value)}
+                  >
+                    <Icon name="eye" size={16} />
+                    {showSessionScore ? t('studioPlayer.score.hide') : t('studioPlayer.score.show')}
                   </button>
                 )}
                 {showWaterfall && (
@@ -1176,7 +1236,7 @@ export default function StudioPlayer() {
           </section>
         )}
 
-        {session && scorePanel}
+        {(session ? showSessionScore : true) && scorePanel}
       </main>
       {showKeyboardGuide && (
         <Modal title={t('studioPlayer.keyboardGuide.title')} onClose={() => setShowKeyboardGuide(false)}>

@@ -50,7 +50,9 @@
   "score": {
     "title": "Score",
     "subtitle": "Play along with the score; note feedback appears as you play.",
-    "measureRange": "Measures {start}–{end}"
+    "measureRange": "Measures {start}–{end}",
+    "hide": "Hide sheet music",
+    "show": "Show sheet music"
   },
   "keyboard": {
     "label": "Virtual piano",

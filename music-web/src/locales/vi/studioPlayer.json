@@ -50,7 +50,9 @@
   "score": {
     "title": "Bản nhạc",
     "subtitle": "Chơi theo bản nhạc; kết quả nốt sẽ hiện ngay khi bạn nhập.",
-    "measureRange": "Ô nhịp {start}–{end}"
+    "measureRange": "Ô nhịp {start}–{end}",
+    "hide": "Ẩn bản nhạc",
+    "show": "Hiện bản nhạc"
   },
   "keyboard": {
     "label": "Đàn piano ảo",

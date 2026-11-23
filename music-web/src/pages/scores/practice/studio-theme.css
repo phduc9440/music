@@ -720,3 +720,112 @@
     transform: none;
   }
 }
+
+/* ---------- một màu duy nhất: bỏ mọi chuyển màu gradient ở giao diện Studio ---------- */
+.studio-player {
+  background: var(--ui-bg);
+}
+:is(
+    .studio-player__setup,
+    .studio-player__score,
+    .studio-player__practice-board,
+    .studio-player__session,
+    .studio-player__display-options
+  ) {
+  background: var(--studio-glass);
+}
+.studio-player .studio-player__heading h1 {
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: var(--ui-text);
+}
+.studio-player__mode-card.is-active {
+  background: var(--ui-primary-soft);
+}
+.studio-player .studio-player__tempo input[type='range']::-webkit-slider-runnable-track {
+  background:
+    linear-gradient(var(--ui-primary), var(--ui-primary)) 0 0 / var(--fill, 50%) 100% no-repeat,
+    var(--ui-surface-muted);
+}
+.studio-player .studio-player__tempo input[type='range']::-moz-range-progress {
+  background: var(--ui-primary);
+}
+.studio-player .studio-player__start,
+.studio-player .sc-btn--primary,
+.studio-player .studio-player__live {
+  background: var(--ui-cta);
+}
+.studio-player .studio-player__start:hover:not(:disabled),
+.studio-player .sc-btn--primary:hover:not(:disabled) {
+  background: var(--ui-cta-hover);
+}
+.studio-player .studio-player__waterfall {
+  background: var(--ui-surface);
+}
+.studio-player .studio-player__hit-line,
+.studio-player .studio-player__piano::before {
+  background: var(--ui-primary);
+}
+.studio-player .studio-player__progress span {
+  background: var(--ui-cta);
+}
+
+/* ô ghi chú cố định: các ghi chú chồng cùng một ô lưới, chỉ cái đang dùng hiện (visibility) nên chiều cao không đổi */
+.studio-player__setup .studio-player__note-slot {
+  display: grid;
+  margin: 0 0 0.75rem;
+}
+.studio-player__setup .studio-player__note-slot > .studio-player__note {
+  grid-area: 1 / 1;
+  margin: 0;
+}
+.studio-player__setup .studio-player__note-slot > .studio-player__note[hidden] {
+  display: block;
+  visibility: hidden;
+}
+.studio-player .studio-player__falling-note {
+  background: var(--note);
+}
+
+/* bỏ tia chớp ở vạch chạm sau khi bấm */
+.studio-player .studio-player__hit-flash {
+  display: none;
+}
+
+/* bỏ cột sáng bắn lên từ phím sau khi chạm nốt */
+.studio-player .studio-player__judge-beam {
+  display: none;
+}
+
+/* khuôn (thẻ, khung) trong Studio luôn màu trắng, kể cả khi web đang ở theme tối: ghim bộ màu sáng cho cả trang Studio
+   để chữ và viền vẫn đủ tương phản trên nền trắng */
+.studio-player {
+  color-scheme: light;
+  --ui-bg: #fff7f1;
+  --ui-surface: #ffffff;
+  --ui-surface-muted: #f6f1ed;
+  --ui-surface-hover: #ffe1ce;
+  --ui-border: #f1cfb9;
+  --ui-border-strong: #f0a77f;
+  --ui-text: #232114;
+  --ui-text-2: #4b4737;
+  --ui-text-3: #5c5744;
+  --ui-primary: #b33a00;
+  --ui-primary-hover: #8f2e00;
+  --ui-primary-soft: #ffe0cc;
+  --ui-primary-ring: rgba(253, 85, 10, 0.3);
+  --studio-glass: #ffffff;
+  color: var(--ui-text);
+}
+
+/* rê chuột chỉ đổi màu, không nhấc / dịch chuyển nên không bị nhảy */
+.studio-player .studio-player__mode-card:hover,
+.studio-player .sc-btn--primary:hover:not(:disabled),
+.studio-player .studio-player__start:hover:not(:disabled),
+.studio-player .studio-player__back:hover svg {
+  transform: none;
+}
+.studio-player .studio-player__mode-card small {
+  display: none;
+}
