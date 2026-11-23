@@ -11,6 +11,8 @@
     "input": "Note input",
     "computerKeyboard": "Computer keyboard",
     "touchKeyboard": "Tap the on-screen piano",
+    "microphone": "Microphone (real piano)",
+    "microphoneHint": "The microphone recognizes multiple notes at once. Use Free Run only; feedback is delayed by about 1–2 seconds. Audio is analyzed in your browser and is not uploaded. Place the mic near the piano and reduce background noise.",
     "hands": "Practice hands",
     "bothHands": "Both hands",
     "rightHand": "Right hand",
@@ -30,6 +32,8 @@
     "saving": "Saving…",
     "progress": "Practice progress",
     "lastResult": "Latest result",
+    "microphonePrompt": "Play your piano; detected notes appear after a short processing delay",
+    "microphoneStatus": "Listening and recognizing multiple notes · processing queue {latency}",
     "playPrompt": "Play a note to begin",
     "waitPrompt": "Play the notes waiting at the line to continue",
     "finished": "Practice complete"
@@ -99,6 +103,15 @@
     "finish": "Could not save the practice result. You can try finishing again.",
     "saveEvents": "Could not send note events; the app will retry.",
     "abort": "Could not abort the practice session.",
-    "input": "Could not score this note."
+    "input": "Could not score this note.",
+    "mic": {
+      "unsupported": "This browser does not support the audio features required. Use a recent version of Chrome, Edge, or Firefox.",
+      "insecure-context": "Microphone access requires HTTPS or localhost.",
+      "permission": "Microphone permission was denied. Allow microphone access for this site and try again.",
+      "no-device": "No microphone was found. Connect a microphone and try again.",
+      "audio-start": "Could not start the microphone audio stream.",
+      "model-load": "Could not load the note-recognition model. Check your connection and try again.",
+      "inference": "Audio recognition failed or fell behind. Abort this session and try again on a faster computer with less background noise."
+    }
   }
 }

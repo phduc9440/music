@@ -2038,6 +2038,13 @@
   background: var(--ui-surface);
 }
 
+.studio-player__mic-status {
+  flex: 1 1 100%;
+  margin: 0;
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-xs);
+}
+
 .studio-player__latest-result {
   align-items: center;
 }
