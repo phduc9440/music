@@ -1,0 +1,1676 @@
+# ============================================================
+# Practice — OpenAPI 3.0 Specification
+# ============================================================
+openapi: 3.0.3
+info:
+  title: Practice API
+  description: |
+    Luyện tập: Practice Studio (phiên tương tác, sự kiện nốt, báo cáo), lịch sử phiên, thống kê chuỗi ngày /
+    heatmap / kỹ năng, playlist luyện tập.
+
+    Mọi phản hồi JSON bọc trong ApiResponse {code, message, result}; code = 200 khi thành công,
+    lỗi trả mã nghiệp vụ (ví dụ 1001 chưa đăng nhập, 1002 không có quyền) kèm HTTP status tương ứng.
+    Sinh từ controller của music-be (springdoc /v3/api-docs) rồi chia theo nhóm chức năng.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: music-be (Spring Boot) khi chạy local
+tags:
+  - name: Practice Studio
+    description: Dữ liệu bản nhạc phục vụ luyện tập tương tác; vòng đời phiên luyện tập tương tác
+  - name: Practice Studio Reports
+    description: Báo cáo và lịch sử phiên luyện tập tương tác
+  - name: Practice sessions
+    description: Lịch sử phiên tập của thành viên hiện tại
+  - name: Practice stats
+    description: Chuỗi ngày luyện tập và heatmap của thành viên hiện tại
+  - name: Playlists
+    description: Playlist luyện tập của thành viên hiện tại
+
+paths:
+  # ─── Practice Studio ─────────────────────────
+  /api/studio/scores/{scoreId}/timeline:
+    get:
+      tags: [Practice Studio]
+      summary: Lấy timeline nốt của bản nhạc cho Studio
+      operationId: getTimeline
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudioTimelineResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/studio/sessions:
+    post:
+      tags: [Practice Studio]
+      summary: Tạo phiên luyện tập
+      operationId: createSession
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudioSessionCreateRequest'
+        required: true
+      responses:
+        '201':
+          description: Tạo thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudioSessionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    get:
+      tags: [Practice Studio Reports]
+      summary: Lấy lịch sử phiên luyện tập
+      operationId: getSessions
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: mode
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - WAIT
+              - FREE_RUN
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 20
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponseStudioSessionSummaryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/studio/sessions/active:
+    get:
+      tags: [Practice Studio]
+      summary: Lấy phiên luyện tập đang chạy
+      operationId: getActiveSession
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudioSessionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/studio/sessions/{sessionId}/abort:
+    post:
+      tags: [Practice Studio]
+      summary: Hủy phiên luyện tập
+      operationId: abortSession
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Thành công, không có nội dung
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/studio/sessions/{sessionId}/events:
+    post:
+      tags: [Practice Studio]
+      summary: Gửi lô sự kiện nốt của phiên
+      operationId: ingestEvents
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudioEventBatchRequest'
+        required: true
+      responses:
+        '202':
+          description: Đã nhận, xử lý nền
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudioEventBatchResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/studio/sessions/{sessionId}/finish:
+    post:
+      tags: [Practice Studio]
+      summary: Kết thúc phiên và tổng hợp báo cáo
+      operationId: finishSession
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudioSessionFinishRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudioSessionReportResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── Practice Studio Reports ─────────────────
+  /api/studio/scores/{scoreId}/best:
+    get:
+      tags: [Practice Studio Reports]
+      summary: Lấy phiên có điểm cao nhất
+      operationId: getBestSession
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudioSessionReportResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/studio/sessions/{sessionId}/report:
+    get:
+      tags: [Practice Studio Reports]
+      summary: Lấy báo cáo một phiên
+      operationId: getReport
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudioSessionReportResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── Practice sessions ───────────────────────
+  /api/practice-sessions:
+    get:
+      tags: [Practice sessions]
+      summary: Lịch sử luyện tập của tôi (mới nhất trước, có thể lọc theo một bản nhạc)
+      operationId: listPracticeSessions
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 20
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePageResponsePracticeSessionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Practice sessions]
+      summary: Lưu một phiên luyện tập
+      operationId: createPracticeSessions
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PracticeSessionRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePracticeSessionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/practice-sessions/{id}:
+    get:
+      tags: [Practice sessions]
+      summary: Một phiên luyện tập của tôi (kèm danh sách lỗi)
+      operationId: getPracticeSessions
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePracticeSessionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Practice sessions]
+      summary: Xóa một phiên luyện tập của tôi
+      operationId: deletePracticeSessions
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── Practice stats ──────────────────────────
+  /api/practice-stats/heatmap:
+    get:
+      tags: [Practice stats]
+      summary: Những ngày tôi đã luyện tập (mặc định 365 ngày gần nhất), cũ nhất trước
+      operationId: heatmap
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListPracticeHeatmapDayResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/practice-stats/skills:
+    get:
+      tags: [Practice stats]
+      summary: Điểm 4 kỹ năng của tôi (0-100) trong N ngày gần nhất, cho biểu đồ radar
+      operationId: skills
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: days
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePracticeSkillsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/practice-stats/streak:
+    get:
+      tags: [Practice stats]
+      summary: Chuỗi ngày luyện tập hiện tại và dài nhất của tôi
+      operationId: streak
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePracticeStreakResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/practice-stats/time:
+    get:
+      tags: [Practice stats]
+      summary: Thời gian luyện tập theo DAY / WEEK / MONTH (điền 0 cho kỳ trống, cũ nhất trước)
+      operationId: time
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: period
+          in: query
+          required: false
+          schema:
+            type: string
+            default: DAY
+        - name: count
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListPracticeTimeBucketResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ─── Playlists ───────────────────────────────
+  /api/playlists:
+    get:
+      tags: [Playlists]
+      summary: Danh sách playlist của tôi
+      operationId: listPlaylists
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListPlaylistResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Playlists]
+      summary: Tạo playlist
+      operationId: createPlaylists
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlaylistRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePlaylistResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/playlists/{id}:
+    get:
+      tags: [Playlists]
+      summary: Lấy một playlist của tôi
+      operationId: getPlaylists
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePlaylistResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Playlists]
+      summary: Cập nhật tên / mô tả playlist
+      operationId: updatePlaylists
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlaylistRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePlaylistResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Playlists]
+      summary: Xóa playlist của tôi (bản nhạc được giữ lại)
+      operationId: deletePlaylists
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/playlists/{id}/scores:
+    get:
+      tags: [Playlists]
+      summary: Danh sách bản nhạc trong playlist (theo thứ tự)
+      operationId: items
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListPlaylistItemResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Playlists]
+      summary: Thêm bản nhạc vào cuối playlist
+      operationId: addScorePlaylists
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlaylistAddScoreRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListPlaylistItemResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/playlists/{id}/scores/order:
+    put:
+      tags: [Playlists]
+      summary: Sắp xếp lại bản nhạc trong playlist
+      operationId: reorderPlaylistsScores
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlaylistOrderRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListPlaylistItemResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/playlists/{id}/scores/remove:
+    post:
+      tags: [Playlists]
+      summary: Gỡ nhiều bản nhạc khỏi playlist cùng lúc (thành công hết hoặc không gỡ bản nào; bản nhạc được giữ lại)
+      description: "Body {scoreIds}. Lỗi: 2601 không có playlist, 2605 danh sách rỗng hoặc có bản nhạc không nằm trong playlist"
+      operationId: removeScores
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlaylistOrderRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListPlaylistItemResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/playlists/{id}/scores/{scoreId}:
+    delete:
+      tags: [Playlists]
+      summary: Gỡ một bản nhạc khỏi playlist (bản nhạc được giữ lại)
+      operationId: removeScorePlaylists
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListPlaylistItemResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "Access token trả về khi đăng nhập (header Authorization: Bearer ...)"
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: access_token
+      description: Web app gửi access token qua cookie HttpOnly access_token
+    internalKey:
+      type: apiKey
+      in: header
+      name: X-Internal-Key
+      description: Khóa bí mật dùng chung với music-ai (biến môi trường AI_INTERNAL_KEY); chỉ nhận từ mạng nội bộ
+
+  responses:
+    BadRequest:
+      description: Dữ liệu không hợp lệ (code nghiệp vụ trong body, ví dụ 1009)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+    Unauthorized:
+      description: Chưa đăng nhập, token hết hạn (1001) hoặc sai X-Internal-Key
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+    Forbidden:
+      description: Không có quyền thực hiện (1002)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+    NotFound:
+      description: Không tìm thấy tài nguyên
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+
+  schemas:
+    JsonNode: {}
+    Measure:
+      type: object
+      properties:
+        index:
+          type: integer
+          format: int32
+        startBeat:
+          type: number
+          format: double
+        beats:
+          type: number
+          format: double
+    Note:
+      type: object
+      properties:
+        id:
+          type: string
+        measure:
+          type: integer
+          format: int32
+        staff:
+          type: integer
+          format: int32
+        hand:
+          type: string
+        midi:
+          type: integer
+          format: int32
+        startBeat:
+          type: number
+          format: double
+        durationBeat:
+          type: number
+          format: double
+        scorable:
+          type: boolean
+        chordGroupId:
+          type: string
+        osmd:
+          $ref: '#/components/schemas/OsmdPosition'
+    OsmdPosition:
+      type: object
+      properties:
+        measureIndex:
+          type: integer
+          format: int32
+        voice:
+          type: integer
+          format: int32
+        entryIndex:
+          type: integer
+          format: int32
+    PageResponsePracticeSessionResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/PracticeSessionResponse'
+        pageNumber:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+    PageResponseStudioSessionSummaryResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/StudioSessionSummaryResponse'
+        pageNumber:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+    PlaylistAddScoreRequest:
+      type: object
+      properties:
+        scoreId:
+          type: string
+    PlaylistItemResponse:
+      type: object
+      properties:
+        scoreId:
+          type: string
+        title:
+          type: string
+        composer:
+          type: string
+        difficulty:
+          type: string
+          enum:
+            - EASY
+            - MEDIUM
+            - HARD
+            - EXPERT
+        measureCount:
+          type: integer
+          format: int32
+        position:
+          type: integer
+          format: int32
+    PlaylistOrderRequest:
+      type: object
+      properties:
+        scoreIds:
+          type: array
+          items:
+            type: string
+    PlaylistRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+    PlaylistResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        scoreCount:
+          type: integer
+          format: int64
+    PracticeHeatmapDayResponse:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        sessionCount:
+          type: integer
+          format: int64
+        totalSeconds:
+          type: integer
+          format: int64
+    PracticeSessionRequest:
+      type: object
+      properties:
+        scoreId:
+          type: string
+        mode:
+          type: string
+          enum:
+            - "1"
+            - "2"
+            - "3"
+            - "4"
+            - "5"
+        tempoPercent:
+          type: number
+          format: double
+        loopStartMeasure:
+          type: integer
+          format: int32
+        loopEndMeasure:
+          type: integer
+          format: int32
+        startedAt:
+          type: string
+          format: date-time
+        endedAt:
+          type: string
+          format: date-time
+        durationSeconds:
+          type: integer
+          format: int32
+        totalNotes:
+          type: integer
+          format: int32
+        perfectCount:
+          type: integer
+          format: int32
+        earlyCount:
+          type: integer
+          format: int32
+        lateCount:
+          type: integer
+          format: int32
+        wrongPitchCount:
+          type: integer
+          format: int32
+        missedCount:
+          type: integer
+          format: int32
+        accuracyPct:
+          type: number
+          format: double
+        timingAccuracyPct:
+          type: number
+          format: double
+        scorePoints:
+          type: number
+          format: double
+        isCompleted:
+          type: boolean
+        errorLog:
+          $ref: '#/components/schemas/JsonNode'
+    PracticeSessionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        scoreId:
+          type: string
+        scoreTitle:
+          type: string
+        mode:
+          type: string
+          enum:
+            - "1"
+            - "2"
+            - "3"
+            - "4"
+            - "5"
+        tempoPercent:
+          type: number
+          format: double
+        loopStartMeasure:
+          type: integer
+          format: int32
+        loopEndMeasure:
+          type: integer
+          format: int32
+        startedAt:
+          type: string
+          format: date-time
+        endedAt:
+          type: string
+          format: date-time
+        durationSeconds:
+          type: integer
+          format: int32
+        totalNotes:
+          type: integer
+          format: int32
+        perfectCount:
+          type: integer
+          format: int32
+        earlyCount:
+          type: integer
+          format: int32
+        lateCount:
+          type: integer
+          format: int32
+        wrongPitchCount:
+          type: integer
+          format: int32
+        missedCount:
+          type: integer
+          format: int32
+        accuracyPct:
+          type: number
+          format: double
+        timingAccuracyPct:
+          type: number
+          format: double
+        scorePoints:
+          type: number
+          format: double
+        isCompleted:
+          type: boolean
+        errorLog:
+          $ref: '#/components/schemas/JsonNode'
+    PracticeSkillsResponse:
+      type: object
+      properties:
+        days:
+          type: integer
+          format: int32
+        sessionCount:
+          type: integer
+          format: int64
+        pitchAccuracy:
+          type: number
+          format: double
+        timing:
+          type: number
+          format: double
+        speed:
+          type: number
+          format: double
+        diligence:
+          type: number
+          format: double
+    PracticeStreakResponse:
+      type: object
+      properties:
+        currentStreak:
+          type: integer
+          format: int32
+        longestStreak:
+          type: integer
+          format: int32
+        lastPracticeDate:
+          type: string
+          format: date
+        practicedToday:
+          type: boolean
+    PracticeTimeBucketResponse:
+      type: object
+      properties:
+        start:
+          type: string
+          format: date
+        end:
+          type: string
+          format: date
+        totalSeconds:
+          type: integer
+          format: int64
+        sessionCount:
+          type: integer
+          format: int64
+    Step:
+      type: object
+      properties:
+        stepIndex:
+          type: integer
+          format: int32
+        startBeat:
+          type: number
+          format: double
+        noteIds:
+          type: array
+          items:
+            type: string
+    StudioEventBatchRequest:
+      type: object
+      properties:
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/StudioNoteEventRequest'
+      required:
+        - events
+    StudioEventBatchResponse:
+      type: object
+      properties:
+        accepted:
+          type: integer
+          format: int32
+        duplicates:
+          type: integer
+          format: int32
+        lastSeq:
+          type: integer
+          format: int32
+    StudioMeasureBreakdown:
+      type: object
+      properties:
+        measure:
+          type: integer
+          format: int32
+        perfect:
+          type: integer
+          format: int32
+        early:
+          type: integer
+          format: int32
+        late:
+          type: integer
+          format: int32
+        wrongPitch:
+          type: integer
+          format: int32
+        missed:
+          type: integer
+          format: int32
+    StudioNoteEventRequest:
+      type: object
+      properties:
+        seq:
+          type: integer
+          format: int32
+          minimum: 0
+        noteId:
+          type: string
+          maxLength: 40
+          minLength: 0
+        measure:
+          type: integer
+          format: int32
+        hand:
+          type: string
+          maxLength: 5
+          minLength: 0
+        expectedMidi:
+          type: integer
+          format: int32
+          maximum: 127
+          minimum: 0
+        playedMidi:
+          type: integer
+          format: int32
+          maximum: 127
+          minimum: 0
+        expectedMs:
+          type: integer
+          format: int32
+          minimum: 0
+        playedMs:
+          type: integer
+          format: int32
+        deltaMs:
+          type: integer
+          format: int32
+        result:
+          type: string
+          enum:
+            - PERFECT
+            - EARLY
+            - LATE
+            - WRONG_PITCH
+            - MISSED
+    StudioSessionComparison:
+      type: object
+      properties:
+        previousScorePoints:
+          type: integer
+          format: int32
+        bestScorePoints:
+          type: integer
+          format: int32
+        isNewBest:
+          type: boolean
+    StudioSessionCounts:
+      type: object
+      properties:
+        total:
+          type: integer
+          format: int32
+        perfect:
+          type: integer
+          format: int32
+        early:
+          type: integer
+          format: int32
+        late:
+          type: integer
+          format: int32
+        wrongPitch:
+          type: integer
+          format: int32
+        missed:
+          type: integer
+          format: int32
+    StudioSessionCreateRequest:
+      type: object
+      properties:
+        scoreId:
+          type: string
+          minLength: 1
+        mode:
+          type: string
+          enum:
+            - WAIT
+            - FREE_RUN
+        inputSource:
+          type: string
+          enum:
+            - MIDI
+            - MIC
+            - TOUCH
+            - KEYBOARD
+        handMode:
+          type: string
+          enum:
+            - BOTH
+            - RIGHT_ONLY
+            - LEFT_ONLY
+        tempoPercent:
+          type: integer
+          format: int32
+          maximum: 200
+          minimum: 20
+        loopStartMeasure:
+          type: integer
+          format: int32
+        loopEndMeasure:
+          type: integer
+          format: int32
+      required:
+        - handMode
+        - inputSource
+        - mode
+        - scoreId
+        - tempoPercent
+    StudioSessionFinishRequest:
+      type: object
+      properties:
+        durationSeconds:
+          type: integer
+          format: int32
+          maximum: 86400
+          minimum: 0
+        reachedEnd:
+          type: boolean
+        coveredUntilMs:
+          type: integer
+          format: int32
+          minimum: 0
+      required:
+        - coveredUntilMs
+        - durationSeconds
+        - reachedEnd
+    StudioSessionReportResponse:
+      type: object
+      properties:
+        sessionId:
+          type: string
+        scoreId:
+          type: string
+        title:
+          type: string
+        mode:
+          type: string
+          enum:
+            - WAIT
+            - FREE_RUN
+        tempoPercent:
+          type: integer
+          format: int32
+        durationSeconds:
+          type: integer
+          format: int32
+        isCompleted:
+          type: boolean
+        scorePoints:
+          type: integer
+          format: int32
+        grade:
+          type: string
+        accuracyPct:
+          type: number
+          format: double
+        timingAccuracyPct:
+          type: number
+          format: double
+        counts:
+          $ref: '#/components/schemas/StudioSessionCounts'
+        measureBreakdown:
+          type: array
+          items:
+            $ref: '#/components/schemas/StudioMeasureBreakdown'
+        weakestMeasures:
+          type: array
+          items:
+            type: integer
+            format: int32
+        comparison:
+          $ref: '#/components/schemas/StudioSessionComparison'
+        startedAt:
+          type: string
+          format: date-time
+    StudioSessionResponse:
+      type: object
+      properties:
+        sessionId:
+          type: string
+        scoreId:
+          type: string
+        mode:
+          type: string
+          enum:
+            - WAIT
+            - FREE_RUN
+        inputSource:
+          type: string
+          enum:
+            - MIDI
+            - MIC
+            - TOUCH
+            - KEYBOARD
+        handMode:
+          type: string
+          enum:
+            - BOTH
+            - RIGHT_ONLY
+            - LEFT_ONLY
+        status:
+          type: string
+          enum:
+            - IN_PROGRESS
+            - COMPLETED
+            - ABANDONED
+        tempoPercent:
+          type: integer
+          format: int32
+        loopStartMeasure:
+          type: integer
+          format: int32
+        loopEndMeasure:
+          type: integer
+          format: int32
+        startedAt:
+          type: string
+          format: date-time
+        serverTime:
+          type: string
+          format: date-time
+        scorableNotesInRange:
+          type: integer
+          format: int32
+    StudioSessionSummaryResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        scoreId:
+          type: string
+        title:
+          type: string
+        mode:
+          type: string
+          enum:
+            - WAIT
+            - FREE_RUN
+        tempoPercent:
+          type: integer
+          format: int32
+        durationSeconds:
+          type: integer
+          format: int32
+        startedAt:
+          type: string
+          format: date-time
+        scorePoints:
+          type: integer
+          format: int32
+        accuracyPct:
+          type: number
+          format: double
+        timingAccuracyPct:
+          type: number
+          format: double
+        grade:
+          type: string
+    StudioTimelineResponse:
+      type: object
+      properties:
+        scoreId:
+          type: string
+        contentHash:
+          type: string
+        title:
+          type: string
+        measureCount:
+          type: integer
+          format: int32
+        tempoBpm:
+          type: integer
+          format: int32
+        timeSignatures:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimeSignature'
+        tempoChanges:
+          type: array
+          items:
+            $ref: '#/components/schemas/TempoChange'
+        measures:
+          type: array
+          items:
+            $ref: '#/components/schemas/Measure'
+        notes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Note'
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/Step'
+        warnings:
+          type: array
+          items:
+            type: string
+    TempoChange:
+      type: object
+      properties:
+        measure:
+          type: integer
+          format: int32
+        bpm:
+          type: integer
+          format: int32
+    TimeSignature:
+      type: object
+      properties:
+        measure:
+          type: integer
+          format: int32
+        beats:
+          type: integer
+          format: int32
+        beatType:
+          type: integer
+          format: int32
+
+    # ── Wrapped Responses ──
+    ApiResponseListPlaylistItemResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlaylistItemResponse'
+    ApiResponseListPlaylistResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlaylistResponse'
+    ApiResponseListPracticeHeatmapDayResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: '#/components/schemas/PracticeHeatmapDayResponse'
+    ApiResponseListPracticeTimeBucketResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: '#/components/schemas/PracticeTimeBucketResponse'
+    ApiResponsePageResponsePracticeSessionResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/PageResponsePracticeSessionResponse'
+    ApiResponsePlaylistResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/PlaylistResponse'
+    ApiResponsePracticeSessionResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/PracticeSessionResponse'
+    ApiResponsePracticeSkillsResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/PracticeSkillsResponse'
+    ApiResponsePracticeStreakResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/PracticeStreakResponse'
+    ApiResponseVoid:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result: {}
+    ApiResponseError:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 1002
+        message:
+          type: string
+          example: You do not have permission

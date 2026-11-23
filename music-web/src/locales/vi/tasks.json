@@ -1,0 +1,49 @@
+{
+  "title": "Việc của tôi",
+  "subtitle": "Các bài được giao cho bạn phối hoặc duyệt trong những buổi diễn của nhóm.",
+  "myTeams": "Nhóm của tôi",
+  "search": "Tìm theo tên bài, nhóm hoặc buổi diễn",
+  "dueLabel": "Lọc nhanh theo hạn",
+  "due": {
+    "all": "Tất cả",
+    "late": "Quá hạn",
+    "soon": "Sắp tới hạn",
+    "week": "Trong tuần",
+    "none": "Chưa có hạn"
+  },
+  "filters": {
+    "team": "Nhóm",
+    "allTeams": "Mọi nhóm",
+    "status": "Trạng thái",
+    "allStatuses": "Mọi trạng thái",
+    "role": "Vai trò",
+    "allRoles": "Phối và duyệt",
+    "arranger": "Bạn phối",
+    "reviewer": "Bạn duyệt"
+  },
+  "sort": {
+    "label": "Sắp xếp",
+    "due": "Hạn gần nhất",
+    "dueDesc": "Hạn xa nhất",
+    "title": "Tên bài A-Z"
+  },
+  "count": "{count} việc",
+  "countFiltered": "Hiện {shown} trên {total} việc",
+  "clear": "Xóa bộ lọc",
+  "emptyTitle": "Bạn chưa được giao bài nào",
+  "emptyHint": "Khi quản lý nhóm giao bài cho bạn phối hoặc duyệt trong một buổi diễn, bài sẽ hiện ở đây.",
+  "noMatchTitle": "Không có việc nào khớp",
+  "noMatchHint": "Thử bỏ bớt bộ lọc hoặc tìm bằng từ khác.",
+  "loadFailed": "Không tải được danh sách việc",
+  "reload": "Thử tải lại trang.",
+  "openShow": "Mở buổi diễn",
+  "openScore": "Mở bản nhạc",
+  "searchInTeam": "Tìm theo tên bài hoặc buổi diễn",
+  "emptyTeamTitle": "Bạn chưa có việc nào trong nhóm này",
+  "emptyTeamHint": "Khi quản lý giao bài cho bạn phối hoặc duyệt trong một buổi diễn của nhóm, bài sẽ hiện ở đây.",
+  "teamHint": "Các bài được giao cho bạn phối hoặc duyệt trong những buổi diễn của nhóm này.",
+  "allTeamsLink": "Việc ở mọi nhóm",
+  "inShowTitle": "Việc của tôi trong buổi diễn",
+  "mineOnly": "Chỉ bài của tôi ({count})",
+  "viewAll": "Xem và lọc tất cả"
+}

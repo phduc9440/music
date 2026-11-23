@@ -5,7 +5,7 @@ import java.util.List;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-import com.ptit.music_be.dto.response.ScoreFileResponse;
+import com.ptit.music_be.dto.response.score.ScoreFileResponse;
 import com.ptit.music_be.entity.ScoreFile;
 
 @Mapper(componentModel = "spring")

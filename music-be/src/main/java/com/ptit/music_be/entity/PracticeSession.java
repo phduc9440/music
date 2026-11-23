@@ -5,7 +5,10 @@ import java.time.LocalDateTime;
 import jakarta.persistence.*;
 
 import com.ptit.music_be.converter.PracticeModeConverter;
-import com.ptit.music_be.dto.enums.PracticeMode;
+import com.ptit.music_be.dto.enums.PracticeSessionStatus;
+import com.ptit.music_be.dto.enums.StudioHandMode;
+import com.ptit.music_be.dto.enums.StudioInputSource;
+import com.ptit.music_be.dto.enums.practice.PracticeMode;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -36,6 +39,19 @@ public class PracticeSession {
     @Column(name = "mode")
     PracticeMode mode;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    @Builder.Default
+    PracticeSessionStatus status = PracticeSessionStatus.ABANDONED;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "input_source")
+    StudioInputSource inputSource;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "hand_mode")
+    StudioHandMode handMode;
+
     @Column(name = "tempo_percent")
     Double tempoPercent;
 
@@ -53,6 +69,9 @@ public class PracticeSession {
 
     @Column(name = "duration_seconds")
     Integer durationSeconds;
+
+    @Column(name = "covered_until_ms")
+    Integer coveredUntilMs;
 
     @Column(name = "total_notes")
     Integer totalNotes;
@@ -83,4 +102,8 @@ public class PracticeSession {
 
     @Column(name = "is_completed")
     Boolean isCompleted;
+
+    /** Log lỗi chi tiết từng nốt (mảng JSON), cột kiểu JSON trong MySQL. */
+    @Column(name = "error_log", columnDefinition = "json")
+    String errorLog;
 }

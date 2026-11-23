@@ -18,11 +18,20 @@ mysql -uroot -p music_db < init/V1__init_schema.sql
 ## 2. Chạy seed (dữ liệu mẫu)
 
 ```bash
-cat seed/*.sql | mysql -uroot -p music_db
+for f in $(ls -v seed/*.sql); do mysql -uroot -p music_db --default-character-set=utf8mb4 < $f; done
 ```
 
-Tài khoản `admin@music.com` (mật khẩu `12345678`) không nằm trong seed. Backend tự tạo nó khi khởi động.
+Tài khoản gốc `admin@music.com` (`SUPER_ADMIN`, mật khẩu `12345678`) nằm trong seed V3. DB không chạy seed thì backend
+tự tạo nó khi khởi động.
 
 ## Chạy tự động
 
 Nếu bạn chạy backend (`./mvnw spring-boot:run` trong thư mục `music-be`), Flyway tự chạy init và seed ở trên, nên không cần làm tay.
+
+## Quy ước
+
+- `init/V1__init_schema.sql` là toàn bộ schema (đủ mọi bảng và cột của entity), không tách migration riêng. Đổi schema thì sửa thẳng V1; DB đã chạy V1 cũ sẽ báo lệch checksum, khi đó tạo lại DB (`DROP DATABASE music_db; CREATE DATABASE music_db CHARACTER SET utf8mb4`) rồi chạy lại backend.
+- `seed/V2..V8` là dữ liệu mẫu theo thứ tự phụ thuộc: vai trò → thành viên → thể loại → nhạc sĩ → bản nhạc → đánh giá/chia sẻ/playlist/kho mẫu → luyện tập/tác vụ AI/thông báo. Tất cả tài khoản có mật khẩu `12345678`.
+- Sau khi xóa hoặc đổi tên file migration, chạy `./mvnw clean` (hoặc xóa `target/classes/db`): Maven không tự dọn file cũ, Flyway sẽ báo "Found more than one migration with version N".
+- Seed SQL không ghi được file, nên khi backend khởi động, `SeedMusicXmlInitializer` ghi MusicXML (`classpath:seed/musicxml`) cho mọi bản `COMPLETED` còn `current_version = 0`. Nhờ vậy bản mẫu mở được Chỉnh sửa, Phát, Luyện tập và Gợi ý hợp âm. Bài quen thuộc có đoạn mở đầu đúng giai điệu, bài khác dùng bài tập gam. Tắt bằng `app.seed.musicxml.enabled=false`.
+- Ảnh bìa của mọi bản công khai, chờ duyệt và kho mẫu nằm ở `seed/V202611231200__seed_score_covers.sql` (ảnh Wikimedia Commons, ghi nguồn và giấy phép trong file).

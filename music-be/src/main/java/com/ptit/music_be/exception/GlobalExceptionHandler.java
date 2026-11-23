@@ -5,6 +5,8 @@ import java.util.Objects;
 
 import jakarta.validation.ConstraintViolation;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
@@ -14,21 +16,27 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
-import com.ptit.music_be.dto.response.ApiResponse;
+import com.ptit.music_be.dto.response.common.ApiResponse;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     private static final String MIN_ATTRIBUTE = "min";
 
     @ExceptionHandler(value = Exception.class)
     ResponseEntity<ApiResponse> handlingRuntimeException(Exception exception) {
+        // Lỗi không lường trước (HTTP 500): ghi log ERROR để admin xem được ở trang giám sát (mục 4.8)
+        log.error("Unhandled exception", exception);
         ApiResponse apiResponse = new ApiResponse();
 
-        apiResponse.setCode(ErrorCode.UNCATEGORIZED_EXCEPTION.getCode());
-        apiResponse.setMessage(ErrorCode.UNCATEGORIZED_EXCEPTION.getMessage());
+        apiResponse.setCode(AccountErrorCode.UNCATEGORIZED_EXCEPTION.getCode());
+        apiResponse.setMessage(AccountErrorCode.UNCATEGORIZED_EXCEPTION.getMessage());
 
-        return ResponseEntity.status(ErrorCode.UNCATEGORIZED_EXCEPTION.getHttpStatusCode())
+        return ResponseEntity.status(AccountErrorCode.UNCATEGORIZED_EXCEPTION.getHttpStatusCode())
                 .body(apiResponse);
     }
 
@@ -47,7 +55,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(value = MaxUploadSizeExceededException.class)
     ResponseEntity<ApiResponse> handlingMaxUploadSize(MaxUploadSizeExceededException exception) {
-        ErrorCode errorCode = ErrorCode.FILE_TOO_LARGE;
+        ErrorCode errorCode = ScoreErrorCode.FILE_TOO_LARGE;
 
         return ResponseEntity.status(errorCode.getHttpStatusCode())
                 .body(ApiResponse.builder()
@@ -59,7 +67,7 @@ public class GlobalExceptionHandler {
     /** Body JSON hỏng hoặc giá trị enum không hợp lệ (ví dụ visibility = "ABC"), hoặc tham số query sai kiểu. */
     @ExceptionHandler(value = {HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class})
     ResponseEntity<ApiResponse> handlingBadRequest(Exception exception) {
-        ErrorCode errorCode = ErrorCode.INVALID_REQUEST;
+        ErrorCode errorCode = AccountErrorCode.INVALID_REQUEST;
 
         return ResponseEntity.status(errorCode.getHttpStatusCode())
                 .body(ApiResponse.builder()
@@ -70,7 +78,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(value = AccessDeniedException.class)
     ResponseEntity<ApiResponse> handlingAccessDeniedException(AccessDeniedException exception) {
-        ErrorCode errorCode = ErrorCode.UNAUTHORIZED;
+        ErrorCode errorCode = AccountErrorCode.UNAUTHORIZED;
 
         return ResponseEntity.status(errorCode.getHttpStatusCode())
                 .body(ApiResponse.builder()
@@ -82,7 +90,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(value = MethodArgumentNotValidException.class)
     ResponseEntity<ApiResponse> handlingValidation(MethodArgumentNotValidException exception) {
         String enumKey = exception.getFieldError().getDefaultMessage();
-        ErrorCode errorCode = ErrorCode.INVALID_REQUEST;
+        ErrorCode errorCode = AccountErrorCode.INVALID_REQUEST;
         Map<String, Object> attributes = null;
 
         try {
@@ -108,9 +116,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(errorCode.getHttpStatusCode()).body(apiResponse);
     }
 
+    /** Điền {min} từ ràng buộc (ví dụ @Size); ràng buộc không có min (như @NotBlank) thì giữ nguyên, không in "null". */
     private String mapAttribute(String message, Map<String, Object> attributes) {
-        String minValue = String.valueOf(attributes.get(MIN_ATTRIBUTE));
-
-        return message.replace("{" + MIN_ATTRIBUTE + "}", minValue);
+        Object minValue = attributes.get(MIN_ATTRIBUTE);
+        if (minValue == null) {
+            return message;
+        }
+        return message.replace("{" + MIN_ATTRIBUTE + "}", String.valueOf(minValue));
     }
 }

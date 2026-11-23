@@ -1,0 +1,119 @@
+{
+  "eyebrow": "Interactive practice studio",
+  "measures": "measures",
+  "unknownComposer": "Unknown composer",
+  "backToScore": "Back to score",
+  "setup": {
+    "title": "Set up your practice",
+    "description": "Choose a tempo and input method. Starting practice opens a full-screen workspace with all 88 piano keys.",
+    "mode": "Mode",
+    "waitHint": "Notes pause at the play line. Play every note in the chord to move to the next step.",
+    "input": "Note input",
+    "computerKeyboard": "Computer keyboard",
+    "touchKeyboard": "Tap the on-screen piano",
+    "microphone": "Microphone (real piano)",
+    "microphoneHint": "The microphone recognizes multiple notes at once. Use Free Run only; feedback is delayed by about 1–2 seconds. Audio is analyzed in your browser and is not uploaded. Place the mic near the piano and reduce background noise.",
+    "hands": "Practice hands",
+    "bothHands": "Both hands",
+    "rightHand": "Right hand",
+    "leftHand": "Left hand",
+    "tempo": "Tempo",
+    "repeatSection": "Repeat a section",
+    "fromMeasure": "From measure",
+    "toMeasure": "To measure",
+    "start": "Start practice",
+    "starting": "Starting session…",
+    "freeRunHint": "Notes keep moving at the chosen tempo; play as each note reaches the line to score Perfect."
+  },
+  "session": {
+    "live": "Practice in progress",
+    "freeRun": "Free run",
+    "abort": "Abort session",
+    "finish": "Finish and view report",
+    "saving": "Saving…",
+    "progress": "Practice progress",
+    "lastResult": "Latest result",
+    "microphonePrompt": "Play your piano; detected notes appear after a short processing delay",
+    "microphoneStatus": "Listening and recognizing multiple notes · processing queue {latency}",
+    "playPrompt": "Play a note to begin",
+    "waitPrompt": "Play the notes waiting at the line to continue",
+    "finished": "Practice complete",
+    "getReady": "Get ready"
+  },
+  "results": {
+    "PERFECT": "Perfect",
+    "EARLY": "Early",
+    "LATE": "Late",
+    "WRONG_PITCH": "Wrong pitch",
+    "MISSED": "Missed"
+  },
+  "score": {
+    "title": "Score",
+    "subtitle": "Play along with the score; note feedback appears as you play.",
+    "measureRange": "Measures {start}–{end}"
+  },
+  "keyboard": {
+    "label": "Virtual piano",
+    "title": "Piano keys",
+    "range": "88 keys · A0–C8",
+    "rangeHint": "Some score notes are outside the 88-key piano range (A0–C8)."
+  },
+  "keyboardGuide": {
+    "open": "How to play",
+    "title": "Playing with your keyboard",
+    "stepInput": "In setup, choose “Computer keyboard” to use letter keys, or “Tap the on-screen piano” to play by touching the piano.",
+    "stepRange": "The virtual piano always shows all 88 keys from A0 to C8. Computer keys play C4 through C5 using the map.",
+    "stepPlay": "Note colors indicate hands: right hand is blue and left hand is orange. Press the matching key when a note reaches the play line, or tap its on-screen piano key.",
+    "stepFeedback": "Check the result below the piano: green means in time, yellow means early/late, and red means wrong note or missed.",
+    "keyMap": "Computer keys play one octave using this map:"
+  },
+  "recovery": {
+    "title": "Another practice session is active",
+    "sameScore": "This account still has an active session for this score. It was left behind after the page was reloaded, so its scoring position cannot be restored.",
+    "otherScore": "This account still has an active session for another score. Only one practice session per account can run at a time.",
+    "resolve": "Resolve old session",
+    "resolveFirst": "Resolve old session first",
+    "sameScoreConfirm": "Aborting the old session will mark it abandoned. Saved events remain in history, but the session cannot be resumed.",
+    "otherScoreConfirm": "The old session may still be in use in another tab. Only confirm if you are sure you no longer want to continue it.",
+    "warning": "After aborting it, you can start a new practice session on this page.",
+    "abort": "Abort old session",
+    "aborting": "Aborting…",
+    "aborted": "The old session was aborted. You can start a new practice session."
+  },
+  "display": {
+    "title": "Practice display",
+    "waterfall": "Falling notes",
+    "keyboard": "Virtual piano",
+    "enableKeyboardForTouch": "Turn on the virtual piano to continue with touch input."
+  },
+  "waterfall": {
+    "title": "Falling notes",
+    "hint": "Notes fall toward the hit line using the selected tempo and measure range.",
+    "waitHint": "The current notes pause at the play line; complete the chord to continue.",
+    "label": "Falling note map by pitch and time",
+    "legend": "Hand colors",
+    "hitLine": "Play line",
+    "waiting": "Play to continue",
+    "seconds": "{seconds}s"
+  },
+  "errors": {
+    "load": "Could not load practice data for this score.",
+    "invalidScore": "Score not found or you do not have permission to practice it.",
+    "noNotes": "The selected section has no scorable notes.",
+    "start": "Could not start the practice session.",
+    "checkActive": "Could not check for an active practice session.",
+    "finish": "Could not save the practice result. You can try finishing again.",
+    "saveEvents": "Could not send note events; the app will retry.",
+    "abort": "Could not abort the practice session.",
+    "input": "Could not score this note.",
+    "mic": {
+      "unsupported": "This browser does not support the audio features required. Use a recent version of Chrome, Edge, or Firefox.",
+      "insecure-context": "Microphone access requires HTTPS or localhost.",
+      "permission": "Microphone permission was denied. Allow microphone access for this site and try again.",
+      "no-device": "No microphone was found. Connect a microphone and try again.",
+      "audio-start": "Could not start the microphone audio stream.",
+      "model-load": "Could not load the note-recognition model. Check your connection and try again.",
+      "inference": "Audio recognition failed or fell behind. Abort this session and try again on a faster computer with less background noise."
+    }
+  }
+}

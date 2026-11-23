@@ -4,13 +4,6 @@ export interface ApiResponse<T> {
   code?: number;
 }
 
-export interface PageResponse<T> {
-  data: T[];
-  currentPage: number;
-  totalPages: number;
-  totalElements: number;
-}
-
 export interface PageRequest {
   page?: number;
   size?: number;

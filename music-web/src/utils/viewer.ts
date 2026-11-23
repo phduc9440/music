@@ -1,4 +1,5 @@
 /** Giới hạn và cấu hình của trình xem bản nhạc (/scores/:id/edit, chế độ chỉ xem). */
+import { t } from '../i18n/core';
 
 /** Mức thu phóng nhỏ nhất / lớn nhất / mỗi bước (%), theo đặc tả 1.17: 50–200%. */
 export const ZOOM_MIN = 50;
@@ -10,16 +11,14 @@ export const ZOOM_DEFAULT = 100;
 export const MAX_XML_BYTES = 5 * 1024 * 1024;
 export const MAX_MEASURES = 500;
 
-/** Điểm gãy responsive (px): dưới 768 là Mobile, 768–1279 là iPad, từ 1280 là Desktop. */
-export const MOBILE_MAX = 767;
-export const TABLET_MAX = 1279;
-
 /** Chế độ xem: "page" vẽ theo từng trang giấy A4, "scroll" vẽ một hàng khuông dài cuộn ngang. */
 export type ViewMode = 'page' | 'scroll';
 
 export interface ViewerPrefs {
   zoom: number;
   mode: ViewMode;
+  /** Đảo màu bản nhạc (nền tối, nốt sáng) cho theme tối. */
+  invert: boolean;
 }
 
 const PREFS_KEY = 'score-viewer-prefs';
@@ -30,9 +29,17 @@ export const clampZoom = (value: number): number => {
   return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(value / 5) * 5));
 };
 
+/**
+ * Mức thu phóng mặc định theo bề ngang màn hình khi người dùng chưa tự chọn: trang A4 rộng khoảng 794px nên điện thoại
+ * mở ở 50% (vừa bề ngang), iPad dọc 90%, máy tính 100%.
+ */
+export const defaultZoomFor = (viewportWidth: number): number =>
+  viewportWidth < 600 ? ZOOM_MIN : viewportWidth < 900 ? 90 : ZOOM_DEFAULT;
+
 /** Đọc lựa chọn thu phóng và chế độ xem đã lưu; lỗi hoặc dữ liệu lạ thì trả mặc định. */
 export const loadViewerPrefs = (): ViewerPrefs => {
-  const fallback: ViewerPrefs = { zoom: ZOOM_DEFAULT, mode: 'page' };
+  const viewport = typeof window === 'undefined' ? 1280 : window.innerWidth;
+  const fallback: ViewerPrefs = { zoom: defaultZoomFor(viewport), mode: 'page', invert: false };
   try {
     const raw = localStorage.getItem(PREFS_KEY);
     if (!raw) return fallback;
@@ -40,6 +47,7 @@ export const loadViewerPrefs = (): ViewerPrefs => {
     return {
       zoom: typeof data.zoom === 'number' ? clampZoom(data.zoom) : fallback.zoom,
       mode: data.mode === 'scroll' ? 'scroll' : 'page',
+      invert: data.invert === true,
     };
   } catch {
     return fallback;
@@ -81,7 +89,7 @@ export const inspectMusicXml = (xml: string): MusicXmlInfo => {
 /** Cảnh báo hiệu năng nếu MusicXML quá lớn; chuỗi rỗng nếu ổn. */
 export const performanceWarning = (info: MusicXmlInfo): string => {
   if (info.bytes > MAX_XML_BYTES || info.measureCount > MAX_MEASURES) {
-    return 'Bản nhạc khá lớn nên có thể vẽ chậm. Hãy thử chế độ "Cuộn ngang" hoặc thu nhỏ để xem nhanh hơn.';
+    return t('viewer.performanceWarning');
   }
   return '';
 };

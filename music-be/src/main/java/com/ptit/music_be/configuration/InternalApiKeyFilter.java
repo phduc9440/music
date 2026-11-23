@@ -20,8 +20,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ptit.music_be.dto.response.ApiResponse;
+import com.ptit.music_be.dto.response.common.ApiResponse;
 import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.AccountErrorCode;
 
 import lombok.RequiredArgsConstructor;
 
@@ -42,11 +43,11 @@ public class InternalApiKeyFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         if (!isInternalAddress(request.getRemoteAddr())) {
-            reject(response, ErrorCode.UNAUTHORIZED);
+            reject(response, AccountErrorCode.UNAUTHORIZED);
             return;
         }
         if (!keyMatches(request.getHeader(AiServiceProperties.INTERNAL_KEY_HEADER))) {
-            reject(response, ErrorCode.UNAUTHENTICATED);
+            reject(response, AccountErrorCode.UNAUTHENTICATED);
             return;
         }
 

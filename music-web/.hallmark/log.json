@@ -1,0 +1,33 @@
+[
+ {
+  "mode": "redesign",
+  "depth": "full",
+  "scope": "page",
+  "shape": "custom split zigzag",
+  "theme": "custom",
+  "axes": "dark/grotesk-light/chromatic-lime",
+  "hero": "Split: head left, OMR constellation right",
+  "nav": "wordmark left, language, theme, sign-in right",
+  "footer": "shared SiteFooter",
+  "imagery": "generated particle staff, product demo SVG, real covers and portraits",
+  "photos": [],
+  "entry": "constellation assembles once, then a playhead sweep",
+  "fingerprint": "split-hero/zigzag/giant-verbs/stat-band/portraits/faq",
+  "sections": [
+   "hero",
+   "demo",
+   "featured",
+   "steps",
+   "features",
+   "stats",
+   "composers",
+   "forum",
+   "faq",
+   "final"
+  ],
+  "signature": "OMR constellation: scattered ink settles onto a staff, the played note lit lime",
+  "waived": [],
+  "prompt": "guest landing of a Vietnamese sheet-music app: digitise paper scores, edit, play back, practise",
+  "date": "2026-11-20"
+ }
+]

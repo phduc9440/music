@@ -30,8 +30,17 @@ class Settings:
     java_base_url: str
     """Địa chỉ Spring Boot để gọi callback ``/internal/ai-tasks/**``."""
 
-    task_timeout_s: int = 600
-    """Tối đa cho cả một job (10 phút, đặc tả mục 2.2)."""
+    task_timeout_s: int = 3600
+    """Trần thời gian của một job dù nhiều trang (giây). Ngân sách thật tính theo số trang, xem :meth:`task_budget_s`."""
+
+    task_timeout_base_s: int = 300
+    """Phần cố định của ngân sách một job (tách trang, ghép, xuất file)."""
+
+    task_timeout_per_page_s: int = 180
+    """Phần cộng thêm cho mỗi trang (tiền xử lý + nhận diện trên CPU)."""
+
+    progress_heartbeat_s: int = 240
+    """Không có tiến độ mới trong khoảng này thì gửi lại tiến độ cũ, để watchdog của Java (10 phút) không cắt nhầm."""
 
     page_timeout_s: int = 90
     """Tối đa cho mỗi trang (90 giây, đặc tả mục 2.2)."""
@@ -106,14 +115,78 @@ class Settings:
     chậm hơn; hệ lệch ô nhịp trong trang đã nhận diện lại theo hệ luôn được xử lý bất kể cờ này). Đặt bằng
     ``OMR_ROUTING_MEASURES=1``."""
 
+    routing_bars: bool = True
+    """Trang có số ô nhịp lệch nhiều so với số ô đếm trên ảnh (vạch nhịp, ``app/omr/barlines.py``) cũng được nhận diện lại
+    theo hệ, và khi chọn giữa các lần đọc thì ưu tiên lần đúng số ô. Đây là cách sửa lỗi model "lạc chỗ" (đọc lại hệ
+    trước, lặp nguyên khối ô nhịp). Tắt bằng ``OMR_ROUTING_BARS=0`` (để đo so sánh)."""
+
     routing_retry_beams: int = 3
     """Hệ vẫn sai số spine thì thử lại bằng beam search với số beam này (bài báo dùng 3). 0 hoặc 1: không thử lại.
     Đặt bằng ``ROUTING_RETRY_BEAMS``."""
+
+    routing_roles_first: bool = True
+    """Hệ giọng hát + piano được đọc riêng (piano 2 khuông, khuông giọng) NGAY từ đầu khi nhận diện lại theo hệ, thay vì đọc
+    cả hệ 3 khuông trước: Transcoda chỉ được train trên piano nên đọc cả hệ 3 khuông chỉ đúng số spine 12/30 lần (đọc lại
+    beam 3: 14/23) trong storage, còn đọc riêng đúng 27/27. Kết quả ghép không đạt (sai số spine, mất nốt, lệch số ô trên
+    ảnh) thì vẫn đọc cả hệ như cũ. Tắt bằng ``OMR_ROLES_FIRST=0``."""
+
+    strip_text: bool = True
+    """Xóa lời ca, tên hợp âm và các chữ khác ngoài khuông khỏi ảnh trước khi đưa vào Transcoda (``app/omr/textstrip.py``).
+    Model chỉ được train trên nhạc piano không chữ nên lời ca làm nó lạc chỗ/đoán sai. Tắt bằng ``OMR_STRIP_TEXT=0``."""
+
+    music_engine: str = "transcoda"
+    """Engine nhận diện ký hiệu nhạc (``app/omr/engines.py``). Đặt bằng ``OMR_ENGINE``."""
+
+    engine_command: str = ""
+    """Lệnh cho ``OMR_ENGINE=command`` (``app/omr/command_engine.py``), có ``{image}``, ``{output}``, ``{beams}``.
+    Đặt bằng ``OMR_ENGINE_COMMAND``."""
+
+    ottava: str = "auto"
+    """Xử lý ``*8va``/``*8ba`` model sinh ra (``app/omr/ottava.py``): ``auto`` bỏ trên khuông giọng hát/khuông đơn và
+    đưa nốt về đúng quãng tám in trên ảnh; ``drop`` bỏ trên mọi khuông; ``keep`` giữ nguyên. Đặt bằng ``OMR_OTTAVA``."""
+
+    pitch_check: bool = True
+    """Sửa quãng tám theo vị trí đầu nốt trên ảnh (``app/omr/pitch_check.py``): Transcoda hay lệch 1-3 quãng tám nhưng tên
+    nốt thì đúng. Tắt bằng ``OMR_PITCH_CHECK=0``."""
+
+    rhythm_fix: bool = True
+    """Đổi trường độ nhịp ba đọc nhầm (``12`` -> ``8``) khi ô thành đúng số chỉ nhịp, bỏ nốt hợp âm dài hơn cả ô
+    (``app/omr/rhythm_fix.py``). Tắt bằng ``OMR_RHYTHM_FIX=0``."""
 
     routing_reserve_s: int = 30
     """Giây giữ lại cho bước ghép và xuất: nhận diện lại chỉ chạy khi job còn nhiều thời gian hơn mức này, nên không bao
     giờ làm job quá hạn. Đặt bằng ``ROUTING_RESERVE_S``."""
 
+    # ---- Chấm tin cậy từng ô, đọc lại để bỏ phiếu, AI xác minh (app/omr/review.py, stability.py, llm_check.py) ----
+
+    tta_reads: int = 2
+    """Số lần đọc lại (ảnh dịch lên/xuống) mỗi hệ có ô nghi ngờ; 0 = tắt. Cần >= 2 thì mới tự thay ô (hai lần đọc lại
+    phải giống nhau). Đặt bằng ``OMR_TTA``."""
+
+    tta_shift_px: int = 3
+    """Độ dịch ảnh (pixel trên ảnh trang 1050x1485) giữa các lần đọc lại. Đặt bằng ``OMR_TTA_SHIFT_PX``."""
+
+    tta_max_systems: int = 4
+    """Tối đa số hệ được đọc lại mỗi job (hệ nhiều ô nghi ngờ nhất trước). Đặt bằng ``OMR_TTA_MAX_SYSTEMS``."""
+
+    llm_mode: str = "off"
+    """``off`` (mặc định) hoặc ``anthropic``: gửi ảnh cắt từng ô tin cậy thấp cho AI xác minh. Đặt bằng ``OMR_LLM``."""
+
+    llm_model: str = "claude-haiku-5-5"
+    """Model AI xác minh (nên dùng model rẻ). Đặt bằng ``OMR_LLM_MODEL``."""
+
+    llm_api_key: str = ""
+    """Khóa API (``ANTHROPIC_API_KEY``). Thiếu khóa thì lớp AI tự tắt kèm cảnh báo."""
+
+    llm_max_measures: int = 10
+    """Trần số ô gửi AI mỗi job. Đặt bằng ``OMR_LLM_MAX_MEASURES``."""
+
+    llm_timeout_s: int = 30
+    """Hạn mỗi lần gọi AI (giây). Đặt bằng ``OMR_LLM_TIMEOUT_S``."""
+
+    def task_budget_s(self, pages: int) -> int:
+        """Ngân sách thời gian cho job ``pages`` trang: cơ sở + số trang × hệ số, không quá ``task_timeout_s``."""
+        return min(self.task_timeout_s, self.task_timeout_base_s + max(1, pages) * self.task_timeout_per_page_s)
 
 def _bool_env(name: str, default: bool) -> bool:
     raw = os.environ.get(name)
@@ -130,6 +203,7 @@ def _float_env(name: str, default: float) -> float:
         return float(raw)
     except ValueError as exc:
         raise ValueError(f"Biến môi trường {name} phải là số, nhận được {raw!r}") from exc
+
 
 
 def _int_env(name: str, default: int) -> int:
@@ -151,7 +225,10 @@ def get_settings() -> Settings:
         storage_root=storage_root.expanduser().resolve(),
         internal_key=os.environ.get("INTERNAL_KEY") or os.environ.get("AI_INTERNAL_KEY") or DEFAULT_INTERNAL_KEY,
         java_base_url=os.environ.get("JAVA_BASE_URL", "http://localhost:8080").rstrip("/"),
-        task_timeout_s=_int_env("TASK_TIMEOUT_S", 600),
+        task_timeout_s=_int_env("TASK_TIMEOUT_S", 3600),
+        task_timeout_base_s=_int_env("TASK_TIMEOUT_BASE_S", 300),
+        task_timeout_per_page_s=_int_env("TASK_TIMEOUT_PER_PAGE_S", 180),
+        progress_heartbeat_s=_int_env("PROGRESS_HEARTBEAT_S", 240),
         page_timeout_s=_int_env("PAGE_TIMEOUT_S", 90),
         pdf_dpi=_int_env("PDF_DPI", 300),
         max_side_px=_int_env("MAX_SIDE_PX", 3600),
@@ -172,9 +249,32 @@ def get_settings() -> Settings:
         max_repeat_lines=_int_env("MAX_REPEAT_LINES", 24),
         omr_routing=_routing_env(),
         routing_measures=os.environ.get("OMR_ROUTING_MEASURES", "").strip().lower() in ("1", "true", "yes", "on"),
+        routing_bars=_bool_env("OMR_ROUTING_BARS", True),
         routing_retry_beams=max(0, _int_env("ROUTING_RETRY_BEAMS", 3)),
+        routing_roles_first=_bool_env("OMR_ROLES_FIRST", True),
+        strip_text=_bool_env("OMR_STRIP_TEXT", True),
         routing_reserve_s=max(0, _int_env("ROUTING_RESERVE_S", 30)),
+        music_engine=(os.environ.get("OMR_ENGINE", "").strip() or "transcoda").lower(),
+        engine_command=os.environ.get("OMR_ENGINE_COMMAND", "").strip(),
+        pitch_check=_bool_env("OMR_PITCH_CHECK", True),
+        rhythm_fix=_bool_env("OMR_RHYTHM_FIX", True),
+        ottava=_choice_env("OMR_OTTAVA", "auto", ("auto", "drop", "keep")),
+        tta_reads=max(0, _int_env("OMR_TTA", 2)),
+        tta_shift_px=max(1, _int_env("OMR_TTA_SHIFT_PX", 3)),
+        tta_max_systems=max(0, _int_env("OMR_TTA_MAX_SYSTEMS", 4)),
+        llm_mode=_choice_env("OMR_LLM", "off", ("off", "anthropic")),
+        llm_model=os.environ.get("OMR_LLM_MODEL", "").strip() or "claude-haiku-5-5",
+        llm_api_key=os.environ.get("ANTHROPIC_API_KEY", "").strip(),
+        llm_max_measures=max(0, _int_env("OMR_LLM_MAX_MEASURES", 10)),
+        llm_timeout_s=max(5, _int_env("OMR_LLM_TIMEOUT_S", 30)),
     )
+
+
+def _choice_env(name: str, default: str, choices: tuple[str, ...]) -> str:
+    raw = (os.environ.get(name, "").strip() or default).lower()
+    if raw not in choices:
+        raise ValueError(f"{name} phải là một trong {', '.join(choices)}, nhận được {raw!r}")
+    return raw
 
 
 def _routing_env() -> str:

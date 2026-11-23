@@ -1,0 +1,119 @@
+{
+  "button": "Gợi ý hợp âm",
+  "buttonHint": "Máy đọc giai điệu và đề xuất hợp âm cho từng ô; bạn xem lại và sửa trước khi lưu",
+  "saveFirst": "Lưu thay đổi trước khi gợi ý hợp âm: AI đọc bản nhạc đã lưu.",
+  "sourceLabel": "Gợi ý hợp âm tự động",
+  "failed": "Không gợi ý được hợp âm, vui lòng thử lại",
+  "cancelled": "Tác vụ gợi ý hợp âm đã bị hủy",
+  "dialog": {
+    "title": "Gợi ý hợp âm",
+    "hint": "AI (model AutoHarmonizer) đọc giai điệu rồi đặt hợp âm cho các ô chưa có hợp âm. Mỗi lần tạo là một lần AI tự \"nghĩ\" lại nên ra cách đệm khác, kèm tới 3 phương án A, B, C để bạn chọn. Nếu bạn sửa được bản nhạc, hợp âm AI hiện ngay trong trình chỉnh sửa (tô vàng) để chỉnh rồi lưu; nếu không, kết quả là một đề xuất sửa để chủ bản nhạc duyệt.",
+    "styleLabel": "Màu hợp âm",
+    "running": "Đang phân tích giai điệu…",
+    "closeHint": "Bạn có thể ẩn hộp này; gợi ý vẫn được tạo và sẽ có trong tab Đề xuất.",
+    "openPending": "Mở gợi ý đang chờ",
+    "cancel": "Hủy",
+    "hide": "Ẩn",
+    "submit": "Tạo gợi ý",
+    "creating": "Đang tạo…",
+    "harmonizedTitle": "Mọi ô nhịp đã có hợp âm",
+    "harmonizedHint": "Bạn có muốn thay đổi các hợp âm đã có không? AI sẽ bỏ hết hợp âm cũ và gợi ý lại cho cả bài; bạn vẫn xem lại trước khi lưu.",
+    "replace": "Gợi ý lại, thay hợp âm cũ",
+    "clearAll": "Xóa hết hợp âm",
+    "clearAllHint": "Gỡ mọi hợp âm khỏi bản nhạc trong trình chỉnh sửa (chưa lưu, Ctrl+Z để hoàn tác)",
+    "creativityLabel": "Độ sáng tạo",
+    "densityLabel": "Mật độ hợp âm"
+  },
+  "styles": {
+    "NATURAL": {
+      "name": "Tự nhiên",
+      "description": "Để AI tự chọn hợp âm hợp giai điệu nhất"
+    },
+    "SIMPLE": {
+      "name": "Đơn giản",
+      "description": "Ưu tiên hợp âm ba trưởng, thứ; hợp người mới tập"
+    },
+    "COLORFUL": {
+      "name": "Có màu",
+      "description": "Thêm hợp âm màu như maj7, m7, sus, 6"
+    },
+    "JAZZY": {
+      "name": "Hợp âm 7 / Jazz",
+      "description": "Ưu tiên hợp âm 7, maj7, m7 và mở rộng 9, 11, 13"
+    }
+  },
+  "taskErrors": {
+    "CHORD_NO_MELODY": "Bản nhạc không có giai điệu để gợi ý hợp âm",
+    "CHORD_ALREADY_HARMONIZED": "Mọi ô nhịp đã có hợp âm, không có gì mới để gợi ý",
+    "AI_SERVICE_UNAVAILABLE": "Dịch vụ AI đang tạm ngưng, vui lòng thử lại sau",
+    "TASK_TIMEOUT": "Gợi ý hợp âm chạy quá lâu nên đã dừng, vui lòng thử lại",
+    "JOB_REJECTED": "Không đọc được bản nhạc để gợi ý hợp âm",
+    "CHORD_NO_CHANGE": "AI gợi ý đúng các hợp âm đang có, không có gì thay đổi",
+    "CHORD_TOO_LONG": "Bản nhạc quá dài để gợi ý hợp âm một lần (tối đa khoảng 256 ô 4/4)",
+    "CHORD_NO_CHORDS": "AI không đặt được hợp âm nào cho giai điệu này, thử phong cách hoặc mật độ khác"
+  },
+  "draft": {
+    "panelTitle": "Hợp âm AI gợi ý",
+    "panelToggle": "Hợp âm AI",
+    "close": "Đóng bảng Hợp âm AI",
+    "counts_one": "{count} hợp âm",
+    "counts_other": "{count} hợp âm",
+    "edited_one": "{count} đã sửa",
+    "edited_other": "{count} đã sửa",
+    "removed_one": "{count} đã xóa",
+    "removed_other": "{count} đã xóa",
+    "legend": "Hợp âm tô vàng trên bản nhạc là do AI thêm. Bấm một hợp âm bên dưới để tới chỗ đó, nhấp đúp để sửa.",
+    "measure": "Ô {number}",
+    "statusEdited": "Bạn đã đổi thành {chord}",
+    "statusRemoved": "Đã xóa",
+    "chipLabel": "Ô {number}, hợp âm {chord}",
+    "prev": "Hợp âm trước",
+    "next": "Hợp âm sau",
+    "position": "{current}/{total}",
+    "edit": "Sửa hợp âm này",
+    "save": "Lưu vào bản nhạc",
+    "saving": "Đang lưu…",
+    "discard": "Bỏ gợi ý",
+    "discardTitle": "Bỏ gợi ý hợp âm?",
+    "discardMessage": "Các hợp âm AI còn nguyên sẽ bị gỡ khỏi bản nhạc và đề xuất được đóng lại. Hợp âm bạn đã tự sửa vẫn giữ.",
+    "discardConfirm": "Bỏ gợi ý",
+    "discarded": "Đã bỏ gợi ý hợp âm",
+    "loading": "Đang nạp hợp âm AI vào bản nhạc…",
+    "loaded_one": "Đã thêm {count} hợp âm AI dưới dạng bản nháp. Xem lại, sửa nếu cần rồi bấm Lưu.",
+    "loaded_other": "Đã thêm {count} hợp âm AI dưới dạng bản nháp. Xem lại, sửa nếu cần rồi bấm Lưu.",
+    "applied": "Đã lưu hợp âm AI vào phiên bản {version}",
+    "appliedFailed": "Đã lưu bản nhạc nhưng chưa đóng được đề xuất; bạn có thể đóng nó ở tab Đề xuất",
+    "cannotDraft": "Không mở được gợi ý trong trình chỉnh sửa, chuyển sang trang duyệt đề xuất",
+    "outdated": "Bản nhạc đã có phiên bản mới sau khi tạo gợi ý, hãy duyệt gợi ý ở trang đề xuất",
+    "nothingNew": "Gợi ý không có hợp âm mới so với bản đang mở",
+    "blocked": "Có ô nhịp đang được người khác sửa nên chưa nạp được hợp âm AI, thử lại sau",
+    "loadFailed": "Không tải được gợi ý hợp âm",
+    "openInEditor": "Mở trong trình chỉnh sửa",
+    "openInEditorHint": "Nạp các hợp âm này vào trình chỉnh sửa dưới dạng bản nháp để sửa lại trước khi lưu",
+    "remove": "Xóa",
+    "removeHint": "Xóa hợp âm {chord} khỏi nốt này (Ctrl+Z để hoàn tác)",
+    "options": "Phương án của AI",
+    "optionsHint": "Mỗi phương án là một cách đệm khác. Đổi phương án sẽ thay các hợp âm AI trên bản nhạc (Ctrl+Z để quay lại).",
+    "optionBest": "Phương án A: AI thấy hợp nhất",
+    "optionOther": "Phương án {option}",
+    "switching": "Đang đổi phương án…"
+  },
+  "clear": {
+    "title": "Xóa hết hợp âm?",
+    "message": "Mọi hợp âm ({count}) sẽ bị gỡ khỏi bản nhạc. Thay đổi chưa được lưu, bạn có thể hoàn tác bằng Ctrl+Z.",
+    "confirm": "Xóa hết",
+    "done": "Đã xóa {count} hợp âm. Bấm Lưu để ghi lại.",
+    "none": "Bản nhạc chưa có hợp âm nào",
+    "blocked": "Có ô nhịp đang được người khác sửa nên chưa xóa được hợp âm, thử lại sau"
+  },
+  "creativity": {
+    "SAFE": "An toàn",
+    "BALANCED": "Cân bằng",
+    "BOLD": "Táo bạo"
+  },
+  "density": {
+    "SPARSE": "Thưa",
+    "NORMAL": "Vừa",
+    "DENSE": "Dày"
+  }
+}

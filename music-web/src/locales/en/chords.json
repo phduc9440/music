@@ -1,0 +1,119 @@
+{
+  "button": "Suggest chords",
+  "buttonHint": "Reads the melody and proposes a chord for each measure; you review and adjust them before saving",
+  "saveFirst": "Save your changes before suggesting chords: the AI reads the saved score.",
+  "sourceLabel": "Automatic chord suggestion",
+  "failed": "Could not suggest chords, please try again",
+  "cancelled": "The chord suggestion task was cancelled",
+  "dialog": {
+    "title": "Suggest chords",
+    "hint": "The AI (AutoHarmonizer model) reads the melody and places chords in measures without chords. Every run the AI \"thinks\" again, so you get a different accompaniment, with up to 3 options A, B, C to choose from. If you can edit the score, the AI chords appear in the editor (highlighted) for you to adjust and save; otherwise the result is an edit suggestion for the owner to review.",
+    "styleLabel": "Chord colour",
+    "running": "Analysing the melody…",
+    "closeHint": "You can hide this dialog; the suggestion is still created and will appear in the Suggestions tab.",
+    "openPending": "Open pending suggestion",
+    "cancel": "Cancel",
+    "hide": "Hide",
+    "submit": "Create suggestion",
+    "creating": "Creating…",
+    "harmonizedTitle": "Every measure already has a chord",
+    "harmonizedHint": "Do you want to change the existing chords? The AI will drop all current chords and suggest new ones for the whole piece; you still review them before saving.",
+    "replace": "Suggest again, replace chords",
+    "clearAll": "Delete all chords",
+    "clearAllHint": "Remove every chord from the score in the editor (unsaved, Ctrl+Z to undo)",
+    "creativityLabel": "Creativity",
+    "densityLabel": "Chord density"
+  },
+  "styles": {
+    "NATURAL": {
+      "name": "Natural",
+      "description": "Let the AI pick the chords that fit the melody best"
+    },
+    "SIMPLE": {
+      "name": "Simple",
+      "description": "Prefers major and minor triads; good for beginners"
+    },
+    "COLORFUL": {
+      "name": "Colourful",
+      "description": "Adds colour chords such as maj7, m7, sus, 6"
+    },
+    "JAZZY": {
+      "name": "Sevenths / Jazz",
+      "description": "Prefers 7, maj7, m7 and extended 9, 11, 13 chords"
+    }
+  },
+  "taskErrors": {
+    "CHORD_NO_MELODY": "The score has no melody to harmonise",
+    "CHORD_ALREADY_HARMONIZED": "Every measure already has a chord; nothing new to suggest",
+    "AI_SERVICE_UNAVAILABLE": "The AI service is unavailable, please try again later",
+    "TASK_TIMEOUT": "Chord suggestion took too long and was stopped, please try again",
+    "JOB_REJECTED": "The score could not be read for chord suggestion",
+    "CHORD_NO_CHANGE": "The AI suggested exactly the current chords; nothing changed",
+    "CHORD_TOO_LONG": "The score is too long to harmonize at once (about 256 measures of 4/4 at most)",
+    "CHORD_NO_CHORDS": "The AI could not place any chord on this melody; try another style or density"
+  },
+  "draft": {
+    "panelTitle": "AI chord suggestions",
+    "panelToggle": "AI chords",
+    "close": "Close AI chords panel",
+    "counts_one": "{count} chord",
+    "counts_other": "{count} chords",
+    "edited_one": "{count} edited",
+    "edited_other": "{count} edited",
+    "removed_one": "{count} removed",
+    "removed_other": "{count} removed",
+    "legend": "Chords highlighted in yellow on the score were added by AI. Click a chord below to jump to it, double-click to edit.",
+    "measure": "Measure {number}",
+    "statusEdited": "You changed it to {chord}",
+    "statusRemoved": "Removed",
+    "chipLabel": "Measure {number}, chord {chord}",
+    "prev": "Previous chord",
+    "next": "Next chord",
+    "position": "{current}/{total}",
+    "edit": "Edit this chord",
+    "save": "Save to score",
+    "saving": "Saving…",
+    "discard": "Discard suggestion",
+    "discardTitle": "Discard chord suggestion?",
+    "discardMessage": "AI chords you have not touched will be removed from the score and the suggestion closed. Chords you edited are kept.",
+    "discardConfirm": "Discard",
+    "discarded": "Chord suggestion discarded",
+    "loading": "Loading AI chords into the score…",
+    "loaded_one": "Added {count} AI chord as a draft. Review it, edit if needed, then Save.",
+    "loaded_other": "Added {count} AI chords as a draft. Review them, edit if needed, then Save.",
+    "applied": "AI chords saved in version {version}",
+    "appliedFailed": "The score was saved but the suggestion could not be closed; you can close it in the Suggestions tab",
+    "cannotDraft": "This suggestion can't be opened in the editor, showing the review page instead",
+    "outdated": "The score has a newer version than this suggestion, review it on the suggestion page",
+    "nothingNew": "The suggestion has no new chords compared with the open score",
+    "blocked": "Someone else is editing some of these measures, so the AI chords could not be loaded yet",
+    "loadFailed": "Could not load the chord suggestion",
+    "openInEditor": "Open in editor",
+    "openInEditorHint": "Load these chords into the editor as a draft so you can adjust them before saving",
+    "remove": "Delete",
+    "removeHint": "Delete chord {chord} from this note (Ctrl+Z to undo)",
+    "options": "AI options",
+    "optionsHint": "Each option is a different accompaniment. Switching replaces the AI chords on the score (Ctrl+Z to go back).",
+    "optionBest": "Option A: the AI's best fit",
+    "optionOther": "Option {option}",
+    "switching": "Switching option…"
+  },
+  "clear": {
+    "title": "Delete all chords?",
+    "message": "All chords ({count}) will be removed from the score. The change is not saved yet; you can undo it with Ctrl+Z.",
+    "confirm": "Delete all",
+    "done": "Deleted {count} chords. Press Save to keep the change.",
+    "none": "The score has no chords yet",
+    "blocked": "Some measures are being edited by someone else, so the chords could not be deleted yet; try again later"
+  },
+  "creativity": {
+    "SAFE": "Safe",
+    "BALANCED": "Balanced",
+    "BOLD": "Bold"
+  },
+  "density": {
+    "SPARSE": "Sparse",
+    "NORMAL": "Normal",
+    "DENSE": "Dense"
+  }
+}

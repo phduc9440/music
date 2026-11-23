@@ -1,0 +1,276 @@
+/* =====================================================================================================================
+   MỖI MÀN MỘT SECTION (dùng chung cho trang chủ khách và trang workspace)
+   - useScreenSnap() gắn lớp `scr-snap` lên <html> và khai báo `--scr-top` (chiều cao thanh dính ở đầu trang).
+   - `data-screen="<nhãn>"`: một điểm hít + một chấm trong SectionDots.
+   - `.scr`: màn chiếm trọn khung nhìn dưới thanh đầu trang, nội dung nằm giữa, có chuyển cảnh khi cuộn vào / ra.
+   - `.scr-title`: tiêu đề màn, mở từ giữa ra như kéo rèm.
+   - `.scr-stagger`: các con hiện lần lượt (thứ tự so le qua --i), trang có thể đổi animation-name cho từng loại.
+   Máy tính (≥961px): cuộn hít đúng từng màn, có chuyển cảnh. Điện thoại / iPad dọc: section thường cao hơn màn hình và
+   không hít, nên tắt chuyển cảnh để nội dung đang đọc không bị mờ / cắt. Trình duyệt chưa hỗ trợ scroll-driven animation
+   hoặc bật "Giảm chuyển động" thì nội dung hiện sẵn, không hít, không hiệu ứng.
+   ===================================================================================================================== */
+.scr {
+  min-height: calc(100svh - var(--scr-top, 0px));
+  align-content: center;
+  padding-block: 40px;
+}
+@media (min-width: 961px) and (prefers-reduced-motion: no-preference) {
+  html.scr-snap {
+    scroll-snap-type: y mandatory;
+    scroll-padding-top: var(--scr-top, 0px);
+  }
+  html.scr-snap [data-screen] {
+    scroll-snap-align: start;
+  }
+  html.scr-snap .site-footer {
+    scroll-snap-align: end;
+  }
+}
+
+/* thứ tự so le */
+.scr-stagger > :nth-child(2) {
+  --i: 1;
+}
+.scr-stagger > :nth-child(3) {
+  --i: 2;
+}
+.scr-stagger > :nth-child(4) {
+  --i: 3;
+}
+.scr-stagger > :nth-child(5) {
+  --i: 4;
+}
+.scr-stagger > :nth-child(6) {
+  --i: 5;
+}
+.scr-stagger > :nth-child(n + 7) {
+  --i: 6;
+}
+
+@supports (animation-timeline: view()) {
+  @media (min-width: 961px) and (prefers-reduced-motion: no-preference) {
+    /* mỗi màn là một dòng thời gian theo vị trí cuộn; con cháu dùng chung để nhịp nhàng với nhau */
+    .scr {
+      view-timeline: --scr block;
+    }
+
+    /* chuyển cảnh: màn mới lật lên từ dưới và rõ dần; màn cũ lật ra sau, nhòe và nhỏ lại */
+    .scr > * {
+      transform-origin: 50% 0;
+      animation:
+        scr-in linear both,
+        scr-out linear forwards;
+      animation-timeline: --scr, --scr;
+      animation-range:
+        entry 0% entry 90%,
+        exit 0% exit 100%;
+    }
+
+    .scr-title {
+      animation: scr-curtain linear both;
+      animation-timeline: --scr;
+      animation-range: entry 35% entry 95%;
+    }
+
+    .scr-stagger > * {
+      animation: scr-rise linear both;
+      animation-timeline: --scr;
+      animation-range: entry calc(40% + var(--i, 0) * 7%) entry calc(80% + var(--i, 0) * 3%);
+    }
+  }
+}
+
+@keyframes scr-in {
+  from {
+    opacity: 0;
+    filter: blur(10px);
+    transform: perspective(1400px) translateY(16vh) rotateX(16deg) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+}
+@keyframes scr-out {
+  to {
+    opacity: 0;
+    filter: blur(8px);
+    transform: perspective(1400px) translateY(-8vh) rotateX(-10deg) scale(0.88);
+  }
+}
+@keyframes scr-curtain {
+  from {
+    clip-path: inset(-20% 50% -20% 50%);
+  }
+  to {
+    clip-path: inset(-20% 0 -20% 0);
+  }
+}
+@keyframes scr-draw-x {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes scr-draw-y {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+/* các hiệu ứng mục con dùng translate / rotate / scale riêng (không đụng transform) để chồng được lên hiệu ứng nghiêng
+   3D hay hover của thẻ */
+@keyframes scr-pop {
+  0% {
+    opacity: 0;
+    scale: 0;
+    rotate: -120deg;
+  }
+  70% {
+    opacity: 1;
+    scale: 1.25;
+    rotate: 8deg;
+  }
+  100% {
+    opacity: 1;
+    scale: none;
+    rotate: none;
+  }
+}
+@keyframes scr-rise {
+  from {
+    opacity: 0;
+    translate: 0 48px;
+  }
+  to {
+    opacity: 1;
+    translate: none;
+  }
+}
+@keyframes scr-zoom {
+  from {
+    opacity: 0;
+    scale: 0.4;
+  }
+  to {
+    opacity: 1;
+    scale: none;
+  }
+}
+@keyframes scr-slide-in {
+  from {
+    opacity: 0;
+    translate: 160px 0;
+    rotate: 4deg;
+  }
+  to {
+    opacity: 1;
+    translate: none;
+    rotate: none;
+  }
+}
+@keyframes scr-slide-left {
+  from {
+    opacity: 0;
+    translate: -80px 0;
+  }
+  to {
+    opacity: 1;
+    translate: none;
+  }
+}
+@keyframes scr-fan {
+  from {
+    opacity: 0;
+    translate: 0 120px;
+    rotate: var(--fan, -9deg);
+  }
+  to {
+    opacity: 1;
+    translate: none;
+    rotate: none;
+  }
+}
+
+/* ---- dải chấm điều hướng bên phải: một chấm một màn, chấm của màn đang xem kéo dài và đổi màu ---- */
+.scr-dots {
+  position: fixed;
+  top: 50%;
+  right: 20px;
+  z-index: 25;
+  display: grid;
+  gap: 4px;
+  transform: translateY(-50%);
+}
+.scr-dots__dot {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.scr-dots__dot::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 8px;
+  background: var(--ui-border-strong);
+  transition:
+    height 0.3s cubic-bezier(0.2, 0.7, 0.2, 1),
+    background-color 0.2s ease;
+}
+.scr-dots__dot:hover::before {
+  background: var(--ui-text-2);
+}
+.scr-dots__dot[aria-current='true']::before {
+  height: 22px;
+  background: var(--ui-cta);
+}
+.scr-dots__dot:focus-visible {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+/* nhãn hiện bên trái chấm khi rê chuột / Tab tới */
+.scr-dots__label {
+  position: absolute;
+  right: calc(100% + 8px);
+  padding: 4px 12px;
+  border-radius: 6px;
+  background: var(--ui-text);
+  color: var(--ui-bg);
+  font-size: 0.875rem;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateX(6px);
+  pointer-events: none;
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+.scr-dots__dot:hover .scr-dots__label,
+.scr-dots__dot:focus-visible .scr-dots__label {
+  opacity: 1;
+  transform: none;
+}
+@media (max-width: 960px) {
+  .scr-dots {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scr-dots__dot::before,
+  .scr-dots__label {
+    transition: none;
+  }
+}

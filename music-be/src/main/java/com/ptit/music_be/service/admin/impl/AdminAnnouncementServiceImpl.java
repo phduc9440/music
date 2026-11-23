@@ -1,0 +1,73 @@
+package com.ptit.music_be.service.admin.impl;
+
+import java.util.List;
+
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.ptit.music_be.dto.enums.auth.MemberStatus;
+import com.ptit.music_be.dto.enums.notification.NotificationType;
+import com.ptit.music_be.dto.request.admin.AnnouncementRequest;
+import com.ptit.music_be.dto.response.admin.AnnouncementResponse;
+import com.ptit.music_be.entity.Member;
+import com.ptit.music_be.exception.AppException;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.repository.auth.MemberRepository;
+import com.ptit.music_be.service.admin.AdminAnnouncementService;
+import com.ptit.music_be.service.notification.NotificationService;
+import com.ptit.music_be.utils.SecurityUtils;
+
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+
+@Service
+@RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@PreAuthorize("@perm.has('ANNOUNCEMENTS_SEND')")
+public class AdminAnnouncementServiceImpl implements AdminAnnouncementService {
+
+    MemberRepository memberRepository;
+    NotificationService notificationService;
+
+    @Override
+    @Transactional
+    public AnnouncementResponse send(AnnouncementRequest request) {
+        String message =
+                request.getMessage() == null ? "" : request.getMessage().trim();
+        if (message.isEmpty() || request.getAudience() == null) {
+            throw new AppException(AccountErrorCode.INVALID_REQUEST);
+        }
+        Member me =
+                memberRepository.findByEmail(SecurityUtils.getCurrentEmail()).orElse(null);
+
+        List<Member> recipients =
+                switch (request.getAudience()) {
+                    case ALL -> memberRepository.findAllByStatus(MemberStatus.ACTIVE);
+                    case USERS -> memberRepository.findNonAdminsByStatus(MemberStatus.ACTIVE);
+                    case ADMINS ->
+                        memberRepository.findAllAdmins().stream()
+                                .filter(m -> m.getStatus() == MemberStatus.ACTIVE)
+                                .toList();
+                    case SELECTED -> {
+                        List<String> ids = request.getMemberIds() == null
+                                ? List.of()
+                                : request.getMemberIds().stream()
+                                        .filter(id -> id != null && !id.isBlank())
+                                        .distinct()
+                                        .toList();
+                        if (ids.isEmpty()) {
+                            throw new AppException(AccountErrorCode.INVALID_REQUEST);
+                        }
+                        // Tài khoản đã bị khóa hoặc không còn tồn tại thì bỏ qua, giống các nhóm khác
+                        yield memberRepository.findAllById(ids).stream()
+                                .filter(m -> m.getStatus() == MemberStatus.ACTIVE)
+                                .toList();
+                    }
+                };
+
+        int sent = notificationService.notifyAll(recipients, me, NotificationType.ANNOUNCEMENT, message);
+        return AnnouncementResponse.builder().recipients(sent).build();
+    }
+}

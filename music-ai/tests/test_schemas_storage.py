@@ -23,7 +23,6 @@ def test_resolve_rejects_unsafe_paths(bad):
 
 def test_resolve_stays_inside_root(storage_root):
     assert storage.resolve("scores/a/b.png") == (storage_root / "scores/a/b.png").resolve()
-    assert storage.to_relative(storage.resolve("scores/a/b.png")) == "scores/a/b.png"
 
 
 def test_valid_job_request(storage_root):

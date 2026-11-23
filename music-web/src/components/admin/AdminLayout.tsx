@@ -1,0 +1,305 @@
+import { useEffect, useRef, useState } from 'react';
+import { Outlet, useLocation } from 'react-router-dom';
+import { NavLink } from '../../routes/transition-nav';
+import { useNavigate } from '../../routes/useTransitionNavigate';
+import { toast } from 'react-toastify';
+import ChangePasswordModal from '../ChangePasswordModal';
+import NotificationBell from '../NotificationBell';
+import ThemeToggle from '../../theme/ThemeToggle';
+import SoundToggle from '../ui/SoundToggle';
+import { useClickMusic } from '../ui/clickMusic';
+import { adoptServerLocale, t } from '../../i18n/core';
+import LanguageToggle from '../../i18n/LanguageToggle';
+import { adoptServerTheme } from '../../theme/theme';
+import { useSignedInSurface } from '../../theme/useSignedInSurface';
+import { adminReportApi, authApi, scoreApi, userApi } from '../../services';
+import { AuthProvider } from '../../types';
+import type { Member } from '../../types';
+import { hasAdminPermission, roleLabel } from '../../utils/auth';
+import { MENU, visibleMenu } from './adminMenu';
+import { Avatar, Icon } from '../ui';
+import './admin.css';
+import { onMemberUpdated } from '../../utils/memberEvents';
+import BrandMark from '../ui/BrandMark';
+
+export interface AdminOutletContext {
+  admin: Member | null;
+}
+
+const ALL_ITEMS = MENU.flatMap((g) => g.items);
+
+/** Tên trang đang mở (mục menu khớp dài nhất) để hiện trên header. */
+const currentTitle = (pathname: string) =>
+  [...ALL_ITEMS]
+    .sort((a, b) => b.to.length - a.to.length)
+    .find((it) => (it.end ? pathname === it.to : pathname === it.to || pathname.startsWith(`${it.to}/`)))?.label ?? '';
+
+/** Khung trang quản trị: header trên cùng, sidebar bên trái (chia nhóm), vùng nội dung ở giữa. */
+/** Mục menu có đang được mở (khớp đường dẫn hiện tại) hay không, cùng luật với NavLink. */
+const matchesPath = (pathname: string, to: string, end?: boolean) =>
+  end ? pathname === to : pathname === to || pathname.startsWith(`${to}/`);
+
+export default function AdminLayout() {
+  useSignedInSurface();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  // Mỗi cú bấm chơi một nốt của giai điệu (tắt / bật bằng nút loa trên thanh trên)
+  useClickMusic();
+  const [admin, setAdmin] = useState<Member | null>(null);
+  const [collapsed, setCollapsed] = useState(false); // thu gọn sidebar trên màn hình lớn
+  const [mobileOpen, setMobileOpen] = useState(false); // mở sidebar dạng ngăn kéo trên màn hình nhỏ
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [reportCount, setReportCount] = useState(0);
+  const menuRef = useRef<HTMLDivElement>(null);
+  // Nhóm menu admin tự mở thêm (theo key nhóm). Mới vào khu quản trị thì mọi nhóm đều đóng, chỉ nhóm chứa trang đang
+  // mở là mở sẵn; nhóm tự mở giữ nguyên khi chuyển trang trong khu quản trị (layout không bị dựng lại)
+  const [openedGroups, setOpenedGroups] = useState<string[]>([]);
+  const toggleGroup = (key: string) =>
+    setOpenedGroups((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
+
+  useEffect(() => {
+    userApi
+      .getMe()
+      .then((res) => {
+        setAdmin(res.data.result);
+        adoptServerTheme(res.data.result.uiTheme); // giao diện đã chọn đi theo tài khoản giữa các máy
+        adoptServerLocale(res.data.result.locale); // ngôn ngữ cũng đi theo tài khoản
+      })
+      .catch(() => toast.error(t('admin.layout.profileFailed')));
+  }, []);
+
+  // Sửa hồ sơ ở /admin/profile thì tên và ảnh trên header đổi theo ngay
+  useEffect(() => onMemberUpdated(setAdmin), []);
+
+  // Số bản chờ duyệt: tải lại mỗi khi chuyển trang (duyệt xong quay lại là thấy số mới)
+  useEffect(() => {
+    if (!hasAdminPermission(admin, 'SCORES_APPROVE')) return; // không có quyền duyệt thì không có số chờ duyệt
+    let cancelled = false;
+    scoreApi
+      .pendingPublic({ page: 0, size: 1 })
+      .then((res) => !cancelled && setPendingCount(res.data.result.totalElements))
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname, admin]);
+
+  // Số báo cáo vi phạm đang chờ xử lý: cũng tải lại mỗi khi chuyển trang
+  useEffect(() => {
+    if (!hasAdminPermission(admin, 'REPORTS_MODERATE')) return;
+    let cancelled = false;
+    adminReportApi
+      .pendingCount()
+      .then((res) => !cancelled && setReportCount(res.data.result))
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname, admin]);
+
+  const badgeCount = (kind: 'scores' | 'reports') => (kind === 'reports' ? reportCount : pendingCount);
+
+  // Đóng menu tài khoản khi bấm ra ngoài
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [menuOpen]);
+
+  const handleLogout = () => {
+    authApi.logout().catch(() => undefined);
+    localStorage.removeItem('role');
+    navigate('/');
+  };
+
+  const displayName = admin?.fullName || admin?.email || 'Admin';
+  // Hồ sơ không nằm trong menu nên tự đặt tiêu đề
+  const title = pathname === '/admin/profile' ? t('common.header.profile') : currentTitle(pathname);
+
+  return (
+    <div className={`adm-shell${collapsed ? ' adm-shell--collapsed' : ''}`}>
+      <header className="adm-header">
+        <div className="adm-header__left">
+          <button
+            type="button"
+            className="adm-btn adm-btn--ghost adm-btn--md adm-btn--icon"
+            aria-label={t('admin.layout.toggleSidebar')}
+            onClick={() => (window.innerWidth <= 900 ? setMobileOpen((v) => !v) : setCollapsed((v) => !v))}
+          >
+            <Icon name="menu" />
+          </button>
+          <span className="adm-brand">
+            <BrandMark size={30} className="adm-brand__logo" />
+            <span className="adm-brand__text">Scorewise</span>
+            <span className="adm-brand__tag">Admin</span>
+          </span>
+          {title && (
+            <span className="adm-header__crumb">
+              / <strong>{title}</strong>
+            </span>
+          )}
+        </div>
+
+        <div className="adm-header__right">
+          <LanguageToggle />
+          <ThemeToggle />
+          <NotificationBell />
+          <div className="adm-usermenu" ref={menuRef}>
+            <button
+              type="button"
+              className="adm-usermenu__trigger"
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen((v) => !v)}
+            >
+              <Avatar name={displayName} src={admin?.avatarUrl} size={30} />
+              <span className="adm-usermenu__name">
+                <strong>{displayName}</strong>
+                <span>{admin ? roleLabel(admin) : ''}</span>
+              </span>
+              <Icon name="chevronDown" size={16} />
+            </button>
+            {menuOpen && (
+              <div className="adm-usermenu__panel" role="menu">
+                {admin?.email && <div className="adm-usermenu__email">{admin.email}</div>}
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="adm-usermenu__item"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    navigate('/admin/profile');
+                  }}
+                >
+                  <Icon name="user" size={16} />
+                  {t('common.header.profile')}
+                </button>
+                <button type="button" role="menuitem" className="adm-usermenu__item" onClick={() => navigate('/')}>
+                  <Icon name="home" size={16} />
+                  {t('admin.menu.userSite')}
+                </button>
+                {admin?.authProvider !== AuthProvider.GOOGLE && (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="adm-usermenu__item"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setPasswordOpen(true);
+                    }}
+                  >
+                    <Icon name="key" size={16} />
+                    {t('common.header.changePassword')}
+                  </button>
+                )}
+                <SoundToggle className="adm-usermenu__item" />
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="adm-usermenu__item adm-usermenu__item--danger"
+                  onClick={handleLogout}
+                >
+                  <Icon name="logout" size={16} />
+                  {t('common.header.logout')}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </header>
+
+      <div className="adm-body">
+        <aside className={`adm-sidebar${mobileOpen ? ' adm-sidebar--open' : ''}`}>
+          <nav className="adm-menu" aria-label={t('admin.layout.menuLabel')}>
+            {visibleMenu(admin).map((group) => {
+              // nhóm chứa trang đang mở luôn mở, nhóm khác đóng trừ khi admin tự mở; sidebar thu gọn (chỉ biểu tượng)
+              // thì mọi nhóm đều mở
+              const hasActive = group.items.some((it) => matchesPath(pathname, it.to, it.end));
+              const open = collapsed || hasActive || openedGroups.includes(group.key);
+              const hiddenBadges = open
+                ? 0
+                : group.items.reduce((n, it) => n + (it.pendingBadge ? badgeCount(it.pendingBadge) : 0), 0);
+              const listId = `adm-group-${group.key}`;
+              return (
+                <div key={group.key} className={`adm-menu__group${open ? ' is-open' : ''}`}>
+                  <button
+                    type="button"
+                    className="adm-menu__section"
+                    aria-expanded={open}
+                    aria-controls={listId}
+                    disabled={hasActive}
+                    title={hasActive ? t('admin.layout.groupActive') : undefined}
+                    onClick={() => toggleGroup(group.key)}
+                  >
+                    <span className="adm-menu__section-label">{group.section}</span>
+                    {hiddenBadges > 0 && (
+                      <span
+                        className="adm-menu__count"
+                        aria-label={t('admin.layout.groupBadge', { count: hiddenBadges })}
+                      >
+                        {hiddenBadges > 99 ? '99+' : hiddenBadges}
+                      </span>
+                    )}
+                    <Icon name="chevronDown" size={14} />
+                  </button>
+                  <div id={listId} className="adm-menu__items" inert={!open}>
+                    <div className="adm-menu__items-inner">
+                      {group.items.map((item) => (
+                        <NavLink
+                          key={item.to}
+                          to={item.to}
+                          end={item.end}
+                          title={item.label}
+                          className={({ isActive }) => `adm-menu__item${isActive ? ' adm-menu__item--active' : ''}`}
+                          onClick={() => setMobileOpen(false)}
+                        >
+                          <span className="adm-menu__icon">
+                            <Icon name={item.icon} />
+                          </span>
+                          <span className="adm-menu__label">{item.label}</span>
+                          {item.pendingBadge && badgeCount(item.pendingBadge) > 0 && (
+                            <span
+                              className="adm-menu__count"
+                              aria-label={t(
+                                item.pendingBadge === 'reports'
+                                  ? 'admin.layout.reportsBadge'
+                                  : 'admin.layout.pendingBadge',
+                                { count: badgeCount(item.pendingBadge) },
+                              )}
+                            >
+                              {badgeCount(item.pendingBadge) > 99 ? '99+' : badgeCount(item.pendingBadge)}
+                            </span>
+                          )}
+                        </NavLink>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </nav>
+          <button type="button" className="adm-menu__item" onClick={() => navigate('/')}>
+            <span className="adm-menu__icon">
+              <Icon name="home" />
+            </span>
+            <span className="adm-menu__label">{t('admin.menu.userSite')}</span>
+          </button>
+        </aside>
+        {mobileOpen && <div className="adm-backdrop" onClick={() => setMobileOpen(false)} />}
+
+        <main className="adm-main">
+          <div className="adm-main__inner">
+            <Outlet context={{ admin } satisfies AdminOutletContext} />
+          </div>
+        </main>
+      </div>
+
+      <ChangePasswordModal isOpen={passwordOpen} onClose={() => setPasswordOpen(false)} />
+    </div>
+  );
+}

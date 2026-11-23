@@ -11,21 +11,8 @@
 	<groupId>com.ptit</groupId>
 	<artifactId>music-be</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name/>
-	<description/>
-	<url/>
-	<licenses>
-		<license/>
-	</licenses>
-	<developers>
-		<developer/>
-	</developers>
-	<scm>
-		<connection/>
-		<developerConnection/>
-		<tag/>
-		<url/>
-	</scm>
+	<name>music-be</name>
+	<description>Music score platform backend</description>
 	<properties>
 		<java.version>21</java.version>
 
@@ -38,6 +25,13 @@
 	</properties>
 
 	<dependencies>
+
+		<!-- CLOUDINARY (avatar hosting) -->
+		<dependency>
+			<groupId>com.cloudinary</groupId>
+			<artifactId>cloudinary-http45</artifactId>
+			<version>1.39.0</version>
+		</dependency>
 
 		<!-- WEB -->
 		<dependency>
@@ -65,6 +59,12 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-validation</artifactId>
+		</dependency>
+
+		<!-- STOMP qua WebSocket: đẩy thông báo tức thì tới chuông (R8) -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-websocket</artifactId>
 		</dependency>
 
 		<!-- SECURITY -->
@@ -171,6 +171,17 @@
 	<build>
 		<plugins>
 
+			<!-- TEST: luôn chạy với profile "test" để dùng DB music_test (src/test/resources/application-test.yaml) -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<systemPropertyVariables>
+						<spring.profiles.active>test</spring.profiles.active>
+					</systemPropertyVariables>
+				</configuration>
+			</plugin>
+
 			<!-- SPRING BOOT -->
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
@@ -184,8 +195,7 @@
 				<version>${maven-compiler-plugin.version}</version>
 
 				<configuration>
-					<source>${java.version}</source>
-					<target>${java.version}</target>
+					<release>${java.version}</release>
 
 					<annotationProcessorPaths>
 
@@ -221,7 +231,7 @@
 			<plugin>
 				<groupId>com.diffplug.spotless</groupId>
 				<artifactId>spotless-maven-plugin</artifactId>
-				<version>2.44.0</version>
+				<version>${spotless.version}</version>
 
 				<configuration>
 					<java>
@@ -234,7 +244,10 @@
 							<spacesPerTab>4</spacesPerTab>
 						</indent>
 
-						<palantirJavaFormat/>
+						<!-- Ghim bản mới: bản mặc định 2.39.0 lỗi NoSuchMethodError trên JDK 25 -->
+						<palantirJavaFormat>
+							<version>2.81.0</version>
+						</palantirJavaFormat>
 
 						<importOrder>
 							<order>java,jakarta,org,com,</order>

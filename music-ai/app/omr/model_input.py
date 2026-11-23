@@ -16,7 +16,9 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
+from app.config import get_settings
 from app.omr.preprocess import TARGET_H, TARGET_W, fit_to_canvas
+from app.omr.textstrip import strip_text
 
 
 def to_model_array(png_path) -> np.ndarray:
@@ -27,8 +29,9 @@ def to_model_array(png_path) -> np.ndarray:
     1. Mở ảnh, chuyển xám (nếu là RGB/RGBA thì nền trong suốt đặt lên trắng).
     2. Ảnh do bước tiền xử lý tạo ra đã đúng 1050x1485. Nếu là ảnh khác kích thước thì áp cùng quy tắc: thu phóng vừa
        khung, pad trắng căn trên-trái (không cắt nội dung như model card).
-    3. Nhân bản ra 3 kênh RGB. Ảnh xám 8-bit là đủ vì model card tự ``convert("RGB")`` trước khi resize.
-    4. Chuẩn hóa ``(x / 255 - 0.5) / 0.5`` rồi thêm chiều batch.
+    3. Xóa chữ ngoài khuông (lời ca, tên hợp âm) nếu ``OMR_STRIP_TEXT`` bật (mặc định bật).
+    4. Nhân bản ra 3 kênh RGB. Ảnh xám 8-bit là đủ vì model card tự ``convert("RGB")`` trước khi resize.
+    5. Chuẩn hóa ``(x / 255 - 0.5) / 0.5`` rồi thêm chiều batch.
     """
     with Image.open(Path(png_path)) as opened:
         if opened.mode in ("RGBA", "LA", "P"):
@@ -39,6 +42,9 @@ def to_model_array(png_path) -> np.ndarray:
 
     if gray.shape != (TARGET_H, TARGET_W):
         gray = fit_to_canvas(gray)
+
+    if get_settings().strip_text:
+        gray, _removed = strip_text(gray)  # lời ca, hợp âm: ngoài phân phối train của Transcoda (xem textstrip.py)
 
     normalized = (gray.astype(np.float32) / 255.0 - 0.5) / 0.5
     rgb = np.repeat(normalized[np.newaxis, :, :], 3, axis=0)  # (3, H, W)

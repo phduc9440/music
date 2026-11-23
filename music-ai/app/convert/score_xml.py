@@ -15,6 +15,8 @@ from typing import Optional
 
 from app.convert.errors import ConversionError
 
+DEFAULT_VELOCITY = 80
+
 STEP_SEMITONE = {"C": 0, "D": 2, "E": 4, "F": 5, "G": 7, "A": 9, "B": 11}
 
 
@@ -26,6 +28,7 @@ class NoteEvent:
     start: Fraction
     length: Fraction
     midi: int
+    velocity: int = DEFAULT_VELOCITY
 
 
 def child_text(element: ET.Element, tag: str) -> Optional[str]:

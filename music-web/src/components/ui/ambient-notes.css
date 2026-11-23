@@ -1,0 +1,54 @@
+/* ---- nền trang trí AmbientNotes: phủ kín khung nhìn, ở yên khi cuộn, nằm dưới nội dung (z-index âm trong ngữ cảnh
+   xếp lớp của khung trang, khung phải có isolation: isolate). Lớp hiệu ứng bấm nổi trên nội dung nhưng không nhận sự
+   kiện chuột ---- */
+.ambient-notes {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  /* ánh màu cực quang rất nhẹ: tím trên trái, hồng trên phải, xanh ngọc dưới trái, hổ phách dưới phải */
+  --ambient-wash: 15%;
+  background:
+    radial-gradient(
+      42% 38% at 8% 14%,
+      color-mix(in srgb, var(--ui-fx-2) var(--ambient-wash), transparent),
+      transparent 72%
+    ),
+    radial-gradient(
+      40% 36% at 94% 18%,
+      color-mix(in srgb, var(--ui-fx-1) var(--ambient-wash), transparent),
+      transparent 72%
+    ),
+    radial-gradient(
+      44% 40% at 14% 96%,
+      color-mix(in srgb, var(--ui-fx-4) var(--ambient-wash), transparent),
+      transparent 72%
+    ),
+    radial-gradient(
+      40% 36% at 90% 92%,
+      color-mix(in srgb, var(--ui-fx-3) var(--ambient-wash), transparent),
+      transparent 72%
+    );
+}
+:root[data-theme='dark'] .ambient-notes {
+  --ambient-wash: 20%;
+}
+/* chỉ có hiệu ứng bấm: bỏ ánh màu nền (trang đã có nền riêng) */
+.ambient-notes--bare {
+  background: none;
+}
+.ambient-notes__bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+/* lớp hiệu ứng bấm (anh em của khối nền): cố định trên cùng trong khung trang, xuyên chuột */
+.ambient-notes__fx {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}

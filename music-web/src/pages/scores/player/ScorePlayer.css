@@ -1,0 +1,12 @@
+/* Trang phát nhạc: thanh Player nằm sát đáy, bản nhạc cuộn phía trên */
+.spl-root .sv-stage {
+  padding-bottom: 8px;
+}
+.spl-root .sv-canvas__host {
+  cursor: pointer;
+}
+.spl-root .pl-bar {
+  position: relative;
+  z-index: 5;
+  flex: none;
+}

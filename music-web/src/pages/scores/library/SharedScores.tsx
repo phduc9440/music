@@ -1,0 +1,50 @@
+import { useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
+import Pagination from '../../../components/scores/common/Pagination';
+import ScoreGrid from '../../../components/scores/library/ScoreGrid';
+import { scoreApi } from '../../../services';
+import type { PageResult, ScoreSummary } from '../../../types';
+import '../../../components/scores/scores.css';
+import './ScoreLibrary.css';
+import { t } from '../../../i18n/core';
+
+const PAGE_SIZE = 12;
+
+/** Trang /scores/shared: bản nhạc người khác chia sẻ cho tôi. */
+export default function SharedScores() {
+  const [page, setPage] = useState(0);
+  const [data, setData] = useState<PageResult<ScoreSummary> | null>(null);
+
+  useEffect(() => {
+    scoreApi
+      .sharedWithMe({ page, size: PAGE_SIZE })
+      .then((res) => setData(res.data.result))
+      .catch(() => toast.error(t('scores.shared.loadFailed')));
+  }, [page]);
+
+  return (
+    <div className="sc-page">
+      <main className="sc-container">
+        <header className="sc-lib-head sc-lib-hero">
+          <div>
+            <h1>{t('common.nav.items.shared')}</h1>
+            <p>{data ? t('common.pagination.scores', { count: data.totalElements }) : t('scores.shared.subtitle')}</p>
+          </div>
+        </header>
+
+        {data && data.content.length === 0 && (
+          <div className="sc-empty">
+            <h3>{t('scores.shared.emptyTitle')}</h3>
+            <p>{t('scores.shared.emptyHint')}</p>
+          </div>
+        )}
+
+        {data && data.content.length > 0 && <ScoreGrid scores={data.content} showTip />}
+
+        {data && (
+          <Pagination page={page} totalPages={data.totalPages} totalElements={data.totalElements} onChange={setPage} />
+        )}
+      </main>
+    </div>
+  );
+}

@@ -1,0 +1,22 @@
+{
+  "title": "Cài đặt thông báo",
+  "subtitle": "Chọn nhóm nào hiện trong chuông và nhóm nào gửi email tóm tắt mỗi sáng.",
+  "loadFailed": "Không tải được cài đặt thông báo",
+  "saveFailed": "Không lưu được cài đặt thông báo",
+  "channel": {
+    "inApp": "Trong ứng dụng",
+    "email": "Email tóm tắt"
+  },
+  "category": {
+    "SCORES": { "name": "Bản nhạc", "desc": "Xin quyền, chia sẻ, duyệt công khai, nhận xét, kho bản nhạc mẫu" },
+    "COMMENTS": { "name": "Góp ý và đề xuất", "desc": "Được nhắc tên, có người trả lời góp ý, đề xuất sửa" },
+    "TEAMS": { "name": "Nhóm và buổi diễn", "desc": "Lời mời, thay đổi vai trò, giao việc, nhắc hạn" },
+    "FORUM": {
+      "name": "Diễn đàn",
+      "desc": "Trả lời trong chủ đề của bạn hoặc chủ đề bạn theo dõi, câu trả lời hay nhất"
+    },
+    "BILLING": { "name": "Gói dịch vụ", "desc": "Kích hoạt, sắp hết hạn, thu hồi gói" }
+  },
+  "offHint": "Đã tắt hoàn toàn: bạn sẽ không nhận thông báo nào ở nhóm này.",
+  "systemNote": "Thông báo chung của quản trị viên luôn hiện trong ứng dụng. Email tóm tắt chỉ gửi khi có thông báo chưa đọc trong 24 giờ qua."
+}

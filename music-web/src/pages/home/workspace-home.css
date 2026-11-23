@@ -1,0 +1,907 @@
+/* Hallmark · v2.0.0 · built: the project · redesign: full · scope: app · theme: custom · reference: Mercury (user-supplied style reference), shared with the guest home · paper: follows the theme · cards: one value step off the paper (--ui-flat), no border, no shadow, radius 12 · accent: lime, posture: spark (the primary action only) · interactive: glacier navy / glacier blue · faces: Lexend 480 (display), Be Vietnam Pro 400/500 (body) */
+/* Hallmark · dropped the piano backdrop, the floating note field, the hero glows, the magnetic button, the 3D cover tilt and the scroll parallax · ornaments with no fact behind them */
+/* Hallmark · answered F7 · one flat card recipe is the whole surface system of the user's Mercury reference; roles differ by content and type size, not by box */
+/* Hallmark · dropped the coloured icon tiles on features and steps, the step numbers and the pending-type dots · 3, 54 and 63; the order lives in the <ol> */
+
+/* Trang làm việc của người đã đăng nhập (/): cùng ngôn ngữ với trang chủ khách — thẻ phẳng, nút viên thuốc, một màu nhấn. */
+/* nền đặc theo theme, phủ ảnh piano chung của bố cục (UserLayout) như trang chủ khách */
+/* .app-main .sc-page đặt nền trong suốt (độ ưu tiên 0,2,0), nên cần bộ chọn mạnh hơn */
+.app-main .sc-page.wh-page {
+  flex: 1;
+  background: var(--ui-bg);
+}
+.wh {
+  --wh-card: var(--ui-flat);
+  --wh-card-2: var(--ui-flat-2);
+  --wh-radius: 12px;
+  --wh-radius-inner: 8px;
+  /* vạch mảnh phân cách các mục không đóng thẻ (tính năng, đoạn nối ba bước): đậm hơn viền thường để nổi trên nền */
+  --wh-hairline: color-mix(in srgb, var(--ui-text) 30%, transparent);
+  --wh-display: var(--ui-font-display);
+
+  display: grid;
+  gap: 72px;
+  padding-bottom: 112px;
+}
+.wh :is(h1, h2, h3, strong) {
+  font-weight: 480;
+}
+.wh :is(a, button):focus-visible {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 3px;
+}
+
+/* ---- nút: chính đồng thau, phụ viền mảnh, bo viên thuốc ---- */
+.wh-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding-inline: 24px;
+  border: 1px solid var(--ui-cta-border);
+  border-radius: 32px;
+  background: var(--ui-cta);
+  color: var(--ui-on-cta);
+  font-size: 1rem;
+  font-weight: 500;
+  white-space: nowrap;
+  text-decoration: none;
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease;
+}
+.wh-btn:hover {
+  background: var(--ui-cta-hover);
+  color: var(--ui-on-cta);
+}
+.wh-btn:active {
+  transform: translateY(1px);
+}
+.wh-btn--light {
+  border-color: var(--ui-text);
+  background: transparent;
+  color: var(--ui-text);
+}
+.wh-btn--light:hover {
+  background: var(--wh-card-2);
+  color: var(--ui-text);
+}
+
+/* ---- khung chào: lời chào ở cỡ hiển thị bên trái, chuỗi ngày trong một thẻ bên phải ---- */
+.wh-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 320px);
+  align-items: center;
+  gap: 40px;
+  padding-top: 40px;
+}
+.wh-hero h1 {
+  min-width: 0;
+  margin: 0;
+  font-family: var(--wh-display);
+  font-size: clamp(2.5rem, 5vw, 4.0625rem);
+  line-height: 1.12;
+  letter-spacing: 0.01em;
+  overflow-wrap: break-word;
+  text-wrap: balance;
+}
+.wh-hero__sub {
+  max-width: 46ch;
+  margin: 20px 0 0;
+  color: var(--ui-text-2);
+  font-size: 1.125rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+.wh-hero__cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 32px;
+}
+.wh-streak {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 4px 16px;
+  padding: 32px;
+  border-radius: var(--wh-radius);
+  background: var(--wh-card);
+  color: var(--ui-text);
+  text-decoration: none;
+  transition: background-color 0.18s ease;
+}
+.wh-streak:hover {
+  background: var(--wh-card-2);
+  color: var(--ui-text);
+}
+.wh-streak > svg {
+  grid-row: span 2;
+  color: var(--ui-cta-ink);
+}
+.wh-streak__num {
+  font-family: var(--wh-display);
+  font-size: 3.5rem;
+  font-weight: 480;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+}
+.wh-streak__label {
+  display: grid;
+  gap: 2px;
+  color: var(--ui-text-2);
+}
+.wh-streak__label small {
+  font-size: 0.875rem;
+}
+
+/* ---- lưới thẻ: tiếp tục (to), gợi ý, tạo mới, việc chờ, nhiệm vụ, liên kết nhanh ---- */
+.wh-bento {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 16px;
+}
+.wh-tile,
+.wh-panel {
+  min-width: 0;
+  padding: 32px;
+  border-radius: var(--wh-radius);
+  background: var(--wh-card);
+  color: var(--ui-text);
+}
+.wh-tile--continue {
+  grid-column: span 7;
+  grid-row: span 3;
+}
+.wh-tile--suggest,
+.wh-tile--create {
+  grid-column: span 5;
+}
+.wh-tile--pending {
+  grid-column: span 7;
+}
+.wh-tile--tasks {
+  grid-column: span 5;
+}
+.wh-panel__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.wh-panel__head h2,
+.wh-tile__kicker {
+  margin: 0;
+  font-family: var(--wh-display);
+  font-size: 1.3125rem;
+  font-weight: 480;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+}
+.wh-panel__action {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  color: var(--ui-primary);
+  font-size: 0.9375rem;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.wh-panel__action:hover {
+  color: var(--ui-primary-hover);
+  text-decoration: underline;
+}
+.wh-empty {
+  margin: 0;
+  color: var(--ui-text-2);
+}
+/* chuỗi thông tin phụ: các mục tách bằng khoảng trống, không nối bằng dấu chấm giữa */
+.wh-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  color: var(--ui-text-2);
+  font-size: 0.875rem;
+}
+
+/* bản đang tập: bìa lớn bên trái, thông tin bên phải */
+.wh-feature {
+  display: grid;
+  grid-template-columns: minmax(0, 160px) minmax(0, 1fr);
+  align-items: center;
+  gap: 24px;
+  padding: 12px;
+  border-radius: var(--wh-radius-inner);
+  color: inherit;
+  text-decoration: none;
+  transition: background-color 0.18s ease;
+}
+.wh-feature:hover {
+  background: var(--wh-card-2);
+  color: inherit;
+}
+.wh-feature__cover {
+  display: block;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border-radius: var(--wh-radius-inner);
+  background: var(--ui-bg);
+}
+.wh-recent__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.wh-feature__body {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.wh-feature__body strong {
+  font-family: var(--wh-display);
+  font-size: 1.75rem;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  overflow-wrap: break-word;
+}
+.wh-feature__body span {
+  color: var(--ui-text-2);
+}
+.wh-feature__body small {
+  color: var(--ui-text-2);
+  font-size: 0.875rem;
+}
+.wh-list {
+  display: grid;
+  gap: 2px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.wh-recent,
+.wh-pending,
+.wh-task {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 56px;
+  padding: 12px;
+  border-radius: var(--wh-radius-inner);
+  color: inherit;
+  text-decoration: none;
+  transition: background-color 0.18s ease;
+}
+.wh-recent:hover,
+.wh-pending:hover,
+.wh-task:hover {
+  background: var(--wh-card-2);
+  color: inherit;
+}
+.wh-recent > svg {
+  flex: none;
+  margin-left: auto;
+  color: var(--ui-text-2);
+}
+.wh-recent__thumb {
+  flex: none;
+  width: 44px;
+  height: 56px;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--ui-bg);
+}
+.wh-recent__body,
+.wh-pending__body,
+.wh-task__body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.wh-recent__body strong,
+.wh-task__body strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wh-task {
+  display: grid;
+  gap: 8px;
+}
+.wh-task__side {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* gợi ý luyện tập */
+.wh-tile--suggest {
+  display: grid;
+  align-content: start;
+  justify-items: start;
+  gap: 8px;
+}
+.wh-suggest__reason {
+  color: var(--ui-text-2);
+}
+.wh-suggest__title {
+  font-family: var(--wh-display);
+  font-size: 1.75rem;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+}
+.wh-suggest__meta {
+  margin-bottom: 12px;
+}
+.wh-suggest__empty {
+  margin: 0;
+  color: var(--ui-text-2);
+}
+.wh-suggest__empty a {
+  color: var(--ui-primary);
+}
+
+/* tạo bản nhạc mới: thẻ có biểu tượng đứng cạnh tiêu đề */
+.wh-tile--create {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 4px 16px;
+  text-decoration: none;
+  transition: background-color 0.18s ease;
+}
+.wh-tile--create:hover {
+  background: var(--wh-card-2);
+  color: var(--ui-text);
+}
+.wh-tile--create > svg {
+  grid-row: span 2;
+  color: var(--ui-primary);
+}
+.wh-tile--create strong {
+  font-family: var(--wh-display);
+  font-size: 1.3125rem;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+}
+.wh-tile--create span {
+  color: var(--ui-text-2);
+  font-size: 0.9375rem;
+}
+
+.wh-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0 0;
+}
+.wh-counts span {
+  padding: 4px 12px;
+  border-radius: 40px;
+  background: var(--wh-card-2);
+  color: var(--ui-text-2);
+  font-size: 0.875rem;
+}
+
+/* liên kết nhanh: hàng viên thuốc */
+.wh-quick {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.wh-quick__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding-inline: 20px;
+  border: 1px solid var(--ui-text);
+  border-radius: 40px;
+  color: var(--ui-text);
+  text-decoration: none;
+  transition: background-color 0.18s ease;
+}
+.wh-quick__item:hover {
+  background: var(--wh-card-2);
+  color: var(--ui-text);
+}
+.wh-quick__icon {
+  display: inline-flex;
+  color: var(--ui-primary);
+}
+
+/* ---- các khối bên dưới: tiêu đề một hàng, thẻ phẳng ---- */
+.wh-sec {
+  display: grid;
+  gap: 32px;
+}
+.wh-sec__head {
+  /* tiêu đề và dòng mô tả căn giữa, mô tả nằm ngay dưới tiêu đề */
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  text-align: center;
+}
+.wh-sec__head h2,
+.wh-cta h2 {
+  min-width: 0;
+  margin: 0;
+  font-family: var(--wh-display);
+  font-size: clamp(2rem, 3.2vw, 2.625rem);
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+  overflow-wrap: break-word;
+  text-wrap: balance;
+}
+.wh-sec__head p {
+  max-width: 44ch;
+  margin: 0;
+  color: var(--ui-text-2);
+  font-size: 1.125rem;
+  line-height: 1.45;
+}
+/* tính năng: không đóng thẻ, như trang chủ khách. Mỗi mục là biểu tượng + chữ, phân cách bằng một vạch mảnh phía trên;
+   cả mục là một liên kết, rê chuột thì vạch và biểu tượng đổi sang màu nhấn */
+.wh-showcase {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 40px 32px;
+}
+.wh-feat {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+  padding-top: 24px;
+  border-top: 1px solid var(--wh-hairline);
+  color: var(--ui-text);
+  text-decoration: none;
+  transition: border-color 0.18s ease;
+}
+.wh-feat__icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--wh-radius-inner);
+  background: color-mix(in srgb, var(--ui-cta) 12%, transparent);
+  color: var(--ui-cta);
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease;
+}
+.wh-feat:hover {
+  border-top-color: var(--ui-cta);
+  color: var(--ui-text);
+}
+.wh-feat:hover .wh-feat__icon {
+  background: var(--ui-cta);
+  color: var(--ui-on-cta);
+}
+.wh-feat:focus-visible {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+.wh-feat__body {
+  display: grid;
+  gap: 8px;
+}
+.wh-feat strong {
+  font-family: var(--wh-display);
+  font-size: 1.3125rem;
+  font-weight: inherit;
+  line-height: 1.3;
+}
+.wh-feat__body span {
+  color: var(--ui-text-2);
+  line-height: 1.5;
+}
+
+/* ba bước: không đóng thẻ. Ba số thứ tự nằm trên một dòng kẻ như nốt trên dòng nhạc, động từ cỡ lớn bên dưới */
+.wh-journey {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 40px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+/* đoạn kẻ nối số này sang số kế bên, chừa khe nhỏ hai đầu; bước cuối không có đoạn nối */
+.wh-journey > li {
+  position: relative;
+}
+.wh-journey > li:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 20px;
+  /* số nằm giữa cột: 28px = nửa vòng tròn 20px + khe 8px; 40px là khoảng cách cột; phần % tính theo bề rộng cột */
+  left: calc(50% + 28px);
+  right: calc(28px - 50% - 40px);
+  height: 1px;
+  background: var(--wh-hairline);
+}
+.wh-journey__item {
+  position: relative;
+  display: grid;
+  align-content: start;
+  justify-items: center; /* số, động từ và mô tả nằm giữa cột */
+  text-align: center;
+  color: var(--ui-text);
+  text-decoration: none;
+}
+.wh-journey__num {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--ui-cta);
+  color: var(--ui-on-cta);
+  font-family: var(--wh-display);
+  font-size: 1.125rem;
+  font-weight: 600;
+  transition: scale 0.18s ease;
+}
+.wh-journey__item:hover {
+  color: var(--ui-text);
+}
+.wh-journey__item:hover .wh-journey__num {
+  scale: 1.12;
+}
+.wh-journey__item:hover strong {
+  color: var(--ui-primary);
+}
+.wh-journey__item:focus-visible {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+.wh-journey__item strong {
+  margin-top: 24px;
+  font-family: var(--wh-display);
+  font-size: clamp(2rem, 3.2vw, 2.625rem);
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+  transition: color 0.18s ease;
+}
+.wh-journey__text {
+  max-width: 34ch;
+  margin-top: 12px;
+  color: var(--ui-text-2);
+  line-height: 1.5;
+}
+
+/* diễn đàn: danh sách dùng chung đặt trong một thẻ phẳng */
+.wh .hf {
+  padding: 12px;
+  border-radius: var(--wh-radius);
+  background: var(--wh-card);
+}
+.wh .hf__item {
+  min-height: 64px;
+  padding: 16px 20px;
+  border: 0;
+  border-radius: var(--wh-radius-inner);
+  background: transparent;
+}
+.wh .hf__item:hover {
+  background: var(--wh-card-2);
+}
+.wh .hf__all {
+  justify-self: start;
+  padding-inline: 20px;
+  color: var(--ui-primary);
+}
+
+/* lời mời cuối trang: một thẻ rộng */
+.wh-cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  padding: 56px 40px;
+  border-radius: var(--wh-radius);
+  background: var(--wh-card);
+}
+.wh-cta p {
+  max-width: 52ch;
+  margin: 12px 0 0;
+  color: var(--ui-text-2);
+  font-size: 1.125rem;
+}
+
+/* khung xương khi đang tải */
+.wh-skeleton {
+  min-height: 180px;
+  border-radius: var(--wh-radius);
+  background: var(--wh-card);
+}
+.wh-skeleton--hero {
+  min-height: 240px;
+}
+.wh-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+/* ---- màn hình nhỏ ---- */
+@media (max-width: 960px) {
+  .wh {
+    gap: 56px;
+  }
+  /* iPad: thẻ chuỗi ngày hẹp lại để lời chào còn đủ chỗ bên cạnh */
+  .wh-hero {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 240px);
+    gap: 24px;
+  }
+}
+@media (max-width: 640px) {
+  /* điện thoại: hero một cột, lời chào ở trên, thẻ chuỗi ngày bên dưới (hai cột thì cột chữ bị ép về 0, chữ dựng đứng
+     từng ký tự) */
+  .wh-hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .wh-hero,
+  .wh-tile--continue,
+  .wh-tile--suggest,
+  .wh-tile--create,
+  .wh-tile--pending,
+  .wh-tile--tasks {
+    grid-column: 1 / -1;
+    grid-row: auto;
+  }
+  .wh-showcase,
+  .wh-journey,
+  .wh-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* ba bước xếp dọc: số thứ tự bên trái, dòng kẻ chạy dọc nối các số */
+  .wh-journey {
+    gap: 32px;
+  }
+  .wh-journey > li:not(:last-child)::after {
+    top: 48px;
+    right: auto;
+    bottom: -24px; /* = 8px - khoảng cách hàng 32px */
+    left: 20px;
+    width: 1px;
+    height: auto;
+  }
+  .wh-journey__item {
+    grid-template-columns: 40px minmax(0, 1fr);
+    column-gap: 20px;
+    justify-items: start;
+    text-align: start;
+  }
+  .wh-journey__num {
+    grid-row: span 2;
+  }
+  .wh-journey__item strong {
+    margin-top: 0;
+    font-size: 1.3125rem;
+    line-height: 40px;
+  }
+  .wh-journey__text {
+    margin-top: 4px;
+  }
+}
+@media (max-width: 560px) {
+  .wh-tile,
+  .wh-panel {
+    padding: 24px;
+  }
+  .wh-feature {
+    grid-template-columns: minmax(0, 96px) minmax(0, 1fr);
+    gap: 16px;
+  }
+  .wh-cta {
+    padding: 32px 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wh-btn:active {
+    transform: none;
+  }
+  .wh-btn,
+  .wh-streak,
+  .wh-feature,
+  .wh-recent,
+  .wh-pending,
+  .wh-task,
+  .wh-tile--create,
+  .wh-quick__item,
+  .wh-feat,
+  .wh-feat__icon,
+  .wh-journey__num,
+  .wh-journey__item strong {
+    transition: none;
+  }
+}
+
+/* ---- thang chữ kiểu Mercury: 65px độ đậm 530 không giãn; 42px giãn 0.01em; 28px giãn 0.015em; 21px không giãn ---- */
+.wh-hero h1,
+.wh-streak__num {
+  font-weight: var(--ui-weight-display);
+  letter-spacing: var(--ui-track-display);
+}
+.wh-hero h1 {
+  line-height: 1.1;
+}
+.wh-sec__head h2,
+.wh-cta h2,
+.wh-journey__item strong {
+  letter-spacing: var(--ui-track-heading-lg);
+}
+.wh-feature__body strong,
+.wh-suggest__title {
+  letter-spacing: var(--ui-track-heading);
+}
+.wh-panel__head h2,
+.wh-tile__kicker,
+.wh-tile--create strong,
+.wh-feat strong {
+  letter-spacing: 0;
+}
+
+/* ---- khuông nhạc 3D (ScoreStaff3D): phủ kín khung nhìn và ở yên khi cuộn (bản nhạc tự trôi theo cuộn trang), nằm dưới mọi
+   nội dung. z-index âm trong ngữ cảnh xếp lớp riêng của .wh-page: vẽ trên nền trang nhưng dưới thẻ và chữ; không nhận
+   sự kiện chuột ---- */
+.wh-page {
+  position: relative;
+  isolation: isolate;
+}
+.wh-staff {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+.wh-staff canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* ---- mỗi màn một section: khung chung, cuộn hít, chuyển cảnh và dải chấm ở components/home/screens.css; dưới đây
+   là phần riêng của trang workspace ---- */
+.wh:has(> .scr) {
+  gap: 0;
+  padding-bottom: 0;
+}
+.wh-desk,
+.wh-cta-screen {
+  display: grid;
+}
+.wh-desk {
+  gap: 24px;
+  padding-block: 16px;
+}
+.wh-desk .wh-hero {
+  padding-top: 0;
+}
+
+/* màn "Việc cần làm": chờ xử lý (7 cột) cạnh việc của tôi (5 cột); không có việc được giao thì chờ xử lý trải hết hàng */
+.wh-bento--todo:not(:has(.wh-tile--tasks)) .wh-tile--pending {
+  grid-column: 1 / -1;
+}
+
+@supports (animation-timeline: view()) {
+  @media (min-width: 961px) and (prefers-reduced-motion: no-preference) {
+    /* ba bước: dòng kẻ được vẽ từ trái sang, ba số bật lên lần lượt như nốt được gõ */
+    /* các đoạn nối được vẽ lần lượt 1→2 rồi 2→3, ngay sau khi số bên trái bật lên */
+    .wh-journey > li::after {
+      transform-origin: 0 50%;
+      animation: scr-draw-x linear both;
+      animation-timeline: --scr;
+      animation-range: entry calc(60% + var(--i, 0) * 12%) entry calc(80% + var(--i, 0) * 12%);
+    }
+    .wh-journey__num {
+      animation: scr-pop linear both;
+      animation-timeline: --scr;
+      animation-range: entry calc(45% + var(--i, 0) * 12%) entry calc(70% + var(--i, 0) * 12%);
+    }
+    /* việc cần làm: các ô trồi lên lần lượt */
+    .wh-bento--todo > * {
+      animation: scr-rise linear both;
+      animation-timeline: --scr;
+      animation-range: entry 40% entry 85%;
+    }
+    .wh-bento--todo > :nth-child(2) {
+      animation-range: entry 48% entry 90%;
+    }
+    .wh-bento--todo > :nth-child(3) {
+      animation-range: entry 56% entry 95%;
+    }
+  }
+}
+
+/* màn hẹp: ba bước xếp dọc nên đoạn nối được vẽ từ trên xuống */
+@media (max-width: 960px) {
+  .wh-journey > li::after {
+    transform-origin: 50% 0;
+    animation-name: scr-draw-y;
+  }
+}
+
+/* ---- phối màu theo vai (bảng Cam – Xanh – Vàng chanh trong tokens.css).
+   Trắng: Tiếp tục, Chờ bạn xử lý, ô Tạo mới (biểu tượng vẫn cam). Xanh (chi tiết lớn): khối Chuỗi ngày và khối kêu gọi cuối trang.
+   Vàng chanh (bổ trợ): Gợi ý luyện tập, nửa sau dải màu của ô Tạo mới. Xanh nhạt: Việc của tôi. Mỗi khung định nghĩa lại
+   --wh-card / --wh-card-2 nên dòng con, ô số đếm và trạng thái rê chuột bên trong đổi theo cùng tông. Pha bằng
+   color-mix với --ui-surface nên tự theo theme sáng / tối ---- */
+.wh {
+  /* trắng khi đã đăng nhập (tokens.css, :root.ui-signed-in); theme tối là nền thẻ tối */
+  --wh-white: var(--ui-surface);
+  --wh-white-2: var(--ui-surface-hover);
+  --wh-lime: var(--ui-tint-lime);
+  --wh-lime-2: var(--ui-tint-lime-2);
+  --wh-teal: var(--ui-tint-teal);
+  --wh-teal-2: var(--ui-tint-teal-2);
+  --wh-deep: linear-gradient(135deg, var(--ui-hero-from), var(--ui-hero-to));
+}
+.wh-tile--continue,
+.wh-tile--pending,
+.wh-tile.wh-tile--create {
+  --wh-card: var(--wh-white);
+  --wh-card-2: var(--wh-white-2);
+}
+.wh-tile--suggest {
+  --wh-card: var(--wh-lime);
+  --wh-card-2: var(--wh-lime-2);
+}
+.wh-tile--tasks {
+  --wh-card: var(--wh-teal);
+  --wh-card-2: var(--wh-teal-2);
+}
+/* ô Tạo mới: nền trắng, biểu tượng cam */
+.wh-tile--create > svg {
+  color: var(--ui-cta);
+}
+
+/* khối xanh đậm: chuỗi ngày tập và khối kêu gọi cuối trang; số và biểu tượng vàng chanh */
+.wh-streak,
+.wh-cta {
+  background: var(--wh-deep);
+  color: var(--ui-hero-text);
+}
+.wh-streak:hover {
+  background: var(--wh-deep);
+  color: var(--ui-hero-text);
+  filter: brightness(1.08);
+}
+.wh-streak > svg,
+.wh-streak__num {
+  color: var(--ui-stage-accent);
+}
+.wh-streak__label,
+.wh-cta p {
+  color: var(--ui-hero-text-2);
+}
+.wh-cta :is(h2, h3, strong) {
+  color: var(--ui-hero-text);
+}
+.wh-cta .wh-btn--light {
+  border-color: var(--ui-hero-line);
+  color: var(--ui-hero-text);
+}
+.wh-cta .wh-btn--light:hover {
+  background: var(--ui-hero-chip);
+  color: var(--ui-hero-text);
+}
+@media (prefers-reduced-motion: reduce) {
+  .wh-streak:hover {
+    filter: none;
+  }
+}

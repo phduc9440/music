@@ -8,19 +8,34 @@ from __future__ import annotations
 import hmac
 import logging
 from contextlib import asynccontextmanager
+from pathlib import PurePosixPath
 from typing import Optional
 from uuid import UUID
 
 from fastapi import Depends, FastAPI, Header, HTTPException
 
 from app import storage
+from app.analysis.diff import diff_files
+from app.chords import ChordError
+from app.chords.generate import generate_file, option_path
 from app.config import get_settings
 from app.convert.errors import ConversionError
 from app.convert.kern import kern_file_to_musicxml_file
 from app.convert.midi import musicxml_file_to_midi_file
+from app.convert.normalize import normalize_musicxml_file
+from app.convert.prepare import prepare_musicxml
 from app.jobs import JobManager, QueueFullError
+from app.omr.engines import music_engine_name
 from app.omr.transcoda import get_recognizer
-from app.schemas import JobRequest, KernToMusicXmlRequest, MusicXmlToMidiRequest
+from app.schemas import (
+    ChordGenerateRequest,
+    DiffRequest,
+    JobRequest,
+    KernToMusicXmlRequest,
+    MusicXmlToMidiRequest,
+    NormalizeRequest,
+    PrepareRequest,
+)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("music-ai")
@@ -77,6 +92,7 @@ def health() -> dict:
         "modelState": recognizer.state,
         "device": recognizer.device if recognizer.model_loaded else _detect_device(),
         "queueSize": manager.queue_size,
+        "engine": music_engine_name(),
     }
     if recognizer.error:
         body["modelError"] = recognizer.error
@@ -137,3 +153,100 @@ def convert_musicxml_to_midi(body: MusicXmlToMidiRequest) -> dict:
     except ConversionError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     return {"outPath": body.outPath, "notes": stats.notes, "tracks": stats.tracks, "seconds": stats.seconds}
+
+
+@app.post("/convert/prepare", dependencies=[Depends(require_internal_key)])
+def convert_prepare(body: PrepareRequest) -> dict:
+    """Chuẩn bị MusicXML trước khi MuseScore xuất file: dịch giọng, đổi tempo, chọn tay, đặt/ẩn tiêu đề, bỏ hợp âm.
+
+    Đồng bộ, chạy ngoài hàng đợi OMR. File vào và ra nằm trong cùng ``scores/{scoreId}/``. MusicXML hỏng hoặc thiếu
+    music21 khi cần dịch giọng: 422 kèm lý do.
+    """
+    try:
+        result = prepare_musicxml(
+            storage.resolve(body.inPath),
+            storage.resolve(body.outPath),
+            transpose=body.transpose,
+            tempo_percent=body.tempoPercent,
+            hands=body.hands,
+            title=body.title,
+            composer=body.composer,
+            show_title=body.showTitle,
+            strip_harmony=body.stripHarmony,
+        )
+    except ConversionError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {"outPath": body.outPath, "warnings": result.warnings}
+
+
+@app.post("/convert/normalize", dependencies=[Depends(require_internal_key)])
+def convert_normalize(body: NormalizeRequest) -> dict:
+    """Chuẩn hóa MusicXML có sẵn (nhập từ file hoặc do MuseScore sinh từ MIDI) thành MusicXML piano nhiều staff, đồng bộ.
+
+    Trả metadata như ``/convert/kern-to-musicxml`` để Java cập nhật ``scores``. XML hỏng, không phải score-partwise,
+    không có ô nhịp hoặc có khai báo ENTITY: 422 kèm lý do.
+    """
+    try:
+        result = normalize_musicxml_file(storage.resolve(body.inPath), storage.resolve(body.outPath), body.tempoBpm)
+    except ConversionError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {
+        "outPath": body.outPath,
+        "measureCount": result.measure_count,
+        "staffCount": result.staff_count,
+        "keySignature": result.key_signature,
+        "timeSignature": result.time_signature,
+        "tempoBpm": result.tempo_bpm,
+        "warnings": result.warnings,
+    }
+
+
+@app.post("/analysis/diff", dependencies=[Depends(require_internal_key)])
+def analysis_diff(body: DiffRequest) -> dict:
+    """So sánh hai MusicXML của cùng một bản nhạc (bản OMR và bản đã sửa), đồng bộ.
+
+    Trả ``{measures: [{base, target, status, errors[]}], summary: {...}}`` (xem ``app/analysis/diff.py``). File hỏng,
+    không phải score-partwise hoặc có khai báo ENTITY: 422 kèm lý do.
+    """
+    try:
+        return diff_files(storage.resolve(body.basePath), storage.resolve(body.targetPath))
+    except ConversionError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.post("/chords/generate", dependencies=[Depends(require_internal_key)])
+def chords_generate(body: ChordGenerateRequest) -> dict:
+    """Gợi ý hợp âm (R3, model AutoHarmonizer + lấy mẫu) cho MusicXML ``inPath``, đồng bộ.
+
+    Ghi tối đa ``options`` phương án: phương án 1 (hợp tai nhất) ra ``outPath``, phương án k ra ``<outPath>-k.musicxml``.
+    Mỗi lần gọi ra kết quả khác (trừ khi truyền ``seed``). Lỗi dự đoán được trả 422 với ``detail = {code, message}``;
+    ``code`` là ``NO_MELODY``, ``ALREADY_HARMONIZED``, ``NO_CHORDS``, ``TOO_LONG`` hoặc ``PARSE_ERROR``.
+    """
+    try:
+        result = generate_file(
+            storage.resolve(body.inPath),
+            storage.resolve(body.outPath),
+            body.style,
+            creativity=body.creativity,
+            density=body.density,
+            options=body.options,
+            seed=body.seed,
+            replace_existing=body.replaceExisting,
+        )
+    except ChordError as exc:
+        raise HTTPException(status_code=422, detail={"code": exc.code, "message": str(exc)}) from exc
+    except ConversionError as exc:
+        raise HTTPException(status_code=422, detail={"code": "PARSE_ERROR", "message": str(exc)}) from exc
+    return {
+        "outPath": body.outPath,
+        "key": result.key,
+        "steps": result.steps,
+        "filled": result.filled,
+        "skipped": result.skipped,
+        "keptExisting": result.kept_existing,
+        "seed": result.seed,
+        "options": [
+            {"outPath": str(option_path(PurePosixPath(body.outPath), i)), "filled": o.filled, "score": o.score}
+            for i, o in enumerate(result.options)
+        ],
+    }

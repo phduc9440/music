@@ -96,3 +96,13 @@ VOICE_ONLY = kern(
     "=2",
     "*-",
 )
+
+
+def melody(measures: int, meter: str = "3/4", final: bool = True) -> str:
+    """Giai điệu một khuông (1 spine) có đúng ``measures`` ô nhịp đủ trường độ ``meter``, như Transcoda trả cho một trang
+    ảo một hệ hoặc cả trang giai điệu."""
+    rows = ["**kern", "*clefG2", "*k[b-]", f"*M{meter}"]
+    for number in range(1, measures + 1):
+        rows += ["2f", "4g", "==" if final and number == measures else f"={number + 1}"]
+    rows.append("*-")
+    return kern(*rows)

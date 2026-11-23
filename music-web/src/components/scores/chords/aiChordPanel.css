@@ -1,0 +1,291 @@
+/* Bảng "Hợp âm AI gợi ý" bên phải trình chỉnh sửa (tiền tố aic-). Khung cột dùng lại .sv-comments (rộng 360px mặc định, kéo được, trên
+   máy tính, ngăn kéo dưới đáy trên màn hình nhỏ). Màu hợp âm AI khớp với chữ được tô trên bản nhạc (--ui-highlight-*). */
+
+.aic-panel {
+  gap: 0.9rem;
+  overflow-x: hidden;
+}
+
+.aic-title {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.aic-spark {
+  display: inline-grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 999px;
+  background: var(--ui-highlight-soft);
+  color: var(--ui-highlight-ink);
+}
+
+/* Chọn phương án A / B / C của AI: nút vuông 40px, phương án đang xem tô màu tương tác */
+.aic-options {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.aic-options__label {
+  font-size: var(--ui-text-sm);
+  font-weight: 600;
+}
+
+.aic-options__tabs {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.aic-option {
+  min-width: 40px;
+  height: 40px;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius-md, 8px);
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease;
+}
+
+.aic-option:hover:not(:disabled) {
+  border-color: var(--ui-primary);
+}
+
+.aic-option.is-active {
+  border-color: var(--ui-primary);
+  background: var(--ui-primary-soft);
+  color: var(--ui-primary);
+}
+
+.aic-option:focus-visible {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 2px;
+}
+
+.aic-option:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.aic-options__hint {
+  margin: 0;
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aic-option {
+    transition: none;
+  }
+}
+
+.aic-summary {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.aic-summary p {
+  margin: 0;
+}
+
+.aic-summary__key {
+  font-weight: 600;
+}
+
+.aic-summary__counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.75rem;
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-sm);
+}
+
+.aic-count.is-edited {
+  color: var(--ui-primary);
+}
+
+.aic-count.is-removed {
+  color: var(--ui-danger);
+}
+
+.aic-legend {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--ui-highlight-border);
+  border-radius: var(--ui-radius);
+  background: color-mix(in srgb, var(--ui-highlight-soft) 55%, transparent);
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-sm);
+  line-height: 1.45;
+}
+
+.aic-legend__swatch {
+  flex: none;
+  padding: 0 0.35rem;
+  border-radius: 4px;
+  background: var(--ui-highlight-soft);
+  color: var(--ui-highlight-ink);
+  font-weight: 700;
+}
+
+.aic-list {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.aic-measure {
+  display: grid;
+  grid-template-columns: 3.4rem 1fr;
+  align-items: start;
+  gap: 0.5rem;
+}
+
+.aic-measure__label {
+  padding-top: 0.45rem;
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-sm);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.aic-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.aic-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.25rem;
+  min-width: 2.75rem;
+  padding: 0.25rem 0.7rem;
+  border: 1px solid var(--ui-highlight-border);
+  border-radius: 999px;
+  background: var(--ui-highlight-soft);
+  color: var(--ui-highlight-ink);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    box-shadow 0.15s ease,
+    transform 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.aic-chip:hover {
+  box-shadow: var(--ui-elev-1);
+  transform: translateY(-1px);
+}
+
+.aic-chip:focus-visible {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 2px;
+}
+
+.aic-chip.is-current {
+  box-shadow: 0 0 0 2px var(--ui-primary);
+}
+
+/* Đã sửa: gợi ý cũ gạch ngang, hợp âm mới đậm bên cạnh */
+.aic-chip.is-edited {
+  border-color: var(--ui-border);
+  background: var(--ui-panel);
+  color: var(--ui-text);
+}
+
+.aic-chip.is-edited .aic-chip__ai {
+  color: var(--ui-text-2);
+  font-weight: 500;
+  text-decoration: line-through;
+}
+
+.aic-chip__now {
+  color: var(--ui-primary);
+}
+
+/* Đã xóa: viền đứt, chữ gạch ngang */
+.aic-chip.is-removed {
+  border-style: dashed;
+  border-color: var(--ui-border);
+  background: transparent;
+  color: var(--ui-text-2);
+  font-weight: 500;
+  text-decoration: line-through;
+}
+
+.aic-footer {
+  position: sticky;
+  bottom: -1rem;
+  display: grid;
+  gap: 0.6rem;
+  min-width: 0;
+  margin-top: auto;
+  padding: 0.75rem 0 0.25rem;
+  border-top: 1px solid var(--ui-border);
+  background: var(--ui-bg);
+}
+
+.aic-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.aic-nav .sc-btn {
+  white-space: nowrap;
+}
+
+.aic-nav__pos {
+  min-width: 3.2rem;
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-sm);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.aic-nav__edit {
+  margin-left: auto;
+}
+
+.aic-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.aic-actions .sc-btn--primary {
+  flex: 1;
+}
+
+@media (max-width: 900px) {
+  .aic-chip {
+    min-height: 2.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aic-chip {
+    transition: none;
+  }
+  .aic-chip:hover {
+    transform: none;
+  }
+}
+
+.aic-summary__desc {
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-sm);
+}

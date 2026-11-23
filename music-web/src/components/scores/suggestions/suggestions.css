@@ -1,0 +1,181 @@
+/*
+ * Đề xuất sửa (mục 4.3): hộp gửi đề xuất và tab Đề xuất của trang chi tiết bản nhạc. Tiền tố sg-; màu lấy từ token --ui-*
+ * nên tự theo theme sáng/tối. Nút, ô nhập dùng lại sc-*.
+ */
+
+.sg-hint {
+  margin: 0;
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-sm);
+}
+
+.sg-section {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.sg-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-surface-muted);
+}
+
+.sg-filter {
+  padding: 0.3rem 0.75rem;
+  border: 1px solid var(--ui-border);
+  border-radius: 999px;
+  background: var(--ui-surface);
+  color: var(--ui-text-2);
+  font: inherit;
+  font-size: var(--ui-text-sm);
+  cursor: pointer;
+}
+
+.sg-filters__action {
+  margin-left: auto;
+}
+
+.sg-filter:hover {
+  border-color: var(--ui-border-strong);
+  color: var(--ui-text);
+}
+
+.sg-filter.is-active {
+  border-color: var(--ui-primary);
+  background: var(--ui-primary-soft);
+  color: var(--ui-primary);
+  font-weight: 600;
+}
+
+.sg-list {
+  display: grid;
+  gap: 0.7rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Mỗi đề xuất là một thẻ: vạch màu bên trái theo trạng thái (mở = nâu, đã nhận = xanh, lệch bản = vàng) */
+.sg-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-surface);
+  box-shadow:
+    inset 4px 0 0 var(--ui-border-strong),
+    var(--ui-shadow);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.sg-item:has(.sg-badge.is-open) {
+  box-shadow:
+    inset 4px 0 0 var(--ui-primary),
+    var(--ui-shadow);
+}
+
+.sg-item:has(.sg-badge.is-accepted) {
+  box-shadow:
+    inset 4px 0 0 var(--ui-success),
+    var(--ui-shadow);
+}
+
+.sg-item:has(.sg-badge.is-stale) {
+  box-shadow:
+    inset 4px 0 0 var(--ui-warning-strong),
+    var(--ui-shadow);
+}
+
+.sg-item:hover {
+  border-color: var(--ui-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sg-item {
+    transition: none;
+  }
+}
+
+.sg-item__main {
+  min-width: 0;
+  flex: 1 1 260px;
+}
+
+.sg-item__title {
+  color: var(--ui-text);
+  font-weight: 600;
+  word-break: break-word;
+  text-decoration: none;
+}
+
+.sg-item__title:hover {
+  color: var(--ui-primary);
+  text-decoration: underline;
+}
+
+.sg-item__meta {
+  margin-top: 0.15rem;
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-sm);
+}
+
+.sg-item__side {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.sg-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.55rem;
+  border: 1px solid var(--ui-border);
+  border-radius: 999px;
+  background: var(--ui-surface-muted);
+  color: var(--ui-text-2);
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.sg-badge.is-open {
+  border-color: var(--ui-primary);
+  background: var(--ui-primary-soft);
+  color: var(--ui-primary);
+}
+
+.sg-badge.is-accepted {
+  border-color: var(--ui-success-border);
+  background: var(--ui-success-soft);
+  color: var(--ui-success);
+}
+
+.sg-badge.is-stale {
+  border-color: var(--ui-warning-border);
+  background: var(--ui-warning-soft);
+  color: var(--ui-warning);
+}
+
+.sg-empty {
+  padding: 1.5rem 1rem;
+  border: 1px dashed var(--ui-border-strong);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-surface);
+  color: var(--ui-text-2);
+  text-align: center;
+}
+
+.sg-empty p {
+  margin: 0.25rem 0 0;
+  font-size: var(--ui-text-sm);
+}

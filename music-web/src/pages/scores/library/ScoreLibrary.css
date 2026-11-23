@@ -1,0 +1,250 @@
+/* Trang thư viện bản nhạc (/scores) */
+.sc-lib-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+.sc-lib-head h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+.sc-lib-head p {
+  margin-top: 0.25rem;
+  color: var(--sc-muted);
+}
+
+.sc-filters {
+  display: grid;
+  grid-template-columns: minmax(220px, 2fr) repeat(3, minmax(140px, 1fr));
+  gap: 0.75rem;
+  padding: 0.75rem;
+  margin-bottom: 1.5rem;
+  background: var(--sc-card);
+  border: 1px solid var(--sc-line);
+  border-radius: var(--sc-radius);
+  box-shadow: var(--sc-shadow);
+}
+/* Thanh lọc gọn (Nhạc mẫu): ô tìm kiếm rộng + một ô chọn */
+.sc-filters--compact {
+  grid-template-columns: minmax(220px, 3fr) minmax(160px, 1fr);
+}
+.sc-search {
+  position: relative;
+  display: block;
+}
+.sc-search svg {
+  position: absolute;
+  top: 50%;
+  left: 0.75rem;
+  transform: translateY(-50%);
+  color: var(--sc-muted);
+  pointer-events: none;
+}
+.sc-search .sc-input {
+  padding-left: 2.4rem;
+}
+
+/* Trạng thái rỗng */
+.sc-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 3.5rem 1rem;
+  text-align: center;
+  background: var(--sc-card);
+  border: 1px dashed var(--ui-border-strong);
+  border-radius: var(--sc-radius);
+}
+.sc-empty__icon {
+  display: grid;
+  place-items: center;
+  width: 84px;
+  height: 84px;
+  margin-bottom: 0.5rem;
+  border-radius: 50%;
+  background: var(--sc-accent-soft);
+  color: var(--sc-accent);
+}
+.sc-empty p {
+  margin-bottom: 0.75rem;
+  color: var(--sc-muted);
+}
+
+/* Phân trang */
+.sc-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.75rem;
+}
+.sc-pager__info {
+  font-size: 0.88rem;
+  color: var(--sc-muted);
+}
+
+@media (max-width: 860px) {
+  .sc-filters {
+    grid-template-columns: 1fr 1fr;
+  }
+  .sc-search {
+    grid-column: 1 / -1;
+  }
+  .sc-filters--compact {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 520px) {
+  /* điện thoại: ô chọn vẫn chia hai cột (nhãn ngắn, đủ chỗ) để bộ lọc không chiếm hết màn hình; ô tìm kiếm trải hết hàng */
+  .sc-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+  /* chữ nhỏ hơn một chút để nhãn ô chọn không bị mũi tên đè */
+  .sc-filters select {
+    padding-left: 0.7rem;
+    font-size: 0.875rem;
+  }
+  .sc-pager {
+    flex-wrap: wrap;
+  }
+}
+
+/* màn hình nhỏ: tiêu đề và nút xếp chồng, thẻ bản nhạc chiếm cả chiều ngang */
+@media (max-width: 600px) {
+  .sc-lib-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.sc-lib-head__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Thùng rác (/scores/trash) */
+.sc-trash {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sc-trash__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+  background: var(--sc-card);
+  border: 1px solid var(--sc-line);
+  border-radius: var(--sc-radius);
+}
+.sc-trash__info {
+  min-width: 0;
+}
+.sc-trash__info h3 {
+  overflow: hidden;
+  font-size: 1rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sc-trash__info p {
+  margin-top: 0.15rem;
+  color: var(--sc-muted);
+  font-size: 0.88rem;
+}
+.sc-trash__actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 0.5rem;
+}
+@media (max-width: 640px) {
+  .sc-trash__item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* =====================================================================================================================
+ * Thư viện "Bản nhạc của tôi" (giao diện v2): đầu trang kiểu sân khấu, thanh lọc nổi. Thẻ bản nhạc dùng chung
+ * nằm ở components/scores/library/score-card.css.
+ * ================================================================================================================== */
+.sc-lib-hero {
+  position: relative;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  padding: 32px;
+  border-radius: 12px;
+  /* kiểu Mercury: thẻ phẳng một bậc so với nền trang, đi theo theme, không viền, không bóng, không quầng sáng */
+  background: var(--ui-flat);
+  color: var(--ui-text);
+}
+.sc-lib-hero h1 {
+  color: var(--ui-text);
+  font-family: var(--ui-font-display);
+  font-size: clamp(1.75rem, 3vw, 2.625rem);
+  font-weight: 480;
+  letter-spacing: 0.01em;
+  line-height: 1.15;
+}
+.sc-lib-hero p {
+  margin-top: 8px;
+  color: var(--ui-text-2);
+  font-size: 1rem;
+}
+.sc-lib-hero .sc-btn {
+  height: 40px;
+  padding: 0 20px;
+  border-color: var(--ui-text);
+  border-radius: 40px;
+  background: transparent;
+  color: var(--ui-text);
+}
+.sc-lib-hero .sc-btn:hover:not(:disabled) {
+  border-color: var(--ui-text);
+  background: var(--ui-flat-2);
+  color: var(--ui-text);
+}
+.sc-lib-hero .sc-btn--primary {
+  border-color: var(--ui-cta-border);
+  border-radius: 32px;
+  background: var(--ui-cta);
+  color: var(--ui-on-cta);
+  font-weight: 500;
+}
+.sc-lib-hero .sc-btn--primary:hover:not(:disabled) {
+  border-color: var(--ui-cta-border);
+  background: var(--ui-cta-hover);
+  color: var(--ui-on-cta);
+}
+
+/* Thanh lọc dính trên đầu khi cuộn, viền rõ hơn */
+.sc-lib .sc-filters {
+  position: sticky;
+  top: calc(var(--ui-header-h) + 8px);
+  z-index: 5;
+  border-color: var(--ui-card-border);
+  background: color-mix(in srgb, var(--ui-surface) 92%, transparent);
+  box-shadow: var(--ui-card-shadow);
+  backdrop-filter: blur(10px);
+}
+
+@media (max-width: 600px) {
+  .sc-lib-hero {
+    padding: 1.2rem 1.1rem;
+  }
+  .sc-lib-hero h1 {
+    font-size: 1.45rem;
+  }
+  .sc-lib .sc-filters {
+    position: static;
+  }
+}

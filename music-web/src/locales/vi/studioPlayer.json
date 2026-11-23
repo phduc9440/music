@@ -1,0 +1,119 @@
+{
+  "eyebrow": "Studio luyện tập tương tác",
+  "measures": "ô nhịp",
+  "unknownComposer": "Chưa rõ tác giả",
+  "backToScore": "Về bản nhạc",
+  "setup": {
+    "title": "Thiết lập buổi luyện",
+    "description": "Chọn tốc độ và cách nhập nốt. Khi bắt đầu, khu vực luyện tập mở toàn màn hình với đầy đủ 88 phím đàn.",
+    "mode": "Chế độ",
+    "waitHint": "Nốt sẽ dừng ở vạch chơi. Bấm đủ các nốt trong hợp âm để chuyển sang bước tiếp theo.",
+    "input": "Cách nhập nốt",
+    "computerKeyboard": "Bàn phím máy tính",
+    "touchKeyboard": "Bấm phím đàn trên màn hình",
+    "microphone": "Micro (đàn piano thật)",
+    "microphoneHint": "Micro nhận diện nhiều nốt cùng lúc. Chỉ dùng với Chạy tự do; kết quả sẽ trễ khoảng 1–2 giây. Âm thanh được phân tích trên trình duyệt, không gửi lên máy chủ. Đặt micro gần đàn và giảm tiếng ồn nền.",
+    "hands": "Tay luyện tập",
+    "bothHands": "Cả hai tay",
+    "rightHand": "Tay phải",
+    "leftHand": "Tay trái",
+    "tempo": "Tốc độ",
+    "repeatSection": "Lặp một đoạn",
+    "fromMeasure": "Từ ô nhịp",
+    "toMeasure": "Đến ô nhịp",
+    "start": "Bắt đầu luyện",
+    "starting": "Đang tạo phiên…",
+    "freeRunHint": "Nốt chạy đều theo tốc độ đã chọn; chơi đúng lúc nốt chạm vạch để được chấm hoàn hảo."
+  },
+  "session": {
+    "live": "Đang luyện",
+    "freeRun": "Chạy tự do",
+    "abort": "Hủy phiên",
+    "finish": "Kết thúc và xem báo cáo",
+    "saving": "Đang lưu…",
+    "progress": "Tiến độ buổi luyện",
+    "lastResult": "Kết quả gần nhất",
+    "microphonePrompt": "Chơi đàn piano thật; nốt sẽ được nhận diện sau một nhịp xử lý",
+    "microphoneStatus": "Đang nghe và phân tích đa nốt · hàng đợi xử lý {latency}",
+    "playPrompt": "Chơi một nốt để bắt đầu",
+    "waitPrompt": "Chơi các nốt đang chờ ở vạch để tiếp tục",
+    "finished": "Bài đã kết thúc",
+    "getReady": "Chuẩn bị"
+  },
+  "results": {
+    "PERFECT": "Hoàn hảo",
+    "EARLY": "Chơi sớm",
+    "LATE": "Chơi trễ",
+    "WRONG_PITCH": "Sai nốt",
+    "MISSED": "Bỏ lỡ"
+  },
+  "score": {
+    "title": "Bản nhạc",
+    "subtitle": "Chơi theo bản nhạc; kết quả nốt sẽ hiện ngay khi bạn nhập.",
+    "measureRange": "Ô nhịp {start}–{end}"
+  },
+  "keyboard": {
+    "label": "Đàn piano ảo",
+    "title": "Phím đàn",
+    "range": "88 phím · A0–C8",
+    "rangeHint": "Một số nốt trong bản nhạc nằm ngoài dải 88 phím của piano (A0–C8)."
+  },
+  "keyboardGuide": {
+    "open": "Cách chơi",
+    "title": "Hướng dẫn luyện với bàn phím",
+    "stepInput": "Trong phần thiết lập, chọn “Bàn phím máy tính” để chơi bằng các phím chữ, hoặc chọn “Bấm phím đàn trên màn hình” để chạm trực tiếp lên đàn.",
+    "stepRange": "Đàn ảo luôn hiển thị đủ 88 phím từ A0 đến C8. Bàn phím máy tính phát các nốt từ C4 đến C5 theo sơ đồ.",
+    "stepPlay": "Quan sát màu nốt để biết tay: tay phải màu xanh, tay trái màu cam. Bấm phím tương ứng khi nốt chạm vạch chơi; với đàn màn hình, chạm phím tương ứng.",
+    "stepFeedback": "Xem kết quả ngay dưới đàn: xanh là đúng nhịp, vàng là sớm/trễ, đỏ là sai nốt hoặc bỏ lỡ.",
+    "keyMap": "Bàn phím máy tính phát một quãng tám theo sơ đồ này:"
+  },
+  "recovery": {
+    "title": "Đang có phiên luyện tập khác",
+    "sameScore": "Tài khoản này còn một phiên đang chạy cho bản nhạc hiện tại. Phiên bị bỏ lại sau khi tải lại trang nên không thể tiếp tục chấm từ vị trí cũ.",
+    "otherScore": "Tài khoản này còn một phiên đang chạy ở bản nhạc khác. Mỗi tài khoản chỉ có thể có một phiên luyện tập tại một thời điểm.",
+    "resolve": "Xử lý phiên cũ",
+    "resolveFirst": "Xử lý phiên cũ trước",
+    "sameScoreConfirm": "Hủy phiên cũ sẽ đánh dấu phiên đó là bị bỏ dở; dữ liệu đã ghi nhận vẫn nằm trong lịch sử nhưng không thể tiếp tục phiên.",
+    "otherScoreConfirm": "Phiên cũ có thể đang được dùng ở một tab khác. Chỉ xác nhận hủy nếu bạn chắc chắn không còn muốn tiếp tục phiên đó.",
+    "warning": "Sau khi hủy, bạn có thể bắt đầu phiên mới trên trang này.",
+    "abort": "Hủy phiên cũ",
+    "aborting": "Đang hủy…",
+    "aborted": "Đã hủy phiên cũ. Bạn có thể bắt đầu luyện tập mới."
+  },
+  "display": {
+    "title": "Hiển thị luyện tập",
+    "waterfall": "Nốt rơi",
+    "keyboard": "Piano ảo",
+    "enableKeyboardForTouch": "Hãy bật piano ảo để tiếp tục với nguồn nhập cảm ứng."
+  },
+  "waterfall": {
+    "title": "Nốt rơi",
+    "hint": "Nốt chạy xuống vạch chạm đúng theo tempo và dải ô nhịp đã chọn.",
+    "waitHint": "Nốt hiện tại dừng ở vạch chơi; hoàn thành cả hợp âm để tiếp tục.",
+    "label": "Bản đồ nốt rơi theo cao độ và thời gian",
+    "legend": "Màu tay chơi",
+    "hitLine": "Vạch chơi",
+    "waiting": "Chờ đủ nốt",
+    "seconds": "{seconds}s"
+  },
+  "errors": {
+    "load": "Không tải được dữ liệu luyện tập cho bản nhạc này.",
+    "invalidScore": "Không tìm thấy bản nhạc hoặc bạn không có quyền luyện tập.",
+    "noNotes": "Đoạn đã chọn không có nốt phù hợp để chấm.",
+    "start": "Không thể bắt đầu buổi luyện.",
+    "checkActive": "Không kiểm tra được phiên luyện tập đang chạy.",
+    "finish": "Không thể lưu kết quả buổi luyện. Bạn có thể thử kết thúc lại.",
+    "saveEvents": "Chưa gửi được dữ liệu nốt; hệ thống sẽ thử lại.",
+    "abort": "Không thể hủy phiên luyện.",
+    "input": "Không thể chấm nốt này.",
+    "mic": {
+      "unsupported": "Trình duyệt này không hỗ trợ thu âm cần thiết. Hãy dùng phiên bản Chrome, Edge hoặc Firefox mới.",
+      "insecure-context": "Trình duyệt chỉ cho phép dùng micro qua HTTPS hoặc localhost.",
+      "permission": "Không được cấp quyền micro. Hãy cho phép trang web sử dụng micro rồi thử lại.",
+      "no-device": "Không tìm thấy micro. Hãy kết nối micro và thử lại.",
+      "audio-start": "Không thể khởi động luồng âm thanh từ micro.",
+      "model-load": "Không tải được mô hình nhận diện nốt. Hãy kiểm tra kết nối mạng rồi thử lại.",
+      "inference": "Nhận diện âm thanh bị lỗi hoặc không theo kịp. Hãy hủy phiên và thử lại với máy tính mạnh hơn, giảm tiếng ồn nền."
+    }
+  }
+}

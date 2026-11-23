@@ -1,0 +1,642 @@
+/*
+ * Riêng phần biểu đồ của dashboard. Thẻ, số liệu, bảng dùng khuôn mẫu chung (admin.css + components/ui).
+ * Màu series theo bảng dataviz: xanh dương = bản nhạc, aqua = luyện tập, tím = thành viên.
+ */
+
+.dash-chart {
+  width: 100%;
+  height: 240px;
+}
+
+.dash-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 240px;
+  color: var(--adm-text-2);
+  font-size: var(--adm-text-sm);
+}
+
+.dash-tooltip {
+  padding: 0.45rem 0.7rem;
+  background: var(--adm-surface);
+  border: 1px solid var(--adm-border);
+  border-radius: var(--adm-radius);
+  box-shadow: var(--adm-shadow-pop);
+  font-size: var(--adm-text-sm);
+}
+
+.dash-tooltip__title {
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+/* bảng thay thế biểu đồ (nút "Bảng") */
+.dash-table-wrap {
+  max-height: 240px;
+  overflow: auto;
+}
+
+.dash-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--adm-text-sm);
+}
+
+.dash-table th,
+.dash-table td {
+  padding: 0.45rem 0.25rem;
+  text-align: left;
+  border-bottom: 1px solid var(--adm-border);
+}
+
+.dash-table th {
+  color: var(--adm-text-2);
+  font-weight: 600;
+}
+
+.dash-table td:last-child,
+.dash-table th:last-child {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* thanh ngang trong ô bảng (top lượt xem) */
+.dash-bar-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.dash-bar-cell__track {
+  flex: 1;
+  height: 8px;
+  background: var(--adm-surface-hover);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.dash-bar-cell__fill {
+  height: 100%;
+  background: var(--ui-chart-scores);
+  border-radius: 4px;
+}
+
+/* Tabs nhỏ gọn trong đầu thẻ biểu đồ */
+.dash .adm-card__actions .adm-tabs {
+  margin-bottom: 0;
+}
+
+.dash .adm-card__actions .adm-tab {
+  padding: 0.25rem 0.6rem;
+  font-size: var(--adm-text-sm);
+}
+
+/* Chú thích màu dưới biểu đồ (màu luôn đi kèm nhãn chữ) */
+.dash-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--adm-text-sm);
+  color: var(--adm-text-2);
+}
+
+.dash-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.dash-legend__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.dash-footnote {
+  margin: 0.5rem 0 0;
+  font-size: var(--adm-text-sm);
+  color: var(--adm-text-2);
+}
+
+/* Tiêu đề nhóm (Gói dịch vụ và doanh thu, Hoạt động theo ngày, ...) */
+.dash-section {
+  margin: 1.75rem 0 0.75rem;
+  font-size: var(--adm-text-sm);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--adm-text-2);
+}
+
+/* ---- Phân tích chi tiết: chọn một chỉ số rồi mới hiện biểu đồ của nó, thay vì bày tất cả biểu đồ ra cùng lúc ---- */
+.dash-analysis-hint {
+  margin: -0.25rem 0 0.75rem;
+  font-size: var(--adm-text-sm);
+  color: var(--adm-text-2);
+}
+
+.dash-picker {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.dash-picker__title {
+  margin: 0 0 0.5rem;
+  font-size: var(--adm-text-xs);
+  font-weight: 600;
+  color: var(--adm-text-3);
+}
+
+.dash-picker__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+  gap: 0.5rem;
+}
+
+/* một ô chỉ số: biểu tượng bên trái, tên và con số tóm tắt bên phải */
+.dash-pick {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  align-items: center;
+  gap: 0.1rem 0.75rem;
+  min-height: 60px;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--adm-border);
+  border-radius: var(--adm-radius);
+  background: var(--adm-surface);
+  color: var(--adm-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.dash-pick:hover {
+  border-color: var(--adm-border-strong);
+  background: var(--adm-surface-hover);
+}
+
+.dash-pick:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--adm-primary-ring);
+}
+
+.dash-pick__icon {
+  display: grid;
+  grid-row: span 2;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--adm-radius-sm);
+  background: var(--adm-primary-soft);
+  color: var(--adm-primary);
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.dash-pick__label {
+  font-size: var(--adm-text-sm);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.dash-pick__value {
+  overflow: hidden;
+  color: var(--adm-text-2);
+  font-size: var(--adm-text-xs);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ô đang được chọn: viền và nền màu chính, biểu tượng đảo màu */
+.dash-pick[aria-pressed='true'] {
+  border-color: var(--adm-primary);
+  background: var(--adm-primary-soft);
+  box-shadow: inset 0 0 0 1px var(--adm-primary);
+}
+
+.dash-pick[aria-pressed='true'] .dash-pick__icon {
+  background: var(--adm-primary);
+  color: var(--adm-surface);
+}
+
+/* biểu đồ đang xem: rộng hết trang và cao hơn thẻ biểu đồ cũ, hiện ra mượt khi đổi lựa chọn */
+.dash-focus {
+  animation: dash-focus-in 0.25s ease both;
+}
+
+.dash-focus .dash-chart,
+.dash-focus .dash-empty {
+  height: 340px;
+}
+
+.dash-focus .dash-table-wrap {
+  max-height: 340px;
+}
+
+@keyframes dash-focus-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dash-pick,
+  .dash-pick__icon {
+    transition: none;
+  }
+  .dash-focus {
+    animation: none;
+  }
+}
+
+/* =====================================================================================================================
+   BỐ CỤC DASHBOARD
+   Hàng 1: con số chính (doanh thu trong kỳ, kèm xu hướng) | những việc cần xử lý.
+   Hàng 2: thẻ số liệu có đường xu hướng nhỏ.
+   Hàng 3: phân tích chi tiết, bảng chọn chỉ số dọc bên trái, biểu đồ đang xem bên phải.
+   Số lớn dùng chữ số tỷ lệ (mặc định của font); tabular-nums chỉ dành cho cột số trong bảng.
+   ===================================================================================================================== */
+.dash-top {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* khung thẻ dùng chung cho các khối mới, cùng kiểu với .adm-card */
+.dash-hero,
+.dash-attn,
+.dash-kpi,
+.dash-analysis .dash-picker {
+  background: var(--adm-surface);
+  border: 1px solid var(--ui-card-border);
+  border-radius: var(--adm-radius-lg);
+  box-shadow: var(--ui-card-shadow);
+}
+
+.dash-card-title {
+  margin: 0 0 0.75rem;
+  font-size: var(--adm-text-md);
+  font-weight: 600;
+}
+
+.dash-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--adm-primary);
+  font-size: var(--adm-text-sm);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.dash-link:hover {
+  text-decoration: underline;
+}
+
+/* ---- con số chính ---- */
+.dash-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1.25rem 1.25rem 1rem;
+}
+
+.dash-hero__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.dash-hero__label {
+  color: var(--adm-text-2);
+  font-size: var(--adm-text-sm);
+  font-weight: 600;
+}
+
+.dash-hero__value {
+  margin-top: 0.25rem;
+  color: var(--adm-text);
+  font-size: clamp(3rem, 4vw, 3.5rem);
+  font-weight: 650;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+.dash-hero__hint {
+  color: var(--adm-text-2);
+  font-size: var(--adm-text-sm);
+}
+
+.dash-hero .dash-spark {
+  margin-top: auto;
+}
+
+.dash-hero__hint {
+  margin-bottom: 1rem;
+}
+
+/* ---- đường xu hướng nhỏ ---- */
+.dash-spark {
+  position: relative;
+  width: 100%;
+  margin-top: auto;
+}
+
+.dash-spark svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.dash-spark__dot {
+  position: absolute;
+  right: -4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--adm-surface);
+  transform: translateY(-50%);
+}
+
+/* ---- việc cần xử lý ---- */
+.dash-attn {
+  display: flex;
+  flex-direction: column;
+  padding: 1.25rem;
+}
+
+/* các ô giãn đều lấp hết chiều cao khối (cao bằng thẻ con số chính bên cạnh) */
+.dash-attn__list {
+  display: grid;
+  flex: 1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dash-attn__item {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto 16px;
+  align-items: center;
+  gap: 0.75rem;
+  height: 100%;
+  padding: 0.75rem 0.75rem 0.75rem 0.85rem;
+  border: 1px solid var(--adm-border);
+  border-left-width: 3px;
+  border-radius: var(--adm-radius);
+  color: var(--adm-text);
+  text-decoration: none;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.dash-attn__item:hover {
+  background: var(--adm-surface-hover);
+}
+
+.dash-attn__item > svg {
+  color: var(--adm-text-3);
+}
+
+.dash-attn__icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--adm-radius-sm);
+}
+
+/* trạng thái luôn đi kèm biểu tượng (đồng hồ, cảnh báo, khóa / dấu ổn) và chữ, không chỉ bằng màu */
+.dash-attn__item.is-ok {
+  border-left-color: var(--adm-success);
+}
+.dash-attn__item.is-ok .dash-attn__icon {
+  background: var(--adm-success-soft);
+  color: var(--adm-success);
+}
+.dash-attn__item.is-warning {
+  border-left-color: var(--adm-warning);
+}
+.dash-attn__item.is-warning .dash-attn__icon {
+  background: var(--adm-warning-soft);
+  color: var(--adm-warning);
+}
+.dash-attn__item.is-danger {
+  border-left-color: var(--adm-danger);
+}
+.dash-attn__item.is-danger .dash-attn__icon {
+  background: var(--adm-danger-soft);
+  color: var(--adm-danger);
+}
+
+.dash-attn__text {
+  display: grid;
+  min-width: 0;
+}
+
+.dash-attn__label {
+  font-size: var(--adm-text-sm);
+  font-weight: 600;
+}
+
+.dash-attn__hint {
+  overflow: hidden;
+  color: var(--adm-text-2);
+  font-size: var(--adm-text-xs);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.dash-attn__count {
+  font-size: 1.375rem;
+  font-weight: 650;
+}
+
+.dash-attn__item.is-ok .dash-attn__count {
+  color: var(--adm-text-3);
+}
+
+/* ---- hàng thẻ số liệu ---- */
+.dash-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.dash-kpi {
+  display: flex;
+  flex-direction: column;
+  min-height: 156px;
+  padding: 1rem 1.1rem;
+  color: var(--adm-text);
+  text-decoration: none;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.dash-kpi:hover {
+  border-color: var(--adm-border-strong);
+  box-shadow: var(--adm-shadow);
+}
+
+.dash-kpi__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  color: var(--adm-text-3);
+}
+
+.dash-kpi__label {
+  color: var(--adm-text-2);
+  font-size: var(--adm-text-sm);
+  font-weight: 600;
+}
+
+.dash-kpi__value {
+  margin-top: 0.4rem;
+  font-size: 1.875rem;
+  font-weight: 650;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.dash-kpi__hint {
+  margin-bottom: 0.75rem;
+  color: var(--adm-text-2);
+  font-size: var(--adm-text-xs);
+}
+
+.dash-hero .dash-link:focus-visible,
+.dash-attn__item:focus-visible,
+.dash-kpi:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--adm-primary-ring);
+}
+
+/* ---- phân tích chi tiết: bảng chọn dọc bên trái (dính khi cuộn), biểu đồ bên phải ---- */
+.dash-analysis {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  align-items: start;
+  gap: 1rem;
+}
+
+.dash-analysis .dash-picker {
+  position: sticky;
+  top: calc(var(--adm-header-h) + 1rem);
+  gap: 0.75rem;
+  margin-bottom: 0;
+  padding: 0.75rem;
+}
+
+.dash-analysis .dash-picker__title {
+  margin: 0 0 0.25rem 0.5rem;
+}
+
+.dash-analysis .dash-picker__list {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+}
+
+.dash-analysis .dash-pick {
+  grid-template-columns: 32px minmax(0, 1fr);
+  min-height: 48px;
+  padding: 0.45rem 0.6rem;
+  border-color: transparent;
+  background: transparent;
+}
+
+.dash-analysis .dash-pick:hover {
+  background: var(--adm-surface-hover);
+}
+
+.dash-analysis .dash-pick__icon {
+  width: 32px;
+  height: 32px;
+}
+
+/* ô đang xem: nền nhạt màu chính và một vạch màu chính bên trái */
+.dash-analysis .dash-pick[aria-pressed='true'] {
+  border-color: transparent;
+  background: var(--adm-primary-soft);
+  box-shadow: inset 3px 0 0 var(--adm-primary);
+}
+
+.dash-analysis .dash-focus > .adm-card {
+  margin: 0;
+}
+
+@media (max-width: 1100px) {
+  .dash-top {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .dash-analysis {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .dash-analysis .dash-picker {
+    position: static;
+  }
+  .dash-analysis .dash-picker__list {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .dash-attn__list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dash-attn__item,
+  .dash-kpi {
+    transition: none;
+  }
+}
+
+/* ô số liệu xen kẽ ba tông của bảng màu: cam nhạt (mặc định), xanh nhạt, vàng chanh nhạt */
+.dash-kpis > .dash-kpi:nth-child(3n + 2) {
+  background: var(--ui-tint-teal);
+}
+.dash-kpis > .dash-kpi:nth-child(3n) {
+  background: var(--ui-tint-lime);
+}
+.dash-kpis > .dash-kpi:nth-child(3n + 2):hover {
+  background: var(--ui-tint-teal-2);
+}
+.dash-kpis > .dash-kpi:nth-child(3n):hover {
+  background: var(--ui-tint-lime-2);
+}
+/* khung Cần xử lý: nền xanh nhạt, tách khỏi khối doanh thu cam nhạt bên cạnh */
+.dash-attn {
+  background: var(--ui-tint-teal);
+}

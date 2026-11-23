@@ -1,0 +1,1509 @@
+/* Hallmark · v2.0.0 · built: the project · redesign: full · theme: custom · reference: Mercury (user-supplied style reference) · idea: "a paper score dissolves into points of ink and is read back as notes; digitising is the picture" · vibe: "glacier hour, flat cards, one lime action" · genre: atmospheric · job: sign up (digitise a first score) · hero: Centred stack, headline, sentence and actions on one axis over the constellation panel · signature: the OMR constellation, scattered ink settling onto a staff, the played note lit lime · paper: follows the theme (glacier white / navy onyx) · cards: one value step off the paper, no border, no shadow, radius 12 · accent: lime, posture: spark (the primary action and the note being played, under 3% of any viewport) · interactive: glacier navy / glacier blue · faces: Lexend 480 (display), Be Vietnam Pro 400/500 (body) · posture: theme-following/wide-grotesk-medium/chromatic-lime · nav: sticky, wordmark left, language, theme and an outline sign-in pill right, frosted on scroll · footer: the project's shared SiteFooter */
+/* Hallmark · pre-emit critique: P4 H5 E4 S4 R4 V4 · weakest: P, the page still argues by listing; the steps lead the cards with three verbs so the method reads first */
+/* Hallmark · waive 6b · headline, sentence and actions share one centred axis above the constellation panel · the user's Mercury reference asks for a centred hero stack */
+/* Hallmark · waive 59 · 72px between sections, every section framed by flat cards one step off the paper · the user's Mercury reference sets a 72px rhythm and the cards carry the separation */
+/* Hallmark · dropped the piano keyboard backdrop, the note field band, the music-terms marquee and the scroll progress bar · drawn ornaments (80, 47c) with no fact behind them; the constellation carries the motion */
+/* Hallmark · dropped the eyebrow "Chụp · Sửa · Nghe · Tập" · 54 and 63 name it; its four verbs became the headline */
+/* Hallmark · reworded heroTitle "Biến bản nhạc giấy thành bản nhạc số, rồi luyện tập ngay trên trình duyệt" to "Chụp, sửa, nghe, tập." · the hero head runs to seven words at most */
+/* Hallmark · reworded heroLead "Số hóa từ ảnh chụp hoặc PDF, chỉnh từng nốt, nghe lại và theo dõi tiến bộ, tất cả bằng tiếng Việt." to "Từ tờ nhạc giấy tới buổi tập, ngay trên trình duyệt." · one sentence of twelve words at most */
+/* Hallmark · answered F7 · one flat card recipe is the whole surface system of the user's Mercury reference; roles differ by content and type size, not by box */
+/* Hallmark · dismissed F4 · the second filled control is the constellation's pause button inside the panel, not beside the action */
+/* Hallmark · dismissed 28a · the first img is a featured cover below the fold, the hero paints a headline and a canvas */
+/* Hallmark · dropped the "Bước {n}" step label and the feature icon tiles · 54 (ordinal eyebrow) and 3 (icon above heading); the order lives in the <ol> */
+
+.gh {
+  /* trang chủ khách đi theo theme sáng / tối của người dùng */
+  --gh-bg: var(--ui-bg);
+  --gh-card: var(--ui-flat);
+  --gh-card-2: var(--ui-flat-2);
+  --gh-ink: var(--ui-text);
+  --gh-ink-2: var(--ui-text-2);
+  --gh-line: var(--ui-border);
+  --gh-line-strong: var(--ui-border-strong);
+  /* vạch mảnh phân cách các mục không đóng thẻ (tính năng, đoạn nối ba bước): đậm hơn viền thường để nổi trên nền */
+  --gh-hairline: color-mix(in srgb, var(--ui-text) 30%, transparent);
+  --gh-accent: var(--ui-primary);
+  --gh-accent-hover: var(--ui-primary-hover);
+  --gh-cta: var(--ui-cta);
+  --gh-cta-hover: var(--ui-cta-hover);
+  --gh-cta-border: var(--ui-cta-border);
+  --gh-on-cta: var(--ui-on-cta);
+  /* đồng thau dùng cho nét vẽ (nốt đang phát, đầu phát): ở theme sáng là tông đồng đậm để đủ tương phản */
+  --gh-lime: var(--ui-cta-ink);
+  --gh-deep: var(--ui-velvet);
+  --gh-display: var(--ui-font-display);
+  --gh-body: var(--ui-font);
+  /* bảng màu hiệu ứng chung của app (tokens.css): vòng khuông, nốt bay, bụi sáng, bảng hạt mực, bảng chọn bài */
+  --gh-fx-1: var(--ui-fx-1);
+  --gh-fx-2: var(--ui-fx-2);
+  --gh-fx-3: var(--ui-fx-3);
+  --gh-fx-4: var(--ui-fx-4);
+  --gh-fx-on: var(--ui-fx-on);
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 40px;
+  --space-9: 56px;
+  --space-10: 72px;
+  --space-11: 112px;
+  --gh-max: 1200px;
+  --gh-gutter: clamp(16px, 4vw, 40px);
+  --gh-radius: 12px;
+  --gh-radius-inner: 8px;
+  --gh-pill: 32px;
+
+  --text-display: clamp(2.75rem, 5.2vw, 4.0625rem);
+  --text-section: clamp(2rem, 3.2vw, 2.625rem);
+  --text-sub: 1.3125rem;
+  --text-body: 1rem;
+  --text-body-lg: 1.125rem;
+  --text-small: 0.875rem;
+
+  min-height: 100dvh;
+  background: var(--gh-bg);
+  color: var(--gh-ink);
+  font-family: var(--gh-body);
+  font-size: var(--text-body);
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.gh :is(h1, h2, h3, strong, dt, summary) {
+  font-weight: 480;
+}
+
+/* ---- điều khiển: một nút chính đồng thau, nút phụ viền mảnh, mọi điều khiển bo viên thuốc ---- */
+.gh-cta,
+.gh-ghost,
+.gh-round {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 48px;
+  border: 1px solid transparent;
+  font-family: var(--gh-body);
+  font-size: var(--text-body);
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease,
+    border-color 0.18s ease;
+}
+.gh-cta {
+  padding-inline: var(--space-6);
+  border-color: var(--gh-cta-border);
+  border-radius: var(--gh-pill);
+  background: var(--gh-cta);
+  color: var(--gh-on-cta);
+  font-weight: 500;
+}
+.gh-cta:hover {
+  background: var(--gh-cta-hover);
+  color: var(--gh-on-cta);
+}
+.gh-cta:active {
+  transform: translateY(1px);
+}
+.gh-cta:disabled {
+  border-color: var(--gh-line);
+  background: var(--gh-card-2);
+  color: var(--gh-ink-2);
+  cursor: not-allowed;
+}
+.gh-ghost {
+  padding-inline: var(--space-5);
+  border-color: var(--gh-ink);
+  border-radius: 40px;
+  background: transparent;
+  color: var(--gh-ink);
+}
+.gh-ghost:hover {
+  background: var(--gh-card-2);
+  color: var(--gh-ink);
+}
+.gh-ghost:active {
+  background: var(--gh-card);
+}
+.gh-ghost:disabled {
+  border-color: var(--gh-line-strong);
+  color: var(--gh-ink-2);
+  cursor: not-allowed;
+}
+.gh-round {
+  width: 48px;
+  padding: 0;
+  border-color: var(--gh-ink);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--gh-ink);
+}
+.gh-round:hover:not(:disabled) {
+  background: var(--gh-card-2);
+}
+.gh-round:active:not(:disabled) {
+  background: var(--gh-card);
+}
+.gh-round:disabled {
+  border-color: var(--gh-line-strong);
+  color: var(--gh-line-strong);
+  cursor: not-allowed;
+}
+.gh :is(a, button, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--gh-accent);
+  outline-offset: 3px;
+}
+
+/* ---- thanh đầu trang: dính trên cùng, mờ nền khi cuộn qua nội dung ---- */
+.gh-bar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: color-mix(in srgb, var(--gh-bg) 84%, transparent);
+  backdrop-filter: blur(12px);
+}
+.gh-bar__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  max-width: calc(var(--gh-max) + 2 * var(--gh-gutter));
+  margin-inline: auto;
+  padding: var(--space-4) var(--gh-gutter);
+}
+.gh-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-family: var(--gh-display);
+  font-size: 1.125rem;
+  font-weight: 480;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+/* biểu tượng Scorewise (BrandMark, SVG tự vẽ nền và màu): chỉ giữ không co lại */
+.gh-brand__mark {
+  flex: none;
+}
+.gh-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+/* nút Đăng ký cạnh Đăng nhập: viên thuốc đồng thau cùng cỡ nút viền bên cạnh */
+.gh-bar__signup {
+  padding-inline: var(--space-5);
+}
+@media (max-width: 480px) {
+  /* điện thoại: thanh trên chật. Bỏ nút Đăng ký (trang đăng nhập có lối đăng ký, nút Đăng nhập dính góc hiện khi cuộn),
+     thu gọn khoảng cách để logo + ngôn ngữ + giao diện + Đăng nhập vừa một hàng */
+  .gh-bar__inner {
+    gap: var(--space-2);
+    padding-inline: var(--space-3);
+  }
+  .gh-bar__signup {
+    display: none;
+  }
+  .gh-bar__actions {
+    gap: var(--space-1);
+  }
+  .gh-bar__actions .gh-ghost {
+    min-height: 44px;
+    padding-inline: var(--space-3);
+  }
+  /* nút ngôn ngữ chỉ còn biểu tượng quả địa cầu (tên ngôn ngữ vẫn có ở nhãn trợ năng và tooltip) */
+  .gh-bar .language-toggle__trigger {
+    width: 36px;
+    font-size: 0;
+  }
+  .gh-bar .language-toggle__trigger svg {
+    flex: none;
+    width: 16px;
+    height: 16px;
+  }
+  .gh-brand {
+    gap: var(--space-2);
+    font-size: 1rem;
+  }
+  .gh-brand__mark {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+/* ---- hero: tiêu đề, câu dẫn, nút căn giữa; chòm sao nằm trong một tấm thẻ rộng phía dưới ---- */
+.gh-hero {
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  /* vòng khuông Für Elise vẽ theo chiều cao khung nhìn (mép trước ở khoảng 55%): phần đầu trang cao ít nhất chừng đó
+     để hình bên dưới không che vòng */
+  min-height: 58svh;
+  gap: var(--space-9);
+  max-width: calc(var(--gh-max) + 2 * var(--gh-gutter));
+  margin-inline: auto;
+  padding: var(--space-9) var(--gh-gutter) var(--space-10);
+  outline: 2px dashed transparent;
+  outline-offset: -8px;
+  text-align: center;
+}
+.gh-hero--drag {
+  outline-color: var(--gh-accent);
+}
+.gh-hero__text {
+  display: grid;
+  justify-items: center;
+}
+.gh-hero h1 {
+  min-width: 0;
+  max-width: 24ch;
+  margin: 0;
+  font-family: var(--gh-display);
+  font-size: var(--text-display);
+  line-height: 1.12;
+  letter-spacing: 0.01em;
+  overflow-wrap: break-word;
+  text-wrap: balance;
+}
+.gh-hero__lead {
+  max-width: 34ch;
+  margin: var(--space-6) 0 0;
+  color: var(--gh-ink-2);
+  font-size: var(--text-body-lg);
+  font-weight: 500;
+  line-height: 1.4;
+}
+.gh-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-top: var(--space-8);
+}
+.gh-hero__hint {
+  margin: var(--space-4) 0 0;
+  color: var(--gh-ink-2);
+  font-size: var(--text-small);
+}
+/* hình chòm sao nốt nhạc ngay dưới phần đầu trang, cùng bề ngang với các khối nội dung. Không có khung: hạt mực nằm
+   thẳng trên nền trang, bốn mép mờ dần vào nền để không lộ đường biên chữ nhật */
+.gh-visual {
+  position: relative;
+  width: calc(100% - 2 * var(--gh-gutter));
+  min-width: 0;
+  max-width: var(--gh-max);
+  height: clamp(260px, 40svh, 440px);
+  margin: 0 auto;
+}
+.gh-constellation {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  touch-action: pan-y; /* vuốt dọc trên điện thoại vẫn cuộn trang */
+  -webkit-mask-image:
+    linear-gradient(to right, transparent, #000 7%, #000 93%, transparent),
+    linear-gradient(to bottom, transparent, #000 14%, #000 86%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to right, transparent, #000 7%, #000 93%, transparent),
+    linear-gradient(to bottom, transparent, #000 14%, #000 86%, transparent);
+  mask-composite: intersect;
+}
+.gh-constellation canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+/* lớp quầng sáng: bản chép nhỏ của hạt mực, nhoè và đậm màu, phủ lên để cả bảng phát sáng mờ ảo */
+.gh-constellation__bloom {
+  pointer-events: none;
+  filter: blur(10px) saturate(1.6);
+  opacity: 0.55;
+}
+:root[data-theme='dark'] .gh-constellation__bloom {
+  mix-blend-mode: screen;
+  opacity: 0.95;
+}
+.gh-visual__pause {
+  position: absolute;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  min-height: 40px;
+  background: var(--gh-card);
+  font-size: var(--text-small);
+}
+
+/* ---- khối nội dung: nền trang trải ngang, nội dung giới hạn 1200px, nhịp 72px ---- */
+.gh-main {
+  display: block;
+}
+.gh-note {
+  max-width: var(--gh-max);
+  margin: 0 auto;
+  padding: var(--space-6) var(--gh-gutter);
+  color: var(--gh-ink-2);
+}
+.gh-section {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  align-items: center;
+  gap: var(--space-8) var(--space-9);
+  padding-block: var(--space-10);
+  padding-inline: max(var(--gh-gutter), calc((100% - var(--gh-max)) / 2));
+}
+.gh-section__head h2,
+.gh-final h2 {
+  min-width: 0;
+  margin: 0;
+  font-family: var(--gh-display);
+  font-size: var(--text-section);
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+  overflow-wrap: break-word;
+  text-wrap: balance;
+}
+.gh-section__head p {
+  max-width: 44ch;
+  margin: var(--space-4) 0 0;
+  color: var(--gh-ink-2);
+  font-size: var(--text-body-lg);
+  line-height: 1.45;
+}
+.gh-section__body {
+  min-width: 0;
+}
+/* thân bên trái, tiêu đề bên phải */
+.gh-section--flip .gh-section__head {
+  order: 2;
+}
+/* tiêu đề một hàng phía trên, thân trải hết bề ngang */
+.gh-section--wide,
+.gh-section--steps,
+.gh-section--stats {
+  grid-template-columns: minmax(0, 1fr);
+}
+.gh-section--wide .gh-section__head,
+.gh-section--steps .gh-section__head,
+.gh-section--stats .gh-section__head {
+  /* tiêu đề và dòng mô tả căn giữa, mô tả nằm ngay dưới tiêu đề */
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  text-align: center;
+}
+.gh-section--wide .gh-section__head p,
+.gh-section--steps .gh-section__head p,
+.gh-section--stats .gh-section__head p {
+  margin: 0;
+}
+
+/* ---- bản nhạc nổi bật: dải thẻ phẳng cuộn ngang ---- */
+.gh-strip-wrap {
+  display: grid;
+  gap: var(--space-6);
+}
+.gh-strip {
+  display: grid;
+  grid-auto-columns: minmax(220px, 264px);
+  grid-auto-flow: column;
+  gap: var(--space-4);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+.gh-strip::-webkit-scrollbar {
+  display: none;
+}
+.gh-strip__nav {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+.gh-score {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-content: start;
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-3) var(--space-3) var(--space-5);
+  border: 0;
+  border-radius: var(--gh-radius);
+  background: var(--gh-card);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  scroll-snap-align: start;
+  cursor: pointer;
+  transition: background-color 0.18s ease;
+}
+.gh-score:hover {
+  background: var(--gh-card-2);
+}
+.gh-score:active {
+  background: var(--gh-card);
+}
+.gh-score__cover {
+  grid-column: 1 / -1;
+  display: block;
+  aspect-ratio: 3 / 4;
+  margin-bottom: var(--space-4);
+  overflow: hidden;
+  border-radius: var(--gh-radius-inner);
+  background: var(--gh-bg);
+}
+.gh-score__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.gh-score__rank {
+  padding-left: var(--space-2);
+  color: var(--gh-accent);
+  font-family: var(--gh-display);
+  font-size: var(--text-sub);
+  font-weight: 480;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+}
+.gh-score__title {
+  overflow: hidden;
+  padding-right: var(--space-2);
+  font-family: var(--gh-display);
+  font-size: var(--text-sub);
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gh-score__composer,
+.gh-score__meta {
+  grid-column: 2;
+  padding-right: var(--space-2);
+  color: var(--gh-ink-2);
+  font-size: var(--text-small);
+}
+.gh-score__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin-top: var(--space-1);
+  font-variant-numeric: tabular-nums;
+}
+.gh-score__meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.gh-score--skeleton {
+  aspect-ratio: 3 / 4;
+  cursor: default;
+}
+/* bìa dựng khi bản nhạc chưa có ảnh: một trang khuông nhạc theo màu theme */
+.gh-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  height: 100%;
+  padding: var(--space-7) var(--space-6);
+}
+.gh-sheet__title {
+  font-family: var(--gh-display);
+  font-size: 1.125rem;
+  font-weight: 480;
+  line-height: 1.2;
+}
+.gh-sheet__composer {
+  color: var(--gh-ink-2);
+  font-size: var(--text-small);
+}
+.gh-sheet__staves {
+  display: grid;
+  gap: var(--space-7);
+  margin-top: auto;
+}
+.gh-sheet__staff {
+  height: 36px;
+  background: repeating-linear-gradient(to bottom, var(--gh-line-strong) 0 1px, transparent 1px 9px);
+}
+
+/* ---- ba bước: không đóng thẻ. Ba số thứ tự nằm trên một dòng kẻ như nốt trên dòng nhạc, động từ cỡ lớn bên dưới ---- */
+.gh-steps {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.gh-steps li {
+  position: relative;
+  min-width: 0;
+  text-align: center; /* số, động từ và mô tả nằm giữa cột */
+}
+/* đoạn kẻ nối số này sang số kế bên (số nằm giữa cột), chừa khe nhỏ hai đầu; bước cuối không có đoạn nối. 28px = nửa
+   vòng tròn 20px + khe 8px; phần % tính theo bề rộng cột */
+.gh-steps li:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 20px;
+  left: calc(50% + 28px);
+  right: calc(28px - 50% - var(--space-8));
+  height: 1px;
+  background: var(--gh-hairline);
+}
+.gh-steps__num {
+  position: relative;
+  display: grid;
+  margin-inline: auto;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--ui-cta);
+  color: var(--ui-on-cta);
+  font-family: var(--gh-display);
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+.gh-steps strong {
+  display: block;
+  margin-top: var(--space-6);
+  font-family: var(--gh-display);
+  font-size: var(--text-section);
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+}
+.gh-steps p {
+  max-width: 34ch;
+  margin: var(--space-3) auto 0;
+  color: var(--gh-ink-2);
+  line-height: 1.5;
+}
+
+/* ---- tính năng: không đóng thẻ. Mỗi mục là biểu tượng + chữ, phân cách bằng một vạch mảnh phía trên ---- */
+.gh-features {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-8) var(--space-7);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.gh-features li {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-4);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--gh-hairline);
+  transition: border-color 0.18s ease;
+}
+.gh-features__icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--gh-radius-inner);
+  background: color-mix(in srgb, var(--ui-cta) 12%, transparent);
+  color: var(--ui-cta);
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease;
+}
+.gh-features li:hover {
+  border-top-color: var(--ui-cta);
+}
+.gh-features li:hover .gh-features__icon {
+  background: var(--ui-cta);
+  color: var(--ui-on-cta);
+}
+.gh-features h3 {
+  margin: 0;
+  font-family: var(--gh-display);
+  font-size: var(--text-sub);
+  font-weight: inherit;
+  line-height: 1.3;
+}
+.gh-features p {
+  margin: var(--space-2) 0 0;
+  color: var(--gh-ink-2);
+  line-height: 1.5;
+}
+
+/* ---- con số thật: một thẻ rộng, chữ số cỡ lớn ---- */
+.gh-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-7);
+  margin: 0;
+  padding: var(--space-8);
+  border-radius: var(--gh-radius);
+  background: var(--gh-card);
+}
+.gh-stats div {
+  /* số và nhãn căn giữa trong cột, khớp với tiêu đề mục đã căn giữa */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.gh-stats dd {
+  order: 0;
+  margin: 0;
+  font-family: var(--gh-display);
+  font-size: var(--text-display);
+  font-weight: 480;
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+}
+.gh-stats dt {
+  order: 1;
+  margin-top: var(--space-2);
+  color: var(--gh-ink-2);
+}
+
+/* ---- nhạc sĩ: thẻ phẳng, chân dung bo trong thẻ ---- */
+.gh-composers {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 216px), 1fr));
+  gap: var(--space-4);
+}
+.gh-composer {
+  display: grid;
+  align-content: start;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-3) var(--space-5);
+  border-radius: var(--gh-radius);
+  background: var(--gh-card);
+  color: inherit;
+  text-decoration: none;
+  transition: background-color 0.18s ease;
+}
+.gh-composer:hover {
+  background: var(--gh-card-2);
+}
+.gh-composer:active {
+  background: var(--gh-card);
+}
+.gh-composer__portrait {
+  display: block;
+  aspect-ratio: 4 / 5;
+  margin-bottom: var(--space-2);
+  overflow: hidden;
+  border-radius: var(--gh-radius-inner);
+  background: var(--gh-bg);
+}
+.gh-composer__name,
+.gh-composer__meta,
+.gh-composer__titles {
+  padding-inline: var(--space-2);
+}
+.gh-composer__name {
+  font-family: var(--gh-display);
+  font-size: var(--text-sub);
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+}
+.gh-composer__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  color: var(--gh-ink-2);
+  font-size: var(--text-small);
+}
+.gh-composer__titles {
+  margin: var(--space-1) 0 0;
+  color: var(--gh-ink-2);
+  font-size: var(--text-small);
+  line-height: 1.5;
+  list-style: none;
+}
+/* chân dung chưa có ảnh: chữ cái đầu theo màu tương tác trên nền trang (đồng thau chỉ dành cho nút chính) */
+.gh .composer-portrait--empty {
+  background: var(--gh-bg);
+  color: var(--gh-accent);
+  font-weight: 480;
+  letter-spacing: 0.01em;
+}
+
+/* ---- diễn đàn: danh sách trong một thẻ phẳng ---- */
+.gh .hf {
+  padding: var(--space-3);
+  border-radius: var(--gh-radius);
+  background: var(--gh-card);
+}
+.gh .hf__list {
+  gap: var(--space-1);
+}
+.gh .hf__item {
+  min-height: 64px;
+  padding: var(--space-4) var(--space-5);
+  border: 0;
+  border-radius: var(--gh-radius-inner);
+  background: transparent;
+}
+.gh .hf__item:hover {
+  background: var(--gh-card-2);
+}
+.gh .hf__main strong {
+  font-family: var(--gh-display);
+  font-weight: 480;
+}
+.gh .hf__all {
+  justify-self: start;
+  padding-inline: var(--space-5);
+  color: var(--gh-accent);
+}
+.gh .hf__all:hover {
+  color: var(--gh-accent-hover);
+}
+
+/* ---- câu hỏi thường gặp: mỗi câu một thẻ phẳng ---- */
+.gh-faq {
+  display: grid;
+  gap: var(--space-3);
+}
+.gh-faq details {
+  border-radius: var(--gh-radius);
+  background: var(--gh-card);
+}
+.gh-faq summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+  min-height: 64px;
+  padding: var(--space-4) var(--space-6);
+  font-family: var(--gh-display);
+  font-size: var(--text-body-lg);
+  line-height: 1.35;
+  letter-spacing: 0.01em;
+  list-style: none;
+  cursor: pointer;
+}
+.gh-faq summary::-webkit-details-marker {
+  display: none;
+}
+.gh-faq summary svg {
+  flex: none;
+  color: var(--gh-accent);
+  transition: transform 0.2s ease;
+}
+.gh-faq details[open] summary svg {
+  transform: rotate(45deg);
+}
+.gh-faq p {
+  max-width: 62ch;
+  margin: 0;
+  padding: 0 var(--space-6) var(--space-6);
+  color: var(--gh-ink-2);
+  line-height: 1.6;
+}
+
+/* ---- lời mời cuối trang: một thẻ rộng ---- */
+.gh-final {
+  padding-block: var(--space-10) var(--space-11);
+  padding-inline: max(var(--gh-gutter), calc((100% - var(--gh-max)) / 2));
+}
+.gh-final__card {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-8);
+  padding: var(--space-9) var(--space-8);
+  border-radius: var(--gh-radius);
+  background: var(--gh-card);
+}
+.gh-final h2 {
+  max-width: 18ch;
+}
+
+/* ---- nút Đăng nhập dính góc khi nút trên thanh đầu trang đã cuộn khuất ---- */
+.gh-sticky {
+  position: fixed;
+  right: var(--space-6);
+  bottom: var(--space-6);
+  z-index: 20;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 48px;
+  padding-inline: var(--space-5);
+  border: 1px solid var(--gh-ink);
+  border-radius: 40px;
+  background: var(--gh-card);
+  color: var(--gh-ink);
+  font-family: var(--gh-body);
+  font-size: var(--text-body);
+  cursor: pointer;
+  transform: translateY(calc(100% + var(--space-8)));
+  transition:
+    transform 0.25s ease,
+    background-color 0.18s ease;
+}
+.gh-sticky.is-on {
+  transform: none;
+}
+.gh-sticky:hover {
+  background: var(--gh-card-2);
+}
+.gh-sticky:active {
+  background: var(--gh-card);
+}
+
+/* ---- màn hình nhỏ ---- */
+@media (max-width: 960px) {
+  .gh-section {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-7);
+  }
+  .gh-section {
+    padding-block: var(--space-9);
+  }
+  .gh-section--flip .gh-section__head {
+    order: 0;
+  }
+  .gh-features {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* ba bước xếp dọc: số thứ tự bên trái, dòng kẻ chạy dọc nối các số */
+  .gh-steps {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-7);
+  }
+  .gh-steps li:not(:last-child)::after {
+    top: calc(40px + var(--space-2));
+    right: auto;
+    bottom: calc(var(--space-2) - var(--space-7));
+    left: 20px;
+    width: 1px;
+    height: auto;
+  }
+  .gh-steps li {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr);
+    column-gap: var(--space-5);
+    text-align: start;
+  }
+  .gh-steps__num {
+    grid-row: span 2;
+    margin-inline: 0;
+  }
+  .gh-steps p {
+    margin-inline: 0;
+  }
+  .gh-steps strong {
+    margin-top: 0;
+    font-size: var(--text-sub);
+    line-height: 40px;
+  }
+  .gh-steps p {
+    margin-top: var(--space-1);
+  }
+  .gh-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-8) var(--space-6);
+    padding: var(--space-7);
+  }
+  .gh-final__card {
+    padding: var(--space-8) var(--space-6);
+  }
+}
+@media (max-width: 560px) {
+  .gh-hero {
+    padding-top: var(--space-8);
+  }
+  /* tiêu đề nhỏ theo bề ngang màn để mỗi vế (ngăn bằng dấu phẩy) vừa một dòng, không gãy kiểu "mỗi bài một / bước tiến" */
+  .gh-hero h1 {
+    font-size: clamp(1.625rem, 7.4vw, 2.5rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* hình chòm sao đứng yên: không cần nút dừng */
+  .gh-visual__pause {
+    display: none;
+  }
+  .gh-cta:active {
+    transform: none;
+  }
+  .gh-sticky,
+  .gh-faq summary svg,
+  .gh-score,
+  .gh-composer {
+    transition: none;
+  }
+}
+
+/* ---- thang chữ kiểu Mercury: 65px độ đậm 530 không giãn; 42px giãn 0.01em; 21px (phụ đề) không giãn ---- */
+.gh-hero__line {
+  display: block;
+}
+.gh-hero h1,
+.gh-stats dd {
+  font-weight: var(--ui-weight-display);
+  letter-spacing: var(--ui-track-display);
+}
+.gh-hero h1 {
+  line-height: 1.1;
+}
+.gh-section__head h2,
+.gh-final h2,
+.gh-steps strong {
+  letter-spacing: var(--ui-track-heading-lg);
+}
+.gh-score__rank,
+.gh-score__title,
+.gh-features h3,
+.gh-composer__name,
+.gh-faq summary {
+  letter-spacing: 0;
+}
+
+/* ---- vòng khuông Für Elise 3D (FurEliseRing3D, three.js): phủ kín khung nhìn, nằm dưới mọi nội dung. z-index âm trong
+   ngữ cảnh xếp lớp riêng của .gh nên được vẽ trên nền trang nhưng dưới thẻ và chữ; không nhận sự kiện chuột ---- */
+.gh {
+  position: relative;
+  isolation: isolate;
+}
+.gh-ring {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  /* ánh màu cực quang rất nhẹ sau vòng khuông: tím trên trái, hồng trên phải, xanh ngọc và hổ phách phía dưới */
+  --gh-wash: 13%;
+  background:
+    radial-gradient(
+      48% 42% at 12% 18%,
+      color-mix(in srgb, var(--gh-fx-2) var(--gh-wash), transparent),
+      transparent 72%
+    ),
+    radial-gradient(
+      44% 40% at 88% 22%,
+      color-mix(in srgb, var(--gh-fx-1) var(--gh-wash), transparent),
+      transparent 72%
+    ),
+    radial-gradient(
+      50% 44% at 22% 92%,
+      color-mix(in srgb, var(--gh-fx-4) var(--gh-wash), transparent),
+      transparent 72%
+    ),
+    radial-gradient(46% 40% at 82% 88%, color-mix(in srgb, var(--gh-fx-3) var(--gh-wash), transparent), transparent 72%);
+}
+:root[data-theme='dark'] .gh-ring {
+  --gh-wash: 16%;
+}
+.gh-ring canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* cụm nút góc dưới trái: chơi nốt tiếp (cũng là lối dùng bằng bàn phím) và tự chạy cả bài; luôn hiện để dừng được
+   nhạc ở bất cứ đâu trên trang */
+.gh-melody {
+  position: fixed;
+  left: var(--space-6);
+  bottom: var(--space-6);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: calc(100vw - 2 * var(--space-6));
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-1);
+  border: 1px solid var(--gh-line-strong);
+  border-radius: 40px;
+  background: var(--gh-card);
+  color: var(--gh-ink);
+  font-family: var(--gh-body);
+  transition:
+    transform 0.25s ease,
+    opacity 0.25s ease;
+}
+.gh-melody__next,
+.gh-melody__auto {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  border: 0;
+  border-radius: 40px;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: background-color 0.18s ease;
+}
+.gh-melody__next {
+  flex: none;
+  justify-content: center;
+  width: 44px;
+  padding: 0;
+  background: transparent;
+}
+.gh-melody__next:hover:not(:disabled) {
+  background: var(--gh-card-2);
+}
+.gh-melody__next:disabled {
+  cursor: default;
+}
+.gh-melody__next:active:not(:disabled) .gh-melody__icon {
+  transform: scale(0.9);
+}
+.gh-melody__auto {
+  flex: none;
+  justify-content: center;
+  gap: var(--space-2);
+  min-width: 116px; /* "Tự chạy" và "Dừng" cùng bề rộng: nút không nhảy chỗ khi bật/tắt */
+  padding-inline: var(--space-4);
+  border: 1px solid var(--gh-ink);
+  background: transparent;
+  font-size: var(--text-small);
+  white-space: nowrap;
+}
+.gh-melody__auto:hover {
+  background: var(--gh-card-2);
+}
+.gh-melody__auto[aria-pressed='true'] {
+  border-color: transparent;
+  background: linear-gradient(120deg, var(--gh-fx-1), var(--gh-fx-2));
+  color: var(--gh-fx-on);
+}
+/* nút nốt nhạc tròn: dải màu hồng → tím của bảng màu hiệu ứng */
+.gh-melody__icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--gh-fx-1), var(--gh-fx-2));
+  color: var(--gh-fx-on);
+  transition: transform 0.12s ease;
+}
+.gh-melody__text {
+  display: grid;
+  flex: none;
+  width: 236px; /* bề rộng cố định: đổi bài, đổi lời gợi ý hay bộ đếm tăng đều không làm cụm nút co giãn */
+  min-width: 0;
+  line-height: 1.3;
+}
+/* thu gọn: mặc định chỉ còn nút nốt nhạc tròn để khỏi che nội dung trang; rê chuột vào, Tab bàn phím tới hoặc đang mở
+   bảng chọn bài thì mở rộng ra đủ tên bài, bộ đếm và nút tự chạy */
+.gh-melody,
+.gh-melody__text,
+.gh-melody__auto {
+  transition:
+    transform 0.25s ease,
+    opacity 0.25s ease,
+    width 0.28s cubic-bezier(0.2, 0.7, 0.2, 1),
+    max-width 0.28s cubic-bezier(0.2, 0.7, 0.2, 1),
+    min-width 0.28s cubic-bezier(0.2, 0.7, 0.2, 1),
+    padding 0.28s cubic-bezier(0.2, 0.7, 0.2, 1),
+    gap 0.28s ease,
+    background-color 0.18s ease;
+}
+.gh-melody__text {
+  overflow: hidden;
+}
+.gh-melody__auto {
+  max-width: 200px;
+}
+.gh-melody:not(:hover, :focus-within, :has(.gh-songs)) {
+  gap: 0;
+  padding: var(--space-2); /* đều bốn phía: thu lại thành một hình tròn */
+}
+.gh-melody:not(:hover, :focus-within, :has(.gh-songs)) .gh-melody__text {
+  width: 0;
+  opacity: 0;
+}
+.gh-melody:not(:hover, :focus-within, :has(.gh-songs)) .gh-melody__auto {
+  min-width: 0;
+  max-width: 0;
+  padding-inline: 0;
+  border-width: 0;
+  opacity: 0;
+}
+/* nút tên bài: chữ đậm như tiêu đề, không khung; mũi tên quay xuống khi bảng đang mở */
+.gh-song-picker {
+  min-width: 0;
+}
+.gh-melody__song {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  width: 100%;
+  min-height: 24px;
+  padding: 0 var(--space-1) 0 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: var(--text-small);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.gh-melody__song-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gh-melody__song svg {
+  flex: none;
+  color: var(--gh-ink-2);
+  transition: transform 0.18s ease;
+}
+.gh-melody__song:hover .gh-melody__song-title {
+  color: var(--gh-fx-1);
+}
+.gh-melody__song[aria-expanded='true'] svg {
+  transform: rotate(180deg);
+}
+.gh-melody__song:focus-visible {
+  outline: 2px solid var(--gh-accent);
+  outline-offset: 2px;
+}
+
+/* bảng chọn bài: trượt lên phía trên cụm nút, chia nhóm, cuộn trong bảng */
+.gh-songs {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + var(--space-3));
+  display: flex;
+  flex-direction: column;
+  width: min(360px, calc(100vw - 2 * var(--space-6)));
+  max-height: min(64svh, 540px);
+  overflow: hidden;
+  border: 1px solid var(--gh-line-strong);
+  border-radius: 20px;
+  background: var(--gh-card);
+  box-shadow: var(--ui-shadow-pop);
+  transform-origin: bottom left;
+  animation: gh-songs-in 0.18s ease-out;
+}
+@keyframes gh-songs-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+/* vạch màu mảnh trên đầu bảng: bốn sắc của bảng màu hiệu ứng */
+.gh-songs::before {
+  content: '';
+  height: 3px;
+  flex: none;
+  background: linear-gradient(90deg, var(--gh-fx-1), var(--gh-fx-2), var(--gh-fx-4), var(--gh-fx-3));
+}
+.gh-songs__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5) var(--space-3);
+  border-bottom: 1px solid var(--gh-line);
+  font-family: var(--gh-display);
+  font-size: var(--text-body);
+  font-weight: 480;
+}
+.gh-songs__head small {
+  color: var(--gh-ink-2);
+  font-family: var(--gh-body);
+  font-size: 0.8125rem;
+}
+.gh-songs__list {
+  flex: 1;
+  min-height: 0;
+  padding: var(--space-1) var(--space-2) var(--space-2);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  outline: none;
+}
+/* tiêu đề nhóm dính trên đầu khi cuộn, có chấm màu riêng cho từng nhóm */
+.gh-songs__group {
+  position: sticky;
+  top: calc(-1 * var(--space-1));
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-3) var(--space-2);
+  background: var(--gh-card);
+  color: var(--gh-ink-2);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.gh-songs__group::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--gh-group, var(--gh-fx-2));
+}
+[aria-labelledby$='-g-classical'] > .gh-songs__group {
+  --gh-group: var(--gh-fx-2);
+}
+[aria-labelledby$='-g-folk'] > .gh-songs__group {
+  --gh-group: var(--gh-fx-4);
+}
+[aria-labelledby$='-g-festive'] > .gh-songs__group {
+  --gh-group: var(--gh-fx-3);
+}
+.gh-songs__item {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 48px;
+  padding: var(--space-1) var(--space-3);
+  border-radius: 12px;
+  cursor: pointer;
+}
+.gh-songs__item.is-active {
+  background: var(--gh-card-2);
+}
+.gh-songs__list:focus-visible .gh-songs__item.is-active {
+  outline: 2px solid var(--gh-accent);
+  outline-offset: -2px;
+}
+.gh-songs__badge {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--gh-card-2);
+  color: var(--gh-ink-2);
+}
+.gh-songs__item.is-current .gh-songs__badge {
+  background: linear-gradient(135deg, var(--gh-fx-1), var(--gh-fx-2));
+  color: var(--gh-fx-on);
+}
+.gh-songs__meta {
+  display: grid;
+  min-width: 0;
+  line-height: 1.3;
+}
+.gh-songs__meta strong,
+.gh-songs__meta small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gh-songs__meta strong {
+  font-size: var(--text-small);
+  font-weight: 600;
+}
+.gh-songs__item.is-current .gh-songs__meta strong {
+  color: var(--gh-accent);
+}
+.gh-songs__meta small,
+.gh-songs__time {
+  color: var(--gh-ink-2);
+  font-size: 0.8125rem;
+}
+.gh-songs__time {
+  font-variant-numeric: tabular-nums;
+}
+/* cột sóng nhạc nhún nhảy ở bài đang tự chạy */
+.gh-eq {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 14px;
+}
+.gh-eq i {
+  width: 3px;
+  height: 100%;
+  border-radius: 2px;
+  background: currentColor;
+  transform-origin: bottom;
+  animation: gh-eq 0.9s ease-in-out infinite;
+}
+.gh-eq i:nth-child(2) {
+  animation-delay: -0.3s;
+}
+.gh-eq i:nth-child(3) {
+  animation-delay: -0.6s;
+}
+@keyframes gh-eq {
+  0%,
+  100% {
+    transform: scaleY(0.3);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+.gh-melody__text small {
+  overflow: hidden;
+  font-variant-numeric: tabular-nums;
+  color: var(--gh-ink-2);
+  font-size: 0.8125rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* màn hẹp: chỉ còn nút nốt nhạc tròn và nút tự chạy, chừa chỗ cho nút Đăng nhập dính ở góc phải */
+@media (max-width: 560px) {
+  .gh-melody {
+    left: var(--space-4);
+    bottom: var(--space-4);
+  }
+  .gh-melody__text small {
+    display: none;
+  }
+  .gh-melody__text {
+    width: 128px;
+  }
+  .gh-songs {
+    width: calc(100vw - 2 * var(--space-4));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gh-melody,
+  .gh-melody__next,
+  .gh-melody__auto,
+  .gh-melody__icon,
+  .gh-melody__song svg {
+    transition: none;
+  }
+  .gh-songs {
+    animation: none;
+  }
+  .gh-eq i {
+    animation: none;
+    transform: scaleY(0.7);
+  }
+}
+
+/* ---- thẻ nghiêng 3D theo con trỏ (useTilt3D đặt --tilt-x/y, --glare-x/y), có vệt sáng đồng thau lướt trên mặt thẻ ---- */
+.gh-score,
+.gh-composer {
+  position: relative;
+  transform: perspective(900px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+  transform-style: preserve-3d;
+  transition:
+    background-color 0.18s ease,
+    transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.gh-score.is-tilting,
+.gh-composer.is-tilting {
+  transition:
+    background-color 0.18s ease,
+    transform 0.12s ease-out;
+}
+.gh-score::after,
+.gh-composer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    circle at var(--glare-x, 50%) var(--glare-y, 50%),
+    color-mix(in srgb, var(--ui-cta) 26%, transparent),
+    transparent 60%
+  );
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.is-tilting::after {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gh-score,
+  .gh-composer {
+    transform: none;
+  }
+}
+
+/* ---- mỗi màn một section: khung chung, cuộn hít, chuyển cảnh và dải chấm ở components/home/screens.css; dưới đây
+   là phần riêng của trang khách ---- */
+.gh-section,
+.gh-final {
+  padding-block: var(--space-8);
+}
+.gh-final {
+  display: grid;
+}
+
+/* nhạc sĩ: một dải cuộn ngang như bản nhạc nổi bật, để cả mục vừa một màn */
+.gh-composers {
+  grid-template-columns: none;
+  grid-auto-columns: minmax(176px, 208px);
+  grid-auto-flow: column;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  padding-bottom: var(--space-3);
+  scrollbar-width: thin;
+}
+.gh-composers > * {
+  scroll-snap-align: start;
+}
+
+@supports (animation-timeline: view()) {
+  @media (min-width: 961px) and (prefers-reduced-motion: no-preference) {
+    /* màn đầu: chữ và hình chòm sao lùi ra sau khi cuộn xuống */
+    .gh-hero__text,
+    .gh-visual {
+      animation: scr-out linear forwards;
+      animation-timeline: view();
+      animation-range: exit 0% exit 100%;
+    }
+    /* ba bước: dòng kẻ được vẽ từ trái sang, ba số bật lên lần lượt như nốt được gõ */
+    /* các đoạn nối được vẽ lần lượt 1→2 rồi 2→3, ngay sau khi số bên trái bật lên */
+    .gh-steps li::after {
+      transform-origin: 0 50%;
+      animation: scr-draw-x linear both;
+      animation-timeline: --scr;
+      animation-range: entry calc(60% + var(--i, 0) * 12%) entry calc(80% + var(--i, 0) * 12%);
+    }
+    .gh-steps__num {
+      animation: scr-pop linear both;
+      animation-timeline: --scr;
+      animation-range: entry calc(45% + var(--i, 0) * 12%) entry calc(70% + var(--i, 0) * 12%);
+    }
+    /* thống kê: số phóng từ nhỏ lên */
+    .gh-stats > div {
+      animation-name: scr-zoom;
+    }
+    /* bản nhạc nổi bật: thẻ trượt vào từ bên phải */
+    .gh-strip > * {
+      animation-name: scr-slide-in;
+    }
+    /* nhạc sĩ: thẻ xòe ra như một tay bài */
+    .gh-composers > * {
+      animation-name: scr-fan;
+    }
+    .gh-composers > :nth-child(even) {
+      --fan: 9deg;
+    }
+    /* câu hỏi thường gặp: trượt vào từ bên trái */
+    .gh-faq details {
+      animation-name: scr-slide-left;
+    }
+  }
+}
+
+/* màn hẹp: ba bước xếp dọc nên đoạn nối được vẽ từ trên xuống */
+@media (max-width: 960px) {
+  .gh-steps li::after {
+    transform-origin: 50% 0;
+    animation-name: scr-draw-y;
+  }
+}

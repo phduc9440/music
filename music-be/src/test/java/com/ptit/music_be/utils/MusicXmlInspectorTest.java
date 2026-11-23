@@ -8,7 +8,7 @@ import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 
 import com.ptit.music_be.exception.AppException;
-import com.ptit.music_be.exception.ErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
 
 class MusicXmlInspectorTest {
 
@@ -94,8 +94,8 @@ class MusicXmlInspectorTest {
                         + "</measure></part></score-partwise>");
 
         assertThatThrownBy(() -> MusicXmlInspector.inspect(xxe))
-                .isInstanceOfSatisfying(
-                        AppException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.MUSICXML_INVALID));
+                .isInstanceOfSatisfying(AppException.class, e -> assertThat(e.getErrorCode())
+                        .isEqualTo(ScoreErrorCode.MUSICXML_INVALID));
     }
 
     @Test
@@ -125,7 +125,44 @@ class MusicXmlInspectorTest {
     @Test
     void malformedXmlIsRejected() {
         assertThatThrownBy(() -> MusicXmlInspector.inspect(bytes("<score-partwise><part>")))
-                .isInstanceOfSatisfying(
-                        AppException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.MUSICXML_INVALID));
+                .isInstanceOfSatisfying(AppException.class, e -> assertThat(e.getErrorCode())
+                        .isEqualTo(ScoreErrorCode.MUSICXML_INVALID));
+    }
+
+    @Test
+    void parseSecureRejectsDoctype() {
+        byte[] withDoctype =
+                bytes("<?xml version=\"1.0\"?><!DOCTYPE score-partwise PUBLIC \"-//Recordare//DTD MusicXML 4.0"
+                        + " Partwise//EN\" \"http://www.musicxml.org/dtds/partwise.dtd\"><score-partwise/>");
+
+        assertThatThrownBy(() -> MusicXmlInspector.parseSecure(withDoctype))
+                .isInstanceOfSatisfying(AppException.class, e -> assertThat(e.getErrorCode())
+                        .isEqualTo(ScoreErrorCode.MUSICXML_INVALID));
+    }
+
+    /** File đã lưu (OMR, Editor) luôn kèm DOCTYPE công khai nên phải đọc được. */
+    @Test
+    void parseStoredAcceptsPublicDoctype() {
+        byte[] stored = bytes("<?xml version=\"1.0\"?><!DOCTYPE score-partwise PUBLIC \"-//Recordare//DTD MusicXML 4.0"
+                + " Partwise//EN\" \"http://www.musicxml.org/dtds/partwise.dtd\"><score-partwise version=\"4.0\"/>");
+
+        assertThat(MusicXmlInspector.parseStored(stored).getDocumentElement().getTagName())
+                .isEqualTo("score-partwise");
+    }
+
+    @Test
+    void parseStoredDoesNotLoadExternalEntities() {
+        byte[] xxe =
+                bytes("<?xml version=\"1.0\"?><!DOCTYPE score-partwise [<!ENTITY leak SYSTEM \"file:///etc/passwd\">]>"
+                        + "<score-partwise>&leak;</score-partwise>");
+
+        assertThat(MusicXmlInspector.parseStored(xxe).getDocumentElement().getTextContent())
+                .doesNotContain("root:");
+    }
+
+    @Test
+    void parseStoredRejectsMalformedXml() {
+        assertThatThrownBy(() -> MusicXmlInspector.parseStored(bytes("<score-partwise>")))
+                .isInstanceOf(AppException.class);
     }
 }

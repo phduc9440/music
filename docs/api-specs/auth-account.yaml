@@ -1,0 +1,1373 @@
+# ============================================================
+# Auth & Account — OpenAPI 3.0 Specification
+# ============================================================
+openapi: 3.0.3
+info:
+  title: Auth & Account API
+  description: |
+    Xác thực và tài khoản: đăng ký, đăng nhập (mật khẩu / Google), làm mới token, quên và đổi mật khẩu;
+    hồ sơ thành viên, ảnh đại diện, ngôn ngữ / giao diện; thông báo trong ứng dụng; mời bạn; trang làm việc.
+
+    Mọi phản hồi JSON bọc trong ApiResponse {code, message, result}; code = 200 khi thành công,
+    lỗi trả mã nghiệp vụ (ví dụ 1001 chưa đăng nhập, 1002 không có quyền) kèm HTTP status tương ứng.
+    Sinh từ controller của music-be (springdoc /v3/api-docs) rồi chia theo nhóm chức năng.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: music-be (Spring Boot) khi chạy local
+tags:
+  - name: Authentication
+    description: Đăng ký, đăng nhập, làm mới token, quên / đổi mật khẩu
+  - name: Members
+    description: Thông tin và hồ sơ của thành viên đang đăng nhập
+  - name: Notifications
+    description: Thông báo trong ứng dụng của người đang đăng nhập
+  - name: Referrals
+    description: Mời bạn đăng ký (7.5)
+  - name: Home
+    description: Trang làm việc của người đã đăng nhập
+
+paths:
+  # ─── Authentication ──────────────────────────
+  /api/auth/change-password:
+    post:
+      tags: [Authentication]
+      summary: Đổi mật khẩu (đăng xuất các thiết bị khác; thiết bị hiện tại nhận cookie mới)
+      operationId: changePassword
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/auth/forgot-password:
+    post:
+      tags: [Authentication]
+      summary: Yêu cầu mã OTP khi quên mật khẩu
+      operationId: forgotPassword
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/auth/google-login:
+    post:
+      tags: [Authentication]
+      summary: Đăng nhập bằng Google ID Token
+      operationId: googleLogin
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoogleLoginRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseAuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/auth/login:
+    post:
+      tags: [Authentication]
+      summary: Đăng nhập và nhận JWT
+      operationId: login
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseAuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/auth/logout:
+    post:
+      tags: [Authentication]
+      summary: "Đăng xuất: xóa cookie xác thực"
+      operationId: logout
+      security: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+  /api/auth/refresh:
+    post:
+      tags: [Authentication]
+      summary: Làm mới access token JWT
+      operationId: refresh
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseAuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/auth/register:
+    post:
+      tags: [Authentication]
+      summary: Đăng ký tài khoản mới
+      operationId: register
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseMemberResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/auth/reset-password:
+    post:
+      tags: [Authentication]
+      summary: "Bước 3 quên mật khẩu: đặt mật khẩu mới bằng reset token lấy từ verify-reset-otp"
+      description: "Lỗi: 1019 phiên đặt lại hết hạn hoặc không hợp lệ (xin OTP mới), 1007 mật khẩu quá ngắn"
+      operationId: resetPassword
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/auth/verify-reset-otp:
+    post:
+      tags: [Authentication]
+      summary: "Bước 2 quên mật khẩu: kiểm tra OTP và nhận reset token dùng một lần (hiệu lực 10 phút)"
+      description: "Lỗi: 1017 OTP sai / hết hạn (sai 5 lần thì mã bị hủy)"
+      operationId: verifyResetOtp
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyResetOtpRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVerifyResetOtpResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  # ─── Members ─────────────────────────────────
+  /api/members/me:
+    get:
+      tags: [Members]
+      summary: Lấy thông tin thành viên đang đăng nhập
+      operationId: getMyInfoMembersMe
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseMemberResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    put:
+      tags: [Members]
+      summary: Cập nhật hồ sơ (fullName, phone, address)
+      operationId: updateMyProfileMembersMe
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseMemberResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/members/me/avatar:
+    post:
+      tags: [Members]
+      summary: Tải lên ảnh đại diện (JPG/PNG, tối đa 2MB)
+      operationId: uploadAvatar
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+                - file
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseMemberResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    delete:
+      tags: [Members]
+      summary: Gỡ ảnh đại diện của tôi
+      operationId: deleteAvatar
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseMemberResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/members/me/locale:
+    put:
+      tags: [Members]
+      summary: Lưu ngôn ngữ giao diện (VI hoặc EN) để đồng bộ giữa các thiết bị
+      operationId: updateMyLocaleMembersMe
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateLocaleRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseMemberResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/members/me/theme:
+    put:
+      tags: [Members]
+      summary: Lưu giao diện sáng / tối (LIGHT, DARK hoặc SYSTEM) để đồng bộ giữa các thiết bị
+      operationId: updateMyThemeMembers
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateThemeRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseMemberResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/users/me:
+    get:
+      tags: [Members]
+      summary: Lấy thông tin thành viên đang đăng nhập
+      operationId: getMyInfo
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseMemberResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    put:
+      tags: [Members]
+      summary: Cập nhật hồ sơ (fullName, phone, address)
+      operationId: updateMyProfile
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseMemberResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/users/me/avatar:
+    post:
+      tags: [Members]
+      summary: Tải lên ảnh đại diện (JPG/PNG, tối đa 2MB)
+      operationId: uploadAvatarUsersMe
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+                - file
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseMemberResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    delete:
+      tags: [Members]
+      summary: Gỡ ảnh đại diện của tôi
+      operationId: deleteAvatarUsersMe
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseMemberResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/users/me/locale:
+    put:
+      tags: [Members]
+      summary: Lưu ngôn ngữ giao diện (VI hoặc EN) để đồng bộ giữa các thiết bị
+      operationId: updateMyLocale
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateLocaleRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseMemberResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/users/me/theme:
+    put:
+      tags: [Members]
+      summary: Lưu giao diện sáng / tối (LIGHT, DARK hoặc SYSTEM) để đồng bộ giữa các thiết bị
+      operationId: updateMyTheme
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateThemeRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseMemberResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ─── Notifications ───────────────────────────
+  /api/notifications:
+    get:
+      tags: [Notifications]
+      summary: Thông báo của tôi, mới nhất trước
+      operationId: getMine
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 20
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePageResponseNotificationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/notifications/preferences:
+    get:
+      tags: [Notifications]
+      summary: Cài đặt thông báo theo từng nhóm (trong ứng dụng / email tổng hợp hằng ngày)
+      operationId: preferences
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListNotificationPreferenceResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    put:
+      tags: [Notifications]
+      summary: Cập nhật cài đặt thông báo; tắt cả hai kênh nghĩa là không nhận thông báo nào của nhóm đó
+      description: "Lỗi: 2502 không đổi được nhóm SYSTEM"
+      operationId: updatePreferences
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationPreferenceRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListNotificationPreferenceResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/notifications/read-all:
+    post:
+      tags: [Notifications]
+      summary: Đánh dấu tất cả là đã đọc
+      operationId: markAllRead
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/notifications/unread-count:
+    get:
+      tags: [Notifications]
+      summary: Số thông báo chưa đọc
+      operationId: unreadCount
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseLong'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/notifications/{id}/read:
+    post:
+      tags: [Notifications]
+      summary: Đánh dấu một thông báo là đã đọc
+      description: "Lỗi: 2501 không tìm thấy (hoặc không phải của bạn)"
+      operationId: markRead
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── Referrals ───────────────────────────────
+  /api/referrals/me:
+    get:
+      tags: [Referrals]
+      summary: Mã giới thiệu của tôi (sinh lần đầu khi gọi) và số người đã mời
+      operationId: mineReferralsMe
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseReferralResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ─── Home ────────────────────────────────────
+  /api/home/summary:
+    get:
+      tags: [Home]
+      summary: "Trang chủ khi đã đăng nhập: chuỗi ngày luyện tập, bản nhạc gần đây, yêu cầu đang chờ, gợi ý luyện tập (một lần gọi)"
+      operationId: getSummary
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseHomeSummaryResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "Access token trả về khi đăng nhập (header Authorization: Bearer ...)"
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: access_token
+      description: Web app gửi access token qua cookie HttpOnly access_token
+    internalKey:
+      type: apiKey
+      in: header
+      name: X-Internal-Key
+      description: Khóa bí mật dùng chung với music-ai (biến môi trường AI_INTERNAL_KEY); chỉ nhận từ mạng nội bộ
+
+  responses:
+    BadRequest:
+      description: Dữ liệu không hợp lệ (code nghiệp vụ trong body, ví dụ 1009)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+    Unauthorized:
+      description: Chưa đăng nhập, token hết hạn (1001) hoặc sai X-Internal-Key
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+    Forbidden:
+      description: Không có quyền thực hiện (1002)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+    NotFound:
+      description: Không tìm thấy tài nguyên
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+
+  schemas:
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        refreshToken:
+          type: string
+        authenticated:
+          type: boolean
+    ChangePasswordRequest:
+      type: object
+      properties:
+        oldPassword:
+          type: string
+          minLength: 1
+        newPassword:
+          type: string
+          maxLength: 2147483647
+          minLength: 8
+      required:
+        - newPassword
+        - oldPassword
+    ForgotPasswordRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          minLength: 1
+      required:
+        - email
+    GoogleLoginRequest:
+      type: object
+      properties:
+        idToken:
+          type: string
+          minLength: 1
+        referralCode:
+          type: string
+          maxLength: 16
+          minLength: 0
+      required:
+        - idToken
+    HomeSummaryResponse:
+      type: object
+      properties:
+        displayName:
+          type: string
+        streak:
+          $ref: '#/components/schemas/PracticeStreakResponse'
+        todayPracticeSeconds:
+          type: integer
+          format: int64
+        recentScores:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScoreSummaryResponse'
+        pending:
+          type: array
+          items:
+            $ref: '#/components/schemas/PendingItem'
+        accessRequestCount:
+          type: integer
+          format: int64
+        officialRequestCount:
+          type: integer
+          format: int64
+        pendingPublicCount:
+          type: integer
+          format: int64
+        suggestion:
+          $ref: '#/components/schemas/Suggestion'
+    Item:
+      type: object
+      properties:
+        category:
+          type: string
+          enum:
+            - SCORES
+            - COMMENTS
+            - TEAMS
+            - FORUM
+            - BILLING
+            - SYSTEM
+        inApp:
+          type: boolean
+        email:
+          type: boolean
+      required:
+        - category
+    LoginRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 1
+        password:
+          type: string
+          maxLength: 2147483647
+          minLength: 6
+      required:
+        - username
+    MemberPlanSummary:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+        source:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+        bans:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlanBanInfo'
+    MemberResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        fullName:
+          type: string
+        phone:
+          type: string
+        address:
+          type: string
+        avatarUrl:
+          type: string
+        uiTheme:
+          type: string
+          enum:
+            - LIGHT
+            - DARK
+            - SYSTEM
+        locale:
+          type: string
+          enum:
+            - VI
+            - EN
+        status:
+          type: string
+          enum:
+            - "1"
+            - "2"
+        emailVerified:
+          type: boolean
+        authProvider:
+          type: string
+          enum:
+            - "1"
+            - "2"
+        roles:
+          type: array
+          items:
+            type: string
+          uniqueItems: true
+        permissions:
+          type: array
+          items:
+            type: string
+            enum:
+              - DASHBOARD_VIEW
+              - MEMBERS_VIEW
+              - MEMBERS_LOCK
+              - MEMBERS_CREATE
+              - TEAMS_MANAGE
+              - ANNOUNCEMENTS_SEND
+              - SCORES_MODERATE
+              - SCORES_APPROVE
+              - OFFICIAL_LIBRARY
+              - TAGS_MANAGE
+              - COMPOSERS_MANAGE
+              - REVENUE_VIEW
+              - PAYMENTS_REFUND
+              - SUBSCRIPTIONS_MANAGE
+              - PLANS_MANAGE
+              - PRACTICE_VIEW
+              - PRACTICE_MANAGE
+              - AI_TASKS_MANAGE
+              - SYSTEM_MONITOR
+              - REPORTS_MODERATE
+              - FORUM_MANAGE
+              - AUDIT_VIEW
+          uniqueItems: true
+        createdAt:
+          type: string
+          format: date-time
+        lastLoginAt:
+          type: string
+          format: date-time
+        plan:
+          $ref: '#/components/schemas/MemberPlanSummary'
+    NotificationPreferenceRequest:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Item'
+          minItems: 1
+      required:
+        - items
+    NotificationPreferenceResponse:
+      type: object
+      properties:
+        category:
+          type: string
+          enum:
+            - SCORES
+            - COMMENTS
+            - TEAMS
+            - FORUM
+            - BILLING
+            - SYSTEM
+        inApp:
+          type: boolean
+        email:
+          type: boolean
+    NotificationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum:
+            - ACCESS_REQUESTED
+            - ACCESS_APPROVED
+            - ACCESS_REJECTED
+            - SHARED_WITH_YOU
+            - PUBLISH_REQUESTED
+            - PUBLISH_APPROVED
+            - PUBLISH_REJECTED
+            - NEW_REVIEW
+            - SCORE_FORKED
+            - ANNOUNCEMENT
+            - SCORE_TRASHED_BY_ADMIN
+            - OFFICIAL_REQUESTED
+            - OFFICIAL_ACCEPTED
+            - OFFICIAL_DECLINED
+            - PLAN_ACTIVATED
+            - PLAN_EXPIRING
+            - PLAN_REVOKED
+            - PLAN_BANNED
+            - PLAN_BAN_LIFTED
+            - TEAM_INVITED
+            - TEAM_MEMBER_JOINED
+            - TEAM_ROLE_CHANGED
+            - TEAM_REMOVED
+            - SHOW_ITEM_ASSIGNED
+            - SHOW_ITEM_SUBMITTED
+            - SHOW_ITEM_APPROVED
+            - SHOW_ITEM_RETURNED
+            - SHOW_ITEM_DUE
+            - TEAM_DELETED_BY_ADMIN
+            - TEAM_DELETED
+            - TEAM_RESTORED
+            - COMMENT_MENTION
+            - COMMENT_REPLY
+            - SUGGESTION_NEW
+            - SUGGESTION_DECIDED
+            - FORUM_REPLY
+            - FORUM_POST_REPLY
+            - FORUM_ANSWER_ACCEPTED
+        scoreId:
+          type: string
+        message:
+          type: string
+        params:
+          type: object
+          additionalProperties:
+            type: string
+        read:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+    PageResponseNotificationResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationResponse'
+        pageNumber:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+    PendingItem:
+      type: object
+      properties:
+        type:
+          type: string
+        scoreId:
+          type: string
+        scoreTitle:
+          type: string
+        actorName:
+          type: string
+        permission:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    PlanBanInfo:
+      type: object
+      properties:
+        planCode:
+          type: string
+        planName:
+          type: string
+        until:
+          type: string
+          format: date-time
+    PracticeStreakResponse:
+      type: object
+      properties:
+        currentStreak:
+          type: integer
+          format: int32
+        longestStreak:
+          type: integer
+          format: int32
+        lastPracticeDate:
+          type: string
+          format: date
+        practicedToday:
+          type: boolean
+    ReferralResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        invitedCount:
+          type: integer
+          format: int64
+        rewardedCount:
+          type: integer
+          format: int64
+    RefreshRequest:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+    RegisterRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+          maxLength: 2147483647
+          minLength: 8
+        email:
+          type: string
+        phone:
+          type: string
+          maxLength: 30
+          minLength: 0
+        fullName:
+          type: string
+          maxLength: 255
+          minLength: 0
+        address:
+          type: string
+          maxLength: 255
+          minLength: 0
+        referralCode:
+          type: string
+          maxLength: 16
+          minLength: 0
+    ResetPasswordRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          minLength: 1
+        resetToken:
+          type: string
+          minLength: 1
+        newPassword:
+          type: string
+          maxLength: 2147483647
+          minLength: 8
+      required:
+        - email
+        - newPassword
+        - resetToken
+    ScoreSummaryResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        composer:
+          type: string
+        difficulty:
+          type: string
+          enum:
+            - EASY
+            - MEDIUM
+            - HARD
+            - EXPERT
+        processingStatus:
+          type: string
+        sourceType:
+          type: string
+        visibility:
+          type: string
+        license:
+          type: string
+          enum:
+            - ALL_RIGHTS_RESERVED
+            - CC0
+            - CC_BY
+            - CC_BY_SA
+            - CC_BY_NC
+        allowArrange:
+          type: boolean
+        isOfficial:
+          type: boolean
+        measureCount:
+          type: integer
+          format: int32
+        accessLevel:
+          type: string
+        ownerEmail:
+          type: string
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/TagResponse'
+        arrangerName:
+          type: string
+        ownerName:
+          type: string
+        viewCount:
+          type: integer
+          format: int64
+        ratingAverage:
+          type: number
+          format: double
+        ratingCount:
+          type: integer
+          format: int64
+        thumbnailUrl:
+          type: string
+        coverUrl:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Suggestion:
+      type: object
+      properties:
+        reason:
+          type: string
+        score:
+          $ref: '#/components/schemas/ScoreSummaryResponse'
+    TagResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+    UpdateLocaleRequest:
+      type: object
+      properties:
+        locale:
+          type: string
+          enum:
+            - VI
+            - EN
+      required:
+        - locale
+    UpdateProfileRequest:
+      type: object
+      properties:
+        fullName:
+          type: string
+          maxLength: 255
+          minLength: 0
+        phone:
+          type: string
+          maxLength: 30
+          minLength: 0
+        address:
+          type: string
+          maxLength: 255
+          minLength: 0
+      required:
+        - fullName
+    UpdateThemeRequest:
+      type: object
+      properties:
+        theme:
+          type: string
+          enum:
+            - LIGHT
+            - DARK
+            - SYSTEM
+      required:
+        - theme
+    VerifyResetOtpRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          minLength: 1
+        otp:
+          type: string
+          minLength: 1
+      required:
+        - email
+        - otp
+    VerifyResetOtpResponse:
+      type: object
+      properties:
+        resetToken:
+          type: string
+        expiresInSeconds:
+          type: integer
+          format: int64
+
+    # ── Wrapped Responses ──
+    ApiResponseAuthResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/AuthResponse'
+    ApiResponseHomeSummaryResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/HomeSummaryResponse'
+    ApiResponseListNotificationPreferenceResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationPreferenceResponse'
+    ApiResponseLong:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          type: integer
+          format: int64
+    ApiResponseMemberResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/MemberResponse'
+    ApiResponsePageResponseNotificationResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/PageResponseNotificationResponse'
+    ApiResponseReferralResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/ReferralResponse'
+    ApiResponseVerifyResetOtpResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/VerifyResetOtpResponse'
+    ApiResponseVoid:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result: {}
+    ApiResponseError:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 1002
+        message:
+          type: string
+          example: You do not have permission

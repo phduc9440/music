@@ -1,0 +1,845 @@
+# ============================================================
+# AI Processing — OpenAPI 3.0 Specification
+# ============================================================
+openapi: 3.0.3
+info:
+  title: AI Processing API
+  description: |
+    Xử lý AI chạy nền: tải PDF / ảnh để nhận dạng OMR, theo dõi và hủy tác vụ, gợi ý hợp âm;
+    callback nội bộ để music-ai báo tiến độ / kết quả (header X-Internal-Key).
+
+    Mọi phản hồi JSON bọc trong ApiResponse {code, message, result}; code = 200 khi thành công,
+    lỗi trả mã nghiệp vụ (ví dụ 1001 chưa đăng nhập, 1002 không có quyền) kèm HTTP status tương ứng.
+    Sinh từ controller của music-be (springdoc /v3/api-docs) rồi chia theo nhóm chức năng.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: music-be (Spring Boot) khi chạy local
+tags:
+  - name: OMR
+    description: "Nhận dạng bản nhạc (OMR): tải lên PDF / ảnh bản nhạc"
+  - name: AI tasks
+    description: Trạng thái các tác vụ AI / chuyển đổi chạy nền
+  - name: Chord suggestions
+    description: Gợi ý hợp âm tự động bằng model AutoHarmonizer, lấy mẫu ra tới 3 phương án (R3)
+  - name: Internal callbacks
+    description: Chỉ music-ai gọi; cần header X-Internal-Key, không dùng JWT
+
+paths:
+  # ─── OMR ─────────────────────────────────────
+  /api/omr/upload:
+    post:
+      tags: [OMR]
+      summary: Tải lên một file PDF (1-20 trang) hoặc 1-20 ảnh (PNG/JPG/JPEG, theo thứ tự trang) để nhận dạng OMR
+      description: "Lỗi: 2003 file rỗng, 2004 sai loại file, 2005 quá lớn, 2006 kết hợp file không hợp lệ, 2008 PDF bị mã hóa / không đọc được, 2009 số trang PDF ngoài 1-20, 2010 độ phân giải ảnh, 2011 sourceType sai, 2018 tên tác giả quá dài, 2202 đã có 3 tác vụ OMR đang chạy"
+      operationId: upload
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: title
+          in: query
+          description: Tên bản nhạc, mặc định là tên file đầu tiên
+          required: false
+          schema:
+            type: string
+        - name: composer
+          in: query
+          description: Tác giả, tối đa 255 ký tự
+          required: false
+          schema:
+            type: string
+        - name: sourceType
+          in: query
+          description: "PHOTO / SCAN / PDF_NATIVE. Bỏ trống: PDF -> PDF_NATIVE, ảnh -> PHOTO"
+          required: false
+          schema:
+            type: string
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+              required:
+                - files
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseOmrUploadResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/scores/{scoreId}/omr/result:
+    get:
+      tags: [OMR]
+      summary: "Kết quả nhận diện mới nhất: cảnh báo, ảnh từng trang, id file kern/MusicXML/MIDI hiện hành"
+      description: "Cần quyền xem bản nhạc. Errors: 2001 không có bản nhạc, 1002 không có quyền, 2101 bản nhạc chưa có tác vụ OMR nào"
+      operationId: getResult
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseOmrResultResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/scores/{scoreId}/omr/retry:
+    post:
+      tags: [OMR]
+      summary: Chạy lại OMR trên file gốc đã lưu (tạo task OMR mới)
+      description: "Cần quyền sửa bản nhạc. Errors: 2001 không có bản nhạc, 1002 không có quyền, 2201 bản nhạc đang có task OMR chờ hoặc đang chạy, 2202 đã có 3 task OMR đang chạy, 2002 file gốc không còn"
+      operationId: retry
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OmrRetryRequest'
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseAiTaskResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── AI tasks ────────────────────────────────
+  /api/ai-tasks/{taskId}:
+    get:
+      tags: [AI tasks]
+      summary: Xem trạng thái một tác vụ AI
+      operationId: getTask
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseAiTaskResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/ai-tasks/{taskId}/cancel:
+    post:
+      tags: [AI tasks]
+      summary: Hủy một tác vụ đang chờ hoặc đang chạy (task CANCELLED, score FAILED)
+      description: "Chỉ chủ task hoặc ADMIN. Errors: 2101 task không tồn tại, 1002 không có quyền, 2102 task đã kết thúc nên không hủy được"
+      operationId: cancelTask
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseAiTaskResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/scores/{scoreId}/ai-tasks:
+    get:
+      tags: [AI tasks]
+      summary: Danh sách tác vụ AI của một bản nhạc
+      operationId: getTasksOfScore
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListAiTaskResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── Chord suggestions ───────────────────────
+  /api/scores/{scoreId}/chord-suggestions:
+    post:
+      tags: [Chord suggestions]
+      summary: Gợi ý hợp âm cho version hiện hành (tạo tác vụ CHORD_GENERATION)
+      description: "Cần quyền nhận xét. Kết quả là đề xuất sửa do hệ thống gửi (phương án A) kèm tới 2 phương án khác (đọc bằng GET /api/suggestions/{id}/content?option=2|3, số phương án ở optionCount); theo dõi bằng GET /api/ai-tasks/{id}, xong thì result.resultData = {suggestionId, key, filled, skipped, options}. Mặc định chỉ gợi ý cho ô chưa có hợp âm; mọi ô đã có hợp âm thì task FAILED với errorMessage CHORD_ALREADY_HARMONIZED (web hỏi người dùng có muốn thay hợp âm cũ). replaceExisting = true: bỏ hết hợp âm đang có rồi gợi ý lại cả bài; nếu kết quả trùng hợp âm cũ thì task FAILED với CHORD_NO_CHANGE. Lỗi khác của task: CHORD_TOO_LONG (bài quá dài), CHORD_NO_CHORDS (model không đặt được hợp âm). Errors: 2001, 1002, 3130 màu hợp âm, độ sáng tạo hoặc mật độ sai, 2201 OMR đang chạy, 3131 đang gợi ý, 3132 đã có gợi ý chờ duyệt (result.suggestionId), 3702 hết hạn mức"
+      operationId: requestScoresChordSuggestions
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChordSuggestionRequest'
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseAiTaskResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── Internal callbacks ──────────────────────
+  /internal/ai-tasks/{taskId}/complete:
+    post:
+      tags: [Internal callbacks]
+      summary: "music-ai báo hoàn tất: task COMPLETED, ghi result_data và metadata của score"
+      description: "401 sai X-Internal-Key; 2101 task không tồn tại. Task đã kết thúc: bỏ qua, trả 200."
+      operationId: complete
+      security:
+        - internalKey: []
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AiTaskCompleteRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /internal/ai-tasks/{taskId}/fail:
+    post:
+      tags: [Internal callbacks]
+      summary: "music-ai báo lỗi: task FAILED, score FAILED, error_message = 'MÃ: message'"
+      description: "401 sai X-Internal-Key; 2101 task không tồn tại. Task đã kết thúc: bỏ qua, trả 200."
+      operationId: fail
+      security:
+        - internalKey: []
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AiTaskFailRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /internal/ai-tasks/{taskId}/files:
+    post:
+      tags: [Internal callbacks]
+      summary: music-ai báo đã ghi xong một file kết quả (ví dụ PNG trang đã tiền xử lý)
+      description: "401 sai X-Internal-Key; 2101 task không tồn tại; 1009 fileType không hợp lệ hoặc storagePath không nằm trong scores/{scoreId}/; 2002 file chưa có trên đĩa. Task đã kết thúc: trả 200."
+      operationId: file
+      security:
+        - internalKey: []
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AiTaskFileRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /internal/ai-tasks/{taskId}/progress:
+    post:
+      tags: [Internal callbacks]
+      summary: music-ai báo tiến độ (task PENDING chuyển PROCESSING)
+      description: "401 sai X-Internal-Key; 403 không phải mạng nội bộ; 2101 task không tồn tại; 1009 progress ngoài 0-100, nhỏ hơn tiến độ đã ghi hoặc step không hợp lệ. Task đã kết thúc: bỏ qua, trả 200."
+      operationId: progress
+      security:
+        - internalKey: []
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AiTaskProgressRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "Access token trả về khi đăng nhập (header Authorization: Bearer ...)"
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: access_token
+      description: Web app gửi access token qua cookie HttpOnly access_token
+    internalKey:
+      type: apiKey
+      in: header
+      name: X-Internal-Key
+      description: Khóa bí mật dùng chung với music-ai (biến môi trường AI_INTERNAL_KEY); chỉ nhận từ mạng nội bộ
+
+  responses:
+    BadRequest:
+      description: Dữ liệu không hợp lệ (code nghiệp vụ trong body, ví dụ 1009)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+    Unauthorized:
+      description: Chưa đăng nhập, token hết hạn (1001) hoặc sai X-Internal-Key
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+    Forbidden:
+      description: Không có quyền thực hiện (1002)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+    NotFound:
+      description: Không tìm thấy tài nguyên
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+
+  schemas:
+    AiTaskCompleteRequest:
+      type: object
+      properties:
+        resultData:
+          type: object
+          additionalProperties: {}
+        scoreMetadata:
+          $ref: '#/components/schemas/ScoreMetadata'
+    AiTaskFailRequest:
+      type: object
+      properties:
+        errorCode:
+          type: string
+          maxLength: 64
+          minLength: 0
+        message:
+          type: string
+          maxLength: 1000
+          minLength: 0
+      required:
+        - errorCode
+    AiTaskFileRequest:
+      type: object
+      properties:
+        fileType:
+          type: string
+          enum:
+            - ORIGINAL_PDF
+            - ORIGINAL_IMAGE
+            - KERN
+            - MUSICXML
+            - MIDI
+            - PDF
+            - SVG
+            - PNG
+            - MP3
+            - WAV
+            - ORIGINAL_MUSICXML
+            - ORIGINAL_MIDI
+        storagePath:
+          type: string
+          maxLength: 512
+          minLength: 0
+        pageNumber:
+          type: integer
+          format: int32
+          minimum: 1
+        contentType:
+          type: string
+          maxLength: 128
+          minLength: 0
+        sizeBytes:
+          type: integer
+          format: int64
+          minimum: 0
+        version:
+          type: integer
+          format: int32
+          minimum: 1
+        meta:
+          type: object
+          additionalProperties: {}
+      required:
+        - fileType
+        - storagePath
+    AiTaskProgressRequest:
+      type: object
+      properties:
+        progress:
+          type: integer
+          format: int32
+          maximum: 100
+          minimum: 0
+        step:
+          type: string
+          enum:
+            - QUEUED
+            - SPLIT_PDF
+            - PREPROCESS
+            - INFERENCE
+            - MERGE
+            - EXPORT
+            - PREPARE
+            - RENDER
+            - SAVE
+      required:
+        - progress
+    AiTaskResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        scoreId:
+          type: string
+        taskType:
+          type: string
+          enum:
+            - OMR_CONVERSION
+            - CHORD_GENERATION
+            - AUDIO_SYNTHESIS
+            - FORMAT_CONVERSION
+        status:
+          type: string
+          enum:
+            - PENDING
+            - PROCESSING
+            - COMPLETED
+            - FAILED
+            - CANCELLED
+        progress:
+          type: integer
+          format: int32
+        step:
+          type: string
+        errorMessage:
+          type: string
+        resultData:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        startedAt:
+          type: string
+          format: date-time
+        finishedAt:
+          type: string
+          format: date-time
+    ChordSuggestionRequest:
+      type: object
+      properties:
+        style:
+          type: string
+          enum: [NATURAL, SIMPLE, COLORFUL, JAZZY]
+          default: NATURAL
+          description: "Màu hợp âm: tăng / giảm xác suất các nhóm hợp âm của model. NATURAL để model tự chọn, SIMPLE ưu tiên hợp âm ba, COLORFUL ưu tiên maj7, m7, sus, 6, JAZZY ưu tiên hợp âm 7 và mở rộng. Tên phong cách cũ (POP, FOLK, CLASSICAL, BALLAD, BOLERO, JAZZ, BLUES) vẫn nhận và quy về màu tương ứng"
+        replaceExisting:
+          type: boolean
+          default: false
+          description: "true: bỏ hết hợp âm đang có và gợi ý lại toàn bộ (dùng khi mọi ô đã có hợp âm)"
+        creativity:
+          type: string
+          enum: [SAFE, BALANCED, BOLD]
+          default: BALANCED
+          description: "Độ sáng tạo khi lấy mẫu (nhiệt độ 0,6 / 1,0 / 1,4). Mỗi lần gọi ra cách đệm khác"
+        density:
+          type: string
+          enum: [SPARSE, NORMAL, DENSE]
+          default: NORMAL
+          description: "Mật độ đổi hợp âm: phách mạnh / đầu phách / thêm chỗ nốt móc đơn"
+    MeasureCheck:
+      type: object
+      properties:
+        imageMeasures:
+          type: integer
+          format: int32
+        kernMeasures:
+          type: integer
+          format: int32
+        flaggedMeasures:
+          type: integer
+          format: int32
+        lowConfidenceMeasures:
+          type: integer
+          format: int32
+    MeasureEntry:
+      type: object
+      properties:
+        measure:
+          type: integer
+          format: int32
+        page:
+          type: integer
+          format: int32
+        system:
+          type: integer
+          format: int32
+        box:
+          type: array
+          items:
+            type: integer
+            format: int32
+        flags:
+          type: array
+          items:
+            type: string
+        confidence:
+          type: number
+          format: double
+        reasons:
+          type: array
+          items:
+            type: string
+    OmrResultResponse:
+      type: object
+      properties:
+        taskId:
+          type: string
+        status:
+          type: string
+          enum:
+            - PENDING
+            - PROCESSING
+            - COMPLETED
+            - FAILED
+            - CANCELLED
+        pageCount:
+          type: integer
+          format: int32
+        warnings:
+          type: array
+          items:
+            type: string
+        stoppedAfter:
+          type: string
+        pages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Page'
+        kernFileId:
+          type: string
+        musicXmlFileId:
+          type: string
+        midiFileId:
+          type: string
+        musicXmlVersion:
+          type: integer
+          format: int32
+        measureMap:
+          type: array
+          items:
+            $ref: '#/components/schemas/MeasureEntry'
+        measureCheck:
+          $ref: '#/components/schemas/MeasureCheck'
+    OmrRetryRequest:
+      type: object
+      description: "Tùy chọn, ví dụ {\"preprocess\": false}. Bỏ trống: dùng lại lựa chọn lần trước"
+      properties:
+        preprocess:
+          type: boolean
+    OmrUploadResponse:
+      type: object
+      properties:
+        scoreId:
+          type: string
+        title:
+          type: string
+        processingStatus:
+          type: string
+        task:
+          $ref: '#/components/schemas/AiTaskResponse'
+        files:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScoreFileResponse'
+    Page:
+      type: object
+      properties:
+        pageNumber:
+          type: integer
+          format: int32
+        imageFileId:
+          type: string
+        firstMeasure:
+          type: integer
+          format: int32
+        lastMeasure:
+          type: integer
+          format: int32
+    ScoreFileResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        scoreId:
+          type: string
+        fileType:
+          type: string
+          enum:
+            - ORIGINAL_PDF
+            - ORIGINAL_IMAGE
+            - KERN
+            - MUSICXML
+            - MIDI
+            - PDF
+            - SVG
+            - PNG
+            - MP3
+            - WAV
+            - ORIGINAL_MUSICXML
+            - ORIGINAL_MIDI
+        originalFileName:
+          type: string
+        contentType:
+          type: string
+        sizeBytes:
+          type: integer
+          format: int64
+        pageNumber:
+          type: integer
+          format: int32
+        version:
+          type: integer
+          format: int32
+        isCurrent:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        downloadUrl:
+          type: string
+    ScoreMetadata:
+      type: object
+      properties:
+        measureCount:
+          type: integer
+          format: int32
+        keySignature:
+          type: string
+        timeSignature:
+          type: string
+        tempoBpm:
+          type: integer
+          format: int32
+        staffCount:
+          type: integer
+          format: int32
+        pageCount:
+          type: integer
+          format: int32
+
+    # ── Wrapped Responses ──
+    ApiResponseAiTaskResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/AiTaskResponse'
+    ApiResponseListAiTaskResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: '#/components/schemas/AiTaskResponse'
+    ApiResponseOmrResultResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/OmrResultResponse'
+    ApiResponseOmrUploadResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/OmrUploadResponse'
+    ApiResponseVoid:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result: {}
+    ApiResponseError:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 1002
+        message:
+          type: string
+          example: You do not have permission

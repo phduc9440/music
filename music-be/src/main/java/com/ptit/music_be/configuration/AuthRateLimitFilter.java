@@ -19,7 +19,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.ptit.music_be.dto.response.ApiResponse;
+import com.ptit.music_be.dto.response.common.ApiResponse;
 
 /**
  * In-memory sliding-window rate limiter for the public /api/auth endpoints, keyed by client IP + path.

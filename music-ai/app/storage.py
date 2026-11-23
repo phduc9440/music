@@ -42,8 +42,3 @@ def resolve_existing_file(relative: str) -> Path:
     if not path.is_file():
         raise ValueError(f"File không tồn tại: {relative}")
     return path
-
-
-def to_relative(path: Path) -> str:
-    """Đường dẫn tuyệt đối trong storage -> đường dẫn tương đối dùng dấu ``/`` để gửi cho Java."""
-    return path.resolve().relative_to(get_settings().storage_root).as_posix()

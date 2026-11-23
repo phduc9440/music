@@ -1,83 +1,159 @@
 # music-ai
 
-Dịch vụ Python (FastAPI) cho phân hệ OMR. Spring Boot giao việc qua REST, music-ai đọc/ghi file trên **cùng thư mục
-storage** với Spring Boot rồi báo tiến độ về bằng callback. music-ai **không kết nối MySQL**.
+Dịch vụ Python (FastAPI) lo phần xử lý nhạc của hệ thống Music:
+
+- **OMR**: đọc PDF / ảnh bản nhạc thành `**kern`, rồi MusicXML và MIDI (model Transcoda).
+- **Chuyển đổi**: kern → MusicXML, MusicXML → MIDI, chuẩn hóa MusicXML nhập vào, chuẩn bị MusicXML trước khi
+  MuseScore xuất file.
+- **So sánh** hai phiên bản MusicXML theo từng ô nhịp.
+- **Gợi ý hợp âm** cho bản chỉ có giai điệu (model AutoHarmonizer, lấy mẫu ra 3 phương án, mỗi lần một khác).
+
+Tổng quan cả hệ thống: [README ở thư mục gốc](../README.md).
+
+## Cách hoạt động
 
 ```
-Web (React) ──REST+JWT──> Spring Boot ──POST /omr/jobs──> music-ai
-                              ^                              │ đọc/ghi file
-                              └── callback /internal/** ─────┘ (storage dùng chung)
+Web (React) ──REST+JWT──> music-be (Spring Boot) ──POST /omr/jobs, /convert/**, /chords──> music-ai
+                                   ^                                                          │ đọc/ghi file
+                                   └──────────── callback /internal/ai-tasks/** ──────────────┘ (storage dùng chung)
 ```
 
-Pipeline hiện có: **tiền xử lý ảnh** (nhánh `feature/omr-preprocess`) rồi **nhận diện bằng Transcoda và ghép kern**
-(nhánh `feature/omr-recognition`). Xuất MusicXML/MIDI là nhánh `feature/omr-export-musicxml-midi`.
+- Chỉ `music-be` gọi tới đây. Mọi endpoint trừ `/health` cần header `X-Internal-Key`; callback ngược về backend cũng
+  gửi kèm header đó.
+- music-ai **không kết nối MySQL**. Hai bên trao đổi đường dẫn tương đối trong thư mục storage dùng chung
+  (`scores/<scoreId>/...`), không gửi nội dung file qua HTTP.
+- Job OMR chạy nền, **mỗi lần một job** theo hàng đợi. Các endpoint chuyển đổi, so sánh và hợp âm chạy đồng bộ, không
+  phải xếp hàng sau OMR.
 
 ## Cài đặt
 
-Cần Python 3.10 trở lên. **Khuyến nghị Python 3.11 hoặc 3.12**: `torch` và `music21` hỗ trợ các bản này chắc chắn nhất; nếu
-`pip install` báo không tìm được bản `torch` cho Python của bạn thì tạo lại venv bằng 3.12.
+| Thành phần | Phiên bản | Ghi chú |
+|---|---|---|
+| Python | 3.11 hoặc 3.12 (tối thiểu 3.10) | Docker dùng 3.11. Từ 3.13 trở lên chưa thử: `torch`, `music21` có thể chưa có bản phù hợp |
+| Gói Python | theo `requirements.txt` | `torch` chạy được trên CPU, CUDA hoặc MPS (Mac Apple Silicon) |
 
 ```bash
 cd music-ai
-python3 -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python scripts/check_env.py
 ```
+
+`check_env.py` in phiên bản Python, từng gói và các cảnh báo; thấy `OK` là chạy được. Khi cần nhờ hỗ trợ thì dán kết
+quả của lệnh này.
+
+Luôn cài bằng `python -m pip`, không gõ `pip` trần. Lý do: nếu venv được tạo từ một bản Python khác, `pip` có thể cài
+gói vào chỗ mà `python` không đọc, nên cài xong vẫn báo thiếu gói. Gặp trường hợp này thì tạo lại venv:
+`rm -rf .venv && python3.12 -m venv .venv`.
 
 ## Chạy
 
 ```bash
-cp .env.example .env               # chỉnh nếu cần (xem bảng dưới)
+cp .env.example .env
 uvicorn app.main:app --env-file .env --host 127.0.0.1 --port 8000
 ```
 
-Mở `http://127.0.0.1:8000/health`:
+Kiểm tra tại http://127.0.0.1:8000/health. Trường `modelState` có các giá trị:
 
-* khi vừa chạy, model đang nạp ở luồng nền: `{"modelLoaded":false,"modelState":"loading","device":"cpu",...}`;
-* nạp xong (lần đầu phải tải về, xem mục "Model Transcoda"): `{"modelLoaded":true,"modelState":"ready","device":"cpu",...}`;
-* nạp lỗi: `modelState":"failed"` kèm `modelError` ghi nguyên nhân.
+| `modelState` | Nghĩa |
+|---|---|
+| `loading` | Model đang nạp ở luồng nền (lần đầu phải tải từ Hugging Face, mất vài phút) |
+| `ready` | Sẵn sàng (`modelLoaded: true`) |
+| `failed` | Nạp lỗi, nguyên nhân ở `modelError` |
+| `disabled` | `LOAD_MODEL=false`: chỉ chạy tiền xử lý, chuyển đổi, so sánh, hợp âm |
 
-Bên Spring Boot đặt `AI_INTERNAL_KEY` trùng với `INTERNAL_KEY` ở đây (mặc định cả hai là `dev-internal-key`).
+`INTERNAL_KEY` phải trùng `AI_INTERNAL_KEY` của backend (mặc định cả hai đều là `dev-internal-key`).
 
-### Biến môi trường
+Khi chạy bằng Docker (`docker compose` ở thư mục gốc), image cài PyTorch bản CPU, model được cache trong volume
+`hf-cache`, storage nằm ở `/data/storage`. Trong container có thể chạy
+`docker exec <container> python scripts/check_env.py` để kiểm tra môi trường.
+
+## Cấu hình
+
+Mọi biến đều có giá trị mặc định. [`.env.example`](.env.example) liệt kê đủ, kèm giải thích ngắn.
+
+### Kết nối và giới hạn
 
 | Biến | Mặc định | Ý nghĩa |
 |---|---|---|
-| `INTERNAL_KEY` | `dev-internal-key` | Khóa dùng chung, header `X-Internal-Key` (cả hai chiều). **Đổi khi triển khai.** |
-| `JAVA_BASE_URL` | `http://localhost:8080` | Nơi gọi callback `/internal/ai-tasks/**` |
-| `STORAGE_ROOT` | `../music-be/storage` (so với repo) | Gốc storage dùng chung với Spring Boot |
-| `TASK_TIMEOUT_S` | `600` | Tối đa cho cả job (10 phút) |
-| `PAGE_TIMEOUT_S` | `90` | Tối đa cho mỗi trang |
-| `PDF_DPI` | `300` | Độ phân giải khi vẽ PDF thành ảnh |
-| `MAX_SIDE_PX` | `3600` | Cạnh dài tối đa của ảnh làm việc (lớn hơn thì thu nhỏ) |
-| `QUEUE_MAX` | `50` | Số job tối đa trong hàng đợi (đầy thì trả 503) |
-| `LOAD_MODEL` | `true` | `false`: không nạp Transcoda (chỉ chạy được tiền xử lý, không cần cài torch) |
-| `MODEL_ID` | `btrkeks/transcoda-59M-zeroshot-v1` | Repo Hugging Face, hoặc đường dẫn thư mục model đã tải (ví dụ `models/transcoda`) |
-| `DEVICE` | `auto` | `auto` (cuda nếu có, ngược lại cpu), `cpu`, `cuda`, `mps` (Mac Apple Silicon, thử nếu CPU chậm) |
-| `NUM_BEAMS` | `1` | 1 = greedy (nhanh); 3 = beam search như bài báo (chính xác hơn, chậm hơn nhiều) |
-| `MAX_TOKENS` | `2048` | Số token sinh tối đa mỗi trang |
-| `REPETITION_PENALTY` | `1.1` | Phạt lặp token (theo model card) |
-| `INFERENCE_PAGE_TIMEOUT_S` | `90` | Tối đa cho suy luận mỗi trang. **Chạy CPU thì nên tăng** (kèm `TASK_TIMEOUT_S`) |
-| `MODEL_WAIT_S` | `600` | Job đến khi model còn đang nạp thì chờ tối đa bấy nhiêu giây |
-| `KERN_PARSE_MODE` | `fail` | `fail`: music21 không đọc được kern ghép thì task FAILED `KERN_PARSE_ERROR`; `warn`: chỉ cảnh báo |
-| `MAX_REPEAT_LINES` | `24` | Một dòng kern lặp liên tiếp quá số này bị coi là model sinh lặp và cắt bớt |
-| `OMR_ROUTING` | `fallback` | `off`: như cũ. `fallback`: trang có số spine khác số khuông trên ảnh thì nhận diện lại từng hệ. `always`: nhận diện cả hai cách cho mọi trang rồi chọn (để đo, chậm gấp đôi). Xem "Bố cục và nhận diện lại theo hệ" |
-| `OMR_ROUTING_MEASURES` | `0` | `1`: trang đúng số spine nhưng có ô nhịp lệch trường độ cũng được nhận diện lại theo hệ (chậm hơn, đọc lại mọi hệ của trang) |
-| `ROUTING_RETRY_BEAMS` | `3` | Hệ vẫn sai số khuông thì thử lại bằng beam search với số beam này; `0`/`1`: không thử lại |
-| `ROUTING_RESERVE_S` | `30` | Giây giữ lại cho bước ghép/xuất: nhận diện lại chỉ chạy khi job còn nhiều thời gian hơn mức này |
+| `INTERNAL_KEY` | `dev-internal-key` | Khóa dùng chung với backend. **Đổi khi triển khai** |
+| `JAVA_BASE_URL` | `http://localhost:8080` | Địa chỉ backend để gọi callback |
+| `STORAGE_ROOT` | `../music-be/storage` | Thư mục storage dùng chung với backend |
+| `CALLBACK_RETRIES`, `CALLBACK_TIMEOUT_S` | `3`, `10` | Số lần gọi lại callback khi lỗi và thời gian chờ mỗi lần |
+| `QUEUE_MAX` | `50` | Số job tối đa trong hàng đợi; đầy thì trả 503 |
+| `TASK_TIMEOUT_S` | `3600` | Trần thời gian của một job, dù nhiều trang |
+| `TASK_TIMEOUT_BASE_S` | `300` | Ngân sách cố định của một job; ngân sách thật = cơ sở + số trang × `TASK_TIMEOUT_PER_PAGE_S` (không quá trần) |
+| `TASK_TIMEOUT_PER_PAGE_S` | `180` | Thời gian cộng thêm cho mỗi trang |
+| `PROGRESS_HEARTBEAT_S` | `240` | Quá khoảng này chưa có tiến độ mới thì gửi lại tiến độ cũ để watchdog 10 phút của Java không cắt nhầm |
+| `PAGE_TIMEOUT_S` | `90` | Thời gian tối đa cho tiền xử lý mỗi trang |
+| `MAX_PAGES` | `40` | Số trang PDF tối đa mỗi job |
+| `PDF_DPI`, `MAX_SIDE_PX` | `300`, `3600` | Độ phân giải khi vẽ PDF thành ảnh; cạnh dài tối đa của ảnh làm việc |
 
-## API (Spring Boot gọi, đặc tả mục 6.2)
+### Model
+
+| Biến | Mặc định | Ý nghĩa |
+|---|---|---|
+| `LOAD_MODEL` | `true` | `false`: không nạp Transcoda, không cần cài `torch` |
+| `MODEL_ID` | `btrkeks/transcoda-59M-zeroshot-v1` | Repo Hugging Face, hoặc thư mục model đã tải về (ví dụ `models/transcoda`) |
+| `DEVICE` | `auto` | `auto` (có CUDA thì dùng, không thì CPU), `cpu`, `cuda`, `mps` |
+| `NUM_BEAMS` | `1` | `1` = greedy (nhanh); `3` = beam search như bài báo (chính xác hơn, chậm hơn nhiều) |
+| `MAX_TOKENS`, `REPETITION_PENALTY` | `2048`, `1.1` | Số token sinh tối đa mỗi lần đọc; hệ số phạt lặp |
+| `INFERENCE_PAGE_TIMEOUT_S` | `90` | Thời gian tối đa cho nhận diện mỗi trang. **Chạy CPU thì nên tăng**, cùng với `TASK_TIMEOUT_S` |
+| `MODEL_WAIT_S` | `600` | Job đến khi model còn đang nạp thì chờ tối đa bấy nhiêu giây |
+| `OMR_ENGINE` | `transcoda` | `command`: chạy lệnh ngoài `OMR_ENGINE_COMMAND` (có `{image}`, `{output}`, `{beams}`) để thử model khác |
+
+### Ghép kern và sửa lỗi nhận diện
+
+| Biến | Mặc định | Ý nghĩa |
+|---|---|---|
+| `KERN_PARSE_MODE` | `fail` | `fail`: music21 không đọc được kern ghép thì job lỗi `KERN_PARSE_ERROR`; `warn`: chỉ cảnh báo |
+| `MERGE_LENIENT_SPINES` | `true` | Căn các trang về số spine phổ biến nhất thay vì báo lỗi `MERGE_SPINE_MISMATCH` |
+| `MAX_REPEAT_LINES` | `24` | Một dòng kern lặp liên tiếp quá số này thì coi là model đọc lặp và cắt bớt |
+| `OMR_ROUTING` | `fallback` | `off`; `fallback`: trang sai số khuông hoặc lệch số ô thì nhận diện lại theo từng hệ; `always`: đọc cả hai cách cho mọi trang (để đo, chậm gấp đôi) |
+| `OMR_ROUTING_BARS` | `1` | Dùng số ô nhịp đếm trên ảnh để phát hiện model đọc lặp và dừng sinh sớm |
+| `OMR_ROUTING_MEASURES` | `0` | `1`: trang đúng số spine nhưng có ô lệch trường độ cũng được nhận diện lại theo hệ |
+| `OMR_ROLES_FIRST` | `1` | Hệ có cả giọng hát lẫn piano: đọc riêng từng nhóm khuông trước rồi mới đọc cả hệ |
+| `ROUTING_RETRY_BEAMS` | `3` | Hệ vẫn sai số khuông thì đọc lại bằng beam search; `0` hoặc `1` là tắt |
+| `ROUTING_RESERVE_S` | `30` | Số giây giữ lại cho bước ghép và xuất; nhận diện lại không bao giờ làm job quá hạn |
+| `OMR_STRIP_TEXT` | `1` | Xóa lời ca, tên hợp âm và chữ ngoài khuông trước khi đưa vào model |
+| `OMR_OTTAVA` | `auto` | `auto`: bỏ dấu `*8va` / `*8ba` model tự thêm trên khuông giọng hát và khuông đơn; `drop`: bỏ ở mọi khuông; `keep`: giữ nguyên |
+| `OMR_PITCH_CHECK` | `1` | Dò đầu nốt trên ảnh (OpenCV) để sửa nốt đúng tên nhưng sai quãng tám |
+| `OMR_RHYTHM_FIX` | `1` | Sửa ô sai trường độ do đọc nhầm nhịp ba (`12` → `8`...), bỏ nốt thừa trong hợp âm |
+
+### Độ tin cậy từng ô
+
+| Biến | Mặc định | Ý nghĩa |
+|---|---|---|
+| `OMR_TTA` | `2` | Số lần đọc lại (ảnh dịch vài pixel) cho hệ có ô nghi ngờ; `0` là tắt; từ `2` trở lên mới tự thay ô |
+| `OMR_TTA_SHIFT_PX` | `3` | Độ dịch ảnh giữa các lần đọc lại (pixel, trên ảnh 1050×1485) |
+| `OMR_TTA_MAX_SYSTEMS` | `4` | Số hệ tối đa được đọc lại mỗi job |
+| `OMR_LLM` | `off` | `anthropic`: gửi ảnh cắt các ô tin cậy thấp nhất cho AI xác minh (cần `ANTHROPIC_API_KEY`) |
+| `OMR_LLM_MODEL` | `claude-haiku-5-5` | Model AI dùng để xác minh (nên chọn model rẻ) |
+| `OMR_LLM_MAX_MEASURES`, `OMR_LLM_TIMEOUT_S` | `10`, `30` | Số ô tối đa gửi AI mỗi job; thời gian chờ mỗi lần gọi. Kết quả được cache ở `{storage}/cache/llm/` |
+
+## API
 
 | Method | Đường dẫn | Mô tả |
 |---|---|---|
-| GET | `/health` | `{modelLoaded, device, queueSize}` |
-| POST | `/omr/jobs` | Nhận job, trả **202** rồi chạy nền, **tuần tự 1 job một lúc**. Gửi lại cùng `taskId` vẫn 202, không chạy lần hai. Dữ liệu sai: 422. Hàng đợi đầy: 503 |
-| DELETE | `/omr/jobs/{taskId}` | Hủy job đang chờ/chạy (dừng giữa các trang). Trả `{"cancelled": true/false}` |
-| POST | `/convert/kern-to-musicxml` | Đồng bộ: kern → MusicXML đã chuẩn hóa. Body `{kernPath, outPath, tempoBpm?}`; trả số ô nhịp, giọng, nhịp, tempo |
-| POST | `/convert/musicxml-to-midi` | Đồng bộ: MusicXML → MIDI (Java gọi khi MIDI cũ hơn MusicXML). Body `{musicXmlPath, outPath, tempoBpm}`; trả `{notes, tracks, seconds}` |
+| GET | `/health` | `{modelLoaded, modelState, modelError?, device, queueSize, engine}`. Không cần khóa |
+| POST | `/omr/jobs` | Nhận job OMR, trả **202** rồi chạy nền. Gửi lại cùng `taskId` vẫn trả 202 nhưng không chạy lần hai. Dữ liệu sai: 422. Hàng đợi đầy: 503 |
+| DELETE | `/omr/jobs/{taskId}` | Hủy job đang chờ hoặc đang chạy (dừng ngay cả giữa một trang). Trả `{cancelled}` |
+| POST | `/convert/kern-to-musicxml` | `{kernPath, outPath, tempoBpm?}` → MusicXML đã chuẩn hóa, kèm metadata (số ô, số khuông, giọng, nhịp, tempo) |
+| POST | `/convert/musicxml-to-midi` | `{musicXmlPath, outPath, tempoBpm}` → MIDI. Trả `{notes, tracks, seconds}` |
+| POST | `/convert/normalize` | `{inPath, outPath, tempoBpm?}`: chuẩn hóa MusicXML nhập từ file hoặc do MuseScore sinh từ MIDI. Trả metadata như trên |
+| POST | `/convert/prepare` | `{inPath, outPath, transpose, tempoPercent, hands, title, composer, showTitle, stripHarmony}`: chuẩn bị MusicXML trước khi MuseScore xuất file |
+| POST | `/analysis/diff` | `{basePath, targetPath}`: so sánh hai MusicXML theo ô nhịp. Trả `{measures: [{base, target, status, errors}], summary}` |
+| POST | `/chords/generate` | `{inPath, outPath, style, creativity, density, options, seed, replaceExisting}`: ghi tới `options` (1–3) phương án, A ra `outPath`, B, C ra `<outPath>-2/-3.musicxml`. Trả `{key, steps, filled, skipped, keptExisting, seed, options: [{outPath, filled, score}]}` |
 
-Mọi endpoint trừ `/health` cần header `X-Internal-Key`, sai trả 401. Hai endpoint `/convert/**` chạy ngoài hàng đợi OMR; đường
-dẫn phải nằm trong `scores/<scoreId>/` (cùng một bản nhạc cho vào và ra), `outPath` có đuôi `.musicxml` / `.mid`; sai: 422.
+Quy tắc chung:
+
+- Thiếu hoặc sai `X-Internal-Key` thì trả 401.
+- Đường dẫn phải là đường dẫn **tương đối**, không chứa `..`, và nằm trong `scores/<scoreId>/`; file vào và file ra
+  phải thuộc cùng một bản nhạc. Sai thì trả 422.
+- XML hỏng, không phải `score-partwise` hoặc có khai báo `ENTITY` thì trả 422 kèm lý do.
+- `/chords/generate` báo lỗi dạng `detail = {code, message}`, trong đó `code` là `NO_MELODY`, `ALREADY_HARMONIZED`,
+  `NO_CHORDS`, `TOO_LONG` hoặc `PARSE_ERROR`.
 
 Body `POST /omr/jobs`:
 
@@ -85,186 +161,204 @@ Body `POST /omr/jobs`:
 {
   "taskId": "uuid",
   "scoreId": "uuid-của-bản-nhạc",
-  "inputs": [{"path": "scores/<scoreId>/original/01-xxx.pdf", "kind": "PDF", "page": null}],
-  "options": {"preprocess": true, "binarize": true, "sourceType": "PHOTO", "stopAfter": "EXPORT", "musicXmlVersion": 1}
+  "inputs": [{ "path": "scores/<scoreId>/original/01-xxx.pdf", "kind": "PDF", "page": null }],
+  "options": { "preprocess": true, "binarize": true, "sourceType": "PHOTO", "stopAfter": "EXPORT", "musicXmlVersion": 1 }
 }
 ```
 
-Quy tắc kiểm tra (sai thì 422): `taskId` là UUID; `path` là đường dẫn **tương đối**, không có `..`, file phải tồn tại và
-nằm trong `scores/<scoreId>/`; hoặc đúng 1 PDF, hoặc nhiều ảnh (không trộn).
+Mỗi job nhận hoặc đúng một PDF, hoặc nhiều ảnh, không được trộn hai loại. Callback báo về backend gồm
+`/internal/ai-tasks/{taskId}/progress`, `/files`, `/complete` và `/fail`.
 
-## Các bước và tiến độ
+## Pipeline OMR
 
-| Bước | Tiến độ | Việc làm |
-|---|---|---|
-| `SPLIT_PDF` | 5-10% | Tách PDF / đọc các ảnh đầu vào |
-| `PREPROCESS` | 10-30% | Tiền xử lý từng trang → `pages/page-NNN.png` → callback `files` (PNG); bố cục → `layout/page-NNN.json` |
-| `INFERENCE` | 30-85% | Transcoda nhận diện từng trang → `kern/page-NNN.krn`; tiến độ `30 + 55 × trang_xong / tổng_trang`. Sau đó (vẫn ở 85%) trang sai số khuông được nhận diện lại theo hệ → `routing/` |
-| `MERGE` | 85-90% | Làm sạch, ghép kern, kiểm tra → `kern/merged.krn` → callback `files` (KERN) |
-| `EXPORT` | 90-98% | kern → `musicxml/v{n}.musicxml` → `midi/v{n}.mid` → callback `files` (MUSICXML, MIDI) → `complete` |
+| Bước | Tiến độ | Việc làm | File ghi ra (trong `scores/<scoreId>/`) |
+|---|---|---|---|
+| `SPLIT_PDF` | 5–10% | Tách PDF hoặc đọc các ảnh đầu vào | |
+| `PREPROCESS` | 10–30% | Tiền xử lý từng trang, phân tích bố cục | `pages/page-NNN.png`, `layout/page-NNN.json` |
+| `INFERENCE` | 30–85% | Transcoda nhận diện từng trang; trang nghi sai được nhận diện lại theo hệ | `kern/page-NNN.krn`, `routing/` |
+| `MERGE` | 85–90% | Làm sạch, ghép kern, kiểm tra, chấm tin cậy từng ô | `kern/merged.krn` |
+| `EXPORT` | 90–98% | kern → MusicXML → MIDI, rồi báo `complete` | `musicxml/v{n}.musicxml`, `midi/v{n}.mid` |
 
-`stopAfter` (Java gửi, biến `OMR_STOP_AFTER`): `PREPROCESS` dừng sau tiền xử lý (không cần model); `MERGE` dừng sau ghép
-kern; `EXPORT` (mặc định) chạy đủ. `musicXmlVersion` do Java tính (`scores.current_version + 1`): nhận diện lại sinh
-`v2`, `v3`... và không ghi đè bản cũ. Chỉ khi chạy đủ thì `result_data` không có khóa `stoppedAfter`.
+- `options.stopAfter` (backend lấy từ biến `OMR_STOP_AFTER`) cho phép dừng sau `PREPROCESS` (không cần model), sau
+  `MERGE`, hoặc chạy đủ với `EXPORT`.
+- `musicXmlVersion` do backend tính: nhận diện lại sinh ra `v2`, `v3`... và không ghi đè bản cũ.
 
-## Bố cục và nhận diện lại theo hệ (bản giọng hát + piano)
+### Tiền xử lý (`app/omr/preprocess.py`)
 
-Transcoda đôi khi bỏ hẳn một khuông ở cả trang (ví dụ khuông giọng hát) hoặc tách/gộp spine sai rồi trôi tới cuối trang.
-Plan và lý do chọn cách làm: `docs/omr-multi-staff-plan.md`.
+Các bước với mỗi trang:
 
-1. **Bố cục** (`app/omr/layout.py`, chỉ OpenCV, ~10 ms/trang): trên chính ảnh 1050×1485 model nhận, dò khuông, gom hệ
-   theo vạch nối ở lề trái, gán vai trò (cặp có ngoặc nhọn là piano; không thấy ngoặc thì hai khuông dưới cùng là
-   piano, khuông phía trên là giọng hát). Mọi hệ cùng số khuông thì bố cục được coi là tin cậy.
-2. **Kiểm tra**: kern trang phải có số spine bằng số khuông mỗi hệ. Sai thì có cảnh báo ghi rõ trang.
-3. **Nhận diện lại theo hệ** (`app/omr/routing.py`, `OMR_ROUTING=fallback`): sau khi mọi trang đã có kết quả, mỗi hệ của
-   trang sai được đặt lên một trang trắng giữ nguyên tỉ lệ (`routing/page-NNN-sKK.png`) rồi nhận diện riêng. Hệ "sai" (sai số spine, hoặc hệ có cả giọng lẫn piano mà ô nhịp lệch trường độ) được thử theo
-   thứ tự rẻ trước: đọc cả hệ (greedy) → **đọc riêng từng nhóm khuông** (khuông giọng một ảnh, grand staff piano một ảnh,
-   `routing/page-NNN-sKK-r1-single.png`, `...-r2-piano.png`; mỗi lần greedy và ngắn) rồi ghép theo ô nhịp và thời điểm
-   (`app/omr/combine.py`); không ghép được (số ô khác nhau, đổi khóa giữa ô...) thì ghi cảnh báo lý do và độn như trước.
-   Kern các hệ được ghép (`routing/page-NNN-systems.krn`) và chỉ thay kết quả cả trang khi
-   có hệ đọc đúng số khuông và điểm cấu trúc cao hơn. Chỉ dùng thời gian còn dư của job (trừ `ROUTING_RESERVE_S`):
-   không đủ thời gian thì giữ kết quả cả trang kèm cảnh báo, không bao giờ làm job FAILED. `result_data.routing` ghi
-   trang nào dùng ứng viên nào.
-4. **Vai trò → kern**: bản có cả khuông đơn và piano thì `merged.krn` có dòng `*Ivox`/`*Ipiano` (mã nhạc cụ Humdrum)
-   ngay sau `**kern`; `result_data.staffRoles` ghi vai trò từ trên xuống. Bản chỉ có piano hoặc chỉ một khuông giữ
-   nguyên như cũ.
+1. Đọc ảnh (xoay theo EXIF); với PDF thì vẽ bằng PyMuPDF ở 300 DPI.
+2. Chuyển sang ảnh xám rồi khử nhiễu theo loại nguồn: `PHOTO` dùng bilateral và cân bằng nền, `SCAN` dùng median,
+   `PDF_NATIVE` bỏ qua bước này.
+3. Chỉnh nghiêng: Hough dò dòng kẻ rồi tinh chỉnh bằng profile chiếu, tối đa ±15°.
+4. Kiểm tra trang có khuông nhạc, cắt lề trắng, nhị phân hóa thích ứng.
+5. Thu nhỏ và pad trắng về đúng **1050 × 1485** (rộng × cao).
 
-Đo trên bản nhạc thật (script không ghi vào storage, không gọi Java):
+Model nhận nguyên một trang ở kích thước này (tensor RGB `(1, 3, 1485, 1050)`, giá trị trong [-1, 1]; xem
+`app/omr/model_input.py`). Trang cao hơn tỉ lệ thì được thu nhỏ rồi pad bên phải, để không bị cắt mất nội dung.
 
-```bash
-python scripts/omr_check.py <scoreId>                          # không cần model: số khuông trên ảnh so với kern đã lưu
-python scripts/omr_check.py <scoreId> --run off,fallback,always  # có model: bảng trang/hệ đúng số khuông, ô đúng trường độ, s/trang
-python scripts/omr_check.py <scoreId> --run fallback --dump /tmp/omr  # lưu ảnh + kern từng lần đọc và systems.txt để đối chiếu
-```
+Tùy chọn trong `options`: `binarize=false` để tắt nhị phân hóa, `preprocess=false` để chỉ resize và pad.
 
-## Xuất MusicXML và MIDI (đặc tả mục 2.4)
+### Bố cục và nhận diện lại theo hệ
 
-1. **kern → MusicXML** (`app/convert/kern.py`): music21 đọc `merged.krn` rồi ghi MusicXML thô.
-2. **Chuẩn hóa** (`app/convert/musicxml.py`, chỉ dùng thư viện chuẩn): gộp các khuông thành **1 part "Piano" nhiều staff**
-   (`<staves>2</staves>`, staff 1 = tay phải). Kern có `*Ivox` thì mỗi khuông giọng là **một part "Giọng hát"** riêng
-   (chương trình MIDI 53) đứng trên part "Piano" 2 khuông. Đưa các part về cùng `divisions`, đánh lại `<staff>`/`<voice>` cho không trùng,
-   thêm `<sound tempo>` ở ô nhịp 1, đánh lại số ô nhịp từ 1. Khuông trên/dưới được xác định từ **khóa nhạc và cao độ**,
-   không dựa vào thứ tự part music21 trả về. Metadata (`measureCount`, `keySignature` dạng `G`/`Bb`/`F#m`, `timeSignature`,
-   `tempoBpm`, `staffCount`) rút từ chính MusicXML này và ghi đè giá trị tạm rút từ kern.
-3. **MusicXML → MIDI** (`app/convert/midi.py`): tự ghi MIDI chuẩn (SMF 1, 480 tick/phách): **track i = khuông thứ i+1 từ trên
-   xuống qua mọi part, kênh i** (bỏ qua kênh 9; bản giọng hát + piano: track 0 giọng, 1 tay phải, 2 tay trái), chương trình
-   theo `<midi-program>` của part, tempo và nhịp ở track đầu; nốt nối (tie) gộp thành một nốt. Không dùng `music21 write('midi')` vì cách
-   music21 gán track/kênh cho bản nhiều staff thay đổi theo phiên bản.
+Transcoda chỉ được train trên nhạc piano không có lời. Với bản giọng hát + piano, model hay bỏ sót một khuông, tách
+hoặc gộp spine sai, hoặc đọc xong một hệ lại quay về đọc lại hệ trước. Các bước khắc phục:
 
-Hai file chỉ được báo về Java (callback `files`) sau khi cả hai đã ghi xong; `complete` kèm `pageMeasures`
-(`[{page, firstMeasure, lastMeasure}]`, để web vẽ đúng phần nhạc của từng trang bên cạnh ảnh gốc).
+1. **Bố cục** (`layout.py`, `barlines.py`, chỉ dùng OpenCV, khoảng 10 ms/trang):
+   - dò khuông và gom thành hệ;
+   - gán vai trò từng khuông: cặp có ngoặc nhọn là piano, khuông còn lại là giọng hát;
+   - đếm vạch nhịp để biết số ô của từng hệ.
+2. **Kiểm tra**: kern của mỗi trang phải có số spine bằng số khuông, và số ô gần bằng số ô đếm được trên ảnh.
+3. **Nhận diện lại theo hệ** (`routing.py`, `combine.py`): mỗi hệ của trang sai được cắt ra đặt lên một trang trắng rồi
+   đọc riêng, thử theo thứ tự từ rẻ đến đắt:
+   - đọc riêng từng nhóm khuông (giọng hát một ảnh, piano một ảnh) rồi ghép lại theo ô nhịp;
+   - đọc cả hệ;
+   - đọc lại bằng beam search.
+
+   Kết quả mới chỉ thay kết quả cả trang khi có điểm cấu trúc cao hơn, và bước này chỉ dùng thời gian còn dư của job.
+4. **Bỏ khối lặp**: nếu kern vẫn thừa ô so với ảnh, bỏ các khối ô nhịp lặp liền nhau giống hệt, cho tới khi bằng số ô
+   trên ảnh.
+5. **Gán vai trò vào kern**: `merged.krn` có thêm `*Ivox` / `*Ipiano`. Khi xuất, mỗi khuông giọng hát thành một part
+   riêng, đứng trên part "Piano" hai khuông.
+
+### Độ tin cậy từng ô
+
+Chạy ở bước `MERGE`. Có ba lớp; lớp sau chỉ xử lý những ô mà lớp trước còn nghi ngờ:
+
+1. **Luật nhạc lý** (`review.py`, luôn bật): gắn cờ `DURATION`, `COUNT_MISMATCH`, `RANGE`, `LEAP`, `ACCIDENTAL`. Mỗi ô
+   có `confidence` (0..1) và danh sách lý do.
+2. **Đọc lại và bỏ phiếu** (`stability.py`, `OMR_TTA`): đọc lại hệ với ảnh dịch ±3 px. Ô đọc mỗi lần một khác bị gắn
+   cờ `UNSTABLE`. Ô chỉ được tự thay khi các lần đọc lại giống hệt nhau và đúng luật hơn bản đầu.
+3. **AI xác minh** (`llm_check.py`, `OMR_LLM`, mặc định tắt): gửi ảnh cắt một ô kèm các cách đọc, AI chọn cách đúng
+   hoặc gắn cờ `AI_DOUBT`.
+
+Kết quả nằm trong `result_data` của job:
+
+| Khóa | Nội dung |
+|---|---|
+| `measureMap` | Vị trí từng ô trên ảnh trang kèm cờ, để trang review của web tô vùng cần kiểm tra |
+| `measureCheck` | Số ô trên ảnh so với kern, các trang đã nhận diện lại, và phần tóm tắt `review` (gồm thống kê số lần gọi AI và token) |
+| `routing` | Trang nào dùng kết quả nào |
+| `staffRoles` | Vai trò các khuông, từ trên xuống |
+| `warnings` | Các cảnh báo |
+
+### Ghép kern và xuất file
+
+- **Ghép** (`merge.py`):
+  - bỏ trang rỗng và cắt các dòng lặp vô hạn;
+  - trang sau kế thừa khóa nhạc, hóa biểu và số chỉ nhịp từ trang trước;
+  - đánh lại số ô nhịp liên tục;
+  - cảnh báo ô sai tổng trường độ (ô lấy đà và ô cuối được phép ngắn hơn);
+  - cuối cùng cho music21 đọc thử `merged.krn`.
+- **kern → MusicXML** (`convert/kern.py`, `convert/musicxml.py`):
+  - music21 ghi MusicXML thô, sau đó bước chuẩn hóa gộp các khuông thành một part "Piano" nhiều staff;
+  - đồng bộ `divisions`, đánh lại `<staff>` / `<voice>`, thêm tempo;
+  - rút metadata (số ô, giọng, nhịp, tempo, số khuông) từ chính file MusicXML này.
+- **MusicXML → MIDI** (`convert/midi.py`):
+  - tự ghi file SMF 1 với 480 tick/phách: track i ứng với khuông thứ i+1 từ trên xuống, trên kênh i (bỏ qua kênh 9);
+  - nốt nối (tie) được gộp thành một nốt;
+  - không dùng `music21 write('midi')` vì cách music21 gán track thay đổi theo phiên bản.
+- File MusicXML và MIDI chỉ được báo về backend sau khi cả hai đã ghi xong. Callback `complete` kèm `pageMeasures` để
+  web hiển thị đúng đoạn nhạc bên cạnh ảnh của từng trang.
+
+### Lỗi của job
 
 | Tình huống | Kết quả |
 |---|---|
-| music21 không đọc/ghi được kern, thiếu music21, MusicXML không có ô nhịp | FAILED `EXPORT_ERROR: chi tiết` (file kern vẫn giữ) |
-| Số ô nhịp theo kern khác theo MusicXML | Cảnh báo: ảnh trang và bản nhạc đặt cạnh nhau có thể lệch |
-| Số staff khác 2 | Cảnh báo: nút Tắt/Solo từng tay có thể không dùng được |
+| Ảnh hoặc PDF không đọc được | `PAGE_UNREADABLE: trang N` |
+| Không trang nào có khuông nhạc | `NO_STAFF_DETECTED` (trang lẻ không có khuông thì chỉ bị bỏ, kèm cảnh báo) |
+| Model tắt hoặc nạp lỗi | `MODEL_NOT_LOADED: nguyên nhân` |
+| Mọi trang đều nhận diện ra rỗng | `RECOGNITION_EMPTY` |
+| Số spine giữa các trang không căn được | `MERGE_SPINE_MISMATCH: trang N` |
+| music21 không đọc được kern ghép | `KERN_PARSE_ERROR` (file kern vẫn được lưu để xem lại) |
+| Không ghi được MusicXML | `EXPORT_ERROR: chi tiết` |
+| Quá thời gian một trang hoặc cả job | `TASK_TIMEOUT` |
+| Backend hủy | Dừng ở lần kiểm tra kế tiếp, không gọi callback |
 
-## Tiền xử lý (đặc tả mục 2.2)
-
-Với mỗi trang: đọc ảnh (xoay theo EXIF; PDF vẽ bằng PyMuPDF 300 DPI) → xám → khử nhiễu (PHOTO: bilateral + cân bằng
-ánh sáng nền; SCAN: median; PDF_NATIVE: bỏ qua) → deskew (Hough dò dòng kẻ rồi tinh chỉnh bằng profile chiếu, giới hạn
-±15°) → kiểm tra có khuông nhạc → cắt bớt lề trắng → nhị phân hóa thích ứng → resize + pad về **1050 (rộng) × 1485
-(cao)** → lưu PNG xám 8-bit.
-
-### Đầu vào của Transcoda
-
-Model `btrkeks/transcoda-59M-zeroshot-v1` nhận `pixel_values` shape `(1, 3, 1485, 1050)` = RGB, cao 1485 × rộng 1050,
-float32 chuẩn hóa về [-1, 1] (`(x/255 - 0.5)/0.5`), kèm `image_sizes=[[1485, 1050]]`. **Một ảnh = một trang đầy đủ**
-(không cắt theo hệ khuông). Vì vậy:
-
-* PNG lưu ra luôn đúng 1050×1485 (`meta` ghi `{"width":1050,"height":1485}`; ví dụ `1485×1050` trong đặc tả mục 1.2
-  bị ngược chiều).
-* Trang cao hơn tỉ lệ thì **thu nhỏ cho vừa khung rồi pad trắng bên phải** (không cắt phần dưới như model card để
-  khỏi mất nội dung); trang thấp hơn thì vừa chiều rộng, pad trắng phía dưới. Ảnh ngang xử lý như vậy và có cảnh báo.
-* PNG xám 8-bit là đủ vì model tự chuyển sang RGB.
-* `app/omr/model_input.py::to_model_input(png_path)` sinh đúng tensor trên; `app/omr/transcoda.py` dùng nó.
-
-### Tùy chọn
-
-* `binarize=false`: tắt nhị phân hóa (nếu làm đứt dòng kẻ/đuôi nốt trên ảnh thật; model quen ảnh render sạch nền trắng).
-* `preprocess=false`: chỉ resize + pad, không bỏ trang, dùng để so sánh có/không tiền xử lý ở script SER 1.7.
-
-### Lỗi và cảnh báo
-
-| Tình huống | Kết quả |
-|---|---|
-| Ảnh/PDF không đọc được | FAILED `PAGE_UNREADABLE: trang N` |
-| Một trang không có dòng kẻ khuông | Bỏ trang, cảnh báo "Trang N không có khuông nhạc" |
-| Mọi trang đều không có khuông | FAILED `NO_STAFF_DETECTED` |
-| Góc nghiêng > 15° | Không xoay, cảnh báo trong `result_data.warnings` |
-| Quá 90 giây một trang / 10 phút cả job | FAILED `TASK_TIMEOUT` |
-| Java hủy | Dừng ở lần kiểm tra kế tiếp, không gọi callback |
-
-Số trang PNG đánh liền mạch 1..N theo thứ tự đầu ra; trang gốc nằm trong `meta.sourcePage`.
+Góc nghiêng lớn hơn 15°, số ô theo kern khác số ô theo MusicXML, hay số khuông khác 2 chỉ sinh cảnh báo, không làm job
+lỗi.
 
 ## Model Transcoda
 
-`btrkeks/transcoda-59M-zeroshot-v1` (~59 triệu tham số, vài trăm MB). **Không cần tải tay**: lần chạy đầu `transformers`
-tự tải từ Hugging Face vào cache (`~/.cache/huggingface`), vì thế lần đầu cần Internet và mất vài phút. Model còn tải thêm
-trọng số ConvNeXt-V2-Tiny rồi ghi đè bằng trọng số Transcoda (model card nói đây là bình thường).
-
-Muốn tải trước để dùng offline hoặc để vào thư mục dự án:
+`btrkeks/transcoda-59M-zeroshot-v1` có khoảng 59 triệu tham số. **Không cần tải tay**: lần chạy đầu, `transformers` tự
+tải về `~/.cache/huggingface`. Muốn dùng offline thì tải trước:
 
 ```bash
-pip install -U "huggingface_hub[cli]"
+python -m pip install -U "huggingface_hub[cli]"
 huggingface-cli download btrkeks/transcoda-59M-zeroshot-v1 --local-dir models/transcoda
-# rồi chạy với: MODEL_ID=models/transcoda uvicorn app.main:app ...
+MODEL_ID=models/transcoda uvicorn app.main:app --env-file .env --port 8000
 ```
 
-`models/` đã nằm trong `.gitignore`, không commit file trọng số. Nếu lúc nạp báo `ModuleNotFoundError` (ví dụ `timm`) thì
-`pip install` đúng gói đó rồi chạy lại.
+`models/` đã có trong `.gitignore`. Nếu lúc nạp báo `ModuleNotFoundError` (ví dụ thiếu `timm`) thì cài đúng gói đó.
 
-Mỗi trang gồm các bước: ảnh PNG 1050×1485 → tensor → `generate` (greedy, `repetition_penalty=1.1`, tối đa 2048 token) →
-decode thành `**kern`. Mỗi token sinh ra đều kiểm tra hủy/timeout nên bấm Hủy dừng được ngay giữa một trang.
+**Tốc độ**: trên CPU, mỗi trang mất từ vài chục giây đến vài phút. Gặp `TASK_TIMEOUT` thì tăng
+`INFERENCE_PAGE_TIMEOUT_S` và `TASK_TIMEOUT_S`. Nếu job chạy quá 10 phút, tăng cả
+`app.ai.processing-timeout-minutes` bên backend. Có GPU NVIDIA thì `DEVICE=auto` tự dùng; trên Mac Apple Silicon có
+thể thử `DEVICE=mps`.
 
-**Tốc độ:** trên CPU mỗi trang có thể mất từ vài chục giây đến vài phút. Nếu gặp `TASK_TIMEOUT` hãy tăng
-`INFERENCE_PAGE_TIMEOUT_S` và `TASK_TIMEOUT_S` (và `app.ai.processing-timeout-minutes` bên Spring Boot nếu một job chạy
-quá 10 phút). Có GPU NVIDIA thì `DEVICE=auto` tự dùng; trên Mac Apple Silicon có thể thử `DEVICE=mps`.
+Fine-tune Transcoda cho bản giọng hát có lời (sinh dữ liệu, train trên Kaggle): [`training/README.md`](training/README.md).
 
-## Ghép kern và kiểm tra (đặc tả mục 2.3)
+## Gợi ý hợp âm
 
-* Làm sạch từng trang: bỏ trang không có `**kern` hoặc không có nốt nào (cảnh báo); cắt đoạn dòng lặp vô hạn; nếu model
-  chạm giới hạn 2048 token thì bỏ dòng cuối (có thể bị cắt dở) và cảnh báo.
-* Ghép: giữ header trang 1, bỏ header `**kern` và `*-` của các trang sau; trang sau thiếu khóa/dấu hóa/khóa điệu/nhịp thì
-  kế thừa từ trang trước; vạch nhịp trùng ở chỗ nối bị bỏ bớt; **đánh lại số ô nhịp liên tục**.
-* Số spine khác trang đầu: căn theo trang đầu (bỏ cột thừa/thêm cột trống) kèm cảnh báo; không căn được thì FAILED
-  `MERGE_SPINE_MISMATCH`.
-* Tổng trường độ một ô nhịp khác số chỉ nhịp: cảnh báo kèm số trang và số ô nhịp (tối đa 10 cảnh báo); ô nhịp đầu
-  (lấy đà) và ô cuối được phép ngắn hơn.
-* Số spine khác 2: cảnh báo, `staffCount` ghi theo thực tế.
-* `music21` đọc thử `merged.krn`: không đọc được thì FAILED `KERN_PARSE_ERROR` (file kern **vẫn được lưu và đăng ký**
-  để xem lại); đặt `KERN_PARSE_MODE=warn` để chỉ cảnh báo. Chưa cài music21 thì bỏ qua bước này kèm cảnh báo.
+Dùng model **AutoHarmonizer** (mã MIT, [github.com/sander-wood/autoharmonizer](https://github.com/sander-wood/autoharmonizer),
+bài báo arXiv:2112.11122): mạng LSTM đọc giai điệu và dự đoán hợp âm cho từng nốt móc kép, chọn trong 1450 hợp âm. Trọng số
+gốc của tác giả được giữ nguyên, chỉ đổi định dạng (`scripts/autoharmonizer_convert.py`). Mạng được dựng lại bằng numpy
+(`app/chords/autoharmonizer/model.py`) vì mã gốc cần TensorFlow 2.2 / Python 3.7; test `test_numpy_network_matches_original_keras_model`
+so với xác suất do model Keras gốc tính (sai khác < 1e-5).
 
-### Lỗi mới của nhánh này
+`app/chords/` chạy theo các bước:
 
-| Tình huống | Kết quả |
+1. Tách giai điệu (nốt cao nhất của khuông 1) thành lưới nốt móc kép, kèm độ mạnh phách (`beatStrength` của music21) và
+   giọng (số dấu thăng), đúng như đầu vào lúc tác giả train.
+2. Chạy model tự hồi quy: mỗi bước nhìn 32 bước giai điệu hai bên và 32 hợp âm vừa chọn, ra xác suất 1450 hợp âm.
+3. **Lấy mẫu** thay vì luôn chọn hợp âm xác suất cao nhất như mã gốc, nên mỗi lần chạy ra cách đệm khác (truyền `seed` để
+   tái hiện). Chạy song song 3 dãy, bỏ trùng, xếp theo log xác suất trung bình của model: phương án A hợp tai nhất.
+4. Chèn `<harmony>` thẳng vào XML gốc ở mỗi chỗ đổi hợp âm, giữ nguyên mọi phần khác.
+
+Điều khiển (đều là cách chỉnh xác suất của model, kiểu `gamma_sampling` của tác giả: tổng xác suất x của một nhóm hợp âm →
+x^tan(πγ/2)):
+
+| Tham số | Giá trị | Tác dụng |
+|---|---|---|
+| `creativity` | `SAFE` / `BALANCED` / `BOLD` | Nhiệt độ lấy mẫu 0,6 / 1,0 / 1,4 và top-p 0,85 / 0,92 / 0,97 |
+| `density` | `SPARSE` / `NORMAL` / `DENSE` | Đổi hợp âm ở phách mạnh / đầu phách / thêm chỗ nốt móc đơn; gamma của hợp âm vừa chọn 0,3 / 0,5 / 0,6 |
+| `style` (màu hợp âm) | `NATURAL` / `SIMPLE` / `COLORFUL` / `JAZZY` | Tăng / giảm nhóm hợp âm (`STYLE_GAMMAS` trong `harmonize.py`): tự nhiên (model tự chọn) / ưu tiên hợp âm ba / ưu tiên maj7, m7, sus, 6 / ưu tiên hợp âm 7 và mở rộng. Model không có khái niệm thể loại nên không có lựa chọn theo thể loại nhạc |
+
+Mặc định, ô đã có hợp âm sẵn được giữ lại (model vẫn thấy chúng trong 32 hợp âm trước); mọi ô đều đã có thì báo
+`ALREADY_HARMONIZED`. Gửi `replaceExisting: true` thì gỡ hết `<harmony>` cũ rồi gợi ý lại cả bài. Bài quá 4096 nốt móc kép
+(khoảng 256 ô 4/4) báo `TOO_LONG`. Thời gian chạy khoảng 0,2–2 giây cho bài 10–20 ô trên CPU.
+
+## Script
+
+Chạy từ thư mục `music-ai`. Mở đầu mỗi file có ghi đủ các cách dùng.
+
+| Script | Việc làm |
 |---|---|
-| Mọi trang đều rỗng / không có `**kern` | FAILED `RECOGNITION_EMPTY` |
-| Số spine giữa các trang không căn được | FAILED `MERGE_SPINE_MISMATCH: trang N` |
-| music21 không đọc được kern ghép | FAILED `KERN_PARSE_ERROR: chi tiết` |
-| Model tắt hoặc nạp lỗi | FAILED `MODEL_NOT_LOADED: nguyên nhân` |
-| Quá `INFERENCE_PAGE_TIMEOUT_S` một trang | FAILED `TASK_TIMEOUT: trang N quá ... giây` |
+| `scripts/check_env.py` | Kiểm tra phiên bản Python và các gói đã cài |
+| `scripts/omr_check.py` | So số khuông / số ô trên ảnh với kern đã lưu; chạy lại pipeline với nhiều cấu hình để so sánh; lưu ảnh và kern từng lần đọc (`--dump`) |
+| `scripts/omr_benchmark.py` | Đo chất lượng OMR trên bộ kiểm thử cố định `benchmark/cases.json` (thư mục chỉ có trên máy cục bộ, không commit) |
+| `scripts/omr_quality_report.py` | So bản OMR `v1` với bản đã sửa mới nhất của mọi bản nhạc trong storage, ghi `reports/omr-quality.csv` |
+| `scripts/autoharmonizer_convert.py` | Chuyển trọng số `weights.hdf5` và `chord_types.bin` của AutoHarmonizer gốc sang `weights.npz` + `chords.json` (đã chạy sẵn) |
 
 ## Test
 
 ```bash
-pytest -q          # 130+ test, khoảng 2-3 phút; test PDF thật và test music21 thật tự bỏ qua nếu chưa cài
+python -m pytest -q
 ```
 
-`tests/test_convert_kern.py` chạy music21 thật (kern → MusicXML → MIDI) và chỉ chạy khi đã `pip install music21`; các test
-còn lại (`test_convert_xml.py`, `test_export.py`) dùng MusicXML dựng tay nên chạy ở mọi nơi.
+Hơn 500 test dùng trang nhạc tổng hợp (`tests/synth.py`), backend giả (`tests/fake_java.py`) và Transcoda giả
+(`tests/fake_recognizer.py`), nên **không cần Java, torch hay model** để chạy. Test cần music21 thật hoặc PDF thật tự
+bỏ qua nếu thiếu gói. Chạy model thật thì phải thử tay.
 
-Test dùng trang nhạc tổng hợp (`tests/synth.py`), Spring Boot giả (`tests/fake_java.py`) và Transcoda giả
-(`tests/fake_recognizer.py`), nên **không cần Java, torch hay tải model** để chạy test. Việc chạy model thật phải thử tay.
-
-### Thử music-ai riêng lẻ (không cần Spring Boot)
+### Chạy riêng music-ai, không cần backend
 
 ```bash
-# cửa sổ 1: Spring Boot giả in ra mọi callback
+# cửa sổ 1: backend giả, in ra mọi callback nhận được
 python tests/fake_java.py 8080 dev-internal-key
-# cửa sổ 2: music-ai (JAVA_BASE_URL mặc định http://localhost:8080)
+
+# cửa sổ 2: music-ai
 uvicorn app.main:app --host 127.0.0.1 --port 8000
+
 # cửa sổ 3: đặt một ảnh vào storage rồi giao job
 mkdir -p ../music-be/storage/scores/demo/original
 cp /đường/dẫn/trang.png ../music-be/storage/scores/demo/original/01-a.png
@@ -272,14 +366,36 @@ curl -i -X POST http://127.0.0.1:8000/omr/jobs -H 'X-Internal-Key: dev-internal-
   -H 'Content-Type: application/json' \
   -d '{"taskId":"11111111-1111-4111-8111-111111111111","scoreId":"demo",
        "inputs":[{"path":"scores/demo/original/01-a.png","kind":"IMAGE","page":1}],"options":{}}'
-# ảnh đầu ra: ../music-be/storage/scores/demo/pages/page-001.png (1050x1485)
-# kern đầu ra (khi model đã nạp): ../music-be/storage/scores/demo/kern/page-001.krn và merged.krn
 ```
 
-Chỉ thử tiền xử lý (không cần model): đặt `"stopAfter":"PREPROCESS"` trong `options`, hoặc chạy với `LOAD_MODEL=false`.
+Kết quả nằm trong `../music-be/storage/scores/demo/`: `pages/page-001.png`, rồi `kern/` khi model đã nạp. Chỉ muốn
+thử tiền xử lý thì đặt `"stopAfter": "PREPROCESS"` trong `options`, hoặc chạy với `LOAD_MODEL=false`.
+
+## Cấu trúc
+
+```
+app/
+├── main.py         FastAPI: định nghĩa endpoint
+├── config.py       đọc biến môi trường
+├── jobs.py         hàng đợi và vòng đời job OMR (hủy, timeout)
+├── callback.py     gọi callback về backend
+├── storage.py      kiểm tra và phân giải đường dẫn trong storage
+├── schemas.py      model Pydantic của request
+├── omr/            pipeline OMR: preprocess, layout, barlines, textstrip, transcoda, engines, routing, combine,
+│                   merge, ottava, pitch_check, rhythm_fix, review, stability, llm_check, measure_map
+├── convert/        kern / MusicXML / MIDI, normalize, prepare
+├── analysis/       so sánh hai MusicXML
+├── chords/         gợi ý hợp âm: model AutoHarmonizer (autoharmonizer/: mạng numpy, trọng số, bảng hợp âm), chèn <harmony>
+└── eval/           metric cho benchmark
+scripts/            công cụ đo và kiểm tra
+training/           sinh dữ liệu fine-tune Transcoda
+tests/
+```
 
 ## Giấy phép
 
-* Trọng số Transcoda: **CC BY 4.0** (theo model card). Cần ghi nguồn khi dùng/phân phối.
-* Mã nguồn repo gốc `btrkeks/transcoda`: theo bạn tra cứu là **AGPL-3.0**; hãy đối chiếu lại file `LICENSE` của repo
-  trước khi đưa mã của họ vào dự án (phần này chưa kiểm chứng được).
+- Trọng số Transcoda: **CC BY 4.0** (theo model card), phải ghi nguồn khi dùng hoặc phân phối.
+- Mã nguồn `github.com/btrkeks/transcoda`: AGPL-3.0. Hãy đối chiếu file `LICENSE` của repo đó trước khi đưa mã của họ
+  vào dự án.
+- Gợi ý hợp âm: mã và trọng số AutoHarmonizer (`github.com/sander-wood/autoharmonizer`) theo giấy phép **MIT**, giữ
+  thông báo bản quyền ở `app/chords/autoharmonizer/LICENSE`.

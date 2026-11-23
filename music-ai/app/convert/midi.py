@@ -7,7 +7,9 @@ nhiều staff thay đổi theo phiên bản và không kiểm thử được khi
   giọng hát, 1 = tay phải, 2 = tay trái) và dùng kênh ``i`` (bỏ qua kênh 9 dành cho trống);
 * tempo và số chỉ nhịp nằm ở track đầu; chương trình MIDI lấy theo ``<midi-program>`` của part (mặc định 0 = Acoustic
   Grand Piano);
-* nốt nối (tie) được gộp thành một nốt dài; nốt trang trí, dấu lặp và biểu cảm (dynamics) được bỏ qua, vận tốc cố định.
+* nốt nối (tie) được gộp thành một nốt dài; các ô nhịp được trải theo dấu lặp / nhà 1-2 / D.C. / D.S. / Coda, nốt nhỏ, láy,
+  rải hợp âm và glissando được khai triển thành nốt, vận tốc theo mức to nhỏ (xem ``performance.py``); bản không có các ký
+  hiệu đó giữ nguyên thứ tự và vận tốc mặc định 80.
 """
 
 from __future__ import annotations
@@ -21,10 +23,10 @@ from pathlib import Path
 from typing import Optional
 
 from app.convert.errors import ConversionError
-from app.convert.score_xml import NoteEvent, child_int, child_text, parse_part_events
+from app.convert.performance import parse_part_performance
+from app.convert.score_xml import NoteEvent, child_int, child_text
 
 TICKS_PER_QUARTER = 480
-VELOCITY = 80
 DRUM_CHANNEL = 9
 
 
@@ -56,7 +58,7 @@ def musicxml_to_midi_bytes(data: bytes, tempo_bpm: int) -> tuple[bytes, MidiStat
     track_programs: dict[int, int] = {}
     offset = 0
     for part in parts:
-        part_events, _ = parse_part_events(part)
+        part_events, _ = parse_part_performance(part, tempo_bpm)
         staves = max([_declared_staves(part)] + [e.staff for e in part_events])
         for event in part_events:
             events.append((offset + max(0, min(event.staff, staves) - 1), event))
@@ -144,7 +146,7 @@ def _build_track(
     for note in notes:
         start = _ticks(note.start)
         end = max(start + 1, _ticks(note.start + note.length))
-        messages.append((start, 1, bytes([0x90 | channel, note.midi, VELOCITY])))
+        messages.append((start, 1, bytes([0x90 | channel, note.midi, note.velocity])))
         messages.append((end, 0, bytes([0x80 | channel, note.midi, 0])))
     messages.sort(key=lambda m: (m[0], m[1]))
 
