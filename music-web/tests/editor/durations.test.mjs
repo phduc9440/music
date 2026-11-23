@@ -105,3 +105,60 @@ test('insertNote với dấu hóa chọn tay', () => {
   insertNote(doc, target, H, 'flat');
   assert.equal(measureSummary(doc, 0)[0], 'Bb4:half/2');
 });
+
+// Ô nhịp trống như bản nhạc tạo mới: một dấu lặng nguyên ô (measure="yes", không có <type>), divisions = 4
+const blankMeasure = () =>
+  ScoreDocument.parse(
+    score(['<note><rest measure="yes"/><duration>16</duration><voice>1</voice></note>'], { divisions: 4 }),
+  );
+const at = (beforeEntry, restEntry = null) => ({
+  partIndex: 0,
+  measureIndex: 0,
+  staff: 1,
+  voice: 1,
+  step: 'G',
+  octave: 4,
+  beforeEntry,
+  restEntry,
+});
+
+test('insertNote: đen, trắng, đen vào ô trống (bấm vào dấu lặng) đủ 4 phách', () => {
+  const doc = blankMeasure();
+  assert.equal(insertNote(doc, at(0, 0), Q).ok, true);
+  assert.equal(insertNote(doc, at(1, 1), H).ok, true);
+  assert.equal(insertNote(doc, at(2, 2), Q).ok, true);
+  assert.deepEqual(measureSummary(doc, 0), ['G4:quarter/4', 'G4:half/8', 'G4:quarter/4']);
+  assert.deepEqual(checkMeasures(doc), []);
+});
+
+test('insertNote: bấm vào chỗ trống sau nốt thì nốt mới chiếm chỗ dấu lặng, ô không thừa phách', () => {
+  const doc = blankMeasure();
+  insertNote(doc, at(0, 0), Q);
+  assert.equal(insertNote(doc, at(1), H).ok, true);
+  assert.deepEqual(measureSummary(doc, 0), ['G4:quarter/4', 'G4:half/8', 'rest:quarter/4']);
+  assert.equal(insertNote(doc, at(2), Q).ok, true);
+  assert.deepEqual(measureSummary(doc, 0), ['G4:quarter/4', 'G4:half/8', 'G4:quarter/4']);
+  assert.deepEqual(checkMeasures(doc), []);
+});
+
+test('insertNote: bấm bên phải dấu lặng cuối ô thì nốt đặt trước chuỗi dấu lặng đó', () => {
+  const doc = blankMeasure();
+  insertNote(doc, at(0, 0), Q);
+  assert.equal(insertNote(doc, at(2), Q).ok, true);
+  assert.deepEqual(measureSummary(doc, 0), ['G4:quarter/4', 'G4:quarter/4', 'rest:half/8']);
+  assert.deepEqual(checkMeasures(doc), []);
+});
+
+test('insertNote: chèn giữa hai nốt không có dấu lặng thì vẫn đẩy nốt sau, ô thừa phách', () => {
+  const doc = ScoreDocument.parse(score([quarters('C4', 'D4', 'E4', 'F4')]));
+  assert.equal(insertNote(doc, at(1), Q).ok, true);
+  assert.equal(measureSummary(doc, 0).length, 5);
+  assert.equal(checkMeasures(doc)[0].diffBeats, 1);
+});
+
+test('insertNote: thay dấu lặng đen bằng nốt trắng ghi đè dấu lặng liền sau', () => {
+  const doc = ScoreDocument.parse(score([quarters('C4') + note(null) + note(null) + quarters('F4')]));
+  assert.equal(insertNote(doc, at(1, 1), H).ok, true);
+  assert.deepEqual(measureSummary(doc, 0), ['C4:quarter/1', 'G4:half/2', 'F4:quarter/1']);
+  assert.deepEqual(checkMeasures(doc), []);
+});
