@@ -385,10 +385,23 @@ const makePitched = (
   return note;
 };
 
+/** Dấu lặng đơn, không nằm trong chùm: có thể bị nốt mới ghi đè. */
+const isPlainRest = (entry: Entry | undefined): boolean =>
+  !!entry && entry.isRest && entry.members.length === 1 && !hasChild(entry.members[0], 'time-modification');
+
+/** Tổng độ dài chuỗi dấu lặng liền nhau bắt đầu từ mục `from`. */
+const restsAfter = (entries: Entry[], from: number): number => {
+  let sum = 0;
+  for (let j = from; j < entries.length && isPlainRest(entries[j]); j++) sum += entries[j].duration;
+  return sum;
+};
+
 /**
  * Thêm một nốt vào bè tại `target` (người dùng bấm hoặc kéo-thả lên khuông).
- * - Bấm vào dấu lặng: dấu lặng trở thành nốt; nốt ngắn hơn thì phần dư thành dấu lặng, dài hơn thì đổi thẳng.
- * - Bấm vào chỗ trống: chèn nốt mới, các nốt sau lùi lại; ô nhịp thừa phách sẽ được viền đỏ.
+ * - Bấm vào dấu lặng: dấu lặng trở thành nốt; nốt ngắn hơn thì phần dư thành dấu lặng; dài hơn thì ghi đè các
+ *   dấu lặng liền sau nếu đủ chỗ, không thì đổi thẳng (ô thừa phách được viền đỏ).
+ * - Bấm vào chỗ trống: chèn nốt mới; nốt mới chiếm chỗ các dấu lặng ngay sau nó (hoặc chuỗi dấu lặng cuối ô khi bấm
+ *   ở cuối ô) để ô giữ đủ phách. Hết dấu lặng để chiếm thì các nốt sau lùi lại và ô thừa phách được viền đỏ.
  * Từ chối khi dính dấu nối, chùm ba hoặc bè có <forward>. Khi thất bại DOM không thay đổi.
  */
 function insertNoteOnce(
@@ -429,7 +442,10 @@ function insertNoteOnce(
     const entry = entries[target.restEntry];
     if (!entry || !entry.isRest || entry.members.length !== 1) return { ok: false, reason: 'unsupported' };
     const head = entry.members[0];
-    const plan = planDuration(head, choice, length < entry.duration);
+    // Nốt dài hơn dấu lặng: nếu các dấu lặng liền sau đủ chỗ thì ghi đè chúng (ô vẫn đủ phách), không thì đổi thẳng
+    const extra = length - entry.duration;
+    const keep = extra < 0 || (extra > 0 && restsAfter(entries, target.restEntry + 1) >= extra);
+    const plan = planDuration(head, choice, keep);
     if ('error' in plan && plan.error !== 'unchanged') return { ok: false, reason: plan.error };
     const command = commitEdit(doc, label, touched, [], () => {
       if ('run' in plan) plan.run();
@@ -443,8 +459,25 @@ function insertNoteOnce(
     return { ok: true, command };
   }
 
-  // Chèn nốt mới
-  const at = Math.max(0, Math.min(target.beforeEntry, entries.length));
+  // Chèn nốt mới. Nốt mới chiếm chỗ của các dấu lặng ngay sau điểm chèn (chỉ phần làm ô thừa phách), để bấm vào
+  // chỗ trống của ô đang có dấu lặng không đẩy dấu lặng ra sau làm ô thừa phách.
+  let at = Math.max(0, Math.min(target.beforeEntry, entries.length));
+  const { beats, beatType, free } = doc.timeAt(target.measureIndex);
+  const capacity = (beats * divisions * 4) / beatType;
+  const total = entries.reduce((sum, e) => sum + e.duration, 0);
+  const needed = free ? 0 : Math.max(0, Math.min(length, total + length - capacity));
+  // Bấm bên phải dấu lặng cuối ô: đặt nốt ngay trước chuỗi dấu lặng cuối ô
+  if (needed > 0 && at === entries.length) {
+    while (at > 0 && isPlainRest(entries[at - 1])) at--;
+  }
+  const absorbed: Entry[] = [];
+  let taken = 0;
+  for (let j = at; j < entries.length && taken < needed && isPlainRest(entries[j]); j++) {
+    absorbed.push(entries[j]);
+    taken += entries[j].duration;
+  }
+  const leftoverRests = taken > needed ? splitRests(taken - needed, divisions) : [];
+  if (!leftoverRests) return { ok: false, reason: 'divisions' };
   const prev = entries[at - 1];
   const next = entries[at];
   // Không chèn vào giữa một chùm (chèn sau mục cuối của chùm, hoặc giữa hai chùm liền nhau thì được)
@@ -461,6 +494,13 @@ function insertNoteOnce(
     stripBeams(entries);
     if (next) next.members[0].before(created);
     else prev.members[prev.members.length - 1].after(created);
+    absorbed.forEach((e) => e.members.forEach((m) => m.remove()));
+    let anchor = created;
+    for (const r of leftoverRests) {
+      const rest = makeRest(created, r.d, r.type, r.dots);
+      anchor.after(rest);
+      anchor = rest;
+    }
   });
   command.selectAfter = idsOfEntry(doc, created);
   command.changedIds = command.selectAfter;
