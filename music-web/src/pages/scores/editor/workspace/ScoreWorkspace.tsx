@@ -4,6 +4,7 @@ import { useNavigate } from '../../../../routes/useTransitionNavigate';
 import ShowAssignmentBanner from '../../../../components/scores/viewer/ShowAssignmentBanner';
 import EditorToolPanel from '../../../../components/scores/toolbar/EditorToolPanel';
 import ChordSuggestDialog from '../../../../components/scores/chords/ChordSuggestDialog';
+import { allMeasuresHaveChords } from '../../../../components/scores/chords/aiChords';
 import ScoreCanvas from '../../../../components/scores/viewer/ScoreCanvas';
 import { useSidebarResize } from '../../../../components/scores/common/useSidebarResize';
 import {
@@ -392,6 +393,15 @@ export default function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: Pr
               ? (suggestionId) => {
                   setSuggestingChords(false);
                   ai.beginAiDraft(suggestionId);
+                }
+              : undefined
+          }
+          allHarmonized={allMeasuresHaveChords(doc)}
+          onClearAll={
+            canEdit
+              ? () => {
+                  setSuggestingChords(false);
+                  void ai.clearAllChords();
                 }
               : undefined
           }

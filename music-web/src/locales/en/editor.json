@@ -171,7 +171,8 @@
       "clear": "Delete chord",
       "paste": "Paste chords",
       "ai": "Add AI chord suggestions",
-      "aiDiscard": "Remove AI chord suggestions"
+      "aiDiscard": "Remove AI chord suggestions",
+      "clearAll": "Delete all chords"
     },
     "lyric": {
       "set": "Enter lyrics",

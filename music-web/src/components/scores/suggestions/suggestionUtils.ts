@@ -27,5 +27,8 @@ export const suggestionPath = (base: string, scoreId: string, suggestionId: stri
   `${base}/${scoreId}/suggestions/${suggestionId}`;
 
 /** Trình chỉnh sửa nạp sẵn gợi ý hợp âm `suggestionId` làm bản nháp (chỉ dùng cho người sửa được bản nhạc). */
+/** Trình chỉnh sửa, vào xong thì hỏi rồi xóa hết hợp âm (hộp Gợi ý hợp âm ở trang chi tiết). */
+export const clearChordsEditPath = (base: string, scoreId: string): string => `${base}/${scoreId}/edit?clearChords=1`;
+
 export const aiChordsEditPath = (base: string, scoreId: string, suggestionId: string): string =>
   `${base}/${scoreId}/edit?aiChords=${encodeURIComponent(suggestionId)}`;

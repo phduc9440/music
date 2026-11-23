@@ -52,3 +52,34 @@ export function chordStatus(doc: ScoreDocument, item: AiChordItem): { status: Ai
   if (now === item.ai) return { status: 'ai', now };
   return { status: now ? 'edited' : 'removed', now };
 }
+
+/**
+ * Các nốt đang có hợp âm ở bản đang mở nhưng không còn ở bản đề xuất (gợi ý lại thay hợp âm cũ: hợp âm mới có thể gắn
+ * vào nốt khác), kèm thẻ <harmony> cũ để "Bỏ gợi ý" trả lại.
+ */
+export function clearedChords(
+  current: ScoreDocument,
+  proposed: ScoreDocument,
+): { id: string; beforeHarmonies: Element[] }[] {
+  return chordNoteIds(current)
+    .filter((id) => proposed.getInfo(id) && !readChord(proposed, id))
+    .map((id) => ({ id, beforeHarmonies: harmoniesOf(current, id) }));
+}
+
+/** Id các nốt đang mang hợp âm (theo thứ tự trong bản nhạc). */
+export function chordNoteIds(doc: ScoreDocument): string[] {
+  return doc.notes.filter((note) => readChord(doc, note.id)).map((note) => note.id);
+}
+
+/**
+ * Mọi ô nhịp có nốt của phần nhạc đầu tiên đều đã có hợp âm (giống điều kiện AI báo "đã có hợp âm hết"), để hỏi người
+ * dùng có muốn thay hợp âm cũ không trước khi tạo gợi ý.
+ */
+export function allMeasuresHaveChords(doc: ScoreDocument): boolean {
+  const measures = new Map<number, boolean>();
+  for (const note of doc.notes) {
+    if (note.partIndex !== 0) continue;
+    measures.set(note.measureIndex, (measures.get(note.measureIndex) ?? false) || !!readChord(doc, note.id));
+  }
+  return measures.size > 0 && [...measures.values()].every(Boolean);
+}

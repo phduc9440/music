@@ -8,7 +8,7 @@ pytest.importorskip("httpx")
 from fastapi.testclient import TestClient  # noqa: E402
 
 from app import main  # noqa: E402
-from tests.chord_samples import n, r, single  # noqa: E402
+from tests.chord_samples import harm, n, r, single  # noqa: E402
 
 KEY = {"X-Internal-Key": "test-key"}
 IN = "scores/a/chords/t1-in.musicxml"
@@ -84,3 +84,13 @@ def test_generate_reports_no_melody_code(client, storage_root):
 
     assert response.status_code == 422
     assert response.json()["detail"]["code"] == "NO_MELODY"
+
+
+def test_generate_replace_existing_overrides_harmonized_score(client, storage_root):
+    write(storage_root, IN, single([harm("C") + measure for measure in TUNE]))
+
+    assert client.post("/chords/generate", json=body(), headers=KEY).status_code == 422
+    response = client.post("/chords/generate", json=body(replaceExisting=True), headers=KEY)
+
+    assert response.status_code == 200
+    assert response.json()["keptExisting"] == 0
