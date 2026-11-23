@@ -50,6 +50,16 @@ const miscField = (root: Element, name: string): Element | undefined => {
 };
 
 /** Đọc tiêu đề, tác giả và kiểu chữ hiện có. */
+/**
+ * Chữ music21 tự ghi khi bản nhạc chưa có tiêu đề / tác giả (file số hóa cũ còn giữ): không vẽ lên bản nhạc và coi như
+ * chưa có, để khỏi hiện "Music21" như tên tác giả.
+ */
+const MUSIC21_PLACEHOLDERS = new Set(['music21', 'music21 fragment']);
+export const isPlaceholderText = (text: string | null | undefined): boolean =>
+  MUSIC21_PLACEHOLDERS.has((text ?? '').trim().toLowerCase());
+
+const realText = (text: string): string => (isPlaceholderText(text) ? '' : text);
+
 export function readHeader(doc: ScoreDocument): HeaderState {
   const root = doc.root;
   const work = childOf(root, 'work');
@@ -60,8 +70,8 @@ export function readHeader(doc: ScoreDocument): HeaderState {
     return raw ? decodeStyle(raw) : { ...NO_STYLE };
   };
   return {
-    title: textOf(childOf(root, 'movement-title')) || textOf(work && childOf(work, 'work-title')),
-    composer: textOf(creator),
+    title: realText(textOf(childOf(root, 'movement-title')) || textOf(work && childOf(work, 'work-title'))),
+    composer: realText(textOf(creator)),
     styles: { title: style('title'), composer: style('composer') },
   };
 }
@@ -188,15 +198,55 @@ export function setHeaderText(doc: ScoreDocument, field: HeaderField, text: stri
 
 interface OsmdLike {
   EngravingRules: unknown;
-  Sheet?: { Title?: { fontStyle?: number }; Composer?: { fontStyle?: number } };
+  Sheet?: {
+    Title?: { fontStyle?: number };
+    Composer?: { fontStyle?: number };
+    /** Setter của OSMD tạo nhãn mới, nên dùng được cả khi file chưa có tiêu đề / tác giả. */
+    TitleString?: string;
+    ComposerString?: string;
+  };
+}
+
+/** Chữ hiện trên bản nhạc ở chỗ tiêu đề / tác giả còn trống (trong Editor), để thấy chỗ trống và bấm vào sửa được. */
+export const BLANK_HEADER_TEXT = 'Blank';
+
+/** Tiêu đề và tác giả thực sự vẽ lên bản nhạc. */
+export interface ShownHeader {
+  title: string;
+  composer: string;
+}
+
+/**
+ * Tiêu đề / tác giả cần vẽ: lấy trong file trước, file trống thì lấy tên bài / tác giả của bản nhạc (`fallback`, ví dụ
+ * tên file tải lên), vẫn trống thì hiện {@link BLANK_HEADER_TEXT}.
+ */
+export function shownHeader(
+  header: HeaderState,
+  fallback: { title?: string | null; composer?: string | null },
+): ShownHeader {
+  return {
+    title: header.title || realText(fallback.title?.trim() ?? '') || BLANK_HEADER_TEXT,
+    composer: header.composer || realText(fallback.composer?.trim() ?? '') || BLANK_HEADER_TEXT,
+  };
 }
 
 /** OSMD FontStyles: 0 thường, 1 đậm, 2 nghiêng, 3 đậm nghiêng. */
 const fontOf = (s: TextStyle): number => (s.bold ? 1 : 0) + (s.italic ? 2 : 0);
 
-/** Áp cỡ chữ và kiểu chữ của tiêu đề / tác giả lên OSMD (gọi sau mỗi lần nạp, trước khi vẽ). */
-export function applyHeaderStyle(osmd: unknown, header: HeaderState): void {
+/**
+ * Áp chữ, cỡ chữ và kiểu chữ của tiêu đề / tác giả lên OSMD (gọi sau mỗi lần nạp, trước khi vẽ). Có `shown` thì vẽ đúng
+ * chữ đó (Editor: điền tên bản nhạc hoặc "Blank" vào chỗ trống); không có thì chỉ bỏ chữ giả "Music21" của file.
+ */
+export function applyHeaderStyle(osmd: unknown, header: HeaderState, shown?: ShownHeader): void {
   const target = osmd as OsmdLike;
+  const sheet = target.Sheet;
+  if (sheet && shown) {
+    sheet.TitleString = shown.title;
+    sheet.ComposerString = shown.composer;
+  } else if (sheet) {
+    if (isPlaceholderText(sheet.TitleString)) sheet.TitleString = '';
+    if (isPlaceholderText(sheet.ComposerString)) sheet.ComposerString = '';
+  }
   const rules = target.EngravingRules as Record<string, number>;
   rules.SheetTitleHeight = (header.styles.title.size ?? DEFAULT_SIZE.title) / 10;
   rules.SheetComposerHeight = (header.styles.composer.size ?? DEFAULT_SIZE.composer) / 10;
