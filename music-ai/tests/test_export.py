@@ -5,6 +5,7 @@ music21 được thay bằng bản giả ghi MusicXML dựng sẵn; chuẩn hóa
 
 import threading
 import uuid
+import xml.etree.ElementTree as ET
 
 import pytest
 from pydantic import ValidationError
@@ -50,13 +51,13 @@ def four_measure_xml() -> bytes:
 def fake_music21(monkeypatch, data=None, error=None, on_call=None):
     calls = []
 
-    def fake(kern_path, out_path, tempo_bpm):
+    def fake(kern_path, out_path, tempo_bpm, title=None, composer=None):
         calls.append((kern_path, out_path, tempo_bpm))
         if on_call:
             on_call()
         if error:
             raise error
-        result = normalize_musicxml(data or four_measure_xml(), tempo_bpm)
+        result = normalize_musicxml(data or four_measure_xml(), tempo_bpm, title=title, composer=composer)
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_bytes(result.xml)
         return result
@@ -112,6 +113,15 @@ def test_export_writes_versioned_files_and_reports_them(storage_root, java, monk
     progress = [(b["progress"], b["step"]) for b in java.bodies("progress")]
     values = [p for p, _ in progress]
     assert values == sorted(values) and progress[-1] == (98, "EXPORT") and (95, "EXPORT") in progress
+
+
+def test_export_writes_score_title_and_composer_into_musicxml(storage_root, java, monkeypatch):
+    fake_music21(monkeypatch)
+    run(setup(storage_root, "e9", title="Mẹ ơi có biết", composer="Nguyễn Văn Tý"))
+
+    root = ET.fromstring((storage_root / "scores/e9/musicxml/v1.musicxml").read_bytes())
+    assert root.findtext("movement-title") == "Mẹ ơi có biết"
+    assert root.findtext("identification/creator[@type='composer']") == "Nguyễn Văn Tý"
 
 
 def test_complete_carries_metadata_from_musicxml_and_no_stopped_after(storage_root, java, monkeypatch):

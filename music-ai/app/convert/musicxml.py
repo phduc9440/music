@@ -79,8 +79,16 @@ class NormalizeResult:
 # ====================================================================== điểm vào
 
 
-def normalize_musicxml(data: bytes, tempo_bpm: Optional[int] = None) -> NormalizeResult:
+def normalize_musicxml(
+    data: bytes,
+    tempo_bpm: Optional[int] = None,
+    title: Optional[str] = None,
+    composer: Optional[str] = None,
+) -> NormalizeResult:
     """Chuẩn hóa MusicXML partwise ``data``. ``tempo_bpm`` None thì giữ tempo đã có trong ô nhịp 1, không có thì 100.
+
+    ``title`` / ``composer`` (tên bài và tác giả của bản nhạc trong DB) có thì ghi vào phần đầu file để bản nhạc hiện đúng
+    tên; bỏ trống thì không ghi. Chữ giả "Music21" / "Music21 Fragment" mà music21 tự thêm luôn bị bỏ.
 
     Ném :class:`ConversionError` nếu XML hỏng, không phải ``score-partwise``, không có part hoặc không có ô nhịp nào.
     """
@@ -100,6 +108,8 @@ def normalize_musicxml(data: bytes, tempo_bpm: Optional[int] = None) -> Normaliz
 
     names = _part_names(root)
     _strip_instrument_refs(root)
+    _strip_music21_placeholders(root)
+    _write_header(root, (title or "").strip(), (composer or "").strip())
     groups = _group_parts(parts, names)
     if len(groups) == 1 and groups[0][0] is None:
         return _normalize_piano(root, parts, tempo_bpm, warnings)
@@ -287,6 +297,66 @@ def _key_name(fifths: Optional[int], mode: Optional[str]) -> Optional[str]:
 
 
 # ====================================================================== sắp xếp và đưa về cùng divisions
+
+
+#: Chữ music21 tự ghi khi bản nhạc chưa có tiêu đề / tác giả; để lại thì "Music21" hiện như tên tác giả.
+MUSIC21_PLACEHOLDERS = {"music21", "music21 fragment"}
+
+
+def _is_music21_placeholder(text: Optional[str]) -> bool:
+    return (text or "").strip().lower() in MUSIC21_PLACEHOLDERS
+
+
+def _strip_music21_placeholders(root: ET.Element) -> None:
+    """Bỏ ``<movement-title>``, ``<work-title>``, ``<creator>`` và ``<credit>`` chỉ chứa chữ giả của music21."""
+    for tag in ("movement-title", "work/work-title"):
+        for element in root.findall(tag):
+            if _is_music21_placeholder(element.text):
+                element.text = ""
+    identification = root.find("identification")
+    if identification is not None:
+        for creator in identification.findall("creator"):
+            if _is_music21_placeholder(creator.text):
+                identification.remove(creator)
+    for credit in root.findall("credit"):
+        words = credit.findall("credit-words")
+        if words and all(_is_music21_placeholder(w.text) for w in words):
+            root.remove(credit)
+
+
+_ROOT_AFTER_WORK = {"movement-number", "movement-title", "identification", "defaults", "credit", "part-list", "part"}
+_ROOT_AFTER_MOVEMENT_TITLE = {"identification", "defaults", "credit", "part-list", "part"}
+_ROOT_AFTER_IDENTIFICATION = {"defaults", "credit", "part-list", "part"}
+
+
+def _write_header(root: ET.Element, title: str, composer: str) -> None:
+    """Ghi tên bài (``<work-title>`` + ``<movement-title>``) và tác giả (``<creator type="composer">``) vào đầu file.
+
+    Bỏ ``<credit>`` cũ khi ghi để trình hiển thị không vẽ hai tiêu đề lẫn nhau (giống ``prepare.apply_titles``).
+    """
+    if not title and not composer:
+        return
+    for credit in root.findall("credit"):
+        root.remove(credit)
+    if title:
+        for tag in ("work", "movement-title"):
+            for element in root.findall(tag):
+                root.remove(element)
+        work = ET.Element("work")
+        work.append(_text_element("work-title", title))
+        _insert_before_first(root, work, _ROOT_AFTER_WORK)
+        _insert_before_first(root, _text_element("movement-title", title), _ROOT_AFTER_MOVEMENT_TITLE)
+    if composer:
+        identification = root.find("identification")
+        if identification is None:
+            identification = ET.Element("identification")
+            _insert_before_first(root, identification, _ROOT_AFTER_IDENTIFICATION)
+        for creator in identification.findall("creator"):
+            if creator.get("type") == "composer":
+                identification.remove(creator)
+        creator = ET.Element("creator", {"type": "composer"})
+        creator.text = composer
+        identification.insert(0, creator)
 
 
 def _strip_instrument_refs(root: ET.Element) -> None:

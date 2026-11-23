@@ -324,3 +324,55 @@ def test_repeated_clefs_are_dropped_but_a_real_clef_change_stays():
     with_clef = [m.get("number") for m in root.iter("measure") if m.find("attributes/clef") is not None]
     assert with_clef == ["1", "4", "6"]
     assert all(len(m.find("attributes")) > 0 for m in root.iter("measure") if m.find("attributes") is not None)
+
+
+def test_music21_placeholder_title_and_composer_are_removed():
+    data = piano_grand_staff().decode("utf-8").replace(
+        "<part-list>",
+        "<movement-title>Music21 Fragment</movement-title>"
+        '<identification><creator type="composer">Music21</creator></identification>'
+        "<credit page=\"1\"><credit-words>Music21</credit-words></credit>"
+        "<part-list>",
+        1,
+    )
+    root = parse(normalize_musicxml(data.encode("utf-8")))
+
+    assert not (root.findtext("movement-title") or "")
+    assert root.find("identification/creator") is None
+    assert root.find("credit") is None
+
+
+def test_real_composer_is_kept():
+    data = piano_grand_staff().decode("utf-8").replace(
+        "<part-list>",
+        '<identification><creator type="composer">Trịnh Công Sơn</creator></identification><part-list>',
+        1,
+    )
+    root = parse(normalize_musicxml(data.encode("utf-8")))
+
+    assert root.findtext("identification/creator[@type='composer']") == "Trịnh Công Sơn"
+
+
+def test_score_title_and_composer_are_written_into_the_file():
+    data = piano_grand_staff().decode("utf-8").replace(
+        "<part-list>",
+        "<movement-title>Music21 Fragment</movement-title>"
+        '<identification><creator type="composer">Music21</creator></identification>'
+        "<part-list>",
+        1,
+    )
+    root = parse(normalize_musicxml(data.encode("utf-8"), title="Mẹ ơi có biết", composer="Nguyễn Văn Tý"))
+
+    assert root.findtext("work/work-title") == "Mẹ ơi có biết"
+    assert root.findtext("movement-title") == "Mẹ ơi có biết"
+    assert root.findtext("identification/creator[@type='composer']") == "Nguyễn Văn Tý"
+    # Thứ tự phần đầu đúng lược đồ MusicXML: work → movement-title → identification → part-list
+    head = [child.tag for child in root if child.tag != "part"]
+    assert head.index("work") < head.index("movement-title") < head.index("identification") < head.index("part-list")
+
+
+def test_blank_composer_is_not_written():
+    root = parse(normalize_musicxml(piano_grand_staff(), title="Mẹ ơi có biết", composer="  "))
+
+    assert root.findtext("movement-title") == "Mẹ ơi có biết"
+    assert root.find("identification/creator[@type='composer']") is None
