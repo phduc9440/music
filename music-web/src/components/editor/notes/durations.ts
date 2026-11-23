@@ -68,8 +68,12 @@ const planDuration = (head: Element, choice: DurationChoice, keep = true): Plan 
 
   const apply = (): void => entry.members.forEach((m) => writeDuration(m, target, choice.type, choice.dots));
 
+  // Nốt dài ra (đổi trường độ, thêm chấm dôi...) mà ngay sau nó là các dấu lặng đủ chỗ: ghi đè các dấu lặng đó để ô
+  // vẫn đủ phách, thay vì để dấu lặng thừa ra cuối ô
+  const absorbRests = !keep && delta > 0 && restsAfter(entries, index + 1) >= delta;
+
   // Đổi thẳng: chỉ đổi nốt này, các nốt khác giữ nguyên; ô nhịp thừa/thiếu phách sẽ được viền đỏ để người dùng tự sửa
-  if (!keep || delta === 0) {
+  if ((!keep && !absorbRests) || delta === 0) {
     return {
       run: () => {
         apply();

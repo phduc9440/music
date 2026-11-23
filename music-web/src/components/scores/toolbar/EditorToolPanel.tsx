@@ -39,6 +39,7 @@ import {
   ToolStepDown,
   ToolStepUp,
   ToolThirtySecond,
+  ToolBreve,
   ToolWhole,
 } from './ToolIcons';
 import { IconRedo, IconSave, IconUndo } from '../viewer/ViewerIcons';
@@ -177,7 +178,9 @@ const markDef = (op: MarkOp): { label: string; title: string } | undefined => {
   return hasKey(`${key}.label`) ? { label: t(`${key}.label`), title: t(`${key}.title`) } : undefined;
 };
 
+/** `key`: phím tắt; rỗng = không có phím tắt (tròn đôi). */
 const DURATION_TOOLS: { type: DurationType; icon: ReactNode; key: string }[] = [
+  { type: 'breve', icon: <ToolBreve />, key: '' },
   { type: 'whole', icon: <ToolWhole />, key: '5' },
   { type: 'half', icon: <ToolHalf />, key: '4' },
   { type: 'quarter', icon: <ToolQuarter />, key: '3' },
@@ -594,7 +597,7 @@ export default function EditorToolPanel({
           entries: [
             ...DURATION_TOOLS.map((tool) => ({
               key: tool.type,
-              text: `${durationToolLabel(tool.type)} trường độ nốt duration`, // i18n-ignore
+              text: `${durationToolLabel(tool.type)} trường độ nốt duration${tool.type === 'breve' ? ' breve' : ''}`, // i18n-ignore
               node: (
                 <IconTool
                   className={`sv-tool${inputMode && inputDuration.type === tool.type ? ' is-active' : ''}`}
@@ -609,7 +612,11 @@ export default function EditorToolPanel({
                   }}
                   aria-pressed={inputMode ? inputDuration.type === tool.type : undefined}
                   onClick={() => onDuration(tool.type)}
-                  title={t('editor.tool.durationTitle', { label: durationToolLabel(tool.type), key: tool.key })}
+                  title={
+                    tool.key
+                      ? t('editor.tool.durationTitle', { label: durationToolLabel(tool.type), key: tool.key })
+                      : t('editor.tool.breveTitle')
+                  }
                   icon={tool.icon}
                   label={durationToolLabel(tool.type)}
                 />
@@ -628,25 +635,6 @@ export default function EditorToolPanel({
                   icon={<ToolDot />}
                   label={t('editor.tool.dot.label')}
                 />
-              ),
-            },
-          ],
-        },
-        {
-          kind: 'text',
-          entries: [
-            {
-              key: 'breve',
-              text: 'Tròn đôi breve trường độ', // i18n-ignore
-              node: (
-                <button
-                  className={`sv-tool sv-tool--text${inputMode && inputDuration.type === 'breve' ? ' is-active' : ''}`}
-                  disabled={busy}
-                  onClick={() => onDuration('breve')}
-                  title={t('editor.tool.breveTitle')}
-                >
-                  {durationToolLabel('breve')}
-                </button>
               ),
             },
           ],

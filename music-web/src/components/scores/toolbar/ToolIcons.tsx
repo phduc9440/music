@@ -38,6 +38,14 @@ export const ToolWhole = () => (
     <ellipse cx="12" cy="12" rx="2" ry="3.2" transform="rotate(-30 12 12)" />
   </Svg>
 );
+/** Tròn đôi: nốt tròn kẹp giữa hai cặp vạch dọc. */
+export const ToolBreve = () => (
+  <Svg>
+    <ellipse cx="12" cy="12" rx="5" ry="3.6" />
+    <ellipse cx="12" cy="12" rx="1.7" ry="2.8" transform="rotate(-30 12 12)" />
+    <path d="M4 7.5v9M6 7.5v9M18 7.5v9M20 7.5v9" />
+  </Svg>
+);
 export const ToolHalf = () => (
   <Svg>
     <Head filled={false} />

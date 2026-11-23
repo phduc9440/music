@@ -162,3 +162,21 @@ test('insertNote: thay dấu lặng đen bằng nốt trắng ghi đè dấu l�
   assert.deepEqual(measureSummary(doc, 0), ['C4:quarter/1', 'G4:half/2', 'F4:quarter/1']);
   assert.deepEqual(checkMeasures(doc), []);
 });
+
+test('setDuration: thêm chấm dôi ghi đè dấu lặng liền sau, ô không thừa phách', () => {
+  const doc = blankMeasure();
+  insertNote(doc, at(0, 0), H);
+  insertNote(doc, at(1, 1), E);
+  insertNote(doc, at(2, 2), Q);
+  assert.equal(setDuration(doc, ['m0-s1-v1-2'], { type: 'quarter', dots: 1 }).ok, true);
+  assert.deepEqual(measureSummary(doc, 0), ['G4:half/8', 'G4:eighth/2', 'G4:quarter./6']);
+  assert.deepEqual(checkMeasures(doc), []);
+});
+
+test('setDuration: kéo dài vào dấu lặng dài hơn thì phần dư vẫn là dấu lặng', () => {
+  const doc = blankMeasure();
+  insertNote(doc, at(0, 0), Q);
+  assert.equal(setDuration(doc, ['m0-s1-v1-0'], H).ok, true);
+  assert.deepEqual(measureSummary(doc, 0), ['G4:half/8', 'rest:half/8']);
+  assert.deepEqual(checkMeasures(doc), []);
+});

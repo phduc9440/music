@@ -1493,10 +1493,21 @@ h3.sv-tools__title {
 .sv-tools__toggle {
   color: var(--ui-text-2);
 }
+/* Ô công cụ nổi khỏi nền bảng (cùng màu nền thì chỉ thấy mỗi viền): nền hơi đậm theo theme, đổ bóng nhẹ */
 .sv-tool {
-  border: 1px solid var(--ui-border);
-  background: var(--ui-surface);
-  box-shadow: 0 1px 0 color-mix(in srgb, var(--ui-shadow-ink) 4%, transparent);
+  border: 1px solid var(--ui-border-strong);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-surface-muted) 55%, var(--ui-surface)),
+    var(--ui-surface-muted)
+  );
+  color: var(--ui-text);
+  box-shadow:
+    var(--ui-elev-1),
+    inset 0 1px 0 color-mix(in srgb, #fff 35%, transparent);
+}
+.sv-tool:disabled {
+  box-shadow: none;
 }
 .sv-tool:not(:disabled):hover:not(.is-active) {
   border-color: var(--ui-primary);
