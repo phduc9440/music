@@ -571,14 +571,13 @@ public class OmrServiceImpl implements OmrService {
         return null;
     }
 
-    /** Mở PDF bằng PDFBox: không mã hóa/đặt mật khẩu, mở được, 1..maxPdfPages trang. Trả về số trang. */
+    /** Mở PDF bằng PDFBox: mở được không cần mật khẩu (cho phép PDF chỉ khóa quyền), 1..maxPdfPages trang. Trả về số trang. */
     private int inspectPdf(MultipartFile file) {
         int pages;
         try (InputStream in = file.getInputStream();
                 PDDocument document = Loader.loadPDF(new RandomAccessReadBuffer(in))) {
-            if (document.isEncrypted()) {
-                throw new AppException(ScoreErrorCode.PDF_ENCRYPTED);
-            }
+            // PDF chỉ khóa quyền (owner password) vẫn được PDFBox mở bằng mật khẩu rỗng và isEncrypted() = true,
+            // nhưng đọc/vẽ trang bình thường nên cho qua. PDF cần mật khẩu để mở sẽ ném InvalidPasswordException.
             pages = document.getNumberOfPages();
         } catch (InvalidPasswordException e) {
             throw new AppException(ScoreErrorCode.PDF_ENCRYPTED);

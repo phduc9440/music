@@ -4,7 +4,7 @@ import { t } from '../i18n/core';
 
 /**
  * Kiểm tra nội dung file ngay ở trình duyệt trước khi upload (doc mục 2.1), khớp với kiểm tra của server:
- *  - PDF: mở được, không mã hóa/mật khẩu, 1–20 trang (mã 2008, 2009). Đọc bằng pdf.js, kèm ảnh trang 1.
+ *  - PDF: mở được (không cần mật khẩu để mở), 1–20 trang (mã 2008, 2009). Đọc bằng pdf.js, kèm ảnh trang 1.
  *  - Ảnh: đọc được, cạnh ngắn >= 600px, tối đa 40 megapixel (mã 2010).
  */
 export interface FileInspection {
@@ -56,11 +56,8 @@ export const inspectPdf = async (file: File): Promise<FileInspection> => {
   }
 
   try {
-    // PDF chỉ khóa quyền (owner password) vẫn mở được nhưng server từ chối, nên chặn luôn ở đây
-    const { info } = await doc.getMetadata();
-    if ((info as { EncryptFilterName?: string } | undefined)?.EncryptFilterName) {
-      return { pageCount: doc.numPages, error: t('upload.inspect.pdfEncrypted') };
-    }
+    // PDF chỉ khóa quyền (owner password, chặn in/sửa/copy) vẫn mở và vẽ được bình thường nên cho tải lên;
+    // chỉ PDF cần mật khẩu để mở mới bị chặn (PasswordException ở trên).
     if (doc.numPages < 1 || doc.numPages > UPLOAD_MAX_PDF_PAGES) {
       return {
         pageCount: doc.numPages,
