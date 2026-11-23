@@ -106,7 +106,12 @@
   "uploaded": "Uploaded, the score is waiting to be digitized",
   "title": "Upload a score",
   "subtitle": "The system will digitize the score into MusicXML and MIDI",
-  "haveXml": "Already have a MusicXML / MIDI file?",
+  "alt": {
+    "heading": "Or create a score another way",
+    "importTitle": "Import a MusicXML / MIDI file",
+    "blankTitle": "Start from a blank score",
+    "omrTitle": "Digitize from a PDF / image"
+  },
   "startBlank": "Start from a blank score",
   "images_one": "{count} image",
   "images_other": "{count} images",
@@ -134,7 +139,6 @@
     "done": "Score imported",
     "title": "Import a MusicXML / MIDI file",
     "subtitle": "Use this when you already have a digital file and don't need to digitize a photo or PDF",
-    "toOmr": "Upload PDF / image (OMR)",
     "dropTitle": "Drop your file here",
     "dropHint": "Up to {max} .musicxml, .xml, .mxl or .mid, .midi files (each ≤ 50MB)",
     "removeFile": "Remove file",

@@ -106,8 +106,13 @@
   "uploaded": "Đã tải lên, bản nhạc đang chờ số hóa",
   "title": "Tải bản nhạc lên",
   "subtitle": "Hệ thống sẽ số hóa bản nhạc thành MusicXML và MIDI",
-  "haveXml": "Đã có file MusicXML / MIDI?",
-  "startBlank": "Bắt đầu từ bản trống",
+  "alt": {
+    "heading": "Hoặc tạo bản nhạc theo cách khác",
+    "importTitle": "Nhập file MusicXML / MIDI",
+    "blankTitle": "Bắt đầu từ bản nhạc trống",
+    "omrTitle": "Số hóa từ PDF / ảnh"
+  },
+  "startBlank": "Bắt đầu từ bản nhạc trống",
   "images": "{count} ảnh",
   "onePdf": "1 file PDF",
   "pages": "{count} trang",
@@ -132,7 +137,6 @@
     "done": "Đã nhập bản nhạc",
     "title": "Nhập file MusicXML / MIDI",
     "subtitle": "Dùng khi bạn đã có file số, không cần số hóa từ ảnh hoặc PDF",
-    "toOmr": "Tải PDF / ảnh (OMR)",
     "dropTitle": "Kéo thả file vào đây",
     "dropHint": "Tối đa {max} file .musicxml, .xml, .mxl hoặc .mid, .midi (mỗi file ≤ 50MB)",
     "removeFile": "Bỏ file",
