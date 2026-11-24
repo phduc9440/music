@@ -64,7 +64,7 @@ export class WaitModeScorer {
       return [
         this.createEvent({
           noteId: null,
-          measure: currentStep.notes[0].measure,
+          measure: null,
           hand: null,
           expectedMidi: null,
           playedMidi: note.midi,

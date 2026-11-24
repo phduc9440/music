@@ -981,34 +981,57 @@
   height: 100%;
   min-height: 0;
   grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.5rem;
   padding: 0;
   overflow: hidden;
+}
+
+/* Khi hiển thị bản nhạc: grid 2 cột */
+.studio-player--fullscreen.has-score-panel .sc-container {
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 38%);
 }
 
 .studio-player--fullscreen > .sc-container > .studio-player__header {
   display: none;
 }
 
-/* bản nhạc lúc đang luyện: bảng nổi phủ lên vùng luyện, bật/tắt bằng nút trong vùng luyện */
+/* bản nhạc lúc đang luyện: nằm bên phải theo grid split-view, bật/tắt bằng nút trong vùng luyện */
 .studio-player--fullscreen > .sc-container > .studio-player__score {
-  position: fixed;
-  z-index: 40;
-  top: 4.5rem;
-  left: 1rem;
-  width: min(calc(100vw - 2rem), 960px);
-  height: 45dvh;
-  min-width: 320px;
-  min-height: 140px;
-  max-width: calc(100vw - 2rem);
-  max-height: calc(100dvh - 5.5rem);
+  grid-column: 2;
+  grid-row: 1 / -1;
+  min-height: 0;
+  margin: 0;
   overflow: auto;
-  /* kéo góc phải dưới để đổi cỡ bảng */
-  resize: both;
-  box-shadow: 0 18px 48px rgb(0 0 0 / 35%);
+}
+
+/* session và display-options chỉ ở cột 1 */
+.studio-player--fullscreen .studio-player__session {
+  grid-column: 1;
+}
+.studio-player--fullscreen .studio-player__display-options {
+  grid-column: 1;
+}
+.studio-player--fullscreen .studio-player__practice-board {
+  grid-column: 1;
+  grid-row: 3;
+}
+
+/* session e display-options chỉ ở cột 1 */
+.studio-player--fullscreen .studio-player__display-options {
+  grid-column: 1;
+}
+.studio-player--fullscreen .studio-player__practice-board {
+  grid-column: 1;
+  grid-row: 3;
+}
+
+.studio-player__score.is-hidden {
+  display: none;
 }
 
 .studio-player--fullscreen .studio-player__session {
+  grid-column: 1;
   grid-row: 1;
   min-width: 0;
   margin: 0;
@@ -2190,4 +2213,160 @@
   height: auto;
   min-height: 0;
   resize: none;
+}
+
+/* Phím tắt máy tính hiển thị trên phím đàn piano ảo */
+.studio-player__key-badge {
+  position: absolute;
+  top: 8px;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.2rem;
+  height: 1.2rem;
+  padding: 0 0.2rem;
+  border: 1px solid color-mix(in srgb, var(--ui-primary) 30%, var(--ui-border));
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--ui-primary) 12%, var(--ui-surface));
+  color: var(--ui-primary);
+  font-family: inherit;
+  font-size: clamp(0.6rem, 0.72vw, 0.75rem);
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  pointer-events: none;
+}
+
+.studio-player__key-badge.is-black-key {
+  top: auto;
+  bottom: 8px;
+  border-color: rgba(255, 255, 255, 0.35);
+  background: var(--ui-primary);
+  color: #fff;
+  font-size: clamp(0.52rem, 0.65vw, 0.65rem);
+  min-width: 1.05rem;
+  height: 1.05rem;
+  padding: 0 0.15rem;
+}
+
+/* Nút nghe thử bản nhạc */
+.studio-player__preview {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  height: 42px;
+  margin-bottom: 0.75rem;
+  font-size: var(--ui-text-sm);
+  font-weight: 600;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--ui-primary) 8%, var(--ui-surface));
+  color: var(--ui-text);
+  transition: all 0.18s ease;
+}
+
+.studio-player__preview:hover:not(:disabled) {
+  border-color: var(--ui-primary);
+  background: color-mix(in srgb, var(--ui-primary) 15%, var(--ui-surface));
+  color: var(--ui-primary);
+}
+
+/* Khung kiểm tra Micro */
+.studio-mic-tester {
+  margin: 0.5rem 0 1rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--ui-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--ui-cta) 4%, var(--ui-surface));
+}
+
+.studio-mic-tester__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.studio-mic-tester__title {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--ui-text);
+  font-size: var(--ui-text-sm);
+}
+
+.studio-mic-tester__error {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.65rem;
+  padding: 0.45rem 0.65rem;
+  border-radius: 6px;
+  background: var(--ui-danger-soft, #fef2f2);
+  color: var(--ui-danger, #ef4444);
+  font-size: var(--ui-text-xs);
+}
+
+.studio-mic-tester__body {
+  margin-top: 0.75rem;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.studio-mic-tester__meter {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.studio-mic-tester__meter-bar {
+  height: 8px;
+  border-radius: 99px;
+  background: var(--ui-surface-muted);
+  overflow: hidden;
+}
+
+.studio-mic-tester__meter-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  transition: width 0.08s ease-out, background-color 0.15s ease;
+}
+
+.studio-mic-tester__meter-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--ui-text-xs);
+  color: var(--ui-text-2);
+}
+
+.studio-mic-tester__note-feedback {
+  min-height: 24px;
+}
+
+.studio-mic-tester__detected {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--ui-success) 12%, var(--ui-surface));
+  color: var(--ui-text);
+  font-size: var(--ui-text-xs);
+}
+
+.studio-mic-tester__detected strong {
+  color: var(--ui-success);
+  font-size: var(--ui-text-sm);
+}
+
+.studio-mic-tester__hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--ui-text-3);
+  font-size: var(--ui-text-xs);
 }

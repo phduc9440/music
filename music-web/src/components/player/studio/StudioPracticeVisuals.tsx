@@ -63,6 +63,8 @@ interface PianoProps {
   guideElapsedMs?: number;
   guideDurationMs?: number;
   guideLoop?: boolean;
+  /** Nốt gốc của bàn phím máy tính (mặc định C4 = 60), để vẽ nhãn phím A-K lên đàn */
+  computerKeyboardBase?: number;
 }
 
 /** Nốt ngắn vẫn giữ phím sáng ít nhất chừng này để mắt kịp thấy. */
@@ -307,6 +309,22 @@ export function StudioWaterfall({
   );
 }
 
+const KEYBOARD_SHORTCUTS: Record<number, string> = {
+  0: 'A',
+  1: 'W',
+  2: 'S',
+  3: 'E',
+  4: 'D',
+  5: 'F',
+  6: 'T',
+  7: 'G',
+  8: 'Y',
+  9: 'H',
+  10: 'U',
+  11: 'J',
+  12: 'K',
+};
+
 export function StudioVirtualPiano({
   inputSource,
   active,
@@ -318,6 +336,7 @@ export function StudioVirtualPiano({
   guideElapsedMs = elapsedMs,
   guideDurationMs = 0,
   guideLoop = false,
+  computerKeyboardBase,
 }: PianoProps) {
   const guide = soundingKeys(guideNotes, guideElapsedMs, guideDurationMs, guideLoop);
   const [pressedPointers, setPressedPointers] = useState<Record<number, number>>({});
@@ -389,6 +408,9 @@ export function StudioVirtualPiano({
             .reverse()
             .find((item) => item.midi === key.midi && elapsedMs - item.atMs <= FEEDBACK_LIFETIME_MS);
           const pressed = Object.values(pressedPointers).includes(key.midi);
+          const semitone = computerKeyboardBase !== undefined ? key.midi - computerKeyboardBase : -1;
+          const shortcut =
+            inputSource === 'KEYBOARD' && semitone >= 0 && semitone <= 12 ? KEYBOARD_SHORTCUTS[semitone] : null;
           return (
             <button
               type="button"
@@ -404,7 +426,7 @@ export function StudioVirtualPiano({
               key={key.midi}
               style={{ left: `${key.keyLeftPercent}%`, width: `${key.keyWidthPercent}%` }}
               aria-label={noteName(key.midi)}
-              title={noteName(key.midi)}
+              title={shortcut ? `${noteName(key.midi)} (${shortcut})` : noteName(key.midi)}
               data-midi={key.midi}
               disabled={!canPlay}
               // bàn phím máy tính (Enter / Space trên phím đang focus): click không đến từ chuột (detail 0)
@@ -414,6 +436,7 @@ export function StudioVirtualPiano({
             >
               <span>{SEMITONE_NAMES[key.midi % 12]}</span>
               {key.midi % 12 === 0 && <strong>{Math.floor(key.midi / 12) - 1}</strong>}
+              {shortcut && <kbd className="studio-player__key-badge">{shortcut}</kbd>}
             </button>
           );
         })}
@@ -422,6 +445,9 @@ export function StudioVirtualPiano({
             .reverse()
             .find((item) => item.midi === key.midi && elapsedMs - item.atMs <= FEEDBACK_LIFETIME_MS);
           const pressed = Object.values(pressedPointers).includes(key.midi);
+          const semitone = computerKeyboardBase !== undefined ? key.midi - computerKeyboardBase : -1;
+          const shortcut =
+            inputSource === 'KEYBOARD' && semitone >= 0 && semitone <= 12 ? KEYBOARD_SHORTCUTS[semitone] : null;
           return (
             <button
               type="button"
@@ -437,14 +463,16 @@ export function StudioVirtualPiano({
               key={key.midi}
               style={{ left: `${key.keyLeftPercent}%`, width: `${key.keyWidthPercent}%` }}
               aria-label={noteName(key.midi)}
-              title={noteName(key.midi)}
+              title={shortcut ? `${noteName(key.midi)} (${shortcut})` : noteName(key.midi)}
               data-midi={key.midi}
               disabled={!canPlay}
               // bàn phím máy tính (Enter / Space trên phím đang focus): click không đến từ chuột (detail 0)
               onClick={(clickEvent) => {
                 if (clickEvent.detail === 0 && canPlay) onPlayNote(key.midi);
               }}
-            ></button>
+            >
+              {shortcut && <kbd className="studio-player__key-badge is-black-key">{shortcut}</kbd>}
+            </button>
           );
         })}
       </div>

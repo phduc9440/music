@@ -175,7 +175,7 @@ export class StudioMicInput {
     }
     this.startedAt = performance.now();
     this.source.connect(this.captureNode);
-    this.captureNode.connect(this.audioContext.destination);
+    // Không connect tới destination để tránh phát lại âm thanh từ mic (echo loop)
     return this.startedAt;
   }
 

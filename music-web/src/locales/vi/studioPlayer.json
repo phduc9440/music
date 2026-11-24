@@ -23,7 +23,9 @@
     "toMeasure": "Đến ô nhịp",
     "start": "Bắt đầu luyện",
     "starting": "Đang tạo phiên…",
-    "freeRunHint": "Nốt chạy đều theo tốc độ đã chọn; chơi đúng lúc nốt chạm vạch để được chấm hoàn hảo."
+    "freeRunHint": "Nốt chạy đều theo tốc độ đã chọn; chơi đúng lúc nốt chạm vạch để được chấm hoàn hảo.",
+    "playPreview": "Nghe thử bài",
+    "stopPreview": "Dừng nghe thử"
   },
   "session": {
     "live": "Đang luyện",
@@ -39,6 +41,20 @@
     "waitPrompt": "Chơi các nốt đang chờ ở vạch để tiếp tục",
     "finished": "Bài đã kết thúc",
     "getReady": "Chuẩn bị"
+  },
+  "micTest": {
+    "title": "Kiểm tra micro",
+    "start": "Thử micro",
+    "stop": "Dừng thử",
+    "statusQuiet": "Đang yên tĩnh (hãy thử gõ 1 nốt đàn)",
+    "statusGood": "Tín hiệu âm thanh tốt",
+    "statusLoud": "Âm lượng lớn / nhiều tiếng ồn",
+    "detectedNote": "Nốt nhận diện được",
+    "playPrompt": "Hãy thử đàn 1 nốt trên piano thật để kiểm tra độ nhạy",
+    "unsupported": "Trình duyệt không hỗ trợ thu âm từ micro.",
+    "permissionDenied": "Chưa được cấp quyền truy cập micro. Vui lòng bấm vào biểu tượng ổ khóa cạnh thanh địa chỉ để cấp quyền.",
+    "noDevice": "Không tìm thấy thiết bị micro nào trên máy.",
+    "startError": "Không thể khởi động micro để kiểm tra."
   },
   "results": {
     "PERFECT": "Hoàn hảo",
@@ -61,8 +77,17 @@
     "rangeHint": "Một số nốt trong bản nhạc nằm ngoài dải 88 phím của piano (A0–C8)."
   },
   "keyboardGuide": {
-    "open": "Cách chơi",
-    "title": "Hướng dẫn luyện với bàn phím",
+    "open": "Hướng dẫn cách chơi",
+    "title": "Hướng dẫn luyện tập piano",
+    "tabs": {
+      "keyboard": "Bàn phím máy tính",
+      "touch": "Phím đàn ảo / Cảm ứng",
+      "mic": "Micro (Đàn piano thật)"
+    },
+    "keyboardDesc": "Sử dụng các phím chữ trên bàn phím máy tính để chơi. Các phím tương ứng được gắn nhãn phím chữ trực tiếp trên phím đàn piano ảo:",
+    "touchDesc": "Chạm trực tiếp hoặc dùng chuột bấm vào các phím đàn piano ảo (88 phím). Bấm gần mép dưới phím để đánh mạnh hơn. Bạn có thể bấm giữ và vuốt ngón tay qua nhiều phím (glissando) hoặc dùng đa chạm trên tablet.",
+    "micDesc": "Đặt laptop hoặc micro gần đàn piano thật (cách khoảng 30–50cm). Đảm bảo không gian xung quanh yên tĩnh. Hệ thống AI phân tích âm thanh trực tiếp trên trình duyệt để chấm điểm các nốt bạn vừa đàn.",
+    "handsDesc": "Quy ước màu tay: Nốt màu xanh là tay phải, nốt màu vàng cam là tay trái. Hãy bấm đúng lúc nốt rơi chạm vạch chơi.",
     "stepInput": "Trong phần thiết lập, chọn “Bàn phím máy tính” để chơi bằng các phím chữ, hoặc chọn “Bấm phím đàn trên màn hình” để chạm trực tiếp lên đàn.",
     "stepRange": "Đàn ảo luôn hiển thị đủ 88 phím từ A0 đến C8. Bàn phím máy tính phát các nốt từ C4 đến C5 theo sơ đồ.",
     "stepPlay": "Quan sát màu nốt để biết tay: tay phải màu xanh, tay trái màu cam. Bấm phím tương ứng khi nốt chạm vạch chơi; với đàn màn hình, chạm phím tương ứng.",
