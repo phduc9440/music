@@ -150,13 +150,11 @@ export class FreeRunScorer {
       return events;
     }
 
-    const nearbyIndex = this.closestExpectedNote(playedMidi, null, playedMs, false);
-    const nearby = nearbyIndex < 0 ? null : this.pending[nearbyIndex];
     events.push(
       this.createEvent({
-        noteId: nearby?.noteId ?? null,
-        measure: nearby?.measure ?? null,
-        hand: nearby?.hand ?? note.hand ?? null,
+        noteId: null,
+        measure: null,
+        hand: note.hand ?? null,
         expectedMidi: null,
         playedMidi,
         expectedMs: null,

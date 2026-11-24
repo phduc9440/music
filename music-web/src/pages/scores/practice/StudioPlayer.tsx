@@ -29,6 +29,7 @@ import {
   StudioWaterfall,
 } from '../../../components/player/studio/StudioPracticeVisuals';
 import type { StudioVisualFeedback } from '../../../components/player/studio/StudioPracticeVisuals';
+import { StudioMicTester } from '../../../components/player/studio/StudioMicTester';
 import { Icon } from '../../../components/ui';
 import Modal from '../../../components/scores/common/Modal';
 import MusicXmlViewer from '../../../components/scores/viewer/MusicXmlViewer';
@@ -98,6 +99,8 @@ export default function StudioPlayer() {
   const [session, setSession] = useState<StudioSessionResponse | null>(null);
   const [activeSession, setActiveSession] = useState<StudioSessionResponse | null>(null);
   const computerKeyboardBaseRef = useRef(COMPUTER_KEYBOARD_DEFAULT_BASE_MIDI);
+  const handModeRef = useRef<StudioHandMode>(handMode);
+  useEffect(() => { handModeRef.current = handMode; }, [handMode]);
   const [sessionSchedule, setSessionSchedule] = useState<StudioSchedule | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
   const [waitVisualElapsedMs, setWaitVisualElapsedMs] = useState(0);
@@ -114,6 +117,8 @@ export default function StudioPlayer() {
   const [showKeyboardGuide, setShowKeyboardGuide] = useState(false);
   const [showActiveSessionDialog, setShowActiveSessionDialog] = useState(false);
   const [micLatencyMs, setMicLatencyMs] = useState<number | null>(null);
+  const [isPlayingPreview, setIsPlayingPreview] = useState(false);
+  const previewTimeoutRef = useRef<number[]>([]);
 
   const sessionRef = useRef<StudioSessionResponse | null>(null);
   const micInputRef = useRef<StudioMicInput | null>(null);
@@ -434,7 +439,9 @@ export default function StudioPlayer() {
         const currentStep = waitScorer?.getCurrentStep() ?? null;
         const stepTransitionCount = waitScorer?.getStepTransitionCount() ?? 0;
         elapsedMsRef.current = playedMs;
-        const events = scorer.play({ midi, playedMs });
+        const playedHand = handModeRef.current === 'LEFT_ONLY' ? 'LEFT' as const :
+                           handModeRef.current === 'RIGHT_ONLY' ? 'RIGHT' as const : undefined;
+        const events = scorer.play({ midi, playedMs, hand: playedHand });
         playPianoNote(midi, velocity);
         // chế độ chờ: qua bước thì đánh luôn phần đệm của bước đó, nhẹ hơn để không lấn nốt người chơi
         if (waitScorer && currentStep && waitScorer.getStepTransitionCount() > stepTransitionCount) {
@@ -665,6 +672,40 @@ export default function StudioPlayer() {
     });
   }, [loadState, repeatSection, startMeasure, endMeasure, tempoPercent, handMode]);
 
+  const stopPreview = useCallback(() => {
+    previewTimeoutRef.current.forEach(id => window.clearTimeout(id));
+    previewTimeoutRef.current = [];
+    setIsPlayingPreview(false);
+  }, []);
+
+  const playPreview = useCallback(() => {
+    if (isPlayingPreview) {
+      stopPreview();
+      return;
+    }
+    const schedule = previewSchedule;
+    if (!schedule) return;
+    setIsPlayingPreview(true);
+    schedule.visualNotes.forEach(note => {
+      const id = window.setTimeout(() => {
+        playPianoNote(note.midi, 0.7);
+      }, note.expectedMs);
+      previewTimeoutRef.current.push(id);
+    });
+    // Tự động stop sau khi bài kết thúc
+    const doneId = window.setTimeout(() => {
+      setIsPlayingPreview(false);
+      previewTimeoutRef.current = [];
+    }, schedule.durationMs + 500);
+    previewTimeoutRef.current.push(doneId);
+  }, [isPlayingPreview, previewSchedule, stopPreview]);
+
+  // Dừng preview khi bắt đầu session, và dọn dẹp khi unmount
+  useEffect(() => {
+    if (session) stopPreview();
+  }, [session, stopPreview]);
+  useEffect(() => () => stopPreview(), [stopPreview]);
+
   // phím máy tính chỉ phủ 13 bán cung: dời quãng tám theo nốt giữa của bài (tay trái ở quãng thấp, tay phải ở quãng cao)
   const computerKeyboardBase = useMemo(() => {
     const midis = ((sessionSchedule ?? previewSchedule)?.notes ?? []).map((note) => note.midi).sort((a, b) => a - b);
@@ -743,7 +784,7 @@ export default function StudioPlayer() {
 
   // Bản nhạc xem trước: lúc thiết lập nằm chung cột trái với thẻ thiết lập (cột tự cuộn), lúc đang luyện ở dưới vùng luyện
   const scorePanel = (
-    <section className={`studio-player__score${!session && !showScoreSheet ? ' is-collapsed' : ''}`}>
+    <section className={`studio-player__score${!session && !showScoreSheet ? ' is-collapsed' : ''}${session && !showSessionScore ? ' is-hidden' : ''}`}>
       <div className="studio-player__section-head">
         <div>
           <h2>{t('studioPlayer.score.title')}</h2>
@@ -776,7 +817,7 @@ export default function StudioPlayer() {
   );
 
   return (
-    <div className={`sc-page studio-player${session ? ' studio-player--fullscreen' : ''}`}>
+    <div className={`sc-page studio-player${session ? ' studio-player--fullscreen' : ''}${session && showSessionScore ? ' has-score-panel' : ''}`}>
       <main className="sc-container">
         <header className="studio-player__header">
           <Link className="studio-player__back" to={`/scores/${score.id}`}>
@@ -1042,6 +1083,18 @@ export default function StudioPlayer() {
                   {t('studioPlayer.display.enableKeyboardForTouch')}
                 </p>
               </div>
+              {inputSource === 'MIC' && <StudioMicTester />}
+              {loadState.phase === 'ready' && (
+                <button
+                  type="button"
+                  className="sc-btn studio-player__preview"
+                  disabled={busy || Boolean(activeSession)}
+                  onClick={playPreview}
+                >
+                  <Icon name={isPlayingPreview ? 'volumeOff' : 'volume'} size={16} />
+                  {isPlayingPreview ? t('studioPlayer.setup.stopPreview') : t('studioPlayer.setup.playPreview')}
+                </button>
+              )}
               <button
                 type="button"
                 className="sc-btn sc-btn--primary studio-player__start"
@@ -1122,11 +1175,10 @@ export default function StudioPlayer() {
               </div>
               <div className="studio-player__practice-controls">
                 <span className="studio-player__piano-range">{t('studioPlayer.keyboard.range')}</span>
-                {!session && (
-                  <button type="button" className="sc-btn sc-btn--sm" onClick={() => setShowKeyboardGuide(true)}>
-                    {t('studioPlayer.keyboardGuide.open')}
-                  </button>
-                )}
+                <button type="button" className="sc-btn sc-btn--sm" onClick={() => setShowKeyboardGuide(true)}>
+                  <Icon name="helpCircle" size={15} />
+                  {t('studioPlayer.keyboardGuide.open')}
+                </button>
                 {session && (
                   <button
                     type="button"
@@ -1187,6 +1239,7 @@ export default function StudioPlayer() {
                   guideElapsedMs={practiceElapsedMs}
                   guideDurationMs={activeSchedule.durationMs}
                   guideLoop={session ? session.loopStartMeasure !== null : repeatSection}
+                  computerKeyboardBase={computerKeyboardBase}
                 />
               )}
             </div>
@@ -1236,26 +1289,57 @@ export default function StudioPlayer() {
           </section>
         )}
 
-        {(session ? showSessionScore : true) && scorePanel}
+        {scorePanel}
       </main>
       {showKeyboardGuide && (
         <Modal title={t('studioPlayer.keyboardGuide.title')} onClose={() => setShowKeyboardGuide(false)}>
           <div className="studio-player__guide-content">
-            <ol>
-              <li>{t('studioPlayer.keyboardGuide.stepInput')}</li>
-              <li>{t('studioPlayer.keyboardGuide.stepRange')}</li>
-              <li>{t('studioPlayer.keyboardGuide.stepPlay')}</li>
-              <li>{t('studioPlayer.keyboardGuide.stepFeedback')}</li>
-            </ol>
-            <p>{t('studioPlayer.keyboardGuide.keyMap')}</p>
-            <div className="studio-player__computer-key-map">
-              {keyboardNotes.map(({ key, note }) => (
-                <span className="studio-player__computer-key" key={key}>
-                  <kbd>{key}</kbd>
-                  <span>{note}</span>
+            <div className="studio-player__guide-section">
+              <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0 0 0.5rem', fontSize: '1.05rem' }}>
+                <Icon
+                  name={inputSource === 'KEYBOARD' ? 'type' : inputSource === 'TOUCH' ? 'select' : 'activity'}
+                  size={18}
+                />
+                <span>
+                  {t(
+                    `studioPlayer.setup.${inputSource === 'KEYBOARD' ? 'computerKeyboard' : inputSource === 'TOUCH' ? 'touchKeyboard' : 'microphone'}`,
+                  )}
                 </span>
-              ))}
+                <span className="sc-chip sc-chip--accent" style={{ fontSize: '0.75rem' }}>
+                  {t('studioPlayer.session.live')}
+                </span>
+              </h3>
+              {inputSource === 'KEYBOARD' && (
+                <>
+                  <p>{t('studioPlayer.keyboardGuide.keyboardDesc')}</p>
+                  <div className="studio-player__computer-key-map">
+                    {keyboardNotes.map(({ key, note }) => (
+                      <span className="studio-player__computer-key" key={key}>
+                        <kbd>{key}</kbd>
+                        <span>{note}</span>
+                      </span>
+                    ))}
+                  </div>
+                  <p style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--ui-text-2)' }}>
+                    💡 <em>{t('studioPlayer.keyboardGuide.stepRange')}</em>
+                  </p>
+                </>
+              )}
+              {inputSource === 'TOUCH' && <p>{t('studioPlayer.keyboardGuide.touchDesc')}</p>}
+              {inputSource === 'MIC' && <p>{t('studioPlayer.keyboardGuide.micDesc')}</p>}
             </div>
+
+            <div
+              className="studio-player__guide-section"
+              style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid var(--ui-border)' }}
+            >
+              <h4 style={{ margin: '0 0 0.4rem', fontSize: '0.95rem' }}>{t('studioPlayer.keyboardGuide.handsDesc')}</h4>
+              <ol style={{ margin: '0', paddingLeft: '1.25rem' }}>
+                <li>{t('studioPlayer.keyboardGuide.stepPlay')}</li>
+                <li>{t('studioPlayer.keyboardGuide.stepFeedback')}</li>
+              </ol>
+            </div>
+
             <div className="sc-modal__actions">
               <button type="button" className="sc-btn sc-btn--primary" onClick={() => setShowKeyboardGuide(false)}>
                 {t('common.close')}

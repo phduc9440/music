@@ -15,7 +15,13 @@ import SiteFooter from '../../components/layout/SiteFooter';
 import SectionDots from '../../components/home/SectionDots';
 import { useScreenSnap } from '../../components/home/useScreenSnap';
 import { t } from '../../i18n/core';
-import { ACCESS_LEVEL_LABELS, DIFFICULTY_LABELS, formatRelative, getScorePath } from '../../utils/score';
+import {
+  ACCESS_LEVEL_LABELS,
+  DIFFICULTY_LABELS,
+  SHARE_PERMISSION_LABELS,
+  formatRelative,
+  getScorePath,
+} from '../../utils/score';
 import '../../components/scores/scores.css';
 import '../teams/teams.css';
 import './workspace-home.css';
@@ -75,11 +81,25 @@ const minutes = (seconds: number) => Math.floor(seconds / 60);
 const pendingTarget = (item: HomePendingItem) =>
   item.type === 'ACCESS_REQUEST' ? `/scores/${item.scoreId}?tab=settings` : '/scores/official-requests';
 
+const getPermissionLabel = (permission?: string | number | null): string => {
+  if (permission == null) return t('home.workspace.accessGeneric');
+  if (typeof permission === 'string' && permission in ACCESS_LEVEL_LABELS) {
+    const label = ACCESS_LEVEL_LABELS[permission as keyof typeof ACCESS_LEVEL_LABELS];
+    if (label) return label.toLowerCase();
+  }
+  const num = Number(permission);
+  if (!Number.isNaN(num) && num in SHARE_PERMISSION_LABELS) {
+    const label = SHARE_PERMISSION_LABELS[num as keyof typeof SHARE_PERMISSION_LABELS];
+    if (label) return label.toLowerCase();
+  }
+  return typeof permission === 'string' ? permission.toLowerCase() : t('home.workspace.accessGeneric');
+};
+
 const pendingText = (item: HomePendingItem) =>
   item.type === 'ACCESS_REQUEST'
     ? t('home.workspace.pendingAccess', {
         name: item.actorName ?? t('home.workspace.someone'),
-        level: item.permission ? ACCESS_LEVEL_LABELS[item.permission].toLowerCase() : t('home.workspace.accessGeneric'),
+        level: getPermissionLabel(item.permission),
       })
     : t('home.workspace.pendingOfficial', { name: item.actorName ?? t('home.workspace.adminName') });
 
