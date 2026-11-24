@@ -205,6 +205,12 @@ const PATHS = {
       <path d="M7 7.5h.01M7 16.5h.01" />
     </>
   ),
+  helpCircle: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01" />
+    </>
+  ),
   alert: (
     <>
       <path d="M12 3l9.5 17h-19z" />

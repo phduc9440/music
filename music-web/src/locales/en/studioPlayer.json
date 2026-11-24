@@ -23,7 +23,9 @@
     "toMeasure": "To measure",
     "start": "Start practice",
     "starting": "Starting session…",
-    "freeRunHint": "Notes keep moving at the chosen tempo; play as each note reaches the line to score Perfect."
+    "freeRunHint": "Notes keep moving at the chosen tempo; play as each note reaches the line to score Perfect.",
+    "playPreview": "Preview",
+    "stopPreview": "Stop preview"
   },
   "session": {
     "live": "Practice in progress",
@@ -39,6 +41,20 @@
     "waitPrompt": "Play the notes waiting at the line to continue",
     "finished": "Practice complete",
     "getReady": "Get ready"
+  },
+  "micTest": {
+    "title": "Test Microphone",
+    "start": "Test mic",
+    "stop": "Stop test",
+    "statusQuiet": "Quiet (try playing a piano key)",
+    "statusGood": "Good audio signal",
+    "statusLoud": "High volume / noise detected",
+    "detectedNote": "Detected note",
+    "playPrompt": "Play a note on your real piano to test pitch sensitivity",
+    "unsupported": "Browser does not support microphone input.",
+    "permissionDenied": "Microphone permission denied. Please allow microphone access in site settings.",
+    "noDevice": "No microphone device detected.",
+    "startError": "Could not start microphone test."
   },
   "results": {
     "PERFECT": "Perfect",
@@ -62,7 +78,16 @@
   },
   "keyboardGuide": {
     "open": "How to play",
-    "title": "Playing with your keyboard",
+    "title": "Piano Practice Guide",
+    "tabs": {
+      "keyboard": "Computer keyboard",
+      "touch": "On-screen piano",
+      "mic": "Microphone (Real piano)"
+    },
+    "keyboardDesc": "Use letter keys on your keyboard to play. Matching keys are also labeled directly on the virtual piano keys:",
+    "touchDesc": "Tap or click the 88 virtual piano keys. Tapping closer to the bottom edge produces higher velocity. You can also slide across keys (glissando) or use multi-touch.",
+    "micDesc": "Place your laptop or microphone near your acoustic or digital piano (30–50cm away). Keep the room quiet. The Basic Pitch AI recognizes notes directly from your piano audio in real time.",
+    "handsDesc": "Hand colors: Teal/Blue is right hand, gold/amber is left hand. Play when each note reaches the hit line.",
     "stepInput": "In setup, choose “Computer keyboard” to use letter keys, or “Tap the on-screen piano” to play by touching the piano.",
     "stepRange": "The virtual piano always shows all 88 keys from A0 to C8. Computer keys play C4 through C5 using the map.",
     "stepPlay": "Note colors indicate hands: right hand is blue and left hand is orange. Press the matching key when a note reaches the play line, or tap its on-screen piano key.",
