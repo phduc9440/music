@@ -35,8 +35,9 @@ def _staff_of(note: ET.Element) -> int:
     return child_int(note, "staff") or 1
 
 
-def insert_harmony(measure: ET.Element, divisions: int, target: Fraction, harmony: ET.Element, staff: int) -> bool:
-    """Chèn ``harmony`` cho vị trí ``target`` (phách đen trong ô). Trả False nếu không có nốt trống để gắn."""
+def _anchors(measure: ET.Element, divisions: int, staff: int) -> list[tuple[int, Fraction]]:
+    """(chỉ số phần tử, vị trí phách đen trong ô) của các nốt có cao độ thuộc khuông ``staff`` (bỏ nốt hoa mỹ, nốt trong
+    hợp âm ``<chord/>``): những nốt có thể mang ``<harmony>``. Nốt nối từ ô trước cũng tính (bắt đầu ở đầu ô)."""
     pos = Fraction(0)
     anchors: list[tuple[int, Fraction]] = []  # (chỉ số phần tử, vị trí) của các nốt có cao độ thuộc khuông giai điệu
     for index, element in enumerate(list(measure)):
@@ -54,7 +55,20 @@ def insert_harmony(measure: ET.Element, divisions: int, target: Fraction, harmon
             if _staff_of(element) == staff and element.find("pitch") is not None:
                 anchors.append((index, pos))
             pos += Fraction(duration, divisions)
+    return anchors
 
+
+def anchor_positions(measure: ET.Element, divisions: int, staff: int) -> set[Fraction]:
+    """Các vị trí trong ô (phách đen) có nốt bắt đầu để gắn hợp âm mà không cần ``<offset>``.
+
+    Hợp âm có ``<offset>`` hiện ở nốt mang nó nhưng khi phát lại vang ở ``nốt + offset``, nên người dùng thấy một hợp âm mà
+    nghe ra hợp âm khác. Vì vậy gợi ý hợp âm chỉ đổi hợp âm ở các vị trí này."""
+    return {pos for _, pos in _anchors(measure, divisions, staff)}
+
+
+def insert_harmony(measure: ET.Element, divisions: int, target: Fraction, harmony: ET.Element, staff: int) -> bool:
+    """Chèn ``harmony`` cho vị trí ``target`` (phách đen trong ô). Trả False nếu không có nốt trống để gắn."""
+    anchors = _anchors(measure, divisions, staff)
     if not anchors:
         _set_offset(harmony, int(target * divisions))
         measure.insert(_first_note_index(measure), harmony)

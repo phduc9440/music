@@ -199,6 +199,29 @@ def test_colour_changes_chord_types(tmp_path):
     assert _share(jazz, sevenths) > _share(folk, sevenths)
 
 
+@pytest.mark.parametrize("density", ["SPARSE", "NORMAL", "DENSE"])
+def test_chords_only_change_where_a_note_starts(tmp_path, density):
+    """Hợp âm có <offset> hiện ở nốt mang nó nhưng phát ở nốt + offset (thấy C mà nghe G): gợi ý không được sinh <offset>."""
+    syncopated = [
+        n("C", 4, 2) + n("D", 4, 4) + n("E", 4, 2),  # không nốt nào bắt đầu ở phách 3
+        n("F", 4, 8),  # nốt tròn: chỉ đổi được ở phách 1
+        n("G", 4, 1) + n("A", 4, 3) + n("G", 4, 4),  # nghịch phách
+        '<note><rest/><duration>4</duration><voice>1</voice><type>half</type></note>' + n("C", 4, 4),
+    ]
+    data = single(syncopated * 2, divisions=2)
+    for seed in range(4):
+        result, roots = run(tmp_path, data, seed=seed, density=density)
+        assert result.filled > 0
+        for root in roots:
+            assert not list(root.iter("offset"))
+            for measure in measures(root):
+                children = list(measure)
+                for index, child in enumerate(children):
+                    if child.tag == "harmony":
+                        after = next(c for c in children[index + 1 :] if c.tag != "harmony")
+                        assert after.tag == "note" and after.find("pitch") is not None
+
+
 def test_density_changes_number_of_chords(tmp_path):
     data = single(TWINKLE * 2)
     sparse = sum(run(tmp_path, data, seed=s, density="SPARSE")[0].filled for s in range(4))

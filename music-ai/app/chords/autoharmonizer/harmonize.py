@@ -8,6 +8,8 @@ Khác mã gốc (luôn chọn hợp âm xác suất cao nhất nên cùng giai �
   nhất).
 - **Mật độ**: như ``gamma_sampling`` của tác giả (x → x^tan(πγ/2)) trên hợp âm vừa chọn, cộng với giới hạn chỗ được đổi
   hợp âm (thưa: phách mạnh; vừa: đầu phách; dày: thêm chỗ nốt giai điệu bắt đầu).
+- **Chỉ đổi hợp âm ở chỗ có nốt bắt đầu**: hợp âm luôn gắn thẳng vào nốt, không có ``<offset>`` (offset làm chữ hợp âm hiện
+  ở nốt này mà tiếng lại đổi muộn hơn, thấy C nghe G).
 - **Màu hợp âm**: cũng bằng gamma, tăng / giảm tổng xác suất của nhóm hợp âm (hợp âm ba, 7, maj7, m7, mở rộng...), nên vẫn là
   hợp âm model thấy hợp với giai điệu, chỉ đổi màu. Model gốc không có khái niệm thể loại nên không có lựa chọn theo thể loại.
 
@@ -30,6 +32,7 @@ import numpy as np
 from app.chords import ChordError
 from app.chords.autoharmonizer.model import SEGMENT, AutoHarmonizerNet, MODEL_DIR, load_net
 from app.chords.melody import MELODY_STAFF, MelodySource, _measure_layout
+from app.chords.writer import anchor_positions, divisions_per_measure
 from app.convert.score_xml import parse_part_events
 
 CELL = Fraction(1, 4)  # một bước = một nốt móc kép (phách đen / 4)
@@ -65,7 +68,7 @@ class Grid:
     melody: np.ndarray  # [N] cao độ MIDI, 0 = lặng
     beat: np.ndarray  # [N] độ mạnh phách của nốt chứa bước (0–4)
     key: np.ndarray  # [N] số dấu thăng + 8
-    onset: np.ndarray  # [N] bool: nốt giai điệu bắt đầu đúng bước này
+    anchor: np.ndarray  # [N] bool: có nốt (khuông giai điệu) bắt đầu đúng bước này để gắn hợp âm không cần <offset>
     cell_beat: np.ndarray  # [N] độ mạnh phách của chính vị trí bước (để quyết định chỗ đổi hợp âm)
     measure: np.ndarray  # [N] chỉ số ô
     offset: list[Fraction]  # [N] vị trí trong ô (phách đen)
@@ -144,9 +147,12 @@ def build_grid(src: MelodySource) -> Grid:
     events, _ = parse_part_events(src.part)
     melody_events = sorted((e for e in events if e.staff == MELODY_STAFF), key=lambda e: (e.start, -e.midi))
     key_token = int(min(15, max(1, (src.fifths or 0) + 8)))
+    part_measures = src.part.findall("measure")
+    divisions = divisions_per_measure(part_measures)
 
-    melody, beat, onset, cell_beat, measure_of, offsets, forced = [], [], [], [], [], [], []
+    melody, beat, anchor, cell_beat, measure_of, offsets, forced = [], [], [], [], [], [], []
     for index, info in enumerate(layout):
+        starts = anchor_positions(part_measures[index], divisions[index], src.staff) if index < len(part_measures) else set()
         cells = int(math.ceil(info.length / CELL))
         nominal = Fraction(info.beats * 4, info.beat_type)
         shift = nominal - info.length if index == 0 and info.length < nominal else Fraction(0)  # ô lấy đà
@@ -161,14 +167,13 @@ def build_grid(src: MelodySource) -> Grid:
                 note_onset = max(top.start, info.start)  # nốt nối qua vạch nhịp tính lại từ đầu ô như music21
                 melody.append(top.midi)
                 beat.append(_accent(info.beats, info.beat_type, note_onset - info.start + shift))
-                onset.append(top.start == at)
                 current_rest_onset = None
             else:
                 if current_rest_onset is None:
                     current_rest_onset = position
                 melody.append(0)
                 beat.append(_accent(info.beats, info.beat_type, current_rest_onset + shift))
-                onset.append(False)
+            anchor.append(position in starts)
             cell_beat.append(_accent(info.beats, info.beat_type, position + shift))
             measure_of.append(index)
             offsets.append(position)
@@ -187,7 +192,7 @@ def build_grid(src: MelodySource) -> Grid:
         melody=np.array(melody, dtype=int),
         beat=np.array(beat, dtype=int),
         key=np.full(n, key_token, dtype=int),
-        onset=np.array(onset, dtype=bool),
+        anchor=np.array(anchor, dtype=bool),
         cell_beat=np.array(cell_beat, dtype=int),
         measure=np.array(measure_of, dtype=int),
         offset=offsets,
@@ -288,16 +293,9 @@ def sample_options(
     prev_gamma, min_beat, at_onsets = DENSITY[density]
     style_gammas = [(_families()[f], g) for f, g in STYLE_GAMMAS[style].items() if f in _families()]
     n = len(grid.melody)
-    change_cells = np.array(
-        [i for i in range(n) if grid.forced[i] == -1 and _may_change(grid, i, min_beat, at_onsets)],
-        dtype=int,
-    )
+    can_change = change_mask(grid, min_beat, at_onsets)
+    change_cells = np.flatnonzero(can_change & (grid.forced == -1))
     static_rows = dict(zip(change_cells.tolist(), _static_features(net, grid, change_cells))) if len(change_cells) else {}
-
-    def static_at(i: int) -> np.ndarray:
-        if i not in static_rows:  # hiếm: bước giữa phách sau "không hợp âm"
-            static_rows[i] = _static_features(net, grid, np.array([i]))[0]
-        return static_rows[i]
 
     history = np.zeros((count, SEGMENT + n), dtype=int)  # 32 token "R" đệm đầu như mã gốc
     log_score = np.zeros(count)
@@ -312,27 +310,21 @@ def sample_options(
         if forced == -2:  # ô khóa nhưng hợp âm có sẵn không có trong bảng: giữ nguyên dãy trước
             history[:, i + SEGMENT] = prev
             continue
-        may_change = _may_change(grid, i, min_beat, at_onsets)
-        if not may_change and (prev != REST_TOKEN).all():
-            history[:, i + SEGMENT] = prev  # giữa phách: giữ hợp âm đang vang, không cần chạy mạng
+        if not can_change[i]:
+            # Không có nốt bắt đầu ở đây (hoặc phách quá yếu với mật độ đã chọn): giữ hợp âm đang vang, kể cả "không hợp
+            # âm". Đổi hợp âm ở chỗ này sẽ phải ghi <offset>, hiện một đằng phát một nẻo.
+            history[:, i + SEGMENT] = prev
             continue
         window = history[:, i : i + SEGMENT]
         chord_feat = net.branch_from_embedding("chord_left", np.maximum(chord_kernel[window] + chord_bias, 0.0))
-        probs = net.head([np.repeat(static_at(i)[None, :], count, axis=0), chord_feat]).astype(np.float64)
+        probs = net.head([np.repeat(static_rows[i][None, :], count, axis=0), chord_feat]).astype(np.float64)
         if grid.melody[i] != 0 and grid.beat[i] == 4:  # như mã gốc: phách mạnh có nốt thì phải có hợp âm
             probs[:, REST_TOKEN] = 0.0
             probs = _normalize(probs)
         for indices, gamma in style_gammas:
             probs = _gamma(probs, indices, gamma)
         probs = _gamma_per_row(probs, prev, prev_gamma)
-        if not may_change:  # giữa phách: giữ hợp âm đang vang (trừ khi đang "không hợp âm")
-            keep = prev != REST_TOKEN
-            chosen = np.where(keep, prev, 0)
-            if not keep.all():
-                drawn = _draw(_nucleus(probs, temperature, top_p), rng)
-                chosen = np.where(keep, prev, drawn)
-        else:
-            chosen = _draw(_nucleus(probs, temperature, top_p), rng)
+        chosen = _draw(_nucleus(probs, temperature, top_p), rng)
         log_score += np.log(np.clip(probs[np.arange(count), chosen], 1e-12, None))
         free_steps += 1
         history[:, i + SEGMENT] = chosen
@@ -341,11 +333,19 @@ def sample_options(
     return [Option(tokens=tokens[k], score=float(scores[k])) for k in range(count)]
 
 
-def _may_change(grid: Grid, i: int, min_beat: int, at_onsets: bool) -> bool:
-    """Bước được phép đổi hợp âm: đủ mạnh phách, hoặc (mật độ dày) nốt giai điệu bắt đầu ở vị trí nốt móc đơn."""
-    if i == 0 or grid.cell_beat[i] >= min_beat:
-        return True
-    return at_onsets and bool(grid.onset[i]) and grid.offset[i] % Fraction(1, 2) == 0
+def change_mask(grid: Grid, min_beat: int, at_onsets: bool) -> np.ndarray:
+    """Các bước được đổi hợp âm. Bắt buộc có nốt bắt đầu đúng bước đó (``grid.anchor``) để hợp âm gắn thẳng vào nốt, không
+    cần ``<offset>``. Thêm điều kiện theo mật độ: đủ mạnh phách, hoặc (mật độ dày) ở vị trí nốt móc đơn. Nốt đầu tiên của
+    mỗi ô luôn được đổi, để giai điệu nhiều nốt nghịch phách vẫn có chỗ đặt hợp âm."""
+    mask = np.zeros(len(grid.melody), dtype=bool)
+    seen: set[int] = set()
+    for i in np.flatnonzero(grid.anchor):
+        measure = int(grid.measure[i])
+        strong = grid.cell_beat[i] >= min_beat
+        dense = at_onsets and grid.offset[i] % Fraction(1, 2) == 0
+        mask[i] = strong or dense or measure not in seen
+        seen.add(measure)
+    return mask
 
 
 def _draw(probs: np.ndarray, rng: np.random.Generator) -> np.ndarray:
