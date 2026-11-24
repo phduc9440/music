@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { OpenSheetMusicDisplay } from 'opensheetmusicdisplay';
+import type { OpenSheetMusicDisplay, VexFlowGraphicalNote } from 'opensheetmusicdisplay';
 import { t } from '../../../i18n/core';
 
 interface Props {
@@ -129,7 +129,8 @@ export default function MusicXmlViewer({ xml, firstMeasure, lastMeasure, playhea
       cursor.update();
       clearLit();
       for (const note of cursor.GNotesUnderCursor()) {
-        const group = note.getSVGGElement?.();
+        // Backend mặc định của OSMD là VexFlow nên nốt thực chất là VexFlowGraphicalNote (có getSVGGElement)
+        const group = (note as VexFlowGraphicalNote).getSVGGElement?.();
         if (!group) continue;
         for (const el of group.querySelectorAll<SVGElement>('path, rect, ellipse')) {
           el.style.fill = LIT_COLOR;
