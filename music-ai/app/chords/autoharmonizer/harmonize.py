@@ -33,7 +33,7 @@ from app.chords import symbols
 
 from app.chords import ChordError
 from app.chords.autoharmonizer.model import SEGMENT, AutoHarmonizerNet, MODEL_DIR, load_net
-from app.chords.melody import MELODY_STAFF, MelodySource, _measure_layout
+from app.chords.melody import MelodySource, _measure_layout
 from app.chords.writer import anchor_positions, divisions_per_measure
 from app.convert.score_xml import parse_part_events
 
@@ -150,10 +150,10 @@ def _harmony_token(harmony: ET.Element) -> int:
 
 
 def build_grid(src: MelodySource) -> Grid:
-    """Lưới nốt móc kép của cả bài từ bè giai điệu (khuông 1 của part đầu)."""
+    """Lưới nốt móc kép của cả bài từ bè giai điệu (part và khuông đã chọn, mặc định khuông 1 của part đầu)."""
     layout = _measure_layout(src.part)
     events, _ = parse_part_events(src.part)
-    melody_events = sorted((e for e in events if e.staff == MELODY_STAFF), key=lambda e: (e.start, -e.midi))
+    melody_events = sorted((e for e in events if e.staff == src.staff), key=lambda e: (e.start, -e.midi))
     key_token = int(min(15, max(1, (src.fifths or 0) + 8)))
     part_measures = src.part.findall("measure")
     divisions = divisions_per_measure(part_measures)

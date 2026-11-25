@@ -20,7 +20,7 @@ public enum AiErrorCode implements ErrorCode {
     AI_SERVICE_UNAVAILABLE(2103, "Dịch vụ nhận diện nhạc tạm thời không khả dụng", HttpStatus.SERVICE_UNAVAILABLE),
     // ---- 3130-3134: Gợi ý hợp âm tự động (R3)
     CHORD_STYLE_INVALID(
-            3130, "Tùy chọn gợi ý hợp âm không hợp lệ (màu hợp âm, độ sáng tạo hoặc mật độ)", HttpStatus.BAD_REQUEST),
+            3130, "Tùy chọn gợi ý hợp âm không hợp lệ (màu hợp âm, độ sáng tạo, mật độ hoặc bè giai điệu)", HttpStatus.BAD_REQUEST),
     CHORD_TASK_RUNNING(3131, "Bản nhạc đang được gợi ý hợp âm, vui lòng chờ xong", HttpStatus.CONFLICT),
     CHORD_SUGGESTION_PENDING(
             3132, "Bản nhạc đã có một gợi ý hợp âm đang chờ duyệt; hãy nhận hoặc từ chối trước", HttpStatus.CONFLICT),

@@ -258,6 +258,10 @@ class ChordGenerateRequest(BaseModel):
     """Hạt giống để tái hiện đúng một lần chạy; bỏ trống thì mỗi lần một khác."""
     replaceExisting: bool = False
     """True: bỏ hết hợp âm đang có rồi gợi ý lại toàn bộ (mặc định giữ ô đã có hợp âm)."""
+    melodyPart: Optional[int] = Field(default=None, ge=0, le=63)
+    """Bè giai điệu (từ 0, theo thứ tự ``<part>``); bỏ trống thì lấy part đầu có nốt có cao độ."""
+    melodyStaff: Optional[int] = Field(default=None, ge=1, le=8)
+    """Khuông giai điệu trong part đó (từ 1); bỏ trống thì khuông 1."""
 
     @field_validator("inPath")
     @classmethod

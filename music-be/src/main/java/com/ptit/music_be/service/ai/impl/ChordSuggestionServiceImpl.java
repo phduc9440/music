@@ -53,6 +53,11 @@ public class ChordSuggestionServiceImpl implements ChordSuggestionService {
     /** Gợi ý hợp âm chưa ai xử lý quá chừng này giờ thì tự đóng khi người dùng gợi ý lại. */
     static final int OPEN_SUGGESTION_TTL_HOURS = 24;
 
+    /** Khớp giới hạn của music-ai (melodyPart 0..63, melodyStaff 1..8). */
+    static final int MAX_MELODY_PART = 63;
+
+    static final int MAX_MELODY_STAFF = 8;
+
     static final String AUTO_CLOSE_NOTE = "Tự đóng vì đã cũ khi gợi ý hợp âm lại";
 
     private final ScoreRepository scoreRepository;
@@ -105,6 +110,12 @@ public class ChordSuggestionServiceImpl implements ChordSuggestionService {
                 .orElseThrow(() -> new AppException(AiErrorCode.CHORD_STYLE_INVALID));
         ChordDensity density = ChordDensity.parse(request == null ? null : request.getDensity())
                 .orElseThrow(() -> new AppException(AiErrorCode.CHORD_STYLE_INVALID));
+        Integer melodyPart = request == null ? null : request.getMelodyPart();
+        Integer melodyStaff = request == null ? null : request.getMelodyStaff();
+        if ((melodyPart != null && (melodyPart < 0 || melodyPart > MAX_MELODY_PART))
+                || (melodyStaff != null && (melodyStaff < 1 || melodyStaff > MAX_MELODY_STAFF))) {
+            throw new AppException(AiErrorCode.CHORD_STYLE_INVALID);
+        }
         Integer baseVersion = score.getCurrentVersion();
         if (baseVersion == null || baseVersion < 1) {
             throw new AppException(ScoreErrorCode.MUSICXML_NOT_READY);
@@ -160,6 +171,13 @@ public class ChordSuggestionServiceImpl implements ChordSuggestionService {
         input.put("density", density.name());
         input.put("options", options);
         input.put("baseVersion", baseVersion);
+        // Bè giai điệu do người dùng chọn (bỏ trống: music-ai tự lấy part đầu có nốt, khuông 1)
+        if (melodyPart != null) {
+            input.put("melodyPart", melodyPart);
+        }
+        if (melodyStaff != null) {
+            input.put("melodyStaff", melodyStaff);
+        }
         input.put("replaceExisting", request != null && Boolean.TRUE.equals(request.getReplaceExisting()));
         AiTask task = aiTaskRepository.save(AiTask.builder()
                 .member(member)

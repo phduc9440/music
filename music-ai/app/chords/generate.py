@@ -67,13 +67,19 @@ def generate_file(
     options: int = MAX_OPTIONS,
     seed: Optional[int] = None,
     replace_existing: bool = False,
+    melody_part: Optional[int] = None,
+    melody_staff: Optional[int] = None,
 ) -> GenerateResult:
-    """``replace_existing``: gỡ mọi ``<harmony>`` có sẵn rồi gợi ý lại cả bài (mặc định giữ ô đã có hợp âm)."""
+    """``replace_existing``: gỡ mọi ``<harmony>`` có sẵn rồi gợi ý lại cả bài (mặc định giữ ô đã có hợp âm).
+
+    ``melody_part`` (từ 0) và ``melody_staff`` (từ 1): bè giai điệu do người dùng chọn; hợp âm ghi vào part đó."""
     style, creativity, density = style.upper(), creativity.upper(), density.upper()
     if style not in STYLES or creativity not in CREATIVITY or density not in DENSITY:
         raise ChordError("PARSE_ERROR", "Màu hợp âm, độ sáng tạo hoặc mật độ không hợp lệ")
     options = max(1, min(MAX_OPTIONS, options))
-    src = load_melody(in_path.read_bytes(), strip_harmonies=replace_existing)
+    src = load_melody(
+        in_path.read_bytes(), strip_harmonies=replace_existing, part_index=melody_part, staff=melody_staff
+    )
     notes = [note for step in src.steps for note in step.notes]
     if not notes:
         raise ChordError("NO_MELODY", "Bản nhạc không có nốt giai điệu nào để gợi ý hợp âm")

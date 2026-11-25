@@ -32,7 +32,7 @@ public class ChordSuggestionController {
             summary = "Gợi ý hợp âm cho version hiện hành (tạo tác vụ CHORD_GENERATION)",
             description =
                     "Cần quyền chỉnh sửa. Kết quả là đề xuất sửa do hệ thống gửi; theo dõi bằng GET /api/ai-tasks/{id},"
-                            + " xong thì result.resultData.suggestionId. Errors: 2001, 1002, 3130 phong cách sai, 2201 OMR đang chạy,"
+                            + " xong thì result.resultData.suggestionId. Errors: 2001, 1002, 3130 tùy chọn sai (màu hợp âm, độ sáng tạo, mật độ, bè giai điệu), 2201 OMR đang chạy,"
                             + " 3131 đang gợi ý, 3132 đã có gợi ý chờ duyệt (result.suggestionId), 3702 hết hạn mức",
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<AiTaskResponse> request(

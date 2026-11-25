@@ -21,4 +21,11 @@ public class ChordSuggestionRequest {
     String creativity;
     /** SPARSE, NORMAL (mặc định) hoặc DENSE. */
     String density;
+    /**
+     * Bè giai điệu cần hợp âm: chỉ số part từ 0 (theo thứ tự part trong bản nhạc, như trình chỉnh sửa). Bỏ trống thì lấy
+     * part đầu tiên có nốt có cao độ.
+     */
+    Integer melodyPart;
+    /** Khuông giai điệu trong part đó, từ 1. Bỏ trống thì khuông 1. */
+    Integer melodyStaff;
 }

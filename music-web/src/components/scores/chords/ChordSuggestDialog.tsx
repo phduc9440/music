@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CHORD_CREATIVITIES, CHORD_DENSITIES, CHORD_STYLES, billingApi, chordApi } from '../../../services';
+import { CHORD_CREATIVITIES, CHORD_DENSITIES, CHORD_STYLES, billingApi, chordApi, fetchMusicXml } from '../../../services';
 import type { ChordCreativity, ChordDensity, ChordStyle } from '../../../services';
 import type { AiTaskInfo, MySubscription, PlanInfo } from '../../../types';
 import { Icon } from '../../ui';
@@ -10,6 +10,8 @@ import { reportPlanLimit, showPlanLimit } from '../../../utils/planLimit';
 import { useExportTask } from '../../export/useExportTask';
 import { suggestionPath } from '../suggestions/suggestionUtils';
 import Modal from '../common/Modal';
+import { listMelodyChoices, melodyChoiceKey } from './melodyChoices';
+import type { MelodyChoice } from './melodyChoices';
 import './chordSuggest.css';
 
 /** Mã lỗi BE: đã có một gợi ý hợp âm đang chờ duyệt (kèm result.suggestionId). */
@@ -29,6 +31,8 @@ interface Props {
   allHarmonized?: boolean;
   /** Xóa hết hợp âm (người sửa được). Không truyền thì không hiện nút. */
   onClearAll?: () => void;
+  /** Biết trước bè nào đã có hợp âm ở mọi ô (trình chỉnh sửa tự kiểm): đổi bè giai điệu thì hỏi lại theo bè mới. */
+  harmonizedOfPart?: (partIndex: number) => boolean;
   /** Số ô nhịp của bản nhạc (nếu đã biết): báo trước giới hạn ô của gói và khóa nút khi vượt, khỏi chờ máy chủ từ chối. */
   measureCount?: number | null;
 }
@@ -65,6 +69,7 @@ export default function ChordSuggestDialog({
   onCompleted,
   allHarmonized,
   onClearAll,
+  harmonizedOfPart,
   measureCount,
 }: Props) {
   const navigate = useNavigate();
@@ -79,6 +84,9 @@ export default function ChordSuggestDialog({
   const [harmonized, setHarmonized] = useState(!!allHarmonized);
   // Gói của người bấm: khóa tùy chọn nâng cao và hiện số lượt còn lại. Chưa tải được thì không khóa gì (BE vẫn kiểm).
   const [sub, setSub] = useState<MySubscription | null>(null);
+  // Bè giai điệu (CH-04): đọc danh sách bè từ bản nhạc đã lưu; chỉ hiện ô chọn khi có từ hai lựa chọn trở lên
+  const [melodies, setMelodies] = useState<MelodyChoice[]>([]);
+  const [melodyKey, setMelodyKey] = useState('');
 
   useEffect(() => {
     let alive = true;
@@ -90,6 +98,29 @@ export default function ChordSuggestDialog({
       alive = false;
     };
   }, []);
+
+  useEffect(() => {
+    let alive = true;
+    fetchMusicXml(scoreId)
+      .then((xml) => {
+        if (!alive) return;
+        const choices = listMelodyChoices(xml);
+        setMelodies(choices);
+        setMelodyKey(choices[0] ? melodyChoiceKey(choices[0]) : '');
+        if (choices[0] && harmonizedOfPart) setHarmonized(harmonizedOfPart(choices[0].partIndex));
+      })
+      .catch(() => undefined); // không đọc được: không hiện ô chọn, BE tự lấy bè mặc định
+    return () => {
+      alive = false;
+    };
+    // harmonizedOfPart là hàm tạo lại mỗi lần vẽ: chỉ đọc lúc bản nhạc vừa tải xong
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scoreId]);
+  const melody = melodies.find((c) => melodyKey === melodyChoiceKey(c));
+  const melodyLabel = (c: MelodyChoice) => {
+    const part = c.partName || t('chords.dialog.melodyPart', { n: c.partIndex + 1 });
+    return c.staffCount > 1 ? t('chords.dialog.melodyPartStaff', { part, staff: c.staff }) : part;
+  };
 
   const unlimited = sub?.status === 'UNLIMITED';
   const limits = sub?.limits;
@@ -148,7 +179,13 @@ export default function ChordSuggestDialog({
     setPendingId(null);
     reset();
     try {
-      const res = await chordApi.request(scoreId, style, { replaceExisting: harmonized, creativity, density });
+      const res = await chordApi.request(scoreId, style, {
+        replaceExisting: harmonized,
+        creativity,
+        density,
+        // Chỉ gửi khi người dùng có thật sự để chọn (từ hai bè/khuông); một lựa chọn duy nhất là mặc định của BE
+        ...(melodies.length > 1 && melody ? { melodyPart: melody.partIndex, melodyStaff: melody.staff } : {}),
+      });
       track(res.data.result);
     } catch (err) {
       if (reportPlanLimit(err)) {
@@ -196,6 +233,31 @@ export default function ChordSuggestDialog({
           </label>
         ))}
       </fieldset>
+
+      {melodies.length > 1 && (
+        <fieldset className="cs-melody" disabled={busy}>
+          <legend className="sc-label">{t('chords.dialog.melodyLabel')}</legend>
+          <select
+            className="sc-input"
+            value={melodyKey}
+            onChange={(e) => {
+              setMelodyKey(e.target.value);
+              // Mỗi bè có hợp âm riêng: hỏi "thay hợp âm cũ" theo bè vừa chọn, và bỏ cảnh báo của lần thử trước
+              const next = melodies.find((c) => e.target.value === melodyChoiceKey(c));
+              setHarmonized(next && harmonizedOfPart ? harmonizedOfPart(next.partIndex) : false);
+              setError(null);
+            }}
+            aria-label={t('chords.dialog.melodyLabel')}
+          >
+            {melodies.map((c) => (
+              <option key={melodyChoiceKey(c)} value={melodyChoiceKey(c)}>
+                {melodyLabel(c)}
+              </option>
+            ))}
+          </select>
+          <p className="cs-hint">{t('chords.dialog.melodyHint')}</p>
+        </fieldset>
+      )}
 
       <div className="cs-knobs">
         <fieldset className="cs-knob" disabled={busy}>

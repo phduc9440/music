@@ -72,13 +72,13 @@ export function chordNoteIds(doc: ScoreDocument): string[] {
 }
 
 /**
- * Mọi ô nhịp có nốt của phần nhạc đầu tiên đều đã có hợp âm (giống điều kiện AI báo "đã có hợp âm hết"), để hỏi người
- * dùng có muốn thay hợp âm cũ không trước khi tạo gợi ý.
+ * Mọi ô nhịp có nốt của bè giai điệu (mặc định part đầu tiên, hoặc part người dùng chọn) đều đã có hợp âm (giống điều
+ * kiện AI báo "đã có hợp âm hết"), để hỏi người dùng có muốn thay hợp âm cũ không trước khi tạo gợi ý.
  */
-export function allMeasuresHaveChords(doc: ScoreDocument): boolean {
+export function allMeasuresHaveChords(doc: ScoreDocument, partIndex = 0): boolean {
   const measures = new Map<number, boolean>();
   for (const note of doc.notes) {
-    if (note.partIndex !== 0) continue;
+    if (note.partIndex !== partIndex) continue;
     measures.set(note.measureIndex, (measures.get(note.measureIndex) ?? false) || !!readChord(doc, note.id));
   }
   return measures.size > 0 && [...measures.values()].every(Boolean);

@@ -435,6 +435,40 @@ class ChordSuggestionServiceImplTest {
     }
 
     @Test
+    void chosenMelodyPartAndStaffAreStoredOnTheTask() throws Exception {
+        ChordSuggestionRequest request = style("NATURAL");
+        request.setMelodyPart(1);
+        request.setMelodyStaff(2);
+
+        service.request(SCORE_ID, request);
+
+        assertThat(savedInput().path("melodyPart").asInt()).isEqualTo(1);
+        assertThat(savedInput().path("melodyStaff").asInt()).isEqualTo(2);
+    }
+
+    @Test
+    void noMelodyChoiceLeavesTheDefaultToMusicAi() throws Exception {
+        service.request(SCORE_ID, style("NATURAL"));
+
+        assertThat(savedInput().has("melodyPart")).isFalse();
+        assertThat(savedInput().has("melodyStaff")).isFalse();
+    }
+
+    @Test
+    void outOfRangeMelodyChoiceIsInvalid() {
+        for (int[] bad : new int[][] {{-1, 1}, {64, 1}, {0, 0}, {0, 9}}) {
+            ChordSuggestionRequest request = style("NATURAL");
+            request.setMelodyPart(bad[0]);
+            request.setMelodyStaff(bad[1]);
+
+            AppException e = catchThrowableOfType(AppException.class, () -> service.request(SCORE_ID, request));
+
+            assertThat(e.getErrorCode()).isEqualTo(AiErrorCode.CHORD_STYLE_INVALID);
+        }
+        verify(aiTaskRepository, never()).save(any());
+    }
+
+    @Test
     void missingOptionCountMeansTheMaximum() throws Exception {
         service.request(SCORE_ID, style("NATURAL"));
 

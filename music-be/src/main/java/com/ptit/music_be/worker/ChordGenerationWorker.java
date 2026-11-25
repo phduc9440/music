@@ -137,7 +137,9 @@ public class ChordGenerationWorker {
             boolean replaceExisting,
             ChordCreativity creativity,
             ChordDensity density,
-            int options) {}
+            int options,
+            Integer melodyPart,
+            Integer melodyStaff) {}
 
     void process(String taskId) {
         Job job;
@@ -166,7 +168,9 @@ public class ChordGenerationWorker {
                     job.replaceExisting(),
                     job.creativity().name(),
                     job.density().name(),
-                    job.options());
+                    job.options(),
+                    job.melodyPart(),
+                    job.melodyStaff());
             byte[] proposed = Files.readAllBytes(fileStorageService.resolve(outPath));
             List<byte[]> others = new ArrayList<>();
             for (ChordGenerationResult.Option option : result.optionsOrDefault()) {
@@ -276,7 +280,9 @@ public class ChordGenerationWorker {
                     ChordCreativity.parse(input.path("creativity").asText(null)).orElse(ChordCreativity.BALANCED),
                     ChordDensity.parse(input.path("density").asText(null)).orElse(ChordDensity.NORMAL),
                     // Tác vụ cũ chưa ghi options thì giữ như trước (tối đa)
-                    input.path("options").asInt(PlanLimits.MAX_CHORD_OPTIONS));
+                    input.path("options").asInt(PlanLimits.MAX_CHORD_OPTIONS),
+                    input.hasNonNull("melodyPart") ? input.get("melodyPart").asInt() : null,
+                    input.hasNonNull("melodyStaff") ? input.get("melodyStaff").asInt() : null);
         });
     }
 

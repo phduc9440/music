@@ -104,3 +104,30 @@ def test_generate_replace_existing_overrides_harmonized_score(client, storage_ro
 
     assert response.status_code == 200
     assert response.json()["keptExisting"] == 0
+
+
+def test_generate_accepts_melody_part_and_staff(client, storage_root):
+    from tests.chord_samples import part_xml, score_xml
+
+    data = score_xml(part_xml("P1", [n("C", 3, 4)] * 4), part_xml("P2", TUNE))
+    write(storage_root, IN, data)
+
+    ok = client.post("/chords/generate", json=body(seed=1, melodyPart=1, melodyStaff=1, options=1), headers=KEY)
+    assert ok.status_code == 200
+    out = (storage_root / OUT).read_bytes().decode("utf-8")
+    # hợp âm nằm ở part 2 (sau thẻ mở part P2)
+    assert "<harmony>" not in out.split('<part id="P2">')[0]
+    assert "<harmony>" in out.split('<part id="P2">')[1]
+
+
+def test_generate_reports_missing_melody_part_as_no_melody(client, storage_root):
+    write(storage_root, IN, single(TUNE))
+    response = client.post("/chords/generate", json=body(melodyPart=3), headers=KEY)
+    assert response.status_code == 422
+    assert response.json()["detail"]["code"] == "NO_MELODY"
+
+
+def test_generate_rejects_bad_melody_indexes(client, storage_root):
+    write(storage_root, IN, single(TUNE))
+    assert client.post("/chords/generate", json=body(melodyPart=-1), headers=KEY).status_code == 422
+    assert client.post("/chords/generate", json=body(melodyStaff=0), headers=KEY).status_code == 422

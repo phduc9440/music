@@ -184,7 +184,7 @@
   "3124": "The co-editing operation is invalid",
   "3126": "You are sending edits too fast, please slow down",
   "3127": "A newer version was saved outside the live session. The session’s unsaved changes were kept as a suggestion in the Suggestions tab.",
-  "3130": "Invalid chord style",
+  "3130": "Invalid chord suggestion option",
   "3131": "Chords are already being suggested for this score, please wait",
   "3132": "This score already has a chord suggestion waiting for review; accept or reject it first",
   "3133": "The score has no melody to harmonise",

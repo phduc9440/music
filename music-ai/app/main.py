@@ -232,6 +232,8 @@ def chords_generate(body: ChordGenerateRequest) -> dict:
             options=body.options,
             seed=body.seed,
             replace_existing=body.replaceExisting,
+            melody_part=body.melodyPart,
+            melody_staff=body.melodyStaff,
         )
     except ChordError as exc:
         raise HTTPException(status_code=422, detail={"code": exc.code, "message": str(exc)}) from exc

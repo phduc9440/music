@@ -83,6 +83,22 @@
 }
 
 /* Độ sáng tạo và mật độ: hai nhóm nút liền nhau (segmented), cạnh nhau khi đủ rộng */
+.cs-melody {
+  margin: 1rem 0 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.cs-melody > legend {
+  margin: 0 0 0.4rem;
+  padding: 0;
+}
+
+.cs-melody .cs-hint {
+  margin: 0.35rem 0 0;
+}
+
 .cs-knobs {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));

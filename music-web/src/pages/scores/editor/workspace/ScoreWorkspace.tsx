@@ -445,6 +445,7 @@ export default function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: Pr
               : undefined
           }
           allHarmonized={allMeasuresHaveChords(doc)}
+          harmonizedOfPart={(partIndex) => allMeasuresHaveChords(doc, partIndex)}
           onClearAll={
             canEdit
               ? () => {

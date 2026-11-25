@@ -123,6 +123,8 @@ public class AiServiceClient {
      * @param creativity SAFE, BALANCED hoặc BOLD
      * @param density SPARSE, NORMAL hoặc DENSE
      * @param options số phương án (1..3, theo gói của người bấm)
+     * @param melodyPart part giai điệu (từ 0), null thì music-ai lấy part đầu có nốt có cao độ
+     * @param melodyStaff khuông giai điệu trong part (từ 1), null thì khuông 1
      */
     public ChordGenerationResult generateChords(
             String inPath,
@@ -131,19 +133,28 @@ public class AiServiceClient {
             boolean replaceExisting,
             String creativity,
             String density,
-            int options) {
+            int options,
+            Integer melodyPart,
+            Integer melodyStaff) {
+        Map<String, Object> body = new java.util.LinkedHashMap<>();
+        body.put("inPath", inPath);
+        body.put("outPath", outPath);
+        body.put("style", style);
+        body.put("replaceExisting", replaceExisting);
+        body.put("creativity", creativity);
+        body.put("density", density);
+        body.put("options", options);
+        if (melodyPart != null) {
+            body.put("melodyPart", melodyPart);
+        }
+        if (melodyStaff != null) {
+            body.put("melodyStaff", melodyStaff);
+        }
         return convertClient
                 .post()
                 .uri("/chords/generate")
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(Map.of(
-                        "inPath", inPath,
-                        "outPath", outPath,
-                        "style", style,
-                        "replaceExisting", replaceExisting,
-                        "creativity", creativity,
-                        "density", density,
-                        "options", options))
+                .body(body)
                 .retrieve()
                 .body(ChordGenerationResult.class);
     }

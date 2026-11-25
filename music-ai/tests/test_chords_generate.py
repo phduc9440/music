@@ -274,3 +274,78 @@ def test_harmony_element_uses_editor_suffix_and_bass():
     el = harmony_element(slash, 2, 1)
     assert el.find("kind").get("text") == "m7" and el.findtext("kind") == "minor-seventh"
     assert el.findtext("bass/bass-step") and el.findtext("staff") == "1"
+
+
+# ------------------------------------------------------------------------------------------------ chọn bè giai điệu (CH-04)
+
+
+def two_part_score() -> bytes:
+    """Part 1 là bè đệm (một nốt C3 mỗi ô), part 2 là giai điệu Twinkle; part 1 đứng đầu file."""
+    from tests.chord_samples import part_xml, score_xml
+
+    accompaniment = [n("C", 3, 4) for _ in TWINKLE]
+    return score_xml(part_xml("P1", accompaniment), part_xml("P2", TWINKLE))
+
+
+def harmony_parts(root: ET.Element) -> list[int]:
+    """Chỉ số (từ 0) của các part có <harmony>."""
+    return [i for i, part in enumerate(root.findall("part")) if part.find(".//harmony") is not None]
+
+
+def test_default_melody_is_first_pitched_part(tmp_path):
+    _, roots = run(tmp_path, two_part_score(), seed=3)
+    assert all(harmony_parts(root) == [0] for root in roots)
+
+
+def test_chosen_part_receives_the_chords_and_drives_the_key(tmp_path):
+    result, roots = run(tmp_path, two_part_score(), seed=3, melody_part=1)
+    assert result.key == "C major"
+    for root in roots:
+        # hợp âm nằm ở bè đã chọn (part 2), không đụng bè đệm
+        assert harmony_parts(root) == [1]
+
+
+def test_chosen_part_is_read_not_the_first_one(tmp_path):
+    # Part 1 chỉ có nốt C3 lặp lại; part 2 mới có giai điệu Twinkle (đổi giọng/hợp âm khác nhau theo nốt)
+    first, _ = run(tmp_path, two_part_score(), seed=3, melody_part=0)
+    second, _ = run(tmp_path, two_part_score(), seed=3, melody_part=1)
+    assert first.steps == second.steps  # cùng số ô nhịp...
+    src0 = load_melody(two_part_score(), part_index=0)
+    src1 = load_melody(two_part_score(), part_index=1)
+    notes0 = {note.midi for step in src0.steps for note in step.notes}
+    notes1 = {note.midi for step in src1.steps for note in step.notes}
+    assert notes0 == {48}  # C3
+    assert {60, 62, 64, 65, 67, 69} <= notes1
+
+
+def test_melody_part_out_of_range_raises_no_melody(tmp_path):
+    with pytest.raises(ChordError) as info:
+        run(tmp_path, two_part_score(), melody_part=5)
+    assert info.value.code == "NO_MELODY"
+
+
+def test_melody_part_without_pitched_notes_raises_no_melody(tmp_path):
+    from tests.chord_samples import part_xml, score_xml, unpitched
+
+    data = score_xml(part_xml("P1", [n("C", 4, 4)]), part_xml("P2", [unpitched(4)]))
+    with pytest.raises(ChordError) as info:
+        run(tmp_path, data, melody_part=1)
+    assert info.value.code == "NO_MELODY"
+
+
+def test_chosen_staff_of_piano_part_is_the_melody(tmp_path):
+    # Khuông 1: giai điệu Twinkle; khuông 2: C3. Chọn khuông 2 thì hợp âm gắn staff 2 và đọc nốt C3
+    data = single([m + backup(4) + n("C", 3, 4, staff=2) for m in TWINKLE], staves=2)
+    src = load_melody(data, staff=2)
+    assert src.staff == 2
+    assert {note.midi for step in src.steps for note in step.notes} == {48}
+    _, roots = run(tmp_path, data, seed=5, melody_staff=2)
+    for root in roots:
+        assert all(h.findtext("staff") == "2" for h in root.iter("harmony"))
+
+
+def test_staff_without_notes_raises_no_melody(tmp_path):
+    data = single([m + backup(4) + n("C", 3, 4, staff=2) for m in TWINKLE], staves=2)
+    with pytest.raises(ChordError) as info:
+        run(tmp_path, data, melody_staff=3)
+    assert info.value.code == "NO_MELODY"
