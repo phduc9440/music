@@ -109,9 +109,11 @@ export default function ScoreUpload() {
 
   // Trần thật của một lần = số nhỏ hơn giữa gói và hệ thống; còn lại trong tháng = hạn mức tháng - đã dùng (OMR-04)
   const hardMax = omrConfig?.maxPdfPages ?? UPLOAD_MAX_PDF_PAGES;
-  const planPerJob = plan?.limits.omrMaxPagesPerJob;
+  // BE cũ không trả limits cho SUPER_ADMIN: khi đó dùng hạn mức của gói chính (gói Unlimited, mọi chỉ số null)
+  const limits = plan ? (plan.limits ?? plan.plan?.limits ?? {}) : undefined;
+  const planPerJob = limits?.omrMaxPagesPerJob;
   const perJob = planPerJob == null ? hardMax : Math.min(planPerJob, hardMax);
-  const monthlyLimit = plan ? (plan.limits.omrPagesPerMonth ?? null) : undefined;
+  const monthlyLimit = limits ? (limits.omrPagesPerMonth ?? null) : undefined;
   const remaining = monthlyLimit == null ? null : Math.max(0, monthlyLimit - (plan?.omrPagesUsed ?? 0));
   const quota: { metric: 'OMR_PAGES_PER_JOB' | 'OMR_PAGES'; limit: number; message: string } | null = !plan
     ? null
