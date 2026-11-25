@@ -14,7 +14,7 @@ const part = (id, content) => `<part id="${id}"><measure number="1">${content}</
 
 test('một part một khuông: một lựa chọn', () => {
   const choices = listMelodyChoices(score(scorePart('P1', 'Piano'), part('P1', note('C'))));
-  assert.deepEqual(choices, [{ partIndex: 0, staff: 1, partName: 'Piano', staffCount: 1 }]);
+  assert.deepEqual(choices, [{ partIndex: 0, staff: 1, partName: 'Piano', staffCount: 1, harmonized: false }]);
 });
 
 test('hai part: mỗi part một lựa chọn, đánh số part theo thứ tự trong file', () => {
@@ -60,4 +60,14 @@ test('file hỏng hoặc không phải score-partwise: không có lựa chọn',
 
 test('khóa của thẻ chọn là "part:khuông"', () => {
   assert.equal(melodyChoiceKey({ partIndex: 2, staff: 1 }), '2:1');
+});
+
+test('harmonized: chỉ true khi mọi ô có nốt của part đều đã có hợp âm', () => {
+  const harmony = '<harmony><root><root-step>C</root-step></root></harmony>';
+  const two = (a, b) =>
+    `<part id="P1"><measure number="1">${a}${note('C')}</measure><measure number="2">${b}${note('E')}</measure></part>`;
+  const all = listMelodyChoices(score(scorePart('P1', 'Piano'), two(harmony, harmony)));
+  const some = listMelodyChoices(score(scorePart('P1', 'Piano'), two(harmony, '')));
+  assert.equal(all[0].harmonized, true);
+  assert.equal(some[0].harmonized, false);
 });

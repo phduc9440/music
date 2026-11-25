@@ -107,7 +107,7 @@ export default function ChordSuggestDialog({
         const choices = listMelodyChoices(xml);
         setMelodies(choices);
         setMelodyKey(choices[0] ? melodyChoiceKey(choices[0]) : '');
-        if (choices[0] && harmonizedOfPart) setHarmonized(harmonizedOfPart(choices[0].partIndex));
+        if (choices[0]) setHarmonized(harmonizedOfPart ? harmonizedOfPart(choices[0].partIndex) : choices[0].harmonized);
       })
       .catch(() => undefined); // không đọc được: không hiện ô chọn, BE tự lấy bè mặc định
     return () => {
@@ -244,7 +244,7 @@ export default function ChordSuggestDialog({
               setMelodyKey(e.target.value);
               // Mỗi bè có hợp âm riêng: hỏi "thay hợp âm cũ" theo bè vừa chọn, và bỏ cảnh báo của lần thử trước
               const next = melodies.find((c) => e.target.value === melodyChoiceKey(c));
-              setHarmonized(next && harmonizedOfPart ? harmonizedOfPart(next.partIndex) : false);
+              setHarmonized(next ? (harmonizedOfPart ? harmonizedOfPart(next.partIndex) : next.harmonized) : false);
               setError(null);
             }}
             aria-label={t('chords.dialog.melodyLabel')}

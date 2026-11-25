@@ -1,8 +1,11 @@
 {
   "button": "Gợi ý hợp âm",
   "buttonHint": "Máy đọc giai điệu và đề xuất hợp âm cho từng ô; bạn xem lại và sửa trước khi lưu",
-  "saveFirst": "Lưu thay đổi trước khi gợi ý hợp âm: AI đọc bản nhạc đã lưu.",
+  "saveFirst": "Đang lưu thay đổi rồi mới gợi ý hợp âm (AI đọc bản nhạc đã lưu)…",
   "sourceLabel": "Gợi ý hợp âm tự động",
+  "generatedTitle": "Gợi ý hợp âm ({{style}})",
+  "generatedDescAdd": "Giọng {{key}}, {{count}} hợp âm được thêm",
+  "generatedDescReplace": "Giọng {{key}}, {{count}} hợp âm thay cho hợp âm cũ",
   "failed": "Không gợi ý được hợp âm, vui lòng thử lại",
   "cancelled": "Tác vụ gợi ý hợp âm đã bị hủy",
   "dialog": {

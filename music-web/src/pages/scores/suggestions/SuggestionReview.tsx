@@ -15,6 +15,7 @@ import { t } from '../../../i18n/core';
 import { fetchMusicXml, suggestionApi } from '../../../services';
 import type { SuggestionChange, SuggestionDetail } from '../../../types';
 import { formatDateTime, getErrorCode, getErrorMessage, useScoreBase } from '../../../utils/score';
+import { suggestionDescription, suggestionTitle } from '../../../utils/suggestionText';
 import '../../../components/scores/scores.css';
 import '../../../components/scores/suggestions/suggestions.css';
 import './SuggestionReview.css';
@@ -238,14 +239,14 @@ export default function SuggestionReview() {
               {detail.source === 'CHORD_GENERATION' && <span className="sg-badge">{t('chords.sourceLabel')}</span>}
               {detail.source === 'LIVE_RECOVERY' && <span className="sg-badge">{t('live.recoveredBadge')}</span>}
             </div>
-            <h1 className="sgr-title">{detail.title}</h1>
+            <h1 className="sgr-title">{suggestionTitle(detail.title, t)}</h1>
             <p className="sgr-meta">
               {t('suggestions.review.author')}: {detail.author?.name ?? t('suggestions.section.system')} ·{' '}
               {formatDateTime(detail.createdAt)} ·{' '}
               {t('suggestions.review.baseVersion', { version: detail.baseVersion })} ·{' '}
               {t('suggestions.review.currentVersion', { version: detail.currentVersion })}
             </p>
-            {detail.description && <p className="sgr-desc">{detail.description}</p>}
+            {detail.description && <p className="sgr-desc">{suggestionDescription(detail.description, t)}</p>}
             {detail.decidedBy && (
               <p className="sgr-meta">
                 {t('suggestions.review.decidedBy', { name: detail.decidedBy.name })}

@@ -38,6 +38,7 @@ import com.ptit.music_be.repository.home.HomeQueryRepository;
 import com.ptit.music_be.repository.practice.PracticeSessionRepository;
 import com.ptit.music_be.repository.score.MemberScoreRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
+import com.ptit.music_be.utils.BusinessTime;
 
 /**
  * Chạy các câu truy vấn của trang chủ với DB thật (cần MySQL đang chạy). Mỗi ca tự tạo dữ liệu trong transaction rồi
@@ -249,7 +250,8 @@ class HomeQueryTest {
     @Test
     void todayPracticeCountsOnlySessionsSinceMidnight() {
         Score mine = score(owner, "Bài tập", "PRIVATE", null, 0);
-        LocalDateTime midnight = LocalDate.now().atStartOfDay();
+        // "Hôm nay" là ngày theo giờ nghiệp vụ (Việt Nam); giờ lưu trong DB là UTC (X-06)
+        LocalDateTime midnight = BusinessTime.startOfDayUtc(BusinessTime.today());
         practice(owner, mine, midnight.minusMinutes(5), 600);
         practice(owner, mine, midnight.plusMinutes(1), 120);
 

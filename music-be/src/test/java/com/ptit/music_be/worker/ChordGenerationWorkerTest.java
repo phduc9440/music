@@ -157,7 +157,7 @@ class ChordGenerationWorkerTest {
                         description.capture(),
                         isNull());
         assertThat(body.getValue()).isEqualTo(WITH_CHORDS);
-        assertThat(title.getValue()).isEqualTo("Gợi ý hợp âm (Tự nhiên)");
+        assertThat(title.getValue()).isEqualTo("chords.title:NATURAL");
         assertThat(description.getValue()).contains("C major");
         assertThat(task.getStatus()).isEqualTo(AiTaskStatus.COMPLETED);
         assertThat(task.getProgress()).isEqualTo(100);

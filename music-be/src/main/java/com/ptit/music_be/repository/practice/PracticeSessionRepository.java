@@ -90,15 +90,15 @@ public interface PracticeSessionRepository extends JpaRepository<PracticeSession
             @Param("endedAt") LocalDateTime endedAt);
 
     /**
-     * Gom phiên tập theo ngày của started_at: [ngày, số phiên, tổng giây]. Chỉ tính phiên tập từ minSeconds giây trở
-     * lên, trong khoảng [from, to).
+     * Giờ bắt đầu và số giây của từng phiên tập từ minSeconds giây trở lên, trong khoảng [from, to) (UTC, như DB lưu).
+     * Service tự gom theo ngày của giờ nghiệp vụ: gom bằng SQL sẽ theo ngày UTC và lệch với ngày người dùng thấy (X-06).
      */
-    @Query("select cast(s.startedAt as date), count(s), coalesce(sum(s.durationSeconds), 0)"
+    @Query("select s.startedAt, s.durationSeconds"
             + " from PracticeSession s"
             + " where s.member = :member and s.startedAt >= :from and s.startedAt < :to"
             + " and s.durationSeconds >= :minSeconds"
-            + " group by cast(s.startedAt as date) order by cast(s.startedAt as date)")
-    List<Object[]> sumByDay(
+            + " order by s.startedAt")
+    List<Object[]> sessionTimes(
             @Param("member") Member member,
             @Param("from") LocalDateTime from,
             @Param("to") LocalDateTime to,

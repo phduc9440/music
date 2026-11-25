@@ -308,7 +308,7 @@ public class SuggestionServiceImpl implements SuggestionService {
                 score.getId(),
                 effective.statuses(),
                 authorFilter,
-                PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), MAX_PAGE_SIZE)));
+                PageRequest.of(Math.max(page, 0), Math.clamp(size, 1, MAX_PAGE_SIZE)));
 
         List<ScoreSuggestion> rows = found.getContent();
         Map<String, Integer> counts = new HashMap<>();
@@ -664,9 +664,9 @@ public class SuggestionServiceImpl implements SuggestionService {
     private String shapeToJson(SuggestionDiffer.Shape shape) {
         ObjectNode node = objectMapper.createObjectNode();
         ArrayNode parts = node.putArray("parts");
-        shape.parts().forEach(id -> parts.add(id));
+        shape.parts().forEach(parts::add);
         ArrayNode counts = node.putArray("measures");
-        shape.measures().forEach(count -> counts.add(count));
+        shape.measures().forEach(counts::add);
         return node.toString();
     }
 
@@ -735,7 +735,7 @@ public class SuggestionServiceImpl implements SuggestionService {
                     actor,
                     NotificationType.SUGGESTION_NEW,
                     score.getId(),
-                    name + " đã đề xuất sửa “" + suggestion.getTitle() + "” trong bản nhạc “" + score.getTitle() + "”",
+                    name + " đã đề xuất sửa “" + plainTitle(suggestion) + "” trong bản nhạc “" + score.getTitle() + "”",
                     NotificationService.params(
                             "name",
                             name,
@@ -750,6 +750,12 @@ public class SuggestionServiceImpl implements SuggestionService {
         }
     }
 
+    /** Tiêu đề đọc được trong thông báo: đề xuất của hệ thống lưu khóa dịch nên thay bằng tên chung. */
+    private static String plainTitle(ScoreSuggestion suggestion) {
+        String title = suggestion.getTitle();
+        return title != null && title.startsWith("chords.") ? "Gợi ý hợp âm" : title;
+    }
+
     private void notifyDecided(Score score, ScoreSuggestion suggestion, Member actor, int accepted, int total) {
         String name = ScoreCommentServiceImpl.displayName(actor);
         notificationService.notify(
@@ -757,7 +763,7 @@ public class SuggestionServiceImpl implements SuggestionService {
                 actor,
                 NotificationType.SUGGESTION_DECIDED,
                 score.getId(),
-                name + " đã xử lý đề xuất “" + suggestion.getTitle() + "” của bạn trong “" + score.getTitle() + "”",
+                name + " đã xử lý đề xuất “" + plainTitle(suggestion) + "” của bạn trong “" + score.getTitle() + "”",
                 NotificationService.params(
                         "name",
                         name,

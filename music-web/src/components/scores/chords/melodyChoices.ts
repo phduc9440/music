@@ -10,6 +10,8 @@ export interface MelodyChoice {
   partName: string;
   /** Part này có bao nhiêu khuông có nốt (piano hai tay: 2). Dùng để chỉ ghi "khuông n" khi cần. */
   staffCount: number;
+  /** Mọi ô có nốt của part này đã có hợp âm: trang chi tiết dùng để hỏi thay hợp âm cũ mà không phải chạy tác vụ lỗi. */
+  harmonized: boolean;
 }
 
 const childrenOf = (el: Element, tag: string): Element[] => Array.from(el.children).filter((c) => c.tagName === tag);
@@ -37,9 +39,14 @@ export function listMelodyChoices(xml: string): MelodyChoice[] {
       const staff = Number(staffText);
       staves.add(Number.isInteger(staff) && staff >= 1 ? staff : 1);
     }
+    const withNotes = childrenOf(part, 'measure').filter((m) =>
+      Array.from(m.getElementsByTagName('note')).some((n) => Array.from(n.children).some((c) => c.tagName === 'pitch')),
+    );
+    const harmonized =
+      withNotes.length > 0 && withNotes.every((m) => Array.from(m.children).some((c) => c.tagName === 'harmony'));
     const sorted = [...staves].sort((a, b) => a - b);
     for (const staff of sorted) {
-      out.push({ partIndex, staff, partName: names.get(part.getAttribute('id') ?? '') ?? '', staffCount: sorted.length });
+      out.push({ partIndex, staff, partName: names.get(part.getAttribute('id') ?? '') ?? '', staffCount: sorted.length, harmonized });
     }
   });
   return out;

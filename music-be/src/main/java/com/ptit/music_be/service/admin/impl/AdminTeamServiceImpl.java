@@ -1,6 +1,5 @@
 package com.ptit.music_be.service.admin.impl;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -43,6 +42,7 @@ import com.ptit.music_be.service.team.TeamAccess;
 import com.ptit.music_be.service.team.TeamActivityLog;
 import com.ptit.music_be.service.team.impl.TeamServiceImpl;
 import com.ptit.music_be.utils.SecurityUtils;
+import com.ptit.music_be.utils.BusinessTime;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -121,7 +121,7 @@ public class AdminTeamServiceImpl implements AdminTeamService {
                                         + " and i.show.status = 'PREPARING' and i.show.deletedAt is null"
                                         + " and i.show.team.deletedAt is null and i.dueDate < :today",
                                 Long.class)
-                        .setParameter("today", LocalDate.now())
+                        .setParameter("today", BusinessTime.today())
                         .getSingleResult())
                 .build();
     }
@@ -168,7 +168,7 @@ public class AdminTeamServiceImpl implements AdminTeamService {
         if (rows.isEmpty()) {
             throw new AppException(TeamErrorCode.TEAM_NOT_EXISTED);
         }
-        AdminTeamResponse team = toRow(rows.get(0), new HashMap<>());
+        AdminTeamResponse team = toRow(rows.getFirst(), new HashMap<>());
 
         List<Show> shows = showRepository.findByTeamOrdered(team.getId());
         Map<String, long[]> progress = new HashMap<>();

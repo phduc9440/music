@@ -163,6 +163,11 @@ Danh sách đầy đủ kèm giải thích nằm trong [`.env.example`](.env.exa
 | Ảnh đại diện | `CLOUDINARY_*` | |
 | Thanh toán | `VNPAY_TMN_CODE`, `VNPAY_HASH_SECRET`, `VNPAY_RETURN_URL` | Sandbox; IPN cần địa chỉ công khai (ngrok...) |
 | Địa chỉ, cổng | `APP_WEB_URL`, `WEB_PORT`, `BE_PORT` | |
+| Múi giờ | `APP_ZONE` | Múi giờ tính "hôm nay" và chuỗi ngày luyện tập, mặc định `Asia/Ho_Chi_Minh` |
+
+**Quy ước thời gian:** backend luôn chạy và lưu giờ UTC (đặt cứng ở `MusicBeApplication`, không phụ thuộc múi giờ máy) và
+trả mọi thời điểm dạng ISO có `Z` (`2026-11-25T01:47:00Z`); web đổi sang giờ của người xem. Ngày theo lịch (hôm nay, chuỗi
+ngày, ngày diễn) tính theo `APP_ZONE`. MySQL nên đặt `default-time-zone='+00:00'` để các `NOW()` trong SQL cùng quy ước.
 
 Không commit `.env`, `music-web/.env` và `music-be/src/main/resources/application.yaml` (đã có trong `.gitignore`).
 

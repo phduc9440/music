@@ -178,9 +178,10 @@ public class ChordGenerationWorker {
                     others.add(Files.readAllBytes(fileStorageService.resolve(option.outPath())));
                 }
             }
-            String title = "Gợi ý hợp âm (" + job.style().label() + ")";
-            String description = "Giọng " + result.key() + ", " + result.filled()
-                    + (job.replaceExisting() ? " hợp âm thay cho hợp âm cũ" : " hợp âm được thêm");
+            // Khóa dịch, không phải câu tiếng Việt: web đọc theo ngôn ngữ người xem (suggestionText.ts)
+            String title = "chords.title:" + job.style().name();
+            String description = "chords.desc:" + result.key() + "|" + result.filled() + "|"
+                    + (job.replaceExisting() ? "REPLACE" : "ADD");
             completeWithSuggestion(job, proposed, others, title, description, result);
         } catch (AppException e) {
             fail(

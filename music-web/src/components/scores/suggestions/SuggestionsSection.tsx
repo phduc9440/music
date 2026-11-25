@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import { suggestionApi } from '../../../services';
 import type { SuggestionFilter, SuggestionSummary } from '../../../types';
 import { formatRelative, getErrorMessage, useScoreBase } from '../../../utils/score';
+import { suggestionTitle } from '../../../utils/suggestionText';
 import { t } from '../../../i18n/core';
 import Skeleton from '../../ui/Skeleton';
 import { Icon } from '../../ui';
@@ -106,7 +107,7 @@ export default function SuggestionsSection({ scoreId, canEdit = false, onOpenCou
             <li key={s.id} className="sg-item">
               <div className="sg-item__main">
                 <Link className="sg-item__title" to={suggestionPath(base, scoreId, s.id)}>
-                  {s.title}
+                  {suggestionTitle(s.title, t)}
                 </Link>
                 <div className="sg-item__meta">
                   {t('suggestions.section.by', { name: s.author?.name ?? t('suggestions.section.system') })} ·{' '}

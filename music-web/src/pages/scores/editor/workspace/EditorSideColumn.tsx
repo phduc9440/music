@@ -9,6 +9,7 @@ import { useMediaQuery } from '../../../../components/player/hooks/useMediaQuery
 import type { ScoreEditor } from '../../../../components/editor/core/useScoreEditor';
 import type { useLiveCollab } from '../../../../components/editor/live/useLiveCollab';
 import { t } from '../../../../i18n/core';
+import { suggestionTitle } from '../../../../utils/suggestionText';
 import type { AiChordPanelState } from './useAiChordPanel';
 import type { ScoreComments } from './useScoreComments';
 
@@ -58,7 +59,7 @@ export default function EditorSideColumn({ scoreId, editor, live, side, ai, onCl
       {!sideRail && ai.shown && draft && (
         <AiChordPanel
           rows={ai.aiDraft.rows}
-          title={draft.suggestion.title}
+          title={suggestionTitle(draft.suggestion.title, t)}
           description={draft.suggestion.description}
           currentId={[...editor.selection][0] ?? null}
           saving={editor.saving}

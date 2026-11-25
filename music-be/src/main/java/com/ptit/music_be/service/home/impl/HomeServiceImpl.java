@@ -1,6 +1,5 @@
 package com.ptit.music_be.service.home.impl;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -36,6 +35,7 @@ import com.ptit.music_be.service.practice.PracticeStatsService;
 import com.ptit.music_be.service.score.ScoreService;
 import com.ptit.music_be.service.storage.FileStorageService;
 import com.ptit.music_be.utils.SecurityUtils;
+import com.ptit.music_be.utils.BusinessTime;
 
 import lombok.RequiredArgsConstructor;
 
@@ -174,7 +174,7 @@ public class HomeServiceImpl implements HomeService {
                 .displayName(displayName(me))
                 .streak(practiceStatsService.getStreak())
                 .todayPracticeSeconds(homeQueryRepository.sumPracticeSecondsSince(
-                        me.getId(), LocalDate.now().atStartOfDay()))
+                        me.getId(), BusinessTime.startOfDayUtc(BusinessTime.today())))
                 .recentScores(recent)
                 .pending(pending)
                 .accessRequestCount(homeQueryRepository.countPendingAccessRequestsOfOwner(me.getId()))
@@ -190,7 +190,7 @@ public class HomeServiceImpl implements HomeService {
         if (!last.isEmpty()) {
             return HomeSummaryResponse.Suggestion.builder()
                     .reason("CONTINUE")
-                    .score(toCard(last.get(0)))
+                    .score(toCard(last.getFirst()))
                     .build();
         }
         List<ScoreSummaryResponse> official =
@@ -200,7 +200,7 @@ public class HomeServiceImpl implements HomeService {
         }
         return HomeSummaryResponse.Suggestion.builder()
                 .reason("OFFICIAL")
-                .score(official.get(0))
+                .score(official.getFirst())
                 .build();
     }
 

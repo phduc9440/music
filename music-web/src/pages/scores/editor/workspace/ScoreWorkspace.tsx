@@ -63,6 +63,8 @@ export default function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: Pr
   const [hideWarning, setHideWarning] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [suggestingChords, setSuggestingChords] = useState(false);
+  // Bấm Gợi ý hợp âm khi còn thay đổi chưa lưu: lưu trước (AI đọc bản đã lưu) rồi mới mở hộp, không bắt người dùng tự lưu
+  const [suggestAfterSave, setSuggestAfterSave] = useState(false);
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [parseFailed, setParseFailed] = useState(false);
   const [focusMeasure, setFocusMeasure] = useState<{ index: number; key: number } | null>(null);
@@ -279,8 +281,23 @@ export default function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: Pr
             onLyricModeChange={editor.setLyricMode}
             chordMode={editor.chordMode}
             onChordModeChange={editor.setChordMode}
-            onSuggestChords={canEdit ? () => setSuggestingChords(true) : undefined}
-            suggestChordsBlocked={editor.dirty ? t('chords.saveFirst') : null}
+            onSuggestChords={
+              canEdit
+                ? () => {
+                    if (!editor.dirty) {
+                      setSuggestingChords(true);
+                      return;
+                    }
+                    setSuggestAfterSave(true);
+                    // Lưu lỗi hoặc xung đột: thông báo đã hiện, không mở hộp
+                    void editor.save().then((saved) => {
+                      setSuggestAfterSave(false);
+                      if (saved) setSuggestingChords(true);
+                    });
+                  }
+                : undefined
+            }
+            suggestChordsBlocked={suggestAfterSave ? t('chords.saveFirst') : null}
             onMark={editor.applyMark}
             onStaves={editor.editStaves}
             onOpenNotation={() => setNotationOpen(true)}

@@ -63,22 +63,22 @@ export function useSaveFlow(o: SaveFlowOptions) {
   }, [doc, scoreId]);
 
   const save = useCallback(
-    async (force = false) => {
-      if (!canEdit || savingRef.current) return;
+    async (force = false): Promise<boolean> => {
+      if (!canEdit || savingRef.current) return false;
       const liveSessionNow = liveRef.current?.session;
       if (liveSessionNow) {
         // Đồng chỉnh sửa: máy chủ giữ bản nhạc chung, Lưu chỉ yêu cầu chốt thành một phiên bản
         liveSessionNow.save();
         flash(t('live.notice.saving'));
-        return;
+        return false;
       }
       if (!force && !historyRef.current.dirty) {
         flash(t('editor.flash.nothingToSave'));
-        return;
+        return true; // không có gì chưa lưu: bản đã lưu là bản đang xem
       }
       if (mode === 'suggest') {
         onSuggest?.(doc.serialize());
-        return;
+        return false;
       }
       savingRef.current = true;
       setSaving(true);
@@ -97,10 +97,12 @@ export function useSaveFlow(o: SaveFlowOptions) {
         });
         toast.success(t('editor.toast.saved'));
         syncScoreMeta();
+        return true;
       } catch (err) {
         const latest = getConflictVersion(err);
         if (latest !== undefined) setConflict({ latestVersion: latest });
         else if (!reportPlanLimit(err)) toast.error(getSaveErrorMessage(err));
+        return false;
       } finally {
         savingRef.current = false;
         setSaving(false);

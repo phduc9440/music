@@ -6,7 +6,7 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: music_db
-    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --default-time-zone=+00:00
     volumes:
       - mysql-data:/var/lib/mysql
     healthcheck:
@@ -58,6 +58,7 @@ services:
       VNPAY_HASH_SECRET: ${VNPAY_HASH_SECRET:-}
       VNPAY_RETURN_URL: ${VNPAY_RETURN_URL:-http://localhost:5173/billing/result}
       APP_WEB_URL: ${APP_WEB_URL:-http://localhost:5173}
+      APP_ZONE: ${APP_ZONE:-Asia/Ho_Chi_Minh}
       APP_STORAGE_LOCAL_ROOT: /data/storage
       OMR_LLM: ${OMR_LLM:-off}
     volumes:
