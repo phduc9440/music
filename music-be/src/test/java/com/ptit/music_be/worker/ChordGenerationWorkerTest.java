@@ -392,7 +392,7 @@ class ChordGenerationWorkerTest {
                 .status(AiTaskStatus.PROCESSING)
                 .build();
         task.setStatus(AiTaskStatus.PROCESSING);
-        when(aiTaskRepository.findByTaskTypeInAndStatusAndUpdatedAtBefore(
+        when(aiTaskRepository.findByTaskTypeInAndStatusAndStartedAtBefore(
                         eq(List.of(AiTaskType.CHORD_GENERATION)),
                         eq(AiTaskStatus.PROCESSING),
                         any(LocalDateTime.class)))
@@ -403,11 +403,19 @@ class ChordGenerationWorkerTest {
 
         assertThat(task.getStatus()).isEqualTo(AiTaskStatus.FAILED);
         assertThat(task.getErrorMessage()).isEqualTo("TASK_TIMEOUT");
+        // PROCESSING tính từ startedAt, 5 phút
         ArgumentCaptor<LocalDateTime> before = ArgumentCaptor.forClass(LocalDateTime.class);
         verify(aiTaskRepository)
-                .findByTaskTypeInAndStatusAndUpdatedAtBefore(
+                .findByTaskTypeInAndStatusAndStartedAtBefore(
                         eq(List.of(AiTaskType.CHORD_GENERATION)), eq(AiTaskStatus.PROCESSING), before.capture());
         assertThat(before.getValue()).isBefore(LocalDateTime.now().minusMinutes(4));
         assertThat(before.getValue()).isAfter(LocalDateTime.now().minusMinutes(6));
+        // PENDING (còn xếp hàng) có mốc dài hơn: 15 phút từ lúc tạo
+        ArgumentCaptor<LocalDateTime> pending = ArgumentCaptor.forClass(LocalDateTime.class);
+        verify(aiTaskRepository)
+                .findByTaskTypeInAndStatusAndUpdatedAtBefore(
+                        eq(List.of(AiTaskType.CHORD_GENERATION)), eq(AiTaskStatus.PENDING), pending.capture());
+        assertThat(pending.getValue()).isBefore(LocalDateTime.now().minusMinutes(14));
+        assertThat(pending.getValue()).isAfter(LocalDateTime.now().minusMinutes(16));
     }
 }

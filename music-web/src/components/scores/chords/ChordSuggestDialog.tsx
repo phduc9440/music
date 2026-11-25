@@ -10,6 +10,8 @@ import { reportPlanLimit, showPlanLimit } from '../../../utils/planLimit';
 import { useExportTask } from '../../export/useExportTask';
 import { suggestionPath } from '../suggestions/suggestionUtils';
 import Modal from '../common/Modal';
+import { ScoreDocument } from '../../editor/core/ScoreDocument';
+import { checkMeasures } from '../../editor/structure/measureCheck';
 import { listMelodyChoices, melodyChoiceKey } from './melodyChoices';
 import type { MelodyChoice } from './melodyChoices';
 import './chordSuggest.css';
@@ -74,6 +76,8 @@ export default function ChordSuggestDialog({
 }: Props) {
   const navigate = useNavigate();
   const base = useScoreBase();
+  // Số thứ tự (từ 1) các ô thiếu / thừa phách: AI đặt hợp âm theo phách nên ô sai độ dài dễ ra hợp âm lệch (CH-11)
+  const [badMeasures, setBadMeasures] = useState<number[]>([]);
   const [style, setStyle] = useState<ChordStyle>('NATURAL');
   const [creativity, setCreativity] = useState<ChordCreativity>('BALANCED');
   const [density, setDensity] = useState<ChordDensity>('NORMAL');
@@ -106,6 +110,12 @@ export default function ChordSuggestDialog({
         if (!alive) return;
         const choices = listMelodyChoices(xml);
         setMelodies(choices);
+        try {
+          const numbers = [...new Set(checkMeasures(ScoreDocument.parse(xml)).map((i) => i.measureIndex + 1))];
+          setBadMeasures(numbers.sort((a, b) => a - b));
+        } catch {
+          setBadMeasures([]); // không đọc được thì thôi không cảnh báo
+        }
         setMelodyKey(choices[0] ? melodyChoiceKey(choices[0]) : '');
         if (choices[0]) setHarmonized(harmonizedOfPart ? harmonizedOfPart(choices[0].partIndex) : choices[0].harmonized);
       })
@@ -310,6 +320,15 @@ export default function ChordSuggestDialog({
         <p className="cs-hint cs-locked-hint">
           <Icon name="lock" size={14} />
           {t('chords.dialog.lockedHint')}
+        </p>
+      )}
+
+      {badMeasures.length > 0 && (
+        <p className="cs-warn" role="status">
+          {t('chords.dialog.badMeasures', {
+            count: badMeasures.length,
+            measures: badMeasures.slice(0, 5).join(', ') + (badMeasures.length > 5 ? '…' : ''),
+          })}
         </p>
       )}
 

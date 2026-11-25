@@ -117,4 +117,8 @@ public interface AiTaskRepository extends JpaRepository<AiTask, String> {
     /** Tác vụ có trạng thái cho trước không cập nhật gì từ trước mốc {@code before} (job quét task xuất). */
     List<AiTask> findByTaskTypeInAndStatusAndUpdatedAtBefore(
             Collection<AiTaskType> taskTypes, AiTaskStatus status, LocalDateTime before);
+
+    /** Tác vụ có trạng thái cho trước bắt đầu chạy từ trước mốc {@code before} (không tính thời gian chờ trong hàng). */
+    List<AiTask> findByTaskTypeInAndStatusAndStartedAtBefore(
+            Collection<AiTaskType> taskTypes, AiTaskStatus status, LocalDateTime before);
 }

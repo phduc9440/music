@@ -12,6 +12,7 @@
     "title": "Suggest chords",
     "hint": "The AI reads the melody and places chords in measures without chords. Every run the AI \"thinks\" again, so you get a different accompaniment.",
     "hintOptions": "You get {{count}} options (A, B, C…) to choose from.",
+    "badMeasures": "{{count}} measures have too few or too many beats (measure {{measures}}). The AI places chords by beat, so those measures may get misplaced chords; you can still continue, or fix them first.",
     "hintEnd": "The AI chords appear in the editor (highlighted) for you to adjust and save. Each run uses one of your quota even if you discard the suggestion.",
     "styleLabel": "Chord colour",
     "running": "Analysing the melody…",

@@ -309,3 +309,13 @@
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+.cs-warn {
+  margin: 1rem 0 0;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid var(--ui-border-strong);
+  border-left: 3px solid var(--ui-warning, var(--ui-note-selected));
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-warning-soft);
+  font-size: var(--ui-text-sm);
+}

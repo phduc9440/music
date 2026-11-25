@@ -12,6 +12,7 @@
     "title": "Gợi ý hợp âm",
     "hint": "AI đọc giai điệu rồi đặt hợp âm cho các ô chưa có hợp âm. Mỗi lần tạo là một lần AI tự \"nghĩ\" lại nên ra cách đệm khác.",
     "hintOptions": "Kèm {{count}} phương án (A, B, C…) để bạn chọn.",
+    "badMeasures": "Có {{count}} ô nhịp thiếu hoặc thừa phách (ô {{measures}}). AI đặt hợp âm theo phách nên các ô này có thể ra hợp âm lệch; bạn vẫn gợi ý được, hoặc sửa các ô đó trước.",
     "hintEnd": "Hợp âm AI hiện ngay trong trình chỉnh sửa (tô vàng) để bạn chỉnh rồi lưu. Mỗi lần tạo tính một lượt trong hạn mức, kể cả khi bạn bỏ gợi ý.",
     "styleLabel": "Màu hợp âm",
     "running": "Đang phân tích giai điệu…",
