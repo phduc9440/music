@@ -5,7 +5,8 @@
       "PENDING": "Pending",
       "PROCESSING": "Processing",
       "COMPLETED": "Completed",
-      "FAILED": "Failed"
+      "FAILED": "Failed",
+      "CANCELLED": "Cancelled"
     },
     "taskStatus": {
       "PENDING": "Pending",
@@ -301,7 +302,10 @@
     "copyLinkFailed": "Could not copy the link",
     "preview": "Preview",
     "details": "Details",
-    "createdAt": "Created"
+    "createdAt": "Created",
+    "cancelled": "You cancelled this digitizing. You can run it again on the uploaded files.",
+    "aiMenu": "AI",
+    "moreMenu": "More actions"
   },
   "edit": {
     "tagsFailed": "Couldn't load the genres",
@@ -617,5 +621,23 @@
     "purgeMessage": "“{title}” and all of its versions, files and comments will be deleted for good. This cannot be undone.",
     "purgeConfirm": "Delete permanently",
     "purged": "“{title}” was deleted permanently"
+  },
+  "next": {
+    "title": "Next steps",
+    "hide": "Hide",
+    "check": {
+      "title": "Check doubtful measures",
+      "text": "{count}/{total} measures the digitizer wasn't sure about, with the original to compare.",
+      "none": "No doubtful measures.",
+      "action": "Open and check"
+    },
+    "chords": {
+      "title": "Add chords",
+      "text": "Let AI suggest accompaniment chords for the melody."
+    },
+    "practice": {
+      "title": "Practice",
+      "text": "Practice the digitized score in Studio."
+    }
   }
 }

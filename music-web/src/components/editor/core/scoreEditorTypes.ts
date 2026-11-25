@@ -24,6 +24,8 @@ export interface UseScoreEditorOptions {
   scoreId: string;
   /** Tên bản nhạc, dùng đặt tên file khi tải bản của người dùng về máy. */
   title: string;
+  /** Tác giả của bản nhạc (scores.composer): lưu xong thì đồng bộ với tác giả ghi trong file (OMR-12). */
+  composer?: string | null;
   doc: ScoreDocument;
   /** Phiên bản MusicXML web đang giữ (từ `currentVersion` của BE). */
   initialVersion: number;

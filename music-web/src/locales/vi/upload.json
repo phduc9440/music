@@ -6,7 +6,9 @@
     "PREPROCESS": "Tiền xử lý ảnh",
     "INFERENCE": "Nhận diện ký hiệu",
     "MERGE": "Ghép các trang",
-    "EXPORT": "Xuất MusicXML và MIDI"
+    "EXPORT": "Xuất MusicXML và MIDI",
+    "QUEUED": "Đang xếp hàng",
+    "BUSY": "Chờ dịch vụ rảnh"
   },
   "errors": {
     "PAGE_UNREADABLE": {
@@ -64,6 +66,10 @@
     "GENERIC": {
       "title": "Số hóa thất bại",
       "hint": "Đã xảy ra lỗi khi xử lý. Bạn có thể thử lại hoặc tải file khác."
+    },
+    "PDF_UNREADABLE": {
+      "title": "Không đọc được PDF",
+      "hint": "File PDF có thể bị hỏng. Hãy xuất lại PDF hoặc chụp ảnh từng trang rồi tải lên."
     }
   },
   "measureFlags": {
@@ -73,7 +79,8 @@
     "LEAP": "Bước nhảy giai điệu bất thường, có thể lệch quãng tám hoặc lệch dòng kẻ",
     "ACCIDENTAL": "Dấu hóa lạ chỉ xuất hiện một lần, có thể là vết bẩn hoặc chữ",
     "UNSTABLE": "Đọc lại ô này nhiều lần cho kết quả khác nhau",
-    "AI_DOUBT": "AI đối chiếu ảnh cho rằng ô này đọc chưa đúng"
+    "AI_DOUBT": "AI đối chiếu ảnh cho rằng ô này đọc chưa đúng",
+    "AUTO_FIXED": "Máy đã tự sửa ô này, hãy đối chiếu với ảnh gốc"
   },
   "dropzone": {
     "title": "Kéo thả bản nhạc vào đây",
@@ -122,7 +129,6 @@
   "fieldComposer": "Tác giả",
   "composerPlaceholder": "Ví dụ: Trịnh Công Sơn",
   "sourceType": "Loại nguồn",
-  "sourceHintTouched": "Dùng để thống kê độ chính xác nhận diện.",
   "sourceHintGuess": "Tự đoán theo loại file, bạn có thể đổi.",
   "progressLabel": "Tiến độ tải lên",
   "uploading": "Đang tải lên... {progress}%",
@@ -212,7 +218,17 @@
     "cancelText": "Tác vụ đang chạy sẽ dừng lại. Bạn có thể bấm \"Thử lại\" sau đó.",
     "keepGoing": "Tiếp tục xử lý",
     "cancelling": "Đang hủy...",
-    "cancelTask": "Hủy tác vụ"
+    "cancelTask": "Hủy tác vụ",
+    "queue": {
+      "position": "Thứ {position} trong hàng đợi · chờ {wait}",
+      "busy": "Hệ thống đang bận, bản nhạc sẽ được tự gửi lại khi có chỗ.",
+      "underMinute": "dưới 1 phút",
+      "minutes": "khoảng {count} phút"
+    },
+    "leaveHint": "Bạn có thể rời trang này: khi số hóa xong hoặc lỗi, chuông thông báo sẽ báo và dẫn thẳng tới kết quả.",
+    "forbidden": "Bạn không có quyền xem tiến độ này",
+    "forbiddenHint": "Chỉ người có quyền chỉnh sửa bản nhạc mới xem được tiến độ số hóa. Hãy xin quyền từ chủ bản nhạc.",
+    "cancelForbidden": "Chỉ người bấm số hóa hoặc chủ bản nhạc mới hủy được tác vụ này"
   },
   "compare": {
     "title": "So sánh trang {page}",
@@ -236,12 +252,14 @@
     "tabs": {
       "score": "Bản nhạc",
       "check": "Ô cần kiểm tra",
-      "warnings": "Cảnh báo"
+      "warnings": "Cảnh báo",
+      "fixes": "Đã tự sửa"
     },
     "summary": {
       "pages": "Số trang",
       "measures": "Số ô nhịp",
-      "imageMeasures": "Số ô đếm trên ảnh"
+      "imageMeasures": "Số ô đếm trên ảnh",
+      "tempo": "Nhịp độ"
     },
     "subtitle": "Kết quả số hóa · kiểm tra trước khi chỉnh sửa",
     "details": "Chi tiết bản nhạc",
@@ -267,19 +285,33 @@
     "downloadKrn": "Tải .krn",
     "actions": "Thao tác với kết quả",
     "accept": "Chấp nhận và chỉnh sửa",
-    "listenSoon": "Trình phát sẽ có ở bản sau",
     "listen": "Nghe thử",
     "downloadXml": "Tải MusicXML",
     "creatingMidi": "Đang tạo MIDI...",
     "downloadMidi": "Tải MIDI",
     "redo": "Nhận diện lại",
-    "hint": "Chỉnh sửa và nghe thử trực tiếp sẽ có ở bản sau; bạn có thể tải MIDI để nghe thử bằng phần mềm khác.",
-    "redoTitle": "Nhận diện lại?",
-    "redoText": "Hệ thống sẽ chạy lại từ file gốc và thay kết quả hiện tại bằng kết quả mới.",
+    "hint": "Bấm \"Chấp nhận và chỉnh sửa\" để mở trình chỉnh sửa kèm bảng Cần kiểm tra và ảnh gốc của từng ô.",
     "redoPreprocess": "Làm sạch và căn thẳng ảnh trước khi nhận diện",
     "later": "Để sau",
     "measure": "Ô {measure}",
-    "confidence": "Độ tin cậy {value}%"
+    "confidence": "Độ tin cậy {value}%",
+    "fixesIntro": "Những chỗ máy đã tự sửa khi số hóa. Các ô này cũng nằm trong danh sách Ô cần kiểm tra.",
+    "advanced": "Nâng cao: chuỗi **kern (để gỡ lỗi)",
+    "moreActions": "Thao tác khác",
+    "source": {
+      "label": "Nội dung bản gốc chưa được nhận diện",
+      "textAboveTitle": "Bản gốc có chữ hoặc hợp âm trên khuông chưa được nhận diện.",
+      "textAbove": "Thấy ở trang {pages}. Tên hợp âm in trên bản gốc không có trong bản số: hãy thêm lại trong trình chỉnh sửa hoặc dùng Gợi ý hợp âm.",
+      "tempoTitle": "Chưa đọc được nhịp độ.",
+      "tempo": "Bản nhạc đang dùng nhịp độ mặc định, hãy nhập đúng nhịp độ in trên bản gốc."
+    },
+    "tempo": {
+      "label": "Nhịp độ (♩ =)",
+      "save": "Lưu nhịp độ",
+      "saving": "Đang lưu...",
+      "saved": "Đã đặt nhịp độ {bpm} BPM",
+      "invalid": "Nhịp độ phải từ {min} đến {max}"
+    }
   },
   "failed": "Tải lên thất bại, vui lòng thử lại",
   "saveFailed": "Lưu thất bại, vui lòng thử lại",
@@ -294,12 +326,15 @@
     "2004": "Định dạng file không hợp lệ: chỉ nhận PDF, PNG, JPG, JPEG và nội dung phải đúng định dạng",
     "2005": "File quá lớn: mỗi file tối đa 50MB, cả lần tải tối đa 200MB",
     "2006": "Chỉ tải 1 file PDF, hoặc 1–20 ảnh (không trộn PDF với ảnh)",
-    "2008": "PDF bị mã hóa, đặt mật khẩu hoặc không mở được",
+    "2008": "PDF đặt mật khẩu nên không mở được, hãy bỏ mật khẩu rồi tải lại",
     "2009": "PDF phải có từ 1 đến {pages} trang",
-    "2010": "Ảnh không đọc được, cạnh ngắn nhỏ hơn {side}px hoặc lớn hơn 40 megapixel",
+    "2010": "Không đọc được ảnh, file có thể bị hỏng",
     "2011": "Loại nguồn không hợp lệ",
     "2018": "Tên tác giả tối đa 255 ký tự",
-    "2202": "Bạn đang có 3 bản nhạc chờ số hóa, hãy đợi một bản xong rồi tải tiếp"
+    "2202": "Bạn đang có 3 bản nhạc chờ số hóa, hãy đợi một bản xong rồi tải tiếp",
+    "2031": "Không đọc được PDF, file có thể bị hỏng",
+    "2032": "Ảnh quá nhỏ: cạnh ngắn phải từ {side}px, hãy chụp gần hơn hoặc dùng ảnh gốc",
+    "2033": "Ảnh quá lớn: tối đa 40 megapixel, hãy thu nhỏ ảnh rồi tải lại"
   },
   "saveByCode": {
     "1002": "Bạn không có quyền sửa bản nhạc này",
@@ -422,5 +457,68 @@
         }
       }
     }
+  },
+  "sourceHint": "Ảnh chụp, bản scan và PDF gốc được làm sạch theo cách khác nhau; chọn đúng loại giúp nhận diện chính xác hơn.",
+  "untitled": "Bản nhạc chưa đặt tên",
+  "externalAiNote": "Lưu ý: hệ thống đang bật AI xác minh. Ảnh cắt của một số ô nhịp nghi ngờ (tối đa 10 ô mỗi bản) được gửi tới dịch vụ AI bên ngoài để đối chiếu.",
+  "quota": {
+    "summary": "Tháng này còn {remaining}/{limit} trang · tối đa {max} trang mỗi lần",
+    "unlimitedMonth": "Không giới hạn trang mỗi tháng · tối đa {max} trang mỗi lần",
+    "perJobExceeded": "Tệp này có {pages} trang, gói của bạn cho tối đa {max} trang mỗi lần số hóa. Hãy tách bớt trang hoặc nâng cấp gói.",
+    "monthExceeded": "Tệp này có {pages} trang nhưng tháng này bạn chỉ còn {remaining} trang.",
+    "seePlans": "Xem các gói"
+  },
+  "warningCodes": {
+    "PAGE_LANDSCAPE": "Trang nằm ngang, đã thu nhỏ cho vừa khổ dọc",
+    "PAGE_BORDER_CROPPED": "Đã cắt dải viền đều màu ở mép ảnh (thường là thanh trạng thái)",
+    "PAGE_SKEW_TOO_LARGE": "Ảnh nghiêng khoảng {angle}°, quá {max}° nên không tự xoay; hãy chụp thẳng hơn",
+    "PAGE_NO_STAFF": "Không thấy khuông nhạc, trang này đã bị bỏ qua",
+    "PAGE_NO_NOTES": "Không nhận diện được nốt nào, trang này đã bị bỏ qua",
+    "PAGE_ONLY_RESTS": "Chỉ đọc được dấu lặng, trang này đã bị bỏ qua",
+    "PAGE_TRUNCATED": "Kết quả chạm giới hạn độ dài, phần cuối trang có thể bị thiếu",
+    "PAGE_LOOP_TRIMMED": "Máy đọc lặp, đã cắt {count} dòng lặp",
+    "PAGE_MEASURE_MISMATCH": "Đọc được {found} ô nhịp trong khi ảnh có {expected} ô, hãy kiểm tra trang này",
+    "PAGE_STAFF_MISMATCH": "Đọc được {found} khuông trong khi ảnh có {expected} khuông mỗi hệ",
+    "SYSTEM_MEASURE_MISMATCH": "Hệ này đọc ra {found} ô nhịp trong khi ảnh có {expected} ô",
+    "BARLINES_INSERTED": "Máy bỏ sót vạch nhịp, đã tự chèn {count} vạch theo trường độ (nên đối chiếu với ảnh)",
+    "TEXT_ABOVE_STAFF": "Có chữ phía trên khuông (thường là tên hợp âm hoặc nhịp độ) chưa được nhận diện; hợp âm in trên bản gốc không có trong bản số",
+    "TEMPO_DEFAULT": "Không đọc được nhịp độ trên bản gốc, đang dùng {bpm} BPM; hãy sửa lại cho đúng"
+  },
+  "fixCodes": {
+    "RHYTHM_FIXED": "Sửa trường độ: {parts}",
+    "RHYTHM_PARTS": {
+      "triplets": "{count} chỗ nhịp ba đọc nhầm",
+      "dropped": "bỏ {count} nốt thừa trong hợp âm",
+      "dots": "thêm {count} chấm dôi"
+    },
+    "OCTAVE_FIXED": "Sửa quãng tám {count} nốt theo vị trí đầu nốt trên ảnh",
+    "OTTAVA_FIXED": "Bỏ dấu 8va máy tự thêm, đưa {count} nốt về đúng quãng tám in trên ảnh",
+    "REREAD_REPLACED": "Đã thay ô này bằng cách đọc giống nhau của các lần đọc lại",
+    "AI_REPLACED": "AI đối chiếu ảnh và chọn cách đọc khác cho ô này"
+  },
+  "check": {
+    "title": "Cần kiểm tra",
+    "close": "Đóng bảng Cần kiểm tra",
+    "toggleHint": "Các ô máy số hóa chưa chắc chắn, kèm ảnh gốc để so",
+    "intro": "Các ô máy nhận diện chưa chắc chắn. Bấm một ô để nhảy tới ô đó và xem ô cắt từ ảnh gốc.",
+    "edited": "Bản nhạc đã được lưu sau khi số hóa. Nếu bạn đã thêm hoặc xóa ô nhịp, số ô ở đây có thể lệch.",
+    "progress": "Đã kiểm {done}/{total} ô",
+    "hideChecked": "Ẩn ô đã kiểm",
+    "allDone": "Không còn ô nào cần kiểm tra.",
+    "jump": "Tới ô này",
+    "markChecked": "Đã kiểm",
+    "uncheck": "Bỏ đánh dấu",
+    "noCrop": "Không có ảnh gốc cho ô này.",
+    "cropAlt": "Ô {measure} trên ảnh gốc trang {page}"
+  },
+  "redo": {
+    "title": "Nhận diện lại?",
+    "text": "Hệ thống sẽ chạy lại từ file gốc với các tùy chọn bên dưới.",
+    "loadFailed": "Không tải được thông tin nhận diện lại, bạn vẫn có thể gửi với lựa chọn của lần trước.",
+    "edited": "Bạn đã lưu {count} phiên bản sau lần số hóa gần nhất. Kết quả mới sẽ thành phiên bản v{next} và mở ra trong trình chỉnh sửa; các bản bạn đã sửa vẫn nằm trong Lịch sử phiên bản.",
+    "pages": "Lần này dùng {count} trang trong hạn mức tháng (đã dùng {used}/{limit}).",
+    "pagesUnlimited": "Lần này tính {count} trang (gói của bạn không giới hạn trang mỗi tháng).",
+    "notEnough": "Tháng này bạn chỉ còn {remaining} trang.",
+    "imageErrorHint": "Lần trước máy không đọc được ảnh. Hãy thử đổi loại nguồn (ví dụ Ảnh chụp) và bật làm sạch, căn thẳng ảnh."
   }
 }

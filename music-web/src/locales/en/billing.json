@@ -162,6 +162,10 @@
       "OMR_PAGES_PER_JOB": "This file has {used} pages; your plan allows up to {limit} pages per upload.",
       "CHORD_MEASURES": "This score has {used} measures; your plan suggests chords for up to {limit} measures.",
       "CHORD_ADVANCED": "Colourful and Sevenths / Jazz colours, Bold creativity and Dense changes are available on higher plans."
+    },
+    "titles": {
+      "perRequest": "Over your plan's per-use limit",
+      "feature": "Available on higher plans"
     }
   }
 }

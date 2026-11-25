@@ -1148,5 +1148,11 @@
     "resizeHint": "Kéo để nới rộng hoặc thu hẹp, kéo hẳn vào để thu gọn · Nhấp đúp hoặc Enter: thu gọn / mở · ←/→: chỉnh độ rộng",
     "expand": "Mở cột {name}",
     "collapsed": "Đã thu gọn"
+  },
+  "header": {
+    "blank": {
+      "title": "Thêm tên bài",
+      "composer": "Thêm tác giả"
+    }
   }
 }

@@ -4,6 +4,17 @@ import { getLocale } from '../i18n/core';
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
 
+/**
+ * Địa chỉ WebSocket STOMP suy ra từ địa chỉ API: bỏ đuôi /api, http -> ws. API cùng nguồn ("/api", bản Docker gọi qua nginx)
+ * thì dựng từ địa chỉ trang đang mở (X-07). Cookie HttpOnly tự đi kèm lúc bắt tay.
+ */
+export function socketUrl(): string {
+  const base = API_BASE_URL.replace(/\/api\/?$/, '');
+  if (/^https?:\/\//.test(base)) return `${base.replace(/^http/, 'ws')}/ws`;
+  const scheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
+  return `${scheme}://${window.location.host}${base}/ws`;
+}
+
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {

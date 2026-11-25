@@ -334,3 +334,15 @@
   color: var(--sc-accent);
   transform: translateX(2px);
 }
+
+/* Hạn mức trang OMR của gói hiện ngay ở trang tải lên (OMR-04) */
+.sc-upload__quota {
+  margin-top: 0.75rem;
+}
+.sc-upload__quota-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}

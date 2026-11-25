@@ -1,5 +1,5 @@
-import { labelMap, t } from '../i18n/core';
-import type { AiTaskInfo, OmrMeasure, TaskStatus } from '../types';
+import { hasKey, labelMap, t } from '../i18n/core';
+import type { AiTaskInfo, OmrFixItem, OmrMeasure, OmrResult, OmrWarningItem, TaskStatus } from '../types';
 
 /** Loại tác vụ OMR (khớp AiTaskType.OMR_CONVERSION của BE). */
 export const OMR_TASK_TYPE = 'OMR_CONVERSION';
@@ -133,11 +133,103 @@ interface ParsedWarning {
   text: string;
 }
 
-/** Tách số trang từ chuỗi cảnh báo do music-ai sinh, ví dụ "Trang 2, ô nhịp 3: ...". */
+/**
+ * Tách số trang từ chuỗi cảnh báo do music-ai sinh, ví dụ "Trang 2, ô nhịp 3: ...". Chỉ còn dùng cho kết quả cũ chưa có
+ * warningItems; kết quả mới lấy số trang từ dữ liệu có cấu trúc (OMR-11).
+ */
 export const parseWarning = (raw: string): ParsedWarning => {
   const match = /^Trang\s+(\d+)\s*[,:]?\s*(.*)$/s.exec(raw);
   if (!match) return { page: null, text: raw };
   return { page: Number(match[1]), text: match[2] || raw };
+};
+
+type Params = Record<string, string | number>;
+
+/** Câu của một cảnh báo theo ngôn ngữ đang dùng: có mã đã dịch thì dựng từ mã + tham số, không thì giữ nguyên văn. */
+export const warningText = (item: OmrWarningItem): string => {
+  const key = item.code ? `upload.warningCodes.${item.code}` : '';
+  return key && hasKey(key) ? t(key, (item.params ?? {}) as Params) : item.text;
+};
+
+/** Cảnh báo của kết quả nhận diện để hiển thị (kèm số trang để nhảy tới ảnh). */
+export const resultWarnings = (result: Pick<OmrResult, 'warnings' | 'warningItems'>): ParsedWarning[] =>
+  result.warningItems
+    ? result.warningItems.map((item) => ({ page: item.page ?? null, text: warningText(item) }))
+    : (result.warnings ?? []).map(parseWarning);
+
+/** Câu của một chỗ máy đã tự sửa theo ngôn ngữ đang dùng (OMR-14). Sửa trường độ chỉ nêu các việc khác 0. */
+export const fixText = (item: OmrFixItem): string => {
+  if (item.code === 'RHYTHM_FIXED') {
+    const p = item.params ?? {};
+    const parts = (['triplets', 'dropped', 'dots'] as const)
+      .filter((k) => Number(p[k] ?? 0) > 0)
+      .map((k) => t(`upload.fixCodes.RHYTHM_PARTS.${k}`, { count: Number(p[k]) }));
+    return t('upload.fixCodes.RHYTHM_FIXED', { parts: parts.join(', ') });
+  }
+  const key = item.code ? `upload.fixCodes.${item.code}` : '';
+  return key && hasKey(key) ? t(key, (item.params ?? {}) as Params) : item.text;
+};
+
+/** Các ô nhịp mà một chỗ tự sửa nhắc tới, để bấm vào thì chọn đúng ô. */
+export const fixMeasures = (item: OmrFixItem): number[] => item.measures ?? [];
+
+/** Nhãn của bước (step) đang chạy của một tác vụ AI. */
+export const omrStepLabel = (step: string): string =>
+  hasKey(`upload.steps.${step}`) ? t(`upload.steps.${step}`) : step;
+
+/** Thời gian chờ ước lượng (giây) thành chữ "khoảng N phút" theo ngôn ngữ. */
+export const formatWait = (seconds: number | null | undefined): string => {
+  if (seconds == null || !Number.isFinite(seconds)) return '';
+  if (seconds < 60) return t('upload.processing.queue.underMinute');
+  return t('upload.processing.queue.minutes', { count: Math.round(seconds / 60) });
+};
+
+// ---- Ô đã kiểm trong bảng "Cần kiểm tra" của Editor (OMR-03): nhớ trong trình duyệt theo bản nhạc và lần nhận diện
+
+const checkedKey = (scoreId: string, taskId: string) => `scorewise.omrChecked.${scoreId}.${taskId}`;
+
+export const loadCheckedMeasures = (scoreId: string, taskId: string): Set<number> => {
+  try {
+    const raw = localStorage.getItem(checkedKey(scoreId, taskId));
+    const list = raw ? (JSON.parse(raw) as unknown) : [];
+    return new Set(Array.isArray(list) ? list.filter((n): n is number => typeof n === 'number') : []);
+  } catch {
+    return new Set();
+  }
+};
+
+export const saveCheckedMeasures = (scoreId: string, taskId: string, measures: Set<number>): void => {
+  try {
+    localStorage.setItem(checkedKey(scoreId, taskId), JSON.stringify([...measures].sort((a, b) => a - b)));
+  } catch {
+    // Trình duyệt chặn lưu (chế độ riêng tư): chỉ nhớ trong phiên này
+  }
+};
+
+/**
+ * Vị trí để cắt đúng một ô từ ảnh trang (OMR-03): khung chứa rộng `width` px, ảnh trang phóng sao cho khung ô (kèm lề
+ * `pad` theo tỉ lệ chiều cao ô) vừa khung chứa. Trả null nếu ô chưa có khung.
+ */
+export const cropOfBox = (
+  box: OmrMeasure['box'],
+  width: number,
+  pad = 0.35,
+): { height: number; imageWidth: number; left: number; top: number } | null => {
+  if (!box) return null;
+  const [x0, y0, x1, y1] = box;
+  if (x1 <= x0 || y1 <= y0) return null;
+  const margin = (y1 - y0) * pad;
+  const left = Math.max(0, x0 - margin);
+  const top = Math.max(0, y0 - margin);
+  const right = Math.min(PAGE_IMAGE_WIDTH, x1 + margin);
+  const bottom = Math.min(PAGE_IMAGE_HEIGHT, y1 + margin);
+  const scale = width / (right - left);
+  return {
+    height: Math.round((bottom - top) * scale),
+    imageWidth: Math.round(PAGE_IMAGE_WIDTH * scale),
+    left: -Math.round(left * scale),
+    top: -Math.round(top * scale),
+  };
 };
 
 /** Kích thước ảnh trang đã tiền xử lý (music-ai); khung ô trong measureMap tính theo kích thước này. */
@@ -153,6 +245,7 @@ export const MEASURE_FLAG_LABELS: Record<OmrMeasure['flags'][number], string> = 
   'ACCIDENTAL',
   'UNSTABLE',
   'AI_DOUBT',
+  'AUTO_FIXED',
 ]);
 
 /** Độ tin cậy của ô dạng phần trăm (làm tròn), null nếu kết quả cũ chưa có. */

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useNavigate } from '../../../../routes/useTransitionNavigate';
 import ShowAssignmentBanner from '../../../../components/scores/viewer/ShowAssignmentBanner';
 import EditorToolPanel from '../../../../components/scores/toolbar/EditorToolPanel';
@@ -16,6 +17,7 @@ import { buildEditorMenu, editorMenuTitle } from '../../../../components/scores/
 import type { ScoreDocument } from '../../../../components/editor/core/ScoreDocument';
 import { PlayerBar } from '../../../../components/player/PlayerBar';
 import { useScoreEditor } from '../../../../components/editor/core/useScoreEditor';
+import { useOmrCheck } from '../../../../components/scores/omr/useOmrCheck';
 import { useLiveCollab } from '../../../../components/editor/live/useLiveCollab';
 import type { LiveSelection, ScoreDetail } from '../../../../types';
 import { t } from '../../../../i18n/core';
@@ -65,6 +67,10 @@ export default function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: Pr
   const [parseFailed, setParseFailed] = useState(false);
   const [focusMeasure, setFocusMeasure] = useState<{ index: number; key: number } | null>(null);
   const canEdit = score.canEdit;
+  // Bảng "Cần kiểm tra" các ô OMR nghi ngờ (OMR-03); "Chấp nhận và chỉnh sửa" ở trang Kết quả mở sẵn bằng ?check=1
+  const [searchParams] = useSearchParams();
+  const omrCheck = useOmrCheck(score);
+  const [checkOpen, setCheckOpen] = useState(() => searchParams.get('check') === '1');
 
   const openHelp = useCallback(() => setHelpOpen(true), []);
   const view = useViewerChrome(rootRef, canEdit, openHelp);
@@ -90,6 +96,7 @@ export default function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: Pr
     live,
     scoreId: score.id,
     title: score.title,
+    composer: score.composer,
     doc,
     initialVersion: xmlVersion ?? score.currentVersion ?? 1,
     canEdit,
@@ -126,7 +133,10 @@ export default function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: Pr
     mode,
     focusMeasure: focusOn,
     stageRef,
-    onPanelOpen: () => setAiPanelOpen(false),
+    onPanelOpen: () => {
+      setAiPanelOpen(false);
+      setCheckOpen(false);
+    },
   });
   const { commentAnchor, commentBlocked, canComment, composer, selRect } = comments;
   const ai = useAiChordPanel({
@@ -179,15 +189,39 @@ export default function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: Pr
         onZoomChange={view.setZoom}
         commentsOpen={comments.commentsOpen}
         openThreadCount={comments.openThreads.length}
-        onToggleComments={() => (comments.commentsOpen ? comments.closeComments() : comments.openComments())}
+        onToggleComments={() => {
+          if (comments.commentsOpen) comments.closeComments();
+          else {
+            setCheckOpen(false);
+            comments.openComments();
+          }
+        }}
         aiToggle={
           ai.aiDraft.draft
             ? {
                 shown: ai.shown,
                 count: ai.aiDraft.marks.length,
                 onClick: () => {
-                  if (!ai.shown) comments.closeComments();
+                  if (!ai.shown) {
+                    comments.closeComments();
+                    setCheckOpen(false);
+                  }
                   setAiPanelOpen(!ai.shown);
+                },
+              }
+            : null
+        }
+        checkToggle={
+          omrCheck.available
+            ? {
+                shown: checkOpen && !ai.shown,
+                count: omrCheck.flagged.filter((m) => !omrCheck.checked.has(m.measure)).length,
+                onClick: () => {
+                  if (!checkOpen) {
+                    comments.closeComments();
+                    setAiPanelOpen(false);
+                  }
+                  setCheckOpen(!checkOpen);
                 },
               }
             : null
@@ -317,6 +351,11 @@ export default function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: Pr
           ai={ai}
           onCloseAi={() => setAiPanelOpen(false)}
           comments={comments}
+          omrCheck={
+            checkOpen && omrCheck.available
+              ? { state: omrCheck, onFocusMeasure: focusOn, onClose: () => setCheckOpen(false) }
+              : null
+          }
         />
       </div>
 

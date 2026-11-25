@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import type { Dispatch, SetStateAction, MutableRefObject } from 'react';
 import { toast } from 'react-toastify';
-import { fetchMusicXmlWithVersion, saveBlob, saveMusicXml } from '../../../services';
+import { fetchMusicXmlWithVersion, saveBlob, saveMusicXml, scoreApi } from '../../../services';
 import { versionApi } from '../../../services/score/versionApi';
 import { getConflictVersion, getSaveErrorMessage, toSafeFileName } from '../../../utils/score';
 import { reportPlanLimit } from '../../../utils/planLimit';
@@ -9,6 +9,7 @@ import { clearDraft, purgeOtherDrafts } from './draft';
 import { History } from './history';
 import type { LiveCollab } from '../live/useLiveCollab';
 import { getVersionErrorMessage } from '../version/versionUtils';
+import { readHeader } from '../structure/header';
 import type { ScoreDocument } from './ScoreDocument';
 import { t } from '../../../i18n/core';
 
@@ -18,6 +19,7 @@ interface SaveFlowOptions {
   doc: ScoreDocument;
   scoreId: string;
   title: string;
+  composer?: string | null;
   version: number;
   setVersion: (version: number) => void;
   mode: 'direct' | 'suggest';
@@ -39,6 +41,26 @@ export function useSaveFlow(o: SaveFlowOptions) {
   const savingRef = useRef(false);
   const [saving, setSaving] = useState(false);
   const [conflict, setConflict] = useState<{ latestVersion: number } | null>(null);
+  // Tên bài / tác giả của bản nhạc đã biết (scores.title, scores.composer): một nguồn tên cho thẻ bản nhạc và đầu trang nhạc
+  const metaRef = useRef({ title: o.title, composer: o.composer ?? '' });
+
+  /**
+   * Lưu xong mà người dùng đã sửa tên bài / tác giả trên bản nhạc thì cập nhật luôn bản nhạc (OMR-12), để thư viện và đầu
+   * trang nhạc không ghi hai tên khác nhau. Lỗi chỉ bỏ qua: nội dung đã lưu, lần mở sau Editor lại lấy tên theo bản nhạc.
+   */
+  const syncScoreMeta = useCallback(() => {
+    const header = readHeader(doc);
+    const patch: { title?: string; composer?: string } = {};
+    if (header.title && header.title !== metaRef.current.title) patch.title = header.title;
+    if (header.composer && header.composer !== metaRef.current.composer) patch.composer = header.composer;
+    if (!patch.title && !patch.composer) return;
+    scoreApi
+      .update(scoreId, patch)
+      .then(() => {
+        metaRef.current = { ...metaRef.current, ...patch };
+      })
+      .catch(() => undefined);
+  }, [doc, scoreId]);
 
   const save = useCallback(
     async (force = false) => {
@@ -74,6 +96,7 @@ export function useSaveFlow(o: SaveFlowOptions) {
           canRedo: historyRef.current.canRedo,
         });
         toast.success(t('editor.toast.saved'));
+        syncScoreMeta();
       } catch (err) {
         const latest = getConflictVersion(err);
         if (latest !== undefined) setConflict({ latestVersion: latest });
@@ -83,7 +106,21 @@ export function useSaveFlow(o: SaveFlowOptions) {
         setSaving(false);
       }
     },
-    [canEdit, doc, scoreId, version, flash, mode, onSuggest, draftPrefix, historyRef, liveRef, setFlags, setVersion],
+    [
+      canEdit,
+      doc,
+      scoreId,
+      version,
+      flash,
+      mode,
+      onSuggest,
+      draftPrefix,
+      historyRef,
+      liveRef,
+      setFlags,
+      setVersion,
+      syncScoreMeta,
+    ],
   );
 
   const finishSuggestion = useCallback(() => {

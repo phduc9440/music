@@ -18,12 +18,13 @@ export type SharePermission = (typeof SharePermission)[keyof typeof SharePermiss
 export const PracticeMode = { FREE: 1, LOOP: 2, TEST: 3 } as const;
 export type PracticeMode = (typeof PracticeMode)[keyof typeof PracticeMode];
 
-export type ProcessingStatus = 'NONE' | 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+/** CANCELLED: người dùng tự hủy lần số hóa đầu tiên (chưa có kết quả), khác FAILED (OMR-15). */
+export type ProcessingStatus = 'NONE' | 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
 export type ScoreSource = 'OMR' | 'IMPORT' | 'MANUAL';
 /** PENDING: chủ đã xin công khai, chờ ADMIN duyệt. */
 export type Visibility = 'PRIVATE' | 'PENDING' | 'PUBLIC';
 export type Difficulty = 'EASY' | 'MEDIUM' | 'HARD' | 'EXPERT';
 export type ScoreSort = 'newest' | 'created' | 'oldest' | 'title' | 'views';
 export type TaskStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
-/** Loại bản gốc khi upload OMR (BE: OmrSourceType), dùng cho thống kê SER 1.7. */
+/** Loại bản gốc khi upload OMR (BE: OmrSourceType): music-ai khử nhiễu theo loại này, và dùng cho thống kê SER 1.7. */
 export type OmrSourceType = 'PHOTO' | 'SCAN' | 'PDF_NATIVE';

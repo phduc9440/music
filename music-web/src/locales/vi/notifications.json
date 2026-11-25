@@ -50,5 +50,12 @@
   "SUGGESTION_DECIDED": "{name} đã xử lý đề xuất sửa của bạn trong bản nhạc “{title}”",
   "FORUM_REPLY": "{name} đã trả lời trong chủ đề “{title}”: “{excerpt}”",
   "FORUM_POST_REPLY": "{name} đã trả lời bình luận của bạn trong “{title}”: “{excerpt}”",
-  "FORUM_ANSWER_ACCEPTED": "{name} đã chọn câu trả lời của bạn là hay nhất trong “{title}”"
+  "FORUM_ANSWER_ACCEPTED": "{name} đã chọn câu trả lời của bạn là hay nhất trong “{title}”",
+  "AI_TASK_COMPLETED": {
+    "omr": "Đã số hóa xong “{title}”, mở để kiểm tra kết quả"
+  },
+  "AI_TASK_FAILED": {
+    "omr": "Số hóa “{title}” thất bại: {error}",
+    "chords": "Gợi ý hợp âm cho “{title}” thất bại: {error}"
+  }
 }

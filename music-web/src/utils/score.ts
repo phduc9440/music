@@ -10,6 +10,7 @@ export const STATUS_LABELS: Record<ProcessingStatus, string> = labelMap('scores.
   'PROCESSING',
   'COMPLETED',
   'FAILED',
+  'CANCELLED',
 ]);
 
 export const TASK_STATUS_LABELS: Record<TaskStatus, string> = labelMap('scores.labels.taskStatus', [
@@ -122,11 +123,11 @@ export const DOWNLOAD_FORMATS: { fileType: string; label: string }[] = [
 
 /**
  * Bấm vào thẻ bản nhạc thì đi đâu (doc 2.0):
- *  - PENDING / PROCESSING / FAILED -> /scores/{id}/processing (trang tiến độ, hiện lỗi + nút "Thử lại" nếu FAILED)
+ *  - PENDING / PROCESSING / FAILED / CANCELLED -> /scores/{id}/processing (trang tiến độ, có nút "Thử lại")
  *  - COMPLETED (và còn lại)        -> /scores/{id}
  */
 export const getScorePath = (id: string, status: ProcessingStatus): string => {
-  const inProgress = status === 'PENDING' || status === 'PROCESSING' || status === 'FAILED';
+  const inProgress = status === 'PENDING' || status === 'PROCESSING' || status === 'FAILED' || status === 'CANCELLED';
   return inProgress ? `/scores/${id}/processing` : `/scores/${id}`;
 };
 
@@ -139,7 +140,7 @@ export const UPLOAD_MIN_IMAGE_SIDE = 600;
 export const UPLOAD_MAX_IMAGE_PIXELS = 40_000_000;
 
 /** Mã lỗi BE có câu riêng khi upload thất bại (chuỗi ở locales, nhóm upload.errorByCode). */
-const UPLOAD_ERROR_CODES = [2003, 2004, 2005, 2006, 2008, 2009, 2010, 2011, 2018, 2202];
+const UPLOAD_ERROR_CODES = [2003, 2004, 2005, 2006, 2008, 2009, 2010, 2011, 2018, 2031, 2032, 2033, 2202];
 
 export const getUploadErrorMessage = (err: unknown): string => {
   const code = getErrorCode(err);

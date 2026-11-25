@@ -464,7 +464,8 @@
 }
 .sc-table__name {
   font-weight: 600;
-  word-break: break-all;
+  /* Chỉ ngắt giữa chữ khi một từ quá dài; break-all làm "(OMR)" gãy thành "(O / MR)" (OMR-09) */
+  overflow-wrap: anywhere;
 }
 .sc-table__sub {
   font-size: 0.78rem;
@@ -1008,4 +1009,11 @@ a.sc-btn.is-disabled {
 .sd-side > .sd-card:nth-child(2) {
   border-color: color-mix(in srgb, var(--ui-fx-3) 45%, var(--ui-border));
   background: var(--ui-tint-lime);
+}
+
+/* Menu "AI" và "⋯" ở hàng thao tác của trang chi tiết (X-01) */
+.sd-menu__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
 }

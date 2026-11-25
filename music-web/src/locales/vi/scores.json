@@ -5,7 +5,8 @@
       "PENDING": "Đang chờ",
       "PROCESSING": "Đang xử lý",
       "COMPLETED": "Hoàn tất",
-      "FAILED": "Thất bại"
+      "FAILED": "Thất bại",
+      "CANCELLED": "Đã hủy"
     },
     "taskStatus": {
       "PENDING": "Đang chờ",
@@ -293,7 +294,10 @@
     "copyLinkFailed": "Không sao chép được liên kết",
     "preview": "Xem trước",
     "details": "Chi tiết",
-    "createdAt": "Ngày tạo"
+    "createdAt": "Ngày tạo",
+    "cancelled": "Bạn đã hủy lần số hóa này. Có thể chạy lại trên các file đã tải.",
+    "aiMenu": "AI",
+    "moreMenu": "Thao tác khác"
   },
   "edit": {
     "tagsFailed": "Không tải được danh sách thể loại",
@@ -605,5 +609,23 @@
     "purgeMessage": "“{title}” cùng mọi phiên bản, file và góp ý sẽ bị xóa hẳn, không thể khôi phục.",
     "purgeConfirm": "Xóa vĩnh viễn",
     "purged": "Đã xóa vĩnh viễn “{title}”"
+  },
+  "next": {
+    "title": "Bước tiếp theo",
+    "hide": "Ẩn",
+    "check": {
+      "title": "Kiểm các ô nghi ngờ",
+      "text": "Còn {count}/{total} ô máy chưa chắc chắn, có ảnh gốc để so.",
+      "none": "Không có ô nào nghi ngờ.",
+      "action": "Mở và kiểm tra"
+    },
+    "chords": {
+      "title": "Thêm hợp âm",
+      "text": "Để AI gợi ý hợp âm đệm theo giai điệu."
+    },
+    "practice": {
+      "title": "Luyện tập",
+      "text": "Tập theo bản nhạc vừa số hóa trong Studio."
+    }
   }
 }

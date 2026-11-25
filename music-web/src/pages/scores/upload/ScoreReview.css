@@ -368,3 +368,105 @@ button.sr-warning:focus-visible {
     transition: none;
   }
 }
+
+/* ---- Bản gốc có chữ/hợp âm trên khuông, nhịp độ mặc định (OMR-13) ---- */
+.sr-source {
+  margin: -0.5rem 0 1.5rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--ui-warning-border);
+  border-radius: 12px;
+  background: var(--ui-warning-soft);
+  color: var(--ui-warning);
+  font-size: 0.9rem;
+}
+.sr-source p {
+  margin: 0 0 0.4rem;
+}
+.sr-tempo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  color: var(--ui-text);
+}
+.sr-tempo .sc-input {
+  width: 6rem;
+}
+
+/* ---- Chỗ máy đã tự sửa (OMR-14): thông tin, không tô như cảnh báo ---- */
+.sr-fixes__intro {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  color: var(--sc-muted);
+}
+.sr-fix {
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--ui-primary-border);
+  border-radius: 10px;
+  background: var(--ui-primary-soft);
+  color: var(--ui-primary-hover);
+  font-size: 0.85rem;
+}
+.sr-fix .sr-warning__page {
+  background: var(--ui-primary);
+}
+.sr-fix__measures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.45rem;
+}
+
+/* ---- Mục Nâng cao (chuỗi **kern để gỡ lỗi, OMR-05) ---- */
+.sr-advanced {
+  flex: none;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--sc-line);
+  font-size: 0.85rem;
+}
+.sr-advanced summary {
+  cursor: pointer;
+  color: var(--sc-muted);
+  font-weight: 600;
+}
+.sr-advanced[open] {
+  max-height: 45vh;
+  overflow-y: auto;
+}
+
+/* ---- Thanh thao tác: màn rộng hiện đủ, màn hẹp chỉ giữ nút chính (UI-02) ---- */
+.sr-actions__toggle {
+  display: none;
+}
+.sr-actions__more {
+  display: contents;
+}
+@media (max-width: 560px) {
+  .sr-fact--minor {
+    display: none;
+  }
+  .sr-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-bottom: 1rem;
+  }
+  .sr-actions {
+    padding: 0.5rem 0.75rem;
+  }
+  .sr-actions__toggle {
+    display: inline-flex;
+  }
+  .sr-actions__more {
+    display: none;
+  }
+  .sr-actions__more.is-open {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    width: 100%;
+  }
+  .sr-actions__more .sc-btn {
+    flex: 1 1 calc(50% - 0.3rem);
+  }
+}

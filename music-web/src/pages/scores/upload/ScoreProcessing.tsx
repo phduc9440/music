@@ -4,29 +4,31 @@ import { useNavigate } from '../../../routes/useTransitionNavigate';
 import { toast } from 'react-toastify';
 import CompareModal from '../../../components/scores/upload/CompareModal';
 import Modal from '../../../components/scores/common/Modal';
+import OmrRedoDialog from '../../../components/scores/omr/OmrRedoDialog';
 import PageStrip from '../../../components/scores/upload/PageStrip';
 import ProcessingSteps from '../../../components/scores/upload/ProcessingSteps';
-import { omrApi, scoreApi, taskApi } from '../../../services';
+import { scoreApi, taskApi } from '../../../services';
 import type { AiTaskInfo, ScoreDetail as ScoreDetailData, ScoreFileInfo } from '../../../types';
 import {
   PROCESSING_POLL_MS,
   computeStepStates,
   describeTaskError,
+  formatWait,
   getTaskWarnings,
   isTerminalStatus,
   isValidScoreId,
   pickLatestOmrTask,
   stoppedEarly,
 } from '../../../utils/omr';
-import { getErrorMessage, getHttpStatus, getUploadErrorMessage, useScoreBase } from '../../../utils/score';
-import { reportPlanLimit } from '../../../utils/planLimit';
+import { getErrorMessage, getHttpStatus, useScoreBase } from '../../../utils/score';
 import '../../../components/scores/scores.css';
 import '../library/ScoreLibrary.css';
 import './ScoreProcessing.css';
 import { t } from '../../../i18n/core';
 import { BackLink } from '../../../components/ui';
 
-type LoadState = 'loading' | 'ready' | 'notFound' | 'error';
+/** forbidden: bản nhạc có nhưng người này không được xem tiến độ (khác "không tồn tại", OMR-08). */
+type LoadState = 'loading' | 'ready' | 'notFound' | 'forbidden' | 'error';
 
 /** Số cảnh báo tối đa hiện ở trang tiến độ; phần còn lại xem ở trang kết quả. */
 const MAX_WARNINGS_SHOWN = 3;
@@ -36,7 +38,8 @@ const NOT_CANCELLABLE_HTTP = 409;
 
 /**
  * Trang /scores/:id/processing: tiến độ số hóa bản nhạc (đặc tả mục 2.4).
- * Hỏi tiến độ mỗi 2 giây, hiện các bước, ảnh từng trang đã xử lý, cho hủy hoặc thử lại.
+ * Hỏi tiến độ mỗi 2 giây khi đang mở (xong hoặc lỗi còn có thông báo trong chuông, nên rời trang được), hiện vị trí trong
+ * hàng đợi, các bước, ảnh từng trang đã xử lý, cho hủy hoặc thử lại với tùy chọn khác.
  */
 export default function ScoreProcessing() {
   const { id } = useParams<{ id: string }>();
@@ -50,6 +53,7 @@ export default function ScoreProcessing() {
   const [pages, setPages] = useState<ScoreFileInfo[]>([]);
   const [compare, setCompare] = useState<ScoreFileInfo | null>(null);
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [redoOpen, setRedoOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
   // Tải bản nhạc, tác vụ OMR mới nhất và các ảnh trang đã có
@@ -71,7 +75,7 @@ export default function ScoreProcessing() {
       } catch (err) {
         if (cancelled) return;
         const status = getHttpStatus(err);
-        setLoadState(status === 404 || status === 403 ? 'notFound' : 'error');
+        setLoadState(status === 404 ? 'notFound' : status === 403 ? 'forbidden' : 'error');
       }
     })();
     return () => {
@@ -103,7 +107,8 @@ export default function ScoreProcessing() {
         setPages(png.data.result);
       } catch (err) {
         const status = getHttpStatus(err);
-        if (!stopped && (status === 404 || status === 403)) setLoadState('notFound');
+        if (!stopped && status === 404) setLoadState('notFound');
+        if (!stopped && status === 403) setLoadState('forbidden');
         // Lỗi mạng thoáng qua: bỏ qua, lần sau hỏi lại
       } finally {
         inFlight = false;
@@ -127,6 +132,25 @@ export default function ScoreProcessing() {
 
   const completed = task?.status === 'COMPLETED';
 
+  // Tiêu đề tab theo trạng thái thật (đang xử lý / xong / lỗi / đã hủy), không mãi "Đang nhận dạng" (OMR-15)
+  const titleKey = !task
+    ? null
+    : task.status === 'COMPLETED'
+      ? 'completed'
+      : task.status === 'CANCELLED'
+        ? 'cancelled'
+        : task.status === 'FAILED'
+          ? 'failed'
+          : 'default';
+  useEffect(() => {
+    if (!titleKey || !score) return;
+    const before = document.title;
+    document.title = `${t(`upload.processing.headline.${titleKey}`)} · ${score.title} · ${t('meta.app')}`;
+    return () => {
+      document.title = before;
+    };
+  }, [titleKey, score]);
+
   const usesPdf = useMemo(() => !!score?.files.some((f) => f.fileType === 'ORIGINAL_PDF'), [score]);
   const originalImages = useMemo(() => score?.files.filter((f) => f.fileType === 'ORIGINAL_IMAGE') ?? [], [score]);
   const originalPdf = useMemo(() => score?.files.find((f) => f.fileType === 'ORIGINAL_PDF'), [score]);
@@ -140,7 +164,9 @@ export default function ScoreProcessing() {
       setTask(res.data.result);
       toast.info(t('upload.processing.cancelled'));
     } catch (err) {
-      if (getHttpStatus(err) === NOT_CANCELLABLE_HTTP) {
+      if (getHttpStatus(err) === 403) {
+        toast.error(t('upload.processing.cancelForbidden'));
+      } else if (getHttpStatus(err) === NOT_CANCELLABLE_HTTP) {
         toast.info(t('upload.processing.cantCancel'));
         // Lấy trạng thái mới nhất để màn hình khớp với thực tế
         try {
@@ -156,21 +182,6 @@ export default function ScoreProcessing() {
       setConfirmCancel(false);
     }
   }, [taskId]);
-
-  const handleRetry = async () => {
-    if (!id) return;
-    setBusy(true);
-    try {
-      const res = await omrApi.retry(id);
-      setTask(res.data.result);
-      setPages([]);
-      toast.success(t('upload.processing.resent'));
-    } catch (err) {
-      if (!reportPlanLimit(err)) toast.error(getUploadErrorMessage(err));
-    } finally {
-      setBusy(false);
-    }
-  };
 
   const navbar = (
     <div className="sc-backbar">
@@ -191,13 +202,26 @@ export default function ScoreProcessing() {
 
   if (loadState !== 'ready' || !score) {
     const notFound = loadState === 'notFound';
+    const forbidden = loadState === 'forbidden';
     return (
       <div className="sc-page">
         {navbar}
         <main className="sc-container sp-container">
           <div className="sc-empty">
-            <h3>{notFound ? t('scores.detail.notFound') : t('upload.processing.loadFailed')}</h3>
-            <p>{notFound ? t('scores.detail.notFoundHint') : t('scores.detail.retryLater')}</p>
+            <h3>
+              {notFound
+                ? t('scores.detail.notFound')
+                : forbidden
+                  ? t('upload.processing.forbidden')
+                  : t('upload.processing.loadFailed')}
+            </h3>
+            <p>
+              {notFound
+                ? t('scores.detail.notFoundHint')
+                : forbidden
+                  ? t('upload.processing.forbiddenHint')
+                  : t('scores.detail.retryLater')}
+            </p>
             <button className="sc-btn sc-btn--primary" onClick={() => navigate(base)}>
               {t('upload.processing.toLibrary')}
             </button>
@@ -227,6 +251,7 @@ export default function ScoreProcessing() {
 
   const failed = task.status === 'FAILED' || task.status === 'CANCELLED';
   const queued = task.status === 'PENDING' || task.step === 'QUEUED' || !task.step;
+  const queue = task.status === 'PENDING' ? task.queue : null;
   const progress = completed ? 100 : Math.min(100, Math.max(0, task.progress ?? 0));
   const stepStates = computeStepStates(task, usesPdf);
   const warnings = getTaskWarnings(task);
@@ -287,7 +312,20 @@ export default function ScoreProcessing() {
             />
           </div>
 
+          {queue && (
+            <p className="sp-queue" aria-live="polite">
+              {queue.busy
+                ? t('upload.processing.queue.busy')
+                : t('upload.processing.queue.position', {
+                    position: queue.position ?? 1,
+                    wait: formatWait(queue.waitSeconds),
+                  })}
+            </p>
+          )}
+
           <ProcessingSteps states={stepStates} activeNote={activeNote} />
+
+          {running && <p className="sp-note sp-note--muted">{t('upload.processing.leaveHint')}</p>}
 
           {completed && (
             <p className="sp-note">
@@ -325,8 +363,8 @@ export default function ScoreProcessing() {
             {failed && (
               <>
                 {score.canEdit && (
-                  <button className="sc-btn sc-btn--primary" disabled={busy} onClick={handleRetry}>
-                    {busy ? t('scores.request.sending') : t('common.retry')}
+                  <button className="sc-btn sc-btn--primary" disabled={busy} onClick={() => setRedoOpen(true)}>
+                    {t('common.retry')}
                   </button>
                 )}
                 <button className="sc-btn" disabled={busy} onClick={() => navigate('/scores/upload')}>
@@ -361,6 +399,18 @@ export default function ScoreProcessing() {
           originalUrl={originalFor(compare)?.downloadUrl}
           originalIsPdf={usesPdf}
           onClose={() => setCompare(null)}
+        />
+      )}
+
+      {redoOpen && (
+        <OmrRedoDialog
+          scoreId={score.id}
+          onClose={() => setRedoOpen(false)}
+          onStarted={(started) => {
+            setRedoOpen(false);
+            setTask(started);
+            setPages([]);
+          }}
         />
       )}
 

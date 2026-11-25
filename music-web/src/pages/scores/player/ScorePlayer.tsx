@@ -65,7 +65,9 @@ export default function ScorePlayer() {
         if (!inspectMusicXml(text).valid) return setPhase('parseError');
         try {
           const opened = ScoreDocument.parse(text);
-          const shown = syncTitle(opened, detail.data.result.title) ? opened.serialize() : text;
+          const shown = syncTitle(opened, detail.data.result.title, detail.data.result.composer)
+            ? opened.serialize()
+            : text;
           setXml(shown);
           setDoc(opened);
           setVersion(fetchedVersion ?? detail.data.result.currentVersion ?? 1);

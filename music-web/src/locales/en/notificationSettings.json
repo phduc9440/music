@@ -8,7 +8,10 @@
     "email": "Email digest"
   },
   "category": {
-    "SCORES": { "name": "Scores", "desc": "Access requests, sharing, public approval, reviews, curated library" },
+    "SCORES": {
+      "name": "Scores",
+      "desc": "Access requests, sharing, public approval, reviews, curated library, digitizing finished or failed"
+    },
     "COMMENTS": { "name": "Comments and suggestions", "desc": "Mentions, replies to your comments, suggested edits" },
     "TEAMS": { "name": "Teams and shows", "desc": "Invitations, role changes, assignments, due reminders" },
     "FORUM": { "name": "Forum", "desc": "Replies in your threads or threads you follow, best answers" },

@@ -1,5 +1,5 @@
 import { Client, type IMessage, type StompSubscription } from '@stomp/stompjs';
-import { API_BASE_URL } from '../../../services/client';
+import { socketUrl } from '../../../services/client';
 import type {
   LiveError,
   LiveJoinResult,
@@ -29,12 +29,6 @@ export interface LiveHandlers {
   onRejected: (rejected: LiveRejected) => void;
   onVersion: (version: LiveVersion) => void;
   onError: (error: LiveError) => void;
-}
-
-/** Địa chỉ WebSocket suy ra từ địa chỉ API (http -> ws, bỏ đuôi /api), cookie HttpOnly tự đi kèm lúc bắt tay. */
-function socketUrl(): string {
-  const base = API_BASE_URL.replace(/\/api\/?$/, '');
-  return `${base.replace(/^http/, 'ws')}/ws`;
 }
 
 function parse<T>(message: IMessage): T | null {

@@ -1148,5 +1148,11 @@
     "resizeHint": "Drag to widen or narrow it, drag all the way in to collapse · Double-click or Enter: collapse / expand · ←/→: adjust width",
     "expand": "Expand the {name} column",
     "collapsed": "Collapsed"
+  },
+  "header": {
+    "blank": {
+      "title": "Add title",
+      "composer": "Add composer"
+    }
   }
 }

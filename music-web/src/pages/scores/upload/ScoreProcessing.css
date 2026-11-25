@@ -317,3 +317,18 @@
     transition: none !important;
   }
 }
+
+/* Vị trí trong hàng đợi và thời gian chờ ước lượng (OMR-10) */
+.sp-queue {
+  margin: 0.5rem 0 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ui-primary-hover);
+}
+/* Gợi ý rời trang được: xong sẽ có thông báo trong chuông (OMR-02) */
+.sp-note--muted {
+  background: transparent;
+  padding: 0;
+  color: var(--sc-muted);
+  font-size: 0.85rem;
+}

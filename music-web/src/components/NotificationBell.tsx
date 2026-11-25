@@ -6,7 +6,7 @@ import { notificationApi } from '../services';
 import { Icon } from './ui';
 import { useDialog } from './ui/dialog-context';
 import { formatDateTime, formatRelativeTime, t } from '../i18n/core';
-import { notificationText } from '../utils/notifications';
+import { aiTaskNotificationPath, notificationText } from '../utils/notifications';
 import type { AppNotification } from '../types';
 import './scores/scores.css';
 import Skeleton from './ui/Skeleton';
@@ -108,6 +108,8 @@ export default function NotificationBell() {
     else if (n.type.startsWith('TEAM_') && n.params?.teamId) navigate(`/teams/${n.params.teamId}`);
     // Có người xin quyền: mở tab Cài đặt để đồng ý hoặc từ chối
     else if (n.type === 'ACCESS_REQUESTED' && n.scoreId) navigate(`/scores/${n.scoreId}?tab=settings`);
+    // Tác vụ AI xong / lỗi (OMR-02): số hóa xong mở thẳng trang Kết quả, lỗi mở trang Tiến độ để thử lại
+    else if (aiTaskNotificationPath(n)) navigate(aiTaskNotificationPath(n) as string);
     else if (n.scoreId) navigate(`/scores/${n.scoreId}`);
   };
 

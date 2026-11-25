@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { BLANK_HEADER_TEXT, shownHeader } from '../../src/components/editor/structure/header.ts';
+import { blankHeaderText, shownHeader } from '../../src/components/editor/structure/header.ts';
+
+const BLANK_TITLE = blankHeaderText('title');
+const BLANK_COMPOSER = blankHeaderText('composer');
 
 const header = (title, composer) => ({ title, composer, styles: { title: {}, composer: {} } });
 
@@ -19,13 +22,19 @@ test('file trống thì lấy tên bài / tác giả của bản nhạc', () => 
   });
 });
 
-test('vẫn trống (hoặc chỉ có chữ giả Music21) thì hiện Blank', () => {
+test('vẫn trống (hoặc chỉ có chữ giả Music21) thì hiện chữ gợi ý theo ngôn ngữ, không còn Blank', () => {
   assert.deepEqual(shownHeader(header('', ''), { title: 'Mẹ ơi có biết', composer: null }), {
     title: 'Mẹ ơi có biết',
-    composer: BLANK_HEADER_TEXT,
+    composer: BLANK_COMPOSER,
   });
   assert.deepEqual(shownHeader(header('', ''), { title: 'Music21 Fragment', composer: '  ' }), {
-    title: BLANK_HEADER_TEXT,
-    composer: BLANK_HEADER_TEXT,
+    title: BLANK_TITLE,
+    composer: BLANK_COMPOSER,
   });
+});
+
+test('chữ gợi ý chỗ trống không còn là "Blank" tiếng Anh', () => {
+  assert.notEqual(BLANK_TITLE, 'Blank');
+  assert.notEqual(BLANK_COMPOSER, 'Blank');
+  assert.notEqual(BLANK_TITLE, BLANK_COMPOSER);
 });

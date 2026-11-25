@@ -1,0 +1,215 @@
+/* Dùng chung cho các phần OMR: hộp Nhận diện lại, bảng Cần kiểm tra trong Editor, thẻ Bước tiếp theo. */
+.om-note {
+  margin: 0.6rem 0;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--sc-line);
+  border-radius: var(--ui-radius);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+.om-note--warning {
+  background: var(--ui-warning-soft);
+  border-color: var(--ui-warning-border);
+  color: var(--ui-warning);
+}
+.om-note--info {
+  background: var(--ui-primary-soft);
+  border-color: var(--ui-primary-border);
+  color: var(--ui-primary-hover);
+}
+.om-field {
+  margin-top: 0.9rem;
+}
+.om-field__label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.om-field__hint {
+  margin-top: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--sc-muted);
+}
+.om-segment {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.25rem;
+  padding: 0.25rem;
+  background: var(--ui-surface-hover);
+  border: 1px solid var(--sc-line);
+  border-radius: 10px;
+}
+.om-segment__opt {
+  padding: 0.45rem 0.25rem;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--sc-muted);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.om-segment__opt.is-active {
+  background: var(--ui-surface);
+  color: var(--sc-accent);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--ui-shadow-ink) 12%, transparent);
+}
+.om-check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+  font-size: 0.9rem;
+}
+
+/* ---- Ảnh cắt một ô từ trang gốc ---- */
+.om-crop {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--sc-line);
+  border-radius: 8px;
+  background: var(--ui-surface);
+}
+.om-crop img {
+  position: absolute;
+  max-width: none;
+}
+
+/* ---- Bảng "Cần kiểm tra" trong Editor ---- */
+.om-panel__intro {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  color: var(--sc-muted);
+}
+.om-panel__progress {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.85rem;
+}
+.om-panel__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.om-item {
+  border: 1px solid var(--sc-line);
+  border-radius: 10px;
+  background: var(--ui-surface);
+}
+.om-item.is-active {
+  border-color: var(--sc-accent);
+}
+.om-item.is-checked {
+  opacity: 0.65;
+}
+.om-item__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.om-item__title {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.om-item__reason {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.8rem;
+  color: var(--sc-muted);
+}
+.om-item__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0 0.7rem 0.7rem;
+}
+.om-item__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+/* ---- Thẻ "Bước tiếp theo" sau khi số hóa (trang chi tiết) ---- */
+.om-next {
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--ui-primary-border);
+  border-radius: var(--ui-radius);
+  background: var(--ui-primary-soft);
+}
+.om-next__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.om-next__head h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+.om-next__steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: om-step;
+}
+.om-next__step {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.7rem;
+  border-radius: 10px;
+  background: var(--ui-surface);
+  counter-increment: om-step;
+}
+.om-next__step::before {
+  content: counter(om-step);
+  display: inline-grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: var(--ui-primary-soft);
+  color: var(--ui-primary-hover);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.om-next__step.is-done::before {
+  content: '✓';
+}
+.om-next__step strong {
+  font-size: 0.9rem;
+}
+.om-next__step span {
+  font-size: 0.82rem;
+  color: var(--sc-muted);
+}
+.om-next__step .sc-btn {
+  align-self: flex-start;
+  margin-top: auto;
+}
+@media (max-width: 720px) {
+  .om-next__steps {
+    grid-template-columns: 1fr;
+  }
+}

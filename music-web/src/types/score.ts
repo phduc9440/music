@@ -153,6 +153,20 @@ export interface AiTaskInfo {
   createdAt?: string;
   startedAt?: string | null;
   finishedAt?: string | null;
+  /** Hàng đợi của task OMR còn chờ (BE: AiTaskResponse.Queue, OMR-10); null với task khác. */
+  queue?: AiTaskQueue | null;
+}
+
+/** Vị trí trong hàng đợi OMR và thời gian chờ ước lượng. */
+export interface AiTaskQueue {
+  /** Thứ tự trong hàng, 1 = chạy ngay khi dịch vụ rảnh. */
+  position?: number | null;
+  pagesAhead?: number | null;
+  /** Giây chờ tới lượt / giây tới khi xong (ước lượng). */
+  waitSeconds?: number | null;
+  etaSeconds?: number | null;
+  /** Dịch vụ đang đầy hàng: hệ thống giữ task và tự gửi lại, không phải lỗi. */
+  busy?: boolean | null;
 }
 
 export interface ScoreDetail extends ScoreSummary {
@@ -288,7 +302,62 @@ export interface OmrMeasure {
   reasons?: string[];
 }
 
-export type OmrMeasureFlag = 'DURATION' | 'COUNT_MISMATCH' | 'RANGE' | 'LEAP' | 'ACCIDENTAL' | 'UNSTABLE' | 'AI_DOUBT';
+export type OmrMeasureFlag =
+  | 'DURATION'
+  | 'COUNT_MISMATCH'
+  | 'RANGE'
+  | 'LEAP'
+  | 'ACCIDENTAL'
+  | 'UNSTABLE'
+  | 'AI_DOUBT'
+  /** Máy đã tự sửa ô này (sửa trường độ, đọc lại hệ, AI), cần đối chiếu lại với ảnh (OMR-14). */
+  | 'AUTO_FIXED';
+
+/** Cảnh báo dạng cấu trúc do music-ai trả (OMR-11): web dựng câu từ code + params, text là bản tiếng Việt dự phòng. */
+export interface OmrWarningItem {
+  code?: string | null;
+  page?: number | null;
+  system?: number | null;
+  measure?: number | null;
+  params?: Record<string, string | number> | null;
+  text: string;
+}
+
+/** Một chỗ máy đã tự sửa (OMR-14). */
+export interface OmrFixItem {
+  code?: string | null;
+  page?: number | null;
+  measures?: number[] | null;
+  params?: Record<string, string | number> | null;
+  text: string;
+}
+
+/** Thông tin cho hộp "Nhận diện lại" (BE: OmrRetryInfoResponse). */
+export interface OmrRetryInfo {
+  pages: number;
+  pdf: boolean;
+  sourceType: OmrSourceType;
+  preprocess: boolean;
+  omrVersion?: number | null;
+  currentVersion?: number | null;
+  /** Số phiên bản đã lưu sau lần số hóa gần nhất. */
+  editedVersions: number;
+  lastStatus?: TaskStatus | null;
+  lastErrorCode?: string | null;
+  monthlyLimit?: number | null;
+  monthlyUsed: number;
+  perJobLimit?: number | null;
+}
+
+/** Giới hạn hệ thống cho một lần số hóa (BE: OmrConfigResponse). */
+export interface OmrConfig {
+  maxPdfPages: number;
+  maxImages: number;
+  minImageSide: number;
+  maxImagePixels: number;
+  /** Bật AI xác minh ô nhịp qua dịch vụ bên ngoài: phải báo người dùng ở trang tải lên (X-05). */
+  externalAiCheck: boolean;
+}
 
 /** So số ô đếm trên ảnh với số ô đọc được (BE: OmrResultResponse.MeasureCheck). */
 export interface OmrMeasureCheck {
@@ -315,6 +384,16 @@ export interface OmrResult {
   /** Bản đồ ô nhịp (rỗng với kết quả cũ). */
   measureMap?: OmrMeasure[];
   measureCheck?: OmrMeasureCheck | null;
+  /** Cảnh báo dạng cấu trúc (null với kết quả cũ: dùng warnings). */
+  warningItems?: OmrWarningItem[] | null;
+  /** Những chỗ máy đã tự sửa (null với kết quả cũ). */
+  autoFixes?: OmrFixItem[] | null;
+  /** Trang có chữ phía trên khuông (tên hợp âm, nhịp độ) chưa được nhận diện (OMR-13). */
+  textAbove?: { page: number }[] | null;
+  /** Nhịp độ không đọc được nên đang dùng mặc định (OMR-13). */
+  tempoDefaulted?: boolean | null;
+  /** Phiên bản MusicXML do lần nhận diện này tạo; khác musicXmlVersion nghĩa là bản nhạc đã được lưu thêm sau OMR. */
+  omrVersion?: number | null;
   kernFileId?: string | null;
   musicXmlFileId?: string | null;
   midiFileId?: string | null;
@@ -359,7 +438,9 @@ export type NotificationType =
   | 'SUGGESTION_DECIDED'
   | 'FORUM_REPLY'
   | 'FORUM_POST_REPLY'
-  | 'FORUM_ANSWER_ACCEPTED';
+  | 'FORUM_ANSWER_ACCEPTED'
+  | 'AI_TASK_COMPLETED'
+  | 'AI_TASK_FAILED';
 
 /** Nhóm thông báo người dùng bật/tắt, BE: NotificationCategory (không có SYSTEM: luôn bật). */
 export type NotificationCategory = 'SCORES' | 'COMMENTS' | 'TEAMS' | 'FORUM' | 'BILLING';

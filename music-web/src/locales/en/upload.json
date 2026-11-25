@@ -6,7 +6,9 @@
     "PREPROCESS": "Image preprocessing",
     "INFERENCE": "Symbol recognition",
     "MERGE": "Merge pages",
-    "EXPORT": "Export MusicXML and MIDI"
+    "EXPORT": "Export MusicXML and MIDI",
+    "QUEUED": "Queued",
+    "BUSY": "Waiting for the service"
   },
   "errors": {
     "PAGE_UNREADABLE": {
@@ -64,6 +66,10 @@
     "GENERIC": {
       "title": "Digitizing failed",
       "hint": "An error occurred while processing. You can try again or upload another file."
+    },
+    "PDF_UNREADABLE": {
+      "title": "Couldn't read the PDF",
+      "hint": "The PDF file may be damaged. Export it again or photograph each page and upload the images."
     }
   },
   "measureFlags": {
@@ -73,7 +79,8 @@
     "LEAP": "Unusual melodic leap; a note may be an octave or a line off",
     "ACCIDENTAL": "Unusual accidental that appears only once; it may be a smudge or text",
     "UNSTABLE": "Reading this measure again gave different results",
-    "AI_DOUBT": "The AI check thinks this measure was read incorrectly"
+    "AI_DOUBT": "The AI check thinks this measure was read incorrectly",
+    "AUTO_FIXED": "This measure was corrected automatically, compare it with the original"
   },
   "dropzone": {
     "title": "Drop your score here",
@@ -124,7 +131,6 @@
   "fieldComposer": "Composer",
   "composerPlaceholder": "For example: Johann Sebastian Bach",
   "sourceType": "Source type",
-  "sourceHintTouched": "Used to track recognition accuracy.",
   "sourceHintGuess": "Guessed from the file type, you can change it.",
   "progressLabel": "Upload progress",
   "uploading": "Uploading... {progress}%",
@@ -215,7 +221,17 @@
     "cancelText": "The running task will stop. You can press \"Try again\" afterwards.",
     "keepGoing": "Keep processing",
     "cancelling": "Cancelling...",
-    "cancelTask": "Cancel task"
+    "cancelTask": "Cancel task",
+    "queue": {
+      "position": "Position {position} in the queue · wait {wait}",
+      "busy": "The system is busy; your score will be sent again automatically when there's room.",
+      "underMinute": "under a minute",
+      "minutes": "about {count} min"
+    },
+    "leaveHint": "You can leave this page: when digitizing finishes or fails, the notification bell will tell you and link to the result.",
+    "forbidden": "You can't view this progress",
+    "forbiddenHint": "Only people who can edit the score can see its digitizing progress. Ask the owner for access.",
+    "cancelForbidden": "Only the person who started it or the score owner can cancel this task"
   },
   "compare": {
     "title": "Compare page {page}",
@@ -239,12 +255,14 @@
     "tabs": {
       "score": "Score",
       "check": "Measures to check",
-      "warnings": "Warnings"
+      "warnings": "Warnings",
+      "fixes": "Auto-fixed"
     },
     "summary": {
       "pages": "Pages",
       "measures": "Measures",
-      "imageMeasures": "Measures counted on the image"
+      "imageMeasures": "Measures counted on the image",
+      "tempo": "Tempo"
     },
     "subtitle": "Digitizing result · check it before editing",
     "details": "Score details",
@@ -271,19 +289,33 @@
     "downloadKrn": "Download .krn",
     "actions": "Actions for the result",
     "accept": "Accept and edit",
-    "listenSoon": "The player is coming in a later version",
     "listen": "Listen",
     "downloadXml": "Download MusicXML",
     "creatingMidi": "Creating MIDI...",
     "downloadMidi": "Download MIDI",
     "redo": "Recognize again",
-    "hint": "Editing and listening directly is coming in a later version; you can download the MIDI and listen with other software.",
-    "redoTitle": "Recognize again?",
-    "redoText": "The system will run again from the original file and replace the current result with a new one.",
+    "hint": "Click \"Accept and edit\" to open the editor with the To check panel and the original image of each measure.",
     "redoPreprocess": "Clean up and straighten the image before recognizing",
     "later": "Not now",
     "measure": "Measure {measure}",
-    "confidence": "Confidence {value}%"
+    "confidence": "Confidence {value}%",
+    "fixesIntro": "Places the digitizer corrected automatically. These measures are also in Measures to check.",
+    "advanced": "Advanced: **kern text (for debugging)",
+    "moreActions": "More actions",
+    "source": {
+      "label": "Content of the original not recognized",
+      "textAboveTitle": "The original has text or chords above the staff that weren't recognized.",
+      "textAbove": "Found on page {pages}. Printed chord names are not in the digital score: add them in the editor or use Suggest chords.",
+      "tempoTitle": "Tempo not read.",
+      "tempo": "The score uses the default tempo; enter the tempo printed on the original."
+    },
+    "tempo": {
+      "label": "Tempo (♩ =)",
+      "save": "Save tempo",
+      "saving": "Saving...",
+      "saved": "Tempo set to {bpm} BPM",
+      "invalid": "Tempo must be between {min} and {max}"
+    }
   },
   "failed": "Upload failed, please try again",
   "saveFailed": "Couldn't save, please try again",
@@ -298,12 +330,15 @@
     "2004": "Invalid file format: only PDF, PNG, JPG and JPEG are accepted and the content must match the format",
     "2005": "File too large: up to 50MB per file and 200MB per upload",
     "2006": "Upload one PDF, or 1–20 images (don't mix PDFs with images)",
-    "2008": "The PDF is encrypted, password-protected or can't be opened",
+    "2008": "The PDF is password-protected and can't be opened; remove the password and upload again",
     "2009": "The PDF must have between 1 and {pages} pages",
-    "2010": "The image can't be read: its short side is under {side}px or it exceeds 40 megapixels",
+    "2010": "The image can't be read; the file may be damaged",
     "2011": "Invalid source type",
     "2018": "The composer name can be up to 255 characters",
-    "2202": "You already have 3 scores waiting to be digitized, wait for one to finish before uploading more"
+    "2202": "You already have 3 scores waiting to be digitized, wait for one to finish before uploading more",
+    "2031": "The PDF can't be read; the file may be damaged",
+    "2032": "Image too small: the short side must be at least {side}px; take the photo closer or use the original",
+    "2033": "Image too large: at most 40 megapixels; resize it and upload again"
   },
   "saveByCode": {
     "1002": "You don't have permission to edit this score",
@@ -426,5 +461,68 @@
         }
       }
     }
+  },
+  "sourceHint": "Photos, scans and native PDFs are cleaned up differently; choosing the right type improves recognition.",
+  "untitled": "Untitled score",
+  "externalAiNote": "Note: AI verification is on. Cropped images of some doubtful measures (up to 10 per score) are sent to an external AI service for checking.",
+  "quota": {
+    "summary": "{remaining}/{limit} pages left this month · up to {max} pages per upload",
+    "unlimitedMonth": "Unlimited pages per month · up to {max} pages per upload",
+    "perJobExceeded": "This file has {pages} pages; your plan allows up to {max} pages per upload. Split the file or upgrade your plan.",
+    "monthExceeded": "This file has {pages} pages but you only have {remaining} pages left this month.",
+    "seePlans": "See plans"
+  },
+  "warningCodes": {
+    "PAGE_LANDSCAPE": "Landscape page, scaled down to fit portrait",
+    "PAGE_BORDER_CROPPED": "Cropped a solid border at the image edge (usually a status bar)",
+    "PAGE_SKEW_TOO_LARGE": "The image is tilted about {angle}°, more than {max}°, so it wasn't straightened; take a straighter photo",
+    "PAGE_NO_STAFF": "No staff found, this page was skipped",
+    "PAGE_NO_NOTES": "No notes recognized, this page was skipped",
+    "PAGE_ONLY_RESTS": "Only rests were read, this page was skipped",
+    "PAGE_TRUNCATED": "The result hit the length limit, the end of the page may be missing",
+    "PAGE_LOOP_TRIMMED": "The model repeated itself, {count} repeated lines were removed",
+    "PAGE_MEASURE_MISMATCH": "Read {found} measures but the image has {expected}, check this page",
+    "PAGE_STAFF_MISMATCH": "Read {found} staves but the image has {expected} staves per system",
+    "SYSTEM_MEASURE_MISMATCH": "This system read {found} measures but the image has {expected}",
+    "BARLINES_INSERTED": "Missing barlines: inserted {count} by duration (compare with the image)",
+    "TEXT_ABOVE_STAFF": "There is text above the staff (usually chord names or tempo) that wasn't recognized; printed chords are not in the digital score",
+    "TEMPO_DEFAULT": "The tempo couldn't be read, using {bpm} BPM; please correct it"
+  },
+  "fixCodes": {
+    "RHYTHM_FIXED": "Durations fixed: {parts}",
+    "RHYTHM_PARTS": {
+      "triplets": "{count} misread triplets",
+      "dropped": "removed {count} extra chord notes",
+      "dots": "added {count} dots"
+    },
+    "OCTAVE_FIXED": "Fixed the octave of {count} notes from the notehead positions",
+    "OTTAVA_FIXED": "Removed an 8va the model added, moved {count} notes back to the printed octave",
+    "REREAD_REPLACED": "Replaced this measure with the reading that repeated re-reads agreed on",
+    "AI_REPLACED": "AI compared the image and chose a different reading for this measure"
+  },
+  "check": {
+    "title": "To check",
+    "close": "Close the To check panel",
+    "toggleHint": "Measures the digitizer wasn't sure about, with the original image",
+    "intro": "Measures the recognizer wasn't sure about. Click one to jump to it and see it cropped from the original page.",
+    "edited": "The score was saved after digitizing. If you added or removed measures, the numbers here may be off.",
+    "progress": "Checked {done}/{total} measures",
+    "hideChecked": "Hide checked",
+    "allDone": "Nothing left to check.",
+    "jump": "Go to measure",
+    "markChecked": "Checked",
+    "uncheck": "Unmark",
+    "noCrop": "No original image for this measure.",
+    "cropAlt": "Measure {measure} on the original page {page}"
+  },
+  "redo": {
+    "title": "Recognize again?",
+    "text": "The system will run again from the original files with the options below.",
+    "loadFailed": "Couldn't load the details; you can still send it with the previous options.",
+    "edited": "You saved {count} version(s) after the last digitizing. The new result becomes version v{next} and opens in the editor; your edited versions stay in Version history.",
+    "pages": "This uses {count} pages of your monthly quota (used {used}/{limit}).",
+    "pagesUnlimited": "This counts {count} pages (your plan has unlimited pages per month).",
+    "notEnough": "You only have {remaining} pages left this month.",
+    "imageErrorHint": "Last time the image couldn't be read. Try another source type (e.g. Photo) and turn on clean-up and straightening."
   }
 }

@@ -4,22 +4,34 @@ import { useNavigate } from '../../../routes/useTransitionNavigate';
 import { toast } from 'react-toastify';
 import AuthImage from '../../../components/scores/common/AuthImage';
 import MusicXmlViewer from '../../../components/scores/viewer/MusicXmlViewer';
-import Modal from '../../../components/scores/common/Modal';
-import { downloadScoreExport, fetchKern, fetchMusicXml, omrApi, saveBlob, scoreApi } from '../../../services';
+import OmrRedoDialog from '../../../components/scores/omr/OmrRedoDialog';
+import {
+  downloadScoreExport,
+  fetchKern,
+  fetchMusicXml,
+  fetchMusicXmlWithVersion,
+  omrApi,
+  saveBlob,
+  saveMusicXml,
+  scoreApi,
+} from '../../../services';
 import type { OmrMeasure, OmrResult, ScoreDetail as ScoreDetailData, ScoreFileInfo } from '../../../types';
 import {
   boxToPercent,
   confidencePercent,
+  fixMeasures,
+  fixText,
   flaggedMeasures,
   isValidScoreId,
   MEASURE_FLAG_LABELS,
-  parseWarning,
+  resultWarnings,
 } from '../../../utils/omr';
+import { setMusicXmlTempo } from '../../../utils/musicXmlTempo';
 import { reportPlanLimit } from '../../../utils/planLimit';
 import {
   getErrorMessage,
   getHttpStatus,
-  getUploadErrorMessage,
+  getSaveErrorMessage,
   toSafeFileName,
   useScoreBase,
 } from '../../../utils/score';
@@ -33,12 +45,18 @@ import Skeleton from '../../../components/ui/Skeleton';
 import { BackLink } from '../../../components/ui';
 
 type LoadState = 'loading' | 'ready' | 'notFound' | 'error';
-type Tab = 'score' | 'check' | 'warnings' | 'kern';
+type Tab = 'score' | 'check' | 'warnings' | 'fixes';
+
+/** Khoảng nhịp độ cho phép sửa ngay ở trang kết quả (cùng giới hạn với Editor). */
+const BPM_MIN = 20;
+const BPM_MAX = 400;
 
 /**
- * Trang /scores/:id/review: xem lại kết quả số hóa (đặc tả mục 2.5, bản đầu).
+ * Trang /scores/:id/review: xem lại kết quả số hóa (đặc tả mục 2.5).
  * Hiện tóm tắt, ảnh từng trang cạnh bản nhạc vẽ từ MusicXML (OSMD), danh sách ô cần kiểm tra (khoanh trên ảnh trang,
- * bấm ô để xem đúng ô đó vẽ từ MusicXML), cảnh báo theo trang, chuỗi **kern đã ghép và nút tải MusicXML / MIDI.
+ * bấm ô để xem đúng ô đó vẽ từ MusicXML), cảnh báo theo trang, những chỗ máy đã tự sửa, và nút nghe thử, tải MusicXML /
+ * MIDI. Chuỗi **kern để gỡ lỗi nằm trong mục "Nâng cao" (OMR-05). Bản gốc có chữ/hợp âm trên khuông hoặc không đọc được
+ * nhịp độ thì có cảnh báo và ô sửa nhịp độ ngay tại đây (OMR-13).
  */
 export default function ScoreReview() {
   const { id } = useParams<{ id: string }>();
@@ -51,14 +69,16 @@ export default function ScoreReview() {
   const [result, setResult] = useState<OmrResult | null>(null);
   const [pages, setPages] = useState<ScoreFileInfo[]>([]);
   const [tab, setTab] = useState<Tab>('score');
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [kern, setKern] = useState<string | null>(null);
   const [kernError, setKernError] = useState(false);
   const [xml, setXml] = useState<string | null>(null);
   const [xmlError, setXmlError] = useState(false);
   const [exporting, setExporting] = useState<'musicxml' | 'midi' | null>(null);
   const [redoOpen, setRedoOpen] = useState(false);
-  const [redoPreprocess, setRedoPreprocess] = useState(true);
-  const [busy, setBusy] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false); // màn hẹp: các thao tác phụ thu vào một nút
+  const [tempo, setTempo] = useState('');
+  const [savingTempo, setSavingTempo] = useState(false);
   const [selected, setSelected] = useState<number | null>(null); // số ô đang chọn
   const pageRefs = useRef<Record<number, HTMLElement | null>>({});
 
@@ -75,6 +95,7 @@ export default function ScoreReview() {
         ]);
         if (cancelled) return;
         setScore(detail.data.result);
+        setTempo(detail.data.result.tempoBpm ? String(detail.data.result.tempoBpm) : '');
         setResult(res.data.result);
         setPages([...png.data.result].sort((a, b) => (a.pageNumber ?? 0) - (b.pageNumber ?? 0)));
         setLoadState('ready');
@@ -91,9 +112,9 @@ export default function ScoreReview() {
 
   const hasKern = !!result?.kernFileId;
 
-  // Chỉ tải chuỗi kern khi người dùng mở tab Kern lần đầu
+  // Chỉ tải chuỗi kern khi người dùng mở mục Nâng cao lần đầu
   useEffect(() => {
-    if (tab !== 'kern' || !id || !hasKern || kern !== null || kernError) return;
+    if (!advancedOpen || !id || !hasKern || kern !== null || kernError) return;
     let cancelled = false;
     fetchKern(id)
       .then((text) => !cancelled && setKern(text))
@@ -101,7 +122,7 @@ export default function ScoreReview() {
     return () => {
       cancelled = true;
     };
-  }, [tab, id, hasKern, kern, kernError]);
+  }, [advancedOpen, id, hasKern, kern, kernError]);
 
   const hasMusicXml = !!result?.musicXmlFileId;
 
@@ -118,8 +139,10 @@ export default function ScoreReview() {
     };
   }, [tab, selected, id, hasMusicXml, xml, xmlError]);
 
-  const warnings = useMemo(() => (result?.warnings ?? []).map(parseWarning), [result]);
+  const warnings = useMemo(() => (result ? resultWarnings(result) : []), [result]);
+  const fixes = useMemo(() => result?.autoFixes ?? [], [result]);
   const flagged = useMemo(() => flaggedMeasures(result?.measureMap), [result]);
+  const textAbovePages = useMemo(() => (result?.textAbove ?? []).map((p) => p.page), [result]);
   /** Ô theo trang, để vẽ khung trên ảnh. */
   const measuresByPage = useMemo(() => {
     const byPage = new Map<number, OmrMeasure[]>();
@@ -181,16 +204,37 @@ export default function ScoreReview() {
     }
   };
 
-  const handleRedo = async () => {
-    if (!id) return;
-    setBusy(true);
+  /** Chọn ô theo số ô (từ chỗ tự sửa): mở đúng ô nếu có trong bản đồ ô nhịp. */
+  const selectByNumber = (measure: number) => {
+    const m = (result?.measureMap ?? []).find((x) => x.measure === measure);
+    if (m) selectMeasure(m);
+    else setSelected(measure);
+  };
+
+  /** Sửa nhịp độ ngay ở trang kết quả (OMR-13): ghi vào MusicXML thành một phiên bản mới. */
+  const handleSaveTempo = async () => {
+    if (!id || !score) return;
+    const bpm = Number(tempo);
+    if (!Number.isFinite(bpm) || bpm < BPM_MIN || bpm > BPM_MAX) {
+      toast.error(t('upload.review.tempo.invalid', { min: BPM_MIN, max: BPM_MAX }));
+      return;
+    }
+    setSavingTempo(true);
     try {
-      await omrApi.retry(id, redoPreprocess);
-      toast.success(t('upload.review.redoSent'));
-      navigate(`${base}/${id}/processing`);
+      const current = await fetchMusicXmlWithVersion(id);
+      const saved = await saveMusicXml(
+        id,
+        setMusicXmlTempo(current.xml, bpm),
+        current.version ?? score.currentVersion ?? 1,
+      );
+      setScore({ ...score, tempoBpm: saved.tempoBpm, currentVersion: saved.version });
+      setXml(null); // vẽ lại bản nhạc với nhịp độ mới
+      setXmlError(false);
+      toast.success(t('upload.review.tempo.saved', { bpm: saved.tempoBpm }));
     } catch (err) {
-      if (!reportPlanLimit(err)) toast.error(getUploadErrorMessage(err));
-      setBusy(false);
+      if (!reportPlanLimit(err)) toast.error(getSaveErrorMessage(err));
+    } finally {
+      setSavingTempo(false);
     }
   };
 
@@ -233,7 +277,8 @@ export default function ScoreReview() {
     { key: 'score', label: t('upload.review.tabs.score') },
     { key: 'check', label: t('upload.review.tabs.check'), count: flagged.length },
     { key: 'warnings', label: t('upload.review.tabs.warnings'), count: warnings.length },
-    { key: 'kern', label: 'Kern' },
+    // Chỗ máy tự sửa là thông tin, tách khỏi Cảnh báo (OMR-14)
+    ...(fixes.length > 0 ? [{ key: 'fixes' as const, label: t('upload.review.tabs.fixes'), count: fixes.length }] : []),
   ];
   /** Mũi tên trái/phải, Home/End chuyển tab theo chuẩn WAI-ARIA. */
   const handleTabKey = (e: React.KeyboardEvent) => {
@@ -250,7 +295,8 @@ export default function ScoreReview() {
     document.getElementById(`sr-tab-${keys[next]}`)?.focus();
   };
   const imageMeasures = result.measureCheck?.imageMeasures ?? null;
-  const summary: { label: string; value: string; tone?: 'ok' | 'warn' }[] = [
+  // minor: trên màn hẹp chỉ giữ 4 ô chính (2 dòng) để ảnh trang không bị đẩy xuống dưới màn đầu (UI-02)
+  const summary: { label: string; value: string; tone?: 'ok' | 'warn'; minor?: boolean }[] = [
     {
       label: t('upload.review.summary.pages'),
       value: (result.pageCount ?? score.pageCount ?? pages.length).toString(),
@@ -262,12 +308,18 @@ export default function ScoreReview() {
             label: t('upload.review.summary.imageMeasures'),
             value: imageMeasures.toString(),
             tone: imageMeasures === score.measureCount ? ('ok' as const) : ('warn' as const),
+            minor: true,
           },
         ]
       : []),
-    { label: t('scores.hero.key'), value: score.keySignature || '—' }, // dạng G, Bb, F#m
-    { label: t('scores.hero.timeSignature'), value: score.timeSignature || '—' },
-    { label: 'Tempo', value: score.tempoBpm ? `${score.tempoBpm} BPM` : '—' },
+    { label: t('scores.hero.key'), value: score.keySignature || '—', minor: true }, // dạng G, Bb, F#m
+    { label: t('scores.hero.timeSignature'), value: score.timeSignature || '—', minor: true },
+    {
+      label: t('upload.review.summary.tempo'),
+      value: score.tempoBpm ? `${score.tempoBpm} BPM` : '—',
+      tone: result.tempoDefaulted ? 'warn' : undefined,
+      minor: true,
+    },
     {
       label: t('upload.review.tabs.check'),
       value: flagged.length.toString(),
@@ -279,6 +331,8 @@ export default function ScoreReview() {
       tone: warnings.length > 0 ? 'warn' : 'ok',
     },
   ];
+  const editPath = `${base}/${score.id}/edit${score.canEdit && flagged.length > 0 ? '?check=1' : ''}`;
+  const showSourceAlert = textAbovePages.length > 0 || !!result.tempoDefaulted;
 
   return (
     <div className="sc-page">
@@ -295,13 +349,59 @@ export default function ScoreReview() {
         </header>
 
         <dl className="sc-facts sr-summary">
-          {summary.map(({ label, value, tone }) => (
-            <div key={label} className={`sc-fact${tone ? ` sr-fact--${tone}` : ''}`}>
+          {summary.map(({ label, value, tone, minor }) => (
+            <div key={label} className={`sc-fact${tone ? ` sr-fact--${tone}` : ''}${minor ? ' sr-fact--minor' : ''}`}>
               <dt>{label}</dt>
               <dd>{value}</dd>
             </div>
           ))}
         </dl>
+
+        {showSourceAlert && (
+          <section className="sr-source" role="status" aria-label={t('upload.review.source.label')}>
+            {textAbovePages.length > 0 && (
+              <p>
+                <strong>{t('upload.review.source.textAboveTitle')}</strong>{' '}
+                {t('upload.review.source.textAbove', { pages: textAbovePages.join(', ') })}
+              </p>
+            )}
+            {result.tempoDefaulted && (
+              <p>
+                <strong>{t('upload.review.source.tempoTitle')}</strong> {t('upload.review.source.tempo')}
+              </p>
+            )}
+            {score.canEdit && (
+              <form
+                className="sr-tempo"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void handleSaveTempo();
+                }}
+              >
+                <label htmlFor="sr-tempo">{t('upload.review.tempo.label')}</label>
+                <input
+                  id="sr-tempo"
+                  className="sc-input"
+                  type="number"
+                  inputMode="numeric"
+                  min={BPM_MIN}
+                  max={BPM_MAX}
+                  value={tempo}
+                  disabled={savingTempo}
+                  onChange={(e) => setTempo(e.target.value)}
+                />
+                <span>BPM</span>
+                <button
+                  type="submit"
+                  className="sc-btn sc-btn--sm"
+                  disabled={savingTempo || !tempo || Number(tempo) === score.tempoBpm}
+                >
+                  {savingTempo ? t('upload.review.tempo.saving') : t('upload.review.tempo.save')}
+                </button>
+              </form>
+            )}
+          </section>
+        )}
 
         <div className="sr-grid">
           <section className="sr-pages" aria-label={t('upload.review.pageImages')}>
@@ -496,77 +596,110 @@ export default function ScoreReview() {
               </div>
             )}
 
-            {tab === 'kern' && (
+            {tab === 'fixes' && (
               <div className="sr-panel" role="tabpanel" id="sr-tabpanel" aria-labelledby={`sr-tab-${tab}`}>
-                {!hasKern && <p className="sr-empty">{t('upload.review.noKern')}</p>}
-                {hasKern && kernError && <div className="sc-error">{t('upload.review.kernLoadFailed')}</div>}
-                {hasKern && !kernError && kern === null && <Skeleton height={220} />}
-                {kern !== null && (
-                  <>
-                    <div className="sr-kern__bar">
-                      <button className="sc-btn sc-btn--sm" onClick={handleCopyKern}>
-                        {t('upload.review.copy')}
-                      </button>
-                      <button className="sc-btn sc-btn--sm sc-btn--primary" onClick={handleDownloadKern}>
-                        {t('upload.review.downloadKrn')}
-                      </button>
-                    </div>
-                    <pre className="sr-kern" tabIndex={0}>
-                      {kern}
-                    </pre>
-                  </>
-                )}
+                <p className="sr-fixes__intro">{t('upload.review.fixesIntro')}</p>
+                <ul className="sr-warnings">
+                  {fixes.map((fix, i) => (
+                    <li key={i} className="sr-fix">
+                      {fix.page != null && (
+                        <span className="sr-warning__page">{t('upload.review.page', { page: fix.page })}</span>
+                      )}
+                      {fixText(fix)}
+                      {fixMeasures(fix).length > 0 && (
+                        <span className="sr-fix__measures">
+                          {fixMeasures(fix).map((m) => (
+                            <button
+                              key={m}
+                              type="button"
+                              className="sc-btn sc-btn--sm"
+                              aria-pressed={selected === m}
+                              onClick={() => selectByNumber(m)}
+                            >
+                              {t('upload.review.measure', { measure: m })}
+                            </button>
+                          ))}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
+
+            {/* Chuỗi **kern chỉ để gỡ lỗi: thu vào mục Nâng cao, không chiếm một tab cho mọi người (OMR-05) */}
+            <details className="sr-advanced" onToggle={(e) => setAdvancedOpen((e.target as HTMLDetailsElement).open)}>
+              <summary>{t('upload.review.advanced')}</summary>
+              {!hasKern && <p className="sr-empty">{t('upload.review.noKern')}</p>}
+              {hasKern && kernError && <div className="sc-error">{t('upload.review.kernLoadFailed')}</div>}
+              {hasKern && !kernError && kern === null && advancedOpen && <Skeleton height={160} />}
+              {kern !== null && (
+                <>
+                  <div className="sr-kern__bar">
+                    <button className="sc-btn sc-btn--sm" onClick={handleCopyKern}>
+                      {t('upload.review.copy')}
+                    </button>
+                    <button className="sc-btn sc-btn--sm sc-btn--primary" onClick={handleDownloadKern}>
+                      {t('upload.review.downloadKrn')}
+                    </button>
+                  </div>
+                  <pre className="sr-kern" tabIndex={0}>
+                    {kern}
+                  </pre>
+                </>
+              )}
+            </details>
           </section>
         </div>
 
         <div className="sp-actions sr-actions" role="toolbar" aria-label={t('upload.review.actions')}>
-          <button
-            className="sc-btn sc-btn--primary"
-            disabled={!hasMusicXml}
-            onClick={() => navigate(`${base}/${score.id}/edit`)}
-          >
+          <button className="sc-btn sc-btn--primary" disabled={!hasMusicXml} onClick={() => navigate(editPath)}>
             {score.canEdit ? t('upload.review.accept') : t('scores.hero.viewScore')}
           </button>
-          <button className="sc-btn" disabled title={t('upload.review.listenSoon')}>
+          <button
+            className="sc-btn"
+            disabled={!hasMusicXml}
+            title={hasMusicXml ? undefined : t('scores.hero.noXmlPlay')}
+            onClick={() => navigate(`${base}/${score.id}/play`)}
+          >
             {t('upload.review.listen')}
           </button>
-          {hasMusicXml && (
-            <>
-              <button className="sc-btn" disabled={exporting !== null} onClick={() => handleExport('musicxml')}>
-                {exporting === 'musicxml' ? t('common.loading') : t('upload.review.downloadXml')}
+          <button
+            type="button"
+            className="sc-btn sr-actions__toggle"
+            aria-expanded={moreOpen}
+            aria-controls="sr-actions-more"
+            onClick={() => setMoreOpen(!moreOpen)}
+          >
+            {t('upload.review.moreActions')}
+          </button>
+          <div id="sr-actions-more" className={`sr-actions__more${moreOpen ? ' is-open' : ''}`}>
+            {hasMusicXml && (
+              <>
+                <button className="sc-btn" disabled={exporting !== null} onClick={() => handleExport('musicxml')}>
+                  {exporting === 'musicxml' ? t('common.loading') : t('upload.review.downloadXml')}
+                </button>
+                <button className="sc-btn" disabled={exporting !== null} onClick={() => handleExport('midi')}>
+                  {exporting === 'midi' ? t('upload.review.creatingMidi') : t('upload.review.downloadMidi')}
+                </button>
+              </>
+            )}
+            {score.canEdit && (
+              <button className="sc-btn" onClick={() => setRedoOpen(true)}>
+                {t('upload.review.redo')}
               </button>
-              <button className="sc-btn" disabled={exporting !== null} onClick={() => handleExport('midi')}>
-                {exporting === 'midi' ? t('upload.review.creatingMidi') : t('upload.review.downloadMidi')}
-              </button>
-            </>
-          )}
-          {score.canEdit && (
-            <button className="sc-btn" onClick={() => setRedoOpen(true)}>
-              {t('upload.review.redo')}
-            </button>
-          )}
+            )}
+          </div>
         </div>
-        <p className="sr-hint">{t('upload.review.hint')}</p>
+        {score.canEdit && flagged.length > 0 && <p className="sr-hint">{t('upload.review.hint')}</p>}
       </main>
 
       {redoOpen && (
-        <Modal title={t('upload.review.redoTitle')} onClose={() => !busy && setRedoOpen(false)}>
-          <p>{t('upload.review.redoText')}</p>
-          <label className="sr-check">
-            <input type="checkbox" checked={redoPreprocess} onChange={(e) => setRedoPreprocess(e.target.checked)} />
-            {t('upload.review.redoPreprocess')}
-          </label>
-          <div className="sc-modal__actions">
-            <button className="sc-btn" disabled={busy} onClick={() => setRedoOpen(false)}>
-              {t('upload.review.later')}
-            </button>
-            <button className="sc-btn sc-btn--primary" disabled={busy} onClick={handleRedo}>
-              {busy ? t('scores.request.sending') : t('upload.review.redo')}
-            </button>
-          </div>
-        </Modal>
+        <OmrRedoDialog
+          scoreId={score.id}
+          onClose={() => setRedoOpen(false)}
+          onStarted={() => navigate(`${base}/${score.id}/processing`)}
+        />
       )}
     </div>
   );

@@ -1,6 +1,7 @@
 import { formatNumber, t } from '../../i18n/core';
 import type { PlanLimits } from '../../types';
 import { Icon } from '../../components/ui';
+import { UPLOAD_MAX_PDF_PAGES } from '../../utils/score';
 
 type NumericKey =
   | 'omrPagesPerMonth'
@@ -33,12 +34,19 @@ export default function LimitList({ limits }: { limits: PlanLimits }) {
   const unlimited = t('billing.unlimited');
   return (
     <ul className="bl-limits">
-      {NUMERIC.map((key) => (
-        <li key={key}>
-          <span>{t(`billing.limits.${key}`)}</span>
-          <strong>{limits[key] == null ? unlimited : formatNumber(limits[key] as number)}</strong>
-        </li>
-      ))}
+      {NUMERIC.map((key) => {
+        // Số trang mỗi lần số hóa luôn có trần hệ thống: để trống trong gói nghĩa là đúng trần đó, không phải không giới hạn
+        const value =
+          key === 'omrMaxPagesPerJob'
+            ? Math.min(limits[key] ?? UPLOAD_MAX_PDF_PAGES, UPLOAD_MAX_PDF_PAGES)
+            : limits[key];
+        return (
+          <li key={key}>
+            <span>{t(`billing.limits.${key}`)}</span>
+            <strong>{value == null ? unlimited : formatNumber(value as number)}</strong>
+          </li>
+        );
+      })}
       <li>
         <span>{t('billing.limits.storageMb')}</span>
         <strong>{limits.storageMb == null ? unlimited : formatStorage(limits.storageMb)}</strong>

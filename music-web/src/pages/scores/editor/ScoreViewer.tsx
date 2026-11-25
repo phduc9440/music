@@ -64,8 +64,8 @@ export default function ScoreViewer() {
         }
         try {
           const opened = ScoreDocument.parse(text);
-          // Tiêu đề trên bản nhạc theo tên bài hát trong ứng dụng (trừ khi đã tự sửa tiêu đề trong trình sửa)
-          if (syncTitle(opened, detail.data.result.title)) setXml(opened.serialize());
+          // Tên bài / tác giả trên bản nhạc theo bản nhạc trong ứng dụng (một nguồn tên, OMR-12)
+          if (syncTitle(opened, detail.data.result.title, detail.data.result.composer)) setXml(opened.serialize());
           setDoc(opened);
           setPhase('ready');
         } catch {

@@ -26,6 +26,10 @@ import ChordSuggestDialog from '../chords/ChordSuggestDialog';
 import { aiChordsEditPath, clearChordsEditPath } from '../suggestions/suggestionUtils';
 import PlaylistPicker from '../library/PlaylistPicker';
 import ScoreCover from './ScoreCover';
+import HeroMenu from './HeroMenu';
+import type { HeroMenuItem } from './HeroMenu';
+import NextStepsCard from '../omr/NextStepsCard';
+import OmrRedoDialog from '../omr/OmrRedoDialog';
 import { t } from '../../../i18n/core';
 
 interface Props {
@@ -50,6 +54,7 @@ export default function ScoreHero({ score, onVisibilityChanged }: Props) {
   const [forking, setForking] = useState(false);
   const [suggestingChords, setSuggestingChords] = useState(false);
   const [savingToPlaylist, setSavingToPlaylist] = useState(false);
+  const [redoOpen, setRedoOpen] = useState(false);
   // Tạo bản phối riêng tư từ bản công khai chủ cho phép (R4), xong thì mở bản mới
   const fork = async () => {
     setForking(true);
@@ -106,6 +111,72 @@ export default function ScoreHero({ score, onVisibilityChanged }: Props) {
     ? `${failure.title}${failure.detail ? ` (${failure.detail})` : ''}`
     : score.rejectReason;
   const processing = score.processingStatus === 'PENDING' || score.processingStatus === 'PROCESSING';
+  const inAdmin = base.startsWith('/admin');
+  const isOmr = score.sourceType === 'OMR';
+  const hasOriginals = score.files.some((f) => f.fileType === 'ORIGINAL_PDF' || f.fileType === 'ORIGINAL_IMAGE');
+
+  // Hàng thao tác (X-01): 3 nút chính (mở, phát, luyện tập) + menu "AI" + menu "⋯" + tải xuống (biểu tượng)
+  const aiItems: HeroMenuItem[] = [
+    ...(score.canEdit && ready
+      ? [
+          {
+            key: 'chords',
+            label: t('chords.button'),
+            icon: <Icon name="music" size={16} />,
+            onClick: () => setSuggestingChords(true),
+          },
+        ]
+      : []),
+    ...(isOmr && score.processingStatus === 'COMPLETED'
+      ? [
+          {
+            key: 'review',
+            label: t('scores.hero.viewResult'),
+            icon: <Icon name="eye" size={16} />,
+            onClick: () => navigate(`${base}/${score.id}/review`),
+          },
+        ]
+      : []),
+    ...(score.canEdit && isOmr && hasOriginals && !processing
+      ? [
+          {
+            key: 'redo',
+            label: t('upload.review.redo'),
+            icon: <Icon name="refresh" size={16} />,
+            onClick: () => setRedoOpen(true),
+          },
+        ]
+      : []),
+  ];
+  const moreItems: HeroMenuItem[] = [
+    ...(!inAdmin
+      ? [
+          {
+            key: 'playlist',
+            label: t('scores.libMenu.addToPlaylist'),
+            icon: <Icon name="listPlus" size={16} />,
+            onClick: () => setSavingToPlaylist(true),
+          },
+        ]
+      : []),
+    ...(score.canFork
+      ? [
+          {
+            key: 'fork',
+            label: forking ? t('scores.fork.working') : t('scores.fork.button'),
+            icon: <Icon name="copy" size={16} />,
+            disabled: forking,
+            onClick: () => void fork(),
+          },
+        ]
+      : []),
+    {
+      key: 'link',
+      label: linkCopied ? t('scores.hero.copyLinkCopied') : t('scores.hero.copyLink'),
+      icon: <Icon name={linkCopied ? 'check' : 'link'} size={16} />,
+      onClick: () => void copyLink(),
+    },
+  ];
 
   const meta = [
     score.composer || t('scores.card.unknownComposer'),
@@ -157,7 +228,7 @@ export default function ScoreHero({ score, onVisibilityChanged }: Props) {
             ))}
           </ul>
 
-          {/* Thao tác chính đứng ngay dưới tên bản nhạc, theo thứ tự hay dùng: mở → phát → tải → chia sẻ */}
+          {/* Thao tác chính đứng ngay dưới tên bản nhạc: mở → phát → luyện tập; việc AI và việc phụ gom vào hai menu */}
           <div className="sd-actions">
             <Link
               className={`sc-btn sc-btn--primary sd-actions__main${ready ? '' : ' is-disabled'}`}
@@ -179,22 +250,12 @@ export default function ScoreHero({ score, onVisibilityChanged }: Props) {
               <Icon name="play" size={16} />
               {t('scores.hero.play')}
             </Link>
-            {ready && !base.startsWith('/admin') && (
+            {ready && !inAdmin && (
               <Link className="sc-btn" to={`/studio/scores/${score.id}/play`}>
                 {t('scores.hero.studioPractice')}
               </Link>
             )}
-            {score.canEdit && ready && (
-              <button
-                type="button"
-                className="sc-btn"
-                onClick={() => setSuggestingChords(true)}
-                title={t('chords.buttonHint')}
-              >
-                <Icon name="music" size={16} />
-                {t('chords.button')}
-              </button>
-            )}
+            <HeroMenu label={t('scores.hero.aiMenu')} icon={<Icon name="star" size={16} />} items={aiItems} />
             {canConvertMidi && (
               <MidiConvertButton
                 scoreId={score.id}
@@ -203,34 +264,20 @@ export default function ScoreHero({ score, onVisibilityChanged }: Props) {
                 onDone={() => navigate(`${base}/${score.id}/edit`)}
               />
             )}
-            {!base.startsWith('/admin') && (
-              <button type="button" className="sc-btn" onClick={() => setSavingToPlaylist(true)}>
-                <Icon name="listPlus" size={16} />
-                {t('scores.libMenu.addToPlaylist')}
-              </button>
-            )}
             <DownloadMenu
               scoreId={score.id}
               files={score.files}
               title={score.title}
               staffCount={score.staffCount}
               canDownload={score.canDownload}
+              compact
             />
-            {score.canFork && (
-              <button type="button" className="sc-btn" disabled={forking} onClick={fork} title={t('scores.fork.hint')}>
-                <Icon name="copy" size={16} />
-                {forking ? t('scores.fork.working') : t('scores.fork.button')}
-              </button>
-            )}
-            <button
-              type="button"
-              className={`sc-btn sd-actions__icon${linkCopied ? ' is-done' : ''}`}
-              onClick={copyLink}
-              title={linkCopied ? t('scores.hero.copyLinkCopied') : t('scores.hero.copyLinkHint')}
-              aria-label={t('scores.hero.copyLink')}
-            >
-              <Icon name={linkCopied ? 'check' : 'link'} size={16} />
-            </button>
+            <HeroMenu
+              label={t('scores.hero.moreMenu')}
+              icon={<Icon name="more" size={16} />}
+              items={moreItems}
+              iconOnly
+            />
           </div>
         </div>
       </header>
@@ -244,6 +291,13 @@ export default function ScoreHero({ score, onVisibilityChanged }: Props) {
         />
       )}
       {savingToPlaylist && <PlaylistPicker score={score} onClose={() => setSavingToPlaylist(false)} />}
+      {redoOpen && (
+        <OmrRedoDialog
+          scoreId={score.id}
+          onClose={() => setRedoOpen(false)}
+          onStarted={() => navigate(`${base}/${score.id}/processing`)}
+        />
+      )}
 
       <div className="sd-alerts">
         {score.accessLevel === 'OWNER' && !base.startsWith('/admin') && <OfficialRequestBanner scoreId={score.id} />}
@@ -280,11 +334,22 @@ export default function ScoreHero({ score, onVisibilityChanged }: Props) {
             <Link to={`${base}/${score.id}/processing`}>{t('scores.hero.viewProgress')} →</Link>
           </div>
         )}
-        {score.processingStatus === 'COMPLETED' && score.sourceType === 'OMR' && (
+        {/* Sau khi số hóa: thẻ "Bước tiếp theo" (kiểm ô nghi ngờ → hợp âm → luyện tập) thay cho dải "Đã số hóa xong" */}
+        {score.processingStatus === 'COMPLETED' && isOmr && score.canEdit && ready && !inAdmin && (
+          <NextStepsCard score={score} base={base} onSuggestChords={() => setSuggestingChords(true)} />
+        )}
+        {score.processingStatus === 'COMPLETED' && isOmr && (!score.canEdit || inAdmin) && (
           <div className="sd-alert sd-alert--info">
             <Icon name="check" size={16} />
             <span>{t('scores.hero.digitized')}</span>
             <Link to={`${base}/${score.id}/review`}>{t('scores.hero.viewResult')} →</Link>
+          </div>
+        )}
+        {score.processingStatus === 'CANCELLED' && (
+          <div className="sd-alert sd-alert--info" role="status">
+            <Icon name="alert" size={16} />
+            <span>{t('scores.hero.cancelled')}</span>
+            <Link to={`${base}/${score.id}/processing`}>{t('scores.hero.viewProgress')} →</Link>
           </div>
         )}
         {score.processingStatus === 'FAILED' && failureReason && (

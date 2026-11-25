@@ -33,6 +33,7 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
   const {
     scoreId,
     title,
+    composer = null,
     doc,
     initialVersion,
     canEdit,
@@ -181,6 +182,7 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     doc,
     scoreId,
     title,
+    composer,
     version,
     setVersion,
     mode,
