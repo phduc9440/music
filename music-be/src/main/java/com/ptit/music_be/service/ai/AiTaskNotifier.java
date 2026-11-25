@@ -8,6 +8,7 @@ import com.ptit.music_be.dto.enums.ai.AiTaskType;
 import com.ptit.music_be.dto.enums.notification.NotificationType;
 import com.ptit.music_be.entity.AiTask;
 import com.ptit.music_be.entity.Score;
+import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.service.notification.NotificationService;
 
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,7 @@ public class AiTaskNotifier {
     public static final String VARIANT_CHORDS = "chords";
 
     private final NotificationService notificationService;
+    private final ScoreRepository scoreRepository;
 
     /** Task vừa chuyển sang COMPLETED hoặc FAILED. Hủy (CANCELLED) do chính người dùng bấm nên không báo. */
     public void finished(AiTask task) {
@@ -49,6 +51,11 @@ public class AiTaskNotifier {
             return; // gợi ý hợp âm xong đã gửi SUGGESTION_NEW
         }
         Score score = task.getScore();
+        // Bản nhạc đã vào thùng rác trong lúc chạy: không báo. Kiểm tra bằng truy vấn (lọc deleted_at) trước khi đọc
+        // score.getTitle(), vì proxy của bản nhạc đã xóa mềm ném EntityNotFoundException và làm hỏng giao dịch callback
+        if (!scoreRepository.existsById(score.getId())) {
+            return;
+        }
         String title = StringUtils.hasText(score.getTitle()) ? score.getTitle() : "";
         String code = completed ? null : errorCode(task.getErrorMessage());
         try {

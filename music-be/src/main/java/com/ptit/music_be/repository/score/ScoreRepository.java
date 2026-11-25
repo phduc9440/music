@@ -61,6 +61,13 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
     Page<Score> findSharedWithMember(@Param("memberId") String memberId, Pageable pageable);
 
     /**
+     * Số trang của bản nhạc; rỗng nếu bản nhạc đã vào thùng rác hoặc chưa có số trang. Dùng thay cho
+     * {@code task.getScore().getPageCount()}: proxy của bản nhạc đã xóa mềm ném EntityNotFoundException khi khởi tạo.
+     */
+    @Query("select s.pageCount from Score s where s.id = :id")
+    Optional<Integer> findPageCountById(@Param("id") String id);
+
+    /**
      * Khóa dòng bản nhạc (SELECT ... FOR UPDATE) để hai lần lưu MusicXML cùng lúc không cùng ra một version; chỉ gọi
      * bên trong transaction.
      */

@@ -14,6 +14,7 @@ import com.ptit.music_be.dto.enums.ai.AiTaskType;
 import com.ptit.music_be.dto.response.ai.AiTaskResponse;
 import com.ptit.music_be.entity.AiTask;
 import com.ptit.music_be.repository.ai.AiTaskRepository;
+import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.service.billing.EntitlementService;
 
 import lombok.RequiredArgsConstructor;
@@ -35,6 +36,7 @@ public class OmrQueueEstimator {
     static final List<AiTaskStatus> ACTIVE = List.of(AiTaskStatus.PENDING, AiTaskStatus.PROCESSING);
 
     private final AiTaskRepository aiTaskRepository;
+    private final ScoreRepository scoreRepository;
     private final ObjectMapper objectMapper;
 
     private volatile double cachedSecondsPerPage;
@@ -86,7 +88,11 @@ public class OmrQueueEstimator {
                 && a.getCreatedAt().isBefore(b.getCreatedAt());
     }
 
-    /** Số trang của task: pagesCharged trong input_data, không có (admin chạy lại) thì số trang của bản nhạc. */
+    /**
+     * Số trang của task: pagesCharged trong input_data, không có (admin chạy lại) thì số trang của bản nhạc. Không chạm
+     * vào proxy {@code task.getScore()} (chỉ lấy id): task cũ của bản nhạc đã vào thùng rác sẽ làm proxy ném
+     * EntityNotFoundException và hỏng cả API xem tiến độ.
+     */
     int pagesOf(AiTask task) {
         if (task.getInputData() != null) {
             try {
@@ -100,7 +106,9 @@ public class OmrQueueEstimator {
                 // input_data hỏng: dùng số trang của bản nhạc
             }
         }
-        Integer pages = task.getScore() == null ? null : task.getScore().getPageCount();
+        Integer pages = task.getScore() == null
+                ? null
+                : scoreRepository.findPageCountById(task.getScore().getId()).orElse(null);
         return pages == null || pages < 1 ? 1 : pages;
     }
 
