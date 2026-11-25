@@ -14,7 +14,7 @@ import com.ptit.music_be.dto.response.score.SuggestionSummaryResponse;
 import com.ptit.music_be.entity.ScoreSuggestion;
 
 /**
- * Đề xuất sửa (mục 4.3): người có quyền nhận xét sửa thử một bản nhạc mà không đụng bản chính; người có quyền sửa xem từng
+ * Đề xuất sửa (mục 4.3): người có quyền góp ý sửa thử một bản nhạc mà không đụng bản chính; người có quyền sửa xem từng
  * ô thay đổi rồi nhận hoặc từ chối. Nhận thì thành version MusicXML mới ghi tên người đề xuất.
  */
 public interface SuggestionService {

@@ -29,7 +29,7 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Tag(
         name = "Score sharing",
-        description = "Quản lý người được chia sẻ và yêu cầu xin quyền (1 xem, 2 nhận xét, 3 chỉnh sửa)")
+        description = "Quản lý người được chia sẻ và yêu cầu xin quyền (1 xem, 2 góp ý, 3 chỉnh sửa)")
 public class ScoreSharingController {
 
     ScoreSharingService sharingService;
