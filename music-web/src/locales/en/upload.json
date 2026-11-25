@@ -131,7 +131,6 @@
   "fieldComposer": "Composer",
   "composerPlaceholder": "For example: Johann Sebastian Bach",
   "sourceType": "Source type",
-  "sourceHintGuess": "Guessed from the file type, you can change it.",
   "progressLabel": "Upload progress",
   "uploading": "Uploading... {progress}%",
   "preparing": "Preparing images...",
@@ -466,8 +465,8 @@
   "untitled": "Untitled score",
   "externalAiNote": "Note: AI verification is on. Cropped images of some doubtful measures (up to 10 per score) are sent to an external AI service for checking.",
   "quota": {
-    "summary": "{remaining}/{limit} pages left this month · up to {max} pages per upload",
-    "unlimitedMonth": "Unlimited pages per month · up to {max} pages per upload",
+    "summary": "{remaining}/{limit} pages left this month · up to {max} pages/upload",
+    "unlimitedMonth": "Up to {max} pages/upload",
     "perJobExceeded": "This file has {pages} pages; your plan allows up to {max} pages per upload. Split the file or upgrade your plan.",
     "monthExceeded": "This file has {pages} pages but you only have {remaining} pages left this month.",
     "seePlans": "See plans"

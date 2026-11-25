@@ -308,12 +308,7 @@ export default function ScoreUpload() {
             />
 
             <span className="sc-label sc-upload__field">{t('upload.sourceType')}</span>
-            <div
-              className="sc-segment"
-              role="radiogroup"
-              aria-label={t('upload.sourceType')}
-              aria-describedby="up-source-hint"
-            >
+            <div className="sc-segment" role="radiogroup" aria-label={t('upload.sourceType')}>
               {SOURCE_TYPES.map((type) => (
                 <button
                   key={type}
@@ -331,10 +326,6 @@ export default function ScoreUpload() {
                 </button>
               ))}
             </div>
-            <p className="sc-upload__hint" id="up-source-hint">
-              {t('upload.sourceHint')}
-              {!sourceTouched && ` ${t('upload.sourceHintGuess')}`}
-            </p>
 
             {plan && (
               <p className="sc-upload__hint sc-upload__quota">

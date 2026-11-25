@@ -129,7 +129,6 @@
   "fieldComposer": "Tác giả",
   "composerPlaceholder": "Ví dụ: Trịnh Công Sơn",
   "sourceType": "Loại nguồn",
-  "sourceHintGuess": "Tự đoán theo loại file, bạn có thể đổi.",
   "progressLabel": "Tiến độ tải lên",
   "uploading": "Đang tải lên... {progress}%",
   "preparing": "Đang chuẩn bị ảnh...",
@@ -462,8 +461,8 @@
   "untitled": "Bản nhạc chưa đặt tên",
   "externalAiNote": "Lưu ý: hệ thống đang bật AI xác minh. Ảnh cắt của một số ô nhịp nghi ngờ (tối đa 10 ô mỗi bản) được gửi tới dịch vụ AI bên ngoài để đối chiếu.",
   "quota": {
-    "summary": "Tháng này còn {remaining}/{limit} trang · tối đa {max} trang mỗi lần",
-    "unlimitedMonth": "Không giới hạn trang mỗi tháng · tối đa {max} trang mỗi lần",
+    "summary": "Tháng này còn {remaining}/{limit} trang · tối đa {max} trang/lần",
+    "unlimitedMonth": "Tối đa {max} trang/lần",
     "perJobExceeded": "Tệp này có {pages} trang, gói của bạn cho tối đa {max} trang mỗi lần số hóa. Hãy tách bớt trang hoặc nâng cấp gói.",
     "monthExceeded": "Tệp này có {pages} trang nhưng tháng này bạn chỉ còn {remaining} trang.",
     "seePlans": "Xem các gói"
