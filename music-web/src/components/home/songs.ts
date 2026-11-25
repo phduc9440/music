@@ -50,7 +50,8 @@ const LETTERS = 'CDEFGAB';
 const SEMIS = [0, 2, 4, 5, 7, 9, 11];
 const parsePitch = (name: string) => {
   const m = /^([A-G])(#?)(\d)$/.exec(name);
-  if (!m) throw new Error(`Cao độ không hợp lệ: ${name}`);
+  // Lỗi lập trình (dữ liệu bài mẫu viết sai), không hiện cho người dùng nên không cần dịch
+  if (!m) throw new Error(`Invalid pitch: ${name}`);
   const li = LETTERS.indexOf(m[1]);
   const oct = Number(m[3]);
   return {
