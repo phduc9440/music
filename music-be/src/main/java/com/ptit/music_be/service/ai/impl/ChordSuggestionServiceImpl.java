@@ -7,6 +7,8 @@ import java.util.Map;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -38,7 +40,9 @@ import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.repository.score.ScoreSuggestionRepository;
 import com.ptit.music_be.service.ai.ChordSuggestionService;
 import com.ptit.music_be.service.billing.EntitlementService;
+import com.ptit.music_be.service.score.ScoreEditService;
 import com.ptit.music_be.service.permission.ScorePermissionService;
+import com.ptit.music_be.utils.MusicXmlInspector;
 import com.ptit.music_be.utils.SecurityUtils;
 
 /** Tạo tác vụ gợi ý hợp âm (R3); việc chạy nằm ở {@code ChordGenerationWorker}. */
@@ -60,6 +64,7 @@ public class ChordSuggestionServiceImpl implements ChordSuggestionService {
     private final AiTaskMapper aiTaskMapper;
     private final ApplicationEventPublisher eventPublisher;
     private final ObjectMapper objectMapper;
+    private final ScoreEditService scoreEditService;
 
     public ChordSuggestionServiceImpl(
             ScoreRepository scoreRepository,
@@ -70,7 +75,8 @@ public class ChordSuggestionServiceImpl implements ChordSuggestionService {
             EntitlementService entitlementService,
             AiTaskMapper aiTaskMapper,
             ApplicationEventPublisher eventPublisher,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            ScoreEditService scoreEditService) {
         this.scoreRepository = scoreRepository;
         this.suggestionRepository = suggestionRepository;
         this.aiTaskRepository = aiTaskRepository;
@@ -80,6 +86,7 @@ public class ChordSuggestionServiceImpl implements ChordSuggestionService {
         this.aiTaskMapper = aiTaskMapper;
         this.eventPublisher = eventPublisher;
         this.objectMapper = objectMapper;
+        this.scoreEditService = scoreEditService;
     }
 
     @Override
@@ -133,8 +140,15 @@ public class ChordSuggestionServiceImpl implements ChordSuggestionService {
         if (style.isAdvanced() || creativity == ChordCreativity.BOLD || density == ChordDensity.DENSE) {
             entitlementService.checkFeature(member.getId(), PlanFeature.CHORD_ADVANCED);
         }
-        if (score.getMeasureCount() != null) {
-            entitlementService.checkRequestCap(member.getId(), RequestCap.CHORD_MEASURES, score.getMeasureCount());
+        // Bản cũ có thể chưa ghi số ô: đếm từ MusicXML hiện hành để vẫn áp giới hạn của gói (CH-05)
+        Integer measureCount = score.getMeasureCount() != null
+                ? score.getMeasureCount()
+                : countMeasures(score.getId(), baseVersion);
+        if (measureCount != null) {
+            if (score.getMeasureCount() == null) {
+                score.setMeasureCount(measureCount);
+            }
+            entitlementService.checkRequestCap(member.getId(), RequestCap.CHORD_MEASURES, measureCount);
         }
         entitlementService.checkAvailable(member.getId(), UsageMetric.CHORD_GENERATIONS, 1);
         // Số phương án chốt theo gói lúc bấm, worker chỉ đọc lại
@@ -157,6 +171,20 @@ public class ChordSuggestionServiceImpl implements ChordSuggestionService {
                 .build());
         eventPublisher.publishEvent(new ChordTaskCreatedEvent(task.getId(), score.getId()));
         return aiTaskMapper.toResponse(task);
+    }
+
+    /** Số ô của part đầu trong phiên bản đã lưu (khớp {@code Score.measureCount}); null nếu không đọc được. */
+    private Integer countMeasures(String scoreId, int version) {
+        try {
+            byte[] xml = scoreEditService.getVersionContent(scoreId, version).bytes();
+            NodeList parts = MusicXmlInspector.parseStored(xml).getElementsByTagName("part");
+            if (parts.getLength() == 0) {
+                return null;
+            }
+            return ((Element) parts.item(0)).getElementsByTagName("measure").getLength();
+        } catch (RuntimeException e) {
+            return null; // hỏng thì để worker báo lỗi đọc bản nhạc như trước
+        }
     }
 
     /** Gợi ý hợp âm đang mở mà không còn nạp làm bản nháp được: dựa trên phiên bản cũ, hoặc đã để quá lâu. */

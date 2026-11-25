@@ -285,6 +285,7 @@ export default function ScoreHero({ score, onVisibilityChanged }: Props) {
       {suggestingChords && (
         <ChordSuggestDialog
           scoreId={score.id}
+          measureCount={score.measureCount}
           onClose={() => setSuggestingChords(false)}
           onCompleted={score.canEdit ? (id) => navigate(aiChordsEditPath(base, score.id, id)) : undefined}
           onClearAll={score.canEdit ? () => navigate(clearChordsEditPath(base, score.id)) : undefined}

@@ -20,10 +20,12 @@ interface Props {
   canEdit?: boolean;
   /** Báo trang cha số đề xuất đang mở để hiện trên tab. */
   onOpenCount?: (count: number) => void;
+  /** Số ô nhịp của bản nhạc, để hộp Gợi ý hợp âm báo trước giới hạn của gói. */
+  measureCount?: number | null;
 }
 
 /** Tab "Đề xuất" của trang chi tiết bản nhạc (mục 4.3): danh sách đề xuất, lọc Đang mở / Đã đóng / Tất cả. */
-export default function SuggestionsSection({ scoreId, canEdit = false, onOpenCount }: Props) {
+export default function SuggestionsSection({ scoreId, canEdit = false, onOpenCount, measureCount }: Props) {
   const base = useScoreBase();
   const navigate = useNavigate();
   const [filter, setFilter] = useState<SuggestionFilter>('OPEN');
@@ -84,6 +86,7 @@ export default function SuggestionsSection({ scoreId, canEdit = false, onOpenCou
       {suggestingChords && (
         <ChordSuggestDialog
           scoreId={scoreId}
+          measureCount={measureCount}
           onClose={() => setSuggestingChords(false)}
           onCompleted={canEdit ? (id) => navigate(aiChordsEditPath(base, scoreId, id)) : undefined}
           onClearAll={canEdit ? () => navigate(clearChordsEditPath(base, scoreId)) : undefined}

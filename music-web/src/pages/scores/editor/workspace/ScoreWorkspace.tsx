@@ -433,6 +433,7 @@ export default function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: Pr
       {suggestingChords && (
         <ChordSuggestDialog
           scoreId={score.id}
+          measureCount={doc.measureCount}
           onClose={() => setSuggestingChords(false)}
           // Người sửa được: gợi ý xong thì nạp ngay vào trình chỉnh sửa làm bản nháp thay vì sang trang duyệt
           onCompleted={

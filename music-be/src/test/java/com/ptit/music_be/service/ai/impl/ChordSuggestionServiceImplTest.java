@@ -11,6 +11,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Optional;
@@ -41,6 +42,7 @@ import com.ptit.music_be.dto.enums.score.SuggestionSource;
 import com.ptit.music_be.dto.enums.score.SuggestionStatus;
 import com.ptit.music_be.dto.request.ai.ChordSuggestionRequest;
 import com.ptit.music_be.dto.response.ai.AiTaskResponse;
+import com.ptit.music_be.dto.response.score.ScoreContent;
 import com.ptit.music_be.entity.AiTask;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
@@ -60,6 +62,7 @@ import com.ptit.music_be.service.billing.EntitlementService;
 import com.ptit.music_be.service.billing.PlanLimits;
 import com.ptit.music_be.service.permission.AccessDecision;
 import com.ptit.music_be.service.permission.ScorePermissionService;
+import com.ptit.music_be.service.score.ScoreEditService;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -92,6 +95,9 @@ class ChordSuggestionServiceImplTest {
     @Mock
     ApplicationEventPublisher eventPublisher;
 
+    @Mock
+    ScoreEditService scoreEditService;
+
     ChordSuggestionServiceImpl service;
     Score score;
     Member me;
@@ -108,7 +114,8 @@ class ChordSuggestionServiceImplTest {
                 entitlementService,
                 aiTaskMapper,
                 eventPublisher,
-                objectMapper);
+                objectMapper,
+                scoreEditService);
         me = Member.builder().id("m-1").email(EMAIL).build();
         score = Score.builder().id(SCORE_ID).title("Bài").currentVersion(7).build();
         when(scoreRepository.findById(SCORE_ID)).thenReturn(Optional.of(score));
@@ -380,8 +387,40 @@ class ChordSuggestionServiceImplTest {
         verify(aiTaskRepository, never()).save(any());
     }
 
+    /** MusicXML hai part: part đầu 3 ô, part hai 5 ô (chỉ part đầu được tính, giống Score.measureCount). */
+    private static ScoreContent twoPartScore() {
+        String xml = "<?xml version=\"1.0\"?><score-partwise><part-list/>"
+                + "<part id=\"P1\"><measure number=\"1\"/><measure number=\"2\"/><measure number=\"3\"/></part>"
+                + "<part id=\"P2\"><measure number=\"1\"/><measure number=\"2\"/><measure number=\"3\"/>"
+                + "<measure number=\"4\"/><measure number=\"5\"/></part></score-partwise>";
+        return new ScoreContent(xml.getBytes(StandardCharsets.UTF_8), 7);
+    }
+
     @Test
-    void unknownMeasureCountSkipsTheCap() {
+    void unknownMeasureCountIsCountedFromTheStoredScore() {
+        // Bản cũ chưa ghi số ô: không được bỏ qua giới hạn của gói (CH-05)
+        when(scoreEditService.getVersionContent(SCORE_ID, 7)).thenReturn(twoPartScore());
+
+        service.request(SCORE_ID, style("NATURAL"));
+
+        verify(entitlementService).checkRequestCap("m-1", RequestCap.CHORD_MEASURES, 3);
+        assertThat(score.getMeasureCount()).isEqualTo(3);
+    }
+
+    @Test
+    void countedMeasuresAreCheckedAgainstThePlan() {
+        when(scoreEditService.getVersionContent(SCORE_ID, 7)).thenReturn(twoPartScore());
+        doThrow(new AppException(BillingErrorCode.PLAN_LIMIT_REACHED))
+                .when(entitlementService)
+                .checkRequestCap("m-1", RequestCap.CHORD_MEASURES, 3);
+
+        assertThat(errorOf(SCORE_ID, "NATURAL").getErrorCode()).isEqualTo(BillingErrorCode.PLAN_LIMIT_REACHED);
+        verify(aiTaskRepository, never()).save(any());
+    }
+
+    @Test
+    void unreadableScoreSkipsTheCapAndLeavesItToTheWorker() {
+        // scoreEditService không trả gì (không đọc được): không đếm được thì không chặn ở bước này
         service.request(SCORE_ID, style("NATURAL"));
 
         verify(entitlementService, never()).checkRequestCap(any(), any(), anyInt());

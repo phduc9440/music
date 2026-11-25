@@ -29,17 +29,19 @@ interface Props {
   allHarmonized?: boolean;
   /** Xóa hết hợp âm (người sửa được). Không truyền thì không hiện nút. */
   onClearAll?: () => void;
+  /** Số ô nhịp của bản nhạc (nếu đã biết): báo trước giới hạn ô của gói và khóa nút khi vượt, khỏi chờ máy chủ từ chối. */
+  measureCount?: number | null;
 }
 
 /** Tùy chọn chỉ gói có quyền lợi chordAdvanced mới dùng được (khớp ChordStyle.isAdvanced, BOLD, DENSE ở BE). */
 const ADVANCED: ReadonlySet<string> = new Set<string>(['COLORFUL', 'JAZZY', 'BOLD', 'DENSE']);
 
-/** Gói thấp nhất cùng nhóm, xếp sau gói hiện tại và có tùy chọn nâng cao; null nếu không có. */
-async function planWithAdvanced(current: PlanInfo): Promise<string | null> {
+/** Gói thấp nhất cùng nhóm, xếp sau gói hiện tại và thỏa `fits`; null nếu không có. */
+async function nextPlanWhere(current: PlanInfo, fits: (p: PlanInfo) => boolean): Promise<string | null> {
   try {
     const res = await billingApi.plans();
     const next = res.data.result
-      .filter((p) => p.audience === current.audience && p.sortOrder > current.sortOrder && p.limits.chordAdvanced)
+      .filter((p) => p.audience === current.audience && p.sortOrder > current.sortOrder && fits(p))
       .sort((a, b) => a.sortOrder - b.sortOrder)[0];
     return next?.code ?? null;
   } catch {
@@ -57,7 +59,14 @@ function taskErrorText(message?: string | null): string {
  * Hộp "Gợi ý hợp âm" (R3): chọn phong cách, tạo tác vụ, chờ xong rồi mở trang duyệt đề xuất do hệ thống gửi.
  * Đóng hộp khi đang chạy thì tác vụ vẫn chạy ở máy chủ; đề xuất sẽ có ở tab Đề xuất và trong thông báo.
  */
-export default function ChordSuggestDialog({ scoreId, onClose, onCompleted, allHarmonized, onClearAll }: Props) {
+export default function ChordSuggestDialog({
+  scoreId,
+  onClose,
+  onCompleted,
+  allHarmonized,
+  onClearAll,
+  measureCount,
+}: Props) {
   const navigate = useNavigate();
   const base = useScoreBase();
   const [style, setStyle] = useState<ChordStyle>('NATURAL');
@@ -89,11 +98,24 @@ export default function ChordSuggestDialog({ scoreId, onClose, onCompleted, allH
   const quota = unlimited ? null : (limits?.chordGenerationsPerMonth ?? null);
   const left = quota == null ? null : Math.max(0, quota - (sub?.chordGenerationsUsed ?? 0));
   const options = unlimited ? 3 : Math.min(3, Math.max(1, limits?.chordOptions ?? 3));
+  // Giới hạn số ô của gói (null: không giới hạn). Biết trước số ô thì báo ngay và khóa nút khi vượt (CH-05)
+  const maxMeasures = unlimited ? null : (limits?.chordMaxMeasures ?? null);
+  const knownMeasures = typeof measureCount === 'number' && measureCount > 0 ? measureCount : null;
+  const overMeasures = knownMeasures != null && maxMeasures != null && knownMeasures > maxMeasures;
 
   /** Bấm tùy chọn bị khóa: không chọn, mở hộp mời nâng cấp (nằm trên hộp này, đóng xong vẫn ở lại). */
   const openUpgrade = async () => {
-    const upgradeTo = sub ? await planWithAdvanced(sub.plan) : null;
+    const upgradeTo = sub ? await nextPlanWhere(sub.plan, (p) => !!p.limits.chordAdvanced) : null;
     showPlanLimit({ metric: 'CHORD_ADVANCED', limit: 0, used: 0, upgradeTo });
+  };
+
+  /** Bài dài hơn giới hạn ô của gói: mở hộp mời nâng cấp lên gói đủ ô (hoặc không giới hạn). */
+  const openMeasuresUpgrade = async () => {
+    const need = knownMeasures ?? 0;
+    const upgradeTo = sub
+      ? await nextPlanWhere(sub.plan, (p) => p.limits.chordMaxMeasures == null || p.limits.chordMaxMeasures >= need)
+      : null;
+    showPlanLimit({ metric: 'CHORD_MEASURES', limit: maxMeasures, used: need, upgradeTo });
   };
 
   /** Chọn một giá trị; giá trị bị khóa theo gói thì mời nâng cấp thay vì chọn. */
@@ -274,6 +296,19 @@ export default function ChordSuggestDialog({ scoreId, onClose, onCompleted, allH
         </div>
       )}
 
+      {knownMeasures != null && maxMeasures != null && (
+        <p className={`cs-quota${overMeasures ? ' is-empty' : ''}`} role={overMeasures ? 'alert' : undefined}>
+          {overMeasures
+            ? t('chords.dialog.measuresOver', { count: knownMeasures, limit: maxMeasures })
+            : t('chords.dialog.measures', { count: knownMeasures, limit: maxMeasures })}
+          {overMeasures && (
+            <button type="button" className="sc-btn sc-btn--sm cs-open" onClick={() => void openMeasuresUpgrade()}>
+              {t('chords.dialog.measuresUpgrade')}
+            </button>
+          )}
+        </p>
+      )}
+
       {sub && (
         <p className={`cs-quota${left === 0 ? ' is-empty' : ''}`}>
           {left == null
@@ -286,7 +321,13 @@ export default function ChordSuggestDialog({ scoreId, onClose, onCompleted, allH
         <button type="button" className="sc-btn" onClick={onClose}>
           {running ? t('chords.dialog.hide') : t('chords.dialog.cancel')}
         </button>
-        <button type="button" className="sc-btn sc-btn--primary" onClick={() => void submit()} disabled={busy}>
+        <button
+          type="button"
+          className="sc-btn sc-btn--primary"
+          onClick={() => void submit()}
+          disabled={busy || overMeasures}
+          title={overMeasures ? t('chords.dialog.measuresOverHint') : undefined}
+        >
           {busy ? t('chords.dialog.creating') : harmonized ? t('chords.dialog.replace') : t('chords.dialog.submit')}
         </button>
       </div>

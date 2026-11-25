@@ -26,6 +26,10 @@
     "lockedBadge": "Nâng cấp",
     "lockedSr": "(cần nâng cấp gói)",
     "lockedHint": "Tùy chọn có biểu tượng khóa cần gói cao hơn. Bấm vào để xem gói phù hợp.",
+    "measures": "Bản nhạc có {count} ô nhịp · gói của bạn gợi ý tối đa {limit} ô nhịp mỗi lần",
+    "measuresOver": "Bản nhạc có {count} ô nhịp, vượt giới hạn {limit} ô nhịp của gói hiện tại. Nâng cấp để gợi ý hợp âm cho cả bài.",
+    "measuresOverHint": "Bản nhạc dài hơn giới hạn của gói hiện tại",
+    "measuresUpgrade": "Xem gói phù hợp",
     "quota": "Còn {left}/{limit} lượt gợi ý hợp âm tháng này · {options} phương án mỗi lần",
     "quotaUnlimited": "Không giới hạn lượt gợi ý hợp âm · {options} phương án mỗi lần"
   },

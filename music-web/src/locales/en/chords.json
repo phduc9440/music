@@ -26,6 +26,10 @@
     "lockedBadge": "Upgrade",
     "lockedSr": "(requires a plan upgrade)",
     "lockedHint": "Options with a lock need a higher plan. Select one to see which plan includes it.",
+    "measures": "This score has {count} measures · your plan suggests chords for up to {limit} measures at a time",
+    "measuresOver": "This score has {count} measures, over your plan's limit of {limit}. Upgrade to get chords for the whole piece.",
+    "measuresOverHint": "The score is longer than your current plan allows",
+    "measuresUpgrade": "See suitable plans",
     "quota": "{left}/{limit} chord suggestions left this month · {options} options each",
     "quotaUnlimited": "Unlimited chord suggestions · {options} options each"
   },

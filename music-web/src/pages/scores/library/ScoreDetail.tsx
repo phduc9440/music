@@ -321,7 +321,12 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
             />
           )}
           {activeTab === 'suggestions' && score.canComment && (
-            <SuggestionsSection scoreId={score.id} canEdit={score.canEdit} onOpenCount={onOpenSuggestions} />
+            <SuggestionsSection
+              scoreId={score.id}
+              canEdit={score.canEdit}
+              onOpenCount={onOpenSuggestions}
+              measureCount={score.measureCount}
+            />
           )}
           {activeTab === 'settings' && showSettingsTab && (
             <ScoreSettingsSection
