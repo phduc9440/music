@@ -534,12 +534,16 @@ def test_suspicious_measure_is_reread_and_fixed_by_agreeing_reads(storage_root, 
     review_data = data["measureCheck"]["review"]
     assert review_data["reread"]["replaced"] == 1 and review_data["reread"]["systems"] == 1
     sixth = data["measureMap"][5]
-    assert sixth["flags"] == [] and sixth["confidence"] >= 0.8
+    # Ô đã được máy thay vẫn vào danh sách "Ô cần kiểm tra" với cờ AUTO_FIXED (OMR-14), độ tin cậy giữ nguyên
+    assert sixth["flags"] == ["AUTO_FIXED"] and sixth["confidence"] >= 0.8
     assert any("đọc lại" in r for r in sixth["reasons"])
     assert all(not k.startswith("_") for e in data["measureMap"] for k in e)
     merged = (storage_root / data["kernPath"]).read_text(encoding="utf-8")
     assert "4ggg" not in merged
-    assert any("ô nhịp 6: đã sửa theo các lần đọc lại hệ" in w for w in data["warnings"])
+    # Chỗ tự sửa nằm ở autoFixes, không lẫn vào cảnh báo
+    assert not any("đã sửa theo các lần đọc lại hệ" in w for w in data["warnings"])
+    fix = next(f for f in data["autoFixes"] if f["code"] == "REREAD_REPLACED")
+    assert fix["page"] == 1 and fix["measures"] == [6]
 
 
 def test_rereading_can_be_turned_off(storage_root, java, monkeypatch):

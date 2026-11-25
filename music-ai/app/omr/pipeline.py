@@ -38,7 +38,21 @@ from app.config import Settings, get_settings
 from app.convert.errors import ConversionError
 from app.convert.kern import kern_file_to_musicxml_file
 from app.convert.midi import musicxml_file_to_midi_file
-from app.omr import kern_check, llm_check, measure_map, merge, ottava, pitch_check, review, rhythm_fix, routing, stability
+from app.convert.musicxml import DEFAULT_TEMPO_BPM
+from app.omr import (
+    kern_check,
+    llm_check,
+    measure_map,
+    merge,
+    messages,
+    ottava,
+    pitch_check,
+    review,
+    rhythm_fix,
+    routing,
+    stability,
+    textstrip,
+)
 from app.omr.layout import PageLayout, analyze_layout
 from app.omr.pdf import iter_pdf_pages
 from app.omr.preprocess import PreprocessOptions, UnreadablePage, load_image_gray, process_page
@@ -198,6 +212,12 @@ class JobContext:
     """Vai trò khuông từ trên xuống của cả bản (từ bố cục), đã ghi vào kern ghép bằng ``*Ivox``/``*Ipiano``."""
     system_counts: dict[int, list[Optional[int]]] = field(default_factory=dict)
     """Số ô từng hệ của các trang được nhận diện lại theo hệ (để lập bản đồ ô nhịp)."""
+    fixes: list[str] = field(default_factory=list)
+    """Những chỗ máy đã tự sửa (sửa trường độ, quãng tám, đọc lại hệ, AI), tách khỏi cảnh báo (OMR-14)."""
+    fixed_measures: set[int] = field(default_factory=set)
+    """Số ô bước sửa trường độ đã đụng tới; được gắn cờ AUTO_FIXED trong measureMap để người dùng kiểm lại."""
+    text_above_pages: list[int] = field(default_factory=list)
+    """Trang có chữ phía trên khuông (tên hợp âm, nhịp độ...) mà OMR không đọc (OMR-13)."""
 
     @property
     def task_id(self) -> str:
@@ -721,6 +741,12 @@ def _analyze_page_layout(ctx: JobContext, page_number: int, image: np.ndarray) -
         _save_text(f"scores/{ctx.job.scoreId}/layout/page-{page_number:03d}.json", layout.to_json())
     except OSError as exc:
         log.warning("Không ghi được bố cục trang %s: %s", page_number, exc)
+    # Transcoda không đọc tên hợp âm, nhịp độ in trên khuông: phát hiện để báo người dùng thay vì im lặng bỏ mất (OMR-13)
+    try:
+        if textstrip.has_text_above_staves(image, layout):
+            ctx.text_above_pages.append(page_number)
+    except Exception:  # noqa: BLE001 - chỉ để cảnh báo
+        log.exception("Không dò được chữ phía trên khuông ở trang %s của job %s", page_number, ctx.task_id)
 
 
 def _job_roles(ctx: JobContext, spines: int) -> Optional[list[str]]:
@@ -785,10 +811,12 @@ def _review_measures(
             else:
                 merged, ai_report = _ask_ai(ctx, merged, measures, images)
                 review.annotate(measures, merged, roles)
-        ctx.warnings.extend(reread.notes)
+        ctx.fixes.extend(reread.notes)
+        if ai_report is not None:
+            ctx.fixes.extend(ai_report.notes)
+        _mark_auto_fixed(measures, ctx.fixed_measures)
         review_data = {**review.summary(measures), "reread": reread.to_dict()}
         if ai_report is not None:
-            ctx.warnings.extend(ai_report.notes)
             review_data["ai"] = ai_report.to_dict()
         check["review"] = review_data
     except (JobCancelled, JobTimeout, TaskGone):
@@ -796,6 +824,22 @@ def _review_measures(
     except Exception:  # noqa: BLE001 - chấm điểm chỉ là thông tin thêm
         log.exception("Job %s: lỗi khi chấm tin cậy ô nhịp", ctx.task_id)
     return review.public_entries(measures), check, merged
+
+
+FLAG_AUTO_FIXED = "AUTO_FIXED"
+_AUTO_FIXED_REASON = "Máy đã tự sửa ô này, hãy đối chiếu với ảnh gốc"
+
+
+def _mark_auto_fixed(measures: list[dict], fixed: set[int]) -> None:
+    """Ô máy đã tự sửa (sửa trường độ, đọc lại hệ, AI chọn cách đọc khác) cũng vào danh sách cần kiểm tra (OMR-14):
+    sửa tự động có thể sai, người dùng cần biết đó là chỗ nào. Gọi sau lần :func:`review.annotate` cuối cùng."""
+    for entry in measures:
+        ai = entry.get("_ai") or {}
+        if entry["measure"] in fixed or entry.get("_replaced") or ai.get("verdict") == "replaced":
+            flags = entry.setdefault("flags", [])
+            if FLAG_AUTO_FIXED not in flags:
+                flags.append(FLAG_AUTO_FIXED)
+                entry.setdefault("reasons", []).append(_AUTO_FIXED_REASON)
 
 
 def _estimate_system_counts(
@@ -842,7 +886,7 @@ def _check_pitch(ctx: JobContext, merged: merge.MergeResult) -> merge.MergeResul
             if gray is not None:
                 images[page_number] = gray
         merged, report = pitch_check.apply(merged, ctx.layouts, images)
-        ctx.warnings.extend(report.notes)
+        ctx.fixes.extend(report.notes)
         log.info("Job %s: pitch_check %s", ctx.task_id, report.to_dict())
     except (JobCancelled, JobTimeout, TaskGone):
         raise
@@ -857,7 +901,8 @@ def _fix_rhythm(ctx: JobContext, merged: merge.MergeResult) -> merge.MergeResult
         return merged
     try:
         merged, report = rhythm_fix.apply(merged)
-        ctx.warnings.extend(report.notes)
+        ctx.fixes.extend(report.notes)
+        ctx.fixed_measures.update(report.measures)
     except Exception:  # noqa: BLE001 - chỉ là bước sửa thêm
         log.exception("Job %s: lỗi khi sửa trường độ", ctx.task_id)
     return merged
@@ -1088,6 +1133,10 @@ def _export(ctx: JobContext, extra: dict, score_metadata: dict) -> Optional[tupl
         return None
 
     ctx.warnings.extend(normalized.warnings)
+    # Kern không có *MM: MusicXML dùng nhịp độ mặc định. Báo để người dùng sửa ở trang kết quả (OMR-13)
+    tempo_defaulted = score_metadata.get("tempoBpm") is None and normalized.tempo_bpm == DEFAULT_TEMPO_BPM
+    if tempo_defaulted:
+        ctx.warnings.append(messages.tempo_default_message(DEFAULT_TEMPO_BPM))
     if ctx.kern_measure_count and ctx.kern_measure_count != normalized.measure_count:
         ctx.warnings.append(
             f"Số ô nhịp trong kern ({ctx.kern_measure_count}) khác MusicXML ({normalized.measure_count}), "
@@ -1141,6 +1190,7 @@ def _export(ctx: JobContext, extra: dict, score_metadata: dict) -> Optional[tupl
         "midiPath": midi_relative,
         "musicXmlVersion": version,
         "pageMeasures": page_measures,
+        "tempoDefaulted": tempo_defaulted,
     }
     # MusicXML là nguồn đúng nhất cho metadata (đặc tả mục 2.4): ghi đè các giá trị rút tạm từ kern
     metadata = {
@@ -1165,10 +1215,18 @@ def _finish(
     score_metadata: dict,
 ) -> None:
     options = ctx.job.options
+    for page in ctx.text_above_pages:
+        ctx.warnings.append(messages.text_above_message(page))
+    # Câu "đã tự sửa" sinh ở bước nhận diện từng trang (8va) cũng chuyển sang danh sách tự sửa (OMR-14)
+    fixes = [*ctx.fixes, *(w for w in ctx.warnings if messages.fix_item(w)["code"] is not None)]
+    warnings = [w for w in ctx.warnings if messages.fix_item(w)["code"] is None]
     result_data = {
         "pageCount": kept_pages,
         "sourcePageCount": total_pages,
-        "warnings": ctx.warnings,
+        "warnings": warnings,
+        "warningItems": messages.warning_items(warnings),
+        "autoFixes": messages.fix_items(fixes),
+        "textAbove": [{"page": p} for p in ctx.text_above_pages],
         "preprocess": options.preprocess,
         "binarize": options.binarize,
         **extra,

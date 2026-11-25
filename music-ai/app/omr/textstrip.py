@@ -107,6 +107,48 @@ def text_mask(gray: np.ndarray, layout: PageLayout | None = None) -> tuple[np.nd
     return mask, int(erase.sum())
 
 
+_ABOVE_NEAR = 0.6
+_ABOVE_FAR = 5.0
+"""Dải tìm chữ phía trên khuông đầu mỗi hệ, tính theo khoảng dòng kẻ: tên hợp âm, chỉ số nhịp độ nằm cách khuông 1-4
+khoảng; tiêu đề bài ở xa hơn nên không tính."""
+
+_ABOVE_MIN_H = 0.9
+"""Chữ cao ít nhất bấy nhiêu khoảng dòng kẻ (dấu chấm, dấu nhấn nhỏ hơn thì bỏ qua)."""
+
+_ABOVE_MIN_PIECES = 2
+"""Trang có từ bấy nhiêu khối chữ phía trên khuông thì tính là "có chữ trên khuông" (một chữ lẻ có thể là vết bẩn)."""
+
+
+def text_above_staves(gray: np.ndarray, layout: PageLayout | None = None) -> int:
+    """Số khối chữ ngay phía trên khuông đầu mỗi hệ (tên hợp âm, chỉ số nhịp độ, số ngón...) theo cùng tiêu chí "giống
+    chữ" của :func:`text_mask`. Tên hợp âm dính vào thân nốt thì không đếm được, nên chỉ cần vài khối là đủ biết bản gốc có
+    chữ trên khuông mà OMR không đọc (OMR-13). Không dò được khuông thì trả 0."""
+    layout = layout or analyze_layout(gray)
+    if not layout.systems or layout.interline <= 0:
+        return 0
+    mask, count = text_mask(gray, layout)
+    if count == 0:
+        return 0
+    il = layout.interline
+    n, _labels, stats, _ = cv2.connectedComponentsWithStats(mask.astype(np.uint8), connectivity=8)
+    pieces = 0
+    for system in layout.systems:
+        top = system.staves[0].top
+        y_min, y_max = top - _ABOVE_FAR * il, top - _ABOVE_NEAR * il
+        for i in range(1, n):
+            x, y, w, h, _area = stats[i]
+            if h < _ABOVE_MIN_H * il or y < y_min or y + h > y_max:
+                continue
+            if x + w < system.left or x > system.right:
+                continue
+            pieces += 1
+    return pieces
+
+
+def has_text_above_staves(gray: np.ndarray, layout: PageLayout | None = None) -> bool:
+    return text_above_staves(gray, layout) >= _ABOVE_MIN_PIECES
+
+
 def _distance_to_bands(y0: float, y1: float, bands: list[tuple[float, float]]) -> float:
     """Khoảng cách dọc từ đoạn ``[y0, y1]`` tới dải khuông gần nhất (<= 0 là chạm/chồng)."""
     best = float("inf")
