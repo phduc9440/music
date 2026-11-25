@@ -33,7 +33,8 @@
     "hasBass": "This part already has two staves (use \"Add Treble/Bass staff\" to add a separate staff)",
     "lastStaff": "The score must keep at least one staff (staff 1 of an instrument can only be removed when another part remains)",
     "noStaff": "Select a note or rest so the app knows which staff this applies to",
-    "voiceNone": "Select notes (not rests or ornaments) to write a voice"
+    "voiceNone": "Select notes (not rests or ornaments) to write a voice",
+    "restKept": "This rest can't be deleted: it fills the whole measure, sits inside a tuplet, or deleting it would leave the measure empty. Delete the measure instead if you don't need it."
   },
   "cmd": {
     "pitch": {

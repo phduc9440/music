@@ -39,6 +39,9 @@ function parse<T>(message: IMessage): T | null {
   }
 }
 
+/** Kích thước mỗi mảnh khi chia khung STOMP lớn (ký tự), dưới mức 8 KB của Tomcat. */
+const LIVE_CHUNK_SIZE = 4 * 1024;
+
 /**
  * Kết nối STOMP riêng cho một bản nhạc đang đồng chỉnh sửa. Chỉ lo vận chuyển: chuyển gói tin sang callback và gửi lệnh
  * lên `/app/scores/{id}/...`. Mất mạng thì thư viện tự nối lại sau 3 giây và gọi lại `onConnect` để vào lại phiên.
@@ -55,6 +58,11 @@ export class LiveClient {
     this.currentSelection = currentSelection;
     this.client = new Client({
       brokerURL: socketUrl(),
+      // Tomcat nhận mỗi tin WebSocket tối đa 8 KB; thao tác cấu trúc (đổi tên bài, thêm ô, áp hợp âm...) gửi cả bản nhạc
+      // nên vượt xa mức này và máy chủ cắt kết nối (1009), thay đổi không tới được máy chủ và nút Lưu đứng ở "Đang lưu".
+      // Chia khung STOMP thành nhiều tin nhỏ; Spring tự ghép lại (tối đa 1 MB, xem WebSocketConfig).
+      splitLargeFrames: true,
+      maxWebSocketChunkSize: LIVE_CHUNK_SIZE,
       reconnectDelay: 3_000,
       heartbeatIncoming: 10_000,
       heartbeatOutgoing: 10_000,

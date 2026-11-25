@@ -382,6 +382,21 @@ class LiveCollabServiceTest {
     }
 
     @Test
+    void failedManualSaveIsReportedToTheUserInsteadOfHanging() {
+        when(scoreEditService.saveLiveSnapshot(eq(SCORE), any(byte[].class), any(), any()))
+                .thenThrow(new AppException(ScoreErrorCode.SCORE_BUSY));
+        join("A", OWNER, -1);
+        lock("A", OWNER, new MeasureRef(0, 1));
+        service.ops(SCORE, "A", OWNER, edit("op-1", 0, MEASURE_2, "<measure number=\"2\">" + note("E") + "</measure>"));
+
+        assertThatThrownBy(() -> service.save(SCORE, "A"))
+                .isInstanceOf(AppException.class)
+                .extracting(e -> ((AppException) e).getErrorCode())
+                .isEqualTo(ScoreErrorCode.SCORE_BUSY);
+        assertThat(service.openScoreIds()).containsExactly(SCORE);
+    }
+
+    @Test
     void reconnectWithOlderThanStartSeqReloadsEverything() {
         when(opRepository.maxSeq(SCORE)).thenReturn(40L);
 

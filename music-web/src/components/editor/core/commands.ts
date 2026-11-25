@@ -37,6 +37,7 @@ export type EditFailure =
   | 'duplicate'
   | 'unchanged'
   | 'empty'
+  | 'restKept'
   | 'tuplet'
   | 'tupletFit'
   | 'tupletType'
@@ -386,13 +387,72 @@ const slurPartners = (doc: ScoreDocument, removed: ReadonlySet<NoteInfo>) => {
   return out;
 };
 
+/** Trường độ (<duration>) của một nốt / dấu lặng, 0 nếu không có. */
+const durationOf = (note: Element): number => {
+  const value = Number(Array.from(note.children).find((c) => c.tagName === 'duration')?.textContent);
+  return Number.isFinite(value) && value > 0 ? value : 0;
+};
+
+/** Dấu lặng cả ô (<rest measure="yes"/>): chỗ giữ của ô trống, xóa đi thì ô không còn gì để vẽ. */
+const isMeasureRest = (note: Element): boolean =>
+  Array.from(note.children).some((c) => c.tagName === 'rest' && c.getAttribute('measure') === 'yes');
+
+const inTuplet = (note: Element): boolean => Array.from(note.children).some((c) => c.tagName === 'time-modification');
+
+/**
+ * Gỡ hẳn một dấu lặng khỏi ô: các nốt sau nó trong cùng bè dồn lên. Thẻ <backup> kế tiếp (lùi về đầu ô để viết bè sau)
+ * phải lùi ít đi đúng bằng trường độ đã bỏ, không thì các bè sau bị kéo lệch theo.
+ */
+const removeRestElement = (rest: Element): void => {
+  const duration = durationOf(rest);
+  let next = rest.nextElementSibling;
+  while (next && next.tagName !== 'backup') next = next.nextElementSibling;
+  rest.remove();
+  if (!next || duration === 0) return;
+  const durationEl = Array.from(next.children).find((c) => c.tagName === 'duration');
+  const left = Number(durationEl?.textContent) - duration;
+  if (!durationEl || !Number.isFinite(left)) return;
+  if (left > 0) durationEl.textContent = String(left);
+  else if (left === 0) next.remove();
+  else {
+    // Bè sau vốn bắt đầu sau chỗ dấu lặng: giữ nguyên vị trí của nó bằng <forward>
+    const forward = next.ownerDocument.createElement('forward');
+    const forwardDuration = next.ownerDocument.createElement('duration');
+    forwardDuration.textContent = String(-left);
+    forward.appendChild(forwardDuration);
+    next.replaceWith(forward);
+  }
+};
+
 /**
  * Đổi nốt đã chọn thành dấu lặng ('rest', cả hợp âm) hoặc xóa nốt ('delete', chỉ các nốt chọn; hợp âm còn nốt khác thì
  * giữ lại, xóa hết thì thành dấu lặng). Trường độ không đổi nên ô nhịp vẫn đủ phách. Nốt nối kéo theo cả chuỗi.
+ *
+ * Với 'delete', dấu lặng được chọn bị gỡ hẳn: nốt sau dồn lên và ô có thể thiếu phách (Kiểm tra ô nhịp sẽ báo). Nhờ vậy
+ * xóa một nốt thừa do nhận dạng sai chỉ cần bấm Delete hai lần (nốt thành dấu lặng, rồi gỡ dấu lặng). Dấu lặng cả ô và
+ * dấu lặng trong chùm (liên ba...) giữ lại vì gỡ ra sẽ làm hỏng ô / chùm; khuông nào của ô chỉ còn các dấu lặng đang chọn
+ * cũng giữ lại để ô không trống.
  */
 export function removeNotes(doc: ScoreDocument, ids: readonly string[], mode: 'rest' | 'delete'): EditResult {
-  const selected = ids.map((id) => doc.getInfo(id)).filter((n): n is NoteInfo => n !== undefined && !n.isRest);
-  if (selected.length === 0) return { ok: false, reason: 'empty' };
+  const infos = ids.map((id) => doc.getInfo(id)).filter((n): n is NoteInfo => n !== undefined);
+  const selected = infos.filter((n) => !n.isRest);
+  const removable =
+    mode === 'delete'
+      ? infos.filter((n) => n.isRest && !n.isGrace && !isMeasureRest(n.element) && !inTuplet(n.element))
+      : [];
+  // Không gỡ hết mọi thứ trên một khuông của ô: ô trống không vẽ được (muốn bỏ cả ô thì xóa ô nhịp)
+  const staffKey = (n: NoteInfo) => `${n.partIndex}|${n.measureIndex}|${n.staff}`;
+  const removableIds = new Set(removable.map((n) => n.id));
+  const emptied = new Set(
+    removable
+      .map(staffKey)
+      .filter((key) => doc.notes.filter((n) => staffKey(n) === key).every((n) => removableIds.has(n.id))),
+  );
+  const rests = removable.filter((n) => !emptied.has(staffKey(n)));
+  if (selected.length === 0 && rests.length === 0) {
+    const onlyRests = infos.length > 0 && infos.every((n) => n.isRest);
+    return { ok: false, reason: mode === 'delete' && onlyRests ? 'restKept' : 'empty' };
+  }
 
   const indexOf = new Map<string, number>();
   doc.notes.forEach((n, i) => indexOf.set(n.id, i));
@@ -421,10 +481,14 @@ export function removeNotes(doc: ScoreDocument, ids: readonly string[], mode: 'r
     touch(touched, members[0]);
   }
 
+  rests.forEach((r) => touch(touched, r));
+  // Nốt đổi thành dấu lặng giữ nguyên thẻ <note> nên chọn lại được theo thẻ sau khi id được tính lại
+  const keptElements = new Set(plan.map((p) => p.members[0].element));
   const removedSet = new Set(plan.flatMap((p) => p.remove));
   const partners = slurPartners(doc, removedSet);
   partners.forEach((p) => touch(touched, p.info));
   const command = commitEdit(doc, symbolLabel(mode), touched, [...chosen.keys()], () => {
+    rests.forEach((r) => removeRestElement(r.element));
     for (const p of partners) {
       slursOf(p.info.element)
         .filter((x) => x.getAttribute('type') === p.type && (x.getAttribute('number') ?? '1') === p.number)
@@ -455,5 +519,7 @@ export function removeNotes(doc: ScoreDocument, ids: readonly string[], mode: 'r
       }
     }
   });
+  // Id theo vị trí trong ô: gỡ dấu lặng làm id các nốt sau đổi, nên chọn lại theo thẻ thay vì giữ id cũ
+  if (rests.length > 0) command.selectAfter = doc.notes.filter((n) => keptElements.has(n.element)).map((n) => n.id);
   return { ok: true, command };
 }

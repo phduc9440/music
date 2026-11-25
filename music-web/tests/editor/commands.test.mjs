@@ -81,6 +81,57 @@ test('removeNotes delete trong hợp âm chỉ bỏ nốt được chọn', () =
   assert.deepEqual(measureSummary(doc, 0), ['E4:quarter/1', 'D4:quarter/1', 'E4:quarter/1', 'F4:quarter/1']);
 });
 
+test('Delete hai lần trên nốt thừa: nốt thành dấu lặng rồi dấu lặng bị gỡ, các nốt sau dồn lên', () => {
+  // 3/4 nhận dạng ra đen - trắng - đen, nốt đen đầu là thừa
+  const doc = ScoreDocument.parse(
+    score([note('C4') + note('E4', { dur: 2, type: 'half' }) + note('G4')], { beats: 3 }),
+  );
+  const first = removeNotes(doc, ['m0-s1-v1-0'], 'delete');
+  assert.equal(first.ok, true);
+  assert.deepEqual(measureSummary(doc, 0), ['rest:quarter/1', 'E4:half/2', 'G4:quarter/1']);
+  const second = removeNotes(doc, ['m0-s1-v1-0'], 'delete');
+  assert.equal(second.ok, true);
+  assert.deepEqual(measureSummary(doc, 0), ['E4:half/2', 'G4:quarter/1']);
+  assert.deepEqual(second.command.selectAfter, []);
+});
+
+test('Gỡ dấu lặng bè 1 thì <backup> lùi ít đi để bè 2 giữ nguyên chỗ', () => {
+  const doc = ScoreDocument.parse(
+    score([
+      note(null, { voice: 1 }) +
+        quarters('D4', 'E4', 'F4').replaceAll('<type>', '<voice>1</voice><type>') +
+        '<backup><duration>4</duration></backup>' +
+        note('C3', { voice: 2, dur: 4, type: 'whole' }),
+    ]),
+  );
+  assert.equal(removeNotes(doc, ['m0-s1-v1-0'], 'delete').ok, true);
+  const backup = doc.getMeasure(0, 0).getElementsByTagName('backup')[0];
+  assert.equal(backup.getElementsByTagName('duration')[0].textContent, '3');
+});
+
+test('Chọn cả nốt và dấu lặng: nốt thành dấu lặng, dấu lặng bị gỡ, vẫn chọn dấu lặng mới', () => {
+  const doc = ScoreDocument.parse(score([note(null) + quarters('D4', 'E4', 'F4')]));
+  const result = removeNotes(doc, ['m0-s1-v1-0', 'm0-s1-v1-2'], 'delete');
+  assert.equal(result.ok, true);
+  assert.deepEqual(measureSummary(doc, 0), ['D4:quarter/1', 'rest:quarter/1', 'F4:quarter/1']);
+  assert.deepEqual(result.command.selectAfter, ['m0-s1-v1-1']);
+});
+
+test('Không gỡ hết dấu lặng làm ô trống', () => {
+  const doc = ScoreDocument.parse(score([quarters(null, null, null, null)]));
+  const ids = ['m0-s1-v1-0', 'm0-s1-v1-1', 'm0-s1-v1-2', 'm0-s1-v1-3'];
+  assert.deepEqual(removeNotes(doc, ids, 'delete'), { ok: false, reason: 'restKept' });
+  assert.equal(removeNotes(doc, ids.slice(0, 2), 'delete').ok, true);
+  assert.deepEqual(measureSummary(doc, 0), ['rest:quarter/1', 'rest:quarter/1']);
+});
+
+test('Dấu lặng cả ô không bị gỡ', () => {
+  const doc = ScoreDocument.parse(
+    score(['<note><rest measure="yes"/><duration>4</duration><type>whole</type></note>']),
+  );
+  assert.deepEqual(removeNotes(doc, ['m0-s1-v1-0'], 'delete'), { ok: false, reason: 'restKept' });
+});
+
 test('removeNotes trên dấu lặng báo empty', () => {
   const doc = ScoreDocument.parse(score([note(null) + quarters('D4', 'E4', 'F4')]));
   assert.deepEqual(removeNotes(doc, ['m0-s1-v1-0'], 'rest'), { ok: false, reason: 'empty' });
