@@ -8,9 +8,15 @@ function aiTaskErrorText(variant: string | undefined, code: string): string {
   return hasKey(`upload.errors.${code}.title`) ? t(`upload.errors.${code}.title`) : t('upload.errors.GENERIC.title');
 }
 
-/** Trang mở ra khi bấm thông báo tác vụ AI: số hóa xong → Kết quả, số hóa lỗi → Tiến độ, hợp âm lỗi → Chi tiết. */
+/**
+ * Trang mở ra khi bấm thông báo tác vụ AI: số hóa xong → Kết quả, số hóa lỗi → Tiến độ, hợp âm xong → Editor với bản
+ * nháp hợp âm AI, hợp âm lỗi → Chi tiết.
+ */
 export function aiTaskNotificationPath(n: AppNotification): string | null {
   if (!n.scoreId || (n.type !== 'AI_TASK_COMPLETED' && n.type !== 'AI_TASK_FAILED')) return null;
+  if (n.params?.variant === 'chords' && n.type === 'AI_TASK_COMPLETED' && n.params.suggestionId) {
+    return `/scores/${n.scoreId}/edit?aiChords=${encodeURIComponent(n.params.suggestionId)}`;
+  }
   if (n.params?.variant !== 'omr') return `/scores/${n.scoreId}`;
   return `/scores/${n.scoreId}/${n.type === 'AI_TASK_COMPLETED' ? 'review' : 'processing'}`;
 }

@@ -3,6 +3,7 @@ package com.ptit.music_be.service.ai;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ptit.music_be.dto.enums.ai.AiTaskStatus;
 import com.ptit.music_be.dto.enums.ai.AiTaskType;
 import com.ptit.music_be.dto.enums.notification.NotificationType;
@@ -15,8 +16,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Báo cho người tạo tác vụ AI khi tác vụ kết thúc (OMR-02): số hóa xong / lỗi, gợi ý hợp âm lỗi (gợi ý hợp âm xong đã có
- * thông báo đề xuất sửa riêng). Đi qua {@link NotificationService} nên vừa lưu vào chuông vừa đẩy qua WebSocket sau khi
+ * Báo cho người tạo tác vụ AI khi tác vụ kết thúc (OMR-02): số hóa xong / lỗi, gợi ý hợp âm xong / lỗi. Gợi ý hợp âm xong
+ * báo người bấm bằng thông báo này (mở thẳng bản nháp), còn đề xuất mới chỉ báo người khác. Đi qua {@link NotificationService} nên vừa lưu vào chuông vừa đẩy qua WebSocket sau khi
  * giao dịch commit; người dùng có thể đóng trang tiến độ mà vẫn biết khi nào xong.
  *
  * <p>params: {@code variant} (omr / chords), {@code title}, {@code taskId} và {@code code} (mã lỗi) để web dựng câu theo
@@ -33,6 +34,7 @@ public class AiTaskNotifier {
 
     private final NotificationService notificationService;
     private final ScoreRepository scoreRepository;
+    private final ObjectMapper objectMapper;
 
     /** Task vừa chuyển sang COMPLETED hoặc FAILED. Hủy (CANCELLED) do chính người dùng bấm nên không báo. */
     public void finished(AiTask task) {
@@ -46,9 +48,6 @@ public class AiTaskNotifier {
         boolean completed = task.getStatus() == AiTaskStatus.COMPLETED;
         if (!completed && task.getStatus() != AiTaskStatus.FAILED) {
             return;
-        }
-        if (completed && VARIANT_CHORDS.equals(variant)) {
-            return; // gợi ý hợp âm xong đã gửi SUGGESTION_NEW
         }
         Score score = task.getScore();
         // Bản nhạc đã vào thùng rác trong lúc chạy: không báo. Kiểm tra bằng truy vấn (lọc deleted_at) trước khi đọc
@@ -66,9 +65,32 @@ public class AiTaskNotifier {
                     score.getId(),
                     fallbackMessage(variant, completed, title),
                     NotificationService.params(
-                            "variant", variant, "title", title, "taskId", task.getId(), "code", code));
+                            "variant",
+                            variant,
+                            "title",
+                            title,
+                            "taskId",
+                            task.getId(),
+                            "code",
+                            code,
+                            // Gợi ý hợp âm xong: web mở thẳng bản nháp hợp âm trong Editor
+                            "suggestionId",
+                            completed && VARIANT_CHORDS.equals(variant) ? suggestionIdOf(task) : null));
         } catch (RuntimeException e) {
             log.warn("Không tạo được thông báo cho task {}: {}", task.getId(), e.getMessage());
+        }
+    }
+
+    /** Mã đề xuất trong result_data của task gợi ý hợp âm; null nếu không đọc được. */
+    private String suggestionIdOf(AiTask task) {
+        if (!StringUtils.hasText(task.getResultData())) {
+            return null;
+        }
+        try {
+            String id = objectMapper.readTree(task.getResultData()).path("suggestionId").asText("");
+            return id.isEmpty() ? null : id;
+        } catch (java.io.IOException | RuntimeException e) {
+            return null;
         }
     }
 
@@ -98,6 +120,8 @@ public class AiTaskNotifier {
                     ? "Đã số hóa xong bản nhạc “" + title + "”, mở để kiểm tra kết quả"
                     : "Số hóa bản nhạc “" + title + "” thất bại";
         }
-        return "Gợi ý hợp âm cho bản nhạc “" + title + "” thất bại";
+        return completed
+                ? "Đã gợi ý xong hợp âm cho bản nhạc “" + title + "”, mở để xem lại"
+                : "Gợi ý hợp âm cho bản nhạc “" + title + "” thất bại";
     }
 }

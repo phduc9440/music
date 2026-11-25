@@ -199,7 +199,7 @@ public class SuggestionServiceImpl implements SuggestionService {
         }
 
         Persisted saved =
-                persist(score, me, SuggestionSource.EDITOR, baseVersion, cleanTitle, cleanDescription, bytes, proposed);
+                persist(score, me, SuggestionSource.EDITOR, baseVersion, cleanTitle, cleanDescription, bytes, proposed, null);
         return detail(saved.suggestion(), score, decision, me, saved.changes());
     }
 
@@ -211,7 +211,8 @@ public class SuggestionServiceImpl implements SuggestionService {
             int baseVersion,
             SuggestionSource source,
             String title,
-            String description) {
+            String description,
+            String requesterId) {
         Score score = findScore(scoreId);
         // File do music-ai ghi lại từ bản đã lưu nên có thể còn DOCTYPE công khai như bản gốc
         Document proposed = MusicXmlInspector.parseStored(musicXml);
@@ -226,7 +227,8 @@ public class SuggestionServiceImpl implements SuggestionService {
         String cleanDescription = description == null || description.isBlank()
                 ? null
                 : description.strip().substring(0, Math.min(description.strip().length(), MAX_DESCRIPTION));
-        return persist(score, null, source, baseVersion, cleanTitle, cleanDescription, musicXml, proposed)
+        return persist(
+                        score, null, source, baseVersion, cleanTitle, cleanDescription, musicXml, proposed, requesterId)
                 .suggestion();
     }
 
@@ -245,7 +247,8 @@ public class SuggestionServiceImpl implements SuggestionService {
             String title,
             String description,
             byte[] bytes,
-            Document proposed) {
+            Document proposed,
+            String requesterId) {
         // Hệ thống gửi (worker chạy nền, không có người đăng nhập) thì đọc không kiểm quyền; quyền đã kiểm lúc tạo tác
         // vụ
         ScoreContent base = author == null
@@ -284,7 +287,7 @@ public class SuggestionServiceImpl implements SuggestionService {
                         .status(SuggestionChangeStatus.PENDING)
                         .build())
                 .toList());
-        notifyNew(score, suggestion, author, changes.size());
+        notifyNew(score, suggestion, author, changes.size(), requesterId);
         return new Persisted(suggestion, changes);
     }
 
@@ -707,8 +710,11 @@ public class SuggestionServiceImpl implements SuggestionService {
 
     // ------------------------------------------------------------------------------------------------ thông báo, điểm
 
-    /** Báo chủ bản nhạc và người được chia sẻ quyền sửa (trừ người gửi). */
-    private void notifyNew(Score score, ScoreSuggestion suggestion, Member actor, int count) {
+    /**
+     * Báo chủ bản nhạc và người được chia sẻ quyền sửa (trừ người gửi). {@code requesterId} là người bấm tạo đề xuất do
+     * hệ thống gửi (gợi ý hợp âm, CH-02): không báo người đó vì họ đã tự thấy kết quả.
+     */
+    private void notifyNew(Score score, ScoreSuggestion suggestion, Member actor, int count, String requesterId) {
         Map<String, Member> recipients = new LinkedHashMap<>();
         if (score.getMember() != null) {
             recipients.put(score.getMember().getId(), score.getMember());
@@ -717,6 +723,9 @@ public class SuggestionServiceImpl implements SuggestionService {
             if (share.getPermission() == SharePermission.EDIT) {
                 recipients.putIfAbsent(share.getMember().getId(), share.getMember());
             }
+        }
+        if (requesterId != null) {
+            recipients.remove(requesterId);
         }
         // actor null: hệ thống gửi (gợi ý hợp âm); web hiện "Hệ thống" theo ngôn ngữ người đọc nhờ param "system"
         String name = actor == null ? "Hệ thống" : ScoreCommentServiceImpl.displayName(actor);
@@ -836,6 +845,8 @@ public class SuggestionServiceImpl implements SuggestionService {
                 .id(suggestion.getId())
                 .title(suggestion.getTitle())
                 .status(suggestion.getStatus())
+                .source(suggestion.getSource())
+                .baseVersion(suggestion.getBaseVersion())
                 .structural(suggestion.isStructural())
                 .stale(stale)
                 .changeCount(changeCount)

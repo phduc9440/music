@@ -304,7 +304,9 @@ public class ChordGenerationWorker {
                             job.baseVersion(),
                             SuggestionSource.CHORD_GENERATION,
                             title,
-                            description);
+                            description,
+                            // Người bấm không nhận "đề xuất mới" của chính mình; họ nhận thông báo "đã xong" bên dưới
+                            task.getMember() == null ? null : task.getMember().getId());
                     suggestionService.storeOptions(suggestion, others);
                     ObjectNode data = objectMapper.createObjectNode();
                     data.put("suggestionId", suggestion.getId());
@@ -317,6 +319,9 @@ public class ChordGenerationWorker {
                     task.setResultData(data.toString());
                     task.setFinishedAt(LocalDateTime.now());
                     aiTaskRepository.save(task);
+                    if (aiTaskNotifier != null) {
+                        aiTaskNotifier.finished(task);
+                    }
                 }));
     }
 

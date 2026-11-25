@@ -11,6 +11,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Optional;
 
@@ -219,6 +220,62 @@ class ChordSuggestionServiceImplTest {
 
         assertThat(e.getErrorCode()).isEqualTo(AiErrorCode.CHORD_SUGGESTION_PENDING);
         assertThat(e.getPayload()).isEqualTo(Map.of("suggestionId", "sug-9"));
+    }
+
+    @Test
+    void openSuggestionOnAnOlderVersionIsClosedInsteadOfBlocking() {
+        // Bản nhạc đã lên v7 sau khi gợi ý dựa trên v5: không nạp làm bản nháp được nữa, không được chặn lần sau (CH-03)
+        ScoreSuggestion stale = ScoreSuggestion.builder()
+                .id("sug-old")
+                .baseVersion(5)
+                .createdAt(LocalDateTime.now().minusMinutes(5))
+                .status(SuggestionStatus.OPEN)
+                .build();
+        when(suggestionRepository.findFirstByScoreIdAndSourceAndStatus(
+                        SCORE_ID, SuggestionSource.CHORD_GENERATION, SuggestionStatus.OPEN))
+                .thenReturn(Optional.of(stale));
+
+        AiTaskResponse response = service.request(SCORE_ID, style("NATURAL"));
+
+        assertThat(response.getId()).isEqualTo("task-1");
+        assertThat(stale.getStatus()).isEqualTo(SuggestionStatus.OUTDATED);
+        assertThat(stale.getDecidedAt()).isNotNull();
+        verify(suggestionRepository).save(stale);
+    }
+
+    @Test
+    void openSuggestionLeftForMoreThanADayIsClosedInsteadOfBlocking() {
+        ScoreSuggestion old = ScoreSuggestion.builder()
+                .id("sug-old")
+                .baseVersion(7)
+                .createdAt(LocalDateTime.now().minusHours(ChordSuggestionServiceImpl.OPEN_SUGGESTION_TTL_HOURS + 1))
+                .status(SuggestionStatus.OPEN)
+                .build();
+        when(suggestionRepository.findFirstByScoreIdAndSourceAndStatus(
+                        SCORE_ID, SuggestionSource.CHORD_GENERATION, SuggestionStatus.OPEN))
+                .thenReturn(Optional.of(old));
+
+        service.request(SCORE_ID, style("NATURAL"));
+
+        assertThat(old.getStatus()).isEqualTo(SuggestionStatus.OUTDATED);
+    }
+
+    @Test
+    void freshOpenSuggestionOnTheCurrentVersionStillBlocks() {
+        ScoreSuggestion fresh = ScoreSuggestion.builder()
+                .id("sug-9")
+                .baseVersion(7)
+                .createdAt(LocalDateTime.now().minusMinutes(10))
+                .status(SuggestionStatus.OPEN)
+                .build();
+        when(suggestionRepository.findFirstByScoreIdAndSourceAndStatus(
+                        SCORE_ID, SuggestionSource.CHORD_GENERATION, SuggestionStatus.OPEN))
+                .thenReturn(Optional.of(fresh));
+
+        AppException e = errorOf(SCORE_ID, "NATURAL");
+
+        assertThat(e.getErrorCode()).isEqualTo(AiErrorCode.CHORD_SUGGESTION_PENDING);
+        assertThat(fresh.getStatus()).isEqualTo(SuggestionStatus.OPEN);
     }
 
     @Test

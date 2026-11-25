@@ -52,7 +52,8 @@
   "FORUM_POST_REPLY": "{name} replied to your comment in “{title}”: “{excerpt}”",
   "FORUM_ANSWER_ACCEPTED": "{name} marked your reply as the best answer in “{title}”",
   "AI_TASK_COMPLETED": {
-    "omr": "“{title}” has been digitized, open it to check the result"
+    "omr": "“{title}” has been digitized, open it to check the result",
+    "chords": "Chord suggestion for “{title}” is ready, open it to review and adjust"
   },
   "AI_TASK_FAILED": {
     "omr": "Digitizing “{title}” failed: {error}",

@@ -5,6 +5,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -43,12 +45,14 @@ import com.ptit.music_be.dto.enums.ai.AiTaskType;
 import com.ptit.music_be.dto.enums.score.SuggestionSource;
 import com.ptit.music_be.dto.response.score.ScoreContent;
 import com.ptit.music_be.entity.AiTask;
+import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ScoreSuggestion;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.code.AccountErrorCode;
 import com.ptit.music_be.exception.code.CollabErrorCode;
 import com.ptit.music_be.repository.ai.AiTaskRepository;
+import com.ptit.music_be.service.ai.AiTaskNotifier;
 import com.ptit.music_be.service.score.ScoreEditService;
 import com.ptit.music_be.service.score.SuggestionService;
 
@@ -135,7 +139,7 @@ class ChordGenerationWorkerTest {
     void completesAndCreatesSuggestion() throws IOException {
         aiWritesChords();
         when(suggestionService.createFromSystem(
-                        eq(SCORE_ID), any(), eq(7), eq(SuggestionSource.CHORD_GENERATION), anyString(), anyString()))
+                        eq(SCORE_ID), any(), eq(7), eq(SuggestionSource.CHORD_GENERATION), anyString(), anyString(), any()))
                 .thenReturn(ScoreSuggestion.builder().id("sug-1").build());
 
         worker.process(TASK_ID);
@@ -150,7 +154,8 @@ class ChordGenerationWorkerTest {
                         eq(7),
                         eq(SuggestionSource.CHORD_GENERATION),
                         title.capture(),
-                        description.capture());
+                        description.capture(),
+                        isNull());
         assertThat(body.getValue()).isEqualTo(WITH_CHORDS);
         assertThat(title.getValue()).isEqualTo("Gợi ý hợp âm (Tự nhiên)");
         assertThat(description.getValue()).contains("C major");
@@ -165,6 +170,33 @@ class ChordGenerationWorkerTest {
         assertThat(objectMapper.readTree(task.getResultData()).path("key").asText())
                 .isEqualTo("C major");
         assertTempFilesGone();
+    }
+
+    @Test
+    void requesterIsExcludedFromNewSuggestionNoticeAndToldWhenDone() {
+        aiWritesChords();
+        task.setMember(Member.builder().id("m-1").build());
+        AiTaskNotifier notifier = mock(AiTaskNotifier.class);
+        worker.setAiTaskNotifier(notifier);
+        when(suggestionService.createFromSystem(
+                        eq(SCORE_ID), any(), eq(7), eq(SuggestionSource.CHORD_GENERATION), anyString(), anyString(), any()))
+                .thenReturn(ScoreSuggestion.builder().id("sug-1").build());
+
+        worker.process(TASK_ID);
+
+        // CH-02: người bấm không nhận "đề xuất mới" của chính mình...
+        verify(suggestionService)
+                .createFromSystem(
+                        eq(SCORE_ID),
+                        any(),
+                        eq(7),
+                        eq(SuggestionSource.CHORD_GENERATION),
+                        anyString(),
+                        anyString(),
+                        eq("m-1"));
+        // ...mà nhận thông báo "gợi ý hợp âm xong" riêng
+        verify(notifier).finished(task);
+        assertThat(task.getStatus()).isEqualTo(AiTaskStatus.COMPLETED);
     }
 
     @Test
@@ -223,7 +255,7 @@ class ChordGenerationWorkerTest {
     @Test
     void emptySuggestionMeansAlreadyHarmonized() {
         aiWritesChords();
-        when(suggestionService.createFromSystem(any(), any(), anyInt(), any(), any(), any()))
+        when(suggestionService.createFromSystem(any(), any(), anyInt(), any(), any(), any(), any()))
                 .thenThrow(new AppException(CollabErrorCode.SUGGESTION_EMPTY));
 
         worker.process(TASK_ID);
@@ -254,7 +286,7 @@ class ChordGenerationWorkerTest {
                     Files.write(root.resolve(OUT), WITH_CHORDS);
                     return new ChordGenerationResult(OUT, "C major", 8, 4, 0, 0, 1L, null);
                 });
-        when(suggestionService.createFromSystem(any(), any(), anyInt(), any(), any(), any()))
+        when(suggestionService.createFromSystem(any(), any(), anyInt(), any(), any(), any(), any()))
                 .thenThrow(new AppException(CollabErrorCode.SUGGESTION_EMPTY));
 
         worker.process(TASK_ID);
@@ -292,7 +324,7 @@ class ChordGenerationWorkerTest {
                                     new ChordGenerationResult.Option(out3, 5, -0.4)));
                 });
         ScoreSuggestion suggestion = ScoreSuggestion.builder().id("sug-1").build();
-        when(suggestionService.createFromSystem(any(), any(), anyInt(), any(), any(), any()))
+        when(suggestionService.createFromSystem(any(), any(), anyInt(), any(), any(), any(), any()))
                 .thenReturn(suggestion);
 
         worker.process(TASK_ID);

@@ -36,13 +36,29 @@ public interface SuggestionService {
      *
      * @param musicXml bản nhạc đầy đủ đã sửa từ version {@code baseVersion}
      */
+    default ScoreSuggestion createFromSystem(
+            String scoreId,
+            byte[] musicXml,
+            int baseVersion,
+            SuggestionSource source,
+            String title,
+            String description) {
+        return createFromSystem(scoreId, musicXml, baseVersion, source, title, description, null);
+    }
+
+    /**
+     * Như trên, nhưng bỏ người đã bấm tạo ({@code requesterId}) khỏi danh sách nhận thông báo "đề xuất mới": họ tự thấy
+     * kết quả (bản nháp trong Editor, thông báo "đã xong" riêng) nên không cần báo như một đề xuất của người khác.
+     * {@code requesterId} null thì báo như cũ.
+     */
     ScoreSuggestion createFromSystem(
             String scoreId,
             byte[] musicXml,
             int baseVersion,
             SuggestionSource source,
             String title,
-            String description);
+            String description,
+            String requesterId);
 
     /**
      * Lưu thêm các phương án khác của một gợi ý hợp âm (phương án 2, 3...; phương án 1 là nội dung chính của đề xuất), cạnh

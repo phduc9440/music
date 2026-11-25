@@ -8,12 +8,13 @@ import { useAiChordDraft } from '../../../../components/scores/chords/useAiChord
 import type { AiChordRow } from '../../../../components/scores/chords/useAiChordDraft';
 import type { AiChordMark } from '../../../../components/scores/chords/aiChordHighlight';
 import { suggestionPath } from '../../../../components/scores/suggestions/suggestionUtils';
+import { suggestionApi } from '../../../../services';
 import { useDialog } from '../../../../components/ui/dialog-context';
 import type { ScoreDocument } from '../../../../components/editor/core/ScoreDocument';
 import type { ScoreEditor } from '../../../../components/editor/core/useScoreEditor';
 import type { useLiveCollab } from '../../../../components/editor/live/useLiveCollab';
 import { t } from '../../../../i18n/core';
-import { useScoreBase } from '../../../../utils/score';
+import { formatDateTime, useScoreBase } from '../../../../utils/score';
 
 /** Mở từ ?aiChords=: chờ phiên đồng chỉnh sửa vào xong tối đa chừng này (ms) rồi mới nạp hợp âm AI. */
 const AI_LIVE_WAIT_MS = 8000;
@@ -95,6 +96,42 @@ export function useAiChordPanel({
     setSearchParams(next, { replace: true });
     beginAiDraft(linkedAiChords);
   }, [linkedAiChords, liveReady, searchParams, setSearchParams, beginAiDraft]);
+
+  // Vào Editor mà không mở từ link: bản nháp hợp âm AI chỉ nằm trong bộ nhớ nên tải lại trang là mất, trong khi đề xuất
+  // vẫn mở ở server (CH-03). Nếu còn một gợi ý hợp âm dùng được (đúng phiên bản hiện tại) thì hỏi có nạp lại không.
+  // Chỉ hỏi một lần mỗi lần mở Editor; "Để sau" giữ nguyên đề xuất, mở lại được bằng hộp Gợi ý hợp âm.
+  const resumeChecked = useRef(false);
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+  const currentVersion = editor.version;
+  useEffect(() => {
+    if (!canEdit || linkedAny || !liveReady || resumeChecked.current) return;
+    resumeChecked.current = true;
+    void (async () => {
+      try {
+        const res = await suggestionApi.list(scoreId, 'OPEN');
+        const pending = res.data.result.content.find(
+          (s) =>
+            s.source === 'CHORD_GENERATION' && !s.stale && !s.structural && (s.baseVersion ?? 0) === currentVersion,
+        );
+        if (!pending || !mountedRef.current) return;
+        const ok = await confirm({
+          title: t('chords.draft.resumeTitle'),
+          message: t('chords.draft.resumeMessage', { time: formatDateTime(pending.createdAt) }),
+          confirmLabel: t('chords.draft.resumeConfirm'),
+          cancelLabel: t('chords.draft.resumeLater'),
+        });
+        if (ok && mountedRef.current) beginAiDraft(pending.id);
+      } catch {
+        // không tải được danh sách đề xuất: bỏ qua, người dùng vẫn mở được bằng hộp Gợi ý hợp âm
+      }
+    })();
+  }, [canEdit, linkedAny, liveReady, scoreId, currentVersion, confirm, beginAiDraft]);
 
   /** Xóa mọi hợp âm của bản nhạc trong một bước sửa (chưa lưu, Ctrl+Z để hoàn tác), có hỏi lại trước. */
   const clearAllChords = useCallback(async () => {

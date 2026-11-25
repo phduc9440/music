@@ -16,6 +16,10 @@ export interface SuggestionSummary {
   id: string;
   title: string;
   status: SuggestionStatus;
+  /** Nguồn đề xuất (gợi ý hợp âm do hệ thống tạo là CHORD_GENERATION). */
+  source?: 'EDITOR' | 'CHORD_GENERATION' | 'LIVE_RECOVERY' | string;
+  /** Phiên bản bản nhạc mà đề xuất dựa trên. */
+  baseVersion?: number | null;
   /** Đổi cấu trúc (khung, khóa, nhịp): không chia theo ô, chỉ nhận tất cả. */
   structural: boolean;
   /** Đề xuất còn mở nhưng bản chính đã đổi đến mức không áp dụng được. */

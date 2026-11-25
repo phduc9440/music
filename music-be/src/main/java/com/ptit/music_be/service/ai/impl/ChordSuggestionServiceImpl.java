@@ -1,5 +1,6 @@
 package com.ptit.music_be.service.ai.impl;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -24,6 +25,7 @@ import com.ptit.music_be.dto.response.ai.AiTaskResponse;
 import com.ptit.music_be.entity.AiTask;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
+import com.ptit.music_be.entity.ScoreSuggestion;
 import com.ptit.music_be.event.ChordTaskCreatedEvent;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.code.AccountErrorCode;
@@ -44,6 +46,10 @@ import com.ptit.music_be.utils.SecurityUtils;
 public class ChordSuggestionServiceImpl implements ChordSuggestionService {
 
     static final List<AiTaskStatus> ACTIVE = List.of(AiTaskStatus.PENDING, AiTaskStatus.PROCESSING);
+    /** Gợi ý hợp âm chưa ai xử lý quá chừng này giờ thì tự đóng khi người dùng gợi ý lại. */
+    static final int OPEN_SUGGESTION_TTL_HOURS = 24;
+
+    static final String AUTO_CLOSE_NOTE = "Tự đóng vì đã cũ khi gợi ý hợp âm lại";
 
     private final ScoreRepository scoreRepository;
     private final ScoreSuggestionRepository suggestionRepository;
@@ -112,6 +118,15 @@ public class ChordSuggestionServiceImpl implements ChordSuggestionService {
                 .findFirstByScoreIdAndSourceAndStatus(
                         score.getId(), SuggestionSource.CHORD_GENERATION, SuggestionStatus.OPEN)
                 .ifPresent(open -> {
+                    // Gợi ý cũ không còn dùng được (bản nhạc đã đổi phiên bản, hoặc bỏ đó quá lâu) thì tự đóng thay vì
+                    // chặn người dùng bằng lỗi 3132 mà không mở lại được (CH-03)
+                    if (isAbandoned(open, baseVersion)) {
+                        open.setStatus(SuggestionStatus.OUTDATED);
+                        open.setDecidedAt(LocalDateTime.now());
+                        open.setDecisionNote(AUTO_CLOSE_NOTE);
+                        suggestionRepository.save(open);
+                        return;
+                    }
                     throw new AppException(AiErrorCode.CHORD_SUGGESTION_PENDING, Map.of("suggestionId", open.getId()));
                 });
         // Tùy chọn nâng cao và độ dài bài theo gói; kiểm trước số lượt để người dùng biết đúng lý do cần nâng cấp
@@ -142,5 +157,14 @@ public class ChordSuggestionServiceImpl implements ChordSuggestionService {
                 .build());
         eventPublisher.publishEvent(new ChordTaskCreatedEvent(task.getId(), score.getId()));
         return aiTaskMapper.toResponse(task);
+    }
+
+    /** Gợi ý hợp âm đang mở mà không còn nạp làm bản nháp được: dựa trên phiên bản cũ, hoặc đã để quá lâu. */
+    private static boolean isAbandoned(ScoreSuggestion open, int currentVersion) {
+        if (open.getBaseVersion() != null && open.getBaseVersion() != currentVersion) {
+            return true;
+        }
+        return open.getCreatedAt() != null
+                && open.getCreatedAt().isBefore(LocalDateTime.now().minusHours(OPEN_SUGGESTION_TTL_HOURS));
     }
 }
