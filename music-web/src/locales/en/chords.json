@@ -7,7 +7,7 @@
   "cancelled": "The chord suggestion task was cancelled",
   "dialog": {
     "title": "Suggest chords",
-    "hint": "The AI (AutoHarmonizer model) reads the melody and places chords in measures without chords. Every run the AI \"thinks\" again, so you get a different accompaniment, with up to 3 options A, B, C to choose from. If you can edit the score, the AI chords appear in the editor (highlighted) for you to adjust and save; otherwise the result is an edit suggestion for the owner to review.",
+    "hint": "The AI reads the melody and places chords in measures without chords. Every run the AI \"thinks\" again, so you get a different accompaniment, with up to 3 options A, B, C to choose from. The AI chords appear in the editor (highlighted) for you to adjust and save.",
     "styleLabel": "Chord colour",
     "running": "Analysing the melody…",
     "closeHint": "You can hide this dialog; the suggestion is still created and will appear in the Suggestions tab.",

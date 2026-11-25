@@ -12,7 +12,7 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ScoreCommentsResponse {
-    /** Người đang xem viết được góp ý không (cần quyền nhận xét trở lên và bản nhạc đã có ô nhịp). */
+    /** Người đang xem viết được góp ý không (cần quyền góp ý trở lên và bản nhạc đã có ô nhịp). */
     boolean canComment;
     /** Số ô hiện tại (giới hạn khi chọn vùng); null nếu bản nhạc chưa có MusicXML. */
     Integer measureCount;

@@ -16,7 +16,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 /**
- * Đề xuất sửa bản nhạc (mục 4.3): một bản MusicXML do người có quyền nhận xét gửi, chia thành các thay đổi theo ô nhịp
+ * Đề xuất sửa bản nhạc (mục 4.3): một bản MusicXML do người có quyền góp ý gửi, chia thành các thay đổi theo ô nhịp
  * ({@link ScoreSuggestionChange}). {@code Score} lọc bản trong thùng rác bằng {@code @SQLRestriction} nên quan hệ để LAZY:
  * service luôn nạp bản nhạc qua {@code ScoreRepository}.
  */

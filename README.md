@@ -39,13 +39,13 @@ qua callback có header `X-Internal-Key`.
   hiện lại trong trình chỉnh sửa (bảng "Cần kiểm tra", kèm ảnh cắt từ trang gốc).
 - **Xem, phát và luyện tập**: hiển thị bản nhạc bằng OpenSheetMusicDisplay, phát lại bằng mẫu âm piano, chế độ luyện
   tập (Studio) có chấm điểm, lịch sử và thống kê luyện tập.
-- **Gợi ý hợp âm** cho bản chỉ có giai điệu: nút "Gợi ý hợp âm" ở trang chi tiết bản nhạc (cần quyền `REVIEW` trở
-  lên), chọn màu hợp âm (Tự nhiên, Đơn giản, Có màu, Hợp âm 7 / Jazz), độ sáng tạo và mật độ hợp âm. `music-ai` dùng model AutoHarmonizer (LSTM, trọng số gốc của tác giả) và lấy mẫu nên mỗi lần ra cách đệm khác,
-  kèm 3 phương án A, B, C để chọn trong trình chỉnh sửa. Người sửa được thấy hợp âm AI ngay trong trình chỉnh sửa dưới dạng bản
-  nháp để sửa rồi lưu; người khác nhận kết quả là một đề xuất sửa do hệ thống gửi, chủ bản nhạc duyệt ở tab Đề xuất.
+- **Gợi ý hợp âm** cho bản chỉ có giai điệu: nút "Gợi ý hợp âm" ở trang chi tiết bản nhạc (cần quyền chỉnh sửa
+  `EDIT`, vì gợi ý hợp âm là sửa bản nhạc), chọn màu hợp âm (Tự nhiên, Đơn giản, Có màu, Hợp âm 7 / Jazz), độ sáng tạo và mật độ hợp âm. `music-ai` dùng model AutoHarmonizer (LSTM, trọng số gốc của tác giả) và lấy mẫu nên mỗi lần ra cách đệm khác,
+  kèm tới 3 phương án A, B, C (theo gói) để chọn trong trình chỉnh sửa. Hợp âm AI hiện ngay trong trình chỉnh sửa dưới dạng bản
+  nháp để sửa rồi lưu (kết quả cũng được lưu thành một đề xuất sửa do hệ thống gửi, xem lại ở tab Đề xuất).
   Bản đã có hợp âm ở mọi ô thì hộp gợi ý hỏi có muốn thay hợp âm cũ không, kèm nút xóa hết hợp âm. Player có thể đệm
   theo các hợp âm này.
-- **Cộng tác**: chia sẻ theo quyền (`VIEW`, `REVIEW`, `EDIT`), góp ý gắn với ô nhịp, đề xuất sửa và so sánh khác biệt,
+- **Cộng tác**: chia sẻ theo quyền `VIEW` (xem, luyện tập, nhận xét và chấm sao), `COMMENT` (góp ý trên ô nhịp, gửi đề xuất sửa), `EDIT` (chỉnh sửa, duyệt đề xuất, gợi ý hợp âm); bản công khai ai đăng nhập cũng có quyền `VIEW`, bản riêng tư thì xin quyền chủ bản nhạc, góp ý gắn với ô nhịp, đề xuất sửa và so sánh khác biệt,
   fork bản nhạc công khai.
 - **Nhóm và Show**: tạo Team, mời thành viên qua email, quản lý Show bằng bảng Kanban, giao việc và nhắc hạn, chế độ
   biểu diễn.
