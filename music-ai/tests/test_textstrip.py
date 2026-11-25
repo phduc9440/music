@@ -33,6 +33,24 @@ def test_removes_lyrics_and_chord_names_but_keeps_notes():
     assert np.array_equal(out, before)
 
 
+def test_counts_systems_with_chord_names_above_staff():
+    from app.omr.textstrip import has_text_above_staves
+
+    page = _page()
+    assert not has_text_above_staves(page)
+    cv2.putText(page, "Am", (150, TOP - 12), cv2.FONT_HERSHEY_SIMPLEX, 0.6, 0, 2)
+    cv2.putText(page, "G/B", (400, TOP - 12), cv2.FONT_HERSHEY_SIMPLEX, 0.6, 0, 2)
+    assert has_text_above_staves(page)
+
+
+def test_lyrics_below_staff_are_not_text_above():
+    from app.omr.textstrip import has_text_above_staves
+
+    page = _page()
+    cv2.putText(page, "Thiet con bua an", (60, TOP + 4 * GAP + 40), cv2.FONT_HERSHEY_SIMPLEX, 0.6, 0, 1)
+    assert not has_text_above_staves(page)
+
+
 def test_keeps_ledger_notehead_and_stem():
     page = _page()
     out, _ = strip_text(page)

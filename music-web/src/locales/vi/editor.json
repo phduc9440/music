@@ -33,7 +33,8 @@
     "hasBass": "Phần nhạc này đã có hai khuông rồi (dùng \"Thêm khuông Sol/Fa\" để thêm khuông riêng)",
     "lastStaff": "Bản nhạc phải còn ít nhất một khuông (khuông 1 của đàn chỉ xóa được khi còn phần nhạc khác)",
     "noStaff": "Hãy chọn một nốt hoặc dấu lặng để biết thao tác này áp dụng cho khuông nào",
-    "voiceNone": "Hãy chọn các nốt (không phải dấu lặng hay nốt trang trí) để viết bè"
+    "voiceNone": "Hãy chọn các nốt (không phải dấu lặng hay nốt trang trí) để viết bè",
+    "restKept": "Không xóa được dấu lặng này: dấu lặng cả ô, dấu lặng trong chùm (liên ba...) hoặc xóa xong ô sẽ trống. Muốn bỏ cả ô thì xóa ô nhịp."
   },
   "cmd": {
     "pitch": {
@@ -1148,5 +1149,11 @@
     "resizeHint": "Kéo để nới rộng hoặc thu hẹp, kéo hẳn vào để thu gọn · Nhấp đúp hoặc Enter: thu gọn / mở · ←/→: chỉnh độ rộng",
     "expand": "Mở cột {name}",
     "collapsed": "Đã thu gọn"
+  },
+  "header": {
+    "blank": {
+      "title": "Thêm tên bài",
+      "composer": "Thêm tác giả"
+    }
   }
 }

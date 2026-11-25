@@ -1,5 +1,5 @@
 import { Client, type IMessage, type StompSubscription } from '@stomp/stompjs';
-import { API_BASE_URL } from '../../../services/client';
+import { socketUrl } from '../../../services/client';
 import type {
   LiveError,
   LiveJoinResult,
@@ -31,12 +31,6 @@ export interface LiveHandlers {
   onError: (error: LiveError) => void;
 }
 
-/** Địa chỉ WebSocket suy ra từ địa chỉ API (http -> ws, bỏ đuôi /api), cookie HttpOnly tự đi kèm lúc bắt tay. */
-function socketUrl(): string {
-  const base = API_BASE_URL.replace(/\/api\/?$/, '');
-  return `${base.replace(/^http/, 'ws')}/ws`;
-}
-
 function parse<T>(message: IMessage): T | null {
   try {
     return JSON.parse(message.body) as T;
@@ -44,6 +38,9 @@ function parse<T>(message: IMessage): T | null {
     return null; // gói hỏng: bỏ qua, lần đồng bộ sau sẽ sửa
   }
 }
+
+/** Kích thước mỗi mảnh khi chia khung STOMP lớn (ký tự), dưới mức 8 KB của Tomcat. */
+const LIVE_CHUNK_SIZE = 4 * 1024;
 
 /**
  * Kết nối STOMP riêng cho một bản nhạc đang đồng chỉnh sửa. Chỉ lo vận chuyển: chuyển gói tin sang callback và gửi lệnh
@@ -61,6 +58,11 @@ export class LiveClient {
     this.currentSelection = currentSelection;
     this.client = new Client({
       brokerURL: socketUrl(),
+      // Tomcat nhận mỗi tin WebSocket tối đa 8 KB; thao tác cấu trúc (đổi tên bài, thêm ô, áp hợp âm...) gửi cả bản nhạc
+      // nên vượt xa mức này và máy chủ cắt kết nối (1009), thay đổi không tới được máy chủ và nút Lưu đứng ở "Đang lưu".
+      // Chia khung STOMP thành nhiều tin nhỏ; Spring tự ghép lại (tối đa 1 MB, xem WebSocketConfig).
+      splitLargeFrames: true,
+      maxWebSocketChunkSize: LIVE_CHUNK_SIZE,
       reconnectDelay: 3_000,
       heartbeatIncoming: 10_000,
       heartbeatOutgoing: 10_000,

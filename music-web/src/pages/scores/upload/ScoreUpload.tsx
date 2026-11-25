@@ -6,8 +6,8 @@ import CreateGuide from '../../../components/scores/create/CreateGuide';
 import UploadDropzone from '../../../components/scores/upload/UploadDropzone';
 import UploadFileItem from '../../../components/scores/upload/UploadFileItem';
 import type { UploadItem } from '../../../components/scores/upload/UploadFileItem';
-import { omrApi } from '../../../services';
-import type { OmrSourceType } from '../../../types';
+import { billingApi, omrApi } from '../../../services';
+import type { MySubscription, OmrConfig, OmrSourceType } from '../../../types';
 import {
   fileNameWithoutExtension,
   getScorePath,
@@ -17,11 +17,12 @@ import {
   MAX_COMPOSER,
   MAX_TITLE,
   OMR_SOURCE_LABELS,
+  UPLOAD_MAX_PDF_PAGES,
   validateUploadBatch,
   validateUploadFile,
 } from '../../../utils/score';
 import { clearPendingUpload, isImportBatch, peekPendingUpload } from '../../../utils/pendingUpload';
-import { reportPlanLimit } from '../../../utils/planLimit';
+import { reportPlanLimit, showPlanLimit } from '../../../utils/planLimit';
 import { inspectFile, rotateImageFile } from '../../../utils/uploadInspect';
 import '../../../components/scores/scores.css';
 import './ScoreUpload.css';
@@ -78,6 +79,24 @@ export default function ScoreUpload() {
   const [progress, setProgress] = useState(0);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
+  // Hạn mức của gói và trần hệ thống (OMR-04), cờ AI xác minh bên ngoài (X-05); lỗi thì để BE kiểm như cũ
+  const [plan, setPlan] = useState<MySubscription | null>(null);
+  const [omrConfig, setOmrConfig] = useState<OmrConfig | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    billingApi
+      .mine()
+      .then((res) => !cancelled && setPlan(res.data.result))
+      .catch(() => undefined);
+    omrApi
+      .config()
+      .then((res) => !cancelled && setOmrConfig(res.data.result))
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const files = items.map((it) => it.file);
   // Lỗi tính trực tiếp từ danh sách nên luôn khớp với những gì đang hiển thị
@@ -85,16 +104,42 @@ export default function ScoreUpload() {
   const batchError = validateUploadBatch(files);
   const inspecting = items.some((it) => it.inspecting);
   const busy = uploading || preparing;
+  const onlyImages = items.length > 0 && !items.some((it) => isPdf(it.file));
+  const totalPages = onlyImages ? items.length : (items.find((it) => isPdf(it.file))?.pageCount ?? 0);
+
+  // Trần thật của một lần = số nhỏ hơn giữa gói và hệ thống; còn lại trong tháng = hạn mức tháng - đã dùng (OMR-04)
+  const hardMax = omrConfig?.maxPdfPages ?? UPLOAD_MAX_PDF_PAGES;
+  // BE cũ không trả limits cho SUPER_ADMIN: khi đó dùng hạn mức của gói chính (gói Unlimited, mọi chỉ số null)
+  const limits = plan ? (plan.limits ?? plan.plan?.limits ?? {}) : undefined;
+  const planPerJob = limits?.omrMaxPagesPerJob;
+  const perJob = planPerJob == null ? hardMax : Math.min(planPerJob, hardMax);
+  const monthlyLimit = limits ? (limits.omrPagesPerMonth ?? null) : undefined;
+  const remaining = monthlyLimit == null ? null : Math.max(0, monthlyLimit - (plan?.omrPagesUsed ?? 0));
+  const quota: { metric: 'OMR_PAGES_PER_JOB' | 'OMR_PAGES'; limit: number; message: string } | null = !plan
+    ? null
+    : totalPages > perJob && planPerJob != null && planPerJob < hardMax
+      ? {
+          metric: 'OMR_PAGES_PER_JOB',
+          limit: perJob,
+          message: t('upload.quota.perJobExceeded', { pages: totalPages, max: perJob }),
+        }
+      : remaining != null && totalPages > remaining
+        ? {
+            metric: 'OMR_PAGES',
+            limit: monthlyLimit ?? 0,
+            message: t('upload.quota.monthExceeded', { pages: totalPages, remaining }),
+          }
+        : null;
+
   const canSubmit =
     items.length > 0 &&
     !itemErrors.some(Boolean) &&
     !batchError &&
     !inspecting &&
     !busy &&
+    !quota &&
     title.length <= MAX_TITLE &&
     composer.length <= MAX_COMPOSER;
-  const onlyImages = items.length > 0 && !items.some((it) => isPdf(it.file));
-  const totalPages = onlyImages ? items.length : (items.find((it) => isPdf(it.file))?.pageCount ?? 0);
 
   // File chờ đã được lấy vào danh sách: đọc nội dung chúng rồi xóa khỏi bộ nhớ để lần mở sau không điền lại
   useEffect(() => {
@@ -165,7 +210,9 @@ export default function ScoreUpload() {
     setUploading(true);
     setProgress(0);
     try {
-      const res = await omrApi.upload({ files: finalFiles, title, composer, sourceType }, setProgress);
+      // Không có tên (và tên file trống) thì gửi tên mặc định theo ngôn ngữ người dùng, không để BE ghi "Untitled score"
+      const finalTitle = title.trim() || fileNameWithoutExtension(items[0].file.name).trim() || t('upload.untitled');
+      const res = await omrApi.upload({ files: finalFiles, title: finalTitle, composer, sourceType }, setProgress);
       toast.success(t('upload.uploaded'));
       const created = res.data.result;
       navigate(getScorePath(created.scoreId, 'PENDING'), { replace: true });
@@ -279,9 +326,33 @@ export default function ScoreUpload() {
                 </button>
               ))}
             </div>
-            <p className="sc-upload__hint">
-              {sourceTouched ? t('upload.sourceHintTouched') : t('upload.sourceHintGuess')}
-            </p>
+
+            {plan && (
+              <p className="sc-upload__hint sc-upload__quota">
+                {remaining == null
+                  ? t('upload.quota.unlimitedMonth', { max: perJob })
+                  : t('upload.quota.summary', { remaining, limit: monthlyLimit ?? 0, max: perJob })}
+              </p>
+            )}
+            {quota && (
+              <div className="sc-error sc-upload__quota-error" role="alert">
+                <span>{quota.message}</span>
+                <button
+                  type="button"
+                  className="sc-btn sc-btn--sm"
+                  onClick={() =>
+                    showPlanLimit({
+                      metric: quota.metric,
+                      limit: quota.limit,
+                      used: quota.metric === 'OMR_PAGES' ? (plan?.omrPagesUsed ?? 0) : totalPages,
+                      upgradeTo: null,
+                    })
+                  }
+                >
+                  {t('upload.quota.seePlans')}
+                </button>
+              </div>
+            )}
 
             {(busy || inspecting) && (
               <div className="sc-upload__progress" aria-live="polite">
@@ -310,6 +381,7 @@ export default function ScoreUpload() {
             <button type="submit" className="sc-btn sc-btn--primary sc-upload__submit" disabled={!canSubmit}>
               {busy ? t('upload.uploadingShort') : t('upload.start')}
             </button>
+            {omrConfig?.externalAiCheck && <p className="sc-upload__hint">{t('upload.externalAiNote')}</p>}
           </aside>
         </form>
 

@@ -84,6 +84,24 @@ const buildTracks = (doc: ScoreDocument): TimelineTrack[] => {
 };
 
 /**
+ * Thêm track đệm hợp âm (nếu có nốt đệm). Bản một khuông, một bè có hợp âm được chơi như piano hai tay: giai điệu là tay
+ * phải, hợp âm là tay trái, nên hai track đổi tên cho dễ hiểu khi tắt / chỉ nghe từng tay.
+ */
+const withChordTrack = (tracks: TimelineTrack[], chordEvents: TimelineEvent[]): TimelineTrack[] => {
+  if (chordEvents.length === 0) return tracks;
+  const twoHands = tracks.length === 1;
+  return [
+    ...(twoHands ? [{ ...tracks[0], label: t('player.track.melodyRight') }] : tracks),
+    {
+      id: CHORD_TRACK_ID,
+      part: chordEvents[0].part,
+      staff: 0,
+      label: twoHands ? t('player.track.chordsLeft') : t('player.track.chords'),
+    },
+  ];
+};
+
+/**
  * @param doc tài liệu MusicXML
  * @param fallbackBpm tempo của bản nhạc (`scores.tempo_bpm`) khi file không khai báo
  */
@@ -101,12 +119,7 @@ export function buildTimeline(doc: ScoreDocument, fallbackBpm: number | null | u
     total: plan.total,
     measures: plan.measures,
     events,
-    tracks: [
-      ...buildTracks(doc),
-      ...(chordEvents.length > 0
-        ? [{ id: CHORD_TRACK_ID, part: chordEvents[0].part, staff: 0, label: t('player.track.chords') }]
-        : []),
-    ],
+    tracks: withChordTrack(buildTracks(doc), chordEvents),
     // Chỉ tính nốt trên bản nhạc: nốt đệm hợp âm không tô trên bản nhạc nên không cần tra
     maxDuration: noteEvents.reduce((max, e) => Math.max(max, e.duration), 0),
   };

@@ -29,6 +29,8 @@ from typing import Optional
 
 import numpy as np
 
+from app.chords import symbols
+
 from app.chords import ChordError
 from app.chords.autoharmonizer.model import SEGMENT, AutoHarmonizerNet, MODEL_DIR, load_net
 from app.chords.melody import MELODY_STAFF, MelodySource, _measure_layout
@@ -98,16 +100,18 @@ def _families() -> dict[str, np.ndarray]:
 
 @lru_cache(maxsize=1)
 def _symbol_index() -> dict[tuple, int]:
-    """(gốc 0–11, kind, bass 0–11 hoặc None) → token, để giữ hợp âm có sẵn trong ô bị khóa."""
+    """(gốc 0–11, kind, bass 0–11 hoặc None, các phần sửa) → token, để giữ hợp âm có sẵn trong ô bị khóa (kể cả hợp âm có
+    nốt thêm như G7(b9), nay được ghi bằng <degree>)."""
     out: dict[tuple, int] = {}
     for index, chord in enumerate(chord_table()):
-        if chord["rest"] or chord.get("added"):
+        if chord["rest"]:
             continue
+        mods = tuple(sorted(symbols.modifications(chord["figure"]))) if chord.get("added") else ()
         root = (_STEP_PC[chord["root"][0]] + chord["root"][1]) % 12
         bass = chord.get("bass")
         bass_pc = None if bass is None else (_STEP_PC[bass[0]] + bass[1]) % 12
-        out.setdefault((root, chord["kind"], bass_pc), index)
-        out.setdefault((root, chord["kind"], None), index)
+        out.setdefault((root, chord["kind"], bass_pc, mods), index)
+        out.setdefault((root, chord["kind"], None, mods), index)
     return out
 
 
@@ -138,7 +142,11 @@ def _harmony_token(harmony: ET.Element) -> int:
     if bass_step and bass_step.strip() in _STEP_PC:
         bass = (_STEP_PC[bass_step.strip()] + int(float(harmony.findtext("bass/bass-alter") or 0))) % 12
     lookup = _symbol_index()
-    return lookup.get((root, kind, bass), lookup.get((root, kind, None), -1))
+    mods = symbols.degrees_of(harmony)
+    for key in ((root, kind, bass, mods), (root, kind, None, mods), (root, kind, bass, ()), (root, kind, None, ())):
+        if key in lookup:
+            return lookup[key]
+    return -1
 
 
 def build_grid(src: MelodySource) -> Grid:
@@ -380,20 +388,23 @@ def signature(grid: Grid, tokens: np.ndarray) -> tuple:
 
 
 def harmony_element(token: int, staves: int, staff: int) -> ET.Element:
-    """Thẻ <harmony> cho một token (bỏ nốt thêm "add ..."; chữ hiển thị theo cách gõ của editor)."""
+    """Thẻ <harmony> cho một token, giữ đủ nốt thêm / biến hóa / bỏ bớt bằng <degree> (symbols.py); chữ hiển thị theo cách
+    gõ của editor ("7(b9,#11)", "9sus4"...) để sửa lại vẫn ra đúng hợp âm."""
     chord = chord_table()[token]
+    mods = symbols.modifications(chord["figure"]) if chord.get("added") else []
     harmony = ET.Element("harmony")
     root = ET.SubElement(harmony, "root")
     ET.SubElement(root, "root-step").text = chord["root"][0]
     if chord["root"][1]:
         ET.SubElement(root, "root-alter").text = str(chord["root"][1])
-    kind = ET.SubElement(harmony, "kind", {"text": chord["text"]})
+    kind = ET.SubElement(harmony, "kind", {"text": symbols.chord_text(chord["kind"], chord["text"], mods)})
     kind.text = chord["kind"]
     if chord.get("bass"):
         bass = ET.SubElement(harmony, "bass")
         ET.SubElement(bass, "bass-step").text = chord["bass"][0]
         if chord["bass"][1]:
             ET.SubElement(bass, "bass-alter").text = str(chord["bass"][1])
+    symbols.append_degrees(harmony, mods)
     if staves > 1:
         ET.SubElement(harmony, "staff").text = str(staff)
     return harmony
@@ -407,4 +418,5 @@ def chord_label(token: int) -> str:
     bass = ""
     if chord.get("bass"):
         bass = "/" + chord["bass"][0] + {1: "#", -1: "b", 2: "##", -2: "bb"}.get(chord["bass"][1], "")
-    return name + chord["text"] + bass
+    mods = symbols.modifications(chord["figure"]) if chord.get("added") else []
+    return name + symbols.chord_text(chord["kind"], chord["text"], mods) + bass

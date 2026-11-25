@@ -10,5 +10,6 @@ import com.ptit.music_be.entity.AiTask;
 public interface AiTaskMapper {
 
     @Mapping(target = "scoreId", source = "score.id")
+    @Mapping(target = "queue", ignore = true)
     AiTaskResponse toResponse(AiTask aiTask);
 }

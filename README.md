@@ -34,7 +34,9 @@ qua callback có header `X-Internal-Key`.
 - **Thư viện bản nhạc**: nhập MusicXML / MXL / MIDI (MIDI tự chuyển sang MusicXML), nhập nhiều file một lúc, tạo bản
   phối kèm giấy phép, thẻ, thùng rác, playlist, xuất file.
 - **OMR**: tải PDF hoặc ảnh bản nhạc, `music-ai` tiền xử lý, nhận diện bằng Transcoda, kiểm tra từng ô nhịp và trả về
-  MusicXML để người dùng rà lại; tiến độ cập nhật trực tiếp qua WebSocket.
+  MusicXML để người dùng rà lại. Trang tiến độ hỏi lại mỗi 2 giây khi đang mở; xong hoặc lỗi thì có thông báo trong
+  chuông (đẩy qua WebSocket) dẫn thẳng tới trang kết quả, nên người dùng có thể rời trang trong lúc chờ. Các ô nghi ngờ
+  hiện lại trong trình chỉnh sửa (bảng "Cần kiểm tra", kèm ảnh cắt từ trang gốc).
 - **Xem, phát và luyện tập**: hiển thị bản nhạc bằng OpenSheetMusicDisplay, phát lại bằng mẫu âm piano, chế độ luyện
   tập (Studio) có chấm điểm, lịch sử và thống kê luyện tập.
 - **Gợi ý hợp âm** cho bản chỉ có giai điệu: nút "Gợi ý hợp âm" ở trang chi tiết bản nhạc (cần quyền `REVIEW` trở

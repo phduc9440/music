@@ -16,7 +16,8 @@ interface Note {
 export interface ChordDegree {
   value: number;
   alter: number;
-  type: 'add' | 'alter';
+  /** subtract: bỏ bớt nốt (ví dụ "7(no3)"). */
+  type: 'add' | 'alter' | 'subtract';
 }
 
 export interface ChordSpec {
@@ -114,23 +115,195 @@ const KINDS = new Map<string, KindDef>([
   ['7#9', { kind: 'dominant', degrees: [addDegree(9, 1)] }],
   ['7b5', { kind: 'dominant', degrees: [alterDegree(5, -1)] }],
   ['7#5', { kind: 'dominant', degrees: [alterDegree(5, 1)] }],
-  // "alt" gồm nhiều nốt biến hóa nên không có kind riêng: ghi là dominant, chữ "7alt" giữ trong thuộc tính text.
-  ['7alt', { kind: 'dominant' }],
+  // "alt" không có kind riêng: dominant kèm b9, #9 và #5 (nghe đúng màu hợp âm biến hóa), chữ "7alt" giữ trong text.
+  ['7alt', { kind: 'dominant', degrees: [addDegree(9, -1), addDegree(9, 1), alterDegree(5, 1)] }],
 ]);
 
 const lookupKind = (suffix: string): KindDef =>
-  KINDS.get(suffix) ?? KINDS.get(suffix.replace(/\s+/g, '')) ?? { kind: 'other' };
+  KINDS.get(suffix) ?? KINDS.get(suffix.replace(/\s+/g, '')) ?? parseSuffix(suffix) ?? { kind: 'other' };
+
+// ---- Đọc hậu tố hợp âm bất kỳ (không có sẵn trong bảng KINDS) ----------------------------------------------------
+//
+// Hậu tố = phần chất lượng ở đầu (m, dim, aug, ø, maj, 5) + số mở rộng (6, 7, 9, 11, 13, 6/9) + các nốt thêm / biến hóa /
+// bỏ bớt viết liền hoặc trong ngoặc: "7b9", "7(b9,#11)", "13sus4", "maj7#5", "m9b5", "9#11", "7alt", "madd2",
+// "dim(maj7)", "+maj7", "7(no3,add4)", "m#5", "(b5)"... Kết quả là kind chuẩn của MusicXML kèm các <degree>, nên trình
+// phát đánh đúng các nốt và hợp âm AI gợi ý (có nốt thêm) gõ lại được y hệt.
+
+type Quality = 'major' | 'minor' | 'dim' | 'hdim' | 'aug' | 'power';
+/** Số mở rộng ở đầu: 69 = "6/9"; maj = có chữ maj/M/Δ đi trước (maj7, maj9...). */
+interface Head {
+  quality: Quality;
+  ext: number | null;
+  maj: boolean;
+}
+
+/** Quãng (nửa cung) của bậc tự nhiên trong gam trưởng: 2 → 2, 9 → 14, 11 → 17, 13 → 21. */
+const naturalSemitones = (value: number): number => {
+  const index = value - 1;
+  return [0, 2, 4, 5, 7, 9, 11][index % 7] + 12 * Math.floor(index / 7);
+};
+
+/** Các bậc tự nhiên có sẵn trong mỗi kind (để "b9" trên hợp âm 9 là biến hóa nốt 9, còn trên hợp âm 7 là thêm nốt). */
+const KIND_DEGREES: Record<string, readonly number[]> = {
+  'dominant-ninth': [9],
+  'major-ninth': [9],
+  'minor-ninth': [9],
+  'dominant-11th': [9, 11],
+  'major-11th': [9, 11],
+  'minor-11th': [9, 11],
+  'dominant-13th': [9, 13],
+  'major-13th': [9, 13],
+  'minor-13th': [9, 13],
+};
+
+const readHead = (s: string): { head: Head; rest: string } | null => {
+  let rest = s;
+  let quality: Quality = 'major';
+  let maj = false;
+  const take = (re: RegExp): RegExpExecArray | null => {
+    const m = re.exec(rest);
+    if (m) rest = rest.slice(m[0].length);
+    return m;
+  };
+  if (take(/^(m7b5|ø7?)/)) quality = 'hdim';
+  else if (take(/^(dim|°|o)/)) quality = 'dim';
+  else if (take(/^(aug|\+)/)) quality = 'aug';
+  else if (take(/^(min|mi|m(?!aj)|-)/)) quality = 'minor';
+  const majMark = quality !== 'hdim' ? take(/^(maj|Maj|MAJ|ma|M|Δ)/) : null;
+  if (majMark) maj = true;
+  let ext: number | null = null;
+  const num = take(/^(6\/9|69|13|11|9|7|6|5)/);
+  if (num) {
+    ext = num[1] === '6/9' || num[1] === '69' ? 69 : Number(num[1]);
+    if (ext === 5 && quality === 'major' && !maj) quality = 'power';
+    else if (ext === 5) return null;
+  } else if (majMark) {
+    // "CΔ" là maj7; "Cmaj", "CM" đứng một mình là hợp âm trưởng
+    if (majMark[1] === 'Δ') ext = 7;
+    else maj = false;
+  }
+  return { head: { quality, ext, maj }, rest };
+};
+
+/** Kind + degree gốc từ phần đầu (chất lượng, số mở rộng, sus). */
+const baseOf = (head: Head, sus: 2 | 4 | null): KindDef | null => {
+  const { quality, ext, maj } = head;
+  const d = addDegree;
+  if (sus) {
+    if (quality !== 'major') return null;
+    const kind = sus === 2 ? 'suspended-second' : 'suspended-fourth';
+    const seventh = maj ? [d(7)] : ext && ext >= 7 && ext !== 69 ? [d(7, -1)] : [];
+    const upper = ext === 9 || ext === 11 ? [d(9)] : ext === 13 ? [d(9), d(13)] : ext === 69 ? [d(6), d(9)] : [];
+    const sixth = ext === 6 ? [d(6)] : [];
+    return { kind, degrees: [...seventh, ...sixth, ...upper] };
+  }
+  switch (quality) {
+    case 'power':
+      return { kind: 'power' };
+    case 'hdim':
+      return ext === 9 ? { kind: 'half-diminished', degrees: [d(9)] } : { kind: 'half-diminished' };
+    case 'dim':
+      if (maj) return { kind: 'diminished', degrees: [d(7)] };
+      return { kind: ext === 7 ? 'diminished-seventh' : 'diminished' };
+    case 'aug':
+      if (maj) return { kind: 'augmented', degrees: [d(7)] };
+      if (ext === 9) return { kind: 'augmented-seventh', degrees: [d(9)] };
+      return { kind: ext === 7 ? 'augmented-seventh' : 'augmented' };
+    case 'minor':
+      if (maj) {
+        const more = ext === 9 ? [d(9)] : ext === 11 ? [d(9), d(11)] : ext === 13 ? [d(9), d(11), d(13)] : [];
+        return { kind: 'major-minor', degrees: more };
+      }
+      if (ext === 69) return { kind: 'minor-sixth', degrees: [d(9)] };
+      return {
+        kind:
+          { 6: 'minor-sixth', 7: 'minor-seventh', 9: 'minor-ninth', 11: 'minor-11th', 13: 'minor-13th' }[ext ?? 0] ??
+          'minor',
+      };
+    default:
+      if (ext === 69) return { kind: 'major-sixth', degrees: [d(9)] };
+      if (maj) return { kind: { 9: 'major-ninth', 11: 'major-11th', 13: 'major-13th' }[ext ?? 0] ?? 'major-seventh' };
+      return {
+        kind:
+          { 6: 'major-sixth', 7: 'dominant', 9: 'dominant-ninth', 11: 'dominant-11th', 13: 'dominant-13th' }[
+            ext ?? 0
+          ] ?? 'major',
+      };
+  }
+};
+
+const ACCIDENTAL: Record<string, number> = { '': 0, b: -1, '-': -1, '#': 1, '+': 1 };
+
+/**
+ * Hiểu một hậu tố hợp âm bất kỳ thành kind + degree; null nếu có phần không đọc được (khi đó vẫn giữ nguyên chữ người dùng
+ * gõ với kind "other" như trước).
+ */
+export function parseSuffix(input: string): KindDef | null {
+  const s = input.replace(/♭/g, 'b').replace(/♯/g, '#').replace(/\s+/g, '');
+  const read = readHead(s);
+  if (!read) return null;
+  let rest = read.rest;
+  let sus: 2 | 4 | null = null;
+  let alt = false;
+  const tokens: { type: 'add' | 'alter' | 'subtract' | 'auto' | 'maj'; value: number; alter: number }[] = [];
+  while (rest.length > 0) {
+    let m: RegExpExecArray | null;
+    if (/^[(),/]/.test(rest)) {
+      rest = rest.slice(1);
+    } else if ((m = /^sus(2|4)?/.exec(rest))) {
+      sus = m[1] === '2' ? 2 : 4;
+      rest = rest.slice(m[0].length);
+    } else if (rest.startsWith('alt')) {
+      alt = true;
+      rest = rest.slice(3);
+    } else if ((m = /^(add)?(maj|Maj|M|Δ)(7|9)/.exec(rest))) {
+      tokens.push({ type: 'maj', value: Number(m[3]), alter: 0 });
+      rest = rest.slice(m[0].length);
+    } else if ((m = /^(no|omit)(\d+)/.exec(rest))) {
+      tokens.push({ type: 'subtract', value: Number(m[2]), alter: 0 });
+      rest = rest.slice(m[0].length);
+    } else if ((m = /^(add)?([b#+-]?)(\d{1,2})/.exec(rest))) {
+      const value = Number(m[3]);
+      if (value < 2 || value > 13) return null;
+      tokens.push({ type: m[1] ? 'add' : 'auto', value, alter: ACCIDENTAL[m[2]] });
+      rest = rest.slice(m[0].length);
+    } else {
+      return null;
+    }
+  }
+  // "7sus4": số mở rộng đứng trước sus; "sus4" một mình đứng sau phần đầu rỗng
+  const base = baseOf(read.head, sus);
+  if (!base) return null;
+  const degrees = [...(base.degrees ?? [])];
+  const has = (value: number) =>
+    (KIND_DEGREES[base.kind] ?? []).includes(value) || degrees.some((g) => g.value === value && g.type === 'add');
+  if (alt) degrees.push(addDegree(9, -1), addDegree(9, 1), alterDegree(5, 1));
+  for (const tk of tokens) {
+    if (tk.type === 'subtract') degrees.push({ value: tk.value, alter: 0, type: 'subtract' });
+    else if (tk.type === 'maj') degrees.push(addDegree(7), ...(tk.value === 9 ? [addDegree(9)] : []));
+    else if (tk.type === 'add') degrees.push(addDegree(tk.value, tk.value === 7 && tk.alter === 0 ? -1 : tk.alter));
+    else if (tk.value === 5) degrees.push(tk.alter ? alterDegree(5, tk.alter) : addDegree(5));
+    else if (tk.value === 7)
+      degrees.push(addDegree(7, tk.alter - 1)); // "7" trong ngoặc là quãng bảy thứ
+    else if (tk.alter !== 0 && has(tk.value)) degrees.push(alterDegree(tk.value, tk.alter));
+    else degrees.push(addDegree(tk.value, tk.alter));
+  }
+  return degrees.length ? { kind: base.kind, degrees } : { kind: base.kind };
+}
+
+/** Quãng của các nốt hợp âm theo kind + degree đã đọc (để kiểm tra; trình phát dùng chordNotes trên thẻ <harmony>). */
+export const degreeSemitones = (degree: ChordDegree): number => naturalSemitones(degree.value) + degree.alter;
 
 const ALTER_SYMBOL: Record<number, string> = { [-2]: 'bb', [-1]: 'b', 0: '', 1: '#', 2: '##' };
 
 const alterOf = (symbol: string): number =>
-  symbol === '#' || symbol === '♯' ? 1 : symbol === 'b' || symbol === '♭' ? -1 : 0;
+  ({ '#': 1, '♯': 1, b: -1, '♭': -1, '##': 2, x: 2, '𝄪': 2, bb: -2, '𝄫': -2 })[symbol] ?? 0;
 
 /** "N.C.", "NC", "N.C" — không có hợp âm. */
 const NO_CHORD = /^N\.?C\.?$/i;
-/** Nốt bass ở cuối: "/E", "/F#". Dấu "/" theo sau là CHỮ SỐ (như "6/9") không phải bass. */
-const BASS = /\/([A-Ga-g])([#b♯♭]?)$/;
-const ROOT = /^([A-Ga-g])([#b♯♭]?)(.*)$/;
+/** Nốt bass ở cuối: "/E", "/F#", "/Bbb". Dấu "/" theo sau là CHỮ SỐ (như "6/9") không phải bass. */
+const BASS = /\/([A-Ga-g])(##|bb|x|𝄪|𝄫|[#b♯♭]?)$/;
+const ROOT = /^([A-Ga-g])(##|bb|x|𝄪|𝄫|[#b♯♭]?)(.*)$/;
 
 /** Hiểu một ký hiệu hợp âm; null nếu không đọc được. */
 export function parseChord(input: string): ChordSpec | null {
@@ -221,7 +394,8 @@ export const stepChordNote = (doc: ScoreDocument, id: string, delta: 1 | -1): st
   return at < 0 ? null : (slots[at + delta]?.id ?? null);
 };
 
-const buildHarmony = (owner: Document, spec: ChordSpec): Element => {
+/** Thẻ <harmony> của một hợp âm đã đọc (dùng chung cho lệnh sửa và kiểm tra cách đánh). */
+export const buildHarmony = (owner: Document, spec: ChordSpec): Element => {
   const make = (tag: string, text?: string) => {
     const el = owner.createElement(tag);
     if (text !== undefined) el.textContent = text;

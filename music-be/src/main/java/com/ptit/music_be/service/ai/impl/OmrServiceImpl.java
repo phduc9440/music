@@ -46,7 +46,9 @@ import com.ptit.music_be.dto.enums.score.FileType;
 import com.ptit.music_be.dto.enums.score.ScoreSource;
 import com.ptit.music_be.dto.request.ai.OmrRetryRequest;
 import com.ptit.music_be.dto.response.ai.AiTaskResponse;
+import com.ptit.music_be.dto.response.ai.OmrConfigResponse;
 import com.ptit.music_be.dto.response.ai.OmrResultResponse;
+import com.ptit.music_be.dto.response.ai.OmrRetryInfoResponse;
 import com.ptit.music_be.dto.response.ai.OmrUploadResponse;
 import com.ptit.music_be.entity.AiTask;
 import com.ptit.music_be.entity.Member;
@@ -65,6 +67,7 @@ import com.ptit.music_be.repository.score.ScoreFileRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.service.ai.OmrService;
 import com.ptit.music_be.service.billing.EntitlementService;
+import com.ptit.music_be.service.billing.PlanLimits;
 import com.ptit.music_be.service.score.ScoreFileService;
 import com.ptit.music_be.service.storage.FileStorageService;
 import com.ptit.music_be.utils.SecurityUtils;
@@ -120,6 +123,17 @@ public class OmrServiceImpl implements OmrService {
     @NonFinal
     @Value("${app.omr.max-image-pixels:40000000}")
     long maxImagePixels;
+
+    /**
+     * Chế độ AI xác minh ô nhịp của music-ai (biến OMR_LLM dùng chung với music-ai): khác "off" thì ảnh cắt của một số ô được
+     * gửi sang dịch vụ bên ngoài, trang tải lên phải báo cho người dùng (X-05).
+     */
+    @NonFinal
+    @Value("${app.omr.llm-mode:${OMR_LLM:off}}")
+    String llmMode;
+
+    /** Tên dự phòng khi không có tiêu đề lẫn tên file; web luôn gửi tên theo ngôn ngữ người dùng nên hiếm khi dùng. */
+    static final String FALLBACK_TITLE = "Untitled score";
 
     @Override
     @Transactional
@@ -289,7 +303,7 @@ public class OmrServiceImpl implements OmrService {
             }
         }
 
-        // Kế thừa sourceType/preprocess từ task OMR gần nhất; body có preprocess thì ưu tiên body
+        // Kế thừa sourceType/preprocess từ task OMR gần nhất; body có giá trị thì ưu tiên body (OMR-06)
         JsonNode previous = latestOmrInput(scoreId);
         OmrSourceType sourceType = isPdf ? OmrSourceType.PDF_NATIVE : OmrSourceType.PHOTO;
         boolean preprocess = true;
@@ -306,6 +320,9 @@ public class OmrServiceImpl implements OmrService {
         }
         if (request != null && request.getPreprocess() != null) {
             preprocess = request.getPreprocess();
+        }
+        if (request != null && StringUtils.hasText(request.getSourceType())) {
+            sourceType = resolveSourceType(request.getSourceType(), isPdf);
         }
 
         score.setProcessingStatus(ProcessingStatus.PENDING.name());
@@ -364,6 +381,9 @@ public class OmrServiceImpl implements OmrService {
 
         List<String> warnings = new ArrayList<>();
         data.path("warnings").forEach(w -> warnings.add(w.asText()));
+        JsonNode warningItems = data.path("warningItems");
+        JsonNode autoFixes = data.path("autoFixes");
+        JsonNode textAbove = data.path("textAbove");
         int pageCount = data.hasNonNull("pageCount") ? data.get("pageCount").asInt() : pages.size();
         String stoppedAfter =
                 data.hasNonNull("stoppedAfter") ? data.get("stoppedAfter").asText() : null;
@@ -381,6 +401,85 @@ public class OmrServiceImpl implements OmrService {
                 .musicXmlFileId(currentFileId(scoreId, FileType.MUSICXML))
                 .midiFileId(currentFileId(scoreId, FileType.MIDI))
                 .musicXmlVersion(currentVersion(scoreId, FileType.MUSICXML))
+                .warningItems(warningItems.isArray() ? warningItems : null)
+                .autoFixes(autoFixes.isArray() ? autoFixes : null)
+                .textAbove(textAbove.isArray() ? textAbove : null)
+                .omrVersion(
+                        data.path("musicXmlVersion").isInt()
+                                ? data.get("musicXmlVersion").asInt()
+                                : null)
+                .tempoDefaulted(
+                        data.path("tempoDefaulted").isBoolean()
+                                ? data.get("tempoDefaulted").asBoolean()
+                                : null)
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public OmrRetryInfoResponse getRetryInfo(String scoreId) {
+        Score score =
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
+        scoreFileService.checkCanEdit(score);
+        Member member = memberRepository
+                .findByEmail(SecurityUtils.getCurrentEmail())
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
+
+        List<AiTask> omrTasks = aiTaskRepository.findByScoreIdOrderByCreatedAtDesc(scoreId).stream()
+                .filter(t -> t.getTaskType() == AiTaskType.OMR_CONVERSION)
+                .toList();
+        AiTask latest = omrTasks.isEmpty() ? null : omrTasks.getFirst();
+        // Phiên bản do lần số hóa thành công gần nhất tạo: music-ai ghi vào result_data.musicXmlVersion
+        Integer omrVersion = omrTasks.stream()
+                .filter(t -> t.getStatus() == AiTaskStatus.COMPLETED)
+                .map(t -> parseJson(t.getResultData()).path("musicXmlVersion"))
+                .filter(JsonNode::isInt)
+                .map(JsonNode::asInt)
+                .findFirst()
+                .orElse(null);
+        int currentVersion = score.getCurrentVersion() == null ? 0 : score.getCurrentVersion();
+        boolean isPdf = !scoreFileRepository
+                .findByScoreIdAndFileTypeOrderByPageNumberAsc(scoreId, FileType.ORIGINAL_PDF)
+                .isEmpty();
+        JsonNode previous = latestOmrInput(scoreId);
+        String sourceType = previous != null && previous.hasNonNull("sourceType")
+                ? previous.get("sourceType").asText()
+                : (isPdf ? OmrSourceType.PDF_NATIVE : OmrSourceType.PHOTO).name();
+        boolean preprocess = previous == null || previous.path("preprocess").asBoolean(true);
+
+        PlanLimits limits = entitlementService.limitsOf(member.getId());
+        Integer planPerJob = limits.omrMaxPagesPerJob();
+        int hardPerJob = Math.max(maxPdfPages, maxImages);
+        String lastErrorCode = null;
+        if (latest != null && StringUtils.hasText(latest.getErrorMessage())) {
+            String message = latest.getErrorMessage();
+            int colon = message.indexOf(':');
+            lastErrorCode = (colon < 0 ? message : message.substring(0, colon)).trim();
+        }
+        return OmrRetryInfoResponse.builder()
+                .pages(score.getPageCount() == null ? 0 : score.getPageCount())
+                .pdf(isPdf)
+                .sourceType(sourceType)
+                .preprocess(preprocess)
+                .omrVersion(omrVersion)
+                .currentVersion(currentVersion)
+                .editedVersions(omrVersion == null ? 0 : Math.max(0, currentVersion - omrVersion))
+                .lastStatus(latest == null ? null : latest.getStatus().name())
+                .lastErrorCode(lastErrorCode)
+                .monthlyLimit(limits.omrPagesPerMonth())
+                .monthlyUsed(entitlementService.usedThisMonth(member.getId(), UsageMetric.OMR_PAGES))
+                .perJobLimit(planPerJob == null ? hardPerJob : Math.min(planPerJob, hardPerJob))
+                .build();
+    }
+
+    @Override
+    public OmrConfigResponse getConfig() {
+        return OmrConfigResponse.builder()
+                .maxPdfPages(maxPdfPages)
+                .maxImages(maxImages)
+                .minImageSide(minImageSide)
+                .maxImagePixels(maxImagePixels)
+                .externalAiCheck(StringUtils.hasText(llmMode) && !"off".equalsIgnoreCase(llmMode.trim()))
                 .build();
     }
 
@@ -586,8 +685,9 @@ public class OmrServiceImpl implements OmrService {
         } catch (InvalidPasswordException e) {
             throw new AppException(ScoreErrorCode.PDF_ENCRYPTED);
         } catch (IOException e) {
+            // PDF hỏng (không phải đặt mật khẩu): báo đúng là "không đọc được", không nói "đã mã hóa" (OMR-09)
             log.warn("Cannot open uploaded PDF {}: {}", file.getOriginalFilename(), e.getMessage());
-            throw new AppException(ScoreErrorCode.PDF_ENCRYPTED);
+            throw new AppException(ScoreErrorCode.PDF_UNREADABLE);
         }
         if (pages < 1 || pages > maxPdfPages) {
             throw new AppException(ScoreErrorCode.PDF_TOO_MANY_PAGES);
@@ -603,12 +703,16 @@ public class OmrServiceImpl implements OmrService {
         for (MultipartFile file : files) {
             long[] size = readImageSize(file);
             if (size == null) {
-                throw new AppException(ScoreErrorCode.IMAGE_RESOLUTION_INVALID);
+                throw new AppException(ScoreErrorCode.IMAGE_RESOLUTION_INVALID); // không đọc được ảnh
             }
             long width = size[0];
             long height = size[1];
-            if (Math.min(width, height) < minImageSide || width * height > maxImagePixels) {
-                throw new AppException(ScoreErrorCode.IMAGE_RESOLUTION_INVALID);
+            // Ba trường hợp ba mã riêng để người dùng biết phải sửa gì (OMR-09)
+            if (Math.min(width, height) < minImageSide) {
+                throw new AppException(ScoreErrorCode.IMAGE_TOO_SMALL);
+            }
+            if (width * height > maxImagePixels) {
+                throw new AppException(ScoreErrorCode.IMAGE_TOO_LARGE);
             }
         }
         return files.size();
@@ -760,7 +864,7 @@ public class OmrServiceImpl implements OmrService {
                 ? title.trim()
                 : StringUtils.stripFilenameExtension(cleanFileName(firstFile.getOriginalFilename()));
         if (!StringUtils.hasText(resolved)) {
-            resolved = "Untitled score";
+            resolved = FALLBACK_TITLE;
         }
         return resolved.length() > MAX_TITLE_LENGTH ? resolved.substring(0, MAX_TITLE_LENGTH) : resolved;
     }

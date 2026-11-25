@@ -150,16 +150,25 @@ const writeMisc = (root: Element, name: string, value: string | null): void => {
 };
 
 /**
- * Cho tiêu đề bản nhạc theo tên bài hát trong ứng dụng, trừ khi người dùng đã tự sửa tiêu đề trong trình sửa.
- * Không ghi lịch sử (là bước chuẩn bị khi mở bản nhạc).
+ * Cho tiêu đề (và tác giả nếu bản nhạc có) trên bản nhạc theo tên bài hát trong ứng dụng: scores.title là nguồn tên duy
+ * nhất (OMR-12). Đổi tên bản nhạc ở thư viện thì lần mở sau đầu trang nhạc đổi theo; sửa tiêu đề trong trình sửa thì lúc
+ * lưu Editor cập nhật lại tên bản nhạc (useSaveFlow). Không ghi lịch sử (là bước chuẩn bị khi mở bản nhạc).
  * @returns true nếu đã đổi nội dung
  */
-export function syncTitle(doc: ScoreDocument, name: string): boolean {
+export function syncTitle(doc: ScoreDocument, name: string, composer?: string | null): boolean {
+  let changed = false;
   const wanted = name.trim();
-  if (!wanted || miscField(doc.root, 'title-custom')) return false;
-  if (readHeader(doc).title === wanted) return false;
-  writeTitle(doc.root, wanted);
-  return true;
+  const current = readHeader(doc);
+  if (wanted && current.title !== wanted) {
+    writeTitle(doc.root, wanted);
+    changed = true;
+  }
+  const author = composer?.trim() ?? '';
+  if (author && current.composer !== author) {
+    writeComposer(doc.root, author);
+    changed = true;
+  }
+  return changed;
 }
 
 const sameStyle = (a: TextStyle, b: TextStyle): boolean =>
@@ -204,11 +213,17 @@ interface OsmdLike {
     /** Setter của OSMD tạo nhãn mới, nên dùng được cả khi file chưa có tiêu đề / tác giả. */
     TitleString?: string;
     ComposerString?: string;
+    /** OSMD lấy <movement-title> làm phụ đề khi file có cả <work-title>: cùng chữ thì tên bài hiện hai lần. */
+    Subtitle?: unknown;
+    SubtitleString?: string;
   };
 }
 
-/** Chữ hiện trên bản nhạc ở chỗ tiêu đề / tác giả còn trống (trong Editor), để thấy chỗ trống và bấm vào sửa được. */
-export const BLANK_HEADER_TEXT = 'Blank';
+/**
+ * Chữ hiện trên bản nhạc ở chỗ tiêu đề / tác giả còn trống (trong Editor), để thấy chỗ trống và bấm vào sửa được. Theo
+ * ngôn ngữ đang dùng (OMR-12), không vẽ chữ "Blank" tiếng Anh.
+ */
+export const blankHeaderText = (field: HeaderField): string => t(`editor.header.blank.${field}`);
 
 /** Tiêu đề và tác giả thực sự vẽ lên bản nhạc. */
 export interface ShownHeader {
@@ -218,15 +233,15 @@ export interface ShownHeader {
 
 /**
  * Tiêu đề / tác giả cần vẽ: lấy trong file trước, file trống thì lấy tên bài / tác giả của bản nhạc (`fallback`, ví dụ
- * tên file tải lên), vẫn trống thì hiện {@link BLANK_HEADER_TEXT}.
+ * tên file tải lên), vẫn trống thì hiện {@link blankHeaderText}.
  */
 export function shownHeader(
   header: HeaderState,
   fallback: { title?: string | null; composer?: string | null },
 ): ShownHeader {
   return {
-    title: header.title || realText(fallback.title?.trim() ?? '') || BLANK_HEADER_TEXT,
-    composer: header.composer || realText(fallback.composer?.trim() ?? '') || BLANK_HEADER_TEXT,
+    title: header.title || realText(fallback.title?.trim() ?? '') || blankHeaderText('title'),
+    composer: header.composer || realText(fallback.composer?.trim() ?? '') || blankHeaderText('composer'),
   };
 }
 
@@ -246,6 +261,11 @@ export function applyHeaderStyle(osmd: unknown, header: HeaderState, shown?: Sho
   } else if (sheet) {
     if (isPlaceholderText(sheet.TitleString)) sheet.TitleString = '';
     if (isPlaceholderText(sheet.ComposerString)) sheet.ComposerString = '';
+  }
+  // File có cả <work-title> và <movement-title> cùng chữ (bản số hóa, Editor ghi cả hai): bỏ phụ đề trùng tên bài
+  const subtitle = sheet?.SubtitleString?.trim();
+  if (sheet && subtitle && (subtitle === sheet.TitleString?.trim() || subtitle === header.title.trim())) {
+    sheet.Subtitle = undefined;
   }
   const rules = target.EngravingRules as Record<string, number>;
   rules.SheetTitleHeight = (header.styles.title.size ?? DEFAULT_SIZE.title) / 10;

@@ -77,5 +77,10 @@ public enum NotificationType {
     /** Có người trả lời trực tiếp vào bài của bạn trong một chủ đề. */
     FORUM_POST_REPLY,
     /** Câu trả lời của bạn được người đặt chủ đề chọn là hay nhất. */
-    FORUM_ANSWER_ACCEPTED
+    FORUM_ANSWER_ACCEPTED,
+    // ---- Tác vụ AI (OMR-02); params: variant (omr / chords), title, taskId, code (mã lỗi khi thất bại)
+    /** Gửi người tạo tác vụ: số hóa đã xong, mở trang kết quả để kiểm tra. */
+    AI_TASK_COMPLETED,
+    /** Gửi người tạo tác vụ: số hóa hoặc gợi ý hợp âm thất bại. */
+    AI_TASK_FAILED
 }

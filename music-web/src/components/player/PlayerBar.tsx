@@ -10,7 +10,7 @@ import {
 } from './controls/PlayerIcons';
 import { ChordControl } from './controls/ChordControl';
 import { LoopControl } from './controls/LoopControl';
-import { mixOf } from './state/mixer';
+import { chordListenMode, chordListenPatches, mixOf } from './state/mixer';
 import { MixerPopover } from './controls/MixerPopover';
 import { PlayerSheet } from './PlayerSheet';
 import type { SheetTab } from './PlayerSheet';
@@ -108,6 +108,9 @@ function BarBody({
   const percent = Math.round(player.sampler.progress * 100);
   /** Đệm hợp âm đang bật (track Hợp âm không bị tắt tiếng); mặc định bật. */
   const chordsOn = !mixOf(player.mixer, CHORD_TRACK_ID).mute;
+  const trackIds = timeline.tracks.map((tr) => tr.id);
+  /** Nghe cả hai / chỉ giai điệu / chỉ hợp âm, suy từ Mute / Solo trong Mixer. */
+  const chordListen = chordListenMode(player.mixer, trackIds, CHORD_TRACK_ID);
   // Thời gian hiển thị là giây thật: ở 50% bài dài gấp đôi
   const speed = player.tempoPercent / 100;
 
@@ -143,6 +146,10 @@ function BarBody({
         return (
           <ChordControl
             on={chordsOn}
+            listen={chordListen}
+            onListen={(mode) =>
+              chordListenPatches(mode, trackIds, CHORD_TRACK_ID).forEach(([id, patch]) => player.setTrackMix(id, patch))
+            }
             carry={player.chordCarry}
             onToggle={() => player.setTrackMix(CHORD_TRACK_ID, { mute: chordsOn })}
             onCarryChange={player.setChordCarry}

@@ -87,6 +87,8 @@ public class LiveCollabService {
         final Map<String, String> editors = Collections.synchronizedMap(new LinkedHashMap<>());
         /** Vừa phát lại thao tác chưa lưu từ nhật ký: lưu thành version ngay khi có người vào (đã biết lưu bằng quyền ai). */
         final AtomicBoolean needsSnapshot = new AtomicBoolean(false);
+        /** Lỗi của lần lưu gần nhất (null nếu lần đó lưu được): báo lại cho người bấm Lưu thay vì im lặng. */
+        volatile AppException lastSaveError;
 
         Live(LiveDocument document, Instant now) {
             this.document = document;
@@ -359,6 +361,12 @@ public class LiveCollabService {
     public void save(String scoreId, String sessionId) {
         requireEditor(scoreId, sessionId);
         flush(scoreId, false);
+        // Không lưu được (hết dung lượng, bản nhạc đang được số hóa lại...): ném lại để người bấm Lưu nhận lỗi qua
+        // /user/queue/live-errors, không đứng mãi ở "Đang lưu thành phiên bản mới"
+        Live live = lives.get(scoreId);
+        if (live != null && live.document.hasUnsaved() && live.lastSaveError != null) {
+            throw live.lastSaveError;
+        }
     }
 
     // ---------------------------------------------------------------- việc nền
@@ -583,6 +591,7 @@ public class LiveCollabService {
                 ScoreSaveResponse saved =
                         security.runAs(email, () -> scoreEditService.saveLiveSnapshot(scoreId, bytes, ifMatch, meta));
                 doc.markSaved(seqTo, saved.getVersion());
+                live.lastSaveError = null;
                 messaging.convertAndSend(
                         topic(scoreId, "version"), new VersionBroadcast(scoreId, saved.getVersion(), seqTo, false));
                 return true;
@@ -599,6 +608,7 @@ public class LiveCollabService {
                     return false;
                 }
                 log.warn("Không lưu được phiên cộng tác {} bằng quyền của {}: {}", scoreId, email, e.getMessage());
+                live.lastSaveError = e;
             }
         }
         return false;

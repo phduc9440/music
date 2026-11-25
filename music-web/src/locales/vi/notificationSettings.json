@@ -8,7 +8,10 @@
     "email": "Email tóm tắt"
   },
   "category": {
-    "SCORES": { "name": "Bản nhạc", "desc": "Xin quyền, chia sẻ, duyệt công khai, nhận xét, kho bản nhạc mẫu" },
+    "SCORES": {
+      "name": "Bản nhạc",
+      "desc": "Xin quyền, chia sẻ, duyệt công khai, nhận xét, kho bản nhạc mẫu, số hóa xong hoặc lỗi"
+    },
     "COMMENTS": { "name": "Góp ý và đề xuất", "desc": "Được nhắc tên, có người trả lời góp ý, đề xuất sửa" },
     "TEAMS": { "name": "Nhóm và buổi diễn", "desc": "Lời mời, thay đổi vai trò, giao việc, nhắc hạn" },
     "FORUM": {

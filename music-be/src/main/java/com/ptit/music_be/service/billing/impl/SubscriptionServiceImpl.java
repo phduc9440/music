@@ -117,8 +117,11 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         int used = (int) aiTaskRepository.sumOmrPagesCharged(member.getId(), monthStart, monthStart.plusMonths(1));
         String grant = roleGrant(member.getId());
         if (ROLE_SUPER_ADMIN.equals(grant)) {
+            PlanResponse unlimited = toPlanResponse(unlimitedPlan());
+            // Luôn trả limits (mọi chỉ số null = không giới hạn) để client không phải phân biệt riêng SUPER_ADMIN
             return MySubscriptionResponse.builder()
-                    .plan(toPlanResponse(unlimitedPlan()))
+                    .plan(unlimited)
+                    .limits(unlimited.getLimits())
                     .status("UNLIMITED")
                     .source("ROLE")
                     .roleGrant(grant)

@@ -40,6 +40,8 @@ interface Props {
   commentsOpen: boolean;
   /** Nút bảng Hợp âm AI, chỉ có khi đang có bản nháp hợp âm AI. */
   aiToggle: { shown: boolean; count: number; onClick: () => void } | null;
+  /** Nút bảng "Cần kiểm tra" (ô OMR nghi ngờ chưa kiểm), chỉ có với bản số hóa còn ô nghi ngờ (OMR-03). */
+  checkToggle?: { shown: boolean; count: number; onClick: () => void } | null;
   openThreadCount: number;
   onToggleComments: () => void;
   fullscreen: boolean;
@@ -147,6 +149,17 @@ export default function EditorHeader(p: Props) {
         {canEdit && (
           <button className="sc-btn sv-mobile-only" onClick={p.onOpenTools}>
             <IconEdit /> {t('editor.view.header.edit')}
+          </button>
+        )}
+        {p.checkToggle && (
+          <button
+            className={`sc-btn sv-ai-toggle${p.checkToggle.shown ? ' is-active' : ''}`}
+            aria-pressed={p.checkToggle.shown}
+            onClick={p.checkToggle.onClick}
+            title={t('upload.check.toggleHint')}
+          >
+            <Icon name="alert" size={16} /> <span className="sv-desktop-only">{t('upload.check.title')}</span>
+            <span className="sv-count">{p.checkToggle.count}</span>
           </button>
         )}
         {p.aiToggle && (

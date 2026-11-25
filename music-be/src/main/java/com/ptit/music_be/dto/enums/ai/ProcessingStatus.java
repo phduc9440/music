@@ -6,5 +6,7 @@ public enum ProcessingStatus {
     PENDING,
     PROCESSING,
     COMPLETED,
-    FAILED
+    FAILED,
+    /** Người dùng tự hủy lần số hóa đầu tiên (chưa có kết quả nào); khác FAILED để thư viện không báo "Thất bại" (OMR-15). */
+    CANCELLED
 }

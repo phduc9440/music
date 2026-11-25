@@ -3,8 +3,8 @@ WORKDIR /src
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
-# Địa chỉ BE mà trình duyệt gọi tới (không phải địa chỉ trong mạng docker).
-ARG VITE_API_BASE_URL=http://localhost:8080/api
+# Địa chỉ BE mà trình duyệt gọi tới. Mặc định /api cùng nguồn: nginx trong image này proxy /api và /ws sang music-be.
+ARG VITE_API_BASE_URL=/api
 ARG VITE_GOOGLE_CLIENT_ID=
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
 RUN npm run build

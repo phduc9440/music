@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 from fractions import Fraction
 from typing import Optional
 
-from app.omr import merge
+from app.omr import merge, messages
 from app.omr.review import slice_measures
 
 TAB = "\t"
@@ -35,6 +35,8 @@ class RhythmReport:
     dropped: int = 0
     """Số nốt thừa trong hợp âm đã bỏ."""
     notes: list[str] = field(default_factory=list)
+    measures: list[int] = field(default_factory=list)
+    """Số thứ tự các ô đã sửa (cùng cách đánh số với measureMap)."""
 
     def to_dict(self) -> dict:
         return {"triplets": self.triplets, "dropped": self.dropped, "dots": self.dots}
@@ -187,8 +189,7 @@ def apply(result: merge.MergeResult) -> tuple[merge.MergeResult, RhythmReport]:
     touched = sorted(set(touched) | set(dotted))
     if not touched:
         return result, report
-    report.notes.append(
-        f"Sửa trường độ ở ô {', '.join(map(str, touched))}: "
-        f"{report.triplets} chỗ nhịp ba đọc nhầm, bỏ {report.dropped} nốt thừa trong hợp âm, thêm {report.dots} chấm dôi"
-    )
+    report.measures = touched
+    # Chỉ nêu việc đã làm, không ghi các vế bằng 0 (OMR-14)
+    report.notes.append(messages.rhythm_fix_message(touched, report.triplets, report.dropped, report.dots))
     return merge.with_lines(result, lines), report

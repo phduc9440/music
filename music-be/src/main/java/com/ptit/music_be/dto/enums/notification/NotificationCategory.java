@@ -30,7 +30,9 @@ public enum NotificationCategory {
                     SCORE_TRASHED_BY_ADMIN,
                     OFFICIAL_REQUESTED,
                     OFFICIAL_ACCEPTED,
-                    OFFICIAL_DECLINED -> SCORES;
+                    OFFICIAL_DECLINED,
+                    AI_TASK_COMPLETED,
+                    AI_TASK_FAILED -> SCORES;
             case COMMENT_MENTION, COMMENT_REPLY, SUGGESTION_NEW, SUGGESTION_DECIDED -> COMMENTS;
             case TEAM_INVITED,
                     TEAM_MEMBER_JOINED,

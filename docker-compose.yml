@@ -26,6 +26,8 @@ services:
       # Ngân sách một bài = 300 s + số trang × TASK_TIMEOUT_PER_PAGE_S, không quá TASK_TIMEOUT_S (OMR-T03)
       TASK_TIMEOUT_PER_PAGE_S: "360"
       TASK_TIMEOUT_S: "3600"
+      # AI xác minh ô nhịp qua dịch vụ ngoài (off / anthropic). music-be đọc cùng biến để trang tải lên báo người dùng (X-05)
+      OMR_LLM: ${OMR_LLM:-off}
     volumes:
       - storage:/data/storage
       - hf-cache:/cache/huggingface
@@ -57,6 +59,7 @@ services:
       VNPAY_RETURN_URL: ${VNPAY_RETURN_URL:-http://localhost:5173/billing/result}
       APP_WEB_URL: ${APP_WEB_URL:-http://localhost:5173}
       APP_STORAGE_LOCAL_ROOT: /data/storage
+      OMR_LLM: ${OMR_LLM:-off}
     volumes:
       - storage:/data/storage
     ports:
@@ -66,7 +69,9 @@ services:
     build:
       context: ./music-web
       args:
-        VITE_API_BASE_URL: http://localhost:${BE_PORT:-8080}/api
+        # Gọi API cùng nguồn qua nginx (nginx.conf đã proxy /api và /ws), không phụ thuộc CORS/cookie khác cổng (X-07).
+        # Muốn trình duyệt gọi thẳng BE ở địa chỉ khác thì đặt WEB_API_BASE_URL trong .env.
+        VITE_API_BASE_URL: ${WEB_API_BASE_URL:-/api}
         VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
     depends_on:
       - music-be

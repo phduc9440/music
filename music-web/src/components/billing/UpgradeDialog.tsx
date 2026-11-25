@@ -18,12 +18,22 @@ const KNOWN_METRICS = [
   'CHORD_ADVANCED',
 ];
 
-/** Hộp thoại báo đã hết hạn mức của gói và dẫn tới trang chọn gói. */
+/** Hạn mức cho một lần dùng (số trang mỗi lần, số ô nhịp) và quyền lợi theo gói: không phải "hết hạn mức tháng". */
+const TITLE_BY_METRIC: Record<string, string> = {
+  OMR_PAGES_PER_JOB: 'perRequest',
+  CHORD_MEASURES: 'perRequest',
+  CHORD_ADVANCED: 'feature',
+};
+
+/** Hộp thoại báo vượt hạn mức của gói và dẫn tới trang chọn gói. Tiêu đề theo loại hạn mức (OMR-04). */
 export default function UpgradeDialog({ info, onClose, onUpgrade }: UpgradeDialogProps) {
   const key = KNOWN_METRICS.includes(info.metric) ? info.metric : 'DEFAULT';
   const params = { limit: String(info.limit ?? ''), used: String(info.used) };
+  const title = TITLE_BY_METRIC[info.metric]
+    ? t(`billing.upgrade.titles.${TITLE_BY_METRIC[info.metric]}`)
+    : t('billing.upgrade.title');
   return (
-    <Modal title={t('billing.upgrade.title')} onClose={onClose}>
+    <Modal title={title} onClose={onClose}>
       <p>{t(`billing.upgrade.reason.${key}`, params)}</p>
       {info.upgradeTo && <p>{t('billing.upgrade.suggest', { plan: info.upgradeTo })}</p>}
       <div className="sc-modal__actions">

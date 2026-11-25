@@ -7,6 +7,11 @@ package com.ptit.music_be.dto.enums.ai;
 public enum AiTaskStep {
     /** Java đã giao việc và music-ai đã nhận (đang xếp hàng), chưa bắt đầu chạy. Chỉ do Java đặt. */
     QUEUED,
+    /**
+     * music-ai đang đầy hàng (trả 503): task vẫn chờ, Java tự gửi lại khi có chỗ; không tính là lần gửi lỗi (OMR-10). Chỉ
+     * do Java đặt.
+     */
+    BUSY,
     /** Tách PDF thành ảnh từng trang (tiến độ 5-10%). */
     SPLIT_PDF,
     /** Tiền xử lý ảnh: khử nhiễu, căn thẳng, nhị phân hóa, đưa về 1050x1485 (10-30%). */

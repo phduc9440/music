@@ -57,14 +57,22 @@
   "chords": {
     "label": {
       "on": "Chord accompaniment: on",
-      "off": "Chord accompaniment: off"
+      "off": "Chord accompaniment: off",
+      "only": "Playing chords only"
     },
     "title": "Chord accompaniment",
     "trigger": "Chords",
     "carry": "Repeat the chord in measures without one",
     "carryOn": "Measures without a chord repeat the chord in effect at the start of the measure.",
     "carryOff": "Measures without a chord stay silent; chords only play where they are written.",
-    "note": "Adjust the accompaniment volume in the Mixer (the \"Chords\" row)."
+    "note": "Adjust each part's volume in the Mixer (\"Chords\" row). On a single-staff score the melody is the right hand and the chords are the left hand.",
+    "triggerOnly": "Chords only",
+    "listen": {
+      "title": "Listen to",
+      "both": "Both",
+      "melody": "Melody only",
+      "chords": "Chords only"
+    }
   },
   "loop": {
     "summary": "Loop {summary}",
@@ -135,7 +143,9 @@
     "rightHand": "Right hand",
     "leftHand": "Left hand",
     "staff": "Staff {n}",
-    "chords": "Chords"
+    "chords": "Chords",
+    "melodyRight": "Melody (right hand)",
+    "chordsLeft": "Chords (left hand)"
   },
   "scorePlayer": {
     "loading": "Loading the score...",

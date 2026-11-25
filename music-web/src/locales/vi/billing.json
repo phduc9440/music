@@ -159,6 +159,10 @@
       "OMR_PAGES_PER_JOB": "Tệp này có {used} trang, gói hiện tại cho tối đa {limit} trang mỗi lần số hóa.",
       "CHORD_MEASURES": "Bản nhạc có {used} ô nhịp, gói hiện tại gợi ý hợp âm cho tối đa {limit} ô nhịp.",
       "CHORD_ADVANCED": "Màu Có màu và Hợp âm 7 / Jazz, độ sáng tạo Táo bạo và mật độ Dày chỉ có ở gói cao hơn."
+    },
+    "titles": {
+      "perRequest": "Vượt giới hạn mỗi lần của gói",
+      "feature": "Tính năng của gói cao hơn"
     }
   }
 }

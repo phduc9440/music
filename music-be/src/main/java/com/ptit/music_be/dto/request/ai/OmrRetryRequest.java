@@ -15,4 +15,9 @@ public class OmrRetryRequest {
 
     /** Có tiền xử lý ảnh không. Để trống: dùng lại lựa chọn của lần chạy trước (mặc định true). */
     Boolean preprocess;
+
+    /**
+     * Loại nguồn PHOTO / SCAN / PDF_NATIVE (đổi cách khử nhiễu, OMR-06). Để trống: dùng lại lựa chọn của lần chạy trước.
+     */
+    String sourceType;
 }

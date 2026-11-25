@@ -6,7 +6,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.ptit.music_be.dto.request.ai.OmrRetryRequest;
 import com.ptit.music_be.dto.response.ai.AiTaskResponse;
+import com.ptit.music_be.dto.response.ai.OmrConfigResponse;
 import com.ptit.music_be.dto.response.ai.OmrResultResponse;
+import com.ptit.music_be.dto.response.ai.OmrRetryInfoResponse;
 import com.ptit.music_be.dto.response.ai.OmrUploadResponse;
 
 public interface OmrService {
@@ -39,4 +41,13 @@ public interface OmrService {
      * AI_TASK_NOT_EXISTED (2101).
      */
     OmrResultResponse getResult(String scoreId);
+
+    /**
+     * Thông tin cho hộp "Nhận diện lại" (OMR-01, OMR-06): số trang sẽ trừ, lựa chọn lần trước, số phiên bản đã sửa sau lần
+     * số hóa gần nhất, hạn mức trang của người bấm. Cần quyền sửa bản nhạc như chính thao tác nhận diện lại.
+     */
+    OmrRetryInfoResponse getRetryInfo(String scoreId);
+
+    /** Giới hạn hệ thống cho một lần số hóa và cờ AI xác minh bên ngoài (OMR-04, X-05). */
+    OmrConfigResponse getConfig();
 }

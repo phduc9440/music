@@ -1,5 +1,20 @@
 import apiClient from '../client';
-import type { AiTaskInfo, ApiResponse, OmrResult, OmrUploadRequest, OmrUploadResult } from '../../types';
+import type {
+  AiTaskInfo,
+  ApiResponse,
+  OmrConfig,
+  OmrResult,
+  OmrRetryInfo,
+  OmrSourceType,
+  OmrUploadRequest,
+  OmrUploadResult,
+} from '../../types';
+
+/** Tùy chọn khi nhận diện lại; bỏ trống trường nào thì dùng lại lựa chọn của lần chạy trước. */
+export interface OmrRetryOptions {
+  preprocess?: boolean;
+  sourceType?: OmrSourceType;
+}
 
 export const omrApi = {
   // Upload 1 PDF hoặc 1–20 ảnh (đúng thứ tự trang) để tạo bản nhạc và tác vụ OMR
@@ -16,12 +31,13 @@ export const omrApi = {
     });
   },
   // Chạy lại OMR trên file gốc đã lưu (lỗi 2201: đang có tác vụ chạy, 2202: quá 3 tác vụ)
-  // preprocess bỏ trống: dùng lại lựa chọn của lần chạy trước
-  retry: (scoreId: string, preprocess?: boolean) =>
-    apiClient.post<ApiResponse<AiTaskInfo>>(
-      `/scores/${scoreId}/omr/retry`,
-      preprocess === undefined ? {} : { preprocess },
-    ),
+  // Tùy chọn bỏ trống: dùng lại lựa chọn của lần chạy trước
+  retry: (scoreId: string, options: OmrRetryOptions = {}) =>
+    apiClient.post<ApiResponse<AiTaskInfo>>(`/scores/${scoreId}/omr/retry`, options),
+  // Số trang sẽ trừ, lựa chọn lần trước, số phiên bản đã sửa sau lần số hóa gần nhất (hộp Nhận diện lại)
+  retryInfo: (scoreId: string) => apiClient.get<ApiResponse<OmrRetryInfo>>(`/scores/${scoreId}/omr/retry-info`),
+  // Giới hạn hệ thống cho một lần số hóa và cờ AI xác minh bên ngoài
+  config: () => apiClient.get<ApiResponse<OmrConfig>>('/omr/config'),
   // Kết quả nhận diện mới nhất: cảnh báo, ảnh từng trang, id file kern
   result: (scoreId: string) => apiClient.get<ApiResponse<OmrResult>>(`/scores/${scoreId}/omr/result`),
 };

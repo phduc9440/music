@@ -2,6 +2,7 @@ package com.ptit.music_be.dto.response.ai;
 
 import java.util.List;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.ptit.music_be.dto.enums.ai.AiTaskStatus;
 
 import lombok.*;
@@ -53,6 +54,30 @@ public class OmrResultResponse {
     /** So số ô đếm trên ảnh với số ô đọc được (result_data.measureCheck), null nếu chưa có. */
     MeasureCheck measureCheck;
 
+    /**
+     * Cảnh báo dạng cấu trúc (result_data.warningItems, OMR-11): mỗi mục {code, page, system, measure, params, text}. Web dựng
+     * câu theo ngôn ngữ từ code + params, nhảy tới trang theo page; text (tiếng Việt) là bản dự phòng. Null với kết quả cũ.
+     */
+    JsonNode warningItems;
+
+    /**
+     * Những chỗ máy đã tự sửa (result_data.autoFixes, OMR-14), tách khỏi cảnh báo: mỗi mục {code, page, measures, params,
+     * text}. Các ô này cũng có cờ AUTO_FIXED trong measureMap để người dùng kiểm lại. Null với kết quả cũ.
+     */
+    JsonNode autoFixes;
+
+    /** Bản gốc có chữ phía trên khuông (tên hợp âm, nhịp độ...) mà hệ thống chưa đọc (OMR-13); null với kết quả cũ. */
+    JsonNode textAbove;
+
+    /** Nhịp độ không đọc được từ bản gốc nên đang dùng mặc định (OMR-13); null với kết quả cũ. */
+    Boolean tempoDefaulted;
+
+    /**
+     * Phiên bản MusicXML do chính lần nhận diện này tạo (result_data.musicXmlVersion). Khác {@link #musicXmlVersion} nghĩa
+     * là bản nhạc đã được lưu thêm sau khi số hóa, số ô trong measureMap có thể lệch nếu người dùng thêm/xóa ô.
+     */
+    Integer omrVersion;
+
     /** Một ô nhịp của bản nhận diện. */
     @Data
     @Builder
@@ -74,7 +99,8 @@ public class OmrResultResponse {
         /**
          * DURATION (tổng trường độ sai số chỉ nhịp), COUNT_MISMATCH (số ô của hệ/trang lệch số ô trên ảnh), RANGE (nốt
          * giọng hát ngoài tầm thường gặp), LEAP (bước nhảy/nốt vọt bất thường), ACCIDENTAL (dấu hóa lạ chỉ xuất hiện một
-         * lần), UNSTABLE (các lần đọc lại cho kết quả khác nhau), AI_DOUBT (AI xác minh cho là sai).
+         * lần), UNSTABLE (các lần đọc lại cho kết quả khác nhau), AI_DOUBT (AI xác minh cho là sai), AUTO_FIXED (máy đã
+         * tự sửa ô này, cần đối chiếu lại với ảnh, OMR-14).
          */
         List<String> flags;
 

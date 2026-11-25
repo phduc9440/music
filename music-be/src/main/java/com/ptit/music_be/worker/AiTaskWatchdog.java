@@ -14,6 +14,7 @@ import com.ptit.music_be.dto.enums.ai.AiTaskType;
 import com.ptit.music_be.entity.AiTask;
 import com.ptit.music_be.repository.ai.AiTaskRepository;
 import com.ptit.music_be.service.ai.InternalAiTaskService;
+import com.ptit.music_be.service.ai.OmrQueueEstimator;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,8 +26,11 @@ import lombok.extern.slf4j.Slf4j;
  *   <li>PENDING chưa gửi được (step còn null) quá 30 giây (lỗi gửi, hoặc server khởi động lại làm mất sự kiện): gửi
  *       lại; đã gửi lại tối đa 2 lần mà vẫn lỗi thì FAILED AI_SERVICE_UNAVAILABLE.
  *   <li>PROCESSING không có callback nào quá 10 phút: FAILED TASK_TIMEOUT.
- *   <li>Task đã được music-ai nhận nhưng mãi chưa chạy (QUEUED) quá 30 phút: FAILED TASK_TIMEOUT (thường do music-ai
- *       khởi động lại và mất hàng đợi).
+ *   <li>Task đã được music-ai nhận nhưng mãi chưa chạy (QUEUED) quá hạn: FAILED TASK_TIMEOUT (thường do music-ai khởi
+ *       động lại và mất hàng đợi). Hạn = queued-timeout-minutes cộng hai lần thời gian chờ ước lượng theo số trang đứng
+ *       trước (OMR-10), để lúc đông người task đang chờ đúng lượt không bị báo lỗi.
+ *   <li>music-ai đầy hàng (step BUSY): gửi lại sau mỗi pendingResendSeconds, không tính vào số lần gửi lỗi; chờ quá hạn
+ *       như trên thì TASK_TIMEOUT.
  * </ol>
  *
  * Mọi thay đổi trạng thái đi qua {@link InternalAiTaskService} (cũng cập nhật scores.processing_status).
@@ -40,6 +44,7 @@ public class AiTaskWatchdog {
     private final InternalAiTaskService internalAiTaskService;
     private final AiTaskDispatcher aiTaskDispatcher;
     private final AiServiceProperties properties;
+    private final OmrQueueEstimator queueEstimator;
 
     @Scheduled(
             fixedDelayString = "${app.ai.watchdog-interval-ms:30000}",
@@ -70,6 +75,28 @@ public class AiTaskWatchdog {
                 log.warn("Không xử lý được task PENDING {}: {}", task.getId(), e.getMessage());
             }
         }
+        // music-ai đầy hàng lúc gửi: gửi lại, quá hạn chờ thì báo hết giờ
+        for (AiTask task : aiTaskRepository.findByTaskTypeAndStatusAndStepAndUpdatedAtBefore(
+                AiTaskType.OMR_CONVERSION, AiTaskStatus.PENDING, AiTaskStep.BUSY.name(), before)) {
+            try {
+                if (waitedTooLong(task, task.getCreatedAt())) {
+                    timeout(task);
+                } else {
+                    aiTaskDispatcher.dispatch(task.getId());
+                }
+            } catch (RuntimeException e) {
+                log.warn("Không gửi lại được task {} đang chờ music-ai rảnh: {}", task.getId(), e.getMessage());
+            }
+        }
+    }
+
+    /** Đã chờ từ {@code since} quá hạn: queued-timeout-minutes + 2 lần thời gian chờ ước lượng theo hàng đợi. */
+    private boolean waitedTooLong(AiTask task, LocalDateTime since) {
+        if (since == null) {
+            return false;
+        }
+        long allowed = properties.getQueuedTimeoutMinutes() * 60L + 2 * queueEstimator.waitSeconds(task);
+        return since.plusSeconds(allowed).isBefore(LocalDateTime.now());
     }
 
     private void expireStuck() {
@@ -82,7 +109,10 @@ public class AiTaskWatchdog {
         LocalDateTime queuedBefore = LocalDateTime.now().minusMinutes(properties.getQueuedTimeoutMinutes());
         for (AiTask task : aiTaskRepository.findByTaskTypeAndStatusAndStepAndUpdatedAtBefore(
                 AiTaskType.OMR_CONVERSION, AiTaskStatus.PENDING, AiTaskStep.QUEUED.name(), queuedBefore)) {
-            timeout(task);
+            // Hàng dài (buổi demo, lớp học): còn trong thời gian chờ ước lượng thì chưa phải treo
+            if (waitedTooLong(task, task.getUpdatedAt())) {
+                timeout(task);
+            }
         }
     }
 
