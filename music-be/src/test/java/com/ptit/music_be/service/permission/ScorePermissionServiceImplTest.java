@@ -150,7 +150,8 @@ class ScorePermissionServiceImplTest {
 
         share(USER, SharePermission.COMMENT);
         assertTrue(service.resolve(score("PRIVATE", false)).canComment());
-        assertEquals(ScoreAccess.COMMENT, service.resolve(score("PUBLIC", false)).level());
+        assertEquals(
+                ScoreAccess.COMMENT, service.resolve(score("PUBLIC", false)).level());
     }
 
     @Test

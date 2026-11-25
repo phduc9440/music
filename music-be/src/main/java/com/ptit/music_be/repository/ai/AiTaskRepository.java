@@ -90,6 +90,12 @@ public interface AiTaskRepository extends JpaRepository<AiTask, String> {
     List<AiTask> findByTaskTypeAndStatusAndStepAndUpdatedAtBefore(
             AiTaskType taskType, AiTaskStatus status, String step, LocalDateTime before);
 
+    /** Task một loại ở các trạng thái cho trước, cũ trước (ước lượng hàng đợi OMR, OMR-10). */
+    List<AiTask> findByTaskTypeAndStatusInOrderByCreatedAtAsc(AiTaskType taskType, Collection<AiTaskStatus> statuses);
+
+    /** 20 task một loại đã kết thúc ở trạng thái cho trước, mới nhất trước (đo thời gian chạy mỗi trang). */
+    List<AiTask> findTop20ByTaskTypeAndStatusOrderByFinishedAtDesc(AiTaskType taskType, AiTaskStatus status);
+
     /** Task đang chạy không có callback nào từ trước mốc {@code before}. */
     List<AiTask> findByTaskTypeAndStatusAndUpdatedAtBefore(
             AiTaskType taskType, AiTaskStatus status, LocalDateTime before);

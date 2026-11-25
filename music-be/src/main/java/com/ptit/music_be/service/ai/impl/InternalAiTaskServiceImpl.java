@@ -41,6 +41,7 @@ import com.ptit.music_be.exception.code.AiErrorCode;
 import com.ptit.music_be.repository.ai.AiTaskRepository;
 import com.ptit.music_be.repository.score.ScoreFileRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
+import com.ptit.music_be.service.ai.AiTaskNotifier;
 import com.ptit.music_be.service.ai.InternalAiTaskService;
 import com.ptit.music_be.service.referral.ReferralService;
 import com.ptit.music_be.service.storage.FileStorageService;
@@ -71,6 +72,7 @@ public class InternalAiTaskServiceImpl implements InternalAiTaskService {
     ObjectMapper objectMapper;
     ReferralService referralService;
     ApplicationEventPublisher eventPublisher;
+    AiTaskNotifier aiTaskNotifier;
 
     @Override
     @Transactional
@@ -226,6 +228,7 @@ public class InternalAiTaskServiceImpl implements InternalAiTaskService {
             referralService.onDigitized(task.getMember());
             rewardFirstDigitized(task.getMember());
         }
+        aiTaskNotifier.finished(task);
     }
 
     /** Thưởng điểm số hóa bản đầu tiên; refId là chính người dùng nên sổ điểm chỉ cộng một lần dù OMR chạy nhiều lần. */
@@ -251,6 +254,7 @@ public class InternalAiTaskServiceImpl implements InternalAiTaskService {
         aiTaskRepository.save(task);
         syncScoreStatus(task, failedScoreStatus(task));
         log.warn("Task {} thất bại: {}", taskId, task.getErrorMessage());
+        aiTaskNotifier.finished(task);
     }
 
     @Override
@@ -258,8 +262,22 @@ public class InternalAiTaskServiceImpl implements InternalAiTaskService {
     public void markQueued(String taskId) {
         AiTask task = lockTask(taskId);
         // Nếu music-ai đã kịp gửi progress (PROCESSING) trước khi ta ghi QUEUED thì không ghi đè
-        if (task.getStatus() == AiTaskStatus.PENDING && task.getStep() == null) {
+        if (task.getStatus() == AiTaskStatus.PENDING
+                && (task.getStep() == null || AiTaskStep.BUSY.name().equals(task.getStep()))) {
             task.setStep(AiTaskStep.QUEUED.name());
+            aiTaskRepository.save(task);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void markBusy(String taskId) {
+        AiTask task = lockTask(taskId);
+        if (task.getStatus() == AiTaskStatus.PENDING
+                && (task.getStep() == null || AiTaskStep.BUSY.name().equals(task.getStep()))) {
+            task.setStep(AiTaskStep.BUSY.name());
+            // Ghi lại để updated_at đổi: job quét chờ thêm pendingResendSeconds rồi mới gửi lại
+            task.setUpdatedAt(LocalDateTime.now());
             aiTaskRepository.save(task);
         }
     }

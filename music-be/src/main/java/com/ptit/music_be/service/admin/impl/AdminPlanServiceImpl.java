@@ -5,6 +5,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +32,7 @@ import com.ptit.music_be.utils.SecurityUtils;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -50,6 +52,14 @@ public class AdminPlanServiceImpl implements AdminPlanService {
     /** Gói mà code dựa vào: FREE cho người chưa mua, PRO cho quản trị viên; UNLIMITED là mã gói ảo của SUPER_ADMIN. */
     static final Set<String> SYSTEM_CODES =
             Set.of(SubscriptionServiceImpl.FREE, SubscriptionServiceImpl.PRO, SubscriptionServiceImpl.UNLIMITED);
+
+    /**
+     * Trần cứng số trang một lần số hóa của hệ thống: gói không được hứa nhiều hơn (OMR-04). Để trống trong gói nghĩa là
+     * dùng đúng trần này.
+     */
+    @NonFinal
+    @Value("${app.omr.max-pdf-pages:20}")
+    int maxOmrPagesPerJob = 20;
 
     PlanRepository planRepository;
     SubscriptionRepository subscriptionRepository;
@@ -195,6 +205,9 @@ public class AdminPlanServiceImpl implements AdminPlanService {
             throw new AppException(BillingErrorCode.PLAN_PRICE_INVALID);
         }
         if (limits == null || !validLimits(limits)) {
+            throw new AppException(BillingErrorCode.PLAN_LIMITS_INVALID);
+        }
+        if (limits.omrMaxPagesPerJob() != null && limits.omrMaxPagesPerJob() > maxOmrPagesPerJob) {
             throw new AppException(BillingErrorCode.PLAN_LIMITS_INVALID);
         }
         if (sortOrder != null && (sortOrder < 0 || sortOrder > MAX_SORT_ORDER)) {

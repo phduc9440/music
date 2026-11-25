@@ -34,7 +34,8 @@ public class AiTaskController {
 
     @PostMapping("/ai-tasks/{taskId}/cancel")
     @Operation(
-            summary = "Hủy một tác vụ đang chờ hoặc đang chạy (task CANCELLED, score FAILED)",
+            summary = "Hủy một tác vụ đang chờ hoặc đang chạy (task CANCELLED; score CANCELLED, hoặc giữ COMPLETED nếu"
+                    + " đã có kết quả từ lần trước). Người tạo task, chủ bản nhạc hoặc quản trị viên",
             description = "Chỉ chủ task hoặc ADMIN. Errors: 2101 task không tồn tại, 1002 không có quyền,"
                     + " 2102 task đã kết thúc nên không hủy được",
             security = @SecurityRequirement(name = "bearerAuth"))

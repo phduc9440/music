@@ -12,12 +12,14 @@ import java.util.concurrent.Executors;
 
 import jakarta.annotation.PreDestroy;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -148,6 +150,17 @@ public class AiTaskDispatcher {
             log.warn("music-ai từ chối task {}: {} {}", taskId, e.getStatusCode(), e.getResponseBodyAsString());
             internalAiTaskService.fail(
                     taskId, AiTaskError.JOB_REJECTED.name(), e.getStatusCode().toString());
+            return;
+        } catch (HttpServerErrorException e) {
+            if (e.getStatusCode().value() == HttpStatus.SERVICE_UNAVAILABLE.value()) {
+                // Hàng đợi music-ai đầy: không phải lỗi, giữ task chờ (step BUSY) và job quét gửi lại, không trừ số lần
+                // gửi lại (OMR-10). Hết hạn chờ thì job quét mới báo TASK_TIMEOUT.
+                internalAiTaskService.markBusy(taskId);
+                log.info("music-ai đang đầy hàng, giữ task {} để gửi lại sau", taskId);
+                return;
+            }
+            int retries = internalAiTaskService.recordSendFailure(taskId);
+            log.warn("music-ai lỗi {} với task {} (lần lỗi {})", e.getStatusCode(), taskId, retries);
             return;
         } catch (RuntimeException e) {
             // Lỗi mạng, timeout hoặc 5xx: giữ PENDING và tăng retry_count, job quét sẽ gửi lại

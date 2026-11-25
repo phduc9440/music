@@ -40,6 +40,7 @@ import com.ptit.music_be.event.ChordTaskCreatedEvent;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.code.CollabErrorCode;
 import com.ptit.music_be.repository.ai.AiTaskRepository;
+import com.ptit.music_be.service.ai.AiTaskNotifier;
 import com.ptit.music_be.service.billing.PlanLimits;
 import com.ptit.music_be.service.score.ScoreEditService;
 import com.ptit.music_be.service.score.SuggestionService;
@@ -79,6 +80,9 @@ public class ChordGenerationWorker {
     private final ObjectMapper objectMapper;
     private final TransactionTemplate tx;
 
+    /** Báo người bấm khi gợi ý lỗi (OMR-02); tiêm qua setter nên test dựng worker bằng tay không cần nó. */
+    private AiTaskNotifier aiTaskNotifier;
+
     private final ThreadPoolExecutor executor = new ThreadPoolExecutor(
             1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(QUEUE_CAPACITY), runnable -> {
                 Thread thread = new Thread(runnable, "chord-worker");
@@ -103,6 +107,11 @@ public class ChordGenerationWorker {
         // REQUIRES_NEW: listener AFTER_COMMIT chạy khi transaction cũ đã xong
         this.tx = new TransactionTemplate(transactionManager);
         this.tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    void setAiTaskNotifier(AiTaskNotifier aiTaskNotifier) {
+        this.aiTaskNotifier = aiTaskNotifier;
     }
 
     @PreDestroy
@@ -330,6 +339,9 @@ public class ChordGenerationWorker {
         task.setErrorMessage(message.length() > MAX_ERROR_LENGTH ? message.substring(0, MAX_ERROR_LENGTH) : message);
         task.setFinishedAt(LocalDateTime.now());
         aiTaskRepository.save(task);
+        if (aiTaskNotifier != null) {
+            aiTaskNotifier.finished(task);
+        }
     }
 
     private void deleteQuietly(String path) {

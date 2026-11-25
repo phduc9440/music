@@ -50,8 +50,9 @@ public class ScoreCommentController {
     @PostMapping("/scores/{scoreId}/comments")
     @Operation(
             summary = "Comment on a range of measures (needs comment permission); mentioned people are notified",
-            description = "Errors: 3902 content 1-2000 chars, 3903 measures out of range, 3904 needs comment permission,"
-                    + " 3906 mention not allowed, 3907 bad part / note ids",
+            description =
+                    "Errors: 3902 content 1-2000 chars, 3903 measures out of range, 3904 needs comment permission,"
+                            + " 3906 mention not allowed, 3907 bad part / note ids",
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<ScoreCommentResponse> create(
             @PathVariable String scoreId, @RequestBody ScoreCommentRequest request) {

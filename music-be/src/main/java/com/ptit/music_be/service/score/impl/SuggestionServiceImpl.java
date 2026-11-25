@@ -37,7 +37,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.ptit.music_be.dto.enums.ai.AiTaskStatus;
 import com.ptit.music_be.dto.enums.ai.AiTaskType;
 import com.ptit.music_be.dto.enums.notification.NotificationType;
-import com.ptit.music_be.dto.enums.score.ScoreAccess;
 import com.ptit.music_be.dto.enums.score.SharePermission;
 import com.ptit.music_be.dto.enums.score.SuggestionChangeStatus;
 import com.ptit.music_be.dto.enums.score.SuggestionFilter;

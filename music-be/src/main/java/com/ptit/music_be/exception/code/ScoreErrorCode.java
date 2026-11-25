@@ -21,10 +21,13 @@ public enum ScoreErrorCode implements ErrorCode {
     FILE_TOO_LARGE(2005, "File tải lên quá lớn", HttpStatus.PAYLOAD_TOO_LARGE),
     INVALID_UPLOAD_COMBINATION(2006, "Chỉ tải lên đúng 1 file PDF hoặc từ 1 đến 20 ảnh", HttpStatus.BAD_REQUEST),
     FILE_STORAGE_ERROR(2007, "Không lưu được file", HttpStatus.INTERNAL_SERVER_ERROR),
-    PDF_ENCRYPTED(2008, "PDF bị mã hóa, đặt mật khẩu hoặc không mở được", HttpStatus.BAD_REQUEST),
+    PDF_ENCRYPTED(2008, "PDF đặt mật khẩu nên không mở được", HttpStatus.BAD_REQUEST),
     PDF_TOO_MANY_PAGES(2009, "PDF phải có từ 1 đến 20 trang", HttpStatus.BAD_REQUEST),
-    IMAGE_RESOLUTION_INVALID(
-            2010, "Ảnh không đọc được, cạnh ngắn nhỏ hơn 600px hoặc lớn hơn 40 megapixel", HttpStatus.BAD_REQUEST),
+    /** Mã giữ tên cũ để không đổi API: nay chỉ dùng cho ảnh không đọc được, ảnh nhỏ/lớn có mã riêng 2032, 2033. */
+    IMAGE_RESOLUTION_INVALID(2010, "Không đọc được ảnh, file có thể bị hỏng", HttpStatus.BAD_REQUEST),
+    PDF_UNREADABLE(2031, "Không đọc được PDF, file có thể bị hỏng", HttpStatus.BAD_REQUEST),
+    IMAGE_TOO_SMALL(2032, "Ảnh quá nhỏ: cạnh ngắn phải từ 600px", HttpStatus.BAD_REQUEST),
+    IMAGE_TOO_LARGE(2033, "Ảnh quá lớn: tối đa 40 megapixel", HttpStatus.BAD_REQUEST),
     INVALID_SOURCE_TYPE(2011, "Loại nguồn phải là PHOTO, SCAN hoặc PDF_NATIVE", HttpStatus.BAD_REQUEST),
     MUSICXML_NOT_READY(
             2012, "Bản nhạc chưa có MusicXML, hãy đợi nhận diện xong hoặc nhận diện lại", HttpStatus.CONFLICT),

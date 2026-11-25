@@ -44,4 +44,10 @@ public interface InternalAiTaskService {
 
     /** Ghi nhận gửi sang music-ai thất bại: task PENDING tăng retry_count. Trả về retry_count mới. */
     int recordSendFailure(String taskId);
+
+    /**
+     * music-ai trả 503 (hàng đợi đầy): task PENDING được đánh dấu step BUSY, không tăng retry_count, để job quét gửi lại
+     * khi có chỗ và trang tiến độ báo "hệ thống đang bận" thay vì lỗi (OMR-10).
+     */
+    void markBusy(String taskId);
 }
