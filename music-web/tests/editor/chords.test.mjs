@@ -183,3 +183,25 @@ test('gốc và bass có dấu thăng kép / giáng kép, giữ nguyên chữ ng
   assert.equal(parseChord('F##7').root.alter, 2);
   assert.equal(parseChord('G7(b9,#11)').text, '7(b9,#11)');
 });
+
+test('thêm rồi gỡ hợp âm AI trả MusicXML về đúng như trước (để Bỏ gợi ý đưa editor về trạng thái sạch)', async () => {
+  const { ScoreDocument } = await import('../../src/components/editor/core/ScoreDocument.ts');
+  const { harmoniesOf, replaceHarmonies } = await import('../../src/components/editor/notation/harmony.ts');
+  const { quarters, score } = await import('./support/score.mjs');
+  const doc = ScoreDocument.parse(score([quarters('C4', 'D4', 'E4', 'F4')]));
+  const before = doc.serialize();
+  const id = 'm0-s1-v1-0';
+  const original = harmoniesOf(doc, id);
+  const ai = buildHarmony(doc.xml ?? owner, {
+    root: { step: 'C', alter: 0 },
+    kind: 'major',
+    text: '',
+    bass: null,
+    degrees: [],
+    noChord: false,
+  });
+  replaceHarmonies(doc, [{ id, harmonies: [ai] }], { key: 'x' });
+  assert.notEqual(doc.serialize(), before);
+  replaceHarmonies(doc, [{ id, harmonies: original }], { key: 'y' });
+  assert.equal(doc.serialize(), before);
+});

@@ -64,6 +64,8 @@ export function useAiChordDraft({ doc, editor, canEdit, onFallback }: Options): 
   // Bản nhạc ngay trước khi nạp gợi ý (để so từng phương án với cùng một gốc) và các phương án đã tải
   const pristineRef = useRef<ScoreDocument | null>(null);
   const optionDocsRef = useRef(new Map<number, ScoreDocument>());
+  // Lúc nạp gợi ý bản nhạc chưa có thay đổi nào chưa lưu: bỏ gợi ý xong mà giống hệt bản đó thì trả editor về trạng thái sạch
+  const cleanAtLoadRef = useRef(false);
   const { applyEdit, version, dirty, canUndo, canRedo } = editor;
 
   const loadedRows = useMemo<AiChordRow[]>(() => {
@@ -117,6 +119,7 @@ export function useAiChordDraft({ doc, editor, canEdit, onFallback }: Options): 
         }
         const proposed = ScoreDocument.parse(xml);
         pristineRef.current = ScoreDocument.parse(doc.serialize());
+        cleanAtLoadRef.current = !dirty;
         optionDocsRef.current = new Map([[1, proposed]]);
         const items = diffChords(doc, proposed);
         const cleared = clearedChords(doc, proposed);
@@ -152,7 +155,7 @@ export function useAiChordDraft({ doc, editor, canEdit, onFallback }: Options): 
         setLoading(false);
       }
     },
-    [canEdit, onFallback, doc, version, applyEdit],
+    [canEdit, onFallback, doc, version, dirty, applyEdit],
   );
 
   const discard = useCallback(async () => {
@@ -173,6 +176,10 @@ export function useAiChordDraft({ doc, editor, canEdit, onFallback }: Options): 
         return;
       }
     }
+    // Không còn khác bản trước khi nạp thì không báo "Có thay đổi chưa lưu" (bước bỏ gợi ý vẫn nằm trong lịch sử, Ctrl+Z được)
+    if (cleanAtLoadRef.current && pristineRef.current && doc.serialize() === pristineRef.current.serialize()) {
+      editor.finishSuggestion();
+    }
     setDraft(null);
     try {
       await suggestionApi.reject(draft.suggestion.id);
@@ -180,7 +187,7 @@ export function useAiChordDraft({ doc, editor, canEdit, onFallback }: Options): 
       // gỡ khỏi bản nhạc là chính; đề xuất còn mở thì vẫn đóng được ở tab Đề xuất
     }
     toast.success(t('chords.draft.discarded'));
-  }, [draft, rows, doc, applyEdit]);
+  }, [draft, rows, doc, applyEdit, editor]);
 
   const switchOption = useCallback(
     async (option: number) => {

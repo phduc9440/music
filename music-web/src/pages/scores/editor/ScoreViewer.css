@@ -1660,3 +1660,19 @@ h3.sv-tools__title {
     transition: none;
   }
 }
+
+/* ---- Màn vừa (iPad, laptop nhỏ ~900–1440px): thanh trên không để tên bài bị bóp mất khi mở bảng Hợp âm AI / Góp ý (UI-01) ----
+   Nút bên phải chỉ còn biểu tượng (chữ nằm ở tooltip và aria-label), tên bài có chỗ tối thiểu và cụm nút được phép xuống hàng */
+@media (min-width: 768px) and (max-width: 1439px) {
+  .sv-toolbar {
+    grid-template-columns: minmax(14rem, 1fr) minmax(0, auto);
+  }
+  .sv-toolbar__right .sc-btn > .sv-desktop-only {
+    display: none;
+  }
+}
+@media (min-width: 1280px) and (max-width: 1439px) {
+  .sv-toolbar {
+    grid-template-columns: minmax(14rem, 1fr) auto minmax(0, auto);
+  }
+}
