@@ -25,6 +25,10 @@ interface Props {
   optionCount: number;
   switching: boolean;
   onOption: (option: number) => void;
+  /** Nghe thử phương án đang xem bằng Player của Editor (phát từ ô đang chọn, không có thì từ đầu); đang phát thì dừng. */
+  listening: boolean;
+  onListen: () => void;
+  onStopListen: () => void;
 }
 
 const optionLetter = (option: number) => String.fromCharCode(64 + option);
@@ -61,6 +65,9 @@ export default function AiChordPanel({
   optionCount,
   switching,
   onOption,
+  listening,
+  onListen,
+  onStopListen,
 }: Props) {
   const groups = useMemo(() => byMeasure(rows), [rows]);
   const edited = rows.filter((r) => r.status === 'edited').length;
@@ -120,6 +127,23 @@ export default function AiChordPanel({
           <p className="aic-options__hint">{switching ? t('chords.draft.switching') : t('chords.draft.optionsHint')}</p>
         </div>
       )}
+
+      <div className="aic-listen">
+        <button
+          type="button"
+          className="sc-btn sc-btn--sm"
+          disabled={switching || saving || rows.length === 0}
+          onClick={listening ? onStopListen : onListen}
+          title={t('chords.draft.listenHint')}
+        >
+          <Icon name={listening ? 'pause' : 'play'} size={14} />{' '}
+          {listening
+            ? t('chords.draft.listenStop')
+            : optionCount > 1
+              ? t('chords.draft.listenOption', { option: optionLetter(option) })
+              : t('chords.draft.listen')}
+        </button>
+      </div>
 
       <div className="aic-summary">
         <p className="aic-summary__key">{title}</p>

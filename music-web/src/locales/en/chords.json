@@ -69,6 +69,10 @@
     "CHORD_NO_CHORDS": "The AI could not place any chord on this melody; try another style or density"
   },
   "draft": {
+    "listen": "Listen",
+    "listenOption": "Listen to option {{option}}",
+    "listenStop": "Stop",
+    "listenHint": "Plays the score with the chords of the option you are viewing, from the selected measure (from the start if none)",
     "panelTitle": "AI chord suggestions",
     "panelToggle": "AI chords",
     "close": "Close AI chords panel",

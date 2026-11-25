@@ -20,6 +20,10 @@ interface Props {
   side: ReturnType<typeof useSidebarResize>;
   ai: AiChordPanelState;
   onCloseAi: () => void;
+  /** Nghe thử bản nhạc đang mở (kèm hợp âm AI): đang phát, bắt đầu phát, dừng. */
+  listening: boolean;
+  onListen: () => void;
+  onStopListen: () => void;
   comments: ScoreComments;
   /** Bảng "Cần kiểm tra" các ô OMR nghi ngờ (OMR-03); null khi không mở. */
   omrCheck: { state: OmrCheckState; onFocusMeasure: (index: number) => void; onClose: () => void } | null;
@@ -29,7 +33,7 @@ interface Props {
  * Cột phải của Editor: bảng Góp ý hoặc bảng Hợp âm AI (dùng chung một chỗ). Máy tính & iPad ngang kéo ra / kéo vào
  * được, thu gọn thành dải mỏng; màn nhỏ là ngăn kéo dưới đáy.
  */
-export default function EditorSideColumn({ scoreId, editor, live, side, ai, onCloseAi, comments, omrCheck }: Props) {
+export default function EditorSideColumn({ scoreId, editor, live, side, ai, onCloseAi, listening, onListen, onStopListen, comments, omrCheck }: Props) {
   const sideWide = useMediaQuery('(min-width: 1024px)');
   const { commentsOpen } = comments;
   // Hợp âm AI > Cần kiểm tra > Góp ý (dùng chung một chỗ, mở bảng này thì các bảng kia đóng)
@@ -74,6 +78,9 @@ export default function EditorSideColumn({ scoreId, editor, live, side, ai, onCl
           optionCount={draft.optionCount}
           switching={ai.aiDraft.switching}
           onOption={(n) => void ai.aiDraft.switchOption(n)}
+          listening={listening}
+          onListen={onListen}
+          onStopListen={onStopListen}
         />
       )}
       {!sideRail && ai.shown && !draft && (

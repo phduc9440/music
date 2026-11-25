@@ -289,3 +289,7 @@
   color: var(--ui-text-2);
   font-size: var(--ui-text-sm);
 }
+
+.aic-listen {
+  display: flex;
+}

@@ -69,6 +69,10 @@
     "CHORD_NO_CHORDS": "AI không đặt được hợp âm nào cho giai điệu này, thử phong cách hoặc mật độ khác"
   },
   "draft": {
+    "listen": "Nghe thử",
+    "listenOption": "Nghe thử phương án {{option}}",
+    "listenStop": "Dừng nghe",
+    "listenHint": "Phát bản nhạc kèm hợp âm của phương án đang xem, từ ô đang chọn (chưa chọn thì từ đầu)",
     "panelTitle": "Hợp âm AI gợi ý",
     "panelToggle": "Hợp âm AI",
     "close": "Đóng bảng Hợp âm AI",
