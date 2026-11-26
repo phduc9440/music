@@ -523,5 +523,15 @@
     "pagesUnlimited": "This counts {count} pages (your plan has unlimited pages per month).",
     "notEnough": "You only have {remaining} pages left this month.",
     "imageErrorHint": "Last time the image couldn't be read. Try another source type (e.g. Photo) and turn on clean-up and straightening."
+  },
+  "titleFromPage": {
+    "label": "Name the score from the original page",
+    "cropAlt": "Top of page 1 of the original",
+    "caption": "Top of page 1 of the original: the title and composer are usually printed here.",
+    "placeholder": "Type the title as printed on the original",
+    "save": "Save title",
+    "saving": "Saving…",
+    "saved": "Title saved",
+    "failed": "Could not save the title"
   }
 }

@@ -27,6 +27,7 @@ import {
   resultWarnings,
 } from '../../../utils/omr';
 import { setMusicXmlTempo } from '../../../utils/musicXmlTempo';
+import TitleFromPage from '../../../components/scores/omr/TitleFromPage';
 import { reportPlanLimit } from '../../../utils/planLimit';
 import {
   getErrorMessage,
@@ -349,6 +350,12 @@ export default function ScoreReview() {
             {t('upload.review.details')}
           </button>
         </header>
+
+        <TitleFromPage
+          score={score}
+          pageUrl={pages.find((p) => p.pageNumber === 1)?.downloadUrl ?? pages[0]?.downloadUrl}
+          onSaved={setScore}
+        />
 
         <dl className="sc-facts sr-summary">
           {summary.map(({ label, value, tone, minor }) => (

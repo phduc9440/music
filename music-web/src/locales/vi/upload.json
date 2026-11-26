@@ -519,5 +519,15 @@
     "pagesUnlimited": "Lần này tính {count} trang (gói của bạn không giới hạn trang mỗi tháng).",
     "notEnough": "Tháng này bạn chỉ còn {remaining} trang.",
     "imageErrorHint": "Lần trước máy không đọc được ảnh. Hãy thử đổi loại nguồn (ví dụ Ảnh chụp) và bật làm sạch, căn thẳng ảnh."
+  },
+  "titleFromPage": {
+    "label": "Đặt tên bài theo trang gốc",
+    "cropAlt": "Phần đầu trang 1 của bản gốc",
+    "caption": "Đầu trang 1 của ảnh gốc: tên bài và tác giả thường in ở đây.",
+    "placeholder": "Nhập tên bài như in trên bản gốc",
+    "save": "Lưu tên bài",
+    "saving": "Đang lưu…",
+    "saved": "Đã lưu tên bài",
+    "failed": "Không lưu được tên bài"
   }
 }

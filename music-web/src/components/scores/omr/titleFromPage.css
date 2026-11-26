@@ -1,0 +1,51 @@
+/* T46: đặt tên bài nhìn phần đầu trang 1 (trang Kết quả số hóa) */
+.tfp {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 1rem;
+  align-items: start;
+  margin: 0 0 1rem;
+  padding: 0.75rem;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  background: var(--ui-surface);
+}
+
+.tfp__crop {
+  margin: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+/* Chỉ hiện khoảng 1/5 trên cùng của trang (vùng tên bài, tác giả): ảnh giữ tỉ lệ dải ngang, cắt từ mép trên */
+.tfp .tfp__img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1050 / 300;
+  object-fit: cover;
+  object-position: top;
+  border-radius: var(--ui-radius-sm);
+  background: var(--ui-surface-muted);
+}
+
+.tfp__crop figcaption {
+  font-size: var(--ui-text-sm);
+  color: var(--ui-text-2);
+}
+
+.tfp__form {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.tfp__form .sc-btn {
+  justify-self: start;
+  margin-top: 0.35rem;
+}
+
+@media (max-width: 720px) {
+  .tfp {
+    grid-template-columns: 1fr;
+  }
+}
