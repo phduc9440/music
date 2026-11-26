@@ -46,6 +46,9 @@ const formatPct = (v?: number | null) => (v == null ? '—' : `${v.toFixed(1)}%`
 const tone = (v?: number | null) => (v == null ? 'none' : v >= 85 ? 'good' : v >= 60 ? 'mid' : 'low');
 const grade = (v?: number | null) =>
   v == null ? '–' : v >= 95 ? 'S' : v >= 85 ? 'A' : v >= 70 ? 'B' : v >= 55 ? 'C' : 'D';
+/** Hạng của phiên Studio theo điểm 0–10000, cùng ngưỡng với báo cáo Studio (BE StudioReportServiceImpl.grade, ST-10). */
+const gradeOfPoints = (points: number) =>
+  points >= 9500 ? 'S' : points >= 8500 ? 'A' : points >= 7000 ? 'B' : points >= 5000 ? 'C' : 'D';
 const avg = (xs: (number | null | undefined)[]) => {
   const v = xs.filter((x): x is number => x != null);
   return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
@@ -69,17 +72,27 @@ const dayLabel = (key: string) => {
 };
 
 /** Đồng hồ điểm: vòng tròn tô theo % đúng, giữa là hạng S/A/B/C/D. */
-function ScoreDial({ value, size = 'md' }: { value?: number | null; size?: 'md' | 'lg' }) {
+function ScoreDial({
+  value,
+  points,
+  size = 'md',
+}: {
+  value?: number | null;
+  /** Điểm Studio (0–10000): có thì hạng lấy theo điểm để khớp trang báo cáo Studio. */
+  points?: number | null;
+  size?: 'md' | 'lg';
+}) {
+  const shownGrade = points != null ? gradeOfPoints(points) : grade(value);
   return (
     <div
       className={`pr-dial pr-dial--${size}`}
       data-tone={tone(value)}
       style={{ '--pct': Math.max(0, Math.min(100, value ?? 0)) } as CSSProperties}
       role="img"
-      aria-label={t('practice.history.dialLabel', { grade: grade(value), pct: formatPct(value) })}
+      aria-label={t('practice.history.dialLabel', { grade: shownGrade, pct: formatPct(value) })}
     >
       <span className="pr-dial__grade" aria-hidden="true">
-        {grade(value)}
+        {shownGrade}
       </span>
       <span className="pr-dial__pct" aria-hidden="true">
         {formatPct(value)}
@@ -428,7 +441,7 @@ export default function PracticeHistory() {
                 <ol className="pr-day__list">
                   {list.map((s) => (
                     <li key={s.id} className="pr-session" data-tone={tone(s.accuracyPct)}>
-                      <ScoreDial value={s.accuracyPct} />
+                      <ScoreDial value={s.accuracyPct} points={s.mode >= 4 ? s.scorePoints : null} />
                       <div className="pr-session__main">
                         <Link className="pr-session__title" to={`/scores/${s.scoreId}`} title={s.scoreTitle}>
                           {s.scoreTitle}
@@ -497,7 +510,7 @@ export default function PracticeHistory() {
           onClose={() => setDetail(null)}
         >
           <div className="pr-detail__top">
-            <ScoreDial value={detail.accuracyPct} size="lg" />
+            <ScoreDial value={detail.accuracyPct} points={detail.mode >= 4 ? detail.scorePoints : null} size="lg" />
             <dl className="pr-facts">
               <div>
                 <dt>{t('practice.history.mode')}</dt>
