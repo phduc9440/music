@@ -173,8 +173,8 @@ public class HomeServiceImpl implements HomeService {
         return HomeSummaryResponse.builder()
                 .displayName(displayName(me))
                 .streak(practiceStatsService.getStreak())
-                .todayPracticeSeconds(homeQueryRepository.sumPracticeSecondsSince(
-                        me.getId(), AppTime.startOfDayUtc(AppTime.today())))
+                .todayPracticeSeconds(
+                        homeQueryRepository.sumPracticeSecondsSince(me.getId(), AppTime.startOfDayUtc(AppTime.today())))
                 .recentScores(recent)
                 .pending(pending)
                 .accessRequestCount(homeQueryRepository.countPendingAccessRequestsOfOwner(me.getId()))

@@ -31,6 +31,7 @@ public class ChordWatchdog {
      * đợi tối đa {@link ChordGenerationWorker#QUEUE_CAPACITY} task chia cho {@link ChordGenerationWorker#WORKERS} luồng.
      */
     static final int PENDING_TIMEOUT_MINUTES = 30;
+
     static final List<AiTaskType> TYPES = List.of(AiTaskType.CHORD_GENERATION);
 
     private final AiTaskRepository aiTaskRepository;

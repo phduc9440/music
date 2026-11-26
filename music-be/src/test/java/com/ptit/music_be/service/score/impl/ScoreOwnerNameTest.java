@@ -11,8 +11,10 @@ class ScoreOwnerNameTest {
 
     @Test
     void fullNameWinsThenEmailLocalPart() {
-        assertThat(ScoreServiceImpl.displayNameOf(
-                        Member.builder().fullName(" An Võ ").email("an.vo@music.com").build()))
+        assertThat(ScoreServiceImpl.displayNameOf(Member.builder()
+                        .fullName(" An Võ ")
+                        .email("an.vo@music.com")
+                        .build()))
                 .isEqualTo("An Võ");
         assertThat(ScoreServiceImpl.displayNameOf(
                         Member.builder().fullName(" ").email("an.vo@music.com").build()))

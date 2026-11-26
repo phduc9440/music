@@ -24,6 +24,7 @@ public class AiServiceClient {
 
     /** Dùng cho các lệnh chuyển đổi đồng bộ (đợi kết quả), read timeout dài hơn lệnh giao việc. */
     private final RestClient convertClient;
+
     private final RestClient chordClient;
 
     public AiServiceClient(AiServiceProperties properties) {

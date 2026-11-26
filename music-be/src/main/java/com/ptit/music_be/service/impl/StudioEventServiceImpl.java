@@ -123,11 +123,9 @@ public class StudioEventServiceImpl implements StudioEventService {
         if (events.stream().noneMatch(event -> event.noteId() != null)) {
             return;
         }
-        java.util.Map<String, Integer> midiByNoteId = studioTimelineService
-                .getTimeline(session.getScore().getId())
-                .notes()
-                .stream()
-                .collect(Collectors.toMap(StudioTimelineResponse.Note::id, StudioTimelineResponse.Note::midi));
+        java.util.Map<String, Integer> midiByNoteId =
+                studioTimelineService.getTimeline(session.getScore().getId()).notes().stream()
+                        .collect(Collectors.toMap(StudioTimelineResponse.Note::id, StudioTimelineResponse.Note::midi));
         for (StudioNoteEventRequest event : events) {
             if (event.noteId() == null) {
                 continue;

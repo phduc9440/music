@@ -33,7 +33,8 @@ class ScoreTitlesTest {
 
     @Test
     void fileNameLongerThan80CharactersBecomesUntitled() {
-        String messenger = "1793598573782_1629614282312674930_g1668634218578729671_de19acbe88df88a68783e9327417ade4.jpg";
+        String messenger =
+                "1793598573782_1629614282312674930_g1668634218578729671_de19acbe88df88a68783e9327417ade4.jpg";
         String zalo = "z6071839202145_8f3c9d2e1b47f6aa8f3c9d2e1b47f6aa9b0c1d2e3f405162738495a6b7c8d9e0f1a2b3c4.jpg";
         assertThat(ScoreTitles.fromFileName(messenger)).isEqualTo(ScoreTitles.UNTITLED);
         assertThat(ScoreTitles.fromFileName(zalo)).isEqualTo(ScoreTitles.UNTITLED);

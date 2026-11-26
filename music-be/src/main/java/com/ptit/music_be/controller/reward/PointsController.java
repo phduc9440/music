@@ -30,6 +30,8 @@ public class PointsController {
             description = "Điểm chỉ đến từ sự kiện của hệ thống (RewardEarnedEvent), không có API tự cộng.",
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<PointsResponse> mine() {
-        return ApiResponse.<PointsResponse>builder().result(pointsService.mine()).build();
+        return ApiResponse.<PointsResponse>builder()
+                .result(pointsService.mine())
+                .build();
     }
 }

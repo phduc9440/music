@@ -133,7 +133,8 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
     private List<DayCount> scoresByDay(LocalDate start, LocalDate end) {
         return dayCounts(
                 "select " + AppTime.localDate("s.createdAt") + ", count(s) from Score s"
-                        + " where s.createdAt >= :from and s.createdAt < :to group by " + AppTime.localDate("s.createdAt"),
+                        + " where s.createdAt >= :from and s.createdAt < :to group by "
+                        + AppTime.localDate("s.createdAt"),
                 start,
                 end);
     }
@@ -141,7 +142,8 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
     private List<DayCount> membersByDay(LocalDate start, LocalDate end) {
         return dayCounts(
                 "select " + AppTime.localDate("m.createdAt") + ", count(m) from Member m"
-                        + " where m.createdAt >= :from and m.createdAt < :to group by " + AppTime.localDate("m.createdAt"),
+                        + " where m.createdAt >= :from and m.createdAt < :to group by "
+                        + AppTime.localDate("m.createdAt"),
                 start,
                 end);
     }
@@ -241,7 +243,8 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
     private List<DayRevenue> revenueByDay(LocalDate start, LocalDate end) {
         Map<LocalDate, Object[]> byDay = byDay(
                 em.createQuery(
-                                "select " + AppTime.localDate("o.paidAt") + ", coalesce(sum(o.amount), 0), count(o) from PaymentOrder o"
+                                "select " + AppTime.localDate("o.paidAt")
+                                        + ", coalesce(sum(o.amount), 0), count(o) from PaymentOrder o"
                                         + " where o.status = :status and o.paidAt >= :from and o.paidAt < :to"
                                         + " group by " + AppTime.localDate("o.paidAt"),
                                 Object[].class)

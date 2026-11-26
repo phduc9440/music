@@ -10,7 +10,8 @@ import org.w3c.dom.Element;
 class MeasureContentValidatorTest {
 
     private static Element measure(String body) {
-        String xml = "<score-partwise><part id=\"P1\"><measure number=\"1\">" + body + "</measure></part></score-partwise>";
+        String xml =
+                "<score-partwise><part id=\"P1\"><measure number=\"1\">" + body + "</measure></part></score-partwise>";
         return (Element) MusicXmlInspector.parseSecure(xml.getBytes(StandardCharsets.UTF_8))
                 .getElementsByTagName("measure")
                 .item(0);

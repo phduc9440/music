@@ -79,6 +79,7 @@ class PointsServiceImplTest {
                 .isEqualTo(LocalDateTime.of(2026, 11, 22, 17, 0));
         assertThat(PointsServiceImpl.windowStart(RewardReason.Window.MONTH, thursday))
                 .isEqualTo(LocalDateTime.of(2026, 10, 31, 17, 0));
-        assertThat(PointsServiceImpl.windowStart(RewardReason.Window.NONE, thursday)).isNull();
+        assertThat(PointsServiceImpl.windowStart(RewardReason.Window.NONE, thursday))
+                .isNull();
     }
 }

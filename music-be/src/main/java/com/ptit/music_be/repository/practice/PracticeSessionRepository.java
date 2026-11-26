@@ -27,7 +27,8 @@ import com.ptit.music_be.utils.AppTime;
 public interface PracticeSessionRepository extends JpaRepository<PracticeSession, String> {
 
     /** Ngày theo giờ Việt Nam của started_at (cột lưu UTC), dùng để gom theo ngày (X-06). */
-    String LOCAL_STARTED_DATE = "cast(function('convert_tz', s.startedAt, '+00:00', '" + AppTime.SQL_OFFSET + "') as date)";
+    String LOCAL_STARTED_DATE =
+            "cast(function('convert_tz', s.startedAt, '+00:00', '" + AppTime.SQL_OFFSET + "') as date)";
 
     List<PracticeSession> findByMember(Member member);
 

@@ -284,7 +284,8 @@ public class SuggestionServiceImpl implements SuggestionService {
                         .status(SuggestionChangeStatus.PENDING)
                         .build())
                 .toList());
-        // Gợi ý hợp âm AI là bản nháp của người bấm (CH-02): chỉ người đó được báo (AiTaskNotifier), không báo chủ và mọi
+        // Gợi ý hợp âm AI là bản nháp của người bấm (CH-02): chỉ người đó được báo (AiTaskNotifier), không báo chủ và
+        // mọi
         // người có quyền sửa như một đề xuất thật
         if (!(author == null && source == SuggestionSource.CHORD_GENERATION)) {
             notifyNew(score, suggestion, author, changes.size());

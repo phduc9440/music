@@ -243,7 +243,8 @@ class ChordGenerationWorkerTest {
 
         worker.process(TASK_ID);
 
-        org.mockito.Mockito.verify(aiServiceClient).generateChords(IN, OUT, "NATURAL", false, "BALANCED", "NORMAL", 1, null);
+        org.mockito.Mockito.verify(aiServiceClient)
+                .generateChords(IN, OUT, "NATURAL", false, "BALANCED", "NORMAL", 1, null);
     }
 
     @Test

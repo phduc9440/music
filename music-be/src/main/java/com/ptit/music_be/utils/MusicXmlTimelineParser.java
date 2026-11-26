@@ -232,8 +232,7 @@ public final class MusicXmlTimelineParser {
             playStarts[position] = roundBeat(playStarts[position - 1] + length);
             measures.add(new Measure(position, playStarts[position - 1], length, source));
             TimeSignature signature = signatures.get(source);
-            if (signature != null
-                    && (timeSignatures.isEmpty() || !sameMeter(timeSignatures.getLast(), signature))) {
+            if (signature != null && (timeSignatures.isEmpty() || !sameMeter(timeSignatures.getLast(), signature))) {
                 timeSignatures.add(new TimeSignature(position, signature.beats(), signature.beatType()));
             }
             Integer bpm = tempos.get(source);
@@ -250,7 +249,9 @@ public final class MusicXmlTimelineParser {
                 .thenComparingInt(note -> note.entryIndex));
         Map<Integer, List<RawNote>> notesBySource = new HashMap<>();
         for (RawNote note : rawNotes) {
-            notesBySource.computeIfAbsent(note.measure, ignored -> new ArrayList<>()).add(note);
+            notesBySource
+                    .computeIfAbsent(note.measure, ignored -> new ArrayList<>())
+                    .add(note);
         }
 
         Map<String, Integer> chordSizes = new HashMap<>();
@@ -452,6 +453,7 @@ public final class MusicXmlTimelineParser {
         List<Integer> endings;
         /** Volta bắt đầu ở ô này (các số lượt) / kết thúc ở ô này. */
         List<Integer> endingStart;
+
         boolean endingStop;
     }
 

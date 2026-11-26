@@ -156,9 +156,15 @@ class MusicXmlTimelineParserTest {
         assertThat(timeline.measures())
                 .extracting(StudioTimelineResponse.Measure::source)
                 .containsExactly(1, 2, 1, 3);
-        assertThat(timeline.notes()).extracting(StudioTimelineResponse.Note::midi).containsExactly(60, 62, 60, 64);
-        assertThat(timeline.notes()).extracting(StudioTimelineResponse.Note::measure).containsExactly(1, 2, 3, 4);
-        assertThat(timeline.notes()).extracting(StudioTimelineResponse.Note::startBeat).containsExactly(0.0, 2.0, 4.0, 6.0);
+        assertThat(timeline.notes())
+                .extracting(StudioTimelineResponse.Note::midi)
+                .containsExactly(60, 62, 60, 64);
+        assertThat(timeline.notes())
+                .extracting(StudioTimelineResponse.Note::measure)
+                .containsExactly(1, 2, 3, 4);
+        assertThat(timeline.notes())
+                .extracting(StudioTimelineResponse.Note::startBeat)
+                .containsExactly(0.0, 2.0, 4.0, 6.0);
         assertThat(timeline.notes().get(2).osmd().measureIndex()).isZero();
         assertThat(timeline.steps()).hasSize(4);
         assertThat(timeline.warnings()).containsExactly(MusicXmlTimelineParser.WARNING_REPEATS_UNFOLDED);

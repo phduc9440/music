@@ -42,7 +42,8 @@ public class StudioTimelineServiceImpl implements StudioTimelineService {
         ScoreContent content = scoreContentService.getMusicXml(scoreId);
         Score score =
                 scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
-        // Gắn phiên bản bộ dựng timeline vào mã băm: đổi cách dựng (ST-08 mở nhắc lại, tay theo part) thì cache cũ tự hết hiệu lực
+        // Gắn phiên bản bộ dựng timeline vào mã băm: đổi cách dựng (ST-08 mở nhắc lại, tay theo part) thì cache cũ tự
+        // hết hiệu lực
         String contentHash = sha256(content.bytes(), TIMELINE_VERSION);
 
         List<String> cached = jdbcTemplate.query(

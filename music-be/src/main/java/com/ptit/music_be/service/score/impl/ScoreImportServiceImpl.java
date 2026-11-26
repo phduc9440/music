@@ -70,6 +70,7 @@ public class ScoreImportServiceImpl implements ScoreImportService {
     static final int MAX_TITLE_LENGTH = ScoreTitles.MAX_LENGTH;
     /** Tên file gốc lưu ở score_files (không phải tên bài). */
     static final int MAX_FILE_NAME_LENGTH = 255;
+
     static final int MAX_COMPOSER_LENGTH = 255;
     /** Giới hạn dung lượng XML sau khi giải nén (chống zip bomb). */
     static final int MAX_XML_BYTES = 50 * 1024 * 1024;

@@ -262,7 +262,10 @@ public class LiveCollabService {
         }
         if (!affected.isEmpty()) {
             CollabErrorCode code = CollabErrorCode.LIVE_ACCESS_CHANGED;
-            replyToUser(affected.getFirst().email(), "/queue/live-errors", new LiveError(code.getCode(), code.getMessage()));
+            replyToUser(
+                    affected.getFirst().email(),
+                    "/queue/live-errors",
+                    new LiveError(code.getCode(), code.getMessage()));
         }
     }
 

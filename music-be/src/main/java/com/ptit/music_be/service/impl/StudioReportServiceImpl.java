@@ -82,8 +82,8 @@ public class StudioReportServiceImpl implements StudioReportService {
             throw new AppException(LibraryErrorCode.STUDIO_SESSION_NOT_ACTIVE);
         }
 
-        EventCounts counts = withUnreachedNotes(
-                session, eventCounts(sessionId, session.getMode(), request.coveredUntilMs()));
+        EventCounts counts =
+                withUnreachedNotes(session, eventCounts(sessionId, session.getMode(), request.coveredUntilMs()));
         int total = counts.expectedCount();
         session.setStatus(PracticeSessionStatus.COMPLETED);
         session.setEndedAt(LocalDateTime.now(ZoneOffset.UTC));
@@ -154,9 +154,7 @@ public class StudioReportServiceImpl implements StudioReportService {
                 STUDIO_MODES,
                 PracticeSessionStatus.COMPLETED,
                 PageRequest.of(0, 1, Sort.by(Sort.Direction.DESC, "scorePoints").and(Sort.by("startedAt"))));
-        return sessions.stream()
-                .findFirst()
-                .map(session -> buildReport(session, countsOf(session)));
+        return sessions.stream().findFirst().map(session -> buildReport(session, countsOf(session)));
     }
 
     private StudioSessionReportResponse buildReport(PracticeSession session, EventCounts counts) {
@@ -247,7 +245,8 @@ public class StudioReportServiceImpl implements StudioReportService {
         if (session.getLoopStartMeasure() != null) {
             return counts;
         }
-        int expected = expectedNoteCount(studioTimelineService.getTimeline(session.getScore().getId()), session);
+        int expected = expectedNoteCount(
+                studioTimelineService.getTimeline(session.getScore().getId()), session);
         int unreached = expected - counts.expectedCount();
         return unreached > 0 ? counts.withMissed(counts.missed() + unreached) : counts;
     }
@@ -377,7 +376,8 @@ public class StudioReportServiceImpl implements StudioReportService {
             return 0;
         }
         double wrongPenalty = microphone ? 0 : 0.3 * counts.wrongPitch();
-        // Chờ nốt không chấm nhịp: đúng cao độ là đủ, nốt sai trừ 0,3 (thang riêng, Q5); tối đa 10000 như Chạy tự do (ST-10)
+        // Chờ nốt không chấm nhịp: đúng cao độ là đủ, nốt sai trừ 0,3 (thang riêng, Q5); tối đa 10000 như Chạy tự do
+        // (ST-10)
         double normalized = mode == PracticeMode.WAIT
                 ? (counts.perfect() + counts.early() + counts.late() - wrongPenalty) / total
                 : (counts.perfect() + 0.7 * (counts.early() + counts.late()) - wrongPenalty) / total;

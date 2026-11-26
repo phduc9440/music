@@ -88,6 +88,7 @@ public class OmrServiceImpl implements OmrService {
     static final String DEFAULT_VISIBILITY = "PRIVATE";
     /** Tên file gốc lưu ở score_files (không phải tên bài). */
     static final int MAX_FILE_NAME_LENGTH = 255;
+
     static final int MAX_COMPOSER_LENGTH = 255;
     /** Tác vụ OMR "đang chạy" = còn chờ hoặc đang xử lý; dùng để giới hạn số task mỗi người. */
     static final List<AiTaskStatus> ACTIVE_STATUSES = List.of(AiTaskStatus.PENDING, AiTaskStatus.PROCESSING);

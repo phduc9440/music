@@ -161,8 +161,7 @@ class StudioReportServiceImplTest {
     private static StudioTimelineResponse timelineWithNotes(int count) {
         List<StudioTimelineResponse.Note> notes = new java.util.ArrayList<>();
         for (int index = 0; index < count; index++) {
-            notes.add(new StudioTimelineResponse.Note(
-                    "n" + index, 1, 1, null, 60, index, 1, true, null, null));
+            notes.add(new StudioTimelineResponse.Note("n" + index, 1, 1, null, 60, index, 1, true, null, null));
         }
         return new StudioTimelineResponse(
                 "score-1", "h", "Test score", 1, 100, List.of(), List.of(), List.of(), notes, List.of(), List.of());

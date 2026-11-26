@@ -21,8 +21,7 @@ public enum CollabErrorCode implements ErrorCode {
             HttpStatus.BAD_REQUEST),
     CANNOT_SHARE_WITH_OWNER(2406, "Không thể chia sẻ bản nhạc cho chính chủ sở hữu", HttpStatus.BAD_REQUEST),
     SHARE_MEMBER_NOT_EXISTED(2407, "Người này chưa có quyền với bản nhạc", HttpStatus.NOT_FOUND),
-    SHARE_PERMISSION_INVALID(
-            2408, "Cấp quyền phải là 1 (xem), 2 (góp ý) hoặc 3 (chỉnh sửa)", HttpStatus.BAD_REQUEST),
+    SHARE_PERMISSION_INVALID(2408, "Cấp quyền phải là 1 (xem), 2 (góp ý) hoặc 3 (chỉnh sửa)", HttpStatus.BAD_REQUEST),
     REVIEW_RATING_INVALID(2410, "Số sao phải từ 1 đến 5", HttpStatus.BAD_REQUEST),
     REVIEW_COMMENT_INVALID(2411, "Bình luận tối đa 2000 ký tự", HttpStatus.BAD_REQUEST),
     REVIEW_EMPTY(2412, "Nhận xét cần có số sao hoặc bình luận", HttpStatus.BAD_REQUEST),
