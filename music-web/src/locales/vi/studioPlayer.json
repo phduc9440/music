@@ -10,7 +10,7 @@
     "waitHint": "Nốt sẽ dừng ở vạch chơi. Bấm đủ các nốt trong hợp âm để chuyển sang bước tiếp theo.",
     "input": "Cách nhập nốt",
     "computerKeyboard": "Bàn phím máy tính",
-    "touchKeyboard": "Bấm phím đàn trên màn hình",
+    "touchKeyboard": "Phím đàn trên màn hình",
     "microphone": "Micro (đàn piano thật)",
     "microphoneHint": "Micro nhận diện nhiều nốt cùng lúc. Chỉ dùng với Chạy tự do; kết quả sẽ trễ khoảng 1–2 giây. Âm thanh được phân tích trên trình duyệt, không gửi lên máy chủ. Đặt micro gần đàn và giảm tiếng ồn nền.",
     "hands": "Tay luyện tập",
@@ -25,7 +25,8 @@
     "starting": "Đang tạo phiên…",
     "freeRunHint": "Nốt chạy đều theo tốc độ đã chọn; chơi đúng lúc nốt chạm vạch để được chấm hoàn hảo.",
     "playPreview": "Nghe thử bài",
-    "stopPreview": "Dừng nghe thử"
+    "stopPreview": "Dừng nghe thử",
+    "tempoBpm": "≈ {bpm} BPM"
   },
   "session": {
     "live": "Đang luyện",
@@ -74,7 +75,9 @@
     "label": "Đàn piano ảo",
     "title": "Phím đàn",
     "range": "88 phím · A0–C8",
-    "rangeHint": "Một số nốt trong bản nhạc nằm ngoài dải 88 phím của piano (A0–C8)."
+    "rangeHint": "Một số nốt trong bản nhạc nằm ngoài dải 88 phím của piano (A0–C8).",
+    "computerRange": "Phím máy tính đang phát {from}–{to}; bấm Z để xuống một quãng tám, X để lên.",
+    "outOfRange": "Bài có nốt ngoài dải này: đổi quãng bằng Z/X khi tới đoạn đó, hoặc tập từng tay."
   },
   "keyboardGuide": {
     "open": "Hướng dẫn cách chơi",
@@ -89,7 +92,7 @@
     "micDesc": "Đặt laptop hoặc micro gần đàn piano thật (cách khoảng 30–50cm). Đảm bảo không gian xung quanh yên tĩnh. Hệ thống AI phân tích âm thanh trực tiếp trên trình duyệt để chấm điểm các nốt bạn vừa đàn.",
     "handsDesc": "Quy ước màu tay: Nốt màu xanh là tay phải, nốt màu vàng cam là tay trái. Hãy bấm đúng lúc nốt rơi chạm vạch chơi.",
     "stepInput": "Trong phần thiết lập, chọn “Bàn phím máy tính” để chơi bằng các phím chữ, hoặc chọn “Bấm phím đàn trên màn hình” để chạm trực tiếp lên đàn.",
-    "stepRange": "Đàn ảo luôn hiển thị đủ 88 phím từ A0 đến C8. Bàn phím máy tính phát các nốt từ C4 đến C5 theo sơ đồ.",
+    "stepRange": "Đàn ảo luôn hiển thị đủ 88 phím từ A0 đến C8. Bàn phím máy tính phát một quãng tám theo nốt giữa của phần đang tập; bấm Z / X để dời xuống / lên một quãng tám.",
     "stepPlay": "Quan sát màu nốt để biết tay: tay phải màu xanh, tay trái màu cam. Bấm phím tương ứng khi nốt chạm vạch chơi; với đàn màn hình, chạm phím tương ứng.",
     "stepFeedback": "Xem kết quả ngay dưới đàn: xanh là đúng nhịp, vàng là sớm/trễ, đỏ là sai nốt hoặc bỏ lỡ.",
     "keyMap": "Bàn phím máy tính phát một quãng tám theo sơ đồ này:"

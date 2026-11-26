@@ -25,7 +25,8 @@
     "starting": "Starting session…",
     "freeRunHint": "Notes keep moving at the chosen tempo; play as each note reaches the line to score Perfect.",
     "playPreview": "Preview",
-    "stopPreview": "Stop preview"
+    "stopPreview": "Stop preview",
+    "tempoBpm": "≈ {bpm} BPM"
   },
   "session": {
     "live": "Practice in progress",
@@ -74,7 +75,9 @@
     "label": "Virtual piano",
     "title": "Piano keys",
     "range": "88 keys · A0–C8",
-    "rangeHint": "Some score notes are outside the 88-key piano range (A0–C8)."
+    "rangeHint": "Some score notes are outside the 88-key piano range (A0–C8).",
+    "computerRange": "Computer keys play {from}–{to}; press Z to go down an octave, X to go up.",
+    "outOfRange": "Some notes are outside this range: shift with Z/X when you reach them, or practise one hand at a time."
   },
   "keyboardGuide": {
     "open": "How to play",
@@ -89,7 +92,7 @@
     "micDesc": "Place your laptop or microphone near your acoustic or digital piano (30–50cm away). Keep the room quiet. The Basic Pitch AI recognizes notes directly from your piano audio in real time.",
     "handsDesc": "Hand colors: Teal/Blue is right hand, gold/amber is left hand. Play when each note reaches the hit line.",
     "stepInput": "In setup, choose “Computer keyboard” to use letter keys, or “Tap the on-screen piano” to play by touching the piano.",
-    "stepRange": "The virtual piano always shows all 88 keys from A0 to C8. Computer keys play C4 through C5 using the map.",
+    "stepRange": "The on-screen piano always shows all 88 keys (A0–C8). Computer keys play one octave around the middle of the part you practise; press Z / X to shift down / up an octave.",
     "stepPlay": "Note colors indicate hands: right hand is blue and left hand is orange. Press the matching key when a note reaches the play line, or tap its on-screen piano key.",
     "stepFeedback": "Check the result below the piano: green means in time, yellow means early/late, and red means wrong note or missed.",
     "keyMap": "Computer keys play one octave using this map:"

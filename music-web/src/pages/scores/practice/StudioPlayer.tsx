@@ -15,6 +15,7 @@ import { fetchMusicXml, scoreApi, studioApi } from '../../../services';
 import { t, translateError } from '../../../i18n/core';
 import { useNavigate } from '../../../routes/useTransitionNavigate';
 import { playClick, playPianoNote } from '../../../utils/pianoSynth';
+import { loadStudioSettings, saveStudioSettings } from '../../../components/player/studio/studioSettings';
 import { DEFAULT_TOLERANCE_WINDOW_MS, FreeRunScorer } from '../../../components/player/engine/FreeRunScorer';
 import type { PracticeNoteEvent } from '../../../components/player/engine/FreeRunScorer';
 import { WaitModeScorer } from '../../../components/player/engine/WaitModeScorer';
@@ -90,16 +91,23 @@ export default function StudioPlayer() {
   const { scoreId } = useParams<{ scoreId: string }>();
   const navigate = useNavigate();
   const [loadState, setLoadState] = useState<LoadState>({ phase: 'loading' });
-  const [mode, setMode] = useState<'FREE_RUN' | 'WAIT'>('FREE_RUN');
-  const [inputSource, setInputSource] = useState<StudioInputSource>('TOUCH');
-  const [handMode, setHandMode] = useState<StudioHandMode>('BOTH');
-  const [tempoPercent, setTempoPercent] = useState(100);
+  // Thiết lập lần trước (T41, ST-13); lần đầu: máy có chuột/bàn phím dùng phím máy tính, màn cảm ứng dùng phím trên màn hình
+  const [savedSettings] = useState(loadStudioSettings);
+  const [mode, setMode] = useState<'FREE_RUN' | 'WAIT'>(savedSettings.mode);
+  const [inputSource, setInputSource] = useState<StudioInputSource>(savedSettings.inputSource);
+  const [handMode, setHandMode] = useState<StudioHandMode>(savedSettings.handMode);
+  const [tempoPercent, setTempoPercent] = useState(savedSettings.tempoPercent);
+  useEffect(() => {
+    saveStudioSettings({ mode, inputSource, handMode, tempoPercent });
+  }, [mode, inputSource, handMode, tempoPercent]);
   const [startMeasure, setStartMeasure] = useState(1);
   const [endMeasure, setEndMeasure] = useState(1);
   const [repeatSection, setRepeatSection] = useState(false);
   const [session, setSession] = useState<StudioSessionResponse | null>(null);
   const [activeSession, setActiveSession] = useState<StudioSessionResponse | null>(null);
   const computerKeyboardBaseRef = useRef(COMPUTER_KEYBOARD_DEFAULT_BASE_MIDI);
+  /** Số quãng tám người chơi dời dải phím máy tính bằng Z / X (T39). */
+  const [octaveShift, setOctaveShift] = useState(0);
   const handModeRef = useRef<StudioHandMode>(handMode);
   useEffect(() => {
     handModeRef.current = handMode;
@@ -491,7 +499,14 @@ export default function StudioPlayer() {
       if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
       const target = event.target;
       if (target instanceof HTMLElement && target.closest('input, select, textarea, [role="dialog"]')) return;
-      const semitone = KEYBOARD_MAP[event.key.toLowerCase()];
+      const key = event.key.toLowerCase();
+      // Z / X: dời dải phím máy tính xuống / lên một quãng tám (bài hai tay, nốt ngoài C4–C5)
+      if (key === 'z' || key === 'x') {
+        event.preventDefault();
+        setOctaveShift((shift) => Math.max(-4, Math.min(4, shift + (key === 'z' ? -1 : 1))));
+        return;
+      }
+      const semitone = KEYBOARD_MAP[key];
       if (semitone === undefined) return;
       event.preventDefault();
       onPlayNote(computerKeyboardBaseRef.current + semitone);
@@ -499,6 +514,12 @@ export default function StudioPlayer() {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [session, inputSource, onPlayNote]);
+
+  const stopPreview = useCallback(() => {
+    previewTimeoutRef.current.forEach((id) => window.clearTimeout(id));
+    previewTimeoutRef.current = [];
+    setIsPlayingPreview(false);
+  }, []);
 
   const startSession = async () => {
     if (loadState.phase !== 'ready' || !scoreId || busy || session || activeSession) return;
@@ -565,6 +586,9 @@ export default function StudioPlayer() {
         }
       }
       setMicLatencyMs(null);
+      // bắt đầu phiên thì dừng nghe thử và trả dải phím máy tính về quãng tự chọn
+      stopPreview();
+      setOctaveShift(0);
       setSession(created.data);
       setElapsedMs(-leadInMs);
       setWaitVisualElapsedMs(0);
@@ -693,12 +717,6 @@ export default function StudioPlayer() {
     });
   }, [loadState, repeatSection, startMeasure, endMeasure, tempoPercent, handMode]);
 
-  const stopPreview = useCallback(() => {
-    previewTimeoutRef.current.forEach((id) => window.clearTimeout(id));
-    previewTimeoutRef.current = [];
-    setIsPlayingPreview(false);
-  }, []);
-
   const playPreview = useCallback(() => {
     if (isPlayingPreview) {
       stopPreview();
@@ -721,19 +739,26 @@ export default function StudioPlayer() {
     previewTimeoutRef.current.push(doneId);
   }, [isPlayingPreview, previewSchedule, stopPreview]);
 
-  // Dừng preview khi bắt đầu session, và dọn dẹp khi unmount
-  useEffect(() => {
-    if (session) stopPreview();
-  }, [session, stopPreview]);
+  // Dọn preview khi rời trang (bắt đầu phiên thì startSession tự dừng preview)
   useEffect(() => () => stopPreview(), [stopPreview]);
 
-  // phím máy tính chỉ phủ 13 bán cung: dời quãng tám theo nốt giữa của bài (tay trái ở quãng thấp, tay phải ở quãng cao)
-  const computerKeyboardBase = useMemo(() => {
+  // phím máy tính chỉ phủ 13 bán cung: đặt quãng tám theo nốt giữa của phần đang tập (tay đã chọn), rồi cộng phần người
+  // chơi tự dời bằng Z / X (T39)
+  const autoKeyboardBase = useMemo(() => {
     const midis = ((sessionSchedule ?? previewSchedule)?.notes ?? []).map((note) => note.midi).sort((a, b) => a - b);
     if (midis.length === 0) return COMPUTER_KEYBOARD_DEFAULT_BASE_MIDI;
     return Math.floor(midis[Math.floor(midis.length / 2)] / 12) * 12;
   }, [sessionSchedule, previewSchedule]);
-  computerKeyboardBaseRef.current = computerKeyboardBase;
+  const computerKeyboardBase = Math.max(24, Math.min(96, autoKeyboardBase + octaveShift * 12));
+  useEffect(() => {
+    computerKeyboardBaseRef.current = computerKeyboardBase;
+  }, [computerKeyboardBase]);
+  // nốt cần chơi nằm ngoài dải phím máy tính hiện tại (bài hai tay thường rộng hơn một quãng tám)
+  const keyboardMissesNotes =
+    inputSource === 'KEYBOARD' &&
+    (sessionSchedule?.notes ?? []).some(
+      (note) => note.midi < computerKeyboardBase || note.midi > computerKeyboardBase + 12,
+    );
 
   if (loadState.phase === 'loading') {
     return (
@@ -867,7 +892,7 @@ export default function StudioPlayer() {
               </li>
             </ul>
           </div>
-          <Link className="sc-btn" to="/studio/history">
+          <Link className="sc-btn" to="/practice-history">
             <Icon name="clock" size={16} />
             {t('studioReport.history.open')}
           </Link>
@@ -933,6 +958,9 @@ export default function StudioPlayer() {
                             <Icon name={icon} size={18} />
                           </span>
                           <strong>{t(`studioReport.mode.${value}`)}</strong>
+                          <small className="studio-player__mode-desc">
+                            {t(value === 'WAIT' ? 'studioPlayer.setup.waitHint' : 'studioPlayer.setup.freeRunHint')}
+                          </small>
                         </label>
                       );
                     })}
@@ -997,6 +1025,14 @@ export default function StudioPlayer() {
                     <output htmlFor="studio-tempo">
                       {tempoPercent}
                       <small>%</small>
+                      {loadState.phase === 'ready' && (
+                        <small className="studio-player__tempo-bpm">
+                          {' '}
+                          {t('studioPlayer.setup.tempoBpm', {
+                            bpm: Math.round((loadState.timeline.tempoBpm * tempoPercent) / 100),
+                          })}
+                        </small>
+                      )}
                     </output>
                   </div>
                   <input
@@ -1230,6 +1266,15 @@ export default function StudioPlayer() {
             </div>
 
             {hasNotesOutsideKeyboard && <p className="studio-player__note">{t('studioPlayer.keyboard.rangeHint')}</p>}
+            {session && inputSource === 'KEYBOARD' && (
+              <p className="studio-player__note" role="status">
+                {t('studioPlayer.keyboard.computerRange', {
+                  from: noteName(computerKeyboardBase),
+                  to: noteName(computerKeyboardBase + 12),
+                })}
+                {keyboardMissesNotes && ` ${t('studioPlayer.keyboard.outOfRange')}`}
+              </p>
+            )}
 
             <div
               className={[

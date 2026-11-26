@@ -1,4 +1,4 @@
-import { Route, createBrowserRouter, createRoutesFromElements } from 'react-router-dom';
+import { Navigate, Route, createBrowserRouter, createRoutesFromElements } from 'react-router-dom';
 import Login from '../pages/Login';
 import UserProfile from '../pages/Profile';
 import NotificationSettings from '../pages/notifications/NotificationSettings';
@@ -40,7 +40,6 @@ import OfficialRequests from '../pages/scores/library/OfficialRequests';
 import OfficialScores from '../pages/scores/library/OfficialScores';
 import PracticeHistory from '../pages/scores/practice/PracticeHistory';
 import PracticeStats from '../pages/scores/practice/PracticeStats';
-import StudioHistory from '../pages/scores/practice/StudioHistory';
 import StudioSessionReport from '../pages/scores/practice/StudioSessionReport';
 import StudioPlayer from '../pages/scores/practice/StudioPlayer';
 import MyPlan from '../pages/billing/MyPlan';
@@ -114,7 +113,8 @@ const router = createBrowserRouter(
         <Route path="/playlists/:id" element={<PlaylistDetail />} />
         <Route path="/practice-history" element={<PracticeHistory />} />
         <Route path="/practice-stats" element={<PracticeStats />} />
-        <Route path="/studio/history" element={<StudioHistory />} />
+        {/* Lịch sử Studio gộp vào lịch sử luyện tập (ST-11); giữ đường dẫn cũ cho liên kết đã lưu */}
+        <Route path="/studio/history" element={<Navigate to="/practice-history" replace />} />
         <Route path="/studio/sessions/:sessionId/report" element={<StudioSessionReport />} />
         {/* Diễn đàn (mục 5.5) */}
         <Route path="/forum" element={<Forum />} />

@@ -342,10 +342,6 @@ export default function PracticeHistory() {
                 <Icon name="chart" size={16} />
                 {t('practice.history.statsLink')}
               </Link>
-              <Link className="pr-ghost" to="/studio/history">
-                <Icon name="clock" size={16} />
-                {t('studioReport.history.open')}
-              </Link>
             </div>
           </div>
 
@@ -473,9 +469,16 @@ export default function PracticeHistory() {
                         >
                           <Icon name="play" size={16} />
                         </Link>
-                        <button className="sc-btn sc-btn--sm" onClick={() => openDetail(s.id)}>
-                          {t('practice.history.details')}
-                        </button>
+                        {s.mode >= 4 ? (
+                          // phiên Studio: mở báo cáo Studio (theo ô nhịp, so sánh kỷ lục) thay cho hộp chi tiết
+                          <Link className="sc-btn sc-btn--sm" to={`/studio/sessions/${s.id}/report`}>
+                            {t('practice.history.details')}
+                          </Link>
+                        ) : (
+                          <button className="sc-btn sc-btn--sm" onClick={() => openDetail(s.id)}>
+                            {t('practice.history.details')}
+                          </button>
+                        )}
                         <button
                           className="pr-icon-btn pr-icon-btn--danger"
                           onClick={() => remove(s)}

@@ -20,6 +20,7 @@ import org.springframework.util.StringUtils;
 
 import com.ptit.music_be.dto.enums.PracticeSessionStatus;
 import com.ptit.music_be.dto.enums.StudioHandMode;
+import com.ptit.music_be.dto.enums.StudioInputSource;
 import com.ptit.music_be.dto.enums.StudioMode;
 import com.ptit.music_be.dto.enums.StudioNoteEventResult;
 import com.ptit.music_be.dto.enums.practice.PracticeMode;
@@ -97,7 +98,7 @@ public class StudioReportServiceImpl implements StudioReportService {
         session.setMissedCount(counts.missed());
         session.setAccuracyPct(accuracyPct(counts, total));
         session.setTimingAccuracyPct(timingAccuracyPct(counts, session.getMode(), total));
-        session.setScorePoints((double) scorePoints(counts, session.getMode(), total));
+        session.setScorePoints((double) scorePoints(counts, session, total));
 
         PracticeSession saved = practiceSessionRepository.save(session);
         return buildReport(saved, counts);
@@ -160,7 +161,7 @@ public class StudioReportServiceImpl implements StudioReportService {
 
     private StudioSessionReportResponse buildReport(PracticeSession session, EventCounts counts) {
         int total = counts.expectedCount();
-        int points = scorePoints(counts, session.getMode(), total);
+        int points = scorePoints(counts, session, total);
         Double accuracy = accuracyPct(counts, total);
         Double timing = timingAccuracyPct(counts, session.getMode(), total);
         List<StudioMeasureBreakdown> measures =
@@ -363,14 +364,23 @@ public class StudioReportServiceImpl implements StudioReportService {
         return timedNotes == 0 || total == 0 ? 0.0 : percent(counts.perfect(), timedNotes);
     }
 
-    private static int scorePoints(EventCounts counts, PracticeMode mode, int total) {
+    private static int scorePoints(EventCounts counts, PracticeSession session, int total) {
+        return scorePoints(counts, session.getMode(), session.getInputSource() == StudioInputSource.MIC, total);
+    }
+
+    /**
+     * Điểm 0–10000. Micro hay nghe ra nốt thừa (hoạ âm, tiếng vang) nên với micro nốt sai vẫn được đếm nhưng không trừ
+     * điểm (ST-12).
+     */
+    static int scorePoints(EventCounts counts, PracticeMode mode, boolean microphone, int total) {
         if (total == 0) {
             return 0;
         }
+        double wrongPenalty = microphone ? 0 : 0.3 * counts.wrongPitch();
         // Chờ nốt không chấm nhịp: đúng cao độ là đủ, nốt sai trừ 0,3 (thang riêng, Q5); tối đa 10000 như Chạy tự do (ST-10)
         double normalized = mode == PracticeMode.WAIT
-                ? (counts.perfect() + counts.early() + counts.late() - 0.3 * counts.wrongPitch()) / total
-                : (counts.perfect() + 0.7 * (counts.early() + counts.late()) - 0.3 * counts.wrongPitch()) / total;
+                ? (counts.perfect() + counts.early() + counts.late() - wrongPenalty) / total
+                : (counts.perfect() + 0.7 * (counts.early() + counts.late()) - wrongPenalty) / total;
         return (int) Math.round(Math.max(0, Math.min(1, normalized)) * 10000);
     }
 

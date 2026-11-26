@@ -41,7 +41,7 @@ export default function StudioSessionReport() {
   return (
     <div className="sc-page">
       <main className="sc-container">
-        <BackLink label={t('studioReport.report.back')} to="/studio/history" />
+        <BackLink label={t('studioReport.report.back')} to="/practice-history" />
         {!report && <p>{t(loadFailed ? 'studioReport.report.loadFailed' : 'studioReport.report.loading')}</p>}
         {report && (
           <>
