@@ -1118,6 +1118,13 @@
   font-variant-numeric: tabular-nums;
 }
 
+.adm-private {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--adm-text-2);
+}
+
 .adm-muted {
   color: var(--adm-text-2);
 }

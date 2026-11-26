@@ -7,6 +7,7 @@ import {
   ButtonLink,
   Card,
   CellTitle,
+  Icon,
   PageHeader,
   Pager,
   SearchForm,
@@ -192,8 +193,16 @@ export default function AdminScores() {
     );
   };
 
+  // Duyệt hàng loạt chỉ áp cho bản chờ duyệt, gỡ công khai chỉ cho bản công khai (BE cũng chặn); bản riêng tư chỉ
+  // xóa được (T50)
+  const selectedRows = rows.filter((r) => selected.has(r.id));
+  const eligible = (action: BulkAction) =>
+    selectedRows
+      .filter((r) => action === 'DELETE' || r.visibility === (action === 'PUBLIC' ? 'PENDING' : 'PUBLIC'))
+      .map((r) => r.id);
+
   const bulk = async (action: BulkAction) => {
-    const ids = [...selected];
+    const ids = eligible(action);
     if (ids.length === 0) return;
     let reason: string | undefined;
     if (action === 'DELETE') {
@@ -314,10 +323,24 @@ export default function AdminScores() {
       {selected.size > 0 && (
         <div className="adm-bulkbar" role="toolbar" aria-label={t('admin.scores.bulkActions')}>
           <span className="adm-bulkbar__count">{t('admin.scores.selected', { count: selected.size })}</span>
-          <Button size="sm" variant="primary" icon="globe" loading={bulkBusy} onClick={() => bulk('PUBLIC')}>
+          <Button
+            size="sm"
+            variant="primary"
+            icon="globe"
+            loading={bulkBusy}
+            disabled={eligible('PUBLIC').length === 0}
+            title={t('admin.scores.bulkPendingOnly')}
+            onClick={() => bulk('PUBLIC')}
+          >
             {t('admin.scores.approvePending')}
           </Button>
-          <Button size="sm" icon="lock" disabled={bulkBusy} onClick={() => bulk('PRIVATE')}>
+          <Button
+            size="sm"
+            icon="lock"
+            disabled={bulkBusy || eligible('PRIVATE').length === 0}
+            title={t('admin.scores.bulkPublicOnly')}
+            onClick={() => bulk('PRIVATE')}
+          >
             {t('admin.scores.unpublish')}
           </Button>
           <Button size="sm" variant="danger" icon="trash" disabled={bulkBusy} onClick={() => bulk('DELETE')}>
@@ -361,8 +384,16 @@ export default function AdminScores() {
                   />
                 </td>
                 <td>
+                  {/* T50 (Q11): bản riêng tư chỉ chủ sở hữu xem được, quản trị viên không có liên kết vào nội dung */}
                   <CellTitle sub={s.composer || undefined}>
-                    <Link to={`/admin/scores/${s.id}`}>{s.title}</Link>
+                    {s.visibility === 'PRIVATE' ? (
+                      <span className="adm-private" title={t('admin.scores.privateHint')}>
+                        <Icon name="lock" size={13} />
+                        {s.title}
+                      </span>
+                    ) : (
+                      <Link to={`/admin/scores/${s.id}`}>{s.title}</Link>
+                    )}
                   </CellTitle>
                 </td>
                 <td className="adm-muted">{s.ownerEmail}</td>
@@ -375,13 +406,15 @@ export default function AdminScores() {
                 <td className="adm-nowrap adm-muted">{formatDateTime(s.updatedAt)}</td>
                 <td className="adm-table__actions">
                   <div className="adm-table__actions-inner">
-                    <ButtonLink
-                      to={`/admin/scores/${s.id}`}
-                      size="sm"
-                      variant="ghost"
-                      icon="eye"
-                      title={t('admin.official.view')}
-                    />
+                    {s.visibility !== 'PRIVATE' && (
+                      <ButtonLink
+                        to={`/admin/scores/${s.id}`}
+                        size="sm"
+                        variant="ghost"
+                        icon="eye"
+                        title={t('admin.official.view')}
+                      />
+                    )}
                     {s.visibility === 'PUBLIC' ? (
                       <>
                         <Button size="sm" icon="library" disabled={busyId === s.id} onClick={() => toggleOfficial(s)}>

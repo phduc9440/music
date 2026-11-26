@@ -54,7 +54,9 @@ qua callback có header `X-Internal-Key`.
 - **Cộng đồng**: trang chủ, Khám phá, trang Nhạc sĩ, diễn đàn, yêu cầu công khai / bản chính thức, báo cáo vi phạm.
 - **Gói dịch vụ và thanh toán**: bảng giá, giới hạn theo gói, thanh toán VNPay (sandbox), giới thiệu bạn bè.
 - **Quản trị**: dashboard, thành viên, vai trò, bản nhạc chờ duyệt, diễn đàn, báo cáo, gói và doanh thu, tác vụ AI,
-  thông báo hệ thống, nhật ký hoạt động.
+  thông báo hệ thống, nhật ký hoạt động. `SUPER_ADMIN` và `ADMIN` không xem nội dung bản nhạc riêng tư của người dùng
+  (chỉ xem bản chờ duyệt và bản công khai); trong "Quản lý bản nhạc" bản riêng tư chỉ hiện tên, chủ, ngày cập nhật và
+  chỉ xóa được (kèm lý do).
 - **Thông báo** trong ứng dụng và email, **giao diện sáng/tối**, **đa ngôn ngữ** Tiếng Việt / English.
 
 ## Chạy nhanh bằng Docker
