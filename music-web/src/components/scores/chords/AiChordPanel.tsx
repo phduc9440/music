@@ -25,6 +25,8 @@ interface Props {
   optionCount: number;
   switching: boolean;
   onOption: (option: number) => void;
+  /** Nghe thử bản nhạc với các hợp âm đang xem (CH-09): mở thanh Player và phát từ hợp âm đang chọn. */
+  onListen?: () => void;
 }
 
 const optionLetter = (option: number) => String.fromCharCode(64 + option);
@@ -60,6 +62,7 @@ export default function AiChordPanel({
   option,
   optionCount,
   switching,
+  onListen,
   onOption,
 }: Props) {
   const groups = useMemo(() => byMeasure(rows), [rows]);
@@ -119,6 +122,19 @@ export default function AiChordPanel({
           </div>
           <p className="aic-options__hint">{switching ? t('chords.draft.switching') : t('chords.draft.optionsHint')}</p>
         </div>
+      )}
+      {onListen && (
+        <button
+          type="button"
+          className="sc-btn sc-btn--sm aic-listen"
+          onClick={onListen}
+          disabled={switching}
+          title={t('chords.draft.listenHint')}
+        >
+          {optionCount > 1
+            ? t('chords.draft.listenOption', { option: optionLetter(option) })
+            : t('chords.draft.listen')}
+        </button>
       )}
 
       <div className="aic-summary">

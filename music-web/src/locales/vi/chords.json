@@ -107,7 +107,10 @@
     "optionBest": "Phương án A: AI thấy hợp nhất",
     "optionOther": "Phương án {option}",
     "switching": "Đang đổi phương án…",
-    "pending": "Bạn còn một gợi ý hợp âm AI chưa xem. Bấm vào đây để nạp lại bản nháp."
+    "pending": "Bạn còn một gợi ý hợp âm AI chưa xem. Bấm vào đây để nạp lại bản nháp.",
+    "listen": "Nghe thử",
+    "listenOption": "Nghe thử phương án {option}",
+    "listenHint": "Phát bản nhạc kèm hợp âm đang xem, từ hợp âm đang chọn (hoặc từ đầu)"
   },
   "clear": {
     "title": "Xóa hết hợp âm?",

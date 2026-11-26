@@ -107,7 +107,10 @@
     "optionBest": "Option A: the AI's best fit",
     "optionOther": "Option {option}",
     "switching": "Switching option…",
-    "pending": "You have an AI chord suggestion you have not reviewed. Click here to load the draft again."
+    "pending": "You have an AI chord suggestion you have not reviewed. Click here to load the draft again.",
+    "listen": "Listen",
+    "listenOption": "Listen to option {option}",
+    "listenHint": "Play the score with these chords, from the selected chord (or from the start)"
   },
   "clear": {
     "title": "Delete all chords?",

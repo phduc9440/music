@@ -28,6 +28,10 @@
   gap: 0.4rem;
 }
 
+.aic-listen {
+  justify-self: start;
+}
+
 .aic-options__label {
   font-size: var(--ui-text-sm);
   font-weight: 600;

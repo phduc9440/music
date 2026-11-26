@@ -375,6 +375,7 @@ export default function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: Pr
           side={side}
           ai={ai}
           onCloseAi={() => setAiPanelOpen(false)}
+          onListenAi={onPlayButton}
           comments={comments}
           omrCheck={
             checkOpen && omrCheck.available
