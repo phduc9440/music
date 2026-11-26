@@ -1,6 +1,7 @@
 import type { MicAudioWindow } from './micAudioWindowBuffer';
 import { MIC_SAMPLE_RATE, MicAudioWindowBuffer } from './micAudioWindowBuffer';
 import type { MicPitchRequest, MicPitchResponse } from './micPitchTypes';
+import { MicResampler } from './micResampler';
 
 export interface RecognizedMicNote {
   midi: number;
@@ -77,6 +78,10 @@ export class StudioMicInput {
   /** Độ trễ thu của thiết bị + trình duyệt và độ trễ hiệu chỉnh (ms), trừ vào thời điểm mỗi nốt (ST-05). */
   private readonly compensationMs: number;
   private readonly onLevel?: (level: number) => void;
+  /** Hạ tần số khi AudioContext không mở được ở 22 050 Hz (ST-15). */
+  private readonly resampler: MicResampler;
+  /** Nút câm nối worklet tới loa: vài trình duyệt (Safari) không chạy worklet không nối tới đích, nhưng không phát lại tiếng. */
+  private readonly sink: GainNode;
 
   private constructor(
     stream: MediaStream,
@@ -92,6 +97,9 @@ export class StudioMicInput {
     this.stream = stream;
     this.onLevel = options.onLevel;
     this.compensationMs = Math.round(inputLatencyMs(stream, audioContext) + (options.offsetMs ?? 0));
+    this.resampler = new MicResampler(audioContext.sampleRate, MIC_SAMPLE_RATE);
+    this.sink = audioContext.createGain();
+    this.sink.gain.value = 0;
     this.audioContext = audioContext;
     this.worker = worker;
     this.source = source;
@@ -168,7 +176,12 @@ export class StudioMicInput {
     let stream: MediaStream | null = null;
     let worker: Worker | null = null;
     try {
-      audioContext = new AudioContext({ sampleRate: MIC_SAMPLE_RATE });
+      // ST-15: mở ở 22 050 Hz cho mô hình; trình duyệt không cho thì mở ở tần số mặc định rồi hạ mẫu (MicResampler)
+      try {
+        audioContext = new AudioContext({ sampleRate: MIC_SAMPLE_RATE });
+      } catch {
+        audioContext = new AudioContext();
+      }
       const resumePromise = audioContext.resume().then(
         () => null,
         (error: unknown) => asMicError(error, 'audio-start'),
@@ -188,7 +201,7 @@ export class StudioMicInput {
         throw new StudioMicError(code, error instanceof Error ? error.message : 'Microphone access failed');
       }
 
-      if (audioContext.sampleRate !== MIC_SAMPLE_RATE) {
+      if (audioContext.sampleRate < MIC_SAMPLE_RATE) {
         throw new StudioMicError('unsupported', `Audio sample rate ${audioContext.sampleRate} is not supported`);
       }
       const workletUrl = new URL(`${import.meta.env.BASE_URL}studio-mic-capture-processor.js`, window.location.origin);
@@ -239,7 +252,8 @@ export class StudioMicInput {
     }
     this.startedAt = performance.now();
     this.source.connect(this.captureNode);
-    // Không connect tới destination để tránh phát lại âm thanh từ mic (echo loop)
+    // Nối tới loa qua nút câm (gain 0): worklet chắc chắn được chạy mà không phát lại tiếng micro (vòng hú)
+    this.captureNode.connect(this.sink).connect(this.audioContext.destination);
     return this.startedAt;
   }
 
@@ -256,6 +270,7 @@ export class StudioMicInput {
     this.stream.getTracks().forEach((track) => track.stop());
     this.source.disconnect();
     this.captureNode.disconnect();
+    this.sink.disconnect();
     this.worker.terminate();
     this.pendingRequests.forEach((request) => request.reject(new Error('Microphone input was disposed')));
     this.pendingRequests.clear();
@@ -294,8 +309,9 @@ export class StudioMicInput {
     return this.buffer.durationMs;
   }
 
-  private acceptAudio(samples: Float32Array): void {
+  private acceptAudio(raw: Float32Array): void {
     if (this.stopped) return;
+    const samples = this.resampler.process(raw);
     if (this.onLevel && samples.length > 0) {
       let sum = 0;
       for (const value of samples) sum += value * value;
