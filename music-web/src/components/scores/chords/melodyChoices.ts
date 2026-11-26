@@ -5,6 +5,8 @@ export interface MelodyChoice {
   partIndex: number;
   staff: number;
   label: string;
+  /** Mọi ô của part này đã có hợp âm: AI không còn ô nào để gợi ý nếu không thay hợp âm cũ (CH-06). */
+  harmonized: boolean;
 }
 
 const childText = (el: Element | undefined, tag: string): string =>
@@ -26,6 +28,8 @@ export function melodyChoicesOf(root: Document | Element): MelodyChoice[] {
       staves = Math.max(staves, Number(el.textContent) || 1);
     }
     const used = new Set(notes.map((n) => Number(childText(n, 'staff')) || 1));
+    const measures = Array.from(part.getElementsByTagName('measure'));
+    const harmonized = measures.length > 0 && measures.every((m) => m.getElementsByTagName('harmony').length > 0);
     const name = childText(scoreParts[partIndex], 'part-name') || t('chords.melody.part', { n: partIndex + 1 });
     for (let staff = 1; staff <= Math.min(staves, 4); staff++) {
       if (!used.has(staff)) continue;
@@ -33,6 +37,7 @@ export function melodyChoicesOf(root: Document | Element): MelodyChoice[] {
         partIndex,
         staff,
         label: staves > 1 ? t('chords.melody.partStaff', { name, staff }) : name,
+        harmonized,
       });
     }
   });

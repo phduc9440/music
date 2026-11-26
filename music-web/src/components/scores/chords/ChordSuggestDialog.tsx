@@ -76,7 +76,9 @@ export default function ChordSuggestDialog({ scoreId, onClose, onCompleted, allH
   const [error, setError] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
   // Mọi ô đã có hợp âm: hỏi có muốn gợi ý lại (thay hợp âm cũ) hoặc xóa hết không
-  const [harmonized, setHarmonized] = useState(!!allHarmonized);
+  // CH-06: biết trước từ bản đã lưu (bè đang chọn đã đủ hợp âm), không phải chạy thử một tác vụ lỗi; lỗi
+  // ALREADY_HARMONIZED từ tác vụ vẫn bật lại cho trường hợp đọc bản nhạc thất bại
+  const [harmonizedByTask, setHarmonized] = useState(false);
   // Gói của người bấm: khóa tùy chọn nâng cao và hiện số lượt còn lại. Chưa tải được thì không khóa gì (BE vẫn kiểm).
   const [sub, setSub] = useState<MySubscription | null>(null);
   // Bè giai điệu (CH-04): đọc từ bản đã lưu, vì AI gợi ý trên version hiện hành; chỉ hiện khi có từ hai lựa chọn
@@ -112,6 +114,8 @@ export default function ChordSuggestDialog({ scoreId, onClose, onCompleted, allH
     };
   }, []);
 
+  const chosenMelody = melodies.length > 0 ? melodies[Math.min(melody, melodies.length - 1)] : undefined;
+  const harmonized = !!allHarmonized || harmonizedByTask || !!chosenMelody?.harmonized;
   const unlimited = sub?.status === 'UNLIMITED';
   const limits = sub?.limits;
   const locked = (value: string) => !!sub && !unlimited && !limits?.chordAdvanced && ADVANCED.has(value);

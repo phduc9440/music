@@ -30,5 +30,14 @@ test('bỏ part không có nốt có cao độ, giữ thứ tự part', () => {
       `<part id="P1"><measure number="1"><note><unpitched/><duration>4</duration></note></measure></part>` +
       `<part id="P2"><measure number="1">${note()}</measure></part></score-partwise>`,
   );
-  assert.deepEqual(melodyChoicesOf(doc), [{ partIndex: 1, staff: 1, label: 'Sáo' }]);
+  assert.deepEqual(melodyChoicesOf(doc), [{ partIndex: 1, staff: 1, label: 'Sáo', harmonized: false }]);
+});
+
+test('part có hợp âm ở mọi ô được đánh dấu đã có hợp âm', () => {
+  const harmony = '<harmony><root><root-step>C</root-step></root><kind>major</kind></harmony>';
+  const doc = parse(
+    `<score-partwise><part-list><score-part id="P1"><part-name>Sáo</part-name></score-part></part-list>` +
+      `<part id="P1"><measure number="1">${harmony}${note()}</measure><measure number="2">${harmony}${note()}</measure></part></score-partwise>`,
+  );
+  assert.equal(melodyChoicesOf(doc)[0].harmonized, true);
 });
