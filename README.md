@@ -78,6 +78,20 @@ Lần đầu chạy, Flyway tự tạo bảng và nạp dữ liệu mẫu; `musi
 trong volume `hf-cache`). Trong Docker, `music-ai` chạy trên CPU nên thời gian chờ OMR đã được nới ra
 (`INFERENCE_PAGE_TIMEOUT_S`, `TASK_TIMEOUT_S`).
 
+**Mac Apple Silicon:** MuseScore 3.6.2 chỉ có bản x86_64 nên `music-be` mặc định chạy dạng `linux/amd64`
+(`BE_PLATFORM`, Docker Desktop chạy qua Rosetta; bật "Use Rosetta for x86_64/amd64 emulation" trong Settings → General).
+Nhờ vậy xuất PDF, SVG, MP3, WAV vẫn dùng được khi demo. Đặt `BE_PLATFORM=linux/arm64` thì BE nhanh hơn nhưng các định
+dạng này trả 503 (mã 2704).
+
+**Mở web bằng địa chỉ khác `localhost`** (127.0.0.1, IP trong mạng LAN): thêm địa chỉ đó vào `APP_CORS_ORIGINS` trong
+`.env` rồi `docker compose up -d music-be`; nếu không, đăng nhập bị chặn và trang đăng nhập báo "Máy chủ từ chối địa chỉ…".
+
+**Thử cùng chỉnh sửa hai người trên một máy:** đặt `APP_CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173`.
+Người A mở http://localhost:5173, người B mở http://127.0.0.1:5173 (cookie đăng nhập tách theo tên máy nên hai tài khoản
+không đè nhau). A chia sẻ một bản nhạc cho B quyền Sửa, cả hai mở trình chỉnh sửa: thấy avatar của nhau, nốt người này
+thêm hiện ngay ở người kia, ô đang được người khác sửa có khung tên và không sửa được, A hạ quyền B xuống Xem thì B được
+báo và chuyển sang chỉ xem, Lưu ở một bên thì bên kia hết "Có thay đổi chưa lưu".
+
 ### Tài khoản mẫu
 
 Mọi tài khoản mẫu có mật khẩu `12345678`.

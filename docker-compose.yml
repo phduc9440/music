@@ -34,6 +34,9 @@ services:
 
   music-be:
     build: ./music-be
+    # MuseScore 3.6.2 (xuất PDF, SVG, MP3, WAV) chỉ có bản x86_64: chạy music-be dạng amd64 để Mac Apple Silicon cũng
+    # xuất được (Docker Desktop dùng Rosetta). Không cần xuất file mà muốn BE chạy nhanh hơn trên Mac: BE_PLATFORM=linux/arm64
+    platform: ${BE_PLATFORM:-linux/amd64}
     depends_on:
       mysql:
         condition: service_healthy
@@ -58,6 +61,8 @@ services:
       VNPAY_HASH_SECRET: ${VNPAY_HASH_SECRET:-}
       VNPAY_RETURN_URL: ${VNPAY_RETURN_URL:-http://localhost:5173/billing/result}
       APP_WEB_URL: ${APP_WEB_URL:-http://localhost:5173}
+      # Các địa chỉ khác được mở web (127.0.0.1, IP trong mạng LAN khi demo), cách nhau bởi dấu phẩy; APP_WEB_URL luôn được phép
+      APP_CORS_ORIGINS: ${APP_CORS_ORIGINS:-http://localhost:5173,http://localhost:3000}
       APP_STORAGE_LOCAL_ROOT: /data/storage
       OMR_LLM: ${OMR_LLM:-off}
     volumes:
