@@ -1105,6 +1105,20 @@
   white-space: nowrap;
 }
 
+/* A-04: bảng rộng hơn khung (máy 1366 px) thì cột thao tác dính bên phải, không bị cắt khi cuộn ngang */
+.adm-table th.adm-table__actions,
+.adm-table td.adm-table__actions {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  background: var(--adm-surface);
+  box-shadow: -8px 0 8px -8px color-mix(in srgb, var(--ui-shadow-ink) 18%, transparent);
+}
+
+.adm-table tbody tr.adm-row--selected td.adm-table__actions {
+  background: var(--adm-surface);
+}
+
 .adm-table__actions-inner {
   display: inline-flex;
   flex-wrap: nowrap;

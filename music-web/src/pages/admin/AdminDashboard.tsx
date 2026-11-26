@@ -365,6 +365,8 @@ export default function AdminDashboard() {
   const newScores = scoresDay.reduce((s, d) => s + d.count, 0);
   const newMembers = membersDay.reduce((s, d) => s + d.count, 0);
   const practiceMinutes = practiceDay.reduce((s, d) => s + d.minutes, 0);
+  // A-02: số phiên cùng khoảng ngày với số phút (trước đây ghép phút 30 ngày với số phiên từ trước tới nay)
+  const practiceSessions = practiceDay.reduce((s, d) => s + d.sessions, 0);
 
   const visibility = orderBy(data?.scoresByVisibility ?? [], VISIBILITY_ORDER).map((r) => ({
     label: VISIBILITY_LABEL[r.key] ?? r.key,
@@ -972,7 +974,15 @@ export default function AdminDashboard() {
           label={t('admin.dashboard.practiceMinutes')}
           icon="activity"
           value={data ? nf.format(Math.round(practiceMinutes)) : '—'}
-          hint={tot ? t('admin.dashboard.sessionsAllTime', { n: nf.format(tot.practiceSessions) }) : undefined}
+          hint={
+            data
+              ? t('admin.dashboard.sessionsInRange', {
+                  n: nf.format(practiceSessions),
+                  days,
+                  total: nf.format(tot?.practiceSessions ?? 0),
+                })
+              : undefined
+          }
           to="/admin/practice"
           spark={
             <Sparkline

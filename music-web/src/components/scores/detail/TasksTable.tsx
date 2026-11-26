@@ -2,27 +2,10 @@ import { toast } from 'react-toastify';
 import { downloadFile } from '../../../services';
 import { TASK_STATUS_LABELS, TASK_TYPE_LABELS, formatDateTime, scoreDownloadName } from '../../../utils/score';
 import type { AiTaskInfo, ScoreFileInfo } from '../../../types';
-import { EXPORT_TASK_TYPES, stepLabel, translateTaskError } from '../../export/exportUtils';
-import { OMR_TASK_TYPE, describeTaskError, omrStepLabel, parseTaskError } from '../../../utils/omr';
-import { hasKey, t as tr } from '../../../i18n/core';
-
-/**
- * Lỗi của tác vụ theo ngôn ngữ người dùng (OMR-09): xuất file theo export.taskErrors, số hóa theo upload.errors (kèm chi
- * tiết như số trang), gợi ý hợp âm theo chords.taskErrors; không hiện mã kỹ thuật như "PAGE_UNREADABLE: trang 3".
- */
-const taskErrorText = (task: AiTaskInfo): string => {
-  const message = task.errorMessage ?? '';
-  if (EXPORT_TASK_TYPES.includes(task.taskType)) return translateTaskError(message);
-  if (task.taskType === OMR_TASK_TYPE) {
-    const error = describeTaskError(task);
-    return error.detail ? `${error.title} (${error.detail})` : error.title;
-  }
-  const { code } = parseTaskError(message);
-  if (task.taskType === 'CHORD_GENERATION') {
-    return hasKey(`chords.taskErrors.${code}`) ? tr(`chords.taskErrors.${code}`) : tr('chords.failed');
-  }
-  return message;
-};
+import { EXPORT_TASK_TYPES, stepLabel } from '../../export/exportUtils';
+import { omrStepLabel } from '../../../utils/omr';
+import { aiTaskErrorText } from '../../../utils/aiTaskErrors';
+import { t as tr } from '../../../i18n/core';
 
 /** Nhãn bước đang chạy theo loại tác vụ, không hiện mã "EXPORT", "INFERENCE"... */
 const taskStepText = (task: AiTaskInfo, step: string): string =>
@@ -80,7 +63,7 @@ export default function TasksTable({
                     </div>
                   )}
                   {t.errorMessage && (t.status === 'FAILED' || t.status === 'CANCELLED') && (
-                    <div className="sc-table__error">{taskErrorText(t)}</div>
+                    <div className="sc-table__error">{aiTaskErrorText(t)}</div>
                   )}
                   {exported && (
                     <button

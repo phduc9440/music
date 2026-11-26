@@ -28,14 +28,33 @@ const RESET_STEPS: Partial<Record<ViewMode, number>> = { forgot: 1, verify: 2, r
 const RESET_SESSION_INVALID = 1019;
 
 type ApiErr = {
-  response?: { data?: { code?: number; message?: string; result?: { retryAfterSeconds?: number } } };
+  response?: {
+    status?: number;
+    data?: { code?: number; message?: string; result?: { retryAfterSeconds?: number } } | string;
+  };
   message?: string;
 };
 
-const apiError = (error: unknown) => translateError(error, (error as ApiErr).message || t('auth.genericError'));
+/**
+ * Câu lỗi đăng nhập theo ngôn ngữ người dùng, không hiện câu thô của axios ("Request failed with status code 403").
+ * A-06: 403 không kèm JSON là máy chủ chặn vì địa chỉ mở web chưa có trong APP_CORS_ORIGINS (ví dụ mở bằng 127.0.0.1).
+ */
+const apiError = (error: unknown) => {
+  const response = (error as ApiErr).response;
+  if (!response) return t('auth.networkError');
+  if (typeof response.data !== 'object' || response.data === null) {
+    return t(response.status === 403 ? 'auth.originBlocked' : 'auth.genericError');
+  }
+  return translateError(error, t('auth.genericError'));
+};
 
 /** Số giây phải chờ khi backend báo xin mã OTP quá sớm (OTP_REQUEST_TOO_SOON). */
-const retryAfter = (error: unknown) => (error as ApiErr).response?.data?.result?.retryAfterSeconds ?? 0;
+const errorData = (error: unknown) => {
+  const data = (error as ApiErr).response?.data;
+  return typeof data === 'object' ? data : undefined;
+};
+
+const retryAfter = (error: unknown) => errorData(error)?.result?.retryAfterSeconds ?? 0;
 
 const STAGE_POINTS = [
   { icon: 'upload', key: 'capture' },
@@ -148,7 +167,7 @@ export default function Login() {
     } catch (error) {
       toast.error(apiError(error));
       // Phiên đặt mật khẩu hết hạn (quá 10 phút): OTP cũ đã dùng, quay lại bước nhập mã để xin mã mới
-      if (viewMode === 'reset' && (error as ApiErr).response?.data?.code === RESET_SESSION_INVALID) {
+      if (viewMode === 'reset' && errorData(error)?.code === RESET_SESSION_INVALID) {
         setResetToken('');
         setViewMode('verify');
       }

@@ -523,8 +523,8 @@
     "aiRunning": "{n} tác vụ đang chạy",
     "newInPeriod": "+{n} trong {days} ngày",
     "practiceMinutes": "Phút luyện tập",
-    "sessionsAllTime": "{n} phiên từ trước đến nay",
-    "sparkLabel": "{days} ngày gần nhất: tổng {total}, cao nhất {max} ngày {date}"
+    "sparkLabel": "{days} ngày gần nhất: tổng {total}, cao nhất {max} ngày {date}",
+    "sessionsInRange": "{n} phiên trong {days} ngày · {total} phiên từ trước đến nay"
   },
   "ai": {
     "status": {
