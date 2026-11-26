@@ -46,6 +46,21 @@ public class AdminDashboardResponse {
     /** Gói đang hiệu lực theo nguồn: PAYMENT / POINTS_TRIAL / ADMIN_GRANT. */
     List<KeyCount> subscriptionsBySource;
 
+    /** Cùng các chuỗi theo ngày của kỳ liền trước (days ngày ngay trước kỳ đang xem), để so sánh tăng / giảm. */
+    Previous previous;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @FieldDefaults(level = AccessLevel.PRIVATE)
+    public static class Previous {
+        List<DayCount> scoresByDay;
+        List<DayCount> membersByDay;
+        List<DayPractice> practiceByDay;
+        List<DayRevenue> revenueByDay;
+    }
+
     @Data
     @Builder
     @NoArgsConstructor

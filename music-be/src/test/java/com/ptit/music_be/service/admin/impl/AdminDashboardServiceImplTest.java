@@ -47,6 +47,15 @@ class AdminDashboardServiceImplTest {
                 r.getTotals().getScores(),
                 r.getScoresByVisibility().stream().mapToLong(k -> k.getCount()).sum());
         assertEquals(30, r.getRevenueByDay().size());
+        // Kỳ trước: cùng 30 ngày, kết thúc ngay trước ngày đầu của kỳ đang xem
+        assertNotNull(r.getPrevious());
+        assertEquals(30, r.getPrevious().getScoresByDay().size());
+        assertEquals(30, r.getPrevious().getMembersByDay().size());
+        assertEquals(30, r.getPrevious().getPracticeByDay().size());
+        assertEquals(30, r.getPrevious().getRevenueByDay().size());
+        assertEquals(
+                r.getScoresByDay().getFirst().getDate().minusDays(1),
+                r.getPrevious().getScoresByDay().getLast().getDate());
         assertNotNull(r.getBilling());
         assertEquals(
                 r.getBilling().getRevenue(),

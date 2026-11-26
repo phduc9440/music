@@ -633,6 +633,13 @@ export interface AdminDashboard {
   subscriptionsByPlan: DashboardKeyCount[];
   /** Khóa là SubscriptionSource: PAYMENT / POINTS_TRIAL / ADMIN_GRANT. */
   subscriptionsBySource: DashboardKeyCount[];
+  /** Cùng các chuỗi theo ngày của kỳ liền trước (days ngày ngay trước kỳ đang xem), để so tăng / giảm. */
+  previous?: {
+    scoresByDay: { date: string; count: number }[];
+    membersByDay: { date: string; count: number }[];
+    practiceByDay: { date: string; sessions: number; minutes: number }[];
+    revenueByDay: { date: string; amount: number; orders: number }[];
+  } | null;
 }
 
 /** Số tiền tính trong `days` ngày gần nhất; gói, đơn chờ và lệnh cấm là trạng thái hiện tại. */

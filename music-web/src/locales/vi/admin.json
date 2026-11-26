@@ -524,7 +524,19 @@
     "newInPeriod": "+{n} trong {days} ngày",
     "practiceMinutes": "Phút luyện tập",
     "sparkLabel": "{days} ngày gần nhất: tổng {total}, cao nhất {max} ngày {date}",
-    "sessionsInRange": "{n} phiên trong {days} ngày · {total} phiên từ trước đến nay"
+    "sessionsInRange": "{n} phiên trong {days} ngày · {total} phiên từ trước đến nay",
+    "metricRevenue": "Doanh thu",
+    "vsPrevious": "So với kỳ trước cùng số ngày",
+    "deltaNew": "Mới",
+    "deltaUp": "Tăng {value}% so với kỳ trước",
+    "deltaDown": "Giảm {value}% so với kỳ trước",
+    "deltaSame": "Không đổi so với kỳ trước",
+    "previousValue": "Kỳ trước: {value}",
+    "trendSub": "Theo ngày trong {days} ngày gần nhất · tổng {total}",
+    "legend": "Chú thích",
+    "thisPeriod": "Kỳ này",
+    "previousPeriod": "Kỳ trước",
+    "snapshot": "Tình trạng hiện tại"
   },
   "ai": {
     "status": {

@@ -10,7 +10,9 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  ComposedChart,
   LabelList,
+  Line,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -309,6 +311,202 @@ function Kpi({
   );
 }
 
+/** % thay đổi so với kỳ trước; null khi kỳ trước bằng 0 (không chia được). */
+const changePct = (current: number, previous: number): number | null =>
+  previous > 0 ? Math.round(((current - previous) / previous) * 1000) / 10 : null;
+
+/**
+ * Tăng / giảm so với kỳ trước (kiểu Stripe): mũi tên + số %, luôn kèm chữ cho trình đọc màn hình, không chỉ dựa vào màu.
+ * Kỳ trước bằng 0 thì ghi "Mới" khi kỳ này có số, ngược lại ghi "—".
+ */
+function Delta({ current, previous }: { current: number; previous: number }) {
+  const pct = changePct(current, previous);
+  if (pct === null) {
+    return (
+      <span className="dash-delta is-flat" title={t('admin.dashboard.vsPrevious')}>
+        {current > 0 ? t('admin.dashboard.deltaNew') : '—'}
+      </span>
+    );
+  }
+  const tone = pct > 0 ? 'is-up' : pct < 0 ? 'is-down' : 'is-flat';
+  const key = pct > 0 ? 'admin.dashboard.deltaUp' : pct < 0 ? 'admin.dashboard.deltaDown' : 'admin.dashboard.deltaSame';
+  return (
+    <span className={`dash-delta ${tone}`} title={t('admin.dashboard.vsPrevious')}>
+      <Icon name={pct > 0 ? 'arrowUp' : pct < 0 ? 'arrowDown' : 'minus'} size={12} />
+      <span aria-hidden="true">{formatNumber(Math.abs(pct))}%</span>
+      <span className="dash-sr">{t(key, { value: formatNumber(Math.abs(pct)) })}</span>
+    </span>
+  );
+}
+
+/** Chỉ số theo kỳ có biểu đồ chính: doanh thu, thành viên mới, bản nhạc mới, phút luyện tập. */
+type MetricKey = 'revenue' | 'members' | 'scores' | 'practice';
+interface MetricDef {
+  key: MetricKey;
+  label: string;
+  icon: IconName;
+  color: string;
+  /** Giá trị từng ngày kỳ này; kỳ trước cùng số ngày, ghép theo thứ tự ngày. */
+  current: { date: string; value: number }[];
+  previous: number[];
+  format: (n: number) => string;
+  /** Câu trong chú thích khi rê chuột, ví dụ "12 bản nhạc". */
+  tipUnit: (n: number) => string;
+}
+
+/** Ô chỉ số bấm được (chọn biểu đồ chính): tên, tổng kỳ này, % so với kỳ trước và đường xu hướng nhỏ. */
+function MetricTile({
+  metric,
+  days,
+  active,
+  onSelect,
+}: {
+  metric: MetricDef;
+  days: number;
+  active: boolean;
+  onSelect: () => void;
+}) {
+  const total = metric.current.reduce((s, d) => s + d.value, 0);
+  const prevTotal = metric.previous.reduce((s, v) => s + v, 0);
+  return (
+    <button type="button" className="dash-metric" aria-pressed={active} aria-controls="dash-trend" onClick={onSelect}>
+      <span className="dash-metric__top">
+        <span className="dash-metric__label">{metric.label}</span>
+        <Icon name={metric.icon} size={16} />
+      </span>
+      <span className="dash-metric__value">{metric.format(total)}</span>
+      <span className="dash-metric__foot">
+        <Delta current={total} previous={prevTotal} />
+        <span className="dash-metric__prev">
+          {t('admin.dashboard.previousValue', { value: metric.format(prevTotal) })}
+        </span>
+      </span>
+      <Sparkline
+        values={metric.current.map((d) => d.value)}
+        color={metric.color}
+        label={sparkLabel(metric.current, days, metric.format)}
+      />
+    </button>
+  );
+}
+
+/**
+ * Biểu đồ chính: chỉ số đang chọn theo ngày. Kỳ này là vùng màu, kỳ trước là đường nét đứt màu trung tính để đối chiếu
+ * (một trục, cùng đơn vị). Chú thích khi rê chuột ghi cả hai kỳ; nút Bảng cho số chính xác.
+ */
+function TrendCard({ metric, days }: { metric: MetricDef; days: number }) {
+  const [asTable, setAsTable] = useState(false);
+  const rows = metric.current.map((d, i) => ({ date: d.date, value: d.value, previous: metric.previous[i] ?? null }));
+  const total = metric.current.reduce((s, d) => s + d.value, 0);
+  return (
+    <Card
+      title={metric.label}
+      description={t('admin.dashboard.trendSub', { days, total: metric.format(total) })}
+      className="dash-trend"
+      actions={
+        <Tabs
+          value={asTable ? 'table' : 'chart'}
+          onChange={(v) => setAsTable(v === 'table')}
+          items={[
+            { value: 'chart', label: t('admin.dashboard.chart') },
+            { value: 'table', label: t('admin.dashboard.table') },
+          ]}
+        />
+      }
+    >
+      <ul className="dash-legend" aria-label={t('admin.dashboard.legend')}>
+        <li>
+          <span className="dash-legend__dot" style={{ background: metric.color }} />
+          {t('admin.dashboard.thisPeriod')}
+        </li>
+        <li>
+          <span className="dash-legend__dash" />
+          {t('admin.dashboard.previousPeriod')}
+        </li>
+      </ul>
+      {asTable ? (
+        <div className="dash-table-wrap dash-table-wrap--trend">
+          <table className="dash-table">
+            <thead>
+              <tr>
+                <th>{t('admin.dashboard.date')}</th>
+                <th>{t('admin.dashboard.thisPeriod')}</th>
+                <th>{t('admin.dashboard.previousPeriod')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.date}>
+                  <td>{longDate(r.date)}</td>
+                  <td>{metric.format(r.value)}</td>
+                  <td>{r.previous == null ? '—' : metric.format(r.previous)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="dash-chart dash-chart--trend">
+          <ResponsiveContainer>
+            <ComposedChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+              <CartesianGrid stroke="var(--ui-chart-grid)" vertical={false} />
+              <XAxis
+                dataKey="date"
+                tickFormatter={shortDate}
+                tick={AXIS}
+                axisLine={false}
+                tickLine={false}
+                minTickGap={24}
+              />
+              <YAxis
+                allowDecimals={false}
+                tick={AXIS}
+                axisLine={false}
+                tickLine={false}
+                width={56}
+                tickFormatter={(v) => formatCompact(Number(v))}
+              />
+              <Tooltip
+                cursor={{ stroke: 'var(--ui-chart-neutral)', strokeWidth: 1 }}
+                content={({ active, payload, label }: TipProps) => {
+                  const row = payload?.[0]?.payload;
+                  if (!active || !row) return null;
+                  const lines = [`${t('admin.dashboard.thisPeriod')}: ${metric.tipUnit(Number(row.value ?? 0))}`];
+                  if (row.previous != null) {
+                    lines.push(`${t('admin.dashboard.previousPeriod')}: ${metric.tipUnit(Number(row.previous))}`);
+                  }
+                  return <Tip title={longDate(String(label))} lines={lines} />;
+                }}
+              />
+              <Line
+                type="monotone"
+                dataKey="previous"
+                stroke="var(--ui-chart-neutral)"
+                strokeWidth={2}
+                strokeDasharray="4 4"
+                dot={false}
+                activeDot={false}
+                isAnimationActive={false}
+              />
+              <Area
+                type="monotone"
+                dataKey="value"
+                stroke={metric.color}
+                strokeWidth={2}
+                fill={metric.color}
+                fillOpacity={0.12}
+                dot={false}
+                activeDot={{ r: 5, stroke: 'var(--ui-surface)', strokeWidth: 2 }}
+                isAnimationActive={false}
+              />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+    </Card>
+  );
+}
+
 /** Một việc cần admin xử lý: số lượng > 0 thì mang màu trạng thái (kèm biểu tượng + chữ), bằng 0 thì hiện dấu ổn. */
 interface AttentionItem {
   key: string;
@@ -329,6 +527,17 @@ export default function AdminDashboard() {
   // biểu đồ đang xem nằm trên URL (?chart=...) để gửi đường dẫn là mở đúng biểu đồ đó
   const [params, setParams] = useSearchParams();
   const chartKey = params.get('chart');
+  // chỉ số của biểu đồ chính cũng nằm trên URL (?metric=...)
+  const metricKey = params.get('metric');
+  const selectMetric = (key: MetricKey) =>
+    setParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set('metric', key);
+        return next;
+      },
+      { replace: true, preventScrollReset: true },
+    );
   const selectChart = (key: string) =>
     setParams(
       (prev) => {
@@ -396,6 +605,51 @@ export default function AdminDashboard() {
     rows.map((r) => [r.label, nf.format(r.count)]);
 
   const maxViews = Math.max(1, ...(data?.topViewed ?? []).map((s) => s.viewCount));
+
+  const prev = data?.previous;
+  const metrics: MetricDef[] = [
+    {
+      key: 'revenue',
+      label: t('admin.dashboard.metricRevenue'),
+      icon: 'chart',
+      color: SERIES_REVENUE,
+      current: revenueDay.map((d) => ({ date: d.date, value: d.amount })),
+      previous: (prev?.revenueByDay ?? []).map((d) => d.amount),
+      format: formatVnd,
+      tipUnit: formatVnd,
+    },
+    {
+      key: 'members',
+      label: t('admin.dashboard.newMembers'),
+      icon: 'users',
+      color: SERIES_MEMBERS,
+      current: membersDay.map((d) => ({ date: d.date, value: d.count })),
+      previous: (prev?.membersByDay ?? []).map((d) => d.count),
+      format: nf.format,
+      tipUnit: (n) => t('admin.dashboard.newMembersTip', { count: n, n: nf.format(n) }),
+    },
+    {
+      key: 'scores',
+      label: t('admin.dashboard.newScores'),
+      icon: 'music',
+      color: SERIES_SCORES,
+      current: scoresDay.map((d) => ({ date: d.date, value: d.count })),
+      previous: (prev?.scoresByDay ?? []).map((d) => d.count),
+      format: nf.format,
+      tipUnit: (n) => t('admin.dashboard.newScoresTip', { count: n, n: nf.format(n) }),
+    },
+    {
+      key: 'practice',
+      label: t('admin.dashboard.practiceMinutes'),
+      icon: 'activity',
+      color: SERIES_PRACTICE,
+      current: practiceDay.map((d) => ({ date: d.date, value: d.minutes })),
+      previous: (prev?.practiceByDay ?? []).map((d) => d.minutes),
+      format: (n) => nf.format(Math.round(n)),
+      tipUnit: (n) => t('admin.dashboard.minutesTip', { count: nf.format(Math.round(n)) }),
+    },
+  ];
+  const metric = metrics.find((m) => m.key === metricKey) ?? metrics[0];
 
   const attention: AttentionItem[] = [
     {
@@ -852,18 +1106,13 @@ export default function AdminDashboard() {
         description={t('admin.dashboard.description', { days })}
         actions={
           <>
-            <select
-              className="adm-input"
-              aria-label={t('admin.dashboard.range')}
-              value={days}
-              onChange={(e) => setDays(Number(e.target.value))}
-            >
+            <div className="dash-range" role="group" aria-label={t('admin.dashboard.range')}>
               {RANGES.map((r) => (
-                <option key={r} value={r}>
+                <button key={r} type="button" aria-pressed={days === r} onClick={() => setDays(r)}>
                   {t('admin.dashboard.lastDays', { count: r })}
-                </option>
+                </button>
               ))}
-            </select>
+            </div>
             <Button icon="refresh" loading={refreshing} onClick={refresh}>
               {t('admin.system.refresh')}
             </Button>
@@ -871,42 +1120,23 @@ export default function AdminDashboard() {
         }
       />
 
-      <div className="dash-top">
-        {/* con số chính của trang: doanh thu trong kỳ, kèm xu hướng theo ngày */}
-        <section className="dash-hero" aria-labelledby="dash-hero-label">
-          <div className="dash-hero__head">
-            <span id="dash-hero-label" className="dash-hero__label">
-              {t('admin.dashboard.revenueInPeriod', { days })}
-            </span>
-            <Link to="/admin/revenue" className="dash-link">
-              {t('admin.dashboard.seeRevenue')}
-              <Icon name="chevronRight" size={14} />
-            </Link>
-          </div>
-          <div className="dash-hero__value">{bill ? formatVnd(bill.revenue) : '—'}</div>
-          <div className="dash-hero__hint">
-            {bill
-              ? [
-                  t('admin.dashboard.revenueHint', { count: bill.paidOrders, n: nf.format(bill.paidOrders), days }),
-                  bill.refundedOrders > 0
-                    ? t('admin.dashboard.refundedHint', { amount: formatVnd(bill.refundedAmount) })
-                    : null,
-                ]
-                  .filter(Boolean)
-                  .join(' · ')
-              : '\u00a0'}
-          </div>
-          <Sparkline
-            values={revenueDay.map((d) => d.amount)}
-            color={SERIES_REVENUE}
-            height={84}
-            label={sparkLabel(
-              revenueDay.map((d) => ({ date: d.date, value: d.amount })),
-              days,
-              formatVnd,
-            )}
+      {/* chỉ số theo kỳ (kiểu Stripe): bấm một ô để xem biểu đồ của nó, có tăng / giảm so với kỳ trước */}
+      <div className="dash-metrics">
+        {metrics.map((m) => (
+          <MetricTile
+            key={m.key}
+            metric={m}
+            days={days}
+            active={m.key === metric.key}
+            onSelect={() => selectMetric(m.key)}
           />
-        </section>
+        ))}
+      </div>
+
+      <div className="dash-main">
+        <div id="dash-trend" className="dash-main__chart" key={metric.key} aria-live="polite">
+          <TrendCard metric={metric} days={days} />
+        </div>
 
         {/* những việc đang chờ admin: có việc thì nổi màu trạng thái, không có thì hiện dấu ổn */}
         <section className="dash-attn" aria-labelledby="dash-attn-title">
@@ -933,6 +1163,8 @@ export default function AdminDashboard() {
         </section>
       </div>
 
+      {/* tình trạng hiện tại của hệ thống (không theo kỳ) */}
+      <Section title={t('admin.dashboard.snapshot')} />
       <div className="dash-kpis">
         <Kpi
           label={t('admin.menu.items.members')}

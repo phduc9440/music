@@ -640,3 +640,198 @@
 .dash-attn {
   background: var(--ui-tint-teal);
 }
+
+/* ===================================================================================================================
+ * Bố cục mới (tham khảo Stripe, Vercel, Linear): khoảng thời gian luôn thấy ở đầu trang, hàng chỉ số theo kỳ có so sánh
+ * với kỳ trước, một biểu đồ chính lớn (kỳ trước là đường nét đứt) và "Cần xử lý" ngay bên cạnh; tình trạng hiện tại ở
+ * hàng thẻ bên dưới. Màu chỉ dùng cho dữ liệu và trạng thái.
+ * =================================================================================================================== */
+
+/* chọn khoảng thời gian: nút liền nhau, luôn hiện (không giấu trong menu) */
+.dash-range {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--adm-border);
+  border-radius: var(--adm-radius);
+  background: var(--adm-surface);
+}
+.dash-range button {
+  padding: 0.35rem 0.75rem;
+  border: 0;
+  border-radius: calc(var(--adm-radius) - 2px);
+  background: transparent;
+  color: var(--adm-text-2);
+  font: inherit;
+  font-size: var(--adm-text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.dash-range button:hover {
+  color: var(--adm-text);
+}
+.dash-range button[aria-pressed='true'] {
+  background: var(--ui-surface-hover);
+  color: var(--adm-text);
+  box-shadow: inset 0 0 0 1px var(--adm-border);
+}
+.dash-range button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--adm-primary-ring);
+}
+
+/* hàng chỉ số theo kỳ */
+.dash-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.dash-metric {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 1rem 1.1rem 0.75rem;
+  border: 1px solid var(--ui-card-border);
+  border-radius: var(--adm-radius-lg);
+  background: var(--adm-surface);
+  box-shadow: var(--ui-card-shadow);
+  color: var(--adm-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.dash-metric:hover {
+  border-color: var(--adm-border-strong);
+}
+.dash-metric[aria-pressed='true'] {
+  border-color: var(--adm-primary);
+  box-shadow: 0 0 0 1px var(--adm-primary);
+}
+.dash-metric:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--adm-primary-ring);
+}
+.dash-metric__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  color: var(--adm-text-3);
+}
+.dash-metric__label {
+  overflow: hidden;
+  color: var(--adm-text-2);
+  font-size: var(--adm-text-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.dash-metric__value {
+  margin-top: 0.35rem;
+  overflow: hidden;
+  font-size: 1.75rem;
+  font-weight: 650;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+.dash-metric__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  margin: 0.35rem 0 0.6rem;
+}
+.dash-metric__prev {
+  color: var(--adm-text-3);
+  font-size: var(--adm-text-xs);
+}
+
+/* % so với kỳ trước: mũi tên + số, màu chữ trạng thái nhạt (luôn kèm chữ cho trình đọc màn hình) */
+.dash-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  font-size: var(--adm-text-xs);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.dash-delta.is-up {
+  background: var(--adm-success-soft);
+  color: var(--adm-success);
+}
+.dash-delta.is-down {
+  background: var(--adm-danger-soft);
+  color: var(--adm-danger);
+}
+.dash-delta.is-flat {
+  background: var(--ui-surface-hover);
+  color: var(--adm-text-2);
+}
+.dash-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* biểu đồ chính + cần xử lý */
+.dash-main {
+  display: grid;
+  grid-template-columns: minmax(0, 8fr) minmax(280px, 4fr);
+  align-items: stretch;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+.dash-main__chart > .dash-trend {
+  height: 100%;
+  margin: 0;
+}
+.dash-chart--trend {
+  height: 300px;
+  margin-top: 0.5rem;
+}
+.dash-table-wrap--trend {
+  max-height: 300px;
+  margin-top: 0.5rem;
+}
+.dash-legend__dash {
+  width: 16px;
+  height: 0;
+  border-top: 2px dashed var(--ui-chart-neutral);
+}
+.dash-main .dash-attn__list {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (max-width: 1200px) {
+  .dash-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 1000px) {
+  .dash-main {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 560px) {
+  .dash-metrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .dash-range {
+    width: 100%;
+  }
+  .dash-range button {
+    flex: 1;
+  }
+}
