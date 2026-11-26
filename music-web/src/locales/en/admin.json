@@ -556,7 +556,19 @@
     "newInPeriod": "+{n} in {days} days",
     "practiceMinutes": "Practice minutes",
     "sparkLabel": "Last {days} days: total {total}, peak {max} on {date}",
-    "sessionsInRange": "{n} sessions in {days} days · {total} all time"
+    "sessionsInRange": "{n} sessions in {days} days · {total} all time",
+    "metricRevenue": "Revenue",
+    "vsPrevious": "Compared with the previous period of the same length",
+    "deltaNew": "New",
+    "deltaUp": "Up {value}% from the previous period",
+    "deltaDown": "Down {value}% from the previous period",
+    "deltaSame": "Unchanged from the previous period",
+    "previousValue": "Previous: {value}",
+    "trendSub": "Daily over the last {days} days · total {total}",
+    "legend": "Legend",
+    "thisPeriod": "This period",
+    "previousPeriod": "Previous period",
+    "snapshot": "Current status"
   },
   "ai": {
     "status": {

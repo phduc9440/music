@@ -54,6 +54,9 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         int safeDays = days <= 0 ? DEFAULT_DAYS : Math.max(MIN_DAYS, Math.min(days, MAX_DAYS));
         LocalDate today = AppTime.today();
         LocalDate start = today.minusDays(safeDays - 1L);
+        // Kỳ liền trước cùng độ dài, để web ghi tăng / giảm so với kỳ trước
+        LocalDate prevEnd = start.minusDays(1);
+        LocalDate prevStart = prevEnd.minusDays(safeDays - 1L);
         LocalDateTime now = LocalDateTime.now();
 
         return AdminDashboardResponse.builder()
@@ -91,6 +94,12 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
                         .setParameter("status", SubscriptionStatus.ACTIVE)
                         .setParameter("now", now)
                         .getResultList()))
+                .previous(AdminDashboardResponse.Previous.builder()
+                        .scoresByDay(scoresByDay(prevStart, prevEnd))
+                        .membersByDay(membersByDay(prevStart, prevEnd))
+                        .practiceByDay(practiceByDay(prevStart, prevEnd))
+                        .revenueByDay(revenueByDay(prevStart, prevEnd))
+                        .build())
                 .build();
     }
 
