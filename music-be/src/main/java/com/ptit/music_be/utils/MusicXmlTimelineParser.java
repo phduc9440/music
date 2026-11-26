@@ -23,7 +23,14 @@ import com.ptit.music_be.dto.response.StudioTimelineResponse.TimeSignature;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.code.ScoreErrorCode;
 
-/** Builds the score timeline used by the interactive practice studio. */
+/**
+ * Builds the score timeline used by the interactive practice studio.
+ *
+ * <p>ST-08: dấu nhắc lại (forward/backward, times) và volta (ending 1, 2...) được mở theo thứ tự phát như Player, nên
+ * {@code measures}, {@code measureCount} và {@code Note.measure} là thứ tự lượt phát (từ 1); {@code Measure.source} là số
+ * ô trên bản nhạc. Tay trái / phải chỉ gán cho part có 2 khuông (khuông 1 = phải, khuông 2 = trái); part 1 khuông (giai
+ * điệu, từng bè) không có tay. D.C./D.S./Coda chưa mở, có cảnh báo.
+ */
 public final class MusicXmlTimelineParser {
 
     private static final Map<String, Integer> STEP_SEMITONES =
@@ -56,11 +63,17 @@ public final class MusicXmlTimelineParser {
         Map<Integer, Integer> tempos = new TreeMap<>();
         double[] measureLengths = new double[measureCount + 1];
         List<RawNote> rawNotes = new ArrayList<>();
-        boolean hasRepeats = false;
+        boolean hasJumps = false;
+        int[] partStaves = new int[parts.size()];
+        RepeatInfo[] repeatInfo = new RepeatInfo[measureCount + 1];
+        for (int m = 0; m <= measureCount; m++) {
+            repeatInfo[m] = new RepeatInfo();
+        }
 
         for (int partIndex = 0; partIndex < parts.size(); partIndex++) {
             Element part = parts.get(partIndex);
             List<Element> partMeasures = childElements(part, "measure");
+            partStaves[partIndex] = 1;
             int divisions = 1;
             Map<TieKey, RawNote> openTies = new HashMap<>();
 
@@ -76,6 +89,10 @@ public final class MusicXmlTimelineParser {
                 for (Element child : childElements(measure, null)) {
                     switch (child.getTagName()) {
                         case "attributes" -> {
+                            String stavesText = childText(child, "staves");
+                            if (stavesText != null) {
+                                partStaves[partIndex] = Math.max(partStaves[partIndex], positiveInteger(stavesText));
+                            }
                             String divisionsText = childText(child, "divisions");
                             if (divisionsText != null) {
                                 divisions = positiveInteger(divisionsText);
@@ -89,6 +106,7 @@ public final class MusicXmlTimelineParser {
                             }
                         }
                         case "direction" -> {
+                            hasJumps |= hasJump(child);
                             Integer bpm = firstTempo(child);
                             if (bpm != null) {
                                 tempos.putIfAbsent(measureNumber, bpm);
@@ -99,6 +117,7 @@ public final class MusicXmlTimelineParser {
                             boolean grace = firstChild(child, "grace") != null;
                             double duration = duration(child, divisions);
                             int staff = positiveIntegerOrDefault(childText(child, "staff"), 1);
+                            partStaves[partIndex] = Math.max(partStaves[partIndex], staff);
                             int voice = positiveIntegerOrDefault(childText(child, "voice"), 1);
                             String voiceKey = staff + ":" + voice;
                             RawNote previous = previousNoteByVoice.get(voiceKey);
@@ -163,7 +182,14 @@ public final class MusicXmlTimelineParser {
                             cursor = roundBeat(cursor + duration(child, divisions));
                             furthestBeat = Math.max(furthestBeat, cursor);
                         }
-                        case "barline" -> hasRepeats |= containsRepeat(child);
+                        case "barline" -> {
+                            // Dấu nhắc lại giống nhau ở mọi part: chỉ đọc ở part đầu
+                            if (partIndex == 0) {
+                                readBarline(child, repeatInfo[measureNumber]);
+                            }
+                            hasJumps |= hasJump(child);
+                        }
+                        case "sound" -> hasJumps |= hasJump(child);
                         default -> {
                             // Other MusicXML elements do not affect note timing.
                         }
@@ -174,10 +200,9 @@ public final class MusicXmlTimelineParser {
             }
         }
 
-        List<TimeSignature> timeSignatures = new ArrayList<>(signatures.values());
-        double[] measureStarts = new double[measureCount + 1];
+        // Độ dài từng ô trên bản nhạc (theo chỉ nhịp đang có hiệu lực, hoặc dài hơn nếu nốt tràn)
+        double[] sourceLengths = new double[measureCount + 1];
         TimeSignature activeSignature = null;
-        List<Measure> measures = new ArrayList<>(measureCount);
         for (int measureNumber = 1; measureNumber <= measureCount; measureNumber++) {
             TimeSignature signature = signatures.get(measureNumber);
             if (signature != null) {
@@ -189,8 +214,31 @@ public final class MusicXmlTimelineParser {
             if (length <= 0) {
                 throw new AppException(ScoreErrorCode.MUSICXML_INVALID);
             }
-            measureStarts[measureNumber] = roundBeat(measureStarts[measureNumber - 1] + length);
-            measures.add(new Measure(measureNumber, measureStarts[measureNumber - 1], length));
+            sourceLengths[measureNumber] = length;
+        }
+
+        // Thứ tự phát: mở dấu nhắc lại và volta
+        spreadEndings(repeatInfo, measureCount);
+        List<Integer> playOrder = playOrder(repeatInfo, measureCount);
+        boolean unfolded = playOrder.size() != measureCount;
+        int playedCount = playOrder.size();
+        double[] playStarts = new double[playedCount + 1];
+        List<Measure> measures = new ArrayList<>(playedCount);
+        List<TimeSignature> timeSignatures = new ArrayList<>();
+        Map<Integer, Integer> playedTempos = new TreeMap<>();
+        for (int position = 1; position <= playedCount; position++) {
+            int source = playOrder.get(position - 1);
+            double length = sourceLengths[source];
+            playStarts[position] = roundBeat(playStarts[position - 1] + length);
+            measures.add(new Measure(position, playStarts[position - 1], length, source));
+            TimeSignature signature = signatures.get(source);
+            if (signature != null && (timeSignatures.isEmpty() || !sameMeter(timeSignatures.getLast(), signature))) {
+                timeSignatures.add(new TimeSignature(position, signature.beats(), signature.beatType()));
+            }
+            Integer bpm = tempos.get(source);
+            if (bpm != null) {
+                playedTempos.put(position, bpm);
+            }
         }
 
         rawNotes.sort(Comparator.comparingInt((RawNote note) -> note.measure)
@@ -199,36 +247,46 @@ public final class MusicXmlTimelineParser {
                 .thenComparingInt(note -> note.staff)
                 .thenComparingInt(note -> note.voice)
                 .thenComparingInt(note -> note.entryIndex));
+        Map<Integer, List<RawNote>> notesBySource = new HashMap<>();
+        for (RawNote note : rawNotes) {
+            notesBySource
+                    .computeIfAbsent(note.measure, ignored -> new ArrayList<>())
+                    .add(note);
+        }
 
         Map<String, Integer> chordSizes = new HashMap<>();
         for (RawNote note : rawNotes) {
             chordSizes.merge(note.groupKey, 1, Integer::sum);
         }
         Map<String, String> chordIds = new HashMap<>();
-        List<Note> notes = new ArrayList<>(rawNotes.size());
+        List<Note> notes = new ArrayList<>();
         Map<Double, List<String>> scorableNotesByBeat = new TreeMap<>();
-        for (int index = 0; index < rawNotes.size(); index++) {
-            RawNote note = rawNotes.get(index);
-            String noteId = "n%04d".formatted(index + 1);
-            String chordId = chordSizes.get(note.groupKey) > 1
-                    ? chordIds.computeIfAbsent(note.groupKey, ignored -> "c%04d".formatted(chordIds.size() + 1))
-                    : null;
-            double startBeat = roundBeat(measureStarts[note.measure - 1] + note.localStartBeat);
-            notes.add(new Note(
-                    noteId,
-                    note.measure,
-                    note.staff,
-                    note.staff == 1 ? "RIGHT" : "LEFT",
-                    note.midi,
-                    startBeat,
-                    note.durationBeat,
-                    note.scorable,
-                    chordId,
-                    new OsmdPosition(note.measure - 1, note.voice, note.entryIndex)));
-            if (note.scorable) {
-                scorableNotesByBeat
-                        .computeIfAbsent(startBeat, ignored -> new ArrayList<>())
-                        .add(noteId);
+        for (int position = 1; position <= playedCount; position++) {
+            int source = playOrder.get(position - 1);
+            for (RawNote note : notesBySource.getOrDefault(source, List.of())) {
+                String noteId = "n%04d".formatted(notes.size() + 1);
+                // Mỗi lượt phát là một hợp âm riêng
+                String groupKey = note.groupKey + "@" + position;
+                String chordId = chordSizes.get(note.groupKey) > 1
+                        ? chordIds.computeIfAbsent(groupKey, ignored -> "c%04d".formatted(chordIds.size() + 1))
+                        : null;
+                double startBeat = roundBeat(playStarts[position - 1] + note.localStartBeat);
+                notes.add(new Note(
+                        noteId,
+                        position,
+                        note.staff,
+                        handOf(partStaves[note.partIndex], note.staff),
+                        note.midi,
+                        startBeat,
+                        note.durationBeat,
+                        note.scorable,
+                        chordId,
+                        new OsmdPosition(source - 1, note.voice, note.entryIndex)));
+                if (note.scorable) {
+                    scorableNotesByBeat
+                            .computeIfAbsent(startBeat, ignored -> new ArrayList<>())
+                            .add(noteId);
+                }
             }
         }
 
@@ -238,27 +296,179 @@ public final class MusicXmlTimelineParser {
             steps.add(new Step(stepIndex++, entry.getKey(), List.copyOf(entry.getValue())));
         }
 
-        Integer firstTempo = tempos.get(1);
+        Integer firstTempo = playedTempos.get(1);
         int tempoBpm = firstTempo == null ? fallbackTempoBpm : firstTempo;
-        List<TempoChange> tempoChanges = tempos.entrySet().stream()
+        List<TempoChange> tempoChanges = playedTempos.entrySet().stream()
                 .filter(entry -> entry.getKey() > 1)
                 .map(entry -> new TempoChange(entry.getKey(), entry.getValue()))
                 .toList();
-        List<String> warnings =
-                hasRepeats ? List.of("Repeats and voltas are not expanded in the timeline.") : List.of();
+        List<String> warnings = new ArrayList<>();
+        if (unfolded) {
+            warnings.add(WARNING_REPEATS_UNFOLDED);
+        }
+        if (hasJumps) {
+            warnings.add(WARNING_JUMPS_NOT_EXPANDED);
+        }
 
         return new StudioTimelineResponse(
                 scoreId,
                 contentHash,
                 title,
-                measureCount,
+                playedCount,
                 tempoBpm,
                 timeSignatures,
                 tempoChanges,
                 measures,
                 notes,
                 steps,
-                warnings);
+                List.copyOf(warnings));
+    }
+
+    /** Mã cảnh báo (web dịch): dấu nhắc lại đã được mở, số ô là theo thứ tự phát. */
+    public static final String WARNING_REPEATS_UNFOLDED = "REPEATS_UNFOLDED";
+    /** Mã cảnh báo: có D.C., D.S., Coda hoặc Fine nhưng timeline chưa mở các bước nhảy này. */
+    public static final String WARNING_JUMPS_NOT_EXPANDED = "JUMPS_NOT_EXPANDED";
+    /** Giới hạn số ô sau khi mở nhắc lại, chống file lỗi lặp vô hạn. */
+    private static final int MAX_PLAYED_MEASURES_FACTOR = 8;
+
+    /** Tay của một nốt: chỉ part 2 khuông mới có tay (khuông 1 phải, khuông 2 trái). */
+    static String handOf(int staves, int staff) {
+        if (staves != 2) {
+            return null;
+        }
+        return staff == 1 ? "RIGHT" : "LEFT";
+    }
+
+    /**
+     * Thứ tự phát các ô (số ô trên bản nhạc, từ 1): nhắc lại về dấu forward gần nhất (hoặc đầu bài), lặp {@code times}
+     * lần (mặc định 2); ô thuộc volta chỉ phát ở lượt có số đó.
+     */
+    static List<Integer> playOrder(RepeatInfo[] info, int measureCount) {
+        List<Integer> order = new ArrayList<>();
+        Map<Integer, Integer> passesDone = new HashMap<>();
+        int repeatStart = 1;
+        int pass = 1;
+        int measure = 1;
+        int limit = measureCount * MAX_PLAYED_MEASURES_FACTOR;
+        while (measure <= measureCount && order.size() < limit) {
+            RepeatInfo current = info[measure];
+            if (current.forward && measure != repeatStart) {
+                repeatStart = measure;
+                pass = 1;
+            }
+            if (current.endings != null && !current.endings.contains(pass)) {
+                measure++;
+                continue;
+            }
+            if (current.endings == null && measure > 1 && info[measure - 1].endings != null && !current.backward) {
+                // ra khỏi khối volta: phần sau là lượt thường
+                pass = 1;
+            }
+            order.add(measure);
+            if (current.backward) {
+                int done = passesDone.getOrDefault(measure, 1);
+                if (done < current.times) {
+                    passesDone.put(measure, done + 1);
+                    pass = done + 1;
+                    measure = repeatStart;
+                    continue;
+                }
+                passesDone.remove(measure);
+                repeatStart = measure + 1;
+                pass = 1;
+            }
+            measure++;
+        }
+        return order;
+    }
+
+    private static void readBarline(Element barline, RepeatInfo info) {
+        for (Element repeat : childElements(barline, "repeat")) {
+            String direction = repeat.getAttribute("direction");
+            if ("forward".equals(direction)) {
+                info.forward = true;
+            } else if ("backward".equals(direction)) {
+                info.backward = true;
+                String times = repeat.getAttribute("times");
+                if (!times.isBlank()) {
+                    try {
+                        info.times = Math.max(2, Math.min(8, Integer.parseInt(times.trim())));
+                    } catch (NumberFormatException ignored) {
+                        // giữ mặc định 2 lượt
+                    }
+                }
+            }
+        }
+        for (Element ending : childElements(barline, "ending")) {
+            String numbers = ending.getAttribute("number");
+            String type = ending.getAttribute("type");
+            if ("stop".equals(type) || "discontinue".equals(type)) {
+                info.endingStop = true;
+            }
+            if ("start".equals(type) && !numbers.isBlank()) {
+                List<Integer> passes = new ArrayList<>();
+                for (String number : numbers.split("[,\\s]+")) {
+                    try {
+                        passes.add(Integer.parseInt(number.trim()));
+                    } catch (NumberFormatException ignored) {
+                        // bỏ số volta không đọc được
+                    }
+                }
+                if (!passes.isEmpty()) {
+                    info.endingStart = passes;
+                }
+            }
+        }
+    }
+
+    private static boolean hasJump(Element element) {
+        for (String attribute : List.of("dacapo", "dalsegno", "tocoda", "fine")) {
+            if (element.hasAttribute(attribute)) {
+                return true;
+            }
+        }
+        NodeList sounds = element.getElementsByTagName("sound");
+        for (int index = 0; index < sounds.getLength(); index++) {
+            Element sound = (Element) sounds.item(index);
+            for (String attribute : List.of("dacapo", "dalsegno", "tocoda", "fine")) {
+                if (sound.hasAttribute(attribute)) {
+                    return true;
+                }
+            }
+        }
+        return element.getElementsByTagName("segno").getLength() > 0
+                || element.getElementsByTagName("coda").getLength() > 0;
+    }
+
+    private static boolean sameMeter(TimeSignature left, TimeSignature right) {
+        return left.beats() == right.beats() && left.beatType() == right.beatType();
+    }
+
+    /** Dấu nhắc lại / volta của một ô (đọc ở part đầu). */
+    static final class RepeatInfo {
+        boolean forward;
+        boolean backward;
+        int times = 2;
+        /** Ô nằm trong volta: các lượt được phát; null = mọi lượt. */
+        List<Integer> endings;
+        /** Volta bắt đầu ở ô này (các số lượt) / kết thúc ở ô này. */
+        List<Integer> endingStart;
+
+        boolean endingStop;
+    }
+
+    /** Gán số lượt của volta cho mọi ô từ ô bắt đầu tới ô kết thúc của nó. */
+    static void spreadEndings(RepeatInfo[] info, int measureCount) {
+        List<Integer> active = null;
+        for (int measure = 1; measure <= measureCount; measure++) {
+            if (info[measure].endingStart != null) {
+                active = info[measure].endingStart;
+            }
+            info[measure].endings = active;
+            if (info[measure].endingStop) {
+                active = null;
+            }
+        }
     }
 
     private static List<Element> childElements(Element parent, String name) {
@@ -379,16 +589,6 @@ public final class MusicXmlTimelineParser {
             }
         }
         return null;
-    }
-
-    private static boolean containsRepeat(Element barline) {
-        for (Element repeat : childElements(barline, "repeat")) {
-            if ("forward".equals(repeat.getAttribute("direction"))
-                    || "backward".equals(repeat.getAttribute("direction"))) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private static int positiveInteger(String value) {

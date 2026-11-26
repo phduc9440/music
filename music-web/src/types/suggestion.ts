@@ -23,6 +23,8 @@ export interface SuggestionSummary {
   changeCount: number;
   /** Null là do hệ thống tạo. */
   author?: CommentMember | null;
+  /** Nguồn tạo: EDITOR (người sửa), CHORD_GENERATION (bản nháp hợp âm AI), LIVE_RECOVERY. */
+  source?: string | null;
   createdAt: string;
   decidedAt?: string | null;
 }

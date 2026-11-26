@@ -42,7 +42,9 @@ public class StudioTimelineServiceImpl implements StudioTimelineService {
         ScoreContent content = scoreContentService.getMusicXml(scoreId);
         Score score =
                 scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
-        String contentHash = sha256(content.bytes());
+        // Gắn phiên bản bộ dựng timeline vào mã băm: đổi cách dựng (ST-08 mở nhắc lại, tay theo part) thì cache cũ tự
+        // hết hiệu lực
+        String contentHash = sha256(content.bytes(), TIMELINE_VERSION);
 
         List<String> cached = jdbcTemplate.query(
                 "SELECT timeline FROM score_timeline WHERE score_id = ? AND content_hash = ?",
@@ -108,9 +110,14 @@ public class StudioTimelineServiceImpl implements StudioTimelineService {
                 timeline.warnings());
     }
 
-    private static String sha256(byte[] content) {
+    /** Tăng khi đổi cách dựng timeline để bỏ cache cũ trong score_timeline. */
+    static final String TIMELINE_VERSION = "timeline-v2";
+
+    private static String sha256(byte[] content, String version) {
         try {
-            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(content));
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            digest.update(version.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(digest.digest(content));
         } catch (NoSuchAlgorithmException exception) {
             throw new IllegalStateException("SHA-256 is not available", exception);
         }

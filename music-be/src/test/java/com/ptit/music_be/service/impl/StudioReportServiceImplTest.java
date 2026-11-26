@@ -25,12 +25,14 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import com.ptit.music_be.dto.enums.PracticeSessionStatus;
 import com.ptit.music_be.dto.enums.practice.PracticeMode;
 import com.ptit.music_be.dto.request.StudioSessionFinishRequest;
+import com.ptit.music_be.dto.response.StudioTimelineResponse;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.PracticeSession;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.practice.PracticeSessionRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
+import com.ptit.music_be.service.StudioTimelineService;
 import com.ptit.music_be.service.score.ScoreFileService;
 
 @ExtendWith(MockitoExtension.class)
@@ -50,6 +52,9 @@ class StudioReportServiceImplTest {
 
     @Mock
     ScoreFileService scoreFileService;
+
+    @Mock
+    StudioTimelineService studioTimelineService;
 
     final Member member =
             Member.builder().id("member-1").email("user@example.com").build();
@@ -73,7 +78,15 @@ class StudioReportServiceImplTest {
                 .startedAt(LocalDateTime.of(2026, 11, 17, 0, 0))
                 .build();
         service = new StudioReportServiceImpl(
-                jdbcTemplate, memberRepository, practiceSessionRepository, scoreRepository, scoreFileService);
+                jdbcTemplate,
+                memberRepository,
+                practiceSessionRepository,
+                scoreRepository,
+                scoreFileService,
+                studioTimelineService);
+        org.mockito.Mockito.lenient()
+                .when(studioTimelineService.getTimeline("score-1"))
+                .thenReturn(timelineWithNotes(2));
         when(memberRepository.findByEmailForUpdate("user@example.com")).thenReturn(Optional.of(member));
         when(practiceSessionRepository.findByIdAndMemberForUpdate("session-1", member))
                 .thenReturn(Optional.of(session));
@@ -116,7 +129,7 @@ class StudioReportServiceImplTest {
     }
 
     @Test
-    void waitModeOmitsTimingScoreAndUsesReducedPoints() {
+    void waitModeOmitsTimingScoreAndScoresOnTheFullScale() {
         session.setMode(PracticeMode.WAIT);
         mockEventRows("PERFECT", 1, "EARLY", 1, new int[0][0]);
 
@@ -124,8 +137,34 @@ class StudioReportServiceImplTest {
 
         assertThat(report.accuracyPct()).isEqualTo(100.0);
         assertThat(report.timingAccuracyPct()).isNull();
-        assertThat(report.scorePoints()).isEqualTo(8000);
+        assertThat(report.scorePoints()).isEqualTo(10000);
         assertThat(report.isCompleted()).isFalse();
+        // chưa tới cuối bài thì không lập kỷ lục
+        assertThat(report.comparison().isNewBest()).isFalse();
+    }
+
+    @Test
+    void stoppingEarlyCountsUnplayedNotesAsMissed() {
+        session.setMode(PracticeMode.WAIT);
+        when(studioTimelineService.getTimeline("score-1")).thenReturn(timelineWithNotes(8));
+        mockEventRows("PERFECT", 2, "WRONG_PITCH", 1, new int[0][0]);
+
+        var report = service.finishSession("session-1", new StudioSessionFinishRequest(10, false, 0));
+
+        assertThat(report.counts().total()).isEqualTo(8);
+        assertThat(report.counts().missed()).isEqualTo(6);
+        assertThat(report.accuracyPct()).isEqualTo(25.0);
+        assertThat(report.comparison().isNewBest()).isFalse();
+        assertThat(session.getMissedCount()).isEqualTo(6);
+    }
+
+    private static StudioTimelineResponse timelineWithNotes(int count) {
+        List<StudioTimelineResponse.Note> notes = new java.util.ArrayList<>();
+        for (int index = 0; index < count; index++) {
+            notes.add(new StudioTimelineResponse.Note("n" + index, 1, 1, null, 60, index, 1, true, null, null));
+        }
+        return new StudioTimelineResponse(
+                "score-1", "h", "Test score", 1, 100, List.of(), List.of(), List.of(), notes, List.of(), List.of());
     }
 
     private void mockEventRows(

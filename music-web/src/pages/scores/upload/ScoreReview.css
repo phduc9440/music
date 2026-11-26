@@ -308,9 +308,10 @@ button.sr-warning:focus-visible {
   background: color-mix(in srgb, var(--ui-primary) 22%, transparent);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--ui-primary) 25%, transparent);
 }
+/* N-11: cột phải hẹp (1366 px) thì các tab xuống hàng thay vì bị cắt ở mép phải (thanh cuộn ngang bị ẩn) */
 .sr-tabs {
-  overflow-x: auto;
-  scrollbar-width: none;
+  flex-wrap: wrap;
+  row-gap: 2px;
 }
 .sr-tabs::-webkit-scrollbar {
   display: none;

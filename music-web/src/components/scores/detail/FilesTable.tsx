@@ -1,18 +1,18 @@
 import { useState } from 'react';
 import { toast } from 'react-toastify';
 import { downloadFile } from '../../../services';
-import { FILE_TYPE_LABELS, formatSize, getErrorMessage } from '../../../utils/score';
+import { FILE_TYPE_LABELS, formatSize, getErrorMessage, scoreDownloadName } from '../../../utils/score';
 import type { ScoreFileInfo } from '../../../types';
 import { t } from '../../../i18n/core';
 
-/** Danh sách file hiện hành của bản nhạc, mỗi dòng có nút tải về. */
-export default function FilesTable({ files }: { files: ScoreFileInfo[] }) {
+/** Danh sách file hiện hành của bản nhạc, mỗi dòng có nút tải về (file hệ thống tạo đặt theo tên bản nhạc). */
+export default function FilesTable({ files, title }: { files: ScoreFileInfo[]; title: string }) {
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   const handleDownload = async (f: ScoreFileInfo) => {
     setDownloadingId(f.id);
     try {
-      await downloadFile(f.downloadUrl, f.originalFileName || `${f.fileType}-${f.id}`);
+      await downloadFile(f.downloadUrl, scoreDownloadName(title, f, f.fileType.toLowerCase()));
     } catch (err) {
       toast.error(getErrorMessage(err, t('scores.files.downloadFailed')));
     } finally {

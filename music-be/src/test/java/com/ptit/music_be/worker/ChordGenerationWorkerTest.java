@@ -38,6 +38,7 @@ import org.springframework.web.client.ResourceAccessException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ptit.music_be.client.AiServiceClient;
 import com.ptit.music_be.client.ChordGenerationResult;
+import com.ptit.music_be.client.ChordMelody;
 import com.ptit.music_be.dto.enums.ai.AiTaskStatus;
 import com.ptit.music_be.dto.enums.ai.AiTaskType;
 import com.ptit.music_be.dto.enums.score.SuggestionSource;
@@ -117,7 +118,7 @@ class ChordGenerationWorkerTest {
 
     /** music-ai giả: kiểm tra file vào đúng là version gốc rồi ghi file ra có hợp âm. */
     private void aiWritesChords() {
-        when(aiServiceClient.generateChords(IN, OUT, "NATURAL", false, "BALANCED", "NORMAL", 3))
+        when(aiServiceClient.generateChords(IN, OUT, "NATURAL", false, "BALANCED", "NORMAL", 3, null))
                 .thenAnswer(inv -> {
                     assertThat(Files.readAllBytes(root.resolve(IN))).isEqualTo(BASE);
                     Files.createDirectories(root.resolve(OUT).getParent());
@@ -170,7 +171,7 @@ class ChordGenerationWorkerTest {
     @Test
     void doesNotCreateSuggestionWhenTaskTimedOutMeanwhile() {
         // Job quét báo TASK_TIMEOUT trong lúc music-ai còn chạy
-        when(aiServiceClient.generateChords(IN, OUT, "NATURAL", false, "BALANCED", "NORMAL", 3))
+        when(aiServiceClient.generateChords(IN, OUT, "NATURAL", false, "BALANCED", "NORMAL", 3, null))
                 .thenAnswer(inv -> {
                     Files.createDirectories(root.resolve(OUT).getParent());
                     Files.write(root.resolve(OUT), WITH_CHORDS);
@@ -189,7 +190,7 @@ class ChordGenerationWorkerTest {
 
     @Test
     void failsTaskAndCleansTempWhenAiRejects() {
-        when(aiServiceClient.generateChords(IN, OUT, "NATURAL", false, "BALANCED", "NORMAL", 3))
+        when(aiServiceClient.generateChords(IN, OUT, "NATURAL", false, "BALANCED", "NORMAL", 3, null))
                 .thenThrow(HttpClientErrorException.create(
                         HttpStatus.UNPROCESSABLE_ENTITY,
                         "Unprocessable",
@@ -207,7 +208,7 @@ class ChordGenerationWorkerTest {
 
     @Test
     void alreadyHarmonizedFromAiIsMapped() {
-        when(aiServiceClient.generateChords(IN, OUT, "NATURAL", false, "BALANCED", "NORMAL", 3))
+        when(aiServiceClient.generateChords(IN, OUT, "NATURAL", false, "BALANCED", "NORMAL", 3, null))
                 .thenThrow(HttpClientErrorException.create(
                         HttpStatus.UNPROCESSABLE_ENTITY,
                         "Unprocessable",
@@ -237,18 +238,32 @@ class ChordGenerationWorkerTest {
     void optionCountChosenAtRequestTimeIsForwarded() {
         // Gói của người bấm chỉ cho 1 phương án (ghi vào input_data lúc tạo tác vụ)
         task.setInputData("{\"style\":\"NATURAL\",\"baseVersion\":7,\"options\":1}");
-        when(aiServiceClient.generateChords(IN, OUT, "NATURAL", false, "BALANCED", "NORMAL", 1))
+        when(aiServiceClient.generateChords(IN, OUT, "NATURAL", false, "BALANCED", "NORMAL", 1, null))
                 .thenThrow(new IllegalStateException("stop"));
 
         worker.process(TASK_ID);
 
-        org.mockito.Mockito.verify(aiServiceClient).generateChords(IN, OUT, "NATURAL", false, "BALANCED", "NORMAL", 1);
+        org.mockito.Mockito.verify(aiServiceClient)
+                .generateChords(IN, OUT, "NATURAL", false, "BALANCED", "NORMAL", 1, null);
+    }
+
+    @Test
+    void chosenMelodyPartIsForwarded() {
+        task.setInputData("{\"style\":\"NATURAL\",\"baseVersion\":7,\"partIndex\":1,\"staff\":2}");
+        ChordMelody melody = new ChordMelody(1, 2);
+        when(aiServiceClient.generateChords(IN, OUT, "NATURAL", false, "BALANCED", "NORMAL", 3, melody))
+                .thenThrow(new IllegalStateException("stop"));
+
+        worker.process(TASK_ID);
+
+        org.mockito.Mockito.verify(aiServiceClient)
+                .generateChords(IN, OUT, "NATURAL", false, "BALANCED", "NORMAL", 3, melody);
     }
 
     @Test
     void replaceModeForwardsFlagAndReportsNoChange() {
         task.setInputData("{\"style\":\"NATURAL\",\"baseVersion\":7,\"replaceExisting\":true}");
-        when(aiServiceClient.generateChords(IN, OUT, "NATURAL", true, "BALANCED", "NORMAL", 3))
+        when(aiServiceClient.generateChords(IN, OUT, "NATURAL", true, "BALANCED", "NORMAL", 3, null))
                 .thenAnswer(inv -> {
                     Files.createDirectories(root.resolve(OUT).getParent());
                     Files.write(root.resolve(OUT), WITH_CHORDS);
@@ -270,7 +285,7 @@ class ChordGenerationWorkerTest {
         String out3 = "scores/s1/chords/task-1-out-3.musicxml";
         byte[] option2 = "<score-partwise><harmony>B</harmony></score-partwise>".getBytes(StandardCharsets.UTF_8);
         byte[] option3 = "<score-partwise><harmony>C</harmony></score-partwise>".getBytes(StandardCharsets.UTF_8);
-        when(aiServiceClient.generateChords(IN, OUT, "NATURAL", false, "BALANCED", "NORMAL", 3))
+        when(aiServiceClient.generateChords(IN, OUT, "NATURAL", false, "BALANCED", "NORMAL", 3, null))
                 .thenAnswer(inv -> {
                     Files.createDirectories(root.resolve(OUT).getParent());
                     Files.write(root.resolve(OUT), WITH_CHORDS);
@@ -310,7 +325,7 @@ class ChordGenerationWorkerTest {
 
     @Test
     void failsWithUnavailableOnConnectionError() {
-        when(aiServiceClient.generateChords(IN, OUT, "NATURAL", false, "BALANCED", "NORMAL", 3))
+        when(aiServiceClient.generateChords(IN, OUT, "NATURAL", false, "BALANCED", "NORMAL", 3, null))
                 .thenThrow(new ResourceAccessException("refused"));
 
         worker.process(TASK_ID);
@@ -320,7 +335,7 @@ class ChordGenerationWorkerTest {
 
     @Test
     void failsWithUnavailableOnServerError() {
-        when(aiServiceClient.generateChords(IN, OUT, "NATURAL", false, "BALANCED", "NORMAL", 3))
+        when(aiServiceClient.generateChords(IN, OUT, "NATURAL", false, "BALANCED", "NORMAL", 3, null))
                 .thenThrow(HttpServerErrorException.create(
                         HttpStatus.INTERNAL_SERVER_ERROR, "boom", HttpHeaders.EMPTY, new byte[0], null));
 

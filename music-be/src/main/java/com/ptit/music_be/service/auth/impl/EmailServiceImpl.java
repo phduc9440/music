@@ -20,6 +20,7 @@ import com.ptit.music_be.dto.request.auth.SendEmailRequest;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.service.auth.EmailService;
 import com.ptit.music_be.service.auth.impl.EmailMessages.Key;
+import com.ptit.music_be.utils.AppTime;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -117,7 +118,7 @@ public class EmailServiceImpl implements EmailService {
     public void sendPasswordChangedEmail(String to, String fullName, boolean viaReset) {
         AppLocale locale = localeOf(to);
         String name = escape(fullName == null || fullName.isBlank() ? to : fullName);
-        String time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy"));
+        String time = LocalDateTime.now(AppTime.ZONE).format(DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy"));
         String how = EmailMessages.text(locale, viaReset ? Key.CHANGED_VIA_RESET : Key.CHANGED_VIA_SETTINGS);
         send(
                 to,

@@ -84,7 +84,7 @@
   },
   "dropzone": {
     "title": "Kéo thả bản nhạc vào đây",
-    "hint": "1 file PDF (tối đa 20 trang) hoặc 1–20 ảnh PNG/JPG theo thứ tự trang, mỗi file ≤ 50MB"
+    "hint": "1 file PDF (tối đa {max} trang) hoặc 1–{max} ảnh PNG/JPG theo thứ tự trang, mỗi file ≤ 50MB"
   },
   "chooseFile": "Chọn file",
   "pageStrip": {
@@ -310,7 +310,8 @@
       "saving": "Đang lưu...",
       "saved": "Đã đặt nhịp độ {bpm} BPM",
       "invalid": "Nhịp độ phải từ {min} đến {max}"
-    }
+    },
+    "autoFixedNote": "Máy đã tự sửa"
   },
   "failed": "Tải lên thất bại, vui lòng thử lại",
   "saveFailed": "Lưu thất bại, vui lòng thử lại",
@@ -458,7 +459,6 @@
     }
   },
   "sourceHint": "Ảnh chụp, bản scan và PDF gốc được làm sạch theo cách khác nhau; chọn đúng loại giúp nhận diện chính xác hơn.",
-  "untitled": "Bản nhạc chưa đặt tên",
   "externalAiNote": "Lưu ý: hệ thống đang bật AI xác minh. Ảnh cắt của một số ô nhịp nghi ngờ (tối đa 10 ô mỗi bản) được gửi tới dịch vụ AI bên ngoài để đối chiếu.",
   "quota": {
     "summary": "Tháng này còn {remaining}/{limit} trang · tối đa {max} trang/lần",
@@ -519,5 +519,15 @@
     "pagesUnlimited": "Lần này tính {count} trang (gói của bạn không giới hạn trang mỗi tháng).",
     "notEnough": "Tháng này bạn chỉ còn {remaining} trang.",
     "imageErrorHint": "Lần trước máy không đọc được ảnh. Hãy thử đổi loại nguồn (ví dụ Ảnh chụp) và bật làm sạch, căn thẳng ảnh."
+  },
+  "titleFromPage": {
+    "label": "Đặt tên bài theo trang gốc",
+    "cropAlt": "Phần đầu trang 1 của bản gốc",
+    "caption": "Đầu trang 1 của ảnh gốc: tên bài và tác giả thường in ở đây.",
+    "placeholder": "Nhập tên bài như in trên bản gốc",
+    "save": "Lưu tên bài",
+    "saving": "Đang lưu…",
+    "saved": "Đã lưu tên bài",
+    "failed": "Không lưu được tên bài"
   }
 }

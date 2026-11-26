@@ -69,6 +69,7 @@ import com.ptit.music_be.service.score.PublicScoreFilter;
 import com.ptit.music_be.service.score.ScoreCopyService;
 import com.ptit.music_be.service.score.ScoreFileService;
 import com.ptit.music_be.service.score.ScoreService;
+import com.ptit.music_be.utils.ScoreTitles;
 import com.ptit.music_be.utils.SecurityUtils;
 
 import lombok.AccessLevel;
@@ -214,7 +215,7 @@ public class ScoreServiceImpl implements ScoreService {
         // PATCH: trường nào null thì giữ nguyên
         if (request.getTitle() != null) {
             String title = request.getTitle().trim();
-            if (title.isEmpty()) {
+            if (!ScoreTitles.isValid(title)) {
                 throw new AppException(ScoreErrorCode.SCORE_TITLE_INVALID);
             }
             score.setTitle(title);
@@ -841,6 +842,22 @@ public class ScoreServiceImpl implements ScoreService {
     }
 
     /** Ghi công bản gốc: chỉ khi bản gốc còn công khai, tên người chia sẻ tính khi trả (không lộ email). */
+    /** Tên hiển thị của thành viên: họ tên, thiếu thì phần trước @ của email; null nếu không có chủ. */
+    static String displayNameOf(Member member) {
+        if (member == null) {
+            return null;
+        }
+        if (member.getFullName() != null && !member.getFullName().isBlank()) {
+            return member.getFullName().trim();
+        }
+        String email = member.getEmail();
+        if (email == null) {
+            return null;
+        }
+        int at = email.indexOf('@');
+        return at < 0 ? email : email.substring(0, at);
+    }
+
     private ScoreDetailResponse.ForkSource forkSource(Score score) {
         Score source = score.getForkedFrom();
         if (source == null || !Visibility.PUBLIC.name().equals(source.getVisibility())) {
@@ -954,7 +971,12 @@ public class ScoreServiceImpl implements ScoreService {
                 .viewCount(score.getViewCount())
                 .averageRating(rating.getAverage() == null ? null : Math.round(rating.getAverage() * 10) / 10.0)
                 .ratingCount(rating.getRatingCount() == null ? 0 : rating.getRatingCount())
-                .ownerEmail(score.getMember() == null ? null : score.getMember().getEmail())
+                // N-05: email chủ bản nhạc chỉ cho chính chủ và quản trị viên; người khác thấy tên
+                .ownerEmail(
+                        score.getMember() == null || !(isOwner || SecurityUtils.isAdmin())
+                                ? null
+                                : score.getMember().getEmail())
+                .ownerName(displayNameOf(score.getMember()))
                 .canEdit(canEdit)
                 .canDelete(scorePermissionService.canDelete(score, decision))
                 .canReview(decision.can(ScoreAccess.VIEW))
@@ -972,6 +994,8 @@ public class ScoreServiceImpl implements ScoreService {
                 .forkCount(scoreRepository.countByForkedFromId(score.getId()))
                 .forkedFrom(forkSource(score))
                 .coverUrl(score.getCoverUrl())
+                // N-13: ảnh trang 1 như ở thư viện, để trang chi tiết không hiện hình giữ chỗ
+                .thumbnailUrl(thumbnailUrlOf(score))
                 // Team đã xóa mềm coi như không còn: bản nhạc hiện như bản cá nhân
                 .teamId(activeTeam == null ? null : activeTeam.getId())
                 .teamName(activeTeam == null ? null : activeTeam.getName())
@@ -986,6 +1010,11 @@ public class ScoreServiceImpl implements ScoreService {
      * Ảnh đại diện của mỗi bản nhạc = ảnh trang 1. Ưu tiên ảnh đã tiền xử lý (PNG), không có thì dùng ảnh gốc
      * (ORIGINAL_IMAGE). Bản nhạc tải lên bằng PDF chưa có ảnh trang nào thì không có ảnh đại diện (null).
      */
+    private String thumbnailUrlOf(Score score) {
+        ScoreFile thumbnail = loadThumbnails(List.of(score)).get(score.getId());
+        return thumbnail == null ? null : "/api/files/" + thumbnail.getId() + "/download?inline=true";
+    }
+
     private Map<String, ScoreFile> loadThumbnails(Collection<Score> scores) {
         Map<String, ScoreFile> result = new HashMap<>();
         if (scores.isEmpty()) {

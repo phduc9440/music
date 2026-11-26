@@ -2332,7 +2332,9 @@
   display: block;
   height: 100%;
   border-radius: inherit;
-  transition: width 0.08s ease-out, background-color 0.15s ease;
+  transition:
+    width 0.08s ease-out,
+    background-color 0.15s ease;
 }
 
 .studio-mic-tester__meter-info {
@@ -2345,6 +2347,16 @@
 
 .studio-mic-tester__note-feedback {
   min-height: 24px;
+}
+
+/* Hiệu chỉnh độ trễ micro (ST-05) */
+.studio-mic-tester__calibrate {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-xs);
 }
 
 .studio-mic-tester__detected {

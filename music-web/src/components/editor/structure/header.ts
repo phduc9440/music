@@ -252,6 +252,9 @@ const fontOf = (s: TextStyle): number => (s.bold ? 1 : 0) + (s.italic ? 2 : 0);
  * Áp chữ, cỡ chữ và kiểu chữ của tiêu đề / tác giả lên OSMD (gọi sau mỗi lần nạp, trước khi vẽ). Có `shown` thì vẽ đúng
  * chữ đó (Editor: điền tên bản nhạc hoặc "Blank" vào chỗ trống); không có thì chỉ bỏ chữ giả "Music21" của file.
  */
+/** Số ký tự tiêu đề cỡ mặc định vừa một dòng khổ A4; dài hơn thì thu nhỏ theo tỉ lệ. */
+const TITLE_FIT_CHARS = 55;
+
 export function applyHeaderStyle(osmd: unknown, header: HeaderState, shown?: ShownHeader): void {
   const target = osmd as OsmdLike;
   const sheet = target.Sheet;
@@ -268,7 +271,10 @@ export function applyHeaderStyle(osmd: unknown, header: HeaderState, shown?: Sho
     sheet.Subtitle = undefined;
   }
   const rules = target.EngravingRules as Record<string, number>;
-  rules.SheetTitleHeight = (header.styles.title.size ?? DEFAULT_SIZE.title) / 10;
+  // Tên dài (tối đa 80 ký tự) không xuống dòng trong OSMD: thu nhỏ chữ để vừa khổ trang thay vì tràn hai bên (T38)
+  const titleText = sheet?.TitleString ?? header.title;
+  const fit = titleText.length > TITLE_FIT_CHARS ? Math.max(0.45, TITLE_FIT_CHARS / titleText.length) : 1;
+  rules.SheetTitleHeight = ((header.styles.title.size ?? DEFAULT_SIZE.title) / 10) * fit;
   rules.SheetComposerHeight = (header.styles.composer.size ?? DEFAULT_SIZE.composer) / 10;
   if (target.Sheet?.Title) target.Sheet.Title.fontStyle = fontOf(header.styles.title);
   if (target.Sheet?.Composer) target.Sheet.Composer.fontStyle = fontOf(header.styles.composer);

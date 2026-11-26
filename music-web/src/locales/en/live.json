@@ -29,6 +29,7 @@
     "atMeasures": "at measures {from}–{to}",
     "idle": "no measure selected",
     "jump": "click to go there",
-    "anonymous": "Collaborator"
+    "anonymous": "Collaborator",
+    "tabs": "{n} tabs"
   }
 }

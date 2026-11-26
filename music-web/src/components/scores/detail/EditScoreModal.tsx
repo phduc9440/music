@@ -155,6 +155,9 @@ export default function EditScoreModal({ score, onClose, onSaved }: Props) {
 
         <label className="sc-label" htmlFor="sc-title">
           {t('scores.edit.scoreTitle')}
+          <span className="sc-counter">
+            {title.length}/{MAX_TITLE}
+          </span>
         </label>
         <input
           id="sc-title"

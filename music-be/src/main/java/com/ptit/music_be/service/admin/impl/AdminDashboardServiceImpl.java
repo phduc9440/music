@@ -29,6 +29,7 @@ import com.ptit.music_be.dto.response.admin.AdminDashboardResponse.TopScore;
 import com.ptit.music_be.dto.response.admin.AdminDashboardResponse.Totals;
 import com.ptit.music_be.entity.PlanSanction;
 import com.ptit.music_be.service.admin.AdminDashboardService;
+import com.ptit.music_be.utils.AppTime;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -51,7 +52,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
     @Transactional(readOnly = true)
     public AdminDashboardResponse getDashboard(int days) {
         int safeDays = days <= 0 ? DEFAULT_DAYS : Math.max(MIN_DAYS, Math.min(days, MAX_DAYS));
-        LocalDate today = LocalDate.now();
+        LocalDate today = AppTime.today();
         LocalDate start = today.minusDays(safeDays - 1L);
         LocalDateTime now = LocalDateTime.now();
 
@@ -131,16 +132,18 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
 
     private List<DayCount> scoresByDay(LocalDate start, LocalDate end) {
         return dayCounts(
-                "select cast(s.createdAt as date), count(s) from Score s"
-                        + " where s.createdAt >= :from and s.createdAt < :to group by cast(s.createdAt as date)",
+                "select " + AppTime.localDate("s.createdAt") + ", count(s) from Score s"
+                        + " where s.createdAt >= :from and s.createdAt < :to group by "
+                        + AppTime.localDate("s.createdAt"),
                 start,
                 end);
     }
 
     private List<DayCount> membersByDay(LocalDate start, LocalDate end) {
         return dayCounts(
-                "select cast(m.createdAt as date), count(m) from Member m"
-                        + " where m.createdAt >= :from and m.createdAt < :to group by cast(m.createdAt as date)",
+                "select " + AppTime.localDate("m.createdAt") + ", count(m) from Member m"
+                        + " where m.createdAt >= :from and m.createdAt < :to group by "
+                        + AppTime.localDate("m.createdAt"),
                 start,
                 end);
     }
@@ -159,8 +162,8 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
     /** Gắn khoảng [start, end] vào câu có tham số :from/:to và gom kết quả theo ngày ở cột 0. */
     private Map<LocalDate, Object[]> byDay(TypedQuery<Object[]> query, LocalDate start, LocalDate end) {
         Map<LocalDate, Object[]> byDay = new HashMap<>();
-        for (Object[] r : query.setParameter("from", start.atStartOfDay())
-                .setParameter("to", end.plusDays(1).atStartOfDay())
+        for (Object[] r : query.setParameter("from", AppTime.startOfDayUtc(start))
+                .setParameter("to", AppTime.startOfDayUtc(end.plusDays(1)))
                 .getResultList()) {
             byDay.put(LocalDate.parse(r[0].toString()), r);
         }
@@ -170,9 +173,9 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
     private List<DayPractice> practiceByDay(LocalDate start, LocalDate end) {
         Map<LocalDate, Object[]> byDay = byDay(
                 em.createQuery(
-                        "select cast(p.startedAt as date), count(p), coalesce(sum(p.durationSeconds), 0)"
+                        "select " + AppTime.localDate("p.startedAt") + ", count(p), coalesce(sum(p.durationSeconds), 0)"
                                 + " from PracticeSession p where p.startedAt >= :from and p.startedAt < :to"
-                                + " group by cast(p.startedAt as date)",
+                                + " group by " + AppTime.localDate("p.startedAt"),
                         Object[].class),
                 start,
                 end);
@@ -231,8 +234,8 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
                                 + " where o.status = :status and o.paidAt >= :from and o.paidAt < :to",
                         Object[].class)
                 .setParameter("status", status)
-                .setParameter("from", start.atStartOfDay())
-                .setParameter("to", end.plusDays(1).atStartOfDay())
+                .setParameter("from", AppTime.startOfDayUtc(start))
+                .setParameter("to", AppTime.startOfDayUtc(end.plusDays(1)))
                 .getSingleResult();
         return new long[] {((Number) r[0]).longValue(), ((Number) r[1]).longValue()};
     }
@@ -240,9 +243,10 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
     private List<DayRevenue> revenueByDay(LocalDate start, LocalDate end) {
         Map<LocalDate, Object[]> byDay = byDay(
                 em.createQuery(
-                                "select cast(o.paidAt as date), coalesce(sum(o.amount), 0), count(o) from PaymentOrder o"
+                                "select " + AppTime.localDate("o.paidAt")
+                                        + ", coalesce(sum(o.amount), 0), count(o) from PaymentOrder o"
                                         + " where o.status = :status and o.paidAt >= :from and o.paidAt < :to"
-                                        + " group by cast(o.paidAt as date)",
+                                        + " group by " + AppTime.localDate("o.paidAt"),
                                 Object[].class)
                         .setParameter("status", PaymentStatus.PAID),
                 start,

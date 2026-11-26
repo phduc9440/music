@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import com.ptit.music_be.dto.enums.PracticeSessionStatus;
+import com.ptit.music_be.dto.enums.StudioNoteEventResult;
 import com.ptit.music_be.dto.request.StudioEventBatchRequest;
 import com.ptit.music_be.dto.request.StudioNoteEventRequest;
 import com.ptit.music_be.dto.response.StudioEventBatchResponse;
@@ -122,17 +123,24 @@ public class StudioEventServiceImpl implements StudioEventService {
         if (events.stream().noneMatch(event -> event.noteId() != null)) {
             return;
         }
-        Set<String> timelineNoteIds = studioTimelineService
-                .getTimeline(session.getScore().getId())
-                .notes()
-                .stream()
-                .map(StudioTimelineResponse.Note::id)
-                .collect(Collectors.toSet());
-        if (events.stream()
-                .map(StudioNoteEventRequest::noteId)
-                .filter(java.util.Objects::nonNull)
-                .anyMatch(noteId -> !timelineNoteIds.contains(noteId))) {
-            throw new AppException(LibraryErrorCode.STUDIO_EVENT_INVALID);
+        java.util.Map<String, Integer> midiByNoteId =
+                studioTimelineService.getTimeline(session.getScore().getId()).notes().stream()
+                        .collect(Collectors.toMap(StudioTimelineResponse.Note::id, StudioTimelineResponse.Note::midi));
+        for (StudioNoteEventRequest event : events) {
+            if (event.noteId() == null) {
+                continue;
+            }
+            Integer midi = midiByNoteId.get(event.noteId());
+            if (midi == null) {
+                throw new AppException(LibraryErrorCode.STUDIO_EVENT_INVALID);
+            }
+            // ST-09: nốt được chấm đúng (đúng giờ / sớm / trễ) phải đúng cao độ của nốt chuẩn trên máy chủ
+            boolean counted = event.result() == StudioNoteEventResult.PERFECT
+                    || event.result() == StudioNoteEventResult.EARLY
+                    || event.result() == StudioNoteEventResult.LATE;
+            if (counted && event.playedMidi() != null && !event.playedMidi().equals(midi)) {
+                throw new AppException(LibraryErrorCode.STUDIO_EVENT_INVALID);
+            }
         }
     }
 

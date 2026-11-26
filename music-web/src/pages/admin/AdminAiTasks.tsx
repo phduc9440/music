@@ -21,7 +21,8 @@ import { errorMessage, formatDateTime, DEFAULT_PAGE_SIZE } from '../../component
 import type { Tone } from '../../components/ui/helpers';
 import { adminApi, taskApi } from '../../services';
 import type { AdminAiTask, AiTaskInfo, AiTaskSummary, PageResult } from '../../types';
-import { OMR_STEPS, describeTaskError } from '../../utils/omr';
+import { OMR_STEPS } from '../../utils/omr';
+import { aiTaskErrorText } from '../../utils/aiTaskErrors';
 import { TASK_TYPE_LABELS } from '../../utils/score';
 import './AdminSystem.css';
 import { labelMap, t } from '../../i18n/core';
@@ -67,11 +68,10 @@ const toJson = (value: unknown) => {
   }
 };
 
-/** Câu lỗi tiếng Việt (dùng lại bảng dịch lỗi của trang tiến độ số hóa). */
+/** Câu lỗi theo loại tác vụ (A-03: gợi ý hợp âm lỗi không còn ghi "Số hóa thất bại"). */
 const errorText = (task: AdminAiTask) => {
   if (task.status !== 'FAILED' && task.status !== 'CANCELLED') return null;
-  const e = describeTaskError(task as unknown as AiTaskInfo);
-  return `${e.title}${e.detail ? ` (${e.detail})` : ''}`;
+  return aiTaskErrorText(task as unknown as AiTaskInfo) || null;
 };
 
 /** Admin (mục 5.2): giám sát hàng đợi tác vụ AI, xem lỗi, hủy task đang chạy và chạy lại task OMR bị lỗi. */

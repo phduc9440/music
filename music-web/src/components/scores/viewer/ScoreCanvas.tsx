@@ -61,6 +61,8 @@ interface Props {
   issueMeasures?: ReadonlySet<number>;
   /** Các ô nhịp đang bị người khác giữ khóa (đồng chỉnh sửa): viền màu và tên người đang sửa. */
   lockBoxes?: readonly LockBox[];
+  /** Bấm thêm nốt vào ô người khác đang sửa: báo tên người đó thay vì mở khung thêm nốt (C-03). */
+  onMeasureHeld?: (name: string) => void;
   /** Cuộn tới một ô nhịp; `key` đổi để yêu cầu lại cùng một ô. */
   focusMeasure?: { index: number; key: number } | null;
   /** Bấm vào nốt (ids rỗng = bấm ra ngoài); additive = giữ Shift. Có prop này thì canvas cho chọn nốt. */
@@ -489,6 +491,7 @@ export default function ScoreCanvas({
   selected = EMPTY_SET,
   issueMeasures = EMPTY_NUMBERS,
   lockBoxes = EMPTY_LOCKS,
+  onMeasureHeld,
   focusMeasure = null,
   playing = EMPTY_SET,
   mutedStaves = EMPTY_SET,
@@ -731,6 +734,9 @@ export default function ScoreCanvas({
           drawPartNames: false,
         });
         osmd.TransposeCalculator = new TransposeCalculator(); // cần có thì `Sheet.Transpose` mới có tác dụng
+        // Không gộp các ô nghỉ liền nhau thành một ô "nghỉ nhiều ô" (T47): mỗi ô phải bấm chọn được, khung khóa của người
+        // cùng sửa và ô nghi ngờ của OMR phải hiện đúng chỗ (bản trống 8 ô trước hiện thành "ô 1 + 7")
+        osmd.EngravingRules.RenderMultipleRestMeasures = false;
         const source = latest.current.doc;
         loadedRevision.current = latest.current.revision;
         const text = source ? source.serialize() : xml;
@@ -1022,6 +1028,12 @@ export default function ScoreCanvas({
     if (!inputMode || !onInsertNote) return;
     const spot = locate(x, y);
     if (!spot || (restOnly && spot.restEntry === null)) return;
+    const held = lockBoxes.find((box) => box.editing && box.measureIndex === spot.measureIndex);
+    if (held) {
+      setGhost(null);
+      onMeasureHeld?.(held.label);
+      return;
+    }
     setGhost(null);
     setPopover({ spot, revision });
   };

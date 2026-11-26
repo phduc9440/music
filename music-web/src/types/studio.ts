@@ -2,7 +2,7 @@ export type StudioMode = 'WAIT' | 'FREE_RUN';
 export type StudioEventResult = 'PERFECT' | 'EARLY' | 'LATE' | 'WRONG_PITCH' | 'MISSED';
 export type StudioHand = 'LEFT' | 'RIGHT';
 export type StudioHandMode = 'BOTH' | 'RIGHT_ONLY' | 'LEFT_ONLY';
-export type StudioInputSource = 'KEYBOARD' | 'TOUCH' | 'MIC';
+export type StudioInputSource = 'MIDI' | 'KEYBOARD' | 'TOUCH' | 'MIC';
 
 export interface StudioSessionCreateRequest {
   scoreId: string;
@@ -56,7 +56,11 @@ export interface StudioTimeline {
   tempoBpm: number;
   timeSignatures: { measure: number; beats: number; beatType: number }[];
   tempoChanges: { measure: number; bpm: number }[];
-  measures: { index: number; startBeat: number; beats: number }[];
+  /**
+   * Các ô theo thứ tự phát (dấu nhắc lại đã mở, ST-08): `index` là thứ tự phát từ 1, `source` là số ô trên bản nhạc
+   * (null ở timeline cũ).
+   */
+  measures: { index: number; startBeat: number; beats: number; source?: number | null }[];
   notes: {
     id: string;
     measure: number;

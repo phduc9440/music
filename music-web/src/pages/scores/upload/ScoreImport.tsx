@@ -7,12 +7,12 @@ import ComposerDatalist from '../../../components/composers/ComposerDatalist';
 import { importApi, playlistApi, showApi, tagApi, teamApi } from '../../../services';
 import type { Playlist, Show, Tag, Team } from '../../../types';
 import {
-  fileNameWithoutExtension,
   formatSize,
   getExtension,
   getUploadErrorMessage,
   MAX_COMPOSER,
   MAX_TITLE,
+  titleFromFileName,
   UPLOAD_MAX_FILE_BYTES,
 } from '../../../utils/score';
 import { clearPendingUpload, isImportBatch, peekPendingUpload } from '../../../utils/pendingUpload';
@@ -103,11 +103,7 @@ export default function ScoreImport() {
 
   const single = items.length === 1 ? items[0] : null;
   // Một file: gợi ý tên theo file (BE tự lấy work-title nếu để trống). Nhiều file: mỗi bản lấy tên từ file của nó
-  const shownTitle = titleTouched
-    ? title
-    : single
-      ? fileNameWithoutExtension(single.file.name).slice(0, MAX_TITLE)
-      : '';
+  const shownTitle = titleTouched ? title : single ? titleFromFileName(single.file.name) : '';
   const sendable = items.filter((it) => !it.invalid && it.status !== 'done');
   const failedCount = items.filter((it) => it.status === 'failed').length;
   const doneCount = items.filter((it) => it.status === 'done').length;
@@ -368,6 +364,11 @@ export default function ScoreImport() {
           <aside className="sc-upload__side">
             <label className="sc-label" htmlFor="im-title">
               {t('upload.fieldTitle')}
+              {items.length <= 1 && (
+                <span className="sc-counter">
+                  {shownTitle.length}/{MAX_TITLE}
+                </span>
+              )}
             </label>
             <input
               id="im-title"

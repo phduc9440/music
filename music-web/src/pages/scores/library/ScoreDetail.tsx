@@ -194,6 +194,24 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
     );
   }
 
+  // T50 (Q11): quản trị viên không xem bản riêng tư của người dùng; không mời "Xin quyền" như người dùng thường
+  if (state.phase === 'forbidden' && admin) {
+    return (
+      <div className="sc-page">
+        {navbar}
+        <main className="sc-container">
+          <div className="sc-empty">
+            <h3>{t('admin.scores.privateTitle')}</h3>
+            <p>{t('admin.scores.privateHint')}</p>
+            <button className="sc-btn sc-btn--primary" onClick={goBack}>
+              {t('scores.detail.toList')}
+            </button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   if (state.phase === 'forbidden' && id) {
     return (
       <div className="sc-page">
@@ -305,8 +323,8 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
               <ScoreSidebar score={score} />
             </div>
           )}
-          {activeTab === 'files' && <FilesTable files={score.files} />}
-          {activeTab === 'tasks' && <TasksTable tasks={score.latestTasks} files={score.files} />}
+          {activeTab === 'files' && <FilesTable files={score.files} title={score.title} />}
+          {activeTab === 'tasks' && <TasksTable tasks={score.latestTasks} files={score.files} title={score.title} />}
           {activeTab === 'comments' && (
             <CommentsSection
               scoreId={score.id}

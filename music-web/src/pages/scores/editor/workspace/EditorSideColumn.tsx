@@ -3,6 +3,7 @@ import AiChordPanel from '../../../../components/scores/chords/AiChordPanel';
 import OmrCheckPanel from '../../../../components/scores/omr/OmrCheckPanel';
 import type { OmrCheckState } from '../../../../components/scores/omr/useOmrCheck';
 import CommentsSection from '../../../../components/scores/comments/CommentsSection';
+import { suggestionDescription, suggestionTitle } from '../../../../components/scores/suggestions/suggestionUtils';
 import { SidebarRail, SidebarResizer } from '../../../../components/scores/common/SidebarResizer';
 import type { useSidebarResize } from '../../../../components/scores/common/useSidebarResize';
 import { useMediaQuery } from '../../../../components/player/hooks/useMediaQuery';
@@ -19,6 +20,8 @@ interface Props {
   side: ReturnType<typeof useSidebarResize>;
   ai: AiChordPanelState;
   onCloseAi: () => void;
+  /** Nghe thử hợp âm AI đang xem bằng thanh Player (CH-09). */
+  onListenAi?: () => void;
   comments: ScoreComments;
   /** Bảng "Cần kiểm tra" các ô OMR nghi ngờ (OMR-03); null khi không mở. */
   omrCheck: { state: OmrCheckState; onFocusMeasure: (index: number) => void; onClose: () => void } | null;
@@ -28,7 +31,17 @@ interface Props {
  * Cột phải của Editor: bảng Góp ý hoặc bảng Hợp âm AI (dùng chung một chỗ). Máy tính & iPad ngang kéo ra / kéo vào
  * được, thu gọn thành dải mỏng; màn nhỏ là ngăn kéo dưới đáy.
  */
-export default function EditorSideColumn({ scoreId, editor, live, side, ai, onCloseAi, comments, omrCheck }: Props) {
+export default function EditorSideColumn({
+  scoreId,
+  editor,
+  live,
+  side,
+  ai,
+  onCloseAi,
+  onListenAi,
+  comments,
+  omrCheck,
+}: Props) {
   const sideWide = useMediaQuery('(min-width: 1024px)');
   const { commentsOpen } = comments;
   // Hợp âm AI > Cần kiểm tra > Góp ý (dùng chung một chỗ, mở bảng này thì các bảng kia đóng)
@@ -58,8 +71,8 @@ export default function EditorSideColumn({ scoreId, editor, live, side, ai, onCl
       {!sideRail && ai.shown && draft && (
         <AiChordPanel
           rows={ai.aiDraft.rows}
-          title={draft.suggestion.title}
-          description={draft.suggestion.description}
+          title={suggestionTitle(draft.suggestion)}
+          description={suggestionDescription(draft.suggestion.source, draft.suggestion.description)}
           currentId={[...editor.selection][0] ?? null}
           saving={editor.saving}
           canSave={live.active ? live.state.unsaved || live.state.pending > 0 : editor.dirty}
@@ -73,6 +86,7 @@ export default function EditorSideColumn({ scoreId, editor, live, side, ai, onCl
           optionCount={draft.optionCount}
           switching={ai.aiDraft.switching}
           onOption={(n) => void ai.aiDraft.switchOption(n)}
+          onListen={onListenAi}
         />
       )}
       {!sideRail && ai.shown && !draft && (

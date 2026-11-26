@@ -173,7 +173,7 @@ class StudioEventServiceImplTest {
                 100,
                 List.of(),
                 List.of(),
-                List.of(new StudioTimelineResponse.Measure(1, 0, 4)),
+                List.of(new StudioTimelineResponse.Measure(1, 0, 4, 1)),
                 List.of(new StudioTimelineResponse.Note("n0001", 1, 1, "RIGHT", 60, 0, 1, true, null, null)),
                 List.of(),
                 List.of());

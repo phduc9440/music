@@ -16,6 +16,16 @@
 }
 
 /* màu hợp âm: hai cột khi hộp đủ rộng, hẹp thì một cột */
+.cs-melody {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 14px;
+}
+
+.cs-melody .cs-hint {
+  margin: 0;
+}
+
 .cs-styles {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));

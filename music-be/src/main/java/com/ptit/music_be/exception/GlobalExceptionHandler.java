@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import com.ptit.music_be.dto.response.common.ApiResponse;
 import com.ptit.music_be.exception.code.AccountErrorCode;
@@ -37,6 +39,17 @@ public class GlobalExceptionHandler {
         apiResponse.setMessage(AccountErrorCode.UNCATEGORIZED_EXCEPTION.getMessage());
 
         return ResponseEntity.status(AccountErrorCode.UNCATEGORIZED_EXCEPTION.getHttpStatusCode())
+                .body(apiResponse);
+    }
+
+    /** Đường dẫn không có handler (gõ sai /api/...): 404, ghi WARN thay vì ERROR để trang Hệ thống không đếm là lỗi. */
+    @ExceptionHandler(value = {NoResourceFoundException.class, NoHandlerFoundException.class})
+    ResponseEntity<ApiResponse> handlingNotFound(Exception exception) {
+        log.warn("Không có đường dẫn: {}", exception.getMessage());
+        ApiResponse apiResponse = new ApiResponse();
+        apiResponse.setCode(AccountErrorCode.API_NOT_FOUND.getCode());
+        apiResponse.setMessage(AccountErrorCode.API_NOT_FOUND.getMessage());
+        return ResponseEntity.status(AccountErrorCode.API_NOT_FOUND.getHttpStatusCode())
                 .body(apiResponse);
     }
 

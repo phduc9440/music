@@ -180,7 +180,10 @@ export default function ScoreHero({ score, onVisibilityChanged }: Props) {
 
   const meta = [
     score.composer || t('scores.card.unknownComposer'),
-    score.ownerEmail ? t('scores.hero.owner', { name: score.ownerEmail }) : null,
+    // N-05: hiện tên chủ; email chỉ có khi người xem là chủ hoặc quản trị viên
+    score.ownerName || score.ownerEmail
+      ? t('scores.hero.owner', { name: score.ownerName || score.ownerEmail || '' })
+      : null,
     t('scores.hero.updated', { when: formatDateTime(score.updatedAt) }),
   ].filter(Boolean);
 
@@ -213,7 +216,9 @@ export default function ScoreHero({ score, onVisibilityChanged }: Props) {
               </span>
             )}
           </div>
-          <h1 className="sd-title">{score.title}</h1>
+          <h1 className="sd-title sc-title-clamp" title={score.title}>
+            {score.title}
+          </h1>
           <p className="sd-meta">
             {meta.map((m, i) => (
               <span key={i}>{m}</span>

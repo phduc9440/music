@@ -71,6 +71,13 @@ export default function PracticeTimeChart() {
     [buckets, period],
   );
 
+  // N-09: nhãn trục cách đều tính từ ngày mới nhất, để hôm nay và mấy ngày gần nhất luôn có nhãn (kiểu tự ẩn của
+  // recharts có thể bỏ đúng các ngày cuối)
+  const ticks = useMemo(() => {
+    const step = Math.max(1, Math.ceil(data.length / 10));
+    return data.filter((_, i) => (data.length - 1 - i) % step === 0).map((d) => d.label);
+  }, [data]);
+
   const totalSeconds = data.reduce((sum, d) => sum + d.seconds, 0);
   const average = data.length > 0 ? totalSeconds / data.length : 0;
   const hint = PERIODS.find((p) => p.value === period)?.hint;
@@ -106,7 +113,7 @@ export default function PracticeTimeChart() {
         <ResponsiveContainer width="100%" height={280}>
           <BarChart data={data} margin={{ top: 8, right: 8, left: -8, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
-            <XAxis dataKey="label" tick={{ fontSize: 12 }} interval="preserveStartEnd" />
+            <XAxis dataKey="label" tick={{ fontSize: 12 }} ticks={ticks} interval={0} />
             <YAxis tick={{ fontSize: 12 }} allowDecimals={false} unit=" p" />
             <Tooltip
               formatter={(_value, _name, item) => [

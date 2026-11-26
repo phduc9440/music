@@ -40,6 +40,7 @@ import com.ptit.music_be.dto.enums.score.SuggestionSource;
 import com.ptit.music_be.dto.enums.score.SuggestionStatus;
 import com.ptit.music_be.dto.request.ai.ChordSuggestionRequest;
 import com.ptit.music_be.dto.response.ai.AiTaskResponse;
+import com.ptit.music_be.dto.response.score.ScoreContent;
 import com.ptit.music_be.entity.AiTask;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
@@ -59,6 +60,7 @@ import com.ptit.music_be.service.billing.EntitlementService;
 import com.ptit.music_be.service.billing.PlanLimits;
 import com.ptit.music_be.service.permission.AccessDecision;
 import com.ptit.music_be.service.permission.ScorePermissionService;
+import com.ptit.music_be.service.score.ScoreEditService;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -271,6 +273,23 @@ class ChordSuggestionServiceImplTest {
                 .isEqualTo(AiErrorCode.CHORD_STYLE_INVALID);
     }
 
+    @Test
+    void chosenMelodyPartAndStaffAreStoredAndValidated() throws Exception {
+        ChordSuggestionRequest request = style("NATURAL");
+        request.setPartIndex(1);
+        request.setStaff(2);
+        service.request(SCORE_ID, request);
+        JsonNode input = savedInput();
+        assertThat(input.path("partIndex").asInt()).isEqualTo(1);
+        assertThat(input.path("staff").asInt()).isEqualTo(2);
+
+        ChordSuggestionRequest bad = style("NATURAL");
+        bad.setStaff(0);
+        assertThat(catchThrowableOfType(AppException.class, () -> service.request(SCORE_ID, bad))
+                        .getErrorCode())
+                .isEqualTo(AiErrorCode.CHORD_STYLE_INVALID);
+    }
+
     private JsonNode savedInput() throws Exception {
         ArgumentCaptor<AiTask> saved = ArgumentCaptor.forClass(AiTask.class);
         verify(aiTaskRepository).save(saved.capture());
@@ -321,6 +340,21 @@ class ChordSuggestionServiceImplTest {
 
         assertThat(errorOf(SCORE_ID, "NATURAL").getErrorCode()).isEqualTo(BillingErrorCode.PLAN_LIMIT_REACHED);
         verify(aiTaskRepository, never()).save(any());
+    }
+
+    @Test
+    void missingMeasureCountIsCountedFromTheCurrentVersion() {
+        ScoreEditService scoreEditService = org.mockito.Mockito.mock(ScoreEditService.class);
+        String xml = "<score-partwise><part-list><score-part id=\"P1\"/></part-list><part id=\"P1\">"
+                + "<measure number=\"1\"/><measure number=\"2\"/><measure number=\"3\"/></part></score-partwise>";
+        when(scoreEditService.getVersionContentForSystem(SCORE_ID, 7))
+                .thenReturn(new ScoreContent(xml.getBytes(java.nio.charset.StandardCharsets.UTF_8), 7));
+        service.setScoreEditService(scoreEditService);
+
+        service.request(SCORE_ID, style("NATURAL"));
+
+        verify(entitlementService).checkRequestCap("m-1", RequestCap.CHORD_MEASURES, 3);
+        assertThat(score.getMeasureCount()).isEqualTo(3);
     }
 
     @Test

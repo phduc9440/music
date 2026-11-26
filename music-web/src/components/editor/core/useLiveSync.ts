@@ -81,6 +81,8 @@ export function useLiveSync(o: LiveSyncOptions) {
       const holder = session.heldByOther(command);
       if (holder === null) return false;
       flash(t('live.notice.heldBy', { name: holder }));
+      // thanh trạng thái dễ bị bỏ qua: báo thêm bằng toast (một cái, không chồng)
+      toast.info(t('live.notice.heldBy', { name: holder }), { toastId: 'live-held' });
       return true;
     },
     [flash, liveRef],

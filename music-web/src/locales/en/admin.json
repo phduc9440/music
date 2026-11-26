@@ -430,7 +430,11 @@
     "selectAll": "Select all scores on this page",
     "selectOne": "Select {title}",
     "deleteOne": "Delete {title}",
-    "noMatch": "No scores match the filters. Try removing some conditions."
+    "noMatch": "No scores match the filters. Try removing some conditions.",
+    "privateTitle": "Private score",
+    "privateHint": "Private — only the owner can view it. Admins only view pending and public scores; a private score can only be deleted (with a reason).",
+    "bulkPendingOnly": "Applies only to the pending scores in the selection",
+    "bulkPublicOnly": "Applies only to the public scores in the selection"
   },
   "dashboard": {
     "visibility": {
@@ -551,8 +555,8 @@
     "aiRunning": "{n} tasks running",
     "newInPeriod": "+{n} in {days} days",
     "practiceMinutes": "Practice minutes",
-    "sessionsAllTime": "{n} sessions all time",
-    "sparkLabel": "Last {days} days: total {total}, peak {max} on {date}"
+    "sparkLabel": "Last {days} days: total {total}, peak {max} on {date}",
+    "sessionsInRange": "{n} sessions in {days} days · {total} all time"
   },
   "ai": {
     "status": {

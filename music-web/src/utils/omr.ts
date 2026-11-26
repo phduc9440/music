@@ -252,6 +252,16 @@ export const MEASURE_FLAG_LABELS: Record<OmrMeasure['flags'][number], string> = 
 export const confidencePercent = (m: Pick<OmrMeasure, 'confidence'>): number | null =>
   typeof m.confidence === 'number' ? Math.round(m.confidence * 100) : null;
 
+/**
+ * Câu độ tin cậy của ô cần kiểm tra. N-10: ô chỉ có cờ "máy đã tự sửa" thì ghi "Máy đã tự sửa" thay vì "Độ tin cậy 100%"
+ * (độ tin cậy là của bản máy đọc sau khi sửa, dễ hiểu nhầm là không cần xem).
+ */
+export const confidenceText = (m: Pick<OmrMeasure, 'confidence' | 'flags'>): string | null => {
+  if (m.flags.length > 0 && m.flags.every((f) => f === 'AUTO_FIXED')) return t('upload.review.autoFixedNote');
+  const value = confidencePercent(m);
+  return value === null ? null : t('upload.review.confidence', { value });
+};
+
 /** Các ô cần kiểm tra (có ít nhất một cờ), theo số ô tăng dần. */
 export const flaggedMeasures = (map: OmrMeasure[] | undefined): OmrMeasure[] =>
   (map ?? []).filter((m) => m.flags.length > 0).sort((a, b) => a.measure - b.measure);

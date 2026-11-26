@@ -2,7 +2,9 @@
   "modes": {
     "1": "Free play",
     "2": "Loop a section",
-    "3": "Scored"
+    "3": "Scored",
+    "4": "Wait for notes",
+    "5": "Play along"
   },
   "durationMinutes": "{m} min {s} s",
   "durationSeconds": "{s} s",
@@ -101,7 +103,9 @@
     "notePitch": "% of notes played at the right pitch.",
     "noteTiming": "% of notes played on time.",
     "noteSpeed": "average practice speed compared to the original (100% of the original speed is 100 points).",
-    "noteDiligence": "% of days with practice in the period."
+    "noteDiligence": "% of days with practice in the period.",
+    "pitch": "Pitch accuracy",
+    "timing": "Timing"
   },
   "time": {
     "DAY": {

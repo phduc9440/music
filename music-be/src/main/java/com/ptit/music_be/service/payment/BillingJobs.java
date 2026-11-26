@@ -3,6 +3,8 @@ package com.ptit.music_be.service.payment;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import com.ptit.music_be.utils.AppTime;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -17,7 +19,7 @@ public class BillingJobs {
 
     private final PaymentService paymentService;
 
-    @Scheduled(cron = "${billing.order-expiry-cron:0 5 * * * *}")
+    @Scheduled(cron = "${billing.order-expiry-cron:0 5 * * * *}", zone = AppTime.ZONE_ID)
     public void expireOrders() {
         int n = paymentService.expirePending();
         if (n > 0) {

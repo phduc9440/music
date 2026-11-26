@@ -21,4 +21,8 @@ public class ChordSuggestionRequest {
     String creativity;
     /** SPARSE, NORMAL (mặc định) hoặc DENSE. */
     String density;
+    /** Bè chứa giai điệu (thứ tự part từ 0); bỏ trống thì part đầu tiên có nốt có cao độ (CH-04). */
+    Integer partIndex;
+    /** Khuông giai điệu trong bè (từ 1); bỏ trống là khuông 1. */
+    Integer staff;
 }

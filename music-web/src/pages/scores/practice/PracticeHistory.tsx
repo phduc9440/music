@@ -15,7 +15,8 @@ import { formatDateTime, getLocale, labelMap, t } from '../../../i18n/core';
 
 const PAGE_SIZE = 20;
 const DAY_MS = 24 * 3600 * 1000;
-const MODE_LABELS: Record<number, string> = labelMap('practice.modes', [1, 2, 3]);
+// 1–3 phiên luyện tập cũ, 4 Chờ nốt và 5 Chạy theo nhạc là phiên Studio (ST-03)
+const MODE_LABELS: Record<number, string> = labelMap('practice.modes', [1, 2, 3, 4, 5]);
 /** Năm loại nốt theo thứ tự hiển thị trên thanh phân bố (khớp màu .pr-kind--*). */
 const KINDS = ['perfect', 'early', 'late', 'wrong', 'missed'] as const;
 type Kind = (typeof KINDS)[number];
@@ -45,6 +46,9 @@ const formatPct = (v?: number | null) => (v == null ? '—' : `${v.toFixed(1)}%`
 const tone = (v?: number | null) => (v == null ? 'none' : v >= 85 ? 'good' : v >= 60 ? 'mid' : 'low');
 const grade = (v?: number | null) =>
   v == null ? '–' : v >= 95 ? 'S' : v >= 85 ? 'A' : v >= 70 ? 'B' : v >= 55 ? 'C' : 'D';
+/** Hạng của phiên Studio theo điểm 0–10000, cùng ngưỡng với báo cáo Studio (BE StudioReportServiceImpl.grade, ST-10). */
+const gradeOfPoints = (points: number) =>
+  points >= 9500 ? 'S' : points >= 8500 ? 'A' : points >= 7000 ? 'B' : points >= 5000 ? 'C' : 'D';
 const avg = (xs: (number | null | undefined)[]) => {
   const v = xs.filter((x): x is number => x != null);
   return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
@@ -68,17 +72,27 @@ const dayLabel = (key: string) => {
 };
 
 /** Đồng hồ điểm: vòng tròn tô theo % đúng, giữa là hạng S/A/B/C/D. */
-function ScoreDial({ value, size = 'md' }: { value?: number | null; size?: 'md' | 'lg' }) {
+function ScoreDial({
+  value,
+  points,
+  size = 'md',
+}: {
+  value?: number | null;
+  /** Điểm Studio (0–10000): có thì hạng lấy theo điểm để khớp trang báo cáo Studio. */
+  points?: number | null;
+  size?: 'md' | 'lg';
+}) {
+  const shownGrade = points != null ? gradeOfPoints(points) : grade(value);
   return (
     <div
       className={`pr-dial pr-dial--${size}`}
       data-tone={tone(value)}
       style={{ '--pct': Math.max(0, Math.min(100, value ?? 0)) } as CSSProperties}
       role="img"
-      aria-label={t('practice.history.dialLabel', { grade: grade(value), pct: formatPct(value) })}
+      aria-label={t('practice.history.dialLabel', { grade: shownGrade, pct: formatPct(value) })}
     >
       <span className="pr-dial__grade" aria-hidden="true">
-        {grade(value)}
+        {shownGrade}
       </span>
       <span className="pr-dial__pct" aria-hidden="true">
         {formatPct(value)}
@@ -328,10 +342,6 @@ export default function PracticeHistory() {
                 <Icon name="chart" size={16} />
                 {t('practice.history.statsLink')}
               </Link>
-              <Link className="pr-ghost" to="/studio/history">
-                <Icon name="clock" size={16} />
-                {t('studioReport.history.open')}
-              </Link>
             </div>
           </div>
 
@@ -427,7 +437,7 @@ export default function PracticeHistory() {
                 <ol className="pr-day__list">
                   {list.map((s) => (
                     <li key={s.id} className="pr-session" data-tone={tone(s.accuracyPct)}>
-                      <ScoreDial value={s.accuracyPct} />
+                      <ScoreDial value={s.accuracyPct} points={s.mode >= 4 ? s.scorePoints : null} />
                       <div className="pr-session__main">
                         <Link className="pr-session__title" to={`/scores/${s.scoreId}`} title={s.scoreTitle}>
                           {s.scoreTitle}
@@ -459,9 +469,16 @@ export default function PracticeHistory() {
                         >
                           <Icon name="play" size={16} />
                         </Link>
-                        <button className="sc-btn sc-btn--sm" onClick={() => openDetail(s.id)}>
-                          {t('practice.history.details')}
-                        </button>
+                        {s.mode >= 4 ? (
+                          // phiên Studio: mở báo cáo Studio (theo ô nhịp, so sánh kỷ lục) thay cho hộp chi tiết
+                          <Link className="sc-btn sc-btn--sm" to={`/studio/sessions/${s.id}/report`}>
+                            {t('practice.history.details')}
+                          </Link>
+                        ) : (
+                          <button className="sc-btn sc-btn--sm" onClick={() => openDetail(s.id)}>
+                            {t('practice.history.details')}
+                          </button>
+                        )}
                         <button
                           className="pr-icon-btn pr-icon-btn--danger"
                           onClick={() => remove(s)}
@@ -485,6 +502,7 @@ export default function PracticeHistory() {
             totalPages={result.totalPages}
             totalElements={result.totalElements}
             onChange={setPage}
+            countLabel={(count) => t('practice.history.count', { count })}
           />
         )}
       </main>
@@ -496,7 +514,7 @@ export default function PracticeHistory() {
           onClose={() => setDetail(null)}
         >
           <div className="pr-detail__top">
-            <ScoreDial value={detail.accuracyPct} size="lg" />
+            <ScoreDial value={detail.accuracyPct} points={detail.mode >= 4 ? detail.scorePoints : null} size="lg" />
             <dl className="pr-facts">
               <div>
                 <dt>{t('practice.history.mode')}</dt>

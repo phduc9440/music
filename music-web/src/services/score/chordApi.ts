@@ -18,6 +18,9 @@ export interface ChordRequestOptions {
   replaceExisting?: boolean;
   creativity?: ChordCreativity;
   density?: ChordDensity;
+  /** Bè giai điệu (CH-04): part từ 0, khuông từ 1. Bỏ trống thì AI lấy khuông 1 của part đầu có nốt. */
+  partIndex?: number;
+  staff?: number;
 }
 
 /** Gợi ý hợp âm tự động (R3, BE: ChordSuggestionController). */
@@ -34,5 +37,7 @@ export const chordApi = {
       replaceExisting: options.replaceExisting ?? false,
       creativity: options.creativity ?? 'BALANCED',
       density: options.density ?? 'NORMAL',
+      partIndex: options.partIndex,
+      staff: options.staff,
     }),
 };

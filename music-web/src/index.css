@@ -362,3 +362,24 @@ a:hover {
 .modal-close:hover {
   color: var(--ui-text);
 }
+
+/* Tên bài dài (tối đa 80 ký tự, có thể là một chuỗi liền không dấu cách): xuống dòng ở bất kỳ đâu, tối đa 2 dòng; tên
+   đầy đủ ở thuộc tính title (T38) */
+.sc-title-clamp {
+  display: -webkit-box;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+/* Thông báo nhắc tên bài dài: xuống dòng ở bất kỳ đâu, tối đa 4 dòng */
+.Toastify__toast-body > div:last-child {
+  display: -webkit-box;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+}

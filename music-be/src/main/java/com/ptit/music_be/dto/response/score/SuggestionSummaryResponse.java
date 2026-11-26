@@ -2,6 +2,7 @@ package com.ptit.music_be.dto.response.score;
 
 import java.time.LocalDateTime;
 
+import com.ptit.music_be.dto.enums.score.SuggestionSource;
 import com.ptit.music_be.dto.enums.score.SuggestionStatus;
 
 import lombok.*;
@@ -17,6 +18,8 @@ public class SuggestionSummaryResponse {
     String id;
     String title;
     SuggestionStatus status;
+    /** Nguồn: EDITOR (người dùng gửi), CHORD_GENERATION (gợi ý hợp âm AI), LIVE_RECOVERY... (CH-03: web tìm bản nháp hợp âm). */
+    SuggestionSource source;
     /** Đổi cấu trúc (khung, khóa, nhịp): không chia theo ô, chỉ nhận tất cả. */
     boolean structural;
     /** Đề xuất còn mở nhưng bản chính đã đổi đến mức không áp dụng được. */

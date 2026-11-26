@@ -1,6 +1,7 @@
 import type { MicAudioWindow } from './micAudioWindowBuffer';
 import { MIC_SAMPLE_RATE, MicAudioWindowBuffer } from './micAudioWindowBuffer';
 import type { MicPitchRequest, MicPitchResponse } from './micPitchTypes';
+import { MicResampler } from './micResampler';
 
 export interface RecognizedMicNote {
   midi: number;
@@ -30,10 +31,28 @@ type MicUpdateHandler = (notes: RecognizedMicNote[], coveredUntilMs: number, lat
 type MicStatusHandler = (latencyMs: number) => void;
 type MicErrorHandler = (error: StudioMicError) => void;
 
+export interface StudioMicOptions {
+  /** Độ trễ còn lại đo bằng hiệu chỉnh (ms, ST-05): trừ thêm vào thời điểm nốt sau khi đã bù độ trễ thu của máy. */
+  offsetMs?: number;
+  /** Mức âm lượng 0–1 của từng khối âm thanh (thanh đo ở hộp thử micro). */
+  onLevel?: (level: number) => void;
+}
+
 interface PendingRequest {
   resolve: (response: MicPitchResponse) => void;
   reject: (error: Error) => void;
 }
+
+/** Worker đã nạp sẵn mô hình (ST-14): tải khi người dùng chọn Micro, không đợi tới lúc bấm Bắt đầu. */
+interface PreloadedModel {
+  worker: Worker;
+  ready: Promise<string>;
+}
+
+let preloaded: PreloadedModel | null = null;
+
+const modelUrl = () =>
+  new URL(`${import.meta.env.BASE_URL}models/basic-pitch/model.json`, window.location.origin).toString();
 
 export class StudioMicInput {
   private static readonly MAX_QUEUED_WINDOWS = 8;
@@ -56,6 +75,13 @@ export class StudioMicInput {
   private disposed = false;
   private failure: Error | null = null;
   private stopPromise: Promise<number> | null = null;
+  /** Độ trễ thu của thiết bị + trình duyệt và độ trễ hiệu chỉnh (ms), trừ vào thời điểm mỗi nốt (ST-05). */
+  private readonly compensationMs: number;
+  private readonly onLevel?: (level: number) => void;
+  /** Hạ tần số khi AudioContext không mở được ở 22 050 Hz (ST-15). */
+  private readonly resampler: MicResampler;
+  /** Nút câm nối worklet tới loa: vài trình duyệt (Safari) không chạy worklet không nối tới đích, nhưng không phát lại tiếng. */
+  private readonly sink: GainNode;
 
   private constructor(
     stream: MediaStream,
@@ -66,8 +92,14 @@ export class StudioMicInput {
     onUpdate: MicUpdateHandler,
     onStatus: MicStatusHandler,
     onError: MicErrorHandler,
+    options: StudioMicOptions,
   ) {
     this.stream = stream;
+    this.onLevel = options.onLevel;
+    this.compensationMs = Math.round(inputLatencyMs(stream, audioContext) + (options.offsetMs ?? 0));
+    this.resampler = new MicResampler(audioContext.sampleRate, MIC_SAMPLE_RATE);
+    this.sink = audioContext.createGain();
+    this.sink.gain.value = 0;
     this.audioContext = audioContext;
     this.worker = worker;
     this.source = source;
@@ -94,10 +126,40 @@ export class StudioMicInput {
 
   private resolveStopped: (() => void) | null = null;
 
+  /**
+   * Tải mô hình Basic Pitch vào một worker trước (ST-14); gọi lại nhiều lần chỉ tải một lần. Trả về backend TF.js
+   * (webgl / cpu). Phiên Micro tạo sau đó dùng lại worker này.
+   */
+  static preload(): Promise<string> {
+    if (!preloaded) {
+      const worker = new Worker(new URL('./basicPitch.worker.ts', import.meta.url), { type: 'module' });
+      const ready = StudioMicInput.request(worker, { type: 'load', requestId: 0, modelUrl: modelUrl() }).then(
+        (response) => response.backend ?? 'cpu',
+      );
+      const entry: PreloadedModel = { worker, ready };
+      preloaded = entry;
+      ready.catch(() => {
+        worker.terminate();
+        if (preloaded === entry) preloaded = null;
+      });
+    }
+    return preloaded.ready;
+  }
+
+  /** Lấy worker đã nạp sẵn (nếu có) cho một phiên; phiên sau tải lại vì worker bị đóng khi phiên kết thúc. */
+  private static async takeWorker(): Promise<Worker> {
+    await StudioMicInput.preload();
+    const entry = preloaded;
+    preloaded = null;
+    if (!entry) throw new StudioMicError('model-load', 'Basic Pitch model is not loaded');
+    return entry.worker;
+  }
+
   static async create(
     onUpdate: MicUpdateHandler,
     onStatus: MicStatusHandler,
     onError: MicErrorHandler,
+    options: StudioMicOptions = {},
   ): Promise<StudioMicInput> {
     if (!window.isSecureContext && !['localhost', '127.0.0.1'].includes(window.location.hostname)) {
       throw new StudioMicError('insecure-context', 'Microphone access requires HTTPS or localhost');
@@ -114,7 +176,12 @@ export class StudioMicInput {
     let stream: MediaStream | null = null;
     let worker: Worker | null = null;
     try {
-      audioContext = new AudioContext({ sampleRate: MIC_SAMPLE_RATE });
+      // ST-15: mở ở 22 050 Hz cho mô hình; trình duyệt không cho thì mở ở tần số mặc định rồi hạ mẫu (MicResampler)
+      try {
+        audioContext = new AudioContext({ sampleRate: MIC_SAMPLE_RATE });
+      } catch {
+        audioContext = new AudioContext();
+      }
       const resumePromise = audioContext.resume().then(
         () => null,
         (error: unknown) => asMicError(error, 'audio-start'),
@@ -134,17 +201,12 @@ export class StudioMicInput {
         throw new StudioMicError(code, error instanceof Error ? error.message : 'Microphone access failed');
       }
 
-      if (audioContext.sampleRate !== MIC_SAMPLE_RATE) {
+      if (audioContext.sampleRate < MIC_SAMPLE_RATE) {
         throw new StudioMicError('unsupported', `Audio sample rate ${audioContext.sampleRate} is not supported`);
       }
       const workletUrl = new URL(`${import.meta.env.BASE_URL}studio-mic-capture-processor.js`, window.location.origin);
       await audioContext.audioWorklet.addModule(workletUrl);
-      worker = new Worker(new URL('./basicPitch.worker.ts', import.meta.url), { type: 'module' });
-      const modelUrl = new URL(
-        `${import.meta.env.BASE_URL}models/basic-pitch/model.json`,
-        window.location.origin,
-      ).toString();
-      await StudioMicInput.request(worker, { type: 'load', requestId: 0, modelUrl });
+      worker = await StudioMicInput.takeWorker();
 
       const source = audioContext.createMediaStreamSource(stream);
       const captureNode = new AudioWorkletNode(audioContext, 'studio-mic-capture', {
@@ -156,7 +218,17 @@ export class StudioMicInput {
       });
       const resumeError = await resumePromise;
       if (resumeError) throw resumeError;
-      return new StudioMicInput(stream, audioContext, worker, source, captureNode, onUpdate, onStatus, onError);
+      return new StudioMicInput(
+        stream,
+        audioContext,
+        worker,
+        source,
+        captureNode,
+        onUpdate,
+        onStatus,
+        onError,
+        options,
+      );
     } catch (error) {
       stream?.getTracks().forEach((track) => track.stop());
       worker?.terminate();
@@ -164,6 +236,11 @@ export class StudioMicInput {
       if (error instanceof StudioMicError) throw error;
       throw new StudioMicError('model-load', error instanceof Error ? error.message : 'Could not load Basic Pitch');
     }
+  }
+
+  /** Mốc performance.now() lúc bắt đầu thu; thời điểm nốt báo về tính từ mốc này. */
+  get startTime(): number {
+    return this.startedAt;
   }
 
   async start(): Promise<number> {
@@ -175,7 +252,8 @@ export class StudioMicInput {
     }
     this.startedAt = performance.now();
     this.source.connect(this.captureNode);
-    // Không connect tới destination để tránh phát lại âm thanh từ mic (echo loop)
+    // Nối tới loa qua nút câm (gain 0): worklet chắc chắn được chạy mà không phát lại tiếng micro (vòng hú)
+    this.captureNode.connect(this.sink).connect(this.audioContext.destination);
     return this.startedAt;
   }
 
@@ -192,6 +270,7 @@ export class StudioMicInput {
     this.stream.getTracks().forEach((track) => track.stop());
     this.source.disconnect();
     this.captureNode.disconnect();
+    this.sink.disconnect();
     this.worker.terminate();
     this.pendingRequests.forEach((request) => request.reject(new Error('Microphone input was disposed')));
     this.pendingRequests.clear();
@@ -230,8 +309,14 @@ export class StudioMicInput {
     return this.buffer.durationMs;
   }
 
-  private acceptAudio(samples: Float32Array): void {
+  private acceptAudio(raw: Float32Array): void {
     if (this.stopped) return;
+    const samples = this.resampler.process(raw);
+    if (this.onLevel && samples.length > 0) {
+      let sum = 0;
+      for (const value of samples) sum += value * value;
+      this.onLevel(Math.sqrt(sum / samples.length));
+    }
     for (const window of this.buffer.append(samples)) this.queueWindow(window);
   }
 
@@ -258,7 +343,7 @@ export class StudioMicInput {
         const notes = (response.notes ?? [])
           .map((note) => ({
             midi: note.pitchMidi,
-            playedMs: Math.max(0, Math.round(windowStartMs + note.startTimeSeconds * 1000)),
+            playedMs: Math.max(0, Math.round(windowStartMs + note.startTimeSeconds * 1000 - this.compensationMs)),
           }))
           .filter((note) => {
             if (note.playedMs <= this.lastCommittedMs || note.playedMs > coveredUntilMs) return false;
@@ -321,6 +406,17 @@ export class StudioMicInput {
       worker.postMessage(request);
     });
   }
+}
+
+/**
+ * Độ trễ từ lúc âm thanh tới micro đến lúc tới bộ thu (ms): độ trễ của track (Chrome báo trong getSettings) cộng
+ * baseLatency của AudioContext. Trình duyệt không báo thì 0, phần còn lại do hiệu chỉnh bù.
+ */
+function inputLatencyMs(stream: MediaStream, audioContext: AudioContext): number {
+  const settings = stream.getAudioTracks()[0]?.getSettings() as (MediaTrackSettings & { latency?: number }) | undefined;
+  const track = typeof settings?.latency === 'number' ? settings.latency : 0;
+  const base = typeof audioContext.baseLatency === 'number' ? audioContext.baseLatency : 0;
+  return Math.max(0, Math.min(0.5, track + base)) * 1000;
 }
 
 function asMicError(error: unknown, fallbackCode: StudioMicErrorCode): StudioMicError {

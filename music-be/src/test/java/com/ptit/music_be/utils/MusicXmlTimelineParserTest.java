@@ -37,7 +37,7 @@ class MusicXmlTimelineParserTest {
 
         assertThat(timeline.measureCount()).isEqualTo(1);
         assertThat(timeline.tempoBpm()).isEqualTo(120);
-        assertThat(timeline.measures()).containsExactly(new StudioTimelineResponse.Measure(1, 0, 3));
+        assertThat(timeline.measures()).containsExactly(new StudioTimelineResponse.Measure(1, 0, 3, 1));
         assertThat(timeline.notes())
                 .extracting(StudioTimelineResponse.Note::midi)
                 .containsExactly(60, 64, 67);
@@ -104,7 +104,7 @@ class MusicXmlTimelineParserTest {
     }
 
     @Test
-    void reportsRepeatWarningsAndLaterTempoChanges() {
+    void laterTempoChangesAreKept() {
         StudioTimelineResponse timeline = parse("""
 				<score-partwise version="3.1">
 				<part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>
@@ -112,7 +112,6 @@ class MusicXmlTimelineParserTest {
 					<measure number="1">
 					<attributes><divisions>1</divisions><time><beats>2</beats><beat-type>4</beat-type></time></attributes>
 					<note><pitch><step>C</step><octave>4</octave></pitch><duration>2</duration></note>
-					<barline><repeat direction="forward"/></barline>
 					</measure>
 					<measure number="2">
 					<direction><sound tempo="80"/></direction>
@@ -124,7 +123,126 @@ class MusicXmlTimelineParserTest {
 
         assertThat(timeline.tempoBpm()).isEqualTo(100);
         assertThat(timeline.tempoChanges()).containsExactly(new StudioTimelineResponse.TempoChange(2, 80));
-        assertThat(timeline.warnings()).isNotEmpty();
+        assertThat(timeline.warnings()).isEmpty();
+    }
+
+    @Test
+    void unfoldsRepeatsAndVoltasLikeThePlayer() {
+        // ô 1 | ô 2 :|| volta 1 = ô 2, volta 2 = ô 3 → phát 1, 2, 1, 3
+        StudioTimelineResponse timeline = parse("""
+				<score-partwise version="3.1">
+				<part-list><score-part id="P1"><part-name>Melody</part-name></score-part></part-list>
+				<part id="P1">
+					<measure number="1">
+					<attributes><divisions>1</divisions><time><beats>2</beats><beat-type>4</beat-type></time></attributes>
+					<barline location="left"><repeat direction="forward"/></barline>
+					<note><pitch><step>C</step><octave>4</octave></pitch><duration>2</duration></note>
+					</measure>
+					<measure number="2">
+					<barline location="left"><ending number="1" type="start"/></barline>
+					<note><pitch><step>D</step><octave>4</octave></pitch><duration>2</duration></note>
+					<barline location="right"><ending number="1" type="stop"/><repeat direction="backward"/></barline>
+					</measure>
+					<measure number="3">
+					<barline location="left"><ending number="2" type="start"/></barline>
+					<note><pitch><step>E</step><octave>4</octave></pitch><duration>2</duration></note>
+					<barline location="right"><ending number="2" type="discontinue"/></barline>
+					</measure>
+				</part>
+				</score-partwise>
+				""");
+
+        assertThat(timeline.measureCount()).isEqualTo(4);
+        assertThat(timeline.measures())
+                .extracting(StudioTimelineResponse.Measure::source)
+                .containsExactly(1, 2, 1, 3);
+        assertThat(timeline.notes())
+                .extracting(StudioTimelineResponse.Note::midi)
+                .containsExactly(60, 62, 60, 64);
+        assertThat(timeline.notes())
+                .extracting(StudioTimelineResponse.Note::measure)
+                .containsExactly(1, 2, 3, 4);
+        assertThat(timeline.notes())
+                .extracting(StudioTimelineResponse.Note::startBeat)
+                .containsExactly(0.0, 2.0, 4.0, 6.0);
+        assertThat(timeline.notes().get(2).osmd().measureIndex()).isZero();
+        assertThat(timeline.steps()).hasSize(4);
+        assertThat(timeline.warnings()).containsExactly(MusicXmlTimelineParser.WARNING_REPEATS_UNFOLDED);
+    }
+
+    @Test
+    void repeatTimesAttributePlaysTheSectionSeveralTimes() {
+        StudioTimelineResponse timeline = parse("""
+				<score-partwise version="3.1">
+				<part-list><score-part id="P1"><part-name>Melody</part-name></score-part></part-list>
+				<part id="P1">
+					<measure number="1">
+					<attributes><divisions>1</divisions><time><beats>1</beats><beat-type>4</beat-type></time></attributes>
+					<note><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration></note>
+					<barline location="right"><repeat direction="backward" times="3"/></barline>
+					</measure>
+					<measure number="2">
+					<note><pitch><step>D</step><octave>4</octave></pitch><duration>1</duration></note>
+					</measure>
+				</part>
+				</score-partwise>
+				""");
+
+        assertThat(timeline.measures())
+                .extracting(StudioTimelineResponse.Measure::source)
+                .containsExactly(1, 1, 1, 2);
+    }
+
+    @Test
+    void handsOnlyForTwoStaffParts() {
+        // part 1: giai điệu 1 khuông; part 2: piano 2 khuông
+        StudioTimelineResponse timeline = parse("""
+				<score-partwise version="3.1">
+				<part-list>
+					<score-part id="P1"><part-name>Voice</part-name></score-part>
+					<score-part id="P2"><part-name>Piano</part-name></score-part>
+				</part-list>
+				<part id="P1">
+					<measure number="1">
+					<attributes><divisions>1</divisions><time><beats>1</beats><beat-type>4</beat-type></time></attributes>
+					<note><pitch><step>A</step><octave>4</octave></pitch><duration>1</duration></note>
+					</measure>
+				</part>
+				<part id="P2">
+					<measure number="1">
+					<attributes><divisions>1</divisions><staves>2</staves><time><beats>1</beats><beat-type>4</beat-type></time></attributes>
+					<note><pitch><step>C</step><octave>5</octave></pitch><duration>1</duration><staff>1</staff></note>
+					<backup><duration>1</duration></backup>
+					<note><pitch><step>C</step><octave>3</octave></pitch><duration>1</duration><staff>2</staff></note>
+					</measure>
+				</part>
+				</score-partwise>
+				""");
+
+        assertThat(timeline.notes())
+                .extracting(StudioTimelineResponse.Note::midi, StudioTimelineResponse.Note::hand)
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple(69, null),
+                        org.assertj.core.groups.Tuple.tuple(72, "RIGHT"),
+                        org.assertj.core.groups.Tuple.tuple(48, "LEFT"));
+    }
+
+    @Test
+    void flagsDaCapoThatIsNotExpanded() {
+        StudioTimelineResponse timeline = parse("""
+				<score-partwise version="3.1">
+				<part-list><score-part id="P1"><part-name>Melody</part-name></score-part></part-list>
+				<part id="P1">
+					<measure number="1">
+					<attributes><divisions>1</divisions><time><beats>1</beats><beat-type>4</beat-type></time></attributes>
+					<note><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration></note>
+					<direction><direction-type><words>D.C. al Fine</words></direction-type><sound dacapo="yes"/></direction>
+					</measure>
+				</part>
+				</score-partwise>
+				""");
+
+        assertThat(timeline.warnings()).containsExactly(MusicXmlTimelineParser.WARNING_JUMPS_NOT_EXPANDED);
     }
 
     @Test

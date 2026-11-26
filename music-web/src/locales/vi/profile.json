@@ -35,5 +35,21 @@
     "copied": "Đã sao chép",
     "copyFailed": "Không sao chép được, hãy chọn và sao chép thủ công",
     "loadFailed": "Không tải được mã giới thiệu"
+  },
+  "points": {
+    "title": "Điểm thưởng",
+    "xp": "XP",
+    "notes": "Nốt",
+    "empty": "Chưa có điểm. Công khai bản nhạc, gửi đề xuất được nhận, trả lời trên diễn đàn hoặc mời bạn để nhận điểm.",
+    "loadFailed": "Không tải được điểm thưởng",
+    "reasons": {
+      "SCORE_PUBLISHED": "Bản nhạc được công khai",
+      "SCORE_OFFICIAL": "Bản nhạc vào kho mẫu",
+      "REFERRAL_DIGITIZED": "Bạn được mời đã số hóa bản đầu",
+      "REFERRAL_WELCOME": "Thưởng đăng ký bằng mã mời",
+      "FORUM_ANSWER_ACCEPTED": "Câu trả lời được chọn",
+      "SUGGESTION_ACCEPTED": "Đề xuất sửa được nhận",
+      "FIRST_DIGITIZED": "Số hóa bản nhạc đầu tiên"
+    }
   }
 }

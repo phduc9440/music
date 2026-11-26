@@ -14,7 +14,7 @@ from app.chords.autoharmonizer.model import load_net
 from app.chords.generate import generate_file, option_path
 from app.chords.melody import load_melody
 from app.chords.writer import insert_harmony
-from tests.chord_samples import backup, harm, n, single
+from tests.chord_samples import backup, harm, n, part_xml, score_xml, single
 
 REFERENCE = Path(__file__).parent / "fixtures" / "autoharmonizer_reference.npz"
 
@@ -153,6 +153,34 @@ def test_generate_writes_on_melody_staff_of_piano_score(tmp_path):
     assert result.key == "C major"
     for root in roots:
         assert all(h.findtext("staff") == "1" for h in root.iter("harmony"))
+
+
+def test_generate_uses_chosen_staff_as_melody(tmp_path):
+    lower = [m.replace("<voice>1</voice>", "<voice>5</voice><staff>2</staff>") for m in TWINKLE]
+    data = single([n("C", 3, 4) + backup(4) + m for m in lower], staves=2)
+    result, roots = run(tmp_path, data, seed=5, staff=2)
+    assert result.filled > 0
+    for root in roots:
+        assert all(h.findtext("staff") == "2" for h in root.iter("harmony"))
+
+
+def test_generate_uses_chosen_part_as_melody(tmp_path):
+    bass = [n("C", 3, 4) for _ in TWINKLE]
+    data = score_xml(part_xml("P1", bass), part_xml("P2", TWINKLE))
+    _, roots = run(tmp_path, data, seed=5, part_index=1)
+    for root in roots:
+        parts = root.findall("part")
+        assert not parts[0].findall(".//harmony")
+        assert parts[1].findall(".//harmony")
+
+
+def test_chosen_part_out_of_range_or_without_pitch_raises(tmp_path):
+    with pytest.raises(ChordError) as info:
+        run(tmp_path, single(TWINKLE), part_index=3)
+    assert info.value.code == "NO_MELODY"
+    with pytest.raises(ChordError) as info:
+        run(tmp_path, single(TWINKLE), staff=2)
+    assert info.value.code == "NO_MELODY"
 
 
 def test_generate_keeps_existing_chords_and_skips_locked_measures(tmp_path):

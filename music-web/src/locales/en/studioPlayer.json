@@ -11,7 +11,7 @@
     "input": "Note input",
     "computerKeyboard": "Computer keyboard",
     "touchKeyboard": "Tap the on-screen piano",
-    "microphone": "Microphone (real piano)",
+    "microphone": "Microphone (experimental)",
     "microphoneHint": "The microphone recognizes multiple notes at once. Use Free Run only; feedback is delayed by about 1–2 seconds. Audio is analyzed in your browser and is not uploaded. Place the mic near the piano and reduce background noise.",
     "hands": "Practice hands",
     "bothHands": "Both hands",
@@ -25,7 +25,22 @@
     "starting": "Starting session…",
     "freeRunHint": "Notes keep moving at the chosen tempo; play as each note reaches the line to score Perfect.",
     "playPreview": "Preview",
-    "stopPreview": "Stop preview"
+    "stopPreview": "Stop preview",
+    "tempoBpm": "≈ {bpm} BPM",
+    "micModel": {
+      "loading": "Loading the listening model (about 1 MB)…",
+      "ready": "Listening is ready. The microphone is experimental: play a piano close to the device and avoid noise.",
+      "slow": "The browser could not enable graphics acceleration, so listening may lag or stop; a MIDI keyboard or the computer keyboard is safer.",
+      "error": "Could not load the listening model. Reload the page or choose another input."
+    },
+    "midiKeyboard": "MIDI keyboard",
+    "midi": {
+      "connecting": "Looking for a MIDI keyboard… The browser may ask for permission to use MIDI devices.",
+      "ready": "Keyboard found: {devices}. Press a few keys to test.",
+      "none": "No MIDI keyboard yet. Plug it in over USB (or a MIDI adapter) and press a key.",
+      "unsupported": "This browser does not support MIDI keyboards (Web MIDI). Use Chrome or Edge, or choose another input.",
+      "denied": "The browser blocked access to MIDI devices. Allow it in the site settings and reload."
+    }
   },
   "session": {
     "live": "Practice in progress",
@@ -49,12 +64,19 @@
     "statusQuiet": "Quiet (try playing a piano key)",
     "statusGood": "Good audio signal",
     "statusLoud": "High volume / noise detected",
-    "detectedNote": "Detected note",
-    "playPrompt": "Play a note on your real piano to test pitch sensitivity",
+    "detectedNote": "Notes heard",
+    "playPrompt": "Play a few notes or a chord on the piano; results appear after about 2 seconds, as in practice.",
     "unsupported": "Browser does not support microphone input.",
     "permissionDenied": "Microphone permission denied. Please allow microphone access in site settings.",
     "noDevice": "No microphone device detected.",
-    "startError": "Could not start microphone test."
+    "startError": "Could not start microphone test.",
+    "starting": "Opening the microphone…",
+    "calibrate": "Calibrate latency",
+    "calibrateHint": "Latency being compensated: {ms} ms. Press Calibrate and play one note on each click.",
+    "calibrating": "Play one note on each click ({count} clicks)…",
+    "calibrated": "Measured {ms} ms of latency and saved it; later microphone sessions will compensate for it.",
+    "calibrationFailed": "Not enough notes were heard on the clicks. Play louder and clearer, then try again.",
+    "resetOffset": "Reset to 0"
   },
   "results": {
     "PERFECT": "Perfect",
@@ -74,7 +96,9 @@
     "label": "Virtual piano",
     "title": "Piano keys",
     "range": "88 keys · A0–C8",
-    "rangeHint": "Some score notes are outside the 88-key piano range (A0–C8)."
+    "rangeHint": "Some score notes are outside the 88-key piano range (A0–C8).",
+    "computerRange": "Computer keys play {from}–{to}; press Z to go down an octave, X to go up.",
+    "outOfRange": "Some notes are outside this range: shift with Z/X when you reach them, or practise one hand at a time."
   },
   "keyboardGuide": {
     "open": "How to play",
@@ -89,7 +113,7 @@
     "micDesc": "Place your laptop or microphone near your acoustic or digital piano (30–50cm away). Keep the room quiet. The Basic Pitch AI recognizes notes directly from your piano audio in real time.",
     "handsDesc": "Hand colors: Teal/Blue is right hand, gold/amber is left hand. Play when each note reaches the hit line.",
     "stepInput": "In setup, choose “Computer keyboard” to use letter keys, or “Tap the on-screen piano” to play by touching the piano.",
-    "stepRange": "The virtual piano always shows all 88 keys from A0 to C8. Computer keys play C4 through C5 using the map.",
+    "stepRange": "The on-screen piano always shows all 88 keys (A0–C8). Computer keys play one octave around the middle of the part you practise; press Z / X to shift down / up an octave.",
     "stepPlay": "Note colors indicate hands: right hand is blue and left hand is orange. Press the matching key when a note reaches the play line, or tap its on-screen piano key.",
     "stepFeedback": "Check the result below the piano: green means in time, yellow means early/late, and red means wrong note or missed.",
     "keyMap": "Computer keys play one octave using this map:"

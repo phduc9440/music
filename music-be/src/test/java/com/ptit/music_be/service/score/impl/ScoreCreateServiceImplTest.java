@@ -220,7 +220,7 @@ class ScoreCreateServiceImplTest {
     void blankOrTooLongTitleAndComposerAreRejected() {
         assertThat(errorOf(with(r -> r.setTitle("   ")))).isEqualTo(ScoreErrorCode.SCORE_TITLE_INVALID);
         assertThat(errorOf(with(r -> r.setTitle(null)))).isEqualTo(ScoreErrorCode.SCORE_TITLE_INVALID);
-        assertThat(errorOf(with(r -> r.setTitle("x".repeat(256))))).isEqualTo(ScoreErrorCode.SCORE_TITLE_INVALID);
+        assertThat(errorOf(with(r -> r.setTitle("x".repeat(81))))).isEqualTo(ScoreErrorCode.SCORE_TITLE_INVALID);
         assertThat(errorOf(with(r -> r.setComposer("x".repeat(256))))).isEqualTo(ScoreErrorCode.SCORE_COMPOSER_INVALID);
 
         verify(scoreRepository, never()).save(any());

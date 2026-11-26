@@ -24,14 +24,30 @@ const whereOf = (p: LiveParticipant, state: LiveState): { from: number; to: numb
  * trên bản nhạc), chấm sáng khi họ đang sửa, rê chuột xem họ đang ở ô nào, bấm vào để cuộn tới chỗ đó.
  */
 export default function LiveBar({ state, onJump }: Props) {
-  // Mình đứng cuối hàng (như Google Docs), người khác theo thứ tự vào phiên
-  const others = state.participants.filter((p) => p.sessionId !== state.selfSessionId);
-  const self = state.participants.find((p) => p.sessionId === state.selfSessionId);
-  const ordered = self ? [...others, self] : others;
-  const shown = ordered.slice(0, MAX_SHOWN);
-  const hidden = ordered.slice(MAX_SHOWN);
   const editingIds = new Set((state.locks?.locks ?? []).map((l) => l.sessionId));
   if (state.locks?.wholeHolder) editingIds.add(state.locks.wholeHolder);
+  // Một người mở nhiều tab chỉ hiện một ảnh đại diện (C-04): gộp theo memberId, ưu tiên tab của mình / tab đang sửa
+  const self = state.participants.find((p) => p.sessionId === state.selfSessionId);
+  const groups = new Map<string, LiveParticipant[]>();
+  for (const p of state.participants) {
+    const key = p.memberId ?? p.sessionId;
+    groups.set(key, [...(groups.get(key) ?? []), p]);
+  }
+  const people = [...groups.values()].map((sessions) => {
+    const main =
+      sessions.find((p) => p.sessionId === state.selfSessionId) ??
+      sessions.find((p) => editingIds.has(p.sessionId)) ??
+      sessions[0];
+    return { main, tabs: sessions.length, editing: sessions.some((p) => editingIds.has(p.sessionId)) };
+  });
+  // Mình đứng cuối hàng (như Google Docs), người khác theo thứ tự vào phiên
+  const selfKey = self ? (self.memberId ?? self.sessionId) : null;
+  const ordered = [
+    ...people.filter((x) => (x.main.memberId ?? x.main.sessionId) !== selfKey),
+    ...people.filter((x) => (x.main.memberId ?? x.main.sessionId) === selfKey),
+  ];
+  const shown = ordered.slice(0, MAX_SHOWN);
+  const hidden = ordered.slice(MAX_SHOWN);
 
   const label =
     state.status === 'offline'
@@ -45,7 +61,7 @@ export default function LiveBar({ state, onJump }: Props) {
   return (
     <div className="live-bar" role="status" aria-live="polite">
       <span className="live-avatars">
-        {shown.map((p) => {
+        {shown.map(({ main: p, tabs, editing }) => {
           const isSelf = p.sessionId === state.selfSessionId;
           const where = whereOf(p, state);
           const place = where
@@ -53,14 +69,15 @@ export default function LiveBar({ state, onJump }: Props) {
               ? t('live.presence.atMeasure', { n: where.from + 1 })
               : t('live.presence.atMeasures', { from: where.from + 1, to: where.to + 1 })
             : t('live.presence.idle');
-          const name = isSelf ? t('live.you', { name: displayName(p) }) : displayName(p);
-          const title = `${name} · ${editingIds.has(p.sessionId) ? t('live.presence.editing') : place}`;
+          const base = isSelf ? t('live.you', { name: displayName(p) }) : displayName(p);
+          const name = tabs > 1 ? `${base} (${t('live.presence.tabs', { n: tabs })})` : base;
+          const title = `${name} · ${editing ? t('live.presence.editing') : place}`;
           const canJump = !isSelf && !!where && !!onJump;
           return (
             <button
               key={p.sessionId}
               type="button"
-              className={`live-avatar${isSelf ? ' is-self' : ''}${editingIds.has(p.sessionId) ? ' is-editing' : ''}`}
+              className={`live-avatar${isSelf ? ' is-self' : ''}${editing ? ' is-editing' : ''}`}
               data-color={colorOf(p)}
               title={canJump ? `${title} — ${t('live.presence.jump')}` : title}
               aria-label={title}
@@ -72,7 +89,10 @@ export default function LiveBar({ state, onJump }: Props) {
           );
         })}
         {hidden.length > 0 && (
-          <span className="live-avatar live-avatar--more" title={hidden.map((p) => displayName(p)).join(', ')}>
+          <span
+            className="live-avatar live-avatar--more"
+            title={hidden.map(({ main }) => displayName(main)).join(', ')}
+          >
             +{hidden.length}
           </span>
         )}

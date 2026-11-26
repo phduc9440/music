@@ -1,16 +1,16 @@
 {
   "button": "Suggest chords",
   "buttonHint": "Reads the melody and proposes a chord for each measure; you review and adjust them before saving",
-  "saveFirst": "Save your changes before suggesting chords: the AI reads the saved score.",
+  "saveFirst": "The AI reads the saved score, so unsaved changes need to be saved before suggesting chords.",
   "sourceLabel": "Automatic chord suggestion",
   "failed": "Could not suggest chords, please try again",
   "cancelled": "The chord suggestion task was cancelled",
   "dialog": {
     "title": "Suggest chords",
-    "hint": "The AI reads the melody and places chords in measures without chords. Every run the AI \"thinks\" again, so you get a different accompaniment, with up to 3 options A, B, C to choose from. The AI chords appear in the editor (highlighted) for you to adjust and save.",
+    "hint": "The AI reads the melody and places chords in measures without chords. Every run the AI \"thinks\" again, so you get a different accompaniment. The AI chords appear in the editor (highlighted) for you to adjust and save.",
     "styleLabel": "Chord colour",
     "running": "Analysing the melody…",
-    "closeHint": "You can hide this dialog; the suggestion is still created and will appear in the Suggestions tab.",
+    "closeHint": "You can hide this dialog; the suggestion keeps running and you will get a notification when it is ready.",
     "openPending": "Open pending suggestion",
     "cancel": "Cancel",
     "hide": "Hide",
@@ -27,7 +27,17 @@
     "lockedSr": "(requires a plan upgrade)",
     "lockedHint": "Options with a lock need a higher plan. Select one to see which plan includes it.",
     "quota": "{left}/{limit} chord suggestions left this month · {options} options each",
-    "quotaUnlimited": "Unlimited chord suggestions · {options} options each"
+    "quotaUnlimited": "Unlimited chord suggestions · {options} options each",
+    "melodyLabel": "Melody part",
+    "melodyHint": "The AI reads the melody of this part and writes the chords above it.",
+    "tooLongTitle": "This score has {count} measures; your plan suggests chords for up to {max}",
+    "tooLongHint": "Upgrade to harmonize the whole score, or copy a shorter section into its own score.",
+    "seePlans": "See plans",
+    "durationIssues_one": "{count} measure of the melody has the wrong length (measure {measures}). Chords may land off the beat; fix it in the editor first.",
+    "durationIssues_other": "{count} measures of the melody have the wrong length (measures {measures}). Chords may land off the beat; fix them in the editor first.",
+    "optionsOne": "Your plan gets 1 option per suggestion.",
+    "optionsMany": "Each suggestion comes with {options} options ({letters}) to choose from.",
+    "quotaNote": "A run is counted once the suggestion is ready, even if you discard it later; failed runs are not counted."
   },
   "styles": {
     "NATURAL": {
@@ -101,7 +111,11 @@
     "optionsHint": "Each option is a different accompaniment. Switching replaces the AI chords on the score (Ctrl+Z to go back).",
     "optionBest": "Option A: the AI's best fit",
     "optionOther": "Option {option}",
-    "switching": "Switching option…"
+    "switching": "Switching option…",
+    "pending": "You have an AI chord suggestion you have not reviewed. Click here to load the draft again.",
+    "listen": "Listen",
+    "listenOption": "Listen to option {option}",
+    "listenHint": "Play the score with these chords, from the selected chord (or from the start)"
   },
   "clear": {
     "title": "Delete all chords?",
@@ -120,5 +134,18 @@
     "SPARSE": "Sparse",
     "NORMAL": "Normal",
     "DENSE": "Dense"
-  }
+  },
+  "melody": {
+    "part": "Part {n}",
+    "partStaff": "{name} · staff {staff}"
+  },
+  "suggestion": {
+    "title": "Chord suggestion ({style})",
+    "added_one": "Key {key}, {count} chord added",
+    "added_other": "Key {key}, {count} chords added",
+    "replaced_one": "Key {key}, {count} chord replacing the old ones",
+    "replaced_other": "Key {key}, {count} chords replacing the old ones"
+  },
+  "saveFirstTitle": "Save before suggesting chords?",
+  "saveAndSuggest": "Save and suggest"
 }

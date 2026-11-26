@@ -1,6 +1,7 @@
 package com.ptit.music_be.client;
 
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -24,9 +25,12 @@ public class AiServiceClient {
     /** Dùng cho các lệnh chuyển đổi đồng bộ (đợi kết quả), read timeout dài hơn lệnh giao việc. */
     private final RestClient convertClient;
 
+    private final RestClient chordClient;
+
     public AiServiceClient(AiServiceProperties properties) {
         this.restClient = buildClient(properties, properties.getReadTimeoutMs());
         this.convertClient = buildClient(properties, properties.getConvertTimeoutMs());
+        this.chordClient = buildClient(properties, properties.getChordTimeoutMs());
     }
 
     private static RestClient buildClient(AiServiceProperties properties, int readTimeoutMs) {
@@ -123,6 +127,7 @@ public class AiServiceClient {
      * @param creativity SAFE, BALANCED hoặc BOLD
      * @param density SPARSE, NORMAL hoặc DENSE
      * @param options số phương án (1..3, theo gói của người bấm)
+     * @param melody bè và khuông giai điệu người dùng chọn; null thì music-ai lấy khuông 1 của part đầu (CH-04)
      */
     public ChordGenerationResult generateChords(
             String inPath,
@@ -131,19 +136,27 @@ public class AiServiceClient {
             boolean replaceExisting,
             String creativity,
             String density,
-            int options) {
-        return convertClient
+            int options,
+            ChordMelody melody) {
+        Map<String, Object> body = new HashMap<>(Map.of(
+                "inPath", inPath,
+                "outPath", outPath,
+                "style", style,
+                "replaceExisting", replaceExisting,
+                "creativity", creativity,
+                "density", density,
+                "options", options));
+        if (melody != null && melody.partIndex() != null) {
+            body.put("partIndex", melody.partIndex());
+        }
+        if (melody != null && melody.staff() != null) {
+            body.put("staff", melody.staff());
+        }
+        return chordClient
                 .post()
                 .uri("/chords/generate")
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(Map.of(
-                        "inPath", inPath,
-                        "outPath", outPath,
-                        "style", style,
-                        "replaceExisting", replaceExisting,
-                        "creativity", creativity,
-                        "density", density,
-                        "options", options))
+                .body(body)
                 .retrieve()
                 .body(ChordGenerationResult.class);
     }

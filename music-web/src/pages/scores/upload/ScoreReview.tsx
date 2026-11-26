@@ -18,7 +18,7 @@ import {
 import type { OmrMeasure, OmrResult, ScoreDetail as ScoreDetailData, ScoreFileInfo } from '../../../types';
 import {
   boxToPercent,
-  confidencePercent,
+  confidenceText,
   fixMeasures,
   fixText,
   flaggedMeasures,
@@ -27,6 +27,7 @@ import {
   resultWarnings,
 } from '../../../utils/omr';
 import { setMusicXmlTempo } from '../../../utils/musicXmlTempo';
+import TitleFromPage from '../../../components/scores/omr/TitleFromPage';
 import { reportPlanLimit } from '../../../utils/planLimit';
 import {
   getErrorMessage,
@@ -186,7 +187,7 @@ export default function ScoreReview() {
     if (!id || !score) return;
     setExporting(kind);
     try {
-      await downloadScoreExport(id, kind, `${score.title || 'ban-nhac'}.${kind === 'midi' ? 'mid' : 'musicxml'}`);
+      await downloadScoreExport(id, kind, `${toSafeFileName(score.title)}.${kind === 'midi' ? 'mid' : 'musicxml'}`);
     } catch (err) {
       toast.error(getErrorMessage(err, kind === 'midi' ? t('upload.review.midiFailed') : t('upload.review.xmlFailed')));
     } finally {
@@ -340,13 +341,21 @@ export default function ScoreReview() {
       <main className="sc-container sr-container">
         <header className="sc-lib-head">
           <div>
-            <h1>{score.title}</h1>
+            <h1 className="sc-title-clamp" title={score.title}>
+              {score.title}
+            </h1>
             <p>{t('upload.review.subtitle')}</p>
           </div>
           <button className="sc-btn sc-btn--sm" onClick={() => navigate(`${base}/${score.id}`)}>
             {t('upload.review.details')}
           </button>
         </header>
+
+        <TitleFromPage
+          score={score}
+          pageUrl={pages.find((p) => p.pageNumber === 1)?.downloadUrl ?? pages[0]?.downloadUrl}
+          onSaved={setScore}
+        />
 
         <dl className="sc-facts sr-summary">
           {summary.map(({ label, value, tone, minor }) => (
@@ -500,10 +509,8 @@ export default function ScoreReview() {
                     {t('upload.review.deselect')}
                   </button>
                 </div>
-                {selectedMeasure.flags.length > 0 && confidencePercent(selectedMeasure) !== null && (
-                  <p className="sr-selected__confidence">
-                    {t('upload.review.confidence', { value: confidencePercent(selectedMeasure) ?? 0 })}
-                  </p>
+                {selectedMeasure.flags.length > 0 && confidenceText(selectedMeasure) !== null && (
+                  <p className="sr-selected__confidence">{confidenceText(selectedMeasure)}</p>
                 )}
                 {(selectedMeasure.reasons?.length
                   ? selectedMeasure.reasons
@@ -563,8 +570,7 @@ export default function ScoreReview() {
                             {t('upload.review.selected', { measure: m.measure, page: m.page })}
                           </span>
                           {m.flags.map((f) => MEASURE_FLAG_LABELS[f] ?? f).join('; ')}
-                          {confidencePercent(m) !== null &&
-                            ` · ${t('upload.review.confidence', { value: confidencePercent(m) ?? 0 })}`}
+                          {confidenceText(m) !== null && ` · ${confidenceText(m)}`}
                         </button>
                       </li>
                     ))}

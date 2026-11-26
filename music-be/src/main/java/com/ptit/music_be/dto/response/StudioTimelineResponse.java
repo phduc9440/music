@@ -19,7 +19,11 @@ public record StudioTimelineResponse(
 
     public record TempoChange(int measure, int bpm) {}
 
-    public record Measure(int index, double startBeat, double beats) {}
+    /**
+     * Một lượt phát của ô nhịp: {@code index} là thứ tự phát (từ 1, sau khi mở dấu nhắc lại), {@code source} là số ô trên
+     * bản nhạc (ST-08). {@code source} null ở timeline cũ trong cache.
+     */
+    public record Measure(int index, double startBeat, double beats, Integer source) {}
 
     public record Note(
             String id,

@@ -90,6 +90,13 @@
   padding: 0;
   border: 0;
 }
+/* Trạng thái của cách nhập đang chọn (mô hình micro, đàn MIDI) */
+.studio-player__field-hint {
+  margin: 0.45rem 0 0;
+  color: var(--ui-text-2);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
 /* legend không nhận margin trong fieldset: dùng padding để tạo khoảng cách */
 .studio-player__field legend,
 .studio-player__tempo-head label {
@@ -199,6 +206,11 @@
   border: 1px solid var(--ui-border);
   border-radius: 16px;
   background: var(--ui-surface-muted);
+}
+/* Bốn cách nhập (MIDI, phím máy tính, phím trên màn hình, micro): lưới 2 x 2 để nhãn không bị cắt */
+.studio-player__segmented.studio-player__inputs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .studio-player .studio-player__controls .studio-player__segmented label {
   position: relative;
@@ -726,12 +738,12 @@
   background: var(--ui-bg);
 }
 :is(
-    .studio-player__setup,
-    .studio-player__score,
-    .studio-player__practice-board,
-    .studio-player__session,
-    .studio-player__display-options
-  ) {
+  .studio-player__setup,
+  .studio-player__score,
+  .studio-player__practice-board,
+  .studio-player__session,
+  .studio-player__display-options
+) {
   background: var(--studio-glass);
 }
 .studio-player .studio-player__heading h1 {

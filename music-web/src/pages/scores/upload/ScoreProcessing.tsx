@@ -145,7 +145,9 @@ export default function ScoreProcessing() {
   useEffect(() => {
     if (!titleKey || !score) return;
     const before = document.title;
-    document.title = `${t(`upload.processing.headline.${titleKey}`)} · ${score.title} · ${t('meta.app')}`;
+    // tên dài làm tiêu đề tab chỉ còn tên bài: cắt 40 ký tự để vẫn thấy trạng thái và tên ứng dụng (T38)
+    const shortTitle = score.title.length > 40 ? `${score.title.slice(0, 39)}…` : score.title;
+    document.title = `${t(`upload.processing.headline.${titleKey}`)} · ${shortTitle} · ${t('meta.app')}`;
     return () => {
       document.title = before;
     };
@@ -284,7 +286,9 @@ export default function ScoreProcessing() {
       <main className="sc-container sp-container">
         <header className="sc-lib-head">
           <div>
-            <h1>{score.title}</h1>
+            <h1 className="sc-title-clamp" title={score.title}>
+              {score.title}
+            </h1>
             <p>
               {t('upload.processing.progress')}
               {sourceLabel ? ` · ${sourceLabel}` : ''}

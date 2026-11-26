@@ -1,5 +1,12 @@
 import { useEffect, useState } from 'react';
-import { CHORD_CREATIVITIES, CHORD_DENSITIES, CHORD_STYLES, billingApi, chordApi } from '../../../services';
+import {
+  CHORD_CREATIVITIES,
+  CHORD_DENSITIES,
+  CHORD_STYLES,
+  billingApi,
+  chordApi,
+  fetchMusicXml,
+} from '../../../services';
 import type { ChordCreativity, ChordDensity, ChordStyle } from '../../../services';
 import type { AiTaskInfo, MySubscription, PlanInfo } from '../../../types';
 import { Icon } from '../../ui';
@@ -10,6 +17,11 @@ import { reportPlanLimit, showPlanLimit } from '../../../utils/planLimit';
 import { useExportTask } from '../../export/useExportTask';
 import { suggestionPath } from '../suggestions/suggestionUtils';
 import Modal from '../common/Modal';
+import { melodyChoicesOf } from './melodyChoices';
+import { ScoreDocument } from '../../editor/core/ScoreDocument';
+import { checkMeasures } from '../../editor/structure/measureCheck';
+import type { MeasureIssue } from '../../editor/structure/measureCheck';
+import type { MelodyChoice } from './melodyChoices';
 import './chordSuggest.css';
 
 /** Mã lỗi BE: đã có một gợi ý hợp âm đang chờ duyệt (kèm result.suggestionId). */
@@ -67,9 +79,39 @@ export default function ChordSuggestDialog({ scoreId, onClose, onCompleted, allH
   const [error, setError] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
   // Mọi ô đã có hợp âm: hỏi có muốn gợi ý lại (thay hợp âm cũ) hoặc xóa hết không
-  const [harmonized, setHarmonized] = useState(!!allHarmonized);
+  // CH-06: biết trước từ bản đã lưu (bè đang chọn đã đủ hợp âm), không phải chạy thử một tác vụ lỗi; lỗi
+  // ALREADY_HARMONIZED từ tác vụ vẫn bật lại cho trường hợp đọc bản nhạc thất bại
+  const [harmonizedByTask, setHarmonized] = useState(false);
   // Gói của người bấm: khóa tùy chọn nâng cao và hiện số lượt còn lại. Chưa tải được thì không khóa gì (BE vẫn kiểm).
   const [sub, setSub] = useState<MySubscription | null>(null);
+  // Bè giai điệu (CH-04): đọc từ bản đã lưu, vì AI gợi ý trên version hiện hành; chỉ hiện khi có từ hai lựa chọn
+  const [melodies, setMelodies] = useState<MelodyChoice[]>([]);
+  const [melody, setMelody] = useState(0);
+  // Số ô của bản đã lưu (CH-05): biết trước bài dài hơn giới hạn gói thay vì bấm xong mới báo
+  const [measureCount, setMeasureCount] = useState<number | null>(null);
+  // CH-11: ô sai trường độ ở bè giai điệu làm AI đặt hợp âm lệch phách; nhắc trước khi gợi ý
+  const [issues, setIssues] = useState<MeasureIssue[]>([]);
+
+  useEffect(() => {
+    let alive = true;
+    fetchMusicXml(scoreId)
+      .then((xml) => {
+        if (!alive) return;
+        const doc = new DOMParser().parseFromString(xml, 'application/xml');
+        setMelodies(melodyChoicesOf(doc));
+        const firstPart = doc.getElementsByTagName('part')[0];
+        setMeasureCount(firstPart ? firstPart.getElementsByTagName('measure').length : null);
+        try {
+          setIssues(checkMeasures(ScoreDocument.parse(xml)));
+        } catch {
+          setIssues([]);
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [scoreId]);
 
   useEffect(() => {
     let alive = true;
@@ -82,6 +124,10 @@ export default function ChordSuggestDialog({ scoreId, onClose, onCompleted, allH
     };
   }, []);
 
+  const chosenMelody = melodies.length > 0 ? melodies[Math.min(melody, melodies.length - 1)] : undefined;
+  const melodyPart = chosenMelody?.partIndex ?? 0;
+  const melodyIssues = issues.filter((issue) => issue.partIndex === melodyPart);
+  const harmonized = !!allHarmonized || harmonizedByTask || !!chosenMelody?.harmonized;
   const unlimited = sub?.status === 'UNLIMITED';
   const limits = sub?.limits;
   const locked = (value: string) => !!sub && !unlimited && !limits?.chordAdvanced && ADVANCED.has(value);
@@ -89,6 +135,8 @@ export default function ChordSuggestDialog({ scoreId, onClose, onCompleted, allH
   const quota = unlimited ? null : (limits?.chordGenerationsPerMonth ?? null);
   const left = quota == null ? null : Math.max(0, quota - (sub?.chordGenerationsUsed ?? 0));
   const options = unlimited ? 3 : Math.min(3, Math.max(1, limits?.chordOptions ?? 3));
+  const maxMeasures = unlimited ? null : (limits?.chordMaxMeasures ?? null);
+  const tooLong = maxMeasures != null && measureCount != null && measureCount > maxMeasures;
 
   /** Bấm tùy chọn bị khóa: không chọn, mở hộp mời nâng cấp (nằm trên hộp này, đóng xong vẫn ở lại). */
   const openUpgrade = async () => {
@@ -126,7 +174,14 @@ export default function ChordSuggestDialog({ scoreId, onClose, onCompleted, allH
     setPendingId(null);
     reset();
     try {
-      const res = await chordApi.request(scoreId, style, { replaceExisting: harmonized, creativity, density });
+      const chosen = melodies.length > 1 ? melodies[melody] : undefined;
+      const res = await chordApi.request(scoreId, style, {
+        replaceExisting: harmonized,
+        creativity,
+        density,
+        partIndex: chosen?.partIndex,
+        staff: chosen?.staff,
+      });
       track(res.data.result);
     } catch (err) {
       if (reportPlanLimit(err)) {
@@ -145,7 +200,32 @@ export default function ChordSuggestDialog({ scoreId, onClose, onCompleted, allH
 
   return (
     <Modal title={t('chords.dialog.title')} onClose={onClose} className="cs-modal">
-      <p className="cs-hint">{t('chords.dialog.hint')}</p>
+      <p className="cs-hint">
+        {t('chords.dialog.hint')} {/* CH-13: số phương án theo gói của người bấm, không hứa 3 cho mọi gói */}
+        {sub &&
+          (options > 1
+            ? t('chords.dialog.optionsMany', { options, letters: ['A', 'B', 'C'].slice(0, options).join(', ') })
+            : t('chords.dialog.optionsOne'))}
+      </p>
+
+      {melodies.length > 1 && (
+        <label className="cs-melody">
+          <span className="sc-label">{t('chords.dialog.melodyLabel')}</span>
+          <select
+            className="sc-input"
+            value={melody}
+            disabled={busy}
+            onChange={(e) => setMelody(Number(e.target.value))}
+          >
+            {melodies.map((choice, index) => (
+              <option key={`${choice.partIndex}-${choice.staff}`} value={index}>
+                {choice.label}
+              </option>
+            ))}
+          </select>
+          <span className="cs-hint">{t('chords.dialog.melodyHint')}</span>
+        </label>
+      )}
 
       <fieldset className="cs-styles" disabled={busy}>
         <legend className="sc-label">{t('chords.dialog.styleLabel')}</legend>
@@ -229,6 +309,40 @@ export default function ChordSuggestDialog({ scoreId, onClose, onCompleted, allH
         </p>
       )}
 
+      {melodyIssues.length > 0 && (
+        <p className="cs-hint cs-locked-hint" role="status">
+          <Icon name="alert" size={14} />
+          {t('chords.dialog.durationIssues', {
+            count: melodyIssues.length,
+            measures: melodyIssues
+              .slice(0, 5)
+              .map((issue) => issue.measureIndex + 1)
+              .join(', '),
+          })}
+        </p>
+      )}
+
+      {tooLong && (
+        <div className="cs-harmonized" role="status">
+          <strong>{t('chords.dialog.tooLongTitle', { count: measureCount ?? 0, max: maxMeasures ?? 0 })}</strong>
+          <p className="cs-hint">{t('chords.dialog.tooLongHint')}</p>
+          <button
+            type="button"
+            className="sc-btn sc-btn--sm"
+            onClick={() =>
+              showPlanLimit({
+                metric: 'CHORD_MEASURES',
+                limit: maxMeasures ?? 0,
+                used: measureCount ?? 0,
+                upgradeTo: null,
+              })
+            }
+          >
+            {t('chords.dialog.seePlans')}
+          </button>
+        </div>
+      )}
+
       {harmonized && (
         <div className="cs-harmonized" role="status">
           <strong>{t('chords.dialog.harmonizedTitle')}</strong>
@@ -278,7 +392,8 @@ export default function ChordSuggestDialog({ scoreId, onClose, onCompleted, allH
         <p className={`cs-quota${left === 0 ? ' is-empty' : ''}`}>
           {left == null
             ? t('chords.dialog.quotaUnlimited', { options })
-            : t('chords.dialog.quota', { left, limit: quota ?? 0, options })}
+            : t('chords.dialog.quota', { left, limit: quota ?? 0, options })}{' '}
+          {left != null && t('chords.dialog.quotaNote')}
         </p>
       )}
 
@@ -286,7 +401,12 @@ export default function ChordSuggestDialog({ scoreId, onClose, onCompleted, allH
         <button type="button" className="sc-btn" onClick={onClose}>
           {running ? t('chords.dialog.hide') : t('chords.dialog.cancel')}
         </button>
-        <button type="button" className="sc-btn sc-btn--primary" onClick={() => void submit()} disabled={busy}>
+        <button
+          type="button"
+          className="sc-btn sc-btn--primary"
+          onClick={() => void submit()}
+          disabled={busy || tooLong}
+        >
           {busy ? t('chords.dialog.creating') : harmonized ? t('chords.dialog.replace') : t('chords.dialog.submit')}
         </button>
       </div>

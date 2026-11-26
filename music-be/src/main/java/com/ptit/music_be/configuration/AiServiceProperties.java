@@ -35,6 +35,12 @@ public class AiServiceProperties {
     private final int convertTimeoutMs;
 
     /**
+     * Timeout đọc của gợi ý hợp âm ({@code POST /chords/generate}, đồng bộ, tới 3 phương án trên CPU), mili giây. Bài dài
+     * cần lâu hơn các lệnh chuyển đổi (CH-10); phải nhỏ hơn thời hạn của ChordWatchdog.
+     */
+    private final int chordTimeoutMs;
+
+    /**
      * Bước cuối cùng pipeline OMR được chạy: PREPROCESS, MERGE (nhận diện + ghép kern) hoặc EXPORT (đủ MusicXML/MIDI,
      * mặc định). Hai giá trị đầu chỉ dùng để chạy thử từng phần pipeline. Biến môi trường: OMR_STOP_AFTER.
      */
@@ -62,7 +68,8 @@ public class AiServiceProperties {
             @Value("${app.ai.pending-resend-seconds:30}") int pendingResendSeconds,
             @Value("${app.ai.max-resends:2}") int maxResends,
             @Value("${app.ai.processing-timeout-minutes:10}") int processingTimeoutMinutes,
-            @Value("${app.ai.queued-timeout-minutes:120}") int queuedTimeoutMinutes) {
+            @Value("${app.ai.queued-timeout-minutes:120}") int queuedTimeoutMinutes,
+            @Value("${app.ai.chord-timeout-ms:90000}") int chordTimeoutMs) {
         this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
         this.internalKey = internalKey;
         this.connectTimeoutMs = connectTimeoutMs;
@@ -73,6 +80,7 @@ public class AiServiceProperties {
         this.maxResends = maxResends;
         this.processingTimeoutMinutes = processingTimeoutMinutes;
         this.queuedTimeoutMinutes = queuedTimeoutMinutes;
+        this.chordTimeoutMs = chordTimeoutMs;
     }
 
     @PostConstruct

@@ -64,7 +64,8 @@ export class WaitModeScorer {
       return [
         this.createEvent({
           noteId: null,
-          measure: null,
+          // ô nhịp của bước đang chờ, để báo cáo theo ô đếm được nốt sai (ST-01)
+          measure: currentStep.notes[0].measure,
           hand: null,
           expectedMidi: null,
           playedMidi: note.midi,

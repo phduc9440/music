@@ -39,6 +39,9 @@ interface Options {
 }
 
 /** Tạo và dọn phiên đồng chỉnh sửa theo `enabled`; trạng thái phiên được đẩy vào React state. */
+/** Mã lỗi BE khi quyền chia sẻ của mình vừa đổi trong lúc đang cùng sửa. */
+const LIVE_ACCESS_CHANGED = 3128;
+
 export function useLiveCollab({ scoreId, doc, enabled, getSelection }: Options): LiveCollab {
   const [state, setState] = useState<LiveState>(IDLE);
   const [session, setSession] = useState<LiveSession | null>(null);
@@ -58,7 +61,11 @@ export function useLiveCollab({ scoreId, doc, enabled, getSelection }: Options):
       onDocChanged: (touched) => bindings.current?.onDocChanged(touched),
       onVersion: (version, mine) => bindings.current?.onVersion(version, mine),
       onNotice: (key, params) => bindings.current?.onNotice(t(key, params)),
-      onServerError: (error) => toast.error(errorCodeMessage(error.code, error.message) ?? error.message),
+      onServerError: (error) => {
+        toast.error(errorCodeMessage(error.code, error.message) ?? error.message, { toastId: `live-${error.code}` });
+        // Chủ vừa đổi quyền của mình (C-05): tải lại để nhận quyền mới (thành chỉ xem, hoặc vào lại phiên)
+        if (error.code === LIVE_ACCESS_CHANGED) window.setTimeout(() => window.location.reload(), 1500);
+      },
       getSelection: () => selectionRef.current(),
     });
     setSession(created);

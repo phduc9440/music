@@ -284,7 +284,12 @@ public class SuggestionServiceImpl implements SuggestionService {
                         .status(SuggestionChangeStatus.PENDING)
                         .build())
                 .toList());
-        notifyNew(score, suggestion, author, changes.size());
+        // Gợi ý hợp âm AI là bản nháp của người bấm (CH-02): chỉ người đó được báo (AiTaskNotifier), không báo chủ và
+        // mọi
+        // người có quyền sửa như một đề xuất thật
+        if (!(author == null && source == SuggestionSource.CHORD_GENERATION)) {
+            notifyNew(score, suggestion, author, changes.size());
+        }
         return new Persisted(suggestion, changes);
     }
 
@@ -836,6 +841,7 @@ public class SuggestionServiceImpl implements SuggestionService {
                 .id(suggestion.getId())
                 .title(suggestion.getTitle())
                 .status(suggestion.getStatus())
+                .source(suggestion.getSource())
                 .structural(suggestion.isStructural())
                 .stale(stale)
                 .changeCount(changeCount)

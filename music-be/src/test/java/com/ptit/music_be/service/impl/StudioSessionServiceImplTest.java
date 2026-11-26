@@ -162,7 +162,7 @@ class StudioSessionServiceImplTest {
                 100,
                 List.of(),
                 List.of(),
-                List.of(new StudioTimelineResponse.Measure(1, 0, 4), new StudioTimelineResponse.Measure(2, 4, 4)),
+                List.of(new StudioTimelineResponse.Measure(1, 0, 4, 1), new StudioTimelineResponse.Measure(2, 4, 4, 2)),
                 List.of(
                         new StudioTimelineResponse.Note("n1", 1, 1, "RIGHT", 60, 0, 1, true, null, null),
                         new StudioTimelineResponse.Note("n2", 2, 1, "RIGHT", 62, 4, 1, false, null, null)),

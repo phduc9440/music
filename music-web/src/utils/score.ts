@@ -76,8 +76,10 @@ export const TASK_TYPE_LABELS: Record<string, string> = labelMap('scores.labels.
   'FORMAT_CONVERSION',
 ]);
 
-// Giới hạn khớp với validate ở BE (ScoreUpdateRequest)
-export const MAX_TITLE = 255;
+// Giới hạn khớp với validate ở BE (ScoreTitles.MAX_LENGTH, T37)
+export const MAX_TITLE = 80;
+/** Tên mặc định khi tên file rỗng hoặc dài hơn MAX_TITLE, khớp BE (ScoreTitles.UNTITLED). */
+export const UNTITLED_TITLE = 'Untitled';
 export const MAX_COMPOSER = 255;
 /** Ảnh bìa bản nhạc: loại và dung lượng tối đa, khớp BE (lỗi 2025). */
 export const COVER_TYPES = ['image/jpeg', 'image/png'];
@@ -193,6 +195,15 @@ export const validateUploadBatch = (files: File[]): string => {
 /** Tên file bỏ đuôi, dùng làm tiêu đề gợi ý. */
 export const fileNameWithoutExtension = (name: string): string => name.replace(/\.[^.]+$/, '');
 
+/**
+ * Tên bài lấy từ tên file tải lên (T37): bỏ đuôi và khoảng trắng hai đầu; rỗng hoặc dài hơn MAX_TITLE ký tự (tên file do
+ * máy đặt như ảnh Zalo, Messenger) thì dùng UNTITLED_TITLE để người dùng đổi tên sau. Khớp BE ScoreTitles.fromFileName.
+ */
+export const titleFromFileName = (name: string): string => {
+  const base = fileNameWithoutExtension(name).trim();
+  return base && base.length <= MAX_TITLE ? base : UNTITLED_TITLE;
+};
+
 /** Tự đoán loại nguồn: PDF -> PDF gốc, ảnh -> Ảnh chụp (người dùng sửa được). */
 export const guessSourceType = (files: File[]): OmrSourceType =>
   files.length > 0 && files.every(isPdf) ? 'PDF_NATIVE' : 'PHOTO';
@@ -205,6 +216,25 @@ export function toSafeFileName(name: string | null | undefined, fallback = 'ban-
     .trim()
     .slice(0, 120);
   return cleaned || fallback;
+}
+
+/** Loại file người dùng tải lên (ảnh/PDF/MusicXML/MIDI gốc): tải về giữ tên file gốc. */
+const UPLOADED_FILE_TYPES = ['ORIGINAL_IMAGE', 'ORIGINAL_PDF', 'ORIGINAL_MUSICXML', 'ORIGINAL_MIDI', 'PNG'];
+
+/**
+ * Tên file khi tải/xuất (T37): file hệ thống tạo ra (MusicXML, MIDI, Kern, PDF, SVG, MP3, WAV) đặt theo tên bản nhạc,
+ * "<tên bài>.<đuôi>"; đuôi lấy từ tên file lưu trên máy chủ, không có thì dùng `ext`. File người dùng tải lên (ảnh,
+ * PDF gốc, trang PNG) giữ tên gốc.
+ */
+export function scoreDownloadName(
+  title: string | null | undefined,
+  file: { fileType?: string; originalFileName?: string | null },
+  ext: string,
+): string {
+  const original = file.originalFileName ?? '';
+  if (file.fileType && UPLOADED_FILE_TYPES.includes(file.fileType) && original) return original;
+  const suffix = /\.([A-Za-z0-9]+)$/.exec(original)?.[1] ?? ext;
+  return `${toSafeFileName(title)}.${suffix.toLowerCase()}`;
 }
 
 /**

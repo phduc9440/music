@@ -34,7 +34,7 @@
   "2014": "Bản nhạc vừa được lưu ở nơi khác, hãy tải bản mới nhất hoặc ghi đè bản của bạn",
   "2015": "File MusicXML không hợp lệ hoặc bị hỏng",
   "2016": "File MIDI không hợp lệ hoặc bị hỏng",
-  "2017": "Tiêu đề là bắt buộc và tối đa 255 ký tự",
+  "2017": "Tiêu đề là bắt buộc và tối đa 80 ký tự",
   "2018": "Tên tác giả tối đa 255 ký tự",
   "2019": "Ghi chú tối đa 5000 ký tự",
   "2020": "Giá trị bộ lọc không hợp lệ",
@@ -170,6 +170,7 @@
   "1024": "Lý do khóa / mở khóa tối đa 255 ký tự",
   "1025": "Bạn không được gán vai trò này",
   "1026": "Email không hợp lệ",
+  "1027": "Đường dẫn không tồn tại",
   "3110": "Tiêu đề đề xuất từ 1 đến 200 ký tự, mô tả tối đa 2000 ký tự, ghi chú tối đa 500 ký tự",
   "3111": "Đề xuất chưa có thay đổi nào so với phiên bản gốc",
   "3112": "Bạn đang có 10 đề xuất chưa xử lý trên bản nhạc này, hãy đợi hoặc rút bớt",
@@ -184,7 +185,7 @@
   "3124": "Thao tác cùng sửa không hợp lệ",
   "3126": "Bạn gửi thao tác quá nhanh, hãy chậm lại một chút",
   "3127": "Bản nhạc vừa có phiên bản mới ngoài phiên cùng sửa. Thay đổi chưa lưu của phiên đã được giữ lại ở tab Đề xuất.",
-  "3130": "Phong cách hợp âm không hợp lệ",
+  "3130": "Tùy chọn gợi ý hợp âm không hợp lệ",
   "3131": "Bản nhạc đang được gợi ý hợp âm, vui lòng chờ xong",
   "3132": "Bản nhạc đã có một gợi ý hợp âm đang chờ duyệt; hãy nhận hoặc từ chối trước",
   "3133": "Bản nhạc không có giai điệu để gợi ý hợp âm",
@@ -212,5 +213,6 @@
   "4111": "Chủ đề đã bị khóa, không trả lời thêm được",
   "4112": "Chuyên mục còn chủ đề nên không xóa được, hãy chuyển hoặc ẩn các chủ đề trước",
   "4113": "Tên chuyên mục từ 2 đến 100 ký tự, mô tả tối đa 300 ký tự",
-  "4114": "Đã có chuyên mục trùng đường dẫn, hãy đổi tên khác"
+  "4114": "Đã có chuyên mục trùng đường dẫn, hãy đổi tên khác",
+  "3128": "Quyền của bạn với bản nhạc này vừa thay đổi; trang sẽ tải lại để cập nhật"
 }

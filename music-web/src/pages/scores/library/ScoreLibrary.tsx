@@ -17,14 +17,12 @@ import type {
   ScoreSummary,
   Tag,
 } from '../../../types';
-import { getErrorMessage, MAX_KEYWORD, POLL_INTERVAL_MS } from '../../../utils/score';
+import { getErrorMessage, MAX_KEYWORD, MAX_TITLE, POLL_INTERVAL_MS } from '../../../utils/score';
 import '../../../components/scores/scores.css';
 import './ScoreLibrary.css';
 import { t } from '../../../i18n/core';
 
 const PAGE_SIZE = 12;
-/** Độ dài tối đa của tên bản nhạc (khớp BE). */
-const MAX_TITLE = 255;
 
 /** Trang /scores: thư viện "Bản nhạc của tôi" (doc mục 2.0). */
 export default function ScoreLibrary() {

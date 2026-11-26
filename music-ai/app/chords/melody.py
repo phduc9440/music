@@ -1,6 +1,7 @@
 """Đọc bè giai điệu của bản nhạc cho gợi ý hợp âm (spec R3 mục 5.1).
 
-- Bè giai điệu: part đầu tiên có nốt có cao độ (bỏ part bộ gõ), khuông 1.
+- Bè giai điệu: part do người dùng chọn (``part_index``, ``staff``); không chọn thì part đầu tiên có nốt có cao độ
+  (bỏ part bộ gõ), khuông 1 (CH-04).
 - Tại mỗi thời điểm chỉ giữ nốt cao nhất đang vang (skyline); nốt nối đã được gộp bởi ``parse_part_events``.
 - Bước: nửa ô với 4/4, 2/2, 6/8, 12/8 (khi ô đủ phách); cả ô với các nhịp khác hoặc ô thiếu phách (ô lấy đà).
 - Ô đã có ``<harmony>`` bị khóa: không ghi đè, hợp âm có sẵn được giữ trong dãy hợp âm model nhìn thấy.
@@ -79,14 +80,30 @@ def parse_xml(data: bytes) -> ET.Element:
     return root
 
 
-def load_melody(data: bytes, strip_harmonies: bool = False) -> MelodySource:
-    """``strip_harmonies``: gỡ mọi ``<harmony>`` của mọi part trước (gợi ý lại từ đầu, không ô nào bị khóa)."""
+def load_melody(
+    data: bytes,
+    strip_harmonies: bool = False,
+    part_index: Optional[int] = None,
+    staff: Optional[int] = None,
+) -> MelodySource:
+    """``strip_harmonies``: gỡ mọi ``<harmony>`` của mọi part trước (gợi ý lại từ đầu, không ô nào bị khóa).
+
+    ``part_index`` (từ 0) và ``staff`` (từ 1): bè giai điệu người dùng chọn; bỏ trống thì part đầu có cao độ, khuông 1.
+    """
     root = parse_xml(data)
     if strip_harmonies:
         for measure in root.iter("measure"):
             for harmony in measure.findall("harmony"):
                 measure.remove(harmony)
-    part = next((p for p in root.findall("part") if p.find(".//note/pitch") is not None), None)
+    parts = root.findall("part")
+    if part_index is not None:
+        if part_index < 0 or part_index >= len(parts):
+            raise ChordError("NO_MELODY", "Bè giai điệu đã chọn không có trong bản nhạc")
+        part = parts[part_index]
+        if part.find(".//note/pitch") is None:
+            raise ChordError("NO_MELODY", "Bè giai điệu đã chọn không có nốt nào có cao độ")
+    else:
+        part = next((p for p in parts if p.find(".//note/pitch") is not None), None)
     if part is None:
         raise ChordError("NO_MELODY", "Bản nhạc không có nốt nào có cao độ")
 
@@ -102,7 +119,10 @@ def load_melody(data: bytes, strip_harmonies: bool = False) -> MelodySource:
     fifths_text = part.findtext("measure/attributes/key/fifths")
     fifths = int(fifths_text.strip()) if fifths_text and fifths_text.strip().lstrip("-").isdigit() else None
 
-    melody = [e for e in events if e.staff == MELODY_STAFF]
+    melody_staff = staff or MELODY_STAFF
+    if melody_staff > (staves or 1):
+        raise ChordError("NO_MELODY", "Khuông giai điệu đã chọn không có trong bè này")
+    melody = [e for e in events if e.staff == melody_staff]
     steps: list[Step] = []
     for index, info in enumerate(measures):
         locked = bool(info.harmonies)
@@ -122,7 +142,7 @@ def load_melody(data: bytes, strip_harmonies: bool = False) -> MelodySource:
     return MelodySource(
         root=root,
         part=part,
-        staff=MELODY_STAFF,
+        staff=melody_staff,
         staves=staves or 1,
         fifths=fifths,
         steps=steps,

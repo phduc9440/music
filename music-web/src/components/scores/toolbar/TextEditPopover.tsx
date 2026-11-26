@@ -7,6 +7,7 @@ import type { HeaderField, HeaderState, TextStyle } from '../../editor/structure
 import { BPM_MAX, BPM_MIN } from '../../editor/structure/tempo';
 import type { TempoInfo } from '../../editor/structure/tempo';
 import { t } from '../../../i18n/core';
+import { MAX_COMPOSER, MAX_TITLE } from '../../../utils/score';
 
 export type TextKind = HeaderField | 'tempo';
 
@@ -112,7 +113,7 @@ export default function TextEditPopover({
             value={text}
             onChange={(e) => setText(e.target.value)}
             aria-label={t('editor.toolbar.text.content')}
-            maxLength={200}
+            maxLength={field === 'title' ? MAX_TITLE : MAX_COMPOSER}
           />
           <div className="ed-pop__row ed-pop__row--text">
             <label className="ed-pop__field">

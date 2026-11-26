@@ -6,7 +6,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -373,21 +372,14 @@ class SuggestionServiceImplTest {
     }
 
     @Test
-    void systemSuggestionNotifiesOwnerAsSystem() {
+    void chordSuggestionIsADraftAndDoesNotNotifyEditors() {
+        // CH-02: gợi ý hợp âm là bản nháp của người bấm (AiTaskNotifier báo riêng người đó), không báo chủ / người sửa
         SecurityContextHolder.clearContext();
 
         createSystem(withChordInFirstMeasure());
 
-        ArgumentCaptor<Map<String, String>> params = ArgumentCaptor.forClass(Map.class);
-        verify(notificationService)
-                .notify(
-                        eq(owner),
-                        isNull(),
-                        eq(NotificationType.SUGGESTION_NEW),
-                        eq(SCORE_ID),
-                        anyString(),
-                        params.capture());
-        assertThat(params.getValue()).containsEntry("system", "1").containsEntry("suggestionId", SUGGESTION_ID);
+        verify(notificationService, never())
+                .notify(any(), any(), eq(NotificationType.SUGGESTION_NEW), any(), anyString(), any());
     }
 
     @Test

@@ -14,12 +14,15 @@ import type {
 import { fetchMusicXml, scoreApi, studioApi } from '../../../services';
 import { t, translateError } from '../../../i18n/core';
 import { useNavigate } from '../../../routes/useTransitionNavigate';
-import { playPianoNote } from '../../../utils/pianoSynth';
+import { playClick, playPianoNote } from '../../../utils/pianoSynth';
+import { loadStudioSettings, saveStudioSettings } from '../../../components/player/studio/studioSettings';
 import { DEFAULT_TOLERANCE_WINDOW_MS, FreeRunScorer } from '../../../components/player/engine/FreeRunScorer';
 import type { PracticeNoteEvent } from '../../../components/player/engine/FreeRunScorer';
 import { WaitModeScorer } from '../../../components/player/engine/WaitModeScorer';
 import { StudioMicError, StudioMicInput } from '../../../components/player/engine/StudioMicInput';
-import { buildStudioSchedule } from '../../../components/player/engine/studioSchedule';
+import { connectMidi } from '../../../components/player/engine/webMidiInput';
+import type { MidiStatus } from '../../../components/player/engine/webMidiInput';
+import { buildStudioSchedule, countInOf } from '../../../components/player/engine/studioSchedule';
 import type { StudioSchedule } from '../../../components/player/engine/studioSchedule';
 import {
   STUDIO_PIANO_MAX_MIDI,
@@ -46,6 +49,7 @@ const LOOP_LOOKAHEAD_MS = 1200;
  * loạt nốt đầu bài bắn nhãn cùng lúc.
  */
 const FREE_RUN_LEAD_IN_MS = STUDIO_WATERFALL_WINDOW_MS;
+
 const COMPUTER_KEYBOARD_DEFAULT_BASE_MIDI = 60;
 const KEYBOARD_MAP: Record<string, number> = {
   a: 0,
@@ -89,18 +93,27 @@ export default function StudioPlayer() {
   const { scoreId } = useParams<{ scoreId: string }>();
   const navigate = useNavigate();
   const [loadState, setLoadState] = useState<LoadState>({ phase: 'loading' });
-  const [mode, setMode] = useState<'FREE_RUN' | 'WAIT'>('FREE_RUN');
-  const [inputSource, setInputSource] = useState<StudioInputSource>('TOUCH');
-  const [handMode, setHandMode] = useState<StudioHandMode>('BOTH');
-  const [tempoPercent, setTempoPercent] = useState(100);
+  // Thiết lập lần trước (T41, ST-13); lần đầu: máy có chuột/bàn phím dùng phím máy tính, màn cảm ứng dùng phím trên màn hình
+  const [savedSettings] = useState(loadStudioSettings);
+  const [mode, setMode] = useState<'FREE_RUN' | 'WAIT'>(savedSettings.mode);
+  const [inputSource, setInputSource] = useState<StudioInputSource>(savedSettings.inputSource);
+  const [handMode, setHandMode] = useState<StudioHandMode>(savedSettings.handMode);
+  const [tempoPercent, setTempoPercent] = useState(savedSettings.tempoPercent);
+  useEffect(() => {
+    saveStudioSettings({ mode, inputSource, handMode, tempoPercent });
+  }, [mode, inputSource, handMode, tempoPercent]);
   const [startMeasure, setStartMeasure] = useState(1);
   const [endMeasure, setEndMeasure] = useState(1);
   const [repeatSection, setRepeatSection] = useState(false);
   const [session, setSession] = useState<StudioSessionResponse | null>(null);
   const [activeSession, setActiveSession] = useState<StudioSessionResponse | null>(null);
   const computerKeyboardBaseRef = useRef(COMPUTER_KEYBOARD_DEFAULT_BASE_MIDI);
+  /** Số quãng tám người chơi dời dải phím máy tính bằng Z / X (T39). */
+  const [octaveShift, setOctaveShift] = useState(0);
   const handModeRef = useRef<StudioHandMode>(handMode);
-  useEffect(() => { handModeRef.current = handMode; }, [handMode]);
+  useEffect(() => {
+    handModeRef.current = handMode;
+  }, [handMode]);
   const [sessionSchedule, setSessionSchedule] = useState<StudioSchedule | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
   const [waitVisualElapsedMs, setWaitVisualElapsedMs] = useState(0);
@@ -117,12 +130,28 @@ export default function StudioPlayer() {
   const [showKeyboardGuide, setShowKeyboardGuide] = useState(false);
   const [showActiveSessionDialog, setShowActiveSessionDialog] = useState(false);
   const [micLatencyMs, setMicLatencyMs] = useState<number | null>(null);
+  // ST-14: mô hình nhận âm tải ngay khi chọn Micro (không đợi bấm Bắt đầu); ST-04: biết backend để báo máy chậm
+  const [micModel, setMicModel] = useState<{ status: 'ready' | 'error'; backend?: string } | null>(null);
+  // ST-07: đàn MIDI nối qua Web MIDI API (BE đã nhận nguồn MIDI)
+  const [midiStatus, setMidiStatus] = useState<MidiStatus | null>(null);
   const [isPlayingPreview, setIsPlayingPreview] = useState(false);
   const previewTimeoutRef = useRef<number[]>([]);
+  useEffect(() => {
+    if (inputSource !== 'MIC' || session) return;
+    let alive = true;
+    StudioMicInput.preload()
+      .then((backend) => alive && setMicModel({ status: 'ready', backend }))
+      .catch(() => alive && setMicModel({ status: 'error' }));
+    return () => {
+      alive = false;
+    };
+  }, [inputSource, session]);
 
   const sessionRef = useRef<StudioSessionResponse | null>(null);
   const micInputRef = useRef<StudioMicInput | null>(null);
   const micDurationRef = useRef<number | null>(null);
+  /** Thời gian đếm nhịp trước nốt đầu khi tập bằng micro; thời điểm micro báo về trừ đi khoảng này (ST-02). */
+  const micLeadInRef = useRef(0);
   const scorerRef = useRef<FreeRunScorer | null>(null);
   const waitScorerRef = useRef<WaitModeScorer | null>(null);
   const scheduleRef = useRef<StudioSchedule | null>(null);
@@ -148,6 +177,7 @@ export default function StudioPlayer() {
         const timeline = timelineResponse.data;
         const activeSession = activeSessionResponse.status === 204 ? null : activeSessionResponse.data;
         setLoadState({ phase: 'ready', score, xml: xmlResponse, timeline });
+        if (!timeline.notes.some((note) => note.hand !== null)) setHandMode('BOTH');
         setActiveSession(activeSession);
         setEndMeasure(timeline.measureCount);
       })
@@ -195,7 +225,8 @@ export default function StudioPlayer() {
             midi,
             result: event.result,
             atMs: feedbackAtMs ?? event.playedMs ?? elapsedMsRef.current,
-            noteId: event.noteId,
+            // nốt sai chỉ gắn với nốt chuẩn để báo cáo theo ô; trên màn hình không tô nốt rơi đó thành "sai"
+            noteId: event.result === 'WRONG_PITCH' ? null : event.noteId,
             expectedMs: event.expectedMs,
           },
         ];
@@ -205,11 +236,14 @@ export default function StudioPlayer() {
   }, []);
 
   const handleMicUpdate = useCallback(
-    (notes: { midi: number; playedMs: number }[], coveredUntilMs: number) => {
+    (notes: { midi: number; playedMs: number }[], micCoveredUntilMs: number) => {
       const currentSession = sessionRef.current;
       const scorer = scorerRef.current;
       const schedule = scheduleRef.current;
       if (!currentSession || currentSession.inputSource !== 'MIC' || !scorer || !schedule) return;
+      // thời gian micro tính từ lúc bật; trừ phần đếm nhịp để khớp mốc 0 của bài, bỏ âm thanh trong lúc đếm (kể cả tiếng gõ)
+      const leadIn = micLeadInRef.current;
+      const coveredUntilMs = micCoveredUntilMs - leadIn;
 
       if (currentSession.loopStartMeasure !== null) {
         let cyclesAdded = 0;
@@ -228,10 +262,12 @@ export default function StudioPlayer() {
 
       const feedbackAtMs = elapsedMsRef.current;
       for (const note of notes) {
-        queueEvents(scorer.play({ midi: note.midi, playedMs: note.playedMs }), feedbackAtMs);
+        const playedMs = note.playedMs - leadIn;
+        if (playedMs < 0) continue;
+        queueEvents(scorer.play({ midi: note.midi, playedMs }), feedbackAtMs);
       }
       const safeCoverageMs = Math.max(0, coveredUntilMs - DEFAULT_TOLERANCE_WINDOW_MS);
-      const latestNoteMs = notes.reduce((latest, note) => Math.max(latest, note.playedMs), 0);
+      const latestNoteMs = notes.reduce((latest, note) => Math.max(latest, note.playedMs - leadIn), 0);
       const scorerCoverageMs = Math.max(lastScoredAtRef.current, safeCoverageMs, latestNoteMs);
       if (scorerCoverageMs >= lastScoredAtRef.current) {
         queueEvents(scorer.advanceTo(scorerCoverageMs), feedbackAtMs);
@@ -285,7 +321,7 @@ export default function StudioPlayer() {
           if (micDurationRef.current === null) {
             const micInput = micInputRef.current;
             if (!micInput) throw new Error('Microphone input is not available');
-            micDurationRef.current = await micInput.stop();
+            micDurationRef.current = Math.max(0, (await micInput.stop()) - micLeadInRef.current);
           }
           practiceDurationMs = micDurationRef.current;
           coveredUntilMs = Math.max(lastScoredAtRef.current, Math.round(practiceDurationMs));
@@ -439,8 +475,12 @@ export default function StudioPlayer() {
         const currentStep = waitScorer?.getCurrentStep() ?? null;
         const stepTransitionCount = waitScorer?.getStepTransitionCount() ?? 0;
         elapsedMsRef.current = playedMs;
-        const playedHand = handModeRef.current === 'LEFT_ONLY' ? 'LEFT' as const :
-                           handModeRef.current === 'RIGHT_ONLY' ? 'RIGHT' as const : undefined;
+        const playedHand =
+          handModeRef.current === 'LEFT_ONLY'
+            ? ('LEFT' as const)
+            : handModeRef.current === 'RIGHT_ONLY'
+              ? ('RIGHT' as const)
+              : undefined;
         const events = scorer.play({ midi, playedMs, hand: playedHand });
         playPianoNote(midi, velocity);
         // chế độ chờ: qua bước thì đánh luôn phần đệm của bước đó, nhẹ hơn để không lấn nốt người chơi
@@ -469,13 +509,38 @@ export default function StudioPlayer() {
     [queueEvents],
   );
 
+  // Đàn MIDI: nối ngay khi chọn (chưa có phiên thì chỉ phát tiếng để thử đàn), mỗi note-on đi đường như phím bấm
+  useEffect(() => {
+    if (inputSource !== 'MIDI') return;
+    let disconnect: (() => void) | null = null;
+    let alive = true;
+    void connectMidi(
+      (midi, velocity) => onPlayNote(midi, velocity),
+      (status) => alive && setMidiStatus(status),
+    ).then((stop) => {
+      if (alive) disconnect = stop;
+      else stop();
+    });
+    return () => {
+      alive = false;
+      disconnect?.();
+    };
+  }, [inputSource, onPlayNote]);
+
   useEffect(() => {
     if (!session || inputSource !== 'KEYBOARD' || inputLockedRef.current) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
       const target = event.target;
       if (target instanceof HTMLElement && target.closest('input, select, textarea, [role="dialog"]')) return;
-      const semitone = KEYBOARD_MAP[event.key.toLowerCase()];
+      const key = event.key.toLowerCase();
+      // Z / X: dời dải phím máy tính xuống / lên một quãng tám (bài hai tay, nốt ngoài C4–C5)
+      if (key === 'z' || key === 'x') {
+        event.preventDefault();
+        setOctaveShift((shift) => Math.max(-4, Math.min(4, shift + (key === 'z' ? -1 : 1))));
+        return;
+      }
+      const semitone = KEYBOARD_MAP[key];
       if (semitone === undefined) return;
       event.preventDefault();
       onPlayNote(computerKeyboardBaseRef.current + semitone);
@@ -483,6 +548,12 @@ export default function StudioPlayer() {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [session, inputSource, onPlayNote]);
+
+  const stopPreview = useCallback(() => {
+    previewTimeoutRef.current.forEach((id) => window.clearTimeout(id));
+    previewTimeoutRef.current = [];
+    setIsPlayingPreview(false);
+  }, []);
 
   const startSession = async () => {
     if (loadState.phase !== 'ready' || !scoreId || busy || session || activeSession) return;
@@ -509,9 +580,15 @@ export default function StudioPlayer() {
         mode === 'WAIT' ? new WaitModeScorer(schedule.waitSteps, schedule.durationMs, repeatSection) : null;
 
       if (inputSource === 'MIC') {
-        micInput = await StudioMicInput.create(handleMicUpdate, setMicLatencyMs, (error) => {
-          toast.error(t(`studioPlayer.errors.mic.${error.code}`));
-        });
+        micInput = await StudioMicInput.create(
+          handleMicUpdate,
+          setMicLatencyMs,
+          (error) => {
+            toast.error(t(`studioPlayer.errors.mic.${error.code}`));
+          },
+          // ST-05: độ trễ đo ở hộp thử micro (đọc lại lúc bắt đầu, vì có thể vừa hiệu chỉnh)
+          { offsetMs: loadStudioSettings().micOffsetMs },
+        );
       }
       const created = await studioApi.create({
         scoreId,
@@ -531,7 +608,9 @@ export default function StudioPlayer() {
       scheduledCyclesRef.current = 1;
       inputLockedRef.current = false;
       finishingRef.current = false;
-      const leadInMs = inputSource === 'MIC' ? 0 : mode === 'FREE_RUN' ? FREE_RUN_LEAD_IN_MS : 0;
+      const countIn = inputSource === 'MIC' ? countInOf(loadState.timeline, selectedStart, tempoPercent) : null;
+      const leadInMs = countIn ? countIn.leadInMs : mode === 'FREE_RUN' ? FREE_RUN_LEAD_IN_MS : 0;
+      micLeadInRef.current = countIn ? countIn.leadInMs : 0;
       startedAtRef.current = performance.now() + leadInMs;
       micDurationRef.current = null;
       lastScoredAtRef.current = -leadInMs;
@@ -541,9 +620,15 @@ export default function StudioPlayer() {
       sessionRef.current = created.data;
       if (micInput) {
         micInputRef.current = micInput;
-        startedAtRef.current = await micInput.start();
+        startedAtRef.current = (await micInput.start()) + leadInMs;
+        if (countIn) {
+          for (let beat = 0; beat < countIn.beats; beat += 1) playClick(beat === 0, (beat * countIn.beatMs) / 1000);
+        }
       }
       setMicLatencyMs(null);
+      // bắt đầu phiên thì dừng nghe thử và trả dải phím máy tính về quãng tự chọn
+      stopPreview();
+      setOctaveShift(0);
       setSession(created.data);
       setElapsedMs(-leadInMs);
       setWaitVisualElapsedMs(0);
@@ -672,12 +757,6 @@ export default function StudioPlayer() {
     });
   }, [loadState, repeatSection, startMeasure, endMeasure, tempoPercent, handMode]);
 
-  const stopPreview = useCallback(() => {
-    previewTimeoutRef.current.forEach(id => window.clearTimeout(id));
-    previewTimeoutRef.current = [];
-    setIsPlayingPreview(false);
-  }, []);
-
   const playPreview = useCallback(() => {
     if (isPlayingPreview) {
       stopPreview();
@@ -686,7 +765,7 @@ export default function StudioPlayer() {
     const schedule = previewSchedule;
     if (!schedule) return;
     setIsPlayingPreview(true);
-    schedule.visualNotes.forEach(note => {
+    schedule.visualNotes.forEach((note) => {
       const id = window.setTimeout(() => {
         playPianoNote(note.midi, 0.7);
       }, note.expectedMs);
@@ -700,19 +779,26 @@ export default function StudioPlayer() {
     previewTimeoutRef.current.push(doneId);
   }, [isPlayingPreview, previewSchedule, stopPreview]);
 
-  // Dừng preview khi bắt đầu session, và dọn dẹp khi unmount
-  useEffect(() => {
-    if (session) stopPreview();
-  }, [session, stopPreview]);
+  // Dọn preview khi rời trang (bắt đầu phiên thì startSession tự dừng preview)
   useEffect(() => () => stopPreview(), [stopPreview]);
 
-  // phím máy tính chỉ phủ 13 bán cung: dời quãng tám theo nốt giữa của bài (tay trái ở quãng thấp, tay phải ở quãng cao)
-  const computerKeyboardBase = useMemo(() => {
+  // phím máy tính chỉ phủ 13 bán cung: đặt quãng tám theo nốt giữa của phần đang tập (tay đã chọn), rồi cộng phần người
+  // chơi tự dời bằng Z / X (T39)
+  const autoKeyboardBase = useMemo(() => {
     const midis = ((sessionSchedule ?? previewSchedule)?.notes ?? []).map((note) => note.midi).sort((a, b) => a - b);
     if (midis.length === 0) return COMPUTER_KEYBOARD_DEFAULT_BASE_MIDI;
     return Math.floor(midis[Math.floor(midis.length / 2)] / 12) * 12;
   }, [sessionSchedule, previewSchedule]);
-  computerKeyboardBaseRef.current = computerKeyboardBase;
+  const computerKeyboardBase = Math.max(24, Math.min(96, autoKeyboardBase + octaveShift * 12));
+  useEffect(() => {
+    computerKeyboardBaseRef.current = computerKeyboardBase;
+  }, [computerKeyboardBase]);
+  // nốt cần chơi nằm ngoài dải phím máy tính hiện tại (bài hai tay thường rộng hơn một quãng tám)
+  const keyboardMissesNotes =
+    inputSource === 'KEYBOARD' &&
+    (sessionSchedule?.notes ?? []).some(
+      (note) => note.midi < computerKeyboardBase || note.midi > computerKeyboardBase + 12,
+    );
 
   if (loadState.phase === 'loading') {
     return (
@@ -740,6 +826,8 @@ export default function StudioPlayer() {
   }
 
   const { score, xml, timeline } = loadState;
+  // bản không có part 2 khuông (giai điệu, từng bè) thì không có tay trái / phải để chọn (ST-13)
+  const hasHands = timeline.notes.some((note) => note.hand !== null);
   // đồng hồ và tiến độ đứng ở 0 trong lúc đếm ngược (thời gian luyện âm)
   const elapsedSeconds = Math.floor(Math.max(0, elapsedMs) / 1000);
   const countdownSeconds = session?.mode === 'FREE_RUN' && elapsedMs < 0 ? Math.ceil(-elapsedMs / 1000) : 0;
@@ -766,7 +854,8 @@ export default function StudioPlayer() {
     const note = timeline.notes.find((item) => item.id === current.noteId);
     const measure = timeline.measures.find((item) => item.index === current.measure);
     if (!note || !measure) return null;
-    return { measure: current.measure, beatOffset: Math.max(0, note.startBeat - measure.startBeat) };
+    // nhắc lại đã mở: lượt phát thứ hai của ô 1 vẫn tô ở ô 1 trên bản nhạc
+    return { measure: measure.source ?? current.measure, beatOffset: Math.max(0, note.startBeat - measure.startBeat) };
   })();
   const progress =
     session && scoreDuration > 0 && !repeatSection
@@ -784,7 +873,9 @@ export default function StudioPlayer() {
 
   // Bản nhạc xem trước: lúc thiết lập nằm chung cột trái với thẻ thiết lập (cột tự cuộn), lúc đang luyện ở dưới vùng luyện
   const scorePanel = (
-    <section className={`studio-player__score${!session && !showScoreSheet ? ' is-collapsed' : ''}${session && !showSessionScore ? ' is-hidden' : ''}`}>
+    <section
+      className={`studio-player__score${!session && !showScoreSheet ? ' is-collapsed' : ''}${session && !showSessionScore ? ' is-hidden' : ''}`}
+    >
       <div className="studio-player__section-head">
         <div>
           <h2>{t('studioPlayer.score.title')}</h2>
@@ -817,7 +908,9 @@ export default function StudioPlayer() {
   );
 
   return (
-    <div className={`sc-page studio-player${session ? ' studio-player--fullscreen' : ''}${session && showSessionScore ? ' has-score-panel' : ''}`}>
+    <div
+      className={`sc-page studio-player${session ? ' studio-player--fullscreen' : ''}${session && showSessionScore ? ' has-score-panel' : ''}`}
+    >
       <main className="sc-container">
         <header className="studio-player__header">
           <Link className="studio-player__back" to={`/scores/${score.id}`}>
@@ -827,7 +920,9 @@ export default function StudioPlayer() {
           {/* tên bài to, thông tin phụ là các thẻ có biểu tượng (không ghép chuỗi bằng dấu chấm giữa) */}
           <div className="studio-player__heading">
             <span className="studio-player__eyebrow">{t('studioPlayer.eyebrow')}</span>
-            <h1>{score.title}</h1>
+            <h1 className="sc-title-clamp" title={score.title}>
+              {score.title}
+            </h1>
             <ul className="studio-player__facts">
               <li>
                 <Icon name="user" size={14} />
@@ -839,7 +934,7 @@ export default function StudioPlayer() {
               </li>
             </ul>
           </div>
-          <Link className="sc-btn" to="/studio/history">
+          <Link className="sc-btn" to="/practice-history">
             <Icon name="clock" size={16} />
             {t('studioReport.history.open')}
           </Link>
@@ -905,6 +1000,9 @@ export default function StudioPlayer() {
                             <Icon name={icon} size={18} />
                           </span>
                           <strong>{t(`studioReport.mode.${value}`)}</strong>
+                          <small className="studio-player__mode-desc">
+                            {t(value === 'WAIT' ? 'studioPlayer.setup.waitHint' : 'studioPlayer.setup.freeRunHint')}
+                          </small>
                         </label>
                       );
                     })}
@@ -912,9 +1010,10 @@ export default function StudioPlayer() {
                 </fieldset>
                 <fieldset className="studio-player__field">
                   <legend>{t('studioPlayer.setup.input')}</legend>
-                  <div className="studio-player__segmented">
+                  <div className="studio-player__segmented studio-player__inputs">
                     {(
                       [
+                        ['MIDI', 'sliders', 'studioPlayer.setup.midiKeyboard'],
                         ['KEYBOARD', 'type', 'studioPlayer.setup.computerKeyboard'],
                         ['TOUCH', 'select', 'studioPlayer.setup.touchKeyboard'],
                         ['MIC', 'activity', 'studioPlayer.setup.microphone'],
@@ -936,37 +1035,71 @@ export default function StudioPlayer() {
                       </label>
                     ))}
                   </div>
+                  {inputSource === 'MIDI' && (
+                    <p className="studio-player__field-hint" role="status">
+                      {midiStatus === null
+                        ? t('studioPlayer.setup.midi.connecting')
+                        : midiStatus.state === 'unsupported'
+                          ? t('studioPlayer.setup.midi.unsupported')
+                          : midiStatus.state === 'denied'
+                            ? t('studioPlayer.setup.midi.denied')
+                            : midiStatus.devices.length === 0
+                              ? t('studioPlayer.setup.midi.none')
+                              : t('studioPlayer.setup.midi.ready', { devices: midiStatus.devices.join(', ') })}
+                    </p>
+                  )}
+                  {inputSource === 'MIC' && (
+                    <p className="studio-player__field-hint" role="status">
+                      {micModel === null
+                        ? t('studioPlayer.setup.micModel.loading')
+                        : micModel.status === 'error'
+                          ? t('studioPlayer.setup.micModel.error')
+                          : micModel.backend === 'cpu'
+                            ? t('studioPlayer.setup.micModel.slow')
+                            : t('studioPlayer.setup.micModel.ready')}
+                    </p>
+                  )}
                 </fieldset>
-                <fieldset className="studio-player__field">
-                  <legend>{t('studioPlayer.setup.hands')}</legend>
-                  <div className="studio-player__segmented studio-player__hands">
-                    {(
-                      [
-                        ['LEFT_ONLY', 'is-left', 'studioPlayer.setup.leftHand'],
-                        ['BOTH', 'is-both', 'studioPlayer.setup.bothHands'],
-                        ['RIGHT_ONLY', 'is-right', 'studioPlayer.setup.rightHand'],
-                      ] as const
-                    ).map(([value, dot, label]) => (
-                      <label key={value} className={handMode === value ? 'is-active' : undefined}>
-                        <input
-                          type="radio"
-                          name="studio-hands"
-                          value={value}
-                          checked={handMode === value}
-                          onChange={() => setHandMode(value)}
-                        />
-                        <i className={`studio-player__hand-dot ${dot}`} aria-hidden="true" />
-                        <span>{t(label)}</span>
-                      </label>
-                    ))}
-                  </div>
-                </fieldset>
+                {hasHands && (
+                  <fieldset className="studio-player__field">
+                    <legend>{t('studioPlayer.setup.hands')}</legend>
+                    <div className="studio-player__segmented studio-player__hands">
+                      {(
+                        [
+                          ['LEFT_ONLY', 'is-left', 'studioPlayer.setup.leftHand'],
+                          ['BOTH', 'is-both', 'studioPlayer.setup.bothHands'],
+                          ['RIGHT_ONLY', 'is-right', 'studioPlayer.setup.rightHand'],
+                        ] as const
+                      ).map(([value, dot, label]) => (
+                        <label key={value} className={handMode === value ? 'is-active' : undefined}>
+                          <input
+                            type="radio"
+                            name="studio-hands"
+                            value={value}
+                            checked={handMode === value}
+                            onChange={() => setHandMode(value)}
+                          />
+                          <i className={`studio-player__hand-dot ${dot}`} aria-hidden="true" />
+                          <span>{t(label)}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                )}
                 <div className="studio-player__tempo">
                   <div className="studio-player__tempo-head">
                     <label htmlFor="studio-tempo">{t('studioPlayer.setup.tempo')}</label>
                     <output htmlFor="studio-tempo">
                       {tempoPercent}
                       <small>%</small>
+                      {loadState.phase === 'ready' && (
+                        <small className="studio-player__tempo-bpm">
+                          {' '}
+                          {t('studioPlayer.setup.tempoBpm', {
+                            bpm: Math.round((loadState.timeline.tempoBpm * tempoPercent) / 100),
+                          })}
+                        </small>
+                      )}
                     </output>
                   </div>
                   <input
@@ -1200,6 +1333,15 @@ export default function StudioPlayer() {
             </div>
 
             {hasNotesOutsideKeyboard && <p className="studio-player__note">{t('studioPlayer.keyboard.rangeHint')}</p>}
+            {session && inputSource === 'KEYBOARD' && (
+              <p className="studio-player__note" role="status">
+                {t('studioPlayer.keyboard.computerRange', {
+                  from: noteName(computerKeyboardBase),
+                  to: noteName(computerKeyboardBase + 12),
+                })}
+                {keyboardMissesNotes && ` ${t('studioPlayer.keyboard.outOfRange')}`}
+              </p>
+            )}
 
             <div
               className={[
@@ -1295,7 +1437,15 @@ export default function StudioPlayer() {
         <Modal title={t('studioPlayer.keyboardGuide.title')} onClose={() => setShowKeyboardGuide(false)}>
           <div className="studio-player__guide-content">
             <div className="studio-player__guide-section">
-              <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0 0 0.5rem', fontSize: '1.05rem' }}>
+              <h3
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  margin: '0 0 0.5rem',
+                  fontSize: '1.05rem',
+                }}
+              >
                 <Icon
                   name={inputSource === 'KEYBOARD' ? 'type' : inputSource === 'TOUCH' ? 'select' : 'activity'}
                   size={18}

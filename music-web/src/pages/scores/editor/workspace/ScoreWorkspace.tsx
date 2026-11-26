@@ -13,6 +13,7 @@ import {
   SelectionCommentButton,
 } from '../../../../components/scores/comments/ViewerCommentTools';
 import ContextMenu from '../../../../components/ui/ContextMenu';
+import { useDialog } from '../../../../components/ui/dialog-context';
 import { buildEditorMenu, editorMenuTitle } from '../../../../components/scores/viewer/editorMenu';
 import type { ScoreDocument } from '../../../../components/editor/core/ScoreDocument';
 import { PlayerBar } from '../../../../components/player/PlayerBar';
@@ -20,6 +21,7 @@ import { useScoreEditor } from '../../../../components/editor/core/useScoreEdito
 import { useOmrCheck } from '../../../../components/scores/omr/useOmrCheck';
 import { useLiveCollab } from '../../../../components/editor/live/useLiveCollab';
 import type { LiveSelection, ScoreDetail } from '../../../../types';
+import { toast } from 'react-toastify';
 import { t } from '../../../../i18n/core';
 import { useScoreBase } from '../../../../utils/score';
 import { performanceWarning } from '../../../../utils/viewer';
@@ -63,6 +65,10 @@ export default function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: Pr
   const [hideWarning, setHideWarning] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [suggestingChords, setSuggestingChords] = useState(false);
+  // CH-08: có thay đổi chưa lưu thì hỏi "Lưu rồi gợi ý"; hộp gợi ý mở khi bản nhạc đã lưu xong (kể cả phiên đồng chỉnh
+  // sửa, nơi Lưu chỉ gửi yêu cầu và máy chủ báo lại sau)
+  const [suggestAfterSave, setSuggestAfterSave] = useState(false);
+  const { confirm } = useDialog();
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [parseFailed, setParseFailed] = useState(false);
   const [focusMeasure, setFocusMeasure] = useState<{ index: number; key: number } | null>(null);
@@ -107,6 +113,25 @@ export default function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: Pr
   useEffect(() => {
     selectionRef.current = editor.selection;
   });
+  const chordDialogOpen = suggestingChords || (suggestAfterSave && !editor.dirty);
+  const closeChordDialog = () => {
+    setSuggestingChords(false);
+    setSuggestAfterSave(false);
+  };
+  const requestChordSuggest = async () => {
+    if (!editor.dirty) {
+      setSuggestingChords(true);
+      return;
+    }
+    const ok = await confirm({
+      title: t('chords.saveFirstTitle'),
+      message: t('chords.saveFirst'),
+      confirmLabel: t('chords.saveAndSuggest'),
+    });
+    if (!ok) return;
+    setSuggestAfterSave(true);
+    await editor.save();
+  };
   const lockBoxes = useLockBoxes(live);
   const { player, playerOpen, loopRange, onPlayButton, closePlayer } = useEditorPlayer(
     doc,
@@ -164,7 +189,8 @@ export default function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: Pr
   };
 
   const warning = useMemo(() => performanceWarning(info), [info]);
-  const notTwoStaves = info.valid && info.staves !== 2;
+  // N-12: chỉ cảnh báo bản một bè (kiểu piano); bản nhiều bè luyện theo bè, không tách tay trái/phải
+  const notTwoStaves = info.valid && info.parts === 1 && info.staves !== 2;
   const goBack = () => {
     void editor.confirmLeave().then((ok) => ok && navigate(`${base}/${score.id}`));
   };
@@ -279,8 +305,7 @@ export default function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: Pr
             onLyricModeChange={editor.setLyricMode}
             chordMode={editor.chordMode}
             onChordModeChange={editor.setChordMode}
-            onSuggestChords={canEdit ? () => setSuggestingChords(true) : undefined}
-            suggestChordsBlocked={editor.dirty ? t('chords.saveFirst') : null}
+            onSuggestChords={canEdit ? () => void requestChordSuggest() : undefined}
             onMark={editor.applyMark}
             onStaves={editor.editStaves}
             onOpenNotation={() => setNotationOpen(true)}
@@ -314,6 +339,7 @@ export default function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: Pr
             selected={editor.selection}
             issueMeasures={issueMeasures}
             lockBoxes={lockBoxes}
+            onMeasureHeld={(name) => toast.info(t('live.notice.heldBy', { name }), { toastId: 'live-held' })}
             focusMeasure={focusMeasure}
             playing={player.activeIds}
             mutedStaves={player.mutedStaves}
@@ -350,6 +376,7 @@ export default function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: Pr
           side={side}
           ai={ai}
           onCloseAi={() => setAiPanelOpen(false)}
+          onListenAi={onPlayButton}
           comments={comments}
           omrCheck={
             checkOpen && omrCheck.available
@@ -430,15 +457,15 @@ export default function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: Pr
       )}
       <EditorStatusBar score={score} info={info} editor={editor} onFocusMeasure={focusOn} />
 
-      {suggestingChords && (
+      {chordDialogOpen && (
         <ChordSuggestDialog
           scoreId={score.id}
-          onClose={() => setSuggestingChords(false)}
+          onClose={closeChordDialog}
           // Người sửa được: gợi ý xong thì nạp ngay vào trình chỉnh sửa làm bản nháp thay vì sang trang duyệt
           onCompleted={
             canEdit
               ? (suggestionId) => {
-                  setSuggestingChords(false);
+                  closeChordDialog();
                   ai.beginAiDraft(suggestionId);
                 }
               : undefined

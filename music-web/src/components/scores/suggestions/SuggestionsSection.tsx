@@ -8,7 +8,7 @@ import { t } from '../../../i18n/core';
 import Skeleton from '../../ui/Skeleton';
 import { Icon } from '../../ui';
 import ChordSuggestDialog from '../chords/ChordSuggestDialog';
-import { aiChordsEditPath, clearChordsEditPath, statusTone, suggestionPath } from './suggestionUtils';
+import { aiChordsEditPath, clearChordsEditPath, statusTone, suggestionPath, suggestionTitle } from './suggestionUtils';
 import { useNavigate } from '../../../routes/useTransitionNavigate';
 import './suggestions.css';
 
@@ -103,7 +103,7 @@ export default function SuggestionsSection({ scoreId, canEdit = false, onOpenCou
             <li key={s.id} className="sg-item">
               <div className="sg-item__main">
                 <Link className="sg-item__title" to={suggestionPath(base, scoreId, s.id)}>
-                  {s.title}
+                  {suggestionTitle(s)}
                 </Link>
                 <div className="sg-item__meta">
                   {t('suggestions.section.by', { name: s.author?.name ?? t('suggestions.section.system') })} ·{' '}

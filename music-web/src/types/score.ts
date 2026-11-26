@@ -179,6 +179,7 @@ export interface ScoreDetail extends ScoreSummary {
   pageCount?: number | null;
   currentVersion?: number | null;
   viewCount?: number | null;
+  /** Email chủ sở hữu: BE chỉ trả cho chính chủ và quản trị viên (N-05). */
   ownerEmail?: string | null;
   /** Bản trong kho mẫu mà bạn là chủ của bản gốc: id bản gốc của bạn. */
   myOriginalScoreId?: string | null;

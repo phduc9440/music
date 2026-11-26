@@ -40,9 +40,11 @@ qua callback có header `X-Internal-Key`.
 - **Xem, phát và luyện tập**: hiển thị bản nhạc bằng OpenSheetMusicDisplay, phát lại bằng mẫu âm piano, chế độ luyện
   tập (Studio) có chấm điểm, lịch sử và thống kê luyện tập.
 - **Gợi ý hợp âm** cho bản chỉ có giai điệu: nút "Gợi ý hợp âm" ở trang chi tiết bản nhạc (cần quyền chỉnh sửa
-  `EDIT`, vì gợi ý hợp âm là sửa bản nhạc), chọn màu hợp âm (Tự nhiên, Đơn giản, Có màu, Hợp âm 7 / Jazz), độ sáng tạo và mật độ hợp âm. `music-ai` dùng model AutoHarmonizer (LSTM, trọng số gốc của tác giả) và lấy mẫu nên mỗi lần ra cách đệm khác,
+  `EDIT`, vì gợi ý hợp âm là sửa bản nhạc), chọn bè giai điệu (part, khuông), màu hợp âm (Tự nhiên, Đơn giản, Có màu, Hợp âm 7 / Jazz), độ sáng tạo và mật độ hợp âm. `music-ai` dùng model AutoHarmonizer (LSTM, trọng số gốc của tác giả) và lấy mẫu nên mỗi lần ra cách đệm khác,
   kèm tới 3 phương án A, B, C (theo gói) để chọn trong trình chỉnh sửa. Hợp âm AI hiện ngay trong trình chỉnh sửa dưới dạng bản
-  nháp để sửa rồi lưu (kết quả cũng được lưu thành một đề xuất sửa do hệ thống gửi, xem lại ở tab Đề xuất).
+  nháp để sửa, nghe thử từng phương án rồi lưu (kết quả cũng được lưu thành một đề xuất sửa do hệ thống gửi, chỉ người bấm
+  nhận thông báo khi xong; mở lại trình chỉnh sửa sẽ nhắc nạp lại bản nháp chưa xem). Hộp gợi ý báo trước giới hạn ô
+  nhịp của gói và các ô sai trường độ ở bè giai điệu.
   Bản đã có hợp âm ở mọi ô thì hộp gợi ý hỏi có muốn thay hợp âm cũ không, kèm nút xóa hết hợp âm. Player có thể đệm
   theo các hợp âm này.
 - **Cộng tác**: chia sẻ theo quyền `VIEW` (xem, luyện tập, nhận xét và chấm sao), `COMMENT` (góp ý trên ô nhịp, gửi đề xuất sửa), `EDIT` (chỉnh sửa, duyệt đề xuất, gợi ý hợp âm); bản công khai ai đăng nhập cũng có quyền `VIEW`, bản riêng tư thì xin quyền chủ bản nhạc, góp ý gắn với ô nhịp, đề xuất sửa và so sánh khác biệt,
@@ -52,7 +54,9 @@ qua callback có header `X-Internal-Key`.
 - **Cộng đồng**: trang chủ, Khám phá, trang Nhạc sĩ, diễn đàn, yêu cầu công khai / bản chính thức, báo cáo vi phạm.
 - **Gói dịch vụ và thanh toán**: bảng giá, giới hạn theo gói, thanh toán VNPay (sandbox), giới thiệu bạn bè.
 - **Quản trị**: dashboard, thành viên, vai trò, bản nhạc chờ duyệt, diễn đàn, báo cáo, gói và doanh thu, tác vụ AI,
-  thông báo hệ thống, nhật ký hoạt động.
+  thông báo hệ thống, nhật ký hoạt động. `SUPER_ADMIN` và `ADMIN` không xem nội dung bản nhạc riêng tư của người dùng
+  (chỉ xem bản chờ duyệt và bản công khai); trong "Quản lý bản nhạc" bản riêng tư chỉ hiện tên, chủ, ngày cập nhật và
+  chỉ xóa được (kèm lý do).
 - **Thông báo** trong ứng dụng và email, **giao diện sáng/tối**, **đa ngôn ngữ** Tiếng Việt / English.
 
 ## Chạy nhanh bằng Docker
@@ -73,6 +77,20 @@ docker compose up --build
 Lần đầu chạy, Flyway tự tạo bảng và nạp dữ liệu mẫu; `music-ai` tải model Transcoda từ Hugging Face (được cache
 trong volume `hf-cache`). Trong Docker, `music-ai` chạy trên CPU nên thời gian chờ OMR đã được nới ra
 (`INFERENCE_PAGE_TIMEOUT_S`, `TASK_TIMEOUT_S`).
+
+**Mac Apple Silicon:** MuseScore 3.6.2 chỉ có bản x86_64 nên `music-be` mặc định chạy dạng `linux/amd64`
+(`BE_PLATFORM`, Docker Desktop chạy qua Rosetta; bật "Use Rosetta for x86_64/amd64 emulation" trong Settings → General).
+Nhờ vậy xuất PDF, SVG, MP3, WAV vẫn dùng được khi demo. Đặt `BE_PLATFORM=linux/arm64` thì BE nhanh hơn nhưng các định
+dạng này trả 503 (mã 2704).
+
+**Mở web bằng địa chỉ khác `localhost`** (127.0.0.1, IP trong mạng LAN): thêm địa chỉ đó vào `APP_CORS_ORIGINS` trong
+`.env` rồi `docker compose up -d music-be`; nếu không, đăng nhập bị chặn và trang đăng nhập báo "Máy chủ từ chối địa chỉ…".
+
+**Thử cùng chỉnh sửa hai người trên một máy:** đặt `APP_CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173`.
+Người A mở http://localhost:5173, người B mở http://127.0.0.1:5173 (cookie đăng nhập tách theo tên máy nên hai tài khoản
+không đè nhau). A chia sẻ một bản nhạc cho B quyền Sửa, cả hai mở trình chỉnh sửa: thấy avatar của nhau, nốt người này
+thêm hiện ngay ở người kia, ô đang được người khác sửa có khung tên và không sửa được, A hạ quyền B xuống Xem thì B được
+báo và chuyển sang chỉ xem, Lưu ở một bên thì bên kia hết "Có thay đổi chưa lưu".
 
 ### Tài khoản mẫu
 

@@ -6,6 +6,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.ptit.music_be.service.score.ScoreTrashService;
+import com.ptit.music_be.utils.AppTime;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +22,7 @@ public class ScoreTrashPurgeJob {
 
     private final ScoreTrashService scoreTrashService;
 
-    @Scheduled(cron = "${score.trash.purge-cron:0 30 3 * * *}")
+    @Scheduled(cron = "${score.trash.purge-cron:0 30 3 * * *}", zone = AppTime.ZONE_ID)
     public void purgeExpired() {
         List<String> ids = scoreTrashService.findExpiredIds();
         if (ids.isEmpty()) {

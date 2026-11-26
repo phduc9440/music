@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -38,6 +37,7 @@ import com.ptit.music_be.repository.home.HomeQueryRepository;
 import com.ptit.music_be.repository.practice.PracticeSessionRepository;
 import com.ptit.music_be.repository.score.MemberScoreRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
+import com.ptit.music_be.utils.AppTime;
 
 /**
  * Chạy các câu truy vấn của trang chủ với DB thật (cần MySQL đang chạy). Mỗi ca tự tạo dữ liệu trong transaction rồi
@@ -249,7 +249,8 @@ class HomeQueryTest {
     @Test
     void todayPracticeCountsOnlySessionsSinceMidnight() {
         Score mine = score(owner, "Bài tập", "PRIVATE", null, 0);
-        LocalDateTime midnight = LocalDate.now().atStartOfDay();
+        // X-06: started_at lưu giờ UTC, "hôm nay" tính từ 0 giờ Việt Nam
+        LocalDateTime midnight = AppTime.startOfDayUtc(AppTime.today());
         practice(owner, mine, midnight.minusMinutes(5), 600);
         practice(owner, mine, midnight.plusMinutes(1), 120);
 

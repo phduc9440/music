@@ -8,6 +8,7 @@ import { useAiChordDraft } from '../../../../components/scores/chords/useAiChord
 import type { AiChordRow } from '../../../../components/scores/chords/useAiChordDraft';
 import type { AiChordMark } from '../../../../components/scores/chords/aiChordHighlight';
 import { suggestionPath } from '../../../../components/scores/suggestions/suggestionUtils';
+import { suggestionApi } from '../../../../services/score/suggestionApi';
 import { useDialog } from '../../../../components/ui/dialog-context';
 import type { ScoreDocument } from '../../../../components/editor/core/ScoreDocument';
 import type { ScoreEditor } from '../../../../components/editor/core/useScoreEditor';
@@ -95,6 +96,30 @@ export function useAiChordPanel({
     setSearchParams(next, { replace: true });
     beginAiDraft(linkedAiChords);
   }, [linkedAiChords, liveReady, searchParams, setSearchParams, beginAiDraft]);
+
+  // CH-03: bản nháp hợp âm AI chỉ nằm trong bộ nhớ, tải lại trang là mất; gợi ý vẫn còn mở ở BE (chặn lần gợi ý sau)
+  // nên vào trình chỉnh sửa thì nhắc mở lại
+  const pendingChecked = useRef<string | null>(null);
+  useEffect(() => {
+    if (!canEdit || linkedAny || pendingChecked.current === scoreId) return;
+    pendingChecked.current = scoreId;
+    let cancelled = false;
+    suggestionApi
+      .list(scoreId, 'OPEN', 0, 20)
+      .then((res) => {
+        const pending = res.data.result?.content?.find((s) => s.source === 'CHORD_GENERATION' && !s.stale);
+        if (cancelled || !pending) return;
+        toast.info(t('chords.draft.pending'), {
+          toastId: `ai-chords-pending-${pending.id}`,
+          autoClose: 12000,
+          onClick: () => beginAiDraft(pending.id),
+        });
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [canEdit, linkedAny, scoreId, beginAiDraft]);
 
   /** Xóa mọi hợp âm của bản nhạc trong một bước sửa (chưa lưu, Ctrl+Z để hoàn tác), có hỏi lại trước. */
   const clearAllChords = useCallback(async () => {

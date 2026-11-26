@@ -10,8 +10,8 @@
     "waitHint": "Nốt sẽ dừng ở vạch chơi. Bấm đủ các nốt trong hợp âm để chuyển sang bước tiếp theo.",
     "input": "Cách nhập nốt",
     "computerKeyboard": "Bàn phím máy tính",
-    "touchKeyboard": "Bấm phím đàn trên màn hình",
-    "microphone": "Micro (đàn piano thật)",
+    "touchKeyboard": "Phím đàn trên màn hình",
+    "microphone": "Micro (thử nghiệm)",
     "microphoneHint": "Micro nhận diện nhiều nốt cùng lúc. Chỉ dùng với Chạy tự do; kết quả sẽ trễ khoảng 1–2 giây. Âm thanh được phân tích trên trình duyệt, không gửi lên máy chủ. Đặt micro gần đàn và giảm tiếng ồn nền.",
     "hands": "Tay luyện tập",
     "bothHands": "Cả hai tay",
@@ -25,7 +25,22 @@
     "starting": "Đang tạo phiên…",
     "freeRunHint": "Nốt chạy đều theo tốc độ đã chọn; chơi đúng lúc nốt chạm vạch để được chấm hoàn hảo.",
     "playPreview": "Nghe thử bài",
-    "stopPreview": "Dừng nghe thử"
+    "stopPreview": "Dừng nghe thử",
+    "tempoBpm": "≈ {bpm} BPM",
+    "micModel": {
+      "loading": "Đang tải mô hình nhận âm (khoảng 1 MB)…",
+      "ready": "Nhận âm sẵn sàng. Micro đang thử nghiệm, chơi đàn piano gần máy và tránh tiếng ồn.",
+      "slow": "Trình duyệt không bật được tăng tốc đồ họa nên nhận âm có thể trễ hoặc dừng giữa chừng; nên dùng đàn MIDI hoặc bàn phím.",
+      "error": "Không tải được mô hình nhận âm. Thử tải lại trang hoặc chọn cách nhập khác."
+    },
+    "midiKeyboard": "Đàn MIDI",
+    "midi": {
+      "connecting": "Đang tìm đàn MIDI… Trình duyệt có thể hỏi quyền dùng thiết bị MIDI.",
+      "ready": "Đã nhận đàn: {devices}. Bấm thử vài phím để nghe.",
+      "none": "Chưa thấy đàn MIDI. Cắm đàn qua cáp USB (hoặc bộ chuyển MIDI) rồi bấm thử một phím.",
+      "unsupported": "Trình duyệt này chưa hỗ trợ đàn MIDI (Web MIDI). Dùng Chrome hoặc Edge, hoặc chọn cách nhập khác.",
+      "denied": "Trình duyệt đã chặn quyền dùng thiết bị MIDI. Cho phép trong phần cài đặt trang rồi tải lại."
+    }
   },
   "session": {
     "live": "Đang luyện",
@@ -49,12 +64,19 @@
     "statusQuiet": "Đang yên tĩnh (hãy thử gõ 1 nốt đàn)",
     "statusGood": "Tín hiệu âm thanh tốt",
     "statusLoud": "Âm lượng lớn / nhiều tiếng ồn",
-    "detectedNote": "Nốt nhận diện được",
-    "playPrompt": "Hãy thử đàn 1 nốt trên piano thật để kiểm tra độ nhạy",
+    "detectedNote": "Nốt nghe được",
+    "playPrompt": "Chơi vài nốt hoặc một hợp âm trên đàn piano; kết quả hiện sau khoảng 2 giây, giống lúc tập.",
     "unsupported": "Trình duyệt không hỗ trợ thu âm từ micro.",
     "permissionDenied": "Chưa được cấp quyền truy cập micro. Vui lòng bấm vào biểu tượng ổ khóa cạnh thanh địa chỉ để cấp quyền.",
     "noDevice": "Không tìm thấy thiết bị micro nào trên máy.",
-    "startError": "Không thể khởi động micro để kiểm tra."
+    "startError": "Không thể khởi động micro để kiểm tra.",
+    "starting": "Đang mở micro…",
+    "calibrate": "Hiệu chỉnh độ trễ",
+    "calibrateHint": "Độ trễ đang bù: {ms} ms. Bấm Hiệu chỉnh rồi chơi một nốt đúng lúc mỗi tiếng gõ.",
+    "calibrating": "Chơi một nốt đúng lúc mỗi tiếng gõ ({count} tiếng)…",
+    "calibrated": "Đã đo độ trễ {ms} ms và lưu lại; các phiên micro sau sẽ bù khoảng này.",
+    "calibrationFailed": "Không nghe đủ nốt theo tiếng gõ. Chơi to, rõ hơn rồi thử lại.",
+    "resetOffset": "Về 0"
   },
   "results": {
     "PERFECT": "Hoàn hảo",
@@ -74,7 +96,9 @@
     "label": "Đàn piano ảo",
     "title": "Phím đàn",
     "range": "88 phím · A0–C8",
-    "rangeHint": "Một số nốt trong bản nhạc nằm ngoài dải 88 phím của piano (A0–C8)."
+    "rangeHint": "Một số nốt trong bản nhạc nằm ngoài dải 88 phím của piano (A0–C8).",
+    "computerRange": "Phím máy tính đang phát {from}–{to}; bấm Z để xuống một quãng tám, X để lên.",
+    "outOfRange": "Bài có nốt ngoài dải này: đổi quãng bằng Z/X khi tới đoạn đó, hoặc tập từng tay."
   },
   "keyboardGuide": {
     "open": "Hướng dẫn cách chơi",
@@ -89,7 +113,7 @@
     "micDesc": "Đặt laptop hoặc micro gần đàn piano thật (cách khoảng 30–50cm). Đảm bảo không gian xung quanh yên tĩnh. Hệ thống AI phân tích âm thanh trực tiếp trên trình duyệt để chấm điểm các nốt bạn vừa đàn.",
     "handsDesc": "Quy ước màu tay: Nốt màu xanh là tay phải, nốt màu vàng cam là tay trái. Hãy bấm đúng lúc nốt rơi chạm vạch chơi.",
     "stepInput": "Trong phần thiết lập, chọn “Bàn phím máy tính” để chơi bằng các phím chữ, hoặc chọn “Bấm phím đàn trên màn hình” để chạm trực tiếp lên đàn.",
-    "stepRange": "Đàn ảo luôn hiển thị đủ 88 phím từ A0 đến C8. Bàn phím máy tính phát các nốt từ C4 đến C5 theo sơ đồ.",
+    "stepRange": "Đàn ảo luôn hiển thị đủ 88 phím từ A0 đến C8. Bàn phím máy tính phát một quãng tám theo nốt giữa của phần đang tập; bấm Z / X để dời xuống / lên một quãng tám.",
     "stepPlay": "Quan sát màu nốt để biết tay: tay phải màu xanh, tay trái màu cam. Bấm phím tương ứng khi nốt chạm vạch chơi; với đàn màn hình, chạm phím tương ứng.",
     "stepFeedback": "Xem kết quả ngay dưới đàn: xanh là đúng nhịp, vàng là sớm/trễ, đỏ là sai nốt hoặc bỏ lỡ.",
     "keyMap": "Bàn phím máy tính phát một quãng tám theo sơ đồ này:"

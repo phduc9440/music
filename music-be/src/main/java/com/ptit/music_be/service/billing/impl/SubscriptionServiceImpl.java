@@ -42,6 +42,7 @@ import com.ptit.music_be.service.billing.PlanLimits;
 import com.ptit.music_be.service.billing.PlanLimitsParser;
 import com.ptit.music_be.service.billing.SubscriptionService;
 import com.ptit.music_be.service.notification.NotificationService;
+import com.ptit.music_be.utils.AppTime;
 import com.ptit.music_be.utils.SecurityUtils;
 
 import lombok.AccessLevel;
@@ -461,7 +462,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         Member by = currentMember();
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime endsAt = now.plusMonths(months);
-        String date = endsAt.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        String date = AppTime.localDateOf(endsAt).format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
         java.util.List<BulkGrantResult> results = new java.util.ArrayList<>();
         for (String memberId : new java.util.LinkedHashSet<>(memberIds)) {
             Member member = memberRepository.findById(memberId).orElse(null);
@@ -861,7 +862,8 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                     subscriptionRepository.findByStatusAndExpiresAtGreaterThanAndExpiresAtLessThanEqual(
                             SubscriptionStatus.ACTIVE, now.plusDays(days - 1L), now.plusDays(days));
             for (Subscription s : expiring) {
-                String date = s.getExpiresAt().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+                String date = AppTime.localDateOf(s.getExpiresAt())
+                        .format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
                 notificationService.notify(
                         s.getMember(),
                         null,

@@ -98,6 +98,9 @@ export default function BlankScoreForm({ onCreated, onCancel }: Props) {
         <div>
           <label className="sc-label" htmlFor="bs-title">
             {t('upload.fieldTitle')}
+            <span className="sc-counter">
+              {title.length}/{MAX_TITLE}
+            </span>
           </label>
           <input
             id="bs-title"

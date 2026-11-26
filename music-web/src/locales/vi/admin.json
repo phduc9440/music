@@ -408,7 +408,11 @@
     "selectAll": "Chọn tất cả bản trên trang",
     "selectOne": "Chọn {title}",
     "deleteOne": "Xóa {title}",
-    "noMatch": "Không có bản nào khớp bộ lọc. Thử bỏ bớt điều kiện."
+    "noMatch": "Không có bản nào khớp bộ lọc. Thử bỏ bớt điều kiện.",
+    "privateTitle": "Bản nhạc riêng tư",
+    "privateHint": "Riêng tư — chỉ chủ sở hữu xem được. Quản trị viên chỉ xem bản chờ duyệt và bản công khai; với bản riêng tư chỉ có thể xóa (kèm lý do).",
+    "bulkPendingOnly": "Chỉ áp cho các bản đang chờ duyệt trong vùng chọn",
+    "bulkPublicOnly": "Chỉ áp cho các bản công khai trong vùng chọn"
   },
   "dashboard": {
     "visibility": {
@@ -519,8 +523,8 @@
     "aiRunning": "{n} tác vụ đang chạy",
     "newInPeriod": "+{n} trong {days} ngày",
     "practiceMinutes": "Phút luyện tập",
-    "sessionsAllTime": "{n} phiên từ trước đến nay",
-    "sparkLabel": "{days} ngày gần nhất: tổng {total}, cao nhất {max} ngày {date}"
+    "sparkLabel": "{days} ngày gần nhất: tổng {total}, cao nhất {max} ngày {date}",
+    "sessionsInRange": "{n} phiên trong {days} ngày · {total} phiên từ trước đến nay"
   },
   "ai": {
     "status": {

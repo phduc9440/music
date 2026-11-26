@@ -88,7 +88,8 @@ public class ScoreController {
 
     @PostMapping("/{scoreId}/publish/approve")
     @Operation(
-            summary = "ADMIN: approve making a score public (everyone signed in can then view, practice, rate and comment on it)",
+            summary =
+                    "ADMIN: approve making a score public (everyone signed in can then view, practice, rate and comment on it)",
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<ScoreDetailResponse> approvePublic(@PathVariable String scoreId) {
         return ApiResponse.<ScoreDetailResponse>builder()

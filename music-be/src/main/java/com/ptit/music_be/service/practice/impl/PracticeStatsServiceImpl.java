@@ -22,6 +22,7 @@ import com.ptit.music_be.exception.code.LibraryErrorCode;
 import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.practice.PracticeSessionRepository;
 import com.ptit.music_be.service.practice.PracticeStatsService;
+import com.ptit.music_be.utils.AppTime;
 import com.ptit.music_be.utils.SecurityUtils;
 
 import lombok.AccessLevel;
@@ -48,7 +49,7 @@ public class PracticeStatsServiceImpl implements PracticeStatsService {
     @Override
     @Transactional(readOnly = true)
     public List<PracticeHeatmapDayResponse> getHeatmap(LocalDate from, LocalDate to) {
-        LocalDate end = to != null ? to : LocalDate.now();
+        LocalDate end = to != null ? to : AppTime.today();
         LocalDate start = from != null ? from : end.minusDays(DEFAULT_DAYS - 1L);
         if (start.isAfter(end) || start.plusDays(MAX_RANGE_DAYS).isBefore(end)) {
             throw new AppException(LibraryErrorCode.PRACTICE_STATS_RANGE_INVALID);
@@ -80,7 +81,7 @@ public class PracticeStatsServiceImpl implements PracticeStatsService {
         int n = count == null ? defaultCount : Math.min(Math.max(count, 1), maxCount);
 
         // Các chu kỳ [start, end], cũ nhất trước, chu kỳ cuối chứa hôm nay
-        LocalDate today = LocalDate.now();
+        LocalDate today = AppTime.today();
         List<LocalDate[]> ranges = new ArrayList<>();
         for (int i = n - 1; i >= 0; i--) {
             switch (p) {
@@ -132,11 +133,11 @@ public class PracticeStatsServiceImpl implements PracticeStatsService {
             throw new AppException(LibraryErrorCode.PRACTICE_STATS_DAYS_INVALID);
         }
         Member me = currentMember();
-        LocalDate today = LocalDate.now();
+        LocalDate today = AppTime.today();
         LocalDate start = today.minusDays(n - 1L);
 
         Object[] row = practiceSessionRepository
-                .skillTotals(me, start.atStartOfDay(), today.plusDays(1).atStartOfDay())
+                .skillTotals(me, AppTime.startOfDayUtc(start), AppTime.startOfDayUtc(today.plusDays(1)))
                 .get(0);
         long sessions = ((Number) row[0]).longValue();
         double totalNotes = ((Number) row[1]).doubleValue();
@@ -173,7 +174,7 @@ public class PracticeStatsServiceImpl implements PracticeStatsService {
     @Override
     @Transactional(readOnly = true)
     public PracticeStreakResponse getStreak() {
-        LocalDate today = LocalDate.now();
+        LocalDate today = AppTime.today();
         NavigableSet<LocalDate> days = new TreeSet<>();
         for (PracticeHeatmapDayResponse d : query(currentMember(), EPOCH, today)) {
             days.add(d.getDate());
@@ -215,7 +216,7 @@ public class PracticeStatsServiceImpl implements PracticeStatsService {
 
     private List<PracticeHeatmapDayResponse> queryWithMin(Member member, LocalDate from, LocalDate to, int minSeconds) {
         return practiceSessionRepository
-                .sumByDay(member, from.atStartOfDay(), to.plusDays(1).atStartOfDay(), minSeconds)
+                .sumByDay(member, AppTime.startOfDayUtc(from), AppTime.startOfDayUtc(to.plusDays(1)), minSeconds)
                 .stream()
                 .map(row -> PracticeHeatmapDayResponse.builder()
                         .date(toLocalDate(row[0]))

@@ -3,6 +3,8 @@ package com.ptit.music_be.service.team;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import com.ptit.music_be.utils.AppTime;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -14,7 +16,7 @@ public class ShowDueReminderJob {
 
     private final ShowService showService;
 
-    @Scheduled(cron = "${team.due-reminder-cron:0 0 8 * * *}")
+    @Scheduled(cron = "${team.due-reminder-cron:0 0 8 * * *}", zone = AppTime.ZONE_ID)
     public void remind() {
         int n = showService.remindDue();
         if (n > 0) {

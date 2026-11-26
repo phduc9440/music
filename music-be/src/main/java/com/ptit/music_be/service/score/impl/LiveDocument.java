@@ -13,6 +13,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import com.ptit.music_be.exception.AppException;
+import com.ptit.music_be.utils.MeasureContentValidator;
 import com.ptit.music_be.utils.MeasureHasher;
 import com.ptit.music_be.utils.MusicXmlInspector;
 
@@ -209,7 +210,7 @@ public final class LiveDocument {
             List<Element> replacements = new ArrayList<>();
             for (MeasureEdit edit : edits) {
                 Element replacement = parseMeasure(edit.afterXml());
-                if (replacement == null) {
+                if (replacement == null || !MeasureContentValidator.isValidMeasure(replacement)) {
                     return Outcome.rejected(seq, Reason.INVALID, List.of());
                 }
                 Element old = measures.get(edit.partIndex()).get(edit.measureIndex());
@@ -252,7 +253,8 @@ public final class LiveDocument {
             try {
                 parsed = MusicXmlInspector.parseSecure(xml.getBytes(StandardCharsets.UTF_8));
                 if (SuggestionDiffer.measuresOf(parsed).stream().anyMatch(List::isEmpty)
-                        || SuggestionDiffer.measuresOf(parsed).isEmpty()) {
+                        || SuggestionDiffer.measuresOf(parsed).isEmpty()
+                        || !MeasureContentValidator.isValidScore(parsed.getDocumentElement())) {
                     return Outcome.rejected(seq, Reason.INVALID, List.of());
                 }
             } catch (AppException e) {

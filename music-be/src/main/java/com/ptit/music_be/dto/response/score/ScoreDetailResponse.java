@@ -53,8 +53,10 @@ public class ScoreDetailResponse {
     /** Số lượt chấm sao. */
     long ratingCount;
 
-    /** Email chủ sở hữu (null với bản nhạc chính thức không có chủ). */
+    /** Email chủ sở hữu: chỉ trả cho chính chủ và quản trị viên (N-05); null với người khác hoặc bản không có chủ. */
     String ownerEmail;
+    /** Tên hiển thị của chủ sở hữu (họ tên, thiếu thì phần trước @ của email); null với bản không có chủ. */
+    String ownerName;
     /** Người đang xem có quyền sửa không (ẩn/hiện nút Sửa, Xóa, Mở Editor). */
     boolean canEdit;
     /** Người đang xem có quyền xóa không (chỉ chủ sở hữu hoặc ADMIN). */
@@ -83,6 +85,8 @@ public class ScoreDetailResponse {
     ForkSource forkedFrom;
     /** Ảnh bìa người dùng tải lên; null nếu chưa có. */
     String coverUrl;
+    /** Ảnh trang 1 (PNG đã xử lý, thiếu thì ảnh gốc) như ở thư viện; null nếu bản nhạc không có ảnh trang (N-13). */
+    String thumbnailUrl;
     /** Team chứa bản nhạc (mục 4.1); null là bản cá nhân. */
     String teamId;
 

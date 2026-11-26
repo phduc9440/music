@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.ptit.music_be.client.AiServiceClient;
 import com.ptit.music_be.client.ChordGenerationResult;
+import com.ptit.music_be.client.ChordMelody;
 import com.ptit.music_be.dto.enums.ai.AiTaskError;
 import com.ptit.music_be.dto.enums.ai.AiTaskStatus;
 import com.ptit.music_be.dto.enums.ai.ChordCreativity;
@@ -68,6 +69,8 @@ import lombok.extern.slf4j.Slf4j;
 public class ChordGenerationWorker {
 
     static final int QUEUE_CAPACITY = 20;
+
+    static final int WORKERS = 2;
     static final int MAX_ERROR_LENGTH = 500;
     /** music-ai trả tối đa chừng này phương án hợp âm. */
     static final int MAX_OPTIONS = 3;
@@ -83,8 +86,9 @@ public class ChordGenerationWorker {
     /** Báo người bấm khi gợi ý lỗi (OMR-02); tiêm qua setter nên test dựng worker bằng tay không cần nó. */
     private AiTaskNotifier aiTaskNotifier;
 
+    // CH-10: hai luồng để một bài dài không chặn mọi người phía sau (music-ai chạy gợi ý hợp âm trên CPU, nhanh)
     private final ThreadPoolExecutor executor = new ThreadPoolExecutor(
-            1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(QUEUE_CAPACITY), runnable -> {
+            WORKERS, WORKERS, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(QUEUE_CAPACITY), runnable -> {
                 Thread thread = new Thread(runnable, "chord-worker");
                 thread.setDaemon(true);
                 return thread;
@@ -137,7 +141,9 @@ public class ChordGenerationWorker {
             boolean replaceExisting,
             ChordCreativity creativity,
             ChordDensity density,
-            int options) {}
+            int options,
+            Integer partIndex,
+            Integer staff) {}
 
     void process(String taskId) {
         Job job;
@@ -166,7 +172,8 @@ public class ChordGenerationWorker {
                     job.replaceExisting(),
                     job.creativity().name(),
                     job.density().name(),
-                    job.options());
+                    job.options(),
+                    ChordMelody.of(job.partIndex(), job.staff()));
             byte[] proposed = Files.readAllBytes(fileStorageService.resolve(outPath));
             List<byte[]> others = new ArrayList<>();
             for (ChordGenerationResult.Option option : result.optionsOrDefault()) {
@@ -276,7 +283,9 @@ public class ChordGenerationWorker {
                     ChordCreativity.parse(input.path("creativity").asText(null)).orElse(ChordCreativity.BALANCED),
                     ChordDensity.parse(input.path("density").asText(null)).orElse(ChordDensity.NORMAL),
                     // Tác vụ cũ chưa ghi options thì giữ như trước (tối đa)
-                    input.path("options").asInt(PlanLimits.MAX_CHORD_OPTIONS));
+                    input.path("options").asInt(PlanLimits.MAX_CHORD_OPTIONS),
+                    input.hasNonNull("partIndex") ? input.get("partIndex").asInt() : null,
+                    input.hasNonNull("staff") ? input.get("staff").asInt() : null);
         });
     }
 
@@ -317,6 +326,10 @@ public class ChordGenerationWorker {
                     task.setResultData(data.toString());
                     task.setFinishedAt(LocalDateTime.now());
                     aiTaskRepository.save(task);
+                    // báo người bấm (CH-02); đề xuất hệ thống không còn gửi SUGGESTION_NEW cho mọi người
+                    if (aiTaskNotifier != null) {
+                        aiTaskNotifier.finished(task);
+                    }
                 }));
     }
 
