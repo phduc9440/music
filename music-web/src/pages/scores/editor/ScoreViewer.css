@@ -63,7 +63,9 @@
 /* ---- Thanh trên ---- */
 .sv-toolbar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  /* cột trái (tên bài, trạng thái lưu, người cùng sửa) luôn giữ chỗ tối thiểu để tên bài không bị bóp mất khi bên phải
+     nhiều nút (UI-01); thiếu chỗ thì nhóm nút bên phải xuống hàng */
+  grid-template-columns: minmax(14rem, 1fr) auto auto;
   align-items: center;
   gap: 0.75rem 1.25rem;
   padding: 0.8rem 1.25rem;
@@ -102,7 +104,8 @@
   border-right: 1px solid var(--sc-line);
 }
 .sv-title {
-  min-width: 0;
+  flex: 1 1 auto;
+  min-width: 6rem;
 }
 .sv-title h1 {
   margin: 0;
@@ -613,13 +616,23 @@
 
 /* ---- iPad: 768–1279px, thanh trên hai hàng, công cụ thu thành thanh dưới đáy ---- */
 @media (max-width: 1279px) {
+  /* hai hàng: (1) quay lại + tên bài + trạng thái + người cùng sửa, (2) chế độ xem, thu phóng và các nút. Trước đây cụm
+     nút chiếm hết hàng một, các phần bên trái đè lên nhau ở ~900px (UI-01) */
   .sv-toolbar {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .sv-toolbar__left {
+    grid-column: 1 / -1;
+    grid-row: 1;
   }
   .sv-toolbar__center {
-    grid-column: 1 / -1;
+    grid-column: 1;
     grid-row: 2;
-    justify-content: center;
+    justify-content: flex-start;
+  }
+  .sv-toolbar__right {
+    grid-column: 2;
+    grid-row: 2;
   }
   .sv-body.has-tools {
     flex-direction: column-reverse;
@@ -664,14 +677,17 @@
     padding: 0.6rem 0.75rem;
   }
   .sv-toolbar__left {
+    grid-column: 1;
     grid-row: 1;
   }
   .sv-toolbar__right {
+    grid-column: 1;
     grid-row: 2;
     justify-content: flex-start;
     gap: 0.35rem;
   }
   .sv-toolbar__center {
+    grid-column: 1;
     grid-row: 3;
   }
   .sv-toolbar .sv-title {

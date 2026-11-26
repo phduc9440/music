@@ -48,7 +48,9 @@ export default function StudioSessionReport() {
             <header className="sc-lib-head">
               <div>
                 <h1>{t('studioReport.report.title')}</h1>
-                <p>{report.title}</p>
+                <p className="sc-title-clamp" title={report.title}>
+                  {report.title}
+                </p>
               </div>
               {/* điểm của phiên và hai lối đi tiếp: luyện lại ngay bài này, hoặc về trang bản nhạc */}
               <div className="studio-report__head-side">

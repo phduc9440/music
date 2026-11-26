@@ -25,13 +25,21 @@ public interface NotificationService {
             String message,
             java.util.Map<String, String> params);
 
-    /** Dựng params từ các cặp khóa, giá trị; bỏ cặp có giá trị null. */
+    /** Tên bài trong thông báo dài hơn mức này thì cắt kèm "…" (T38): chuông và toast không bị một chuỗi dài chiếm hết. */
+    int MAX_TITLE_IN_NOTIFICATION = 60;
+
+    /** Dựng params từ các cặp khóa, giá trị; bỏ cặp có giá trị null; tham số "title" dài thì cắt ngắn. */
     static java.util.Map<String, String> params(String... keyValues) {
         java.util.Map<String, String> map = new java.util.LinkedHashMap<>();
         for (int i = 0; i + 1 < keyValues.length; i += 2) {
-            if (keyValues[i + 1] != null) {
-                map.put(keyValues[i], keyValues[i + 1]);
+            String value = keyValues[i + 1];
+            if (value == null) {
+                continue;
             }
+            if ("title".equals(keyValues[i]) && value.length() > MAX_TITLE_IN_NOTIFICATION) {
+                value = value.substring(0, MAX_TITLE_IN_NOTIFICATION - 1) + "…";
+            }
+            map.put(keyValues[i], value);
         }
         return map;
     }

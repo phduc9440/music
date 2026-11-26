@@ -213,7 +213,9 @@ export default function ScoreHero({ score, onVisibilityChanged }: Props) {
               </span>
             )}
           </div>
-          <h1 className="sd-title">{score.title}</h1>
+          <h1 className="sd-title sc-title-clamp" title={score.title}>
+            {score.title}
+          </h1>
           <p className="sd-meta">
             {meta.map((m, i) => (
               <span key={i}>{m}</span>

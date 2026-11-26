@@ -880,7 +880,9 @@ export default function StudioPlayer() {
           {/* tên bài to, thông tin phụ là các thẻ có biểu tượng (không ghép chuỗi bằng dấu chấm giữa) */}
           <div className="studio-player__heading">
             <span className="studio-player__eyebrow">{t('studioPlayer.eyebrow')}</span>
-            <h1>{score.title}</h1>
+            <h1 className="sc-title-clamp" title={score.title}>
+              {score.title}
+            </h1>
             <ul className="studio-player__facts">
               <li>
                 <Icon name="user" size={14} />

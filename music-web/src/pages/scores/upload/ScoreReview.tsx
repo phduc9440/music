@@ -340,7 +340,9 @@ export default function ScoreReview() {
       <main className="sc-container sr-container">
         <header className="sc-lib-head">
           <div>
-            <h1>{score.title}</h1>
+            <h1 className="sc-title-clamp" title={score.title}>
+              {score.title}
+            </h1>
             <p>{t('upload.review.subtitle')}</p>
           </div>
           <button className="sc-btn sc-btn--sm" onClick={() => navigate(`${base}/${score.id}`)}>
